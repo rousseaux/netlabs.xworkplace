@@ -2304,6 +2304,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
         break;
 
         case SP_DTP_STARTUP:
+            G_pGlobalSettings->fWriteXWPStartupLog = 0;
             G_pGlobalSettings->ShowBootupStatus = 0;
             G_pGlobalSettings->BootLogo = 0;
             G_pGlobalSettings->bBootLogoStyle = 0;

@@ -57,6 +57,9 @@
 #define INCL_WINTIMER
 #define INCL_WINPOINTERS
 #define INCL_WINMENUS
+#define INCL_WINDIALOGS
+#define INCL_WINSTATICS
+#define INCL_WINBUTTONS
 #define INCL_WINSTDDRAG
 
 #define INCL_GPICONTROL
@@ -75,10 +78,12 @@
 
 // headers in /helpers
 #include "helpers\comctl.h"             // common controls (window procs)
+#include "helpers\dialog.h"             // dialog helpers
 #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
@@ -118,15 +123,25 @@
  *
  ********************************************************************/
 
+#define MENUFL_NOSHUTDOWN           0x0001
+#define MENUFL_NORESTARTWPS         0x0002
+#define MENUFL_NOLOGOFF             0x0004
+#define MENUFL_NOSUSPEND            0x0008
+#define MENUFL_NOLOCKUP             0x0010
+#define MENUFL_NORUNDLG             0x0020
+
 /*
  * OBJBUTTONSETUP:
  *
+ *@@changed V0.9.14 (2001-08-21) [umoeller]: added x-button menu item configuration
  */
 
 typedef struct _OBJBUTTONSETUP
 {
-    HOBJECT     hobj;                   // member object's handle
-
+    HOBJECT     hobj;                   // member object's handle (for obj buttons)
+    ULONG       flMenuItems;            // MENUFL_* menu item flags (for x-button);
+                                        // if any one is set, the corresponding item
+                                        // is removed
 } OBJBUTTONSETUP, *POBJBUTTONSETUP;
 
 /*
@@ -225,7 +240,17 @@ VOID OwgtScanSetup(const char *pcszSetupString,
         pSetup->hobj = strtol(p, NULL, 16);
         ctrFreeSetupValue(p);
     }
+    else
+        pSetup->hobj = 0;
 
+    if (p = ctrScanSetupString(pcszSetupString,
+                               "MENUITEMS"))
+    {
+        pSetup->flMenuItems = strtol(p, NULL, 16);
+        ctrFreeSetupValue(p);
+    }
+    else
+        pSetup->flMenuItems = 0;
 }
 
 /*
@@ -236,18 +261,28 @@ VOID OwgtScanSetup(const char *pcszSetupString,
  */
 
 VOID OwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared first)
-                   ULONG cxCurrent,
+                   BOOL fIsObjButton,
                    POBJBUTTONSETUP pSetup)
 {
     CHAR    szTemp[100];
     xstrInit(pstrSetup, 100);
 
-    if (pSetup->hobj)
+    if (fIsObjButton)
     {
-        sprintf(szTemp, "OBJECTHANDLE=%lX;",
-                pSetup->hobj);
-        xstrcat(pstrSetup, szTemp, 0);
+        if (pSetup->hobj)
+        {
+            sprintf(szTemp, "OBJECTHANDLE=%lX;",
+                    pSetup->hobj);
+            xstrcat(pstrSetup, szTemp, 0);
+        }
     }
+    else
+        if (pSetup->flMenuItems)
+        {
+            sprintf(szTemp, "MENUITEMS=%lX;",
+                    pSetup->flMenuItems);
+            xstrcat(pstrSetup, szTemp, 0);
+        }
 }
 
 /* ******************************************************************
@@ -256,38 +291,192 @@ VOID OwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
  *
  ********************************************************************/
 
-// None currently.
-
-/* ******************************************************************
- *
- *   Callbacks stored in XCENTERWIDGET
- *
- ********************************************************************/
-
 /*
- *@@ OwgtSetupStringChanged:
- *      this gets called from ctrSetSetupString if
- *      the setup string for a widget has changed.
+ *@@ XBTNMENUITEMDEF:
  *
- *      This procedure's address is stored in
- *      XCENTERWIDGET so that the XCenter knows that
- *      we can do this.
+ *@@added V0.9.14 (2001-08-21) [umoeller]
  */
 
-VOID EXPENTRY OwgtSetupStringChanged(PXCENTERWIDGET pWidget,
-                                     const char *pcszNewSetupString)
+typedef struct _XBTNMENUITEMDEF
 {
-    POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
-    if (pPrivate)
+    const char  **ppcsz;
+    ULONG       ulFlag,
+                ulItemID;
+} XBTNMENUITEMDEF, *PXBTNMENUITEMDEF;
+
+/*
+ *@@ OwgtShowXButtonSettingsDlg:
+ *
+ *@@added V0.9.14 (2001-08-21) [umoeller]
+ */
+
+VOID EXPENTRY OwgtShowXButtonSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
+{
+    HWND hwndDlg = NULLHANDLE;
+    APIRET arc;
+
+    CONTROLDEF
+                OKButton = CONTROLDEF_DEFPUSHBUTTON(NULL, DID_OK, 100, 30),
+                CancelButton = CONTROLDEF_PUSHBUTTON(NULL, DID_CANCEL, 100, 30),
+
+                ChecksGroup = CONTROLDEF_GROUP(NULL, -1),
+
+                CheckShutdown
+                            = CONTROLDEF_AUTOCHECKBOX(NULL,
+                                                      1000 + MENUFL_NOSHUTDOWN,
+                                                      -1, 20),
+                CheckRestartWPS
+                            = CONTROLDEF_AUTOCHECKBOX(NULL,
+                                                      1000 + MENUFL_NORESTARTWPS,
+                                                      -1, 20),
+                CheckLogoff
+                            = CONTROLDEF_AUTOCHECKBOX(NULL,
+                                                      1000 + MENUFL_NOLOGOFF,
+                                                      -1, 20),
+                CheckSuspend
+                            = CONTROLDEF_AUTOCHECKBOX(NULL,
+                                                      1000 + MENUFL_NOSUSPEND,
+                                                      -1, 20),
+                CheckLockup
+                            = CONTROLDEF_AUTOCHECKBOX(NULL,
+                                                      1000 + MENUFL_NOLOCKUP,
+                                                      -1, 20),
+                CheckRunDlg
+                            = CONTROLDEF_AUTOCHECKBOX(NULL,
+                                                      1000 + MENUFL_NORUNDLG,
+                                                      -1, 20);
+
+    DLGHITEM    DlgTemplate[] =
+        {
+            START_TABLE,
+                START_ROW(0),
+                    START_GROUP_TABLE(&ChecksGroup),
+                        START_ROW(0),
+                            CONTROL_DEF(&CheckRunDlg),
+                        START_ROW(0),
+                            CONTROL_DEF(&CheckLockup),
+                        START_ROW(0),
+                            CONTROL_DEF(&CheckSuspend),
+                        START_ROW(0),
+                            CONTROL_DEF(&CheckLogoff),
+                        START_ROW(0),
+                            CONTROL_DEF(&CheckRestartWPS),
+                        START_ROW(0),
+                            CONTROL_DEF(&CheckShutdown),
+                    END_TABLE,
+                START_ROW(0),
+                    CONTROL_DEF(&OKButton),
+                    CONTROL_DEF(&CancelButton),
+            END_TABLE
+        };
+
+    XBTNMENUITEMDEF   aItems[] =
+        {
+             &CheckRunDlg.pcszText, MENUFL_NORUNDLG, ID_CRMI_RUN,
+             &CheckLockup.pcszText, MENUFL_NOLOCKUP, ID_CRMI_LOCKUPNOW,
+             &CheckSuspend.pcszText, MENUFL_NOSUSPEND, ID_CRMI_SUSPEND,
+             &CheckLogoff.pcszText, MENUFL_NOLOGOFF, ID_CRMI_LOGOFF,
+             &CheckRestartWPS.pcszText, MENUFL_NORESTARTWPS, ID_CRMI_RESTARTWPS,
+             &CheckShutdown.pcszText, MENUFL_NOSHUTDOWN, ID_CRMI_SHUTDOWN
+        };
+
+    // load the standard X-button menu so we can copy
+    // the strings from there
+    HWND            hmenuTemp;
+
+    if (hmenuTemp = WinLoadMenu(pData->hwndOwner,
+                                cmnQueryNLSModuleHandle(FALSE),
+                                ID_CRM_XCENTERBUTTON))
     {
-        // reinitialize the setup data
-        OwgtClearSetup(&pPrivate->Setup);
-        OwgtScanSetup(pcszNewSetupString,
-                      &pPrivate->Setup);
+        // for each checkbox, set its text to the
+        // corresponding menu item
+        ULONG   ul;
+        for (ul = 0;
+             ul < ARRAYITEMCOUNT(aItems);
+             ul++)
+        {
+            PSZ p;
+            *(aItems[ul].ppcsz) = winhQueryMenuItemText(hmenuTemp, aItems[ul].ulItemID);
+            if ((p = strstr(*(aItems[ul].ppcsz), "...")))
+                strcpy(p, p+3);
+        }
+
+        ChecksGroup.pcszText = "Visible menu items"; // @@todo localize
+
+        OKButton.pcszText = cmnGetString(ID_XSSI_DLG_OK);
+        CancelButton.pcszText = cmnGetString(ID_XSSI_DLG_CANCEL);
+
+        if (!(arc = dlghCreateDlg(&hwndDlg,
+                                  pData->hwndOwner,
+                                  FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
+                                  WinDefDlgProc,
+                                  "X-Button",     // @@todo localize
+                                  DlgTemplate,
+                                  ARRAYITEMCOUNT(DlgTemplate),
+                                  NULL,
+                                  cmnQueryDefaultFont())))
+        {
+            // go scan the setup string
+            OBJBUTTONSETUP  Setup;
+            OwgtScanSetup(pData->pcszSetupString, &Setup);
+
+            _Pmpf(("Setup string is \"%s\", flMenuItems = %lX",
+                        pData->pcszSetupString,
+                        Setup.flMenuItems));
+
+
+            // check the boxes accordingly
+            for (ul = 0;
+                 ul < ARRAYITEMCOUNT(aItems);
+                 ul++)
+            {
+                BOOL fCheck = ((Setup.flMenuItems & aItems[ul].ulFlag) == 0);
+                _Pmpf(("Setting %lX to %d", 1000 + aItems[ul].ulFlag, fCheck));
+                winhSetDlgItemChecked(hwndDlg,
+                                      1000 + aItems[ul].ulFlag,
+                                      fCheck);
+            }
+
+            // go!
+            winhCenterWindow(hwndDlg);
+            if (DID_OK == WinProcessDlg(hwndDlg))
+            {
+                XSTRING strSetup;
+
+                // now reset setup
+                Setup.flMenuItems = 0;          // show all
+                for (ul = 0;
+                     ul < ARRAYITEMCOUNT(aItems);
+                     ul++)
+                {
+                    if (!winhIsDlgItemChecked(hwndDlg,
+                                              1000 + aItems[ul].ulFlag))
+                        // disabled:
+                        Setup.flMenuItems |= aItems[ul].ulFlag;
+                }
+
+                OwgtSaveSetup(&strSetup,
+                              FALSE,            // X-button
+                              &Setup);
+                pData->pctrSetSetupString(pData->hSettings,
+                                          strSetup.psz);
+                xstrClear(&strSetup);
+            }
+
+            WinDestroyWindow(hwndDlg);
+        }
+
+        for (ul = 0;
+             ul < ARRAYITEMCOUNT(aItems);
+             ul++)
+        {
+            if (*(aItems[ul].ppcsz))
+                free((PSZ)(*(aItems[ul].ppcsz)));
+        }
+
+        WinDestroyWindow(hmenuTemp);
     }
 }
-
-// VOID EXPENTRY OwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
 
 /* ******************************************************************
  *
@@ -314,31 +503,29 @@ WPObject* FindObject(POBJBUTTONPRIVATE pPrivate)
 {
     WPObject *pobj = NULL;
 
-    if (pPrivate->Setup.hobj)
+    if (    (pPrivate->Setup.hobj)
+         && (pobj = _wpclsQueryObject(_WPObject,
+                                      pPrivate->Setup.hobj))
+       )
     {
-        pobj = _wpclsQueryObject(_WPObject,
-                                 pPrivate->Setup.hobj);
+        // dereference shadows
+        while ((pobj) && (_somIsA(pobj, _WPShadow)))
+            pobj = _wpQueryShadowedObject(pobj, TRUE);
+
         if (pobj)
         {
-            // dereference shadows
-            while ((pobj) && (_somIsA(pobj, _WPShadow)))
-                pobj = _wpQueryShadowedObject(pobj, TRUE);
+            // now, if pObj is a disk object: get root folder
+            if (_somIsA(pobj, _WPDisk))
+                pobj = wpshQueryRootFolder(pobj, FALSE, NULL);
 
-            if (pobj)
+            if ((pobj) && (pPrivate->pobjNotify != pobj))
             {
-                // now, if pObj is a disk object: get root folder
-                if (_somIsA(pobj, _WPDisk))
-                    pobj = wpshQueryRootFolder(pobj, FALSE, NULL);
-
-                if ((pobj) && (pPrivate->pobjNotify != pobj))
-                {
-                    // set list notify so that the widget is destroyed
-                    // when the object goes dormant
-                    _wpLockObject(pobj);
-                    _xwpAddWidgetNotify(pobj,
-                                         pPrivate->pWidget->hwndWidget);
-                    pPrivate->pobjNotify = pobj;
-                }
+                // set list notify so that the widget is destroyed
+                // when the object goes dormant
+                _wpLockObject(pobj);
+                _xwpAddWidgetNotify(pobj,
+                                     pPrivate->pWidget->hwndWidget);
+                pPrivate->pobjNotify = pobj;
             }
         }
     }
@@ -355,8 +542,8 @@ MRESULT OwgtCreate(HWND hwnd, MPARAM mp1)
 {
     MRESULT mrc = 0;
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)mp1;
-    POBJBUTTONPRIVATE pPrivate = malloc(sizeof(OBJBUTTONPRIVATE));
-    memset(pPrivate, 0, sizeof(OBJBUTTONPRIVATE));
+    POBJBUTTONPRIVATE pPrivate = NEW(OBJBUTTONPRIVATE);
+    ZERO(pPrivate);
     // link the two together
     pWidget->pUser = pPrivate;
     pPrivate->pWidget = pWidget;
@@ -429,6 +616,24 @@ BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                     break; }
 
                     /*
+                     * XN_SETUPCHANGED:
+                     *      XCenter has a new setup string for
+                     *      us in mp2.
+                     */
+
+                    case XN_SETUPCHANGED:
+                    {
+                        const char *pcszNewSetupString = (const char*)mp2;
+
+                        // reinitialize the setup data
+                        OwgtClearSetup(&pPrivate->Setup);
+                        OwgtScanSetup(pcszNewSetupString, &pPrivate->Setup);
+
+                        // WinInvalidateRect(pWidget->hwndWidget, NULL, FALSE);
+                    }
+                    break;
+
+                    /*
                      * XN_OBJECTDESTROYED:
                      *      member object has been destroyed.
                      *      Destroy ourselves too.
@@ -491,12 +696,13 @@ BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 VOID OwgtPaintButton(HWND hwnd)
 {
     RECTL rclPaint;
-    HPS hps = WinBeginPaint(hwnd, NULLHANDLE, &rclPaint);
+    PXCENTERWIDGET pWidget;
+    POBJBUTTONPRIVATE pPrivate;
 
-    if (hps)
+    HPS hps;
+
+    if (hps = WinBeginPaint(hwnd, NULLHANDLE, &rclPaint))
     {
-        PXCENTERWIDGET pWidget;
-        POBJBUTTONPRIVATE pPrivate;
         if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
              && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
            )
@@ -558,6 +764,124 @@ VOID OwgtPaintButton(HWND hwnd)
 }
 
 /*
+ *@@ BuildXButtonMenu:
+ *      called from OwgtButton1Down to build the
+ *      X-button menu before displaying it.
+ *
+ *      After this, pPrivate->hwndMenuMain has
+ *      the new context menu.
+ *
+ *@@added V0.9.14 (2001-08-21) [umoeller]
+ *@@changed V0.9.14 (2001-08-21) [umoeller]: added selective disable of menu items
+ */
+
+VOID BuildXButtonMenu(HWND hwnd,
+                      POBJBUTTONPRIVATE pPrivate,
+                      PCGLOBALSETTINGS pGlobalSettings)
+{
+    WPDesktop *pActiveDesktop = cmnQueryActiveDesktop();
+    PSZ pszDesktopTitle = _wpQueryTitle(pActiveDesktop);
+    PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
+    BOOL fShutdownRunning = xsdIsShutdownRunning();
+
+    HWND hMenu
+     = pPrivate->hwndMenuMain
+     = WinLoadMenu(hwnd,
+                   cmnQueryNLSModuleHandle(FALSE),
+                   ID_CRM_XCENTERBUTTON);
+
+    // nuke run if the menu item has been disabled V0.9.14 (2001-08-21) [umoeller]
+    if (pPrivate->Setup.flMenuItems & MENUFL_NORUNDLG)
+    {
+        winhRemoveMenuItem(hMenu, ID_CRMI_RUN);
+        winhRemoveMenuItem(hMenu, ID_CRMI_SEP2);
+    }
+
+    if ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) == 0)
+    {
+        // if XShutdown confirmations have been disabled,
+        // remove "..." from the shutdown menu entries
+        winhMenuRemoveEllipse(hMenu,
+                              ID_CRMI_RESTARTWPS);
+        winhMenuRemoveEllipse(hMenu,
+                              ID_CRMI_SHUTDOWN);
+    }
+
+    if (pPrivate->Setup.flMenuItems & MENUFL_NOSHUTDOWN)
+        winhRemoveMenuItem(hMenu, ID_CRMI_SHUTDOWN);
+    else
+        WinEnableMenuItem(hMenu,
+                          ID_CRMI_SHUTDOWN,
+                          !fShutdownRunning);
+    if (pPrivate->Setup.flMenuItems & MENUFL_NORESTARTWPS)
+        winhRemoveMenuItem(hMenu, ID_CRMI_RESTARTWPS);
+    else
+        WinEnableMenuItem(hMenu,
+                          ID_CRMI_RESTARTWPS,
+                          !fShutdownRunning);
+
+
+    if (    (!pKernelGlobals->pXWPShellShared)
+         || (pPrivate->Setup.flMenuItems & MENUFL_NOLOGOFF)
+       )
+    {
+        // XWPShell not running:
+        // remove "logoff"
+        winhRemoveMenuItem(hMenu, ID_CRMI_LOGOFF);
+    }
+    else
+    {
+        if ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) == 0)
+            // if XShutdown confirmations have been disabled,
+            // remove "..." from menu entry
+            winhMenuRemoveEllipse(hMenu,
+                                  ID_CRMI_LOGOFF);
+        WinEnableMenuItem(hMenu,
+                          ID_CRMI_LOGOFF,
+                          !fShutdownRunning);
+    }
+
+    // nuke lockup if the menu item has been disabled V0.9.14 (2001-08-21) [umoeller]
+    if (pPrivate->Setup.flMenuItems & MENUFL_NOLOCKUP)
+        winhRemoveMenuItem(hMenu, ID_CRMI_LOCKUPNOW);
+
+    if (pPrivate->Setup.flMenuItems & MENUFL_NOSUSPEND)
+        // power has been disabled:
+        pPrivate->pPower = NULL;
+    else
+        // check if we can find the "Power" object
+        if (pPrivate->pPower = wpshQueryObjectFromID("<WP_POWER>", NULL))
+        {
+            if (_somIsA(pPrivate->pPower, _WPPower))
+            {
+                // is power management enabled?
+                if (!_wpQueryPowerManagement(pPrivate->pPower))
+                    // no:
+                    pPrivate->pPower = NULL;
+            }
+            else
+                pPrivate->pPower = NULL;
+        }
+
+    if (!pPrivate->pPower)
+        winhRemoveMenuItem(hMenu, ID_CRMI_SUSPEND);
+    else
+        // power exists:
+        if (!_wpQueryPowerConfirmation(pPrivate->pPower))
+            // if power confirmations have been disabled,
+            // remove "..." from menu entry
+            winhMenuRemoveEllipse(hMenu,
+                                  ID_CRMI_SUSPEND);
+
+    // prepare folder content submenu for Desktop
+    cmnuPrepareContentSubmenu(pActiveDesktop,
+                              hMenu,
+                              pszDesktopTitle,
+                              0,        // top item
+                              FALSE); // no owner draw in main context menu
+}
+
+/*
  * OwgtButton1Down:
  *      implementation for WM_BUTTON1DOWN.
  *
@@ -601,83 +925,8 @@ VOID OwgtButton1Down(HWND hwnd)
                 cmnuInitItemCache(pGlobalSettings);
 
                 if (pPrivate->ulType == BTF_XBUTTON)
-                {
                     // it's an X-button: load default menu
-                    WPDesktop *pActiveDesktop = cmnQueryActiveDesktop();
-                    PSZ pszDesktopTitle = _wpQueryTitle(pActiveDesktop);
-                    PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
-                    BOOL fShutdownRunning = xsdIsShutdownRunning();
-
-                    pPrivate->hwndMenuMain = WinLoadMenu(hwnd,
-                                                         cmnQueryNLSModuleHandle(FALSE),
-                                                         ID_CRM_XCENTERBUTTON);
-
-                    if ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) == 0)
-                    {
-                        // if XShutdown confirmations have been disabled,
-                        // remove "..." from the shutdown menu entries
-                        winhMenuRemoveEllipse(pPrivate->hwndMenuMain,
-                                              ID_CRMI_RESTARTWPS);
-                        winhMenuRemoveEllipse(pPrivate->hwndMenuMain,
-                                              ID_CRMI_SHUTDOWN);
-                    }
-
-                    WinEnableMenuItem(pPrivate->hwndMenuMain,
-                                      ID_CRMI_RESTARTWPS,
-                                      !fShutdownRunning);
-                    WinEnableMenuItem(pPrivate->hwndMenuMain,
-                                      ID_CRMI_SHUTDOWN,
-                                      !fShutdownRunning);
-
-                    if (!pKernelGlobals->pXWPShellShared)
-                    {
-                        // XWPShell not running:
-                        // remove "logoff"
-                        winhRemoveMenuItem(pPrivate->hwndMenuMain,
-                                           ID_CRMI_LOGOFF);
-                    }
-                    else
-                    {
-                        if ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) == 0)
-                            // if XShutdown confirmations have been disabled,
-                            // remove "..." from menu entry
-                            winhMenuRemoveEllipse(pPrivate->hwndMenuMain,
-                                                  ID_CRMI_LOGOFF);
-                        WinEnableMenuItem(pPrivate->hwndMenuMain,
-                                          ID_CRMI_LOGOFF,
-                                          !fShutdownRunning);
-                    }
-
-                    // check if we can find the "Power" object
-                    if (pPrivate->pPower = wpshQueryObjectFromID("<WP_POWER>", NULL))
-                        if (_somIsA(pPrivate->pPower, _WPPower))
-                        {
-                            // is power management enabled?
-                            if (!_wpQueryPowerManagement(pPrivate->pPower))
-                                // no:
-                                pPrivate->pPower = NULL;
-                        }
-                        else
-                            pPrivate->pPower = NULL;
-
-                    if (!pPrivate->pPower)
-                        winhRemoveMenuItem(pPrivate->hwndMenuMain,
-                                           ID_CRMI_SUSPEND);
-                    else
-                        // power exists:
-                        if (!_wpQueryPowerConfirmation(pPrivate->pPower))
-                            // if power confirmations have been disabled,
-                            // remove "..." from menu entry
-                            winhMenuRemoveEllipse(pPrivate->hwndMenuMain,
-                                                  ID_CRMI_SUSPEND);
-
-                    // prepare folder content submenu for Desktop
-                    cmnuPrepareContentSubmenu(pActiveDesktop,
-                                              pPrivate->hwndMenuMain,
-                                              pszDesktopTitle,
-                                              0,        // top item
-                                              FALSE); // no owner draw in main context menu
-                } // if (pPrivate->ulType == BTF_XBUTTON)
+                    BuildXButtonMenu(hwnd, pPrivate, pGlobalSettings);
                 else
                 {
                     // regular object button:

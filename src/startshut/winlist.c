@@ -71,6 +71,12 @@
 // other SOM headers
 #pragma hdrstop
 
+/*
+ *@@ WINLISTRECORD:
+ *
+ *@@added V0.9.4 (2000-07-15) [umoeller]
+ */
+
 typedef struct _WINLISTRECORD
 {
     RECORDCORE  recc;
@@ -78,15 +84,6 @@ typedef struct _WINLISTRECORD
     ULONG       ulIndex;
 
     HSWITCH     hSwitch;
-
-    HWND        hwnd;
-    CHAR        szHWND[20];
-    PSZ         pszHWND;
-
-    HPROGRAM    hPgm;
-    PID         pid;
-    ULONG       sid;
-    ULONG       ulVisibility;
 
     CHAR        szSwTitle[200];
     PSZ         pszSwTitle;         // points to szSwTitle
@@ -97,7 +94,20 @@ typedef struct _WINLISTRECORD
     CHAR        szObject[30];
     PSZ         pszObject;
 
+    HWND        hwnd;
+    CHAR        szHWND[20];
+    PSZ         pszHWND;
+
+    HPROGRAM    hPgm;
+    PID         pid;
+    ULONG       sid;
+    ULONG       ulVisibility;
+
     PSZ         pszObjectTitle;
+
+    HAPP        happObject;
+    CHAR        szHAPP[30];
+    PSZ         pszHAPP;            // points to szHAPP
 
     CHAR        szClosable[30];
     PSZ         pszClosable;        // points to szClosable
@@ -184,7 +194,20 @@ ULONG winlCreateRecords(HWND hwndCnr)
             pRecThis->pszObject = pRecThis->szObject;
 
             if (pObject)
+            {
+                PVIEWITEM pvi;
+
                 pRecThis->pszObjectTitle = _wpQueryTitle(pObject);
+
+                if (pvi = _wpFindViewItem(pObject,
+                                          VIEW_RUNNING,
+                                          NULL))
+                {
+                    pRecThis->happObject = pvi->handle;
+                    sprintf(pRecThis->szHAPP, "%lX", pvi->handle);
+                    pRecThis->pszHAPP = pRecThis->szHAPP;
+                }
+            }
 
             pRecThis = (PWINLISTRECORD)pRecThis->recc.preccNextRecord;
         }
@@ -270,6 +293,11 @@ MRESULT EXPENTRY winl_fnwpWinList(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM
                     xfi[i].ulDataType = CFA_STRING;
                     xfi[i++].ulOrientation = CFA_RIGHT;
 
+                    xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, hPgm);
+                    xfi[i].pszColumnTitle = "hPgm";
+                    xfi[i].ulDataType = CFA_ULONG;
+                    xfi[i++].ulOrientation = CFA_RIGHT;
+
                     xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, pid);
                     xfi[i].pszColumnTitle = "PID";
                     xfi[i].ulDataType = CFA_ULONG;
@@ -297,6 +325,11 @@ MRESULT EXPENTRY winl_fnwpWinList(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM
 
                     xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, pszObjectTitle);
                     xfi[i].pszColumnTitle = "Obj Title";
+                    xfi[i].ulDataType = CFA_STRING;
+                    xfi[i++].ulOrientation = CFA_RIGHT;
+
+                    xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, pszHAPP);
+                    xfi[i].pszColumnTitle = "HAPP";
                     xfi[i].ulDataType = CFA_STRING;
                     xfi[i++].ulOrientation = CFA_RIGHT;
 

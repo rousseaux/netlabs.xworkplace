@@ -1108,6 +1108,9 @@
         BYTE        fExtendCloseMenu;
                         // XFldWPS "View" page
 
+        BYTE        fWriteXWPStartupLog;
+                        // V0.9.14 (2001-08-21) [umoeller]
+
     } GLOBALSETTINGS;
 
     typedef const GLOBALSETTINGS* PCGLOBALSETTINGS;

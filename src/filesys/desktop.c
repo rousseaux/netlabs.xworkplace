@@ -850,6 +850,7 @@ MRESULT dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.1 (2000-02-09) [umoeller]: added NumLock support to this page
  *@@changed V0.9.13 (2001-06-14) [umoeller]: fixed Undo for boot logo file
+ *@@changed V0.9.14 (2001-08-21) [umoeller]: added "write startuplog" setting
  */
 
 VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -943,6 +944,10 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         WinSetPointer(HWND_DESKTOP, hptrOld);
 
+        // startup log file
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_WRITEXWPSTARTLOG,
+                              pGlobalSettings->fWriteXWPStartupLog);
+
         // bootup status
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_BOOTUPSTATUS,
                               pGlobalSettings->ShowBootupStatus);
@@ -1008,6 +1013,7 @@ VOID SetBootLogoFile(PCREATENOTEBOOKPAGE pcnbp,
  *@@changed V0.9.3 (2000-04-11) [umoeller]: fixed major resource leak; the bootlogo bitmap was never freed
  *@@changed V0.9.9 (2001-04-07) [pr]: fixed Undo
  *@@changed V0.9.13 (2001-06-14) [umoeller]: fixed Undo for boot logo file
+ *@@changed V0.9.14 (2001-08-21) [umoeller]: added "write startuplog" setting
  */
 
 MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1037,6 +1043,10 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 pGlobalSettings->bBootLogoStyle = 1;
             break;
 
+            case ID_XSDI_DTP_WRITEXWPSTARTLOG:
+                pGlobalSettings->fWriteXWPStartupLog = ulExtra;
+            break;
+
             case ID_XSDI_DTP_BOOTUPSTATUS:
                 pGlobalSettings->ShowBootupStatus = ulExtra;
             break;
@@ -1052,6 +1062,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 GLOBALSETTINGS *pGSBackup = (GLOBALSETTINGS*)(pcnbp->pUser);
 
                 // and restore the settings for this page
+                pGlobalSettings->fWriteXWPStartupLog = pGSBackup->fWriteXWPStartupLog;
                 pGlobalSettings->ShowBootupStatus = pGSBackup->ShowBootupStatus;
                 pGlobalSettings->BootLogo = pGSBackup->BootLogo;
                 pGlobalSettings->bBootLogoStyle = pGSBackup->bBootLogoStyle;

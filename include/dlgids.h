@@ -910,6 +910,7 @@
 #define ID_XSDI_DTP_LOGO_BROWSE         2120
 #define ID_XSDI_DTP_BOOTUPSTATUS        2121
 #define ID_XSDI_DTP_NUMLOCKON           2122  // added V0.9.1 (2000-02-09) [umoeller]
+#define ID_XSDI_DTP_WRITEXWPSTARTLOG    2123  // added V0.9.14 (2001-08-21) [umoeller]
 
 // XFldDesktop "Shutdown" page (V0.9.0)
 #define ID_XSD_DTP_SHUTDOWN             2125
@@ -1073,13 +1074,16 @@
 #define ID_XSDI_MOUSE_MB3CLICK_DROP     3465    // added V0.9.9 (2001-03-14) [lafaix]
 
 #define ID_XSD_MOUSE_MOVEMENT2          3470    // added V0.9.14 (2001-08-02) [lafaix]
-#define ID_XSDI_MOUSE_AUTOHIDE_CHECK    3410
-#define ID_XSDI_MOUSE_AUTOHIDE_TXT1     3411
-#define ID_XSDI_MOUSE_AUTOHIDE_SLIDER   3412
-#define ID_XSDI_MOUSE_AUTOHIDE_TXT2     3413
+#define ID_XSDI_MOUSE_AUTOHIDE_CHECK    3471
+#define ID_XSDI_MOUSE_AUTOHIDE_TXT1     3472
+#define ID_XSDI_MOUSE_AUTOHIDE_SLIDER   3473
+#define ID_XSDI_MOUSE_AUTOHIDE_TXT2     3474
 #define ID_XSDI_MOUSE_AUTOHIDE_CHECKMNU 3475
 #define ID_XSDI_MOUSE_AUTOHIDE_CHECKBTN 3476
 #define ID_XSDI_MOUSE_AUTOMOVE_CHECK    3477
+#define ID_XSDI_MOUSE_AUTOMOVE_TXT1     3478
+#define ID_XSDI_MOUSE_AUTOMOVE_SLIDER   3479
+#define ID_XSDI_MOUSE_AUTOMOVE_TXT2     3480
 
 /******************************************
  * XCenter (V0.9.7)         >= 3600       *
@@ -1097,6 +1101,7 @@
 #define ID_CRDI_VIEW_AUTOHIDE_TXT1      3611    // added V0.9.9 (2001-03-09) [umoeller]
 #define ID_CRDI_VIEW_AUTOHIDE_SLIDER    3612    // added V0.9.9 (2001-03-09) [umoeller]
 #define ID_CRDI_VIEW_AUTOHIDE_TXT2      3613    // added V0.9.9 (2001-03-09) [umoeller]
+#define ID_CRDI_VIEW_AUTOHIDE_CLICK     3614    // added V0.9.14 (2001-08-21) [umoeller]
 
 #define ID_CRD_SETTINGS_VIEW2           3650
 #define ID_CRDI_VIEW2_3DBORDER_SLIDER   3651

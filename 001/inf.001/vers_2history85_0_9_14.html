@@ -15,7 +15,20 @@
 
 <UL><LI>General: Added <A HREF="setupstr_4xfdesktop.html">SHOWRUNDLG setup string</A>.
 
+<P><LI>General: Since so many people didn't quite appreciate my beautiful
+XWPSTART.LOG file, I added a setting for that on the "Startup" page in the
+desktop's settings notebook.
+
+<P><LI>Mouse: Martin Lafaix added a couple of settings to the "Auto-hide mouse"
+feature and the general "Auto-move pointer to default push button" feature.
+While I was at it, I added mouse pointer animations then.
+
 <P><LI>XCenter: Added another diskfree widget ("condensed" style).
+
+<P><LI>XCenter: Added properties dlg to X-button widget for configuring the
+menu items to display.
+
+<P><LI>XCenter: Added "Hide immediately on mouse click" setting.
 
 <P><LI>XCenter: Martin Lafaix added dragging widgets to open folders, which will
 create a widget definition in a file, which can then be dropped to an XCenter
@@ -42,7 +55,8 @@ Thanks Martin Lafaix for the oriental meditation hints.
 
 </UL>Bugfixes:
 
-<UL><LI>General: New message boxes never had focus on default button. Fixed.
+<UL><LI>General: New message boxes never had focus on default button. Besides,
+the "snap back" for default buttons on tabbing didn't always work. Fixed.
 
 <P><LI>General: Some message boxes didn't react to mouse clicks at all and could
 only be dismissed via keyboard. Fixed.
@@ -51,6 +65,10 @@ only be dismissed via keyboard. Fixed.
 font sized to be selected in some situations.
 
 <P><LI>General: Fixed about a dozen memory leaks in various places.
+
+<P><LI>General: Library routine which was used for starting applications
+(among others, by XCenter "Run" dialog)
+always hung the system for full-screen Win-OS/2 sessions. Fixed by Paul Ratcliffe.
 
 <P><LI>XFolder: Folder hotkeys for sort and arrange sorted the desktop
 even if the respective menu items were disabled for the desktop. Fixed;
@@ -68,6 +86,12 @@ by Paul Ratcliffe.
 
 <P><LI>Status bars: "Undo" on status bars page 2 in "Workplace Shell" didn't
 undo everything. Fixed.
+
+<P><LI>Hook: This allowed many things during lockup that weren't supposed to
+happen, such as opening hot corner objects. Fixed.
+
+<P><LI>XCenter: Widget settings management crashed sometimes in an endless loop
+when freeing settings data. Fixed by Paul Ratcliffe.
 
 <P><LI>XCenter: Widget properties dialogs never worked for subwidgets in a tray.
 Fixed.

@@ -34,7 +34,7 @@ typedef struct _DIRINFO
     CHAR                szThis[CCHMAXPATH];     // "OS2"
     CHAR                szRecordText[CCHMAXPATH+50];          // what appears in the cnr
     ULONG               ulFiles;
-    double              dTotalSize;
+    double              dTotalSize0;
     double              dTotalEASize;
     ULONG               ulRecursionLevel;       // 1 for root level
     PRECORDCORE         precc;      // PSIZERECORD actually
@@ -60,7 +60,7 @@ typedef struct _SIZERECORD
     PDIRINFO        pdi;                // if in directories tree
     PFILEENTRY      pFileEntry;         // if in "100 largest files"
     BOOL            fDisplayValid;      // TRUE only if display is valid
-    double          dTotalSize;
+    double          dTotalSize;         // copy of DIRINFO, needed for 100 largest files
 } SIZERECORD, *PSIZERECORD;
 
 #define TSM_START            (WM_USER)

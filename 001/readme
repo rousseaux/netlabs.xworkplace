@@ -1,9 +1,9 @@
 
-XWorkplace 0.9.13 README
+XWorkplace 0.9.14 README
 
 (W) Ulrich M”ller, Feb 7, 2000
 
-Last updated July 6, 2001
+Last updated August 21, 2001
 
 
 0. CONTENTS OF THIS FILE
@@ -29,7 +29,7 @@ Last updated July 6, 2001
 1. INTRODUCTION
 ===============
 
-    Welcome to XWorkplace V0.9.13.
+    Welcome to XWorkplace V0.9.14.
 
     XWorkplace is a complex set of replacement classes for the
     OS/2 Workplace Shell to enhance the WPS's behavior in many
@@ -46,13 +46,8 @@ Last updated July 6, 2001
     About this release
     ------------------
 
-    V0.9.9 had enhancements to pretty much all parts of
-    XWorkplace. Some major bugs have been fixed, and PageMage,
-    XCenter, and the hook functions were enhanced further.
-
-    V0.9.13 fixes more bugs, mostly. One of the new features
-    that was requested most frequently is a tray widget for
-    the XCenter.
+    V0.9.14 fixes more bugs, mostly. A few new features have
+    been added too.
 
     For details, refer to the "Version Notices" in the
     "XWorkplace User Guide". To extract the documentation
@@ -62,7 +57,15 @@ Last updated July 6, 2001
 2. INSTALLATION
 ===============
 
-    XWorkplace must be installed using WarpIN.
+    XWorkplace must be installed using WarpIN. After all files
+    have been copied, WarpIN will restart your Workplace Shell
+    to make sure the changes become active. A reboot should not
+    be necessary.
+
+    WARNING: It was reported that the Workplace Shell hangs itself
+    up after the restart if you have the "Automatic lockup on
+    startup" setting enabled. In that case, disable that setting
+    before allowing WarpIN to restart the WPS.
 
     ---> In any case, before installing, MAKE A WPS BACKUP.
 
@@ -91,11 +94,11 @@ Last updated July 6, 2001
     or your installation will not be fully updated.
 
     If you get this message for a help file (.HLP extension), the
-    XWorkplace help file is currently opened by the WPS. This
-    cannot be unlocked automatically. While the dialog is showing,
-    simply have the WPS show the help panel for the desktop (or
-    any other standard WPS help panel), which will unlock the
-    XWorkplace help file.
+    XWorkplace help file is currently opened by the WPS. It is
+    impossible to unlock data files automatically. While the
+    dialog is showing, simply have the WPS show the help panel
+    for the desktop (or any other standard WPS help panel), which
+    will unlock the XWorkplace help file.
 
     Besides, you will probably get a notification message that
     XWPDAEMN.EXE is running and must be killed. Have WarpIN kill

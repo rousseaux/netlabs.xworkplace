@@ -85,10 +85,9 @@ HWND GetScrollBar(HWND hwndOwner,
     ULONG   ulWinStyle; // style of the found scroll bar
 
     // begin window enumeration
-    henum = WinBeginEnumWindows(hwndOwner);
-    if (henum)
+    if (henum = WinBeginEnumWindows(hwndOwner))
     {
-        while ((hwndFound = WinGetNextWindow(henum)) != NULLHANDLE)
+        while (hwndFound = WinGetNextWindow(henum))
         {
             if (!WinIsWindow(hab,
                              hwndFound))
@@ -365,7 +364,7 @@ LONG CalcScrollBarSize(PSCROLLDATA pScrollData,  // in: scroll data structure in
                     if (    (sbcd.cTotal) // avoid division by zero
                          && (sbcd.cTotal > sbcd.cVisible)
                        )
-                        lrc = lrc
+                        lrc =   lrc
                               * (sbcd.cTotal - sbcd.cVisible)
                               / sbcd.cTotal;
                 }
@@ -405,15 +404,16 @@ BOOL WMMouseMove_MB3ScrollAmplified(PSCROLLDATA pScrollData,  // in: scroll data
     BOOL    brc = FALSE;
 
     // get scroll bar size
-    LONG    lScrollBarSizePels = CalcScrollBarSize(pScrollData,
-                                                   fHorizontal);
-
-    if (lScrollBarSizePels)
+    LONG    lScrollBarSizePels;
+    if (lScrollBarSizePels = CalcScrollBarSize(pScrollData,
+                                               fHorizontal))
     {
         // get scroll bar range
-        MRESULT mrThumbRange = WinSendMsg(pScrollData->hwndScrollBar,
-                                          SBM_QUERYRANGE, 0, 0);
-        if (mrThumbRange)
+        MRESULT mrThumbRange;
+        if (mrThumbRange = WinSendMsg(pScrollData->hwndScrollBar,
+                                      SBM_QUERYRANGE,
+                                      0,
+                                      0))
         {
             SHORT   sThumbLoLimitUnits = (LONG)SHORT1FROMMR(mrThumbRange),
                     sThumbHiLimitUnits = (LONG)SHORT2FROMMR(mrThumbRange);
@@ -441,7 +441,7 @@ BOOL WMMouseMove_MB3ScrollAmplified(PSCROLLDATA pScrollData,  // in: scroll data
                 //    since MB3 was initially depressed, relative
                 //    to the window (scroll bar owner) height.
                 //    This will be in the range of -1000 to +1000.
-                lPerMilleMoved = (lDeltaPels * 1000L)
+                lPerMilleMoved =   (lDeltaPels * 1000L)
                                  / lScrollBarSizePels;
                         // this correlates the y movement to the
                         // remaining window height;
@@ -599,9 +599,8 @@ BOOL WMMouseMove_MB3OneScrollbar(HWND hwnd,                  // in: window with 
          */
 
         // 1) query window handle of vertical scroll bar
-        pScrollData->hwndScrollBar = GetScrollBar(hwnd,
-                                                  fHorizontal);
-        if (pScrollData->hwndScrollBar == NULLHANDLE)
+        if (!(pScrollData->hwndScrollBar = GetScrollBar(hwnd,
+                                                        fHorizontal)))
             // if not found, then try if parent has a scroll bar
             pScrollData->hwndScrollBar = GetScrollBar(WinQueryWindow(hwnd,
                                                                      QW_PARENT),
@@ -636,9 +635,8 @@ BOOL WMMouseMove_MB3OneScrollbar(HWND hwnd,                  // in: window with 
              *
              */
 
-            pScrollData->hwndScrollLastOwner = WinQueryWindow(pScrollData->hwndScrollBar,
-                                                              QW_OWNER);
-            if (pScrollData->hwndScrollLastOwner)
+            if (pScrollData->hwndScrollLastOwner = WinQueryWindow(pScrollData->hwndScrollBar,
+                                                                  QW_OWNER))
                 brc = TRUE;
         }
 
@@ -656,9 +654,8 @@ BOOL WMMouseMove_MB3OneScrollbar(HWND hwnd,                  // in: window with 
         {
             // check if the scroll bar (still) has an owner;
             // otherwise all this doesn't make sense
-            pScrollData->hwndScrollLastOwner = WinQueryWindow(pScrollData->hwndScrollBar,
-                                                              QW_OWNER);
-            if (pScrollData->hwndScrollLastOwner)
+            if (pScrollData->hwndScrollLastOwner = WinQueryWindow(pScrollData->hwndScrollBar,
+                                                                  QW_OWNER))
             {
                 // calculate difference between initial
                 // mouse pos (when MB3 was depressed) and

@@ -7,6 +7,8 @@
  *      creating/reformatting/destroying the XCenter view itself,
  *      and so on.
  *
+ *      Be warned, this code is a bit complex.
+ *
  *      See src\shared\center.c for an introduction to the XCenter.
  *
  *      Function prefix for this file:
@@ -99,11 +101,14 @@
 
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "shared\center.h"              // public XCenter interfaces
 #include "xcenter\centerp.h"            // private XCenter implementation
+
+#include "hook\xwphook.h"
 
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 #include <wpshadow.h>
@@ -259,7 +264,7 @@ static XCENTERWIDGETCLASS   G_aBuiltInWidgets[]
             "XButton",
             "X-Button",
             WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP,       // not trayable
-            NULL        // no settings dlg
+            OwgtShowXButtonSettingsDlg          // V0.9.14 (2001-08-21) [umoeller]
         },
         // CPU pulse widget
         {
@@ -1005,6 +1010,7 @@ VOID StopAutoHide(PXCENTERWINDATA pXCenterData)
  *      May only run on the XCenter GUI thread.
  *
  *@@added V0.9.7 (2000-12-04) [umoeller]
+ *@@changed V0.9.14 (2001-08-21) [umoeller]: added "hide on click" support
  */
 
 VOID StartAutoHide(PXCENTERWINDATA pXCenterData)
@@ -1020,11 +1026,96 @@ VOID StartAutoHide(PXCENTERWINDATA pXCenterData)
                                  pGlobals->hwndFrame,
                                  TIMERID_AUTOHIDE_START,
                                  _ulAutoHide);
+
+        if (_fHideOnClick) // V0.9.14 (2001-08-21) [umoeller]
+        {
+            HWND hwnd;
+            if (hwnd = krnQueryDaemonObject())
+                if (WinSendMsg(hwnd,
+                               XDM_ADDCLICKWATCH,
+                               (MPARAM)pXCenterData->Globals.hwndClient,
+                               (MPARAM)XCM_MOUSECLICKED))           // msg to be used
+                    // was added:
+                    pXCenterData->fClickWatchRunning = TRUE;
+        }
     }
     else
         // auto-hide disabled:
         // make sure timer is not running
         StopAutoHide(pXCenterData);
+}
+
+/*
+ *@@ StartAutohideNow:
+ *      begins auto-hiding the XCenter immediately. Call
+ *      this only if auto-hide is actually enabled.
+ *
+ *      This was extracted from FrameTimer() with V0.9.14
+ *      because we can now enforce auto-hide if "hide on click"
+ *      is enabled.
+ *
+ *@@added V0.9.14 (2001-08-21) [umoeller]
+ */
+
+BOOL StartAutohideNow(PXCENTERWINDATA pXCenterData)
+{
+    PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
+    PXTIMERSET pTimerSet = (PXTIMERSET)pGlobals->pvXTimerSet;
+
+    BOOL fStart = TRUE;
+    HWND hwndFocus = WinQueryFocus(HWND_DESKTOP);
+
+    // this is only for the delay
+    tmrStopXTimer(pTimerSet,
+                  pGlobals->hwndFrame,
+                  TIMERID_AUTOHIDE_START);
+    pXCenterData->idTimerAutohideStart = 0;
+
+    // disable auto-hide if a settings dialog is currently open
+    if (pXCenterData->fShowingSettingsDlg)
+        fStart = FALSE;
+    // disable auto-hide if any menu is currently open
+    else if (hwndFocus)
+    {
+        CHAR szWinClass[100];
+        if (WinQueryClassName(hwndFocus, sizeof(szWinClass), szWinClass))
+        {
+            if (!strcmp(szWinClass, "#4"))
+                // it's a menu:
+                fStart = FALSE;
+        }
+    }
+
+    if (fStart)
+    {
+        // second check: if mouse is still over XCenter,
+        // forget it
+        POINTL ptlMouseDtp;
+        WinQueryPointerPos(HWND_DESKTOP, &ptlMouseDtp);
+        if (WinWindowFromPoint(HWND_DESKTOP,
+                               &ptlMouseDtp,
+                               FALSE)           // no check children
+                == pGlobals->hwndFrame)
+            fStart = FALSE;
+    }
+
+    if (fStart)
+    {
+        // broadcast XN_BEGINANIMATE notification
+        ctrpBroadcastWidgetNotify(&pXCenterData->llWidgets,
+                                  XN_BEGINANIMATE,
+                                  MPFROMSHORT(XAF_HIDE));
+
+        pXCenterData->idTimerAutohideRun
+            = tmrStartXTimer(pTimerSet,
+                             pGlobals->hwndFrame,
+                             TIMERID_AUTOHIDE_RUN,
+                             50);
+    }
+    else
+        StartAutoHide(pXCenterData);
+
+    return (fStart);
 }
 
 /*
@@ -1831,7 +1922,7 @@ PLINKLIST GetDragoverObjects(PDRAGINFO pdrgInfo,
  *      If hwndTrayWidget != NULLHANDLE, this searches
  *      the specified tray widget for a subwidget.
  *      The coordinates are assumed to be tray widget
- *      coordinates.
+ *      coordinates.              &ouml;
  *
  *      If hwndTrayWidget == NULLHANDLE, this searches
  *      the XCenter itself for a widget.
@@ -3053,65 +3144,8 @@ BOOL FrameTimer(HWND hwnd,
          */
 
         case TIMERID_AUTOHIDE_START:
-        {
-            BOOL fStart = TRUE;
-            HWND hwndFocus = WinQueryFocus(HWND_DESKTOP);
-
-            // this is only for the delay
-            tmrStopXTimer(pTimerSet,
-                          hwnd,
-                          usTimerID);
-            pXCenterData->idTimerAutohideStart = 0;
-
-            // disable auto-hide if a settings dialog is currently open
-            if (pXCenterData->fShowingSettingsDlg)
-                fStart = FALSE;
-            // disable auto-hide if a menu is currently open
-            else if (hwndFocus)
-            {
-                CHAR szWinClass[100];
-                if (WinQueryClassName(hwndFocus, sizeof(szWinClass), szWinClass))
-                {
-                    // _Pmpf((__FUNCTION__ ": win class %s", szWinClass));
-                    if (strcmp(szWinClass, "#4") == 0)
-                    {
-                        // it's a menu:
-                        /*  if (WinQueryWindow(hwndFocus, QW_OWNER)
-                                == pGlobals->hwndClient) */
-                            fStart = FALSE;
-                    }
-                }
-            }
-
-            if (fStart)
-            {
-                // second check: if mouse is still over XCenter,
-                // forget it
-                POINTL ptlMouseDtp;
-                WinQueryPointerPos(HWND_DESKTOP, &ptlMouseDtp);
-                if (WinWindowFromPoint(HWND_DESKTOP,
-                                       &ptlMouseDtp,
-                                       FALSE)
-                        == pGlobals->hwndFrame)
-                    fStart = FALSE;
-            }
-
-            if (fStart)
-            {
-                // broadcast XN_BEGINANIMATE notification
-                ctrpBroadcastWidgetNotify(&pXCenterData->llWidgets,
-                                          XN_BEGINANIMATE,
-                                          MPFROMSHORT(XAF_HIDE));
-
-                pXCenterData->idTimerAutohideRun
-                    = tmrStartXTimer(pTimerSet,
-                                     hwnd,
-                                     TIMERID_AUTOHIDE_RUN,
-                                     50);
-            }
-            else
-                StartAutoHide(pXCenterData);
-        break; }
+            StartAutohideNow(pXCenterData);
+        break;
 
         /*
          * TIMERID_AUTOHIDE_RUN:
@@ -3183,6 +3217,17 @@ BOOL FrameTimer(HWND hwnd,
                             // we sometimes have display errors that will never
                             // go away
                             WinInvalidateRect(pGlobals->hwndClient, NULL, FALSE);
+
+                    if (pXCenterData->fClickWatchRunning)
+                    {
+                        // if we had a click watch running, stop it now
+                        HWND hwndDaemon;
+                        if (hwndDaemon = krnQueryDaemonObject())
+                            WinSendMsg(hwndDaemon,
+                                       XDM_ADDCLICKWATCH,
+                                       (MPARAM)pXCenterData->Globals.hwndClient,
+                                       (MPARAM)-1);         // remove
+                    }
                 }
 
                 if (pGlobals->ulPosition == XCENTER_BOTTOM)
@@ -3293,6 +3338,7 @@ VOID FrameDestroy(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.9 (2001-03-07) [umoeller]: fixed crashes on destroy... WM_DESTROY cleanup is now handled here
  *@@changed V0.9.10 (2001-04-11) [umoeller]: added WM_HITTEST, as requested by Alessandro Cantatore
  *@@changed V0.9.13 (2001-06-19) [umoeller]: extracted FrameDestroy
+ *@@changed V0.9.14 (2001-08-21) [umoeller]: added WM_QUERYFRAMEINFO, which returns 0
  */
 
 MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -3363,6 +3409,18 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
                 }
                 mrc = (MRESULT)AWP_DEACTIVATE;
             }
+            break;
+
+            /*
+             * WM_QUERYFRAMEINFO:
+             *
+             *added V0.9.14 (2001-08-21) [umoeller]
+             */
+
+            case WM_QUERYFRAMEINFO:
+                mrc = (MPARAM)(0);
+                        // default frame window proc returns
+                        // FI_FRAME | FI_OWNERHIDE | FI_NOMOVEWITHOWNER | FI_ACTIVATEOK
             break;
 
             /*
@@ -4178,6 +4236,7 @@ BOOL ClientSaveSetup(HWND hwndClient,
  *@@changed V0.9.7 (2001-01-19) [umoeller]: fixed active window bugs
  *@@changed V0.9.9 (2001-03-07) [umoeller]: fixed crashes on destroy
  *@@changed V0.9.14 (2001-07-14) [lafaix]: fixed MB2 click on border/resizing bar
+ *@@changed V0.9.14 (2001-08-21) [umoeller]: added "hide on click" support
  */
 
 MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -4387,6 +4446,33 @@ MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
                 WinDestroyWindow((HWND)mp1);
                         // this better be a widget window...
                         // ctrDefWidgetProc takes care of cleanup
+            break;
+
+            /*
+             * XCM_MOUSECLICKED:
+             *      special msg posted from XWPDAEMN.EXE for
+             *      mouse click notifies. The mouse click watch
+             *      is only added in auto-hide mode if "hide on
+             *      click" is enabled also, and only while the
+             *      XCenter is still visible. So if we get this
+             *      we should start the auto-hide immediately.
+             *
+             *      See XDM_ADDCLICKWATCH for the params we
+             *      get here.
+             *
+             *      V0.9.14 (2001-08-21) [umoeller]
+             */
+
+            case XCM_MOUSECLICKED:
+                switch ((ULONG)mp1)
+                {
+                    // ignore button 2 and 3
+                    case WM_BUTTON1DOWN:
+                    case WM_BUTTON1UP:
+                    case WM_BUTTON1DBLCLK:
+                        StartAutohideNow((PXCENTERWINDATA)WinQueryWindowPtr(hwnd,
+                                                                            QWL_USER));
+                }
             break;
 
             default:
@@ -5975,6 +6061,7 @@ BOOL ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
  *
  *@@added V0.9.7 (2000-12-02) [umoeller]
  *@@changed V0.9.13 (2001-06-21) [umoeller]: fixed memory leak, this wasn't freed properly
+ *@@changed V0.9.14 (2001-08-20) [pr]: fixed endless loop/crash
  */
 
 VOID ctrpFreeWidgets(XCenter *somSelf)
@@ -5993,6 +6080,8 @@ VOID ctrpFreeWidgets(XCenter *somSelf)
                 PPRIVATEWIDGETSETTING pSetting = (PPRIVATEWIDGETSETTING)pNode->pItemData;
                 FreeSettingData(pSetting);
                 free(pSetting);
+
+                pNode = pNode->pNext; // V0.9.14
             }
 
             // now nuke the main list; the LISTNODEs are still left,

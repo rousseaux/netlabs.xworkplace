@@ -302,6 +302,9 @@
 
             BOOL                fHasEmphasis;       // TRUE if emphasis has been added and client
                                                     // needs repaint V0.9.9 (2001-03-10) [umoeller]
+
+            BOOL                fClickWatchRunning; // TRUE while XWPDAEMN.EXE is running a click watch
+                                                    // for this XCenter V0.9.14 (2001-08-21) [umoeller]
         } XCENTERWINDATA, *PXCENTERWINDATA;
 
         /*
@@ -679,6 +682,18 @@
 
     #define XCM_CREATESUBWIDGET      (WM_USER + 8)
 
+    /*
+     *@@ XCM_MOUSECLICKED:
+     *      private message used for notifications from
+     *      XWPDAEMN.EXE for auto-hide and mouse clicks.
+     *
+     *      See XDM_ADDCLICKWATCH.
+     *
+     *@@added V0.9.14 (2001-08-21) [umoeller]
+     */
+
+    #define XCM_MOUSECLICKED         (WM_USER + 9)
+
     /* ******************************************************************
      *
      *   XCenter setup set (ctr_notebook.c)
@@ -743,6 +758,14 @@
                                        ULONG ulItemID, USHORT usNotifyCode,
                                        ULONG ulExtra);
     #endif
+
+    /* ******************************************************************
+     *
+     *   Settings dialogs for built-in widgets
+     *
+     ********************************************************************/
+
+    VOID EXPENTRY OwgtShowXButtonSettingsDlg(PWIDGETSETTINGSDLGDATA pData);
 
 #endif
 

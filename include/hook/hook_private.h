@@ -47,6 +47,7 @@
     #define TIMERID_MONITORDRIVE        3
     #define TIMERID_AUTOHIDEMOUSE       4
     #define TIMERID_AUTOSCROLL          5
+    #define TIMERID_MOVINGPTR           6
 
     /* ******************************************************************
      *                                                                  *
@@ -221,6 +222,9 @@
 
         // auto-hide mouse pointer state backup; added V0.9.9 (2001-03-21) [lafaix]
         BOOL        fOldAutoHideMouse;
+
+        // click watches V0.9.14 (2001-08-21) [umoeller]
+        BOOL        fClickWatches;
 
     } HOOKDATA, *PHOOKDATA;
 

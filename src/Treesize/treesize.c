@@ -213,7 +213,7 @@ VOID CollectDirectory(PDIRINFO pdiThis)
                 // create new DIRINFO for the recursive call
                 PDIRINFO pdiRecurse = malloc(sizeof(DIRINFO));
                 pdiRecurse->ulFiles = 0;
-                pdiRecurse->dTotalSize = 0;
+                pdiRecurse->dTotalSize0 = 0;
                 pdiRecurse->dTotalEASize = 0;
                 pdiRecurse->pParent = pdiThis;
                 strcpy(pdiRecurse->szThis, ffb3.achName);
@@ -260,7 +260,7 @@ VOID CollectDirectory(PDIRINFO pdiThis)
     // now that we're done with this directory:
     // store the sizes in the current DIRINFO
     pdiThis->ulFiles += ulFilesThisDir;
-    pdiThis->dTotalSize += dSizeThisDir;
+    pdiThis->dTotalSize0 += dSizeThisDir;
     pdiThis->dTotalEASize += dEASizeThisDir;
 
     // add the size of the subdirector(ies) to
@@ -273,7 +273,7 @@ VOID CollectDirectory(PDIRINFO pdiThis)
         while (pdiParent)
         {
             pdiParent->ulFiles += ulFilesThisDir;
-            pdiParent->dTotalSize += dSizeThisDir;
+            pdiParent->dTotalSize0 += dSizeThisDir;
             pdiParent->dTotalEASize += dEASizeThisDir;
             pdiParent = pdiParent->pParent;
             // pdiThis2 = pdiThis2->pParent;
@@ -320,7 +320,7 @@ void _System fntCollect(ULONG ulDummy)
     {
         pdiRoot->pParent = NULL;
         pdiRoot->ulFiles = 0;
-        pdiRoot->dTotalSize = 0;
+        pdiRoot->dTotalSize0 = 0;
         pdiRoot->dTotalEASize = 0;
         strcpy(pdiRoot->szThis, szRootDir);
         strcpy(pdiRoot->szFullPath, szRootDir);
@@ -400,7 +400,7 @@ VOID Cleanup(HWND hwndCnr, PSIZERECORD preccParent)
 SHORT EXPENTRY fnCompareName(PRECORDCORE pmrc1, PRECORDCORE pmrc2, PVOID pStorage)
 {
     HAB habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
-    pStorage = pStorage; // to keep the compiler happy
+    // pStorage = pStorage; // to keep the compiler happy
     if ((pmrc1) && (pmrc2))
         if ((pmrc1->pszIcon) && (pmrc2->pszIcon))
             switch (WinCompareStrings(habDesktop, 0, 0,
@@ -420,12 +420,13 @@ SHORT EXPENTRY fnCompareName(PRECORDCORE pmrc1, PRECORDCORE pmrc2, PVOID pStorag
 
 SHORT EXPENTRY fnCompareSize(PSIZERECORD pmrc1, PSIZERECORD pmrc2, PVOID pStorage)
 {
-    pStorage = pStorage; // to keep the compiler happy
+    // pStorage = pStorage; // to keep the compiler happy
     if ((pmrc1) && (pmrc2))
-        if (pmrc1->dTotalSize > pmrc2->dTotalSize)
-            return (-1);
-        else if (pmrc1->dTotalSize < pmrc2->dTotalSize)
-            return (1);
+        if ((pmrc1->pdi) && (pmrc2->pdi))
+            if (pmrc1->dTotalSize > pmrc2->dTotalSize)
+                return (-1);
+            else if (pmrc1->dTotalSize < pmrc2->dTotalSize)
+                return (1);
 
     return (0);
 }
@@ -594,6 +595,8 @@ VOID Insert100LargestFiles(VOID)
  *      --  handle cnr context menus
  *      --  handle cnr drag'n'drop
  *      --  handle dialog resizing/minimizing etc.
+ *
+ *@@changed V0.9.14 (2001-08-09) [umoeller]: fixed bad sort by size that broke with 100 largest files
  */
 
 MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -697,7 +700,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                 // to DIRINFO (check treesize.h)
                 ((PSIZERECORD)(pdi->precc))->pdi = pdi;
                 ((PSIZERECORD)(pdi->precc))->fDisplayValid = FALSE;
-                ((PSIZERECORD)(pdi->precc))->dTotalSize = pdi->dTotalSize;
+                ((PSIZERECORD)(pdi->precc))->dTotalSize = pdi->dTotalSize0;
 
                 // store parent directory
                 if (pdi->pParent)
@@ -795,10 +798,10 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                         // value:
                         strhThousandsDouble(szSize,
                                             (Settings.ulSizeDisplay == SD_BYTES)
-                                                    ? pdiThis->dTotalSize
+                                                    ? pdiThis->dTotalSize0
                                                 : (Settings.ulSizeDisplay == SD_KBYTES)
-                                                    ? ((pdiThis->dTotalSize + 512) / 1024)
-                                                : ((pdiThis->dTotalSize + (512*1024)) / 1024 / 1024),
+                                                    ? ((pdiThis->dTotalSize0 + 512) / 1024)
+                                                : ((pdiThis->dTotalSize0 + (512*1024)) / 1024 / 1024),
                                             szThousand[0]),
                         // "bytes" string:
                         (Settings.ulSizeDisplay == SD_BYTES)
@@ -819,7 +822,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                                                         ? pdiThis->dTotalEASize
                                                     : (Settings.ulSizeDisplay == SD_KBYTES)
                                                         ? ((pdiThis->dTotalEASize + 512) / 1024)
-                                                    : ((pdiThis->dTotalSize + (512*1024)) / 1024 / 1024),
+                                                    : ((pdiThis->dTotalEASize + (512*1024)) / 1024 / 1024),
                                                 szThousand[0]),
                            (Settings.ulSizeDisplay == SD_BYTES)
                                    ? "bytes"
@@ -829,6 +832,11 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 
                 strcat(pdiThis->szRecordText, ")");
                 // _Pmpf(("  WM_DONEDIRECTORY %s", pdi->szRecordText));
+
+                // refresh the current dir size
+                // (sort funcs use the RECORDCORE field, not the
+                // DIRINFO any more V0.9.14 (2001-08-18) [umoeller])
+                ((PSIZERECORD)(pdiThis->precc))->dTotalSize = pdiThis->dTotalSize0;
 
                 if (fInvalidate)
                 {

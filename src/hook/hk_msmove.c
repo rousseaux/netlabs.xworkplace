@@ -262,13 +262,13 @@ VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hoo
     {
         // get currently active window; this can only
         // be a frame window (WC_FRAME)
-        HWND    hwndActiveNow = WinQueryActiveWindow(HWND_DESKTOP);
+        HWND    hwndActiveNow;
 
         // check 1: check if the active window is still the
         //          the one which was activated by ourselves
         //          previously (either by the hook during WM_BUTTON1DOWN
         //          or by the daemon in sliding focus processing):
-        if (hwndActiveNow)
+        if (hwndActiveNow = WinQueryActiveWindow(HWND_DESKTOP))
         {
             if (hwndActiveNow != G_HookData.hwndActivatedByUs)
             {
@@ -337,7 +337,7 @@ VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hoo
             {
                 WinQueryClassName(hwndDesktopChild,
                                   sizeof(szClassName), szClassName);
-                if (strcmp(szClassName, "#1") == 0)
+                if (!strcmp(szClassName, "#1"))
                     // it's a frame:
                     hwndFrameInBetween = hwndDesktopChild;
                 hwndDesktopChild = hwndTempParent;
@@ -722,12 +722,11 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
                 // is on. We only differentiate for _selection_ below now.
 
                 // has item changed since last time?
-                if (usNewItemIndex != usOldItemIndex)
-                    if (G_HookData.HookConfig.fMenuImmediateHilite)
-                    {
-                        HiliteMenuItem(hwndCurrentMenu,
-                                       usNewItemIndex);
-                    }
+                if (    (usNewItemIndex != usOldItemIndex)
+                     && (G_HookData.HookConfig.fMenuImmediateHilite)
+                   )
+                    HiliteMenuItem(hwndCurrentMenu,
+                                   usNewItemIndex);
 
                 // 2)  We then post the daemon a message to start
                 //     a timer. Before that, we store the menu item
@@ -779,13 +778,12 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
                 G_HookData.hwndMenuUnderMouse = hwndCurrentMenu;
 
                 // no delay, but immediately:
-                if (usOldItemIndex != usNewItemIndex)
-                    if (fSelect)
-                    {
-                        SelectMenuItem(hwndCurrentMenu,
-                                       usNewItemIndex,
-                                       fSelect);
-                    }
+                if (    (usOldItemIndex != usNewItemIndex)
+                     && (fSelect)
+                   )
+                    SelectMenuItem(hwndCurrentMenu,
+                                   usNewItemIndex,
+                                   fSelect);
             }
         }
     }
@@ -850,6 +848,7 @@ VOID WMMouseMove_AutoHideMouse(VOID)
  *@@changed V0.9.5 (2000-09-20) [pr]: fixed auto-hide bug
  *@@changed V0.9.9 (2001-03-15) [lafaix]: now uses corner sensitivity
  *@@changed V0.9.9 (2001-03-15) [lafaix]: added AutoScroll support
+ *@@changed V0.9.14 (2001-08-21) [umoeller]: added fixes for while system is locked up
  */
 
 BOOL WMMouseMove(PQMSG pqmsg,
@@ -898,7 +897,6 @@ BOOL WMMouseMove(PQMSG pqmsg,
              || (fWinChanged)
            )
         {
-            BYTE    bHotCorner = 0;
 
             /*
              * MB3 scroll
@@ -910,6 +908,7 @@ BOOL WMMouseMove(PQMSG pqmsg,
                       || (G_HookData.bAutoScroll)
                     )
                  && (G_HookData.hwndCurrentlyScrolling)
+                 && (!G_HookData.hwndLockupFrame)    // system not locked up V0.9.14
                )
             {
                 // simulate mouse capturing by passing the scrolling
@@ -932,7 +931,9 @@ BOOL WMMouseMove(PQMSG pqmsg,
                  *
                  */
 
-                if (G_HookData.HookConfig.fSlidingFocus)
+                if (    (G_HookData.HookConfig.fSlidingFocus)
+                     && (!G_HookData.hwndLockupFrame)    // system not locked up V0.9.14
+                   )
                 {
                     // sliding focus enabled?
                     // V0.9.5 (2000-08-22) [umoeller]
@@ -946,71 +947,77 @@ BOOL WMMouseMove(PQMSG pqmsg,
                     // only if mouse has moved, not
                     // on window change:
 
+                    BYTE    bHotCorner = 0;
+
                     /*
                      * hot corners:
                      *
                      *changed V0.9.9 (2001-03-15) [lafaix]: now uses corner sensitivity
                      */
 
-                    // check if mouse is in one of the screen
-                    // corners
-                    if (G_ptlMousePosDesktop.x == 0)
+                    if (!G_HookData.hwndLockupFrame)    // system not locked up V0.9.14
                     {
-                        if (G_ptlMousePosDesktop.y == 0)
-                            // lower left corner:
-                            bHotCorner = 1;
-                        else if (G_ptlMousePosDesktop.y == G_HookData.lCYScreen - 1)
-                            // top left corner:
-                            bHotCorner = 2;
-                        // or maybe left screen border:
-                        // make sure mouse y is in the middle third of the screen
-                        else if (    (G_ptlMousePosDesktop.y >= G_HookData.lCYScreen * G_HookData.HookConfig.ulCornerSensitivity / 100)
-                                  && (G_ptlMousePosDesktop.y <= G_HookData.lCYScreen * (100 - G_HookData.HookConfig.ulCornerSensitivity) / 100)
-                                )
-                            bHotCorner = 6; // left border
-                    }
-                    else if (G_ptlMousePosDesktop.x == G_HookData.lCXScreen - 1)
-                    {
-                        if (G_ptlMousePosDesktop.y == 0)
-                            // lower right corner:
-                            bHotCorner = 3;
-                        else if (G_ptlMousePosDesktop.y == G_HookData.lCYScreen - 1)
-                            // top right corner:
-                            bHotCorner = 4;
-                        // or maybe right screen border:
-                        // make sure mouse y is in the middle third of the screen
-                        else if (    (G_ptlMousePosDesktop.y >= G_HookData.lCYScreen * G_HookData.HookConfig.ulCornerSensitivity / 100)
-                                  && (G_ptlMousePosDesktop.y <= G_HookData.lCYScreen * (100 - G_HookData.HookConfig.ulCornerSensitivity) / 100)
-                                )
-                            bHotCorner = 7; // right border
-                    }
-                    else
-                        // more checks for top and bottom screen border:
-                        if (    (G_ptlMousePosDesktop.y == 0)   // bottom
-                             || (G_ptlMousePosDesktop.y == G_HookData.lCYScreen - 1) // top
-                           )
+                        // check if mouse is in one of the screen
+                        // corners
+                        if (G_ptlMousePosDesktop.x == 0)
                         {
-                            if (    (G_ptlMousePosDesktop.x >= G_HookData.lCXScreen * G_HookData.HookConfig.ulCornerSensitivity / 100)
-                                 && (G_ptlMousePosDesktop.x <= G_HookData.lCXScreen * (100 - G_HookData.HookConfig.ulCornerSensitivity) / 100)
-                               )
-                                if (G_ptlMousePosDesktop.y == 0)
-                                    // bottom border:
-                                    bHotCorner = 8;
-                                else
-                                    // top border:
-                                    bHotCorner = 5;
+                            if (G_ptlMousePosDesktop.y == 0)
+                                // lower left corner:
+                                bHotCorner = 1;
+                            else if (G_ptlMousePosDesktop.y == G_HookData.lCYScreen - 1)
+                                // top left corner:
+                                bHotCorner = 2;
+                            // or maybe left screen border:
+                            // make sure mouse y is in the middle third of the screen
+                            else if (    (G_ptlMousePosDesktop.y >= G_HookData.lCYScreen * G_HookData.HookConfig.ulCornerSensitivity / 100)
+                                      && (G_ptlMousePosDesktop.y <= G_HookData.lCYScreen * (100 - G_HookData.HookConfig.ulCornerSensitivity) / 100)
+                                    )
+                                bHotCorner = 6; // left border
                         }
+                        else if (G_ptlMousePosDesktop.x == G_HookData.lCXScreen - 1)
+                        {
+                            if (G_ptlMousePosDesktop.y == 0)
+                                // lower right corner:
+                                bHotCorner = 3;
+                            else if (G_ptlMousePosDesktop.y == G_HookData.lCYScreen - 1)
+                                // top right corner:
+                                bHotCorner = 4;
+                            // or maybe right screen border:
+                            // make sure mouse y is in the middle third of the screen
+                            else if (    (G_ptlMousePosDesktop.y >= G_HookData.lCYScreen * G_HookData.HookConfig.ulCornerSensitivity / 100)
+                                      && (G_ptlMousePosDesktop.y <= G_HookData.lCYScreen * (100 - G_HookData.HookConfig.ulCornerSensitivity) / 100)
+                                    )
+                                bHotCorner = 7; // right border
+                        }
+                        else
+                            // more checks for top and bottom screen border:
+                            if (    (G_ptlMousePosDesktop.y == 0)   // bottom
+                                 || (G_ptlMousePosDesktop.y == G_HookData.lCYScreen - 1) // top
+                               )
+                            {
+                                if (    (G_ptlMousePosDesktop.x >= G_HookData.lCXScreen * G_HookData.HookConfig.ulCornerSensitivity / 100)
+                                     && (G_ptlMousePosDesktop.x <= G_HookData.lCXScreen * (100 - G_HookData.HookConfig.ulCornerSensitivity) / 100)
+                                   )
+                                    if (G_ptlMousePosDesktop.y == 0)
+                                        // bottom border:
+                                        bHotCorner = 8;
+                                    else
+                                        // top border:
+                                        bHotCorner = 5;
+                            }
 
-                    // is mouse in a screen corner?
-                    if (bHotCorner != 0)
-                        // yes:
-                        // notify thread-1 object window, which
-                        // will start the user-configured action
-                        // (if any)
-                        WinPostMsg(G_HookData.hwndDaemonObject,
-                                   XDM_HOTCORNER,
-                                   (MPARAM)bHotCorner,
-                                   (MPARAM)NULL);
+                        // is mouse in a screen corner?
+                        if (bHotCorner)
+                            // yes:
+                            // notify thread-1 object window, which
+                            // will start the user-configured action
+                            // (if any)
+                            WinPostMsg(G_HookData.hwndDaemonObject,
+                                       XDM_HOTCORNER,
+                                       (MPARAM)bHotCorner,
+                                       (MPARAM)NULL);
+
+                     } // end if (!G_HookData.hwndLockupFrame)    // system not locked up V0.9.14
 
                     /*
                      * sliding menus:
@@ -1018,12 +1025,13 @@ BOOL WMMouseMove(PQMSG pqmsg,
                      *    V0.9.4 (2000-08-03) [umoeller]
                      */
 
-                    if (G_HookData.HookConfig.fSlidingMenus)
-                        if (strcmp(szClassUnderMouse, "#4") == 0)
-                            // window under mouse is a menu:
-                            WMMouseMove_SlidingMenus(pqmsg->hwnd,
-                                                     pqmsg->mp1,
-                                                     pqmsg->mp2);
+                    if (    (G_HookData.HookConfig.fSlidingMenus)
+                         && (!strcmp(szClassUnderMouse, "#4"))
+                       )
+                        // window under mouse is a menu:
+                        WMMouseMove_SlidingMenus(pqmsg->hwnd,
+                                                 pqmsg->mp1,
+                                                 pqmsg->mp2);
 
                     /*
                      * auto hide disabled over buttons
@@ -1031,7 +1039,7 @@ BOOL WMMouseMove(PQMSG pqmsg,
 
                     if (    (G_HookData.HookConfig.fAutoHideMouse)
                          && (G_HookData.HookConfig.ulAutoHideFlags & AHF_IGNOREBUTTONS)
-                         && (strcmp(szClassUnderMouse, "#3") == 0)
+                         && (!strcmp(szClassUnderMouse, "#3"))
                        )
                     {
                         // window under mouse is a button, do not restart autohide

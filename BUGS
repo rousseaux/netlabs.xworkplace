@@ -17,6 +17,10 @@ Ulrich M”ller.
 MINOR PROBLEMS
 --------------
 
+install:
+    --  if lockup on start is enabled, first xwp msg box hangs the system
+        after install.
+
 trash can:
     --  When deleting a folder wich has an other folder inside wich has the
         attribut "read only", destroying of this folder in trashcan will fail,
@@ -40,6 +44,11 @@ file assocs:
 trash can:
     -- shredder deletes into trash can (undo wpDelete change)
 
+    -- When I activate "Replace true delete" (I don't use the TrashCan), I get the
+       new XWP dialog when I delete objects via popup menus, but the regular OS/2
+       one if I just press the "del" key. Of course I get it all the time if
+       "replace true delete" is not active <g>.
+
     -- When you delete an object, it probably retains its object ID, because
        if a program tries to UPDATE the object that has been deleted, it
        effectively updates the object in the TrashCan, while it should
@@ -55,8 +64,9 @@ prog start:
     --  cmd files not started minimized?
 
 XCenter:
-    --  if widget class is broken "wanna remove" msg displays garbage
-        and doesn't work if yes is pressed.
+    --  dragging locale object over XCenter crashes WPS
+
+    --  "show frame" setting on a per-widget basis
 
     --  trays: cycle when clicking on whitespace
 
@@ -125,9 +135,6 @@ XWPSetup:
 folders:
     -- dragging stuff to folders crashes WPS if folder is being populated
             (probably a WPS bug)
-
-    -- shadows missing if "always sort" and "folders first" are enabled (?!?)
-
 
 file exists dlg:
     --  Right click on a file object (program object does not cause this bug)

@@ -116,8 +116,11 @@
  +          11: _ulWidgetSpacing,
  +          12: _fReduceDesktopWorkarea
  +          13: _pszClientFont          // V0.9.9 (2001-03-07) [umoeller]
+ +          14: _lcolClientBackground
+ +          15: _fHideOnClick           // V0.9.14 (2001-08-21) [umoeller]
  +
  *@@added V0.9.9 (2001-01-29) [umoeller]
+ *@@changed V0.9.14 (2001-08-21) [umoeller]: added "hide on click"
  */
 
 static XWPSETUPENTRY    G_XCenterSetupSet[] =
@@ -205,7 +208,7 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
         //     key for wpSaveState/wpRestoreState
                3,
         //     default, ulExtra,            min, max
-               0,       0,                  0,   4000,
+               0,       0,                  0,   60000,
 
         // type,  setup string,     offset,
         STG_BOOL, NULL,               FIELDOFFSET(XCenterData, fHelpDisplayed),
@@ -262,6 +265,14 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
         STG_BOOL,    "REDUCEDESKTOP",  FIELDOFFSET(XCenterData, fReduceDesktopWorkarea),
         //     key for wpSaveState/wpRestoreState
                12,
+        //     default, ulExtra,            min, max
+               FALSE,   0,                  0,   0,
+
+        // V0.9.14 (2001-08-21) [umoeller]
+        // type,  setup string,     offset,
+        STG_BOOL,    "HIDEONCLICK", FIELDOFFSET(XCenterData, fHideOnClick),
+        //     key for wpSaveState/wpRestoreState
+               15,
         //     default, ulExtra,            min, max
                FALSE,   0,                  0,   0,
 
@@ -956,6 +967,7 @@ static BOOL     G_fSetting = FALSE;
  *@@added V0.9.7 (2000-12-05) [umoeller]
  *@@changed V0.9.9 (2001-01-29) [umoeller]: "Undo" data wasn't working
  *@@changed V0.9.9 (2001-03-09) [umoeller]: added auto-hide delay slider
+ *@@changed V0.9.14 (2001-08-21) [umoeller]: added "hide on click"
  */
 
 VOID ctrpView1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -1018,6 +1030,9 @@ VOID ctrpView1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                            _ulAutoHide / 1000,
                            FALSE);      // unsigned
 
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_CLICK,
+                              _fHideOnClick);
+
         // priority
         winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage,
                                                  ID_CRDI_VIEW_PRTY_SLIDER),
@@ -1042,13 +1057,15 @@ VOID ctrpView1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         // disable auto-hide if workarea is to be reduced
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE,
-                         (_fReduceDesktopWorkarea == FALSE));
+                          (_fReduceDesktopWorkarea == FALSE));
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_TXT1,
-                         fAutoHide);
+                          fAutoHide);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_SLIDER,
-                         fAutoHide);
+                          fAutoHide);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_TXT2,
-                         fAutoHide);
+                          fAutoHide);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_CLICK,
+                          fAutoHide);
     }
 }
 
@@ -1061,6 +1078,7 @@ VOID ctrpView1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@added V0.9.7 (2000-12-05) [umoeller]
  *@@changed V0.9.9 (2001-01-29) [umoeller]: now using cmnSetup* funcs
  *@@changed V0.9.9 (2001-03-09) [umoeller]: added auto-hide delay slider
+ *@@changed V0.9.14 (2001-08-21) [umoeller]: added "hide on click"
  */
 
 MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1132,6 +1150,10 @@ MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             // range is 0 thru 59
                 ulUpdateFlags = 0;      // no complete reformat
             }
+        break;
+
+        case ID_CRDI_VIEW_AUTOHIDE_CLICK:
+            _fHideOnClick = ulExtra;
         break;
 
         case ID_CRDI_VIEW_PRTY_SLIDER:

@@ -201,7 +201,7 @@ BOOL pgmcCreateMainControlWnd(VOID)
 
     // _Pmpf(("Entering pgmcCreateMainControlWnd"));
 
-    if (G_pHookData->hwndPageMageFrame == NULLHANDLE)
+    if (!G_pHookData->hwndPageMageFrame)
     {
         ULONG   flFrameFlags    = FCF_TITLEBAR |
                                   FCF_SYSMENU |
@@ -219,7 +219,7 @@ BOOL pgmcCreateMainControlWnd(VOID)
         // disable message processing in the hook
         G_pHookData->fDisableSwitching = TRUE;
 
-        G_pHookData->hwndPageMageFrame
+        if (G_pHookData->hwndPageMageFrame
             = WinCreateStdWindow(HWND_DESKTOP,
                                  0, // WS_ANIMATE,  // style
                                  &flFrameFlags,
@@ -228,25 +228,14 @@ BOOL pgmcCreateMainControlWnd(VOID)
                                  0,
                                  0,
                                  1000,    // ID...
-                                 &G_pHookData->hwndPageMageClient);
-
-        if (G_pHookData->hwndPageMageFrame)
+                                 &G_pHookData->hwndPageMageClient))
         {
-            // SWP     swpPager;
-
-            // shortcuts to global pagemage config
-            // PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
-            // PPOINTL         pptlMaxDesktops = &pPageMageConfig->ptlMaxDesktops;
-
             // set frame icon
             WinSendMsg(G_pHookData->hwndPageMageFrame,
                        WM_SETICON,
                        (MPARAM)G_hptrDaemon,
                        NULL);
-
             // subclass frame
-            // _Pmpf(("subclassing pagemage 0x%lX", G_pHookData->hwndPageMageFrame));
-
             G_pfnOldFrameWndProc = WinSubclassWindow(G_pHookData->hwndPageMageFrame,
                                                      fnwpSubclPageMageFrame);
 
@@ -589,91 +578,93 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
                                       ) / pszlClient->cy;
 
                     // start enum
-                    henum = WinBeginEnumWindows(HWND_DESKTOP);
-                    while ((hwndThis = WinGetNextWindow(henum)))
+                    if (henum = WinBeginEnumWindows(HWND_DESKTOP))
                     {
-                        BOOL            fPaint = TRUE;
-
-                        // go thru local list and find the
-                        // current enumeration window
-                        PPGMGWININFO pWinInfo = pgmwFindWinInfo(hwndThis,
-                                                                NULL);
-
-                        if (pWinInfo)
+                        while (hwndThis = WinGetNextWindow(henum))
                         {
-                            // item is on list:
-                            // update window pos in window list
-                            WinQueryWindowPos(pWinInfo->hwnd,
-                                              &pWinInfo->swp);
+                            BOOL            fPaint = TRUE;
 
-                            fPaint = TRUE;
+                            // go thru local list and find the
+                            // current enumeration window
+                            PPGMGWININFO pWinInfo = pgmwFindWinInfo(hwndThis,
+                                                                    NULL);
 
-                            switch (pWinInfo->bWindowType)
+                            if (pWinInfo)
                             {
-                                case WINDOW_RESCAN:
-                                    // window wasn't fully scanned: rescan
-                                    if (!pgmwFillWinInfo(pWinInfo->hwnd,
-                                                         pWinInfo))
-                                        fNeedRescan = TRUE;
-                                break;
+                                // item is on list:
+                                // update window pos in window list
+                                WinQueryWindowPos(pWinInfo->hwnd,
+                                                  &pWinInfo->swp);
 
-                                case WINDOW_NORMAL:
-                                case WINDOW_MAXIMIZE:
-                                    // paint these
-                                break;
+                                fPaint = TRUE;
 
-                                default:
-                                    // all others: do not paint
+                                switch (pWinInfo->bWindowType)
+                                {
+                                    case WINDOW_RESCAN:
+                                        // window wasn't fully scanned: rescan
+                                        if (!pgmwFillWinInfo(pWinInfo->hwnd,
+                                                             pWinInfo))
+                                            fNeedRescan = TRUE;
+                                    break;
+
+                                    case WINDOW_NORMAL:
+                                    case WINDOW_MAXIMIZE:
+                                        // paint these
+                                    break;
+
+                                    default:
+                                        // all others: do not paint
+                                        fPaint = FALSE;
+                                }
+
+                                if ((fPaint) && (!WinIsWindowVisible(pWinInfo->hwnd)))
                                     fPaint = FALSE;
-                            }
 
-                            if ((fPaint) && (!WinIsWindowVisible(pWinInfo->hwnd)))
-                                fPaint = FALSE;
+                                if (fPaint)
+                                {
+                                    // this window is to be painted:
+                                    // use a new item on the MINIWINDOW
+                                    // array then and calculate the
+                                    // mapping of the mini window
 
-                            if (fPaint)
-                            {
-                                // this window is to be painted:
-                                // use a new item on the MINIWINDOW
-                                // array then and calculate the
-                                // mapping of the mini window
+                                    PMINIWINDOW pMiniWindowThis
+                                        = &paMiniWindows[cMiniWindowsUsed++];
 
-                                PMINIWINDOW pMiniWindowThis
-                                    = &paMiniWindows[cMiniWindowsUsed++];
+                                    PSWP pswp = &pWinInfo->swp;
 
-                                PSWP pswp = &pWinInfo->swp;
+                                    // store WININFO ptr; we hold the winlist
+                                    // locked all the time, so this is safe
+                                    pMiniWindowThis->pWinInfo = pWinInfo;
 
-                                // store WININFO ptr; we hold the winlist
-                                // locked all the time, so this is safe
-                                pMiniWindowThis->pWinInfo = pWinInfo;
+                                    pMiniWindowThis->hwnd = hwndThis;
 
-                                pMiniWindowThis->hwnd = hwndThis;
+                                    pMiniWindowThis->ptlBegin.x
+                                        =   (pswp->x + G_ptlCurrPos.x)
+                                          / fScale_X;
 
-                                pMiniWindowThis->ptlBegin.x
-                                    =   (pswp->x + G_ptlCurrPos.x)
-                                      / fScale_X;
+                                    pMiniWindowThis->ptlBegin.y
+                                        = (   (pptlMaxDesktops->y - 1)
+                                            * G_szlEachDesktopReal.cy
+                                            - G_ptlCurrPos.y + pswp->y
+                                          )
+                                          / fScale_Y;
 
-                                pMiniWindowThis->ptlBegin.y
-                                    = (   (pptlMaxDesktops->y - 1)
-                                        * G_szlEachDesktopReal.cy
-                                        - G_ptlCurrPos.y + pswp->y
-                                      )
-                                      / fScale_Y;
+                                    pMiniWindowThis->ptlEnd.x
+                                        =   (pswp->x + pswp->cx + G_ptlCurrPos.x)
+                                          / fScale_X - 1;
 
-                                pMiniWindowThis->ptlEnd.x
-                                    =   (pswp->x + pswp->cx + G_ptlCurrPos.x)
-                                      / fScale_X - 1;
+                                    pMiniWindowThis->ptlEnd.y
+                                        = (    (pptlMaxDesktops->y - 1)
+                                             * G_szlEachDesktopReal.cy
+                                             - G_ptlCurrPos.y + pswp->y + pswp->cy
+                                          )
+                                          / fScale_Y - 1;
 
-                                pMiniWindowThis->ptlEnd.y
-                                    = (    (pptlMaxDesktops->y - 1)
-                                         * G_szlEachDesktopReal.cy
-                                         - G_ptlCurrPos.y + pswp->y + pswp->cy
-                                      )
-                                      / fScale_Y - 1;
-
-                            } // end if (fPaint)
-                        } // end if (pEntryThis)
-                    } // end while ((hwndThis = WinGetNextWindow(henum)) != NULLHANDLE)
-                    WinEndEnumWindows(henum);
+                                } // end if (fPaint)
+                            } // end if (pEntryThis)
+                        } // end while ((hwndThis = WinGetNextWindow(henum)) != NULLHANDLE)
+                        WinEndEnumWindows(henum);
+                    }
 
                     // now paint
 
@@ -918,8 +909,6 @@ VOID TrackWithinPager(HWND hwnd,
 VOID ClientCreate(HWND hwnd,
                   PPAGEMAGECLIENTDATA pClientData)
 {
-    // SIZEL           szlMem;
-
     // shortcuts to global pagemage config
     PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;
     // PPOINTL         pptlMaxDesktops = &pPageMageConfig->ptlMaxDesktops;

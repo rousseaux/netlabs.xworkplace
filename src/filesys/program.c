@@ -1213,10 +1213,11 @@ HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFil
                     if (pArgDataFile)
                     {
                         // V0.9.7 (2000-12-10) [umoeller]: better to query folder's dir
-                        WPFolder *pFilesFolder = _wpQueryFolder(pArgDataFile);
-                        if (pFilesFolder)
-                            if (_wpQueryFilename(pFilesFolder, szDatafileDir, TRUE))
-                                pszStartupDir = szDatafileDir;
+                        WPFolder *pFilesFolder;
+                        if (    (pFilesFolder = _wpQueryFolder(pArgDataFile))
+                             && (_wpQueryFilename(pFilesFolder, szDatafileDir, TRUE))
+                           )
+                            pszStartupDir = szDatafileDir;
                     }
 
                 // set the new params and startup dir

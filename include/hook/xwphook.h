@@ -46,18 +46,6 @@
     // #define MAX_WINDOWS         256
     #define PGMG_TEXTLEN        30
 
-    // flags for HOOKCONFIG.usScrollMode
-    #define SM_LINEWISE         0
-    #define SM_AMPLIFIED        1
-
-    // flags for HOOKCONFIG.ulAutoHideFlags
-    #define AHF_IGNOREMENUS     0x00000001L
-    #define AHF_IGNOREBUTTONS   0x00000002L
-
-    // flags for HOOKCONFIG.ulAutoMoveFlags
-    #define AMF_ALWAYSMOVE      0x00000001L
-    #define AMF_IGNORENOBUTTON  0x00000002L
-
     /*
      *@@ PAGEMAGECONFIG:
      *      PageMage configuration data.
@@ -133,6 +121,18 @@
         /* BOOL         bReturnKeystrokes;
         BOOL         bHotkeyGrabFocus; */
     } PAGEMAGECONFIG, *PPAGEMAGECONFIG;
+
+    // flags for HOOKCONFIG.usScrollMode
+    #define SM_LINEWISE         0
+    #define SM_AMPLIFIED        1
+
+    // flags for HOOKCONFIG.ulAutoHideFlags
+    #define AHF_IGNOREMENUS     0x00000001L
+    #define AHF_IGNOREBUTTONS   0x00000002L
+
+    // flags for HOOKCONFIG.ulAutoMoveFlags
+    #define AMF_ALWAYSMOVE      0x00000001L
+    #define AMF_IGNORENOBUTTON  0x00000002L
 
     /*
      *@@ HOOKCONFIG:
@@ -308,6 +308,7 @@
         ULONG           ulAutoHideFlags;
         BOOL            fAutoMoveMouse;
         ULONG           ulAutoMoveFlags;
+        ULONG           ulAutoMoveDelay;            // V0.9.14 (2001-08-21) [umoeller]
     } HOOKCONFIG, *PHOOKCONFIG;
 
     /*
@@ -452,6 +453,23 @@
     #define XDM_REMOVEDISKWATCH     (WM_USER + 418)
 
     #define XDM_QUERYDISKS          (WM_USER + 419)
+
+    #define XDM_ADDCLICKWATCH       (WM_USER + 420)
+
+    #define XDM_MOUSECLICKED        (WM_USER + 421)
+
+    #define XDM_MOVEPTRTOBUTTON     (WM_USER + 422)
+
+/*
+   #define WM_BUTTON1UP               0x0072
+   #define WM_BUTTON1DBLCLK           0x0073
+   #define WM_BUTTON2DOWN             0x0074
+   #define WM_BUTTON2UP               0x0075
+   #define WM_BUTTON2DBLCLK           0x0076
+      #define WM_BUTTON3DOWN          0x0077
+      #define WM_BUTTON3UP            0x0078
+      #define WM_BUTTON3DBLCLK        0x0079
+*/
 
 #endif
 

@@ -723,35 +723,6 @@ PPRIVATEWIDGETSETTING YwgtCreateSubwidget(PTRAYWIDGETPRIVATE pPrivate,
 
 // None currently.
 
-/* ******************************************************************
- *
- *   Callbacks stored in XCENTERWIDGET
- *
- ********************************************************************/
-
-/*
- *@@ YwgtSetupStringChanged:
- *      this gets called from ctrSetSetupString if
- *      the setup string for a widget has changed.
- *
- *      This procedure's address is stored in
- *      XCENTERWIDGET so that the XCenter knows that
- *      we can do this.
- */
-
-VOID EXPENTRY YwgtSetupStringChanged(PXCENTERWIDGET pWidget,
-                                     const char *pcszNewSetupString)
-{
-    PTRAYWIDGETPRIVATE pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser;
-    if (pPrivate)
-    {
-        // reinitialize the setup data
-        YwgtClearSetup(&pPrivate->Setup);
-        YwgtScanSetup(pcszNewSetupString,
-                      &pPrivate->Setup);
-    }
-}
-
 // VOID EXPENTRY YwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
 
 /* ******************************************************************

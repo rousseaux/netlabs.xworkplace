@@ -2231,6 +2231,7 @@ VOID krnReplaceWheelWatcher(FILE *DumpFile)
  *@@changed V0.9.7 (2000-12-13) [umoeller]: moved config.sys path composition here
  *@@changed V0.9.7 (2000-12-17) [umoeller]: got crashes if archiving displayed a msg box; moved archiving up
  *@@changed V0.9.9 (2001-03-23) [umoeller]: added API object window
+ *@@changed V0.9.14 (2001-08-21) [umoeller]: finally added setting for writing startup log
  */
 
 VOID krnInitializeXWorkplace(VOID)
@@ -2253,7 +2254,7 @@ VOID krnInitializeXWorkplace(VOID)
 
         fInitialized = TRUE;
 
-        if (TRUE)           // @@todo
+        if (pGlobalSettings->fWriteXWPStartupLog)       // V0.9.14 (2001-08-21) [umoeller]
         {
             sprintf(szDumpFile, "%c:\\xwpstart.log", doshQueryBootDrive());
             DumpFile = fopen(szDumpFile, "w");

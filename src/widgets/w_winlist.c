@@ -1801,9 +1801,8 @@ BOOL WwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         ScanSwitchList(pPrivate,
                                        NULL);
                         WinInvalidateRect(pWidget->hwndWidget, NULL, FALSE);
-                    break; }
-
-
+                    }
+                    break;
                 }
             } // if (usID == ID_XCENTER_CLIENT)
             else

@@ -439,7 +439,7 @@ VOID ctrFreeSetupValue(PSZ p)
  *
  *      If the affected widget is currently open, it
  *      will be sent a WM_CONTROL message with the
- *      ID_XCENTER_CLIENT notification code.
+ *      XN_SETUPCHANGED notification code.
  *
  *@@added V0.9.7 (2000-12-07) [umoeller]
  *@@changed V0.9.11 (2001-04-25) [umoeller]: adjusted for new ctrpShowSettingsDlg

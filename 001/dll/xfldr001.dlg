@@ -1578,41 +1578,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_DTP_STARTUP LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_DTP_STARTUP, 0, 0, 275, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "Workplace Shell boot logo", -1, 4, 58, 205, 94
-        AUTOCHECKBOX    "Enable ~boot logo", ID_XSDI_DTP_BOOTLOGO, 10, 130,
-                        100, 10
-        GROUPBOX        "Boot logo style", -1, 20, 102, 100, 28, NOT
-                        WS_GROUP
-        AUTORADIOBUTTON "~Transparent style", ID_XSDI_DTP_LOGO_TRANSPARENT,
-                        24, 114, 90, 8, WS_GROUP | WS_TABSTOP
-        AUTORADIOBUTTON "B~low-up style", ID_XSDI_DTP_LOGO_BLOWUP, 24, 106,
-                        85, 8, WS_TABSTOP
-        GROUPBOX        "", ID_XSDI_DTP_LOGOFRAME, 128, 102, 78, 45
-        CONTROL         "", ID_XSDI_DTP_LOGOBITMAP, 132, 106, 70, 34,
-                        WC_STATIC, SS_FGNDFRAME | WS_VISIBLE
-        LTEXT           "OS/2 1.3 BMP ~file for boot logo:",
-                        ID_XSDI_DTP_LOGOFILETXT, 20, 90, 180, 8, DT_MNEMONIC
-        ENTRYFIELD      "", ID_XSDI_DTP_LOGOFILE, 86, 80, 116, 8, ES_MARGIN
-        PUSHBUTTON      "Bro~wse...", ID_XSDI_DTP_LOGO_BROWSE, 84, 64, 55,
-                        12
-        PUSHBUTTON      "T~est logo", ID_XSDI_DTP_TESTLOGO, 144, 64, 60, 12
-        AUTOCHECKBOX    "Show ~WPS class initialization",
-                        ID_XSDI_DTP_BOOTUPSTATUS, 4, 46, 200, 8
-        PUSHBUTTON      "Create ~XWorkplace Startup folder",
-                        ID_XSDI_DTP_CREATESTARTUPFLDR, 4, 32, 160, 12
-        AUTOCHECKBOX    "Enable ~NumLock at startup", ID_XSDI_DTP_NUMLOCKON,
-                        6, 22, 200, 8
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 65, 12
-        PUSHBUTTON      "~Default", DID_DEFAULT, 75, 6, 65, 12
-        PUSHBUTTON      "~Help", DID_HELP, 145, 6, 65, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_XSD_FILESPAGE1 LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_XSD_FILESPAGE1, 0, 0, 265, 180, NOT FS_DLGBORDER |
@@ -1843,32 +1808,6 @@ BEGIN
                         ID_XSDI_MOUSE_CONDCASCADE, 22, 28, 164, 10
         AUTOCHECKBOX    "I~mmediate hilite", ID_XSDI_MOUSE_MENUHILITE, 22,
                         20, 164, 10
-        PUSHBUTTON      "~Undo", DID_UNDO, 4, 4, 70, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 78, 4, 70, 12
-        PUSHBUTTON      "~Help", DID_HELP, 152, 4, 70, 12, BS_HELP
-    END
-END
-
-DLGTEMPLATE ID_XSD_MOUSE_MOVEMENT2 LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_MOUSE_MOVEMENT2, 0, 0, 232, 164, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "Auto-hide mouse pointer", -1, 6, 40, 194, 46
-        AUTOCHECKBOX    "En~able", ID_XSDI_MOUSE_AUTOHIDE_CHECK, 12, 70, 132, 8
-        LTEXT           "Dela~y:", ID_XSDI_MOUSE_AUTOHIDE_TXT1, 22, 58, 28,
-                        12, DT_VCENTER | DT_MNEMONIC
-        SLIDER          ID_XSDI_MOUSE_AUTOHIDE_SLIDER, 56, 58, 58, 12,
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
-                        CTLDATA 12, 0, 60, 0, 1, 0
-        CTEXT           "0 s", ID_XSDI_MOUSE_AUTOHIDE_TXT2, 116, 58, 28, 12,
-                        DT_VCENTER | DT_MNEMONIC
-        AUTOCHECKBOX    "Do not hide if a ~menu is open",
-                        ID_XSDI_MOUSE_AUTOHIDE_CHECKMNU, 22, 50, 164, 10
-        AUTOCHECKBOX    "Do not hide if over a push button",
-                        ID_XSDI_MOUSE_AUTOHIDE_CHECKBTN, 22, 42, 164, 10
-        GROUPBOX        "Auto-move mouse pointer to default push button", -1, 6, 18, 194, 20
-        AUTOCHECKBOX    "E~nable", ID_XSDI_MOUSE_AUTOMOVE_CHECK, 12, 20, 46, 12
         PUSHBUTTON      "~Undo", DID_UNDO, 4, 4, 70, 12, WS_GROUP
         PUSHBUTTON      "~Default", DID_DEFAULT, 78, 4, 70, 12
         PUSHBUTTON      "~Help", DID_HELP, 152, 4, 70, 12, BS_HELP
@@ -2369,43 +2308,6 @@ BEGIN
         RTEXT           "unknown", ID_XCDI_INFO_NLS_AUTHOR, 104, 24, 70, 6,
                         DT_VCENTER
         PUSHBUTTON      "~Help", DID_HELP, 140, 6, 60, 12, BS_HELP
-    END
-END
-
-DLGTEMPLATE ID_CRD_SETTINGS_VIEW LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_CRD_SETTINGS_VIEW, 0, 0, 188, 136, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "XCenter frame", -1, 6, 80, 172, 56
-        AUTOCHECKBOX    "~Reduce desktop workarea",
-                        ID_CRDI_VIEW_REDUCEWORKAREA, 12, 120, 135, 8,
-                        WS_GROUP
-        AUTOCHECKBOX    "~Always on top", ID_CRDI_VIEW_ALWAYSONTOP, 12, 112,
-                        135, 8, WS_GROUP
-        AUTOCHECKBOX    "A~nimate", ID_CRDI_VIEW_ANIMATE, 12, 104, 135, 8
-        AUTOCHECKBOX    "Auto-h~ide", ID_CRDI_VIEW_AUTOHIDE, 12, 96, 56, 8
-        LTEXT           "D~elay:", ID_CRDI_VIEW_AUTOHIDE_TXT1, 24, 82, 24,
-                        14, DT_VCENTER | DT_MNEMONIC
-        SLIDER          ID_CRDI_VIEW_AUTOHIDE_SLIDER, 48, 82, 108, 14,
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
-                        CTLDATA 12, 0, 60, 0, 1, 0
-        LTEXT           "s", ID_CRDI_VIEW_AUTOHIDE_TXT2, 158, 82, 12, 14,
-                        DT_VCENTER
-        GROUPBOX        "~View thread priority", -1, 6, 52, 172, 26,
-                        DT_MNEMONIC
-        SLIDER          ID_CRDI_VIEW_PRTY_SLIDER, 14, 54, 96, 16,
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
-                        CTLDATA 12, 0, 32, 0, 1, 0
-        LTEXT           "Text", ID_CRDI_VIEW_PRTY_TEXT, 128, 58, 44, 8
-        GROUPBOX        "XCenter position", -1, 6, 24, 172, 26
-        AUTORADIOBUTTON "~Top of screen", ID_CRDI_VIEW_TOPOFSCREEN, 12, 34,
-                        114, 8, WS_GROUP | WS_TABSTOP
-        AUTORADIOBUTTON "~Bottom of screen", ID_CRDI_VIEW_BOTTOMOFSCREEN, 12,
-                        26, 114, 8, WS_TABSTOP
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
-        PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
     END
 END
 
@@ -2939,5 +2841,117 @@ BEGIN
         PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 65, 12
         PUSHBUTTON      "~Default", DID_DEFAULT, 75, 6, 65, 12
         PUSHBUTTON      "~Help", DID_HELP, 145, 6, 65, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_CRD_SETTINGS_VIEW LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_CRD_SETTINGS_VIEW, 0, 0, 194, 158, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        GROUPBOX        "XCenter frame", -1, 6, 80, 172, 64
+        AUTOCHECKBOX    "~Reduce desktop workarea",
+                        ID_CRDI_VIEW_REDUCEWORKAREA, 12, 128, 135, 8,
+                        WS_GROUP
+        AUTOCHECKBOX    "~Always on top", ID_CRDI_VIEW_ALWAYSONTOP, 12, 120,
+                        135, 8, WS_GROUP
+        AUTOCHECKBOX    "A~nimate", ID_CRDI_VIEW_ANIMATE, 12, 112, 135, 8
+        AUTOCHECKBOX    "Auto-h~ide", ID_CRDI_VIEW_AUTOHIDE, 12, 104, 56, 8
+        LTEXT           "D~elay:", ID_CRDI_VIEW_AUTOHIDE_TXT1, 24, 90, 24,
+                        14, DT_VCENTER | DT_MNEMONIC
+        SLIDER          ID_CRDI_VIEW_AUTOHIDE_SLIDER, 48, 90, 108, 14,
+                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
+                        CTLDATA 12, 0, 60, 0, 1, 0
+        LTEXT           "s", ID_CRDI_VIEW_AUTOHIDE_TXT2, 158, 90, 12, 14,
+                        DT_VCENTER
+        AUTOCHECKBOX    "Hide i~mmediately on mouse click",
+                        ID_CRDI_VIEW_AUTOHIDE_CLICK, 22, 82, 148, 8
+        GROUPBOX        "~View thread priority", -1, 6, 52, 172, 26,
+                        DT_MNEMONIC
+        SLIDER          ID_CRDI_VIEW_PRTY_SLIDER, 14, 54, 96, 16,
+                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
+                        CTLDATA 12, 0, 32, 0, 1, 0
+        LTEXT           "Text", ID_CRDI_VIEW_PRTY_TEXT, 128, 58, 44, 8
+        GROUPBOX        "XCenter position", -1, 6, 24, 172, 26
+        AUTORADIOBUTTON "~Top of screen", ID_CRDI_VIEW_TOPOFSCREEN, 12, 34,
+                        114, 8, WS_GROUP | WS_TABSTOP
+        AUTORADIOBUTTON "~Bottom of screen", ID_CRDI_VIEW_BOTTOMOFSCREEN, 12,
+                        26, 114, 8, WS_TABSTOP
+        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12, WS_GROUP
+        PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
+        PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XSD_DTP_STARTUP LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_DTP_STARTUP, 0, 0, 275, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        GROUPBOX        "Workplace Shell boot logo", -1, 4, 62, 205, 90
+        AUTOCHECKBOX    "Enable ~boot logo", ID_XSDI_DTP_BOOTLOGO, 10, 130,
+                        100, 10
+        GROUPBOX        "Boot logo style", -1, 20, 102, 100, 28, NOT
+                        WS_GROUP
+        AUTORADIOBUTTON "~Transparent style", ID_XSDI_DTP_LOGO_TRANSPARENT,
+                        24, 114, 90, 8, WS_GROUP | WS_TABSTOP
+        AUTORADIOBUTTON "B~low-up style", ID_XSDI_DTP_LOGO_BLOWUP, 24, 106,
+                        85, 8, WS_TABSTOP
+        GROUPBOX        "", ID_XSDI_DTP_LOGOFRAME, 128, 102, 78, 45
+        CONTROL         "", ID_XSDI_DTP_LOGOBITMAP, 132, 106, 70, 34,
+                        WC_STATIC, SS_FGNDFRAME | WS_VISIBLE
+        LTEXT           "OS/2 1.3 BMP ~file for boot logo:",
+                        ID_XSDI_DTP_LOGOFILETXT, 20, 92, 180, 8, DT_MNEMONIC
+        ENTRYFIELD      "", ID_XSDI_DTP_LOGOFILE, 86, 82, 116, 8, ES_MARGIN
+        PUSHBUTTON      "Bro~wse...", ID_XSDI_DTP_LOGO_BROWSE, 84, 66, 55,
+                        12
+        PUSHBUTTON      "T~est logo", ID_XSDI_DTP_TESTLOGO, 144, 66, 60, 12
+        AUTOCHECKBOX    "Write XWP~START.LOG file",
+                        ID_XSDI_DTP_WRITEXWPSTARTLOG, 4, 52, 200, 8
+        AUTOCHECKBOX    "Show W~PS class initialization",
+                        ID_XSDI_DTP_BOOTUPSTATUS, 4, 44, 200, 8
+        PUSHBUTTON      "Create ~XWorkplace Startup folder",
+                        ID_XSDI_DTP_CREATESTARTUPFLDR, 4, 30, 160, 12
+        AUTOCHECKBOX    "Enable ~NumLock at startup", ID_XSDI_DTP_NUMLOCKON,
+                        6, 20, 200, 8
+        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 65, 12
+        PUSHBUTTON      "~Default", DID_DEFAULT, 75, 6, 65, 12
+        PUSHBUTTON      "~Help", DID_HELP, 145, 6, 65, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XSD_MOUSE_MOVEMENT2 LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_MOUSE_MOVEMENT2, 0, 0, 232, 164, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        GROUPBOX        "Auto-hide mouse pointer", -1, 6, 58, 194, 46
+        AUTOCHECKBOX    "En~able", ID_XSDI_MOUSE_AUTOHIDE_CHECK, 12, 88, 44,
+                        8
+        LTEXT           "Dela~y:", ID_XSDI_MOUSE_AUTOHIDE_TXT1, 22, 76, 28,
+                        12, DT_VCENTER | DT_MNEMONIC
+        SLIDER          ID_XSDI_MOUSE_AUTOHIDE_SLIDER, 56, 76, 106, 12,
+                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
+                        CTLDATA 12, 0, 60, 0, 1, 0
+        CTEXT           "0 s", ID_XSDI_MOUSE_AUTOHIDE_TXT2, 160, 76, 28, 12,
+                        DT_VCENTER | DT_MNEMONIC
+        AUTOCHECKBOX    "Do not hide if a ~menu is open",
+                        ID_XSDI_MOUSE_AUTOHIDE_CHECKMNU, 22, 68, 164, 10
+        AUTOCHECKBOX    "Do not hide if over a push button",
+                        ID_XSDI_MOUSE_AUTOHIDE_CHECKBTN, 22, 60, 164, 10
+        GROUPBOX        "Auto-move mouse pointer to dialog button", -1,
+                        6, 18, 194, 36
+        AUTOCHECKBOX    "E~nable", ID_XSDI_MOUSE_AUTOMOVE_CHECK, 12, 36, 46,
+                        10
+        LTEXT           "Dela~y:", ID_XSDI_MOUSE_AUTOMOVE_TXT1, 22, 22, 28, 12, DT_VCENTER |
+                        DT_MNEMONIC
+        SLIDER          ID_XSDI_MOUSE_AUTOMOVE_SLIDER, 56, 22, 106, 12, SLS_SNAPTOINCREMENT |
+                        SLS_BUTTONSTOP | WS_GROUP
+                        CTLDATA 12, 0, 50, 0, 1, 0
+        CTEXT           "0 s", ID_XSDI_MOUSE_AUTOMOVE_TXT2, 160, 22, 28, 12, DT_VCENTER |
+                        DT_MNEMONIC
+        PUSHBUTTON      "~Undo", DID_UNDO, 4, 4, 70, 12, WS_GROUP
+        PUSHBUTTON      "~Default", DID_DEFAULT, 78, 4, 70, 12
+        PUSHBUTTON      "~Help", DID_HELP, 152, 4, 70, 12, BS_HELP
     END
 END

@@ -75,15 +75,10 @@ BOOL WMChar_FunctionKeys(USHORT usFlags,  // in: SHORT1FROMMP(mp1) from WM_CHAR
         // request access to shared memory
         // with function key definitions:
         PFUNCTIONKEY paFunctionKeysShared = NULL;
-        APIRET arc = DosGetNamedSharedMem((PVOID*)(&paFunctionKeysShared),
-                                          SHMEM_FUNCTIONKEYS,
-                                          PAG_READ | PAG_WRITE);
 
-        // _Pmpf(("  DosGetNamedSharedMem arc: %d", arc));
-
-        _Pmpf(("WMChar_FunctionKeys: Searching for scan code 0x%lX", ucScanCode));
-
-        if (arc == NO_ERROR)
+        if (!DosGetNamedSharedMem((PVOID*)(&paFunctionKeysShared),
+                                           SHMEM_FUNCTIONKEYS,
+                                           PAG_READ | PAG_WRITE))
         {
             // search function keys array
             ULONG   ul = 0;
@@ -92,8 +87,6 @@ BOOL WMChar_FunctionKeys(USHORT usFlags,  // in: SHORT1FROMMP(mp1) from WM_CHAR
                  ul < G_cFunctionKeys;
                  ul++)
             {
-                _Pmpf(("  funckey %d is scan code 0x%lX", ul, pKeyThis->ucScanCode));
-
                 if (pKeyThis->ucScanCode == ucScanCode)
                 {
                     // scan codes match:
@@ -163,27 +156,18 @@ BOOL WMChar_Hotkeys(USHORT usFlagsOrig,  // in: SHORT1FROMMP(mp1) from WM_CHAR
     // request access to shared memory
     // with hotkey definitions:
     PGLOBALHOTKEY pGlobalHotkeysShared = NULL;
-    APIRET arc = DosGetNamedSharedMem((PVOID*)(&pGlobalHotkeysShared),
-                                      SHMEM_HOTKEYS,
-                                      PAG_READ | PAG_WRITE);
-
-    _Pmpf(("  DosGetNamedSharedMem arc: %d", arc));
-
-    if (arc == NO_ERROR)
+    if (!DosGetNamedSharedMem((PVOID*)(&pGlobalHotkeysShared),
+                                       SHMEM_HOTKEYS,
+                                       PAG_READ | PAG_WRITE))
     {
         // OK, we got the shared hotkeys:
         USHORT  us;
-
         PGLOBALHOTKEY pKeyThis = pGlobalHotkeysShared;
 
         // filter out unwanted flags;
         // we used to check for KC_VIRTUALKEY also, but this doesn't
         // work with VIO sessions, where this is never set V0.9.3 (2000-04-10) [umoeller]
         USHORT usFlags = usFlagsOrig & (KC_CTRL | KC_ALT | KC_SHIFT);
-
-        _Pmpf(("  Checking %d hotkeys for scan code 0x%lX",
-                G_cGlobalHotkeys,
-                ucScanCode));
 
         // now go through the shared hotkey list and check
         // if the pressed key was assigned an action to
@@ -192,8 +176,6 @@ BOOL WMChar_Hotkeys(USHORT usFlagsOrig,  // in: SHORT1FROMMP(mp1) from WM_CHAR
              us < G_cGlobalHotkeys;
              us++)
         {
-            _Pmpf(("    item %d: scan code %lX", us, pKeyThis->ucScanCode));
-
             // when comparing,
             // filter out KC_VIRTUALKEY, because this is never set
             // in VIO sessions... V0.9.3 (2000-04-10) [umoeller]
@@ -270,21 +252,18 @@ BOOL WMChar_Main(PQMSG pqmsg)       // in/out: from hookPreAccelHook
     USHORT usch       = SHORT1FROMMP(pqmsg->mp2);
     // USHORT usvk       = SHORT2FROMMP(pqmsg->mp2);
 
+    APIRET arc;
+
     // request access to the hotkeys mutex:
     // first we need to open it, because this
     // code can be running in any PM thread in
     // any process
-    APIRET arc = DosOpenMutexSem(NULL,       // unnamed
-                                 &G_hmtxGlobalHotkeys);
-    if (arc == NO_ERROR)
+    if (!(arc = DosOpenMutexSem(NULL,       // unnamed
+                                &G_hmtxGlobalHotkeys)))
     {
         // OK, semaphore opened: request access
-        arc = WinRequestMutexSem(G_hmtxGlobalHotkeys,
-                                 TIMEOUT_HMTX_HOTKEYS);
-
-        // _Pmpf(("WM_CHAR WinRequestMutexSem arc: %d", arc));
-
-        if (arc == NO_ERROR)
+        if (!(arc = WinRequestMutexSem(G_hmtxGlobalHotkeys,
+                                       TIMEOUT_HMTX_HOTKEYS)))
         {
             // OK, we got the mutex:
             // search the list of function keys

@@ -352,35 +352,6 @@ VOID PwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
 
 // None currently.
 
-/* ******************************************************************
- *
- *   Callbacks stored in XCENTERWIDGET
- *
- ********************************************************************/
-
-/*
- *@@ PwgtSetupStringChanged:
- *      this gets called from ctrSetSetupString if
- *      the setup string for a widget has changed.
- *
- *      This procedure's address is stored in
- *      XCENTERWIDGET so that the XCenter knows that
- *      we can do this.
- */
-
-VOID EXPENTRY PwgtSetupStringChanged(PXCENTERWIDGET pWidget,
-                                     const char *pcszNewSetupString)
-{
-    PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
-    if (pPrivate)
-    {
-        // reinitialize the setup data
-        PwgtClearSetup(&pPrivate->Setup);
-        PwgtScanSetup(pcszNewSetupString,
-                      &pPrivate->Setup);
-    }
-}
-
 // VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
 
 /* ******************************************************************

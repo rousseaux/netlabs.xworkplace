@@ -451,7 +451,7 @@ void _Optlink fntDiskWatch(PTHREADINFO ptiMyself)
                         {
                             if (dFree != pWatch->dFreeLast)
                             {
-                                // changed:
+                                // free space changed:
                                 _Pmpf((__FUNCTION__ ": drive %d changed, old: %f, new: %f",
                                         pWatch->ulLogicalDrive,
                                         pWatch->dFreeLast,
@@ -465,6 +465,7 @@ void _Optlink fntDiskWatch(PTHREADINFO ptiMyself)
                         {
                             if (arc != pWatch->arcLast)
                             {
+                                // error code changed:
                                 lKB = -(LONG)arc;
                                 pWatch->dFreeLast = 0;
                                 pWatch->arcLast = arc;
@@ -472,7 +473,10 @@ void _Optlink fntDiskWatch(PTHREADINFO ptiMyself)
                         }
 
                         if (lKB != -1)
+                            // we got something to report:
+                            // well, report then
                             WinPostMsg(pWatch->hwndNotify,
+                                       // post the msg that client wants from us
                                        pWatch->ulMessage,
                                        (MPARAM)pWatch->ulLogicalDrive,
                                        (MPARAM)lKB);

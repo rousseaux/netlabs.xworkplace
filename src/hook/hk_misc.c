@@ -78,12 +78,11 @@ VOID WMButton_SystemMenuContext(HWND hwnd)     // of WM_BUTTON2CLICK
     // get mouse coordinates (absolute coordinates)
     WinQueryPointerPos(HWND_DESKTOP, &ptlMouse);
     // query parent of title bar window (frame window)
-    hwndFrame = WinQueryWindow(hwnd, QW_PARENT);
-    if (hwndFrame)
+    if (hwndFrame = WinQueryWindow(hwnd, QW_PARENT))
     {
         // query handle of system menu icon (action bar style)
-        HWND hwndSysMenuIcon = WinWindowFromID(hwndFrame, FID_SYSMENU);
-        if (hwndSysMenuIcon)
+        HWND hwndSysMenuIcon;
+        if (hwndSysMenuIcon = WinWindowFromID(hwndFrame, FID_SYSMENU))
         {
             HWND        hNewMenu; // handle of our copied menu
             HWND        SysMenuHandle;
@@ -102,8 +101,7 @@ VOID WMButton_SystemMenuContext(HWND hwnd)     // of WM_BUTTON2CLICK
             SysMenuHandle = mi.hwndSubMenu;
 
             // create a new empty menu
-            hNewMenu = WinCreateMenu(HWND_OBJECT, NULL);
-            if (hNewMenu)
+            if (hNewMenu = WinCreateMenu(HWND_OBJECT, NULL))
             {
                 // query how menu entries the original system menu has
                 SHORT SysMenuItems = (SHORT)WinSendMsg(SysMenuHandle,

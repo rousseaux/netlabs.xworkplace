@@ -239,15 +239,15 @@ BOOL pgmwFillWinInfo(HWND hwnd,              // in: window to test
                 const char *pcszClassName = pWinInfo->szClassName;
                 if (   // not PM Desktop child?
                         (!WinIsChild(hwnd, HWND_DESKTOP))
-                     || (strcmp(pcszClassName, "#32765") == 0)
+                     || (!strcmp(pcszClassName, "#32765"))
                             // PM "Icon title" class
-                     || (strcmp(pcszClassName, "AltTabWindow") == 0)
+                     || (!strcmp(pcszClassName, "AltTabWindow"))
                             // Warp 4 "Alt tab" window; this always exists,
                             // but is hidden most of the time
-                     || (strcmp(pcszClassName, "#4") == 0)
+                     || (!strcmp(pcszClassName, "#4"))
                             // menu, always ignore those
-                     || (strcmp(pcszClassName, WC_SHAPE_WINDOW) == 0)
-                     || (strcmp(pcszClassName, WC_SHAPE_REGION) == 0)
+                     || (!strcmp(pcszClassName, WC_SHAPE_WINDOW))
+                     || (!strcmp(pcszClassName, WC_SHAPE_REGION))
                             // ignore shaped windows (src\helpers\shapewin.c)
                    )
                     brc = FALSE;
@@ -353,8 +353,8 @@ VOID pgmwScanAllWindows(VOID)
                 // window found and strings allocated maybe:
                 // append this thing to the list
 
-                PPGMGWININFO pNew = NEW(PGMGWININFO);
-                if (pNew)
+                PPGMGWININFO pNew;
+                if (pNew = NEW(PGMGWININFO))
                 {
                     memcpy(pNew, &WinInfoTemp, sizeof(PGMGWININFO));
                     lstAppendItem(&G_llWinInfos, pNew);
@@ -439,15 +439,15 @@ VOID pgmwDeleteWinInfo(HWND hwnd)
     if (pgmwLock())
     {
         PLISTNODE       pNodeFound = NULL;
-        PPGMGWININFO    pWinInfo = pgmwFindWinInfo(hwnd,
-                                                   (PVOID*)&pNodeFound);
+        PPGMGWININFO    pWinInfo;
 
-        if (pWinInfo && pNodeFound)
-        {
+        if (    (pWinInfo = pgmwFindWinInfo(hwnd,
+                                            (PVOID*)&pNodeFound))
+             && (pNodeFound)
+           )
             // we have an item for this window:
             // remove from list, which will also free pWinInfo
             lstRemoveNode(&G_llWinInfos, pNodeFound);
-        }
 
         pgmwUnlock();
     }
@@ -470,10 +470,9 @@ VOID pgmwUpdateWinInfo(HWND hwnd)
     if (pgmwLock())
     {
         // check if we have an entry for this window already
-        PPGMGWININFO    pWinInfo = pgmwFindWinInfo(hwnd,
-                                                   NULL);
-
-        if (pWinInfo)
+        PPGMGWININFO    pWinInfo;
+        if (pWinInfo = pgmwFindWinInfo(hwnd,
+                                       NULL))
             // we have an entry:
             // mark it as dirty
             pWinInfo->bWindowType = WINDOW_RESCAN;
@@ -656,7 +655,7 @@ HWND pgmwGetWindowFromClientPoint(ULONG ulX,  // in: x coordinate within the Pag
                   );
 
     henumPoint = WinBeginEnumWindows(HWND_DESKTOP);
-    while ((hwndPoint = WinGetNextWindow(henumPoint)) != NULLHANDLE)
+    while (hwndPoint = WinGetNextWindow(henumPoint))
     {
         if (hwndPoint == G_pHookData->hwndPageMageFrame)
             // ignore PageMage frame

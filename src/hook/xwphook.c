@@ -265,7 +265,7 @@ VOID InitializeGlobalsForHooks(VOID)
         CHAR    szClass[200];
         if (WinQueryClassName(hwndThis, sizeof(szClass), szClass))
         {
-            if (strcmp(szClass, "#1") == 0)
+            if (!strcmp(szClass, "#1"))
             {
                 // frame window: check the children
                 HENUM   henumFrame;
@@ -278,7 +278,7 @@ VOID InitializeGlobalsForHooks(VOID)
                     CHAR    szChildClass[200];
                     if (WinQueryClassName(hwndChild, sizeof(szChildClass), szChildClass))
                     {
-                        if (strcmp(szChildClass, "WindowList") == 0)
+                        if (!strcmp(szChildClass, "WindowList"))
                         {
                             // yup, found:
                             G_HookData.hwndWindowList = hwndThis;
@@ -591,11 +591,11 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
 {
     BOOL    fSemOpened = FALSE,
             fSemOwned = FALSE;
-    // request access to the hotkeys mutex
-    APIRET arc = DosOpenMutexSem(NULL,       // unnamed
-                                 &G_hmtxGlobalHotkeys);
+    APIRET arc;
 
-    if (arc == NO_ERROR)
+    // request access to the hotkeys mutex
+    if (!(arc = DosOpenMutexSem(NULL,       // unnamed
+                                &G_hmtxGlobalHotkeys)))
     {
         fSemOpened = TRUE;
         arc = WinRequestMutexSem(G_hmtxGlobalHotkeys,
@@ -604,7 +604,7 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
 
     _Pmpf(("hookSetGlobalHotkeys: WinRequestMutexSem arc: %d", arc));
 
-    if (arc == NO_ERROR)
+    if (!arc)
     {
         fSemOwned = TRUE;
 
@@ -617,11 +617,11 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
             G_paGlobalHotkeys = 0;
         }
 
-        arc = DosAllocSharedMem((PVOID*)(&G_paGlobalHotkeys),
-                                SHMEM_HOTKEYS,
-                                sizeof(GLOBALHOTKEY) * cNewHotkeys, // rounded up to 4KB
-                                PAG_COMMIT | PAG_READ | PAG_WRITE);
-        if (arc == NO_ERROR)
+        if (!(arc = DosAllocSharedMem((PVOID*)(&G_paGlobalHotkeys),
+                                      SHMEM_HOTKEYS,
+                                      sizeof(GLOBALHOTKEY) * cNewHotkeys,
+                                            // rounded up to 4KB
+                                      PAG_COMMIT | PAG_READ | PAG_WRITE)))
         {
             // copy hotkeys to shared memory
             memcpy(G_paGlobalHotkeys,
@@ -639,12 +639,10 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
             G_paFunctionKeys = 0;
         }
 
-        arc = DosAllocSharedMem((PVOID*)(&G_paFunctionKeys),
-                                SHMEM_FUNCTIONKEYS,
-                                sizeof(FUNCTIONKEY) * cNewFunctionKeys, // rounded up to 4KB
-                                PAG_COMMIT | PAG_READ | PAG_WRITE);
-
-        if (arc == NO_ERROR)
+        if (!(arc = DosAllocSharedMem((PVOID*)(&G_paFunctionKeys),
+                                      SHMEM_FUNCTIONKEYS,
+                                      sizeof(FUNCTIONKEY) * cNewFunctionKeys, // rounded up to 4KB
+                                      PAG_COMMIT | PAG_READ | PAG_WRITE)))
         {
             // copy function keys to shared memory
             memcpy(G_paFunctionKeys,
@@ -707,11 +705,11 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
 
             if (WinQueryClassName(hwnd, sizeof(szClass), szClass))
             {
-                if (    (strcmp(szClass, "#1") == 0)
-                     || (strcmp(szClass, "wpFolder window") == 0)
-                     || (strcmp(szClass, "Win32FrameClass") == 0)
+                if (    (!strcmp(szClass, "#1"))
+                     || (!strcmp(szClass, "wpFolder window"))
+                     || (!strcmp(szClass, "Win32FrameClass"))
                                 // that's for Odin V0.9.7 (2001-01-18) [umoeller]
-                     || (strcmp(szClass, "EFrame") == 0)
+                     || (!strcmp(szClass, "EFrame"))
                                 // that's for EPM V0.9.7 (2001-01-19) [dk]
                    )
                 {
@@ -826,8 +824,8 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
              && (WinIsWindowVisible(G_HookData.hwndPageMageFrame))
            )
         {
-            PSWP pswp = (PSWP)psmh->mp1;
-            if (    (pswp)
+            PSWP pswp;
+            if (    (pswp = (PSWP)psmh->mp1)
                  // && (pswp->fl & SWP_ZORDER)
                  && (pswp->hwndInsertBehind == HWND_TOP)
                  && (WinQueryWindow(psmh->hwnd, QW_PARENT) == G_HookData.hwndPMDesktop)
@@ -874,40 +872,40 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
                    0);
     }
     else
-    // special extra check, to find out if menu mode is active
-    // or not.  If G_hwndRootMenu is not NULLHANDLE, then we are
-    // in menu mode (i.e., a menu is active).
-    // V0.9.14 (2001-08-01) [lafaix]
-    if (    (G_HookData.HookConfig.fAutoHideMouse)
-         && (G_HookData.HookConfig.ulAutoHideFlags& AHF_IGNOREMENUS)
-       )
-    {
-        if (    (psmh->msg == WM_INITMENU)
-             && (G_hwndRootMenu == NULLHANDLE)
+        // special extra check, to find out if menu mode is active
+        // or not.  If G_hwndRootMenu is not NULLHANDLE, then we are
+        // in menu mode (i.e., a menu is active).
+        // V0.9.14 (2001-08-01) [lafaix]
+        if (    (G_HookData.HookConfig.fAutoHideMouse)
+             && (G_HookData.HookConfig.ulAutoHideFlags& AHF_IGNOREMENUS)
            )
         {
-            G_hwndRootMenu = (HWND)psmh->mp2;
-            WMMouseMove_AutoHideMouse();
+            if (    (psmh->msg == WM_INITMENU)
+                 && (G_hwndRootMenu == NULLHANDLE)
+               )
+            {
+                G_hwndRootMenu = (HWND)psmh->mp2;
+                WMMouseMove_AutoHideMouse();
+            }
+            else
+            if (    (psmh->msg == WM_MENUEND)
+                 && (G_hwndRootMenu == (HWND)psmh->mp2)
+               )
+            {
+                G_hwndRootMenu = NULLHANDLE;
+                WMMouseMove_AutoHideMouse();
+            }
         }
-        else
-        if (    (psmh->msg == WM_MENUEND)
-             && (G_hwndRootMenu == (HWND)psmh->mp2)
-           )
-        {
-            G_hwndRootMenu = NULLHANDLE;
-            WMMouseMove_AutoHideMouse();
-        }
-    }
 
-    // yet another extra check, to find out if the about to be
-    // shown window contains a default push button
+    // yet another extra check, to find out if the
+    // about-to-be-shown window contains a default push button
     // V0.9.14 (2001-08-02) [lafaix]
     if (    (G_HookData.HookConfig.fAutoMoveMouse)
          && (    (    (psmh->msg == WM_SHOW)
                    && (SHORT1FROMMP(psmh->mp1))
                  )
               // for some reasons, opening a dialog window
-              // does not produces a WM_SHOW message, so
+              // does not produce a WM_SHOW message, so
               // we must check WM_WINDOWPOSCHANGED too
               || (    (psmh->msg == WM_WINDOWPOSCHANGED)
                    && (((PSWP)psmh->mp1)->fl & SWP_SHOW)
@@ -915,24 +913,15 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
             )
        )
     {
-        HWND hwndDefButton = (HWND)WinQueryWindowULong(psmh->hwnd,
-                                                       QWL_DEFBUTTON);
+        HWND hwndDefButton;
 
-        if (hwndDefButton)
+        if (hwndDefButton = (HWND)WinQueryWindowULong(psmh->hwnd,
+                                                      QWL_DEFBUTTON))
         {
-            POINTL ptl;
-            RECTL  rec;
-
-            // reposition mouse pointer in the middle of the
-            // default button
-            WinQueryWindowRect(hwndDefButton, &rec);
-            ptl.x = (rec.xLeft + rec.xRight) / 2;
-            ptl.y = (rec.yTop + rec.yBottom) / 2;
-            WinMapWindowPoints(hwndDefButton,
-                               HWND_DESKTOP,
-                               &ptl,
-                               1);
-            WinSetPointerPos(HWND_DESKTOP, ptl.x, ptl.y);
+            WinPostMsg(G_HookData.hwndDaemonObject,
+                       XDM_MOVEPTRTOBUTTON,
+                       (MPARAM)hwndDefButton,
+                       0);
         }
     }
 
@@ -950,21 +939,24 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.6 (2000-11-05) [pr]: fix for hotkeys not working after Lockup
  *@@changed V0.9.7 (2001-01-18) [umoeller]: removed PGMG_LOCKUP call, pagemage doesn't need this
+ *@@changed V0.9.14 (2001-08-21) [umoeller]: now always storing lockup window, we need this in various places
  */
 
 VOID EXPENTRY hookLockupHook(HAB hab,
                              HWND hwndLocalLockupFrame)
 {
-    if (G_HookData.hwndPageMageFrame)
+    G_HookData.hwndLockupFrame = hwndLocalLockupFrame;
+
+    /* if (G_HookData.hwndPageMageFrame)
     {
-        G_HookData.hwndLockupFrame = hwndLocalLockupFrame;
-        /* WinPostMsg(G_HookData.hwndPageMageClient,
+
+        WinPostMsg(G_HookData.hwndPageMageClient,
                    PGMG_LOCKUP,
                    MPFROMLONG(TRUE),
-                   MPVOID); */
+                   MPVOID);
             // removed V0.9.7 (2001-01-18) [umoeller], PageMage doesn't
             // need this
-    }
+    } */
     /* G_HookData.hwndLockupFrame = hwndLocalLockupFrame;
     WinPostMsg(G_HookData.hwndPageMageClient,
                PGMG_LOCKUP,
@@ -1024,6 +1016,7 @@ VOID EXPENTRY hookLockupHook(HAB hab,
  *@@changed V0.9.9 (2001-03-20) [lafaix]: added many KC_NONE checks
  *@@changed V0.9.9 (2001-03-20) [lafaix]: added MB3 Autoscroll support
  *@@changed V0.9.9 (2001-03-21) [lafaix]: added MB3 Push2Bottom support
+ *@@changed V0.9.14 (2001-08-21) [umoeller]: added click watches support
  */
 
 BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
@@ -1160,7 +1153,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                                           sizeof(szWindowClass),
                                           szWindowClass);
                         // mouse button 2 was pressed over a title bar control
-                        if (strcmp(szWindowClass, "#9") == 0)
+                        if (!strcmp(szWindowClass, "#9"))
                         {
                             // copy system menu and display it as context menu
                             WMButton_SystemMenuContext(hwnd);
@@ -1231,9 +1224,9 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                )
             {
                 // VIO, EPM, or UMAIL EPM client window?
-                if (    (strcmp(szClassName, "Shield") == 0)
-                     || (strcmp(szClassName, "NewEditWndClass") == 0)
-                     || (strcmp(szClassName, "UMAILEPM") == 0)
+                if (    (!strcmp(szClassName, "Shield"))
+                     || (!strcmp(szClassName, "NewEditWndClass"))
+                     || (!strcmp(szClassName, "UMAILEPM"))
                    )
                 {
                     // yes:
@@ -1321,8 +1314,8 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
 
                     if (WinQueryClassName(hwnd, sizeof(szClassName), szClassName))
                     {
-                        if (    (strcmp(szClassName, "NewEditWndClass") == 0)
-                             || (strcmp(szClassName, "UMAILEPM") == 0)
+                        if (    (!strcmp(szClassName, "NewEditWndClass"))
+                             || (!strcmp(szClassName, "UMAILEPM"))
                            )
                             WinPostMsg(hwnd, WM_BUTTON3CLICK, mp1, mp2);
                     }
@@ -1332,27 +1325,27 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                 // brc = TRUE;
             }
             else
-            // MB3 click conversion enabled?
-            if (G_HookData.HookConfig.fMB3Click2MB1DblClk)
-            {
-                // is window under mouse minimized?
-                SWP swp;
-                WinQueryWindowPos(hwnd,&swp);
-                if (swp.fl & SWP_MINIMIZE)
+                // MB3 click conversion enabled?
+                if (G_HookData.HookConfig.fMB3Click2MB1DblClk)
                 {
-                    // yes:
-                    WinPostMsg(hwnd, WM_BUTTON1DOWN, mp1, mp2);
-                    WinPostMsg(hwnd, WM_BUTTON1UP, mp1, mp2);
-                    WinPostMsg(hwnd, WM_SINGLESELECT, mp1, mp2);
-                    WinPostMsg(hwnd, WM_BUTTON1DBLCLK, mp1, mp2);
-                    WinPostMsg(hwnd, WM_OPEN, mp1, mp2);
-                    WinPostMsg(hwnd, WM_BUTTON1UP, mp1, mp2);
+                    // is window under mouse minimized?
+                    SWP swp;
+                    WinQueryWindowPos(hwnd,&swp);
+                    if (swp.fl & SWP_MINIMIZE)
+                    {
+                        // yes:
+                        WinPostMsg(hwnd, WM_BUTTON1DOWN, mp1, mp2);
+                        WinPostMsg(hwnd, WM_BUTTON1UP, mp1, mp2);
+                        WinPostMsg(hwnd, WM_SINGLESELECT, mp1, mp2);
+                        WinPostMsg(hwnd, WM_BUTTON1DBLCLK, mp1, mp2);
+                        WinPostMsg(hwnd, WM_OPEN, mp1, mp2);
+                        WinPostMsg(hwnd, WM_BUTTON1UP, mp1, mp2);
+                    }
+                    // brc = FALSE;   // pass on to next hook in chain (if any)
+                    // you HAVE TO return FALSE so that the OS
+                    // can translate a sequence of WM_BUTTON3DOWN
+                    // WM_BUTTON3UP to WM_BUTTON3CLICK
                 }
-                // brc = FALSE;   // pass on to next hook in chain (if any)
-                // you HAVE TO return FALSE so that the OS
-                // can translate a sequence of WM_BUTTON3DOWN
-                // WM_BUTTON3UP to WM_BUTTON3CLICK
-            }
         break; }
 
         /*
@@ -1472,6 +1465,25 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
         // handle auto-hide V0.9.9 (2001-01-29) [umoeller]
         WMMouseMove_AutoHideMouse();
 
+    // V0.9.14 (2001-08-21) [umoeller]
+    if (G_HookData.fClickWatches)
+        switch (msg)
+        {
+            case WM_BUTTON1DOWN:
+            case WM_BUTTON1UP:
+            case WM_BUTTON1DBLCLK:
+            case WM_BUTTON2DOWN:
+            case WM_BUTTON2UP:
+            case WM_BUTTON2DBLCLK:
+            case WM_BUTTON3DOWN:
+            case WM_BUTTON3UP:
+            case WM_BUTTON3DBLCLK:
+                WinPostMsg(G_HookData.hwndDaemonObject,
+                           XDM_MOUSECLICKED,
+                           (MPARAM)msg,
+                           mp1);             // POINTS pointer pos
+        }
+
     return (brc);                           // msg not processed if FALSE
 }
 
@@ -1541,7 +1553,7 @@ BOOL EXPENTRY hookPreAccelHook(HAB hab, PQMSG pqmsg, ULONG option)
             if (   (    (G_HookData.HookConfig.fGlobalHotkeys)
                     ||  (G_HookData.PageMageConfig.fEnableArrowHotkeys)
                    )
-               && (G_HookData.hwndLockupFrame == NULLHANDLE)    // system not locked up
+               && (!G_HookData.hwndLockupFrame)    // system not locked up
                )
             {
                 brc = WMChar_Main(pqmsg);

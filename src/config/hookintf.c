@@ -973,7 +973,8 @@ MRESULT hifKeybdHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                             (PRECORDCORE)pcnbp->preccSource,
                                             hPopupMenu,
                                             pcnbp->hwndDlgPage);    // owner
-                break; }
+                }
+                break;
             }
         break;
 
@@ -992,7 +993,8 @@ MRESULT hifKeybdHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                   NULLHANDLE,   // hwndCnr (?!?)
                                   OPEN_SETTINGS,
                                   0);
-        break; }
+        }
+        break;
 
         /*
          * ID_XSMI_HOTKEYS_OPENFOLDER:
@@ -1013,7 +1015,8 @@ MRESULT hifKeybdHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                       OPEN_DEFAULT,
                                       0);
                 }
-        break; }
+        }
+        break;
 
         /*
          * ID_XSMI_HOTKEYS_REMOVE:
@@ -1041,7 +1044,8 @@ MRESULT hifKeybdHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                               precc->Hotkey.ulHandle);
                             // this updates the notebook in turn
             }
-        break; }
+        }
+        break;
     }
 
     return (mrc);
@@ -1145,7 +1149,8 @@ MRESULT EXPENTRY hif_fnwpSubclassedFuncKeyEF(HWND hwndEdit,
             else
                 mrc = WinSendMsg(WinQueryWindow(hwndEdit, QW_PARENT),
                                  msg, mp1, mp2);
-        break; }
+        }
+        break;
 
         default:
             mrc = G_pfnwpEntryFieldOrig(hwndEdit, msg, mp1, mp2);
@@ -1403,7 +1408,8 @@ MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                             (PRECORDCORE)pcnbp->preccSource,
                                             hPopupMenu,
                                             pcnbp->hwndDlgPage);    // owner
-                break; }
+                }
+                break;
             }
         break;
 
@@ -1548,7 +1554,8 @@ MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                 WinDestroyWindow(hwndEditDlg);
             } // end if (hwndEditDlg)
-        break; }
+        }
+        break;
 
         /*
          * ID_XSMI_FUNCK_DELETE:
@@ -1581,7 +1588,8 @@ MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                MPFROM2SHORT(1, CMA_FREE | CMA_INVALIDATE));
                 }
             }
-        break; }
+        }
+        break;
 
         default:
         break;
@@ -1769,7 +1777,8 @@ MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pdc->fMB3AutoScroll = (lIndex == 0);
             pdc->fMB3Click2MB1DblClk = (lIndex == 1);
             pdc->fMB3Push2Bottom = (lIndex == 3);
-        break; }
+        }
+        break;
 
         case ID_XSDI_MOUSE_MB3SCROLL:
             hifLoadHookConfig(pdc);
@@ -1790,7 +1799,8 @@ MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             hifLoadHookConfig(pdc);
             pdc->usMB3ScrollMin = lSliderIndex;
-        break; }
+        }
+        break;
 
         case ID_XSDI_MOUSE_MB3LINEWISE:
             hifLoadHookConfig(pdc);
@@ -1818,7 +1828,8 @@ MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             hifLoadHookConfig(pdc);
             pdc->sAmplification = lSliderIndex - 9;
-        break; }
+        }
+        break;
 
         case ID_XSDI_MOUSE_MB3SCROLLREVERSE:
             hifLoadHookConfig(pdc);
@@ -2135,7 +2146,8 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             WinSetDlgItemText(pcnbp->hwndDlgPage,
                               ID_XSDI_MOUSE_FOCUSDELAY_TXT2,
                               szTemp);
-        break; }
+        }
+        break;
 
         case ID_XSDI_MOUSE_SLIDINGMENU:
             hifLoadHookConfig(pdc);
@@ -2157,7 +2169,8 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                               ID_XSDI_MOUSE_MENUDELAY_TXT2,
                               szTemp);
             pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
-        break; }
+        }
+        break;
 
         case ID_XSDI_MOUSE_CONDCASCADE:
             hifLoadHookConfig(pdc);
@@ -2248,6 +2261,7 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *@@added V0.9.14 (2001-08-02) [lafaix]
  *@@changed V0.9.6 (2000-10-27) [umoeller]: added optional NPSWPS-like submenu behavior
  *@@changed V0.9.7 (2000-12-08) [umoeller]: added "ignore XCenter"
+ *@@changed V0.9.14 (2001-08-21) [umoeller]: added delay for auto-move ptr
  */
 
 VOID hifMouseMovement2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -2276,6 +2290,11 @@ VOID hifMouseMovement2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
                                            ID_XSDI_MOUSE_AUTOHIDE_SLIDER),
                            MPFROM2SHORT(4, 10), 3,
                            MPFROM2SHORT(9, 10), 6);
+
+        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
+                                           ID_XSDI_MOUSE_AUTOMOVE_SLIDER),
+                           MPFROM2SHORT(9, 10), 6,
+                           (MPARAM)-1, -1);
     }
 
     if (flFlags & CBI_SET)
@@ -2297,6 +2316,11 @@ VOID hifMouseMovement2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
         // auto-move mouse pointer to default button
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOMOVE_CHECK,
                               pdc->fAutoMoveMouse);
+
+        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage,
+                                                 ID_XSDI_MOUSE_AUTOMOVE_SLIDER),
+                                 SMA_INCREMENTVALUE,
+                                 pdc->ulAutoMoveDelay / 100);
     }
 
     if (flFlags & CBI_ENABLE)
@@ -2305,15 +2329,22 @@ VOID hifMouseMovement2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
         PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
 
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_TXT1,
-                         pdc->fAutoHideMouse);
+                          pdc->fAutoHideMouse);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_SLIDER,
-                         pdc->fAutoHideMouse);
+                          pdc->fAutoHideMouse);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_TXT2,
-                         pdc->fAutoHideMouse);
+                          pdc->fAutoHideMouse);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_CHECKMNU,
-                         pdc->fAutoHideMouse);
+                          pdc->fAutoHideMouse);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_CHECKBTN,
-                         pdc->fAutoHideMouse);
+                          pdc->fAutoHideMouse);
+
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOMOVE_TXT1,
+                          pdc->fAutoMoveMouse);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOMOVE_SLIDER,
+                          pdc->fAutoMoveMouse);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOMOVE_TXT2,
+                          pdc->fAutoMoveMouse);
     }
 }
 
@@ -2324,6 +2355,7 @@ VOID hifMouseMovement2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
  *      Reacts to changes of any of the dialog controls.
  *
  *@@added V.9.14 (2001-08-02) [lafaix]
+ *@@changed V0.9.14 (2001-08-21) [umoeller]: added delay for auto-move ptr
  */
 
 MRESULT hifMouseMovement2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -2333,6 +2365,7 @@ MRESULT hifMouseMovement2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     MRESULT mrc = 0;
     PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
     BOOL    fSave = TRUE;
+    CHAR    szTemp[30];
 
     _Pmpf(("hifMouseMovement2ItemChanged: usItemID: %d ulExtra: %d", ulItemID, ulExtra));
 
@@ -2346,7 +2379,6 @@ MRESULT hifMouseMovement2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XSDI_MOUSE_AUTOHIDE_SLIDER:
         {
-            CHAR szTemp[30];
             // get delay
             LONG lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
                                                            SMA_INCREMENTVALUE);
@@ -2357,7 +2389,8 @@ MRESULT hifMouseMovement2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             WinSetDlgItemText(pcnbp->hwndDlgPage,
                               ID_XSDI_MOUSE_AUTOHIDE_TXT2,
                               szTemp);
-        break; }
+        }
+        break;
 
         case ID_XSDI_MOUSE_AUTOHIDE_CHECKMNU:
             hifLoadHookConfig(pdc);
@@ -2378,6 +2411,22 @@ MRESULT hifMouseMovement2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_MOUSE_AUTOMOVE_CHECK:
             hifLoadHookConfig(pdc);
             pdc->fAutoMoveMouse = ulExtra;
+            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
+        break;
+
+        case ID_XSDI_MOUSE_AUTOMOVE_SLIDER:
+        {
+            // get delay
+            LONG lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
+                                                           SMA_INCREMENTVALUE);
+            // convert to milliseconds
+            hifLoadHookConfig(pdc);
+            pdc->ulAutoMoveDelay = lSliderIndex * 100;
+            sprintf(szTemp, "%d ms", pdc->ulAutoMoveDelay);
+            WinSetDlgItemText(pcnbp->hwndDlgPage,
+                              ID_XSDI_MOUSE_AUTOMOVE_TXT2,
+                              szTemp);
+        }
         break;
 
         /*
@@ -2393,6 +2442,7 @@ MRESULT hifMouseMovement2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pdc->ulAutoHideFlags = 0;
             pdc->fAutoMoveMouse = 0;
             pdc->ulAutoMoveFlags = 0;
+            pdc->ulAutoMoveDelay = 0;
 
             // saving settings here
             hifHookConfigChanged(pdc);
@@ -2417,6 +2467,7 @@ MRESULT hifMouseMovement2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 pdc->ulAutoHideFlags = pBackup->ulAutoHideFlags;
                 pdc->fAutoMoveMouse = pBackup->fAutoMoveMouse;
                 pdc->ulAutoMoveFlags = pBackup->ulAutoMoveFlags;
+                pdc->ulAutoMoveDelay = pBackup->ulAutoMoveDelay;
 
                 // saving settings here
                 hifHookConfigChanged(pdc);
@@ -2748,8 +2799,8 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 // store special function, which has the hiword as FFFF
                 pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex]
                     = 0xFFFF0000 | lIndex;
-
-        break; }
+        }
+        break;
 
         /*
          * ID_XSDI_MOUSE_CORNERSIZE_SLIDER:
@@ -2764,7 +2815,8 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // convert to percents
             hifLoadHookConfig(pdc);
             pdc->ulCornerSensitivity = lSliderIndex * 10 / 2;
-        break; }
+        }
+        break;
 
         /*
          * DID_DEFAULT:
