@@ -1,0 +1,66 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+<TITLE>
+Subclassing Folder Windows
+</TITLE>
+</HEAD>
+
+<BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000AA" VLINK="#777777">
+XWorkplace subclasses all WPFolder frame windows to intercept a large
+number of messages. This is needed for the majority of XWorkplace's features,
+which are not directly SOM/WPS-related, but are rather straight PM programming.
+
+<P>Most of the standard WPS methods are really encapsulations of PM messages.
+When the WPS opens a folder window, it creates a container control
+as a child of the folder frame window, which is subclassed to get all the
+container WM_CONTROL messages. Then, for example, if the user opens a context
+menu on an object in the container, the frame gets WM_CONTROL with CN_CONTEXTMENU.
+The WPS then finds the WPS (SOM) object which corresponds to the container record core
+on which the context menu was opened and invokes the WPS menu methods on it,
+that is, <CODE>wpFilterPopupMenu</CODE> and <CODE>wpModifyPopupMenu</CODE>.
+Similar things happen with WM_COMMAND and <CODE>wpMenuItemSelected</CODE>.
+
+<P>The trick is just how to get "past" the WPS, which does a lot of hidden
+stuff in its method code. By subclassing the folder frames ourselves, we get all
+the messages which are being sent or posted to the folder
+<I>before</I> the WPS gets them and can thus
+modify the WPS's behavior even if no methods have been defined for a certain
+event. An example of this is that the contents of an XFolder status bar changes
+when object selections have changed in the folder: this reacts to WM_CONTROL
+with CN_EMPHASIS.
+
+<P>Subclassing is done in <CODE>XFolder::wpOpen</CODE> after
+having called the parent method (WPFolder's), which returns the handle of the
+new folder frame which the WPS has created.
+<P>
+XFolder's subclassed frame window proc is called <CODE>fnwpSubclassedFolderFrame</CODE>
+(in <CODE>src\filesys\folder.c</CODE>). Take a look at it, it's one of the most
+interesting parts of XWorkplace. It handles status bars (which are frame
+controls), tree view auto-rolling, special menu features, the &quot;folder
+content&quot; menus and more.
+<P>This gives us the following hierarchy of window procedures:
+<OL><LI>our <CODE>fnwpSubclassedFolderFrame</CODE>, first, followed by
+<LI>the WPS folder frame window subclass, followed by
+<LI>WC_FRAME's default frame window procedure, followed by
+<LI><CODE>WinDefWindowProc</CODE> last.
+
+</OL>If additional WPS enhancers are installed (e.g. Object Desktop), they will
+appear at the top of the chain also. I guess it depends on the hierarchy of replacement
+classes in the WPS class list which one sits on top.
+<P>
+In order to be able to relate the original frame window proc to a
+folder frame (which can be different for each WPFolder window),
+XWorkplace maintains a global linked list of <CODE>PSUBCLASSEDLISTITEM</CODE>
+structures (declared in <CODE>include\filesys\folder.h</CODE>). This might be a bit slow, but I
+have found no other way to store the original window proc. Using
+window words does not work (believe me: it <I>does</I> crash the WPS),
+because either the WPFolder frame window class does not have window words
+or the window words seem to be used by the WPS already, and (of
+course) this is not documented. If you have a better idea for this,
+let me know.
+
+<P>As with all linked lists, XWorkplace uses the <CODE>lst*</CODE> functions in
+<CODE>src\helpers\linklist.c</CODE> for adding/removing/searching etc. list items.
+<BR>
+</BODY>
+</HTML>

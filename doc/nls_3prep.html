@@ -1,0 +1,58 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+<TITLE>
+Preparations
+</TITLE>
+</HEAD>
+<BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000AA" VLINK="#777777">
+The files in the "001" directory contain everything neccessary to do a
+complete translation of XWorkplace.
+</OL>
+Here's a list of things you need to do before you can begin translations.
+<OL><LI>The first thing you need to do is find out your
+<B>three-digit language code.</B> Open the OS/2 Command Reference, "Country"
+page, and find the code for your country.
+
+<P><LI>Make a copy of the entire <CODE>001</CODE> directory tree within
+the XWorkplace source tree, renaming it to your country code.
+
+<P><LI>Most files in the <CODE>001</CODE> directory carry a three-digit language code in
+their respective names. For your language, you need to change all the filenames
+with &quot;001&quot; in their names to your country code (e.g. 039 for Italian).
+For example, rename <CODE>xfldr001.dlg</CODE> to <CODE>xfldr039.dlg</CODE>.
+
+<P><LI>You will also have to change the <CODE>.DEF</CODE> file and <CODE>makefile</CODE>,
+which assume a country code of 001 at this point. Required changes are noted in
+the files themselves.
+
+<P><LI>Open <CODE>xfldrXXX.rc</CODE> (with "xxx" being your country code) and
+find the strings "ID_XSSI_DLLLANGUAGE" and "ID_XSSI_NLS_AUTHOR". Change those
+two to match your language and name; this is the information that is displayed
+to the user in the "Language" drop-down box in the "XWorkplace Setup" settings
+object.
+</OL>
+You should now be ready to <B>recompile the NLS DLL</B> for the first time.
+<P>
+If you have IBM VAC++, you can simply use <CODE>MAKE.CMD</CODE> to have the DLL
+recreated. Open <CODE>MAKE.CMD</CODE> and check somewhere in the middle where
+the script checks for the presence of the <CODE>049</CODE> directory, and change
+the variables to point to your new directory instead.
+Running <CODE>MAKE.CMD</CODE> should then work fine, since all the neccessary
+files are included.
+<P>
+Otherwise, things get a bit more complicated. Since the
+resource compiler (<CODE>RC.EXE</CODE>) is already included
+with every OS/2 installation, you can try the following:
+<OL><LI>Copy an existing XWorkplace resource DLL (e.g. <CODE>xfldr001.dll</CODE>)
+into your new NLS directory;
+rename it so that it contains your language code (e.g. <CODE>xfldr039.dll</CODE>).
+<P><LI>Open a command line in that directory.
+<P><LI>Type <CODE>rc xfldr039.rc xfldr039.dll</CODE> (replace "039" with your language code),
+which should create a new <CODE>.RES</CODE> file and link it against the existing DLL.
+</OL>
+
+After recompiling, you can test the DLL as described in
+<A HREF="nls_8testing.html">"Testing the DLL"</A>.
+<BR>
+</BODY>
+</HTML>

@@ -1,0 +1,54 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+<TITLE>
+Makefile Environment Variables
+</TITLE>
+</HEAD>
+
+<BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000AA" VLINK="#777777">
+This section describes the environment variables which should be set
+externally before executing the makefiles.
+
+<P>You can modify <CODE>MAKE.CMD</CODE> to set up these things, because
+<CODE>MAKE.CMD</CODE> calls the main <CODE>makefile</CODE>.
+
+<P>Alternatively, create your own "XWorkplace make" command file, which
+sets up these variables, or define these variables in CONFIG.SYS.
+
+<P>If these are not set, you'll either get errors from the makefiles
+(certain checks are built into those), or <CODE>setup.in</CODE> will
+use some dumb default, which is most probably not matching your system.
+
+<OL><LI><CODE>PROJECT_BASE_DIR</CODE> points to the base directory of
+the XWorkplace source tree. This must be the parent directory of <CODE>src\</CODE>,
+<CODE>include\,</CODE> etc. This is required for the makefiles to work, because
+otherwise they'll never know where to recurse to.
+
+<P><LI>If <CODE>XWPDEBUG</CODE> is defined (to anything), XWorkplace will
+be compiled and linked with debug code enabled. Also, this will pass the
+<CODE>__XWPDEBUG__</CODE> define to the compiler, to which some code parts
+react. For example, only if that flag is defined, PmPrintf calls will be
+compiled. See <A HREF="src1_880debug.html">"Debugging XWorkplace"</A> for details.
+
+<P><LI><CODE>XWPRUNNING</CODE> must point to an exiting XFolder/XWorkplace
+installation. Since the makefiles first create all the files in <CODE>bin\</CODE>,
+this is not suitable for testing your code, because XWorkplace expects a lot
+of files at fixed locations relative to the directory where <CODE>XFLDR.DLL</CODE>
+resides. Most makefiles will copy the target files to the directory pointed to
+by this environment variable (after unlocking executables), so after rebuilding,
+you can simply restart the WPS, and your new code will be running in the WPS.
+
+<P>This must point to the parent directory of <CODE>bin\</CODE>, <CODE>help\</CODE> etc.
+in the XFolder/XWorkplace installation tree.
+
+<P><LI><CODE>XWPRELEASE</CODE> is only used with <CODE>nmake release</CODE>.
+This specifies the base directory where to build a complete XWorkplace release. If
+this directory does not exist, it is created.
+
+<P><LI><CODE>HELPERS_BASE</CODE> is required. This must point to the WarpIN CVS source
+tree, from which XWorkplace steals the <A HREF="src1_5helpers.html">helpers code</A>.
+This must point to the parent directory of <CODE>src\</CODE> in the WarpIN tree.
+
+</OL>
+</BODY>
+</HTML>

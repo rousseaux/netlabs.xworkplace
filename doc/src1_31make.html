@@ -1,0 +1,64 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+<TITLE>
+Making (Building) XWorkplace
+</TITLE>
+</HEAD>
+
+<BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000AA" VLINK="#777777">
+With V0.9.0, the make process has been completely redesigned to allow
+for easier extension of XWorkplace and for the Netlabs CVS server.
+
+<P>If you wish to build the whole XWorkplace thing including the NLS DLLs
+and the INF and HLP files, do the following:
+
+<OL><LI>Put the <CODE>.EXE</CODE> files in <CODE>/TOOLS</CODE> directory
+in a directory on your PATH. These tools are required by the makefiles.
+
+<P><LI>In <CODE>MAKE.CMD</CODE> in the main directory, you'll have to set
+a few variables. This is explained in that file.
+
+<P><LI>Edit <CODE>SETUP.IN</CODE>, if you have any wicked compiler setup
+on your system. This file is included from the makefiles in the source
+subdirectories. For most cases, the default setup should be OK.
+Instead of changing <CODE>SETUP.IN</CODE>, I strongly recommend to use
+<A HREF="src1_32env.html">environment variables</A>.
+
+<P><LI>Call <CODE>MAKE.CMD</CODE>,
+which will recurse into the directories and possibly take a long
+time. This will build the main DLL, the NLS DLL, and all the INF and
+HLP files. Alternatively, execute <CODE>nmake</CODE> or <CODE>nmake really_all</CODE>
+from the command line. (See the top of the main <CODE>makefile</CODE> for
+possible targets.)
+
+<P>A complete build (<CODE>nmake -a really_all</CODE>)
+currently (99-11-29) takes 240 seconds on my PII-400, 128 MB RAM.
+
+</OL><B>Debug code.</B> Depending on whether the <CODE>XWPDEBUG</CODE> environment
+variable is set (in <CODE>MAKE.CMD</CODE> or <CODE>SETUP.IN</CODE> or somewhere else),
+XWorkplace will be compiled with debug code or not. See the
+<A HREF="src1_32env.html">next page</A> for details.
+
+<P><B>Makefiles.</B> Each directory now has its own makefile. All makefiles were
+written for IBM NMAKE. I don't know if these will work with other make utilities.
+
+<P><B>Replacing in-use files.</B> You can rebuild XWorkplace while the WPS is up
+and XWorkplace is installed. The makefiles will automatically unlock DLLs which
+are currently in use. After the rebuild, restart the WPS to make it use the newly
+built DLLs.
+
+The exception to this is XWPHOOK.DLL, which is not unlocked. This is intentional.
+Unlocking a system hook DLL (which becomes part of every PM process on the system)
+will _never_ release the DLL again, so you'd have to reboot to use the new DLL.
+So if you get an error during the build process which says "XWPHOOK.DLL is in use",
+kill <CODE>XWPDAEMON.EXE</CODE>, which will properly unload the hooks.
+
+<P><B>Rebuilding the whole thing.</B> If you want to make sure that all C files
+are <I>re</I>compiled, use <CODE>NMAKE -A</CODE> on the main makefile.
+Alternatively, you can open and save <CODE>include/setup.h</CODE> to make
+it newer than the target files. This is
+#include'd in all XWorkplace C files, and the makefiles' inference
+rules will then enforce recompilation of <I>all</I> C files.
+<BR>
+</BODY>
+</HTML>

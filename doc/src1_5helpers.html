@@ -1,0 +1,91 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+<TITLE>
+The SRC\HELPERS\ directory
+</TITLE>
+</HEAD>
+
+<BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000AA" VLINK="#777777">
+<CODE>SRC\HELPERS</CODE> contains lots of useful code which I have developed
+over time. This code is <B>independent of XWorkplace</B> and could be used
+with any OS/2 program. Some of the code is for PM programs, some can be used
+with text-mode programs also. Consider this a general OS/2 programming
+library.
+
+<P><B>Note:</B> XWorkplace's source code does not contain the helpers source code.
+Instead, during the build process, the XWorkplace makefiles branch over to the
+WarpIN source tree, which is also on the Netlabs CVS server. You will need to
+set the <CODE>HELPERS_BASE</CODE> <A HREF="src1_32env.html">environment variable</A>
+to point to the WarpIN source tree for this to work.
+
+<P> In detail, we have:
+<UL>
+<LI>
+<CODE>animate.*</CODE> contains some animation code.
+
+<LI>
+<CODE>cnrh.*</CODE> Container helper functions (new with V0.9.0,
+partly moved from winh.*).
+
+<LI>
+<CODE>comctl.*</CODE> Various window procedures.
+
+<LI>
+<CODE>debug.*</CODE> parses executables and SYM files for debugging
+information; used by except.c (below). Introduced with V0.84,
+moved to <CODE>SRC\HELPERS\</CODE> with V0.9.0.
+
+<LI>
+<CODE>dosh.*</CODE> Control Program helper functions.
+
+<LI>
+<CODE>eas.*</CODE> contains helper functions to handle
+extended attributes.
+
+<P><LI>
+<CODE>except.*</CODE> contains generic code for implementing powerful
+exception handlers. This was introduced with V0.84 and has been moved
+to <CODE>SRC\HELPERS\</CODE> with V0.9.0. The code has been straightened
+out to be independent of XWorkplace with the use of exception "plug-ins".
+See <A HREF="src2_840except.html">"XWorkplace exception handling"</A> for details.
+
+<LI>
+<CODE>gpih.*</CODE> GPI (graphics) helper functions.
+
+<LI>
+<CODE>linklist.*</CODE> contains helper functions to handle linked lists.
+
+<LI>
+<CODE>prfh.*</CODE> is new with V0.82 and contains Profile (INI)
+helper functions.
+
+<LI>
+<CODE>procstat.*</CODE> modified Kai Uwe Rommel's DosQProc() functions.
+
+<LI>
+<CODE>shapewin.*</CODE> contains the ShapeWindows library. See the top of
+shapewin.c for details (new with V0.85).
+
+<LI>
+<CODE>stringh.*</CODE> contains helper functions to handle strings/texts
+
+<LI>
+<CODE>syssound.*</CODE> has code for managing system sound data and
+sound schemes.
+
+<LI>
+<CODE>threads.*</CODE> contains helper functions to synchronize threads.
+
+<LI>
+<CODE>tmsgfile.*</CODE> has Christian Langanke's new .TMF
+(text message file) handling to get rid of those ugly .MSG files.
+
+<LI>
+<CODE>winh.*</CODE> Win (PM) helper functions.
+
+<LI>
+<CODE>wphandle.*</CODE> Henk Kelder's WPS handles functions.
+
+</UL>
+</BODY>
+</HTML>

@@ -1,0 +1,84 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+<TITLE>
+The HTML2IPF Utility
+</TITLE>
+<META CONTENT="1.0" NAME="Version">
+<META CONTENT="en" NAME="Language">
+<META CONTENT="1999-01-05" NAME="Date-Created">
+<META CONTENT="TXT2HTML" NAME="Generator">
+<META CONTENT="html2ipf,additional,information,obligatory,txt2HTML,Valesoft" NAME="Keywords">
+</HEAD>
+
+<BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000AA" VLINK="#777777">
+
+<P>
+The <CODE>TOOLS</CODE> directory contains the very valuable HTML2IPF tool by
+Andrew Pavel Zabolotny. This REXX script is capable of creating a single
+<CODE>.IPF</CODE> file from a list of linked HTML files, which can then be passed to
+IBM's <CODE>IPFC.EXE</CODE> for creating <CODE>.HLP</CODE> and <CODE>.INF</CODE> files.
+<P>
+I have slightly modified this tool (see notes below).
+<P>
+Even if you don't know what I'm talking about, in this directory, you
+need to open <CODE>HTML2IPF.CMD</CODE> and change three, maybe four things:
+
+<UL>
+<LI>
+In line 27, translate the <CODE>Resources on the Internet</CODE> string.
+
+<LI>
+In lines 28-31, translate the string beginning with <CODE>This chapter contains...</CODE>
+translate every line, but do not mess with the <CODE>'||'0d0a'x</CODE> codes
+and such.
+
+<LI>
+In lines 34/35 translate the <CODE>Click below to launch [code] with this URL:</CODE>
+string, but do not change the code in the middle.
+
+<LI>
+In line 20, change the image converter; this is thoroughly explained in
+the <A HREF="nls_6images.html">Images</A> section.
+
+
+</UL>
+<B>Additional information (not obligatory)</B>
+
+<P>
+I have included HTML2IPF.INF, which describes how the tool works. You
+need not bother with this though, because everything is already set up
+properly.
+<P>
+I have changed HTML2IPF.CMD in a few places to allow for IPF window
+positioning and certain extra character formatting. These changes are
+only documented here, in case you're interested -- you will NOT find
+these changes in the INF file (you don't have to know this, just if
+you're curious):
+
+<UL>
+<LI>
+The &lt;HTML&gt; tag has new attributes: XPOS= and YPOS= work just like
+IPF's &quot;x&quot; and &quot;y&quot; tags; WIDTH= and HEIGHT are the same as in IPF.
+
+<LI>
+Added the strings described above to global variables for NLS.
+
+<LI>
+The &lt;A&gt; tag accepts a new &quot;AUTO=&quot; attribute, which works just like
+&quot;HREF=&quot;, but automatically opens and closes the window (this is, for
+example, used on the &quot;Introduction&quot; page of the <I>XWorkplace Online Reference</I>).
+
+<LI>
+The &lt;CITE&gt; and &lt;/CITE&gt; formatting tags are now set to use a
+non-proportional font, which is used extensively.
+
+<LI>
+Some formatting changes (&lt;UL&gt;, &lt;BR&gt;, &lt;B&gt; etc.).
+
+<LI>
+HTML2IPF now removes indenting spaces at the beginning of lines
+because these would all appear in the INF/HLP files, while HTML
+ignores them. (New with V0.81).
+</UL>
+</BODY>
+</HTML>

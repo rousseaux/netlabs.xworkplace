@@ -1,0 +1,51 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+<TITLE>
+Debugging XWorkplace
+</TITLE>
+</HEAD>
+
+<BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000AA" VLINK="#777777">
+Debugging WPS applications can be really tiresome, because you have to restart
+the WPS for every tiny change you made to the source codes to take effect. And,
+as with any PM program, you can't just <CODE>printf()</CODE> stuff to the screen.
+Even worse, it's hard to use the PM debugger, because you have to start the whole
+WPS (<CODE>PMSHELL.EXE</CODE>) with it, since <CODE>XFLDR.DLL</CODE> is no standalone
+application.
+
+<P>So I had to look for something else.
+
+<P>Those <CODE>_Pmpf((&quot;xxx&quot;))</CODE> thingies are for the
+magnificent PMPRINTF package by Dennis Bareis.
+These only display anything if the proper <CODE>DEBUG_xxx</CODE> #define's are set in
+<CODE>include\setup.h</CODE> (changed with V0.9.0).
+For the release version of XWorkplace, all these flags
+have been disabled, so no additional code is produced at all. You
+thus don't have to remove the commands to speed up XWorkplace, because this
+wouldn't make any difference.
+
+<P>Some files from the PMPRINTF package are included so that you can
+compile. The PM interface which actually displays the messages is not
+however. Check Dennis Bareis' homepage at
+<A HREF="http://www.ozemail.com.au/~dbareis/">http://www.ozemail.com.au/~dbareis/</A> where you'll find tons of other
+useful utilities too.
+
+<P>However, to really use PMPRINTF, you'll have to put some DLLs
+on your LIBPATH. See the PMPRINTF docs for details. I strongly
+recommend using this utility.
+
+<P><B>IMPORTANT NOTE:</B> If you #define any of the flags at the top of
+<CODE>include\setup.h</CODE>, you <I>must</I> have the PMPRINTF DLLs somewhere on your
+LIBPATH, or otherwise you'll spend days figuring out why XWorkplace is
+simply not working any more. (I had this recently after a reinstall
+of OS/2, after which the DLLs where gone.) That is, XWorkplace classes
+will not load at WPS startup, because the PMPRINTF imports cannot be
+resolved. Neither will registering XWorkplace classes succeed. And don't
+expect to get an error message other than FALSE. <CODE>:-(</CODE>
+
+<P><CODE>_Pmpf((&quot;xxx&quot;))</CODE> uses regular printf syntax, except for those
+strange double brackets, which are needed because macros don't accept
+variable parameter lists otherwise.
+<BR>
+</BODY>
+</HTML>

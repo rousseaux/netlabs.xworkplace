@@ -1,0 +1,48 @@
+<HTML WIDTH=70% XPOS=right>
+<HEAD>
+<TITLE>
+Playing Sounds
+</TITLE>
+</HEAD>
+
+<BODY TEXT="#000000" BGCOLOR="#FFFFFF" LINK="#0000AA" VLINK="#777777">
+The new system sounds are played in the &quot;Speedy&quot; thread with high
+regular priority. Check <CODE>fntSpeedyThread</CODE> and <CODE>fnwpSpeedyObject</CODE>
+for details about how this is implemented using MMOS/2.
+
+<P>There are two above-average programming tricks related to this:
+
+<UL><LI>For one, nowhere is documented how to access and modify the
+system sounds that appear in the <B>&quot;Sound&quot; object.</B> I have accidently
+discovered that
+this is actually fairly easy: these are stored in <CODE>MMPM.INI</CODE> in the
+MMOS/2 directory. Each sound has an index in that file, which I have
+declared in <CODE>common.h</CODE> (those <CODE>MMSOUND_*</CODE> #define's).
+These should be the
+same on every system. The INI data then contains a
+<CODE>&quot;&lt;soundfile&gt;#&lt;description&gt;#&lt;volume&gt;&quot;</CODE> string.
+<P>
+Sound data manipulation has been moved into a separate file with V0.9.0:
+check <CODE>/helpers/syssound.c</CODE> for details. This now also supports
+sound scheme manipulation.
+
+<P><LI>
+With V0.82, the actual playing of the sounds has been moved to a
+separate <CODE>SOUND.DLL</CODE> because previously XWorkplace would refuse to install on
+systems where MMPM/2 was not installed. This was due to the fact that
+if you link a DLL against the MMPM/2 library functions, loading of the
+DLL fails if these imports cannot be resolved. (Naturally, you don't get an
+error message other than FALSE from the SOM kernel. This has taken me days
+to find out.)
+<P>Now, if loading of <CODE>SOUND.DLL</CODE> fails (either because it's not there or
+because the MMPM/2 imports of <I>that</I> DLL cannot be resolved), the new system
+sounds are silently disabled. This happens in <CODE>xthrInitializeThreads</CODE>.
+
+<P>Also, I've added much more
+sophisticated MMPM/2 messaging to check for whether the waveform
+device is actually available. So playing sounds is a process of
+communication between the Speedy thread and <CODE>SOUND.DLL</CODE> now. See the
+top of <CODE>/main/sounddll.c</CODE> for more explanations.
+</UL>
+</BODY>
+</HTML>
