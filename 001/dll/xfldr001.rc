@@ -734,6 +734,8 @@ BEGIN
     ID_XCSI_RESTARTWPS                  "Enable ""Restart Desktop"""
     ID_XCSI_XSHUTDOWN                   "Enable eXtended Shutdown"
 
+    ID_XCSI_CHECKDESKTOP                "Check desktop integrity"
+
     ID_XCSI_FILEOPERATIONS              "File operations"
     ID_XCSI_EXTASSOCS                   "Extended file type associations"
 /*     this item removed with V0.9.16
@@ -1072,12 +1074,14 @@ BEGIN
     ID_XFDI_PANIC_XFIX                  "Run x~fix"
     ID_XFDI_PANIC_XFIX_TXT              "Run the &xwp; Handles Fixer."
     ID_XFDI_PANIC_CMD                   "Run ~CMD.EXE"
-    ID_XFDI_PANIC_CMD_TXT               "Starts a command line session now."
+    ID_XFDI_PANIC_CMD_TXT               "Opens a command line window now."
     ID_XFDI_PANIC_SHUTDOWN              "~Shut down now"
     ID_XFDI_PANIC_SHUTDOWN_TXT          "This performs a default &os2; shutdown now."
     // these ones are new with V0.9.16
     ID_XFDI_PANIC_DISABLEREPLREFRESH    "Disable replacement folder auto-refresh"
     ID_XFDI_PANIC_DISABLETURBOFOLDERS   "Disable turbo folders"
+    // this one is new with V0.9.16
+    ID_XFDI_PANIC_DISABLECHECKDESKTOP   "Disable check desktop on startup"
 
     /* strings formerly in ID_XSD_FOLDERVIEWS */
     ID_XSD_FOLDERVIEWGROUP              "Folder view settings"
@@ -1131,6 +1135,10 @@ BEGIN
     ID_SDDI_WPS_CLOSEWINDOWS            "~Close all sessions"
     ID_SDDI_WPS_STARTUPFOLDER           "~Process all XWorkplace Startup folders"
     ID_SDDI_MESSAGEAGAIN                "~Show this message next time"
+
+    /* the following two are new with V0.9.17 (2002-02-05) [umoeller] */
+    ID_SDDI_COMPLETE                    "Shutdown has completed."
+    ID_SDDI_SWITCHOFF                   "You may now switch off your computer or press Ctrl+Alt+Del to reboot."
 
     /* new "Icon" page replacement */
     ID_XSDI_ICON_TITLE_TEXT             "T~itle"

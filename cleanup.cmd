@@ -39,12 +39,10 @@ end
 call charout , 'Do you wish to delete the IPF source files [Y/N] ? '
 parse upper linein yn .
 if yn = 'Y' then do
-  call deletefiles '001\inf.001\xfldr001.ipf'
+  call deletefiles 'bin\modules\*.ipf'
   call deletefiles '001\inf.001\*.bmp'
-  call deletefiles '001\xwphelp\xfldr001.ipf'
-  call deletefiles '001\xwphelp\*.bmp'
-  call deletefiles '049_de\inf.049\xfldr049.ipf'
   call deletefiles '049_de\inf.049\*.bmp'
+  call deletefiles '001\xwphelp2\img\*.bmp'
 end
 
 /* SOM headers */

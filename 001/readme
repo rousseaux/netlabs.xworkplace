@@ -1,5 +1,5 @@
 
-XWorkplace 0.9.16 README
+XWorkplace 0.9.17 README
 
 (W) Ulrich M”ller, Feb 7, 2000
 
@@ -29,7 +29,7 @@ Last updated February 4, 2002
 1. INTRODUCTION
 ===============
 
-    Welcome to XWorkplace V0.9.16.
+    Welcome to XWorkplace V0.9.17.
 
     XWorkplace is a complex set of replacement classes for the
     OS/2 Workplace Shell to enhance the WPS's behavior in many
@@ -48,9 +48,11 @@ Last updated February 4, 2002
 
     It's been a long while since the last public release
     (V0.9.14 was released in August 2001), so naturally
-    lots of things have changed. This release fixes _many_
-    bugs and adds quite a few more features which I wrote
-    when I got tired of bugfixing.
+    lots of things have changed. V0.9.16 fixed _many_
+    bugs and added quite a few more features which I wrote
+    when I got tired of bugfixing. V0.9.17 is a small
+    maintenance release to fix some issues people had
+    with V0.9.16.
 
     For details, refer to the "Version Notices" in the
     "XWorkplace User Guide". To extract the documentation

@@ -32,9 +32,9 @@ For details, refer to the "Notices" section of the &xwp; User Guide.
 <--FEATURES_6000-->: If "Replace icons" is enabled, &xwp; will replace the WPS default icons with prettier ones (in my view, that is). Those icons are freely configurable.
 This was new with XFolder 0.84.
 See the &xwp; User Guide for details.
-<--FEATURES_6002-->: If "Add Object page..." is enabled, a new "Object" page will be added to the settings notebooks of all objects on your system.
-On that page, you can view object internals and set a global hotkey for an object, if the &xwp; Hook is also enabled (see "Mouse and Keyboard features" below).
-This was added with &xwp; 0.9.0 and replaces the "Internals" page which was present in XFolder 0.85.
+<--FEATURES_6002-->: If "Replace Icon page..." is enabled, &xwp will replace the "Icon" page in every object's settings notebook with a new, enhanced version.
+On that page, changing the icon is a bit more comfortable. In addition, you can view object internals and set a global hotkey for an object, if the &xwp; Hook is also enabled (see "Mouse and Keyboard features" below).
+This was added with &xwp; 0.9.16 and replaces the "Object" page which was present in previous &xwp; versions.
 <--FEATURES_6003-->: If this is enabled, &xwp; combines the three standard "File" pages in folder and data file settings notebooks into a more convenient single "File" page.
 Also, a second page for viewing extended attributes is added.
 Also, this replaces the "Details" page in disk objects with a graphical pie chart view.

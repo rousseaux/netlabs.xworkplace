@@ -36,7 +36,7 @@ SOMTEMP = $(TEMP)
     [set SMEMIT=ih;h;c] || \
     [set SMADDSTAR=1] || \
     [set SMNOTC=1] || \
-    [set SMINCLUDE=$(TKBASE)\idl;$(TKBASE)\h;$(TKBASE)\SOM\include;.]
+    [set SMINCLUDE=$(SMINCLUDE);$(TKBASE)\idl;$(TKBASE)\h;$(TKBASE)\SOM\include;.]
 !endif
 
 !if [@echo    SMINCLUDE is $(SMINCLUDE)]

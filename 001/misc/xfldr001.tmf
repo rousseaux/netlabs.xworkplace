@@ -424,6 +424,21 @@ Do you wish to remove this widget from the &xcenter;'s widget list?
 <--XFL0228-->: An error occured starting the program "%1". The operating system returned the following error message:
 <--XFL0229-->: Do you wish to open the properties notebook of the program object?
 
+;
+; the following items are new with V0.9.17
+;
+
+<--XFL0230-->: Desktop error
+<--XFL0231-->: &xwp; was trying to check your desktop for integrity.
+While attempting to parse the Workplace Shell file-system handles table from your system profile, error %1 occured.
+This does not necessarily mean that your desktop is broken, but it appears that your file-system handles table has some problems.
+
+&xwp; can now display the "Panic" dialog for you, where you do can any of the following:
+1) Run xfix, the &xwp; file handles fixer, to take a look at the file-system handles and maybe find out what is wrong.
+2) Disable the "Check desktop on startup" feature so this message will not appear again. This might however lead to a "Cannot find desktop" failure in the future.
+
+Should &xwp; display the "Panic" dialog now? Otherwise we will simply continue startup.
+
 ; ---------------------------------------------------------------------------------
 ;
 ; V0.9.0:

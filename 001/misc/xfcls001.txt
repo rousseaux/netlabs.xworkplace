@@ -487,4 +487,21 @@ VRManager 1 VX-REXX manager class, exact purpose unknown.
 VRWindow 1 VX-REXX window class; every VX-REXX window of a VX-REXX program is an object of that class.
 VRPrimitive 1 VX-REXX primitive class, exact purpose unknown.
 
+// Items added with V0.9.17
+B2KBackupSet: Back Again/2000 Backup Set file. These files contain definitions of what to backup and where for CDS, Inc.'s Back Again/2000.
+BA2KSchedFold: Back Again/2000 Object Scheduler. Special WPS folder subclass that implements scheduling features, i.e. when to automatically backup what, for CDS, Inc.'s Back Again/2000.
+BA2KWCatalog: Back Again/2000 Catalog file. These files contain a description of an existing backup, i.e. where the backuped files came from and will go to on restoring it again, made with Back Again/2000 by CDS, Inc.
+CWAudio: Parent class of Chris Wohlgemuth's CW MM package for seamless WPS integration of Russel O'Connor's MMIOProcs.
+CWDataFile: Part of Chris Wohlgemuth's WPS Wizard. Replaces the WPDataFile class. Implements configurable context menus for files and the display of file size in the context menu.
+CWDisk: Part of Chris Wohlgemuth's WPS Wizard. Replaces the WPDisk class. Implements the possibility to remove the "Format disk" menu item from hard disks' context menus.
+CWFolder: Part of Chris Wohlgemuth's WPS Wizard. Replaces the WPFolder class. Implements configurable context menu items for folders.
+CWMediaFolder: Part of Chris Wohlgemuth's CW MM package. Subclass of CWProgFolder. Implements a media player for all audio file formats supported by MMOS2 (and possible extensions). The folder is used as a playing list.
+CWMenuFolder: Part of Chris Wohlgemuth's WPS Wizard. Implements a configuration folder for additional context menu items that works pretty much the same as XWorkplace's.
+CWMP3: Part of Chris Wohlgemuth's CW MM package. Subclass of CWAudio. Adds notebook pages for file information and ID3 tag editing capabilities, related items to the "Open" menu item, and a special icon for MP3 files. Integrates Russel O'Connor's MMIOProcs for MMOS2 into the WPS.
+CWOGG: Part of Chris Wohlgemuth's CW MM package. Subclass of CWAudio: Adds a special icon for Ogg Vorbis. Integrates Russel O'Connor's MMIOProcs for MMOS2 into the WPS.
+CWWizzSettings: Part of Chris Wohlgemuth's WPS Wizard. This implements the WPS Wizard's settings object.
+
+// Items added with V0.9.18
+BDview: (WSeB/CP/eCS) Implements an object for switching bi-directional language settings.
+WPVideoSystem: (Scitech Display Doctor) Replaces the WPSystem class to enhance the "Screen" notebook page.
 

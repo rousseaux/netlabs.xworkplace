@@ -18,6 +18,26 @@ Ulrich M”ller.
 
 override all wpQuery/SetIconData too
 
+align icon page 2 for folders
+
+lost icons for FTP-PM
+
+>Minor bug - when you open the object properties of an application from the File
+>Types tab of the Workplace Shell object, the icon disappears. Selecting
+>something else and coming back, the icon will show up again.
+
+>Minor bug - errors when deinstalling fonts from the font folder say that there was
+>an error when installing fonts.
+
+>Icon loading code - I've had to hit Default/Undo on about a half dozen program
+>objects to restore the proper icon. I have discovered that this doesn't work
+>properly for any *.cmd or *.exe files that don't have custom icons - the icon is
+>always changing back to the open font folder icon (???). It also seems that the
+>icons for attachments in PMMail have been adversely affected, as many are now
+>showing as blank. I see in the BUGS file that you noticed the problem with
+>ProNews - but the problem is much more widespread.
+
+
 MINOR PROBLEMS
 --------------
 
