@@ -255,7 +255,7 @@ VOID PwgtScanSetup(const char *pcszSetupString,
         ctrFreeSetupValue(p);
     }
     else
-        pSetup->lcolGraphIntr = RGBCOL_BLUE; // RGBCOL_BLUE;
+        pSetup->lcolGraphIntr = RGBCOL_DARKBLUE;
 
 
     // text color:
@@ -474,7 +474,6 @@ VOID PwgtUpdateGraph(HWND hwnd,
                      PWIDGETPRIVATE pPrivate)
 {
     PXCENTERWIDGET pWidget = pPrivate->pWidget;
-    ULONG   ul = 0;
     RECTL   rclBmp;
     POINTL  ptl;
 
@@ -483,9 +482,6 @@ VOID PwgtUpdateGraph(HWND hwnd,
     WinQueryWindowRect(hwnd, &rclBmp);
     rclBmp.xRight -= 2;
     rclBmp.yTop -= 2;
-
-    // start on the left
-    ptl.x = 0;
 
     if (pPrivate->hpsMem == NULLHANDLE)
     {
@@ -521,46 +517,33 @@ VOID PwgtUpdateGraph(HWND hwnd,
     // "CPU Load" and "CPU Interrupt Load" together rather
     // than draw them overlapping.
 
-    // scan the CPU loads
-    if (pPrivate->palLoads)
+    // go thru all values in the "Loads" LONG array
+    for (ptl.x = 0;
+         ((ptl.x < pPrivate->cLoads) && (ptl.x < rclBmp.xRight));
+         ptl.x++)
     {
-        GpiSetColor(pPrivate->hpsMem,
-                    pPrivate->Setup.lcolGraph);
-        // go thru all values in the "Loads" LONG array
-        for (ul = 0;
-             ((ul < pPrivate->cLoads) && (ul < rclBmp.xRight));
-             ul++)
-        {
-            ptl.y = 0;
-            GpiMove(pPrivate->hpsMem, &ptl);
-            ptl.y = rclBmp.yTop * pPrivate->palLoads[ul] / 1000;
-            GpiLine(pPrivate->hpsMem, &ptl);
+        ptl.y = 0;
 
-            ptl.x++;
+        // interrupt load on bottom
+        if (pPrivate->palIntrs)
+        {
+            GpiSetColor(pPrivate->hpsMem,
+                        pPrivate->Setup.lcolGraphIntr);
+            // go thru all values in the "Interrupt Loads" LONG array
+            // Note: number of "loads" entries and "intrs" entries is the same
+            GpiMove(pPrivate->hpsMem, &ptl);
+            ptl.y += rclBmp.yTop * pPrivate->palIntrs[ptl.x] / 1000;
+            GpiLine(pPrivate->hpsMem, &ptl);
         }
-    }
 
-    // scan the CPU interrupt loads
-    // Note: the interrupt load is expected to be much lower
-    // than the total CPU load. Therefore, the graph is painted
-    // in the foreground.
-    if (pPrivate->palIntrs)
-    {
-        GpiSetColor(pPrivate->hpsMem,
-                    pPrivate->Setup.lcolGraphIntr);
-        // go thru all values in the "Interrupt Loads" LONG array
-        // Note: number of "loads" entries and "intrs" entries is the same
-        ptl.x = 0;      // *** was missing!
-        for (ul = 0;
-             ((ul < pPrivate->cLoads) && (ul < rclBmp.xRight));
-             ul++)
+        // scan the CPU loads
+        if (pPrivate->palLoads)
         {
-            ptl.y = 0;
+            GpiSetColor(pPrivate->hpsMem,
+                        pPrivate->Setup.lcolGraph);
             GpiMove(pPrivate->hpsMem, &ptl);
-            ptl.y = rclBmp.yTop * pPrivate->palIntrs[ul] / 1000;
+            ptl.y += rclBmp.yTop * pPrivate->palLoads[ptl.x] / 1000;
             GpiLine(pPrivate->hpsMem, &ptl);
-
-            ptl.x++;
         }
     }
 
@@ -630,6 +613,7 @@ VOID PwgtPaint2(HWND hwnd,
             // performance counters are working:
             PCOUNTRYSETTINGS pCountrySettings = (PCOUNTRYSETTINGS)pWidget->pGlobals->pCountrySettings;
             POINTL      ptlBmpDest;
+            LONG        lLoad1000 = 0;
 
             if (pPrivate->fUpdateGraph)
                 // graph bitmap needs to be updated:
@@ -645,19 +629,18 @@ VOID PwgtPaint2(HWND hwnd,
                           0, 0,
                           DBM_NORMAL);
 
-            /* if (pPrivate->palLoads)
-                sprintf(szPaint, "%lu%c%lu%c",
-                        pPrivate->pPerfData->palLoads[0] / 10,
-                        pCountrySettings->cDecimal,
-                        pPrivate->pPerfData->palLoads[0] % 10,
-                        '%'); */
+            // in the string, display the total load
+            // (busy plus interrupt)
+            if (pPrivate->palLoads)
+                lLoad1000 = pPrivate->pPerfData->palLoads[0];
             if (pPrivate->palIntrs)
-                sprintf(szPaint, "%lu%c%lu%c",
-                        pPrivate->pPerfData->palIntrs[0] / 10,
-                        pCountrySettings->cDecimal,
-                        pPrivate->pPerfData->palIntrs[0] % 10,
-                        '%');
+                lLoad1000 += pPrivate->pPerfData->palIntrs[0];
 
+            sprintf(szPaint, "%lu%c%lu%c",
+                    lLoad1000 / 10,
+                    pCountrySettings->cDecimal,
+                    lLoad1000 % 10,
+                    '%');
         }
         else
         {
