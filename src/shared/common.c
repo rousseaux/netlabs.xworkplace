@@ -376,11 +376,10 @@ HMODULE cmnQueryMainResModuleHandle(VOID)
                 {
                     APIRET arc = NO_ERROR;
                     strcat(szResModule, "\\bin\\xwpres.dll");
-                    arc = DosLoadModule(szError,
-                                        sizeof(szError),
-                                        szResModule,
-                                        &G_hmodRes);
-                    if (arc != NO_ERROR)
+                    if (arc = DosLoadModule(szError,
+                                            sizeof(szError),
+                                            szResModule,
+                                            &G_hmodRes))
                         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                                "Error %d occured loading \"%s\".",
                                arc, szResModule);

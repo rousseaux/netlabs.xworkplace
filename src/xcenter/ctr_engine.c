@@ -1809,111 +1809,216 @@ VOID ctrpRemoveDragoverEmphasis(HWND hwndClient)
  *
  *      May only run on the XCenter GUI thread.
  *
+ *      Time for some remarks about how drag'n'drop works
+ *      with OS/2 and, especially, with the WPS.
+ *
+ *      We get here after the following code sequence:
+ *
+ *      1)  User starts dragging a widget, DwgtBeginDrag,
+ *          called from ctrDefWidgetProc, which calls
+ *          ctrpDragWidget (this function) for the
+ *          implementation. Here we create a bitmap for
+ *          the dragging and allocate the DRAGINFO and
+ *          DRAGITEM.
+ *
+ *      2)  The system then sends a flurry of DM_DRAGOVER
+ *          messages for each window that the widget is
+ *          dragged over.
+ *
+ *          For each of those, the target then tries to
+ *          determine whether it can handle the widget.
+ *
+ *          --  In the case of an XCenter (either the
+ *              source or a different one), the XCenter
+ *              client figures out that the widget supports
+ *              the private rendering mechanism
+ *              DRM_XCENTERWIDGET, so it assumes it's
+ *              a widget and accepts the dragover as well.
+ *              See ctrpDragOver.
+ *
+ *          --  In the case of a folder, it figures out
+ *              that the widget supports DRM_OS2FILE,
+ *              among other things. So it accepts the
+ *              dragover.
+ *
+ *      3)  On drop, things get more complicated.
+ *
+ *          --  In the case of an XCenter, the _target_
+ *              performs the desired action, that is,
+ *              copying or moving the widget right when
+ *              DM_DROP comes in. See ctrpDrop. In that
+ *              case, everything happens synchronously,
+ *              and the widget is copied or moved before
+ *              DrgDrag returns.
+ *
+ *          --  In the case of dropping on the desktop,
+ *              we have _source_ rendering. The following
+ *              sequence takes place:
+ *
+ *              1)  DM_DROP on a folder ends up in
+ *                  WPFolder::wpDrop. Apparently that
+ *                  method checks for whether the rendering
+ *                  is DRM_OS2FILE and, if so, initiates
+ *                  source rendering by sending (!)
+ *                  DM_RENDER to the source.
+ *
+ *              2)  In that case, we end up in DwgtRender.
+ *                  We create a new file in the target folder.
+ *
+ *              3)  We then send (!) DM_RENDERCOMPLETE which
+ *                  ends up in WPFolder::wpRenderComplete,
+ *                  I suspect.
+ *
+ *              4)  WPFolder::wpDrop returns RC_DROP_DROPCOMPLETE,
+ *                  meaning that wpDrop is not called for the
+ *                  next DRAGITEM (there's only one anyway) and
+ *                  pdrgInfo is not freed, WPREF says.
+ *
+ *      The point is, however, that we must be careful with
+ *      freeing the draginfo in this function for the one case
+ *      of source rendering because otherwise the WPS crashes
+ *      quietly in WPFolder::wpRenderComplete (which causes
+ *      a giant memory leak because the WPS exception handler
+ *      then skips over the proper free code apparently).
+ *
  *@@added V0.9.9 (2001-03-09) [umoeller]
  *@@changed V0.9.13 (2001-06-27) [umoeller]: fixes for tray widgets
  *@@changed V0.9.14 (2001-07-31) [lafaix]: defines a default name for the widget
  *@@changed V0.9.14 (2001-08-05) [lafaix]: widgets can be copied too, now
+ *@@changed V0.9.19 (2002-06-08) [umoeller]: added excpt handling to avoid massive memory leak
  */
 
 HWND ctrpDragWidget(HWND hwnd,
                     PXCENTERWIDGET pWidget)     // in: widget or subwidget
 {
-    HWND hwndDrop = NULLHANDLE;
+    HWND        hwndDrop = NULLHANDLE,
+                hwndSource;
 
-    if (pWidget)
+    if (    (pWidget)
+         && (hwndSource = WinQueryWindow(hwnd, QW_PARENT)) // XCenter client or tray
+       )
     {
-        // create a bitmap from the widget display for dragging
-        HPS hpsScreen;
-        if (hpsScreen = WinGetScreenPS(HWND_DESKTOP))
+        HBITMAP     hbmWidget = NULLHANDLE;
+        PDRAGINFO   pdrgInfo = NULL;
+        BOOL        fFreeDraginfo = FALSE;
+
+        TRY_LOUD(excpt1)
         {
-            SWP         swpWidget;
-            RECTL       rclWidget;
-            PXBITMAP    pbmWidget;
-            HBITMAP     hbmWidget = NULLHANDLE;
-
-            HWND hwndParent = WinQueryWindow(hwnd, QW_PARENT);  // XCenter client or tray
-
-            WinQueryWindowPos(hwnd, &swpWidget);
-            rclWidget.xLeft = swpWidget.x;
-            rclWidget.xRight = swpWidget.x + swpWidget.cx;
-            rclWidget.yBottom = swpWidget.y;
-            rclWidget.yTop = swpWidget.y + swpWidget.cy;
-
-            WinMapWindowPoints(hwndParent,
-                               HWND_DESKTOP,
-                               (PPOINTL)&rclWidget,
-                               2);
-            if (pbmWidget = gpihCreateBmpFromPS(WinQueryAnchorBlock(hwnd),
-                                                hpsScreen,
-                                                &rclWidget))
+            // create a bitmap from the widget display for dragging
+            HPS hpsScreen;
+            if (hpsScreen = WinGetScreenPS(HWND_DESKTOP))
             {
-                hbmWidget = gpihDetachBitmap(pbmWidget);
-                gpihDestroyXBitmap(&pbmWidget);
-            }
+                SWP         swpWidget;
+                RECTL       rclWidget;
+                PXBITMAP    pbmWidget;
 
-            WinReleasePS(hpsScreen);
+                WinQueryWindowPos(hwnd, &swpWidget);
+                rclWidget.xLeft = swpWidget.x;
+                rclWidget.xRight = swpWidget.x + swpWidget.cx;
+                rclWidget.yBottom = swpWidget.y;
+                rclWidget.yTop = swpWidget.y + swpWidget.cy;
 
-            if (hbmWidget)
-            {
-                // got bitmap:
-                // prepare dragging then
-                PDRAGINFO pdrgInfo;
-                if (pdrgInfo = DrgAllocDraginfo(1))
+                WinMapWindowPoints(hwndSource,
+                                   HWND_DESKTOP,
+                                   (PPOINTL)&rclWidget,
+                                   2);
+                if (pbmWidget = gpihCreateBmpFromPS(WinQueryAnchorBlock(hwnd),
+                                                    hpsScreen,
+                                                    &rclWidget))
                 {
-                    DRAGITEM  drgItem = {0};
-
-                    drgItem.hwndItem = hwnd;       // Conversation partner
-                    drgItem.ulItemID = (ULONG)pWidget;
-                    drgItem.hstrType = DrgAddStrHandle(DRT_UNKNOWN);
-                    // as the RMF, use our private mechanism and format
-                    drgItem.hstrRMF = DrgAddStrHandle(WIDGET_DRAG_RMF);
-                    drgItem.hstrContainerName = 0;
-                    drgItem.hstrSourceName = 0;
-                    drgItem.hstrTargetName = DrgAddStrHandle((PSZ)pWidget->pcszWidgetClass);
-                    drgItem.cxOffset = 0;          // X-offset of the origin of
-                                                 // the image from the pointer
-                                                 // hotspot
-                    drgItem.cyOffset = 0;          // Y-offset of the origin of
-                                                 // the image from the pointer
-                                                 // hotspot
-                    drgItem.fsControl = 0;         // Source item control flags
-                                                 // object is open
-                    drgItem.fsSupportedOps = DO_MOVEABLE | DO_COPYABLE;
-
-                    if (DrgSetDragitem(pdrgInfo,
-                                       &drgItem,
-                                       sizeof(drgItem),
-                                       0))
-                    {
-                        DRAGIMAGE drgImage;             // DRAGIMAGE structure
-                        drgImage.cb = sizeof(DRAGIMAGE);
-                        drgImage.cptl = 0;
-                        drgImage.hImage = hbmWidget;
-                        drgImage.fl = DRG_BITMAP;
-                        drgImage.cxOffset = 0;           // Offset of the origin of
-                        drgImage.cyOffset = 0;           // the image from the pointer
-
-                        // source is always XCenter client (or tray)
-                        pdrgInfo->hwndSource = hwndParent;
-
-                        hwndDrop = DrgDrag(pdrgInfo->hwndSource,
-                                           pdrgInfo,      // Pointer to DRAGINFO structure
-                                           &drgImage,     // Drag image
-                                           1,             // Size of the pdimg array
-                                           VK_ENDDRAG,    // Release of direct-manipulation
-                                                          // button ends the drag
-                                           NULL);         // Reserved
-                                // this func is modal and does not return
-                                // until things have been dropped or drag
-                                // has been cancelled
-                    }
-
-                    DrgFreeDraginfo(pdrgInfo);
+                    hbmWidget = gpihDetachBitmap(pbmWidget);
+                    gpihDestroyXBitmap(&pbmWidget);
                 }
 
-                GpiDeleteBitmap(hbmWidget);
+                WinReleasePS(hpsScreen);
+
+                if (hbmWidget)
+                {
+                    // got bitmap:
+                    // prepare dragging then
+                    if (pdrgInfo = DrgAllocDraginfo(1))
+                    {
+                        DRAGITEM  drgItem = {0};
+
+                        drgItem.hwndItem = hwnd;       // Conversation partner
+                        drgItem.ulItemID = (ULONG)pWidget;
+                        drgItem.hstrType = DrgAddStrHandle(DRT_UNKNOWN);
+                        // as the RMF, use our private mechanism and format
+                        drgItem.hstrRMF = DrgAddStrHandle(WIDGET_DRAG_RMF);
+                        drgItem.hstrContainerName = 0;
+                        drgItem.hstrSourceName = 0;
+                        drgItem.hstrTargetName = DrgAddStrHandle((PSZ)pWidget->pcszWidgetClass);
+                        drgItem.cxOffset = 0;          // X-offset of the origin of
+                                                     // the image from the pointer
+                                                     // hotspot
+                        drgItem.cyOffset = 0;          // Y-offset of the origin of
+                                                     // the image from the pointer
+                                                     // hotspot
+                        drgItem.fsControl = 0;         // Source item control flags
+                                                     // object is open
+                        drgItem.fsSupportedOps = DO_MOVEABLE | DO_COPYABLE;
+
+                        if (DrgSetDragitem(pdrgInfo,
+                                           &drgItem,
+                                           sizeof(drgItem),
+                                           0))
+                        {
+                            DRAGIMAGE drgImage;             // DRAGIMAGE structure
+                            drgImage.cb = sizeof(DRAGIMAGE);
+                            drgImage.cptl = 0;
+                            drgImage.hImage = hbmWidget;
+                            drgImage.fl = DRG_BITMAP;
+                            drgImage.cxOffset = 0;           // Offset of the origin of
+                            drgImage.cyOffset = 0;           // the image from the pointer
+
+                            // source is always XCenter client (or tray)
+                            pdrgInfo->hwndSource = hwndSource;
+
+                            hwndDrop = DrgDrag(pdrgInfo->hwndSource,
+                                               pdrgInfo,      // Pointer to DRAGINFO structure
+                                               &drgImage,     // Drag image
+                                               1,             // Size of the pdimg array
+                                               VK_ENDDRAG,    // Release of direct-manipulation
+                                                              // button ends the drag
+                                               NULL);         // Reserved
+                                    // this func is modal and does not return
+                                    // until things have been dropped or drag
+                                    // has been cancelled
+
+                            _Pmpf((__FUNCTION__ ": DrgDrag returned hwndDrop 0x%lX",
+                                      hwndDrop));
+                        }
+                    }
+                }
             }
         }
+        CATCH(excpt1)
+        {
+            hwndDrop = NULLHANDLE;
+        } END_CATCH();
+
+        // clean up even if we crash, but DO NOT if we have a
+        // target window and the target window is on the same
+        // process as the source. Otherwise WPFolder::wpRenderComplete
+        // crashes because it gets called after this... apparently
+        // that takes care of cleanup then.
+        if (hwndDrop)
+        {
+            PID pidTarget,
+                pidSource;
+            if (    (!WinQueryWindowProcess(hwndDrop, &pidTarget, NULL))
+                 || (!WinQueryWindowProcess(hwndSource, &pidSource, NULL))
+                 || (pidTarget == pidSource)
+               )
+                // do not free then
+                pdrgInfo = NULL;
+        }
+
+        if (pdrgInfo)
+            DrgFreeDraginfo(pdrgInfo);
+
+        if (hbmWidget)
+            GpiDeleteBitmap(hbmWidget);
     }
 
     return (hwndDrop);
@@ -4940,6 +5045,7 @@ static MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, 
              */
 
             case DM_DRAGLEAVE:
+                _Pmpf((__FUNCTION__ ": DM_DRAGLEAVE"));
                 // remove emphasis
                 ctrpRemoveDragoverEmphasis(hwnd);
             break;
@@ -4950,9 +5056,15 @@ static MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, 
              */
 
             case DM_DROP:
+                _Pmpf((__FUNCTION__ ": DM_DROP"));
                 ctrpDrop(hwnd,
                          NULLHANDLE,      // tray widget window
                          (PDRAGINFO)mp1);
+            break;
+
+            case DM_ENDCONVERSATION:
+                _Pmpf((__FUNCTION__ ": DM_ENDCONVERSATION"));
+                mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
             break;
 
             /*

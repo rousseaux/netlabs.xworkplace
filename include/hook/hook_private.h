@@ -176,7 +176,7 @@
         HWND        hwndPagerMoveThread;
                 // XPager move thread (fnwpMoveThread)
 
-        ULONG       cDisablePagerSwitching;
+        ULONG       cSuppressWinlistNotify;
                 // if > 0, notification msgs from hook to pager
                 // are disabled; this is set by pgrLockHook if
                 // the pager itself is doing window positioning

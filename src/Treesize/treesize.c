@@ -35,6 +35,7 @@
 
 #define INCL_DOSPROCESS
 #define INCL_DOSMODULEMGR
+#define INCL_DOSMISC
 #define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
@@ -724,10 +725,14 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
             // set font V0.9.16 (2001-12-02) [umoeller]
             if (doshIsWarp4())
             {
-                winhSetWindowFont(G_hwndCnr,
-                                  "9.WarpSans");
                 winhSetWindowFont(G_hwndText,
                                   "9.WarpSans Bold");
+                winhSetWindowFont(G_hwndCnr,
+                                  "9.WarpSans");
+                winhSetWindowFont(WinWindowFromID(hwndDlg, DID_OK),
+                                  "9.WarpSans");
+                winhSetWindowFont(WinWindowFromID(hwndDlg, DID_CLEAR),
+                                  "9.WarpSans");
             }
 
             // setup the container
@@ -1532,14 +1537,14 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 
                 // "Clear" button:
                 // adjust xpos only
-                WinQueryWindowPos(G_hwndClear,
+                /* WinQueryWindowPos(G_hwndClear,
                                   &swpControl);
                 WinSetWindowPos(G_hwndClear,
                                 NULLHANDLE,
                                 swpControl.x + ldcx,
                                 swpControl.y,
                                 0, 0,
-                                SWP_MOVE);
+                                SWP_MOVE); */
             }
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
         }
@@ -1711,6 +1716,18 @@ BOOL LoadNLS(VOID)
                               "001",
                               (PVOID)szLanguageCode,
                               sizeof(szLanguageCode));
+
+        // allow '?:\' for boot drive
+        // V0.9.19 (2002-06-08) [umoeller]
+        if (szNLSDLL[0] == '?')
+        {
+            ULONG ulBootDrive;
+            DosQuerySysInfo(QSV_BOOT_DRIVE, QSV_BOOT_DRIVE,
+                            &ulBootDrive,
+                            sizeof(ulBootDrive));
+            szNLSDLL[0] = (CHAR)ulBootDrive + 'A' - 1;
+        }
+
         strcat(szNLSDLL, "\\bin\\xfldr");
         strcat(szNLSDLL, szLanguageCode);
         strcat(szNLSDLL, ".dll");

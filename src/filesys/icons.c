@@ -3555,10 +3555,10 @@ VOID XWPENTRY icoIcon1InitPage(PNOTEBOOKPAGE pnbp,
                 CHAR    szKeyName[200];
                 // check if maybe this is a function key
                 // V0.9.3 (2000-04-19) [umoeller]
-                PFUNCTIONKEY pFuncKey = hifFindFunctionKey(pData->paFuncKeys,
-                                                           pData->cFuncKeys,
-                                                           Hotkey.ucScanCode);
-                if (pFuncKey)
+                PFUNCTIONKEY pFuncKey;
+                if (pFuncKey = hifFindFunctionKey(pData->paFuncKeys,
+                                                  pData->cFuncKeys,
+                                                  Hotkey.ucScanCode))
                 {
                     // it's a function key:
                     sprintf(szKeyName,
@@ -3589,7 +3589,7 @@ VOID XWPENTRY icoIcon1InitPage(PNOTEBOOKPAGE pnbp,
         if (flIconPageFlags & ICONFL_ICON)
         {
             // disable "Reset icon" button if
-            // the object doesn't have a non-default icon anyway
+            // the object has a default icon anyway
             WinEnableControl(pnbp->hwndDlgPage,
                              ID_XSDI_ICON_RESET_BUTTON,
                              !icoIsUsingDefaultIcon(pnbp->inbp.somSelf,

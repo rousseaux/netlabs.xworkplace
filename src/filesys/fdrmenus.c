@@ -964,6 +964,7 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.14 (2001-08-25) [umoeller]: added XWPString support
+ *@@changed V0.9.19 (2002-06-08) [umoeller]: finally treating shadows to program objs like program objs
  */
 
 static BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLISTITEM list to append to
@@ -987,8 +988,11 @@ static BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLIS
         {
             // if the object is a shadow, we will only de-reference it
             // if it's a template
+            // and also now if it's pointing to a program object
+            // V0.9.19 (2002-06-08) [umoeller]
             if (    (pObject2Insert = objResolveIfShadow(pObject))
                  && (!(_wpQueryStyle(pObject2Insert) & OBJSTYLE_TEMPLATE))
+                 && (!(_somIsA(pObject2Insert, _WPProgram)))
                )
                 pObject2Insert = pObject;
 
@@ -2807,11 +2811,9 @@ static BOOL CheckForVariableMenuItems(WPFolder *somSelf,  // in: folder or root 
                 break;  // end OC_TEMPLATE
 
                 case OC_PROGRAM:
-                {
                     // WPPrograms are handled separately, for we will perform
                     // tricks on the startup directory and parameters
                     ProgramObjectSelected(somSelf, pObject);
-                }
                 break;  // end OC_PROGRAM
 
                 case OC_XWPSTRING:      // V0.9.14 (2001-08-25) [umoeller]

@@ -2725,6 +2725,24 @@ SOM_Scope void  SOMLINK xoM_wpclsInitData(M_XFldObject *somSelf)
 }
 
 /*
+ *@@ wpclsQueryObject:
+ *
+ *@@added V0.9.19 (2002-06-12) [umoeller]
+ */
+
+SOM_Scope WPObject*  SOMLINK xoM_wpclsQueryObject(M_XFldObject *somSelf,
+                                                  HOBJECT hObject)
+{
+    /* M_XFldObjectData *somThis = M_XFldObjectGetData(somSelf); */
+    M_XFldObjectMethodDebug("M_XFldObject","xoM_wpclsQueryObject");
+
+    _Pmpf((__FUNCTION__ ": HOBJECT 0x%lX", hObject));
+
+    return (M_XFldObject_parent_M_WPObject_wpclsQueryObject(somSelf,
+                                                            hObject));
+}
+
+/*
  *@@ wpclsQuerySettingsPageSize:
  *      this WPObject class method should return the
  *      size of the largest settings page in dialog

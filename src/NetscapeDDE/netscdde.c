@@ -32,6 +32,7 @@
 #define INCL_DOSMEMMGR
 #define INCL_DOSMODULEMGR
 #define INCL_DOSSESMGR
+#define INCL_DOSMISC
 
 #define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR
@@ -320,6 +321,17 @@ BOOL LoadNLS(VOID)
                               "001",
                               (PVOID)szLanguageCode,
                               sizeof(szLanguageCode));
+        // allow '?:\' for boot drive
+        // V0.9.19 (2002-06-08) [umoeller]
+        if (G_szNLSDLL[0] == '?')
+        {
+            ULONG ulBootDrive;
+            DosQuerySysInfo(QSV_BOOT_DRIVE, QSV_BOOT_DRIVE,
+                            &ulBootDrive,
+                            sizeof(ulBootDrive));
+            G_szNLSDLL[0] = (CHAR)ulBootDrive + 'A' - 1;
+        }
+
         strcat(G_szNLSDLL, "\\bin\\xfldr");
         strcat(G_szNLSDLL, szLanguageCode);
         strcat(G_szNLSDLL, ".dll");

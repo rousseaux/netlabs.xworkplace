@@ -502,8 +502,8 @@
         // sure that we can only do d'n'd within this
         // one container)
         #define WIDGET_DRAG_MECH "DRM_XCENTERWIDGET"
-        // #define WIDGET_DRAG_RMF  "(" WIDGET_DRAG_MECH ")x(DRF_UNKNOWN)"
-        #define WIDGET_DRAG_RMF  "(" WIDGET_DRAG_MECH ",DRM_OS2FILE,DRM_DISCARD)x(DRF_UNKNOWN)"
+        #define WIDGET_DRAG_RMF \
+            "(" WIDGET_DRAG_MECH ",DRM_OS2FILE,DRM_DISCARD)x(DRF_UNKNOWN)"
 
         VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
                               BOOL fRemove,

@@ -838,3 +838,43 @@ SOM_Scope WPObject*  SOMLINK xfsM_wpclsFileSysExists(M_XWPFileSystem *somSelf,
     return (pAwake);
 }
 
+
+/*
+ *@@ wpclsObjectFromHandle:
+ *      this class method returns the object that corresponds
+ *      to the given handle or NULL if the handle is invalid.
+ *
+ *      WPSREF doesn't say so, but this is really an implementation
+ *      method and should not be called directly. Instead, one
+ *      should always use M_WPObject::wpclsQueryObject, which
+ *      figures out which base class the handle belongs to and
+ *      then invokes _this_ method on the proper base class.
+ *
+ *      So WPFileSystem::wpclsObjectFromHandle, which we override
+ *      here, only ever gets called for file-system handles.
+ *
+ *      @@todo
+ *      Eventually we must override this method once we can
+ *      replace the WPS file-handles engine. For now, THIS METHOD
+ *      IS NOT OPERATING CORRECTLY because if the object for the
+ *      given handle is not awake yet, it is made awake here,
+ *      which bypasses or new populate code. I believe this method
+ *      is the reason that sometimes objects awakened independently
+ *      from populate are of the wrong class and sometimes are not
+ *      recorded in our folder trees either.
+ *
+ *@@added V0.9.19 (2002-06-12) [umoeller]
+ */
+
+SOM_Scope WPObject*  SOMLINK xfsM_wpclsObjectFromHandle(M_XWPFileSystem *somSelf,
+                                                        HOBJECT hObject)
+{
+    /* M_XWPFileSystemData *somThis = M_XWPFileSystemGetData(somSelf); */
+    M_XWPFileSystemMethodDebug("M_XWPFileSystem","xfsM_wpclsObjectFromHandle");
+
+    _Pmpf((__FUNCTION__ ": HOBJECT 0x%lX", hObject));
+
+    return (M_XWPFileSystem_parent_M_WPFileSystem_wpclsObjectFromHandle(somSelf,
+                                                                        hObject));
+}
+

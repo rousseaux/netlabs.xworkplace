@@ -364,9 +364,6 @@ BOOL pgrGetWinInfo(PPAGERWININFO pWinInfo)  // in/out: window info
                         else
                         {
                             // window is in tasklist:
-                            WinQuerySwitchEntry(pWinInfo->hsw,
-                                                &pWinInfo->swctl);
-
                             if (!pWinInfo->bWindowType)
                             {
                                 // the minimize attribute prevails the "sticky" attribute,
@@ -382,6 +379,16 @@ BOOL pgrGetWinInfo(PPAGERWININFO pWinInfo)  // in/out: window info
                                     pWinInfo->bWindowType = WINDOW_NORMAL;
                             }
                         }
+
+                        // try to get switch entry in all cases;
+                        // otherwise we have an empty switch title
+                        // for some windows in the list, which will cause
+                        // the new refresh thread to fire "window changed"
+                        // every time
+                        // V0.9.19 (2002-06-08) [umoeller]
+                        if (pWinInfo->hsw)
+                            WinQuerySwitchEntry(pWinInfo->hsw,
+                                                &pWinInfo->swctl);
                     }
                 }
             }
@@ -892,7 +899,13 @@ VOID CheckWindow(HAB hab,
                     if (strcmp(pCtrlThis->szSwtitle, pInfo->swctl.szSwtitle))
                     {
                         // session title changed:
-                        // _Pmpf((__FUNCTION__ ": title changed hwnd 0x%lX (%s, %s)", pCtrlThis->hwnd, pCtrlThis->szSwtitle, pInfo->szClassName));
+                        #ifdef DEBUG_WINDOWLIST
+                        _Pmpf((__FUNCTION__ ": title changed hwnd 0x%lX (old %s, new %s)",
+                            pCtrlThis->hwnd,
+                            pInfo->swctl.szSwtitle,
+                            pCtrlThis->szSwtitle
+                            ));
+                        #endif
 
                         memcpy(pInfo->swctl.szSwtitle,
                                pCtrlThis->szSwtitle,
@@ -918,7 +931,9 @@ VOID CheckWindow(HAB hab,
                     if (hptrNew != hptrOld)
                     {
                         // icon changed:
-                        // _Pmpf((__FUNCTION__ ": icon changed hwnd 0x%lX", pCtrlThis->hwnd));
+                        #ifdef DEBUG_WINDOWLIST
+                        _Pmpf((__FUNCTION__ ": icon changed hwnd 0x%lX", pCtrlThis->hwnd));
+                        #endif
 
                         WinPostMsg(G_pHookData->hwndDaemonObject,
                                    XDM_ICONCHANGE,

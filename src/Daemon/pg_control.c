@@ -20,48 +20,33 @@
  *      components:
  *
  *      --  The XPager control window (the pager).
- *          For one, this paints the representation
- *          of all virtual desktops in its client.
+ *          That's this file. The pager paints the
+ *          representation of all virtual desktops in its
+ *          client window.
  *
- *          In order to be able to do this, it receives
- *          messages from the XWP hook whenever frame
- *          windows are created, moved, renamed, or
- *          destroyed.
+ *          Starting with V0.9.19, the pager is a client
+ *          of the daemon window list. When the pager is
+ *          started, it sends XDM_ADDWINLISTWATCH to
+ *          the daemon object window (fnwpDaemonObject)
+ *          to receive notifications when any desktop
+ *          windows change. This allows us to track
+ *          window creation, destruction, renames, and
+ *          moves in the pager window.
  *
- *      --  XPager keeps its own window list to be
- *          able to quickly trace all windows and their
- *          positions without having to query the entire
- *          PM switch list or enumerate all desktop windows
- *          all the time. As a result, XPager's CPU load
- *          is pretty low.
- *
- *          The code for this is in pg_winlist.c.
+ *          The code for this is in pg_winlist.c and is
+ *          now shared with the XCenter window list
+ *          widget, which is another client of the
+ *          daemon window list.
  *
  *      --  The XPager "move thread", which is a second
  *          thread which gets started when the pager is
  *          created. This is in pg_move.c.
  *
- *          This thread is reponsible for actually switching
- *          desktops. Switching desktops is actually done by
- *          moving all windows (except the sticky ones). So
- *          when the user switches one desktop to the right,
- *          all windows are actually moved to the left by the
- *          size of the PM screen.
- *
- *          There are several occasions when the move thread
- *          gets notifications to move all windows (i.e. to
- *          switch desktops).
- *
- *          For one, this happens when the XWP hook detects
- *          an active window change. The move thread is notified
- *          of all such changes and will then check if the
- *          newly activated window is currently off-screen
- *          (i.e. "on another desktop") and will then switch
- *          to that desktop.
- *
- *          Of course, switching desktops can also be intitiated
- *          by the user (using the hotkeys or by clicking into
- *          the pager).
+ *          This thread is reponsible for switching desktops.
+ *          Switching desktops is actually done by moving all
+ *          windows (except the sticky ones). So when the user
+ *          switches one desktop to the right, all windows are
+ *          actually moved to the left by the size of the PM screen.
  *
  *      --  As with the rest of the daemon, XPager receives
  *          notifications from XFLDR.DLL when its settings
@@ -79,21 +64,6 @@
  *      but WITHOUT ANY WARRANTY; without even the implied warranty of
  *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *      GNU General Public License for more details.
- */
-
-
-/*
- *  Desktop Arrangement (4,3):
- *
- *  ÚÄÄÄÂÄÄÄÂÄÄÄÂÄÄÄ¿
- *  ³0,0³1,0³2,0³3,0³
- *  ÃÄÄÄÅÄÄÄÅÄÄÄÅÄÄÄ´
- *  ³0,1³1,1³2,1³3,1³
- *  ÃÄÄÄÅÄÄÄÅÄÄÄÅÄÄÄ´
- *  ³0,2³1,2³2,2³3,2³
- *  ÀÄÄÄÁÄÄÄÁÄÄÄÁÄÄÄÙ
- *
- *  [Note that (0,0) is the _upper_ left desktop, not the _lower_ left.]
  */
 
 #define INCL_DOSPROCESS
@@ -147,6 +117,8 @@
 
 /*
  *@@ PAGERWINDATA:
+ *      pager heap data stored in QWL_USER of
+ *      the pager window. Created by pgrCreatePager.
  *
  *@@added V0.9.19 (2002-05-07) [umoeller]
  */
@@ -179,7 +151,7 @@ typedef struct _PAGERWINDATA
 
 static PCSZ         WC_PAGER = "XWPXPagerClient";
 
-HMTX                G_hmtxDisableSwitching = NULLHANDLE;    // V0.9.14 (2001-08-25) [umoeller]
+HMTX                G_hmtxSuppressNotify = NULLHANDLE;    // V0.9.14 (2001-08-25) [umoeller]
 
 THREADINFO          G_tiMoveThread = {0};
 
@@ -193,7 +165,7 @@ extern HAB          G_habDaemon;        // xwpdaemn.c
 
 /*
  *@@ pgrLockHook:
- *      sets the fDisablePgmgSwitching in the global
+ *      increases cSuppressWinlistNotify in the global
  *      hook data to prevent the send-msg hook from
  *      intercepting window messages.
  *
@@ -202,13 +174,10 @@ extern HAB          G_habDaemon;        // xwpdaemn.c
  *      switches, because otherwise we'd recurse
  *      into the hook.
  *
- *      With V0.9.14, this has been encapsulated in
- *      this function to allow for protecting the
- *      flag with a mutex. It seems that previously
- *      the flag got set wrongly if two funcs attempted
- *      to set or clear it independently. As a
- *      result of this wrapper now, only one func
- *      can hold this flag set at a time.
+ *      Never modify the cSuppressWinlistNotify flag
+ *      directly. The flag is protected by a mutex
+ *      and supports recursive sets and clears now,
+ *      so always use this function.
  *
  *      Call pgrUnlockHook to clear the flag
  *      again, which will release the mutex too.
@@ -219,16 +188,16 @@ extern HAB          G_habDaemon;        // xwpdaemn.c
 
 BOOL pgrLockHook(PCSZ pcszFile, ULONG ulLine, PCSZ pcszFunction)
 {
-    if (!G_hmtxDisableSwitching)
+    if (!G_hmtxSuppressNotify)
     {
         // first call:
-        DosCreateMutexSem(NULL, &G_hmtxDisableSwitching, 0, FALSE);
+        DosCreateMutexSem(NULL, &G_hmtxSuppressNotify, 0, FALSE);
     }
 
-    if (!WinRequestMutexSem(G_hmtxDisableSwitching, 4000))
+    if (!WinRequestMutexSem(G_hmtxSuppressNotify, 4000))
         // WinRequestMutexSem works even if the thread has no message queue
     {
-        ++(G_pHookData->cDisablePagerSwitching);
+        ++(G_pHookData->cSuppressWinlistNotify);
                 // V0.9.19 (2002-05-07) [umoeller]
         return TRUE;
     }
@@ -245,10 +214,10 @@ BOOL pgrLockHook(PCSZ pcszFile, ULONG ulLine, PCSZ pcszFunction)
 
 VOID pgrUnlockHook(VOID)
 {
-    if (G_pHookData->cDisablePagerSwitching)
+    if (G_pHookData->cSuppressWinlistNotify)
     {
-        --(G_pHookData->cDisablePagerSwitching);
-        DosReleaseMutexSem(G_hmtxDisableSwitching);
+        --(G_pHookData->cSuppressWinlistNotify);
+        DosReleaseMutexSem(G_hmtxSuppressNotify);
     }
 }
 
@@ -266,18 +235,17 @@ VOID pgrUnlockHook(VOID)
  *
  *@@added V0.9.2 (2000-02-23) [umoeller]
  *@@changed V0.9.3 (2000-04-09) [umoeller]: now taking titlebar setting into account
+ *@@changed V0.9.19 (2002-06-08) [umoeller]: rewritten
  */
 
 LONG pgrCalcClientCY(LONG cx)
 {
-    // shortcuts to global config
-    LONG lHeightPercentOfWidth = G_pHookData->lCYScreen * 100 / G_pHookData->lCXScreen;
-                // e.g. 75 for 1024x768
-    LONG lCY =      (  (cx * lHeightPercentOfWidth / 100)
-                       * G_pHookData->PagerConfig.cDesktopsY
-                       / G_pHookData->PagerConfig.cDesktopsX
-                    );
-    return (lCY);
+    return (   cx
+             * G_pHookData->PagerConfig.cDesktopsY
+             * G_pHookData->lCYScreen
+             / G_pHookData->PagerConfig.cDesktopsX
+             / G_pHookData->lCXScreen
+          );
 }
 
 /*
@@ -331,6 +299,7 @@ BOOL pgrIsShowing(PSWP pswp)
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.19 (2002-06-02) [umoeller]: rewritten to use linklist
+ *@@changed V0.9.19 (2002-06-08) [umoeller]: no longer recovering XCenters
  */
 
 VOID pgrRecoverWindows(HAB hab)
@@ -357,6 +326,8 @@ VOID pgrRecoverWindows(HAB hab)
              && (!(swp.fl & (SWP_HIDE | SWP_MINIMIZE)))
              && (WinQueryClassName(hwnd, sizeof(szClassName), szClassName))
              && (strcmp(szClassName, "#32765"))
+             // do not recover XCenter
+             && (strcmp(szClassName, WC_XCENTER_FRAME))
              && (!pgrIsShowing(&swp))
            )
         {
@@ -441,7 +412,7 @@ VOID pgrRecoverWindows(HAB hab)
 #define GRID_Y(cy, lDesktopY) (cy * (lDesktopY) / G_pHookData->PagerConfig.cDesktopsY)
 
 /*
- *@@ CreateTemplateBmp:
+ *@@ CreateTemplateBitmap:
  *      creates and returns the "template bitmap",
  *      which is the "empty" bitmap for the background
  *      of the pager. This includes the color fading,
@@ -454,8 +425,8 @@ VOID pgrRecoverWindows(HAB hab)
  *@@added V0.9.19 (2002-05-07) [umoeller]
  */
 
-static HBITMAP CreateTemplateBmp(HAB hab,
-                                 PSIZEL pszl)
+static HBITMAP CreateTemplateBitmap(HAB hab,
+                                    PSIZEL pszl)
 {
     HBITMAP hbmTemplate = NULLHANDLE;
     PXBITMAP pbmTemplate;
@@ -540,7 +511,7 @@ static VOID DestroyBitmaps(PPAGERWINDATA pWinData)
  *@@ MINIWINDOW:
  *      representation of a WININFO entry in the
  *      XPager client. This is only used for
- *      a temporary list in RefreshPagerBmp.
+ *      a temporary list in RefreshPagerBitmap.
  *
  *@@added V0.9.7 (2001-01-21) [umoeller]
  */
@@ -558,9 +529,9 @@ typedef struct _MINIWINDOW
 } MINIWINDOW, *PMINIWINDOW;
 
 /*
- *@@ RefreshPagerBmp:
+ *@@ RefreshPagerBitmap:
  *
- *      Calls CreateTemplateBmp if necessary.
+ *      Calls CreateTemplateBitmap if necessary.
  *
  *      Preconditions:
  *
@@ -571,8 +542,8 @@ typedef struct _MINIWINDOW
  *@@added V0.9.19 (2002-05-07) [umoeller]
  */
 
-static VOID RefreshPagerBmp(HWND hwnd,
-                            PPAGERWINDATA pWinData)
+static VOID RefreshPagerBitmap(HWND hwnd,
+                               PPAGERWINDATA pWinData)
 {
     HPS     hpsMem = pWinData->pbmClient->hpsMem;
     POINTL  ptl;
@@ -591,13 +562,12 @@ static VOID RefreshPagerBmp(HWND hwnd,
 
     // check if we need a new template bitmap for background
     // (this gets destroyed on resize only)
-    if (!pWinData->hbmTemplate)
-        pWinData->hbmTemplate = CreateTemplateBmp(G_habDaemon,
-                                                  &pWinData->szlClient);
-
-    // a) bitblt the template into the client bitmap
-    if (pWinData->hbmTemplate)
+    if (    (pWinData->hbmTemplate)
+         || (pWinData->hbmTemplate = CreateTemplateBitmap(G_habDaemon,
+                                                          &pWinData->szlClient))
+       )
     {
+        // a) bitblt the template into the client bitmap
         POINTL  aptl[4];
         memset(aptl, 0, sizeof(POINTL) * 4);
         aptl[1].x = cxClient - 1;
@@ -648,7 +618,7 @@ static VOID RefreshPagerBmp(HWND hwnd,
             //      to bottom, so we need to paint them in reverse order
             //      because the topmost window must be painted last
 
-            // we use as many entries as are on the main
+            // we allocate as many entries as are on the main
             // WININFO list to be on the safe side, but
             // not all will be used
 
@@ -979,8 +949,8 @@ static VOID PagerPaint(HWND hwnd)
             if (pWinData->fNeedsRefresh)
             {
                 // client bitmap needs refresh:
-                RefreshPagerBmp(hwnd,
-                                pWinData);
+                RefreshPagerBitmap(hwnd,
+                                   pWinData);
                 pWinData->fNeedsRefresh = FALSE;
             }
 
@@ -1160,7 +1130,6 @@ static MRESULT PagerButtonClick(HWND hwnd,
                 // mb2: lower window
                 if (pgrLockHook(__FILE__, __LINE__, __FUNCTION__))
                 {
-
                      WinSetWindowPos(hwndClicked,
                                      HWND_BOTTOM,
                                      0, 0, 0, 0,
@@ -1179,6 +1148,8 @@ static MRESULT PagerButtonClick(HWND hwnd,
 
     if (!hwndClicked)
     {
+        // click on whitespace (not on mini-window):
+
         switch (msg)
         {
             case WM_BUTTON2CLICK:
@@ -1201,26 +1172,25 @@ static MRESULT PagerButtonClick(HWND hwnd,
             break;
 
             case WM_BUTTON1CLICK:
-            {
-                // set lDeltas to which desktop we want
-                LONG lDeltaX, lDeltaY;
-                lDeltaX =   G_pHookData->ptlCurrentDesktop.x
-                          - (   ptlMouse.x
-                              * G_pHookData->PagerConfig.cDesktopsX
-                              / pWinData->szlClient.cx
-                              * G_pHookData->szlEachDesktopFaked.cx
-                            );
-                lDeltaY =   G_pHookData->ptlCurrentDesktop.y
-                          - (   ptlMouse.y
-                              * G_pHookData->PagerConfig.cDesktopsY
-                              / pWinData->szlClient.cy
-                              * G_pHookData->szlEachDesktopFaked.cy
-                            );
+                // click on desktop background:
+                // switch to that desktop then
+
                 WinPostMsg(G_pHookData->hwndPagerMoveThread,
                            PGRM_MOVEBYDELTA,
-                           (MPARAM)lDeltaX,
-                           (MPARAM)lDeltaY);
-            }
+                           (MPARAM)(   G_pHookData->ptlCurrentDesktop.x
+                                     - (   ptlMouse.x
+                                         * G_pHookData->PagerConfig.cDesktopsX
+                                         / pWinData->szlClient.cx
+                                         * G_pHookData->szlEachDesktopFaked.cx
+                                       )
+                                   ),
+                           (MPARAM)(   G_pHookData->ptlCurrentDesktop.y
+                                     - (   ptlMouse.y
+                                         * G_pHookData->PagerConfig.cDesktopsY
+                                         / pWinData->szlClient.cy
+                                         * G_pHookData->szlEachDesktopFaked.cy
+                                       )
+                                   ));
             break;
         }
     }
@@ -1448,8 +1418,7 @@ static VOID PagerActiveChanged(HWND hwnd)
             if (hsw = WinQuerySwitchHandle(hwndActive, 0))
             {
                 SWCNTRL swc;
-                // if (WinQuerySwitchEntry(hsw, &swc))
-                if (0 == WinQuerySwitchEntry(hsw, &swc))
+                if (!WinQuerySwitchEntry(hsw, &swc))
                         // for some reason, this returns 0 on success!!
                 {
                     if (pgrIsSticky(hwndActive, swc.szSwtitle))
@@ -1528,32 +1497,32 @@ static VOID PagerActiveChanged(HWND hwnd)
 
 static VOID PagerHotkey(MPARAM mp1)
 {
-    LONG    lDeltaX = 0,
-            lDeltaY = 0;
+    LONG    dx = 0,
+            dy = 0;
 
     switch ((ULONG)mp1)
     {
         case 0x63:                              // left
-            lDeltaX = G_pHookData->szlEachDesktopFaked.cx;
+            dx = G_pHookData->szlEachDesktopFaked.cx;
         break;
 
         case 0x64:                              // right
-            lDeltaX = -G_pHookData->szlEachDesktopFaked.cx;
+            dx = -G_pHookData->szlEachDesktopFaked.cx;
         break;
 
         case 0x66:                              // down
-            lDeltaY = G_pHookData->szlEachDesktopFaked.cy;
+            dy = G_pHookData->szlEachDesktopFaked.cy;
         break;
 
         case 0x61:                              // up
-            lDeltaY = -G_pHookData->szlEachDesktopFaked.cy;
+            dy = -G_pHookData->szlEachDesktopFaked.cy;
         break;
     }
 
     WinPostMsg(G_pHookData->hwndPagerMoveThread,
                PGRM_MOVEBYDELTA,
-               (MPARAM)lDeltaX,
-               (MPARAM)lDeltaY);
+               (MPARAM)dx,
+               (MPARAM)dy);
 }
 
 /*
@@ -1811,7 +1780,6 @@ static MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
              *      move the windows within the pager.
              */
 
-            // case WM_BUTTON2MOTIONSTART:
             case WM_BEGINDRAG:
                 PagerDrag(hwnd, mp1);
             break;
@@ -1947,7 +1915,7 @@ static MRESULT EXPENTRY fnwpSubclPagerFrame(HWND hwnd, ULONG msg, MPARAM mp1, MP
                     PrfWriteProfileData(HINI_USER,
                                         INIAPP_XWPHOOK,
                                         INIKEY_HOOK_PAGERWINPOS,
-                                        (PSWP)mp1,
+                                        mp1,
                                         sizeof(SWP));
                 if (((PSWP)mp1)->fl & SWP_SHOW)
                     CheckFlashTimer();

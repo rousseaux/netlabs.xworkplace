@@ -1045,7 +1045,7 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
 
 #ifndef __NOPAGER__
 
-    if (!G_HookData.cDisablePagerSwitching)
+    if (!G_HookData.cSuppressWinlistNotify)
                 // this flag is set frequently when XPager
                 // is doing tricky stuff; we must not process
                 // messages then, or we'll recurse forever
@@ -1071,12 +1071,12 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
            )
         {
             // but disable switching V0.9.12 (2001-05-31) [umoeller]
-            ++G_HookData.cDisablePagerSwitching;
+            ++G_HookData.cSuppressWinlistNotify;
             WinSetWindowPos(G_HookData.hwndPagerFrame,
                             HWND_TOP,
                             0, 0, 0, 0,
                             SWP_ZORDER | SWP_SHOW);
-            --G_HookData.cDisablePagerSwitching;
+            --G_HookData.cSuppressWinlistNotify;
         }
     }
 #endif
@@ -1331,7 +1331,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
         return FALSE;
 
 #ifndef __NOPAGER__
-    if (!G_HookData.cDisablePagerSwitching)
+    if (!G_HookData.cSuppressWinlistNotify)
                 // this flag is set frequently when XPager
                 // is doing tricky stuff; we must not process
                 // messages then, or we'll recurse forever

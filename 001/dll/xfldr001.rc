@@ -1425,7 +1425,7 @@ BEGIN
 
     /* strings formerly in ID_CRD_SETTINGS_VIEW */
     ID_XRDI_VIEW_FRAMEGROUP             "&xcenter; frame"
-    ID_CRDI_VIEW_REDUCEWORKAREA         "~Reduce desktop workarea"
+    ID_CRDI_VIEW_REDUCEWORKAREA         "~Reduce Desktop workarea"
     ID_CRDI_VIEW_ALWAYSONTOP            "~Always on top"
     ID_CRDI_VIEW_ANIMATE                "A~nimate"
     ID_CRDI_VIEW_AUTOHIDE               "Auto-h~ide"

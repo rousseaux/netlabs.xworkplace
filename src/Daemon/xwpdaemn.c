@@ -2141,7 +2141,9 @@ static VOID ProcessWindowChange(MPARAM mp1, MPARAM mp2)
     {
         case WM_CREATE:
             fPost = pgrCreateWinInfo((HWND)mp1);
+            #ifdef DEBUG_WINDOWLIST
             _Pmpf((__FUNCTION__ ": pgrCreateWinInfo 0x%lX", mp1));
+            #endif
         break;
 
         case WM_DESTROY:
@@ -2173,8 +2175,11 @@ static VOID ProcessIconChange(MPARAM mp1, MPARAM mp2)
     if (pgrIconChange((HWND)mp1, (HPOINTER)mp2))
     {
         // process notifies
+        #ifdef DEBUG_WINDOWLIST
         _Pmpf((__FUNCTION__ ": sending iconchange for hwnd 0x%lX",
                 mp1));
+        #endif
+
         ProcessNotifies(1,     // message offset
                         mp1,
                         mp2);

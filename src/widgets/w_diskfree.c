@@ -10,6 +10,8 @@
  *@@header "shared\center.h"
  */
 
+// #define YURIEXT 1
+
 #define INCL_DOSMODULEMGR
 #define INCL_DOSERRORS
 
@@ -101,7 +103,8 @@ static const XCENTERWIDGETCLASS G_WidgetClasses[]
           (PCSZ)(XCENTER_STRING_RESOURCE | ID_CRSI_WIDGET_DISKFREE_WC),
                                       // widget class name displayed to user
                                       // (NLS DLL) V0.9.19 (2002-05-07) [umoeller]
-          WGTF_TRAYABLE,
+          WGTF_SIZEABLE |       // V0.9.19 (2002-06-12) [umoeller]
+            WGTF_TRAYABLE,
           WgtShowSettingsDlg          // our settings dialog
       };
 
@@ -213,7 +216,7 @@ static const RESOLVEFUNCTION G_aImports[] =
  ********************************************************************/
 
 /*
- *@@ SAMPLESETUP:
+ *@@ DISKFREESETUP:
  *      instance data to which setup strings correspond.
  *      This is also a member of DISKFREEPRIVATE.
  *
@@ -225,9 +228,11 @@ static const RESOLVEFUNCTION G_aImports[] =
  *      separating the setup data from the widget window
  *      data will come in handy for managing the setup
  *      strings.
+ *
+ *@@changed V0.9.19 (2002-06-12) [umoeller]: added cx field, we're sizeable now
  */
 
-typedef struct _SAMPLESETUP
+typedef struct _DISKFREESETUP
 {
     long        lcolBackground,         // background color
                 lcolForeground;         // foreground color (for text)
@@ -236,9 +241,13 @@ typedef struct _SAMPLESETUP
             // if != NULL, non-default font (in "8.Helv" format);
             // this has been allocated using local malloc()!
 
-    char        chDrive;      // if ch == '*' we are in 'multi-view'
-    long        lShow;        // eg FILETYPE
-} SAMPLESETUP, *PSAMPLESETUP;
+    CHAR        chDrive;      // if ch == '*' we are in 'multi-view'
+    LONG        lShow;        // eg FILETYPE
+
+    LONG        cx;           // width (we're sizeable now)
+                              // V0.9.19 (2002-06-12) [umoeller]
+
+} DISKFREESETUP, *PDISKFREESETUP;
 
 /*
  *@@ DISKFREEPRIVATE:
@@ -255,7 +264,7 @@ typedef struct _DISKFREEPRIVATE
             // that all the time and don't want to pass it on
             // the stack with each function call
 
-    SAMPLESETUP Setup;
+    DISKFREESETUP Setup;
             // widget settings that correspond to a setup string
 
 
@@ -265,7 +274,6 @@ typedef struct _DISKFREEPRIVATE
 
     char     szDrives[27];
     BYTE     bFSIcon;
-    long     lCX;
 
     char     chAktDrive;
     char     szAktDriveType[12];
@@ -324,7 +332,7 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,
  *      itself.
  */
 
-void WgtClearSetup(PSAMPLESETUP pSetup)
+void WgtClearSetup(PDISKFREESETUP pSetup)
 {
     if (pSetup)
     {
@@ -347,9 +355,19 @@ void WgtClearSetup(PSAMPLESETUP pSetup)
  */
 
 void WgtScanSetup(PCSZ pcszSetupString,
-                  PSAMPLESETUP pSetup)
+                  PDISKFREESETUP pSetup)
 {
     PSZ p;
+
+    // width
+    if (p = pctrScanSetupString(pcszSetupString,
+                                "WIDTH"))
+    {
+        pSetup->cx = atoi(p);
+        pctrFreeSetupValue(p);
+    }
+    else
+        pSetup->cx = 100;
 
     // background color
     if (p = pctrScanSetupString(pcszSetupString,
@@ -417,7 +435,7 @@ void WgtScanSetup(PCSZ pcszSetupString,
  */
 
 void WgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared first)
-                  PSAMPLESETUP pSetup)
+                  PDISKFREESETUP pSetup)
 {
     CHAR    szTemp[100];
     // PSZ     psz = 0;
@@ -485,7 +503,7 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,
         case WMXINT_SETUP:
         {
             // setup-string-handling
-            PSAMPLESETUP pSetup = (PSAMPLESETUP)malloc(sizeof(SAMPLESETUP));
+            PDISKFREESETUP pSetup = (PDISKFREESETUP)malloc(sizeof(DISKFREESETUP));
 
             // set max.length of entryfield to 1
             WinSendDlgItemMsg(hwnd, 106,
@@ -495,7 +513,7 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,
 
             if (pSetup)
             {
-                memset(pSetup, 0, sizeof(SAMPLESETUP));
+                memset(pSetup, 0, sizeof(DISKFREESETUP));
                 // store this in WIDGETSETTINGSDLGDATA
                 pData->pUser = pSetup;
 
@@ -532,7 +550,7 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,
         {
             if (pData)
             {
-                PSAMPLESETUP pSetup = (PSAMPLESETUP)pData->pUser;
+                PDISKFREESETUP pSetup = (PDISKFREESETUP)pData->pUser;
                 if (pSetup)
                 {
                     WgtClearSetup(pSetup);
@@ -571,7 +589,7 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,
                 case 110: // ok-button
                 {
                     XSTRING strSetup;
-                    PSAMPLESETUP pSetup = (PSAMPLESETUP)pData->pUser;
+                    PDISKFREESETUP pSetup = (PDISKFREESETUP)pData->pUser;
                     // 'store' settings in pSetup
                     if (!WinSendDlgItemMsg(hwnd, 101,
                                            BM_QUERYCHECKINDEX,
@@ -736,8 +754,6 @@ MRESULT WgtCreate(HWND hwnd,
                     NULL,
                     TRUE);
 
-    pPrivate->lCX = 10;          // we'll resize ourselves later
-
     if (pPrivate->Setup.chDrive == '*')
         pPrivate->chAktDrive = *pPrivate->szDrives;
     else
@@ -798,8 +814,8 @@ BOOL WgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                 case XN_QUERYSIZE:
                 {
                     PSIZEL pszl = (PSIZEL)mp2;
-                    pszl->cx = pPrivate->lCX;      // desired width
-                    pszl->cy = 20;                 // desired minimum height
+                    pszl->cx = pPrivate->Setup.cx;  // desired width
+                    pszl->cy = 20;                  // desired minimum height
                     brc = TRUE;
                 }
                 break;
@@ -829,7 +845,6 @@ BOOL WgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
                     GetDriveInfo(pPrivate);
 
-                    pPrivate->lCX = 10;
                     WinInvalidateRect(pWidget->hwndWidget, NULL, FALSE);
                 }
                 break;
@@ -956,9 +971,12 @@ void WgtPaint(HWND hwnd,
             }
 
             // add 70pixel for grah
+            #ifdef YURIEXT
             bxCorr += (50 + 5 + 5);
+            #endif
 
             // now check if we have enough space
+            /*  disabled, we're sizeable now V0.9.19 (2002-06-12) [umoeller]
             GpiQueryTextBox(hps,
                             strlen(szText),
                             szText,
@@ -977,12 +995,16 @@ void WgtPaint(HWND hwnd,
                            (MPARAM)hwnd,
                            (MPARAM)pPrivate->lCX);
             }
-            else
+            else */
             {
                 RECTL rcGraph = rclWin;
 
                 // sufficient space:
+                #ifdef YURIEXT
                 rclWin.xLeft += (bxCorr - 50 - 5 - 5);
+                #else
+                rclWin.xLeft += bxCorr;
+                #endif
 
                 WinDrawText(hps,
                             strlen(szText),
@@ -992,6 +1014,7 @@ void WgtPaint(HWND hwnd,
                             pPrivate->Setup.lcolBackground,
                             DT_LEFT| DT_VCENTER);
 
+                #ifdef YURIEXT
                 // graph border
                 rcGraph.yTop    -= 2;
                 rcGraph.yBottom += 2;
@@ -1021,7 +1044,7 @@ void WgtPaint(HWND hwnd,
                     rcGraph.xRight  --;
                     pgpihDraw3DFrame(hps, &rcGraph, 1, 0xFFFFFF, 0x000000);
                 }
-
+                #endif
             }
         }
         WinEndPaint(hps);  // V0.9.11 (2001-04-19) [pr]: Moved to correct place
@@ -1186,7 +1209,6 @@ void GetDrive(HWND hwnd,
 
         GetDriveInfo(pPrivate);
 
-        pPrivate->lCX = 10;
         WinInvalidateRect(hwnd,
                           NULLHANDLE,
                           TRUE);
@@ -1325,6 +1347,7 @@ MRESULT EXPENTRY fnwpSampleWidget(HWND hwnd,
             }
         break;
 
+#ifdef YURIEXT
         case WM_BUTTON1DBLCLK:  // Open disk object
             if (pWidget)
             {
@@ -1357,6 +1380,27 @@ MRESULT EXPENTRY fnwpSampleWidget(HWND hwnd,
                          dtTimeout);
         }
         break;
+#else
+        case WM_BUTTON1CLICK:
+        case WM_BUTTON1DBLCLK:
+            if (pWidget)
+            {
+                PDISKFREEPRIVATE pPrivate = (PDISKFREEPRIVATE)pWidget->pUser;
+                if (pPrivate->Setup.chDrive=='*')
+                {
+                    if (WinGetKeyState(HWND_DESKTOP, VK_CTRL) & 0x8000)
+                        GetDrive(hwnd, pWidget, FALSE);
+                    else
+                        GetDrive(hwnd, pWidget, TRUE);
+                }
+            }
+
+            mrc = (MRESULT)TRUE;        // V0.9.11 (2001-04-18) [umoeller]
+                                        // you processed the msg, so return TRUE
+        break;
+#endif
+
+
 
         case WM_PAINT:
             WgtPaint(hwnd, pWidget);

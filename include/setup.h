@@ -351,6 +351,11 @@
         // debug program startup data
             // #define DEBUG_PROGRAMSTART
 
+/* daemon and hook */
+
+        // debug window list
+            // #define DEBUG_WINDOWLIST
+
 /* misc */
 
         // debug new system sounds

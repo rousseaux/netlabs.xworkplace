@@ -154,6 +154,7 @@ interface M_XWPFileSystem : M_WPFileSystem
 
     wpclsQueryAwakeObject: override;
     wpclsFileSysExists: override;
+    wpclsObjectFromHandle: override;
 
   };
 #endif /* __SOMIDL__ */

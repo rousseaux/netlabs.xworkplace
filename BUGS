@@ -61,6 +61,9 @@ CURRENT PROBLEMS
     checked) --> wrong datafile class (possibly broken icons
     too)
 
+--  XCenter: dragging widgets to folders to create widget
+    files leaks memory.
+
 --  XFldProgramFile: Parameter and Working dir settings
     specified in a settings notebook are presently ignored.
 

@@ -1005,75 +1005,72 @@ static MRESULT DwgtBeginDrag(HWND hwnd, MPARAM mp1)
 static VOID DwgtDestroy(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
-    if (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+    HWND hwndClient;
+    PXCENTERWINDATA pXCenterData;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (hwndClient = pWidget->pGlobals->hwndClient)
+         && (pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient,
+                                                               QWL_USER))
+       )
     {
-        HWND hwndClient = pWidget->pGlobals->hwndClient;
-        PXCENTERWINDATA pXCenterData;
-        if (pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient,
-                                                              QWL_USER))
+        WPSHLOCKSTRUCT Lock = {0};
+        TRY_LOUD(excpt1)
         {
-            WPSHLOCKSTRUCT Lock = {0};
-            TRY_LOUD(excpt1)
+            if (LOCK_OBJECT(Lock, pXCenterData->somSelf))
             {
-                if (LOCK_OBJECT(Lock, pXCenterData->somSelf))
+                // stop all running timers
+                // tmrStopAllTimers(hwnd);
+
+                // remove the widget from the list of open
+                // views in the XCenter, but only if this is
+                // not a subwidget in a tray;
+                // XCENTERWIDGET is first member in PRIVATEWIDGETVIEW,
+                // so this typecast works
+                if (!((PPRIVATEWIDGETVIEW)pWidget)->pOwningTrayWidget)
+                    if (!lstRemoveItem(&pXCenterData->llWidgets,
+                                       pWidget))
+                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                               "lstRemoveItem failed.");
+
+                if (pWidget->pcszWidgetClass)
                 {
-                    // stop all running timers
-                    // tmrStopAllTimers(hwnd);
-
-                    if (pXCenterData)
-                    {
-                        // remove the widget from the list of open
-                        // views in the XCenter, but only if this is
-                        // not a subwidget in a tray;
-                        // XCENTERWIDGET is first member in PRIVATEWIDGETVIEW,
-                        // so this typecast works
-                        if (!((PPRIVATEWIDGETVIEW)pWidget)->pOwningTrayWidget)
-                            if (!lstRemoveItem(&pXCenterData->llWidgets,
-                                               pWidget))
-                                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                                       "lstRemoveItem failed.");
-                    }
-
-                    if (pWidget->pcszWidgetClass)
-                    {
-                        free((PSZ)pWidget->pcszWidgetClass);
-                        pWidget->pcszWidgetClass = NULL;
-                    }
-
-                    if (pWidget->hwndContextMenu)
-                    {
-                        WinDestroyWindow(pWidget->hwndContextMenu);
-                        pWidget->hwndContextMenu = NULLHANDLE;
-                    }
-
-                    // if the widget was registered with the
-                    // tooltip control, remove it
-                    // V0.9.13 (2001-06-21) [umoeller]
-                    if (pWidget->ulClassFlags & WGTF_TOOLTIP)
-                    {
-                        TOOLINFO ti = {0};
-                        ti.hwndToolOwner = pWidget->pGlobals->hwndClient;
-                        ti.hwndTool = hwnd;
-                        WinSendMsg(pWidget->pGlobals->hwndTooltip,
-                                   TTM_DELTOOL,
-                                   (MPARAM)0,
-                                   &ti);
-                    }
-
-                    free(pWidget);
-                    WinSetWindowPtr(hwnd, QWL_USER, 0);
-
-                    WinPostMsg(hwndClient,
-                               XCM_REFORMAT,
-                               (MPARAM)XFMF_REPOSITIONWIDGETS,
-                               0);
+                    free((PSZ)pWidget->pcszWidgetClass);
+                    pWidget->pcszWidgetClass = NULL;
                 }
-            }
-            CATCH(excpt1) {} END_CATCH();
 
-            if (Lock.fLocked)
-                _wpReleaseObjectMutexSem(Lock.pObject);
+                if (pWidget->hwndContextMenu)
+                {
+                    WinDestroyWindow(pWidget->hwndContextMenu);
+                    pWidget->hwndContextMenu = NULLHANDLE;
+                }
+
+                // if the widget was registered with the
+                // tooltip control, remove it
+                // V0.9.13 (2001-06-21) [umoeller]
+                if (pWidget->ulClassFlags & WGTF_TOOLTIP)
+                {
+                    TOOLINFO ti = {0};
+                    ti.hwndToolOwner = pWidget->pGlobals->hwndClient;
+                    ti.hwndTool = hwnd;
+                    WinSendMsg(pWidget->pGlobals->hwndTooltip,
+                               TTM_DELTOOL,
+                               (MPARAM)0,
+                               &ti);
+                }
+
+                free(pWidget);
+                WinSetWindowPtr(hwnd, QWL_USER, 0);
+
+                WinPostMsg(hwndClient,
+                           XCM_REFORMAT,
+                           (MPARAM)XFMF_REPOSITIONWIDGETS,
+                           0);
+            }
         }
+        CATCH(excpt1) {} END_CATCH();
+
+        if (Lock.fLocked)
+            _wpReleaseObjectMutexSem(Lock.pObject);
     }
 }
 
@@ -1081,82 +1078,96 @@ static VOID DwgtDestroy(HWND hwnd)
  *@@ DwgtRender:
  *      implementation for DM_RENDER in ctrDefWidgetProc.
  *
- *      To be able to save the widget setting string, we first must
- *      query it.
+ *      This performs source rendering for the single case
+ *      that a widget is dropped on a folder and a widget
+ *      file thus needs to be created.
+ *
+ *      See ctrpDragWidget for an introduction to this
+ *      mess.
  *
  *@@added V0.9.14 (2001-07-31) [lafaix]
  *@@changed V0.9.14 (2001-08-01) [umoeller]: didn't work for tray subwidgets, fixed
+ *@@changed V0.9.19 (2002-06-08) [umoeller]: fixed major leaks
  */
 
 static BOOL DwgtRender(HWND hwnd,
                        PDRAGTRANSFER pdt)
 {
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    BOOL           brc = FALSE;
+    PXCENTERWIDGET  pWidget;
+    BOOL            brc = FALSE;
+    HWND            hwndClient;
+    PXCENTERWINDATA pXCenterData;
 
-    if (    (pWidget)
+    _Pmpf((__FUNCTION__ ": entering"));
+
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
          && (DrgVerifyRMF(pdt->pditem, "DRM_OS2FILE", NULL))
+         && (hwndClient = pWidget->pGlobals->hwndClient)
+         && (pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient, QWL_USER))
        )
     {
-        HWND hwndClient = pWidget->pGlobals->hwndClient;
-        PXCENTERWINDATA pXCenterData;
-        if (pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient, QWL_USER))
+        XCenter        *somSelf = pXCenterData->somSelf;
+        WPSHLOCKSTRUCT Lock = {0};
+
+        TRY_LOUD(excpt1)
         {
-            XCenter        *somSelf = pXCenterData->somSelf;
-            WPSHLOCKSTRUCT Lock = {0};
-
-            TRY_LOUD(excpt1)
+            if (LOCK_OBJECT(Lock, somSelf))
             {
-                if (LOCK_OBJECT(Lock, somSelf))
+                ULONG ulTrayWidgetIndex = 0,
+                      ulTrayIndex = 0,
+                      ulWidgetIndex = 0;
+                PPRIVATEWIDGETSETTING pSetting;
+                WIDGETPOSITION Pos;
+                if (    (!ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
+                                                       pWidget->hwndWidget,
+                                                       &Pos))
+                     && (!ctrpFindWidgetSetting(pXCenterData->somSelf,
+                                                &Pos,
+                                                &pSetting,
+                                                NULL))
+                   )
                 {
-                    /* PLINKLIST   pllWidgets = ctrpQuerySettingsList(somSelf);
-                    ULONG       ulIndex = ctrpQueryWidgetIndexFromHWND(somSelf,
-                                                                       hwnd);
-                    PPRIVATEWIDGETSETTING pSetting = lstItemFromIndex(pllWidgets,
-                                                                      ulIndex);
+                    CHAR ach[CCHMAXPATH];
 
-                    if (pSetting) */
+                    DrgQueryStrName(pdt->hstrRenderToName,
+                                    CCHMAXPATH,
+                                    ach);
 
-                    // replaced this V0.9.14 (2001-08-01) [umoeller]
-                    ULONG ulTrayWidgetIndex = 0,
-                          ulTrayIndex = 0,
-                          ulWidgetIndex = 0;
-                    PPRIVATEWIDGETSETTING pSetting;
-                    WIDGETPOSITION Pos;
-                    if (    (!ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
-                                                           pWidget->hwndWidget,
-                                                           &Pos))
-                         && (!ctrpFindWidgetSetting(pXCenterData->somSelf,
-                                                    &Pos,
-                                                    &pSetting,
-                                                    NULL))
-                       )
-                    {
-                        CHAR ach[CCHMAXPATH];
+                    brc = ctrpSaveToFile(ach,
+                                         pWidget->pcszWidgetClass,
+                                         pSetting->Public.pszSetupString);
 
-                        DrgQueryStrName(pdt->hstrRenderToName,
-                                        CCHMAXPATH,
-                                        ach);
-
-                        brc = ctrpSaveToFile(ach,
-                                             pWidget->pcszWidgetClass,
-                                             pSetting->Public.pszSetupString);
-
-                        WinPostMsg(pdt->hwndClient,
-                                   DM_RENDERCOMPLETE,
-                                   MPFROMP(pdt),
-                                   (brc) ? MPFROMSHORT(DMFL_RENDEROK)
-                                         : MPFROMSHORT(DMFL_RENDERFAIL));
-
-                    } // end if (pSetting)
-                }
+                } // end if (pSetting)
             }
-            CATCH(excpt1) {} END_CATCH();
+        }
+        CATCH(excpt1)
+        {
+            brc = FALSE;
+        } END_CATCH();
 
-            if (Lock.fLocked)
-                _wpReleaseObjectMutexSem(Lock.pObject);
-        } // end if (pXCenterData)
-    }
+        if (Lock.fLocked)
+            _wpReleaseObjectMutexSem(Lock.pObject);
+
+    } // end if (pXCenterData)
+
+    // post this even if we crash, or we leak;
+    // and use DrgSendTransferMsg instead of WinPostMsg
+    // V0.9.19 (2002-06-08) [umoeller]
+    DrgSendTransferMsg(pdt->hwndClient,
+                       DM_RENDERCOMPLETE,
+                       (MPARAM)pdt,
+                       (MPARAM)((brc) ? DMFL_RENDEROK
+                                      : DMFL_RENDERFAIL));
+            // ah shit, it doesn't matter... we still leak,
+            // looks like the target (WPFolder?) isn't
+            // cleaning up properly
+
+    // and this was missing, which leaked many KBs per drag
+    // V0.9.19 (2002-06-08) [umoeller]
+    DrgFreeDragtransfer(pdt);
+
+    _Pmpf((__FUNCTION__ ": leaving, returning %d", brc));
+
     return brc;
 }
 

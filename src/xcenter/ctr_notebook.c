@@ -1390,23 +1390,23 @@ BOOL ctrpSaveToFile(PCSZ pszDest,
     #pragma pack()
     BOOL      brc = FALSE;
 
-    if (DosOpen((PSZ)pszDest,
-                &hf,
-                &ulAction,
-                0L,
-                0,
-                FILE_OPEN|OPEN_ACTION_CREATE_IF_NEW,
-                OPEN_ACCESS_WRITEONLY|OPEN_SHARE_DENYREADWRITE,
-                0) == NO_ERROR)
+    if (!DosOpen((PSZ)pszDest,
+                 &hf,
+                 &ulAction,
+                 0L,
+                 0,
+                 FILE_OPEN | OPEN_ACTION_CREATE_IF_NEW,
+                 OPEN_ACCESS_WRITEONLY | OPEN_SHARE_DENYREADWRITE,
+                 0))
     {
         // Adding a "Widget settings" .TYPE EA
-        if ((pfea2l = (PFEA2LIST) malloc(sizeof(FEA2LIST)+sizeof(val))))
+        if ((pfea2l = (PFEA2LIST)malloc(sizeof(FEA2LIST) + sizeof(val))))
         {
-            pfea2l->cbList = sizeof(FEA2LIST)+sizeof(val);
+            pfea2l->cbList = sizeof(FEA2LIST) + sizeof(val);
             pfea2l->list[0].oNextEntryOffset = 0;
             pfea2l->list[0].fEA = 0;
             pfea2l->list[0].cbName = 5;
-            pfea2l->list[0].cbValue = sizeof(val)-6;
+            pfea2l->list[0].cbValue = sizeof(val) - 6;
             strcpy(val.ach, ".TYPE");
             val.usMainType = EAT_MVMT;
             val.usCodepage = 0;
@@ -1420,31 +1420,30 @@ BOOL ctrpSaveToFile(PCSZ pszDest,
             memcpy(pfea2l->list[0].szName, &val, sizeof(val));
             eaop2.fpFEA2List = pfea2l;
 
-            if (DosSetFileInfo(hf,
-                               FIL_QUERYEASIZE,
-                               &eaop2,
-                               sizeof(eaop2)) == NO_ERROR)
+            if (!DosSetFileInfo(hf,
+                                FIL_QUERYEASIZE,
+                                &eaop2,
+                                sizeof(eaop2)))
             {
                 // create the file content:
-
                 if (    // first, the widget class name, which cannot
                         // be NULL
                         (pszClass)
-                     && (DosWrite(hf,
-                                  (PVOID)pszClass,
-                                  strlen(pszClass),
-                                  &ulAction) == NO_ERROR)
+                     && (!DosWrite(hf,
+                                   (PVOID)pszClass,
+                                   strlen(pszClass),
+                                   &ulAction))
                         // then, a CR/LF marker
-                     && (DosWrite(hf,
-                                  "\r\n",
-                                  2,
-                                  &ulAction) == NO_ERROR)
+                     && (!DosWrite(hf,
+                                   "\r\n",
+                                   2,
+                                   &ulAction))
                         // and the setup string, which may be NULL
                      && (    (pszSetup == NULL)
-                          || (DosWrite(hf,
-                                       (PVOID)pszSetup,
-                                       strlen(pszSetup),
-                                       &ulAction) == NO_ERROR)
+                          || (!DosWrite(hf,
+                                        (PVOID)pszSetup,
+                                        strlen(pszSetup),
+                                        &ulAction))
                              )
                    )
                     brc = TRUE;
@@ -1689,6 +1688,7 @@ static const DLGHITEM G_dlgXCenterView[] =
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added "hide on click"
  *@@changed V0.9.19 (2002-05-07) [umoeller]: now using dlg formatter
  *@@changed V0.9.19 (2002-05-07) [umoeller]: added auto screen border
+ *@@changed V0.9.19 (2002-06-08) [umoeller]: fixed wrong slider ticks for priority
  */
 
 VOID ctrpView1InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -1720,7 +1720,8 @@ VOID ctrpView1InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         winhSetSliderTicks(WinWindowFromID(pnbp->hwndDlgPage,
                                            ID_CRDI_VIEW_PRTY_SLIDER),
                            (MPARAM)0, 3,
-                           MPFROM2SHORT(9, 10), 6);
+                           MPFROM2SHORT(0, 10), 6);
+                                // fixed V0.9.19 (2002-06-08) [umoeller]
     }
 
     if (flFlags & CBI_SET)

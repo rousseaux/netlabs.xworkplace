@@ -308,6 +308,8 @@ interface M_XFldObject : M_WPObject
 
     wpclsInitData: override;
 
+    wpclsQueryObject: override;
+
     wpclsQuerySettingsPageSize: override;
 
     wpclsSetIconData: override;

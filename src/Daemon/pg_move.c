@@ -63,15 +63,15 @@ PFNWP   G_pfnwpStaticOriginal = NULL;
  *      which all windows should be moved. As a result,
  *      with respect to the current desktop:
  *
- *      --  positive lXDelta moves the current desktop to
+ *      --  positive dx moves the current desktop to
  *          the left;
  *
- *      --  negative lXDelta moves the current desktop to
+ *      --  negative dx moves the current desktop to
  *          the right;
  *
- *      --  positive lYDelta moves the current desktop down;
+ *      --  positive dy moves the current desktop down;
  *
- *      --  negative lYDelta moves the current desktop up.
+ *      --  negative dy moves the current desktop up.
  *
  *      Returns TRUE if the move was successful.
  *
@@ -79,8 +79,8 @@ PFNWP   G_pfnwpStaticOriginal = NULL;
  */
 
 BOOL MoveCurrentDesktop(HAB hab,
-                        LONG lXDelta,
-                        LONG lYDelta)
+                        LONG dx,       // in: X delta
+                        LONG dy)       // in: Y delta
 {
     BOOL    brc = FALSE;
 
@@ -88,55 +88,55 @@ BOOL MoveCurrentDesktop(HAB hab,
             cDesktopsX = G_pHookData->PagerConfig.cDesktopsX,
             xCurrent = G_pHookData->ptlCurrentDesktop.x,
             xLimit = cDesktopsX * cxEach,
-            xNew = xCurrent - lXDelta;
+            xNew = xCurrent - dx;
 
     LONG    cyEach = G_pHookData->szlEachDesktopFaked.cy,
             cDesktopsY = G_pHookData->PagerConfig.cDesktopsY,
             yCurrent = G_pHookData->ptlCurrentDesktop.y,
             yLimit = cDesktopsY * cyEach,
-            yNew = yCurrent - lYDelta;
+            yNew = yCurrent - dy;
 
     ULONG   flPager = G_pHookData->PagerConfig.flPager;
 
     // bump X delta
-    if (lXDelta)
+    if (dx)
     {
         if (xNew < 0)
         {
             if (flPager & PGRFL_WRAPAROUND)
-                lXDelta = -((cDesktopsX - 1) * cxEach);
+                dx = -((cDesktopsX - 1) * cxEach);
             else
-                lXDelta = 0;
+                dx = 0;
         }
         else if ((xNew + cxEach) > xLimit)
         {
             if (flPager & PGRFL_WRAPAROUND)
-                lXDelta = (cDesktopsX - 1) * cxEach;
+                dx = (cDesktopsX - 1) * cxEach;
             else
-                lXDelta = 0;
+                dx = 0;
         }
     }
 
     // bump Y delta
-    if (lYDelta)
+    if (dy)
     {
         if (yNew < 0)
         {
             if (flPager & PGRFL_WRAPAROUND)
-                lYDelta = -((cDesktopsY - 1) * cyEach);
+                dy = -((cDesktopsY - 1) * cyEach);
             else
-                lYDelta = 0;
+                dy = 0;
         }
         else if ((yNew + cyEach) > yLimit)
         {
             if (flPager & PGRFL_WRAPAROUND)
-                lYDelta = (cDesktopsY - 1) * cyEach;
+                dy = (cDesktopsY - 1) * cyEach;
             else
-                lYDelta = 0;
+                dy = 0;
         }
     }
 
-    if (lXDelta || lYDelta)
+    if (dx || dy)
     {
         BOOL    fAnythingMoved = TRUE;
 
@@ -183,7 +183,11 @@ BOOL MoveCurrentDesktop(HAB hab,
                     if (!WinIsWindow(hab, pEntryThis->swctl.hwnd))
                         // window no longer valid:
                         // remove from the list NOW
-                        lstRemoveNode(&G_llWinInfos, pNode);
+                        // lstRemoveNode(&G_llWinInfos, pNode);
+                        WinPostMsg(G_pHookData->hwndDaemonObject,
+                                   XDM_WINDOWCHANGE,
+                                   (MPARAM)pEntryThis->swctl.hwnd,
+                                   (MPARAM)WM_DESTROY);
                     else
                     {
                         BOOL fRefreshThis = FALSE;
@@ -234,7 +238,11 @@ BOOL MoveCurrentDesktop(HAB hab,
                                 // window no longer valid:
                                 // remove from the list NOW
                                 // V0.9.15 (2001-09-14) [umoeller]
-                                lstRemoveNode(&G_llWinInfos, pNode);
+                                // lstRemoveNode(&G_llWinInfos, pNode);
+                                WinPostMsg(G_pHookData->hwndDaemonObject,
+                                           XDM_WINDOWCHANGE,
+                                           (MPARAM)pEntryThis->swctl.hwnd,
+                                           (MPARAM)WM_DESTROY);
 
                                 // update pEntryThis so that we don't try to
                                 // move it later
@@ -274,8 +282,8 @@ BOOL MoveCurrentDesktop(HAB hab,
 
                             pswpNewThis->hwnd = pEntryThis->swctl.hwnd;
                             // add the delta for moving
-                            pswpNewThis->x += lXDelta;
-                            pswpNewThis->y += lYDelta;
+                            pswpNewThis->x += dx;
+                            pswpNewThis->y += dy;
 
                             pswpNewThis->fl = fl;
 
@@ -324,8 +332,8 @@ BOOL MoveCurrentDesktop(HAB hab,
 
         if (fAnythingMoved)
         {
-            G_pHookData->ptlCurrentDesktop.x -= lXDelta;
-            G_pHookData->ptlCurrentDesktop.y -= lYDelta;
+            G_pHookData->ptlCurrentDesktop.x -= dx;
+            G_pHookData->ptlCurrentDesktop.y -= dy;
 
             WinPostMsg(G_pHookData->hwndPagerClient,
                        PGRM_REFRESHCLIENT,
