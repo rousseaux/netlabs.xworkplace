@@ -17,14 +17,14 @@ Definition.
      *@@ XCENTERWIDGETCLASS:
      *      describes one widget class which can be
      *      used in an &xcenter;. Such a class can either
-     *      be internal or in a widget plugin DLL.
+     *      be internal or in a widget Plug-In DLL.
      */
 
     typedef struct _XCENTERWIDGETCLASS
     {
         const char      *pcszPMClass;
                 // PM window class name of this widget class (can be shared among
-                // several widget classes). A plugin DLL is responsible for
+                // several widget classes). A Plug-In DLL is responsible for
                 // registering this window class when it's loaded.
 
         ULONG           ulExtra;

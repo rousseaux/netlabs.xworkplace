@@ -23,7 +23,7 @@ das kommt in <A HREF="plug_52strings.html">Schritt 2</A>);
 <P><LI>einen Einstellungsdialog erzeugen (dazu siehe
 <A HREF="plug_55dialog.html">Schritt 4</A>);
  
-</UL>Als mindeste Voraussetzung mu· eine Plugin-DLL folgendes tun kînnen:
+</UL>Als mindeste Voraussetzung mu· eine Plug-In-DLL folgendes tun kînnen:
  
 <OL><LI>Sie mu· <B>drei Prozeduren</B> mit den entsprechenden Ordinalien
 <B>exportieren</B>.
@@ -46,7 +46,7 @@ in dieser DLL Åbergeben, so da· das &xcenter; Åber diese Klassen in der DLL info
 <P><B>c)</B> Der <B>"query version"</B>-Export (Ordinal 3) wird noch vor dem "init"-Export
 aufgerufen, um die Version von &xwp; zu ÅberprÅfen, die dieses Widget benîtigt.
  
-<P><LI>Die Plugin-DLL mu· eine <B>PM-Fensterprozedur</B> fÅr die Widget-Klasse enthalten.
+<P><LI>Die Plug-In-DLL mu· eine <B>PM-Fensterprozedur</B> fÅr die Widget-Klasse enthalten.
 Im Beispiel des Mini-Widgets ist das die Prozedur <CODE>fnwpSampleWidget</CODE>. Der
 "init"-Export ist verantwortlich fÅr den Aufruf von <CODE>WinRegisterClass</CODE> mit dieser
 Fensterprozedur, um damit eine PM-Fensterklasse zu erzeugen.

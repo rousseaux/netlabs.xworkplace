@@ -45,8 +45,8 @@ k”nnen sich mehrere Widget-Klassen eine PM-Klasse teilen.
  
 <P>Einige Widget-Klassen sind im &xcenter; selbst eingebaut (d.h. sie befinden
 sich in der Datei <CODE>XFLDR.DLL</CODE>), aber das &xcenter; kann
-ebenfalls externe Plugin-DLLs laden. Mehrere der Widget-Klassen, die mit &xwp;
-geliefert werden, wurden als Plugins angelegt, um Ihnen zu zeigen, wie es funktioniert.
+ebenfalls externe Plug-In-DLLs laden. Mehrere der Widget-Klassen, die mit &xwp;
+geliefert werden, wurden als Plug-Ins angelegt, um Ihnen zu zeigen, wie es funktioniert.
 Wenn Sie den <A HREF="notices_40source.html">&xwp;-Quellcode</A> haben, schauen Sie
 dazu im Verzeichnis <CODE>src\widgets</CODE> nach.
  
@@ -80,10 +80,10 @@ alle Widgets erzeugt werden mssen), ruft es <CODE>WinCreateWindow</CODE> mit
 dem Namen der PM-Fensterklasse auf, die mit der Widget-Klasse angegeben wurde. Es
 ist also nichts auáergew”hnliches.
  
-<P><LI>Eine <B>"Widget Plugin-DLL"</B> ist eine separate DLL, die sich im
+<P><LI>Eine <B>"Widget Plug-In-DLL"</B> ist eine separate DLL, die sich im
 Unterverzeichnis <CODE>plugins\xcenter</CODE> des &xwp;-Installationsverzeichnisses
 befindet. Diese muá eine oder mehrere Widget-Klassen enthalten. Es gibt drei
-Prozeduren, die eine Widget-Plugin-DLL exportieren muá, damit das &xcenter;
+Prozeduren, die eine Widget-Plug-In-DLL exportieren muá, damit das &xcenter;
 die Widget-Klassen sehen kann. Diese werden im Detail auf den n„chsten Seiten
 erkl„rt.
  
