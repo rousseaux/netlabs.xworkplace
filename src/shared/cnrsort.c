@@ -120,17 +120,17 @@ SHORT EXPENTRY fnCompareExt(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID 
                                           pmrc2->pszIcon,
                                           0))
                 {
-                    case WCS_LT: return (-1);
-                    case WCS_GT: return (1);
+                    case WCS_LT: return -1;
+                    case WCS_GT: return 1;
                     default: return 0;
                 }
             else
                 // pmrc1 has no ext, but pmrc2 does:
-                return (-1);
+                return -1;
         else
             if (pDot2 == NULL)
                 // pmrc1 has extension, but pmrc2 doesn't:
-                return (1);
+                return 1;
 
         // both records have extensions:
         // compare extensions
@@ -140,8 +140,8 @@ SHORT EXPENTRY fnCompareExt(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID 
                                   pDot1, pDot2,
                                   0))
         {
-            case WCS_LT: return (-1);
-            case WCS_GT: return (1);
+            case WCS_LT: return -1;
+            case WCS_GT: return 1;
             default:
                 // same ext: compare names
                 switch (WinCompareStrings(G_habThread1,
@@ -151,8 +151,8 @@ SHORT EXPENTRY fnCompareExt(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID 
                                           pmrc2->pszIcon,
                                           0))
                 {
-                    case WCS_LT: return (-1);
-                    case WCS_GT: return (1);
+                    case WCS_LT: return -1;
+                    case WCS_GT: return 1;
                 }
         }
     }
@@ -184,15 +184,15 @@ SHORT EXPENTRY fnCompareExtFoldersFirst(PMINIRECORDCORE pmrc1, PMINIRECORDCORE p
     if (IsFldr1 && IsFldr2)
         // both are folders:
         // compare by name then
-        return (fnCompareName(pmrc1, pmrc2, pStorage));
+        return fnCompareName(pmrc1, pmrc2, pStorage);
     else if (IsFldr1)
-        return (-1);
+        return -1;
     else if (IsFldr2)
-        return (1);
+        return 1;
 
     // none of the two are folders:
     // only then compare extensions
-    return (fnCompareExt(pmrc1, pmrc2, pStorage));
+    return fnCompareExt(pmrc1, pmrc2, pStorage);
 }
 
 /*
@@ -214,8 +214,8 @@ SHORT EXPENTRY fnCompareName(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID
                                   pmrc2->pszIcon,
                                   0))
         {
-            case WCS_LT: return (-1);
-            case WCS_GT: return (1);
+            case WCS_LT: return -1;
+            case WCS_GT: return 1;
         }
 
     return 0;
@@ -244,12 +244,12 @@ SHORT EXPENTRY fnCompareNameFoldersFirst(PMINIRECORDCORE pmrc1, PMINIRECORDCORE 
     if (IsFldr1 == IsFldr2)
         // both are folders, or both are NOT folders:
         // compare by name then
-        return (fnCompareName(pmrc1, pmrc2, pStorage));
+        return fnCompareName(pmrc1, pmrc2, pStorage);
     else if (IsFldr1)
-        return (-1);
+        return -1;
 
     // else if IsFldr2)
-    return (1);
+    return 1;
 }
 
 /*
@@ -283,25 +283,25 @@ SHORT EXPENTRY fnCompareType(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID
                                           pType2,
                                           0))
                 {
-                    case WCS_LT: return (-1);
-                    case WCS_GT: return (1);
+                    case WCS_LT: return -1;
+                    case WCS_GT: return 1;
                 }
             }
             else
                 // obj1 has type, obj2 has not
-                return (-1);
+                return -1;
         }
         else
             if (pType2)
                 // obj1 has NO type, but obj2 does
-                return (1);
+                return 1;
 
     }
 
     // types are equal, or both have no type:
     // compare by name instead
     // V0.9.18 (2002-03-23) [umoeller]
-    return (fnCompareName(pmrc1, pmrc2, pStorage));
+    return fnCompareName(pmrc1, pmrc2, pStorage);
 }
 
 /*
@@ -327,15 +327,15 @@ SHORT EXPENTRY fnCompareTypeFoldersFirst(PMINIRECORDCORE pmrc1, PMINIRECORDCORE 
     if (IsFldr1 && IsFldr2)
         // both are folders:
         // compare by name then
-        return (fnCompareName(pmrc1, pmrc2, pStorage));
+        return fnCompareName(pmrc1, pmrc2, pStorage);
     else if (IsFldr1)
-        return (-1);
+        return -1;
     else if (IsFldr2)
-        return (1);
+        return 1;
 
     // none of the two are folders:
     // only then compare types
-    return (fnCompareType(pmrc1, pmrc2, pStorage));
+    return fnCompareType(pmrc1, pmrc2, pStorage);
 }
 
 /*
@@ -362,14 +362,14 @@ SHORT EXPENTRY fnCompareClass(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOI
                                   pszClass2,
                                   0))
         {
-            case WCS_LT: return (-1);
-            case WCS_GT: return (1);
+            case WCS_LT: return -1;
+            case WCS_GT: return 1;
         }
 
     // classes are equal:
     // compare by name instead
     // V0.9.18 (2002-03-23) [umoeller]
-    return (fnCompareName(pmrc1, pmrc2, pStorage));
+    return fnCompareName(pmrc1, pmrc2, pStorage);
 }
 
 /*
@@ -395,15 +395,15 @@ SHORT EXPENTRY fnCompareClassFoldersFirst(PMINIRECORDCORE pmrc1, PMINIRECORDCORE
     if (IsFldr1 && IsFldr2)
         // both are folders:
         // compare by name then
-        return (fnCompareName(pmrc1, pmrc2, pStorage));
+        return fnCompareName(pmrc1, pmrc2, pStorage);
     else if (IsFldr1)
-        return (-1);
+        return -1;
     else if (IsFldr2)
-        return (1);
+        return 1;
 
     // none of the two are folders:
     // only then compare classes
-    return (fnCompareClass(pmrc1, pmrc2, pStorage));
+    return fnCompareClass(pmrc1, pmrc2, pStorage);
 }
 
 /*
@@ -441,8 +441,8 @@ SHORT EXPENTRY fnCompareRealName(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, P
                                           0,
                     sz1, sz2, 0))
                 {
-                    case WCS_LT: return (-1);
-                    case WCS_GT: return (1);
+                    case WCS_LT: return -1;
+                    case WCS_GT: return 1;
                 }
              }
         }
@@ -475,9 +475,9 @@ SHORT EXPENTRY fnCompareSize(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID
                 ul2 = _wpQueryFileSize(pobj2);
 
             if (ul1 < ul2)
-                return (1);
+                return 1;
             else if (ul1 > ul2)
-                return (-1);
+                return -1;
          }
     }
     return 0;
@@ -558,8 +558,8 @@ SHORT EXPENTRY fnCompareCommonDate(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2,
             switch (WinCompareStrings(G_habThread1, 0, 0,
                     sz1, sz2, 0))
             {
-                case WCS_LT: return (-1);
-                case WCS_GT: return (1);
+                case WCS_LT: return -1;
+                case WCS_GT: return 1;
             }
         }
     }
@@ -578,7 +578,7 @@ SHORT EXPENTRY fnCompareCommonDate(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2,
 SHORT EXPENTRY fnCompareLastWriteDate(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID pStorage)
 {
     pStorage = pStorage;
-    return (fnCompareCommonDate(pmrc1, pmrc2, 1));
+    return fnCompareCommonDate(pmrc1, pmrc2, 1);
 }
 
 /*
@@ -593,7 +593,7 @@ SHORT EXPENTRY fnCompareLastWriteDate(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmr
 SHORT EXPENTRY fnCompareLastAccessDate(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID pStorage)
 {
     pStorage = pStorage;
-    return (fnCompareCommonDate(pmrc1, pmrc2, 2));
+    return fnCompareCommonDate(pmrc1, pmrc2, 2);
 }
 
 /*
@@ -608,7 +608,7 @@ SHORT EXPENTRY fnCompareLastAccessDate(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pm
 SHORT EXPENTRY fnCompareCreationDate(PMINIRECORDCORE pmrc1, PMINIRECORDCORE pmrc2, PVOID pStorage)
 {
     pStorage = pStorage;
-    return (fnCompareCommonDate(pmrc1, pmrc2, 3));
+    return fnCompareCommonDate(pmrc1, pmrc2, 3);
 }
 
 

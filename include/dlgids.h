@@ -86,15 +86,15 @@
 // XFolder version flags; since this file is
 // #include'd in the NLS DLLs also, this string
 // will be readable as a resource in the NLS DLL
-#define XFOLDER_VERSION        "0.9.19"
+#define XFOLDER_VERSION        "0.9.20"
 
 #define XFOLDER_MAJOR          0
 #define XFOLDER_MINOR          9
-#define XFOLDER_REVISION       19
+#define XFOLDER_REVISION       20
 
 // this sets the minimum version number for NLS DLLS
 // which XFolder will accept
-#define MINIMUM_NLS_VERSION    "0.9.19"
+#define MINIMUM_NLS_VERSION    "0.9.20"
 
 /* ******************************************************************
  *

@@ -217,7 +217,8 @@ PCLASSRECORDCORE clsAddClass2Cnr(HWND hwndCnr,                  // in: cnr to in
         if (pwpsMyself)
             pwpsMyself->fProcessed = TRUE;
     }
-    return (preccNew);
+
+    return preccNew;
 }
 
 /*
@@ -755,7 +756,7 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
         SOMFree(somidRoot);
     }
 
-    return (pwpsciReturn);
+    return pwpsciReturn;
 }
 
 /*
@@ -1000,6 +1001,7 @@ MRESULT EXPENTRY fnwpSelectWPSClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
         default:
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
     }
+
     return mrc;
 }
 
@@ -1039,10 +1041,10 @@ ULONG clsSelectWpsClassDlg(HWND hwndOwner,
                            ULONG idDlg,
                            PSELECTCLASSDATA pscd)
 {
-    return (WinDlgBox(HWND_DESKTOP, hwndOwner,
-                      fnwpSelectWPSClass,
-                      hmod, idDlg,
-                      pscd));
+    return WinDlgBox(HWND_DESKTOP, hwndOwner,
+                     fnwpSelectWPSClass,
+                     hmod, idDlg,
+                     pscd);
 }
 
 /* ******************************************************************
@@ -1238,7 +1240,8 @@ PMETHODINFO clsQueryMethodInfo(SOMClass *pClassObject,  // in: class to query me
             }
         } // end for
     }
-    return (pmi);
+
+    return pmi;
 }
 
 /*
@@ -1257,27 +1260,28 @@ PMETHODINFO clsQueryMethodInfo(SOMClass *pClassObject,  // in: class to query me
 
 VOID clsFreeMethodInfo(PMETHODINFO *ppMethodInfo)
 {
-    if (ppMethodInfo)
-        if (*ppMethodInfo)
+    if (    (ppMethodInfo)
+         && (*ppMethodInfo)
+       )
+    {
+        PLISTNODE pNode = lstQueryFirstNode(&((*ppMethodInfo)->llMethods));
+        while (pNode)
         {
-            PLISTNODE pNode = lstQueryFirstNode(&((*ppMethodInfo)->llMethods));
-            while (pNode)
-            {
-                PSOMMETHOD psm = (PSOMMETHOD)pNode->pItemData;
-                if (psm->pszMethodName)
-                    free(psm->pszMethodName);
-                // free list of class objects (no auto-free)
-                lstClear(&psm->llOverriddenBy);
-                free(psm);
-                pNode = pNode->pNext;
-            }
-
-            // free SOMMETHOD list
-            lstClear(&((*ppMethodInfo)->llMethods));
-
-            free(*ppMethodInfo);
-            *ppMethodInfo = NULL;
+            PSOMMETHOD psm = (PSOMMETHOD)pNode->pItemData;
+            if (psm->pszMethodName)
+                free(psm->pszMethodName);
+            // free list of class objects (no auto-free)
+            lstClear(&psm->llOverriddenBy);
+            free(psm);
+            pNode = pNode->pNext;
         }
+
+        // free SOMMETHOD list
+        lstClear(&((*ppMethodInfo)->llMethods));
+
+        free(*ppMethodInfo);
+        *ppMethodInfo = NULL;
+    }
 }
 
 

@@ -274,7 +274,8 @@ SOM_Scope BOOL  SOMLINK xpg_xwpDestroyStorage(XWPProgram *somSelf)
  *
  *      If TRUE is returned, pszBuffer has received the
  *      program's executable name, which may or may not
- *      be fully qualified.
+ *      be fully qualified. Note that the buffer receives
+ *      a "*" string only if the app is a command prompt.
  *
  *      Returns FALSE if the internal executable data is
  *      empty or invalid.
@@ -299,6 +300,10 @@ SOM_Scope BOOL  SOMLINK xpg_xwpQueryExecutable(XWPProgram *somSelf,
         {
             HOBJECT hobj;
             WPObject *pobj;
+
+            _PmpfF(("[%s] ulExecutableHandle 0x%lX",
+                    _wpQueryTitle(somSelf),
+                    pData->ulExecutableHandle));
 
             if (pData->ulExecutableHandle == 0xFFFF)
             {
@@ -640,6 +645,7 @@ SOM_Scope HPOINTER  SOMLINK xpg_wpQueryIcon(XWPProgram *somSelf)
  *      Returns FALSE only on crashes.
  *
  *@@added V0.9.18 (2002-03-19) [umoeller]
+ *@@changed V0.9.20 (2002-07-03) [umoeller]: fixed bad icons for "*" command prompts
  */
 
 static BOOL ProgramIconHandler(XWPProgram *somSelf,
@@ -652,6 +658,8 @@ static BOOL ProgramIconHandler(XWPProgram *somSelf,
 {
     BOOL        brc = FALSE;
     BOOL        fLocked = FALSE;
+
+    _PmpfF(("entering"));
 
     TRY_LOUD(excpt1)
     {
@@ -666,9 +674,24 @@ static BOOL ProgramIconHandler(XWPProgram *somSelf,
             CHAR    szFQExecutable[CCHMAXPATH];
             PSZ     pszExec = NULL;
 
-            if (    (szExecutable[1] != ':')
-                 && (!strchr(szExecutable, '\\'))
-               )
+            _PmpfF(("_xwpQueryExecutable returned %s", szExecutable));
+
+            // handle icons for command lines V0.9.20 (2002-07-03) [umoeller]
+            if (!strcmp(szExecutable, "*"))
+            {
+                if (    (pData->ProgType.progc)
+                     && (!progFindIcon(NULL,     // no exec, get default icon for the type
+                                       pData->ProgType.progc,
+                                       phptr,
+                                       pcbIconInfo,
+                                       pIconInfo,
+                                       pfNotDefaultIcon))
+                   )
+                    fFound = TRUE;
+            }
+            else if (    (szExecutable[1] != ':')
+                      && (!strchr(szExecutable, '\\'))
+                    )
             {
                 // prog is not fully qualified: find it on path
                 if (!doshSearchPath("PATH",
@@ -680,6 +703,8 @@ static BOOL ProgramIconHandler(XWPProgram *somSelf,
             }
             else
                 pszExec = szExecutable;
+
+            _PmpfF(("pszExec is %s", STRINGORNULL(pszExec)));
 
             if (pszExec)
             {
@@ -1218,51 +1243,6 @@ SOM_Scope BOOL  SOMLINK xpg_wpQueryProgDetails(XWPProgram *somSelf,
     {
         BOOL brc = FALSE;
         BOOL fLocked = FALSE;
-
-        #ifdef DEBUG_PROGRAMSTART
-            _Pmpf((__FUNCTION__ " for \"%s\":", _wpQueryTitle(somSelf) ));
-
-            _Pmpf(("   pszEnvironment is 0x%lX",
-                                pData->pszEnvironment));
-            if (pData->pszEnvironment)
-            {
-                PSZ pszThis = pData->pszEnvironment;
-                while (*pszThis != 0)
-                {
-                    _Pmpf(("  \"%s\"", pszThis));
-                    pszThis += strlen(pszThis) + 1;
-                }
-            }
-
-            _Pmpf(("   ulExecutableHandle is 0x%lX", pData->ulExecutableHandle));
-            {
-                HOBJECT hobj = pData->ulExecutableHandle;
-                WPObject *pobj;
-                if (!(pobj = _wpclsQueryObject(_WPObject,
-                                               hobj | (G_usHiwordFileSystem << 16))))
-                    _Pmpf(("    _wpclsQueryObject(%lX) failed",
-                                               hobj | (G_usHiwordFileSystem << 16)));
-                else if (objQueryFlags(pobj) & OBJFL_WPFILESYSTEM)
-                {
-                    CHAR szBuffer[CCHMAXPATH];
-                    if (!_wpQueryFilename(pobj, szBuffer, TRUE))
-                        _Pmpf(("    _wpQueryFilename(%lX) failed",
-                                    pobj));
-                    else
-                        _Pmpf(("    executable from hobj %lX is \"%s\"",
-                                 hobj, szBuffer));
-                }
-            }
-
-            _Pmpf(("   startupdir %lX", pData->ulStartupDirHandle));
-
-            _Pmpf(("    progc is %s",
-                    appDescribeAppType(pData->ProgType.progc)));
-
-            _Pmpf(("   pszExecutable: 0x%lX", pData->pszExecutable));
-            if (pData->pszExecutable)
-                DumpMemoryBlock(pData->pszExecutable, 100, 8);
-        #endif
 
         TRY_LOUD(excpt1)
         {

@@ -299,7 +299,7 @@ unsigned long _System _DLL_InitTerm(unsigned long hModule,
     }
 
     // a non-zero value must be returned to indicate success
-    return (1);
+    return 1;
 }
 
 /*
@@ -325,7 +325,7 @@ unsigned long _System _DLL_InitTerm(unsigned long hModule,
 
 HMODULE cmnQueryMainCodeModuleHandle(VOID)
 {
-    return (G_hmodDLL);
+    return G_hmodDLL;
 }
 
 /*
@@ -339,7 +339,7 @@ HMODULE cmnQueryMainCodeModuleHandle(VOID)
 
 PCSZ cmnQueryMainCodeModuleFilename(VOID)
 {
-    return (G_szDLLFile);
+    return G_szDLLFile;
 }
 
 /*
@@ -392,7 +392,7 @@ HMODULE cmnQueryMainResModuleHandle(VOID)
     if (fLocked)
         krnUnlock();
 
-    return (G_hmodRes);
+    return G_hmodRes;
 }
 
 /*
@@ -487,7 +487,7 @@ PCSZ cmnQueryLanguageCode(VOID)
     if (fLocked)
         krnUnlock();
 
-    return (G_szLanguageCode);
+    return G_szLanguageCode;
 }
 
 /*
@@ -569,7 +569,7 @@ PCSZ cmnQueryHelpLibrary(VOID)
     if (fLocked)
         krnUnlock();
 
-    return (rc);
+    return rc;
 }
 
 /*
@@ -662,7 +662,7 @@ PCSZ cmnQueryMessageFile(VOID)
     if (fLocked)
         krnUnlock();
 
-    return (rc);
+    return rc;
 }
 
 #ifndef __NOBOOTLOGO__
@@ -697,7 +697,7 @@ PSZ cmnQueryBootLogoFile(VOID)
         pszReturn = strdup(szBootLogoFile);
     }
 
-    return (pszReturn);
+    return pszReturn;
 }
 
 #endif
@@ -949,7 +949,7 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                "Returning NULLHANDLE. Some error occured.");
 
     // return (new?) module handle
-    return (hmodReturn);
+    return hmodReturn;
 }
 
 /*
@@ -1112,7 +1112,7 @@ static ULONG ReplaceEntities(PXSTRING pstr)
             rc++;
     }
 
-    return (rc);
+    return rc;
 }
 
 /*
@@ -1340,7 +1340,7 @@ PSZ cmnGetString(ULONG ulStringID)
     if (fLocked)
         UnlockStrings();
 
-    return (pszReturn);
+    return pszReturn;
 }
 
 /*
@@ -1627,7 +1627,7 @@ PCSZ cmnQueryThemeDirectory(VOID)
     if (fLocked)
         krnUnlock();
 
-    return (pReturn);
+    return pReturn;
 }
 
 #endif
@@ -1681,7 +1681,7 @@ static BOOL LockIcons(VOID)
         }
     }
     else
-        return (!WinRequestMutexSem(G_hmtxIconsCache, SEM_INDEFINITE_WAIT));
+        return !WinRequestMutexSem(G_hmtxIconsCache, SEM_INDEFINITE_WAIT);
 
     return FALSE;
 }
@@ -1924,7 +1924,7 @@ static PICONTREENODE LoadNewIcon(ULONG ulStdIcon)
                    treeCompareKeys);
     }
 
-    return (pNode);
+    return pNode;
 }
 
 /*
@@ -2234,7 +2234,7 @@ PCSZ cmnQueryStatusBarSetting(USHORT usSetting)
     if (fLocked)
         krnUnlock();
 
-    return (rc);
+    return rc;
 }
 
 /*
@@ -2364,7 +2364,7 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
 
 ULONG cmnQueryStatusBarHeight(VOID)
 {
-    return (G_ulStatusBarHeight);
+    return G_ulStatusBarHeight;
 }
 
 /* ******************************************************************
@@ -3114,7 +3114,7 @@ static PCSETTINGINFO FindSettingInfo(XWPSETTING s)
     {
         if (s == G_aSettingInfos[ul2].s)
         {
-            return (&G_aSettingInfos[ul2]);
+            return &G_aSettingInfos[ul2];
         }
     }
 
@@ -3328,7 +3328,7 @@ ULONG cmnQuerySettingDebug(XWPSETTING s,
 #endif
 
     if (s < ___LAST_SETTING)
-        return (G_aulSettings[s]);
+        return G_aulSettings[s];
 
 #ifdef __DEBUG__
     cmnLog(pcszSourceFile, ulLine, pcszFunction,
@@ -3377,7 +3377,7 @@ ULONG cmnQuerySetting(XWPSETTING s)
 #endif
 
     if (s < ___LAST_SETTING)
-        return (G_aulSettings[s]);
+        return G_aulSettings[s];
 
 #ifdef __DEBUG__
     cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -3480,7 +3480,7 @@ PSETTINGSBACKUP cmnBackupSettings(const XWPSETTING *paSettings,
         }
     }
 
-    return (p1);
+    return p1;
 }
 
 /*
@@ -3525,7 +3525,7 @@ VOID cmnRestoreSettings(PSETTINGSBACKUP paSettingsBackup,
 
 BOOL cmnTurboFoldersEnabled(VOID)
 {
-    return (G_aulSettings[sfTurboFolders]);
+    return G_aulSettings[sfTurboFolders];
 }
 
 /*
@@ -4178,7 +4178,7 @@ ULONG cmnSetupSetDefaults(PXWPSETUPENTRY paSettings, // in: object's setup set
         } // for (ulSettingThis = 0;
     } // for (ulOfsThis = 0;
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -4229,7 +4229,7 @@ ULONG cmnSetupRestoreBackup(PULONG paulOffsets,
         ulrc++;
     } // for (ulOfsThis = 0;
 
-    return (ulrc);
+    return ulrc;
 }
 
 /* ******************************************************************
@@ -4678,7 +4678,7 @@ PCOUNTRYSETTINGS cmnQueryCountrySettings(BOOL fReload)
         G_fCountrySettingsLoaded = TRUE;
     }
 
-    return (&G_CountrySettings);
+    return &G_CountrySettings;
 }
 
 /*
@@ -4692,7 +4692,7 @@ PCOUNTRYSETTINGS cmnQueryCountrySettings(BOOL fReload)
 CHAR cmnQueryThousandsSeparator(VOID)
 {
     PCOUNTRYSETTINGS p = cmnQueryCountrySettings(FALSE);
-    return (p->cThousands);
+    return p->cThousands;
 }
 
 /*
@@ -5033,7 +5033,7 @@ BOOL cmnIsObjectFromForeignDesktop(WPObject *somSelf)
         pCheck = _wpQueryFolder(pCheck);
     }
 
-    return (fForeign);
+    return fForeign;
 }
 
 static PCSZ G_apcszExtensions[]
@@ -5095,7 +5095,7 @@ static PSZ StripParams(PSZ pcszCommand,
             pszReturn = strdup(pcszCommand);
     }
 
-    return (pszReturn);
+    return pszReturn;
 }
 
 /*
@@ -5705,7 +5705,7 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
     {
     } END_CATCH();
 
-    return (happ);      // V0.9.12 (2001-05-26) [umoeller]
+    return happ;      // V0.9.12 (2001-05-26) [umoeller]
 }
 
 /*
@@ -5723,10 +5723,10 @@ PCSZ cmnQueryDefaultFont(VOID)
 {
 #ifndef __NOPARANOIA__
     if (cmnQuerySetting(sfUse8HelvFont))
-        return ("8.Helv");
+        return "8.Helv";
     else
 #endif
-        return ("9.WarpSans");
+        return "9.WarpSans";
 }
 
 /*
@@ -5764,7 +5764,7 @@ HPOINTER cmnQueryDlgIcon(VOID)
         G_hptrDlgIcon = WinLoadPointer(HWND_DESKTOP,
                                        cmnQueryMainResModuleHandle(),
                                        ID_ICONDLG);
-    return (G_hptrDlgIcon);
+    return G_hptrDlgIcon;
 }
 
 ULONG   G_MsgBoxHelpPanel = NULLHANDLE;
@@ -5871,7 +5871,7 @@ ULONG cmnMessageBox(HWND hwndOwner,     // in: owner
     }
     CATCH(excpt1) { } END_CATCH();
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -5972,7 +5972,7 @@ APIRET cmnGetMessage(PCSZ *pTable,     // in: replacement PSZ table or NULL
     // create string message identifier from ulMsgNumber
     sprintf(szMessageName, "XFL%04d", ulMsgNumber);
 
-    return (cmnGetMessageExt(pTable, ulTable, pstr, szMessageName));
+    return cmnGetMessageExt(pTable, ulTable, pstr, szMessageName);
 }
 
 /*
@@ -6014,7 +6014,7 @@ ULONG cmnMessageBoxHelp(HWND hwndOwner,   // in: owner window
     xstrClear(&strTitle);
     xstrClear(&strMessage);
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -6645,7 +6645,7 @@ ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window
     xstrClear(&strError);
     xstrClear(&str2);
 
-    return (mbrc);
+    return mbrc;
 }
 
 /*
@@ -6725,7 +6725,7 @@ ULONG cmnProgramErrorMsgBox(HWND hwndOwner,
         }
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -6744,15 +6744,15 @@ PSZ cmnTextEntryBox(HWND hwndOwner,
                     ULONG ulMaxLen,
                     ULONG fl)
 {
-    return (dlghTextEntryBox(hwndOwner,
-                             pcszTitle,
-                             pcszDescription,
-                             pcszDefault,
-                             cmnGetString(DID_OK),
-                             cmnGetString(DID_CANCEL),
-                             ulMaxLen,
-                             fl,
-                             cmnQueryDefaultFont()));
+    return dlghTextEntryBox(hwndOwner,
+                            pcszTitle,
+                            pcszDescription,
+                            pcszDefault,
+                            cmnGetString(DID_OK),
+                            cmnGetString(DID_CANCEL),
+                            ulMaxLen,
+                            fl,
+                            cmnQueryDefaultFont());
 }
 
 /*

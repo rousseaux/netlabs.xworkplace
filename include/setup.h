@@ -40,15 +40,6 @@
      *
      *************************************************************/
 
-    // stdlib; doesn't work right now... should we include
-    // setup.h before any stdlib headers?
-    #pragma alloc_text(FREQ_CODE1, strlen)
-    #pragma alloc_text(FREQ_CODE1, strdup)
-    #pragma alloc_text(FREQ_CODE1, free)
-    #pragma alloc_text(FREQ_CODE1, malloc)
-    #pragma alloc_text(FREQ_CODE1, strcmp)
-    #pragma alloc_text(FREQ_CODE1, memcpy)
-
     // dosh.c
     #pragma alloc_text(FREQ_CODE1, doshSleep)
     #pragma alloc_text(FREQ_CODE1, doshRequestMutexSem)
@@ -58,6 +49,10 @@
     #pragma alloc_text(FREQ_CODE1, doshMatch)
     #pragma alloc_text(FREQ_CODE1, doshMatchCase)
     #pragma alloc_text(FREQ_CODE1, doshQuerySysUptime)
+
+    #pragma alloc_text(FREQ_CODE1, nlsDBCS)
+    #pragma alloc_text(FREQ_CODE1, nlschr)
+    #pragma alloc_text(FREQ_CODE1, nlsrchr)
 
     // winh.c
     #pragma alloc_text(FREQ_CODE1, winhRequestMutexSem)
@@ -346,14 +341,14 @@
             // #define DEBUG_FLDRICONS
 
         // debug file operations engine
-            #define DEBUG_FOPS
+            // #define DEBUG_FOPS
 
         // debug trashcan
             // #define DEBUG_TRASHCAN
 
 /* program objects */
         // debug program startup data
-            // #define DEBUG_PROGRAMSTART
+            #define DEBUG_PROGRAMSTART
 
 /* daemon and hook */
 
@@ -375,7 +370,7 @@
      *
      *************************************************************/
 
-    // XWPEXPORT defines the standard linkage for the
+    // XWPENTRY defines the standard linkage for the
     // XWorkplace helpers.
 
     // VAC:

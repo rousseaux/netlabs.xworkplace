@@ -2002,6 +2002,7 @@ APIRET LoadWinPEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
  *@@changed V0.9.18 (2002-03-19) [umoeller]: no longer checking buffer size
+ *@@changed V0.9.20 (2002-07-03) [umoeller]: fixed major screwup if pExec was NULL
  */
 
 APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
@@ -2019,11 +2020,13 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
     if (s_fCrashed)
         return ERROR_PROTECTION_VIOLATION;
 
+    // moved this out of the excpt handler, christ
+    // V0.9.20 (2002-07-03) [umoeller]
+    if (!pExec)
+        return ERROR_INVALID_PARAMETER;
+
     TRY_LOUD(excpt1)
     {
-        if (!pExec)
-            return ERROR_INVALID_PARAMETER;
-
         // check the executable type
         switch (pExec->ulExeFormat)
         {

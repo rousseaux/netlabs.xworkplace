@@ -711,6 +711,9 @@ ULONG progQueryProgType(PCSZ pszFullFile,
  *      In that case the OBJSTYLE_NOTDEFAULTICON flag must be
  *      set clear.
  *
+ *      Note that it is possible to pass in pExec as NULL to
+ *      receive a default icon for the given program type.
+ *
  *      This is shared code between XWPProgram and XWPProgramFile,
  *      for both the wpSetProgicon and the wpQueryIconData
  *      method overrides.
@@ -750,7 +753,7 @@ ULONG progQueryProgType(PCSZ pszFullFile,
  *@@changed V0.9.18 (2002-03-16) [umoeller]: added support for wpQueryIconData
  */
 
-APIRET progFindIcon(PEXECUTABLE pExec,          // in: executable from exehOpen
+APIRET progFindIcon(PEXECUTABLE pExec,          // in: executable from exehOpen; ptr can be NULL
                     ULONG ulAppType,            // in: PROG_* app type
                     HPOINTER *phptr,            // out: if != NULL, icon handle
                     PULONG pcbIconInfo,         // out: if != NULL, size of ICONINFO buffer required

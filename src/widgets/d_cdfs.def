@@ -17,7 +17,7 @@
 ;
 
 LIBRARY D_CDFS INITGLOBAL TERMGLOBAL
-Description '@#Ulrich M”ller:0.9.19#@ XWorkplace CDFS.IFS driver plugin DLL'
+Description '@#Ulrich M”ller:0.9.20#@ XWorkplace CDFS.IFS driver plugin DLL'
 PROTMODE
 
 DATA              MULTIPLE READWRITE LOADONCALL NONSHARED

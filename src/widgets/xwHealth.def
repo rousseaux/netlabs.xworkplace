@@ -3,7 +3,7 @@
 ;-------------
 
 LIBRARY XWHEALTH INITGLOBAL TERMGLOBAL
-Description '@#Ulrich M”ller:0.9.19#@ XWorkplace xwHealth plugin DLL'
+Description '@#Ulrich M”ller:0.9.20#@ XWorkplace xwHealth plugin DLL'
 PROTMODE
 
 DATA              MULTIPLE READWRITE LOADONCALL NONSHARED
