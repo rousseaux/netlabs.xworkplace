@@ -788,6 +788,33 @@ VOID DeinstallHook(VOID)
  *
  ********************************************************************/
 
+typedef HSWITCH APIENTRY WINHSWITCHFROMHAPP(HAPP happ);
+
+/*
+ *@@ winhHSWITCHfromHAPP:
+ *      resolves and calls the undocumented
+ *      WinHSWITCHfromHAPP API.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+HSWITCH winhHSWITCHfromHAPP(HAPP happ)
+{
+    static WINHSWITCHFROMHAPP *pWinHSWITCHfromHAPP = NULL;
+
+    if (!pWinHSWITCHfromHAPP)
+        // first call: import WinHSWITCHfromHAPP
+        // WinHSWITCHfromHAPP PMMERGE.5199
+        doshQueryProcAddr("PMMERGE",
+                          5199,
+                          (PFN*)&pWinHSWITCHfromHAPP);
+
+    if (pWinHSWITCHfromHAPP)
+        return pWinHSWITCHfromHAPP(happ);
+
+    return NULLHANDLE;
+}
+
 /*
  *@@ ProcessAutoScroll:
  *      this gets called from fnwpDaemonObject to
@@ -1156,7 +1183,7 @@ static VOID ProcessHotCorner(MPARAM mp1)
         {
             // XPager?
 #ifndef __NOPAGER__
-            case 0xFFFF0002:
+            case SPECIALOBJ_PAGER_SHOW: // 0xFFFF0002:
                 // yes: bring up XPager window
                 WinSetWindowPos(G_pHookData->hwndXPagerFrame,
                                 HWND_TOP,
@@ -1169,24 +1196,24 @@ static VOID ProcessHotCorner(MPARAM mp1)
             break;
 
             // XPager screen change?
-            case 0xFFFF0003:
+            case SPECIALOBJ_PAGER_UP: // 0xFFFF0003:
                 ucScanCode = 0x61;
             break;
 
-            case 0xFFFF0004:
+            case SPECIALOBJ_PAGER_RIGHT: // 0xFFFF0004:
                 ucScanCode = 0x64;
             break;
 
-            case 0xFFFF0005:
+            case SPECIALOBJ_PAGER_DOWN: // 0xFFFF0005:
                 ucScanCode = 0x66;
             break;
 
-            case 0xFFFF0006:
+            case SPECIALOBJ_PAGER_LEFT: // 0xFFFF0006:
                 ucScanCode = 0x63;
             break;
 #endif
 
-            case 0xFFFF0007: // V0.9.18 (2002-02-12) [pr]
+            case SPECIALOBJ_SCREENWRAP: // 0xFFFF0007: // V0.9.18 (2002-02-12) [pr]
             {
                 POINTL ptlCurrent;
 
@@ -1222,7 +1249,7 @@ static VOID ProcessHotCorner(MPARAM mp1)
                            T1M_OPENOBJECTFROMHANDLE,
                            // pass HOBJECT or special function (0xFFFF000x)
                            (MPARAM)hobjIndex,
-                           // pass mp1
+                           // pass screen border in mp1
                            (MPARAM)(lIndex + 1));
         } // end switch
 
@@ -1822,8 +1849,6 @@ static VOID ProcessMovePtrToButton(HWND hwndObject, MPARAM mp1)
                          G_ptlMovingPtrEnd.y);
 }
 
-typedef HSWITCH APIENTRY WINHSWITCHFROMHAPP(HAPP happ);
-
 /*
  *@@ ProcessStartApp:
  *      implementation for XDM_STARTAPP in fnwpDaemonObject.
@@ -1835,8 +1860,6 @@ typedef HSWITCH APIENTRY WINHSWITCHFROMHAPP(HAPP happ);
 static MRESULT ProcessStartApp(MPARAM mp1, MPARAM mp2)
 {
     APIRET arc;
-
-    static WINHSWITCHFROMHAPP *G_WinHSWITCHfromHAPP = NULL;
 
     if (!(arc = DosGetSharedMem(mp2,
                                 PAG_READ | PAG_WRITE)))
@@ -1869,17 +1892,7 @@ static MRESULT ProcessStartApp(MPARAM mp1, MPARAM mp2)
                )
             {
                 // try to find the switch entry, if there's one
-                if (!G_WinHSWITCHfromHAPP)
-                    // import WinHSWITCHfromHAPP
-                    // WinHSWITCHfromHAPP PMMERGE.5199
-                    if ((arc = doshQueryProcAddr("PMMERGE",
-                                                 5199,
-                                                 (PFN*)&G_WinHSWITCHfromHAPP)))
-                        _Pmpf(("doshQueryProcAddr returned %d resolving WinHSWITCHfromHAPP.", arc));
-
-                if (    (G_WinHSWITCHfromHAPP)
-                     && (hsw = G_WinHSWITCHfromHAPP(happ))
-                   )
+                if (hsw = winhHSWITCHfromHAPP(happ))
                 {
                     _Pmpf(("switching to hsw 0x%lX.", hsw));
                     WinSwitchToProgram(hsw);
@@ -2200,7 +2213,11 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *      which is not really desirable.
              *
              *      Parameters:
-             *      -- ULONG mp1: hotkey identifier, probably Desktop object handle.
+             *
+             *      -- ULONG mp1: hotkey identifier, probably WPS
+             *         object handle.
+             *
+             *      -- mp2: not used, must be NULL.
              */
 
             case XDM_HOTKEYPRESSED:
@@ -2213,7 +2230,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     WinPostMsg(G_pXwpGlobalShared->hwndThread1Object,
                                T1M_OPENOBJECTFROMHANDLE,
                                mp1,
-                               mp2);
+                               0);      // object hotkey, not screen border
                 }
             break;
 
@@ -2328,7 +2345,10 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *      determines whether to open any object.
              *
              *      Parameters:
-             *      -- BYTE mp1: corner reached; see hook\xwphook.h for definitions
+             *
+             *      -- BYTE mp1: corner reached; see hook\xwphook.h
+             *         for definitions
+             *
              *      -- mp2: unused, always 0.
              *
              *@@changed V0.9.9 (2001-01-25) [lafaix]: XPager movements actions added

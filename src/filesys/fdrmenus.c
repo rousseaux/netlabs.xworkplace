@@ -156,6 +156,7 @@
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
+#include "filesys\statbars.h"           // status bar translation logic
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
@@ -175,17 +176,14 @@
  *
  ********************************************************************/
 
-static BOOL    G_fIsWarp4 = FALSE;
-
-// static HWND    G_hwndTemplateFrame = NULLHANDLE;
-// static POINTL  G_ptlTemplateMousePos = {0};
+static BOOL     G_fIsWarp4 = FALSE;
 
 // linked list for config folder content:
-static HMTX        G_hmtxConfigContent = NULLHANDLE;   // V0.9.9 (2001-04-04) [umoeller]
-static LINKLIST    G_llConfigContent;
-static BOOL        G_fConfigCacheValid;                // if FALSE, cache is rebuilt
+static HMTX     G_hmtxConfigContent = NULLHANDLE;   // V0.9.9 (2001-04-04) [umoeller]
+static LINKLIST G_llConfigContent;
+static BOOL     G_fConfigCacheValid;                // if FALSE, cache is rebuilt
 
-static POINTL      G_ptlMouseMenu;              // ptr position when menu was opened
+static POINTL   G_ptlMouseMenu;              // ptr position when menu was opened
                                                 // moved this here from XFolder instance
                                                 // data V0.9.16 (2001-10-23) [umoeller]
 
@@ -211,8 +209,10 @@ static POINTL      G_ptlMouseMenu;              // ptr position when menu was op
  *
  *      hwndViewSubmenu contains the submenu to add
  *      items to:
+ *
  *      --  on Warp 4, this is the default "View" submenu
  *          (either in the context menu or the "View" pulldown)
+ *
  *      --  on Warp 3, mnuModifyFolderPopupMenu creates a new
  *          "View" submenu, which is passed to this func.
  *
@@ -243,9 +243,6 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
     if (hwndCnr)
     {
         // we have a valid open view:
-        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
         ULONG       ulOfs = cmnQuerySetting(sulVarMenuOffset);
         ULONG       ulAttr = 0;
         USHORT      usIconsAttr;
@@ -348,24 +345,25 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
         if (cmnQuerySetting(sfStatusBars))
 #endif
         {
-            if (cmnIsADesktop(somSelf))
+            BOOL fDefaultVis = cmnQuerySetting(sfDefaultStatusBarVisibility);
+
+            if (!stbClassCanHaveStatusBars(somSelf)) // V0.9.19 (2002-04-17) [umoeller]
                 // always disable for Desktop
                 ulAttr = MIA_DISABLED;
             else if (_somIsA(somSelf, _WPRootFolder))
                 // for root folders (WPDisk siblings),
                 // check global setting only
                 ulAttr = MIA_DISABLED
-                            | ((cmnQuerySetting(sfDefaultStatusBarVisibility))
+                            | (fDefaultVis
                                 ? MIA_CHECKED
                                 : 0);
             else
                 // for regular folders, check both instance
                 // and global status bar setting
-                ulAttr = (
-                           (_bStatusBarInstance == STATUSBAR_ON)
-                        || (    (_bStatusBarInstance == STATUSBAR_DEFAULT)
-                             && (cmnQuerySetting(sfDefaultStatusBarVisibility))
-                           )
+                ulAttr = (    (_bStatusBarInstance == STATUSBAR_ON)
+                           || (    (_bStatusBarInstance == STATUSBAR_DEFAULT)
+                                && (fDefaultVis)
+                              )
                          )
                             ? MIA_CHECKED
                             : 0;
@@ -837,8 +835,6 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
     BOOL            rc = TRUE;
     MENUITEM        mi;
 
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     ULONG           ulVarMenuOfs = cmnQuerySetting(sulVarMenuOffset);
 
     // set the global variable for whether Warp 4 is running
@@ -1274,7 +1270,6 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
 {
     BOOL brc = FALSE;
 
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     ULONG           ulVarMenuOfs = cmnQuerySetting(sulVarMenuOffset);
 
     HWND hNewMenu;
@@ -1366,7 +1361,6 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
                                 HWND hwndCnr,
                                 ULONG iPosition)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     ULONG           ulVarMenuOfs = cmnQuerySetting(sulVarMenuOffset);
 
     /* if (cmnQuerySetting(sfExtAssocs))
@@ -1544,7 +1538,6 @@ BOOL mnuProgramObjectSelected(WPObject *pFolder,        // in: folder or disk ob
     CHAR            szNewTitle[1024] = "";
 
     HAB             hab;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     // get program object data
     if ((pDetails = progQueryDetails(pProgram)))
@@ -1884,7 +1877,6 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
 
     TRY_LOUD(excpt1)
     {
-        // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
         ULONG               ulMenuId2 = ulMenuId - cmnQuerySetting(sulVarMenuOffset);
 
         if (somSelf)
@@ -2160,7 +2152,6 @@ BOOL mnuMenuItemHelpSelected(WPObject *somSelf, ULONG MenuId)
 {
     ULONG   ulFirstVarMenuId;
     ULONG   ulPanel = 0;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     ULONG   ulMenuId2 = MenuId - cmnQuerySetting(sulVarMenuOffset);
 
     // first check for variable menu item IDs
@@ -2351,10 +2342,8 @@ BOOL mnuFileSystemSelectingMenuItem(WPObject *somSelf,
                                        // out: if TRUE is returned (ie. the menu item was handled
                                        // here), this determines whether the menu should be dismissed
 {
-    // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
     ULONG               ulMenuId2 = usItem - cmnQuerySetting(sulVarMenuOffset);
     BOOL                fHandled = TRUE;
-    // BOOL                brc = TRUE;     // "dismiss menu" flag
 
     WPObject *pObject = somSelf;
     WPFileSystem *pFileSystem = objResolveIfShadow(pObject);
@@ -2497,11 +2486,8 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
 {
     // XFolderData *somThis = XFolderGetData(somSelf);
 
-    // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
     ULONG               ulMenuId2 = usItem - cmnQuerySetting(sulVarMenuOffset);
     BOOL                fHandled = TRUE;
-    // BOOL                brc = TRUE;     // "dismiss menu" flag
-    // USHORT              usfAlwaysSort, usDefaultSort;
 
     #ifdef DEBUG_MENUS
         _Pmpf(("mnuFolderSelectingMenuItem"));
@@ -2795,27 +2781,19 @@ static const XWPSETTING G_AddMenusBackup[] =
 VOID mnuAddMenusInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                              ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == NULL)
-        {
-            // first call: backup Global Settings for "Undo" button;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            /* pnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
-               */
-            pnbp->pUser = cmnBackupSettings(G_AddMenusBackup,
-                                             ARRAYITEMCOUNT(G_AddMenusBackup));
-            // insert the controls using the dialog formatter
-            // V0.9.16 (2001-09-29) [umoeller]
-            ntbFormatPage(pnbp->hwndDlgPage,
-                          dlgAddMenus,
-                          ARRAYITEMCOUNT(dlgAddMenus));
-        }
+        // first call: backup Global Settings for "Undo" button;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        pnbp->pUser = cmnBackupSettings(G_AddMenusBackup,
+                                        ARRAYITEMCOUNT(G_AddMenusBackup));
+        // insert the controls using the dialog formatter
+        // V0.9.16 (2001-09-29) [umoeller]
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      dlgAddMenus,
+                      ARRAYITEMCOUNT(dlgAddMenus));
     }
 
     if (flFlags & CBI_SET)
@@ -2979,23 +2957,14 @@ static const XWPSETTING G_ConfigFolderMenusBackup[] =
 VOID mnuConfigFolderMenusInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                       ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == NULL)
-        {
-            // first call: backup Global Settings for "Undo" button;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            pnbp->pUser = cmnBackupSettings(G_ConfigFolderMenusBackup,
-                                             ARRAYITEMCOUNT(G_ConfigFolderMenusBackup));
-            /*
-            pnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
-            */
-        }
+        // first call: backup Global Settings for "Undo" button;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        pnbp->pUser = cmnBackupSettings(G_ConfigFolderMenusBackup,
+                                         ARRAYITEMCOUNT(G_ConfigFolderMenusBackup));
     }
 
     if (flFlags & CBI_SET)
@@ -3072,18 +3041,9 @@ MRESULT mnuConfigFolderMenusItemChanged(PNOTEBOOKPAGE pnbp,
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
-            // PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pnbp->pUser);
-
             // and restore the settings for this page
             cmnRestoreSettings(pnbp->pUser,
                                ARRAYITEMCOUNT(G_ConfigFolderMenusBackup));
-            /*
-            cmnSetSetting(sfMenuCascadeMode, pGSBackup->MenuCascadeMode);
-            cmnSetSetting(sfRemoveX, pGSBackup->RemoveX);
-            cmnSetSetting(sfAppdParam, pGSBackup->AppdParam);
-            cmnSetSetting(sulTemplatesOpenSettings, pGSBackup->TemplatesOpenSettings);
-            cmnSetSetting(sfTemplatesReposition, pGSBackup->TemplatesReposition);
-               */
 
             // update the display by calling the INIT callback
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
@@ -3139,23 +3099,14 @@ static const XWPSETTING G_RemoveMenusBackup[] =
 VOID mnuRemoveMenusInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                 ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == NULL)
-        {
-            // first call: backup Global Settings for "Undo" button;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            /*
-            pnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
-            */
-            pnbp->pUser = cmnBackupSettings(G_RemoveMenusBackup,
-                                             ARRAYITEMCOUNT(G_RemoveMenusBackup));
-        }
+        // first call: backup Global Settings for "Undo" button;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        pnbp->pUser = cmnBackupSettings(G_RemoveMenusBackup,
+                                         ARRAYITEMCOUNT(G_RemoveMenusBackup));
     }
 
     if (flFlags & CBI_SET)
@@ -3319,20 +3270,9 @@ MRESULT mnuRemoveMenusItemChanged(PNOTEBOOKPAGE pnbp,
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
-            // PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pnbp->pUser);
-
             // and restore the settings for this page
             cmnRestoreSettings(pnbp->pUser,
                                ARRAYITEMCOUNT(G_RemoveMenusBackup));
-            /*
-            cmnSetSetting(sflDefaultMenuItems, pGSBackup->DefaultMenuItems);
-            cmnSetSetting(sfRemoveViewMenu, pGSBackup->RemoveViewMenu);
-            cmnSetSetting(sfRemovePasteItem, pGSBackup->RemovePasteItem);
-            cmnSetSetting(sfRemoveLockInPlaceItem, pGSBackup->RemoveLockInPlaceItem);
-            cmnSetSetting(sfFixLockInPlace, pGSBackup->fFixLockInPlace);
-            cmnSetSetting(sfRemoveCheckDiskItem, pGSBackup->RemoveCheckDiskItem);
-            cmnSetSetting(sfRemoveFormatDiskItem, pGSBackup->RemoveFormatDiskItem);
-               */
             // update the display by calling the INIT callback
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         }

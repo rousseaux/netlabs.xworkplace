@@ -118,6 +118,7 @@
 #include "filesys\fileops.h"            // file operations implementation
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\object.h"             // XFldObject implementation
+#include "filesys\statbars.h"           // status bar translation logic
 #include "filesys\trash.h"              // trash can implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
@@ -535,7 +536,6 @@ VOID xthrResetWorkerThreadPriority(VOID)
 {
     if (LockWorkerThreadData())
     {
-        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         ULONG   ulPrty, ulDelta;
 
         if (G_fWorkerThreadHighPriority)
@@ -947,9 +947,9 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
             // for each open folder view, call the callback
             // which updates the status bars
-            // (fncbUpdateStatusBars in folder.c)
+            // (stb_UpdateCallback in folder.c)
             fdrForEachOpenGlobalView((ULONG)mp1,
-                                     (PFNWP)fncbUpdateStatusBars);
+                                     (PFNWP)stb_UpdateCallback);
         }
         break;
 
@@ -1825,7 +1825,6 @@ MRESULT EXPENTRY fnwpBushObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
         case WM_CREATE:
         {
             PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-            // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
             // these are already initialized by xfobjM_wpclsInitData
 
             memset(&sb, 0, sizeof(sb));
@@ -1891,8 +1890,6 @@ MRESULT EXPENTRY fnwpBushObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
         case QM_DESTROYLOGO:
         {
-            // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
             if (cmnQuerySetting(sulBootLogoStyle) == 0)
                 // was bitmap window created successfully?
                 if (sb.hwndShapeFrame)
@@ -2249,7 +2246,6 @@ void _Optlink fntWimpThread(PTHREADINFO pti)
 BOOL xthrStartThreads(VOID)
 {
     BOOL brc = FALSE;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     PKERNELGLOBALS pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
 
     initLog("Entering " __FUNCTION__":");

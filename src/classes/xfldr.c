@@ -305,7 +305,6 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
 {
     BOOL        Update = FALSE;
     XFolderData *somThis = XFolderGetData(somSelf);
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     BOOL fLocked = FALSE;
 
@@ -397,7 +396,6 @@ SOM_Scope BOOL  SOMLINK xf_xwpSortViewOnce(XFolder *somSelf,
                                            long lSort)
 {
     BOOL        rc = FALSE;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
 #ifndef __ALWAYSEXTSORT__
     if (cmnQuerySetting(sfExtendedSorting))
@@ -1209,7 +1207,9 @@ SOM_Scope BOOL  SOMLINK xf_xwpProcessObjectCommand(XFolder *somSelf,
  *
  *      a)   You can call it yourself if you need to have the
  *           status bar updated; use
- +              WinQueryWindow(hwndFrame, 0x9001)
+ *
+ +              WinQueryWindow(hwndFrame, ID_STATUSBAR)
+ *
  *           to get hwndStatusBar for this method. If that call
  *           returns NULLHANDLE, there is no status bar for the
  *           folder view.
@@ -1631,7 +1631,6 @@ SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
 SOM_Scope BOOL  SOMLINK xf_wpFree(XFolder *somSelf)
 {
     BOOL        brc;
-    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // HOBJECT     hObj = NULLHANDLE;
     // XFolder *pCfg = _xwpclsQueryConfigFolder(_XFolder);
 
@@ -2244,7 +2243,6 @@ SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
 {
     ULONG ulMenuFilter = 0;
     // XFolderData *somThis = XFolderGetData(somSelf);
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XFolderMethodDebug("XFolder","xf_wpFilterPopupMenu");
 
     ulMenuFilter = XFolder_parent_WPFolder_wpFilterPopupMenu(somSelf,
@@ -2410,7 +2408,6 @@ SOM_Scope HWND  SOMLINK xf_wpDisplayMenu(XFolder *somSelf,
                                          ULONG ulReserved)
 {
     HWND hwndMenu;
-    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpDisplayMenu");
@@ -2446,7 +2443,6 @@ SOM_Scope HWND  SOMLINK xf_wpDisplayMenu(XFolder *somSelf,
 SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
 {
     ULONG   ulDefaultView = 0;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     XFolderMethodDebug("XFolder","xf_wpQueryDefaultView");
 
@@ -2789,7 +2785,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRefresh(XFolder *somSelf,
 
     fdrForEachOpenInstanceView(somSelf,
                               (ULONG)2,           // update
-                              (PFNWP)fncbUpdateStatusBars);
+                              (PFNWP)stb_UpdateCallback);
 
     xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, MPNULL);
 
@@ -2858,7 +2854,6 @@ SOM_Scope ULONG  SOMLINK xf_wpInsertSettingsPage(XFolder *somSelf,
 SOM_Scope ULONG  SOMLINK xf_wpAddObjectGeneralPage2(XFolder *somSelf,
                                                     HWND hwndNotebook)
 {
-    // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpAddObjectGeneralPage2");
 
@@ -2907,7 +2902,6 @@ SOM_Scope ULONG  SOMLINK xf_wpAddObjectGeneralPage2(XFolder *somSelf,
 SOM_Scope ULONG  SOMLINK xf_wpAddFile1Page(XFolder *somSelf,
                                            HWND hwndNotebook)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpAddFile1Page");
 
@@ -2940,7 +2934,6 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFile1Page(XFolder *somSelf,
 SOM_Scope ULONG  SOMLINK xf_wpAddFile2Page(XFolder *somSelf,
                                            HWND hwndNotebook)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpAddFile2Page");
 
@@ -2970,7 +2963,6 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFile2Page(XFolder *somSelf,
 SOM_Scope ULONG  SOMLINK xf_wpAddFile3Page(XFolder *somSelf,
                                            HWND hwndNotebook)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpAddFile3Page");
 
@@ -3026,7 +3018,6 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFolderBackgroundPage(XFolder *somSelf,
 SOM_Scope ULONG  SOMLINK xf_wpAddFolderSortPage(XFolder *somSelf,
                                                    HWND hwndNotebook)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpAddFolderSortPage");
 
@@ -3173,7 +3164,7 @@ SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
     if (!(_wpQueryFldrFlags(somSelf) & (FOI_POPULATEINPROGRESS | FOI_REFRESHINPROGRESS)))
         fdrForEachOpenInstanceView(somSelf,
                                    STBM_UPDATESTATUSBAR,
-                                   fncbStatusBarPost);
+                                   stb_PostCallback);
 
     return (brc);
 }
@@ -3227,7 +3218,7 @@ SOM_Scope BOOL  SOMLINK xf_wpDeleteFromContent(XFolder *somSelf,
     if (!(_wpQueryFldrFlags(somSelf) & (FOI_POPULATEINPROGRESS | FOI_REFRESHINPROGRESS)))
         fdrForEachOpenInstanceView(somSelf,
                                    STBM_UPDATESTATUSBAR,
-                                   fncbStatusBarPost);
+                                   stb_PostCallback);
 
     return (brc);
 }
@@ -3502,7 +3493,6 @@ SOM_Scope BOOL  SOMLINK xf_wpMoveObject(XFolder *somSelf,
 
 SOM_Scope ULONG  SOMLINK xf_wpDelete(XFolder *somSelf, ULONG fConfirmations)
 {
-    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpDelete");
 
@@ -3601,8 +3591,6 @@ SOM_Scope BOOL  SOMLINK xf_wpSetFldrSort(XFolder *somSelf,
                                                 ulType);
     if (brc)
     {
-        // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
-
 #ifndef __ALWAYSEXTSORT__
         if (cmnQuerySetting(sfExtendedSorting))
 #endif
@@ -3880,7 +3868,6 @@ SOM_Scope BOOL  SOMLINK xfM_wpclsCreateDefaultTemplates(M_XFolder *somSelf,
 SOM_Scope ULONG  SOMLINK xfM_wpclsQueryDefaultView(M_XFolder *somSelf)
 {
     ULONG ul;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // M_XFolderData *somThis = M_XFolderGetData(somSelf);
     M_XFolderMethodDebug("M_XFolder","xfM_wpclsQueryDefaultView");
 

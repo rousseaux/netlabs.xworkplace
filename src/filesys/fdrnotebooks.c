@@ -90,6 +90,7 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\statbars.h"           // status bar translation logic
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 // other SOM headers
@@ -260,28 +261,21 @@ VOID fdrViewInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                      ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == NULL)
-        {
-            // first call: backup Global Settings for "Undo" button;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            pnbp->pUser = cmnBackupSettings(G_ViewBackup,
-                                             ARRAYITEMCOUNT(G_ViewBackup));
-            /* malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
-               */
+        // first call: backup Global Settings for "Undo" button;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        pnbp->pUser = cmnBackupSettings(G_ViewBackup,
+                                         ARRAYITEMCOUNT(G_ViewBackup));
 
-            // insert the controls using the dialog formatter
-            // V0.9.16 (2001-10-11) [umoeller]
-            ntbFormatPage(pnbp->hwndDlgPage,
-                          dlgView,
-                          ARRAYITEMCOUNT(dlgView));
-        }
+        // insert the controls using the dialog formatter
+        // V0.9.16 (2001-10-11) [umoeller]
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      dlgView,
+                      ARRAYITEMCOUNT(dlgView));
     }
 
     if (flFlags & CBI_SET)
@@ -477,22 +471,14 @@ static const XWPSETTING G_GridBackup[] =
 VOID fdrGridInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                      ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == NULL)
-        {
-            // first call: backup Global Settings for "Undo" button;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            /* pnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
-            */
-            pnbp->pUser = cmnBackupSettings(G_GridBackup,
-                                             ARRAYITEMCOUNT(G_GridBackup));
-        }
+        // first call: backup Global Settings for "Undo" button;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        pnbp->pUser = cmnBackupSettings(G_GridBackup,
+                                         ARRAYITEMCOUNT(G_GridBackup));
     }
 
     if (flFlags & CBI_SET)
@@ -557,18 +543,9 @@ MRESULT fdrGridItemChanged(PNOTEBOOKPAGE pnbp,
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
-            // PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pnbp->pUser);
-
             // and restore the settings for this page
             cmnRestoreSettings(pnbp->pUser,
                                ARRAYITEMCOUNT(G_GridBackup));
-            /*
-            cmnSetSetting(sfAddSnapToGridDefault, pGSBackup->fAddSnapToGridDefault);
-            cmnSetSetting(sulGridX, pGSBackup->GridX);
-            cmnSetSetting(sulGridY, pGSBackup->GridY);
-            cmnSetSetting(sulGridCX, pGSBackup->GridCX);
-            cmnSetSetting(sulGridCY, pGSBackup->GridCY);
-               */
             // update the display by calling the INIT callback
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         break; }
@@ -695,26 +672,22 @@ static const DLGHITEM dlgXFolder[] =
 VOID fdrXFolderInitPage(PNOTEBOOKPAGE pnbp,  // notebook info struct
                         ULONG flFlags)              // CBI_* flags (notebook.h)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XFolderData *somThis = XFolderGetData(pnbp->inbp.somSelf);
 
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == NULL)
-        {
-            // first call: backup instance data for "Undo" button;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            pnbp->pUser = malloc(sizeof(XFolderData));
+        // first call: backup instance data for "Undo" button;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        if (pnbp->pUser = malloc(sizeof(XFolderData)))
             memcpy(pnbp->pUser, somThis, sizeof(XFolderData));
 
-            // insert the controls using the dialog formatter
-            // V0.9.16 (2001-09-29) [umoeller]
-            ntbFormatPage(pnbp->hwndDlgPage,
-                          dlgXFolder,
-                          ARRAYITEMCOUNT(dlgXFolder));
-        }
+        // insert the controls using the dialog formatter
+        // V0.9.16 (2001-09-29) [umoeller]
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      dlgXFolder,
+                      ARRAYITEMCOUNT(dlgXFolder));
     }
 
     if (flFlags & CBI_SET)
@@ -757,7 +730,8 @@ VOID fdrXFolderInitPage(PNOTEBOOKPAGE pnbp,  // notebook info struct
                                            : _bStatusBarInstance )
                                      != 0)
                                   // always uncheck for Desktop
-                                && (pnbp->inbp.somSelf != cmnQueryActiveDesktop())
+                                && (stbClassCanHaveStatusBars(pnbp->inbp.somSelf))
+                                        // V0.9.19 (2002-04-17) [umoeller]
                               ));
     }
 
@@ -792,7 +766,8 @@ VOID fdrXFolderInitPage(PNOTEBOOKPAGE pnbp,  // notebook info struct
         winhEnableDlgItem(pnbp->hwndDlgPage,
                          ID_XSDI_ENABLESTATUSBAR,
                          // always disable for Desktop
-                         (   (pnbp->inbp.somSelf != cmnQueryActiveDesktop())
+                         (   (stbClassCanHaveStatusBars(pnbp->inbp.somSelf))
+                                        // V0.9.19 (2002-04-17) [umoeller]
 #ifndef __ALWAYSSUBCLASS__
                           && (!cmnQuerySetting(sfNoSubclassing))
 #endif
@@ -938,29 +913,21 @@ static const XWPSETTING G_StartupFolderBackup[] =
 VOID fdrStartupFolderInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                               ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XFldStartupData *somThis = NULL;
 
     somThis = XFldStartupGetData(pnbp->inbp.somSelf);
 
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == 0)
-        {
-            // first call: backup Global Settings and instance
-            // variables for "Undo" button;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            /* pnbp->pUser = malloc(sizeof(XFldStartupData) + sizeof(GLOBALSETTINGS));
-            memcpy(pnbp->pUser, somThis, sizeof(XFldStartupData));
-            memcpy((char *) pnbp->pUser + sizeof(XFldStartupData),
-                   pGlobalSettings, sizeof(GLOBALSETTINGS)); */
-            pnbp->pUser = cmnBackupSettings(G_StartupFolderBackup,
-                                             ARRAYITEMCOUNT(G_StartupFolderBackup));
-            pnbp->pUser2 = malloc(sizeof(XFldStartupData));
+        // first call: backup Global Settings and instance
+        // variables for "Undo" button;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        pnbp->pUser = cmnBackupSettings(G_StartupFolderBackup,
+                                         ARRAYITEMCOUNT(G_StartupFolderBackup));
+        if (pnbp->pUser2 = malloc(sizeof(XFldStartupData)))
             memcpy(pnbp->pUser2, somThis, sizeof(XFldStartupData));
-        }
 
         // set up sliders
         winhSetSliderTicks(WinWindowFromID(pnbp->hwndDlgPage, ID_SDDI_STARTUP_INITDELAY_SLID),
@@ -1076,15 +1043,11 @@ MRESULT fdrStartupFolderItemChanged(PNOTEBOOKPAGE pnbp,
             if (pnbp->pUser)
             {
                 XFldStartupData *Backup = pnbp->pUser2;
-                // PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)((char *) pnbp->pUser + sizeof(XFldStartupData));
                 // "Undo" button: restore backed up instance & global data
                 _ulType = Backup->ulType;
                 _ulObjectDelay = Backup->ulObjectDelay;
                 cmnRestoreSettings(pnbp->pUser,
                                    ARRAYITEMCOUNT(G_StartupFolderBackup));
-                /* cmnSetSetting(sfShowStartupProgress, pGSBackup->ShowStartupProgress);
-                cmnSetSetting(sulStartupInitialDelay, pGSBackup->ulStartupInitialDelay);
-                */
                 // update the display by calling the INIT callback
                 pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
             }

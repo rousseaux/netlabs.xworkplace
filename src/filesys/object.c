@@ -1593,7 +1593,6 @@ static MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, M
                          */
 
                         case CN_EXPANDTREE:
-                            // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                             if (cmnQuerySetting(sfTreeViewAutoScroll))
                             {
@@ -3463,7 +3462,6 @@ VOID objModifyPopupMenu(WPObject* somSelf,
 {
     if (doshIsWarp4())
     {
-        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         if (cmnQuerySetting(sfRemoveLockInPlaceItem))
             // remove WPObject's "Lock in place" submenu
             winhDeleteMenuItem(hwndMenu, ID_WPM_LOCKINPLACE);

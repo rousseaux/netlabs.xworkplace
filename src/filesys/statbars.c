@@ -3,17 +3,14 @@
  *@@sourcefile statbars.c:
  *      this file contains status bar code:
  *
+ *      --  status bar window handling (see stbCreate);
+ *
  *      -- status bar info translation logic (see stbComposeText)
  *
  *      -- status bar notebook callbacks used from XFldWPS (xfwps.c);
  *         these have been moved here with V0.9.0.
  *
  *      More status bar code can be found with the following:
- *
- *      --  The status bar is created in fdrCreateStatusBar, which
- *          gets called from XFolder::wpOpen.
- *
- *      --  The status bar's window proc (fdr_fnwpStatusBar) is in folder.c.
  *
  *      --  When selections change in a folder view (i.e.
  *          fdr_fnwpSubclassedFolderFrame receives CN_EMPHASIS
@@ -37,6 +34,9 @@
  *      "if" statements. No changes in other files should be necessary.
  *      You will have to add a #include below for that class though
  *      to be able to access the SOM class object for that new class.
+ *
+ *      With V0.9.19, the status bar window code was moved into
+ *      this file as well.
  *
  *@@header "filesys\statbars.h"
  */
@@ -68,19 +68,33 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
+#define INCL_DOSEXCEPTIONS
+#define INCL_DOSPROCESS
 #define INCL_DOSERRORS
-#define INCL_WINSHELLDATA       // Prf* functions
-#define INCL_WINPROGRAMLIST     // needed for PROGDETAILS, wppgm.h
+
+#define INCL_WINWINDOWMGR
+#define INCL_WINFRAMEMGR
+#define INCL_WINSYS             // needed for presparams
+#define INCL_WININPUT
+#define INCL_WINTIMER
 #define INCL_WINMENUS
 #define INCL_WINPOINTERS
 #define INCL_WINDIALOGS
 #define INCL_WINBUTTONS
+#define INCL_WINSTATICS
 #define INCL_WINENTRYFIELDS
+#define INCL_WINSHELLDATA       // Prf* functions
+#define INCL_WINPROGRAMLIST     // needed for PROGDETAILS, wppgm.h
+
+#define INCL_GPILOGCOLORTABLE
+#define INCL_GPIPRIMITIVES
 #include <os2.h>
 
 // C library headers
 #include <stdio.h>
 #include <string.h>
+#include <setjmp.h>             // needed for except.h
+#include <assert.h>             // needed for except.h
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
@@ -88,7 +102,9 @@
 // headers in /helpers
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dosh.h"               // Control Program helper routines
+#include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\standards.h"          // some standard macros
@@ -98,6 +114,7 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xfobj.ih"
+#include "xfldr.ih"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -106,6 +123,7 @@
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
+#include "filesys\folder.h"             // XFolder implementation
 #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 #include "filesys\statbars.h"           // status bar translation logic
@@ -113,7 +131,6 @@
 
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
-#include <wpfolder.h>                   // WPFolder
 #include <wpdisk.h>                     // WPDisk
 #include <wppgm.h>                      // WPProgram
 // #include <wpshadow.h>                   // WPShadow
@@ -144,7 +161,1202 @@ static SOMClass    *G_WPUrl = (SOMClass*)-1;
 
 /* ******************************************************************
  *
- *   Status bar mnemonics
+ *   Status bar window
+ *
+ ********************************************************************/
+
+/*
+ *@@ stbClassCanHaveStatusBars:
+ *      returns TRUE if the given object's class
+ *      can have status bars.
+ *
+ *      This rules out the active desktop and
+ *      the Object Desktop tab launchpad and
+ *      control center classes.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+BOOL stbClassCanHaveStatusBars(WPFolder *somSelf)
+{
+    PCSZ    pcszClass;
+    return (
+                // no status bar for active Desktop
+                (somSelf != cmnQueryActiveDesktop())
+                // rule out object desktop classes V0.9.19 (2002-04-17) [umoeller]
+             && (pcszClass = _somGetClassName(somSelf))
+             && (strcmp(pcszClass, G_pcszTabLaunchPad))
+             && (strcmp(pcszClass, G_pcszControlCenter))
+           );
+}
+
+/*
+ *@@ stbViewHasStatusBars:
+ *      returns TRUE if the given view for the given
+ *      folder should have a status bar.
+ *
+ *      This returns FALSE if status bars are disabled
+ *      globally, or locally for the folder, or if
+ *      the folder's class shouldn't have status bars,
+ *      of if the view has been ruled out in "Workplace
+ *      Shell".
+ *
+ *      This func was added with V0.9.19 to have one
+ *      central place which verifies whether a folder
+ *      view can have a status bar. This is necessary
+ *      so we can finally rule out status bars for
+ *      the Object Desktop folder subclasses.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+BOOL stbViewHasStatusBars(WPFolder *somSelf,
+                          ULONG ulView)
+{
+    XFolderData         *somThis = XFolderGetData(somSelf);
+    ULONG               flViews;
+
+    return (
+#ifndef __NOCFGSTATUSBARS__
+                (cmnQuerySetting(sfStatusBars))
+             &&
+#endif
+                (    (_bStatusBarInstance == STATUSBAR_ON)
+                  || (    (_bStatusBarInstance == STATUSBAR_DEFAULT)
+                       && (cmnQuerySetting(sfDefaultStatusBarVisibility))
+                     )
+                )
+             // 2) rule out desktop and Object Desktop classes
+             // V0.9.19 (2002-04-17) [umoeller]
+             && (stbClassCanHaveStatusBars(somSelf))
+             // 4) status bar only if allowed for the current view type
+             && (flViews = cmnQuerySetting(sflSBForViews))
+             && (
+                    (   (ulView == OPEN_CONTENTS)
+                     && (flViews & SBV_ICON)
+                    )
+                 || (   (ulView == OPEN_TREE)
+                     && (flViews & SBV_TREE)
+                    )
+                 || (   (ulView == OPEN_DETAILS)
+                     && (flViews & SBV_DETAILS)
+                    )
+                )
+           );
+}
+
+/*
+ *@@ stbCreate:
+ *      this creates the status bar for the given folder view.
+ *
+ *      This gets called in the following situations:
+ *
+ *      a)   from fdrManipulateNewView, when a folder view is
+ *           created which needs a status bar;
+ *
+ *      b)   later if status bar visibility settings are changed
+ *           either for the folder or globally.
+ *
+ *      Parameters:
+ *
+ *      --  psfv:      pointer to SUBCLASSEDFOLDERVIEW structure of
+ *                     current folder frame; this contains the
+ *                     folder frame window handle
+ *
+ *      This func returns the hwnd of the status bar or NULL if calling
+ *      the func was useless, because the status bar was already
+ *      (de)activated.
+ *
+ *      The status bar always has the ID ID_STATUSBAR (0x9001) so you
+ *      can get the status bar HWND later by calling
+ *
+ +          WinQueryWindow(hwndFrame, ID_STATUSBAR)
+ *
+ *      Note that this does _not_ change the folder's visibility
+ *      settings, but only creates the actual status bar window
+ *      and reformats the folder's PM frame window.
+ *
+ *      This function _must_ be called only from the same thread
+ *      where the folder frame window is running (normally TID 1),
+ *      otherwise the WPS will crash or PM will hang.
+ *
+ *      Because of all this, call XFolder::xwpSetStatusBarVisibility
+ *      instead if you wish to change folder status bars. That method
+ *      will do the display also.
+ *
+ *@@changed V0.9.0 [umoeller]: this used to be an instance method (xfldr.c)
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: renamed from fdrCreateStatusBar, extracted stbDestroy
+ */
+
+HWND stbCreate(PSUBCLASSEDFOLDERVIEW psli2)
+{
+    HWND hrc = NULLHANDLE;
+
+    // XFolderData *somThis = XFolderGetData(somSelf);
+
+    #ifdef DEBUG_STATUSBARS
+        _Pmpf((__FUNCTION__ " for %s: fShow = %d", _wpQueryTitle(somSelf), fShow));
+    #endif
+
+    if (psli2)
+    {
+        if (psli2->hwndStatusBar) // already activated: update only
+        {
+            #ifdef DEBUG_STATUSBARS
+                _Pmpf(("    status bar already exists, posting STBM_UPDATESTATUSBAR"));
+            #endif
+
+            WinPostMsg(psli2->hwndStatusBar, STBM_UPDATESTATUSBAR, MPNULL, MPNULL);
+            // and quit
+        }
+        // else create status bar as a static control
+        // (which will be subclassed below)
+        else if (psli2->hwndStatusBar = WinCreateWindow(
+                                      psli2->hwndFrame,        // parent
+                                      WC_STATIC,              // wnd class
+                                      cmnGetString(ID_XSSI_POPULATING),
+                                            // "Collecting objects..."
+                                      (SS_TEXT | DT_LEFT | DT_VCENTER // wnd style flags
+                                          | DT_ERASERECT
+                                          | WS_VISIBLE | WS_CLIPSIBLINGS),
+                                      0L, 0L, -1L, -1L,
+                                      psli2->hwndFrame,        // owner
+                                      HWND_BOTTOM,
+                                      ID_STATUSBAR,            // ID
+                                      (PVOID)NULL,
+                                      (PVOID)NULL))
+        {
+            XFolderData *somThis = XFolderGetData(psli2->somSelf);
+            CHAR    szFolderPosKey[50];
+            ULONG   ulIni;
+            ULONG   cbIni;
+            BOOL    fInflate = FALSE;
+            SWP     swp;
+            const char* pszStatusBarFont = cmnQueryStatusBarSetting(SBS_STATUSBARFONT);
+            ULONG   ulView = wpshQueryView(psli2->somSelf,
+                                           psli2->hwndFrame);
+
+            // set up window data (QWL_USER) for status bar
+            PSTATUSBARDATA psbd = malloc(sizeof(STATUSBARDATA));
+
+            #ifdef DEBUG_STATUSBARS
+                PCSZ pcszView;
+                CHAR szView[100];
+                _Pmpf(("    created new status bar hwnd 0x%lX", psli2->hwndStatusBar));
+                switch (ulView)
+                {
+                    case OPEN_TREE: pcszView = "Tree"; break;
+                    case OPEN_CONTENTS: pcszView = "Contents"; break;
+                    case OPEN_DETAILS: pcszView = "Details"; break;
+                    default:
+                        sprintf(szView, "unknown %d", ulView);
+                        pcszView = szView;
+                }
+                _Pmpf(( "    View: %s", pcszView));
+            #endif
+
+            psbd->somSelf    = psli2->somSelf;
+            psbd->psfv       = psli2;
+            psbd->habStatusBar = WinQueryAnchorBlock(psli2->hwndStatusBar);
+            psbd->idTimer    = 0;
+            psbd->fDontBroadcast = TRUE;
+                        // prevents broadcasting of WM_PRESPARAMSCHANGED
+            psbd->fFolderPopulated = FALSE;
+                        // suspends updating until folder is populated;
+            WinSetWindowULong(psli2->hwndStatusBar, QWL_USER, (ULONG)psbd);
+
+            // subclass static control to make it a status bar
+            psbd->pfnwpStatusBarOriginal = WinSubclassWindow(psli2->hwndStatusBar,
+                                                             fdr_fnwpStatusBar);
+            WinSetPresParam(psli2->hwndStatusBar,
+                            PP_FONTNAMESIZE,
+                            (ULONG)strlen(pszStatusBarFont) + 1,
+                            (PVOID)pszStatusBarFont);
+
+            // now "inflate" the folder frame window if this is the first
+            // time that this folder view has been opened with a status bar;
+            // if we didn't do this, the folder frame would be too small
+            // for the status bar and scroll bars would appear. We store
+            // a flag in the folder's instance data for each different view
+            // that we've inflated the folder frame, so that this happens
+            // only once per view.
+
+            // From wpobject.h:
+            // #define VIEW_CONTENTS      0x00000001
+            // #define VIEW_SETTINGS      0x00000002
+            // #define VIEW_HELP          0x00000004
+            // #define VIEW_RUNNING       0x00000008
+            // #define VIEW_DETAILS       0x00000010
+            // #define VIEW_TREE          0x00000020
+
+            sprintf(szFolderPosKey, "%d@XFSB",
+                    _wpQueryHandle(psli2->pRealObject));
+
+            cbIni = sizeof(ulIni);
+            if (PrfQueryProfileData(HINI_USER,
+                                    (PSZ)WPINIAPP_FOLDERPOS,
+                                    szFolderPosKey,
+                                    &ulIni,
+                                    &cbIni) == FALSE)
+                ulIni = 0;
+
+            if (ulIni & (   (ulView == OPEN_CONTENTS) ? VIEW_CONTENTS
+                          : (ulView == OPEN_TREE) ? VIEW_TREE
+                          : VIEW_DETAILS
+                        ))
+                fInflate = FALSE;
+            else
+                fInflate = TRUE;
+
+            #ifdef DEBUG_STATUSBARS
+                _Pmpf(("   fInflate = %d, ulView = %d", fInflate, ulView));
+            #endif
+
+            // set a flag for the subclassed folder frame
+            // window proc that this folder view needs no additional scrolling
+            // (this is evaluated in WM_FORMATFRAME msgs)
+            psli2->fNeedCnrScroll = FALSE;
+
+            if (fInflate)
+            {
+                // this view has not been inflated yet:
+                // inflate now and set flag for this view
+
+                ULONG ulStatusBarHeight = cmnQueryStatusBarHeight();
+                WinQueryWindowPos(psli2->hwndFrame, &swp);
+                // inflate folder frame
+                WinSetWindowPos(psli2->hwndFrame, 0,
+                                swp.x, (swp.y - ulStatusBarHeight),
+                                swp.cx, (swp.cy + ulStatusBarHeight),
+                                SWP_MOVE | SWP_SIZE);
+
+                // mark this folder view as "inflated" in OS2.INI
+                ulIni |= (   (ulView == OPEN_CONTENTS) ? VIEW_CONTENTS
+                           : (ulView == OPEN_TREE) ? VIEW_TREE
+                           : VIEW_DETAILS
+                         );
+                PrfWriteProfileData(HINI_USER,
+                                    (PSZ)WPINIAPP_FOLDERPOS,
+                                    szFolderPosKey,
+                                    &ulIni,
+                                    sizeof(ulIni));
+            }
+
+            // always do this for icon view if auto-sort is off
+            // V0.9.18 (2002-03-24) [umoeller]
+            // WM_FORMATFRAME _will_ have to scroll the container
+            if (    (ulView == OPEN_CONTENTS)
+                 && (  (_lAlwaysSort == SET_DEFAULT)
+                            ? !cmnQuerySetting(sfAlwaysSort)
+                            : !_lAlwaysSort)
+               )
+                psli2->fNeedCnrScroll = TRUE;
+
+            #ifdef DEBUG_STATUSBARS
+                _Pmpf(("    set psli2->fNeedCnrScroll: %d", psli2->fNeedCnrScroll));
+                _Pmpf(("    sending WM_UPDATEFRAME"));
+            #endif
+
+            // enforce reformatting / repaint of frame window
+            WinSendMsg(psli2->hwndFrame, WM_UPDATEFRAME, (MPARAM)0, MPNULL);
+
+            // update status bar contents
+            WinPostMsg(psli2->hwndStatusBar, STBM_UPDATESTATUSBAR, MPNULL, MPNULL);
+
+            hrc = psli2->hwndStatusBar;
+        }
+    }
+
+    return (hrc);
+}
+
+/*
+ *@@ stbDestroy:
+ *      destroys the status bar window for the given
+ *      folder view.
+ *
+ *      This code used to be in stbCreate, but we
+ *      shouldn't destroy something in a function
+ *      that is called "create" really.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+VOID stbDestroy(PSUBCLASSEDFOLDERVIEW psli2)
+{
+    // hide status bar:
+    if (psli2->hwndStatusBar)
+    {
+        CHAR    szFolderPosKey[50];
+        ULONG   ulIni;
+        ULONG   cbIni;
+        SWP     swp;
+        HWND    hwndStatus = psli2->hwndStatusBar;
+        BOOL    fDeflate = FALSE;
+        ULONG   ulView = wpshQueryView(psli2->somSelf,
+                                       psli2->hwndFrame);
+
+        psli2->hwndStatusBar = 0;
+        WinSendMsg(psli2->hwndFrame, WM_UPDATEFRAME, (MPARAM)0, MPNULL);
+        WinDestroyWindow(hwndStatus);
+
+        // decrease the size of the frame window by the status bar height,
+        // if we did this before
+        sprintf(szFolderPosKey, "%d@XFSB",
+                _wpQueryHandle(psli2->pRealObject));
+
+        cbIni = sizeof(ulIni);
+        if (PrfQueryProfileData(HINI_USER,
+                                (PSZ)WPINIAPP_FOLDERPOS,     // "PM_Workplace:FolderPos"
+                                szFolderPosKey,
+                                &ulIni,
+                                &cbIni) == FALSE)
+            ulIni = 0;
+
+        if (ulIni & (   (ulView == OPEN_CONTENTS) ? VIEW_CONTENTS
+                      : (ulView == OPEN_TREE) ? VIEW_TREE
+                      : VIEW_DETAILS
+                    ))
+            fDeflate = TRUE;
+        else
+            fDeflate = TRUE;
+
+        if (fDeflate)
+        {
+            ULONG ulStatusBarHeight = cmnQueryStatusBarHeight();
+            WinQueryWindowPos(psli2->hwndFrame, &swp);
+            WinSetWindowPos(psli2->hwndFrame, 0,
+                            swp.x, (swp.y + ulStatusBarHeight),
+                            swp.cx, (swp.cy - ulStatusBarHeight),
+                            SWP_MOVE | SWP_SIZE);
+
+            ulIni &= ~(   (ulView == OPEN_CONTENTS) ? VIEW_CONTENTS
+                        : (ulView == OPEN_TREE) ? VIEW_TREE
+                        : VIEW_DETAILS
+                      );
+            PrfWriteProfileData(HINI_USER,
+                                (PSZ)WPINIAPP_FOLDERPOS,     // "PM_Workplace:FolderPos"
+                                szFolderPosKey,
+                                &ulIni,
+                                sizeof(ulIni));
+        }
+    }
+}
+
+/*
+ * stb_UpdateCallback:
+ *      callback func for WOM_UPDATEALLSTATUSBARS in
+ *      XFolder Worker thread to refresh status bar
+ *      visibilities for the given folder. This gets
+ *      called whenever status bar visibility settings
+ *      changed, or the mnemonics have changed, in
+ *      the "Workplace Shell" object.
+ *
+ *      This is called by xf(cls)ForEachOpenView, which
+ *      also passes the parameters to this func.
+ *
+ *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
+ */
+
+MRESULT EXPENTRY stb_UpdateCallback(HWND hwndView,        // folder frame
+                                    ULONG ulActivate,
+                                            // 1: show/hide status bars according to
+                                            //    folder/Global settings
+                                            // 2: reformat status bars (e.g. because
+                                            //    fonts have changed)
+                                    MPARAM mpView,                      // OPEN_xxx flag
+                                    MPARAM mpFolder)                    // folder object
+{
+    MRESULT                 mrc = (MPARAM)FALSE;
+    PSUBCLASSEDFOLDERVIEW   psfv;
+
+    #ifdef DEBUG_STATUSBARS
+        _Pmpf(("stb_UpdateCallback ulActivate = %d", ulActivate));
+    #endif
+
+    if (psfv = fdrQuerySFV(hwndView, NULL))
+    {
+        if (ulActivate == 2) // "update" flag
+            WinPostMsg(psfv->hwndSupplObject,
+                       SOM_ACTIVATESTATUSBAR,
+                       (MPARAM)2,
+                       (MPARAM)hwndView);
+        else
+        {
+            // show/hide flag:
+
+            // check if the folder should have a status bar
+            // depending on the new settings
+            // V0.9.19 (2002-04-17) [umoeller]
+            BOOL fNewVisible = stbViewHasStatusBars((WPFolder*)mpFolder,
+                                                    (ULONG)mpView);
+
+/*
+            XFolderData *somThis = XFolderGetData(mpFolder);
+            ULONG flViews;
+            BOOL fVisible = (
+                                // status bar feature enabled?
+#ifndef __NOCFGSTATUSBARS__
+                                (cmnQuerySetting(sfStatusBars))
+                            &&
+#endif
+                                // status bars either enabled for this instance
+                                // or in global settings?
+                                (    (_bStatusBarInstance == STATUSBAR_ON)
+                                  || (    (_bStatusBarInstance == STATUSBAR_DEFAULT)
+                                       && (cmnQuerySetting(sfDefaultStatusBarVisibility))
+                                     )
+                                )
+                            && (flViews = cmnQuerySetting(sflSBForViews))
+                            &&
+                                // status bars enabled for current view type?
+                                (   (   ((ULONG)mpView == OPEN_CONTENTS)
+                                     && (flViews & SBV_ICON)
+                                    )
+                                 || (   ((ULONG)mpView == OPEN_TREE)
+                                     && (flViews & SBV_TREE)
+                                    )
+                                 || (   ((ULONG)mpView == OPEN_DETAILS)
+                                     && (flViews & SBV_DETAILS)
+                                    )
+                                )
+                            );
+*/
+
+            if ( fNewVisible != (psfv->hwndStatusBar != NULLHANDLE) )
+            {
+                // visibility changed:
+                // we now post a message to the folder frame's
+                // supplementary object window;
+                // because we cannot mess with the windows on
+                // the Worker thread, we need to have the
+                // status bar created/destroyed/changed on the
+                // folder's thread
+                WinPostMsg(psfv->hwndSupplObject,
+                           SOM_ACTIVATESTATUSBAR,
+                           (MPARAM)fNewVisible,     // show/hide flag
+                           (MPARAM)hwndView);
+                mrc = (MPARAM)TRUE;
+            }
+        }
+    }
+
+    return (mrc);
+}
+
+/*
+ * stb_PostCallback:
+ *      this posts a message to each view's status bar
+ *      if it exists.
+ *
+ *      This is a callback to fdrForEachOpenInstanceView,
+ *      which gets
+ *      called from XFolder::wpAddToContent and
+ *      XFolder::wpDeleteFromContent.
+ *
+ *@@added V0.9.6 (2000-10-26) [pr]
+ */
+
+MRESULT EXPENTRY stb_PostCallback(HWND hwndView,        // folder frame
+                                   ULONG msg,            // message
+                                   MPARAM mpView,        // OPEN_xxx flag
+                                   MPARAM mpFolder)      // folder object
+{
+    PSUBCLASSEDFOLDERVIEW psfv;
+
+    if (    ((ULONG) mpView == OPEN_CONTENTS)
+         || ((ULONG) mpView == OPEN_DETAILS)
+         || ((ULONG) mpView == OPEN_TREE)
+       )
+    {
+        if (    (psfv = fdrQuerySFV(hwndView, NULL))
+             && (psfv->hwndStatusBar)
+           )
+            WinPostMsg(psfv->hwndStatusBar,
+                       msg,
+                       MPNULL,
+                       MPNULL);
+    }
+
+    return ((MPARAM) TRUE);
+}
+
+/*
+ *@@ CallResolvedUpdateStatusBar:
+ *      resolves XFolder::xwpUpdateStatusBar via name-lookup
+ *      resolution on pFolder and, if found, calls that method
+ *      implementation.
+ *
+ *      Always use this function instead of calling the method
+ *      directly... because that would probably lead to confusion.
+ *
+ *@@added V0.9.7 (2001-01-13) [umoeller]
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: made this static
+ */
+
+static VOID CallResolvedUpdateStatusBar(WPFolder *pFolder,
+                                        HWND hwndStatusBar,
+                                        HWND hwndCnr)
+{
+    BOOL fObjectInitialized = _wpIsObjectInitialized(pFolder);
+    XFolderData *somThis = XFolderGetData(pFolder);
+    somTD_XFolder_xwpUpdateStatusBar pfnResolvedUpdateStatusBar = NULL;
+
+    // do SOM name-lookup resolution for xwpUpdateStatusBar
+    // (which will per default find the XFolder method, V0.9.0)
+    // if we have not done that for this instance already;
+    // we store the method pointer in the instance data
+    // for speed
+    if (fObjectInitialized) // V0.9.3 (2000-04-29) [umoeller]
+        if (_pfnResolvedUpdateStatusBar)
+            // already resolved: get resolved address
+            // from instance data
+            pfnResolvedUpdateStatusBar
+                = (somTD_XFolder_xwpUpdateStatusBar)_pfnResolvedUpdateStatusBar;
+
+    if (!pfnResolvedUpdateStatusBar)
+    {
+        // not resolved yet:
+        pfnResolvedUpdateStatusBar
+                = (somTD_XFolder_xwpUpdateStatusBar)somResolveByName(
+                                          pFolder,
+                                          "xwpUpdateStatusBar");
+        if (fObjectInitialized)
+            // object initialized:
+            _pfnResolvedUpdateStatusBar = (PVOID)pfnResolvedUpdateStatusBar;
+    }
+
+    // finally, compose the text by calling
+    // the resolved method
+    if (pfnResolvedUpdateStatusBar)
+        pfnResolvedUpdateStatusBar(pFolder,
+                                   hwndStatusBar,
+                                   hwndCnr);
+    else
+        WinSetWindowText(hwndStatusBar,
+                         "*** error in name-lookup resolution");
+}
+
+/*
+ *@@ stbUpdate:
+ *      updates the status bars of all open views of the
+ *      specified folder.
+ *
+ *@@added V0.9.7 (2001-01-13) [umoeller]
+ */
+
+VOID stbUpdate(WPFolder *pFolder)
+{
+    if (_wpFindUseItem(pFolder, USAGE_OPENVIEW, NULL))
+    {
+        // folder has an open view;
+        // now we go search the open views of the folder and get the
+        // frame handle of the desired view (ulView)
+        PVIEWITEM   pViewItem;
+        for (pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, NULL);
+             pViewItem;
+             pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, pViewItem))
+        {
+            switch (pViewItem->view)
+            {
+                case OPEN_CONTENTS:
+                case OPEN_DETAILS:
+                case OPEN_TREE:
+                {
+                    HWND hwndStatusBar;
+                    HWND hwndCnr;
+                    if (    (hwndStatusBar = WinWindowFromID(pViewItem->handle, ID_STATUSBAR))
+                         && (hwndCnr = wpshQueryCnrFromFrame(pViewItem->handle))
+                       )
+                        CallResolvedUpdateStatusBar(pFolder,
+                                                    hwndStatusBar,
+                                                    hwndCnr);
+                }
+            }
+        }
+    }
+}
+
+/* ******************************************************************
+ *
+ *   XFolder window procedures
+ *
+ ********************************************************************/
+
+/*
+ *@@ StatusTimer:
+ *
+ *@@added V0.9.16 (2001-10-28) [umoeller]
+ *@@changed V0.9.16 (2001-10-28) [umoeller]: fixed bad view check for tree views
+ *@@changed V0.9.16 (2001-10-28) [umoeller]: fixed bad excpt handler cleanup
+ */
+
+static VOID StatusTimer(HWND hwndBar,
+                        PSTATUSBARDATA psbd)
+{
+    TRY_LOUD(excpt1)
+    {
+        // XFolderData *somThis = XFolderGetData(psbd->somSelf);
+        BOOL fUpdate = TRUE;
+
+        // stop timer (it's just for one shot)
+        WinStopTimer(psbd->habStatusBar, // anchor block,
+                     hwndBar,
+                     1);
+        psbd->idTimer = 0;
+
+        // if we're not fully populated yet, start timer again and quit;
+        // otherwise we would display false information.
+        // We need an extra flag in the status bar data because the
+        // FOI_POPULATEDWITHALL is reset to 0 by the WPS for some reason
+        // when an object is deleted from an open folder, and no further
+        // status bar updates would occur then
+        if (psbd->fFolderPopulated == FALSE)
+        {
+            ULONG   ulFlags = _wpQueryFldrFlags(psbd->somSelf);
+            ULONG   ulView = wpshQueryView(// psbd->psfv->somSelf,
+                                           // V0.9.16 (2001-10-28) [umoeller]: we
+                                           // can't use somSelf because root folders
+                                           // never hold the view information... use
+                                           // the "real object" instead, which, for
+                                           // root folders, holds the disk object
+                                           psbd->psfv->pRealObject,
+                                           psbd->psfv->hwndFrame);
+            #ifdef DEBUG_STATUSBARS
+                PCSZ pcszView;
+                CHAR szView[100];
+                switch (ulView)
+                {
+                    case OPEN_TREE: pcszView = "Tree"; break;
+                    case OPEN_CONTENTS: pcszView = "Contents"; break;
+                    case OPEN_DETAILS: pcszView = "Details"; break;
+                    default:
+                        sprintf(szView, "unknown %d", ulView);
+                        pcszView = szView;
+                }
+                _Pmpf((__FUNCTION__ ":  View is %s", pcszView));
+                fdrDebugDumpFolderFlags(psbd->somSelf);
+            #endif
+
+            // for tree views, check if folder is populated with folders;
+            // otherwise check for populated with all
+            if (    (   (ulView == OPEN_TREE)
+                     && ((ulFlags & FOI_POPULATEDWITHFOLDERS) !=0)
+                    )
+                || ((ulFlags & FOI_POPULATEDWITHALL) != 0)
+               )
+            {
+                psbd->fFolderPopulated = TRUE;
+            }
+            else
+            {
+                // folder not yet populated:
+                // restart timer with a lower frequency
+                // to have this checked again
+                psbd->idTimer = WinStartTimer(psbd->habStatusBar, // anchor block
+                                              hwndBar,
+                                              1,
+                                              300);   // this time, use 300 ms
+                // and stop
+                // break;       // whoa, this didn't deregister the excpt handler
+                                // V0.9.16 (2001-10-28) [umoeller]
+                fUpdate = FALSE;
+            }
+        }
+
+        if (fUpdate)
+            // OK:
+            CallResolvedUpdateStatusBar(psbd->somSelf,
+                                        hwndBar,
+                                        psbd->psfv->hwndCnr);
+    }
+    CATCH(excpt1)
+    {
+        WinSetWindowText(hwndBar, "*** error composing text");
+    } END_CATCH();
+
+}
+
+/*
+ *@@ StatusPaint:
+ *
+ *@@added V0.9.16 (2001-10-28) [umoeller]
+ */
+
+static VOID StatusPaint(HWND hwndBar)
+{
+    // preparations:
+    HPS     hps = WinBeginPaint(hwndBar, NULLHANDLE, NULL);
+
+    TRY_LOUD(excpt1)
+    {
+        RECTL   rclBar,
+                rclPaint;
+        POINTL  ptl1;
+        PSZ     pszText;
+        CHAR    szTemp[100] = "0";
+        USHORT  usLength;
+        LONG    lNextX;
+        PSZ     p1, p2, p3;
+        ULONG   ulStyle = cmnQuerySetting(sulSBStyle);
+        LONG    lHiColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONLIGHT, 0),
+                lLoColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONDARK, 0);
+
+        WinQueryWindowRect(hwndBar,
+                           &rclBar);        // exclusive
+        // switch to RGB mode
+        gpihSwitchToRGB(hps);
+
+        // 1) draw background
+        WinFillRect(hps,
+                    &rclBar,                // exclusive
+                    cmnQuerySetting(slSBBgndColor));
+
+        rclPaint.xLeft = rclBar.xLeft;
+        rclPaint.yBottom = rclBar.yBottom;
+        rclPaint.xRight = rclBar.xRight - 1;
+        rclPaint.yTop = rclBar.yTop - 1;
+
+        // 2) draw 3D frame in selected style
+        switch (ulStyle)
+        {
+            case SBSTYLE_WARP3RAISED:
+                // Warp 3 style, raised
+                gpihDraw3DFrame(hps,
+                                &rclPaint,
+                                1,
+                                lHiColor,
+                                lLoColor);
+            break;
+
+            case SBSTYLE_WARP3SUNKEN:
+                // Warp 3 style, sunken
+                gpihDraw3DFrame(hps,
+                                &rclPaint,
+                                1,
+                                lLoColor,
+                                lHiColor);
+            break;
+
+            case SBSTYLE_WARP4MENU:
+                // Warp 4 menu style: draw 3D line at top only
+                rclPaint.yBottom = rclPaint.yTop - 1;
+                gpihDraw3DFrame(hps,
+                                &rclPaint,
+                                1,
+                                lLoColor,
+                                lHiColor);
+            break;
+
+            default:
+                // Warp 4 button style
+                // draw "sunken" outer rect
+                gpihDraw3DFrame(hps,
+                                &rclPaint,
+                                2,
+                                lLoColor,
+                                lHiColor);
+                // draw "raised" inner rect
+                rclPaint.xLeft++;
+                rclPaint.yBottom++;
+                rclPaint.xRight--;
+                rclPaint.yTop--;
+                gpihDraw3DFrame(hps,
+                                &rclPaint,
+                                2,
+                                lHiColor,
+                                lLoColor);
+            break;
+        }
+
+        // 3) start working on text; we do "simple" GpiCharString
+        //    if no tabulators are defined, but calculate some
+        //    subrectangles otherwise
+        if (pszText = winhQueryWindowText(hwndBar))
+        {
+                // pszText now has the translated status bar text
+                // except for the tabulators ("$x" keys)
+            p1 = pszText;
+            p2 = NULL;
+            ptl1.x = 7;
+
+            do  // while tabulators are present
+            {
+                // search for tab mnemonic
+                if (p2 = strstr(p1, "$x("))
+                {
+                    // tab found: calculate next x position into lNextX
+                    usLength = (p2-p1);
+                    strcpy(szTemp, "100");
+                    if (p3 = strchr(p2, ')'))
+                    {
+                        PSZ p4 = strchr(p2, '%');
+                        strncpy(szTemp, p2+3, p3-p2-3);
+                        // get the parameter
+                        sscanf(szTemp, "%d", &lNextX);
+
+                        if (lNextX < 0)
+                        {
+                            // if the result is negative, it's probably
+                            // meant to be an offset from the right
+                            // status bar border
+                            lNextX = (rclBar.xRight + lNextX); // lNextX is negative
+                        }
+                        else if ((p4) && (p4 < p3))
+                        {
+                            // if we have a '%' char before the closing
+                            // bracket, consider lNextX a percentage
+                            // parameter and now translate it into an
+                            // absolute x position using the status bar's
+                            // width
+                            lNextX = (rclBar.xRight * lNextX) / 100;
+                        }
+                    }
+                    else
+                        p2 = NULL;
+                }
+                else
+                    usLength = strlen(p1);
+
+                ptl1.y = (cmnQuerySetting(sulSBStyle) == SBSTYLE_WARP4MENU) ? 5 : 7;
+                // set the text color to the global value;
+                // this might have changed via color drag'n'drop
+                GpiSetColor(hps, cmnQuerySetting(slSBTextColor));
+                    // the font is already preset by the static
+                    // text control (phhhh...)
+
+                if (p2)
+                {
+                    // did we have tabs? if so, print text clipped to rect
+                    RECTL rcl;
+                    rcl.xLeft   = 0;
+                    rcl.yBottom = 0; // ptl1.y;
+                    rcl.xRight  = lNextX-10; // 10 pels space
+                    rcl.yTop    = rclBar.yTop;
+                    GpiCharStringPosAt(hps,
+                                       &ptl1,
+                                       &rcl,
+                                       CHS_CLIP,
+                                       usLength,
+                                       p1,
+                                       NULL);
+                }
+                else
+                {
+                    // no (more) tabs: just print
+                    GpiMove(hps, &ptl1);
+                    GpiCharString(hps, usLength, p1);
+                }
+
+                if (p2)
+                {   // "tabulator" was found: set next x pos
+                    ptl1.x = lNextX;
+                    p1 = p3+1;
+                }
+
+            } while (p2);       // go for next tabulator, if we had one
+
+            free(pszText);
+        } // end if (pszText)
+    }
+    CATCH(excpt1)
+    {
+        PSZ pszErr = "*** error painting status bar";
+        POINTL ptl = {5, 5};
+        GpiMove(hps, &ptl);
+        GpiCharString(hps, strlen(pszErr), pszErr);
+    } END_CATCH();
+
+    WinEndPaint(hps);
+}
+
+/*
+ *@@ StatusPresParamChanged:
+ *
+ *@@added V0.9.16 (2001-10-28) [umoeller]
+ */
+
+static VOID StatusPresParamChanged(HWND hwndBar,
+                                   PSTATUSBARDATA psbd,
+                                   MPARAM mp1)
+{
+    if (psbd->fDontBroadcast)
+    {
+        // this flag has been set if it was not this status
+        // bar whose presparams have changed, but some other
+        // status bar; in this case, update only
+        psbd->fDontBroadcast = FALSE;
+        // update parent's frame controls (because font size
+        // might have changed)
+        WinSendMsg(WinQueryWindow(hwndBar, QW_PARENT), WM_UPDATEFRAME, MPNULL, MPNULL);
+        // update ourselves
+        WinPostMsg(hwndBar, STBM_UPDATESTATUSBAR, MPNULL, MPNULL);
+        // and quit
+        return;
+    }
+
+    // else: it was us that the presparam has been set for
+    #ifdef DEBUG_STATUSBARS
+        _Pmpf(( "WM_PRESPARAMCHANGED: %lX", mp1 ));
+    #endif
+
+    // now check what has changed
+    switch ((ULONG)mp1)
+    {
+        case PP_FONTNAMESIZE:
+        {
+            ULONG attrFound;
+            // CHAR  szDummy[200];
+            CHAR  szNewFont[100];
+            WinQueryPresParam(hwndBar,
+                              PP_FONTNAMESIZE,
+                              0,
+                              &attrFound,
+                              (ULONG)sizeof(szNewFont),
+                              (PVOID)&szNewFont,
+                              0);
+            cmnSetStatusBarSetting(SBS_STATUSBARFONT,
+                                   szNewFont);
+            // update parent's frame controls (because font size
+            // might have changed)
+            WinSendMsg(WinQueryWindow(hwndBar, QW_PARENT),
+                    WM_UPDATEFRAME, MPNULL, MPNULL);
+        }
+        break;
+
+        case PP_FOREGROUNDCOLOR:
+        case PP_BACKGROUNDCOLOR:
+        {
+            ULONG   ul = 0,
+                    attrFound = 0;
+
+            WinQueryPresParam(hwndBar,
+                              (ULONG)mp1,
+                              0,
+                              &attrFound,
+                              (ULONG)sizeof(ul),
+                              (PVOID)&ul,
+                              0);
+            if ((ULONG)mp1 == PP_FOREGROUNDCOLOR)
+                cmnSetSetting(slSBTextColor, ul);
+            else
+                cmnSetSetting(slSBBgndColor, ul);
+
+            WinPostMsg(hwndBar, STBM_UPDATESTATUSBAR, MPNULL, MPNULL);
+        }
+        break;
+    }
+
+    // finally, broadcast this message to all other status bars;
+    // this is handled by the Worker thread
+    xthrPostWorkerMsg(WOM_UPDATEALLSTATUSBARS,
+                      (MPARAM)2,      // update display
+                      MPNULL);
+}
+
+/*
+ *@@ fdr_fnwpStatusBar:
+ *      since the status bar is just created as a static frame
+ *      control, it is subclassed (by stbCreate),
+ *      and this is the wnd proc for this.
+ *
+ *      This handles the new STBM_UPDATESTATUSBAR message (which
+ *      is posted any time the status bar needs to be updated)
+ *      and intercepts WM_TIMER and WM_PAINT.
+ *
+ *@@changed V0.9.0 [umoeller]: fixed context menu problem (now open view)
+ *@@changed V0.9.0 [umoeller]: now using new XFolder methods to encapsulate status bar updates
+ *@@changed V0.9.0 [umoeller]: adjusted to new gpihDraw3DFrame
+ *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
+ *@@changed V0.9.1 (99-12-19) [umoeller]: finally fixed the context menu problems with MB2 right-click on status bar
+ */
+
+MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    PSTATUSBARDATA psbd = (PSTATUSBARDATA)WinQueryWindowPtr(hwndBar, QWL_USER);
+    MRESULT        mrc = 0;
+
+    if (psbd)
+    {
+        PFNWP      pfnwpStatusBarOriginal = psbd->pfnwpStatusBarOriginal;
+
+        switch(msg)
+        {
+            /*
+             * STBM_UPDATESTATUSBAR:
+             *      mp1: MPNULL,
+             *      mp2: MPNULL
+             *      Update status bar text. We will set a timer
+             *      for a short delay to filter out repetitive
+             *      messages here.
+             *      This timer is "one-shot" in that it will be
+             *      started here and stopped as soon as WM_TIMER
+             *      is received.
+             */
+
+            case STBM_UPDATESTATUSBAR:
+                if (psbd->idTimer == 0)
+                    // only if timer is not yet running: start it now
+                    psbd->idTimer = WinStartTimer(psbd->habStatusBar, // anchor block
+                                                  hwndBar,
+                                                  1,
+                                                  100); // delay: 100 ms
+            break;
+
+            /*
+             * WM_TIMER:
+             *      a timer is started by STBM_UPDATESTATUSBAR
+             *      to avoid flickering;
+             *      we now compose the actual text to be displayed
+             */
+
+            case WM_TIMER:
+                if ((ULONG)mp1 == 1)
+                    StatusTimer(hwndBar, psbd);
+                else
+                    mrc = pfnwpStatusBarOriginal(hwndBar, msg, mp1, mp2);
+            break;
+
+            /*
+             * WM_PAINT:
+             *      this, well, paints the status bar.
+             *      Since the status bar is just a static control,
+             *      we want to do some extra stuff to make it prettier.
+             *      At this point, the window text (of the status bar)
+             *      contains the fully translated status bar mnemonics,
+             *      except for the tabulators ("$x" flags), which we'll
+             *      deal with here.
+             */
+
+            case WM_PAINT:
+                StatusPaint(hwndBar);
+            break;
+
+            /*
+             * STBM_PROHIBITBROADCASTING:
+             *      this msg is sent to us to tell us we will
+             *      be given new presentation parameters soon;
+             *      we will set a flag to TRUE in order to
+             *      prevent broadcasting the pres params again.
+             *      We need this flag because there are two
+             *      situations in which we are given
+             *      WM_PRESPARAMCHANGED messages:
+             *      1)   the user has dropped something on this
+             *           status bar window; in this case, we're
+             *           getting WM_PRESPARAMCHANGED directly,
+             *           without STBM_PROHIBITBROADCASTING, which
+             *           means that we should notify the Worker
+             *           thread to broadcast WM_PRESPARAMCHANGED
+             *           to all status bars;
+             *      2)   a status bar other than this one had been
+             *           dropped something upon; in this case, we'll
+             *           get WM_PRESPARAMCHANGED also (from the
+             *           Worker thread), but STBM_PROHIBITBROADCASTING
+             *           beforehand so that we know we should not
+             *           notify the Worker thread again.
+             *      See WM_PRESPARAMCHANGED below.
+             */
+
+            case STBM_PROHIBITBROADCASTING:
+                psbd->fDontBroadcast = TRUE;
+            break;
+
+            /*
+             * WM_PRESPARAMCHANGED:
+             *      if fonts or colors were dropped on the bar, update
+             *      GlobalSettings and have this message broadcast to all
+             *      other status bars on the system.
+             *      This is also posted to us by the Worker thread
+             *      after some OTHER status bar has been dropped
+             *      fonts or colors upon; in this case, psbd->fDontBroadcast
+             *      is TRUE (see above), and we will only update our
+             *      own display and NOT broadcast, because this is
+             *      already being done.
+             */
+
+            case WM_PRESPARAMCHANGED:
+                mrc = pfnwpStatusBarOriginal(hwndBar, msg, mp1, mp2);
+                StatusPresParamChanged(hwndBar, psbd, mp1);
+            break;
+
+            /*
+             * WM_BUTTON1CLICK:
+             *      if button1 is clicked on the status
+             *      bar, we should reset the focus to the
+             *      container.
+             */
+
+            case WM_BUTTON1CLICK:
+                // mrc = (MRESULT)(*pfnwpStatusBarOriginal)(hwndBar, msg, mp1, mp2);
+                WinSetFocus(HWND_DESKTOP, psbd->psfv->hwndCnr);
+            break;
+
+            /*
+             * WM_BUTTON1DBLCLK:
+             *      on double-click on the status bar,
+             *      open the folder's settings notebook.
+             *      If DEBUG_RESTOREDATA is on (common.h),
+             *      dump some internal folder data to
+             *      PMPRINTF instead.
+             */
+
+            case WM_BUTTON1DBLCLK:
+                WinPostMsg(psbd->psfv->hwndFrame,
+                           WM_COMMAND,
+                           (MPARAM)WPMENUID_PROPERTIES,
+                           MPFROM2SHORT(CMDSRC_MENU,
+                                   FALSE) );     // results from keyboard operation
+            break;
+
+            /*
+             * WM_CONTEXTMENU:
+             *      if the user right-clicks on status bar,
+             *      display folder's context menu. Parameters:
+             *      mp1:
+             *          POINTS mp1      pointer position, win coords
+             *      mp2:
+             *          USHORT usReserved  should be 0
+             *          USHORT fPointer    if TRUE: results from keyboard
+             */
+
+            case WM_CONTEXTMENU:
+                if (psbd->psfv)
+                {
+                    POINTL  ptl;
+                    ptl.x = SHORT1FROMMP(mp1);
+                    ptl.y = SHORT2FROMMP(mp1)-20; // this is in cnr coords!
+                    _wpDisplayMenu(psbd->somSelf,
+                                   psbd->psfv->hwndFrame, // hwndFolderView, // owner
+                                   psbd->psfv->hwndCnr, // NULLHANDLE, // hwndFolderView, // parent
+                                   &ptl,
+                                   MENU_OPENVIEWPOPUP, // was: MENU_OBJECTPOPUP, V0.9.0
+                                   0);
+                }
+            break;
+
+            /*
+             * WM_DESTROY:
+             *      call original wnd proc, then free psbd
+             */
+
+            case WM_DESTROY:
+                mrc = pfnwpStatusBarOriginal(hwndBar, msg, mp1, mp2);
+                WinSetWindowULong(hwndBar, QWL_USER, 0);
+                free(psbd);
+            break;
+
+            default:
+                mrc = pfnwpStatusBarOriginal(hwndBar, msg, mp1, mp2);
+
+        } // end switch
+    } // end if (psbd)
+
+    return (mrc);
+}
+
+/********************************************************************
+ *
+ *   Status bar text composition
  *
  ********************************************************************/
 
@@ -742,9 +1954,9 @@ static BOOL CheckLogicalDrive(PULONG pulLogicalDrive,
  *@@changed V0.9.13 (2001-06-14) [umoeller]: fixed missing SOMFree
  */
 
-ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
-                                   PXSTRING pstrText,       // in/out: status bar text
-                                   PCOUNTRYSETTINGS pcs)    // in: country settings
+ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
+                                  PXSTRING pstrText,       // in/out: status bar text
+                                  PCOUNTRYSETTINGS pcs)    // in: country settings
 {
     ULONG       ulrc = 0;
     CHAR        szTemp[300];        // must be at least CCHMAXPATH!
@@ -1410,7 +2622,6 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
                 *pobjSelected = NULL;
     PSZ         p;
     CHAR        *p2;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     PMINIRECORDCORE prec;
 
     // get country settings from "Country" object
@@ -1986,23 +3197,14 @@ static const XWPSETTING G_StatusBar1Backup[] =
 VOID stbStatusBar1InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                            ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == NULL)
-        {
-            // first call: backup Global Settings for "Undo" button;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            /*
-            pnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
-            */
-            pnbp->pUser = cmnBackupSettings(G_StatusBar1Backup,
-                                             ARRAYITEMCOUNT(G_StatusBar1Backup));
-        }
+        // first call: backup Global Settings for "Undo" button;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        pnbp->pUser = cmnBackupSettings(G_StatusBar1Backup,
+                                         ARRAYITEMCOUNT(G_StatusBar1Backup));
     }
 
     if (flFlags & CBI_SET)
@@ -2124,15 +3326,6 @@ MRESULT stbStatusBar1ItemChanged(PNOTEBOOKPAGE pnbp,
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
-            /*
-            PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pnbp->pUser);
-
-            // and restore the settings for this page
-            cmnSetSetting(sfDefaultStatusBarVisibility, pGSBackup->fDefaultStatusBarVisibility);
-            cmnSetSetting(sflSBForViews, pGSBackup->SBForViews);
-            cmnSetSetting(sulSBStyle, pGSBackup->SBStyle);
-               */
-
             cmnRestoreSettings(pnbp->pUser,
                                ARRAYITEMCOUNT(G_StatusBar1Backup));
             // update the display by calling the INIT callback
@@ -2241,31 +3434,21 @@ static const XWPSETTING G_StatusBar2Backup[] =
 VOID stbStatusBar2InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     PSTATUSBARPAGEDATA psbpd = (PSTATUSBARPAGEDATA)pnbp->pUser2;
 
     if (flFlags & CBI_INIT)
     {
+        // first call: backup Global Settings for "Undo" button;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        pnbp->pUser = cmnBackupSettings(G_StatusBar2Backup,
+                                         ARRAYITEMCOUNT(G_StatusBar2Backup));
 
-
-        if (pnbp->pUser == NULL)
-        {
-            // first call: backup Global Settings for "Undo" button;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            /*
-            pnbp->pUser = NEW(GLOBALSETTINGS);
-            memcpy(pnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
-               */
-            pnbp->pUser = cmnBackupSettings(G_StatusBar2Backup,
-                                             ARRAYITEMCOUNT(G_StatusBar2Backup));
-
-            pnbp->pUser2
-            = psbpd
-                = NEW(STATUSBARPAGEDATA);
-            ZERO(psbpd);
-        }
+        pnbp->pUser2
+        = psbpd
+            = NEW(STATUSBARPAGEDATA);
+        ZERO(psbpd);
 
         strcpy(psbpd->szSBTextNoneSelBackup,
                cmnQueryStatusBarSetting(SBS_TEXTNONESEL));

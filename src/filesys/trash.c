@@ -1493,7 +1493,7 @@ BOOL trshPopulateFirstTime(XWPTrashCan *somSelf,
 
                     // update status bars for open views
                     _cDrivePopulating = cDrive;
-                    fdrUpdateStatusBars(somSelf);
+                    stbUpdate(somSelf);
 
                     // get "\trash" dir on that drive
                     sprintf(szTrashDir, "%c:\\Trash",
@@ -1554,7 +1554,7 @@ BOOL trshPopulateFirstTime(XWPTrashCan *somSelf,
     } CATCH(excpt1) { } END_CATCH();
 
     _cDrivePopulating = 0;
-    fdrUpdateStatusBars(somSelf);
+    stbUpdate(somSelf);
 
     // now insert all the trash objects in one flush V0.9.9 (2001-04-02) [umoeller]
     fdrInsertAllContents(somSelf);
@@ -1598,7 +1598,7 @@ BOOL trshRefresh(XWPTrashCan *somSelf)
     }
     lstFree(&pllTrashObjects);
 
-    fdrUpdateStatusBars(somSelf);
+    stbUpdate(somSelf);
 
     return (TRUE);
 }
@@ -2232,7 +2232,6 @@ BOOL trshProcessObjectCommand(WPFolder *somSelf,
 {
     BOOL brc = TRUE;        // default: processed
 
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     LONG lMenuID2 = usCommand - cmnQuerySetting(sulVarMenuOffset);
 
     switch (lMenuID2)
@@ -2565,25 +2564,20 @@ static const DLGHITEM dlgTrashSettings[] =
 VOID trshTrashCanSettingsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                   ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == NULL)
-        {
-            // first call: backup Global Settings for "Undo" button;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            pnbp->pUser = cmnBackupSettings(G_TrashCanSettingsBackup,
-                                             ARRAYITEMCOUNT(G_TrashCanSettingsBackup));
+        // first call: backup Global Settings for "Undo" button;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        pnbp->pUser = cmnBackupSettings(G_TrashCanSettingsBackup,
+                                         ARRAYITEMCOUNT(G_TrashCanSettingsBackup));
 
-            // insert the controls using the dialog formatter
-            // V0.9.19 (2002-04-14) [umoeller]
-            ntbFormatPage(pnbp->hwndDlgPage,
-                          dlgTrashSettings,
-                          ARRAYITEMCOUNT(dlgTrashSettings));
-        }
+        // insert the controls using the dialog formatter
+        // V0.9.19 (2002-04-14) [umoeller]
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      dlgTrashSettings,
+                      ARRAYITEMCOUNT(dlgTrashSettings));
     }
 
     if (flFlags & CBI_ENABLE)
@@ -2688,15 +2682,12 @@ VOID trshTrashCanDrivesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 {
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == NULL)
-        {
-            // first call: backup drives array for "Undo" button;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            pnbp->pUser = malloc(CB_SUPPORTED_DRIVES);
-            _xwpclsQueryDrivesSupport(_XWPTrashCan, pnbp->pUser);
-        }
+        // first call: backup drives array for "Undo" button;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        pnbp->pUser = malloc(CB_SUPPORTED_DRIVES);
+        _xwpclsQueryDrivesSupport(_XWPTrashCan, pnbp->pUser);
     }
 
     if (flFlags & CBI_SET)
@@ -2967,22 +2958,20 @@ MRESULT trshTrashCanDrivesItemChanged(PNOTEBOOKPAGE pnbp,
  *      Sets the controls on the page according to the
  *      Global Settings.
  *
+ *      Note that this code is only used any more if the
+ *      user has disabled the icon pages replacements.
+ *
  *@@added V0.9.4 (2000-08-03) [umoeller]
  */
 
 VOID trshTrashCanIconInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                               ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == NULL)
-        {
-            // first call:
-            // backup object title for "Undo" button
-            pnbp->pUser = strdup(_wpQueryTitle(pnbp->inbp.somSelf));
-        }
+        // first call:
+        // backup object title for "Undo" button
+        pnbp->pUser = strhdup(_wpQueryTitle(pnbp->inbp.somSelf), NULL);
 
         WinSendDlgItemMsg(pnbp->hwndDlgPage, ID_XTDI_ICON_TITLEMLE,
                           MLM_SETTEXTLIMIT,
@@ -3002,6 +2991,9 @@ VOID trshTrashCanIconInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *      notebook callback function (notebook.c) for the
  *      trash can "Icon" settings page.
  *      Reacts to changes of any of the dialog controls.
+ *
+ *      Note that this code is only used any more if the
+ *      user has disabled the icon pages replacements.
  *
  *@@added V0.9.4 (2000-08-03) [umoeller]
  */

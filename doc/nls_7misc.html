@@ -44,22 +44,22 @@ does not use &quot;Y&quot; for saying
 &quot;Yes&quot;. Unfortunately, <CODE>INSTALL.CMD</CODE> relies on these keys. <CODE>:-(</CODE>
 
 
-<P><LI>
-<CODE>CROBJxxx.CMD</CODE> is a straightforward REXX script which creates the
-default XWorkplace Configuration Folder. Even if you don't know REXX,
+<P><LI><CODE>INSTLxxx.CMD</CODE> is a straightforward REXX script which creates the
+default XWorkplace installation objects (the "XWorkplace" folder plus all the new
+settings objects). Even if you don't know REXX,
 don't worry: you only have to change the strings on top of the file,
 which contain all the language-dependent things. Be careful with the quotes.
 Do not change anything else, because XWorkplace relies on it.
 
-<P>This REXX script now gets called by WarpIN after all files have been unpacked.
-Also, this gets called when the "Recreate config folder" button is pressed on the
-"Objects" page in the "XWorkplace Setup" object.
+<P>Even though XWorkplace uses WarpIN for installation, this REXX script gets
+called after the first WPS restart after installation.
 
-<P><LI>
-Similarly, <CODE>INSTLxxx.CMD</CODE> creates the default XWorkplace installation
-objects (the "XWorkplace" folder plus all the new settings objects).
+<P><LI>Similarly, <CODE>CROBJxxx.CMD</CODE> creates the default XWorkplace
+Configuration Folder.
 
-<P>This REXX script now gets called by WarpIN after all files have been unpacked.
+<P>This REXX script gets called by <CODE>INSTLxxx.CMD</CODE>.
+Also, this gets called independently when the "Recreate config folder" button
+is pressed on the "Objects" page in the "XWorkplace Setup" object.
 
 <P><LI>
 <CODE>SOUNDxxx.CMD</CODE> is the REXX script which creates the neccessary INI

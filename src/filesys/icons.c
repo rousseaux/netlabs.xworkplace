@@ -3335,10 +3335,8 @@ VOID XWPENTRY icoIcon1InitPage(PNOTEBOOKPAGE pnbp,
 
     if (flFlags & CBI_INIT)
     {
-        if (    (pnbp->pUser == NULL)
-             // backup data for "undo"
-             && (pData = NEW(OBJICONPAGEDATA))
-           )
+        // backup data for "undo"
+        if (pData = NEW(OBJICONPAGEDATA))
         {
             ULONG   ulStyle = _wpQueryStyle(pnbp->inbp.somSelf);
 

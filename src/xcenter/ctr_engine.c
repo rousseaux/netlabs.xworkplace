@@ -1278,8 +1278,9 @@ static BOOL StartAutohideNow(PXCENTERWINDATA pXCenterData)
 VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
                   ULONG ulFlags)                // in: XFMF_* flags (shared\center.h)
 {
-    PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
-    XCenterData *somThis = XCenterGetData(pXCenterData->somSelf);
+    PXCENTERGLOBALS     pGlobals = &pXCenterData->Globals;
+    XCenterData         *somThis = XCenterGetData(pXCenterData->somSelf);
+    PPRIVATEWIDGETVIEW  pWidget2Focus = NULL;   // V0.9.19 (2002-04-17) [umoeller]
 
     // NOTE: We must not request the XCenter mutex here because
     // this function can get called during message sends from
@@ -1364,6 +1365,29 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
     else
         pXCenterData->yFrame = 0;
 
+    if (ulFlags & XFMF_FOCUS2FIRSTWIDGET)
+    {
+        // run thru the widgets and get the first one
+        // which has the WGTF_CANTAKECENTERHOTKEY class flag
+        // V0.9.19 (2002-04-17) [umoeller]
+        PLISTNODE   pNode = lstQueryFirstNode(&pXCenterData->llWidgets);
+        while (pNode)
+        {
+            PPRIVATEWIDGETVIEW pWidgetThis = (PPRIVATEWIDGETVIEW)pNode->pItemData;
+
+            if (pWidgetThis->Widget.ulClassFlags & WGTF_CANTAKECENTERHOTKEY)
+            {
+                pWidget2Focus = pWidgetThis;
+                break;
+            }
+
+            pNode = pNode->pNext;
+        }
+
+        // resurface anyway
+        ulFlags |= XFMF_RESURFACE;
+    }
+
     if (ulFlags & XFMF_RESURFACE)
         flSWP |= SWP_ZORDER;
 
@@ -1389,6 +1413,16 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
 
     // (re)start auto-hide timer
     StartAutoHide(pXCenterData);
+
+    // V0.9.19 (2002-04-17) [umoeller]
+    if (pWidget2Focus)
+    {
+        WinSendMsg(pWidget2Focus->Widget.hwndWidget,
+                   WM_CONTROL,
+                   MPFROM2SHORT(ID_XCENTER_CLIENT,
+                                XN_CENTERHOTKEYPRESSED),
+                   NULL);
+    }
 }
 
 /* ******************************************************************
@@ -1441,7 +1475,7 @@ VOID ctrpShowSettingsDlg(XCenter *somSelf,
     {
         if (LOCK_OBJECT(Lock, somSelf))
         {
-            XCRET arc;
+            APIRET arc;
             PPRIVATEWIDGETSETTING pSetting;
             PXCENTERWIDGET pViewData;
 
@@ -5255,7 +5289,6 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
         {
             XCenterData *somThis = XCenterGetData(somSelf);
             MENUITEM mi;
-            // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
             // get handle to the "Open" submenu in the
             // the popup menu
             if (winhQueryMenuItem(hwndMenu,

@@ -1365,7 +1365,6 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
 
     TRY_LOUD(excpt1)
     {
-        // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
         PCKERNELGLOBALS      pKernelGlobals = krnQueryGlobals();
 
         // allocate a block of memory... we can't use malloc,

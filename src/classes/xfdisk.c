@@ -127,7 +127,6 @@ SOM_Scope ULONG  SOMLINK xfdisk_wpFilterPopupMenu(XFldDisk *somSelf,
                                                 BOOL fMultiSelect)
 {
     ULONG ulrc;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldDiskData *somThis = XFldDiskGetData(somSelf);
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpFilterPopupMenu");
 
@@ -164,7 +163,6 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpModifyPopupMenu(XFldDisk *somSelf,
                                                  HWND hwndCnr,
                                                  ULONG iPosition)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     BOOL            rc;
 
     // XFldDiskData *somThis = XFldDiskGetData(somSelf);
@@ -267,7 +265,6 @@ SOM_Scope HWND  SOMLINK xfdisk_wpViewObject(XFldDisk *somSelf,
                                             ULONG ulView,
                                             ULONG param)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     HWND            hwndFrame = NULLHANDLE; // default: error occured
 
     /* XFldDiskData *somThis = XFldDiskGetData(somSelf); */
@@ -349,7 +346,6 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
         case OPEN_DETAILS:
         case OPEN_SETTINGS:     // V0.9.16 (2001-10-23) [umoeller]
         {
-            // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
             XFolder*        pRootFolder = 0;
             // XFldDiskData *somThis = XFldDiskGetData(somSelf);
             XFldDiskMethodDebug("XFldDisk","xfdisk_wpOpen");
@@ -436,7 +432,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
                                 )
                             )
                             // this reformats the window with the status bar
-                            fdrCreateStatusBar(pRootFolder, psfv, TRUE);
+                            stbCreate(psfv);
                     }
 
                 // extended sort functions
@@ -480,8 +476,6 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpAddSettingsPages(XFldDisk *somSelf,
                                                   HWND hwndNotebook)
 {
     BOOL brc = FALSE;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     /* XFldDiskData *somThis = XFldDiskGetData(somSelf); */
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpAddSettingsPages");
 
@@ -512,7 +506,6 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpAddSettingsPages(XFldDisk *somSelf,
 SOM_Scope ULONG  SOMLINK xfdisk_wpAddDiskDetailsPage(XFldDisk *somSelf,
                                                      HWND hwndNotebook)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XFldDiskData *somThis = XFldDiskGetData(somSelf); */
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpAddDiskDetailsPage");
 

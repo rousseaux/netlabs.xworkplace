@@ -73,6 +73,7 @@
 #define INCL_WINSTDCNR
 #define INCL_WINSTDBOOK
 #define INCL_WINPROGRAMLIST
+#define INCL_WINSWITCHLIST
 #include <os2.h>
 
 // C library headers
@@ -984,6 +985,99 @@ SOM_Scope WPObject*  SOMLINK xo_xwpQueryNextObj(XFldObject *somSelf)
         pobj = *ppObjNext;
 
     return (pobj);
+}
+
+/*
+ *@@ xwpHotkeyOrBorderAction:
+ *      this new XFldObject method gets called
+ *      from the thread-1 object window whenever
+ *      the XWPDaemon notifies it that an object
+ *      should be opened, either because a hotkey
+ *      was pressed or because a screen border was
+ *      touched with the mouse.
+ *
+ *      This method gets resolved by name from
+ *      T1M_OpenObjectFromHandle. This allows WPS
+ *      classes to override what happens in this case.
+ *
+ *      Parameters:
+ *
+ *      --  hab is the anchor block of WPS thread 1.
+ *
+ *      --  ulCorner is 0 if this is really from a
+ *          hotkey. In that case, the "hotkey"
+ *          system sound has already been played.
+ *          It is > 0 if this resulted from a
+ *          screen border mouse action.
+ *
+ *      Presently, only the XCenter overrides this,
+ *      so this default implementation gets called
+ *      for everything but the XCenter. This calls
+ *      wpViewObject on somSelf to either open or
+ *      resurface an existing view.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+SOM_Scope HWND  SOMLINK xo_xwpHotkeyOrBorderAction(XFldObject *somSelf,
+                                                   ULONG hab,
+                                                   ULONG ulCorner)
+{
+    HWND hwnd;
+
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_xwpHotkeyOrBorderAction");
+
+    // open the object, or resurface if already open
+    hwnd = _wpViewObject(somSelf,
+                         NULLHANDLE,   // hwndCnr (?!?)
+                         OPEN_DEFAULT,
+                         0);           // "optional parameter" (?!?)
+
+    #ifdef DEBUG_KEYS
+        _Pmpf(("T1M_OpenObjectFromHandle: opened hwnd 0x%lX", hwnd));
+    #endif
+
+    if (hwnd)
+    {
+        if (WinIsWindow(hab,
+                        hwnd))
+        {
+            // it's a window:
+            // move to front
+            WinSetActiveWindow(HWND_DESKTOP, hwnd);
+        }
+        else
+        {
+            // wpViewObject only returns a window handle for
+            // WPS windows. By contrast, if a program object is
+            // started, an obscure USHORT value is returned.
+            // I suppose this is a HAPP instead.
+            // From my testing, the lower byte (0xFF) contains
+            // the session ID of the started application, while
+            // the higher byte (0xFF00) contains the application
+            // type, which is:
+            // --   0x0300  presentation manager
+            // --   0x0200  VIO
+
+            // IBM, this is sick.
+
+            // So now we go thru the switch list and find the
+            // session which has this lo-byte. V0.9.4 (2000-06-15) [umoeller]
+
+            // V0.9.19 (2002-04-17) [umoeller]: replaced all the
+            // old code with this, which is probably more efficient.
+            HSWITCH hsw;
+            SWCNTRL swc;
+            if (    (hsw = winhHSWITCHfromHAPP((HAPP)hwnd))
+                 && (!WinQuerySwitchEntry(hsw, &swc))
+               )
+                WinSetActiveWindow(HWND_DESKTOP,
+                                   swc.hwnd);
+        }
+    }
+
+    return (hwnd);
 }
 
 /*

@@ -4362,7 +4362,6 @@ APIRET cmnEmptyDefTrashCan(HAB hab,        // in: synchronously?
 BOOL cmnAddProductInfoMenuItem(HWND hwndMenu)   // in: main menu with "Help" submenu
 {
     BOOL brc = FALSE;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if ((cmnQuerySetting(sflDefaultMenuItems) & CTXT_HELP) == 0)
     {
@@ -4836,7 +4835,6 @@ BOOL cmnRegisterView(WPObject *somSelf,
 BOOL cmnPlaySystemSound(USHORT usIndex)
 {
     BOOL brc = FALSE;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     if (cmnQuerySetting(sfXSystemSounds))    // V0.9.3 (2000-04-10) [umoeller]
     {
         // check if the XWPMedia subsystem is working
@@ -6343,18 +6341,24 @@ ULONG cmnErrorMsgBox(HWND hwndOwner,        // in: owner window
 {
     ULONG ulrc;
     XSTRING str;
-    PCSZ pcsz;
     xstrInit(&str, 0);
     cmnDescribeError(&str, arc, NULL, fShowExplanation);
 
-    pcsz = str.psz;
-
-    ulrc = cmnMessageBoxMsgExt(hwndOwner,
-                               104,
-                               &pcsz,
-                               1,
-                               ulMsg,
-                               flFlags);
+    if (ulMsg)
+    {
+        PCSZ pcsz = str.psz;
+        ulrc = cmnMessageBoxMsgExt(hwndOwner,
+                                   104,
+                                   &pcsz,
+                                   1,
+                                   ulMsg,
+                                   flFlags);
+    }
+    else
+        ulrc = cmnMessageBox(hwndOwner,
+                             "XWorkplace",
+                             str.psz,
+                             flFlags);
 
     xstrClear(&str);
 

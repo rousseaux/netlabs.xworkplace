@@ -344,10 +344,6 @@
  *
  ********************************************************************/
 
-typedef HSWITCH APIENTRY WINHSWITCHFROMHAPP(HAPP happ);
-
-WINHSWITCHFROMHAPP *G_WinHSWITCHfromHAPP = NULL;
-
 HWND        G_hwndShellObject = NULLHANDLE;
     // object window for communication
 
@@ -642,7 +638,7 @@ APIRET StartUserShell(VOID)
             // create security context for the shell
             // (otherwise it will be refreshed)
             HSWITCH hsw;
-            if (!(hsw = G_WinHSWITCHfromHAPP(G_happWPS)))
+            if (!(hsw = winhHSWITCHfromHAPP(G_happWPS)))
             {
                 _Pmpf((__FUNCTION__ ": Cannot find HSWITCH for happ 0x%lX", G_happWPS));
             }
@@ -2067,14 +2063,8 @@ int main(int argc, char *argv[])
         // sure we survive even shutdown
         WinCancelShutdown(hmq, TRUE);
 
-        // import WinHSWITCHfromHAPP
-        // WinHSWITCHfromHAPP PMMERGE.5199
-        if ((arc = doshQueryProcAddr("PMMERGE",
-                                     5199,
-                                     (PFN*)&G_WinHSWITCHfromHAPP)))
-            Error("doshQueryProcAddr returned %d resolving WinHSWITCHfromHAPP.", arc);
         // allocate XWPSHELLSHARED
-        else if ((arc = DosAllocSharedMem((PVOID*)&G_pXWPShellShared,
+        if ((arc = DosAllocSharedMem((PVOID*)&G_pXWPShellShared,
                                 SHMEM_XWPSHELL,
                                 sizeof(XWPSHELLSHARED),
                                 PAG_COMMIT | PAG_READ | PAG_WRITE)))

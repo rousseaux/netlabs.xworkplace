@@ -432,8 +432,6 @@ BOOL fdrModifySortMenu(WPFolder *somSelf,
                        HWND hwndMenuWithSortSubmenu)
 {
     BOOL brc = FALSE;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
 #ifndef __ALWAYSEXTSORT__
     if (cmnQuerySetting(sfExtendedSorting))
 #endif
@@ -559,8 +557,6 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
                              PBOOL pbDismiss)    // out: dismiss flag for fdr_fnwpSubclassedFolderFrame
 {
     BOOL            brc = FALSE;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
 #ifndef __ALWAYSEXTSORT__
     if (cmnQuerySetting(sfExtendedSorting))
 #endif
@@ -1026,8 +1022,6 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
                      LONG lSort)        // in: sort criterion
 {
     XFolderData *somThis = XFolderGetData(somSelf);
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     BOOL fFoldersFirst = (_lFoldersFirst == SET_DEFAULT)
                             ? cmnQuerySetting(sfFoldersFirst)
                             : _lFoldersFirst;
@@ -1209,7 +1203,6 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
 
 BOOL fdrHasAlwaysSort(WPFolder *somSelf)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XFolderData *somThis = XFolderGetData(somSelf);
 
 #ifndef __ALWAYSEXTSORT__
@@ -1312,9 +1305,6 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
         {
             if (LOCK_OBJECT(Lock, somSelf))
             {
-                // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
-                // use our macro for determining this folder's always-sort flag;
                 // this is TRUE if "Always sort" is on either locally or globally
                 BOOL            AlwaysSort = (_lAlwaysSort == SET_DEFAULT)
                                                 ? cmnQuerySetting(sfAlwaysSort)
@@ -1534,7 +1524,6 @@ static XWPSETTING G_SortBackup[] =
 VOID fdrSortInitPage(PNOTEBOOKPAGE pnbp,
                      ULONG flFlags)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     HWND        hwndListbox = WinWindowFromID(pnbp->hwndDlgPage,
                                               ID_XSDI_SORTLISTBOX);
 
@@ -1552,15 +1541,12 @@ VOID fdrSortInitPage(PNOTEBOOKPAGE pnbp,
             // get instance data
             XFolderData *somThis = XFolderGetData(pnbp->inbp.somSelf);
 
-            if (pnbp->pUser == NULL)
-            {
-                // first call: backup instance data for "Undo" button;
-                // this memory will be freed automatically by the
-                // common notebook window function (notebook.c) when
-                // the notebook page is destroyed
-                pnbp->pUser = malloc(sizeof(XFolderData));
+            // first call: backup instance data for "Undo" button;
+            // this memory will be freed automatically by the
+            // common notebook window function (notebook.c) when
+            // the notebook page is destroyed
+            if (pnbp->pUser = malloc(sizeof(XFolderData)))
                 memcpy(pnbp->pUser, somThis, sizeof(XFolderData));
-            }
 
             // get folder's sort class
             pSortClass = _wpQueryFldrSortClass(pnbp->inbp.somSelf);
@@ -1568,18 +1554,12 @@ VOID fdrSortInitPage(PNOTEBOOKPAGE pnbp,
         else
         {
             // "Workplace Shell" page:
-            if (pnbp->pUser == NULL)
-            {
-                // first call: backup Global Settings for "Undo" button;
-                // this memory will be freed automatically by the
-                // common notebook window function (notebook.c) when
-                // the notebook page is destroyed
-                /* pnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-                memcpy(pnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
-                */
-                pnbp->pUser = cmnBackupSettings(G_SortBackup,
-                                                ARRAYITEMCOUNT(G_SortBackup));
-            }
+            // first call: backup Global Settings for "Undo" button;
+            // this memory will be freed automatically by the
+            // common notebook window function (notebook.c) when
+            // the notebook page is destroyed
+            pnbp->pUser = cmnBackupSettings(G_SortBackup,
+                                            ARRAYITEMCOUNT(G_SortBackup));
 
             // sort class: always use _WPFileSystem
             pSortClass = _WPFileSystem;
@@ -1811,12 +1791,6 @@ MRESULT fdrSortItemChanged(PNOTEBOOKPAGE pnbp,
                     // fixed undo V0.9.12 (2001-05-22) [umoeller]
                     // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
                     cmnRestoreSettings(pnbp->pUser, ARRAYITEMCOUNT(G_SortBackup));
-                    /*
-                    cmnSetSetting(sfFoldersFirst, pBackup->fFoldersFirst);
-                    cmnSetSetting(slDefSortCrit, pBackup->lDefSortCrit);
-                    cmnSetSetting(sfAlwaysSort, pBackup->AlwaysSort);
-                    // cmnUnlockGlobalSettings();
-                      */
                     fGlobalRefreshViews = TRUE;
                 }
 
@@ -1846,8 +1820,6 @@ MRESULT fdrSortItemChanged(PNOTEBOOKPAGE pnbp,
         {
             HPOINTER hptrOld = winhSetWaitPointer();
             // global:
-
-            // cmnStoreGlobalSettings();
 
             ntbUpdateVisiblePage(NULL,      // any object
                                  SP_FLDRSORT_FLDR);

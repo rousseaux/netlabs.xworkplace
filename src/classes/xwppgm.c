@@ -552,7 +552,6 @@ SOM_Scope HWND  SOMLINK xpg_wpOpen(XWPProgram *somSelf,
                                    ULONG ulView,
                                    ULONG param)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XWPProgramData *somThis = XWPProgramGetData(somSelf);
     XWPProgramMethodDebug("XWPProgram","xpg_wpOpen");
 
@@ -1660,8 +1659,6 @@ SOM_Scope ULONG  SOMLINK xpg_wpAddProgramSessionPage(XWPProgram *somSelf,
 SOM_Scope ULONG  SOMLINK xpg_wpAddProgramAssociationPage(XWPProgram *somSelf,
                                                          HWND hwndNotebook)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
     XWPProgramMethodDebug("XWPProgram","xwppgm_wpAddProgramAssociationPage");
 

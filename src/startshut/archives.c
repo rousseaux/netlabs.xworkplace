@@ -316,21 +316,18 @@ VOID arcArchivesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == NULL)
-        {
-            // first call: backup archive settings for "Undo" button;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            pnbp->pUser = malloc(sizeof(ARCHIVINGSETTINGS));
+        // first call: backup archive settings for "Undo" button;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        if (pnbp->pUser = malloc(sizeof(ARCHIVINGSETTINGS)))
             memcpy(pnbp->pUser, pArcSettings, sizeof(ARCHIVINGSETTINGS));
 
-            // insert the controls using the dialog formatter
-            // V0.9.16 (2001-11-22) [umoeller]
-            ntbFormatPage(pnbp->hwndDlgPage,
-                          dlgArchives,
-                          ARRAYITEMCOUNT(dlgArchives));
-        }
+        // insert the controls using the dialog formatter
+        // V0.9.16 (2001-11-22) [umoeller]
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      dlgArchives,
+                      ARRAYITEMCOUNT(dlgArchives));
 
         WinSendDlgItemMsg(pnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPIN,
                           SPBM_SETARRAY,

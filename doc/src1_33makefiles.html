@@ -45,15 +45,15 @@ So <CODE>nmake dep</CODE> support had to be introduced.
 
 <UL><LI>A single configuration file which sets up all compiler and linker options.
 This is <CODE>setup.in</CODE> in the main directory, which is included from all
-makefiles via the NMAKE <CODE>!include</CODE> directive.
+makefiles via the <CODE>nmake</CODE> <CODE>!include</CODE> directive.
+
+<P><LI>System-dependent configuration (directories etc.) is done via another file,
+<A HREF="src1_32env.html">config.in</A>.
 
 <P><LI>The makefiles create all output files (.OBJ, .DLL, .EXE) in the <CODE>bin\</CODE>
 directory, which is created if it doesn't exist.
 
 <P>To rebuild the entire thing, one can simply delete the entire <CODE>bin\</CODE> tree.
-
-<P><LI>System-dependent configuration (directories etc.) is done via
-<A HREF="src1_32env.html">environment variables</A>.
 
 <P><LI>If the main makefile is started, it changes to the subdirectories and calls nmake
 again with <CODE>MAINMAKERUNNING=YES</CODE> defined. This way the sub-makefile knows that

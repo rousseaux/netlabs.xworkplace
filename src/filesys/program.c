@@ -2726,9 +2726,7 @@ VOID progFile2InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
     if (flFlags & CBI_INIT)
     {
         XFIELDINFO xfi[4];
-        // PFIELDINFO pfi = NULL;
         int        i = 0;
-        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
         WinSetDlgItemText(pnbp->hwndDlgPage,
                           ID_XFDI_CNR_GROUPTITLE,
@@ -3127,7 +3125,6 @@ VOID progResourcesInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
         XFIELDINFO xfi[6];
         PFIELDINFO pfi = NULL;
         int        i = 0;
-        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
         WinSetDlgItemText(pnbp->hwndDlgPage,
                           ID_XFDI_CNR_GROUPTITLE,

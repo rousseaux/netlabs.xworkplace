@@ -614,8 +614,6 @@ SHORT cmnuPrepareContentSubmenu(WPFolder *somSelf, // in: folder whose content i
 {
     HWND    hwndNewMenu;
     SHORT   sId = G_sNextMenuId;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     if (hwndNewMenu = winhInsertSubmenu(hwndMenu,
                                         iPosition,
                                         sId,
@@ -716,7 +714,6 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
     HAB             habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
     BOOL            fFolderLocked = FALSE;
     PLISTNODE       pNode = NULL;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     // We will first create two lists in memory
     // for all folders and non-folders; we will
@@ -1028,8 +1025,6 @@ VOID cmnuFillContentSubmenu(SHORT sMenuId, // in: menu ID of selected folder con
 {
     PLISTNODE       pNode = lstQueryFirstNode(&G_llContentMenuItems);
     PCONTENTMENULISTITEM pcmli = NULL;
-
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     WPFolder        *pFolder = NULL;
 

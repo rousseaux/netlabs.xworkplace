@@ -356,7 +356,6 @@ SOM_Scope BOOL  SOMLINK xfstup_wpModifyPopupMenu(XFldStartup *somSelf,
 {
     BOOL rc;
     ULONG ulOfs = cmnQuerySetting(sulVarMenuOffset);
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     /* XFldStartupData *somThis = XFldStartupGetData(somSelf); */
     XFldStartupMethodDebug("XFldStartup","xfstup_wpModifyPopupMenu");
@@ -398,7 +397,6 @@ SOM_Scope BOOL  SOMLINK xfstup_wpMenuItemSelected(XFldStartup *somSelf,
                                                   HWND hwndFrame,
                                                   ULONG ulMenuId)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XFldStartupData *somThis = XFldStartupGetData(somSelf); */
     XFldStartupMethodDebug("XFldStartup","xfstup_wpMenuItemSelected");
 

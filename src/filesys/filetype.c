@@ -3143,86 +3143,80 @@ VOID ftypFileTypesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
     if (flFlags & CBI_INIT)
     {
-        // HWND    hwndListBox;
-        // CNRINFO CnrInfo;
+        PFILETYPESPAGEDATA pftpd;
 
-        if (pnbp->pUser == NULL)
+        // first call: create FILETYPESPAGEDATA
+        // structure;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        pftpd = malloc(sizeof(FILETYPESPAGEDATA));
+        pnbp->pUser = pftpd;
+        memset(pftpd, 0, sizeof(FILETYPESPAGEDATA));
+
+        pftpd->pnbp = pnbp;
+
+        lstInit(&pftpd->llFileTypes, TRUE);
+
+        // create "cleanup" list; this will hold all kinds
+        // of items which need to be free()'d when the
+        // notebook page is destroyed.
+        // We just keep storing stuff in here so we need not
+        // keep track of where we allocated what.
+        lstInit(&pftpd->llCleanup, TRUE);
+
+        // store container hwnd's
+        pftpd->hwndTypesCnr = hwndCnr;
+        pftpd->hwndFiltersCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_FT_FILTERSCNR);
+        pftpd->hwndAssocsCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_FT_ASSOCSCNR);
+
+        // set up file types container
+        BEGIN_CNRINFO()
         {
-            PFILETYPESPAGEDATA pftpd;
+            cnrhSetView(CV_TREE | CA_TREELINE | CV_TEXT);
+            cnrhSetTreeIndent(15);
+            cnrhSetSortFunc(fnCompareName);
+        } END_CNRINFO(hwndCnr);
 
-            // first call: create FILETYPESPAGEDATA
-            // structure;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            pftpd = malloc(sizeof(FILETYPESPAGEDATA));
-            pnbp->pUser = pftpd;
-            memset(pftpd, 0, sizeof(FILETYPESPAGEDATA));
+        // set up filters container
+        BEGIN_CNRINFO()
+        {
+            cnrhSetView(CV_TEXT | CV_FLOW);
+            cnrhSetSortFunc(fnCompareName);
+        } END_CNRINFO(pftpd->hwndFiltersCnr);
 
-            pftpd->pnbp = pnbp;
+        // set up assocs container
+        BEGIN_CNRINFO()
+        {
+            cnrhSetView(CV_NAME | CV_MINI
+                         | CA_ORDEREDTARGETEMPH
+                                        // allow dropping only _between_ records
+                         | CA_OWNERDRAW);
+                                        // for disabled records
+            // no sort here
+        } END_CNRINFO(pftpd->hwndAssocsCnr);
 
-            lstInit(&pftpd->llFileTypes, TRUE);
+        // flags for cnr owner draw
+        pnbp->inbp.ulCnrOwnerDraw = CODFL_DISABLEDTEXT | CODFL_MINIICON;
 
-            // create "cleanup" list; this will hold all kinds
-            // of items which need to be free()'d when the
-            // notebook page is destroyed.
-            // We just keep storing stuff in here so we need not
-            // keep track of where we allocated what.
-            lstInit(&pftpd->llCleanup, TRUE);
-
-            // store container hwnd's
-            pftpd->hwndTypesCnr = hwndCnr;
-            pftpd->hwndFiltersCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_FT_FILTERSCNR);
-            pftpd->hwndAssocsCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_FT_ASSOCSCNR);
-
-            // set up file types container
-            BEGIN_CNRINFO()
-            {
-                cnrhSetView(CV_TREE | CA_TREELINE | CV_TEXT);
-                cnrhSetTreeIndent(15);
-                cnrhSetSortFunc(fnCompareName);
-            } END_CNRINFO(hwndCnr);
-
-            // set up filters container
-            BEGIN_CNRINFO()
-            {
-                cnrhSetView(CV_TEXT | CV_FLOW);
-                cnrhSetSortFunc(fnCompareName);
-            } END_CNRINFO(pftpd->hwndFiltersCnr);
-
-            // set up assocs container
-            BEGIN_CNRINFO()
-            {
-                cnrhSetView(CV_NAME | CV_MINI
-                             | CA_ORDEREDTARGETEMPH
-                                            // allow dropping only _between_ records
-                             | CA_OWNERDRAW);
-                                            // for disabled records
-                // no sort here
-            } END_CNRINFO(pftpd->hwndAssocsCnr);
-
-            // flags for cnr owner draw
-            pnbp->inbp.ulCnrOwnerDraw = CODFL_DISABLEDTEXT | CODFL_MINIICON;
-
-            pftpd->hmenuFileTypeSel = WinLoadMenu(HWND_OBJECT,
+        pftpd->hmenuFileTypeSel = WinLoadMenu(HWND_OBJECT,
+                                              cmnQueryNLSModuleHandle(FALSE),
+                                              ID_XSM_FILETYPES_SEL);
+        pftpd->hmenuFileTypeNoSel = WinLoadMenu(HWND_OBJECT,
+                                                cmnQueryNLSModuleHandle(FALSE),
+                                                ID_XSM_FILETYPES_NOSEL);
+        pftpd->hmenuFileFilterSel = WinLoadMenu(HWND_OBJECT,
+                                                cmnQueryNLSModuleHandle(FALSE),
+                                                ID_XSM_FILEFILTER_SEL);
+        pftpd->hmenuFileFilterNoSel = WinLoadMenu(HWND_OBJECT,
                                                   cmnQueryNLSModuleHandle(FALSE),
-                                                  ID_XSM_FILETYPES_SEL);
-            pftpd->hmenuFileTypeNoSel = WinLoadMenu(HWND_OBJECT,
-                                                    cmnQueryNLSModuleHandle(FALSE),
-                                                    ID_XSM_FILETYPES_NOSEL);
-            pftpd->hmenuFileFilterSel = WinLoadMenu(HWND_OBJECT,
-                                                    cmnQueryNLSModuleHandle(FALSE),
-                                                    ID_XSM_FILEFILTER_SEL);
-            pftpd->hmenuFileFilterNoSel = WinLoadMenu(HWND_OBJECT,
-                                                      cmnQueryNLSModuleHandle(FALSE),
-                                                      ID_XSM_FILEFILTER_NOSEL);
-            pftpd->hmenuFileAssocSel = WinLoadMenu(HWND_OBJECT,
-                                                   cmnQueryNLSModuleHandle(FALSE),
-                                                   ID_XSM_FILEASSOC_SEL);
-            pftpd->hmenuFileAssocNoSel = WinLoadMenu(HWND_OBJECT,
-                                                     cmnQueryNLSModuleHandle(FALSE),
-                                                     ID_XSM_FILEASSOC_NOSEL);
-        }
+                                                  ID_XSM_FILEFILTER_NOSEL);
+        pftpd->hmenuFileAssocSel = WinLoadMenu(HWND_OBJECT,
+                                               cmnQueryNLSModuleHandle(FALSE),
+                                               ID_XSM_FILEASSOC_SEL);
+        pftpd->hmenuFileAssocNoSel = WinLoadMenu(HWND_OBJECT,
+                                                 cmnQueryNLSModuleHandle(FALSE),
+                                                 ID_XSM_FILEASSOC_NOSEL);
     }
 
     /*
@@ -5211,10 +5205,8 @@ VOID ftypDatafileTypesInitPage(PNOTEBOOKPAGE pnbp,
 
         if (pdftp)
         {
-            PSZ     pszTypes = _wpQueryType(pnbp->inbp.somSelf);
             // backup existing types for "Undo"
-            if (pszTypes)
-                pdftp->pszTypesBackup = strdup(pszTypes);
+            pdftp->pszTypesBackup = strhdup(_wpQueryType(pnbp->inbp.somSelf), NULL);
         }
     }
 
@@ -5382,10 +5374,8 @@ VOID ftypAssociationsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
         if (pdftp)
         {
-            PSZ pszTypes = _wpQueryAssociationType(pnbp->inbp.somSelf);
             // backup existing types for "Undo"
-            if (pszTypes)
-                pdftp->pszTypesBackup = strdup(pszTypes);
+            pdftp->pszTypesBackup = strhdup(_wpQueryAssociationType(pnbp->inbp.somSelf), NULL);
         }
     }
 

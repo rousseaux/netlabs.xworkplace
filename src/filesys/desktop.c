@@ -396,9 +396,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                         HWND hwndMenu)
 {
     HWND            hwndMenuInsert = hwndMenu;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
-    // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
 
     // position of original "Shutdown" menu item in context menu
     SHORT   sOrigShutdownPos = (SHORT)WinSendMsg(hwndMenu,
@@ -610,9 +608,6 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
                          HWND hwndFrame,
                          PULONG pulMenuId) // in/out: menu item ID (can be changed)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    // PCKERNELGLOBALS   pKernelGlobals = krnQueryGlobals();
-
     if (!xsdIsShutdownRunning())
     {
         ULONG ulMenuId2 = (*pulMenuId - (cmnQuerySetting(sulVarMenuOffset)));
@@ -817,22 +812,19 @@ VOID dtpMenuItemsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 {
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == NULL)
-        {
-            // first call: backup Global Settings for "Undo" button;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            pnbp->pUser = cmnBackupSettings(G_DtpMenuItemsBackup,
-                                             ARRAYITEMCOUNT(G_DtpMenuItemsBackup));
+        // first call: backup Global Settings for "Undo" button;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        pnbp->pUser = cmnBackupSettings(G_DtpMenuItemsBackup,
+                                         ARRAYITEMCOUNT(G_DtpMenuItemsBackup));
 
 
-            // insert the controls using the dialog formatter
-            // V0.9.16 (2001-09-29) [umoeller]
-            ntbFormatPage(pnbp->hwndDlgPage,
-                          dlgDesktopMenus,
-                          ARRAYITEMCOUNT(dlgDesktopMenus));
-        }
+        // insert the controls using the dialog formatter
+        // V0.9.16 (2001-09-29) [umoeller]
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      dlgDesktopMenus,
+                      ARRAYITEMCOUNT(dlgDesktopMenus));
     }
 
     if (flFlags & CBI_SET)
@@ -1112,42 +1104,37 @@ static const XWPSETTING G_DtpStartupBackup[] =
 VOID dtpStartupInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                         ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == NULL)
-        {
-            // first call: backup Global Settings for "Undo" button;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            pnbp->pUser = cmnBackupSettings(G_DtpStartupBackup,
-                                             ARRAYITEMCOUNT(G_DtpStartupBackup));
+        // first call: backup Global Settings for "Undo" button;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        pnbp->pUser = cmnBackupSettings(G_DtpStartupBackup,
+                                         ARRAYITEMCOUNT(G_DtpStartupBackup));
 
-            // insert the controls using the dialog formatter
-            // V0.9.16 (2001-09-29) [umoeller]
-            ntbFormatPage(pnbp->hwndDlgPage,
-                          dlgDesktopStartup,
-                          ARRAYITEMCOUNT(dlgDesktopStartup));
+        // insert the controls using the dialog formatter
+        // V0.9.16 (2001-09-29) [umoeller]
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      dlgDesktopStartup,
+                      ARRAYITEMCOUNT(dlgDesktopStartup));
 
 #ifndef __NOBOOTLOGO__
-            // backup old boot logo file
-            pnbp->pUser2 = cmnQueryBootLogoFile();     // malloc'ed
-                    // fixed V0.9.13 (2001-06-14) [umoeller]
+        // backup old boot logo file
+        pnbp->pUser2 = cmnQueryBootLogoFile();     // malloc'ed
+                // fixed V0.9.13 (2001-06-14) [umoeller]
 
-            // prepare the control to properly display
-            // stretched bitmaps
-            ctlPrepareStretchedBitmap(WinWindowFromID(pnbp->hwndDlgPage,
-                                                      ID_XSDI_DTP_LOGOBITMAP),
-                                      TRUE);    // preserve proportions
+        // prepare the control to properly display
+        // stretched bitmaps
+        ctlPrepareStretchedBitmap(WinWindowFromID(pnbp->hwndDlgPage,
+                                                  ID_XSDI_DTP_LOGOBITMAP),
+                                  TRUE);    // preserve proportions
 
-            // set entry field limit
-            winhSetEntryFieldLimit(WinWindowFromID(pnbp->hwndDlgPage,
-                                                   ID_XSDI_DTP_LOGOFILE),
-                                   CCHMAXPATH);
+        // set entry field limit
+        winhSetEntryFieldLimit(WinWindowFromID(pnbp->hwndDlgPage,
+                                               ID_XSDI_DTP_LOGOFILE),
+                               CCHMAXPATH);
 #endif
-        }
     }
 
     if (flFlags & CBI_SET)
@@ -1394,7 +1381,6 @@ MRESULT dtpStartupItemChanged(PNOTEBOOKPAGE pnbp,
     {
         // not processed above:
         // second switch-case with non-global settings stuff
-        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
         switch (ulItemID)
         {

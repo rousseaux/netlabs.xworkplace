@@ -802,84 +802,79 @@ VOID sndSoundsInitPage(PNOTEBOOKPAGE pnbp,           // notebook info struct
 
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == NULL)
+        // create SOUNDPAGEDATA structure;
+        // this will be free()'d automatically
+        // when the notebook page is destroyed
+        if (pnbp->pUser = malloc(sizeof(SOUNDPAGEDATA)))
         {
-            // create SOUNDPAGEDATA structure;
-            // this will be free()'d automatically
-            // when the notebook page is destroyed
-            pnbp->pUser = malloc(sizeof(SOUNDPAGEDATA));
-            if (pnbp->pUser)
+            PSZ     pszLastScheme;
+            SHORT   sSchemeToSelect;
+
+            PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)(pnbp->pUser);
+            memset(pnbp->pUser, 0, sizeof(SOUNDPAGEDATA));
+
+            // sound schemes
+            pspd->hwndSchemesDropDown = WinWindowFromID(pnbp->hwndDlgPage,
+                                                        ID_XSDI_SOUND_SCHEMES_DROPDOWN);
+            // events
+            pspd->hwndEventsListbox = WinWindowFromID(pnbp->hwndDlgPage,
+                                                      ID_XSDI_SOUND_EVENTSLISTBOX);
+            pspd->sEventSelected = LIT_NONE;
+
+            // others
+            pspd->hwndSoundFile = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_SOUND_FILE);
+
+            // set text length for entry field
+            winhSetEntryFieldLimit(pspd->hwndSoundFile, 255);
+            // store CREATENOTEBOOKPAGE in entry field's QWL_USER
+            WinSetWindowULong(pspd->hwndSoundFile, QWL_USER, (ULONG)pnbp);
+            // subclass the entry field to support drag'n'drop
+            pspd->pfnwpSoundFileOriginal = WinSubclassWindow(pspd->hwndSoundFile,
+                                                             fnwpSubclassedSoundFile);
+
+            // sprintf(pspd->szMMPM, "%c:\\MMOS2\\MMPM.INI", doshQueryBootDrive());
+            sndQueryMmpmIniPath(pspd->szMMPM);
+                    // V0.9.10 (2001-04-16) [umoeller]
+
+            // create circular slider
+            winhReplaceWithCircularSlider(pnbp->hwndDlgPage, pnbp->hwndDlgPage,
+                                          // hwndInsertAfter:
+                                          WinWindowFromID(pnbp->hwndDlgPage,
+                                                          ID_XSDI_SOUND_COMMONVOLUME),
+                                          ID_XSDI_SOUND_VOLUMELEVER,
+                                          CSS_NOTEXT
+                                            | CSS_POINTSELECT
+                                            | CSS_MIDPOINT
+                                            | CSS_PROPORTIONALTICKS,
+                                          0, 100,       // range
+                                          5, 20);       // increments
+
+            // fill "Sound schemes" drop-down
+            // Note: We do this within CBI_INIT because we
+            // really only want this to be done exactly once.
+            // When sound schemes change, we call this function
+            // again manually later.
+            pspd->fDontConfirmSchemeSelection = TRUE;
+            FillDropDownWithSchemes(pspd->hwndSchemesDropDown);
+
+            // now query last selected scheme from OS2.INI
+            if (pszLastScheme = prfhQueryProfileData(HINI_USER,
+                                                     INIAPP_XWORKPLACE,
+                                                     INIKEY_XWPSOUNDSCHEME,
+                                                     NULL))
             {
-                PSZ     pszLastScheme;
-                SHORT   sSchemeToSelect;
-
-                PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)(pnbp->pUser);
-                memset(pnbp->pUser, 0, sizeof(SOUNDPAGEDATA));
-
-                // sound schemes
-                pspd->hwndSchemesDropDown = WinWindowFromID(pnbp->hwndDlgPage,
-                                                            ID_XSDI_SOUND_SCHEMES_DROPDOWN);
-                // events
-                pspd->hwndEventsListbox = WinWindowFromID(pnbp->hwndDlgPage,
-                                                          ID_XSDI_SOUND_EVENTSLISTBOX);
-                pspd->sEventSelected = LIT_NONE;
-
-                // others
-                pspd->hwndSoundFile = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_SOUND_FILE);
-
-                // set text length for entry field
-                winhSetEntryFieldLimit(pspd->hwndSoundFile, 255);
-                // store CREATENOTEBOOKPAGE in entry field's QWL_USER
-                WinSetWindowULong(pspd->hwndSoundFile, QWL_USER, (ULONG)pnbp);
-                // subclass the entry field to support drag'n'drop
-                pspd->pfnwpSoundFileOriginal = WinSubclassWindow(pspd->hwndSoundFile,
-                                                                 fnwpSubclassedSoundFile);
-
-                // sprintf(pspd->szMMPM, "%c:\\MMOS2\\MMPM.INI", doshQueryBootDrive());
-                sndQueryMmpmIniPath(pspd->szMMPM);
-                        // V0.9.10 (2001-04-16) [umoeller]
-
-                // create circular slider
-                winhReplaceWithCircularSlider(pnbp->hwndDlgPage, pnbp->hwndDlgPage,
-                                              // hwndInsertAfter:
-                                              WinWindowFromID(pnbp->hwndDlgPage,
-                                                              ID_XSDI_SOUND_COMMONVOLUME),
-                                              ID_XSDI_SOUND_VOLUMELEVER,
-                                              CSS_NOTEXT
-                                                | CSS_POINTSELECT
-                                                | CSS_MIDPOINT
-                                                | CSS_PROPORTIONALTICKS,
-                                              0, 100,       // range
-                                              5, 20);       // increments
-
-                // fill "Sound schemes" drop-down
-                // Note: We do this within CBI_INIT because we
-                // really only want this to be done exactly once.
-                // When sound schemes change, we call this function
-                // again manually later.
-                pspd->fDontConfirmSchemeSelection = TRUE;
-                FillDropDownWithSchemes(pspd->hwndSchemesDropDown);
-
-                // now query last selected scheme from OS2.INI
-                pszLastScheme = prfhQueryProfileData(HINI_USER,
-                                                    INIAPP_XWORKPLACE,
-                                                    INIKEY_XWPSOUNDSCHEME,
-                                                    NULL);
-                if (pszLastScheme)
-                {
-                    sSchemeToSelect = (SHORT)WinSendMsg(pspd->hwndSchemesDropDown,
-                                                        LM_SEARCHSTRING,
-                                                        MPFROM2SHORT(LSS_CASESENSITIVE,
-                                                                     LIT_FIRST),
-                                                        (MPARAM)pszLastScheme);
-                    free(pszLastScheme);
-                }
-                else
-                    // none saved: select "none"
-                    sSchemeToSelect = LIT_NONE; // pspd->sCustomSchemeIndex;
-
-                SelectSoundScheme(pspd, sSchemeToSelect);
+                sSchemeToSelect = (SHORT)WinSendMsg(pspd->hwndSchemesDropDown,
+                                                    LM_SEARCHSTRING,
+                                                    MPFROM2SHORT(LSS_CASESENSITIVE,
+                                                                 LIT_FIRST),
+                                                    (MPARAM)pszLastScheme);
+                free(pszLastScheme);
             }
+            else
+                // none saved: select "none"
+                sSchemeToSelect = LIT_NONE; // pspd->sCustomSchemeIndex;
+
+            SelectSoundScheme(pspd, sSchemeToSelect);
         }
     }
 

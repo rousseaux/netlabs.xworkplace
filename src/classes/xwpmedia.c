@@ -875,7 +875,6 @@ VOID xwmmCodecsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 {
     if (flFlags & CBI_INIT)
     {
-        // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
         HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
         XFIELDINFO      xfi[6];

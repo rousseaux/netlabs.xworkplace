@@ -90,12 +90,14 @@ BMPS = \
     img\titleedit.bmp \
     img\trunc.bmp \
     img\xcenter_view.bmp \
+    img\xc_drag.bmp \
     img\xc_mem.bmp \
     img\xc_power1.bmp \
     img\xc_power2.bmp \
     img\xc_pulse.bmp \
     img\xc_sentinel1.bmp \
     img\xc_sentinel2.bmp \
+    img\xc_sizbar.bmp \
     img\xc_tray.bmp \
     img\xc_winlist.bmp \
     img\xfsys.bmp \

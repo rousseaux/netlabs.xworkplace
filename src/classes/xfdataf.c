@@ -409,7 +409,6 @@ SOM_Scope HWND  SOMLINK xdf_wpDisplayMenu(XFldDataFile *somSelf,
 {
     HWND hwndMenu = 0;
 
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpDisplayMenu");
 
@@ -474,7 +473,6 @@ SOM_Scope ULONG  SOMLINK xdf_wpFilterPopupMenu(XFldDataFile *somSelf,
                                                BOOL fMultiSelect)
 {
     ULONG ulMenuFilter = 0;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpFilterPopupMenu");
 
@@ -528,7 +526,6 @@ BOOL _System xdf_wpModifyMenu(XFldDataFile *somSelf,
                               ULONG ulReserved)
 {
     BOOL    brc = FALSE;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     xfTD_wpModifyMenu _parent_wpModifyMenu = NULL;
     BOOL    fExtAssocs = FALSE;
     somMethodTabs pParentMTab;
@@ -751,7 +748,6 @@ SOM_Scope HWND  SOMLINK xdf_wpOpen(XFldDataFile *somSelf,
 {
     HWND        hwnd = NULLHANDLE;
     BOOL        fCallParent = TRUE;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpOpen");
 
@@ -840,7 +836,6 @@ SOM_Scope HWND  SOMLINK xdf_wpOpen(XFldDataFile *somSelf,
 SOM_Scope ULONG  SOMLINK xdf_wpAddFile1Page(XFldDataFile *somSelf,
                                             HWND hwndNotebook)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpAddFile1Page");
 
@@ -874,7 +869,6 @@ SOM_Scope ULONG  SOMLINK xdf_wpAddFile1Page(XFldDataFile *somSelf,
 SOM_Scope ULONG  SOMLINK xdf_wpAddFile2Page(XFldDataFile *somSelf,
                                             HWND hwndNotebook)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpAddFile2Page");
 
@@ -905,7 +899,6 @@ SOM_Scope ULONG  SOMLINK xdf_wpAddFile2Page(XFldDataFile *somSelf,
 SOM_Scope ULONG  SOMLINK xdf_wpAddFile3Page(XFldDataFile *somSelf,
                                             HWND hwndNotebook)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpAddFile3Page");
 
@@ -935,7 +928,6 @@ SOM_Scope ULONG  SOMLINK xdf_wpAddFile3Page(XFldDataFile *somSelf,
 SOM_Scope ULONG  SOMLINK xdf_wpAddFileTypePage(XFldDataFile *somSelf,
                                                HWND hwndNotebook)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpAddFileTypePage");
 

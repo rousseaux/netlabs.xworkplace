@@ -221,7 +221,6 @@ BOOL hifXWPHookReady(VOID)
     BOOL brc = FALSE;
     PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
     PXWPGLOBALSHARED pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared;
-    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     if (pXwpGlobalShared)
         if (pXwpGlobalShared->fAllHooksInstalled)
 #ifndef __ALWAYSHOOK__
@@ -311,13 +310,11 @@ BOOL hifHookConfigChanged(PVOID pvdc)
         PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
         PXWPGLOBALSHARED   pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared;
 
-        brc = PrfWriteProfileData(HINI_USER,
-                                  INIAPP_XWPHOOK,
-                                  INIKEY_HOOK_CONFIG,
-                                  pdc,
-                                  sizeof(HOOKCONFIG));
-
-        if (!brc)
+        if (!(brc = PrfWriteProfileData(HINI_USER,
+                                        INIAPP_XWPHOOK,
+                                        INIKEY_HOOK_CONFIG,
+                                        pdc,
+                                        sizeof(HOOKCONFIG))))
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "PrfWriteProfileData failed.");
         else
@@ -470,12 +467,11 @@ BOOL hifSetObjectHotkeys(PVOID pvHotkeys,   // in: ptr to array of GLOBALHOTKEY 
 {
     BOOL brc = FALSE;
 
-    brc = PrfWriteProfileData(HINI_USER,
-                              INIAPP_XWPHOOK,
-                              INIKEY_HOOK_HOTKEYS,
-                              pvHotkeys,
-                              cHotkeys * sizeof(GLOBALHOTKEY));
-    if (brc)
+    if (brc = PrfWriteProfileData(HINI_USER,
+                                  INIAPP_XWPHOOK,
+                                  INIKEY_HOOK_HOTKEYS,
+                                  pvHotkeys,
+                                  cHotkeys * sizeof(GLOBALHOTKEY)))
     {
         // notify daemon, which in turn notifies the hook
         brc = krnPostDaemonMsg(XDM_HOTKEYSCHANGED,
@@ -505,12 +501,11 @@ BOOL hifSetObjectHotkeys(PVOID pvHotkeys,   // in: ptr to array of GLOBALHOTKEY 
 PFUNCTIONKEY hifQueryFunctionKeys(PULONG pcFunctionKeys)    // out: function key count (not array size!)
 {
     ULONG   cbFunctionKeys = 0;
-    PFUNCTIONKEY paFunctionKeys
-        = (PFUNCTIONKEY)prfhQueryProfileData(HINI_USER,
-                                             INIAPP_XWPHOOK,
-                                             INIKEY_HOOK_FUNCTIONKEYS,
-                                             &cbFunctionKeys);
-    if (paFunctionKeys)
+    PFUNCTIONKEY paFunctionKeys;
+    if (paFunctionKeys = (PFUNCTIONKEY)prfhQueryProfileData(HINI_USER,
+                                                            INIAPP_XWPHOOK,
+                                                            INIKEY_HOOK_FUNCTIONKEYS,
+                                                            &cbFunctionKeys))
         if (pcFunctionKeys)
             *pcFunctionKeys = cbFunctionKeys / sizeof(FUNCTIONKEY);
 
@@ -547,17 +542,15 @@ BOOL hifFreeFunctionKeys(PFUNCTIONKEY paFunctionKeys)
 BOOL hifSetFunctionKeys(PFUNCTIONKEY paFunctionKeys, // in: function keys array
                         ULONG cFunctionKeys)    // in: array item count (NOT array size!)
 {
-    BOOL brc = FALSE;
+    BOOL brc;
 
-    brc = PrfWriteProfileData(HINI_USER,
-                              INIAPP_XWPHOOK,
-                              INIKEY_HOOK_FUNCTIONKEYS,
-                              (cFunctionKeys)
-                                    ? paFunctionKeys
-                                    : NULL,     // if none are present
-                              cFunctionKeys * sizeof(FUNCTIONKEY));
-
-    if (brc)
+    if (brc = PrfWriteProfileData(HINI_USER,
+                                  INIAPP_XWPHOOK,
+                                  INIKEY_HOOK_FUNCTIONKEYS,
+                                  (cFunctionKeys)
+                                        ? paFunctionKeys
+                                        : NULL,     // if none are present
+                                  cFunctionKeys * sizeof(FUNCTIONKEY)))
     {
         // notify daemon, which in turn notifies the hook
         brc = krnPostDaemonMsg(XDM_HOTKEYSCHANGED,
@@ -579,23 +572,24 @@ BOOL hifSetFunctionKeys(PFUNCTIONKEY paFunctionKeys, // in: function keys array
 
 BOOL hifAppendFunctionKey(PFUNCTIONKEY pNewKey)
 {
-    BOOL    brc = FALSE;
-    ULONG   cbFunctionKeys = 0;
-    PFUNCTIONKEY paFunctionKeys
-        = (PFUNCTIONKEY) prfhQueryProfileData(HINI_USER,
-                                              INIAPP_XWPHOOK,
-                                              INIKEY_HOOK_FUNCTIONKEYS,
-                                              &cbFunctionKeys),
-            paNewKeys = NULL;
-    ULONG   cKeys = 0;
+    BOOL            brc = FALSE;
+    ULONG           cbFunctionKeys = 0;
+    PFUNCTIONKEY    paFunctionKeys,
+                    paNewKeys = NULL;
+    ULONG           cKeys = 0;
 
-    if (paFunctionKeys)
+    if (paFunctionKeys = (PFUNCTIONKEY)prfhQueryProfileData(HINI_USER,
+                                                            INIAPP_XWPHOOK,
+                                                            INIKEY_HOOK_FUNCTIONKEYS,
+                                                            &cbFunctionKeys))
         cKeys = cbFunctionKeys / sizeof(FUNCTIONKEY);
 
-    paNewKeys = malloc(sizeof(FUNCTIONKEY) * (cKeys + 1));
-    if (paFunctionKeys)
+    if (    (cKeys)
+         && (paNewKeys = malloc(sizeof(FUNCTIONKEY) * (cKeys + 1)))
+       )
         // items existed already:
         memcpy(paNewKeys, paFunctionKeys, sizeof(FUNCTIONKEY) * cKeys);
+
     // append new item
     memcpy(&paNewKeys[cKeys], pNewKey, sizeof(FUNCTIONKEY));
 
@@ -764,20 +758,21 @@ VOID hifCollectHotkeys(MPARAM mp1,  // in: HWND hwndCnr
                     cmnDescribeKey(preccThis->szHotkey,
                                    pHotkeyThis->usFlags,
                                    pHotkeyThis->usKeyCode);
+
                 preccThis->pszHotkey = preccThis->szHotkey;
 
                 // get object for hotkey
-                preccThis->pObject = _wpclsQueryObject(_WPObject,
-                                                       pHotkeyThis->ulHandle);
-                if (preccThis->pObject)
+                if (preccThis->pObject = _wpclsQueryObject(_WPObject,
+                                                           pHotkeyThis->ulHandle))
                 {
-                    WPFolder *pFolder = _wpQueryFolder(preccThis->pObject);
+                    WPFolder *pFolder;
 
                     preccThis->recc.pszIcon = _wpQueryTitle(preccThis->pObject);
                     preccThis->recc.hptrMiniIcon = _wpQueryIcon(preccThis->pObject);
-                    if (pFolder)
-                        if (_wpQueryFilename(pFolder, preccThis->szFolderPath, TRUE))
-                            preccThis->pszFolderPath = preccThis->szFolderPath;
+                    if (    (pFolder = _wpQueryFolder(preccThis->pObject))
+                         && (_wpQueryFilename(pFolder, preccThis->szFolderPath, TRUE))
+                       )
+                        preccThis->pszFolderPath = preccThis->szFolderPath;
                 }
                 else
                     preccThis->recc.pszIcon = cmnGetString(ID_XSSI_INVALID_OBJECT);
@@ -832,13 +827,11 @@ VOID hifKeybdHotkeysInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 {
     if (flFlags & CBI_INIT)
     {
-        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         PHOTKEYSPAGEDATA pPageData = 0;
         XFIELDINFO      xfi[7];
         PFIELDINFO      pfi = NULL;
         int             i = 0;
         HWND            hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
-        // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
         SWP             swpCnr;
 
         // set group title V0.9.4 (2000-06-13) [umoeller]
@@ -996,14 +989,15 @@ MRESULT hifKeybdHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
 
         case ID_XSMI_HOTKEYS_PROPERTIES:
         {
-            PHOTKEYRECORD precc = (PHOTKEYRECORD)pnbp->preccSource;
+            PHOTKEYRECORD precc;
                         // this has been set in CN_CONTEXTMENU above
-            if (precc)
-                if (precc->pObject)
-                    _wpViewObject(precc->pObject,
-                                  NULLHANDLE,   // hwndCnr (?!?)
-                                  OPEN_SETTINGS,
-                                  0);
+            if (    (precc = (PHOTKEYRECORD)pnbp->preccSource)
+                 && (precc->pObject)
+               )
+                _wpViewObject(precc->pObject,
+                              NULLHANDLE,   // hwndCnr (?!?)
+                              OPEN_SETTINGS,
+                              0);
         }
         break;
 
@@ -1014,18 +1008,17 @@ MRESULT hifKeybdHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
 
         case ID_XSMI_HOTKEYS_OPENFOLDER:
         {
-            PHOTKEYRECORD precc = (PHOTKEYRECORD)pnbp->preccSource;
+            PHOTKEYRECORD precc;
+            WPFolder *pFolder;
                         // this has been set in CN_CONTEXTMENU above
-            if (precc)
-                if (precc->pObject)
-                {
-                    WPFolder *pFolder = _wpQueryFolder(precc->pObject);
-                    if (pFolder)
-                        _wpViewObject(pFolder,
-                                      NULLHANDLE,   // hwndCnr (?!?)
-                                      OPEN_DEFAULT,
-                                      0);
-                }
+            if (    (precc = (PHOTKEYRECORD)pnbp->preccSource)
+                 && (precc->pObject)
+                 && (pFolder = _wpQueryFolder(precc->pObject))
+               )
+                _wpViewObject(pFolder,
+                              NULLHANDLE,   // hwndCnr (?!?)
+                              OPEN_DEFAULT,
+                              0);
         }
         break;
 
@@ -1036,9 +1029,9 @@ MRESULT hifKeybdHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
 
         case ID_XSMI_HOTKEYS_REMOVE:
         {
-            PHOTKEYRECORD precc = (PHOTKEYRECORD)pnbp->preccSource;
+            PHOTKEYRECORD precc;
                         // this has been set in CN_CONTEXTMENU above
-            if (precc)
+            if (precc = (PHOTKEYRECORD)pnbp->preccSource)
             {
                 // string replacements
                 PCSZ apsz[2] = {
@@ -1276,8 +1269,6 @@ typedef struct _FUNCKEYSPAGEDATA
 VOID hifKeybdFunctionKeysInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                   ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     if (flFlags & CBI_INIT)
     {
         PFUNCKEYSPAGEDATA pPageData = 0;
@@ -1635,22 +1626,17 @@ VOID hifMouseMappings2InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
         HWND hwndDrop = WinWindowFromID(pnbp->hwndDlgPage,
                                         ID_XSDI_MOUSE_MB3CLICK_DROP);
-        if (pnbp->pUser == 0)
-        {
-            // first call: create HOOKCONFIG
-            // structure;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            pnbp->pUser = malloc(sizeof(HOOKCONFIG));
-            if (pnbp->pUser)
-                hifLoadHookConfig(pnbp->pUser);
+        // first call: create HOOKCONFIG
+        // structure;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        if (pnbp->pUser = malloc(sizeof(HOOKCONFIG)))
+            hifLoadHookConfig(pnbp->pUser);
 
-            // make backup for "undo"
-            pnbp->pUser2 = malloc(sizeof(HOOKCONFIG));
-            if (pnbp->pUser2)
-                memcpy(pnbp->pUser2, pnbp->pUser, sizeof(HOOKCONFIG));
-        }
+        // make backup for "undo"
+        if (pnbp->pUser2 = malloc(sizeof(HOOKCONFIG)))
+            memcpy(pnbp->pUser2, pnbp->pUser, sizeof(HOOKCONFIG));
 
         // set MB3 mappings combo
         WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_MB3_AUTOSCROLL)) ; // pszMB3AutoScroll
@@ -2116,27 +2102,22 @@ VOID hifMouseMovementInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 {
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == 0)
-        {
-            // first call: create HOOKCONFIG structure;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            pnbp->pUser = malloc(sizeof(HOOKCONFIG));
-            if (pnbp->pUser)
-                hifLoadHookConfig(pnbp->pUser);
+        // first call: create HOOKCONFIG structure;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        if (pnbp->pUser = malloc(sizeof(HOOKCONFIG)))
+            hifLoadHookConfig(pnbp->pUser);
 
-            // make backup for "undo"
-            pnbp->pUser2 = malloc(sizeof(HOOKCONFIG));
-            if (pnbp->pUser2)
-                memcpy(pnbp->pUser2, pnbp->pUser, sizeof(HOOKCONFIG));
+        // make backup for "undo"
+        if (pnbp->pUser2 = malloc(sizeof(HOOKCONFIG)))
+            memcpy(pnbp->pUser2, pnbp->pUser, sizeof(HOOKCONFIG));
 
-            // insert the controls using the dialog formatter
-            // V0.9.16 (2001-12-06) [umoeller]
-            ntbFormatPage(pnbp->hwndDlgPage,
-                          dlgMovement1,
-                          ARRAYITEMCOUNT(dlgMovement1));
-        }
+        // insert the controls using the dialog formatter
+        // V0.9.16 (2001-12-06) [umoeller]
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      dlgMovement1,
+                      ARRAYITEMCOUNT(dlgMovement1));
 
         // setup sliders
 #ifndef __NOSLIDINGFOCUS__
@@ -2193,7 +2174,6 @@ VOID hifMouseMovementInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
     if (flFlags & CBI_ENABLE)
     {
-        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         PHOOKCONFIG pdc = (PHOOKCONFIG)pnbp->pUser;
 
 #ifndef __NOSLIDINGFOCUS__
@@ -2444,21 +2424,16 @@ VOID hifMouseMovement2InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 {
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == 0)
-        {
-            // first call: create HOOKCONFIG structure;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            pnbp->pUser = malloc(sizeof(HOOKCONFIG));
-            if (pnbp->pUser)
-                hifLoadHookConfig(pnbp->pUser);
+        // first call: create HOOKCONFIG structure;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        if (pnbp->pUser = malloc(sizeof(HOOKCONFIG)))
+            hifLoadHookConfig(pnbp->pUser);
 
-            // make backup for "undo"
-            pnbp->pUser2 = malloc(sizeof(HOOKCONFIG));
-            if (pnbp->pUser2)
-                memcpy(pnbp->pUser2, pnbp->pUser, sizeof(HOOKCONFIG));
-        }
+        // make backup for "undo"
+        if (pnbp->pUser2 = malloc(sizeof(HOOKCONFIG)))
+            memcpy(pnbp->pUser2, pnbp->pUser, sizeof(HOOKCONFIG));
 
         // setup sliders
         winhSetSliderTicks(WinWindowFromID(pnbp->hwndDlgPage,
@@ -2505,7 +2480,6 @@ VOID hifMouseMovement2InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
     if (flFlags & CBI_ENABLE)
     {
-        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         PHOOKCONFIG pdc = (PHOOKCONFIG)pnbp->pUser;
 
         winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_TXT1,
@@ -2759,22 +2733,17 @@ VOID hifMouseCornersInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 {
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == 0)
-        {
-            // first call: create HOOKCONFIG
-            // structure;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            pnbp->pUser = malloc(sizeof(HOOKCONFIG));
-            if (pnbp->pUser)
-                hifLoadHookConfig(pnbp->pUser);
+        // first call: create HOOKCONFIG
+        // structure;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        if (pnbp->pUser = malloc(sizeof(HOOKCONFIG)))
+            hifLoadHookConfig(pnbp->pUser);
 
-            // make backup for "undo"
-            pnbp->pUser2 = malloc(sizeof(HOOKCONFIG));
-            if (pnbp->pUser2)
-                memcpy(pnbp->pUser2, pnbp->pUser, sizeof(HOOKCONFIG));
-        }
+        // make backup for "undo"
+        if (pnbp->pUser2 = malloc(sizeof(HOOKCONFIG)))
+            memcpy(pnbp->pUser2, pnbp->pUser, sizeof(HOOKCONFIG));
 
         // check top left screen corner
         G_ulScreenCornerSelectedID = ID_XSDI_MOUSE_RADIO_TOPLEFT;
@@ -2851,7 +2820,7 @@ VOID hifMouseCornersInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
             cnrhRemoveAll(hwndCnr);
             winhSetLboxSelectedItem(hwndDrop, LIT_NONE, TRUE);
         }
-        else if (ulCurrentObj >= 0xFFFF0000)
+        else if (ulCurrentObj >= SPECIALOBJ_FIRST) // 0xFFFF0000
         {
             // special function for this corner:
             winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_MOUSE_INACTIVEOBJ, FALSE);
@@ -2998,7 +2967,7 @@ MRESULT hifMouseCornersItemChanged(PNOTEBOOKPAGE pnbp,
         case ID_XSDI_MOUSE_OPEN_CHECK:
             hifLoadHookConfig(pdc);
             if (    (pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex] == 0)
-                 ||  (pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex] >= 0xFFFF0000)
+                 || (pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex] >= SPECIALOBJ_FIRST) // 0xFFFF0000
                 )
                 // mode changed to object mode: store a pseudo-object
                 pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex] = 1;
@@ -3037,8 +3006,9 @@ MRESULT hifMouseCornersItemChanged(PNOTEBOOKPAGE pnbp,
 
         case ID_XSDI_MOUSE_SPECIAL_CHECK:
             hifLoadHookConfig(pdc);
-            if (pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex] < 0xFFFF0000)  //V0.9.18 (2002-02-12) [pr]
-                pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex] = 0xFFFF0000;
+            if (pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex] < SPECIALOBJ_FIRST) // 0xFFFF0000
+                        //V0.9.18 (2002-02-12) [pr]
+                pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex] = SPECIALOBJ_FIRST; // 0xFFFF0000
 
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         break;
@@ -3056,7 +3026,8 @@ MRESULT hifMouseCornersItemChanged(PNOTEBOOKPAGE pnbp,
             else
                 // store special function, which has the hiword as FFFF
                 pdc->ahobjHotCornerObjects[G_ulScreenCornerSelectedIndex]
-                    = 0xFFFF0000 | lIndex;
+                    = SPECIALOBJ_FIRST | lIndex;
+                            // 0xFFFF0000
         }
         break;
 

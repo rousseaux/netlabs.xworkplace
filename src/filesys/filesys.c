@@ -2313,50 +2313,47 @@ VOID fsysFile1InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
 {
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == NULL)
+        // first call: backup instance data for "Undo" button;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        CHAR            szFilename[CCHMAXPATH];
+        PFILEPAGEDATA   pfpd = (PFILEPAGEDATA)malloc(sizeof(FILEPAGEDATA));
+        memset(pfpd, 0, sizeof(FILEPAGEDATA));
+        pnbp->pUser = pfpd;
+        pfpd->ulAttr = _wpQueryAttr(pnbp->inbp.somSelf);
+        _wpQueryFilename(pnbp->inbp.somSelf, szFilename, TRUE);
+        pfpd->pszSubject = fsysQueryEASubject(pnbp->inbp.somSelf);
+        pfpd->pszComments = fsysQueryEAComments(pnbp->inbp.somSelf);
+        pfpd->pszKeyphrases = fsysQueryEAKeyphrases(pnbp->inbp.somSelf);
+
+        // insert the controls using the dialog formatter
+        // V0.9.19 (2002-04-14) [umoeller]
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      dlgFile1,
+                      ARRAYITEMCOUNT(dlgFile1));
+
+        if (doshIsFileOnFAT(szFilename))
         {
-            // first call: backup instance data for "Undo" button;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            CHAR            szFilename[CCHMAXPATH];
-            PFILEPAGEDATA   pfpd = (PFILEPAGEDATA)malloc(sizeof(FILEPAGEDATA));
-            memset(pfpd, 0, sizeof(FILEPAGEDATA));
-            pnbp->pUser = pfpd;
-            pfpd->ulAttr = _wpQueryAttr(pnbp->inbp.somSelf);
-            _wpQueryFilename(pnbp->inbp.somSelf, szFilename, TRUE);
-            pfpd->pszSubject = fsysQueryEASubject(pnbp->inbp.somSelf);
-            pfpd->pszComments = fsysQueryEAComments(pnbp->inbp.somSelf);
-            pfpd->pszKeyphrases = fsysQueryEAKeyphrases(pnbp->inbp.somSelf);
-
-            // insert the controls using the dialog formatter
-            // V0.9.19 (2002-04-14) [umoeller]
-            ntbFormatPage(pnbp->hwndDlgPage,
-                          dlgFile1,
-                          ARRAYITEMCOUNT(dlgFile1));
-
-            if (doshIsFileOnFAT(szFilename))
-            {
-                // on FAT: hide fields
-                winhShowDlgItem(pnbp->hwndDlgPage, ID_XSDI_FILES_CREATIONDATE,
-                                FALSE);
-                winhShowDlgItem(pnbp->hwndDlgPage, ID_XSDI_FILES_LASTACCESSDATE,
-                                FALSE);
-            }
-
-            if (!_somIsA(pnbp->inbp.somSelf, _WPFolder))
-            {
-                // this page is not for a folder, but
-                // a data file:
-                // hide "Work area" item
-                winhShowDlgItem(pnbp->hwndDlgPage, ID_XSDI_FILES_WORKAREA, FALSE);
-            }
-            else if (cmnIsADesktop(pnbp->inbp.somSelf))
-                // for the Desktop, disable work area;
-                // this must not be changed
-                winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_FILES_WORKAREA,
-                                  FALSE);
+            // on FAT: hide fields
+            winhShowDlgItem(pnbp->hwndDlgPage, ID_XSDI_FILES_CREATIONDATE,
+                            FALSE);
+            winhShowDlgItem(pnbp->hwndDlgPage, ID_XSDI_FILES_LASTACCESSDATE,
+                            FALSE);
         }
+
+        if (!_somIsA(pnbp->inbp.somSelf, _WPFolder))
+        {
+            // this page is not for a folder, but
+            // a data file:
+            // hide "Work area" item
+            winhShowDlgItem(pnbp->hwndDlgPage, ID_XSDI_FILES_WORKAREA, FALSE);
+        }
+        else if (cmnIsADesktop(pnbp->inbp.somSelf))
+            // for the Desktop, disable work area;
+            // this must not be changed
+            winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_FILES_WORKAREA,
+                              FALSE);
 
         // Even though CPREF says that the .SUBJECT EA was limited to
         // 40 chars altogether, this is wrong apparently, as many users

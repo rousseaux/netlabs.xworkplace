@@ -883,47 +883,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XCD_PARANOIA LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XCD_PARANOIA, 0, 0, 275, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "Disable XWorkplace Features", -1, 5, 56, 205, 90
-        LTEXT           "Here you can globally disable certain XWorkplace fe"
-                        "atures in case of trouble. Press ""Help"" to find o"
-                        "ut more about the different settings.", -1, 10, 114,
-                        190, 23, DT_WORDBREAK
-        LTEXT           "XWorkplace menu item ~ID offset:", -1, 10, 100, 140,
-                        12, DT_VCENTER | DT_MNEMONIC
-        SPINBUTTON      ID_XCDI_VARMENUOFFSET, 150, 100, 50, 12,
-                        SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTLEFT |
-                        SPBS_JUSTRIGHT | SPBS_JUSTCENTER | SPBS_FASTSPIN
-        AUTOCHECKBOX    "Disable all folder ~subclassing",
-                        ID_XCDI_NOSUBCLASSING, 10, 92, 134, 8
-        AUTOCHECKBOX    "Disable undocumented menu functions",
-                        ID_XCDI_NOFREAKYMENUS, 10, 84, 190, 8, BS_AUTOSIZE
-        AUTOCHECKBOX    "Disable background ~Worker thread", -1, 10, 76, 190,
-                        8
-        AUTOCHECKBOX    "Use ~8.Helv font", ID_XCDI_USE8HELVFONT, 10, 68,
-                        190, 8, BS_AUTOSIZE
-        AUTOCHECKBOX    "Disable ex~ception beeps", ID_XCDI_NOEXCPTBEEPS, 10,
-                        60, 190, 8, BS_AUTOSIZE
-        GROUPBOX        "Worker thread", -1, 5, 20, 205, 33, NOT WS_GROUP
-        LTEXT           "De~fault Worker thread priority:",
-                        ID_XCDI_WORKERPRTY_TEXT1, 10, 36, 90, 8, DT_MNEMONIC
-        SLIDER          ID_XCDI_WORKERPRTY_SLIDER, 115, 33, 50, 16,
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP
-                        CTLDATA 12, 0, 3, 0, 0, 0
-        LTEXT           "Text", ID_XCDI_WORKERPRTY_TEXT2, 170, 36, 35, 8,
-                        NOT WS_GROUP
-        AUTOCHECKBOX    "~Beep on priority change", ID_XCDI_WORKERPRTY_BEEP,
-                        10, 24, 195, 10
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 65, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 75, 6, 65, 12
-        PUSHBUTTON      "~Help", DID_HELP, 145, 6, 65, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_XCD_STATUS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_XCD_STATUS, 0, 0, 275, 180, NOT FS_DLGBORDER | WS_VISIBLE

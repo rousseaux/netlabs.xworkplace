@@ -52,6 +52,7 @@
 #define INCL_WINLISTBOXES
 #define INCL_WINSTDCNR
 #define INCL_WINSTDSLIDER
+#define INCL_WINSTDSPIN
 #define INCL_WINSYS
 
 #define INCL_GPILOGCOLORTABLE
@@ -1575,33 +1576,31 @@ VOID setLogoInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 {
     if (flFlags & CBI_INIT)
     {
-        HPS hpsTemp = WinGetPS(pnbp->hwndDlgPage);
-        if (hpsTemp)
+        HPS hpsTemp;
+        PXWPSETUPLOGODATA pLogoData;
+        if (    (hpsTemp = WinGetPS(pnbp->hwndDlgPage))
+             && (pLogoData = malloc(sizeof(XWPSETUPLOGODATA)))
+           )
         {
-            PXWPSETUPLOGODATA pLogoData = malloc(sizeof(XWPSETUPLOGODATA));
-            if (pLogoData)
-            {
-                memset(pLogoData, 0, sizeof(XWPSETUPLOGODATA));
-                pnbp->pUser = pLogoData;
+            memset(pLogoData, 0, sizeof(XWPSETUPLOGODATA));
+            pnbp->pUser = pLogoData;
 
-                pLogoData->hbmLogo = GpiLoadBitmap(hpsTemp,
+            if (pLogoData->hbmLogo = GpiLoadBitmap(hpsTemp,
                                                    cmnQueryMainResModuleHandle(),
                                                    ID_XWPBIGLOGO,
-                                                   0, 0);   // no stretch;
-                if (pLogoData->hbmLogo)
+                                                   0, 0))
+            {
+                BITMAPINFOHEADER2 bmih2;
+                bmih2.cbFix = sizeof(bmih2);
+                if (GpiQueryBitmapInfoHeader(pLogoData->hbmLogo, &bmih2))
                 {
-                    BITMAPINFOHEADER2 bmih2;
-                    bmih2.cbFix = sizeof(bmih2);
-                    if (GpiQueryBitmapInfoHeader(pLogoData->hbmLogo, &bmih2))
-                    {
-                        pLogoData->szlLogo.cx = bmih2.cx;
-                        pLogoData->szlLogo.cy = bmih2.cy;
-                    }
+                    pLogoData->szlLogo.cx = bmih2.cx;
+                    pLogoData->szlLogo.cy = bmih2.cy;
                 }
-
-                WinReleasePS(hpsTemp);
             }
         }
+
+        WinReleasePS(hpsTemp);
     }
 
     if (flFlags & CBI_DESTROY)
@@ -1796,7 +1795,6 @@ static const XWPSETTING G_FeaturesBackup[] =
 VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                          ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
 
     HWND hwndFeaturesCnr = WinWindowFromID(pnbp->hwndDlgPage,
@@ -1811,23 +1809,20 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         HAB                 hab = WinQueryAnchorBlock(pnbp->hwndDlgPage);
         HMODULE             hmodNLS = cmnQueryNLSModuleHandle(FALSE);
 
-        if (pnbp->pUser == NULL)
-        {
-            PXWPFEATURESDATA pFeaturesData;
-            // first call: backup Global Settings for "Undo" button;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            pnbp->pUser = pFeaturesData = malloc(sizeof(XWPFEATURESDATA));
-            pFeaturesData->pBackup = cmnBackupSettings(G_FeaturesBackup,
-                                                       ARRAYITEMCOUNT(G_FeaturesBackup));
+        PXWPFEATURESDATA pFeaturesData;
+        // first call: backup Global Settings for "Undo" button;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        pnbp->pUser = pFeaturesData = malloc(sizeof(XWPFEATURESDATA));
+        pFeaturesData->pBackup = cmnBackupSettings(G_FeaturesBackup,
+                                                   ARRAYITEMCOUNT(G_FeaturesBackup));
 #ifndef __ALWAYSOBJHOTKEYS__
-            pFeaturesData->bObjectHotkeys = hifObjectHotkeysEnabled();
+        pFeaturesData->bObjectHotkeys = hifObjectHotkeysEnabled();
 #endif
 #ifndef __ALWAYSREPLACEREFRESH__
-            pFeaturesData->bReplaceRefresh = krnReplaceRefreshEnabled();
+        pFeaturesData->bReplaceRefresh = krnReplaceRefreshEnabled();
 #endif
-        }
 
         if (!ctlMakeCheckboxContainer(pnbp->hwndDlgPage,
                                       ID_XCDI_CONTAINER))
@@ -3662,6 +3657,115 @@ static const XWPSETTING G_ParanoiaBackup[] =
         sulDefaultWorkerThreadPriority
     };
 
+SLDCDATA
+        WorkerPrtyCData =
+             {
+                     sizeof(SLDCDATA),
+                     3,          // scale 1 increments
+                     0,         // scale 1 spacing
+                     1,          // scale 2 increments
+                     0           // scale 2 spacing
+             };
+
+static const CONTROLDEF
+    ParanoiaGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING,
+                            ID_XCDI_PARANOIA_GROUP,
+                            -1,
+                            -1),
+    ParanoiaIntro = CONTROLDEF_TEXT_WORDBREAK(
+                            LOAD_STRING,
+                            ID_XCDI_PARANOIA_INTRO,
+                            400),
+    VarMenuOfsTxt = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_XCDI_VARMENUOFFSET_TXT,
+                            -1,
+                            -1),
+    VarMenuSpin = CONTROLDEF_SPINBUTTON(
+                            ID_XCDI_VARMENUOFFSET,
+                            100,
+                            -1),
+    NoSubclassingCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XCDI_NOSUBCLASSING,
+                            -1,
+                            -1),
+    NoFreakyMenusCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XCDI_NOFREAKYMENUS,
+                            -1,
+                            -1),
+    Use8HelvCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XCDI_USE8HELVFONT,
+                            -1,
+                            -1),
+    NoExcptBeepsCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XCDI_NOEXCPTBEEPS,
+                            -1,
+                            -1),
+    WorkerPrtyGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING,
+                            ID_XCDI_WORKERPRTY_GROUP,
+                            -1,
+                            -1),
+    WorkerPrtyTxt1 = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_XCDI_WORKERPRTY_TEXT1,
+                            -1,
+                            -1),
+    WorkerPrtySlider = CONTROLDEF_SLIDER(
+                            ID_XCDI_WORKERPRTY_SLIDER,
+                            100,
+                            30,
+                            &WorkerPrtyCData),
+    WorkerPrtyTxt2 = CONTROLDEF_TEXT(
+                            "A",
+                            ID_XCDI_WORKERPRTY_TEXT2,
+                            50,
+                            -1),
+    WorkerPrtyBeepCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XCDI_WORKERPRTY_BEEP,
+                            400,
+                            -1);
+
+static const DLGHITEM dlgParanoia[] =
+    {
+        START_TABLE,
+            START_ROW(0),
+                START_GROUP_TABLE(&ParanoiaGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&ParanoiaIntro),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&VarMenuOfsTxt),
+                        CONTROL_DEF(&VarMenuSpin),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&NoSubclassingCB),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&NoFreakyMenusCB),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&Use8HelvCB),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&NoExcptBeepsCB),
+                END_TABLE,
+            START_ROW(0),
+                START_GROUP_TABLE(&WorkerPrtyGroup),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&WorkerPrtyTxt1),
+                        CONTROL_DEF(&WorkerPrtySlider),
+                        CONTROL_DEF(&WorkerPrtyTxt2),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&WorkerPrtyBeepCB),
+                END_TABLE,
+            START_ROW(0),       // notebook buttons (will be moved)
+                CONTROL_DEF(&G_UndoButton),         // common.c
+                CONTROL_DEF(&G_DefaultButton),      // common.c
+                CONTROL_DEF(&G_HelpButton),         // common.c
+        END_TABLE
+    };
 /*
  *@@ setParanoiaInitPage:
  *      notebook callback function (notebook.c) for the
@@ -3675,23 +3779,20 @@ static const XWPSETTING G_ParanoiaBackup[] =
 VOID setParanoiaInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                          ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == NULL)
-        {
-            // first call: backup Global Settings for "Undo" button;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            pnbp->pUser = cmnBackupSettings(G_ParanoiaBackup,
-                                             ARRAYITEMCOUNT(G_ParanoiaBackup));
-            /*
-            pnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
-            */
-        }
+        // first call: backup Global Settings for "Undo" button;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        pnbp->pUser = cmnBackupSettings(G_ParanoiaBackup,
+                                        ARRAYITEMCOUNT(G_ParanoiaBackup));
+
+        // insert the controls using the dialog formatter
+        // V0.9.19 (2002-04-17) [umoeller]
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      dlgParanoia,
+                      ARRAYITEMCOUNT(dlgParanoia));
 
         // set up slider
         winhSetSliderTicks(WinWindowFromID(pnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_SLIDER),

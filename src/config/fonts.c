@@ -313,7 +313,7 @@ XWPFontObject* fonCreateFontObject(XWPFontFolder *pFolder,
                     XWPFontFolderData *somThis = XWPFontFolderGetData(pFolder);
 
                     _ulFontsCurrent++;
-                    fdrUpdateStatusBars(pFolder);
+                    stbUpdate(pFolder);
 
                     if (fInsert)
                         fdrCnrInsertObject(pNew);
@@ -875,7 +875,6 @@ BOOL fonProcessObjectCommand(WPFolder *somSelf,
 {
     BOOL brc = TRUE;        // default: processed
 
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     LONG lMenuID2 = usCommand - cmnQuerySetting(sulVarMenuOffset);
 
     switch (lMenuID2)
@@ -997,8 +996,6 @@ VOID fonModifyFontPopupMenu(XWPFontObject *somSelf,
                             HWND hwndMenu)
 {
     XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     MENUITEM mi;
     ULONG ulOfs = cmnQuerySetting(sulVarMenuOffset);
 
@@ -1063,7 +1060,6 @@ BOOL fonMenuItemSelected(XWPFontObject *somSelf,
                          ULONG ulMenuId)
 {
     BOOL brc = FALSE;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (ulMenuId == cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW)
     {

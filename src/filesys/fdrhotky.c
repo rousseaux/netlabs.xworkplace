@@ -361,7 +361,6 @@ BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
                 // OK: this is a hotkey...
 
                 BOOL                fPost = TRUE;
-                // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
 
                 // find the corresponding
                 // "command" (= menu ID) and post it to the frame
@@ -909,8 +908,6 @@ static const XWPSETTING G_HotkeysBackup[] =
 VOID fdrHotkeysInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                         ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     HWND    hwndEditField = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_DESCRIPTION);
     HWND    hwndListbox = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_LISTBOX);
 
@@ -922,23 +919,18 @@ VOID fdrHotkeysInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         HMODULE hmod = cmnQueryNLSModuleHandle(FALSE);
         PSUBCLHOTKEYEF pshef;
 
-        if (pnbp->pUser == NULL)
-        {
-            // first call: backup Global Settings for "Undo" button;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            /* pnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS)); */
-            pnbp->pUser = cmnBackupSettings(G_HotkeysBackup,
-                                             ARRAYITEMCOUNT(G_HotkeysBackup));
-            // and also backup the Folder Hotkeys array in the
-            // second pointer
-            pnbp->pUser2 = malloc(FLDRHOTKEYSSIZE);
+        // first call: backup Global Settings for "Undo" button;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        pnbp->pUser = cmnBackupSettings(G_HotkeysBackup,
+                                         ARRAYITEMCOUNT(G_HotkeysBackup));
+        // and also backup the Folder Hotkeys array in the
+        // second pointer
+        if (pnbp->pUser2 = malloc(FLDRHOTKEYSSIZE))
             memcpy(pnbp->pUser2,
                    fdrQueryFldrHotkeys(),
                    FLDRHOTKEYSSIZE);
-        }
 
         for (i = 0; i < FLDRHOTKEYCOUNT; i++)
         {
@@ -954,8 +946,7 @@ VOID fdrHotkeysInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
             }
         }
 
-        pshef = (PSUBCLHOTKEYEF)malloc(sizeof(SUBCLHOTKEYEF));
-        if (pshef)
+        if (pshef = (PSUBCLHOTKEYEF)malloc(sizeof(SUBCLHOTKEYEF)))
         {
             memset(pshef, 0, sizeof(*pshef));
             WinSetWindowPtr(hwndEditField, QWL_USER, pshef);

@@ -1840,7 +1840,6 @@ static MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1,
                         {
                             if (!fFillingCnr)
                             {
-                                // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                                 if (cmnQuerySetting(sfTreeViewAutoScroll))
                                 {
                                     pscd->preccExpanded = (PRECORDCORE)mp2;
@@ -2903,20 +2902,16 @@ static MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, M
 VOID cllClassListInitPage(PNOTEBOOKPAGE pnbp,  // notebook info struct
                            ULONG flFlags)              // CBI_* flags (notebook.h)
 {
-    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XWPClassListData *somThis = XWPClassListGetData(pnbp->inbp.somSelf);
 
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == NULL)
-        {
-            // first call: backup instance data for "Undo" button;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            pnbp->pUser = malloc(sizeof(XWPClassListData));
-            memcpy(pnbp->pUser, somThis, sizeof(XWPClassListData));
-        }
+        // first call: backup instance data for "Undo" button;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        pnbp->pUser = malloc(sizeof(XWPClassListData));
+        memcpy(pnbp->pUser, somThis, sizeof(XWPClassListData));
     }
 
     if (flFlags & CBI_SET)
@@ -3028,8 +3023,6 @@ BOOL cllModifyPopupMenu(XWPClassList *somSelf,
 
         // mi.hwndSubMenu now contains "Open" submenu handle,
         // which we add items to now
-        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
                            ulOfs + ID_XFMI_OFS_XWPVIEW,
                            cmnGetString(ID_XFSI_OPENCLASSLIST),  // pszOpenClassList
@@ -3073,7 +3066,6 @@ BOOL cllMenuItemSelected(XWPClassList *somSelf,
                          ULONG ulMenuId)
 {
     BOOL brc = FALSE;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (ulMenuId == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW))
     {

@@ -249,7 +249,6 @@ SOM_Scope BOOL  SOMLINK vol_wpModifyPopupMenu(XMMVolume *somSelf,
         {
             // mi.hwndSubMenu now contains "Open" submenu handle,
             // which we add items to now
-            // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
             // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
             winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
                                cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW,
@@ -276,7 +275,6 @@ SOM_Scope BOOL  SOMLINK vol_wpMenuItemSelected(XMMVolume *somSelf,
                                                ULONG ulMenuId)
 {
     BOOL brc = FALSE;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XMMVolumeData *somThis = XMMVolumeGetData(somSelf); */
     XMMVolumeMethodDebug("XMMVolume","vol_wpMenuItemSelected");
 
@@ -348,7 +346,6 @@ SOM_Scope BOOL  SOMLINK vol_wpQueryDefaultHelp(XMMVolume *somSelf,
 
 SOM_Scope ULONG  SOMLINK vol_wpQueryDefaultView(XMMVolume *somSelf)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XMMVolumeData *somThis = XMMVolumeGetData(somSelf); */
     XMMVolumeMethodDebug("XMMVolume","vol_wpQueryDefaultView");
 
@@ -376,7 +373,6 @@ SOM_Scope HWND  SOMLINK vol_wpOpen(XMMVolume *somSelf, HWND hwndCnr,
                                    ULONG ulView, ULONG param)
 {
     HWND    hwndNewView = 0;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XMMVolumeData *somThis = XMMVolumeGetData(somSelf); */
     XMMVolumeMethodDebug("XMMVolume","vol_wpOpen");
 

@@ -1324,7 +1324,6 @@ SOM_Scope BOOL  SOMLINK xpgf_wpSetProgDetails(XWPProgramFile *somSelf,
 SOM_Scope ULONG  SOMLINK xpgf_wpAddProgramAssociationPage(XWPProgramFile *somSelf,
                                                           HWND hwndNotebook)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     ULONG ulType = _xwpQueryProgType(somSelf, NULL, NULL);
 
     // XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
@@ -1402,7 +1401,6 @@ SOM_Scope ULONG  SOMLINK xpgf_wpAddProgramPage(XWPProgramFile *somSelf,
 SOM_Scope ULONG  SOMLINK xpgf_wpAddProgramSessionPage(XWPProgramFile *somSelf,
                                                       HWND hwndNotebook)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     ULONG ulType = _xwpQueryProgType(somSelf, NULL, NULL);
 
     // XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);

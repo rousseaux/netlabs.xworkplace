@@ -102,6 +102,7 @@
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
+#include "xfobj.ih"
 #include "xfldr.ih"
 
 // XWorkplace implementation headers
@@ -994,16 +995,36 @@ static VOID T1M_DaemonReady(VOID)
  *      fnwpThread1Object.
  *
  *      Parameters:
+ *
  *      -- HOBJECT mp1: object handle to open.
- *              The following "special objects" exist:
- *              0xFFFF0000: show window list.
- *              0xFFFF0001: show Desktop's context menu.
+ *              The following "special objects" are
+ *              handled here:
+ *              (definitions are in include\xwphook.h):
+ *
+ +                SPECIALOBJ_SHOWWINDOWLIST         0xFFFF0000
+ +                SPECIALOBJ_DESKTOPCONTEXTMENU     0xFFFF0001
+ *
+ *         Note that there are more definitions, but those
+ *         are handled in the daemon and not passed here
+ *         because they affect the pager and other hook-specific
+ *         things.
+ *
  *      -- ULONG mp2: corner reached;
  *                  1 = lower left,
  *                  2 = top left,
  *                  3 = lower right,
  *                  4 = top right;
  *                  0 = no corner, probably object hotkey.
+ *
+ *      The way this works is the following:
+ *
+ *      1)  If the object is "special", the respective action
+ *          is performed.
+ *
+ *      2)  If it is not, we try to get the object from the
+ *          handle. If that works (handle isn't invalid),
+ *          we first play the "hotkey" system sound. We then
+ *          invoke
  *
  *@@added V0.9.3 (2000-04-20) [umoeller]
  *@@changed V0.9.3 (2000-04-20) [umoeller]: added system sound
@@ -1036,106 +1057,12 @@ static VOID T1M_OpenObjectFromHandle(HWND hwndObject,
 
         if (hobjStart = (HOBJECT)mp1)
         {
-            if ((ULONG)hobjStart < 0xFFFF0000)
-            {
-                // normal object handle:
-                WPObject *pobjStart = _wpclsQueryObject(_WPObject,
-                                                        hobjStart);
-
-                #ifdef DEBUG_KEYS
-                    _Pmpf(("T1Object: received hobj 0x%lX -> 0x%lX",
-                            hobjStart,
-                            pobjStart));
-                #endif
-
-                if (pobjStart)
-                {
-                    HWND hwnd;
-
-    #ifndef __NOXSYSTEMSOUNDS__
-                    if ((ULONG)mp2 == 0)
-                        // object hotkey, not screen corner:
-                        cmnPlaySystemSound(MMSOUND_XFLD_HOTKEYPRSD);
-                                    // V0.9.3 (2000-04-20) [umoeller]
-    #endif
-
-                    // open the object, or resurface if already open
-                    hwnd = _wpViewObject(pobjStart,
-                                         NULLHANDLE,   // hwndCnr (?!?)
-                                         OPEN_DEFAULT,
-                                         0);           // "optional parameter" (?!?)
-
-                    #ifdef DEBUG_KEYS
-                        _Pmpf(("T1M_OpenObjectFromHandle: opened hwnd 0x%lX", hwnd));
-                    #endif
-
-                    if (hwnd)
-                    {
-                        if (WinIsWindow(WinQueryAnchorBlock(hwndObject),
-                                        hwnd))
-                        {
-                            // it's a window:
-                            // move to front
-                            WinSetActiveWindow(HWND_DESKTOP, hwnd);
-                        }
-                        else
-                        {
-                            // wpViewObject only returns a window handle for
-                            // WPS windows. By contrast, if a program object is
-                            // started, an obscure USHORT value is returned.
-                            // I suppose this is a HAPP instead.
-                            // From my testing, the lower byte (0xFF) contains
-                            // the session ID of the started application, while
-                            // the higher byte (0xFF00) contains the application
-                            // type, which is:
-                            // --   0x0300  presentation manager
-                            // --   0x0200  VIO
-
-                            // IBM, this is sick.
-
-                            // So now we go thru the switch list and find the
-                            // session which has this lo-byte. V0.9.4 (2000-06-15) [umoeller]
-
-                            PSWBLOCK pSwBlock;
-                                    // now using winhQuerySwitchList V0.9.13 (2001-06-23) [umoeller]
-
-                            if (pSwBlock = winhQuerySwitchList(G_habThread1))
-                            {
-                                // loop through all the tasklist entries
-                                ULONG ul;
-                                for (ul = 0; ul < (pSwBlock->cswentry); ul++)
-                                {
-                                    #ifdef DEBUG_KEYS
-                                        _Pmpf((" swlist %d: hwnd 0x%lX, hprog 0x%lX, idSession 0x%lX",
-                                                ul,
-                                                pSwBlock->aswentry[ul].swctl.hwnd,
-                                                pSwBlock->aswentry[ul].swctl.hprog, // always 0...
-                                                pSwBlock->aswentry[ul].swctl.idSession));
-                                    #endif
-
-                                    if (pSwBlock->aswentry[ul].swctl.idSession == (hwnd & 0xFF))
-                                    {
-                                        // got it:
-                                        #ifdef DEBUG_KEYS
-                                            _Pmpf(("      Found!"));
-                                        #endif
-
-                                        WinSetActiveWindow(HWND_DESKTOP,
-                                                           pSwBlock->aswentry[ul].swctl.hwnd);
-                                    }
-                                }
-                                free(pSwBlock);  // V0.9.7 (2000-11-29) [umoeller]
-                            }
-                        }
-                    }
-                }
-            }
-            else
+            if ((ULONG)hobjStart >= SPECIALOBJ_FIRST)
             {
                 // special objects:
                 switch ((ULONG)hobjStart)
                 {
-                    case 0xFFFF0000:
+                    case SPECIALOBJ_SHOWWINDOWLIST: // 0xFFFF0000
                         // show window list
                         WinPostMsg(cmnQueryActiveDesktopHWND(),
                                    WM_COMMAND,
@@ -1144,7 +1071,7 @@ static VOID T1M_OpenObjectFromHandle(HWND hwndObject,
                                                 TRUE));
                     break;
 
-                    case 0xFFFF0001:
+                    case SPECIALOBJ_DESKTOPCONTEXTMENU: // 0xFFFF0001
                     {
                         // show Desktop's context menu V0.9.1 (99-12-19) [umoeller]
                         WPObject* pActiveDesktop = cmnQueryActiveDesktop();
@@ -1181,6 +1108,40 @@ static VOID T1M_OpenObjectFromHandle(HWND hwndObject,
                         }
                     }
                     break;
+                }
+            } // end if ((ULONG)hobjStart >= SPECIALOBJ_FIRST)
+            else
+            {
+                // normal object handle:
+                WPObject *pobjStart = _wpclsQueryObject(_WPObject,
+                                                        hobjStart);
+
+                #ifdef DEBUG_KEYS
+                    _Pmpf(("T1Object: received hobj 0x%lX -> 0x%lX",
+                            hobjStart,
+                            pobjStart));
+                #endif
+
+                if (pobjStart)
+                {
+                    somTD_XFldObject_xwpHotkeyOrBorderAction pfn_xwpHotkeyOrBorderAction;
+
+                    // obtain "xwpHotkeyOrBorderAction" method pointer
+                    if (pfn_xwpHotkeyOrBorderAction = (somTD_XFldObject_xwpHotkeyOrBorderAction)somResolveByName(
+                                                            pobjStart,
+                                                            "xwpHotkeyOrBorderAction"))
+                    {
+                        // method resolved:
+#ifndef __NOXSYSTEMSOUNDS__
+                        if ((ULONG)mp2 == 0)
+                            // object hotkey, not screen corner:
+                            cmnPlaySystemSound(MMSOUND_XFLD_HOTKEYPRSD);
+                                        // V0.9.3 (2000-04-20) [umoeller]
+#endif
+                        pfn_xwpHotkeyOrBorderAction(pobjStart,
+                                                    WinQueryAnchorBlock(hwndObject),
+                                                    (ULONG)mp2);
+                    }
                 }
             }
         }

@@ -13,7 +13,7 @@
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -225,22 +225,17 @@ static VOID pgmiXPagerGeneralInitPage(PNOTEBOOKPAGE pnbp,   // notebook info str
 {
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == 0)
-        {
-            // first call: create PAGERCONFIG
-            // structure;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            pnbp->pUser = malloc(sizeof(PAGERCONFIG));
-            if (pnbp->pUser)
-                LoadXPagerConfig(pnbp->pUser);
+        // first call: create PAGERCONFIG
+        // structure;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        if (pnbp->pUser = malloc(sizeof(PAGERCONFIG)))
+            LoadXPagerConfig(pnbp->pUser);
 
-            // make backup for "undo"
-            pnbp->pUser2 = malloc(sizeof(PAGERCONFIG));
-            if (pnbp->pUser2)
-                memcpy(pnbp->pUser2, pnbp->pUser, sizeof(PAGERCONFIG));
-        }
+        // make backup for "undo"
+        if (pnbp->pUser2 = malloc(sizeof(PAGERCONFIG)))
+            memcpy(pnbp->pUser2, pnbp->pUser, sizeof(PAGERCONFIG));
 
         winhSetSliderTicks(WinWindowFromID(pnbp->hwndDlgPage, ID_SCDI_PGMG1_X_SLIDER),
                            (MPARAM)0, 3,
@@ -604,28 +599,23 @@ static VOID pgmiXPagerWindowInitPage(PNOTEBOOKPAGE pnbp,   // notebook info stru
 {
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == 0)
-        {
-            // first call: create PAGERCONFIG
-            // structure;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            pnbp->pUser = malloc(sizeof(PAGERCONFIG));
-            if (pnbp->pUser)
-                LoadXPagerConfig(pnbp->pUser);
+        // first call: create PAGERCONFIG
+        // structure;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        if (pnbp->pUser = malloc(sizeof(PAGERCONFIG)))
+            LoadXPagerConfig(pnbp->pUser);
 
-            // make backup for "undo"
-            pnbp->pUser2 = malloc(sizeof(PAGERCONFIG));
-            if (pnbp->pUser2)
-                memcpy(pnbp->pUser2, pnbp->pUser, sizeof(PAGERCONFIG));
+        // make backup for "undo"
+        if (pnbp->pUser2 = malloc(sizeof(PAGERCONFIG)))
+            memcpy(pnbp->pUser2, pnbp->pUser, sizeof(PAGERCONFIG));
 
-            // insert the controls using the dialog formatter
-            // V0.9.19 (2002-04-17) [umoeller]
-            ntbFormatPage(pnbp->hwndDlgPage,
-                          dlgXPagerWindow,
-                          ARRAYITEMCOUNT(dlgXPagerWindow));
-        }
+        // insert the controls using the dialog formatter
+        // V0.9.19 (2002-04-17) [umoeller]
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      dlgXPagerWindow,
+                      ARRAYITEMCOUNT(dlgXPagerWindow));
     }
 
     if (flFlags & CBI_SET)
@@ -1337,17 +1327,17 @@ static const CONTROLDEF
                             200),       // for now, will be resized
     AddButton = CONTROLDEF_PUSHBUTTON(
                             LOAD_STRING,
-                            ID_SCDI_STICKY_ADD,
+                            DID_ADD,
                             100,
                             30),
     EditButton = CONTROLDEF_PUSHBUTTON(
                             LOAD_STRING,
-                            ID_SCDI_STICKY_EDIT,
+                            DID_EDIT,
                             100,
                             30),
     RemoveButton = CONTROLDEF_PUSHBUTTON(
                             LOAD_STRING,
-                            ID_SCDI_STICKY_REMOVE,
+                            DID_REMOVE,
                             100,
                             30);
 
@@ -1399,26 +1389,23 @@ static VOID pgmiXPagerStickyInitPage(PNOTEBOOKPAGE pnbp,   // notebook info stru
         XFIELDINFO xfi[5];
         int        i = 0;
 
-        if (pnbp->pUser == 0)
-        {
-            // first call: create PAGERCONFIG
-            // structure;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            if (pnbp->pUser = malloc(sizeof(PAGERCONFIG)))
-                LoadXPagerConfig(pnbp->pUser);
+        // first call: create PAGERCONFIG
+        // structure;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        if (pnbp->pUser = malloc(sizeof(PAGERCONFIG)))
+            LoadXPagerConfig(pnbp->pUser);
 
-            // make backup for "undo"
-            if (pnbp->pUser2 = malloc(sizeof(PAGERCONFIG)))
-                memcpy(pnbp->pUser2, pnbp->pUser, sizeof(PAGERCONFIG));
+        // make backup for "undo"
+        if (pnbp->pUser2 = malloc(sizeof(PAGERCONFIG)))
+            memcpy(pnbp->pUser2, pnbp->pUser, sizeof(PAGERCONFIG));
 
-            // insert the controls using the dialog formatter
-            // V0.9.19 (2002-04-17) [umoeller]
-            ntbFormatPage(pnbp->hwndDlgPage,
-                          dlgStickies,
-                          ARRAYITEMCOUNT(dlgStickies));
-        }
+        // insert the controls using the dialog formatter
+        // V0.9.19 (2002-04-17) [umoeller]
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      dlgStickies,
+                      ARRAYITEMCOUNT(dlgStickies));
 
         hwndCnr = WinWindowFromID(pnbp->hwndDlgPage,
                                   ID_SCDI_STICKY_CNR);
@@ -1484,13 +1471,13 @@ static VOID pgmiXPagerStickyInitPage(PNOTEBOOKPAGE pnbp,   // notebook info stru
         PAGERCONFIG* pPgmgConfig = (PAGERCONFIG*)pnbp->pUser;
 
         winhEnableDlgItem(pnbp->hwndDlgPage,
-                          ID_SCDI_STICKY_ADD,
+                          DID_ADD,
                           pPgmgConfig->usStickyTextNum < MAX_STICKIES);
         winhEnableDlgItem(pnbp->hwndDlgPage,
-                          ID_SCDI_STICKY_EDIT,
+                          DID_EDIT,
                           pPgmgConfig->usStickyTextNum != 0);
         winhEnableDlgItem(pnbp->hwndDlgPage,
-                          ID_SCDI_STICKY_REMOVE,
+                          DID_REMOVE,
                           pPgmgConfig->usStickyTextNum != 0);
     }
 }
@@ -1534,15 +1521,13 @@ static MRESULT pgmiXPagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
                     // so that the notebook.c function can
                     // remove source emphasis later automatically
                     pnbp->hwndSourceCnr = pnbp->hwndControl;
-                    pnbp->preccSource = (PRECORDCORE)ulExtra;
-                    if (pnbp->preccSource)
+                    if (pnbp->preccSource = (PRECORDCORE)ulExtra)
                     {
                         // popup menu on container recc:
-                        hPopupMenu = WinLoadMenu(pnbp->hwndDlgPage, // owner
-                                                 cmnQueryNLSModuleHandle(FALSE),
-                                                 ID_XSM_STICKY_SEL);
                         // disabling "add" item if sticky array full
-                        if (hPopupMenu)
+                        if (hPopupMenu = WinLoadMenu(pnbp->hwndDlgPage, // owner
+                                                     cmnQueryNLSModuleHandle(FALSE),
+                                                     ID_XSM_STICKY_SEL))
                             WinEnableMenuItem(hPopupMenu,
                                               ID_XSMI_STICKY_NEW,
                                               (((PAGERCONFIG*)pnbp->pUser)->usStickyTextNum < MAX_STICKIES));
@@ -1550,12 +1535,10 @@ static MRESULT pgmiXPagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
                     else
                     {
                         // popup menu on cnr whitespace
-                        hPopupMenu = WinLoadMenu(pnbp->hwndDlgPage, // owner
-                                                 cmnQueryNLSModuleHandle(FALSE),
-                                                 ID_XSM_STICKY_NOSEL);
-
                         // disabling "add" item if sticky array full
-                        if (hPopupMenu)
+                        if (hPopupMenu = WinLoadMenu(pnbp->hwndDlgPage, // owner
+                                                     cmnQueryNLSModuleHandle(FALSE),
+                                                     ID_XSM_STICKY_NOSEL))
                             WinEnableMenuItem(hPopupMenu,
                                               ID_XSMI_STICKY_NEW,
                                               (((PAGERCONFIG*)pnbp->pUser)->usStickyTextNum < MAX_STICKIES));
@@ -1609,18 +1592,15 @@ static MRESULT pgmiXPagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
          *      a new sticky window from that dialog.
          */
 
-        case ID_SCDI_STICKY_ADD:
+        case DID_ADD:
         case ID_XSMI_STICKY_NEW:
         {
             STICKYRECORD rec;
-
             memset(&rec, 0, sizeof(rec));
-
             EditStickyRecord(&rec,
                              pnbp,
                              hwndCnr,
                              TRUE); // create a new record if needed
-
             pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
         }
         break;
@@ -1646,15 +1626,14 @@ static MRESULT pgmiXPagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
          *      (button command).
          */
 
-        case ID_SCDI_STICKY_EDIT:
+        case DID_EDIT:
         {
             // get current selected record
-            PSTICKYRECORD pRec = (PSTICKYRECORD)WinSendMsg(hwndCnr,
-                                                           CM_QUERYRECORDEMPHASIS,
-                                                           (MPARAM)CMA_FIRST,
-                                                           (MPARAM)CRA_SELECTED);
-
-            if (    (pRec)
+            PSTICKYRECORD pRec;
+            if (    (pRec = (PSTICKYRECORD)WinSendMsg(hwndCnr,
+                                                      CM_QUERYRECORDEMPHASIS,
+                                                      (MPARAM)CMA_FIRST,
+                                                      (MPARAM)CRA_SELECTED))
                  && ((LONG)pRec != -1L)
                )
                 EditStickyRecord(pRec,
@@ -1686,15 +1665,14 @@ static MRESULT pgmiXPagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
          *      (button command).
          */
 
-        case ID_SCDI_STICKY_REMOVE:
+        case DID_REMOVE:
         {
             // get current selected record
-            PSTICKYRECORD pRec = (PSTICKYRECORD)WinSendMsg(hwndCnr,
-                                                           CM_QUERYRECORDEMPHASIS,
-                                                           (MPARAM)CMA_FIRST,
-                                                           (MPARAM)CRA_SELECTED);
-
-            if (    (pRec)
+            PSTICKYRECORD pRec;
+            if (    (pRec = (PSTICKYRECORD)WinSendMsg(hwndCnr,
+                                                      CM_QUERYRECORDEMPHASIS,
+                                                      (MPARAM)CMA_FIRST,
+                                                      (MPARAM)CRA_SELECTED))
                  && ((LONG)pRec != -1L)
                )
             {
@@ -1835,23 +1813,24 @@ static MRESULT EXPENTRY pgmi_fnwpSubclassedStaticRect(HWND hwndStatic, ULONG msg
             gpihSwitchToRGB(hps);
             WinQueryWindowRect(hwndStatic,
                                &rclPaint);      // exclusive
-            plColor = GetColorPointer(hwndStatic, pPgmgConfig);
+            if (plColor = GetColorPointer(hwndStatic, pPgmgConfig))
+            {
+                // make rect inclusive
+                rclPaint.xRight--;
+                rclPaint.yTop--;
 
-            // make rect inclusive
-            rclPaint.xRight--;
-            rclPaint.yTop--;
+                // draw interior
+                GpiSetColor(hps, *plColor);
+                gpihBox(hps,
+                        DRO_FILL,
+                        &rclPaint);
 
-            // draw interior
-            GpiSetColor(hps, *plColor);
-            gpihBox(hps,
-                    DRO_FILL,
-                    &rclPaint);
-
-            // draw frame
-            GpiSetColor(hps, RGBCOL_BLACK);
-            gpihBox(hps,
-                    DRO_OUTLINE,
-                    &rclPaint);
+                // draw frame
+                GpiSetColor(hps, RGBCOL_BLACK);
+                gpihBox(hps,
+                        DRO_OUTLINE,
+                        &rclPaint);
+            }
 
             WinEndPaint(hps);
         }
@@ -1862,8 +1841,8 @@ static MRESULT EXPENTRY pgmi_fnwpSubclassedStaticRect(HWND hwndStatic, ULONG msg
             {
                 case PP_BACKGROUNDCOLOR:
                 {
-                    PLONG plColor = GetColorPointer(hwndStatic, pPgmgConfig);
-                    if (plColor)
+                    PLONG plColor;
+                    if (plColor = GetColorPointer(hwndStatic, pPgmgConfig))
                     {
                         ULONG   ul = 0,
                                 attrFound = 0;
@@ -1921,37 +1900,34 @@ static VOID pgmiXPagerColorsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info stru
 {
     if (flFlags & CBI_INIT)
     {
-        if (pnbp->pUser == 0)
+        ULONG ul = 0;
+
+        // first call: create PAGERCONFIG
+        // structure;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        if (pnbp->pUser = malloc(sizeof(PAGERCONFIG)))
+            LoadXPagerConfig(pnbp->pUser);
+
+        // make backup for "undo"
+        if (pnbp->pUser2 = malloc(sizeof(PAGERCONFIG)))
+            memcpy(pnbp->pUser2, pnbp->pUser, sizeof(PAGERCONFIG));
+
+        // subclass static rectangles
+        for (ul = 0;
+             ul < sizeof(ausStaticFrameIDs) / sizeof(ausStaticFrameIDs[0]);
+             ul++)
         {
-            ULONG ul = 0;
-
-            // first call: create PAGERCONFIG
-            // structure;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            if (pnbp->pUser = malloc(sizeof(PAGERCONFIG)))
-                LoadXPagerConfig(pnbp->pUser);
-
-            // make backup for "undo"
-            if (pnbp->pUser2 = malloc(sizeof(PAGERCONFIG)))
-                memcpy(pnbp->pUser2, pnbp->pUser, sizeof(PAGERCONFIG));
-
-            // subclass static rectangles
-            for (ul = 0;
-                 ul < sizeof(ausStaticFrameIDs) / sizeof(ausStaticFrameIDs[0]);
-                 ul++)
-            {
-                HWND    hwndFrame = WinWindowFromID(pnbp->hwndDlgPage,
-                                                    ausStaticFrameIDs[ul]);
-                // store pcnbp in QWL_USER of that control
-                // so the control knows about its purpose and can
-                // access the PAGERCONFIG data
-                WinSetWindowPtr(hwndFrame, QWL_USER, (PVOID)pnbp);
-                // subclass this control
-                G_pfnwpOrigStatic = WinSubclassWindow(hwndFrame,
-                                                      pgmi_fnwpSubclassedStaticRect);
-            }
+            HWND    hwndFrame = WinWindowFromID(pnbp->hwndDlgPage,
+                                                ausStaticFrameIDs[ul]);
+            // store pcnbp in QWL_USER of that control
+            // so the control knows about its purpose and can
+            // access the PAGERCONFIG data
+            WinSetWindowPtr(hwndFrame, QWL_USER, (PVOID)pnbp);
+            // subclass this control
+            G_pfnwpOrigStatic = WinSubclassWindow(hwndFrame,
+                                                  pgmi_fnwpSubclassedStaticRect);
         }
     }
 
@@ -1963,9 +1939,10 @@ static VOID pgmiXPagerColorsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info stru
              ul < sizeof(ausStaticFrameIDs) / sizeof(ausStaticFrameIDs[0]);
              ul++)
         {
-            HWND    hwndFrame = WinWindowFromID(pnbp->hwndDlgPage,
-                                                ausStaticFrameIDs[ul]);
-            WinInvalidateRect(hwndFrame, NULL, FALSE);
+            WinInvalidateRect(WinWindowFromID(pnbp->hwndDlgPage,
+                                              ausStaticFrameIDs[ul]),
+                              NULL,
+                              FALSE);
         }
     }
 }
@@ -2086,6 +2063,7 @@ ULONG pgmiInsertPagerPages(WPObject *somSelf,       // in: screen object
     inbp.pcszName = "~XPager";
     inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_SCD_PAGER_STICKY; V0.9.19 (2002-04-17) [umoeller]
     inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PAGER_STICKY;
+    // make this sizeable V0.9.19 (2002-04-17) [umoeller]
     inbp.pampControlFlags = G_ampStickies;
     inbp.cControlFlags = ARRAYITEMCOUNT(G_ampStickies);
     // give this page a unique ID, which is

@@ -176,9 +176,9 @@ typedef struct _OBJBUTTONPRIVATE
 
     ULONG       ulType;                 // either BTF_OBJBUTTON or BTF_XBUTTON
 
-    BOOL        fMouseButton1Down;      // if TRUE, mouse button is currently down
-    BOOL        fButtonSunk;            // if TRUE, button control is currently pressed;
-                    // the control is painted "down" if either of the two are TRUE
+    BOOL        fMB1Pressed;            // if TRUE, mouse button is currently pressed
+    BOOL        fIgnoreMB1Up;
+    BOOL        fPaintButtonSunk;       // if TRUE, button control is to be painted "down"
     BOOL        fMouseCaptured; // if TRUE, mouse is currently captured
 
     BOOL        fHasDragoverEmphasis;   // TRUE only while something is dragged over obj button
@@ -805,12 +805,16 @@ static MRESULT OwgtCreate(HWND hwnd, MPARAM mp1)
     return (mrc);
 }
 
+static VOID OwgtButton1Down(HWND hwnd,
+                            BOOL fIsFromXCenterHotkey);
+
 /*
  *@@ OwgtControl:
  *      implementation for WM_CONTROL.
  *
  *@@added V0.9.7 (2000-12-14) [umoeller]
  *@@changed V0.9.13 (2001-06-21) [umoeller]: added in-use emphasis support
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: added support for XCenter hotkey (XN_CENTERHOTKEYPRESSED)
  */
 
 static BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
@@ -905,6 +909,17 @@ static BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                     case XN_INUSECHANGED:
                         WinInvalidateRect(hwnd, NULL, FALSE);
                     break;
+
+                    /*
+                     * XN_CENTERHOTKEYPRESSED:
+                     *
+                     *added V0.9.19 (2002-04-17) [umoeller]
+                     */
+
+                    case XN_CENTERHOTKEYPRESSED:
+                        OwgtButton1Down(hwnd,
+                                        TRUE);      // no real mouse event here
+                    break;
                 }
             break; // ID_XCENTER_CLIENT
 
@@ -963,9 +978,7 @@ static VOID OwgtPaintButton(HWND hwnd)
 
             if (pWidget->pGlobals->flDisplayStyle & XCS_FLATBUTTONS)
                 fl |= XBF_FLAT;
-            if (    (pPrivate->fMouseButton1Down)
-                 || (pPrivate->fButtonSunk)
-               )
+            if (pPrivate->fPaintButtonSunk)
                 fl |= XBF_PRESSED;
 
             // refresh button data
@@ -1160,113 +1173,121 @@ static VOID BuildXButtonMenu(HWND hwnd,
  *      implementation for WM_BUTTON1DOWN.
  *
  *@@changed V0.9.14 (2001-07-24) [lafaix]: fixed menu position
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: added support for XCenter hotkey press
  */
 
-static VOID OwgtButton1Down(HWND hwnd)
+static VOID OwgtButton1Down(HWND hwnd,
+                            BOOL fIsFromXCenterHotkey)      // V0.9.19 (2002-04-17) [umoeller]
 {
     PXCENTERWIDGET pWidget;
     POBJBUTTONPRIVATE pPrivate;
     if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
          && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
+         && (WinIsWindowEnabled(hwnd))
        )
     {
-        if (WinIsWindowEnabled(hwnd))
+        if (!fIsFromXCenterHotkey)      // V0.9.19 (2002-04-17) [umoeller]
+            pPrivate->fMB1Pressed = TRUE;
+
+        // since we're not passing the message
+        // to WinDefWndProc, we need to give
+        // ourselves the focus; this will also
+        // dismiss the button's menu, if open
+        WinSetFocus(HWND_DESKTOP, hwnd);
+
+        if (    (!pPrivate->fMouseCaptured)
+             && (!fIsFromXCenterHotkey)     // V0.9.19 (2002-04-17) [umoeller]
+           )
         {
-            pPrivate->fMouseButton1Down = TRUE;
+            // capture mouse events while the
+            // mouse button is down
+            WinSetCapture(HWND_DESKTOP, hwnd);
+            pPrivate->fMouseCaptured = TRUE;
+        }
+
+        if (!pPrivate->fPaintButtonSunk)
+        {
+            // toggle state is still UP (i.e. button pressed
+            // for the first time): create menu
+
+            pPrivate->fPaintButtonSunk = TRUE;
             WinInvalidateRect(hwnd, NULL, FALSE);
 
-            // since we're not passing the message
-            // to WinDefWndProc, we need to give
-            // ourselves the focus; this will also
-            // dismiss the button's menu, if open
-            WinSetFocus(HWND_DESKTOP, hwnd);
+            // ignore the next button 1 up
+            // V0.9.19 (2002-04-17) [umoeller]
+            pPrivate->fIgnoreMB1Up = TRUE;
 
-            if (!pPrivate->fMouseCaptured)
+            // prepare globals in fdrmenus.c
+            cmnuInitItemCache();
+
+            if (pPrivate->ulType == BTF_XBUTTON)
+                // it's an X-button: load default menu
+                BuildXButtonMenu(hwnd, pPrivate);
+            else
             {
-                // capture mouse events while the
-                // mouse button is down
-                WinSetCapture(HWND_DESKTOP, hwnd);
-                pPrivate->fMouseCaptured = TRUE;
+                // regular object button:
+                // check if this is a folder...
+
+                if (!pPrivate->pobjButton)
+                    // object not queried yet:
+                    pPrivate->pobjButton = FindObject(pPrivate);
+
+                if (pPrivate->pobjButton)
+                {
+                    if (_somIsA(pPrivate->pobjButton, _WPFolder))
+                    {
+                        // yes, it's a folder:
+                        // prepare folder content menu by inserting
+                        // a dummy menu item... the actual menu
+                        // fill is done for WM_INITMENU, which comes
+                        // in right afterwards
+                        pPrivate->hwndMenuMain = WinCreateMenu(hwnd, NULL);
+                        WinSetWindowBits(pPrivate->hwndMenuMain,
+                                         QWL_STYLE,
+                                         MIS_OWNERDRAW,
+                                         MIS_OWNERDRAW);
+
+                        // insert a dummy menu item so that cmnuPrepareOwnerDraw
+                        // can measure its size
+                        winhInsertMenuItem(pPrivate->hwndMenuMain,
+                                           0,
+                                           cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_DUMMY,
+                                           "test",
+                                           MIS_TEXT,
+                                           0);
+                    }
+                    // else no folder:
+                    // do nothing at this point, just paint the
+                    // button depressed... we'll open the object
+                    // on button-up
+                }
             }
 
-            if (!pPrivate->fButtonSunk)
+            if (pPrivate->hwndMenuMain)
             {
-                // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-                // toggle state is still UP (i.e. button pressed
-                // for the first time): create menu
-
-                // prepare globals in fdrmenus.c
-                cmnuInitItemCache();
-
-                if (pPrivate->ulType == BTF_XBUTTON)
-                    // it's an X-button: load default menu
-                    BuildXButtonMenu(hwnd, pPrivate);
-                else
+                if (pPrivate->ulType == BTF_OBJBUTTON)
                 {
-                    // regular object button:
-                    // check if this is a folder...
+                    // object buttons needs special treatment here
+                    // so that the menu is correctly positionned
 
-                    if (!pPrivate->pobjButton)
-                        // object not queried yet:
-                        pPrivate->pobjButton = FindObject(pPrivate);
+                    RECTL rclButton;
+                    WinQueryWindowRect(hwnd, &rclButton);
+                    // rclButton now has button coordinates;
+                    // convert this to screen coordinates:
+                    WinMapWindowPoints(hwnd,
+                                       HWND_DESKTOP,
+                                       (PPOINTL)&rclButton,
+                                       2);          // rectl == 2 points
 
-                    if (pPrivate->pobjButton)
-                    {
-                        if (_somIsA(pPrivate->pobjButton, _WPFolder))
-                        {
-                            // yes, it's a folder:
-                            // prepare folder content menu by inserting
-                            // a dummy menu item... the actual menu
-                            // fill is done for WM_INITMENU, which comes
-                            // in right afterwards
-                            pPrivate->hwndMenuMain = WinCreateMenu(hwnd, NULL);
-                            WinSetWindowBits(pPrivate->hwndMenuMain,
-                                             QWL_STYLE,
-                                             MIS_OWNERDRAW,
-                                             MIS_OWNERDRAW);
-
-                            // insert a dummy menu item so that cmnuPrepareOwnerDraw
-                            // can measure its size
-                            winhInsertMenuItem(pPrivate->hwndMenuMain,
-                                               0,
-                                               cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_DUMMY,
-                                               "test",
-                                               MIS_TEXT,
-                                               0);
-                        }
-                        // else no folder:
-                        // do nothing at this point, just paint the
-                        // button depressed... we'll open the object
-                        // on button-up
-                    }
+                    if (pWidget->pGlobals->ulPosition == XCENTER_TOP)
+                        cmnuSetPositionBelow((PPOINTL)&rclButton);
                 }
 
-                if (pPrivate->hwndMenuMain)
-                {
-                    if (pPrivate->ulType == BTF_OBJBUTTON)
-                    {
-                        // object buttons needs special treatment here
-                        // so that the menu is correctly positionned
-
-                        RECTL rclButton;
-                        WinQueryWindowRect(hwnd, &rclButton);
-                        // rclButton now has button coordinates;
-                        // convert this to screen coordinates:
-                        WinMapWindowPoints(hwnd,
-                                           HWND_DESKTOP,
-                                           (PPOINTL)&rclButton,
-                                           2);          // rectl == 2 points
-
-                        if (pWidget->pGlobals->ulPosition == XCENTER_TOP)
-                            cmnuSetPositionBelow((PPOINTL)&rclButton);
-                    }
-
-                    ctrPlaceAndPopupMenu(hwnd,
-                                         pPrivate->hwndMenuMain,
-                                         pWidget->pGlobals->ulPosition == XCENTER_BOTTOM);
-                }
-            } // end if (!pPrivate->fButtonSunk)
-        }
+                ctrPlaceAndPopupMenu(hwnd,
+                                     pPrivate->hwndMenuMain,
+                                     pWidget->pGlobals->ulPosition == XCENTER_BOTTOM);
+            }
+        } // end if (!pPrivate->fButtonSunk)
     } // end if (pWidget)
 }
 
@@ -1283,44 +1304,52 @@ static VOID OwgtButton1Up(HWND hwnd)
          && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
        )
     {
+        // un-capture the mouse first
+        if (pPrivate->fMouseCaptured)
+        {
+            WinSetCapture(HWND_DESKTOP, NULLHANDLE);
+            pPrivate->fMouseCaptured = FALSE;
+        }
+
         if (WinIsWindowEnabled(hwnd))
         {
-            // un-capture the mouse first
-            if (pPrivate->fMouseCaptured)
-            {
-                WinSetCapture(HWND_DESKTOP, NULLHANDLE);
-                pPrivate->fMouseCaptured = FALSE;
-            }
-
-            pPrivate->fMouseButton1Down = FALSE;
+            pPrivate->fMB1Pressed = FALSE;
 
             // toggle state with each WM_BUTTON1UP
-            pPrivate->fButtonSunk = !pPrivate->fButtonSunk;
+            // pPrivate->fPaintButtonSunk = !pPrivate->fPaintButtonSunk;
 
-            if (pPrivate->ulType == BTF_OBJBUTTON)
-                // we have an object button (not X-button):
-                if (pPrivate->pobjButton)
-                    // object was successfully retrieved on button-down:
-                    if (!_somIsA(pPrivate->pobjButton, _WPFolder))
-                    {
-                        // object is not a folder:
-                        // open it on button up!
-                        // V0.9.16 (2002-01-04) [umoeller]: do this on thread 1
-                        // always, or we get very strange system hangs with
-                        // some executables
-                        /* krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
-                                                (MPARAM)pPrivate->pobjButton,
-                                                (MPARAM)OPEN_DEFAULT); */
-                        _wpViewObject(pPrivate->pobjButton,
-                                      NULLHANDLE,
-                                      OPEN_DEFAULT,
-                                      NULLHANDLE);
-                        // unset button sunk state
-                        // (no toggle)
-                        pPrivate->fButtonSunk = FALSE;
-                    }
-                    // else folder: we do nothing, the work for the menu
-                    // has been set up in button-down and init-menu
+            if (    (pPrivate->ulType == BTF_OBJBUTTON)
+                 && (pPrivate->pobjButton)
+               )
+            {
+                // object button (not X-button)
+                // and was successfully retrieved on button-down:
+                if (!_somIsA(pPrivate->pobjButton, _WPFolder))
+                {
+                    // object is not a folder:
+                    // open it on button up!
+                    // V0.9.16 (2002-01-04) [umoeller]: do this on thread 1
+                    // always, or we get very strange system hangs with
+                    // some executables
+                    /* krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
+                                            (MPARAM)pPrivate->pobjButton,
+                                            (MPARAM)OPEN_DEFAULT); */
+                    _wpViewObject(pPrivate->pobjButton,
+                                  NULLHANDLE,
+                                  OPEN_DEFAULT,
+                                  NULLHANDLE);
+                    // unset button sunk state
+                    // (no toggle)
+                    pPrivate->fPaintButtonSunk = FALSE;
+                }
+                // else folder: we do nothing, the work for the menu
+                // has been set up in button-down and init-menu
+            }
+
+            if (pPrivate->fIgnoreMB1Up)
+                pPrivate->fIgnoreMB1Up = FALSE;
+            else
+                pPrivate->fPaintButtonSunk = FALSE;
 
             // repaint sunk button state
             WinInvalidateRect(hwnd, NULL, FALSE);
@@ -1348,7 +1377,6 @@ static VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
          && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
        )
     {
-        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         SHORT sMenuIDMsg = (SHORT)mp1;
         HWND hwndMenuMsg = (HWND)mp2;
 
@@ -1442,13 +1470,8 @@ static VOID OwgtMenuEnd(HWND hwnd, MPARAM mp2)
         if ((HWND)mp2 == pPrivate->hwndMenuMain)
         {
             // main menu is ending:
-            if (!pPrivate->fMouseButton1Down)
-            {
-                // mouse button not currently down
-                // --> menu dismissed for some other reason:
-                pPrivate->fButtonSunk = FALSE;
-                WinInvalidateRect(hwnd, NULL, FALSE);
-            }
+            pPrivate->fPaintButtonSunk = FALSE;
+            WinInvalidateRect(hwnd, NULL, FALSE);
 
             WinDestroyWindow(pPrivate->hwndMenuMain);
             pPrivate->hwndMenuMain = NULLHANDLE;
@@ -1571,7 +1594,6 @@ static BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
             // -- for object buttons; fProcessed is still FALSE
             // -- for the x-button if none of the standard items
             //    was selected; this can be a subitem of "desktop" folder contents too
-            // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
             ULONG ulFirstVarMenuId = cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_VARIABLE;
             if (     (ulMenuId >= ulFirstVarMenuId)
                   && (ulMenuId <  ulFirstVarMenuId + G_ulVarItemCount)
@@ -2055,7 +2077,8 @@ MRESULT EXPENTRY fnwpObjButtonWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
 
         case WM_BUTTON1DOWN:
         case WM_BUTTON1DBLCLK:
-            OwgtButton1Down(hwnd);
+            OwgtButton1Down(hwnd,
+                            FALSE);     // real mouse event V0.9.19 (2002-04-17) [umoeller]
             mrc = (MPARAM)TRUE;     // message processed
         break;
 

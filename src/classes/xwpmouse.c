@@ -531,7 +531,6 @@ SOM_Scope ULONG  SOMLINK xms_wpAddMouseCometPage(XWPMouse *somSelf,
 SOM_Scope ULONG  SOMLINK xms_wpAddMousePtrPage(XWPMouse *somSelf,
                                                HWND hwndNotebook)
 {
-    // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     /* XWPMouseData *somThis = XWPMouseGetData(somSelf); */
     XWPMouseMethodDebug("XWPMouse","xms_wpAddMousePtrPage");
 

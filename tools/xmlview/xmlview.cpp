@@ -41,10 +41,6 @@
 
 #include "expat\expat.h"
 
-#include "encodings\base.h"
-#include "encodings\cp437.h"
-#include "encodings\cp850.h"
-
 #include "helpers\cnrh.h"
 #include "helpers\datetime.h"           // date/time helper routines
 #include "helpers\dialog.h"
@@ -59,7 +55,11 @@
 #include "helpers\xstring.h"
 #include "helpers\xml.h"
 
+#include "encodings\base.h"
+
 #include "xmlview.h"
+
+#pragma hdrstop
 
 /* ******************************************************************
  *
@@ -236,23 +236,19 @@ int APIENTRY GetCPData(PXMLDOM pDom,
 {
     ULONG ul;
 
+    ENCID id;
+
     XWPENCODINGMAP *pMap = NULL;
     ULONG cEntries = 0;
 
-    switch (ulCP)
-    {
-        case 850:
-            pMap = G_cp850;
-            cEntries = ARRAYITEMCOUNT(G_cp850);
-        break;
+    if (    (id == encFindIdForCodepage(ulCP,
+                                        NULL,
+                                        NULL))
 
-        case 437:
-            pMap = G_cp437;
-            cEntries = ARRAYITEMCOUNT(G_cp437);
-        break;
-    }
-
-    if (cEntries)
+         && (encGetTable(id,
+                         &pMap,
+                         &cEntries))
+       )
     {
         for (ul = 0;
              ul < cEntries;
@@ -427,44 +423,22 @@ typedef struct _INSERTSTACK
 } INSERTSTACK, *PINSERTSTACK;
 
 /*
- *@@ GetCPCharFromUnicode:
- *
- *@@added V0.9.14 (2001-08-09) [umoeller]
- */
-
-CHAR GetCPCharFromUnicode(ULONG ulUni)
-{
-    XWPENCODINGMAP *pMap = G_cp850;
-    ULONG cEntries = ARRAYITEMCOUNT(G_cp850);
-    ULONG ul;
-
-    for (ul = 0;
-         ul < cEntries;
-         ul++)
-    {
-        if ((ULONG)pMap[ul].usUni == ulUni)
-            return (pMap[ul].usCP);
-    }
-
-    return '#';
-}
-
-/*
  *@@ AppendUTF8:
  *
  *@@added V0.9.14 (2001-08-09) [umoeller]
  */
 
-VOID AppendUTF8(PXSTRING pstrTarget,
+VOID AppendUTF8(PCONVERSION pCodec,
+                PXSTRING pstrTarget,
                 PXSTRING pstrUTF8)
 {
-    const char *p = pstrUTF8->psz;
-    if (p)
+    const char *p;
+    if (p = pstrUTF8->psz)
     {
         ULONG ulChar;
         while (ulChar = encDecodeUTF8(&p))
             xstrcatc(pstrTarget,
-                     GetCPCharFromUnicode(ulChar));
+                     (CHAR)encUni2Char(pCodec, ulChar));
     }
 }
 
@@ -474,7 +448,8 @@ VOID AppendUTF8(PXSTRING pstrTarget,
  *@@added V0.9.9 (2001-02-16) [umoeller]
  */
 
-VOID XWPENTRY InsertAttribDecls(TREE *t,        // in: PCMATTRIBUTEDECL really
+VOID XWPENTRY InsertAttribDecls(PCONVERSION pCodec,
+                                TREE *t,        // in: PCMATTRIBUTEDECL really
                                 PVOID pUser)    // in: PINSERTSTACK user param
 {
     PCMATTRIBUTEDECL pAttribDecl = (PCMATTRIBUTEDECL)t;
@@ -496,7 +471,7 @@ VOID XWPENTRY InsertAttribDecls(TREE *t,        // in: PCMATTRIBUTEDECL really
             PNODEBASE pNode = (PNODEBASE)treeFirst(pAttribDecl->ValuesTree);
             while (pNode)
             {
-                AppendUTF8(&str, &pNode->strNodeName);
+                AppendUTF8(pCodec, &str, &pNode->strNodeName);
                 // xstrcats(&str, &pNode->strNodeName);
                 xstrcatc(&str, '|');
 
@@ -650,7 +625,8 @@ VOID XWPENTRY InsertElementDecls(TREE *t,           // in: an CMELEMENTDECLNODE 
  *@@added V0.9.9 (2001-02-16) [umoeller]
  */
 
-VOID InsertDocType(PXMLDOM pDom,
+VOID InsertDocType(PCONVERSION pCodec,
+                   PXMLDOM pDom,
                    PDOMDOCTYPENODE pDocTypeNode,
                    PNODERECORD pParentRecord)
 {
@@ -678,7 +654,8 @@ VOID InsertDocType(PXMLDOM pDom,
             TREE *t = treeFirst(pAttribDeclBase->AttribDeclsTree);
             while (t)
             {
-                InsertAttribDecls(t,
+                InsertAttribDecls(pCodec,
+                                  t,
                                   &Stack2);
                 t = treeNext(t);
             }
@@ -699,7 +676,8 @@ VOID InsertDocType(PXMLDOM pDom,
                  0); */
 }
 
-VOID InsertDom(PXMLDOM pDom,
+VOID InsertDom(PCONVERSION pCodec,
+               PXMLDOM pDom,
                PDOMNODE pDomNode,
                PNODERECORD pParentRecord);
 
@@ -710,7 +688,8 @@ VOID InsertDom(PXMLDOM pDom,
  *      not insert, but only its children.
  */
 
-VOID InsertDom(PXMLDOM pDom,
+VOID InsertDom(PCONVERSION pCodec,
+               PXMLDOM pDom,
                PDOMNODE pDomNode,
                PNODERECORD pParentRecord)       // initially NULL
 {
@@ -725,22 +704,22 @@ VOID InsertDom(PXMLDOM pDom,
     {
         case DOMNODE_ELEMENT:
             // xstrcpys(&str, &pDomNode->NodeBase.strNodeName);
-            AppendUTF8(&str, &pDomNode->NodeBase.strNodeName);
+            AppendUTF8(pCodec, &str, &pDomNode->NodeBase.strNodeName);
         break;
 
         case DOMNODE_ATTRIBUTE:
-            AppendUTF8(&str, &pDomNode->NodeBase.strNodeName);
+            AppendUTF8(pCodec, &str, &pDomNode->NodeBase.strNodeName);
             // xstrcpys(&str, &pDomNode->NodeBase.strNodeName);
             xstrcat(&str, "=\"", 2);
             // xstrcats(&str, pDomNode->pstrNodeValue);
-            AppendUTF8(&str, pDomNode->pstrNodeValue);
+            AppendUTF8(pCodec, &str, pDomNode->pstrNodeValue);
             xstrcatc(&str, '\"');
         break;
 
         case DOMNODE_TEXT:
             xstrcpy(&str, "\"", 1);
             // xstrcats(&str, pDomNode->pstrNodeValue);
-            AppendUTF8(&str, pDomNode->pstrNodeValue);
+            AppendUTF8(pCodec, &str, pDomNode->pstrNodeValue);
             xstrcatc(&str, '\"');
         break;
 
@@ -748,7 +727,7 @@ VOID InsertDom(PXMLDOM pDom,
             xstrcpy(&str, "Document", 0);
             xstrcat(&str, " \"", 0);
             // xstrcats(&str, &pDomNode->NodeBase.strNodeName);
-            AppendUTF8(&str, &pDomNode->NodeBase.strNodeName);
+            AppendUTF8(pCodec, &str, &pDomNode->NodeBase.strNodeName);
             xstrcat(&str, "\"", 0);
         break;
 
@@ -757,10 +736,10 @@ VOID InsertDom(PXMLDOM pDom,
             pDocType = (PDOMDOCTYPENODE)pDomNode;
             xstrcpy(&str, "DOCTYPE system: \"", 0);
             // xstrcats(&str, &pDocType->strSystemID);
-            AppendUTF8(&str, &pDocType->strSystemID);
+            AppendUTF8(pCodec, &str, &pDocType->strSystemID);
             xstrcat(&str, "\", public: \"", 0);
             // xstrcats(&str, &pDocType->strPublicID);
-            AppendUTF8(&str, &pDocType->strPublicID);
+            AppendUTF8(pCodec, &str, &pDocType->strPublicID);
             xstrcatc(&str, '\"');
         break; }
 
@@ -796,7 +775,8 @@ VOID InsertDom(PXMLDOM pDom,
         PDOMNODE pAttrNode = (PDOMNODE)treeFirst(pDomNode->AttributesMap);
         while (pAttrNode)
         {
-            InsertDom(pDom,
+            InsertDom(pCodec,
+                      pDom,
                       pAttrNode,
                       prec);
             pAttrNode = (PDOMNODE)treeNext((TREE*)pAttrNode);
@@ -807,7 +787,8 @@ VOID InsertDom(PXMLDOM pDom,
         while (pSubNode)
         {
             PDOMNODE pDomSubnode = (PDOMNODE)pSubNode->pItemData;
-            InsertDom(pDom,
+            InsertDom(pCodec,
+                      pDom,
                       pDomSubnode,
                       prec);
 
@@ -818,7 +799,7 @@ VOID InsertDom(PXMLDOM pDom,
         xstrClear(&str);
 
     if (prec && pDocType)
-        InsertDocType(pDom, pDocType, prec);
+        InsertDocType(pCodec, pDom, pDocType, prec);
 }
 
 /* ******************************************************************
@@ -862,9 +843,25 @@ VOID LoadAndInsert(const char *pcszFile)
 
         cnrhRemoveAll(G_hwndCnr);
 
-        InsertDom(G_pLoadedFile->pDom,
-                  (PDOMNODE)G_pLoadedFile->pDom->pDocumentNode,
-                  NULL);
+        // create codec for process codepage
+        ULONG acp[8];       // fixed V0.9.19 (2002-04-14) [umoeller], this needs an array
+        ULONG cb = 0;
+        APIRET arcCP;
+        ENCID id;
+        PCONVERSION pCodec;
+        if (    (!(arcCP = DosQueryCp(sizeof(acp),
+                                      acp,
+                                      &cb)))
+             && (id = encFindIdForCodepage(acp[0], NULL, NULL))
+             && (pCodec = encCreateCodec(id))
+           )
+        {
+            InsertDom(pCodec,
+                      G_pLoadedFile->pDom,
+                      (PDOMNODE)G_pLoadedFile->pDom->pDocumentNode,
+                      NULL);
+            encFreeCodec(&pCodec);
+        }
     }
 }
 

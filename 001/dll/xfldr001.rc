@@ -956,14 +956,10 @@ BEGIN
     ID_XSSI_ADMIN_ALL_USERS             "All ~users"
     ID_XSSI_ADMIN_ALL_GROUPS            "All ~groups"
 
-    ID_CRSI_OWGT_BITMAPFILE             "OS/2-Bitmap-Datei"
+    ID_CRSI_OWGT_BITMAPFILE             "OS/2 bitmap file"
 
     /* XPager "sticky" page and related dialogs */
     ID_SCDI_STICKY_GROUP                "Sticky windows"
-    ID_SCDI_STICKY_ADD                  "~Add..."
-    ID_SCDI_STICKY_EDIT                 "~Edit..."
-    ID_SCDI_STICKY_REMOVE               "~Remove"
-
     ID_SCDI_STICKY_INCLUDE               "I"
     ID_SCDI_STICKY_EXCLUDE               "E"
     ID_SCDI_STICKY_CONTAINS              "contains"
@@ -972,12 +968,12 @@ BEGIN
     ID_SCDI_STICKY_EQUALS                "equals"
     ID_SCDI_STICKY_MATCHES               "matches"
     ID_SCDI_STICKY_TITLEATTRIBUTE        "Title"
-    ID_SCDI_STICKY_CRITERIA              "Criterion"
+    ID_SCDI_STICKY_CRITERIA              "Criteria"
     ID_SCDI_STICKY_ATTRIBUTE             "Attribute"
     ID_SCDI_STICKY_OPERATOR              "Operator"
     ID_SCDI_STICKY_VALUE                 "Value"
-    ID_SCDI_STICKY_EDITTITLE             "Edit sticky criteria"
-    ID_SCDI_STICKY_ADDTITLE              "Add sticky criteria"
+    ID_SCDI_STICKY_EDITTITLE             "Edit Sticky Criteria"
+    ID_SCDI_STICKY_ADDTITLE              "Add Sticky Criteria"
 
     ID_SCDI_STICKY_CRITERIAGROUP         "Criteria"
     ID_SCDI_STICKY_MATCHINGGROUP         "Matching criteria"
@@ -1062,6 +1058,11 @@ BEGIN
     DID_ABORT                           "~Abort"
     DID_RETRY                           "~Retry"
     DID_IGNORE                          "~Ignore"
+
+    /* couple more added with V0.9.19 */
+    DID_ADD                             "~Add..."
+    DID_EDIT                            "~Edit..."
+    DID_REMOVE                          "~Remove"
 
     /* strings formerly in ID_XSD_SET25ADDMENUS */
     ID_XSDI_FILEMENUS_GROUP             "File menus"
@@ -1309,6 +1310,19 @@ BEGIN
     ID_SCDI_PGMG1_CLICK2ACTIVATE        "~Mini-window mouse actions"
     ID_SCDI_PGMG1_SHOWSECONDARY         "Show ~secondary windows"
     ID_SCDI_PGMG1_SHOWSTICKY            "Show stic~ky windows"
+
+    /* strings formerly in ID_XCD_PARANOIA */
+    ID_XCDI_PARANOIA_GROUP              "Disable XWorkplace Features"
+    ID_XCDI_PARANOIA_INTRO              "Here you can globally disable certain XWorkplace features in case of trouble. Press ""Help"" to find out more about the different settings."
+    ID_XCDI_VARMENUOFFSET_TXT           "XWorkplace menu item ~ID offset:"
+    ID_XCDI_NOSUBCLASSING               "Disable all folder ~subclassing"
+    ID_XCDI_NOFREAKYMENUS               "Disable undocumented menu functions"
+    ID_XCDI_USE8HELVFONT                "Use ~8.Helv font"
+    ID_XCDI_NOEXCPTBEEPS                "Disable ex~ception beeps"
+    ID_XCDI_WORKERPRTY_GROUP            "Worker thread"
+    ID_XCDI_WORKERPRTY_TEXT1            "De~fault Worker thread priority:"
+    ID_XCDI_WORKERPRTY_BEEP             "~Beep on priority change"
+
 END
 
 /* Treesize definitions; added V0.9.0 */

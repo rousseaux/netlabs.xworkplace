@@ -130,6 +130,8 @@ interface XFldObject : WPObject
     ULONG xwpSetNextObj(in WPObject pobjNext);
     WPObject xwpQueryNextObj();
 
+    HWND xwpHotkeyOrBorderAction(in ULONG hab, in ULONG ulCorner);
+
 #ifdef __SOMIDL__
   implementation {
 
@@ -150,7 +152,8 @@ interface XFldObject : WPObject
                   xwpDestroyStorage,
                   xwpQueryRealDefaultView,
                   xwpFreeSetupBuffer,
-                  xwpQueryOriginalObjectID;
+                  xwpQueryOriginalObjectID,
+                  xwpHotkeyOrBorderAction;
 
     /*
      * Class Modifiers:

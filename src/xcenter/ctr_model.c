@@ -129,7 +129,8 @@ static const XCENTERWIDGETCLASS   G_aBuiltInWidgets[]
 #else
             "X-Button",
 #endif
-            WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP,       // not trayable
+            WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP       // not trayable
+                 | WGTF_CANTAKECENTERHOTKEY,        // V0.9.19 (2002-04-17) [umoeller]
             OwgtShowXButtonSettingsDlg          // V0.9.14 (2001-08-21) [umoeller]
         },
         // CPU pulse widget
@@ -857,8 +858,6 @@ HWND ctrpAddWidgetsMenu(XCenter *somSelf,
 
 PPRIVATEWIDGETCLASS ctrpFindClassFromMenuCommand(USHORT usCmd)
 {
-    PPRIVATEWIDGETCLASS pClass = NULL;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     ULONG ulOfsVariable =  cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_VARIABLE;
     if (    (usCmd >=  ulOfsVariable)
          && (usCmd < (   ulOfsVariable
@@ -867,11 +866,11 @@ PPRIVATEWIDGETCLASS ctrpFindClassFromMenuCommand(USHORT usCmd)
        )
     {
         // yes: get the corresponding item
-        pClass = (PPRIVATEWIDGETCLASS)lstItemFromIndex(&G_llWidgetClasses,
-                                                       usCmd - ulOfsVariable);
+        return (PPRIVATEWIDGETCLASS)lstItemFromIndex(&G_llWidgetClasses,
+                                                     usCmd - ulOfsVariable);
     }
 
-    return (pClass);
+    return (NULL);
 }
 
 /* ******************************************************************
@@ -942,7 +941,7 @@ PPRIVATEWIDGETCLASS ctrpFindClassFromMenuCommand(USHORT usCmd)
  *@@changed V0.9.16 (2001-10-18) [umoeller]: merged this with old AddWidgetSetting func
  */
 
-XCRET ctrpCreateWidgetSetting(XCenter *somSelf,
+APIRET ctrpCreateWidgetSetting(XCenter *somSelf,
                               PTRAYSETTING pTray,   // in: tray to create subwidget in or NULL
                               PCSZ pcszWidgetClass, // in: new widget's class (required)
                               PCSZ pcszSetupString, // in: new widget's setup string (can be NULL)
@@ -951,7 +950,7 @@ XCRET ctrpCreateWidgetSetting(XCenter *somSelf,
                               PULONG pulNewItemCount,   // out: new settings count (ptr can be NULL)
                               PULONG pulNewWidgetIndex) // out: index of new widget (ptr can be NULL)
 {
-    XCRET arc = NO_ERROR;
+    APIRET arc = NO_ERROR;
 
     if (    (somSelf)
          && (pcszWidgetClass)       // this is required
@@ -1065,12 +1064,12 @@ XCRET ctrpCreateWidgetSetting(XCenter *somSelf,
  *@@changed V0.9.16 (2001-12-31) [umoeller]: now using WIDGETPOSITION struct
  */
 
-XCRET ctrpFindWidgetSetting(XCenter *somSelf,
-                            PWIDGETPOSITION pPosition,  // in: widget position
-                            PPRIVATEWIDGETSETTING *ppSetting, // out: widget setting
-                            PXCENTERWIDGET *ppViewData) // out: view data or NULL; ptr can be NULL
+APIRET ctrpFindWidgetSetting(XCenter *somSelf,
+                             PWIDGETPOSITION pPosition,  // in: widget position
+                             PPRIVATEWIDGETSETTING *ppSetting, // out: widget setting
+                             PXCENTERWIDGET *ppViewData) // out: view data or NULL; ptr can be NULL
 {
-    XCRET   arc = NO_ERROR;
+    APIRET arc = NO_ERROR;
 
     PLINKLIST   pllWidgets = ctrpQuerySettingsList(somSelf);
     XCenterData *somThis = XCenterGetData(somSelf);
@@ -1440,8 +1439,7 @@ PVOID ctrpQueryWidgets(XCenter *somSelf,
             PLINKLIST pllSettings = ctrpQuerySettingsList(somSelf);
             PLISTNODE pNode = lstQueryFirstNode(pllSettings);
             ULONG cSettings = lstCountItems(pllSettings);
-            paSettings = malloc(sizeof(XCENTERWIDGETSETTING) * cSettings);
-            if (paSettings)
+            if (paSettings = malloc(sizeof(XCENTERWIDGETSETTING) * cSettings))
             {
                 ULONG ul = 0;
                 for (;

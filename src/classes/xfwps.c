@@ -188,7 +188,6 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
 {
     INSERTNOTEBOOKPAGE inbp;
     HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldWPSData *somThis = XFldWPSGetData(somSelf);
     XFldWPSMethodDebug("XFldWPS","xfwps_xwpAddXFldWPSPages");
 

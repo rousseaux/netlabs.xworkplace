@@ -443,7 +443,6 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
                                 (PSZ)INIKEY_BOOTMGR,
                                 &ulKeyLength))
         {
-            // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
             // items exist: evaluate
             if (pINI = malloc(ulKeyLength))
             {
@@ -2234,7 +2233,6 @@ BOOL xsdInitiateRestartWPS(BOOL fLogoff)        // in: if TRUE, perform logoff a
 BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
 {
     BOOL                fStartShutdown = TRUE;
-    // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     PSHUTDOWNPARAMS     psdpNew = NULL;
 
     if (xsdIsShutdownRunning())
@@ -2362,7 +2360,7 @@ static const CONTROLDEF
             ID_SDDI_SAVEINIS_LIST,
             CTL_COMMON_FONT,
             0,
-            {300, 20},
+            {300, 100},     // size adjusted for new combo box support in dialog.c
             COMMON_SPACING
         },
 #endif
@@ -2514,25 +2512,18 @@ VOID xsdShutdownInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                 ID_XSSI_XSD_SAVEINIS_NONE   // pszXSDSaveInisNone
             };
 
-        if (pnbp->pUser == NULL)
-        {
-            // first call: backup Global Settings for "Undo" button;
-            // this memory will be freed automatically by the
-            // common notebook window function (notebook.c) when
-            // the notebook page is destroyed
-            /*
-            pnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
-               */
-            pnbp->pUser = cmnBackupSettings(G_ShutdownBackup,
-                                             ARRAYITEMCOUNT(G_ShutdownBackup));
+        // first call: backup Global Settings for "Undo" button;
+        // this memory will be freed automatically by the
+        // common notebook window function (notebook.c) when
+        // the notebook page is destroyed
+        pnbp->pUser = cmnBackupSettings(G_ShutdownBackup,
+                                         ARRAYITEMCOUNT(G_ShutdownBackup));
 
-            // insert the controls using the dialog formatter
-            // V0.9.16 (2001-10-08) [umoeller]
-            ntbFormatPage(pnbp->hwndDlgPage,
-                          dlgShutdown,
-                          ARRAYITEMCOUNT(dlgShutdown));
-        }
+        // insert the controls using the dialog formatter
+        // V0.9.16 (2001-10-08) [umoeller]
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      dlgShutdown,
+                      ARRAYITEMCOUNT(dlgShutdown));
 
         sprintf(szAPMVersion, "APM %s", apmQueryVersion());
         WinSetDlgItemText(pnbp->hwndDlgPage, ID_SDDI_APMVERSION, szAPMVersion);

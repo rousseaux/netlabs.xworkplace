@@ -956,9 +956,6 @@ BEGIN
 
     /* XPager "sticky" page and related dialogs */
     ID_SCDI_STICKY_GROUP                "Haftfenster"
-    ID_SCDI_STICKY_ADD                  "Hin~zufÅgen..."
-    ID_SCDI_STICKY_EDIT                 "~Bearbeiten..."
-    ID_SCDI_STICKY_REMOVE               "~Entfernen"
 
     ID_SCDI_STICKY_INCLUDE               "E"
     ID_SCDI_STICKY_EXCLUDE               "A"
@@ -1058,6 +1055,11 @@ BEGIN
     DID_ABORT                           "~Abbrechen"
     DID_RETRY                           "~Wiederholen"
     DID_IGNORE                          "~Ignorieren"
+
+    /* couple more added with V0.9.19 */
+    DID_ADD                             "Hin~zufÅgen..."
+    DID_EDIT                            "~Bearbeiten..."
+    DID_REMOVE                          "~Entfernen"
 
     /* strings formerly in ID_XSD_SET25ADDMENUS */
     ID_XSDI_FILEMENUS_GROUP             "DateimenÅs"
@@ -1303,6 +1305,19 @@ BEGIN
     ID_SCDI_PGMG1_CLICK2ACTIVATE        "~Mausoperationen fÅr Mini-Fenster"
     ID_SCDI_PGMG1_SHOWSECONDARY         "Show ~secondary windows"
     ID_SCDI_PGMG1_SHOWSTICKY            "Ha~ftfenster anzeigen"
+
+    /* strings formerly in ID_XCD_PARANOIA */
+    ID_XCDI_PARANOIA_GROUP              "XWorkplace-Funktionen deaktivieren"
+    ID_XCDI_PARANOIA_INTRO              "Hier kînnen Sie global bestimmte XWorkplace-Funktionen deaktivieren, falls Probleme auftauchen. DrÅcken Sie ""Hilfe"", um mehr Åber die verschiedenen Einstellungen zu erfahren."
+    ID_XCDI_VARMENUOFFSET_TXT           "XWorkplace MenÅeintrags-~ID-Ausgleich:"
+    ID_XCDI_NOSUBCLASSING               "Jegliche Ordner~subklassierung deaktivieren"
+    ID_XCDI_NOFREAKYMENUS               "Undokumentierte MenÅfunktionen deaktivieren"
+    ID_XCDI_USE8HELVFONT                "Schriftart ~8.Helv verwenden"
+    ID_XCDI_NOEXCPTBEEPS                "Signaltîne bei E~xceptions deaktivieren"
+    ID_XCDI_WORKERPRTY_GROUP            "Arbeitsthread"
+    ID_XCDI_WORKERPRTY_TEXT1            "Standard~prioritÑt des Arbeitsthreads:"
+    ID_XCDI_WORKERPRTY_BEEP             "Signalton bei PrioritÑts~Ñnderung"
+
 END
 
 

@@ -655,7 +655,6 @@ SOM_Scope BOOL  SOMLINK xtro_wpModifyPopupMenu(XWPTrashObject *somSelf,
                                                               iPosition);
     if (brc)
     {
-        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
         ULONG           ulAttr = 0;
 
@@ -722,7 +721,6 @@ SOM_Scope BOOL  SOMLINK xtro_wpMenuItemSelected(XWPTrashObject *somSelf,
 {
     BOOL brc = FALSE;
     ULONG ulOfs = cmnQuerySetting(sulVarMenuOffset);
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpMenuItemSelected");
 
@@ -765,7 +763,6 @@ SOM_Scope BOOL  SOMLINK xtro_wpMenuItemHelpSelected(XWPTrashObject *somSelf,
                                                     ULONG MenuId)
 {
     ULONG ulOfs = cmnQuerySetting(sulVarMenuOffset);
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf); */
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpMenuItemHelpSelected");
 

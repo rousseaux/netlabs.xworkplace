@@ -189,76 +189,76 @@ static VOID UnlockNotebooks(VOID)
 static VOID PageInit(PNOTEBOOKPAGE pnbp,
                      HWND hwndDlg)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     #ifdef DEBUG_NOTEBOOKS
         _Pmpf(("fnwpPageCommon: WM_INITDLG"));
     #endif
 
-    // store the dlg hwnd in notebook structure
-    pnbp->hwndDlgPage = hwndDlg;
-
-    // store the WM_INITDLG parameter in the
-    // window words; the CREATENOTEBOOKPAGE
-    // structure is passed to us by ntbInsertPage
-    // as a creation parameter in mp2
-    WinSetWindowULong(hwndDlg, QWL_USER, (ULONG)pnbp);
-    pnbp->fPageInitialized = FALSE;
-
-    // make Warp 4 notebook buttons and move controls
-    winhAssertWarp4Notebook(hwndDlg,
-                            100,         // ID threshold
-                            14);
-
-    // set controls font to 8.Helv, if global settings
-    // want this (paranoia page, V0.9.0)
-    if (cmnQuerySetting(sfUse8HelvFont))
-        winhSetControlsFont(hwndDlg,
-                            0,
-                            8000,
-                            "8.Helv");
-
-    // initialize the other fields
-    pnbp->preccSource = (PRECORDCORE)-1;
-    pnbp->hwndSourceCnr = NULLHANDLE;
-
-    // call "initialize" callback
-    if (pnbp->inbp.pfncbInitPage)
-        pnbp->inbp.pfncbInitPage(pnbp, CBI_INIT | CBI_SET | CBI_ENABLE);
-
-    // timer desired?
-    if (pnbp->inbp.ulTimer)
+    if (!pnbp->fPageInitialized)        // V0.9.19 (2002-04-17) [umoeller]
     {
-        WinStartTimer(WinQueryAnchorBlock(hwndDlg),
-                      hwndDlg,
-                      1,
-                      pnbp->inbp.ulTimer);
-        // call timer callback already now;
-        // let's not wait until the first downrun
-        if (pnbp->inbp.pfncbTimer)
-            pnbp->inbp.pfncbTimer(pnbp, 1);
-    }
+        // store the dlg hwnd in notebook structure
+        pnbp->hwndDlgPage = hwndDlg;
 
-    // winhAdjustControls desired?
-    if (    (pnbp->inbp.pampControlFlags)
-#ifndef __ALWAYSRESIZESETTINGSPAGES__
-         && (cmnQuerySetting(sfResizeSettingsPages))
-#endif
-       )
-    {
-        // yes: allocate and zero
-        if (pnbp->pxac = NEW(XADJUSTCTRLS))
+        // store the WM_INITDLG parameter in the
+        // window words; the CREATENOTEBOOKPAGE
+        // structure is passed to us by ntbInsertPage
+        // as a creation parameter in mp2
+        WinSetWindowULong(hwndDlg, QWL_USER, (ULONG)pnbp);
+
+        // make Warp 4 notebook buttons and move controls
+        winhAssertWarp4Notebook(hwndDlg,
+                                100,         // ID threshold
+                                14);
+
+        // set controls font to 8.Helv, if global settings
+        // want this (paranoia page, V0.9.0)
+        if (cmnQuerySetting(sfUse8HelvFont))
+            winhSetControlsFont(hwndDlg,
+                                0,
+                                8000,
+                                "8.Helv");
+
+        // initialize the other fields
+        pnbp->preccSource = (PRECORDCORE)-1;
+        pnbp->hwndSourceCnr = NULLHANDLE;
+
+        // call "initialize" callback
+        if (pnbp->inbp.pfncbInitPage)
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_INIT | CBI_SET | CBI_ENABLE);
+
+        // timer desired?
+        if (pnbp->inbp.ulTimer)
         {
-            memset(pnbp->pxac, 0, sizeof(XADJUSTCTRLS));
-            winhAdjustControls(hwndDlg,
-                               pnbp->inbp.pampControlFlags,
-                               pnbp->inbp.cControlFlags,
-                               NULL,    // INIT
-                               pnbp->pxac);
+            WinStartTimer(WinQueryAnchorBlock(hwndDlg),
+                          hwndDlg,
+                          1,
+                          pnbp->inbp.ulTimer);
+            // call timer callback already now;
+            // let's not wait until the first downrun
+            if (pnbp->inbp.pfncbTimer)
+                pnbp->inbp.pfncbTimer(pnbp, 1);
         }
-    }
 
-    pnbp->fPageInitialized = TRUE;
+        // winhAdjustControls desired?
+        if (    (pnbp->inbp.pampControlFlags)
+    #ifndef __ALWAYSRESIZESETTINGSPAGES__
+             && (cmnQuerySetting(sfResizeSettingsPages))
+    #endif
+           )
+        {
+            // yes: allocate and zero
+            if (pnbp->pxac = NEW(XADJUSTCTRLS))
+            {
+                memset(pnbp->pxac, 0, sizeof(XADJUSTCTRLS));
+                winhAdjustControls(hwndDlg,
+                                   pnbp->inbp.pampControlFlags,
+                                   pnbp->inbp.cControlFlags,
+                                   NULL,    // INIT
+                                   pnbp->pxac);
+            }
+        }
+
+        pnbp->fPageInitialized = TRUE;
+    }
 }
 
 /*
@@ -592,7 +592,6 @@ static MRESULT EXPENTRY PageWmControl(PNOTEBOOKPAGE pnbp,
                      */
 
                     case CN_EXPANDTREE:
-                        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                         mrc = WinDefDlgProc(pnbp->hwndDlgPage, msg, mp1, mp2);
                         if (cmnQuerySetting(sfTreeViewAutoScroll))
                         {
@@ -1476,6 +1475,9 @@ static MRESULT EXPENTRY fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM m
  *      -- When the page is destroyed (when the notebook is closed),
  *         flFlags is CBI_DESTROY.
  *
+ *      CBI_INIT is guaranteed to come in only _once_ in the lifetime
+ *      of the notebook page.
+ *
  *      It is recommended to have up to six blocks in your "init" callback
  *      (but you probably won't need all of them):
  *
@@ -1799,6 +1801,12 @@ APIRET ntbFormatPage(HWND hwndDlg,              // in: dialog frame to work on
                                     100,         // ID threshold
                                     14);
         }
+        else
+            cmnErrorMsgBox(hwndDlg,
+                           arc,
+                           0,
+                           MB_OK,
+                           TRUE);
 
         free(paNew);
     }

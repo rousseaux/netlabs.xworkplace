@@ -63,6 +63,8 @@ interface XCenter : WPAbstract
 
     BOOL xwpQuerySetup2(in PVOID pstrSetup);
 
+    HWND xwpHotkeyOrBorderAction(in ULONG hab, in ULONG ulCorner);
+
 #ifdef __SOMIDL__
   implementation {
 
@@ -73,7 +75,8 @@ interface XCenter : WPAbstract
                   xwpRemoveWidget,
                   xwpMoveWidget,
                   xwpSetPriority,
-                  xwpQuerySetup2;
+                  xwpQuerySetup2,
+                  xwpHotkeyOrBorderAction;
 
     /*
      * Class Modifiers:

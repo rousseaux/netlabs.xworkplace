@@ -399,7 +399,7 @@ SOM_Scope void  SOMLINK xtrc_xwpAddObjectSize(XWPTrashCan *somSelf,
         {
             _dSizeOfAllObjects += ulNewSize;
             // update all visible status bars
-            fdrUpdateStatusBars(somSelf);
+            stbUpdate(somSelf);
         }
     }
     CATCH(excpt1) {} END_CATCH();
@@ -665,7 +665,6 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpUpdateStatusBar(XWPTrashCan *somSelf,
 
 SOM_Scope void  SOMLINK xtrc_wpInitData(XWPTrashCan *somSelf)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpInitData");
 
@@ -948,7 +947,6 @@ SOM_Scope BOOL  SOMLINK xtrc_wpModifyPopupMenu(XWPTrashCan *somSelf,
          && (_ulTrashObjectCount)
        )
     {
-        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         CHAR        szEmptyItem[200];
         ULONG       ulAttr = 0;
@@ -994,7 +992,6 @@ SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemSelected(XWPTrashCan *somSelf,
                                                 ULONG ulMenuId)
 {
     BOOL                brc = TRUE;
-    // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     ULONG               ulMenuId2 = ulMenuId - cmnQuerySetting(sulVarMenuOffset);
 
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
@@ -1038,7 +1035,6 @@ SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemSelected(XWPTrashCan *somSelf,
 SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemHelpSelected(XWPTrashCan *somSelf,
                                                     ULONG MenuId)
 {
-    // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpMenuItemHelpSelected");
 
@@ -1466,7 +1462,6 @@ SOM_Scope ULONG  SOMLINK xtrc_wpAddObjectGeneralPage(XWPTrashCan *somSelf,
 SOM_Scope ULONG  SOMLINK xtrc_wpAddObjectGeneralPage2(XWPTrashCan *somSelf,
                                                       HWND hwndNotebook)
 {
-    // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpAddObjectGeneralPage2");
 

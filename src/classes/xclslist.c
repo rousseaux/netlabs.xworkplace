@@ -357,7 +357,6 @@ SOM_Scope BOOL  SOMLINK xwlist_wpMenuItemSelected(XWPClassList *somSelf,
 
 SOM_Scope ULONG  SOMLINK xwlist_wpQueryDefaultView(XWPClassList *somSelf)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XWPClassListData *somThis = XWPClassListGetData(somSelf); */
     XWPClassListMethodDebug("XWPClassList","xwlist_wpQueryDefaultView");
 
@@ -423,7 +422,6 @@ SOM_Scope HWND  SOMLINK xwlist_wpOpen(XWPClassList *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         XWPClassListData *somThis = XWPClassListGetData(somSelf);
 
         fLocked = !_wpRequestObjectMutexSem(somSelf, 5000);

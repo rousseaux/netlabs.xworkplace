@@ -1040,17 +1040,13 @@ VOID ctrpView1InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
     if (flFlags & CBI_INIT)
     {
-        // make backup of instance data
-        if (pnbp->pUser == NULL)
-        {
-            // copy data for "Undo"
-            XCenterData *pBackup = (XCenterData*)malloc(sizeof(*somThis));
+        // make backup of instance data for "Undo"
+        XCenterData *pBackup;
+        if (pBackup = (XCenterData*)malloc(sizeof(*somThis)))
             memcpy(pBackup, somThis, sizeof(*somThis));
             // be careful about using the copy... we have some pointers in there!
-
-            // store in noteboot struct
-            pnbp->pUser = pBackup;
-        }
+        // store in notebook struct
+        pnbp->pUser = pBackup;
 
         winhSetSliderTicks(WinWindowFromID(pnbp->hwndDlgPage,
                                            ID_CRDI_VIEW_AUTOHIDE_SLIDER),
@@ -1502,23 +1498,19 @@ VOID ctrpView2InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
     if (flFlags & CBI_INIT)
     {
-        // make backup of instance data
-        if (pnbp->pUser == NULL)
-        {
-            // copy data for "Undo"
-            XCenterData *pBackup = (XCenterData*)malloc(sizeof(*somThis));
+        // make backup of instance data for "Undo"
+        XCenterData *pBackup;
+        if (pBackup = (XCenterData*)malloc(sizeof(*somThis)))
             memcpy(pBackup, somThis, sizeof(*somThis));
             // be careful about using the copy... we have some pointers in there!
+        // store in notebook struct
+        pnbp->pUser = pBackup;
 
-            // store in noteboot struct
-            pnbp->pUser = pBackup;
-
-            // insert the controls using the dialog formatter
-            // V0.9.16 (2001-10-24) [umoeller]
-            ntbFormatPage(pnbp->hwndDlgPage,
-                          dlgXCenterStyle,
-                          ARRAYITEMCOUNT(dlgXCenterStyle));
-        }
+        // insert the controls using the dialog formatter
+        // V0.9.16 (2001-10-24) [umoeller]
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      dlgXCenterStyle,
+                      ARRAYITEMCOUNT(dlgXCenterStyle));
 
         winhSetSliderTicks(WinWindowFromID(pnbp->hwndDlgPage,
                                            ID_CRDI_VIEW2_3DBORDER_SLIDER),
@@ -2547,8 +2539,6 @@ typedef struct _XCLASSRECORD
 VOID ctrpClassesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                          ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // XCenterData *somThis = XCenterGetData(pnbp->inbp.somSelf);
-
     if (flFlags & CBI_INIT)
     {
         // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();

@@ -480,6 +480,7 @@ VOID fdrRemoveSFV(PSUBCLASSEDFOLDERVIEW psfv)
  *@@added V0.9.0 (99-11-27) [umoeller]
  *@@changed V0.9.1 (2000-02-08) [umoeller]: status bars were added even if globally disabled; fixed.
  *@@changed V0.9.3 (2000-04-08) [umoeller]: adjusted for new folder frame subclassing
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: now using stbViewHasStatusBars to fix Object Desktop classes
  */
 
 VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
@@ -487,7 +488,6 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
                           ULONG ulView)             // in: OPEN_CONTENTS, OPEN_TREE, or OPEN_DETAILS
 {
     PSUBCLASSEDFOLDERVIEW psfv = 0;
-    // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     XFolderData         *somThis = XFolderGetData(somSelf);
     HWND                hwndCnr = wpshQueryCnrFromFrame(hwndNewFrame);
 
@@ -511,37 +511,11 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
             fdrSetOneFrameWndTitle(somSelf, hwndNewFrame);
 
         // add status bar, if allowed:
-            // 1) status bar only if allowed for the current folder
-        if (
-#ifndef __NOCFGSTATUSBARS__
-                (cmnQuerySetting(sfStatusBars))
-             &&
-#endif
-                (    (_bStatusBarInstance == STATUSBAR_ON)
-                  || (   (_bStatusBarInstance == STATUSBAR_DEFAULT)
-                      && (cmnQuerySetting(sfDefaultStatusBarVisibility))
-                     )
-                )
-             // 2) no status bar for active Desktop
-             && (somSelf != cmnQueryActiveDesktop())
-             // 3) check that subclassed list item is valid
+        if (    (stbViewHasStatusBars(somSelf, ulView))      // V0.9.19 (2002-04-17) [umoeller]
              && (psfv)
-             // 4) status bar only if allowed for the current view type
-             && (flViews = cmnQuerySetting(sflSBForViews))
-             && (
-                    (   (ulView == OPEN_CONTENTS)
-                     && (flViews & SBV_ICON)
-                    )
-                 || (   (ulView == OPEN_TREE)
-                     && (flViews & SBV_TREE)
-                    )
-                 || (   (ulView == OPEN_DETAILS)
-                     && (flViews & SBV_DETAILS)
-                    )
-                )
            )
         {
-            fdrCreateStatusBar(somSelf, psfv, TRUE);
+            stbCreate(psfv);
         }
 
         // replace sort stuff
@@ -628,7 +602,7 @@ static VOID FormatFrame(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
             // We only do this the first time we're arriving here
             // (which should be before the WPS is populating the folder);
             // psfv->fNeedCnrScroll has been initially set to TRUE
-            // by fdrCreateStatusBar.
+            // by stbCreate.
             #ifdef DEBUG_STATUSBARS
             {
                 _Pmpf((__FUNCTION__ ": psfv->fNeedCnrScroll: %d", psfv->fNeedCnrScroll));
@@ -792,8 +766,6 @@ static VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
                      ULONG sMenuIDMsg,         // in: mp1 from WM_INITMENU
                      HWND hwndMenuMsg)         // in: mp2 from WM_INITMENU
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     // get XFolder instance data
     XFolderData     *somThis = XFolderGetData(psfv->somSelf);
 
@@ -1468,7 +1440,6 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
 
             case WM_MENUSELECT:
             {
-                // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                 BOOL fDismiss = TRUE;
 
                 #ifdef DEBUG_MENUS
@@ -1813,7 +1784,6 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
 
                         case CN_EXPANDTREE:
                         {
-                            // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                             mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
                             if (cmnQuerySetting(sfTreeViewAutoScroll))
                                 xthrPostBushMsg(QM_TREEVIEWAUTOSCROLL,
@@ -2041,9 +2011,11 @@ MRESULT EXPENTRY fdr_fnwpSupplFolderObject(HWND hwndObject, ULONG msg, MPARAM mp
          *      threads will cause PM hangs or WPS crashes.
          *
          *      Parameters:
+         *
          *      -- ULONG mp1   -- 0: disable (destroy) status bar
          *                     -- 1: enable (create) status bar
          *                     -- 2: update (reformat) status bar
+         *
          *      -- HWND  mp2:  hwndView (frame) to update
          */
 
@@ -2058,11 +2030,11 @@ MRESULT EXPENTRY fdr_fnwpSupplFolderObject(HWND hwndObject, ULONG msg, MPARAM mp
                 switch ((ULONG)mp1)
                 {
                     case 0:
-                        fdrCreateStatusBar(psfv->somSelf, psfv, FALSE);
+                        stbDestroy(psfv);
                     break;
 
                     case 1:
-                        fdrCreateStatusBar(psfv->somSelf, psfv, TRUE);
+                        stbCreate(psfv);
                     break;
 
                     default:

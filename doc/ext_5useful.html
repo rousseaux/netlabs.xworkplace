@@ -18,11 +18,9 @@ at the top of your code. See the top of the respective header for additional
 
 <P><LI>There are some functions in <CODE>src\shared\common.c</CODE> which might be
 useful to you, most notably to query some XWorkplace settings and NLS stuff.
-<CODE>cmnQueryGlobalSettings</CODE> will return the global settings structure,
+<CODE>cmnQuerySetting</CODE> will return a global setting,
 for example, or <CODE>cmnMessageBox</CODE> will display one of the pretty
 XWorkplace message boxes.
-Since your code should be NLS enabled, you should always use
-<CODE>cmnQueryLanguageCode</CODE> to find out what language is currently used.
 
 <P><LI>To find out how to create a <CODE>WPAbstract</CODE> class from scratch,
 including a completely new view defined by your class (like the "Class list view"),
@@ -30,8 +28,8 @@ you can take a look at <CODE>xclslist.idl</CODE> and <CODE>xclslist.c</CODE>,
 which do exactly this. See the comments in that file for instructions.
 
 <P><LI>To create a new settings object (which is not derived from WPSystem), take
-a look at <B>XWPSetup</B>, a direct subclass of WPAbstract, which is implemented
-this way.
+a look at <CODE>XWPSetup</CODE>, a direct subclass of <CODE>WPAbstract</CODE>,
+which is implemented this way.
 
 <P><LI>For easier maintenance of notebook dialog procs, I have created
 <CODE>src\shared\notebook.c</CODE>,

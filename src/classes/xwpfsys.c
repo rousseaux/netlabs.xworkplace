@@ -555,6 +555,7 @@ SOM_Scope BOOL  SOMLINK xfs_wpRefresh(XWPFileSystem *somSelf,
  *      then reset the variable to -1 and call this explicitly.
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
+ *@@changed V0.9.19 (2002-04-17) [umoeller]: doesn't work, disabled for now
  */
 
 SOM_Scope void  SOMLINK xfs_wpCnrRefreshDetails(XWPFileSystem *somSelf)
@@ -562,12 +563,14 @@ SOM_Scope void  SOMLINK xfs_wpCnrRefreshDetails(XWPFileSystem *somSelf)
     XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpCnrRefreshDetails");
 
-    if (_ulCnrRefresh == -1)
+    // if (_ulCnrRefresh == -1)
         XWPFileSystem_parent_WPFileSystem_wpCnrRefreshDetails(somSelf);
-    else
+    // doesn't work, disabled for now V0.9.19 (2002-04-17) [umoeller]
+
+    /* else
         // just count, we're in wpRefresh
         (_ulCnrRefresh)++;
-
+       */
 }
 
 
@@ -589,8 +592,6 @@ VOID cmnEnableTurboFolders(VOID);
 
 SOM_Scope void  SOMLINK xfsM_wpclsInitData(M_XWPFileSystem *somSelf)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     /* M_XWPFileSystemData *somThis = M_XWPFileSystemGetData(somSelf); */
     M_XWPFileSystemMethodDebug("M_XWPFileSystem","xfsM_wpclsInitData");
 

@@ -226,19 +226,16 @@ static VOID xwstrStringInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
     {
         HWND hwndMLE = WinWindowFromID(pnbp->hwndDlgPage, ID_XSD_XWPSTRING_STRING_MLE);
 
-        if (pnbp->pUser == NULL)
-        {
-            // copy data for "Undo"
-            XWPStringData *pBackup = (XWPStringData*)malloc(sizeof(*somThis));
-            memset(pBackup, 0, sizeof(*somThis));
-            if (_pWszSetupString)
-                pBackup->pWszSetupString = strdup(_pWszSetupString);
-            pBackup->hobjStatic = _hobjStatic;
-            pBackup->fConfirm = _fConfirm;
+        // copy data for "Undo"
+        XWPStringData *pBackup = (XWPStringData*)malloc(sizeof(*somThis));
+        memset(pBackup, 0, sizeof(*somThis));
+        if (_pWszSetupString)
+            pBackup->pWszSetupString = strdup(_pWszSetupString);
+        pBackup->hobjStatic = _hobjStatic;
+        pBackup->fConfirm = _fConfirm;
 
-            // store in noteboot struct
-            pnbp->pUser = pBackup;
-        }
+        // store in noteboot struct
+        pnbp->pUser = pBackup;
 
         // enable word wrap
         WinSendMsg(hwndMLE,
@@ -1071,8 +1068,6 @@ SOM_Scope BOOL  SOMLINK xwstr_wpModifyPopupMenu(XWPString *somSelf,
             {
                 // mi.hwndSubMenu now contains "Open" submenu handle,
                 // which we add items to now
-                // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-                // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
                 winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
                                    (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW),
                                    cmnGetString(ID_XSSI_XWPSTRING_OPENMENU),  // pszXWPStringOpenMenu
@@ -1103,7 +1098,6 @@ SOM_Scope BOOL  SOMLINK xwstr_wpMenuItemSelected(XWPString *somSelf,
                                                  ULONG ulMenuId)
 {
     BOOL brc = FALSE;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XWPStringData *somThis = XWPStringGetData(somSelf);
     XWPStringMethodDebug("XWPString","xwstr_wpMenuItemSelected");
 
@@ -1133,7 +1127,6 @@ SOM_Scope BOOL  SOMLINK xwstr_wpMenuItemHelpSelected(XWPString *somSelf,
                                                      ULONG MenuId)
 {
     BOOL brc = FALSE;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XWPStringData *somThis = XWPStringGetData(somSelf);
     XWPStringMethodDebug("XWPString","xwstr_wpMenuItemHelpSelected");
 
@@ -1174,7 +1167,6 @@ SOM_Scope HWND  SOMLINK xwstr_wpOpen(XWPString *somSelf,
                                      ULONG param)
 {
     HWND hwnd = NULLHANDLE;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XWPStringData *somThis = XWPStringGetData(somSelf);
     XWPStringMethodDebug("XWPString","xwstr_wpOpen");
 
@@ -1236,7 +1228,6 @@ SOM_Scope BOOL  SOMLINK xwstr_wpQueryDefaultHelp(XWPString *somSelf,
 
 SOM_Scope ULONG  SOMLINK xwstr_wpQueryDefaultView(XWPString *somSelf)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XWPStringData *somThis = XWPStringGetData(somSelf);
     XWPStringMethodDebug("XWPString","xwstr_wpQueryDefaultView");
 

@@ -76,6 +76,7 @@
 // headers in /helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
+#include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
@@ -379,6 +380,64 @@ SOM_Scope BOOL  SOMLINK xctr_xwpQuerySetup2(XCenter *somSelf,
 }
 
 /*
+ *@@ xwpHotkeyOrBorderAction:
+ *      this new XFldObject method gets called
+ *      from the thread-1 object window whenever
+ *      the XWPDaemon notifies it that an object
+ *      should be opened, either because a hotkey
+ *      was pressed or because a screen border was
+ *      touched with the mouse.
+ *
+ *      This method gets resolved by name from
+ *      T1M_OpenObjectFromHandle. This allows WPS
+ *      classes to override what happens in this case.
+ *
+ *      Parameters:
+ *
+ *      --  hab is the anchor block of WPS thread 1.
+ *
+ *      --  ulCorner is 0 if this is really from a
+ *          hotkey. In that case, the "hotkey"
+ *          system sound has already been played.
+ *          It is > 0 if this resulted from a
+ *          screen border mouse action.
+ *
+ *      We override this for the XCenter to be able
+ *      to open the first widget which can handle
+ *      this event.
+ *
+ *@@added V0.9.19 (2002-04-17) [umoeller]
+ */
+
+SOM_Scope HWND  SOMLINK xctr_xwpHotkeyOrBorderAction(XCenter *somSelf,
+                                                     ULONG hab,
+                                                     ULONG ulCorner)
+{
+    PXCENTERWINDATA pXCenterData;
+    XCenterData *somThis = XCenterGetData(somSelf);
+    XCenterMethodDebug("XCenter","xctr_xwpHotkeyOrBorderAction");
+
+    if (    (_tidRunning)
+         && (pXCenterData = (PXCENTERWINDATA)_pvOpenView)
+       )
+    {
+        // XCenter view is open:
+        WinPostMsg(pXCenterData->Globals.hwndClient,
+                   XCM_REFORMAT,
+                   (MPARAM)((ulCorner == 0)
+                                // if object hotkey, open first widget
+                                ? XFMF_RESURFACE | XFMF_FOCUS2FIRSTWIDGET
+                                // if screen corner, resurface only
+                                : XFMF_RESURFACE),
+                   0);
+
+        return pXCenterData->Globals.hwndFrame;
+    }
+
+    return _wpViewObject(somSelf, NULLHANDLE, OPEN_DEFAULT, 0);
+}
+
+/*
  *@@ wpInitData:
  *      this WPObject instance method gets called when the
  *      object is being initialized (on wake-up or creation).
@@ -616,7 +675,6 @@ SOM_Scope BOOL  SOMLINK xctr_wpQueryDefaultHelp(XCenter *somSelf,
 
 SOM_Scope ULONG  SOMLINK xctr_wpQueryDefaultView(XCenter *somSelf)
 {
-    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XCenterData *somThis = XCenterGetData(somSelf); */
     XCenterMethodDebug("XCenter","xctr_wpQueryDefaultView");
 
@@ -650,7 +708,6 @@ SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,
                                     ULONG param)
 {
     HWND    hwndNewView = NULLHANDLE;
-    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_wpOpen");
 
@@ -732,7 +789,6 @@ SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,
 SOM_Scope BOOL  SOMLINK xctr_wpSwitchTo(XCenter *somSelf, ULONG View)
 {
     BOOL brc = FALSE;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_wpSwitchTo");
 

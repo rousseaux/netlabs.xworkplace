@@ -580,7 +580,6 @@ SOM_Scope BOOL  SOMLINK fono_wpMenuItemSelected(XWPFontObject *somSelf,
                                                 ULONG ulMenuId)
 {
     // XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
-    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XWPFontObjectMethodDebug("XWPFontObject","fono_wpMenuItemSelected");
 
     if (fonMenuItemSelected(somSelf, ulMenuId))
@@ -622,7 +621,6 @@ SOM_Scope BOOL  SOMLINK fono_wpMenuItemHelpSelected(XWPFontObject *somSelf,
 
 SOM_Scope ULONG  SOMLINK fono_wpQueryDefaultView(XWPFontObject *somSelf)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_wpQueryDefaultView");
 
@@ -674,7 +672,6 @@ SOM_Scope BOOL  SOMLINK fono_wpQueryDefaultHelp(XWPFontObject *somSelf,
 SOM_Scope HWND  SOMLINK fono_wpOpen(XWPFontObject *somSelf, HWND hwndCnr,
                                     ULONG ulView, ULONG param)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_wpOpen");
 

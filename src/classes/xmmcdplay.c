@@ -780,7 +780,6 @@ SOM_Scope BOOL  SOMLINK cdp_wpQueryDefaultHelp(XMMCDPlayer *somSelf,
 
 SOM_Scope ULONG  SOMLINK cdp_wpQueryDefaultView(XMMCDPlayer *somSelf)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XMMCDPlayerData *somThis = XMMCDPlayerGetData(somSelf); */
     XMMCDPlayerMethodDebug("XMMCDPlayer","cdp_wpQueryDefaultView");
 
@@ -808,7 +807,6 @@ SOM_Scope HWND  SOMLINK cdp_wpOpen(XMMCDPlayer *somSelf, HWND hwndCnr,
                                    ULONG ulView, ULONG param)
 {
     HWND    hwndNewView = 0;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XMMCDPlayerData *somThis = XMMCDPlayerGetData(somSelf); */
     XMMCDPlayerMethodDebug("XMMCDPlayer","cdp_wpOpen");
 
