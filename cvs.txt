@@ -1,6 +1,6 @@
 Netlabs CVS README
 (W) Ulrich M”ller, November 12, 1999
-Last updated March 29, 2001 by Ulrich M”ller
+Last updated March 6, 2002 by Ulrich M”ller
 
 
 0. CONTENTS OF THIS FILE
@@ -125,14 +125,19 @@ Last updated March 29, 2001 by Ulrich M”ller
     and so on. Currently, Netlabs holds over a dozen projects which
     can all be retrieved that way.
 
+    NOTE: The CVSROOT path was changed in February 2002 for all Netlabs
+    projects. From your old CVSROOT variables, simply remove the "e:"
+    before "/netlabs.cvs". You will need to run "cvs login" again to
+    have CVS pick up the change (see below).
+
     Create a local subdirectory in your CVS root directory with the
     same name (e.g. ("F:\cvs\xworkplace"). Change to that directory.
 
     Set USER=guest in your environment. Fire up your internet connection.
-    To log onto a project, use the "cvs logon" command. Enter "readonly"
+    To log onto a project, use the "cvs login" command. Enter "readonly"
     when you are prompted for the password. (Note that you will need to
-    enter "cvs logon" separately for each repository. CVS will then store
-    the data in $(HOME) so you only need to do this once per project.)
+    enter "cvs login" separately for each repository. CVS will then store
+    the data in $(HOME)\.cvspass so you only need to do this once per project.)
 
     You are now ready to download ("check out") a project. See section
     5 below.

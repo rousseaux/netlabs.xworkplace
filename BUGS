@@ -17,10 +17,6 @@ Ulrich M”ller.
 CURRENT PROBLEMS
 ----------------
 
-BTW, Check Desktop Integrity in XWP Setup is missing its descriptive
-entry in the .TMF file.
-
-
 --  override all wpQuery/SetIconData too
 
 --  align icon page 2 for folders
@@ -31,6 +27,12 @@ entry in the .TMF file.
         1) change path in properties
         2) wps doesn't pick up change on double-click
         3) path is still correct in properties
+
+    --  conflicts with dragtext
+
+    --  still hangs with many VIO programs if not started on thread 1
+
+--  object not refreshed after alt-click rename
 
 --  replacement icons:
 
@@ -65,8 +67,12 @@ entry in the .TMF file.
 --  Kernel object: Errors page, Drive for POPUPLOG.OS2 shows
     incorrect drive (always the first HD on your system)
 
---  XCenter: Double clicking clock object doesn't bring-up the clock
-    properties in eCS.
+--  XCenter:
+
+    --  Double clicking clock object doesn't bring-up the clock
+        properties in eCS.
+
+    --  XCenter doesn't save its height when scaling.
 
 
 OLDER, MINOR PROBLEMS

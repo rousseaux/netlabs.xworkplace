@@ -82,17 +82,17 @@
  
 <--XFL0119-->: Die Klasse "%1" konnte nicht deregistriert werden.
  
-<--XFL0120-->: Sie haben gew„hlt, die Klasse "%1" aus der WPS-Klassenliste zu entfernen. Diese Klasse geh”rt zum &xwp;-Paket. Alle &xwp;-Klassen sind darauf ausgelegt zusammenzuarbeiten und die Entfernung einzelner kann zu schwerwiegenden Fehlfunktionen der Workplace Shell fhren. Soll diese Klasse wirklich deregistriert werden?
+<--XFL0120-->: Sie haben gew„hlt, die Klasse "%1" aus der WPS-Klassenliste zu entfernen. Diese Klasse geh”rt zum &xwp;-Paket. Alle &xwp;-Klassen sind darauf ausgelegt zusammenzuarbeiten, und die Entfernung einzelner kann zu schwerwiegenden Fehlfunktionen der Workplace Shell fhren. Soll diese Klasse wirklich deregistriert werden?
  
 <--XFL0121-->: &xwp;
  
-<--XFL0122-->: Die Klasse "%1" wurde erfolgreich deregistriert. Die nderung wird erst nach einem Neustart der WPS wirksam.
+<--XFL0122-->: Die Klasse "%1" wurde erfolgreich deregistriert. Diese nderung wird erst nach einem Neustart der WPS wirksam.
  
 <--XFL0123-->: W„hlen Sie die Objekt-Klasse aus, mit der Sie "%1" ersetzen wollen.
  
 <--XFL0124-->: Soll die Objekt-Klasse "%1" wirklich durch "%2" ersetzt werden? Dies funktioniert nur mit Klassen, die speziell auf diesen Zweck ausgelegt wurden. Andernfalls kann dieses Vorgehen zu schwerwiegenden Fehlfunktionen der Workplace Shell fhren und eventuell sogar eine komplette Reinstallation erforderlich machen. Soll die Klasse trotzdem ersetzt werden?
  
-<--XFL0125-->: Sie haben gew„hlt, die Ersetzung der Klasse "%1" durch "%2" rckg„ngig zu machen. Diese Klasse geh”rt zum &xwp;-Paket. Alle &xwp;-Klassen sind darauf ausgelegt zusammenzuarbeiten und die Modifikation der Ersetzungen kann zu schwerwiegenden Fehlfunktionen der Workplace Shell fhren. Soll die Ersetzung dieser Klasse wirklich rckg„ngig gemacht werden?
+<--XFL0125-->: Sie haben gew„hlt, die Ersetzung der Klasse "%1" durch "%2" rckg„ngig zu machen. Diese Klasse geh”rt zum &xwp;-Paket. Alle &xwp;-Klassen sind darauf ausgelegt zusammenzuarbeiten, und die Modifikation der Ersetzungen kann zu schwerwiegenden Fehlfunktionen der Workplace Shell fhren. Soll die Ersetzung dieser Klasse wirklich rckg„ngig gemacht werden?
  
 <--XFL0126-->: Sie haben gew„hlt, die Ersetzung der Klasse "%1" durch "%2" rckg„ngig zu machen. Sie sollten Ersetzungen von WPS-Klassen nur „ndern, wenn Sie genau wissen, was Sie tun. Das Rckg„ngigmachen der Ersetzung von WPS-Klassen kann zu schwerwiegenden Fehlfunktionen der Workplace Shell fhren und sogar eine komplette Reinstallation von &os2; erforderlich machen. Soll die Ersetzung dieser Klasse wirklich rckg„ngig gemacht werden?
  
@@ -104,17 +104,17 @@
  
 <--XFL0130-->: Die Ersetzung der Klasse "%1" durch "%2" schlug fehl.
  
-<--XFL0131-->: Die Klasse "%1" wurde erfolgreich deregistriert. Ein Neustart der WPS ist wahrscheinlich nicht notwendig.
+<--XFL0131-->: Die Klasse "%1" wurde erfolgreich deregistriert. Ein Neustart der WPS ist wahrscheinlich nicht erforderlich.
  
 <--XFL0132-->: Die Registrierung der Klasse "%1" schlug fehl. Fehlercode: %2. Modulinformation: %3.
  
-<--XFL0133-->: Sie haben ausgew„hlt, alle Ordner in Ihrem System standardm„áig zu sortieren. Dies schlieát die Arbeitsoberfl„che ein. Soll das automatische Sortieren fr die Arbeitsoberfl„che deaktiviert werden?
+<--XFL0133-->: Sie haben gew„hlt, alle Ordner in Ihrem System standardm„áig zu sortieren. Dies schlieát die Arbeitsoberfl„che ein. Soll das automatische Sortieren fr die Arbeitsoberfl„che deaktiviert werden?
  
 <--XFL0135-->: Sie haben ein Untermen ge”ffnet, welches keine Meneintr„ge enth„lt, da der entsprechende &xwp;-Konfigurationsordner keine Objekte enth„lt. Plazieren Sie Objekte im Konfigurationsordner, um Meneintr„ge zu erzeugen.
  
 <--XFL0136-->: Die Datei CONFIG.SYS wurde ge„ndert. Die vorige CONFIG.SYS wurde als Datei %1 gesichert. Um die neuen Einstellungen zu aktivieren, muá ein Systemabschluá durchgefhrt und das System neu gestartet werden. Ein Neustart der WPS reicht hierfr nicht aus.
  
-<--XFL0137-->: &xwp; konnte seine Online-Hilfe nicht finden. Eventuell wurde das entsprechende Objekt, das vom Installationsprogramm angelegt wurde, gel”scht. Sie finden die Online-Hilfe (XFLDR049.INF) im &xwp;-Installationsverzeichnis.
+<--XFL0137-->: &xwp; konnte seine Online-Hilfe nicht finden. Eventuell wurde das entsprechende vom Installationsprogramm angelegte Objekt gel”scht. Sie finden die Online-Hilfe (XFLDR049.INF) im &xwp;-Installationsverzeichnis.
  
 <--XFL0138-->: Sollen wirklich alle Objekte in diesem Ordner gestartet werden? Dies kann zu Problemen fhren, wenn in diesem Ordner befindliche Programme bereits laufen.
  
@@ -123,7 +123,7 @@
 ;
 ; the following items are new with V0.9.0
  
-<--XFL0141-->: Hiermit wird ein Objekt der Klasse "%1" mit dem Titel "%2" auf der Arbeitsoberfl„che angelegt. Warnung: Einige WPS-Klassen sind nicht dafr ausgelegt, daá aus ihnen Objekte erzeugt werden und manche werden nur zu Problemen mit der Konfiguration Ihres Systems fhren. Soll das Objekt trotzdem angelegt werden?
+<--XFL0141-->: Hiermit wird ein Objekt der Klasse "%1" mit dem Titel "%2" auf der Arbeitsoberfl„che angelegt. Warnung: Einige WPS-Klassen sind nicht dafr ausgelegt, daá aus ihnen Objekte erzeugt werden, und manche werden nur zu Problemen mit der Konfiguration Ihres Systems fhren. Soll das Objekt trotzdem angelegt werden?
  
 <--XFL0142-->: Sie haben die folgenden nderungen an der &xwp;-Klassenkonfiguration durchgefhrt:
  
@@ -167,7 +167,7 @@ Soll dies wirklich durchgefhrt werden?
  
 <--XFL0157-->: Der &xwp;-Hook wurde installiert. Tastenkrzel fr Objekte und Mausbewegungsfunktionen stehen nun in den Einstellungsobjekten "Tastatur" und "Maus" zur Verfgung.
  
-<--XFL0158-->: Der &xwp;-Hook wurde nun deinstalliert. Tastenkrzel fr Objekte und Mausbewegungsfunktionen stehen nun nicht mehr in den Einstellungsobjekten "Tastatur" und "Maus" zur Verfgung.
+<--XFL0158-->: Der &xwp;-Hook wurde deinstalliert. Tastenkrzel fr Objekte und Mausbewegungsfunktionen stehen nun nicht mehr in den Einstellungsobjekten "Tastatur" und "Maus" zur Verfgung.
  
 ;
 ; the following items have been added with V0.9.1
@@ -183,7 +183,7 @@ Falls Sie vorher XFolder installiert hatten, wird &xwp; die meisten der alten XF
  
 Wenn Sie vorher schon &xwp; installiert hatten, werden Ihre Einstellungen nicht ver„ndert.
  
-Falls nun irgendwelche Probleme auftauchen sollten, z.B. das das System beim Startvorgang h„ngenbleibt, drcken Sie zuerst Strg-Alt-Entf, um das System neu zu starten.
+Falls nun irgendwelche Probleme auftauchen sollten, z.B. daá das System beim Startvorgang h„ngenbleibt, drcken Sie zuerst Strg-Alt-Entf, um das System neu zu starten.
  
 Drcken dann Sie die Umschalttaste ("Shift"), w„hrend die WPS nach dem Systemneustart hochf„hrt. Dadurch wird ein "Panik"-Dialog angezeigt, mit dessen Hilfe Sie bestimmte &xwp;-Funktionen deaktivieren k”nnen.
  
@@ -197,14 +197,14 @@ Falls Sie dies nicht wnschen, werden alle &xwp;-Funktionen anfangs deaktiviert.
  
 Sollen Ihre alten XFolder-Einstellung fr &xwp; konvertiert werden?
  
-<--XFL0161-->: Hiermit wird der &xwp;-Konfigurationsordner im &xwp;-Installationsorder angelegt oder auf der Arbeitsoberfl„che, falls dieser nicht existiert.
+<--XFL0161-->: Hiermit wird der &xwp;-Konfigurationsordner im &xwp;-Installationsordner angelegt oder auf der Arbeitsoberfl„che, falls dieser nicht existiert.
  
 Soll fortgefahren werden?
  
-<--XFL0162-->: Soll das Tastaturkrzel "%1" fr das Objekt "%2" wirklich gel”scht werden?
+<--XFL0162-->: Soll das Tastenkrzel "%1" fr das Objekt "%2" wirklich gel”scht werden?
  
 ; the following one has changed with V0.9.10
-<--XFL0163-->: Hiermit wird ein Objekt namens "%1" im Ordner "%2" mit dem Einstellungstring "%3" angelegt.
+<--XFL0163-->: Hiermit wird ein Objekt namens "%1" im Ordner "%2" mit dem Einstellungsstring "%3" angelegt.
  
 Soll damit fortgefahren werden?
  
@@ -229,13 +229,13 @@ Soll dies nun nachgeholt werden?
  
 <--XFL0171-->: W„hrend der Registrierung der WPS-Klassen fr den Papierkorb ist ein Fehler aufgetreten.
  
-<--XFL0172-->: Soll das Papierkorb-Objekt zerst”rt und die &xwp;-Papierkorb-Klassen (XWPTrashCan, XWPTrashObject) deregistriert werden?
+<--XFL0172-->: Soll das Papierkorb-Objekt zerst”rt und die &xwp;-Papierkorbklassen (XWPTrashCan, XWPTrashObject) deregistriert werden?
  
 <--XFL0173-->: Das Objekt Papierkorb wurde erfolgreich zerst”rt und die Papierkorbklassen wurden deregistriert. Um die nderungen zu aktivieren, muá die WPS neu gestartet werden.
  
 <--XFL0174-->: Diese Operation ist bei einem Papierkorb-Objekt ungltig.
  
-<--XFL0175-->: &xwp;: Fehler bei Datei-Operation
+<--XFL0175-->: &xwp;: Fehler bei Dateioperation
  
 ;
 ; the following items have been added with V0.9.3
@@ -245,7 +245,7 @@ Soll dies nun nachgeholt werden?
  
 <--XFL0178-->: Sie haben %1 Objekte zum permanenten L”schen ausgew„hlt. Soll damit wirklich fortgefahren werden?
  
-<--XFL0179-->: "%1" ist eine Nur-Lesen-Datei. Soll sie trotzdem in den Papierkorb verschoben werden?
+<--XFL0179-->: "%1" ist eine schreibgeschtzte Datei. Soll sie trotzdem in den Papierkorb verschoben werden?
  
 <--XFL0180-->: Das aktuelle Laufwerk wird nicht vom Papierkorb untersttzt. Soll "%1" stattdessen permanent gel”scht werden?
  
@@ -255,7 +255,7 @@ Soll dies nun nachgeholt werden?
  
 <--XFL0183-->: Sie haben %1 Objekte fr das Verschieben in den Papierkorb ausgew„hlt. Soll damit wirklich fortgefahren werden?
  
-<--XFL0184-->: "%1" ist eine Nur-Lesen-Datei. Soll sie trotzdem permanent gel”scht werden?
+<--XFL0184-->: "%1" ist eine schreibgeschtzte Datei. Soll sie trotzdem permanent gel”scht werden?
  
 <--XFL0185-->: "%1" kann nicht gel”scht werden.
  
@@ -275,7 +275,7 @@ Soll dies nun nachgeholt werden?
  
 <--XFL0190-->: Bevor Sie &xsd; zum ersten Mal verwenden, sollten Sie die Feineinstellungen fr &xsd; auf der neuen Seite "&xsd;" im Einstellungsnotizbuch der Arbeitsoberfl„che vornehmen.
  
-Warnung: Auch wenn &xsd; durchgetestet wurde, besteht die M”glichkeit, daá es auf Ihrem System nicht funktioniert. Bevor Sie zum ersten Mal einen Systemabschluá mit &xsd; durchfhren, stellen Sie sicher, daá Sie ein ordnungsgem„áes Backup der WPS haben. Und sagen Sie hinterher nicht, Sie w„ren nicht gewarnt worden!
+Warnung: Auch wenn &xsd; durchgetestet wurde, besteht die M”glichkeit, daá es auf Ihrem System nicht richtig funktioniert. Bevor Sie zum ersten Mal einen Systemabschluá mit &xsd; durchfhren, stellen Sie sicher, daá Sie ein ordnungsgem„áes Backup der WPS haben. Und sagen Sie hinterher nicht, Sie w„ren nicht gewarnt worden!
  
 ;
 ; the following items are new with V0.9.6
@@ -303,7 +303,7 @@ Prfen Sie, ob die Datei xwplog.log im Wurzelverzeichnis Ihres Systemlaufwerkes 
  
 Soll dieses Widget aus der Widgetliste des &xcenter;s entfernt werden?
  
-<--XFL0196-->: Fehler beim Anlegen des Dateitypen "%1". Eventuell existiert der Dateityp bereits.
+<--XFL0196-->: Fehler beim Anlegen des Dateitypen "%1". M&ouml;glicherweise existiert der Dateityp bereits.
  
 <--XFL0197-->: &xcenter;
  
@@ -321,7 +321,7 @@ Viel Spaá mit &xwp;!
  
 Soll dieser Fehler ignoriert und mit der Installation der Schriften fortgefahren werden?
  
-<--XFL0201-->: Die Schriftartendatei "%1" ist bereits installiert.
+<--XFL0201-->: Die Schriftartdatei "%1" ist bereits installiert.
  
 Soll dieser Fehler ignoriert und mit der Installation der Schriften fortgefahren werden?
  
@@ -343,11 +343,11 @@ Soll dieser Fehler ignoriert und mit der Deinstallation der Schriften fortgefahr
 ; the following items are new with V0.9.9
 ;
  
-<--XFL0208-->: &xwp;s erweiterete Dateizuordnungen sind nun aktiv.
+<--XFL0208-->: &xwp;s erweiterte Dateizuordnungen sind nun aktiv.
  
-Anmerkung: Wenn Sie die Dateitypen fr &xwp; noch nicht konfiguriert haben, sind nun alle bisherigen Zuordnungen der WPS deaktiviert. ™ffnen Sie die Seite "Dateitypen" im Objekt "Workplace Shell" und richten Sie dort Dateitypen fr Ihre bestehenden Zuordnungen ein.
+Hinweis: Wenn Sie die Dateitypen fr &xwp; noch nicht konfiguriert haben, sind nun alle bisherigen Zuordnungen der WPS deaktiviert. ™ffnen Sie die Seite "Dateitypen" im Objekt "Workplace Shell" und richten Sie dort Dateitypen fr Ihre bestehenden Zuordnungen ein.
  
-Die erweiterten Dateizuornungen k”nnen jederzeit deaktiviert werden, um den alten Mechanismus der WPS zurckzuerhalten.
+Die erweiterten Dateizuordnungen k”nnen jederzeit deaktiviert werden, um den alten Mechanismus der WPS zurckzuerhalten.
  
 <--XFL0209-->: Der Dateityp %1 wurde nicht in der Datei OS2.INI gefunden.
  
@@ -416,7 +416,7 @@ Soll dieses Widget aus der Widgetliste des &xcenter;s entfernt werden?
  
 <--XFL0223-->: Die Funktion "Turbo-Ordner" wurde aktiviert. Aus Sicherheitsgrnden wird diese Einstellung erst wirksam, nachdem die WPS neu gestartet wurde.
 <--XFL0224-->: Die Funktion "Turbo-Ordner" wurde deaktiviert. Aus Sicherheitsgrnden wird diese Einstellung erst wirksam, nachdem die WPS neu gestartet wurde.
-<--XFL0225-->: Die ausgew„hlten Objekte k”nnen nicht gel”scht werden, da der &xwp;-Papierkorb nicht existiert. Soll der Papierkorb auf der Arbeitsoberfl„che wieder hergestellt werden?
+<--XFL0225-->: Die ausgew„hlten Objekte k”nnen nicht gel”scht werden, da der &xwp;-Papierkorb nicht existiert. Soll der Papierkorb auf der Arbeitsoberfl„che wiederhergestellt werden?
  
 <--XFL0226-->: "%1" ist ein Ordner. Soll er wirklich einschlieálich des kompletten Inhaltes permanent gel”scht werden?
  
@@ -437,7 +437,7 @@ Dies muá nicht notwendigerweise bedeuten, daá die Arbeitsoberfl„che defekt ist, 
 1) Starten von xfix, des &xwp;-Reparaturprogrammes fr Dateisystem-Handles, um die Dateisystem-Handles anzuschauen und vielleicht den Fehler zu finden.
 2) Die Funktion "Arbeitsoberfl„che beim Systemstart prfen" deaktivieren, so daá diese Nachricht in Zukunft nicht mehr erscheint. Dies kann jedoch in der Zukunft zu einem "Arbeitsoberfl„che kann nicht gefunden werden"-Versagen fhren.
  
-Soll &xwp; nun den "Panik"-Dialog anzeigen? Andernfalls wird einfach mit dem Systemstart fortgefahren.
+Soll &xwp; nun den "Panik"-Dialog anzeigen? Andernfalls wird normal mit dem Systemstart fortgefahren.
  
 ; ---------------------------------------------------------------------------------
 ;
@@ -455,7 +455,7 @@ Soll &xwp; nun den "Panik"-Dialog anzeigen? Andernfalls wird einfach mit dem Sys
  
 <--S506DLG_1622-->: "Verbose" (/V) zeigt Informationen zum Treiber, dem Adapter und den Ger„ten beim Systemstart an.
  
-<--S506DLG_1623-->: "Wait" (/W) zeigt diegleichen Informationen an wie "/V", aber nicht alles auf einmal (was sonst dazu fhrt, daá die Ausgabe weggescrollt wird), sondern es wird nach jedem Stck von Informationen ein Tastendruck abgewartet.
+<--S506DLG_1623-->: "Wait" (/W) zeigt diegleichen Informationen an wie "/V", aber nicht alles auf einmal (was sonst dazu fhrt, daá die Ausgabe weggerollt wird), sondern es wird nach jedem Stck von Informationen ein Tastendruck abgewartet.
 Verfgbarkeit: DANIS506.ADD und neuere IBM1S506.ADD-Versionen.
  
 <--S506DLG_1624-->: Dieses Markierungsfeld bestimmt, ob DMA Scatter/Gather aktiviert ist.
@@ -617,7 +617,7 @@ Verfgbarkeit: ausschlieálich DANIS506.ADD.
  
 <--S506DLG_1672-->: Ist das obige Markierungsfeld ausgew„hlt, kann hier der fr die aktuelle Einheit erlaubte Multiword-DMA-Modus explizit festgelegt werden.
 Laut DANIS506.DOC sind gltige Werte:
-    0  -  deaktiviere  MW DMA
+    0  -  deaktiviere MW DMA
     1  -  Begrenzung auf MW DMA mode 0 (bei S506.ADD dasselbe wie 0)
     2  -  Begrenzung auf MW DMA mode 1
     3  -  Begrenzung auf MW DMA mode 2
@@ -634,7 +634,7 @@ Laut DANIS506.DOC sind gltige Werte:
 Verfgbarkeit: ausschlieálich DANIS506.ADD.
  
 <--S506DLG_1675-->: Diese Einstellung bestimmt, ob ein Laufwerk als Wechsellaufwerk behandelt wird.
-Aus DANIS506.DOC: "Wenn Sie ein Wechsellaufwerk haben und von diesem booten m”chten, schl„gt dies fehl, wie berichtet wird. Um von dieser Einheit booten zu k”nnen, muá es als normales Laufwerk behandelt werden. Dies kann erreicht werde, indem die Option /!RMV fr das Laufwerk angegeben wird.
+Aus DANIS506.DOC: "Wenn Sie ein Wechsellaufwerk haben und von diesem starten m”chten, schl„gt dies fehl, wie berichtet wird. Um von dieser Einheit booten zu k”nnen, muá es als normales Laufwerk behandelt werden. Dies kann erreicht werde, indem die Option /!RMV fr das Laufwerk angegeben wird.
 Es wird berichtet, daá manche Syquest-Laufwerke fehlerhafte Firmware besitzen, welche die Untersttzung der Wechselfunktionen nicht ordnungsgem„á meldet. Um diese Laufwerke bei &os2; als Wechsellaufwerke anzumelden, fgen Sie fr das entsprechende Ger„t die Option /RMV hinzu."
 Verfgbarkeit: ausschlieálich DANIS506.ADD.
  

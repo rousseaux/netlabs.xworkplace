@@ -33,11 +33,11 @@ Details entnehmen Sie bitte der Sektion "Bemerkungen" des &xwp;-Handbuches.
 Dies wurde mit XFolder 0.84 eingefhrt.
 Details finden Sie im &xwp;-Handbuch.
 <--FEATURES_6002-->: Wenn "Seite Symbol ersetzen..." aktiviert ist, ersetzt &xwp die Seite "Symbol" im Einstellungsnotizbuch eines jeden Objektes durch eine neue, erweiterte Version.
-Auf dieser Seite kann das Symbol nun auf etwas komfortablere Weise ersetzt werden. Zudem k”nnen Sie Objektinterna anschauen und ein globales Tastaturkrzel fr ein Objekt setzen, wenn der &xwp;-Hook auch aktiviert ist (siehe "Maus- und Tastaturfunktionen" unten).
+Auf dieser Seite kann das Symbol nun auf etwas komfortablere Weise ersetzt werden. Zudem k”nnen Sie Objektinterna anschauen und ein globales Tastenkrzel fr ein Objekt setzen, wenn der &xwp;-Hook auch aktiviert ist (siehe "Maus- und Tastaturfunktionen" unten).
 Dies wurde mit &xwp; 0.9.16 eingefhrt und ersetzt die Seite "Objekt" frherer &xwp;-Versionen.
-<--FEATURES_6003-->: Wenn dies aktiviert ist, kombiniert &xwp; die drei standardm„áigen "Datei"-Seiten der Einstellungsnotizbcher von Ordnern und Dateien zu einer einzigen komfortableren "Datei"-Seite.
+<--FEATURES_6003-->: Wenn dies aktiviert ist, kombiniert &xwp; die drei standardm„áigen "Datei"-Seiten der Einstellungsnotizbcher der Ordner und Dateien zu einer einzigen komfortableren "Datei"-Seite.
 Auáerdem wird eine zweite Seite zur Anzeige erweiterter Attribute hinzugefgt.
-Weiter wird hierdurch die Seite "Details" von Plattenobjekten durch eine Anzeige mit einem Tortendiagramm ersetzt.
+Weiter wird hierdurch die Seite "Details" von Datentr„gerobjekten durch eine Anzeige mit einem Tortendiagramm ersetzt.
 Dies wurde mit &xwp; 0.9.0 eingefhrt.
 <--FEATURES_6004-->: "Erweiterte Systemkl„nge" erlaubt es, mehr Kl„nge zu definieren als die WPS normalerweise bietet.
 Damit erhalten Sie zus„tzliche Kl„nge fr Kontextmens, die Auswahl von Objekten, und mehr.
@@ -52,7 +52,7 @@ Dies wurde mit &xwp; 0.9.4 eingefhrt.
 
 ; FEATURES_6005 added with V0.9.12
 
-<--FEATURES_6005-->: Ist "Klassennamen berschreiben" markiert, berschreibt &xwp; die Klassennamen der Klassen Ordner, Datei und Datentr„ger.
+<--FEATURES_6005-->: Ist "Klassennamen korrigieren" markiert, berschreibt &xwp; die Klassennamen der Klassen Ordner, Datei und Datentr„ger.
 Die Klassennamen werden in der dritten Spalte der Detailanzeige angezeigt (und auch in Statuszeilen, falls Sie dies so eingestellt haben).
 Wenn die WPS-Netzwerkklassen installiert wurden, sind diese Namen leider nicht mehr sehr aussagekr„ftig. &xwp; kann sie dann wieder auf "Ordner", "Datendatei" und "Datentr„ger" zurcksetzen.
 
@@ -62,16 +62,16 @@ Auáerdem kann fr jeden einzelnen Ordner festlegt werden, ob eine Statuszeile an
 Nachdem Sie diese Funktion eingeschaltet haben, sollten Sie also das Objekt "Workplace Shell" ”ffnen und die Seite "Statuszeile" ausw„hlen.
 Weitere Details, insbesondere dazu, wie Sie die Statuszeilen genau an Ihre Bedrfnisse anpassen, finden Sie im &xwp;-Handbuch.
 Dies wurde mit XFolder 0.70 eingefhrt.
-<--FEATURES_6012-->: Nach Auswahl von "Am Gitter ausrichten aktivieren" kann dem Kontextmen der Ordner ein Eintrag "Am Gitter ausrichten" hinzugefgt werden.
+<--FEATURES_6012-->: Nach Auswahl von "Am Gitter ausrichten aktivieren" kann dem Kontextmen der Ordner ein Punkt "Am Gitter ausrichten" hinzugefgt werden.
 Dieser Eintrag richtet alle Objekte im Ordner an den Linien eines unsichtbaren Gitters aus und vereinfacht so die Plazierung von Objekten.
-Mit dem Einschalten dieser Funktion wird dem Objekt "Workplace Shell" auch eine Seite "Am Gitter ausrichten" hinzugefgt, auf der das zu verwendende Gitter definiert werden kann.
+Mit dem Einschalten dieser Funktion wird dem Objekt "Workplace Shell" auch eine Seite "Gitter" hinzugefgt, auf der das zu verwendende Gitter definiert werden kann.
 Eine Einfhrung hierzu finden Sie im &xwp;-Handbuch.
 Dies wurde mit XFolder 0.50 eingefhrt.
-<--FEATURES_6013-->: Sind "Ordner-Tastaturkrzel" aktiviert, k”nnen mehr als 30 h„ufig verwendeten Ordnerfunktionen (wie z.B. "Alles ausw„hlen") im &xwp;-Objekt "Workplace Shell" neue Tastaturkrzel zugewiesen werden.
+<--FEATURES_6013-->: Sind "Ordner-Tastenkrzel" aktiviert, k”nnen mehr als 30 h„ufig verwendeten Ordnerfunktionen (wie z.B. "Alles ausw„hlen") im &xwp;-Objekt "Workplace Shell" neue Tastenkrzel zugewiesen werden.
 Dies wurde mit XFolder 0.50 eingefhrt.
-Details und die Standardeinstellungen fr Tastaturkrzel entnehmen Sie bitte dem &xwp;-Handbuch.
-<--FEATURES_6014-->: "Erweitertes Sortieren in Ordnern" ersetzt die Standardsortierungsfunktionen der WPS fr Ordner. Ist diese Funktion aktiviert, k”nnen im &xwp;-Objekt "Workplace Shell" endlich globale Einstellungen fr die Sortierung vorgenommen werden. Diese Standardeinstellungen k”nnen aber immer noch fr jeden Ordner individuell berschrieben werden.
-Weiterhin werden neue Sortierungskriterien eingefhrt, wie z.B. "Sortieren nach Erweiterung" oder "Sortiere Ordner zuerst".
+Details und die Standardeinstellungen fr Tastenkrzel entnehmen Sie bitte dem &xwp;-Handbuch.
+<--FEATURES_6014-->: "Erweitertes Sortieren in Ordnern" ersetzt die Standardsortierfunktionen der WPS fr Ordner. Ist diese Funktion aktiviert, k”nnen im &xwp;-Objekt "Workplace Shell" endlich globale Einstellungen fr das Sortieren vorgenommen werden. Diese Standardeinstellungen k”nnen aber immer noch fr jeden Ordner individuell berschrieben werden.
+Weiterhin werden neue Sortierkriterien eingefhrt, wie z.B. "Sortieren nach Erweiterung" oder "Sortiere Ordner zuerst".
 Dies wurde mit XFolder 0.70 eingefhrt.
 Details finden Sie im &xwp;-Handbuch.
 ;
@@ -85,23 +85,23 @@ Hierzu muá die Ersatzklasse XWPFileSystem installiert sein. Eine nderung dieser
 
 <--FEATURES_6051-->: Der "&xwp;-Hook" ist ein globaler PM-Hook, der einige der Funktionen der Programme NPS WPS und WarpEnhancer implementiert.
 Aktivieren Sie diese Einstellung, um Funktionen wie das automatische Aktivieren von Fenstern, Scrollen im Fenster mit Mausknopf 3, Bildschirmeckenobjekte und einige weitere Mausfunktionen nutzen m”chten.
-Zudem ist der &xwp;-Hook fr globale Tastaturkrzel fr Objekte erforderlich.
+Zudem ist der &xwp;-Hook fr globale Tastenkrzel fr Objekte erforderlich.
 Ist diese Einstellung aktiv, werden den Objekten "Tastatur" und "Maus" im Ordner "Systemkonfiguration" zus„tzliche Einstellungsseiten hinzugefgt.
 Dies wurde mit &xwp; 0.9.0 eingefhrt.
 Details entnehmen Sie bitte dem &xwp;-Handbuch.
 <--FEATURES_6052-->: "Animierte Mauszeiger" ersetzt die Seite "Zeiger" im Objekt "Maus" (im Ordner "Systemkonfiguration") mit einer neuen Seite, ber die animierte Mauszeiger anstelle der standardm„áigen statischen von &os2; definiert werden k”nnen.
 Diese Funktion war frher Teil des separaten Programmes "Animierte Mauszeiger fr &os2;", ist nun aber Teil von &xwp; 0.9.0.
 Details entnehmen Sie bitte dem &xwp;-Handbuch.
-<--FEATURES_6053-->: Wenn diese Einstellung aktiviert ist, kann jedem WPS-Objekt ein globales Tastaturkrzel zugewiesen werden. Wann immer dieses Tastaturkrzel eingegeben wird, wird das Objekt in seiner Standardansicht ge”ffnet.
-Ein Tastaturkrzel fr ein Objekt kann auf der Seite "Symbol" im Einstellungsnotizbuch eines jeden Objektes gesetzt werden.
-Auáerdem wurde dem Einstellungsobjekt "Tastatur" im Ordner "Systemkonfiguration" eine Seite "Tastaturkrzel" hinzugefgt, auf der eine šbersicht ber alle Tastaturkrzel gegeben wird.
+<--FEATURES_6053-->: Wenn diese Einstellung aktiviert ist, kann jedem WPS-Objekt ein globales Tastenkrzel zugewiesen werden. Wann immer dieses Tastenkrzel eingegeben wird, wird das Objekt in seiner Standardansicht ge”ffnet.
+Ein Tastenkrzel fr ein Objekt kann auf der Seite "Symbol" im Einstellungsnotizbuch eines jeden Objektes gesetzt werden.
+Auáerdem wurde dem Einstellungsobjekt "Tastatur" im Ordner "Systemkonfiguration" eine Seite "Tastenkrzel" hinzugefgt, auf der eine šbersicht aller Tastenkrzel gegeben wird.
 Dieser Eintrag ist nicht verfgbar, wenn der &xwp;-Hook nicht installiert ist.
 ;Make sure that you also have the "Object page" setting in the "General features" group enabled, or you won't be able to configure hotkeys.
 Dies wurde mit &xwp; V0.9.1 eingefhrt.
 <--FEATURES_6054-->: "PageMage" bietet virtuelle Arbeitsoberfl„chen. Dies bedeutet, daá &xwp; aus der aktuellen Arbeitsoberfl„che eine von vielen macht, zwischen denen hin- und hergeschaltet werden kann.
 Ist diese Funktion aktiviert, so wird dem Einstellungsobjekt "Bildschirm" eine neue Seite hinzugefgt, auf der Feineinstellungen fr PageMage vorgenommen werden k”nnen.
 Dieser Eintrag ist nicht verfgbar, wenn der &xwp;-Hook nicht installiert wurde.
-PageMage war frher ein separates Programm, das von Carlos Ugarte geschrieben wurde und ist nun in &xwp; integriert.
+PageMage war frher ein separates Programm, das von Carlos Ugarte geschrieben wurde, und ist nun in &xwp; integriert.
 Dies wurde mit &xwp; V0.9.2 eingefhrt.
 
 <--FEATURES_6021-->: Hiermit wird die Seite "Archivieren" im Einstellungsnotizbuch der Arbeitsoberfl„che ersetzt. Ist diese Funktion aktiviert, k”nnen die Bedingungen, unter denen die Workplace Shell automatisch gesichert wird, pr„zise eingestellt werden - anstelle der M”glichkeit, die Archivierung nur ganz an- oder abschalten zu k”nnen.
@@ -197,11 +197,11 @@ Wenn diese Klasse installiert werden soll, muá auch XFolder installiert sein.
 <--XWPCLS_1254-->: "XFldDesktop" ist der &xwp;-Ersatz fr die Klasse WPDesktop, welche die Arbeitsoberfl„che implementiert.
 Diese Ersatzklasse bietet Erweiterungen der Arbeitsoberfl„che, wie z.B. den erweiterten Systemstart (Startlogos, Archivierung) und den erweiterten Systemabschluá.
 
-<--XWPCLS_1255-->: "XFldDataFile" ist der &xwp;-Ersatz fr die Klasse WPDataFile, welche fr alle physikalischen Datei im System verwendet wird.
+<--XWPCLS_1255-->: "XFldDataFile" ist der &xwp;-Ersatz fr die Klasse WPDataFile, welche fr alle physischen Datei im System verwendet wird.
 Diese Ersatzklasse bietet Erweiterungen des Zuordnungsmechanismus der WPS, die Ersetzung der Standardsymbole und die Funktion "Dateiname in Zwischenablage kopieren".
 
 ; V0.9.16: changed the following one
-<--XWPCLS_1256-->: "XWPProgramFile" ist der &xwp;-Ersatz fr die Klasse WPProgramFile, welche fr alle ausfhrbaren physikalischen Dateien (.EXE, .COM, etc.) verwendet wird.
+<--XWPCLS_1256-->: "XWPProgramFile" ist der &xwp;-Ersatz fr die Klasse WPProgramFile, welche fr alle ausfhrbaren physischen Dateien (.EXE, .COM, etc.) verwendet wird.
 Diese Klasse fgt dem Einstellungsnotizbuch der ausfhrbaren Datei eine neue Seite "Module" hinzu und bietet die M”glichkeit, die Standardsymbole zu ersetzen.
 
 <--XWPCLS_1257-->: "XWPSound" ist der &xwp;-Ersatz fr die Klasse WPSound, welche das Objekt "Warnton" bzw. "Ton" implementiert, das sich im Ordner "Systemkonfiguration" befindet.
@@ -235,7 +235,7 @@ Dies wurde mit &xwp; 0.9.0 eingefhrt.
 Bei frheren Versionen von XFolder war diese Funktion Teil des Objektes "Workplace Shell". Sie wurde aber nun ausgelagert und zu diesem neuen Objekt ausgebaut, das eine komplett neue Anzeige festlegt.
 Sie kann nun sogar Informationen zu WPS-Methoden anzeigen, was hilfreich fr WPS-Programmierer ist.
 
-<--XWPCLS_1266-->: "XWPTrashCan" wurde mit &xwp; 0.9.0 eingefhrt und implementiert endlich ein besonderes "Papierkorb"-Orderobjekt, „hnlich dem, das man bei Macintosh-, KDE- und Win95-Systemen finden kann.
+<--XWPCLS_1266-->: "XWPTrashCan" wurde mit &xwp; 0.9.0 eingefhrt und implementiert endlich ein besonderes "Papierkorb"-Ordnerobjekt, „hnlich dem, das man bei Macintosh-, KDE- und Win95-Systemen finden kann.
 "XWPTrashObject" implementiert die "Papierkorb-Objekte", die sich in diesem Ordner befinden und wird automatisch mit XWPTrashCan installiert.
 Dies wurde mit &xwp; 0.9.0 eingefhrt.
 
@@ -274,7 +274,7 @@ Dies wurde mit &xwp; 0.9.4 eingefhrt.
 
 <--XWPCLS_1271-->: "XWPFontFolder" implementiert einen neuen Ordner, der alle Ihre Schriftarten beinhaltet.
 "XWPFontObject" implementiert die "Schriftartenobjekte", die sich in diesem Ordner befinden und wird automatisch mit XWPFontFolder installiert.
-"XWPFontFile" ist eine neue Unterklasse von WPDataFile und wird also automatisch mit XWPFontFolder installiert. Alle Dateien, die echte Schriftartendateien sind, werden automatisch zu Instanzen dieser Klasse.
+"XWPFontFile" ist eine neue Unterklasse von WPDataFile und wird also automatisch mit XWPFontFolder installiert. Alle Dateien, die echte Schriftartdateien sind, werden automatisch zu Instanzen dieser Klasse.
 
 ;
 ; the following was added with V0.9.16

@@ -84,4 +84,5 @@ Last updated February 4, 2002, Ulrich M”ller
         jsmall              John Small (jsmall@lynxus.com)
         lafaix              Martin Lafaix (lafaix@ibm.net)
         pr                  Paul Ratcliffe (paul@orac.clara.co.uk)
+        kso                 Knut Stange Osmundsen (bird@anduin.net)
 

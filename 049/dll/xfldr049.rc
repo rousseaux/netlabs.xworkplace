@@ -1,7 +1,7 @@
 
 /*
  * xfldr001.rc:
- *      this is the main resource file for the English NLS DLL.
+ *      this is the main resource file for the German NLS DLL.
  *
  *      Translate all the strings in this file.
  *
@@ -35,7 +35,7 @@
  *
  *          --  &nl;        newline character (\n, ASCII 10)
  *
- *      The dialog templates (xfldr001.dlg) are #include'd. You
+ *      The dialog templates (xfldr049.dlg) are #include'd. You
  *      may either translate that text file "manually" or open
  *      the resulting .RES file with the Toolkit dialog editor.
  *      This will then recreate the .RES and .DLG files, but leave
@@ -46,7 +46,7 @@
  *      only change strings. This is very helpful to avoid
  *      accidentally ruining the dialogs.
  *
- *      Copyright (C) 1997-2002 Ulrich Mîller.
+ *      Copyright (C) 1997-2000 Ulrich Mîller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -90,9 +90,9 @@ END
 
 MENU ID_XLM_CLASS_NOSEL LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    MENUITEM "~Register new class...", ID_XLMI_REGISTER
+    MENUITEM "~Neue Klasse registrieren...", ID_XLMI_REGISTER
     MENUITEM "", 1, MIS_SEPARATOR
-    MENUITEM "~Help", ID_XFMI_HELP
+    MENUITEM "~Hilfe", ID_XFMI_HELP
 END */
 
 // the following two have been added with V0.9.0 */
@@ -154,7 +154,7 @@ END
 
 MENU ID_XSM_FILEASSOC_NOSEL LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    MENUITEM "WPS-Filters ~importieren...", ID_XSMI_FILEFILTER_IMPORTWPS
+    MENUITEM "WPS-Filter ~importieren...", ID_XSMI_FILEFILTER_IMPORTWPS
 END
 
 /* Button menus in XWPSetup "Objects" page;
@@ -189,8 +189,8 @@ END
 
 MENU ID_XSM_OBJECTS_XWORKPLACE LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    MENUITEM "~Workplace Shell Konfiguration", 200
-    MENUITEM "~OS/2-Kernel Konfiguration", 201
+    MENUITEM "~Workplace Shell-Konfiguration", 200
+    MENUITEM "~OS/2-Kernel-Konfiguration", 201
     MENUITEM "W~PS-Klassenliste", 202
     MENUITEM "B~ildschirm", 203
 /* the following item added with V0.9.5 (2000-08-23) [umoeller] */
@@ -243,12 +243,12 @@ END
 
 MENU ID_XSM_STICKY_NOSEL LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    MENUITEM "~Neues permanentes Fenster...", ID_XSMI_STICKY_NEW
+    MENUITEM "~Neues Haftfenster...", ID_XSMI_STICKY_NEW
 END
 
 MENU ID_XSM_STICKY_SEL LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    MENUITEM "Aus Liste permanenter Fenster entfe~rnen", ID_XSMI_STICKY_DELETE
+    MENUITEM "Aus Liste der Haftfenster entfe~rnen", ID_XSMI_STICKY_DELETE
 END
 
 /* XCenter main button menu V0.9.7 (2000-11-30) [umoeller] */
@@ -291,7 +291,7 @@ STRINGTABLE
 BEGIN
     /* miscellaneous menu items */
     ID_XSSI_NOTDEFINED              "[nicht definiert]"
-    ID_XSSI_PRODUCTINFO             "~&xwp; Produktinformation"
+    ID_XSSI_PRODUCTINFO             "~&xwp;-Produktinformation"
     ID_XSSI_REFRESHNOW              "~Sofort aktualisieren"
     ID_XSSI_SNAPTOGRID              "Am ~Gitter ausrichten"
 
@@ -323,7 +323,7 @@ BEGIN
 
     /* default status bar mnemonics; changed with V0.9.6 (2000-11-23) [umoeller] */
     /* changed the following V0.9.11 (2001-04-22) [umoeller] */
-    ID_XSSI_SBTEXTNONESEL           "$C objects$x(50%)$SA insgesamt, $fM von $zM MB frei"
+    ID_XSSI_SBTEXTNONESEL           "$C Objekte$x(50%)$SA insgesamt, $fM von $zM MB frei"
     ID_XSSI_SBTEXTMULTISEL          "$c von $C Objekten ausgewÑhlt$x(50%)$sA ausgewÑhlt"
     ID_XSSI_SBTEXTWPDATAFILE        """$r"" ($w)$x(55%)$sA $x(70%)$D $T"
     /* changed the following V0.9.11 (2001-04-22) [umoeller] */
@@ -385,14 +385,14 @@ BEGIN
     ID_XSSI_LB_SWITCHTODETAILSVIEW  "Umschalten auf Detailanzeige (nur Warp 4)"
     ID_XSSI_LB_SWITCHTOTREEVIEW     "Umschalten auf Strukturanzeige (nur Warp 4)"
     ID_XSSI_LB_ARRANGEDEFAULT       "Anordnen (Standard)"
-    ID_XSSI_LB_ARRANGEFROMTOP       "Anordnen von oben (Warp 4 only)"
-    ID_XSSI_LB_ARRANGEFROMLEFT      "Anordnen von links (Warp 4 only)"
-    ID_XSSI_LB_ARRANGEFROMRIGHT     "Anordnen von rechts (Warp 4 only)"
-    ID_XSSI_LB_ARRANGEFROMBOTTOM    "Anordnen von unten (Warp 4 only)"
-    ID_XSSI_LB_ARRANGEPERIMETER     "Anordnen Perimeter (Warp 4 only)"
-    ID_XSSI_LB_ARRANGEHORIZONTALLY  "Anordnen horizontal (Warp 4 only)"
-    ID_XSSI_LB_ARRANGEVERTICALLY    "Anordnen vertikal (Warp 4 only)"
-    ID_XSSI_LB_INSERT               "EinfÅgen... (Warp 4 only)"
+    ID_XSSI_LB_ARRANGEFROMTOP       "Anordnen von oben (nur Warp 4)"
+    ID_XSSI_LB_ARRANGEFROMLEFT      "Anordnen von links (nur Warp 4)"
+    ID_XSSI_LB_ARRANGEFROMRIGHT     "Anordnen von rechts (nur Warp 4)"
+    ID_XSSI_LB_ARRANGEFROMBOTTOM    "Anordnen von unten (nur Warp 4)"
+    ID_XSSI_LB_ARRANGEPERIMETER     "Anordnen Perimeter (nur Warp 4)"
+    ID_XSSI_LB_ARRANGEHORIZONTALLY  "Anordnen horizontal (nur Warp 4)"
+    ID_XSSI_LB_ARRANGEVERTICALLY    "Anordnen vertikal (nur Warp 4)"
+    ID_XSSI_LB_INSERT               "EinfÅgen... (nur Warp 4)"
     ID_XSSI_LB_SORTBYEXTENSION      "Nach Erweiterung sortieren"
     ID_XSSI_LB_SORTFOLDERSFIRST     "Ordner zuerst sortieren"
     ID_XSSI_LB_SORTBYCLASS          "Nach Objektklasse sortieren"
@@ -429,12 +429,12 @@ BEGIN
     ID_XSSI_27STATUSBAR             "Status~zeilen" /* V0.9.9 */
     ID_XSSI_3SNAPTOGRID             "Gitter"
     ID_XSSI_4ACCELERATORS           "~OrdnertastenkÅrzel" /* V0.9.9 */
-    ID_XSSI_5INTERNALS              "XFolder Interna"
+    ID_XSSI_5INTERNALS              "XFolder-Interna"
     ID_XSSI_FILEOPS                 "Datei~operationen"
     ID_XSSI_INTERNALS               "~Objekt" /* changed V0.9.0 */
     ID_XSSI_SORT                    "~Sortieren"
     /* the following are new with V0.9.0 */
-    ID_XSSI_XWPSTATUS               "~&xwp; Status"
+    ID_XSSI_XWPSTATUS               "~&xwp;-Status"
     ID_XSSI_FEATURES                "~FunktionalitÑt"
     ID_XSSI_PARANOIA                "~Paranoia"
     ID_XSSI_OBJECTS                 "~Objekte"
@@ -448,7 +448,7 @@ BEGIN
     ID_XSSI_VIEWPAGE                "~Anzeige"
     ID_XSSI_ARCHIVESPAGE            "~Archivieren"
     ID_XSSI_PGMFILE_MODULE          "~Module"
-    ID_XSSI_OBJECTHOTKEYSPAGE       "~TastaturkÅrzel"
+    ID_XSSI_OBJECTHOTKEYSPAGE       "~TastenkÅrzel"
     /* ID_XSSI_FUNCTIONKEYSPAGE added with V0.9.3 (2000-04-18) [umoeller] */
     ID_XSSI_FUNCTIONKEYSPAGE        "~Funktionstasten"
     ID_XSSI_MOUSEHOOKPAGE           "~Bewegung"
@@ -563,7 +563,7 @@ BEGIN
     ID_XSSI_HOTKEY_TITLE                "Objekttitel"
     ID_XSSI_HOTKEY_FOLDER               "in Ordner"
     ID_XSSI_HOTKEY_HANDLE               "Objekt-Handle"
-    ID_XSSI_HOTKEY_HOTKEY               "TastaturkÅrzel"
+    ID_XSSI_HOTKEY_HOTKEY               "TastenkÅrzel"
 
     /* Method info columns for XWPClassList; V0.9.1 (99-12-03) */
     ID_XSSI_CLSLIST_INDEX               "Nr."
@@ -603,7 +603,7 @@ BEGIN
     ID_MMSI_TYPE_ANIMATION              "Animation"
     ID_MMSI_TYPE_MOVIE                  "Film"
 
-    ID_MMSI_TYPE_STORAGE                "Storage"
+    ID_MMSI_TYPE_STORAGE                "Speichermedien"
     ID_MMSI_TYPE_FILE                   "Datei"
     ID_MMSI_TYPE_DATA                   "Daten"
 
@@ -714,7 +714,7 @@ BEGIN
     ID_XCSI_FOLDERFEATURES              "Ordner-Funktionen"
     ID_XCSI_ENABLESTATUSBARS            "Statuszeilen fÅr Ordner aktivieren"
     ID_XCSI_ENABLESNAP2GRID             """Am Gitter ausrichten"" fÅr Ordner aktivieren"
-    ID_XCSI_ENABLEFOLDERHOTKEYS         "TastaturkÅrzel fÅr Ordner aktivieren"
+    ID_XCSI_ENABLEFOLDERHOTKEYS         "TastenkÅrzel fÅr Ordner aktivieren"
     ID_XCSI_EXTFOLDERSORT               "Erweitertes Sortieren in Ordnern"
     /* the following item added with V0.9.16 (2001-10-25) [umoeller] */
     ID_XCSI_TURBOFOLDERS                "Turbo-Ordner"
@@ -722,7 +722,7 @@ BEGIN
     ID_XCSI_MOUSEKEYBOARDFEATURES       "Maus- und Tastaturfunktionen"
     ID_XCSI_ANIMOUSE                    "Animierte Mauszeiger"
     ID_XCSI_XWPHOOK                     "&xwp;-Hook aktivieren"
-    ID_XCSI_GLOBALHOTKEYS               "Globale TastaturkÅrzel fÅr Objekte aktivieren"
+    ID_XCSI_GLOBALHOTKEYS               "Globale TastatenkÅrzel fÅr Objekte aktivieren"
     ID_XCSI_PAGEMAGE                    "PageMage: Virtuelle ArbeitsoberflÑchen"
 
     ID_XCSI_STARTSHUTFEATURES           "Systemstart/abschlu·-Funktionen"
@@ -761,7 +761,7 @@ BEGIN
     ID_XSSI_WIDGETSETUP                 "Widget-Konfiguration"
 
     ID_XSSI_FONTFOLDER                  "Schriftartenordner"
-    ID_XSSI_FONTFILE                    "Schriftartendatei"
+    ID_XSSI_FONTFILE                    "Schriftartdatei"
     ID_XSSI_FONTFAMILY                  "Schriftartenfamilie"
     ID_XSSI_FONTERRORS                  "Schriftartenfehler"
     ID_XSSI_FONTOBJECT                  "Installierte Schriftart"
@@ -790,7 +790,7 @@ BEGIN
     ID_XSSI_PARAMETERS                  "Parameter"
     ID_XSSI_CLOSE                       "S~chlie·en"
 
-    ID_XSSI_DROPPED1                    "... %d Objekte vernachlÑssigt,"
+    ID_XSSI_DROPPED1                    "... %d Objekte ignoriert,"
     ID_XSSI_DROPPED2                    "îffnen Sie den Ordner, um auch sie zu sehen"
 
     ID_XSSI_THREADSTHREAD               "Thread"
@@ -898,10 +898,10 @@ BEGIN
 
     ID_CRSI_PWGT_TITLE                  "Puls"
     ID_CRSI_PWGT_IRQLOADCOLOR           "IRQ-Last"
-    ID_CRSI_PWGT_CPUGRAPHCOLORS         "CPU Graphenfarben"
-    ID_CRSI_PWGT_CPUXUSERCOLOR          "CPU %d Benutzerlast"
+    ID_CRSI_PWGT_CPUGRAPHCOLORS         "CPU-Graphenfarben"
+    ID_CRSI_PWGT_CPUXUSERCOLOR          "CPU %d-Benutzerlast"
     ID_CRSI_PWGT_OTHERCOLORS            "Andere Farben"
-    ID_CRSI_PWGT_BACKGROUNDCOLOR        "HIntergrund"
+    ID_CRSI_PWGT_BACKGROUNDCOLOR        "Hintergrund"
     ID_CRSI_PWGT_TEXTCOLOR              "Text"
     ID_CRSI_PWGT_TOOLTIP1               "CPU-Anzahl: %d&nl;CPU 0 IRQ: %lu%c%lu%c"
     ID_CRSI_PWGT_TOOLTIP2               "&nl;CPU %d Benutzer: %lu%c%lu%c"
@@ -1002,16 +1002,16 @@ BEGIN
 
     /* strings formerly in ID_XSD_SETTINGS_FLDR1 */
     ID_XSSI_GENERALVIEWPAGE             "Allgemeine Anzeigeneinstellungen"
-    ID_XSDI_FAVORITEFOLDER              "~Lieblingsordner"
-    ID_XSDI_QUICKOPEN                   "S~chnelles ôfnnen beim Start der WPS"
+    ID_XSDI_FAVORITEFOLDER              "~Bevorzugter Ordner"
+    ID_XSDI_QUICKOPEN                   "S~chnelles ôffnen beim Start der WPS"
     ID_XSDI_FULLPATH                    "Vollen Pfad im Ordner~titel anzeigen"
     ID_XSDI_KEEPTITLE                   "~Originaltitel beibehalten"
     ID_XSDI_SNAPTOGRID                  """Am ~Gitter ausrichten"" hinzufÅgen"
-    ID_XSDI_ACCELERATORS                "Auf Tastaturk~Årzel reagieren"
+    ID_XSDI_ACCELERATORS                "Auf Tastenk~Årzel reagieren"
     ID_XSDI_ENABLESTATUSBAR             "~Statuszeile anzeigen"
 
     /* strings formerly in ID_XSD_DTP_MENUITEMS */
-    ID_XSDI_DTP_MENUITEMSGROUP          "Sichtbare StandardmenÅeintrÑge"
+    ID_XSDI_DTP_MENUITEMSGROUP          "Sichtbare StandardmenÅpunkte"
     ID_XSDI_DTP_SORT                    "S~ortieren"
     ID_XSDI_DTP_ARRANGE                 "~Anordnen"
     ID_XSDI_DTP_LOCKUP                  "~Sperren"
@@ -1045,7 +1045,7 @@ BEGIN
     ID_SDDI_CANDESKTOPALTF4             "Alt+F~4 auf ArbeitsoberflÑche startet Systemabschlu·"
 
     /* strings formerly in ID_XSD_DTP_STARTUP */
-    ID_XSDI_DTP_LOGOGROUP               "Workplace Shell Bootlogo"
+    ID_XSDI_DTP_LOGOGROUP               "Workplace Shell-Bootlogo"
     ID_XSDI_DTP_BOOTLOGO                "~Bootlogo aktivieren"
     ID_XSDI_DTP_LOGOSTYLEGROUP          "Bootlogo-Stil"
     ID_XSDI_DTP_LOGO_TRANSPARENT        "~Transparent"
@@ -1065,7 +1065,7 @@ BEGIN
     ID_XFDI_PANIC_NOARCHIVING           "~Archivierung der ArbeitsoberflÑche einmal Åberspringen"
     ID_XFDI_PANIC_DISABLEFEATURES       "Alle Funktionen permanent ~deaktivieren"
     ID_XFDI_PANIC_DISABLEREPLICONS      "Ersetzung der Symbole permanent deaktiv~ieren"
-    ID_XFDI_PANIC_REMOVEHOTKEYS         "Alle Tastatu~rkÅrzel entfernen"
+    ID_XFDI_PANIC_REMOVEHOTKEYS         "Alle TastenkÅ~rzel entfernen"
     ID_XFDI_PANIC_DISABLEPAGEMAGE       "~PageMage deaktivieren"
     ID_XFDI_PANIC_DISABLEMULTIMEDIA     "~Multimedia deaktivieren"
     ID_XFDI_PANIC_CONTINUE              "F~ortfahren"
@@ -1147,7 +1147,7 @@ BEGIN
     ID_XSDI_ICON_RESET_BUTTON           "Zu~rÅcksetzen"
     ID_XSDI_ICON_LOCKPOSITION_CB        "Position s~perren"
     ID_XSDI_ICON_TEMPLATE_CB            "S~chablone"
-    ID_XSDI_ICON_HOTKEY_TEXT            "Objekt-TastaturkÅrzel:"
+    ID_XSDI_ICON_HOTKEY_TEXT            "Objekt-TastenkÅrzel:"
     ID_XSDI_ICON_HOTKEY_CLEAR           "~Lîschen"
     ID_XSDI_ICON_HOTKEY_SET             "~Setzen"
     ID_XSDI_ICON_EXTRAS_GROUP           "Extras"
@@ -1176,7 +1176,7 @@ BEGIN
     ID_XSDI_INFO_TITLE                  "Produktinformation"
 
     /* installed classes dialog */
-    ID_XCD_CLASSES_TITLE                "XWorkplace Klassen"
+    ID_XCD_CLASSES_TITLE                "XWorkplace-Klassen"
     ID_XCD_CLASSES_REPLACEMENTS         "Klassenersetzungen"
     ID_XCD_CLASSES_NEW                  "Neue Klassen"
 

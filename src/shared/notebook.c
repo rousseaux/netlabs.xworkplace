@@ -1734,6 +1734,7 @@ APIRET ntbFormatPage(HWND hwndDlg,              // in: dialog frame to work on
                      ULONG cDlgItems)           // in: array item count (NOT array size)
 {
     APIRET arc;
+    SIZEL szlClient;
 
     cmnLoadDialogStrings(paDlgItems, cDlgItems);
 
@@ -1742,8 +1743,14 @@ APIRET ntbFormatPage(HWND hwndDlg,              // in: dialog frame to work on
                               paDlgItems,
                               cDlgItems,
                               cmnQueryDefaultFont(),
-                              DFFL_CREATECONTROLS | DFFL_RESIZEFRAME)))
+                              DFFL_CREATECONTROLS,
+                              &szlClient,
+                              NULL)))
     {
+        // resize the frame
+        dlghResizeFrame(hwndDlg,
+                        &szlClient);
+
         // make Warp 4 notebook buttons and move controls
         // (this was already called in PageInit on WM_INITDLG,
         // but at that point the init callback wasn't called yet...)

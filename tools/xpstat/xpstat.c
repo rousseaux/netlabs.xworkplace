@@ -27,6 +27,8 @@
 
 #include "helpers\comctl.h"
 #include "helpers\cnrh.h"
+#include "helpers\dosh.h"
+#include "helpers\exeh.h"
 #include "helpers\gpih.h"
 #include "helpers\linklist.h"
 #include "helpers\memdebug.h"
@@ -285,7 +287,7 @@ VOID AppendModuleInfo(PXSTRING ppszCurrentInfo,
                     pszVendor = "not available",
                     pszDescr = "not available";
     // get module info
-    if (doshExecOpen(pszModuleName,
+    if (exehOpen(pszModuleName,
                      &pExec)
             == NO_ERROR)
     {
@@ -306,8 +308,8 @@ VOID AppendModuleInfo(PXSTRING ppszCurrentInfo,
             case EXEFORMAT_TEXT_BATCH:
                 pszExeFormat = "Text batch file";
             break;
-            case EXEFORMAT_TEXT_REXX:
-                pszExeFormat = "Text REXX file";
+            case EXEFORMAT_TEXT_CMD:
+                pszExeFormat = "Text command file";
             break;
         }
 
@@ -316,7 +318,7 @@ VOID AppendModuleInfo(PXSTRING ppszCurrentInfo,
         else
             psz32Bits = "no";
 
-        if (doshExecQueryBldLevel(pExec) == NO_ERROR)
+        if (exehQueryBldLevel(pExec) == NO_ERROR)
         {
             if (pExec->pszVendor)
                 pszVendor = pExec->pszVendor;
@@ -338,7 +340,7 @@ VOID AppendModuleInfo(PXSTRING ppszCurrentInfo,
     xstrcat(ppszCurrentInfo, szTemp, 0);
 
     if (pExec)
-        doshExecClose(&pExec);
+        exehClose(&pExec);
 }
 
 /* ******************************************************************

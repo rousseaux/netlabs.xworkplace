@@ -2682,6 +2682,7 @@ static const DLGHITEM dlgObjIconTail[] =
  *      class style flag set.
  *
  *@@added V0.9.16 (2001-10-15) [umoeller]
+ *@@changed V0.9.18 (2002-03-03) [umoeller]: changed ordering
  */
 
 VOID icoFormatIconPage(PNOTEBOOKPAGE pnbp,
@@ -2711,12 +2712,6 @@ VOID icoFormatIconPage(PNOTEBOOKPAGE pnbp,
                 arc = dlghAppendToArray(pArrayIcon,
                                         dlgObjIconTitle,
                                         ARRAYITEMCOUNT(dlgObjIconTitle));
-
-            // icon control fields
-            if ( (!arc) && (flFlags & ICONFL_ICON) )
-                arc = dlghAppendToArray(pArrayIcon,
-                                        dlgObjIconIcon,
-                                        ARRAYITEMCOUNT(dlgObjIconIcon));
 
             if (    (!arc)
                  && (flFlags & (  ICONFL_TEMPLATE
@@ -2751,6 +2746,13 @@ VOID icoFormatIconPage(PNOTEBOOKPAGE pnbp,
                                             dlgObjIconExtrasTail,
                                             ARRAYITEMCOUNT(dlgObjIconExtrasTail));
             }
+
+            // icon control fields
+            // moved these to the bottom V0.9.18 (2002-03-03) [umoeller]
+            if ( (!arc) && (flFlags & ICONFL_ICON) )
+                arc = dlghAppendToArray(pArrayIcon,
+                                        dlgObjIconIcon,
+                                        ARRAYITEMCOUNT(dlgObjIconIcon));
 
             // "Details" button
             if ( (!arc) && (flFlags & ICONFL_DETAILS) )

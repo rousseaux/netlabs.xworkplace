@@ -1691,6 +1691,7 @@ BOOL progSetupArgs(PCSZ pcszParams,
  *
  *@@added V0.9.7 (2000-12-17) [umoeller]
  *@@changed V0.9.12 (2001-05-22) [umoeller]: fixed invalid pointer return
+ *@@changed V0.9.18 (2002-02-27) [umoeller]: added two codepage variables
  */
 
 PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
@@ -1749,11 +1750,21 @@ PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
                                          szTemp,
                                          TRUE)))     // add as first entry
         {
+            // V0.9.18 (2002-02-23) [umoeller]
+            // apparently the WPS also sets these two environment
+            // variables always too
+            appSetEnvironmentVar(&Env,
+                                 "WORKPLACE_PRIMARY_CP=1",      // or 0?
+                                 FALSE);
+            appSetEnvironmentVar(&Env,
+                                 "WORKPLACE_NATIVE=0",          // or 1?
+                                 FALSE);
+
             // rebuild environment
-            arc = appConvertEnvironment(&Env,
-                                        &pszNewEnv,
-                                        NULL);
-            if (arc != NO_ERROR)
+            if (arc = appConvertEnvironment(&Env,
+                                            &pszNewEnv,
+                                            NULL))
+                // error:
                 if (pszNewEnv)
                 {
                     free(pszNewEnv);

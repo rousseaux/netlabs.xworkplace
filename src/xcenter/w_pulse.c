@@ -660,6 +660,7 @@ static CONTROLDEF
                                   1000,
                                   100,
                                   40),
+    * paProcessorColor = NULL,          /* kso: Pointer to an array of colors. Inited on first call. */
 
     OthersGroup = CONTROLDEF_GROUP(
                             NULL,
@@ -707,12 +708,15 @@ static const DLGHITEM
         END_TABLE
     };
 
+static PDLGHITEM    padlgPulsePerProcessor = NULL;  /* kso: Array of processor controls. */
+
 /*
  *@@ PwgtShowSettingsDlg:
  *      shows the pulse widget settings dialog for
  *      setting up the colors.
  *
  *@@added V0.9.16 (2002-01-05) [umoeller]
+ *@@changed V0.9.18 (2002-03-03) [kso]: misc fixes
  */
 
 VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
@@ -743,15 +747,31 @@ VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
                                           dlgPulseFront,
                                           ARRAYITEMCOUNT(dlgPulseFront))))
             {
-                for (ul = 0;
-                     ul < cProcessors;
-                     ul++)
+                //kso: we'll have to make unique CONTROLDEF for each processor...
+                //     do it the first time only, assuming that noone adds cpus while running.
+                if (!paProcessorColor)
                 {
-                    if (arc = dlghAppendToArray(pArray,
-                                                dlgPulsePerProcessor,
-                                                ARRAYITEMCOUNT(dlgPulsePerProcessor)))
-                        break;
+                    paProcessorColor = malloc(  sizeof(ProcessorColor)
+                                              * cProcessors);
+                    padlgPulsePerProcessor = malloc(  sizeof(dlgPulsePerProcessor)
+                                                    * cProcessors);
+                    for (ul = 0;
+                         ul < cProcessors;
+                         ul++)
+                    {
+                        paProcessorColor[ul] = ProcessorColor;
+                        paProcessorColor[ul].usID += ul;
+
+                        memcpy((char *)padlgPulsePerProcessor + sizeof(dlgPulsePerProcessor) * ul,
+                               &dlgPulsePerProcessor[0],
+                               sizeof(dlgPulsePerProcessor));
+                        padlgPulsePerProcessor[(ul * 2) + 1].ulData = (ULONG)&paProcessorColor[ul];
+                    }
                 }
+
+                arc = dlghAppendToArray(pArray,
+                                        padlgPulsePerProcessor,
+                                        ARRAYITEMCOUNT(dlgPulsePerProcessor) * cProcessors);
             }
         }
 
@@ -794,6 +814,7 @@ VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
                 sprintf(sz,
                         pcszCPUXUserColor,
                         ul);
+
                 SubclassAndSetColor(hwndDlg,
                                     1000 + ul,
                                     sz,
@@ -924,6 +945,7 @@ static VOID UnlockData(PWIDGETPRIVATE pPrivate)
  *      a mutex in WIDGETPRIVATE (see LockData()).
  *
  *@@added V0.9.12 (2001-05-20) [umoeller]
+ *@@changed V0.9.18 (2002-03-03) [kso]: misc fixes
  */
 
 static VOID _Optlink fntCollect(PTHREADINFO ptiMyself)
@@ -932,7 +954,7 @@ static VOID _Optlink fntCollect(PTHREADINFO ptiMyself)
     if (pPrivate)
     {
         BOOL    fLocked = FALSE;
-        ULONG   cCurCPU;
+        ULONG   iCPU;
 
         // give this thread a higher-than-regular priority;
         // this way, the "loads" array is always up-to-date,
@@ -965,30 +987,43 @@ static VOID _Optlink fntCollect(PTHREADINFO ptiMyself)
                              && (!(pPrivate->arc = doshPerfGet(pPrivate->pPerfData)))
                            )
                         {
-                            // in the array of loads, move each entry
-                            // one to the front; drop the oldest entry
-                            memcpy(&pPrivate->palIntrs[0],
-                                   &pPrivate->palIntrs[1],
-                                   sizeof(LONG) * (pPrivate->cLoads - 1));
-                            // and update the last entry with the current value
-                            pPrivate->palIntrs[pPrivate->cLoads - 1]
-                                = pPrivate->pPerfData->palIntrs[0];
-
                             // get load for every CPU in the system [bvl]
-                            for (cCurCPU=0;
-                                 cCurCPU < pPrivate->cProcessors;
-                                 cCurCPU++)
+                            for (iCPU = 0;
+                                 iCPU < pPrivate->cProcessors;
+                                 iCPU++)
                             {
+                                PLONG   palCPUIntr = &pPrivate->palIntrs[pPrivate->cLoads * iCPU];
+                                PLONG   palCPULoad = &pPrivate->palLoads[pPrivate->cLoads * iCPU];
+
                                 // in the array of loads, move each entry
                                 // one to the front; drop the oldest entry
-                                memcpy(&pPrivate->palLoads[cCurCPU*pPrivate->cLoads],
-                                       &pPrivate->palLoads[(cCurCPU*pPrivate->cLoads)+1],
+                                #if 0  //kso debug
+                                memcpy(palCPUIntr,
+                                       palCPUIntr + 1,
                                        sizeof(LONG) * (pPrivate->cLoads - 1));
+                                #else
+                                int i;
+                                for (i = 1; i < pPrivate->cLoads; i++)
+                                    palCPUIntr[i - 1] = palCPUIntr[i];
+                                #endif
+                                // and update the last entry with the current value
+                                palCPUIntr[pPrivate->cLoads - 1] = pPrivate->pPerfData->palIntrs[iCPU];
+
+
+                                // in the array of loads, move each entry
+                                // one to the front; drop the oldest entry
+                                #if 0 //kso debug
+                                memcpy(palCPULoad,
+                                       palCPULoad + 1,
+                                       sizeof(LONG) * (pPrivate->cLoads - 1));
+                                #else
+                                for (i = 1; i < pPrivate->cLoads; i++)
+                                    palCPULoad[i - 1] = palCPULoad[i];
+                                #endif
 
                                 // and update the last entry with the current value
-                                pPrivate->palLoads[(pPrivate->cLoads + (pPrivate->cLoads * cCurCPU)) - 1]
-                                    = pPrivate->pPerfData->palLoads[cCurCPU];
-                            } // for cCurCPU
+                                palCPULoad[pPrivate->cLoads - 1] = pPrivate->pPerfData->palLoads[iCPU];
+                            } // for iCPU
                         }
 
                         UnlockData(pPrivate);
@@ -1020,7 +1055,7 @@ static VOID _Optlink fntCollect(PTHREADINFO ptiMyself)
                         // data. However, we should not use DosSleep
                         // because we MUST exit quickly when the
                         // widget gets destroyed...
-                        // the trick is to wait on an event semaphore:
+                        // the trick is to wait on an event semaphore
                         // with a timeout of one second;
                         // this will sleep for a second, but exit
                         // earlier when PwgtDestroy() posts the semaphore
@@ -1271,28 +1306,31 @@ static VOID PwgtUpdateGraph(HWND hwnd,
              && pPrivate->cLoads
            )    // V0.9.14 (2001-07-12) [umoeller]
         {
-            PLONG    palLoad1000 = _alloca(sizeof(LONG) * pPrivate->cProcessors);
-            LONG     lIRQ1000 = pPrivate->pPerfData->palIntrs[0];
-            ULONG    cCurCPU;
+            ULONG    iCPU;
             PSZ      pszTooltipLoc;
 
-            for (cCurCPU = 0;
-                 cCurCPU < pPrivate->cProcessors;
-                 cCurCPU++)
+            for (iCPU = 0;
+                 iCPU < pPrivate->cProcessors;
+                 iCPU++)
             {
+                PLONG   plCurIntr = &pPrivate->palIntrs[pPrivate->cLoads * iCPU];
+                PLONG   plCurLoad = &pPrivate->palLoads[pPrivate->cLoads * iCPU];
+
                 // go thru all values in the "Loads" LONG array
                 for (ptl.x = 0;
                      (    (ptl.x < pPrivate->cLoads)
                        && (ptl.x < rclBmp.xRight)
                      );
-                     ptl.x++)
+                     ptl.x++, plCurIntr++, plCurLoad++)
                 {
-                    ptl.y = 0;
+                    POINTL ptlPrev = ptl;   //kso: we wanted line mode didn't we?
+                    ptlPrev.y = ptl.y = 0;
+                    ptlPrev.x = ptl.x > 0 ? ptl.x - 1 : 0;
 
                     // interrupt load on bottom
                     // IRQ processing only takes place on CPU(0) so we only need
                     // that information ONCE [bvl]
-                    if (pPrivate->palIntrs)
+                    if (pPrivate->palIntrs && iCPU == 0)  //kso: only cpu 0 *currently*!
                     {
                         GpiSetColor(hpsMem,
                                     pPrivate->Setup.lcolGraphIntr);
@@ -1301,36 +1339,32 @@ static VOID PwgtUpdateGraph(HWND hwnd,
 
                         // bvl: this ensures line mode.. if the this is the first item in the load
                         //      start at the bottom, otherwise the previous point
-                        if (ptl.x)
-                            ptl.y += rclBmp.yTop * pPrivate->palIntrs[ptl.x-1] / 1000;
+                        ptlPrev.y = ptl.x > 0 ? rclBmp.yTop * plCurIntr[-1] / 1000 : 0;
 
-                        GpiMove(hpsMem, &ptl);
-                        ptl.y += rclBmp.yTop * pPrivate->palIntrs[ptl.x] / 1000;
+                        GpiMove(hpsMem, &ptlPrev);
+                        ptl.y = rclBmp.yTop * *plCurIntr / 1000;
                         GpiLine(hpsMem, &ptl);
                     }
 
 
-                    // LOAD Information is available for every CPU so itterate over it
-                    palLoad1000[cCurCPU] = pPrivate->pPerfData->palLoads[cCurCPU];
                     // scan the CPU loads
                     if (pPrivate->palLoads)
                     {
                         if (pPrivate->Setup.palcolGraph)
                             GpiSetColor(hpsMem,
-                                        pPrivate->Setup.palcolGraph[cCurCPU]);
+                                        pPrivate->Setup.palcolGraph[iCPU]);
 
                         // bvl: this ensures line mode.. if the this is the first item in the load
                         //      start at the bottom, otherwise the previous point
-                        if (ptl.x != 0)
-                            ptl.y += rclBmp.yTop * pPrivate->palLoads[(pPrivate->cLoads*cCurCPU) + ptl.x-1] / 1000;
+                        ptlPrev.y += ptl.x > 0 ? rclBmp.yTop * plCurLoad[-1] / 1000 : 0;
 
-                        GpiMove(hpsMem, &ptl);
-                        ptl.y = rclBmp.yTop * pPrivate->palLoads[(pPrivate->cLoads*cCurCPU) + ptl.x] / 1000;
+                        GpiMove(hpsMem, &ptlPrev);
+                        ptl.y += rclBmp.yTop * *plCurLoad / 1000;
                         GpiLine(hpsMem, &ptl);
                     }
 
                 } // end if (fLocked)
-            } // for cCurCPU
+            } // for iCPU
 
             // update the tooltip text V0.9.13 (2001-06-21) [umoeller]
 
@@ -1340,24 +1374,25 @@ static VOID PwgtUpdateGraph(HWND hwnd,
                                      // "CPU count: %d"            // bvl: show CPU count
                                      // "\nCPU 0 IRQ: %lu%c%lu%c",
                                      pPrivate->cProcessors,
-                                     lIRQ1000 / 10,          // only CPU [0] does IRQ management
+                                     pPrivate->pPerfData->palIntrs[0] / 10, // only CPU [0] does IRQ management
+                                                                            //kso: not really true if you enable APIC mode or switch interrupt focus..
                                      pCountrySettings->cDecimal,
-                                     lIRQ1000 % 10,
+                                     pPrivate->pPerfData->palIntrs[0] % 10,
                                      '%'
                                      );
-            for (cCurCPU = 0;
-                 cCurCPU < pPrivate->cProcessors;
-                 cCurCPU++)
+            for (iCPU = 0;
+                 iCPU < pPrivate->cProcessors;
+                 iCPU++)
             {
                 pszTooltipLoc += sprintf(pszTooltipLoc, // @@todo localize
                                          cmnGetString(ID_CRSI_PWGT_TOOLTIP2),
                                          // "\nCPU %d User: %lu%c%lu%c",
-                                         cCurCPU,
-                                         palLoad1000[cCurCPU] / 10,
+                                         iCPU,
+                                         pPrivate->pPerfData->palLoads[iCPU] / 10,
                                          pCountrySettings->cDecimal,
-                                         palLoad1000[cCurCPU] % 10,
+                                         pPrivate->pPerfData->palLoads[iCPU] % 10,
                                          '%');
-            } // for cCurCPU
+            } // for iCPU
 
             if (pPrivate->fTooltipShowing)
                 // tooltip currently showing:
@@ -1388,6 +1423,7 @@ static VOID PwgtUpdateGraph(HWND hwnd,
  *@@changed V0.9.9 (2001-03-14) [umoeller]: added interrupts graph
  *@@changed V0.9.12 (2001-05-20) [umoeller]: added mutex
  *@@changed V0.9.16 (2002-01-05) [umoeller]: added multiple CPUs support
+ *@@changed V0.9.18 (2002-03-03) [kso]: misc fixes
  */
 
 static VOID PwgtPaint2(HWND hwnd,
@@ -1442,7 +1478,7 @@ static VOID PwgtPaint2(HWND hwnd,
             PCOUNTRYSETTINGS pCountrySettings = (PCOUNTRYSETTINGS)pWidget->pGlobals->pCountrySettings;
             POINTL      ptlBmpDest;
             PULONG      paulLoad1000;
-            ULONG       cCurCPU;
+            ULONG       iCPU;
             PSZ         pszPaintLoc;
 
             // allocate array for strings
@@ -1458,42 +1494,49 @@ static VOID PwgtPaint2(HWND hwnd,
                 // in the string, display the total load
                 // (busy plus interrupt) V0.9.9 (2001-03-14) [umoeller]
                 // use for loop to process all CPU's [bvl]
-                for (cCurCPU = 0;
-                     cCurCPU < pPrivate->cProcessors;
-                     cCurCPU++)
+                for (iCPU = 0;
+                     iCPU < pPrivate->cProcessors;
+                     iCPU++)
                 {
                     if (pPrivate->palLoads)
-                        paulLoad1000[cCurCPU] = pPrivate->pPerfData->palLoads[cCurCPU];
+                        paulLoad1000[iCPU] = pPrivate->pPerfData->palLoads[iCPU];
                     if (pPrivate->palIntrs)
-                        paulLoad1000[cCurCPU] += pPrivate->pPerfData->palIntrs[cCurCPU];
-                } // for cCurCPU
+                        paulLoad1000[iCPU] += pPrivate->pPerfData->palIntrs[iCPU];
+                } // for iCPU
+
+                //// everything below is safe, so unlock
+                //UnlockData(pPrivate);
+                //fLocked = FALSE;
+
+                if (pPrivate->pBitmap)
+                {
+                    ptlBmpDest.x = rclWin.xLeft + ulBorder;
+                    ptlBmpDest.y = rclWin.yBottom + ulBorder;
+                    // now paint graph from bitmap
+                    WinDrawBitmap(hps,
+                                  pPrivate->pBitmap->hbm,
+                                  NULL,     // entire bitmap
+                                  &ptlBmpDest,
+                                  0, 0,
+                                  DBM_NORMAL);
+                }
 
                 // everything below is safe, so unlock
                 UnlockData(pPrivate);
                 fLocked = FALSE;
 
-                ptlBmpDest.x = rclWin.xLeft + ulBorder;
-                ptlBmpDest.y = rclWin.yBottom + ulBorder;
-                // now paint graph from bitmap
-                WinDrawBitmap(hps,
-                              pPrivate->pBitmap->hbm,
-                              NULL,     // entire bitmap
-                              &ptlBmpDest,
-                              0, 0,
-                              DBM_NORMAL);
-
                 pszPaintLoc = szPaint;
-                for (cCurCPU = 0;
-                     cCurCPU < pPrivate->cProcessors;
-                     cCurCPU++)
+                for (iCPU = 0;
+                     iCPU < pPrivate->cProcessors;
+                     iCPU++)
                 {
                     pszPaintLoc += sprintf(pszPaintLoc,
                                            "%lu%c%lu%c / ",
-                                           paulLoad1000[cCurCPU] / 10,
+                                           paulLoad1000[iCPU] / 10,
                                            pCountrySettings->cDecimal,
-                                           paulLoad1000[cCurCPU] % 10,
+                                           paulLoad1000[iCPU] % 10,
                                            '%');
-                } // for cCurCPU
+                } // for iCPU
 
                 // delete trailing / if it was the last CPU
                 if (ulPaintLen = pszPaintLoc - szPaint)
@@ -1652,6 +1695,7 @@ static VOID PwgtNewDataAvailable(HWND hwnd)
  *@@added V0.9.7 (2000-12-02) [umoeller]
  *@@changed V0.9.9 (2001-03-14) [umoeller]: added interrupts graph
  *@@changed V0.9.13 (2001-06-21) [umoeller]: changed XCM_SAVESETUP call for tray support
+ *@@changed V0.9.18 (2002-03-03) [kso]: misc fixes
  */
 
 static VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
@@ -1693,52 +1737,22 @@ static VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
                             // since the array is cx items wide...
                             // so reallocate the array, but keep past
                             // values
-                            ULONG ulNewClientCX = pswpNew->cx - 2;
-                            PLONG palNewLoads = (PLONG)malloc(sizeof(LONG) * ulNewClientCX);
-
-                            if (ulNewClientCX > pPrivate->cLoads)
+                            int     iCPU;
+                            ULONG   ulNewClientCX = pswpNew->cx > 2 ? pswpNew->cx - 2 : 1;
+                            ULONG   cDelta = abs(pPrivate->cLoads - ulNewClientCX);
+                            PLONG   palNewLoads = (PLONG)malloc(sizeof(LONG) * ulNewClientCX
+                                                                * pPrivate->cProcessors);
+                            for (iCPU = 0; iCPU < pPrivate->cProcessors; iCPU++)
                             {
-                                // window has become wider:
-                                // fill the front with zeroes
-                                memset(palNewLoads,
-                                       0,
-                                       (ulNewClientCX - pPrivate->cLoads) * sizeof(LONG));
-                                // and copy old values after that
-                                memcpy(&palNewLoads[(ulNewClientCX - pPrivate->cLoads)],
-                                       pPrivate->palLoads,
-                                       pPrivate->cLoads * sizeof(LONG));
-                            }
-                            else
-                            {
-                                // window has become smaller:
-                                // e.g. ulnewClientCX = 100
-                                //      pPrivate->cLoads = 200
-                                // drop the first items
-                                // ULONG ul = 0;
-                                memcpy(palNewLoads,
-                                       &pPrivate->palLoads[pPrivate->cLoads - ulNewClientCX],
-                                       ulNewClientCX * sizeof(LONG));
-                            }
-
-                            free(pPrivate->palLoads);
-                            pPrivate->palLoads = palNewLoads;
-
-                            // do the same for the interrupt load
-                            if (pPrivate->palIntrs)
-                            {
-                                PLONG palNewIntrs = (PLONG)malloc(sizeof(LONG) * ulNewClientCX);
-
+                                PLONG   palNew = palNewLoads + iCPU * ulNewClientCX;
+                                PLONG   palOld  = pPrivate->palLoads + iCPU * pPrivate->cLoads;
                                 if (ulNewClientCX > pPrivate->cLoads)
                                 {
                                     // window has become wider:
                                     // fill the front with zeroes
-                                    memset(palNewIntrs,
-                                           0,
-                                           (ulNewClientCX - pPrivate->cLoads) * sizeof(LONG));
+                                    memset(palNew, 0, cDelta * sizeof(LONG));
                                     // and copy old values after that
-                                    memcpy(&palNewIntrs[(ulNewClientCX - pPrivate->cLoads)],
-                                           pPrivate->palIntrs,
-                                           pPrivate->cLoads * sizeof(LONG));
+                                    memcpy(palNew + cDelta, palOld, pPrivate->cLoads * sizeof(LONG));
                                 }
                                 else
                                 {
@@ -1746,11 +1760,40 @@ static VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                     // e.g. ulnewClientCX = 100
                                     //      pPrivate->cLoads = 200
                                     // drop the first items
-                                    // ULONG ul = 0;
-                                    memcpy(palNewIntrs,
-                                           &pPrivate->palIntrs[pPrivate->cLoads - ulNewClientCX],
-                                           ulNewClientCX * sizeof(LONG));
+                                    memcpy(palNew, palOld + cDelta, ulNewClientCX * sizeof(LONG));
                                 }
+                            } /* for iCPU */
+
+                            free(pPrivate->palLoads);
+                            pPrivate->palLoads = palNewLoads;
+
+
+                            // do the same for the interrupt load
+                            if (pPrivate->palIntrs)
+                            {
+                                PLONG palNewIntrs = (PLONG)malloc(sizeof(LONG) * ulNewClientCX
+                                                                  * pPrivate->cProcessors);
+                                for (iCPU = 0; iCPU < pPrivate->cProcessors; iCPU++)
+                                {
+                                    PLONG   palNew = palNewIntrs + iCPU * ulNewClientCX;
+                                    PLONG   palOld  = pPrivate->palIntrs + iCPU * pPrivate->cLoads;
+                                    if (ulNewClientCX > pPrivate->cLoads)
+                                    {
+                                        // window has become wider:
+                                        // fill the front with zeroes
+                                        memset(palNew, 0, cDelta * sizeof(LONG));
+                                        // and copy old values after that
+                                        memcpy(palNew + cDelta, palOld, pPrivate->cLoads * sizeof(LONG));
+                                    }
+                                    else
+                                    {
+                                        // window has become smaller:
+                                        // e.g. ulnewClientCX = 100
+                                        //      pPrivate->cLoads = 200
+                                        // drop the first items
+                                        memcpy(palNew, palOld + cDelta, ulNewClientCX * sizeof(LONG));
+                                    }
+                                } /* for iCPU */
 
                                 free(pPrivate->palIntrs);
                                 pPrivate->palIntrs = palNewIntrs;
