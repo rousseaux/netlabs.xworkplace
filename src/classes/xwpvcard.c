@@ -59,6 +59,13 @@
 #define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
+
+#define INCL_WINSTATICS
+#define INCL_WINBUTTONS
+#define INCL_WINENTRYFIELDS
+#define INCL_WINLISTBOXES
+#define INCL_WINMLE
+#define INCL_WINSTDCNR
 #include <os2.h>
 
 // C library headers
@@ -69,12 +76,16 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\cnrh.h"               // container helper routines
+#include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
+#include "helpers\vcard.h"              // vCard parsing
+#include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
@@ -84,343 +95,733 @@
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
+#include "shared\notebook.h"            // generic XWorkplace notebook handling
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
 
 /* ******************************************************************
  *
- *   vCard parser
+ *   Shared stuff
  *
  ********************************************************************/
 
-typedef struct _PROPERTY
-{
-    XSTRING     strProperty,
-                strParameters,
-                strValue;
+#define TEXT_WIDTH  120
+#define EF_WIDTH    200
+#define EF_HEIGHT   -1
 
-    PLINKLIST   pllSubList;
-        // if != NULL, nested PROPERTY structs
-} PROPERTY, *PPROPERTY;
+#define TEXT_AND_ENTRYFIELD(varname, string, idbase) \
+            varname ## Text = CONTROLDEF_TEXT(string, idbase ## _TEXT, TEXT_WIDTH, -1), \
+            varname ## EF = CONTROLDEF_ENTRYFIELD_RO(NULL, idbase ## _EF, EF_WIDTH, EF_HEIGHT)
 
 /*
- *@@ vcfFree:
+ *@@ SetEFText:
  *
  */
 
-APIRET vcfFree(PLINKLIST *ppll)
+VOID SetEFText(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+               ULONG ulID,
+               PCSZ pcsz)
 {
-    PLINKLIST pll;
-    if (    (!ppll)
-         || (!(pll = *ppll))
-       )
-        return ERROR_INVALID_PARAMETER;
-    else
+    HWND hwnd;
+    if (hwnd = WinWindowFromID(pcnbp->hwndDlgPage, ulID))
     {
-        PLISTNODE pNode = lstQueryFirstNode(pll);
-        while (pNode)
-        {
-            PPROPERTY pProp = (PPROPERTY)pNode->pItemData;
-            xstrClear(&pProp->strProperty);
-            xstrClear(&pProp->strParameters);
-            xstrClear(&pProp->strValue);
+        winhSetEntryFieldLimit(hwnd, 1000);
+        WinSetWindowText(hwnd, (PSZ)pcsz);
+    }
+}
 
-            pNode = pNode->pNext;
+/* ******************************************************************
+ *
+ *   "Summary" page
+ *
+ ********************************************************************/
+
+#define ID_XSDI_VCARD_SUMMARY_NAME_TEXT        32000
+#define ID_XSDI_VCARD_SUMMARY_NAME_EF          32001
+#define ID_XSDI_VCARD_SUMMARY_TITLE_TEXT       32002
+#define ID_XSDI_VCARD_SUMMARY_TITLE_EF         32003
+#define ID_XSDI_VCARD_SUMMARY_ADDRESS_TEXT     32004
+#define ID_XSDI_VCARD_SUMMARY_ADDRESS_EF       32005
+#define ID_XSDI_VCARD_SUMMARY_EMAIL_TEXT       32006
+#define ID_XSDI_VCARD_SUMMARY_EMAIL_EF         32007
+
+static CONTROLDEF
+    TEXT_AND_ENTRYFIELD(SummaryName,
+                        "~Name:",
+                        ID_XSDI_VCARD_SUMMARY_NAME),
+    TEXT_AND_ENTRYFIELD(SummaryTitle,
+                        "~Title:",
+                        ID_XSDI_VCARD_SUMMARY_TITLE),
+    SummaryAddressText = CONTROLDEF_TEXT(
+                            "~Address:",
+                            ID_XSDI_VCARD_SUMMARY_ADDRESS_TEXT,
+                            TEXT_WIDTH,
+                            -1),
+    SummaryAddressEF = CONTROLDEF_MLE(
+                            NULL,
+                            ID_XSDI_VCARD_SUMMARY_ADDRESS_EF,
+                            EF_WIDTH,
+                            70),
+    TEXT_AND_ENTRYFIELD(SummaryEmail,
+                        "~E-Mail:",
+                        ID_XSDI_VCARD_SUMMARY_EMAIL);
+
+static const DLGHITEM dlgSummary[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(ROW_VALIGN_CENTER),
+                CONTROL_DEF(&SummaryNameText),
+                CONTROL_DEF(&SummaryNameEF),
+            START_ROW(ROW_VALIGN_CENTER),
+                CONTROL_DEF(&SummaryTitleText),
+                CONTROL_DEF(&SummaryTitleEF),
+            START_ROW(ROW_VALIGN_CENTER),
+                CONTROL_DEF(&SummaryAddressText),
+                CONTROL_DEF(&SummaryAddressEF),
+            START_ROW(ROW_VALIGN_CENTER),
+                CONTROL_DEF(&SummaryEmailText),
+                CONTROL_DEF(&SummaryEmailEF),
+            START_ROW(0),
+                CONTROL_DEF(&G_UndoButton),         // notebook.c
+                CONTROL_DEF(&G_DefaultButton),      // notebook.c
+                CONTROL_DEF(&G_HelpButton),         // notebook.c
+        END_TABLE
+    };
+
+/*
+ *@@ SetStringOrArray:
+ *
+ */
+
+VOID SetStringOrArray(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+                      ULONG ulID,
+                      PCSZ pcszReal,
+                      PCSZ *papcsz,
+                      CHAR cSeparator,
+                      ULONG c,
+                      PULONG paulOrder)
+{
+    PCSZ pcszTemp = NULL;
+    XSTRING strTemp;
+    xstrInit(&strTemp, 0);
+
+    if (pcszReal)
+        pcszTemp = pcszReal;
+    else if (papcsz)
+    {
+        // if we can't find a formatted name, let's
+        // compose one ourselves
+        ULONG   ul;
+
+        for (ul = 0;
+             ul < c;
+             ul++)
+        {
+            if (papcsz[paulOrder[ul]])
+            {
+                if (strTemp.ulLength)
+                    xstrcatc(&strTemp, cSeparator);
+                xstrcat(&strTemp, papcsz[paulOrder[ul]], 0);
+            }
         }
 
-        lstFree(ppll);
+        pcszTemp = strTemp.psz;
     }
 
-    return NO_ERROR;
+    SetEFText(pcnbp,
+              ulID,
+              pcszTemp);
+    xstrClear(&strTemp);
 }
 
 /*
- *@@ vcfFindProperty:
+ *@@ vcfSummaryInitPage:
+ *      "vCard" page notebook callback function (notebook.c).
  *
- *      A property is the definition of an individual attribute describing
- *      the vCard. A property takes the following form:
- +
- +          PropertyName [';' PropertyParameters] ':'  PropertyValue
- +
- *      as shown in the following example:
- +
- +          TEL;HOME:+1-919-555-1234
- +
- *      A property takes the form of one or more lines of text. The
- *      specification of property names and property parameters is
- *      case insensitive.
- *
- *      The property name can be one of a set of pre-defined strings.
- *      The property name, along with an optional grouping label,
- *      must appear as the first characters on a line.
- *      In the previous example, "TEL" is the name of the Telephone
- *      Number property.
- *
- *      Property values are specified as strings. In the previous
- *      example, "+1-919-555-1234" is the formatted value for the
- *      Telephone Number property.
- *
- *      A property value can be further qualified with a property
- *      parameter expression. Property parameter expressions are
- *      delimited from the property name with a semicolon.
- *      A semicolon in a property parameter value must be escaped
- *      with a backslash character. The property parameter expressions
- *      are specified as either a name=value or a value string. The
- *      value string can be specified alone in those cases where the
- *      value is unambiguous. For example a complete property parameter
- *      specification might be:
- +
- +      NOTE;ENCODING=QUOTED-PRINTABLE:Don't remember to order Girl=
- +          Scout cookies from Stacey today!
- +
- *      A valid short version of the same property parameter
- *      specification might be:
- +
- +      NOTE;QUOTED-PRINTABLE:Don t remember to order Girl=
- +          Scout cookies from Stacey today!
- *
- *      Continuation across several lines is possible by starting
- *      continuation lines with spaces. During parsing, any sequence
- *      of CRLF followed immediately by spaces is considered a
- *      continuation and will be removed in the returned value.
- *
- *      Standard properties:
- *
- *      --  FN: formatted name (what is displayed as the name).
- *
- *      --  N: structured name (family name;
- *                              given name;
- *                              addtl. names;
- *                              name prefix;
- *                              name suffix)
- *
- *          e.g.    N:Public;John;Quinlan;Mr.;Esq.
- *                  N:Veni, Vidi, Vici;The Restaurant.
- *
- *      --  PHOTO: photo of vCard's owner
- *
- +              PHOTO;VALUE=URL:file:///jqpublic.gif
- +
- +              PHOTO;ENCODING=BASE64;TYPE=GIF:
- +                  R0lGODdhfgA4AOYAAAAAAK+vr62trVIxa6WlpZ+fnzEpCEpzlAha/0Kc74+PjyGM
- +                  SuecKRhrtX9/fzExORBSjCEYCGtra2NjYyF7nDGE50JrhAg51qWtOTl7vee1MWu1
- +                  50o5e3PO/3sxcwAx/4R7GBgQOcDAwFoAQt61hJyMGHuUSpRKIf8A/wAY54yMjHtz
- *
- *      --  BDAY: birthday
- +
- +              BDAY:19950415
- +
- +              BDAY:1995-04-15
- *
- *      --  ADR: delivery address (compound: Post Office Address;
- *                                           Extended Address;
- *                                           Street;
- *                                           Locality;
- *                                           Region;
- *                                           Postal Code;
- *                                           Country)
- +
- +              ADR;DOM;HOME:P.O. Box 101;Suite 101;123 Main Street;Any Town;CA;91921-1234;
- *
- *      --  LABEL: delivery label (formatted)
- *
- *      --  TEL: telephone
- *
- *      --  EMAIL
- *
- *      --  MAILER: email software used by individual
- *
- *      --  TZ: timezone
- *
- *      --  GEO: geographic position
- *
- *      --  TITLE: job title etc.
- *
- *      --  ROLE: business role
- *
- *      --  LOGO: company logo or something
- *
- *      --  ORG: organization name
- *
- *      --  NOTE: a comment
- *
- *      --  REV: when vCard was last modified
- *
- *      --  SOUND: sound data
- *
- *      --  URL: where to find up-to-date information
- *
- *      --  UID: unique vCard identifier
- *
- *      --  VERSION: vCard version info (2.1)
- *
- *      --  KEY: public key
- *
- *      --  X-*: extension
  */
 
-APIRET vcfTokenize(PSZ *ppszInput,
-                   PLINKLIST *ppllProperties)      // out: PROPERTY list items
+VOID vcfSummaryInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+                        ULONG flFlags)                // CBI_* flags (notebook.h)
 {
-    PSZ         pLineThis = *ppszInput;
-    ULONG       cbPropertyName;
-    APIRET      arc = NO_ERROR;
-    PLINKLIST   pList;
-    ULONG       ul = 0;
-    PXSTRING    pstrPrevValue = NULL;
-
-    if (    (!ppszInput)
-         || (!(*ppszInput))
-         || (!ppllProperties)
-       )
-        return (ERROR_INVALID_PARAMETER);
-
-    pList = lstCreate(FALSE);
-
-    while (TRUE)
+    if (flFlags & CBI_INIT)
     {
-        PSZ     pNextEOL = strhFindEOL(pLineThis, NULL);    // never NULL
+        ntbFormatPage(pcnbp->hwndDlgPage,
+                      dlgSummary,
+                      ARRAYITEMCOUNT(dlgSummary));
+    }
 
-        if (*pLineThis == ' ')
+    if (flFlags & CBI_SET)
+    {
+        XWPVCardData *somThis = XWPVCardGetData(pcnbp->somSelf);
+        PVCARD      pvc;
+        APIRET      arc = NO_ERROR;
+        CHAR        sz[CCHMAXPATH];
+
+        if (!_pvCard)
+            if (_wpQueryFilename(pcnbp->somSelf, sz, TRUE))
+                arc = vcfRead(sz, (PVCARD*)&_pvCard);
+
+        if (pvc = (PVCARD)_pvCard)
         {
-            // continuation from previous line:
-            // append to previous value string, if we had one
-            if (!pstrPrevValue)
+            ULONG   aulFormattedNameOrder[] =
+                {
+                    VCF_VALUE_INDEX_N_PREFIX,
+                    VCF_VALUE_INDEX_N_GIVEN,
+                    VCF_VALUE_INDEX_N_ADDITIONAL,
+                    VCF_VALUE_INDEX_N_FAMILY,
+                    VCF_VALUE_INDEX_N_SUFFIX
+                },
+                    aulAddressOrder[] =
+                {
+                    VCF_VALUE_INDEX_ADR_POSTOFFICE,
+                    VCF_VALUE_INDEX_ADR_EXTENDED,
+                    VCF_VALUE_INDEX_ADR_STREET,
+                    VCF_VALUE_INDEX_ADR_LOCALITY,
+                    VCF_VALUE_INDEX_ADR_REGION,
+                    VCF_VALUE_INDEX_ADR_POSTALCODE,
+                    VCF_VALUE_INDEX_ADR_COUNTRY
+                };
+
+            SetStringOrArray(pcnbp,
+                             ID_XSDI_VCARD_SUMMARY_NAME_EF,
+                             pvc->pcszFormattedName,
+                             pvc->apcszName,
+                             ' ',
+                             ARRAYITEMCOUNT(aulFormattedNameOrder),
+                             aulFormattedNameOrder);
+
+            SetEFText(pcnbp,
+                      ID_XSDI_VCARD_SUMMARY_TITLE_EF,
+                      pvc->pcszJobTitle);
+
+            SetStringOrArray(pcnbp,
+                             ID_XSDI_VCARD_SUMMARY_ADDRESS_EF,
+                             (pvc->cLabels)
+                                ? pvc->paLabels[0].pcszLabel
+                                : NULL,
+                             (pvc->cDeliveryAddresses)
+                                ? pvc->paDeliveryAddresses[0].apcszAddress
+                                : NULL,
+                             '\n',
+                             ARRAYITEMCOUNT(aulAddressOrder),
+                             aulAddressOrder);
+
+            SetEFText(pcnbp,
+                      ID_XSDI_VCARD_SUMMARY_EMAIL_EF,
+                      pvc->pcszEmail);
+        }
+    }
+}
+/* ******************************************************************
+ *
+ *   "Name" page
+ *
+ ********************************************************************/
+
+#define ID_XSDI_VCARD_PERS_NAMEFIELDS_GROUP      30002
+#define ID_XSDI_VCARD_PERS_FAMILY_TEXT           30003
+#define ID_XSDI_VCARD_PERS_FAMILY_EF             30004
+#define ID_XSDI_VCARD_PERS_GIVEN_TEXT            30005
+#define ID_XSDI_VCARD_PERS_GIVEN_EF              30006
+#define ID_XSDI_VCARD_PERS_ADDITIONAL_TEXT       30007
+#define ID_XSDI_VCARD_PERS_ADDITIONAL_EF         30008
+#define ID_XSDI_VCARD_PERS_PREFIX_TEXT           30009
+#define ID_XSDI_VCARD_PERS_PREFIX_EF             30010
+#define ID_XSDI_VCARD_PERS_SUFFIX_TEXT           30011
+#define ID_XSDI_VCARD_PERS_SUFFIX_EF             30012
+
+static CONTROLDEF
+    NameFieldsGroup = CONTROLDEF_GROUP(
+                            "Name fields",
+                            ID_XSDI_VCARD_PERS_NAMEFIELDS_GROUP,
+                            -1,
+                            -1),
+    TEXT_AND_ENTRYFIELD(NameFamily,
+                        "~Family name:",
+                        ID_XSDI_VCARD_PERS_FAMILY),
+    TEXT_AND_ENTRYFIELD(NameGiven,
+                        "~Given name:",
+                        ID_XSDI_VCARD_PERS_GIVEN),
+    TEXT_AND_ENTRYFIELD(NameAdditional,
+                        "A~dditional names:",
+                        ID_XSDI_VCARD_PERS_ADDITIONAL),
+    TEXT_AND_ENTRYFIELD(NamePrefix,
+                        "Name ~prefix",
+                        ID_XSDI_VCARD_PERS_PREFIX),
+    TEXT_AND_ENTRYFIELD(NameSuffix,
+                        "Name su~ffix:",
+                        ID_XSDI_VCARD_PERS_SUFFIX);
+
+static const DLGHITEM dlgName[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(0),
+                START_GROUP_TABLE(&NameFieldsGroup),
+                    START_ROW(0),
+                        START_ROW(ROW_VALIGN_CENTER),
+                           CONTROL_DEF(&NamePrefixText),
+                           CONTROL_DEF(&NamePrefixEF),
+                        START_ROW(ROW_VALIGN_CENTER),
+                           CONTROL_DEF(&NameGivenText),
+                           CONTROL_DEF(&NameGivenEF),
+                        START_ROW(ROW_VALIGN_CENTER),
+                           CONTROL_DEF(&NameAdditionalText),
+                           CONTROL_DEF(&NameAdditionalEF),
+                        START_ROW(ROW_VALIGN_CENTER),
+                           CONTROL_DEF(&NameFamilyText),
+                           CONTROL_DEF(&NameFamilyEF),
+                        START_ROW(ROW_VALIGN_CENTER),
+                           CONTROL_DEF(&NameSuffixText),
+                           CONTROL_DEF(&NameSuffixEF),
+                END_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&G_UndoButton),         // notebook.c
+                CONTROL_DEF(&G_DefaultButton),      // notebook.c
+                CONTROL_DEF(&G_HelpButton),         // notebook.c
+        END_TABLE
+    };
+
+/*
+ *@@ vcfNameInitPage:
+ *      "vCard" page notebook callback function (notebook.c).
+ *
+ */
+
+VOID vcfNameInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+                     ULONG flFlags)                // CBI_* flags (notebook.h)
+{
+    if (flFlags & CBI_INIT)
+    {
+        ntbFormatPage(pcnbp->hwndDlgPage,
+                      dlgName,
+                      ARRAYITEMCOUNT(dlgName));
+    }
+
+    if (flFlags & CBI_SET)
+    {
+        XWPVCardData *somThis = XWPVCardGetData(pcnbp->somSelf);
+        PVCARD      pvc;
+        APIRET      arc = NO_ERROR;
+        CHAR        sz[CCHMAXPATH];
+
+        if (!_pvCard)
+            if (_wpQueryFilename(pcnbp->somSelf, sz, TRUE))
+                arc = vcfRead(sz, (PVCARD*)&_pvCard);
+
+        if (pvc = (PVCARD)_pvCard)
+        {
+            ULONG   aulIDs[] =
+                {
+                     ID_XSDI_VCARD_PERS_FAMILY_EF,
+                     ID_XSDI_VCARD_PERS_GIVEN_EF,
+                     ID_XSDI_VCARD_PERS_ADDITIONAL_EF,
+                     ID_XSDI_VCARD_PERS_PREFIX_EF,
+                     ID_XSDI_VCARD_PERS_SUFFIX_EF,
+                },
+                    ul;
+
+            for (ul = 0;
+                 ul < ARRAYITEMCOUNT(aulIDs);
+                 ul++)
             {
-                arc = ERROR_BAD_FORMAT;
-                break;
-            }
-            else
-            {
-                // skip the spaces
-                PSZ p = pLineThis + 1;
-                while (*p == ' ')
-                    p++;
-                if (*p != '\n')
-                    // line not empty:
-                    xstrcat(pstrPrevValue,
-                            p - 1,      // add one space always!
-                            pNextEOL - p + 1);
+                SetEFText(pcnbp, aulIDs[ul],
+                                  (PSZ)pvc->apcszName[ul]);
             }
         }
-        else
-        {
-            if (!strnicmp(pLineThis,
-                          "END:VCARD",
-                          9))
-                // end of this vCard:
-                return NO_ERROR;
-            else
-            {
-                PSZ pNextColon = strchr(pLineThis, ':');        // can be NULL
-                if (!pNextColon)
-                    return ERROR_BAD_FORMAT;
+    }
+}
 
-                if (    (pNextColon < pNextEOL)
-                     && (*pLineThis != '\n')       // not empty line
+/* ******************************************************************
+ *
+ *   "Phone numbers" page
+ *
+ ********************************************************************/
+
+#define ID_XSDI_VCARD_PHONE_LISTBOX         33000
+#define ID_XSDI_VCARD_PHONE_GROUP           33001
+#define ID_XSDI_VCARD_PHONE_NUMBER_TEXT     33002
+#define ID_XSDI_VCARD_PHONE_NUMBER_EF       33003
+#define ID_XSDI_VCARD_PHONE_PREF            33004
+#define ID_XSDI_VCARD_PHONE_WORK            33005
+#define ID_XSDI_VCARD_PHONE_HOME            33006
+#define ID_XSDI_VCARD_PHONE_VOICE           33007
+#define ID_XSDI_VCARD_PHONE_FAX             33008
+#define ID_XSDI_VCARD_PHONE_MSG             33009
+#define ID_XSDI_VCARD_PHONE_CELL            33010
+#define ID_XSDI_VCARD_PHONE_PAGER           33011
+#define ID_XSDI_VCARD_PHONE_BBS             33012
+#define ID_XSDI_VCARD_PHONE_MODEM           33013
+#define ID_XSDI_VCARD_PHONE_CAR             33014
+#define ID_XSDI_VCARD_PHONE_ISDN            33015
+#define ID_XSDI_VCARD_PHONE_VIDEO           33016
+
+
+static CONTROLDEF
+    PhoneLB = CONTROLDEF_LISTBOX(
+                            ID_XSDI_VCARD_PHONE_LISTBOX,
+                            60,
+                            200),
+    PhoneGroup = CONTROLDEF_GROUP(
+                            "Current phone number settings",
+                            ID_XSDI_VCARD_PHONE_GROUP,
+                            -1,
+                            -1),
+    TEXT_AND_ENTRYFIELD(PhoneNumber,
+                        "~Number:",
+                        ID_XSDI_VCARD_PHONE_NUMBER),
+    PhoneCB_PREF = CONTROLDEF_AUTOCHECKBOX(
+                        "Preferred",
+                        ID_XSDI_VCARD_PHONE_PREF, -1, -1), // preferred no.
+    PhoneCB_WORK = CONTROLDEF_AUTOCHECKBOX(
+                        "Work",
+                        ID_XSDI_VCARD_PHONE_WORK, -1, -1), // work no.
+    PhoneCB_HOME = CONTROLDEF_AUTOCHECKBOX(
+                        "Home",
+                        ID_XSDI_VCARD_PHONE_HOME, -1, -1), // home no.
+    PhoneCB_VOICE = CONTROLDEF_AUTOCHECKBOX(
+                        "Voice",
+                        ID_XSDI_VCARD_PHONE_VOICE, -1, -1), // voice no. (default)
+    PhoneCB_FAX = CONTROLDEF_AUTOCHECKBOX(
+                        "Fax",
+                        ID_XSDI_VCARD_PHONE_FAX, -1, -1), // fax no.
+    PhoneCB_MSG = CONTROLDEF_AUTOCHECKBOX(
+                        "Messaging",
+                        ID_XSDI_VCARD_PHONE_MSG, -1, -1), // messaging service
+    PhoneCB_CELL = CONTROLDEF_AUTOCHECKBOX(
+                        "Cellular",
+                        ID_XSDI_VCARD_PHONE_CELL, -1, -1), // cell phone
+    PhoneCB_PAGER = CONTROLDEF_AUTOCHECKBOX(
+                        "Pager",
+                        ID_XSDI_VCARD_PHONE_PAGER, -1, -1), // pager
+    PhoneCB_BBS = CONTROLDEF_AUTOCHECKBOX(
+                        "BBS",
+                        ID_XSDI_VCARD_PHONE_BBS, -1, -1), // bulletin board service
+    PhoneCB_MODEM = CONTROLDEF_AUTOCHECKBOX(
+                        "Modem",
+                        ID_XSDI_VCARD_PHONE_MODEM, -1, -1), // modem
+    PhoneCB_CAR = CONTROLDEF_AUTOCHECKBOX(
+                        "Car",
+                        ID_XSDI_VCARD_PHONE_CAR, -1, -1), // car phone
+    PhoneCB_ISDN = CONTROLDEF_AUTOCHECKBOX(
+                        "ISDN",
+                        ID_XSDI_VCARD_PHONE_ISDN, -1, -1), // isdn
+    PhoneCB_VIDEO = CONTROLDEF_AUTOCHECKBOX(
+                        "Video",
+                        ID_XSDI_VCARD_PHONE_VIDEO, -1, -1); // video phone
+
+static const DLGHITEM dlgPhone[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(0),
+                CONTROL_DEF(&PhoneLB),
+                START_GROUP_TABLE(&PhoneGroup),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&PhoneNumberText),
+                        CONTROL_DEF(&PhoneNumberEF),
+                    START_ROW(ROW_VALIGN_TOP),
+                        START_TABLE,
+                            START_ROW(0),
+                                CONTROL_DEF(&PhoneCB_PREF),
+                            START_ROW(0),
+                                CONTROL_DEF(&PhoneCB_WORK),
+                            START_ROW(0),
+                                CONTROL_DEF(&PhoneCB_HOME),
+                            START_ROW(0),
+                                CONTROL_DEF(&PhoneCB_VOICE),
+                            START_ROW(0),
+                                CONTROL_DEF(&PhoneCB_FAX),
+                            START_ROW(0),
+                                CONTROL_DEF(&PhoneCB_MSG),
+                        END_TABLE,
+                        START_TABLE,
+                            START_ROW(0),
+                                CONTROL_DEF(&PhoneCB_CELL),
+                            START_ROW(0),
+                                CONTROL_DEF(&PhoneCB_PAGER),
+                            START_ROW(0),
+                                CONTROL_DEF(&PhoneCB_BBS),
+                            START_ROW(0),
+                                CONTROL_DEF(&PhoneCB_MODEM),
+                            START_ROW(0),
+                                CONTROL_DEF(&PhoneCB_CAR),
+                            START_ROW(0),
+                                CONTROL_DEF(&PhoneCB_ISDN),
+                            START_ROW(0),
+                                CONTROL_DEF(&PhoneCB_VIDEO),
+                        END_TABLE,
+                END_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&G_UndoButton),         // notebook.c
+                CONTROL_DEF(&G_DefaultButton),      // notebook.c
+                CONTROL_DEF(&G_HelpButton),         // notebook.c
+        END_TABLE
+    };
+
+/*
+ *@@ vcfPhoneInitPage:
+ *
+ */
+
+VOID vcfPhoneInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+                      ULONG flFlags)                // CBI_* flags (notebook.h)
+{
+    if (flFlags & CBI_INIT)
+    {
+        ntbFormatPage(pcnbp->hwndDlgPage,
+                      dlgPhone,
+                      ARRAYITEMCOUNT(dlgPhone));
+    }
+
+    if (flFlags & CBI_SET)
+    {
+        XWPVCardData *somThis = XWPVCardGetData(pcnbp->somSelf);
+        PVCARD      pvc;
+        APIRET      arc = NO_ERROR;
+        CHAR        sz[CCHMAXPATH];
+
+        if (!_pvCard)
+            if (_wpQueryFilename(pcnbp->somSelf, sz, TRUE))
+                arc = vcfRead(sz, (PVCARD*)&_pvCard);
+
+        if (pvc = (PVCARD)_pvCard)
+        {
+            ULONG ul;
+            HWND hwndLB = WinWindowFromID(pcnbp->hwndDlgPage,
+                                          ID_XSDI_VCARD_PHONE_LISTBOX);
+            for (ul = 0;
+                 ul < pvc->cPhones;
+                 ul++)
+            {
+                SHORT sIndex;
+                sprintf(sz, "%d", ul + 1);
+                sIndex = WinInsertLboxItem(hwndLB, LIT_END, sz);
+                winhSetLboxItemHandle(hwndLB, sIndex, ul);
+            }
+        }
+    }
+}
+
+/*
+ *@@ vcfPhoneItemChanged:
+ *
+ */
+
+MRESULT XWPENTRY vcfPhoneItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                     ULONG ulItemID, USHORT usNotifyCode,
+                                     ULONG ulExtra)
+{
+    MRESULT mrc = 0;
+
+    switch (ulItemID)
+    {
+        case ID_XSDI_VCARD_PHONE_LISTBOX:
+            if (usNotifyCode == LN_SELECT)
+            {
+                XWPVCardData *somThis = XWPVCardGetData(pcnbp->somSelf);
+
+                SHORT sIndex = winhQueryLboxSelectedItem(pcnbp->hwndControl,
+                                                         LIT_FIRST);
+                PVCARD      pvc;
+                if (    (pvc = (PVCARD)_pvCard)
+                     && (sIndex >= 0)
+                     && (sIndex < pvc->cPhones)
                    )
                 {
-                    // colon before EOL: then we can look
-                    PSZ     pNextSemicolon;
-                    ULONG   cbPropertyNameThis,
-                            cbLineThis = pNextEOL - pLineThis;
-                    PPROPERTY pProp;
-
-                    *pNextColon = '\0';
-                    nlsUpper(pLineThis,
-                             pNextColon - pLineThis);
-
-                    if (pNextSemicolon = strchr(pLineThis, ';'))
-                        // we have a parameter:
-                        cbPropertyNameThis = pNextSemicolon - pLineThis;
-                    else
-                        cbPropertyNameThis = pNextColon - pLineThis;
-
-                    if (pProp = NEW(PROPERTY))
-                    {
-                        ZERO(pProp);
-                        xstrcpy(&pProp->strProperty,
-                                pLineThis,
-                                cbPropertyNameThis);
-
-                        while (pNextSemicolon)
+                    PVCPHONE pPhone = &pvc->paPhones[sIndex];
+                    ULONG aulFlags[] =
                         {
-                            // @@todo we can have several
-                            // PHOTO;VALUE=URL;TYPE=GIF:http://www.abc.com/dir_photos/my_photo.gif
-                            xstrcpy(&pProp->strParameters,
-                                    pNextSemicolon + 1,
-                                    // up to colon
-                                    pNextColon - pNextSemicolon - 1);
-                            pNextSemicolon = strchr(pNextSemicolon + 1, ';');
-                        }
+                             VCF_PHONEFL_PREF,
+                             VCF_PHONEFL_WORK,
+                             VCF_PHONEFL_HOME,
+                             VCF_PHONEFL_VOICE       ,
+                             VCF_PHONEFL_FAX,
+                             VCF_PHONEFL_MSG,
+                             VCF_PHONEFL_CELL        ,
+                             VCF_PHONEFL_PAGER,
+                             VCF_PHONEFL_BBS,
+                             VCF_PHONEFL_MODEM,
+                             VCF_PHONEFL_CAR,
+                             VCF_PHONEFL_ISDN        ,
+                             VCF_PHONEFL_VIDEO,
+                        };
+                    ULONG aulIDs[] =
+                        {
+                             ID_XSDI_VCARD_PHONE_PREF,
+                             ID_XSDI_VCARD_PHONE_WORK,
+                             ID_XSDI_VCARD_PHONE_HOME,
+                             ID_XSDI_VCARD_PHONE_VOICE       ,
+                             ID_XSDI_VCARD_PHONE_FAX,
+                             ID_XSDI_VCARD_PHONE_MSG,
+                             ID_XSDI_VCARD_PHONE_CELL        ,
+                             ID_XSDI_VCARD_PHONE_PAGER,
+                             ID_XSDI_VCARD_PHONE_BBS,
+                             ID_XSDI_VCARD_PHONE_MODEM,
+                             ID_XSDI_VCARD_PHONE_CAR,
+                             ID_XSDI_VCARD_PHONE_ISDN        ,
+                             ID_XSDI_VCARD_PHONE_VIDEO
+                        };
+                    ULONG ul;
 
-                        // now for the data:
-                        // store string pointer for line continuations
-                        pstrPrevValue = &pProp->strValue;
-                        // and copy initial value
-                        xstrcpy(pstrPrevValue,
-                                pNextColon + 1,
-                                pNextEOL - pNextColon - 1);
-                        _Pmpf(("prop %d: \"%s\" \"%s\" \"%s\" ddd",
-                               ul++,
-                               STRINGORNULL(pProp->strProperty.psz),
-                               STRINGORNULL(pProp->strParameters.psz),
-                               STRINGORNULL(pProp->strValue.psz)
-                             ));
+                    WinSetDlgItemText(pcnbp->hwndDlgPage,
+                                      ID_XSDI_VCARD_PHONE_NUMBER_EF,
+                                      pPhone->pcszNumber);
 
-                        lstAppendItem(pList,
-                                      pProp);
+                    for (ul = 0;
+                         ul < ARRAYITEMCOUNT(aulIDs);
+                         ul++)
+                    {
+                        winhSetDlgItemChecked(pcnbp->hwndDlgPage,
+                                              aulIDs[ul],
+                                              ((pPhone->fl & aulFlags[ul]) != 0));
                     }
+                }
+            }
+        break;
+    }
 
-                    *pNextColon = ':';
+    return (mrc);
+}
+
+/* ******************************************************************
+ *
+ *   "Addresses" page
+ *
+ ********************************************************************/
+
+#define ID_XSDI_VCARD_ADDR_NAMEFIELDS_GROUP     31002
+#define ID_XSDI_VCARD_ADDR_POBOX_TEXT           31003
+#define ID_XSDI_VCARD_ADDR_POBOX_EF             31004
+#define ID_XSDI_VCARD_ADDR_EXTENDED_TEXT        31015
+#define ID_XSDI_VCARD_ADDR_EXTENDED_EF          31016
+#define ID_XSDI_VCARD_ADDR_STREET_TEXT          31017
+#define ID_XSDI_VCARD_ADDR_STREET_EF            31018
+#define ID_XSDI_VCARD_ADDR_LOCALITY_TEXT        31019
+#define ID_XSDI_VCARD_ADDR_LOCALITY_EF          31020
+#define ID_XSDI_VCARD_ADDR_STATE_TEXT           31021
+#define ID_XSDI_VCARD_ADDR_STATE_EF             31022
+#define ID_XSDI_VCARD_ADDR_POSTALCODE_TEXT      31023
+#define ID_XSDI_VCARD_ADDR_POSTALCODE_EF        31024
+#define ID_XSDI_VCARD_ADDR_COUNTRY_TEXT         31025
+#define ID_XSDI_VCARD_ADDR_COUNTRY_EF           31026
+
+static CONTROLDEF
+    AddressFieldsGroup = CONTROLDEF_GROUP(
+                            "Address fields",
+                            ID_XSDI_VCARD_ADDR_NAMEFIELDS_GROUP,
+                            -1,
+                            -1),
+    TEXT_AND_ENTRYFIELD(AddressesPostOffice,
+                        "Post office box:",
+                        ID_XSDI_VCARD_ADDR_POBOX),
+    TEXT_AND_ENTRYFIELD(AddressesExtended,
+                        "Additional:",
+                        ID_XSDI_VCARD_ADDR_EXTENDED),
+    TEXT_AND_ENTRYFIELD(AddressesStreet,
+                        "Street:",
+                        ID_XSDI_VCARD_ADDR_STREET),
+    TEXT_AND_ENTRYFIELD(AddressesLocality,
+                        "Town:",
+                        ID_XSDI_VCARD_ADDR_LOCALITY),
+    TEXT_AND_ENTRYFIELD(AddressesState,
+                        "State:",
+                        ID_XSDI_VCARD_ADDR_STATE),
+    TEXT_AND_ENTRYFIELD(AddressesPostalCode,
+                        "Zip code:",
+                        ID_XSDI_VCARD_ADDR_POSTALCODE),
+    TEXT_AND_ENTRYFIELD(AddressesCountry,
+                        "Country:",
+                        ID_XSDI_VCARD_ADDR_COUNTRY);
+
+static const DLGHITEM dlgAddresses[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(0),
+                START_GROUP_TABLE(&AddressFieldsGroup),
+                    START_ROW(0),
+                        START_ROW(ROW_VALIGN_CENTER),
+                           CONTROL_DEF(&AddressesExtendedText),
+                           CONTROL_DEF(&AddressesExtendedEF),
+                        START_ROW(ROW_VALIGN_CENTER),
+                           CONTROL_DEF(&AddressesStreetText),
+                           CONTROL_DEF(&AddressesStreetEF),
+                        START_ROW(ROW_VALIGN_CENTER),
+                           CONTROL_DEF(&AddressesPostOfficeText),
+                           CONTROL_DEF(&AddressesPostOfficeEF),
+                        START_ROW(ROW_VALIGN_CENTER),
+                           CONTROL_DEF(&AddressesLocalityText),
+                           CONTROL_DEF(&AddressesLocalityEF),
+                        START_ROW(ROW_VALIGN_CENTER),
+                           CONTROL_DEF(&AddressesStateText),
+                           CONTROL_DEF(&AddressesStateEF),
+                        START_ROW(ROW_VALIGN_CENTER),
+                           CONTROL_DEF(&AddressesPostalCodeText),
+                           CONTROL_DEF(&AddressesPostalCodeEF),
+                        START_ROW(ROW_VALIGN_CENTER),
+                           CONTROL_DEF(&AddressesCountryText),
+                           CONTROL_DEF(&AddressesCountryEF),
+                END_TABLE,
+            START_ROW(0),
+                CONTROL_DEF(&G_UndoButton),         // notebook.c
+                CONTROL_DEF(&G_DefaultButton),      // notebook.c
+                CONTROL_DEF(&G_HelpButton),         // notebook.c
+        END_TABLE
+    };
+
+/*
+ *@@ vcfAddressesInitPage:
+ *
+ */
+
+VOID vcfAddressesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+                          ULONG flFlags)                // CBI_* flags (notebook.h)
+{
+    if (flFlags & CBI_INIT)
+    {
+        ntbFormatPage(pcnbp->hwndDlgPage,
+                      dlgAddresses,
+                      ARRAYITEMCOUNT(dlgAddresses));
+    }
+
+    if (flFlags & CBI_SET)
+    {
+        XWPVCardData *somThis = XWPVCardGetData(pcnbp->somSelf);
+        PVCARD      pvc;
+        APIRET      arc = NO_ERROR;
+        CHAR        sz[CCHMAXPATH];
+
+        if (!_pvCard)
+            if (_wpQueryFilename(pcnbp->somSelf, sz, TRUE))
+                arc = vcfRead(sz, (PVCARD*)&_pvCard);
+
+        if (pvc = (PVCARD)_pvCard)
+        {
+            ULONG   aulIDs[] =
+                {
+                    ID_XSDI_VCARD_ADDR_POBOX_EF,
+                    ID_XSDI_VCARD_ADDR_EXTENDED_EF,
+                    ID_XSDI_VCARD_ADDR_STREET_EF,
+                    ID_XSDI_VCARD_ADDR_LOCALITY_EF,
+                    ID_XSDI_VCARD_ADDR_STATE_EF,
+                    ID_XSDI_VCARD_ADDR_POSTALCODE_EF,
+                    ID_XSDI_VCARD_ADDR_COUNTRY_EF
+                },
+                    ul;
+
+            if (pvc->cDeliveryAddresses)
+            {
+                for (ul = 0;
+                     ul < ARRAYITEMCOUNT(aulIDs);
+                     ul++)
+                {
+                    SetEFText(pcnbp, aulIDs[ul],
+                                      (PSZ)pvc->paDeliveryAddresses[0].apcszAddress[ul]);
                 }
             }
         }
-
-        if (!*pNextEOL)
-            // no more lines:
-            break;
-
-        pLineThis = pNextEOL + 1;
     }
-
-    if (arc)
-        vcfFree(&pList);
-    else
-        *ppllProperties = pList;
-
-    return (arc);
-}
-
-/*
- *@@ vcfRead:
- *
- */
-
-APIRET vcfRead(PCSZ pcszFilename,
-               PLINKLIST *ppllProperties)      // out: PROPERTY list items
-{
-    APIRET  arc;
-    PSZ     pszData = NULL;
-    ULONG   cbRead;
-    if (!(arc = doshLoadTextFile(pcszFilename,
-                                 &pszData,
-                                 &cbRead)))
-    {
-        XSTRING str;
-        PSZ p;
-        xstrInitSet2(&str, pszData, cbRead - 1);
-        xstrConvertLineFormat(&str, CRLF2LF);
-        p = str.psz;
-        arc = vcfTokenize(&p,
-                          ppllProperties);
-
-        xstrClear(&str);
-    }
-
-    return (arc);
 }
 
 /* ******************************************************************
@@ -430,6 +831,37 @@ APIRET vcfRead(PCSZ pcszFilename,
  ********************************************************************/
 
 /*
+ *@@ wpInitData:
+ *
+ */
+
+SOM_Scope void  SOMLINK xvc_wpInitData(XWPVCard *somSelf)
+{
+    XWPVCardData *somThis = XWPVCardGetData(somSelf);
+    XWPVCardMethodDebug("XWPVCard","xvc_wpInitData");
+
+    XWPVCard_parent_WPDataFile_wpInitData(somSelf);
+
+    _pvCard = NULL;
+}
+
+/*
+ *@@ wpUnInitData:
+ *
+ */
+
+SOM_Scope void  SOMLINK xvc_wpUnInitData(XWPVCard *somSelf)
+{
+    XWPVCardData *somThis = XWPVCardGetData(somSelf);
+    XWPVCardMethodDebug("XWPVCard","xvc_wpUnInitData");
+
+    if (_pvCard)
+        vcfFree((PVCARD*)&_pvCard);
+
+    XWPVCard_parent_WPDataFile_wpUnInitData(somSelf);
+}
+
+/*
  *@@ wpAddSettingsPages:
  *
  */
@@ -437,34 +869,124 @@ APIRET vcfRead(PCSZ pcszFilename,
 SOM_Scope BOOL  SOMLINK xvc_wpAddSettingsPages(XWPVCard *somSelf,
                                                HWND hwndNotebook)
 {
-    CHAR sz[CCHMAXPATH];
-    /* XWPVCardData *somThis = XWPVCardGetData(somSelf); */
+    BOOL brc = FALSE;
+
+    XWPVCardData *somThis = XWPVCardGetData(somSelf);
     XWPVCardMethodDebug("XWPVCard","xvc_wpAddSettingsPages");
 
-    if (_wpQueryFilename(somSelf, sz, TRUE))
+    if (XWPVCard_parent_WPDataFile_wpAddSettingsPages(somSelf,
+                                                      hwndNotebook))
     {
-        APIRET arc;
-        PLINKLIST pll = NULL;
-        if (!(arc = vcfRead(sz,
-                            &pll)))
+        TRY_LOUD(excpt1)
         {
-            PLISTNODE pNode = lstQueryFirstNode(pll);
-            ULONG ul = 0;
-            while (pNode)
-            {
-                PPROPERTY pProp = (PPROPERTY)pNode->pItemData;
+            PCREATENOTEBOOKPAGE pcnbp;
 
-                pNode = pNode->pNext;
-                ul++;
-            }
-            vcfFree(&pll);
+            pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+            memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+            pcnbp->somSelf = somSelf;
+            pcnbp->hwndNotebook = hwndNotebook;
+            pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+            pcnbp->usPageStyleFlags = BKA_MAJOR;
+            pcnbp->pszName = "Addresses",    // @@todo
+            pcnbp->ulDlgID = ID_XFD_EMPTYDLG;
+            pcnbp->ulDefaultHelpPanel  = ID_XSH_VCARD_PAGE; // @@todo
+            pcnbp->ulPageID = SP_VCARD_ADDRESSES;
+            pcnbp->pfncbInitPage    = vcfAddressesInitPage;
+            ntbInsertPage(pcnbp);
+
+            pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+            memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+            pcnbp->somSelf = somSelf;
+            pcnbp->hwndNotebook = hwndNotebook;
+            pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+            pcnbp->usPageStyleFlags = BKA_MAJOR;
+            pcnbp->pszName = "Phone numbers",    // @@todo
+            pcnbp->ulDlgID = ID_XFD_EMPTYDLG;
+            pcnbp->ulDefaultHelpPanel  = ID_XSH_VCARD_PAGE; // @@todo
+            pcnbp->ulPageID = SP_VCARD_PHONE;
+            pcnbp->pfncbInitPage    = vcfPhoneInitPage;
+            pcnbp->pfncbItemChanged = vcfPhoneItemChanged;
+            ntbInsertPage(pcnbp);
+
+            pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+            memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+            pcnbp->somSelf = somSelf;
+            pcnbp->hwndNotebook = hwndNotebook;
+            pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+            pcnbp->usPageStyleFlags = BKA_MAJOR;
+            pcnbp->pszName = "Name"; // @@todo
+            pcnbp->ulDlgID = ID_XFD_EMPTYDLG;
+            pcnbp->ulDefaultHelpPanel  = ID_XSH_VCARD_PAGE; // @@todo
+            pcnbp->ulPageID = SP_VCARD_NAME;
+            pcnbp->pfncbInitPage    = vcfNameInitPage;
+            ntbInsertPage(pcnbp);
+
+            pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+            memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+            pcnbp->somSelf = somSelf;
+            pcnbp->hwndNotebook = hwndNotebook;
+            pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+            pcnbp->usPageStyleFlags = BKA_MAJOR;
+            pcnbp->pszName = "Summary",    // @@todo
+            pcnbp->ulDlgID = ID_XFD_EMPTYDLG;
+            pcnbp->ulDefaultHelpPanel  = ID_XSH_VCARD_PAGE; // @@todo
+            pcnbp->ulPageID = SP_VCARD_SUMMARY;
+            pcnbp->pfncbInitPage    = vcfSummaryInitPage;
+            ntbInsertPage(pcnbp);
+
+            brc = TRUE;
         }
-        else
-            _Pmpf((__FUNCTION__ ": vcfRead returned %d", arc));
+        CATCH(excpt1)
+        {
+        } END_CATCH();
     }
 
-    return (XWPVCard_parent_WPDataFile_wpAddSettingsPages(somSelf,
-                                                          hwndNotebook));
+    return brc;
+}
+
+
+/*
+ *@@ wpQueryDefaultHelp:
+ *      this WPObject instance method specifies the default
+ *      help panel for an object (when "Extended help" is
+ *      selected from the object's context menu). This should
+ *      describe what this object can do in general.
+ *      We must return TRUE to report successful completion.
+ */
+
+SOM_Scope BOOL  SOMLINK xvc_wpQueryDefaultHelp(XWPVCard *somSelf,
+                                               PULONG pHelpPanelId,
+                                               PSZ HelpLibrary)
+{
+    /* XWPVCardData *somThis = XWPVCardGetData(somSelf); */
+    XWPVCardMethodDebug("XWPVCard","xvc_wpQueryDefaultHelp");
+
+    strcpy(HelpLibrary, cmnQueryHelpLibrary());
+    *pHelpPanelId = ID_XSH_VCARD_MAIN;
+    return (TRUE);
+}
+
+
+/*
+ *@@ wpCreateFromTemplate:
+ *
+ */
+
+SOM_Scope WPObject*  SOMLINK xvc_wpCreateFromTemplate(XWPVCard *somSelf,
+                                                      WPFolder* folder,
+                                                      BOOL fLock)
+{
+    WPObject *pNew;
+
+    // XWPVCardData *somThis = XWPVCardGetData(somSelf);
+    XWPVCardMethodDebug("XWPVCard","xvc_wpCreateFromTemplate");
+
+    if (pNew = XWPVCard_parent_WPDataFile_wpCreateFromTemplate(somSelf,
+                                                               folder,
+                                                               fLock))
+        _wpViewObject(pNew, NULLHANDLE, OPEN_SETTINGS, 0);
+
+    return pNew;
 }
 
 

@@ -2509,7 +2509,7 @@ static CONTROLDEF
     IconExplanationText = CONTROLDEF_TEXT_WORDBREAK(
                             LOAD_STRING,
                             ID_XSDI_ICON_EXPLANATION_TXT,
-                            230),
+                            -100),      // use table width
     IconEditButton = CONTROLDEF_PUSHBUTTON(
                             LOAD_STRING,
                             ID_XSDI_ICON_EDIT_BUTTON,

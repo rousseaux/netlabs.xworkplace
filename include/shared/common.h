@@ -689,6 +689,12 @@
     #define SP_OBJECT_ICONPAGE2     221     // new with V0.9.16 (2001-10-15) [umoeller]
                 // this is really a WPFolder page...
 
+    // 22) XWPVCard V0.9.16 (2002-02-02) [umoeller]
+    #define SP_VCARD_SUMMARY        230
+    #define SP_VCARD_NAME           231
+    #define SP_VCARD_ADDRESSES      232
+    #define SP_VCARD_PHONE          233
+
     /********************************************************************
      *
      *   Global structures

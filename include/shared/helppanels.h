@@ -247,5 +247,8 @@
     #define ID_XSH_PROGRAMFILE_DLL          144     // V0.9.16 (2002-01-13) [umoeller]
     #define ID_XSH_PROGRAMFILE_DRIVER       145     // V0.9.16 (2002-01-13) [umoeller]
 
+    #define ID_XSH_VCARD_MAIN               146     // V0.9.16 (2002-02-02) [umoeller]
+    #define ID_XSH_VCARD_PAGE               147     // V0.9.16 (2002-02-02) [umoeller]
+
 #endif
 
