@@ -90,6 +90,7 @@
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
+#include "helpers\tree.h"               // red-black binary trees
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
 
@@ -239,6 +240,72 @@ SOM_Scope ULONG  SOMLINK xo_xwpAddReplacementIconPage(XFldObject *somSelf,
 }
 
 /*
+ *@@ xwpShareIconWith:
+ *      returns the current icon of somSelf and registers pobjClient
+ *      as a current user of the icon so that pobjClient can be
+ *      forced to refresh its icon if somSelf's icon changes.
+ *
+ *      This was added for finally getting icons from associations
+ *      right. Practically, this method only gets called on WPProgram
+ *      and WPProgramFile objects, but instead of having to implement
+ *      it twice, I added it to XFldObject as the only common
+ *      ancestor.
+ *
+ *      In detail, this does the following:
+ *
+ *      1)  Calls wpQueryIcon to get the current icon of the object.
+ *          This will go through the class-specific overhead to
+ *          determine somSelf's current (program) icon.
+ *
+ *      2)  Adds pobjClient to the list of objects using this icon
+ *          in the instance data.
+ *
+ *      3)  If fMakeGlobal is TRUE and the icon has not yet been
+ *          made global (i.e. pobjClient is the first requestor),
+ *          we tell PM to put the icon in shared memory.
+ *
+ *      Cleanup happens automatically for the caller, i.e. the
+ *      caller is automatically removed from the private list
+ *      when he goes dormant. This works because the caller is
+ *      an XFldObject too, and we call XFldObject::xwpModifyListNotify
+ *      on him behind his back.
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ */
+
+SOM_Scope HPOINTER  SOMLINK xo_xwpShareIconWith(XFldObject *somSelf,
+                                                WPObject* pobjClient,
+                                                BOOL fMakeGlobal)
+{
+    BOOL        fLocked = FALSE;
+    HPOINTER    hptrIcon;
+
+    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_xwpShareIconWith");
+
+    if (hptrIcon = _wpQueryIcon(somSelf))
+    {
+        XFldObjectData *somThis = XFldObjectGetData(somSelf);
+
+        /*
+        TRY_LOUD(excpt1)
+        {
+            if (fLocked = LockIconShares())
+            {
+
+                _xwpModifyListNotify(
+            }
+        }
+
+        if (fLocked)
+            UnlockIconShares();
+        */
+    }
+
+    return hptrIcon;
+}
+
+/*
  *@@ xwpQueryRealDefaultView:
  *      this new method returns the "real default view" of
  *      the object.
@@ -358,6 +425,7 @@ SOM_Scope PSZ  SOMLINK xo_xwpQueryOriginalObjectID(XFldObject *somSelf)
  *      structures are not changed.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: adjusted for new TRASHDATA
  */
 
 SOM_Scope BOOL  SOMLINK xo_xwpQueryDeletion(XFldObject *somSelf,
@@ -365,22 +433,48 @@ SOM_Scope BOOL  SOMLINK xo_xwpQueryDeletion(XFldObject *somSelf,
                                             CTIME* pctimeDeleted)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    PTRASHDATA p;
 
-    BOOL    brc = (_cdateDeleted.year != 0);     // V0.9.16 (2001-12-06) [umoeller]
+    // BOOL    brc = (_cdateDeleted.year != 0);     // V0.9.16 (2001-12-06) [umoeller]
 
     XFldObjectMethodDebug("XFldObject","xo_xwpQueryDeletion");
 
     // _PmpfF(("_cdateDeleted.year %d, returning %d", _cdateDeleted.year, brc));
 
-    if (brc)
+    if (p = (PTRASHDATA)_pvTrashData)
     {
         if (pcdateDeleted)
-            memcpy(pcdateDeleted, &_cdateDeleted, sizeof(CDATE));
+            memcpy(pcdateDeleted, &p->cdateDeleted, sizeof(CDATE));
         if (pctimeDeleted)
-            memcpy(pctimeDeleted, &_ctimeDeleted, sizeof(CTIME));
+            memcpy(pctimeDeleted, &p->ctimeDeleted, sizeof(CTIME));
+
+        return TRUE;
     }
 
-    return brc;
+    return FALSE;
+}
+
+/*
+ *@@ AllocTrashData:
+ *
+ *@@added V0.9.20 (2002-07-25) [umoeller]
+ */
+
+static PTRASHDATA GetTrashData(XFldObject *somSelf,
+                               XFldObjectData *somThis)
+{
+    // set deletion data:
+    if (!_pvTrashData)
+    {
+        // no trash data yet:
+        ULONG rc;
+        if (_pvTrashData = _wpAllocMem(somSelf,
+                                       sizeof(TRASHDATA),
+                                       &rc))
+            memset(_pvTrashData, 0, sizeof(TRASHDATA));
+    }
+
+    return (PTRASHDATA)_pvTrashData;
 }
 
 /*
@@ -408,22 +502,52 @@ SOM_Scope BOOL  SOMLINK xo_xwpQueryDeletion(XFldObject *somSelf,
 SOM_Scope BOOL  SOMLINK xo_xwpSetDeletion(XFldObject *somSelf,
                                           BOOL fSet)
 {
-    // BOOL    brc = FALSE;
+    BOOL fLocked = FALSE,
+         brc = FALSE;
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_xwpSetDeletion");
 
-    if (fSet)
+    TRY_LOUD(excpt1)
     {
-        // set deletion data:
-        DATETIME    dt;
-        DosGetDateTime(&dt);
-        cnrhDateTimeDos2Win(&dt, &_cdateDeleted, &_ctimeDeleted);
-        // _fDeleted = TRUE;        // V0.9.16 (2001-12-06) [umoeller]
-    }
-    else
-        _cdateDeleted.year = 0; // fDeleted = FALSE;    V0.9.16 (2001-12-06) [umoeller]
+        if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+        {
+            if (fSet)
+            {
+                PTRASHDATA p;
 
-    return _wpSaveDeferred(somSelf);
+                if (p = GetTrashData(somSelf, somThis))
+                {
+                    DATETIME    dt;
+                    DosGetDateTime(&dt);
+                    cnrhDateTimeDos2Win(&dt, &p->cdateDeleted, &p->ctimeDeleted);
+                    brc = TRUE;
+                }
+            }
+            else
+            {
+                // clear:
+                if (_pvTrashData)
+                {
+                    _wpFreeMem(somSelf, (PBYTE)_pvTrashData);
+                    _pvTrashData = NULL;
+                }
+
+                brc = TRUE;
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    if (fLocked)
+        _wpReleaseObjectMutexSem(somSelf);
+
+    if (brc)
+        return _wpSaveDeferred(somSelf);
+
+    return FALSE;
 }
 
 /*
@@ -431,7 +555,9 @@ SOM_Scope BOOL  SOMLINK xo_xwpSetDeletion(XFldObject *somSelf,
  *      sets the internal trash object field to the specified
  *      trash object (XWPTrashObject) to be able to relate a
  *      deleted object to the corresponding trash object in the
- *      trash can. Only to be called by the trash can.
+ *      trash can.
+ *
+ *      Only to be called by the trash can.
  *
  *@@added V0.9.3 (2000-04-11) [umoeller]
  */
@@ -439,12 +565,35 @@ SOM_Scope BOOL  SOMLINK xo_xwpSetDeletion(XFldObject *somSelf,
 SOM_Scope BOOL  SOMLINK xo_xwpSetTrashObject(XFldObject *somSelf,
                                              WPObject* pTrashObject)
 {
+    BOOL fLocked = FALSE,
+         brc = FALSE;
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_xwpSetTrashObject");
 
-    _pTrashObject = pTrashObject;
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+        {
+            PTRASHDATA p;
 
-    return TRUE;
+            if (    (pTrashObject)
+                 && (p = GetTrashData(somSelf, somThis))
+               )
+            {
+                p->pTrashObject = pTrashObject;
+                brc = TRUE;
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    if (fLocked)
+        _wpReleaseObjectMutexSem(somSelf);
+
+    return brc;
 }
 
 /*
@@ -461,11 +610,14 @@ SOM_Scope ULONG  SOMLINK xo_xwpQueryListNotify(XFldObject *somSelf)
     WPObject *pobjLock = NULL;
     XFldObjectMethodDebug("XFldObject","xo_xwpQueryListNotify");
 
+    // we need the lock here because xwpModifyListNotify
+    // reads and writes holding the lock too
     TRY_LOUD(excpt1)
     {
+        XFldObjectData *somThis = XFldObjectGetData(somSelf);
+
         if (pobjLock = cmnLockObject(somSelf))
         {
-            XFldObjectData *somThis = XFldObjectGetData(somSelf);
             ulrc = _ulListNotify;
         }
     }
@@ -533,11 +685,15 @@ SOM_Scope BOOL  SOMLINK xo_xwpSetListNotify(XFldObject *somSelf,
     WPObject *pobjLock = NULL;
     XFldObjectMethodDebug("XFldObject","xo_xwpSetListNotify");
 
+    // we need the lock here because xwpModifyListNotify
+    // reads and writes holding the lock too
+
     TRY_LOUD(excpt1)
     {
+        XFldObjectData *somThis = XFldObjectGetData(somSelf);
+
         if (pobjLock = cmnLockObject(somSelf))
         {
-            XFldObjectData *somThis = XFldObjectGetData(somSelf);
             _ulListNotify = flNotifyFlags;
             brc = TRUE;
         }
@@ -585,10 +741,10 @@ SOM_Scope BOOL  SOMLINK xo_xwpModifyListNotify(XFldObject *somSelf,
 
     TRY_LOUD(excpt1)
     {
+        XFldObjectData *somThis = XFldObjectGetData(somSelf);
+
         if (pobjLock = cmnLockObject(somSelf))
         {
-            XFldObjectData *somThis = XFldObjectGetData(somSelf);
-
             _ulListNotify = (
                                 // copy all unaffected
                                 (_ulListNotify & ~flNotifyFlags)
@@ -1217,8 +1373,10 @@ SOM_Scope void  SOMLINK xo_wpInitData(XFldObject *somSelf)
             _flFlags |= OBJFL_WPSHADOW;
     }
 
+    _pvTrashData = NULL;            // V0.9.20 (2002-07-25) [umoeller]
+
     // _fDeleted = FALSE;
-    _cdateDeleted.year = 0;     // V0.9.16 (2001-12-06) [umoeller]
+    // _cdateDeleted.year = 0;     // V0.9.16 (2001-12-06) [umoeller]
 
     // _pObjectLongs = NULL;        // removed V0.9.19 (2002-07-01) [umoeller]
     // _cbObjectLongs = 0;          // removed V0.9.19 (2002-07-01) [umoeller]
@@ -1227,13 +1385,15 @@ SOM_Scope void  SOMLINK xo_wpInitData(XFldObject *somSelf)
 
     _pWszOriginalObjectID = NULL;
 
-    _pTrashObject = NULL;
+    // _pTrashObject = NULL;        // removed V0.9.20 (2002-07-25) [umoeller]
 
     _ulListNotify = 0;
 
     _pvllWidgetNotifies = NULL;
 
-    // _ulDefaultView = 0;             // OPEN_DEFAULT
+    // init the icon shares
+    treeInit((TREE**)&_IconSharesTreeRoot,
+             &_cIconShares);
 }
 
 /*
@@ -1502,14 +1662,21 @@ SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
  *@@changed V0.9.6 (2000-10-23) [umoeller]: added support for progOpenProgram
  *@@changed V0.9.7 (2001-01-18) [umoeller]: added support for favorite and quick-open folders
  *@@changed V0.9.16 (2001-12-31) [umoeller]: added fixes for replacement icons
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: added mutex
  */
 
 SOM_Scope void  SOMLINK xo_wpUnInitData(XFldObject *somSelf)
 {
-    PMINIRECORDCORE pmrc = _wpQueryCoreRecord(somSelf);
-
+    PMINIRECORDCORE pmrc;
+    PTRASHDATA p;
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpUnInitData");
+
+    // grab the object's mutex to let no-one mess with us
+    // while we're cleaning up! Note that we do NOT release
+    // it because WPObject::wpUnInitData will delete it anway.
+    // V0.9.20 (2002-07-25) [umoeller]
+    _wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT);
 
     #ifdef __DEBUG__
         if (!(_flFlags & OBJFL_INITIALIZED))
@@ -1527,8 +1694,14 @@ SOM_Scope void  SOMLINK xo_wpUnInitData(XFldObject *somSelf)
                       MPNULL);
 
     // destroy trash object, if there's one
-    if (_pTrashObject)
-        _wpFree(_pTrashObject);
+    if (p = (PTRASHDATA)_pvTrashData)
+    {
+        if (p->pTrashObject)
+            _wpFree(p->pTrashObject);
+
+        _wpFreeMem(somSelf, (PBYTE)_pvTrashData);
+        _pvTrashData = NULL;
+    }
 
     // we have a problem with our replacement icons in that
     // the WPS frees the pointer handle in WPObject::wpUnInitData
@@ -1537,7 +1710,7 @@ SOM_Scope void  SOMLINK xo_wpUnInitData(XFldObject *somSelf)
     // of our standard icons WHICH MUST NOT BE FREED under any circumstances,
     // or the shared icon would disappear globally
     // V0.9.16 (2001-12-31) [umoeller]
-    if (    (pmrc)
+    if (    (pmrc = _wpQueryCoreRecord(somSelf))
          && (pmrc->hptrIcon)
          && (_wpQueryStyle(somSelf) & (OBJSTYLE_NOTDEFAULTICON | OBJSTYLE_TEMPLATE))
        )
@@ -1681,6 +1854,7 @@ SOM_Scope void  SOMLINK xo_wpUnInitData(XFldObject *somSelf)
  *      the memory properly in wpUnInitData).
  *
  *@@added V0.9.16 (2002-01-04) [umoeller]
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: extended mutex protection
  */
 
 SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
@@ -1713,76 +1887,90 @@ SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
                 brc = FALSE;
             else
             {
-                PSZ p;
+                ULONG           ulStyle = _wpQueryStyle(somSelf);
+                BOOL            fIsInitialized = (0 != (_flFlags & OBJFL_INITIALIZED));
 
-                memcpy(pszNewTitleCopy, pszNewTitle, ulNewTitleLen + 1);
+                // LOCK the object if it is already initialized... no need
+                // to do so if this gets called in the process of setting
+                // up the object though
 
-                // replace all '^' with '\n'
-                p = pszNewTitleCopy;
-                while (p = strchr(p, '^'))
-                    *p = '\n';
+                // (moved the lock up here V0.9.20 (2002-07-25) [umoeller])
 
-                if (strhcmp(pRecord->pszIcon, pszNewTitleCopy))
+                if (    (!fIsInitialized)
+                     || (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+                   )
                 {
-                    // new title is different:
-                    ULONG           ulStyle = _wpQueryStyle(somSelf);
-                    BOOL            fIsInitialized = (0 != (_flFlags & OBJFL_INITIALIZED));
-                                        // _wpIsObjectInitialized(somSelf);
+                    PSZ p;
 
-                    if (    (ulStyle & OBJSTYLE_TEMPLATE)
-                         && (fIsInitialized)
-                       )
+                    memcpy(pszNewTitleCopy, pszNewTitle, ulNewTitleLen + 1);
+
+                    // replace all '^' with '\n'
+                    p = pszNewTitleCopy;
+                    while (p = strchr(p, '^'))
+                        *p = '\n';
+
+                    if (strhcmp(pRecord->pszIcon, pszNewTitleCopy))
                     {
-                        // renaming a template: template entries in
-                        // OS2.INI are based on names, so unset
-                        // the template flag; this will nuke the
-                        // template entry from OS2.INI, we'll add
-                        // a new one below
-                        _wpModifyStyle(somSelf,
-                                       OBJSTYLE_TEMPLATE,
-                                       0);
-                    }
+                        // new title is different:
+                        if (    (ulStyle & OBJSTYLE_TEMPLATE)
+                             && (fIsInitialized)
+                           )
+                        {
+                            // renaming a template: template entries in
+                            // OS2.INI are based on names, so unset
+                            // the template flag; this will nuke the
+                            // template entry from OS2.INI, we'll add
+                            // a new one below
+                            _wpModifyStyle(somSelf,
+                                           OBJSTYLE_TEMPLATE,
+                                           0);
+                        }
 
-                    // now go set the new string which we allocated above
-                    if (pRecord->pszIcon)
-                        _wpFreeMem(somSelf, pRecord->pszIcon);
-                    pRecord->pszIcon = pszNewTitleCopy;     // can be NULL V0.9.19 (2002-04-25) [umoeller]
+                        // now go set the new string which we allocated above
+                        if (pRecord->pszIcon)
+                            _wpFreeMem(somSelf, pRecord->pszIcon);
+                        pRecord->pszIcon = pszNewTitleCopy;     // can be NULL V0.9.19 (2002-04-25) [umoeller]
 
-                    // this was missing V0.9.17 (2002-02-05) [umoeller]
-                    // abstracts don't save themselves otherwise
-                    if (    (fIsInitialized)
-                         && (_flFlags & OBJFL_WPABSTRACT)
-                       )
-                    {
-                        _PmpfF(("obj is abstract, saving"));
-                        _wpSaveDeferred(somSelf);
-                    }
+                        // alright, don't free this
+                        pszNewTitleCopy = NULL;
 
-                    // now go refresh all the views...
-                    // no need to do that if the object isn't even
-                    // initialized yet because then we can neither
-                    // have shadows pointing to it nor can it be
-                    // inserted into a container yet
-                    if (    (fIsInitialized)
-                         && (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
-                       )
-                    {
-                        objRefreshUseItems(somSelf, pszNewTitleCopy);
-                    }
+                        // this was missing V0.9.17 (2002-02-05) [umoeller]
+                        // abstracts don't save themselves otherwise
+                        if (    (fIsInitialized)
+                             && (_flFlags & OBJFL_WPABSTRACT)
+                           )
+                        {
+                            _PmpfF(("obj is abstract, saving"));
+                            _wpSaveDeferred(somSelf);
+                        }
 
-                    if (    (ulStyle & OBJSTYLE_TEMPLATE)
-                         && (fIsInitialized)
-                       )
-                    {
-                        // re-enter the template entry we killed above
-                        _wpModifyStyle(somSelf,
-                                       OBJSTYLE_TEMPLATE,
-                                       OBJSTYLE_TEMPLATE);
+                        // now go refresh all the views if the object
+                        // is already initialized;
+                        // no need to do otherwise because then we can neither
+                        // have shadows pointing to it nor can it be
+                        // inserted into a container yet
+
+                        // note: fLocked is TRUE only if the object _was_ intialized,
+                        // see above
+                        if (fLocked)
+                            objRefreshUseItems(somSelf, pRecord->pszIcon);
+
+                        if (    (ulStyle & OBJSTYLE_TEMPLATE)
+                             && (fIsInitialized)
+                           )
+                        {
+                            // re-enter the template entry we killed above
+                            _wpModifyStyle(somSelf,
+                                           OBJSTYLE_TEMPLATE,
+                                           OBJSTYLE_TEMPLATE);
+                        }
                     }
                 }
-                else
-                    // title hasn't changed:
+
+                if (pszNewTitleCopy)
+                    // title hasn't changed, or something else went wrong:
                     _wpFreeMem(somSelf, pszNewTitleCopy);
+
             } // end else if (!(pszNewTitleCopy = _wpAllocMem(somSelf,
         } // end if (!pszNewTitle)
     }
@@ -1945,6 +2133,8 @@ SOM_Scope BOOL  SOMLINK xo_wpSaveState(XFldObject *somSelf)
 {
     BOOL    brc = FALSE,
             fHacked = FALSE;
+    PTRASHDATA p;
+
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpSaveState");
 
@@ -1998,12 +2188,14 @@ SOM_Scope BOOL  SOMLINK xo_wpSaveState(XFldObject *somSelf)
     */
 
     // save deletion data if we are currently in the trash can
-    if (_cdateDeleted.year != 0)        // V0.9.16 (2001-12-06) [umoeller]
+    if (p = (PTRASHDATA)_pvTrashData)       // V0.9.20 (2002-07-25) [umoeller]
     {
-        _wpSaveData(somSelf, (PSZ)G_pcszXFldObject, 1,
-                    (PBYTE)&_cdateDeleted, sizeof(CDATE));
-        _wpSaveData(somSelf, (PSZ)G_pcszXFldObject, 2,
-                    (PBYTE)&_ctimeDeleted, sizeof(CTIME));
+        _wpSaveData(somSelf,
+                    (PSZ)G_pcszXFldObject, 1,
+                    (PBYTE)&p->cdateDeleted, sizeof(CDATE));
+        _wpSaveData(somSelf,
+                    (PSZ)G_pcszXFldObject, 2,
+                    (PBYTE)&p->ctimeDeleted, sizeof(CTIME));
     }
 
     return brc;
@@ -2023,8 +2215,12 @@ SOM_Scope BOOL  SOMLINK xo_wpRestoreState(XFldObject *somSelf,
                                           ULONG ulReserved)
 {
     BOOL    brc = FALSE;
+    CDATE   cdate;
+    CTIME   ctime;
     ULONG   cbcdate = sizeof(CDATE),
             cbctime = sizeof(CTIME);
+    PTRASHDATA p;
+    PSZ     pszObjectID;
 
     PIBMOBJECTDATA pData;
 
@@ -2054,84 +2250,27 @@ SOM_Scope BOOL  SOMLINK xo_wpRestoreState(XFldObject *somSelf,
     // this to NULL
     // V0.9.16 (2001-12-06) [umoeller]
     if (    (_pvWPObjectData)
-         && (((PIBMOBJECTDATA)_pvWPObjectData)->pszObjectID)
-         && (*(((PIBMOBJECTDATA)_pvWPObjectData)->pszObjectID))
+         && (pszObjectID = ((PIBMOBJECTDATA)_pvWPObjectData)->pszObjectID)
+         && (*pszObjectID)
        )
         wpshStore(somSelf,
                   &_pWszOriginalObjectID,
-                  ((PIBMOBJECTDATA)_pvWPObjectData)->pszObjectID,
+                  pszObjectID,
                   NULL);
 
     // restore trash can deletion
+    // updated V0.9.20 (2002-07-25) [umoeller]
     if (    (_wpRestoreData(somSelf, (PSZ)G_pcszXFldObject, 1,
-                            (PBYTE)&_cdateDeleted, &cbcdate))
+                            (PBYTE)&cdate, &cbcdate))
          && (_wpRestoreData(somSelf, (PSZ)G_pcszXFldObject, 2,
-                            (PBYTE)&_ctimeDeleted, &cbctime))
+                            (PBYTE)&ctime, &cbctime))
+         && (p = GetTrashData(somSelf, somThis))
        )
-        // both keys successfully restored:
-        ; // _fDeleted = TRUE;  V0.9.16 (2001-12-06) [umoeller]
-    else
-        _cdateDeleted.year = 0;         // V0.9.16 (2001-12-06) [umoeller]
-
-    return brc;
-}
-
-/*
- *@@ wpRestoreData:
- *      this instance method restores a 32-bit data
- *      value for the object data upon object awakening.
- *
- *      We check the "ulKey" value after having called
- *      the parent to be able to intercept the pointer
- *      to certain WPS-internal object data, which
- *      we cannot access otherwise. That's a real ugly
- *      kludge, but there's no other way to get certain
- *      object settings. ;-)
- *
- *      It is possible to override this method for WPObject
- *      even though WPObject does not define the implementation
- *      how object data is stored and restored. This works
- *      because the implementation apparently sits in
- *      wpRestoreState, which is overridden by the WPS
- *      base storage classes (WPAbstract, WPTransient,
- *      WPFileSystem). This method is _not_ overridden.
- *
- *@@added V0.9.1 (2000-01-22) [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xo_wpRestoreData(XFldObject *somSelf,
-                                         PSZ pszClass, ULONG ulKey,
-                                         PBYTE pValue, PULONG pcbValue)
-{
-    BOOL    brc = FALSE;
-    XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xo_wpRestoreData");
-
-    brc = XFldObject_parent_WPObject_wpRestoreData(somSelf,
-                                                   pszClass,
-                                                   ulKey, pValue,
-                                                   pcbValue);
-
-    /* disabled this code V0.9.19 (2002-07-01) [umoeller]
-    if ( (brc) && (pValue) )
     {
-        switch (ulKey)
-        {
-            case 11:        // IDKEY_OBJLONGS, not defined
-                _pObjectLongs = (PVOID)pValue;
-                // store object default view for xwpQueryDefaultView
-                // V0.9.16 (2001-11-25) [umoeller]
-                _ulDefaultView = _pObjectLongs->lDefaultView;
-
-                _cbObjectLongs = *pcbValue;
-
-                // object strings come right after this
-                _pObjectStrings = (PWPOBJECTSTRINGS)(   (PBYTE)(_pObjectLongs)
-                                                      + _cbObjectLongs
-                                                    );
-            break;
-        }
-    } */
+        // both keys successfully restored:
+        memcpy(&p->cdateDeleted, &cdate, sizeof(cdate));
+        memcpy(&p->ctimeDeleted, &ctime, sizeof(ctime));
+    }
 
     return brc;
 }
@@ -2167,8 +2306,9 @@ SOM_Scope ULONG  SOMLINK xo_wpFilterPopupMenu(XFldObject *somSelf,
     #endif
 
     // if object has been deleted already (ie. is in trashcan),
-    // remove delete
-    if (_cdateDeleted.year != 0)    // V0.9.16 (2001-12-06) [umoeller]
+    // remove delete... not that I can see how we can get a context
+    // menu for the object then ;-)
+    if (_pvTrashData)    // V0.9.20 (2002-07-25) [umoeller]
         ulMenuFilter &= ~CTXT_DELETE; // V0.9.5 (2000-09-20) [pr]
 
     // now suppress default menu items according to

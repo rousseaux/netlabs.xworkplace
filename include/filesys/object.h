@@ -39,6 +39,29 @@
         #define OBJSTYLE_LOCKEDINPLACE  0x00020000
     #endif
 
+    /*
+     *@@ TRASHDATA:
+     *      object deletion information if the object
+     *      is in the trash can. This is what _pTrashData
+     *      points to if != NULL.
+     *
+     *      I'd loved to have this declared in xfobj.idl,
+     *      but that would have required everyone to include
+     *      the container headers.
+     *
+     *@@added V0.9.20 (2002-07-25) [umoeller]
+     */
+
+    typedef struct _TRASHDATA
+    {
+        // CDATE and CTIME contain the date and time of deletion
+        CDATE       cdateDeleted;   // data for xwpQueryDeletion
+        CTIME       ctimeDeleted;   // data for xwpQueryDeletion
+        WPObject    *pTrashObject;  // corresponding trash object; this is set when
+                                    // the trash object is created (upon deletion
+                                    // or upon first trash can populate)
+    } TRASHDATA, *PTRASHDATA;
+
     /* ******************************************************************
      *
      *   Object internals
@@ -134,12 +157,24 @@
 
     #pragma pack()
 
-    #define OBJFL_WPFILESYSTEM              0x0001
-    #define OBJFL_WPFOLDER                  0x0002
-    #define OBJFL_WPABSTRACT                0x0004  // V0.9.19 (2002-04-24) [umoeller]
-    #define OBJFL_WPSHADOW                  0x0008
+    #define OBJFL_WPFILESYSTEM              0x00000001
+    #define OBJFL_WPFOLDER                  0x00000002
+    #define OBJFL_WPABSTRACT                0x00000004  // V0.9.19 (2002-04-24) [umoeller]
+    #define OBJFL_WPSHADOW                  0x00000008
 
-    #define OBJFL_INITIALIZED               0x1000
+    #define OBJFL_INITIALIZED               0x00001000
+
+    #define OBJLIST_RUNNINGSTORED           0x00010000
+    #define OBJLIST_CONFIGFOLDER            0x00020000
+#ifndef __NOFOLDERCONTENTS__
+    #define OBJLIST_FAVORITEFOLDER          0x00040000
+#endif
+#ifndef __NOQUICKOPEN__
+    #define OBJLIST_QUICKOPENFOLDER         0x00080000
+#endif
+    #define OBJLIST_HANDLESCACHE            0x00100000 // V0.9.9 (2001-04-02) [umoeller]
+    #define OBJLIST_DIRTYLIST               0x00200000 // V0.9.11 (2001-04-18) [umoeller]
+    #define OBJLIST_QUERYAWAKEFSOBJECT      0x00400000 // V0.9.16 (2001-10-25) [umoeller]
 
     WPObject* objResolveIfShadow(WPObject *somSelf);
 
@@ -262,24 +297,6 @@
                               ULONG ulListFlag);
 
     #endif
-
-    /* ******************************************************************
-     *
-     *   Object flags
-     *
-     ********************************************************************/
-
-    #define OBJLIST_RUNNINGSTORED           0x0001
-    #define OBJLIST_CONFIGFOLDER            0x0002
-#ifndef __NOFOLDERCONTENTS__
-    #define OBJLIST_FAVORITEFOLDER          0x0004
-#endif
-#ifndef __NOQUICKOPEN__
-    #define OBJLIST_QUICKOPENFOLDER         0x0008
-#endif
-    #define OBJLIST_HANDLESCACHE            0x0010 // V0.9.9 (2001-04-02) [umoeller]
-    #define OBJLIST_DIRTYLIST               0x0020 // V0.9.11 (2001-04-18) [umoeller]
-    #define OBJLIST_QUERYAWAKEFSOBJECT      0x0040 // V0.9.16 (2001-10-25) [umoeller]
 
     /* ******************************************************************
      *

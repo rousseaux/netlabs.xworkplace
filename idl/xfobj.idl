@@ -105,6 +105,9 @@ interface XFldObject : WPObject
                                     in ULONG ulPageID,
                                     in ULONG ulDefaultHelpPanel);
 
+    HPOINTER xwpShareIconWith(in WPObject pobjClient,
+                              in BOOL fMakeGlobal);
+
     ULONG xwpQueryRealDefaultView();
     PSZ xwpQueryOriginalObjectID();
 
@@ -156,7 +159,8 @@ interface XFldObject : WPObject
                   xwpFreeSetupBuffer,
                   xwpQueryOriginalObjectID,
                   xwpHotkeyOrBorderAction,
-                  xwpAddReplacementIconPage;
+                  xwpAddReplacementIconPage,
+                  xwpShareIconWith;
 
     /*
      * Class Modifiers:
@@ -184,13 +188,12 @@ interface XFldObject : WPObject
     // BOOL        fDeleted;       // if TRUE, the following two fields are valid
                     // removed V0.9.16 (2001-12-06) [umoeller]
 
-    // trash can deletion... if CDATE::year is != NULL, the object
-    // currently resides in the trash can, and CDATE and CTIME then
-    // contain the date and time of deletion (removed the extra
-    // fDeleted flag V0.9.16 (2001-12-06) [umoeller])
-    CDATE       cdateDeleted;   // data for xwpQueryDeletion, if fDeleted == TRUE
-    CTIME       ctimeDeleted;   // data for xwpQueryDeletion, if fDeleted == TRUE
-
+    // trash can deletion; this is only != NULL if the object
+    // currently resides in the trash can. We use this extra
+    // pointer to avoid having to allocate all the fields
+    // with every object, even if it is not in the trash.
+    // V0.9.20 (2002-07-25) [umoeller]
+    PVOID       pvTrashData;
 
     // pointer to WPObject instance data
     // V0.9.18 (2002-03-23) [umoeller]
@@ -209,14 +212,14 @@ interface XFldObject : WPObject
     // the following has been added with V0.9.16 (2001-12-06) [umoeller]
     //# PWPOBJECTSTRINGS pObjectStrings;  // ptr to array of strings in instance data
 
-    WPObject    pTrashObject;   // if the object has been deleted, this is the
-                                // corresponding trash object; this is set when
-                                // the trash object is created (upon deletion
-                                // or upon first trash can populate)
-
     ULONG       ulListNotify;   // OBJLIST_* flags set with xwpSetListNotify
 
     PVOID       pvllWidgetNotifies; // really a PLINKLIST for xwpSetWidgetNotify
+
+    // tree of WPFileSystem objects
+    // V0.9.20 (2002-07-25) [umoeller]
+    PVOID           IconSharesTreeRoot;        // a TREE* really
+    LONG            cIconShares;
 
     // ULONG       ulDefaultView;
                             // for xwpQueryRealDefaultView
@@ -246,7 +249,7 @@ interface XFldObject : WPObject
 
     wpSaveState: override;
     wpRestoreState: override;
-    wpRestoreData: override;
+//# wpRestoreData: override;    removed V0.9.20 (2002-07-25) [umoeller]
 
     wpFilterPopupMenu: override;
     wpModifyPopupMenu: override;

@@ -35,6 +35,12 @@
         #error trash.h requires xtrash.h to be included.
     #endif
 
+    /* ******************************************************************
+     *
+     *   Definitions
+     *
+     ********************************************************************/
+
     #define CB_SUPPORTED_DRIVES     24  // fixed V0.9.4 (2000-06-08) [umoeller]
 
     #define XTRC_INVALID            0

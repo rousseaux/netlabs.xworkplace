@@ -904,17 +904,29 @@ VOID pgrBuildWinlist(VOID)
     {
         HENUM henum;
         HWND hwndTemp;
+        LINKLIST llWnds;
+        PLISTNODE pNode;
+        lstInit(&llWnds, FALSE);
 
         ClearWinlist();
 
+        // first, build a stack of open windows because
+        // we want to add them in reverse order!
+        // V0.9.20 (2002-07-22) [umoeller]
         henum = WinBeginEnumWindows(HWND_DESKTOP);
         while (hwndTemp = WinGetNextWindow(henum))
         {
-            // next window found:
-            // create a temporary WININFO struct here... this will
-            // allocate the PSZ's in that struct, which we can
-            // then copy
+            lstAppendItem(&llWnds, (PVOID)hwndTemp);
+        }
+        WinEndEnumWindows(henum);
+
+        // now run through the list in reverse order
+        for (pNode = lstQueryLastNode(&llWnds);
+             pNode;
+             pNode = pNode->pPrevious)
+        {
             XWINDATA dataTemp;
+            hwndTemp = (HWND)pNode->pItemData;
             dataTemp.swctl.hwnd = hwndTemp;
             if (pgrGetWinData(&dataTemp))
             {
@@ -929,9 +941,10 @@ VOID pgrBuildWinlist(VOID)
                 }
             }
         }
-        WinEndEnumWindows(henum);
 
         pgrUnlockWinlist();
+
+        lstClear(&llWnds);
     }
 
     WinPostMsg(G_pHookData->hwndPagerClient,

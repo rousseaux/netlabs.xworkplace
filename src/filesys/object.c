@@ -2157,7 +2157,7 @@ VOID objRefreshUseItems(WPObject *somSelf,
                    (MPARAM)1);
 
         // and refresh the view
-        WinSendMsg(pRecordItem->hwndCnr,    /* Invalidate record */
+        WinSendMsg(pRecordItem->hwndCnr,
                    CM_INVALIDATERECORD,
                    (MPARAM)&pRecordItem->pRecord,
                    MPFROM2SHORT(1,
@@ -2267,8 +2267,8 @@ static BOOL WriteObjectsList(POBJECTLIST pll,
 
     if (pll->fLoaded)
     {
-        PLISTNODE pNode = lstQueryFirstNode(&pll->ll);
-        if (pNode)
+        PLISTNODE pNode;
+        if (pNode = lstQueryFirstNode(&pll->ll))
         {
             // list is not empty: recompose string
             XSTRING strTemp;
@@ -2328,16 +2328,10 @@ static BOOL LoadObjectsList(POBJECTLIST pll,
                             PCSZ pcszIniKey)
 {
     BOOL        brc = FALSE;
-    // ULONG       ulSize;
     PSZ         pszHandles = NULL;
 
-    // _PmpfF(("  loading %s, pll 0x%lX", pcszIniKey, pll));
-
     if (pll->fLoaded)
-    {
-        // _Pmpf(("        already loaded!!"));
         return FALSE;  // V0.9.16 (2001-10-24) [umoeller]
-    }
 
     TRY_LOUD(excpt1)
     {

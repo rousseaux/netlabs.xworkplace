@@ -2239,6 +2239,7 @@ ULONG ConfirmRename(HWND hwndOwner,
  *      folder.
  *
  *@@added V0.9.19 (2002-06-18) [umoeller]
+ *@@changed V0.9.20 (2002-07-25) [umoeller]: fixed wrong "rename everything to upper case"
  */
 
 VOID DoRename(HWND hwndDlg)
@@ -2335,7 +2336,9 @@ VOID DoRename(HWND hwndDlg)
                     // create target filename
                     CHAR szNewTitle[CCHMAXPATH];
                     int rc;
-                    if (!rxpSubsWith(pcszTitleMatch,
+                    if (!rxpSubsWith(pcszTitleOrig, // pcszTitleMatch,
+                                            // use orig title, or everything ends up in upper case
+                                            // V0.9.20 (2002-07-25) [umoeller]
                                      pos,
                                      length,
                                      &mi,

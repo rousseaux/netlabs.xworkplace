@@ -100,6 +100,7 @@ $(OUTPUTDIR)\filetype.obj \
 $(OUTPUTDIR)\folder.obj \
 $(OUTPUTDIR)\fops_bottom.obj \
 $(OUTPUTDIR)\fops_top.obj \
+$(OUTPUTDIR)\iconpage.obj \
 $(OUTPUTDIR)\icons.obj \
 $(OUTPUTDIR)\object.obj \
 $(OUTPUTDIR)\program.obj \
