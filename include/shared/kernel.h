@@ -355,6 +355,8 @@
 
     #define T1M_INITIATEXSHUTDOWN       (WM_USER+290)    // V0.9.12 (2001-04-28) [umoeller]
 
+    #define T1M_OPENRUNDIALOG           (WM_USER+291)    // V0.9.14 (2001-08-07) [pr]
+
     BOOL krnPostThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
 
     MRESULT krnSendThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2);

@@ -422,6 +422,16 @@ WARNING: This feature is still slightly unstable. It will probably not hang your
 <--XFL0220-->: Delete tray
 <--XFL0221-->: Are you sure you wish to delete the tray named "%1"?
 
+;
+; the following items are new with V0.9.14
+;
+
+<--XFL0222-->: The XCenter failed to create the widget of the class "%1".
+
+This widget class cannot be used in a tray.
+
+Do you wish to remove this widget from the XCenter's widget list?
+
 ; ---------------------------------------------------------------------------------
 ;
 ; V0.9.0:

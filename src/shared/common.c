@@ -3686,17 +3686,37 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
  *@@changed V0.9.11 (2001-04-18) [umoeller]: fixed entry field lengths
  *@@changed V0.9.12 (2001-05-26) [umoeller]: added return value
  *@@changed V0.9.14 (2001-07-28) [umoeller]: fixed parameter handling which was ignored
+ *@@changed V0.9.14 (2001-08-07) [pr]: changed dialog handling, fixed bugs
  */
 
 HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLHANDLE for active desktop
                        const char *pcszStartupDir)  // in: startup dir or NULL
 {
-    HAPP happ = NULLHANDLE;
+    static HWND hwndDlg = NULLHANDLE;
+    HAPP        happ = NULLHANDLE;
 
-    HWND hwndDlg;
+    // Activate the current Run dialog if user tries to open a new one V0.9.14
+    if (hwndDlg)
+    {
+        HWND    hwnd = hwndDlg, hwndTmp;
+        HENUM   henum = WinBeginEnumWindows(HWND_DESKTOP);
 
+        // Find the Browse dialog if it is open
+        while (hwndTmp = WinGetNextWindow(henum))
+            if (WinQueryWindow (hwndTmp, QW_OWNER) == hwndDlg)
+            {
+                hwnd = hwndTmp;
+                break;
+            }
+
+        WinEndEnumWindows(henum);
+        WinSetFocus (HWND_DESKTOP, hwnd);
+        return(happ);
+    }
+
+    /* V0.9.14 This is a very bad idea as it means the desktop is disabled
     if (!hwndOwner)
-        hwndOwner = cmnQueryActiveDesktopHWND();
+        hwndOwner = cmnQueryActiveDesktopHWND(); */
 
     if (hwndDlg = WinLoadDlg(HWND_DESKTOP,
                              hwndOwner,
@@ -3776,10 +3796,14 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
                         pd.pszParameters = (PSZ)pParams;
                         pd.pszStartupDir = pszStartup;
 
+                        pd.swpInitial.hwndInsertBehind = HWND_TOP; // V0.9.14
                         if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_MINIMIZED))
                             pd.swpInitial.fl = SWP_MINIMIZE;
+                        else
+                            pd.swpInitial.fl = SWP_ACTIVATE; // V0.9.14
+
                         if (!winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_AUTOCLOSE))
-                            pd.swpInitial.fl = SWP_NOAUTOCLOSE;
+                            pd.swpInitial.fl |= SWP_NOAUTOCLOSE; // V0.9.14
 
                         happ = appStartApp(NULLHANDLE,        // no notify
                                            &pd);
@@ -3793,6 +3817,7 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
                 free(pszStartup);
         }
         WinDestroyWindow(hwndDlg);
+        hwndDlg = NULLHANDLE; // V0.9.14
     }
 
     return (happ);      // V0.9.12 (2001-05-26) [umoeller]

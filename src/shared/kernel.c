@@ -963,6 +963,7 @@ VOID krn_T1M_OpenObjectFromHandle(HWND hwndObject,
  *@@changed V0.9.3 (2000-04-25) [umoeller]: startup folder was permanently disabled when panic flag was set; fixed
  *@@changed V0.9.4 (2000-06-05) [umoeller]: added exception handling
  *@@changed V0.9.6 (2000-10-16) [umoeller]: added WM_APPTERMINATENOTIFY
+ *@@changed V0.9.14 (2001-08-07) [pr]: added T1M_OPENRUNDIALOG
  */
 
 MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1500,6 +1501,17 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
                         xsdInitiateShutdown();
                     break;
                 }
+            break;
+
+            /*
+             * T1M_OPENRUNDIALOG:
+             *      this gets posted from the XCenter thread
+             *      to open the Run dialog.
+             */
+
+            case T1M_OPENRUNDIALOG:
+                cmnRunCommandLine((HWND)mp1,
+                                  (const char *)mp2);
             break;
 
             #ifdef __DEBUG__

@@ -1031,10 +1031,8 @@
 #define ID_XSDI_MOUSE_IGNOREDESKTOP     3407
 #define ID_XSDI_MOUSE_IGNOREPAGEMAGE    3408
 #define ID_XSDI_MOUSE_IGNOREXCENTER     3409    // V0.9.7 (2000-12-08) [umoeller]
-#define ID_XSDI_MOUSE_AUTOHIDE_CHECK    3410
-#define ID_XSDI_MOUSE_AUTOHIDE_TXT1     3411
-#define ID_XSDI_MOUSE_AUTOHIDE_SLIDER   3412
-#define ID_XSDI_MOUSE_AUTOHIDE_TXT2     3413
+// ID_XSDI_MOUSE_AUTOHIDE_* moved to ID_XSD_MOUSE_MOVEMENT2
+// V0.9.14 (2001-08-02) [lafaix]
 #define ID_XSDI_MOUSE_SLIDINGMENU       3414
 #define ID_XSDI_MOUSE_MENUDELAY_TXT1    3415
 #define ID_XSDI_MOUSE_MENUDELAY_SLIDER  3416
@@ -1073,6 +1071,15 @@
 #define ID_XSDI_MOUSE_MB3SCROLLREVERSE  3462
 //#define ID_XSDI_MOUSE_MB3CLK2MB1DBLCLK  3463
 #define ID_XSDI_MOUSE_MB3CLICK_DROP     3465    // added V0.9.9 (2001-03-14) [lafaix]
+
+#define ID_XSD_MOUSE_MOVEMENT2          3470    // added V0.9.14 (2001-08-02) [lafaix]
+#define ID_XSDI_MOUSE_AUTOHIDE_CHECK    3410
+#define ID_XSDI_MOUSE_AUTOHIDE_TXT1     3411
+#define ID_XSDI_MOUSE_AUTOHIDE_SLIDER   3412
+#define ID_XSDI_MOUSE_AUTOHIDE_TXT2     3413
+#define ID_XSDI_MOUSE_AUTOHIDE_CHECKMNU 3475
+#define ID_XSDI_MOUSE_AUTOHIDE_CHECKBTN 3476
+#define ID_XSDI_MOUSE_AUTOMOVE_CHECK    3477
 
 /******************************************
  * XCenter (V0.9.7)         >= 3600       *
@@ -1376,6 +1383,9 @@
 #define ID_XFMI_OFS_CLOSEALLTHISFDR     (WPMENUID_USER+52)      // "close all of this fdr"
 #define ID_XFMI_OFS_CLOSEALLSUBFDRS     (WPMENUID_USER+53)      // "close all subfdrs"
 
+// "Run" menu item in XFolder/XFldDisk V0.9.14 (2001-08-07) [pr]
+#define ID_XFMI_OFS_RUN                 (WPMENUID_USER+54)
+
 // this is the value used for variable menu items, i.e.
 // those inserted according to the config folder and by
 // the "folder content" functions; XFolder will use this
@@ -1432,6 +1442,7 @@
 #define ID_XSSI_NLS_AUTHOR        5021      // new with V0.9.0
 // #define ID_XSSI_KERNEL_BUILD      5022      // new with V0.9.0; for /main/xfldr.rc
         // removed V0.9.7 (2000-12-14) [umoeller]
+#define ID_XSSI_RUN               5022      // new with V0.9.14
 
 // folder hotkeys: key descriptions
 #define ID_XSSI_KEY_CTRL             5201

@@ -687,6 +687,7 @@
     #define SP_MOUSE_MOVEMENT       130     // new with V0.9.2 (2000-02-26) [umoeller]
     #define SP_MOUSE_CORNERS        131     // new with V0.9.2 (2000-02-26) [umoeller]
     #define SP_MOUSE_MAPPINGS2      132     // new with V0.9.1
+    #define SP_MOUSE_MOVEMENT2      133     // new with V0.9.14 (2001-08-02) [lafaix]
 
     // 14) XWPScreen
     #define SP_PAGEMAGE_MAIN        140     // new with V0.9.3 (2000-04-09) [umoeller]

@@ -803,6 +803,7 @@ BOOL InsertConfigFolderItems(XFolder *somSelf,
  *@@changed V0.9.1 (2000-02-01) [umoeller]: "select some" was added for Tree view also; fixed
  *@@changed V0.9.3 (2000-04-10) [umoeller]: snap2grid feature setting was ignored; fixed
  *@@changed V0.9.12 (2001-05-22) [umoeller]: "refresh now" was added even for non-open-view menus
+ *@@changed V0.9.14 (2001-08-07) [pr]: added Run menu item
  */
 
 BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
@@ -828,6 +829,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
         XFolderData *somThis = XFolderGetData(somSelf);
         HWND        hwndFrame = NULLHANDLE;
         ULONG       ulView = -1;
+        BOOL        bSepAdded = FALSE;
         POINTL      ptlMouse;
 
         if (hwndCnr)
@@ -1048,6 +1050,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
         {
             winhInsertMenuSeparator(hwndMenu, MIT_END,
                                     ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+            bSepAdded = TRUE; // V0.9.14
 
             winhInsertMenuItem(hwndMenu, MIT_END,
                                ulVarMenuOfs + ID_XFMI_OFS_COPYFILENAME_MENU,
@@ -1055,14 +1058,34 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                                0, 0);
         }
 
+        // V0.9.14
+/*      if (pGlobalSettings->AddRunItem)
+        {
+            if (!bSepAdded)
+            {
+                winhInsertMenuSeparator(hwndMenu, MIT_END,
+                                        ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+
+                bSepAdded = TRUE;
+            }
+
+            winhInsertMenuItem(hwndMenu,
+                               MIT_END,
+                               ulVarMenuOfs + ID_XFMI_OFS_RUN,
+                               cmnGetString(ID_XSSI_RUN),
+                               MIS_TEXT,
+                               0);
+        } */
+
         // insert the "Refresh now" and "Snap to grid" items only
         // if the folder is currently open
         if (ulView != -1)           // fixed V0.9.12 (2001-05-22) [umoeller]
         {
-            if (!pGlobalSettings->AddCopyFilenameItem)
+            if (!bSepAdded) // V0.9.14
                 winhInsertMenuSeparator(hwndMenu,
                                         MIT_END,
                                         ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+            bSepAdded = TRUE;
 
             // "Refresh now"
             if (pGlobalSettings->MoveRefreshNow)
@@ -1943,6 +1966,19 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                 case ID_XFMI_OFS_BORED:
                     // explain how to configure XFolder
                     cmnMessageBoxMsg(HWND_DESKTOP, 116, 135, MB_OK);
+                    brc = TRUE;
+                break;
+
+
+                /*
+                 * ID_XFMI_OFS_RUN:
+                 *      open Run dialog
+                 *
+                 *  V0.9.14 (2001-08-07) [pr]
+                 */
+
+                case ID_XFMI_OFS_RUN:
+                    cmnRunCommandLine(NULLHANDLE, NULL);
                     brc = TRUE;
                 break;
 

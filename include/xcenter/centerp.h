@@ -424,6 +424,9 @@
                       HWND hwndTrayWidget,
                       PDRAGINFO pdrgInfo);
 
+        BOOL ctrpVerifyType(PDRAGITEM pdrgInfo,
+                            const char *pcszType);
+
     /* ******************************************************************
      *
      *   Widget window creation

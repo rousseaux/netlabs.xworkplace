@@ -201,6 +201,14 @@
         MRESULT XWPENTRY hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                             ULONG ulItemID, USHORT usNotifyCode,
                                             ULONG ulExtra);
+
+        // the following two funcs added V0.9.14 (2001-08-02) [lafaix]
+        VOID XWPENTRY hifMouseMovement2InitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                               ULONG flFlags);
+
+        MRESULT XWPENTRY hifMouseMovement2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                            ULONG ulItemID, USHORT usNotifyCode,
+                                            ULONG ulExtra);
     #endif
 
 #endif

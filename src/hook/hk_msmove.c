@@ -807,6 +807,7 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
  *
  *@@added V0.9.1 (99-12-03) [umoeller]
  *@@changed V0.9.5 (2000-09-20) [pr]: fixed auto-hide bug
+ *@@changed V0.9.14 (2001-08-01) [lafaix]: allows auto-hide disabling while in menu mode
  */
 
 VOID WMMouseMove_AutoHideMouse(VOID)
@@ -829,7 +830,9 @@ VOID WMMouseMove_AutoHideMouse(VOID)
     }
 
     // (re)start timer
-    if (G_HookData.HookConfig.fAutoHideMouse) // V0.9.5 (2000-09-20) [pr] fix auto-hide mouse bug
+    if (    (G_HookData.HookConfig.fAutoHideMouse) // V0.9.5 (2000-09-20) [pr] fix auto-hide mouse bug
+         && (G_hwndRootMenu == NULLHANDLE) // V0.9.14 (2001-08-01) [lafaix]
+       )
         G_HookData.idAutoHideTimer =
             WinStartTimer(G_HookData.habDaemonObject,
                           G_HookData.hwndDaemonObject,
@@ -1021,6 +1024,40 @@ BOOL WMMouseMove(PQMSG pqmsg,
                             WMMouseMove_SlidingMenus(pqmsg->hwnd,
                                                      pqmsg->mp1,
                                                      pqmsg->mp2);
+
+                    /*
+                     * auto hide disabled over buttons
+                     */
+
+                    if (    (G_HookData.HookConfig.fAutoHideMouse)
+                         && (G_HookData.HookConfig.ulAutoHideFlags & AHF_IGNOREBUTTONS)
+                         && (strcmp(szClassUnderMouse, "#3") == 0)
+                       )
+                    {
+                        // window under mouse is a button, do not restart autohide
+                        // is the timer currently running?
+                        if (G_HookData.idAutoHideTimer != NULLHANDLE)
+                        {
+                            // stop the running async timer
+                            WinStopTimer(G_HookData.habDaemonObject,
+                                         G_HookData.hwndDaemonObject,
+                                         G_HookData.idAutoHideTimer);
+
+                            G_HookData.idAutoHideTimer = NULLHANDLE;
+                        }
+
+                        // show the mouse pointer now
+                        if (G_HookData.fMousePointerHidden)
+                        {
+                            WinShowPointer(HWND_DESKTOP, TRUE);
+                            G_HookData.fMousePointerHidden = FALSE;
+                        }
+
+                        // do not restart autohide (we undefine fGlobalMouseMoved
+                        // so that the ending test does not hide the pointer again)
+                        fGlobalMouseMoved = FALSE;
+                    }
+
                 } // end if (fMouseMoved)
 
             } // if (WinQueryCapture(HWND_DESKTOP) == NULLHANDLE)

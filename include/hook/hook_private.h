@@ -295,7 +295,7 @@
     extern HWND    G_hwndLastSubframeUnderMouse;
     extern POINTS  G_ptsMousePosWin;
     extern POINTL  G_ptlMousePosDesktop;
-
+    extern HWND    G_hwndRootMenu;
 #endif
 
 

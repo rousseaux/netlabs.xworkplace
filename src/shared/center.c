@@ -733,6 +733,7 @@ VOID ctrDrawWidgetEmphasis(PXCENTERWIDGET pWidget,
  *      implementation for WM_CONTEXTMENU in ctrDefWidgetProc.
  *
  *@@changed V0.9.13 (2001-06-23) [umoeller]: added WGTF_TRANSPARENT support
+ *@@changed V0.9.14 (2001-08-05) [lafaix]: optimized WGTF_TRANSPARENT support
  */
 
 VOID DwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
@@ -740,31 +741,32 @@ VOID DwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
     if (pWidget)
     {
-        PXCENTERWIDGETCLASS pClass = ctrpFindClass(pWidget->pcszWidgetClass);
-        if (pClass)
+        // if transparent, use the parent context menu instead
+        if (    (pWidget->ulClassFlags & WGTF_TRANSPARENT)
+             && (WinSendMsg(pWidget->hwndWidget,
+                            WM_CONTROL,
+                            MPFROM2SHORT(ID_XCENTER_CLIENT,
+                                         XN_HITTEST),
+                            mp1) == FALSE)
+           )
         {
-            // if transparent, use the parent context menu instead
-            if (    ((pClass->ulClassFlags & WGTF_TRANSPARENT) == WGTF_TRANSPARENT)
-                 && (WinSendMsg(pWidget->hwndWidget,
-                                WM_CONTROL,
-                                MPFROM2SHORT(ID_XCENTER_CLIENT,
-                                             XN_HITTEST),
-                                mp1) == FALSE)
-               )
-            {
-                // we must adjust the mouse coordinate so that the
-                // popup menu is well positioned for the parent window
-                SWP swp;
+            // we must adjust the mouse coordinate so that the
+            // popup menu is well positioned for the parent window
+            SWP swp;
 
-                WinQueryWindowPos(hwnd, (PSWP)&swp);
+            WinQueryWindowPos(hwnd, (PSWP)&swp);
 
-                WinSendMsg(WinQueryWindow(hwnd, QW_PARENT),
-                           WM_CONTEXTMENU,
-                           MPFROM2SHORT(SHORT1FROMMP(mp1) + swp.x,
-                                        SHORT2FROMMP(mp1) + swp.y),
-                           mp2);
-            }
-            else
+            WinSendMsg(WinQueryWindow(hwnd, QW_PARENT),
+                       WM_CONTEXTMENU,
+                       MPFROM2SHORT(SHORT1FROMMP(mp1) + swp.x,
+                                    SHORT2FROMMP(mp1) + swp.y),
+                       mp2);
+        }
+        else
+        {
+            PXCENTERWIDGETCLASS pClass = ctrpFindClass(pWidget->pcszWidgetClass);
+
+            if (pClass)
             {
                 // enable "properties" if class has show-settings proc
                 WinEnableMenuItem(pWidget->hwndContextMenu,
@@ -1112,6 +1114,7 @@ BOOL DwgtRender(HWND hwnd,
  *
  *@@added V0.9.7 (2000-12-02) [umoeller]
  *@@changed V0.9.11 (2001-04-25) [umoeller]: changed default widget menu item IDs
+ *@@changed V0.9.14 (2001-08-05) [lafaix]: added dnd support for transparent widgets
  */
 
 MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1176,17 +1179,63 @@ MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
         /*
          * DM_DRAGOVER:
-         *      forward this to the XCenter client
+         * DM_DRAGLEAVE:
+         * DM_DROP:
+         *      forward this to the parent if the widget is
+         *      transparent
          */
 
-/*         case DM_DRAGOVER:
+        case DM_DRAGOVER:
         case DM_DRAGLEAVE:
         case DM_DROP:
-            mrc = WinSendMsg(WinQueryWindow(hwnd, QW_PARENT),
-                             msg,
-                             mp1,
-                             mp2);
-        break; */
+        {
+            PXCENTERWIDGET pWidget;
+
+            if (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+            {
+                // if transparent, use the parent context menu instead
+                if (    (pWidget->ulClassFlags & WGTF_TRANSPARENT)
+                     && (WinSendMsg(pWidget->hwndWidget,
+                                    WM_CONTROL,
+                                    MPFROM2SHORT(ID_XCENTER_CLIENT,
+                                                 XN_HITTEST),
+                                    mp2) == FALSE) // @todo convert mp2 to client pos
+                   )
+                    mrc = WinSendMsg(WinQueryWindow(hwnd, QW_PARENT),
+                                     msg,
+                                     mp1,
+                                     mp2);
+                else
+                    mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
+            }
+        break; }
+
+        /*
+         * WM_BUTTON1*:
+         *      swallow if not transparent
+         *
+         */
+
+        case WM_BUTTON1CLICK:
+        case WM_BUTTON1DBLCLK:
+        case WM_BUTTON1DOWN:
+        case WM_BUTTON1UP:
+        {
+            PXCENTERWIDGET pWidget;
+
+            if (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+            {
+                // if transparent, do not swallow
+                if (    (pWidget->ulClassFlags & WGTF_TRANSPARENT)
+                     && (WinSendMsg(pWidget->hwndWidget,
+                                    WM_CONTROL,
+                                    MPFROM2SHORT(ID_XCENTER_CLIENT,
+                                                 XN_HITTEST),
+                                    mp1) == FALSE)
+                   )
+                    mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
+            }
+        break; }
 
         /*
          * WM_DESTROY:

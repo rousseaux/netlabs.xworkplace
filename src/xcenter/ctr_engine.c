@@ -1548,6 +1548,7 @@ VOID ctrpRemoveDragoverEmphasis(HWND hwndClient)
  *@@added V0.9.9 (2001-03-09) [umoeller]
  *@@changed V0.9.13 (2001-06-27) [umoeller]: fixes for tray widgets
  *@@changed V0.9.14 (2001-07-31) [lafaix]: defines a default name for the widget
+ *@@changed V0.9.14 (2001-08-05) [lafaix]: widgets can be copied too, now
  */
 
 HWND ctrpDragWidget(HWND hwnd,
@@ -1596,8 +1597,8 @@ HWND ctrpDragWidget(HWND hwnd,
                     // as the RMF, use our private mechanism and format
                     drgItem.hstrRMF = DrgAddStrHandle(WIDGET_DRAG_RMF);
                     drgItem.hstrContainerName = 0;
-                    drgItem.hstrSourceName = DrgAddStrHandle((PSZ)pWidget->pcszWidgetClass);
-                    drgItem.hstrTargetName = 0;
+                    drgItem.hstrSourceName = 0;
+                    drgItem.hstrTargetName = DrgAddStrHandle((PSZ)pWidget->pcszWidgetClass);
                     drgItem.cxOffset = 0;          // X-offset of the origin of
                                                  // the image from the pointer
                                                  // hotspot
@@ -1606,7 +1607,7 @@ HWND ctrpDragWidget(HWND hwnd,
                                                  // hotspot
                     drgItem.fsControl = 0;         // Source item control flags
                                                  // object is open
-                    drgItem.fsSupportedOps = DO_MOVEABLE;
+                    drgItem.fsSupportedOps = DO_MOVEABLE | DO_COPYABLE;
 
                     if (DrgSetDragitem(pdrgInfo,
                                        &drgItem,
@@ -1645,6 +1646,65 @@ HWND ctrpDragWidget(HWND hwnd,
     }
 
     return (hwndDrop);
+}
+
+/*
+ *@@ ctrpVerifyType:
+ *      just like DrgVerifyType, except that it handles the WPS
+ *      bug that cause line feed to be used in hstrType instead
+ *      of comma.
+ *
+ *      Current restriction: pszType must be just one type.
+ *
+ *@@added V0.9.14 (2001-08-06) [lafaix]
+ */
+
+BOOL ctrpVerifyType(PDRAGITEM pdrgItem,
+                    const char *pszType)
+{
+    BOOL  brc = FALSE;
+
+    PSZ   pBuffer;
+    ULONG ulStrlen;
+
+    // len(hstrType) + 3 (final 0, plus leading and trailing comma)
+    ulStrlen = DrgQueryStrNameLen(pdrgItem->hstrType) + 3;
+
+    if (pBuffer = (PSZ)malloc(ulStrlen))
+    {
+        PSZ pNeedle;
+
+        pBuffer[0] = ',';
+
+        DrgQueryStrName(pdrgItem->hstrType,
+                        ulStrlen,
+                        pBuffer+1);
+
+        strcat(pBuffer, ",");
+
+        if (pNeedle = malloc(strlen(pszType)+3))
+        {
+            PSZ pszCur = pBuffer;
+            pNeedle[0] = ',';
+            strcpy(pNeedle+1, pszType);
+            strcat(pNeedle, ",");
+
+            while (*pszCur)
+            {
+                if (*pszCur == '\n')
+                    *pszCur = ',';
+                pszCur++;
+            }
+
+            brc = (strstr(pBuffer, pNeedle) != NULL);
+
+            free(pNeedle);
+        }
+
+        free(pBuffer);
+    }
+
+    return (brc);
 }
 
 /*
@@ -1732,7 +1792,7 @@ PLINKLIST GetDragoverObjects(PDRAGINFO pdrgInfo,
             PDRAGITEM pdrgItem = DrgQueryDragitemPtr(pdrgInfo, ul);
 
             if (    (DrgVerifyRMF(pdrgItem, "DRM_OS2FILE", NULL))
-                 && (DrgVerifyType(pdrgItem, DRT_WIDGET))
+                 && (ctrpVerifyType(pdrgItem, DRT_WIDGET))
                )
             {
                 if (!pllObjects)
@@ -1798,6 +1858,7 @@ PLINKLIST GetDragoverObjects(PDRAGINFO pdrgInfo,
  *
  *@@added V0.9.7 (2000-12-02) [umoeller]
  *@@changed V0.9.13 (2001-06-21) [umoeller]: added hwndTrayWidget for tray support
+ *@@changed V0.9.14 (2001-08-05) [lafaix]: added widget transparency support
  */
 
 ULONG FindWidgetFromClientXY(PXCENTERWINDATA pXCenterData,
@@ -1873,6 +1934,28 @@ ULONG FindWidgetFromClientXY(PXCENTERWINDATA pXCenterData,
             }
         }
         else
+        if (pView->Widget.ulClassFlags & WGTF_TRANSPARENT)
+        {
+            // widget supports transparency and we are over a transparent
+            // part of it (or else we wouldn't be there)
+            // V0.9.14 (2001-08-05) [lafaix]
+
+            if (pfIsSizeable)
+                *pfIsSizeable = pView->Widget.fSizeable;
+            if (ppViewOver)
+                *ppViewOver = pView;
+
+            // if we are over the left half, let's return the index of
+            // the preceeding widget, so that drops can behave somewhat
+            // intuitively
+            if (sx <= ((pView->xCurrent + ulRightEdge + ulSpacingThis) / 2))
+                ul--;
+            if (pulIndexOver)
+                *pulIndexOver = ul;
+
+            return (1);
+        }
+        else
             break;
 
         pNode = pNode->pNext;
@@ -1880,6 +1963,50 @@ ULONG FindWidgetFromClientXY(PXCENTERWINDATA pXCenterData,
     }
 
     return (0);
+}
+
+/*
+ *@@ CheckIfPresent:
+ *      tests is a widget of a specified class is already present in
+ *      the XCenter
+ *
+ *@@added V0.9.14 (2001-08-06) [lafaix]
+ */
+
+BOOL CheckIfPresent(XCenter *somSelf,
+                    PXCENTERWIDGET pWidget,
+                    BOOL bMove)
+{
+    BOOL            brc = FALSE;
+    PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(pWidget->pGlobals->hwndClient,
+                                                                      QWL_USER);
+
+    if (somSelf == pXCenterData->somSelf)
+    {
+        // it's an operation local to the XCenter, no need to check
+        // further
+        brc = !bMove;
+    }
+    else
+    {
+        PLINKLIST pllWidgetSettings = ctrpQuerySettingsList(somSelf);
+        PLISTNODE pNode = lstQueryFirstNode(pllWidgetSettings);
+
+        while (pNode)
+        {
+            PPRIVATEWIDGETSETTING pSettingThis = (PPRIVATEWIDGETSETTING)pNode->pItemData;
+            if (strcmp(pSettingThis->Public.pszWidgetClass,
+                       pWidget->pcszWidgetClass)
+                   == 0)
+            {
+                // widget of this class exists:
+                brc = TRUE;
+                break;
+            }
+            pNode = pNode->pNext;
+        }
+    }
+    return (brc);
 }
 
 /*
@@ -1892,6 +2019,7 @@ ULONG FindWidgetFromClientXY(PXCENTERWINDATA pXCenterData,
  *@@changed V0.9.9 (2001-03-10) [umoeller]: target emphasis was never drawn
  *@@changed V0.9.9 (2001-03-10) [umoeller]: made target emphasis clearer
  *@@changed V0.9.13 (2001-06-21) [umoeller]: renamed from ClientDragOver, added tray support
+ *@@changed V0.9.14 (2001-08-05) [lafaix]: drop acceptance part rewritten
  */
 
 MRESULT ctrpDragOver(HWND hwndClient,
@@ -1922,44 +2050,72 @@ MRESULT ctrpDragOver(HWND hwndClient,
     // go!
     if (DrgAccessDraginfo(pdrgInfo))
     {
-        // is this a widget being dragged within the XCenter?
-        // make sure the source is the SAME XCenter;
-        // we cannot allow dragging widgets BETWEEN
-        // XCenters
-        if (pdrgInfo->hwndSource == pGlobals->hwndClient)
+        // rewrite:
+        if (pdrgInfo->cditem)
         {
-            if (    (    (pdrgInfo->usOperation == DO_DEFAULT)
+            PDRAGITEM pdrgItem = DrgQueryDragitemPtr(pdrgInfo, 0);
+
+            if (    (pdrgInfo->cditem == 1)
+                 && (DrgVerifyRMF(pdrgItem,
+                                  WIDGET_DRAG_MECH,
+                                  NULL))
+                 && (    (pdrgInfo->usOperation == DO_DEFAULT)
                       || (pdrgInfo->usOperation == DO_MOVE)
                     )
-                 && (pdrgInfo->cditem == 1)
-                 && (pdrgInfo->cditem == 1)
                )
             {
-                // source is same XCenter:
-                PDRAGITEM pdrgItem = DrgQueryDragitemPtr(pdrgInfo, 0);
-                if (DrgVerifyRMF(pdrgItem,
-                                 WIDGET_DRAG_MECH, // mechanism
-                                 NULL))            // any format
+                // this is a widget being dragged from some XCenter
+                // or tray, that's fine with us, so we accept it
+
+                ULONG ulClassFlags = ((PXCENTERWIDGET)pdrgItem->ulItemID)->ulClassFlags;
+
+                if  (    // trying to drop a non-trayable widget onto a tray
+                         (    (hwndTrayWidget)
+                           && ((ulClassFlags & WGTF_TRAYABLE) == 0)
+                         )
+                      || // trying to copy a unique global widget
+                         (    (pdrgInfo->usOperation == DO_COPY)
+                           && ((ulClassFlags & WGTF_UNIQUEGLOBAL) == WGTF_UNIQUEGLOBAL)
+                         )
+                      || // trying to copy or move a unique per xcenter
+                         // widget with one instance already present
+                         (    (ulClassFlags & WGTF_UNIQUEPERXCENTER)
+                           && (CheckIfPresent(pXCenterData->somSelf,
+                                              (PXCENTERWIDGET)pdrgItem->ulItemID,
+                                              (pdrgInfo->usOperation != DO_COPY))
+                              )
+                         )
+                    )
                 {
-                    G_pWidgetBeingDragged
-                        = (PPRIVATEWIDGETVIEW)pdrgItem->ulItemID;
+                    // refuse drop, but send dragover again if a
+                    // modifier changes
+                    usIndicator = DOR_NODROP;
+                }
+                else
+                {
+                    G_pWidgetBeingDragged = (PPRIVATEWIDGETVIEW)pdrgItem->ulItemID;
                     fDrawTargetEmph = TRUE;
                     usIndicator = DOR_DROP;
-                    usOp = DO_MOVE;
+
+                    if (pdrgInfo->usOperation == DO_COPY)
+                        usOp = DO_COPY;
+                    else
+                        usOp = DO_MOVE;
                 }
             }
-        }
-        else
-        {
-            PLINKLIST pll = GetDragoverObjects(pdrgInfo,
-                                               &usIndicator,
-                                               &usOp);
-
-            if (pll)
+            else
             {
-                // WPS object(s) being dragged over client:
-                fDrawTargetEmph = TRUE;
-                lstFree(&pll);
+                // this is something else, lets see if we can handle it
+                PLINKLIST pll = GetDragoverObjects(pdrgInfo,
+                                                   &usIndicator,
+                                                   &usOp);
+
+                if (pll)
+                {
+                    // WPS object(s) being dragged over client:
+                    fDrawTargetEmph = TRUE;
+                    lstFree(&pll);
+                }
             }
         }
 
@@ -2036,6 +2192,7 @@ MRESULT ctrpDragOver(HWND hwndClient,
  *@@changed V0.9.13 (2001-06-21) [umoeller]: renamed from ClientDrop, added tray support
  *@@changed V0.9.13 (2001-06-21) [umoeller]: tooltips never worked for widgets which were added later, fixed
  *@@changed V0.9.14 (2001-07-31) [lafaix]: accepts DRT_WIDGET drops too
+ *@@changed V0.9.14 (2001-08-05) [lafaix]: widget drop part rewritten
  */
 
 VOID ctrpDrop(HWND hwndClient,          // in: XCenter client
@@ -2086,19 +2243,103 @@ VOID ctrpDrop(HWND hwndClient,          // in: XCenter client
 
         if (G_pWidgetBeingDragged)
         {
-            // ClientDragover found a widget being dragged:
-            // we must then move the widget...
+            // ctrpDragOver found a widget being dragged, so we
+            // face two possibilities: (1) if the widget is a
+            // top-level one, and is being moved to some other
+            // position within the same XCenter, we simply move
+            // it; (2) in all other cases, we simply copy it
+            // to its new location, and remove it from its
+            // initial position if a move operation is going on.
+            // V0.9.14 (2001-08-05) [lafaix]
             ULONG ulTrayWidgetIndex = 0,
                   ulTrayIndex = 0,
                   ulWidgetIndex = 0;
-            if (ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
-                                             G_pWidgetBeingDragged->Widget.hwndWidget,
-                                             &ulTrayWidgetIndex,
-                                             &ulTrayIndex,
-                                             &ulWidgetIndex))
-                _xwpMoveWidget(pXCenterData->somSelf,
-                               ulWidgetIndex,           // @@todo
-                               ulIndex);
+
+            if (    (hwndTrayWidget == NULLHANDLE)
+                 && (pdrgInfo->usOperation == DO_MOVE)
+                 && (hwndClient == WinQueryWindow(G_pWidgetBeingDragged->Widget.hwndWidget,
+                                                  QW_PARENT))
+               )
+            {
+                // case (1): this is an optimization (i.e., case 2 could
+                // handle it just fine, but calling xwpMoveWidget is faster)
+                if (ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
+                                                 G_pWidgetBeingDragged->Widget.hwndWidget,
+                                                 &ulTrayWidgetIndex,
+                                                 &ulTrayIndex,
+                                                 &ulWidgetIndex))
+                    _xwpMoveWidget(pXCenterData->somSelf,
+                                   ulWidgetIndex,
+                                   ulIndex);
+            }
+            else
+            {
+                // case (2): generic handling
+                PXCENTERWINDATA pSourceXCenterData =
+                    (PXCENTERWINDATA)WinQueryWindowPtr(G_pWidgetBeingDragged->Widget.pGlobals->hwndClient,
+                                                       QWL_USER);
+
+                if (ctrpQueryWidgetIndexFromHWND(pSourceXCenterData->somSelf,
+                                                 G_pWidgetBeingDragged->Widget.hwndWidget,
+                                                 &ulTrayWidgetIndex,
+                                                 &ulTrayIndex,
+                                                 &ulWidgetIndex))
+                {
+                    PPRIVATEWIDGETSETTING pSetting;
+
+                    if ((pSetting = ctrpFindWidgetSetting(pSourceXCenterData->somSelf,
+                                                          ulTrayWidgetIndex,
+                                                          ulTrayIndex,
+                                                          ulWidgetIndex,
+                                                          NULL)))
+                    {
+                        PSZ pszClass = (PSZ)G_pWidgetBeingDragged->Widget.pcszWidgetClass;
+                        PSZ pszSetup = pSetting->Public.pszSetupString;
+
+                        if (hwndTrayWidget)
+                        {
+                            // we are copying a widget to a tray; we hence
+                            // must build a temporary buffer to hold the
+                            // packed widget setup definition
+
+                            PSZ pszBuff = (PSZ)malloc(   strlen(pszClass)
+                                                       + ((pszSetup)
+                                                              ? strlen(pszSetup)
+                                                              : 0 )
+                                                       + 3); // "\r\n" + final 0
+
+                            if (pszBuff)
+                            {
+                                strcpy(pszBuff, pszClass);
+                                strcat(pszBuff, "\r\n");
+                                if (pszSetup)
+                                    strcat(pszBuff, pszSetup);
+
+                                WinSendMsg(hwndTrayWidget,
+                                           XCM_CREATESUBWIDGET,
+                                           (MPARAM)pszBuff,
+                                           (MPARAM)ulIndex);
+                                free(pszBuff);
+                            }
+                        }
+                        else
+                            _xwpInsertWidget(pXCenterData->somSelf,
+                                             ulIndex,
+                                             pszClass,
+                                             pszSetup);
+                    }
+
+                    // if the operation was a move, remove the
+                    // widget from its initial location
+                    // (No need to invalidate the source XCenter,
+                    // this will do that too.)
+                    if (pdrgInfo->usOperation == DO_MOVE)
+                        WinSendMsg(G_pWidgetBeingDragged->Widget.hwndWidget,
+                                   DM_DISCARDOBJECT,
+                                   NULL,
+                                   NULL);
+                }
+            }
         }
         else
         {
@@ -2127,7 +2368,6 @@ VOID ctrpDrop(HWND hwndClient,          // in: XCenter client
                     PDRAGITEM pdrgItem = DrgQueryDragitemPtr(pdrgInfo, ul);
                     CHAR        achCnr[CCHMAXPATH],
                                 achSrc[CCHMAXPATH];
-                    PSZ         pszBuff;
 
                     // the dnd part guaranties the following
                     // will not overflow
@@ -2141,6 +2381,7 @@ VOID ctrpDrop(HWND hwndClient,          // in: XCenter client
                     if ((strlen(achCnr)+strlen(achSrc)) < (CCHMAXPATH-1))
                     {
                         CHAR achAll[CCHMAXPATH];
+                        PSZ  pszBuff;
 
                         strcpy(achAll, achCnr);
                         strcat(achAll, achSrc);

@@ -1033,8 +1033,12 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
                 break;
 
                 case ID_CRMI_RUN:       // V0.9.9 (2001-03-07) [umoeller]
-                    cmnRunCommandLine(pWidget->pGlobals->hwndFrame,
+                    krnPostThread1ObjectMsg(T1M_OPENRUNDIALOG,
+                                            MPNULL,
+                                            MPNULL);        // boot drive
+                    /* cmnRunCommandLine(pWidget->pGlobals->hwndFrame,
                                       NULL);        // boot drive
+                    */
                 break;
 
                 default:
@@ -1237,11 +1241,14 @@ MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
     return (mrc);
 }
 
+#define WIDGET_DRAG_MECH "DRM_XCENTERWIDGET"
+
 /*
  *@@ OwgtDragover:
  *      implementation for DM_DRAGOVER.
  *
  *@@added V0.9.13 (2001-06-19) [umoeller]
+ *@@changed V0.9.14 (2001-08-05) [lafaix]: refuses move/default for DRM_XCENTERWIDGET
  */
 
 MRESULT OwgtDragover(HWND hwnd, MPARAM mp1, MPARAM mp2)
@@ -1271,13 +1278,41 @@ MRESULT OwgtDragover(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
             if (pPrivate->pobjButton)
             {
+                BOOL bDragOver = TRUE;
+
                 ctrDrawWidgetEmphasis(pWidget,
                                       FALSE);
                 pPrivate->fHasDragoverEmphasis = TRUE;
 
-                mrc = _wpDragOver(pPrivate->pobjButton,
-                                  NULLHANDLE,           // cnr
-                                  pdrgInfo);
+                // if the user is currently dragging a widget, we
+                // must reject either a default or a move drop
+                // (so that moving widgets remain easy).
+                // V0.9.14 (2001-08-05) [lafaix]
+                if (DrgAccessDraginfo(pdrgInfo))
+                {
+                    if (    (    (pdrgInfo->usOperation == DO_DEFAULT)
+                              || (pdrgInfo->usOperation == DO_MOVE)
+                            )
+                         && (pdrgInfo->cditem == 1)
+                       )
+                    {
+                        PDRAGITEM pdrgItem = DrgQueryDragitemPtr(pdrgInfo, 0);
+                        if (DrgVerifyRMF(pdrgItem,
+                                         WIDGET_DRAG_MECH, // mechanism
+                                         NULL))            // any format
+                        {
+                            mrc = MRFROM2SHORT(DOR_NODROP, DO_DEFAULT);
+                            bDragOver = FALSE;
+                        }
+                    }
+
+                    DrgFreeDraginfo(pdrgInfo);
+                }
+
+                if (bDragOver)
+                    mrc = _wpDragOver(pPrivate->pobjButton,
+                                      NULLHANDLE,           // cnr
+                                      pdrgInfo);
             }
         }
     }
@@ -1326,6 +1361,8 @@ VOID OwgtDragLeave(HWND hwnd)
  *      implementaton for DM_DROP. Always returns 0.
  *
  *@@added V0.9.13 (2001-06-19) [umoeller]
+ *@@changed V0.9.14 (2001-08-05) [lafaix]: fixed incorrect draginfo usage
+ *@@changed V0.9.14 (2001-08-05) [lafaix]: refuses move/default drops for DRM_XCENTERWIDGET
  */
 
 VOID OwgtDrop(HWND hwnd, MPARAM mp1, MPARAM mp2)
@@ -1339,7 +1376,10 @@ VOID OwgtDrop(HWND hwnd, MPARAM mp1, MPARAM mp2)
        )
     {
         // only object button can accept this
-        if (pPrivate->ulType == BTF_OBJBUTTON)
+        if (    (pPrivate->ulType == BTF_OBJBUTTON)
+                // pdrgInfo must be accessed before use V0.9.14 (2001-08-05)
+             && (DrgAccessDraginfo(pdrgInfo))
+           )
         {
             if (!pPrivate->pobjButton)
                 // object not queried yet:
@@ -1357,11 +1397,28 @@ VOID OwgtDrop(HWND hwnd, MPARAM mp1, MPARAM mp2)
                     pPrivate->fHasDragoverEmphasis = FALSE;
                 }
 
-                _wpDrop(pPrivate->pobjButton,
-                        NULLHANDLE,           // cnr
-                        pdrgInfo,
-                        pdrgItem);
+                // if it is a widget drop, rejects default or move drop
+                // (so that moving widgets remain easy)
+                // V0.9.14 (2001-08-05) [lafaix]
+                if (    (    (pdrgInfo->usOperation == DO_DEFAULT)
+                          || (pdrgInfo->usOperation == DO_MOVE)
+                        )
+                     && (pdrgInfo->cditem == 1)
+                     && (DrgVerifyRMF(pdrgItem,
+                                      WIDGET_DRAG_MECH, // mechanism
+                                      NULL))            // any format
+                   )
+                {
+                    // do nothing
+                }
+                else
+                    _wpDrop(pPrivate->pobjButton,
+                            NULLHANDLE,           // cnr
+                            pdrgInfo,
+                            pdrgItem);
             }
+
+            DrgFreeDraginfo(pdrgInfo);
         }
     }
 }

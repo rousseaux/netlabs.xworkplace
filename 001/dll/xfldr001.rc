@@ -844,6 +844,8 @@ BEGIN
 
     ID_CRSI_ENTERNEWTRAY                "Please enter a name for the tray to be created:"
     ID_CRSI_ENTERRENAMETRAY             "Please enter a new name for this tray:"
+
+    ID_XSSI_RUN                         "~Run..."
 END
 
 /* string IDs for status bar mnemonics (all new with V0.9.14) */

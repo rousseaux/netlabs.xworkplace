@@ -1436,7 +1436,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                                (MPARAM)fnCompareName,
                                NULL);
                     Settings.ulSort = SV_NAME;
-                    PrfWriteProfileData(HINI_USER, G_pcszXFldTreesize, "Settings",
+                    PrfWriteProfileData(HINI_USER, (PSZ)G_pcszXFldTreesize, "Settings",
                                         &Settings,
                                         sizeof(Settings));
                 break; }
@@ -1448,7 +1448,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                                 (MPARAM)fnCompareSize,
                                 NULL);
                     Settings.ulSort = SV_SIZE;
-                    PrfWriteProfileData(HINI_USER, G_pcszXFldTreesize, "Settings",
+                    PrfWriteProfileData(HINI_USER, (PSZ)G_pcszXFldTreesize, "Settings",
                             &Settings,
                             sizeof(Settings));
                 break; }
@@ -1460,7 +1460,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                                (MPARAM)fnCompareFilesCount,
                                NULL);
                     Settings.ulSort = SV_FILESCOUNT;
-                    PrfWriteProfileData(HINI_USER, G_pcszXFldTreesize, "Settings",
+                    PrfWriteProfileData(HINI_USER, (PSZ)G_pcszXFldTreesize, "Settings",
                                         &Settings,
                                         sizeof(Settings));
                 break; }
@@ -1472,7 +1472,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                                (MPARAM)fnCompareEASize,
                                NULL);
                     Settings.ulSort = SV_EASIZE;
-                    PrfWriteProfileData(HINI_USER, G_pcszXFldTreesize, "Settings",
+                    PrfWriteProfileData(HINI_USER, (PSZ)G_pcszXFldTreesize, "Settings",
                                         &Settings,
                                         sizeof(Settings));
                 break; }
@@ -1480,7 +1480,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                 case ID_TSMI_SIZE_BYTES:
                 {
                     Settings.ulSizeDisplay = SD_BYTES;
-                    PrfWriteProfileData(HINI_USER, G_pcszXFldTreesize, "Settings",
+                    PrfWriteProfileData(HINI_USER, (PSZ)G_pcszXFldTreesize, "Settings",
                                         &Settings,
                                         sizeof(Settings));
                 break; }
@@ -1488,7 +1488,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                 case ID_TSMI_SIZE_KBYTES:
                 {
                     Settings.ulSizeDisplay = SD_KBYTES;
-                    PrfWriteProfileData(HINI_USER, G_pcszXFldTreesize, "Settings",
+                    PrfWriteProfileData(HINI_USER, (PSZ)G_pcszXFldTreesize, "Settings",
                                         &Settings,
                                         sizeof(Settings));
                 break; }
@@ -1496,7 +1496,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                 case ID_TSMI_SIZE_MBYTES:
                 {
                     Settings.ulSizeDisplay = SD_MBYTES;
-                    PrfWriteProfileData(HINI_USER, G_pcszXFldTreesize, "Settings",
+                    PrfWriteProfileData(HINI_USER, (PSZ)G_pcszXFldTreesize, "Settings",
                                         &Settings,
                                         sizeof(Settings));
                 break; }
@@ -1504,7 +1504,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                 case ID_TSMI_LOWPRTY:
                 {
                     Settings.LowPriority = !(Settings.LowPriority);
-                    PrfWriteProfileData(HINI_USER, G_pcszXFldTreesize, "Settings",
+                    PrfWriteProfileData(HINI_USER, (PSZ)G_pcszXFldTreesize, "Settings",
                                         &Settings,
                                         sizeof(Settings));
 
@@ -1518,7 +1518,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                 case ID_TSMI_COLLECTEAS:
                 {
                     Settings.CollectEAs = !(Settings.CollectEAs);
-                    PrfWriteProfileData(HINI_USER, G_pcszXFldTreesize, "Settings",
+                    PrfWriteProfileData(HINI_USER, (PSZ)G_pcszXFldTreesize, "Settings",
                                         &Settings,
                                         sizeof(Settings));
                 break; }
@@ -1572,7 +1572,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                     // Note that this function only works while the
                     // window is still visible, so we do this here.
                     fStopThread = TRUE;
-                    WinStoreWindowPos(G_pcszXFldTreesize, "WindowPos", hwndDlg);
+                    WinStoreWindowPos((PSZ)G_pcszXFldTreesize, "WindowPos", hwndDlg);
                     Cleanup(hwndCnr, NULL);
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                 break; }
@@ -1757,12 +1757,12 @@ int main(int argc, char *argv[])
         hswitch = WinAddSwitchEntry(&swctl);
 
         // get settings in OS2.INI
-        WinRestoreWindowPos(G_pcszXFldTreesize, "WindowPos", hwndMain);
+        WinRestoreWindowPos((PSZ)G_pcszXFldTreesize, "WindowPos", hwndMain);
         Settings.ulSort = SV_SIZE;
         Settings.CollectEAs = TRUE;
         Settings.ulSizeDisplay = SD_KBYTES;
         Settings.LowPriority = TRUE;
-        PrfQueryProfileData(HINI_USER, G_pcszXFldTreesize, "Settings",
+        PrfQueryProfileData(HINI_USER, (PSZ)G_pcszXFldTreesize, "Settings",
                             &Settings,
                             &cbSettings);
 

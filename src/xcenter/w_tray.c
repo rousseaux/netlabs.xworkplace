@@ -261,6 +261,46 @@ typedef struct _TRAYWIDGETPRIVATE
  ********************************************************************/
 
 /*
+ *@@ CheckIfTrayable:
+ *      checks if a given class is trayable.
+ *
+ *      Returns 1 if it is (or if the user whishes it is so).
+ *
+ *      This is used when subwidgets are added and when trays
+ *      are switched.
+ */
+
+BOOL CheckIfTrayable(PCSZ pcszWidgetClass)
+{
+    PXCENTERWIDGETCLASS   pClass;
+    BOOL                  brc = TRUE;
+
+    if (ctrpLockClasses())
+    {
+        if (pClass = ctrpFindClass(pcszWidgetClass))
+        {
+            if (!(pClass->ulClassFlags & WGTF_TRAYABLE))
+            {
+                PSZ     apsz[2];
+                apsz[0] = (PSZ)pcszWidgetClass;
+                if (cmnMessageBoxMsgExt(NULLHANDLE,
+                                        194,        // XCenter Error
+                                        apsz,
+                                        1,
+                                        222,
+                                        MB_YESNO)
+                    == MBID_YES)
+                    brc = FALSE;
+            }
+        }
+
+        ctrpUnlockClasses();
+    }
+
+    return (brc);
+}
+
+/*
  *@@ DestroySubwidgetWindow:
  *      destroys the specified widget window.
  *      Does not remove the widget setting.
@@ -375,6 +415,8 @@ VOID InvalidateMenu(PTRAYWIDGETPRIVATE pPrivate)
  *      This does not save the tray widget settings.
  *
  *      Returns TRUE if the tray was changed.
+ *
+ *@@changed V0.9.14 (2001-08-05) [lafaix]: check if subwidgets are trayable
  */
 
 BOOL SwitchToTray(PTRAYWIDGETPRIVATE pPrivate,
@@ -419,19 +461,34 @@ BOOL SwitchToTray(PTRAYWIDGETPRIVATE pPrivate,
                     PXCENTERWINDATA pXCenterData = WinQueryWindowPtr(pWidget->pGlobals->hwndFrame,
                                                                      QWL_USER);
 
-                    for (pNode = lstQueryFirstNode(&pNewTray->llSubwidgets);
-                         pNode;
-                         pNode = pNode->pNext)
+                    pNode = lstQueryFirstNode(&pNewTray->llSubwidgets);
+
+                    while (pNode)
                     {
                         PPRIVATEWIDGETSETTING pSubwidget = (PPRIVATEWIDGETSETTING)pNode->pItemData;
-                        if (!ctrpCreateWidgetWindow(pXCenterData,
-                                                    (PPRIVATEWIDGETVIEW)pWidget,
-                                                         // parent: tray widget
-                                                    pTrayWidgetView->pllSubwidgetViews,
-                                                    pSubwidget,
-                                                    -1))             // add rightmost
-                            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                                   "Widget view creation failed.");
+                        PLISTNODE             pNodeSaved = pNode;
+                        pNode = pNode->pNext;
+
+                        // we must check if the subwidget class is trayable,
+                        // as this may change
+                        // V0.9.14 (2001-08-05) [lafaix]
+                        if (CheckIfTrayable(pSubwidget->Public.pszWidgetClass))
+                        {
+                            if (!ctrpCreateWidgetWindow(pXCenterData,
+                                                        (PPRIVATEWIDGETVIEW)pWidget,
+                                                             // parent: tray widget
+                                                        pTrayWidgetView->pllSubwidgetViews,
+                                                        pSubwidget,
+                                                        -1))             // add rightmost
+                                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                                       "Widget view creation failed.");
+                        }
+                        else
+                        {
+                            // remove: lafaix  // @@todo what is this?!?
+                            lstRemoveNode(&pNewTray->llSubwidgets, pNodeSaved);
+                            _wpSaveDeferred(pXCenterData->somSelf);
+                        }
                     }
 
                     // reformat widgets in tray then
@@ -627,7 +684,9 @@ PPRIVATEWIDGETSETTING YwgtCreateSubwidget(PTRAYWIDGETPRIVATE pPrivate,
 
     PTRAYSETTING    pCurrentTray;
 
-    if (pCurrentTray = FindCurrentTray(pPrivate))
+    if (    (CheckIfTrayable(pcszWidgetClass)) // V0.9.14 (2001-08-05) [lafaix]
+         && (pCurrentTray = FindCurrentTray(pPrivate))
+       )
     {
         if (pSubwidget = ctrpCreateWidgetSetting(pCurrentTray,
                                                  pcszWidgetClass,
@@ -997,6 +1056,7 @@ VOID YwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      implementation for WM_BUTTON1DOWN in fnwpTrayWidget.
  *
  *@@changed V0.9.14 (2001-07-31) [lafaix]: fixed menu position
+ *@@changed V0.9.14 (2001-08-05) [lafaix]: added MB1 click tray switch
  */
 
 VOID YwgtButton1Down(HWND hwnd, MPARAM mp1)
@@ -1086,6 +1146,29 @@ VOID YwgtButton1Down(HWND hwnd, MPARAM mp1)
             }
         }
     } // end if (pWidget)
+}
+
+/*
+ *@@ YwgtButton1DblClick:
+ *
+ *@@added V0.9.14 (2001-08-07) [umoeller]
+ */
+
+VOID YwgtButton1DblClick(HWND hwnd)
+{
+    PXCENTERWIDGET pWidget;
+    PTRAYWIDGETPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PTRAYWIDGETPRIVATE)pWidget->pUser)
+       )
+    {
+        // circle through the trays
+        PPRIVATEWIDGETSETTING ppws = (PPRIVATEWIDGETSETTING)pPrivate->pWidget->pvWidgetSetting;
+        ULONG cTrays = lstCountItems(ppws->pllTraySettings);
+        if (cTrays > 1)
+            SwitchToTray(pPrivate,
+                         ((pPrivate->Setup.pPrivateSetting->ulCurrentTray) + 1) % cTrays);
+    }
 }
 
 /*
@@ -1759,8 +1842,13 @@ MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
          */
 
         case WM_BUTTON1DOWN:
-        case WM_BUTTON1DBLCLK:
+        // case WM_BUTTON1DBLCLK:
             YwgtButton1Down(hwnd, mp1);
+            mrc = (MPARAM)TRUE;     // message processed
+        break;
+
+        case WM_BUTTON1DBLCLK:
+            YwgtButton1DblClick(hwnd);
             mrc = (MPARAM)TRUE;     // message processed
         break;
 
@@ -1906,6 +1994,17 @@ MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         break;
 
         case XCM_CREATESUBWIDGET:
+            // process later, as we may still be answering
+            // a dnd sequence
+            #define UM_CREATESUBWIDGET (WM_USER + 600)
+
+            WinPostMsg(hwnd,
+                       UM_CREATESUBWIDGET,
+                       (MPARAM)strdup((PSZ)mp1),
+                       mp2);
+        break;
+
+        case UM_CREATESUBWIDGET:
         {
             PXCENTERWIDGET pWidget;
             PTRAYWIDGETPRIVATE pPrivate;
@@ -1925,6 +2024,8 @@ MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                                     pszSettings,
                                     (ULONG)mp2);
             }
+
+            free((PSZ)mp1);
         }
         break;
 

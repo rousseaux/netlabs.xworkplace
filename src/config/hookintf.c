@@ -1949,6 +1949,7 @@ VOID UpdateScreenCornerIndex(USHORT usItemID)
  *
  *@@changed V0.9.6 (2000-10-27) [umoeller]: added optional NPSWPS-like submenu behavior
  *@@changed V0.9.7 (2000-12-08) [umoeller]: added "ignore XCenter"
+ *@@changed V0.9.14 (2001-08-02) [lafaix]: moved the autohide stuff to movement page 2
  */
 
 VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -1981,10 +1982,6 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
                                            ID_XSDI_MOUSE_MENUDELAY_SLIDER),
                            MPFROM2SHORT(5, 10), 3,
                            MPFROM2SHORT(0, 10), 6);
-        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
-                                           ID_XSDI_MOUSE_AUTOHIDE_SLIDER),
-                           MPFROM2SHORT(4, 10), 3,
-                           MPFROM2SHORT(9, 10), 6);
     }
 
     if (flFlags & CBI_SET)
@@ -2023,14 +2020,6 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
                               pdc->fConditionalCascadeSensitive);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MENUHILITE,
                               pdc->fMenuImmediateHilite);
-
-        // auto-hide mouse pointer
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_CHECK,
-                              pdc->fAutoHideMouse);
-        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage,
-                                                 ID_XSDI_MOUSE_AUTOHIDE_SLIDER),
-                                 SMA_INCREMENTVALUE,
-                                 pdc->ulAutoHideDelay);
     }
 
     if (flFlags & CBI_ENABLE)
@@ -2068,13 +2057,6 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
                           pdc->fSlidingMenus);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MENUHILITE,
                           (pdc->fSlidingMenus) && (pdc->ulSubmenuDelay > 0));
-
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_TXT1,
-                         pdc->fAutoHideMouse);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_SLIDER,
-                         pdc->fAutoHideMouse);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_TXT2,
-                         pdc->fAutoHideMouse);
     }
 }
 
@@ -2089,6 +2071,7 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
  *@@changed V0.9.7 (2000-12-08) [umoeller]: added "ignore XCenter"
  *@@changed V0.9.9 (2001-03-25) [lafaix]: fixed "default" and "undo" behavior
  *@@changed V0.9.9 (2001-04-07) [pr]: fixed "default" and "undo" again
+ *@@changed V0.9.14 (2001-08-02) [lafaix]: moved the autohide stuff to movement page 2
  */
 
 MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -2186,27 +2169,6 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pdc->fMenuImmediateHilite = ulExtra;
         break;
 
-        case ID_XSDI_MOUSE_AUTOHIDE_CHECK:
-            hifLoadHookConfig(pdc);
-            pdc->fAutoHideMouse = ulExtra;
-            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
-        break;
-
-        case ID_XSDI_MOUSE_AUTOHIDE_SLIDER:
-        {
-            CHAR szTemp[30];
-            // get delay
-            LONG lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
-                                                           SMA_INCREMENTVALUE);
-            // convert to seconds
-            hifLoadHookConfig(pdc);
-            pdc->ulAutoHideDelay = lSliderIndex;
-            sprintf(szTemp, "%d s", pdc->ulAutoHideDelay + 1);
-            WinSetDlgItemText(pcnbp->hwndDlgPage,
-                              ID_XSDI_MOUSE_AUTOHIDE_TXT2,
-                              szTemp);
-        break; }
-
         /*
          * DID_DEFAULT:
          *
@@ -2227,8 +2189,6 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pdc->ulSubmenuDelay = 0;
             pdc->fConditionalCascadeSensitive = 0;
             pdc->fMenuImmediateHilite = 0;
-            pdc->fAutoHideMouse = 0;
-            pdc->ulAutoHideDelay = 0;
 
             // saving settings here
             hifHookConfigChanged(pdc);
@@ -2260,8 +2220,203 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 pdc->ulSubmenuDelay = pBackup->ulSubmenuDelay;
                 pdc->fConditionalCascadeSensitive = pBackup->fConditionalCascadeSensitive;
                 pdc->fMenuImmediateHilite = pBackup->fMenuImmediateHilite;
+
+                // saving settings here
+                hifHookConfigChanged(pdc);
+                fSave = FALSE;
+            }
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+        break;
+
+        default:
+            fSave = FALSE;
+    }
+
+    if (fSave)
+        hifHookConfigChanged(pdc);
+
+    return (mrc);
+}
+
+/*
+ *@@ hifMouseMovement2InitPage:
+ *      notebook callback function (notebook.c) for the
+ *      "Mouse hook" page 2 in the "Mouse" settings object.
+ *      Sets the controls on the page according to the
+ *      Global Settings.
+ *
+ *@@added V0.9.14 (2001-08-02) [lafaix]
+ *@@changed V0.9.6 (2000-10-27) [umoeller]: added optional NPSWPS-like submenu behavior
+ *@@changed V0.9.7 (2000-12-08) [umoeller]: added "ignore XCenter"
+ */
+
+VOID hifMouseMovement2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+                               ULONG flFlags)        // CBI_* flags (notebook.h)
+{
+    if (flFlags & CBI_INIT)
+    {
+        if (pcnbp->pUser == 0)
+        {
+            // first call: create HOOKCONFIG structure;
+            // this memory will be freed automatically by the
+            // common notebook window function (notebook.c) when
+            // the notebook page is destroyed
+            pcnbp->pUser = malloc(sizeof(HOOKCONFIG));
+            if (pcnbp->pUser)
+                hifLoadHookConfig(pcnbp->pUser);
+
+            // make backup for "undo"
+            pcnbp->pUser2 = malloc(sizeof(HOOKCONFIG));
+            if (pcnbp->pUser2)
+                memcpy(pcnbp->pUser2, pcnbp->pUser, sizeof(HOOKCONFIG));
+        }
+
+        // setup sliders
+        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
+                                           ID_XSDI_MOUSE_AUTOHIDE_SLIDER),
+                           MPFROM2SHORT(4, 10), 3,
+                           MPFROM2SHORT(9, 10), 6);
+    }
+
+    if (flFlags & CBI_SET)
+    {
+        PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
+
+        // auto-hide mouse pointer
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_CHECK,
+                              pdc->fAutoHideMouse);
+        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage,
+                                                 ID_XSDI_MOUSE_AUTOHIDE_SLIDER),
+                                 SMA_INCREMENTVALUE,
+                                 pdc->ulAutoHideDelay);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_CHECKMNU,
+                              pdc->ulAutoHideFlags & AHF_IGNOREMENUS);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_CHECKBTN,
+                              pdc->ulAutoHideFlags & AHF_IGNOREBUTTONS);
+
+        // auto-move mouse pointer to default button
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOMOVE_CHECK,
+                              pdc->fAutoMoveMouse);
+    }
+
+    if (flFlags & CBI_ENABLE)
+    {
+        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
+
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_TXT1,
+                         pdc->fAutoHideMouse);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_SLIDER,
+                         pdc->fAutoHideMouse);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_TXT2,
+                         pdc->fAutoHideMouse);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_CHECKMNU,
+                         pdc->fAutoHideMouse);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_CHECKBTN,
+                         pdc->fAutoHideMouse);
+    }
+}
+
+/*
+ *@@ hifMouseMovement2ItemChanged:
+ *      notebook callback function (notebook.c) for the
+ *      "Mouse hook" page 2 in the "Mouse" settings object.
+ *      Reacts to changes of any of the dialog controls.
+ *
+ *@@added V.9.14 (2001-08-02) [lafaix]
+ */
+
+MRESULT hifMouseMovement2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                     ULONG ulItemID, USHORT usNotifyCode,
+                                     ULONG ulExtra)      // for checkboxes: contains new state
+{
+    MRESULT mrc = 0;
+    PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
+    BOOL    fSave = TRUE;
+
+    _Pmpf(("hifMouseMovement2ItemChanged: usItemID: %d ulExtra: %d", ulItemID, ulExtra));
+
+    switch (ulItemID)
+    {
+        case ID_XSDI_MOUSE_AUTOHIDE_CHECK:
+            hifLoadHookConfig(pdc);
+            pdc->fAutoHideMouse = ulExtra;
+            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
+        break;
+
+        case ID_XSDI_MOUSE_AUTOHIDE_SLIDER:
+        {
+            CHAR szTemp[30];
+            // get delay
+            LONG lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
+                                                           SMA_INCREMENTVALUE);
+            // convert to seconds
+            hifLoadHookConfig(pdc);
+            pdc->ulAutoHideDelay = lSliderIndex;
+            sprintf(szTemp, "%d s", pdc->ulAutoHideDelay + 1);
+            WinSetDlgItemText(pcnbp->hwndDlgPage,
+                              ID_XSDI_MOUSE_AUTOHIDE_TXT2,
+                              szTemp);
+        break; }
+
+        case ID_XSDI_MOUSE_AUTOHIDE_CHECKMNU:
+            hifLoadHookConfig(pdc);
+            if (ulExtra)
+                pdc->ulAutoHideFlags |= AHF_IGNOREMENUS;
+            else
+                pdc->ulAutoHideFlags &= ~AHF_IGNOREMENUS;
+        break;
+
+        case ID_XSDI_MOUSE_AUTOHIDE_CHECKBTN:
+            hifLoadHookConfig(pdc);
+            if (ulExtra)
+                pdc->ulAutoHideFlags |= AHF_IGNOREBUTTONS;
+            else
+                pdc->ulAutoHideFlags &= ~AHF_IGNOREBUTTONS;
+        break;
+
+        case ID_XSDI_MOUSE_AUTOMOVE_CHECK:
+            hifLoadHookConfig(pdc);
+            pdc->fAutoMoveMouse = ulExtra;
+        break;
+
+        /*
+         * DID_DEFAULT:
+         *
+         */
+
+        case DID_DEFAULT:
+            hifLoadHookConfig(pdc);
+
+            pdc->fAutoHideMouse = 0;
+            pdc->ulAutoHideDelay = 0;
+            pdc->ulAutoHideFlags = 0;
+            pdc->fAutoMoveMouse = 0;
+            pdc->ulAutoMoveFlags = 0;
+
+            // saving settings here
+            hifHookConfigChanged(pdc);
+            fSave = FALSE;
+
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+        break;
+
+        /*
+         * DID_UNDO:
+         *
+         */
+
+        case DID_UNDO:
+            // restore data which was backed up in INIT callback
+            hifLoadHookConfig(pdc);
+            if (pcnbp->pUser2)
+            {
+                PHOOKCONFIG pBackup = (PHOOKCONFIG)pcnbp->pUser2;
                 pdc->fAutoHideMouse = pBackup->fAutoHideMouse;
                 pdc->ulAutoHideDelay = pBackup->ulAutoHideDelay;
+                pdc->ulAutoHideFlags = pBackup->ulAutoHideFlags;
+                pdc->fAutoMoveMouse = pBackup->fAutoMoveMouse;
+                pdc->ulAutoMoveFlags = pBackup->ulAutoMoveFlags;
 
                 // saving settings here
                 hifHookConfigChanged(pdc);

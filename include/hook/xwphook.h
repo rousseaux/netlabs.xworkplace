@@ -50,6 +50,14 @@
     #define SM_LINEWISE         0
     #define SM_AMPLIFIED        1
 
+    // flags for HOOKCONFIG.ulAutoHideFlags
+    #define AHF_IGNOREMENUS     0x00000001L
+    #define AHF_IGNOREBUTTONS   0x00000002L
+
+    // flags for HOOKCONFIG.ulAutoMoveFlags
+    #define AMF_ALWAYSMOVE      0x00000001L
+    #define AMF_IGNORENOBUTTON  0x00000002L
+
     /*
      *@@ PAGEMAGECONFIG:
      *      PageMage configuration data.
@@ -294,6 +302,12 @@
         // Mouse-button-3 autoscroll and push to bottom features
         BOOL            fMB3AutoScroll;
         BOOL            fMB3Push2Bottom;
+
+        // Auto hide and automatic pointer movement options
+        // V0.9.14 (2001-08-02) [lafaix]
+        ULONG           ulAutoHideFlags;
+        BOOL            fAutoMoveMouse;
+        ULONG           ulAutoMoveFlags;
     } HOOKCONFIG, *PHOOKCONFIG;
 
     /*

@@ -744,6 +744,8 @@ BOOL ctrpRestoreState(XCenter *somSelf)
  *      write the widget settings to a file, and sets its .TYPE
  *      attribute to DRT_WIDGET.
  *
+ *      pszClass must not be NULL.  pszSetup may be NULL.
+ *
  *      Returns TRUE if the operation was successful.
  *
  *@@added V0.9.14 (2001-07-30) [lafaix]
@@ -761,9 +763,15 @@ BOOL ctrpSaveToFile(PCSZ pszDest,
     struct
     {
         CHAR   ach[6];
-        USHORT usValType,
-               usValLen;
-        CHAR   achVal[16];
+        USHORT usMainType,
+               usCodepage,
+               usCount;
+        USHORT usVal1Type,
+               usVal1Len;
+        CHAR   achVal1[15];
+        USHORT usVal2Type,
+               usVal2Len;
+        CHAR   achVal2[10];
     } val;
     #pragma pack()
     BOOL      brc = FALSE;
@@ -784,11 +792,17 @@ BOOL ctrpSaveToFile(PCSZ pszDest,
             pfea2l->list[0].oNextEntryOffset = 0;
             pfea2l->list[0].fEA = 0;
             pfea2l->list[0].cbName = 5;
-            pfea2l->list[0].cbValue = 20;
+            pfea2l->list[0].cbValue = sizeof(val)-6;
             strcpy(val.ach, ".TYPE");
-            val.usValType = EAT_ASCII;
-            val.usValLen = 15; // strlen(DRT_WIDGET)
-            strcpy(val.achVal, DRT_WIDGET);
+            val.usMainType = EAT_MVMT;
+            val.usCodepage = 0;
+            val.usCount = 2;
+            val.usVal1Type = EAT_ASCII;
+            val.usVal1Len = 15; // strlen(DRT_WIDGET)
+            memcpy(val.achVal1, DRT_WIDGET, 15);
+            val.usVal2Type = EAT_ASCII;
+            val.usVal2Len = 10; // strlen(DRT_TEXT)
+            memcpy(val.achVal2, DRT_TEXT, 10);
             memcpy(pfea2l->list[0].szName, &val, sizeof(val));
             eaop2.fpFEA2List = pfea2l;
 
@@ -799,8 +813,10 @@ BOOL ctrpSaveToFile(PCSZ pszDest,
             {
                 // create the file content:
 
-                if (    // first, the widget class name
-                        (DosWrite(hf,
+                if (    // first, the widget class name, which cannot
+                        // be NULL
+                        (pszClass)
+                     && (DosWrite(hf,
                                   (PVOID)pszClass,
                                   strlen(pszClass),
                                   &ulAction) == NO_ERROR)
@@ -809,11 +825,13 @@ BOOL ctrpSaveToFile(PCSZ pszDest,
                                   "\r\n",
                                   2,
                                   &ulAction) == NO_ERROR)
-                        // and the setup string
-                     && (DosWrite(hf,
-                                  (PVOID)pszSetup,
-                                  strlen(pszSetup),
-                                  &ulAction) == NO_ERROR)
+                        // and the setup string, which may be NULL
+                     && (    (pszSetup == NULL)
+                          || (DosWrite(hf,
+                                       (PVOID)pszSetup,
+                                       strlen(pszSetup),
+                                       &ulAction) == NO_ERROR)
+                             )
                    )
                     brc = TRUE;
             }
@@ -1455,6 +1473,7 @@ MRESULT EXPENTRY fnwpWidgetsCnr(HWND hwndCnr,
         case DM_RENDER:
         {
             PDRAGTRANSFER pdt = (PDRAGTRANSFER)mp1;
+            MRESULT       mrc = (MRESULT)FALSE;
 
             if (DrgVerifyRMF(pdt->pditem, "DRM_OS2FILE", NULL))
             {
@@ -1476,10 +1495,12 @@ MRESULT EXPENTRY fnwpWidgetsCnr(HWND hwndCnr,
                            (bSuccess) ? MPFROMSHORT(DMFL_RENDEROK)
                                       : MPFROMSHORT(DMFL_RENDERFAIL));
 
-                return (MRESULT)TRUE;
+                mrc = (MRESULT)TRUE;
             }
-            else
-                return (FALSE);
+
+            DrgFreeDragtransfer(pdt);
+
+            return (mrc);
         }
 
     /* ??? This part does not work.  DM_DISCARDOBJECT is only received
@@ -1491,7 +1512,9 @@ MRESULT EXPENTRY fnwpWidgetsCnr(HWND hwndCnr,
         case DM_DISCARDOBJECT:
         {
             PDRAGINFO pdi;
-            PDRAGITEM pditem;
+_Pmpf(("DM_DISCARDOBJECT"));
+DosBeep(100, 100);
+/*            PDRAGINFO pdi;
             PWIDGETRECORD prec;
             PCREATENOTEBOOKPAGE pcnbp;
 
@@ -1513,7 +1536,7 @@ MRESULT EXPENTRY fnwpWidgetsCnr(HWND hwndCnr,
             }
             else
                 _Pmpf(("DM_DISCARDOBJECT NULL"));
-        }
+*/        }
     }
 
     return (G_pfnwpWidgetsCnr(hwndCnr, msg, mp1, mp2));
@@ -1832,7 +1855,7 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                )
                             {
                                 if (    (DrgVerifyRMF(pdrgItem, "DRM_OS2FILE", NULL))
-                                     && (DrgVerifyType(pdrgItem, DRT_WIDGET))
+                                     && (ctrpVerifyType(pdrgItem, DRT_WIDGET))
                                    )
                                 {
                                     // this is case (1)
@@ -1971,7 +1994,7 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             if (    (pdrgItem)
                                  && (G_precAfter)
                                  && (DrgVerifyRMF(pdrgItem, "DRM_OS2FILE", NULL))
-                                 && (DrgVerifyType(pdrgItem, DRT_WIDGET))
+                                 && (ctrpVerifyType(pdrgItem, DRT_WIDGET))
                                )
                             {
                                 // that was it.  We must create a new widget

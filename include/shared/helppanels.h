@@ -231,6 +231,7 @@
 
     #define ID_XSH_WIDGET_DISKFREE_WC       133     // V0.9.14 (2001-08-01) [umoeller]
     #define ID_XSH_WIDGET_DISKFREE_COND     134     // V0.9.14 (2001-08-01) [umoeller]
+    #define ID_XSH_MOUSE_MOVEMENT2          135     // V0.9.14 (2001-08-02) [lafaix]
 
 #endif
 

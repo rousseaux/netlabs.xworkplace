@@ -196,6 +196,7 @@ HWND    G_hwndLastFrameUnderMouse = NULLHANDLE;
 HWND    G_hwndLastSubframeUnderMouse = NULLHANDLE;
 POINTS  G_ptsMousePosWin = {0};
 POINTL  G_ptlMousePosDesktop = {0};
+HWND    G_hwndRootMenu = NULLHANDLE; // V0.9.14 (2001-08-01) [lafaix]
 
 /*
  * Prototypes:
@@ -795,6 +796,8 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
  *@@changed V0.9.9 (2001-03-10) [umoeller]: fixed errant sliding menu behavior
+ *@@changed V0.9.14 (2001-08-01) [lafaix]: added menu mode check for auto hide
+ *@@changed V0.9.14 (2001-08-02) [lafaix]: added auto move to default button
  */
 
 VOID EXPENTRY hookSendMsgHook(HAB hab,
@@ -869,6 +872,68 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
                    XDM_SLIDINGMENU,
                    (MPARAM)-1,          // stop timer
                    0);
+    }
+    else
+    // special extra check, to find out if menu mode is active
+    // or not.  If G_hwndRootMenu is not NULLHANDLE, then we are
+    // in menu mode (i.e., a menu is active).
+    // V0.9.14 (2001-08-01) [lafaix]
+    if (    (G_HookData.HookConfig.fAutoHideMouse)
+         && (G_HookData.HookConfig.ulAutoHideFlags& AHF_IGNOREMENUS)
+       )
+    {
+        if (    (psmh->msg == WM_INITMENU)
+             && (G_hwndRootMenu == NULLHANDLE)
+           )
+        {
+            G_hwndRootMenu = (HWND)psmh->mp2;
+            WMMouseMove_AutoHideMouse();
+        }
+        else
+        if (    (psmh->msg == WM_MENUEND)
+             && (G_hwndRootMenu == (HWND)psmh->mp2)
+           )
+        {
+            G_hwndRootMenu = NULLHANDLE;
+            WMMouseMove_AutoHideMouse();
+        }
+    }
+
+    // yet another extra check, to find out if the about to be
+    // shown window contains a default push button
+    // V0.9.14 (2001-08-02) [lafaix]
+    if (    (G_HookData.HookConfig.fAutoMoveMouse)
+         && (    (    (psmh->msg == WM_SHOW)
+                   && (SHORT1FROMMP(psmh->mp1))
+                 )
+              // for some reasons, opening a dialog window
+              // does not produces a WM_SHOW message, so
+              // we must check WM_WINDOWPOSCHANGED too
+              || (    (psmh->msg == WM_WINDOWPOSCHANGED)
+                   && (((PSWP)psmh->mp1)->fl & SWP_SHOW)
+                 )
+            )
+       )
+    {
+        HWND hwndDefButton = (HWND)WinQueryWindowULong(psmh->hwnd,
+                                                       QWL_DEFBUTTON);
+
+        if (hwndDefButton)
+        {
+            POINTL ptl;
+            RECTL  rec;
+
+            // reposition mouse pointer in the middle of the
+            // default button
+            WinQueryWindowRect(hwndDefButton, &rec);
+            ptl.x = (rec.xLeft + rec.xRight) / 2;
+            ptl.y = (rec.yTop + rec.yBottom) / 2;
+            WinMapWindowPoints(hwndDefButton,
+                               HWND_DESKTOP,
+                               &ptl,
+                               1);
+            WinSetPointerPos(HWND_DESKTOP, ptl.x, ptl.y);
+        }
     }
 
 }
