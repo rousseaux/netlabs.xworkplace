@@ -550,13 +550,14 @@ VOID PwgtUpdateGraph(HWND hwnd,
                     pPrivate->Setup.lcolGraphIntr);
         // go thru all values in the "Interrupt Loads" LONG array
         // Note: number of "loads" entries and "intrs" entries is the same
+        ptl.x = 0;      // *** was missing!
         for (ul = 0;
              ((ul < pPrivate->cLoads) && (ul < rclBmp.xRight));
              ul++)
         {
             ptl.y = 0;
             GpiMove(pPrivate->hpsMem, &ptl);
-            ptl.y = 4; // rclBmp.yTop * pPrivate->palIntrs[ul] / 1000;
+            ptl.y = rclBmp.yTop * pPrivate->palIntrs[ul] / 1000;
             GpiLine(pPrivate->hpsMem, &ptl);
 
             ptl.x++;
