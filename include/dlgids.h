@@ -66,6 +66,7 @@
    -    TS   for Treesize;
    -    ND   for NetscapeDDE
    -    DM   for Daemon
+   -    FX   for xfix
    then comes an abbreviation of the ID type:
    -    M    for a menu template,
    -    MI   for a menu item,
@@ -246,6 +247,9 @@
 #define DID_ADD                 102
 #define DID_EDIT                103
 #define DID_REMOVE              104
+
+// Xfix dialog control added V1.0.4 (2005-02-24) [chennecke]
+#define DID_ENTER               105
 
 /* ******************************************************************
  *
@@ -2535,6 +2539,14 @@
 
 #define ID_TS_ICON                      10021
 
+// added V1.0.4 (2005-02-24) [chennecke]: strings for display of file and EA size in container
+#define ID_TSSI_LARGESTFILES            10022
+#define ID_TSSI_BYTES                   10023
+#define ID_TSSI_KBYTES                  10024
+#define ID_TSSI_MBYTES                  10025
+#define ID_TSSI_WORKING                 10026
+#define ID_TSSI_FILES                   10027
+
 /* ******************************************************************
  *
  *   Netscape DDE                       >= 10100
@@ -2548,6 +2560,173 @@
 #define ID_NDD_STARTING                 10103
 
 #define ID_ND_ICON                      10110
+
+/* ******************************************************************
+ *
+ *   Xfix                               >= 11000
+ *
+ ********************************************************************/
+
+#define ID_FXM_MAIN                          11000
+#define ID_FX_ICON                           11001
+
+#define ID_FXM_OBJIDS                        11050
+
+#define ID_FXM_XFIX                          11100
+#define ID_FXMI_RESCAN                       11101
+#define ID_FXMI_WRITETOINI                   11102
+#define ID_FXMI_CLOSETHIS                    11103
+#define ID_FXMI_EXIT                         11104
+
+#define ID_FXM_VIEW                          11130
+#define ID_FXMI_VIEW_OBJIDS                  11131
+#define ID_FXMI_VIEW_ABSTRACTS               11132
+
+#define ID_FXM_SORT                          11150
+#define ID_FXMI_SORT_INDEX                   11151
+#define ID_FXMI_SORT_STATUS                  11152
+#define ID_FXMI_SORT_TYPE                    11153
+#define ID_FXMI_SORT_HANDLE                  11154
+#define ID_FXMI_SORT_PARENT                  11155
+#define ID_FXMI_SORT_SHORTNAME               11156
+#define ID_FXMI_SORT_CHILDREN                11157
+#define ID_FXMI_SORT_DUPS                    11158
+#define ID_FXMI_SORT_REFCS                   11159
+#define ID_FXMI_SORT_LONGNAME                11160
+
+#define ID_FXMI_SORT_ID                      11170
+
+#define ID_FXM_ACTIONS                       11200
+#define ID_FXMI_ACTIONS_INTEGRITY            11201
+#define ID_FXMI_ACTIONS_FILES                11202
+
+#define ID_FXM_SELECT                        11300
+#define ID_FXMI_SELECT_INVALID               11301
+#define ID_FXMI_SELECT_BYNAME                11302
+
+#define ID_FXM_HELP                          11400
+#define ID_FXMI_HELP_USINGHELP               11401
+#define ID_FXMI_HELP_GENERAL                 11402
+#define ID_FXMI_HELP_PRODINFO                11403
+
+#define ID_FXM_RECORDSELMULTI                11800
+#define ID_FXM_RECORDSELSINGLE               11801
+#define ID_FXMI_NUKEFOLDERPOS                11802
+#define ID_FXMI_NUKEOBJID                    11803
+#define ID_FXMI_DELETE                       11804
+#define ID_FXMI_MOVEABSTRACTS                11805
+#define ID_FXMI_CUT                          11806
+#define ID_FXMI_PASTE                        11807
+
+#define ID_FXDI_MAIN                         11500
+
+#define ID_FXDI_OBJIDS                       11501
+
+#define ID_FXSI_NUMBER                       11510
+#define ID_FXSI_TYPE                         11511
+#define ID_FXSI_NODEOFS                      11512
+#define ID_FXSI_HANDLE                       11513
+#define ID_FXSI_PARENT                       11514
+#define ID_FXSI_SHORTNAME                    11515
+#define ID_FXSI_CHILDREN                     11516
+#define ID_FXSI_DUPLICATES                   11517
+#define ID_FXSI_REFERENCES                   11518
+#define ID_FXSI_LONGNAME                     11519
+
+#define ID_FXSI_STATUS                       11520
+#define ID_FXSI_ID                           11521
+
+#define ID_FXSI_NODESTAT_DUPLICATEDRIV       11530
+#define ID_FXSI_NODESTAT_ISDUPLICATE         11531
+#define ID_FXSI_NODESTAT_INVALIDDRIVE        11532
+#define ID_FXSI_NODESTAT_INVALIDPARENT       11533
+#define ID_FXSI_NODESTAT_FILENOTFOUND        11534
+#define ID_FXSI_NODESTAT_PARENTNOTFOLDER     11535
+#define ID_FXSI_NODESTAT_FOLDERPOSNOTFOLDER  11536
+#define ID_FXSI_NODESTAT_ABSTRACTSNOTFOLDER  11537
+
+#define ID_FXSI_TYPE_DRIVE                   11538
+#define ID_FXSI_TYPE_NODE                    11539
+
+#define ID_FXSI_REFERENCES_ABSTRACTS         11540
+#define ID_FXSI_REFERENCES_FOLDERPOS         11541
+
+#define ID_FXSI_LONGNAME_ABSTRACTVALID       11542
+#define ID_FXSI_LONGNAME_ABSTRACTINVALID     11543
+
+#define ID_FXSI_STATBAR_LOADEDINSERTED       11560
+#define ID_FXSI_STATBAR_HANDLESSELECTED      11561
+#define ID_FXSI_STATBAR_DONE                 11562
+#define ID_FXSI_STATBAR_SECONDS              11563
+#define ID_FXSI_STATBAR_DUPWARNING           11564
+#define ID_FXSI_STATBAR_IDSLOADED            11565
+#define ID_FXSI_STATBAR_RESOLVINGPERCENT     11566
+#define ID_FXSI_STATBAR_PARSINGPERCENT       11567
+#define ID_FXSI_STATBAR_CHECKINGPERCENT      11568
+#define ID_FXSI_STATBAR_RESOLVING            11569
+#define ID_FXSI_STATBAR_DONECHECKING         11570
+#define ID_FXSI_STATBAR_PARSINGHANDLES       11571
+
+#define ID_FXDI_FILEMASKSELECT               11580
+#define ID_FXDI_FILEMASKSELECT_MASK          11581
+#define ID_FXDI_FILEMASKSELECT_SELECT        11582
+#define ID_FXDI_FILEMASKSELECT_DESELECT      11583
+#define ID_FXDI_FILEMASKSELECT_SELECTALL     11584
+#define ID_FXDI_FILEMASKSELECT_DESELECTALL   11585
+
+#define ID_FXSI_PRODINFO                     11590
+
+#define ID_FXSI_NUKE_ABSTRACTS               11600
+#define ID_FXSI_NUKE_AND                     11601
+#define ID_FXSI_NUKE_FOLDERPOS               11602
+#define ID_FXSI_NUKE_OBJECTIDS               11603
+#define ID_FXSI_NUKE_SCHEDULED               11604
+#define ID_FXSI_NUKE_HANDLEPROBLEM           11605
+#define ID_FXSI_NUKE_HANDLESLEFT             11606
+
+#define ID_FXSI_WRITEBACK_INTRO              11610
+#define ID_FXSI_WRITEBACK_FIRSTFIRST         11611
+#define ID_FXSI_WRITEBACK_FIRSTSECOND        11612
+#define ID_FXSI_WRITEBACK_SECOND             11613
+#define ID_FXSI_WRITEBACK_THIRD              11614
+#define ID_FXSI_WRITEBACK_CONFIRM            11615
+
+#define ID_FXSI_WRITEBACKABORTED             11620
+#define ID_FXSI_WRITEBACKSUCCESS_BLOCKS      11621
+#define ID_FXSI_WRITEBACKSUCCESS_OBJMOVED    11622
+#define ID_FXSI_WRITEBACKSUCCESS_KEYSDELETED 11623
+#define ID_FXSI_WRITEBACKSUCCESS_EXIT        11624
+
+#define ID_FXSI_REMOVEHANDLES                11630
+
+#define ID_FXSI_NUKEFOLDERPOS                11640
+
+#define ID_FXSI_DELETEHANDLES                11650
+
+#define ID_FXSI_MOVEABSTRACTS_DESKTOPID      11660
+#define ID_FXSI_MOVEABSTRACTS_CONFIRM        11661
+
+#define ID_FXSI_MOVEABSTRACTSSUCCESS         11670
+
+#define ID_FXSI_ERROR_INVALIDHANDLE          11700
+#define ID_FXSI_ERROR_INVALIDPARENTHANDLE    11701
+#define ID_FXSI_ERROR_DEFAULT                11702
+#define ID_FXSI_ERROR_ABSFOLDERHANDLELOST    11703
+#define ID_FXSI_ERROR_INVALIDFOLDERHANDLE    11704
+#define ID_FXSI_ERROR_CANTGETACTIVEHANDLES   11705
+#define ID_FXSI_ERROR_ERROROCCURED           11706
+#define ID_FXSI_ERROR_MOVEABSTRACTS          11707
+#define ID_FXSI_ERROR_PARSEHANDLES           11708
+#define ID_FXSI_ERROR_PROFILENOTEXIST        11709
+#define ID_FXSI_ERROR_PROFILEZEROBYTES       11710
+#define ID_FXSI_ERROR_CANTOPENPROFILE        11711
+#define ID_FXSI_ERROR_USER                   11712
+#define ID_FXSI_ERROR_SYSTEM                 11713
+#define ID_FXSI_ERROR_INVALIDPARMC           11714
+#define ID_FXSI_ERROR_INVALIDPARMS           11715
+#define ID_FXSI_ERROR_NOTAVAILABLE           11716
+#define ID_FXSI_ERROR_FATALLOADHANDLES       11717
+#define ID_FXSI_ERROR_BUILDHANDLESCACHE      11718
 
 /* ******************************************************************
  *

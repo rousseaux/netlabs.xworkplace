@@ -1,6 +1,6 @@
 
 /*
- * treesize.rc:
+ * xfix.rc:
  *      Copyright (C) 1997-2003 Ulrich M”ller.
  *
  *      This file is part of the XWorkplace source package.
@@ -17,112 +17,6 @@
 // #include <os2.h>
 
 #include "rcdefs.h"     // V1.0.1 (2002-12-14) [umoeller]
-#include "xfix.h"
 
 POINTER 1 LOADONCALL MOVEABLE DISCARDABLE xfix.ico
-
-/* main menu */
-
-MENU 1 LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    SUBMENU "~xfix", IDM_XFIX, MIS_TEXT
-    BEGIN
-        MENUITEM "Re-parse buffer", IDMI_RESCAN, MIS_TEXT
-        MENUITEM "", -1, MIS_SEPARATOR
-        MENUITEM "Write back to OS2SYS.INI...", IDMI_WRITETOINI, MIS_TEXT
-        MENUITEM "", -1, MIS_SEPARATOR
-        MENUITEM "E~xit xfix\tAlt+F4",      IDMI_EXIT, MIS_TEXT
-    END
-
-    SUBMENU "~View", IDM_VIEW, MIS_TEXT
-    BEGIN
-        MENUITEM "Object ~IDs...", IDMI_VIEW_OBJIDS, MIS_TEXT
-        /* MENUITEM "~Abstract objects...", IDMI_VIEW_ABSTRACTS, MIS_TEXT */
-    END
-
-    SUBMENU "Sor~t", IDM_SORT, MIS_TEXT
-    BEGIN
-        MENUITEM "~Index", IDMI_SORT_INDEX, MIS_TEXT
-        MENUITEM "~Status", IDMI_SORT_STATUS, MIS_TEXT
-        MENUITEM "~Type", IDMI_SORT_TYPE, MIS_TEXT
-        MENUITEM "~Handle", IDMI_SORT_HANDLE, MIS_TEXT
-        MENUITEM "~Parent", IDMI_SORT_PARENT, MIS_TEXT
-        MENUITEM "Sh~ort name", IDMI_SORT_SHORTNAME, MIS_TEXT
-        MENUITEM "~Children", IDMI_SORT_CHILDREN, MIS_TEXT
-        MENUITEM "~Duplicates", IDMI_SORT_DUPS, MIS_TEXT
-        MENUITEM "~References", IDMI_SORT_REFCS, MIS_TEXT
-        MENUITEM "~Long name", IDMI_SORT_LONGNAME, MIS_TEXT
-    END
-
-    SUBMENU "~Actions", IDM_ACTIONS, MIS_TEXT
-    BEGIN
-        MENUITEM "Find invalid ~files", IDMI_ACTIONS_FILES, MIS_TEXT
-    END
-
-    SUBMENU "~Select", IDM_SELECT, MIS_TEXT
-    BEGIN
-        MENUITEM "Select all invalid", IDMI_SELECT_INVALID, MIS_TEXT
-        MENUITEM "Select by name...", IDMI_SELECT_BYNAME, MIS_TEXT
-    END
-
-    SUBMENU "~Help", IDM_HELP, MIS_TEXT
-    BEGIN
-        MENUITEM "~General help", IDMI_HELP_GENERAL, MIS_TEXT
-        MENUITEM "~Using help", IDMI_HELP_USINGHELP, MIS_TEXT
-        MENUITEM "", -1, MIS_SEPARATOR
-        MENUITEM "~Product information", IDMI_HELP_PRODINFO, MIS_TEXT
-    END
-END
-
-/* menu for object IDs frame */
-
-MENU IDM_OBJIDS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    SUBMENU "~xfix", IDM_XFIX, MIS_TEXT
-    BEGIN
-        MENUITEM "~Close this window\tAlt+F4",      IDMI_CLOSETHIS, MIS_TEXT
-        MENUITEM "E~xit xfix",      IDMI_EXIT, MIS_TEXT
-    END
-
-    SUBMENU "Sor~t", IDM_SORT, MIS_TEXT
-    BEGIN
-        MENUITEM "~Index", IDMI_SORT_INDEX, MIS_TEXT
-        MENUITEM "~Status", IDMI_SORT_STATUS, MIS_TEXT
-        MENUITEM "~ID", IDMI_SORT_ID, MIS_TEXT
-        MENUITEM "~Handle", IDMI_SORT_HANDLE, MIS_TEXT
-        MENUITEM "~Long name", IDMI_SORT_LONGNAME, MIS_TEXT
-    END
-
-    SUBMENU "~Help", IDM_HELP, MIS_TEXT
-    BEGIN
-        MENUITEM "~General help", IDMI_HELP_GENERAL, MIS_TEXT
-        MENUITEM "~Using help", IDMI_HELP_USINGHELP, MIS_TEXT
-        MENUITEM "", -1, MIS_SEPARATOR
-        MENUITEM "~Product information", IDMI_HELP_PRODINFO, MIS_TEXT
-    END
-END
-
-/* context menus */
-
-MENU IDM_RECORDSELMULTI LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    MENUITEM "Remove ~folder positions", IDMI_NUKEFOLDERPOS
-    MENUITEM "Remove object ~IDs", IDMI_NUKEOBJID
-    MENUITEM "", -1, MIS_SEPARATOR
-    MENUITEM "~Delete handle...", IDMI_DELETE
-END
-
-MENU IDM_RECORDSELSINGLE LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    MENUITEM "~Move abstracts to desktop", IDMI_MOVEABSTRACTS
-    MENUITEM "Remove ~folder positions", IDMI_NUKEFOLDERPOS
-    MENUITEM "Remove object ~IDs", IDMI_NUKEOBJID
-/*
-    MENUITEM "", -1, MIS_SEPARATOR
-    MENUITEM "~Cut", IDMI_CUT
-    MENUITEM "~Paste...", IDMI_PASTE
-*/
-    MENUITEM "", -1, MIS_SEPARATOR
-    MENUITEM "~Delete...", IDMI_DELETE
-END
 

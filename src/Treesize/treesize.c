@@ -20,6 +20,7 @@
  *          --  using a dlg template as a main window which can be resized,
  *              maximized and minimized,
  *          --  container programming: tree views, context menus, drag-n-drop.
+ *
  */
 
 /*
@@ -69,6 +70,7 @@
 #include "helpers\eah.h"
 #include "helpers\dosh.h"
 #include "helpers\nls.h"
+#include "helpers\nlscache.h"       // added V1.0.4 (2005-02-24) [chennecke]: load NLS strings from resource DLL
 #include "helpers\standards.h"
 #include "helpers\stringh.h"
 #include "helpers\tree.h"
@@ -169,6 +171,7 @@ PRECORDCORE G_precParentOf100Largest = NULL;
  *
  *@@changed V0.9.14 (2001-07-28) [umoeller]: added largest files collect
  *@@changed V0.9.14 (2001-07-28) [umoeller]: now using WinPostMsg, which is speedier
+ *@@changed V1.0.4 (2005-02-24) [chennecke]: replaced hard-coded strings with corresponding nlsGetString() calls
  */
 
 VOID CollectDirectory(PDIRINFO pdiThis)
@@ -576,6 +579,7 @@ PSZ ComposeFilename(PSZ pszBuf,
  *
  *@@added V0.9.14 (2001-07-28) [umoeller]
  *@@changed V0.9.15 (2001-08-25) [rbri] the 100 largest entries are available only once after D&D
+ *@@changed V1.0.4 (2005-02-24) [chennecke]: replaced hard-coded strings with corresponding nlsGetString() calls
  */
 
 VOID Insert100LargestFiles(VOID)
@@ -597,7 +601,7 @@ VOID Insert100LargestFiles(VOID)
         CHAR szFilename[400],
              szTemp[1000];
 
-        sprintf(szSize, "%d largest files", cFiles);
+        sprintf(szSize, nlsGetString(ID_TSSI_LARGESTFILES), cFiles);
 
         // create the entry only if it is not alredy there
         if (G_precParentOf100Largest == NULL)
@@ -657,10 +661,10 @@ VOID Insert100LargestFiles(VOID)
                                         G_szThousand[0]),
                     // "bytes" string:
                     (G_Settings.ulSizeDisplay == SD_BYTES)
-                            ? "bytes"
+                            ? nlsGetString(ID_TSSI_BYTES)
                         : (G_Settings.ulSizeDisplay == SD_KBYTES)
-                            ? "KBytes"
-                        : "MBytes");
+                            ? nlsGetString(ID_TSSI_KBYTES)
+                        : nlsGetString(ID_TSSI_MBYTES));
 
             precThis->pFileEntry = pEntry;
 
@@ -697,6 +701,7 @@ VOID Insert100LargestFiles(VOID)
  *
  *@@changed V0.9.14 (2001-08-09) [umoeller]: fixed bad sort by size that broke with 100 largest files
  *@@changed V1.0.0 (2002-11-23) [bvl]: added "Refresh" button @@fixes 172
+ *@@changed V1.0.4 (2005-02-24) [chennecke]: replaced hard-coded strings with corresponding nlsGetString() calls
  */
 
 MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -810,7 +815,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                                           1);
 
             // recc text
-            sprintf(pdi->szRecordText, "%s: working...", pdi->szThis);
+            sprintf(pdi->szRecordText, nlsGetString(ID_TSSI_WORKING), pdi->szThis);
 
              _Pmpf(("  WM_BEGINDIRECTORY %s", pdi->szRecordText));
              _Pmpf(("    Level: %d", pdi->ulRecursionLevel));
@@ -930,14 +935,14 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                                             G_szThousand[0]),
                         // "bytes" string:
                         (G_Settings.ulSizeDisplay == SD_BYTES)
-                                ? "bytes"
+                                ? nlsGetString(ID_TSSI_BYTES)
                             : (G_Settings.ulSizeDisplay == SD_KBYTES)
-                                ? "KBytes"
-                            : "MBytes",
+                                ? nlsGetString(ID_TSSI_KBYTES)
+                            : nlsGetString(ID_TSSI_MBYTES),
                         nlsThousandsULong(szFiles,
                                            pdiThis->ulFiles,
                                            G_szThousand[0]),
-                        "Files");
+                        nlsGetString(ID_TSSI_FILES));
 
                 if (G_Settings.CollectEAs)
                     sprintf(pdiThis->szRecordText + strlen(pdiThis->szRecordText),
@@ -950,10 +955,10 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                                                     : ((pdiThis->dTotalEASize + (512*1024)) / 1024 / 1024),
                                                 G_szThousand[0]),
                            (G_Settings.ulSizeDisplay == SD_BYTES)
-                                   ? "bytes"
+                                   ? nlsGetString(ID_TSSI_BYTES)
                                : (G_Settings.ulSizeDisplay == SD_KBYTES)
-                                   ? "KBytes"
-                               : "MBytes");
+                                   ? nlsGetString(ID_TSSI_KBYTES)
+                               : nlsGetString(ID_TSSI_MBYTES));
 
                 strcat(pdiThis->szRecordText, ")");
                 // _Pmpf(("  WM_DONEDIRECTORY %s", pdi->szRecordText));
@@ -1777,6 +1782,8 @@ BOOL LoadNLS(VOID)
  *      as a dlg resource. All the processing is done
  *      in fnwpMain above, which is running after this
  *      func has called WinProcessDlg.
+ *
+ *@@changed V1.0.4 (2005-02-24) [chennecke]: added nlsInitStrings() call to initialize the NLS string cache
  */
 
 int main(int argc, char *argv[])
@@ -1899,6 +1906,9 @@ int main(int argc, char *argv[])
                             "Settings",
                             &G_Settings,
                             &cbSettings);
+
+        // initialize NLS cache
+        nlsInitStrings(hab, G_hmodNLS, NULL, 0);
 
         // go!
         WinShowWindow(G_hwndMain, TRUE);

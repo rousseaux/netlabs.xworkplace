@@ -11,6 +11,8 @@
  *      and my Desktop started again.
  *
  *      V0.9.16 added support for removing object IDs.
+ *      V1.0.4  added national language support. Resources are stored in main
+ *              resource file.
  *
  *@@header "xfix.h"
  *@@added V0.9.5 (2000-08-13) [umoeller]
@@ -52,6 +54,7 @@
 #include "helpers\except.h"
 #include "helpers\linklist.h"
 #include "helpers\nls.h"                // National Language Support helpers
+#include "helpers\nlscache.h"           // added to load string resources from NLS DLL V1.0.4 (2005-02-24) [chennecke]
 #include "helpers\prfh.h"
 #include "helpers\standards.h"
 #include "helpers\stringh.h"
@@ -66,8 +69,7 @@
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 
 #include "bldlevel.h"
-
-#include "xfix.h"
+#include "dlgids.h"                     // required to load NLS strings V1.0.4 (2005-02-25) [chennecke]
 
 
 
@@ -87,6 +89,8 @@
 ULONG       G_ulrc = 0;         // return code from main()
 
 HAB         G_hab = NULLHANDLE;
+
+HMODULE     G_hmodNLS = NULLHANDLE;         // module handle for NLS resource DLL V1.0.4 (2005-02-25) [chennecke]
 
 HWND        G_hwndMain = NULLHANDLE,
             G_hwndObjIDsFrame = NULLHANDLE;
@@ -345,6 +349,36 @@ VOID UpdateStatusBar(LONG lSeconds);
 VOID MarkAllOrphans(PNODERECORD prec,
                     ULONG ulParentHandle);
 
+/*
+ *@@ STRINGENTITY:
+ *     Entity array for NLS strings
+ *     This is the equivalent of XWPENTITY from common.c.
+ *     The entities defined in this array are automatically
+ *     replaced in the strings loaded from the NLS DLL via
+ *     nlsGetString().
+ *
+ *     The array is passed to nlsInitStrings()
+ *     along with the number of elements to initialize the NLS
+ *     cache.
+ *
+ *@@added V1.0.4 (2002-03-04) [chennecke]
+ */
+
+PCSZ    G_pcszBldlevel = BLDLEVEL_VERSION,
+        G_pcszBldDate = __DATE__,
+        G_pcszNewLine = "\n",
+        G_pcszCopyright = "(C)",
+        G_pcszXWorkplace = "XWorkplace";
+
+const STRINGENTITY G_aEntities[] =
+    {
+        "&copy;", &G_pcszCopyright,
+        "&xwp;", &G_pcszXWorkplace,
+        "&version;", &G_pcszBldlevel,
+        "&date;", &G_pcszBldDate,
+        "&nl;", &G_pcszNewLine,
+    };
+
 /* ******************************************************************
  *
  *   Handles helpers
@@ -378,28 +412,28 @@ VOID UpdateStatusDescr(PNODERECORD prec)
 
     // node status
     if (prec->ulStatus & NODESTAT_DUPLICATEDRIV)
-        Append(&str, "Duplicate DRIV", "; ");
+        Append(&str, nlsGetString(ID_FXSI_NODESTAT_DUPLICATEDRIV), "; ");
 
     if (prec->ulStatus & NODESTAT_ISDUPLICATE)
-        Append(&str, "Duplicate", "; ");
+        Append(&str, nlsGetString(ID_FXSI_NODESTAT_ISDUPLICATE), "; ");
 
     if (prec->ulStatus & NODESTAT_INVALIDDRIVE)
-        Append(&str, "Invalid drive", "; ");
+        Append(&str, nlsGetString(ID_FXSI_NODESTAT_INVALIDDRIVE), "; ");
 
     if (prec->ulStatus & NODESTAT_INVALID_PARENT)
-        Append(&str, "Orphaned", "; ");
+        Append(&str, nlsGetString(ID_FXSI_NODESTAT_INVALIDPARENT), "; ");
 
     if (prec->ulStatus & NODESTAT_FILENOTFOUND)
-        Append(&str, "File not found", "; ");
+        Append(&str, nlsGetString(ID_FXSI_NODESTAT_FILENOTFOUND), "; ");
 
     if (prec->ulStatus & NODESTAT_PARENTNOTFOLDER)
-        Append(&str, "Parent is not folder", "; ");
+        Append(&str, nlsGetString(ID_FXSI_NODESTAT_PARENTNOTFOLDER), "; ");
 
     if (prec->ulStatus & NODESTAT_FOLDERPOSNOTFOLDER)
-        Append(&str, "Folderpos for non-folder", "; ");
+        Append(&str, nlsGetString(ID_FXSI_NODESTAT_FOLDERPOSNOTFOLDER), "; ");
 
     if (prec->ulStatus & NODESTAT_ABSTRACTSNOTFOLDER)
-        Append(&str, "Abstracts in non-folder", "; ");
+        Append(&str, nlsGetString(ID_FXSI_NODESTAT_ABSTRACTSNOTFOLDER), "; ");
 
     switch (prec->arcComposePath)
     {
@@ -408,17 +442,17 @@ VOID UpdateStatusDescr(PNODERECORD prec)
 
         // added clear names here V0.9.19 (2002-04-14) [umoeller]
         case ERROR_INVALID_HANDLE:
-            Append(&str, "Invalid handle", "; ");
+            Append(&str, nlsGetString(ID_FXSI_ERROR_INVALIDHANDLE), "; ");
         break;
 
         case ERROR_WPH_INVALID_PARENT_HANDLE:
-            Append(&str, "Invalid parent handle", "; ");
+            Append(&str, nlsGetString(ID_FXSI_ERROR_INVALIDPARENTHANDLE), "; ");
         break;
 
         default:
         {
             CHAR sz[100];
-            sprintf(sz, "wphComposePath returned %d", prec->arcComposePath);
+            sprintf(sz, nlsGetString(ID_FXSI_ERROR_DEFAULT), prec->arcComposePath);
             Append(&str, sz, "; ");
         }
         break;
@@ -452,12 +486,12 @@ VOID UpdateStatusDescr(PNODERECORD prec)
     if (prec->cAbstracts)
     {
         CHAR sz[50];
-        sprintf(sz, "%d ABS", prec->cAbstracts);
+        sprintf(sz, nlsGetString(ID_FXSI_REFERENCES_ABSTRACTS), prec->cAbstracts);
         Append(&str, sz, "; ");
     }
 
     if (prec->fFolderPos)
-        Append(&str, "FPOS", "; ");
+        Append(&str, nlsGetString(ID_FXSI_REFERENCES_FOLDERPOS), "; ");
 
     if (prec->pObjID)
         Append(&str, prec->pObjID->pcszID, "\n");
@@ -533,6 +567,7 @@ VOID RebuildRecordsHashTable(VOID)
  *      wrapper for showing a message box.
  *
  *@@added V0.9.15 (2001-09-14) [umoeller]
+ *@@changed V1.0.4 (2005-02-24) [chennecke]: replaced hard-coded strings with nlsGetString() calls
  */
 
 ULONG MessageBox(HWND hwndOwner,
@@ -542,15 +577,15 @@ ULONG MessageBox(HWND hwndOwner,
 {
     MSGBOXSTRINGS Strings =
         {
-            "~Yes",
-            "~No",
-            "~OK",
-            "~Cancel",
-            "~Abort",
-            "~Retry",
-            "~Ignore",
-            "~Enter",
-            "Yes to ~all"
+            nlsGetString(DID_YES),
+            nlsGetString(DID_NO),
+            nlsGetString(DID_OK),
+            nlsGetString(DID_CANCEL),
+            nlsGetString(DID_ABORT),
+            nlsGetString(DID_RETRY),
+            nlsGetString(DID_IGNORE),
+            nlsGetString(DID_ENTER),
+            nlsGetString(DID_YES2ALL)
         };
 
     CHAR szBuf[4000];
@@ -596,36 +631,36 @@ VOID SetStatusBarText(HWND hwndFrame,
  *      handles WM_COMMANDs shared between several windows.
  *
  *@@added V0.9.16 (2001-09-29) [umoeller]
+ *@@changed V1.0.4 (2005-02-24) [chennecke]: replaced hard-coded strings with nlsGetString() calls
+ *                                           renamed identifiers IDM... to ID_FXM...
  */
 
 VOID StandardCommands(HWND hwndFrame, USHORT usCmd)
 {
     switch (usCmd)
     {
-        case IDMI_EXIT:
+        case ID_FXMI_EXIT:
             WinPostMsg(hwndFrame,
                        WM_QUIT,
                        0,
                        0);
         break;
 
-        case IDMI_HELP_GENERAL:
-        case IDMI_HELP_USINGHELP:
+        case ID_FXMI_HELP_GENERAL:
+        case ID_FXMI_HELP_USINGHELP:
             if (G_hwndHelp)
             {
                 winhDisplayHelpPanel(G_hwndHelp,
-                                    (usCmd == IDMI_HELP_GENERAL)
+                                    (usCmd == ID_FXMI_HELP_GENERAL)
                                         ? ID_XSH_XFIX_INTRO
                                         : 0);       // "using help"
             }
         break;
 
-        case IDMI_HELP_PRODINFO:
+        case ID_FXMI_HELP_PRODINFO:
             MessageBox(hwndFrame,
                        MB_OK | MB_MOVEABLE,
-                       "xfix V" BLDLEVEL_VERSION " built " __DATE__ "\n"
-                       "(C) 2000-2003 Ulrich M”ller\n\n"
-                       XWORKPLACE_STRING " File Handles Fixer.");
+                       nlsGetString(ID_FXSI_PRODINFO));
         break;
     }
 }
@@ -672,7 +707,7 @@ LONG inline CompareStrings(PVOID precc1, PVOID precc2, ULONG ulFieldOfs)
                 return 0;
         }
         /* return strcmp(psz1,
-                         psz2); */
+                       psz2); */
     }
     else if (psz1)
         // string 1 exists, but 2 doesn't:
@@ -1460,6 +1495,7 @@ VOID CheckObjIdsSortItem(HWND hwndFrame, USHORT usCmd)
 /*
  *@@ SetObjIDsSort:
  *
+ *@@changed (2005-02-24) [chennecke]: renamed IDM... identifiers to ID_FXM...
  */
 
 VOID SetObjIDsSort(HWND hwndFrame,
@@ -1468,23 +1504,23 @@ VOID SetObjIDsSort(HWND hwndFrame,
     PVOID pvSortFunc = NULL;
     switch (usCmd)
     {
-        case IDMI_SORT_INDEX:
+        case ID_FXMI_SORT_INDEX:
             pvSortFunc = (PVOID)fnObjIdsCompareIndex;
         break;
 
-        case IDMI_SORT_STATUS:
+        case ID_FXMI_SORT_STATUS:
             pvSortFunc = (PVOID)fnObjIdsCompareStatus;
         break;
 
-        case IDMI_SORT_ID:
+        case ID_FXMI_SORT_ID:
             pvSortFunc = (PVOID)fnObjIdsCompareIDs;
         break;
 
-        case IDMI_SORT_HANDLE:
+        case ID_FXMI_SORT_HANDLE:
             pvSortFunc = (PVOID)fnObjIdsCompareHandles;
         break;
 
-        case IDMI_SORT_LONGNAME:
+        case ID_FXMI_SORT_LONGNAME:
             pvSortFunc = (PVOID)fnObjIdsCompareLongNames;
         break;
     }
@@ -1508,6 +1544,7 @@ VOID SetObjIDsSort(HWND hwndFrame,
  *@@ fnwpSubclassedObjIDsFrame:
  *
  *@@added V0.9.16 (2001-09-29) [umoeller]
+ *@@changed V1.0.4 (2005-02-24) [chennecke]: renamed IDM... identifiers to ID_FXM...
  */
 
 MRESULT EXPENTRY fnwpSubclassedObjIDsFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1537,18 +1574,18 @@ MRESULT EXPENTRY fnwpSubclassedObjIDsFrame(HWND hwndFrame, ULONG msg, MPARAM mp1
             USHORT  usCmd = SHORT1FROMMP(mp1);
             switch (usCmd)
             {
-                case IDMI_CLOSETHIS:
+                case ID_FXMI_CLOSETHIS:
                     WinPostMsg(hwndFrame,
                                WM_SYSCOMMAND,
                                (MPARAM)SC_CLOSE,
                                0);
                 break;
 
-                case IDMI_SORT_INDEX:
-                case IDMI_SORT_STATUS:
-                case IDMI_SORT_ID:
-                case IDMI_SORT_HANDLE:
-                case IDMI_SORT_LONGNAME:
+                case ID_FXMI_SORT_INDEX:
+                case ID_FXMI_SORT_STATUS:
+                case ID_FXMI_SORT_ID:
+                case ID_FXMI_SORT_HANDLE:
+                case ID_FXMI_SORT_LONGNAME:
                     SetObjIDsSort(hwndFrame, usCmd);
                 break;
 
@@ -1569,6 +1606,8 @@ MRESULT EXPENTRY fnwpSubclassedObjIDsFrame(HWND hwndFrame, ULONG msg, MPARAM mp1
  *@@ ViewObjectIDs:
  *
  *@@added V0.9.16 (2001-09-29) [umoeller]
+ *@@changed V1.0.4 (2005-02-24) [chennecke]: replaced hard-coded strings with nlsGetString() calls
+ *                                           renamed IDM... identifiers to ID_FXM...
  */
 
 VOID ViewObjectIDs(VOID)
@@ -1585,7 +1624,7 @@ VOID ViewObjectIDs(VOID)
                | FCF_TASKLIST,
             XFCF_STATUSBAR,
             0,                      // frame style
-            "xfix: Object IDs",
+            nlsGetString(ID_FXDI_OBJIDS),
             1,     // icon resource
             WC_CONTAINER,
             CCS_MINIICONS | CCS_READONLY | CCS_EXTENDSEL
@@ -1601,7 +1640,7 @@ VOID ViewObjectIDs(VOID)
         // not yet created:
 
         if (    (G_hwndObjIDsFrame = ctlCreateStdWindow(&xfd,
-                                                        &hwndObjIDsCnr))
+                                                            &hwndObjIDsCnr))
              && (hwndObjIDsCnr)
            )
         {
@@ -1613,10 +1652,10 @@ VOID ViewObjectIDs(VOID)
 
             // load the different menu bar explicitly
             WinLoadMenu(G_hwndObjIDsFrame,
-                        NULLHANDLE,
-                        IDM_OBJIDS);
+                        G_hmodNLS,
+                        ID_FXM_OBJIDS);
 
-            CheckObjIdsSortItem(G_hwndObjIDsFrame, IDMI_SORT_INDEX);
+            CheckObjIdsSortItem(G_hwndObjIDsFrame, ID_FXMI_SORT_INDEX);
 
             // set up data for Details view columns
             XFIELDINFO      xfi[13];
@@ -1624,28 +1663,28 @@ VOID ViewObjectIDs(VOID)
                             iSplitAfter;
 
             xfi[i].ulFieldOffset = FIELDOFFSET(OBJIDRECORD, ulIndex);
-            xfi[i].pszColumnTitle = "i";
+            xfi[i].pszColumnTitle = nlsGetString(ID_FXSI_NUMBER);
             xfi[i].ulDataType = CFA_ULONG;
             xfi[i++].ulOrientation = CFA_RIGHT | CFA_TOP;
 
             xfi[i].ulFieldOffset = FIELDOFFSET(OBJIDRECORD, pszStatus);
-            xfi[i].pszColumnTitle = "Status";
+            xfi[i].pszColumnTitle = nlsGetString(ID_FXSI_STATUS);
             xfi[i].ulDataType = CFA_STRING;
             xfi[i++].ulOrientation = CFA_LEFT;
 
             iSplitAfter = i;
             xfi[i].ulFieldOffset = FIELDOFFSET(OBJIDRECORD, pcszID);
-            xfi[i].pszColumnTitle = "ID";
+            xfi[i].pszColumnTitle = nlsGetString(ID_FXSI_ID);
             xfi[i].ulDataType = CFA_STRING;
             xfi[i++].ulOrientation = CFA_LEFT;
 
             xfi[i].ulFieldOffset = FIELDOFFSET(OBJIDRECORD, pcszHandle);
-            xfi[i].pszColumnTitle = "Handle";
+            xfi[i].pszColumnTitle = nlsGetString(ID_FXSI_HANDLE);
             xfi[i].ulDataType = CFA_STRING;
             xfi[i++].ulOrientation = CFA_RIGHT;
 
             xfi[i].ulFieldOffset = FIELDOFFSET(OBJIDRECORD, pszLongName);
-            xfi[i].pszColumnTitle = "Long name";
+            xfi[i].pszColumnTitle = nlsGetString(ID_FXSI_LONGNAME);
             xfi[i].ulDataType = CFA_STRING;
             xfi[i++].ulOrientation = CFA_LEFT;
 
@@ -1712,7 +1751,7 @@ VOID ViewObjectIDs(VOID)
                     if (p = G_RecordHashTable[LOUSHORT(ulHandle)])
                         precThis->pszLongName = p->szLongName;
                     else
-                        Append(&strStatus, "Invalid handle", ";");
+                        Append(&strStatus, nlsGetString(ID_FXSI_ERROR_INVALIDHANDLE), ";");
                 }
                 else
                 {
@@ -1720,7 +1759,7 @@ VOID ViewObjectIDs(VOID)
                     USHORT usFolder;
                     if (!(usFolder = G_ausAbstractFolders[LOUSHORT(ulHandle)]))
                     {
-                        Append(&strStatus, "Abstract's folder handle lost", ";");
+                        Append(&strStatus, nlsGetString(ID_FXSI_ERROR_ABSFOLDERHANDLELOST), ";");
                     }
                     else
                     {
@@ -1729,16 +1768,16 @@ VOID ViewObjectIDs(VOID)
                         PNODERECORD prec;
                         if (prec = G_RecordHashTable[usFolder])
                             sprintf(precThis->szLongName,
-                                    "Abstract in 0x%04lX (%s)",
+                                    nlsGetString(ID_FXSI_LONGNAME_ABSTRACTVALID),
                                     usFolder,
                                     prec->szLongName);
                         else
                         {
                             // invalid folder handle:
                             sprintf(precThis->szLongName,
-                                    "Abstract in 0x%04lX",
+                                    nlsGetString(ID_FXSI_LONGNAME_ABSTRACTINVALID),
                                     usFolder);
-                            Append(&strStatus, "Invalid folder handle", ";");
+                            Append(&strStatus, nlsGetString(ID_FXSI_ERROR_INVALIDFOLDERHANDLE), ";");
                         }
 
                         precThis->pszLongName = precThis->szLongName;
@@ -1771,7 +1810,7 @@ VOID ViewObjectIDs(VOID)
 
             CHAR sz2[30], sz3[30];
             SetStatusBarText(G_hwndObjIDsFrame,
-                             "%s IDs loaded, %s IDs inserted.",
+                             nlsGetString(ID_FXSI_STATBAR_LOADEDINSERTED),
                              nlsThousandsULong(sz2, G_cObjIDs, G_cThousands[0]),
                              nlsThousandsULong(sz3, cRecords, G_cThousands[0]));
         }
@@ -1815,6 +1854,7 @@ MRESULT EXPENTRY fnwpSubclassedMainCnr(HWND hwndCnr, ULONG msg, MPARAM mp1, MPAR
 /*
  *@@ SetupMainCnr:
  *
+ *@@changed V1.0.4 (2005-02-24) [chennecke]: replaced hard-coded strings with nlsGetString() calls
  */
 
 VOID SetupMainCnr(HWND hwndCnr)
@@ -1825,58 +1865,58 @@ VOID SetupMainCnr(HWND hwndCnr)
                     iSplitAfter = 0;
 
     xfi[i].ulFieldOffset = FIELDOFFSET(NODERECORD, ulIndex);
-    xfi[i].pszColumnTitle = "i";
+    xfi[i].pszColumnTitle = nlsGetString(ID_FXSI_NUMBER);
     xfi[i].ulDataType = CFA_ULONG;
     xfi[i++].ulOrientation = CFA_RIGHT | CFA_TOP;
 
     xfi[i].ulFieldOffset = FIELDOFFSET(NODERECORD, pszStatusDescr);
-    xfi[i].pszColumnTitle = "";
+    xfi[i].pszColumnTitle = nlsGetString(ID_FXSI_STATUS);
     xfi[i].ulDataType = CFA_STRING;
     xfi[i++].ulOrientation = CFA_LEFT;
 
     xfi[i].ulFieldOffset = FIELDOFFSET(NODERECORD, pszType);
-    xfi[i].pszColumnTitle = "Type";
+    xfi[i].pszColumnTitle = nlsGetString(ID_FXSI_TYPE);
     xfi[i].ulDataType = CFA_STRING;
     xfi[i++].ulOrientation = CFA_LEFT;
 
     xfi[i].ulFieldOffset = FIELDOFFSET(NODERECORD, ulOfs);
-    xfi[i].pszColumnTitle = "Node ofs";
+    xfi[i].pszColumnTitle = nlsGetString(ID_FXSI_NODEOFS);
     xfi[i].ulDataType = CFA_ULONG;
     xfi[i++].ulOrientation = CFA_RIGHT;
 
     xfi[i].ulFieldOffset = FIELDOFFSET(NODERECORD, pszHexHandle);
-    xfi[i].pszColumnTitle = "Handle";
+    xfi[i].pszColumnTitle = nlsGetString(ID_FXSI_HANDLE);
     xfi[i].ulDataType = CFA_STRING;
     xfi[i++].ulOrientation = CFA_RIGHT;
 
     xfi[i].ulFieldOffset = FIELDOFFSET(NODERECORD, pszHexParentHandle);
-    xfi[i].pszColumnTitle = "Parent";
+    xfi[i].pszColumnTitle = nlsGetString(ID_FXSI_PARENT);
     xfi[i].ulDataType = CFA_STRING;
     xfi[i++].ulOrientation = CFA_RIGHT;
 
     iSplitAfter = i;
     xfi[i].ulFieldOffset = FIELDOFFSET(NODERECORD, pszShortNameCopy);
-    xfi[i].pszColumnTitle = "Short name";
+    xfi[i].pszColumnTitle = nlsGetString(ID_FXSI_SHORTNAME);
     xfi[i].ulDataType = CFA_STRING;
     xfi[i++].ulOrientation = CFA_LEFT;
 
     xfi[i].ulFieldOffset = FIELDOFFSET(NODERECORD, cChildren);
-    xfi[i].pszColumnTitle = "Children";
+    xfi[i].pszColumnTitle = nlsGetString(ID_FXSI_CHILDREN);
     xfi[i].ulDataType = CFA_ULONG;
     xfi[i++].ulOrientation = CFA_RIGHT;
 
     xfi[i].ulFieldOffset = FIELDOFFSET(NODERECORD, cDuplicates);
-    xfi[i].pszColumnTitle = "Dups.";
+    xfi[i].pszColumnTitle = nlsGetString(ID_FXSI_DUPLICATES);
     xfi[i].ulDataType = CFA_ULONG;
     xfi[i++].ulOrientation = CFA_RIGHT;
 
     xfi[i].ulFieldOffset = FIELDOFFSET(NODERECORD, pszRefcsDescr);
-    xfi[i].pszColumnTitle = "Refcs.";
+    xfi[i].pszColumnTitle = nlsGetString(ID_FXSI_REFERENCES);
     xfi[i].ulDataType = CFA_STRING;
     xfi[i++].ulOrientation = CFA_LEFT;
 
     xfi[i].ulFieldOffset = FIELDOFFSET(NODERECORD, pszLongName);
-    xfi[i].pszColumnTitle = "Long name";
+    xfi[i].pszColumnTitle = nlsGetString(ID_FXSI_LONGNAME);
     xfi[i].ulDataType = CFA_STRING;
     xfi[i++].ulOrientation = CFA_LEFT;
 
@@ -1909,6 +1949,7 @@ VOID SetupMainCnr(HWND hwndCnr)
 /*
  *@@ UpdateStatusBar:
  *
+ *@@changed V1.0.4 (2005-02-24) [chennecke]: replaced hard-coded strings with nlsGetString() calls
  */
 
 VOID UpdateStatusBar(LONG lSeconds)
@@ -1922,25 +1963,25 @@ VOID UpdateStatusBar(LONG lSeconds)
     {
         // any records selected:
         psz += sprintf(psz,
-                       "%s out of %s handles selected",
+                       nlsGetString(ID_FXSI_STATBAR_HANDLESSELECTED),
                        nlsThousandsULong(sz3, (ULONG)G_cHandlesSelected, G_cThousands[0]),
                        nlsThousandsULong(sz2, (ULONG)G_cHandlesParsed, G_cThousands[0]));
     }
     else
     {
         psz += sprintf(psz,
-                       "Done, %s bytes (%s handles)",
+                       nlsGetString(ID_FXSI_STATBAR_DONE),
                        nlsThousandsULong(sz3, (ULONG)G_pHandlesBuf->cbData, G_cThousands[0]),
                        nlsThousandsULong(sz2, (ULONG)G_cHandlesParsed, G_cThousands[0]));
         if (lSeconds != -1)
             psz += sprintf(psz,
-                           ", %d seconds",
+                           nlsGetString(ID_FXSI_STATBAR_SECONDS),
                            lSeconds / 1000);
     }
 
     if (G_cDuplicatesFound)
         psz += sprintf(psz,
-                       " -- WARNING: %d duplicate handles exist!",
+                       nlsGetString(ID_FXSI_STATBAR_DUPWARNING),
                        G_cDuplicatesFound);
 
     SetStatusBarText(G_hwndMain, sz);
@@ -1949,6 +1990,7 @@ VOID UpdateStatusBar(LONG lSeconds)
 /*
  *@@ UpdateMenuItems:
  *
+ *@@changed V1.0.4 (2005-02-24) [chennecke]: renamed IDM... identifiers to ID_FXM...
  */
 
 VOID UpdateMenuItems(USHORT usSortCmd)
@@ -1958,21 +2000,21 @@ VOID UpdateMenuItems(USHORT usSortCmd)
 
     // view menu
     BOOL fEnable = (!G_tidInsertHandlesRunning && !G_tidCheckFilesRunning);
-    WinEnableMenuItem(hmenuMain, IDM_ACTIONS,
+    WinEnableMenuItem(hmenuMain, ID_FXM_ACTIONS,
                       fEnable);
-    WinEnableMenuItem(hmenuMain, IDM_SELECT,
+    WinEnableMenuItem(hmenuMain, ID_FXM_SELECT,
                       fEnable);
-    WinEnableMenuItem(hmenuMain, IDMI_RESCAN,
+    WinEnableMenuItem(hmenuMain, ID_FXMI_RESCAN,
                       fEnable);
-    WinEnableMenuItem(hmenuMain, IDMI_WRITETOINI,
+    WinEnableMenuItem(hmenuMain, ID_FXMI_WRITETOINI,
                       fEnable);
 
     // disable "object IDs" window if already open
-    /* WinEnableMenuItem(hmenuMain, IDMI_VIEW_OBJIDS,
+    /* WinEnableMenuItem(hmenuMain, ID_FXMI_VIEW_OBJIDS,
                       (G_hwndObjIDsFrame == NULL)); */
 
     // disable "duplicates" if we have none
-    WinEnableMenuItem(hmenuMain, IDMI_SORT_DUPS,
+    WinEnableMenuItem(hmenuMain, ID_FXMI_SORT_DUPS,
                       (G_cDuplicatesFound != 0));
 
     if (usSortCmd)
@@ -2006,6 +2048,7 @@ VOID SelectionChanged(VOID)
 /*
  *@@ SetMainSort:
  *
+ *@@changed V1.0.4 (2005-02-24) [chennecke]: renamed IDM... identifiers to ID_FXM...
  */
 
 VOID SetMainSort(USHORT usCmd)
@@ -2013,43 +2056,43 @@ VOID SetMainSort(USHORT usCmd)
     PVOID pvSortFunc = NULL;
     switch (usCmd)
     {
-        case IDMI_SORT_INDEX:
+        case ID_FXMI_SORT_INDEX:
             pvSortFunc = (PVOID)fnMainCompareIndex;
         break;
 
-        case IDMI_SORT_STATUS:
+        case ID_FXMI_SORT_STATUS:
             pvSortFunc = (PVOID)fnMainCompareStatus;
         break;
 
-        case IDMI_SORT_TYPE:
+        case ID_FXMI_SORT_TYPE:
             pvSortFunc = (PVOID)fnMainCompareType;
         break;
 
-        case IDMI_SORT_HANDLE:
+        case ID_FXMI_SORT_HANDLE:
             pvSortFunc = (PVOID)fnMainCompareHandle;
         break;
 
-        case IDMI_SORT_PARENT:
+        case ID_FXMI_SORT_PARENT:
             pvSortFunc = (PVOID)fnMainCompareParent;
         break;
 
-        case IDMI_SORT_SHORTNAME:
+        case ID_FXMI_SORT_SHORTNAME:
             pvSortFunc = (PVOID)fnMainCompareShortName;
         break;
 
-        case IDMI_SORT_CHILDREN:
+        case ID_FXMI_SORT_CHILDREN:
             pvSortFunc = (PVOID)fnMainCompareChildren;
         break;
 
-        case IDMI_SORT_DUPS:
+        case ID_FXMI_SORT_DUPS:
             pvSortFunc = (PVOID)fnMainCompareDuplicates;
         break;
 
-        case IDMI_SORT_REFCS:
+        case ID_FXMI_SORT_REFCS:
             pvSortFunc = (PVOID)fnMainCompareReferences;
         break;
 
-        case IDMI_SORT_LONGNAME:
+        case ID_FXMI_SORT_LONGNAME:
             pvSortFunc = (PVOID)fnMainCompareLongName;
         break;
     }
@@ -2072,6 +2115,7 @@ VOID SetMainSort(USHORT usCmd)
  *@@ StartInsertHandles:
  *
  *@@added V0.9.7 (2001-01-21) [umoeller]
+ *@@changed V1.0.4 (2005-02-24) [chennecke]: renamed IDM... identifiers to ID_FXM...
  */
 
 VOID StartInsertHandles(HWND hwndCnr)
@@ -2090,7 +2134,7 @@ VOID StartInsertHandles(HWND hwndCnr)
                   TIMERID_THREADRUNNING,
                   200);
 
-    UpdateMenuItems(IDMI_SORT_INDEX);
+    UpdateMenuItems(ID_FXMI_SORT_INDEX);
 }
 
 /*
@@ -2268,6 +2312,7 @@ VOID NukeFolderPoses(PNODERECORD prec,
  *      to the specified handle record.
  *
  *@@added V0.9.7 (2001-01-25) [umoeller]
+ *@@changed V1.0.4 (2005-02-24) [chennecke]: replaced hard-coded strings with nlsGetString() calls
  */
 
 VOID NukeObjID(PNODERECORD prec,
@@ -2303,7 +2348,7 @@ VOID NukeObjID(PNODERECORD prec,
 
         if (G_hwndObjIDsFrame)
             SetStatusBarText(G_hwndObjIDsFrame,
-                             "%s IDs loaded.",
+                             nlsGetString(ID_FXSI_STATBAR_IDSLOADED),
                              nlsThousandsULong(sz2, G_cObjIDs, G_cThousands[0]));
     }
     free(prec->pObjID);
@@ -2429,6 +2474,7 @@ VOID MarkAllOrphans(PNODERECORD prec,         // in: rec to start with (advanced
  *
  *@@added V0.9.7 (2001-01-21) [umoeller]
  *@@changed V0.9.9 (2001-04-07) [umoeller]: greatly reordered, fixed many crashes
+ *@@changed V1.0.4 (2005-02-24) [chennecke]: replaced hard-coded strings with nlsGetString() calls
  */
 
 ULONG RemoveHandles(HWND hwndCnr,
@@ -2650,15 +2696,15 @@ ULONG RemoveHandles(HWND hwndCnr,
 
             if (cAbstractsNuked)
             {
-                sprintf(sz, "%d abstract object(s)",
+                sprintf(sz, nlsGetString(ID_FXSI_NUKE_ABSTRACTS),
                         cAbstractsNuked);
                 xstrcpy(&str, sz, 0);
             }
             if (cFolderPosesNuked)
             {
                 if (sz[0])
-                    xstrcat(&str, " and ", 0);
-                sprintf(sz, "%d folder position(s)",
+                    xstrcat(&str, nlsGetString(ID_FXSI_NUKE_AND), 0);
+                sprintf(sz, nlsGetString(ID_FXSI_NUKE_FOLDERPOS),
                         cFolderPosesNuked);
                 xstrcat(&str, sz, 0);
             }
@@ -2666,22 +2712,22 @@ ULONG RemoveHandles(HWND hwndCnr,
             if (cObjIDsNuked)
             {
                 if (sz[0])
-                    xstrcat(&str, " and ", 0);
-                sprintf(sz, "%d object ID(s)",
+                    xstrcat(&str, nlsGetString(ID_FXSI_NUKE_AND), 0);
+                sprintf(sz, nlsGetString(ID_FXSI_NUKE_OBJECTIDS),
                         cObjIDsNuked);
                 xstrcat(&str, sz, 0);
             }
 
             if (str.ulLength)
-                xstrcat(&str, " have been scheduled for deletion. ", 0);
+                xstrcat(&str, nlsGetString(ID_FXSI_NUKE_SCHEDULED), 0);
 
             if (CnrInfo.cRecords != cNewRecords)
                 sprintf(sz,
-                        "Hmmm. CNRINFO reports %d handles left, but we counted %d.",
+                        nlsGetString(ID_FXSI_NUKE_HANDLEPROBLEM),
                         CnrInfo.cRecords,
                         cNewRecords);
             else
-                sprintf(sz, "%d handles are left.", cNewRecords);
+                sprintf(sz, nlsGetString(ID_FXSI_NUKE_HANDLESLEFT), cNewRecords);
             xstrcat(&str, sz, 0);
 
             if (str.ulLength)
@@ -2781,26 +2827,20 @@ BOOL WriteAllBlocks(PSZ pszHandles,
  *@@ WriteBack:
  *
  *@@added V0.9.7 (2001-01-21) [umoeller]
+ *@@changed V1.0.4 (2005-02-24) [chennecke]: replaced hard-coded strings with nlsGetString() calls
  */
 
 VOID WriteBack(VOID)
 {
-    const char msg[] =
+    char msg[2000];  // made constant a variable V1.0.4 (2005-02-25) [chennecke]
     // rewritten V0.9.20 (2002-07-16) [umoeller]
-    "This will write all the changes that you have made back to the OS2.INI and "
-    "OS2SYS.INI files.\n\n"
-    "Please mind the following:\n\n"
-    "1. You should have started xfix from the " XWORKPLACE_STRING " 'Panic' dialog that "
-    "comes up if you hold down the 'Shift' key while the WPS is starting. "
-    "If you run xfix while the WPS is running and write back your handles, "
-    "your changes will soon be overwritten by the WPS again.\n\n"
-    "2. Be warned that if you have deleted handles that are critical to "
-    "the operation of the Workplace Shell, such as the Desktop itself, your "
-    "Desktop might no longer start.\n\n"
-    "3. As a result, be sure that you have a current WPS backup, for example as "
-    "created by the WPS archiving mechanism that can be enabled on the 'Archives' "
-    "page in the Desktop's own settings notebook.\n\n"
-    "So, are you sure you want to do this?";
+    // split this up because string length exceeded limit for resource files V1.0.4 (2005-02-25) [chennecke]
+    strcpy(msg, nlsGetString(ID_FXSI_WRITEBACK_INTRO));
+    strcat(msg, nlsGetString(ID_FXSI_WRITEBACK_FIRSTFIRST));
+    strcat(msg, nlsGetString(ID_FXSI_WRITEBACK_FIRSTSECOND));
+    strcat(msg, nlsGetString(ID_FXSI_WRITEBACK_SECOND));
+    strcat(msg, nlsGetString(ID_FXSI_WRITEBACK_THIRD));
+    strcat(msg, nlsGetString(ID_FXSI_WRITEBACK_CONFIRM));
 
     if (MessageBox(G_hwndMain,
                    MB_YESNO | MB_DEFBUTTON2 | MB_MOVEABLE,
@@ -2810,7 +2850,7 @@ VOID WriteBack(VOID)
         // "no":
         MessageBox(G_hwndMain,
                    MB_OK | MB_MOVEABLE,
-                   "No changes have been made to your system. To leave xfix, just close the main window."
+                   nlsGetString(ID_FXSI_WRITEBACKABORTED)
                    );
     }
     else
@@ -2822,7 +2862,7 @@ VOID WriteBack(VOID)
         PSZ pszActiveHandles;
         if (arc = wphQueryActiveHandles(G_hiniSystem,
                                         &pszActiveHandles))
-            strcpy(szText, "Cannot get the active handles from OS2SYS.INI.");
+            strcpy(szText, nlsGetString(ID_FXSI_ERROR_CANTGETACTIVEHANDLES));
         else
         {
             ULONG   ulLastChar = strlen(pszActiveHandles) - 1;
@@ -2838,7 +2878,7 @@ VOID WriteBack(VOID)
             G_ulrc = 1;
 
             sprintf(szText,
-                    "%d BLOCKs have been written to both handles sections. ",
+                    nlsGetString(ID_FXSI_WRITEBACKSUCCESS_BLOCKS),
                     ulLastBlock);
 
             // update desktop
@@ -2852,7 +2892,7 @@ VOID WriteBack(VOID)
                                     G_cAbstractsDesktop * sizeof(ULONG));
 
                 sprintf(szText + strlen(szText),
-                        "%d objects have been moved to the desktop. ",
+                        nlsGetString(ID_FXSI_WRITEBACKSUCCESS_OBJMOVED),
                         G_cTotalAbstractsMoved);
             }
 
@@ -2874,9 +2914,9 @@ VOID WriteBack(VOID)
 
             if (cNukes)
                 sprintf(szText + strlen(szText),
-                        "%d keys in OS2.INI have been deleted. ", cNukes);
+                        nlsGetString(ID_FXSI_WRITEBACKSUCCESS_KEYSDELETED), cNukes);
 
-            strcat(szText, "To end xfix, just close the main window now.");
+            strcat(szText, nlsGetString(ID_FXSI_WRITEBACKSUCCESS_EXIT));
         }
 
         MessageBox(G_hwndMain,
@@ -3084,6 +3124,7 @@ MRESULT EXPENTRY fnwpSelectByName(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
  *@@ SelectByName:
  *
  *@@added V0.9.15 (2001-09-14) [umoeller]
+ *@@changed V1.0.4 (2005-02-24) [chennecke]: replaced hard-coded strings with nlsGetString() calls
  */
 
 VOID SelectByName(HWND hwndCnr)
@@ -3091,7 +3132,7 @@ VOID SelectByName(HWND hwndCnr)
     static const CONTROLDEF
                 Static = {
                             WC_STATIC,
-                            "File mask:",
+                            nlsGetString(ID_FXDI_FILEMASKSELECT_MASK),
                             WS_VISIBLE | SS_TEXT | DT_LEFT | DT_WORDBREAK,
                             -1,
                             CTL_COMMON_FONT,
@@ -3109,7 +3150,7 @@ VOID SelectByName(HWND hwndCnr)
                          },
                 SelectButton = {
                             WC_BUTTON,
-                            "~Select",
+                            nlsGetString(ID_FXDI_FILEMASKSELECT_SELECT),
                             WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_DEFAULT,
                             IDDI_SELECT,
                             CTL_COMMON_FONT,
@@ -3118,7 +3159,7 @@ VOID SelectByName(HWND hwndCnr)
                          },
                 DeselectButton = {
                             WC_BUTTON,
-                            "~Deselect",
+                            nlsGetString(ID_FXDI_FILEMASKSELECT_DESELECT),
                             WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
                             IDDI_DESELECT,
                             CTL_COMMON_FONT,
@@ -3127,7 +3168,7 @@ VOID SelectByName(HWND hwndCnr)
                          },
                 SelectAllButton = {
                             WC_BUTTON,
-                            "Select ~all",
+                            nlsGetString(ID_FXDI_FILEMASKSELECT_SELECTALL),
                             WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
                             IDDI_SELECTALL,
                             CTL_COMMON_FONT,
@@ -3136,7 +3177,7 @@ VOID SelectByName(HWND hwndCnr)
                          },
                 DeselectAllButton = {
                             WC_BUTTON,
-                            "Deselect a~ll",
+                            nlsGetString(ID_FXDI_FILEMASKSELECT_DESELECTALL),
                             WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
                             IDDI_DESELECTALL,
                             CTL_COMMON_FONT,
@@ -3145,7 +3186,7 @@ VOID SelectByName(HWND hwndCnr)
                          },
                 CloseButton = {
                             WC_BUTTON,
-                            "~Close",
+                            nlsGetString(DID_CLOSE),
                             WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
                             DID_CANCEL,
                             CTL_COMMON_FONT,
@@ -3178,7 +3219,7 @@ VOID SelectByName(HWND hwndCnr)
                        G_hwndMain,
                        FCF_FIXED_DLG,
                        fnwpSelectByName,
-                       "xfix: Select By Name",
+                       nlsGetString(ID_FXDI_FILEMASKSELECT),
                        dlgSelect,      // DLGHITEM array
                        ARRAYITEMCOUNT(dlgSelect),
                        NULL,
@@ -3204,6 +3245,8 @@ VOID SelectByName(HWND hwndCnr)
  *@@ FrameCommand:
  *
  *@@added V0.9.7 (2001-01-21) [umoeller]
+ *@@changed V1.0.4 (2005-02-24) [chennecke]: replaced hard-coded strings with nlsGetString() calls
+ *                                           renamed IDM... identifiers to ID_FXM...
  */
 
 VOID FrameCommand(HWND hwndFrame,
@@ -3216,32 +3259,32 @@ VOID FrameCommand(HWND hwndFrame,
     {
         switch (usCmd)
         {
-            case IDMI_RESCAN:
+            case ID_FXMI_RESCAN:
                 StartInsertHandles(hwndCnr);
             break;
 
-            case IDMI_WRITETOINI:
+            case ID_FXMI_WRITETOINI:
                 WriteBack();
             break;
 
-            case IDMI_VIEW_OBJIDS:
+            case ID_FXMI_VIEW_OBJIDS:
                 ViewObjectIDs();
             break;
 
-            case IDMI_SORT_INDEX:
-            case IDMI_SORT_STATUS:
-            case IDMI_SORT_TYPE:
-            case IDMI_SORT_HANDLE:
-            case IDMI_SORT_PARENT:
-            case IDMI_SORT_SHORTNAME:
-            case IDMI_SORT_CHILDREN:
-            case IDMI_SORT_DUPS:
-            case IDMI_SORT_REFCS:
-            case IDMI_SORT_LONGNAME:
+            case ID_FXMI_SORT_INDEX:
+            case ID_FXMI_SORT_STATUS:
+            case ID_FXMI_SORT_TYPE:
+            case ID_FXMI_SORT_HANDLE:
+            case ID_FXMI_SORT_PARENT:
+            case ID_FXMI_SORT_SHORTNAME:
+            case ID_FXMI_SORT_CHILDREN:
+            case ID_FXMI_SORT_DUPS:
+            case ID_FXMI_SORT_REFCS:
+            case ID_FXMI_SORT_LONGNAME:
                 SetMainSort(usCmd);
             break;
 
-            case IDMI_ACTIONS_FILES:
+            case ID_FXMI_ACTIONS_FILES:
                 thrCreate(&G_tiCheckFiles,
                           fntCheckFiles,
                           &G_tidCheckFilesRunning,
@@ -3255,7 +3298,7 @@ VOID FrameCommand(HWND hwndFrame,
                 UpdateMenuItems(0);
             break;
 
-            case IDMI_SELECT_INVALID:
+            case ID_FXMI_SELECT_INVALID:
             {
                 HPOINTER hptrOld = winhSetWaitPointer();
                 cnrhForAllRecords(hwndCnr,
@@ -3267,11 +3310,11 @@ VOID FrameCommand(HWND hwndFrame,
             }
             break;
 
-            case IDMI_SELECT_BYNAME:
+            case ID_FXMI_SELECT_BYNAME:
                 SelectByName(hwndCnr);
             break;
 
-            case IDMI_DELETE:
+            case ID_FXMI_DELETE:
             {
                 ULONG       cRecs = 0;
                 PLINKLIST   pll = GetSelectedRecords(hwndCnr,
@@ -3280,8 +3323,7 @@ VOID FrameCommand(HWND hwndFrame,
                 if (pll && cRecs)
                 {
                     CHAR szText[500];
-                    sprintf(szText, "You have selected %d handle(s) for removal. "
-                                    "Are you sure you want to do this?", cRecs);
+                    sprintf(szText, nlsGetString(ID_FXSI_REMOVEHANDLES), cRecs);
 
                     if (MessageBox(hwndFrame,
                                    MB_YESNO | MB_DEFBUTTON2 | MB_MOVEABLE,
@@ -3291,7 +3333,7 @@ VOID FrameCommand(HWND hwndFrame,
                         ULONG ulrc;
                         if (ulrc = RemoveHandles(hwndCnr, pll))
                         {
-                            sprintf(szText, "Error %d occurred.", ulrc);
+                            sprintf(szText, nlsGetString(ID_FXSI_ERROR_ERROROCCURED), ulrc);
                             MessageBox(hwndFrame,
                                        MB_OK | MB_MOVEABLE,
                                        szText);
@@ -3303,7 +3345,7 @@ VOID FrameCommand(HWND hwndFrame,
             }
             break;
 
-            case IDMI_NUKEFOLDERPOS:
+            case ID_FXMI_NUKEFOLDERPOS:
             {
                 ULONG       cRecs = 0;
                 PLINKLIST   pll = GetSelectedRecords(hwndCnr,
@@ -3346,7 +3388,7 @@ VOID FrameCommand(HWND hwndFrame,
                             cnrhInvalidateAll(hwndCnr);
 
                         CHAR sz[200];
-                        sprintf(sz, "%d folder position(s) have been scheduled for deletion.",
+                        sprintf(sz, nlsGetString(ID_FXSI_NUKEFOLDERPOS),
                                 cTotalNuked);
                         winhDebugBox(G_hwndMain,
                                      "xfix",
@@ -3360,7 +3402,7 @@ VOID FrameCommand(HWND hwndFrame,
             }
             break;
 
-            case IDMI_NUKEOBJID:
+            case ID_FXMI_NUKEOBJID:
             {
                 ULONG       cRecs = 0;
                 PLINKLIST   pll = GetSelectedRecords(hwndCnr,
@@ -3391,7 +3433,7 @@ VOID FrameCommand(HWND hwndFrame,
                         cnrhInvalidateAll(hwndCnr);
 
                     CHAR sz[200];
-                    sprintf(sz, "%d object ID(s) have been scheduled for deletion.",
+                    sprintf(sz, nlsGetString(ID_FXSI_DELETEHANDLES),
                             cTotalNuked);
                     winhDebugBox(G_hwndMain,
                                  "xfix",
@@ -3403,11 +3445,11 @@ VOID FrameCommand(HWND hwndFrame,
             break;
 
             /*
-             * IDMI_MOVEABSTRACTS:
+             * ID_FXMI_MOVEABSTRACTS:
              *      move abstracts to desktop
              */
 
-            case IDMI_MOVEABSTRACTS:
+            case ID_FXMI_MOVEABSTRACTS:
             {
                 ULONG       cAbstractsMoved = 0;
 
@@ -3430,7 +3472,7 @@ VOID FrameCommand(HWND hwndFrame,
                         G_precDesktop = G_RecordHashTable[hobjDesktop & 0xFFFF];
 
                         CHAR sz2[100];
-                        sprintf(sz2, "Desktop handle is %lX", hobjDesktop & 0xFFFF);
+                        sprintf(sz2, nlsGetString(ID_FXSI_MOVEABSTRACTS_DESKTOPID), hobjDesktop & 0xFFFF);
                         winhDebugBox(NULLHANDLE,
                                      "xfix",
                                      sz2);
@@ -3446,10 +3488,7 @@ VOID FrameCommand(HWND hwndFrame,
                     if (pll && cRecs)
                     {
                         CHAR szText[500];
-                        sprintf(szText, "You have selected %d handles whose abstract objects "
-                                        "should be moved to the deskop.\n"
-                                        "Are you sure you want to do this?",
-                                        cRecs);
+                        sprintf(szText, nlsGetString(ID_FXSI_MOVEABSTRACTS_CONFIRM), cRecs);
                         if (MessageBox(hwndFrame,
                                        MB_YESNO | MB_DEFBUTTON2 | MB_MOVEABLE,
                                        szText)
@@ -3468,20 +3507,23 @@ VOID FrameCommand(HWND hwndFrame,
                 if (cAbstractsMoved)
                 {
                     CHAR sz[200];
-                    sprintf(sz, "%d abstracts have been moved to the desktop. They will "
-                            "appear after the next Desktop startup.",
-                            cAbstractsMoved);
+                    sprintf(sz, nlsGetString(ID_FXSI_MOVEABSTRACTSSUCCESS), cAbstractsMoved);
                     winhDebugBox(G_hwndMain, "xfix", sz);
                 }
                 else
-                    winhDebugBox(G_hwndMain, "xfix", "An error occurred moving the abstracts.");
+                {
+                    // added work-around so compiler doesn't compain about const = variable V1.0.4 (2005-02-24) [chennecke]
+                    CHAR sz[100];
+                    sprintf(sz, nlsGetString(ID_FXSI_ERROR_MOVEABSTRACTS));
+                    winhDebugBox(G_hwndMain, "xfix", sz);
+                }
             }
             break;
 
-            case IDMI_CUT:
+            case ID_FXMI_CUT:
             break;
 
-            case IDMI_PASTE:
+            case ID_FXMI_PASTE:
             break;
 
             default:
@@ -3497,6 +3539,7 @@ VOID FrameCommand(HWND hwndFrame,
  *      winh_fnwpFrameWithStatusBar.
  *
  *@@added V0.9.15 (2001-09-14) [umoeller]
+ *@@changed V1.0.4 (2005-02-24) [chennecke]: renamed IDM... identifiers to ID_FXM...
  */
 
 MRESULT FrameWMControl(HWND hwndFrame,
@@ -3552,13 +3595,13 @@ MRESULT FrameWMControl(HWND hwndFrame,
                     }
 
                     WinEnableMenuItem(hwndMenu,
-                                      IDMI_NUKEFOLDERPOS,
+                                      ID_FXMI_NUKEFOLDERPOS,
                                       fGotFolderPoses);
                     WinEnableMenuItem(hwndMenu,
-                                      IDMI_MOVEABSTRACTS,
+                                      ID_FXMI_MOVEABSTRACTS,
                                       fGotAbstracts);
                     WinEnableMenuItem(hwndMenu,
-                                      IDMI_NUKEOBJID,
+                                      ID_FXMI_NUKEOBJID,
                                       fGotIDs);
 
                     cnrhShowContextMenu(hwndCnr,
@@ -3607,6 +3650,7 @@ MRESULT FrameWMControl(HWND hwndFrame,
  *@@ fnwpSubclassedMainFrame:
  *
  *@@added V0.9.16 (2001-09-29) [umoeller]
+ *@@changed V1.0.4 (2005-02-24) [chennecke]: replaced hard-coded strings with nlsGetString() calls
  */
 
 MRESULT EXPENTRY fnwpSubclassedMainFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -3633,17 +3677,17 @@ MRESULT EXPENTRY fnwpSubclassedMainFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
                         CHAR sz[100];
                         if (G_fResolvingRefs)
                             SetStatusBarText(G_hwndMain,
-                                             "Resolving cross-references, %03d%% done...",
+                                             nlsGetString(ID_FXSI_STATBAR_RESOLVINGPERCENT),
                                              G_ulPercentDone);
                         else
                             SetStatusBarText(G_hwndMain,
-                                             "Parsing handles section, %03d%% done...",
+                                             nlsGetString(ID_FXSI_STATBAR_PARSINGPERCENT),
                                              G_ulPercentDone);
                     }
                     else if (G_tidCheckFilesRunning)
                     {
                         SetStatusBarText(G_hwndMain,
-                                         "Checking files, %03d%% done...",
+                                         nlsGetString(ID_FXSI_STATBAR_CHECKINGPERCENT),
                                          G_ulPercentDone);
                     }
             }
@@ -3666,7 +3710,7 @@ MRESULT EXPENTRY fnwpSubclassedMainFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
             if ((LONG)mp1 == -1)
             {
                 // resolving cross-references:
-                SetStatusBarText(G_hwndMain, "Resolving cross-references...");
+                SetStatusBarText(G_hwndMain, nlsGetString(ID_FXSI_STATBAR_RESOLVING));
             }
             else
             {
@@ -3680,7 +3724,7 @@ MRESULT EXPENTRY fnwpSubclassedMainFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
                 else
                     // done, error:
                     SetStatusBarText(G_hwndMain,
-                                     "An error occurred parsing the handles section.");
+                                     nlsGetString(ID_FXSI_ERROR_PARSEHANDLES));
 
                 thrWait(&G_tiInsertHandles);
 
@@ -3691,7 +3735,7 @@ MRESULT EXPENTRY fnwpSubclassedMainFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
 
         case WM_USER + 1:
             SetStatusBarText(G_hwndMain,
-                             "Done checking files.");
+                             nlsGetString(ID_FXSI_STATBAR_DONECHECKING));
             cnrhInvalidateAll(WinWindowFromID(G_hwndMain, FID_CLIENT));
             thrWait(&G_tiCheckFiles);
 
@@ -3746,6 +3790,7 @@ MRESULT EXPENTRY fnwpSubclassedMainFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
 /*
  *@@ HandleProfile:
  *
+ *@@changed V1.0.4 (2005-02-24) [chennecke]: replaced hard-coded strings with nlsGetString() calls
  */
 
 BOOL HandleProfile(PCSZ pcszFilename,
@@ -3759,7 +3804,7 @@ BOOL HandleProfile(PCSZ pcszFilename,
     {
         MessageBox(NULLHANDLE,
                    MB_CANCEL,
-                   "Error: Specified %s profile \"%s\" does not exist.",
+                   nlsGetString(ID_FXSI_ERROR_PROFILENOTEXIST),
                    pcszUserOrSystem,
                    pcszFilename);
         return FALSE;
@@ -3768,7 +3813,7 @@ BOOL HandleProfile(PCSZ pcszFilename,
     {
         MessageBox(NULLHANDLE,
                    MB_CANCEL,
-                   "Error: Specified %s profile \"%s\" has 0 bytes.",
+                   nlsGetString(ID_FXSI_ERROR_PROFILEZEROBYTES),
                    pcszUserOrSystem,
                    pcszFilename);
         return FALSE;
@@ -3779,7 +3824,7 @@ BOOL HandleProfile(PCSZ pcszFilename,
         ERRORID id = WinGetLastError(G_hab);
         MessageBox(NULLHANDLE,
                    MB_CANCEL,
-                   "Error: Cannot open %s profile \"%s\" (WinGetLastError returned 0x%lX).",
+                   nlsGetString(ID_FXSI_ERROR_CANTOPENPROFILE),
                    pcszUserOrSystem,
                    pcszFilename,
                    id);
@@ -3793,6 +3838,7 @@ BOOL HandleProfile(PCSZ pcszFilename,
  *@@ ParseArgs:
  *
  *@@added V0.9.19 (2002-04-14) [umoeller]
+ *@@changed V1.0.4 (2005-02-24) [chennecke]: replaced hard-coded strings with nlsGetString() calls
  */
 
 BOOL ParseArgs(int argc, char* argv[])
@@ -3811,7 +3857,7 @@ BOOL ParseArgs(int argc, char* argv[])
                 {
                     case 'U':
                         if (!HandleProfile(&argv[i][i2+1],
-                                           "user",
+                                           nlsGetString(ID_FXSI_ERROR_USER),
                                            &G_hiniUser))
                             return FALSE;
 
@@ -3820,7 +3866,7 @@ BOOL ParseArgs(int argc, char* argv[])
 
                     case 'S':
                         if (!HandleProfile(&argv[i][i2+1],
-                                           "system",
+                                           nlsGetString(ID_FXSI_ERROR_SYSTEM),
                                            &G_hiniSystem))
                             return FALSE;
 
@@ -3830,7 +3876,7 @@ BOOL ParseArgs(int argc, char* argv[])
                     default:
                         MessageBox(NULLHANDLE,
                                    MB_CANCEL,
-                                   "Error: Invalid parameter \"-%c\".",
+                                   nlsGetString(ID_FXSI_ERROR_INVALIDPARMC),
                                    argv[i][i2]);
                         return FALSE;
                 }
@@ -3844,7 +3890,7 @@ BOOL ParseArgs(int argc, char* argv[])
         {
             MessageBox(NULLHANDLE,
                        MB_CANCEL,
-                       "Error: Invalid parameter \"%s\".",
+                       nlsGetString(ID_FXSI_ERROR_INVALIDPARMS),
                        argv[i]);
             return FALSE;
         } // end else if (argv[i][0] == '-')
@@ -3854,10 +3900,91 @@ BOOL ParseArgs(int argc, char* argv[])
 }
 
 /*
+ *@@ LoadNLS:
+ *      xfix NLS interface.
+ *
+ *@@added V1.0.4 (2005-02-24) [chennecke]: copied from treesize.c
+ */
+
+BOOL LoadNLS(VOID)
+{
+    CHAR        szNLSDLL[2*CCHMAXPATH];
+    BOOL Proceed = TRUE;
+
+    if (PrfQueryProfileString(HINI_USER,
+                              "XWorkplace",
+                              "XFolderPath",
+                              "",
+                              szNLSDLL, sizeof(szNLSDLL)) < 3)
+
+    {
+        WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
+                      "xfix was unable to determine the location of the "
+                      "XWorkplace National Language Support DLL, which is "
+                      "required for operation. The OS2.INI file does not contain "
+                      "this information. "
+                      "xfix cannot proceed. Please re-install XWorkplace.",
+                      "xfix: Fatal Error",
+                      0, MB_OK | MB_MOVEABLE);
+        Proceed = FALSE;
+    }
+    else
+    {
+        CHAR    szLanguageCode[50] = "";
+
+        // now compose module name from language code
+        PrfQueryProfileString(HINI_USERPROFILE,
+                              "XWorkplace", "Language",
+                              "001",
+                              (PVOID)szLanguageCode,
+                              sizeof(szLanguageCode));
+
+        // allow '?:\' for boot drive
+        // V0.9.19 (2002-06-08) [umoeller]
+        if (szNLSDLL[0] == '?')
+        {
+            ULONG ulBootDrive;
+            DosQuerySysInfo(QSV_BOOT_DRIVE, QSV_BOOT_DRIVE,
+                            &ulBootDrive,
+                            sizeof(ulBootDrive));
+            szNLSDLL[0] = (CHAR)ulBootDrive + 'A' - 1;
+        }
+
+        strcat(szNLSDLL, "\\bin\\xfldr");
+        strcat(szNLSDLL, szLanguageCode);
+        strcat(szNLSDLL, ".dll");
+
+        // try to load the module
+        if (DosLoadModule(NULL,
+                          0,
+                          szNLSDLL,
+                          &G_hmodNLS))
+        {
+            CHAR    szMessage[2000];
+            sprintf(szMessage,
+                    "xfix was unable to load \"%s\", "
+                    "the National Language DLL which "
+                    "is specified for XWorkplace in OS2.INI.",
+                    szNLSDLL);
+            WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
+                          szMessage,
+                          "xfix: Fatal Error",
+                          0, MB_OK | MB_MOVEABLE);
+            Proceed = FALSE;
+        }
+
+        _Pmpf(("DosLoadModule: 0x%lX", G_hmodNLS));
+    }
+    return (Proceed);
+}
+
+/*
  *@@ main:
  *
  *@@added V0.9.16 (2001-09-29) [umoeller]
  *@@changed V0.9.19 (2002-07-01) [umoeller]: added error msgs
+ *@@changed V1.0.4 (2005-02-24) [chennecke]: added national language support
+ *                                           renamed IDM... identifiers to ID_FXM...
  */
 
 int main(int argc, char* argv[])
@@ -3883,22 +4010,31 @@ int main(int argc, char* argv[])
 
     G_hptrMain = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 1);
 
-    ULONG cb = sizeof(G_cThousands);
-    PrfQueryProfileData(G_hiniUser,
-                        "PM_National",
-                        "sThousand",
-                        G_cThousands,
-                        &cb);
+    if (LoadNLS()) // continue only if NLS DLL loaded V1.0.4 (2005-02-24) [chennecke]
+    {
+        ULONG cb = sizeof(G_cThousands);
+        PrfQueryProfileData(G_hiniUser,
+                            "PM_National",
+                            "sThousand",
+                            G_cThousands,
+                            &cb);
 
-    lstInit(&G_llDeferredNukes, TRUE);
+        lstInit(&G_llDeferredNukes, TRUE);
 
-    if (!(ParseArgs(argc, argv)))
-        return 1;
+        if (!(ParseArgs(argc, argv)))
+            return 1;
 
-    // create frame and handles container
-    HWND hwndCnr = NULLHANDLE;
+        // initialize NLS cache V1.0.4 (2005-02-24) [chennecke]
+        ULONG G_EntitiesNumber = sizeof(G_aEntities) / sizeof (G_aEntities[0]);
+        nlsInitStrings(G_hab,
+                       G_hmodNLS,
+                       G_aEntities,
+                       G_EntitiesNumber);
 
-    EXTFRAMECDATA xfd =
+        // create frame and handles container
+        HWND hwndCnr = NULLHANDLE;
+
+        EXTFRAMECDATA xfd =
         {
                   0,
                   FCF_TITLEBAR
@@ -3906,11 +4042,12 @@ int main(int argc, char* argv[])
                      | FCF_MINMAX
                      | FCF_SIZEBORDER
                      | FCF_ICON
-                     | FCF_MENU
+                      // removed FCF_MENU, load menu from NLS DLL instead V1.0.4 (2005-02-25) [chennecke]
+                      // | FCF_MENU
                      | FCF_TASKLIST,
                   XFCF_STATUSBAR,
                   0,
-                  "xfix: Handles list",
+                      nlsGetString(ID_FXDI_MAIN),
                   1,     // icon resource
                   WC_CONTAINER,
                   CCS_MINIICONS | CCS_READONLY | CCS_EXTENDSEL
@@ -3919,146 +4056,150 @@ int main(int argc, char* argv[])
                   NULL
         };
 
-    if (    (G_hwndMain = ctlCreateStdWindow(&xfd,
-                                             &hwndCnr))
-         && (hwndCnr)
-       )
-    {
-        // subclass cnr (it's our client)
-        G_pfnwpCnrOrig = WinSubclassWindow(hwndCnr, fnwpSubclassedMainCnr);
-
-        // subclass frame for supporting msgs
-        G_fnwpMainFrameOrig = WinSubclassWindow(G_hwndMain,
-                                                fnwpSubclassedMainFrame);
-
-        SetStatusBarText(G_hwndMain,
-                         "Parsing handles...");
-
-        SetupMainCnr(hwndCnr);
-
-        // load icons
-
-        G_hwndContextMenuSingle = WinLoadMenu(hwndCnr,
-                                              NULLHANDLE,
-                                              IDM_RECORDSELSINGLE);
-        G_hwndContextMenuMulti  = WinLoadMenu(hwndCnr,
-                                              NULLHANDLE,
-                                              IDM_RECORDSELMULTI);
-
-        // load NLS help library (..\help\xfldr001.hlp)
-        PPIB     ppib;
-        PTIB     ptib;
-        CHAR     szHelpName[CCHMAXPATH];
-        DosGetInfoBlocks(&ptib, &ppib);
-        DosQueryModuleName(ppib->pib_hmte, sizeof(szHelpName), szHelpName);
-                // now we have: "J:\Tools\WPS\XWorkplace\bin\xfix.exe"
-        PSZ pszLastBackslash;
-        if (pszLastBackslash = strrchr(szHelpName, '\\'))
+        if (    (G_hwndMain = ctlCreateStdWindow(&xfd,
+                                                 &hwndCnr))
+             && (hwndCnr)
+           )
         {
-            *pszLastBackslash = 0;
-            // again to get rid of "bin"
+            // subclass cnr (it's our client)
+            G_pfnwpCnrOrig = WinSubclassWindow(hwndCnr, fnwpSubclassedMainCnr);
+
+            // subclass frame for supporting msgs
+            G_fnwpMainFrameOrig = WinSubclassWindow(G_hwndMain,
+                                                    fnwpSubclassedMainFrame);
+
+            // load main menu from NLS DLL V1.0.4 (2005-02-25) [chennecke]
+            WinLoadMenu(G_hwndMain, G_hmodNLS, ID_FXM_MAIN);
+      
+            SetStatusBarText(G_hwndMain,
+                             nlsGetString(ID_FXSI_STATBAR_PARSINGHANDLES));
+
+            SetupMainCnr(hwndCnr);
+
+            // load icons
+
+            G_hwndContextMenuSingle = WinLoadMenu(hwndCnr,
+                                                  G_hmodNLS,
+                                                  ID_FXM_RECORDSELSINGLE);
+            G_hwndContextMenuMulti  = WinLoadMenu(hwndCnr,
+                                                  G_hmodNLS,
+                                                  ID_FXM_RECORDSELMULTI);
+
+            // load NLS help library (..\help\xfldr001.hlp)
+            PPIB     ppib;
+            PTIB     ptib;
+            CHAR     szHelpName[CCHMAXPATH];
+            DosGetInfoBlocks(&ptib, &ppib);
+            DosQueryModuleName(ppib->pib_hmte, sizeof(szHelpName), szHelpName);
+                // now we have: "J:\Tools\WPS\XWorkplace\bin\xfix.exe"
+            PSZ pszLastBackslash;
             if (pszLastBackslash = strrchr(szHelpName, '\\'))
             {
                 *pszLastBackslash = 0;
-                // now we have: "J:\Tools\WPS\XWorkplace"
-                CHAR szLanguage[10];
-                PrfQueryProfileString(G_hiniUser,
-                                      INIAPP,
-                                      "Language",
-                                      "001",        // default
-                                      szLanguage,
-                                      sizeof(szLanguage));
-                sprintf(szHelpName + strlen(szHelpName),
-                        "\\help\\xfldr%s.hlp",
-                        szLanguage);
-                G_hwndHelp = winhCreateHelp(G_hwndMain,
-                                            szHelpName,
-                                            NULLHANDLE,
-                                            NULL,
-                                            "xfix");
+                // again to get rid of "bin"
+                if (pszLastBackslash = strrchr(szHelpName, '\\'))
+                {
+                    *pszLastBackslash = 0;
+                    // now we have: "J:\Tools\WPS\XWorkplace"
+                    CHAR szLanguage[10];
+                    PrfQueryProfileString(G_hiniUser,
+                                          INIAPP,
+                                          "Language",
+                                          "001",        // default
+                                          szLanguage,
+                                          sizeof(szLanguage));
+                    sprintf(szHelpName + strlen(szHelpName),
+                            "\\help\\xfldr%s.hlp",
+                            szLanguage);
+                    G_hwndHelp = winhCreateHelp(G_hwndMain,
+                                                szHelpName,
+                                                NULLHANDLE,
+                                                NULL,
+                                                "xfix");
+                }
             }
-        }
 
-        if (!winhRestoreWindowPos(G_hwndMain,
-                                  G_hiniUser,
-                                  INIAPP,
-                                  INIKEY_MAINWINPOS,
-                                  SWP_SHOW | SWP_ACTIVATE | SWP_MOVE | SWP_SIZE))
-            WinSetWindowPos(G_hwndMain,
-                            HWND_TOP,
-                            10, 10, 500, 500,
-                            SWP_SHOW | SWP_ACTIVATE | SWP_MOVE | SWP_SIZE);
+            if (!winhRestoreWindowPos(G_hwndMain,
+                                      G_hiniUser,
+                                      INIAPP,
+                                      INIKEY_MAINWINPOS,
+                                      SWP_SHOW | SWP_ACTIVATE | SWP_MOVE | SWP_SIZE))
+                WinSetWindowPos(G_hwndMain,
+                                HWND_TOP,
+                                10, 10, 500, 500,
+                                SWP_SHOW | SWP_ACTIVATE | SWP_MOVE | SWP_SIZE);
 
-        // load handles from OS2.INI
-        PSZ pszActiveHandles;
-        if (arc = wphQueryActiveHandles(G_hiniSystem,
-                                        &pszActiveHandles))
-            MessageBox(NULLHANDLE,
-                       MB_CANCEL,
-                       "Cannot get the active handles from OS2SYS.INI.");
-        else
-        {
-            PCSZ pcszError;
-
-            // added error messages here V0.9.19 (2002-07-01) [umoeller]
-
-            if (arc = wphLoadHandles(G_hiniUser,
-                                     G_hiniSystem,
-                                     pszActiveHandles,
-                                     (HHANDLES*)&G_pHandlesBuf))
-            {
-                // if we fail here, then the handles data is totally
-                // broken, and we have no chance to recover
-                // V0.9.19 (2002-07-01) [umoeller]
-
-                if (!(pcszError = wphDescribeError(arc)))
-                    pcszError = "not available";
-
+            // load handles from OS2.INI
+            PSZ pszActiveHandles;
+            if (arc = wphQueryActiveHandles(G_hiniSystem,
+                                            &pszActiveHandles))
                 MessageBox(NULLHANDLE,
                            MB_CANCEL,
-                           "Fatal error %d occurred loading the handles from the INI files. Description: %s",
-                           arc,
-                           pcszError);
-            }
+                           nlsGetString(ID_FXSI_ERROR_CANTGETACTIVEHANDLES));
             else
             {
-                if (arc = wphRebuildNodeHashTable((HHANDLES)G_pHandlesBuf,
-                                                  FALSE))
+                PCSZ pcszError;
+
+                // added error messages here V0.9.19 (2002-07-01) [umoeller]
+
+                if (arc = wphLoadHandles(G_hiniUser,
+                                         G_hiniSystem,
+                                         pszActiveHandles,
+                                         (HHANDLES*)&G_pHandlesBuf))
                 {
+                    // if we fail here, then the handles data is totally
+                    // broken, and we have no chance to recover
+                    // V0.9.19 (2002-07-01) [umoeller]
+
                     if (!(pcszError = wphDescribeError(arc)))
-                        pcszError = "not available";
+                        pcszError = nlsGetString(ID_FXSI_ERROR_NOTAVAILABLE);
 
                     MessageBox(NULLHANDLE,
                                MB_CANCEL,
-                               "Warning: Error %d building handles cache. Description: %s",
+                               nlsGetString(ID_FXSI_ERROR_FATALLOADHANDLES),
                                arc,
                                pcszError);
                 }
+                else
+                {
+                    if (arc = wphRebuildNodeHashTable((HHANDLES)G_pHandlesBuf,
+                                                      FALSE))
+                    {
+                        if (!(pcszError = wphDescribeError(arc)))
+                            pcszError = nlsGetString(ID_FXSI_ERROR_NOTAVAILABLE);
 
-                StartInsertHandles(hwndCnr);
+                        MessageBox(NULLHANDLE,
+                                   MB_CANCEL,
+                                   nlsGetString(ID_FXSI_ERROR_BUILDHANDLESCACHE),
+                                   arc,
+                                   pcszError);
+                    }
 
-                // display introductory help with warnings
-                WinPostMsg(G_hwndMain,
-                           WM_COMMAND,
-                           (MPARAM)IDMI_HELP_GENERAL,
-                           0);
+                    StartInsertHandles(hwndCnr);
 
-                // standard PM message loop
-                while (WinGetMsg(G_hab, &qmsg, NULLHANDLE, 0, 0))
-                    WinDispatchMsg(G_hab, &qmsg);
+                    // display introductory help with warnings
+                    WinPostMsg(G_hwndMain,
+                               WM_COMMAND,
+                               (MPARAM)ID_FXMI_HELP_GENERAL,
+                               0);
 
-                if (G_tidInsertHandlesRunning)
-                    thrFree(&G_tiInsertHandles);
-                if (G_tidCheckFilesRunning)
-                    thrFree(&G_tiCheckFiles);
+                    // standard PM message loop
+                    while (WinGetMsg(G_hab, &qmsg, NULLHANDLE, 0, 0))
+                        WinDispatchMsg(G_hab, &qmsg);
+
+                    if (G_tidInsertHandlesRunning)
+                        thrFree(&G_tiInsertHandles);
+                    if (G_tidCheckFilesRunning)
+                        thrFree(&G_tiCheckFiles);
+                }
             }
         }
-    }
 
-    if (G_hiniUser != HINI_USER)
-        PrfCloseProfile(G_hiniUser);
-    if (G_hiniSystem != HINI_USER)
-        PrfCloseProfile(G_hiniSystem);
+        if (G_hiniUser != HINI_USER)
+            PrfCloseProfile(G_hiniUser);
+        if (G_hiniSystem != HINI_USER)
+            PrfCloseProfile(G_hiniSystem);
+    } // end if (LoadNLS)
 
     // clean up on the way out
     WinDestroyMsgQueue(hmq);

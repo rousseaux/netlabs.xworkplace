@@ -1,4 +1,4 @@
-
+ 
 /*
  * xfldr001.rc:
  *      this is the main resource file for the English NLS DLL.
@@ -1217,6 +1217,9 @@ BEGIN
     DID_OPEN                            "~Open"
     DID_SAVE                            "~Save"
 
+    /* added V1.0.4 (2005-02-24) [chennecke]: for Xfix */
+    DID_ENTER                           "~Enter"
+
     /* strings formerly in ID_XSD_SET25ADDMENUS
         all removed V0.9.19 */
 
@@ -1792,8 +1795,260 @@ BEGIN
     MENUITEM "~Close", 1000
 END
 
+  /* Treesize container strings; added V1.0.4 (2005-02-07) [chennecke] */
+
+STRINGTABLE
+BEGIN
+    ID_TSSI_LARGESTFILES      "%d largest files"
+    ID_TSSI_BYTES             "bytes"
+    ID_TSSI_KBYTES            "Kbytes"
+    ID_TSSI_MBYTES            "Mbytes"
+    ID_TSSI_WORKING           "%s: working..."
+    ID_TSSI_FILES             "files"
+END
+
 /* Netscape DDE definitions; added V0.9.1 (99-12-19) [umoeller] */
 POINTER ID_ND_ICON LOADONCALL MOVEABLE DISCARDABLE netscdde.ico
+
+/* Xfix definitions; added V1.0.4 (2005-02-24) [chennecke] */
+
+POINTER ID_FX_ICON LOADONCALL MOVEABLE DISCARDABLE xfix.ico
+
+  /* main menu */
+
+MENU ID_FXM_MAIN LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    SUBMENU "~xfix", ID_FXM_XFIX, MIS_TEXT
+    BEGIN
+        MENUITEM "Re-parse buffer", ID_FXMI_RESCAN, MIS_TEXT
+        MENUITEM "", -1, MIS_SEPARATOR
+        MENUITEM "Write back to OS2SYS.INI...", ID_FXMI_WRITETOINI, MIS_TEXT
+        MENUITEM "", -1, MIS_SEPARATOR
+        MENUITEM "E~xit xfix\tAlt+F4",      ID_FXMI_EXIT, MIS_TEXT
+    END
+
+    SUBMENU "~View", ID_FXM_VIEW, MIS_TEXT
+    BEGIN
+        MENUITEM "Object ~IDs...", ID_FXMI_VIEW_OBJIDS, MIS_TEXT
+        /* MENUITEM "~Abstract objects...", ID_FXMI_VIEW_ABSTRACTS, MIS_TEXT */
+    END
+
+    SUBMENU "Sor~t", ID_FXM_SORT, MIS_TEXT
+    BEGIN
+        MENUITEM "~Index", ID_FXMI_SORT_INDEX, MIS_TEXT
+        MENUITEM "~Status", ID_FXMI_SORT_STATUS, MIS_TEXT
+        MENUITEM "~Type", ID_FXMI_SORT_TYPE, MIS_TEXT
+        MENUITEM "~Handle", ID_FXMI_SORT_HANDLE, MIS_TEXT
+        MENUITEM "~Parent", ID_FXMI_SORT_PARENT, MIS_TEXT
+        MENUITEM "Sh~ort name", ID_FXMI_SORT_SHORTNAME, MIS_TEXT
+        MENUITEM "~Children", ID_FXMI_SORT_CHILDREN, MIS_TEXT
+        MENUITEM "~Duplicates", ID_FXMI_SORT_DUPS, MIS_TEXT
+        MENUITEM "~References", ID_FXMI_SORT_REFCS, MIS_TEXT
+        MENUITEM "~Long name", ID_FXMI_SORT_LONGNAME, MIS_TEXT
+    END
+
+    SUBMENU "~Actions", ID_FXM_ACTIONS, MIS_TEXT
+    BEGIN
+        MENUITEM "Find invalid ~files", ID_FXMI_ACTIONS_FILES, MIS_TEXT
+    END
+
+    SUBMENU "~Select", ID_FXM_SELECT, MIS_TEXT
+    BEGIN
+        MENUITEM "Select all invalid", ID_FXMI_SELECT_INVALID, MIS_TEXT
+        MENUITEM "Select by name...", ID_FXMI_SELECT_BYNAME, MIS_TEXT
+    END
+
+    SUBMENU "~Help", ID_FXM_HELP, MIS_TEXT
+    BEGIN
+        MENUITEM "~General help", ID_FXMI_HELP_GENERAL, MIS_TEXT
+        MENUITEM "~Using help", ID_FXMI_HELP_USINGHELP, MIS_TEXT
+        MENUITEM "", -1, MIS_SEPARATOR
+        MENUITEM "~Product information", ID_FXMI_HELP_PRODINFO, MIS_TEXT
+    END
+END
+
+  /* menu for object IDs frame */
+
+MENU ID_FXM_OBJIDS LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    SUBMENU "~xfix", ID_FXM_XFIX, MIS_TEXT
+    BEGIN
+        MENUITEM "~Close this window\tAlt+F4",      ID_FXMI_CLOSETHIS, MIS_TEXT
+        MENUITEM "E~xit xfix",      ID_FXMI_EXIT, MIS_TEXT
+    END
+
+    SUBMENU "Sor~t", ID_FXM_SORT, MIS_TEXT
+    BEGIN
+        MENUITEM "~Index", ID_FXMI_SORT_INDEX, MIS_TEXT
+        MENUITEM "~Status", ID_FXMI_SORT_STATUS, MIS_TEXT
+        MENUITEM "~ID", ID_FXMI_SORT_ID, MIS_TEXT
+        MENUITEM "~Handle", ID_FXMI_SORT_HANDLE, MIS_TEXT
+        MENUITEM "~Long name", ID_FXMI_SORT_LONGNAME, MIS_TEXT
+    END
+
+    SUBMENU "~Help", ID_FXM_HELP, MIS_TEXT
+    BEGIN
+        MENUITEM "~General help", ID_FXMI_HELP_GENERAL, MIS_TEXT
+        MENUITEM "~Using help", ID_FXMI_HELP_USINGHELP, MIS_TEXT
+        MENUITEM "", -1, MIS_SEPARATOR
+        MENUITEM "~Product information", ID_FXMI_HELP_PRODINFO, MIS_TEXT
+    END
+END
+
+  /* context menus */
+
+MENU ID_FXM_RECORDSELMULTI LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "Remove ~folder positions", ID_FXMI_NUKEFOLDERPOS
+    MENUITEM "Remove object ~IDs", ID_FXMI_NUKEOBJID
+    MENUITEM "", -1, MIS_SEPARATOR
+    MENUITEM "~Delete handle...", ID_FXMI_DELETE
+END
+
+MENU ID_FXM_RECORDSELSINGLE LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "~Move abstracts to desktop", ID_FXMI_MOVEABSTRACTS
+    MENUITEM "Remove ~folder positions", ID_FXMI_NUKEFOLDERPOS
+    MENUITEM "Remove object ~IDs", ID_FXMI_NUKEOBJID
+/*
+    MENUITEM "", -1, MIS_SEPARATOR
+    MENUITEM "~Cut", ID_FXMI_CUT
+    MENUITEM "~Paste...", ID_FXMI_PASTE
+*/
+    MENUITEM "", -1, MIS_SEPARATOR
+    MENUITEM "~Delete...", ID_FXMI_DELETE
+END
+
+  /* strings used in the container, error messages, dialogs */
+
+STRINGTABLE
+BEGIN
+    ID_FXDI_MAIN                         "xfix: Handles list"
+
+    /* node status column */
+    ID_FXSI_NODESTAT_DUPLICATEDRIV       "Duplicate DRIV"
+    ID_FXSI_NODESTAT_ISDUPLICATE         "Duplicate"
+    ID_FXSI_NODESTAT_INVALIDDRIVE        "Invalid drive"
+    ID_FXSI_NODESTAT_INVALIDPARENT       "Orphaned"
+    ID_FXSI_NODESTAT_FILENOTFOUND        "File not found"
+    ID_FXSI_NODESTAT_PARENTNOTFOLDER     "Parent is not folder"
+    ID_FXSI_NODESTAT_FOLDERPOSNOTFOLDER  "Folderpos for non-folder"
+    ID_FXSI_NODESTAT_ABSTRACTSNOTFOLDER  "Abstracts in non-folder"
+
+    /* references column */
+    ID_FXSI_REFERENCES_ABSTRACTS         "%d ABS"
+    ID_FXSI_REFERENCES_FOLDERPOS         "FPOS"
+
+    /* type column */
+    ID_FXSI_TYPE_DRIVE                   "DRIV"
+    ID_FXSI_TYPE_NODE                    "NODE"
+
+    /* column names in main and object ID containers */
+    ID_FXSI_NUMBER                       "i" 
+    ID_FXSI_TYPE                         "Type"
+    ID_FXSI_NODEOFS                      "Node ofs"
+    ID_FXSI_HANDLE                       "Handle" 
+    ID_FXSI_PARENT                       "Parent"
+    ID_FXSI_SHORTNAME                    "Short name"
+    ID_FXSI_CHILDREN                     "Children"
+    ID_FXSI_DUPLICATES                   "Dups."
+    ID_FXSI_REFERENCES                   "Refcs."
+    ID_FXSI_LONGNAME                     "Long name"
+
+    /* object ID window */
+    ID_FXDI_OBJIDS                       "xfix: Object IDs"
+
+    /* column name in container, object ID window */
+    ID_FXSI_STATUS                       "Status"
+    ID_FXSI_ID                           "ID"
+    ID_FXSI_LONGNAME_ABSTRACTVALID       "Abstract in 0x%04lX (%s)"
+    ID_FXSI_LONGNAME_ABSTRACTINVALID     "Abstract in 0x%04lX"
+
+    /* status bar */
+    ID_FXSI_STATBAR_LOADEDINSERTED       "%s IDs loaded, %s IDs inserted."
+    ID_FXSI_STATBAR_HANDLESSELECTED      "%s out of %s handles selected"
+    ID_FXSI_STATBAR_DONE                 "Done, %s bytes (%s handles)"
+    ID_FXSI_STATBAR_SECONDS              ", %d seconds"
+    ID_FXSI_STATBAR_DUPWARNING           " -- WARNING: %d duplicate handles exist!"
+    ID_FXSI_STATBAR_IDSLOADED            "%s IDs loaded."
+    ID_FXSI_STATBAR_RESOLVINGPERCENT     "Resolving cross-references, %03d%% done..."
+    ID_FXSI_STATBAR_PARSINGPERCENT       "Parsing handles section, %03d%% done..."
+    ID_FXSI_STATBAR_CHECKINGPERCENT      "Checking files, %03d%% done..."
+    ID_FXSI_STATBAR_RESOLVING            "Resolving cross-references..."
+    ID_FXSI_STATBAR_DONECHECKING         "Done checking files."
+    ID_FXSI_STATBAR_PARSINGHANDLES       "Parsing handles..."
+
+    /* select by file mask dialog */
+    ID_FXDI_FILEMASKSELECT                "xfix: Select By Name"
+    ID_FXDI_FILEMASKSELECT_MASK           "File mask:"
+    ID_FXDI_FILEMASKSELECT_SELECT         "~Select"
+    ID_FXDI_FILEMASKSELECT_DESELECT       "~Deslect"
+    ID_FXDI_FILEMASKSELECT_SELECTALL      "Select ~all"
+    ID_FXDI_FILEMASKSELECT_DESELECTALL    "Delect a~ll"
+
+    /* product information message box */
+    ID_FXSI_PRODINFO                     "xfix V&version;, built &date;&nl;&copy; 2000-2002 Ulrich M”ller&nl;&nl;&xwp; File Handles Fixer."
+
+    /* nuke message box strings */
+    ID_FXSI_NUKE_ABSTRACTS               "%d abstract object(s)"
+    ID_FXSI_NUKE_AND                     " and "
+    ID_FXSI_NUKE_FOLDERPOS               "%d folder position(s)"
+    ID_FXSI_NUKE_OBJECTIDS               "%d object ID(s)"
+    ID_FXSI_NUKE_SCHEDULED               " have been scheduled for deletion. "
+    ID_FXSI_NUKE_HANDLEPROBLEM           "Hmmm. CNRINFO reports %d handles left, but we counted %d."
+    ID_FXSI_NUKE_HANDLESLEFT             "%d handles are left."
+
+    /* write back to INI confirmation message box */
+    ID_FXSI_WRITEBACK_INTRO              "This will write all the changes that you have made back to the OS2.INI and OS2SYS.INI files.&nl;&nl;Please mind the following:&nl;&nl;"
+    ID_FXSI_WRITEBACK_FIRSTFIRST         "1. You should have started xfix from the &xwp; 'Panic' dialog that comes up if you hold down the 'Shift' key while the WPS is starting. "
+    ID_FXSI_WRITEBACK_FIRSTSECOND        "If you run xfix while the WPS is running and write back your handles, your changes will soon be overwritten by the WPS again.&nl;&nl;"
+    ID_FXSI_WRITEBACK_SECOND             "2. Be warned that if you have deleted handles that are critical to the operation of the Workplace Shell, such as the Desktop itself, your Desktop might no longer start.&nl;&nl;"
+    ID_FXSI_WRITEBACK_THIRD              "3. As a result, be sure that you have a current WPS backup, for example as created by the WPS archiving mechanism that can be enabled on the 'Archives' page in the Desktop's own settings notebook.&nl;&nl;"
+    ID_FXSI_WRITEBACK_CONFIRM            "So, are you sure you want to do this?"
+
+    ID_FXSI_WRITEBACKABORTED             "No changes have been made to your system. To leave xfix, just close the main window."
+    ID_FXSI_WRITEBACKSUCCESS_BLOCKS      "%d BLOCKs have been written to both handles sections. "
+    ID_FXSI_WRITEBACKSUCCESS_OBJMOVED    "%d objects have been moved to the desktop. "
+    ID_FXSI_WRITEBACKSUCCESS_KEYSDELETED "%d keys in OS2.INI have been deleted. "
+    ID_FXSI_WRITEBACKSUCCESS_EXIT        "To end xfix, just close the main window now."
+
+    /* remove handles message box */
+    ID_FXSI_REMOVEHANDLES                "You have selected %d handle(s) for removal. Are you sure you want to do this?"
+
+    /* nuke folder pos message box */
+    ID_FXSI_NUKEFOLDERPOS                "%d folder position(s) have been scheduled for deletion."
+
+    /* delete object IDs message box */
+    ID_FXSI_DELETEHANDLES                "%d object ID(s) have been scheduled for deletion."
+
+    /* move abstracts message box */
+    ID_FXSI_MOVEABSTRACTS_DESKTOPID      "Desktop handle is %lX"
+    ID_FXSI_MOVEABSTRACTS_CONFIRM        "You have selected %d handles whose abstract objects should be moved to the deskop.&nl;Are you sure you want to do this?"
+
+    /* move abstracts successful */
+    ID_FXSI_MOVEABSTRACTSSUCCESS         "%d abstracts have been moved to the desktop. They will appear after the next Desktop startup."
+
+    /* error messages */
+    ID_FXSI_ERROR_INVALIDHANDLE          "Invalid handle"
+    ID_FXSI_ERROR_INVALIDPARENTHANDLE    "Invalid parent handle"
+    ID_FXSI_ERROR_DEFAULT                "wphComposePath returned %d"
+    ID_FXSI_ERROR_ABSFOLDERHANDLELOST    "Abstract's folder handle lost"
+    ID_FXSI_ERROR_INVALIDFOLDERHANDLE    "Invalid folder handle"
+    ID_FXSI_ERROR_CANTGETACTIVEHANDLES   "Cannot get the active handles from OS2SYS.INI."
+    ID_FXSI_ERROR_ERROROCCURED           "Error %d occurred."
+    ID_FXSI_ERROR_MOVEABSTRACTS          "An error occurred moving the abstracts."
+    ID_FXSI_ERROR_PARSEHANDLES           "An error occurred parsing the handles section."
+    ID_FXSI_ERROR_PROFILENOTEXIST        "Error: Specified %s profile ""%s"" does not exist."
+    ID_FXSI_ERROR_PROFILEZEROBYTES       "Error: Specified %s profile ""%s"" has 0 bytes."
+    ID_FXSI_ERROR_CANTOPENPROFILE        "Error: Cannot open %s profile ""%s"" (WinGetLastError returned 0x%lX)."
+    ID_FXSI_ERROR_USER                   "User"
+    ID_FXSI_ERROR_SYSTEM                 "System"
+    ID_FXSI_ERROR_INVALIDPARMC           "Error: Invalid parameter ""-%c""."
+    ID_FXSI_ERROR_INVALIDPARMS           "Error: Invalid parameter ""%s""."
+    ID_FXSI_ERROR_NOTAVAILABLE           "not available"
+    ID_FXSI_ERROR_FATALLOADHANDLES       "Fatal error %d occurred loading the handles from the INI files. Description: %s"
+    ID_FXSI_ERROR_BUILDHANDLESCACHE      "Warning: Error %d building handles cache. Description: %s"
+END
 
 rcinclude "xfldr001.dlg"
 

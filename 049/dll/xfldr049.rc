@@ -669,18 +669,18 @@ BEGIN
     ID_MMSI_TYPE_FILE                   "Datei"
     ID_MMSI_TYPE_DATA                   "Daten"
 
-    ID_MMSI_DEVTYPE_VIDEOTAPE           "Video Tape"
-    ID_MMSI_DEVTYPE_VIDEODISC           "Video Disc"
-    ID_MMSI_DEVTYPE_CD_AUDIO            "CD Audio"
+    ID_MMSI_DEVTYPE_VIDEOTAPE           "Video-Band"
+    ID_MMSI_DEVTYPE_VIDEODISC           "Video-Disc"
+    ID_MMSI_DEVTYPE_CD_AUDIO            "CD-Audio"
     ID_MMSI_DEVTYPE_DAT                 "DAT"
-    ID_MMSI_DEVTYPE_AUDIO_TAPE          "Audio Tape"
+    ID_MMSI_DEVTYPE_AUDIO_TAPE          "Audio-Band"
     ID_MMSI_DEVTYPE_OTHER               "Andere"
     ID_MMSI_DEVTYPE_WAVEFORM_AUDIO      "Wave Audio"
     ID_MMSI_DEVTYPE_SEQUENCER           "Sequencer"
     ID_MMSI_DEVTYPE_AUDIO_AMPMIX        "Ampmix"
     ID_MMSI_DEVTYPE_OVERLAY             "Overlay"
     ID_MMSI_DEVTYPE_ANIMATION           "Animation"
-    ID_MMSI_DEVTYPE_DIGITAL_VIDEO       "Digital Video"
+    ID_MMSI_DEVTYPE_DIGITAL_VIDEO       "Digital-Video"
     ID_MMSI_DEVTYPE_SPEAKER             "Lautsprecher"
     ID_MMSI_DEVTYPE_HEADPHONE           "Kopfhîrer"
     ID_MMSI_DEVTYPE_MICROPHONE          "Mikrophon"
@@ -737,8 +737,8 @@ BEGIN
     ID_XSSI_ICONPAGE                    "~Symbol"
 
     /* INI save methods V0.9.5 (2000-08-20) [umoeller] */
-    ID_XSSI_XSD_SAVEINIS_NEW            "Neues Verfahren: &xwp; INI-Routinen verwenden"
-    ID_XSSI_XSD_SAVEINIS_OLD            "Altes Verfahren: &os2; INI-Routinen verwenden"
+    ID_XSSI_XSD_SAVEINIS_NEW            "Neues Verfahren: &xwp;-INI-Routinen verwenden"
+    ID_XSSI_XSD_SAVEINIS_OLD            "Altes Verfahren: &os2;-INI-Routinen verwenden"
     ID_XSSI_XSD_SAVEINIS_NONE           "INIs Åberhaupt nicht sichern"
 
     /* logoff V0.9.5 (2000-09-28) [umoeller] */
@@ -884,8 +884,8 @@ BEGIN
        variable data (sprintf). */
     ID_XSSI_ARCRESTORED                 "Archiv %d wurde gerade wiederhergestellt."
     ID_XSSI_ARCDAYSPASSED               "%d Tag(e) ist/sind seit der letzten Sicherung vergangen."
-    ID_XSSI_ARCDAYSLIMIT                "Limit: %d Tag(e)."
-    ID_XSSI_ARCINICHECKING              "Checking INI files..."
+    ID_XSSI_ARCDAYSLIMIT                "Grenzwert: %d Tag(e)."
+    ID_XSSI_ARCINICHECKING              "PrÅfen der INI-Dateien..."
     ID_XSSI_ARCINICHANGED               "INI-Dateien geÑndert zu %f %%."
     ID_XSSI_ARCINILIMIT                 "Grenzwert: %f %%."
     ID_XSSI_ARCENABLED                  "Archivierung der ArbeitsoberflÑche aktiviert."
@@ -913,7 +913,7 @@ BEGIN
     ID_XSSI_SPECIAL_PAGERLEFT        "Einen Bildschirm nach links"
 
     /* new MB3 mappings labels V0.9.9 (2001-03-27) [umoeller] */
-    ID_XSSI_MB3_AUTOSCROLL              "Automatisches Scrolling"
+    ID_XSSI_MB3_AUTOSCROLL              "Automatisches Rollen"
     ID_XSSI_MB3_DBLCLICK                "Doppelklick"
     ID_XSSI_MB3_NOCONVERSION            "Keine Umsetzung"
     ID_XSSI_MB3_PUSHTOBOTTOM            "Nach hinten verschieben"
@@ -940,7 +940,7 @@ BEGIN
     ID_XSSI_XSHUTDOWN                   "~&xsd;"
     ID_XSSI_XC_CLASSTITLE               "Klassentitel"
     ID_XSSI_XC_VERSION                  "Version"
-    ID_XSSI_XC_OBJBUTTONWIDGET          "ObjektschaltflÑchenwidget"
+    ID_XSSI_XC_OBJBUTTONWIDGET          "ObjektschaltflÑchen-Widget"
 
     /* another archive string V0.9.13 (2001-06-14) [umoeller] */
     ID_XSSI_ARCENABLEDONCE              "Einmalige Archivierung der ArbeitsoberflÑche aktiviert."
@@ -968,7 +968,7 @@ BEGIN
     ID_XSSI_RUN                         "Ausf~Åhren..."
 
     /* the following have been added with V0.9.16 */
-    ID_CRSI_SENTINELTOOLTIP             "Verbrauch an physichem Speicher&nl;Freies RAM: %s KB&nl;Benutztes RAM: %s KB&nl;Auslagerungsgrî·e: %s KB"
+    ID_CRSI_SENTINELTOOLTIP             "Verbrauch an physischem Speicher&nl;Freies RAM: %s KB&nl;Benutztes RAM: %s KB&nl;Auslagerungsgrî·e: %s KB"
             /* expands to:
                               Physical memory usage
                               Free RAM: %s KB
@@ -1020,7 +1020,7 @@ BEGIN
     ID_XSSI_DOUBLEFILES_TIME            "Uhrzeit"
 
     ID_NDSI_STARTNETSCAPE               "Ihr Browser scheint momentan nicht geladen zu sein. Soll er jetzt gestartet werden?"
-    ID_NDSI_SYNTAX                      "Die Syntax fÅr die Netscape DDE-Kommandozeile ist fehlerhaft. Mîchten Sie die Online-Hilfe lesen?"
+    ID_NDSI_SYNTAX                      "Die Syntax fÅr die Netscape-DDE-Befehlszeile ist fehlerhaft. Mîchten Sie die Online-Hilfe lesen?"
 
     ID_CRSI_OWGT_BITMAPFILE             "OS/2-Bitmap-Datei"
 
@@ -1197,6 +1197,9 @@ BEGIN
     DID_OPEN                            "~ôffnen"
     DID_SAVE                            "~Speichern"
 
+    /* added V1.0.4 (2005-02-24) [chennecke]: for Xfix */
+    DID_ENTER                           "~Eingabe"
+
     /* strings formerly in ID_XSD_SET25ADDMENUS
         all removed V0.9.19 */
 
@@ -1210,7 +1213,7 @@ BEGIN
     ID_XSDI_ACCELERATORS                "Auf Tastenk~Årzel reagieren"
     ID_XSDI_ENABLESTATUSBAR             "~Statuszeile anzeigen"
     ID_XSDI_SHOWINMENUS                 "KÅrzel in ~MenÅs anzeigen"
-    ID_XSDI_HOTKEYS_GROUP               "Folder hotkeys"
+    ID_XSDI_HOTKEYS_GROUP               "Ordner-TastenkÅrzel"
 
     /* strings formerly in ID_XSD_DTP_MENUITEMS
         all removed with V0.9.19  */
@@ -1256,7 +1259,7 @@ BEGIN
     ID_XSDI_DTP_NUMLOCKON               "~NumLock beim Systemstart aktivieren"
 
     /* strings formerly in ID_XFD_STARTUPPANIC */
-    ID_XFDI_PANIC_TITLE                 "&xwp; Panik"
+    ID_XFDI_PANIC_TITLE                 "&xwp;-Panik"
     ID_XFDI_PANIC_SKIPBOOTLOGO          "~Bootlogo einmal Åberspringen"
     ID_XFDI_PANIC_SKIPXFLDSTARTUP       "&xwp;-S~ystemstartordner einmal Åberspringen"
     ID_XFDI_PANIC_SKIPQUICKOPEN         """~Schnelles ôffnen"" der Ordner einmal Åberspringen"
@@ -1269,7 +1272,7 @@ BEGIN
     ID_XFDI_PANIC_CONTINUE              "F~ortfahren"
     ID_XFDI_PANIC_CONTINUE_TXT          "Hiermit wird mit dem Start der WPS fortgefahren."
     ID_XFDI_PANIC_XFIX                  "x~fix starten"
-    ID_XFDI_PANIC_XFIX_TXT              "Das &xwp; Handlereparaturprogramm ausfÅhren."
+    ID_XFDI_PANIC_XFIX_TXT              "Das &xwp;-Programm zur Handle-Reparatur ausfÅhren."
     ID_XFDI_PANIC_CMD                   "~CMD.EXE ausfÅhren"
     ID_XFDI_PANIC_CMD_TXT               "ôffnet sofort ein Befehlszeilenfenster."
     ID_XFDI_PANIC_SHUTDOWN              "~Sofortiger Systemabschlu·"
@@ -1287,7 +1290,7 @@ BEGIN
         /* already in ID_XSDI_FAVORITEFOLDER */
     ID_XSDI_MAXPATHCHARS_TX1            "Pfad ~begrenzen auf"
     ID_XSDI_MAXPATHCHARS_TX2            "Zeichen"
-    ID_XSDI_TREEVIEWAUTOSCROLL          "Strukturan~zeige automatisch scrollen"
+    ID_XSDI_TREEVIEWAUTOSCROLL          "Strukturan~zeige automatisch rollen"
     ID_XSDI_FDRDEFAULTDOC               "Standarddokum~ent fÅr Ordner aktivieren"
     ID_XSDI_FDRDEFAULTDOCVIEW           "Standarddok~ument = Standardordneransicht"
     ID_XSDI_FDRAUTOREFRESH              "~Automatische Aktualisierung von Ordnern aktivieren"
@@ -1304,7 +1307,7 @@ BEGIN
     ID_CRDI_VIEW2_3DBORDER_GROUP        "~3D-Randbreite"
     ID_CRDI_VIEW2_ALL3DBORDERS          "~Alle vier 3D-RÑnder zeichnen"
     ID_CRDI_VIEW2_BDRSPACE_GROUP        "Randa~bstand"
-    ID_CRDI_VIEW2_WGTSPACE_GROUP        "~Widgetabstand"
+    ID_CRDI_VIEW2_WGTSPACE_GROUP        "~Widget-Abstand"
     ID_CRDI_VIEW2_SIZINGBARS            "Gr~î·enÑnderungsleisten zeichnen"
     ID_CRDI_VIEW2_SPACINGLINES          "Abstandslinien zei~chnen"
     ID_CRDI_VIEW2_DEFSTYLES_GROUP       "Standardstile fÅr Widgets"
@@ -1507,7 +1510,7 @@ BEGIN
     ID_XFD_RUN_FULLSCREEN               "~Vollbildschirm"
     ID_XFD_RUN_AUTOCLOSE                "~Beim Beenden schlie·en"
     ID_XFD_RUN_WINOS2_GROUP             "&winos2;-Einstellungen"
-    ID_XFD_RUN_ENHANCED                 "~Enhanced mode"
+    ID_XFD_RUN_ENHANCED                 "~Erweiterter Modus"
     ID_XFD_RUN_SEPARATE                 "Getrennte ~Sitzung"
     ID_XFD_RUN_STARTUPDIR_TXT           "Arbe~itsverzeichnis:"
 
@@ -1648,12 +1651,12 @@ BEGIN
     ID_XSDI_MOUSE_CHORDWINLIST          "An~zeigen der Fensterliste Åberall ermîglichen"
     ID_XSDI_MOUSE_SYSMENUMB2            "~SystemmenÅ bei MB2-Klick auf Titelleiste"
     ID_XSDI_MOUSE_MB3CLICK_TXT          "MB3-~Klick-Aktion:"
-    ID_XSDI_MOUSE_MB3SCROLL             "Scrollen bei ~MB3-Ziehen"
+    ID_XSDI_MOUSE_MB3SCROLL             "Rollen bei ~MB3-Ziehen"
     ID_XSDI_MOUSE_MB3PIXELS_TXT1        "Minimum an Pi~xeln:"
     ID_XSDI_MOUSE_MB3LINEWISE           "Zei~lenweiser (fester) Modus"
     ID_XSDI_MOUSE_MB3AMPLIFIED          "~VerstÑrkungsmodus"
     ID_XSDI_MOUSE_MB3AMP_TXT1           "Ve~rstÑrkung:"
-    ID_XSDI_MOUSE_MB3SCROLLREVERSE      "~Umgekehrtes Scrollen"
+    ID_XSDI_MOUSE_MB3SCROLLREVERSE      "~Umgekehrtes Rollen"
 
     /* strings formerly in ID_XSD_FILETYPES V0.9.20 (2002-08-04) [umoeller] */
     ID_XSDI_FT_GROUP                    "Dateitypen"
@@ -1747,9 +1750,9 @@ BEGIN
     END
     MENUITEM "~Grî·e anzeigen in", ID_TSM_SIZES, MIS_SUBMENU
     BEGIN
-        MENUITEM "~Bytes", ID_TSMI_SIZE_BYTES
-        MENUITEM "~KBytes", ID_TSMI_SIZE_KBYTES
-        MENUITEM "~MBytes", ID_TSMI_SIZE_MBYTES
+        MENUITEM "~Byte", ID_TSMI_SIZE_BYTES
+        MENUITEM "~KByte", ID_TSMI_SIZE_KBYTES
+        MENUITEM "~MByte", ID_TSMI_SIZE_MBYTES
     END
     MENUITEM "", 1, MIS_SEPARATOR
     MENUITEM "Er~weiterte Attribute sammeln", ID_TSMI_COLLECTEAS
@@ -1760,8 +1763,260 @@ BEGIN
     MENUITEM "~Schlie·en", 1000
 END
 
+  /* Treesize container strings; added V1.0.4 (2005-02-07) [chennecke] */
+
+STRINGTABLE
+BEGIN
+    ID_TSSI_LARGESTFILES      "%d grî·te Dateien"
+    ID_TSSI_BYTES             "Byte"
+    ID_TSSI_KBYTES            "KByte"
+    ID_TSSI_MBYTES            "MByte"
+    ID_TSSI_WORKING           "%s: Verarbeitung lÑuft..."
+    ID_TSSI_FILES             "Dateien"
+END
+
 /* Netscape DDE definitions; added V0.9.1 (99-12-19) [umoeller] */
 POINTER ID_ND_ICON LOADONCALL MOVEABLE DISCARDABLE netscdde.ico
+
+/* Xfix definitions; added V1.0.4 (2005-02-24) [chennecke] */
+
+POINTER ID_FX_ICON LOADONCALL MOVEABLE DISCARDABLE xfix.ico
+
+  /* main menu */
+
+MENU ID_FXM_MAIN LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    SUBMENU "~xfix", ID_FXM_XFIX, MIS_TEXT
+    BEGIN
+        MENUITEM "Puffer nochmals verarbeiten", ID_FXMI_RESCAN, MIS_TEXT
+        MENUITEM "", -1, MIS_SEPARATOR
+        MENUITEM "ZurÅck in OS2SYS.INI schreiben...", ID_FXMI_WRITETOINI, MIS_TEXT
+        MENUITEM "", -1, MIS_SEPARATOR
+        MENUITEM "~xfix beenden\tAlt+F4",      ID_FXMI_EXIT, MIS_TEXT
+    END
+
+    SUBMENU "~Anzeige", ID_FXM_VIEW, MIS_TEXT
+    BEGIN
+        MENUITEM "Objekt-~IDs...", ID_FXMI_VIEW_OBJIDS, MIS_TEXT
+        /* MENUITEM "~Abstrakte Objekte...", ID_FXMI_VIEW_ABSTRACTS, MIS_TEXT */
+    END
+
+    SUBMENU "Sor~tieren nach", ID_FXM_SORT, MIS_TEXT
+    BEGIN
+        MENUITEM "~Index", ID_FXMI_SORT_INDEX, MIS_TEXT
+        MENUITEM "~Status", ID_FXMI_SORT_STATUS, MIS_TEXT
+        MENUITEM "~Typ", ID_FXMI_SORT_TYPE, MIS_TEXT
+        MENUITEM "~Handle", ID_FXMI_SORT_HANDLE, MIS_TEXT
+        MENUITEM "~Eltern", ID_FXMI_SORT_PARENT, MIS_TEXT
+        MENUITEM "K~urzer Name", ID_FXMI_SORT_SHORTNAME, MIS_TEXT
+        MENUITEM "~Kinder", ID_FXMI_SORT_CHILDREN, MIS_TEXT
+        MENUITEM "~Duplikate", ID_FXMI_SORT_DUPS, MIS_TEXT
+        MENUITEM "~Referenzen", ID_FXMI_SORT_REFCS, MIS_TEXT
+        MENUITEM "~Langer Name", ID_FXMI_SORT_LONGNAME, MIS_TEXT
+    END
+
+    SUBMENU "~VorgÑnge", ID_FXM_ACTIONS, MIS_TEXT
+    BEGIN
+        MENUITEM "Suche ungÅltige ~Dateien", ID_FXMI_ACTIONS_FILES, MIS_TEXT
+    END
+
+    SUBMENU "Au~swÑhlen", ID_FXM_SELECT, MIS_TEXT
+    BEGIN
+        MENUITEM "Alle ungÅltigen auswÑhlen", ID_FXMI_SELECT_INVALID, MIS_TEXT
+        MENUITEM "Nach Name auswÑhlen...", ID_FXMI_SELECT_BYNAME, MIS_TEXT
+    END
+
+    SUBMENU "~Hilfe", ID_FXM_HELP, MIS_TEXT
+    BEGIN
+        MENUITEM "~Allgemeine Hilfe", ID_FXMI_HELP_GENERAL, MIS_TEXT
+        MENUITEM "~Hilfe fÅr Hilfefunktion", ID_FXMI_HELP_USINGHELP, MIS_TEXT
+        MENUITEM "", -1, MIS_SEPARATOR
+        MENUITEM "~Produktinformation", ID_FXMI_HELP_PRODINFO, MIS_TEXT
+    END
+END
+
+  /* menu for object IDs frame */
+
+MENU ID_FXM_OBJIDS LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    SUBMENU "~xfix", ID_FXM_XFIX, MIS_TEXT
+    BEGIN
+        MENUITEM "Fenster s~chlie·en\tAlt+F4",      ID_FXMI_CLOSETHIS, MIS_TEXT
+        MENUITEM "xfi~x beenden",      ID_FXMI_EXIT, MIS_TEXT
+    END
+
+    SUBMENU "Sor~tieren nach", ID_FXM_SORT, MIS_TEXT
+    BEGIN
+        MENUITEM "~Index", ID_FXMI_SORT_INDEX, MIS_TEXT
+        MENUITEM "~Status", ID_FXMI_SORT_STATUS, MIS_TEXT
+        MENUITEM "~ID", ID_FXMI_SORT_ID, MIS_TEXT
+        MENUITEM "~Handle", ID_FXMI_SORT_HANDLE, MIS_TEXT
+        MENUITEM "~Langer Name", ID_FXMI_SORT_LONGNAME, MIS_TEXT
+    END
+
+    SUBMENU "~Hilfe", ID_FXM_HELP, MIS_TEXT
+    BEGIN
+        MENUITEM "~Allgemeine Hilfe", ID_FXMI_HELP_GENERAL, MIS_TEXT
+        MENUITEM "~Hilfe fÅr Hilfefunktion", ID_FXMI_HELP_USINGHELP, MIS_TEXT
+        MENUITEM "", -1, MIS_SEPARATOR
+        MENUITEM "~Produktinformation", ID_FXMI_HELP_PRODINFO, MIS_TEXT
+    END
+END
+
+/* context menus */
+
+MENU ID_FXM_RECORDSELMULTI LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "Ordnerpositionen ent~fernen", ID_FXMI_NUKEFOLDERPOS
+    MENUITEM "Objekt-~IDs entfernen", ID_FXMI_NUKEOBJID
+    MENUITEM "", -1, MIS_SEPARATOR
+    MENUITEM "Handle ~lîschen...", ID_FXMI_DELETE
+END
+
+MENU ID_FXM_RECORDSELSINGLE LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    MENUITEM "Abstrakte Objekte auf ArbeitsoberflÑche ~verschieben", ID_FXMI_MOVEABSTRACTS
+    MENUITEM "Ordnerpositionen ent~fernen", ID_FXMI_NUKEFOLDERPOS
+    MENUITEM "Objekt-~IDs entfernen", ID_FXMI_NUKEOBJID
+/*
+    MENUITEM "", -1, MIS_SEPARATOR
+    MENUITEM "~Ausschneiden", ID_FXMI_CUT
+    MENUITEM "~EinfÅgen...", ID_FXMI_PASTE
+*/
+    MENUITEM "", -1, MIS_SEPARATOR
+    MENUITEM "~Lîschen...", ID_FXMI_DELETE
+END
+
+  /* strings used in the container, error messages, dialogs */
+
+STRINGTABLE
+BEGIN
+    ID_FXDI_MAIN                         "xfix: Handle-Liste"
+
+    /* node status column */
+    ID_FXSI_NODESTAT_DUPLICATEDRIV       "Duplikat-DRIV"
+    ID_FXSI_NODESTAT_ISDUPLICATE         "Duplikat"
+    ID_FXSI_NODESTAT_INVALIDDRIVE        "UngÅltiges Laufwerk"
+    ID_FXSI_NODESTAT_INVALIDPARENT       "Verwaist"
+    ID_FXSI_NODESTAT_FILENOTFOUND        "Datei nicht gefunden"
+    ID_FXSI_NODESTAT_PARENTNOTFOLDER     "Elternteil kein Ordner"
+    ID_FXSI_NODESTAT_FOLDERPOSNOTFOLDER  "Folderpos fÅr Nicht-Ordner"
+    ID_FXSI_NODESTAT_ABSTRACTSNOTFOLDER  "Abstraktes Objekt in Nicht-Ordner"
+
+    /* references column */
+    ID_FXSI_REFERENCES_ABSTRACTS         "%d ABS"
+    ID_FXSI_REFERENCES_FOLDERPOS         "FPOS"
+
+    /* type column */
+    ID_FXSI_TYPE_DRIVE                   "DRIV"
+    ID_FXSI_TYPE_NODE                    "NODE"
+
+    /* column names in main and object ID containers */
+    ID_FXSI_NUMBER                       "i"
+    ID_FXSI_TYPE                         "Typ"
+    ID_FXSI_NODEOFS                      "Knoten-Ofs"
+    ID_FXSI_HANDLE                       "Handle"
+    ID_FXSI_PARENT                       "Elternteil"
+    ID_FXSI_SHORTNAME                    "Kurzer Name"
+    ID_FXSI_CHILDREN                     "Kinder"
+    ID_FXSI_DUPLICATES                   "Duplkte."
+    ID_FXSI_REFERENCES                   "Refzn."
+    ID_FXSI_LONGNAME                     "Langer Name"
+
+    /* object ID window */
+    ID_FXDI_OBJIDS                       "xfix: Objekt-IDs"
+
+    /* column name in container, object ID window */
+    ID_FXSI_STATUS                       "Status"
+    ID_FXSI_ID                           "ID"
+    ID_FXSI_LONGNAME_ABSTRACTVALID       "Abstraktes Objekt in 0x%04lX (%s)"
+    ID_FXSI_LONGNAME_ABSTRACTINVALID     "Abstraktes Objekt in 0x%04lX"
+
+    /* status bar */
+    ID_FXSI_STATBAR_LOADEDINSERTED       "%s IDs geladen, %s IDs eingefÅgt."
+    ID_FXSI_STATBAR_HANDLESSELECTED      "%s von %s Handles ausgewÑhlt"
+    ID_FXSI_STATBAR_DONE                 "Fertig, %s Byte (%s Handles)"
+    ID_FXSI_STATBAR_SECONDS              ", %d Sekunden"
+    ID_FXSI_STATBAR_DUPWARNING           " -- WARNUNG: %d doppelte Handles vorhanden!"
+    ID_FXSI_STATBAR_IDSLOADED            "%s IDs geladen."
+    ID_FXSI_STATBAR_RESOLVINGPERCENT     "Auflîsen der Querverweise, %03d%% abgeschlossen..."
+    ID_FXSI_STATBAR_PARSINGPERCENT       "Verarbeitung der Handle-Sektion, %03d%% abgeschlossen..."
+    ID_FXSI_STATBAR_CHECKINGPERCENT      "PrÅfen der Dateien, %03d%% abgeschlossen..."
+    ID_FXSI_STATBAR_RESOLVING            "Auflîsen der Querverweise..."
+    ID_FXSI_STATBAR_DONECHECKING         "PrÅfen der Dateien abgeschlossen."
+    ID_FXSI_STATBAR_PARSINGHANDLES       "Verarbeitung der Handles..."
+
+    /* select by file mask dialog */
+    ID_FXDI_FILEMASKSELECT               "xfix: Nach Name auswÑhlen"
+    ID_FXDI_FILEMASKSELECT_MASK          "Dateimaske:"
+    ID_FXDI_FILEMASKSELECT_SELECT        "Au~swÑhlen"
+    ID_FXDI_FILEMASKSELECT_DESELECT      "A~bwÑhlen"
+    ID_FXDI_FILEMASKSELECT_SELECTALL     "~Alle auswÑhlen"
+    ID_FXDI_FILEMASKSELECT_DESELECTALL   "A~lles abwÑhlen"
+
+    /* product information message box */
+    ID_FXSI_PRODINFO                     "xfix V&version;, erstellt am &date;&nl;&copy; 2000-2002 Ulrich Mîller&nl;&nl;&xwp; Datei-Handle-Reparatur."
+
+    /* nuke message box strings */
+    ID_FXSI_NUKE_ABSTRACTS               "%d abstrakte(s) Objekt(e)"
+    ID_FXSI_NUKE_AND                     " und "
+    ID_FXSI_NUKE_FOLDERPOS               "%d Ordnerposition(en)"
+    ID_FXSI_NUKE_OBJECTIDS               "%d Objekt-ID(s)"
+    ID_FXSI_NUKE_SCHEDULED               " wurden zum Lîschen vorgemerkt. "
+    ID_FXSI_NUKE_HANDLEPROBLEM           "Hmmm. CNRINFO meldet %d verbleibende Handles, aber es wurden %d gezÑhlt."
+    ID_FXSI_NUKE_HANDLESLEFT             "%d Handles verbleiben."
+
+    /* write back to INI confirmation message box */
+    ID_FXSI_WRITEBACK_INTRO              "Hierdurch werden sÑmtliche vorgenommenen énderungen zurÅck in die Dateien OS2.INI und OS2SYS.INI geschrieben.&nl;&nl;Beachten Sie bitte folgendes:&nl;&nl;"
+    ID_FXSI_WRITEBACK_FIRSTFIRST         "1. Sie sollten xfix aus dem &xwp;-'Panik'-Dialog heraus gestartet haben, der erscheint, wenn man beim WPS-Start die 'Umschalt'-Taste gedrÅckt hÑlt."
+    ID_FXSI_WRITEBACK_FIRSTSECOND        "Benutzt man xfix, wÑhrend die WPS in Betrieb ist, und schreibt die Handles zurÅck, werden die énderungen bald danach wieder von der WPS Åberschrieben.&nl;&nl;"
+    ID_FXSI_WRITEBACK_SECOND             "2. Seien Sie davor gewarnt, da· die WPS vielleicht nicht mehr startet, wenn Sie Handles gelîscht haben, die fÅr den Betrieb der Workplace Shell essentiell sind, wie etwa das der ArbeitsoberflÑche.&nl;&nl;"
+    ID_FXSI_WRITEBACK_THIRD              "3. Achten Sie also darauf, da· Sie eine aktuelle Sicherheitskopie der WPS besitzen, wie sie vom Archivierungsmechanismus der WPS erstellt wird, der unter 'Archivieren' im Einstellungsnotizbuches der ArbeitsoberflÑche aktiviert werden kann.&nl;&nl;"
+    ID_FXSI_WRITEBACK_CONFIRM            "Soll wirklich fortgefahren werden?"
+
+    ID_FXSI_WRITEBACKABORTED             "Es wurden keine VerÑnderungen am System vorgenommen. Um xfix zu verlassen, schlie·en Sie einfach das Hauptfenster."
+    ID_FXSI_WRITEBACKSUCCESS_BLOCKS      "%d BLOCKs wurden in beide Handle-Sektionen geschrieben. "
+    ID_FXSI_WRITEBACKSUCCESS_OBJMOVED    "%d Objekte wurden auf die ArbeitsoberflÑche verschoben. "
+    ID_FXSI_WRITEBACKSUCCESS_KEYSDELETED "%d SchlÅssel in OS2.INI wurden gelîscht. "
+    ID_FXSI_WRITEBACKSUCCESS_EXIT        "Um xfix zu beenden, schlie·en Sie einfach das Hauptfenster."
+
+    /* remove handles message box */
+    ID_FXSI_REMOVEHANDLES                "Sie haben %d Handle(s) zum Lîschen ausgewÑhlt. Soll dies wirklich durchgefÅhrt werden?"
+
+    /* nuke folder pos message box */
+    ID_FXSI_NUKEFOLDERPOS                "%d Ordnerposition(en) wurden zum Lîschen vorgemerkt."
+
+    /* delete object IDs message box */
+    ID_FXSI_DELETEHANDLES                "%d Objekt-ID(s) zum Lîschen vorgesehen."
+
+    /* move abstracts message box */
+    ID_FXSI_MOVEABSTRACTS_DESKTOPID      "Handle der ArbeitsoberflÑche ist %lX"
+    ID_FXSI_MOVEABSTRACTS_CONFIRM        "Sie haben %d Handles ausgewÑhlt, deren abstrakte Objekte auf die ArbeitsoberflÑche verschoben werden sollen.&nl;Soll dies wirklich durchgefÅhrt werden?"
+
+    /* move abstracts successful */
+    ID_FXSI_MOVEABSTRACTSSUCCESS         "%d abstrakte Objekte wurden auf die ArbeitsoberflÑche verschoben. Sie erscheinen nach dem nÑchsten Neustart der WPS."
+
+    /* error messages */
+    ID_FXSI_ERROR_INVALIDHANDLE          "UngÅltiges Handle"
+    ID_FXSI_ERROR_INVALIDPARENTHANDLE    "UngÅltiges Eltern-Handle"
+    ID_FXSI_ERROR_DEFAULT                "wphComposePath gab %d zurÅck"
+    ID_FXSI_ERROR_ABSFOLDERHANDLELOST    "Ordner-Handle des abstrakten Objekts verloren"
+    ID_FXSI_ERROR_INVALIDFOLDERHANDLE    "UngÅltiges Ordner-Handle"
+    ID_FXSI_ERROR_CANTGETACTIVEHANDLES   "Aktive Handles kînnen nicht aus OS2SYS.INI gelesen werden."
+    ID_FXSI_ERROR_ERROROCCURED           "Fehler %d ist aufgegtreten."
+    ID_FXSI_ERROR_MOVEABSTRACTS          "Beim Verschieben der abstrakten Objekte ist ein Fehler aufgetreten."
+    ID_FXSI_ERROR_PARSEHANDLES           "Bei der Verarbeitung der Handle-Sektion ist ein Fehler aufgetreten."
+    ID_FXSI_ERROR_PROFILENOTEXIST        "Fehler: Angegebenes %sprofil ""%s"" ist nicht vorhanden."
+    ID_FXSI_ERROR_PROFILEZEROBYTES       "Fehler: Angegebenes %sprofile ""%s"" ist 0 Byte lang."
+    ID_FXSI_ERROR_CANTOPENPROFILE        "Fehler: %sprofil ""%s"" kann nicht geîffnet werden (WinGetLastError gab 0x%lX zurÅck)."
+    ID_FXSI_ERROR_USER                   "Benutzer"
+    ID_FXSI_ERROR_SYSTEM                 "System"
+    ID_FXSI_ERROR_INVALIDPARMC           "Fehler: UngÅltiger Parameter ""-%c""."
+    ID_FXSI_ERROR_INVALIDPARMS           "Fehler: UngÅltiger Parameter ""%s""."
+    ID_FXSI_ERROR_NOTAVAILABLE           "nicht verfÅgbar"
+    ID_FXSI_ERROR_FATALLOADHANDLES       "Beim Laden der Handles aus den INI-Dateien ist der schwerwiegende Fehler %d aufgetreten. Beschreibung: %s"
+    ID_FXSI_ERROR_BUILDHANDLESCACHE      "Warnung: Fehler %d beim Aufbau des Handle-Caches aufgetreten. Beschreibung: %s"
+END
 
 rcinclude "xfldr049.dlg"
 
