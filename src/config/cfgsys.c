@@ -600,6 +600,7 @@ STATIC MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
  *@@changed V0.9.13 (2001-06-23) [umoeller]: added new memory settings
  *@@changed V0.9.16 (2001-12-08) [umoeller]: fixed memory leak
  *@@changed V0.9.20 (2002-07-03) [umoeller]: fixed max ID_OSDI_CACHE_THRESHOLD to 128
+ *@@changed V1.0.1 (2002-12-11) [pr]: POPUPLOG drive was wrong @@fixes 37
  */
 
 VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
@@ -1032,6 +1033,7 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
                     CHAR    szParameter[300] = "";
                     BOOL fAutoFail = FALSE,
                          fReIPL = FALSE;
+                    LONG lIndex = 0;           // default for "0" param
                     PSZ p = csysGetParameter(pszConfigSys, "AUTOFAIL=",
                             szParameter, sizeof(szParameter));
                     if (p)
@@ -1052,7 +1054,6 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
                             (p != NULL));
                     if (p)
                     {
-                        LONG lIndex = 0;           // default for "0" param
                         if (*p != '0')
                         {
                             CHAR c = toupper(*p);
@@ -1060,12 +1061,15 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
                         } else
                             // "0" character:
                             lIndex = G_lDriveCount;
-
-                        WinSendDlgItemMsg(hwndDlgPage, ID_OSDI_SUPRESSP_DRIVE,
-                                          SPBM_SETCURRENTVALUE,
-                                          (MPARAM)lIndex,
-                                          (MPARAM)NULL);
                     }
+                    // V1.0.1 (2002-12-11) [pr]: @@fixes 37
+                    else
+                        lIndex = doshQueryBootDrive() - 'C';
+
+                    WinSendDlgItemMsg(hwndDlgPage, ID_OSDI_SUPRESSP_DRIVE,
+                                      SPBM_SETCURRENTVALUE,
+                                      (MPARAM)lIndex,
+                                      (MPARAM)NULL);
                 }
                 break;
 

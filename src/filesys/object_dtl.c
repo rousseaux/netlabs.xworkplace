@@ -1284,69 +1284,60 @@ VOID objShowObjectDetails(HWND hwndOwner,
 
     HPOINTER hptrOld = winhSetWaitPointer();
 
-    PDLGHITEM paNew;
-
-    if (!cmnLoadDialogStrings(dlgObjDetails,
-                              ARRAYITEMCOUNT(dlgObjDetails),
-                              &paNew))
+    if (!dlghCreateDlg(&hwndDlg,
+                       hwndOwner,
+                       FCF_FIXED_DLG,
+                       fnwpObjectDetails,
+                       cmnGetString(ID_XSDI_DETAILS_DIALOG),
+                       dlgObjDetails,
+                       ARRAYITEMCOUNT(dlgObjDetails),
+                       NULL,
+                       cmnQueryDefaultFont()))
     {
-        if (!dlghCreateDlg(&hwndDlg,
-                           hwndOwner,
-                           FCF_FIXED_DLG,
-                           fnwpObjectDetails,
-                           cmnGetString(ID_XSDI_DETAILS_DIALOG),
-                           paNew,
-                           ARRAYITEMCOUNT(dlgObjDetails),
-                           NULL,
-                           cmnQueryDefaultFont()))
+        PXFOBJWINDATA pWinData = NEW(XFOBJWINDATA);
+        ZERO(pWinData);
+        xstrInit(&pWinData->strOldObjectID, 0);
+        pWinData->somSelf = pobj;
+        pWinData->hwndCnr = WinWindowFromID(hwndDlg, ID_XSDI_DETAILS_CONTAINER);
+        WinSetWindowPtr(hwndDlg, QWL_USER, pWinData);
+
+        TRY_LOUD(excpt1)
         {
-            PXFOBJWINDATA pWinData = NEW(XFOBJWINDATA);
-            ZERO(pWinData);
-            xstrInit(&pWinData->strOldObjectID, 0);
-            pWinData->somSelf = pobj;
-            pWinData->hwndCnr = WinWindowFromID(hwndDlg, ID_XSDI_DETAILS_CONTAINER);
-            WinSetWindowPtr(hwndDlg, QWL_USER, pWinData);
+            PSZ pszSetupString;
+            ULONG ulLength;
 
-            TRY_LOUD(excpt1)
+            winhCenterWindow(hwndDlg);
+
+            BEGIN_CNRINFO()
             {
-                PSZ pszSetupString;
-                ULONG ulLength;
+                cnrhSetView(CV_TREE | CV_TEXT | CA_TREELINE);
+                cnrhSetTreeIndent(30);
+                cnrhSetSortFunc(fnCompareName);
+            } END_CNRINFO(pWinData->hwndCnr);
 
-                winhCenterWindow(hwndDlg);
+            FillCnrWithObjectUsage(pWinData->hwndCnr,
+                                   pobj);
 
-                BEGIN_CNRINFO()
-                {
-                    cnrhSetView(CV_TREE | CV_TEXT | CA_TREELINE);
-                    cnrhSetTreeIndent(30);
-                    cnrhSetSortFunc(fnCompareName);
-                } END_CNRINFO(pWinData->hwndCnr);
-
-                FillCnrWithObjectUsage(pWinData->hwndCnr,
-                                       pobj);
-
-                if (    (pszSetupString = _xwpQuerySetup(pobj, &ulLength))
-                     && (ulLength)
-                   )
-                {
-                    HWND hwndEF = WinWindowFromID(hwndDlg, ID_XSDI_DETAILS_SETUPSTR_EF);
-                    winhSetEntryFieldLimit(hwndEF, ulLength + 1);
-                    WinSetWindowText(hwndEF, pszSetupString);
-                    _xwpFreeSetupBuffer(pobj, pszSetupString);
-                }
-
-                WinSetPointer(HWND_DESKTOP, hptrOld);
-                hptrOld = NULLHANDLE;
-
-                WinProcessDlg(hwndDlg);
+            if (    (pszSetupString = _xwpQuerySetup(pobj, &ulLength))
+                 && (ulLength)
+               )
+            {
+                HWND hwndEF = WinWindowFromID(hwndDlg, ID_XSDI_DETAILS_SETUPSTR_EF);
+                winhSetEntryFieldLimit(hwndEF, ulLength + 1);
+                WinSetWindowText(hwndEF, pszSetupString);
+                _xwpFreeSetupBuffer(pobj, pszSetupString);
             }
-            CATCH(excpt1) {} END_CATCH();
 
-            WinDestroyWindow(hwndDlg);
-            xstrClear(&pWinData->strOldObjectID);
-            free(pWinData);
+            WinSetPointer(HWND_DESKTOP, hptrOld);
+            hptrOld = NULLHANDLE;
+
+            WinProcessDlg(hwndDlg);
         }
+        CATCH(excpt1) {} END_CATCH();
 
-        free(paNew);
+        winhDestroyWindow(&hwndDlg);
+        xstrClear(&pWinData->strOldObjectID);
+        free(pWinData);
     }
 
     if (hptrOld)

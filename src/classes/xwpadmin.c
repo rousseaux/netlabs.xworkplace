@@ -280,7 +280,7 @@ VOID admAllUsersInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
         WinSetDlgItemText(pnbp->hwndDlgPage,
                           ID_XFDI_CNR_GROUPTITLE,
-                          cmnGetString(ID_XSSI_ADMIN_ALL_USERS));
+                          (PSZ)cmnGetString(ID_XSSI_ADMIN_ALL_USERS));
 
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(USERRECORD, Entry.uid);
@@ -406,7 +406,7 @@ VOID admAllGroupsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
         WinSetDlgItemText(pnbp->hwndDlgPage,
                           ID_XFDI_CNR_GROUPTITLE,
-                          cmnGetString(ID_XSSI_ADMIN_ALL_GROUPS));
+                          (PSZ)cmnGetString(ID_XSSI_ADMIN_ALL_GROUPS));
 
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(GROUPRECORD, gid);
@@ -707,7 +707,7 @@ SOM_Scope PSZ  SOMLINK admM_wpclsQueryTitle(M_XWPAdmin *somSelf)
     /* M_XWPAdminData *somThis = M_XWPAdminGetData(somSelf); */
     M_XWPAdminMethodDebug("M_XWPAdmin","admM_wpclsQueryTitle");
 
-    return (cmnGetString(ID_XSSI_ADMINISTRATOR)) ; // pszAdministrator
+    return (PSZ)cmnGetString(ID_XSSI_ADMINISTRATOR);
 }
 
 /*

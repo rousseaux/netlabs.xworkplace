@@ -279,8 +279,9 @@ SOM_Scope ULONG  SOMLINK xsndM_wpclsQueryIconData(M_XWPSound *somSelf,
 
         return (sizeof(ICONINFO));
     }
-    else */
-        return (M_XWPSound_parent_M_WPSound_wpclsQueryIconData(somSelf,
-                                                               pIconInfo));
+    */
+
+    return M_XWPSound_parent_M_WPSound_wpclsQueryIconData(somSelf,
+                                                          pIconInfo);
 }
 

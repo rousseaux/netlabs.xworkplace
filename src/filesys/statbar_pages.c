@@ -659,8 +659,7 @@ VOID stbStatusBar2InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
             if (psbpd->pSBClassObjectSelected)
                 psbpd->pSBClassObjectSelected = NULL;
 
-            if (psbpd->hwndKeysMenu)
-                WinDestroyWindow(psbpd->hwndKeysMenu),
+            winhDestroyWindow(&psbpd->hwndKeysMenu),
 
             free(psbpd);
 
@@ -841,8 +840,7 @@ STATIC MRESULT CreateKeysMenu(PSTATUSBARPAGEDATA psbpd,
 {
     HPOINTER hptrOld = winhSetWaitPointer();
 
-    if (psbpd->hwndKeysMenu)
-        WinDestroyWindow(psbpd->hwndKeysMenu);
+    winhDestroyWindow(&psbpd->hwndKeysMenu);
 
     // different button or first call:
     // build menu then

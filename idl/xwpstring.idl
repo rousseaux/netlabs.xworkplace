@@ -183,9 +183,7 @@ interface M_XWPString : M_WPAbstract
 
     wpclsQueryIconData: override;
 
-    wpclsQuerySettingsPageSize: override;
-
-    wpclsCreateDefaultTemplates: override;
+    //# wpclsCreateDefaultTemplates: override;  removed V1.0.1 (2002-12-11) [umoeller]
   };
 #endif /* __SOMIDL__ */
 };

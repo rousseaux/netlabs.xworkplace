@@ -1246,8 +1246,11 @@ STATIC VOID _Optlink fntFindFolder(PTHREADINFO ptiMyself)
         WinDispatchMsg(ptiMyself->hab, &qmsg);
                     // loop until WM_QUIT
 
-    WinDestroyWindow(G_hwndFindFolder);
-    G_hwndFindFolder = NULLHANDLE;
+    if (G_hwndFindFolder)
+    {
+        WinDestroyWindow(G_hwndFindFolder);
+        G_hwndFindFolder = NULLHANDLE;
+    }
 }
 
 /* ******************************************************************

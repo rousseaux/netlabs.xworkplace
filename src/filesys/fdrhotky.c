@@ -1189,186 +1189,178 @@ STATIC VOID EditHotkeyRecord(PHOTKEYRECORD pRec,
                              BOOL fInsert)
 {
     HWND        hwndDlg;
-    PDLGHITEM   paNew;
 
-    if (!cmnLoadDialogStrings(dlgAddHotkey,
-                              ARRAYITEMCOUNT(dlgAddHotkey),
-                              &paNew))
+    if (!dlghCreateDlg(&hwndDlg,
+                       pnbp->hwndDlgPage,
+                       FCF_FIXED_DLG,
+                       fnwpEditHotkeyRecord,
+                       cmnGetString(fInsert
+                                        ? ID_XSDI_HOTKEY_ADDTITLE
+                                        : ID_XSDI_HOTKEY_EDITTITLE),
+                       dlgAddHotkey,
+                       ARRAYITEMCOUNT(dlgAddHotkey),
+                       NULL,
+                       cmnQueryDefaultFont()))
     {
-        if (!dlghCreateDlg(&hwndDlg,
-                           pnbp->hwndDlgPage,
-                           FCF_FIXED_DLG,
-                           fnwpEditHotkeyRecord,
-                           cmnGetString(fInsert
-                                            ? ID_XSDI_HOTKEY_ADDTITLE
-                                            : ID_XSDI_HOTKEY_EDITTITLE),
-                           paNew,
-                           ARRAYITEMCOUNT(dlgAddHotkey),
-                           NULL,
-                           cmnQueryDefaultFont()))
-        {
-            ULONG ul;
-            HWND  hwndItem = WinWindowFromID(hwndDlg, ID_XSDI_HOTKEY_HOTKEY_EF);
-            SUBCLHOTKEYEF shef;
-            USHORT usOldFlags, usOldKey;
+        ULONG ul;
+        HWND  hwndItem = WinWindowFromID(hwndDlg, ID_XSDI_HOTKEY_HOTKEY_EF);
+        SUBCLHOTKEYEF shef;
+        USHORT usOldFlags, usOldKey;
 
-            winhCenterWindow(hwndDlg);
+        winhCenterWindow(hwndDlg);
 
-            // filling in the key field
-            memset(&shef, 0, sizeof(shef));
-            WinSetWindowPtr(hwndItem, QWL_USER, &shef);
-            shef.pfnwpOrig = WinSubclassWindow(hwndItem, fnwpFolderHotkeyEntryField);
+        // filling in the key field
+        memset(&shef, 0, sizeof(shef));
+        WinSetWindowPtr(hwndItem, QWL_USER, &shef);
+        shef.pfnwpOrig = WinSubclassWindow(hwndItem, fnwpFolderHotkeyEntryField);
 
-            shef.hwndSet = WinWindowFromID(pnbp->hwndDlgPage, DID_OK);
-            shef.hwndClear = WinWindowFromID(pnbp->hwndDlgPage, DID_CANCEL);
-            usOldFlags = shef.usFlags = pRec->usFlags;
-            usOldKey = shef.usKeyCode = pRec->usKey;
+        shef.hwndSet = WinWindowFromID(pnbp->hwndDlgPage, DID_OK);
+        shef.hwndClear = WinWindowFromID(pnbp->hwndDlgPage, DID_CANCEL);
+        usOldFlags = shef.usFlags = pRec->usFlags;
+        usOldKey = shef.usKeyCode = pRec->usKey;
 
-            WinSetWindowText(hwndItem, pRec->pcszKeyName);
+        WinSetWindowText(hwndItem, pRec->pcszKeyName);
 
 #ifdef ACTIONDROP
-            // filling the possible actions (just Command currently)
-            hwndItem = WinWindowFromID(hwndDlg, ID_XSDI_HOTKEY_ACTION_DROP);
-            WinInsertLboxItem(hwndItem,
-                              0,
-                              "Command"); // @@todo localize
-            WinSendMsg(hwndItem, LM_SELECTITEM, MPFROMSHORT(0), MPFROMSHORT(TRUE));
+        // filling the possible actions (just Command currently)
+        hwndItem = WinWindowFromID(hwndDlg, ID_XSDI_HOTKEY_ACTION_DROP);
+        WinInsertLboxItem(hwndItem,
+                          0,
+                          "Command"); // @@todo localize
+        WinSendMsg(hwndItem, LM_SELECTITEM, MPFROMSHORT(0), MPFROMSHORT(TRUE));
 #endif
 
-            hwndItem = WinWindowFromID(hwndDlg, ID_XSDI_HOTKEY_PARAM_DROP);
+        hwndItem = WinWindowFromID(hwndDlg, ID_XSDI_HOTKEY_PARAM_DROP);
+        for (ul = 0;
+             ul < FLDRHOTKEYCOUNT;
+             ul++)
+        {
+            if (    G_szLBEntries[ul]
+                 && (    (G_fIsWarp4)
+                      || (!G_aDescriptions[ul].bWarp4)
+                    )
+               )
+            {
+                WinInsertLboxItem(hwndItem,
+                                  LIT_SORTASCENDING,
+                                  G_szLBEntries[ul]);
+            }
+        }
+        WinSetWindowText(hwndItem, pRec->pcszParameters);
+
+        if (WinProcessDlg(hwndDlg) == DID_OK)
+        {
+            CHAR szCommand[MAXLBENTRYLENGTH];
+            BOOL fAbort = FALSE;
+
+            // OK pressed:
+            pRec->usFlags = shef.usFlags;
+            pRec->usKey = shef.usKeyCode;
+            WinQueryWindowText(hwndItem, sizeof(szCommand), szCommand);
+
+            // getting the parameter value
             for (ul = 0;
                  ul < FLDRHOTKEYCOUNT;
                  ul++)
             {
-                if (    G_szLBEntries[ul]
-                     && (    (G_fIsWarp4)
-                          || (!G_aDescriptions[ul].bWarp4)
+                if (!strcmp(szCommand, G_szLBEntries[ul]))
+                {
+                    pRec->ulCommand = G_aDescriptions[ul].usPostCommand;
+                    break;
+                }
+            }
+
+            // checking for duplicate key code
+            for (ul = 0;
+                 ul < FLDRHOTKEYCOUNT;
+                 ul++)
+            {
+                if (G_FolderHotkeys[ul].usCommand == 0)
+                    break;
+                if (    (G_FolderHotkeys[ul].usKeyCode == pRec->usKey)
+                     && (G_FolderHotkeys[ul].usFlags == pRec->usFlags)
+                     && (    (fInsert)
+                          || (pRec->usKey != usOldKey)
+                          || (pRec->usFlags != usOldFlags)
+                              // ignore same hotkey if editing
                         )
                    )
                 {
-                    WinInsertLboxItem(hwndItem,
-                                      LIT_SORTASCENDING,
-                                      G_szLBEntries[ul]);
-                }
-            }
-            WinSetWindowText(hwndItem, pRec->pcszParameters);
-
-            if (WinProcessDlg(hwndDlg) == DID_OK)
-            {
-                CHAR szCommand[MAXLBENTRYLENGTH];
-                BOOL fAbort = FALSE;
-
-                // OK pressed:
-                pRec->usFlags = shef.usFlags;
-                pRec->usKey = shef.usKeyCode;
-                WinQueryWindowText(hwndItem, sizeof(szCommand), szCommand);
-
-                // getting the parameter value
-                for (ul = 0;
-                     ul < FLDRHOTKEYCOUNT;
-                     ul++)
-                {
-                    if (!strcmp(szCommand, G_szLBEntries[ul]))
+                    // found a duplicate hotkey
+                    if (cmnErrorMsgBox(pnbp->hwndDlgPage,
+                                       0,
+                                       255,
+                                       MB_YESNO|MB_DEFBUTTON2,
+                                       TRUE) == MBID_NO)
                     {
-                        pRec->ulCommand = G_aDescriptions[ul].usPostCommand;
-                        break;
+                        // abort
+                        fAbort = TRUE;
                     }
-                }
-
-                // checking for duplicate key code
-                for (ul = 0;
-                     ul < FLDRHOTKEYCOUNT;
-                     ul++)
-                {
-                    if (G_FolderHotkeys[ul].usCommand == 0)
-                        break;
-                    if (    (G_FolderHotkeys[ul].usKeyCode == pRec->usKey)
-                         && (G_FolderHotkeys[ul].usFlags == pRec->usFlags)
-                         && (    (fInsert)
-                              || (pRec->usKey != usOldKey)
-                              || (pRec->usFlags != usOldFlags)
-                                  // ignore same hotkey if editing
-                            )
-                       )
-                    {
-                        // found a duplicate hotkey
-                        if (cmnErrorMsgBox(pnbp->hwndDlgPage,
-                                           0,
-                                           255,
-                                           MB_YESNO|MB_DEFBUTTON2,
-                                           TRUE) == MBID_NO)
-                        {
-                            // abort
-                            fAbort = TRUE;
-                        }
-                        else
-                        {
-                            PHOTKEYRECORD pRec2 = NULL;
-                            USHORT        usCmd = CMA_FIRST;
-                            BOOL          fCont = TRUE;
-                            USHORT        usCurrent = 0;
-
-                            // remove existing entry
-                            do
-                            {
-                                pRec2 = (PHOTKEYRECORD)WinSendMsg(hwndCnr,
-                                                                  CM_QUERYRECORD,
-                                                                  pRec2, // ignored on first call
-                                                                  MPFROM2SHORT(usCmd,     // CMA_FIRST or CMA_NEXT
-                                                                               CMA_ITEMORDER));
-                                usCmd = CMA_NEXT;
-
-                                if ((pRec2) && ((ULONG)pRec2 != -1))
-                                {
-                                    if (usCurrent == ul)
-                                    {
-                                        WinSendMsg(hwndCnr,
-                                                   CM_REMOVERECORD,
-                                                   (MPARAM)&pRec2,
-                                                   MPFROM2SHORT(1,
-                                                                CMA_FREE | CMA_INVALIDATE));
-                                        fCont = FALSE;
-                                    }
-                                }
-                                else
-                                    fCont = FALSE;
-
-                                usCurrent++;
-                            } while (fCont);
-                        }
-                        break;
-                    }
-                }
-
-                if (!fAbort)
-                {
-                    if (fInsert)
-                        AddHotkeyRecord(hwndCnr,
-                                        shef.usKeyCode,
-                                        shef.usFlags,
-                                        pRec->ulCommand,
-                                        TRUE);          // invalidate
                     else
                     {
-                        // pRec is already in container
-                        AdjustHotkeyRecord(pRec);
+                        PHOTKEYRECORD pRec2 = NULL;
+                        USHORT        usCmd = CMA_FIRST;
+                        BOOL          fCont = TRUE;
+                        USHORT        usCurrent = 0;
 
-                        // invalidate container to refresh view
-                        WinSendMsg(hwndCnr,
-                                   CM_INVALIDATERECORD,
-                                   (MPARAM)&pRec,
-                                   MPFROM2SHORT(1,
-                                                CMA_TEXTCHANGED));
+                        // remove existing entry
+                        do
+                        {
+                            pRec2 = (PHOTKEYRECORD)WinSendMsg(hwndCnr,
+                                                              CM_QUERYRECORD,
+                                                              pRec2, // ignored on first call
+                                                              MPFROM2SHORT(usCmd,     // CMA_FIRST or CMA_NEXT
+                                                                           CMA_ITEMORDER));
+                            usCmd = CMA_NEXT;
+
+                            if ((pRec2) && ((ULONG)pRec2 != -1))
+                            {
+                                if (usCurrent == ul)
+                                {
+                                    WinSendMsg(hwndCnr,
+                                               CM_REMOVERECORD,
+                                               (MPARAM)&pRec2,
+                                               MPFROM2SHORT(1,
+                                                            CMA_FREE | CMA_INVALIDATE));
+                                    fCont = FALSE;
+                                }
+                            }
+                            else
+                                fCont = FALSE;
+
+                            usCurrent++;
+                        } while (fCont);
                     }
-
-                    fdrSaveFldrHotkeys(hwndCnr);
+                    break;
                 }
             }
 
-            WinDestroyWindow(hwndDlg);
+            if (!fAbort)
+            {
+                if (fInsert)
+                    AddHotkeyRecord(hwndCnr,
+                                    shef.usKeyCode,
+                                    shef.usFlags,
+                                    pRec->ulCommand,
+                                    TRUE);          // invalidate
+                else
+                {
+                    // pRec is already in container
+                    AdjustHotkeyRecord(pRec);
+
+                    // invalidate container to refresh view
+                    WinSendMsg(hwndCnr,
+                               CM_INVALIDATERECORD,
+                               (MPARAM)&pRec,
+                               MPFROM2SHORT(1,
+                                            CMA_TEXTCHANGED));
+                }
+
+                fdrSaveFldrHotkeys(hwndCnr);
+            }
         }
 
-        free(paNew);
+        winhDestroyWindow(&hwndDlg);
     }
 }
 

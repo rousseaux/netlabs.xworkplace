@@ -979,7 +979,7 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
             case 0:
                 pcfi->flCompare   = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
                 pcfi->flData            |= CFA_STRING | CFA_LEFT;
-                pcfi->pTitleData        = cmnGetString(ID_XTSI_ORIGFOLDER);
+                pcfi->pTitleData        = (PSZ)cmnGetString(ID_XTSI_ORIGFOLDER);
                 pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, pszDeletedFrom));
                 pcfi->ulLenFieldData    = sizeof(PSZ);
                 pcfi->DefaultComparison = CMP_GREATER;
@@ -993,7 +993,7 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
                 pcfi->pfnSort           = (PFNCOMPARE)CompareTrashSize;
                                             // V0.9.12 (2001-05-18) [umoeller]
                 pcfi->flData            |= CFA_ULONG | CFA_INVISIBLE;
-                pcfi->pTitleData        = cmnGetString(ID_XTSI_SIZE);  // pszSize
+                pcfi->pTitleData        = (PSZ)cmnGetString(ID_XTSI_SIZE);  // pszSize
                 pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, ulSize));
                 pcfi->ulLenFieldData    = sizeof(ULONG);
                 pcfi->DefaultComparison = CMP_GREATER;
@@ -1004,7 +1004,7 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
             case 2:
                 pcfi->flCompare   = 0; // COMPARE_SUPPORTED | SORTBY_SUPPORTED;
                 pcfi->flData            |= CFA_STRING | CFA_RIGHT;
-                pcfi->pTitleData        = cmnGetString(ID_XTSI_SIZE);  // pszSize
+                pcfi->pTitleData        = (PSZ)cmnGetString(ID_XTSI_SIZE);  // pszSize
                 pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, pszSize));
                 pcfi->ulLenFieldData    = sizeof(PSZ);
                 pcfi->DefaultComparison = CMP_GREATER;
@@ -1014,7 +1014,7 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
             case 3:
                 pcfi->flCompare         = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
                 pcfi->flData            |= CFA_STRING | CFA_LEFT;
-                pcfi->pTitleData        = cmnGetString(ID_XTSI_ORIGCLASS);  // pszOrigClass
+                pcfi->pTitleData        = (PSZ)cmnGetString(ID_XTSI_ORIGCLASS);  // pszOrigClass
                 pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, pszOriginalClass));
                 pcfi->ulLenFieldData    = sizeof(PSZ);
                 pcfi->DefaultComparison = CMP_GREATER;
@@ -1024,7 +1024,7 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
             case 4:
                 pcfi->flCompare   = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
                 pcfi->flData            |= CFA_DATE | CFA_RIGHT;
-                pcfi->pTitleData        = cmnGetString(ID_XTSI_DELDATE);  // pszDelDate
+                pcfi->pTitleData        = (PSZ)cmnGetString(ID_XTSI_DELDATE);  // pszDelDate
                 pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, cdateDeleted));
                 pcfi->ulLenFieldData    = sizeof(CDATE);
                 pcfi->DefaultComparison = CMP_GREATER;
@@ -1036,7 +1036,7 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
                                 // removed SORTBY_SUPPORTED because sort by date
                                 // takes time into account as well V0.9.12 (2001-05-20) [umoeller]
                 pcfi->flData            |= CFA_TIME | CFA_RIGHT;
-                pcfi->pTitleData        = cmnGetString(ID_XTSI_DELTIME);  // pszDelTime
+                pcfi->pTitleData        = (PSZ)cmnGetString(ID_XTSI_DELTIME);  // pszDelTime
                 pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, ctimeDeleted));
                 pcfi->ulLenFieldData    = sizeof(CTIME);
                 pcfi->DefaultComparison = CMP_GREATER;
@@ -1177,7 +1177,7 @@ SOM_Scope PSZ  SOMLINK xtroM_wpclsQueryTitle(M_XWPTrashObject *somSelf)
     /* M_XWPTrashObjectData *somThis = M_XWPTrashObjectGetData(somSelf); */
     M_XWPTrashObjectMethodDebug("M_XWPTrashObject","xtroM_wpclsQueryTitle");
 
-    return (cmnGetString(ID_XTSI_TRASHOBJECT)) ; // pszTrashObject
+    return (PSZ)cmnGetString(ID_XTSI_TRASHOBJECT);
 }
 
 /*

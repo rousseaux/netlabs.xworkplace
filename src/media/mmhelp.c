@@ -644,8 +644,7 @@ ULONG xmmCDCloseDevice(PXMMCDPLAYER *ppPlayer)
             pPlayer->aTocEntries = NULL;
             pPlayer->cTocEntries = 0;
 
-            if (pPlayer->hwndObject)
-                WinDestroyWindow(pPlayer->hwndObject);
+            winhDestroyWindow(&pPlayer->hwndObject);
 
             free(pPlayer);
             *ppPlayer = NULL;

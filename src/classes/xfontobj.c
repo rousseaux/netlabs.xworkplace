@@ -789,7 +789,7 @@ SOM_Scope void  SOMLINK fonoM_wpclsInitData(M_XWPFontObject *somSelf)
                 pcfi->flCompare   = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
                 pcfi->pfnCompare   = 0; // (PFNCOMPARE)fnCompareExtensions;
                 pcfi->flData            |= CFA_STRING | CFA_LEFT;
-                pcfi->pTitleData        = cmnGetString(ID_XSSI_FONTFILE);  // pszFontFile
+                pcfi->pTitleData        = (PSZ)cmnGetString(ID_XSSI_FONTFILE);  // pszFontFile
                 pcfi->offFieldData      = (ULONG)(FIELDOFFSET(FNTO_DETAILS, pszFontFile));
                 pcfi->ulLenFieldData    = sizeof(PSZ);
                 pcfi->DefaultComparison = CMP_GREATER;
@@ -800,7 +800,7 @@ SOM_Scope void  SOMLINK fonoM_wpclsInitData(M_XWPFontObject *somSelf)
                 pcfi->flCompare   = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
                 pcfi->pfnCompare   = 0; // (PFNCOMPARE)fnCompareExtensions;
                 pcfi->flData            |= CFA_STRING | CFA_LEFT;
-                pcfi->pTitleData        = cmnGetString(ID_XSSI_FONTFAMILY);  // pszFontFamily
+                pcfi->pTitleData        = (PSZ)cmnGetString(ID_XSSI_FONTFAMILY);  // pszFontFamily
                 pcfi->offFieldData      = (ULONG)(FIELDOFFSET(FNTO_DETAILS, pszFontFamily));
                 pcfi->ulLenFieldData    = sizeof(PSZ);
                 pcfi->DefaultComparison = CMP_GREATER;
@@ -811,7 +811,7 @@ SOM_Scope void  SOMLINK fonoM_wpclsInitData(M_XWPFontObject *somSelf)
                 pcfi->flCompare   = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
                 pcfi->pfnCompare   = 0; // (PFNCOMPARE)fnCompareExtensions;
                 pcfi->flData            |= CFA_STRING | CFA_LEFT;
-                pcfi->pTitleData        = cmnGetString(ID_XSSI_FONTERRORS);  // pszFontErrors
+                pcfi->pTitleData        = (PSZ)cmnGetString(ID_XSSI_FONTERRORS);  // pszFontErrors
                 pcfi->offFieldData      = (ULONG)(FIELDOFFSET(FNTO_DETAILS, pszFontFileError));
                 pcfi->ulLenFieldData    = sizeof(PSZ);
                 pcfi->DefaultComparison = CMP_GREATER;
@@ -934,7 +934,7 @@ SOM_Scope PSZ  SOMLINK fonoM_wpclsQueryTitle(M_XWPFontObject *somSelf)
     /* M_XWPFontObjectData *somThis = M_XWPFontObjectGetData(somSelf); */
     M_XWPFontObjectMethodDebug("M_XWPFontObject","fonoM_wpclsQueryTitle");
 
-    return cmnGetString(ID_XSSI_FONTOBJECT);
+    return (PSZ)cmnGetString(ID_XSSI_FONTOBJECT);
 }
 
 /*

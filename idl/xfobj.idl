@@ -32,6 +32,83 @@
                ÀÄÄ XFldObject
 */
 
+interface XWPObjList : SOMObject
+{
+    /*
+     * New instance methods for XWPObjList:
+     *
+     */
+
+    VOID SetKeys(in PSZ pszApp,
+                 in PSZ pszKey);
+
+    BOOL Load();
+
+    BOOL Write();
+
+    BOOL Append(in WPObject pobj);
+
+    ULONG Count();
+
+    BOOL IsIn(in WPObject pobj);
+
+    BOOL Remove(in WPObject pobj);
+
+    WPObject Enum(in WPObject pobj);
+
+#ifdef __SOMIDL__
+  implementation {
+
+    releaseorder: SetKeys,
+                  Load,
+                  Write,
+                  Append,
+                  Count,
+                  IsIn,
+                  Remove,
+                  Enum;
+
+    /*
+     * Class Modifiers:
+     *
+     */
+
+    externalprefix = xl_;
+    externalstem = xl;
+    majorversion = 1;
+    minorversion = 1;
+    filestem = xfobj;           //# specifies the filestem for sc-generated files
+    //# metaclass = M_XWPObjList;
+    dllname = "xfldr.dll";
+    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
+
+    /*
+     * Internal instance variables for XWPObjList:
+     *
+     */
+
+    BOOL    fLoaded;
+    PSZ     pszIniApp;
+    PSZ     pszIniKey;
+
+    PVOID   pvList;
+
+    /*
+     * SOMObject methods overridden by XWPObjList:
+     *
+     */
+
+    somDefaultInit: override;
+    somDestruct: override;
+
+#ifdef __PRIVATE__
+
+#endif
+
+  }; // implementation
+#endif /* __SOMIDL__ */
+};
+
 interface M_XFldObject;            // Forward Reference to XFldObject metaclass
 
 interface XFldObject : WPObject
@@ -122,6 +199,9 @@ interface XFldObject : WPObject
     BOOL xwpModifyFlags(in ULONG flFlags,
                         in ULONG flMask);
 
+    VOID xwpAddedToList(in XWPObjList pList);
+    VOID xwpRemovedFromList(in XWPObjList pList);
+
     BOOL xwpOwnerDrawIcon(in PMINIRECORDCORE pmrc,
                           in HPS hps,
                           in ULONG flOwnerDraw,
@@ -166,7 +246,10 @@ interface XFldObject : WPObject
                   xwpQueryHandle,
                   xwpQueryLocks,
                   xwpOwnerDrawIcon,
-                  xwpHandleSelfClose;
+                  xwpHandleSelfClose,
+                  xwpSetTitleOnly,
+                  xwpAddedToList,
+                  xwpRemovedFromList;
 
     /*
      * Class Modifiers:
@@ -215,6 +298,9 @@ interface XFldObject : WPObject
                                     // combined V0.9.20 (2002-07-25) [umoeller]
 
     PVOID       pvllWidgetNotifies; // really a PLINKLIST for xwpSetWidgetNotify
+
+    PVOID       pvllLists;          // a PLINKLIST of XWPObjList* objects that this
+                                    // object is currently stored in
 
     // ULONG       ulDefaultView;
                             // for xwpQueryRealDefaultView
@@ -344,11 +430,15 @@ interface M_XFldObject : M_WPObject
 
     BOOL xwpclsRemoveObjectHotkey(in HOBJECT hobj);
 
+    XWPObjList xwpclsCreateList(in PSZ pcszIniApp,
+                                in PSZ pcszIniKey);
+
 #ifdef __SOMIDL__
   implementation {
 
     releaseorder:
-                xwpclsRemoveObjectHotkey;
+                xwpclsRemoveObjectHotkey,
+                xwpclsCreateList;
 
     //# Class Modifiers
     externalprefix = xoM_;

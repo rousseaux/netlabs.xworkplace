@@ -113,8 +113,13 @@
 
 // roots of linked lists for XStartup folders
 // these hold plain WPObject pointers, no auto-free
+#if 1 // V1.0.1 (2002-12-11) [umoeller]
+static XWPObjList          *G_llSavedStartupFolders = NULL,
+                           *G_llStartupFolders = NULL;
+#else
 static OBJECTLIST          G_llSavedStartupFolders = {0};
 static OBJECTLIST          G_llStartupFolders = {0};
+#endif
 
 /* ******************************************************************
  *
@@ -166,11 +171,22 @@ SOM_Scope ULONG  SOMLINK xfstup_xwpSetXStartup(XFldStartup *somSelf,
     // XFldStartupData *somThis = XFldStartupGetData(somSelf);
     XFldStartupMethodDebug("XFldStartup","xfstup_xwpSetXStartup");
 
+#if 1
+    return (    (G_llStartupFolders)
+             && (   (fInsert)
+                        ? _Append(G_llStartupFolders,
+                                  somSelf)
+                        : _Remove(G_llStartupFolders,
+                                  somSelf)
+                )
+           );
+#else
     return objAddToList(somSelf,
                         &G_llStartupFolders,
                         fInsert,
                         INIKEY_XSTARTUPFOLDERS,
                         0);
+#endif
 }
 
 /*
@@ -463,10 +479,15 @@ SOM_Scope XFldStartup*  SOMLINK xfstupM_xwpclsQueryXStartupFolder(M_XFldStartup 
     pDesktop = cmnQueryActiveDesktop();
     do
     {
-        pFolder = objEnumList(&G_llSavedStartupFolders,
-                              pFolder,
-                              INIKEY_XSAVEDSTARTUPFOLDERS,
-                              0);
+        #if 1       // V1.0.1 (2002-12-11) [umoeller]
+            pFolder = _Enum(G_llSavedStartupFolders,
+                            pFolder);
+        #else
+            pFolder = objEnumList(&G_llSavedStartupFolders,
+                                  pFolder,
+                                  INIKEY_XSAVEDSTARTUPFOLDERS,
+                                  0);
+        #endif
 
         // _Pmpf(("    got %s",
            //      (pFolder) ? _wpQueryTitle(pFolder) : "NULL"));
@@ -505,25 +526,34 @@ SOM_Scope void  SOMLINK xfstupM_wpclsInitData(M_XFldStartup *somSelf)
         // first call:
 
         // initialize linked lists
-        lstInit(&G_llStartupFolders.ll, FALSE);    // no auto-free
-        G_llStartupFolders.fLoaded = FALSE;
-        lstInit(&G_llSavedStartupFolders.ll, FALSE);    // no auto-free
-        G_llSavedStartupFolders.fLoaded = FALSE;
+        #if 1       // V1.0.1 (2002-12-11) [umoeller]
+            G_llStartupFolders = _xwpclsCreateList(_XFldObject,
+                                                   (PSZ)INIAPP_XWORKPLACE,
+                                                   (PSZ)INIKEY_XSTARTUPFOLDERS);
+            G_llSavedStartupFolders = _xwpclsCreateList(_XFldObject,
+                                                        (PSZ)INIAPP_XWORKPLACE,
+                                                        (PSZ)INIKEY_XSAVEDSTARTUPFOLDERS);
+        #else
+            lstInit(&G_llStartupFolders.ll, FALSE);    // no auto-free
+            G_llStartupFolders.fLoaded = FALSE;
+            lstInit(&G_llSavedStartupFolders.ll, FALSE);    // no auto-free
+            G_llSavedStartupFolders.fLoaded = FALSE;
+        #endif
 
         // copy INI setting
-        brc = PrfQueryProfileSize(HINI_USERPROFILE,
-                                  (PSZ)INIAPP_XWORKPLACE,
-                                  (PSZ)INIKEY_XSTARTUPFOLDERS,
-                                  &ulSize);
-        if (   brc
-            && ((pszHandles = malloc(ulSize)) != NULL)
+        if (    (brc = PrfQueryProfileSize(HINI_USERPROFILE,
+                                           (PSZ)INIAPP_XWORKPLACE,
+                                           (PSZ)INIKEY_XSTARTUPFOLDERS,
+                                           &ulSize))
+             && (pszHandles = malloc(ulSize))
            )
         {
-            brc = PrfQueryProfileString(HINI_USERPROFILE,
-                                        (PSZ)INIAPP_XWORKPLACE,
-                                        (PSZ)INIKEY_XSTARTUPFOLDERS,
-                                        "", pszHandles, ulSize);
-            if (brc)
+            if (brc = PrfQueryProfileString(HINI_USERPROFILE,
+                                            (PSZ)INIAPP_XWORKPLACE,
+                                            (PSZ)INIKEY_XSTARTUPFOLDERS,
+                                            "",
+                                            pszHandles,
+                                            ulSize))
                 PrfWriteProfileString(HINI_USERPROFILE,
                                       (PSZ)INIAPP_XWORKPLACE,
                                       (PSZ)INIKEY_XSAVEDSTARTUPFOLDERS,
@@ -551,7 +581,7 @@ SOM_Scope PSZ  SOMLINK xfstupM_wpclsQueryTitle(M_XFldStartup *somSelf)
     M_XFldStartupMethodDebug("M_XFldStartup","xfstupM_wpclsQueryTitle");
 
     // return ("XWorkplace Startup");
-    return cmnGetString(ID_XFSI_XWPSTARTUPFDR);
+    return (PSZ)cmnGetString(ID_XFSI_XWPSTARTUPFDR);
 }
 
 /*
@@ -728,7 +758,7 @@ SOM_Scope PSZ  SOMLINK xfshutM_wpclsQueryTitle(M_XFldShutdown *somSelf)
     /* M_XFldShutdownData *somThis = M_XFldShutdownGetData(somSelf); */
     M_XFldShutdownMethodDebug("M_XFldShutdown","xfshutM_wpclsQueryTitle");
 
-    return cmnGetString(ID_XFSI_XWPSHUTDOWNFDR);
+    return (PSZ)cmnGetString(ID_XFSI_XWPSHUTDOWNFDR);
                 // V1.0.0 (2002-08-31) [umoeller]
 }
 

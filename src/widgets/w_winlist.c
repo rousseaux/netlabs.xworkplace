@@ -1860,7 +1860,10 @@ STATIC VOID WwgtDestroy(HWND hwnd)
                           NULL);
 
         if (pPrivate->hwndButtonContextMenu)
+        {
             WinDestroyWindow(pPrivate->hwndButtonContextMenu);
+            pPrivate->hwndButtonContextMenu = NULLHANDLE;
+        }
 
         plstClear(&pPrivate->llWinList);      // auto-free
 

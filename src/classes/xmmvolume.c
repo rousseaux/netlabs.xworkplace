@@ -462,7 +462,7 @@ SOM_Scope PSZ  SOMLINK volM_wpclsQueryTitle(M_XMMVolume *somSelf)
     /* M_XMMVolumeData *somThis = M_XMMVolumeGetData(somSelf); */
     M_XMMVolumeMethodDebug("M_XMMVolume","volM_wpclsQueryTitle");
 
-    return cmnGetString(ID_XSSI_VOLUME);
+    return (PSZ)cmnGetString(ID_XSSI_VOLUME);
 }
 
 /*

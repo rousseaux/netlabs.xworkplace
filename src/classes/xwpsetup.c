@@ -146,7 +146,7 @@ SOM_Scope ULONG  SOMLINK xwset_wpQueryDefaultView(XWPSetup *somSelf)
 {
     XWPSetupMethodDebug("XWPSetup","xwset_wpQueryDefaultView");
 
-    return (OPEN_SETTINGS);     // settings view is default
+    return OPEN_SETTINGS;
 }
 
 /*
@@ -274,7 +274,7 @@ SOM_Scope PSZ  SOMLINK xwsetM_wpclsQueryTitle(M_XWPSetup *somSelf)
     /* M_XWPSetupData *somThis = M_XWPSetupGetData(somSelf); */
     M_XWPSetupMethodDebug("M_XWPSetup","xwsetM_wpclsQueryTitle");
 
-    return ("XWorkplace Setup");
+    return "XWorkplace Setup";
 }
 
 /*
@@ -345,28 +345,7 @@ SOM_Scope ULONG  SOMLINK xwsetM_wpclsQueryIconData(M_XWPSetup *somSelf,
         pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
-    return (sizeof(ICONINFO));
+    return sizeof(ICONINFO);
 }
-
-/*
- *@@ wpclsQuerySettingsPageSize:
- *      this WPObject class method should return the
- *      size of the largest settings page in dialog
- *      units; if a settings notebook is initially
- *      opened, i.e. no window pos has been stored
- *      yet, the WPS will use this size, to avoid
- *      truncated settings pages.
- */
-
-SOM_Scope BOOL  SOMLINK xwsetM_wpclsQuerySettingsPageSize(M_XWPSetup *somSelf,
-                                                          PSIZEL pSizl)
-{
-    /* M_XWPSetupData *somThis = M_XWPSetupGetData(somSelf); */
-    M_XWPSetupMethodDebug("M_XWPSetup","xwsetM_wpclsQuerySettingsPageSize");
-
-    return (M_XWPSetup_parent_M_WPAbstract_wpclsQuerySettingsPageSize(somSelf,
-                                                                       pSizl));
-}
-
 
 

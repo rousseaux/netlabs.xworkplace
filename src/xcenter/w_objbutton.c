@@ -705,7 +705,7 @@ VOID EXPENTRY OwgtShowXButtonSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
                 xstrClear(&strSetup);
             }
 
-            WinDestroyWindow(hwndDlg);
+            winhDestroyWindow(&hwndDlg);
 
             OwgtClearSetup(&Setup);
         }
@@ -718,7 +718,7 @@ VOID EXPENTRY OwgtShowXButtonSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
                 free((PSZ)(*(aItems[ul].ppcsz)));
         }
 
-        WinDestroyWindow(hmenuTemp);
+        winhDestroyWindow(&hmenuTemp);
     }
 }
 
@@ -1477,15 +1477,14 @@ STATIC VOID OwgtMenuEnd(HWND hwnd, MPARAM mp2)
             pPrivate->bs.fPaintButtonSunk = FALSE;
             WinInvalidateRect(hwnd, NULL, FALSE);
 
-            WinDestroyWindow(pPrivate->hwndMenuMain);
-            pPrivate->hwndMenuMain = NULLHANDLE;
+            winhDestroyWindow(&pPrivate->hwndMenuMain);
         }
 
         if ((HWND)mp2 == pPrivate->hwndObjectPopup)
         {
             // object popup (copy of WPS context menu for object button):
-            WinDestroyWindow(pPrivate->hwndObjectPopup);
-            pPrivate->hwndObjectPopup = NULLHANDLE;
+            winhDestroyWindow(&pPrivate->hwndObjectPopup);
+
             // remove source emphasis
             WinInvalidateRect(pWidget->pGlobals->hwndClient, NULL, FALSE);
         }

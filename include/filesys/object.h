@@ -170,12 +170,16 @@
 
     #define OBJLIST_RUNNINGSTORED           0x00010000
     #define OBJLIST_CONFIGFOLDER            0x00020000
-#ifndef __NOFOLDERCONTENTS__
-    #define OBJLIST_FAVORITEFOLDER          0x00040000
+
+#if 0       // these flags removed V1.0.1 (2002-12-11) [umoeller]
+    #ifndef __NOFOLDERCONTENTS__
+        #define OBJLIST_FAVORITEFOLDER          0x00040000
+    #endif
+    #ifndef __NOQUICKOPEN__
+        #define OBJLIST_QUICKOPENFOLDER         0x00080000
+    #endif
 #endif
-#ifndef __NOQUICKOPEN__
-    #define OBJLIST_QUICKOPENFOLDER         0x00080000
-#endif
+
     #define OBJLIST_HANDLESCACHE            0x00100000 // V0.9.9 (2001-04-02) [umoeller]
     #define OBJLIST_DIRTYLIST               0x00200000 // V0.9.11 (2001-04-18) [umoeller]
     #define OBJLIST_QUERYAWAKEFSOBJECT      0x00400000 // V0.9.16 (2001-10-25) [umoeller]
@@ -258,7 +262,7 @@
      *
      ********************************************************************/
 
-    #ifdef LINKLIST_HEADER_INCLUDED
+    #if 0 // LINKLIST_HEADER_INCLUDED        V1.0.1 (2002-12-08) [umoeller]
 
         /*
          *@@ OBJECTLIST:

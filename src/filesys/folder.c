@@ -162,6 +162,7 @@ BOOL fdrHasShowAllInTreeView(WPFolder *somSelf)
  *@@added V0.9.9 (2001-04-04) [umoeller]
  *@@changed V0.9.12 (2001-05-20) [umoeller]: adjusted for new folder sorting
  *@@changed V1.0.0 (2002-08-24) [umoeller]: added OPEN=SPLITVIEW
+ *@@changed V1.0.1 (2002-12-11) [umoeller]: fixed erroneous WOM_UPDATEALLSTATUSBARS post
  */
 
 BOOL fdrSetup(WPFolder *somSelf,
@@ -308,11 +309,17 @@ BOOL fdrSetup(WPFolder *somSelf,
                 _bStatusBarInstance = STATUSBAR_ON;
             else if (!strnicmp(szValue, "DEFAULT", 7))
                 _bStatusBarInstance = STATUSBAR_DEFAULT;
+
+            // moved this code inside the brackets,
+            // this posted the msg no matter if the
+            // string was present V1.0.1 (2002-12-11) [umoeller]
+            PMPF_STATUSBARS(("posting WOM_UPDATEALLSTATUSBARS"));
+
+            xthrPostWorkerMsg(WOM_UPDATEALLSTATUSBARS,
+                              (MPARAM)1,  // show/hide flag
+                              MPNULL);
+            fChanged = TRUE;
         }
-        xthrPostWorkerMsg(WOM_UPDATEALLSTATUSBARS,
-                          (MPARAM)1,  // show/hide flag
-                          MPNULL);
-        fChanged = TRUE;
     }
 
 #ifndef __ALWAYSEXTSORT__
@@ -2029,7 +2036,7 @@ STATIC MRESULT EXPENTRY fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
         WriteDropDownToIni(WinWindowFromID(hwndDlg, ID_XFDI_SOME_ENTRYFIELD),
                            INIKEY_LAST10SELECTSOME);
 
-        WinDestroyWindow(hwndDlg);
+        winhDestroyWindow(&hwndDlg);
     }
 
     return mrc;
@@ -2141,7 +2148,6 @@ STATIC BOOL IsNotTreeView(HWND hwndFrame)
 VOID fdrShowSelectSome(HWND hwndFrame)
 {
     HWND hwndSelectSome;
-    PDLGHITEM paNew;
 
     // get the folder from the frame to produce the title V1.0.0 (2002-08-31) [umoeller]
     WPFolder *pFolder;
@@ -2157,27 +2163,20 @@ VOID fdrShowSelectSome(HWND hwndFrame)
         xstrcat(&strTitle, " - ", 0);
         xstrcat(&strTitle, cmnGetString(ID_XFDI_SELECTSOME_TITLE), 0);
 
-        if (!cmnLoadDialogStrings(G_dlgSelectSome,
-                                  ARRAYITEMCOUNT(G_dlgSelectSome),
-                                  &paNew))
+        if (!dlghCreateDlg(&hwndSelectSome,
+                           hwndFrame,         // owner
+                           FCF_FIXED_DLG,
+                           fnwpSelectSome,
+                           strTitle.psz,
+                           G_dlgSelectSome,
+                           ARRAYITEMCOUNT(G_dlgSelectSome),
+                           (PVOID)hwndFrame,    // dlg params
+                           cmnQueryDefaultFont()))
         {
-            if (!dlghCreateDlg(&hwndSelectSome,
-                               hwndFrame,         // owner
-                               FCF_FIXED_DLG,
-                               fnwpSelectSome,
-                               strTitle.psz,
-                               paNew,
-                               ARRAYITEMCOUNT(G_dlgSelectSome),
-                               (PVOID)hwndFrame,    // dlg params
-                               cmnQueryDefaultFont()))
-            {
-                winhPlaceBesides(hwndSelectSome,
-                                 WinWindowFromID(hwndFrame, FID_CLIENT),
-                                 PLF_SMART);
-                WinShowWindow(hwndSelectSome, TRUE);
-            }
-
-            free(paNew);        // was missing V0.9.19 (2002-06-18) [umoeller]
+            winhPlaceBesides(hwndSelectSome,
+                             WinWindowFromID(hwndFrame, FID_CLIENT),
+                             PLF_SMART);
+            WinShowWindow(hwndSelectSome, TRUE);
         }
 
         xstrClear(&strTitle);
@@ -2370,7 +2369,6 @@ ULONG ConfirmRename(HWND hwndOwner,
                 };
 
         HWND        hwndConfirm;
-        PDLGHITEM   paNew;
 
         cmnGetMessage(apcsz, 2,
                       pstrMsg,
@@ -2382,45 +2380,38 @@ ULONG ConfirmRename(HWND hwndOwner,
         IconObject.pcszText = (PCSZ)_wpQueryIcon(pobj);
         IconTitle.pcszText = apcsz[0];
 
-        if (!cmnLoadDialogStrings(dlgConfirm,
-                                  ARRAYITEMCOUNT(dlgConfirm),
-                                  &paNew))
+        if (!dlghCreateDlg(&hwndConfirm,
+                           hwndOwner,
+                           FCF_FIXED_DLG,
+                           WinDefDlgProc,
+                           pcszDlgTitle,
+                           dlgConfirm,
+                           ARRAYITEMCOUNT(dlgConfirm),
+                           NULL,
+                           cmnQueryDefaultFont()))
         {
-            if (!dlghCreateDlg(&hwndConfirm,
-                               hwndOwner,
-                               FCF_FIXED_DLG,
-                               WinDefDlgProc,
-                               pcszDlgTitle,
-                               paNew,
-                               ARRAYITEMCOUNT(dlgConfirm),
-                               NULL,
-                               cmnQueryDefaultFont()))
+            winhCenterWindow(hwndConfirm);
+            switch (WinProcessDlg(hwndConfirm))
             {
-                winhCenterWindow(hwndConfirm);
-                switch (WinProcessDlg(hwndConfirm))
-                {
-                    case DID_YES:
-                        ulrc = MBID_YES;
-                    break;
+                case DID_YES:
+                    ulrc = MBID_YES;
+                break;
 
-                    case DID_YES2ALL:
-                        ulrc = MBID_YES;
-                        *pfYes2All = TRUE;
-                    break;
+                case DID_YES2ALL:
+                    ulrc = MBID_YES;
+                    *pfYes2All = TRUE;
+                break;
 
-                    case DID_NO:
-                        ulrc = MBID_NO;
-                    break;
+                case DID_NO:
+                    ulrc = MBID_NO;
+                break;
 
-                    case DID_CANCEL:
-                        ulrc = MBID_CANCEL;
-                    break;
-                }
-
-                WinDestroyWindow(hwndConfirm);
+                case DID_CANCEL:
+                    ulrc = MBID_CANCEL;
+                break;
             }
 
-            free(paNew);
+            winhDestroyWindow(&hwndConfirm);
         }
     }
 
@@ -2759,7 +2750,7 @@ STATIC MRESULT EXPENTRY fnwpBatchRename(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                            INIKEY_LAST10BATCHSOURCE);
         WriteDropDownToIni(WinWindowFromID(hwndDlg, ID_XFDI_BATCH_TARGETEF),
                            INIKEY_LAST10BATCHTARGET);
-        WinDestroyWindow(hwndDlg);
+        winhDestroyWindow(&hwndDlg);
     }
 
     return mrc;
@@ -2777,7 +2768,6 @@ STATIC MRESULT EXPENTRY fnwpBatchRename(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
 VOID fdrShowBatchRename(HWND hwndFrame)
 {
     HWND hwndSelectSome;
-    PDLGHITEM paNew;
 
     // get the folder from the frame to produce the title V1.0.0 (2002-08-31) [umoeller]
     WPFolder *pFolder;
@@ -2793,27 +2783,20 @@ VOID fdrShowBatchRename(HWND hwndFrame)
         xstrcat(&strTitle, " - ", 0);
         xstrcat(&strTitle, cmnGetString(ID_XFDI_BATCHRENAME_TITLE), 0);
 
-        if (!cmnLoadDialogStrings(G_dlgBatchRename,
-                                  ARRAYITEMCOUNT(G_dlgBatchRename),
-                                  &paNew))
+        if (!dlghCreateDlg(&hwndSelectSome,
+                           hwndFrame,         // owner
+                           FCF_FIXED_DLG,
+                           fnwpBatchRename,
+                           strTitle.psz,
+                           G_dlgBatchRename,
+                           ARRAYITEMCOUNT(G_dlgBatchRename),
+                           (PVOID)hwndFrame,    // dlg params
+                           cmnQueryDefaultFont()))
         {
-            if (!dlghCreateDlg(&hwndSelectSome,
-                               hwndFrame,         // owner
-                               FCF_FIXED_DLG,
-                               fnwpBatchRename,
-                               strTitle.psz,
-                               paNew,
-                               ARRAYITEMCOUNT(G_dlgBatchRename),
-                               (PVOID)hwndFrame,    // dlg params
-                               cmnQueryDefaultFont()))
-            {
-                winhPlaceBesides(hwndSelectSome,
-                                 WinWindowFromID(hwndFrame, FID_CLIENT),
-                                 PLF_SMART);
-                WinShowWindow(hwndSelectSome, TRUE);
-            }
-
-            free(paNew);
+            winhPlaceBesides(hwndSelectSome,
+                             WinWindowFromID(hwndFrame, FID_CLIENT),
+                             PLF_SMART);
+            WinShowWindow(hwndSelectSome, TRUE);
         }
 
         xstrClear(&strTitle);
@@ -3422,8 +3405,6 @@ STATIC WPDataFile* DoPaste(WPFolder *pFolder,
 VOID fdrShowPasteDlg(WPFolder *pFolder,
                      HWND hwndFrame)
 {
-    PDLGHITEM paNew;
-
     PPASTEDLGDATA pData;
 
     // if we have another open paste dialog,
@@ -3442,75 +3423,67 @@ VOID fdrShowPasteDlg(WPFolder *pFolder,
          && (pData = NEW(PASTEDLGDATA))
        )
     {
+        PSZ pszTitle = strdup(cmnGetString(ID_XFDI_PASTE_TITLE));
+        ULONG ulOfs = 0;
+
         pData->hwndFrame = hwndFrame;
         pData->pFolder = pFolder;
 
-        if (!cmnLoadDialogStrings(G_dlgPaste,
-                                  ARRAYITEMCOUNT(G_dlgPaste),
-                                  &paNew))
+        strhFindReplace(&pszTitle, &ulOfs, "%1", _wpQueryTitle(pFolder));
+
+        if (!dlghCreateDlg(&G_hwndOpenPasteDlg,
+                           hwndFrame,         // owner
+                           FCF_FIXED_DLG,
+                           fnwpPaste,
+                           pszTitle,
+                           G_dlgPaste,
+                           ARRAYITEMCOUNT(G_dlgPaste),
+                           (PVOID)pData,
+                           cmnQueryDefaultFont()))
         {
-            PSZ pszTitle = strdup(cmnGetString(ID_XFDI_PASTE_TITLE));
-            ULONG ulOfs = 0;
+            ULONG ulrc;
 
-            strhFindReplace(&pszTitle, &ulOfs, "%1", _wpQueryTitle(pFolder));
+            winhPlaceBesides(G_hwndOpenPasteDlg,
+                             WinWindowFromID(hwndFrame, FID_CLIENT),
+                             PLF_SMART);
+            ulrc = WinProcessDlg(G_hwndOpenPasteDlg);
 
-            if (!dlghCreateDlg(&G_hwndOpenPasteDlg,
-                               hwndFrame,         // owner
-                               FCF_FIXED_DLG,
-                               fnwpPaste,
-                               pszTitle,
-                               paNew,
-                               ARRAYITEMCOUNT(G_dlgPaste),
-                               (PVOID)pData,
-                               cmnQueryDefaultFont()))
+            WinSetClipbrdViewer(pData->hab,
+                                NULLHANDLE);
+
+            if (DID_OK == ulrc)
             {
-                ULONG ulrc;
+                CHAR    szFilename[CCHMAXPATH];
+                CHAR    szClass[100];
+                ULONG   ulFormat = PasteQuerySelectedFormat(pData);
 
-                winhPlaceBesides(G_hwndOpenPasteDlg,
-                                 WinWindowFromID(hwndFrame, FID_CLIENT),
-                                 PLF_SMART);
-                ulrc = WinProcessDlg(G_hwndOpenPasteDlg);
+                WinQueryWindowText(pData->hwndObjTitle, sizeof(szFilename), szFilename);
+                WinQueryWindowText(pData->hwndClass, sizeof(szClass), szClass);
 
-                WinSetClipbrdViewer(pData->hab,
-                                    NULLHANDLE);
-
-                if (DID_OK == ulrc)
+                if (DoPaste(pData->pFolder,
+                            szClass,
+                            szFilename,
+                            sizeof(szFilename),
+                            ulFormat))
                 {
-                    CHAR    szFilename[CCHMAXPATH];
-                    CHAR    szClass[100];
-                    ULONG   ulFormat = PasteQuerySelectedFormat(pData);
+                    AddEntryToDropDown(pData->hwndObjTitle, FALSE);
+                    WriteDropDownToIni(pData->hwndObjTitle,
+                                       INIKEY_LAST10PASTETITLES);
 
-                    WinQueryWindowText(pData->hwndObjTitle, sizeof(szFilename), szFilename);
-                    WinQueryWindowText(pData->hwndClass, sizeof(szClass), szClass);
+                    PrfWriteProfileData(HINI_USER,
+                                        (PSZ)INIAPP_XWORKPLACE,
+                                        (PSZ)INIKEY_LASTPASTEFORMAT,
+                                        &ulFormat,
+                                        sizeof(ulFormat));
 
-                    if (DoPaste(pData->pFolder,
-                                szClass,
-                                szFilename,
-                                sizeof(szFilename),
-                                ulFormat))
-                    {
-                        AddEntryToDropDown(pData->hwndObjTitle, FALSE);
-                        WriteDropDownToIni(pData->hwndObjTitle,
-                                           INIKEY_LAST10PASTETITLES);
-
-                        PrfWriteProfileData(HINI_USER,
-                                            (PSZ)INIAPP_XWORKPLACE,
-                                            (PSZ)INIKEY_LASTPASTEFORMAT,
-                                            &ulFormat,
-                                            sizeof(ulFormat));
-
-                        PrfWriteProfileString(HINI_USER,
-                                              (PSZ)INIAPP_XWORKPLACE,
-                                              (PSZ)INIKEY_LASTPASTECLASS,
-                                              szClass);
-                    }
+                    PrfWriteProfileString(HINI_USER,
+                                          (PSZ)INIAPP_XWORKPLACE,
+                                          (PSZ)INIKEY_LASTPASTECLASS,
+                                          szClass);
                 }
-
-                WinDestroyWindow(G_hwndOpenPasteDlg);
-                G_hwndOpenPasteDlg = NULLHANDLE;
             }
 
-            free(paNew);
+            winhDestroyWindow(&G_hwndOpenPasteDlg);
         }
 
         free(pData);
@@ -3850,7 +3823,7 @@ ULONG fdrStartFolderContents(WPFolder *pFolder,
                       (ULONG)&pf);
 
     winhSaveWindowPos(pf.hwndStatus, HINI_USER, INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP);
-    WinDestroyWindow(pf.hwndStatus);
+    winhDestroyWindow(&pf.hwndStatus);
 
     return (ulrc);
 }

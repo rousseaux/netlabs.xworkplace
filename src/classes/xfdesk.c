@@ -84,6 +84,7 @@
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
+#include "xfobj.ih"
 #include "xfdesk.ih"
 
 // XWorkplace implementation headers

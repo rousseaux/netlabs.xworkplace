@@ -90,6 +90,7 @@
     // common.c
     #pragma alloc_text(FREQ_CODE1, cmnQuerySetting)
     #pragma alloc_text(FREQ_CODE1, cmnGetString)
+    #pragma alloc_text(FREQ_CODE1, nlsGetString)
     #pragma alloc_text(FREQ_CODE1, cmnLockObject)
 
     /*
@@ -228,6 +229,20 @@
      *      the various flags below are taken into account. Note that
      *      many of these are from very old XFolder versions, and
      *      I cannot guarantee that these will compile any more.
+     *
+     *      Anyway, this setup allows us to finally enable certain
+     *      groups of Pmprintf output. In debug mode, there's a
+     *      new page in XWPSetup which allows you to set which output
+     *      should be enabled.
+     *
+     *      To add a new Pmprintf group, do the following:
+     *
+     *      1)  Add one block to the list below to define both
+     *          a new member in the DEBUGGINGFLAGS enumeration
+     *          and a corresponding PMPF_* macro.
+     *
+     *      2)  Add the new enum value to the G_aDebugDescrs
+     *          array in shared\xsetup.c.
      */
 
     // disable debugging if debug code is off
@@ -256,15 +271,15 @@
         {
     #endif
 
+
+
 /* general debugging */
 
         // the following will printf language code queries and
         // NLS DLL evaluation
     #ifndef DONTDEBUGATALL
             DBGSET_LANGCODES,
-                #define PMPF_LANGCODES(b) \
-                    if (G_aDebugs[DBGSET_LANGCODES]) \
-                        PmpfF(b)
+                #define PMPF_LANGCODES(b) { if (G_aDebugs[DBGSET_LANGCODES]) PmpfF(b); }
     #else
                 #define PMPF_LANGCODES(b)
     #endif
@@ -272,9 +287,7 @@
     #ifndef DONTDEBUGATALL
         // debug notebook.c callbacks
             DBGSET_NOTEBOOKS,
-                #define PMPF_NOTEBOOKS(b) \
-                    if (G_aDebugs[DBGSET_NOTEBOOKS]) \
-                        PmpfF(b)
+                #define PMPF_NOTEBOOKS(b) { if (G_aDebugs[DBGSET_NOTEBOOKS]) PmpfF(b); }
     #else
                 #define PMPF_NOTEBOOKS(b)
     #endif
@@ -286,9 +299,7 @@
         // debug wpRestoreData and such
         // WARNING: this produces LOTS of output
             DBGSET_RESTOREDATA,
-                #define PMPF_RESTOREDATA(b) \
-                    if (G_aDebugs[DBGSET_RESTOREDATA]) \
-                        PmpfF(b)
+                #define PMPF_RESTOREDATA(b) { if (G_aDebugs[DBGSET_RESTOREDATA]) PmpfF(b); }
     #else
                 #define PMPF_RESTOREDATA(b)
     #endif
@@ -296,9 +307,7 @@
     #ifndef DONTDEBUGATALL
         // debug icon replacements
             DBGSET_ICONREPLACEMENTS,
-                #define PMPF_ICONREPLACEMENTS(b) \
-                    if (G_aDebugs[DBGSET_ICONREPLACEMENTS]) \
-                        PmpfF(b)
+                #define PMPF_ICONREPLACEMENTS(b) { if (G_aDebugs[DBGSET_ICONREPLACEMENTS]) PmpfF(b); }
     #else
                 #define PMPF_ICONREPLACEMENTS(b)
     #endif
@@ -309,9 +318,7 @@
 
         // debug startup (folder, archives) processing
             DBGSET_STARTUP,
-                #define PMPF_STARTUP(b) \
-                    if (G_aDebugs[DBGSET_STARTUP]) \
-                        PmpfF(b)
+                #define PMPF_STARTUP(b) { if (G_aDebugs[DBGSET_STARTUP]) PmpfF(b); }
     #else
                 #define PMPF_STARTUP(b)
     #endif
@@ -322,9 +329,7 @@
         // "Shutdown..." from the desktop context menu. In addition,
         // you'll get some PMPRINTF info and beeps
             DBGSET_SHUTDOWN,
-                #define PMPF_SHUTDOWN(b) \
-                    if (G_aDebugs[DBGSET_SHUTDOWN]) \
-                        PmpfF(b)
+                #define PMPF_SHUTDOWN(b) { if (G_aDebugs[DBGSET_SHUTDOWN]) PmpfF(b); }
     #else
                 #define PMPF_SHUTDOWN(b)
     #endif
@@ -336,9 +341,7 @@
         // the following gives information on ordered folder content
         // (sorting by .ICONPOS etc.)
             DBGSET_ORDEREDLIST,
-                #define PMPF_ORDEREDLIST(b) \
-                    if (G_aDebugs[DBGSET_ORDEREDLIST]) \
-                        PmpfF(b)
+                #define PMPF_ORDEREDLIST(b) { if (G_aDebugs[DBGSET_ORDEREDLIST]) PmpfF(b); }
     #else
                 #define PMPF_ORDEREDLIST(b)
     #endif
@@ -346,9 +349,7 @@
     #ifndef DONTDEBUGATALL
         // the following will printf wpAddToContent
             DBGSET_CNRCONTENT,
-                #define PMPF_CNRCONTENT(b) \
-                    if (G_aDebugs[DBGSET_CNRCONTENT]) \
-                        PmpfF(b)
+                #define PMPF_CNRCONTENT(b) { if (G_aDebugs[DBGSET_CNRCONTENT]) PmpfF(b); }
     #else
                 #define PMPF_CNRCONTENT(b)
     #endif
@@ -356,9 +357,7 @@
     #ifndef DONTDEBUGATALL
         // the following displays internal status bar data
             DBGSET_STATUSBARS,
-                #define PMPF_STATUSBARS(b) \
-                    if (G_aDebugs[DBGSET_STATUSBARS]) \
-                        PmpfF(b)
+                #define PMPF_STATUSBARS(b) { if (G_aDebugs[DBGSET_STATUSBARS]) PmpfF(b); }
     #else
                 #define PMPF_STATUSBARS(b)
     #endif
@@ -366,9 +365,7 @@
     #ifndef DONTDEBUGATALL
         // the following will printf lots of sort info
             DBGSET_SORT,
-                #define PMPF_SORT(b) \
-                    if (G_aDebugs[DBGSET_SORT]) \
-                        PmpfF(b)
+                #define PMPF_SORT(b) { if (G_aDebugs[DBGSET_SORT]) PmpfF(b); }
     #else
                 #define PMPF_SORT(b)
     #endif
@@ -376,9 +373,7 @@
     #ifndef DONTDEBUGATALL
         // the following will printf folder/global hotkey info
             DBGSET_KEYS,
-                #define PMPF_KEYS(b) \
-                    if (G_aDebugs[DBGSET_KEYS]) \
-                        PmpfF(b)
+                #define PMPF_KEYS(b) { if (G_aDebugs[DBGSET_KEYS]) PmpfF(b); }
     #else
                 #define PMPF_KEYS(b)
     #endif
@@ -387,9 +382,7 @@
         // the following displays a lot of infos about menu
         // processing (msgs), esp. for folder content menus
             DBGSET_MENUS,
-                #define PMPF_MENUS(b) \
-                    if (G_aDebugs[DBGSET_MENUS]) \
-                        PmpfF(b)
+                #define PMPF_MENUS(b) { if (G_aDebugs[DBGSET_MENUS]) PmpfF(b); }
     #else
                 #define PMPF_MENUS(b)
     #endif
@@ -398,9 +391,7 @@
         // the following debugs turbo folders and fast
         // content trees
             DBGSET_TURBOFOLDERS,
-                #define PMPF_TURBOFOLDERS(b) \
-                    if (G_aDebugs[DBGSET_TURBOFOLDERS]) \
-                        PmpfF(b)
+                #define PMPF_TURBOFOLDERS(b) { if (G_aDebugs[DBGSET_TURBOFOLDERS]) PmpfF(b); }
     #else
                 #define PMPF_TURBOFOLDERS(b)
     #endif
@@ -409,9 +400,7 @@
         // the following debugs painting cnr backgrounds
         // (split view only presently)
             DBGSET_CNRBITMAPS,
-                #define PMPF_CNRBITMAPS(b) \
-                    if (G_aDebugs[DBGSET_CNRBITMAPS]) \
-                        PmpfF(b)
+                #define PMPF_CNRBITMAPS(b) { if (G_aDebugs[DBGSET_CNRBITMAPS]) PmpfF(b); }
     #else
                 #define PMPF_CNRBITMAPS(b)
     #endif
@@ -419,9 +408,7 @@
     #ifndef DONTDEBUGATALL
         // this debugs the split view populate thread
             DBGSET_SPLITVIEW,
-                #define PMPF_SPLITVIEW(b) \
-                    if (G_aDebugs[DBGSET_SPLITVIEW]) \
-                        PmpfF(b)
+                #define PMPF_SPLITVIEW(b) { if (G_aDebugs[DBGSET_SPLITVIEW]) PmpfF(b); }
     #else
                 #define PMPF_SPLITVIEW(b)
     #endif
@@ -429,9 +416,7 @@
     #ifndef DONTDEBUGATALL
         // this debugs rootfolders/disks
             DBGSET_DISK,
-                #define PMPF_DISK(b) \
-                    if (G_aDebugs[DBGSET_DISK]) \
-                        PmpfF(b)
+                #define PMPF_DISK(b) { if (G_aDebugs[DBGSET_DISK]) PmpfF(b); }
     #else
                 #define PMPF_DISK(b)
     #endif
@@ -442,9 +427,7 @@
 
         // debug title clash dialog
             DBGSET_TITLECLASH,
-                #define PMPF_TITLECLASH(b) \
-                    if (G_aDebugs[DBGSET_TITLECLASH]) \
-                        PmpfF(b)
+                #define PMPF_TITLECLASH(b) { if (G_aDebugs[DBGSET_TITLECLASH]) PmpfF(b); }
     #else
                 #define PMPF_TITLECLASH(b)
     #endif
@@ -452,9 +435,7 @@
     #ifndef DONTDEBUGATALL
         // debug data/program file associations/icons
             DBGSET_ASSOCS,
-                #define PMPF_ASSOCS(b) \
-                    if (G_aDebugs[DBGSET_ASSOCS]) \
-                        PmpfF(b)
+                #define PMPF_ASSOCS(b) { if (G_aDebugs[DBGSET_ASSOCS]) PmpfF(b); }
     #else
                 #define PMPF_ASSOCS(b)
     #endif
@@ -462,9 +443,7 @@
     #ifndef DONTDEBUGATALL
         // debug file operations engine
             DBGSET_FOPS,
-                #define PMPF_FOPS(b) \
-                    if (G_aDebugs[DBGSET_FOPS]) \
-                        PmpfF(b)
+                #define PMPF_FOPS(b) { if (G_aDebugs[DBGSET_FOPS]) PmpfF(b); }
     #else
                 #define PMPF_FOPS(b)
     #endif
@@ -472,9 +451,7 @@
     #ifndef DONTDEBUGATALL
         // debug trashcan
             DBGSET_TRASHCAN,
-                #define PMPF_TRASHCAN(b) \
-                    if (G_aDebugs[DBGSET_TRASHCAN]) \
-                        PmpfF(b)
+                #define PMPF_TRASHCAN(b) { if (G_aDebugs[DBGSET_TRASHCAN]) PmpfF(b); }
     #else
                 #define PMPF_TRASHCAN(b)
     #endif
@@ -484,9 +461,7 @@
 /* program objects */
         // debug program startup data
             DBGSET_PROGRAMSTART,
-                #define PMPF_PROGRAMSTART(b) \
-                    if (G_aDebugs[DBGSET_PROGRAMSTART]) \
-                        PmpfF(b)
+                #define PMPF_PROGRAMSTART(b) { if (G_aDebugs[DBGSET_PROGRAMSTART]) PmpfF(b); }
     #else
                 #define PMPF_PROGRAMSTART(b)
     #endif
@@ -498,9 +473,7 @@
         // debug window list (adds debug container to daemon)
             // #define DEBUG_WINDOWLIST
             DBGSET_WINDOWLIST,
-                #define PMPF_WINDOWLIST(b) \
-                    if (G_aDebugs[DBGSET_WINDOWLIST]) \
-                        PmpfF(b)
+                #define PMPF_WINDOWLIST(b) { if (G_aDebugs[DBGSET_WINDOWLIST]) PmpfF(b); }
     #else
                 #define PMPF_WINDOWLIST(b)
     #endif
@@ -511,11 +484,20 @@
 
         // debug new system sounds
             DBGSET_SOUNDS,
-                #define PMPF_SOUNDS(b) \
-                    if (G_aDebugs[DBGSET_SOUNDS]) \
-                        PmpfF(b)
+                #define PMPF_SOUNDS(b) { if (G_aDebugs[DBGSET_SOUNDS]) PmpfF(b); }
     #else
                 #define PMPF_SOUNDS(b)
+    #endif
+
+    #ifndef DONTDEBUGATALL
+
+/* misc */
+
+        // debug new XWPObjList class V1.0.1 (2002-12-11) [umoeller]
+            DBGSET_OBJLISTS,
+                #define PMPF_OBJLISTS(b) { if (G_aDebugs[DBGSET_OBJLISTS]) PmpfF(b); }
+    #else
+                #define PMPF_OBJLISTS(b)
     #endif
 
     #ifndef DONTDEBUGATALL

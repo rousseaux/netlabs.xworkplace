@@ -2384,7 +2384,7 @@ STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
     // In any of these cases, we need to clean up big time now.
 
     // close "main" window, but keep the status window for now
-    WinDestroyWindow(pShutdownData->SDConsts.hwndMain);
+    winhDestroyWindow(&pShutdownData->SDConsts.hwndMain);
 
     doshWriteLogEntry(LogFile,
            __FUNCTION__ ": Entering cleanup...");
@@ -2473,7 +2473,7 @@ STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
             doshWriteLogEntry(LogFile, "Preparing Desktop restart...");
 
             ctlStopAnimation(WinWindowFromID(pShutdownData->SDConsts.hwndShutdownStatus, ID_SDDI_ICON));
-            WinDestroyWindow(pShutdownData->SDConsts.hwndShutdownStatus);
+            winhDestroyWindow(&pShutdownData->SDConsts.hwndShutdownStatus);
             xsdFreeAnimation(&G_sdAnim);
 
             doshWriteLogEntry(LogFile, "Restarting WPS: Calling DosExit(), closing log.");
@@ -2514,7 +2514,7 @@ STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
     // moved this down, because we need a msg queue for restart Desktop
     // V0.9.3 (2000-04-26) [umoeller]
 
-    WinDestroyWindow(pShutdownData->SDConsts.hwndShutdownStatus);
+    winhDestroyWindow(&pShutdownData->SDConsts.hwndShutdownStatus);
 
     free(pShutdownData);        // V0.9.9 (2001-03-07) [umoeller]
 
@@ -2712,8 +2712,7 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
                 // thread determined that a session was closed
                 // manually, so we just do nothing...
 
-                WinDestroyWindow(pShutdownData->SDConsts.hwndVioDlg);
-                pShutdownData->SDConsts.hwndVioDlg = NULLHANDLE;
+                winhDestroyWindow(&pShutdownData->SDConsts.hwndVioDlg);
             } // end else (optAutoCloseVIO)
         }
 
@@ -3612,8 +3611,8 @@ STATIC VOID PowerOffAnim(HPS hpsScreen)
 VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData)
 {
     ULONG flShutdown = 0;
-    PSZ pszComplete = cmnGetString(ID_SDDI_COMPLETE);
-    PSZ pszSwitchOff = cmnGetString(ID_SDDI_SWITCHOFF);
+    PCSZ pcszComplete = cmnGetString(ID_SDDI_COMPLETE);
+    PCSZ pcszSwitchOff = cmnGetString(ID_SDDI_SWITCHOFF);
 
     HPS hpsScreen = WinGetScreenPS(HWND_DESKTOP);
 
@@ -3662,8 +3661,8 @@ VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData)
     // -- block all file access
     DosShutdown(0); // V0.9.16 (2002-02-03) [pr]: moved this down
     // -- update the message
-    WinSetDlgItemText(hwndCADMessage, ID_SDDI_PROGRESS1, pszComplete);
-    WinSetDlgItemText(hwndCADMessage, ID_SDDI_PROGRESS2, pszSwitchOff);
+    WinSetDlgItemText(hwndCADMessage, ID_SDDI_PROGRESS1, (PSZ)pcszComplete);
+    WinSetDlgItemText(hwndCADMessage, ID_SDDI_PROGRESS2, (PSZ)pcszSwitchOff);
     // -- and now loop forever!
     while (TRUE)
         DosSleep(10000);
@@ -3691,7 +3690,7 @@ VOID xsdFinishStandardReboot(PSHUTDOWNDATA pShutdownData)
     BOOL        fShowRebooting = TRUE;
     // load string resource before shutting down
     // V0.9.16 (2002-01-05) [umoeller]
-    PSZ         pszRebooting = cmnGetString(ID_SDSI_REBOOTING);
+    PCSZ        pcszRebooting = cmnGetString(ID_SDSI_REBOOTING);
     HPS         hpsScreen = WinGetScreenPS(HWND_DESKTOP);
 
 #ifndef __NOXSHUTDOWN__
@@ -3733,8 +3732,9 @@ VOID xsdFinishStandardReboot(PSHUTDOWNDATA pShutdownData)
     // say "Rebooting..." if we had no animation
     if (fShowRebooting)
     {
-        WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus, ID_SDDI_STATUS,
-                          pszRebooting) ; // pszSDRebooting
+        WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus,
+                          ID_SDDI_STATUS,
+                          (PSZ)pcszRebooting);
         DosSleep(500);
     }
 

@@ -1383,15 +1383,14 @@ VOID ftypFileTypesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
     {
         PFILETYPESPAGEDATA pftpd = (PFILETYPESPAGEDATA)pnbp->pUser;
 
-        WinDestroyWindow(pftpd->hmenuFileTypeSel);
-        WinDestroyWindow(pftpd->hmenuFileTypeNoSel);
-        WinDestroyWindow(pftpd->hmenuFileFilterSel);
-        WinDestroyWindow(pftpd->hmenuFileFilterNoSel);
-        WinDestroyWindow(pftpd->hmenuFileAssocSel);
-        WinDestroyWindow(pftpd->hmenuFileAssocNoSel);
+        winhDestroyWindow(&pftpd->hmenuFileTypeSel);
+        winhDestroyWindow(&pftpd->hmenuFileTypeNoSel);
+        winhDestroyWindow(&pftpd->hmenuFileFilterSel);
+        winhDestroyWindow(&pftpd->hmenuFileFilterNoSel);
+        winhDestroyWindow(&pftpd->hmenuFileAssocSel);
+        winhDestroyWindow(&pftpd->hmenuFileAssocNoSel);
 
-        if (pftpd->hwndWPSImportDlg)
-            WinDestroyWindow(pftpd->hwndWPSImportDlg);
+        winhDestroyWindow(&pftpd->hwndWPSImportDlg);
 
         ftypClearTypesList(pftpd->hwndTypesCnr,
                            &pftpd->llFileTypes);
@@ -1991,7 +1990,8 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                         }
                     }
                 }
-                WinDestroyWindow(hwndDlg);
+
+                winhDestroyWindow(&hwndDlg);
             }
 
         }
@@ -2170,7 +2170,8 @@ MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                     AddFilter2Cnr(pftpd, szNewFilter);
                     WriteXWPFilters2INI(pftpd);
                 }
-                WinDestroyWindow(hwndDlg);
+
+                winhDestroyWindow(&hwndDlg);
             }
         }
         break;
@@ -3037,7 +3038,7 @@ STATIC MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1
             switch ((ULONG)mp1)
             {
                 case SC_CLOSE:
-                    WinDestroyWindow(hwndDlg);
+                    winhDestroyWindow(&hwndDlg);
                     mrc = 0;
                 break;
 

@@ -893,7 +893,7 @@ SOM_Scope PSZ  SOMLINK cdpM_wpclsQueryTitle(M_XMMCDPlayer *somSelf)
     /* M_XMMCDPlayerData *somThis = M_XMMCDPlayerGetData(somSelf); */
     M_XMMCDPlayerMethodDebug("M_XMMCDPlayer","cdpM_wpclsQueryTitle");
 
-    return (cmnGetString(ID_XSSI_CDPLAYER)) ; // pszCDPlayer
+    return (PSZ)cmnGetString(ID_XSSI_CDPLAYER);
 }
 
 /*

@@ -1150,7 +1150,7 @@ STATIC VOID AdjustStickyRecord(PSTICKYRECORD pRec)
         break;
     }
 
-    pRec->pcszCriteria = cmnGetString(id);
+    pRec->pcszCriteria = (PSZ)cmnGetString(id);
 
     switch (pRec->ulFlags & SF_OPERATOR_MASK)
     {
@@ -1171,10 +1171,10 @@ STATIC VOID AdjustStickyRecord(PSTICKYRECORD pRec)
         break;
     }
 
-    pRec->pcszOperator = cmnGetString(id);
+    pRec->pcszOperator = (PSZ)cmnGetString(id);
 
     // only one attribute supported so far, SF_TITLE
-    pRec->pcszAttribute = cmnGetString(ID_SCDI_STICKY_TITLEATTRIBUTE);
+    pRec->pcszAttribute = (PSZ)cmnGetString(ID_SCDI_STICKY_TITLEATTRIBUTE);
 
     pRec->pcszValue = pRec->szSticky;
 }
@@ -1425,153 +1425,145 @@ STATIC VOID EditStickyRecord(PSTICKYRECORD pRec,
                              BOOL fInsert)
 {
     HWND        hwndDlg;
-    PDLGHITEM   paNew;
 
-    if (!cmnLoadDialogStrings(dlgAddSticky,
-                              ARRAYITEMCOUNT(dlgAddSticky),
-                              &paNew))
+    if (!dlghCreateDlg(&hwndDlg,
+                       pnbp->hwndDlgPage,
+                       FCF_FIXED_DLG,
+                       fnwpEditStickyRecord,
+                       cmnGetString(fInsert
+                                        ? ID_SCDI_STICKY_ADDTITLE
+                                        : ID_SCDI_STICKY_EDITTITLE),
+                       dlgAddSticky,
+                       ARRAYITEMCOUNT(dlgAddSticky),
+                       NULL,
+                       cmnQueryDefaultFont()))
     {
-        if (!dlghCreateDlg(&hwndDlg,
-                           pnbp->hwndDlgPage,
-                           FCF_FIXED_DLG,
-                           fnwpEditStickyRecord,
-                           cmnGetString(fInsert
-                                            ? ID_SCDI_STICKY_ADDTITLE
-                                            : ID_SCDI_STICKY_EDITTITLE),
-                           paNew,
-                           ARRAYITEMCOUNT(dlgAddSticky),
-                           NULL,
-                           cmnQueryDefaultFont()))
+        PSWBLOCK    pSwBlock;
+
+        winhCenterWindow(hwndDlg);
+
+        // get all the tasklist entries into a buffer
+        // V0.9.16 (2002-01-05) [umoeller]: now using winhQuerySwitchList
+        if (pSwBlock = winhQuerySwitchList(WinQueryAnchorBlock(pnbp->hwndDlgPage)))
         {
-            PSWBLOCK    pSwBlock;
+            ULONG ul;
+            HWND  hwndCombo = WinWindowFromID(hwndDlg, ID_SCDI_STICKY_ATTRIBUTE_DROP);
 
-            winhCenterWindow(hwndDlg);
+            // filling the possible attributes (just Title currently)
+            WinInsertLboxItem(hwndCombo,
+                              0,
+                              cmnGetString(ID_SCDI_STICKY_TITLEATTRIBUTE));
+            WinSendMsg(hwndCombo, LM_SELECTITEM, MPFROMSHORT(0), MPFROMSHORT(TRUE));
 
-            // get all the tasklist entries into a buffer
-            // V0.9.16 (2002-01-05) [umoeller]: now using winhQuerySwitchList
-            if (pSwBlock = winhQuerySwitchList(WinQueryAnchorBlock(pnbp->hwndDlgPage)))
+            // filling the possible operators
+            hwndCombo = WinWindowFromID(hwndDlg, ID_SCDI_STICKY_OPERATOR_DROP);
+            WinInsertLboxItem(hwndCombo, 0, cmnGetString(ID_SCDI_STICKY_CONTAINS));
+            WinInsertLboxItem(hwndCombo, 1, cmnGetString(ID_SCDI_STICKY_BEGINSWITH));
+            WinInsertLboxItem(hwndCombo, 2, cmnGetString(ID_SCDI_STICKY_ENDSWITH));
+            WinInsertLboxItem(hwndCombo, 3, cmnGetString(ID_SCDI_STICKY_EQUALS));
+            WinInsertLboxItem(hwndCombo, 4, cmnGetString(ID_SCDI_STICKY_MATCHES));
+
+            switch (pRec->ulFlags & SF_OPERATOR_MASK)
             {
-                ULONG ul;
-                HWND  hwndCombo = WinWindowFromID(hwndDlg, ID_SCDI_STICKY_ATTRIBUTE_DROP);
-
-                // filling the possible attributes (just Title currently)
-                WinInsertLboxItem(hwndCombo,
-                                  0,
-                                  cmnGetString(ID_SCDI_STICKY_TITLEATTRIBUTE));
-                WinSendMsg(hwndCombo, LM_SELECTITEM, MPFROMSHORT(0), MPFROMSHORT(TRUE));
-
-                // filling the possible operators
-                hwndCombo = WinWindowFromID(hwndDlg, ID_SCDI_STICKY_OPERATOR_DROP);
-                WinInsertLboxItem(hwndCombo, 0, cmnGetString(ID_SCDI_STICKY_CONTAINS));
-                WinInsertLboxItem(hwndCombo, 1, cmnGetString(ID_SCDI_STICKY_BEGINSWITH));
-                WinInsertLboxItem(hwndCombo, 2, cmnGetString(ID_SCDI_STICKY_ENDSWITH));
-                WinInsertLboxItem(hwndCombo, 3, cmnGetString(ID_SCDI_STICKY_EQUALS));
-                WinInsertLboxItem(hwndCombo, 4, cmnGetString(ID_SCDI_STICKY_MATCHES));
-
-                switch (pRec->ulFlags & SF_OPERATOR_MASK)
-                {
-                    case SF_CONTAINS:
-                        WinSendMsg(hwndCombo, LM_SELECTITEM, MPFROMSHORT(0), MPFROMSHORT(TRUE));
-                    break;
-                    case SF_BEGINSWITH:
-                        WinSendMsg(hwndCombo, LM_SELECTITEM, MPFROMSHORT(1), MPFROMSHORT(TRUE));
-                    break;
-                    case SF_ENDSWITH:
-                        WinSendMsg(hwndCombo, LM_SELECTITEM, MPFROMSHORT(2), MPFROMSHORT(TRUE));
-                    break;
-                    case SF_EQUALS:
-                        WinSendMsg(hwndCombo, LM_SELECTITEM, MPFROMSHORT(3), MPFROMSHORT(TRUE));
-                    break;
-                    case SF_MATCHES:
-                        WinSendMsg(hwndCombo, LM_SELECTITEM, MPFROMSHORT(4), MPFROMSHORT(TRUE));
-                    break;
-                }
-
-                // loop through all the tasklist entries
-                hwndCombo = WinWindowFromID(hwndDlg, ID_SCDI_STICKY_VALUE_DROP);
-                for (ul = 0;
-                     ul < pSwBlock->cswentry;
-                     ul++)
-                {
-                    PSWCNTRL pCtrl = &pSwBlock->aswentry[ul].swctl;
-                    if (    (strlen(pCtrl->szSwtitle))
-                         && ((pCtrl->uchVisibility & SWL_VISIBLE) != 0) // V0.9.11 (2001-04-25) [umoeller]
-                       )
-                        WinInsertLboxItem(hwndCombo,
-                                          LIT_SORTASCENDING,
-                                          pCtrl->szSwtitle);
-                }
-                WinSetWindowText(hwndCombo, pRec->szSticky);
-
-                WinCheckButton(hwndDlg,
-                               ID_SCDI_STICKY_RADIO_INCLUDE,
-                               (pRec->ulFlags & SF_CRITERIA_MASK) == SF_INCLUDE);
-                WinCheckButton(hwndDlg,
-                               ID_SCDI_STICKY_RADIO_EXCLUDE,
-                               (pRec->ulFlags & SF_CRITERIA_MASK) == SF_EXCLUDE);
-
-                if (WinProcessDlg(hwndDlg) == DID_OK)
-                {
-                    // OK pressed:
-                    PSZ pszSticky;
-                    if (pszSticky = winhQueryWindowText(hwndCombo))
-                    {
-                        ULONG ulFlags = 0;
-
-                        // build flags from settings
-                        if (WinQueryButtonCheckstate(hwndDlg,
-                                                     ID_SCDI_STICKY_RADIO_EXCLUDE))
-                            ulFlags |= SF_EXCLUDE;
-                        hwndCombo = WinWindowFromID(hwndDlg, ID_SCDI_STICKY_OPERATOR_DROP);
-                        switch (WinQueryLboxSelectedItem(hwndCombo))
-                        {
-                            case 1:
-                                ulFlags |= SF_BEGINSWITH;
-                            break;
-                            case 2:
-                                ulFlags |= SF_ENDSWITH;
-                            break;
-                            case 3:
-                                ulFlags |= SF_EQUALS;
-                            break;
-                            case 4:
-                                ulFlags |= SF_MATCHES;
-                            break;
-                        }
-                        pRec->ulFlags = ulFlags;
-                        strhncpy0(pRec->szSticky, pszSticky, STICKYLEN);
-
-                        if (fInsert)
-                            AddStickyRecord(hwndCnr,
-                                            pszSticky,
-                                            ulFlags,
-                                            TRUE);          // invalidate
-                        else
-                        {
-                            // pRec is already in container
-                            AdjustStickyRecord(pRec);
-
-                            // invalidate container to refresh view
-                            WinSendMsg(hwndCnr,
-                                       CM_INVALIDATERECORD,
-                                       (MPARAM)&pRec,
-                                       MPFROM2SHORT(1,
-                                                    CMA_TEXTCHANGED));
-                        }
-
-                        SaveStickies(hwndCnr,
-                                     (PAGERCONFIG*)pnbp->pUser);
-                        free(pszSticky);
-                    }
-                }
-
-                free(pSwBlock);
+                case SF_CONTAINS:
+                    WinSendMsg(hwndCombo, LM_SELECTITEM, MPFROMSHORT(0), MPFROMSHORT(TRUE));
+                break;
+                case SF_BEGINSWITH:
+                    WinSendMsg(hwndCombo, LM_SELECTITEM, MPFROMSHORT(1), MPFROMSHORT(TRUE));
+                break;
+                case SF_ENDSWITH:
+                    WinSendMsg(hwndCombo, LM_SELECTITEM, MPFROMSHORT(2), MPFROMSHORT(TRUE));
+                break;
+                case SF_EQUALS:
+                    WinSendMsg(hwndCombo, LM_SELECTITEM, MPFROMSHORT(3), MPFROMSHORT(TRUE));
+                break;
+                case SF_MATCHES:
+                    WinSendMsg(hwndCombo, LM_SELECTITEM, MPFROMSHORT(4), MPFROMSHORT(TRUE));
+                break;
             }
 
-            WinDestroyWindow(hwndDlg);
+            // loop through all the tasklist entries
+            hwndCombo = WinWindowFromID(hwndDlg, ID_SCDI_STICKY_VALUE_DROP);
+            for (ul = 0;
+                 ul < pSwBlock->cswentry;
+                 ul++)
+            {
+                PSWCNTRL pCtrl = &pSwBlock->aswentry[ul].swctl;
+                if (    (strlen(pCtrl->szSwtitle))
+                     && ((pCtrl->uchVisibility & SWL_VISIBLE) != 0) // V0.9.11 (2001-04-25) [umoeller]
+                   )
+                    WinInsertLboxItem(hwndCombo,
+                                      LIT_SORTASCENDING,
+                                      pCtrl->szSwtitle);
+            }
+            WinSetWindowText(hwndCombo, pRec->szSticky);
+
+            WinCheckButton(hwndDlg,
+                           ID_SCDI_STICKY_RADIO_INCLUDE,
+                           (pRec->ulFlags & SF_CRITERIA_MASK) == SF_INCLUDE);
+            WinCheckButton(hwndDlg,
+                           ID_SCDI_STICKY_RADIO_EXCLUDE,
+                           (pRec->ulFlags & SF_CRITERIA_MASK) == SF_EXCLUDE);
+
+            if (WinProcessDlg(hwndDlg) == DID_OK)
+            {
+                // OK pressed:
+                PSZ pszSticky;
+                if (pszSticky = winhQueryWindowText(hwndCombo))
+                {
+                    ULONG ulFlags = 0;
+
+                    // build flags from settings
+                    if (WinQueryButtonCheckstate(hwndDlg,
+                                                 ID_SCDI_STICKY_RADIO_EXCLUDE))
+                        ulFlags |= SF_EXCLUDE;
+                    hwndCombo = WinWindowFromID(hwndDlg, ID_SCDI_STICKY_OPERATOR_DROP);
+                    switch (WinQueryLboxSelectedItem(hwndCombo))
+                    {
+                        case 1:
+                            ulFlags |= SF_BEGINSWITH;
+                        break;
+                        case 2:
+                            ulFlags |= SF_ENDSWITH;
+                        break;
+                        case 3:
+                            ulFlags |= SF_EQUALS;
+                        break;
+                        case 4:
+                            ulFlags |= SF_MATCHES;
+                        break;
+                    }
+                    pRec->ulFlags = ulFlags;
+                    strhncpy0(pRec->szSticky, pszSticky, STICKYLEN);
+
+                    if (fInsert)
+                        AddStickyRecord(hwndCnr,
+                                        pszSticky,
+                                        ulFlags,
+                                        TRUE);          // invalidate
+                    else
+                    {
+                        // pRec is already in container
+                        AdjustStickyRecord(pRec);
+
+                        // invalidate container to refresh view
+                        WinSendMsg(hwndCnr,
+                                   CM_INVALIDATERECORD,
+                                   (MPARAM)&pRec,
+                                   MPFROM2SHORT(1,
+                                                CMA_TEXTCHANGED));
+                    }
+
+                    SaveStickies(hwndCnr,
+                                 (PAGERCONFIG*)pnbp->pUser);
+                    free(pszSticky);
+                }
+            }
+
+            free(pSwBlock);
         }
 
-        free(paNew);
+        WinDestroyWindow(hwndDlg);
     }
 }
 

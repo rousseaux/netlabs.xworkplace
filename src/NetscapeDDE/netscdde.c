@@ -238,7 +238,7 @@ ULONG WinCenteredDlgBox(HWND hwndParent,
     {
         CenterWindow(hwndDlg);
         ulReply = WinProcessDlg(hwndDlg);
-        WinDestroyWindow(hwndDlg);
+        winhDestroyWindow(&hwndDlg);
     }
     else
         DisplayError("Cannot load dialog");
@@ -627,8 +627,7 @@ int main(int argc,
         }                           // end if (proceed)
 
         // clean up on the way out
-        if (G_hwndContacting)
-            WinDestroyWindow(G_hwndContacting);
+        winhDestroyWindow(&G_hwndContacting);
     }
 
     WinDestroyMsgQueue(hmq);
@@ -963,8 +962,8 @@ MRESULT EXPENTRY fnwpMain(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
 
                             // destroy "Contacting", create "Starting Netscape"
                             // window
-                            if (G_hwndContacting)
-                                WinDestroyWindow(G_hwndContacting);
+                            winhDestroyWindow(&G_hwndContacting);
+
                             if (!G_optQuiet)
                             {
                                 G_hwndContacting = WinLoadDlg(HWND_DESKTOP, G_hwndDebug,

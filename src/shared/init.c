@@ -559,152 +559,143 @@ STATIC VOID ShowPanicDlg(BOOL fForceShow)      // V0.9.17 (2002-02-05) [umoeller
         ULONG   ulrc = 0;
         APIRET  arc;
         HWND hwndPanic;
-        PDLGHITEM paNew;
-
         fRepeat = FALSE;
 
-        if (!cmnLoadDialogStrings(dlgPanic,
+        if (!(arc = dlghCreateDlg(&hwndPanic,
+                                  NULLHANDLE,
+                                  FCF_FIXED_DLG,
+                                  WinDefDlgProc,
+                                  cmnGetString(ID_XFDI_PANIC_TITLE),
+                                  dlgPanic,
                                   ARRAYITEMCOUNT(dlgPanic),
-                                  &paNew))
+                                  NULL,
+                                  cmnQueryDefaultFont())))
         {
-            if (!(arc = dlghCreateDlg(&hwndPanic,
-                                      NULLHANDLE,
-                                      FCF_FIXED_DLG,
-                                      WinDefDlgProc,
-                                      cmnGetString(ID_XFDI_PANIC_TITLE),
-                                      paNew,
-                                      ARRAYITEMCOUNT(dlgPanic),
-                                      NULL,
-                                      cmnQueryDefaultFont())))
-            {
-                winhCenterWindow(hwndPanic);
+            winhCenterWindow(hwndPanic);
 
-                // disable items which are irrelevant
+            // disable items which are irrelevant
 #ifndef __NOBOOTLOGO__
-                WinEnableControl(hwndPanic, ID_XFDI_PANIC_SKIPBOOTLOGO,
+            WinEnableControl(hwndPanic, ID_XFDI_PANIC_SKIPBOOTLOGO,
 
-                                  cmnQuerySetting(sfBootLogo));
+                              cmnQuerySetting(sfBootLogo));
 #endif
 #ifndef __ALWAYSREPLACEARCHIVING__
-                WinEnableControl(hwndPanic, ID_XFDI_PANIC_NOARCHIVING,
-                                  cmnQuerySetting(sfReplaceArchiving));
+            WinEnableControl(hwndPanic, ID_XFDI_PANIC_NOARCHIVING,
+                              cmnQuerySetting(sfReplaceArchiving));
 #endif
 #ifndef __NEVERCHECKDESKTOP__
-                WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLECHECKDESKTOP,
-                                  cmnQuerySetting(sfCheckDesktop));
+            WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLECHECKDESKTOP,
+                              cmnQuerySetting(sfCheckDesktop));
 #endif
-                WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLEREPLREFRESH,
-                                  krnReplaceRefreshEnabled());
+            WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLEREPLREFRESH,
+                              krnReplaceRefreshEnabled());
 #ifndef __NOTURBOFOLDERS__
-                WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLETURBOFOLDERS,
-                                  cmnTurboFoldersEnabled());
+            WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLETURBOFOLDERS,
+                              cmnTurboFoldersEnabled());
 #endif
 #ifndef __NOICONREPLACEMENTS__
-                WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS,
-                                  cmnQuerySetting(sfIconReplacements));
+            WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS,
+                              cmnQuerySetting(sfIconReplacements));
 #endif
 #ifndef __NOPAGER__
-                WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLEPAGER,
-                                  cmnQuerySetting(sfEnableXPager));
+            WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLEPAGER,
+                              cmnQuerySetting(sfEnableXPager));
 #endif
-                WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA,
-                                  (xmmQueryStatus() == MMSTAT_WORKING));
+            WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA,
+                              (xmmQueryStatus() == MMSTAT_WORKING));
 
-                ulrc = WinProcessDlg(hwndPanic);
+            ulrc = WinProcessDlg(hwndPanic);
 
-                switch (ulrc)
+            switch (ulrc)
+            {
+                case ID_XFDI_PANIC_CONTINUE:        // continue
                 {
-                    case ID_XFDI_PANIC_CONTINUE:        // continue
-                    {
 #ifndef __NOBOOTLOGO__
-                        if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPBOOTLOGO))
-                            G_KernelGlobals.ulPanicFlags |= SUF_SKIPBOOTLOGO;
+                    if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPBOOTLOGO))
+                        G_KernelGlobals.ulPanicFlags |= SUF_SKIPBOOTLOGO;
 #endif
 #ifndef __NOXWPSTARTUP__
-                        if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPXFLDSTARTUP))
-                            G_KernelGlobals.ulPanicFlags |= SUF_SKIPXFLDSTARTUP;
+                    if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPXFLDSTARTUP))
+                        G_KernelGlobals.ulPanicFlags |= SUF_SKIPXFLDSTARTUP;
 #endif
 #ifndef __NOQUICKOPEN__
-                        if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPQUICKOPEN))
-                            G_KernelGlobals.ulPanicFlags |= SUF_SKIPQUICKOPEN;
+                    if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPQUICKOPEN))
+                        G_KernelGlobals.ulPanicFlags |= SUF_SKIPQUICKOPEN;
 #endif
-                        if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_NOARCHIVING))
-                        {
-                            PARCHIVINGSETTINGS pArcSettings = arcQuerySettings();
-                            // disable "check archives" flag
-                            pArcSettings->ulArcFlags &= ~ARCF_ENABLED;
-                        }
+                    if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_NOARCHIVING))
+                    {
+                        PARCHIVINGSETTINGS pArcSettings = arcQuerySettings();
+                        // disable "check archives" flag
+                        pArcSettings->ulArcFlags &= ~ARCF_ENABLED;
+                    }
 
 #ifndef __NEVERCHECKDESKTOP__
-                        if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLECHECKDESKTOP))
-                            cmnSetSetting(sfCheckDesktop, FALSE);
+                    if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLECHECKDESKTOP))
+                        cmnSetSetting(sfCheckDesktop, FALSE);
 #endif
-                        if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEREPLREFRESH))
-                            krnEnableReplaceRefresh(FALSE);
+                    if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEREPLREFRESH))
+                        krnEnableReplaceRefresh(FALSE);
 #ifndef __NOTURBOFOLDERS__
-                        if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLETURBOFOLDERS))
-                            cmnSetSetting(sfTurboFolders, FALSE);
+                    if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLETURBOFOLDERS))
+                        cmnSetSetting(sfTurboFolders, FALSE);
 #endif
 
 #ifndef __NOICONREPLACEMENTS__
-                        if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS))
-                            cmnSetSetting(sfIconReplacements, FALSE);
+                    if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS))
+                        cmnSetSetting(sfIconReplacements, FALSE);
 #endif
 #ifndef __NOPAGER__
-                        if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEPAGER))
-                            cmnSetSetting(sfEnableXPager, FALSE);  // @@todo
+                    if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEPAGER))
+                        cmnSetSetting(sfEnableXPager, FALSE);  // @@todo
 #endif
-                        if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA))
-                        {
-                            xmmDisable();
-                        }
-                        if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEFEATURES))
-                            cmnSetDefaultSettings(0);       // reset all!
-                        if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_REMOVEHOTKEYS))
-                            PrfWriteProfileData(HINI_USER,
-                                                INIAPP_XWPHOOK,
-                                                INIKEY_HOOK_HOTKEYS,
-                                                0, 0);      // delete INI key
-                    }
-                    break;
-
-                    case ID_XFDI_PANIC_XFIX:      // run xfix:
-                        if (RunXFix())
-                        {
-                            // handle section changed:
-                            cmnMessageBoxExt(NULLHANDLE,
-                                             121,       // xwp
-                                             NULL, 0,
-                                             205,       // restart wps now.
-                                             MB_OK);
-                            DosExit(EXIT_PROCESS, 0);
-                        }
-
-                        fRepeat = TRUE;
-                    break;
-
-                    case ID_XFDI_PANIC_CMD:         // run cmd.exe
+                    if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA))
                     {
-                        HAPP happCmd;
-                        if (!StartCmdExe(G_KernelGlobals.hwndThread1Object,
-                                         &happCmd))
-                            WaitForApp(getenv("OS2_SHELL"),
-                                       happCmd);
+                        xmmDisable();
                     }
-                    break;
-
-                    case ID_XFDI_PANIC_SHUTDOWN:        // shutdown
-                        // "Shutdown" pressed:
-                        WinShutdownSystem(WinQueryAnchorBlock(HWND_DESKTOP),
-                                          WinQueryWindowULong(HWND_DESKTOP, QWL_HMQ));
-                        while (TRUE)
-                            DosSleep(1000);
+                    if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEFEATURES))
+                        cmnSetDefaultSettings(0);       // reset all!
+                    if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_REMOVEHOTKEYS))
+                        PrfWriteProfileData(HINI_USER,
+                                            INIAPP_XWPHOOK,
+                                            INIKEY_HOOK_HOTKEYS,
+                                            0, 0);      // delete INI key
                 }
+                break;
 
-                WinDestroyWindow(hwndPanic);
+                case ID_XFDI_PANIC_XFIX:      // run xfix:
+                    if (RunXFix())
+                    {
+                        // handle section changed:
+                        cmnMessageBoxExt(NULLHANDLE,
+                                         121,       // xwp
+                                         NULL, 0,
+                                         205,       // restart wps now.
+                                         MB_OK);
+                        DosExit(EXIT_PROCESS, 0);
+                    }
+
+                    fRepeat = TRUE;
+                break;
+
+                case ID_XFDI_PANIC_CMD:         // run cmd.exe
+                {
+                    HAPP happCmd;
+                    if (!StartCmdExe(G_KernelGlobals.hwndThread1Object,
+                                     &happCmd))
+                        WaitForApp(getenv("OS2_SHELL"),
+                                   happCmd);
+                }
+                break;
+
+                case ID_XFDI_PANIC_SHUTDOWN:        // shutdown
+                    // "Shutdown" pressed:
+                    WinShutdownSystem(WinQueryAnchorBlock(HWND_DESKTOP),
+                                      WinQueryWindowULong(HWND_DESKTOP, QWL_HMQ));
+                    while (TRUE)
+                        DosSleep(1000);
             }
 
-            free(paNew);
+            winhDestroyWindow(&hwndPanic);
         }
     }
 }
@@ -1427,50 +1418,53 @@ VOID initMain(VOID)
                                  NULL);        // create params
     */
 
-    krnCreateObjectWindows();       // V0.9.18 (2002-03-27) [umoeller]
-                // sets G_habThread1 as well
-
-    cmnInitEntities();
-
-    initLog("XWorkplace thread-1 object window created, HWND 0x%lX",
-                      G_KernelGlobals.hwndThread1Object);
-
-    initLog("XWorkplace API object window created, HWND 0x%lX",
-                      G_KernelGlobals.hwndAPIObject);
-
-    // if shift is pressed, show "Panic" dialog
-    // V0.9.7 (2001-01-24) [umoeller]: moved this behind creation
-    // of thread-1 window... we need this for starting xfix from
-    // the "panic" dlg.
-    // NOTE: This possibly changes global settings, so the wheel
-    // watcher evaluation must come AFTER this! Same for turbo
-    // folders, which is OK because G_fTurboSettingsEnabled is
-    // enabled only in M_XWPFileSystem::wpclsInitData (because
-    // it requires XWPFileSystem to be present)
-    ShowStartupDlgs();
-
-    // check if "replace folder refresh" is enabled...
-    if (krnReplaceRefreshEnabled())
-        // yes: kick out WPS wheel watcher thread,
-        // start our own one instead
-        ReplaceWheelWatcher();
-
-    /*
-     *  enable NumLock at startup
-     *      V0.9.1 (99-12-19) [umoeller]
-     */
-
-    if (cmnQuerySetting(sfNumLockStartup))
-        winhSetNumLock(TRUE);
-
     TRY_LOUD(excpt1)
     {
         APIRET arc;
         PSZ pszActiveHandles;
 
+        // moved all the following code inside the excpt handler
+        // V1.0.1 (2002-12-11) [umoeller]
+
+        krnCreateObjectWindows();       // V0.9.18 (2002-03-27) [umoeller]
+                    // sets G_habThread1 as well
+
+        cmnInitEntities();
+
+        initLog("XWorkplace thread-1 object window created, HWND 0x%lX",
+                          G_KernelGlobals.hwndThread1Object);
+
+        initLog("XWorkplace API object window created, HWND 0x%lX",
+                          G_KernelGlobals.hwndAPIObject);
+
+        // if shift is pressed, show "Panic" dialog
+        // V0.9.7 (2001-01-24) [umoeller]: moved this behind creation
+        // of thread-1 window... we need this for starting xfix from
+        // the "panic" dlg.
+        // NOTE: This possibly changes global settings, so the wheel
+        // watcher evaluation must come AFTER this! Same for turbo
+        // folders, which is OK because G_fTurboSettingsEnabled is
+        // enabled only in M_XWPFileSystem::wpclsInitData (because
+        // it requires XWPFileSystem to be present)
+        ShowStartupDlgs();
+
+        // check if "replace folder refresh" is enabled...
+        if (krnReplaceRefreshEnabled())
+            // yes: kick out WPS wheel watcher thread,
+            // start our own one instead
+            ReplaceWheelWatcher();
+
+        /*
+         *  enable NumLock at startup
+         *      V0.9.1 (99-12-19) [umoeller]
+         */
+
+        if (cmnQuerySetting(sfNumLockStartup))
+            winhSetNumLock(TRUE);
+
         /*
          * CheckClassOrder:
-         *      moved this inside excpt handler V1.0.1 (2002-11-30) [umoeller]
+         *
          */
 
         CheckClassOrder();
@@ -2473,7 +2467,7 @@ STATIC void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
                     winhSaveWindowPos(qod.hwndStatus,
                                       HINI_USER,
                                       INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP);
-                    WinDestroyWindow(qod.hwndStatus);
+                    winhDestroyWindow(&qod.hwndStatus);
                 }
 
             }

@@ -521,7 +521,7 @@ SOM_Scope PSZ  SOMLINK xwlistM_wpclsQueryTitle(M_XWPClassList *somSelf)
     /* M_XWPClassListData *somThis = M_XWPClassListGetData(somSelf); */
     M_XWPClassListMethodDebug("M_XWPClassList","xwlistM_wpclsQueryTitle");
 
-    return (cmnGetString(ID_XFSI_XWPCLASSLIST)) ; // pszXWPClassList
+    return (PSZ)cmnGetString(ID_XFSI_XWPCLASSLIST);
 }
 
 /*

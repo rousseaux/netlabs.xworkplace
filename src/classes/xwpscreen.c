@@ -146,7 +146,7 @@ SOM_Scope ULONG  SOMLINK xwpscr_xwpAddXWPScreenPages(XWPScreen *somSelf,
 #endif
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -263,7 +263,7 @@ SOM_Scope PSZ  SOMLINK xwpscrM_wpclsQueryTitle(M_XWPScreen *somSelf)
     /* M_XWPScreenData *somThis = M_XWPScreenGetData(somSelf); */
     M_XWPScreenMethodDebug("M_XWPScreen","xwpscrM_wpclsQueryTitle");
 
-    return (cmnGetString(ID_XSSI_XWPSCREENTITLE)) ; // pszXWPScreenTitle
+    return (PSZ)cmnGetString(ID_XSSI_XWPSCREENTITLE);
 }
 
 /*
@@ -333,7 +333,7 @@ SOM_Scope ULONG  SOMLINK xwpscrM_wpclsQueryIconData(M_XWPScreen *somSelf,
         pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
-    return (sizeof(ICONINFO));
+    return sizeof(ICONINFO);
 }
 
 /*

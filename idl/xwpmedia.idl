@@ -129,8 +129,6 @@ interface M_XWPMedia : M_WPAbstract
     wpclsQueryDefaultHelp: override;
 
     wpclsQueryIconData: override;
-
-    wpclsQuerySettingsPageSize: override;
   };
 #endif /* __SOMIDL__ */
 };

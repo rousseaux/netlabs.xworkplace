@@ -990,7 +990,6 @@ STATIC HWND PrepareFileExistsDlg(WPObject *somSelf,
     // load confirmation dialog
     // V0.9.20 (2002-08-08) [umoeller]
 
-    PDLGHITEM   paNew;
     APIRET      arc;
     PSZ         pszIntro;
     CHAR        szTemp[CCHMAXPATH];
@@ -1013,171 +1012,164 @@ STATIC HWND PrepareFileExistsDlg(WPObject *somSelf,
         ClashSizeOld.pcszText = szTemp;
         ClashSizeNew.pcszText = szTemp;
 
-        if (!(arc = cmnLoadDialogStrings(G_dlgFileExists,
-                                         ARRAYITEMCOUNT(G_dlgFileExists),
-                                         &paNew)))
+        if (!(arc = dlghCreateDlg(&hwndConfirm,
+                                  NULLHANDLE,
+                                  FCF_FIXED_DLG,
+                                  fnwpTitleClashDlg,
+                                  cmnGetString(ID_XFD_TITLECLASH),
+                                  G_dlgFileExists,
+                                  ARRAYITEMCOUNT(G_dlgFileExists), // same as before
+                                  NULL,
+                                  cmnQueryDefaultFont())))
         {
-            if (!(arc = dlghCreateDlg(&hwndConfirm,
-                                      NULLHANDLE,
-                                      FCF_FIXED_DLG,
-                                      fnwpTitleClashDlg,
-                                      cmnGetString(ID_XFD_TITLECLASH),
-                                      paNew,        // new array with NLS strings
-                                      ARRAYITEMCOUNT(G_dlgFileExists), // same as before
-                                      NULL,
-                                      cmnQueryDefaultFont())))
+            CHAR    szProposeTitle[CCHMAXPATH] = "????",
+                    szExistingFilename[CCHMAXPATH];
+            ULONG   ulLastFocusID = 0,
+                    ulLastDot = 0;
+            PSZ     pTemp;
+
+            // prepare file date/time etc. for
+            // display in window
+            FILESTATUS3         fs3;
+            PCOUNTRYSETTINGS    pcs = cmnQueryCountrySettings(FALSE);
+
+            // disable window updates for the following changes
+            WinEnableWindowUpdate(hwndConfirm, FALSE);
+
+            // set object information fields
+            if (_somIsA(pExisting, _WPFileSystem))
             {
-                CHAR    szProposeTitle[CCHMAXPATH] = "????",
-                        szExistingFilename[CCHMAXPATH];
-                ULONG   ulLastFocusID = 0,
-                        ulLastDot = 0;
-                PSZ     pTemp;
+                _wpQueryFilename(pExisting, szExistingFilename, TRUE);
+                DosQueryPathInfo(szExistingFilename,
+                                 FIL_STANDARD,
+                                 &fs3, sizeof(fs3));
+                nlsFileDate(szTemp, &(fs3.fdateLastWrite),
+                            pcs->ulDateFormat, pcs->cDateSep);
+                WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATEOLD, szTemp);
+                nlsFileTime(szTemp, &(fs3.ftimeLastWrite),
+                            pcs->ulTimeFormat, pcs->cTimeSep);
+                WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMEOLD, szTemp);
 
-                // prepare file date/time etc. for
-                // display in window
-                FILESTATUS3         fs3;
-                PCOUNTRYSETTINGS    pcs = cmnQueryCountrySettings(FALSE);
-
-                // disable window updates for the following changes
-                WinEnableWindowUpdate(hwndConfirm, FALSE);
-
-                // set object information fields
-                if (_somIsA(pExisting, _WPFileSystem))
-                {
-                    _wpQueryFilename(pExisting, szExistingFilename, TRUE);
-                    DosQueryPathInfo(szExistingFilename,
-                                     FIL_STANDARD,
-                                     &fs3, sizeof(fs3));
-                    nlsFileDate(szTemp, &(fs3.fdateLastWrite),
-                                pcs->ulDateFormat, pcs->cDateSep);
-                    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATEOLD, szTemp);
-                    nlsFileTime(szTemp, &(fs3.ftimeLastWrite),
-                                pcs->ulTimeFormat, pcs->cTimeSep);
-                    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMEOLD, szTemp);
-
-                    nlsThousandsULong(szTemp, fs3.cbFile, // )+512) / 1024 ,
-                                      pcs->cThousands);
-                    strcat(szTemp, pcszBytes);
-                    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZEOLD, szTemp);
-                }
-                else
-                {
-                    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATEOLD, "");
-                    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMEOLD, "");
-                    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZEOLD, "0");
-                }
-
-                // if we're not copying within the same folder,
-                // i.e. if the two objects are different,
-                // give info on ourselves too
-                if (    (pExisting != somSelf)
-                     && (_somIsA(somSelf, _WPFileSystem))
-                   )
-                {
-                    CHAR szSelfFilename[CCHMAXPATH];
-                    _wpQueryFilename(somSelf, szSelfFilename, TRUE);
-                    DosQueryPathInfo(szSelfFilename,
-                                     FIL_STANDARD,
-                                     &fs3, sizeof(fs3));
-                    nlsFileDate(szTemp, &(fs3.fdateLastWrite),
-                                 pcs->ulDateFormat, pcs->cDateSep);
-                    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATENEW, szTemp);
-                    nlsFileTime(szTemp, &(fs3.ftimeLastWrite),
-                                 pcs->ulTimeFormat, pcs->cTimeSep);
-                    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMENEW, szTemp);
-                    nlsThousandsULong(szTemp, fs3.cbFile, // )+512) / 1024,
-                                       pcs->cThousands);
-                    strcat(szTemp, pcszBytes);
-                    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZENEW, szTemp);
-                }
-                else
-                {
-                    // if we're copying within the same folder,
-                    // set the "new object" fields empty
-                    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATENEW, "");
-                    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMENEW, "");
-                    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZENEW, "");
-                }
-
-                // get new title which doesn't exist in the folder yet
-                fopsProposeNewTitle(pszTitle,
-                                    Folder,
-                                    szProposeTitle);
-
-                // OK, we've found a new filename: set dlg items
-                WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMENEWTXT,
-                                  EM_SETTEXTLIMIT,
-                                  (MPARAM)(250), MPNULL);
-                WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_RENAMENEWTXT,
-                                  szProposeTitle);
-                WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT,
-                                  EM_SETTEXTLIMIT,
-                                  (MPARAM)(250), MPNULL);
-                WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT,
-                                  szProposeTitle);
-
-                // select the first characters up to the extension
-                // in the edit field
-                if (pTemp = strrchr(szProposeTitle, '.'))       // last dot == extension
-                    ulLastDot = (pTemp - szProposeTitle);
-                else
-                    ulLastDot = 300;                    // too large == select all
-
-                WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMENEWTXT,
-                                  EM_SETSEL,
-                                  MPFROM2SHORT(0, ulLastDot),
-                                  MPNULL);
-                WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT,
-                                  EM_SETSEL,
-                                  MPFROM2SHORT(0, ulLastDot),
-                                  MPNULL);
-
-                // find the selection the user has made last time;
-                // this INI key item is maintained by fnwpTitleClashDlg above
-                ulLastFocusID = PrfQueryProfileInt(HINI_USER,
-                                                   (PSZ)INIAPP_XWORKPLACE,
-                                                   (PSZ)INIKEY_NAMECLASHFOCUS,
-                                                   ID_XFDI_CLASH_RENAMENEWTXT);
-                                                        // default value if not set
-
-                if (flOptions & NO_NAMECLASH_RENAMEOLD)
-                {
-                    WinEnableControl(hwndConfirm, ID_XFDI_CLASH_RENAMEOLD, FALSE);
-                    WinEnableControl(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT, FALSE);
-                    // if the last focus is one of the disabled items,
-                    // change it
-                    if (ulLastFocusID == ID_XFDI_CLASH_RENAMEOLDTXT)
-                        ulLastFocusID = ID_XFDI_CLASH_RENAMENEWTXT;
-                }
-
-                if (flOptions & NO_NAMECLASH_REPLACE)
-                {
-                    // disable "Replace" for "Rename" mode; this is
-                    // not allowed
-                    WinEnableControl(hwndConfirm, ID_XFDI_CLASH_REPLACE, FALSE);
-                    // if the last focus is one of the disabled items,
-                    // change it
-                    if (ulLastFocusID == ID_XFDI_CLASH_REPLACE)
-                        ulLastFocusID = ID_XFDI_CLASH_RENAMENEWTXT;
-                }
-
-                // set focus to that item
-                winhSetDlgItemFocus(hwndConfirm, ulLastFocusID);
-                    // this will automatically select the corresponding
-                    // radio button, see fnwpTitleClashDlg above
-                    // V1.0.1 (2002-11-30) [umoeller] no not really,
-                    // so force checking this
-                winhSetDlgItemChecked(hwndConfirm, ulLastFocusID, TRUE);
-
-                // *** go!
-                winhRestoreWindowPos(hwndConfirm,
-                                     HINI_USER,
-                                     INIAPP_XWORKPLACE, INIKEY_WNDPOSNAMECLASH,
-                                     SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
-                                            // move only, no resize
+                nlsThousandsULong(szTemp, fs3.cbFile, // )+512) / 1024 ,
+                                  pcs->cThousands);
+                strcat(szTemp, pcszBytes);
+                WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZEOLD, szTemp);
+            }
+            else
+            {
+                WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATEOLD, "");
+                WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMEOLD, "");
+                WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZEOLD, "0");
             }
 
-            free(paNew);
+            // if we're not copying within the same folder,
+            // i.e. if the two objects are different,
+            // give info on ourselves too
+            if (    (pExisting != somSelf)
+                 && (_somIsA(somSelf, _WPFileSystem))
+               )
+            {
+                CHAR szSelfFilename[CCHMAXPATH];
+                _wpQueryFilename(somSelf, szSelfFilename, TRUE);
+                DosQueryPathInfo(szSelfFilename,
+                                 FIL_STANDARD,
+                                 &fs3, sizeof(fs3));
+                nlsFileDate(szTemp, &(fs3.fdateLastWrite),
+                             pcs->ulDateFormat, pcs->cDateSep);
+                WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATENEW, szTemp);
+                nlsFileTime(szTemp, &(fs3.ftimeLastWrite),
+                             pcs->ulTimeFormat, pcs->cTimeSep);
+                WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMENEW, szTemp);
+                nlsThousandsULong(szTemp, fs3.cbFile, // )+512) / 1024,
+                                   pcs->cThousands);
+                strcat(szTemp, pcszBytes);
+                WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZENEW, szTemp);
+            }
+            else
+            {
+                // if we're copying within the same folder,
+                // set the "new object" fields empty
+                WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATENEW, "");
+                WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMENEW, "");
+                WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZENEW, "");
+            }
+
+            // get new title which doesn't exist in the folder yet
+            fopsProposeNewTitle(pszTitle,
+                                Folder,
+                                szProposeTitle);
+
+            // OK, we've found a new filename: set dlg items
+            WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMENEWTXT,
+                              EM_SETTEXTLIMIT,
+                              (MPARAM)(250), MPNULL);
+            WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_RENAMENEWTXT,
+                              szProposeTitle);
+            WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT,
+                              EM_SETTEXTLIMIT,
+                              (MPARAM)(250), MPNULL);
+            WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT,
+                              szProposeTitle);
+
+            // select the first characters up to the extension
+            // in the edit field
+            if (pTemp = strrchr(szProposeTitle, '.'))       // last dot == extension
+                ulLastDot = (pTemp - szProposeTitle);
+            else
+                ulLastDot = 300;                    // too large == select all
+
+            WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMENEWTXT,
+                              EM_SETSEL,
+                              MPFROM2SHORT(0, ulLastDot),
+                              MPNULL);
+            WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT,
+                              EM_SETSEL,
+                              MPFROM2SHORT(0, ulLastDot),
+                              MPNULL);
+
+            // find the selection the user has made last time;
+            // this INI key item is maintained by fnwpTitleClashDlg above
+            ulLastFocusID = PrfQueryProfileInt(HINI_USER,
+                                               (PSZ)INIAPP_XWORKPLACE,
+                                               (PSZ)INIKEY_NAMECLASHFOCUS,
+                                               ID_XFDI_CLASH_RENAMENEWTXT);
+                                                    // default value if not set
+
+            if (flOptions & NO_NAMECLASH_RENAMEOLD)
+            {
+                WinEnableControl(hwndConfirm, ID_XFDI_CLASH_RENAMEOLD, FALSE);
+                WinEnableControl(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT, FALSE);
+                // if the last focus is one of the disabled items,
+                // change it
+                if (ulLastFocusID == ID_XFDI_CLASH_RENAMEOLDTXT)
+                    ulLastFocusID = ID_XFDI_CLASH_RENAMENEWTXT;
+            }
+
+            if (flOptions & NO_NAMECLASH_REPLACE)
+            {
+                // disable "Replace" for "Rename" mode; this is
+                // not allowed
+                WinEnableControl(hwndConfirm, ID_XFDI_CLASH_REPLACE, FALSE);
+                // if the last focus is one of the disabled items,
+                // change it
+                if (ulLastFocusID == ID_XFDI_CLASH_REPLACE)
+                    ulLastFocusID = ID_XFDI_CLASH_RENAMENEWTXT;
+            }
+
+            // set focus to that item
+            winhSetDlgItemFocus(hwndConfirm, ulLastFocusID);
+                // this will automatically select the corresponding
+                // radio button, see fnwpTitleClashDlg above
+                // V1.0.1 (2002-11-30) [umoeller] no not really,
+                // so force checking this
+            winhSetDlgItemChecked(hwndConfirm, ulLastFocusID, TRUE);
+
+            // *** go!
+            winhRestoreWindowPos(hwndConfirm,
+                                 HINI_USER,
+                                 INIAPP_XWORKPLACE, INIKEY_WNDPOSNAMECLASH,
+                                 SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
+                                        // move only, no resize
         }
 
         free(pszIntro);
@@ -1388,7 +1380,7 @@ STATIC ULONG ConfirmObjectTitle(WPFolder *Folder,          // in: target folder 
                     break;
                 }
 
-                WinDestroyWindow(hwndConfirm);
+                winhDestroyWindow(&hwndConfirm);
             }
         }
     }

@@ -129,7 +129,7 @@ SOM_Scope ULONG  SOMLINK xkb_xwpAddKeyboardHotkeysPage(XWPKeyboard *somSelf,
         ulrc = ntbInsertPage(&inbp);
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -169,7 +169,7 @@ SOM_Scope ULONG  SOMLINK xkb_xwpAddKeyboardFunctionKeysPage(XWPKeyboard *somSelf
         ulrc = ntbInsertPage(&inbp);
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -243,23 +243,4 @@ SOM_Scope void  SOMLINK xkbM_wpclsInitData(M_XWPKeyboard *somSelf)
     krnClassInitialized(G_pcszXWPKeyboard);
 }
 
-/*
- *@@ wpclsQuerySettingsPageSize:
- *      this WPObject class method should return the
- *      size of the largest settings page in dialog
- *      units; if a settings notebook is initially
- *      opened, i.e. no window pos has been stored
- *      yet, the WPS will use this size, to avoid
- *      truncated settings pages.
- */
-
-SOM_Scope BOOL  SOMLINK xkbM_wpclsQuerySettingsPageSize(M_XWPKeyboard *somSelf,
-                                                        PSIZEL pSizl)
-{
-    /* M_XWPKeyboardData *somThis = M_XWPKeyboardGetData(somSelf); */
-    M_XWPKeyboardMethodDebug("M_XWPKeyboard","xkbM_wpclsQuerySettingsPageSize");
-
-    return (M_XWPKeyboard_parent_M_WPKeyboard_wpclsQuerySettingsPageSize(somSelf,
-                                                                         pSizl));
-}
 

@@ -1281,7 +1281,7 @@ STATIC MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1
             {
                 case 1:
                     // archive status timer
-                    WinDestroyWindow(G_hwndArchiveStatus);
+                    winhDestroyWindow(&G_hwndArchiveStatus);
                 break;
 
 #ifndef __NOPAGER__

@@ -126,7 +126,6 @@ interface M_XWPKeyboard : M_WPKeyboard
      */
 
     wpclsInitData: override;
-    wpclsQuerySettingsPageSize: override;
 
   };
 #endif /* __SOMIDL__ */

@@ -166,15 +166,24 @@
 extern WPFolder             *G_pConfigFolder = NULL;
                         // used in xfobj.c too
 
-// roots of linked lists for favorite/quick-open folders
-// these hold plain WPObject pointers, no auto-free
-#ifndef __NOFOLDERCONTENTS__
-extern OBJECTLIST           G_llFavoriteFolders = {0};
-#endif
-#ifndef __NOQUICKOPEN__
-extern OBJECTLIST           G_llQuickOpenFolders = {0};
-#endif
+#if 1 // V1.0.1 (2002-12-08) [umoeller]
+    #ifndef __NOFOLDERCONTENTS__
+        XWPObjList              *G_llFavoriteFolders = NULL;
+    #endif
+    #ifndef __NOQUICKOPEN__
+        XWPObjList              *G_llQuickOpenFolders = NULL;
+    #endif
+#else
+    // roots of linked lists for favorite/quick-open folders
+    // these hold plain WPObject pointers, no auto-free
+    #ifndef __NOFOLDERCONTENTS__
+    extern OBJECTLIST           G_llFavoriteFolders = {0};
+    #endif
+    #ifndef __NOQUICKOPEN__
+    extern OBJECTLIST           G_llQuickOpenFolders = {0};
                             // these two are exported in folder.h
+    #endif
+#endif
 
 ULONG                       G_ulViewForModifyMenu;
                             // workaround for wpModifyMenu bug
@@ -756,14 +765,24 @@ SOM_Scope ULONG  SOMLINK xf_xwpMakeFavoriteFolder(XFolder *somSelf,
     XFolderMethodDebug("XFolder","xf_xwpMakeFavoriteFolder");
 
 #ifndef __NOFOLDERCONTENTS__
-    return objAddToList(somSelf,
-                        &G_llFavoriteFolders,
-                        fInsert,
-                        INIKEY_FAVORITEFOLDERS,
-                        OBJLIST_FAVORITEFOLDER);
-#else
-    return FALSE;
+    #if 1
+        if (G_llFavoriteFolders)
+            if (fInsert)
+                return _Append(G_llFavoriteFolders,
+                               somSelf);
+            else
+                return _Remove(G_llFavoriteFolders,
+                               somSelf);
+    #else
+        return objAddToList(somSelf,
+                            &G_llFavoriteFolders,
+                            fInsert,
+                            INIKEY_FAVORITEFOLDERS,
+                            OBJLIST_FAVORITEFOLDER);
+    #endif
 #endif
+
+    return FALSE;
 }
 
 /*
@@ -780,11 +799,17 @@ SOM_Scope BOOL  SOMLINK xf_xwpIsFavoriteFolder(XFolder *somSelf)
     XFolderMethodDebug("XFolder","xf_xwpIsFavoriteFolder");
 
 #ifndef __NOFOLDERCONTENTS__
-    return objIsOnList(somSelf,
-                       &G_llFavoriteFolders);
-#else
-    return FALSE;
+    #if 1
+        if (G_llFavoriteFolders)
+            return _IsIn(G_llFavoriteFolders,
+                         somSelf);
+    #else
+        return objIsOnList(somSelf,
+                           &G_llFavoriteFolders);
+    #endif
 #endif
+
+    return FALSE;
 }
 
 /*
@@ -804,14 +829,24 @@ SOM_Scope ULONG  SOMLINK xf_xwpSetQuickOpen(XFolder *somSelf,
     XFolderMethodDebug("XFolder","xf_xwpSetQuickOpen");
 
 #ifndef __NOQUICKOPEN__
-    return objAddToList(somSelf,
-                        &G_llQuickOpenFolders,
-                        fQuickOpen,
-                        INIKEY_QUICKOPENFOLDERS,
-                        OBJLIST_QUICKOPENFOLDER);
-#else
-    return FALSE;
+    #if 1
+        if (G_llQuickOpenFolders)
+            if (fQuickOpen)
+                return _Append(G_llQuickOpenFolders,
+                               somSelf);
+            else
+                return _Remove(G_llQuickOpenFolders,
+                               somSelf);
+    #else
+        return objAddToList(somSelf,
+                            &G_llQuickOpenFolders,
+                            fQuickOpen,
+                            INIKEY_QUICKOPENFOLDERS,
+                            OBJLIST_QUICKOPENFOLDER);
+    #endif
 #endif
+
+    return FALSE;
 }
 
 /*
@@ -828,11 +863,17 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryQuickOpen(XFolder *somSelf)
     XFolderMethodDebug("XFolder","xf_xwpSetQuickOpen");
 
 #ifndef __NOQUICKOPEN__
-    return objIsOnList(somSelf,
-                       &G_llQuickOpenFolders);
-#else
-    return FALSE;
+    #if 1
+        if (G_llQuickOpenFolders)
+            return _IsIn(G_llQuickOpenFolders,
+                         somSelf);
+    #else
+        return objIsOnList(somSelf,
+                           &G_llQuickOpenFolders);
+    #endif
 #endif
+
+    return FALSE;
 }
 
 /*
@@ -1033,12 +1074,14 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetStatusBarVisibility(XFolder *somSelf,
 
         if (fUpdate)
         {
+            PMPF_STATUSBARS(("posting WOM_UPDATEALLSTATUSBARS"));
+
             // update open folder views in Worker thread;
             // this will call fncbUpdateStatusBars for each
             // open folder window
             xthrPostWorkerMsg(WOM_UPDATEALLSTATUSBARS,
-                             (MPARAM)1,      // show/hide flag
-                             0);
+                              (MPARAM)1,      // show/hide flag
+                              0);
             // update "XFolder" notebook page, if open
             ntbUpdateVisiblePage(somSelf, SP_XFOLDER_FLDR);
         }
@@ -1203,14 +1246,12 @@ SOM_Scope BOOL  SOMLINK xf_xwpModifyXFolderStyle(XFolder *somSelf,
  *      new folder view is opened and XWorkplace needs the
  *      tool bar layout for the new view.
  *
- *      This method must return an array of TOOLBARCONTROL
- *      (comctl.h) structures defining the controls to be
- *      added and store the number of array items in
- *      *pcControls.
+ *      This method must build the tool bar for the given
+ *      view of somSelf by calling XFolder::xwpAddToolbarButton
+ *      for each tool bar button that should be added.
  *
- *      It is assumed that the array has been allocated
- *      with a call of _wpAllocMem on somSelf. The array
- *      will be freed automatically.
+ *      hToolBar is a private handle of the toolbar and
+ *      should be passed to that method.
  *
  *@@added V1.0.1 (2002-11-30) [umoeller]
  */
@@ -1229,7 +1270,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpBuildToolBar(XFolder *somSelf,
     cmnGetStandardIcon(STDICON_TB_REFRESH, &hptr, NULL, NULL);
     _xwpAddToolbarButton(somSelf,
                          hToolBar,
-                         cmnGetString(ID_XSSI_REFRESHNOW),
+                         (PSZ)cmnGetString(ID_XSSI_REFRESHNOW),
                          TBBS_COMMAND,
                          WPMENUID_REFRESH,
                          hptr);
@@ -1237,7 +1278,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpBuildToolBar(XFolder *somSelf,
     cmnGetStandardIcon(STDICON_TB_FIND, &hptr, NULL, NULL);
     _xwpAddToolbarButton(somSelf,
                          hToolBar,
-                         cmnGetString(ID_XSDI_MENU_FIND),
+                         (PSZ)cmnGetString(ID_XSDI_MENU_FIND),
                          TBBS_COMMAND,
                          WPMENUID_FIND,
                          hptr);
@@ -1245,7 +1286,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpBuildToolBar(XFolder *somSelf,
     cmnGetStandardIcon(STDICON_TB_HELP, &hptr, NULL, NULL);
     _xwpAddToolbarButton(somSelf,
                          hToolBar,
-                         cmnGetString(DID_HELP),
+                         (PSZ)cmnGetString(DID_HELP),
                          TBBS_COMMAND,
                          WPMENUID_EXTENDEDHELP,
                          hptr);
@@ -1260,7 +1301,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpBuildToolBar(XFolder *somSelf,
     cmnGetStandardIcon(STDICON_TB_MULTIPLECOLUMNS, &hptr, NULL, NULL);
     _xwpAddToolbarButton(somSelf,
                          hToolBar,
-                         cmnGetString(ID_XSDI_MENU_ICONVIEW),
+                         (PSZ)cmnGetString(ID_XSDI_MENU_ICONVIEW),
                          TBBS_COMMAND | TBBS_RADIO
                             | ((!(flStyle & XFFL_SPLIT_DETAILS))
                                 ? TBBS_CHECKINITIAL
@@ -1271,7 +1312,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpBuildToolBar(XFolder *somSelf,
     cmnGetStandardIcon(STDICON_TB_DETAILS, &hptr, NULL, NULL);
     _xwpAddToolbarButton(somSelf,
                          hToolBar,
-                         cmnGetString(ID_XSDI_MENU_DETAILSVIEW),
+                         (PSZ)cmnGetString(ID_XSDI_MENU_DETAILSVIEW),
                          TBBS_COMMAND | TBBS_RADIO
                             | ((flStyle & XFFL_SPLIT_DETAILS)
                                 ? TBBS_CHECKINITIAL
@@ -1287,7 +1328,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpBuildToolBar(XFolder *somSelf,
         fl2 |= TBBS_CHECKINITIAL;
     _xwpAddToolbarButton(somSelf,
                          hToolBar,
-                         cmnGetString(ID_XFSI_SMALLICONS),
+                         (PSZ)cmnGetString(ID_XFSI_SMALLICONS),
                          fl2,
                          *G_pulVarMenuOfs + ID_XFMI_OFS_SMALLICONS,
                          hptr);
@@ -2437,8 +2478,8 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
            )
         {
             // XFolderData *somThis = XFolderGetData(somSelf);
-            WPFileSystem *pDefaultDoc = _xwpQueryDefaultDocument(somSelf);
-            if (pDefaultDoc)
+            WPFileSystem *pDefaultDoc;
+            if (pDefaultDoc = _xwpQueryDefaultDocument(somSelf))
                 // we have a default document for this folder:
                 // change default view to menu item ID of "open default document"
                 // (same as in mnuModifyDataFilePopupMenu)
@@ -2604,22 +2645,18 @@ SOM_Scope HWND  SOMLINK xf_wpDisplayMenu(XFolder *somSelf,
                                          ULONG ulMenuType,
                                          ULONG ulReserved)
 {
-    HWND hwndMenu;
-
     XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpDisplayMenu");
 
     _ulLastDisplayedMenuType = ulMenuType;
         // V0.9.12 (2001-05-29) [umoeller]
 
-    hwndMenu = XFolder_parent_WPFolder_wpDisplayMenu(somSelf,
-                                                     hwndOwner,
-                                                     hwndClient,
-                                                     ptlPopupPt,
-                                                     ulMenuType,
-                                                     ulReserved);
-
-    return hwndMenu;
+    return XFolder_parent_WPFolder_wpDisplayMenu(somSelf,
+                                                 hwndOwner,
+                                                 hwndClient,
+                                                 ptlPopupPt,
+                                                 ulMenuType,
+                                                 ulReserved);
 }
 
 /*
@@ -3887,13 +3924,18 @@ SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryFavoriteFolder(M_XFolder *somSelf,
     M_XFolderMethodDebug("M_XFolder","xfM_xwpclsQueryFavoriteFolder");
 
 #ifndef __NOFOLDERCONTENTS__
-    return objEnumList(&G_llFavoriteFolders,
-                       pFolder,
-                       INIKEY_FAVORITEFOLDERS,
-                       OBJLIST_FAVORITEFOLDER);
-#else
-    return NULL;
+    #if 1
+        if (G_llFavoriteFolders)
+            return _Enum(G_llFavoriteFolders, pFolder);
+    #else
+        return objEnumList(&G_llFavoriteFolders,
+                           pFolder,
+                           INIKEY_FAVORITEFOLDERS,
+                           OBJLIST_FAVORITEFOLDER);
+    #endif
 #endif
+
+    return NULL;
 }
 
 /*
@@ -3917,13 +3959,18 @@ SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryQuickOpenFolder(M_XFolder *somSelf,
     M_XFolderMethodDebug("M_XFolder","xfM_xwpclsQueryQuickOpenFolder");
 
 #ifndef __NOQUICKOPEN__
-    return objEnumList(&G_llQuickOpenFolders,
-                       pFolder,
-                       INIKEY_QUICKOPENFOLDERS,
-                       OBJLIST_QUICKOPENFOLDER);
-#else
-    return NULL;
+    #if 1
+        if (G_llQuickOpenFolders)
+            return _Enum(G_llQuickOpenFolders, pFolder);
+    #else
+        return objEnumList(&G_llQuickOpenFolders,
+                           pFolder,
+                           INIKEY_QUICKOPENFOLDERS,
+                           OBJLIST_QUICKOPENFOLDER);
+    #endif
 #endif
+
+    return NULL;
 }
 
 /*
@@ -4012,13 +4059,26 @@ SOM_Scope void  SOMLINK xfM_wpclsInitData(M_XFolder *somSelf)
             // first call:
 
             // initialize other data
-#ifndef __NOFOLDERCONTENTS__
-            lstInit(&G_llFavoriteFolders.ll, FALSE);    // no auto-free
-            G_llFavoriteFolders.fLoaded = FALSE;
-#endif
-#ifndef __NOQUICKOPEN__
-            lstInit(&G_llQuickOpenFolders.ll, FALSE);      // no auto-free
-            G_llQuickOpenFolders.fLoaded = FALSE;
+#if 1
+    #ifndef __NOFOLDERCONTENTS__
+                G_llFavoriteFolders = _xwpclsCreateList(_XFldObject,
+                                                        (PSZ)INIAPP_XWORKPLACE,
+                                                        (PSZ)INIKEY_FAVORITEFOLDERS);
+    #endif
+    #ifndef __NOQUICKOPEN__
+                G_llQuickOpenFolders = _xwpclsCreateList(_XFldObject,
+                                                         (PSZ)INIAPP_XWORKPLACE,
+                                                         (PSZ)INIKEY_QUICKOPENFOLDERS);
+    #endif
+#else
+    #ifndef __NOFOLDERCONTENTS__
+                lstInit(&G_llFavoriteFolders.ll, FALSE);    // no auto-free
+                G_llFavoriteFolders.fLoaded = FALSE;
+    #endif
+    #ifndef __NOQUICKOPEN__
+                lstInit(&G_llQuickOpenFolders.ll, FALSE);      // no auto-free
+                G_llQuickOpenFolders.fLoaded = FALSE;
+    #endif
 #endif
 
             fdrLoadFolderHotkeys();
@@ -4149,7 +4209,7 @@ SOM_Scope PSZ  SOMLINK xfM_wpclsQueryTitle(M_XFolder *somSelf)
         return M_XFolder_parent_M_WPFolder_wpclsQueryTitle(somSelf);
 #endif
 
-    return cmnGetString(ID_XSSI_CLASSTITLE_FOLDER);
+    return (PSZ)cmnGetString(ID_XSSI_CLASSTITLE_FOLDER);
 }
 
 /*

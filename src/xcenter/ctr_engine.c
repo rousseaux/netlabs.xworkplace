@@ -3539,7 +3539,7 @@ STATIC VOID DestroyAllWidgetWindows(PXCENTERWINDATA pXCenterData)
                     // ctrDefWidgetProc alters the list
         PPRIVATEWIDGETVIEW pView = (PPRIVATEWIDGETVIEW)pNode->pItemData;
 
-        WinDestroyWindow(pView->Widget.hwndWidget);
+        winhDestroyWindow(&pView->Widget.hwndWidget);
                 // the window is responsible for cleaning up pView->pUser;
                 // ctrDefWidgetProc will also free pView and remove it
                 // from the widget views list
@@ -3949,11 +3949,7 @@ STATIC VOID FrameDestroy(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
     if (pXCenterData->hsw)
         WinRemoveSwitchEntry(pXCenterData->hsw);
 
-    if (pXCenterData->Globals.hwndTooltip)
-    {
-        WinDestroyWindow(pXCenterData->Globals.hwndTooltip);
-        pXCenterData->Globals.hwndTooltip = NULLHANDLE;
-    }
+    winhDestroyWindow(&pXCenterData->Globals.hwndTooltip);
 
     // last chance... update desktop workarea in case
     // this hasn't been done that. This has probably been
@@ -3966,7 +3962,7 @@ STATIC VOID FrameDestroy(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
     // destroy the client... this no longer happens
     // automatically since we are no longer a WC_FRAME
     // V0.9.16 (2002-01-13) [umoeller]
-    WinDestroyWindow(pXCenterData->Globals.hwndClient);
+    winhDestroyWindow(&pXCenterData->Globals.hwndClient);
 
     // remove this window from the object's use list
     _wpDeleteFromObjUseList(pXCenterData->somSelf,
@@ -4139,7 +4135,7 @@ STATIC MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, M
                 // update desktop workarea
                 UpdateDesktopWorkarea((PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER),
                                       TRUE);            // force remove
-                WinDestroyWindow(hwnd);
+                winhDestroyWindow(&hwnd);
                         // after this pXCenterData is INVALID!
 
                 // sigh... this was missing
@@ -5963,7 +5959,7 @@ STATIC void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                     UpdateDesktopWorkarea(pXCenterData,
                                           TRUE);            // force remove
 
-                    WinDestroyWindow(pGlobals->hwndFrame);
+                    winhDestroyWindow(&pGlobals->hwndFrame);
                     // ClientDestroy sets _pvOpenView to NULL
                 }
                 CATCH(excpt1) {} END_CATCH();

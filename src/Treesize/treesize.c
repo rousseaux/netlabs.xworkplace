@@ -1900,7 +1900,7 @@ int main(int argc, char *argv[])
         // go!
         WinShowWindow(G_hwndMain, TRUE);
         WinProcessDlg(G_hwndMain);
-        WinDestroyWindow(G_hwndMain);
+        winhDestroyWindow(&G_hwndMain);
     } // end if (proceed)
 
     if (G_tidCollect)

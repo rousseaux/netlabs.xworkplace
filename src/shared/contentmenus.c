@@ -565,19 +565,19 @@ VOID cmnuAppendFldr2ContentList(WPFolder *pFolder,
  *      item id.
  */
 
-ULONG cmnuInsertOneObjectMenuItem(HWND       hAddToMenu,   // hwnd of menu to add to
-                                  USHORT     iPosition,
-                                  PSZ        pszNewItemString,          // title of new item
-                                  USHORT     afStyle,
-                                  WPObject   *pObject,                  // pointer to corresponding object
-                                  ULONG      ulObjType)
+ULONG cmnuInsertOneObjectMenuItem(HWND hAddToMenu,   // hwnd of menu to add to
+                                  USHORT iPosition,
+                                  PCSZ pcszNewItemString,          // title of new item
+                                  USHORT afStyle,
+                                  WPObject *pObject,                  // pointer to corresponding object
+                                  ULONG ulObjType)
 {
     ULONG               rc = G_sNextMenuId;
 
     winhInsertMenuItem(hAddToMenu,
                        iPosition,
                        G_sNextMenuId,
-                       pszNewItemString,
+                       pcszNewItemString,
                        afStyle,
                        0);
 
@@ -639,7 +639,7 @@ VOID cmnuSetPositionBelow(PPOINTL pptlBelow)
 
 SHORT cmnuPrepareContentSubmenu(WPFolder *somSelf, // in: folder whose content is to be displayed
                                 HWND hwndMenu,    // in: menu to insert submenu into
-                                PSZ pszTitle,     // in: submenu item title
+                                PCSZ pcszTitle,     // in: submenu item title
                                 USHORT iPosition, // in: position to insert at (or MIT_END)
                                 BOOL fOwnerDraw)  // in: owner-draw style flag for submenu (ie. display icons)
 {
@@ -648,7 +648,7 @@ SHORT cmnuPrepareContentSubmenu(WPFolder *somSelf, // in: folder whose content i
     if (hwndNewMenu = winhInsertSubmenu(hwndMenu,
                                         iPosition,
                                         sId,
-                                        pszTitle,
+                                        pcszTitle,
                                         (fOwnerDraw
                                             ? MIS_OWNERDRAW
                                             : 0),
@@ -657,7 +657,7 @@ SHORT cmnuPrepareContentSubmenu(WPFolder *somSelf, // in: folder whose content i
                                             // (cmnQueryNLSStrings())->pszFldrEmpty,
                                         MIS_TEXT,
                                         MIA_DISABLED))
-     {
+    {
         cmnuAppendFldr2ContentList(somSelf, sId);
         cmnuAppendMi2List(somSelf, OC_CONTENTFOLDER);
         return(sId);

@@ -2301,8 +2301,10 @@ STATIC APIRET ExportAddTypesTree(PDOMNODE pRootElement)
                                                 // this will recurse
                 #ifdef __DEBUG__
                 if (arc)
+                {
                     PMPF_ASSOCS(("ExportAddFileTypeAndAllParents returned %d for %s",
                                 arc, pKey));
+                }
                 else
                     PMPF_ASSOCS(("%s processed OK", pKey));
                 #endif

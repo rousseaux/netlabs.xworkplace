@@ -571,7 +571,7 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
                                   INIAPP_XWORKPLACE, INIKEY_FILEOPSPOS);
                 // clean up
                 free(WinQueryWindowPtr(hwndProgress, QWL_USER));
-                WinDestroyWindow(hwndProgress);
+                winhDestroyWindow(&hwndProgress);
             }
             else
                 mrc = WinDefDlgProc(hwndProgress, msg, mp1, mp2);
@@ -613,7 +613,7 @@ STATIC APIRET StartWithGenericProgress(HFILETASKLIST hftl,
 
     TRY_LOUD(excpt1)
     {
-        PSZ pszTitle = "unknown task";
+        PCSZ pcszTitle = "unknown task";
         WPObject *pobjConf;
 
         // pSourceFolder can be NULL for install fonts, so the below
@@ -643,24 +643,24 @@ STATIC APIRET StartWithGenericProgress(HFILETASKLIST hftl,
             switch (ulOperation)
             {
                 case XFT_MOVE2TRASHCAN:
-                    pszTitle = cmnGetString(ID_XSSI_FOPS_MOVE2TRASHCAN);
+                    pcszTitle = cmnGetString(ID_XSSI_FOPS_MOVE2TRASHCAN);
                 break;
 
                 case XFT_RESTOREFROMTRASHCAN:
-                    pszTitle = cmnGetString(ID_XSSI_FOPS_RESTOREFROMTRASHCAN);
+                    pcszTitle = cmnGetString(ID_XSSI_FOPS_RESTOREFROMTRASHCAN);
                 break;
 
                 case XFT_TRUEDELETE:
-                    pszTitle = cmnGetString(ID_XSSI_FOPS_TRUEDELETE);
+                    pcszTitle = cmnGetString(ID_XSSI_FOPS_TRUEDELETE);
                 break;
 
                 case XFT_INSTALLFONTS:
-                    pszTitle = cmnGetString(ID_XSSI_INSTALLINGFONTS);
+                    pcszTitle = cmnGetString(ID_XSSI_INSTALLINGFONTS);
                 break;
             }
 
             // set progress window title
-            WinSetWindowText(ppwd->hwndProgress, pszTitle);
+            WinSetWindowText(ppwd->hwndProgress, (PSZ)pcszTitle);
 
             winhCenterWindow(ppwd->hwndProgress);
             // get last window position from INI

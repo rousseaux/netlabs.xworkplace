@@ -16,8 +16,7 @@
  *      -- global settings (cmnQuerySetting, cmnSetSetting);
  *
  *      -- miscellaneous dialog wrappers for our own NLS
- *         string support (cmnMessageBox, cmnLoadDialogStrings,
- *         and many others).
+ *         string support (cmnMessageBox and many others).
  *
  *      Note that the system sound functions have been exported
  *      to helpers\syssound.c (V0.9.0).
@@ -103,7 +102,7 @@
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\prfh.h"               // INI file helper routines
-#include "helpers\procstat.h"
+#include "helpers\procstat.h"           // DosQProcStat handling
 #include "helpers\regexp.h"             // extended regular expressions
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
@@ -112,6 +111,8 @@
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\wphandle.h"           // file-system object handles
 #include "helpers\xstring.h"            // extended string helpers
+
+#include "helpers\nlscache.h"           // NLS string cache
 
 #include "helpers\tmsgfile.h"           // "text message file" handling (for cmnGetMessage)
 
@@ -215,6 +216,38 @@ extern BOOL             G_fIsWarp4 = FALSE;     // V0.9.19 (2002-04-24) [umoelle
     extern char G_aDebugs[__LAST_DBGSET] = {0};
 #endif
 
+static CHAR     G_szCopyright[5] = "";
+
+static PCSZ     G_pcszBldlevel = BLDLEVEL_VERSION,
+                G_pcszBldDate = __DATE__,
+                G_pcszNewLine = "\n",
+                G_pcszNBSP = "\xFF",      // non-breaking space
+                G_pcszContactUser = CONTACT_ADDRESS_USER,
+                G_pcszContactDev = CONTACT_ADDRESS_DEVEL,
+                G_pcszCopyChar = "\xB8",       // in codepage 850
+                G_pcszCopyright = G_szCopyright;
+
+static BOOL     G_fEntitiesHacked = FALSE;
+
+static const STRINGENTITY G_aEntities[] =
+    {
+        "&copy;", &G_pcszCopyright,
+        "&xwp;", &ENTITY_XWORKPLACE,
+        "&os2;", &ENTITY_OS2,
+        "&winos2;", &ENTITY_WINOS2,
+        "&warpcenter;", &ENTITY_WARPCENTER,
+        "&xcenter;", &ENTITY_XCENTER,
+        "&xbutton;", &ENTITY_XBUTTON,
+        "&xsd;", &ENTITY_XSHUTDOWN,
+        "&version;", &G_pcszBldlevel,
+        "&date;", &G_pcszBldDate,
+        "&pgr;", &ENTITY_PAGER,
+        "&nl;", &G_pcszNewLine,
+        "&nbsp;", &G_pcszNBSP,
+        "&contact-user;", &G_pcszContactUser,
+        "&contact-dev;", &G_pcszContactDev,
+    };
+
 // Declare C runtime prototypes, because there are no headers
 // for these:
 
@@ -227,7 +260,6 @@ int _CRT_init(void);
 // linked, as is the case with XFolder.
 void _CRT_term(void);
 
-VOID UnloadAllStrings(VOID);
 VOID LoadDaemonNLSStrings(VOID);
 
 /* ******************************************************************
@@ -929,10 +961,11 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
 
             if (hmodOld)
             {
-                // free all NLS strings we ever used;
-                // they will be dynamically re-loaded
-                // with the new NLS module
-                UnloadAllStrings();
+                // reinitialize string cache in helpers code V1.0.1 (2002-12-11) [umoeller]
+                nlsInitStrings(G_habThread1,
+                               G_hmodNLS,
+                               G_aEntities,
+                               ARRAYITEMCOUNT(G_aEntities));
 
                 // close TMF message file to force reload
                 // V0.9.19 (2002-04-02) [umoeller]
@@ -1077,52 +1110,6 @@ VOID cmnLog(PCSZ pcszSourceFile, // in: source file name
  ********************************************************************/
 
 /*
- *@@ XWPENTITY:
- *
- *@@added V0.9.16 (2001-09-29) [umoeller]
- */
-
-typedef struct _XWPENTITY
-{
-    PCSZ    pcszEntity;
-    PCSZ    *ppcszString;
-} XWPENTITY, *PXWPENTITY;
-
-typedef const struct _XWPENTITY *PCXWPENTITY;
-
-static CHAR     G_szCopyright[5] = "";
-
-static PCSZ     G_pcszBldlevel = BLDLEVEL_VERSION,
-                G_pcszBldDate = __DATE__,
-                G_pcszNewLine = "\n",
-                G_pcszNBSP = "\xFF",      // non-breaking space
-                G_pcszContactUser = CONTACT_ADDRESS_USER,
-                G_pcszContactDev = CONTACT_ADDRESS_DEVEL,
-                G_pcszCopyChar = "\xB8",       // in codepage 850
-                G_pcszCopyright = G_szCopyright;
-
-static BOOL     G_fEntitiesHacked = FALSE;
-
-static const XWPENTITY G_aEntities[] =
-    {
-        "&copy;", &G_pcszCopyright,
-        "&xwp;", &ENTITY_XWORKPLACE,
-        "&os2;", &ENTITY_OS2,
-        "&winos2;", &ENTITY_WINOS2,
-        "&warpcenter;", &ENTITY_WARPCENTER,
-        "&xcenter;", &ENTITY_XCENTER,
-        "&xbutton;", &ENTITY_XBUTTON,
-        "&xsd;", &ENTITY_XSHUTDOWN,
-        "&version;", &G_pcszBldlevel,
-        "&date;", &G_pcszBldDate,
-        "&pgr;", &ENTITY_PAGER,
-        "&nl;", &G_pcszNewLine,
-        "&nbsp;", &G_pcszNBSP,
-        "&contact-user;", &G_pcszContactUser,
-        "&contact-dev;", &G_pcszContactDev,
-    };
-
-/*
  *@@ cmnInitEntities:
  *      called from initMain to initialize NLS-dependent
  *      parts of the entities.
@@ -1155,144 +1142,11 @@ VOID cmnInitEntities(VOID)
             strcpy(G_szCopyright, "(C)");
     }
 
+    nlsInitStrings(G_habThread1,
+                   cmnQueryNLSModuleHandle(FALSE),
+                   G_aEntities,
+                   ARRAYITEMCOUNT(G_aEntities));
 }
-
-/*
- *@@ ReplaceEntities:
- *
- *@@added V0.9.16 (2001-09-29) [umoeller]
- */
-
-STATIC ULONG ReplaceEntities(PXSTRING pstr)
-{
-    ULONG ul,
-          rc = 0;
-
-    for (ul = 0;
-         ul < ARRAYITEMCOUNT(G_aEntities);
-         ul++)
-    {
-        ULONG ulOfs = 0;
-        PCXWPENTITY pThis = &G_aEntities[ul];
-        while (xstrFindReplaceC(pstr,
-                                &ulOfs,
-                                pThis->pcszEntity,
-                                *(pThis->ppcszString)))
-            rc++;
-    }
-
-    return rc;
-}
-
-/*
- *@@ cmnLoadString:
- *      pretty similar to WinLoadString, but allocates
- *      necessary memory as well. *ppsz is a pointer
- *      to a PSZ; if this PSZ is != NULL, whatever it
- *      points to will be free()d, so you should set this
- *      to NULL if you initially call this function.
- *      This is used at Desktop startup and when XFolder's
- *      language is changed later to load all the strings
- *      from a NLS DLL (cmnQueryNLSModuleHandle).
- *
- *@@changed V0.9.0 [umoeller]: "string not found" is now re-allocated using strdup (avoids crashes)
- *@@changed V0.9.0 (99-11-28) [umoeller]: added more meaningful error message
- *@@changed V0.9.2 (2000-02-26) [umoeller]: made temporary buffer larger
- *@@changed V0.9.16 (2001-09-29) [umoeller]: added entities support
- *@@changed V0.9.16 (2002-01-26) [umoeller]: added pulLength param
- *@@changed V1.0.0 (2002-09-17) [umoeller]: optimized
- */
-
-void cmnLoadString(HAB habDesktop,
-                   HMODULE hmodResource,
-                   ULONG ulID,
-                   PSZ *ppsz,
-                   PULONG pulLength)        // out: length of new string (ptr can be NULL)
-{
-    CHAR    szBuf[500];
-    XSTRING str;
-    LONG    lLength;        // V1.0.0 (2002-09-17) [umoeller]
-
-    if (*ppsz)
-        free(*ppsz);
-
-    if (!(lLength = WinLoadString(habDesktop,
-                                  hmodResource,
-                                  ulID,
-                                  sizeof(szBuf),
-                                  szBuf)))
-        // loading failed:
-        lLength = sprintf(szBuf,
-                          "string resource %d not found in module 0x%lX",
-                          ulID,
-                          hmodResource);
-
-    xstrInitCopy(&str,
-                 szBuf,
-                 lLength);      // V1.0.0 (2002-09-17) [umoeller]
-    ReplaceEntities(&str);      // V0.9.16
-    *ppsz = str.psz;
-    if (pulLength)
-        *pulLength = str.ulLength;
-    // do not free string
-}
-
-static HMTX        G_hmtxStringsCache = NULLHANDLE;
-static TREE        *G_StringsCache;
-static LONG        G_cStringsInCache = 0;
-
-/*
- *@@ LockStrings:
- *
- *@@added V0.9.9 (2001-04-04) [umoeller]
- */
-
-STATIC BOOL LockStrings(VOID)
-{
-    if (G_hmtxStringsCache)
-        return !DosRequestMutexSem(G_hmtxStringsCache, SEM_INDEFINITE_WAIT);
-
-    // first call:
-    if (!DosCreateMutexSem(NULL,
-                           &G_hmtxStringsCache,
-                           0,
-                           TRUE))
-    {
-        treeInit(&G_StringsCache,
-                 &G_cStringsInCache);
-
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-/*
- *@@ UnlockStrings:
- *
- *@@added V0.9.9 (2001-04-04) [umoeller]
- */
-
-STATIC VOID UnlockStrings(VOID)
-{
-    DosReleaseMutexSem(G_hmtxStringsCache);
-}
-
-/*
- *@@ STRINGTREENODE:
- *      internal string node structure for cmnGetString.
- *
- *@@added V0.9.9 (2001-04-04) [umoeller]
- *@@changed V0.9.16 (2002-01-26) [umoeller]: no longer using malloc() for string
- */
-
-typedef struct _STRINGTREENODE
-{
-    TREE        Tree;               // tree node (src\helpers\tree.c)
-    CHAR        szLoaded[1];        // string that was loaded;
-                                    // the struct is dynamic in size now
-                                    // V0.9.16 (2002-01-26) [umoeller]
-} STRINGTREENODE, *PSTRINGTREENODE;
 
 /*
  *@@ cmnGetString:
@@ -1347,74 +1201,12 @@ typedef struct _STRINGTREENODE
  *@@added V0.9.9 (2001-04-04) [umoeller]
  *@@changed V0.9.16 (2001-10-19) [umoeller]: fixed bad string count which was never set
  *@@changed V0.9.16 (2002-01-26) [umoeller]: optimized heap locality
+ *@@changed V1.0.1 (2002-12-11) [umoeller]: now using nlsGetString for the implementation
  */
 
-PSZ cmnGetString(ULONG ulStringID)
+PCSZ cmnGetString(ULONG ulStringID)
 {
-    BOOL    fLocked = FALSE;
-    PSZ     pszReturn = "Error";
-
-    TRY_LOUD(excpt1)
-    {
-        if (fLocked = LockStrings())
-        {
-            PSTRINGTREENODE pNode;
-
-            if (pNode = (PSTRINGTREENODE)treeFind(G_StringsCache,
-                                                  ulStringID,
-                                                  treeCompareKeys))
-                // already loaded:
-                pszReturn = pNode->szLoaded;
-            else
-            {
-                // not loaded: load now
-                PSZ     psz = NULL;
-                ULONG   ulLength = 0;
-
-                if (!G_hmodNLS)
-                    // NLS DLL not loaded yet:
-                    cmnQueryNLSModuleHandle(FALSE);
-
-                cmnLoadString(G_habThread1,     // kernel.c
-                              G_hmodNLS,
-                              ulStringID,
-                              &psz,
-                              &ulLength);
-
-                if (    (!psz)
-                     || (!(pNode = (PSTRINGTREENODE)malloc(   sizeof(STRINGTREENODE)
-                                                               // has one byte for null
-                                                               // terminator already
-                                                            + ulLength)))
-                   )
-                    pszReturn = "malloc() failed.";
-                else
-                {
-                    pNode->Tree.ulKey = ulStringID;
-                    memcpy(pNode->szLoaded,
-                           psz,
-                           ulLength + 1);
-                    treeInsert(&G_StringsCache,
-                               &G_cStringsInCache,      // fixed V0.9.16 (2001-10-19) [umoeller]
-                               (TREE*)pNode,
-                               treeCompareKeys);
-                    pszReturn = pNode->szLoaded;
-                }
-
-                if (psz)
-                    free(psz);
-            }
-        }
-        else
-            // we must always return a string, never NULL
-            pszReturn = "Cannot get strings lock.";
-    }
-    CATCH(excpt1) {} END_CATCH();
-
-    if (fLocked)
-        UnlockStrings();
-
-    return pszReturn;
+    return nlsGetString(ulStringID);
 }
 
 /*
@@ -1502,62 +1294,6 @@ VOID cmnLoadDaemonNLSStrings(VOID)
         krnUnlock();
 }
 
-/*
- *@@ UnloadAllStrings:
- *      removes all loaded strings from memory.
- *      Called by cmnQueryNLSModuleHandle when the
- *      module handle has changed.
- *
- *@@added V0.9.9 (2001-04-04) [umoeller]
- */
-
-STATIC VOID UnloadAllStrings(VOID)
-{
-    BOOL    fLocked = FALSE;
-
-    TRY_LOUD(excpt1)
-    {
-        if (fLocked = LockStrings())
-        {
-            // to delete all nodes, build a temporary
-            // array of all string node pointers;
-            // we don't want to rebalance the tree
-            // for each node
-            LONG            cNodes = G_cStringsInCache;
-            PSTRINGTREENODE *papNodes
-                = (PSTRINGTREENODE*)treeBuildArray(G_StringsCache,
-                                                   &cNodes);
-            if (papNodes)
-            {
-                if (cNodes == G_cStringsInCache)
-                {
-                    // delete all nodes in array
-                    ULONG ul;
-                    for (ul = 0;
-                         ul < cNodes;
-                         ul++)
-                    {
-                        free(papNodes[ul]);
-                    }
-                }
-                else
-                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                           "Node count mismatch.");
-
-                free(papNodes);
-            }
-
-            // reset the tree to "empty"
-            treeInit(&G_StringsCache,
-                     &G_cStringsInCache);
-        }
-    }
-    CATCH(excpt1) {} END_CATCH();
-
-    if (fLocked)
-        UnlockStrings();
-}
-
 // some frequently used dialog controls, these
 // are exported!
 // V0.9.16 (2001-10-08) [umoeller]
@@ -1581,147 +1317,6 @@ const CONTROLDEF
             // added V1.0.0 (2002-09-10) [lafaix]
     G_RemoveButton = LOADDEF_PUSHBUTTON(DID_REMOVE);
             // added V1.0.0 (2002-09-10) [lafaix]
-
-/*
- *@@ cmnLoadDialogStrings:
- *      builds a copy of the given array of DLGHITEM
- *      structs, including the variable CONTROLDEF
- *      structs they point to, and loads NLS strings
- *      for those CONTROLDEF's that have their
- *      pcszText set to LOAD_STRING ((PCSZ)-1).
- *
- *      The point for this function is that the
- *      dialog formatter (src\helpers\dialog.c)
- *      expects all strings to be properly set and
- *      cannot load strings from resources. As a
- *      result, we have to do this here. We used to
- *      simply override the LOAD_STRING values in
- *      the global variables, but this blew up the
- *      system after an NLS language change because
- *      then the string pointers pointed to data
- *      that was already freed. So we need a heap
- *      copy of the DLGHITEM arrays.
- *
- *      The caller should pass the newly created
- *      DLGHITEM array to dlghCreateDlg and
- *      free() that afterwards:
- +
- +      static const DLGHITEM dlgOrig[] = {...};
- +      PDLGHITEM paNew;
- +      APIRET arc;
- +
- +      if (!(arc = cmnLoadDialogStrings(dlgOrig,
- +                                       ARRAYITEMCOUNT(dlgOrig),
- +                                       &paNew)))
- +      {
- +          HWND hwndDlg;
- +          if (!(arc = dlghCreateDlg(&hwndDlg,
- +                                    hwndOwner,
- +                                    FCF_FIXED_DLG,
- +                                    fnwpWhatever,
- +                                    "Title",
- +                                    paNew,        // new array with NLS strings
- +                                    ARRAYITEMCOUNT(dlgOrig), // same as before
- +                                    ...)))
- +          {
- +              ...
- +          }
- +
- +          free(paNew);
- +      }
- *
- *      Also used by ntbFormatPage.
- *
- *@@added V0.9.16 (2001-10-08) [umoeller]
- *@@changed V0.9.19 (2002-04-02) [umoeller]: now building copy to avoid blowups on NLS changes
- */
-
-APIRET cmnLoadDialogStrings(PCDLGHITEM paDlgItems,     // in: definition array
-                            ULONG cDlgItems,           // in: array item count (NOT array size)
-                            PDLGHITEM *ppaNew)         // out: new array with NLS strings replaced
-{
-    ULONG cControlDefs = 0;
-    PDLGHITEM paNew;
-    PCONTROLDEF pDefTargetThis;
-    const CONTROLDEF *pDef;
-
-    // loop 1:
-    // first check how much mem we need;
-    // we not only allocate an array of DLGHITEM
-    // structs but we also put the CONTROLDEFs
-    // they point to in the same memory buffer
-    // if they contain NLS strings
-    ULONG ul;
-    ULONG cb;
-    for (ul = 0;
-         ul < cDlgItems;
-         ul++)
-    {
-        PCDLGHITEM pThis = &paDlgItems[ul];
-        // allocate an extra CONTROLDEF if the
-        // DLGHITEM points to one and the control
-        // def has a LOAD_STRING entry
-        if (    (    (pThis->Type == TYPE_CONTROL_DEF)
-                  || (pThis->Type == TYPE_START_NEW_TABLE)
-                )
-             && (pDef = (const CONTROLDEF *)pThis->ul1) // pThis->pCtlDef) V1.0.0 (2002-08-18) [umoeller]
-             && (pDef->pcszText == LOAD_STRING ) // (PCSZ)-1)
-           )
-        {
-            ++cControlDefs;
-        }
-    }
-
-    // now go allocate memory
-    cb =   cDlgItems * sizeof(DLGHITEM)
-         + cControlDefs * sizeof(CONTROLDEF);
-
-    if (!(paNew = malloc(cb)))
-        return ERROR_NOT_ENOUGH_MEMORY;
-
-    memset(paNew, 0, cb);
-
-    // first CONTROLDEF comes after DLGHITEMs array
-    pDefTargetThis = (PCONTROLDEF)(((PBYTE)paNew) + (cDlgItems * sizeof(DLGHITEM)));
-
-    // loop 2: fill the memory buffer
-
-    for (ul = 0;
-         ul < cDlgItems;
-         ul++)
-    {
-        // copy DLGHITEM
-        PCDLGHITEM pThis = &paDlgItems[ul];
-        memcpy(&paNew[ul], pThis, sizeof(DLGHITEM));
-
-        // again, if the DLGHITEM points to a CONTOLDEF
-        // and the control def has a LOAD_STRING entry,
-        // use one of the array items allocated above
-        if (    (    (pThis->Type == TYPE_CONTROL_DEF)
-                  || (pThis->Type == TYPE_START_NEW_TABLE)
-                )
-             && (pDef = (const CONTROLDEF *)pThis->ul1) // pCtlDef) V1.0.0 (2002-08-18) [umoeller]
-             && (pDef->pcszText == LOAD_STRING ) // (PCSZ)-1)
-           )
-        {
-            // then use a new CONTROLDEF as well
-            memcpy(pDefTargetThis, pDef, sizeof(CONTROLDEF));
-            // and replace the LOAD_STRING with the real string
-            pDefTargetThis->pcszText = cmnGetString(pDef->usID);
-            // and point DLGHITEM to this CONTROLDEF instead
-            // paNew[ul].pCtlDef = pDefTargetThis;  V1.0.0 (2002-08-18) [umoeller]
-            paNew[ul].ul1 = (ULONG)pDefTargetThis;
-            ++pDefTargetThis;
-        }
-        // otherwise we use the const DLGHITEM that was
-        // given to us in paDlgItems for this entry
-    }
-
-    // output pointer
-    *ppaNew = paNew;
-
-    return NO_ERROR;
-}
 
 /*
  * G_aStringIDs:
@@ -5342,7 +4937,6 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
     HWND        hwndInfo;
     XSTRING     strInfo,
                 strInfoECS1;
-    PDLGHITEM   paNew;
 
     CHAR        szPhysMem[50],
                 szFreeMem[50],
@@ -5393,29 +4987,22 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
             (ULONG)((double)ulFreeMem * 100 / ulMem));
     ProductInfoFreeKBytes.pcszText = szFreeMemKBytes;
 
-    if (!cmnLoadDialogStrings(dlgProductInfo,
-                              ARRAYITEMCOUNT(dlgProductInfo),
-                              &paNew))
+    if (!dlghCreateDlg(&hwndInfo,
+                       hwndOwner,
+                       FCF_FIXED_DLG,
+                       fnwpProductInfo, // WinDefDlgProc,   V0.9.20 (2002-08-10) [umoeller]
+                       cmnGetString(ID_XSDI_INFO_TITLE),
+                       dlgProductInfo,
+                       ARRAYITEMCOUNT(dlgProductInfo),
+                       NULL,
+                       cmnQueryDefaultFont()))
     {
-        if (!dlghCreateDlg(&hwndInfo,
-                           hwndOwner,
-                           FCF_FIXED_DLG,
-                           fnwpProductInfo, // WinDefDlgProc,   V0.9.20 (2002-08-10) [umoeller]
-                           cmnGetString(ID_XSDI_INFO_TITLE),
-                           paNew,
-                           ARRAYITEMCOUNT(dlgProductInfo),
-                           NULL,
-                           cmnQueryDefaultFont()))
-        {
-            // ctlMakeSeparatorLine(WinWindowFromID(hwndInfo, 9998));
-            // ctlMakeSeparatorLine(WinWindowFromID(hwndInfo, 9999));
+        // ctlMakeSeparatorLine(WinWindowFromID(hwndInfo, 9998));
+        // ctlMakeSeparatorLine(WinWindowFromID(hwndInfo, 9999));
 
-            winhCenterWindow(hwndInfo);
-            WinProcessDlg(hwndInfo);
-            WinDestroyWindow(hwndInfo);
-        }
-
-        free(paNew);
+        winhCenterWindow(hwndInfo);
+        WinProcessDlg(hwndInfo);
+        winhDestroyWindow(&hwndInfo);
     }
 
     if (hbmLogo)
@@ -6369,7 +5956,6 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
     TRY_LOUD(excpt1)
     {
         static HWND hwndDlg = NULLHANDLE;
-        PDLGHITEM paNew;
 
         // activate the current Run dialog if user tries to open a new one V0.9.14
         if (hwndDlg)
@@ -6396,151 +5982,144 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
         if (!hwndOwner)
             hwndOwner = cmnQueryActiveDesktopHWND(); */
 
-        if (!cmnLoadDialogStrings(G_dlgRun,
-                                  ARRAYITEMCOUNT(G_dlgRun),
-                                  &paNew))
+        if (!dlghCreateDlg(&hwndDlg,
+                           hwndOwner,
+                           FCF_FIXED_DLG,
+                           fnwpRunCommandLine,
+                           cmnGetString(ID_XFD_RUN_TITLE),
+                           G_dlgRun,
+                           ARRAYITEMCOUNT(G_dlgRun),
+                           NULL,
+                           cmnQueryDefaultFont()))
         {
-            if (!dlghCreateDlg(&hwndDlg,
-                               hwndOwner,
-                               FCF_FIXED_DLG,
-                               fnwpRunCommandLine,
-                               cmnGetString(ID_XFD_RUN_TITLE),
-                               paNew,
-                               ARRAYITEMCOUNT(G_dlgRun),
-                               NULL,
-                               cmnQueryDefaultFont()))
+            HWND    hwndCommand = WinWindowFromID(hwndDlg, ID_XFD_RUN_COMMAND),
+                    hwndStartup = WinWindowFromID(hwndDlg, ID_XFD_RUN_STARTUPDIR);
+
+            winhSetDlgItemText(hwndDlg, ID_XFD_RUN_FULLPATH, "");
+
+            winhSetEntryFieldLimit(hwndCommand, CCHMAXPATH);
+            if (LoadRunHistory(hwndCommand))
             {
-                HWND    hwndCommand = WinWindowFromID(hwndDlg, ID_XFD_RUN_COMMAND),
-                        hwndStartup = WinWindowFromID(hwndDlg, ID_XFD_RUN_STARTUPDIR);
+                HWND hwndOK = WinWindowFromID(hwndDlg, DID_OK);
+                HWND hwndCancel = WinWindowFromID(hwndDlg, DID_CANCEL);
 
-                winhSetDlgItemText(hwndDlg, ID_XFD_RUN_FULLPATH, "");
-
-                winhSetEntryFieldLimit(hwndCommand, CCHMAXPATH);
-                if (LoadRunHistory(hwndCommand))
-                {
-                    HWND hwndOK = WinWindowFromID(hwndDlg, DID_OK);
-                    HWND hwndCancel = WinWindowFromID(hwndDlg, DID_CANCEL);
-
-                    WinEnableWindow(hwndOK, TRUE);
-                    WinSetWindowULong(hwndDlg, QWL_DEFBUTTON, DID_OK);
-                    WinSetWindowBits(hwndOK, QWL_STYLE, -1, WS_GROUP | BS_DEFAULT );
-                    WinSetWindowBits(hwndCancel, QWL_STYLE, 0, WS_GROUP | BS_DEFAULT);
-                }
-
-                winhSetEntryFieldLimit(hwndStartup, CCHMAXPATH);
-                WinSetWindowText(hwndStartup, pcszStartupDir);
-
-                cmnSetControlsFont(hwndDlg, 1, 10000);
-                winhSetDlgItemChecked(hwndDlg, ID_XFD_RUN_AUTOCLOSE, TRUE);
-                winhSetDlgItemChecked(hwndDlg, ID_XFD_RUN_ENHANCED, TRUE); // V0.9.14
-                winhCenterWindow(hwndDlg);
-
-                WinSetFocus(HWND_DESKTOP, hwndCommand);
-
-                // go!
-                if (WinProcessDlg(hwndDlg) == DID_OK)
-                {
-                    PSZ pszCommand = winhQueryWindowText(hwndCommand);
-                    PSZ pszStartup = winhQueryWindowText(hwndStartup);
-
-                    if (pszCommand)
-                    {
-                        APIRET  arc = NO_ERROR;
-                        PSZ     pszExec,
-                                pParams = NULL;
-                        CHAR    szExecutable[CCHMAXPATH];
-
-                        UpdateRunHistory(hwndCommand);
-                        SaveRunHistory(hwndCommand);
-                        if (!pszStartup)
-                        {
-                            pszStartup = strdup("?:\\");
-                            *pszStartup = doshQueryBootDrive();
-                        }
-
-                        pszExec = StripParams(pszCommand,
-                                              &pParams);
-                        if (!pszExec)
-                            arc = ERROR_INVALID_PARAMETER;
-                        else
-                        {
-                            arc = doshFindExecutable(pszExec,
-                                                     szExecutable,
-                                                     sizeof(szExecutable),
-                                                     G_apcszExtensions,
-                                                     ARRAYITEMCOUNT(G_apcszExtensions));
-                            free(pszExec);
-                        }
-
-                        if (arc != NO_ERROR)
-                        {
-                            PSZ pszError;
-                            if (pszError = doshQuerySysErrorMsg(arc))
-                            {
-                                cmnMessageBox(hwndOwner,
-                                              pszCommand,
-                                              pszError,
-                                              NULLHANDLE, // no help
-                                              MB_CANCEL);
-                                free(pszError);
-                            }
-                        }
-                        else
-                        {
-                            PROGDETAILS pd;
-                            ULONG   ulDosAppType, ulFlags = 0;
-                            memset(&pd, 0, sizeof(pd));
-
-                            if (!(arc = appQueryAppType(szExecutable,
-                                                        &ulDosAppType,
-                                                        &pd.progt.progc)))
-                            {
-                                pd.progt.fbVisible = SHE_VISIBLE;
-                                pd.pszExecutable = szExecutable;
-                                nlsUpper(szExecutable);
-                                pd.pszParameters = (PSZ)pParams;
-                                pd.pszStartupDir = pszStartup;
-
-                                pd.swpInitial.hwndInsertBehind = HWND_TOP; // V0.9.14
-                                if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_MINIMIZED))
-                                    pd.swpInitial.fl = SWP_MINIMIZE;
-                                else
-                                    pd.swpInitial.fl = SWP_ACTIVATE; // V0.9.14
-
-                                if (!winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_AUTOCLOSE))
-                                    pd.swpInitial.fl |= SWP_NOAUTOCLOSE; // V0.9.14
-
-                                if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_FULLSCREEN))
-                                    ulFlags |= APP_RUN_FULLSCREEN;
-
-                                if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_ENHANCED))
-                                    ulFlags |= APP_RUN_ENHANCED;
-                                else
-                                    ulFlags |= APP_RUN_STANDARD;
-
-                                if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_SEPARATE))
-                                    ulFlags |= APP_RUN_SEPARATE;
-
-                                arc = appStartApp(NULLHANDLE,        // no notify
-                                                  &pd,
-                                                  ulFlags, //V0.9.14
-                                                  &happ,
-                                                  0,
-                                                  NULL);
-                            }
-                        }
-                    }
-
-                    if (pszCommand)
-                        free(pszCommand);
-                    if (pszStartup)
-                        free(pszStartup);
-                }
-                WinDestroyWindow(hwndDlg);
-                hwndDlg = NULLHANDLE; // V0.9.14
+                WinEnableWindow(hwndOK, TRUE);
+                WinSetWindowULong(hwndDlg, QWL_DEFBUTTON, DID_OK);
+                WinSetWindowBits(hwndOK, QWL_STYLE, -1, WS_GROUP | BS_DEFAULT );
+                WinSetWindowBits(hwndCancel, QWL_STYLE, 0, WS_GROUP | BS_DEFAULT);
             }
 
-            free(paNew);
+            winhSetEntryFieldLimit(hwndStartup, CCHMAXPATH);
+            WinSetWindowText(hwndStartup, pcszStartupDir);
+
+            cmnSetControlsFont(hwndDlg, 1, 10000);
+            winhSetDlgItemChecked(hwndDlg, ID_XFD_RUN_AUTOCLOSE, TRUE);
+            winhSetDlgItemChecked(hwndDlg, ID_XFD_RUN_ENHANCED, TRUE); // V0.9.14
+            winhCenterWindow(hwndDlg);
+
+            WinSetFocus(HWND_DESKTOP, hwndCommand);
+
+            // go!
+            if (WinProcessDlg(hwndDlg) == DID_OK)
+            {
+                PSZ pszCommand = winhQueryWindowText(hwndCommand);
+                PSZ pszStartup = winhQueryWindowText(hwndStartup);
+
+                if (pszCommand)
+                {
+                    APIRET  arc = NO_ERROR;
+                    PSZ     pszExec,
+                            pParams = NULL;
+                    CHAR    szExecutable[CCHMAXPATH];
+
+                    UpdateRunHistory(hwndCommand);
+                    SaveRunHistory(hwndCommand);
+                    if (!pszStartup)
+                    {
+                        pszStartup = strdup("?:\\");
+                        *pszStartup = doshQueryBootDrive();
+                    }
+
+                    pszExec = StripParams(pszCommand,
+                                          &pParams);
+                    if (!pszExec)
+                        arc = ERROR_INVALID_PARAMETER;
+                    else
+                    {
+                        arc = doshFindExecutable(pszExec,
+                                                 szExecutable,
+                                                 sizeof(szExecutable),
+                                                 G_apcszExtensions,
+                                                 ARRAYITEMCOUNT(G_apcszExtensions));
+                        free(pszExec);
+                    }
+
+                    if (arc != NO_ERROR)
+                    {
+                        PSZ pszError;
+                        if (pszError = doshQuerySysErrorMsg(arc))
+                        {
+                            cmnMessageBox(hwndOwner,
+                                          pszCommand,
+                                          pszError,
+                                          NULLHANDLE, // no help
+                                          MB_CANCEL);
+                            free(pszError);
+                        }
+                    }
+                    else
+                    {
+                        PROGDETAILS pd;
+                        ULONG   ulDosAppType, ulFlags = 0;
+                        memset(&pd, 0, sizeof(pd));
+
+                        if (!(arc = appQueryAppType(szExecutable,
+                                                    &ulDosAppType,
+                                                    &pd.progt.progc)))
+                        {
+                            pd.progt.fbVisible = SHE_VISIBLE;
+                            pd.pszExecutable = szExecutable;
+                            nlsUpper(szExecutable);
+                            pd.pszParameters = (PSZ)pParams;
+                            pd.pszStartupDir = pszStartup;
+
+                            pd.swpInitial.hwndInsertBehind = HWND_TOP; // V0.9.14
+                            if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_MINIMIZED))
+                                pd.swpInitial.fl = SWP_MINIMIZE;
+                            else
+                                pd.swpInitial.fl = SWP_ACTIVATE; // V0.9.14
+
+                            if (!winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_AUTOCLOSE))
+                                pd.swpInitial.fl |= SWP_NOAUTOCLOSE; // V0.9.14
+
+                            if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_FULLSCREEN))
+                                ulFlags |= APP_RUN_FULLSCREEN;
+
+                            if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_ENHANCED))
+                                ulFlags |= APP_RUN_ENHANCED;
+                            else
+                                ulFlags |= APP_RUN_STANDARD;
+
+                            if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_SEPARATE))
+                                ulFlags |= APP_RUN_SEPARATE;
+
+                            arc = appStartApp(NULLHANDLE,        // no notify
+                                              &pd,
+                                              ulFlags, //V0.9.14
+                                              &happ,
+                                              0,
+                                              NULL);
+                        }
+                    }
+                }
+
+                if (pszCommand)
+                    free(pszCommand);
+                if (pszStartup)
+                    free(pszStartup);
+            }
+
+            winhDestroyWindow(&hwndDlg);
         }
     }
     CATCH(excpt1)
@@ -6762,7 +6341,7 @@ APIRET cmnGetMessageExt(PCSZ *pTable,     // in: replacement PSZ table or NULL
                 PMPF_LANGCODES(("tmfGetMessage rc: %d", arc));
 
                 if (!arc)
-                    ReplaceEntities(pstr);
+                    nlsReplaceEntities(pstr);
                 else
                 {
                     CHAR sz[500];

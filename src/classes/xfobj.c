@@ -29,6 +29,7 @@
  *      i.e. the methods themselves.
  *      The implementation for this class is mostly in filesys\object.c.
  *
+ *@@somclass XWPObjList xl_
  *@@somclass XFldObject xo_
  *@@somclass M_XFldObject xoM_
  */
@@ -86,6 +87,7 @@
 #define INCL_WINSTDCNR
 #define INCL_WINSTDBOOK
 #define INCL_WINPROGRAMLIST
+#define INCL_WINSHELLDATA
 #define INCL_WINSWITCHLIST
 #include <os2.h>
 
@@ -101,6 +103,7 @@
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\sem.h"                // fast mutex semaphores
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
@@ -163,6 +166,9 @@ static XFldObject   *G_pFirstAwakeObject = NULL,
 WPObject            *G_pAwakeWarpCenter = NULL;
 ULONG               G_cAwakeObjects = 0;
 
+// mutex for all XWPObjList objects V1.0.1 (2002-12-11) [umoeller]
+static HMTX         G_hmtxObjectLists = NULLHANDLE;
+
 /* ******************************************************************
  *
  *   Awake objects list
@@ -205,6 +211,575 @@ STATIC VOID UnlockAwakeObjectsList(VOID)
 {
     DosReleaseMutexSem(G_hmtxAwakeObjects);
 }
+
+/*
+ *@@ LockObjectLists:
+ *      locks all list objects.
+ *
+ *@@added V1.0.1 (2002-12-11) [umoeller]
+ */
+
+STATIC BOOL LockObjectLists(VOID)
+{
+    if (G_hmtxObjectLists)
+        return !DosRequestMutexSem(G_hmtxObjectLists, SEM_INDEFINITE_WAIT);
+
+    return !DosCreateMutexSem(NULL,
+                              &G_hmtxObjectLists,
+                              0,
+                              TRUE);
+}
+
+/*
+ *@@ UnlockObjectLists:
+ *      unlocks all list objects.
+ *
+ *@@added V1.0.1 (2002-12-11) [umoeller]
+ */
+
+STATIC BOOL UnlockObjectLists(VOID)
+{
+    return !DosReleaseMutexSem(G_hmtxObjectLists);
+}
+
+/* ******************************************************************
+ *
+ *   here come the XWPObjList methods
+ *
+ ********************************************************************/
+
+/*
+ *@@ SetKeys:
+ *      sets the internal INI key members.
+ *
+ *      Private method, only to be called by M_XFldObject::xwpclsCreateList.
+ *
+ *@@added V1.0.1 (2002-12-11) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xl_SetKeys(XWPObjList *somSelf, PSZ pszApp,
+                                   PSZ pszKey)
+{
+    XWPObjListData *somThis = XWPObjListGetData(somSelf);
+    XWPObjListMethodDebug("XWPObjList","xl_SetKeys");
+
+    _pszIniApp = pszApp;
+    _pszIniKey = pszKey;
+}
+
+/*
+ *@@ xl_Load:
+ *      loads objects from OS2.INI into the list.
+ *
+ *      Private method, not to be called externally.
+ *      Caller must have locked the list first.
+ *
+ *@@added V0.9.7 (2001-01-18) [umoeller]
+ *@@changed V0.9.9 (2001-03-19) [pr]: tidied up
+ *@@changed V0.9.9 (2001-03-27) [umoeller]: added OBJECTLIST encapsulation
+ *@@changed V0.9.16 (2001-10-11) [umoeller]: rewritten
+ *@@changed V0.9.16 (2001-10-24) [umoeller]: added fixes for duplicate objects on list, which lead to endlessly looping startup folders
+ *@@changed V1.0.1 (2002-12-11) [umoeller]: turned this into an XWPObjList method
+ */
+
+SOM_Scope BOOL  SOMLINK xl_Load(XWPObjList *somSelf)
+{
+    BOOL        brc = FALSE;
+    PSZ         pszHandles = NULL;
+
+    XWPObjListData *somThis = XWPObjListGetData(somSelf);
+    XWPObjListMethodDebug("XWPObjList","xl_Load");
+
+    TRY_LOUD(excpt1)
+    {
+        if (    (!_fLoaded)
+             && (_pszIniKey)
+           )
+        {
+            BOOL fReSave = FALSE;
+
+            if (pszHandles = prfhQueryProfileData(HINI_USERPROFILE,
+                                                  _pszIniApp,
+                                                  _pszIniKey,
+                                                  NULL))
+            {
+                PCSZ pTemp = pszHandles;
+                ULONG ulCharsLeft;
+
+                while (     (pTemp)
+                         && (*pTemp)
+                      )
+                {
+                    HOBJECT          hObject;
+                    if (hObject = strtol(pTemp,
+                                         NULL,
+                                         16))
+                    {
+                        PCSZ        p;
+                        WPObject    *pobj;
+                        if (    (pobj = _wpclsQueryObject(_WPObject, hObject))
+                             && (wpshCheckObject(pobj))
+                           )
+                        {
+                            // make sure the object is NOT on the list
+                            // yet!! for some reason, we end up with objects
+                            // being on the list twice or something.
+                            // V0.9.16 (2001-10-24) [umoeller]
+
+                            if (-1 == lstIndexFromItem(_pvList, pobj))
+                            {
+                                // not on list yet:
+                                // add it now
+                                if (lstAppendItem(_pvList, pobj))
+                                    _xwpAddedToList(pobj, somSelf);
+                            }
+                            else
+                            {
+                                // we have duplicate objects on the list:
+                                // save the fixed list back to OS2.INI
+                                // V0.9.16 (2001-10-24) [umoeller]
+                                fReSave = TRUE;
+                                // _Pmpf(("   got duplicate obj %lX = %s", pobj, _wpQueryTitle(pobj)));
+                            }
+                        }
+
+                        // find next space
+                        if (p = strchr(pTemp, ' '))
+                        {
+                            // skip spaces
+                            while (*p && *p == ' ')
+                                p++;
+                            pTemp = p;          // points to either next non-space
+                                                // or null char now
+                        }
+                        else
+                            // no more spaces:
+                            break;
+                    }
+                    else
+                        // cannot get object string:
+                        break;
+                };
+            }
+
+            _fLoaded = TRUE;
+
+            if (fReSave)        // V0.9.16 (2001-10-24) [umoeller]
+            {
+                // _Pmpf(("  RESAVE, saving modified list back to OS2.INI"));
+                _Write(somSelf);
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    if (pszHandles)
+        free(pszHandles);
+
+    return brc;
+}
+
+/*
+ *@@ Write:
+ *      writes the list out to the OS2.INI file.
+ *
+ *      This creates a handle for each object on the
+ *      list.
+ *
+ *      Private method, not to be called externally.
+ *      Caller must have locked the list first.
+ *
+ *@@added V1.0.1 (2002-12-11) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xl_Write(XWPObjList *somSelf)
+{
+    BOOL    brc = FALSE;
+
+    XWPObjListData *somThis = XWPObjListGetData(somSelf);
+    XWPObjListMethodDebug("XWPObjList","xl_Write");
+
+    TRY_LOUD(excpt1)
+    {
+        if (    (_fLoaded)
+             && (_pszIniKey)
+           )
+        {
+            PLISTNODE pNode;
+            if (pNode = lstQueryFirstNode(_pvList))
+            {
+                // list is not empty: recompose string
+                XSTRING strTemp;
+                xstrInit(&strTemp, 100);
+
+                while (pNode)
+                {
+                    CHAR szHandle[30];
+                    WPObject *pobj = (WPObject*)pNode->pItemData;
+                    sprintf(szHandle,
+                            "%lX ",         // note the space
+                            _wpQueryHandle(pobj));
+
+                    xstrcat(&strTemp, szHandle, 0);
+
+                    pNode = pNode->pNext;
+                }
+
+                brc = PrfWriteProfileString(HINI_USERPROFILE,
+                                            (PSZ)_pszIniApp,
+                                            (PSZ)_pszIniKey,
+                                            strTemp.psz);
+
+                xstrClear(&strTemp);
+            }
+            else
+            {
+                // list is empty: remove
+                brc = PrfWriteProfileData(HINI_USERPROFILE,
+                                          (PSZ)_pszIniApp,
+                                          (PSZ)_pszIniKey,
+                                          NULL,
+                                          0);
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    return brc;
+}
+
+/*
+ *@@ Append:
+ *      appends pobj to the list object represented by somSelf,
+ *      if it is not yet in the list.
+ *
+ *      Returns TRUE if the list was changed. In that case,
+ *      the list is rewritten to the specified INI key.
+ *
+ *@@added V0.9.0 (99-11-16) [umoeller]
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: made this generic for all objs... renamed from fdr*
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: removed mallocs(), this wasn't needed
+ *@@changed V0.9.9 (2001-01-29) [lafaix]: wrong object set, fixed
+ *@@changed V0.9.9 (2001-03-19) [pr]: lock/unlock objects on the lists
+ *@@changed V0.9.9 (2001-03-27) [umoeller]: added OBJECTLIST encapsulation
+ *@@changed V0.9.14 (2001-07-31) [pr]: fixed confusing code
+ *@@changed V1.0.1 (2002-12-11) [umoeller]: turned this into an XWPObjList method
+ */
+
+SOM_Scope BOOL  SOMLINK xl_Append(XWPObjList *somSelf, WPObject* pobj)
+{
+    BOOL    brc = FALSE,
+            fLocked = FALSE;
+
+    XWPObjListData *somThis = XWPObjListGetData(somSelf);
+    XWPObjListMethodDebug("XWPObjList","xl_Append");
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = LockObjectLists())
+        {
+            PLISTNODE pNode;
+
+            if (!_fLoaded)
+                _Load(somSelf);
+
+            if (    (!(pNode = lstNodeFromItem(_pvList, pobj)))
+                 && (brc = !!lstAppendItem(_pvList, pobj))
+               )
+            {
+                // notify object of addition
+                _xwpAddedToList(pobj, somSelf);
+
+                // list changed:
+                _Write(somSelf);
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    if (fLocked)
+        UnlockObjectLists();
+
+    return brc;
+}
+
+/*
+ *@@ Count:
+ *      returns the no. of objects currently stored
+ *      in the list.
+ *
+ *@@added V1.0.1 (2002-12-11) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xl_Count(XWPObjList *somSelf)
+{
+    ULONG   ulrc = 0;
+    BOOL    fLocked = FALSE;
+
+    XWPObjListData *somThis = XWPObjListGetData(somSelf);
+    XWPObjListMethodDebug("XWPObjList","xl_Count");
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = LockObjectLists())
+            ulrc = lstCountItems(_pvList);
+    }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
+
+    if (fLocked)
+        UnlockObjectLists();
+
+    return ulrc;
+}
+
+/*
+ *@@ IsIn:
+ *      returns TRUE if pobj is already in the list
+ *      represented by somSelf.
+ *
+ *@@added V0.9.0 (99-11-16) [umoeller]
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: made this generic for all objs... renamed from fdr*
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: removed mallocs(), this wasn't needed
+ *@@changed V0.9.9 (2001-03-27) [umoeller]: added OBJECTLIST encapsulation
+ *@@changed V1.0.1 (2002-12-11) [umoeller]: turned this into an XWPObjList method
+ */
+
+SOM_Scope BOOL  SOMLINK xl_IsIn(XWPObjList *somSelf, WPObject* pobj)
+{
+    BOOL    brc = FALSE,
+            fLocked = FALSE;
+
+    XWPObjListData *somThis = XWPObjListGetData(somSelf);
+    XWPObjListMethodDebug("XWPObjList","xl_IsIn");
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = LockObjectLists())
+        {
+            if (!_fLoaded)
+                _Load(somSelf);
+
+            brc = !!lstNodeFromItem(_pvList, pobj);
+        }
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fLocked)
+        UnlockObjectLists();
+
+    return brc;
+}
+
+/*
+ *@@ Remove:
+ *      removes pobj from the list represented by somSelf.
+ *
+ *@@added V1.0.1 (2002-12-11) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xl_Remove(XWPObjList *somSelf, WPObject* pobj)
+{
+    BOOL    brc = FALSE,
+            fLocked = FALSE;
+
+    XWPObjListData *somThis = XWPObjListGetData(somSelf);
+    XWPObjListMethodDebug("XWPObjList","xl_Remove");
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = LockObjectLists())
+        {
+            PLISTNODE pNode;
+
+            if (!_fLoaded)
+                _Load(somSelf);
+
+            if (    (pNode = lstNodeFromItem(_pvList, pobj))
+                 && (brc = lstRemoveNode(_pvList, pNode))
+               )
+            {
+                // notify object of removal
+                _xwpRemovedFromList(pobj, somSelf);
+
+                // list changed:
+                _Write(somSelf);
+            }
+        }
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fLocked)
+        UnlockObjectLists();
+
+    return brc;
+}
+
+/*
+ *@@ Enum:
+ *      traverses the list represented by somSelf.
+ *
+ *      If pobj is NULL, this returns the first object on
+ *      the list. Otherwise it returns the object that
+ *      comes after pobj in the list.
+ *
+ *      Returns NULL if no object was found (that is,
+ *      if the list is empty or there is no object
+ *      after pobj).
+ *
+ *@@added V1.0.1 (2002-12-11) [umoeller]
+ */
+
+SOM_Scope WPObject*  SOMLINK xl_Enum(XWPObjList *somSelf, WPObject* pobj)
+{
+    BOOL        fLocked = FALSE;
+    WPObject    *pobjReturn = NULL;
+
+    XWPObjListData *somThis = XWPObjListGetData(somSelf);
+    XWPObjListMethodDebug("XWPObjList","xl_Enum");
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = LockObjectLists())
+        {
+            PLISTNODE pNode;
+
+            if (!_fLoaded)
+                _Load(somSelf);
+
+            if (!pobj)
+            {
+                // caller wants first:
+                if (pNode = lstQueryFirstNode(_pvList))
+                    pobjReturn = (WPObject*)pNode->pItemData;
+            }
+            else
+            {
+                // caller wants next:
+                if (    (pNode = lstNodeFromItem(_pvList, pobj))
+                     && (pNode = pNode->pNext)
+                   )
+                    pobjReturn = (WPObject*)pNode->pItemData;
+            }
+        }
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fLocked)
+        UnlockObjectLists();
+
+    return pobjReturn;
+}
+
+/*
+ *@@ somDefaultInit:
+ *      overridden SOM constructor to initialize a
+ *      new instance of XWPObjList.
+ *
+ *      Always use M_XFldObject::xwpclsCreateList to
+ *      create a new instance of XWPObjList, never
+ *      use somNew directly.
+ *
+ *@@added V1.0.1 (2002-12-11) [umoeller]
+ */
+
+SOM_Scope void SOMLINK xl_somDefaultInit(XWPObjList *somSelf,
+                                         somInitCtrl* ctrl)
+{
+    BOOL        fLocked = FALSE;
+
+    XWPObjListData *somThis; /* set in BeginInitializer */
+    somInitCtrl globalCtrl;
+    somBooleanVector myMask;
+    XWPObjListMethodDebug("XWPObjList","somDefaultInit");
+    XWPObjList_BeginInitializer_somDefaultInit;
+
+    XWPObjList_Init_SOMObject_somDefaultInit(somSelf, ctrl);
+
+    /*
+     * local XWPObjList initialization code added by programmer
+     */
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = LockObjectLists())
+        {
+            _fLoaded = FALSE;
+            _pszIniApp = NULL;
+            _pszIniKey = NULL;
+            _pvList = lstCreate(FALSE);       // no auto-free
+
+            PMPF_OBJLISTS(("XWPObjList at 0x%lX created", somSelf));
+        }
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fLocked)
+        UnlockObjectLists();
+}
+
+
+/*
+ *@@ somDestruct:
+ *      overridden SOM destructor to de-initialize an
+ *      instance of XWPObjList.
+ *
+ *      You can call SOM_Free(pList) to destroy a list.
+ *
+ *@@added V1.0.1 (2002-12-11) [umoeller]
+ */
+
+SOM_Scope void SOMLINK xl_somDestruct(XWPObjList *somSelf, octet doFree,
+                                      somDestructCtrl* ctrl)
+{
+    BOOL        fLocked = FALSE;
+
+    XWPObjListData *somThis; /* set in BeginDestructor */
+    somDestructCtrl globalCtrl;
+    somBooleanVector myMask;
+    XWPObjListMethodDebug("XWPObjList","xl_somDestruct");
+    XWPObjList_BeginDestructor;
+
+    /*
+     * local XWPObjList deinitialization code added by programmer
+     */
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = LockObjectLists())
+        {
+            PLISTNODE pNode;
+
+            while (pNode = lstQueryFirstNode(_pvList))
+            {
+                WPObject *pobj = (WPObject*)pNode->pItemData;
+                lstRemoveNode(_pvList, pNode);
+                // notify object of removal
+                _xwpRemovedFromList(pobj, somSelf);
+            }
+
+            lstFree((LINKLIST**)&_pvList);
+        }
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fLocked)
+        UnlockObjectLists();
+
+    XWPObjList_EndDestructor;
+}
+
+
 
 /* ******************************************************************
  *
@@ -829,6 +1404,75 @@ SOM_Scope BOOL  SOMLINK xo_xwpModifyFlags(XFldObject *somSelf,
         objUnlockFlags();
 
     return brc;
+}
+
+/*
+ *@@ xwpAddedToList:
+ *      this new instance method gets called whenever an
+ *      object has been added to a linked list represented
+ *      by an XWPObjList object.
+ *
+ *      This method must then perform reference counting
+ *      so that the list can be cleaned up when the object
+ *      goes dormant.
+ *
+ *      When the method gets called, the object is already
+ *      in the list, and all object lists are globally
+ *      locked.
+ *
+ *@@added V1.0.1 (2002-12-11) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xo_xwpAddedToList(XFldObject *somSelf,
+                                          XWPObjList* pList)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_xwpAddedToList");
+
+    if (    (_pvllLists)
+         || (_pvllLists = lstCreate(FALSE))
+       )
+    {
+        lstAppendItem(_pvllLists, pList);
+
+        PMPF_OBJLISTS(("[%s] added to list 0x%lX, now %d items",
+                        _wpQueryTitle(somSelf),
+                        pList,
+                        _Count(pList)));
+    }
+}
+
+/*
+ *@@ xwpRemovedFromList:
+ *      this new instance method gets called whenever an
+ *      object has been removed from a linked list represented
+ *      by an XWPObjList object.
+ *
+ *      This method must then undo reference counting
+ *      previously performed in XFldObject::xwpAddedToList.
+ *
+ *      When the method gets called, the object is already
+ *      removed from the list, and all object lists are globally
+ *      locked.
+ *
+ *@@added V1.0.1 (2002-12-11) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xo_xwpRemovedFromList(XFldObject *somSelf,
+                                              XWPObjList* pList)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_xwpRemovedFromList");
+
+    if (_pvllLists)
+    {
+        lstRemoveItem(_pvllLists, pList);
+
+        PMPF_OBJLISTS(("[%s] removed from list 0x%lX, now %d items",
+                        _wpQueryTitle(somSelf),
+                        pList,
+                        _Count(pList)));
+    }
 }
 
 /*
@@ -1688,6 +2332,7 @@ SOM_Scope void  SOMLINK xo_wpInitData(XFldObject *somSelf)
     _pWszOriginalObjectID = NULL;
 
     _pvllWidgetNotifies = NULL;
+    _pvllLists = NULL;
 
     // init the icon shares
     // V0.9.20 (2002-07-25) [umoeller]
@@ -1761,11 +2406,10 @@ SOM_Scope BOOL  SOMLINK xo_wpSetup(XFldObject *somSelf, PSZ pszSetupString)
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpSetup");
 
-    if (XFldObject_parent_WPObject_wpSetup(somSelf, pszSetupString))
-        return objSetup(somSelf,
-                        pszSetupString);
-
-    return FALSE;
+    return (    (XFldObject_parent_WPObject_wpSetup(somSelf, pszSetupString))
+             && (objSetup(somSelf,
+                          pszSetupString))
+           );
 }
 
 /*
@@ -1965,14 +2609,16 @@ SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
 SOM_Scope void  SOMLINK xo_wpUnInitData(XFldObject *somSelf)
 {
     BOOL        fAwakeSem = FALSE,
-                fIconSem = FALSE;
-    PMINIRECORDCORE pmrc;
-    PTRASHDATA  p;
+                fIconSem = FALSE,
+                fListSem = FALSE;
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpUnInitData");
 
     TRY_LOUD(excpt1)
     {
+        PMINIRECORDCORE pmrc;
+        PTRASHDATA      p;
+
         // maintain list of awake objects
         // (see wpInitData for remarks)
         // V0.9.20 (2002-07-25) [umoeller]
@@ -2050,6 +2696,28 @@ SOM_Scope void  SOMLINK xo_wpUnInitData(XFldObject *somSelf)
 
             icomUnlockIconShares();
             fIconSem = FALSE;
+        }
+
+        // kick us out of all object lists that we are currently
+        // stored in V1.0.1 (2002-12-11) [umoeller]
+        if (fListSem = LockObjectLists())
+        {
+            if (_pvllLists)
+            {
+                PLISTNODE pNode;
+                while (pNode = lstQueryFirstNode(_pvllLists))
+                {
+                    XWPObjList *pList = (XWPObjList*)pNode->pItemData;
+                    _Remove(pList, somSelf);
+                            // this calls back or xwpRemovedFromList method,
+                            // which removes pList from _pvllLists
+                }
+
+                lstFree((LINKLIST**)&_pvllLists);
+            }
+
+            UnlockObjectLists();
+            fListSem = FALSE;
         }
 
         // grab the object's mutex to let no-one mess with us
@@ -2161,28 +2829,30 @@ SOM_Scope void  SOMLINK xo_wpUnInitData(XFldObject *somSelf)
                 mnuInvalidateConfigCache();
             }
 
-#ifndef __NOFOLDERCONTENTS__
-            if (_flObject & OBJLIST_FAVORITEFOLDER)
-            {
-                _flObject &= ~OBJLIST_FAVORITEFOLDER;
-                objAddToList(somSelf,
-                             &G_llFavoriteFolders,      // folder.h
-                             FALSE,         // remove
-                             INIKEY_FAVORITEFOLDERS,
-                             0);            // no modify flags... we're being destroyed
-            }
-#endif
+#if 0 // these flags removed V1.0.1 (2002-12-11) [umoeller]
+    #ifndef __NOFOLDERCONTENTS__
+                if (_flObject & OBJLIST_FAVORITEFOLDER)
+                {
+                    _flObject &= ~OBJLIST_FAVORITEFOLDER;
+                    objAddToList(somSelf,
+                                 &G_llFavoriteFolders,      // folder.h
+                                 FALSE,         // remove
+                                 INIKEY_FAVORITEFOLDERS,
+                                 0);            // no modify flags... we're being destroyed
+                }
+    #endif
 
-#ifndef __NOQUICKOPEN__
-            if (_flObject & OBJLIST_QUICKOPENFOLDER)
-            {
-                _flObject &= ~OBJLIST_QUICKOPENFOLDER;
-                objAddToList(somSelf,
-                             &G_llQuickOpenFolders,      // folder.h
-                             FALSE,         // remove
-                             INIKEY_QUICKOPENFOLDERS,
-                             0);            // no modify flags... we're being destroyed
-            }
+    #ifndef __NOQUICKOPEN__
+                if (_flObject & OBJLIST_QUICKOPENFOLDER)
+                {
+                    _flObject &= ~OBJLIST_QUICKOPENFOLDER;
+                    objAddToList(somSelf,
+                                 &G_llQuickOpenFolders,      // folder.h
+                                 FALSE,         // remove
+                                 INIKEY_QUICKOPENFOLDERS,
+                                 0);            // no modify flags... we're being destroyed
+                }
+    #endif
 #endif
 
             if (_flObject & OBJLIST_HANDLESCACHE)
@@ -2227,11 +2897,14 @@ SOM_Scope void  SOMLINK xo_wpUnInitData(XFldObject *somSelf)
     {
     } END_CATCH();
 
-    if (fAwakeSem)
-        UnlockAwakeObjectsList();
+    if (fListSem)
+        UnlockObjectLists();
 
     if (fIconSem)
         icomUnlockIconShares();
+
+    if (fAwakeSem)
+        UnlockAwakeObjectsList();
 
     // even if we crashed, call the parent... we can't
     // afford stopping here
@@ -4196,6 +4869,64 @@ SOM_Scope BOOL  SOMLINK xoM_xwpclsRemoveObjectHotkey(M_XFldObject *somSelf,
 }
 
 /*
+ *@@ xwpclsCreateList:
+ *      this new class method creates a new OBJECTLIST.
+ *
+ *      An OBJECTLIST is basically a linked list with additional
+ *      features to facilitate object handling. These features
+ *      are:
+ *
+ *      --  Automatic locking with an internal mutex.
+ *
+ *      --  Automatic reference counting. If you add an object
+ *          to the list which goes dormant for some reason,
+ *          it is automatically removed from the list without
+ *          you having to take care of that.
+ *          This is done in XFldObject::wpUnInitData.
+ *
+ *      --  Automatic optional loading and saving of the object
+ *          list from OS2.INI.
+ *
+ *      Use XFldObject::xwpAppendToList, XFldObject::xwpIsOnList,
+ *      and XFldObject::xwpRemoveFromList to work on the list.
+ *
+ *      If pcszIniApp and pcszIniKey are specified, the operates
+ *      in "INI" mode; the objects are loaded from the given
+ *      OS2.INI location, and every change to the list is
+ *      automatically stored in the given key.
+ *
+ *      Since the list is stored as an array of object handles in
+ *      OS2.INI, this then allocates one for every object on the list.
+ *
+ *      The key strings must be static; this function does not make
+ *      copies of them.
+ *
+ *      Returns NULL if the list could not be created.
+ *
+ *@@added V1.0.1 (2002-12-08) [umoeller]
+ */
+
+SOM_Scope XWPObjList*  SOMLINK xoM_xwpclsCreateList(M_XFldObject *somSelf,
+                                                    PSZ pcszIniApp,
+                                                    PSZ pcszIniKey)
+{
+    XWPObjList* pList;
+    BOOL        fLocked = FALSE;
+
+    /* M_XFldObjectData *somThis = M_XFldObjectGetData(somSelf); */
+    M_XFldObjectMethodDebug("M_XFldObject","xoM_xwpclsCreateList");
+
+    if (pList = _somNew(_XWPObjList))
+    {
+        _SetKeys(pList,
+                 pcszIniApp,
+                 pcszIniKey);
+    }
+
+    return pList;
+}
+
+/*
  *@@ wpclsInitData:
  *      this WPObject class method gets called when a class
  *      is loaded by the WPS (probably from within a
@@ -4273,6 +5004,10 @@ SOM_Scope void  SOMLINK xoM_wpclsInitData(M_XFldObject *somSelf)
             // initialize the kernel (kernel.c)
             initMain();
         }
+
+        // initialize the XWPObjList class explicitly
+        // V1.0.1 (2002-12-11) [umoeller]
+        XWPObjListNewClass(1, 1);
 
         krnClassInitialized(G_pcszXFldObject);
     }

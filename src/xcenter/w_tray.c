@@ -290,7 +290,7 @@ STATIC VOID DestroySubwidgetWindow(PTRAYWIDGETPRIVATE pPrivate,
                                    PLISTNODE pNode)    // in: PRIVATEWIDGETVIEW node from pPrivate->llWidgetViews
 {
     // destroy the subwidget
-    WinDestroyWindow(((PPRIVATEWIDGETVIEW)pNode->pItemData)->Widget.hwndWidget);
+    winhDestroyWindow(&((PPRIVATEWIDGETVIEW)pNode->pItemData)->Widget.hwndWidget);
             // ctrDefWidgetProc also frees the PRIVATEWIDGETVIEW;
             // however, since this is a tray widget, it does
             // not remove the node from the list, so we must
@@ -371,11 +371,7 @@ STATIC VOID InvalidateMenu(PTRAYWIDGETPRIVATE pPrivate)
 {
     // if we had built a tray menu before,
     // invalidate that
-    if (pPrivate->hwndTraysMenu)
-    {
-        WinDestroyWindow(pPrivate->hwndTraysMenu);
-        pPrivate->hwndTraysMenu = NULLHANDLE;
-    }
+    winhDestroyWindow(&pPrivate->hwndTraysMenu);
 }
 
 /*
@@ -932,7 +928,7 @@ STATIC BOOL YwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         pttt->pszText = pCurrentTray->pszTrayName;
                     }
                     else
-                        pttt->pszText = cmnGetString(ID_CRSI_NOTRAYACTIVE);
+                        pttt->pszText = (PSZ)cmnGetString(ID_CRSI_NOTRAYACTIVE);
 
                     pttt->ulFormat = TTFMT_PSZ;
                 }
@@ -2028,7 +2024,7 @@ MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                     PPRIVATEWIDGETVIEW pView = (PPRIVATEWIDGETVIEW)pNode->pItemData;
                     if (pView->Widget.hwndWidget == hwndSubwidget)
                     {
-                        WinDestroyWindow(hwndSubwidget);
+                        winhDestroyWindow(&hwndSubwidget);
                         lstRemoveNode(pTrayWidgetView->pllSubwidgetViews, pNode);
                         break;
                     }

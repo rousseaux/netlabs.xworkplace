@@ -349,7 +349,7 @@ VOID pgrRecoverWindows(HAB hab,
     lstInit(&llSWPs,
             TRUE);      // auto-free
 
-    _PmpfF(("fWPSOnly is %d", fWPSOnly));
+    // _PmpfF(("fWPSOnly is %d", fWPSOnly));
 
     henum = WinBeginEnumWindows(HWND_DESKTOP);
     while ((hwnd = WinGetNextWindow(henum)))

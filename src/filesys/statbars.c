@@ -326,7 +326,7 @@ HWND stbCreateBar(WPFolder *somSelf,        // in: (root) folder
 
     if (hwndBar = WinCreateWindow(hwndFrame,
                                   WC_STATIC,              // wnd class
-                                  cmnGetString(ID_XSSI_POPULATING),
+                                  (PSZ)cmnGetString(ID_XSSI_POPULATING),
                                         // "Collecting objects..."
                                   SS_TEXT | DT_LEFT | DT_VCENTER // wnd style flags
                                       | DT_ERASERECT
@@ -594,7 +594,7 @@ VOID stbDestroy(PSUBCLFOLDERVIEW psli2)
 
         psli2->hwndStatusBar = 0;
         WinSendMsg(psli2->hwndFrame, WM_UPDATEFRAME, 0, 0);
-        WinDestroyWindow(hwndStatus);
+        winhDestroyWindow(&hwndStatus);
 
         // decrease the size of the frame window by the status bar height,
         // if we did this before
@@ -671,7 +671,7 @@ BOOL _Optlink stb_UpdateCallback(WPFolder *somSelf,
     // fdrQuerySFV doesn't work for split views
     if (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
     {
-        PMPF_STATUSBARS(("view 0x%lX is split view", ulView));
+        PMPF_STATUSBARS(("view 0x%lX is split view, posting WM_CONTROL SN_UPDATESTATUSBAR", ulView));
 
         WinPostMsg(hwndView,
                    WM_CONTROL,
@@ -907,21 +907,10 @@ STATIC VOID StatusTimer(HWND hwndBar,
                                            // root folders, holds the disk object
                                            psbd->pRealObject,
                                            psbd->hwndFrame);
-            #ifdef __DEBUG__
-                PCSZ pcszView;
-                CHAR szView[100];
-                switch (ulView)
-                {
-                    case OPEN_TREE: pcszView = "Tree"; break;
-                    case OPEN_CONTENTS: pcszView = "Contents"; break;
-                    case OPEN_DETAILS: pcszView = "Details"; break;
-                    default:
-                        sprintf(szView, "unknown %d", ulView);
-                        pcszView = szView;
-                }
-                PMPF_STATUSBARS((" View is %s", pcszView));
-                fdrDebugDumpFolderFlags(psbd->somSelf);
-            #endif
+
+            PMPF_STATUSBARS(("view = 0x%lX (%s)",
+                             ulView,
+                             cmnIdentifyView(ulView)));
 
             // for tree views, check if folder is populated with folders;
             // otherwise check for populated with all
@@ -1235,6 +1224,7 @@ STATIC VOID StatusPresParamChanged(HWND hwndBar,
 
     // finally, broadcast this message to all other status bars;
     // this is handled by the Worker thread
+    PMPF_STATUSBARS(("posting WOM_UPDATEALLSTATUSBARS"));
     xthrPostWorkerMsg(WOM_UPDATEALLSTATUSBARS,
                       (MPARAM)2,      // update display
                       0);

@@ -150,7 +150,7 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMovementPage(XWPMouse *somSelf,
         ulrc = ntbInsertPage(&inbp);
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -193,7 +193,7 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMappings2Page(XWPMouse *somSelf,
         ulrc = ntbInsertPage(&inbp);
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -240,8 +240,8 @@ SOM_Scope ULONG  SOMLINK xms_wpAddMouseCometPage(XWPMouse *somSelf,
 
     _xwpAddMouseMovementPage(somSelf, hwndNotebook);
 
-    return (XWPMouse_parent_WPMouse_wpAddMouseCometPage(somSelf,
-                                                        hwndNotebook));
+    return XWPMouse_parent_WPMouse_wpAddMouseCometPage(somSelf,
+                                                       hwndNotebook);
 }
 
 
@@ -263,8 +263,8 @@ SOM_Scope ULONG  SOMLINK xms_wpAddMouseMappingsPage(XWPMouse *somSelf,
 
     _xwpAddMouseMappings2Page(somSelf, hwndNotebook);
 
-    return (XWPMouse_parent_WPMouse_wpAddMouseMappingsPage(somSelf,
-                                                           hwndNotebook));
+    return XWPMouse_parent_WPMouse_wpAddMouseMappingsPage(somSelf,
+                                                          hwndNotebook);
 }
 
 

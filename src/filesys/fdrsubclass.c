@@ -1027,12 +1027,13 @@ VOID fdrInitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
  *
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  *@@changed V1.0.0 (2002-08-21) [umoeller]:
+ *@@changed V1.0.1 (2002-12-11) [umoeller]: exported this for split view support
  */
 
-STATIC BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
-                       MPARAM mp1,              // in: mp1 from WM_MENUSELECT
-                       MPARAM mp2,              // in: mp2 from WM_MENUSELECT
-                       BOOL *pfDismiss)         // out: dismissal flag
+BOOL fdrMenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
+                   MPARAM mp1,              // in: mp1 from WM_MENUSELECT
+                   MPARAM mp2,              // in: mp2 from WM_MENUSELECT
+                   BOOL *pfDismiss)         // out: dismissal flag
 {
     BOOL        fHandled = FALSE;
             // return value for WM_MENUSELECT;
@@ -1051,121 +1052,116 @@ STATIC BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
            )
        )
     {
-        HWND hwndCnr = WinWindowFromID(psfv->hwndFrame, FID_CLIENT);
+        // HWND hwndCnr = WinWindowFromID(psfv->hwndFrame, FID_CLIENT);
+                // we have this in psfv V1.0.1 (2002-12-11) [umoeller]
+
+        // first find out what kind of objects we have here
+        WPObject *pObject = psfv->pSourceObject;
+                            // set with WM_INITMENU
 
 #ifndef __NOXSYSTEMSOUNDS__
         // play system sound
         cmnPlaySystemSound(MMSOUND_XFLD_CTXTSELECT);
 #endif
 
-        // now check if we have a menu item which we don't
-        // want to see dismissed
+        PMPF_MENUS(("  Object selections: %d", psfv->ulSelection));
 
-        if (hwndCnr)
+        if (pObject = objResolveIfShadow(pObject))
         {
-            // first find out what kind of objects we have here
-            WPObject *pObject = psfv->pSourceObject;
-                                // set with WM_INITMENU
-
-            PMPF_MENUS(("  Object selections: %d", psfv->ulSelection));
-
-            if (pObject = objResolveIfShadow(pObject))
+            if (WinGetKeyState(HWND_DESKTOP, VK_SHIFT) & 0x8000)
             {
-                if (WinGetKeyState(HWND_DESKTOP, VK_SHIFT) & 0x8000)
-                {
-                    // shift is down: then check whether this is an "open view"
-                    // item and allow changing the object's default view this
-                    // way V1.0.0 (2002-08-21) [umoeller]
-                    ULONG   ulMenuId2 = usItem - *G_pulVarMenuOfs;
+                // shift is down: then check whether this is an "open view"
+                // item and allow changing the object's default view this
+                // way V1.0.0 (2002-08-21) [umoeller]
+                ULONG   ulMenuId2 = usItem - *G_pulVarMenuOfs;
 
-                    if (    (usItem == OPEN_CONTENTS)
-                         || (usItem == OPEN_TREE)
-                         || (usItem == OPEN_DETAILS)
-                         || (ulMenuId2 == ID_XFMI_OFS_SPLITVIEW)
-                         || (    (usItem >= 0x1000)
-                              && (usItem <= 0x1000 + MAX_ASSOCS_PER_OBJECT)
-                            )
-                       )
-                    {
-                        USHORT usOldDefaultView = _wpQueryDefaultView(pObject);
-
-                        if (    (usItem != usOldDefaultView)
-                             && (_wpSetDefaultView(pObject,
-                                                   usItem))
-                                    // we make sure this fails for the desktop
-                                    // and the split view
-                                    // V1.0.0 (2002-09-13) [umoeller]
-                           )
-                        {
-                            PMPF_MENUS(("  un-checking 0x%lX in hMenu 0x%lX",
-                                        usOldDefaultView,
-                                        mp2));
-
-                            WinSendMsg((HWND)mp2,
-                                       MM_SETITEMATTR,
-                                       MPFROM2SHORT(usOldDefaultView,
-                                                    FALSE),
-                                       MPFROM2SHORT(MIA_CHECKED,
-                                                    0));
-
-                            WinSendMsg((HWND)mp2,
-                                       MM_SETITEMATTR,
-                                       MPFROM2SHORT(usItem,
-                                                    FALSE),
-                                       MPFROM2SHORT(MIA_CHECKED,
-                                                    MIA_CHECKED));
-                            _wpSaveDeferred(pObject);
-                        }
-
-                        fHandled = TRUE;
-                        *pfDismiss = FALSE;
-                    }
-                }
-
-                // now call the functions in fdrmenus.c for this,
-                // depending on the class of the object for which
-                // the menu was opened
-                if (    (!fHandled)
-                     && (_somIsA(pObject, _WPFileSystem))
+                if (    (usItem == OPEN_CONTENTS)
+                     || (usItem == OPEN_TREE)
+                     || (usItem == OPEN_DETAILS)
+                     || (ulMenuId2 == ID_XFMI_OFS_SPLITVIEW)
+                     || (    (usItem >= 0x1000)
+                          && (usItem <= 0x1000 + MAX_ASSOCS_PER_OBJECT)
+                        )
                    )
                 {
-                    fHandled = fcmdSelectingFsysMenuItem(
-                                   psfv->pSourceObject,
-                                        // set in WM_INITMENU;
-                                        // note that we're passing
-                                        // psfv->pSourceObject instead of pObject;
-                                        // psfv->pSourceObject might be a shadow!
+                    USHORT usOldDefaultView = _wpQueryDefaultView(pObject);
+
+                    if (    (usItem != usOldDefaultView)
+                         && (_wpSetDefaultView(pObject,
+                                               usItem))
+                                // we make sure this fails for the desktop
+                                // and the split view
+                                // V1.0.0 (2002-09-13) [umoeller]
+                       )
+                    {
+                        PMPF_MENUS(("  un-checking 0x%lX in hMenu 0x%lX",
+                                    usOldDefaultView,
+                                    mp2));
+
+                        WinSendMsg((HWND)mp2,
+                                   MM_SETITEMATTR,
+                                   MPFROM2SHORT(usOldDefaultView,
+                                                FALSE),
+                                   MPFROM2SHORT(MIA_CHECKED,
+                                                0));
+
+                        WinSendMsg((HWND)mp2,
+                                   MM_SETITEMATTR,
+                                   MPFROM2SHORT(usItem,
+                                                FALSE),
+                                   MPFROM2SHORT(MIA_CHECKED,
+                                                MIA_CHECKED));
+                        _wpSaveDeferred(pObject);
+                    }
+
+                    fHandled = TRUE;
+                    *pfDismiss = FALSE;
+                }
+            }
+
+            // now call the functions in fdrmenus.c for this,
+            // depending on the class of the object for which
+            // the menu was opened
+            if (    (!fHandled)
+                 && (_somIsA(pObject, _WPFileSystem))
+               )
+            {
+                fHandled = fcmdSelectingFsysMenuItem(
+                               psfv->pSourceObject,
+                                    // set in WM_INITMENU;
+                                    // note that we're passing
+                                    // psfv->pSourceObject instead of pObject;
+                                    // psfv->pSourceObject might be a shadow!
+                               usItem,
+                               (BOOL)usPostCommand,
+                               (HWND)mp2,               // hwndMenu
+                               psfv->hwndCnr,
+                               psfv->ulSelection,       // SEL_* flags
+                               pfDismiss);              // dismiss-menu flag
+
+                if (    (!fHandled)
+                     && (_somIsA(pObject, _WPFolder))
+                   )
+                {
+                    fHandled = fcmdSelectingFdrMenuItem(pObject,
                                    usItem,
-                                   (BOOL)usPostCommand,
+                                   (BOOL)usPostCommand, // fPostCommand
                                    (HWND)mp2,               // hwndMenu
-                                   hwndCnr,
+                                   psfv->hwndCnr,
                                    psfv->ulSelection,       // SEL_* flags
                                    pfDismiss);              // dismiss-menu flag
-
-                    if (    (!fHandled)
-                         && (_somIsA(pObject, _WPFolder))
-                       )
-                    {
-                        fHandled = fcmdSelectingFdrMenuItem(pObject,
-                                       usItem,
-                                       (BOOL)usPostCommand, // fPostCommand
-                                       (HWND)mp2,               // hwndMenu
-                                       hwndCnr,
-                                       psfv->ulSelection,       // SEL_* flags
-                                       pfDismiss);              // dismiss-menu flag
-                    }
                 }
+            }
 
-                if (    (fHandled)
-                     && (!(*pfDismiss))
-                   )
-                {
-                    // menu not to be dismissed: set the flag
-                    // which will remove cnr source
-                    // emphasis when the main menu is dismissed
-                    // later (WM_ENDMENU msg here)
-                    psfv->fRemoveSourceEmphasis = TRUE;
-                }
+            if (    (fHandled)
+                 && (!(*pfDismiss))
+               )
+            {
+                // menu not to be dismissed: set the flag
+                // which will remove cnr source
+                // emphasis when the main menu is dismissed
+                // later (WM_ENDMENU msg here)
+                psfv->fRemoveSourceEmphasis = TRUE;
             }
         }
     }
@@ -2022,7 +2018,10 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                 // added V0.9.3 (2000-03-28) [umoeller]
                 // now handle our stuff; this might modify mrc to
                 // have the menu stay on the screen
-                if (MenuSelect(psfv, mp1, mp2, &fDismiss))
+                if (fdrMenuSelect(psfv,
+                                  mp1,
+                                  mp2,
+                                  &fDismiss))
                     // processed: return the modified flag instead
                     mrc = (MRESULT)fDismiss;
             }
@@ -2347,7 +2346,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                 // destroy the supplementary object window for this folder
                 // frame window; do this first because this references
                 // the SFV
-                WinDestroyWindow(psfv->hwndSupplObject);
+                winhDestroyWindow(&psfv->hwndSupplObject);
 
                 // upon closing the window, undo the subclassing, in case
                 // some other message still comes in

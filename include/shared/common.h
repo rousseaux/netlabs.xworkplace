@@ -1202,14 +1202,16 @@
 
     VOID XWPENTRY cmnInitEntities(VOID);
 
-    void XWPENTRY cmnLoadString(HAB habDesktop,
-                                HMODULE hmodResource,
-                                ULONG ulID,
-                                PSZ *ppsz,
-                                PULONG pulLength);
+    #if 0       // removed, use nls* functions instead
+        void XWPENTRY cmnLoadString(HAB habDesktop,
+                                    HMODULE hmodResource,
+                                    ULONG ulID,
+                                    PSZ *ppsz,
+                                    PULONG pulLength);
+    #endif
 
-    PSZ XWPENTRY cmnGetString(ULONG ulStringID);
-    typedef PSZ XWPENTRY CMNGETSTRING(ULONG ulStringID);
+    PCSZ XWPENTRY cmnGetString(ULONG ulStringID);
+    typedef PCSZ XWPENTRY CMNGETSTRING(ULONG ulStringID);
     typedef CMNGETSTRING *PCMNGETSTRING;
 
     VOID XWPENTRY cmnLoadDaemonNLSStrings(VOID);

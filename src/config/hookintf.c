@@ -793,7 +793,7 @@ VOID hifCollectHotkeys(MPARAM mp1,  // in: HWND hwndCnr
                         preccThis->pszFolderPath = preccThis->szFolderPath;
                 }
                 else
-                    preccThis->recc.pszIcon = cmnGetString(ID_XSSI_INVALID_OBJECT);
+                    preccThis->recc.pszIcon = (PSZ)cmnGetString(ID_XSSI_INVALID_OBJECT);
 
                 preccThis = (PHOTKEYRECORD)(preccThis->recc.preccNextRecord);
                 ulCount++;

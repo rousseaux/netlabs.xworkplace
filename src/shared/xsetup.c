@@ -75,6 +75,7 @@
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\nls.h"                // National Language Support helpers
+#include "helpers\nlscache.h"           // NLS string cache
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\procstat.h"           // DosQProcStat handling
 #include "helpers\standards.h"          // some standard macros
@@ -1289,7 +1290,7 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             if (pxwpcOld->pszTooltipString)
                 free(pxwpcOld->pszTooltipString);
 
-            WinDestroyWindow(pxwpcOld->hwndTooltip);
+            winhDestroyWindow(&pxwpcOld->hwndTooltip);
 
             // free two XWPCLASSES structures
             free(pxwpcOld);
@@ -1432,81 +1433,65 @@ STATIC VOID ShowClassesDlg(HWND hwndOwner)
                                   // plus a check box, i.e. 2 per class
                                 + 2 * ARRAYITEMCOUNT(G_aClasses);
         DLGHITEM    *paDlgItems = malloc(sizeof(DLGHITEM) * cDlgItems),
-                    *pDlgItemThis = paDlgItems,
-                    *paNewFront,
-                    *paNewMiddle;
+                    *pDlgItemThis = paDlgItems;
         ULONG       ul;
 
-        if (!cmnLoadDialogStrings(dlgClassesFront,
-                                  ARRAYITEMCOUNT(dlgClassesFront),
-                                  &paNewFront))
+        ClsOKButton.pcszText = cmnGetString(DID_OK);
+        ClsCancelButton.pcszText = cmnGetString(DID_CANCEL);
+        ClsHelpButton.pcszText = cmnGetString(DID_HELP);
+
+        // copy front
+        for (ul = 0;
+             ul < ARRAYITEMCOUNT(dlgClassesFront);
+             ul++)
         {
-            if (!cmnLoadDialogStrings(dlgClassesMiddle,
-                                      ARRAYITEMCOUNT(dlgClassesMiddle),
-                                      &paNewMiddle))
-            {
-                ClsOKButton.pcszText = cmnGetString(DID_OK);
-                ClsCancelButton.pcszText = cmnGetString(DID_CANCEL);
-                ClsHelpButton.pcszText = cmnGetString(DID_HELP);
+            memcpy(pDlgItemThis, &dlgClassesFront[ul], sizeof(DLGHITEM));
+            pDlgItemThis++;
+        }
 
-                // copy front
-                for (ul = 0;
-                     ul < ARRAYITEMCOUNT(dlgClassesFront);
-                     ul++)
-                {
-                    memcpy(pDlgItemThis, &paNewFront[ul], sizeof(DLGHITEM));
-                    pDlgItemThis++;
-                }
+        // now go create the items for the class replacements
+        AppendClassesGroup(&ClsOneClass,
+                           &pControlDefThis,
+                           &pDlgItemThis,
+                           TRUE);
 
-                // now go create the items for the class replacements
-                AppendClassesGroup(&ClsOneClass,
-                                   &pControlDefThis,
-                                   &pDlgItemThis,
-                                   TRUE);
+        // copy separator (middle)
+        for (ul = 0;
+             ul < ARRAYITEMCOUNT(dlgClassesMiddle);
+             ul++)
+        {
+            memcpy(pDlgItemThis, &dlgClassesMiddle[ul], sizeof(DLGHITEM));
+            pDlgItemThis++;
+        }
 
-                // copy separator (middle)
-                for (ul = 0;
-                     ul < ARRAYITEMCOUNT(dlgClassesMiddle);
-                     ul++)
-                {
-                    memcpy(pDlgItemThis, &paNewMiddle[ul], sizeof(DLGHITEM));
-                    pDlgItemThis++;
-                }
+        // and for the new classes
+        AppendClassesGroup(&ClsOneClass,
+                           &pControlDefThis,
+                           &pDlgItemThis,
+                           FALSE);
 
-                // and for the new classes
-                AppendClassesGroup(&ClsOneClass,
-                                   &pControlDefThis,
-                                   &pDlgItemThis,
-                                   FALSE);
+        // copy tail
+        for (ul = 0;
+             ul < ARRAYITEMCOUNT(dlgClassesTail);
+             ul++)
+        {
+            memcpy(pDlgItemThis, &dlgClassesTail[ul], sizeof(DLGHITEM));
+            pDlgItemThis++;
+        }
 
-                // copy tail
-                for (ul = 0;
-                     ul < ARRAYITEMCOUNT(dlgClassesTail);
-                     ul++)
-                {
-                    memcpy(pDlgItemThis, &dlgClassesTail[ul], sizeof(DLGHITEM));
-                    pDlgItemThis++;
-                }
-
-                if (!(arc = dlghCreateDlg(&hwndDlg,
-                                          hwndOwner,
-                                          FCF_FIXED_DLG,
-                                          fnwpXWorkplaceClasses,
-                                          cmnGetString(ID_XCD_CLASSES_TITLE),
-                                          paDlgItems,
-                                          cDlgItems,
-                                          NULL,
-                                          cmnQueryDefaultFont())))
-                {
-                    winhCenterWindow(hwndDlg);
-                    WinProcessDlg(hwndDlg);
-                    WinDestroyWindow(hwndDlg);
-                }
-
-                free(paNewMiddle);
-            }
-
-            free(paNewFront);
+        if (!(arc = dlghCreateDlg(&hwndDlg,
+                                  hwndOwner,
+                                  FCF_FIXED_DLG,
+                                  fnwpXWorkplaceClasses,
+                                  cmnGetString(ID_XCD_CLASSES_TITLE),
+                                  paDlgItems,
+                                  cDlgItems,
+                                  NULL,
+                                  cmnQueryDefaultFont())))
+        {
+            winhCenterWindow(hwndDlg);
+            WinProcessDlg(hwndDlg);
+            winhDestroyWindow(&hwndDlg);
         }
 
         free(paDlgItems);
@@ -1835,9 +1820,7 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
             while (preccThis)
             {
                 // load NLS string for feature
-                cmnLoadString(hab,
-                              hmodNLS,
-                              G_FeatureItemsList[ul].usFeatureID, // in: string ID
+                nlsLoadString(G_FeatureItemsList[ul].usFeatureID, // in: string ID
                               &(G_FeatureItemsList[ul].pszNLSString), // out: NLS string
                               NULL);
 
@@ -1882,7 +1865,7 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         } // end if (ctlMakeCheckboxContainer(inbp.hwndPage,
 
         // register tooltip class
-        if (!ctlRegisterTooltip(WinQueryAnchorBlock(pnbp->hwndDlgPage)))
+        if (!ctlRegisterTooltip(hab))
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
                    "ctlRegisterTooltip failed.");
         else
@@ -3871,6 +3854,7 @@ static const struct
         DEBUGSETTING(DBGSET_PROGRAMSTART),
         DEBUGSETTING(DBGSET_WINDOWLIST),
         DEBUGSETTING(DBGSET_SOUNDS),
+        DEBUGSETTING(DBGSET_OBJLISTS),
     };
 
 static MPARAM G_ampDebugPage[] =

@@ -1001,7 +1001,9 @@ HBITMAP GetBitmap(PIBMFDRBKGND pBkgnd)
  *      This sets the container's background color and
  *      bitmap, if applicable, foreground color and font.
  *      It does not change the container view itself
- *      (that is, details, tree, name, etc.).
+ *      (that is, details, tree, name, etc.). For that,
+ *      call fdrvSetupView, which calls this in turn,
+ *      if necessary.
  *
  *      If you want the container to paint folder
  *      background bitmaps properly, subclass the container
@@ -1262,13 +1264,33 @@ STATIC BOOL BuildFieldInfos(HWND hwndCnr,
 
 /*
  *@@ fdrvSetupView:
+ *      one-shot function to set up the given container for the
+ *      given view.
+ *
+ *      This
+ *
+ *      --  switches the container view to Name, Details, or Tree;
+ *
+ *      --  builds the FIELDINFOs for Details view, if necessary
+ *          (that is, if the folder details class changed or Details
+ *          view is switched to for the first time);
+ *
+ *      --  sets the correct sort function on the container, if applicable;
+ *
+ *      --  calls fdrvSetCnrLayout if necessary.
+ *
+ *      In order to avoid unnecessary switches, this caches the
+ *      current settings in the given CNRVIEW struct. On the
+ *      first call, all members must be zeroed except for the
+ *      hwndCnr field.
  *
  *@@added V1.0.1 (2002-11-30) [umoeller]
  */
 
 BOOL fdrvSetupView(PCNRVIEW pCnrView,
                    WPFolder *pFolder,   // in: folder that the cnr displays (for querying view settings)
-                   ULONG ulView,        // in: one of OPEN_CONTENTS, OPEN_DETAILS, OPEN_TREE
+                                        // or NULL for no change
+                   ULONG ulView,        // in: one of OPEN_CONTENTS, OPEN_DETAILS, OPEN_TREE or 0 for no change
                    BOOL fMini)          // in: mini icons? (ignored for OPEN_DETAILS)
 {
     ULONG       flNewStyle = 0;

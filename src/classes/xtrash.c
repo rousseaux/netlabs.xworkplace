@@ -1811,7 +1811,7 @@ SOM_Scope PSZ  SOMLINK xtrcM_wpclsQueryTitle(M_XWPTrashCan *somSelf)
     /* M_XWPTrashCanData *somThis = M_XWPTrashCanGetData(somSelf); */
     M_XWPTrashCanMethodDebug("M_XWPTrashCan","xtrcM_wpclsQueryTitle");
 
-    return cmnGetString(ID_XTSI_TRASHCAN);
+    return (PSZ)cmnGetString(ID_XTSI_TRASHCAN);
 }
 
 /*

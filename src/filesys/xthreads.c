@@ -952,7 +952,7 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
          */
 
         case WOM_UPDATEALLSTATUSBARS:
-            PMPF_STATUSBARS(("WT: WOM_UPDATEALLSTATUSBARS" ));
+            PMPF_STATUSBARS(("WT: WOM_UPDATEALLSTATUSBARS, mp1 = %d", mp1));
 
             // for each open folder view, call the callback
             // which updates the status bars
@@ -1179,8 +1179,7 @@ void _Optlink fntWorkerThread(PTHREADINFO pti)
     }
 
     // clean up
-    WinDestroyWindow(G_hwndWorkerObject);
-    G_hwndWorkerObject = NULLHANDLE;
+    winhDestroyWindow(&G_hwndWorkerObject);
 
     WinDestroyMsgQueue(G_hmqWorkerThread);
     G_hmqWorkerThread = NULLHANDLE;
@@ -1496,7 +1495,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                                           &pid,
                                           NULL);
 
-                    WinDestroyWindow(hwndCreating);
+                    winhDestroyWindow(&hwndCreating);
                 }
             }
         }
@@ -1714,8 +1713,7 @@ void _Optlink fntFileThread(PTHREADINFO pti)
         PKERNELGLOBALS pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
         if (pKernelGlobals)
         {
-            WinDestroyWindow(pKernelGlobals->hwndFileObject);
-            pKernelGlobals->hwndFileObject = NULLHANDLE;
+            winhDestroyWindow(&pKernelGlobals->hwndFileObject);
             krnUnlockGlobals();
         }
         WinDestroyMsgQueue(G_hmqFileThread);
@@ -1856,8 +1854,8 @@ MRESULT EXPENTRY fnwpBushObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                 {
                     // yes: clean up
                     shpFreeBitmap(&sb);
-                    WinDestroyWindow(sb.hwndShapeFrame) ;
-                    WinDestroyWindow(sb.hwndShape);
+                    winhDestroyWindow(&sb.hwndShapeFrame) ;
+                    winhDestroyWindow(&sb.hwndShape);
                 }
         }
         break;
@@ -1900,7 +1898,7 @@ MRESULT EXPENTRY fnwpBushObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
             if (G_hwndBootupStatus)
                 // window still visible or created anew:
                 if (mp1 == NULL)
-                    WinDestroyWindow(G_hwndBootupStatus);
+                    winhDestroyWindow(&G_hwndBootupStatus);
                 else
                 {
                     CHAR szTemp[2000];
@@ -1934,11 +1932,7 @@ MRESULT EXPENTRY fnwpBushObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
                 // timer 1: bootup status wnd
                 case 1:
-                    if (G_hwndBootupStatus)
-                    {
-                        WinDestroyWindow(G_hwndBootupStatus);
-                        G_hwndBootupStatus = NULLHANDLE;
-                    }
+                    winhDestroyWindow(&G_hwndBootupStatus);
                     WinStopTimer(G_habWorkerThread, hwndObject, 1);
                 break;
             }
@@ -2112,10 +2106,7 @@ void _Optlink fntBushThread(PTHREADINFO pti)
     {
         PKERNELGLOBALS pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
         if (pKernelGlobals)
-        {
-            WinDestroyWindow(pKernelGlobals->hwndBushObject);
-            pKernelGlobals->hwndBushObject = NULLHANDLE;
-        }
+            winhDestroyWindow(&pKernelGlobals->hwndBushObject);
 
         WinDestroyMsgQueue(G_hmqBushThread);
         G_hmqBushThread = NULLHANDLE;

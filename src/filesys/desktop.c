@@ -1267,8 +1267,8 @@ MRESULT dtpStartupItemChanged(PNOTEBOOKPAGE pnbp,
 
                                 GpiSetBitmap(sf.hps, NULLHANDLE); // V0.9.3 (2000-04-11) [umoeller]
 
-                                WinDestroyWindow(sf.hwndShapeFrame) ;
-                                WinDestroyWindow(sf.hwndShape);
+                                winhDestroyWindow(&sf.hwndShapeFrame) ;
+                                winhDestroyWindow(&sf.hwndShape);
                             }
                         }
                         // delete the bitmap again
@@ -1301,7 +1301,7 @@ MRESULT dtpStartupItemChanged(PNOTEBOOKPAGE pnbp,
                     "OBJECTID=%s;",
                     XFOLDER_STARTUPID);
                 if (hObj = WinCreateObject((PSZ)G_pcszXFldStartup,
-                                           cmnGetString(ID_XFSI_XWPSTARTUPFDR), // "XWorkplace Startup",
+                                           (PSZ)cmnGetString(ID_XFSI_XWPSTARTUPFDR), // "XWorkplace Startup",
                                                 // finally localized V1.0.0 (2002-08-31) [umoeller]
                                            szSetup,
                                            (PSZ)WPOBJID_DESKTOP, // "<WP_DESKTOP>",

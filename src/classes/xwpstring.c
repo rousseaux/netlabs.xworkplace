@@ -439,7 +439,7 @@ SOM_Scope PSZ  SOMLINK xwstr_xwpQueryString(XWPString *somSelf)
             memcpy(psz,
                    _pWszSetupString,
                    cb + 1);
-            return (psz);
+            return psz;
         }
     }
 
@@ -483,9 +483,9 @@ SOM_Scope WPObject*  SOMLINK xwstr_xwpQueryStaticObject(XWPString *somSelf)
     XWPStringMethodDebug("XWPString","xwstr_xwpQueryStaticObject");
 
     if (_hobjStatic)
-        return (_wpclsQueryObject(_WPObject, _hobjStatic));
-    else
-        return NULL;
+        return _wpclsQueryObject(_WPObject, _hobjStatic);
+
+    return NULL;
 }
 
 /*
@@ -1254,7 +1254,7 @@ SOM_Scope HWND  SOMLINK xwstr_wpOpen(XWPString *somSelf,
         hwnd = XWPString_parent_WPAbstract_wpOpen(somSelf, hwndCnr,
                                                   ulView, param);
 
-    return (hwnd);
+    return hwnd;
 }
 
 /*
@@ -1395,7 +1395,7 @@ SOM_Scope MRESULT  SOMLINK xwstr_wpDragOver(XWPString *somSelf,
         }
     }
 
-    return (MRFROM2SHORT(usDrop, usDefaultOp));
+    return MRFROM2SHORT(usDrop, usDefaultOp);
 }
 
 /*
@@ -1537,7 +1537,7 @@ SOM_Scope PSZ  SOMLINK xwstrM_wpclsQueryTitle(M_XWPString *somSelf)
     /* M_XWPStringData *somThis = M_XWPStringGetData(somSelf); */
     M_XWPStringMethodDebug("M_XWPString","xwstrM_wpclsQueryTitle");
 
-    return ("Setup string");
+    return "Setup string";
 }
 
 /*
@@ -1607,54 +1607,7 @@ SOM_Scope ULONG  SOMLINK xwstrM_wpclsQueryIconData(M_XWPString *somSelf,
         pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
-    return (sizeof(ICONINFO));
+    return sizeof(ICONINFO);
 }
-
-/*
- *@@ wpclsQuerySettingsPageSize:
- *      this WPObject class method should return the
- *      size of the largest settings page in dialog
- *      units; if a settings notebook is initially
- *      opened, i.e. no window pos has been stored
- *      yet, the WPS will use this size, to avoid
- *      truncated settings pages.
- */
-
-SOM_Scope BOOL  SOMLINK xwstrM_wpclsQuerySettingsPageSize(M_XWPString *somSelf,
-                                                          PSIZEL pSizl)
-{
-    /* M_XWPStringData *somThis = M_XWPStringGetData(somSelf); */
-    M_XWPStringMethodDebug("M_XWPString","xwstrM_wpclsQuerySettingsPageSize");
-
-    return (M_XWPString_parent_M_WPAbstract_wpclsQuerySettingsPageSize(somSelf,
-                                                                       pSizl));
-}
-
-
-/*
- *@@ wpclsCreateDefaultTemplates:
- *      this WPObject class method is called by the
- *      Templates folder to allow a class to
- *      create its default templates.
- *
- *      The default WPS behavior is to create new templates
- *      if the class default title is different from the
- *      existing templates.
- *
- *@@added V0.9.3 (2000-04-26) [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xwstrM_wpclsCreateDefaultTemplates(M_XWPString *somSelf,
-                                                           WPObject* Folder)
-{
-    /* M_XWPStringData *somThis = M_XWPStringGetData(somSelf); */
-    M_XWPStringMethodDebug("M_XWPString","xwstrM_wpclsCreateDefaultTemplates");
-
-    // DosBeep(5000, 1000);
-
-    return (M_XWPString_parent_M_WPAbstract_wpclsCreateDefaultTemplates(somSelf,
-                                                                        Folder));
-}
-
 
 

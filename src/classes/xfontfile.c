@@ -197,7 +197,7 @@ SOM_Scope PSZ  SOMLINK fonfM_wpclsQueryTitle(M_XWPFontFile *somSelf)
     /* M_XWPFontFileData *somThis = M_XWPFontFileGetData(somSelf); */
     M_XWPFontFileMethodDebug("M_XWPFontFile","fonfM_wpclsQueryTitle");
 
-    return (cmnGetString(ID_XSSI_FONTFILE)) ; // pszFontFile
+    return (PSZ)cmnGetString(ID_XSSI_FONTFILE);
 }
 
 /*

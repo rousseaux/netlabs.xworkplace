@@ -134,6 +134,11 @@
                      ULONG sMenuIDMsg,
                      HWND hwndMenuMsg);
 
+    BOOL fdrMenuSelect(PSUBCLFOLDERVIEW psfv,
+                       MPARAM mp1,
+                       MPARAM mp2,
+                       BOOL *pfDismiss);
+
     BOOL fdrWMCommand(PSUBCLFOLDERVIEW psfv,
                       SHORT sCommand);
 

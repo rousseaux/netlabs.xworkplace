@@ -968,7 +968,7 @@ SOM_Scope PSZ  SOMLINK xfdiskM_wpclsQueryTitle(M_XFldDisk *somSelf)
         return M_XFldDisk_parent_M_WPDisk_wpclsQueryTitle(somSelf);
 #endif
 
-    return cmnGetString(ID_XSSI_CLASSTITLE_DISK);
+    return (PSZ)cmnGetString(ID_XSSI_CLASSTITLE_DISK);
 }
 
 

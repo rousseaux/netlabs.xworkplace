@@ -301,8 +301,7 @@ STATIC VOID PageDestroy(PNOTEBOOKPAGE pnbp)
             pnbp->inbp.pfncbInitPage(pnbp, CBI_DESTROY);
 
         // tooltip to be destroyed?
-        if (pnbp->hwndTooltip)
-            WinDestroyWindow(pnbp->hwndTooltip);
+        winhDestroyWindow(&pnbp->hwndTooltip);
 
         // winhAdjustControls prepared?
         if (pnbp->pxac)
@@ -1747,44 +1746,36 @@ APIRET ntbFormatPage(HWND hwndDlg,              // in: dialog frame to work on
 {
     APIRET arc;
     SIZEL szlClient;
-    PDLGHITEM paNew;
 
-    if (!cmnLoadDialogStrings(paDlgItems,
+    // go create the controls
+    if (!(arc = dlghFormatDlg(hwndDlg,
+                              paDlgItems,
                               cDlgItems,
-                              &paNew))
+                              cmnQueryDefaultFont(),
+                              DFFL_CREATECONTROLS,
+                              &szlClient,
+                              NULL)))
     {
-        // go create the controls
-        if (!(arc = dlghFormatDlg(hwndDlg,
-                                  paNew,
-                                  cDlgItems,
-                                  cmnQueryDefaultFont(),
-                                  DFFL_CREATECONTROLS,
-                                  &szlClient,
-                                  NULL)))
-        {
-            // resize the frame
-            dlghResizeFrame(hwndDlg,
-                            &szlClient);
+        // resize the frame
+        dlghResizeFrame(hwndDlg,
+                        &szlClient);
 
-            // make Warp 4 notebook buttons and move controls
-            // (this was already called in PageInit on WM_INITDLG,
-            // but at that point the init callback wasn't called yet...)
-            winhAssertWarp4Notebook(hwndDlg,
-                                    100);         // ID threshold
-                                    // 14);
-        }
-        else
-        {
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "dlghFormatDlg returned %d", arc);
-            cmnErrorMsgBox(hwndDlg,
-                           arc,
-                           0,
-                           MB_OK,
-                           TRUE);
-        }
-
-        free(paNew);
+        // make Warp 4 notebook buttons and move controls
+        // (this was already called in PageInit on WM_INITDLG,
+        // but at that point the init callback wasn't called yet...)
+        winhAssertWarp4Notebook(hwndDlg,
+                                100);         // ID threshold
+                                // 14);
+    }
+    else
+    {
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "dlghFormatDlg returned %d", arc);
+        cmnErrorMsgBox(hwndDlg,
+                       arc,
+                       0,
+                       MB_OK,
+                       TRUE);
     }
 
     return arc;

@@ -1330,7 +1330,7 @@ STATIC BOOL DisplayParamsPrompt(PXSTRING pstrPrompt)   // in: prompt string,
         }
         // else: user pressed "Cancel":
 
-        WinDestroyWindow(hwndDlg);
+        winhDestroyWindow(&hwndDlg);
     }
 
     return brc;

@@ -1026,17 +1026,17 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         */
 
                         case MWGT_MEMORY:
-                            pttt->pszText = pcmnGetString(ID_CRSI_MEMORYTOOLTIP); // "Currently free memory";
+                            pttt->pszText = (PSZ)pcmnGetString(ID_CRSI_MEMORYTOOLTIP); // "Currently free memory";
                                         // localized V1.0.0 (2002-08-21) [umoeller]
                         break;
 
                         case MWGT_POWER:
-                            pttt->pszText = pcmnGetString(ID_CRSI_BATTERYTOOLTIP); // "Battery power";
+                            pttt->pszText = (PSZ)pcmnGetString(ID_CRSI_BATTERYTOOLTIP); // "Battery power";
                                         // localized V1.0.0 (2002-08-21) [umoeller]
                         break;
 
                         case MWGT_DISKFREE:
-                            pttt->pszText = pcmnGetString(ID_CRSI_DISKFREECONDTOOLTIP); // "Free space on disks";
+                            pttt->pszText = (PSZ)pcmnGetString(ID_CRSI_DISKFREECONDTOOLTIP); // "Free space on disks";
                                         // localized V1.0.0 (2002-08-21) [umoeller]
                         break;
                     }

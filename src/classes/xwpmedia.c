@@ -289,7 +289,7 @@ VOID xwmmDevicesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
         // set group title V0.9.4 (2000-06-13) [umoeller]
         WinSetDlgItemText(pnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
-                          cmnGetString(ID_MMSI_PAGETITLE_DEVICES)) ; // pszPagetitleDevices
+                          (PSZ)cmnGetString(ID_MMSI_PAGETITLE_DEVICES)) ; // pszPagetitleDevices
 
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(MMDEVRECORD, pszDeviceType);
@@ -633,7 +633,7 @@ VOID xwmmIOProcsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
         // set group title V0.9.4 (2000-06-13) [umoeller]
         WinSetDlgItemText(pnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
-                          cmnGetString(ID_MMSI_PAGETITLE_IOPROCS)) ; // pszPagetitleIOProcs
+                          (PSZ)cmnGetString(ID_MMSI_PAGETITLE_IOPROCS)) ; // pszPagetitleIOProcs
 
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(IOPROCRECORD, ulIndex);
@@ -883,7 +883,7 @@ VOID xwmmCodecsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
         // set group title V0.9.4 (2000-06-13) [umoeller]
         WinSetDlgItemText(pnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
-                          cmnGetString(ID_MMSI_PAGETITLE_CODECS)) ; // pszPagetitleCodecs
+                          (PSZ)cmnGetString(ID_MMSI_PAGETITLE_CODECS)) ; // pszPagetitleCodecs
 
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(CODECRECORD, ulIndex);
@@ -1058,7 +1058,7 @@ SOM_Scope ULONG  SOMLINK xwmm_wpQueryDefaultView(XWPMedia *somSelf)
     /* XWPMediaData *somThis = XWPMediaGetData(somSelf); */
     XWPMediaMethodDebug("XWPMedia","xwmm_wpQueryDefaultView");
 
-    return (OPEN_SETTINGS);
+    return OPEN_SETTINGS;
 }
 
 /*
@@ -1153,7 +1153,7 @@ SOM_Scope PSZ  SOMLINK xwmmM_wpclsQueryTitle(M_XWPMedia *somSelf)
     /* M_XWPMediaData *somThis = M_XWPMediaGetData(somSelf); */
     M_XWPMediaMethodDebug("M_XWPMedia","xwmmM_wpclsQueryTitle");
 
-    return ("Multimedia");
+    return "Multimedia";
 }
 
 /*
@@ -1224,27 +1224,7 @@ SOM_Scope ULONG  SOMLINK xwmmM_wpclsQueryIconData(M_XWPMedia *somSelf,
         pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
-    return (sizeof(ICONINFO));
-}
-
-/*
- *@@ wpclsQuerySettingsPageSize:
- *      this WPObject class method should return the
- *      size of the largest settings page in dialog
- *      units; if a settings notebook is initially
- *      opened, i.e. no window pos has been stored
- *      yet, the WPS will use this size, to avoid
- *      truncated settings pages.
- */
-
-SOM_Scope BOOL  SOMLINK xwmmM_wpclsQuerySettingsPageSize(M_XWPMedia *somSelf,
-                                                         PSIZEL pSizl)
-{
-    /* M_XWPMediaData *somThis = M_XWPMediaGetData(somSelf); */
-    M_XWPMediaMethodDebug("M_XWPMedia","xwmmM_wpclsQuerySettingsPageSize");
-
-    return (M_XWPMedia_parent_M_WPAbstract_wpclsQuerySettingsPageSize(somSelf,
-                                                                      pSizl));
+    return sizeof(ICONINFO);
 }
 
 

@@ -1982,7 +1982,6 @@ STATIC MRESULT ProcessRemoveNotify(HWND hwndNotify,         // in: window to rem
         if (pNodeFound)
         {
             lstRemoveNode(pllNotifies, pNodeFound);
-            // DosBeep(500, 100);
             mrc = (MPARAM)TRUE;
 
             // refresh flag for hook
@@ -2019,8 +2018,6 @@ STATIC VOID ProcessMouseClicked(MPARAM mp1, MPARAM mp2)
                           pNode);
         pNode = pNext;
     }
-
-    // DosBeep(3000, 10);
 }
 
 #ifndef __NOMOVEMENT2FEATURES__
@@ -2583,7 +2580,6 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             break;
 
             case XDM_ISTRANSIENTSTICKY:
-                // DosBeep(1000, 30);
                 // _Pmpf(("IsTransientSticky called for HWND %08x", (HWND)mp1));
                 mrc = (MRESULT)pgrIsWindowTransientSticky((HWND)mp1);
             break;

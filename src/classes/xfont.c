@@ -518,7 +518,7 @@ SOM_Scope PSZ  SOMLINK fonM_wpclsQueryTitle(M_XWPFontFolder *somSelf)
     M_XWPFontFolderMethodDebug("M_XWPFontFolder","fonM_wpclsQueryTitle");
 
     // return (M_XWPFontFolder_parent_M_WPFolder_wpclsQueryTitle(somSelf));
-    return (cmnGetString(ID_XSSI_FONTFOLDER)) ; // pszFontFolder
+    return (PSZ)cmnGetString(ID_XSSI_FONTFOLDER);
 }
 
 /*

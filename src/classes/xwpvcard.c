@@ -1072,8 +1072,6 @@ SOM_Scope ULONG  SOMLINK xvcM_wpclsQueryDefaultView(M_XWPVCard *somSelf)
     M_XWPVCardMethodDebug("M_XWPVCard","xvcM_wpclsQueryDefaultView");
 
     return OPEN_SETTINGS;
-
-    // return (M_XWPVCard_parent_M_WPDataFile_wpclsQueryDefaultView(somSelf));
 }
 
 /*

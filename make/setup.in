@@ -253,7 +253,8 @@ PROJECT_INCLUDE = $(PROJECT_BASE_DIR)\include\classes\wps;$(TKBASE)\h;$(TKBASE)\
 # TOOLS SETUP
 # -----------
 
-RUN_FASTDEP = $(HELPERS_BASE)\fastdep.exe -i .;$(PROJECT_INCLUDE) -o $(OUTPUTDIR)
+RUN_FASTDEP = $(HELPERS_BASE)\fastdep.exe -f -cy -i .;$(PROJECT_INCLUDE) -o $(OUTPUTDIR) $(PROJECT_BASE_DIR)\include\classes\*.ih $(PROJECT_BASE_DIR)\include\classes\*.h $(PROJECT_BASE_DIR)\include\classes\wps\*.ih $(PROJECT_BASE_DIR)\include\classes\wps\*.h
+# RUN_FASTDEP = $(HELPERS_BASE)\fastdep.exe -i .;$(PROJECT_INCLUDE) -o $(OUTPUTDIR) *.ih *.h
 
 RUN_BLDLEVEL = cmd.exe /c $(CVS_WORK_ROOT)\$(XWPDIR)\tools\BuildLevel.cmd
 

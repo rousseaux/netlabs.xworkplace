@@ -1039,11 +1039,7 @@ STATIC VOID DwgtDestroy(HWND hwnd)
                     pWidget->pcszWidgetClass = NULL;
                 }
 
-                if (pWidget->hwndContextMenu)
-                {
-                    WinDestroyWindow(pWidget->hwndContextMenu);
-                    pWidget->hwndContextMenu = NULLHANDLE;
-                }
+                winhDestroyWindow(&pWidget->hwndContextMenu);
 
                 // if the widget was registered with the
                 // tooltip control, remove it

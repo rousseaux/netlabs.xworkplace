@@ -1447,7 +1447,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
     TRY_LOUD(excpt1)
     {
         CHAR        szCurDir[CCHMAXPATH] = "";
-        PSZ         pszDlgTitle;
+        PCSZ        pcszDlgTitle;
 
         ULONG       flInitialParse = 0;
 
@@ -1489,12 +1489,12 @@ HWND fdlgFileDlg(HWND hwndOwner,
                             // store the initial parse flags so we
                             // can set the entry field properly below
 
-        if (!(pszDlgTitle = pfd->pszTitle))
+        if (!(pcszDlgTitle = pfd->pszTitle))
             // no user title specified:
             if (pfd->fl & FDS_SAVEAS_DIALOG)
-                pszDlgTitle = cmnGetString(ID_XFSI_FDLG_SAVEFILEAS);
+                pcszDlgTitle = cmnGetString(ID_XFSI_FDLG_SAVEFILEAS);
             else
-                pszDlgTitle = cmnGetString(ID_XFSI_FDLG_OPENFILE);
+                pcszDlgTitle = cmnGetString(ID_XFSI_FDLG_OPENFILE);
 
         flSplit = SPLIT_NOAUTOPOSITION | SPLIT_NOAUTOPOPOPULATE;
 
@@ -1530,7 +1530,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
                                           | FCF_MAXBUTTON
                                           | FCF_SIZEBORDER
                                           | FCF_AUTOICON,
-                                    pszDlgTitle,
+                                    pcszDlgTitle,
                                     flSplit,     // SPLIT_* styles
                                     WinData.szFileMask,
                                     30))       // split bar pos

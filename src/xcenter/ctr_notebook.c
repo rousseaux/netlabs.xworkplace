@@ -1779,7 +1779,7 @@ VOID ctrpClassesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                         precThis->pszVersion = precThis->szVersion;
                     }
                     else
-                        precThis->pszDLL = cmnGetString(ID_CRSI_BUILTINCLASS);
+                        precThis->pszDLL = (PSZ)cmnGetString(ID_CRSI_BUILTINCLASS);
 
                     precThis->pszClass = (PSZ)pClass->pcszClass;
 

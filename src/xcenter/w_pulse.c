@@ -763,7 +763,7 @@ VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
                 xstrClear(&strSetup);
             }
 
-            WinDestroyWindow(hwndDlg);
+            winhDestroyWindow(&hwndDlg);
         }
 
         dlghFreeArray(&pArray);

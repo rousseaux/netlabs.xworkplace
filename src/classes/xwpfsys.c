@@ -148,7 +148,7 @@ SOM_Scope PSZ  SOMLINK xfs_xwpQueryUpperRealName(XWPFileSystem *somSelf)
         }
     }
 
-    return (_pWszUpperRealName);
+    return _pWszUpperRealName;
 }
 
 /*
@@ -274,12 +274,12 @@ SOM_Scope HPOINTER  SOMLINK xfs_wpQueryIcon(XWPFileSystem *somSelf)
         // V0.9.18 (2002-03-24) [umoeller]
         // fixed to never call the parent any more,
         // which nukes our shared icons sometimes
-        return (hptrReturn);
+        return hptrReturn;
     }
 
 #endif
 
-    return (XWPFileSystem_parent_WPFileSystem_wpQueryIcon(somSelf));
+    return XWPFileSystem_parent_WPFileSystem_wpQueryIcon(somSelf);
 }
 
 /*
@@ -358,8 +358,8 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetIconData(XWPFileSystem *somSelf,
         return brc;
     }
 
-    return (XWPFileSystem_parent_WPFileSystem_wpSetIconData(somSelf,
-                                                            pIconInfo));
+    return XWPFileSystem_parent_WPFileSystem_wpSetIconData(somSelf,
+                                                           pIconInfo);
 }
 
 /*
@@ -420,10 +420,10 @@ SOM_Scope HWND  SOMLINK xfs_wpOpen(XWPFileSystem *somSelf, HWND hwndCnr,
     }
 #endif
 
-    return (XWPFileSystem_parent_WPFileSystem_wpOpen(somSelf,
-                                                     hwndCnr,
-                                                     ulView,
-                                                     param));
+    return XWPFileSystem_parent_WPFileSystem_wpOpen(somSelf,
+                                                    hwndCnr,
+                                                    ulView,
+                                                    param);
 }
 
 /*
@@ -640,10 +640,7 @@ SOM_Scope BOOL  SOMLINK xfs_wpRefreshFSInfo(XWPFileSystem *somSelf,
 
 #ifndef __NOTURBOFOLDERS__
     if (cmnQuerySetting(sfTurboFolders))
-    {
-        // DosBeep(4000, 10);
         return !fsysRefresh(somSelf, pReserved);
-    }
 #endif
 
     return XWPFileSystem_parent_WPFileSystem_wpRefreshFSInfo(somSelf,
@@ -729,11 +726,11 @@ SOM_Scope WPObject*  SOMLINK xfsM_wpclsQueryAwakeObject(M_XWPFileSystem *somSelf
          && (pszInputPath[0] != '\\')
          && (pszInputPath[1] != '\\')
        )
-        return (fdrQueryAwakeFSObject(pszInputPath));
+        return fdrQueryAwakeFSObject(pszInputPath);
 #endif
 
-    return (M_XWPFileSystem_parent_M_WPFileSystem_wpclsQueryAwakeObject(somSelf,
-                                                                        pszInputPath));
+    return M_XWPFileSystem_parent_M_WPFileSystem_wpclsQueryAwakeObject(somSelf,
+                                                                       pszInputPath);
 }
 
 
@@ -790,7 +787,7 @@ SOM_Scope WPObject*  SOMLINK xfsM_wpclsFileSysExists(M_XWPFileSystem *somSelf,
                                                                           pszFilename,
                                                                           attrFile);
 
-    return (pAwake);
+    return pAwake;
 }
 
 
@@ -829,7 +826,7 @@ SOM_Scope WPObject*  SOMLINK xfsM_wpclsObjectFromHandle(M_XWPFileSystem *somSelf
 
     // _PmpfF(("HOBJECT 0x%lX", hObject));
 
-    return (M_XWPFileSystem_parent_M_WPFileSystem_wpclsObjectFromHandle(somSelf,
-                                                                        hObject));
+    return M_XWPFileSystem_parent_M_WPFileSystem_wpclsObjectFromHandle(somSelf,
+                                                                       hObject);
 }
 

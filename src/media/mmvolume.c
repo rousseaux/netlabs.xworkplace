@@ -300,8 +300,8 @@ MRESULT EXPENTRY fnwpSubclVolumeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPA
                                       HINI_USER,
                                       INIAPP_XWORKPLACE,
                                       INIKEY_WNDPOSXMMVOLUME);
-                    WinDestroyWindow(hwndSlider);
-                    WinDestroyWindow(hwndFrame);
+                    winhDestroyWindow(&hwndSlider);
+                    winhDestroyWindow(&hwndFrame);
                 }
                 break;
 

@@ -453,8 +453,8 @@ void _Optlink xmm_fntPartyThread(PTHREADINFO pti)
         fTrapped = TRUE;
     } END_CATCH();
 
-    WinDestroyWindow(G_hwndPartyObject);
-    G_hwndPartyObject = NULLHANDLE;
+    winhDestroyWindow(&G_hwndPartyObject);
+
     WinDestroyMsgQueue(G_hmqPartyThread);
     G_hmqPartyThread = NULLHANDLE;
     WinTerminate(G_habPartyThread);

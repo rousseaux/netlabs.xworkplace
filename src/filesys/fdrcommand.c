@@ -654,6 +654,7 @@ BOOL fcmdSelectingFdrMenuItem(WPFolder *somSelf,
                                                      MPFROM2SHORT(usItem,
                                                                   FALSE),
                                                      (MPARAM)MIA_CHECKED);
+
                 _xwpSetStatusBarVisibility(somSelf,
                                            (ulMenuAttr & MIA_CHECKED)
                                               ? STATUSBAR_OFF
@@ -1471,14 +1472,12 @@ BOOL fcmdMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
              */
 
             case ID_XFMI_OFS_SPLITVIEW:
-            {
                 _wpViewObject(somSelf,
                               WinWindowFromID(hwndFrame, FID_CLIENT),
                                             // hwndCnr
                               ulMenuId,     // varmenuofs + ID_XFMI_OFS_SPLITVIEW
                               NULLHANDLE);
                 _xwpHandleSelfClose(somSelf, hwndFrame, ulMenuId); // V1.0.1 (2002-12-08) [umoeller]
-            }
             break;
 
             /*

@@ -1631,7 +1631,7 @@ SOM_Scope PSZ  SOMLINK xdfM_wpclsQueryTitle(M_XFldDataFile *somSelf)
         return M_XFldDataFile_parent_M_WPDataFile_wpclsQueryTitle(somSelf);
 #endif
 
-    return cmnGetString(ID_XSSI_CLASSTITLE_DATAFILE);
+    return (PSZ)cmnGetString(ID_XSSI_CLASSTITLE_DATAFILE);
 }
 
 /*

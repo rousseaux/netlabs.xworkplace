@@ -149,18 +149,18 @@
 
     VOID cmnuAppendFldr2ContentList(WPFolder *pFolder, SHORT sMenuId);
 
-    ULONG cmnuInsertOneObjectMenuItem(HWND       hAddToMenu,
-                                      USHORT     iPosition,
-                                      PSZ        pszNewItemString,
-                                      USHORT     afStyle,
-                                      WPObject   *pObject,
-                                      ULONG      ulObjType);
+    ULONG cmnuInsertOneObjectMenuItem(HWND hAddToMenu,
+                                      USHORT iPosition,
+                                      PCSZ pcszNewItemString,
+                                      USHORT afStyle,
+                                      WPObject *pObject,
+                                      ULONG ulObjType);
 
     VOID cmnuSetPositionBelow(PPOINTL pptlBelow);
 
     SHORT cmnuPrepareContentSubmenu(WPFolder *somSelf,
                                     HWND hwndMenu,
-                                    PSZ pszTitle,
+                                    PCSZ pcszTitle,
                                     USHORT iPosition,
                                     BOOL fOwnerDraw);
 
