@@ -762,9 +762,11 @@
         sfHelpReplacements,              // added V0.9.20 (2002-07-19) [umoeller]
 #endif
         // sfMoveRefreshNow,        removed V0.9.19 (2002-04-17) [umoeller]
-#ifndef __ALWAYSSUBCLASS__
-        sfNoSubclassing,
-#endif
+
+// #ifndef __ALWAYSSUBCLASS__
+//         sfNoSubclassing,         removed V0.9.21 (2002-09-12) [umoeller]
+// #endif
+
 #ifndef __NOFOLDERCONTENTS__
         // sfAddFolderContentItem,  removed V0.9.19 (2002-04-17) [umoeller]
         sfFolderContentShowIcons,

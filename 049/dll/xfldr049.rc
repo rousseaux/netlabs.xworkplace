@@ -1410,7 +1410,8 @@ BEGIN
     ID_XCDI_PARANOIA_GROUP              "XWorkplace-Funktionen deaktivieren"
     ID_XCDI_PARANOIA_INTRO              "Hier kînnen Sie global bestimmte XWorkplace-Funktionen deaktivieren, falls Probleme auftauchen. DrÅcken Sie ""Hilfe"", um mehr Åber die verschiedenen Einstellungen zu erfahren."
     ID_XCDI_VARMENUOFFSET_TXT           "~ID-Ausgleich fÅr XWorkplace-MenÅeintrÑge:"
-    ID_XCDI_NOSUBCLASSING               "Jegliche Ordner~subklassierung deaktivieren"
+    // ID_XCDI_NOSUBCLASSING               "Jegliche Ordner~subklassierung deaktivieren"
+    //      removed V0.9.21 (2002-09-12) [umoeller]
     // ID_XCDI_NOFREAKYMENUS               "Undokumentierte MenÅfunktionen deaktivieren"
     //      removed V0.9.21 (2002-08-26) [umoeller]
     ID_XCDI_USE8HELVFONT                "Schriftart ~8.Helv verwenden"

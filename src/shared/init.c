@@ -815,11 +815,11 @@ STATIC VOID ShowStartupDlgs(VOID)
 
     ShowPanicDlg(FALSE);        // no force
 
-#ifndef __ALWAYSSUBCLASS__
-    if (getenv("XWP_NO_SUBCLASSING"))
-        // V0.9.3 (2000-04-26) [umoeller]
-        cmnSetSetting(sfNoSubclassing, TRUE);
-#endif
+// #ifndef __ALWAYSSUBCLASS__
+//     if (getenv("XWP_NO_SUBCLASSING"))
+//         // V0.9.3 (2000-04-26) [umoeller]
+//         cmnSetSetting(sfNoSubclassing, TRUE);
+// #endif
 }
 
 /*

@@ -354,5 +354,7 @@
     #define ID_XSH_WPNETGRP                 235
     #define ID_XSH_DRIVES_REFRESHMEDIA      236
     #define ID_XSH_PASTEDLG                 237
+
+    #define ID_XSH_SETTINGS_FDRHOTKEYS_DLG  238     // V0.9.21 (2002-09-12) [umoeller]
 #endif
 

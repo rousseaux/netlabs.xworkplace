@@ -3536,9 +3536,9 @@ STATIC const XWPSETTING G_ParanoiaBackup[] =
     {
         sulVarMenuOfs,
         // sfNoFreakyMenus,     removed V0.9.21 (2002-08-26) [umoeller]
-#ifndef __ALWAYSSUBCLASS__
-        sfNoSubclassing,
-#endif
+// #ifndef __ALWAYSSUBCLASS__
+//         sfNoSubclassing,
+// #endif
         sfUse8HelvFont,
         sfNoExcptBeeps,
         sfWorkerPriorityBeep,
@@ -3566,11 +3566,6 @@ STATIC const CONTROLDEF
                             ID_XCDI_VARMENUOFFSET,
                             50,
                             STD_SPIN_HEIGHT),
-#ifndef __ALWAYSSUBCLASS__
-    NoSubclassingCB = LOADDEF_AUTOCHECKBOX(ID_XCDI_NOSUBCLASSING),
-#endif
-    // NoFreakyMenusCB = LOADDEF_AUTOCHECKBOX(ID_XCDI_NOFREAKYMENUS),
-            // removed V0.9.21 (2002-08-26) [umoeller]
     Use8HelvCB = LOADDEF_AUTOCHECKBOX(ID_XCDI_USE8HELVFONT),
     NoExcptBeepsCB = LOADDEF_AUTOCHECKBOX(ID_XCDI_NOEXCPTBEEPS),
     WorkerPrtyGroup = LOADDEF_GROUP(ID_XCDI_WORKERPRTY_GROUP, SZL_AUTOSIZE),
@@ -3601,12 +3596,6 @@ STATIC const DLGHITEM dlgParanoia[] =
                     START_ROW(ROW_VALIGN_CENTER),
                         CONTROL_DEF(&VarMenuOfsTxt),
                         CONTROL_DEF(&VarMenuSpin),
-#ifndef __ALWAYSSUBCLASS__
-                    START_ROW(ROW_VALIGN_CENTER),
-                        CONTROL_DEF(&NoSubclassingCB),
-#endif
-                    // START_ROW(ROW_VALIGN_CENTER),    removed V0.9.21 (2002-08-26) [umoeller]
-                    //     CONTROL_DEF(&NoFreakyMenusCB),
                     START_ROW(ROW_VALIGN_CENTER),
                         CONTROL_DEF(&Use8HelvCB),
                     START_ROW(ROW_VALIGN_CENTER),
@@ -3671,10 +3660,10 @@ VOID setParanoiaInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         //                                        cmnQuerySetting(sfNoFreakyMenus));
         // removed V0.9.21 (2002-08-26) [umoeller]
 
-#ifndef __ALWAYSSUBCLASS__
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XCDI_NOSUBCLASSING,
-                                               cmnQuerySetting(sfNoSubclassing));
-#endif
+// #ifndef __ALWAYSSUBCLASS__
+//         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XCDI_NOSUBCLASSING,
+//                                                cmnQuerySetting(sfNoSubclassing));
+// #endif
         // winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XCDI_NOWORKERTHREAD,
            //                                     cmnQuerySetting(sNoWorkerThread));
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XCDI_USE8HELVFONT,
@@ -3730,14 +3719,6 @@ MRESULT setParanoiaItemChanged(PNOTEBOOKPAGE pnbp,
         // case ID_XCDI_NOFREAKYMENUS:
         //     cmnSetSetting(sfNoFreakyMenus, ulExtra);
         // break;       removed V0.9.21 (2002-08-26) [umoeller]
-
-#ifndef __ALWAYSSUBCLASS__
-        case ID_XCDI_NOSUBCLASSING:
-            cmnSetSetting(sfNoSubclassing, ulExtra);
-            // set flag to iterate over other notebook pages
-            fUpdateOtherPages = TRUE;
-        break;
-#endif
 
         case ID_XCDI_USE8HELVFONT:
             cmnSetSetting(sfUse8HelvFont, ulExtra);

@@ -2857,11 +2857,11 @@ STATIC const SETTINGINFO G_aSettingInfos[] =
             "fMoveRefreshNow",
 #endif */
 
-#ifndef __ALWAYSSUBCLASS__
-        sfNoSubclassing, FIELDOFFSET(OLDGLOBALSETTINGS, __fNoSubclassing), 4,
-            SP_SETUP_PARANOIA, 0,
-            "fNoSubclassing",
-#endif
+// #ifndef __ALWAYSSUBCLASS__   removed V0.9.21 (2002-09-12) [umoeller]
+//         sfNoSubclassing, FIELDOFFSET(OLDGLOBALSETTINGS, __fNoSubclassing), 4,
+//             SP_SETUP_PARANOIA, 0,
+//             "fNoSubclassing",
+// #endif
 
 #ifndef __NOFOLDERCONTENTS__
         sfFolderContentShowIcons, FIELDOFFSET(OLDGLOBALSETTINGS, __fFolderContentShowIcons), 4,

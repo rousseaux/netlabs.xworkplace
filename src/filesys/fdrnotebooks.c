@@ -276,13 +276,6 @@ VOID fdrViewInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
     if (flFlags & CBI_ENABLE)
     {
-#ifndef __ALWAYSSUBCLASS__
-        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_TREEVIEWAUTOSCROLL,
-                (    // (cmnQuerySetting(sNoWorkerThread) == FALSE)
-                        // // removed this setting V0.9.16 (2002-01-04) [umoeller]
-                   (!cmnQuerySetting(sfNoSubclassing))
-                ));
-#endif
 #ifndef __NOFDRDEFAULTDOCS__
         WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_FDRDEFAULTDOCVIEW,
                          cmnQuerySetting(sfFdrDefaultDoc));
@@ -692,12 +685,7 @@ VOID fdrXFolderInitPage(PNOTEBOOKPAGE pnbp,  // notebook info struct
     {
         // disable items
         BOOL fEnable = (
-                              1
-#ifndef __ALWAYSSUBCLASS__
-                           &&
-                              !cmnQuerySetting(sfNoSubclassing)
-                           &&
-#endif
+                              1 &&
 #ifndef __ALWAYSFDRHOTKEYS__
                               (cmnQuerySetting(sfFolderHotkeys))
 #endif
@@ -721,9 +709,6 @@ VOID fdrXFolderInitPage(PNOTEBOOKPAGE pnbp,  // notebook info struct
                          // always disable for Desktop
         fEnable =        (   (stbClassCanHaveStatusBars(pnbp->inbp.somSelf))
                                         // V0.9.19 (2002-04-17) [umoeller]
-#ifndef __ALWAYSSUBCLASS__
-                          && (!cmnQuerySetting(sfNoSubclassing))
-#endif
 #ifndef __NOCFGSTATUSBARS__
                           && (cmnQuerySetting(sfStatusBars))
 #endif

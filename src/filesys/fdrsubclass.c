@@ -510,46 +510,41 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
     XFolderData         *somThis = XFolderGetData(somSelf);
     HWND                hwndCnr = WinWindowFromID(hwndNewFrame, FID_CLIENT);
 
-#ifndef __ALWAYSSUBCLASS__
-    if (!cmnQuerySetting(sfNoSubclassing)) // V0.9.3 (2000-04-26) [umoeller]
-#endif
+    ULONG flViews;
+
+    // subclass the new folder frame window;
+    // this creates a SUBCLFOLDERVIEW for the view
+    psfv = fdrSubclassFolderView(hwndNewFrame,
+                                 hwndCnr,
+                                 somSelf,
+                                 somSelf);  // "real" object; for folders, this is the folder too
+
+    // change the window title to full path, if allowed
+    if (    (_bFullPathInstance == 1)
+         || ((_bFullPathInstance == 2) && (cmnQuerySetting(sfFullPath)))
+       )
+        fdrSetOneFrameWndTitle(somSelf, hwndNewFrame);
+
+    // add status bar, if allowed:
+    if (    (stbViewHasStatusBars(somSelf, ulView))      // V0.9.19 (2002-04-17) [umoeller]
+         && (psfv)
+       )
     {
-        ULONG flViews;
-
-        // subclass the new folder frame window;
-        // this creates a SUBCLFOLDERVIEW for the view
-        psfv = fdrSubclassFolderView(hwndNewFrame,
-                                     hwndCnr,
-                                     somSelf,
-                                     somSelf);  // "real" object; for folders, this is the folder too
-
-        // change the window title to full path, if allowed
-        if (    (_bFullPathInstance == 1)
-             || ((_bFullPathInstance == 2) && (cmnQuerySetting(sfFullPath)))
-           )
-            fdrSetOneFrameWndTitle(somSelf, hwndNewFrame);
-
-        // add status bar, if allowed:
-        if (    (stbViewHasStatusBars(somSelf, ulView))      // V0.9.19 (2002-04-17) [umoeller]
-             && (psfv)
-           )
-        {
-            stbCreate(psfv);
-        }
-
-        // replace sort stuff
-#ifndef __ALWAYSEXTSORT__
-        if (cmnQuerySetting(sfExtendedSorting))
-#endif
-            if (hwndCnr)
-            {
-                PMPF_SORT(("setting folder sort"));
-
-                fdrSetFldrCnrSort(somSelf,
-                                  hwndCnr,
-                                  TRUE);        // force
-            }
+        stbCreate(psfv);
     }
+
+    // replace sort stuff
+#ifndef __ALWAYSEXTSORT__
+    if (cmnQuerySetting(sfExtendedSorting))
+#endif
+        if (hwndCnr)
+        {
+            PMPF_SORT(("setting folder sort"));
+
+            fdrSetFldrCnrSort(somSelf,
+                              hwndCnr,
+                              TRUE);        // force
+        }
 }
 
 /* ******************************************************************

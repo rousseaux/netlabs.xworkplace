@@ -1456,7 +1456,8 @@ BEGIN
     ID_XCDI_PARANOIA_GROUP              "Disable XWorkplace Features"
     ID_XCDI_PARANOIA_INTRO              "Here you can globally disable certain XWorkplace features in case of trouble. Press ""Help"" to find out more about the different settings."
     ID_XCDI_VARMENUOFFSET_TXT           "XWorkplace menu item ~ID offset:"
-    ID_XCDI_NOSUBCLASSING               "Disable all folder ~subclassing"
+    // ID_XCDI_NOSUBCLASSING               "Disable all folder ~subclassing"
+    //      removed V0.9.21 (2002-09-12) [umoeller]
     // ID_XCDI_NOFREAKYMENUS               "Disable undocumented menu functions"
     //      removed V0.9.21 (2002-08-26) [umoeller]
     ID_XCDI_USE8HELVFONT                "Use ~8.Helv font"

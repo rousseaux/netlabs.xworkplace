@@ -70,7 +70,7 @@
  *      Based on code from WarpEnhancer, (C) Achim HasenmÅller.
  */
 
-VOID WMButton_SystemMenuContext(HWND hwnd)     // of WM_BUTTON2CLICK                     
+VOID WMButton_SystemMenuContext(HWND hwnd)     // of WM_BUTTON2CLICK
 {
     POINTL      ptlMouse; // mouse coordinates
     HWND        hwndFrame; // handle of the frame window (parent)
@@ -159,7 +159,7 @@ VOID WMButton_SystemMenuContext(HWND hwnd)     // of WM_BUTTON2CLICK
                     WinSendMsg(hNewMenu,
                                MM_INSERTITEM,
                                MPFROMP(&mi),
-                               "Sticky");
+                               "Sticky");           // @@todo localize
                 }
 #endif
 

@@ -1805,8 +1805,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
         // this if either folder content for every folder is
         // enabled or at least one favorite folder exists
         pFavorite = _xwpclsQueryFavoriteFolder(_XFolder, NULL);
-        if (    (!cmnQuerySetting(sfNoSubclassing))
-             && (    (fAddFolderContentItem)
+        if (    (    (fAddFolderContentItem)
                   || (pFavorite)
                 )
            )

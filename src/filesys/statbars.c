@@ -3308,27 +3308,6 @@ VOID stbStatusBar1InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                 winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4MENU, TRUE);
         }
     }
-
-    if (flFlags & CBI_ENABLE)
-    {
-#ifndef __ALWAYSSUBCLASS__
-        static const ULONG aulIDs[] =
-            {
-                ID_XSDI_ENABLESTATUSBAR,
-                ID_XSDI_SBSTYLE_3RAISED,
-                ID_XSDI_SBSTYLE_3SUNKEN,
-                ID_XSDI_SBSTYLE_4MENU,
-                ID_XSDI_SBSTYLE_4RECT,
-                ID_XSDI_SBFORICONVIEWS,
-                ID_XSDI_SBFORTREEVIEWS,
-                ID_XSDI_SBFORDETAILSVIEWS
-            };
-        winhEnableControls2(pnbp->hwndDlgPage,
-                            aulIDs,
-                            ARRAYITEMCOUNT(aulIDs),
-                            !cmnQuerySetting(sfNoSubclassing));
-#endif
-    }
 }
 
 /*

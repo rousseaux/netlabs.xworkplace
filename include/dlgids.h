@@ -802,9 +802,9 @@
 #define ID_XCDI_VARMENUOFFSET_TXT       1160
 #define ID_XCDI_VARMENUOFFSET           1161
 // #define ID_XCDI_NOFREAKYMENUS           1162     removed V0.9.21 (2002-08-26) [umoeller]
-#ifndef __ALWAYSSUBCLASS__
-#define ID_XCDI_NOSUBCLASSING           1163
-#endif
+// #ifndef __ALWAYSSUBCLASS__
+// #define ID_XCDI_NOSUBCLASSING           1163     removed V0.9.21 (2002-09-12) [umoeller]
+// #endif
 // #define ID_XCDI_NOWORKERTHREAD          1164
         // removed this setting V0.9.16 (2001-01-04) [umoeller]
 #define ID_XCDI_USE8HELVFONT            1165

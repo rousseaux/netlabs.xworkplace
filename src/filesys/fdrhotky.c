@@ -921,10 +921,13 @@ STATIC const CONTROLDEF
                             ID_XSDI_HOTKEY_ACTION,
                             ACTIONWIDTH,
                             -1),
+#undef ACTIONDROP
+#ifdef ACTIONDROP
     ActionList = CONTROLDEF_DROPDOWNLIST(
                             ID_XSDI_HOTKEY_ACTION_DROP,
                             ACTIONWIDTH,
                             70),
+#endif
     ParamTxt = CONTROLDEF_TEXT_CENTER(
                             LOAD_STRING,
                             ID_XSDI_HOTKEY_PARAM,
@@ -947,12 +950,14 @@ STATIC const DLGHITEM dlgAddHotkey[] =
                             START_ROW(0),
                                 CONTROL_DEF(&Hotkey),
                         END_TABLE,
+#ifdef ACTIONDROP
                         START_TABLE,
                             START_ROW(0),
                                 CONTROL_DEF(&ActionTxt),
                             START_ROW(0),
                                 CONTROL_DEF(&ActionList),
                         END_TABLE,
+#endif
                         START_TABLE,
                             START_ROW(0),
                                 CONTROL_DEF(&ParamTxt),
@@ -986,8 +991,7 @@ STATIC MRESULT EXPENTRY fnwpEditHotkeyRecord(HWND hwndDlg,
         {
             BOOL fDismiss = TRUE;
 
-            if (    (SHORT1FROMMP(mp1) == DID_OK)
-               )
+            if (SHORT1FROMMP(mp1) == DID_OK)
             {
                 // before allowing OK, check if the key is valid
                 HWND hwnd = WinWindowFromID(hwndDlg, ID_XSDI_HOTKEY_HOTKEY_EF);
@@ -1030,7 +1034,8 @@ STATIC MRESULT EXPENTRY fnwpEditHotkeyRecord(HWND hwndDlg,
         break;
 
         case WM_HELP:
-            cmnDisplayHelp(NULL, ID_XSH_SETTINGS_PAGER_STICKY + 2);
+            cmnDisplayHelp(NULL,
+                           ID_XSH_SETTINGS_FDRHOTKEYS_DLG); // V0.9.21 (2002-09-12) [umoeller]
         break;
 
         default:
@@ -1221,14 +1226,15 @@ STATIC VOID EditHotkeyRecord(PHOTKEYRECORD pRec,
 
             WinSetWindowText(hwndItem, pRec->pcszKeyName);
 
+#ifdef ACTIONDROP
             // filling the possible actions (just Command currently)
             hwndItem = WinWindowFromID(hwndDlg, ID_XSDI_HOTKEY_ACTION_DROP);
             WinInsertLboxItem(hwndItem,
                               0,
-                              "Command"); // @todo
+                              "Command"); // @@todo localize
             WinSendMsg(hwndItem, LM_SELECTITEM, MPFROMSHORT(0), MPFROMSHORT(TRUE));
+#endif
 
-            // loop through all the tasklist entries
             hwndItem = WinWindowFromID(hwndDlg, ID_XSDI_HOTKEY_PARAM_DROP);
             for (ul = 0;
                  ul < FLDRHOTKEYCOUNT;
@@ -1475,10 +1481,12 @@ VOID fdrHotkeysInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         xfi[i].ulDataType = CFA_STRING | CFA_HORZSEPARATOR;
         xfi[i++].ulOrientation = CFA_LEFT;
 
+#ifdef ACTIONDROP
         xfi[i].ulFieldOffset = FIELDOFFSET(HOTKEYRECORD, pcszPlugin);
         xfi[i].pszColumnTitle = cmnGetString(ID_XSDI_HOTKEY_ACTION);
         xfi[i].ulDataType = CFA_STRING | CFA_HORZSEPARATOR;
         xfi[i++].ulOrientation = CFA_LEFT;
+#endif
 
         xfi[i].ulFieldOffset = FIELDOFFSET(HOTKEYRECORD, pcszParameters);
         xfi[i].pszColumnTitle = cmnGetString(ID_XSDI_HOTKEY_PARAM);
@@ -1526,23 +1534,12 @@ VOID fdrHotkeysInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
     if (flFlags & CBI_ENABLE)
     {
-#ifndef __ALWAYSSUBCLASS__
-        BOOL fEnable = !cmnQuerySetting(sfNoSubclassing);
-
-        WinEnableControl(pnbp->hwndDlgPage,
-                         ID_XSDI_CNR,
-                         fEnable);
-        WinEnableControl(pnbp->hwndDlgPage,
-                         DID_ADD,
-                         fEnable);
         WinEnableControl(pnbp->hwndDlgPage,
                          DID_EDIT,
-                         fEnable && G_FolderHotkeys[0].usCommand != 0);
+                         G_FolderHotkeys[0].usCommand != 0);
         WinEnableControl(pnbp->hwndDlgPage,
                          DID_REMOVE,
-                         fEnable && G_FolderHotkeys[0].usCommand != 0);
-
-#endif
+                         G_FolderHotkeys[0].usCommand != 0);
     }
 }
 

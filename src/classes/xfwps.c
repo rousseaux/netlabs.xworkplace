@@ -249,19 +249,9 @@ SOM_Scope ULONG  SOMLINK xwp_xwpAddWPSFdrStatusBarPages(XFldWPS *somSelf,
      * "Status bar" pages
      */
 
-    if (
-#ifndef __ALWAYSSUBCLASS__
-            (!cmnQuerySetting(sfNoSubclassing))
-#else
-        1
-#endif
-        &&
 #ifndef __NOCFGSTATUSBARS__
-            (cmnQuerySetting(sfStatusBars))
-#else
-        1
+    if (cmnQuerySetting(sfStatusBars))
 #endif
-       )
     {
 #ifndef __NOCFGSTATUSBARS__
         // insert "Status bar" page 2
