@@ -1444,16 +1444,29 @@
  *
  ********************************************************************/
 
-// all IDs changed V0.9.19 (2002-04-02) [umoeller]
+// all IDs changed V1.0.1 (2003-01-10) [umoeller]
 #define ID_AMDI_USER_LOCAL_GROUP        4000
 #define ID_AMDI_USER_USERNAME_TXT       4001
 #define ID_AMDI_USER_USERNAME_DATA      4002
 #define ID_AMDI_USER_USERID_TXT         4003
 #define ID_AMDI_USER_USERID_DATA        4004
-#define ID_AMDI_USER_GROUPNAME_TXT      4005
-#define ID_AMDI_USER_GROUPNAME_DATA     4006
-#define ID_AMDI_USER_GROUPID_TXT        4007
-#define ID_AMDI_USER_GROUPID_DATA       4008
+#define ID_AMDI_USER_FULLNAME_TXT       4005
+#define ID_AMDI_USER_FULLNAME_DATA      4006
+#define ID_AMDI_USER_PASS_TXT           4007
+#define ID_AMDI_USER_PASS_DATA          4008
+#define ID_AMDI_USER_CONFIRMPASS_TXT    4009
+#define ID_AMDI_USER_CONFIRMPASS_DATA   4010
+#define ID_AMDI_USER_GROUPS_TXT         4011
+#define ID_AMDI_USER_GROUPS_DATA        4012
+#define ID_AMDI_USER_LOCALSEC_TXT       4013
+#define ID_AMDI_USER_LOCALSEC_DATA      4014
+
+#define ID_AMSI_LOCAL_USER              4015
+#define ID_AMSI_ALL_USERS               4016
+#define ID_AMSI_ALL_GROUPS              4017
+
+#define ID_AMDI_F3_PERMISSIONS_TXT      4018
+#define ID_AMDI_F3_PERMISSIONS_DATA     4019
 
 /* ******************************************************************
  *
@@ -1791,6 +1804,10 @@
 // #define ID_XSSI_1GENERIC                5620         removed V0.9.20 (2002-07-25) [umoeller]
 // #define ID_XSSI_2REMOVEITEMS            5621         removed V0.9.20 (2002-07-25) [umoeller]
 // #define ID_XSSI_25ADDITEMS              5622         removed V0.9.20 (2002-07-25) [umoeller]
+#define ID_XSSI_FILEPAGE                5619            // changed V1.0.1 (2003-01-10) [umoeller]
+#define ID_XSSI_FILEPAGE_GENERAL        5620            // added V1.0.1 (2003-01-10) [umoeller]
+#define ID_XSSI_FILEPAGE_EAS            5621            // added V1.0.1 (2003-01-10) [umoeller]
+#define ID_XSSI_FILEPAGE_PERMISSIONS    5622            // added V1.0.1 (2003-01-10) [umoeller]
 #define ID_XSSI_26CONFIGITEMS           5623
 #define ID_XSSI_27STATUSBAR             5624
 #define ID_XSSI_3SNAPTOGRID             5625
@@ -1805,7 +1822,6 @@
 #define ID_XSSI_FEATURES                5633
 #define ID_XSSI_PARANOIA                5634
 #define ID_XSSI_OBJECTS                 5635
-#define ID_XSSI_FILEPAGE                5636
 #define ID_XSSI_DETAILSPAGE             5637
 #define ID_XSSI_XSHUTDOWNPAGE           5638
 #define ID_XSSI_STARTUPPAGE             5639
@@ -2316,9 +2332,11 @@
 #define ID_NDSI_STARTNETSCAPE           6221
 #define ID_NDSI_SYNTAX                  6222
 
+/* moved to admin section V1.0.1 (2003-01-10) [umoeller]
 #define ID_XSSI_ADMIN_LOCAL_USER        6223
 #define ID_XSSI_ADMIN_ALL_USERS         6224
 #define ID_XSSI_ADMIN_ALL_GROUPS        6225
+*/
 
 #define ID_CRSI_OWGT_BITMAPFILE         6226
 
@@ -2406,22 +2424,6 @@
 #define ID_XFSI_XWPSHUTDOWNFDR          6301        // V1.0.0 (2002-08-31) [umoeller]
 
 #define ID_XSSI_DEINSTALLINGFONTS       6302        // V1.0.1 (2002-12-15) [pr]
-
-// the following added V1.0.1 (2003-01-05) [umoeller]
-#define ID_XSSI_USERID                  6303
-#define ID_XSSI_USERID_EF               6304
-#define ID_XSSI_USERNAME                6305
-#define ID_XSSI_USERNAME_EF             6306
-#define ID_XSSI_USERFULLNAME            6307
-#define ID_XSSI_USERFULLNAME_EF         6308
-#define ID_XSSI_USERPASS                6309
-#define ID_XSSI_USERPASS_EF             6310
-#define ID_XSSI_USERCONFIRMPASS         6311
-#define ID_XSSI_USERCONFIRMPASS_EF      6312
-#define ID_XSSI_GROUPID                 6313
-#define ID_XSSI_GROUPID_EF              6314
-#define ID_XSSI_GROUPNAME               6315
-#define ID_XSSI_GROUPNAME_EF            6316
 
 /* ******************************************************************
  *

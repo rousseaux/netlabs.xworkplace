@@ -82,30 +82,24 @@ AINCLUDES  = -Fdi:$(DDKBASE)/inc -Fdi:../../include/xwpsec32.sys
 AOBJS = \
     $(OUTPUTDIR)\sec32_pre_init_base.obj $(OUTPUTDIR)\sec32_devhlp32.obj
 
-COBJS =   \
-#    $(OUTPUTDIR)\audit.obj                                   \
-    $(OUTPUTDIR)\callb_close.obj                               \
-    $(OUTPUTDIR)\callb_delete.obj                              \
-    $(OUTPUTDIR)\callb_dirs.obj                                \
-    $(OUTPUTDIR)\callb_exec.obj                                \
-    $(OUTPUTDIR)\callb_find.obj                                \
-    $(OUTPUTDIR)\callb_move.obj                                \
-    $(OUTPUTDIR)\callb_open.obj                                \
-#    $(OUTPUTDIR)\sec32_idc.obj                               \
-    $(OUTPUTDIR)\sec32_strategy.obj                          \
-    $(OUTPUTDIR)\sec32_data.obj                              \
-    $(OUTPUTDIR)\sec32_callbacks.obj                         \
-    $(OUTPUTDIR)\strat_init_base.obj                         \
-    $(OUTPUTDIR)\strat_init_complete.obj                     \
-    $(OUTPUTDIR)\strat_ioctl.obj                             \
-    $(OUTPUTDIR)\strat_open.obj                              \
-    $(OUTPUTDIR)\strat_close.obj                             \
-    $(OUTPUTDIR)\strat_invalid.obj                           \
-    $(OUTPUTDIR)\strat_shutdown.obj                          \
-    $(OUTPUTDIR)\util_daemon.obj                             \
-#    $(OUTPUTDIR)\util_log.obj                                \
-    $(OUTPUTDIR)\util_misc.obj                               \
-    $(OUTPUTDIR)\util_sem.obj                                \
+COBJS = \
+    $(OUTPUTDIR)\callb_close.obj \
+    $(OUTPUTDIR)\callb_delete.obj \
+    $(OUTPUTDIR)\callb_dirs.obj \
+    $(OUTPUTDIR)\callb_exec.obj \
+    $(OUTPUTDIR)\callb_find.obj \
+    $(OUTPUTDIR)\callb_move.obj \
+    $(OUTPUTDIR)\callb_open.obj \
+    $(OUTPUTDIR)\sec32_strategy.obj \
+    $(OUTPUTDIR)\sec32_data.obj \
+    $(OUTPUTDIR)\sec32_callbacks.obj \
+    $(OUTPUTDIR)\strat_init_base.obj \
+    $(OUTPUTDIR)\strat_init_complete.obj \
+    $(OUTPUTDIR)\strat_ioctl.obj \
+    $(OUTPUTDIR)\strat_invalid.obj \
+    $(OUTPUTDIR)\strat_shutdown.obj \
+    $(OUTPUTDIR)\util_misc.obj \
+    $(OUTPUTDIR)\util_string.obj \
     $(OUTPUTDIR)\tree.obj
 
 # TARGETS
@@ -136,11 +130,11 @@ $(DRIVERNAME).def: ..\..\include\bldlevel.h makefile
     $(RUN_BLDLEVEL) $(DRIVERNAME).def ..\..\include\bldlevel.h "$(XWPNAME) Security device driver"
 
 $(MODULESDIR)\$(DRIVERNAME).sys: \
-            $(AOBJS)             \
-            $(COBJS)             \
-            $(OUTPUTDIR)\sec32_start.obj     \
-            $(OUTPUTDIR)\sec32_end.obj       \
-            $(DRIVERNAME).def    \
+            $(AOBJS) \
+            $(COBJS) \
+            $(OUTPUTDIR)\sec32_start.obj \
+            $(OUTPUTDIR)\sec32_end.obj \
+            $(DRIVERNAME).def \
             makefile
         ilink @<<
 /OUT:$(MODULESDIR)\$(@B).sys

@@ -21,7 +21,6 @@
 #define INCL_DOSERRORS
 #define INCL_NOPMAPI
 #include <os2.h>
-// #include <secure.h>
 
 #include <string.h>
 
@@ -29,7 +28,6 @@
 #include "xwpsec32.sys\StackToFlat.h"
 #include "xwpsec32.sys\DevHlp32.h"
 #include "xwpsec32.sys\reqpkt32.h"
-// #include "xwpsec32.sys\SecHlp.h"
 
 #include "xwpsec32.sys\xwpsec_types.h"
 #include "xwpsec32.sys\xwpsec_callbacks.h"
@@ -38,38 +36,11 @@
 
 /* ******************************************************************
  *
- *   Prototypes
+ *   Private definitions
  *
  ********************************************************************/
 
 extern int _System sec32_pre_init_base(PTR16 reqpkt);
-
-/* ******************************************************************
- *
- *   Global variables
- *
- ********************************************************************/
-
-extern unsigned short codeend;      // in sec32_start.asm
-extern unsigned short dataend;      // in sec32_start.asm
-extern PTR16          DevHelp2;
-
-extern char code32_end;
-extern char data32_end;
-
-extern void begin_code32(void);     // in sec32_start.asm
-extern int  begin_data32;           // in sec32_start.asm
-
-extern int debug_port;
-
-char G_szBanner[]
-= "XWPSEC32.SYS: XWorkplace Security driver V" BLDLEVEL_VERSION " (" __DATE__ ") loaded\r\n"
-  "(C) Copyright 2000-2002 Ulrich M”ller\r\n";
-
-char G_szNoSES[] = "XWPSEC32.SYS: SES driver not found. Cannot initialize.\r\n";
-
-char G_szCom1[] = "XWPSEC32.SYS: Debugging to COM port 1.\r\n";
-char G_szCom2[] = "XWPSEC32.SYS: Debugging to COM port 2.\r\n";
 
 #pragma pack(1)
 
@@ -88,25 +59,40 @@ struct ddd32_parm_list
     unsigned short cmd_line_args;          // addr of Command Line Args
     unsigned short machine_config_table;   // addr of Machine Config Info
 };
+
 #pragma pack()
 
+extern unsigned short codeend;      // in sec32_start.asm
+extern unsigned short dataend;      // in sec32_start.asm
+extern PTR16          DevHelp2;
 
-void *TKSSBase;
+extern void code32_begin(void);     // in sec32_start.asm
+extern int  data32_begin;           // in sec32_start.asm
+
+extern char code32_end;
+extern char data32_end;
+
+extern int G_DebugPort;
+
+void *TKSSBase;                     // in sec32_pre_init_base.asm
     // pointer to kernel _TKSSBase value.
-PTR16          DevHelp2;
 
-// struct DevHelp32 DevHelp32 = {DEVHELP32_MAGIC, DEVHELP32_VERSION, };
-    // mwdd32.sys DevHlp32 entry points
+/* ******************************************************************
+ *
+ *   Global variables (DATA32)
+ *
+ ********************************************************************/
 
-/* struct SecExp_s SecurityExports
-    = {     SEC_EXPORT_MAJOR_VERSION,
-            SEC_EXPORT_MINOR_VERSION,
-            // ...
-      };
-    // SecHlp kernel entry points
+char    G_szBanner[] =
+    "XWPSEC32.SYS: XWorkplace Security driver V" BLDLEVEL_VERSION " (" __DATE__ ") loaded\r\n"
+    "(C) Copyright 2000-2002 Ulrich M”ller\r\n";
 
-struct SecurityHelpers SecHlp = {0, }; */
-    // SecHlp sesdd32.sys entry points
+char    G_szNoSES[] = "XWPSEC32.SYS: Error initializing kernel security hooks!\r\n";
+
+char    G_szCom1[] = "XWPSEC32.SYS: Debugging to COM port 1.\r\n";
+char    G_szCom2[] = "XWPSEC32.SYS: Debugging to COM port 2.\r\n";
+
+PTR16   DevHelp2;
 
 /* ******************************************************************
  *
@@ -124,49 +110,30 @@ struct SecurityHelpers SecHlp = {0, }; */
 
 int FixMemory(void)
 {
-    APIRET rc;
-    ULONG  ulPgCount;
-    char   abLock[12];            // receives lock handle
+    APIRET  rc;
+    ULONG   ulPgCount;
+    char    abLock[12];            // receives lock handle
 
     // lock DGROUP into physical memory
-    rc = DevHlp32_VMLock(VMDHL_LONG          // lock for more than 2 seconds
-                            | VMDHL_WRITE,    // write (set "dirty bit" in page table entries)
-                            // | VMDHL_VERIFY,
-                            // since VMDHL_NOBLOCK is not specified, this blocks
-                            // until the page is available
-                         &begin_data32,
-                         (ULONG)(&data32_end) - (ULONG)(&begin_data32),
-                         (void *)-1,
-                         __StackToFlat(abLock),        // receives lock handle
-                         __StackToFlat(&ulPgCount));
-
-    if (rc == NO_ERROR)
+    if (!(rc = DevHlp32_VMLock(VMDHL_LONG          // lock for more than 2 seconds
+                                  | VMDHL_WRITE,    // write (set "dirty bit" in page table entries)
+                                  // | VMDHL_VERIFY,
+                                  // since VMDHL_NOBLOCK is not specified, this blocks
+                                  // until the page is available
+                               &data32_begin,
+                               (ULONG)&data32_end - (ULONG)&data32_begin,
+                               (PVOID)-1,
+                               __StackToFlat(abLock),        // receives lock handle
+                               __StackToFlat(&ulPgCount))))
     {
         // locks CODE32 into physical memory
         rc = DevHlp32_VMLock(VMDHL_LONG,
                                  // | VMDHL_VERIFY,
-                             (VOID*)&begin_code32,
-                             // (void*)begin_code32,
-                             // (ULONG)(&code32_end) - (ULONG)begin_code32,
-                             (ULONG)(&code32_end) - (ULONG)(&begin_code32),
-                             (void *)-1,
+                             (PVOID)&code32_begin,
+                             (ULONG)&code32_end - (ULONG)&code32_begin,
+                             (PVOID)-1,
                              __StackToFlat(abLock),
                              __StackToFlat(&ulPgCount));
-        /* if (rc == NO_ERROR)
-        {
-            // allocate 2 GDT selectors to communicate with the control program
-            // later; we must do this at init time, but right now these
-            // selectors point to nowhere until the CP calls the REGISTER IOCtl
-            if (!(rc = DevHlp32_AllocGDTSelector(G_aGDTSels, 2)))
-            {
-                // set the pointers to the control program communication buffer;
-                G_CPData.pOpData = NULL; // (OPDATA*)MK_FP(GDTSels[0], 0);
-                G_CPData.pvBuf = NULL; // (void*)MK_FP(GDTSels[1], 0);
-
-                // say the control program has never been attached
-                G_fCPAttached = -1;
-            }
-        } */
     }
 
     return rc;
@@ -180,7 +147,7 @@ int FixMemory(void)
 
 int InitSecurity(VOID)
 {
-    APIRET rc = NO_ERROR;
+    APIRET rc;
 
     // pass table of security hooks to kernel
     if (!(rc = DevHlp32_Security(DHSEC_SETIMPORT,
@@ -194,7 +161,7 @@ int InitSecurity(VOID)
         } */
     }
 
-    return (rc);
+    return rc;
 }
 
 /* ******************************************************************
@@ -231,157 +198,117 @@ int InitSecurity(VOID)
 int sec32_init_base(PTR16 reqpkt)
 {
     int                     fQuiet = 0;
-    int                     status;
+    int                     status = 0;
     int                     rc;
     struct reqpkt_init      *pRequest;
     struct ddd32_parm_list  *pCmd;
-    char                    *pszParm;
-    // unsigned short          usTempSel;
 
-    /*
-     * Initialize request status
-     */
-    status = 0;
-
-    /*
-     * We first do preliminary init code so that DevHelp32 functions and
-     * __StackToFlat() can be called.
-     */
-    if (    (rc = sec32_pre_init_base(reqpkt)) // assembler code
-            != NO_ERROR)
-    {
+    // run assembler init code to make DevHelp32 and __StackToFlag
+    // work (sec32_pre_init_base.asm)
+    if (rc = sec32_pre_init_base(reqpkt))
         // error in assembler drv32_pre_init:
         status |= STERR + ERROR_I24_QUIET_INIT_FAIL;
-    }
+
+    // convert the 16:16 request packet pointer to FLAT
+    else if (rc = DevHlp32_VirtToLin(reqpkt,
+                                     __StackToFlat(&pRequest)))
+        status |= STERR + ERROR_I24_QUIET_INIT_FAIL;
+
+    // convert the 16:16 command line pointer to FLAT
+    else if (rc = DevHlp32_VirtToLin(pRequest->u.input.initarg,
+                                     __StackToFlat(&pCmd)))
+        status |= STERR + ERROR_I24_QUIET_INIT_FAIL;
     else
     {
-        // convert the 16:16 request packet pointer to FLAT
-        if ((rc = DevHlp32_VirtToLin(reqpkt, __StackToFlat(&pRequest)))
-                    != NO_ERROR)
-            // error while thunking reqpkt:
+        // OK so far: process parameters
+        CHAR    *pszParm;
+        PTR16   tmpparm;
+        tmpparm.seg = pRequest->u.input.initarg.seg;
+        tmpparm.ofs = pCmd->cmd_line_args;
+
+        if (rc = DevHlp32_VirtToLin(tmpparm,
+                                    __StackToFlat(&pszParm)))
             status |= STERR + ERROR_I24_QUIET_INIT_FAIL;
         else
         {
-            // convert the 16:16 command line pointer to FLAT
-            if ((rc = DevHlp32_VirtToLin(pRequest->u.input.initarg,
-                                         __StackToFlat(&pCmd)))
-                        != NO_ERROR)
-                // error while thunking command line pointer
-                status |= STERR + ERROR_I24_QUIET_INIT_FAIL;
-            else
+            char    *tmp;
+            __strupr(pszParm);
+            for (tmp = __strpbrk(pszParm, "-/");
+                 tmp;
+                 tmp = __strpbrk(tmp, "-/"))
             {
-                PTR16   tmpparm;
-                // OK so far: process parameters
-                tmpparm.seg = pRequest->u.input.initarg.seg;
-                tmpparm.ofs = pCmd->cmd_line_args;
-                if ((rc = DevHlp32_VirtToLin(tmpparm, __StackToFlat(&pszParm)))
-                        == NO_ERROR)
-                {
-                    char    *tmp;
-                    __strupr(pszParm);
-                    for (tmp = __strpbrk(pszParm, "-/");
-                         tmp;
-                         tmp = __strpbrk(tmp, "-/"))
-                    {
-                        // go to char after "-" or "/"
-                        tmp++;
+                // go to char after "-" or "/"
+                ++tmp;
 
-                        // -Q: quiet initialization?
-                        if (strncmp(tmp, "Q", sizeof("Q") - 1) == 0)
-                        {
-                            fQuiet = 1;
-                            continue;
-                        }
+                // -Q: quiet initialization?
+                if (strncmp(tmp, "Q", sizeof("Q") - 1) == 0)
+                {
+                    fQuiet = 1;
+                    continue;
+                }
 
 #define OUTPUT_COM1 0x3F8
 #define OUTPUT_COM2 0x2F8
 
-                        if (strncmp(tmp, "1", sizeof("1") - 1) == 0)
-                        {
-                            debug_port = OUTPUT_COM1;
-                            continue;
-                        }
-
-                        if (strncmp(tmp, "2", sizeof("2") - 1) == 0)
-                        {
-                            debug_port = OUTPUT_COM2;
-                            continue;
-                        }
-
-
-                        // "-AL:logfile": audit log file specified?
-                        /* else if (strncmp(tmp, "AL", sizeof("AL") - 1) == 0)
-                        {
-                            if (*(tmp + 2) == ':')
-                            {
-                                char *pSource = tmp + 3,
-                                     *pTarget = G_szLogFile;
-                                while ((*pSource) && (*pSource != ' '))
-                                    *pTarget++ = *pSource++;
-                                *pTarget = 0;
-                            }
-                        } */
-                    }
-
-                    if ((rc = FixMemory()) != NO_ERROR)
-                        // couldn't lock 32 bits segments:
-                        status |= STERR + ERROR_I24_QUIET_INIT_FAIL;
-                    else
-                    {
-                        // interface SES (pass kernel hooks, get helpers)
-                        if ((rc = InitSecurity()) != NO_ERROR)
-                        {
-                            // error interfacing SES:
-                            DevHlp32_SaveMessage(G_szNoSES, sizeof(G_szNoSES));
-                            status |= STERR + ERROR_I24_QUIET_INIT_FAIL;
-                        }
-                        else
-                        {
-                            ULONG ul = 0;
-
-                            // OK, driver successfully initialized:
-                            // if not "-Q", put out message
-                            if (!fQuiet)
-                            {
-                                // say hello
-                                DevHlp32_SaveMessage(G_szBanner,
-                                                     sizeof(G_szBanner));
-                                // say log file name
-                                /* if (G_szLogFile[0])
-                                {
-                                    _sprintf("  Audit log file is: \"%s\".\r\n",
-                                             G_szLogFile);
-                                    DevHlp32_SaveMessage(G_szScratchBuf,
-                                                         strlen(G_szScratchBuf) + 1);
-                                } */
-
-                                if (debug_port == OUTPUT_COM1)
-                                {
-                                    kernel_printf(G_szCom1);
-                                    DevHlp32_SaveMessage(G_szCom1,
-                                                         sizeof(G_szCom1));
-                                }
-                                else if (debug_port == OUTPUT_COM2)
-                                {
-                                    kernel_printf(G_szCom2);
-                                    DevHlp32_SaveMessage(G_szCom2,
-                                                         sizeof(G_szCom2));
-                                }
-                            }
-                        }
-                    }
+                if (strncmp(tmp, "1", sizeof("1") - 1) == 0)
+                {
+                    G_DebugPort = OUTPUT_COM1;
+                    continue;
                 }
-                else
-                    // error while thunking command line pointer:
-                    status |= STERR + ERROR_I24_QUIET_INIT_FAIL;
+
+                if (strncmp(tmp, "2", sizeof("2") - 1) == 0)
+                {
+                    G_DebugPort = OUTPUT_COM2;
+                    continue;
+                }
             }
 
-            // and return end of code and end of data
-            // to kernel so that init code can be released
-            pRequest->u.output.codeend = codeend;
-            pRequest->u.output.dataend = dataend;
+            // now go lock 32-bit segments
+            if (rc = FixMemory())
+                // couldn't lock 32 bits segments:
+                status |= STERR + ERROR_I24_QUIET_INIT_FAIL;
+
+            // interface SES (pass kernel hooks, get helpers)
+            else if (rc = InitSecurity())
+            {
+                // error interfacing SES:
+                DevHlp32_SaveMessage(G_szNoSES, sizeof(G_szNoSES));
+                status |= STERR + ERROR_I24_QUIET_INIT_FAIL;
+            }
+            else
+            {
+                // OK, driver successfully initialized:
+                // if not "-Q", put out message
+                if (!fQuiet)
+                {
+                    // say hello
+                    DevHlp32_SaveMessage(G_szBanner,
+                                         sizeof(G_szBanner));
+
+                    switch (G_DebugPort)
+                    {
+                        case OUTPUT_COM1:
+                            kernel_printf(G_szCom1);
+                            DevHlp32_SaveMessage(G_szCom1,
+                                                 sizeof(G_szCom1));
+                        break;
+
+                        case OUTPUT_COM2:
+                            kernel_printf(G_szCom2);
+                            DevHlp32_SaveMessage(G_szCom2,
+                                                 sizeof(G_szCom2));
+                        break;
+                    }
+                }
+            }
         }
     }
+
+    // return end of code and end of data
+    // to kernel so that init code can be released
+    pRequest->u.output.codeend = codeend;
+    pRequest->u.output.dataend = dataend;
+
     return (status | STDON);
 }
 

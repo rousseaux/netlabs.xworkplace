@@ -51,51 +51,6 @@ ULONG MAKEDIR(PSZ pszPath)
 
     if (utilNeedsVerify())
     {
-        // access control enabled, and not call from daemon itself:
-        if (    (rc = utilSemRequest(&G_hmtxBufferLocked, -1))
-                    == NO_ERROR)
-        {
-            // daemon buffers locked
-            // (we have exclusive access):
-
-            // utilWriteLog("MAKEDIR for \"%s\"\r\n", pszPath);
-            // utilWriteLogInfo();
-
-            // prepare data for daemon notify
-            strcpy( ((PSECIOSHARED)G_pSecIOShared)->EventData.FileOnly.szPath,
-                    pszPath);
-                      // sizeof(EventData.Directory.szPath));
-
-            // have this request authorized by daemon
-            rc = utilDaemonRequest(SECEVENT_MAKEDIR);
-            // utilDaemonRequest properly serializes all requests
-            // to the daemon;
-            // utilDaemonRequest blocks until the daemon has either
-            // authorized or turned down this request.
-
-            // Return code is either an error in the driver
-            // or NO_ERROR if daemon has authorized the request
-            // or ERROR_ACCESS_DENIED or some other error code
-            // if the daemon denied the request.
-
-            // now release buffers mutex;
-            // this unblocks other application threads
-            // which are waiting on an access verification
-            // in this function (after we return from ring-0,
-            // I guess)
-            utilSemRelease(&G_hmtxBufferLocked);
-        }
-    }
-
-    if (    (rc != NO_ERROR)
-         && (rc != ERROR_ACCESS_DENIED)
-       )
-    {
-        // kernel panic
-        // _sprintf("XWPSEC32.SYS: OPEN_PRE returned %d.", rc);
-        // DevHlp32_InternalError(G_szScratchBuf, strlen(G_szScratchBuf) + 1);
-        // utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
-        rc = ERROR_ACCESS_DENIED;
     }
 
     return (rc);
@@ -117,51 +72,6 @@ ULONG CHANGEDIR(PSZ pszPath)
 
     if (utilNeedsVerify())
     {
-        // access control enabled, and not call from daemon itself:
-        if (    (rc = utilSemRequest(&G_hmtxBufferLocked, -1))
-                    == NO_ERROR)
-        {
-            // daemon buffers locked
-            // (we have exclusive access):
-
-            // utilWriteLog("CHANGEDIR for \"%s\"\r\n", pszPath);
-            // utilWriteLogInfo();
-
-            // prepare data for daemon notify
-            strcpy( ((PSECIOSHARED)G_pSecIOShared)->EventData.FileOnly.szPath,
-                    pszPath);
-                      // sizeof(EventData.Directory.szPath));
-
-            // have this request authorized by daemon
-            rc = utilDaemonRequest(SECEVENT_CHANGEDIR);
-            // utilDaemonRequest properly serializes all requests
-            // to the daemon;
-            // utilDaemonRequest blocks until the daemon has either
-            // authorized or turned down this request.
-
-            // Return code is either an error in the driver
-            // or NO_ERROR if daemon has authorized the request
-            // or ERROR_ACCESS_DENIED or some other error code
-            // if the daemon denied the request.
-
-            // now release buffers mutex;
-            // this unblocks other application threads
-            // which are waiting on an access verification
-            // in this function (after we return from ring-0,
-            // I guess)
-            utilSemRelease(&G_hmtxBufferLocked);
-        }
-    }
-
-    if (    (rc != NO_ERROR)
-         && (rc != ERROR_ACCESS_DENIED)
-       )
-    {
-        // kernel panic
-        // _sprintf("XWPSEC32.SYS: OPEN_PRE returned %d.", rc);
-        // DevHlp32_InternalError(G_szScratchBuf, strlen(G_szScratchBuf) + 1);
-        // utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
-        rc = ERROR_ACCESS_DENIED;
     }
 
     return (rc);
@@ -187,51 +97,6 @@ ULONG REMOVEDIR(PSZ pszPath)
 
     if (utilNeedsVerify())
     {
-        // access control enabled, and not call from daemon itself:
-        if (    (rc = utilSemRequest(&G_hmtxBufferLocked, -1))
-                    == NO_ERROR)
-        {
-            // daemon buffers locked
-            // (we have exclusive access):
-
-            // utilWriteLog("REMOVEDIR for \"%s\"\r\n", pszPath);
-            // utilWriteLogInfo();
-
-            // prepare data for daemon notify
-            strcpy( ((PSECIOSHARED)G_pSecIOShared)->EventData.FileOnly.szPath,
-                    pszPath);
-                      // sizeof(EventData.Directory.szPath));
-
-            // have this request authorized by daemon
-            rc = utilDaemonRequest(SECEVENT_REMOVEDIR);
-            // utilDaemonRequest properly serializes all requests
-            // to the daemon;
-            // utilDaemonRequest blocks until the daemon has either
-            // authorized or turned down this request.
-
-            // Return code is either an error in the driver
-            // or NO_ERROR if daemon has authorized the request
-            // or ERROR_ACCESS_DENIED or some other error code
-            // if the daemon denied the request.
-
-            // now release buffers mutex;
-            // this unblocks other application threads
-            // which are waiting on an access verification
-            // in this function (after we return from ring-0,
-            // I guess)
-            utilSemRelease(&G_hmtxBufferLocked);
-        }
-    }
-
-    if (    (rc != NO_ERROR)
-         && (rc != ERROR_ACCESS_DENIED)
-       )
-    {
-        // kernel panic
-        // _sprintf("XWPSEC32.SYS: OPEN_PRE returned %d.", rc);
-        // DevHlp32_InternalError(G_szScratchBuf, strlen(G_szScratchBuf) + 1);
-        // utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
-        rc = ERROR_ACCESS_DENIED;
     }
 
     return (rc);

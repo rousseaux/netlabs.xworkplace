@@ -99,6 +99,7 @@ $(OUTPUTDIR)\fdrviews.obj \
 $(OUTPUTDIR)\filedlg.obj \
 $(OUTPUTDIR)\fileops.obj \
 $(OUTPUTDIR)\filesys.obj \
+$(OUTPUTDIR)\filesys_pages.obj \
 $(OUTPUTDIR)\filetype.obj \
 !ifndef XWPLITE
 $(OUTPUTDIR)\filetype_page.obj \

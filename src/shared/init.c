@@ -121,7 +121,7 @@
 
 #include "media\media.h"                // XWorkplace multimedia support
 
-#include "security\xwpsecty.h"          // XWorkplace Security
+#include "helpers\xwpsecty.h"           // XWorkplace Security
 
 #include "startshut\archives.h"         // archiving declarations
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown

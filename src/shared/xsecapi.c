@@ -35,7 +35,6 @@
 #define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSQUEUES
-#define INCL_DOSMODULEMGR
 #define INCL_DOSERRORS
 #include <os2.h>
 
@@ -47,13 +46,10 @@
 
 // headers in /helpers
 #include "helpers\standards.h"          // some standard macros
-
-// SOM headers which don't crash with prec. header files
+#include "helpers\stringh.h"            // string helper routines
 
 // XWorkplace implementation headers
-#include "shared\kernel.h"              // XWorkplace Kernel
-
-#include "security\xwpsecty.h"          // XWorkplace Security
+#include "helpers\xwpsecty.h"           // XWorkplace Security
 
 // other SOM headers
 #pragma hdrstop
@@ -155,23 +151,34 @@ APIRET CreateXWPShellCommand(ULONG ulCommand,               // in: command
  *      sends a command to XWPShell and waits for
  *      the command to be processed.
  *
- *      This will wait a maximum of five seconds
- *      and return 640 (ERROR_TIMEOUT) if XWPShell
- *      didn't manage to respond in that time.
- *
- *      In addition to standard OS/2 error codes,
- *      this may return XWPShell error codes
- *      depending on the command that was sent.
- *      See XWPSHELLQUEUEDATA for commands and
- *      their possible return values.
- *
- *      If XWPSEC_QUEUE_INVALID_CMD is returned,
- *      you have specified an invalid command code.
- *
  *      Be warned, this blocks the calling thread.
  *      Even though XWPShell should be following
- *      the PM 0.1 seconds rule, you might want
- *      to start a second thread for this.
+ *      the PM 0.1 seconds rule in most cases,
+ *      some calls such as "create user" can be
+ *      expensive and you might want to start a
+ *      second thread for this.
+ *
+ *      Returns:
+ *
+ *      --  NO_ERROR: command written, and XWPShell
+ *          responded correctly.
+ *
+ *      --  ERROR_TIMEOUT (640): XWPShell did not
+ *          respond within five seconds.
+ *
+ *      --  XWPSEC_QUEUE_INVALID_CMD: XWPShell did
+ *          not recognize the given command code.
+ *
+ *      --  XWPSEC_STRUCT_MISMATCH: sizeof XWPSHELLQUEUEDATA
+ *          does not match; probably a wrong version of
+ *          XWPShell is installed.
+ *
+ *      --  XWPSEC_INTEGRITY: internal error in XWPShell.
+ *          Some data structure was corrupt, and this is
+ *          really a bug and should be fixed.
+ *
+ *      plus the many command-specific XWPSEC_*
+ *      error codes.
  *
  *@@added V0.9.11 (2001-04-22) [umoeller]
  */
@@ -235,18 +242,56 @@ VOID FreeXWPShellCommand(PXWPSHELLCOMMAND pCommand)
  ********************************************************************/
 
 /*
- *@@ xsecQueryLocalLoggedOn:
- *      returns the user who's currently logged
- *      on locally.
+ *@@ xsecQueryStatus:
+ *      tests whether XWorkplace security is working and
+ *      returns ring-0 statistics.
+ *
+ +      If this returns NO_ERROR, XWPShell is running
+ *      correctly. Check RING0STATUS.fLocalSecurity to
+ *      learn whether the ring-0 driver is active also.
  *
  *      Required authority: None.
  *
- *      Among others, this can return:
+ *      Command-specific error codes in addition to those
+ *      returned by CreateXWPShellCommand and
+ *      SendXWPShellCommand:
  *
- *      --  ERROR_NOT_ENOUGH_MEMORY
+ *      --  none.
  *
- *      --  ERROR_QUE_NAME_NOT_EXIST (343): XWPShell queue
- *          not found, XWPShell is probably not running.
+ *@@added V1.0.1 (2003-01-05) [umoeller]
+ */
+
+APIRET xsecQueryStatus(PRING0STATUS pStatus)        // out: ring-0 status (ptr can be null)
+{
+    APIRET              arc = NO_ERROR;
+    PXWPSHELLCOMMAND    pCommand;
+
+    if (!(arc = CreateXWPShellCommand(QUECMD_QUERYSTATUS,
+                                      &pCommand)))
+    {
+        if (!(arc = SendXWPShellCommand(pCommand)))
+            if (pStatus)
+                memcpy(pStatus,
+                       &pCommand->pShared->Data.Status,
+                       sizeof(pCommand->pShared->Data.Status));
+
+        FreeXWPShellCommand(pCommand);
+    }
+
+    return arc;
+}
+
+/*
+ *@@ xsecQueryLocalUser:
+ *      returns info for the user who's currently
+ *      logged on locally, that is, the user who
+ *      owns the shell.
+ *
+ *      Required authority: None.
+ *
+ *      Command-specific error codes in addition to those
+ *      returned by CreateXWPShellCommand and
+ *      SendXWPShellCommand:
  *
  *      --  XWPSEC_NO_LOCAL_USER: no user is currently
  *          logged on locally (XWPShell is probably
@@ -255,21 +300,24 @@ VOID FreeXWPShellCommand(PXWPSHELLCOMMAND pCommand)
  *@@added V0.9.11 (2001-04-22) [umoeller]
  */
 
-APIRET xsecQueryLocalLoggedOn(PXWPLOGGEDON pLoggedOn)       // out: currently logged on user
+APIRET xsecQueryLocalUser(PXWPUSERDBENTRY *ppLocalUser)     // out: currently logged on user
 {
     APIRET              arc = NO_ERROR;
     PXWPSHELLCOMMAND    pCommand;
 
-    if (!(arc = CreateXWPShellCommand(QUECMD_QUERYLOCALLOGGEDON,
+    if (!(arc = CreateXWPShellCommand(QUECMD_QUERYLOCALUSER,
                                       &pCommand)))
     {
         if (!(arc = SendXWPShellCommand(pCommand)))
         {
             // alright:
-            // copy output
-            memcpy(pLoggedOn,
-                   &pCommand->pShared->Data.QueryLocalLoggedOn,      // union member
-                   sizeof(XWPLOGGEDON));
+            PXWPUSERDBENTRY pLocal = pCommand->pShared->Data.pLocalUser;
+            if (!(*ppLocalUser = (PXWPUSERDBENTRY)malloc(pLocal->cbStruct)))
+                arc = ERROR_NOT_ENOUGH_MEMORY;
+            else
+                memcpy(*ppLocalUser,
+                       pLocal,
+                       pLocal->cbStruct);
         }
 
         FreeXWPShellCommand(pCommand);
@@ -288,15 +336,13 @@ APIRET xsecQueryLocalLoggedOn(PXWPLOGGEDON pLoggedOn)       // out: currently lo
  *      always use the cbStruct member of each
  *      array item to climb to the next.
  *
- *      Returns:
+ *      Required authority: XWPPERM_QUERYUSERINFO.
  *
- *      --  NO_ERROR
+ *      Command-specific error codes in addition to those
+ *      returned by CreateXWPShellCommand and
+ *      SendXWPShellCommand:
  *
- *      --  ERROR_NOT_ENOUGH_MEMORY
- *
- *      --  XWPSEC_INSUFFICIENT_AUTHORITY: process
- *          owner does not have sufficient authority
- *          for this query.
+ *      --  XWPSEC_INSUFFICIENT_AUTHORITY
  *
  *      plus the error codes from sudbQueryUsers.
  *
@@ -355,15 +401,13 @@ APIRET xsecQueryUsers(PULONG pcUsers,               // ou: array item count
  *      returns an array of XWPGROUPDBENTRY structs
  *      with all the groups currently in the userdb.
  *
- *      Returns:
+ *      Required authority: XWPPERM_QUERYUSERINFO.
  *
- *      --  NO_ERROR
+ *      Command-specific error codes in addition to those
+ *      returned by CreateXWPShellCommand and
+ *      SendXWPShellCommand:
  *
- *      --  ERROR_NOT_ENOUGH_MEMORY
- *
- *      --  XWPSEC_INSUFFICIENT_AUTHORITY: process
- *          owner does not have sufficient authority
- *          for this query.
+ *      --  XWPSEC_INSUFFICIENT_AUTHORITY
  *
  *      plus the error codes from sudbQueryGroups.
  *
@@ -412,17 +456,13 @@ APIRET xsecQueryGroups(PULONG pcGroups,
  *      returns the UID on whose behalf the given
  *      process is running.
  *
- *      Returns:
+ *      Required authority: XWPPERM_QUERYUSERINFO.
  *
- *      --  NO_ERROR
+ *      Command-specific error codes in addition to those
+ *      returned by CreateXWPShellCommand and
+ *      SendXWPShellCommand:
  *
- *      --  ERROR_NOT_ENOUGH_MEMORY
- *
- *      --  XWPSEC_INSUFFICIENT_AUTHORITY: process
- *          owner does not have sufficient authority
- *          for this query.
- *
- *      plus the error codes from subjQuerySubjectInfo.
+ *      --  XWPSEC_INSUFFICIENT_AUTHORITY
  *
  *@@added V0.9.19 (2002-04-02) [umoeller]
  */
@@ -449,47 +489,23 @@ APIRET xsecQueryProcessOwner(ULONG ulPID,           // in: process ID
 }
 
 /*
- *@@ CopyString:
- *
- *@@added V1.0.1 (2003-01-05) [umoeller]
- */
-
-STATIC APIRET CopyString(PSZ pszTarget,
-                         PCSZ pcszSource,
-                         ULONG cbTarget)
-{
-    ULONG cb;
-    if (!pcszSource || !*pcszSource)
-        return ERROR_INVALID_PARAMETER;
-    cb = strlen(pcszSource) + 1;
-    if (cb > cbTarget)
-        return XWPSEC_NAME_TOO_LONG;
-
-    memcpy(pszTarget,
-           pcszSource,
-           cb);
-    return NO_ERROR;
-}
-
-/*
  *@@ xsecCreateUser:
- *      returns the UID on whose behalf the given
- *      process is running.
+ *      creates a new user in the user database.
  *
- *      Returns:
+ *      Required authority: XWPPERM_CREATEUSER.
  *
- *      --  NO_ERROR
+ *      Command-specific error codes in addition to those
+ *      returned by CreateXWPShellCommand and
+ *      SendXWPShellCommand:
  *
- *      --  ERROR_NOT_ENOUGH_MEMORY
+ *      --  ERROR_INVALID_PARAMETER
  *
- *      --  XWPSEC_NAME_TOO_LONG: one of the given
+ *      --  ERROR_FILENAME_EXCED_RANGE: one of the given
  *          strings is too long.
  *
- *      --  XWPSEC_INSUFFICIENT_AUTHORITY: process
- *          owner does not have sufficient authority
- *          for this query.
+ *      --  XWPSEC_INSUFFICIENT_AUTHORITY
  *
- *      plus the error codes from sudbCreateUser.
+ *      --  XWPSEC_USER_EXISTS
  *
  *@@added V0.9.19 (2002-04-02) [umoeller]
  */
@@ -508,15 +524,15 @@ APIRET xsecCreateUser(PCSZ pcszUserName,        // in: user name
     {
         PQUEUEUNION pUnion = &pCommand->pShared->Data;
 
-        if (    (!(arc = CopyString(pUnion->CreateUser.szUserName,
-                                    pcszUserName,
-                                    sizeof(pUnion->CreateUser.szUserName))))
-             && (!(arc = CopyString(pUnion->CreateUser.szFullName,
-                                    pcszFullName,
-                                    sizeof(pUnion->CreateUser.szFullName))))
-             && (!(arc = CopyString(pUnion->CreateUser.szPassword,
-                                    pcszPassword,
-                                    sizeof(pUnion->CreateUser.szPassword))))
+        if (    (!(arc = strhCopyBuf(pUnion->CreateUser.szUserName,
+                                     pcszUserName,
+                                     sizeof(pUnion->CreateUser.szUserName))))
+             && (!(arc = strhCopyBuf(pUnion->CreateUser.szFullName,
+                                     pcszFullName,
+                                     sizeof(pUnion->CreateUser.szFullName))))
+             && (!(arc = strhCopyBuf(pUnion->CreateUser.szPassword,
+                                     pcszPassword,
+                                     sizeof(pUnion->CreateUser.szPassword))))
              && (!(arc = SendXWPShellCommand(pCommand)))
            )
         {
@@ -534,20 +550,18 @@ APIRET xsecCreateUser(PCSZ pcszUserName,        // in: user name
  *@@ xsecSetUserData:
  *      updates the user data for the given UID.
  *
- *      Returns:
+ *      Required authority: XWPPERM_CHANGEUSER.
  *
- *      --  NO_ERROR
+ *      Command-specific error codes in addition to those
+ *      returned by CreateXWPShellCommand and
+ *      SendXWPShellCommand:
  *
- *      --  ERROR_NOT_ENOUGH_MEMORY
+ *      --  ERROR_INVALID_PARAMETER
  *
- *      --  XWPSEC_NAME_TOO_LONG: one of the given
+ *      --  ERROR_FILENAME_EXCED_RANGE: one of the given
  *          strings is too long.
  *
- *      --  XWPSEC_INSUFFICIENT_AUTHORITY: process
- *          owner does not have sufficient authority
- *          for this query.
- *
- *      plus the error codes from sudbCreateUser.
+ *      --  XWPSEC_INSUFFICIENT_AUTHORITY
  *
  *@@added V1.0.1 (2003-01-05) [umoeller]
  */
@@ -566,12 +580,12 @@ APIRET xsecSetUserData(XWPSECID uid,
 
         pUnion->SetUserData.uid = uid;
 
-        if (    (!(arc = CopyString(pUnion->SetUserData.szUserName,
-                                    pcszUserName,
-                                    sizeof(pUnion->SetUserData.szUserName))))
-             && (!(arc = CopyString(pUnion->SetUserData.szFullName,
-                                    pcszFullName,
-                                    sizeof(pUnion->SetUserData.szFullName))))
+        if (    (!(arc = strhCopyBuf(pUnion->SetUserData.szUserName,
+                                     pcszUserName,
+                                     sizeof(pUnion->SetUserData.szUserName))))
+             && (!(arc = strhCopyBuf(pUnion->SetUserData.szFullName,
+                                     pcszFullName,
+                                     sizeof(pUnion->SetUserData.szFullName))))
              && (!(arc = SendXWPShellCommand(pCommand)))
            )
         {
@@ -587,20 +601,13 @@ APIRET xsecSetUserData(XWPSECID uid,
  *@@ xsecDeleteUser:
  *      deletes the user account for the given UID.
  *
- *      Returns:
+ *      Required authority: XWPPERM_DELETEUSER.
  *
- *      --  NO_ERROR
+ *      Command-specific error codes in addition to those
+ *      returned by CreateXWPShellCommand and
+ *      SendXWPShellCommand:
  *
- *      --  ERROR_NOT_ENOUGH_MEMORY
- *
- *      --  XWPSEC_NAME_TOO_LONG: one of the given
- *          strings is too long.
- *
- *      --  XWPSEC_INSUFFICIENT_AUTHORITY: process
- *          owner does not have sufficient authority
- *          for this query.
- *
- *      plus the error codes from sudbCreateUser.
+ *      --  XWPSEC_INSUFFICIENT_AUTHORITY
  *
  *@@added V1.0.1 (2003-01-05) [umoeller]
  */
@@ -624,3 +631,56 @@ APIRET xsecDeleteUser(XWPSECID uid)
 
     return arc;
 }
+
+/*
+ *@@ xsecQueryPermissions:
+ *      returns the permissions that the user on whose
+ *      behalf the calling process runs has on the
+ *      given resource. *pflAccess receives the ORed
+ *      XWPACCESS_* flags that represent these
+ *      permissions.
+ *
+ *      This performs a full authorization on the given
+ *      resource according to the general authorization
+ *      rules.
+ *
+ *      Required authority: none.
+ *
+ *      Command-specific error codes in addition to those
+ *      returned by CreateXWPShellCommand and
+ *      SendXWPShellCommand:
+ *
+ *      --  ERROR_INVALID_PARAMETER
+ *
+ *      --  ERROR_FILENAME_EXCED_RANGE
+ *
+ *@@added V1.0.1 (2003-01-10) [umoeller]
+ */
+
+APIRET xsecQueryPermissions(PCSZ pcszFilename,
+                            PULONG pflAccess)
+{
+    APIRET              arc = NO_ERROR;
+    PXWPSHELLCOMMAND    pCommand;
+
+    if (!(arc = CreateXWPShellCommand(QUECMD_QUERYPERMISSIONS,
+                                      &pCommand)))
+    {
+        PQUEUEUNION pUnion = &pCommand->pShared->Data;
+
+        if (    (!(arc = strhCopyBuf(pUnion->QueryPermissions.szResource,
+                                     pcszFilename,
+                                     sizeof(pUnion->QueryPermissions.szResource))))
+             && (!(arc = SendXWPShellCommand(pCommand)))
+           )
+        {
+            *pflAccess = pUnion->QueryPermissions.flAccess;
+        }
+
+        FreeXWPShellCommand(pCommand);
+    }
+
+    return arc;
+}
+
+

@@ -23,7 +23,9 @@
 #ifndef XSECAPI_HEADER_INCLUDED
     #define XSECAPI_HEADER_INCLUDED
 
-    APIRET xsecQueryLocalLoggedOn(PXWPLOGGEDON pLoggedOn);
+    APIRET xsecQueryStatus(PRING0STATUS pStatus);
+
+    APIRET xsecQueryLocalUser(PXWPUSERDBENTRY *ppLocalUser);
 
     APIRET xsecQueryUsers(PULONG pcUsers,
                           PXWPUSERDBENTRY *ppaUsers);
@@ -45,5 +47,8 @@
                            PCSZ pcszFullName);
 
     APIRET xsecDeleteUser(XWPSECID uid);
+
+    APIRET xsecQueryPermissions(PCSZ pcszFilename,
+                                PULONG pflAccess);
 
 #endif

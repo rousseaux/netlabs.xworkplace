@@ -52,55 +52,6 @@ ULONG LOADEROPEN(PSZ pszPath,
 
     if (utilNeedsVerify())
     {
-        // access control enabled, and not call from daemon itself:
-        if (    (rc = utilSemRequest(&G_hmtxBufferLocked, -1))
-                    == NO_ERROR)
-        {
-            // daemon buffers locked
-            // (we have exclusive access):
-
-            PXWPSECEVENTDATA_LOADEROPEN pLoaderOpen
-                = &((PSECIOSHARED)G_pSecIOShared)->EventData.LoaderOpen;
-
-            // utilWriteLog("LOADEROPEN for \"%s\"\r\n", pszPath);
-            // utilWriteLogInfo();
-
-            // prepare data for daemon notify
-            strcpy( pLoaderOpen->szFileName,
-                    pszPath);
-                      // sizeof(EventData.LoaderOpen.szFileName));
-            pLoaderOpen->SFN = SFN;
-
-            // have this request authorized by daemon
-            rc = utilDaemonRequest(SECEVENT_LOADEROPEN);
-            // utilDaemonRequest properly serializes all requests
-            // to the daemon;
-            // utilDaemonRequest blocks until the daemon has either
-            // authorized or turned down this request.
-
-            // Return code is either an error in the driver
-            // or NO_ERROR if daemon has authorized the request
-            // or ERROR_ACCESS_DENIED or some other error code
-            // if the daemon denied the request.
-
-            // now release buffers mutex;
-            // this unblocks other application threads
-            // which are waiting on an access verification
-            // in this function (after we return from ring-0,
-            // I guess)
-            utilSemRelease(&G_hmtxBufferLocked);
-        }
-    }
-
-    if (    (rc != NO_ERROR)
-         && (rc != ERROR_ACCESS_DENIED)
-       )
-    {
-        // kernel panic
-        // _sprintf("XWPSEC32.SYS: OPEN_PRE returned %d.", rc);
-        // DevHlp32_InternalError(G_szScratchBuf, strlen(G_szScratchBuf) + 1);
-        // utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
-        rc = ERROR_ACCESS_DENIED;
     }
 
     return (rc);
@@ -122,51 +73,6 @@ ULONG GETMODULE(PSZ pszPath)
 
     if (utilNeedsVerify())
     {
-        // access control enabled, and not call from daemon itself:
-        if (    (rc = utilSemRequest(&G_hmtxBufferLocked, -1))
-                    == NO_ERROR)
-        {
-            // daemon buffers locked
-            // (we have exclusive access):
-
-            // utilWriteLog("GETMODULE for \"%s\"\r\n", pszPath);
-            // utilWriteLogInfo();
-
-            // prepare data for daemon notify
-            strcpy( ((PSECIOSHARED)G_pSecIOShared)->EventData.FileOnly.szPath,
-                    pszPath);
-                      // sizeof(EventData.GetModule.szFileName));
-
-            // have this request authorized by daemon
-            rc = utilDaemonRequest(SECEVENT_GETMODULE);
-            // utilDaemonRequest properly serializes all requests
-            // to the daemon;
-            // utilDaemonRequest blocks until the daemon has either
-            // authorized or turned down this request.
-
-            // Return code is either an error in the driver
-            // or NO_ERROR if daemon has authorized the request
-            // or ERROR_ACCESS_DENIED or some other error code
-            // if the daemon denied the request.
-
-            // now release buffers mutex;
-            // this unblocks other application threads
-            // which are waiting on an access verification
-            // in this function (after we return from ring-0,
-            // I guess)
-            utilSemRelease(&G_hmtxBufferLocked);
-        }
-    }
-
-    if (    (rc != NO_ERROR)
-         && (rc != ERROR_ACCESS_DENIED)
-       )
-    {
-        // kernel panic
-        // _sprintf("XWPSEC32.SYS: OPEN_PRE returned %d.", rc);
-        // DevHlp32_InternalError(G_szScratchBuf, strlen(G_szScratchBuf) + 1);
-        // utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
-        rc = ERROR_ACCESS_DENIED;
     }
 
     return (rc);
@@ -189,54 +95,6 @@ ULONG EXECPGM(PSZ pszPath,
 
     if (utilNeedsVerify())
     {
-        // access control enabled, and not call from daemon itself:
-        if (    (rc = utilSemRequest(&G_hmtxBufferLocked, -1))
-                    == NO_ERROR)
-        {
-            // daemon buffers locked
-            // (we have exclusive access):
-
-            // utilWriteLog("EXECPGM for \"%s\"\r\n", pszPath);
-            // utilWriteLogInfo();
-
-            // prepare data for daemon notify
-            strcpy( ((PSECIOSHARED)G_pSecIOShared)->EventData.ExecPgm.szFileName,
-                    pszPath);
-                      // sizeof(EventData.ExecPgm.szFileName));
-            /* strcpy(__StackToFlat(&EventData.ExecPgm.szArgs),
-                   pchArgs); */
-                      // sizeof(EventData.ExecPgm.szArgs));
-
-            // have this request authorized by daemon
-            rc = utilDaemonRequest(SECEVENT_EXECPGM);
-            // utilDaemonRequest properly serializes all requests
-            // to the daemon;
-            // utilDaemonRequest blocks until the daemon has either
-            // authorized or turned down this request.
-
-            // Return code is either an error in the driver
-            // or NO_ERROR if daemon has authorized the request
-            // or ERROR_ACCESS_DENIED or some other error code
-            // if the daemon denied the request.
-
-            // now release buffers mutex;
-            // this unblocks other application threads
-            // which are waiting on an access verification
-            // in this function (after we return from ring-0,
-            // I guess)
-            utilSemRelease(&G_hmtxBufferLocked);
-        }
-    }
-
-    if (    (rc != NO_ERROR)
-         && (rc != ERROR_ACCESS_DENIED)
-       )
-    {
-        // kernel panic
-        // _sprintf("XWPSEC32.SYS: OPEN_PRE returned %d.", rc);
-        // DevHlp32_InternalError(G_szScratchBuf, strlen(G_szScratchBuf) + 1);
-        // utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
-        rc = ERROR_ACCESS_DENIED;
     }
 
     return (rc);
@@ -258,57 +116,11 @@ VOID EXECPGM_POST(PSZ pszPath,
 {
     int rc = NO_ERROR;
 
-    if (G_fDaemonReady)
+    if (G_pidShell)
     {
-        // access control enabled:
-        // note that this time, we don't use utilNeedsVerify()
-        // because we also need to track calls from the daemon itself...
-
-        // AS A CONSEQUENCE, THE DAEMON RING-3 THREAD MUST NOT
-        // START PROCESSES!!! THIS WOULD CAUSE A DEADLOCK!!!
-
-        if (    (rc = utilSemRequest(&G_hmtxBufferLocked, -1))
-                    == NO_ERROR)
-        {
-            // daemon buffers locked
-            // (we have exclusive access):
-
-            PXWPSECEVENTDATA_EXECPGM_POST pExecPgmPost
-                = &((PSECIOSHARED)G_pSecIOShared)->EventData.ExecPgmPost;
-
-            // utilWriteLog("EXECPGM_POST for \"%s\", new PID: 0x%lX\r\n", pszPath, NewPID);
-            // utilWriteLogInfo();
-
-            // prepare data for daemon notify
-            strcpy( pExecPgmPost->szFileName,
-                    pszPath);
-            pExecPgmPost->ulNewPID = NewPID;
-
-            // have this request authorized by daemon
-            utilDaemonRequest(SECEVENT_EXECPGM_POST);
-            // utilDaemonRequest blocks until the daemon has
-            // processed this request... no return code here
-
-            // now release buffers mutex;
-            // this unblocks other application threads
-            // which are waiting on an access verification
-            // in this function (after we return from ring-0,
-            // I guess)
-            utilSemRelease(&G_hmtxBufferLocked);
-        }
     }
 
-    if (    (rc != NO_ERROR)
-         && (rc != ERROR_ACCESS_DENIED)
-       )
-    {
-        // kernel panic
-        // _sprintf("XWPSEC32.SYS: OPEN_PRE returned %d.", rc);
-        // DevHlp32_InternalError(G_szScratchBuf, strlen(G_szScratchBuf) + 1);
-        // utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
-        rc = ERROR_ACCESS_DENIED;
-    }
-
+    // no return value
 }
 
 

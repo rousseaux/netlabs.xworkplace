@@ -83,7 +83,7 @@ interface XWPFileSystem : WPFileSystem
                                         // folder content tree;
                                         // WARNING: allocated using wpAllocMem
 
-    ULONG       ulCnrRefresh;
+    //# ULONG       ulCnrRefresh;        removed V1.0.1 (2003-01-05) [umoeller]
 
     /*
      * The following is forced into the .H file:

@@ -78,7 +78,7 @@
  *      file called xwpusers.xml.
  *
  *@@added V0.9.5 [umoeller]
- *@@header "security\xwpsecty.h"
+ *@@header "security\xwpshell.h"
  */
 
 /*
@@ -93,8 +93,8 @@
  *      GNU General Public License for more details.
  */
 
-#define  INCL_DOS
-#define  INCL_DOSERRORS
+#define INCL_DOSSEMAPHORES
+#define INCL_DOSERRORS
 #include <os2.h>
 
 #include <stdlib.h>
@@ -104,18 +104,17 @@
 
 #include "setup.h"
 
+#include "expat\expat.h"                // must come before xml.h
+
 #include "helpers\dosh.h"
 #include "helpers\linklist.h"
 #include "helpers\stringh.h"
-
-#include "expat\expat.h"                // must come before xml.h
 #include "helpers\tree.h"
 #include "helpers\xstring.h"
 #include "helpers\xml.h"
 
-#include "bldlevel.h"
-
-#include "security\xwpsecty.h"
+#include "helpers\xwpsecty.h"
+#include "security\xwpshell.h"
 
 /* ******************************************************************
  *
@@ -349,7 +348,7 @@ APIRET CreateGroup(PXWPUSERDB pDB,
  *      --  XWPSEC_DB_USER_SYNTAX: syntax error in
  *          user's XML element.
  *
- *      --  XWPSEC_INVALID_GROUPID: cannot find group
+ *      --  XWPSEC_INVALID_ID: cannot find group
  *          for the user's group ID.
  *
  *@@added V0.9.11 (2001-04-22) [umoeller]
@@ -395,7 +394,7 @@ APIRET CreateUser(PXWPUSERDB pDB,
                                                 gid)))
             {
                 // cannot find group for this user:
-                arc = XWPSEC_INVALID_GROUPID;
+                arc = XWPSEC_INVALID_ID;
                 break;
             }
 
@@ -954,7 +953,7 @@ APIRET sudbQueryGroups(PULONG pcGroups,               // out: user count
  *
  *      --  XWPSEC_CANNOT_GET_MUTEX
  *
- *      --  XWPSEC_INVALID_USERID
+ *      --  XWPSEC_INVALID_ID
  *
  *      --  ERROR_INVALID_PARAMETER
  *
@@ -983,7 +982,7 @@ APIRET sudbQueryUser(XWPSECID uid,
         const XWPUSERDBENTRY* pUserFound;
         if (!(pUserFound = FindUserFromID(&G_Database.llUsers,
                                           uid)))
-            arc = XWPSEC_INVALID_USERID;
+            arc = XWPSEC_INVALID_ID;
         else
         {
             PXWPUSERDBENTRY pUserReturn;

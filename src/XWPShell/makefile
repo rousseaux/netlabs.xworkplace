@@ -61,7 +61,6 @@ ALL_OBJ1 = \
     $(OUTPUTDIR)\contexts.obj \
     $(OUTPUTDIR)\loggedon.obj \
     $(OUTPUTDIR)\userdb.obj \
-    $(OUTPUTDIR)\subjects.obj \
     $(OUTPUTDIR)\xwpshell.obj \
     $(OUTPUTDIR)\helpers.lib
 
@@ -87,7 +86,7 @@ dep:
 
 # build targets
 xwpshell.def: ..\..\include\bldlevel.h makefile
-    $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "$(XWPNAME) Security shell starter"
+    $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "$(XWPNAME) Security shell"
 
 $(OUTPUTDIR)\xwpshell.res: $(@B).rc *.ico
     $(RC) -i $(MAKEDIR) -r $(MAKEDIR)\$(@B).rc $(OUTPUTDIR)\$(@B).res

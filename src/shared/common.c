@@ -144,7 +144,7 @@
 
 #include "media\media.h"                // XWorkplace multimedia support
 
-#include "security\xwpsecty.h"          // XWorkplace Security
+#include "helpers\xwpsecty.h"           // XWorkplace Security
 
 // other SOM headers
 
@@ -6947,12 +6947,8 @@ VOID cmnDescribeError(PXSTRING pstr,        // in/out: string buffer (must be in
                 pcszErrorDescription = "No groups in user database.";
             break;
 
-            case XWPSEC_INVALID_USERID:
-                pcszErrorDescription = "Invalid user ID.";
-            break;
-
-            case XWPSEC_INVALID_GROUPID:
-                pcszErrorDescription = "Invalid group ID.";
+            case XWPSEC_INVALID_ID:
+                pcszErrorDescription = "Invalid user or group ID.";
             break;
 
             case XWPSEC_NOT_AUTHENTICATED:
@@ -6971,8 +6967,8 @@ VOID cmnDescribeError(PXSTRING pstr,        // in/out: string buffer (must be in
                 pcszErrorDescription = "Invalid profile.";
             break;
 
-            case XWPSEC_NO_LOCAL_USER:
-                pcszErrorDescription = "No local user.";
+            case XWPSEC_NO_LOGON:
+                pcszErrorDescription = "User is not logged on.";
             break;
 
             case XWPSEC_DB_GROUP_SYNTAX:

@@ -84,8 +84,7 @@ device_header   dd -1                           ; Pointer to next driver
 ;                  +--------------------------------- device type bit: 0 = block, 1 = 1
 
                 dw offset CODE16:sec32_stub_strategy; Strategy routine entry point
-;                dw offset CODE16:sec32_stub_IDC     ; IDC routine entry point
-                dw 0
+                dw 0                                ; IDC routine entry point
 
                 db 'XWPSEC$ '                   ; Device name
                 db 8 dup (0)                    ; Reserved
@@ -162,28 +161,26 @@ CODE16 ends
 CODE32 segment
 ASSUME CS:FLAT, DS:FLAT, ES:FLAT
 
-        public begin_code32
+        public code32_begin
 
         extrn  SEC32_STRATEGY  : far
 ;        extrn  SEC32_IDC       : far
 
-begin_code32:
+code32_begin:
 
 CODE32 ends
 
 DATA32 segment
         public  codeend
         public  dataend
-
         codeend dw offset CODE16:code16_end
         dataend dw offset DATA16:data16_end
 
 DATA32 ends
 
 BSS32 segment
-        public  begin_data32
-
-        begin_data32 dd (?)
+        public  data32_begin
+        data32_begin dd (?)
 BSS32 ends
 
 end

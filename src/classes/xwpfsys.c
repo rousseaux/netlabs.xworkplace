@@ -168,7 +168,6 @@ SOM_Scope void  SOMLINK xfs_wpInitData(XWPFileSystem *somSelf)
 
     _ulHandle = 0;
     _pWszUpperRealName = NULL;
-    _ulCnrRefresh = -1;
 }
 
 /*

@@ -6,254 +6,9 @@
  *      processes, and access control lists to interact with
  *      the ring-0 device driver (XWPSEC32.SYS).
  *
- *      When XWPShell is installed thru CONFIG.SYS (for details,
- *      see below), it initializes PM, attempts to open
- *      XWPSEC32.SYS, and then does the following:
+ *      See helpers\xwpsecty.h for an introduction of how all
+ *      this works.
  *
- *      1. It displays the logon dialog for user authentication.
- *
- *      2. If the user has been authenticated, XWPShell then
- *         changes the user profile (replacement OS2.INI) by
- *         calling PrfReset and starts the desired shell process
- *         with the following environment:
- *
- *         -- USER is set to the user name;
- *         -- USERID is set to the user ID (uid);
- *         -- HOME is set to the user's home directory;
- *         -- OS2_INI is set to the user's OS2.INI file. This
- *              does not affect the profile (which has been
- *              changed using PrfReset before), but is still
- *              changed in case any program references this
- *              variable.
- *
- *         All processes started by the WPS will inherit this
- *         environment since the WPS always copies its environment
- *         to child processes.
- *
- *      3. When the WPS terminates, go back to 1.
- *
- *      Note that Security Enabling Services (SES) is NOT used
- *      for user logon and authentication. In other words, this
- *      program serves neither as an SES System Logon Authority
- *      (SLA) nor a User Identification Authority (UIA). I have
- *      found SES Logon Shell Services (LSS) too buggy to be useful,
- *      but maybe I was too dumb to find out how to use them. But
- *      then again, these APIs are too complicated and error-prone
- *      to be used by ordinary humans.
- *
- *      So instead, I have rewritten the LSS functionality for
- *      XWPShell. SES is only used for kernel interfaces (KPIs)
- *      in XWPSEC32.SYS. As a result, the SECURE.SYS text file
- *      in \OS2\SECURITY\SESDB is not used either.
- *
- *      <B>Concepts:</B>
- *
- *      To implement XWPSec, I have reviewed the concepts of Linux,
- *      SES, and OS/2 LAN Server (Warp Server for e-Business).
- *      See subjects.c, users.c, and userdb.c for a discussion of
- *      security concepts which came out of this review.
- *
- *      As a summary, XWPSec follows the SES security models, with a
- *      few simplifications. To make processing more efficient, user
- *      IDs and group IDs have been added (like Linux uid and gid) to
- *      allow looking up data based on numbers instead of names.
- *
- *      <B>Recommended reading:</B>
- *
- *      -- "SES Developer's Guide" (IBM SG244668 redbook). This
- *         sucks, but it's the only source for SES information.
- *
- *      -- "Network Administrator Tasks" (BOOKS\A3AA3MST.INF
- *         on a WSeB installation). A very good book.
- *
- *      -- Linux manpages for group(5) and passwd(5); Linux info
- *         page for chmod (follow the "File permissions" node).
- *
- *      <B>XWPSec Modules:</B>
- *
- *      XWPSec consists of the following modules:
- *
- *      1. XWPShell, which can be compared to SES LSS. This
- *         consists of the following:
- *
- *         -- XWPShell (shell starter and logon dialog). This
- *            also manages all users which are currently logged
- *            on (either locally or remotely, via network).
- *
- *            This is the only part which needs PM. As a result,
- *            this can be rewritten for a command-line logon
- *            at system startup.
- *
- *         -- Subject handles. This references the user database
- *            (UserDB) and allows the ACL database (ACLDB) to be
- *            notified of subject handle creation and deletion.
- *
- *            Responsibilities:
- *
- *            1)   Allowing an ACLDB to be registered for
- *                 subject creation and deletion.
- *
- *            2)   Notification of the ACLDB on subject handle
- *                 creation and deletion.
- *
- *            See subjects.c.
- *
- *         -- Security context management. A security context
- *            is associated with each process on the system
- *            and determines the process's access rights. A
- *            security context consists of a user subject
- *            handle and a group subject handle plus authority
- *            flags.
- *
- *            Responsibilities:
- *
- *            1)   Creation and deletion of security contexts
- *                 upon notification of process creation / exit.
- *
- *            2)   Returning a security context for a given PID.
- *
- *            See contexts.c.
- *
- *         -- Currently-logged-on users database.
- *            This logs users on and off and keeps track of
- *            all currently logged-on users (either locally
- *            or via network).
- *
- *            Responsibilities:
- *
- *            1)   Modify the calling process's security
- *                 context.
- *
- *            See loggedon.c.
- *
- *         -- XWPShell ring-3 daemon thread. This is in contact
- *            with the ring-0 driver, receives notification
- *            about security-related events, and queries the
- *            ACLDB for each access request.
- *
- *            See fntRing3Daemon in this file.
- *
- *      2. OS/2 kernel security hooks in a ring-0 driver. This
- *         must implement:
- *
- *         -- Process creation/termination notification. This
- *            is needed so that security contexts can be
- *            attached to processes.
- *
- *         -- Resource protection. The ring-0 driver uses the
- *            SES kernel hooks to be able to turn down access to
- *            local resources (e.g. DosOpen, DosExecPgm).
- *
- *            The ring-0 driver communicates with the XWPShell
- *            ring-3 daemon thread, which in turn contacts the
- *            ACL database to give or turn down access to a
- *            resource based on the process's security context.
- *
- *      3. "Black boxes", which can be easily rewritten. These are:
- *
- *         -- User database (userdb.c). This can be replaced if
- *            some other method of storing user and group data
- *            is desired (e.g. for accessing a Warp Server user
- *            database).
- *
- *            This can be compared to an SES user identification
- *            authority (UIA).
- *
- *            The current implementation maintains user and
- *            group information in an XML file called xwpusers.xml.
- *            This allows XWPSec to be installed on machines without
- *            network functionality as well.
- *
- *         -- ACL database. This can be replaced if some other method
- *            of storing ACL's is desired, e.g. for interfacing
- *            WarpServer ACL's or HPFS386 local security (which are
- *            tied together, AFAIK).
- *
- *            This can be compared to an SES access control authority
- *            (ACA).
- *
- *            Responsibilities:
- *
- *            1)   Creation and deletion of ACL entries.
- *
- *            2)   Loading and unloading ACL entries on subject
- *                 handle creation and deletion.
- *
- *            3)   Verifying access rights for access to resources
- *                 (such as DosOpen, DosExecPgm) based on a security
- *                 context. See saclVerifyAccess.
- *
- *      <B>Example:</B>
- *
- *      1.  XWPShell starts up on system bootup.
- *
- *      2.  XWPShell displays the logon dialog.
- *
- *      3.  User "user" types in name and password. XWPShell
- *          calls sudbAuthenticateUser to verify that user
- *          name and password are correct.
- *
- *          If the user has been authenticated, the UserDB returns
- *          the user ID (uid) and group ID (gid) for the user.
- *          Let's assume that "user" belongs to group "users".
- *
- *          If the user has not been authenticated, go back to
- *          2.
- *
- *      4.  XWPShell calls slogLogOn to log the user onto the
- *          system. This creates two subject handles: one for
- *          "user", one for the group "users". (If the group
- *          "users" already has a subject handle, e.g. because
- *          another user of that group has already logged on,
- *          no subject handle will be created.)
- *
- *      5.  The ACLDB is notified of each subject handle creation.
- *          With each subject handle creation, it loads the
- *          access rights (ACL entries) associated with the handle.
- *          For the "user" creation, it will load ACL entries
- *          for "user". For the "users" group creation, it will
- *          load ACL entries for the "users" group.
- *
- *          (Here we already see the advantage of subject handles.
- *          If a second user of the "users" group logs on, no
- *          subject handle needs to be created. The ACL entries
- *          are already loaded.)
- *
- *          The ACLDB will build a hash table of subject handles
- *          to be able to quickly find ACL entries later.
- *
- *      6.  Logon is now complete.
- *
- *      7.  XWPShell then starts the user shell (normally the WPS).
- *
- *      8.  This already implies access to a resource, since the
- *          ring-0 driver has hooked DosExecPgm. The ring-3 daemon
- *          is unblocked and contacts the ACLDB, which verifies
- *          access to that resource. The ring-0 driver then
- *          returns NO_ERROR or ERROR_ACCESS_DENIED to the OS/2
- *          kernel.
- *
- *          For obvious reasons, the OS/2 directories should be
- *          given read and execute rights for all users. So in
- *          this case, access is granted, and the Desktop starts up.
- *
- *          (For each file and directory accessed by the WPS, such
- *          as the Desktop hierachies, SOM DLLs and such, this is
- *          repeated.)
- *
- *      9.  Assume that the user attempts to delete a file from
- *          the OS/2 directory. Step 8 is processed again (this
- *          time the DosDelete hook is called in the ring-0 driver),
- *          and since the user does not have the proper access
- *          rights for the OS/2 directory, ERROR_ACCESS_DENIED
- *          is returned.
- *
- *      10. Now, "user" logs off. The subject handles for "user"
- *          and "users" are deleted (if no other user of the
- *          "users" group is logged on), and the ACLDB is notified
- *          so it can free the ACL entries associated with them.
- *
- *          Go back to 2.
  *
  *      <B>XWPShell Setup:</B>
  *
@@ -267,6 +22,8 @@
  *
  *      Instead of SET RUNWORKPLACE=...\xwpshell.exe, use cmd.exe
  *      and start XWPSHELL.EXE manually from the command line.
+ *      In debug mode, you can terminate XWPShell by entering the
+ *      "exit" user name with any dummy password.
  *
  *      Configuration via environment variables:
  *
@@ -276,7 +33,7 @@
  *          PMSHELL.EXE is used.
  *
  *      2.  In CONFIG.SYS, set XWPHOME to the full path of the HOME
- *          directory, which holds all user desktops and INI files.
+ *          directory tree, which holds all user desktops and INI files.
  *          If this is not specified, this defaults to ?:\home on the
  *          boot drive.
  *
@@ -286,12 +43,12 @@
  *          to ?:\OS2 on the boot drive.
  *
  *@@added V0.9.5 [umoeller]
- *@@header "security\xwpsecty.h"
- *@@header "xwpshell.h"
+ *@@header "helpers\xwpsecty.h"
+ *@@header "security\xwpshell.h"
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2002 Ulrich M”ller.
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -302,10 +59,15 @@
  *      GNU General Public License for more details.
  */
 
-#define  INCL_WIN
-#define  INCL_WINWORKPLACE
-#define  INCL_DOS
-#define  INCL_DOSERRORS
+#define INCL_DOSEXCEPTIONS
+#define INCL_DOSPROCESS
+#define INCL_DOSSEMAPHORES
+#define INCL_DOSQUEUES
+#define INCL_DOSERRORS
+
+#define INCL_WINPOINTERS
+#define INCL_WINPROGRAMLIST
+#define INCL_WINWORKPLACE
 #include <os2.h>
 
 #include <stdlib.h>
@@ -318,23 +80,14 @@
 #include "setup.h"
 
 #include "helpers\apps.h"
-#include "helpers\cnrh.h"
 #include "helpers\dosh.h"
-#include "helpers\eah.h"
 #include "helpers\except.h"
 #include "helpers\prfh.h"
-#include "helpers\procstat.h"
-#include "helpers\stringh.h"
 #include "helpers\winh.h"
 #include "helpers\threads.h"
 
-#include "bldlevel.h"
-#include "dlgids.h"
-
-#include "security\xwpsecty.h"
-#include "security\ring0api.h"
-
-#include "xwpshell.h"
+#include "helpers\xwpsecty.h"
+#include "security\xwpshell.h"
 
 /* ******************************************************************
  *
@@ -353,15 +106,6 @@ PSZ         G_pszEnvironment = NULL;
     // environment of user shell
 
 FILE        *G_LogFile = NULL;
-
-HFILE       G_hfSec32DD = NULLHANDLE;
-BOOL        G_fAccessControl = FALSE;       // TRUE if ring-3 daemon is running
-                                            // and access control is enabled
-                                            // V0.9.19 (2002-04-02) [umoeller]
-
-THREADINFO  G_tiRing3Daemon = {0};
-ULONG       G_tidRing3DaemonRunning = FALSE;
-// HEV         G_hevCallback = NULLHANDLE;
 
 PXWPSHELLSHARED G_pXWPShellShared = 0;
 
@@ -432,11 +176,14 @@ STATIC MRESULT EXPENTRY fnwpLogonDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
                     if (WinQueryWindowText(hwndUserID,
                                            sizeof(puiLogon->User.szUserName),
                                            puiLogon->User.szUserName))
-                        if (WinQueryWindowText(hwndPassword,
-                                               sizeof(puiLogon->szPassword),
-                                               puiLogon->szPassword))
-                            WinDismissDlg(hwnd, DID_OK);
+                    {
+                        WinQueryWindowText(hwndPassword,
+                                           sizeof(puiLogon->szPassword),
+                                           puiLogon->szPassword);
 
+                        WinDismissDlg(hwnd, DID_OK);
+
+                    }
                 }
                 break;
             }
@@ -573,10 +320,10 @@ APIRET SetNewUserProfile(HAB hab,                       // in: XWPSHELL anchor b
 
 APIRET StartUserShell(VOID)
 {
-    APIRET arc = NO_ERROR;
+    APIRET      arc = NO_ERROR;
 
-    XWPLOGGEDON loLocal;
-    if (!(arc = slogQueryLocalUser(&loLocal)))
+    XWPSECID    uidLocal;
+    if (!(arc = slogQueryLocalUser(&uidLocal)))
     {
         PROGDETAILS pd;
 
@@ -611,26 +358,7 @@ APIRET StartUserShell(VOID)
         else
         {
             // in case ring-0 support is not running,
-            // create security context for the shell
-            // (otherwise it will be refreshed)
-            HSWITCH hsw;
-            if (!(hsw = winhHSWITCHfromHAPP(G_happWPS)))
-            {
-                _PmpfF(("Cannot find HSWITCH for happ 0x%lX", G_happWPS));
-            }
-            else
-            {
-                SWCNTRL swc;
-                if (!WinQuerySwitchEntry(hsw, &swc))
-                {
-                    arc = scxtCreateSecurityContext(swc.idProcess,
-                                                    loLocal.cSubjects,
-                                                    loLocal.aSubjects);
-                    _PmpfF(("scxtCreateSecurityContext returned %d", arc));
-                }
-                else
-                    _PmpfF(("WinQuerySwitchEntry for shell failed"));
-            }
+            // change our own security context @@todo
         }
     }
 
@@ -694,46 +422,47 @@ APIRET LocalLogon(VOID)
                    0,
                    sizeof(uiLogon.szPassword));
 
-            if (arc == XWPSEC_NOT_AUTHENTICATED)
+            switch (arc)
             {
-                WinMessageBox(HWND_DESKTOP,
-                              NULLHANDLE,
-                              "Error: Invalid user name and/or password given.",
-                              "XWorkplace Security",
-                              0,
-                              MB_OK | MB_SYSTEMMODAL | MB_MOVEABLE);
+                case XWPSEC_NOT_AUTHENTICATED:
+                    WinMessageBox(HWND_DESKTOP,
+                                  NULLHANDLE,
+                                  "Error: Invalid user name and/or password given.",
+                                  "XWorkplace Security",
+                                  0,
+                                  MB_OK | MB_SYSTEMMODAL | MB_MOVEABLE);
+                break;
+
+                case NO_ERROR:
+                    // user logged on, authenticated,
+                    // subject handles created,
+                    // registered with logged-on users:
+                    G_pszEnvironment = NULL;
+
+                    if (arc = SetNewUserProfile(WinQueryAnchorBlock(G_hwndShellObject),
+                                                uiLogon.User.uid,
+                                                uiLogon.User.szUserName,
+                                                &G_pszEnvironment))
+                    {
+                        Error("SetNewUserProfile returned %d.", arc);
+                        arc = XWPSEC_INVALID_PROFILE;
+                    }
+                    else
+                    {
+                        // success:
+                        // store local user
+                        // (we must do this before the shell starts)
+                        arc = StartUserShell();
+                    }
+
+                    if (arc)
+                        slogLogOff(LoggedOnUser.uid);
+                break;
+
+                default:
+                    // some other error:
+                    Error("LocalLogon: slogLogOn returned arc %d", arc);
             }
-            else if (arc != NO_ERROR)
-            {
-                Error("LocalLogon: slogLogOn returned arc %d", arc);
-            }
-            else
-            {
-                // user logged on, authenticated,
-                // subject handles created,
-                // registered with logged-on users:
-                G_pszEnvironment = NULL;
-
-                if (arc = SetNewUserProfile(WinQueryAnchorBlock(G_hwndShellObject),
-                                            uiLogon.User.uid,
-                                            uiLogon.User.szUserName,
-                                            &G_pszEnvironment))
-                {
-                    Error("SetNewUserProfile returned %d.", arc);
-                    arc = XWPSEC_INVALID_PROFILE;
-                }
-                else
-                {
-                    // success:
-                    // store local user
-                    // (we must do this before the shell starts)
-                    arc = StartUserShell();
-                }
-
-                if (arc != NO_ERROR)
-                    arc = slogLogOff(LoggedOnUser.uid);
-
-            } // end if Logon()
 
             WinSetPointer(HWND_DESKTOP, hptrOld);
         }
@@ -751,80 +480,106 @@ APIRET LocalLogon(VOID)
  ********************************************************************/
 
 /*
+ *@@ GiveMemToCaller:
+ *
+ *@@added V1.0.1 (2003-01-10) [umoeller]
+ */
+
+APIRET GiveMemToCaller(PVOID p,
+                       ULONG pid)
+{
+    APIRET arc;
+
+    arc = DosGiveSharedMem((PBYTE)p,
+                           pid, // caller's PID
+                           PAG_READ | PAG_WRITE);
+
+    // free this for us; usage count is 2 presently,
+    // so the chunk will be freed after the caller
+    // has issued DosFreeMem also
+    DosFreeMem((PBYTE)p);
+
+    return arc;
+}
+
+/*
  *@@ ProcessQueueCommand:
  *
  *@@added V0.9.11 (2001-04-22) [umoeller]
  *@@changed V1.0.1 (2003-01-05) [umoeller]: added create user
  */
 
-APIRET ProcessQueueCommand(PXWPSHELLQUEUEDATA pSharedQueueData,
+APIRET ProcessQueueCommand(PXWPSHELLQUEUEDATA pQD,
                            ULONG pid)
 {
     APIRET  arc = NO_ERROR;
 
     // check size of struct; when we add fields, this can change,
     // and we don't want to blow up because of this V1.0.1 (2003-01-05) [umoeller]
-    if (pSharedQueueData->cbStruct != sizeof(XWPSHELLQUEUEDATA))
+    if (pQD->cbStruct != sizeof(XWPSHELLQUEUEDATA))
         return XWPSEC_STRUCT_MISMATCH;
 
+#ifdef __DEBUG__
+    TRY_LOUD(excpt1)
+#else
     TRY_QUIET(excpt1)
+#endif
     {
         // prepare security context so we can check if the
         // calling process has sufficient authority for
         // processing this request
-        XWPSECURITYCONTEXT sc;
-        sc.ulPID = pid;
-        if (!(arc = scxtFindSecurityContext(&sc)))
+        PXWPSECURITYCONTEXT psc;
+        if (!(arc = scxtFindSecurityContext(pid,
+                                            &psc)))
         {
-            switch (pSharedQueueData->ulCommand)
+            switch (pQD->ulCommand)
             {
-                case QUECMD_QUERYLOCALLOGGEDON:
-                    // no authority needed for this
-                    arc = slogQueryLocalUser(&pSharedQueueData->Data.QueryLocalLoggedOn);
+                case QUECMD_QUERYSTATUS:
+                    arc = scxtQueryStatus(&pQD->Data.Status);
                 break;
 
-                case QUECMD_QUERYUSERS:
-                    if (    (!(arc = scxtVerifyAuthority(&sc,
-                                                         XWPPERM_QUERYUSERINFO)))
-                         && (!(arc = sudbQueryUsers(
-                                            &pSharedQueueData->Data.QueryUsers.cUsers,
-                                            &pSharedQueueData->Data.QueryUsers.paUsers)))
+                case QUECMD_QUERYLOCALUSER:
+                {
+                    // no authority needed for this
+                    XWPSECID    uidLocal;
+                    if (    (!(arc = slogQueryLocalUser(&uidLocal)))
+                         && (!(arc = sudbQueryUser(uidLocal,
+                                                   &pQD->Data.pLocalUser)))
                        )
                     {
                         // this has allocated a chunk of shared memory, so give
                         // this to the caller
-                        arc = DosGiveSharedMem(
-                                            (PBYTE)pSharedQueueData->Data.QueryUsers.paUsers,
-                                            pid, // caller's PID
-                                            PAG_READ | PAG_WRITE);
+                        arc = GiveMemToCaller(pQD->Data.pLocalUser,
+                                              pid);
+                    }
+                }
+                break;
 
-                        // free this for us; usage count is 2 presently,
-                        // so the chunk will be freed after the caller
-                        // has issued DosFreeMem also
-                        DosFreeMem((PBYTE)pSharedQueueData->Data.QueryUsers.paUsers);
+                case QUECMD_QUERYUSERS:
+                    if (    (!(arc = scxtVerifyAuthority(psc,
+                                                         XWPPERM_QUERYUSERINFO)))
+                         && (!(arc = sudbQueryUsers(&pQD->Data.QueryUsers.cUsers,
+                                                    &pQD->Data.QueryUsers.paUsers)))
+                       )
+                    {
+                        // this has allocated a chunk of shared memory, so give
+                        // this to the caller
+                        arc = GiveMemToCaller(pQD->Data.QueryUsers.paUsers,
+                                              pid);
                     }
                 break;
 
                 case QUECMD_QUERYGROUPS:
-                    if (    (!(arc = scxtVerifyAuthority(
-                                            &sc,
-                                            XWPPERM_QUERYUSERINFO)))
-                         && (!(arc = sudbQueryGroups(
-                                            &pSharedQueueData->Data.QueryGroups.cGroups,
-                                            &pSharedQueueData->Data.QueryGroups.paGroups)))
+                    if (    (!(arc = scxtVerifyAuthority(psc,
+                                                         XWPPERM_QUERYUSERINFO)))
+                         && (!(arc = sudbQueryGroups(&pQD->Data.QueryGroups.cGroups,
+                                                     &pQD->Data.QueryGroups.paGroups)))
                        )
                     {
                         // this has allocated a chunk of shared memory, so give
                         // this to the caller
-                        arc = DosGiveSharedMem(
-                                            (PBYTE)pSharedQueueData->Data.QueryGroups.paGroups,
-                                            pid, // caller's PID
-                                            PAG_READ | PAG_WRITE);
-
-                        // free this for us; usage count is 2 presently,
-                        // so the chunk will be freed after the caller
-                        // as issued DosFreeMem also
-                        DosFreeMem((PBYTE)pSharedQueueData->Data.QueryGroups.paGroups);
+                        arc = GiveMemToCaller(pQD->Data.QueryGroups.paGroups,
+                                              pid);
                     }
                 break;
 
@@ -834,17 +589,24 @@ APIRET ProcessQueueCommand(PXWPSHELLQUEUEDATA pSharedQueueData,
                 break;
 
                 case QUECMD_CREATEUSER:
-                    if (!(arc = scxtVerifyAuthority(&sc,
+                    if (!(arc = scxtVerifyAuthority(psc,
                                                     XWPPERM_CREATEUSER)))
                     {
                         XWPUSERDBENTRY ue;
-                        #define COPYITEM(a) memcpy(ue.User.a, pSharedQueueData->Data.CreateUser.a, sizeof(ue.User.a))
+                        #define COPYITEM(a) memcpy(ue.User.a, pQD->Data.CreateUser.a, sizeof(ue.User.a))
                         COPYITEM(szUserName);
                         COPYITEM(szFullName);
-                        memcpy(ue.szPassword, pSharedQueueData->Data.CreateUser.szPassword, sizeof(ue.szPassword));
+                        memcpy(ue.szPassword, pQD->Data.CreateUser.szPassword, sizeof(ue.szPassword));
                         if (!(arc = sudbCreateUser(&ue)))
-                            pSharedQueueData->Data.CreateUser.uidCreated = ue.User.uid;
+                            pQD->Data.CreateUser.uidCreated = ue.User.uid;
                     }
+                break;
+
+                case QUECMD_QUERYPERMISSIONS:
+                    arc = scxtQueryPermissions(pQD->Data.QueryPermissions.szResource,
+                                               psc->cSubjects,
+                                               psc->aSubjects,
+                                               &pQD->Data.QueryPermissions.flAccess);
                 break;
 
                 default:
@@ -852,6 +614,8 @@ APIRET ProcessQueueCommand(PXWPSHELLQUEUEDATA pSharedQueueData,
                     arc = XWPSEC_QUEUE_INVALID_CMD;
                 break;
             }
+
+            free(psc);
         }
     }
     CATCH(excpt1)
@@ -899,25 +663,25 @@ void _Optlink fntQueueThread(PTHREADINFO ptiMyself)
                                  NULLHANDLE)))           // event semaphore, ignored for DCWW_WAIT
         {
             // got a command:
-            PXWPSHELLQUEUEDATA  pSharedQueueData = (PXWPSHELLQUEUEDATA)(rq.ulData);
-            HEV hev = pSharedQueueData->hevData;
+            PXWPSHELLQUEUEDATA  pQD = (PXWPSHELLQUEUEDATA)(rq.ulData);
+            HEV hev = pQD->hevData;
 
-            _PmpfF(("got queue item, pSharedQueueData->ulCommand: %d",
-                        pSharedQueueData->ulCommand));
+            _PmpfF(("got queue item, pQD->ulCommand: %d",
+                        pQD->ulCommand));
 
             if (!DosOpenEventSem(NULL,
                                  &hev))
             {
                 TRY_LOUD(excpt1)
                 {
-                    pSharedQueueData->arc = ProcessQueueCommand(pSharedQueueData,
-                                                                // caller's pid
-                                                                rq.pid);
+                    pQD->arc = ProcessQueueCommand(pQD,
+                                                   // caller's pid
+                                                   rq.pid);
 
                     // free shared memory for this process... it was
                     // given to us by the client, so we must lower
                     // the resource count (client will still own it)
-                    DosFreeMem(pSharedQueueData);
+                    DosFreeMem(pQD);
                 }
                 CATCH(excpt1)
                 {
@@ -978,9 +742,9 @@ MRESULT EXPENTRY fnwpShellObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
         {
             // display logon dialog, create subject handles,
             // set environment, start shell, ...
-            APIRET arc = LocalLogon();
+            APIRET arc;
 
-            if (arc != NO_ERROR)
+            if (arc = LocalLogon())
             {
                 // error:
                 // repost to try again
@@ -1017,14 +781,14 @@ MRESULT EXPENTRY fnwpShellObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
                 }
                 else
                 {
-                    XWPLOGGEDON LoggedOnLocal;
-                    if (arc = slogQueryLocalUser(&LoggedOnLocal))
+                    XWPSECID    uidLocal;
+                    if (arc = slogQueryLocalUser(&uidLocal))
                         Error("slogQueryLocalUser returned %d", arc);
                     else
                     {
                         // log off the local user
                         // (this deletes the subject handles)
-                        arc = slogLogOff(LoggedOnLocal.uid);
+                        arc = slogLogOff(uidLocal);
                         if (G_pszEnvironment)
                         {
                             free(G_pszEnvironment);
@@ -1083,11 +847,10 @@ MRESULT EXPENTRY fnwpShellObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
 
 int main(int argc, char *argv[])
 {
-    int         irc = 0;
+    APIRET  arc = NO_ERROR;
 
-    HAB         hab;
-    HMQ         hmq;
-    APIRET      arc;
+    HAB     hab;
+    HMQ     hmq;
 
     CHAR szLog[100];
     sprintf(szLog, "%c:\\xwpshell.log", doshQueryBootDrive());
@@ -1110,7 +873,7 @@ int main(int argc, char *argv[])
                  "XWorkplace Security",
                  "Another instance of XWPSHELL.EXE is already running. "
                  "This instance will terminate now.");
-        irc = 99;
+        arc = -1;
     }
     else
     {
@@ -1127,25 +890,24 @@ int main(int argc, char *argv[])
                                         PAG_COMMIT | PAG_READ | PAG_WRITE))
                 Error("DosAllocSharedMem returned %d.", arc);
             // create master queue
-            else if ((arc = DosCreateQueue(&G_hqXWPShell,
-                                           QUE_FIFO | QUE_NOCONVERT_ADDRESS,
-                                           QUEUE_XWPSHELL)))
+            else if (arc = DosCreateQueue(&G_hqXWPShell,
+                                          QUE_FIFO | QUE_NOCONVERT_ADDRESS,
+                                          QUEUE_XWPSHELL))
                 Error("DosCreateQueue returned %d.", arc);
             // initialize subsystems
-            else if (    (saclInit() != NO_ERROR)
-                      || (scxtInit() != NO_ERROR)
-                      || (subjInit() != NO_ERROR)
-                      || (sudbInit() != NO_ERROR)
-                      || (slogInit() != NO_ERROR)
+            else if (arc = scxtInit())
+                Error("Error %d initializing security contexts.", arc);
+            else if (    (arc = sudbInit())
+                      || (arc = slogInit())
                     )
-                irc = 1;
+                Error("Initialization error %d.", arc);
             // create shell object (thread 1)
             else if (!WinRegisterClass(hab,
                                        WC_SHELL_OBJECT,
                                        fnwpShellObject,
                                        0,
                                        sizeof(ULONG)))
-                irc = 2;
+                arc = -1;
             else if (!(G_hwndShellObject = WinCreateWindow(HWND_OBJECT,
                                                            WC_SHELL_OBJECT,
                                                            "XWPShellObject",
@@ -1156,39 +918,34 @@ int main(int argc, char *argv[])
                                                            0,             // ID
                                                            NULL,
                                                            NULL)))
-                irc = 3;
+                arc = -1;
             else
             {
                 // OK:
                 QMSG qmsg;
+                // create the queue thread
+                thrCreate(&G_tiQueueThread,
+                          fntQueueThread,
+                          NULL,
+                          "Queue thread",
+                          THRF_WAIT,
+                          0);
 
-                // @@todo initialize driver (see .h file)
+                // do a logon first
+                WinPostMsg(G_hwndShellObject,
+                           XM_LOGON,
+                           0, 0);
 
-                {
-                    // create the queue thread
-                    thrCreate(&G_tiQueueThread,
-                              fntQueueThread,
-                              NULL,
-                              "Queue thread",
-                              THRF_WAIT,
-                              0);
-
-                    // do a logon first
-                    WinPostMsg(G_hwndShellObject,
-                               XM_LOGON,
-                               0, 0);
-
-                    // enter standard PM message loop
-                    while (WinGetMsg(hab, &qmsg, NULLHANDLE, 0, 0))
-                        WinDispatchMsg(hab, &qmsg);
-
-                    // @@todo close driver
-                }
+                // enter standard PM message loop
+                while (WinGetMsg(hab, &qmsg, NULLHANDLE, 0, 0))
+                    WinDispatchMsg(hab, &qmsg);
             }
         }
         CATCH(excpt1)
         {
         } END_CATCH();
+
+        scxtExit();
     }
 
     // clean up on the way out
@@ -1197,7 +954,7 @@ int main(int argc, char *argv[])
 
     fclose(G_LogFile);
 
-    return (irc);
+    return arc;
 }
 
 

@@ -596,6 +596,7 @@
     #define SP_FILE1                60      // new with V0.9.0
     #define SP_FILE2                61      // new with V0.9.1 (2000-01-22) [umoeller]
     #define SP_DATAFILE_TYPES       62      // XFldDataFile "Types" page V0.9.9 (2001-03-27) [umoeller]
+    #define SP_FILE3_PERMISSIONS    63      // new with V1.0.1 (2003-01-10) [umoeller]
 
     // 8) "Sounds" page in XWPSound
     #define SP_SOUNDS               70

@@ -11,23 +11,12 @@
  *
  *      Reversely, the user is logged off via slogLogOff.
  *
- *      These functions can get called by:
- *
- *      -- XWPShell (or any other shell wrapper) to log
- *         a user onto a system (with data entered by
- *         a logon dialog) and then start a shell accordingly.
- *
- *      -- Any other program to change its own security
- *         context. For example, the user might open a
- *         command shell and might want to run a single
- *         program with administrator privileges.
- *
  *@@added V0.9.5 [umoeller]
- *@@header "security\xwpsecty.h"
+ *@@header "security\xwpshell.h"
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2002 Ulrich M”ller.
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -38,8 +27,9 @@
  *      GNU General Public License for more details.
  */
 
-#define  INCL_DOS
-#define  INCL_DOSERRORS
+#define INCL_DOSPROCESS
+#define INCL_DOSSEMAPHORES
+#define INCL_DOSERRORS
 #include <os2.h>
 
 #include <stdlib.h>
@@ -53,9 +43,8 @@
 #include "helpers\linklist.h"
 #include "helpers\stringh.h"
 
-#include "bldlevel.h"
-
-#include "security\xwpsecty.h"
+#include "helpers\xwpsecty.h"
+#include "security\xwpshell.h"
 
 /* ******************************************************************
  *
@@ -243,7 +232,7 @@ APIRET DeregisterLoggedOn(XWPSECID uid,
         PXWPLOGGEDON pFound;
         if (!(pFound = (PXWPLOGGEDON)FindLoggedOnFromID(uid)))
             // error:
-            arc = XWPSEC_INVALID_USERID;
+            arc = XWPSEC_INVALID_ID;
         else
         {
             // remove from list
@@ -287,7 +276,7 @@ APIRET DeregisterLoggedOn(XWPSECID uid,
  *
  *      2) Creates subject handles for the
  *         user's ID and group ID by calling
- *         subjCreateSubject.
+ *         scxtCreateSubject.
  *
  *      3) Registers the user as logged on
  *         in our internal list.
@@ -319,10 +308,10 @@ APIRET DeregisterLoggedOn(XWPSECID uid,
  *      --  XWPSEC_USER_EXISTS: user is already logged on.
  */
 
-APIRET slogLogOn(PCSZ pcszUserName,         // in: user name
-                 PCSZ pcszPassword,  // in: password
-                 BOOL fLocal,
-                 XWPSECID *puid)           // out: user ID if NO_ERROR
+APIRET slogLogOn(PCSZ pcszUserName,     // in: user name
+                 PCSZ pcszPassword,     // in: password
+                 BOOL fLocal,           // in: TRUE if this is the local user
+                 XWPSECID *puid)        // out: user ID if NO_ERROR
 {
     APIRET arc = NO_ERROR;
 
@@ -371,7 +360,7 @@ APIRET slogLogOn(PCSZ pcszUserName,         // in: user name
 
                 _Pmpf(("  sudbAuthenticateUser returned uid %d", uiLogon.uid));
 
-                if (!(arc = subjCreateSubject(&siUser)))
+                if (!(arc = scxtCreateSubject(&siUser)))
                 {
                     // got user subject:
                     pLogon->aSubjects[0] = siUser.hSubject;
@@ -392,28 +381,31 @@ APIRET slogLogOn(PCSZ pcszUserName,         // in: user name
                             siGroup.id = pUserDBEntry->Membership.aGIDs[ul];
                             siGroup.bType = SUBJ_GROUP;
 
-                            if (arc = subjCreateSubject(&siGroup))
+                            if (arc = scxtCreateSubject(&siGroup))
                                 break;
 
                             pLogon->aSubjects[pLogon->cSubjects++] = siGroup.hSubject;
                         }
+                    }
 
-                        if (!arc)
-                        {
+                    if (    (!arc)
                             // register this user as logged on
-                            if (!(arc = RegisterLoggedOn(pLogon,
-                                                         fLocal)))
-                                // pass out user ID
-                                *puid = uiLogon.uid;
-                        }
+                         && (!(arc = RegisterLoggedOn(pLogon,
+                                                      fLocal)))
+                       )
+                    {
+                        // pass out user ID
+                        *puid = uiLogon.uid;
+
+                        // rebuild system ACL table and send it to the driver
+                        arc = scxtRefresh();
                     }
                     else
-                        if (arc)
-                            // error: kill the subjects we created
-                            for (ul = 0;
-                                 ul < pLogon->cSubjects;
-                                 ++ul)
-                                subjDeleteSubject(pLogon->aSubjects[ul]);
+                        // error: kill the subjects we created
+                        for (ul = 0;
+                             ul < pLogon->cSubjects;
+                             ++ul)
+                            scxtDeleteSubject(pLogon->aSubjects[ul]);
                 }
 
                 if (arc)
@@ -446,7 +438,7 @@ APIRET slogLogOn(PCSZ pcszUserName,         // in: user name
  *      -- NO_ERROR: user was successfully
  *         logged off.
  *
- *      -- XWPSEC_INVALID_USERID: uid does
+ *      -- XWPSEC_INVALID_ID: uid does
  *         not specify a currently logged-on
  *         user.
  */
@@ -465,10 +457,13 @@ APIRET slogLogOff(XWPSECID uid)
              ul < pLogoff->cSubjects;
              ++ul)
         {
-            subjDeleteSubject(pLogoff->aSubjects[ul]);
+            scxtDeleteSubject(pLogoff->aSubjects[ul]);
         }
 
         free(pLogoff);
+
+        // rebuild system ACL table and send it to the driver
+        arc = scxtRefresh();
     }
 
     return arc;
@@ -478,14 +473,16 @@ APIRET slogLogOff(XWPSECID uid)
  *@@ slogQueryLocalUser:
  *      returns the data of the current local user.
  *
- *      If NO_ERROR is returned, pLoggedOnLocal
- *      receives the logon data of the local user.
+ *      Returns:
  *
- *      If XWPSEC_NO_LOCAL_USER, no local user
- *      has logged on.
+ *      --  NO_ERROR: *puid has been set to the
+ *          user ID of the current local user.
+ *
+ *      --  XWPSEC_NO_LOGON: no local user has
+ *          logged on.
  */
 
-APIRET slogQueryLocalUser(PXWPLOGGEDON pLoggedOnLocal)
+APIRET slogQueryLocalUser(XWPSECID *puid)
 {
     APIRET  arc = NO_ERROR;
     BOOL    fLocked;
@@ -495,9 +492,58 @@ APIRET slogQueryLocalUser(PXWPLOGGEDON pLoggedOnLocal)
     else
     {
         if (!G_pLoggedOnLocal)
-            arc = XWPSEC_NO_LOCAL_USER;
+            arc = XWPSEC_NO_LOGON;
         else
-            memcpy(pLoggedOnLocal, G_pLoggedOnLocal, sizeof(XWPLOGGEDON));
+            *puid = G_pLoggedOnLocal->uid;
+    }
+
+    if (fLocked)
+        UnlockLoggedOn();
+
+    return arc;
+}
+
+/*
+ *@@ slogQueryLogon:
+ *
+ *      Returns:
+ *
+ *      --  NO_ERROR: *ppLogon has been set to
+ *          a newly malloc()'d XWPLOGGEDON
+ *          struct, which must be free()'d by
+ *          the caller.
+ *
+ *      --  ERROR_NOT_ENOUGH_MEMORY
+ *
+ *      --  XWPSEC_NO_LOGON: the given user is
+ *          not logged on.
+ *
+ *@@added V1.0.1 (2003-01-05) [umoeller]
+ */
+
+APIRET slogQueryLogon(XWPSECID uid,
+                      PXWPLOGGEDON *ppLogon)
+{
+    APIRET  arc = NO_ERROR;
+    BOOL    fLocked;
+
+    if (!(fLocked = LockLoggedOn()))
+        arc = XWPSEC_CANNOT_GET_MUTEX;
+    else
+    {
+        PXWPLOGGEDON pReturn;
+        const XWPLOGGEDON *plo;
+        if (!(plo = FindLoggedOnFromID(uid)))
+            arc = XWPSEC_NO_LOGON;
+        else if (!(pReturn = (PXWPLOGGEDON)malloc(plo->cbStruct)))
+            arc = ERROR_NOT_ENOUGH_MEMORY;
+        else
+        {
+            memcpy(pReturn,
+                   plo,
+                   plo->cbStruct);
+            *ppLogon = pReturn;
+        }
     }
 
     if (fLocked)

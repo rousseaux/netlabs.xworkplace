@@ -138,28 +138,9 @@
      *
      ********************************************************************/
 
-    #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID XWPENTRY fsysFile1InitPage(PNOTEBOOKPAGE pnbp,
-                                        ULONG flFlags);
-
-        MRESULT XWPENTRY fsysFile1ItemChanged(PNOTEBOOKPAGE pnbp,
-                                     ULONG ulItemID,
-                                     USHORT usNotifyCode,
-                                     ULONG ulExtra);
-
-#ifndef __NOFILEPAGE2__
-        VOID XWPENTRY fsysFile2InitPage(PNOTEBOOKPAGE pnbp,
-                                        ULONG flFlags);
-
-        MRESULT XWPENTRY fsysFile2ItemChanged(PNOTEBOOKPAGE pnbp,
-                                     ULONG ulItemID,
-                                     USHORT usNotifyCode,
-                                     ULONG ulExtra);
-#endif
-
+    #ifdef SOM_WPFileSystem_h
         ULONG fsysInsertFilePages(WPObject *somSelf,
                                   HWND hwndNotebook);
-
     #endif
 
 #endif

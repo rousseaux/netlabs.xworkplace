@@ -3,118 +3,41 @@
  *@@sourcefile acldb.c:
  *      database for access control lists (ACL's).
  *
- *      ACL's are complicated and difficult to understand.
- *      The ACL database contains entries for (possibly)
- *      each directory and file on the system.
- *
- *      This implementation uses the Unix model of granting
- *      and denying access (as implemented by Linux).
- *
- *      As a result, each ACL entry has the following fields:
- *
- *      -- OWNUSER    name of user who owns this file.
- *      -- OWNGROUP   name of group this file belongs to.
- *      -- OWNERRIGHTS  rights of the owner (RWX).
- *      -- GROUPRIGHTS  rights of members of the group (RWX).
- *      -- OTHERRIGHTS  rights of everyone else (RWX).
- *
- *      This is exactly the Unix way of doing things.
- *      "ls" output is as follows:
- *
- +          -rwxrwxrwx  4  ownuser owngroup  ...
- +           \ /\ /\ /
- +            V  V  V
- +            ³  ³  ÀÄ other
- +            ³  ÀÄÄÄÄ group
- +            ÀÄÄÄÄÄÄÄ owner
+ *      This file is a "black box" in that the rest of
+ *      XWPShell does not care about how the ACL database
+ *      is implemented. Instead, XWPShell simply requires
+ *      that a function saclLoadDatabase exists, which
+ *      loads the ACL database on startup. It is the
+ *      responsibility of that function to call
+ *      scxtCreateACLEntry for each resource definition,
+ *      and the rest of XWPShell handles coordinating
+ *      the database.
  *
  *      This ACLDB implementation uses a plain text file
  *      for speed, where each ACL entry consists of a
  *      single line like this:
  +
- +        F "resname" decuid decgid octrights
+ +        "resname" id-hexflags [id-hexflags...]
  *
  *      being:
  *
- *      -- F: a flag marking the type of resource, being:
- *              -- "R": root directory (drive)
- *              -- "D": directory
- *              -- "F": file
- *              -- "P": process
- *
  *      -- "resname": the name of the resource, being
- *              -- for "R": Drive letter (e.g. "G:")
- *              -- for "D": full directory specification (e.g. "G:\DESKTOP")
- *              -- for "F": full file path (e.g. "G:\DESKTOP\INDEX.HTML")
- *              -- for "P": full executable path (e.g. "G:\OS2\E.EXE")
+ *              -- a drive letter (e.g. "G:")
+ *              -- a full directory specification (e.g. "G:\DESKTOP")
+ *              -- a full file path (e.g. "G:\DESKTOP\INDEX.HTML")
  *
- *      -- decuid: decimal user ID of owner
+ *      -- id: either a group id in the form "G2" or a user id in the
+ *         form "U2"
  *
- *      -- decgid: decimal group ID of owning group
- *
- *      -- octrights: rights flags (octal), as on Unix "chmod"
- *
- *      With this implementation, if no ACL entry exists for a resource
- *      (i.e. a file or directory), the ACL entry of the parent directory
- *      applies, climbing up until the drive level is reached. This way
- *      you only have to create ACL entries if they are supposed to be
- *      different from the parent's ones.
- *
- *      If no ACL entry is found this way (i.e. not even the drive has an
- *      ACL entry), access is denied.
- *
- *      <B>Example:</B>
- *
- *      1.  User "user" logs on, who belongs to group "users".
- *          The user's ID (uid) is 1, the group id (gid) is 1.
- *
- *      2.  XWPSec creates two subject handles, one for the
- *          user "user", one for the group "users".
- *
- *      3.  Now assume that "user" attempts to create a file
- *          in "F:\home\user" (his own directory).
- *
- *          This results in a saclVerifyAccess call for
- *          "F:\home\user", asking for authorization.
- *
- *          saclVerifyAccess receives the subject handle for
- *          "user" (and also for the "users" group) and will
- *          find out that an ACLENTRYNODE exists for the user
- *          subject handle and "F:\home\user".
- *
- *          Since "RWX" is specified in that entry, access is
- *          granted.
- *
- *      4.  Now assume that "user" attempts to create a file
- *          in "F:\home" (the parent directory).
- *
- *          Again, saclVerifyAccess receives the subject handle
- *          for "user" and the "users" group.
- *
- *          This time, however, since "F:\home" is not owned
- *          by user, no ACLENTRYNODE exists for that, and for
- *          none of the parent directories either.
- *
- *          saclVerifyAccess will then try the group subject
- *          handle (for "users"). "F:\home" is owned by "users",
- *          and access rights are defined as "R--". So creating
- *          a file is not permitted, and access is turned down
- *          gor food.
- *
- *      <B>Remarks:</B>
- *
- *      -- The functions in this file never get called
- *         for processes running on behalf of the
- *         superuser (root). This is because per definition,
- *         the superuser has unrestricted access to the
- *         system, so no ACL entries are needed.
+ *      -- hexflags: one byte in hexadecimal, specifying the ORed
+ *         XWPACCESS_* flags for this resource.
  *
  *@@added V0.9.5 [umoeller]
- *@@header "security\xwpsecty.h"
+ *@@header "security\xwpshell.h"
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2002 Ulrich M”ller.
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -125,9 +48,8 @@
  *      GNU General Public License for more details.
  */
 
-#define INCL_DOS
+#define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
-#define INCL_WIN
 #include <os2.h>
 
 #include <stdlib.h>
@@ -140,446 +62,25 @@
 #include "helpers\dosh.h"
 #include "helpers\linklist.h"
 #include "helpers\nls.h"                // National Language Support helpers
+#include "helpers\standards.h"
 #include "helpers\stringh.h"
 #include "helpers\tree.h"               // red-black binary trees
 
-#include "bldlevel.h"
-
-#include "security\xwpsecty.h"
-
-/* ******************************************************************
- *
- *   Private Definitions
- *
- ********************************************************************/
-
-#define ACLTYPE_DRIVE           1
-#define ACLTYPE_DIRECTORY       2
-#define ACLTYPE_FILE            3
-#define ACLTYPE_PROCESS         4
-
-// Unix permissions
-#define ACLACC_READ         0x0001
-        // -- for files: allow read
-        // -- for directories: allow list contents
-#define ACLACC_WRITE        0x0002
-        // -- for files: allow write
-        // -- for directories: allow create, rename, remove files in directory
-#define ACLACC_EXEC         0x0004
-        // -- for files: allow execute
-        // -- for directories: allow "access files", that is:
-        //          -- change to directory
-
-// octal constants as with Linux
-// defined as:       0000 000u uugg gooo
-
-// 1) rights for "other" users (bits 0-2) 0000 0000 0000 0ooo
-#define ACLACC_READ_OTHER           01
-#define ACLACC_WRITE_OTHER          02
-#define ACLACC_EXEC_OTHER           04
-
-#define ACLACC_OTHER_MASK           07
-#define GET_OTHER_RIGHTS(ulFlags) ( (ulFlags) & ACLACC_OTHER_MASK )
-
-// 2) rights for group members (bits 3-5) 0000 0000 00gg g000
-#define ACLACC_READ_GROUP           010
-#define ACLACC_WRITE_GROUP          020
-#define ACLACC_EXEC_GROUP           040
-
-#define ACLACC_GROUP_MASK           070
-#define ACLACC_GROUP_SHR            3
-#define GET_GROUP_RIGHTS(ulFlags) ( ((ulFlags) & ACLACC_GROUP_MASK) >> ACLACC_GROUP_SHR )
-
-// 3) rights for owner user (bits 6-8)    0000 000u uu00 0000
-#define ACLACC_READ_USER            0100
-#define ACLACC_WRITE_USER           0200
-#define ACLACC_EXEC_USER            0400
-
-#define ACLACC_USER_MASK            0700
-#define ACLACC_USER_SHR             6
-#define GET_USER_RIGHTS(ulFlags) ( ((ulFlags) & ACLACC_USER_MASK) >> ACLACC_USER_SHR )
+#include "helpers\xwpsecty.h"
+#include "security\xwpshell.h"
 
 /*
- *@@ ACLDBENTRYNODE:
- *      this represents one ACL database entry.
- *      This corresponds to a single line in the
- *      database file.
- *
- *      This is an extended tree node (see helpers\tree.c).
- *      These nodes are sorted according to pszName;
- *      there are two comparison functions for this
- *      (fnCompareACLDBNames_Nodes, fnCompareACLDBNames_Data).
- *
- *      Created by LoadACLDatabase.
- */
-
-typedef struct _ACLDBENTRYNODE
-{
-    TREE        Tree;
-            // base tree node; "ulkey" is a PSZ to the resource name
-
-    // PSZ         pszName;
-            // name of the resource to which this entry applies
-            // (in a new buffer allocated with malloc());
-            // one of the following:
-            // -- ACLTYPE_DRIVE:        the drive name (e.g. "G:")
-            // -- ACLTYPE_DIRECTORY     the capitalized directory name (e.g. "DESKTOP")
-            // -- ACLTYPE_FILE          the capitalized file name (e.g. "INDEX.HTML")
-
-    ULONG       ulType;
-            // one of the following:
-            // -- ACLTYPE_DRIVE         entry is for an entire drive
-            // -- ACLTYPE_DIRECTORY     entry is for a directory (or subdirectory)
-            // -- ACLTYPE_FILE          entry is for a file
-
-    XWPSECID    uid;
-            // user ID (owner of resource)
-    XWPSECID    gid;
-            // group ID (owner of resource)
-
-    ULONG       ulUnixAccessRights;
-            // Unix access rights flags as stored in ACL database;
-            // this is any combination of the following:
-            // 1) rights for "other" users
-            // -- ACLACC_READ_OTHER           01
-            // -- ACLACC_WRITE_OTHER          02
-            // -- ACLACC_EXEC_OTHER           04
-
-            // 2) rights for group members
-            // -- ACLACC_READ_GROUP           010
-            // -- ACLACC_WRITE_GROUP          020
-            // -- ACLACC_EXEC_GROUP           040
-
-            // 3) rights for owner user
-            // -- ACLACC_READ_USER            0100
-            // -- ACLACC_WRITE_USER           0200
-            // -- ACLACC_EXEC_USER            0400
-
-    ULONG       ulXWPUserAccessFlags,
-                ulXWPGroupAccessFlags,
-                ulXWPOtherAccessFlags;
-
-} ACLDBENTRYNODE, *PACLDBENTRYNODE;
-
-APIRET LoadACLDatabase(PULONG pulLineWithError);
-
-/* ******************************************************************
- *
- *   Global variables
- *
- ********************************************************************/
-
-// ACL database
-TREE        *G_treeACLDB;
-    // balanced binary tree of currently loaded ACLs;
-    // contains ACLDBENTRYNODE's
-LONG        G_cACLDBEntries = 0;
-HMTX        G_hmtxACLs = NULLHANDLE;
-    // mutex semaphore protecting global data
-
-/* ******************************************************************
- *
- *   Initialization
- *
- ********************************************************************/
-
-/*
- *@@ saclInit:
- *      initializes XWPSecurity.
- */
-
-APIRET saclInit(VOID)
-{
-    APIRET arc = NO_ERROR;
-
-    if (G_hmtxACLs == NULLHANDLE)
-    {
-        // first call:
-        arc = DosCreateMutexSem(NULL,       // unnamed
-                                &G_hmtxACLs,
-                                0,          // unshared
-                                FALSE);     // unowned
-        if (arc == NO_ERROR)
-        {
-            ULONG   ulLineWithError;
-            treeInit(&G_treeACLDB, &G_cACLDBEntries);
-            arc = LoadACLDatabase(&ulLineWithError);
-        }
-    }
-    else
-        arc = XWPSEC_INSUFFICIENT_AUTHORITY;
-
-    return arc;
-}
-
-/* ******************************************************************
- *
- *   Private Helpers
- *
- ********************************************************************/
-
-/*
- *@@ LockACLs:
- *      locks the global security data by requesting
- *      its mutex.
- *
- *      Always call UnlockACLs() when you're done.
- */
-
-APIRET LockACLs(VOID)
-{
-    APIRET arc = NO_ERROR;
-
-    arc = DosRequestMutexSem(G_hmtxACLs, SEM_INDEFINITE_WAIT);
-
-    return arc;
-}
-
-/*
- *@@ UnlockACLs:
- *      unlocks the global security data.
- */
-
-APIRET UnlockACLs(VOID)
-{
-    return (DosReleaseMutexSem(G_hmtxACLs));
-}
-
-/*
- *@@ fnCompareACLDBNames_Nodes:
- *
- */
-
-int TREEENTRY fnCompareStrings(ULONG ul1, ULONG ul2)
-{
-    return (strcmp((PSZ)ul1,
-                   (PSZ)ul2));
-}
-
-#ifdef _PMPRINTF_
-    /*
-     *@@ DumpAccessFlags:
-     *
-     */
-
-    VOID DumpAccessFlags(PSZ pszBuf,
-                         ULONG ulAccess)
-    {
-        if (ulAccess & XWPACCESS_READ)
-            *pszBuf++ = 'R';
-        if (ulAccess & XWPACCESS_WRITE)
-            *pszBuf++ = 'W';
-        if (ulAccess & XWPACCESS_CREATE)
-            *pszBuf++ = 'C';
-        if (ulAccess & XWPACCESS_EXEC)
-            *pszBuf++ = 'X';
-        if (ulAccess & XWPACCESS_DELETE)
-            *pszBuf++ = 'D';
-        if (ulAccess & XWPACCESS_ATRIB)
-            *pszBuf++ = 'A';
-        if (ulAccess & XWPACCESS_PERM)
-            *pszBuf++ = 'P';
-        *pszBuf = 0;
-    }
-#else
-#define DumpAccessFlags(a, b)
-#endif
-
-/* ******************************************************************
- *
- *   ACL Database
- *
- ********************************************************************/
-
-/*
- *@@ ConvertUnix2XWP:
- *      converts Unix access flags (ACLACC_READ, WRITE, EXEC)
- *      to the XWorkplace (OS/2) ones.
- *
- *      This never returns the XWPACCESS_PERM bit, which is
- *      reserved for the (user) owner of a resource.
- */
-
-ULONG ConvertUnix2XWP(ULONG ulUnixFlags,    // in: any combination of:
-                                            // -- ACLACC_READ         0x0001
-                                            // -- ACLACC_WRITE        0x0002
-                                            // -- ACLACC_EXEC         0x0004
-                      ULONG ulType)         // in: one of:
-                                            // -- ACLTYPE_DRIVE           1
-                                            // -- ACLTYPE_DIRECTORY       2
-                                            // -- ACLTYPE_FILE            3
-                                            // -- ACLTYPE_PROCESS         4
-{
-    ULONG ulXWPFlags = 0;
-
-    switch (ulType)
-    {
-        // drive or directory:
-        case ACLTYPE_DRIVE:
-        case ACLTYPE_DIRECTORY:
-            if (ulUnixFlags & ACLACC_READ)
-                ulXWPFlags |=
-                    XWPACCESS_READ;
-                    // For directories: Permission to view the directory's
-                    // contents.
-            if (ulUnixFlags & ACLACC_WRITE)
-                ulXWPFlags |=
-                    (XWPACCESS_WRITE
-                    // For directories: Permission to write to files
-                    // in the directory, but not create files ("Create"
-                    // is required for that).
-                    | XWPACCESS_CREATE
-                    // Permission to create subdirectories and files
-                    // in a directory. "Create" alone allows creation
-                    // of the file only, but once it's closed, it
-                    // cannot be changed any more.
-                    | XWPACCESS_DELETE
-                    // Permission to delete subdirectories and files.
-                    | XWPACCESS_ATRIB);
-                    // Permission to modify the attributes of a
-                    // resource (read-only, hidden, system, and
-                    // the date and time a file was last modified).
-            if (ulUnixFlags & ACLACC_EXEC)
-                ulXWPFlags |=
-                    XWPACCESS_EXEC;
-                    // Permission to run (not copy) an executable
-                    // or command file.
-                    // Note: For .CMD and .BAT files, "Read" permission
-                    // is also required.
-                    // -- for directories: XWPSec defines this as
-                    //    with Unix, to change to a directory.
-        break;
-
-        case ACLTYPE_FILE:
-            if (ulUnixFlags & ACLACC_READ)
-                ulXWPFlags |=
-                    XWPACCESS_READ;
-                    // For files: Permission to read data from a file and
-                    // copy the file.
-            if (ulUnixFlags & ACLACC_WRITE)
-                ulXWPFlags |=
-                    (XWPACCESS_WRITE
-                    // For files: Permission to write data to a file.
-                    | XWPACCESS_DELETE
-                    // Permission to delete subdirectories and files.
-                    | XWPACCESS_ATRIB);
-                    // Permission to modify the attributes of a
-                    // resource (read-only, hidden, system, and
-                    // the date and time a file was last modified).
-            if (ulUnixFlags & ACLACC_EXEC)
-                ulXWPFlags |=
-                    XWPACCESS_EXEC;
-                    // Permission to run (not copy) an executable
-                    // or command file.
-                    // Note: For .CMD and .BAT files, "Read" permission
-                    // is also required.
-        break;
-    }
-
-    return (ulXWPFlags);
-}
-
-ULONG G_aulRights[]          // rwxrwxrwx
-    = {
-            // first digits: user read, write, execute
-            ACLACC_READ_USER,
-            ACLACC_WRITE_USER,
-            ACLACC_EXEC_USER,
-
-            // second digits: group read, write, execute
-            ACLACC_READ_GROUP,
-            ACLACC_WRITE_GROUP,
-            ACLACC_EXEC_GROUP,
-
-            // third digits: other read, write, execute
-            ACLACC_READ_OTHER,
-            ACLACC_WRITE_OTHER,
-            ACLACC_EXEC_OTHER
-      };
-
-/*
- *@@ CreateACLDBEntry:
- *      creates a new ACLDB entry. pszName must have
- *      been malloc'd.
- */
-
-APIRET CreateACLDBEntry(ULONG ulType,
-                        PSZ pszName,
-                        XWPSECID uid,
-                        XWPSECID gid,
-                        PSZ pszRights)  // in: ptr to "rwxrwxrwx" string
-{
-    APIRET arc = NO_ERROR;
-
-    PACLDBENTRYNODE pNewEntry
-        = (PACLDBENTRYNODE)malloc(sizeof(ACLDBENTRYNODE));
-    if (!pNewEntry)
-        arc = ERROR_NOT_ENOUGH_MEMORY;
-    else
-    {
-        ULONG   ulDigit = 0;
-        PSZ     pLine = 0;
-
-        memset(pNewEntry, 0, sizeof(*pNewEntry));
-
-        pNewEntry->ulType = ulType;
-        pNewEntry->Tree.ulKey = (ULONG)pszName;
-        pNewEntry->uid = uid;
-        pNewEntry->gid = gid;
-
-        pLine = pszRights;
-        for (ulDigit = 0;
-             ulDigit < 9;
-             ulDigit++)
-        {
-            if (*pLine != '-')
-                // access granted:
-                pNewEntry->ulUnixAccessRights
-                        |= G_aulRights[ulDigit];
-            pLine++;
-        }
-
-        // convert Unix access flags for...
-
-        // a) user (owner)
-        pNewEntry->ulXWPUserAccessFlags
-            = (ConvertUnix2XWP(GET_USER_RIGHTS(pNewEntry->ulUnixAccessRights),
-                              ulType)
-                | XWPACCESS_PERM);  // user may also change permissions
-
-        // b) group (owning group)
-        pNewEntry->ulXWPGroupAccessFlags
-            = ConvertUnix2XWP(GET_GROUP_RIGHTS(pNewEntry->ulUnixAccessRights),
-                              ulType);
-
-        // c) other users (non-user, non-group)
-        pNewEntry->ulXWPOtherAccessFlags
-            = ConvertUnix2XWP(GET_OTHER_RIGHTS(pNewEntry->ulUnixAccessRights),
-                              ulType);
-
-        treeInsert(&G_treeACLDB,
-                   &G_cACLDBEntries,
-                   (TREE*)pNewEntry,
-                   fnCompareStrings);
-
-        /* _Pmpf(("LoadACLDatabase: got entry \"%s\" -> 0x%lX",
-                pNewEntry->pszName,
-                pNewEntry->ulUnixAccessRights)); */
-    }
-
-    return arc;
-}
-
-/*
- *@@ LoadACLDatabase:
+ *@@ saclLoadDatabase:
  *      loads the ACL database.
  *
- *      Called on startup by saclInit.
+ *      Called on startup by scxtInit.
  *
- *      The caller must lock the ACLDB before using this.
+ *      The caller has locked the ACLDB before calling
+ *      this, so this code need not worry about
+ *      serialization.
  */
 
-APIRET LoadACLDatabase(PULONG pulLineWithError)
+APIRET saclLoadDatabase(PULONG pulLineWithError)
 {
     APIRET  arc = NO_ERROR;
 
@@ -591,8 +92,7 @@ APIRET LoadACLDatabase(PULONG pulLineWithError)
 
     ULONG   ulLineCount = 0;
 
-    pszDBPath = getenv("XWPACLDB");
-    if (!pszDBPath)
+    if (!(pszDBPath = getenv("XWPACLDB")))
     {
         // XWPUSERDB not specified:
         // default to "?:\os2" on boot drive
@@ -601,119 +101,155 @@ APIRET LoadACLDatabase(PULONG pulLineWithError)
     }
     sprintf(szUserDB, "%s\\xwpusers.acc", pszDBPath);
 
-    UserDBFile = fopen(szUserDB, "r");
-    if (!UserDBFile)
+    if (!(UserDBFile = fopen(szUserDB, "r")))
         arc = _doserrno;
     else
     {
         CHAR        szLine[300];
         PSZ         pLine = NULL;
-        while ((pLine = fgets(szLine, sizeof(szLine), UserDBFile)) != NULL)
+        while (pLine = fgets(szLine, sizeof(szLine), UserDBFile))
         {
-            ULONG   ulType = 0;
+            // "A:" G1-3F
+            // pLine is on '"' char now
+            PSZ         pFirstQuote,
+                        pSecondQuote;
+            PACLDBTREENODE pNewEntry;
+            ULONG       ulResNameLen;
 
-            // skip spaces, tabs
             while (     (*pLine)
                      && ( (*pLine == ' ') || (*pLine == '\t') )
                   )
                 pLine++;
 
-            switch (*pLine)
+            if (    (!*pLine)
+                 || (*pLine == '\n')
+               )
+                // empty line
+                continue;
+
+            pFirstQuote = pLine;
+            if (    (*pFirstQuote != '"')
+                 || (!(pSecondQuote = strchr(pLine + 2, '"')))
+               )
             {
-                case 'R':       // root directory (drive)
-                    ulType = ACLTYPE_DRIVE;
-                break;
-
-                case 'D':       // directory
-                    ulType = ACLTYPE_DIRECTORY;
-                break;
-
-                case 'F':       // file
-                    ulType = ACLTYPE_FILE;
-                break;
-
-                case 'P':       // process
-                    ulType = ACLTYPE_PROCESS;
+                arc = XWPSEC_DB_ACL_SYNTAX;
                 break;
             }
 
-            if (ulType)
+            // "C:"
+            //    ^ pSecondQuote
+            // ^ pFirstQuote
+            ulResNameLen = pSecondQuote - pFirstQuote - 1;
+
+            // allocate an entry for this resource
+            if (!(pNewEntry = (PACLDBTREENODE)malloc(   sizeof(ACLDBTREENODE)
+                                                      + ulResNameLen)))
             {
-                PSZ pszName = 0;
-                pLine++;        // on space now
-                while (     (*pLine)
-                         && ( (*pLine == ' ') || (*pLine == '\t') )
+                arc = ERROR_NOT_ENOUGH_MEMORY;
+                break;
+            }
+
+            lstInit(&pNewEntry->llPerms, TRUE);
+            pNewEntry->usResNameLen = ulResNameLen;
+            memcpy(pNewEntry->szResName,
+                   pFirstQuote + 1,
+                   ulResNameLen);
+            pNewEntry->szResName[ulResNameLen] = '\0';
+            nlsUpper(pNewEntry->szResName);
+
+            // insert into global tree
+            if (arc = scxtCreateACLEntry(pNewEntry))
+                break;
+
+            pLine = pSecondQuote + 1;
+
+            // keep reading permissions for this resource on the same line
+            while (!arc)
+            {
+                BYTE    bType = 0;
+                while (    (*pLine)
+                        && ( (*pLine == ' ') || (*pLine == '\t') )
                       )
                     pLine++;
 
-                if (!*pLine)
-                    arc = XWPSEC_DB_ACL_SYNTAX;
+                switch (*pLine++)
+                {
+                    case 'G':
+                        bType = SUBJ_GROUP;
+                    break;
+
+                    case 'U':
+                        bType = SUBJ_USER;
+                    break;
+
+                    case '\0':
+                    case '\n':
+                        // no more permissions in this line: stop
+                    break;
+
+                    default:
+                        arc = XWPSEC_DB_ACL_SYNTAX;
+                    break;
+                }
+
+                if (!bType)
+                    break;
                 else
                 {
-                    // on '"' now
-                    pszName = strhQuote(pLine, '"', &pLine);
-                    if (!pszName)
+                    PSZ     pDash;
+                    if (!(pDash = strchr(pLine, '-')))
                         arc = XWPSEC_DB_ACL_SYNTAX;
                     else
                     {
-                        // OK, got name:
-                        // pLine points to space after '"' now
-                        while (     (*pLine)
-                                 && ( (*pLine == ' ') || (*pLine == '\t') )
-                              )
-                            pLine++;
-
-                        if (!*pLine)
-                            arc = XWPSEC_DB_ACL_SYNTAX;
+                        PACLDBPERM pPerm;
+                        if (!(pPerm = NEW(ACLDBPERM)))
+                            arc = ERROR_NOT_ENOUGH_MEMORY;
                         else
                         {
-                            ULONG   uid = 0,
-                                    gid = 0;
-                            CHAR    szRights[20];
-                            if (sscanf(pLine, "%d %d %s", &uid, &gid, szRights) != 3)
-                                arc = XWPSEC_DB_ACL_SYNTAX;
-                            else
-                            {
-                                if (strlen(szRights) != 9)
-                                    arc = XWPSEC_DB_ACL_SYNTAX;
-                                else
-                                {
-                                    // OK, got fields:
-                                    arc = CreateACLDBEntry(ulType,
-                                                           pszName,
-                                                           uid,
-                                                           gid,
-                                                           szRights);
-                                }
-                            }
+                            *pDash = '\0';
+                            pPerm->id = atoi(pLine);
+                            pPerm->bType = bType;
+                            pPerm->fbPerm = strtol(pDash + 1, NULL, 16);
+
+                            lstAppendItem(&pNewEntry->llPerms,
+                                          pPerm);
+
+                            pLine = pDash + 3;
                         }
                     }
                 }
-            }
+            } // while (!arc)
 
-            if (arc != NO_ERROR)
+            #ifdef __DEBUG__
+            {
+                PLISTNODE pNode;
+                _PmpfF(("permissions for res \"%s\":",
+                        pNewEntry->szResName));
+                FOR_ALL_NODES(&pNewEntry->llPerms, pNode)
+                {
+                    PACLDBPERM pPerm = pNode->pItemData;
+                    _PmpfF(("   %s %d has perm 0x%lX",
+                            (pPerm->bType == SUBJ_GROUP)
+                                ? "group"
+                                : "user",
+                            pPerm->id,
+                            pPerm->fbPerm));
+                }
+            }
+            #endif
+
+            if (arc)
                 break;  // while
 
             ulLineCount++;
         } // end while ((pLine = fgets(szLine, sizeof(szLine), UserDBFile)) != NULL)
+
+        *pulLineWithError = ulLineCount;
+
         fclose(UserDBFile);
     }
 
-    *pulLineWithError = ulLineCount;
-
     return arc;
-}
-
-/*
- *@@ FindACLDBEntry:
- *
- */
-
-PACLDBENTRYNODE FindACLDBEntry(const char *pcszName)
-{
-    return ((PACLDBENTRYNODE)treeFind(G_treeACLDB,
-                                      (ULONG)pcszName,
-                                      fnCompareStrings));
 }
 
 

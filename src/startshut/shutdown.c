@@ -123,13 +123,12 @@
 // headers in /hook
 #include "hook\xwphook.h"
 
-// #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 #include "media\media.h"                // XWorkplace multimedia support
 
-#include "security\xwpsecty.h"          // XWorkplace Security base
+#include "helpers\xwpsecty.h"           // XWorkplace Security base
 #include "shared\xsecapi.h"             // XWorkplace Security API
 
 #include "startshut\apm.h"              // APM power-off for XShutdown
@@ -786,7 +785,7 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData);
 
 VOID xsdGetShutdownConsts(PSHUTDOWNCONSTS pConsts)
 {
-    XWPLOGGEDON lo;
+    PXWPUSERDBENTRY puiLocal;
 
     pConsts->pKernelGlobals = krnQueryGlobals();
     pConsts->pWPDesktop = _WPDesktop;
@@ -824,11 +823,12 @@ VOID xsdGetShutdownConsts(PSHUTDOWNCONSTS pConsts)
 
     // get uid and gid of currently logged on user, if xwpshell
     // is running V0.9.19 (2002-04-02) [umoeller]
-    if (!xsecQueryLocalLoggedOn(&lo))
+    if (!xsecQueryLocalUser(&puiLocal))
     {
         // running:
         // store uid
-        pConsts->uid = lo.uid;
+        pConsts->uid = puiLocal->User.uid;
+        free(puiLocal);
     }
     else
         pConsts->uid = -1;

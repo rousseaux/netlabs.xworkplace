@@ -39,10 +39,6 @@
 
 int sec32_shutdown(PTR16 reqpkt)
 {
-    /*
-     * no special processing yet
-     */
-
     return STDON;
 }
 

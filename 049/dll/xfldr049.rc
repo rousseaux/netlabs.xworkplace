@@ -1019,10 +1019,6 @@ BEGIN
     ID_NDSI_STARTNETSCAPE               "Ihr Browser scheint momentan nicht geladen zu sein. Soll er jetzt gestartet werden?"
     ID_NDSI_SYNTAX                      "Die Syntax fÅr die Netscape DDE-Kommandozeile ist fehlerhaft. Mîchten Sie die Online-Hilfe lesen?"
 
-    ID_XSSI_ADMIN_LOCAL_USER            "~Aktueller Benutzer"
-    ID_XSSI_ADMIN_ALL_USERS             "Alle ~Benutzer"
-    ID_XSSI_ADMIN_ALL_GROUPS            "Alle ~Gruppen"
-
     ID_CRSI_OWGT_BITMAPFILE             "OS/2-Bitmap-Datei"
 
     /* widget class names (all new with V0.9.19) */
@@ -1395,13 +1391,6 @@ BEGIN
     ID_XCD_CLASSES_REPLACEMENTS         "Klassenersetzungen"
     ID_XCD_CLASSES_NEW                  "Neue Klassen"
 
-    /* the following are new with V0.9.19 */
-    ID_AMDI_USER_LOCAL_GROUP            "Aktueller lokaler Benutzer"
-    ID_AMDI_USER_USERNAME_TXT           "Benutzername:"
-    ID_AMDI_USER_USERID_TXT             "Benutzer-ID:"
-    ID_AMDI_USER_GROUPNAME_TXT          "Gruppenname:"
-    ID_AMDI_USER_GROUPID_TXT            "Gruppen-ID:"
-
     /* strings formerly in ID_XSD_FILESPAGE1 */
     ID_XSDI_FILES_REALNAME_TXT          "Echter Name:"
     ID_XSDI_FILES_FILESIZE_TXT          "Grî·e in Bytes:"
@@ -1699,6 +1688,33 @@ BEGIN
 
     /* daemon-specific strings V1.0.0 (2002-09-15) [lafaix] */
     ID_DMSI_STICKYTOGGLE                "~Haftfenster"
+
+    /* tool bars page 1 V1.0.1 (2002-12-08) [umoeller] */
+    ID_XSDI_ENABLETOOLBAR               "Di~splay folder tool bars"
+    ID_XSDI_TBSTYLE_TEXT                "Show te~xt on buttons"
+    ID_XSDI_TBSTYLE_MINI                "Small ~icons"
+    ID_XSDI_TBSTYLE_FLAT                "~Flat buttons"
+    ID_XSDI_TBSTYLE_HILITE              "H~ilight on mouse over"
+    ID_XSDI_TBSTYLE_TOOLTIPS            "Dis~play tooltips"
+
+    /* pages for administrator object
+        all new with V1.0.1 (2003-01-05) [umoeller]
+        some moved from above */
+    ID_AMDI_USER_LOCAL_GROUP            "You are logged in as..."
+    ID_AMDI_USER_USERNAME_TXT           "User name:"
+    ID_AMDI_USER_USERID_TXT             "User ID:"
+    ID_AMDI_USER_FULLNAME_TXT           "Descriptive name:"
+    ID_AMDI_USER_PASS_TXT               "Password:"
+    ID_AMDI_USER_CONFIRMPASS_TXT        "Confirm password:"
+    ID_AMDI_USER_GROUPS_TXT             "Groups:"
+    ID_AMDI_USER_LOCALSEC_TXT           "Local security:"
+
+    ID_AMSI_LOCAL_USER                  "~My Account"
+    ID_AMSI_ALL_USERS                   "All ~Users"
+    ID_AMSI_ALL_GROUPS                  "All ~Groups"
+
+    /* new file 3 (permissions) page */
+    ID_AMDI_F3_PERMISSIONS_TXT          "Your permissions:"
 END
 
 

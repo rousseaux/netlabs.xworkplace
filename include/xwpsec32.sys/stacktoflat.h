@@ -21,7 +21,6 @@
 #ifndef __StackToFlat_h
 #define __StackToFlat_h
 
-#ifndef USE_VDH_HELP
 /*
  * This points to the kernel stack to FLAT conversion value for the
  * current thread. FLAT:ESP = SP + *TKSSBase
@@ -35,28 +34,6 @@ extern void *TKSSBase;
  * addresses to subroutines. It is A LOT faster than using VirtToLin
  * to do the conversion.
  */
-INLINE void *__StackToFlat(void *addr) {
-    return (void *)((unsigned long)addr + *(unsigned long *)TKSSBase);
-}
-
-#else
-
-/*
- * The other solution is to use _TKSSBase as exported in MVDM.DLL (Virtual device
- * driver helpers); not I don't know if it is always available (PROTECTONLY=YES may
- * disable it in some cases ???)
- */
-#pragma library("vdh.lib")
-
-/*
- * _TKSSBase is exported in MVDM.DLL
- */
-extern void *_TKSSBase;
-
-INLINE void *__StackToFlat(void *addr) {
-    return (void *)((unsigned long)addr + (unsigned long)_TKSSBase);
-}
-#endif
-
+#define __StackToFlat(p) (void*)((unsigned long)p + *(unsigned long *)TKSSBase)
 
 #endif

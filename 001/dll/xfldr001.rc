@@ -502,6 +502,12 @@ BEGIN
     ID_XSSI_PARANOIA                "~Paranoia"
     ID_XSSI_OBJECTS                 "~Objects"
     ID_XSSI_FILEPAGE                "~File"
+
+    /* the following three added V1.0.1 (2003-01-10) [umoeller] */
+    ID_XSSI_FILEPAGE_GENERAL        "General"
+    ID_XSSI_FILEPAGE_EAS            "Extended Attributes"
+    ID_XSSI_FILEPAGE_PERMISSIONS    "Permissions"
+
     ID_XSSI_DETAILSPAGE             "~Details"
     ID_XSSI_XSHUTDOWNPAGE           "~&xsd;"
     ID_XSSI_STARTUPPAGE             "~Startup"
@@ -1033,10 +1039,6 @@ BEGIN
     ID_NDSI_STARTNETSCAPE               "Your browser does not seem to be currently running. Start it now?"
     ID_NDSI_SYNTAX                      "The syntax for the Netscape DDE command line is incorrect. Would you like to view the online help?"
 
-    ID_XSSI_ADMIN_LOCAL_USER            "~Current user"
-    ID_XSSI_ADMIN_ALL_USERS             "All ~users"
-    ID_XSSI_ADMIN_ALL_GROUPS            "All ~groups"
-
     ID_CRSI_OWGT_BITMAPFILE             "OS/2 bitmap file"
 
     /* widget class names (all new with V0.9.19) */
@@ -1411,13 +1413,6 @@ BEGIN
 
     /* the following are new with V0.9.19 */
 
-    /* new pages in XWPAdmin */
-    ID_AMDI_USER_LOCAL_GROUP            "Current local user"
-    ID_AMDI_USER_USERNAME_TXT           "User name:"
-    ID_AMDI_USER_USERID_TXT             "User ID:"
-    ID_AMDI_USER_GROUPNAME_TXT          "Group name:"
-    ID_AMDI_USER_GROUPID_TXT            "Group ID:"
-
     /* strings formerly in ID_XSD_FILESPAGE1 */
     ID_XSDI_FILES_REALNAME_TXT          "Real name:"
     ID_XSDI_FILES_FILESIZE_TXT          "Size in bytes:"
@@ -1725,13 +1720,24 @@ BEGIN
     ID_XSDI_TBSTYLE_HILITE              "H~ilight on mouse over"
     ID_XSDI_TBSTYLE_TOOLTIPS            "Dis~play tooltips"
 
-    ID_XSSI_USERID                      "User ID:"
-    ID_XSSI_USERNAME                    "User name:"
-    ID_XSSI_USERFULLNAME                "Descriptive name:"
-    ID_XSSI_USERPASS                    "Password:"
-    ID_XSSI_USERCONFIRMPASS             "Confirm password:"
-    ID_XSSI_GROUPID                     "Group ID:"
-    ID_XSSI_GROUPNAME                   "Group name:"
+    /* pages for administrator object
+        all new with V1.0.1 (2003-01-05) [umoeller]
+        some moved from above */
+    ID_AMDI_USER_LOCAL_GROUP            "You are logged in as..."
+    ID_AMDI_USER_USERNAME_TXT           "User name:"
+    ID_AMDI_USER_USERID_TXT             "User ID:"
+    ID_AMDI_USER_FULLNAME_TXT           "Descriptive name:"
+    ID_AMDI_USER_PASS_TXT               "Password:"
+    ID_AMDI_USER_CONFIRMPASS_TXT        "Confirm password:"
+    ID_AMDI_USER_GROUPS_TXT             "Groups:"
+    ID_AMDI_USER_LOCALSEC_TXT           "Local security:"
+
+    ID_AMSI_LOCAL_USER                  "~My Account"
+    ID_AMSI_ALL_USERS                   "All ~Users"
+    ID_AMSI_ALL_GROUPS                  "All ~Groups"
+
+    /* new file 3 (permissions) page */
+    ID_AMDI_F3_PERMISSIONS_TXT          "Your permissions:"
 END
 
 /* Treesize definitions; added V0.9.0 */

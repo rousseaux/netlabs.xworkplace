@@ -105,13 +105,12 @@
 // headers in /hook
 #include "hook\xwphook.h"
 
-// #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 #include "media\media.h"                // XWorkplace multimedia support
 
-#include "security\xwpsecty.h"          // XWorkplace Security base
+#include "helpers\xwpsecty.h"           // XWorkplace Security base
 #include "shared\xsecapi.h"             // XWorkplace Security API
 
 #include "startshut\apm.h"              // APM power-off for XShutdown

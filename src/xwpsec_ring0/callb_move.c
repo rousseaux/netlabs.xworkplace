@@ -57,57 +57,6 @@ ULONG CallType MOVE_PRE(PSZ pszNewPath,
 
     if (utilNeedsVerify())
     {
-        // access control enabled, and not call from daemon itself:
-        if (    (rc = utilSemRequest(&G_hmtxBufferLocked, -1))
-                    == NO_ERROR)
-        {
-            // daemon buffers locked
-            // (we have exclusive access):
-
-            PXWPSECEVENTDATA_MOVE_PRE pMovePre
-                = &((PSECIOSHARED)G_pSecIOShared)->EventData.MovePre;
-
-            // utilWriteLog("MOVE_PRE for \"%s\" -> \"%s\"\r\n", pszOldPath, pszNewPath);
-            // utilWriteLogInfo();
-
-            // prepare data for daemon notify
-            strcpy( pMovePre->szNewPath,
-                    pszNewPath);
-                      // sizeof(EventData.Directory.szPath));
-            strcpy( pMovePre->szOldPath,
-                    pszOldPath);
-                      // sizeof(EventData.Directory.szPath));
-
-            // have this request authorized by daemon
-            rc = utilDaemonRequest(SECEVENT_MOVE_PRE);
-            // utilDaemonRequest properly serializes all requests
-            // to the daemon;
-            // utilDaemonRequest blocks until the daemon has either
-            // authorized or turned down this request.
-
-            // Return code is either an error in the driver
-            // or NO_ERROR if daemon has authorized the request
-            // or ERROR_ACCESS_DENIED or some other error code
-            // if the daemon denied the request.
-
-            // now release buffers mutex;
-            // this unblocks other application threads
-            // which are waiting on an access verification
-            // in this function (after we return from ring-0,
-            // I guess)
-            utilSemRelease(&G_hmtxBufferLocked);
-        }
-    }
-
-    if (    (rc != NO_ERROR)
-         && (rc != ERROR_ACCESS_DENIED)
-       )
-    {
-        // kernel panic
-        // _sprintf("XWPSEC32.SYS: OPEN_PRE returned %d.", rc);
-        // DevHlp32_InternalError(G_szScratchBuf, strlen(G_szScratchBuf) + 1);
-        // utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
-        rc = ERROR_ACCESS_DENIED;
     }
 
     return (rc);

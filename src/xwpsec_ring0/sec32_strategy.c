@@ -85,22 +85,10 @@ static int (*driver_routing_table[32])() =
 
 int DRV32ENTRY sec32_strategy(PTR16 reqpkt, int index)
 {
-    int status;
-
     if (index < sizeof(driver_routing_table) / sizeof(*driver_routing_table))
-    {
-        /*
-         * Valid command received: call handler function
-         */
-        status = driver_routing_table[index](reqpkt);
-    }
-    else
-    {
-        /*
-         * Invalid command received
-         */
-        status = STDON + STERR + ERROR_I24_INVALID_PARAMETER;
-    }
-    return status;
+        // valid command received: call handler function:
+        return driver_routing_table[index](reqpkt);
+
+    return STDON + STERR + ERROR_I24_INVALID_PARAMETER;
 }
 

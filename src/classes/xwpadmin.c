@@ -77,6 +77,7 @@
 #include "helpers\dialog.h"             // dialog helpers
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
+#include "helpers\textview.h"           // PM XTextView control
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
 
@@ -129,58 +130,46 @@ STATIC VOID Error(WPObject *somSelf,
  *
  ********************************************************************/
 
-#define LEFT_COLUMN     100
-#define RIGHT_COLUMN    50
+#define RIGHT_COLUMN    100
 
 static const CONTROLDEF
     LocalUserGroup = LOADDEF_GROUP(ID_AMDI_USER_LOCAL_GROUP, SZL_AUTOSIZE),
-    LocalUserNameTxt = CONTROLDEF_TEXT(
-                            LOAD_STRING,
-                            ID_AMDI_USER_USERNAME_TXT,
-                            LEFT_COLUMN,
-                            -1),
+    LocalUserNameTxt = LOADDEF_TEXT(ID_AMDI_USER_USERNAME_TXT),
     LocalUserNameData = CONTROLDEF_TEXT(
-                            LOAD_STRING,
+                            "A",
                             ID_AMDI_USER_USERNAME_DATA,
                             RIGHT_COLUMN,
                             -1),
-    LocalUserIDTxt = CONTROLDEF_TEXT(
-                            LOAD_STRING,
-                            ID_AMDI_USER_USERID_TXT,
-                            LEFT_COLUMN,
+    LocalFullNameTxt = LOADDEF_TEXT(ID_AMDI_USER_FULLNAME_TXT),
+    LocalFullNameData = CONTROLDEF_TEXT(
+                            "A",
+                            ID_AMDI_USER_FULLNAME_DATA,
+                            RIGHT_COLUMN,
                             -1),
+    LocalUserIDTxt = LOADDEF_TEXT(ID_AMDI_USER_USERID_TXT),
     LocalUserIDData = CONTROLDEF_TEXT(
-                            LOAD_STRING,
+                            "A",
                             ID_AMDI_USER_USERID_DATA,
                             RIGHT_COLUMN,
                             -1),
-    LocalGroupNameTxt = CONTROLDEF_TEXT(
-                            LOAD_STRING,
-                            ID_AMDI_USER_GROUPNAME_TXT,
-                            LEFT_COLUMN,
-                            -1),
-    LocalGroupNameData = CONTROLDEF_TEXT(
-                            LOAD_STRING,
-                            ID_AMDI_USER_GROUPNAME_DATA,
+    LocalGroupsTxt = LOADDEF_TEXT(ID_AMDI_USER_GROUPS_TXT),
+    LocalGroupsData = CONTROLDEF_XTEXTVIEW(
+                            "A\nA\nA",
+                            ID_AMDI_USER_GROUPS_DATA,
                             RIGHT_COLUMN,
-                            -1),
-    LocalGroupIDTxt = CONTROLDEF_TEXT(
-                            LOAD_STRING,
-                            ID_AMDI_USER_GROUPID_TXT,
-                            LEFT_COLUMN,
-                            -1),
-    LocalGroupIDData = CONTROLDEF_TEXT(
-                            LOAD_STRING,
-                            ID_AMDI_USER_GROUPID_DATA,
-                            RIGHT_COLUMN,
-                            -1);
+                            NULL),
+    LocalSecTxt = LOADDEF_TEXT(ID_AMDI_USER_LOCALSEC_TXT),
+    LocalSecData = CONTROLDEF_TEXT_WORDBREAK(
+                            "A",
+                            ID_AMDI_USER_LOCALSEC_DATA,
+                            RIGHT_COLUMN);
 
 static const DLGHITEM dlgLocalUser[] =
     {
         START_TABLE,            // root table, required
             START_ROW(0),       // row 1 in the root table, required
                 // create group on top
-                START_GROUP_TABLE(&LocalUserGroup),
+                START_GROUP_TABLE_ALIGN(&LocalUserGroup),
                     START_ROW(ROW_VALIGN_CENTER),
                         CONTROL_DEF(&LocalUserNameTxt),
                         CONTROL_DEF(&LocalUserNameData),
@@ -188,11 +177,14 @@ static const DLGHITEM dlgLocalUser[] =
                         CONTROL_DEF(&LocalUserIDTxt),
                         CONTROL_DEF(&LocalUserIDData),
                     START_ROW(ROW_VALIGN_CENTER),
-                        CONTROL_DEF(&LocalGroupNameTxt),
-                        CONTROL_DEF(&LocalGroupNameData),
+                        CONTROL_DEF(&LocalFullNameTxt),
+                        CONTROL_DEF(&LocalFullNameData),
+                    START_ROW(ROW_VALIGN_TOP),
+                        CONTROL_DEF(&LocalGroupsTxt),
+                        CONTROL_DEF(&LocalGroupsData),
                     START_ROW(ROW_VALIGN_CENTER),
-                        CONTROL_DEF(&LocalGroupIDTxt),
-                        CONTROL_DEF(&LocalGroupIDData),
+                        CONTROL_DEF(&LocalSecTxt),
+                        CONTROL_DEF(&LocalSecData),
                 END_TABLE,
             START_ROW(0),       // notebook buttons (will be moved)
                 CONTROL_DEF(&G_HelpButton),         // notebook.c
@@ -217,10 +209,82 @@ VOID LocalUserInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        APIRET arc = NO_ERROR;
-        XWPLOGGEDON LoggedOn;
+        APIRET      arc = NO_ERROR;
+        RING0STATUS Status;
+        PXWPUSERDBENTRY pLocalUser;
 
-        if (arc = xsecQueryLocalLoggedOn(&LoggedOn))
+        if (    (!(arc = xsecQueryStatus(&Status)))
+             && (!(arc = xsecQueryLocalUser(&pLocalUser)))
+           )
+        {
+            ULONG   cGroups;
+            PXWPGROUPDBENTRY paGroups;
+
+            WinSetDlgItemShort(pnbp->hwndDlgPage,
+                               ID_AMDI_USER_USERID_DATA,
+                               pLocalUser->User.uid,
+                               FALSE);          // unsigned
+            WinSetDlgItemText(pnbp->hwndDlgPage,
+                              ID_AMDI_USER_USERNAME_DATA,
+                              pLocalUser->User.szUserName);
+            WinSetDlgItemText(pnbp->hwndDlgPage,
+                              ID_AMDI_USER_FULLNAME_DATA,
+                              pLocalUser->User.szFullName);
+
+            WinSetDlgItemText(pnbp->hwndDlgPage,
+                              ID_AMDI_USER_LOCALSEC_DATA,
+                              (Status.fLocalSecurity)
+                                ? "Active"
+                                : "Inactive");   // @@todo localize
+
+            if (!(arc = xsecQueryGroups(&cGroups,
+                                        &paGroups)))
+            {
+                ULONG   ul;
+                XSTRING strGroups;
+                xstrInit(&strGroups, 0);
+
+                for (ul = 0;
+                     ul < pLocalUser->Membership.cGroups;
+                     ++ul)
+                {
+                    ULONG       ul2;
+                    XWPSECID    gidThis = pLocalUser->Membership.aGIDs[ul];
+
+                    if (strGroups.ulLength)
+                        xstrcatc(&strGroups, '\n');
+
+                    for (ul2 = 0;
+                         ul2 < cGroups;
+                         ++ul)
+                    {
+                        if (gidThis == paGroups[ul2].gid)
+                        {
+                            xstrcat(&strGroups,
+                                    paGroups[ul2].szGroupName,
+                                    0);
+                            xstrcatc(&strGroups, ' ');
+                            break;
+                        }
+                    }
+
+                    xstrCatf(&strGroups,
+                             "[%d]",
+                             gidThis);
+                }
+
+                WinSetDlgItemText(pnbp->hwndDlgPage,
+                                  ID_AMDI_USER_GROUPS_DATA,
+                                  strGroups.psz);
+
+                xstrClear(&strGroups);
+
+                free(paGroups);
+            }
+
+            free(pLocalUser);
+        }
+        else
         {
             // error:
             CHAR szError[100];
@@ -228,16 +292,6 @@ VOID LocalUserInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
             WinSetDlgItemText(pnbp->hwndDlgPage,
                               ID_AMDI_USER_USERNAME_DATA,
                               szError);
-        }
-        else
-        {
-            WinSetDlgItemText(pnbp->hwndDlgPage,
-                              ID_AMDI_USER_USERNAME_DATA,
-                              LoggedOn.szUserName);
-            WinSetDlgItemShort(pnbp->hwndDlgPage,
-                               ID_AMDI_USER_USERID_DATA,
-                               LoggedOn.uid,
-                               FALSE);          // unsigned
         }
     }
 }
@@ -264,7 +318,7 @@ typedef struct _USERRECORD
 } USERRECORD, *PUSERRECORD;
 
 static const CONTROLDEF
-    AllUsersGroup = LOADDEF_GROUP(ID_XSSI_ADMIN_ALL_USERS, SZL_AUTOSIZE),
+    AllUsersGroup = LOADDEF_GROUP(ID_AMSI_ALL_USERS, SZL_AUTOSIZE),
     AllUsersCnr = CONTROLDEF_CONTAINER(
                             ID_XFDI_CNR_CNR,
                             200,        // for now, will be resized
@@ -290,7 +344,7 @@ static const DLGHITEM G_dlgAllUsers[] =
 MPARAM G_ampAllUsers[] =
     {
         MPFROM2SHORT(ID_XFDI_CNR_CNR, XAC_SIZEX | XAC_SIZEY),
-        MPFROM2SHORT(ID_XSSI_ADMIN_ALL_USERS, XAC_SIZEX | XAC_SIZEY),
+        MPFROM2SHORT(ID_AMSI_ALL_USERS, XAC_SIZEX | XAC_SIZEY),
     };
 
 /*
@@ -428,18 +482,17 @@ MRESULT EXPENTRY fnwpAddUser(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
             WinSetWindowPtr(hwndDlg, QWL_USER, mp2);
                     // PUSERRECORD to edit or NULL for add mode
             winhSetDlgItemFocus(hwndDlg,
-                                ID_XSSI_USERNAME_EF);
+                                ID_AMDI_USER_USERNAME_DATA);
             mrc = (MRESULT)TRUE;
         break;
 
         case WM_CONTROL:
             switch (SHORT1FROMMP(mp1))
             {
-                case ID_XSSI_USERID_EF:
-                case ID_XSSI_USERNAME_EF:
-                case ID_XSSI_USERFULLNAME_EF:
-                case ID_XSSI_USERPASS_EF:
-                case ID_XSSI_USERCONFIRMPASS_EF:
+                case ID_AMDI_USER_USERNAME_DATA:
+                case ID_AMDI_USER_FULLNAME_DATA:
+                case ID_AMDI_USER_PASS_DATA:
+                case ID_AMDI_USER_CONFIRMPASS_DATA:
                     if (SHORT2FROMMP(mp1) == EN_CHANGE)
                         WinPostMsg(hwndDlg, XM_ENABLEITEMS, 0, 0);
                 break;
@@ -450,7 +503,7 @@ MRESULT EXPENTRY fnwpAddUser(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
         {
             BOOL    fEnable = FALSE;
             PSZ     pszUser;
-            if (pszUser = winhQueryDlgItemText(hwndDlg, ID_XSSI_USERNAME_EF))
+            if (pszUser = winhQueryDlgItemText(hwndDlg, ID_AMDI_USER_USERNAME_DATA))
             {
                 BOOL    fOK = TRUE;
                 PCSZ    p = pszUser;
@@ -467,7 +520,7 @@ MRESULT EXPENTRY fnwpAddUser(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                 }
 
                 if (    (fOK)
-                     && WinQueryDlgItemTextLength(hwndDlg, ID_XSSI_USERFULLNAME_EF)
+                     && WinQueryDlgItemTextLength(hwndDlg, ID_AMDI_USER_FULLNAME_DATA)
                    )
                 {
                     if (WinQueryWindowPtr(hwndDlg, QWL_USER))
@@ -476,8 +529,8 @@ MRESULT EXPENTRY fnwpAddUser(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                     else
                     {
                         // add mode: then we need to check pwds
-                        PSZ pszPassword = winhQueryDlgItemText(hwndDlg, ID_XSSI_USERPASS_EF),
-                            pszConfirmPassword = winhQueryDlgItemText(hwndDlg, ID_XSSI_USERCONFIRMPASS_EF);
+                        PSZ pszPassword = winhQueryDlgItemText(hwndDlg, ID_AMDI_USER_PASS_DATA),
+                            pszConfirmPassword = winhQueryDlgItemText(hwndDlg, ID_AMDI_USER_CONFIRMPASS_DATA);
                         if (!strhcmp(pszPassword, pszConfirmPassword))
                             fEnable = TRUE;
 
@@ -503,28 +556,28 @@ MRESULT EXPENTRY fnwpAddUser(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 #define EF_WIDTH        80
 
 static const CONTROLDEF
-    UserNameTxt = LOADDEF_TEXT(ID_XSSI_USERNAME),
+    UserNameTxt = LOADDEF_TEXT(ID_AMDI_USER_USERNAME_TXT),
     UserNameEF = CONTROLDEF_ENTRYFIELD(
                             NULL,
-                            ID_XSSI_USERNAME_EF,
+                            ID_AMDI_USER_USERNAME_DATA,
                             EF_WIDTH,
                             SZL_AUTOSIZE),
-    UserFullTxt = LOADDEF_TEXT(ID_XSSI_USERFULLNAME),
+    UserFullTxt = LOADDEF_TEXT(ID_AMDI_USER_FULLNAME_TXT),
     UserFullEF = CONTROLDEF_ENTRYFIELD(
                             NULL,
-                            ID_XSSI_USERFULLNAME_EF,
+                            ID_AMDI_USER_FULLNAME_DATA,
                             EF_WIDTH,
                             SZL_AUTOSIZE),
-    UserPassTxt = LOADDEF_TEXT(ID_XSSI_USERPASS),
+    UserPassTxt = LOADDEF_TEXT(ID_AMDI_USER_PASS_TXT),
     UserPassEF = CONTROLDEF_ENTRYFIELD_PASSWD(
                             NULL,
-                            ID_XSSI_USERPASS_EF,
+                            ID_AMDI_USER_PASS_DATA,
                             EF_WIDTH,
                             SZL_AUTOSIZE),
-    UserConfirmPassTxt = LOADDEF_TEXT(ID_XSSI_USERCONFIRMPASS),
+    UserConfirmPassTxt = LOADDEF_TEXT(ID_AMDI_USER_CONFIRMPASS_TXT),
     UserConfirmPassEF = CONTROLDEF_ENTRYFIELD_PASSWD(
                             NULL,
-                            ID_XSSI_USERCONFIRMPASS_EF,
+                            ID_AMDI_USER_CONFIRMPASS_DATA,
                             EF_WIDTH,
                             SZL_AUTOSIZE);
 
@@ -608,10 +661,10 @@ STATIC APIRET AddOrEditUser(HWND hwndOwner,
             if (preccEdit)
             {
                 winhSetDlgItemText(hwndDlg,
-                                   ID_XSSI_USERNAME_EF,
+                                   ID_AMDI_USER_USERNAME_DATA,
                                    preccEdit->Entry.szUserName);
                 winhSetDlgItemText(hwndDlg,
-                                   ID_XSSI_USERFULLNAME_EF,
+                                   ID_AMDI_USER_FULLNAME_DATA,
                                    preccEdit->Entry.szFullName);
             }
 
@@ -622,11 +675,11 @@ STATIC APIRET AddOrEditUser(HWND hwndOwner,
                 PSZ pszUser,
                     pszFullUser;
 
-                if (!(pszUser = winhQueryDlgItemText(hwndDlg, ID_XSSI_USERNAME_EF)))
+                if (!(pszUser = winhQueryDlgItemText(hwndDlg, ID_AMDI_USER_USERNAME_DATA)))
                     arc = ERROR_INVALID_PARAMETER;
                 else
                 {
-                    if (!(pszFullUser = winhQueryDlgItemText(hwndDlg, ID_XSSI_USERFULLNAME_EF)))
+                    if (!(pszFullUser = winhQueryDlgItemText(hwndDlg, ID_AMDI_USER_FULLNAME_DATA)))
                         arc = ERROR_INVALID_PARAMETER;
                     else
                     {
@@ -638,8 +691,8 @@ STATIC APIRET AddOrEditUser(HWND hwndOwner,
                         else
                         {
                             // add mode:
-                            PSZ pszPassword = winhQueryDlgItemText(hwndDlg, ID_XSSI_USERPASS_EF),
-                                pszConfirmPassword = winhQueryDlgItemText(hwndDlg, ID_XSSI_USERCONFIRMPASS_EF);
+                            PSZ pszPassword = winhQueryDlgItemText(hwndDlg, ID_AMDI_USER_PASS_DATA),
+                                pszConfirmPassword = winhQueryDlgItemText(hwndDlg, ID_AMDI_USER_CONFIRMPASS_DATA);
 
                             if (strhcmp(pszPassword, pszConfirmPassword))
                                 arc = ERROR_INVALID_PARAMETER;
@@ -750,7 +803,7 @@ typedef struct _GROUPRECORD
 } GROUPRECORD, *PGROUPRECORD;
 
 static const CONTROLDEF
-    AllGroupsGroup = LOADDEF_GROUP(ID_XSSI_ADMIN_ALL_GROUPS, SZL_AUTOSIZE),
+    AllGroupsGroup = LOADDEF_GROUP(ID_AMSI_ALL_GROUPS, SZL_AUTOSIZE),
     AllGroupsCnr = CONTROLDEF_CONTAINER(
                             ID_XFDI_CNR_CNR,
                             200,        // for now, will be resized
@@ -776,7 +829,7 @@ static const DLGHITEM G_dlgAllGroups[] =
 MPARAM G_ampAllGroups[] =
     {
         MPFROM2SHORT(ID_XFDI_CNR_CNR, XAC_SIZEX | XAC_SIZEY),
-        MPFROM2SHORT(ID_XSSI_ADMIN_ALL_GROUPS, XAC_SIZEX | XAC_SIZEY),
+        MPFROM2SHORT(ID_AMSI_ALL_GROUPS, XAC_SIZEX | XAC_SIZEY),
     };
 
 /*
@@ -1001,8 +1054,6 @@ SOM_Scope ULONG  SOMLINK adm_xwpAddXWPAdminPages(XWPAdmin *somSelf,
 {
     ULONG   ulrc;
     INSERTNOTEBOOKPAGE  inbp;
-    PID                 pidXWPShell;
-    HQUEUE              hqXWPShell;
 
     /* XWPAdminData *somThis = XWPAdminGetData(somSelf); */
     XWPAdminMethodDebug("XWPAdmin","adm_xwpAddXWPAdminPages");
@@ -1013,9 +1064,7 @@ SOM_Scope ULONG  SOMLINK adm_xwpAddXWPAdminPages(XWPAdmin *somSelf,
     inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
 
     // check if XWPShell is running; if so the queue must exist
-    if (DosOpenQueue(&pidXWPShell,
-                     &hqXWPShell,
-                     QUEUE_XWPSHELL))
+    if (xsecQueryStatus(NULL))
     {
         // error: display XWP page only then
         inbp.usPageStyleFlags = BKA_MAJOR;
@@ -1029,12 +1078,11 @@ SOM_Scope ULONG  SOMLINK adm_xwpAddXWPAdminPages(XWPAdmin *somSelf,
     else
     {
         // XWPShell running:
-        DosCloseQueue(hqXWPShell);
 
         // all groups
         inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_XFD_CONTAINERPAGE;
         inbp.usPageStyleFlags = BKA_MAJOR;
-        inbp.pcszName = cmnGetString(ID_XSSI_ADMIN_ALL_GROUPS);
+        inbp.pcszName = cmnGetString(ID_AMSI_ALL_GROUPS);
         inbp.ulDefaultHelpPanel  = ID_XSH_ADMIN_ALL_GROUPS;
         inbp.ulPageID = SP_ADMIN_ALL_GROUPS;
         inbp.pampControlFlags = G_ampAllGroups;
@@ -1048,7 +1096,7 @@ SOM_Scope ULONG  SOMLINK adm_xwpAddXWPAdminPages(XWPAdmin *somSelf,
         // all users
         inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_XFD_CONTAINERPAGE;
         inbp.usPageStyleFlags = BKA_MAJOR;
-        inbp.pcszName = cmnGetString(ID_XSSI_ADMIN_ALL_USERS);
+        inbp.pcszName = cmnGetString(ID_AMSI_ALL_USERS);
         inbp.ulDefaultHelpPanel  = ID_XSH_ADMIN_ALL_USERS;
         inbp.ulPageID = SP_ADMIN_ALL_USERS;
         inbp.pampControlFlags = G_ampAllUsers;
@@ -1062,7 +1110,7 @@ SOM_Scope ULONG  SOMLINK adm_xwpAddXWPAdminPages(XWPAdmin *somSelf,
         // current local user
         inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_AMD_USER;
         inbp.usPageStyleFlags = BKA_MAJOR;
-        inbp.pcszName = cmnGetString(ID_XSSI_ADMIN_LOCAL_USER);
+        inbp.pcszName = cmnGetString(ID_AMSI_LOCAL_USER);
         inbp.ulDefaultHelpPanel  = ID_XSH_ADMIN_LOCAL_USER;
         inbp.ulPageID = SP_ADMIN_LOCAL_USER;
         inbp.pampControlFlags = NULL;
