@@ -305,17 +305,17 @@
 
     #define T1M_DAEMONREADY             (WM_USER+281)    // added V0.9.0
 
-#ifdef __PAGEMAGE__
+// #ifdef __PAGEMAGE__
     #define T1M_PAGEMAGECLOSED          (WM_USER+282)    // added V0.9.2 (2000-02-23) [umoeller]
-#endif
+// #endif
 
     #define T1M_QUERYXFOLDERVERSION     (WM_USER+283)
                 // V0.9.2 (2000-02-26) [umoeller]:
                 // msg value changed to break compatibility with V0.8x
 
-#ifdef __PAGEMAGE__
+// #ifdef __PAGEMAGE__
     #define T1M_PAGEMAGECONFIGDELAYED   (WM_USER+284)
-#endif
+// #endif
 
     /*
      *@@ T1M_FOPS_TASK_DONE:

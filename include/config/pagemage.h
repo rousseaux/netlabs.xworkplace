@@ -27,7 +27,7 @@
 #ifndef CONFIG_HEADER_INCLUDED
     #define CONFIG_HEADER_INCLUDED
 
-#ifdef __PAGEMAGE__
+// #ifdef __PAGEMAGE__
 
     /* ******************************************************************
      *                                                                  *
@@ -60,6 +60,6 @@
         #error "shared\notebook.h needs to be included before including pagemage.h".
     #endif
 
-#endif // __PAGEMAGE__
+// #endif // __PAGEMAGE__
 
 #endif

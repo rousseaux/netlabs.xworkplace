@@ -852,6 +852,8 @@ POINTL  G_ptlMousePosDesktop = {0};
  *@@changed V0.9.4 (2000-07-10) [umoeller]: fixed float-on-top
  *@@changed V0.9.7 (2001-01-15) [dk]: WM_SETWINDOWPARAMS added
  *@@changed V0.9.7 (2001-01-18) [umoeller]: removed PGMG_LOCKUP call, pagemage doesn't need this
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: fixed sticky odin windows
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: fixed sticky EPM
  */
 
 VOID ProcessMsgsForPageMage(HWND hwnd,
@@ -882,6 +884,8 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
                      || (strcmp(szClass, "wpFolder window") == 0)
                      || (strcmp(szClass, "Win32FrameClass") == 0)
                                 // that's for Odin V0.9.7 (2001-01-18) [umoeller]
+                     || (strcmp(szClass, "EFrame") == 0)
+                                // that's for EPM V0.9.7 (2001-01-19) [dk]
                    )
                 {
                     // window creation/destruction:

@@ -454,7 +454,7 @@ BOOL dmnStartPageMage(VOID)
 {
     BOOL brc = FALSE;
 
-#ifdef __PAGEMAGE__
+// #ifdef __PAGEMAGE__
 
     if (G_pHookData)
         if (    (G_pHookData->fInputHooked)
@@ -479,7 +479,7 @@ BOOL dmnStartPageMage(VOID)
                       0);
                 // this creates the PageMage object window
         }
-#endif
+// #endif
 
     return (brc);
 }
@@ -505,7 +505,7 @@ BOOL dmnStartPageMage(VOID)
 
 VOID dmnKillPageMage(BOOL fNotifyKernel)    // in: if TRUE, we post T1M_PAGEMAGECLOSED (TRUE) to the kernel
 {
-#ifdef __PAGEMAGE__
+// #ifdef __PAGEMAGE__
     if (G_pHookData->hwndPageMageFrame)
     {
         // PageMage running:
@@ -538,7 +538,7 @@ VOID dmnKillPageMage(BOOL fNotifyKernel)    // in: if TRUE, we post T1M_PAGEMAGE
                    (MPARAM)fNotifyKernel,       // if TRUE, PageMage will be disabled
                    0);
     }
-#endif
+// #endif
 }
 
 /* ******************************************************************
@@ -669,7 +669,7 @@ BOOL LoadHookConfig(BOOL fHook,         // in: reload hook settings
                                       &cb);
         }
 
-#ifdef __PAGEMAGE__
+// #ifdef __PAGEMAGE__
         if (fPageMage)
         {
             // safe defaults
@@ -680,7 +680,7 @@ BOOL LoadHookConfig(BOOL fHook,         // in: reload hook settings
             // otherwise XWPScreen doesn't work right
             pgmsSaveSettings();
         }
-#endif
+// #endif
     }
 
     return (brc);
@@ -1130,11 +1130,11 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 if (G_pHookData)
                 {
                     G_pHookData->hwndWPSDesktop = (HWND)mp1;
-#ifdef __PAGEMAGE__
+// #ifdef __PAGEMAGE__
                     // give PageMage a chance to recognize the Desktop
                     // V0.9.4 (2000-08-08) [umoeller]
                     pgmwWindowListAdd(G_pHookData->hwndWPSDesktop);
-#endif
+// #endif
                 }
             break;
 
@@ -1159,7 +1159,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
             break;
 
-#ifdef __PAGEMAGE__
+// #ifdef __PAGEMAGE__
             /*
              *@@ XDM_STARTSTOPPAGEMAGE:
              *      starts or stops PageMage.
@@ -1208,7 +1208,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 // load config from OS2.INI
                 mrc = (MPARAM)pgmsLoadSettings((ULONG)mp1);
             break;
-#endif
+// #endif
 
             /*
              *@@ XDM_HOTKEYPRESSED:
@@ -1375,12 +1375,12 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                                                 HWND_TOP,
                                                 0, 0, 0, 0,
                                                 SWP_ZORDER | SWP_SHOW | SWP_RESTORE);
-#ifdef __PAGEMAGE__
+// #ifdef __PAGEMAGE__
                                 // start or restart timer for flashing
                                 // fixed V0.9.4 (2000-07-10) [umoeller]
                                 if (G_pHookData->PageMageConfig.fFlash)
                                     pgmgcStartFlashTimer();
-#endif
+// #endif
                             }
                             else
                                 // no: let XFLDR.DLL thread-1 object handle this

@@ -107,7 +107,7 @@ SOM_Scope ULONG  SOMLINK xwpscr_xwpAddXWPScreenPages(XWPScreen *somSelf,
     /* XWPScreenData *somThis = XWPScreenGetData(somSelf); */
     XWPScreenMethodDebug("XWPScreen","xwpscr_xwpAddXWPScreenPages");
 
-#ifdef __PAGEMAGE__
+// #ifdef __PAGEMAGE__
     // hook installed?
     if (hifXWPHookReady())
     {
@@ -173,7 +173,7 @@ SOM_Scope ULONG  SOMLINK xwpscr_xwpAddXWPScreenPages(XWPScreen *somSelf,
             return (ntbInsertPage(pcnbp));
         }
     }
-#endif
+// #endif
 
     return NULLHANDLE;
 }

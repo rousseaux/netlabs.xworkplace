@@ -136,11 +136,11 @@ VOID SavePageMageConfig(PAGEMAGECONFIG* pPgmgConfig,
         //    a timer for this...
         //    after that, the daemon sends XDM_PAGEMAGECONFIG
         //    to the daemon.
-#ifdef __PAGEMAGE__
+// #ifdef __PAGEMAGE__
         krnPostThread1ObjectMsg(T1M_PAGEMAGECONFIGDELAYED,
                                 (MPARAM)ulFlags,
                                 0);
-#endif // __PAGEMAGE__
+// #endif // __PAGEMAGE__
     }
 }
 
@@ -150,7 +150,7 @@ VOID SavePageMageConfig(PAGEMAGECONFIG* pPgmgConfig,
  *
  ********************************************************************/
 
-#ifdef __PAGEMAGE__
+// #ifdef __PAGEMAGE__
 
 /*
  *@@ pgmiPageMageGeneralInitPage:
@@ -1096,4 +1096,4 @@ MRESULT pgmiPageMageColorsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     return (mrc);
 }
 
-#endif // __PAGEMAGE__
+// #endif // __PAGEMAGE__

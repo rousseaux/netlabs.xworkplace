@@ -230,7 +230,7 @@ BOOL hifEnablePageMage(BOOL fEnable)
 {
     BOOL    brc = FALSE;
 
-#ifdef __PAGEMAGE__
+// #ifdef __PAGEMAGE__
     PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
     PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
 
@@ -259,7 +259,7 @@ BOOL hifEnablePageMage(BOOL fEnable)
             _Pmpf(("  Returning %d", brc));
         }
     }
-#endif
+// #endif
 
     return (brc);
 }

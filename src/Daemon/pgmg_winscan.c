@@ -3,6 +3,7 @@
  *@@ pgmg_winscan.c:
  *      PageMage window scanning and checking.
  *
+ *      See pgmg_control.c for an introduction to PageMage.
  */
 
 /*

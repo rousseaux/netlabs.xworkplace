@@ -693,14 +693,14 @@ VOID krn_T1M_DaemonReady(VOID)
                 _Pmpf(("    pGlobalSettings->fPageMageEnabled: %d",
                         pGlobalSettings->fEnablePageMage));
 
-#ifdef __PAGEMAGE__
+// #ifdef __PAGEMAGE__
                 if (pGlobalSettings->fEnablePageMage)
                     // PageMage is enabled too:
                     WinSendMsg(pDaemonShared->hwndDaemonObject,
                                XDM_STARTSTOPPAGEMAGE,
                                (MPARAM)TRUE,
                                0);
-#endif
+// #endif
             }
         }
     }
@@ -960,7 +960,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                         if (pDaemonShared)
                             if (pDaemonShared->hwndDaemonObject)
                             {
-#ifdef __PAGEMAGE__
+// #ifdef __PAGEMAGE__
                                 // cross-process send msg: this
                                 // does not return until the daemon
                                 // has re-read the data
@@ -968,7 +968,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                                                             XDM_PAGEMAGECONFIG,
                                                             (MPARAM)G_PageMageConfigFlags,
                                                             0);
-#endif
+// #endif
                                 // reset flags
                                 G_PageMageConfigFlags = 0;
                             }
@@ -1437,7 +1437,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                 krn_T1M_DaemonReady();
             break;
 
-#ifdef __PAGEMAGE__
+// #ifdef __PAGEMAGE__
             /*
              *@@ T1M_PAGEMAGECLOSED:
              *      this gets posted by dmnKillPageMage when
@@ -1470,9 +1470,9 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                 // update "Features" page, if open
                 ntbUpdateVisiblePage(NULL, SP_SETUP_FEATURES);
             break; }
-#endif
+// #endif
 
-#ifdef __PAGEMAGE__
+// #ifdef __PAGEMAGE__
             /*
              *@@ T1M_PAGEMAGECONFIGDELAYED:
              *      posted by XWPScreen when any PageMage configuration
@@ -1499,7 +1499,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                               2,
                               500);     // half a second delay
             break; }
-#endif
+// #endif
 
             /*
              *@@ T1M_WELCOME:

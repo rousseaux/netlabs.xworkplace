@@ -3,6 +3,63 @@
  *@@sourcefile pgmg_control.c:
  *      PageMage Desktop control window.
  *
+ *      PageMage was originally written by Carlos Ugarte
+ *      and implemented its own system hook. This was
+ *      integrated into the XWP hook, while the PageMage
+ *      window (the pager) and the move handling were
+ *      in a separate PM program, which is now running
+ *      in XWPDAEMN.EXE.
+ *
+ *      Basically, PageMage consists of the following
+ *      components:
+ *
+ *      --  The PageMage control window (the pager).
+ *          For one, this paints the representation
+ *          of all virtual desktops in its client.
+ *
+ *          In order to be able to do this, it receives
+ *          messages from the XWP hook whenever frame
+ *          windows are created, moved, renamed, or
+ *          destroyed.
+ *
+ *      --  PageMage keeps its own window list to be
+ *          able to quickly trace all windows and their
+ *          positions without having to query the entire
+ *          PM switch list or enumerate all desktop windows
+ *          all the time. As a result, PageMage's CPU load
+ *          is pretty low.
+ *
+ *          The code for this is in pgmg_winscan.c.
+ *
+ *      --  The PageMage "move thread", which is a second
+ *          thread which gets started when the pager is
+ *          created. This is in pgmg_move.c.
+ *
+ *          This thread is reponsible for actually switching
+ *          desktops. Switching desktops is actually done by
+ *          moving all windows (except the sticky ones). So
+ *          when the user switches one desktop to the right,
+ *          all windows are actually moved to the left by the
+ *          size of the PM screen.
+ *
+ *          There are several occasions when the move thread
+ *          gets notifications to move all windows (i.e. to
+ *          switch desktops).
+ *
+ *          For one, this happens when the XWP hook detects
+ *          an active window change. The move thread is notified
+ *          of all such changes and will then check if the
+ *          newly activated window is currently off-screen
+ *          (i.e. "on another desktop") and will then switch
+ *          to that desktop.
+ *
+ *          Of course, switching desktops can also be intitiated
+ *          by the user (using the hotkeys or by clicking into
+ *          the pager).
+ *
+ *      --  As with the rest of the daemon, PageMage receives
+ *          notifications from XFLDR.DLL when its settings
+ *          have been modified in the "Screen" settings notebook.
  */
 
 /*
@@ -308,6 +365,9 @@ USHORT pgmgcStartFlashTimer(VOID)
  *@@ PAGEMAGECLIENTDATA:
  *      static (!) structure in fnwpPageMageClient
  *      holding all kinds of data needed for the client.
+ *
+ *      This replaces a whole bunch of global variables
+ *      which used to be used with PageMage before V0.9.7.
  *
  *@@added V0.9.7 (2001-01-18) [umoeller]
  */

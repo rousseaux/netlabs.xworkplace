@@ -3,6 +3,7 @@
  *@@ pgmg_move.c:
  *      PageMage "Move" thread.
  *
+ *      See pgmg_control.c for an introduction to PageMage.
  */
 
 /*

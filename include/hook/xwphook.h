@@ -423,7 +423,7 @@
 
     #define XDM_HOOKCONFIG          (WM_USER + 402)
 
-#ifdef __PAGEMAGE__
+// #ifdef __PAGEMAGE__
     #define XDM_STARTSTOPPAGEMAGE   (WM_USER + 403)
 
     #define XDM_PAGEMAGECONFIG      (WM_USER + 404)
@@ -432,7 +432,7 @@
         #define PGMGCFG_REFORMAT    0x0002  // causes pgmcSetPgmgFramePos
         #define PGMGCFG_ZAPPO       0x0004  // reformats the PageMage title bar
         #define PGMGCFG_STICKIES    0x0008  // sticky windows have changed, rescan winlist
-#endif
+// #endif
 
     #define XDM_HOTKEYPRESSED       (WM_USER + 405)
 

@@ -3,6 +3,7 @@
  *@@sourcefile pgmg_settings.c:
  *      PageMage configuration stuff.
  *
+ *      See pgmg_control.c for an introduction to PageMage.
  */
 
 /*

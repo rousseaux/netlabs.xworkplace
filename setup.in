@@ -223,13 +223,14 @@ PROJECT_INCLUDE = $(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classe
 #
 # The following features are presently defined (we list the #define's here):
 #   __PAGEMAGE__: include PageMage code
+#         --> removed V0.9.7 (2001-01-19) [umoeller]; this is always compiled now
 #   __ANIMATED_MOUSE_POINTERS__: include AMPTR code
 #   __REPLHANDLES__: include replacement file handles management
 
-PAGEMAGE_STRING =
-!ifdef PAGEMAGE
-PAGEMAGE_STRING = /D__PAGEMAGE__=1
-!endif
+# PAGEMAGE_STRING =
+# !ifdef PAGEMAGE
+# PAGEMAGE_STRING = /D__PAGEMAGE__=1
+# !endif
 
 ANIMATED_MOUSE_POINTERS_STRING =
 !ifdef ANIMATED_MOUSE_POINTERS
@@ -258,8 +259,7 @@ CC_WARNINGS  = /w3 /Wcmp+ /Wcnd- /Wcns+ /Wcnv+ /Wgen /Wcns /Wcpy /Wobs /Word- /W
 # /Wuse+ /Wuni+
 
 # compiler options which are the same with debug and release code
-CC_SHARED    = icc $(PAGEMAGE_STRING) \
-$(ANIMATED_MOUSE_POINTERS_STRING) \
+CC_SHARED    = icc $(ANIMATED_MOUSE_POINTERS_STRING) \
 $(REPLHANDLES_STRING) /I$(PROJECT_INCLUDE) /c /gd- /gi+ /q+ /se /ss
 
 !ifdef XWP_DEBUG
