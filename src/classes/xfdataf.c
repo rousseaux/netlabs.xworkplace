@@ -76,6 +76,8 @@
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
+
+#define INCL_WINPOINTERS
 #define INCL_WINMENUS
 #define INCL_WINPROGRAMLIST     // needed for wppgm.h
 #include <os2.h>
@@ -1022,8 +1024,17 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
 
         if (pobjAssoc)
         {
-            hptr = _wpQueryIcon(pobjAssoc);
-            _wpUnlockObject(pobjAssoc);
+            // get the assoc icon
+            if (hptr = _wpQueryIcon(pobjAssoc))
+                // and make it global so that other processes
+                // can use it (otherwise PMView won't display
+                // icons for attachments) V0.9.18 (2002-02-06) [umoeller]
+                WinSetPointerOwner(hptr,
+                                   (PID)0,
+                                   // magic flag used by the WPS
+                                   0x77482837);
+
+            // _wpUnlockObject(pobjAssoc);
                     // is this smart? may the program go dormant?
                     // default method does this though, so we do it too
         }

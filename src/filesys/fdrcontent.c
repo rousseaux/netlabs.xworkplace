@@ -48,10 +48,6 @@
  *          Apparently, WPFolder::wpQueryContent iterates over
  *          these things.
  *
- *          I wonder who came up with this stupid idea since
- *          this needs SOM methods and slows things down
- *          massively. See fdrResolveContentPtrs.
- *
  *          Starting with V0.9.16, XFolder maintains two binary
  *          balanced trees of the file-system and abstract
  *          objects which have been added to the folder to allow
@@ -80,7 +76,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2001 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -688,13 +684,43 @@ BOOL fdrResolveContentPtrs(WPFolder *somSelf)
 }
 
 /*
- *@@ FindFSFromUpperName:
+ *@@ FastFindFSFromUpperName:
+ *      retrieves the awake file-system object with the
+ *      specified name (which _must_ be upper-cased)
+ *      from the folder contents tree.
+ *
+ *      Preconditions:
+ *
+ *      --  Caller must hold the folder mutex sem.
  *
  *@@added V0.9.16 (2001-10-25) [umoeller]
+ *@@changed V0.9.18 (2002-02-06) [umoeller]: removed mutex request, renamed
  */
 
-WPObject* FindFSFromUpperName(WPFolder *pFolder,
-                              const char *pcszUpperShortName)
+WPObject* FastFindFSFromUpperName(WPFolder *pFolder,
+                                  const char *pcszUpperShortName)
+{
+    XFolderData *somThis = XFolderGetData(pFolder);
+    PFDRCONTENTITEM pNode;
+    if (pNode = (PFDRCONTENTITEM)treeFind(
+                         _FileSystemsTreeRoot,
+                         (ULONG)pcszUpperShortName,
+                         treeCompareStrings))
+        return (pNode->pobj);
+
+    return (NULL);
+}
+
+/*
+ *@@ FastFindFSFromUpperName:
+ *      calls FastFindFSFromUpperName in a folder mutex sem
+ *      request block properly.
+ *
+ *@@added V0.9.18 (2002-02-06) [umoeller]
+ */
+
+WPObject* SafeFindFSFromUpperName(WPFolder *pFolder,
+                                  const char *pcszUpperShortName)
 {
     WPObject *pobjReturn = NULL;
     BOOL fFolderLocked = FALSE;
@@ -703,16 +729,8 @@ WPObject* FindFSFromUpperName(WPFolder *pFolder,
     {
         if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
         {
-            XFolderData *somThis = XFolderGetData(pFolder);
-            PFDRCONTENTITEM pNode;
-
-            if (pNode = (PFDRCONTENTITEM)treeFind(
-                                 _FileSystemsTreeRoot,
-                                 (ULONG)pcszUpperShortName,
-                                 treeCompareStrings))
-            {
-                pobjReturn = pNode->pobj;
-            }
+            pobjReturn = FastFindFSFromUpperName(pFolder,
+                                                 pcszUpperShortName);
         }
     }
     CATCH(excpt1)
@@ -727,7 +745,7 @@ WPObject* FindFSFromUpperName(WPFolder *pFolder,
 }
 
 /*
- *@@ fdrFindFSFromName:
+ *@@ fdrFastFindFSFromName:
  *      goes thru the folder contents to find the first
  *      file-system object with the specified real name
  *      (not title!).
@@ -735,14 +753,18 @@ WPObject* FindFSFromUpperName(WPFolder *pFolder,
  *      pcszShortName is looked for without respect to
  *      case.
  *
+ *      Preconditions:
+ *
+ *      --  Caller must hold the folder mutex sem.
+ *
  *@@added V0.9.9 (2001-02-01) [umoeller]
  *@@changed V0.9.16 (2001-10-25) [umoeller]: now using fast content trees
+ *@@changed V0.9.18 (2002-02-06) [umoeller]: removed mutex request, renamed
  */
 
-WPObject* fdrFindFSFromName(WPFolder *pFolder,
-                            const char *pcszShortName)  // in: short real name to look for
+WPObject* fdrFastFindFSFromName(WPFolder *pFolder,
+                                const char *pcszShortName)  // in: short real name to look for
 {
-    // protect the folder contents (lock out anyone changing them)
     if (    pcszShortName
          && (*pcszShortName)
        )
@@ -757,36 +779,44 @@ WPObject* fdrFindFSFromName(WPFolder *pFolder,
         memcpy(pszUpperRealName, pcszShortName, ulLength + 1);
         nlsUpper(pszUpperRealName, ulLength);
 
-        return (FindFSFromUpperName(pFolder,
-                                    pszUpperRealName));
-
-        /* if (fdrResolveContentPtrs(pFolder))
-        {
-            XFolderData *somThis = XFolderGetData(pFolder);
-
-            WPObject *pobj = *_ppFirstObj;
-
-            while (pobj)
-            {
-                if (_somIsA(pobj, _WPFileSystem))
-                {
-                    // check name
-                    CHAR szFilename[CCHMAXPATH];
-                    if (_wpQueryFilename(pobj, szFilename, FALSE))
-                        if (!stricmp(szFilename, pcszShortName))
-                        {
-                            // got it:
-                            pobjReturn = pobj;
-                            break;
-                        }
-                }
-
-                pobj = _xwpQueryNextObj(pobj);
-            }
-        } */
+        return (FastFindFSFromUpperName(pFolder,
+                                        pszUpperRealName));
     }
 
     return (NULL);
+}
+
+/*
+ *@@ fdrSafeFindFSFromName:
+ *      calls fdrFastFindFSFromName in a folder mutex sem
+ *      request block properly.
+ *
+ *@@added V0.9.18 (2002-02-06) [umoeller]
+ */
+
+WPObject* fdrSafeFindFSFromName(WPFolder *pFolder,
+                                const char *pcszShortName)  // in: short real name to look for
+{
+    WPObject *pobjReturn = NULL;
+    BOOL fFolderLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
+        {
+            pobjReturn = fdrFastFindFSFromName(pFolder,
+                                               pcszShortName);
+        }
+    }
+    CATCH(excpt1)
+    {
+        pobjReturn = NULL;
+    } END_CATCH();
+
+    if (fFolderLocked)
+        fdrReleaseFolderMutexSem(pFolder);
+
+    return (pobjReturn);
 }
 
 /*
@@ -1635,8 +1665,8 @@ WPFileSystem* ProcessParticles(WPFolder *pCurrentFolder,
             // ask the folder if this file name is awake
             WPFileSystem *pFound;
             // _Pmpf(("Scanning particle %s", pStartOfParticle));
-            if (pFound = FindFSFromUpperName(pCurrentFolder,
-                                             pStartOfParticle))
+            if (pFound = SafeFindFSFromUpperName(pCurrentFolder,
+                                                 pStartOfParticle))
             {
                 // found something:
                 if (fQuit)
@@ -1732,6 +1762,8 @@ WPFileSystem* fdrQueryAwakeFSObject(PCSZ pcszFQPath)
 
                 // now get the root folder from the drive letter
                 if (fLocked = LockRootFolders())
+                        // @@todo this isn't enough, the WPS might be
+                        // awaking a root folder behind our back!!!
                 {
                     PLISTNODE pNode;
                     WPFolder *pRoot = NULL;
@@ -1761,8 +1793,8 @@ WPFileSystem* fdrQueryAwakeFSObject(PCSZ pcszFQPath)
                             // _Pmpf(("Scanning cache folder %s",
                                //     G_szLastQueryAwakeFolderPath));
 
-                            pReturn = FindFSFromUpperName(G_pLastQueryAwakeFolder,
-                                                          pLastBackslash + 1);
+                            pReturn = SafeFindFSFromUpperName(G_pLastQueryAwakeFolder,
+                                                              pLastBackslash + 1);
                             // even if this returned NULL,
                             // skip the query
                             fSkip = TRUE;
@@ -2010,7 +2042,7 @@ BOOL PopulateWithAbstracts(WPFolder *somSelf,
  *          which is quite expensive.
  *
  *      --  Since we can use our fast folder content
- *          trees (see fdrFindFSFromName), this
+ *          trees (see fdrSafeFindFSFromName), this
  *          is a _lot_ faster for folders with many
  *          file system objects because we can check
  *          much more quickly if an object is already

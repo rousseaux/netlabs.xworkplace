@@ -11,7 +11,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2001 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -306,6 +306,11 @@ static CONTROLDEF
                             ID_XFDI_PANIC_NOARCHIVING,
                             -1,
                             -1),
+    DisableCheckDesktopCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XFDI_PANIC_DISABLECHECKDESKTOP,
+                            -1,
+                            -1),
     DisableReplRefreshCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,
                             ID_XFDI_PANIC_DISABLEREPLREFRESH,
@@ -406,6 +411,8 @@ static const DLGHITEM dlgPanic[] =
             START_ROW(0),
                 CONTROL_DEF(&SkipArchivingCB),
             START_ROW(0),
+                CONTROL_DEF(&DisableCheckDesktopCB),
+            START_ROW(0),
                 CONTROL_DEF(&DisableReplRefreshCB),
 #ifndef __NOTURBOFOLDERS__
             START_ROW(0),
@@ -499,14 +506,17 @@ BOOL RunXFix(VOID)
 
 /*
  *@@ ShowPanicDlg:
+ *      displays the "Panic" dialog if either fForceShow
+ *      is TRUE or the "Shift" key is pressed.
  *
  *@@added V0.9.16 (2001-10-08) [umoeller]
  *@@changed V0.9.16 (2001-10-25) [umoeller]: added "disable refresh", "disable turbo fdrs"
+ *@@changed V0.9.17 (2002-02-05) [umoeller]: added fForceShow and "disable check desktop"
  */
 
-VOID ShowPanicDlg(VOID)
+VOID ShowPanicDlg(BOOL fForceShow)      // V0.9.17 (2002-02-05) [umoeller]
 {
-    BOOL    fRepeat = FALSE;
+    BOOL    fRepeat = fForceShow;
 
     while (    (doshQueryShiftState())
             || (fRepeat)       // set to TRUE after xfix V0.9.7 (2001-01-24) [umoeller]
@@ -545,6 +555,8 @@ VOID ShowPanicDlg(VOID)
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_NOARCHIVING,
                               cmnQuerySetting(sfReplaceArchiving));
 #endif
+            winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLECHECKDESKTOP,
+                              cmnQuerySetting(sfCheckDesktop));
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEREPLREFRESH,
                               krnReplaceRefreshEnabled());
 #ifndef __NOTURBOFOLDERS__
@@ -587,6 +599,8 @@ VOID ShowPanicDlg(VOID)
                         pArcSettings->ulArcFlags &= ~ARCF_ENABLED;
                     }
 
+                    if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLECHECKDESKTOP))
+                        cmnSetSetting(sfCheckDesktop, FALSE);
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEREPLREFRESH))
                         krnEnableReplaceRefresh(FALSE);
 #ifndef __NOTURBOFOLDERS__
@@ -670,11 +684,13 @@ VOID ShowPanicDlg(VOID)
  *      "Panic" dialog.
  *
  *@@added V0.9.1 (99-12-18) [umoeller]
+ *@@changed V0.9.18 (2002-02-06) [umoeller]: fixed multiple XFolder conversions
  */
 
 VOID ShowStartupDlgs(VOID)
 {
     ULONG   cbData = 0;
+    PCSZ    pcszXFolderConverted = "_XFolderConv";
 
     // check if XWorkplace was just installed
 #ifndef __XWPLITE__
@@ -696,18 +712,27 @@ VOID ShowStartupDlgs(VOID)
      *
      */
 
-    if (PrfQueryProfileSize(HINI_USER,
+    // this no longer works V0.9.18 (2002-02-06) [umoeller]
+    /* if (PrfQueryProfileSize(HINI_USER,
                             (PSZ)INIAPP_XWORKPLACE,
                             (PSZ)INIKEY_GLOBALSETTINGS,
                             &cbData)
-            == FALSE)
+            == FALSE) */
     {
         // XWorkplace keys do _not_ exist:
+
         // check if we have old XFolder settings
-        if (PrfQueryProfileSize(HINI_USER,
-                                (PSZ)INIAPP_OLDXFOLDER,
-                                (PSZ)INIKEY_GLOBALSETTINGS,
-                                &cbData))
+        if (    (PrfQueryProfileSize(HINI_USER,
+                                     (PSZ)INIAPP_OLDXFOLDER,
+                                     (PSZ)INIKEY_GLOBALSETTINGS,
+                                     &cbData))
+             // have those not yet been converted?
+             // V0.9.18 (2002-02-06) [umoeller]
+             && (!PrfQueryProfileSize(HINI_USER,
+                                      (PSZ)INIAPP_XWORKPLACE,
+                                      (PSZ)pcszXFolderConverted,
+                                      &cbData))
+           )
         {
             if (cmnMessageBoxMsg(HWND_DESKTOP,
                                  121,       // "XWorkplace"
@@ -731,6 +756,13 @@ VOID ShowStartupDlgs(VOID)
 
                 cmnLoadGlobalSettings();
             }
+
+            // in any case, set "converted" flag
+            // so we won't prompt again
+            PrfWriteProfileString(HINI_USER,
+                                  (PSZ)INIAPP_XWORKPLACE,
+                                  (PSZ)pcszXFolderConverted,
+                                  "1");
         }
     }
 
@@ -739,7 +771,7 @@ VOID ShowStartupDlgs(VOID)
      *
      */
 
-    ShowPanicDlg();
+    ShowPanicDlg(FALSE);        // no force
 
 #ifndef __ALWAYSSUBCLASS__
     if (getenv("XWP_NO_SUBCLASSING"))
@@ -944,6 +976,7 @@ ULONG CheckDesktop(PXFILE pLogFile,
                 {
                     doshWriteLogEntry(pLogFile,
                                       "  ERROR %d resolving <WP_DESKTOP> handle 0x%lX",
+                                      arc,
                                       G_hobjDesktop);
                     ulResult = DESKTOP_HANDLE_NOT_FOUND;
                 }
@@ -1056,6 +1089,7 @@ ULONG CheckDesktop(PXFILE pLogFile,
  *@@changed V0.9.14 (2001-08-21) [umoeller]: finally added setting for writing startup log
  *@@changed V0.9.16 (2001-09-26) [umoeller]: renamed from krnInitializeXWorkplace
  *@@changed V0.9.16 (2001-09-29) [umoeller]: added CheckDesktopValid()
+ *@@changed V0.9.17 (2002-02-05) [umoeller]: added option to stop checking for broken desktops
  */
 
 VOID initMain(VOID)
@@ -1178,11 +1212,9 @@ VOID initMain(VOID)
 
     // check if "replace folder refresh" is enabled...
     if (krnReplaceRefreshEnabled())
-    {
         // yes: kick out WPS wheel watcher thread,
         // start our own one instead
         ReplaceWheelWatcher(pLogFile);
-    }
 
     /*
      *  enable NumLock at startup
@@ -1196,18 +1228,28 @@ VOID initMain(VOID)
     {
         APIRET arc;
         PSZ pszActiveHandles;
+
+        // assume defaults for the handle hiwords;
+        // these should be correct with 95% of all systems
+        // V0.9.17 (2002-02-05) [umoeller]
+        G_usHiwordAbstract = 2;
+        G_usHiwordFileSystem = 3;
+
         if (arc = wphQueryActiveHandles(HINI_SYSTEM, &pszActiveHandles))
-             doshWriteLogEntry(pLogFile,
-                               "WARNING: wphQueryActiveHandles returned %d", arc);
+            doshWriteLogEntry(pLogFile,
+                              "WARNING: wphQueryActiveHandles returned %d", arc);
         else
         {
             HHANDLES hHandles;
+
             if (arc = wphLoadHandles(HINI_USER,
                                      HINI_SYSTEM,
                                      pszActiveHandles,
                                      &hHandles))
+            {
                 doshWriteLogEntry(pLogFile,
                                   "WARNING: wphLoadHandles returned %d", arc);
+            }
             else
             {
                 // get the abstract and file-system handle hiwords for
@@ -1215,9 +1257,48 @@ VOID initMain(VOID)
                 G_usHiwordAbstract = ((PHANDLESBUF)hHandles)->usHiwordAbstract;
                 G_usHiwordFileSystem = ((PHANDLESBUF)hHandles)->usHiwordFileSystem;
 
-                // go check if the desktop is valid
-                G_ulDesktopValid = CheckDesktop(pLogFile,
-                                                hHandles);
+                if (cmnQuerySetting(sfCheckDesktop)) // V0.9.17 (2002-02-05) [umoeller]
+                {
+                    // go build the handles cache explicitly... CheckDesktop
+                    // calls wphComposePath which would call this automatically,
+                    // but then we can't catch the error code and people get
+                    // complaints about a desktop failure even though only
+                    // one handle is invalid which doesn't endanger the system,
+                    // so give the user a different warning instead if this
+                    // fails, and allow him to disable checks for the future
+                    // V0.9.17 (2002-02-05) [umoeller]
+                    if (arc = wphRebuildNodeHashTable(hHandles,
+                                                      TRUE))        // fail on errors
+                    {
+                        CHAR sz[30];
+                        PSZ psz = sz;
+                        doshWriteLogEntry(pLogFile,
+                                          "WARNING: wphRebuildNodeHashTable returned %d", arc);
+                        sprintf(sz, "%d", arc);
+                        if (cmnMessageBoxMsgExt(NULLHANDLE,
+                                                230,        // desktop error
+                                                &psz,
+                                                1,
+                                                231,        // error %d parsing handles...
+                                                MB_YESNO)
+                                == MBID_YES)
+                        {
+                            ShowPanicDlg(TRUE);     // force
+                        }
+
+                        // in any case, do not let the "cannot find desktop"
+                        // dialog come up
+                        G_ulDesktopValid = DESKTOP_VALID;
+                    }
+                    else
+                    {
+                        // go check if the desktop is valid
+                        G_ulDesktopValid = CheckDesktop(pLogFile,
+                                                        hHandles);
+                    }
+                } // if (cmnQuerySetting(sfCheckDesktop)) // V0.9.17 (2002-02-05) [umoeller]
+                else
+                    G_ulDesktopValid = DESKTOP_VALID;
 
                 wphFreeHandles(&hHandles);
             }
@@ -1479,15 +1560,19 @@ VOID initMain(VOID)
  *      This does _not_ get called from initMain because
  *      initMain gets processed in the context of
  *      M_XFldObject::wpclsInitData, where the file-system
- *      objects are not yet initialized.
+ *      classes are not yet initialized.
  *
  *      Instead, this gets called from
- *      M_XFldDesktop::wpclsInitData, which gets called
- *      while the WPS startup code is trying to open the
- *      default desktop. Essentially, we are changing
- *      the desktop's object ID behind the WPS's back
- *      (while it is trying to find the object from it),
- *      so this might or might not work.
+ *      M_XWPProgram::wpclsInitData (yes, WPProgram), which
+ *      gets called late enough in the WPS startup cycle
+ *      for all file-system classes to be initialized.
+ *      Apparently this is still _before_ the Desktop
+ *      attempts to open the <WP_DESKTOP> folder.
+ *      Essentially, if the desktop was detected as broken
+ *      before, we are then changing the desktop's object
+ *      ID behind the WPS's back (before it will try to
+ *      find the object from it), so this might or might
+ *      not work.
  *
  *@@added V0.9.16 (2001-09-29) [umoeller]
  */
@@ -1571,8 +1656,8 @@ BOOL initRepairDesktopIfBroken(VOID)
             xstrcat(&str, szMsg, 0);
             xstrcat(&str,
                     "\nA command window has been opened for your convenience. "
-                    "You can now attempt to enter the full path of where your desktop "
-                    "resides.",
+                    "Below you can now attempt to enter the full path of where "
+                    "your desktop resides.",
                     0);
             xstrcat(&str,
                     pcszOKMsg,

@@ -219,6 +219,7 @@ static FEATURESITEM G_FeatureItemsList[] =
             ID_XCSI_RESTARTWPS, ID_XCSI_STARTSHUTFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_XSHUTDOWN, ID_XCSI_STARTSHUTFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
+            ID_XCSI_CHECKDESKTOP, ID_XCSI_STARTSHUTFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 
             // file operations
             ID_XCSI_FILEOPERATIONS, 0, 0, NULL,
@@ -2004,6 +2005,8 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XSHUTDOWN,
                 cmnQuerySetting(sfXShutdown));
 #endif
+        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_CHECKDESKTOP,
+                cmnQuerySetting(sfCheckDesktop));
 
 #ifndef __NEVEREXTASSOCS__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_EXTASSOCS,
@@ -2355,6 +2358,10 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     ulNotifyMsg = 190;
             break;
 #endif
+
+            case ID_XCSI_CHECKDESKTOP:
+                cmnSetSetting(sfCheckDesktop, precc->usCheckState);
+            break;
 
 #ifndef __NEVEREXTASSOCS__
             case ID_XCSI_EXTASSOCS:

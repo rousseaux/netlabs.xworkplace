@@ -418,7 +418,9 @@ ULONG ftypRegisterInstanceTypesAndFilters(M_WPFileSystem *pClassObject)
 
                     pNew->pClassObject = pClassObject;
 
-                    _Pmpf(("    got filter %s", pNew->szFilter));
+                    #ifdef DEBUG_ASSOCS
+                        _Pmpf(("    got filter %s", pNew->szFilter));
+                    #endif
 
                     if (!fLocked)
                         fLocked = ftypLockInstances();

@@ -34,7 +34,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2001 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -1818,8 +1818,8 @@ MRESULT EXPENTRY fnwpAPIObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp
 
         case APIM_FILEDLG:
         {
-            PXWPFILEDLG pfd = (PXWPFILEDLG)mp1;
-            if (pfd)
+            PXWPFILEDLG pfd;
+            if (pfd = (PXWPFILEDLG)mp1)
             {
                 // open the (modal) file dialog; this does
                 // not return until the dialog is dismissed

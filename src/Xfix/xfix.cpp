@@ -17,7 +17,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2001 Ulrich M”ller.
+ *      Copyright (C) 2000-2002 Ulrich M”ller.
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -591,7 +591,7 @@ VOID StandardCommands(HWND hwndFrame, USHORT usCmd)
             MessageBox(hwndFrame,
                        MB_OK | MB_MOVEABLE,
                        "xfix V" BLDLEVEL_VERSION " built " __DATE__ "\n"
-                       "(C) 2000-2001 Ulrich M”ller\n\n"
+                       "(C) 2000-2002 Ulrich M”ller\n\n"
                        "XWorkplace File Handles Fixer.");
         }
         break;
@@ -807,7 +807,7 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
 
         if (G_pHandlesBuf)
         {
-            // got handles buffer:
+            // got handles buffer (loaded in main()):
             // now set the pointer for the end of the BLOCKs buffer
             PBYTE pEnd = G_pHandlesBuf->pbData + G_pHandlesBuf->cbData;
 
@@ -2526,7 +2526,8 @@ ULONG RemoveHandles(HWND hwndCnr,
             pNode = pNode->pNext;
         } // end while (pNode)
 
-        wphRebuildNodeHashTable((HHANDLES)G_pHandlesBuf);
+        wphRebuildNodeHashTable((HHANDLES)G_pHandlesBuf,
+                                FALSE);
         RebuildRecordsHashTable();
 
         // only now that we have rebuilt all record
@@ -3843,30 +3844,29 @@ int main(int argc, char* argv[])
                                arc);
                 else
                 {
-                    if (arc = wphRebuildNodeHashTable((HHANDLES)G_pHandlesBuf))
+                    if (arc = wphRebuildNodeHashTable((HHANDLES)G_pHandlesBuf,
+                                                      FALSE))
                         MessageBox(NULLHANDLE,
                                    MB_CANCEL,
-                                   "Error %d building handles cache.",
+                                   "Warning: Error %d building handles cache.",
                                    arc);
-                    else
-                    {
-                        StartInsertHandles(hwndCnr);
 
-                        // display introductory help with warnings
-                        WinPostMsg(G_hwndMain,
-                                   WM_COMMAND,
-                                   (MPARAM)IDMI_HELP_GENERAL,
-                                   0);
+                    StartInsertHandles(hwndCnr);
 
-                        // standard PM message loop
-                        while (WinGetMsg(G_hab, &qmsg, NULLHANDLE, 0, 0))
-                            WinDispatchMsg(G_hab, &qmsg);
+                    // display introductory help with warnings
+                    WinPostMsg(G_hwndMain,
+                               WM_COMMAND,
+                               (MPARAM)IDMI_HELP_GENERAL,
+                               0);
 
-                        if (G_tidInsertHandlesRunning)
-                            thrFree(&G_tiInsertHandles);
-                        if (G_tidCheckFilesRunning)
-                            thrFree(&G_tiCheckFiles);
-                    }
+                    // standard PM message loop
+                    while (WinGetMsg(G_hab, &qmsg, NULLHANDLE, 0, 0))
+                        WinDispatchMsg(G_hab, &qmsg);
+
+                    if (G_tidInsertHandlesRunning)
+                        thrFree(&G_tiInsertHandles);
+                    if (G_tidCheckFilesRunning)
+                        thrFree(&G_tiCheckFiles);
                 }
             }
         }

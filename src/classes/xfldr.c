@@ -50,7 +50,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2001 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -214,7 +214,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpDestroyStorage(XFolder *somSelf)
     {
         APIRET arc = DosDeleteDir(szFilename);
 
-        _Pmpf((__FUNCTION__ ": DosDelete returned %d", arc));
+        // _Pmpf((__FUNCTION__ ": DosDelete returned %d", arc));
 
         switch (arc)
         {
@@ -3974,13 +3974,13 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryIconData(M_XFolder *somSelf,
                                     NULL,            // no hpointer
                                     pIconInfo))      // fill icon info
             {
-                _Pmpf((__FUNCTION__ ", class %s, format %s",
+                /* _Pmpf((__FUNCTION__ ", class %s, format %s",
                         _somGetName(somSelf),
                         (pIconInfo)
                             ? ((pIconInfo->fFormat == ICON_FILE) ? "FILE"
                                 : (pIconInfo->fFormat == ICON_RESOURCE) ? "RESOURCE"
                                 : "UNKNOWN"  )
-                            : "NULL"));
+                            : "NULL")); */
                 ulrc = sizeof(ICONINFO);
             }
     }

@@ -24,7 +24,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -652,97 +652,6 @@ PCSZ cmnQueryMessageFile(VOID)
 
     return (rc);
 }
-
-#ifndef __NOICONREPLACEMENTS__
-
-/*
- * cmnQueryIconsDLL:
- *      this returns the HMODULE of XFolder ICONS.DLL
- *      (new with V0.84).
- *
- *      If this is queried for the first time, the DLL
- *      is loaded from the /BIN directory.
- *
- *      In this case, this routine also checks if
- *      ICONS.DLL exists in the /ICONS directory. If
- *      so, it is copied to /BIN before loading the
- *      DLL. This allows for replacing the DLL using
- *      the REXX script in /ICONS.
- *
- *changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
- *removed V0.9.16 (2002-01-13) [umoeller]
- */
-
-/* HMODULE cmnQueryIconsDLL(VOID)
-{
-    BOOL fLocked = FALSE;
-    // ULONG ulNesting;
-    // DosEnterMustComplete(&ulNesting);
-
-    TRY_LOUD(excpt1)
-    {
-        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
-        if (fLocked)
-        {
-            // first query?
-            if (G_hmodIconsDLL == NULLHANDLE)
-            {
-                CHAR    szIconsDLL[CCHMAXPATH],
-                        szNewIconsDLL[CCHMAXPATH];
-                cmnQueryXWPBasePath(szIconsDLL);
-                strcpy(szNewIconsDLL, szIconsDLL);
-
-                sprintf(szIconsDLL+strlen(szIconsDLL),
-                        "\\bin\\icons.dll");
-                sprintf(szNewIconsDLL+strlen(szNewIconsDLL),
-                        "\\icons\\icons.dll");
-
-                #ifdef DEBUG_LANGCODES
-                    _Pmpf(("cmnQueryIconsDLL: checking %s", szNewIconsDLL));
-                #endif
-                // first check for /ICONS/ICONS.DLL
-                if (access(szNewIconsDLL, 0) == 0)
-                {
-                    #ifdef DEBUG_LANGCODES
-                        _Pmpf(("    found, copying to %s", szIconsDLL));
-                    #endif
-                    // exists: move to /BIN
-                    // and use that one
-                    DosDelete(szIconsDLL);
-                    DosMove(szNewIconsDLL,      // old
-                            szIconsDLL);        // new
-                    DosDelete(szNewIconsDLL);
-                }
-
-                #ifdef DEBUG_LANGCODES
-                    _Pmpf(("cmnQueryIconsDLL: loading %s", szIconsDLL));
-                #endif
-                // now load /BIN/ICONS.DLL
-                if (DosLoadModule(NULL,
-                                  0,
-                                  szIconsDLL,
-                                  &G_hmodIconsDLL)
-                        != NO_ERROR)
-                    G_hmodIconsDLL = NULLHANDLE;
-            }
-
-            #ifdef DEBUG_LANGCODES
-                _Pmpf(("cmnQueryIconsDLL: returning %lX", hmodIconsDLL));
-            #endif
-
-        }
-    }
-    CATCH(excpt1) { } END_CATCH();
-
-    if (fLocked)
-        krnUnlock();
-
-    // DosExitMustComplete(&ulNesting);
-
-    return (G_hmodIconsDLL);
-} */
-
-#endif
 
 #ifndef __NOBOOTLOGO__
 
@@ -2714,6 +2623,12 @@ static const SETTINGINFO G_aSettingInfos[] =
             "ulSaveINIS",
 #endif
 
+#ifndef __ALWAYSCHECKDESKTOP__
+        sfCheckDesktop, -1, 0,
+            SP_SETUP_FEATURES, 1,
+            "fCheckDesktop",
+#endif
+
 #ifndef __ALWAYSEXTSORT__
         sfExtendedSorting, FIELDOFFSET(OLDGLOBALSETTINGS, __fExtFolderSort), 4,
             SP_SETUP_FEATURES, 0,
@@ -2892,7 +2807,7 @@ static const SETTINGINFO G_aSettingInfos[] =
             SP_DTP_STARTUP, 0,
             "fNumLockStartup",
         sfWriteXWPStartupLog, FIELDOFFSET(OLDGLOBALSETTINGS, fWriteXWPStartupLog), 1,
-            SP_DTP_STARTUP, 0,
+            SP_DTP_STARTUP, 1,
             "fWriteXWPStartupLog",
 
         // folder sort settings
@@ -3207,7 +3122,7 @@ ULONG cmnQuerySettingDebug(XWPSETTING s,
  +
  *      the call now simply goes
  +
- +          value = cmnQuerySetting(IconReplacements);
+ +          value = cmnQuerySetting(sfIconReplacements);
  +
  *      Of course this requires that the "s" value is
  *      a valid entry in the XWPSETTING enum.

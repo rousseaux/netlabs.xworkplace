@@ -17,7 +17,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2001 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -959,13 +959,26 @@ PCSZ FindBestDataFileClass(PFEA2LIST pFEA2List2,
  *      from DosFindFirst/Next, which contains both
  *      the EAs for the object and its real name.
  *
+ *      This checks if the object is already awake in
+ *      the folder. If so, it is refreshed if necessary.
+ *
+ *      If the object is not awake, it is awakened by
+ *      a call to wpclsMakeAwake with the correct class
+ *      object.
+ *
+ *      In any case (refresh or awakening), the object
+ *      is locked once in this call.
+ *
  *@@added V0.9.16 (2001-10-25) [umoeller]
+ *@@changed V0.9.18 (2002-02-06) [umoeller]: fixed duplicate awakes and "treeInsert failed"
  */
 
 WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
                              PFILEFINDBUF3 pfb3)
 {
     WPFileSystem *pAwake = NULL;
+
+    BOOL fFolderLocked = FALSE;
 
     // Alright, the caller has given us a pointer
     // into the return buffer from DosFindFirst;
@@ -1008,221 +1021,236 @@ WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
         // on first call, cache length of "WPDataFile" string
         s_ulWPDataFileLen = strlen(G_pcszWPDataFile);
 
-    // alright, apparently we got something:
-    // check if it is already awake (using the
-    // fast content tree functions)
-    if (pAwake = fdrFindFSFromName(pFolder,
-                                   pszRealName))
+    TRY_LOUD(excpt1)
     {
-        FILEFINDBUF4        ffb4;
-
-        _wpLockObject(pAwake);
-
-        // now set the refresh flags... since wpPopulate gets in turn
-        // called by wpRefresh, we are responsible for setting the
-        // "dirty" and "found" bits here, or the object will disappear
-        // from the folder on refresh.
-        // For about how this works, the Warp 4 WPSREF says:
-
-        //    1. Loop through all of the objects in the folder and turn on the DIRTYBIT
-        //       and turn off the FOUNDBIT for all of your objects.
-        //    2. Loop through the database. For every entry in the database, find the
-        //       corresponding object.
-        //         a. If the object exists, turn on the FOUNDBIT for the object.
-        //         b. If the object does not exist, create a new object with the
-        //            FOUNDBIT turned on and the DIRTYBIT turned off.
-        //    3. Loop through the objects in the folder again. For any object that has
-        //       the FOUNDBIT turned off, delete the object (since there is no longer a
-        //       corresponding entry in the database). For any object that has the
-        //       DIRTYBIT turned on, update the view with the current contents of the
-        //       object and turn its DIRTYBIT off.
-
-        // Now, since the objects disappear on refresh, I assume
-        // we need to set the FOUNDBIT to on; since we are refreshing
-        // here already, we can set DIRTYBIT to off as well.
-        fsysSetRefreshFlags(pAwake,
-                            (fsysQueryRefreshFlags(pAwake)
-                                & ~DIRTYBIT)
-                                | FOUNDBIT);
-
-        /* _wpQueryLastWrite(pAwake, &fdateLastWrite, &ftimeLastWrite);
-        _wpQueryLastAccess(pAwake, &fdateLastAccess, &ftimeLastAccess);
-        if (    (memcmp(&fdateLastWrite, &pfb3->fdateLastWrite, sizeof(FDATE)))
-             || (memcmp(&ftimeLastWrite, &pfb3->ftimeLastWrite, sizeof(FTIME)))
-             || (memcmp(&fdateLastAccess, &pfb3->fdateLastAccess, sizeof(FDATE)))
-             || (memcmp(&ftimeLastAccess, &pfb3->ftimeLastAccess, sizeof(FTIME)))
-           )
-        */
-
-        // this is way faster, I believe V0.9.16 (2001-12-18) [umoeller]
-        _wpQueryDateInfo(pAwake, &ffb4);
-
-        // in both ffb3 and ffb4, fdateCreation is the first date/time field;
-        // FDATE and FTIME are a USHORT each, and the decl in the toolkit
-        // has #pragma pack(2), so this should work
-        if (memcmp(&pfb3->fdateCreation,
-                   &ffb4.fdateCreation,
-                   3 * (sizeof(FDATE) + sizeof(FTIME))))
+        // sem was missing, this produced "treeInsertFailed",
+        // and duplicate awakes for the same object sometimes
+        // V0.9.18 (2002-02-06) [umoeller]
+        if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
         {
-            // object changed: go refresh it
-            if (_somIsA(pAwake, _WPFolder))
-                fsysRefreshFSInfo(pAwake, pfb3);
-            else
-                // regular fs object: call wpRefresh directly,
-                // which we might have replaced if icon replacements
-                // are on
-                _wpRefresh(pAwake, NULLHANDLE, pfb3);
-        }
-    }
-    else
-    {
-        // no: wake it up then... this is terribly complicated:
-        POBJDATA        pObjData = NULL;
-
-        CHAR            szLongname[CCHMAXPATH];
-        PSZ             pszTitle;
-        ULONG           ulTitleLen;
-
-        PCSZ            pcszClassName = NULL;
-        ULONG           ulClassNameLen;
-        somId           somidClassName;
-        SOMClass        *pClassObject;
-
-        // for the title of the new object, use the real
-        // name, unless we also find a .LONGNAME attribute,
-        // so decode the EA buffer
-        if (DecodeLongname(pFEA2List2, szLongname, &ulTitleLen))
-            // got .LONGNAME:
-            pszTitle = szLongname;
-        else
-        {
-            // no .LONGNAME:
-            pszTitle = pszRealName;
-            ulTitleLen = *puchNameLen;
-        }
-
-        // NOTE about the class management:
-        // At this point, we operate on class _names_
-        // only and do not mess with class objects yet. This
-        // is because we must take class replacements into
-        // account; that is, if the object says "i wanna be
-        // WPDataFile", it should really be XFldDataFile
-        // or whatever other class replacements are installed.
-        // While the _WPDataFile macro will not always correctly
-        // resolve (since apparently this code gets called
-        // too early to properly initialize the static variables
-        // hidden in the macro code), somFindClass _will_
-        // return the proper replacement classes.
-
-        // _Pmpf((__FUNCTION__ ": checking %s", pszTitle));
-
-        // decode the .CLASSINFO EA, which may give us a
-        // class name and the OBJDATA buffer
-        if (!(pcszClassName = DecodeClassInfo(pFEA2List2,
-                                              &ulClassNameLen,
-                                              &pObjData)))
-        {
-            // no .CLASSINFO: use default class...
-            // if this is a directory, use _WPFolder
-            if (pfb3->attrFile & FILE_DIRECTORY)
-                pcszClassName = G_pcszWPFolder;
-            // else for WPDataFile, keep NULL so we
-            // can determine the proper class name below
-        }
-        else
-        {
-            // we found a class name:
-            // if this is "WPDataFile", return NULL instead so we
-            // can still check for the default data file subclasses
-
-            // _Pmpf(("  got .CLASSINFO %s", pcszClassName));
-
-            if (    (s_ulWPDataFileLen == ulClassNameLen)
-                 && (!memcmp(G_pcszWPDataFile, pcszClassName, s_ulWPDataFileLen))
-               )
-                pcszClassName = NULL;
-        }
-
-        if (!pcszClassName)
-        {
-            // still NULL: this means we have no .CLASSINFO,
-            // or the .CLASSINFO specified "WPDataFile"
-            // (folders were ruled out before, so we do have
-            // a data file now)...
-            // for WPDataFile, we must run through the
-            // wpclsQueryInstanceType/Filter methods to
-            // find if any WPDataFile subclass wants this
-            // object to be its own (for example, .EXE files
-            // should be WPProgramFile instead)
-            pcszClassName = FindBestDataFileClass(pFEA2List2,
-                                                  // title (.LONGNAME or realname)
-                                                  pszTitle,
-                                                  ulTitleLen);
-                    // this returns either NULL or the
-                    // class object of a subclass
-
-            // _Pmpf(("  FindBestDataFileClass = %s", pcszClassName));
-        }
-
-        if (!pcszClassName)
-            // still nothing:
-            pcszClassName = G_pcszWPDataFile;
-
-        // now go load the class
-        if (somidClassName = somIdFromString((PSZ)pcszClassName))
-        {
-            if (!(pClassObject = _somFindClass(SOMClassMgrObject,
-                                               somidClassName,
-                                               0,
-                                               0)))
+            // alright, apparently we got something:
+            // check if it is already awake (using the
+            // fast content tree functions)
+            if (pAwake = fdrFastFindFSFromName(pFolder,
+                                               pszRealName))
             {
-                // this class is not installed:
-                // this can easily happen with multiple OS/2
-                // installations accessing the same partitions...
-                // to be on the safe side, use either
-                // WPDataFile or WPFolder then
-                if (pfb3->attrFile & FILE_DIRECTORY)
-                    pcszClassName = G_pcszWPFolder;
+                FILEFINDBUF4        ffb4;
+
+                _wpLockObject(pAwake);
+
+                // now set the refresh flags... since wpPopulate gets in turn
+                // called by wpRefresh, we are responsible for setting the
+                // "dirty" and "found" bits here, or the object will disappear
+                // from the folder on refresh.
+                // For about how this works, the Warp 4 WPSREF says:
+
+                //    1. Loop through all of the objects in the folder and turn on the DIRTYBIT
+                //       and turn off the FOUNDBIT for all of your objects.
+                //    2. Loop through the database. For every entry in the database, find the
+                //       corresponding object.
+                //         a. If the object exists, turn on the FOUNDBIT for the object.
+                //         b. If the object does not exist, create a new object with the
+                //            FOUNDBIT turned on and the DIRTYBIT turned off.
+                //    3. Loop through the objects in the folder again. For any object that has
+                //       the FOUNDBIT turned off, delete the object (since there is no longer a
+                //       corresponding entry in the database). For any object that has the
+                //       DIRTYBIT turned on, update the view with the current contents of the
+                //       object and turn its DIRTYBIT off.
+
+                // Now, since the objects disappear on refresh, I assume
+                // we need to set the FOUNDBIT to on; since we are refreshing
+                // here already, we can set DIRTYBIT to off as well.
+                fsysSetRefreshFlags(pAwake,
+                                    (fsysQueryRefreshFlags(pAwake)
+                                        & ~DIRTYBIT)
+                                        | FOUNDBIT);
+
+                /* _wpQueryLastWrite(pAwake, &fdateLastWrite, &ftimeLastWrite);
+                _wpQueryLastAccess(pAwake, &fdateLastAccess, &ftimeLastAccess);
+                if (    (memcmp(&fdateLastWrite, &pfb3->fdateLastWrite, sizeof(FDATE)))
+                     || (memcmp(&ftimeLastWrite, &pfb3->ftimeLastWrite, sizeof(FTIME)))
+                     || (memcmp(&fdateLastAccess, &pfb3->fdateLastAccess, sizeof(FDATE)))
+                     || (memcmp(&ftimeLastAccess, &pfb3->ftimeLastAccess, sizeof(FTIME)))
+                   )
+                */
+
+                // this is way faster, I believe V0.9.16 (2001-12-18) [umoeller]
+                _wpQueryDateInfo(pAwake, &ffb4);
+
+                // in both ffb3 and ffb4, fdateCreation is the first date/time field;
+                // FDATE and FTIME are a USHORT each, and the decl in the toolkit
+                // has #pragma pack(2), so this should work
+                if (memcmp(&pfb3->fdateCreation,
+                           &ffb4.fdateCreation,
+                           3 * (sizeof(FDATE) + sizeof(FTIME))))
+                {
+                    // object changed: go refresh it
+                    if (_somIsA(pAwake, _WPFolder))
+                        fsysRefreshFSInfo(pAwake, pfb3);
+                    else
+                        // regular fs object: call wpRefresh directly,
+                        // which we might have replaced if icon replacements
+                        // are on
+                        _wpRefresh(pAwake, NULLHANDLE, pfb3);
+                }
+            }
+            else
+            {
+                // no: wake it up then... this is terribly complicated:
+                POBJDATA        pObjData = NULL;
+
+                CHAR            szLongname[CCHMAXPATH];
+                PSZ             pszTitle;
+                ULONG           ulTitleLen;
+
+                PCSZ            pcszClassName = NULL;
+                ULONG           ulClassNameLen;
+                somId           somidClassName;
+                SOMClass        *pClassObject;
+
+                // for the title of the new object, use the real
+                // name, unless we also find a .LONGNAME attribute,
+                // so decode the EA buffer
+                if (DecodeLongname(pFEA2List2, szLongname, &ulTitleLen))
+                    // got .LONGNAME:
+                    pszTitle = szLongname;
                 else
+                {
+                    // no .LONGNAME:
+                    pszTitle = pszRealName;
+                    ulTitleLen = *puchNameLen;
+                }
+
+                // NOTE about the class management:
+                // At this point, we operate on class _names_
+                // only and do not mess with class objects yet. This
+                // is because we must take class replacements into
+                // account; that is, if the object says "i wanna be
+                // WPDataFile", it should really be XFldDataFile
+                // or whatever other class replacements are installed.
+                // While the _WPDataFile macro will not always correctly
+                // resolve (since apparently this code gets called
+                // too early to properly initialize the static variables
+                // hidden in the macro code), somFindClass _will_
+                // return the proper replacement classes.
+
+                // _Pmpf((__FUNCTION__ ": checking %s", pszTitle));
+
+                // decode the .CLASSINFO EA, which may give us a
+                // class name and the OBJDATA buffer
+                if (!(pcszClassName = DecodeClassInfo(pFEA2List2,
+                                                      &ulClassNameLen,
+                                                      &pObjData)))
+                {
+                    // no .CLASSINFO: use default class...
+                    // if this is a directory, use _WPFolder
+                    if (pfb3->attrFile & FILE_DIRECTORY)
+                        pcszClassName = G_pcszWPFolder;
+                    // else for WPDataFile, keep NULL so we
+                    // can determine the proper class name below
+                }
+                else
+                {
+                    // we found a class name:
+                    // if this is "WPDataFile", return NULL instead so we
+                    // can still check for the default data file subclasses
+
+                    // _Pmpf(("  got .CLASSINFO %s", pcszClassName));
+
+                    if (    (s_ulWPDataFileLen == ulClassNameLen)
+                         && (!memcmp(G_pcszWPDataFile, pcszClassName, s_ulWPDataFileLen))
+                       )
+                        pcszClassName = NULL;
+                }
+
+                if (!pcszClassName)
+                {
+                    // still NULL: this means we have no .CLASSINFO,
+                    // or the .CLASSINFO specified "WPDataFile"
+                    // (folders were ruled out before, so we do have
+                    // a data file now)...
+                    // for WPDataFile, we must run through the
+                    // wpclsQueryInstanceType/Filter methods to
+                    // find if any WPDataFile subclass wants this
+                    // object to be its own (for example, .EXE files
+                    // should be WPProgramFile instead)
+                    pcszClassName = FindBestDataFileClass(pFEA2List2,
+                                                          // title (.LONGNAME or realname)
+                                                          pszTitle,
+                                                          ulTitleLen);
+                            // this returns either NULL or the
+                            // class object of a subclass
+
+                    // _Pmpf(("  FindBestDataFileClass = %s", pcszClassName));
+                }
+
+                if (!pcszClassName)
+                    // still nothing:
                     pcszClassName = G_pcszWPDataFile;
 
-                SOMFree(somidClassName);
+                // now go load the class
                 if (somidClassName = somIdFromString((PSZ)pcszClassName))
-                    pClassObject = _somFindClass(SOMClassMgrObject,
-                                                 somidClassName,
-                                                 0,
-                                                 0);
+                {
+                    if (!(pClassObject = _somFindClass(SOMClassMgrObject,
+                                                       somidClassName,
+                                                       0,
+                                                       0)))
+                    {
+                        // this class is not installed:
+                        // this can easily happen with multiple OS/2
+                        // installations accessing the same partitions...
+                        // to be on the safe side, use either
+                        // WPDataFile or WPFolder then
+                        if (pfb3->attrFile & FILE_DIRECTORY)
+                            pcszClassName = G_pcszWPFolder;
+                        else
+                            pcszClassName = G_pcszWPDataFile;
+
+                        SOMFree(somidClassName);
+                        if (somidClassName = somIdFromString((PSZ)pcszClassName))
+                            pClassObject = _somFindClass(SOMClassMgrObject,
+                                                         somidClassName,
+                                                         0,
+                                                         0);
+                    }
+                }
+
+                if (pClassObject)
+                {
+                    MAKEAWAKEFS   awfs;
+
+                    // alright, now go make the thing AWAKE
+                    awfs.pszRealName        = pszRealName;
+
+                    memcpy(&awfs.Creation, &pfb3->fdateCreation, sizeof(FDATETIME));
+                    memcpy(&awfs.LastAccess, &pfb3->fdateLastAccess, sizeof(FDATETIME));
+                    memcpy(&awfs.LastWrite, &pfb3->fdateLastWrite, sizeof(FDATETIME));
+
+                    awfs.attrFile           = pfb3->attrFile;
+                    awfs.cbFile             = pfb3->cbFile;
+                    awfs.cbList             = pFEA2List2->cbList;
+                    awfs.pFea2List          = pFEA2List2;
+
+                    pAwake = _wpclsMakeAwake(pClassObject,
+                                             pszTitle,
+                                             0,                 // style
+                                             NULLHANDLE,        // icon
+                                             pObjData,          // null if no .CLASSINFO found
+                                             pFolder,           // folder
+                                             (ULONG)&awfs);
+                }
+
+                if (somidClassName)
+                    SOMFree(somidClassName);
             }
         }
-
-        if (pClassObject)
-        {
-            MAKEAWAKEFS   awfs;
-
-            // alright, now go make the thing AWAKE
-            awfs.pszRealName        = pszRealName;
-
-            memcpy(&awfs.Creation, &pfb3->fdateCreation, sizeof(FDATETIME));
-            memcpy(&awfs.LastAccess, &pfb3->fdateLastAccess, sizeof(FDATETIME));
-            memcpy(&awfs.LastWrite, &pfb3->fdateLastWrite, sizeof(FDATETIME));
-
-            awfs.attrFile           = pfb3->attrFile;
-            awfs.cbFile             = pfb3->cbFile;
-            awfs.cbList             = pFEA2List2->cbList;
-            awfs.pFea2List          = pFEA2List2;
-
-            pAwake = _wpclsMakeAwake(pClassObject,
-                                     pszTitle,
-                                     0,                 // style
-                                     NULLHANDLE,        // icon
-                                     pObjData,          // null if no .CLASSINFO found
-                                     pFolder,           // folder
-                                     (ULONG)&awfs);
-        }
-
-        if (somidClassName)
-            SOMFree(somidClassName);
     }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
+
+    if (fFolderLocked)
+        fdrReleaseFolderMutexSem(pFolder);
 
     return (pAwake);
 }

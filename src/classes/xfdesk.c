@@ -88,7 +88,6 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
-#include "shared\init.h"                // XWorkplace initialization
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
@@ -592,9 +591,11 @@ SOM_Scope void  SOMLINK xfdeskM_wpclsInitData(M_XFldDesktop *somSelf)
 
     M_XFldDesktop_parent_M_WPDesktop_wpclsInitData(somSelf);
 
-    if (krnClassInitialized(G_pcszXFldDesktop))
+    krnClassInitialized(G_pcszXFldDesktop);
         // first call: check if the desktop is valid...
-        initRepairDesktopIfBroken();
+        // moved this to WPProgram because that is init'd later
+        // V0.9.17 (2002-02-05) [umoeller]
+        // initRepairDesktopIfBroken();
 }
 
 /*

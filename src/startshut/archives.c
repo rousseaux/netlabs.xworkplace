@@ -753,6 +753,8 @@ VOID arcForceNoArchiving(VOID)
     arcSaveSettings();
 }
 
+#define ID_XFDI_GENERICDLGTEXT          221
+
 static CONTROLDEF
     ArcStatusIcon = CONTROLDEF_ICON(
                             NULLHANDLE,     // replaced below

@@ -118,6 +118,7 @@
 // other SOM headers
 #pragma hdrstop
 #include <wptrans.h>                    // WPTransient
+#include <wpabs.h>                      // WPAbstract
 
 #include "helpers\undoc.h"              // some undocumented stuff
 
@@ -337,7 +338,7 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpQueryDeletion(XFldObject *somSelf,
 
     XFldObjectMethodDebug("XFldObject","xfobj_xwpQueryDeletion");
 
-    _Pmpf((__FUNCTION__ ": _cdateDeleted.year %d, returning %d", _cdateDeleted.year, brc));
+    // _Pmpf((__FUNCTION__ ": _cdateDeleted.year %d, returning %d", _cdateDeleted.year, brc));
 
     if (brc)
     {
@@ -1554,6 +1555,13 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSetTitle(XFldObject *somSelf,
                         _wpFreeMem(somSelf, pRecord->pszIcon);
                     pRecord->pszIcon = pszNewTitleCopy;
 
+                    // this was missing V0.9.17 (2002-02-05) [umoeller]
+                    // abstracts don't save themselves otherwise
+                    if (    (fIsInitialized)
+                         && (_somIsA(somSelf, _WPAbstract))
+                       )
+                        _wpSaveDeferred(somSelf);
+
                     brc = TRUE;
 
                     // now go refresh all the views...
@@ -2622,20 +2630,20 @@ SOM_Scope BOOL  SOMLINK xfobjM_wpclsSetIconData(M_XFldObject *somSelf,
     // too; for all other cases, call the parent method
     if (cmnQuerySetting(sfIconReplacements))
     {
-        _Pmpf((__FUNCTION__ ", class %s, format %s",
+        /* _Pmpf((__FUNCTION__ ", class %s, format %s",
                 _somGetName(somSelf),
                 (pIconInfo)
                     ? ((pIconInfo->fFormat == ICON_FILE) ? "FILE"
                         : (pIconInfo->fFormat == ICON_RESOURCE) ? "RESOURCE"
                         : "UNKNOWN"  )
-                    : "NULL"));
+                    : "NULL")); */
         if ((pIconInfo) && (pIconInfo->fFormat == ICON_FILE))
         {
             HPOINTER hptr;
 
             fCallDefault = FALSE;
 
-            _Pmpf(("        pIconInfo->pszFileName %s", pIconInfo->pszFileName));
+            // _Pmpf(("        pIconInfo->pszFileName %s", pIconInfo->pszFileName));
 
             if (!icoLoadICOFile(pIconInfo->pszFileName,
                                 &hptr,

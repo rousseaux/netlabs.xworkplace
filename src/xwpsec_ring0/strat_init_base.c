@@ -62,7 +62,7 @@ extern int  begin_data32;           // in sec32_start.asm
 
 char G_szBanner[]
 = "XWPSEC32.SYS: XWorkplace Security driver V" BLDLEVEL_VERSION " (" __DATE__ ") loaded\r\n"
-  "(C) Copyright 2000-2001 Ulrich M”ller\r\n";
+  "(C) Copyright 2000-2002 Ulrich M”ller\r\n";
 
 char G_szNoSES[] = "XWPSEC32.SYS: SES driver not found. Cannot initialize.\r\n";
 

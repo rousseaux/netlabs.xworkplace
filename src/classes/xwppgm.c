@@ -16,7 +16,7 @@
  */
 
 /*
- *      Copyright (C) 2001 Ulrich M”ller.
+ *      Copyright (C) 2001-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -90,6 +90,7 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
+#include "shared\init.h"                // XWorkplace initialization
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
@@ -391,7 +392,7 @@ VOID SaveStringArray(WPObject *somSelf,
             cb += sizeof(USHORT) + cbThis + 1;
     }
 
-    _Pmpf(("cb is %d", cb));
+    // _Pmpf(("cb is %d", cb));
 
     if (cb)
     {
@@ -414,7 +415,7 @@ VOID SaveStringArray(WPObject *somSelf,
                 PSZ psz;
                 if (psz = strhCreateDump(pbTemp, cb, 4))
                 {
-                    _Pmpf(("\n%s", psz));
+                    // _Pmpf(("\n%s", psz));
                     free(psz);
                 }
             }
@@ -452,7 +453,8 @@ VOID SaveStringArray(WPObject *somSelf,
  *      does not call the parent). So we need to try to imitate
  *      the WPS's WPProgram save data here.
  *
- *@@added V0.9.12 (2001-05-26) [umoeller]
+ *@@added V0.9.16 (2002-01-13) [umoeller]
+ *@@changed V0.9.17 (2002-02-05) [umoeller]: fixed missing save if prog obj was empty
  */
 
 SOM_Scope BOOL  SOMLINK xpg_wpSaveState(XWPProgram *somSelf)
@@ -463,22 +465,29 @@ SOM_Scope BOOL  SOMLINK xpg_wpSaveState(XWPProgram *somSelf)
     XWPProgramData *somThis = XWPProgramGetData(somSelf);
     XWPProgramMethodDebug("XWPProgram","xpg_wpSaveState");
 
-    _Pmpf((__FUNCTION__ ": entering for %s", _wpQueryTitle(somSelf)));
+    // _Pmpf((__FUNCTION__ ": entering for %s", _wpQueryTitle(somSelf)));
 
-    // save only if we have something to save at all
-    if (    (    (_usExecutableHandle)
-              || (_pWszExecutable)
-              || (_usStartupDirHandle)
-            )
-            // resolve WPAbstract::wpSaveState so we can call
-            // the parent but skip WPProgram
-         && (pwpSaveState = (somTD_WPObject_wpSaveState)wpshResolveFor(
-                                         somSelf,
-                                         _WPAbstract,     // class to resolve for
-                                         "wpSaveState"))
-       )
+    TRY_LOUD(excpt1)
     {
-        TRY_LOUD(excpt1)
+        // urgh, we forgot to call the parent if no executable
+        // was set... darn, so always resolve the parent and
+        // always call it
+        // V0.9.17 (2002-02-05) [umoeller]
+
+        // resolve WPAbstract::wpSaveState so we can call
+        // the parent but skip WPProgram
+        pwpSaveState = (somTD_WPObject_wpSaveState)wpshResolveFor(
+                                             somSelf,
+                                             // skip WPProgram, call WPAbstract directly:
+                                             _WPAbstract,
+                                             "wpSaveState");
+
+        // save program data only if we have something to save at all
+        if (    (    (_usExecutableHandle)
+                  || (_pWszExecutable)
+                  || (_usStartupDirHandle)
+                )
+           )
         {
             ULONG   aulLongs[7] =
                 {
@@ -498,6 +507,10 @@ SOM_Scope BOOL  SOMLINK xpg_wpSaveState(XWPProgram *somSelf)
                 };
 
             ULONG   cb;
+
+            // alright, save all the WPProgram data..
+            // NOTE, to preserve compatibility with the WPS,
+            // we use the same strings and keys as WPProgram!
 
             // 1)   save LONGS array
             _wpSaveData(somSelf,
@@ -527,24 +540,27 @@ SOM_Scope BOOL  SOMLINK xpg_wpSaveState(XWPProgram *somSelf)
                  && (cb = appQueryEnvironmentLen(_pWszEnvironment))
                )
             {
-                _Pmpf((" environment cb is %d", cb));
+                // _Pmpf((" environment cb is %d", cb));
                 brc = _wpSaveData(somSelf,
                                   (PSZ)G_pcszWPProgramOrig,
                                   ID_WPPROGRAM_ENVIRONMENT,
                                   (PBYTE)_pWszEnvironment,
                                   cb);
             }
-
-            // call parent method, skipping WPProgram
-            brc = pwpSaveState(somSelf);
-
-            _Pmpf(("WPAbstract::wpSaveState returned %d", brc));
         }
-        CATCH(excpt1)
-        {
-            brc = FALSE;
-        } END_CATCH();
+
+        // _always call parent method, skipping WPProgram
+        // fixed V0.9.17 (2002-02-05) [umoeller], this was
+        // in the above block and never got called if the
+        // program object was empty
+        brc = pwpSaveState(somSelf);
+
+        // _Pmpf(("WPAbstract::wpSaveState returned %d", brc));
     }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
 
     /* else
         brc = XWPProgram_parent_WPProgram_wpSaveState(somSelf); */
@@ -667,15 +683,14 @@ SOM_Scope BOOL  SOMLINK xpg_wpRestoreData(XWPProgram *somSelf,
                             pThis += sizeof(USHORT);
                             if (pThis > pValue + *pcbValue)
                             {
-                                _Pmpf(("excessive string value"));
+                                // _Pmpf(("excessive string value"));
                                 break;
                             }
 
                             switch (usIndex)
                             {
                                 case 0:
-                                    _Pmpf((__FUNCTION__ ": got exec \"%s\"",
-                                            pThis));
+                                    // _Pmpf((__FUNCTION__ ": got exec \"%s\"", pThis));
                                     wpshStore(somSelf,
                                               &_pWszExecutable,
                                               pThis,
@@ -683,8 +698,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpRestoreData(XWPProgram *somSelf,
                                 break;
 
                                 case 1:
-                                    _Pmpf((__FUNCTION__ ": got params \"%s\"",
-                                            pThis));
+                                    // _Pmpf((__FUNCTION__ ": got params \"%s\"", pThis));
                                     wpshStore(somSelf,
                                               &_pWszParameters,
                                               pThis,
@@ -1060,8 +1074,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgIcon(XWPProgram *somSelf,
                         ULONG ulProgType;
                         ULONG ulStdIcon = 0;
 
-                        _Pmpf((__FUNCTION__ ": %s, calling _xwpQueryProgType",
-                                    pszExec));
+                        // _Pmpf((__FUNCTION__ ": %s, calling _xwpQueryProgType", pszExec));
 
                         if (_ProgType.progc)
                             ulProgType = _ProgType.progc;
@@ -1242,6 +1255,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpQueryProgDetails(XWPProgram *somSelf,
              && (pszTitle = _wpQueryTitle(somSelf))
            )
         {
+    /*
     #ifdef _PMPRINTF_
             _Pmpf((__FUNCTION__ " for \"%s\": progc is %s",
                     pszTitle,
@@ -1262,7 +1276,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpQueryProgDetails(XWPProgram *somSelf,
                 }
             }
     #endif
-
+       */
             return (progFillProgDetails(pProgDetails,     // can be NULL
                                         _ProgType.progc,
                                         _ProgType.fbVisible,
@@ -1359,7 +1373,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
                 // executable specified:
                 ULONG hfs;
 
-                _Pmpf((__FUNCTION__ ": got exec \"%s\"", pProgDetails->pszExecutable));
+                // _Pmpf((__FUNCTION__ ": got exec \"%s\"", pProgDetails->pszExecutable));
 
                 // "*" means command prompt
                 if (pProgDetails->pszExecutable[0] == '*')
@@ -1420,8 +1434,8 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
                 fSetProgIcon = TRUE;
             }
 
-            _Pmpf(("   new hfs 0x%lX", _usExecutableHandle));
-            _Pmpf(("   new _pszExecutable %s", _pWszExecutable));
+            // _Pmpf(("   new hfs 0x%lX", _usExecutableHandle));
+            // _Pmpf(("   new _pszExecutable %s", _pWszExecutable));
 
             // startup dir
             _usStartupDirHandle = GetFSHandle(pProgDetails->pszStartupDir);
@@ -1552,6 +1566,8 @@ SOM_Scope ULONG  SOMLINK xpg_wpAddProgramAssociationPage(XWPProgram *somSelf,
  *      is loaded by the WPS (probably from within a
  *      somFindClass call) and allows the class to initialize
  *      itself.
+ *
+ *@@changed V0.9.17 (2002-02-05) [umoeller]: moved "repair desktop" to here to fix broken XFldDesktop class on repaired desktop
  */
 
 SOM_Scope void  SOMLINK xpgM_wpclsInitData(M_XWPProgram *somSelf)
@@ -1561,7 +1577,15 @@ SOM_Scope void  SOMLINK xpgM_wpclsInitData(M_XWPProgram *somSelf)
 
     M_XWPProgram_parent_M_WPProgram_wpclsInitData(somSelf);
 
-    krnClassInitialized(G_pcszXWPProgram);
+    if (krnClassInitialized(G_pcszXWPProgram))
+        // first call:
+        // since this gets initialized by the WPS _after_
+        // the WPDesktop class, we can now repair the desktop
+        // if it is broken
+        // moved this here from XFldDesktop because WPProgram
+        // is initialized later
+        // V0.9.17 (2002-02-05) [umoeller]
+        initRepairDesktopIfBroken();
 }
 
 

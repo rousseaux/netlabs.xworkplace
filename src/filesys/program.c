@@ -40,7 +40,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2001 Ulrich M”ller.
+ *      Copyright (C) 2000-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -565,8 +565,7 @@ ULONG progQueryProgType(PCSZ pszFullFile,
             pExec = (PEXECUTABLE)pvExec;
         else
         {
-            _Pmpf((__FUNCTION__ ": %s, calling exehOpen",
-                        pszFullFile));
+            // _Pmpf((__FUNCTION__ ": %s, calling exehOpen", pszFullFile));
             if (!(arc = exehOpen(pszFullFile, &pExec)))
                 // close this again on exit
                 fClose = TRUE;
@@ -595,18 +594,18 @@ ULONG progQueryProgType(PCSZ pszFullFile,
                             switch (pExec->pLXHeader->ulFlags & E32APPMASK)
                             {
                                 case E32PMAPI:
-                                    _Pmpf(("  LX OS2 PM"));
+                                    // _Pmpf(("  LX OS2 PM"));
                                     ulAppType = PROG_PM;
                                 break;
 
                                 case E32PMW:
-                                    _Pmpf(("  LX OS2 VIO"));
+                                    // _Pmpf(("  LX OS2 VIO"));
                                     ulAppType = PROG_WINDOWABLEVIO;
                                 break;
 
                                 case E32NOPMW:
                                 default:
-                                    _Pmpf(("  LX OS2 FULLSCREEN"));
+                                    // _Pmpf(("  LX OS2 FULLSCREEN"));
                                     ulAppType = PROG_FULLSCREEN;
                                 break;
                             }
@@ -616,18 +615,18 @@ ULONG progQueryProgType(PCSZ pszFullFile,
                             switch (pExec->pNEHeader->usFlags & NEAPPTYP)
                             {
                                 case NEWINCOMPAT:
-                                    _Pmpf(("  NE OS2 VIO"));
+                                    // _Pmpf(("  NE OS2 VIO"));
                                     ulAppType = PROG_WINDOWABLEVIO;
                                 break;
 
                                 case NEWINAPI:
-                                    _Pmpf(("  NE OS2 PM"));
+                                    // _Pmpf(("  NE OS2 PM"));
                                     ulAppType = PROG_PM;
                                 break;
 
                                 case NENOTWINCOMPAT:
                                 default:
-                                    _Pmpf(("  NE OS2 FULLSCREEN"));
+                                    // _Pmpf(("  NE OS2 FULLSCREEN"));
                                     ulAppType = PROG_FULLSCREEN;
                                 break;
                             }
@@ -646,13 +645,13 @@ ULONG progQueryProgType(PCSZ pszFullFile,
 
                 case EXEOS_WIN16:
                 case EXEOS_WIN386:
-                    _Pmpf(("  WIN16"));
+                    // _Pmpf(("  WIN16"));
                     ulAppType = PROG_31_ENHSEAMLESSCOMMON;
                 break;
 
                 case EXEOS_WIN32_GUI:
                 case EXEOS_WIN32_CLI:
-                    _Pmpf(("  WIN32"));
+                    // _Pmpf(("  WIN32"));
                     ulAppType = PROG_WIN32;
                 break;
             }
@@ -716,10 +715,11 @@ APIRET progFindIcon(PEXECUTABLE pExec,
 
     TRY_LOUD(excpt1)
     {
-        _Pmpf((__FUNCTION__ " %s: progtype %d (%s)",
+        /* _Pmpf((__FUNCTION__ " %s: progtype %d (%s)",
                 (pExec && pExec->pFile) ? pExec->pFile->pszFilename : "NULL",
                 ulAppType,
-                appDescribeAppType(ulAppType)));
+                appDescribeAppType(ulAppType))); */
+
 
         // examine the application type we have
         switch (ulAppType)
@@ -1967,9 +1967,9 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
                                    pArgDataFile);
                 pProgDetails->pszEnvironment = pszNewEnvironment;
 
-                _Pmpf((__FUNCTION__ ": hacked exec: \"%s\"", (pProgDetails->pszExecutable) ? pProgDetails->pszExecutable : "NULL"));
-                _Pmpf(("  hacked params: \"%s\"", (pProgDetails->pszParameters) ? pProgDetails->pszParameters : "NULL"));
-                _Pmpf(("  hacked startup: \"%s\"", (pProgDetails->pszStartupDir) ? pProgDetails->pszStartupDir : "NULL"));
+                // _Pmpf((__FUNCTION__ ": hacked exec: \"%s\"", (pProgDetails->pszExecutable) ? pProgDetails->pszExecutable : "NULL"));
+                // _Pmpf(("  hacked params: \"%s\"", (pProgDetails->pszParameters) ? pProgDetails->pszParameters : "NULL"));
+                // _Pmpf(("  hacked startup: \"%s\"", (pProgDetails->pszStartupDir) ? pProgDetails->pszStartupDir : "NULL"));
 
                 Data.pProgDetails = pProgDetails;
                 Data.phapp = phapp;
@@ -1981,7 +1981,7 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
                 {
                     // if we're running on thread 1, we don't need
                     // the below overhead
-                    _Pmpf((__FUNCTION__ ": calling progOpenProgramThread1 directly"));
+                    // _Pmpf((__FUNCTION__ ": calling progOpenProgramThread1 directly"));
                     arc = progOpenProgramThread1(&Data);
                 }
                 else
@@ -1989,7 +1989,7 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
                     HAB hab;
                     PCKERNELGLOBALS pKernelGlobals;
 
-                    _Pmpf((__FUNCTION__ ": entering msg loop"));
+                    // _Pmpf((__FUNCTION__ ": entering msg loop"));
 
                     // not thread 1:
                     // create notify window for progOpenProgramThread1;
@@ -2015,7 +2015,7 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
                                  && (qmsg.msg == WM_USER)
                                )
                             {
-                                _Pmpf((__FUNCTION__ ": got WM_USER"));
+                                // _Pmpf((__FUNCTION__ ": got WM_USER"));
                                 fQuit = TRUE;
                                 arc = (ULONG)qmsg.mp1;
                             }
@@ -2028,7 +2028,7 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
                         WinDestroyWindow(Data.hwndNotify);
                     }
 
-                    _Pmpf((__FUNCTION__ ": left message loop"));
+                    // _Pmpf((__FUNCTION__ ": left message loop"));
                 }
 
                 if (!arc)
@@ -2056,7 +2056,7 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
     if (pProgDetails)
         free(pProgDetails);
 
-    _Pmpf((__FUNCTION__ ": leaving, rc = %d", arc));
+    // _Pmpf((__FUNCTION__ ": leaving, rc = %d", arc));
 
     return (arc);
 }

@@ -2534,7 +2534,7 @@ VOID hifMouseMovement2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
  *      "Mouse hook" page 2 in the "Mouse" settings object.
  *      Reacts to changes of any of the dialog controls.
  *
- *@@added V.9.14 (2001-08-02) [lafaix]
+ *@@added V0.9.14 (2001-08-02) [lafaix]
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added delay for auto-move ptr
  */
 

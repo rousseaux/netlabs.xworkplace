@@ -19,7 +19,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2001 Ulrich M”ller.
+ *      Copyright (C) 2000-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -592,7 +592,8 @@ SOM_Scope WPObject*  SOMLINK xfsM_wpclsQueryAwakeObject(M_XWPFileSystem *somSelf
  *@@ wpclsFileSysExists:
  *      tests "Folder" whether a file-system object with
  *      the real name pszFilename is already awake in the
- *      folder. If so, it is returned.
+ *      folder. If so, it is returned; otherwise, we
+ *      return NULL.
  *
  *      We replace this method also if "turbo folders"
  *      are on.
@@ -621,8 +622,8 @@ SOM_Scope WPObject*  SOMLINK xfsM_wpclsFileSysExists(M_XWPFileSystem *somSelf,
         // alright, apparently we got something:
         // check if it is already awake (using the
         // fast content tree functions)
-        if (pAwake = fdrFindFSFromName(Folder,
-                                       pszFilename))
+        if (pAwake = fdrSafeFindFSFromName(Folder,
+                                           pszFilename))
         {
             if ((_wpQueryAttr(pAwake) & FILE_DIRECTORY) == (attrFile & FILE_DIRECTORY))
                 fsysSetRefreshFlags(pAwake,

@@ -5832,11 +5832,14 @@ VOID PowerOffAnim(HPS hpsScreen)
  *      Runs on the Shutdown thread.
  *
  *@@changed V0.9.12 (2001-05-12) [umoeller]: animations frequently didn't show up, fixed
+ *@@changed V0.9.17 (2002-02-05) [pr]: fix text not displaying by making it a 2 stage message
  */
 
 VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData)
 {
     ULONG flShutdown = 0;
+    PSZ pszComplete = cmnGetString(ID_SDDI_COMPLETE);
+    PSZ pszSwitchOff = cmnGetString(ID_SDDI_SWITCHOFF);
 
     HPS hpsScreen = WinGetScreenPS(HWND_DESKTOP);
 
@@ -5870,15 +5873,10 @@ VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData)
         // PM will repaint part of the animation
         WinShowWindow(pShutdownData->SDConsts.hwndShutdownStatus, FALSE);
 
-    DosShutdown(0);
-
     // now, this is fun:
     // here's a fine example of how to completely
     // block the system without ANY chance to escape.
-    // Since we have called DosShutdown(), all file
-    // access is blocked already. In addition, we
-    // do the following:
-    // -- show "Press C-A-D..." window
+    // -- show "Shutdown in progress..." window
     WinShowWindow(hwndCADMessage, TRUE);
     // -- make the CAD message system-modal
     WinSetSysModalWindow(HWND_DESKTOP, hwndCADMessage);
@@ -5887,6 +5885,11 @@ VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData)
     winhKillTasklist();
     // -- block all other WPS threads
     DosEnterCritSec();
+    // -- block all file access
+    DosShutdown(0); // V0.9.16 (2002-02-03) [pr]: moved this down
+    // -- update the message
+    WinSetDlgItemText(hwndCADMessage, ID_SDDI_PROGRESS1, pszComplete);
+    WinSetDlgItemText(hwndCADMessage, ID_SDDI_PROGRESS2, pszSwitchOff);
     // -- and now loop forever!
     while (TRUE)
         DosSleep(10000);
@@ -6190,193 +6193,177 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData)
 
 void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
 {
-    // HAB             habUpdateThread;
-    // HMQ             hmqUpdateThread;
     PSZ             pszErrMsg = NULL;
 
     PSHUTDOWNDATA   pShutdownData = (PSHUTDOWNDATA)ptiMyself->ulData;
+
+    BOOL            fSemOwned = FALSE;
+    LINKLIST        llTestList;
 
     DosSetPriority(PRTYS_THREAD,
                    PRTYC_REGULAR,
                    +31,          // priority delta
                    0);           // this thread
 
-    // if (    (habUpdateThread = WinInitialize(0))
-       //   && (hmqUpdateThread = WinCreateMsgQueue(habUpdateThread, 0))
-       // )
+
+    lstInit(&llTestList, TRUE);     // auto-free items
+
+    TRY_LOUD(excpt1)
     {
-        BOOL            fSemOwned = FALSE;
-        LINKLIST        llTestList;
+        ULONG           ulShutItemCount = 0,
+                        ulTestItemCount = 0;
+        BOOL            fUpdated = FALSE;
 
-        lstInit(&llTestList, TRUE);     // auto-free items
+        WinCancelShutdown(ptiMyself->hmq, TRUE);
 
-        TRY_LOUD(excpt1)
+        while (!G_tiUpdateThread.fExit)
         {
-            ULONG           ulShutItemCount = 0,
-                            ulTestItemCount = 0;
-            BOOL            fUpdated = FALSE;
-            // PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
+            ULONG ulDummy;
 
-            WinCancelShutdown(ptiMyself->hmq, TRUE);
+            // this is the first loop: we arrive here every time
+            // the task list has changed */
+            #ifdef DEBUG_SHUTDOWN
+                _Pmpf(( "UT: Waiting for update..." ));
+            #endif
 
-            // wait until main shutdown window is up
-            /* while (    (pShutdownData->SDConsts.hwndMain == 0)
-                    && (!G_tiUpdateThread.fExit) )
-                DosSleep(100); */ // V0.9.12 (2001-04-28) [umoeller]
+            DosResetEventSem(pShutdownData->hevUpdated, &ulDummy);
+                        // V0.9.9 (2001-04-04) [umoeller]
 
-            while (!G_tiUpdateThread.fExit)
+            // have Shutdown thread update its list of items then
+            WinPostMsg(pShutdownData->SDConsts.hwndMain, WM_COMMAND,
+                       MPFROM2SHORT(ID_SDMI_UPDATESHUTLIST, 0),
+                       MPNULL);
+            fUpdated = FALSE;
+
+            // shutdown thread is waiting for us to post the
+            // "ready" semaphore, so do this now
+            DosPostEventSem(ptiMyself->hevRunning);
+
+            // now wait until Shutdown thread is done updating its
+            // list; it then posts an event semaphore
+            while (     (!fUpdated)
+                    &&  (!G_tiUpdateThread.fExit)
+                  )
             {
-                ULONG ulDummy;
-
-                // this is the first loop: we arrive here every time
-                // the task list has changed */
-                #ifdef DEBUG_SHUTDOWN
-                    _Pmpf(( "UT: Waiting for update..." ));
-                #endif
-
-                DosResetEventSem(pShutdownData->hevUpdated, &ulDummy);
-                            // V0.9.9 (2001-04-04) [umoeller]
-
-                // have Shutdown thread update its list of items then
-                WinPostMsg(pShutdownData->SDConsts.hwndMain, WM_COMMAND,
-                           MPFROM2SHORT(ID_SDMI_UPDATESHUTLIST, 0),
-                           MPNULL);
-                fUpdated = FALSE;
-
-                // shutdown thread is waiting for us to post the
-                // "ready" semaphore, so do this now
-                DosPostEventSem(ptiMyself->hevRunning);
-
-                // now wait until Shutdown thread is done updating its
-                // list; it then posts an event semaphore
-                while (     (!fUpdated)
-                        &&  (!G_tiUpdateThread.fExit)
-                      )
+                if (G_tiUpdateThread.fExit)
                 {
-                    if (G_tiUpdateThread.fExit)
-                    {
-                        // we're supposed to exit:
-                        fUpdated = TRUE;
-                        #ifdef DEBUG_SHUTDOWN
-                            _Pmpf(( "UT: Exit recognized" ));
-                        #endif
-                    }
-                    else
-                    {
-                        ULONG   ulUpdate;
-                        // query event semaphore post count
-                        DosQueryEventSem(pShutdownData->hevUpdated, &ulUpdate);
-                        fUpdated = (ulUpdate > 0);
-                        #ifdef DEBUG_SHUTDOWN
-                            _Pmpf(( "UT: update recognized" ));
-                        #endif
-                        DosSleep(100);
-                    }
-                } // while (!fUpdated);
-
-                ulTestItemCount = 0;
-                ulShutItemCount = 0;
-
-                #ifdef DEBUG_SHUTDOWN
-                    _Pmpf(( "UT: Waiting for task list change, loop 2..." ));
-                #endif
-
-                while (     (ulTestItemCount == ulShutItemCount)
-                         && (!G_tiUpdateThread.fExit)
-                      )
+                    // we're supposed to exit:
+                    fUpdated = TRUE;
+                    #ifdef DEBUG_SHUTDOWN
+                        _Pmpf(( "UT: Exit recognized" ));
+                    #endif
+                }
+                else
                 {
-                    // ULONG ulNesting = 0;
+                    ULONG   ulUpdate;
+                    // query event semaphore post count
+                    DosQueryEventSem(pShutdownData->hevUpdated, &ulUpdate);
+                    fUpdated = (ulUpdate > 0);
+                    #ifdef DEBUG_SHUTDOWN
+                        _Pmpf(( "UT: update recognized" ));
+                    #endif
+                    DosSleep(100);
+                }
+            } // while (!fUpdated);
 
-                    // this is the second loop: we stay in here until the
-                    // task list has changed; for monitoring this, we create
-                    // a second task item list similar to the pliShutdownFirst
-                    // list and compare the two
-                    lstClear(&llTestList);
+            ulTestItemCount = 0;
+            ulShutItemCount = 0;
 
-                    // create a test list for comparing the task list;
-                    // this is our private list, so we need no mutex
-                    // semaphore
-                    xsdBuildShutList(ptiMyself->hab,
-                                     pShutdownData,
-                                     &llTestList);
+            #ifdef DEBUG_SHUTDOWN
+                _Pmpf(( "UT: Waiting for task list change, loop 2..." ));
+            #endif
 
-                    // count items in the test list
-                    ulTestItemCount = lstCountItems(&llTestList);
+            while (     (ulTestItemCount == ulShutItemCount)
+                     && (!G_tiUpdateThread.fExit)
+                  )
+            {
+                // ULONG ulNesting = 0;
 
-                    // count items in the list of the Shutdown thread;
-                    // here we need a mutex semaphore, because the
-                    // Shutdown thread might be working on this too
-                    TRY_LOUD(excpt2)
+                // this is the second loop: we stay in here until the
+                // task list has changed; for monitoring this, we create
+                // a second task item list similar to the pliShutdownFirst
+                // list and compare the two
+                lstClear(&llTestList);
+
+                // create a test list for comparing the task list;
+                // this is our private list, so we need no mutex
+                // semaphore
+                xsdBuildShutList(ptiMyself->hab,
+                                 pShutdownData,
+                                 &llTestList);
+
+                // count items in the test list
+                ulTestItemCount = lstCountItems(&llTestList);
+
+                // count items in the list of the Shutdown thread;
+                // here we need a mutex semaphore, because the
+                // Shutdown thread might be working on this too
+                TRY_LOUD(excpt2)
+                {
+                    fSemOwned = (WinRequestMutexSem(pShutdownData->hmtxShutdown, 4000) == NO_ERROR);
+                    if (fSemOwned)
                     {
-                        fSemOwned = (WinRequestMutexSem(pShutdownData->hmtxShutdown, 4000) == NO_ERROR);
-                        if (fSemOwned)
-                        {
-                            ulShutItemCount = lstCountItems(&pShutdownData->llShutdown);
-                            DosReleaseMutexSem(pShutdownData->hmtxShutdown);
-                            fSemOwned = FALSE;
-                        }
+                        ulShutItemCount = lstCountItems(&pShutdownData->llShutdown);
+                        DosReleaseMutexSem(pShutdownData->hmtxShutdown);
+                        fSemOwned = FALSE;
                     }
-                    CATCH(excpt2) {} END_CATCH();
+                }
+                CATCH(excpt2) {} END_CATCH();
 
-                    if (!G_tiUpdateThread.fExit)
-                        DosSleep(100);
-                } // end while; loop until either the Shutdown thread has set the
-                  // Exit flag or the list has changed
+                if (!G_tiUpdateThread.fExit)
+                    DosSleep(100);
+            } // end while; loop until either the Shutdown thread has set the
+              // Exit flag or the list has changed
 
-                #ifdef DEBUG_SHUTDOWN
-                    _Pmpf(( "UT: Change or exit recognized" ));
-                #endif
-            }  // end while; loop until exit flag set
-        } // end TRY_LOUD(excpt1)
-        CATCH(excpt1)
+            #ifdef DEBUG_SHUTDOWN
+                _Pmpf(( "UT: Change or exit recognized" ));
+            #endif
+        }  // end while; loop until exit flag set
+    } // end TRY_LOUD(excpt1)
+    CATCH(excpt1)
+    {
+        // exception occured:
+        // complain to the user
+        if (pszErrMsg == NULL)
         {
-            // exception occured:
-            // complain to the user
-            if (pszErrMsg == NULL)
+            if (fSemOwned)
             {
-                if (fSemOwned)
-                {
-                    DosReleaseMutexSem(pShutdownData->hmtxShutdown);
-                    fSemOwned = FALSE;
-                }
-
-                // only report the first error, or otherwise we will
-                // jam the system with msg boxes
-                pszErrMsg = malloc(1000);
-                if (pszErrMsg)
-                {
-                    strcpy(pszErrMsg, "An error occured in the XFolder Update thread. "
-                            "In the root directory of your boot drive, you will find a "
-                            "file named XFLDTRAP.LOG, which contains debugging information. "
-                            "If you had shutdown logging enabled, you will also find the "
-                            "file XSHUTDWN.LOG there. If not, please enable shutdown "
-                            "logging in the Desktop's settings notebook. ");
-                    krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT, (MPARAM)pszErrMsg,
-                            (MPARAM)0); // don't enforce Desktop restart
-
-                    doshWriteLogEntry(pShutdownData->ShutdownLogFile, "\n*** CRASH\n%s\n", pszErrMsg);
-                }
+                DosReleaseMutexSem(pShutdownData->hmtxShutdown);
+                fSemOwned = FALSE;
             }
-        } END_CATCH();
 
-        // clean up
-        #ifdef DEBUG_SHUTDOWN
-            _Pmpf(( "UT: Exiting..." ));
-        #endif
+            // only report the first error, or otherwise we will
+            // jam the system with msg boxes
+            pszErrMsg = malloc(1000);
+            if (pszErrMsg)
+            {
+                strcpy(pszErrMsg, "An error occured in the XFolder Update thread. "
+                        "In the root directory of your boot drive, you will find a "
+                        "file named XFLDTRAP.LOG, which contains debugging information. "
+                        "If you had shutdown logging enabled, you will also find the "
+                        "file XSHUTDWN.LOG there. If not, please enable shutdown "
+                        "logging in the Desktop's settings notebook. ");
+                krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT, (MPARAM)pszErrMsg,
+                        (MPARAM)0); // don't enforce Desktop restart
 
-        if (fSemOwned)
-        {
-            // release our mutex semaphore
-            DosReleaseMutexSem(pShutdownData->hmtxShutdown);
-            fSemOwned = FALSE;
+                doshWriteLogEntry(pShutdownData->ShutdownLogFile, "\n*** CRASH\n%s\n", pszErrMsg);
+            }
         }
+    } END_CATCH();
 
-        lstClear(&llTestList);
+    // clean up
+    #ifdef DEBUG_SHUTDOWN
+        _Pmpf(( "UT: Exiting..." ));
+    #endif
 
-
+    if (fSemOwned)
+    {
+        // release our mutex semaphore
+        DosReleaseMutexSem(pShutdownData->hmtxShutdown);
+        fSemOwned = FALSE;
     }
-    // WinDestroyMsgQueue(hmqUpdateThread);
-    // WinTerminate(habUpdateThread);
+
+    lstClear(&llTestList);
 
     #ifdef DEBUG_SHUTDOWN
         DosBeep(100, 100);

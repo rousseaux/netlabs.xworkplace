@@ -1862,7 +1862,8 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 // now make it the active window
                 WinSetActiveWindow(HWND_DESKTOP,
                                    G_pHookData->hwndSwitchList);
-            break; }
+            }
+            break;
 
             /*
              *@@ XDM_BEGINSCROLL:
@@ -2182,59 +2183,66 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *      -- POINTS mp2: mouse pointer position,
              *         as in mp1 of the WM_BUTTONxxxx messages.
              *
+             *      Returns TRUE on success.
+             *
              *@@added V0.9.14 (2001-08-21) [umoeller]
+             *@@changed V0.9.17 (2002-02-05) [umoeller]: fixed crash if hook not running
              */
 
             case XDM_ADDCLICKWATCH:
-            {
-                // no need to lock here, since the daemon object
-                // is the only one using this list
-                PCLICKWATCH p = NULL;
-
-                PLISTNODE pNode = lstQueryFirstNode(&G_llClickWatches),
-                          pNodeFound = NULL;
-                while (pNode)
+                // check if the hook is running first;
+                // or we'll get crashes if not
+                // V0.9.17 (2002-02-05) [umoeller]
+                if (G_pHookData)
                 {
-                    PLISTNODE pNext = pNode->pNext;
-                    p = (PCLICKWATCH)pNode->pItemData;
-                    if (p->hwndNotify == (HWND)mp1)
+                    // no need to lock here, since the daemon object
+                    // is the only one using this list
+                    PCLICKWATCH p = NULL;
+
+                    PLISTNODE pNode = lstQueryFirstNode(&G_llClickWatches),
+                              pNodeFound = NULL;
+                    while (pNode)
                     {
-                        pNodeFound = pNode;
-                        break;
+                        PLISTNODE pNext = pNode->pNext;
+                        p = (PCLICKWATCH)pNode->pItemData;
+                        if (p->hwndNotify == (HWND)mp1)
+                        {
+                            pNodeFound = pNode;
+                            break;
+                        }
+
+                        pNode = pNext;
                     }
 
-                    pNode = pNext;
-                }
-
-                if ((ULONG)mp2 == -1)
-                {
-                    // remove watch:
-                    if (pNodeFound)
+                    if ((ULONG)mp2 == -1)
                     {
-                        lstRemoveNode(&G_llClickWatches, pNodeFound);
-                        // DosBeep(500, 100);
+                        // remove watch:
+                        if (pNodeFound)
+                        {
+                            lstRemoveNode(&G_llClickWatches, pNodeFound);
+                            // DosBeep(500, 100);
+                            mrc = (MPARAM)TRUE;
+                        }
+                    }
+                    else
+                    {
+                        // add watch:
+                        if (!pNodeFound)
+                            // we didn't already have one for this window:
+                            p = NEW(CLICKWATCH);
+                        // else: p still points to the item found
+
+                        p->hwndNotify = (HWND)mp1;
+                        p->ulMessage = (ULONG)mp2;
+                        if (!pNodeFound)
+                            lstAppendItem(&G_llClickWatches, p);
+
                         mrc = (MPARAM)TRUE;
                     }
-                }
-                else
-                {
-                    // add watch:
-                    if (!pNodeFound)
-                        // we didn't already have one for this window:
-                        p = NEW(CLICKWATCH);
-                    // else: p still points to the item found
 
-                    p->hwndNotify = (HWND)mp1;
-                    p->ulMessage = (ULONG)mp2;
-                    if (!pNodeFound)
-                        lstAppendItem(&G_llClickWatches, p);
-
-                    mrc = (MPARAM)TRUE;
-                }
-
-                // refresh flag for hook
-                G_pHookData->fClickWatches = (lstCountItems(&G_llClickWatches) > 0);
-            }
+                    // refresh flag for hook
+                    G_pHookData->fClickWatches = (lstCountItems(&G_llClickWatches) > 0);
+                } // end if (G_pHookData)
             break;
 
             /*
@@ -2439,7 +2447,8 @@ ULONG _System TerminateExcHandler(PEXCEPTIONREPORTRECORD pReportRec,
             fclose(file);
 
             longjmp(pRegRec2->jmpThread, pReportRec->ExceptionNum);
-        break; }
+        }
+        break;
     }
 
     return (XCPT_CONTINUE_SEARCH);

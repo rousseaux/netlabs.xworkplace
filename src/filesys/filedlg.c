@@ -19,7 +19,7 @@
  */
 
 /*
- *      Copyright (C) 2001 Ulrich M”ller.
+ *      Copyright (C) 2001-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -151,16 +151,16 @@ typedef struct _FILEDLGDATA
 
     // window hierarchy
     HWND        hwndMainFrame,
-                hwndMainClient,     // child of hwndMainFrame
-                hwndSplitWindow,    // child of hwndMainClient
-                hwndDrivesCnrTxt,   // child of hwndMainClient (static text above cnr)
+                hwndMainControl,     // child of hwndMainFrame
+                hwndSplitWindow,    // child of hwndMainControl
+                hwndDrivesCnrTxt,   // child of hwndMainControl (static text above cnr)
                 hwndDrivesFrame,    // child of hwndSplitWindow
                 hwndDrivesCnr,      // child of hwndDrivesFrame
-                hwndFilesCnrTxt,    // child of hwndMainClient (static text above cnr)
+                hwndFilesCnrTxt,    // child of hwndMainControl (static text above cnr)
                 hwndFilesFrame,     // child of hwndSplitWindow
                 hwndFilesCnr;       // child of hwndFilesFrame
 
-    // controls in hwndMainClient
+    // controls in hwndMainControl
 
     HWND        // types combo:
                 hwndTypesTxt,
@@ -187,33 +187,25 @@ typedef struct _FILEDLGDATA
     WPFolder    *pDrivesFolder;         // root folder to populate, whose contents
                                         // appear in "drives" tree (constant)
 
-    // "add children" thread info (keeps running, has object window)
-    THREADINFO  tiAddChildren;
-    volatile TID tidAddChildrenRunning;
-    HWND        hwndAddChildren;        // "add children" object window (fnwpAddChildren)
-
-    LINKLIST    llDriveObjectsInserted; // linked list of plain WPObject* pointers
-                                        // inserted, no auto-free; needed for cleanup
     LINKLIST    llDisks;                // linked list of all WPDisk* objects
                                         // so that we can quickly find them for updating
                                         // the dialog; no auto-free
-    PMINIRECORDCORE precSelectedInDrives;   // currently selected record
+    PMINIRECORDCORE precFolderContentsShowing;   // currently selected record
 
     // data for files view (right)
     PSUBCLASSEDFOLDERVIEW psfvFiles;    // XFolder subclassed view data (see above)
     BOOL        fFilesFrameSubclassed;  // TRUE after first insert
 
     // transient "insert contents" thread, restarted on every selection
-    THREADINFO  tiInsertContents;
-    volatile TID tidInsertContentsRunning;
-    LINKLIST    llFileObjectsInserted;
+    // THREADINFO  tiInsertContents;
+    // volatile TID tidInsertContentsRunning;
 
     // full file name etc., parsed and set by ParseFileString()
     // ULONG       ulLogicalDrive;          // e.g. 3 for 'C'
     CHAR        szDrive[CCHMAXPATH];        // e.g. "C:" if local drive,
                                             // or "\\SERVER\RESOURCE" if UNC
     BOOL        fUNCDrive;                  // TRUE if szDrive specifies something UNC
-    CHAR        szDir[CCHMAXPATH],          // e.g. "\whatever"
+    CHAR        szDir[CCHMAXPATH],          // e.g. "\whatever\subdir"
                 szFileMask[CCHMAXPATH],     // e.g. "*.TXT"
                 szFileName[CCHMAXPATH];     // e.g. "test.txt"
 
@@ -224,57 +216,36 @@ typedef struct _FILEDLGDATA
     ULONG       cThreadsRunning;
             // if > 0, STPR_WAIT is used for the pointer
 
+    // populate thread
+    THREADINFO      tiPopulate;
+    volatile TID    tidPopulateRunning;
+    HWND            hwndPopulate;
+
+    LINKLIST        llDriveObjectsInserted; // linked list of plain WPObject* pointers
+                                        // inserted, no auto-free; needed for cleanup
+    LINKLIST        llFileObjectsInserted;
+
 } FILEDLGDATA, *PFILEDLGDATA;
 
-/*
- *@@ INSERTTHREADSDATA:
- *      temporary structure allocated from the heap
- *      and passed to the various transient threads
- *      that do the hard work for us (populate, insert children).
- *      This structure is free()'d by the thread that
- *      was started.
- */
+#define FM_FILLFOLDER           (WM_USER + 1)
+    #define FFL_FOLDERSONLY         0x0001
+    #define FFL_SCROLLTO            0x0002
+    #define FFL_EXPAND              0x0004
 
-typedef struct _INSERTTHREADSDATA
-{
-    PFILEDLGDATA        pWinData;
+#define FM_POPULATED_FILLTREE   (WM_USER + 2)
+#define FM_POPULATED_SCROLLTO   (WM_USER + 3)
+#define FM_POPULATED_FILLFILES  (WM_USER + 4)
+#define FM_UPDATEPOINTER        (WM_USER + 5)
 
-    PLINKLIST           pll;         // list of items to work on; format depends on thread.
-                                     // List is freed on exit.
-
-} INSERTTHREADSDATA, *PINSERTTHREADSDATA;
-
-/*
- *@@ INSERTOBJECTSARRAY:
- *
- */
-
-typedef struct _INSERTOBJECTSARRAY
-{
-    WPFolder            *pFolder;
-    HWND                hwndCnr;
-    WPObject            **papObjects;
-    ULONG               cObjects;
-    PMINIRECORDCORE     precParent;
-
-    PLINKLIST           pllObjects;
-    PLINKLIST           pllRecords;
-} INSERTOBJECTSARRAY, *PINSERTOBJECTSARRAY;
-
-#define XM_FILLFILESCNR         (WM_USER + 2)
-#define XM_INSERTOBJARRAY       (WM_USER + 3)
-#define XM_UPDATEPOINTER        (WM_USER + 4)
-
-#define ACM_ADDCHILDREN         (WM_USER + 6)
-#define ACM_ADDFIRSTCHILD       (WM_USER + 7)
+#define FM2_POPULATE            (WM_USER + 6)
+#define FM2_ADDFIRSTCHILD_BEGIN (WM_USER + 7)
+#define FM2_ADDFIRSTCHILD_NEXT  (WM_USER + 8)
+#define FM2_ADDFIRSTCHILD_DONE  (WM_USER + 9)
 
 #define ID_TREEFRAME            1
 #define ID_FILESFRAME           2
 
 MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2);
-
-BOOL StartInsertContents(PFILEDLGDATA pWinData,
-                         PMINIRECORDCORE precc);
 
 /* ******************************************************************
  *
@@ -311,6 +282,8 @@ BOOL StartInsertContents(PFILEDLGDATA pWinData,
  *         given, and FILEDLGDATA.szFileName has been updated.
  *         FILEDLGDATA.is unchanged.
  *         This never comes with FFL_FILEMASK.
+ *
+ *@@changed V0.9.18 (2002-02-06) [umoeller]: fixed a bunch of bugs
  */
 
 ULONG ParseFileString(PFILEDLGDATA pWinData,
@@ -352,32 +325,45 @@ ULONG ParseFileString(PFILEDLGDATA pWinData,
     // get path from there
     if (p && *p)
     {
-        // p2 = last backslash
-        const char *p2;
-        if (p2 = strrchr(p, '\\'))
+        BOOL    fMustBeDir = FALSE; // V0.9.18 (2002-02-06) [umoeller]
+
+        // p3 = last backslash
+        PCSZ    pStartOfFile;
+        PCSZ    p3;
+        if (p3 = strrchr(p, '\\'))
         {
             // path specified:
             // @@todo handle relative paths here
+            ULONG cb = p3 - p;
+
+            // check if the last character is a '\';
+            // the spec _must_ be a directory then
+            if (p3[cb] == '\0')
+            {
+                fMustBeDir = TRUE;
+                // p2++;           // points to null char now --> no file spec
+            }
+
             strhncpy0(pWinData->szDir,
                       p,        // start: either first char or after drive
-                      (p2 - p));
-            _Pmpf(("  new path is %s", pWinData->szDir));
+                      cb);
+            _Pmpf(("  got path %s", pWinData->szDir));
             ulChanged |= FFL_PATH;
-            p2++;
+            pStartOfFile = p3 + 1;      // after the last backslash
         }
         else
             // no path specified:
-            p2 = p;
+            pStartOfFile = p;
 
         // check if the following is a file mask
         // or a real file name
-        if (    (strchr(p2, '*'))
-             || (strchr(p2, '?'))
+        if (    (strchr(pStartOfFile, '*'))
+             || (strchr(pStartOfFile, '?'))
            )
         {
             // get file name (mask) after that
             strcpy(pWinData->szFileMask,
-                   p2);
+                   pStartOfFile);
 
             _Pmpf(("  new mask is %s", pWinData->szFileMask));
             ulChanged |= FFL_FILEMASK;
@@ -390,16 +376,23 @@ ULONG ParseFileString(PFILEDLGDATA pWinData,
             CHAR szFull[CCHMAXPATH];
             FILESTATUS3 fs3;
             BOOL fIsDir = FALSE;
+            PSZ pszThis = szFull;
 
-            sprintf(szFull,
-                    "%s%s\\%s",
-                    pWinData->szDrive,      // either C: or \\SERVER\RESOURCE
-                    pWinData->szDir,
-                    p2);        // entry
-            if (!DosQueryPathInfo(szFull,
-                                  FIL_STANDARD,
-                                  &fs3,
-                                  sizeof(fs3)))
+            pszThis += sprintf(pszThis,
+                               "%s%s",
+                               pWinData->szDrive,      // either C: or \\SERVER\RESOURCE
+                               pWinData->szDir);
+            if (*pStartOfFile)
+                // we have a file spec left:
+                pszThis += sprintf(pszThis,
+                                   "\\%s",
+                                   pStartOfFile);        // entry
+
+            _Pmpf(("   checking %s", szFull));
+            if (!(arc2 = DosQueryPathInfo(szFull,
+                                          FIL_STANDARD,
+                                          &fs3,
+                                          sizeof(fs3))))
             {
                 // this thing exists:
                 // is it a file or a directory?
@@ -407,22 +400,39 @@ ULONG ParseFileString(PFILEDLGDATA pWinData,
                     fIsDir = TRUE;
             }
 
+            _Pmpf(("   DosQueryPathInfo returned %d, fIsDir is %d",
+                        arc2, fIsDir));
+
             if (fIsDir)
             {
                 // user specified directory:
                 // append to existing and say "path changed"
-                strcat(pWinData->szDir, "\\");
-                strcat(pWinData->szDir, p2);
+                if (*pStartOfFile)
+                {
+                    strcat(pWinData->szDir, "\\");
+                    strcat(pWinData->szDir, pStartOfFile);
+                }
                 _Pmpf(("  new path is %s", pWinData->szDir));
                 ulChanged |= FFL_PATH;
             }
             else
             {
-                // this doesn't exist, or it is a file:
-                strcpy(pWinData->szFileName,
-                       p2);
-                _Pmpf(("  new filename is %s", pWinData->szFileName));
-                ulChanged |= FFL_FILENAME;
+                // this is not a directory:
+                if (fMustBeDir)
+                    // but it must be (because user termianted string with "\"):
+                    ;
+                else
+                {
+                    // this doesn't exist, or it is a file:
+                    if (*pStartOfFile)
+                    {
+                        // and it has a length: V0.9.18 (2002-02-06) [umoeller]
+                        strcpy(pWinData->szFileName,
+                               pStartOfFile);
+                        _Pmpf(("  new filename is %s", pWinData->szFileName));
+                        ulChanged |= FFL_FILENAME;
+                    }
+                }
             }
         }
     }
@@ -446,7 +456,6 @@ ULONG ParseFileString(PFILEDLGDATA pWinData,
  *         a file-system object;
  *
  *      -- if the WPDisk or WPShadow cannot be resolved.
- *
  *
  *@@added V0.9.9 (2001-03-11) [umoeller]
  */
@@ -604,276 +613,59 @@ BOOL IsInsertable(WPObject *pObject,
 }
 
 /*
- *@@ InsertFirstChild:
+ *@@ IsObjectInCnr:
+ *      returns TRUE if pObject has already been
+ *      inserted into hwndCnr.
  *
+ *@@added V0.9.18 (2002-02-06) [umoeller]
  */
 
-VOID InsertFirstChild(HWND hwndMainClient,              // in: wnd to send XM_INSERTOBJARRAY to
-                      HWND hwndCnr,                     // in: cnr to insert reccs to
-                      WPFolder *pFolder,                // in: folder whose contents are to be inserted
-                      PMINIRECORDCORE precParent,       // in: parent recc or NULL
-                      PLINKLIST pllObjects,             // in/out: if != NULL, list where
-                                                        // to append objects to
-                      PLINKLIST pllRecords,             // in/out: if != NULL, list where
-                                                        // to append inserted records to
-                      PBOOL pfExit)                     // in: when this goes TRUE, we exit
+BOOL IsObjectInCnr(WPObject *pObject,
+                   HWND hwndCnr)
 {
-    PMINIRECORDCORE precFirstChild
-        = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
-                                      CM_QUERYRECORD,
-                                      (MPARAM)precParent,
-                                      MPFROM2SHORT(CMA_FIRSTCHILD, CMA_ITEMORDER));
-    if (    (precFirstChild == 0)
-         || ((ULONG)precFirstChild != -1)
-       )
+    BOOL    brc = FALSE;
+    BOOL    fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
     {
-        // we don't have a first child already:
-        WPFolder *pFirstChildFolder = NULL;
-
-        // check if we have a subfolder in the folder already
-        BOOL fFolderLocked = FALSE;
-
-        TRY_LOUD(excpt1)
+        if (fLocked = !_wpRequestObjectMutexSem(pObject, SEM_INDEFINITE_WAIT))
         {
-            if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
+            PUSEITEM    pUseItem = NULL;
+            for (pUseItem = _wpFindUseItem(pObject, USAGE_RECORD, NULL);
+                 pUseItem;
+                 pUseItem = _wpFindUseItem(pObject, USAGE_RECORD, pUseItem))
             {
-                WPObject    *pObject;
-                // POINTL      ptlIcon = {0, 0};
-                // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                        // = (somTD_WPFolder_wpQueryContent)wpshResolveFor(pFolder, NULL, "wpQueryContent");
+                // USAGE_RECORD specifies where this object is
+                // currently inserted
+                PRECORDITEM pRecordItem = (PRECORDITEM)(pUseItem + 1);
 
-                // 1) count objects
-                // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
-                for (   pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
-                        (pObject) && (!*pfExit);
-                        pObject = *wpshGetNextObjPointer(pObject))
+                if (hwndCnr == pRecordItem->hwndCnr)
                 {
-                    if (IsInsertable(pObject,
-                                     TRUE,      // folders only
-                                     NULL))
-                    {
-                        pFirstChildFolder = pObject;
-                        break;
-                    }
-                }
-            }
-        }
-        CATCH(excpt1) {} END_CATCH();
-
-        if (fFolderLocked)
-        {
-            fdrReleaseFolderMutexSem(pFolder);
-            fFolderLocked = FALSE;
-        }
-
-        if (!pFirstChildFolder)
-        {
-            // no folder awake in folder yet:
-            // do a quick DosFindFirst loop to find the
-            // first subfolder in here
-            HDIR          hdir = HDIR_CREATE;
-            FILEFINDBUF3  ffb3     = {0};
-            // ULONG         cbFFB3 = sizeof(FILEFINDBUF3);
-            ULONG         ulFindCount    = 1;        // look for 1 file at a time
-            APIRET        arc            = NO_ERROR;
-
-            CHAR          szFolder[CCHMAXPATH],
-                          szSearchMask[CCHMAXPATH];
-
-            _wpQueryFilename(pFolder, szFolder, TRUE);
-            sprintf(szSearchMask, "%s\\*", szFolder);
-
-            ulFindCount = 1;
-            arc = DosFindFirst(szSearchMask,
-                               &hdir,
-                               MUST_HAVE_DIRECTORY | FILE_ARCHIVED | FILE_SYSTEM | FILE_READONLY,
-                                     // but exclude hidden
-                               &ffb3,
-                               sizeof(ffb3),
-                               &ulFindCount,
-                               FIL_STANDARD);
-
-            while ((arc == NO_ERROR) && (!*pfExit))
-            {
-                // do not use "." and ".."
-                if (    (strcmp(ffb3.achName, ".") != 0)
-                     && (strcmp(ffb3.achName, "..") != 0)
-                   )
-                {
-                    // this is good:
-                    CHAR szFolder2[CCHMAXPATH];
-                    sprintf(szFolder2, "%s\\%s", szFolder, ffb3.achName);
-                    pFirstChildFolder = _wpclsQueryFolder(_WPFolder, szFolder2, TRUE);
+                    brc = TRUE;
                     break;
                 }
-
-                // search next file
-                ulFindCount = 1;
-                arc = DosFindNext(hdir,
-                                 &ffb3,
-                                 sizeof(ffb3),
-                                 &ulFindCount);
-
-            } // end while (rc == NO_ERROR)
-
-            DosFindClose(hdir);
-        }
-
-        if (pFirstChildFolder)
-        {
-            INSERTOBJECTSARRAY ioa;
-            ioa.pFolder = pFolder;
-            ioa.hwndCnr = hwndCnr;
-            ioa.papObjects = &pFirstChildFolder;
-            ioa.cObjects = 1;
-            ioa.precParent = precParent;
-            ioa.pllObjects = pllObjects;
-            ioa.pllRecords = pllRecords;
-            // cross-thread send:
-            // have the main thread insert the objects
-            // because it will have to re-subclass the
-            // container owner probably
-            WinSendMsg(hwndMainClient,
-                       XM_INSERTOBJARRAY,
-                       (MPARAM)&ioa,
-                       0);
-        }
-    }
-}
-
-/*
- *@@ InsertFolderContents:
- *      populates pFolder and inserts the contents of
- *      pFolder into hwndCnr.
- *
- *      You should set the view attributes of hwndCnr
- *      before calling this; they are not modified.
- *
- *      If (precParent == NULL), the object records
- *      are inserted at the root level. Only for tree
- *      views, you may set precParent to an existing
- *      record in the cnr to insert folder contents
- *      into a subtree. precParent should then be the
- *      record matching pFolder in the tree, of course.
- *
- *      This function filters out records according
- *      to ulFoldersOnly and pcszFileMask, which are
- *      passed to IsInsertable() for filtering.
- *
- *      While this is running, it keeps checking if
- *      *pfExit is TRUE. If so, the routine exits
- *      immediately. This is useful for having this
- *      routine running in a second thread.
- *
- *      After all objects have been collected and filtered,
- *      this sends (!) XM_INSERTOBJARRAY to hwndMainClient,
- *      which must then insert the objects specified in
- *      the INSERTOBJECTSARRAY pointed to by mp1 and maybe
- *      re-subclass the container owner.
- */
-
-ULONG InsertFolderContents(HWND hwndMainClient,         // in: wnd to send XM_INSERTOBJARRAY to
-                           HWND hwndCnr,                // in: cnr to insert reccs to
-                           WPFolder *pFolder,           // in: folder whose contents are to be inserted
-                           PMINIRECORDCORE precParent,  // in: parent recc or NULL
-                           ULONG ulFoldersOnly,         // in: folders only?
-                           const char *pcszFileMask,    // in: file mask or NULL
-                           PLINKLIST pllObjects,        // in/out: if != NULL, list where
-                                                        // to append objects to
-                           PLINKLIST pllRecords,        // in/out: if != NULL, list where
-                                                        // to append inserted records to
-                           PBOOL pfExit)            // in: when this goes TRUE, we exit
-{
-    ULONG       cObjects = 0;
-
-    if (fdrCheckIfPopulated(pFolder,
-                            (ulFoldersOnly != 0)))     // folders only?
-    {
-        BOOL fFolderLocked = FALSE;
-
-        TRY_LOUD(excpt1)
-        {
-            if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
-            {
-                WPObject    *pObject;
-                // 1) count objects
-                for (   pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
-                        (pObject) && (!*pfExit);
-                        pObject = *wpshGetNextObjPointer(pObject)
-                    )
-                {
-                    if (IsInsertable(pObject,
-                                     ulFoldersOnly,
-                                     pcszFileMask))
-                        cObjects++;
-                }
-
-                // 2) build array
-                if ((cObjects) && (!*pfExit))
-                {
-                    WPObject **papObjects = (WPObject**)malloc(sizeof(WPObject*) * cObjects);
-
-                    if (!papObjects)
-                        cObjects = 0;
-                    else
-                    {
-                        WPObject **ppThis = papObjects;
-                        // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
-                        for (   pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
-                                (pObject) && (!*pfExit);
-                                pObject = *wpshGetNextObjPointer(pObject)
-                            )
-                        {
-                            if (IsInsertable(pObject,
-                                             ulFoldersOnly,
-                                             pcszFileMask))
-                            {
-                                *ppThis = pObject;
-                                ppThis++;
-                            }
-                        }
-
-                        if (!*pfExit)
-                        {
-                            INSERTOBJECTSARRAY ioa;
-                            ioa.pFolder = pFolder;
-                            ioa.hwndCnr = hwndCnr;
-                            ioa.papObjects = papObjects;
-                            ioa.cObjects = cObjects;
-                            ioa.precParent = precParent;
-                            ioa.pllObjects = pllObjects;
-                            ioa.pllRecords = pllRecords;
-                            // cross-thread send:
-                            // have the main thread insert the objects
-                            // because it will have to re-subclass the
-                            // container owner probably
-                            WinSendMsg(hwndMainClient,
-                                       XM_INSERTOBJARRAY,
-                                       (MPARAM)&ioa,
-                                       0);
-                        }
-
-                        free(papObjects);
-                    }
-                }
             }
         }
-        CATCH(excpt1) {} END_CATCH();
-
-        if (fFolderLocked)
-            fdrReleaseFolderMutexSem(pFolder);
     }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
 
-    return (cObjects);
+    if (fLocked)
+        _wpReleaseObjectMutexSem(pObject);
+
+    return (brc);
 }
 
 /*
  *@@ ClearContainer:
- *
+ *      removes all objects that were inserted into the
+ *      specified container and updates the USEITEM's
+ *      correctly.
  */
 
-ULONG ClearContainer(HWND hwndCnr,
-                     PLINKLIST pllObjects)
+ULONG ClearContainer(HWND hwndCnr,              // in: cnr to clear
+                     PLINKLIST pllObjects)      // in: list of objects to remove
 {
     ULONG       ulrc = 0;
     PLISTNODE   pNode;
@@ -900,6 +692,9 @@ ULONG ClearContainer(HWND hwndCnr,
                MPFROM2SHORT(0,      // all records
                             CMA_INVALIDATE));
                                 // no free, WPS shares records
+
+    // WinEnableWindowUpdate(hwndCnr, FALSE);
+
     pNode = lstQueryFirstNode(pllObjects);
     while (pNode)
     {
@@ -913,7 +708,33 @@ ULONG ClearContainer(HWND hwndCnr,
 
     lstClear(pllObjects);
 
+    //  WinEnableWindowUpdate(hwndCnr, TRUE);
+
     return (ulrc);
+}
+
+/*
+ *@@ PostFillFolder:
+ *      posts FM_FILLFOLDER to the main control
+ *      window with the given parameters.
+ *
+ *@@added V0.9.18 (2002-02-06) [umoeller]
+ */
+
+VOID PostFillFolder(PFILEDLGDATA pWinData,
+                    PMINIRECORDCORE prec,       // in: record with folder to populate
+                    ULONG fl)                   // in: FFL_* flags
+{
+    _Pmpf(("        posting FM_FILLFOLDER %s, fl %s %s",
+                prec->pszIcon,
+                (fl & FFL_FOLDERSONLY) ? "FFL_FOLDERSONLY " : "",
+                (fl & FFL_SCROLLTO) ? "FFL_SCROLLTO " : "",
+                (fl & FFL_EXPAND) ? "FFL_EXPAND " : ""
+            ));
+    WinPostMsg(pWinData->hwndMainControl,
+               FM_FILLFOLDER,
+               (MPARAM)prec,
+               (MPARAM)fl);
 }
 
 /*
@@ -927,11 +748,11 @@ ULONG ClearContainer(HWND hwndCnr,
  *@@changed V0.9.16 (2001-10-19) [umoeller]: fixed sticky wait pointer
  */
 
-HPOINTER QueryCurrentPointer(HWND hwndMainClient)
+HPOINTER QueryCurrentPointer(HWND hwndMainControl)
 {
     ULONG           idPtr = SPTR_ARROW;
 
-    PFILEDLGDATA    pWinData = WinQueryWindowPtr(hwndMainClient, QWL_USER);
+    PFILEDLGDATA    pWinData = WinQueryWindowPtr(hwndMainControl, QWL_USER);
 
     if (pWinData)
         if (pWinData->cThreadsRunning)
@@ -947,12 +768,18 @@ HPOINTER QueryCurrentPointer(HWND hwndMainClient)
  *      updates the dialog according to the
  *      current directory/path/file fields
  *      in pWinData.
+ *
+ *      Returns TRUE if we already initiated
+ *      the full populate of a folder.
+ *
+ *@@changed V0.9.18 (2002-02-06) [umoeller]: mostly rewritten for better thread synchronization
  */
 
-VOID UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
+BOOL UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
 {
     PMINIRECORDCORE precDiskSelect = NULL;
     WPFolder        *pRootFolder = NULL;
+    BOOL            brc = FALSE;
 
     if (pWinData->fUNCDrive)
     {
@@ -990,13 +817,12 @@ VOID UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
         // we got a valid disk and root folder:
         WPFolder *pFullFolder;
 
-        // awake the directory we currently have
         CHAR szFull[CCHMAXPATH];
 
-        WinPostMsg(pWinData->hwndAddChildren,
-                   ACM_ADDCHILDREN,
-                   (MPARAM)precDiskSelect,      // for disk now
-                   0);
+        // populate and expand the current disk
+        PostFillFolder(pWinData,
+                       precDiskSelect,
+                       FFL_FOLDERSONLY | FFL_EXPAND);
 
         sprintf(szFull,
                 "%s%s",
@@ -1026,7 +852,7 @@ VOID UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
                 const char *pBacksl = strchr(pcThis, '\\');
                 WPFileSystem *pobj;
 
-                _Pmpf(("    remaining: %s", pcThis));
+                _Pmpf(("       remaining: %s", pcThis));
 
                 if (!pBacksl)
                     strcpy(szComponent, pcThis);
@@ -1043,17 +869,19 @@ VOID UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
                 // path component;
                 // e.g. if szDir was "F:\OS2\BOOK", we now have "OS2"
 
-                _Pmpf(("    checking component %s", szComponent));
+                _Pmpf(("       checking component %s", szComponent));
 
                 // find this component in pFdrThis
-                if (    (pobj = fdrFindFSFromName(pFdrThis,
-                                                  szComponent))
+                if (    (pobj = fdrSafeFindFSFromName(pFdrThis,
+                                                      szComponent))
                      && (_somIsA(pobj, _WPFolder))
                    )
                 {
                     // got that folder:
                     POINTL ptlIcon = {0, 0};
                     PMINIRECORDCORE pNew;
+                    ULONG fl;
+
                     _Pmpf(("        -> got %s", _wpQueryTitle(pobj)));
 
                     pNew = _wpCnrInsertObject(pobj,
@@ -1062,16 +890,31 @@ VOID UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
                                               precParent,  // parent == previous folder
                                               NULL); // next available position
 
-                    _Pmpf(("        got precNew 0x%lX, posting ACM_ADDCHILDREN", pNew));
+                    if (!pBacksl)
+                    {
+                        // this was the last component: then
+                        // populate fully and scroll to the thing
+                        fl = FFL_SCROLLTO;
+                        precDiskSelect = NULL;
+                        // tell caller we fully populated
+                        brc = TRUE;
+                    }
+                    else
+                    {
+                        // not the last componend:
+                        // then we'll need to expand the thing
+                        // and add the first child to each subfolder
+                        fl = FFL_FOLDERSONLY | FFL_EXPAND;
+                    }
+
                     if (pNew)
                     {
-                        WinPostMsg(pWinData->hwndAddChildren,
-                                   ACM_ADDCHILDREN,
-                                   (MPARAM)pNew,
-                                   0);
+                        PostFillFolder(pWinData,
+                                       pNew,
+                                       fl);
 
                         precParent = pNew;
-                        precDiskSelect = precParent;
+                        // precDiskSelect = precParent;
                     }
                     else
                         break;
@@ -1094,23 +937,18 @@ VOID UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
 
     if (precDiskSelect)
     {
-        ULONG ul;
-        // got valid folder, apparently:
-        cnrhExpandFromRoot(pWinData->hwndDrivesCnr,
-                           (PRECORDCORE)precDiskSelect);
-        ul = cnrhScrollToRecord(pWinData->hwndDrivesCnr,
-                                (PRECORDCORE)precDiskSelect,
-                                CMA_ICON | CMA_TEXT | CMA_TREEICON,
-                                TRUE);       // keep parent
-        cnrhSelectRecord(pWinData->hwndDrivesCnr,
-                         precDiskSelect,
-                         TRUE);
-        if (ul && ul != 3)
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                    "Error: cnrhScrollToRecord returned %d", ul);
+        // this only happens if a root drive was selected...
+        // then we still need to fully populate and scroll:
+        PostFillFolder(pWinData,
+                       precDiskSelect,
+                       FFL_SCROLLTO);
+        // tell caller we fully populated
+        brc = TRUE;
     }
 
     _Pmpf((__FUNCTION__ ": exiting"));
+
+    return (brc);
 }
 
 /*
@@ -1131,34 +969,30 @@ VOID UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
 VOID ParseAndUpdate(PFILEDLGDATA pWinData,
                     const char *pcszFullFile)
 {
-     // parse the new file string
-     ULONG fl = ParseFileString(pWinData,
-                                pcszFullFile);
+    // parse the new file string
+    ULONG fl = ParseFileString(pWinData,
+                               pcszFullFile);
 
-     if (fl & FFL_FILENAME)
-     {
-         // no wildcard, but file specified:
-         pWinData->pfd->lReturn = DID_OK;
-         WinPostMsg(pWinData->hwndMainClient, WM_CLOSE, 0, 0);
-                 // main msg loop detects that
-         // get outta here
-         return;
-     }
+    BOOL fAlreadyFull = FALSE;
 
-     if (fl & (FFL_DRIVE | FFL_PATH))
-     {
-         // drive or path specified:
-         // expand that
-         UpdateDlgWithFullFile(pWinData);
-     }
+    if (fl & FFL_FILENAME)
+    {
+        // no wildcard, but file specified:
+        pWinData->pfd->lReturn = DID_OK;
+        WinPostMsg(pWinData->hwndMainControl, WM_CLOSE, 0, 0);
+                // main msg loop detects that
+        // get outta here
+        return;
+    }
 
-     if (fl & FFL_FILEMASK)
-     {
-         // file mask changed:
-         // update files list
-         StartInsertContents(pWinData,
-                             pWinData->precSelectedInDrives);
-     }
+    if (fl & (FFL_DRIVE | FFL_PATH | FFL_FILEMASK))
+    {
+        // set this to NULL so that main control will refresh
+        pWinData->precFolderContentsShowing = NULL;
+        // drive or path specified:
+        // expand that
+        fAlreadyFull = UpdateDlgWithFullFile(pWinData);
+    }
 }
 
 /*
@@ -1205,16 +1039,181 @@ VOID BuildDisksList(WPFolder *pDrivesFolder,
 
 /* ******************************************************************
  *
- *   Add-all-children thread
+ *   Populate thread
  *
  ********************************************************************/
 
 /*
- *@@ fnwpAddChildren:
- *      object window for "add children" thread.
+ *@@ AddFirstChild:
+ *      adds the first child record for precParent
+ *      to the given container if precParent represents
+ *      a folder that has subfolders.
+ *
+ *      This gets called for every record in the drives
+ *      tree so we properly add the "+" expansion signs
+ *      to each record without having to fully populate
+ *      each folder. This is an imitation of the standard
+ *      WPS behavior in Tree views.
+ *
+ *@@added V0.9.18 (2002-02-06) [umoeller]
  */
 
-MRESULT EXPENTRY fnwpAddChildren(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+WPObject* AddFirstChild(WPFolder *pFolder,
+                        PMINIRECORDCORE precParent,     // in: folder record to insert first child for
+                        HWND hwndCnr,                   // in: cnr where precParent is inserted
+                        PLINKLIST pll)                  // in/out: list of objs
+{
+    PMINIRECORDCORE     precFirstChild;
+    WPFolder            *pFirstChildFolder = NULL;
+
+    if (!(precFirstChild = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
+                                      CM_QUERYRECORD,
+                                      (MPARAM)precParent,
+                                      MPFROM2SHORT(CMA_FIRSTCHILD,
+                                                   CMA_ITEMORDER))))
+    {
+        // we don't have a first child already:
+
+        // check if we have a subfolder in the folder already
+        BOOL    fFolderSem = FALSE,
+                fFindSem = FALSE;
+
+        _Pmpf(("  "__FUNCTION__": CM_QUERYRECORD returned NULL"));
+
+        TRY_LOUD(excpt1)
+        {
+            // request the find sem to make sure we won't have a populate
+            // on the other thread; otherwise we get duplicate objects here
+            if (fFindSem = !fdrRequestFindMutexSem(pFolder, SEM_INDEFINITE_WAIT))
+            {
+                if (fFolderSem = !fdrRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
+                {
+                    WPObject    *pObject;
+                    for (   pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
+                            pObject;
+                            pObject = *wpshGetNextObjPointer(pObject))
+                    {
+                        if (IsInsertable(pObject,
+                                         TRUE,      // folders only
+                                         NULL))
+                        {
+                            pFirstChildFolder = pObject;
+                            break;
+                        }
+                    }
+
+                    fdrReleaseFolderMutexSem(pFolder);
+                    fFolderSem = FALSE;
+                }
+
+                _Pmpf(("  "__FUNCTION__": pFirstChildFolder pop is 0x%lX", pFirstChildFolder));
+
+                if (!pFirstChildFolder)
+                {
+                    // no folder awake in folder yet:
+                    // do a quick DosFindFirst loop to find the
+                    // first subfolder in here
+                    HDIR          hdir = HDIR_CREATE;
+                    FILEFINDBUF3  ffb3     = {0};
+                    // ULONG         cbFFB3 = sizeof(FILEFINDBUF3);
+                    ULONG         ulFindCount    = 1;        // look for 1 file at a time
+                    APIRET        arc            = NO_ERROR;
+
+                    CHAR          szFolder[CCHMAXPATH],
+                                  szSearchMask[CCHMAXPATH];
+
+                    _wpQueryFilename(pFolder, szFolder, TRUE);
+                    sprintf(szSearchMask, "%s\\*", szFolder);
+
+                    _Pmpf(("  "__FUNCTION__": searching %s", szSearchMask));
+
+                    ulFindCount = 1;
+                    arc = DosFindFirst(szSearchMask,
+                                       &hdir,
+                                       MUST_HAVE_DIRECTORY | FILE_ARCHIVED | FILE_SYSTEM | FILE_READONLY,
+                                             // but exclude hidden
+                                       &ffb3,
+                                       sizeof(ffb3),
+                                       &ulFindCount,
+                                       FIL_STANDARD);
+
+                    while ((arc == NO_ERROR))
+                    {
+                        _Pmpf(("      "__FUNCTION__": got %s", ffb3.achName));
+
+                        // do not use "." and ".."
+                        if (    (strcmp(ffb3.achName, ".") != 0)
+                             && (strcmp(ffb3.achName, "..") != 0)
+                           )
+                        {
+                            // this is good:
+                            CHAR szFolder2[CCHMAXPATH];
+                            sprintf(szFolder2, "%s\\%s", szFolder, ffb3.achName);
+                            _Pmpf(("      "__FUNCTION__": awaking %s", szFolder2));
+                            pFirstChildFolder = _wpclsQueryFolder(_WPFolder,
+                                                                  szFolder2,
+                                                                  TRUE);
+                            break;
+                        }
+
+                        // search next file
+                        ulFindCount = 1;
+                        arc = DosFindNext(hdir,
+                                         &ffb3,
+                                         sizeof(ffb3),
+                                         &ulFindCount);
+
+                    } // end while (rc == NO_ERROR)
+
+                    DosFindClose(hdir);
+                }
+            }
+        }
+        CATCH(excpt1)
+        {
+        } END_CATCH();
+
+        if (fFolderSem)
+            fdrReleaseFolderMutexSem(pFolder);
+        if (fFindSem)
+            fdrReleaseFindMutexSem(pFolder);
+
+        if (pFirstChildFolder)
+        {
+            POINTL ptl = {0, 0};
+            if (_wpCnrInsertObject(pFirstChildFolder,
+                                   hwndCnr,
+                                   &ptl,        // without this the func fails
+                                   precParent,
+                                   NULL))
+                lstAppendItem(pll,
+                              pFirstChildFolder);
+        }
+    }
+
+    return (pFirstChildFolder);
+}
+
+/*
+ *@@ POPULATEDATA:
+ *      transient struct posted with FM2_POPULATE.
+ *
+ *@@added V0.9.18 (2002-02-06) [umoeller]
+ */
+
+typedef struct _POPULATEDATA
+{
+    PFILEDLGDATA    pWinData;
+    PMINIRECORDCORE prec;
+    ULONG           fl;         // FFL_* flags as passed to FM_FILLFOLDER
+} POPULATEDATA, *PPOPULATEDATA;
+
+/*
+ *@@ fnwpPopulate:
+ *      object window for populate thread.
+ */
+
+MRESULT EXPENTRY fnwpPopulate(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -1225,93 +1224,162 @@ MRESULT EXPENTRY fnwpAddChildren(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         break;
 
         /*
-         *@@ ACM_ADDCHILDREN:
-         *      adds children to the folder specified by
-         *      the MINIRECORDCORE pointer in mp1.
+         *@@ FM2_POPULATE:
+         *      posted by fnwpMainControl when
+         *      FM_FILLFOLDER comes in to offload
+         *      populate to this second thread.
          *
-         *      This does two things:
+         *      After populate is done, we post the
+         *      following back to fnwpMainControl:
          *
-         *      1)  Populate the folder with folders only
-         *          and inserts its contents into the
-         *          drives container.
+         *      --  FM_POPULATED_FILLTREE always so
+         *          that the drives tree can get
+         *          updated;
          *
-         *      2)  Adds a first child to each of the new
-         *          subfolders.
+         *      --  FM_POPULATED_SCROLLTO, if the
+         *          FFL_SCROLLTO flag was set;
+         *
+         *      --  FM_POPULATED_FILLFILES, if the
+         *          FFL_FOLDERSONLY flag was _not_
+         *          set.
+         *
+         *      This processing is all new with V0.9.18
+         *      to finally synchronize the populate with
+         *      the main thread better.
+         *
+         *      This takes a POPULATEDATA struct
+         *      in mp1, which is freed here.
+         *
+         *@@added V0.9.18 (2002-02-06) [umoeller]
          */
 
-        case ACM_ADDCHILDREN:
+        case FM2_POPULATE:
         {
-            PFILEDLGDATA pWinData = WinQueryWindowPtr(hwnd, QWL_USER);
-            PMINIRECORDCORE prec = (PMINIRECORDCORE)mp1;
-            WPFolder *pFolder;
-            if (pFolder = GetFSFromRecord(prec,
-                                          TRUE))      // folders only
+            PPOPULATEDATA pData;
+            PFILEDLGDATA    pWinData;
+            WPFolder        *pFolder;
+
+            if (pData = (PPOPULATEDATA)mp1)
             {
-                LINKLIST llInsertedRecords;
-                PLISTNODE pNode;
-                lstInit(&llInsertedRecords, FALSE);
-
-                _Pmpf((__FUNCTION__ ": got ACM_ADDCHILDREN for %s", _wpQueryTitle(pFolder)));
-
-                InsertFolderContents(pWinData->hwndMainClient,
-                                     pWinData->hwndDrivesCnr,
-                                     pFolder,
-                                     prec,          // parent
-                                     TRUE,          // folders only
-                                     NULL,          // file mask
-                                     &pWinData->llDriveObjectsInserted,
-                                     &llInsertedRecords,
-                                     &pWinData->tiAddChildren.fExit); // &ptiMyself->fExit);
-
-                // now post "add first child" for each record
-                // inserted; we post a second, separate message
-                // because there might be several "add children"
-                // msgs in the queue, and we first want to fully
-                // process all full "add children" before going
-                // for the "add first child" for each new child.
-                // Otherwise the user has to wait a long time for
-                // the tree to fully expand.
-                pNode = lstQueryFirstNode(&llInsertedRecords);
-                while (pNode)
+                if (    (pWinData = pData->pWinData)
+                     && (pFolder = GetFSFromRecord(pData->prec, TRUE))
+                   )
                 {
-                    PMINIRECORDCORE precSub = (PMINIRECORDCORE)pNode->pItemData;
-                    WinPostMsg(hwnd,
-                               ACM_ADDFIRSTCHILD,
-                               (MPARAM)precSub,
-                               0);
+                    BOOL fFoldersOnly = ((pData->fl & FFL_FOLDERSONLY) != 0);
 
-                    pNode = pNode->pNext;
+                    // set wait pointer
+                    (pWinData->cThreadsRunning)++;
+                    WinPostMsg(pWinData->hwndMainControl,
+                               FM_UPDATEPOINTER,
+                               0, 0);
+
+                    _Pmpf((__FUNCTION__ ": populating %s", _wpQueryTitle(pFolder)));
+
+                    if (fdrCheckIfPopulated(pFolder,
+                                            fFoldersOnly))
+                    {
+                        // in any case, refresh the tree
+                        WinPostMsg(pWinData->hwndMainControl,
+                                   FM_POPULATED_FILLTREE,
+                                   (MPARAM)pData->prec,
+                                   (MPARAM)pData->fl);
+                                // fnwpMainControl will check fl again and
+                                // fire "add first child" msgs accordingly
+
+                        if (pData->fl & FFL_SCROLLTO)
+                            WinPostMsg(pWinData->hwndMainControl,
+                                       FM_POPULATED_SCROLLTO,
+                                       (MPARAM)pData->prec,
+                                       0);
+
+                        if (!fFoldersOnly)
+                            // refresh the files only if we are not
+                            // in folders-only mode
+                            WinPostMsg(pWinData->hwndMainControl,
+                                       FM_POPULATED_FILLFILES,
+                                       (MPARAM)pData->prec,
+                                       (MPARAM)pFolder);
+                    }
+
+                    // clear wait pointer
+                    (pWinData->cThreadsRunning)--;
+                    WinPostMsg(pWinData->hwndMainControl,
+                               FM_UPDATEPOINTER,
+                               0, 0);
                 }
-
-                lstClear(&llInsertedRecords);
             }
-        break; }
+
+            free(pData);
+        }
+        break;
 
         /*
-         *@@ ACM_ADDFIRSTCHILD:
-         *      adds a first child to the folder specified
-         *      by the MINIRECORDCORE in mp1.
+         *@@ FM2_ADDFIRSTCHILD_BEGIN:
+         *      posted by InsertContents before the first
+         *      FM2_ADDFIRSTCHILD_NEXT is posted so we
+         *      can update the "wait" ptr accordingly.
+         *
+         *@@added V0.9.18 (2002-02-06) [umoeller]
          */
 
-        case ACM_ADDFIRSTCHILD:
+        case FM2_ADDFIRSTCHILD_BEGIN:
         {
-            PFILEDLGDATA pWinData = WinQueryWindowPtr(hwnd, QWL_USER);
-            PMINIRECORDCORE precSub = (PMINIRECORDCORE)mp1;
-            WPFolder *pFolderSub = GetFSFromRecord(precSub,
-                                                   TRUE);
-            if (pFolderSub)
-            {
-                _Pmpf((__FUNCTION__ ": got ACM_ADDFIRSTCHILD for %s", _wpQueryTitle(pFolderSub)));
+            PFILEDLGDATA        pWinData = WinQueryWindowPtr(hwnd, QWL_USER);
+            (pWinData->cThreadsRunning)++;
+            WinPostMsg(pWinData->hwndMainControl,
+                       FM_UPDATEPOINTER,
+                       0, 0);
+        }
+        break;
 
-                InsertFirstChild(pWinData->hwndMainClient,
-                                 pWinData->hwndDrivesCnr,
-                                 pFolderSub,
-                                 precSub,
-                                 &pWinData->llDriveObjectsInserted,
-                                 NULL,
-                                 &pWinData->tiAddChildren.fExit); // &ptiMyself->fExit);
+        /*
+         *@@ FM2_ADDFIRSTCHILD_NEXT:
+         *      fired by InsertContents for every folder that
+         *      is added to the drives tree.
+         *
+         *      Parameters:
+         *
+         *      --  WPFolder* mp1: folder to add first child for.
+         *          This better be in the tree.
+         *
+         *@@added V0.9.18 (2002-02-06) [umoeller]
+         */
+
+        case FM2_ADDFIRSTCHILD_NEXT:
+            if (mp1)
+            {
+                PFILEDLGDATA        pWinData = WinQueryWindowPtr(hwnd, QWL_USER);
+                HWND                hwndCnr = pWinData->hwndDrivesCnr;
+                WPFolder            *pFolder = (WPObject*)mp1;
+                PMINIRECORDCORE     precParent = _wpQueryCoreRecord(pFolder);
+
+                _Pmpf((__FUNCTION__ ": CM_ADDFIRSTCHILD %s", _wpQueryTitle(mp1)));
+
+                AddFirstChild(pFolder,
+                              precParent,
+                              hwndCnr,
+                              &pWinData->llDriveObjectsInserted);
             }
-        break; }
+        break;
+
+        /*
+         *@@ FM2_ADDFIRSTCHILD_DONE:
+         *      posted by InsertContents after the last
+         *      FM2_ADDFIRSTCHILD_NEXT was posted so we
+         *      can reset the "wait" ptr.
+         *
+         *@@added V0.9.18 (2002-02-06) [umoeller]
+         */
+
+        case FM2_ADDFIRSTCHILD_DONE:
+        {
+            PFILEDLGDATA        pWinData = WinQueryWindowPtr(hwnd, QWL_USER);
+            (pWinData->cThreadsRunning)--;
+            WinPostMsg(pWinData->hwndMainControl,
+                       FM_UPDATEPOINTER,
+                       0, 0);
+        }
+        break;
 
         default:
             mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
@@ -1321,13 +1389,24 @@ MRESULT EXPENTRY fnwpAddChildren(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 }
 
 /*
- *@@ fntAddChildren:
- *      "add children" thread. This creates an object window
+ *@@ fntPopulate:
+ *      "populate" thread. This creates an object window
  *      so that we can easily serialize the order in which
- *      children are added to the drives tree.
+ *      folders are populate and such.
+ *
+ *      This is responsible for both populating folders _and_
+ *      doing the "add first child" processing. This is all
+ *      new with V0.9.18 and is my second attempt at getting
+ *      the thread synchronization right.
+ *
+ *      We _need_ a second thread for "add first child" too
+ *      because even adding the first child can take quite a
+ *      while. For example, if a folder has 1,000 files in it
+ *      and the 999th is a directory, the file system has to
+ *      scan the entire contents first.
  */
 
-VOID _Optlink fntAddChildren(PTHREADINFO ptiMyself)
+VOID _Optlink fntPopulate(PTHREADINFO ptiMyself)
 {
     TRY_LOUD(excpt1)
     {
@@ -1336,135 +1415,21 @@ VOID _Optlink fntAddChildren(PTHREADINFO ptiMyself)
 
         WinRegisterClass(ptiMyself->hab,
                          (PSZ)WC_ADDCHILDRENOBJ,
-                         fnwpAddChildren,
+                         fnwpPopulate,
                          0,
                          sizeof(PVOID));
-        pWinData->hwndAddChildren = winhCreateObjectWindow(WC_ADDCHILDRENOBJ,
-                                                           pWinData);
+        pWinData->hwndPopulate = winhCreateObjectWindow(WC_ADDCHILDRENOBJ,
+                                                        pWinData);
         // thread 1 is waiting for obj window to be created
         DosPostEventSem(ptiMyself->hevRunning);
 
         while (WinGetMsg(ptiMyself->hab, &qmsg, NULLHANDLE, 0, 0))
             WinDispatchMsg(ptiMyself->hab, &qmsg);
 
-        WinDestroyWindow(pWinData->hwndAddChildren);
+        WinDestroyWindow(pWinData->hwndPopulate);
     }
     CATCH(excpt1) {} END_CATCH();
 
-}
-
-/* ******************************************************************
- *
- *   Insert-Contents thread
- *
- ********************************************************************/
-
-/*
- *@@ fntInsertContents:
- *      adds the entire contents of the folder specified
- *      by INSERTTHREADSDATA.precc into the files container.
- *
- *      This expects a INSERTTHREADSDATA pointer
- *      as ulUser, which is free()'d on exit.
- *
- *@@changed V0.9.16 (2001-10-19) [umoeller]: added excpt handling
- */
-
-VOID _Optlink fntInsertContents(PTHREADINFO ptiMyself)
-{
-    TRY_LOUD(excpt1)
-    {
-        PINSERTTHREADSDATA pThreadData;
-        PFILEDLGDATA pWinData;
-        if (    (pThreadData = (PINSERTTHREADSDATA)ptiMyself->ulData)
-             && (pWinData = pThreadData->pWinData)
-           )
-        {
-            // set wait pointer
-            (pWinData->cThreadsRunning)++;
-            WinPostMsg(pWinData->hwndMainClient,
-                       XM_UPDATEPOINTER,
-                       0, 0);
-
-            if (pThreadData->pll)
-            {
-                PLISTNODE pNode = lstQueryFirstNode(pThreadData->pll);
-                while (pNode)
-                {
-                    PMINIRECORDCORE prec = (PMINIRECORDCORE)pNode->pItemData;
-                    WPFolder *pFolder;
-                    if (pFolder = GetFSFromRecord(prec, TRUE))
-                    {
-                        ClearContainer(pWinData->hwndFilesCnr,
-                                       &pWinData->llFileObjectsInserted);
-
-                        InsertFolderContents(pWinData->hwndMainClient,
-                                             pWinData->hwndFilesCnr,
-                                             pFolder,
-                                             NULL,      // no parent
-                                             FALSE,         // all records
-                                             pWinData->szFileMask, // file mask
-                                             &pWinData->llFileObjectsInserted,
-                                             NULL,
-                                             &ptiMyself->fExit);
-                    }
-
-                    pNode = pNode->pNext;
-                }
-
-                lstFree(&pThreadData->pll);
-            }
-
-            // clear wait pointer
-            (pWinData->cThreadsRunning)--;
-            WinPostMsg(pWinData->hwndMainClient,
-                       XM_UPDATEPOINTER,
-                       0, 0);
-        }
-
-        FREE(pThreadData);
-    }
-    CATCH(excpt1)
-    {
-    } END_CATCH();
-}
-
-/*
- *@@ StartInsertContents:
- *      starts the "insert contents" thread (fntInsertContents).
- *
- *      Returns FALSE if the thread was not started
- *      because it was already running.
- *
- *@@added V0.9.9 (2001-03-10) [umoeller]
- */
-
-BOOL StartInsertContents(PFILEDLGDATA pWinData,
-                         PMINIRECORDCORE precc)      // in: record of folder (never NULL)
-{
-    if (pWinData->tidInsertContentsRunning)
-        return (FALSE);
-    else
-    {
-        PINSERTTHREADSDATA pData;
-        if (pData = malloc(sizeof(INSERTTHREADSDATA)))
-        {
-            pData->pWinData = pWinData;
-            pData->pll = lstCreate(FALSE);
-            lstAppendItem(pData->pll, precc);
-            thrCreate(&pWinData->tiInsertContents,
-                      fntInsertContents,
-                      &pWinData->tidInsertContentsRunning,
-                      "InsertContents",
-                      THRF_PMMSGQUEUE | THRF_WAIT,
-                      (ULONG)pData);
-        }
-    }
-
-    WinSetPointer(HWND_DESKTOP,
-                  QueryCurrentPointer(pWinData->hwndMainClient));
-
-    return (TRUE);
 }
 
 /* ******************************************************************
@@ -1479,7 +1444,7 @@ BOOL StartInsertContents(PFILEDLGDATA pWinData,
  */
 
 HWND CreateFrameWithCnr(ULONG ulFrameID,
-                        HWND hwndMainClient,        // in: main client window
+                        HWND hwndMainControl,        // in: main client window
                         BOOL fMultipleSelection,
                         HWND *phwndClient)          // out: client window (cnr)
 {
@@ -1500,7 +1465,7 @@ HWND CreateFrameWithCnr(ULONG ulFrameID,
                 | CCS_MINIICONS
                 | CCS_SINGLESEL;        // one item at a time
 
-    hwndFrame = winhCreateStdWindow(hwndMainClient, // parent
+    hwndFrame = winhCreateStdWindow(hwndMainControl, // parent
                                     NULL,          // pswpFrame
                                     FCF_NOBYTEALIGN,
                                     WS_VISIBLE,
@@ -1512,18 +1477,18 @@ HWND CreateFrameWithCnr(ULONG ulFrameID,
                                     NULL,
                                     phwndClient);
     // set client as owner
-    WinSetOwner(hwndFrame, hwndMainClient);
+    WinSetOwner(hwndFrame, hwndMainControl);
 
     return (hwndFrame);
 }
 
 /*
- *@@ MainClientCreate:
+ *@@ MainControlCreate:
  *      part of the implementation for WM_CREATE. This
  *      creates all the controls.
  */
 
-MPARAM MainClientCreate(HWND hwnd,
+MPARAM MainControlCreate(HWND hwnd,
                         PFILEDLGDATA pWinData)
 {
     MPARAM mrc = (MPARAM)FALSE;         // return value of WM_CREATE: 0 == OK
@@ -1717,13 +1682,13 @@ MPARAM MainClientCreate(HWND hwnd,
 }
 
 /*
- *@@ MainClientChar:
- *      implementation for WM_CHAR in fnwpMainClient.
+ *@@ MainControlChar:
+ *      implementation for WM_CHAR in fnwpMainControl.
  *
  *@@added V0.9.9 (2001-03-13) [umoeller]
  */
 
-MRESULT MainClientChar(HWND hwnd, MPARAM mp1, MPARAM mp2)
+MRESULT MainControlChar(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     BOOL brc = FALSE;               // not processed
     PFILEDLGDATA pWinData = WinQueryWindowPtr(hwnd, QWL_USER);
@@ -1745,10 +1710,9 @@ MRESULT MainClientChar(HWND hwnd, MPARAM mp1, MPARAM mp2)
                 switch (usvk)
                 {
                     case VK_TAB:
-                    {
                         // find next focus window
                         dlghSetNextFocus(&pWinData->llDialogControls);
-                    break; }
+                    break;
 
                     case VK_BACKTAB:
                         // note: shift+tab produces this!!
@@ -1761,7 +1725,7 @@ MRESULT MainClientChar(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         PMINIRECORDCORE prec = (PMINIRECORDCORE)WinSendMsg(
                                                 pWinData->hwndDrivesCnr,
                                                 CM_QUERYRECORD,
-                                                (MPARAM)pWinData->precSelectedInDrives,
+                                                (MPARAM)pWinData->precFolderContentsShowing,
                                                 MPFROM2SHORT(CMA_PARENT,
                                                              CMA_ITEMORDER));
                         if (prec)
@@ -1769,7 +1733,8 @@ MRESULT MainClientChar(HWND hwnd, MPARAM mp1, MPARAM mp2)
                             cnrhSelectRecord(pWinData->hwndDrivesCnr,
                                              prec,
                                              TRUE);
-                    break; }
+                    }
+                    break;
 
                     case VK_ESC:
                         WinPostMsg(hwnd,
@@ -1797,9 +1762,9 @@ MRESULT MainClientChar(HWND hwnd, MPARAM mp1, MPARAM mp2)
 }
 
 /*
- *@@ MainClientRepositionControls:
+ *@@ MainControlRepositionControls:
  *      part of the implementation of WM_SIZE in
- *      fnwpMainClient. This resizes all subwindows
+ *      fnwpMainControl. This resizes all subwindows
  *      of the main client -- the split window and
  *      the controls on bottom.
  *
@@ -1807,7 +1772,7 @@ MRESULT MainClientChar(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      cause the two container frames to be adjusted.
  */
 
-VOID MainClientRepositionControls(HWND hwnd,
+VOID MainControlRepositionControls(HWND hwnd,
                                   PFILEDLGDATA pWinData,
                                   MPARAM mp2)
 {
@@ -1955,7 +1920,157 @@ VOID MainClientRepositionControls(HWND hwnd,
 }
 
 /*
- *@@ fnwpMainClient:
+ *@@ InsertContents:
+ *      inserts the contents of the given folder into
+ *      the given container.
+ *
+ *      It is assumed that the folder is already populated.
+ *
+ *      If (precParent != NULL), the contents are inserted
+ *      as child records below that record. Of course that
+ *      will work in Tree view only.
+ *
+ *      In addition, if (hwndAddFirstChild != NULLHANDLE),
+ *      this will fire an CM_ADDFIRSTCHILD msg to that
+ *      window for every record that was inserted.
+ *
+ *@@added V0.9.18 (2002-02-06) [umoeller]
+ */
+
+VOID InsertContents(WPFolder *pFolder,              // in: populated folder
+                    HWND hwndCnr,                   // in: cnr to insert records to
+                    PMINIRECORDCORE precParent,     // in: parent record or NULL
+                    ULONG ulFoldersOnly,            // in: as with IsInsertable
+                    HWND hwndAddFirstChild,         // in: if != 0, we post CM_ADDFIRSTCHILD for each item too
+                    PCSZ pcszFileMask,              // in: file mask filter or NULL
+                    PLINKLIST pllObjects)           // in/out: linked list of objs that were inserted
+{
+    BOOL        fFolderSem = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (fFolderSem = !fdrRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
+        {
+            // count objects that should be inserted
+            WPObject    *pObject;
+            ULONG       cObjects = 0;
+            for (   pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
+                    pObject;
+                    pObject = *wpshGetNextObjPointer(pObject)
+                )
+            {
+                if (IsInsertable(pObject,
+                                 ulFoldersOnly,
+                                 pcszFileMask))
+                    cObjects++;
+            }
+
+            _Pmpf(("--> run 1: got %d objects", cObjects));
+
+            // 2) build array
+            if (cObjects)
+            {
+                // allocate array of objects to be inserted
+                WPObject    **papObjects;
+                ULONG       cAddFirstChilds = 0;
+
+                if (papObjects = (WPObject**)malloc(sizeof(WPObject*) * cObjects))
+                {
+                    ULONG ul;
+                    WPObject **ppThis = papObjects;
+                    // reset object count, this might change
+                    cObjects = 0;
+
+                    for (   pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
+                            pObject;
+                            pObject = *wpshGetNextObjPointer(pObject)
+                        )
+                    {
+                        if (IsInsertable(pObject,
+                                         ulFoldersOnly,
+                                         pcszFileMask))
+                        {
+                            if (!IsObjectInCnr(pObject, hwndCnr))
+                            {
+                                *ppThis = pObject;
+                                ppThis++;
+                                cObjects++;
+                            }
+
+                            if (    (hwndAddFirstChild)
+                                 && (_somIsA(pObject, _WPFolder))
+                               )
+                            {
+                                if (!cAddFirstChilds)
+                                {
+                                    // first post: tell thread to update
+                                    // the wait pointer
+                                    WinPostMsg(hwndAddFirstChild,
+                                               FM2_ADDFIRSTCHILD_BEGIN,
+                                               0, 0);
+                                    cAddFirstChilds++;
+                                }
+
+                                WinPostMsg(hwndAddFirstChild,
+                                           FM2_ADDFIRSTCHILD_NEXT,
+                                           (MPARAM)pObject,
+                                           NULL);
+                            }
+                        }
+                    }
+
+                    _Pmpf(("--> run 2: got %d objects", cObjects));
+
+                    _wpclsInsertMultipleObjects(_somGetClass(pFolder),
+                                                hwndCnr,
+                                                NULL,
+                                                (PVOID*)papObjects,
+                                                precParent,
+                                                cObjects);
+
+                    for (ul = 0;
+                         ul < cObjects;
+                         ul++)
+                    {
+                        // BOOL fAppend = FALSE;
+                        WPObject *pobjThis = papObjects[ul];
+
+                        // lock the object!! we must make sure
+                        // the WPS won't let it go dormant
+                        // _wpLockObject(pobjThis);
+                                // no, populate has locked it already
+                                // V0.9.18 (2002-02-06) [umoeller]
+                                // unlock is in "clear container"
+                        if (pllObjects)
+                            lstAppendItem(pllObjects, pobjThis);
+                    }
+
+                    free(papObjects);
+                }
+
+                if (cAddFirstChilds)
+                {
+                    // we had any "add-first-child" posts:
+                    // post another msg which will get processed
+                    // after all the "add-first-child" things
+                    // so that the wait ptr can be reset
+                    WinPostMsg(hwndAddFirstChild,
+                               FM2_ADDFIRSTCHILD_DONE,
+                               0, 0);
+                }
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
+
+    if (fFolderSem)
+        fdrReleaseFolderMutexSem(pFolder);
+}
+
+/*
+ *@@ fnwpMainControl:
  *      winproc for the main client (child of the main frame
  *      of the file dlg). By definition, this winproc is
  *      reponsible for managing the actual dialog functionality...
@@ -1966,7 +2081,7 @@ VOID MainClientRepositionControls(HWND hwnd,
  *
  +      WC_FRAME        (main file dlg, not subclassed)
  +        |
- +        +--- WC_CLIENT (fnwpMainClient)
+ +        +--- WC_CLIENT (fnwpMainControl)
  +                |
  +                +--- split window (cctl_splitwin.c)
  +                |      |
@@ -1984,9 +2099,10 @@ VOID MainClientRepositionControls(HWND hwnd,
  +
  *
  *@@added V0.9.9 (2001-03-10) [umoeller]
+ *@@changed V0.9.18 (2002-02-06) [umoeller]: largely rewritten for new thread synchronization
  */
 
-MRESULT EXPENTRY fnwpMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+MRESULT EXPENTRY fnwpMainControl(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -2000,7 +2116,7 @@ MRESULT EXPENTRY fnwpMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                 WinSetWindowPtr(hwnd, QWL_USER, mp1);
 
                 // create controls
-                mrc = MainClientCreate(hwnd, pWinData);
+                mrc = MainControlCreate(hwnd, pWinData);
             }
             else
                 // no PFILEDLGDATA:
@@ -2019,7 +2135,8 @@ MRESULT EXPENTRY fnwpMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                                          SYSCLR_DIALOGBACKGROUND,
                                          0));
             WinEndPaint(hps);
-        break; }
+        }
+        break;
 
         /*
          * WM_SIZE:
@@ -2031,8 +2148,9 @@ MRESULT EXPENTRY fnwpMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
             PFILEDLGDATA pWinData = WinQueryWindowPtr(hwnd, QWL_USER);
             if (pWinData)
-                MainClientRepositionControls(hwnd, pWinData, mp2);
-        break; }
+                MainControlRepositionControls(hwnd, pWinData, mp2);
+        }
+        break;
 
         /*
          * WM_COMMAND:
@@ -2053,8 +2171,8 @@ MRESULT EXPENTRY fnwpMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                         // and check if it contains a wildcard.
                         // For some reason people have become
                         // accustomed to this.
-                        PSZ pszFullFile = winhQueryWindowText(pWinData->hwndFileEntry);
-                        if (pszFullFile)
+                        PSZ pszFullFile;
+                        if (pszFullFile = winhQueryWindowText(pWinData->hwndFileEntry))
                         {
                             ParseAndUpdate(pWinData,
                                            pszFullFile);
@@ -2063,7 +2181,8 @@ MRESULT EXPENTRY fnwpMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                             free(pszFullFile);
                         }
 
-                    break; }
+                    }
+                    break;
 
                     case DID_CANCEL:
                         pWinData->pfd->lReturn = DID_CANCEL;
@@ -2071,7 +2190,8 @@ MRESULT EXPENTRY fnwpMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                                 // main msg loop detects that
                     break;
                 }
-        break; }
+        }
+        break;
 
         /*
          * WM_CHAR:
@@ -2081,192 +2201,279 @@ MRESULT EXPENTRY fnwpMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
          */
 
         case WM_CHAR:
-            mrc = MainClientChar(hwnd, mp1, mp2);
+            mrc = MainControlChar(hwnd, mp1, mp2);
         break;
 
         /*
-         * XM_FILLFILESCNR:
-         *      gets posted from fnwpSubclassedDrivesFrame when
-         *      a tree item gets selected in the left drives tree.
+         *@@ CM_FILLFOLDER:
+         *      posted to the main control to fill
+         *      the dialog when a new folder has been
+         *      selected in the left drives tree.
          *
-         *      Has MINIRECORDCORE of "folder" to fill files cnr with
-         *      in mp1.
+         *      This automatically offloads populate
+         *      to fntPopulate, which will then post
+         *      a bunch of messages back to us so we
+         *      can update the dialog properly.
+         *
+         *      Parameters:
+         *
+         *      --  PMINIRECORDCODE mp1: record of folder
+         *          (or disk or whatever) to fill with.
+         *
+         *      --  ULONG mp2: dialog flags.
+         *
+         *      mp2 can be any combination of the following:
+         *
+         *      --  If FFL_FOLDERSONLY is set, this operates
+         *          in "folders only" mode. We will then
+         *          populate the folder with subfolders only
+         *          and expand the folder on the left. The
+         *          files list is not changed.
+         *
+         *          If the flag is not set, the folder is
+         *          fully populated and the files list is
+         *          updated as well.
+         *
+         *      --  If FFL_SCROLLTO is set, we will scroll
+         *          the drives tree so that the given record
+         *          becomes visible.
+         *
+         *      --  If FFL_EXPAND is set, we will also expand
+         *          the record in the drives tree after
+         *          populate and run "add first child" for
+         *          each subrecord that was inserted.
+         *
+         *@@added V0.9.18 (2002-02-06) [umoeller]
          */
 
-        case XM_FILLFILESCNR:
+        case FM_FILLFOLDER:
         {
             PFILEDLGDATA pWinData = WinQueryWindowPtr(hwnd, QWL_USER);
             PMINIRECORDCORE prec = (PMINIRECORDCORE)mp1;
+            BOOL        fFolderChanged = FALSE;
+            WPFolder    *pFolder;
 
-            if (prec != pWinData->precSelectedInDrives)
+            _Pmpf((__FUNCTION__ ": CM_FILLFOLDER %s, fFdrsOnly %d",
+                        prec->pszIcon,
+                        mp2));
+
+            if (0 == ((ULONG)mp2 & FFL_FOLDERSONLY))
+                // not folders-only: then we need to
+                // refresh the files list
+                ClearContainer(pWinData->hwndFilesCnr,
+                               &pWinData->llFileObjectsInserted);
+
+            // if (!pWinData->tidPopulateRunning)
             {
-                pWinData->precSelectedInDrives = prec;
+                PPOPULATEDATA   pData;
 
-                if (pWinData->fFileDlgReady)
+                if (pData = NEW(POPULATEDATA))
                 {
-                    if (!StartInsertContents(pWinData,
-                                             prec))
-                    {
-                        // thread is still busy:
-                        // repost
-                        winhSleep(100);
-                        WinPostMsg(hwnd, msg, mp1, mp2);
-                    }
-                    else
-                    {
-                        // thread started:
-                        // check if the object is a disk object
-                        WPObject *pobj = OBJECT_FROM_PREC(prec);
-                        if (_somIsA(pobj, _WPDisk))
-                        {
-                            WinPostMsg(pWinData->hwndAddChildren,
-                                       ACM_ADDCHILDREN,
-                                       (MPARAM)prec,
-                                       0);
-                        }
-                    }
+                    pData->pWinData = pWinData;
+                    pData->prec = prec;
+                    pData->fl = (ULONG)mp2;
+
+                    WinPostMsg(pWinData->hwndPopulate,
+                               FM2_POPULATE,
+                               (MPARAM)pData,
+                               NULL);
+                        // populate posts the other msgs
                 }
             }
-        break; }
+        }
+        break;
 
         /*
-         * XM_INSERTOBJARRAY:
-         *      has INSERTOBJECTSARRAY pointer in mp1.
-         *      This is _sent_ always so the pointer must
-         *      not be freed.
+         *@@ FM_POPULATED_FILLTREE:
+         *      posted by fntPopulate after populate has been
+         *      done for a folder. This gets posted in any case,
+         *      if the folder was populated in folders-only mode
+         *      or not.
+         *
+         *      Parameters:
+         *
+         *      --  PMINIRECORDCODE mp1: record of folder
+         *          (or disk or whatever) to fill with.
+         *
+         *      --  ULONG mp2: FFL_* flags for whether to
+         *          expand.
+         *
+         *@@added V0.9.18 (2002-02-06) [umoeller]
          */
 
-        case XM_INSERTOBJARRAY:
-        {
-            PFILEDLGDATA pWinData = WinQueryWindowPtr(hwnd, QWL_USER);
-            PINSERTOBJECTSARRAY pioa = (PINSERTOBJECTSARRAY)mp1;
-            if (pioa)
+        case FM_POPULATED_FILLTREE:
+
+            _Pmpf((__FUNCTION__ ": FM_POPULATED_FILLTREE %s",
+                        mp1
+                            ? ((PMINIRECORDCORE)mp1)->pszIcon
+                            : "NULL"));
+
+            if (mp1)
             {
-                CHAR    szPathName[CCHMAXPATH + 4];
-                ULONG   ul;
-                POINTL  ptlIcon = {0, 0};
-                // _Pmpf(("XM_INSERTOBJARRAY: inserting %d recs", pioa->cObjects));
+                PMINIRECORDCORE prec = mp1;
+                PFILEDLGDATA pWinData = WinQueryWindowPtr(hwnd, QWL_USER);
+                WPFolder    *pFolder = GetFSFromRecord(mp1, TRUE);
+                PLISTNODE   pNode;
+                HWND        hwndAddFirstChild = NULLHANDLE;
 
-                // now differentiate...
-                // if this is for the "files" container,
-                // we can do wpclsInsertMultipleObjects,
-                // which is way faster.
-                if (pioa->hwndCnr != pWinData->hwndFilesCnr)
+                if ((ULONG)mp2 & FFL_EXPAND)
                 {
-                    // this is for the "drives" container:
-                    // we can't use wpclsInsertMultipleObjects
-                    // because this fails if only one object
-                    // has already been inserted, which is
-                    // frequently the case here. Dull WPS.
-                    // So we need to insert the objects one
-                    // by one.
-                    for (ul = 0;
-                         ul < pioa->cObjects;
-                         ul++)
-                    {
-                        // BOOL fAppend = FALSE;
-                        WPObject *pobjThis = pioa->papObjects[ul];
+                    BOOL        fOld = pWinData->fFileDlgReady;
+                    // stop control notifications from messing with this
+                    pWinData->fFileDlgReady = FALSE;
+                    cnrhExpandFromRoot(pWinData->hwndDrivesCnr,
+                                       (PRECORDCORE)prec);
+                    // then fire CM_ADDFIRSTCHILD too
+                    hwndAddFirstChild = pWinData->hwndPopulate;
 
-                        PMINIRECORDCORE prec;
-                        if (prec = _wpCnrInsertObject(pobjThis,
-                                                      pioa->hwndCnr,
-                                                      &ptlIcon,
-                                                      pioa->precParent,
-                                                      NULL))
-                        {
-                            // lock the object!! we must make sure
-                            // the WPS won't let it go dormant
-                            _wpLockObject(pobjThis);
-                                    // unlock is in "clear container"
+                    // re-enable control notifications
+                    pWinData->fFileDlgReady = fOld;
+                }
 
-                            if (pioa->pllObjects)
-                                lstAppendItem(pioa->pllObjects, pobjThis);
-                            if (pioa->pllRecords)
-                                lstAppendItem(pioa->pllRecords, prec);
-                        }
-                    }
+                // insert subfolders into tree on the left
+                InsertContents(pFolder,
+                               pWinData->hwndDrivesCnr,
+                               (PMINIRECORDCORE)mp1,
+                               2,       // folders only
+                               hwndAddFirstChild,
+                               NULL,       // file mask
+                               &pWinData->llDriveObjectsInserted);
+            }
+        break;
+
+        /*
+         *@@ FM_POPULATED_SCROLLTO:
+         *
+         *      Parameters:
+         *
+         *      --  PMINIRECORDCODE mp1: record of folder
+         *          (or disk or whatever) that was populated
+         *          and should now be scrolled to.
+         *
+         *@@added V0.9.18 (2002-02-06) [umoeller]
+         */
+
+        case FM_POPULATED_SCROLLTO:
+        {
+            ULONG ul;
+            PFILEDLGDATA pWinData = WinQueryWindowPtr(hwnd, QWL_USER);
+            BOOL        fOld = pWinData->fFileDlgReady;
+
+            _Pmpf((__FUNCTION__ ": FM_POPULATED_SCROLLTO %s",
+                        mp1
+                            ? ((PMINIRECORDCORE)mp1)->pszIcon
+                            : "NULL"));
+
+            // stop control notifications from messing with this
+            pWinData->fFileDlgReady = FALSE;
+
+            /* cnrhExpandFromRoot(pWinData->hwndDrivesCnr,
+                               (PRECORDCORE)mp1); */
+            ul = cnrhScrollToRecord(pWinData->hwndDrivesCnr,
+                                    (PRECORDCORE)mp1,
+                                    CMA_ICON | CMA_TEXT | CMA_TREEICON,
+                                    TRUE);       // keep parent
+            cnrhSelectRecord(pWinData->hwndDrivesCnr,
+                             (PRECORDCORE)mp1,
+                             TRUE);
+            if (ul && ul != 3)
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                        "Error: cnrhScrollToRecord returned %d", ul);
+
+            // re-enable control notifications
+            pWinData->fFileDlgReady = fOld;
+        }
+        break;
+
+        /*
+         *@@ FM_POPULATED_FILLFILES:
+         *      posted by fntPopulate after populate has been
+         *      done for the newly selected folder, if this
+         *      was not in folders-only mode. We must then fill
+         *      the right half of the dialog with all the objects.
+         *
+         *      Parameters:
+         *
+         *      --  PMINIRECORDCODE mp1: record of folder
+         *          (or disk or whatever) to fill with.
+         *
+         *      --  WPFolder* mp2: folder that was populated
+         *          for that record.
+         *
+         *@@added V0.9.18 (2002-02-06) [umoeller]
+         */
+
+        case FM_POPULATED_FILLFILES:
+
+            _Pmpf((__FUNCTION__ ": FM_POPULATED_FILLFILES %s",
+                        mp1
+                            ? ((PMINIRECORDCORE)mp1)->pszIcon
+                            : "NULL"));
+
+
+            if ((mp1) && (mp2))
+            {
+                PFILEDLGDATA pWinData = WinQueryWindowPtr(hwnd, QWL_USER);
+                WPFolder    *pFolder = (WPFolder*)mp2;
+                CHAR        szPathName[2*CCHMAXPATH];
+
+                // insert all contents into list on the right
+                InsertContents(pFolder,
+                               pWinData->hwndFilesCnr,
+                               NULL,    // parent
+                               0,       // folders only
+                               NULLHANDLE,      // no add first child
+                               pWinData->szFileMask,
+                               &pWinData->llFileObjectsInserted);
+
+                // set new "directory" static on bottom
+                _wpQueryFilename(pFolder,
+                                 szPathName,
+                                 TRUE);     // fully q'fied
+                strcat(szPathName, "\\");
+                strcat(szPathName, pWinData->szFileMask);
+                WinSetWindowText(pWinData->hwndDirValue,
+                                 szPathName);
+
+                // now, if this is for the files cnr, we must make
+                // sure that the container owner (the parent frame)
+                // has been subclassed by us... we do this AFTER
+                // the WPS subclasses the owner, which happens during
+                // record insertion
+
+                if (!pWinData->fFilesFrameSubclassed)
+                {
+                    // not subclassed yet:
+                    // subclass now
+
+                    pWinData->psfvFiles
+                        = fdrCreateSFV(pWinData->hwndFilesFrame,
+                                       pWinData->hwndFilesCnr,
+                                       QWL_USER,
+                                       pFolder,
+                                       pFolder);
+                    pWinData->psfvFiles->pfnwpOriginal
+                        = WinSubclassWindow(pWinData->hwndFilesFrame,
+                                            fnwpSubclassedFilesFrame);
+                    pWinData->fFilesFrameSubclassed = TRUE;
                 }
                 else
                 {
-                    // files container:
-                    // then we can use fast insert
-                    // _Pmpf(("    fast insert"));
-                    _wpclsInsertMultipleObjects(_somGetClass(pioa->pFolder),
-                                                pioa->hwndCnr,
-                                                NULL,
-                                                (PVOID*)pioa->papObjects,
-                                                pioa->precParent,
-                                                pioa->cObjects);
-                    // _Pmpf(("    fast insert done, locking"));
-
-                    for (ul = 0;
-                         ul < pioa->cObjects;
-                         ul++)
-                    {
-                        // BOOL fAppend = FALSE;
-                        WPObject *pobjThis = pioa->papObjects[ul];
-
-                        // lock the object!! we must make sure
-                        // the WPS won't let it go dormant
-                        _wpLockObject(pobjThis);
-                                // unlock is in "clear container"
-                        if (pioa->pllObjects)
-                            lstAppendItem(pioa->pllObjects, pobjThis);
-                    }
-                    // _Pmpf(("    done locking"));
-
-                    // set new "directory" static on bottom
-                    _wpQueryFilename(pioa->pFolder,
-                                     szPathName,
-                                     TRUE);     // fully q'fied
-                    strcat(szPathName, "\\");
-                    strcat(szPathName, pWinData->szFileMask);
-                    WinSetWindowText(pWinData->hwndDirValue,
-                                     szPathName);
-
-                    // now, if this is for the files cnr, we must make
-                    // sure that the container owner (the parent frame)
-                    // has been subclassed by us... we do this AFTER
-                    // the WPS subclasses the owner, which happens during
-                    // record insertion
-
-                    if (!pWinData->fFilesFrameSubclassed)
-                    {
-                        // not subclassed yet:
-                        // subclass now
-
-                        pWinData->psfvFiles
-                            = fdrCreateSFV(pWinData->hwndFilesFrame,
-                                           pWinData->hwndFilesCnr,
-                                           QWL_USER,
-                                           pioa->pFolder,
-                                           pioa->pFolder);
-                        pWinData->psfvFiles->pfnwpOriginal
-                            = WinSubclassWindow(pWinData->hwndFilesFrame,
-                                                fnwpSubclassedFilesFrame);
-                        pWinData->fFilesFrameSubclassed = TRUE;
-                    }
-                    else
-                    {
-                        // already subclassed:
-                        // update the folder pointers in the SFV
-                        pWinData->psfvFiles->somSelf = pioa->pFolder;
-                        pWinData->psfvFiles->pRealObject = pioa->pFolder;
-                    }
+                    // already subclassed:
+                    // update the folder pointers in the SFV
+                    pWinData->psfvFiles->somSelf = pFolder;
+                    pWinData->psfvFiles->pRealObject = pFolder;
                 }
-
-                // _Pmpf(("XM_INSERTOBJARRAY: done"));
             }
-
-        break; }
+        break;
 
         /*
-         * XM_UPDATEPOINTER:
+         * CM_UPDATEPOINTER:
          *      posted when threads exit etc. to update
          *      the current pointer.
          */
 
-        case XM_UPDATEPOINTER:
+        case FM_UPDATEPOINTER:
             WinSetPointer(HWND_DESKTOP,
                           QueryCurrentPointer(hwnd));
         break;
@@ -2286,6 +2493,8 @@ MRESULT EXPENTRY fnwpMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *      We use the XFolder subclassed window proc for
  *      most messages. In addition, we intercept a
  *      couple more for extra features.
+ *
+ *@@changed V0.9.18 (2002-02-06) [umoeller]: many fixes for new threads synchronization
  */
 
 MRESULT EXPENTRY fnwpSubclassedDrivesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2305,6 +2514,40 @@ MRESULT EXPENTRY fnwpSubclassedDrivesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1
                 switch (usNotifyCode)
                 {
                     /*
+                     * CN_EMPHASIS:
+                     *      selection changed:
+                     */
+
+                    case CN_EMPHASIS:
+                    {
+                        HWND            hwndMainControl;
+                        PFILEDLGDATA    pWinData;
+                        PNOTIFYRECORDEMPHASIS pnre = (PNOTIFYRECORDEMPHASIS)mp2;
+                        PMINIRECORDCORE prec;
+
+                        if (    (pnre->pRecord)
+                             && (pnre->fEmphasisMask & CRA_SELECTED)
+                             && (prec = (PMINIRECORDCORE)pnre->pRecord)
+                             && (prec->flRecordAttr & CRA_SELECTED)
+                             && (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
+                             && (pWinData = WinQueryWindowPtr(hwndMainControl, QWL_USER))
+                             // notifications not disabled?
+                             && (pWinData->fFileDlgReady)
+                             // record changed?
+                             && (prec != pWinData->precFolderContentsShowing)
+                           )
+                        {
+                            _Pmpf((__FUNCTION__ ": CN_EMPHASIS %s",
+                                    prec->pszIcon));
+
+                            PostFillFolder(pWinData,
+                                           prec,
+                                           0);
+                        }
+                    }
+                    break;
+
+                    /*
                      * CN_EXPANDTREE:
                      *      user clicked on "+" sign next to
                      *      tree item; expand that, but start
@@ -2313,21 +2556,30 @@ MRESULT EXPENTRY fnwpSubclassedDrivesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1
 
                     case CN_EXPANDTREE:
                     {
-                        HWND hwndMainClient;
-                        PFILEDLGDATA pWinData;
-                        if (    (hwndMainClient = WinQueryWindow(hwndFrame, QW_OWNER))
-                             && (pWinData = WinQueryWindowPtr(hwndMainClient, QWL_USER))
+                        HWND            hwndMainControl;
+                        PFILEDLGDATA    pWinData;
+                        PMINIRECORDCORE prec;
+
+                        if (    (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
+                             && (pWinData = WinQueryWindowPtr(hwndMainControl, QWL_USER))
+                             // notifications not disabled?
+                             && (pWinData->fFileDlgReady)
+                             && (prec = (PMINIRECORDCORE)mp2)
                            )
                         {
-                            WinPostMsg(pWinData->hwndAddChildren,
-                                       ACM_ADDCHILDREN,
-                                       (MPARAM)mp2,
-                                       0);
+                            _Pmpf((__FUNCTION__ ": CN_EXPANDTREE %s",
+                                    prec->pszIcon));
+
+                            PostFillFolder(pWinData,
+                                           prec,
+                                           FFL_FOLDERSONLY | FFL_EXPAND);
+
+                            // and call default because xfolder
+                            // handles auto-scroll
+                            fCallDefault = TRUE;
                         }
-                        // and call default because xfolder
-                        // handles auto-scroll
-                        fCallDefault = TRUE;
-                    break; }
+                    }
+                    break;
 
                     /*
                      * CN_ENTER:
@@ -2362,28 +2614,8 @@ MRESULT EXPENTRY fnwpSubclassedDrivesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1
                                        (MPARAM)prec,
                                        0);
                         }
-                    break; }
-
-                    /*
-                     * CN_EMPHASIS:
-                     *      selection changed:
-                     */
-
-                    case CN_EMPHASIS:
-                    {
-                        PNOTIFYRECORDEMPHASIS pnre = (PNOTIFYRECORDEMPHASIS)mp2;
-                        if (    (pnre->pRecord)
-                             && (pnre->fEmphasisMask & CRA_SELECTED)
-                             && (((PMINIRECORDCORE)(pnre->pRecord))->flRecordAttr & CRA_SELECTED)
-                           )
-                        {
-                            WinPostMsg(WinQueryWindow(hwndFrame, QW_OWNER),
-                                                    // the main client
-                                       XM_FILLFILESCNR,
-                                       (MPARAM)pnre->pRecord,
-                                       0);
-                        }
-                    break; }
+                    }
+                    break;
 
                     default:
                         fCallDefault = TRUE;
@@ -2391,7 +2623,8 @@ MRESULT EXPENTRY fnwpSubclassedDrivesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1
             }
             else
                 fCallDefault = TRUE;
-        break; }
+        }
+        break;
 
         case WM_CHAR:
             // forward to main client
@@ -2412,10 +2645,11 @@ MRESULT EXPENTRY fnwpSubclassedDrivesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1
 
         case WM_CONTROLPOINTER:
         {
-            HWND hwndMainClient = WinQueryWindow(hwndFrame, QW_OWNER);
+            HWND hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER);
                                     // the main client
-            mrc = (MPARAM)QueryCurrentPointer(hwndMainClient);
-        break; }
+            mrc = (MPARAM)QueryCurrentPointer(hwndMainControl);
+        }
+        break;
 
         default:
             fCallDefault = TRUE;
@@ -2458,33 +2692,6 @@ MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1,
             {
                 switch (usNotifyCode)
                 {
-                    case CN_ENTER:
-                    {
-                        PNOTIFYRECORDENTER pnre;
-                        PMINIRECORDCORE prec;
-                        HWND hwndMainClient;
-                        PFILEDLGDATA pWinData;
-                        WPObject *pobj;
-
-                        if (    (pnre = (PNOTIFYRECORDENTER)mp2)
-                             && (prec = (PMINIRECORDCORE)pnre->pRecord)
-                                        // can be null for whitespace!
-                             && (hwndMainClient = WinQueryWindow(hwndFrame, QW_OWNER))
-                             && (pWinData = WinQueryWindowPtr(hwndMainClient, QWL_USER))
-                             && (pobj = GetFSFromRecord(prec, FALSE))
-                           )
-                        {
-                            CHAR szFullFile[CCHMAXPATH];
-                            if (_wpQueryFilename(pobj,
-                                                 szFullFile,
-                                                 TRUE))     // fully q'fied
-                            {
-                                ParseAndUpdate(pWinData,
-                                               szFullFile);
-                            }
-                        }
-                    break; }
-
                     /*
                      * CN_EMPHASIS:
                      *      selection changed:
@@ -2497,7 +2704,7 @@ MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1,
                         PNOTIFYRECORDEMPHASIS pnre = (PNOTIFYRECORDEMPHASIS)mp2;
                         WPObject *pobj;
                         CHAR szFilename[CCHMAXPATH];
-                        HWND hwndMainClient;
+                        HWND hwndMainControl;
                         PFILEDLGDATA pWinData;
                         // if it's not a folder, update the entry field
                         // with the file's name:
@@ -2512,8 +2719,8 @@ MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1,
                              && (!_somIsA(pobj, _WPFolder))
                              // it's a file: get filename
                              && (_wpQueryFilename(pobj, szFilename, FALSE))
-                             && (hwndMainClient = WinQueryWindow(hwndFrame, QW_OWNER))
-                             && (pWinData = WinQueryWindowPtr(hwndMainClient, QWL_USER))
+                             && (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
+                             && (pWinData = WinQueryWindowPtr(hwndMainControl, QWL_USER))
                            )
                         {
                             // OK, file was selected: update windata
@@ -2521,7 +2728,36 @@ MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1,
                             // update entry field
                             WinSetWindowText(pWinData->hwndFileEntry, szFilename);
                         }
-                    break; }
+                    }
+                    break;
+
+                    case CN_ENTER:
+                    {
+                        PNOTIFYRECORDENTER pnre;
+                        PMINIRECORDCORE prec;
+                        HWND hwndMainControl;
+                        PFILEDLGDATA pWinData;
+                        WPObject *pobj;
+
+                        if (    (pnre = (PNOTIFYRECORDENTER)mp2)
+                             && (prec = (PMINIRECORDCORE)pnre->pRecord)
+                                        // can be null for whitespace!
+                             && (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
+                             && (pWinData = WinQueryWindowPtr(hwndMainControl, QWL_USER))
+                             && (pobj = GetFSFromRecord(prec, FALSE))
+                           )
+                        {
+                            CHAR szFullFile[CCHMAXPATH];
+                            if (_wpQueryFilename(pobj,
+                                                 szFullFile,
+                                                 TRUE))     // fully q'fied
+                            {
+                                ParseAndUpdate(pWinData,
+                                               szFullFile);
+                            }
+                        }
+                    }
+                    break;
 
                     default:
                         fCallDefault = TRUE;
@@ -2529,7 +2765,8 @@ MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1,
             }
             else
                 fCallDefault = TRUE;
-        break; }
+        }
+        break;
 
         case WM_CHAR:
             // forward to main client
@@ -2550,10 +2787,11 @@ MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1,
 
         case WM_CONTROLPOINTER:
         {
-            HWND hwndMainClient = WinQueryWindow(hwndFrame, QW_OWNER);
+            HWND hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER);
                                     // the main client
-            mrc = (MPARAM)QueryCurrentPointer(hwndMainClient);
-        break; }
+            mrc = (MPARAM)QueryCurrentPointer(hwndMainControl);
+        }
+        break;
 
         default:
             fCallDefault = TRUE;
@@ -2582,7 +2820,7 @@ MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1,
  *      file dialog with full WPS support, including shadows,
  *      WPS context menus, and all that.
  *
- *      See fnwpMainClient for the (complex) window hierarchy.
+ *      See fnwpMainControl for the (complex) window hierarchy.
  *
  *      Supported file-dialog flags in FILEDLG.fl:
  *
@@ -2691,7 +2929,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
             HAB hab = winhMyAnchorBlock();
             WinRegisterClass(hab,
                              (PSZ)WC_FILEDLGCLIENT,
-                             fnwpMainClient,
+                             fnwpMainControl,
                              CS_CLIPCHILDREN | CS_SIZEREDRAW,
                              sizeof(PFILEDLGDATA));
             s_fRegistered = TRUE;
@@ -2722,8 +2960,8 @@ HWND fdlgFileDlg(HWND hwndOwner,
                                                     WS_VISIBLE | WS_SYNCPAINT, // client style
                                                     0,  // frame ID
                                                     &WinData,
-                                                    &WinData.hwndMainClient);
-        if (!WinData.hwndMainFrame || !WinData.hwndMainClient)
+                                                    &WinData.hwndMainControl);
+        if (!WinData.hwndMainFrame || !WinData.hwndMainControl)
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
                    "Cannot create main window.");
         else
@@ -2809,30 +3047,6 @@ HWND fdlgFileDlg(HWND hwndOwner,
                                                 NULL,       // parent record
                                                 NULL);      // RECORDINSERT
 
-                // insert the folder contents into the
-                // drives tree on the left... this is
-                // relatively fast, so we do this
-                // synchronously
-                InsertFolderContents(WinData.hwndMainClient,
-                                     WinData.hwndDrivesCnr,
-                                     WinData.pDrivesFolder,
-                                     pDrivesRec,   // parent record
-                                     2,         // folders plus disks
-                                     NULL,      // no file mask
-                                     &WinData.llDriveObjectsInserted,
-                                     NULL,
-                                     &fExit);
-                                // note that we do not add children
-                                // to the disk objects yet... this
-                                // would attempt to get the root folder
-                                // for each of them
-
-                // expand "drives"
-                WinSendMsg(WinData.hwndDrivesCnr,
-                           CM_EXPANDTREE,
-                           (MPARAM)pDrivesRec,
-                           MPNULL);
-
                 // this has called wpCnrinsertObjects which
                 // subclasses the container owner, so
                 // subclass this with the XFolder subclass
@@ -2848,17 +3062,30 @@ HWND fdlgFileDlg(HWND hwndOwner,
                     = WinSubclassWindow(WinData.hwndDrivesFrame,
                                         fnwpSubclassedDrivesFrame);
 
+                // and populate this once we're running
+                /* WinSendMsg(WinData.hwndDrivesCnr,
+                           CM_EXPANDTREE,
+                           (MPARAM)pDrivesRec,
+                           0); */
+                PostFillFolder(&WinData,
+                               pDrivesRec,
+                               FFL_FOLDERSONLY);
+                /* WinPostMsg(WinData.hwndMainControl,
+                           CM_FILLFOLDER,
+                           (MPARAM)pDrivesRec,
+                           NULL); */
+
                 if (WinData.psfvDrives->pfnwpOriginal)
                 {
                     // OK, drives frame subclassed:
                     QMSG    qmsg;
                     HAB     hab = WinQueryAnchorBlock(WinData.hwndMainFrame);
 
-                    // create the "add children" thread
-                    thrCreate(&WinData.tiAddChildren,
-                              fntAddChildren,
-                              &WinData.tidAddChildrenRunning,
-                              "AddChildren",
+                    // create the "populate" thread
+                    thrCreate(&WinData.tiPopulate,
+                              fntPopulate,
+                              &WinData.tidPopulateRunning,
+                              "FileDlgPopulate",
                               THRF_PMMSGQUEUE | THRF_WAIT_EXPLICIT,
                                         // "add child" posts event sem
                                         // when it has created the obj wnd
@@ -2903,7 +3130,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
                     while (WinGetMsg(hab, &qmsg, NULLHANDLE, 0, 0))
                     {
                         fExit = FALSE;
-                        if (    (qmsg.hwnd == WinData.hwndMainClient)
+                        if (    (qmsg.hwnd == WinData.hwndMainControl)
                              && (qmsg.msg == WM_CLOSE)
                            )
                         {
@@ -2955,19 +3182,17 @@ HWND fdlgFileDlg(HWND hwndOwner,
      *
      */
 
-    // stop threads
-    WinPostMsg(WinData.hwndAddChildren,
+    // stop threads; we crash if we exit
+    // before these are stopped
+    WinPostMsg(WinData.hwndPopulate,
                WM_QUIT,
                0, 0);
-    WinData.tiAddChildren.fExit = TRUE;
-    WinData.tiInsertContents.fExit = TRUE;
+    // WinData.tiAddChildren.fExit = TRUE;
+    WinData.tiPopulate.fExit = TRUE;
     DosSleep(0);
-    while (    (WinData.tidAddChildrenRunning)
-            || (WinData.tidInsertContentsRunning)
+    while (    (WinData.tidPopulateRunning)
           )
-    {
         winhSleep(50);
-    }
 
     // prevent dialog updates
     WinData.fFileDlgReady = FALSE;

@@ -51,7 +51,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2001 Ulrich M”ller.
+ *      Copyright (C) 2000-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace binary release.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published

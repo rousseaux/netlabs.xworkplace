@@ -21,7 +21,7 @@
  */
 
 /*
- *      Copyright (C) 2000-2001 Ulrich M”ller.
+ *      Copyright (C) 2000-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -465,9 +465,7 @@ BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
                         {
                             XCenterData *somThat = XCenterGetData(pDataThat->somSelf);
 
-                            _Pmpf(("%s cyFrame %d",
-                                    _wpQueryTitle(pDataThat->somSelf),
-                                    pDataThat->cyFrame));
+                            // _Pmpf(("%s cyFrame %d", _wpQueryTitle(pDataThat->somSelf), pDataThat->cyFrame));
 
                             if (somThat->ulPosition == XCENTER_BOTTOM)
                             {
@@ -488,8 +486,8 @@ BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
                                 // this might have caused endless loops
                     }
 
-                    _Pmpf(("  ulCutBottom %d", ulCutBottom));
-                    _Pmpf(("  ulCutTop %d", ulCutTop));
+                    // _Pmpf(("  ulCutBottom %d", ulCutBottom));
+                    // _Pmpf(("  ulCutTop %d", ulCutTop));
                     rclNew.yBottom += ulCutBottom;
                     rclNew.yTop -= ulCutTop;
 

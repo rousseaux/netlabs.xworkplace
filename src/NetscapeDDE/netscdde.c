@@ -17,7 +17,7 @@
  *      for all Netscape versions at
  *      http://developer.netscape.com/library/documentation/communicator/DDE
  *
- *      Copyright (C) 1997-2001 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING

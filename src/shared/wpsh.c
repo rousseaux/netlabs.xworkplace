@@ -39,7 +39,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2001 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -1400,103 +1400,100 @@ BOOL wpshPopulateWithShadows(WPFolder *somSelf)
     // wpclsFindObjectFirst... appears to work
     BOOL        brc = FALSE;
 
-    if (somSelf)
+    if (    (somSelf)
+         && (!(_wpQueryFldrFlags(somSelf) & FOI_POPULATEDWITHALL))
+       )
     {
-        if (!(_wpQueryFldrFlags(somSelf) & FOI_POPULATEDWITHALL))
+        M_WPObject  *pWPObject = _WPObject;
+        BOOL        fFindSem = FALSE,
+                    fFolderSem = FALSE;
+        HFIND       hFind = 0;          // find handle
+
+        TRY_LOUD(excpt1)
         {
-            M_WPObject  *pWPObject = _WPObject;
-            BOOL        fFindSem = FALSE,
-                        fFolderSem = FALSE;
-            HFIND       hFind = 0;          // find handle
-
-            TRY_LOUD(excpt1)
+            // request the find mutex... we are awaking objects here
+            if (fFindSem = !fdrRequestFindMutexSem(somSelf, SEM_INDEFINITE_WAIT))
             {
-                // request the find mutex... we are awaking objects here
-                fFindSem = !fdrRequestFindMutexSem(somSelf, SEM_INDEFINITE_WAIT);
-                if (fFindSem)
+                if (fFolderSem = !fdrRequestFolderMutexSem(somSelf, SEM_INDEFINITE_WAIT))
                 {
-                    fFolderSem = !fdrRequestFolderMutexSem(somSelf, SEM_INDEFINITE_WAIT);
-                    if (fFolderSem)
+                    CLASS       aClasses[2];        // array of classes to look for
+                    OBJECT      aObjects[100];      // buffer for returned objects
+                    ULONG       ulCount,
+                                ulErrorID;
+                                                    // objects count
+
+                    // set "populate" flag
+                    _wpModifyFldrFlags(somSelf,
+                                       FOI_POPULATEINPROGRESS,
+                                       FOI_POPULATEINPROGRESS);
+
+                    // here's the trick how to awake all shadows:
+                    // run wpclsFindObjectFirst with the WPShadow class object
+                    // on the folder...
+                    aClasses[0] = _WPShadow;
+                    aClasses[1] = NULL;         // list terminator
+
+                    // reset the error indicators
+                    _wpclsSetError(pWPObject, 0);
+
+                    brc = FALSE;
+                    // attempt to find the first stack of objects into
+                    // the buffer
+                    ulCount = ARRAYITEMCOUNT(aObjects);
+                    brc = _wpclsFindObjectFirst(pWPObject,
+                                                aClasses,    // classes to find
+                                                &hFind,      // out: handle
+                                                (PSZ)NULL,   // we don't care about the titled
+                                                somSelf,     // folder to search
+                                                FALSE,       // no recurse into subfolders
+                                                NULL,        // extended criteria (?!?)
+                                                aObjects,    // out: objects found
+                                                &ulCount);   // in: size of array;
+                                                             // out: object count found
+                            // all objs are locked!!
+
+                    ulErrorID = _wpclsQueryError(pWPObject);
+
+                    while (    (!brc)
+                            && (ulErrorID == WPERR_BUFFER_OVERFLOW)
+                          )
                     {
-                        CLASS       aClasses[2];        // array of classes to look for
-                        OBJECT      aObjects[100];      // buffer for returned objects
-                        ULONG       ulCount,
-                                    ulErrorID;
-                                                        // objects count
-
-                        // set "populate" flag
-                        _wpModifyFldrFlags(somSelf,
-                                           FOI_POPULATEINPROGRESS,
-                                           FOI_POPULATEINPROGRESS);
-
-                        // here's the trick how to awake all shadows:
-                        // run wpclsFindObjectFirst with the WPShadow class object
-                        // on the folder...
-                        aClasses[0] = _WPShadow;
-                        aClasses[1] = NULL;         // list terminator
-
-                        // reset the error indicators
+                        // buffer wasn't large enough:
+                        // get next set
                         _wpclsSetError(pWPObject, 0);
-
-                        brc = FALSE;
-                        // attempt to find the first stack of objects into
-                        // the buffer
                         ulCount = ARRAYITEMCOUNT(aObjects);
-                        brc = _wpclsFindObjectFirst(pWPObject,
-                                                    aClasses,    // classes to find
-                                                    &hFind,      // out: handle
-                                                    (PSZ)NULL,   // we don't care about the titled
-                                                    somSelf,     // folder to search
-                                                    FALSE,       // no recurse into subfolders
-                                                    NULL,        // extended criteria (?!?)
-                                                    aObjects,    // out: objects found
-                                                    &ulCount);   // in: size of array;
-                                                                 // out: object count found
-                                // all objs are locked!!
-
+                        brc = _wpclsFindObjectNext(pWPObject,
+                                                   hFind,
+                                                   aObjects,
+                                                   &ulCount );
                         ulErrorID = _wpclsQueryError(pWPObject);
+                    }
 
-                        while (    (!brc)
-                                && (ulErrorID == WPERR_BUFFER_OVERFLOW)
-                              )
-                        {
-                            // buffer wasn't large enough:
-                            // get next set
-                            _wpclsSetError(pWPObject, 0);
-                            ulCount = ARRAYITEMCOUNT(aObjects);
-                            brc = _wpclsFindObjectNext(pWPObject,
-                                                       hFind,
-                                                       aObjects,
-                                                       &ulCount );
-                            ulErrorID = _wpclsQueryError(pWPObject);
-                        }
-
-                        // OK, now we got all shadows in the folder too.
-                    } // end if (fFolderSem)
-                } // end if (fFindSem)
-            }
-            CATCH(excpt1)
-            {
-                brc = FALSE;
-            } END_CATCH();
-
-            // release mutexes in reverse order
-            if (fFolderSem)
-                fdrReleaseFolderMutexSem(somSelf);
-            if (fFindSem)
-                fdrReleaseFindMutexSem(somSelf);
-
-            // clean up
-            _wpclsSetError(pWPObject, 0);
-
-            if (hFind)
-                _wpclsFindObjectEnd(pWPObject, hFind);
-
-            // unset "populate" flag again
-            _wpModifyFldrFlags(somSelf,
-                               FOI_POPULATEINPROGRESS,
-                               0);
+                    // OK, now we got all shadows in the folder too.
+                } // end if (fFolderSem)
+            } // end if (fFindSem)
         }
+        CATCH(excpt1)
+        {
+            brc = FALSE;
+        } END_CATCH();
+
+        // release mutexes in reverse order
+        if (fFolderSem)
+            fdrReleaseFolderMutexSem(somSelf);
+        if (fFindSem)
+            fdrReleaseFindMutexSem(somSelf);
+
+        // clean up
+        _wpclsSetError(pWPObject, 0);
+
+        if (hFind)
+            _wpclsFindObjectEnd(pWPObject, hFind);
+
+        // unset "populate" flag again
+        _wpModifyFldrFlags(somSelf,
+                           FOI_POPULATEINPROGRESS,
+                           0);
     }
 
     return (brc);
