@@ -15,6 +15,9 @@
 
 <UL><LI>Documented XWPString setup strings. Added NOSTRINGPAGE setup string.
 
+<P><LI>Giant WPS help rework. &xwp; can now replace most default WPS help
+panels. This can be disabled on the "Features" page in XWPSetup.
+
 </UL>Miscellaneous changes:
 
 <UL><LI>
@@ -27,6 +30,10 @@
 version, of which I do not know whether it actually works. I'd be grateful if Asian
 testers could check whether the bugs that have been reported are fixed by this since,
 again, I have no way of testing DBCS here.
+
+<P><LI>Common: Replaced most wpQueryDefaultHelp overrides with wpclsQueryDefaultHelp
+overrides for changing a class's default help. The previous implementation broke
+instance help assigned via HELPLIBRARY and HELPPANEL.
 
 <P><LI>Program objects: Command line icons were broken (in "Command Prompts" folder),
 and batch files and Win-OS/2 full screen objects didn't work at all. Fixed.

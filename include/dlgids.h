@@ -1994,6 +1994,9 @@
 #ifndef __ALWAYSFIXCLASSTITLES__
 #define ID_XCSI_FIXCLASSTITLES          6005        // V0.9.12 (2001-05-22) [umoeller]
 #endif
+#ifndef __ALWAYSREPLACEHELP__
+#define ID_XCSI_REPLACEHELP             6006        // added V0.9.20 (2002-07-19) [umoeller]
+#endif
 
 #define ID_XCSI_FOLDERFEATURES          6010
 #ifndef __NOCFGSTATUSBARS__

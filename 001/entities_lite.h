@@ -37,7 +37,7 @@
 #define winos2setup "Win16 Settings"
 #define link_desktop "<IMG SRC=\"img/desktop_mini.gif\"><A HREF=\"objects/obj_desktop.html\">Desktop</A>"
 #define link_progobjs "<A HREF=\"objects/obj_pgmobj.html\">program objects</A>"
-#define link_tempsfdr "<IMG SRC=\"img/os2temps_mini.gif\"><A HREF=\"objects/obj_os2temps.html\">\"Templates\" folder</A>"
+#define link_tempsfdr "<IMG SRC=\"img/os2temps_mini.gif\"><A HREF=\"objects/obj_os2wptemplates.html\">\"Templates\" folder</A>"
 #define link_cmdfdr "<IMG SRC=\"img/os2cmdpfdr_mini.gif\"><A HREF=\"objects/obj_os2cmdfdr.html\">\"Command Prompts\" folder</A>"
 #define link_drivesfdr "<IMG SRC=\"img/os2drives_mini.gif\"><A HREF=\"objects/obj_os2drivfdr.html\">\"Drives\" folder</A>"
 #define link_warpcenter "<A HREF=\"objects/obj_os2warpcenter.html\">&warpcenter;</A>"

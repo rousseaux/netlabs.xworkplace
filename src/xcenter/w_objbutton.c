@@ -339,6 +339,7 @@ static VOID OwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cle
  *@@ LoadBitmap:
  *
  *@@added V0.9.19 (2002-04-14) [umoeller]
+ *@@changed V0.9.20 (2002-07-19) [umoeller]: fixed broken bitmap selection for high screen resolutions
  */
 
 VOID LoadBitmap(HWND hwnd,
@@ -368,14 +369,20 @@ VOID LoadBitmap(HWND hwnd,
                        pPrivate->Setup.pszXButtonBmp);
 
         if (    (!pPrivate->hbmXMini)
-             && (!(pPrivate->hbmXMini = GpiLoadBitmap(hps,
+             /* && (!(pPrivate->hbmXMini = GpiLoadBitmap(hps,
                                                       cmnQueryMainResModuleHandle(),
                                                       ID_BMPXMINI,
                                                       0,
-                                                      0)))
+                                                      0))) */
+             // replaced this call to make eButton bitmap selection
+             // correct under all device resolutions V0.9.20 (2002-07-19) [umoeller]
+             && (arc = gpihLoadBitmap(&pPrivate->hbmXMini,
+                                      hps,
+                                      cmnQueryMainResModuleHandle(),
+                                      ID_BMPXMINI))
            )
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "Cannot load X mini bitmap");
+                   "Cannot load X mini bitmap, rc = %d", arc);
 
         if (pPrivate->hbmXMini)
         {

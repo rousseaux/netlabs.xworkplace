@@ -13,7 +13,8 @@
  *      As opposed to the declarations in dlgids.h, these
  *      declarations are NOT used by the NLS resource DLLs.
  *      The declarations have been separated to avoid
- *      unnecessary recompiles.
+ *      unnecessary recompiles. (Not that it helps a whole
+ *      lot.)
  *
  *      Note that with V0.9.0, all the debugging #define's have
  *      been moved to include\setup.h.
@@ -53,19 +54,22 @@
      *  These have been moved here with V0.9.7 (2001-01-17) [umoeller]
      *  and converted to DECLARE_CMN_STRING macros with
      *  V0.9.14 V0.9.14 (2001-07-31) [umoeller].
+     *
+     *  As a result, string constants declared here go into the
+     *  binary exactly ONCE to save space.
+     *
+     *  DECLARE_CMN_STRING is a handy macro which saves us from
+     *  keeping two string lists in both the .h and the .c file.
+     *  If common.h is included from common.c, INCLUDE_COMMON_PRIVATE
+     *  is #define'd, and the string is _defined_ as a global variable.
+     *  Otherwise it is only _declared_ as "extern" so other files can
+     *  see it but reference the one and only global variable.
      */
-
-    // DECLARE_CMN_STRING is a handy macro which saves us from
-    // keeping two string lists in both the .h and the .c file.
-    // If this include file is included from the .c file, the
-    // string is defined as a global variable. Otherwise
-    // it is only declared as "extern" so other files can
-    // see it.
 
     #ifdef INCLUDE_COMMON_PRIVATE
         #define DECLARE_CMN_STRING(str, def) PCSZ str = def
     #else
-        #define DECLARE_CMN_STRING(str, def) extern PCSZ str;
+        #define DECLARE_CMN_STRING(str, def) extern PCSZ str
     #endif
 
     /********************************************************************
@@ -363,6 +367,12 @@
     DECLARE_CMN_STRING(WNDCLASS_SUPPLOBJECT, "XWPSupplFolderObject");
     DECLARE_CMN_STRING(WNDCLASS_APIOBJECT, "XWPAPIObject");
 
+    // ID's of XWorkplace object windows (added V0.9.0)
+    #define ID_THREAD1OBJECT        0x1234
+    #define ID_WORKEROBJECT         0x1235
+    #define ID_QUICKOBJECT          0x1236
+    #define ID_FILEOBJECT           0x1237
+
     /********************************************************************
      *
      *   Other string constants
@@ -394,27 +404,6 @@
     DECLARE_CMN_STRING(ENTITY_XWORKPLACE, XWORKPLACE_STRING);
 
     DECLARE_CMN_STRING(WC_WPFOLDERWINDOW, "wpFolder window");
-
-    /********************************************************************
-     *
-     *   Thread object windows
-     *
-     ********************************************************************/
-
-    // ID's of XWorkplace object windows (added V0.9.0)
-    #define ID_THREAD1OBJECT        0x1234
-    #define ID_WORKEROBJECT         0x1235
-    #define ID_QUICKOBJECT          0x1236
-    #define ID_FILEOBJECT           0x1237
-
-    // object window class names (added V0.9.0)
-    /* extern PCSZ WNDCLASS_WORKEROBJECT;
-    extern PCSZ WNDCLASS_QUICKOBJECT;
-    extern PCSZ WNDCLASS_FILEOBJECT;
-
-    extern PCSZ WNDCLASS_THREAD1OBJECT;
-    extern PCSZ WNDCLASS_SUPPLOBJECT;
-    extern PCSZ WNDCLASS_APIOBJECT; */
 
     /********************************************************************
      *
@@ -603,10 +592,10 @@
     #define SP_MOUSE_MOVEMENT2      133     // new with V0.9.14 (2001-08-02) [lafaix]
 
     // 14) XWPScreen
-    #define SP_PAGER_MAIN        140     // new with V0.9.3 (2000-04-09) [umoeller]
-    #define SP_PAGER_WINDOW      141     // new with V0.9.9 (2001-03-27) [umoeller]
-    #define SP_PAGER_STICKY      142     // new with V0.9.3 (2000-04-09) [umoeller]
-    #define SP_PAGER_COLORS      143     // new with V0.9.3 (2000-04-09) [umoeller]
+    #define SP_PAGER_MAIN           140     // new with V0.9.3 (2000-04-09) [umoeller]
+    #define SP_PAGER_WINDOW         141     // new with V0.9.9 (2001-03-27) [umoeller]
+    #define SP_PAGER_STICKY         142     // new with V0.9.3 (2000-04-09) [umoeller]
+    #define SP_PAGER_COLORS         143     // new with V0.9.3 (2000-04-09) [umoeller]
 
     // 15) XWPString
     #define SP_XWPSTRING            150     // new with V0.9.3 (2000-04-27) [umoeller]
@@ -655,6 +644,8 @@
      *
      ********************************************************************/
 
+    // this variable is FALSE only if Warp 3 is running
+    // (set from shared\init.c)
     extern BOOL G_fIsWarp4;
 
     /********************************************************************
@@ -710,6 +701,8 @@
      *      are enabled. This replaces the global settings
      *      present before V0.9.16.
      *
+     *      See cmnQuerySetting() for details.
+     *
      *@@added V0.9.16 (2001-10-11) [umoeller]
      */
 
@@ -719,6 +712,9 @@
 
 #ifndef __NOICONREPLACEMENTS__
         sfIconReplacements,
+#endif
+#ifndef __ALWAYSREPLACEHELP__
+        sfHelpReplacements,              // added V0.9.20 (2002-07-19) [umoeller]
 #endif
         // sfMoveRefreshNow,        removed V0.9.19 (2002-04-17) [umoeller]
 #ifndef __ALWAYSSUBCLASS__

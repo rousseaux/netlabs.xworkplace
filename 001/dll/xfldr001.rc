@@ -728,7 +728,10 @@ BEGIN
 #ifndef __NOICONREPLACEMENTS__
     ID_XCSI_REPLACEICONS                "Replace Icons"
 #endif
-    /* the following item added with V0.9.4 V0.9.4 (2000-08-08) [umoeller] */
+    /* the following item added with V0.9.20 (2002-07-19) [umoeller] */
+    ID_XCSI_REPLACEHELP                 "Replace default help panels"
+
+    /* the following item added with V0.9.4 (2000-08-08) [umoeller] */
     ID_XCSI_RESIZESETTINGSPAGES         "Adjust settings pages on notebook resize"
     /* the following item's ID and string changed with V0.9.16 (2001-10-15) [umoeller] */
     ID_XCSI_REPLACEICONPAGE             "Replace ""Icon"" page in all settings notebooks"

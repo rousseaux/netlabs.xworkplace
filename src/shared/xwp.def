@@ -84,6 +84,7 @@ EXPORTS
     gpihDestroyXBitmap
     gpihDraw3DFrame
     gpihFindPresFont
+    gpihLoadBitmapFile
     gpihManipulateRGB
     gpihMatchFont
     gpihMediumRGB

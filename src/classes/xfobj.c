@@ -2442,17 +2442,21 @@ SOM_Scope BOOL  SOMLINK xo_wpMenuItemHelpSelected(XFldObject *somSelf,
  *      is selected from the context menu).
  *
  *      Default help can either be instance or class help.
- *      WPobject::wpQueryDefaultHelp checks for whether
+ *      WPObject::wpQueryDefaultHelp checks for whether
  *      the object has HELPLIBRARY and/or HELPPANEL set and
- *      hands out those values if so, or calls the class
- *      method wpclsQueryDefaultHelp on the object's class
- *      object instead.
+ *      hands out those values if so, or otherwise calls the
+ *      class method wpclsQueryDefaultHelp on the object's
+ *      class object instead.
  *
  *      As a result, classes should only override the instance
  *      method if they want to display specific help depending
  *      on the object's instance settings. For example, this
  *      makes sense in XWPProgramFile::wpQueryDefaultHelp in
- *      order to differentiate between program types.
+ *      order to differentiate between program types. To
+ *      change help for an entire class without breaking
+ *      instance help settings for an object, classes should
+ *      override wpclsQueryDefaultHelp. (Finally got this
+ *      right with 0.9.20.)
  *
  *      We override this method to hand out more meaningful
  *      help for many default WPS objects which have no
@@ -2470,7 +2474,11 @@ SOM_Scope BOOL  SOMLINK xo_wpQueryDefaultHelp(XFldObject *somSelf,
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpQueryDefaultHelp");
 
-    if (_pvWPObjectData)
+    if (    (_pvWPObjectData)
+#ifndef __ALWAYSREPLACEHELP__
+         && (cmnQuerySetting(sfHelpReplacements))
+#endif
+       )
     {
         // check the help library, if it's null, it's WPHELP.HLP
         PSZ     p;
@@ -2538,20 +2546,18 @@ SOM_Scope BOOL  SOMLINK xo_wpQueryDefaultHelp(XFldObject *somSelf,
                 strcpy(HelpLibrary, p);
             else
                 *HelpLibrary = '\0';
+
+            return TRUE;
         }
-        else
-            return _wpclsQueryDefaultHelp(_somGetClass(somSelf),
-                                          pHelpPanelId,
-                                          HelpLibrary);
+
+        return _wpclsQueryDefaultHelp(_somGetClass(somSelf),
+                                      pHelpPanelId,
+                                      HelpLibrary);
     }
 
-    return TRUE;
-
-    /*
-    return (XFldObject_parent_WPObject_wpQueryDefaultHelp(somSelf,
-                                                          pHelpPanelId,
-                                                          HelpLibrary));
-    */
+    return XFldObject_parent_WPObject_wpQueryDefaultHelp(somSelf,
+                                                         pHelpPanelId,
+                                                         HelpLibrary);
 }
 
 /*
@@ -2695,70 +2701,75 @@ SOM_Scope BOOL  SOMLINK xo_wpDisplayHelp(XFldObject *somSelf,
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpDisplayHelp");
 
-    // WPS passes WPHELP.HLP as NULL!
-    if (    (!HelpLibrary)
-         || (!*HelpLibrary)
-         || (!stricmp(HelpLibrary, "WPHELP.HLP"))
-         || (strhistr(HelpLibrary, "\\WPHELP.HLP"))
-       )
+#ifndef __ALWAYSREPLACEHELP__
+    if (cmnQuerySetting(sfHelpReplacements))
+#endif
     {
-        ULONG ul,
-              ulNewHelpPanelId = 0;
-        for (ul = 0;
-             ul < ARRAYITEMCOUNT(aReplacements);
-             ++ul)
-        {
-            if (HelpPanelId == aReplacements[ul].ulOldId)
-            {
-                // use template help if set and somSelf is
-                // a template indeed
-                if (    (ulNewHelpPanelId = aReplacements[ul].ulTemplateReplacemendId)
-                     && (_wpQueryStyle(somSelf) & OBJSTYLE_TEMPLATE)
-                   )
-                    break;
-
-                // not template, or we have no help panel if it is:
-                ulNewHelpPanelId = aReplacements[ul].ulReplacementId;
-                break;
-            }
-        }
-
-        // there is a bug in the WPS in that the default help
-        // for a minimized window in the miniwin viewer is
-        // passed as NULL, 0; so display our replacement help
-        // for the miniwin viewer instead
-        if (    (!HelpPanelId)
-             && (ctsIsMinWin(somSelf))
+        // WPS passes WPHELP.HLP as NULL!
+        if (    (!HelpLibrary)
+             || (!*HelpLibrary)
+             || (!stricmp(HelpLibrary, "WPHELP.HLP"))
+             || (strhistr(HelpLibrary, "\\WPHELP.HLP"))
            )
-            ulNewHelpPanelId = ID_XSH_OS2MINWINV;
-
-        if (ulNewHelpPanelId)
         {
-            HelpPanelId = ulNewHelpPanelId;
-            HelpLibrary = (PSZ)pcszXWPHelp;
+            ULONG ul,
+                  ulNewHelpPanelId = 0;
+            for (ul = 0;
+                 ul < ARRAYITEMCOUNT(aReplacements);
+                 ++ul)
+            {
+                if (HelpPanelId == aReplacements[ul].ulOldId)
+                {
+                    // use template help if set and somSelf is
+                    // a template indeed
+                    if (    (ulNewHelpPanelId = aReplacements[ul].ulTemplateReplacemendId)
+                         && (_wpQueryStyle(somSelf) & OBJSTYLE_TEMPLATE)
+                       )
+                        break;
+
+                    // not template, or we have no help panel if it is:
+                    ulNewHelpPanelId = aReplacements[ul].ulReplacementId;
+                    break;
+                }
+            }
+
+            // there is a bug in the WPS in that the default help
+            // for a minimized window in the miniwin viewer is
+            // passed as NULL, 0; so display our replacement help
+            // for the miniwin viewer instead
+            if (    (!HelpPanelId)
+                 && (ctsIsMinWin(somSelf))
+               )
+                ulNewHelpPanelId = ID_XSH_OS2MINWINV;
+
+            if (ulNewHelpPanelId)
+            {
+                HelpPanelId = ulNewHelpPanelId;
+                HelpLibrary = (PSZ)pcszXWPHelp;
+            }
+            else
+                // no help panel ID found:
+                // but help is supposed to be in wphelp.hlp
+                // so enforce that
+                HelpLibrary = "WPHELP.HLP";
         }
-        else
-            // no help panel ID found:
-            // but help is supposed to be in wphelp.hlp
-            // so enforce that
-            HelpLibrary = "WPHELP.HLP";
+
+        fOurHelp = (!strcmp(HelpLibrary, pcszXWPHelp));
+
+        #if 0
+            if ( (!fOurHelp) && (HelpPanelId != 1) )      // used by unlockhelp.cmd
+            {
+                CHAR sz[500];
+                sprintf(sz,
+                        "lib: \"%s\", panel: %d",
+                        (HelpLibrary) ? HelpLibrary : "NULL",
+                        HelpPanelId);
+                winhDebugBox(NULLHANDLE,
+                             __FUNCTION__,
+                             sz);
+            }
+        #endif
     }
-
-    fOurHelp = (!strcmp(HelpLibrary, pcszXWPHelp));
-
-    #if 0
-        if ( (!fOurHelp) && (HelpPanelId != 1) )      // used by unlockhelp.cmd
-        {
-            CHAR sz[500];
-            sprintf(sz,
-                    "lib: \"%s\", panel: %d",
-                    (HelpLibrary) ? HelpLibrary : "NULL",
-                    HelpPanelId);
-            winhDebugBox(NULLHANDLE,
-                         __FUNCTION__,
-                         sz);
-        }
-    #endif
 
     if (!XFldObject_parent_WPObject_wpDisplayHelp(somSelf,
                                                   HelpPanelId,

@@ -93,22 +93,11 @@
 
     #ifdef SOM_WPObject_h
 
-        // startup flags for KERNELGLOBALS.ulStartupFlags
-#ifndef __NOBOOTLOGO__
-        #define SUF_SKIPBOOTLOGO            0x0001  // skip boot logo
-#endif
-#ifndef __NOXWPSTARTUP__
-        #define SUF_SKIPXFLDSTARTUP         0x0002  // skip XFldStartup processing
-#endif
-#ifndef __NOQUICKOPEN__
-        #define SUF_SKIPQUICKOPEN           0x0004  // skip "quick open" folder processing
-#endif
-
         /*
          *@@ KERNELGLOBALS:
          *      this structure is stored in a static global
          *      variable in kernel.c, whose address can
-         *      always be obtained thru t1QueryGlobals.
+         *      always be obtained thru krnQueryGlobals.
          *
          *      This structure is used to store information
          *      which is of importance to all parts of XWorkplace.
@@ -154,51 +143,15 @@
                     // -- SUF_SKIPBOOTLOGO: skip boot logo
                     // -- SUF_SKIPXFLDSTARTUP: skip XFldStartup processing
                     // -- SUF_SKIPQUICKOPEN: skip "quick open" folder processing
-
-            /*
-             * XWorkplace class objects (new with V0.9.0):
-             *      if any of these is FALSE, this means that
-             *      the class has not been installed. All
-             *      these things are set to TRUE by the respective
-             *      wpclsInitData class methods.
-             *
-             *      If you introduce a new class to the XWorkplace
-             *      class setup, please add a BOOL to this list and
-             *      set that field to TRUE in the wpclsInitData of
-             *      your class.
-             */
-
-            // class replacements
-            /* BOOL                fXFldObject,
-                                fXFolder,
-                                fXFldDisk,
-                                fXFldDesktop,
-                                fXFldDataFile,
-                                fXWPProgramFile,
-                                fXWPSound,
-                                fXWPMouse,
-                                fXWPKeyboard,
-                                fXWPProgram,        // V0.9.9 (2001-04-02) [umoeller]
-
-            // new classes
-                                fXWPSetup,
-                                fXFldSystem,
-                                fXFldWPS,
-                                fXWPScreen,
-                                fXFldStartup,
-                                fXFldShutdown,
-                                fXWPClassList,
-                                fXWPTrashCan,
-                                fXWPTrashObject,
-                                fXWPString,
-                                fXWPMedia,
-                                fXMMVolume,     // V0.9.6 (2000-11-09) [umoeller]
-                                fXMMCDPlayer,   // V0.9.7 (2000-12-20) [umoeller]
-                                fXCenter,       // V0.9.7 (2000-12-20) [umoeller]
-                                fXWPFontFile,   // V0.9.7 (2001-01-12) [umoeller]
-                                fXWPFontFolder, // V0.9.7 (2001-01-12) [umoeller]
-                                fXWPFontObject; // V0.9.7 (2001-01-12) [umoeller]
-            */
+                    #ifndef __NOBOOTLOGO__
+                        #define SUF_SKIPBOOTLOGO            0x0001  // skip boot logo
+                    #endif
+                    #ifndef __NOXWPSTARTUP__
+                        #define SUF_SKIPXFLDSTARTUP         0x0002  // skip XFldStartup processing
+                    #endif
+                    #ifndef __NOQUICKOPEN__
+                        #define SUF_SKIPQUICKOPEN           0x0004  // skip "quick open" folder processing
+                    #endif
 
             /*
              * XWorkplace daemon

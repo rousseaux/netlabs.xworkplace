@@ -11,6 +11,7 @@
 
 // general features
 #define __NOICONREPLACEMENTS__                  1
+#define __ALWAYSREPLACEHELP__                   1
 #define __ALWAYSRESIZESETTINGSPAGES__           1
 #define __ALWAYSREPLACEFILEPAGE__               1
 #define __ALWAYSREPLACEICONPAGE__               1

@@ -162,6 +162,9 @@ static FEATURESITEM G_FeatureItemsList[] =
 #ifndef __NOICONREPLACEMENTS__
             ID_XCSI_REPLACEICONS, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
+#ifndef __ALWAYSREPLACEHELP__
+            ID_XCSI_REPLACEHELP, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
 #ifndef __ALWAYSFIXCLASSTITLES__
             ID_XCSI_FIXCLASSTITLES, ID_XCSI_GENERALFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
@@ -1590,7 +1593,8 @@ VOID setLogoInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
             if (pLogoData->hbmLogo = GpiLoadBitmap(hpsTemp,
                                                    cmnQueryMainResModuleHandle(),
                                                    ID_XWPBIGLOGO,
-                                                   0, 0))
+                                                   0,
+                                                   0))
             {
                 BITMAPINFOHEADER2 bmih2;
                 bmih2.cbFix = sizeof(bmih2);
@@ -1712,6 +1716,9 @@ static const XWPSETTING G_FeaturesBackup[] =
     {
 #ifndef __NOICONREPLACEMENTS__
         sfIconReplacements,
+#endif
+#ifndef __ALWAYSREPLACEHELP__
+        sfHelpReplacements,
 #endif
 #ifndef __ALWAYSRESIZESETTINGSPAGES__
         sfResizeSettingsPages,
@@ -1943,6 +1950,10 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 #ifndef __NOICONREPLACEMENTS__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEICONS,
                 cmnQuerySetting(sfIconReplacements));
+#endif
+#ifndef __ALWAYSREPLACEHELP__
+        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEHELP,
+                cmnQuerySetting(sfHelpReplacements));
 #endif
 #ifndef __ALWAYSRESIZESETTINGSPAGES__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_RESIZESETTINGSPAGES,
@@ -2195,6 +2206,12 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
             break;
 #endif
 
+#ifndef __ALWAYSREPLACEHELP__
+            case ID_XCSI_REPLACEHELP:
+                cmnSetSetting(sfHelpReplacements, precc->usCheckState);
+            break;
+#endif
+
 #ifndef __ALWAYSRESIZESETTINGSPAGES__
             case ID_XCSI_RESIZESETTINGSPAGES:
                 cmnSetSetting(sfResizeSettingsPages, precc->usCheckState);
@@ -2430,7 +2447,7 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
-            PXWPFEATURESDATA pFeaturesData = (PXWPFEATURESDATA) pnbp->pUser;
+            PXWPFEATURESDATA pFeaturesData = (PXWPFEATURESDATA)pnbp->pUser;
 
             cmnRestoreSettings(pFeaturesData->pBackup,
                                ARRAYITEMCOUNT(G_FeaturesBackup));

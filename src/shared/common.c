@@ -2743,6 +2743,12 @@ static const SETTINGINFO G_aSettingInfos[] =
             "fIconReplacements",
 #endif
 
+#ifndef __ALWAYSREPLACEHELP__           // added V0.9.20 (2002-07-19) [umoeller]
+        sfHelpReplacements, -1, 0,
+            SP_SETUP_FEATURES, 0,
+            "fHelpReplacements",
+#endif
+
 /* #ifndef __NOMOVEREFRESHNOW__
         sfMoveRefreshNow, FIELDOFFSET(OLDGLOBALSETTINGS, __fMoveRefreshNow), 4,
             SP_MENUS_FILE, 0,
@@ -4634,7 +4640,8 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
         hbmLogo = GpiLoadBitmap(hps,
                                 cmnQueryMainResModuleHandle(),
                                 ID_XWPBIGLOGO,
-                                0, 0); // no stretch
+                                0,
+                                0); // no stretch
         ProductInfoBitmap.pcszText = (PCSZ)hbmLogo;
         WinReleasePS(hps);
     }

@@ -292,6 +292,12 @@ This was added with &xwp; 0.9.4.
 The class titles are shown in the third column in Details view (and also on status bars, if you have told them to do so).
 Unfortunately, if the WPS networking classes are installed, these titles are no longer very meaningful, so &xwp; can reset them to "folder", "data file", and "disk" again.
 
+; FEATURES_6006 added with V0.9.20 (2002-07-19) [umoeller]
+
+<--FEATURES_6006-->: If "Replace default help panels" is checked, &xwp; will replace many default WPS help panels with new rewritten ones which, in my view, are more informative. At the least, they are not as outdated.
+This applies mostly to help panels assigned to many standard WPS objects, that is, if you select an object in a folder and press F1.
+This was added with XWorkplace 0.9.20.
+
 <--FEATURES_6011-->: If "Enable status bars" is checked, you may configure folders to show status bars with detailed information for the selected objects in a folder.
 If this is enabled, you'll get two additional settings pages in &xwp;'s "Workplace Shell" object, which allow you to configure status bars in detail.
 Also, you can define whether status bars should be visible for each folder individually.

@@ -714,12 +714,6 @@ VOID trshSaveMappings(XWPTrashCan *pTrashCan)
                                 "%c:\\trash\\" MAPPINGS_FILE,
                                 cDrive);
 
-                        #ifdef DEBUG_TRASHCAN
-                        _PmpfF(("got %d entries: \n%s",
-                                    cEntries,
-                                    strMappings.psz));
-                        #endif
-
                         if (cEntries)
                             doshWriteTextFile(szMappingsFile,
                                               strMappings.psz,
