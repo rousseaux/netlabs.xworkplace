@@ -745,7 +745,7 @@ PSZ cmnQueryBootLogoFile(VOID)
  *@@changed V0.9.19 (2002-04-02) [umoeller]: msg file wasn't reloaded on NLS change, fixed
  *@@changed V0.9.19 (2002-04-24) [umoeller]: version checks never worked, fixed
  *@@changed V0.9.19 (2002-04-24) [umoeller]: reverting to 001 on errors now
- *@@changed V0.9.21 (2002-09-15) [lafaix]: notify the daemon if fEnforceReload == TRUE
+ *@@changed V1.0.0 (2002-09-15) [lafaix]: notify the daemon if fEnforceReload == TRUE
  */
 
 HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
@@ -958,7 +958,7 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
             }
 
             // fill the shared buffer with the daemon-specific
-            // resources V0.9.21 (2002-09-15) [lafaix]
+            // resources V1.0.0 (2002-09-15) [lafaix]
             cmnLoadDaemonNLSStrings();
         }
     }
@@ -1192,7 +1192,7 @@ STATIC ULONG ReplaceEntities(PXSTRING pstr)
  *@@changed V0.9.2 (2000-02-26) [umoeller]: made temporary buffer larger
  *@@changed V0.9.16 (2001-09-29) [umoeller]: added entities support
  *@@changed V0.9.16 (2002-01-26) [umoeller]: added pulLength param
- *@@changed V0.9.21 (2002-09-17) [umoeller]: optimized
+ *@@changed V1.0.0 (2002-09-17) [umoeller]: optimized
  */
 
 void cmnLoadString(HAB habDesktop,
@@ -1203,7 +1203,7 @@ void cmnLoadString(HAB habDesktop,
 {
     CHAR    szBuf[500];
     XSTRING str;
-    LONG    lLength;        // V0.9.21 (2002-09-17) [umoeller]
+    LONG    lLength;        // V1.0.0 (2002-09-17) [umoeller]
 
     if (*ppsz)
         free(*ppsz);
@@ -1221,7 +1221,7 @@ void cmnLoadString(HAB habDesktop,
 
     xstrInitCopy(&str,
                  szBuf,
-                 lLength);      // V0.9.21 (2002-09-17) [umoeller]
+                 lLength);      // V1.0.0 (2002-09-17) [umoeller]
     ReplaceEntities(&str);      // V0.9.16
     *ppsz = str.psz;
     if (pulLength)
@@ -1425,7 +1425,7 @@ PSZ cmnGetString(ULONG ulStringID)
  *
  *      If the shared buffer is full, no more strings are added.
  *
- *@@added V0.9.21 (2002-09-15) [lafaix]
+ *@@added V1.0.0 (2002-09-15) [lafaix]
  */
 
 VOID cmnLoadDaemonNLSStrings(VOID)
@@ -1436,7 +1436,7 @@ VOID cmnLoadDaemonNLSStrings(VOID)
     // check if this is != NULL, because on my system we
     // get called from cmnQueryNLSModuleHandle when this
     // pointer is still NULL
-    // V0.9.21 (2002-09-17) [umoeller]
+    // V1.0.0 (2002-09-17) [umoeller]
 
     TRY_LOUD(excpt1)
     {
@@ -1481,7 +1481,7 @@ VOID cmnLoadDaemonNLSStrings(VOID)
 
             *pszBuf = 0;
 
-            // made post a send V0.9.21 (2002-09-17) [umoeller]
+            // made post a send V1.0.0 (2002-09-17) [umoeller]
             krnSendDaemonMsg(XDM_NLSCHANGED, MPNULL, MPNULL);
         }
     }
@@ -1568,11 +1568,11 @@ const CONTROLDEF
                             8,
                             1),
     G_AddButton = LOADDEF_PUSHBUTTON(DID_ADD),
-            // added V0.9.21 (2002-09-10) [lafaix]
+            // added V1.0.0 (2002-09-10) [lafaix]
     G_EditButton = LOADDEF_PUSHBUTTON(DID_EDIT),
-            // added V0.9.21 (2002-09-10) [lafaix]
+            // added V1.0.0 (2002-09-10) [lafaix]
     G_RemoveButton = LOADDEF_PUSHBUTTON(DID_REMOVE);
-            // added V0.9.21 (2002-09-10) [lafaix]
+            // added V1.0.0 (2002-09-10) [lafaix]
 
 /*
  *@@ cmnLoadDialogStrings:
@@ -1656,7 +1656,7 @@ APIRET cmnLoadDialogStrings(PCDLGHITEM paDlgItems,     // in: definition array
         if (    (    (pThis->Type == TYPE_CONTROL_DEF)
                   || (pThis->Type == TYPE_START_NEW_TABLE)
                 )
-             && (pDef = (const CONTROLDEF *)pThis->ul1) // pThis->pCtlDef) V0.9.21 (2002-08-18) [umoeller]
+             && (pDef = (const CONTROLDEF *)pThis->ul1) // pThis->pCtlDef) V1.0.0 (2002-08-18) [umoeller]
              && (pDef->pcszText == LOAD_STRING ) // (PCSZ)-1)
            )
         {
@@ -1692,7 +1692,7 @@ APIRET cmnLoadDialogStrings(PCDLGHITEM paDlgItems,     // in: definition array
         if (    (    (pThis->Type == TYPE_CONTROL_DEF)
                   || (pThis->Type == TYPE_START_NEW_TABLE)
                 )
-             && (pDef = (const CONTROLDEF *)pThis->ul1) // pCtlDef) V0.9.21 (2002-08-18) [umoeller]
+             && (pDef = (const CONTROLDEF *)pThis->ul1) // pCtlDef) V1.0.0 (2002-08-18) [umoeller]
              && (pDef->pcszText == LOAD_STRING ) // (PCSZ)-1)
            )
         {
@@ -1701,7 +1701,7 @@ APIRET cmnLoadDialogStrings(PCDLGHITEM paDlgItems,     // in: definition array
             // and replace the LOAD_STRING with the real string
             pDefTargetThis->pcszText = cmnGetString(pDef->usID);
             // and point DLGHITEM to this CONTROLDEF instead
-            // paNew[ul].pCtlDef = pDefTargetThis;  V0.9.21 (2002-08-18) [umoeller]
+            // paNew[ul].pCtlDef = pDefTargetThis;  V1.0.0 (2002-08-18) [umoeller]
             paNew[ul].ul1 = (ULONG)pDefTargetThis;
             ++pDefTargetThis;
         }
@@ -2889,7 +2889,7 @@ typedef struct _OLDGLOBALSETTINGS
 #pragma pack()
 
 extern ULONG    *G_pulVarMenuOfs = NULL;
-            // V0.9.21 (2002-08-28) [umoeller]
+            // V1.0.0 (2002-08-28) [umoeller]
 
 /*
  *@@ SETTINGINFO:
@@ -2953,7 +2953,7 @@ static const SETTINGINFO G_aSettingInfos[] =
             "fMoveRefreshNow",
 #endif */
 
-// #ifndef __ALWAYSSUBCLASS__   removed V0.9.21 (2002-09-12) [umoeller]
+// #ifndef __ALWAYSSUBCLASS__   removed V1.0.0 (2002-09-12) [umoeller]
 //         sfNoSubclassing, FIELDOFFSET(OLDGLOBALSETTINGS, __fNoSubclassing), 4,
 //             SP_SETUP_PARANOIA, 0,
 //             "fNoSubclassing",
@@ -3157,7 +3157,7 @@ static const SETTINGINFO G_aSettingInfos[] =
             "fTurboFolders",
 #endif
 
-        sfFdrSplitViews, -1, 0,            // V0.9.21 (2002-09-09) [umoeller]
+        sfFdrSplitViews, -1, 0,            // V1.0.0 (2002-09-09) [umoeller]
             SP_SETUP_FEATURES, 0,
             "fFdrSplitViews",
 
@@ -3170,7 +3170,7 @@ static const SETTINGINFO G_aSettingInfos[] =
             "fMenuCascadeMode",
 
         sfFixLockInPlace, FIELDOFFSET(OLDGLOBALSETTINGS, fFixLockInPlace), 1,
-            SP_MENUSETTINGS, 1,     // default changed V0.9.21 (2002-09-20) [umoeller]
+            SP_MENUSETTINGS, 1,     // default changed V1.0.0 (2002-09-20) [umoeller]
             "fFixLockInPlace",
 
         // folder view settings
@@ -3269,7 +3269,7 @@ static const SETTINGINFO G_aSettingInfos[] =
             "fWorkerPriorityBeep",
         // sfNoFreakyMenus, FIELDOFFSET(OLDGLOBALSETTINGS, fNoFreakyMenus), 1,
         //     SP_SETUP_PARANOIA, 0,
-        //     "fNoFreakyMenus",            removed V0.9.21 (2002-08-26) [umoeller]
+        //     "fNoFreakyMenus",            removed V1.0.0 (2002-08-26) [umoeller]
 #endif
 
         // misc
@@ -3432,7 +3432,7 @@ VOID cmnLoadGlobalSettings(VOID)
 
     #ifdef __DEBUG__
         // in debug mode, load debug flags, if we have any
-        // V0.9.21 (2002-09-02) [umoeller]
+        // V1.0.0 (2002-09-02) [umoeller]
         memset(G_aDebugs, 0, sizeof(G_aDebugs));
         cb = sizeof(G_aDebugs);
         PrfQueryProfileData(HINI_USER,
@@ -3516,7 +3516,7 @@ VOID cmnLoadGlobalSettings(VOID)
     }
 
     // set global variable to var menu offset
-    // V0.9.21 (2002-08-28) [umoeller]
+    // V1.0.0 (2002-08-28) [umoeller]
     G_pulVarMenuOfs = &G_aulSettings[sulVarMenuOfs];
 }
 
@@ -4730,7 +4730,7 @@ APIRET cmnEmptyDefTrashCan(HAB hab,        // in: synchronously?
  *
  *      Line format is \n only (not \r\n).
  *
- *@@added V0.9.21 (2002-08-28) [umoeller]
+ *@@added V1.0.0 (2002-08-28) [umoeller]
  */
 
 VOID cmnBugReport(PXSTRING pstr)
@@ -5154,7 +5154,7 @@ static const DLGHITEM dlgProductInfo[] =
  *@@ fnwpProductInfo:
  *
  *@@added V0.9.20 (2002-08-10) [umoeller]
- *@@changed V0.9.21 (2002-08-28) [umoeller]: added bug report
+ *@@changed V1.0.0 (2002-08-28) [umoeller]: added bug report
  */
 
 STATIC MRESULT EXPENTRY fnwpProductInfo(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)

@@ -374,12 +374,12 @@ PSUBCLFOLDERVIEW fdrCreateSFV(HWND hwndFrame,           // in: folder frame
         psliNew->hwndCnr = hwndCnr;
 
         // psliNew->fRemoveSourceEmphasis = FALSE;
-                // taken care of by memset above V0.9.21 (2002-09-13) [umoeller]
+                // taken care of by memset above V1.0.0 (2002-09-13) [umoeller]
 
         // set status bar hwnd to zero at this point;
         // this will be created elsewhere
         // psliNew->hwndStatusBar = NULLHANDLE;
-                // taken care of by memset above V0.9.21 (2002-09-13) [umoeller]
+                // taken care of by memset above V1.0.0 (2002-09-13) [umoeller]
 
         // create a supplementary object window
         // for this folder frame (see
@@ -671,8 +671,8 @@ VOID fdrFormatFrame(HWND hwndFrame,
  *      the implementation of WM_FORMATFRAME in
  *      fnwpSubclWPFolderWindow.
  *
- *@@added V0.9.21 (2002-08-21) [umoeller]
- *@@changed V0.9.21 (2002-09-09) [umoeller]: fixed annoying scroll bars in folder frame when always sort was off
+ *@@added V1.0.0 (2002-08-21) [umoeller]
+ *@@changed V1.0.0 (2002-09-09) [umoeller]: fixed annoying scroll bars in folder frame when always sort was off
  */
 
 MRESULT FormatFrame2(PSUBCLFOLDERVIEW psfv,     // in: frame information
@@ -719,7 +719,7 @@ MRESULT FormatFrame2(PSUBCLFOLDERVIEW psfv,     // in: frame information
             // exactly help... the point is we must ALWAYS reduce
             // the ptlOrigin.y by the status bar height, or we'll
             // get scroll bars, period
-            // V0.9.21 (2002-09-09) [umoeller]
+            // V1.0.0 (2002-09-09) [umoeller]
 
             // if (CnrInfo.ptlOrigin.y >= (LONG)ulStatusBarHeight)
             {
@@ -743,7 +743,7 @@ MRESULT FormatFrame2(PSUBCLFOLDERVIEW psfv,     // in: frame information
             // container's vertical scroll bar and _then_
             // another PAGEUP to the container itself
             // V0.9.18 (2002-03-24) [umoeller]
-            /* no longer needed since the above code works now V0.9.21 (2002-09-09) [umoeller]
+            /* no longer needed since the above code works now V1.0.0 (2002-09-09) [umoeller]
             PostWMChar(WinWindowFromID(hwndClient, 0x7FF9),
                        KC_VIRTUALKEY | KC_CTRL,
                        MPFROM2SHORT(0,
@@ -772,7 +772,7 @@ MRESULT FormatFrame2(PSUBCLFOLDERVIEW psfv,     // in: frame information
 /*
  *@@ fdrManipulatePulldown:
  *
- *@@added V0.9.21 (2002-08-28) [umoeller]
+ *@@added V1.0.0 (2002-08-28) [umoeller]
  */
 
 VOID fdrManipulatePulldown(PSUBCLFOLDERVIEW psfv,     // in: frame information
@@ -782,17 +782,17 @@ VOID fdrManipulatePulldown(PSUBCLFOLDERVIEW psfv,     // in: frame information
     switch (sMenuID)
     {
         case 0x2CF: // "Folder" pulldown
-        case ID_XFM_BAR_FOLDER:     // in split view V0.9.21 (2002-08-28) [umoeller]
+        case ID_XFM_BAR_FOLDER:     // in split view V1.0.0 (2002-08-28) [umoeller]
             PMPF_MENUS(("  'Folder' pulldown found"));
 
             // set the "source" object for menu item
             // selections to the folder
             psfv->pSourceObject = psfv->somSelf;
-                    // V0.9.21 (2002-08-24) [umoeller]
+                    // V1.0.0 (2002-08-24) [umoeller]
         break;
 
         case 0x2D0: // "Edit" submenu
-        case ID_XFM_BAR_EDIT:       // in split view V0.9.21 (2002-08-28) [umoeller]
+        case ID_XFM_BAR_EDIT:       // in split view V1.0.0 (2002-08-28) [umoeller]
         {
             // set the "source" object for menu item
             // selections to the folder
@@ -803,7 +803,7 @@ VOID fdrManipulatePulldown(PSUBCLFOLDERVIEW psfv,     // in: frame information
         break;
 
         case 0x2D1: // "View" submenu
-        case ID_XFM_BAR_VIEW:       // in split view V0.9.21 (2002-08-28) [umoeller]
+        case ID_XFM_BAR_VIEW:       // in split view V1.0.0 (2002-08-28) [umoeller]
         {
             PMPF_MENUS(("  'View' pulldown found"));
 
@@ -815,7 +815,7 @@ VOID fdrManipulatePulldown(PSUBCLFOLDERVIEW psfv,     // in: frame information
         break;
 
         /* case 0x2D2:     // "Selected" submenu:
-        case ID_XFM_BAR_SELECTED:   // in split view V0.9.21 (2002-08-28) [umoeller]
+        case ID_XFM_BAR_SELECTED:   // in split view V1.0.0 (2002-08-28) [umoeller]
         break; */
 
         case 0x2D3: // "Help" submenu: add XFolder product info
@@ -1019,7 +1019,7 @@ VOID fdrInitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
  *      Otherwise the default wnd proc will be used.
  *
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
- *@@changed V0.9.21 (2002-08-21) [umoeller]:
+ *@@changed V1.0.0 (2002-08-21) [umoeller]:
  */
 
 STATIC BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
@@ -1068,7 +1068,7 @@ STATIC BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
                 {
                     // shift is down: then check whether this is an "open view"
                     // item and allow changing the object's default view this
-                    // way V0.9.21 (2002-08-21) [umoeller]
+                    // way V1.0.0 (2002-08-21) [umoeller]
                     ULONG   ulMenuId2 = usItem - cmnQuerySetting(sulVarMenuOfs);
 
                     if (    (usItem == OPEN_CONTENTS)
@@ -1087,7 +1087,7 @@ STATIC BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
                                                    usItem))
                                     // we make sure this fails for the desktop
                                     // and the split view
-                                    // V0.9.21 (2002-09-13) [umoeller]
+                                    // V1.0.0 (2002-09-13) [umoeller]
                            )
                         {
                             PMPF_MENUS(("  un-checking 0x%lX in hMenu 0x%lX",
@@ -1173,7 +1173,7 @@ STATIC BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
  *      Returns TRUE if the item was processed, FALSE otherwise
  *      and the parent func should be called.
  *
- *@@added V0.9.21 (2002-08-28) [umoeller]
+ *@@added V1.0.0 (2002-08-28) [umoeller]
  */
 
 BOOL fdrWMCommand(PSUBCLFOLDERVIEW psfv,
@@ -1254,7 +1254,7 @@ STATIC VOID WMChar_Delete(PSUBCLFOLDERVIEW psfv,
  *
  *@@added V0.9.18 (2002-03-23) [umoeller]
  *@@changed V0.9.19 (2002-04-02) [umoeller]: fixed broken true delete if trashcan is disabled
- *@@changed V0.9.21 (2002-08-24) [umoeller]: fixed key up/down processing
+ *@@changed V1.0.0 (2002-08-24) [umoeller]: fixed key up/down processing
  */
 
 STATIC BOOL WMChar(HWND hwndFrame,
@@ -1269,7 +1269,7 @@ STATIC BOOL WMChar(HWND hwndFrame,
     USHORT usch       = SHORT1FROMMP(mp2);
     USHORT usvk       = SHORT2FROMMP(mp2);
 
-    // if (!(usFlags & KC_KEYUP))       removed, process both up and down V0.9.21 (2002-08-24) [umoeller]
+    // if (!(usFlags & KC_KEYUP))       removed, process both up and down V1.0.0 (2002-08-24) [umoeller]
 
     // intercept DEL key
     if (    (usFlags & KC_VIRTUALKEY)
@@ -1315,7 +1315,7 @@ STATIC BOOL WMChar(HWND hwndFrame,
         // fdrProcessFldrHotkey returns TRUE if this key
         // is a folder hotkey (for both key up and down now)
         // but posts the command only for key down
-        // V0.9.21 (2002-08-24) [umoeller]
+        // V1.0.0 (2002-08-24) [umoeller]
         if (fdrProcessFldrHotkey(psfv->somSelf,
                                  hwndFrame,
                                  usFlags,
@@ -1443,8 +1443,8 @@ STATIC BOOL WMChar(HWND hwndFrame,
  *      passed in and other special cases.
  *
  *@@added V0.9.20 (2002-08-04) [umoeller]
- *@@changed V0.9.21 (2002-08-21) [umoeller]: fixed painting problems for folder shadows
- *@@changed V0.9.21 (2002-09-17) [umoeller]: fixed another deadlock for folder shadows
+ *@@changed V1.0.0 (2002-08-21) [umoeller]: fixed painting problems for folder shadows
+ *@@changed V1.0.0 (2002-09-17) [umoeller]: fixed another deadlock for folder shadows
  */
 
 STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we can't use poi->hwnd)
@@ -1530,7 +1530,7 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
                  // if the current thread doesn't have it, which can deadlock
                  // the system if a shadow is just being created!
                  // so use CRA_INUSE instead, which should be correct
-                 // V0.9.21 (2002-09-17) [umoeller]
+                 // V1.0.0 (2002-09-17) [umoeller]
                  && (poi->fsAttribute & CRA_INUSE)
                )
                 hptrPaint = _wpQueryIconN(pobjTest, 1);
@@ -1674,7 +1674,7 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
                 GpiBox(poi->hps, DRO_OUTLINE, &ptl, 0, 0);
 
                 GpiSetLineType(poi->hps, lOldLineType);
-                            // was missing V0.9.21 (2002-08-21) [umoeller]
+                            // was missing V1.0.0 (2002-08-21) [umoeller]
             }
         }
 
@@ -2439,7 +2439,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
  *@@changed V0.9.3 (2000-03-28) [umoeller]: added freaky menus setting
  *@@changed V0.9.3 (2000-04-08) [umoeller]: extracted ProcessFolderMsgs
  *@@changed V0.9.20 (2002-07-31) [umoeller]: made this static
- *@@changed V0.9.21 (2002-08-26) [umoeller]: renamed from fnwpSubclassedFolderFrame
+ *@@changed V1.0.0 (2002-08-26) [umoeller]: renamed from fnwpSubclassedFolderFrame
  */
 
 STATIC MRESULT EXPENTRY fnwpSubclWPFolderWindow(HWND hwndFrame,

@@ -147,7 +147,7 @@ interface XFolder : WPFolder
     /*
      *@@ FDRSTRINGARRAY:
      *
-     *@@added V0.9.21 (2002-08-24) [umoeller]
+     *@@added V1.0.0 (2002-08-24) [umoeller]
      */
 
     struct FDRSTRINGARRAY
@@ -350,8 +350,8 @@ interface XFolder : WPFolder
 
     wpSaveState: override;
     wpRestoreState: override;
-    //# wpRestoreLong: override; removed V0.9.21 (2002-08-24) [umoeller]
-    //# wpRestoreString: override; removed V0.9.21 (2002-08-24) [umoeller]
+    //# wpRestoreLong: override; removed V1.0.0 (2002-08-24) [umoeller]
+    //# wpRestoreString: override; removed V1.0.0 (2002-08-24) [umoeller]
     wpRestoreData: override;
 
     //# 2)  WPObject query/set methods
@@ -367,8 +367,8 @@ interface XFolder : WPFolder
 
     wpDisplayMenu: override;
     wpFilterPopupMenu: override;
-    //# wpModifyPopupMenu: override;        removed V0.9.21 (2002-08-31) [umoeller]
-    wpModifyMenu: override;                 //# added V0.9.21 (2002-08-31) [umoeller]
+    //# wpModifyPopupMenu: override;        removed V1.0.0 (2002-08-31) [umoeller]
+    wpModifyMenu: override;                 //# added V1.0.0 (2002-08-31) [umoeller]
 
     wpMenuItemSelected: override;
     wpMenuItemHelpSelected: override;
@@ -400,7 +400,7 @@ interface XFolder : WPFolder
 
     wpSetFldrSort: override;
 
-    wpRedrawFolderBackground: override;     //# added V0.9.21 (2002-09-24) [umoeller]
+    wpRedrawFolderBackground: override;     //# added V1.0.0 (2002-09-24) [umoeller]
 
     //# 7)  file operation methods
 

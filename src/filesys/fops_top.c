@@ -274,7 +274,7 @@ APIRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
             // this was added for giving the user feedback if
             // wpFree failed on an object, we should then allow
             // retry
-            // V0.9.21 (2002-09-09) [umoeller]
+            // V1.0.0 (2002-09-09) [umoeller]
             APIRET arc2;
             XSTRING str;
             if (!(arc2 = _wpQueryError(pObject)))

@@ -510,7 +510,7 @@ STATIC ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
             ulrc = REMOVE_FOLDER;
 
             // moved the refresh code to folder.c
-            // V0.9.21 (2002-08-26) [umoeller]
+            // V1.0.0 (2002-08-26) [umoeller]
             fdrForceRefresh(pFolder);
         }
         break;

@@ -77,7 +77,7 @@
                 // XDM_NLSCHANGED message.  Can safely handles up to 12 strings.
                 // Size is about 3K so that this structure still fits into
                 // a 386 memory page.
-                // V0.9.21 (2002-09-15) [lafaix]
+                // V1.0.0 (2002-09-15) [lafaix]
     } XWPGLOBALSHARED, *PXWPGLOBALSHARED;
 
     #define APIM_FILEDLG            (WM_USER + 300)

@@ -130,13 +130,13 @@
  ********************************************************************/
 
 #define ICON_WIDTH          40
-// #define GROUPS_WIDTH       175       V0.9.21 (2002-08-18) [umoeller]
+// #define GROUPS_WIDTH       175       V1.0.0 (2002-08-18) [umoeller]
 #define EF_HEIGHT           25
 #define HOTKEY_EF_WIDTH     50
 
 // #define NEW_TABLE_STUFF     1
 
-// V0.9.21 (2002-08-18) [umoeller]
+// V1.0.0 (2002-08-18) [umoeller]
 // With the new dialog formatter, we no longer need to calculate
 // the size of the group boxes with the size macros above. Instead
 // we just set the group table widths to SZL_AUTOSIZE and, for
@@ -148,12 +148,12 @@ static const CONTROLDEF
     TitleEF = CONTROLDEF_MLE(
                             NULL,
                             ID_XSDI_ICON_TITLE_EF,
-                            -100, // GROUPS_WIDTH - 2 * COMMON_SPACING, V0.9.21 (2002-08-18) [umoeller]
+                            -100, // GROUPS_WIDTH - 2 * COMMON_SPACING, V1.0.0 (2002-08-18) [umoeller]
                             MAKE_SQUARE_CY(EF_HEIGHT)),
     IconGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
                             ID_XSDI_ICON_GROUP,
-                            SZL_AUTOSIZE, // GROUPS_WIDTH, V0.9.21 (2002-08-18) [umoeller]
+                            SZL_AUTOSIZE, // GROUPS_WIDTH, V1.0.0 (2002-08-18) [umoeller]
                             SZL_AUTOSIZE),
     IconStatic =
         {
@@ -187,7 +187,7 @@ static const CONTROLDEF
     ExtrasGroup = CONTROLDEF_GROUP(
                             LOAD_STRING,
                             ID_XSDI_ICON_EXTRAS_GROUP,
-                            SZL_AUTOSIZE, // GROUPS_WIDTH,  V0.9.21 (2002-08-18) [umoeller]
+                            SZL_AUTOSIZE, // GROUPS_WIDTH,  V1.0.0 (2002-08-18) [umoeller]
                             SZL_AUTOSIZE),
     HotkeyText = CONTROLDEF_TEXT(
                             LOAD_STRING,
@@ -227,7 +227,7 @@ static const DLGHITEM dlgObjIconTitle[] =
             // START_ROW(ROW_VALIGN_TOP),       // row 1 in the root table, required
             START_ROW(ROW_VALIGN_CENTER),
                 START_GROUP_TABLE_EXT(&TitleGroup, TABLE_INHERIT_SIZE),
-                            // now using TABLE_INHERIT_SIZE V0.9.21 (2002-08-18) [umoeller]
+                            // now using TABLE_INHERIT_SIZE V1.0.0 (2002-08-18) [umoeller]
                     START_ROW(0),
                         CONTROL_DEF(&TitleEF),
                 END_TABLE,
@@ -237,7 +237,7 @@ static const DLGHITEM dlgObjIconIcon[] =
     {
             START_ROW(ROW_VALIGN_CENTER),
                 START_GROUP_TABLE_EXT(&IconGroup, TABLE_INHERIT_SIZE),
-                            // now using TABLE_INHERIT_SIZE V0.9.21 (2002-08-18) [umoeller]
+                            // now using TABLE_INHERIT_SIZE V1.0.0 (2002-08-18) [umoeller]
                     START_ROW(0),
                         CONTROL_DEF(&IconStatic),
                     START_TABLE,
@@ -255,7 +255,7 @@ static const DLGHITEM dlgObjIconExtrasFront[] =
     {
             START_ROW(ROW_VALIGN_CENTER),
                 START_GROUP_TABLE_EXT(&ExtrasGroup, TABLE_INHERIT_SIZE),
-                            // now using TABLE_INHERIT_SIZE V0.9.21 (2002-08-18) [umoeller]
+                            // now using TABLE_INHERIT_SIZE V1.0.0 (2002-08-18) [umoeller]
                     START_ROW(0)
     };
 
@@ -669,7 +669,7 @@ STATIC VOID EditIcon(POBJICONPAGEDATA pData)
 /*
  *@@ BrowseIcon:
  *
- *@@added V0.9.21 (2002-09-13) [umoeller]
+ *@@added V1.0.0 (2002-09-13) [umoeller]
  */
 
 STATIC VOID BrowseIcon(POBJICONPAGEDATA pData)
@@ -1276,7 +1276,7 @@ STATIC MRESULT HandleENHotkey(POBJICONPAGEDATA pData,
  *@@changed V0.9.19 (2002-04-25) [umoeller]: this didn't allow empty titles, fixed
  *@@changed V0.9.19 (2002-05-23) [umoeller]: title was read before page was ready, fixed
  *@@changed V0.9.20 (2002-07-16) [umoeller]: fixed excessive rename when page was inited
- *@@changed V0.9.21 (2002-08-31) [umoeller]: fixed excessive save
+ *@@changed V1.0.0 (2002-08-31) [umoeller]: fixed excessive save
  */
 
 MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
@@ -1294,7 +1294,7 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
                                     // to set a bit, set it in both flags and mask
                                     // to clear a bit set it in flags only
 
-    // separated these bools V0.9.21 (2002-08-31) [umoeller]
+    // separated these bools V1.0.0 (2002-08-31) [umoeller]
     BOOL    fRefreshPage = FALSE,
             fSave = FALSE;
 
@@ -1366,7 +1366,7 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
             case DID_BROWSE:
                 BrowseIcon(pData);
                 // refresh the page because the "reset icon"
-                // button needs an update probably V0.9.21 (2002-09-13) [umoeller]
+                // button needs an update probably V1.0.0 (2002-09-13) [umoeller]
                 fRefreshPage = TRUE;
             break;
 
@@ -1604,11 +1604,11 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
         fSave = TRUE;
     }
 
-    if (fRefreshPage)  // V0.9.21 (2002-08-31) [umoeller]
+    if (fRefreshPage)  // V1.0.0 (2002-08-31) [umoeller]
         // update the display by calling the INIT callback
         pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
 
-    if (fSave)  // V0.9.21 (2002-08-31) [umoeller]
+    if (fSave)  // V1.0.0 (2002-08-31) [umoeller]
         // save the object (to be on the safe side)
         _wpSaveDeferred(pnbp->inbp.somSelf);
 

@@ -985,7 +985,7 @@ STATIC HWND PrepareFileExistsDlg(WPObject *somSelf,
                                  PSZ pszTitle,
                                  ULONG flOptions)
 {
-    HWND        hwndConfirm = NULLHANDLE;       // V0.9.21 (2002-08-18) [umoeller]
+    HWND        hwndConfirm = NULLHANDLE;       // V1.0.0 (2002-08-18) [umoeller]
 
     // load confirmation dialog
     // V0.9.20 (2002-08-08) [umoeller]

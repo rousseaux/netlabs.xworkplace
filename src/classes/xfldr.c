@@ -952,7 +952,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryMenuBarVisibility(XFolder *somSelf)
         // check the FDRLONGARRAY (xfldr.idl) to which we have
         // obtained a pointer using the ugly kludge in
         // XFolder::wpRestoreData
-        // rewritten V0.9.21 (2002-08-24) [umoeller]
+        // rewritten V1.0.0 (2002-08-24) [umoeller]
         PIBMFOLDERDATA pData;
         if (pData = (PIBMFOLDERDATA)_pvWPFolderData)
         {
@@ -1080,7 +1080,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpQueryStatusBarVisibility(XFolder *somSelf)
  *         get the others, if this is indicated here.
  *
  *@@added V0.9.7 (2001-01-13) [umoeller]
- *@@changed V0.9.21 (2002-08-26) [umoeller]: method renamed from processObjectCommand
+ *@@changed V1.0.0 (2002-08-26) [umoeller]: method renamed from processObjectCommand
  */
 
 SOM_Scope BOOL  SOMLINK xf_xwpProcessViewCommand(XFolder *somSelf,
@@ -1332,7 +1332,7 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
     _lFoldersFirst = SET_DEFAULT;
     _lAlwaysSort = SET_DEFAULT;
 
-    /*   all removed V0.9.21 (2002-08-24) [umoeller]
+    /*   all removed V1.0.0 (2002-08-24) [umoeller]
     _pFolderSortInfo = NULL;
     _pFolderLongArray = NULL;
     _pszFolderStrArray = NULL;
@@ -1549,7 +1549,7 @@ SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
     // side of the folder split view; if so, then we MUST
     // notify the split view because it has internal pointers
     // to somSelf that must be removed
-    // V0.9.21 (2002-08-28) [umoeller]
+    // V1.0.0 (2002-08-28) [umoeller]
     for (pui = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
          pui;
          pui = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pui))
@@ -1649,7 +1649,7 @@ SOM_Scope BOOL  SOMLINK xf_wpFree(XFolder *somSelf)
  *      TRUE, since the folder was obviously already deleted.
  *
  *@@added V0.9.20 (2002-07-25) [umoeller]
- *@@changed V0.9.21 (2002-09-09) [umoeller]: added wpSetError on errors
+ *@@changed V1.0.0 (2002-09-09) [umoeller]: added wpSetError on errors
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpDestroyObject(XFolder *somSelf)
@@ -1681,7 +1681,7 @@ SOM_Scope BOOL  SOMLINK xf_wpDestroyObject(XFolder *somSelf)
                 // code on the object so fops_bottom.c can figure
                 // out what went wrong; wpFree has called
                 // wpSetError(NO_ERROR) previously
-                // V0.9.21 (2002-09-09) [umoeller]
+                // V1.0.0 (2002-09-09) [umoeller]
                 _wpSetError(somSelf, arc);
         }
     }
@@ -1882,7 +1882,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
     // in this case, we MUST call the parent LAST because
     // wpRestoreData checks for whether an XFolder sort setting
     // has been restored!!
-    brc = (XFolder_parent_WPFolder_wpRestoreState(somSelf, ulReserved));
+    brc = XFolder_parent_WPFolder_wpRestoreState(somSelf, ulReserved);
 
     PMPF_RESTOREDATA(("  End of XFolder::wpRestoreState"));
 
@@ -1905,7 +1905,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
  *      we've calculated in the IBMFOLDERDATA for debugging.
  *
  *@@changed V0.9.7 (2000-12-18) [umoeller]: fixed always sort bug
- *@@changed V0.9.21 (2002-08-24) [umoeller]: removed all code, except for debugging
+ *@@changed V1.0.0 (2002-08-24) [umoeller]: removed all code, except for debugging
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
@@ -2385,7 +2385,7 @@ SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
     XFolderMethodDebug("XFolder","xf_wpFilterPopupMenu");
 
     // store the filter in the instance data so we can
-    // respect it in wpModifyPopupMenu V0.9.21 (2002-08-26) [umoeller]
+    // respect it in wpModifyPopupMenu V1.0.0 (2002-08-26) [umoeller]
     flMenuFilter = XFolder_parent_WPFolder_wpFilterPopupMenu(somSelf,
                                                              ulFlags,
                                                              hwndCnr,
@@ -2413,7 +2413,7 @@ SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
  *      allows the object to manipulate its menu in a more
  *      fine-grained way than wpModifyPopupMenu.
  *
- *      With V0.9.21, while adding support for the split view
+ *      With V1.0.0, while adding support for the split view
  *      to the menu methods, I finally got tired of all the
  *      send-msg hacks to get Warp 4 menu items to work and
  *      decided to finally break Warp 3 support for XWorkplace.
@@ -2454,7 +2454,7 @@ SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
  *          but not described in WPSREF. I think this is what comes in
  *          if the system menu is being built for an open object view.
  *
- *@@added V0.9.21 (2002-08-31) [umoeller]
+ *@@added V1.0.0 (2002-08-31) [umoeller]
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpModifyMenu(XFolder *somSelf,
@@ -2591,7 +2591,7 @@ SOM_Scope BOOL  SOMLINK xf_wpMenuItemHelpSelected(XFolder *somSelf,
  *@@changed V0.9.4 (2000-06-09) [umoeller]: added default documents
  *@@changed V0.9.18 (2002-03-20) [umoeller]: added pre-populate support
  *@@changed V0.9.19 (2002-04-02) [umoeller]: moved pre-populate to XFldDesktop::wpOpen
- *@@changed V0.9.21 (2002-08-24) [umoeller]: added split view
+ *@@changed V1.0.0 (2002-08-24) [umoeller]: added split view
  */
 
 SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
@@ -2629,7 +2629,7 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
 #endif
     {
         // added split view
-        // V0.9.21 (2002-08-21) [umoeller]
+        // V1.0.0 (2002-08-21) [umoeller]
         if (    (cmnQuerySetting(sfFdrSplitViews))
              && (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
            )
@@ -3150,7 +3150,7 @@ SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
                     // check if the folder is currently showing on the right
                     // side of a folder split view (yes, we only support this
                     // right now if turbo folders are enabled)
-                    // V0.9.21 (2002-08-28) [umoeller]
+                    // V1.0.0 (2002-08-28) [umoeller]
                  && (fFdrObjLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
                )
             {
@@ -3186,7 +3186,7 @@ SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
     }
 
     // release folder's _object_ mutex before calling parent
-    // V0.9.21 (2002-08-28) [umoeller]
+    // V1.0.0 (2002-08-28) [umoeller]
     if (fFdrObjLocked)
         _wpReleaseObjectMutexSem(somSelf);
 
@@ -3414,7 +3414,7 @@ SOM_Scope BOOL  SOMLINK xf_wpSetFldrSort(XFolder *somSelf,
  *      We intercept this notification to redraw split
  *      views as well.
  *
- *@@added V0.9.21 (2002-09-24) [umoeller]
+ *@@added V1.0.0 (2002-09-24) [umoeller]
  */
 
 SOM_Scope void  SOMLINK xf_wpRedrawFolderBackground(XFolder *somSelf)

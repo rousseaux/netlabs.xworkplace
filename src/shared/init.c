@@ -160,7 +160,7 @@ extern PIBMDRIVEDATA    G_paDriveData = NULL;
 static THREADINFO       G_tiSentinel = {0};
 
 #define DESKTOP_VALID               0
-#define NO_ACTIVE_HANDLES           1       // V0.9.21 (2002-09-20) [umoeller]
+#define NO_ACTIVE_HANDLES           1       // V1.0.0 (2002-09-20) [umoeller]
 #define HANDLES_BROKEN              2       // V0.9.20 (2002-08-04) [umoeller]
 #define NO_DESKTOP_ID               3
 #define DESKTOP_HANDLE_NOT_FOUND    4
@@ -1053,7 +1053,7 @@ STATIC ULONG CheckDesktop(HHANDLES hHandles)       // in: handles buffer from wp
  *
  *      Returns TRUE if the class list was changed.
  *
- *@@added V0.9.21 (2002-08-26) [umoeller]
+ *@@added V1.0.0 (2002-08-26) [umoeller]
  */
 
 BOOL CheckOneClassOrder(PCSZ pcszOriginal,
@@ -1221,7 +1221,7 @@ BOOL CheckOneClassOrder(PCSZ pcszOriginal,
  *      OS2.INI and checks if the XWP classes are
  *      in the correct order.
  *
- *@@added V0.9.21 (2002-08-26) [umoeller]
+ *@@added V1.0.0 (2002-08-26) [umoeller]
  */
 
 VOID CheckClassOrder(VOID)
@@ -1329,8 +1329,8 @@ VOID CheckClassOrder(VOID)
  *@@changed V0.9.17 (2002-02-05) [umoeller]: added option to stop checking for broken desktops
  *@@changed V0.9.19 (2002-04-02) [umoeller]: fixed wrong pager settings after logoff
  *@@changed V0.9.19 (2002-05-01) [umoeller]: changed name of startup log file
- *@@changed V0.9.21 (2002-08-26) [umoeller]: added checks for proper class replacements ordering
- *@@changed V0.9.21 (2002-09-17) [umoeller]: added daemon NLS init
+ *@@changed V1.0.0 (2002-08-26) [umoeller]: added checks for proper class replacements ordering
+ *@@changed V1.0.0 (2002-09-17) [umoeller]: added daemon NLS init
  */
 
 VOID initMain(VOID)
@@ -1494,7 +1494,7 @@ VOID initMain(VOID)
             // that we're currently being installed, and only in that
             // case, set G_ulDesktopValid to DESKTOP_VALID to shut up
             // the message box.
-            // V0.9.21 (2002-09-20) [umoeller]
+            // V1.0.0 (2002-09-20) [umoeller]
             ULONG   fCDBoot = 0,
                     cb = sizeof(fCDBoot);
             PrfQueryProfileData(HINI_USER,
@@ -1523,7 +1523,7 @@ VOID initMain(VOID)
                 initLog("WARNING: wphQueryActiveHandles returned %d", arc);
                 G_ulDesktopValid = NO_ACTIVE_HANDLES;
                         // this was missing, G_ulDesktopValid was still -1 in
-                        // that case V0.9.21 (2002-09-20) [umoeller]
+                        // that case V1.0.0 (2002-09-20) [umoeller]
                 G_arcHandles = arc;
             }
         }
@@ -1755,7 +1755,7 @@ VOID initMain(VOID)
         G_KernelGlobals.pXwpGlobalShared = pXwpGlobalShared;
 
         // in either case, load the strings for daemon NLS
-        // support V0.9.21 (2002-09-17) [umoeller]
+        // support V1.0.0 (2002-09-17) [umoeller]
         cmnLoadDaemonNLSStrings();
     }
 
@@ -1894,7 +1894,7 @@ BOOL initRepairDesktopIfBroken(VOID)
             brc = TRUE;
         break;
 
-        case NO_ACTIVE_HANDLES:     // V0.9.21 (2002-09-20) [umoeller]
+        case NO_ACTIVE_HANDLES:     // V1.0.0 (2002-09-20) [umoeller]
             sprintf(szMsg,
                     "The active handles marker was not found in OS2SYS.INI.");
         break;

@@ -303,7 +303,7 @@ BEGIN
     MENUITEM "~Hilfe", ID_CRMI_HELP
 END
 
-/* Split view menu bar V0.9.21 (2002-08-28) [umoeller] */
+/* Split view menu bar V1.0.0 (2002-08-28) [umoeller] */
 MENU ID_XFM_SPLITVIEWBAR LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     MENUITEM "~Ordner", ID_XFM_BAR_FOLDER, MIS_SUBMENU
@@ -353,7 +353,7 @@ BEGIN
 
     ID_XSSI_FLDRCONTENT             "~Ordnerinhalt"
     ID_XSSI_COPYFILENAME            "Dateiname ko~pieren"
-    /* the following six added V0.9.21 (2002-11-09) [umoeller] */
+    /* the following six added V1.0.0 (2002-11-09) [umoeller] */
     ID_XSSI_COPYFILENAME_SHORTSP    "file names only, separated by spaces"
     ID_XSSI_COPYFILENAME_FULLSP     "including path, separated by spaces"
     ID_XSSI_COPYFILENAME_SHORTNL    "file names only, multiple lines"
@@ -454,7 +454,7 @@ BEGIN
     ID_XSSI_LB_TASKLIST             "Fensterliste anzeigen"
     ID_XSSI_LB_COPYFILENAME_SHORT   "Dateiname kopieren (ohne Pfad)"
     ID_XSSI_LB_COPYFILENAME_FULL    "Dateiname kopieren (mit Pfad)"
-/* V0.9.21: added remaining Pickup choices [lafaix] */
+/* V1.0.0: added remaining Pickup choices [lafaix] */
     ID_XSSI_LB_PICKUPDROPCOPY       "öbergeben (Kopieren)"
     ID_XSSI_LB_PICKUPDROPMOVE       "öbergeben (Verschieben)"
     ID_XSSI_LB_PICKUPDROPLINK       "öbergeben (Ziehen abbrechen)"
@@ -779,7 +779,7 @@ BEGIN
     ID_XCSI_EXTFOLDERSORT               "Erweitertes Sortieren in Ordnern"
     /* the following item added with V0.9.16 (2001-10-25) [umoeller] */
     ID_XCSI_TURBOFOLDERS                "Turbo-Ordner"
-    /* the following item added with V0.9.21 (2002-09-09) [umoeller] */
+    /* the following item added with V1.0.0 (2002-09-09) [umoeller] */
     ID_XCSI_FDRSPLITVIEWS               "Geteilte Ordneransichten"
 
     ID_XCSI_MOUSEKEYBOARDFEATURES       "Maus- und Tastaturfunktionen"
@@ -967,7 +967,7 @@ BEGIN
                               Used RAM: %s KB
                               Swapper size: %s KB
             */
-    /* the following five added V0.9.21 (2002-08-21) [umoeller] */
+    /* the following five added V1.0.0 (2002-08-21) [umoeller] */
     ID_CRSI_SENTINELTOOLTIP2            "&nl;Frei in Auslagerung: %s KB "
     ID_CRSI_MEMORYTOOLTIP               "Derzeit freier Speicher"
     ID_CRSI_BATTERYTOOLTIP              "Energie in Batterie"
@@ -1189,7 +1189,7 @@ BEGIN
     DID_EDIT                            "~Bearbeiten..."
     DID_REMOVE                          "~Entfernen"
 
-    /* and these with V0.9.21 (2002-09-13) [umoeller] */
+    /* and these with V1.0.0 (2002-09-13) [umoeller] */
     DID_OPEN                            "~ôffnen"
     DID_SAVE                            "~Speichern"
 
@@ -1326,7 +1326,7 @@ BEGIN
 
     /* strings formerly in ID_SDD_CONFIRMWPS */
     ID_SDDI_CONFIRMWPS_TITLE            "&xwp;: WPS neu starten"
-    /* V0.9.21: ID of next item changed */
+    /* V1.0.0: ID of next item changed */
     ID_SDDI_CONFIRMWPS_TEXT             "Soll die WPS wirklich neu gestartet werden?"
     ID_SDDI_WPS_CLOSEWINDOWS            "~Alle Sitzungen schlie·en"
     ID_SDDI_WPS_STARTUPFOLDER           "Alle XWorkplace-S~ystemstartordner abarbeiten"
@@ -1334,7 +1334,7 @@ BEGIN
     ID_SDDI_ARCHIVEONCE                 "A~rbeitsoberflÑche einmal archivieren"
     ID_SDDI_MESSAGEAGAIN                "Die~se Nachricht beim nÑchsten Mal anzeigen"
 
-    /* strings formerly in ID_SDD_CONFIRM V0.9.21 */
+    /* strings formerly in ID_SDD_CONFIRM V1.0.0 */
     ID_SDDI_CONFIRM_TITLE               "&xwp;: Erweiterter Systemabschlu·"
     ID_SDDI_CONFIRM_TEXT                "WÑhlen Sie, wie das System heruntergefahren werden soll."
     ID_SDDI_REBOOTOPT_GROUP             "Optionen fÅr Neustart"
@@ -1452,7 +1452,7 @@ BEGIN
     ID_SCDI_PGR1_SHOWSTICKY            "Ha~ftfenster anzeigen"
     ID_SCDI_PGR1_FOLLOWFOCUS           "A~rbeitsoberflÑche folgt aktivem Fenster"
     ID_SCDI_PGR1_SHOWWINICONS          "Fensters~ymbole zeigen"
-    /* daemon-specific strings V0.9.21 (2002-09-15) [lafaix] */
+    /* daemon-specific strings V1.0.0 (2002-09-15) [lafaix] */
     ID_SCDI_PGR1_STICKIESTOGGLE        """Haftfenster"" zu Sys~temmenÅs hinzufÅgen"
 
     /* strings formerly in ID_SCD_PAGER_COLORS */
@@ -1471,9 +1471,9 @@ BEGIN
     ID_XCDI_PARANOIA_INTRO              "Hier kînnen Sie global bestimmte XWorkplace-Funktionen deaktivieren, falls Probleme auftauchen. DrÅcken Sie ""Hilfe"", um mehr Åber die verschiedenen Einstellungen zu erfahren."
     ID_XCDI_VARMENUOFFSET_TXT           "~ID-Ausgleich fÅr XWorkplace-MenÅeintrÑge:"
     // ID_XCDI_NOSUBCLASSING               "Jegliche Ordner~subklassierung deaktivieren"
-    //      removed V0.9.21 (2002-09-12) [umoeller]
+    //      removed V1.0.0 (2002-09-12) [umoeller]
     // ID_XCDI_NOFREAKYMENUS               "Undokumentierte MenÅfunktionen deaktivieren"
-    //      removed V0.9.21 (2002-08-26) [umoeller]
+    //      removed V1.0.0 (2002-08-26) [umoeller]
     ID_XCDI_USE8HELVFONT                "Schriftart ~8.Helv verwenden"
     ID_XCDI_NOEXCPTBEEPS                "Signaltîne bei E~xceptions deaktivieren"
     ID_XCDI_WORKERPRTY_GROUP            "Arbeitsthread"
@@ -1674,16 +1674,16 @@ BEGIN
     ID_XSDI_INFO_MAINMEM_TXT            "Arbeitsspeicher:"
     ID_XSDI_INFO_FREEMEM_TXT            "Freier Speicher:"
     ID_XSDI_INFO_BUGREPORT              "Fehler melden..."
-            /* ID_XSDI_INFO_BUGREPORT is new with V0.9.21 (2002-08-28) [umoeller] */
+            /* ID_XSDI_INFO_BUGREPORT is new with V1.0.0 (2002-08-28) [umoeller] */
 
-    /* new items for folder split views V0.9.21 (2002-08-21) [umoeller] */
+    /* new items for folder split views V1.0.0 (2002-08-21) [umoeller] */
     ID_XFSI_FDR_SPLITVIEW               "~Geteilte Anzeige"
 
-    /* startup and shutdown folder were missing so far V0.9.21 (2002-08-31) [umoeller] */
+    /* startup and shutdown folder were missing so far V1.0.0 (2002-08-31) [umoeller] */
     ID_XFSI_XWPSTARTUPFDR               "&xwp;-Systemstart-Ordner"
     ID_XFSI_XWPSHUTDOWNFDR              "&xwp;-Systemabschlu·-Ordner"
 
-    /* hotkey definition dialog V0.9.21 (2002-09-10) [lafaix] */
+    /* hotkey definition dialog V1.0.0 (2002-09-10) [lafaix] */
     ID_XSDI_HOTKEY_ADDTITLE             "TastenkÅrzel-Definition hinzufÅgen"
     ID_XSDI_HOTKEY_EDITTITLE            "TastenkÅrzel-Definition bearbeiten"
     ID_XSDI_HOTKEY_HOTKEY               "TastenkÅrzel"
@@ -1691,7 +1691,7 @@ BEGIN
     ID_XSDI_HOTKEY_PARAM                "Parameter"
     ID_XSDI_HOTKEY_GROUP                "Definition"
 
-    /* daemon-specific strings V0.9.21 (2002-09-15) [lafaix] */
+    /* daemon-specific strings V1.0.0 (2002-09-15) [lafaix] */
     ID_DMSI_STICKYTOGGLE                "~Haftfenster"
 END
 

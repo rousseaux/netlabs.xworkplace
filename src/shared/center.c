@@ -847,7 +847,7 @@ STATIC VOID DwgtMenuEnd(HWND hwnd,
  *
  *@@changed V0.9.19 (2002-04-14) [umoeller]: added "Properties" and "Close" items to def. widget context menu
  *@@changed V0.9.20 (2002-08-08) [umoeller]: added confirmations for delete
- *@@changed V0.9.21 (2002-08-12) [umoeller]: confirmations for delete never worked, fixed
+ *@@changed V1.0.0 (2002-08-12) [umoeller]: confirmations for delete never worked, fixed
  */
 
 STATIC VOID DwgtCommand(HWND hwnd,
@@ -941,7 +941,7 @@ xcenterhelp:
                                                  &pClass))
                               && (pcszClassTitle = pClass->pcszClassTitle)
                               // && (DID_YES == cmnMessageBoxExt(hwnd,
-                                    // wrong V0.9.21 (2002-08-12) [umoeller]
+                                    // wrong V1.0.0 (2002-08-12) [umoeller]
                               && (MBID_YES == cmnMessageBoxExt(hwnd,
                                                               243, // Remove Widget
                                                               &pcszClassTitle,

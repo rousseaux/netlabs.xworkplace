@@ -692,6 +692,7 @@ VOID Insert100LargestFiles(VOID)
  *      --  handle dialog resizing/minimizing etc.
  *
  *@@changed V0.9.14 (2001-08-09) [umoeller]: fixed bad sort by size that broke with 100 largest files
+ *@@changed V1.0.0 (2002-11-23) [bvl]: added "Refresh" button @@fixes 172
  */
 
 MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -721,17 +722,21 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
             // set font V0.9.16 (2001-12-02) [umoeller]
             if (doshIsWarp4())
             {
+                PCSZ pcszWS = "9.WarpSans";
+
                 winhSetWindowFont(G_hwndText,
                                   "9.WarpSans Bold");
                 winhSetWindowFont(G_hwndCnr,
-                                  "9.WarpSans");
+                                  pcszWS);
                 winhSetWindowFont(WinWindowFromID(hwndDlg, DID_OK),
-                                  "9.WarpSans");
+                                  pcszWS);
                 winhSetWindowFont(WinWindowFromID(hwndDlg, DID_CLEAR),
-                                  "9.WarpSans");
+                                  pcszWS);
+                winhSetWindowFont(WinWindowFromID(hwndDlg, DID_REFRESH),
+                                  pcszWS);
             }
 
-            // setup the container
+            // set up the container
             WinSendMsg(G_hwndCnr, CM_QUERYCNRINFO, &CnrInfo, (MPARAM)sizeof(CnrInfo));
             // don't sort initially, because sort-by-size doesn't
             // work until we have all the directory sizes. Instead,
@@ -1557,6 +1562,11 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
             {
                 case DID_CLEAR:
                     Cleanup(NULL);
+                break;
+
+                case DID_REFRESH:
+                    Cleanup(NULL);
+                    WinPostMsg(hwndDlg, TSM_START, 0, 0);
                 break;
 
                 case ID_TSMI_SORTBYNAME:

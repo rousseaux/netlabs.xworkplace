@@ -573,7 +573,7 @@ SOM_Scope void  SOMLINK xfstupM_wpclsInitData(M_XFldStartup *somSelf)
  *      for new objects of a class.
  *
  *@@changed V0.9.6 (2000-11-20) [umoeller]: changed to "XWorkplace"
- *@@changed V0.9.21 (2002-08-31) [umoeller]: finally localized
+ *@@changed V1.0.0 (2002-08-31) [umoeller]: finally localized
  */
 
 SOM_Scope PSZ  SOMLINK xfstupM_wpclsQueryTitle(M_XFldStartup *somSelf)
@@ -733,7 +733,7 @@ SOM_Scope void  SOMLINK xfshutM_wpclsInitData(M_XFldShutdown *somSelf)
  *      for new objects of a class.
  *
  *@@changed V0.9.6 (2000-11-20) [umoeller]: changed to "XWorkplace"
- *@@changed V0.9.21 (2002-08-31) [umoeller]: finally localized
+ *@@changed V1.0.0 (2002-08-31) [umoeller]: finally localized
  */
 
 SOM_Scope PSZ  SOMLINK xfshutM_wpclsQueryTitle(M_XFldShutdown *somSelf)
@@ -744,7 +744,7 @@ SOM_Scope PSZ  SOMLINK xfshutM_wpclsQueryTitle(M_XFldShutdown *somSelf)
     // return ("XWorkplace Shutdown");
 
     return cmnGetString(ID_XFSI_XWPSHUTDOWNFDR);
-                // V0.9.21 (2002-08-31) [umoeller]
+                // V1.0.0 (2002-08-31) [umoeller]
 }
 
 /*

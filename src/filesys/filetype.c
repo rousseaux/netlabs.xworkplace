@@ -1455,7 +1455,7 @@ WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,       // in: data file
  *
  *@@added V0.9.0 (99-11-27) [umoeller]
  *@@changed V0.9.20 (2002-07-25) [umoeller]: got rid of linked list
- *@@changed V0.9.21 (2002-08-31) [umoeller]: fixed deletion of WPMENUID_PROPERTIES
+ *@@changed V1.0.0 (2002-08-31) [umoeller]: fixed deletion of WPMENUID_PROPERTIES
  */
 
 BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf, // in: data file in question
@@ -1485,7 +1485,7 @@ BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf, // in: data file in ques
             {
                 ulItemID = (ULONG)WinSendMsg(hwndOpenSubmenu,
                                              MM_ITEMIDFROMPOSITION,
-                                             (MPARAM)sPos,      // V0.9.21 (2002-08-31) [umoeller]
+                                             (MPARAM)sPos,      // V1.0.0 (2002-08-31) [umoeller]
                                              0);      // reserved
                 if (    (ulItemID)
                      && (ulItemID != MIT_ERROR)
@@ -1494,7 +1494,7 @@ BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf, // in: data file in ques
                     // only remove items >= 0x1000 because at this
                     // point, the "properties" menu item is still
                     // in the menu (dammit, IBM)
-                    // V0.9.21 (2002-08-31) [umoeller]
+                    // V1.0.0 (2002-08-31) [umoeller]
                     if (ulItemID < 0x1000)
                     {
                         ++sPos;

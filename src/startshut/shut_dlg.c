@@ -5,7 +5,7 @@
  *      and "reboot actions" etc. dialogs.
  *
  *      This has been separated from shutdown.c with
- *      V0.9.21 (2002-09-13) [umoeller].
+ *      V1.0.0 (2002-09-13) [umoeller].
  *
  *
  *      All the functions in this file have the xsd* prefix.
@@ -496,7 +496,7 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
                                  NULL);
 */
 
-        // now using dialog formatter V0.9.21 (2002-09-17) [umoeller]
+        // now using dialog formatter V1.0.0 (2002-09-17) [umoeller]
         if (!cmnLoadDialogStrings(dlgConfirmShutdown,
                                   ARRAYITEMCOUNT(dlgConfirmShutdown),
                                   &paNew))
@@ -584,7 +584,7 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
                     }
 
                     // finally fix the non-selected reboot item
-                    // V0.9.21 (2002-09-17) [umoeller]
+                    // V1.0.0 (2002-09-17) [umoeller]
                     if (fSelectFirst)
                         WinSendDlgItemMsg(hwndConfirm, ID_SDDI_BOOTMGR,
                                           LM_SELECTITEM,

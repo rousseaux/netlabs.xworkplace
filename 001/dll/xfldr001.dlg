@@ -1,7 +1,7 @@
 #ifndef OS2_INCLUDED
    #include <os2.h>
 #endif
-DLGINCLUDE 1 "R:\projects\R_cvs\xworkplace\001\dll\dlgids.h"
+DLGINCLUDE 1 "..\..\dlgids.h"
 
 DLGTEMPLATE ID_CRD_DISKFREEWGT_SETTINGS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
@@ -1578,6 +1578,7 @@ BEGIN
                         PRESPARAMS PP_BACKGROUNDCOLOR, 0x00FFFFFFL
         DEFPUSHBUTTON   "~Close", DID_OK, 6, 4, 60, 12
         PUSHBUTTON      "C~lear", DID_CLEAR, 72, 4, 60, 12
+        PUSHBUTTON      "R~efresh", DID_REFRESH, 140, 4, 60, 12
     END
 END
 

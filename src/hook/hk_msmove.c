@@ -819,7 +819,7 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
  *@@added V0.9.1 (99-12-03) [umoeller]
  *@@changed V0.9.5 (2000-09-20) [pr]: fixed auto-hide bug
  *@@changed V0.9.14 (2001-08-01) [lafaix]: allows auto-hide disabling while in menu mode
- *@@changed V0.9.21 (2002-09-05) [lafaix]: do not hide if a mouse button is down
+ *@@changed V1.0.0 (2002-09-05) [lafaix]: do not hide if a mouse button is down
  */
 
 VOID WMMouseMove_AutoHideMouse(VOID)
@@ -844,7 +844,7 @@ VOID WMMouseMove_AutoHideMouse(VOID)
     // (re)start timer
     if (    (G_HookData.HookConfig.__fAutoHideMouse) // V0.9.5 (2000-09-20) [pr] fix auto-hide mouse bug
          && (G_hwndRootMenu == NULLHANDLE) // V0.9.14 (2001-08-01) [lafaix]
-         && ((WinGetKeyState(HWND_DESKTOP, VK_BUTTON1) & 0x8000) == 0) // V0.9.21 (2002-09-05) [lafaix]
+         && ((WinGetKeyState(HWND_DESKTOP, VK_BUTTON1) & 0x8000) == 0) // V1.0.0 (2002-09-05) [lafaix]
          && ((WinGetKeyState(HWND_DESKTOP, VK_BUTTON2) & 0x8000) == 0)
          && ((WinGetKeyState(HWND_DESKTOP, VK_BUTTON3) & 0x8000) == 0)
        )
@@ -869,7 +869,7 @@ VOID WMMouseMove_AutoHideMouse(VOID)
  *@@changed V0.9.9 (2001-03-15) [lafaix]: added AutoScroll support
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added fixes for while system is locked up
  *@@changed V0.9.18 (2002-02-12) [pr]: mods. for screen wrap
- *@@changed V0.9.21 (2002-09-05) [lafaix]: refined auto-hide behavior
+ *@@changed V1.0.0 (2002-09-05) [lafaix]: refined auto-hide behavior
  */
 
 BOOL WMMouseMove(PQMSG pqmsg,
@@ -1084,7 +1084,7 @@ BOOL WMMouseMove(PQMSG pqmsg,
                         // so that the ending test does not hide the pointer again)
                         fGlobalMouseMoved = FALSE;
                         // undefining fWinChanged too because the ending test has
-                        // changed.  V0.9.21 (2002-09-05) [lafaix]
+                        // changed.  V1.0.0 (2002-09-05) [lafaix]
                         fWinChanged = FALSE;
                     }
 #endif
@@ -1099,7 +1099,7 @@ BOOL WMMouseMove(PQMSG pqmsg,
          || (fWinChanged)
                 // we must restart autohide if just the window under
                 // the pointer has changed, if for example the button
-                // we were over is no more.   V0.9.21 (2002-09-05) [lafaix]
+                // we were over is no more.   V1.0.0 (2002-09-05) [lafaix]
        )
     {
         /*

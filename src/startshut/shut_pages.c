@@ -5,7 +5,7 @@
  *      the Desktop's settings notebook).
  *
  *      This has been separated from shutdown.c with
- *      V0.9.21 (2002-09-13) [umoeller].
+ *      V1.0.0 (2002-09-13) [umoeller].
  *
  *
  *      All the functions in this file have the xsd* prefix.
@@ -589,7 +589,7 @@ MRESULT xsdShutdownItemChanged(PNOTEBOOKPAGE pnbp,
             if (hObj = WinCreateObject((PSZ)G_pcszXFldShutdown,
                                        // "XFolder Shutdown",
                                        cmnGetString(ID_XFSI_XWPSHUTDOWNFDR),
-                                            // finally localized V0.9.21 (2002-08-31) [umoeller]
+                                            // finally localized V1.0.0 (2002-08-31) [umoeller]
                                        szSetup,
                                        (PSZ)WPOBJID_DESKTOP, // "<WP_DESKTOP>",
                                        CO_UPDATEIFEXISTS))

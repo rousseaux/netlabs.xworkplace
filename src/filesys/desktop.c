@@ -434,7 +434,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
     ULONG ulShutdownAttr = 0;
 
     ULONG ulOfs = cmnQuerySetting(sulVarMenuOfs);
-    ULONG fl = cmnQuerySetting(mnuQueryMenuXWPSetting(somSelf));  // V0.9.21 (2002-10-11) [pr]
+    ULONG fl = cmnQuerySetting(mnuQueryMenuXWPSetting(somSelf));  // V1.0.0 (2002-10-11) [pr]
 
     if (fShutdownRunning)
         // disable all those menu items if XShutdown is currently running
@@ -504,7 +504,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
 
     } // end if (cmnQuerySetting(sfXShutdown)) ...
 
-    if (   (!(fl & XWPCTXT_RESTARTWPS))  // V0.9.21 (2002-10-11) [pr]
+    if (   (!(fl & XWPCTXT_RESTARTWPS))  // V1.0.0 (2002-10-11) [pr]
         && cmnQuerySetting(sfRestartDesktop))
     {
         // insert "Restart Desktop"
@@ -1304,7 +1304,7 @@ MRESULT dtpStartupItemChanged(PNOTEBOOKPAGE pnbp,
                     XFOLDER_STARTUPID);
                 if (hObj = WinCreateObject((PSZ)G_pcszXFldStartup,
                                            cmnGetString(ID_XFSI_XWPSTARTUPFDR), // "XWorkplace Startup",
-                                                // finally localized V0.9.21 (2002-08-31) [umoeller]
+                                                // finally localized V1.0.0 (2002-08-31) [umoeller]
                                            szSetup,
                                            (PSZ)WPOBJID_DESKTOP, // "<WP_DESKTOP>",
                                            CO_UPDATEIFEXISTS))

@@ -245,7 +245,7 @@ BOOL ctsDescendedFromSharedDir(SOMClass *pClassObject)
  *
  *      WPDisk objects function as root folders.
  *
- *@@added V0.9.21 (2002-09-23) [pr]
+ *@@added V1.0.0 (2002-09-23) [pr]
  */
 
 BOOL ctsIsDisk(WPObject *somSelf)

@@ -460,7 +460,7 @@ BOOL krnIsClassReady(PCSZ pcszClassName)
  *      is used; otherwise we use the root
  *      directory of the boot drive.
  *
- *@@added V0.9.21 (2002-09-20) [umoeller]
+ *@@added V1.0.0 (2002-09-20) [umoeller]
  */
 
 BOOL krnMakeLogFilename(PSZ pszBuf,             // out: fully qualified filename

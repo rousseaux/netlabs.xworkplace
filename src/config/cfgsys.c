@@ -2539,7 +2539,7 @@ STATIC VOID AddOneSyslevel2Cnr(HWND hwndCnr,
  */
 
 STATIC VOID AddSyslevelsForDir(HWND hwndCnr,
-                               PCSZ pszDir)     // in: directory to search (with terminating \)
+                               PCSZ pcszDir)    // in: directory to search (with terminating \)
 {
     HDIR          hdirFindHandle = HDIR_CREATE;
     FILEFINDBUF3  ffb3     = {0};      /* Returned from FindFirst/Next */
@@ -2551,7 +2551,7 @@ STATIC VOID AddSyslevelsForDir(HWND hwndCnr,
     CHAR    szCurDir[400],
             szSearchMask[400];
 
-    strcpy(szCurDir, pszDir);
+    strcpy(szCurDir, pcszDir);
     if (szCurDir[0] == '?')
         szCurDir[0] = doshQueryBootDrive();
     sprintf(szSearchMask, "%sSYSLEVEL.*", szCurDir);
@@ -2567,7 +2567,7 @@ STATIC VOID AddSyslevelsForDir(HWND hwndCnr,
                       FIL_STANDARD);
 
     // and start looping
-    while (rc == NO_ERROR)
+    while (!rc)
     {
         CHAR    szFile[CCHMAXPATH];
         ULONG   ulAction = 0;
@@ -2576,15 +2576,14 @@ STATIC VOID AddSyslevelsForDir(HWND hwndCnr,
                                 ffb3.achName);
 
         // open file
-        if (DosOpen(szFile,
-                    &hfSysLevel,
-                    &ulAction,
-                    0,
-                    FILE_NORMAL,
-                    OPEN_ACTION_FAIL_IF_NEW | OPEN_ACTION_OPEN_IF_EXISTS,
-                    OPEN_FLAGS_FAIL_ON_ERROR | OPEN_FLAGS_RANDOM | OPEN_SHARE_DENYWRITE | OPEN_ACCESS_READONLY,
-                    NULL)
-            == NO_ERROR)
+        if (!DosOpen(szFile,
+                     &hfSysLevel,
+                     &ulAction,
+                     0,
+                     FILE_NORMAL,
+                     OPEN_ACTION_FAIL_IF_NEW | OPEN_ACTION_OPEN_IF_EXISTS,
+                     OPEN_FLAGS_FAIL_ON_ERROR | OPEN_FLAGS_RANDOM | OPEN_SHARE_DENYWRITE | OPEN_ACCESS_READONLY,
+                     NULL))
         {
             AddOneSyslevel2Cnr(hwndCnr,
                                hfSysLevel,
@@ -2609,6 +2608,8 @@ STATIC VOID AddSyslevelsForDir(HWND hwndCnr,
  *@@changed V0.9.4 (2000-06-13) [umoeller]: group title was missing; fixed
  *@@changed V0.9.14 (2001-07-07) [umoeller]: this never found TCPIP syslevels, fixed
  *@@changed V0.9.19 (2002-04-02) [umoeller]: optimized, added a couple of paths, sorted dirs
+ *@@changed V1.0.0 (2002-11-23) [umoeller]: syslevels not found if not on boot drive @@fixes 197
+ *@@changed V1.0.0 (2002-11-23) [umoeller]: added IBMGSK50
  */
 
 VOID cfgSyslevelInitPage(PNOTEBOOKPAGE pnbp,
@@ -2674,27 +2675,93 @@ VOID cfgSyslevelInitPage(PNOTEBOOKPAGE pnbp,
         // made this a loop and sorted them
         // alphabetically
         // V0.9.19 (2002-04-02) [umoeller]
-        static PCSZ apcszDirs[] =
+        CHAR    szIbmCom[CCHMAXPATH],
+                szIbmGsk[CCHMAXPATH],
+                szIbmGsk4[CCHMAXPATH],
+                szIbmGsk5[CCHMAXPATH],
+                szMmos2Install[CCHMAXPATH],
+                szMptn[CCHMAXPATH],
+                szTcpip[CCHMAXPATH];
+
+        PCSZ apcszDirs[] =
             {
                    "?:\\CID\\LOCINSTU\\",     // added V0.9.19 (2002-04-02) [umoeller]
                    "?:\\DMISL\\",
-                   "?:\\IBMCOM\\",
-                   "?:\\IBMGSK\\",            // added V0.9.19 (2002-04-02) [umoeller]
-                   "?:\\IBMGSK40\\",          // added V0.9.19 (2002-04-02) [umoeller]
+                   szIbmCom, // "?:\\IBMCOM\\",
+                   szIbmGsk, // "?:\\IBMGSK\\",            // added V0.9.19 (2002-04-02) [umoeller]
+                   szIbmGsk4, // "?:\\IBMGSK40\\",          // added V0.9.19 (2002-04-02) [umoeller]
+                   szIbmGsk5, // "?:\\IBMGSK50\\",          // added V1.0.0 (2002-11-23) [umoeller]
                    "?:\\IBMI18N\\",
                    "?:\\IBMINST\\",    // networking installation
                    "?:\\IBMLAN\\",    // peer
-                   "?:\\MMOS2\\INSTALL\\",
-                   "?:\\MPTN\\",
+                   szMmos2Install, // "?:\\MMOS2\\INSTALL\\",
+                   szMptn, // "?:\\MPTN\\",
                    "?:\\MUGLIB\\",    // peer
                    "?:\\OS2\\DLL\\",
                    "?:\\OS2\\INSTALL\\",
-                   // "?:\\TCPIP\\",
-                   "?:\\TCPIP\\BIN\\",     // fixed V0.9.14 (2001-07-07) [umoeller]
+                   szTcpip, // "?:\\TCPIP\\BIN\\",
 
             };
-        ULONG ul;
+        ULONG   ul;
+        PSZ     p;
 
+        // try to find IBMCOM etc. directories by looking for executables on the PATH
+        // V1.0.0 (2002-11-23) [umoeller]
+        struct
+        {
+            PCSZ    pcszExe;
+            PSZ     pszBuf;
+            PCSZ    pcszDefault;
+        } aExecs[] =
+            {
+                "MPTS.EXE", szIbmCom, "?:\\IBMCOM\\",
+                "gskver.exe", szIbmGsk, "?:\\IBMGSK\\",
+                "gsk4ver.exe", szIbmGsk4, "?:\\IBMGSK40\\",
+                "gsk5ver.exe", szIbmGsk5, "?:\\IBMGSK50\\",
+                "MINSTALL.EXE", szMmos2Install, "?:\\MMOS2\\",
+                "syslevel.dbx", szTcpip, "?:\\TCPIP\\BIN\\"
+            };
+
+        HPOINTER hptrOld = winhSetWaitPointer();
+
+        for (ul = 0;
+             ul < ARRAYITEMCOUNT(aExecs);
+             ++ul)
+        {
+            if (    (!doshSearchPath(NULL,        // "PATH",
+                                     aExecs[ul].pcszExe,
+                                     aExecs[ul].pszBuf,
+                                     CCHMAXPATH))
+                 && (p = strrchr(aExecs[ul].pszBuf, '\\'))
+               )
+            {
+                _Pmpf(("found %s in %s", aExecs[ul].pcszExe, aExecs[ul].pszBuf));
+                p[1] = '\0';
+            }
+            else
+                // not found:
+                strcpy(aExecs[ul].pszBuf, aExecs[ul].pcszDefault);
+        }
+
+        // MPTN is special because only MPTN\BIN is on the PATH
+        strcpy(szMptn, "?:\\MPTN\\");
+        if (    (!doshSearchPath(NULL,        // "PATH",
+                                 "ifconfig.exe",
+                                 szMptn,
+                                 CCHMAXPATH))
+             && (p = strrchr(szMptn, '\\'))
+           )
+        {
+            *p = '\0';
+            // cut off \BIN too
+            if (p = strrchr(szMptn, '\\'))
+                p[1] = '\0';
+        }
+
+        // and MMOS2 has the syslevels in the install subdir
+        strcat(szMmos2Install, "INSTALL\\");
+
+        // now search for syslevels
         for (ul = 0;
              ul < ARRAYITEMCOUNT(apcszDirs);
              ++ul)
@@ -2702,6 +2769,8 @@ VOID cfgSyslevelInitPage(PNOTEBOOKPAGE pnbp,
             AddSyslevelsForDir(hwndCnr,
                                apcszDirs[ul]);
         }
+
+        WinSetPointer(HWND_DESKTOP, hptrOld);
     }
 }
 

@@ -899,7 +899,7 @@ SHORT EXPENTRY fnCompareDetailsColumn(PMINIRECORDCORE pmrc1,
     // from pointer hacked in wpRestoreData
     // PIBMSORTINFO pSortInfo = (PIBMSORTINFO)_pFolderSortInfo;
     PIBMSORTINFO pSortInfo = &((PIBMFOLDERDATA)_pvWPFolderData)->SortInfo;
-            // V0.9.21 (2002-08-24) [umoeller]
+            // V1.0.0 (2002-08-24) [umoeller]
 
     BOOL    f1IsOfSortClass,
             f2IsOfSortClass;
@@ -1202,7 +1202,7 @@ BOOL fdrHasAlwaysSort(WPFolder *somSelf)
 #ifndef __ALWAYSEXTSORT__
     // if (_pFolderSortInfo)
         // return (((PIBMSORTINFO)_pFolderSortInfo)->fAlwaysSort);
-    // V0.9.21 (2002-08-24) [umoeller]
+    // V1.0.0 (2002-08-24) [umoeller]
     return ((PIBMFOLDERDATA)_pvWPFolderData)->SortInfo.fAlwaysSort;
 #endif
 }
@@ -1214,7 +1214,7 @@ BOOL fdrHasAlwaysSort(WPFolder *somSelf)
  *      the parameters to this func.
  *
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
- *@@changed V0.9.21 (2002-08-28) [umoeller]: adjusted to new callback prototype
+ *@@changed V1.0.0 (2002-08-28) [umoeller]: adjusted to new callback prototype
  */
 
 BOOL _Optlink fdrSortAllViews(WPFolder *somSelf,
@@ -1425,7 +1425,7 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
                 // to this structure in wpRestoreData
                 if (objIsObjectInitialized(somSelf))
                     ((PIBMFOLDERDATA)_pvWPFolderData)->SortInfo.fAlwaysSort = AlwaysSort;
-                                // V0.9.21 (2002-08-24) [umoeller]
+                                // V1.0.0 (2002-08-24) [umoeller]
                     // if (_pFolderSortInfo)
                        //  ((PIBMSORTINFO)_pFolderSortInfo)->fAlwaysSort = AlwaysSort;
 
@@ -1484,7 +1484,7 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
  *
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
  *@@changed V0.9.7 (2000-12-18) [umoeller]: fixed wrong window handle
- *@@changed V0.9.21 (2002-08-28) [umoeller]: adjusted to new callback prototype
+ *@@changed V1.0.0 (2002-08-28) [umoeller]: adjusted to new callback prototype
  */
 
 BOOL _Optlink fdrUpdateFolderSorts(WPFolder *somSelf,

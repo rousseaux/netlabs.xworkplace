@@ -1598,7 +1598,7 @@ static const DLGHITEM G_dlgPagerStickies[] =
                         CONTROL_DEF(&G_RemoveButton),
                 END_TABLE,
             // Martin, I moved this out of the group
-            // V0.9.21 (2002-09-17) [umoeller]
+            // V1.0.0 (2002-09-17) [umoeller]
             START_ROW(0),
                 CONTROL_DEF(&StickiesToggle),
             START_ROW(0),       // notebook buttons (will be moved)
@@ -1625,7 +1625,7 @@ MPARAM G_ampStickies[] =
  *@@added V0.9.4 (2000-07-10) [umoeller]
  *@@changed V0.9.19 (2002-04-14) [lafaix]: modified container view
  *@@changed V0.9.19 (2002-04-17) [umoeller]: now using dialog formatter
- *@@changed V0.9.21 (2002-09-14) [lafaix]: added support for PGRFL_ADDSTICKYTOGGLE
+ *@@changed V1.0.0 (2002-09-14) [lafaix]: added support for PGRFL_ADDSTICKYTOGGLE
  */
 
 STATIC VOID PagerStickyInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -1753,7 +1753,7 @@ STATIC VOID PagerStickyInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *@@changed V0.9.11 (2001-04-25) [umoeller]: no longer listing invisible switchlist entries
  *@@changed V0.9.19 (2002-04-14) [lafaix]: using new sticky settings dialog
  *@@changed V0.9.19 (2002-04-16) [lafaix]: fixed popup menu font and DID_UNDO
- *@@changed V0.9.21 (2002-09-14) [lafaix]: added support for PGRFL_ADDSTICKYTOGGLE
+ *@@changed V1.0.0 (2002-09-14) [lafaix]: added support for PGRFL_ADDSTICKYTOGGLE
  */
 
 STATIC MRESULT PagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
@@ -1843,7 +1843,7 @@ STATIC MRESULT PagerStickyItemChanged(PNOTEBOOKPAGE pnbp,
                 case CN_ENTER:
                     // this crashed if the user double-clicked on
                     // cnr whitespace since the record was then NULL
-                    if (ulExtra)        // V0.9.21 (2002-08-28) [umoeller]
+                    if (ulExtra)        // V1.0.0 (2002-08-28) [umoeller]
                         EditStickyRecord((PSTICKYRECORD)ulExtra,
                                          pnbp,
                                          hwndCnr,

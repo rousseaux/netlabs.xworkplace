@@ -83,7 +83,7 @@
         HPOINTER    ahptr[XSD_ANIM_COUNT];
     } SHUTDOWNANIM, *PSHUTDOWNANIM;
 
-    extern SHUTDOWNANIM     G_sdAnim;       // V0.9.21 (2002-09-13) [umoeller]
+    extern SHUTDOWNANIM     G_sdAnim;       // V1.0.0 (2002-09-13) [umoeller]
 
     /*
      *@@ AUTOCLOSELISTITEM:

@@ -306,7 +306,7 @@ BEGIN
     MENUITEM "~Help", ID_CRMI_HELP
 END
 
-/* Split view menu bar V0.9.21 (2002-08-28) [umoeller] */
+/* Split view menu bar V1.0.0 (2002-08-28) [umoeller] */
 MENU ID_XFM_SPLITVIEWBAR LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     MENUITEM "~Folder", ID_XFM_BAR_FOLDER, MIS_SUBMENU
@@ -356,7 +356,7 @@ BEGIN
 
     ID_XSSI_FLDRCONTENT             "F~older contents"
     ID_XSSI_COPYFILENAME            "Co~py filename"
-    /* the following six added V0.9.21 (2002-11-09) [umoeller] */
+    /* the following six added V1.0.0 (2002-11-09) [umoeller] */
     ID_XSSI_COPYFILENAME_SHORTSP    "file names only, separated by spaces"
     ID_XSSI_COPYFILENAME_FULLSP     "including path, separated by spaces"
     ID_XSSI_COPYFILENAME_SHORTNL    "file names only, multiple lines"
@@ -458,7 +458,7 @@ BEGIN
     ID_XSSI_LB_TASKLIST             "Show task list"
     ID_XSSI_LB_COPYFILENAME_SHORT   "Copy filenames (without path)"
     ID_XSSI_LB_COPYFILENAME_FULL    "Copy filenames (including path)"
-/* V0.9.21: added remaining Pickup choices [lafaix] */
+/* V1.0.0: added remaining Pickup choices [lafaix] */
     ID_XSSI_LB_PICKUPDROPCOPY       "Drop (Copy)"
     ID_XSSI_LB_PICKUPDROPMOVE       "Drop (Move)"
     ID_XSSI_LB_PICKUPDROPLINK       "Drop (Create shadow)"
@@ -708,7 +708,7 @@ BEGIN
 
     ID_XSSI_COLMN_SYSL_COMPONENT        "Component"
     ID_XSSI_COLMN_SYSL_FILE             "SYSLEVEL File"
-            /* corrected SYLEVEL typo V0.9.21 (2002-08-12) [umoeller] */
+            /* corrected SYLEVEL typo V1.0.0 (2002-08-12) [umoeller] */
     ID_XSSI_COLMN_SYSL_VERSION          "Version"
     ID_XSSI_COLMN_SYSL_LEVEL            "Syslevel"
     ID_XSSI_COLMN_SYSL_PREVIOUS         "Previous"
@@ -784,7 +784,7 @@ BEGIN
     ID_XCSI_EXTFOLDERSORT               "Extended folder sorting"
     /* the following item added with V0.9.16 (2001-10-25) [umoeller] */
     ID_XCSI_TURBOFOLDERS                "Turbo folders"
-    /* the following item added with V0.9.21 (2002-09-09) [umoeller] */
+    /* the following item added with V1.0.0 (2002-09-09) [umoeller] */
     ID_XCSI_FDRSPLITVIEWS               "Folder split views"
 
     ID_XCSI_MOUSEKEYBOARDFEATURES       "Mouse and keyboard features"
@@ -973,7 +973,7 @@ BEGIN
                               Swapper size: %s KB
             */
 
-    /* the following five added V0.9.21 (2002-08-21) [umoeller] */
+    /* the following five added V1.0.0 (2002-08-21) [umoeller] */
     ID_CRSI_SENTINELTOOLTIP2            "&nl;Free in swapper: %s KB "
     ID_CRSI_MEMORYTOOLTIP               "Currently free memory"
     ID_CRSI_BATTERYTOOLTIP              "Battery power"
@@ -1195,7 +1195,7 @@ BEGIN
     DID_EDIT                            "~Edit..."
     DID_REMOVE                          "~Remove"
 
-    /* and these with V0.9.21 (2002-09-13) [umoeller] */
+    /* and these with V1.0.0 (2002-09-13) [umoeller] */
     DID_OPEN                            "~Open"
     DID_SAVE                            "~Save"
 
@@ -1233,7 +1233,7 @@ BEGIN
     ID_SDDI_ANIMATE_TXT                 "Animation"
     ID_SDDI_ANIMATE_SHUTDOWN            "~before shutdown"
     ID_SDDI_ANIMATE_REBOOT              "be~fore reboot"
-    /* V0.9.21: ID_SDDI_APMPOWEROFF renamed */
+    /* V1.0.0: ID_SDDI_APMPOWEROFF renamed */
     ID_SDDI_APMPOWEROFF                 "Power-off computer"
     ID_SDDI_DELAY                       "Dela~y"
     ID_SDDI_APMVERSION_TXT              "APM level:"
@@ -1333,7 +1333,7 @@ BEGIN
 
     /* strings formerly in ID_SDD_CONFIRMWPS */
     ID_SDDI_CONFIRMWPS_TITLE            "&xwp;: Restart Desktop"
-    /* V0.9.21: ID of next item changed */
+    /* V1.0.0: ID of next item changed */
     ID_SDDI_CONFIRMWPS_TEXT             "Are you sure you wish to restart the Desktop?"
     ID_SDDI_WPS_CLOSEWINDOWS            "~Close all sessions"
     ID_SDDI_WPS_STARTUPFOLDER           "~Process all XWorkplace Startup folders"
@@ -1341,7 +1341,7 @@ BEGIN
     ID_SDDI_ARCHIVEONCE                 "~Archive Desktop once after restart"
     ID_SDDI_MESSAGEAGAIN                "~Show this message next time"
 
-    /* strings formerly in ID_SDD_CONFIRM V0.9.21 */
+    /* strings formerly in ID_SDD_CONFIRM V1.0.0 */
     ID_SDDI_CONFIRM_TITLE                "&xwp;: Extended Shutdown"
     ID_SDDI_CONFIRM_TEXT                "Please select how the system shall be shut down."
     ID_SDDI_REBOOTOPT_GROUP             "Reboot options"
@@ -1461,7 +1461,7 @@ BEGIN
     ID_SCDI_PGR1_SHOWSTICKY            "Show stic~ky windows"
     ID_SCDI_PGR1_FOLLOWFOCUS           "Desktop follows active ~window"
     ID_SCDI_PGR1_SHOWWINICONS          "Show window ~icons"
-    /* daemon-specific strings V0.9.21 (2002-09-15) [lafaix] */
+    /* daemon-specific strings V1.0.0 (2002-09-15) [lafaix] */
     ID_SCDI_PGR1_STICKIESTOGGLE        "Include sticky ~toggle in system menus"
 
     /* strings formerly in ID_SCD_PAGER_COLORS */
@@ -1480,9 +1480,9 @@ BEGIN
     ID_XCDI_PARANOIA_INTRO              "Here you can globally disable certain XWorkplace features in case of trouble. Press ""Help"" to find out more about the different settings."
     ID_XCDI_VARMENUOFFSET_TXT           "XWorkplace menu item ~ID offset:"
     // ID_XCDI_NOSUBCLASSING               "Disable all folder ~subclassing"
-    //      removed V0.9.21 (2002-09-12) [umoeller]
+    //      removed V1.0.0 (2002-09-12) [umoeller]
     // ID_XCDI_NOFREAKYMENUS               "Disable undocumented menu functions"
-    //      removed V0.9.21 (2002-08-26) [umoeller]
+    //      removed V1.0.0 (2002-08-26) [umoeller]
     ID_XCDI_USE8HELVFONT                "Use ~8.Helv font"
     ID_XCDI_NOEXCPTBEEPS                "Disable ex~ception beeps"
     ID_XCDI_WORKERPRTY_GROUP            "Worker thread"
@@ -1682,16 +1682,16 @@ BEGIN
     ID_XSDI_INFO_MAINMEM_TXT            "System memory:"
     ID_XSDI_INFO_FREEMEM_TXT            "Free memory:"
     ID_XSDI_INFO_BUGREPORT              "Report bug..."
-            /* ID_XSDI_INFO_BUGREPORT is new with V0.9.21 V0.9.21 (2002-08-28) [umoeller] */
+            /* ID_XSDI_INFO_BUGREPORT is new with V1.0.0 V1.0.0 (2002-08-28) [umoeller] */
 
-    /* new items for folder split views V0.9.21 (2002-08-21) [umoeller] */
+    /* new items for folder split views V1.0.0 (2002-08-21) [umoeller] */
     ID_XFSI_FDR_SPLITVIEW               "~Split view"
 
-    /* startup and shutdown folder were missing so far V0.9.21 (2002-08-31) [umoeller] */
+    /* startup and shutdown folder were missing so far V1.0.0 (2002-08-31) [umoeller] */
     ID_XFSI_XWPSTARTUPFDR               "&xwp; Startup Folder"
     ID_XFSI_XWPSHUTDOWNFDR              "&xwp; Shutdown Folder"
 
-    /* hotkey definition dialog V0.9.21 (2002-09-10) [lafaix] */
+    /* hotkey definition dialog V1.0.0 (2002-09-10) [lafaix] */
     ID_XSDI_HOTKEY_ADDTITLE             "Add Hotkey definition"
     ID_XSDI_HOTKEY_EDITTITLE            "Edit Hotkey definition"
     ID_XSDI_HOTKEY_HOTKEY               "Hotkey"
@@ -1699,7 +1699,7 @@ BEGIN
     ID_XSDI_HOTKEY_PARAM                "Parameter"
     ID_XSDI_HOTKEY_GROUP                "Definition"
 
-    /* daemon-specific strings V0.9.21 (2002-09-15) [lafaix] */
+    /* daemon-specific strings V1.0.0 (2002-09-15) [lafaix] */
     ID_DMSI_STICKYTOGGLE                "Stick~y"
 END
 

@@ -567,13 +567,13 @@ BOOL wpshCheckObject(WPObject *pObject)
  *      Returns OPEN_UNKNOWN (-1) upon errors.
  *
  *@@changed V0.9.2 (2000-03-06) [umoeller]: added object mutex protection
- *@@changed V0.9.21 (2002-08-26) [umoeller]: now returning -1 on errors because 0 is OPEN_DEFAULT
+ *@@changed V1.0.0 (2002-08-26) [umoeller]: now returning -1 on errors because 0 is OPEN_DEFAULT
  */
 
 ULONG wpshQueryView(WPObject* somSelf,      // in: object to examine
                     HWND hwndFrame)         // in: frame window of open view of somSelf
 {
-    ULONG   ulView = OPEN_UNKNOWN;      // -1 V0.9.21 (2002-08-26) [umoeller]
+    ULONG   ulView = OPEN_UNKNOWN;      // -1 V1.0.0 (2002-08-26) [umoeller]
 
     WPObject *pobjLock = NULL;
     TRY_LOUD(excpt1)
@@ -619,7 +619,7 @@ ULONG wpshQueryView(WPObject* somSelf,      // in: object to examine
  *      hwndCnr passed with wpModifyPopupMenu.
  *
  *@@added V0.9.2 (2000-03-08) [umoeller]
- *@@changed V0.9.21 (2002-08-26) [umoeller]: rewritten to be much faster and work with split views too
+ *@@changed V1.0.0 (2002-08-26) [umoeller]: rewritten to be much faster and work with split views too
  */
 
 BOOL wpshIsViewCnr(WPObject *somSelf,
@@ -1320,8 +1320,8 @@ WPFileSystem* wpshContainsFile(WPFolder *pFolder,   // in: folder to examine
  *@@changed V0.9.2 (2000-02-26) [umoeller]: removed CM_QUERYRECORDINFO
  *@@changed V0.9.9 (2001-03-27) [umoeller]: now using wpCopyObject instead of wpCreateFromTemplate; this should fix the system hangs
  *@@changed V0.9.14 (2001-07-28) [umoeller]: fixed invisible new obj in tree views (workaround for WPS bug)
- *@@changed V0.9.21 (2002-08-26) [umoeller]: removed hab param which was never used; optimized
- *@@changed V0.9.21 (2002-08-26) [umoeller]: fixed tree view, finally
+ *@@changed V1.0.0 (2002-08-26) [umoeller]: removed hab param which was never used; optimized
+ *@@changed V1.0.0 (2002-08-26) [umoeller]: fixed tree view, finally
  */
 
 WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
@@ -1385,7 +1385,7 @@ WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
                                        &ptlMoveTo,
                                        1);
 
-                    /*  replaced this V0.9.21 (2002-08-26) [umoeller]
+                    /*  replaced this V1.0.0 (2002-08-26) [umoeller]
                     // the passed mouse coords are relative to screen,
                     // so subtract frame wnd coords
                     WinQueryWindowPos(hwndFrame, &swp);
@@ -1642,7 +1642,7 @@ WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
  *       Returns NULLHANDLE if the specified view is not
  *       currently open.
  *
- *@@changed V0.9.21 (2002-08-28) [umoeller]: optimized
+ *@@changed V1.0.0 (2002-08-28) [umoeller]: optimized
  */
 
 HWND wpshQueryFrameFromView(WPFolder *somSelf,  // in: folder to examine
@@ -1656,7 +1656,7 @@ HWND wpshQueryFrameFromView(WPFolder *somSelf,  // in: folder to examine
         // go search the open views of the folder and get the
         // frame handle of the desired view (ulView)
 
-        /*  replaced V0.9.21 (2002-08-28) [umoeller]
+        /*  replaced V1.0.0 (2002-08-28) [umoeller]
         for (pViewItem = _wpFindViewItem(somSelf, VIEW_ANY, NULL);
              pViewItem;
              pViewItem = _wpFindViewItem(somSelf, VIEW_ANY, pViewItem)) */
@@ -1673,7 +1673,7 @@ HWND wpshQueryFrameFromView(WPFolder *somSelf,  // in: folder to examine
                 if (pvi->view == ulView)
                 {
                      hwndFrame = pvi->handle;
-                     break;     // V0.9.21 (2002-08-28) [umoeller]
+                     break;     // V1.0.0 (2002-08-28) [umoeller]
                 }
             } // end for
         }

@@ -716,6 +716,7 @@ BEGIN
                         PRESPARAMS PP_BACKGROUNDCOLOR, 0x00FFFFFFL
         DEFPUSHBUTTON   "~Schlieáen", DID_OK, 5, 3, 65, 12
         PUSHBUTTON      "A~lles entfernen", DID_CLEAR, 255, 3, 65, 12
+        PUSHBUTTON      "A~ktualisieren", DID_REFRESH , 140, 4, 60, 12
     END
 END
 

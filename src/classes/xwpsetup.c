@@ -126,7 +126,7 @@ SOM_Scope ULONG  SOMLINK xwset_xwpAddXWPSetupPages(XWPSetup *somSelf,
     XWPSetupMethodDebug("XWPSetup","xwset_xwpAddXWPSetupPages");
 
     // moved all this stuff to shared\xsetup.c
-    // V0.9.21 (2002-09-02) [umoeller]
+    // V1.0.0 (2002-09-02) [umoeller]
     return setInsertNotebookPages(somSelf, hwndDlg);
 }
 

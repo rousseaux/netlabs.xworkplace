@@ -1292,7 +1292,7 @@ VOID ConfirmRemoveFromBootMgr(PLVMDATA pData)
 /*
  *@@ ShowProductInfo:
  *
- *@@added V0.9.21 (2002-08-12) [umoeller]
+ *@@added V1.0.0 (2002-08-12) [umoeller]
  */
 
 VOID ShowProductInfo(HWND hwndClient)

@@ -141,7 +141,7 @@ really_all:     compile_really_all tools link nls
     @echo ----- Leaving $(MAKEDIR)
     @echo Yo, done!
 
-# "full": shortcut to really_all V0.9.21 (2002-09-13) [umoeller]
+# "full": shortcut to really_all V1.0.0 (2002-09-13) [umoeller]
 full: really_all
 
 # "dep": create dependencies.
@@ -736,7 +736,7 @@ release: really_all
     $(COPY) release\bin\showall.cmd $(XWPRELEASE_MAIN)\bin
     $(COPY) release\bin\xhelp.cmd $(XWPRELEASE_MAIN)\bin
     $(COPY) release\bin\xshutdwn.cmd $(XWPRELEASE_MAIN)\bin
-#fixed wrong target path for xshutdwn.ico V0.9.21 (2002-08-18) [umoeller]
+#fixed wrong target path for xshutdwn.ico V1.0.0 (2002-08-18) [umoeller]
     $(COPY) release\bin\xshutdwn.ico $(XWPRELEASE_MAIN)\bin
 !endif
 #    $(COPY) release\bin\icons.dll

@@ -21,7 +21,7 @@
  *      Function prefix for this file:
  *      --  fcmd*
  *
- *      This file is new with V0.9.21 and contains code formerly
+ *      This file is new with V1.0.0 and contains code formerly
  *      in fdrmenus.c and fdrsubclass.c. I got tired of switching
  *      between many files to figure out where the code path
  *      actually was when something was selected somewhere.
@@ -196,7 +196,7 @@ STATIC VOID CopyOneObject(PXSTRING pstr,
  *@@changed V0.9.0 [umoeller]: fixed a minor bug when memory allocation failed
  *@@changed V0.9.19 (2002-06-02) [umoeller]: fixed buffer overflow with many objects
  *@@changed V0.9.19 (2002-06-02) [umoeller]: renamed from wpshCopyObjectFileName, moved here
- *@@changed V0.9.21 (2002-11-09) [umoeller]: moved here, added cSep
+ *@@changed V1.0.0 (2002-11-09) [umoeller]: moved here, added cSep for submenu support @@fixes 219
  */
 
 STATIC BOOL CopyObjectFileName(WPObject *somSelf, // in: the object which was passed to wpMenuItemSelected
@@ -282,7 +282,7 @@ STATIC BOOL CopyObjectFileName(WPObject *somSelf, // in: the object which was pa
  *      calls CopyObjectFileName with the parameters
  *      determined from the given menu item ID.
  *
- *@@added V0.9.21 (2002-11-09) [umoeller]
+ *@@added V1.0.0 (2002-11-09) [umoeller]
  */
 
 STATIC BOOL CopyObjectFileName2(WPObject *somSelf, // in: the object which was passed to wpMenuItemSelected
@@ -482,7 +482,7 @@ BOOL fcmdSelectingFsysMenuItem(WPObject *somSelf,
 
         /*
          * ID_XFMI_OFS_COPYFILENAME_X:
-         *      rewritten V0.9.21 (2002-11-09) [umoeller]
+         *      rewritten V1.0.0 (2002-11-09) [umoeller]
          */
 
         case ID_XFMI_OFS_COPYFILENAME_SHORTSP:
@@ -709,7 +709,7 @@ BOOL fcmdSelectingFdrMenuItem(WPFolder *somSelf,
 
             default:
                 // moved edit items to fcmdProcessViewCommand
-                // V0.9.21 (2002-08-26) [umoeller]
+                // V1.0.0 (2002-08-26) [umoeller]
                 fHandled = FALSE;
         }
     }
@@ -738,7 +738,7 @@ BOOL fcmdSelectingFdrMenuItem(WPFolder *somSelf,
  *      which should always behave the same no matter what
  *      objects are selected. This applies to "select some"
  *      and "batch rename", which have always been broken
- *      some way or the other before 0.9.21. This now works
+ *      some way or the other before 1.0.0. This now works
  *
  *      --  from the "view" submenu of the folder whitespace
  *          context menu;
@@ -749,8 +749,8 @@ BOOL fcmdSelectingFdrMenuItem(WPFolder *somSelf,
  *
  *@@added V0.9.7 (2001-01-13) [umoeller]
  *@@changed V0.9.9 (2001-02-18) [pr]: fix delete folder from menu bar
- *@@changed V0.9.21 (2002-08-26) [umoeller]: func renamed
- *@@changed V0.9.21 (2002-08-26) [umoeller]: moved "select some" and "batch rename" here to fix duplicate popups
+ *@@changed V1.0.0 (2002-08-26) [umoeller]: func renamed
+ *@@changed V1.0.0 (2002-08-26) [umoeller]: moved "select some" and "batch rename" here to fix duplicate popups
  */
 
 BOOL fcmdProcessViewCommand(WPFolder *somSelf,
@@ -831,7 +831,7 @@ BOOL fcmdProcessViewCommand(WPFolder *somSelf,
         /*
          * WPMENUID_REFRESH:
          *
-         * added V0.9.21 (2002-08-26) [umoeller]
+         * added V1.0.0 (2002-08-26) [umoeller]
          */
 
         case WPMENUID_REFRESH:
@@ -1296,7 +1296,7 @@ BOOL fcmdMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
              *      routine because these can come in from folder
              *      hotkeys as well
              *
-             *      rewritten V0.9.21 (2002-11-09) [umoeller]
+             *      rewritten V1.0.0 (2002-11-09) [umoeller]
              */
 
             case ID_XFMI_OFS_COPYFILENAME_SHORTSP:
@@ -1459,7 +1459,7 @@ BOOL fcmdMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
              * ID_XFMI_OFS_SPLITVIEW:
              *      "Open" -> "split view".
              *
-             * V0.9.21 (2002-08-21) [umoeller]
+             * V1.0.0 (2002-08-21) [umoeller]
              */
 
             case ID_XFMI_OFS_SPLITVIEW:
@@ -1479,7 +1479,7 @@ BOOL fcmdMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
 
             default:
                 // moved edit items to fcmdProcessViewCommand
-                // V0.9.21 (2002-08-26) [umoeller]
+                // V1.0.0 (2002-08-26) [umoeller]
 
                 switch (ulMenuId)
                 {
@@ -1564,7 +1564,7 @@ BOOL fcmdMenuItemHelpSelected(WPObject *somSelf,
             ulPanel = ID_XFH_VIEW_MENU_ITEMS;
         break;
 
-        // the following adjusted V0.9.21 (2002-11-09) [umoeller]
+        // the following adjusted V1.0.0 (2002-11-09) [umoeller]
         case ID_XFM_OFS_COPYFILENAME:
         case ID_XFMI_OFS_COPYFILENAME_SHORTSP:
         case ID_XFMI_OFS_COPYFILENAME_FULLSP:

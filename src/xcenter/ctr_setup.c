@@ -6,10 +6,10 @@
  *      Function prefix for this file:
  *      --  ctrp* also.
  *
- *      This is all new with V0.9.21 and contains
+ *      This is all new with V1.0.0 and contains
  *      code formerly in ctr_notebook.c.
  *
- *@@added V0.9.21 (2000-11-27) [umoeller]
+ *@@added V1.0.0 (2000-11-27) [umoeller]
  *@@header "shared\center.h"
  */
 
@@ -351,7 +351,7 @@ extern const XWPSETUPENTRY    G_XCenterSetupSet[] =
                0xCCCCCC, 0,                 0,   0x00FFFFFF
     };
 
-// V0.9.21 (2002-08-12) [umoeller]
+// V1.0.0 (2002-08-12) [umoeller]
 extern ULONG G_cXCenterSetupSetEntries = ARRAYITEMCOUNT(G_XCenterSetupSet);
 
 /*
@@ -1081,7 +1081,7 @@ STATIC BOOL CreateDefaultWidgets(XCenter *somSelf)
 
     xstrClear(&str);
 
-    return TRUE;        // don't let this fail  V0.9.21 (2002-09-20) [umoeller]
+    return TRUE;        // don't let this fail  V1.0.0 (2002-09-20) [umoeller]
 }
 
 /*

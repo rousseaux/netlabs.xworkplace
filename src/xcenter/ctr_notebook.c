@@ -6,7 +6,7 @@
  *      Function prefix for this file:
  *      --  ctrp* also.
  *
- *      This is all new with V0.9.7. With V0.9.21,
+ *      This is all new with V0.9.7. With V1.0.0,
  *      instance setup has been moved to the new
  *      ctr_setup.c.
  *
@@ -327,7 +327,7 @@ VOID ctrpView1InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         WinEnableControl(pnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE,
                           (_fReduceDesktopWorkarea == FALSE));
 
-        // replaced call here V0.9.21 (2002-08-12) [umoeller]
+        // replaced call here V1.0.0 (2002-08-12) [umoeller]
         winhEnableControls2(pnbp->hwndDlgPage,
                             aulIDs,
                             ARRAYITEMCOUNT(aulIDs),
@@ -1213,7 +1213,7 @@ static PWIDGETRECORD G_precDragged = NULL,
  *@@added V0.9.9 (2001-03-09) [umoeller]
  *@@changed V0.9.12 (2001-05-08) [lafaix]: fixed problems if widget class not found
  *@@changed V0.9.14 (2001-07-29) [lafaix]: now handles widget settings files dnd
- *@@changed V0.9.21 (2002-08-12) [umoeller]: fixed highly broken popup menu
+ *@@changed V1.0.0 (2002-08-12) [umoeller]: fixed highly broken popup menu
  */
 
 MRESULT ctrpWidgetsItemChanged(PNOTEBOOKPAGE pnbp,
@@ -1552,7 +1552,7 @@ MRESULT ctrpWidgetsItemChanged(PNOTEBOOKPAGE pnbp,
                         if (pnbp->pUser)
                         {
                             // reload every time now
-                            // V0.9.21 (2002-08-12) [umoeller]
+                            // V1.0.0 (2002-08-12) [umoeller]
                             WinDestroyWindow((HWND)pnbp->pUser);
                             pnbp->pUser = NULL;
                         }
@@ -1560,7 +1560,7 @@ MRESULT ctrpWidgetsItemChanged(PNOTEBOOKPAGE pnbp,
                         if (    (!ctrpFindClass(pnbp->preccSource->pszIcon,  // class name
                                                 FALSE,       // fMustBeTrayable
                                                 &pClass))
-                                // using new func now V0.9.21 (2002-08-12) [umoeller]
+                                // using new func now V1.0.0 (2002-08-12) [umoeller]
                              && (pnbp->pUser = (PVOID)ctrpLoadWidgetPopupMenu(pnbp->hwndControl,
                                                                               pClass,
                                                                               WPOPFL_NOTEBOOKMENU))

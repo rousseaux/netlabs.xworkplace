@@ -315,7 +315,7 @@ BOOL fdrFindHotkey(USHORT usCommand,
  *
  *      Note that you should pass in WM_CHAR even if KC_KEYUP
  *      is not set to be able to determine whether the key
- *      should be swallowed (V0.9.21). We check for the flag
+ *      should be swallowed (V1.0.0). We check for the flag
  *      here and post the message only if the flag is clear,
  *      but return TRUE (for "swallow the message") in both
  *      cases.
@@ -325,7 +325,7 @@ BOOL fdrFindHotkey(USHORT usCommand,
  *@@changed V0.9.9 (2001-02-28) [pr]: allow multiple actions on same hotkey
  *@@changed V0.9.14 (2001-07-28) [umoeller]: now disabling sort and arrange hotkeys for desktop, if those menu items are disabled
  *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu handling
- *@@changed V0.9.21 (2002-08-24) [umoeller]: fixed key up/down processing
+ *@@changed V1.0.0 (2002-08-24) [umoeller]: fixed key up/down processing
  */
 
 BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
@@ -340,7 +340,7 @@ BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
     // messages and check if either a virtual key (such as F5)
     // or Ctrl or Alt was pressed
     if (    // ((usFlags & KC_KEYUP) == 0)      nope, process both key down and up
-            //                                  V0.9.21 (2002-08-24) [umoeller]
+            //                                  V1.0.0 (2002-08-24) [umoeller]
             (     ((usFlags & KC_VIRTUALKEY) != 0)
                   // Ctrl pressed?
                || ((usFlags & KC_CTRL) != 0)
@@ -447,7 +447,7 @@ BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
                     }
 
                     // post only if this is a "key down" message
-                    // V0.9.21 (2002-08-24) [umoeller]
+                    // V1.0.0 (2002-08-24) [umoeller]
                     if (!(usAllFlags & KC_KEYUP))
                     {
                         WinPostMsg(hwndFrame,
@@ -531,8 +531,8 @@ FLDRHOTKEYDESC G_aDescriptions[FLDRHOTKEYCOUNT] =
 
          ID_XSSI_LB_FIND, WPMENUID_FIND, WPMENUID_FIND, FALSE,
 
-         ID_XSSI_LB_PICKUP, WPMENUID_PICKUP, WPMENUID_PICKUP, TRUE, // was FALSE V0.9.21 (2002-09-05) [lafaix]
-         ID_XSSI_LB_PICKUPCANCELDRAG, WPMENUID_PUTDOWN_CANCEL, WPMENUID_PUTDOWN_CANCEL, TRUE, // was FALSE V0.9.21 (2002-09-05) [lafaix]
+         ID_XSSI_LB_PICKUP, WPMENUID_PICKUP, WPMENUID_PICKUP, TRUE, // was FALSE V1.0.0 (2002-09-05) [lafaix]
+         ID_XSSI_LB_PICKUPCANCELDRAG, WPMENUID_PUTDOWN_CANCEL, WPMENUID_PUTDOWN_CANCEL, TRUE, // was FALSE V1.0.0 (2002-09-05) [lafaix]
 
          ID_XSSI_LB_SORTBYNAME, ID_WPMI_SORTBYNAME, ID_WPMI_SORTBYNAME, FALSE,
          ID_XSSI_LB_SORTBYSIZE, ID_WPMI_SORTBYSIZE, ID_WPMI_SORTBYSIZE, FALSE,
@@ -582,7 +582,7 @@ FLDRHOTKEYDESC G_aDescriptions[FLDRHOTKEYCOUNT] =
          ID_XSSI_LB_COPYFILENAME_SHORT, ID_XFMI_OFS_COPYFILENAME_SHORTSP, 0, FALSE,
          ID_XSSI_LB_COPYFILENAME_FULL, ID_XFMI_OFS_COPYFILENAME_FULLSP, 0, FALSE,
 
-         // V0.9.21 (2002-09-05) [lafaix]
+         // V1.0.0 (2002-09-05) [lafaix]
          ID_XSSI_LB_PICKUPDROPCOPY, WPMENUID_PUTDOWN_COPY, WPMENUID_PUTDOWN_COPY, TRUE,
          ID_XSSI_LB_PICKUPDROPMOVE, WPMENUID_PUTDOWN_MOVE, WPMENUID_PUTDOWN_MOVE, TRUE,
          ID_XSSI_LB_PICKUPDROPLINK, WPMENUID_PUTDOWN_LINK, WPMENUID_PUTDOWN_LINK, TRUE
@@ -668,7 +668,7 @@ VOID fdrAddHotkeysToPulldown(HWND hwndPulldown,     // in: submenu handle
  *@@added V0.9.2 (2000-03-06) [umoeller]
  *@@changed V0.9.4 (2000-06-11) [umoeller]: hotkeys showed up even if hotkeys were globally disabled; fixed
  *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu handling
- *@@changed V0.9.21 (2002-08-31) [umoeller]: changed prototype for Warp 4 method overrides
+ *@@changed V1.0.0 (2002-08-31) [umoeller]: changed prototype for Warp 4 method overrides
  */
 
 VOID fdrAddHotkeysToMenu(WPObject *somSelf,
@@ -793,7 +793,7 @@ typedef struct _SUBCLHOTKEYEF
  *
  *@@changed V0.9.0 [umoeller]: renamed from fnwpHotkeyEntryField
  *@@changed V0.9.9 (2001-04-04) [umoeller]: added "set" support
- *@@changed V0.9.21 (2002-09-10) [lafaix]: no longer freeing pshef
+ *@@changed V1.0.0 (2002-09-10) [lafaix]: no longer freeing pshef
  */
 
 STATIC MRESULT EXPENTRY fnwpFolderHotkeyEntryField(HWND hwndEdit, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -975,7 +975,7 @@ static const DLGHITEM dlgAddHotkey[] =
 /*
  *@@ fnwpHotkeyRecord:
  *
- *@@added V0.9.21 (2002-09-09) [lafaix]
+ *@@added V1.0.0 (2002-09-09) [lafaix]
  */
 
 STATIC MRESULT EXPENTRY fnwpEditHotkeyRecord(HWND hwndDlg,
@@ -1035,7 +1035,7 @@ STATIC MRESULT EXPENTRY fnwpEditHotkeyRecord(HWND hwndDlg,
 
         case WM_HELP:
             cmnDisplayHelp(NULL,
-                           ID_XSH_SETTINGS_FDRHOTKEYS_DLG); // V0.9.21 (2002-09-12) [umoeller]
+                           ID_XSH_SETTINGS_FDRHOTKEYS_DLG); // V1.0.0 (2002-09-12) [umoeller]
         break;
 
         default:
@@ -1049,7 +1049,7 @@ STATIC MRESULT EXPENTRY fnwpEditHotkeyRecord(HWND hwndDlg,
  *@@ HOTKEYRECORD:
  *      extended record core for "Hotkeys" container.
  *
- *@@added V0.9.21 (2002-09-05) [lafaix]
+ *@@added V1.0.0 (2002-09-05) [lafaix]
  */
 
 typedef struct _HOTKEYRECORD
@@ -1069,7 +1069,7 @@ typedef struct _HOTKEYRECORD
  *       this saves the folder hotkeys contained in the
  *       container to OS2.INI.
  *
- *@@added V0.9.21 (2002-09-11) [lafaix]
+ *@@added V1.0.0 (2002-09-11) [lafaix]
  */
 
 void fdrSaveFldrHotkeys(HWND hwndCnr)
@@ -1113,7 +1113,7 @@ void fdrSaveFldrHotkeys(HWND hwndCnr)
  *@@ AdjustStickyRecord:
  *      adjusts the pcsz* values in the HOTKEYRECORD.
  *
- *@@added V0.9.21 (2002-09-15) [lafaix]
+ *@@added V1.0.0 (2002-09-15) [lafaix]
  */
 
 STATIC VOID AdjustHotkeyRecord(PHOTKEYRECORD pRec)
@@ -1145,7 +1145,7 @@ STATIC VOID AdjustHotkeyRecord(PHOTKEYRECORD pRec)
  *      creates and inserts a HOTKEYRECORD for the given
  *      container with the specified title.
  *
- *@@added V0.9.21 (2002-09-05) [lafaix]
+ *@@added V1.0.0 (2002-09-05) [lafaix]
  */
 
 STATIC VOID AddHotkeyRecord(HWND hwndCnr,
@@ -1180,7 +1180,7 @@ STATIC VOID AddHotkeyRecord(HWND hwndCnr,
  *@@ EditHotkeyRecord:
  *      edit and possibly inserts a HOTKEYRECORD.
  *
- *@@added V0.9.21 (2002-09-08) [lafaix]
+ *@@added V1.0.0 (2002-09-08) [lafaix]
  */
 
 STATIC VOID EditHotkeyRecord(PHOTKEYRECORD pRec,
@@ -1421,7 +1421,7 @@ MPARAM G_ampHotkeys[] =
  *
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  *@@changed V0.9.19 (2002-04-17) [umoeller]: finally skipping Warp 4 specific entries for Warp 3
- *@@changed V0.9.21 (2002-09-05) [lafaix]: reworked, uses the  dialog formatter too
+ *@@changed V1.0.0 (2002-09-05) [lafaix]: reworked, uses the  dialog formatter too
  */
 
 VOID fdrHotkeysInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -1450,7 +1450,7 @@ VOID fdrHotkeysInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                    FLDRHOTKEYSSIZE);
 
         // insert the controls using the dialog formatter
-        // V0.9.21 (2002-09-05) [lafaix]
+        // V1.0.0 (2002-09-05) [lafaix]
         ntbFormatPage(pnbp->hwndDlgPage,
                       G_dlgHotkeys,
                       ARRAYITEMCOUNT(G_dlgHotkeys));
@@ -1551,7 +1551,7 @@ VOID fdrHotkeysInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  *@@changed V0.9.9 (2001-04-04) [umoeller]: added "Set" button
- *@@changed V0.9.21 (2002-09-08) [lafaix]: reworked to use a container
+ *@@changed V1.0.0 (2002-09-08) [lafaix]: reworked to use a container
  */
 
 MRESULT fdrHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
@@ -1641,7 +1641,7 @@ MRESULT fdrHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
                 case CN_ENTER:
                     // this crashed if the user double-clicked on
                     // cnr whitespace since the record was then NULL
-                    if (ulExtra)        // V0.9.21 (2002-08-28) [umoeller]
+                    if (ulExtra)        // V1.0.0 (2002-08-28) [umoeller]
                         EditHotkeyRecord((PHOTKEYRECORD)ulExtra,
                                          pnbp,
                                          hwndCnr,

@@ -152,7 +152,7 @@
      *      The substructure includes its own buffer, so that the
      *      string resources are available for all processes.
      *
-     *@@added V0.9.21 (2002-09-16) [lafaix]
+     *@@added V1.0.0 (2002-09-16) [lafaix]
      */
 
    typedef struct _NLSDATA
@@ -332,7 +332,7 @@
         // V0.9.16 (2001-12-08) [umoeller]
         BOOL        fHotkeysDisabledTemp;
 
-        // NLS strings V0.9.21 (2002-09-16) [lafaix]
+        // NLS strings V1.0.0 (2002-09-16) [lafaix]
         NLSDATA     NLSData;
     } HOOKDATA, *PHOOKDATA;
 

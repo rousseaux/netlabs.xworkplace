@@ -4,7 +4,7 @@
  *      folder "split view" implementation.
  *
  *
- *@@added V0.9.21 (2002-08-21) [umoeller]
+ *@@added V1.0.0 (2002-08-21) [umoeller]
  *@@header "filesys\folder.h"
  */
 
@@ -137,7 +137,7 @@ PFNWP       G_pfnwpSplitFrameOrig = NULL;
  *      Runs on the split populate thread (fntSplitPopulate).
  *
  *@@added V0.9.18 (2002-02-06) [umoeller]
- *@@changed V0.9.21 (2002-09-09) [umoeller]: removed linklist
+ *@@changed V1.0.0 (2002-09-09) [umoeller]: removed linklist
  */
 
 STATIC WPObject* AddFirstChild(WPFolder *pFolder,
@@ -287,6 +287,8 @@ STATIC WPObject* AddFirstChild(WPFolder *pFolder,
  *      object window for populate thread.
  *
  *      Runs on the split populate thread (fntSplitPopulate).
+ *
+ *@@changed V1.0.0 (2002-11-23) [umoeller]: split view stopped working when populate failed, @@fixes 192
  */
 
 STATIC MRESULT EXPENTRY fnwpSplitPopulate(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -667,7 +669,7 @@ HPOINTER fdrSplitQueryPointer(PFDRSPLITVIEW psv)
  *          mode as given to fdrvIsInsertable. See remarks
  *          there.
  *
- *@@changed V0.9.21 (2002-09-09) [umoeller]: removed linklist
+ *@@changed V1.0.0 (2002-09-09) [umoeller]: removed linklist
  */
 
 VOID fdrInsertContents(WPFolder *pFolder,              // in: populated folder
@@ -697,7 +699,7 @@ VOID fdrInsertContents(WPFolder *pFolder,              // in: populated folder
                         cAddFirstChilds = 0;
 
             // filter out the real INSERT_* flags
-            // V0.9.21 (2002-09-13) [umoeller]
+            // V1.0.0 (2002-09-13) [umoeller]
             ULONG       ulFoldersOnly = flInsert & 0x0f;
 
             PMPF_POPULATESPLITVIEW(("file mask is \"%s\", ulFoldersOnly %d",
@@ -760,7 +762,7 @@ VOID fdrInsertContents(WPFolder *pFolder,              // in: populated folder
                 else
                     // object is _not_ insertable:
                     // then we might need to unlock it
-                    // V0.9.21 (2002-09-13) [umoeller]
+                    // V1.0.0 (2002-09-13) [umoeller]
                     if (flInsert & INSERT_UNLOCKFILTERED)
                         _wpUnlockObject(pObject);
             }
@@ -978,7 +980,7 @@ MPARAM fdrSetupSplitView(HWND hwnd,
 /*
  *@@ SplitSendWMControl:
  *
- *@@added V0.9.21 (2002-09-13) [umoeller]
+ *@@added V1.0.0 (2002-09-13) [umoeller]
  */
 
 STATIC MRESULT SplitSendWMControl(PFDRSPLITVIEW psv,
@@ -1209,7 +1211,7 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                             if ((ULONG)mp2 & FFL_SETBACKGROUND)
                                 // change files container background NOW
                                 // to give user immediate feedback
-                                // V0.9.21 (2002-09-24) [umoeller]: use
+                                // V1.0.0 (2002-09-24) [umoeller]: use
                                 // msg because we need this code from XFolder
                                 // method code now too
                                 WinPostMsg(psv->hwndFilesFrame,
@@ -1372,7 +1374,7 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
              *          inserting anything.
              *
              *@@added V0.9.18 (2002-02-06) [umoeller]
-             *@@changed V0.9.21 (2002-09-13) [umoeller]: changed mp2 definition
+             *@@changed V1.0.0 (2002-09-13) [umoeller]: changed mp2 definition
              */
 
             case FM_POPULATED_FILLFILES:
@@ -1580,7 +1582,7 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
  *
  *      Returns TRUE if the msg was processed.
  *
- *@@added V0.9.21 (2002-11-23) [umoeller]
+ *@@added V1.0.0 (2002-11-23) [umoeller]
  */
 
 STATIC BOOL HandleWMChar(HWND hwndFrame,
@@ -1639,7 +1641,7 @@ STATIC BOOL HandleWMChar(HWND hwndFrame,
  *      Set *pfCallDefault to TRUE if you want the
  *      parent window proc to be called.
  *
- *@@added V0.9.21 (2002-08-26) [umoeller]
+ *@@added V1.0.0 (2002-08-26) [umoeller]
  */
 
 STATIC MRESULT TreeFrameControl(HWND hwndFrame,
@@ -1735,7 +1737,7 @@ STATIC MRESULT TreeFrameControl(HWND hwndFrame,
          *          previously and need to run "add first child"
          *          manually.
          *
-         *      V0.9.21 (2002-09-13) [umoeller]
+         *      V1.0.0 (2002-09-13) [umoeller]
          */
 
         case CN_EXPANDTREE:
@@ -1755,7 +1757,7 @@ STATIC MRESULT TreeFrameControl(HWND hwndFrame,
                 if (psv->precToPopulate != prec)
                     // the record that is being expanded has _not_ just
                     // been selected: run "add first child"
-                    // V0.9.21 (2002-11-23) [umoeller]
+                    // V1.0.0 (2002-11-23) [umoeller]
                     fdrPostFillFolder(psv,
                                       prec,
                                       FFL_FOLDERSONLY | FFL_EXPAND);
@@ -1857,7 +1859,7 @@ STATIC MRESULT TreeFrameControl(HWND hwndFrame,
  *      most messages. In addition, we intercept a
  *      couple more for extra features.
  *
- *@@changed V0.9.21 (2002-11-23) [umoeller]: brought back keyboard support
+ *@@changed V1.0.0 (2002-11-23) [umoeller]: brought back keyboard support
  */
 
 STATIC MRESULT EXPENTRY fnwpTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2019,7 +2021,7 @@ STATIC MRESULT EXPENTRY fnwpTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPA
  *      Set *pfCallDefault to TRUE if you want the
  *      parent window proc to be called.
  *
- *@@added V0.9.21 (2002-08-26) [umoeller]
+ *@@added V1.0.0 (2002-08-26) [umoeller]
  */
 
 STATIC MRESULT FilesFrameControl(HWND hwndFrame,
@@ -2204,7 +2206,7 @@ STATIC MRESULT FilesFrameControl(HWND hwndFrame,
  *      most messages. In addition, we intercept a
  *      couple more for extra features.
  *
- *@@changed V0.9.21 (2002-11-23) [umoeller]: brought back keyboard support
+ *@@changed V1.0.0 (2002-11-23) [umoeller]: brought back keyboard support
  */
 
 STATIC MRESULT EXPENTRY fnwpFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2294,7 +2296,7 @@ STATIC MRESULT EXPENTRY fnwpFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MP
              *      that point to ourselves, or we'll have endless
              *      problems.
              *
-             *@@added V0.9.21 (2002-08-28) [umoeller]
+             *@@added V1.0.0 (2002-08-28) [umoeller]
              */
 
             case FM_DELETINGFDR:
@@ -2334,7 +2336,7 @@ STATIC MRESULT EXPENTRY fnwpFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MP
              *
              *      No return value.
              *
-             *@@added V0.9.21 (2002-09-24) [umoeller]
+             *@@added V1.0.0 (2002-09-24) [umoeller]
              */
 
             case FM_SETCNRLAYOUT:
@@ -2351,7 +2353,7 @@ STATIC MRESULT EXPENTRY fnwpFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MP
                                      (WPFolder*)mp1,
                                      OPEN_CONTENTS);
 
-                    // and set sort func V0.9.21 (2002-09-13) [umoeller]
+                    // and set sort func V1.0.0 (2002-09-13) [umoeller]
                     fdrSetFldrCnrSort((WPFolder*)mp1,
                                       psv->hwndFilesCnr,
                                       TRUE);        // force
@@ -2425,7 +2427,7 @@ STATIC MRESULT EXPENTRY fnwpFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MP
  *          (File dlg needs this to force populate to a
  *          subtree on startup.)
  *
- *@@added V0.9.21 (2002-08-28) [umoeller]
+ *@@added V1.0.0 (2002-08-28) [umoeller]
  */
 
 BOOL fdrSplitCreateFrame(WPObject *pRootObject,
@@ -2556,7 +2558,7 @@ BOOL fdrSplitCreateFrame(WPObject *pRootObject,
  *      and freeing the FDRSPLITVIEW is the job of the
  *      user code.)
  *
- *@@added V0.9.21 (2002-08-21) [umoeller]
+ *@@added V1.0.0 (2002-08-21) [umoeller]
  */
 
 VOID fdrSplitDestroyFrame(PFDRSPLITVIEW psv)
@@ -2615,7 +2617,7 @@ VOID fdrSplitDestroyFrame(PFDRSPLITVIEW psv)
 /*
  *@@ SPLITVIEWPOS:
  *
- *@@added V0.9.21 (2002-08-21) [umoeller]
+ *@@added V1.0.0 (2002-08-21) [umoeller]
  */
 
 typedef struct _SPLITVIEWPOS
@@ -2653,7 +2655,7 @@ typedef struct _SPLITVIEWDATA
 /*
  *@@ fnwpSplitViewFrame:
  *
- *@@added V0.9.21 (2002-08-21) [umoeller]
+ *@@added V1.0.0 (2002-08-21) [umoeller]
  */
 
 MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2932,7 +2934,7 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
         /*
          *@@ WM_CONTROL:
          *      intercept SN_FRAMECLOSE.
-         *      V0.9.21 (2002-09-13) [umoeller]
+         *      V1.0.0 (2002-09-13) [umoeller]
          */
 
         case WM_CONTROL:
@@ -3021,7 +3023,7 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
          *
          *      No return code.
          *
-         *added V0.9.21 (2002-09-24) [umoeller]
+         *added V1.0.0 (2002-09-24) [umoeller]
          */
 
         case FM_SETCNRLAYOUT:

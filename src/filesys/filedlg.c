@@ -272,7 +272,7 @@ STATIC ULONG ParseFileString(PFILEDLGDATA pWinData,
     {
         // nothing after the drive spec (that is, something like "K:"
         // was specified: make that a root directory
-        // V0.9.21 (2002-09-13) [umoeller]
+        // V1.0.0 (2002-09-13) [umoeller]
         pWinData->szDir[0] = '\0';
         flChanged |= FFL_PATH;
 
@@ -638,7 +638,7 @@ STATIC VOID ParseAndUpdate(PFILEDLGDATA pWinData,
         // which sends WM_CONTROL with SN_FRAMECLOSE
         // back to the frame; the main msg loop in
         // fdlgFileDlg detects that and exits
-        // V0.9.21 (2002-09-13) [umoeller]
+        // V1.0.0 (2002-09-13) [umoeller]
 
         // now get outta here
         return;
@@ -707,7 +707,7 @@ static PFNWP    G_pfnwpFiledlgFrameOrig = NULL;
 /*
  *@@ CreateControlFont:
  *
- *@@added V0.9.21 (2002-09-13) [umoeller]
+ *@@added V1.0.0 (2002-09-13) [umoeller]
  */
 
 HWND CreateControlFont(HWND hwndParent,
@@ -733,7 +733,7 @@ HWND CreateControlFont(HWND hwndParent,
 /*
  *@@ FrameCreateControls:
  *
- *@@changed V0.9.21 (2002-08-21) [umoeller]: extracted fdrSetupSplitView
+ *@@changed V1.0.0 (2002-08-21) [umoeller]: extracted fdrSetupSplitView
  */
 
 STATIC VOID FrameCreateControls(PFILEDLGDATA pWinData)
@@ -831,7 +831,7 @@ STATIC VOID FrameCreateControls(PFILEDLGDATA pWinData)
     if (!(pcszOKButton = pfd->pszOKButton))
         // not specified by caller:
         // use "Open" or "Save" then ("OK" is meaningless, if you ask me)
-        // V0.9.21 (2002-09-13) [umoeller]
+        // V1.0.0 (2002-09-13) [umoeller]
         pcszOKButton = cmnGetString( (pfd->fl & FDS_SAVEAS_DIALOG)
                                         ? DID_SAVE
                                         : DID_OPEN);
@@ -1119,9 +1119,145 @@ STATIC VOID FrameRepositionControls(PFILEDLGDATA pWinData)
 }
 
 /*
+ *@@ FrameClientControl:
+ *      implementation for WM_CONTROL from FID_CLIENT in
+ *      fnwpFileDlgFrame.
+ *
+ *@@added V1.0.0 (2002-11-24) [umoeller]
+ */
+
+STATIC MRESULT FrameClientControl(HWND hwndFrame, PFILEDLGDATA pWinData, MPARAM mp1, MPARAM mp2)
+{
+
+    MRESULT mrc = 0;
+
+    CHAR szTemp[CCHMAXPATH];
+
+    switch (SHORT2FROMMP(mp1))
+    {
+        case SN_FOLDERCHANGING:
+            if (mp2)
+            {
+                // say "populating"
+                PMPF_POPULATESPLITVIEW(("SN_FOLDERCHANGING"));
+                WinSetWindowText(pWinData->hwndDirValue,
+                                 cmnGetString(ID_XFSI_FDLG_WORKING));
+
+                // update our file path etc.
+                if (_wpQueryFilename((WPFolder*)mp2,
+                                     szTemp,
+                                     TRUE))
+                {
+                    ParseFileString(pWinData,
+                                    szTemp);
+                }
+            }
+            else
+                // populate failed:
+                WinSetWindowText(pWinData->hwndDirValue, "");
+
+        break;
+
+        case SN_FOLDERCHANGED:
+        {
+            PMPF_POPULATESPLITVIEW(("SN_FOLDERCHANGED"));
+            sprintf(szTemp,
+                    "%s%s\\%s",
+                    pWinData->szDrive,
+                    pWinData->szDir,
+                    pWinData->szFileMask);
+
+            WinSetWindowText(pWinData->hwndDirValue,
+                             szTemp);
+        }
+        break;
+
+        case SN_OBJECTSELECTED:
+        case SN_OBJECTENTER:
+        {
+            WPFileSystem *pobjFS;
+
+            // this resolves shadows
+            if (    (pobjFS = fdrvGetFSFromRecord((PMINIRECORDCORE)mp2,
+                                                  FALSE))
+                 && (pWinData = WinQueryWindowPtr(hwndFrame, QWL_USER))
+               )
+            {
+                // if this points to some other folder, paste
+                // the fully qualified filename (files and folders)
+                _wpQueryFilename(pobjFS,
+                                 szTemp,
+                                 (_wpQueryFolder(pobjFS) != pWinData->sv.psfvFiles->somSelf));
+
+                // set entry field to filename only if the target
+                // object is not a folder or we'll overwrite a
+                // "save as" filename every time the user clicks
+                // on a folder
+                if (!_somIsA(pobjFS, _WPFolder))
+                    WinSetWindowText(pWinData->hwndFileEntry,
+                                     szTemp);
+
+                // on double-clicks, refresh the dialog
+                // (as if "OK" was clicked)
+                if (SHORT2FROMMP(mp1) == SN_OBJECTENTER)
+                    ParseAndUpdate(pWinData,
+                                   szTemp);
+            }
+
+            // prevent the split view from opening the object
+            mrc = (MRESULT)TRUE;
+        }
+        break;
+
+            /* WinPostMsg(hwndFrame,
+                       WM_COMMAND,
+                       (MPARAM)DID_OK,
+                       NULL); */
+
+        case SN_VKEY:
+        {
+            mrc = (MRESULT)TRUE;
+
+            switch ((USHORT)mp2)
+            {
+                case VK_TAB:
+                    // find next focus window
+                    dlghSetNextFocus(&pWinData->llDialogControls);
+                break;
+
+                case VK_BACKTAB:
+                    // note: shift+tab produces this!!
+                    dlghSetPrevFocus(&pWinData->llDialogControls);
+                break;
+
+                case VK_ESC:
+                    WinPostMsg(hwndFrame,
+                               WM_COMMAND,
+                               (MPARAM)DID_CANCEL,
+                               0);
+                break;
+
+                case VK_NEWLINE:        // this comes from the main key
+                case VK_ENTER:          // this comes from the numeric keypad
+                    dlghEnter(&pWinData->llDialogControls);
+                break;
+
+                default:
+                    mrc = (MRESULT)FALSE;       // not processed
+            } // end switch
+        }
+        break;
+
+        // SN_FRAMECLOSE gets handled by main msg loop
+    }
+
+    return mrc;
+}
+
+/*
  *@@ fnwpFileDlgFrame:
  *
- *@@added V0.9.21 (2002-08-21) [umoeller]
+ *@@added V1.0.0 (2002-08-21) [umoeller]
  */
 
 MRESULT EXPENTRY fnwpFileDlgFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1160,119 +1296,7 @@ MRESULT EXPENTRY fnwpFileDlgFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
             if (    (SHORT1FROMMP(mp1) == FID_CLIENT)
                  && (pWinData = WinQueryWindowPtr(hwndFrame, QWL_USER))
                )
-            {
-                CHAR szTemp[CCHMAXPATH];
-
-                switch (SHORT2FROMMP(mp1))
-                {
-                    case SN_FOLDERCHANGING:
-                        if (mp2)
-                        {
-                            // say "populating"
-                            PMPF_POPULATESPLITVIEW(("SN_FOLDERCHANGING"));
-                            WinSetWindowText(pWinData->hwndDirValue,
-                                             cmnGetString(ID_XFSI_FDLG_WORKING));
-
-                            // update our file path etc.
-                            if (_wpQueryFilename((WPFolder*)mp2,
-                                                 szTemp,
-                                                 TRUE))
-                            {
-                                ParseFileString(pWinData,
-                                                szTemp);
-                            }
-                        }
-                        else
-                            // populate failed:
-                            WinSetWindowText(pWinData->hwndDirValue, "");
-
-                    break;
-
-                    case SN_FOLDERCHANGED:
-                    {
-                        PMPF_POPULATESPLITVIEW(("SN_FOLDERCHANGED"));
-                        sprintf(szTemp,
-                                "%s%s\\%s",
-                                pWinData->szDrive,
-                                pWinData->szDir,
-                                pWinData->szFileMask);
-
-                        WinSetWindowText(pWinData->hwndDirValue,
-                                         szTemp);
-                    }
-                    break;
-
-                    case SN_OBJECTSELECTED:
-                    {
-                        WPFileSystem *pobjFS;
-
-                        // this resolves shadows
-                        if (    (pobjFS = fdrvGetFSFromRecord((PMINIRECORDCORE)mp2,
-                                                              FALSE))
-                             && (pWinData = WinQueryWindowPtr(hwndFrame, QWL_USER))
-                           )
-                        {
-                            // if this points to some other folder, paste
-                            // the fully qualified filename (files and folders)
-                            _wpQueryFilename(pobjFS,
-                                             szTemp,
-                                             (_wpQueryFolder(pobjFS) != pWinData->sv.psfvFiles->somSelf));
-
-                            WinSetWindowText(pWinData->hwndFileEntry,
-                                             szTemp);
-                        }
-                    }
-                    break;
-
-                    case SN_OBJECTENTER:
-                    {
-                        WinPostMsg(hwndFrame,
-                                   WM_COMMAND,
-                                   (MPARAM)DID_OK,
-                                   NULL);
-
-                        // prevent the split view from opening the object
-                        mrc = (MRESULT)TRUE;
-                    }
-                    break;
-
-                    case SN_VKEY:
-                    {
-                        mrc = (MRESULT)TRUE;
-
-                        switch ((USHORT)mp2)
-                        {
-                            case VK_TAB:
-                                // find next focus window
-                                dlghSetNextFocus(&pWinData->llDialogControls);
-                            break;
-
-                            case VK_BACKTAB:
-                                // note: shift+tab produces this!!
-                                dlghSetPrevFocus(&pWinData->llDialogControls);
-                            break;
-
-                            case VK_ESC:
-                                WinPostMsg(hwndFrame,
-                                           WM_COMMAND,
-                                           (MPARAM)DID_CANCEL,
-                                           0);
-                            break;
-
-                            case VK_NEWLINE:        // this comes from the main key
-                            case VK_ENTER:          // this comes from the numeric keypad
-                                dlghEnter(&pWinData->llDialogControls);
-                            break;
-
-                            default:
-                                mrc = (MRESULT)FALSE;       // not processed
-                        } // end switch
-                    }
-                    break;
-
-                    // SN_FRAMECLOSE gets handled by main msg loop
-                }
-            }
+                mrc = FrameClientControl(hwndFrame, pWinData, mp1, mp2);
         break;
 
         /*
@@ -1327,7 +1351,7 @@ MRESULT EXPENTRY fnwpFileDlgFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                         // which sends WM_CONTROL with SN_FRAMECLOSE
                         // back to the frame; the main msg loop in
                         // fdlgFileDlg detects that and exits
-                        // V0.9.21 (2002-09-13) [umoeller]
+                        // V1.0.0 (2002-09-13) [umoeller]
                     break;
                 }
         break;
@@ -1393,7 +1417,7 @@ MRESULT EXPENTRY fnwpFileDlgFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
  *      The following other FILEDLG fields are ignored: ulUser,
  *      pfnDlgProc, pszIDrive, pszIDriveList, hMod, usDlgID, x, y.
  *
- *@@changed V0.9.21 (2002-09-13) [umoeller]: reworked greatly to work with new split view code
+ *@@changed V1.0.0 (2002-09-13) [umoeller]: reworked greatly to work with new split view code
  */
 
 HWND fdlgFileDlg(HWND hwndOwner,

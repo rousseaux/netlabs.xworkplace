@@ -1706,7 +1706,7 @@ STATIC VOID HackContextMenu(PWIDGETPRIVATE pPrivate)
                                          s + 2,
                                          1999,
                                          pcmnGetString(ID_CRMI_IPWIDGET_SOURCE), // "Source",
-                                                // localized V0.9.21 (2002-08-21) [umoeller]
+                                                // localized V1.0.0 (2002-08-21) [umoeller]
                                          MIS_TEXT,
                                          0,
                                          NULL,

@@ -130,7 +130,7 @@
                 // flags for "XPager" settings page 3
                 #define PGRFL_ADDSTICKYTOGGLE       0x2000
                     // add "sticky" option to system menu?
-                            // V0.9.21 (2002-09-14) [lafaix]
+                            // V1.0.0 (2002-09-14) [lafaix]
 
                 #define PGRMASK_PAGE3 ( PGRFL_ADDSTICKYTOGGLE )
                 #define PGRFL_PAGE3_DEFAULTS        0
@@ -606,11 +606,11 @@
     #define XDM_REMOVECLICKWATCH    (WM_USER + 430) // V0.9.19 (2002-06-14) [lafaix]
 
 #ifndef __NOPAGER__
-    #define XDM_TOGGLETRANSIENTSTICKY (WM_USER + 431) // V0.9.21 (2002-07-26) [lafaix]
+    #define XDM_TOGGLETRANSIENTSTICKY (WM_USER + 431) // V1.0.0 (2002-07-26) [lafaix]
     #define XDM_ISTRANSIENTSTICKY   (WM_USER + 432)
 #endif
 
-    #define XDM_NLSCHANGED          (WM_USER + 433) // V0.9.21 (2002-09-15) [lafaix]
+    #define XDM_NLSCHANGED          (WM_USER + 433) // V1.0.0 (2002-09-15) [lafaix]
 #endif
 
 

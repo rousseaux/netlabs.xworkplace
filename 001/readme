@@ -1,9 +1,9 @@
 
-XWorkplace 0.9.20 README
+XWorkplace 1.0.0 README
 
 (W) Ulrich M”ller, Feb 7, 2000
 
-Last updated August 11, 2002
+Last updated November 23, 2002
 
 
 0. CONTENTS OF THIS FILE
@@ -31,7 +31,7 @@ Last updated August 11, 2002
 1. INTRODUCTION
 ===============
 
-    Welcome to XWorkplace V0.9.20.
+    Welcome to XWorkplace V1.0.0.
 
     XWorkplace is a complex set of replacement classes for the
     OS/2 Workplace Shell to enhance the WPS's behavior in many
@@ -48,17 +48,17 @@ Last updated August 11, 2002
     About this release
     ------------------
 
-    Things looked pretty good with V0.9.19, but a few fixes
-    still had to be made, so here's my next attempt.
+    This is my first attempt at a "stable" XWorkplace release.
+    Since the code has improved quite a bit over the last few
+    releases, I thought it might finally be time.
 
-    Because I got bored bugfixing, I also added a few new
-    (optional) features. To go for the exciting stuff
-    right away, go to "Workplace Shell", "Folder views",
-    and enable "Lazy icon loading" and "mark shadow icons".
+    This does not mean that XWorkplace is bug-free. But I am
+    confident that if any problems exist, it should be possible
+    to work around them.
 
     For details, refer to the "Version Notices" in the
     "XWorkplace User Guide". To extract the documentation
-    only, see "2. INSTALLATION" below.
+    only, see "3. INSTALLATION" below.
 
 
 2. REQUIREMENTS
@@ -68,17 +68,16 @@ Last updated August 11, 2002
     1.0, which is equivalent -- as far as the OS/2 code base
     is concerned -- to the Merlin Convenience Package 1 (MCP1).
 
-    Since I can no longer get my Warp 3 partition to boot and
-    do not particularly care for spending more time on that,
-    XWORKPLACE IS NO LONGER BEING TESTED ON WARP 3. It might
-    work, but it might not. Use it at your own risk.
+    NOTE: As opposed to previous releases, XWorkplace 1.0.0
+    will NO LONGER work on OS/2 Warp 3. I finally broke Warp 3
+    support intentionally because for one I can no longer test
+    on Warp 3 and secondly because I got tired working around
+    the many bugs and limitations of Warp 3's menu support.
 
-    Starting with V0.9.19, XWorkplace makes a few assumptions
-    about some internal WPS structures, which might be
-    different on Warp 3. Again, I don't know.
+    SO DO NOT TRY TO INSTALL THIS ON WARP 3.
 
-    The following should be safe, since they are based on
-    the same IBM code:
+    The following OS/2 versions should be safe, since they are
+    based on the same IBM code:
 
     --  Warp 4 FP 15
 
@@ -241,4 +240,9 @@ Last updated August 11, 2002
         xworkplace-dev@yahoogroups.com
 
     For details, see "Notices" --> "Contact" in XFLDR001.INF.
+
+    A bugtracking system is being set up at the time of this writing.
+    Please watch the usual "OS/2 news" announcements for updates on
+    this issue.
+
 

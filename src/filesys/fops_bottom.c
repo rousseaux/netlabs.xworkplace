@@ -800,7 +800,7 @@ BOOL fopsUseForceDelete(PCSZ pcszFilename)
  *      in our wpDestroyObject overrides, this is a good
  *      idea to do.
  *
- *@@added V0.9.21 (2002-09-09) [umoeller]
+ *@@added V1.0.0 (2002-09-09) [umoeller]
  */
 
 APIRET Call_wpFree(PFILETASKLIST pftl,
@@ -827,7 +827,7 @@ APIRET Call_wpFree(PFILETASKLIST pftl,
         // added error reports here; since we have disabled
         // the message boxes in wpDestroyObject, the user
         // gets no feedback at all if the deletion failed,
-        // but we should give her some V0.9.21 (2002-09-09) [umoeller]
+        // but we should give her some V1.0.0 (2002-09-09) [umoeller]
         if (    (arc)
              && (pftl->pfnErrorCallback)
            )
@@ -1075,7 +1075,7 @@ APIRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
  *@@changed V0.9.20 (2002-07-12) [umoeller]: optimizations and adjustments for fopsUseForceDelete
  *@@changed V0.9.20 (2002-07-16) [umoeller]: fixed deleting FTP folders
  *@@changed V0.9.20 (2002-08-04) [umoeller]: no longer unsetting FOI_DELETEINPROGRESS before wpFree'ing a folder
- *@@changed V0.9.21 (2002-09-09) [umoeller]: added better error reports if wpFree failed
+ *@@changed V1.0.0 (2002-09-09) [umoeller]: added better error reports if wpFree failed
  */
 
 APIRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,

@@ -633,6 +633,7 @@ APIRET icoBuildPtrFromFEA2List(PFEA2LIST pFEA2List,     // in: FEA2LIST to check
  *          ICONINFO structure in the buffer.
  *
  *@@added V0.9.18 (2002-03-19) [umoeller]
+ *@@changed V1.0.0 (2002-11-23) [umoeller]: returning HPOINTER never worked, fixed
  */
 
 APIRET icoBuildPtrFromEAs(PCSZ pcszFilename,
@@ -663,7 +664,7 @@ APIRET icoBuildPtrFromEAs(PCSZ pcszFilename,
             pbIconData = (PBYTE)(pIconInfo + 1);
 
         if (!(arc = icoBuildPtrFromFEA2List(pFEA2List2,
-                                            NULL,     // hptr
+                                            phptr, // V1.0.0 (2002-11-23) [umoeller] NULL,     // hptr
                                             &cbData,
                                             pbIconData)))
         {
@@ -1131,7 +1132,7 @@ STATIC APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
  *      resource type.
  *
  *@@added V0.9.16 (2001-12-18) [umoeller]
- *@@changed V0.9.21 (2002-09-02) [umoeller]: moved this here from program.c
+ *@@changed V1.0.0 (2002-09-02) [umoeller]: moved this here from program.c
  */
 
 PSZ icoGetWinResourceTypeName(PSZ pszBuf,
@@ -1169,7 +1170,7 @@ PSZ icoGetWinResourceTypeName(PSZ pszBuf,
  *@@changed V0.9.9 (2001-04-02) [umoeller]: now returning const char*
  *@@changed V0.9.16 (2002-01-05) [umoeller]: moved this here from fsys.c, renamed from fsysGetOS2ResourceTypeName
  *@@changed V0.9.16 (2002-01-05) [umoeller]: added icons display
- *@@changed V0.9.21 (2002-09-02) [umoeller]: moved this here from program.c
+ *@@changed V1.0.0 (2002-09-02) [umoeller]: moved this here from program.c
  */
 
 PCSZ icoGetOS2ResourceTypeName(ULONG ulResourceType)

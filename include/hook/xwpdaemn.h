@@ -179,7 +179,7 @@
      *@@ XWINTRANSIENT:
      *      one of these exists for every transient sticky window.
      *
-     *@@added V0.9.21 (2002-08-13) [lafaix]
+     *@@added V1.0.0 (2002-08-13) [lafaix]
      */
 
     typedef struct _XWINTRANSIENT

@@ -3,7 +3,7 @@
  *@@sourcefile fdrsubclass.h:
  *      header file for folder.c (XFolder implementation).
  *
- *      This file is new with V0.9.21 (2002-08-28) [umoeller].
+ *      This file is new with V1.0.0 (2002-08-28) [umoeller].
  *
  *@@include #include <os2.h>
  *@@include #include <wpfolder.h>

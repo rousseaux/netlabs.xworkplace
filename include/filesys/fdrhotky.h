@@ -4,7 +4,7 @@
  *      header file for fdrhotky.c.
  *
  *      This file was separated from folder.h with
- *      V0.9.21 (2002-08-31) [umoeller].
+ *      V1.0.0 (2002-08-31) [umoeller].
  *
  *@@include #include <os2.h>
  *@@include #include <wpfolder.h>

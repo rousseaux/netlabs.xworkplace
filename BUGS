@@ -1,15 +1,10 @@
 
-This file lists bugs known to the current XWorkplace release.
-I keep adding bugs which are reported through xworkplace-user@yahoogroups.com
-to this file and remove them when they are fixed.
+This file used to list bugs known to the current XWorkplace release.
 
-Please don't report bugs which are already mentioned in this file. Thanks.
-
-Even though this file might look dangerously large, this doesn't mean that
-XWorkplace is dangerously unstable. Many of the bugs below are only minor
-quirks or funny misbehaviors which will not cause your system to hang or
-crash. And even if some behavior is not acceptable, you can always disable
-XWorkplace features in the "XWorkplace Setup" object.
+At the moment, I am setting up a bug tracker for XWorkplace and WarpIN that
+will probably be hosted on Netlabs. So there is no bugs list at the moment,
+but this will be available shortly. Please watch the usual OS/2 announcement
+places for updates.
 
 Ulrich M”ller.
 

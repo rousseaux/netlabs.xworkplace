@@ -286,10 +286,10 @@ interface XFldObject : WPObject
 
     //# 5)  menu methods
 
-    //# wpFilterPopupMenu: override;        removed V0.9.21 (2002-08-31) [umoeller]
-    wpFilterMenu: override;                 //# added V0.9.21 (2002-08-31) [umoeller]
-    //# wpModifyPopupMenu: override;        removed V0.9.21 (2002-08-31) [umoeller]
-    wpModifyMenu: override;                 //# added V0.9.21 (2002-08-31) [umoeller]
+    //# wpFilterPopupMenu: override;        removed V1.0.0 (2002-08-31) [umoeller]
+    wpFilterMenu: override;                 //# added V1.0.0 (2002-08-31) [umoeller]
+    //# wpModifyPopupMenu: override;        removed V1.0.0 (2002-08-31) [umoeller]
+    wpModifyMenu: override;                 //# added V1.0.0 (2002-08-31) [umoeller]
     wpMenuItemSelected: override;
     wpMenuItemHelpSelected: override;
 

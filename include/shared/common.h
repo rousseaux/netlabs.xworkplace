@@ -50,7 +50,7 @@
      ********************************************************************/
 
     // moved these here from various other locations
-    // V0.9.21 (2002-08-26) [umoeller]
+    // V1.0.0 (2002-08-26) [umoeller]
 
     // Toolkit 4 declarations
 
@@ -236,7 +236,7 @@
     // keyboard macros V0.9.20 (2002-07-03) [umoeller]
     DECLARE_CMN_STRING(INIKEY_KEYBOARD_MACROS, "KeybMacros");
 
-    // split view window positions V0.9.21 (2002-08-21) [umoeller]
+    // split view window positions V1.0.0 (2002-08-21) [umoeller]
     DECLARE_CMN_STRING(INIAPP_FDRSPLITVIEWPOS, "XWorkplace:SplitViews");
 
     /*
@@ -579,7 +579,7 @@
     #define SP_SETUP_XWPLOGO        34      // new with V0.9.6 (2000-11-04) [umoeller]
     #define SP_SETUP_THREADS        35      // new with V0.9.9 (2001-03-07) [umoeller]
     #ifdef __DEBUG__
-        #define SP_SETUP_DEBUG      36      // new with V0.9.21 (2002-09-02) [umoeller]
+        #define SP_SETUP_DEBUG      36      // new with V1.0.0 (2002-09-02) [umoeller]
     #endif
 
     // 4) "Sort" pages both in folder notebooks and
@@ -693,7 +693,7 @@
     extern ULONG    G_cxIconSys;            // V0.9.20 (2002-08-04) [umoeller]
     extern ULONG    G_cyIconSys;            // V0.9.20 (2002-08-04) [umoeller]
 
-    extern ULONG    *G_pulVarMenuOfs;       // V0.9.21 (2002-08-28) [umoeller]
+    extern ULONG    *G_pulVarMenuOfs;       // V1.0.0 (2002-08-28) [umoeller]
 
     /********************************************************************
      *
@@ -770,7 +770,7 @@
         // sfMoveRefreshNow,        removed V0.9.19 (2002-04-17) [umoeller]
 
 // #ifndef __ALWAYSSUBCLASS__
-//         sfNoSubclassing,         removed V0.9.21 (2002-09-12) [umoeller]
+//         sfNoSubclassing,         removed V1.0.0 (2002-09-12) [umoeller]
 // #endif
 
 #ifndef __NOFOLDERCONTENTS__
@@ -905,7 +905,7 @@
 #endif
 
         sfFdrSplitViews,            // new folder split views
-                                    // V0.9.21 (2002-09-09) [umoeller]
+                                    // V1.0.0 (2002-09-09) [umoeller]
 
         // menu settings
         sulVarMenuOfs,
@@ -1042,7 +1042,7 @@
             //      2: regular +/-0
         sfWorkerPriorityBeep,
             // XWPSetup "Paranoia": beep on priority change
-        // sfNoFreakyMenus,     // removed V0.9.21 (2002-08-26) [umoeller]
+        // sfNoFreakyMenus,     // removed V1.0.0 (2002-08-26) [umoeller]
             // on XWPSetup "Paranoia" page
 #endif
 

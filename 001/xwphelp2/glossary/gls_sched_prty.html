@@ -26,7 +26,7 @@ thread only gets processor time if no threads of higher priority classes
 are running. Such threads are helpful for offloading work that needs to be
 done, but can be delayed until the computer has time for it.
 
-<!-- V0.9.21 (2002-09-13) [umoeller]: removed this section
+<!-- V1.0.0 (2002-09-13) [umoeller]: removed this section
 An example of such a thread is &xwp;'s own
 <A HREF="glossary/gls_workerthr.html">Worker thread</A>, which keeps track of
 the awake Desktop objects on your system. This is fairly time-consuming,
@@ -59,7 +59,7 @@ Even if it yields the CPU via <CODE>DosSleep(0)</CODE>
 <A HREF="cpref.inf#DosSleep"><CODE>DosSleep</CODE></A>
 in the Toolkit documentation<A HREF="_toolkitlink.html">*</A>),
 other non-time-critical threads will not run.
-<!-- V0.9.21: changed the following phrase -->
+<!-- V1.0.0: changed the following phrase -->
 This class is therefore normally only used for network and other communications software,
 or CD writer or other multimedia software.
 

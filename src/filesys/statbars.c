@@ -199,7 +199,7 @@ BOOL stbClassCanHaveStatusBars(WPFolder *somSelf)
  *      this folder in general, either explicitly
  *      or globally.
  *
- *@@added V0.9.21 (2002-08-21) [umoeller]
+ *@@added V1.0.0 (2002-08-21) [umoeller]
  */
 
 BOOL stbFolderWantsStatusBars(WPFolder *somSelf)
@@ -267,7 +267,7 @@ BOOL stbViewHasStatusBars(WPFolder *somSelf,
  *@@ stbCreateBar:
  *      this actually creates the status bar window.
  *
- *@@added V0.9.21 (2002-08-21) [umoeller]
+ *@@added V1.0.0 (2002-08-21) [umoeller]
  */
 
 HWND stbCreateBar(WPFolder *somSelf,        // in: (root) folder
@@ -299,7 +299,7 @@ HWND stbCreateBar(WPFolder *somSelf,        // in: (root) folder
         if (psbd = NEW(STATUSBARDATA))
         {
             psbd->somSelf    = somSelf;
-            psbd->pRealObject = pRealObject;        // V0.9.21 (2002-08-21) [umoeller]
+            psbd->pRealObject = pRealObject;        // V1.0.0 (2002-08-21) [umoeller]
             psbd->hwndFrame = hwndFrame;
             psbd->hwndCnr = hwndCnr;
             psbd->habStatusBar = WinQueryAnchorBlock(hwndBar);
@@ -418,7 +418,7 @@ HWND stbCreate(PSUBCLFOLDERVIEW psli2)
 
             // inflate only for standard folder views,
             // this rules out split view
-            // V0.9.21 (2002-08-21) [umoeller]
+            // V1.0.0 (2002-08-21) [umoeller]
             switch (ulView)
             {
                 case OPEN_TREE:
@@ -799,7 +799,7 @@ VOID stbUpdate(WPFolder *pFolder)
         // folder has an open view;
         // now we go search the open views of the folder and get the
         // frame handle of the desired view (ulView)
-        /*      replaced V0.9.21 (2002-08-28) [umoeller]
+        /*      replaced V1.0.0 (2002-08-28) [umoeller]
         PVIEWITEM   pViewItem;
         for (pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, NULL);
              pViewItem;
@@ -1252,11 +1252,11 @@ STATIC MRESULT EXPENTRY fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARA
              *      --  HWND mp1: if != NULLHANDLE, this sets a new
              *          container window for the status bar to
              *          retrieve its information from.
-             *          V0.9.21 (2002-08-21) [umoeller]
+             *          V1.0.0 (2002-08-21) [umoeller]
              *
              *      --  mp2: always NULL.
              *
-             *@@changed V0.9.21 (2002-08-21) [umoeller]: now allowing mp1 to change the hwndCnr
+             *@@changed V1.0.0 (2002-08-21) [umoeller]: now allowing mp1 to change the hwndCnr
              */
 
             case STBM_UPDATESTATUSBAR:
@@ -1268,7 +1268,7 @@ STATIC MRESULT EXPENTRY fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARA
                                                   100); // delay: 100 ms
 
                 if (mp1)
-                    psbd->hwndCnr = (HWND)mp1;  // V0.9.21 (2002-08-21) [umoeller]
+                    psbd->hwndCnr = (HWND)mp1;  // V1.0.0 (2002-08-21) [umoeller]
             break;
 
             /*

@@ -137,7 +137,7 @@ SOM_Scope ULONG  SOMLINK fon_xwpAddFontsPage(XWPFontFolder *somSelf,
  *      IDL doesn't know that XWPTrashCan is in fact
  *      derived from XFolder, we have to do it this way.
  *
- *@@changed V0.9.21 (2002-08-26) [umoeller]: method renamed
+ *@@changed V1.0.0 (2002-08-26) [umoeller]: method renamed
  */
 
 SOM_Scope BOOL  SOMLINK fon_xwpProcessViewCommand(XWPFontFolder *somSelf,

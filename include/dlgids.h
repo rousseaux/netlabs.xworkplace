@@ -208,8 +208,9 @@
 #define DID_ABORT              85
 #define DID_RETRY              84
 #define DID_IGNORE             83
-#define DID_OPEN               82           // V0.9.21 (2002-09-13) [umoeller]
-#define DID_SAVE               81           // V0.9.21 (2002-09-13) [umoeller]
+#define DID_OPEN               82           // V1.0.0 (2002-09-13) [umoeller]
+#define DID_SAVE               81           // V1.0.0 (2002-09-13) [umoeller]
+#define DID_CLEAR              80           // moved this here from Treesize section V1.0.0 (2002-11-23) [umoeller]
 
 /* DID_OK and DID_CANCEL are def'd somewhere in os2.h */
 
@@ -266,7 +267,7 @@
 #define ID_XSDI_INFO_MAINMEM_VALUE      205     // added V0.9.20 (2002-08-10) [umoeller]
 #define ID_XSDI_INFO_FREEMEM_TXT        206     // added V0.9.20 (2002-08-10) [umoeller]
 #define ID_XSDI_INFO_FREEMEM_VALUE      207     // added V0.9.20 (2002-08-10) [umoeller]
-#define ID_XSDI_INFO_BUGREPORT          208     // added V0.9.21 (2002-08-28) [umoeller]
+#define ID_XSDI_INFO_BUGREPORT          208     // added V1.0.0 (2002-08-28) [umoeller]
 
 // "Select by name" dlg items
 #define ID_XFDI_SELECTSOME_TITLE        210      // V0.9.19 (2002-04-17) [umoeller]
@@ -585,7 +586,7 @@
 #define ID_XSDI_FDRVIEW_LAZYICONS       665     // added V0.9.20 (2002-08-04) [umoeller]
 #define ID_XSDI_FDRVIEW_SHADOWOVERLAY   666     // added V0.9.20 (2002-08-04) [umoeller]
 
-// "Add/Edit hotkey" dialog (added V0.9.21) [lafaix]
+// "Add/Edit hotkey" dialog (added V1.0.0) [lafaix]
 #define ID_XSDI_HOTKEY_ADDTITLE         670
 #define ID_XSDI_HOTKEY_EDITTITLE        671
 #define ID_XSDI_HOTKEY_HOTKEY           672
@@ -804,9 +805,9 @@
 #define ID_XCDI_PARANOIA_INTRO          1159
 #define ID_XCDI_VARMENUOFFSET_TXT       1160
 #define ID_XCDI_VARMENUOFFSET           1161
-// #define ID_XCDI_NOFREAKYMENUS           1162     removed V0.9.21 (2002-08-26) [umoeller]
+// #define ID_XCDI_NOFREAKYMENUS           1162     removed V1.0.0 (2002-08-26) [umoeller]
 // #ifndef __ALWAYSSUBCLASS__
-// #define ID_XCDI_NOSUBCLASSING           1163     removed V0.9.21 (2002-09-12) [umoeller]
+// #define ID_XCDI_NOSUBCLASSING           1163     removed V1.0.0 (2002-09-12) [umoeller]
 // #endif
 // #define ID_XCDI_NOWORKERTHREAD          1164
         // removed this setting V0.9.16 (2001-01-04) [umoeller]
@@ -1439,7 +1440,7 @@
 /* dlg templates */
 #define ID_SDD_MAIN                     4200
 #define ID_SDD_STATUS                   4201
-// #define ID_SDD_CONFIRM                  4202     // removed V0.9.21 (2002-09-17) [umoeller]
+// #define ID_SDD_CONFIRM                  4202     // removed V1.0.0 (2002-09-17) [umoeller]
 #define ID_SDD_CAD                      4203
 #define ID_SDD_CLOSEVIO                 4204
 // #define ID_SDD_CONFIRMWPS               4205     // removed V0.9.16 (2002-01-13) [umoeller]
@@ -1470,7 +1471,7 @@
 #define ID_SDDI_STANDARDREBOOT          4317
 #define ID_SDDI_REBOOTTO                4318
 #define ID_SDDI_EMPTYTRASHCAN           4319
-#define ID_SDDI_CONFIRMWPS_TEXT         4320    // V0.9.21 (2002-09-17) [umoeller]
+#define ID_SDDI_CONFIRMWPS_TEXT         4320    // V1.0.0 (2002-09-17) [umoeller]
 #define ID_SDDI_CONFIRMWPS_TITLE        4205    // V0.9.16 (2002-01-13) [umoeller]
 #define ID_SDDI_PROGRESS1               4321    // V0.9.17 (2002-02-05) [pr]
 #define ID_SDDI_PROGRESS2               4322
@@ -1588,7 +1589,7 @@
     #define ID_SCDI_PGR1_SHOWSECONDARY     4611    // added V0.9.19 (2002-04-11) [lafaix]
     #define ID_SCDI_PGR1_SHOWSTICKY        4612    // added V0.9.19 (2002-04-11) [lafaix]
     #define ID_SCDI_PGR1_SHOWWINICONS      4613     // added V0.9.19 (2002-06-13) [umoeller]
-    #define ID_SCDI_PGR1_STICKIESTOGGLE    4614    // added V0.9.21 (2002-09-14) [lafaix]
+    #define ID_SCDI_PGR1_STICKIESTOGGLE    4614    // added V1.0.0 (2002-09-14) [lafaix]
 #endif
 
 /* ******************************************************************
@@ -1647,7 +1648,7 @@
         // removed V0.9.7 (2000-12-14) [umoeller]
 #define ID_XSSI_RUN               5022      // new with V0.9.14
 
-// copy filename submenu V0.9.21 (2002-11-09) [umoeller]
+// copy filename submenu V1.0.0 (2002-11-09) [umoeller]
 #define ID_XSSI_COPYFILENAME_SHORTSP 5023
 #define ID_XSSI_COPYFILENAME_FULLSP  5024
 #define ID_XSSI_COPYFILENAME_SHORTNL 5025
@@ -1738,9 +1739,9 @@
 #define ID_XSSI_LB_COPYFILENAME_SHORT   5539
 #define ID_XSSI_LB_COPYFILENAME_FULL    5540
 
-#define ID_XSSI_LB_PICKUPDROPCOPY       5541  // added V0.9.21 (2002-09-05) [lafaix]
-#define ID_XSSI_LB_PICKUPDROPMOVE       5542  // added V0.9.21 (2002-09-05) [lafaix]
-#define ID_XSSI_LB_PICKUPDROPLINK       5543  // added V0.9.21 (2002-09-05) [lafaix]
+#define ID_XSSI_LB_PICKUPDROPCOPY       5541  // added V1.0.0 (2002-09-05) [lafaix]
+#define ID_XSSI_LB_PICKUPDROPMOVE       5542  // added V1.0.0 (2002-09-05) [lafaix]
+#define ID_XSSI_LB_PICKUPDROPLINK       5543  // added V1.0.0 (2002-09-05) [lafaix]
 
 // FIRST and LAST are used be the notebook func to
 // calculate corresponding items
@@ -2076,7 +2077,7 @@
 #ifndef __NOTURBOFOLDERS__
 #define ID_XCSI_TURBOFOLDERS            6015        // V0.9.16 (2001-10-25) [umoeller]
 #endif
-#define ID_XCSI_FDRSPLITVIEWS           6016        // V0.9.21 (2002-09-09) [umoeller]
+#define ID_XCSI_FDRSPLITVIEWS           6016        // V1.0.0 (2002-09-09) [umoeller]
 
 #define ID_XCSI_STARTSHUTFEATURES       6020
 #ifndef __ALWAYSREPLACEARCHIVING__
@@ -2363,16 +2364,16 @@
 #define ID_CRSI_IPWGT_GRAPHOUTCOLOR     6292
 #define ID_CRSI_IPWGT_BYTESTOTAL        6293
 
-#define ID_CRSI_SENTINELTOOLTIP2        6294        // V0.9.21 (2002-08-21) [umoeller]
-#define ID_CRSI_MEMORYTOOLTIP           6295        // V0.9.21 (2002-08-21) [umoeller]
-#define ID_CRSI_BATTERYTOOLTIP          6296        // V0.9.21 (2002-08-21) [umoeller]
-#define ID_CRSI_DISKFREECONDTOOLTIP     6297        // V0.9.21 (2002-08-21) [umoeller]
-#define ID_CRMI_IPWIDGET_SOURCE         6298        // V0.9.21 (2002-08-21) [umoeller]
+#define ID_CRSI_SENTINELTOOLTIP2        6294        // V1.0.0 (2002-08-21) [umoeller]
+#define ID_CRSI_MEMORYTOOLTIP           6295        // V1.0.0 (2002-08-21) [umoeller]
+#define ID_CRSI_BATTERYTOOLTIP          6296        // V1.0.0 (2002-08-21) [umoeller]
+#define ID_CRSI_DISKFREECONDTOOLTIP     6297        // V1.0.0 (2002-08-21) [umoeller]
+#define ID_CRMI_IPWIDGET_SOURCE         6298        // V1.0.0 (2002-08-21) [umoeller]
 
-#define ID_XFSI_FDR_SPLITVIEW           6299        // V0.9.21 (2002-08-21) [umoeller]
+#define ID_XFSI_FDR_SPLITVIEW           6299        // V1.0.0 (2002-08-21) [umoeller]
 
-#define ID_XFSI_XWPSTARTUPFDR           6300        // V0.9.21 (2002-08-31) [umoeller]
-#define ID_XFSI_XWPSHUTDOWNFDR          6301        // V0.9.21 (2002-08-31) [umoeller]
+#define ID_XFSI_XWPSTARTUPFDR           6300        // V1.0.0 (2002-08-31) [umoeller]
+#define ID_XFSI_XWPSHUTDOWNFDR          6301        // V1.0.0 (2002-08-31) [umoeller]
 
 /* ******************************************************************
  *
@@ -2418,13 +2419,13 @@
 /* ******************************************************************
  *
  *   String IDs for daemon-specific resources       >= 8000
- *   (all new with V0.9.21)
+ *   (all new with V1.0.0)
  *
  *   If there ever happens to be more than 12 daemon-specific
  *   string resources, we will have to update the XDM_NLSCHANGED
  *   mechanism (in src/shared/common.c and src/Daemon/xwpdaemn.h).
  *
- *   added V0.9.21 (2002-09-15) [lafaix]
+ *   added V1.0.0 (2002-09-15) [lafaix]
  *
  ********************************************************************/
 
@@ -2443,7 +2444,6 @@
 #define ID_TSDI_TEXT1                   10003
 #define ID_TSDI_TEXT2                   10004
 #define ID_TSDI_ICON                    10005
-#define DID_CLEAR                       10006
 
 // #define ID_TSD_PRODINFO                 10007        removed V0.9.16 (2001-12-02) [umoeller]
 
@@ -2605,7 +2605,7 @@
 #define ID_XSMI_STICKY_EDIT             (WPMENUID_USER+1146) // added V0.9.19 (2002-04-15) [lafaix]
 #define ID_XSMI_STICKY_DELETEALL        (WPMENUID_USER+1147)
 
-/* split view menu bar V0.9.21 (2002-08-28) [umoeller] */
+/* split view menu bar V1.0.0 (2002-08-28) [umoeller] */
 #define ID_XFM_SPLITVIEWBAR             (WPMENUID_USER+1150)
 #define ID_XFM_BAR_FOLDER               (WPMENUID_USER+1151)
 #define ID_XFM_BAR_EDIT                 (WPMENUID_USER+1152)
@@ -2635,9 +2635,9 @@
 
 #define ID_XFMI_OFS_FLDRCONTENT         (WPMENUID_USER+12)
 #define ID_XFMI_OFS_DUMMY               (WPMENUID_USER+13)
-#define ID_XFM_OFS_COPYFILENAME         (WPMENUID_USER+14)      // submenu (changed V0.9.21 (2002-11-09) [umoeller])
-#define ID_XFMI_OFS_COPYFILENAME_SHORTSP (WPMENUID_USER+15)      // short name with spaces changed V0.9.21 (2002-11-09) [umoeller]
-#define ID_XFMI_OFS_COPYFILENAME_FULLSP  (WPMENUID_USER+16)      // full name with spaces V0.9.21 (2002-11-09) [umoeller]
+#define ID_XFM_OFS_COPYFILENAME         (WPMENUID_USER+14)      // submenu (changed V1.0.0 (2002-11-09) [umoeller])
+#define ID_XFMI_OFS_COPYFILENAME_SHORTSP (WPMENUID_USER+15)      // short name with spaces changed V1.0.0 (2002-11-09) [umoeller]
+#define ID_XFMI_OFS_COPYFILENAME_FULLSP  (WPMENUID_USER+16)      // full name with spaces V1.0.0 (2002-11-09) [umoeller]
 #define ID_XFMI_OFS_BORED               (WPMENUID_USER+17)
 #define ID_XFMI_OFS_SELECTSOME          (WPMENUID_USER+18)
 #define ID_XFMI_OFS_PROCESSCONTENT      (WPMENUID_USER+19)
@@ -2691,7 +2691,7 @@
 // "Run" menu item in XFolder/XFldDisk V0.9.14 (2001-08-07) [pr]
 #define ID_XFMI_OFS_RUN                 (WPMENUID_USER+54)
 
-// folder split view V0.9.21 (2002-08-28) [umoeller]
+// folder split view V1.0.0 (2002-08-28) [umoeller]
 #define ID_XFMI_OFS_SPLITVIEW           (WPMENUID_USER+55)
                 // ID_XFMI_OFS_SPLITVIEW is used for the root folder whose
                 // tree is displayed on the left
@@ -2703,15 +2703,15 @@
 // batch rename V0.9.19 (2002-06-18) [umoeller]
 #define ID_XFMI_OFS_BATCHRENAME         (WPMENUID_USER+57)
 
-#define ID_XFMI_OFS_COPYFILENAME_SHORTNL (WPMENUID_USER+58)      // short name with newlines, added V0.9.21 (2002-11-09) [umoeller]
-#define ID_XFMI_OFS_COPYFILENAME_FULLNL  (WPMENUID_USER+59)      // full name with newlines, added V0.9.21 (2002-11-09) [umoeller]
+#define ID_XFMI_OFS_COPYFILENAME_SHORTNL (WPMENUID_USER+58)      // short name with newlines, added V1.0.0 (2002-11-09) [umoeller]
+#define ID_XFMI_OFS_COPYFILENAME_FULLNL  (WPMENUID_USER+59)      // full name with newlines, added V1.0.0 (2002-11-09) [umoeller]
 
 // this is the value used for variable menu items, i.e.
 // those inserted according to the config folder and by
 // the "folder content" functions; XFolder will use this
 // value (i.e. WPMENUID_USER + "menu item id offset"
 // + FIRST_VARIABLE) and increment it until 0x8000 is reached
-#define FIRST_VARIABLE                  65      // raised V0.9.21 (2002-11-09) [umoeller]
+#define FIRST_VARIABLE                  65      // raised V1.0.0 (2002-11-09) [umoeller]
 #define ID_XFMI_OFS_VARIABLE            (WPMENUID_USER+FIRST_VARIABLE)
 
 #endif

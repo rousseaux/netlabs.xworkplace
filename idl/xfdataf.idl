@@ -106,10 +106,10 @@ interface XFldDataFile : WPDataFile
 
     //# 5)  menu methods
 
-    //#wpDisplayMenu: override;             removed V0.9.21 (2002-08-31) [umoeller]
+    //#wpDisplayMenu: override;             removed V1.0.0 (2002-08-31) [umoeller]
     wpFilterPopupMenu: override;
-    //# wpModifyPopupMenu: override;        removed V0.9.21 (2002-08-31) [umoeller]
-    wpModifyMenu: override;                 //# added V0.9.21 (2002-08-31) [umoeller]
+    //# wpModifyPopupMenu: override;        removed V1.0.0 (2002-08-31) [umoeller]
+    wpModifyMenu: override;                 //# added V1.0.0 (2002-08-31) [umoeller]
 
     wpMenuItemHelpSelected: override;
 

@@ -4,9 +4,9 @@
  *      implementation code for the "Details" dialog
  *      (Icon page).
  *
- *      This code has been moved from object.c with V0.9.21.
+ *      This code has been moved from object.c with V1.0.0.
  *
- *@@added V0.9.21 (2002-08-24) [umoeller]
+ *@@added V1.0.0 (2002-08-24) [umoeller]
  *@@header "filesys\object.h"
  */
 
@@ -231,7 +231,7 @@ STATIC VOID AddFolderView2Cnr(HWND hwndCnr,
 /*
  *@@ AddColor:
  *
- *@@added V0.9.21 (2002-08-24) [umoeller]
+ *@@added V1.0.0 (2002-08-24) [umoeller]
  */
 
 VOID AddColor(HWND hwndCnr,
@@ -261,7 +261,7 @@ VOID AddColor(HWND hwndCnr,
 /*
  *@@ AddFolderItems:
  *
- *@@added V0.9.21 (2002-08-24) [umoeller]
+ *@@added V1.0.0 (2002-08-24) [umoeller]
  */
 
 VOID AddFolderItems(WPFolder *pObject,
@@ -338,7 +338,7 @@ VOID AddFolderItems(WPFolder *pObject,
 
 
 
-    // folder colors: V0.9.21 (2002-08-24) [umoeller]
+    // folder colors: V1.0.0 (2002-08-24) [umoeller]
 
     if (pFdrData = (PIBMFOLDERDATA)_pvWPFolderData)
     {
@@ -772,7 +772,7 @@ STATIC VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
         {
             PVIEWITEM   pViewItem = (PVIEWITEM)(pUseItem+1);
 
-            // V0.9.21 (2002-08-31) [umoeller]
+            // V1.0.0 (2002-08-31) [umoeller]
             PCSZ        pcszViewName = mnuQueryViewName(pViewItem->view);
 
             if (pViewItem->view != OPEN_RUNNING)

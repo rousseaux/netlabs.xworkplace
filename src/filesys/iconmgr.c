@@ -519,7 +519,7 @@ STATIC void _Optlink fntLazyIcons(PTHREADINFO ptiMyself)
 
                         if (hptr = _wpQueryIcon(pDataFile))
                         {
-                            _wpSetIconHandle(pDataFile, hptr);
+                            // _wpSetIconHandle(pDataFile, hptr);
                             _wpSetIcon(pDataFile, hptr);
                         }
 

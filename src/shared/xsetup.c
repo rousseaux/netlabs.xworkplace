@@ -203,7 +203,7 @@ static FEATURESITEM G_FeatureItemsList[] =
             ID_XCSI_TURBOFOLDERS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
             ID_XCSI_FDRSPLITVIEWS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-                    // V0.9.21 (2002-09-09) [umoeller]
+                    // V1.0.0 (2002-09-09) [umoeller]
 
             // mouse/keyboard features
             ID_XCSI_MOUSEKEYBOARDFEATURES, 0, 0, NULL,
@@ -1323,7 +1323,7 @@ STATIC VOID AppendClassesGroup(const CONTROLDEF *pClsOneClass,
             PCONTROLDEF pDef;
 
             (*ppDlgItemThis)->Type = TYPE_START_NEW_ROW;
-            (*ppDlgItemThis)->ul2 = ROW_VALIGN_CENTER;      // V0.9.21 (2002-08-18) [umoeller]
+            (*ppDlgItemThis)->ul2 = ROW_VALIGN_CENTER;      // V1.0.0 (2002-08-18) [umoeller]
             (*ppDlgItemThis)++;
 
             // fill the controldef
@@ -1336,7 +1336,7 @@ STATIC VOID AppendClassesGroup(const CONTROLDEF *pClsOneClass,
 
             // and append the controldef
             (*ppDlgItemThis)->Type = TYPE_CONTROL_DEF;
-            // (*ppDlgItemThis)->pCtlDef = *ppControlDefThis;   V0.9.21 (2002-08-18) [umoeller]
+            // (*ppDlgItemThis)->pCtlDef = *ppControlDefThis;   V1.0.0 (2002-08-18) [umoeller]
             (*ppDlgItemThis)->ul1 = (ULONG)*ppControlDefThis;
             (*ppDlgItemThis)++;
             (*ppControlDefThis)++;
@@ -3535,7 +3535,7 @@ MRESULT setObjectsItemChanged(PNOTEBOOKPAGE pnbp,
 static const XWPSETTING G_ParanoiaBackup[] =
     {
         sulVarMenuOfs,
-        // sfNoFreakyMenus,     removed V0.9.21 (2002-08-26) [umoeller]
+        // sfNoFreakyMenus,     removed V1.0.0 (2002-08-26) [umoeller]
 // #ifndef __ALWAYSSUBCLASS__
 //         sfNoSubclassing,
 // #endif
@@ -3658,7 +3658,7 @@ VOID setParanoiaInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                                 cmnQuerySetting(sulVarMenuOfs));
         // winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XCDI_NOFREAKYMENUS,
         //                                        cmnQuerySetting(sfNoFreakyMenus));
-        // removed V0.9.21 (2002-08-26) [umoeller]
+        // removed V1.0.0 (2002-08-26) [umoeller]
 
 // #ifndef __ALWAYSSUBCLASS__
 //         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XCDI_NOSUBCLASSING,
@@ -3718,7 +3718,7 @@ MRESULT setParanoiaItemChanged(PNOTEBOOKPAGE pnbp,
 
         // case ID_XCDI_NOFREAKYMENUS:
         //     cmnSetSetting(sfNoFreakyMenus, ulExtra);
-        // break;       removed V0.9.21 (2002-08-26) [umoeller]
+        // break;       removed V1.0.0 (2002-08-26) [umoeller]
 
         case ID_XCDI_USE8HELVFONT:
             cmnSetSetting(sfUse8HelvFont, ulExtra);
@@ -3858,7 +3858,7 @@ static MPARAM G_ampDebugPage[] =
 /*
  *@@ setDebugInitPage:
  *
- *@@added V0.9.21 (2002-09-02) [umoeller]
+ *@@added V1.0.0 (2002-09-02) [umoeller]
  */
 
 VOID setDebugInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -3930,7 +3930,7 @@ VOID setDebugInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 /*
  *@@ setDebugItemChanged:
  *
- *@@added V0.9.21 (2002-09-02) [umoeller]
+ *@@added V1.0.0 (2002-09-02) [umoeller]
  */
 
 MRESULT setDebugItemChanged(PNOTEBOOKPAGE pnbp,

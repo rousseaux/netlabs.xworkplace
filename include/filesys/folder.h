@@ -75,7 +75,7 @@
          *
          *      Moved this here from xfldr.idl.
          *
-         *@@added V0.9.21 (2002-08-24) [umoeller]
+         *@@added V1.0.0 (2002-08-24) [umoeller]
          */
 
         typedef struct _IBMFDRBKGNDSTORE
@@ -121,7 +121,7 @@
          *      transient structure used by the WPS internally
          *      to handle folder backgrounds.
          *
-         *@@added V0.9.21 (2002-08-24) [umoeller]
+         *@@added V1.0.0 (2002-08-24) [umoeller]
          */
 
         typedef struct _IBMFDRBKGND
@@ -147,7 +147,7 @@
          *      any more in the first place).
          *
          *@@added V0.9.20 (2002-07-25) [umoeller]
-         *@@changed V0.9.21 (2002-08-24) [umoeller]: greatly extended
+         *@@changed V1.0.0 (2002-08-24) [umoeller]: greatly extended
          */
 
         typedef struct _IBMFOLDERDATA
@@ -239,7 +239,7 @@
      *@@ IBMDRIVEDATA:
      *
      *      Here's a table of values from the testing on my system
-     *      (V0.9.21 (2002-08-31) [umoeller]):
+     *      (V1.0.0 (2002-08-31) [umoeller]):
      *
      +      ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
      +      ³ fs             ³ bFileSystem       ³fRemote³fFixed ³ fZIP  ³ bDiskType            ³

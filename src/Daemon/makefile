@@ -121,7 +121,7 @@ dep:
     $(RUN_FASTDEP) *.c
     @echo ----- Leaving $(MAKEDIR)
 
-# V0.9.21: Use the inference rule in \make\comp_classcode.in now,
+# V1.0.0: Use the inference rule in \make\comp_classcode.in now,
 # which is shared for all makefiles that generate code for XFLDR.DLL.
 # This sets up the compiler rule to compile .c files to .obj files
 # in the $(OUTPUTDIR).

@@ -1,6 +1,6 @@
 NAME XPSTAT WINDOWAPI
 
-Description '@#Ulrich M”ller:0.9.21#@ XWorkplace process status utility'
+Description '@#Ulrich M”ller:1.0.0#@ XWorkplace process status utility'
 
 STACKSIZE   65536
 

@@ -157,7 +157,7 @@ extern MPARAM G_ampHotkeys[];
  *      called indirectly from XFldWPS::xwpAddXFldWPSPages.
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
- *@@changed V0.9.21 (2002-09-06) [lafaix]: made sizeable
+ *@@changed V1.0.0 (2002-09-06) [lafaix]: made sizeable
  */
 
 SOM_Scope ULONG  SOMLINK xwp_xwpAddWPSFdrHotkeysPage(XFldWPS *somSelf,
@@ -184,7 +184,7 @@ SOM_Scope ULONG  SOMLINK xwp_xwpAddWPSFdrHotkeysPage(XFldWPS *somSelf,
         inbp.ulPageID = SP_4ACCELERATORS;
         inbp.pfncbInitPage    = fdrHotkeysInitPage;
         inbp.pfncbItemChanged = fdrHotkeysItemChanged;
-        // make this sizeable V0.9.21 (2002-09-06) [lafaix]
+        // make this sizeable V1.0.0 (2002-09-06) [lafaix]
         inbp.pampControlFlags = G_ampHotkeys;
         inbp.cControlFlags = 4; // ARRAYITEMCOUNT(G_ampHotkeys);
         ulrc = ntbInsertPage(&inbp);

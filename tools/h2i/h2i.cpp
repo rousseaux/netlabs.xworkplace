@@ -2050,7 +2050,7 @@ VOID AppendToMainBuffer(PXSTRING pxstrIPF,
     // If neither x nor width are given, make this full size
     // so that help panels will resize properly with the
     // main helpmgr frame. Thanks to Alex Taylor for the hint.
-    // V0.9.21 (2002-08-21) [umoeller]
+    // V1.0.0 (2002-08-21) [umoeller]
     if (fFull)
     {
         xstrcat(pstrExtras,

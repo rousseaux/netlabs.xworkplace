@@ -654,7 +654,7 @@ STATIC void _Optlink fntMethodCollectThread(PTHREADINFO pti)
  *@@changed V0.9.1 (99-12-20) [umoeller]: now using fntMethodCollectThread for method infos
  *@@changed V0.9.12 (2001-05-17) [pr]: beautify class title
  *@@changed V0.9.20 (2002-08-04) [umoeller]: added instance size
- *@@changed V0.9.21 (2002-08-12) [umoeller]: fixed instance size for null objects
+ *@@changed V1.0.0 (2002-08-12) [umoeller]: fixed instance size for null objects
  */
 
 STATIC VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
@@ -731,7 +731,7 @@ STATIC VOID NewClassSelected(PCLASSLISTCLIENTDATA pClientData)
         WinSetDlgItemText(pClientData->hwndClassInfoDlg, ID_XLDI_CLASSTITLE, szInfo2);
 
         // instance size V0.9.20 (2002-08-04) [umoeller]
-        // check class object first V0.9.21 (2002-08-12) [umoeller]
+        // check class object first V1.0.0 (2002-08-12) [umoeller]
         if (pwps->pClassObject)
             sprintf(szInfo2,
                     "%d / %d",

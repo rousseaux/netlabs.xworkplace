@@ -568,7 +568,7 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
  *      this loads the shutdown (traffic light) animation
  *      as an array of icons from the XFLDR.DLL module.
  *
- *@@changed V0.9.21 (2002-09-13) [umoeller]: optimized
+ *@@changed V1.0.0 (2002-09-13) [umoeller]: optimized
  */
 
 VOID xsdLoadAnimation(PSHUTDOWNANIM psda)
@@ -588,7 +588,7 @@ VOID xsdLoadAnimation(PSHUTDOWNANIM psda)
         };
 
     USHORT us;
-    // made this a loop V0.9.21 (2002-09-13) [umoeller]
+    // made this a loop V1.0.0 (2002-09-13) [umoeller]
     for (us = 0;
          us < XSD_ANIM_COUNT;
          us++)
@@ -3511,7 +3511,7 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
         apcsz[1] = strErrDescr.psz;
         if (cmnMessageBoxExt(pShutdownData->SDConsts.hwndShutdownStatus,
                              110,
-                             apcsz, 2,      // V0.9.21 (2002-09-17) [umoeller]
+                             apcsz, 2,      // V1.0.0 (2002-09-17) [umoeller]
                              111,
                              MB_YESNO)
                     == MBID_YES)

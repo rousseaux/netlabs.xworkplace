@@ -1411,6 +1411,8 @@ STATIC VOID FixSpacesInFilename(PXSTRING pstr)
  *
  *@@added V0.9.7 (2000-12-10) [umoeller]
  *@@changed V0.9.18 (2002-02-13) [umoeller]: fixed possible buffer overflows
+ *@@changed V1.0.0 (2002-11-23) [umoeller]: fixed wrong quoting around filename particles (%**N etc.) @@fixes 216
+ *@@changed V1.0.0 (2002-11-23) [umoeller]: added support for lower-case %**n as WPS does (case insensitivity) @@fixes 25
  */
 
 STATIC BOOL HandlePlaceholder(PCSZ p,           // in: placeholder (starting with "%")
@@ -1445,6 +1447,7 @@ STATIC BOOL HandlePlaceholder(PCSZ p,           // in: placeholder (starting wit
                 switch (*(p+3))
                 {
                     case 'P':
+                    case 'p':       // V1.0.0 (2002-11-23) [umoeller]
                     {
                         // "%**P": drive and path information without the
                         // last backslash (\)
@@ -1454,7 +1457,9 @@ STATIC BOOL HandlePlaceholder(PCSZ p,           // in: placeholder (starting wit
                             xstrcpy(&strTemp,
                                     pcszFilename,
                                     pLastBackslash - pcszFilename);
-                            FixSpacesInFilename(&strTemp); // V0.9.7 (2000-12-10) [umoeller]
+                            // FixSpacesInFilename(&strTemp); // V0.9.7 (2000-12-10) [umoeller]
+                                // wrong, WPS does not ever put spaces around %**P
+                                // V1.0.0 (2002-11-23) [umoeller]
                         }
 
                         *pfAppendDataFilename = FALSE;
@@ -1464,6 +1469,7 @@ STATIC BOOL HandlePlaceholder(PCSZ p,           // in: placeholder (starting wit
                     break;
 
                     case 'D':
+                    case 'd':   // V1.0.0 (2002-11-23) [umoeller]
                     {
                         //  "%**D": drive with ':' or UNC name
                         ULONG ulDriveSpecLen;
@@ -1476,7 +1482,9 @@ STATIC BOOL HandlePlaceholder(PCSZ p,           // in: placeholder (starting wit
                             xstrcpy(&strTemp,
                                     pcszFilename,
                                     ulDriveSpecLen);
-                            FixSpacesInFilename(&strTemp); // V0.9.7 (2000-12-10) [umoeller]
+                            // FixSpacesInFilename(&strTemp); // V0.9.7 (2000-12-10) [umoeller]
+                                // wrong, WPS does not ever put spaces around %**D
+                                // V1.0.0 (2002-11-23) [umoeller]
                         }
 
                         *pfAppendDataFilename = FALSE;
@@ -1486,6 +1494,7 @@ STATIC BOOL HandlePlaceholder(PCSZ p,           // in: placeholder (starting wit
                     break;
 
                     case 'N':
+                    case 'n':   // V1.0.0 (2002-11-23) [umoeller]
                     {
                         //  "%**N": file name without extension.
                         // first find filename
@@ -1508,7 +1517,9 @@ STATIC BOOL HandlePlaceholder(PCSZ p,           // in: placeholder (starting wit
                             xstrcpy(&strTemp,
                                     pLastBackslash + 1,
                                     ulLength);
-                            FixSpacesInFilename(&strTemp); // V0.9.7 (2000-12-10) [umoeller]
+                            // FixSpacesInFilename(&strTemp); // V0.9.7 (2000-12-10) [umoeller]
+                                // wrong, WPS does not ever put spaces around %**N
+                                // V1.0.0 (2002-11-23) [umoeller]
                         }
 
                         *pfAppendDataFilename = FALSE;
@@ -1518,6 +1529,7 @@ STATIC BOOL HandlePlaceholder(PCSZ p,           // in: placeholder (starting wit
                     break;
 
                     case 'F':
+                    case 'f':   // V1.0.0 (2002-11-23) [umoeller]
                     {
                         // "%**F": file name with extension.
                         // find filename
@@ -1526,7 +1538,9 @@ STATIC BOOL HandlePlaceholder(PCSZ p,           // in: placeholder (starting wit
                         if (pLastBackslash = strrchr(pcszFilename + 2, '\\'))
                         {
                             xstrcpy(&strTemp, pLastBackslash + 1, 0);
-                            FixSpacesInFilename(&strTemp); // V0.9.7 (2000-12-10) [umoeller]
+                            // FixSpacesInFilename(&strTemp); // V0.9.7 (2000-12-10) [umoeller]
+                                // wrong, WPS does not ever put spaces around %**F
+                                // V1.0.0 (2002-11-23) [umoeller]
                         }
 
                         *pfAppendDataFilename = FALSE;
@@ -1536,6 +1550,7 @@ STATIC BOOL HandlePlaceholder(PCSZ p,           // in: placeholder (starting wit
                     break;
 
                     case 'E':
+                    case 'e':   // V1.0.0 (2002-11-23) [umoeller]
                     {
                         //  "%**E": extension without leading dot.
                         // In HPFS, the extension always comes after the last dot.
@@ -1543,8 +1558,10 @@ STATIC BOOL HandlePlaceholder(PCSZ p,           // in: placeholder (starting wit
                         if (pExt = doshGetExtension(pcszFilename))
                         {
                             xstrcpy(&strTemp, pExt, 0);
-                            FixSpacesInFilename(&strTemp);
+                            // FixSpacesInFilename(&strTemp);
                                     // improbable, but possible
+                                // wrong, WPS does not ever put spaces around %**E
+                                // V1.0.0 (2002-11-23) [umoeller]
                         }
 
                         *pfAppendDataFilename = FALSE;
@@ -1561,7 +1578,9 @@ STATIC BOOL HandlePlaceholder(PCSZ p,           // in: placeholder (starting wit
 
                 // "%*": full path of data file
                 xstrcpy(&strTemp, pcszFilename, 0);
-                FixSpacesInFilename(&strTemp); // V0.9.7 (2000-12-10) [umoeller]
+                // FixSpacesInFilename(&strTemp); // V0.9.7 (2000-12-10) [umoeller]
+                                // wrong, WPS does not ever put spaces around %*
+                                // V1.0.0 (2002-11-23) [umoeller]
 
                 *pfAppendDataFilename = FALSE;
                 *pcReplace = 2;     // "%**?"
@@ -1633,7 +1652,7 @@ STATIC BOOL HandlePlaceholder(PCSZ p,           // in: placeholder (starting wit
  *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed params prompt hangs (new implementation)
  *@@changed V0.9.7 (2000-12-10) [umoeller]: extracted HandlePlaceholder
  *@@changed V0.9.18 (2002-03-27) [umoeller]: fixed trailing space that was always appended
- *@@changed V0.9.21 (2002-09-13) [umoeller]: fixed memory leak
+ *@@changed V1.0.0 (2002-09-13) [umoeller]: fixed memory leak
  */
 
 BOOL progSetupArgs(PCSZ pcszParams,
@@ -1779,9 +1798,11 @@ BOOL progSetupArgs(PCSZ pcszParams,
                     xstrcatc(pstrParams, ' ');
 
             FixSpacesInFilename(&strDataFilename); // V0.9.7 (2000-12-10) [umoeller]
+                    // V1.0.0 (2002-11-23) [umoeller] correct, the WPS _does_
+                    // put quotes around a filename if it is added automatically
             xstrcats(pstrParams, &strDataFilename);
 
-            xstrClear(&strDataFilename); // V0.9.21 (2002-09-13) [umoeller]
+            xstrClear(&strDataFilename); // V1.0.0 (2002-09-13) [umoeller]
         }
     } // end if (brc)
     else
@@ -1874,7 +1895,7 @@ PSZ progSetupEnv(WPObject *pProgObject,     // in: WPProgram or WPProgramFile
         // no environment specified:
         // get the one from the WPS process
         arc = appGetEnvironment(&Env);
-#else // V0.9.21 (2002-09-02) [umoeller]
+#else // V1.0.0 (2002-09-02) [umoeller]
     // get the one from the WPS process and use it as base.
     arc = appGetEnvironment(&Env);
 
@@ -3017,7 +3038,7 @@ STATIC void _Optlink fntInsertResources(PTHREADINFO pti)
  *@@ KillPointersInRecords:
  *
  *@@added V0.9.16 (2002-01-05) [umoeller]
- *@@changed V0.9.21 (2002-09-09) [umoeller]: adjusted for cnrhForAllRecords updates
+ *@@changed V1.0.0 (2002-09-09) [umoeller]: adjusted for cnrhForAllRecords updates
  */
 
 STATIC ULONG XWPENTRY KillPointersInRecords(HWND hwndCnr,

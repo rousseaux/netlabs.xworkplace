@@ -509,7 +509,7 @@ XWPFileSystem 1 XWorkplace replaces the WPFileSystem class with this class to ac
 // Items added with V0.9.19
 FileState 1 (FILESTAT.DLL) Reports statistics for objects dropped on it.
 
-// Items added with V0.9.21
+// Items added with V1.0.0
 ClassTree 1 (CLSSTREE.DLL) The ClassTree is an object from the Object Factory application by Synaptec. The ClassTree lists all the SOM objects and all objects created by the Object Factory user. It is used in conjuction with the ClassNotebook Object (and the hidden SomNotebook object) to provide a GUI inteface for creating new SOM objects.
 ClassNotebook 1 (CLSSNOTE.DLL) The ClassNotebook object is from the Object Factory application by Synaptec. It is used to define a new SOM class.
 SomNote 1 (SOMNOTE.DLL) SomNote is an object that is part of the Object Factory application by Synaptec. It appears to provide help for SOM classes when using the ClassTree object.

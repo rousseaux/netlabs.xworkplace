@@ -3,7 +3,7 @@
  *@@sourcefile fdrviews.h:
  *      header file for fdrviews.c.
  *
- *      This file is ALL new with V0.9.21
+ *      This file is ALL new with V1.0.0
  *
  *@@include #include <os2.h>
  *@@include #include "helpers\linklist.h"

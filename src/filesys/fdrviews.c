@@ -3,7 +3,7 @@
  *@@sourcefile fdrview.c:
  *      shared code for all folder views.
  *
- *@@added V0.9.21 (2002-08-28) [umoeller]
+ *@@added V1.0.0 (2002-08-28) [umoeller]
  *@@header "filesys\folder.h"
  */
 
@@ -99,7 +99,7 @@
 /*
  *@@ IMAGECACHEENTRY:
  *
- *@@added V0.9.21 (2002-08-24) [umoeller]
+ *@@added V1.0.0 (2002-08-24) [umoeller]
  */
 
 typedef struct _IMAGECACHEENTRY
@@ -119,7 +119,7 @@ typedef struct _IMAGECACHEENTRY
  *      The view settings are then manipulated
  *      every time the
  *
- *@@added V0.9.21 (2002-08-24) [umoeller]
+ *@@added V1.0.0 (2002-08-24) [umoeller]
  */
 
 typedef struct _SUBCLCNR
@@ -222,7 +222,7 @@ STATIC VOID UnlockImages(VOID)
  *      position while making sure that only parts in
  *      prclClip will actually be painted.
  *
- *@@added V0.9.21 (2002-08-24) [umoeller]
+ *@@added V1.0.0 (2002-08-24) [umoeller]
  */
 
 VOID DrawBitmapClipped(HPS hps,             // in: presentation space
@@ -391,7 +391,7 @@ VOID DrawBitmapClipped(HPS hps,             // in: presentation space
  *      This is a MAJOR, MAJOR MESS. No wonder noone ever
  *      uses CM_PAINTBACKGROUND.
  *
- *@@added V0.9.21 (2002-08-24) [umoeller]
+ *@@added V1.0.0 (2002-08-24) [umoeller]
  */
 
 MRESULT PaintCnrBackground(HWND hwndCnr,
@@ -584,7 +584,7 @@ MRESULT PaintCnrBackground(HWND hwndCnr,
  *      We have a SUBCLCNR struct in QWL_USER, which was
  *      put there by fdrMakeCnrPaint.
  *
- *@@added V0.9.21 (2002-08-24) [umoeller]
+ *@@added V1.0.0 (2002-08-24) [umoeller]
  */
 
 MRESULT EXPENTRY fnwpSubclCnr(HWND hwndCnr, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -663,7 +663,7 @@ MRESULT EXPENTRY fnwpSubclCnr(HWND hwndCnr, ULONG msg, MPARAM mp1, MPARAM mp2)
  *      This creates a SUBCLCNR struct and puts it
  *      into the cnr's QWL_USER.
  *
- *@@added V0.9.21 (2002-08-24) [umoeller]
+ *@@added V1.0.0 (2002-08-24) [umoeller]
  */
 
 BOOL fdrvMakeCnrPaint(HWND hwndCnr)
@@ -697,7 +697,7 @@ BOOL fdrvMakeCnrPaint(HWND hwndCnr)
 /*
  *@@ ResolveColor:
  *
- *@@added V0.9.21 (2002-08-24) [umoeller]
+ *@@added V1.0.0 (2002-08-24) [umoeller]
  */
 
 LONG ResolveColor(LONG lcol)         // in: explicit color or SYSCLR_* index
@@ -788,7 +788,7 @@ LONG ResolveColor(LONG lcol)         // in: explicit color or SYSCLR_* index
  *@@ fdrvRemoveFromImageCache:
  *      removes the given object from the image cache.
  *
- *@@added V0.9.21 (2002-08-24) [umoeller]
+ *@@added V1.0.0 (2002-08-24) [umoeller]
  */
 
 BOOL fdrvRemoveFromImageCache(WPObject *pobjImage)
@@ -850,7 +850,7 @@ BOOL fdrvRemoveFromImageCache(WPObject *pobjImage)
  *      --  we're running on Warp 3. We require
  *          the help of the WPImageFile class here.
  *
- *@@added V0.9.21 (2002-08-24) [umoeller]
+ *@@added V1.0.0 (2002-08-24) [umoeller]
  */
 
 HBITMAP GetBitmap(PIBMFDRBKGND pBkgnd)
@@ -988,7 +988,7 @@ HBITMAP GetBitmap(PIBMFDRBKGND pBkgnd)
  *      This sets the container's background color and
  *      bitmap, if applicable, foreground color and font.
  *
- *@@added V0.9.21 (2002-08-24) [umoeller]
+ *@@added V1.0.0 (2002-08-24) [umoeller]
  */
 
 VOID fdrvSetCnrLayout(HWND hwndCnr,         // in: cnr whose colors and fonts are to be set
@@ -1334,7 +1334,7 @@ BOOL fdrvIsObjectInCnr(WPObject *pObject,
  *      callback for cnrhForAllRecords, specified
  *      by fdrvClearContainer.
  *
- *@@added V0.9.21 (2002-09-09) [umoeller]
+ *@@added V1.0.0 (2002-09-09) [umoeller]
  */
 
 STATIC ULONG XWPENTRY fncbClearCnr(HWND hwndCnr,
@@ -1373,8 +1373,8 @@ STATIC ULONG XWPENTRY fncbClearCnr(HWND hwndCnr,
  *      --  If CLEARFL_UNLOCKOBJECTS is set, we will
  *          unlock every object that we remove once.
  *
- *@@changed V0.9.21 (2002-09-13) [umoeller]: added flClear
- *@@changed V0.9.21 (2002-11-23) [umoeller]: fixed broken lazy drag in progress
+ *@@changed V1.0.0 (2002-09-13) [umoeller]: added flClear
+ *@@changed V1.0.0 (2002-11-23) [umoeller]: fixed broken lazy drag in progress @@fixes 225
  */
 
 ULONG fdrvClearContainer(HWND hwndCnr,      // in: cnr to clear

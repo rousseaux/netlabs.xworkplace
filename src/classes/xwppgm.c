@@ -582,15 +582,16 @@ SOM_Scope HPOINTER  SOMLINK xpg_wpQueryIcon(XWPProgram *somSelf)
  *
  *@@added V0.9.18 (2002-03-19) [umoeller]
  *@@changed V0.9.20 (2002-07-03) [umoeller]: fixed bad icons for "*" command prompts
+ *@@changed V1.0.0 (2002-11-23) [umoeller]: this never checked for .ICON EAs (ProNews case) @@fixes 34
  */
 
 STATIC BOOL ProgramIconHandler(XWPProgram *somSelf,
                                PIBMPROGRAMDATA pData,
                                XWPProgramData *somThis,
-                               HPOINTER *phptr,
+                               HPOINTER *phptr,      // out: if != NULL, icon handle
                                PULONG pcbIconInfo,   // out: if != NULL, size of ICONINFO buffer required
                                PICONINFO pIconInfo,  // out: if != NULL, icon info
-                               BOOL *pfNotDefaultIcon)
+                               BOOL *pfNotDefaultIcon) // out: set to TRUE if non-default icon (ptr can be NULL)
 {
     BOOL        brc = FALSE;
     BOOL        fLocked = FALSE;
@@ -644,77 +645,104 @@ STATIC BOOL ProgramIconHandler(XWPProgram *somSelf,
 
             if (pszExec)
             {
-                // first: check if an .ICO file of the same filestem
-                // exists in the folder. If so, _always_ use that icon.
-                PCSZ pExt;
-                if (pExt = doshGetExtension(pszExec))
+                // this code was missing the check for .ICON EAs...
+                // if the executable had an .ICON EA, this was completely
+                // ignored because we always only searched for icons in
+                // the executable resources (ProNews case): so look for
+                // an .ICON first
+                // V1.0.0 (2002-11-23) [umoeller]
+                if (!(arc = icoBuildPtrFromEAs(pszExec,
+                                               phptr,
+                                               pcbIconInfo,
+                                               pIconInfo)))
                 {
-                    ULONG ulStemLen = pExt - pszExec;
-                    CHAR szIconFile[CCHMAXPATH];
-                    memcpy(szIconFile, pszExec, ulStemLen);
-                    memcpy(szIconFile + ulStemLen, "ico", 4);   // include 0
-                    // use the new icoLoadICOFile, this is way faster
-                    // V0.9.16 (2001-12-08) [umoeller]
-                            // NOTE: This only gets called for "create icon"
-                            // mode, never with the "fill icon info" mode,
-                            // because in that case wpQueryIconData checks
-                            // _pWszUsingIconFile
-                            // V0.9.18 (2002-03-19) [umoeller]
-                    if (!(arc = icoLoadICOFile(szIconFile,
-                                               phptr,       // can be NULL
-                                               NULL,
-                                               NULL)))
+                    if (phptr)
+                        PMPF_ICONREPLACEMENTS(("got hptr 0x%lX from .ICON EA", *phptr));
+
+                    if (pfNotDefaultIcon)
+                        *pfNotDefaultIcon = TRUE;
+                    fFound = TRUE;
+                }
+                else
+                {
+                    // next: check if an .ICO file of the same filestem
+                    // exists in the folder -- if so, _always_ use that icon
+                    PCSZ pExt;
+
+                    PMPF_ICONREPLACEMENTS(("icoBuildPtrFromEAs returned %d", arc));
+
+                    if (pExt = doshGetExtension(pszExec))
                     {
-                        // store this in the instance data so
-                        // that wpQueryIconData can properly
-                        // return this... we can't do this
-                        // otherwise because we can't check
-                        // if the icon file data is valid
-                        // without building a pointer handle
-                        // V0.9.18 (2002-03-19) [umoeller]
+                        ULONG ulStemLen = pExt - pszExec;
+                        CHAR szIconFile[CCHMAXPATH];
+                        memcpy(szIconFile, pszExec, ulStemLen);
+                        memcpy(szIconFile + ulStemLen, "ico", 4);   // include 0
+                        // use the new icoLoadICOFile, this is way faster
+                        // V0.9.16 (2001-12-08) [umoeller]
+                                // NOTE: This only gets called for "create icon"
+                                // mode, never with the "fill icon info" mode,
+                                // because in that case wpQueryIconData checks
+                                // _pWszUsingIconFile
+                                // V0.9.18 (2002-03-19) [umoeller]
+                        if (!(arc = icoLoadICOFile(szIconFile,
+                                                   phptr,       // can be NULL
+                                                   NULL,
+                                                   NULL)))
+                        {
+                            // store this in the instance data so
+                            // that wpQueryIconData can properly
+                            // return this... we can't do this
+                            // otherwise because we can't check
+                            // if the icon file data is valid
+                            // without building a pointer handle
+                            // V0.9.18 (2002-03-19) [umoeller]
+                            wpshStore(somSelf,
+                                      &_pWszUsingIconFile,
+                                      szIconFile,
+                                      NULL);
+
+                            if (pfNotDefaultIcon)
+                                *pfNotDefaultIcon = TRUE;
+                            fFound = TRUE;
+                        }
+                        // else: .ICO file doesn't exist, or bad format, so go on
+                    }
+
+                    if (!fFound)
+                    {
+                        PEXECUTABLE pExec = NULL;
+
                         wpshStore(somSelf,
                                   &_pWszUsingIconFile,
-                                  szIconFile,
+                                  NULL,
                                   NULL);
 
-                        if (pfNotDefaultIcon)
-                            *pfNotDefaultIcon = TRUE;
-                        fFound = TRUE;
+                        if (!(arc = exehOpen(pszExec, &pExec)))
+                        {
+                            ULONG ulProgType;
+                            ULONG ulStdIcon = 0;
+
+                            if (!(ulProgType = pData->ProgType.progc))
+                                ulProgType = progQueryProgType(pszExec,
+                                                               pExec);
+
+                            PMPF_ICONREPLACEMENTS(("exehOpen'd %s, progtype is %d (%s)",
+                                                    pszExec,
+                                                    ulProgType,
+                                                    appDescribeAppType(ulProgType)));
+
+                            if (!progFindIcon(pExec,
+                                              ulProgType,
+                                              phptr,
+                                              pcbIconInfo,
+                                              pIconInfo,
+                                              pfNotDefaultIcon))
+                                fFound = TRUE;
+
+                            exehClose(&pExec);
+
+                        } // end if (!(arc = exehOpen(pszExec, &pExec)))
                     }
-                    // else: .ICO file doesn't exist, or bad format, so go on
-                }
-
-                if (!fFound)
-                {
-                    PEXECUTABLE pExec = NULL;
-
-                    wpshStore(somSelf,
-                              &_pWszUsingIconFile,
-                              NULL,
-                              NULL);
-
-                    if (!(arc = exehOpen(pszExec, &pExec)))
-                    {
-                        ULONG ulProgType;
-                        ULONG ulStdIcon = 0;
-
-                        PMPF_ICONREPLACEMENTS(("%s, calling _xwpQueryProgType", pszExec));
-
-                        if (!(ulProgType = pData->ProgType.progc))
-                            ulProgType = progQueryProgType(pszExec,
-                                                           pExec);
-
-                        if (!progFindIcon(pExec,
-                                          ulProgType,
-                                          phptr,
-                                          pcbIconInfo,
-                                          pIconInfo,
-                                          pfNotDefaultIcon))
-                            fFound = TRUE;
-
-                        exehClose(&pExec);
-
-                    } // end if (!(arc = exehOpen(pszExec, &pExec)))
                 }
             }
         }

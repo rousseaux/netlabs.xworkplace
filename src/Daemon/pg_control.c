@@ -1174,7 +1174,7 @@ STATIC VOID PagerPositionFrame(VOID)
  *
  *@@added V0.9.7 (2001-01-18) [umoeller]
  *@@changed V0.9.20 (2002-08-08) [umoeller]: added shift mb2 click for hiding pager
- *@@changed V0.9.21 (2002-09-13) [umoeller]: fixed pager window flickering with desktop switch
+ *@@changed V1.0.0 (2002-09-13) [umoeller]: fixed pager window flickering with desktop switch
  */
 
 STATIC MRESULT PagerButtonClick(HWND hwnd,
@@ -1229,7 +1229,7 @@ STATIC MRESULT PagerButtonClick(HWND hwnd,
 
                 // and refresh client right away because
                 // we have a delay with activechanged
-                #if 0       // no, this flickers V0.9.21 (2002-09-13) [umoeller]
+                #if 0       // no, this flickers V1.0.0 (2002-09-13) [umoeller]
                 WinPostMsg(hwnd,
                            PGRM_REFRESHCLIENT,
                            (MPARAM)FALSE,
@@ -1592,7 +1592,7 @@ BOOL pgrSwitchToDesktop(HWND hwnd,
  *
  *@@added V0.9.19 (2002-05-07) [umoeller]
  *@@changed V0.9.19 (2002-06-02) [umoeller]: made this configurable
- *@@changed V0.9.21 (2002-09-13) [umoeller]: fixed pager window flickering with desktop switch
+ *@@changed V1.0.0 (2002-09-13) [umoeller]: fixed pager window flickering with desktop switch
  */
 
 STATIC VOID PagerActiveChanged(HWND hwnd)
@@ -1602,7 +1602,7 @@ STATIC VOID PagerActiveChanged(HWND hwnd)
     if (!G_pHookData->fProcessingWraparound)
     {
         HWND        hwndActive;
-        BOOL        fRefresh = TRUE;       // V0.9.21 (2002-09-13) [umoeller]
+        BOOL        fRefresh = TRUE;       // V1.0.0 (2002-09-13) [umoeller]
 
         if (hwndActive = WinQueryActiveWindow(HWND_DESKTOP))
         {
@@ -1654,7 +1654,7 @@ STATIC VOID PagerActiveChanged(HWND hwnd)
         } // end if (hwndActive)
 
         // refresh client
-        if (fRefresh)       // V0.9.21 (2002-09-13) [umoeller]
+        if (fRefresh)       // V1.0.0 (2002-09-13) [umoeller]
             WinPostMsg(hwnd,
                        PGRM_REFRESHCLIENT,
                        (MPARAM)FALSE,

@@ -1,42 +1,13 @@
 /                                           umoeller
-/CVSROOT                                    ktk umoeller
+/CVSROOT                                    umoeller,ktk
 /001                                        umoeller
-/001/dll                                    umoeller
-/001/help.001                               umoeller
-/001/inf.001                                umoeller
-/001/misc                                   umoeller
-/001/tools                                  umoeller
-/001/xwphelp2                               umoeller
-/049                                        umoeller chennecke
-/049/dll                                    umoeller chennecke
-/049/inf.049                                umoeller chennecke
-/049/misc                                   umoeller chennecke
+/049                                        umoeller,chennecke
+/049/dll                                    umoeller,chennecke
+/049/inf.049                                umoeller,chennecke
+/049/misc                                   umoeller,chennecke
 /idl                                        umoeller
 /include                                    umoeller
 /release                                    umoeller
 /src                                        umoeller
 /tools                                      umoeller
-/include/classes                            umoeller
-/include/config                             umoeller
-/include/filesys                            umoeller
-/include/hook                               umoeller
-/include/shared                             umoeller
-/include/startshut                          umoeller
-/release/bin                                umoeller
-/release/bootlogo                           umoeller
-/release/help                               umoeller
-/release/icons                              umoeller
-/release/install                            umoeller
-/release/wav                                umoeller
-/src/classes                                umoeller
-/src/config                                 umoeller
-/src/filesys                                umoeller
-/src/hook                                   umoeller
-/src/NetscapeDDE                            umoeller
-/src/shared                                 umoeller
-/src/startshut                              umoeller
-/src/Treesize                               umoeller
-/src/Xshutdwn                               umoeller
-/tools/repclass                             umoeller
-/tools/WPSReset                             umoeller
 

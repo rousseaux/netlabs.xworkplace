@@ -58,7 +58,7 @@
 <--XFL0110-->: &xsd;: Fehler
 
 ;
-; 111 changed with V0.9.21
+; 111 changed with V1.0.0
 ;
 <--XFL0111-->: Beim Sichern der INI-Dateien ist der Fehler %1 aufgetreten. Beschreibung:
 
@@ -489,7 +489,7 @@ Wenn Sie in der Zielzeichenkette Rckbezge verwenden (z.B. "\1"), achten Sie da
 <--XFL0244-->: Soll das Widget "%1" wirklich komplett entfernt werden? Dieser Vorgang kann nicht rckg„ngig gemacht werden.
 
 ;
-; the following items are new with V0.9.21
+; the following items are new with V1.0.0
 ;
 
 <--XFL0245-->: Beim Versuch, den Standard-Browser (%1) zu starten, ist ein Fehler aufgetreten:

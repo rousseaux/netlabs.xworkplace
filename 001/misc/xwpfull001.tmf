@@ -334,7 +334,7 @@ If you enable this setting, you will probably notice a speed increase when folde
 Also, the background threads for the replacement auto-refresh will profit from this setting.
 This requires the XWPFileSystem replacement class to be installed. Changing this setting requires a WPS restart.
 ;
-; FEATURES_6016 added with V0.9.21 (2002-09-09) [umoeller]
+; FEATURES_6016 added with V1.0.0 (2002-09-09) [umoeller]
 ;
 <--FEATURES_6016-->: The "Split views" setting determines whether &xwp; adds a new standard folder view to the "Open" submenu of all context menus.
 A split view consists of two folder views, a Tree view on the left and a second view on the right which displays the objects in the folder that is currently selected in the Tree.
@@ -477,7 +477,7 @@ This replacement offers a better version of the "Sounds" page in that object's s
 This was added with &xwp; 0.9.0.
 
 ;
-; V0.9.21: replaced this silly description
+; V1.0.0: replaced this silly description
 ;
 <--XWPCLS_1258-->: "XWPMouse" is the &xwp; replacement for the WPMouse class, which implements the "Mouse" object found in your "System setup" folder.
 This replacement adds new pages to the object for configuring the &xwp; hook mouse features, such as sliding focus and screen corner objects.

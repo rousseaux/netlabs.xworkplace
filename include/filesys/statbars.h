@@ -71,11 +71,11 @@
             WPFolder    *somSelf;           // the (root) folder of the status bar
             WPObject    *pRealObject;       // "real" object, only != somSelf if disk
             HWND        hwndFrame;          // our parent window
-                                            // V0.9.21 (2002-08-21) [umoeller]
+                                            // V1.0.0 (2002-08-21) [umoeller]
             HWND        hwndCnr;            // container window; normally the FID_CLIENT
                                             // of the frame, but for the split view this
                                             // will be different
-                                            // V0.9.21 (2002-08-21) [umoeller]
+                                            // V1.0.0 (2002-08-21) [umoeller]
             HAB         habStatusBar;       // status bar PM anchor block V0.9.2 (2000-02-22) [umoeller]
             ULONG       idTimer;            // update delay timer
             BOOL        fDontBroadcast;     // anti-recursion flag for presparams

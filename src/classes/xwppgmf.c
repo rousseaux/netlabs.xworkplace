@@ -1160,7 +1160,7 @@ SOM_Scope BOOL  SOMLINK xpgf_wpSetIconData(XWPProgramFile *somSelf,
  *
  *      Note that I have never seen the PFEA2LIST pointer to be
  *      set to anything but NULL, so we do not handle loading
- *      an icons from EAs here.
+ *      an icon from EAs here.
  *
  *      Note that this also gets called for instances of the
  *      WPCommandFile subclass (BAT and CMD extension), so we

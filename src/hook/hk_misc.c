@@ -134,7 +134,7 @@ VOID WMButton_SystemMenuContext(HWND hwnd)     // of WM_BUTTON2CLICK
 
 #ifndef __NOPAGER__
                 // add the sticky entry if it's a top-level window
-                // V0.9.21 (2002-09-14) [lafaix]
+                // V1.0.0 (2002-09-14) [lafaix]
                 if (    (WinQueryWindow(hwndFrame, QW_PARENT) == G_HookData.hwndPMDesktop)
                      && (G_HookData.PagerConfig.flPager & PGRFL_ADDSTICKYTOGGLE)
                      && (G_HookData.hwndPagerFrame)

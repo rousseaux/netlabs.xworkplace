@@ -182,7 +182,7 @@ static BOOL         G_fInitialized = FALSE;
  *      still failed to return the info, ERROR_INVALID_DATA
  *      is returned (shouldn't happen).
  *
- *@@changed V0.9.21 (2002-08-31) [umoeller]: added cbBufs parameter
+ *@@changed V1.0.0 (2002-08-31) [umoeller]: added cbBufs parameter
  */
 
 APIRET fonGetFontDescription(HAB hab,

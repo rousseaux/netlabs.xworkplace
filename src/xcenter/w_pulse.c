@@ -663,7 +663,7 @@ VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
                         memcpy((char *)padlgPulsePerProcessor + sizeof(dlgPulsePerProcessor) * ul,
                                &dlgPulsePerProcessor[0],
                                sizeof(dlgPulsePerProcessor));
-                        // padlgPulsePerProcessor[(ul * 2) + 1].pCtlDef = &paProcessorColor[ul]; V0.9.21 (2002-08-18) [umoeller]
+                        // padlgPulsePerProcessor[(ul * 2) + 1].pCtlDef = &paProcessorColor[ul]; V1.0.0 (2002-08-18) [umoeller]
                         padlgPulsePerProcessor[(ul * 2) + 1].ul1 = (ULONG)&paProcessorColor[ul];
                     }
                 }
@@ -1158,7 +1158,7 @@ STATIC BOOL PwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.13 (2001-06-21) [umoeller]: added tooltip refresh
  *@@changed V0.9.14 (2001-07-12) [umoeller]: fixed sporadic crash on some systems
  *@@changed V0.9.16 (2002-01-05) [umoeller]: added multiple CPUs support
- *@@changed V0.9.21 (2002-08-21) [umoeller]: rewrote the graph part for fixing the vertical line on the left and much better speed
+ *@@changed V1.0.0 (2002-08-21) [umoeller]: rewrote the graph part for fixing the vertical line on the left and much better speed
  */
 
 STATIC VOID PwgtUpdateGraph(HWND hwnd,
@@ -1198,7 +1198,7 @@ STATIC VOID PwgtUpdateGraph(HWND hwnd,
             ULONG   iCPU;
             PSZ     pszTooltipLoc;
 
-            // V0.9.21 (2002-08-21) [umoeller]:
+            // V1.0.0 (2002-08-21) [umoeller]:
             // big optimization. Saved ourselves about 200
             // GpiSetColor and GpiMove calls here for each
             // loop, besides fixed the painting that always
@@ -1208,21 +1208,21 @@ STATIC VOID PwgtUpdateGraph(HWND hwnd,
 
             // 1) interrupt loads; this only exists for CPU 0,
             //    so no need for looping through all CPUs for that
-            //    V0.9.21 (2002-08-21) [umoeller]
+            //    V1.0.0 (2002-08-21) [umoeller]
 
             if (pPrivate->palIntrs)
             {
                 PLONG   plIntThis = &pPrivate->palIntrs[0];
 
                 // set start position to the first array item
-                // V0.9.21 (2002-08-21) [umoeller]
+                // V1.0.0 (2002-08-21) [umoeller]
                 ptl.x = 0;
                 ptl.y = rclBmp.yTop * (*plIntThis++) / 1000;
                 GpiMove(hpsMem, &ptl);
                 GpiSetColor(hpsMem,
                             pPrivate->Setup.lcolGraphIntr);
 
-                for (ptl.x = 1;     // V0.9.21 (2002-08-21) [umoeller]
+                for (ptl.x = 1;     // V1.0.0 (2002-08-21) [umoeller]
                      (    (ptl.x < pPrivate->cLoads)
                        && (ptl.x < rclBmp.xRight)
                      );
@@ -1233,7 +1233,7 @@ STATIC VOID PwgtUpdateGraph(HWND hwnd,
 
                     // GpiLine changes the current position, so
                     // there's no need for running GpiMove again
-                    // V0.9.21 (2002-08-21) [umoeller]
+                    // V1.0.0 (2002-08-21) [umoeller]
                 }
             }
 
@@ -1249,7 +1249,7 @@ STATIC VOID PwgtUpdateGraph(HWND hwnd,
                     PLONG   plUserThis = &pPrivate->palLoads[pPrivate->cLoads * iCPU];
 
                     // set start position to the first array item
-                    // V0.9.21 (2002-08-21) [umoeller]
+                    // V1.0.0 (2002-08-21) [umoeller]
                     ptl.x = 0;
                     ptl.y = rclBmp.yTop * (*plUserThis++) / 1000;
                     GpiMove(hpsMem, &ptl);
@@ -1259,7 +1259,7 @@ STATIC VOID PwgtUpdateGraph(HWND hwnd,
                                     pPrivate->Setup.palcolGraph[iCPU]);
 
                     // go thru all values in the "Loads" LONG array for this CPU
-                    for (ptl.x = 1;     // V0.9.21 (2002-08-21) [umoeller]
+                    for (ptl.x = 1;     // V1.0.0 (2002-08-21) [umoeller]
                          (    (ptl.x < pPrivate->cLoads)
                            && (ptl.x < rclBmp.xRight)
                          );

@@ -799,7 +799,7 @@ BOOL LoadHookConfig(BOOL fHook,         // in: reload hook settings
  *      G_pXwpGlobalShared->achNLSStrings contains a 0-terminated list
  *      of strings.
  *
- *@@added V0.9.21 (2002-09-15) [lafaix]
+ *@@added V1.0.0 (2002-09-15) [lafaix]
  */
 
 BOOL LoadNLSResources(VOID)
@@ -827,7 +827,7 @@ BOOL LoadNLSResources(VOID)
                 break;
 
             // strcpy(pszDest, pszSrc);
-            memcpy(pszDest, pszSrc, usLen + 1); // V0.9.21 (2002-09-17) [umoeller]
+            memcpy(pszDest, pszSrc, usLen + 1); // V1.0.0 (2002-09-17) [umoeller]
 
             pNLSData->apszNLSStrings[us] = pszDest;
             pszSrc += usLen;
@@ -884,7 +884,7 @@ VOID InstallHook(VOID)
 
             // copy NLS resources from shared mem to
             // hook data
-            // V0.9.21 (2002-09-17) [umoeller]
+            // V1.0.0 (2002-09-17) [umoeller]
             LoadNLSResources();
         }
     }
@@ -2483,7 +2483,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *      This gives the daemon a chance to update its
              *      NLS-dependant resources.
              *
-             *@@added V0.9.21 (2002-09-15) [lafaix]
+             *@@added V1.0.0 (2002-09-15) [lafaix]
              */
 
             case XDM_NLSCHANGED:
@@ -3424,7 +3424,7 @@ ULONG _System TerminateExcHandler(PEXCEPTIONREPORTRECORD pReportRec,
  *@@changed V0.9.11 (2001-04-25) [umoeller]: added termination exception handler for proper hook cleanup
  *@@changed V0.9.11 (2001-04-25) [umoeller]: reordered all this code for readability
  *@@changed V0.9.19 (2002-05-23) [umoeller]: fixed startup directory
- *@@changed V0.9.21 (2002-08-21) [umoeller]: fixed hangs on default OS/2 shutdown
+ *@@changed V1.0.0 (2002-08-21) [umoeller]: fixed hangs on default OS/2 shutdown
  */
 
 int main(int argc, char *argv[])
@@ -3450,7 +3450,7 @@ int main(int argc, char *argv[])
 
         // cancel shutdown requests to avoid hangs with
         // default OS/2 shutdown
-        // V0.9.21 (2002-08-21) [umoeller]
+        // V1.0.0 (2002-08-21) [umoeller]
         WinCancelShutdown(G_hmqDaemon, TRUE);
 
         // initialize click-watch list V0.9.14 (2001-08-21) [umoeller]
@@ -3586,7 +3586,7 @@ int main(int argc, char *argv[])
                               0);
 
                     // create watchdog threads
-                    // V0.9.21 (2002-08-12) [umoeller]
+                    // V1.0.0 (2002-08-12) [umoeller]
                     // dmnStartWatchdog();
 
                     // post msg to XFLDR.DLL thread-1 object window

@@ -355,6 +355,6 @@
     #define ID_XSH_DRIVES_REFRESHMEDIA      236
     #define ID_XSH_PASTEDLG                 237
 
-    #define ID_XSH_SETTINGS_FDRHOTKEYS_DLG  238     // V0.9.21 (2002-09-12) [umoeller]
+    #define ID_XSH_SETTINGS_FDRHOTKEYS_DLG  238     // V1.0.0 (2002-09-12) [umoeller]
 #endif
 

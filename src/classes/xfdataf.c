@@ -208,7 +208,7 @@ SOM_Scope void  SOMLINK xdf_wpUnInitData(XFldDataFile *somSelf)
  *      TRUE, since the file was obviously already deleted.
  *
  *@@added V0.9.20 (2002-07-25) [umoeller]
- *@@changed V0.9.21 (2002-09-09) [umoeller]: added wpSetError on errors
+ *@@changed V1.0.0 (2002-09-09) [umoeller]: added wpSetError on errors
  */
 
 SOM_Scope BOOL  SOMLINK xdf_wpDestroyObject(XFldDataFile *somSelf)
@@ -244,7 +244,7 @@ SOM_Scope BOOL  SOMLINK xdf_wpDestroyObject(XFldDataFile *somSelf)
                 // code on the object so fops_bottom.c can figure
                 // out what went wrong; wpFree has called
                 // wpSetError(NO_ERROR) previously
-                // V0.9.21 (2002-09-09) [umoeller]
+                // V1.0.0 (2002-09-09) [umoeller]
                 _wpSetError(somSelf, arc);
         }
     }
@@ -500,7 +500,7 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryIcon(XFldDataFile *somSelf)
         {
         } END_CATCH();
 
-        return (hptrReturn);
+        return hptrReturn;
     }
 
 #endif
@@ -620,7 +620,7 @@ SOM_Scope ULONG  SOMLINK xdf_wpQueryIconData(XFldDataFile *somSelf,
             cbRequired = 0;
         } END_CATCH();
 
-        return (cbRequired);
+        return cbRequired;
     }
 #endif
 
@@ -643,7 +643,7 @@ SOM_Scope ULONG  SOMLINK xdf_wpQueryIconData(XFldDataFile *somSelf,
  *      override.
  *
  *@@added V0.9.18 (2002-03-19) [umoeller]
- *@@changed V0.9.21 (2002-09-12) [umoeller]: fixed missing _fHasIconEA adjustment
+ *@@changed V1.0.0 (2002-09-12) [umoeller]: fixed missing _fHasIconEA adjustment
  */
 
 SOM_Scope BOOL  SOMLINK xdf_wpSetIconData(XFldDataFile *somSelf,
@@ -688,7 +688,7 @@ SOM_Scope BOOL  SOMLINK xdf_wpSetIconData(XFldDataFile *somSelf,
         if (    (pIconInfo)
              && (pIconInfo->fFormat != ICON_CLEAR)
            )
-            _fHasIconEA = TRUE;     // V0.9.21 (2002-09-12) [umoeller]
+            _fHasIconEA = TRUE;     // V1.0.0 (2002-09-12) [umoeller]
 
         return TRUE;
     }
@@ -796,7 +796,7 @@ SOM_Scope WPObject*  SOMLINK xdf_wpQueryAssociatedProgram(XFldDataFile *somSelf,
 
     PMPF_ASSOCS(("End of wpQueryAssociatedProgram for %s", _wpQueryTitle(somSelf)));
 
-    return (pobj);
+    return pobj;
 }
 
 /*
@@ -869,7 +869,7 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
         } END_CATCH();
 
         PMPF_ASSOCS(("done, returning 0x%lX",
-                hptr));
+                     hptr));
 
         return hptr;      // NULLHANDLE still for "plain text"
     }
@@ -995,7 +995,7 @@ SOM_Scope ULONG  SOMLINK xdf_wpFilterPopupMenu(XFldDataFile *somSelf,
  *      allows the object to manipulate its menu in a more
  *      fine-grained way than wpModifyPopupMenu.
  *
- *      With V0.9.21, while adding support for the split view
+ *      With V1.0.0, while adding support for the split view
  *      to the menu methods, I finally got tired of all the
  *      send-msg hacks to get Warp 4 menu items to work and
  *      decided to finally break Warp 3 support for XWorkplace.
@@ -1036,7 +1036,7 @@ SOM_Scope ULONG  SOMLINK xdf_wpFilterPopupMenu(XFldDataFile *somSelf,
  *          but not described in WPSREF. I think this is what comes in
  *          if the system menu is being built for an open object view.
  *
- *@@added V0.9.21 (2002-08-31) [umoeller]
+ *@@added V1.0.0 (2002-08-31) [umoeller]
  */
 
 SOM_Scope BOOL  SOMLINK xdf_wpModifyMenu(XFldDataFile *somSelf,
@@ -1283,7 +1283,7 @@ SOM_Scope HWND  SOMLINK xdf_wpOpen(XFldDataFile *somSelf,
 
     PMPF_ASSOCS(("[%s] returning hwnd 0x%lX", _wpQueryTitle(somSelf), hwnd));
 
-    return (hwnd);
+    return hwnd;
 
 }
 
@@ -1310,13 +1310,13 @@ SOM_Scope ULONG  SOMLINK xdf_wpAddFile1Page(XFldDataFile *somSelf,
     if (cmnQuerySetting(sfReplaceFilePage))
     {
 #endif
-        return (fsysInsertFilePages(somSelf,
-                                    hwndNotebook));
+        return fsysInsertFilePages(somSelf,
+                                   hwndNotebook);
 #ifndef __ALWAYSREPLACEFILEPAGE__
     }
-    else
-        return (XFldDataFile_parent_WPDataFile_wpAddFile1Page(somSelf,
-                                                              hwndNotebook));
+
+    return XFldDataFile_parent_WPDataFile_wpAddFile1Page(somSelf,
+                                                         hwndNotebook);
 #endif
 }
 
@@ -1343,10 +1343,10 @@ SOM_Scope ULONG  SOMLINK xdf_wpAddFile2Page(XFldDataFile *somSelf,
     if (cmnQuerySetting(sfReplaceFilePage))
 #endif
         return SETTINGS_PAGE_REMOVED;
+
 #ifndef __ALWAYSREPLACEFILEPAGE__
-    else
-        return (XFldDataFile_parent_WPDataFile_wpAddFile2Page(somSelf,
-                                                              hwndNotebook));
+    return XFldDataFile_parent_WPDataFile_wpAddFile2Page(somSelf,
+                                                         hwndNotebook);
 #endif
 }
 
@@ -1373,10 +1373,10 @@ SOM_Scope ULONG  SOMLINK xdf_wpAddFile3Page(XFldDataFile *somSelf,
     if (cmnQuerySetting(sfReplaceFilePage))
 #endif
         return SETTINGS_PAGE_REMOVED;
+
 #ifndef __ALWAYSREPLACEFILEPAGE__
-    else
-        return (XFldDataFile_parent_WPDataFile_wpAddFile3Page(somSelf,
-                                                              hwndNotebook));
+    return XFldDataFile_parent_WPDataFile_wpAddFile3Page(somSelf,
+                                                         hwndNotebook);
 #endif
 }
 
@@ -1416,7 +1416,7 @@ SOM_Scope ULONG  SOMLINK xdf_wpAddFileTypePage(XFldDataFile *somSelf,
         inbp.pfncbInitPage    = ftypDatafileTypesInitPage;
         inbp.pfncbItemChanged = ftypDatafileTypesItemChanged;
 
-        return (ntbInsertPage(&inbp));
+        return ntbInsertPage(&inbp);
     }
 #endif
 
@@ -1514,9 +1514,9 @@ SOM_Scope WPObject*  SOMLINK xdf_wpCreateFromTemplate(XFldDataFile *somSelf,
     }
 #endif
 
-    return (XFldDataFile_parent_WPDataFile_wpCreateFromTemplate(somSelf,
-                                                                folder,
-                                                                fLock));
+    return XFldDataFile_parent_WPDataFile_wpCreateFromTemplate(somSelf,
+                                                               folder,
+                                                               fLock);
 }
 
 /* ******************************************************************
@@ -1554,7 +1554,7 @@ SOM_Scope void  SOMLINK xdfM_wpclsInitData(M_XFldDataFile *somSelf)
      *
      */
 
-#if 0       // V0.9.21 (2002-08-31) [umoeller]
+#if 0       // V1.0.0 (2002-08-31) [umoeller]
     // this gets called for subclasses too, so patch
     // this only for the parent class...
     // descendant classes will inherit this anyway
@@ -1602,9 +1602,9 @@ SOM_Scope BOOL  SOMLINK xdfM_wpclsCreateDefaultTemplates(M_XFldDataFile *somSelf
         return TRUE;
         // means that the Templates folder should _not_ create templates
         // by itself; we pretend that we've done this
-    else
-        return (M_XFldDataFile_parent_M_WPDataFile_wpclsCreateDefaultTemplates(somSelf,
-                                                                               Folder));
+
+    return M_XFldDataFile_parent_M_WPDataFile_wpclsCreateDefaultTemplates(somSelf,
+                                                                          Folder);
 
 }
 
@@ -1628,10 +1628,10 @@ SOM_Scope PSZ  SOMLINK xdfM_wpclsQueryTitle(M_XFldDataFile *somSelf)
 
 #ifndef __ALWAYSFIXCLASSTITLES__
     if (!cmnQuerySetting(sfFixClassTitles))
-        return (M_XFldDataFile_parent_M_WPDataFile_wpclsQueryTitle(somSelf));
+        return M_XFldDataFile_parent_M_WPDataFile_wpclsQueryTitle(somSelf);
 #endif
 
-    return (cmnGetString(ID_XSSI_CLASSTITLE_DATAFILE));
+    return cmnGetString(ID_XSSI_CLASSTITLE_DATAFILE);
 }
 
 /*
@@ -1701,15 +1701,6 @@ SOM_Scope ULONG  SOMLINK xdfM_wpclsQueryIconData(M_XFldDataFile *somSelf,
 #ifndef __NOICONREPLACEMENTS__
     if (cmnQuerySetting(sfIconReplacements))
     {
-        /* hmodIconsDLL = cmnQueryIconsDLL();
-        // icon replacements allowed:
-        if ((pIconInfo) && (hmodIconsDLL))
-        {
-            pIconInfo->fFormat = ICON_RESOURCE;
-            pIconInfo->hmod = hmodIconsDLL;
-            pIconInfo->resid = 109;
-        }*/
-
         // now using cmnGetStandardIcon
         // V0.9.16 (2002-01-13) [umoeller]
         ULONG cb = 0;

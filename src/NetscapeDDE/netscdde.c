@@ -522,7 +522,7 @@ int main(int argc,
                     // no option ("-"): seems to be URL
                     _PmpfF(("got URL [%s]", argv[i]));
                     // if the URL contains spaces, we enclose it in quotes
-                    // V0.9.21 (2002-09-09) [umoeller]: not only spaces,
+                    // V1.0.0 (2002-09-09) [umoeller]: not only spaces,
                     // but other weird characters too
                     if (strpbrk(argv[i], " &|="))
                         sprintf(G_szURL, "\"%s\"", argv[i]);

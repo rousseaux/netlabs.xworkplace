@@ -166,7 +166,7 @@
     #define OBJFL_GLOBALICON                0x00000200  // V0.9.20 (2002-07-25) [umoeller]
     #define OBJFL_LAZYLOADINGICON           0x00000400  // V0.9.20 (2002-07-25) [umoeller]
 
-    #define OBJFL_FOLDERVIEW1PAGING         0x00000800  // V0.9.21 (2002-08-31) [umoeller]
+    #define OBJFL_FOLDERVIEW1PAGING         0x00000800  // V1.0.0 (2002-08-31) [umoeller]
 
     #define OBJLIST_RUNNINGSTORED           0x00010000
     #define OBJLIST_CONFIGFOLDER            0x00020000
@@ -179,7 +179,7 @@
     #define OBJLIST_HANDLESCACHE            0x00100000 // V0.9.9 (2001-04-02) [umoeller]
     #define OBJLIST_DIRTYLIST               0x00200000 // V0.9.11 (2001-04-18) [umoeller]
     #define OBJLIST_QUERYAWAKEFSOBJECT      0x00400000 // V0.9.16 (2001-10-25) [umoeller]
-    #define OBJLIST_IMAGECACHE              0x00800000 // V0.9.21 (2002-08-24) [umoeller]
+    #define OBJLIST_IMAGECACHE              0x00800000 // V1.0.0 (2002-08-24) [umoeller]
 
     BOOL objIsAShadow(WPObject *somSelf);
 

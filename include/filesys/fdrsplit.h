@@ -3,7 +3,7 @@
  *@@sourcefile fdrsplit.h:
  *      header file for fdrsplit.c.
  *
- *      This file is ALL new with V0.9.21
+ *      This file is ALL new with V1.0.0
  *
  *@@include #include <os2.h>
  *@@include #include "helpers\linklist.h"
@@ -87,7 +87,7 @@
      *
      *      The return code is ignored.
      *
-     *@@added V0.9.21 (2002-09-13) [umoeller]
+     *@@added V1.0.0 (2002-09-13) [umoeller]
      */
 
     #define SN_FOLDERCHANGING       0x1000
@@ -108,7 +108,7 @@
      *
      *      The return code is ignored.
      *
-     *@@added V0.9.21 (2002-09-13) [umoeller]
+     *@@added V1.0.0 (2002-09-13) [umoeller]
      */
 
     #define SN_FOLDERCHANGED        0x1001
@@ -131,7 +131,7 @@
      *
      *      The return code is ignored.
      *
-     *@@added V0.9.21 (2002-09-13) [umoeller]
+     *@@added V1.0.0 (2002-09-13) [umoeller]
      */
 
     #define SN_OBJECTSELECTED       0x1002
@@ -157,7 +157,7 @@
      *      default action. If a non-zero value is returned,
      *      the split view does nothing.
      *
-     *@@added V0.9.21 (2002-09-13) [umoeller]
+     *@@added V1.0.0 (2002-09-13) [umoeller]
      */
 
     #define SN_OBJECTENTER          0x1003
@@ -222,7 +222,7 @@
      *
      *      The return code is ignored.
      *
-     *@@added V0.9.21 (2002-09-13) [umoeller]
+     *@@added V1.0.0 (2002-09-13) [umoeller]
      */
 
     #define SN_FRAMECLOSE           0x1004
@@ -245,7 +245,7 @@
      *      otherwise it is passed to the default XFolder
      *      frame proc.
      *
-     *@@added V0.9.21 (2002-11-23) [umoeller]
+     *@@added V1.0.0 (2002-11-23) [umoeller]
      */
 
     #define SN_VKEY                 0x1005
@@ -340,7 +340,7 @@
                     // received notification that we did a full populate
                     // and objects therefore should be unlocked when
                     // clearing out the container
-                    // V0.9.21 (2002-09-13) [umoeller]
+                    // V1.0.0 (2002-09-13) [umoeller]
 
             BOOL            fSplitViewReady;
                     // while this is FALSE (during the initial setup),

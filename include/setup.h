@@ -25,7 +25,7 @@
      *
      *************************************************************/
 
-    // STATIC is now used with V0.9.21 (2002-09-02) [umoeller]
+    // STATIC is now used with V1.0.0 (2002-09-02) [umoeller]
     // instead of "static" for static functions. Unfortunately
     // I spent a lot of work on making functions static a while
     // ago to reduce the stress on the linker and avoid name

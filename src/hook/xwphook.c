@@ -200,7 +200,7 @@ HWND    G_hwndLastSubframeUnderMouse = NULLHANDLE;
 POINTS  G_ptsMousePosWin = {0};
 POINTL  G_ptlMousePosDesktop = {0};
 HWND    G_hwndRootMenu = NULLHANDLE; // V0.9.14 (2001-08-01) [lafaix]
-HWND    G_hwndStickyMenu = NULLHANDLE; // V0.9.21 (2002-09-12) [lafaix]
+HWND    G_hwndStickyMenu = NULLHANDLE; // V1.0.0 (2002-09-12) [lafaix]
 
 /*
  * Prototypes:
@@ -854,7 +854,7 @@ VOID ProcessMsgsForWinlist(HWND hwnd,
  *@@changed V0.9.19 (2002-04-04) [lafaix]: enabled AMF_ALWAYSMOVE for auto move feature
  *@@changed V0.9.20 (2002-07-03) [umoeller]: fixed pager stay on top
  *@@changed V0.9.20 (2002-07-16) [lafaix]: AHF_IGNOREMENUS now recognize Mozilla menus too
- *@@changed V0.9.21 (2002-09-14) [lafaix]: added support for stickyness toggle in system menus
+ *@@changed V1.0.0 (2002-09-14) [lafaix]: added support for stickyness toggle in system menus
  */
 
 VOID EXPENTRY hookSendMsgHook(HAB hab,
@@ -1060,7 +1060,7 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
     // tricky as we have to _send_ messages to add items to the menu.
     // Even weirder, we have to send an inter process message to query
     // the "sticky" state of the current window.
-    // V0.9.21 (2002-09-12) [lafaix]
+    // V1.0.0 (2002-09-12) [lafaix]
     if (    (G_HookData.PagerConfig.flPager & PGRFL_ADDSTICKYTOGGLE)
              // don't do that if XPager is disabled
          && (G_HookData.hwndPagerFrame)
@@ -1102,7 +1102,7 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
                            // frame owner (in case of a submenu).  This
                            // fixes the problem with folders not displaying
                            // the checkmark.
-                           // V0.9.21 (2002-09-15) [lafaix]
+                           // V1.0.0 (2002-09-15) [lafaix]
                            MPFROMHWND(hwndFrame ? hwndFrame : psmh->hwnd),
                            0)
                )
@@ -1245,7 +1245,7 @@ HWND GetFrameWindow(HWND hwndTemp)
  *@@changed V0.9.9 (2001-03-21) [lafaix]: added MB3 Push2Bottom support
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added click watches support
  *@@changed V0.9.20 (2002-07-16) [lafaix]: don't always raise window on MB1 click
- *@@changed V0.9.21 (2002-09-05) [lafaix]: added transient sticky menu support
+ *@@changed V1.0.0 (2002-09-05) [lafaix]: added transient sticky menu support
  */
 
 BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
@@ -1275,7 +1275,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                               pqmsg->mp2);
     }
 
-    // V0.9.21 (2002-09-05) [lafaix]
+    // V1.0.0 (2002-09-05) [lafaix]
     if (    (pqmsg->msg == WM_SYSCOMMAND)
          && (SHORT1FROMMP(pqmsg->mp1) == PGRIDM_TOGGLEITEM)
          && (G_HookData.PagerConfig.flPager & PGRFL_ADDSTICKYTOGGLE)
@@ -1288,7 +1288,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                    0);
 
         // Netscape 4.61 enters in an endless loop if we swallow the
-        // message.  V0.9.21 (2002-09-14) [lafaix]
+        // message.  V1.0.0 (2002-09-14) [lafaix]
         // brc = TRUE;
     }
 #endif
@@ -1399,7 +1399,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                                 // use 4 instead of 3, or "#9whatever" is
                                 // matched too (not sure why actually, just
                                 // mimicing what we do for button 1 above)
-                                // V0.9.21 (2002-09-05) [lafaix]
+                                // V1.0.0 (2002-09-05) [lafaix]
                         // get class name of window being created
                         WinQueryClassName(pqmsg->hwnd,
                                           sizeof(szWindowClass),
@@ -1486,7 +1486,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
          || (    (pqmsg->msg >= WM_BUTTONCLICKFIRST)
               && (pqmsg->msg <= WM_BUTTONCLICKLAST)
                   // always restart autohide for mouse buttons events
-                  // V0.9.21 (2002-09-05) [lafaix]
+                  // V1.0.0 (2002-09-05) [lafaix]
             )
        )
         // handle auto-hide V0.9.9 (2001-01-29) [umoeller]

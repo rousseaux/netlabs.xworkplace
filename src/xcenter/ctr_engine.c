@@ -3071,7 +3071,7 @@ APIRET ctrpDrop(HWND hwndClient,          // in: XCenter client
  *          help only. Ignored if WPOPFL_NOTEBOOKMENU is
  *          set.
  *
- *@@added V0.9.21 (2002-08-12) [umoeller]
+ *@@added V1.0.0 (2002-08-12) [umoeller]
  */
 
 HWND ctrpLoadWidgetPopupMenu(HWND hwndOwner,
@@ -3359,7 +3359,7 @@ PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,      // 
                     pWidget->hwndContextMenu = ctrpLoadWidgetPopupMenu(pWidget->hwndWidget,
                                                                        pWidgetClass,
                                                                        fl);
-                            // extracted this code V0.9.21 (2002-08-12) [umoeller]
+                            // extracted this code V1.0.0 (2002-08-12) [umoeller]
 
                     if (pszStdMenuFont)
                     {
@@ -4460,7 +4460,7 @@ STATIC VOID ClientPaint2(HWND hwndClient,
                              RGBCOL_BLACK); // pGlobals->lcol3DDark);
                                     // V0.9.18 (2002-03-19) [umoeller]
 
-            /* not need with gpihDraw3DFrame2 V0.9.21 (2002-08-24) [umoeller]
+            /* not need with gpihDraw3DFrame2 V1.0.0 (2002-08-24) [umoeller]
             rclWin.xLeft += ul3DBorderWidth;
             rclWin.xRight -= ul3DBorderWidth;
             rclWin.yBottom += ul3DBorderWidth;

@@ -626,7 +626,7 @@ VOID plgFreeClasses(PPLUGINCATEGORY pplgCategory)
                                                 szModuleName))
                             arc = FreeModule(hmod,
                                              TRUE);       // call uninit
-#ifdef __DEBUG__        // only in debug mode now V0.9.21 (2002-08-26) [umoeller]
+#ifdef __DEBUG__        // only in debug mode now V1.0.0 (2002-08-26) [umoeller]
                             if (arc)
                                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
                                        "FreeModule returned %d for %s (hmod %lX)",

@@ -45,7 +45,7 @@
  *      menus have been moved to src\shared\contentmenus.c to
  *      allow sharing with other code parts, such as the XCenter.
  *
- *      With V0.9.21, the menu _selection_ logic was moved to
+ *      With V1.0.0, the menu _selection_ logic was moved to
  *      fdrcommand.c.
  *
  *@@header "filesys\fdrmenus.h"
@@ -188,7 +188,7 @@ extern POINTL   G_ptlMouseMenu = {0, 0};    // ptr position when menu was opened
  *      a string (e.g. "OPEN_CONTENTS"), or a localized
  *      "unknown" string if not recognized.
  *
- *@@added V0.9.21 (2002-08-31) [umoeller]
+ *@@added V1.0.0 (2002-08-31) [umoeller]
  */
 
 PCSZ mnuQueryViewName(ULONG ulView)
@@ -600,7 +600,7 @@ static const MENUITEMDEF G_MenuItemsWithIDs[] =
         ID_XSDI_MENU_LOGOFFNETWORKNOW, WPMENUID_LOGOFF,
                 CONFFL_WPDESKTOP,
                 XWPCTXT_HIGHBIT | XWPCTXT_LOGOFF,
-        // "~Restart Desktop..." V0.9.21 (2002-10-08) [pr]
+        // "~Restart Desktop..." V1.0.0 (2002-10-08) [pr]
         ID_SDSI_RESTARTWPS, ID_XFMI_OFS_RESTARTWPS,
                 CONFFL_WPDESKTOP,
                 XWPCTXT_HIGHBIT | XWPCTXT_RESTARTWPS,
@@ -827,7 +827,7 @@ VOID mnuRemoveMenuItems(WPObject *somSelf,
  *@@changed V0.9.0 [umoeller]: fixed wrong separators
  *@@changed V0.9.0 [umoeller]: now using cmnQueryObjectFromID to get the config folder
  *@@changed V0.9.0 [umoeller]: fixed broken "View" item in menu bar
- *@@changed V0.9.21 (2002-08-24) [umoeller]: changed prototype to receive CNRINFO instead of cnr
+ *@@changed V1.0.0 (2002-08-24) [umoeller]: changed prototype to receive CNRINFO instead of cnr
  */
 
 BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context menu
@@ -1394,7 +1394,7 @@ STATIC BOOL InsertConfigFolderItems(XFolder *somSelf,
  *      adds the "copy filename" submenu to the given
  *      menu.
  *
- *@@added V0.9.21 (2002-11-09) [umoeller] @@fixes 219
+ *@@added V1.0.0 (2002-11-09) [umoeller] @@fixes 219
  */
 
 STATIC VOID InsertCopyFilename(WPObject *somSelf,
@@ -1495,8 +1495,8 @@ STATIC VOID InsertCopyFilename(WPObject *somSelf,
  *@@changed V0.9.3 (2000-04-10) [umoeller]: snap2grid feature setting was ignored; fixed
  *@@changed V0.9.12 (2001-05-22) [umoeller]: "refresh now" was added even for non-open-view menus
  *@@changed V0.9.14 (2001-08-07) [pr]: added Run menu item
- *@@changed V0.9.21 (2002-08-24) [umoeller]: various changes for split view support
- *@@changed V0.9.21 (2002-08-31) [umoeller]: remove iPosition param which was never used
+ *@@changed V1.0.0 (2002-08-24) [umoeller]: various changes for split view support
+ *@@changed V1.0.0 (2002-08-31) [umoeller]: remove iPosition param which was never used
  */
 
 BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
@@ -1523,7 +1523,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
         ULONG       ulView = OPEN_UNKNOWN,  // receives OPEN_* flag based on cnrinfo
                     ulRealWPSView = OPEN_UNKNOWN;
                                             // receives OPEN_* flag based on wpshQueryView
-                                            // V0.9.21 (2002-08-26) [umoeller]
+                                            // V1.0.0 (2002-08-26) [umoeller]
                                           /*
                                             #define OPEN_UNKNOWN      -1
                                             #define OPEN_DEFAULT       0
@@ -1542,7 +1542,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
         if (hwndCnr)
         {
             // get view (OPEN_CONTENTS etc.)
-            // V0.9.21 (2002-08-24) [umoeller]: do this
+            // V1.0.0 (2002-08-24) [umoeller]: do this
             // from cnrinfo now to make this work with
             // split views
             cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
@@ -1558,7 +1558,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                 // this rules out split views for the "view" menu
                 // items below
                 ulRealWPSView = wpshQueryView(somSelf, hwndFrame);
-                        // V0.9.21 (2002-08-26) [umoeller]
+                        // V1.0.0 (2002-08-26) [umoeller]
                         // returns OPEN_UNKNOWN if not found
         }
 
@@ -1584,7 +1584,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
          *
          */
 
-        // hack in split view V0.9.21 (2002-08-24) [umoeller]
+        // hack in split view V1.0.0 (2002-08-24) [umoeller]
         if (    (fOpen = winhQueryMenuItem(hwndMenu,
                                            WPMENUID_OPEN,
                                            TRUE,
@@ -1719,7 +1719,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                 {
                     // rule out possible user views
                     // of WPFolder subclasses
-                    // V0.9.21 (2002-08-26) [umoeller]: now using
+                    // V1.0.0 (2002-08-26) [umoeller]: now using
                     // ulRealWPSView to rule out split views as well
                     if (    (ulRealWPSView == OPEN_TREE)
                          || (ulRealWPSView == OPEN_CONTENTS)
@@ -1977,7 +1977,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
  *      This will call the legacy mnuModifyFolderPopupMenu
  *      method if the menu request is for a folder instance.
  *
- *@@added V0.9.21 (2002-08-31) [umoeller]
+ *@@added V1.0.0 (2002-08-31) [umoeller]
  */
 
 BOOL mnuModifyFolderMenu(WPFolder *somSelf,
@@ -2272,7 +2272,7 @@ BOOL mnuModifyFolderMenu(WPFolder *somSelf,
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.4 (2000-06-09) [umoeller]: added default documents
  *@@changed V0.9.4 (2000-06-09) [umoeller]: fixed separators
- *@@changed V0.9.21 (2002-08-31) [umoeller]: removed iPosition param which was never used
+ *@@changed V1.0.0 (2002-08-31) [umoeller]: removed iPosition param which was never used
  */
 
 BOOL mnuModifyDataFilePopupMenu(WPObject *somSelf,  // in: data file
@@ -2399,7 +2399,7 @@ BOOL mnuModifyDataFilePopupMenu(WPObject *somSelf,  // in: data file
     // insert "Copy filename" for data files
     // (the XFolder class does this also)
     if (fAddCopyFilenameItem)
-        InsertCopyFilename(somSelf, hwndCnr, hwndMenu, MIT_END);        // V0.9.21 (2002-11-09) [umoeller]
+        InsertCopyFilename(somSelf, hwndCnr, hwndMenu, MIT_END);        // V1.0.0 (2002-11-09) [umoeller]
 
     // insert "Default document" if enabled
 #ifndef __NOFDRDEFAULTDOCS__

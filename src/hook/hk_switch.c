@@ -3,7 +3,7 @@
  *@@sourcefile hk_switch.c:
  *      code for subclassing the switch list.
  *
- *@@added V0.9.21 (2002-09-13) [umoeller]
+ *@@added V1.0.0 (2002-09-13) [umoeller]
  *@@header "hook\hook_private.h"
  */
 

@@ -1993,7 +1993,7 @@ BOOL fdrPopulate(WPFolder *somSelf,
  *@@changed V0.9.16 (2001-10-25) [umoeller]: added quiet excpt handler around wpPopulate
  *@@changed V0.9.16 (2002-01-01) [umoeller]: added checks if a refresh is in order
  *@@changed V0.9.16 (2002-01-01) [umoeller]: renamed from wpshCheckIfPopulated, moved here from wpsh.c
- *@@changed V0.9.21 (2002-09-13) [umoeller]: returning 2 now if we didn't really populate
+ *@@changed V1.0.0 (2002-09-13) [umoeller]: returning 2 now if we didn't really populate
  */
 
 ULONG fdrCheckIfPopulated(WPFolder *somSelf,
@@ -2045,7 +2045,7 @@ ULONG fdrCheckIfPopulated(WPFolder *somSelf,
     }
     else
         // already populated:
-        ulrc = 2;       // V0.9.21 (2002-09-13) [umoeller]
+        ulrc = 2;       // V1.0.0 (2002-09-13) [umoeller]
 
     return ulrc;
 }

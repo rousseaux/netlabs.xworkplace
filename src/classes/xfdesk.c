@@ -156,7 +156,7 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopStartupPage(XFldDesktop *som
     inbp.ulPageID = SP_DTP_STARTUP;
     inbp.pfncbInitPage    = dtpStartupInitPage;
     inbp.pfncbItemChanged = dtpStartupItemChanged;
-    return (ntbInsertPage(&inbp));
+    return ntbInsertPage(&inbp);
 }
 
 /*
@@ -191,7 +191,7 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopArchivesPage(XFldDesktop *so
     inbp.ulPageID = SP_DTP_ARCHIVES;
     inbp.pfncbInitPage    = arcArchivesInitPage;
     inbp.pfncbItemChanged = arcArchivesItemChanged;
-    return (ntbInsertPage(&inbp));
+    return ntbInsertPage(&inbp);
 }
 
 /*
@@ -236,7 +236,7 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopShutdownPage(XFldDesktop *so
     ulrc = ntbInsertPage(&inbp);
 #endif
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -260,9 +260,9 @@ SOM_Scope BOOL  SOMLINK xfdesk_xwpQuerySetup2(XFldDesktop *somSelf,
     if (dtpQuerySetup(somSelf, pstrSetup))
     {
         // manually resolve parent method
-        return (wpshParentQuerySetup2(somSelf,
-                                      _somGetParent(_XFldDesktop),
-                                      pstrSetup));
+        return wpshParentQuerySetup2(somSelf,
+                                     _somGetParent(_XFldDesktop),
+                                     pstrSetup);
     }
 
     return FALSE;
@@ -435,7 +435,7 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpQueryDefaultHelp(XFldDesktop *somSelf,
  *      tree. Those three work, but settings or split
  *      view won't.
  *
- *@@added V0.9.21 (2002-09-13) [umoeller]
+ *@@added V1.0.0 (2002-09-13) [umoeller]
  */
 
 SOM_Scope BOOL  SOMLINK xfdesk_wpSetDefaultView(XFldDesktop *somSelf,
@@ -514,17 +514,15 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpModifyPopupMenu(XFldDesktop *somSelf,
 
     // calling the parent (which is XFolder!) will insert all the
     // variable menu items
-    rc = XFldDesktop_parent_WPDesktop_wpModifyPopupMenu(somSelf,
-                                                           hwndMenu,
-                                                           hwndCnr,
-                                                           iPosition);
-
-    if (rc)
+    if (rc = XFldDesktop_parent_WPDesktop_wpModifyPopupMenu(somSelf,
+                                                            hwndMenu,
+                                                            hwndCnr,
+                                                            iPosition))
         if (_wpIsCurrentDesktop(somSelf))
             dtpModifyPopupMenu(somSelf,
                                hwndMenu);
 
-    return (rc);
+    return rc;
 }
 
 /*
@@ -553,10 +551,10 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpMenuItemSelected(XFldDesktop *somSelf,
     if (dtpMenuItemSelected(somSelf, hwndFrame, &ulMenuId2))
         // one of the new items processed:
         return TRUE;
-    else
-        return (XFldDesktop_parent_WPDesktop_wpMenuItemSelected(somSelf,
-                                                                hwndFrame,
-                                                                ulMenuId2));
+
+    return XFldDesktop_parent_WPDesktop_wpMenuItemSelected(somSelf,
+                                                           hwndFrame,
+                                                           ulMenuId2);
 }
 
 /*
@@ -650,7 +648,7 @@ SOM_Scope HWND  SOMLINK xfdesk_wpOpen(XFldDesktop *somSelf, HWND hwndCnr,
         initLog("  posted desktop HWND 0x%lX to daemon", hwndReturn);
     }
 
-    return (hwndReturn);
+    return hwndReturn;
 }
 
 /*
@@ -791,7 +789,7 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpAddSettingsPages(XFldDesktop *somSelf,
         _xwpInsertXFldDesktopStartupPage(somSelf, hwndNotebook);
     }
 
-    return (rc);
+    return rc;
 }
 
 /*
@@ -852,6 +850,7 @@ SOM_Scope BOOL  SOMLINK xfdeskM_wpclsQuerySettingsPageSize(M_XFldDesktop *somSel
             pSizl->cx = 260;    // and the width
 
     }
+
     return brc;
 }
 
@@ -911,6 +910,7 @@ SOM_Scope ULONG  SOMLINK xfdeskM_wpclsQueryIconData(M_XFldDesktop *somSelf,
 
     }
 #endif
+
     // icon replacements not allowed: call default
     return M_XFldDesktop_parent_M_WPDesktop_wpclsQueryIconData(somSelf,
                                                                pIconInfo);

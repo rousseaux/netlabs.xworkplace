@@ -147,7 +147,7 @@ BOOL fdrHasShowAllInTreeView(WPFolder *somSelf)
     return (    G_fIsWarp4
              && (((PIBMFOLDERDATA)_pvWPFolderData)->fShowAllInTreeView)
            );
-    /*  V0.9.21 (2002-08-24) [umoeller]
+    /*  V1.0.0 (2002-08-24) [umoeller]
     return (    (_pulFolderShowAllInTreeView) // only != NULL on Warp 4
              && (*_pulFolderShowAllInTreeView)
            );
@@ -161,7 +161,7 @@ BOOL fdrHasShowAllInTreeView(WPFolder *somSelf)
  *
  *@@added V0.9.9 (2001-04-04) [umoeller]
  *@@changed V0.9.12 (2001-05-20) [umoeller]: adjusted for new folder sorting
- *@@changed V0.9.21 (2002-08-24) [umoeller]: added OPEN=SPLITVIEW
+ *@@changed V1.0.0 (2002-08-24) [umoeller]: added OPEN=SPLITVIEW
  */
 
 BOOL fdrSetup(WPFolder *somSelf,
@@ -546,7 +546,7 @@ BOOL fdrQuerySetup(WPObject *somSelf,
          *
          */
 
-        // BACKGROUND, rewritten V0.9.21 (2002-08-28) [umoeller]
+        // BACKGROUND, rewritten V1.0.0 (2002-08-28) [umoeller]
         if (pData)
         {
             // the folder has instance background data
@@ -1015,7 +1015,7 @@ BOOL fdrQuerySetup(WPObject *somSelf,
  *
  *@@changed V0.9.1 (2000-02-04) [umoeller]: this used to be XFolder::xwpForEachOpenView
  *@@changed V0.9.19 (2002-06-13) [umoeller]: this broke for root folders, fixed
- *@@changed V0.9.21 (2002-08-28) [umoeller]: adjusted for new callback prototype; optimized
+ *@@changed V1.0.0 (2002-08-28) [umoeller]: adjusted for new callback prototype; optimized
  */
 
 BOOL fdrForEachOpenInstanceView(WPFolder *somSelf,
@@ -1049,7 +1049,7 @@ BOOL fdrForEachOpenInstanceView(WPFolder *somSelf,
             // folder has an open view;
             // now we go search the open views of the folder and get the
             // frame handle of the desired view (ulView)
-            /* PVIEWITEM   pViewItem;   replaced V0.9.21 (2002-08-28) [umoeller]
+            /* PVIEWITEM   pViewItem;   replaced V1.0.0 (2002-08-28) [umoeller]
             for (pViewItem = _wpFindViewItem(somSelf2, VIEW_ANY, NULL);
                  pViewItem;
                  pViewItem = _wpFindViewItem(somSelf2, VIEW_ANY, pViewItem)) */
@@ -1093,7 +1093,7 @@ BOOL fdrForEachOpenInstanceView(WPFolder *somSelf,
  *      will take long.
  *
  *@@changed V0.9.1 (2000-02-04) [umoeller]: this used to be M_XFolder::xwpclsForEachOpenView
- *@@changed V0.9.21 (2002-08-28) [umoeller]: adjusted for new callback prototype
+ *@@changed V1.0.0 (2002-08-28) [umoeller]: adjusted for new callback prototype
  */
 
 BOOL fdrForEachOpenGlobalView(PFNFOREACHVIEWCALLBACK pfnCallback,
@@ -1275,7 +1275,7 @@ BOOL fdrUpdateAllFrameWindows(WPFolder *somSelf,
  *
  *      This thread is created with a PM message queue.
  *
- *@@added V0.9.21 (2002-08-26) [umoeller]
+ *@@added V1.0.0 (2002-08-26) [umoeller]
  */
 
 STATIC VOID _Optlink fntFdrRefresh(PTHREADINFO ptiMyself)
@@ -1298,7 +1298,7 @@ STATIC VOID _Optlink fntFdrRefresh(PTHREADINFO ptiMyself)
  *      set the folder flags to have the refresh happen
  *      when the folder is opened for the next time.
  *
- *@@added V0.9.21 (2002-08-26) [umoeller]
+ *@@added V1.0.0 (2002-08-26) [umoeller]
  */
 
 BOOL fdrForceRefresh(WPFolder *pFolder)
@@ -2104,7 +2104,7 @@ static const DLGHITEM G_dlgSelectSome[] =
  *      both "select some" and "batch rename" in
  *      order to prevent opening them via folder hotkeys.
  *
- *@@added V0.9.21 (2002-08-31) [umoeller]
+ *@@added V1.0.0 (2002-08-31) [umoeller]
  */
 
 STATIC BOOL IsNotTreeView(HWND hwndFrame)
@@ -2129,8 +2129,8 @@ STATIC BOOL IsNotTreeView(HWND hwndFrame)
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
  *@@changed V0.9.19 (2002-06-18) [umoeller]: fixed leak
- *@@changed V0.9.21 (2002-08-31) [umoeller]: added folder title to window title
- *@@changed V0.9.21 (2002-08-31) [umoeller]: fixed open in tree view via fdr hotkey
+ *@@changed V1.0.0 (2002-08-31) [umoeller]: added folder title to window title
+ *@@changed V1.0.0 (2002-08-31) [umoeller]: fixed open in tree view via fdr hotkey
  */
 
 VOID fdrShowSelectSome(HWND hwndFrame)
@@ -2138,7 +2138,7 @@ VOID fdrShowSelectSome(HWND hwndFrame)
     HWND hwndSelectSome;
     PDLGHITEM paNew;
 
-    // get the folder from the frame to produce the title V0.9.21 (2002-08-31) [umoeller]
+    // get the folder from the frame to produce the title V1.0.0 (2002-08-31) [umoeller]
     WPFolder *pFolder;
     if (    IsNotTreeView(hwndFrame)
          && (pFolder = (WPFolder*)WinSendMsg(hwndFrame,
@@ -2765,8 +2765,8 @@ STATIC MRESULT EXPENTRY fnwpBatchRename(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
  *      shows the "Batch rename" window.
  *
  *@@added V0.9.19 (2002-06-18) [umoeller]
- *@@changed V0.9.21 (2002-08-31) [umoeller]: added folder title to window title
- *@@changed V0.9.21 (2002-08-31) [umoeller]: fixed open in tree view via fdr hotkey
+ *@@changed V1.0.0 (2002-08-31) [umoeller]: added folder title to window title
+ *@@changed V1.0.0 (2002-08-31) [umoeller]: fixed open in tree view via fdr hotkey
  */
 
 VOID fdrShowBatchRename(HWND hwndFrame)
@@ -2774,7 +2774,7 @@ VOID fdrShowBatchRename(HWND hwndFrame)
     HWND hwndSelectSome;
     PDLGHITEM paNew;
 
-    // get the folder from the frame to produce the title V0.9.21 (2002-08-31) [umoeller]
+    // get the folder from the frame to produce the title V1.0.0 (2002-08-31) [umoeller]
     WPFolder *pFolder;
     if (    IsNotTreeView(hwndFrame)
          && (pFolder = (WPFolder*)WinSendMsg(hwndFrame,

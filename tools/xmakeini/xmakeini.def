@@ -1,6 +1,6 @@
 NAME xmakeini WINDOWCOMPAT
 
-Description '@#Ulrich M”ller:0.9.21#@ xmakeini profile generator'
+Description '@#Ulrich M”ller:1.0.0#@ xmakeini profile generator'
 
 STACKSIZE   250000
 

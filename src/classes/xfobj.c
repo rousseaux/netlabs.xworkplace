@@ -154,7 +154,7 @@ extern WPFolder     *G_pConfigFolder;
 // awake objects list V0.9.20 (2002-07-25) [umoeller]
 static HMTX         G_hmtxAwakeObjects = NULLHANDLE;
 
-// object flags mutex V0.9.21 (2002-08-31) [umoeller]
+// object flags mutex V1.0.0 (2002-08-31) [umoeller]
 static HMTX         G_hmtxObjFlags = NULLHANDLE;
 
 static XFldObject   *G_pFirstAwakeObject = NULL,
@@ -282,7 +282,7 @@ SOM_Scope HOBJECT  SOMLINK xo_xwpQueryHandle(XFldObject *somSelf,
  *      This is needed because wpIsLocked only returns
  *      TRUE or FALSE and we'd like to debug.
  *
- *@@added V0.9.21 (2002-08-28) [umoeller]
+ *@@added V1.0.0 (2002-08-28) [umoeller]
  */
 
 SOM_Scope ULONG  SOMLINK xo_xwpQueryLocks(XFldObject *somSelf)
@@ -681,7 +681,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpSetTrashObject(XFldObject *somSelf,
  *      object. See XFldObject::xwpModifyFlags for details.
  *
  *@@added V0.9.6 (2000-10-23) [umoeller]
- *@@changed V0.9.21 (2002-09-02) [umoeller]: now using new flags mutex to avoid deadlocks
+ *@@changed V1.0.0 (2002-09-02) [umoeller]: now using new flags mutex to avoid deadlocks
  */
 
 SOM_Scope ULONG  SOMLINK xo_xwpQueryFlags(XFldObject *somSelf)
@@ -776,7 +776,7 @@ SOM_Scope ULONG  SOMLINK xo_xwpQueryFlags(XFldObject *somSelf)
  +                          FLAG1);            // flags to set (i.e. clear FLAG2)
  *
  *@@added V0.9.6 (2000-10-23) [umoeller]
- *@@changed V0.9.21 (2002-09-02) [umoeller]: now using new flags mutex to avoid deadlocks
+ *@@changed V1.0.0 (2002-09-02) [umoeller]: now using new flags mutex to avoid deadlocks
  */
 
 SOM_Scope BOOL  SOMLINK xo_xwpModifyFlags(XFldObject *somSelf,
@@ -792,7 +792,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpModifyFlags(XFldObject *somSelf,
     {
         XFldObjectData *somThis = XFldObjectGetData(somSelf);
 
-        // V0.9.21 (2002-09-02) [umoeller]
+        // V1.0.0 (2002-09-02) [umoeller]
         // I have introduced a new mutex for the object flags
         // here. The mutex is global and thus protects the
         // object flags of all objects. We used to request
@@ -868,7 +868,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpModifyFlags(XFldObject *somSelf,
  *
  *@@added V0.9.7 (2001-01-03) [umoeller]
  *@@changed V0.9.13 (2001-06-21) [umoeller]: renamed from xwpAddDestroyNotify
- *@@changed V0.9.21 (2002-09-02) [umoeller]: now using new flags mutex to avoid deadlocks
+ *@@changed V1.0.0 (2002-09-02) [umoeller]: now using new flags mutex to avoid deadlocks
  */
 
 SOM_Scope BOOL  SOMLINK xo_xwpAddWidgetNotify(XFldObject *somSelf,
@@ -919,7 +919,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpAddWidgetNotify(XFldObject *somSelf,
  *      the reverse to XFldObject::AddWidgetNotify.
  *
  *@@added V0.9.7 (2001-01-03) [umoeller]
- *@@changed V0.9.21 (2002-09-02) [umoeller]: now using new flags mutex to avoid deadlocks
+ *@@changed V1.0.0 (2002-09-02) [umoeller]: now using new flags mutex to avoid deadlocks
  */
 
 SOM_Scope BOOL  SOMLINK xo_xwpRemoveDestroyNotify(XFldObject *somSelf,
@@ -1601,7 +1601,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetupOnce(XFldObject *somSelf,
  *@@changed V0.9.20 (2002-07-16) [umoeller]: fixed higly broken _wpSaveImmediate call
  *@@changed V0.9.20 (2002-07-16) [umoeller]: added exception handling
  *@@changed V0.9.20 (2002-07-25) [umoeller]: optimized to use real method calls finally
- *@@changed V0.9.21 (2002-09-09) [umoeller]: added wpSetError for errors
+ *@@changed V1.0.0 (2002-09-09) [umoeller]: added wpSetError for errors
  */
 
 SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
@@ -1619,7 +1619,7 @@ SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
             PSZ     pszID = _wpQueryObjectID(somSelf);
 
             // reset the object error code because our wpDestroyObject
-            // overrides may set that V0.9.21 (2002-09-09) [umoeller]
+            // overrides may set that V1.0.0 (2002-09-09) [umoeller]
             _wpSetError(somSelf, NO_ERROR);
 
             // if the object has an object ID assigned, remove this...
@@ -1653,7 +1653,7 @@ SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
             // an executable that is currently in use, and then this frees
             // the SOM object even though the file is still there, which
             // then reappears on refresh
-            // V0.9.21 (2002-09-09) [umoeller]
+            // V1.0.0 (2002-09-09) [umoeller]
             if (_wpDestroyObject(somSelf))
             {
                 // the WPS then calls wpSaveImmediate just in case the object
@@ -2457,7 +2457,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetIcon(XFldObject *somSelf, HPOINTER hptrNewIcon)
         if (    (pData = (PIBMOBJECTDATA)_pvWPObjectData)
              && (pmrc = pData->pmrc)
              // && (fSelfLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
-                // V0.9.21 (2002-09-02) [umoeller]
+                // V1.0.0 (2002-09-02) [umoeller]
              && (fFlagsLocked = LockObjFlags())
            )
         {
@@ -2472,7 +2472,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetIcon(XFldObject *somSelf, HPOINTER hptrNewIcon)
                 _flObject &= ~OBJFL_LAZYLOADINGICON;
             }
 
-            UnlockObjFlags();       // V0.9.21 (2002-09-02) [umoeller]
+            UnlockObjFlags();       // V1.0.0 (2002-09-02) [umoeller]
             fFlagsLocked = FALSE;
         }
 
@@ -2503,7 +2503,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetIcon(XFldObject *somSelf, HPOINTER hptrNewIcon)
         icomUnlockIconShares();
 
     if (fFlagsLocked)
-        UnlockObjFlags();       // V0.9.21 (2002-09-02) [umoeller]
+        UnlockObjFlags();       // V1.0.0 (2002-09-02) [umoeller]
 
     return brc;
 }
@@ -2908,7 +2908,7 @@ SOM_Scope ULONG  SOMLINK xo_wpReleaseObjectMutexSem(XFldObject *somSelf)
  *      with the ULONG array item index where each flag
  *      applies.
  *
- *@@added V0.9.21 (2002-08-31) [umoeller]
+ *@@added V1.0.0 (2002-08-31) [umoeller]
  */
 
 SOM_Scope BOOL  SOMLINK xo_wpFilterMenu(XFldObject *somSelf,
@@ -2960,7 +2960,7 @@ SOM_Scope BOOL  SOMLINK xo_wpFilterMenu(XFldObject *somSelf,
  *      allows the object to manipulate its menu in a more
  *      fine-grained way than wpModifyPopupMenu.
  *
- *      With V0.9.21, while adding support for the split view
+ *      With V1.0.0, while adding support for the split view
  *      to the menu methods, I finally got tired of all the
  *      send-msg hacks to get Warp 4 menu items to work and
  *      decided to finally break Warp 3 support for XWorkplace.
@@ -3001,7 +3001,7 @@ SOM_Scope BOOL  SOMLINK xo_wpFilterMenu(XFldObject *somSelf,
  *          but not described in WPSREF. I think this is what comes in
  *          if the system menu is being built for an open object view.
  *
- *@@added V0.9.21 (2002-08-31) [umoeller]
+ *@@added V1.0.0 (2002-08-31) [umoeller]
  */
 
 SOM_Scope BOOL  SOMLINK xo_wpModifyMenu(XFldObject *somSelf,
@@ -3081,7 +3081,7 @@ SOM_Scope BOOL  SOMLINK xo_wpModifyMenu(XFldObject *somSelf,
         // because those menu items will only be added later... for
         // folders, we call this function in XFolder::wpMenuItemSelected
         if (   !(_flObject & OBJFL_WPFILESYSTEM)
-            && !(ctsIsDisk(somSelf))  // V0.9.21 (2002-09-23) [pr]: Stop double hotkeys on disks
+            && !(ctsIsDisk(somSelf))  // V1.0.0 (2002-09-23) [pr]: Stop double hotkeys on disks
            )
             fdrAddHotkeysToMenu(somSelf,
                                 hwndCnr,
@@ -3128,7 +3128,7 @@ SOM_Scope BOOL  SOMLINK xo_wpModifyMenu(XFldObject *somSelf,
  *@@changed V0.9.7 (2001-01-15) [umoeller]: added WPMENUID_DELETE if trash can is enabled
  *@@changed V0.9.9 (2001-03-10) [pr]: this screwed up print jobs, now checking for WPTransient
  *@@changed V0.9.16 (2001-12-06) [umoeller]: fixed shredder deleting into trash can
- *@@changed V0.9.21 (2002-09-12) [umoeller]: re-enabled WPMENUID_DELETE to catch some more delete situations
+ *@@changed V1.0.0 (2002-09-12) [umoeller]: re-enabled WPMENUID_DELETE to catch some more delete situations
  */
 
 SOM_Scope BOOL  SOMLINK xo_wpMenuItemSelected(XFldObject *somSelf,
@@ -3145,7 +3145,7 @@ SOM_Scope BOOL  SOMLINK xo_wpMenuItemSelected(XFldObject *somSelf,
     {
 
         // re-enabled WPMENUID_DELETE catch here
-        // V0.9.21 (2002-09-12) [umoeller]
+        // V1.0.0 (2002-09-12) [umoeller]
 
         // this is normally never reached because fdrWMCommand
         // intercepts this before wpMenuItemSelected gets called

@@ -58,7 +58,7 @@
 <--XFL0110-->: &xsd;: Error
 
 ;
-; 111 changed with V0.9.21
+; 111 changed with V1.0.0
 ;
 <--XFL0111-->: Error %1 occured saving the INI files. Error description:
 
@@ -488,7 +488,7 @@ If you are using backreferences (e.g. "\1") in the "replace" string, make sure y
 <--XFL0244-->: Are you sure you want to remove the entire "%1" widget? This operation cannot be undone.
 
 ;
-; the following items are new with V0.9.21
+; the following items are new with V1.0.0
 ;
 
 <--XFL0245-->: An error occured while &xwp; was trying to start your system's default browser (%1):

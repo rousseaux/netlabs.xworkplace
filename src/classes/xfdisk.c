@@ -176,7 +176,7 @@ SOM_Scope WPRootFolder*  SOMLINK xfdisk_xwpSafeQueryRootFolder(XFldDisk *somSelf
  *      We initialize our additional instance data here.
  *      Always call the parent first.
  *
- *@@added V0.9.21 (2002-08-31) [umoeller]
+ *@@added V1.0.0 (2002-08-31) [umoeller]
  */
 
 SOM_Scope void  SOMLINK xfdisk_wpInitData(XFldDisk *somSelf)
@@ -206,7 +206,7 @@ SOM_Scope void  SOMLINK xfdisk_wpInitData(XFldDisk *somSelf)
  *      with the ULONG array item index where each flag
  *      applies.
  *
- *@@added V0.9.21 (2002-08-31) [umoeller]
+ *@@added V1.0.0 (2002-08-31) [umoeller]
  */
 
 SOM_Scope BOOL  SOMLINK xfdisk_wpFilterMenu(XFldDisk *somSelf,
@@ -363,7 +363,7 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpFilterMenu(XFldDisk *somSelf,
  *      ready and we DO NOT call the parent method. Otherwise
  *      we have a valid root folder.
  *
- *@@added V0.9.21 (2002-08-31) [umoeller]
+ *@@added V1.0.0 (2002-08-31) [umoeller]
  */
 
 SOM_Scope BOOL  SOMLINK xfdisk_wpModifyPopupMenu(XFldDisk *somSelf,
@@ -401,7 +401,7 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpModifyPopupMenu(XFldDisk *somSelf,
  *      allows the object to manipulate its menu in a more
  *      fine-grained way than wpModifyPopupMenu.
  *
- *      With V0.9.21, while adding support for the split view
+ *      With V1.0.0, while adding support for the split view
  *      to the menu methods, I finally got tired of all the
  *      send-msg hacks to get Warp 4 menu items to work and
  *      decided to finally break Warp 3 support for XWorkplace.
@@ -442,7 +442,7 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpModifyPopupMenu(XFldDisk *somSelf,
  *          but not described in WPSREF. I think this is what comes in
  *          if the system menu is being built for an open object view.
  *
- *@@added V0.9.21 (2002-08-31) [umoeller]
+ *@@added V1.0.0 (2002-08-31) [umoeller]
  */
 
 SOM_Scope BOOL  SOMLINK xfdisk_wpModifyMenu(XFldDisk *somSelf,
@@ -515,7 +515,7 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpModifyMenu(XFldDisk *somSelf,
  *      their wpModifyPopupMenu overrides. See
  *      XFldDisk::wpModifyPopupMenu.
  *
- *@@added V0.9.21 (2002-08-31) [umoeller]
+ *@@added V1.0.0 (2002-08-31) [umoeller]
  */
 
 SOM_Scope HWND  SOMLINK xfdisk_wpDisplayMenu(XFldDisk *somSelf,
@@ -585,10 +585,10 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpMenuItemSelected(XFldDisk *somSelf,
 
     if (fcmdMenuItemSelected(pFolder, hwndFrame, ulMenuId))
         return TRUE;
-    else
-        return XFldDisk_parent_WPDisk_wpMenuItemSelected(somSelf,
-                                                         hwndFrame,
-                                                         ulMenuId);
+
+    return XFldDisk_parent_WPDisk_wpMenuItemSelected(somSelf,
+                                                     hwndFrame,
+                                                     ulMenuId);
 }
 
 /*
@@ -606,9 +606,9 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpMenuItemHelpSelected(XFldDisk *somSelf,
 
     if (fcmdMenuItemHelpSelected(pFolder, MenuId))
         return TRUE;
-    else
-        return XFldDisk_parent_WPDisk_wpMenuItemHelpSelected(somSelf,
-                                                             MenuId);
+
+    return XFldDisk_parent_WPDisk_wpMenuItemHelpSelected(somSelf,
+                                                         MenuId);
 }
 
 /*
@@ -669,7 +669,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpViewObject(XFldDisk *somSelf,
 
     PMPF_DISK(("leaving"));
 
-    return (hwndFrame);
+    return hwndFrame;
 }
 
 /*
@@ -816,7 +816,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
 
         default:
             // added split view
-            // V0.9.21 (2002-08-28) [umoeller]
+            // V1.0.0 (2002-08-28) [umoeller]
             if (    (cmnQuerySetting(sfFdrSplitViews))
                  && (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
                )
@@ -835,7 +835,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
 
     PMPF_DISK(("leaving"));
 
-    return (hwndNewFrame);
+    return hwndNewFrame;
 }
 
 /*
@@ -866,8 +866,8 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpAddSettingsPages(XFldDisk *somSelf,
     }
 #endif
 
-    return (XFldDisk_parent_WPDisk_wpAddSettingsPages(somSelf,
-                                                      hwndNotebook));
+    return XFldDisk_parent_WPDisk_wpAddSettingsPages(somSelf,
+                                                     hwndNotebook);
 }
 
 /*
@@ -903,12 +903,12 @@ SOM_Scope ULONG  SOMLINK xfdisk_wpAddDiskDetailsPage(XFldDisk *somSelf,
         inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_DISKDETAILS;
         inbp.pfncbInitPage    = (PFNCBACTION)dskDetailsInitPage;
         inbp.pfncbItemChanged = dskDetailsItemChanged;
-        return (ntbInsertPage(&inbp));
+        return ntbInsertPage(&inbp);
     }
 
 #ifndef __ALWAYSREPLACEFILEPAGE__
-    return (XFldDisk_parent_WPDisk_wpAddDiskDetailsPage(somSelf,
-                                                        hwndNotebook));
+    return XFldDisk_parent_WPDisk_wpAddDiskDetailsPage(somSelf,
+                                                       hwndNotebook);
 #endif
 }
 
@@ -958,7 +958,7 @@ SOM_Scope PSZ  SOMLINK xfdiskM_wpclsQueryTitle(M_XFldDisk *somSelf)
 
 #ifndef __ALWAYSFIXCLASSTITLES__
     if (!cmnQuerySetting(sfFixClassTitles))
-        return (M_XFldDisk_parent_M_WPDisk_wpclsQueryTitle(somSelf));
+        return M_XFldDisk_parent_M_WPDisk_wpclsQueryTitle(somSelf);
 #endif
 
     return cmnGetString(ID_XSSI_CLASSTITLE_DISK);

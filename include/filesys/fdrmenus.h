@@ -154,7 +154,7 @@
     #define XWPCTXT_UNLOCKDISK          0x00000100
     #define XWPCTXT_COPYFILENAME        0x00000200
     #define XWPCTXT_ATTRIBUTESMENU      0x00000400
-    #define XWPCTXT_RESTARTWPS          0x00000800    // V0.9.21 (2002-10-08) [pr]
+    #define XWPCTXT_RESTARTWPS          0x00000800    // V1.0.0 (2002-10-08) [pr]
     #define XWPCTXT_SELALL              0x00001000
     #define XWPCTXT_DESELALL            0x00002000
     #define XWPCTXT_SELECTSOME          0x00004000
@@ -169,7 +169,7 @@
 
     #define XWPCTXT_HIGHBIT             0x80000000
 
-    // wpDisplayMenu flags V0.9.21 (2002-08-28) [umoeller]
+    // wpDisplayMenu flags V1.0.0 (2002-08-28) [umoeller]
     #ifndef MENU_FOLDERPULLDOWN
         #define MENU_FOLDERPULLDOWN       0x00000005
         #define MENU_VIEWPULLDOWN         0x00000006
@@ -182,7 +182,7 @@
 
     // OPEN_TREE and OPEN_DETAILS are only defined in wpfolder.h,
     // which makes it a hassle for us, so add the definitions
-    // here too V0.9.21 (2002-08-31) [umoeller]
+    // here too V1.0.0 (2002-08-31) [umoeller]
     #ifndef OPEN_TREE
         #define OPEN_TREE               101
     #endif

@@ -583,7 +583,7 @@ SOM_Scope ULONG SOMLINK xtrc_xwpEmptyTrashCan(XWPTrashCan *somSelf,
  *      the implementation.
  *
  *@@added V0.9.7 (2001-01-13) [umoeller]
- *@@changed V0.9.21 (2002-08-26) [umoeller]: method renamed
+ *@@changed V1.0.0 (2002-08-26) [umoeller]: method renamed
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_xwpProcessViewCommand(XWPTrashCan *somSelf,
