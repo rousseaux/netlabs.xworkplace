@@ -1,0 +1,120 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        New XFldDesktop Setup Strings
+    </TITLE>
+</HEAD>
+<!-- this is all new with V0.9.7 -->
+<!-- V0.9.16: moved this to xwphelp dir from inf.001; changed top HTML tag -->
+<BODY>
+<!-- V0.9.16: replaced this first paragraph -->
+If &xwp; is installed, the <CODE>XFldDesktop</CODE> class replaces the
+<CODE>WPDesktop</CODE> class and introduces more setup strings.
+Since the
+Desktop is just a special folder, in addition to the <CODE>XFldDesktop</CODE>
+strings listed below, the Desktop also supports the strings of the
+<CODE><A HREF="objects/string_1wpobject.html">WPObject</A></CODE>,
+<CODE><A HREF="objects/string_2wpfolder.html">WPFolder</A></CODE>,
+and <CODE><A HREF="objects/string_3xfolder.html">XFolder</A></CODE> classes.
+
+<P>To get the currently open Desktop, invoke these strings on the object
+with the ID <CODE>&lt;WP_DESKTOP&gt;</CODE>.
+
+<DL>
+<!-- V0.9.14: SHOWRUNDLG added -->
+<DT><P><CITE><B>SHOWRUNDLG</B>=<I>startupdir</I></CITE>
+<DD>Shows the &xwp; "Run" dialog, as with the "Run" command from the &xcenter;
+<!-- V0.9.16: added entity -->
+&xbutton; widget.
+
+<P>If <CITE><I>startupdir</I></CITE> is set to <CITE>DEFAULT</CITE>, the
+dialog's entry field for the startup directory will be initially empty
+(which means that the
+root directory of the boot drive should be used). Any other value will be
+used as the initial value for the startup directory.
+
+<P><B>Note 1:</B> This setup string changes no settings,
+but is a rather a command to be performed immediately.
+
+<P><B>Note 2:</B> If you invoke this setup string programatically (either through
+<CODE>WinSetObjectData</CODE> or <CODE>SysSetObjectData</CODE>),
+that function will not return until the dialog has been dismissed.
+
+<P><B>Example:</B> <CITE>SHOWRUNDLG=F:\OS2</CITE> will show the "Run" dialog
+with the startup directory field set to <CITE>F:\OS2</CITE>.
+<!-- end V0.9.14 -->
+
+<DT><P><CITE><B>XSHUTDOWNNOW</B>=<I>settings</I></CITE>
+<DD>Starts &xshutdown; now with the specified <I>settings</I>, which correspond to
+the various settings on the "&xshutdown;" page in the Desktop's properties notebook.
+
+<P><B>Note 1:</B> This setup string changes no settings,
+but is a rather a command to be performed immediately.
+The below <CODE><I>settings</I></CODE> will only affect this one system shutdown.
+
+<P><B>Note 2:</B> If you invoke this setup string programatically (either through
+<CODE>WinSetObjectData</CODE> or <CODE>SysSetObjectData</CODE>) and confirmations
+are enabled, that function will not return until the confirmation dialog has
+been dismissed.
+
+<P><CODE><I>settings</I></CODE> is a comma-separated list of &xshutdown; settings
+or <CODE>DEFAULT</CODE>. You can specify any combination of what's listed below.
+In general, if one of the keywords below is not specified, &xshutdown; will use
+what is specified on the "&xshutdown;" page in the Desktop's properties notebook.
+
+<P>To override the preconfigured behavior after &xshutdown; has completed, use one
+of the following:
+
+<UL><LI><CODE>HALT</CODE> will perform a full shutdown and
+show the "It is now safe..." message and then
+halt the system after shutdown has completed.
+
+<LI><CODE>REBOOT</CODE> will perform a full shutdown and then do a standard reboot.
+
+<LI><CODE>USERREBOOT(<I>cmd</I>)</CODE> will
+perform a full shutdown and then
+attempt to do a user-defined reboot
+with the reboot action <CODE><I>cmd</I></CODE>.
+
+<LI><CODE>POWEROFF</CODE> will
+perform a full shutdown and then
+attempt an APM power-off, if this is supported on
+the system.
+
+<LI><CODE>RESTARTWPS</CODE> will not shut down the system, but only restart the
+WPS.
+
+<LI><CODE>FULLRESTARTWPS</CODE> will not shut down the system, but only restart the
+WPS, but close all open sessions first and reuse the &xwp; startup folder at
+the next Desktop startup.
+
+</UL><BR>To override the preconfigured treatment of VIO windows,
+use either <CODE>AUTOCLOSEVIO</CODE> or <CODE>NOAUTOCLOSEVIO</CODE>.
+
+<P>To override the preconfigured setting for <CODE>XSHUTDWN.LOG</CODE>,
+use either <CODE>LOG</CODE> or <CODE>NOLOG</CODE>.
+
+<P>To override the preconfigured animation settings, use either
+<CODE>ANIMATE</CODE> or <CODE>NOANIMATE</CODE>.
+
+<P>To override the preconfigured confirmation setting, use either
+<CODE>CONFIRM</CODE> or <CODE>NOCONFIRM</CODE>. Note that if confirmations are on
+(either because <CODE>CONFIRM</CODE> was specified or because it was preconfigured
+and not overridden), most of the settings specified with <CODE>XSHUTDOWNNOW</CODE>
+will only cause the confirmation dialog to display different defaults.
+
+<P>If you do not want to override any settings, specify <CODE>DEFAULT</CODE>.
+
+<P>Examples:
+
+<BR><UL><LI><CODE>XSHUTDOWNNOW=DEFAULT</CODE> will start &xshutdown; with the current
+settings.
+
+<P><LI><CODE>XSHUTDOWNNOW=RESTARTWPS,NOCONFIRM,LOG</CODE> will restart the WPS now
+without confirmation, but enable logging this one time.
+
+</UL>
+</DL>
+</BODY>
+</HTML>
+

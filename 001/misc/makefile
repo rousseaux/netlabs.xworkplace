@@ -28,55 +28,63 @@ LANGUAGE = 001
 # DO NOT CHANGE THE FOLLOWING
 #
 
-#
 # Define the suffixes for files which NMAKE will work on.
 # .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
 # defining file extensions that NMAKE will recognize.
-#
-
 .SUFFIXES: .tmf
 
 FILES_TO_COPY = \
     $(XWPRUNNING)\help\xfldr$(LANGUAGE).tmf \
-!ifndef XWPLITE
     $(XWPRUNNING)\install\crobj$(LANGUAGE).cmd \
-!else
-    $(XWPRUNNING)\install\crobj$(LANGUAGE)_lite.cmd \
-!endif
-!ifndef XWPLITE
     $(XWPRUNNING)\install\instl$(LANGUAGE).cmd \
-!else
-    $(XWPRUNNING)\install\instl$(LANGUAGE)_lite.cmd \
-!endif
+!ifndef XWPLITE
     $(XWPRUNNING)\install\sound$(LANGUAGE).cmd \
     $(XWPRUNNING)\help\drvrs$(LANGUAGE).txt \
     $(XWPRUNNING)\help\xfcls$(LANGUAGE).txt
+!endif
 
 all: $(FILES_TO_COPY)
     @echo ----- Leaving $(MAKEDIR)
 
+# copy tmf file to modulesdir first
+$(XWPRUNNING)\help\xfldr$(LANGUAGE).tmf: $(MODULESDIR)\$(@B).tmf
+    $(COPY) $(MODULESDIR)\$(@B).tmf $@
+
+# compose tmf file in modulesdir from several source tmf files
 !ifdef XWPLITE
-$(XWPRUNNING)\help\xfldr$(LANGUAGE).tmf: xfldr$(LANGUAGE).tmf xwplite$(LANGUAGE).tmf
-    $(COPY) $(@B).tmf+xwplite$(LANGUAGE).tmf $(XWPRUNNING)\help\$(@B).tmf
+$(MODULESDIR)\xfldr$(LANGUAGE).tmf: xfldr$(LANGUAGE).tmf xwplite$(LANGUAGE).tmf
+    $(COPY) $(@B).tmf+xwplite$(LANGUAGE).tmf $@
 !else
-$(XWPRUNNING)\help\xfldr$(LANGUAGE).tmf: xfldr$(LANGUAGE).tmf xwpfull$(LANGUAGE).tmf
-    $(COPY) $(@B).tmf+xwpfull$(LANGUAGE).tmf $(XWPRUNNING)\help\$(@B).tmf
+$(MODULESDIR)\xfldr$(LANGUAGE).tmf: xfldr$(LANGUAGE).tmf xwpfull$(LANGUAGE).tmf
+    $(COPY) $(@B).tmf+xwpfull$(LANGUAGE).tmf $@
 !endif
 
-$(XWPRUNNING)\install\crobj$(LANGUAGE).cmd: $(@B).cmd
-    $(COPY) $(@B).cmd $(XWPRUNNING)\install\crobj$(LANGUAGE).cmd
+# crobjXXX.cmd
 
-$(XWPRUNNING)\install\crobj$(LANGUAGE)_lite.cmd: $(@B).cmd
-    $(COPY) $(@B).cmd $(XWPRUNNING)\install\crobj$(LANGUAGE).cmd
+!ifdef XWPLITE
+CROBJ_SOURCE = crobj$(LANGUAGE)_lite.cmd
+!else
+CROBJ_SOURCE = crobj$(LANGUAGE).cmd
+!endif
 
-$(XWPRUNNING)\install\instl$(LANGUAGE).cmd: $(@B).cmd
-    $(COPY) $(@B).cmd $(XWPRUNNING)\install\instl$(LANGUAGE).cmd
+$(XWPRUNNING)\install\crobj$(LANGUAGE).cmd: $(CROBJ_SOURCE)
+    $(COPY) $(CROBJ_SOURCE) $(XWPRUNNING)\install\crobj$(LANGUAGE).cmd
 
-$(XWPRUNNING)\install\instl$(LANGUAGE)_lite.cmd: $(@B).cmd
-    $(COPY) $(@B).cmd $(XWPRUNNING)\install\instl$(LANGUAGE).cmd
+# instlXXX.cmd
+
+!ifdef XWPLITE
+INSTL_SOURCE = instl$(LANGUAGE)_lite.cmd
+!else
+INSTL_SOURCE = instl$(LANGUAGE).cmd
+!endif
+
+$(XWPRUNNING)\install\instl$(LANGUAGE).cmd: $(INSTL_SOURCE)
+    $(COPY) $(INSTL_SOURCE) $(XWPRUNNING)\install\instl$(LANGUAGE).cmd
 
 $(XWPRUNNING)\install\sound$(LANGUAGE).cmd: $(@B).cmd
     $(COPY) $(@B).cmd $(XWPRUNNING)\install
+
+# *.txt files
 
 $(XWPRUNNING)\help\drvrs$(LANGUAGE).txt: $(@B).txt
     $(COPY) $(@B).txt $(XWPRUNNING)\help

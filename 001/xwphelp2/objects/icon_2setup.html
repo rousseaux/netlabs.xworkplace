@@ -1,0 +1,56 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xwp;: Object Setup String
+    </TITLE>
+</HEAD>
+<!-- this is all new with V0.9.4 -->
+<BODY>
+The "Setup" entry field
+<!-- V0.9.16: on the "Object" page -->
+allows to view the current object's
+setup string.
+This string is composed by &xwp; directly from the object's settings.
+<!-- V0.9.16: changed this -->
+The entry field is read-only and cannot be changed, but you can copy its
+contents to the clipboard by using the <CODE>Ctrl+Insert</CODE> keys.
+
+<!-- V0.9.13: added this -->
+<!-- V0.9.16: slightly changed -->
+<P>See <A HREF="glossary/gls_objstrings.html">"Setup strings"</A> for more
+information about WPS setup strings and a list of the most frequently
+used ones.
+
+<!-- V0.9.13: removed chunk here -->
+
+You can use this setup string to create a similar object using REXX functions.
+<!-- V0..9.16 See the appendices of the <I>&xwp; User Guide</I> for more about those functions
+and a listing of many setup strings. -->
+
+<P>Presently, &xwp; can decode setup strings of the following classes:
+
+<UL><LI>WPObject/XFldObject;
+<P><LI>WPFolder/XFolder;
+<P><LI>WPProgram and XWPProgramFile. For these classes, the setup string can become
+particularly long. You will also see that the WPS stores the DOS setup variables
+("DOS" or "&winos2; properties" button on the "Session" page) in the program's
+environment, using "SET xxx=yyy" strings.
+
+</UL>If setup strings are defined of a more specific class, but &xwp; cannot
+decode them, you will only get the setup strings of the parent class(es).
+Most notably, setup strings of WPPalette (and subclasses), WPDesktop/XFldDesktop,
+WPDisk/XFldDisk,
+WPHost, WPLaunchPad, WPNetgrp, WPPdr, WPPrinter, WPRPrinter, WPServer, WPShadow,
+and WPUrl are not supported.
+
+<P>However, even for the classes listed above,
+not all setup strings are supported by &xwp;
+<!-- V0.9.13: rewrote all the following -->
+since there is no standard interface how to retrieve them. Again, see
+<A HREF="glossary/gls_objstrings.html">"Setup strings"</A> for details.
+
+
+<BR>
+</BODY>
+</HTML>
+

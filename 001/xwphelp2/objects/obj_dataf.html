@@ -1,0 +1,47 @@
+<HTML RESID=&ID_XSH_DATAFILE_MAIN;>
+<HEAD>
+    <TITLE>
+        &xwp;: Data File
+    </TITLE>
+</HEAD>
+<!-- this page is all new with V0.9.16 -->
+<BODY>
+Data files are used by programs to store data on disk. All file-system
+objects that are neither <A HREF="objects/obj_pgmf.html">program files</A>
+nor folders are considered data
+files by &os2;. They may or may not contain useful data.
+
+<P>Data files usually have a <B>type</B>. You can set a file's types
+explicitly on the "Type" page in the file's
+<A HREF="glossary/gls_notebook.html">properties notebook</A>.
+
+<IFNDEF __NEVEREXTASSOCS__>
+If no explicit type has been assigned, &xwp; will assign an automatic type
+to the file based on its file extension, which is the part of the object's
+file name after the last dot.
+</IFNDEF>
+
+<P>In addition, data files frequently have program objects <B>associated</B> with
+them. This allows you to simply double-click on a data file to have the
+associated program opened with the data file already loaded, or to select
+a program from the data file's "Open" submenu in its context menu.
+
+<P>If the data file does not have a type assigned (neither explicitly nor
+automatically), OS/2 associates it with the
+<IFDEF __EWORKPLACE__>
+"Text Editor" object, which usually resides in the "Utilities" folder in
+the "Programs" folder on your Desktop.
+</IFDEF>
+<IFNDEF __EWORKPLACE__>
+System Editor.
+</IFNDEF>
+
+<P>You can configure &xwp;'s file types and associations on the "File types"
+page in the <A HREF="objects/obj_wps.html">"Workplace Shell" object.</A>
+
+<P>See <A HREF="glossary/gls_assocs.html">"Types and associations"</A> for an
+introduction to associations between data files and programs.
+
+<BR>
+</BODY>
+</HTML>

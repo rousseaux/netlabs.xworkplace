@@ -100,7 +100,7 @@
 
 <--XFL0128-->: Undoing the replacement of class "%1" with "%2" failed.
 
-<--XFL0129-->: Class "%1" has been successfully replaced with "%2". Note that this will only have an effect after a WPS restart and that also the WPS class list will only reflect this change then.
+<--XFL0129-->: Class "%1" has been successfully replaced with "%2". Note that this will only have an effect after a Desktop restart and that also the WPS class list will only reflect this change then.
 
 <--XFL0130-->: Replacing class "%1" with "%2" failed.
 
@@ -112,7 +112,7 @@
 
 <--XFL0135-->: You have opened a submenu which contains no menu items because the corresponding &xwp; configuration folder contains no objects. Place objects into the configuration folders to create menu items.
 
-<--XFL0136-->: The CONFIG.SYS file has been changed. In order to let the settings take effect, you will need to shut down and reboot your system. A WPS restart will not suffice for this.
+<--XFL0136-->: The CONFIG.SYS file has been changed. Your previous CONFIG.SYS has been copied to the file %1. In order to let the settings take effect, you will need to shut down and reboot your system. A Desktop restart will not suffice for this.
 
 <--XFL0137-->: &xwp; could not find its Online Reference. You have probably deleted the respective object that was created by the installation program. You will find the Online Reference (XFLDR001.INF) in the &xwp; installation directory.
 

@@ -45,9 +45,6 @@ LANGUAGE = 001
 # OUTPUTDIR specifies the directory where all the output .OBJ
 # files will be created in.
 OUTPUTDIR = $(XWP_OUTPUT_ROOT)
-!if [@echo       OUTPUTDIR is $(OUTPUTDIR)]
-!endif
-MODULESDIR = $(OUTPUTDIR)\modules
 
 # create output directory
 !if [@md $(OUTPUTDIR) 2> NUL]
@@ -59,25 +56,19 @@ OBJS = $(OUTPUTDIR)\xfldr$(LANGUAGE).obj
 
 XFLDHELP = $(XWPRUNNING)\help
 
-#
 # Define the suffixes for files which NMAKE will work on.
 # .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
 # defining file extensions that NMAKE will recognize.
-#
-
-# V1.00: added .tmf
 .SUFFIXES: .txt .c .obj .dll .rc .res .html .ipf .hlp .inf
 
 all: $(XWPRUNNING)\bin\xfldr$(LANGUAGE).dll
     @echo ----- Leaving $(MAKEDIR)
 
-#
 # Now define inference rules for what to do with certain file
 # types, based on their file extension.
 # The syntax we need here is ".fromext.toext".
 # So whenever NMAKE encounters a .toext file, it
 # executes what we specify here.
-#
 
 .c{$(OUTPUTDIR)}.obj:
         $(CC_DLL_MT) -I$(INCLUDE) -c /Fo$(OUTPUTDIR)\$(@B).obj $<

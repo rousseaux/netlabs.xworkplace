@@ -1,0 +1,34 @@
+<HTML>
+<HEAD>
+    <TITLE>
+        &xcenter;: View Page
+    </TITLE>
+</HEAD>
+<!-- this page is all new with V0.9.7 -->
+<BODY>
+The <B>"View thread priority"</B> allows you to specify the priority delta
+of the thread that is started when the &xcenter; is opened.
+
+<P>The &xcenter; does not run on the same thread as most other WPS windows
+-- which is normally thread 1 in the WPS process. Instead, when an &xcenter;
+is opened, a new thread is created. This way we can control the priority
+of the &xcenter; display independently from the rest of the WPS.
+
+<P>Note that the &xcenter; will always use the "regular" priority class to
+avoid system hangs and side effects with other software.
+Only within that class you may alter the priority delta between zero and 31.
+
+<P>Per default, the &xcenter; runs with a priority delta of zero, which is
+the standard priority delta (and the same as all other WPS windows).
+However, you can raise that delta up to 31 (which is the maximum priority
+delta in &os2;) to give the &xcenter; precendence over other tasks in the system.
+Among other things, this might make animations run more smoothly.
+
+<!-- V0.9.13: changed the following 2 lines -->
+<P>See <A HREF="glossary/gls_scheduler.html">"Processes and threads"</A> for more information
+about thread priorities.
+
+<BR>
+</BODY>
+</HTML>
+

@@ -29,7 +29,7 @@ DosWin              = "~DOS window";
 DOSFullscreen       = "DOS f~ullscreen";
 CreateAnother       = "Create a~nother";
 Folder              = "Folder";
-    /* the following two were added with V0.9.16 */
+    /* the following three were added with V0.9.16 */
 URLFolder           = "URL Folder";
 DataFile            = "Data file";
 ProgramObject       = "Program object";

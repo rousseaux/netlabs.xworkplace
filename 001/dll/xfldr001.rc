@@ -3,10 +3,37 @@
  * xfldr001.rc:
  *      this is the main resource file for the English NLS DLL.
  *
- *      Translate all the strings in this file. If you encounter
- *      any "~" characters: these are for underlining characters
- *      in menus so that the menu item can be accessed using the
- *      keyboard.
+ *      Translate all the strings in this file.
+ *
+ *      Special characters and codes:
+ *
+ *      --  If you encounter any "~" characters: these are for
+ *          underlining characters in menus so that the menu item
+ *          can be accessed using the keyboard.
+ *
+ *      --  "&xxx;" are for entities that are replaced dynamically
+ *          by XWorkplace when the string gets loaded. This only
+ *          works with string tables, not with menu IDs, unless
+ *          noted otherwise.
+ *
+ *          Presently the following entities are defined:
+ *
+ *          --  &xwp;       "XWorkplace" string, or "eWorkplace"
+ *                          if eWorkplace is running
+ *
+ *          --  &os2;       "OS/2" or "eComStation"
+ *
+ *          --  &warpcenter;    "WarpCenter" or "eComCenter"
+ *
+ *          --  &xcenter;   "XCenter" or "eCenter"
+ *
+ *          --  &xsd;       "XShutdown" or "eShutdown"
+ *
+ *          --  &version;   current XWorkplace version (e.g. "0.9.16")
+ *
+ *          --  &date;      build date (e.g. Jan 12 2002)
+ *
+ *          --  &nl;        newline character (\n, ASCII 10)
  *
  *      The dialog templates (xfldr001.dlg) are #include'd. You
  *      may either translate that text file "manually" or open
@@ -861,6 +888,28 @@ BEGIN
     ID_XSSI_RUN                         "~Run..."
 
     /* the following have been added with V0.9.16 */
+    ID_CRSI_SENTINELTOOLTIP             "Physical memory usage&nl;Free RAM: %s KB&nl;Used RAM: %s KB&nl;Swapper size: %s KB"
+            /* expands to:
+                              Physical memory usage
+                              Free RAM: %s KB
+                              Used RAM: %s KB
+                              Swapper size: %s KB
+            */
+    ID_CRSI_BUILTINCLASS                "Built-in"
+    ID_CRSI_OWGT_MENUITEMS              "Visible menu items"
+
+    ID_CRSI_PWGT_TITLE                  "Pulse"
+    ID_CRSI_PWGT_IRQLOADCOLOR           "IRQ load"
+    ID_CRSI_PWGT_CPUGRAPHCOLORS         "CPU graph colors"
+    ID_CRSI_PWGT_CPUXUSERCOLOR          "CPU %d user load"
+    ID_CRSI_PWGT_OTHERCOLORS            "Other colors"
+    ID_CRSI_PWGT_BACKGROUNDCOLOR        "Background"
+    ID_CRSI_PWGT_TEXTCOLOR              "Text"
+    ID_CRSI_PWGT_TOOLTIP1               "CPU count: %d&nl;CPU 0 IRQ: %lu%c%lu%c"
+    ID_CRSI_PWGT_TOOLTIP2               "&nl;CPU %d User: %lu%c%lu%c"
+            /* warning: the above two are strings for sprintf, so you _must_
+               get the % flags exactly correct, or the pulse will crash */
+
     ID_XSSI_WPSFDRVIEWPAGE              "Folder ~views"
 
     ID_XFSI_FDLG_DRIVES                 "~Drives:"
@@ -959,6 +1008,16 @@ BEGIN
     ID_XSDI_SNAPTOGRID                  "Add ""Sna~p to grid"""
     ID_XSDI_ACCELERATORS                "React to folder h~otkeys"
     ID_XSDI_ENABLESTATUSBAR             "Show ~status bar"
+
+    /* strings formerly in ID_XSD_DTP_MENUITEMS */
+    ID_XSDI_DTP_MENUITEMSGROUP          "Visible standard menu items"
+    ID_XSDI_DTP_SORT                    "S~ort"
+    ID_XSDI_DTP_ARRANGE                 "~Arrange"
+    ID_XSDI_DTP_LOCKUP                  "~Lockup now"
+    ID_XSDI_DTP_LOGOFFNETWORKNOW        "Lo~goff network now"
+    ID_XSDI_DTP_SHUTDOWN                "Shu~tdown"
+    ID_XSDI_DTP_SHUTDOWNMENU            "Add su~bmenu"
+    ID_XSDI_DTP_SYSTEMSETUP             "System ~setup"
 
     /* strings formerly in ID_XSD_DTP_SHUTDOWN */
     ID_SDDI_SHAREDGROUP                 "Common settings"
@@ -1066,6 +1125,13 @@ BEGIN
     ID_XSDI_ARC_ARCHIVES_NO_TXT1        "Kee~p"
     ID_XSDI_ARC_ARCHIVES_NO_TXT2        "archives"
 
+    /* strings formerly in ID_SDD_CONFIRMWPS */
+    ID_SDDI_CONFIRMWPS_TITLE            "&xwp;: Restart Desktop"
+    ID_SDDI_CONFIRM_TEXT                "Are you sure you wish to restart the Desktop?"
+    ID_SDDI_WPS_CLOSEWINDOWS            "~Close all sessions"
+    ID_SDDI_WPS_STARTUPFOLDER           "~Process all XWorkplace Startup folders"
+    ID_SDDI_MESSAGEAGAIN                "~Show this message next time"
+
     /* new "Icon" page replacement */
     ID_XSDI_ICON_TITLE_TEXT             "T~itle:"
     ID_XSDI_ICON_GROUP                  "Current icon"
@@ -1098,6 +1164,14 @@ BEGIN
     ID_XSDI_MOUSE_MENUDELAY_TXT1        "Su~bmenu delay:"
     ID_XSDI_MOUSE_CONDCASCADE           "~Conditional cascade sensitivity"
     ID_XSDI_MOUSE_MENUHILITE            "I~mmediate hilite"
+
+    /* product info */
+    ID_XSDI_INFO_TITLE                  "Product Information"
+
+    /* installed classes dialog */
+    ID_XCD_CLASSES_TITLE                "XWorkplace Classes"
+    ID_XCD_CLASSES_REPLACEMENTS         "Class replacements"
+    ID_XCD_CLASSES_NEW                  "New classes"
 
 END
 

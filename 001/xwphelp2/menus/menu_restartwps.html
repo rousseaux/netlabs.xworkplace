@@ -1,0 +1,60 @@
+<HTML RESID=&ID_XMH_RESTARTWPS;>
+<HEAD>
+    <TITLE>
+        Restart Desktop
+    </TITLE>
+</HEAD>
+<BODY>
+With the "Restart Desktop" menu item in the Desktop's context menu
+you can restart the Workplace Shell process only, without having
+to reboot your computer.
+
+<P>After selecting this item, &xwp; will perform pretty much the same procedure as
+with the <A HREF="menus/menu_xsd.html">Extended Shutdown</A>. The difference is that after
+all windows have been closed, the system is not shut down, but only the Workplace process
+(PMSHELL.EXE) is terminated and then restarted.
+
+<P>This can be very handy if you have installed WPS software which requires
+a restart of the WPS, for example because the WPS class list was changed.
+
+<!-- V0.9.9: changed all the following -->
+<IFNDEF __NOXWPSETUP__>
+<P>You can disable this feature in the
+<A HREF="objects/obj_xwpsetup.html">"&xwp; Setup" object</A>.
+<P><B>Warning:</B> Before using this, be sure to read the respective section in the
+<I>&xwp; User Guide,</I> which comments on some problems which might arise.
+</IFNDEF>
+
+<P>In the <B>confirmation window,</B> which is displayed if you have enabled
+confirmations in the Desktop's <A HREF="glossary/gls_notebook.html">properties notebook</A>,
+the following settings are available:
+
+<UL><LI>You may determine whether &xshutdown; should <B>close all sessions</B> before
+restarting the WPS. If so, &xwp; will not only close the WPS windows, but all
+other programs also.
+
+<P><LI>You may also determine whether after the Desktop restart &xwp; should
+<B>process all startup folders</B> again. If this is enabled, &xwp; will
+process <I>all</I> &xwp; startup folders after the Desktop restart. By contrast,
+if this setting is disabled, only those startup folders will be processed which
+have the "Every Desktop restart" setting enabled in their respective
+<A HREF="glossary/gls_notebook.html">properties notebook</A>.
+
+<P><B>Note:</B> You should only enable this setting
+if you have either "Close all sessions" enabled also or if you're sure that
+the programs in the startup folder are not currently running, because otherwise
+they might be started twice.
+
+<P>This setting does not affect the regular &os2; startup folder. That folder is
+never processed after a Desktop restart.
+
+<P><LI>If you deselect the <B>"Show this message next time"</B> setting,
+<!-- end V0.9.9 -->
+confirmations will be disabled for eXtended Shutdown and Desktop restarts.
+You can then re-enable the confirmations in the Desktop's
+<A HREF="glossary/gls_notebook.html">properties notebook</A> on
+the "&xshutdown;" page.
+</UL>
+</BODY>
+</HTML>
+

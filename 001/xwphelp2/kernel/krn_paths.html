@@ -1,0 +1,70 @@
+<HTML RESID=&ID_XSH_SETTINGS_SYSPATHS;>
+<HEAD>
+    <TITLE>
+        &xwp;: System Paths
+    </TITLE>
+</HEAD>
+<!-- this file used to be 099empty005.html. The text is all new with V0.90.
+     Use "ren090.cmd" in the parent directory to have it renamed. -->
+<BODY>
+This page allows you to take a look at the most important system path entries
+in &cfgsys; and find out which entries are invalid.
+<P><B>Note:</B> Take extreme caution in modifying the system paths. One
+invalid modification might render your whole system unusable.
+<P>Press <B>"Apply"</B> to have the changes you've made written to the
+&cfgsys; file. This will write the changes to all system paths available
+in the drop-down box, not just the changes of the path that is currently
+selected.
+You will have to restart the computer to let the changes
+take effect. A Desktop restart does <I>not</I> suffice.
+<P>The <B>"System paths to check"</B> drop-down box offers you a selection
+of system paths that can be modified using this page. The following system paths
+are available (additional documentation can be found in the <I>&os2; Command Reference</I>):
+
+<UL><LI><CODE>LIBPATH</CODE>: the "library" system path, which is searched every time
+&os2; attempts to load a dynamic link library (DLL). This better contain the &os2; system
+directories as well as a dot (".") entry, which stands for the current directory.
+
+<!-- V0.9.7: added this line -->
+<P>See the <A HREF="cmdref.inf#libpath">documentation</A> in the
+<I>&os2; Command Reference</I> for details.
+
+<P>Note that this is the only system path which is <I>not</I> defined using an environment
+variable and can therefore not be changed from the command line. Use the <CODE>BEGINLIBPATH</CODE>
+and <CODE>ENDLIBPATH</CODE> variables for temporary changes (which are not supported by this page though).
+
+<P><LI><CODE>SET PATH</CODE>: the search path for executables (.EXE, .COM, .BAT, .CMD files).
+
+<!-- V0.9.7: added this line -->
+<P>See the <A HREF="cmdref.inf#path">documentation</A> in the
+<I>&os2; Command Reference</I> for details.
+
+<P><LI><CODE>SET DPATH</CODE>: the search path for data files. The use of this search
+path is dependent on the applications; some applications use this, others don't.
+
+<!-- V0.9.7: added this line -->
+<P>See the <A HREF="cmdref.inf#dpath">documentation</A> in the
+<I>&os2; Command Reference</I> for details.
+
+<P><LI><CODE>SET BOOKSHELF</CODE>: this is evaluated by <CODE>VIEW.EXE</CODE> to find
+online .INF books. Even though any INF book can be displayed, even if it's not on this
+search path, the "Find" facility of <CODE>VIEW.EXE</CODE> will only find items in books
+which reside on this path.
+
+<P><LI><CODE>SET HELP</CODE>: this is evaluated by the PM help facility to display
+help panels (.HLP files). Some applications do not specify the full path of help files
+to PM in order to display help panels, which requires the help file to reside on this
+path. &xwp; does not require such an entry though.
+
+</UL>Once you select a &cfgsys; item, the paths that are specified with it
+in &cfgsys; are displayed in the list box below. You can then select items
+in that list box and use the buttons to have them modified. This should be
+pretty self-explanatory.
+
+<P>The <B>"Select invalid"</B> which select all path entries that are not
+valid directories on your system. You can then press <B>"Delete"</B> afterwards
+to have these entries removed.
+<BR>
+</BODY>
+</HTML>
+

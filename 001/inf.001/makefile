@@ -67,10 +67,6 @@ COPYTO = $(XWPRUNNING)
 # defining file extensions that NMAKE will recognize.
 .SUFFIXES: .html .ipf .hlp .inf .gif
 
-# main target
-all: $(COPYTO)\xfldr$(LANGUAGE).inf
-    @echo ----- Leaving $(MAKEDIR)
-
 #
 # Now define inference rules for what to do with certain file
 # types, based on their file extension.

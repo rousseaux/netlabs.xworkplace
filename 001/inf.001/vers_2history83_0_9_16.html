@@ -22,20 +22,7 @@ code will use a replacement file dialog with full WPS support instead of
 the dull default OS/2 file dialog.
 Try the "Browse" button on the new "Icon" page.
 
-<P><LI>Folders: Added new "turbo folders" feature. Essentially, this is a
-rewrite of the folder populate code. For folders with many objects, this can
-be several times as fast as the old code.
-
-<P>In addition to replacing populate, this will also replace the "read icon"
-code for executables. Essentially I am no longer allowing the WPS to read
-executable icons at all, but will only use my own code for now. This works
-for LX and Win16 and OS/2 NE executables. Win32 PE resources are presently
-not understood; PE files will receive a dull default icon, but at least the
-WPS will no longer hang forever with them.
-
-<P>As one side effect, this will change the behavior for Win16 icons if the
-system icon size is 40x40; instead of scaling, &xwp; will now center the
-32x32 icon. Looks a bit better, IMV.
+<P><LI>Folders: Added new <A HREF="fldr_30turbo.html">"turbo folders"</A> feature.
 
 <P><LI>Folders: Finally documented that setup string objects can be put
 into the &xwp; Configuration Folder as well to have the setup string invoked
