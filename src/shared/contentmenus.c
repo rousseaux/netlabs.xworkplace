@@ -976,8 +976,8 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
     }
 
     // clean up
-    lstFree(pllFolders);
-    lstFree(pllNonFolders);
+    lstFree(&pllFolders);
+    lstFree(&pllNonFolders);
 }
 
 /*

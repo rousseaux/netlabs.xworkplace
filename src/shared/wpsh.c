@@ -914,7 +914,7 @@ BOOL wpshCloseAllViews(WPObject *pObject)
                     pFolderNode = pFolderNode->pNext;
                 }
 
-                lstFree(pllOpenFolders);
+                lstFree(&pllOpenFolders);
             }
             else
                 brc = FALSE;

@@ -596,7 +596,7 @@ VOID clsCleanupWpsClasses(PWPSCLASSESINFO pwpsci) // in: struct returned by clsW
         pNode = pNode->pNext;
     }
 
-    lstFree(pwpsci->pllClassList);
+    lstFree(&pwpsci->pllClassList);
 
     free(pwpsci->pObjClass);
     free(pwpsci);

@@ -21,9 +21,33 @@
 #       startup.
 #
 
+# CVS DIRECTORY SETUP
+# -------------------
+
 # CVS_WORK_ROOT: the root of your CVS tree
 # (the parent dir of "xworkplace" and "xwphelpers")
 CVS_WORK_ROOT = K:\projects\cvs
+
+# XWPDIR: name of the directory this file resides in
+# (subdirectory of CVS_WORK_ROOT).
+# This will usually be xworkplace (the CVS repository
+# name), unless you chose a different name.
+XWPDIR = xworkplace
+
+# XWPHELPERSDIR: name of the directory the xwphelpers
+# resides in (subdirectory of CVS_WORK_ROOT).
+# This will usually be xwphelpers (the CVS repository
+# name), unless you chose a different name.
+XWPHELPERSDIR = xwphelpers
+
+# INCLUDE AND LIB SETUP
+# ---------------------
+
+# Starting with V0.9.12, we no longer use the default
+# INCLUDE and LIB paths. Instead, we specify all
+# directories directly on the command lines, so we
+# need to know where your toolkit and compiler things
+# are.
 
 # TKBASE: the main Toolkit directory.
 # This must be the parent of the "h" and "lib"

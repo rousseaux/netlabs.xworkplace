@@ -1893,7 +1893,7 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
             PAUTOCLOSEWINDATA pData = (PAUTOCLOSEWINDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
             ctlStopAnimation(WinWindowFromID(hwndDlg, ID_SDDI_ICON));
             xsdFreeAnimation(&G_sdAnim);
-            lstFree(pData->pllAutoClose);
+            lstFree(&pData->pllAutoClose);
             free(pData);
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
         break; } // continue
@@ -2513,7 +2513,7 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             PREBOOTWINDATA pData = (PREBOOTWINDATA)WinQueryWindowULong(hwndDlg, QWL_USER);
             ctlStopAnimation(WinWindowFromID(hwndDlg, ID_SDDI_ICON));
             xsdFreeAnimation(&G_sdAnim);
-            lstFree(pData->pllReboot);
+            lstFree(&pData->pllReboot);
             if (pData->pPartitionsList)
                 doshFreePartitionsList(pData->pPartitionsList);
             free(pData);

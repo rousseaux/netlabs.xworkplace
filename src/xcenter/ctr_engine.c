@@ -3105,7 +3105,7 @@ MRESULT ClientDragOver(HWND hwnd, MPARAM mp1)
             {
                 // WPS object(s) being dragged over client:
                 fDrawTargetEmph = TRUE;
-                lstFree(pll);
+                lstFree(&pll);
             }
         }
 
@@ -3257,7 +3257,7 @@ VOID ClientDrop(HWND hwnd, MPARAM mp1, MPARAM mp2)
                 pNode = pNode->pNext;
             }
 
-            lstFree(pll);
+            lstFree(&pll);
         }
 
         DrgFreeDraginfo(pdrgInfo);
@@ -4200,10 +4200,7 @@ VOID ctrpFreeWidgets(XCenter *somSelf)
         XCenterData *somThis = XCenterGetData(somSelf);
         // _Pmpf((__FUNCTION__ ": entering, _pllWidgetSettings is %lX", _pllWidgetSettings));
         if (_pllWidgetSettings)
-        {
-            lstFree(_pllWidgetSettings);
-            _pllWidgetSettings = NULL;
-        }
+            lstFree((LINKLIST**)&_pllWidgetSettings);
     }
     wpshUnlockObject(&Lock);
 }

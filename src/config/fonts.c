@@ -848,7 +848,7 @@ MRESULT fonDrop(XWPFontFolder *pFontFolder,
     }
 
     // in any case, free the list
-    lstFree(pllDroppedObjects);
+    lstFree(&pllDroppedObjects);
 
     return (mrc);
 }

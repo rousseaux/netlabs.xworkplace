@@ -27,7 +27,10 @@
 
 !include config.in
 
-PROJECT_BASE_DIR = $(CVS_WORK_ROOT)\xworkplace
+# set up PROJECT_BASE_DIR, which is required by other
+# makefiles (and most importantly by xwphelpers)
+PROJECT_BASE_DIR = $(CVS_WORK_ROOT)\$(XWPDIR)
+# this should give us something like K:\cvs\xworkplace
 
 # RUNNING XWORKPLACE
 # ------------------
@@ -42,12 +45,21 @@ PROJECT_BASE_DIR = $(CVS_WORK_ROOT)\xworkplace
 !error in setup.in: You must set XWPRUNNING to an existing XWorkplace binary installation. See PROGREF.INF for details.
 !endif
 
+# OUTPUT DIRECTORIES
+# ------------------
+
+# Unless you have specified an explicit path in
+# XWP_OUTPUT_ROOT from the environment, this
+# defaults to the bin\ subdir.
+
 !ifndef XWP_OUTPUT_ROOT
 XWP_OUTPUT_ROOT = $(PROJECT_BASE_DIR)\bin
 !endif
 
 PROJECT_OUTPUT_DIR = $(XWP_OUTPUT_ROOT)
 
+# HELPERS_OUTPUT_DIR is where the xwphelpers
+# will write stuff to.
 HELPERS_OUTPUT_DIR = $(PROJECT_OUTPUT_DIR)
 
 # DEBUG CODE
@@ -95,6 +107,7 @@ HELPERS_OUTPUT_DIR = $(PROJECT_OUTPUT_DIR)
 XWP_LANG_CODE = 001
 !endif
 
+
 # XWORKPLACE RELEASE
 # ------------------
 
@@ -126,7 +139,7 @@ XWPRELEASE_MAP = $(XWPRELEASE)\map
 # it's in the CVS tree also, so we derive this from $(CVS_WORK_ROOT).
 
 !ifndef HELPERS_BASE
-HELPERS_BASE = $(CVS_WORK_ROOT)\xwphelpers
+HELPERS_BASE = $(CVS_WORK_ROOT)\$(XWPHELPERSDIR)
 !endif
 
 
@@ -212,13 +225,15 @@ PROJECT_INCLUDE = $(TKBASE)\h;$(TKBASE)\som\include;$(VACBASE)\include;$(PROJECT
 # TOOLS SETUP
 # -----------
 
-RUN_FASTDEP = $(CVS_WORK_ROOT)\xwphelpers\fastdep.exe -i $(PROJECT_INCLUDE) -o $(OUTPUTDIR)
+RUN_FASTDEP = $(HELPERS_BASE)\fastdep.exe -i $(PROJECT_INCLUDE) -i . -o $(OUTPUTDIR)
 
-RUN_BLDLEVEL = cmd.exe /c $(CVS_WORK_ROOT)\xworkplace\tools\BuildLevel.cmd
+RUN_BLDLEVEL = cmd.exe /c $(CVS_WORK_ROOT)\$(XWPDIR)\tools\BuildLevel.cmd
 
-RUN_UNLOCK = $(CVS_WORK_ROOT)\xworkplace\tools\unlock.exe
+RUN_UNLOCK = $(CVS_WORK_ROOT)\$(XWPDIR)\tools\unlock.exe
 
-RUN_STRRPL = $(CVS_WORK_ROOT)\xworkplace\tools\strrpl.exe
+RUN_STRRPL = $(CVS_WORK_ROOT)\$(XWPDIR)\tools\strrpl.exe
+
+COPY = cmd.exe /c copy
 
 # INCLUDED FEATURES
 # -----------------
@@ -252,6 +267,7 @@ REPLHANDLES_STRING =
 !ifdef REPLHANDLES
 REPLHANDLES_STRING = /D__REPLHANDLES__=1
 !endif
+
 
 # COMPILER OPTIONS
 # ----------------
@@ -399,9 +415,5 @@ RC      = rc -p -x2 -n -i $(TKBASE)\h;$(PROJECT_BASE_DIR)\include
 # -n       no logo
 
 
-# COPY COMMAND
-# ------------
-
-COPY = cmd.exe /c copy
 
 

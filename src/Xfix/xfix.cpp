@@ -2319,7 +2319,7 @@ VOID FrameCommand(HWND hwndFrame,
                         }
                     }
 
-                    lstFree(pll);
+                    lstFree(&pll);
                 }
 
             break; }
@@ -2376,7 +2376,7 @@ VOID FrameCommand(HWND hwndFrame,
                         free(pszFolderPoses);
                     }
 
-                    lstFree(pll);
+                    lstFree(&pll);
                 }
             break; }
 
@@ -2442,7 +2442,7 @@ VOID FrameCommand(HWND hwndFrame,
                                           &cAbstractsMoved);
                         }
 
-                        lstFree(pll);
+                        lstFree(&pll);
                     }
                 }
 
@@ -2696,7 +2696,7 @@ MRESULT EXPENTRY winh_fnwpFrameWithStatusBar(HWND hwndFrame, ULONG msg, MPARAM m
                                             hwndMenu,
                                             hwndFrame);
 
-                        lstFree(pll);
+                        lstFree(&pll);
                     }
                 }
             }

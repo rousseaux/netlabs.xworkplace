@@ -1792,7 +1792,7 @@ VOID CollectDoubleFiles(MPARAM mp1)
     }
 
     // destroy the temprary list, including all files
-    lstFree(pllFilesTemp);
+    lstFree(&pllFilesTemp);
 
     WinPostMsg(pdf->hwndNotify,
                pdf->ulNotifyMsg,

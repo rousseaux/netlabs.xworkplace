@@ -442,7 +442,7 @@ APIRET LoadDatabase(PVOID pDatabase)
                                               pGroupElementThis);
                         }
 
-                        lstFree(pllGroups);
+                        lstFree(&pllGroups);
 
                         if (!arc)
                         {
@@ -462,7 +462,7 @@ APIRET LoadDatabase(PVOID pDatabase)
                                                      pUserElementThis);
                                 }
 
-                                lstFree(pllUsers);
+                                lstFree(&pllUsers);
                             }
                         }
                     }

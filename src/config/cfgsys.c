@@ -647,7 +647,7 @@ MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
         {
             PDOUBLEFILESWINDATA pWinData = (PDOUBLEFILESWINDATA)WinQueryWindowPtr(hwndDlg,
                                                                                   QWL_USER);
-            lstFree(pWinData->df.pllDoubleFiles);
+            lstFree(&pWinData->df.pllDoubleFiles);
             winhAdjustControls(hwndDlg,
                                NULL, // cleanup
                                sizeof(ampDoubleFilesControls) / sizeof(MPARAM),
@@ -1280,13 +1280,12 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
             while (pSysPathNode)
             {
                 PSYSPATH pSysPathThis = (PSYSPATH)pSysPathNode->pItemData;
-                lstFree(pSysPathThis->pllPaths);        // this frees the items automatically
+                lstFree(&pSysPathThis->pllPaths);        // this frees the items automatically
                 free(pSysPathThis);
 
                 pSysPathNode = pSysPathNode->pNext;
             }
-            lstFree(G_pllSysPathsList);
-            G_pllSysPathsList = NULL;
+            lstFree(&G_pllSysPathsList);
         }
     }
 }

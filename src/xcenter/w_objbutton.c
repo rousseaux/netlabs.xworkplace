@@ -1281,6 +1281,40 @@ MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 }
 
 /*
+ *@@ OwgtDestroy:
+ *      implementation for WM_DESTROY.
+ *
+ *@@added V0.9.12 (2001-05-24) [umoeller]
+ */
+
+VOID OwgtDestroy(HWND hwnd)
+{
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    if (pWidget)
+    {
+        POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
+        if (pPrivate)
+        {
+            if (pPrivate->hptrXMini)
+                WinDestroyPointer(pPrivate->hptrXMini);
+
+            if (pPrivate->pobjNotify)
+            {
+                // @@todo memory leak still here... does this
+                // even get called?!? V0.9.12 (2001-05-24) [umoeller]
+                _xwpRemoveDestroyNotify(pPrivate->pobjNotify,
+                                        hwnd);
+                _wpUnlockObject(pPrivate->pobjNotify);
+            }
+
+            // free private data
+            free(pPrivate);
+                    // pWidget is cleaned up by DestroyWidgets
+        }
+    }
+}
+
+/*
  *@@ fnwpObjButtonWidget:
  *      window procedure for the desktop button widget class.
  *
@@ -1455,30 +1489,9 @@ MRESULT EXPENTRY fnwpObjButtonWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
          */
 
         case WM_DESTROY:
-        {
-            PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-            if (pWidget)
-            {
-                POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
-                if (pPrivate)
-                {
-                    if (pPrivate->hptrXMini)
-                        WinDestroyPointer(pPrivate->hptrXMini);
-
-                    if (pPrivate->pobjNotify)
-                    {
-                        _xwpRemoveDestroyNotify(pPrivate->pobjNotify,
-                                                hwnd);
-                        _wpUnlockObject(pPrivate->pobjNotify);
-                    }
-
-                    // free private data
-                    free(pPrivate);
-                            // pWidget is cleaned up by DestroyWidgets
-                }
-            }
+            OwgtDestroy(hwnd);
             mrc = ctrDefWidgetProc(hwnd, msg, mp1, mp2);
-        break; }
+        break;
 
         default:
             mrc = ctrDefWidgetProc(hwnd, msg, mp1, mp2);

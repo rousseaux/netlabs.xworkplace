@@ -16,8 +16,6 @@
 !if [@echo +++++ Entering $(MAKEDIR)]
 !endif
 
-PROJECT_BASE_DIR = $(CVS_WORK_ROOT)\xworkplace
-
 # include setup (compiler options etc.)
 !include ..\..\setup.in
 

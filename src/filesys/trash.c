@@ -1567,7 +1567,7 @@ BOOL trshRefresh(XWPTrashCan *somSelf)
         // go for next
         pNode = pNode->pNext;
     }
-    lstFree(pllTrashObjects);
+    lstFree(&pllTrashObjects);
 
     fdrUpdateStatusBars(somSelf);
 
@@ -2065,7 +2065,7 @@ MRESULT trshMoveDropped2TrashCan(XWPTrashCan *somSelf,
     }
 
     // in any case, free the list V0.9.7 (2001-01-13) [umoeller]
-    lstFree(pllDroppedObjects);
+    lstFree(&pllDroppedObjects);
 
     return (mrc);
 }
@@ -2129,7 +2129,7 @@ ULONG trshEmptyTrashCan(XWPTrashCan *somSelf,
                                                 NULL,           // target folder: not needed
                                                 pllTrashObjects); // list with objects
 
-                lstFree(pllTrashObjects);
+                lstFree(&pllTrashObjects);
             }
         }
     }

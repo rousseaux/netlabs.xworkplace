@@ -634,7 +634,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
         {
             // folder was empty:
             // cleanup
-            lstFree(pec->pllOrderedContent);
+            lstFree(&pec->pllOrderedContent);
             free(pec);
             pec = NULL;
         }
@@ -756,7 +756,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpEndEnumContent(XFolder *somSelf,
 
     if (pec)
     {
-        lstFree(pec->pllOrderedContent);    // this will auto-free the list items
+        lstFree(&pec->pllOrderedContent);    // this will auto-free the list items
         free(pec);
         brc = TRUE;
     }

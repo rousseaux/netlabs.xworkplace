@@ -1234,7 +1234,7 @@ PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
             #endif
         }
 
-        lstFree(pllTypes);
+        lstFree(&pllTypes);
     }
 
     return (pllAssocs);
@@ -1247,22 +1247,27 @@ PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
  *      then freeing the list.
  *
  *@@added V0.9.6 (2000-10-16) [umoeller]
+ *@@changed V0.9.12 (2001-05-24) [umoeller]: changed prototype for new lstFree
  */
 
-ULONG ftypFreeAssocsList(PLINKLIST pllAssocs)    // in: list created by ftypBuildAssocsList
+ULONG ftypFreeAssocsList(PLINKLIST *ppllAssocs)    // in: list created by ftypBuildAssocsList
 {
     ULONG       ulrc = 0;
-    PLISTNODE   pNode = lstQueryFirstNode(pllAssocs);
-    while (pNode)
+    PLINKLIST pList;
+    if (pList = *ppllAssocs)
     {
-        WPObject *pObj = (WPObject*)pNode->pItemData;
-        _wpUnlockObject(pObj);
+        PLISTNODE   pNode = lstQueryFirstNode(pList);
+        while (pNode)
+        {
+            WPObject *pObj = (WPObject*)pNode->pItemData;
+            _wpUnlockObject(pObj);
 
-        pNode = pNode->pNext;
-        ulrc++;
+            pNode = pNode->pNext;
+            ulrc++;
+        }
+
+        lstFree(ppllAssocs);
     }
-
-    lstFree(pllAssocs);
 
     return (ulrc);
 }
@@ -1347,7 +1352,7 @@ WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,       // in: data file
             }
         }
 
-        ftypFreeAssocsList(pllAssocObjects);
+        ftypFreeAssocsList(&pllAssocObjects);
     }
 
     return (pObjReturn);
@@ -1477,7 +1482,7 @@ BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf, // in: data file in ques
                     }
                 } // end if (cAssocObjects)
 
-                ftypFreeAssocsList(pllAssocObjects);
+                ftypFreeAssocsList(&pllAssocObjects);
             }
         }
     }
@@ -4412,7 +4417,7 @@ VOID FillInstanceFileTypesPage(PCREATENOTEBOOKPAGE pcnbp,
                                   pllDisable);        // disable list
 
         if (pllExplicitTypes)
-            lstFree(pllExplicitTypes);
+            lstFree(&pllExplicitTypes);
     }
 }
 
@@ -4529,7 +4534,7 @@ VOID HandleRecordChecked(ULONG ulExtra,         // from "item changed" callback
                 xstrcpys(pstrTypes, &strNew);
                 xstrClear(&strNew);
 
-                lstFree(pllExplicitTypes);
+                lstFree(&pllExplicitTypes);
             }
             else
                 // we had only one type:
@@ -4588,7 +4593,7 @@ VOID ftypDatafileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                   '\n',         // separator char
                                   pllAutomaticTypes);    // items to disable
 
-        lstFree(pllAutomaticTypes);
+        lstFree(&pllAutomaticTypes);
     }
 
     if (flFlags & CBI_DESTROY)
@@ -4975,7 +4980,7 @@ APIRET ImportFilters(PDOMNODE pTypeElementThis,
                             cbFilters);
 
         lstClear(&llAllFilters);
-        lstFree(pllElementFilters);
+        lstFree(&pllElementFilters);
     }
     // else no filters: no problem,
     // we leave the existing intact, if any
@@ -5076,7 +5081,7 @@ APIRET ImportTypes(PDOMNODE pParentElement,
                                   pstrTypeName->psz);
         } // end for (pTypeNode = lstQueryFirstNode(pllTypes);
 
-        lstFree(pllTypes);
+        lstFree(&pllTypes);
     }
 
     return (arc);

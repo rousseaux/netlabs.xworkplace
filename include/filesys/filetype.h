@@ -42,7 +42,7 @@
         PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
                                       BOOL fUsePlainTextAsDefault);
 
-        ULONG ftypFreeAssocsList(PLINKLIST pllAssocs);
+        ULONG ftypFreeAssocsList(PLINKLIST *ppllAssocs);
 
         WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,
                                              PULONG pulView,

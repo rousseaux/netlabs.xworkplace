@@ -2051,7 +2051,7 @@ VOID _Optlink fntInsertContents(PTHREADINFO ptiMyself)
                     pNode = pNode->pNext;
                 }
 
-                lstFree(pThreadData->pll);
+                lstFree(&pThreadData->pll);
             }
 
             WinPostMsg(pWinData->hwndMainClient,

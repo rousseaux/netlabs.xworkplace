@@ -1141,7 +1141,7 @@ SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
             pNode = pNode->pNext;
         }
 
-        lstFree(_pvllWidgetNotifies);
+        lstFree((LINKLIST**)&_pvllWidgetNotifies);
     }
 
     XFldObject_parent_WPObject_wpUnInitData(somSelf);

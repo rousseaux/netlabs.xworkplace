@@ -504,7 +504,7 @@ src\widgets\w_diskfree.def: include\bldlevel.h
 
 $(MODULESDIR)\diskfree.dll: $(DISKFREEOBJS) src\widgets\w_diskfree.def
         @echo $(MAKEDIR)\makefile: Linking $@
-        $(LINK) /OUT:$@ src\widgets\w_diskfree.def @<<link.tmp
+        $(LINK) /OUT:$@ src\widgets\w_diskfree.def @<<
 $(DISKFREEOBJS)
 <<
 !ifdef XWP_OUTPUT_ROOT_DRIVE
@@ -533,7 +533,7 @@ src\widgets\monitors.def: include\bldlevel.h
 
 $(MODULESDIR)\monitors.dll: $(MONITOROBJS) src\widgets\$(@B).def
         @echo $(MAKEDIR)\makefile: Linking $@
-        $(LINK) /OUT:$@ src\widgets\$(@B).def @<<link.tmp
+        $(LINK) /OUT:$@ src\widgets\$(@B).def @<<
 $(MONITOROBJS)
 <<
 !ifdef XWP_OUTPUT_ROOT_DRIVE
@@ -589,7 +589,7 @@ src\widgets\xwHealth.def: include\bldlevel.h
 
 $(MODULESDIR)\xwHealth.dll: $(HEALTHOBJS) src\widgets\$(@B).def
         @echo $(MAKEDIR)\makefile: Linking $@
-        $(LINK) /OUT:$@ src\widgets\$(@B).def @<<link.tmp
+        $(LINK) /OUT:$@ src\widgets\$(@B).def @<<
 $(HEALTHOBJS)
 <<
 !ifdef XWP_OUTPUT_ROOT_DRIVE
@@ -618,7 +618,7 @@ src\widgets\sample.def: include\bldlevel.h
 
 $(MODULESDIR)\sample.dll: $(SAMPLEOBJS) src\widgets\$(@B).def
         @echo $(MAKEDIR)\makefile: Linking $@
-        $(LINK) /OUT:$@ src\widgets\$(@B).def @<<link.tmp
+        $(LINK) /OUT:$@ src\widgets\$(@B).def @<<
 $(SAMPLEOBJS)
 <<
 !ifdef XWP_OUTPUT_ROOT_DRIVE

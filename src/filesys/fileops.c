@@ -434,7 +434,7 @@ VOID fopsFreeExpandedList(PLINKLIST pllSFL)
 
             pNode = pNode->pNext;
         }
-        lstFree(pllSFL);
+        lstFree(&pllSFL);
     }
 }
 

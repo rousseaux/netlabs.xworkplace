@@ -543,7 +543,7 @@ PLINKLIST InsertDriverCategories(HWND hwndCnr,
             else
                 // no drivers found: destroy the list
                 // again, it's empty anyway
-                lstFree(pllDriverSpecsForCategory);
+                lstFree(&pllDriverSpecsForCategory);
 
             free(pszBlock);
 
@@ -779,12 +779,12 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
                         pSpecNode = pSpecNode->pNext;
                     }
 
-                    lstFree(pllSpecsForCategory);
+                    lstFree(&pllSpecsForCategory);
                 }
                 pListNode = pListNode->pNext;
             }
 
-            lstFree(pPageData->pllLists);
+            lstFree(&pPageData->pllLists);
         }
         // pcnbp->pUser = NULL;        // avoid notebook.c freeing this
 
