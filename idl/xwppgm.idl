@@ -55,7 +55,8 @@ interface XWPProgram : WPProgram
   implementation {
 
     releaseorder: xwpAddAssociationsPage,
-                  xwpQuerySetup2;
+                  xwpQuerySetup2,
+                  xwpNukePhysical;
 
     /*
      * Class Modifiers:

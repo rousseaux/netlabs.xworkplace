@@ -63,7 +63,8 @@ interface XFldProgramFile : WPProgramFile
                   xwpQuerySetup2,
                   xwpAddResourcesPage,
                   xwpAddModulePage,
-                  xwpAddAssociationsPage;
+                  xwpAddAssociationsPage,
+                  xwpNukePhysical;
 
     /*
      * Class Modifiers:
