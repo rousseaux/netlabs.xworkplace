@@ -645,11 +645,17 @@ VOID PwgtPaint2(HWND hwnd,
                           0, 0,
                           DBM_NORMAL);
 
-            if (pPrivate->palLoads)
+            /* if (pPrivate->palLoads)
                 sprintf(szPaint, "%lu%c%lu%c",
                         pPrivate->pPerfData->palLoads[0] / 10,
                         pCountrySettings->cDecimal,
                         pPrivate->pPerfData->palLoads[0] % 10,
+                        '%'); */
+            if (pPrivate->palIntrs)
+                sprintf(szPaint, "%lu%c%lu%c",
+                        pPrivate->pPerfData->palIntrs[0] / 10,
+                        pCountrySettings->cDecimal,
+                        pPrivate->pPerfData->palIntrs[0] % 10,
                         '%');
 
         }
