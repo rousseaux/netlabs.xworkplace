@@ -169,6 +169,8 @@ interface XFldObject : WPObject
     wpCopyObject: override;
     wpObjectReady: override;
 
+    wpSetup: override;
+
     wpFree: override;
     wpUnInitData: override;
 

@@ -672,6 +672,7 @@ USHORT xsdWriteAutoCloseItems(PLINKLIST pllItems)
  *@@changed V0.9.2 (2000-03-04) [umoeller]: added "APM delay" support
  *@@changed V0.9.3 (2000-05-22) [umoeller]: added animate on reboot
  *@@changed V0.9.4 (2000-08-03) [umoeller]: added "empty trash can"
+ *@@changed V0.9.9 (2001-04-07) [pr]: added missing Undo and Default processing
  */
 
 VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -688,6 +689,16 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         PEXECUTABLE pExec;
         CHAR    szAPMVersion[30];
         CHAR    szAPMSysFile[CCHMAXPATH];
+
+        if (pcnbp->pUser == NULL)
+        {
+            // first call: backup Global Settings for "Undo" button;
+            // this memory will be freed automatically by the
+            // common notebook window function (notebook.c) when
+            // the notebook page is destroyed
+            pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
+            memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+        }
 
         sprintf(szAPMVersion, "APM %s", apmQueryVersion());
         WinSetDlgItemText(pcnbp->hwndDlgPage, ID_SDDI_APMVERSION, szAPMVersion);
@@ -839,6 +850,7 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.2 (2000-03-04) [umoeller]: added "APM delay" support
  *@@changed V0.9.3 (2000-05-22) [umoeller]: added animate on reboot
  *@@changed V0.9.4 (2000-08-03) [umoeller]: added "empty trash can"
+ *@@changed V0.9.9 (2001-04-07) [pr]: added missing Undo and Default processing
  */
 
 MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -847,7 +859,8 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                ULONG ulExtra)      // for checkboxes: contains new state
 {
     ULONG ulChange = 1;
-    ULONG ulFlag = -1;
+    ULONG ulFlag = -1,
+          ulSaveINIS = -1;
 
     switch (ulItemID)
     {
@@ -893,17 +906,12 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_SDDI_SAVEINIS_LIST:
         {
-            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-            if (pGlobalSettings)
-            {
-                ULONG ul = (ULONG)WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST,
-                                                    LM_QUERYSELECTION,
-                                                    MPFROMSHORT(LIT_FIRST),
-                                                    0);
-                if (ul >= 0 && ul <= 2)
-                    pGlobalSettings->bSaveINIS = ul;
-                cmnUnlockGlobalSettings();
-            }
+            ULONG ul = (ULONG)WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST,
+                                                LM_QUERYSELECTION,
+                                                MPFROMSHORT(LIT_FIRST),
+                                                0);
+            if (ul >= 0 && ul <= 2)
+                ulSaveINIS = ul;
         break; }
 
         // Reboot Actions (Desktop page 1)
@@ -949,19 +957,58 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             ulChange = 0;
         break; }
 
+        case DID_UNDO:
+        {
+            // "Undo" button: get pointer to backed-up Global Settings
+            PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
+            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+            if (pGlobalSettings)
+            {
+                // and restore the settings for this page
+                pGlobalSettings->ulXShutdownFlags = pGSBackup->ulXShutdownFlags;
+                pGlobalSettings->bSaveINIS = pGSBackup->bSaveINIS;
+
+                // update the display by calling the INIT callback
+                (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+                cmnUnlockGlobalSettings();
+            }
+        break; }
+
+        case DID_DEFAULT:
+        {
+            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+            if (pGlobalSettings)
+            {
+                // set the default settings for this settings page
+                // (this is in common.c because it's also used at
+                // WPS startup)
+                cmnSetDefaultSettings(pcnbp->ulPageID);
+                // update the display by calling the INIT callback
+                (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+                cmnUnlockGlobalSettings();
+            }
+        break; }
+
         default:
             ulChange = 0;
     }
 
-    if (ulFlag != -1)
+    if (   (ulFlag != -1)
+        || (ulSaveINIS != -1)
+       )
     {
         GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
         if (pGlobalSettings)
         {
-            if (ulExtra)
-                pGlobalSettings->ulXShutdownFlags |= ulFlag;
-            else
-                pGlobalSettings->ulXShutdownFlags &= ~ulFlag;
+            if (ulFlag != -1)
+                if (ulExtra)
+                    pGlobalSettings->ulXShutdownFlags |= ulFlag;
+                else
+                    pGlobalSettings->ulXShutdownFlags &= ~ulFlag;
+
+            if (ulSaveINIS != -1)
+                pGlobalSettings->bSaveINIS = (CHAR) ulSaveINIS;
+
             cmnUnlockGlobalSettings();
         }
     }
@@ -1888,9 +1935,9 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 
             // get existing items from INI
             if (PrfQueryProfileSize(HINI_USER,
-                        (PSZ)INIAPP_XWORKPLACE,
-                        (PSZ)INIKEY_BOOTMGR,
-                        &ulKeyLength))
+                                    (PSZ)INIAPP_XWORKPLACE,
+                                    (PSZ)INIKEY_BOOTMGR,
+                                    &ulKeyLength))
             {
                 // _Pmpf(( "Size: %d", ulKeyLength ));
                 // items exist: evaluate
@@ -1898,10 +1945,10 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                 if (pINI)
                 {
                     PrfQueryProfileData(HINI_USER,
-                                (PSZ)INIAPP_XWORKPLACE,
-                                (PSZ)INIKEY_BOOTMGR,
-                                pINI,
-                                &ulKeyLength);
+                                        (PSZ)INIAPP_XWORKPLACE,
+                                        (PSZ)INIKEY_BOOTMGR,
+                                        pINI,
+                                        &ulKeyLength);
                     p = pINI;
                     // _Pmpf(( "%s", p ));
                     while (strlen(p))
@@ -2243,20 +2290,22 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                     HPOINTER       hptrOld = winhSetWaitPointer();
                     HWND           hMenu = NULLHANDLE;
 
-                    if (pData->ppi == NULL)
+                    if (!pData->fPartitionsLoaded)  // V0.9.9 (2001-04-07) [umoeller]
                     {
                         // first time:
                         USHORT         usContext = 0;
-                        APIRET arc = doshGetPartitionsList(&pData->ppi,
-                                                           &pData->usPartitions,
+                        APIRET arc = doshGetPartitionsList(&pData->pPartitionsList,
                                                            &usContext);
-                        if (arc != NO_ERROR)
-                            pData->ppi = NULL;
+
+                        pData->fPartitionsLoaded = TRUE;
                     }
 
-                    if (pData->ppi)
+                    _Pmpf((__FUNCTION__ ": pData->pPartitionsList is 0x%lX",
+                                pData->pPartitionsList));
+
+                    if (pData->pPartitionsList)
                     {
-                        PPARTITIONINFO ppi = pData->ppi;
+                        PPARTITIONINFO ppi = pData->pPartitionsList->pPartitionInfo;
                         SHORT          sItemId = ID_XSDI_PARTITIONSFIRST;
                         hMenu = WinCreateMenu(HWND_DESKTOP,
                                               NULL); // no menu template
@@ -2360,19 +2409,20 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                 break; }
 
                 default: // includes DID_CANCEL
-                    if (    (pData->ppi)
-                         && (pData->usPartitions)
+                    if (    (pData->pPartitionsList)
+                         && (pData->pPartitionsList->cPartitions)
                        )
                     {
                         // partitions valid:
+                        ULONG cPartitions = pData->pPartitionsList->cPartitions;
                         if (    (usItemID >= ID_XSDI_PARTITIONSFIRST)
-                             && (usItemID < ID_XSDI_PARTITIONSFIRST + pData->usPartitions)
+                             && (usItemID < ID_XSDI_PARTITIONSFIRST + cPartitions)
                              && (pData->pliSelected)
                            )
                         {
                             // partition item from "Partitions" menu button:
                             // search partitions list then
-                            PPARTITIONINFO ppi = pData->ppi;
+                            PPARTITIONINFO ppi = pData->pPartitionsList->pPartitionInfo;
                             SHORT sItemIDCompare = ID_XSDI_PARTITIONSFIRST;
                             while (ppi)
                             {
@@ -2449,8 +2499,8 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             ctlStopAnimation(WinWindowFromID(hwndDlg, ID_SDDI_ICON));
             xsdFreeAnimation(&G_sdAnim);
             lstFree(pData->pllReboot);
-            if (pData->ppi != NULL)
-                doshFreePartitionsList(pData->ppi);
+            if (pData->pPartitionsList)
+                doshFreePartitionsList(pData->pPartitionsList);
             free(pData);
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
         break; }

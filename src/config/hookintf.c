@@ -768,7 +768,7 @@ VOID hifCollectHotkeys(MPARAM mp1,  // in: HWND hwndCnr
                             preccThis->pszFolderPath = preccThis->szFolderPath;
                 }
                 else
-                    preccThis->recc.pszIcon = "Invalid object";
+                    preccThis->recc.pszIcon = "Invalid object"; //@@todo NLS
 
                 preccThis = (PHOTKEYRECORD)(preccThis->recc.preccNextRecord);
                 ulCount++;
@@ -1725,6 +1725,7 @@ VOID hifMouseMappings2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
  *@@changed V0.9.4 (2000-06-12) [umoeller]: fixed "default" and "undo" buttons
  *@@changed V0.9.9 (2001-03-15) [lafaix]: added MB3 click mappings
  *@@changed V0.9.9 (2001-03-25) [lafaix]: fixed "default" and "undo" behavior
+ *@@changed V0.9.9 (2001-04-07) [pr]: fixed "default" and "undo" again
  */
 
 MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1823,8 +1824,10 @@ MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             hifLoadHookConfig(pdc);
             pdc->fChordWinList = 0;
             pdc->fSysMenuMB2TitleBar = 0;
+            pdc->fMB3AutoScroll = 0; // V0.9.9 (2001-04-07) [pr]
             pdc->fMB3Click2MB1DblClk = 0;
             pdc->fMB3Scroll = 0;
+            pdc->fMB3Push2Bottom = 0; // V0.9.9 (2001-04-07) [pr]
             pdc->usMB3ScrollMin = 0;
             pdc->usScrollMode = SM_LINEWISE; // 0
             pdc->sAmplification = 0;
@@ -1850,7 +1853,9 @@ MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 PHOOKCONFIG pBackup = (PHOOKCONFIG)pcnbp->pUser2;
                 pdc->fChordWinList = pBackup->fChordWinList;
                 pdc->fSysMenuMB2TitleBar = pBackup->fSysMenuMB2TitleBar;
+                pdc->fMB3AutoScroll = pBackup->fMB3AutoScroll;  // V0.9.9 (2001-04-07) [pr]
                 pdc->fMB3Click2MB1DblClk = pBackup->fMB3Click2MB1DblClk;
+                pdc->fMB3Push2Bottom = pBackup->fMB3Push2Bottom;  // V0.9.9 (2001-04-07) [pr]
                 pdc->fMB3Scroll = pBackup->fMB3Scroll;
                 pdc->usMB3ScrollMin = pBackup->usMB3ScrollMin;
                 pdc->usScrollMode = pBackup->usScrollMode;
@@ -2072,6 +2077,7 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
  *@@changed V0.9.6 (2000-10-27) [umoeller]: added optional NPSWPS-like submenu behavior
  *@@changed V0.9.7 (2000-12-08) [umoeller]: added "ignore XCenter"
  *@@changed V0.9.9 (2001-03-25) [lafaix]: fixed "default" and "undo" behavior
+ *@@changed V0.9.9 (2001-04-07) [pr]: fixed "default" and "undo" again
  */
 
 MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -2204,6 +2210,7 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pdc->fSlidingIgnoreSeamless = 0;
             pdc->fSlidingIgnoreDesktop = 0;
             pdc->fSlidingIgnorePageMage = 0;
+            pdc->fSlidingIgnoreXCenter = 0;  // V0.9.9 (2001-04-07) [pr]
             pdc->ulSlidingFocusDelay = 0;
             pdc->fSlidingMenus = 0;
             pdc->ulSubmenuDelay = 0;
@@ -2236,6 +2243,7 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 pdc->fSlidingIgnoreSeamless = pBackup->fSlidingIgnoreSeamless;
                 pdc->fSlidingIgnoreDesktop = pBackup->fSlidingIgnoreDesktop;
                 pdc->fSlidingIgnorePageMage = pBackup->fSlidingIgnorePageMage;
+                pdc->fSlidingIgnoreXCenter = pBackup->fSlidingIgnoreXCenter;  // V0.9.9 (2001-04-07) [pr]
                 pdc->ulSlidingFocusDelay = pBackup->ulSlidingFocusDelay;
                 pdc->fSlidingMenus = pBackup->fSlidingMenus;
                 pdc->ulSubmenuDelay = pBackup->ulSubmenuDelay;

@@ -1200,12 +1200,12 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
     // nameclashs are only a problem for file-system objects,
     // and only if we're not creating shadows
     if (    (_somIsA(somSelf, _WPFileSystem))
-    /*      && (menuID != 0x13C) // "create shadow" code
+         && (menuID != 0x13C) // "create shadow" code
          && (menuID != 0x065) // various "create another" codes; V0.9.4 (2000-07-15) [umoeller]
          && (menuID != 0x066)
          && (menuID < 0x7D0)
-       ) */
-         && (0 == (_wpQueryNameClashOptions(somSelf, menuID) & NO_NAMECLASH_DIALOG))
+         // && (0 == (_wpQueryNameClashOptions(somSelf, menuID) & NO_NAMECLASH_DIALOG))
+                    // this doesn't work V0.9.9 (2001-04-07) [umoeller]
        )
     {
         CHAR            szFolder[CCHMAXPATH],

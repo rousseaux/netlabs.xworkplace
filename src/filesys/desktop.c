@@ -244,7 +244,7 @@ BOOL dtpSetup(WPDesktop *somSelf,
         brc = xsdInitiateShutdownExt(&xsd);
     }
 
-    if (_wpScanSetupString(somSelf,
+    /* if (_wpScanSetupString(somSelf,
                            (PSZ)pcszSetupString,
                            "TESTFILEDLG",
                            szValue,
@@ -261,7 +261,7 @@ BOOL dtpSetup(WPDesktop *somSelf,
             winhDebugBox(NULLHANDLE,
                          "Test file dlg",
                          szFullFile);
-    }
+    } */
 
     return (brc);
 }
@@ -403,7 +403,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
             // remove original shutdown item
             winhRemoveMenuItem(hwndMenu, WPMENUID_SHUTDOWN);
 
-            strcpy(szShutdown, "~XShutdown");
+            strcpy(szShutdown, "~XShutdown");  //@@todo NLS
             if (pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM)
                 strcat(szShutdown, "...");
 
@@ -737,6 +737,7 @@ VOID dtpMenuItemsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.7 (2000-12-13) [umoeller]: changed shutdown menu items
  *@@changed V0.9.7 (2000-12-13) [umoeller]: added "logoff network now"
+ *@@changed V0.9.9 (2001-04-07) [pr]: fixed Undo
  */
 
 MRESULT dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -786,8 +787,11 @@ MRESULT dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             GLOBALSETTINGS *pGSBackup = (GLOBALSETTINGS*)(pcnbp->pUser);
 
             // and restore the settings for this page
+            pGlobalSettings->fDTMSort = pGSBackup->fDTMSort;  // V0.9.9
+            pGlobalSettings->fDTMArrange = pGSBackup->fDTMArrange;  // V0.9.9
             pGlobalSettings->fDTMSystemSetup = pGSBackup->fDTMSystemSetup;
             pGlobalSettings->fDTMLockup = pGSBackup->fDTMLockup;
+            pGlobalSettings->fDTMLogoffNetwork = pGSBackup->fDTMLogoffNetwork;  // V0.9.9
             pGlobalSettings->fDTMShutdown = pGSBackup->fDTMShutdown;
             pGlobalSettings->fDTMShutdownMenu = pGSBackup->fDTMShutdownMenu;
 
@@ -959,6 +963,7 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.1 (2000-02-09) [umoeller]: added NumLock support to this page
  *@@changed V0.9.3 (2000-04-11) [umoeller]: fixed major resource leak; the bootlogo bitmap was never freed
+ *@@changed V0.9.9 (2001-04-07) [pr]: fixed Undo
  */
 
 MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1006,6 +1011,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                pGlobalSettings->ShowBootupStatus = pGSBackup->ShowBootupStatus;
                pGlobalSettings->BootLogo = pGSBackup->BootLogo;
                pGlobalSettings->bBootLogoStyle = pGSBackup->bBootLogoStyle;
+               pGlobalSettings->fNumLockStartup = pGSBackup->fNumLockStartup;  // V0.9.9
 
                // update the display by calling the INIT callback
                pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);

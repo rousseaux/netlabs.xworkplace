@@ -17,7 +17,7 @@ Ulrich M”ller.
 NOT-SO-SERIOUS PROBLEMS
 -----------------------
 
---  fix xfix
+--  xfix crashes with multiple handles being deleted.
 
 --  xcenter:
     stays visible with lockup screen and stay-on-top.

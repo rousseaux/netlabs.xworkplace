@@ -103,11 +103,73 @@
 
 /* ******************************************************************
  *
- *   Additional declarations
+ *   Private declarations
  *
  ********************************************************************/
 
 #define MAPPINGS_FILE "@mapping"
+
+/*
+ *@@ TRASHMAPPINGNODE:
+ *      entry for the binary tree in G_MappingsTreeRoot.
+ *
+ *      Assuming that C:\Documents\Important\myfile.txt
+ *      gets moved into the trash can. This would result
+ *      in the following:
+ *
+ *      1) Creation of the hidden C:\TRASH directory,
+ *         if that doesn't exist yet.
+ *
+ *      2) Now, instead of creating "C:\TRASH\Documents\Important"
+ *         as we used to do, we create a new dir with a random
+ *         name (e.g. "C:\TRASH\01234567") and move myfile.txt
+ *         there.
+ *
+ *      3) We then create a TRASHMAPPINGTREENODE for "C:\TRASH\01234567"
+ *         and store "C:\TRASH\Documents\Important" with pcszRealTitle.
+ *
+ *      If "C:\Documents\Important\myfile2.txt" gets deleted, we
+ *      use that same mapping.
+ *
+ *      By contrast, if the entire folder "C:\Documents\Important"
+ *      gets deleted, we do this:
+ *
+ *      1) Again, creation of the hidden C:\TRASH directory,
+ *         if that doesn't exist yet.
+ *
+ *      2) Create a new dir with a random name (e.g. "C:\TRASH\1")
+ *         and move "C:\Documents\Important" there.
+ *
+ *      3) We then create a TRASHMAPPINGTREENODE for "C:\TRASH\1"
+ *         and store "C:\TRASH\Documents" with pcszRealTitle.
+ *
+ *      This allows us to keep deleted files and folders separate.
+ *
+ *@@added V0.9.9 (2001-02-06) [umoeller]
+ *@@changed V0.9.9 (2001-04-07) [umoeller]: completely reworked mappings to not use object handles
+ */
+
+typedef struct _TRASHMAPPINGTREENODE2
+{
+    TREE            Tree;
+                // base tree node. ID is NOT used.
+
+    PSZ             pszSourceRealName;
+                // full path of where that folder originally was;
+                // for example, if pFolderInTrash is "C:\TRASH\01234567",
+                // this could be "C:\Documents\Important".
+                // This PSZ is allocated using malloc().
+
+    WPFolder        *pFolderInTrash;
+                // awake subfolder of \trash. This is a DIRECT subdirectory
+                // of \trash on each drive and contains the related
+                // objects which were put here. This is ALWAYS HIDDEN.
+
+    ULONG           ulIndex;
+                // decimal number representing the name of pFolderInTrash;
+                // they are all named with decimals, which we store here also
+
+} TRASHMAPPINGTREENODE2, *PTRASHMAPPINGTREENODE2;
 
 /* ******************************************************************
  *
@@ -153,12 +215,85 @@ BYTE        G_abMappingDrivesDirty[CB_SUPPORTED_DRIVES] = {0};
  ********************************************************************/
 
 /*
+ *@@ fnCompareMappingNodes:
+ *
+ *@@added V0.9.9 (2001-04-07) [umoeller]
+ */
+
+int TREEENTRY fnCompareMappingNodes(TREE *t1, TREE *t2)
+{
+    return (strhicmp(((PTRASHMAPPINGTREENODE2)t1)->pszSourceRealName,
+                     ((PTRASHMAPPINGTREENODE2)t2)->pszSourceRealName));
+}
+
+/*
+ *@@ fnCompareMappingsData:
+ *
+ *@@added V0.9.9 (2001-04-07) [umoeller]
+ */
+
+int TREEENTRY fnCompareMappingsData(TREE *t1, void *pData)
+{
+    return (strhicmp(((PTRASHMAPPINGTREENODE2)t1)->pszSourceRealName,
+                     (const char*)pData));
+}
+
+/*
+ *@@ CreateMapping:
+ *      creates a new TRASHMAPPINGTREENODE with the
+ *      specified data.
+ *
+ *      This also marks the corresponding drive as
+ *      "dirty" and calls wpSaveDeferred on the
+ *      trash can to force the mappings to be saved
+ *      again.
+ *
+ *      Caller must hold the trash can mutex.
+ *
+ *@@added V0.9.9 (2001-02-06) [umoeller]
+ */
+
+PTRASHMAPPINGTREENODE2 CreateMapping(ULONG ulMappingIndex,      // in: decimal in \trash subdir name
+                                     WPFolder *pFolderInTrash,   // in: direct \trash subfolder
+                                     const char *pcszSourceRealName,   // in: real name of source dir
+                                     PBOOL pfNeedSave)   // out: set to TRUE if drives are dirty
+                                         // and wpSaveDeferred must be called on the trash can
+{
+    PTRASHMAPPINGTREENODE2 pMapping = malloc(sizeof(TRASHMAPPINGTREENODE2));
+    if (pMapping)
+    {
+        ULONG   ulDriveOfs = 0;
+        pMapping->ulIndex = ulMappingIndex;
+        pMapping->pFolderInTrash  = pFolderInTrash;
+        pMapping->pszSourceRealName = strdup(pcszSourceRealName);
+        if (treeInsertNode(&G_MappingsTreeRoot,
+                           (TREE*)pMapping,
+                           fnCompareMappingNodes,
+                           FALSE)      // no duplicates
+                == TREE_OK)
+        {
+            if (pfNeedSave)
+            {
+                // set the corresponding drive to "dirty"
+                ulDriveOfs = pcszSourceRealName[0] - 'C';
+                        // 0 for C:, 1 for D:, ...
+                _Pmpf((__FUNCTION__ ": setting drive ofs %d dirty", ulDriveOfs));
+                G_abMappingDrivesDirty[ulDriveOfs] = 1;
+
+                *pfNeedSave = TRUE;
+            }
+        }
+    }
+
+    return (pMapping);
+}
+
+/*
  *@@ LoadMappingsForDrive:
  *      called from trshInitMappings to load the
  *      "@mapping" file from each drive.
  *
- *      Not to be called manually. The caller must
- *      hold the trash can's mutex.
+ *      Caller must hold the trash can's mutex.
  *
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
@@ -175,95 +310,83 @@ ULONG LoadMappingsForDrive(M_WPFolder *pFolderClass,
             "%s\\" MAPPINGS_FILE,
             pcszTrashDir);
 
-    if (doshLoadTextFile(szMapping,
-                         &pszDriveMappings)
-            == NO_ERROR)
+    if (    (!doshLoadTextFile(szMapping,
+                               &pszDriveMappings))
+         && (pszDriveMappings)
+       )
     {
-        if (pszDriveMappings)
+        // now, each line in that file looks like this:
+
+        // 123 C:\Documents\FullPath
+
+        const char *pThis = pszDriveMappings;
+        while (*pThis)
         {
-            // now, each line in that file looks like this:
-
-            // 0776abhj C:\Documents\FullPath
-
-            const char *pThis = pszDriveMappings;
-            while (*pThis)
+            PSZ pSpace = strchr(pThis, ' ');
+            if (pSpace)
             {
-                PTRASHMAPPINGTREENODE pNewNode = NULL;
-
-                PSZ pSpace = strchr(pThis, ' ');
-                if (pSpace)
+                PSZ pEOL = strhFindEOL(pSpace + 1, NULL);
+                if (pEOL > pSpace)
                 {
-                    const char *pEOL = strhFindEOL(pSpace + 1, NULL);
-                    if (pEOL > pSpace)
+                    // awake the folder
+                    WPFolder *pFolderInTrash;
+                    CHAR szMappedDir[CCHMAXPATH];
+                    // zero-terminate the folder name
+                    *pSpace = '\0';
+                    sprintf(szMappedDir,
+                            "%s\\%s",
+                            pcszTrashDir,
+                            pThis);
+                        // now we got:
+                        // C:\TRASH\123
+
+                    // awake the folder
+                    pFolderInTrash  = _wpclsQueryFolder(pFolderClass,
+                                                        szMappedDir,
+                                                        TRUE);    // lock
+                    if (!pFolderInTrash)
                     {
-                        pNewNode = malloc(sizeof(TRASHMAPPINGTREENODE));
-                        if (pNewNode)
-                        {
-                            // awake the folder
-                            CHAR szMappedDir[CCHMAXPATH];
-                            // zero-terminate the folder name
-                            *pSpace = '\0';
-                            sprintf(szMappedDir,
-                                    "%s\\%s",
-                                    pcszTrashDir,
-                                    pThis);
-                                // now we got:
-                                // C:\TRASH\0776abhj
-                            // awake the folder
-                            pNewNode->pFolderInTrash = _wpclsQueryFolder(pFolderClass,
-                                                                  szMappedDir,
-                                                                  TRUE);    // lock
-                            if (!pNewNode->pFolderInTrash)
-                            {
-                                ULONG ulDriveOfs = 0;
-                                // can't get the folder: this probably no longer
-                                // exists
-                                free(pNewNode);
-                                            // no set zero, we want to continue looping
+                        ULONG ulDriveOfs = 0;
+                        // can't get the folder: this probably no longer
+                        // exists...
+                        // set the corresponding drive to "dirty"
+                        ulDriveOfs = pcszTrashDir[0] - 'C';
+                                // 0 for C:, 1 for D:, ...
+                        _Pmpf((__FUNCTION__ ": setting drive ofs %d dirty", ulDriveOfs));
+                        G_abMappingDrivesDirty[ulDriveOfs] = 1;
 
-                                // set the corresponding drive to "dirty"
-                                ulDriveOfs = pcszTrashDir[0] - 'C';
-                                        // 0 for C:, 1 for D:, ...
-                                _Pmpf((__FUNCTION__ ": setting drive ofs %d dirty", ulDriveOfs));
-                                G_abMappingDrivesDirty[ulDriveOfs] = 1;
+                        *pfNeedSave = TRUE;
+                    }
+                    else
+                    {
+                        // folder still exists:
+                        // add the mapping then
+                        CHAR    c = *pEOL;
+                        *pEOL = '\0';
 
-                                *pfNeedSave = TRUE;
-                            }
-                            else
-                            {
-                                // folder still exists:
-                                // add the mapping then
-                                pNewNode->pszRealName = strhSubstr(pSpace + 1,
-                                                                   pEOL);
-                                // use the SOM pointer of the folder
-                                // as the tree ID
-                                pNewNode->Tree.id = (ULONG)pNewNode->pFolderInTrash;
+                        CreateMapping(atoi(pThis),      // decimal
+                                      pFolderInTrash,
+                                      pSpace + 1,       // source folder name
+                                      NULL);            // never save, we're restoring
 
-                                treeInsertID(&G_MappingsTreeRoot,
-                                             (TREE*)pNewNode,
-                                             FALSE);      // no duplicates
-                                ulrc++;
-                            }
-                        }
+                        // restore old EOL (can be \n or \0)
+                        *pEOL = c;
+                        ulrc++;
+                    }
 
-                        pThis = pEOL + 1;
-                    } // end if (pEOL > pSpace)
-                } // end if (pSpace)
+                    pThis = pEOL + 1;
+                } // end if (pEOL > pSpace)
+            } // end if (pSpace)
+        } // while (*pThis)
 
-                if (!pNewNode)
-                    // error: stop right here
-                    break;
-            }
-
-            free(pszDriveMappings);
-        }
+        free(pszDriveMappings);
     }
 
     return (ulrc);
 }
 
 /*
- *@@ trshInitMappings:
+ *@@ InitMappings:
  *      this initializes the trash can mappings for
  *      the trash can, if they have not been initialized
  *      yet.
@@ -301,7 +424,7 @@ ULONG LoadMappingsForDrive(M_WPFolder *pFolderClass,
  *
  *      -- trshDeleteIntoTrashCan (which is the implementation
  *         for XWPTrashCan::xwpDeleteIntoTrashCan) calls
- *         trshCreateMapping to create a new mapping for the source
+ *         CreateMapping to create a new mapping for the source
  *         dir, if none exists yet.
  *
  *      The trash mappings are quite efficient. They use a red-black
@@ -329,9 +452,9 @@ ULONG LoadMappingsForDrive(M_WPFolder *pFolderClass,
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-VOID trshInitMappings(XWPTrashCan *somSelf,
-                      PBOOL pfNeedSave)      // out: set to TRUE if drives are dirty
-                                             // and wpSaveDeferred must be called on the trash can
+VOID InitMappings(XWPTrashCan *somSelf,
+                  PBOOL pfNeedSave)      // out: set to TRUE if drives are dirty
+                                         // and wpSaveDeferred must be called on the trash can
 {
     WPSHLOCKSTRUCT Lock;
     if (wpshLockObject(&Lock, somSelf))
@@ -383,14 +506,9 @@ VOID trshInitMappings(XWPTrashCan *somSelf,
 }
 
 /*
- *@@ trshCreateMapping:
- *      creates a new TRASHMAPPINGTREENODE with the
- *      specified data.
- *
- *      This also marks the corresponding drive as
- *      "dirty" and calls wpSaveDeferred on the
- *      trash can to force the mappings to be saved
- *      again.
+ *@@ trshGetMapping:
+ *      returns a TRASHMAPPINGTREENODE for the specified
+ *      source folder or NULL if none exists.
  *
  *      See trshInitMappings for an introduction to
  *      the trash can mappings.
@@ -398,38 +516,17 @@ VOID trshInitMappings(XWPTrashCan *somSelf,
  *@@added V0.9.9 (2001-02-06) [umoeller]
  */
 
-PTRASHMAPPINGTREENODE trshCreateMapping(XWPTrashCan *pTrashCan,
-                                        WPFolder *pFolderInTrash,   // in: direct \trash subfolder
-                                        const char *pcszRealName,   // in: real name for that folder
-                                        PBOOL pfNeedSave)   // out: set to TRUE if drives are dirty
-                                             // and wpSaveDeferred must be called on the trash can
+PTRASHMAPPINGTREENODE2 trshGetMappingFromSource(XWPTrashCan *pTrashCan,
+                                                const char *pcszSourceFolder)
 {
-    PTRASHMAPPINGTREENODE pMapping = NULL;
+    PTRASHMAPPINGTREENODE2 pMapping = NULL;
 
     WPSHLOCKSTRUCT Lock;
     if (wpshLockObject(&Lock, pTrashCan))
     {
-        pMapping = malloc(sizeof(TRASHMAPPINGTREENODE));
-        if (pMapping)
-        {
-            ULONG   ulDriveOfs = 0;
-            pMapping->pFolderInTrash = pFolderInTrash;
-            pMapping->Tree.id  = (ULONG)pFolderInTrash;
-            pMapping->pszRealName = strdup(pcszRealName);
-            if (treeInsertID(&G_MappingsTreeRoot,
-                             (TREE*)pMapping,
-                             FALSE)      // no duplicates
-                    == TREE_OK)
-            {
-                // set the corresponding drive to "dirty"
-                ulDriveOfs = pcszRealName[0] - 'C';
-                        // 0 for C:, 1 for D:, ...
-                _Pmpf((__FUNCTION__ ": setting drive ofs %d dirty", ulDriveOfs));
-                G_abMappingDrivesDirty[ulDriveOfs] = 1;
-
-                *pfNeedSave = TRUE;
-            }
-        }
+        pMapping = treeFindEQData(&G_MappingsTreeRoot,
+                                  (VOID*)pcszSourceFolder,
+                                  fnCompareMappingsData);
     }
     wpshUnlockObject(&Lock);
 
@@ -437,27 +534,35 @@ PTRASHMAPPINGTREENODE trshCreateMapping(XWPTrashCan *pTrashCan,
 }
 
 /*
- *@@ trshGetMapping:
- *      returns a TRASHMAPPINGTREENODE for the specified
- *      folder or NULL if none exists.
+ *@@ trshGetMappingFromTrashDir:
  *
- *      See trshInitMappings for an introduction to
- *      the trash can mappings.
+ *      This can't use the sorting of the tree because
+ *      the tree is sorted according to the source folder
+ *      names, but since we are doing string comparisons
+ *      here, this seemed OK to me.
  *
- *@@added V0.9.9 (2001-02-06) [umoeller]
+ *@@added V0.9.9 (2001-04-07) [umoeller]
  */
 
-PTRASHMAPPINGTREENODE trshGetMapping(XWPTrashCan *pTrashCan,
-                                     WPFolder *pFolder)
+PTRASHMAPPINGTREENODE2 trshGetMappingFromTrashDir(XWPTrashCan *pTrashCan,
+                                                WPFolder *pFolderInTrash)
 {
-    PTRASHMAPPINGTREENODE pMapping = NULL;
+    PTRASHMAPPINGTREENODE2 pMapping = NULL;
 
     WPSHLOCKSTRUCT Lock;
     if (wpshLockObject(&Lock, pTrashCan))
     {
-        pMapping = treeFindEQID(&G_MappingsTreeRoot,
-                                (ULONG)pFolder);
+        PTRASHMAPPINGTREENODE2 pNode = treeFirst(G_MappingsTreeRoot);
+        while (pNode)
+        {
+            if (pNode->pFolderInTrash == pFolderInTrash)
+            {
+                pMapping = pNode;
+                break;
+            }
 
+            pNode = treeNext((TREE*)pNode);
+        }
     }
     wpshUnlockObject(&Lock);
 
@@ -476,7 +581,7 @@ PTRASHMAPPINGTREENODE trshGetMapping(XWPTrashCan *pTrashCan,
  */
 
 VOID trshFreeMapping(XWPTrashCan *pTrashCan,
-                     PTRASHMAPPINGTREENODE pMapping,
+                     PTRASHMAPPINGTREENODE2 pMapping,
                      PBOOL pfNeedSave)       // out: set to TRUE if drives are dirty now
                                              // and wpSaveDeferred must be invoked on the trash can
 {
@@ -487,17 +592,17 @@ VOID trshFreeMapping(XWPTrashCan *pTrashCan,
     {
         treeDelete(&G_MappingsTreeRoot,
                    (TREE*)pMapping);
-        if (pMapping->pszRealName)
+        if (pMapping->pszSourceRealName)
         {
             // set the corresponding drive to "dirty"
-            ULONG ulDriveOfs = pMapping->pszRealName[0] - 'C';
+            ULONG ulDriveOfs = pMapping->pszSourceRealName[0] - 'C';
                     // 0 for C:, 1 for D:, ...
             _Pmpf((__FUNCTION__ ": setting drive ofs %d dirty", ulDriveOfs));
             G_abMappingDrivesDirty[ulDriveOfs] = 1;
 
             // now clean up
-            free(pMapping->pszRealName);
-            pMapping->pszRealName = NULL;
+            free(pMapping->pszSourceRealName);
+            pMapping->pszSourceRealName = NULL;
 
             *pfNeedSave = TRUE;
         }
@@ -505,52 +610,6 @@ VOID trshFreeMapping(XWPTrashCan *pTrashCan,
         free(pMapping);
     }
     wpshUnlockObject(&Lock);
-}
-
-/*
- *@@ TRAVERSEMAPPINGSBUF:
- *
- *@@added V0.9.9 (2001-02-06) [umoeller]
- */
-
-typedef struct _TRAVERSEMAPPINGSBUF
-{
-    CHAR        cDrive;
-    XSTRING     strMappings;
-    ULONG       cEntries;
-} TRAVERSEMAPPINGSBUF, *PTRAVERSEMAPPINGSBUF;
-
-/*
- *@@ TraverseMappings:
- *      tree traversal function (helpers\tree.c) used
- *      in trshSaveMappings.
- *
- *@@added V0.9.9 (2001-02-06) [umoeller]
- */
-
-void TraverseMappings(TREE *t,          // in: PTRASHMAPPINGTREENODE
-                      void *pUser)      // in: PTRAVERSEMAPPINGSBUF
-{
-    PTRASHMAPPINGTREENODE pMapping = (PTRASHMAPPINGTREENODE)t;
-    PTRAVERSEMAPPINGSBUF pBuf = (PTRAVERSEMAPPINGSBUF)pUser;
-
-    _Pmpf((__FUNCTION__ ": comparing %c to %s", pBuf->cDrive, pMapping->pszRealName));
-
-    if (toupper(pMapping->pszRealName[0]) == pBuf->cDrive)
-    {
-        // this mapping is for our drive:
-        xstrcat(&pBuf->strMappings,
-                _wpQueryTitle(pMapping->pFolderInTrash),
-                        // same as filename... we only use decimal digits here
-                0);
-        xstrcatc(&pBuf->strMappings, ' ');
-        xstrcat(&pBuf->strMappings,
-                pMapping->pszRealName,
-                0);
-        xstrcatc(&pBuf->strMappings, '\n');
-
-        (pBuf->cEntries)++;
-    }
 }
 
 /*
@@ -586,36 +645,55 @@ VOID trshSaveMappings(XWPTrashCan *pTrashCan)
                 {
                     // this drive is dirty:
                     // compose a new "@mappings" file for this
-                    TRAVERSEMAPPINGSBUF Buf;
-                    Buf.cDrive = cDrive;
-                    xstrInit(&Buf.strMappings, 1000);
-                    Buf.cEntries = 0;
+                    CHAR szMappingsFile[CCHMAXPATH];
+                    XSTRING     strMappings;
+                    ULONG       cEntries = 0;
+                    PTRASHMAPPINGTREENODE2 pNode;
+
+                    xstrInit(&strMappings, 1000);
 
                     // now traverse the tree and add all mappings which
                     // belong to this drive
-                    treeTraverse(G_MappingsTreeRoot,
-                                 TraverseMappings,
-                                 &Buf,          // user param
-                                 1);
-
-                    if (Buf.cEntries)
+                    pNode = treeFirst(G_MappingsTreeRoot);
+                    while (pNode)
                     {
-                        CHAR szMappingsFile[CCHMAXPATH];
-                        _Pmpf((__FUNCTION__ ": got %d entries: \n%s",
-                                    Buf.cEntries,
-                                    Buf.strMappings.psz));
+                        if (toupper(pNode->pszSourceRealName[0]) == cDrive)
+                        {
+                            // this mapping is for our drive:
+                            xstrcat(&strMappings,
+                                    _wpQueryTitle(pNode->pFolderInTrash),
+                                            // same as filename... we only use decimal digits here
+                                    0);
+                            xstrcatc(&strMappings, ' ');
+                            xstrcat(&strMappings,
+                                    pNode->pszSourceRealName,
+                                    0);
+                            xstrcatc(&strMappings, '\n');
 
-                        sprintf(szMappingsFile,
-                                "%c:\\trash\\" MAPPINGS_FILE,
-                                cDrive);
-                        doshWriteTextFile(szMappingsFile,
-                                          Buf.strMappings.psz,
-                                          NULL,
-                                          NULL);
+                            cEntries++;
+                        }
+
+                        pNode = treeNext((TREE*)pNode);
                     }
 
+                    sprintf(szMappingsFile,
+                            "%c:\\trash\\" MAPPINGS_FILE,
+                            cDrive);
+
+                    _Pmpf((__FUNCTION__ ": got %d entries: \n%s",
+                                cEntries,
+                                strMappings.psz));
+
+                    if (cEntries)
+                        doshWriteTextFile(szMappingsFile,
+                                          strMappings.psz,
+                                          NULL,
+                                          NULL);
+                    else
+                        DosDelete(szMappingsFile);
+
                     // clean up
-                    xstrClear(&Buf.strMappings);
+                    xstrClear(&strMappings);
 
                     // unset "dirty" flag
                     G_abMappingDrivesDirty[bIndex] = 0;
@@ -624,6 +702,120 @@ VOID trshSaveMappings(XWPTrashCan *pTrashCan)
         }
     }
     wpshUnlockObject(&Lock);
+}
+
+/*
+ *@@ GetLowestTrashDirDecimal:
+ *      returns a decimal number which is not
+ *      presently used in the trash mappings.
+ *
+ *      Caller must hold trash can mutex.
+ *
+ *@@added V0.9.9 (2001-04-07) [umoeller]
+ */
+
+ULONG GetLowestTrashDirDecimal(VOID)
+{
+    ULONG ul = 0;
+    PTRASHMAPPINGTREENODE2 pNode = treeFirst(G_MappingsTreeRoot);
+    while (pNode)
+    {
+        if (pNode->ulIndex == ul)
+        {
+            // this one's already used:
+            // try next
+            ul++;
+            // start over
+            pNode = treeFirst(G_MappingsTreeRoot);
+        }
+        else
+            pNode = treeNext((TREE*)pNode);
+    }
+
+    return (ul);
+}
+
+/*
+ *@@ trshGetOrCreateTrashDir:
+ *      returns a subdirectory of \trash on the
+ *      drive where pcszSourceFolder resides,
+ *      which corresponds to pcszSourceFolder.
+ *
+ *      If a matching trash dir already exists,
+ *      it is returned.
+ *
+ *      Otherwise a new directory and a corresponding
+ *      internal mapping is created, and the new
+ *      folder is returned.
+ *
+ *@@added V0.9.9 (2001-04-07) [umoeller]
+ */
+
+WPFolder* trshGetOrCreateTrashDir(XWPTrashCan *pTrashCan,
+                                  const char *pcszSourceFolder, // in: real name of source folder
+                                  PBOOL pfNeedSave)
+{
+    WPFolder    *pFolderInTrash = NULL;
+    PTRASHMAPPINGTREENODE2 pMapping;
+
+    // initialize the mappings if this hasn't been done yet
+    InitMappings(pTrashCan, pfNeedSave);
+
+
+
+    // check if we have a mapping for the source folder yet
+    pMapping = trshGetMappingFromSource(pTrashCan,
+                                        pcszSourceFolder);
+    if (pMapping)
+        // got one: return the folder
+        pFolderInTrash = pMapping->pFolderInTrash;
+    else
+    {
+        // no: create a new trash dir...
+
+        WPSHLOCKSTRUCT Lock;
+        if (wpshLockObject(&Lock, pTrashCan))
+        {
+            // 1) we need a unique decimal as the name
+            //    of the trash dir; we used to be using
+            //    the source folder's HOBJECT, but this
+            //    led to excessive handle creation for
+            //    the \trash subdirectories... instead,
+            //    we now always try to use low decimal
+            //    numbers so that handles are not necessarily
+            //    recreated
+
+            ULONG   ulDecimal = GetLowestTrashDirDecimal();
+            CHAR    szSubdirOfTrash[CCHMAXPATH];
+
+            sprintf(szSubdirOfTrash,
+                    "%c:\\Trash\\%d",
+                    *pcszSourceFolder,      // drive letter from source
+                    ulDecimal);             // rest of path
+
+            if (!doshQueryDirExist(szSubdirOfTrash))
+                // does not exist yet:
+                // create \trash subdirectory
+                doshCreatePath(szSubdirOfTrash,
+                               TRUE);   // hide that directory
+
+            // 2) awake the \trash subdir now
+            pFolderInTrash = _wpclsQueryFolder(_WPFolder,
+                                               szSubdirOfTrash,
+                                               TRUE);       // lock object
+            if (pFolderInTrash)
+            {
+                // 3) create a mapping
+                pMapping = CreateMapping(ulDecimal,
+                                         pFolderInTrash,
+                                         pcszSourceFolder,
+                                         pfNeedSave);
+            }
+        }
+        wpshUnlockObject(&Lock);
+    }
+
+    return (pFolderInTrash);
 }
 
 /* ******************************************************************
@@ -890,6 +1082,75 @@ VOID trshCalcTrashObjectSize(XWPTrashObject *pTrashObject,
                      -1);        // dec busy
 }
 
+/*
+ *@@ trshComposeRelatedPath:
+ *      implementation for the first call of
+ *      XWPTrashObject::xwpQueryRelatedPath.
+ *
+ *@@added V0.9.9 (2001-04-07) [umoeller]
+ */
+
+PSZ trshComposeRelatedPath(XWPTrashObject *somSelf)
+{
+    XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
+
+    #ifdef DEBUG_TRASHCAN_
+        Pmpf(("    pRelatedObject: 0x%lX", _pRelatedObject));
+    #endif
+
+    if (_pRelatedObject)
+    {
+        WPFolder *pTrashDir = _wpQueryFolder(_pRelatedObject);
+
+        #ifdef DEBUG_TRASHCAN
+            _Pmpf(("    pTrashDir: 0x%lX", pTrashDir));
+        #endif
+
+        if (pTrashDir)
+        {
+            // get trash can (must be folder of trash object)
+            BOOL        fNeedRefresh = FALSE;
+            XWPTrashCan *pTrashCan = _wpQueryFolder(somSelf);
+
+            // find the mapping for this
+            PTRASHMAPPINGTREENODE2 pMapping = trshGetMappingFromTrashDir(pTrashCan,
+                                                                         pTrashDir);
+            if (pMapping)
+            {
+                // we have a mapping: use that
+                _pszSourcePath = strdup(pMapping->pszSourceRealName);
+            }
+            else
+            {
+                // we have no mapping: use the folder's name
+                CHAR szPathInTrash[CCHMAXPATH];
+                if (_wpQueryFilename(pTrashDir, szPathInTrash, TRUE))
+                {
+                    CHAR szSourcePath[CCHMAXPATH];
+
+                    #ifdef DEBUG_TRASHCAN
+                        _Pmpf(("    szPathInTrash: %s", szPathInTrash));
+                    #endif
+
+                    // copy drive letter
+                    szSourcePath[0] = szPathInTrash[0];
+                    // copy ':'
+                    szSourcePath[1] = ':';
+                    // copy stuff after "?:\Trash"
+                    strcpy(&(szSourcePath[2]), &(szPathInTrash[8]));
+                    _pszSourcePath = strdup(szSourcePath);
+                }
+            }
+
+            if (fNeedRefresh)
+                _wpSaveDeferred(pTrashCan);
+
+        } // end if (pTrashDir)
+    }
+
+    return (_pszSourcePath);
+}
+
 /* ******************************************************************
  *
  *   Trash can populating
@@ -1101,19 +1362,19 @@ BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // in: _
         while (pDirNode)
         {
             WPFolder *pFolder = (WPFolder*)pDirNode->pItemData;
-            PTRASHMAPPINGTREENODE pMapping = trshGetMapping(pTrashCan,
-                                                            pFolder);
 
-            #ifdef DEBUG_TRASHCAN
-                _Pmpf(("    Freeing empty folder %s",
-                        _wpQueryTitle(pFolder)));
-            #endif
-
+            // free the mapping, if one exists
+            PTRASHMAPPINGTREENODE2 pMapping = trshGetMappingFromTrashDir(pTrashCan,
+                                                                         pFolder);
             if (pMapping)
                 trshFreeMapping(pTrashCan,
                                 pMapping,
                                 pfNeedSave);
 
+            // free the folder
+            #ifdef DEBUG_TRASHCAN
+                _Pmpf(("    Freeing empty folder %s", _wpQueryTitle(pFolder)));
+            #endif
             _wpFree(pFolder);
 
             pDirNode = pDirNode->pNext;
@@ -1181,8 +1442,8 @@ BOOL trshPopulateFirstTime(XWPTrashCan *somSelf,
             cDrive = 'C';  // (bIndex == 0) = drive C:
 
             // load all the mappings, if this hasn't been done yet
-            trshInitMappings(somSelf,
-                             &fNeedSave);
+            InitMappings(somSelf,
+                         &fNeedSave);
 
             for (bIndex = 0;
                  bIndex < CB_SUPPORTED_DRIVES;
@@ -1354,7 +1615,7 @@ BOOL trshRefresh(XWPTrashCan *somSelf)
  *
  *          As a result, the concept of "trash directory mappings"
  *          had to be introduced. See trshInitMappings for an
- *          introduction. trshCreateMapping gets called by this function.
+ *          introduction. CreateMapping gets called by this function.
  *
  *      3)  Move the object which is being deleted into that
  *          directory (using wpMoveObject, so that all WPS
@@ -1372,6 +1633,7 @@ BOOL trshRefresh(XWPTrashCan *somSelf)
  *@@added V0.9.1 (2000-02-03) [umoeller]
  *@@changed V0.9.4 (2000-06-17) [umoeller]: now closing folder subviews properly
  *@@changed V0.9.9 (2001-02-06) [umoeller]: added trash dir mappings
+ *@@changed V0.9.9 (2001-04-07) [umoeller]: completely reworked mappings to not use object handles
  */
 
 BOOL trshDeleteIntoTrashCan(XWPTrashCan *pTrashCan, // in: trash can where to create trash object
@@ -1387,55 +1649,23 @@ BOOL trshDeleteIntoTrashCan(XWPTrashCan *pTrashCan, // in: trash can where to cr
         if (pSourceFolder)
         {
             CHAR    szSourceFolder[CCHMAXPATH];
-            HOBJECT hobjSourceFolder;
-            if (    (_wpQueryFilename(pSourceFolder, szSourceFolder, TRUE))
-                 && (hobjSourceFolder = _wpQueryHandle(pSourceFolder))
-               )
+            if (_wpQueryFilename(pSourceFolder, szSourceFolder, TRUE))
             {
-                // now we have the directory name where pObject resides
-                // in szFolder
-                CHAR szSubdirOfTrash[CCHMAXPATH];
-
                 #ifdef DEBUG_TRASHCAN
                     _Pmpf(("xwpDeleteIntoTrashCan: Source folder: %s", szFolder));
                 #endif
 
-                sprintf(szSubdirOfTrash,
-                        "%c:\\Trash\\%d",
-                        szSourceFolder[0],    // drive letter
-                        hobjSourceFolder);   // rest of path
+                // get the \trash subdir corresponding to pSourceFolder;
+                // this function either creates one or gets an existing
+                // one if things have been deleted from pSourceFolder
+                // already
+                pFolderInTrash = trshGetOrCreateTrashDir(pTrashCan,
+                                                         szSourceFolder,
+                                                         &fNeedSave);
 
-                #ifdef DEBUG_TRASHCAN
-                    _Pmpf(("   xwpDeleteIntoTrashCan: Creating dir %s", szTrashDir));
-                #endif
-
-                if (!doshQueryDirExist(szSubdirOfTrash))
-                    // create \trash subdirectory
-                    doshCreatePath(szSubdirOfTrash,
-                                   TRUE);   // hide that directory
-
-                // initialize the mappings if this hasn't been done yet
-                trshInitMappings(pTrashCan,
-                                 &fNeedSave);
-
-                // awake the \trash subdir now
-                pFolderInTrash = _wpclsQueryFolder(_WPFolder,
-                                                   szSubdirOfTrash,
-                                                   TRUE);       // lock object
                 if (pFolderInTrash)
                 {
-                    // check if a mapping exist already for that folder
-                    PTRASHMAPPINGTREENODE pMapping = trshGetMapping(pTrashCan,
-                                                                    pFolderInTrash);
-                    if (!pMapping)
-                    {
-                        // no mapping yet:
-                        // create one
-                        pMapping = trshCreateMapping(pTrashCan,
-                                                     pFolderInTrash,
-                                                     szSourceFolder,
-                                                     &fNeedSave);
-                    }
+                    // MOVE THE OBJECT NOW
 
                     // close all open views
                     if (wpshCloseAllViews(pObject))

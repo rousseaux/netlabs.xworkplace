@@ -209,12 +209,14 @@ static PCHECKBOXRECORDCORE G_pFeatureRecordsList = NULL;
  *      created from the menu buttons.
  *
  *@@changed V0.9.4 (2000-07-15) [umoeller]: added pExists
+ *@@changed V0.9.9 (2001-04-07) [pr]: added pcszLocation
  */
 
 typedef struct _STANDARDOBJECT
 {
     const char  **ppcszDefaultID;   // e.g. <WP_DRIVES>;
     const char  *pcszObjectClass;   // e.g. "WPDrives"
+    const char  *pcszLocation;      // e.g. "<WP_CONFIG>"
     const char  *pcszSetupString;   // e.g. "DETAILSFONT=..."; if present, _always_
                                     // put a semicolon at the end, because "OBJECTID=xxx"
                                     // will always be added
@@ -224,61 +226,87 @@ typedef struct _STANDARDOBJECT
 } STANDARDOBJECT, *PSTANDARDOBJECT;
 
 #define OBJECTSIDFIRST 100      // first object menu ID, inclusive
-#define OBJECTSIDLAST  214      // last object menu ID, inclusive
+#define OBJECTSIDLAST  230      // last object menu ID, inclusive
 
 // array of objects for "Standard WPS objects" menu button
 static STANDARDOBJECT
     G_WPSObjects[] = {
-            &WPOBJID_KEYB, "WPKeyboard", "", 100, 0,
-            &WPOBJID_MOUSE, "WPMouse", "", 101, 0,
-            &WPOBJID_CNTRY, "WPCountry", "", 102, 0,
-            &WPOBJID_SOUND, "WPSound", "", 103, 0,
-            &WPOBJID_POWER, "WPPower", "", 104, 0,
-            &WPOBJID_WINCFG, "WPWinConfig", "", 105, 0,
+            &WPOBJID_KEYB, "WPKeyboard", "<WP_CONFIG>", "", 100, 0,
+            &WPOBJID_MOUSE, "WPMouse", "<WP_CONFIG>", "", 101, 0,
+            &WPOBJID_CNTRY, "WPCountry", "<WP_CONFIG>", "", 102, 0,
+            &WPOBJID_SOUND, "WPSound", "<WP_CONFIG>", "", 103, 0,
+            &WPOBJID_SYSTEM, "WPSystem", "<WP_CONFIG>",
+                    "HELPPANEL=9259;", 104, 0, // V0.9.9
+            &WPOBJID_POWER, "WPPower", "<WP_CONFIG>", "", 105, 0,
+            &WPOBJID_WINCFG, "WPWinConfig", "<WP_CONFIG>", "", 106, 0,
 
-            &WPOBJID_HIRESCLRPAL, "WPColorPalette", "", 110, 0,
-            &WPOBJID_LORESCLRPAL, "WPColorPalette", "", 111, 0,
-            &WPOBJID_FNTPAL, "WPFontPalette", "", 112, 0,
-            &WPOBJID_SCHPAL96, "WPSchemePalette", "", 113, 0,
+            &WPOBJID_HIRESCLRPAL, "WPColorPalette", "<WP_CONFIG>",
+                    "NODELETETE=YES;AUTOSETUP=HIRES;", 110, 0,
+            &WPOBJID_LORESCLRPAL, "WPColorPalette", "<WP_CONFIG>",
+                    "NODELETETE=YES;AUTOSETUP=LORES;", 111, 0,
+            &WPOBJID_FNTPAL, "WPFontPalette", "<WP_CONFIG>",
+                    "NODELETE=YES;", 112, 0,
+            &WPOBJID_SCHPAL96, "WPSchemePalette", "<WP_CONFIG>",
+                    "NODELETE=YES;AUTOSETUP=YES;", 113, 0,
 
-            &WPOBJID_LAUNCHPAD, "WPLaunchPad", "", 120, 0,
-            &WPOBJID_WARPCENTER, "SmartCenter", "", 121, 0,
+            &WPOBJID_LAUNCHPAD, "WPLaunchPad", "<WP_OS2SYS>", "", 120, 0,
+            &WPOBJID_WARPCENTER, "SmartCenter", "<WP_OS2SYS>", "", 121, 0,
 
-            &WPOBJID_SPOOL, "WPSpool", "", 130, 0,
-            &WPOBJID_VIEWER, "WPMinWinViewer", "", 131, 0,
-            &WPOBJID_SHRED, "WPShredder", "", 132, 0,
-            &WPOBJID_CLOCK, "WPClock", "", 133, 0,
+            &WPOBJID_SPOOL, "WPSpool", "<WP_CONFIG>", "", 130, 0,
+            &WPOBJID_VIEWER, "WPMinWinViewer", "<WP_OS2SYS>",
+                    "ALWAYSSORT=YES;", 131, 0,
+            &WPOBJID_SHRED, "WPShredder", "<WP_DESKTOP>", "", 132, 0,
+            &WPOBJID_CLOCK, "WPClock", "<WP_CONFIG>", "", 133, 0,
 
-            &WPOBJID_START, "WPStartup", "", 140, 0,
-            &WPOBJID_TEMPS, "WPTemplates", "", 141, 0,
-            &WPOBJID_DRIVES, "WPDrives", "", 142, 0
+            &WPOBJID_START, "WPStartup", "<WP_OS2SYS>",
+                    "HELPPANEL=8002;NODELETE=YES;", 140, 0,
+            &WPOBJID_TEMPS, "WPTemplates", "<WP_OS2SYS>",
+                    "HELPPANEL=15680;NODELETE=YES;", 141, 0,
+            &WPOBJID_DRIVES, "WPDrives", "<WP_CONNECTIONSFOLDER>",
+                    "ALWAYSSORT=YES;NODELETE=YES;DEFAULTVIEW=ICON;", 142, 0
     },
 
 // array of objects for "XWorkplace objects" menu button
     G_XWPObjects[] = {
-            &XFOLDER_WPSID, "XFldWPS", "", 200, 0,
-            &XFOLDER_KERNELID, "XFldSystem", "", 201, 0,
-            &XFOLDER_SCREENID, "XWPScreen", "", 203, 0,
-            &XFOLDER_MEDIAID, "XWPMedia", "", 204, 0,
-            &XFOLDER_CLASSLISTID, "XWPClassList", "", 202, 0,
+            &XFOLDER_WPSID, "XFldWPS", "<WP_CONFIG>",
+                    "",
+                    200, 0,
+            &XFOLDER_KERNELID, "XFldSystem", "<WP_CONFIG>",
+                    "",
+                    201, 0,
+            &XFOLDER_SCREENID, "XWPScreen", "<WP_CONFIG>",
+                    "",
+                    203, 0,
+            &XFOLDER_MEDIAID, "XWPMedia", "<WP_CONFIG>",
+                    "",
+                    204, 0,
+            &XFOLDER_CLASSLISTID, "XWPClassList", "<WP_CONFIG>",
+                    "",
+                    202, 0,
 
-            &XFOLDER_CONFIGID, "WPFolder",
+            &XFOLDER_CONFIGID, "WPFolder", "<XWP_MAINFLDR>",
                     "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
                     210, 0,
-            &XFOLDER_STARTUPID, "XFldStartup",
+            &XFOLDER_STARTUPID, "XFldStartup", "<XWP_MAINFLDR>",
                     "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
                     211, 0,
-            &XFOLDER_SHUTDOWNID, "XFldShutdown",
+            &XFOLDER_SHUTDOWNID, "XFldShutdown", "<XWP_MAINFLDR>",
                     "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
                     212, 0,
-
-            &XFOLDER_TRASHCANID, "XWPTrashCan",
-                    "DETAILSCLASS=XWPTrashObject;"
-                    "SORTCLASS=XWPTrashObject;",
+            &XFOLDER_FONTFOLDERID, "XWPFontFolder", "<WP_CONFIG>", // V0.9.9
+                    "DEFAULTVIEW=DETAILS;DETAILSCLASS=XWPFontObject;SORTCLASS=XWPFontObject;",  // added SORTCLASS V0.9.9 (2001-04-07) [umoeller]
                     213, 0,
-            &XFOLDER_XCENTERID, "XCenter",
+
+            &XFOLDER_TRASHCANID, "XWPTrashCan", "<WP_DESKTOP>",
+                    "DETAILSCLASS=XWPTrashObject;SORTCLASS=XWPTrashObject;",
+                    220, 0,
+            &XFOLDER_STRINGTPLID, "XWPString", "<XWP_MAINFLDR>", // V0.9.9
+                    "TEMPLATE=YES;",
+                    221, 0,
+
+            &XFOLDER_XCENTERID, "XCenter", "<XWP_MAINFLDR>",
                     "",
-                    214, 0
+                    230, 0
     };
 
 /* ******************************************************************
@@ -1769,10 +1797,9 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             case ID_XCSI_GLOBALHOTKEYS:
                 hifEnableObjectHotkeys(precc->usCheckState);
-/*                 if (precc->usCheckState)
-                    pGlobalSettings->AddObjectPage = TRUE; @@@ paul, this doesn't work */
-                pGlobalSettings->AddObjectPage = precc->usCheckState;
-                                // V0.9.7 (2001-01-22) [umoeller]
+                if (precc->usCheckState)
+                    // enable object page also, or user can't find hotkeys
+                    pGlobalSettings->AddObjectPage = TRUE;
                 ulUpdateFlags = CBI_SET | CBI_ENABLE;
             break;
 
@@ -2717,6 +2744,7 @@ VOID setFindExistingObjects(BOOL fStandardObj)      // in: if FALSE, XWorkplace 
  *
  *@@changed V0.9.1 (2000-02-01) [umoeller]: renamed prototype; added hwndOwner
  *@@changed V0.9.4 (2000-07-15) [umoeller]: now storing object pointer to disable menu item in time
+ *@@changed V0.9.9 (2001-04-07) [pr]: added location field for creating objects
  */
 
 BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
@@ -2779,14 +2807,22 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
                                     MB_YESNO)
                          == MBID_YES)
             {
-                HOBJECT hobj = WinCreateObject((PSZ)pso2->pcszObjectClass,       // class
-                                               apsz[0], // pso2->pszObjectClass,       // title
-                                               szSetupString,
-                                               (PSZ)WPOBJID_DESKTOP,
+                HOBJECT hobj = WinCreateObject((PSZ)pso2->pcszObjectClass,  // class
+                                               apsz[0],                     // title
+                                               szSetupString,               // setup
+                                               (PSZ)pso2->pcszLocation,     // location
                                                CO_FAILIFEXISTS);
+
+                if (!hobj)
+                    // didn't work in given location: try desktop instead
+                    hobj = WinCreateObject((PSZ)pso2->pcszObjectClass,      // class
+                                           apsz[0],                         // title
+                                           szSetupString,                   // setup
+                                           (PSZ)WPOBJID_DESKTOP,            // location
+                                           CO_FAILIFEXISTS);
                 if (hobj)
                 {
-                    // success:
+                    // alright, got it:
                     // store in array so the menu item will be
                     // disabled next time
                     pso2->pExists = _wpclsQueryObject(_WPObject,

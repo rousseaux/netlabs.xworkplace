@@ -314,6 +314,7 @@ const char *WPOBJID_KEYB = "<WP_KEYB>";
 const char *WPOBJID_MOUSE = "<WP_MOUSE>";
 const char *WPOBJID_CNTRY = "<WP_CNTRY>";
 const char *WPOBJID_SOUND = "<WP_SOUND>";
+const char *WPOBJID_SYSTEM = "<WP_SYSTEM>"; // V0.9.9
 const char *WPOBJID_POWER = "<WP_POWER>";
 const char *WPOBJID_WINCFG = "<WP_WINCFG>";
 
@@ -348,6 +349,7 @@ const char      *XFOLDER_CONFIGID        = "<XWP_CONFIG>";
 
 const char      *XFOLDER_STARTUPID       = "<XWP_STARTUP>";
 const char      *XFOLDER_SHUTDOWNID      = "<XWP_SHUTDOWN>";
+const char      *XFOLDER_FONTFOLDERID    = "<XWP_FONTFOLDER>";
 
 const char      *XFOLDER_WPSID           = "<XWP_WPS>";
 const char      *XFOLDER_KERNELID        = "<XWP_KERNEL>";
@@ -357,6 +359,7 @@ const char      *XFOLDER_MEDIAID         = "<XWP_MEDIA>";
 const char      *XFOLDER_CLASSLISTID     = "<XWP_CLASSLIST>";
 const char      *XFOLDER_TRASHCANID      = "<XWP_TRASHCAN>";
 const char      *XFOLDER_XCENTERID       = "<XWP_XCENTER>";
+const char      *XFOLDER_STRINGTPLID     = "<XWP_STRINGTPL>"; // V0.9.9
 
 const char      *XFOLDER_INTROID         = "<XWP_INTRO>";
 const char      *XFOLDER_USERGUIDE       = "<XWP_REF>";

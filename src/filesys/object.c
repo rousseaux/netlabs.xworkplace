@@ -225,12 +225,10 @@
 #include "shared\cnrsort.h"             // container sort comparison functions
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
-#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 // headers in /hook
 #include "hook\xwphook.h"
 
-#include "filesys\object.h"             // XFldObject implementation
 #include "filesys\filesys.h"            // various file-system object implementation code
 
 #include "config\hookintf.h"            // daemon/hook interface
@@ -242,7 +240,10 @@
 #include <wppgmf.h>                     // WPProgramFile
 #include <wpshadow.h>                   // WPShadow
 #include <wptrans.h>                    // WPTransient
+#include <wpclsmgr.h>                   // WPClassMgr
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\object.h"             // XFldObject implementation
+#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "helpers\undoc.h"              // some undocumented stuff
 
@@ -1238,10 +1239,9 @@ BOOL objRemoveFromDirtyList(WPObject *pobj)
                 free(pNode);
                 G_ulDirtyListItemsCount--;
 
-                _Pmpf((__FUNCTION__ ": removed obj 0x%lX (%s), %d remaining",
-                            pobj,
-                            _wpQueryTitle(pobj),
-                            G_ulDirtyListItemsCount ));
+                _Pmpf((__FUNCTION__ ": removed obj 0x%lX, %d remaining",
+                       pobj,
+                       G_ulDirtyListItemsCount ));
 
                 brc = TRUE;
             }
@@ -3062,6 +3062,53 @@ VOID objModifyPopupMenu(WPObject* somSelf,
     }
 }
 
+/* ******************************************************************
+ *
+ *   Object setup strings
+ *
+ ********************************************************************/
+
+/*
+ *@@ objSetup:
+ *      implementation for XFldObject::wpSetup.
+ *
+ *@@added V0.9.9 (2001-04-06) [umoeller]
+ */
+
+BOOL objSetup(WPObject *somSelf,
+              PSZ pszSetupString)
+{
+    ULONG   cb = 0;
+    BOOL    brc = TRUE;
+
+    if (_wpScanSetupString(somSelf,
+                           pszSetupString,
+                           "WRITEREXXSETUP",
+                           NULL,            // get size
+                           &cb))
+    {
+        PSZ pszRexxFile = malloc(cb);
+        if (pszRexxFile)
+        {
+            if (_wpScanSetupString(somSelf,
+                                   pszSetupString,
+                                   "WRITEREXXSETUP",
+                                   pszRexxFile,
+                                   &cb))
+            {
+                brc = !objCreateObjectScript(somSelf,
+                                             pszRexxFile,
+                                             NULL,
+                                             SCRFL_RECURSE);
+            }
+
+            free(pszRexxFile);
+        }
+    }
+
+    return (brc);
+}
+
 /*
  *@@ objQuerySetup:
  *      implementation of XFldObject::xwpQuerySetup.
@@ -3307,4 +3354,254 @@ ULONG objQuerySetup(WPObject *somSelf,
 
     return (ulReturn);
 }
+
+/* ******************************************************************
+ *
+ *   Object Scripts
+ *
+ ********************************************************************/
+
+/*
+ *@@ objGetSetupString:
+ *      returns a setup string for the specified
+ *      object in a new buffer, or NULL on errors.
+ *
+ *      Use free() on the return value.
+ *
+ *@@added V0.9.9 (2001-04-06) [umoeller]
+ */
+
+PSZ objGetSetupString(WPObject *pobj)
+{
+    PSZ pszSetupString = NULL;
+
+    TRY_LOUD(excpt1)
+    {
+        ULONG cbSetupString = _xwpQuerySetup(pobj,
+                                             NULL,
+                                             0);
+
+        if (cbSetupString)
+        {
+            pszSetupString = malloc(cbSetupString + 1);
+            if (pszSetupString)
+            {
+                if (!_xwpQuerySetup(pobj,
+                                    pszSetupString,
+                                    cbSetupString + 1))
+                {
+                    free(pszSetupString);
+                    pszSetupString = NULL;
+                }
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+        if (pszSetupString)
+        {
+            free(pszSetupString);
+            pszSetupString = NULL;
+        }
+    } END_CATCH();
+
+    return (pszSetupString);
+}
+
+/*
+ *@@ WriteOutObjectSetup:
+ *
+ *@@added V0.9.9 (2001-04-06) [umoeller]
+ */
+
+ULONG WriteOutObjectSetup(FILE *RexxFile,
+                          WPObject *pobj,
+                          ULONG ulRecursion,        // in: recursion level, initially 0
+                          BOOL fRecurse)
+{
+    ULONG       ulrc = 0,
+                ul;
+
+    PSZ         pszSetupString = objGetSetupString(pobj);
+    PSZ         pszTrueClassName = _wpGetTrueClassName(SOMClassMgrObject, pobj);
+
+    CHAR        szFolderName[CCHMAXPATH];
+    XSTRING     strTitle;
+    ULONG       ulOfs;
+    CHAR        cQuote = '\"';
+
+    BOOL        fIsDisk = !strcmp(pszTrueClassName, "WPDisk");
+
+    // get folder ID or name
+    WPFolder    *pOwningFolder = _wpQueryFolder(pobj);
+    PSZ         pszOwningFolderID = _wpQueryObjectID(pOwningFolder);
+    if (pszOwningFolderID)
+        strcpy(szFolderName, pszOwningFolderID);
+    else
+        _wpQueryFilename(pOwningFolder, szFolderName, TRUE);
+
+    // special hack for line breaks in titles: "^"
+    xstrInitCopy(&strTitle, _wpQueryTitle(pobj), 0);
+    ulOfs = 0;
+    while (xstrFindReplaceC(&strTitle, &ulOfs, "\r\n", "^"))
+        ;
+    ulOfs = 0;
+    while (xstrFindReplaceC(&strTitle, &ulOfs, "\r", "^"))
+        ;
+    ulOfs = 0;
+    while (xstrFindReplaceC(&strTitle, &ulOfs, "\n", "^"))
+        ;
+
+    // if we have a quote:
+    if (strchr(strTitle.psz, '\"'))
+        cQuote = '\'';
+
+    // indent
+    for (ul = 0; ul < ulRecursion; ul++)
+        fprintf(RexxFile, "  ");
+
+    if (fIsDisk)
+        fprintf(RexxFile, "/* ");
+
+    // write out object
+    if (pszSetupString && strlen(pszSetupString))
+        // we got setup:
+        fprintf(RexxFile,
+                "rc = SysCreateObject(\"%s\", %c%s%c, \"%s\", \"%s\");",
+                pszTrueClassName,
+                cQuote,
+                strTitle.psz,
+                cQuote,
+                szFolderName,
+                pszSetupString);
+    else
+        // no setup string:
+        fprintf(RexxFile,
+                "rc = SysCreateObject(\"%s\", %c%s%c, \"%s\");",
+                pszTrueClassName,
+                cQuote,
+                strTitle.psz,
+                cQuote,
+                szFolderName);
+
+    if (fIsDisk)
+        fprintf(RexxFile, " */ \n");
+    else
+        fprintf(RexxFile, "\n");
+
+    ulrc++;
+
+    if (pszSetupString)
+        free(pszSetupString);
+    xstrClear(&strTitle);
+
+    // recurse for folders
+    if (    (fRecurse)
+         && (_somIsA(pobj, _WPFolder))
+       )
+    {
+        BOOL    fSem = FALSE;
+        TRY_LOUD(excpt1)
+        {
+            // rule out certain stupid special folder classes
+            if (    strcmp(pszTrueClassName, "XWPFontFolder")
+                 && strcmp(pszTrueClassName, "XWPTrashCan")
+                 && strcmp(pszTrueClassName, "WPMinWinViewer")
+                 && strcmp(pszTrueClassName, "WPHwManager")
+                 && strcmp(pszTrueClassName, "WPTemplates")
+                 && strcmp(pszTrueClassName, "WPNetgrp")
+               )
+            {
+                if (wpshCheckIfPopulated(pobj, FALSE))
+                {
+                    if (fSem = !wpshRequestFolderMutexSem(pobj, 5000))
+                    {
+                        WPObject *pSubObj = 0;
+
+                        somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                                = (somTD_WPFolder_wpQueryContent)wpshResolveFor(pobj,
+                                                                                NULL,
+                                                                                "wpQueryContent");
+
+                        for (   pSubObj = rslv_wpQueryContent(pobj,
+                                                              NULL,
+                                                              QC_FIRST);
+                                pSubObj;
+                                pSubObj = rslv_wpQueryContent(pobj,
+                                                              pSubObj,
+                                                              QC_NEXT)
+                            )
+                        {
+                            ulrc += WriteOutObjectSetup(RexxFile,
+                                                        pSubObj,
+                                                        ulRecursion + 1,
+                                                        fRecurse);
+                        }
+                    }
+                }
+            }
+        }
+        CATCH(excpt1)
+        {
+        }
+        END_CATCH();
+
+        if (fSem)
+            wpshReleaseFolderMutexSem(pobj);
+    }
+
+    // return total object count
+    return (ulrc);
+}
+
+/*
+ *@@ fdrCreateObjectScript:
+ *      creates an object package.
+ *
+ *      pllObjects is expected to contain plain WPObject*
+ *      pointers of all objects to put into the package.
+ *
+ *      pcszRexxFile must be the fully qualified path name
+ *      of the REXX .CMD file to be created.
+ *
+ *      flCreate can be any combination of:
+ *
+ *      --  SCRFL_RECURSE: recurse into subfolders.
+ *
+ *      This returns an OS/2 error code.
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+APIRET objCreateObjectScript(WPObject *pObject,          // in: object to start with
+                             const char *pcszRexxFile,   // in: file name of output REXX file
+                             WPFolder *pFolderForFiles,  // in: if != NULL, icons etc. are put here
+                             ULONG flCreate)             // in: flags
+{
+    APIRET arc = NO_ERROR;
+
+    if (!pObject || !pcszRexxFile)
+        arc = ERROR_INVALID_PARAMETER;
+    else
+    {
+        FILE *RexxFile = fopen(pcszRexxFile,
+                               "w");            // replace @@@
+
+        if (!RexxFile)
+            arc = ERROR_CANNOT_MAKE;
+        else
+        {
+            WriteOutObjectSetup(RexxFile,
+                                pObject,
+                                0,
+                                ((flCreate & SCRFL_RECURSE) != 0));
+                    // this will recurse for folders
+
+            fclose(RexxFile);
+        }
+    }
+
+    return (arc);
+}
+
 

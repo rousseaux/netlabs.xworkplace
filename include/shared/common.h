@@ -134,6 +134,7 @@
     extern const char *WPOBJID_MOUSE;
     extern const char *WPOBJID_CNTRY;
     extern const char *WPOBJID_SOUND;
+    extern const char *WPOBJID_SYSTEM;
     extern const char *WPOBJID_POWER;
     extern const char *WPOBJID_WINCFG;
 
@@ -168,6 +169,7 @@
 
     extern const char *XFOLDER_STARTUPID;
     extern const char *XFOLDER_SHUTDOWNID;
+    extern const char *XFOLDER_FONTFOLDERID;
 
     extern const char *XFOLDER_WPSID;
     extern const char *XFOLDER_KERNELID;
@@ -177,6 +179,7 @@
     extern const char *XFOLDER_CLASSLISTID;
     extern const char *XFOLDER_TRASHCANID;
     extern const char *XFOLDER_XCENTERID;
+    extern const char *XFOLDER_STRINGTPLID;
 
     extern const char *XFOLDER_INTROID;
     extern const char *XFOLDER_USERGUIDE;

@@ -141,8 +141,14 @@
             SHORT           sSelected;
             PREBOOTLISTITEM pliSelected;
             USHORT          usItemCount;
-            PPARTITIONINFO  ppi;                   // partitions list (V0.9.0)
-            USHORT          usPartitions;
+
+            /* PPARTITIONINFO  ppi;                   // partitions list (V0.9.0)
+            USHORT          usPartitions; */
+
+            PPARTITIONSLIST pPartitionsList;        // new partitions list
+                                                    // V0.9.9 (2001-04-07) [umoeller]
+            BOOL            fPartitionsLoaded;      // TRUE after first attempt,
+                                                    // even if failed
         } REBOOTWINDATA, *PREBOOTWINDATA;
         #endif
 

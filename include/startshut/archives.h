@@ -86,6 +86,7 @@
                     dDataSumLast;
 
         BOOL        fShowStatus;
+        CHAR        cArchivesCount;
     } WPSARCOSETTINGS, *PWPSARCOSETTINGS;
 
     VOID arcSetDefaultSettings(VOID);

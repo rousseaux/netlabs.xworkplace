@@ -802,62 +802,6 @@ ULONG fdrQuerySetup(WPObject *somSelf,
 
 /* ******************************************************************
  *
- *   Object Scripts
- *
- ********************************************************************/
-
-/*
- *@@ fdrCreateObjectScript:
- *      creates an object package.
- *
- *      pllObjects is expected to contain plain WPObject*
- *      pointers of all objects to put into the package.
- *
- *      pcszRexxFile must be the fully qualified path name
- *      of the REXX .CMD file to be created.
- *
- *      flCreate can be any combination of:
- *
- *      --  SCRFL_RECURSE: recurse into subfolders.
- *
- *      --  SCRFL_REPLACE: if pcszRexxFile exists, it is
- *          replaced. Otherwise it is appended to.
- *
- *          No matter if this flag is set, the script file
- *          is always created if it doesn't exist.
- *
- *      This returns an OS/2 error code.
- *
- *@@added V0.9.9 (2001-04-04) [umoeller]
- */
-
-APIRET fdrCreateObjectScript(PLINKLIST pllObjects,       // in: object list
-                             const char *pcszRexxFile,   // in: file name of output REXX file
-                             WPFolder *pFolderForFiles,  // in: if != NULL, icons etc. are put here
-                             ULONG flCreate)             // in: flags
-{
-    APIRET arc = NO_ERROR;
-
-    if (!pllObjects || !pcszRexxFile)
-        arc = ERROR_INVALID_PARAMETER;
-    else
-    {
-        FILE *RexxFile = fopen(pcszRexxFile,
-                               "w");            // replace @@@
-
-        if (!RexxFile)
-            arc = ERROR_CANNOT_MAKE;
-        else
-        {
-
-        }
-    }
-
-    return (NO_ERROR);
-}
-
-/* ******************************************************************
- *
  *   Folder view helpers
  *
  ********************************************************************/

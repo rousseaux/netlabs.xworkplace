@@ -1118,6 +1118,11 @@ SOM_Scope BOOL  SOMLINK xtrc_wpPopulate(XWPTrashCan *somSelf,
                 brc = trshPopulateFirstTime(somSelf, ulFldrFlags);
 
                 _fAlreadyPopulated = TRUE;
+
+                // alright, now that we're done populating, we
+                // must re-enable cnr add or otherwise later
+                // objects won't get inserted
+                _xwpSetDisableCnrAdd(somSelf, FALSE);
             }
         }
 

@@ -393,6 +393,7 @@ VOID PumpAgedNotification(PXWPNOTIFY pNotify,
  *      -- The caller must hold the WPS notify mutex.
  *
  *@@added V0.9.9 (2001-02-01) [umoeller]
+ *@@changed V0.9.9 (2001-04-07) [umoeller]: disabled overflow handling for now, which kept crashing
  */
 
 BOOL PumpNotifications(VOID)
@@ -441,7 +442,11 @@ BOOL PumpNotifications(VOID)
                    )
                 {
                     // yes:
-                    PXWPNOTIFY pNew;
+
+                    // disabled all this for now... this keeps crashing
+                    // V0.9.9 (2001-04-07) [umoeller]
+
+                    /* PXWPNOTIFY pNew;
 
                     // and add a new notification for "full refresh" later
                     pNew = (PXWPNOTIFY)malloc(sizeof(XWPNOTIFY));
@@ -455,9 +460,10 @@ BOOL PumpNotifications(VOID)
                                     sizeof(pNew->ulMS));
 
                     // clear all notifications for this folder
-                    refrClearFolderNotifications(pNotify->pFolder);
+                    // refrClearFolderNotifications(pNotify->pFolder);
+                            // this crashes @@@todo
 
-                    refrAddNotification(pNew);
+                    refrAddNotification(pNew); */
                 }
                 else
                     // no overflow: just process

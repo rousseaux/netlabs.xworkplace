@@ -100,7 +100,6 @@
 #include "helpers\except.h"             // exception handling
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\stringh.h"            // string helper routines
-#include "helpers\tree.h"               // red-black binary trees
 
 // SOM headers which don't crash with prec. header files
 #include "xtrash.ih"
@@ -244,67 +243,9 @@ SOM_Scope PSZ SOMLINK xtro_xwpQueryRelatedPath(XWPTrashObject *somSelf)
     #endif
 
     if (_pszSourcePath == NULL)
-    {
         // source path not queried yet:
         // do it now
-        #ifdef DEBUG_TRASHCAN_
-            Pmpf(("    pRelatedObject: 0x%lX", _pRelatedObject));
-        #endif
-
-        if (_pRelatedObject)
-        {
-            WPFolder *pTrashDir = _wpQueryFolder(_pRelatedObject);
-
-            #ifdef DEBUG_TRASHCAN
-                _Pmpf(("    pTrashDir: 0x%lX", pTrashDir));
-            #endif
-
-            if (pTrashDir)
-            {
-                // get trash can (must be folder of trash object)
-                BOOL        fNeedRefresh = FALSE;
-                XWPTrashCan *pTrashCan = _wpQueryFolder(somSelf);
-
-                // find the mapping for this
-                PTRASHMAPPINGTREENODE pMapping = NULL;
-                trshInitMappings(pTrashCan,
-                                 &fNeedRefresh);
-
-                pMapping = trshGetMapping(pTrashCan,
-                                          pTrashDir);
-                if (pMapping)
-                {
-                    // we have a mapping: use that
-                    _pszSourcePath = strdup(pMapping->pszRealName);
-                }
-                else
-                {
-                    // we have no mapping: use the folder's name
-                    CHAR szPathInTrash[CCHMAXPATH];
-                    if (_wpQueryFilename(pTrashDir, szPathInTrash, TRUE))
-                    {
-                        CHAR szSourcePath[CCHMAXPATH];
-
-                        #ifdef DEBUG_TRASHCAN
-                            _Pmpf(("    szPathInTrash: %s", szPathInTrash));
-                        #endif
-
-                        // copy drive letter
-                        szSourcePath[0] = szPathInTrash[0];
-                        // copy ':'
-                        szSourcePath[1] = ':';
-                        // copy stuff after "?:\Trash"
-                        strcpy(&(szSourcePath[2]), &(szPathInTrash[8]));
-                        _pszSourcePath = strdup(szSourcePath);
-                    }
-                }
-
-                if (fNeedRefresh)
-                    _wpSaveDeferred(pTrashCan);
-
-            } // end if (pTrashDir)
-        }
-    }
+        _pszSourcePath = trshComposeRelatedPath(somSelf);
 
     return (_pszSourcePath);
 }

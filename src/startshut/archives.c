@@ -129,7 +129,7 @@ static CHAR                G_szArcBaseFilename[CCHMAXPATH] = "";
  ********************************************************************/
 
 #define PERCENTAGES_COUNT 11
-// 8 PSZ's for percentage spinbutton
+// PSZ's for percentage spinbutton
 static PSZ     G_apszPercentages[PERCENTAGES_COUNT];
 
 /*
@@ -141,6 +141,7 @@ static PSZ     G_apszPercentages[PERCENTAGES_COUNT];
  *      Global Settings.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.9 (2001-04-07) [pr]: fixed Undo/Default
  */
 
 VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -152,7 +153,7 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     {
         if (pcnbp->pUser == NULL)
         {
-            // first call: backup Global Settings for "Undo" button;
+            // first call: backup archive settings for "Undo" button;
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
@@ -181,7 +182,6 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        CHAR        cArchivesCount = 0;
         ULONG       ul = 0;
 
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ARC_ENABLE,
@@ -228,11 +228,11 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                               pArcSettings->fShowStatus);
 
         // no. of archives
-        arcSetNumArchives(&cArchivesCount,
+        arcSetNumArchives(&pArcSettings->cArchivesCount,
                           FALSE);       // query
         winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_XSDI_ARC_ARCHIVES_SPIN,
                                1, 9,        // spin button limits
-                               cArchivesCount);
+                               pArcSettings->cArchivesCount);
     }
 
     if (flFlags & CBI_ENABLE)
@@ -271,6 +271,7 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *      Reacts to changes of any of the dialog controls.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.9 (2001-04-07) [pr]: fixed Undo/Default
  */
 
 MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -336,24 +337,28 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XSDI_ARC_ARCHIVES_SPIN:
         {
-            CHAR    cArchivesCount = (CHAR)winhAdjustDlgItemSpinData(pcnbp->hwndDlgPage,
-                                                                     ulItemID,
-                                                                     0,              // no grid
-                                                                     usNotifyCode);
-            arcSetNumArchives(&cArchivesCount,
+            pArcSettings->cArchivesCount = (CHAR)winhAdjustDlgItemSpinData(pcnbp->hwndDlgPage,
+                                                                           ulItemID,
+                                                                           0,              // no grid
+                                                                           usNotifyCode);
+            arcSetNumArchives(&pArcSettings->cArchivesCount,
                               TRUE);        // set
             fSave = FALSE;
         break; }
 
         case DID_UNDO:
         {
-            // "Undo" button: get pointer to backed-up Global Settings
-            PWPSARCOSETTINGS pGSBackup = (PWPSARCOSETTINGS)(pcnbp->pUser);
+            // "Undo" button: get pointer to backed-up archive settings
+            PWPSARCOSETTINGS pWASBackup = (PWPSARCOSETTINGS)(pcnbp->pUser);
 
             // and restore the settings for this page
-            pArcSettings->ulArcFlags = pGSBackup->ulArcFlags;
-            // pArcSettings->ulIniFilesPercent = pGSBackup->ulIniFilesPercent;
-            pArcSettings->ulEveryDays = pGSBackup->ulEveryDays;
+            pArcSettings->ulArcFlags = pWASBackup->ulArcFlags;
+            pArcSettings->dIniFilesPercent = pWASBackup->dIniFilesPercent;
+            pArcSettings->ulEveryDays = pWASBackup->ulEveryDays;
+            pArcSettings->fShowStatus = pWASBackup->fShowStatus;
+            pArcSettings->cArchivesCount = pWASBackup->cArchivesCount;
+            arcSetNumArchives(&pArcSettings->cArchivesCount,
+                              TRUE);        // set
 
             // update the display by calling the INIT callback
             (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
@@ -362,9 +367,9 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case DID_DEFAULT:
         {
             // set the default settings for this settings page
-            // (this is in common.c because it's also used at
-            // WPS startup)
             arcSetDefaultSettings();
+            arcSetNumArchives(&pArcSettings->cArchivesCount,
+                              TRUE);        // set
             // update the display by calling the INIT callback
             (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
         break; }
@@ -400,6 +405,8 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *@@ arcSetDefaultSettings:
  *      this initializes the global WPSARCOSETTINGS
  *      structure with default values.
+ *
+ *@@changed V0.9.9 (2001-04-07) [pr]: fixed Undo/Default
  */
 
 VOID arcSetDefaultSettings(VOID)
@@ -410,10 +417,8 @@ VOID arcSetDefaultSettings(VOID)
     G_ArcSettings.ulArcFlags = 0;
     G_ArcSettings.dIniFilesPercent = .1;
     G_ArcSettings.ulEveryDays = 1;
-    G_ArcSettings.dAppsSizeLast = 0;
-    G_ArcSettings.dKeysSizeLast = 0;
-    G_ArcSettings.dDataSumLast = 0;
     G_ArcSettings.fShowStatus = TRUE;
+    G_ArcSettings.cArchivesCount = 3;
 }
 
 /*
@@ -422,6 +427,8 @@ VOID arcSetDefaultSettings(VOID)
  *      structure, which is filled with the data
  *      from OS2.INI if this is queried for the
  *      first time.
+ *
+ *@@changed V0.9.9 (2001-04-07) [pr]: fixed Undo/Default
  */
 
 PWPSARCOSETTINGS arcQuerySettings(VOID)
@@ -439,7 +446,12 @@ PWPSARCOSETTINGS arcQuerySettings(VOID)
                                   &cbData);
         if ((!brc) || cbData != sizeof(G_ArcSettings))
             // data not found:
+        {
+            G_ArcSettings.dAppsSizeLast = 0;
+            G_ArcSettings.dKeysSizeLast = 0;
+            G_ArcSettings.dDataSumLast = 0;
             arcSetDefaultSettings();
+        }
 
         cbData = sizeof(G_dtLastArchived);
         brc = PrfQueryProfileData(HINI_USER,

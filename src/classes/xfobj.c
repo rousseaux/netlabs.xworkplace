@@ -958,6 +958,33 @@ SOM_Scope void  SOMLINK xfobj_wpObjectReady(XFldObject *somSelf,
 }
 
 /*
+ *@@ wpSetup:
+ *      this WPObject instance method is called to allow an
+ *      object to set itself up according to setup strings.
+ *      As opposed to wpSetupOnce, this gets called any time
+ *      a setup string is invoked.
+ *
+ *      We support the WRITEREXXSETUP string here.
+ *
+ *@@added V0.9.9 (2001-04-06) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfobj_wpSetup(XFldObject *somSelf, PSZ pszSetupString)
+{
+    BOOL    brc = FALSE;
+    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xfobj_wpSetup");
+
+    brc = XFldObject_parent_WPObject_wpSetup(somSelf, pszSetupString);
+
+    if (brc)
+        brc = objSetup(somSelf,
+                       pszSetupString);
+
+    return (brc);
+}
+
+/*
  *@@ wpFree:
  *      this WPObject method destroys the persistent form of the object
  *      and then frees the memory that represented that object.

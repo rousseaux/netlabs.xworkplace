@@ -138,8 +138,9 @@ BEGIN
     MENUITEM "~Mouse settings", 101
     MENUITEM "~Country settings", 102
     MENUITEM "~Sound settings", 103
-    MENUITEM "Ener~gy settings", 104
-    MENUITEM "W~in-OS/2 settings", 105
+    MENUITEM "S~ystem settings", 104
+    MENUITEM "Ener~gy settings", 105
+    MENUITEM "W~in-OS/2 settings", 106
     MENUITEM "", 1, MIS_SEPARATOR
     MENUITEM "Color palette ~1", 110
     MENUITEM "Color palette ~2", 111
@@ -171,10 +172,12 @@ BEGIN
     MENUITEM "~Configuration folder", 210
     MENUITEM "~Startup folder", 211
     MENUITEM "S~hutdown folder", 212
+    MENUITEM "~Font folder", 213
     MENUITEM "", 1, MIS_SEPARATOR
-    MENUITEM "~Trash can", 213
+    MENUITEM "~Trash can", 220
+    MENUITEM "Set~up string", 221
     MENUITEM "", 1, MIS_SEPARATOR
-    MENUITEM "~XCenter", 214
+    MENUITEM "~XCenter", 230
 END
 
 /* Context menus on XFldSystem "Drivers" page;
@@ -481,7 +484,7 @@ BEGIN
     /* entry in XWPClassList's "Open" submenu */
     ID_XFSI_OPENCLASSLIST               "~Class list"
     /* default title for object */
-    ID_XFSI_XWPCLASSLIST                "WPS class list"
+    ID_XFSI_XWPCLASSLIST                "WPS Class List"
     /* the following is new with V0.9.1 (99-12-28) [umoeller] */
     ID_XFSI_REGISTERCLASS               "R~egister new class..."
 

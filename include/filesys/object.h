@@ -164,9 +164,27 @@
      *
      ********************************************************************/
 
+    BOOL objSetup(WPObject *somSelf,
+                  PSZ pszSetupString);
+
     ULONG objQuerySetup(WPObject *somSelf,
                         PSZ pszSetupString,
                         ULONG cbSetupString);
+
+    PSZ objGetSetupString(WPObject *pobj);
+
+    #define SCRFL_RECURSE           0x0001
+
+    #ifdef LINKLIST_HEADER_INCLUDED
+    #ifdef SOM_WPFolder_h
+
+        APIRET objCreateObjectScript(WPObject *pObject,
+                                     const char *pcszRexxFile,
+                                     WPFolder *pFolderForFiles,
+                                     ULONG flCreate);
+    #endif
+    #endif
+
 #endif
 
 

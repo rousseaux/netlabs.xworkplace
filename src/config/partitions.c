@@ -118,8 +118,12 @@ typedef struct _PARTITIONCLIENTDATA
     VIEWITEM        ViewItem;           // view item
 
     USHORT          usDiskCount;        // from doshQueryDiskCount
-    PPARTITIONINFO  ppi;                // from doshGetPartitionsList
+    /* PPARTITIONINFO  ppi;                // from doshGetPartitionsList
     USHORT          usPartitionCount;   // from doshGetPartitionsList
+     */
+
+    PPARTITIONSLIST pPartitionsList;
+
     HWND            hwndDiskChart[16];  // for each disk, a pie chart control
 } PARTITIONCLIENTDATA, *PPARTITIONCLIENTDATA;
 
@@ -140,10 +144,12 @@ VOID UpdateChartControlData(HWND hwndClient,        // in: partition client wind
 {
     ULONG   ulDiskThis = 0;
     USHORT  usContext = 0;
-    APIRET  arc = doshGetPartitionsList(&pClientData->ppi,
-                                       &pClientData->usPartitionCount,
-                                       &usContext);
-    if ((pClientData->usDiskCount) && (arc == NO_ERROR))
+    APIRET  arc = doshGetPartitionsList(&pClientData->pPartitionsList,
+                                        &usContext);
+    if (    (pClientData->pPartitionsList)
+         && (pClientData->pPartitionsList->cPartitions)
+         && (arc == NO_ERROR)
+       )
     {
         // array of colors which we'll use
         // in round-robin fashion
@@ -174,7 +180,7 @@ VOID UpdateChartControlData(HWND hwndClient,        // in: partition client wind
         {
             // count partitions on current disk
             ULONG           cPartitionsThisDisk = 0;
-            PPARTITIONINFO  ppiThis = pClientData->ppi;
+            PPARTITIONINFO  ppiThis = pClientData->pPartitionsList->pPartitionInfo;
             while (ppiThis)
             {
                 if (ppiThis->bDisk == ulDiskThis + 1)
@@ -201,7 +207,7 @@ VOID UpdateChartControlData(HWND hwndClient,        // in: partition client wind
                                 *ppszDescriptionThis = papszDescriptions;
 
                 // go thru partitions again and fill data
-                ppiThis = pClientData->ppi;
+                ppiThis = pClientData->pPartitionsList->pPartitionInfo;
                 while (ppiThis)
                 {
                     if (ppiThis->bDisk == ulDiskThis + 1)
@@ -510,7 +516,7 @@ MRESULT EXPENTRY fnwpPartitionsClient(HWND hwndClient, ULONG msg, MPARAM mp1, MP
                                         &pClientData->UseItem);
 
                 // free the partition info
-                doshFreePartitionsList(pClientData->ppi);
+                doshFreePartitionsList(pClientData->pPartitionsList);
 
                 // free the use list item
                 _wpFreeMem(pClientData->somSelf, (PBYTE)pClientData);
