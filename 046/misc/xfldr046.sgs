@@ -1,0 +1,204 @@
+
+<sguide low-res-size=(.8,.9) med-res-size=(.7,.6) high-res-size=(.6,.6)>
+<title>XWorkplace Introduktion
+.****** Intro panel ***********************
+<panel name=main
+       next=ContextMenus
+       enable-done hide-undo hide-help
+       image-lib=xfldr046.dll image-id=120>
+<title>V„lkommen till XWorkplace!</title>
+<P>XWorkplace har skrivits f”r att l„gga till ett antal funktioner hos Workplace Shell f”r
+vilket IBM inte har visat n†got intresse hittils och troligtvis aldrig kommer att g”ra heller.
+<p>Dessa sidor „r t„nkta att ge dig en snabb, interaktiv introduktion till de m†nga funktionerna
+hos XWorkplace.
+<p>F”r detaljer om speciella funktioner hos XWorkplace, var v„nlig och l„s 
+<i>XWorkplace Online Referens,</i> f”r vilken XWorkplace's installationsprogram har skapat
+ett objekt i mappen "XWorkplace Installation" p† ditt Skrivbord.
+<p>Klicka nu p† knappen nedanf”r f”r att forts„tta.
+</panel>
+
+.****** Context menus ***********************
+<panel name=ContextMenus
+       next=CreatingObjects
+       previous=main
+       enable-done hide-undo hide-help
+       image-lib=xfldr046.dll image-id=120>
+<title>Kontext Menyer</title>
+<p>M†nga av den nya XWorkplace funktionerna antingen modifierar standardkontexten
+f”r menyposterna eller g†r att n† genom att anv„nda dom.
+<p>Som ett exempel, var v„nlig och klicka p† Skrivbordet med musknapp 2. Dess kontextmeny
+kommer att ”ppnas, d„r du kan se m†nga ny optioner. Om du ”nskar k„nna till vad en viss
+menypost har f”r uppgift, klicka p† den, h†ll ner musknappen och tryck F1 tangenten. Ett 
+hj„lpf”nster kommer att upptr„da, f”rklarande den aktuella menyposten.
+</panel>
+
+.****** Creating objects ***********************
+<panel name=CreatingObjects
+       next=ConfigFolder
+       previous=ContextMenus
+       enable-done hide-undo hide-help
+       image-lib=xfldr046.dll image-id=120>
+<title>Skapa Objekt</title>
+<p>XWorkplace till†ter dig ocks† att snabbt skapa objekt genom att anv„nda en kontextmeny.
+<p>Klicka med musknapp 2 p† Skrivbordet. I kontextmenyn kommer du att se en undermeny
+kallad <b>"Skapa ny"</b>. V„lj en av menyposterna i den, och XWorkplace kommer att skapa
+respektive objekt direkt vid musens position.
+</p>
+</panel>
+
+.****** Config folder***********************
+<panel name=ConfigFolder
+       next=GlobalSettings
+       previous=ContextMenus
+       enable-done hide-undo hide-help
+       image-lib=xfldr046.dll image-id=120>
+<title>Konfigurera Menyer</title>
+<p>Du kan modifiera den nya menyn och menyposterna i mappens kontextmeny som du vill.
+<p>Detta kan g”ras genom att anv„nda "XWorkplace Konfigurationsmapp", vilken skapades av
+installationsprogrammet i "XWorkplace Installation" mappen p† ditt Skrivbord.
+Allt som du l„gger in i den h„r specialmappen kommer att upptr„da som menyposter i
+mappens kontextmeny. Om du l„gger in mallar i specialmappen, kommer du att kunna skapa
+objekt fr†n dem genom att anv„nda kontextmeyn.
+<P>Klicka p† Skrivbordet med musknapp 2 och v„lj <b>XWorkplace Konfigurationsmapp</b>
+i <b>XWorkplace</b> menyn.
+<p>Du kommer att se att varje undermapp i den mappen korresponderar till en undermeny,
+och att varje objekt upptr„der som en menypost i kontextmenyn.
+</panel>
+
+.****** Global settings ***********************
+<panel name=GlobalSettings
+       next=FolderSettings
+       previous=ConfigFolder
+       enable-done hide-undo hide-help
+       image-lib=xfldr046.dll image-id=120>
+<title>XWorkplace Inst„llningar</title>
+<p>Andra XWorkplace funktioner „r ocks† fritt konfigureringsbara. F”r att †stadkomma detta,
+har XWorkplace skapat ett nytt objekt kallat <b>"Workplace Shell"</b> i din mapp
+med "Systemprogram". I det h„r objektet hittar du b†de standard "System" inst„llningssidor som har
+att g”ra med Workplace Shell s†v„l som nya inst„llningar f”r XWorkplace.
+<p>™ppna din mapp med "Systemprogram" och inne i den "Workplace Shell" objektet f”r att ta en
+titt p† de nya sidorna.
+<p>P† varje ny sida kan du alltid erh†lla omfattande hj„lp genom att trycka p† "Hj„lp" knappen.
+</panel>
+
+.****** Folder settings ***********************
+<panel name=FolderSettings
+       next=DesktopSettings
+       previous=GlobalSettings
+       enable-done hide-undo hide-help
+       image-lib=xfldr046.dll image-id=120>
+<title>Mappar Inst„llningar</title>
+<p>Emedan "Workplace Shell" objektet handhar inst„llningar som p†verkar hela systemet,
+finns det vissa inst„llningar som bara p†verkar enskilda mappar. F”r det „ndam†let,
+l„gger XWorkplace till en ny sida med inst„llningar i notboken f”r varje enskild mapp 
+ocks†.
+<p>™ppna notboken med inst„llningar f”r varje mapp. D„r kommer att finnas en ny sida med
+inst„llningar f”r "XWorkplace", f”r vilken du ocks† kan finna mera hj„lp.
+
+.****** Desktop settings ***********************
+<panel name=DesktopSettings
+       next=OS2Kernel
+       previous=FolderSettings
+       enable-done hide-undo hide-help
+       image-lib=xfldr046.dll image-id=120>
+<title>Skrivbord Inst„llningar</title>
+<p>XWorkplace l„gger ocks† till fler inst„llningar f”r Skrivbordet. P† sidan <b>"XSkrivbord"</b> i
+notboken med inst„llningar f”r Skrivbordet hittar du flera menyoptioner, men allra viktigast,
+inst„llningarna f”r den nya <b>Ut”kad Avst„ngning,</b> med vilken XWorkplace kan byta ut och
+f”rb„ttra standardavst„ngningen i OS/2.
+<p>Den Ut”kade avst„ngningen till†ter dig att automatisk boota om din dator, definiera dina egna
+optioner f”r ombootning, att inte st„nga vissa program, avbryta avst„ngning, med mera.
+<p>Som till„gg, XWorkplace till†ter dig att <b>starta om WPS</b> separat utan att beh”va boota om hela
+datorn.
+<p>Var v„nlig och titta i <i>XWorkplace Online Referens</i> f”r att l„sa en mera detaljerad
+introduktion om dessa funktioner.
+
+.****** OS/2 Kernel, new with V0.84; note that you'll have to update the next and
+.****** previous flags of DesktopSettings and StatusBars
+<panel name=OS2Kernel
+       next=StatusBars
+       previous=DesktopSettings
+       enable-done hide-undo hide-help
+       image-lib=xfldr046.dll image-id=120>
+<title>OS/2 K„rna</title>
+<p>Ytterligare ett objekt har skapats i mappen "Systemprogram", vilket kallas
+<b>"OS/2 K„rna".</b> I mots„ttning till "Workplace Shell" objektet, vilket tar hand
+om WPS inst„llningar vilka blir aktiva omedelbart, inneh†ller "OS/2 K„rna" inst„llningar vilka
+kr„ver ombootning f”r att bli aktiva.
+<p>Objektet erbjuder dig ett enkelt-att-anv„nda gr„nssnitt f”r de viktigaste CONFIG.SYS
+inst„llningarna. Det finns omfattande hj„lp tillg„nglig f”r alla dessa inst„llningar. Eftersom „ndringar
+av CONFIG.SYS alltid „r lite riskabla, f”rs”ker XWorkplace att assistera dig med att hitta
+inst„llningar som inte f”rst”r ditt system och kan ocks† optimera vissa v„rden f”r din
+dator.
+<p>En genv„g till objektet kan ocks† hittas i <b>"XWorkplace"</b> meny i varje mapps 
+kontextmeny.
+</panel>
+
+.****** Status Bars ***********************
+<panel name=StatusBars
+       next=FolderHotkeys
+       previous=OS2Kernel
+       enable-done hide-undo hide-help
+       image-lib=xfldr046.dll image-id=120>
+<title>Mappar Statusf„lt</title>
+<p>XWorkplace kan l„gga till ett statusf„lt i alla ”ppna mappvisningar.I dessa statusf„lt kan du
+se detaljerad och v„ldigt flexibel information om de objekt som f”r n„rvarande „r valda.
+<p>Eftersom „ven andra WPS program erbjuder statusf„lt, „r den funktionen avaktiverad som standard.
+I det nya "Workplace Shell" objektet kan du aktivera den funktionen p† sidan om "Statusf„lt".
+<p>Statusf„ltets visning kan konfigureras v„ldigt fritt.
+<p>Var v„nlig och titta i <i>XWorkplace Online Referens</i> f”r att l„sa en mera detaljerad
+introduktion om dessa funktioner.
+</panel>
+
+.****** Folder Hotkeys ***********************
+<panel name=FolderHotkeys
+       next=Misc
+       previous=Statusbars
+       enable-done hide-undo hide-help
+       image-lib=xfldr046.dll image-id=120>
+<title>Mappar Snabbtangenter</title>
+<p>XWorkplace till†ter dig att definiera snabbtangenter f”r mapparna att anv„nda med m†nga
+mappfunktioner.
+<p>Som ett exempel, ”ppna n†gon mapp och tryck <b>Ctrl+S</b>. Du kommer att se ett nytt f”nster
+vilket till†ter dig att v„lja definierade objekt i den mappen.
+<p>Det finns mer „n 30 olika mappfunktioner f”r vilka du kan tilldela mappar snabbtangenter, 
+som sortering, ”ppning av ”verordnad mapp, f”rnya nu, etc.
+<p>Detta „r ocks† f”rklarat i detalj i <i>XWorkplace Online Referens.</i>
+</panel>
+
+.****** "More features", new with V0.84; note that you'll have to update the next and
+.****** previous flags of FolderHotkeys and LastPanel
+<panel name=Misc
+       next=LastPanel
+       previous=FolderHotkeys
+       enable-done hide-undo hide-help
+       image-lib=xfldr046.dll image-id=120>
+<title>Mera funktioner</title>
+<p><b>Nya systemljud</b> - det finns nu ytterligare ett antal h„ndelser som du kan tilldela
+ljud till.
+<p><b>Nya standardikoner</b> f”r de flesta WPS klasser.
+<p><b>Netscape DDE gr„nssnitt</b> - du kan nu v„lja att endast anv„nda den version av Netscape
+som redan k”rs.
+<p><b>Tr„dstorlek</b> - se hur mycket diskutrymme som har konsumerats av en mapp och alla dess
+undermappar.
+<p><b>Auto-scrollning i Tr„dvisning</b> - scrolla ner en Tr„dvisning automatiskt n„r den „r
+expanderad f”r att g”ra nya poster synliga.
+<p><b>Snabb ™ppning</b> g”r att dina oftast ”ppnade mappar visar sitt inneh†ll omedelbart.
+</panel>
+
+.****** last panel ***********************
+<panel name=LastPanel
+       previous=Misc
+       enable-done hide-undo hide-help
+       image-lib=xfldr046.dll image-id=120>
+<title>Vad kommer h„rn„st?</title>
+<p>Detta borde r„cka till f”r en kort introduktion av XWorkplace's m”jligheter.
+<p><i>XWorkplace Online Referens</i> inneh†ller detaljerade beskrivningar av alla
+XWorkplace's funktioner, inklusive de som inte beskrivits h„r, och hur de skall konfigureras.
+<p>Du kan ”ppna referensen antingen genom att dubbel-klicka p† det objekt som
+XWorkplace's installationsprogram har skapat i mappen "XWorkplace Installation" p† ditt Skrivbord, 
+eller genom att v„lja respektive menypost i "XWorkplace" meny i varje mapps kontextmeny.
+<p>Och nu, ha roligt med XWorkplace!
+</panel>
+
+</sguide>
