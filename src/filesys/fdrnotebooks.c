@@ -76,6 +76,7 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xfldr.ih"
+#include "xfstart.ih"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -864,23 +865,30 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *@@changed V0.9.0 [umoeller]: moved this here from xfdesk.c
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  *@@changed V0.9.4 (2000-08-02) [umoeller]: now using sliders; added initial delay
+ *@@changed V0.9.9 (2001-03-19) [pr]: multiple startup folder mods.
  */
 
 VOID fdrStartupFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                               ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    XFldStartupData *somThis = NULL;
+
+    somThis = XFldStartupGetData(pcnbp->somSelf);
 
     if (flFlags & CBI_INIT)
     {
         if (pcnbp->pUser == 0)
         {
-            // first call: backup Global Settings for "Undo" button;
+            // first call: backup Global Settings and instance
+            // variables for "Undo" button;
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
-            pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+            pcnbp->pUser = malloc(sizeof(XFldStartupData) + sizeof(GLOBALSETTINGS));
+            memcpy(pcnbp->pUser, somThis, sizeof(XFldStartupData));
+            memcpy((char *) pcnbp->pUser + sizeof(XFldStartupData),
+                   pGlobalSettings, sizeof(GLOBALSETTINGS));
         }
 
         // set up sliders
@@ -905,13 +913,15 @@ VOID fdrStartupFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
         // per-object delay
         winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage, ID_SDDI_STARTUP_OBJDELAY_SLID),
                                  SMA_INCREMENTVALUE,
-                                 (pGlobalSettings->ulStartupObjectDelay / 500) - 1);
+                                 (_ulObjectDelay / 500) - 1);
 
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_SHOWSTARTUPPROGRESS,
                               pGlobalSettings->ShowStartupProgress);
-        /* winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_SDDI_STARTUPDELAY,
-                               500, 10000,
-                               pGlobalSettings->ulStartupDelay); */
+        if (_ulType == XSTARTUP_REBOOTSONLY)
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_STARTUP_REBOOTSONLY, TRUE);
+
+        if (_ulType == XSTARTUP_EVERYWPSRESTART)
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_STARTUP_EVERYWPSRESTART, TRUE);
     }
 
     if (flFlags & CBI_ENABLE)
@@ -930,6 +940,7 @@ VOID fdrStartupFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
  *@@changed V0.9.0 [umoeller]: moved this here from xfdesk.c
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  *@@changed V0.9.4 (2000-08-02) [umoeller]: now using sliders; added initial delay
+ *@@changed V0.9.9 (2001-03-19) [pr]: multiple startup folder mods.; add Undo & Default processing
  */
 
 MRESULT fdrStartupFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -938,13 +949,14 @@ MRESULT fdrStartupFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 {
     GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     ULONG   ulChange = 1;
-
-    MRESULT mrc = (MRESULT)-1;
+    BOOL fUpdate = TRUE;
+    XFldStartupData *somThis = XFldStartupGetData(pcnbp->somSelf);
 
     switch (usItemID)
     {
         case ID_SDDI_SHOWSTARTUPPROGRESS:
             pGlobalSettings->ShowStartupProgress = ulExtra;
+            fUpdate = FALSE;
         break;
 
         case ID_SDDI_STARTUP_INITDELAY_SLID:
@@ -960,6 +972,7 @@ MRESULT fdrStartupFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                               szMS);
 
             pGlobalSettings->ulStartupInitialDelay = lMS;
+            fUpdate = FALSE;
         break; }
 
         case ID_SDDI_STARTUP_OBJDELAY_SLID:
@@ -974,8 +987,43 @@ MRESULT fdrStartupFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                               ID_SDDI_STARTUP_OBJDELAY_TXT2,
                               szMS);
 
-            pGlobalSettings->ulStartupObjectDelay = lMS;
+            _ulObjectDelay = lMS;
+            ulChange = 0;
         break; }
+
+        case ID_SDDI_STARTUP_REBOOTSONLY:
+            _ulType = XSTARTUP_REBOOTSONLY;
+            ulChange = 0;
+        break;
+
+        case ID_SDDI_STARTUP_EVERYWPSRESTART:
+            _ulType = XSTARTUP_EVERYWPSRESTART;
+            ulChange = 0;
+        break;
+
+        case DID_UNDO:
+            if (pcnbp->pUser)
+            {
+                XFldStartupData *Backup = (pcnbp->pUser);
+                PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)((char *) pcnbp->pUser + sizeof(XFldStartupData));
+                // "Undo" button: restore backed up instance & global data
+                _ulType = Backup->ulType;
+                _ulObjectDelay = Backup->ulObjectDelay;
+                pGlobalSettings->ShowStartupProgress = pGSBackup->ShowStartupProgress;
+                pGlobalSettings->ulStartupInitialDelay = pGSBackup->ulStartupInitialDelay;
+                // update the display by calling the INIT callback
+                (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            }
+        break;
+
+        case DID_DEFAULT:
+            // "Default" button:
+            _ulType = XSTARTUP_REBOOTSONLY;
+            _ulObjectDelay = XSTARTUP_DEFAULTOBJECTDELAY;
+            cmnSetDefaultSettings(SP_STARTUPFOLDER);
+            // update the display by calling the INIT callback
+            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+        break;
 
         default:
             ulChange = 0;
@@ -986,7 +1034,10 @@ MRESULT fdrStartupFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     if (ulChange)
         cmnStoreGlobalSettings();
 
-    return (mrc);
+    if (fUpdate)
+        _wpSaveDeferred(pcnbp->somSelf);
+
+    return ((MPARAM)0);
 }
 
 

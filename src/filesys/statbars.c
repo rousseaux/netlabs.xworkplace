@@ -534,6 +534,7 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
  *@@changed V0.9.6 (2000-11-01) [umoeller]: now using all new xstrFindReplace
  *@@changed V0.9.6 (2000-11-12) [umoeller]: removed cThousands param, now using cached country settings
  *@@changed V0.9.6 (2000-11-12) [pr]: new status bar mnemonics
+ *@@changed V0.9.9 (2001-03-19) [pr]: fixed drive space problems
  */
 
 ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
@@ -637,7 +638,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     ulLogicalDrive = 0;
             }
 
-            if (doshQueryDiskFree(ulLogicalDrive, &dbl))
+            if ((ulLogicalDrive == 0) || doshQueryDiskFree(ulLogicalDrive, &dbl))
                 strcpy(szTemp, "?");
             else
                 strhThousandsDouble(szTemp, dbl,
@@ -658,7 +659,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     ulLogicalDrive = 0;
             }
 
-            if (doshQueryDiskFree(ulLogicalDrive, &dbl))
+            if ((ulLogicalDrive == 0) || doshQueryDiskFree(ulLogicalDrive, &dbl))
                 strcpy(szTemp, "?");
             else
                 strhThousandsDouble(szTemp,
@@ -680,8 +681,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     ulLogicalDrive = 0;
             }
 
-            if (doshQueryDiskFree(ulLogicalDrive, &dbl))
-            if (dbl == -1)
+            if ((ulLogicalDrive == 0) || doshQueryDiskFree(ulLogicalDrive, &dbl))
                 strcpy(szTemp, "?");
             else
                 strhThousandsDouble(szTemp,
@@ -703,7 +703,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     ulLogicalDrive = 0;
             }
 
-            if (doshQueryDiskFree(ulLogicalDrive, &dbl))
+            if ((ulLogicalDrive == 0) || doshQueryDiskFree(ulLogicalDrive, &dbl))
                 strcpy(szTemp, "?");
             else
                 strhThousandsDouble(szTemp,
@@ -725,7 +725,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     ulLogicalDrive = 0;
             }
 
-            if (doshQueryDiskFree(ulLogicalDrive, &dbl))
+            if ((ulLogicalDrive == 0) || doshQueryDiskFree(ulLogicalDrive, &dbl))
                 strcpy(szTemp, "?");
             else
                strhThousandsDouble(szTemp,
@@ -749,7 +749,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     ulLogicalDrive = 0;
             }
 
-            if (doshQueryDiskFree(ulLogicalDrive, &dbl))
+            if ((ulLogicalDrive == 0) || doshQueryDiskFree(ulLogicalDrive, &dbl))
                 strcpy(szTemp, "?");
             else
                 stbVar1000Double(szTemp,
@@ -772,7 +772,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     ulLogicalDrive = 0;
             }
 
-            if (doshQueryDiskFree(ulLogicalDrive, &dbl))
+            if ((ulLogicalDrive == 0) || doshQueryDiskFree(ulLogicalDrive, &dbl))
                 strcpy(szTemp, "?");
             else
                 stbVar1024Double(szTemp,
@@ -796,13 +796,14 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     ulLogicalDrive = 0;
             }
 
-            if (doshQueryDiskFSType(ulLogicalDrive,
-                                    szBuffer,
-                                    sizeof(szBuffer))
-                         == NO_ERROR)
-                xstrFindReplaceC(pstrText, &ulOfs, "\tF", szBuffer);
-            else
+            if (   (ulLogicalDrive == 0)
+                || doshQueryDiskFSType(ulLogicalDrive,
+                                       szBuffer,
+                                       sizeof(szBuffer))
+               )
                 xstrFindReplaceC(pstrText, &ulOfs, "\tF", "?");
+            else
+                xstrFindReplaceC(pstrText, &ulOfs, "\tF", szBuffer);
             ulrc++;
         }
     }
@@ -1192,7 +1193,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
                             pDeref = _wpQueryShadowedObject(pDeref, TRUE);
                     }
 
-                    if (_somIsA(pDeref, _WPFileSystem))
+                    if (pDeref && _somIsA(pDeref, _WPFileSystem))
                         ulSizeSelected += _wpQueryFileSize(pDeref);
                 }
                 else

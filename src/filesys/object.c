@@ -387,6 +387,7 @@ VOID UnlockObjectsList(VOID)
  *      Preconditions: caller must lock the list.
  *
  *@@added V0.9.7 (2001-01-18) [umoeller]
+ *@@changed V0.9.9 (2001-03-19) [pr]: tidied up
  */
 
 BOOL LoadObjectsList(PLINKLIST pll,
@@ -394,40 +395,53 @@ BOOL LoadObjectsList(PLINKLIST pll,
                      const char *pcszIniKey)
 {
     BOOL        brc = FALSE;
-    CHAR        szFavorites[1000],
-                szDummy[1000];
-    PSZ         pszFavorites;
+    ULONG       ulSize;
+    PSZ         pszHandles, pszTemp;
 
-    brc = PrfQueryProfileString(HINI_USERPROFILE,
-                               (PSZ)INIAPP_XWORKPLACE, (PSZ)pcszIniKey,
-                               "", &szFavorites, sizeof(szFavorites));
-    if (brc)
+    brc = PrfQueryProfileSize(HINI_USERPROFILE,
+                              (PSZ)INIAPP_XWORKPLACE, (PSZ)pcszIniKey,
+                              &ulSize);
+    if (   brc
+        && ((pszHandles = malloc(ulSize)) != NULL)
+       )
     {
-        pszFavorites = szFavorites;
-
-        do
+        brc = PrfQueryProfileString(HINI_USERPROFILE,
+                                    (PSZ)INIAPP_XWORKPLACE, (PSZ)pcszIniKey,
+                                    "", pszHandles, ulSize);
+        if (brc)
         {
-            HOBJECT          hObject;
-            WPObject         *pobj;
-            sscanf(pszFavorites, "%lX %s", &hObject, &szDummy);
-            pobj = _wpclsQueryObject(_WPFolder, hObject);
-            if (pobj)
+            pszTemp = pszHandles;
+            do
             {
-                if (wpshCheckObject(pobj))
+                HOBJECT          hObject;
+                WPObject         *pobj = NULL;
+
+                sscanf(pszTemp, "%lX", &hObject);
+                pobj = _wpclsQueryObject(_WPFolder, hObject);
+                if (pobj)
                 {
-                    lstAppendItem(pll,
-                                  pobj);
-                    if (ulListFlag)
+                    if (wpshCheckObject(pobj))
                     {
-                        // set list notify flag
-                        _xwpModifyListNotify(pobj,
-                                             ulListFlag,        // set
-                                             ulListFlag);       // mask
+                        // object is already locked
+                        lstAppendItem(pll,
+                                      pobj);
+                        if (ulListFlag)
+                        {
+                            // set list notify flag
+                            _xwpModifyListNotify(pobj,
+                                                 ulListFlag,        // set
+                                                 ulListFlag);       // mask
+                        }
                     }
                 }
-            }
-            pszFavorites += 6;
-        } while (strlen(pszFavorites) > 0);
+
+                while(   *pszTemp
+                      && (*pszTemp++ != ' ')
+                     );
+            } while (strlen(pszTemp) > 0);
+        }
+
+        free(pszHandles);
     }
 
     return (brc);
@@ -516,6 +530,7 @@ BOOL WriteObjectsList(PLINKLIST pll,
  *@@changed V0.9.7 (2001-01-18) [umoeller]: made this generic for all objs... renamed from fdr*
  *@@changed V0.9.7 (2001-01-18) [umoeller]: removed mallocs(), this wasn't needed
  *@@changed V0.9.9 (2001-01-29) [lafaix]: wrong object set, fixed
+ *@@changed V0.9.9 (2001-03-19) [pr]: lock/unlock objects on the lists
  */
 
 BOOL objAddToList(WPObject *somSelf,
@@ -559,6 +574,8 @@ BOOL objAddToList(WPObject *somSelf,
                 // insert mode:
                 if (!pobjFound)
                 {
+                    // lock object to stop it going dormant
+                    _wpLockObject(somSelf);
                     // not on list yet: append
                     lstAppendItem(pll,
                                   somSelf);
@@ -579,6 +596,8 @@ BOOL objAddToList(WPObject *somSelf,
                 {
                     lstRemoveItem(pll,
                                   pobjFound);
+                    // unlock object to allow it to go dormant
+                    _wpUnlockObject(somSelf);
 
                     if (ulListFlag)
                         // set list notify flag

@@ -295,18 +295,19 @@
 
     #define T1M_BEGINSTARTUP            (WM_USER+270)
 
-    #define T1M_POCCALLBACK             (WM_USER+271)
+    #define T1M_STARTCONTENT            (WM_USER+271)
+    #define T1M_POCCALLBACK             (WM_USER+272)
 
-    #define T1M_BEGINQUICKOPEN          (WM_USER+272)
-    #define T1M_NEXTQUICKOPEN           (WM_USER+273)
+    #define T1M_BEGINQUICKOPEN          (WM_USER+273)
+    #define T1M_NEXTQUICKOPEN           (WM_USER+274)
 
-    #define T1M_LIMITREACHED            (WM_USER+274)
+    #define T1M_LIMITREACHED            (WM_USER+275)
 
-    #define T1M_EXCEPTIONCAUGHT         (WM_USER+275)
+    #define T1M_EXCEPTIONCAUGHT         (WM_USER+276)
 
-    #define T1M_EXTERNALSHUTDOWN        (WM_USER+276)
+    #define T1M_EXTERNALSHUTDOWN        (WM_USER+277)
 
-    #define T1M_DESTROYARCHIVESTATUS    (WM_USER+277)    // added V0.9.0
+    #define T1M_DESTROYARCHIVESTATUS    (WM_USER+278)    // added V0.9.0
 
     #define T1M_OPENOBJECTFROMHANDLE    (WM_USER+280)    // added V0.9.0
 

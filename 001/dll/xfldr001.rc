@@ -384,9 +384,9 @@ BEGIN
     ID_XSSI_25ADDITEMS              "Co~ntext menus"
     ID_XSSI_26CONFIGITEMS           "Config folder items"
     ID_XSSI_2REMOVEITEMS            "Standard menu items"
-    ID_XSSI_27STATUSBAR             "Status bars"
+    ID_XSSI_27STATUSBAR             "Status ~bars" /* V0.9.9 */
     ID_XSSI_3SNAPTOGRID             "Grid"
-    ID_XSSI_4ACCELERATORS           "Folder hotkeys"
+    ID_XSSI_4ACCELERATORS           "~Folder hotkeys" /* V0.9.9 */
     ID_XSSI_5INTERNALS              "XFolder Internals"
     ID_XSSI_FILEOPS                 "File ~operations"
     ID_XSSI_INTERNALS               "~Object" /* changed V0.9.0 */

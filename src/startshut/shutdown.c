@@ -3844,13 +3844,16 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
  *      when processing Shutdown folder.
  *
  *      Runs on thread 1.
+ *
+ *@@changed V0.9.9 (2001-03-19) [pr]: change to WM_UPDATEPROGRESSBAR call
  */
 
 MRESULT EXPENTRY fncbShutdown(HWND hwndStatus,
                               ULONG ulObject,
-                              MPARAM mpNow,
-                              MPARAM mpMax)
+                              MPARAM mp1,
+                              MPARAM mp2)
 {
+    PPROCESSCONTENTINFO pPCI = (PPROCESSCONTENTINFO) mp1;
     PSHUTDOWNDATA pShutdownData = (PSHUTDOWNDATA)WinQueryWindowPtr(hwndStatus,
                                                                    QWL_USER);
 
@@ -3871,7 +3874,9 @@ MRESULT EXPENTRY fncbShutdown(HWND hwndStatus,
         WinSetActiveWindow(HWND_DESKTOP, hwndStatus);
 
         WinSendMsg(WinWindowFromID(hwndStatus, ID_SDDI_PROGRESSBAR),
-                   WM_UPDATEPROGRESSBAR, mpNow, mpMax);
+                   WM_UPDATEPROGRESSBAR,
+                   MPFROMLONG(pPCI->ulObjectNow),
+                   MPFROMLONG(pPCI->ulObjectMax));
     }
     else
     {
@@ -4240,6 +4245,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
 
                         pShutdownData->hPOC
                             = _xwpBeginProcessOrderedContent(pShutdownFolder,
+                                                             FALSE, // V0.9.9 (2001-03-19) [pr]: updated prototype
                                                              0, // wait mode
                                                              fncbShutdown,
                                                              (ULONG)pShutdownData->SDConsts.hwndShutdownStatus);

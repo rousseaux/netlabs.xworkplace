@@ -290,11 +290,11 @@ $(OUTPUTDIR)\xfpgmf.obj: \
 
 $(OUTPUTDIR)\xfstart.obj: \
             $(INC)\setup.h \
-            $(HLPINC)\winh.h \
+            $(HLPINC)\winh.h $(HLPINC)\linklist.h \
             $(INC)\classes\xfpgmf.h \
             $(INC)\dlgids.h \
-            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
-            $(INC)\filesys\folder.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
+            $(INC)\filesys\folder.h $(INC)\filesys\object.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xfsys.obj: \

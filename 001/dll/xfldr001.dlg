@@ -857,7 +857,7 @@ BEGIN
         AUTOCHECKBOX    "~Close all sessions", ID_SDDI_WPS_CLOSEWINDOWS, 10,
                         21, 160, 10
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        AUTOCHECKBOX    "~Process XWorkplace Startup folder",
+        AUTOCHECKBOX    "~Process all XWorkplace Startup folders",
                         ID_SDDI_WPS_STARTUPFOLDER, 10, 12, 155, 10
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         AUTOCHECKBOX    "~Show this message next time", ID_SDDI_MESSAGEAGAIN,
@@ -2549,26 +2549,32 @@ BEGIN
     DIALOG  "", ID_XSD_STARTUPFOLDER, 0, 0, 224, 180, NOT FS_DLGBORDER |
             WS_VISIBLE
     BEGIN
-        GROUPBOX        "XWorkplace Startup folder", -1, 5, 24, 190, 54
-        LTEXT           "Initial delay:", ID_SDDI_STARTUP_INITDELAY_TXT1, 10,
-                        56, 50, 14, DT_VCENTER
-        SLIDER          ID_SDDI_STARTUP_INITDELAY_SLID, 64, 56, 96, 14,
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
+        GROUPBOX        "XWorkplace Startup folder", -1, 5, 24, 196, 102
+        LTEXT           "~Initial delay:", ID_SDDI_STARTUP_INITDELAY_TXT1,
+                        10, 102, 54, 14, DT_VCENTER | DT_MNEMONIC
+        SLIDER          ID_SDDI_STARTUP_INITDELAY_SLID, 64, 102, 96, 14,
+                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP
                         CTLDATA 12, 0, 20, 0, 1, 0
-        LTEXT           "ms", ID_SDDI_STARTUP_INITDELAY_TXT2, 164, 56, 26,
-                        14, DT_VCENTER
-        LTEXT           "Per-object delay:", ID_SDDI_STARTUP_OBJDELAY_TXT1,
-                        10, 40, 50, 14, DT_VCENTER
-        SLIDER          ID_SDDI_STARTUP_OBJDELAY_SLID, 64, 40, 96, 14,
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP | WS_GROUP
+        LTEXT           "ms", ID_SDDI_STARTUP_INITDELAY_TXT2, 164, 102, 30,
+                        14, DT_VCENTER | NOT WS_GROUP
+        LTEXT           "~Per-object delay:", ID_SDDI_STARTUP_OBJDELAY_TXT1,
+                        10, 86, 54, 14, DT_VCENTER | DT_MNEMONIC
+        SLIDER          ID_SDDI_STARTUP_OBJDELAY_SLID, 64, 86, 96, 14,
+                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP
                         CTLDATA 12, 0, 20, 0, 1, 0
-        LTEXT           "ms", ID_SDDI_STARTUP_OBJDELAY_TXT2, 164, 40, 26, 14,
-                        DT_VCENTER
-        AUTOCHECKBOX    "Show ~status window", ID_SDDI_SHOWSTARTUPPROGRESS,
-                        10, 27, 180, 10
+        LTEXT           "ms", ID_SDDI_STARTUP_OBJDELAY_TXT2, 164, 86, 30, 14,
+                        DT_VCENTER | NOT WS_GROUP
+        AUTOCHECKBOX    "~Show status window", ID_SDDI_SHOWSTARTUPPROGRESS,
+                        10, 72, 184, 10, WS_GROUP
+        GROUPBOX        "Start folder content", -1, 10, 29, 186, 38
+        AUTORADIOBUTTON "~Reboots only", ID_SDDI_STARTUP_REBOOTSONLY, 15, 47,
+                        80, 12, BS_NOCURSORSELECT | WS_TABSTOP
+        AUTORADIOBUTTON "~Every WPS restart",
+                        ID_SDDI_STARTUP_EVERYWPSRESTART, 15, 33, 80, 12,
+                        BS_NOCURSORSELECT | WS_TABSTOP
         PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 60, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 70, 6, 60, 12, WS_GROUP
-        PUSHBUTTON      "~Help", DID_HELP, 135, 6, 60, 12, BS_HELP |
+        PUSHBUTTON      "~Default", DID_DEFAULT, 73, 6, 60, 12, WS_GROUP
+        PUSHBUTTON      "~Help", DID_HELP, 141, 6, 60, 12, BS_HELP |
                         WS_GROUP
     END
 END

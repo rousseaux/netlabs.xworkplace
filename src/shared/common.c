@@ -272,6 +272,10 @@ const char      *INIKEY_FONTSAMPLEWNDPOS = "WndPosFontSample";
 const char      *INIKEY_FONTSAMPLESTRING = "FontSampleString";
 const char      *INIKEY_FONTSAMPLEHINTS  = "FontSampleHints";
 
+// XFldStartup V0.9.9 (2001-03-19) [pr]
+const char      *INIKEY_XSTARTUPFOLDERS  = "XStartupFolders";
+const char      *INIKEY_XSAVEDSTARTUPFOLDERS  = "XSavedStartupFolders";
+
 /*
  * file type hierarchies:
  *

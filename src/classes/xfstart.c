@@ -76,6 +76,7 @@
 #define INCL_WINMENUS
 #define INCL_WINDIALOGS
 #define INCL_WINBUTTONS
+#define INCL_WINSHELLDATA
 #include <os2.h>
 
 // C library headers
@@ -87,6 +88,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
@@ -97,11 +99,27 @@
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\kernel.h"              // XWorkplace Kernel
+#include "shared\wpsh.h"                // WPS Helpers
 
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\object.h"             // XFldObject implementation
 
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
+
+/* ******************************************************************
+ *                                                                  *
+ *   Global variables                                               *
+ *                                                                  *
+ ********************************************************************/
+
+// "XFldStartup" key for wpRestoreData etc.
+static const char*  G_pcszXFldStartup = "XFldStartup";
+
+// roots of linked lists for XStartup folders
+// these hold plain WPObject pointers, no auto-free
+PLINKLIST           G_XSavedStartupFolders = NULL;
+PLINKLIST           G_XStartupFolders = NULL;
 
 /* ******************************************************************
  *                                                                  *
@@ -118,7 +136,7 @@
  */
 
 SOM_Scope ULONG  SOMLINK xfstup_xwpAddXFldStartupPage(XFldStartup *somSelf,
-                                                     HWND hwndDlg)
+                                                      HWND hwndDlg)
 {
     PCREATENOTEBOOKPAGE pcnbp;
     PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
@@ -143,6 +161,162 @@ SOM_Scope ULONG  SOMLINK xfstup_xwpAddXFldStartupPage(XFldStartup *somSelf,
 }
 
 /*
+ *@@ xwpSetXStartup:
+ *      adds/removes the folder to/from the linked list
+ *      of XStartup folders.
+ *
+ *@@added V0.9.9 (2001-03-19) [pr]
+ */
+
+SOM_Scope ULONG  SOMLINK xfstup_xwpSetXStartup(XFldStartup *somSelf,
+                                               BOOL fInsert)
+{
+    // XFldStartupData *somThis = XFldStartupGetData(somSelf);
+    XFldStartupMethodDebug("XFldStartup","xfstup_xwpSetXStartup");
+
+    return (objAddToList(somSelf,
+                         G_XStartupFolders,
+                         fInsert,
+                         INIKEY_XSTARTUPFOLDERS,
+                         0));
+}
+
+/*
+ *@@ xwpQueryXStartupType:
+ *      queries the start type of the folder
+ *
+ *@@added V0.9.9 (2001-03-19) [pr]
+ */
+
+SOM_Scope ULONG  SOMLINK xfstup_xwpQueryXStartupType(XFldStartup *somSelf)
+{
+    XFldStartupData *somThis = XFldStartupGetData(somSelf);
+    XFldStartupMethodDebug("XFldStartup","xfstup_xwpQueryXStartupType");
+
+    return(_ulType);
+}
+
+/*
+ *@@ xwpQueryXStartupObjectDelay:
+ *      queries the object delay time of the folder
+ *
+ *@@added V0.9.9 (2001-03-19) [pr]
+ */
+
+SOM_Scope ULONG  SOMLINK xfstup_xwpQueryXStartupObjectDelay(XFldStartup *somSelf)
+{
+    XFldStartupData *somThis = XFldStartupGetData(somSelf);
+    XFldStartupMethodDebug("XFldStartup","xfstup_xwpQueryXStartupObjectDelay");
+
+    return(_ulObjectDelay);
+}
+
+/*
+ *@@ wpInitData:
+ *      initialises the object with safe defaults.
+ *
+ *@@added V0.9.9 (2001-03-19) [pr]
+ */
+
+SOM_Scope void  SOMLINK xfstup_wpInitData(XFldStartup *somSelf)
+{
+    XFldStartupData *somThis = XFldStartupGetData(somSelf);
+    XFldStartupMethodDebug("XFldStartup","xfstup_wpInitData");
+
+    XFldStartup_parent_XFolder_wpInitData(somSelf);
+
+    // set all the instance variables to safe defaults
+    _ulType = XSTARTUP_REBOOTSONLY;
+    _ulObjectDelay = XSTARTUP_DEFAULTOBJECTDELAY;
+}
+
+/*
+ *@@ wpObjectReady:
+ *      adds the object to the linked list when it is
+ *      being awoken.
+ *
+ *@@added V0.9.9 (2001-03-19) [pr]
+ */
+
+SOM_Scope void  SOMLINK xfstup_wpObjectReady(XFldStartup *somSelf,
+                                             ULONG ulCode, WPObject* refObject)
+{
+    // XFldStartupData *somThis = XFldStartupGetData(somSelf);
+    XFldStartupMethodDebug("XFldStartup","xfstup_wpObjectReady");
+
+    XFldStartup_parent_XFolder_wpObjectReady(somSelf, ulCode,
+                                             refObject);
+
+    // add to the linked list
+    _xwpSetXStartup(somSelf, TRUE);
+}
+
+/*
+ *@@ wpFree:
+ *      removes the object from the linked list when it
+ *      is being deleted.
+ *
+ *@@added V0.9.9 (2001-03-19) [pr]
+ */
+
+SOM_Scope BOOL  SOMLINK xfstup_wpFree(XFldStartup *somSelf)
+{
+    XFldStartupData *somThis = XFldStartupGetData(somSelf);
+    XFldStartupMethodDebug("XFldStartup","xfstup_wpFree");
+
+    // remove from the linked list
+    _xwpSetXStartup(somSelf, FALSE);
+    return (XFldStartup_parent_XFolder_wpFree(somSelf));
+}
+
+/*
+ *@@ wpSaveState:
+ *      saves the object's instance data.
+ *
+ *@@added V0.9.9 (2001-03-19) [pr]
+ */
+
+SOM_Scope BOOL  SOMLINK xfstup_wpSaveState(XFldStartup *somSelf)
+{
+    XFldStartupData *somThis = XFldStartupGetData(somSelf);
+    XFldStartupMethodDebug("XFldStartup","xfstup_wpSaveState");
+
+    if (_ulType != XSTARTUP_REBOOTSONLY)
+        _wpSaveLong(somSelf, (PSZ)G_pcszXFldStartup, 1, _ulType);
+
+    if (_ulObjectDelay != XSTARTUP_DEFAULTOBJECTDELAY)
+        _wpSaveLong(somSelf, (PSZ)G_pcszXFldStartup, 2, _ulObjectDelay);
+
+    return (XFldStartup_parent_XFolder_wpSaveState(somSelf));
+}
+
+/*
+ *@@ wpRestoreState:
+ *      restores the object's instance data.
+ *
+ *@@added V0.9.9 (2001-03-19) [pr]
+ */
+
+SOM_Scope BOOL  SOMLINK xfstup_wpRestoreState(XFldStartup *somSelf,
+                                              ULONG ulReserved)
+{
+    ULONG   ul;
+    XFldStartupData *somThis = XFldStartupGetData(somSelf);
+    XFldStartupMethodDebug("XFldStartup","xfstup_wpRestoreState");
+
+    if (_wpRestoreLong(somSelf, (PSZ)G_pcszXFldStartup, 1, &ul))
+        _ulType = ul;
+
+    if (_wpRestoreLong(somSelf, (PSZ)G_pcszXFldStartup, 2, &ul))
+        _ulObjectDelay = ul;
+
+    return (XFldStartup_parent_XFolder_wpRestoreState(somSelf,
+                                                      ulReserved));
+}
+
+/*
+
+/*
  *
  *@@ wpFilterPopupMenu:
  *      this WPObject instance method allows the object to
@@ -152,6 +326,7 @@ SOM_Scope ULONG  SOMLINK xfstup_xwpAddXFldStartupPage(XFldStartup *somSelf,
  *      We remove "Create another" menu item.
  *
  *@@added V0.9.2 (2000-02-26) [umoeller]
+ *@@changed V0.9.9 (2001-03-19) [pr]: allow create another
  */
 
 SOM_Scope ULONG  SOMLINK xfstup_wpFilterPopupMenu(XFldStartup *somSelf,
@@ -166,7 +341,7 @@ SOM_Scope ULONG  SOMLINK xfstup_wpFilterPopupMenu(XFldStartup *somSelf,
                                                          ulFlags,
                                                          hwndCnr,
                                                          fMultiSelect)
-            & ~CTXT_NEW
+//             & ~CTXT_NEW
            );
 }
 
@@ -221,6 +396,8 @@ SOM_Scope BOOL  SOMLINK xfstup_wpModifyPopupMenu(XFldStartup *somSelf,
  *
  *      We react to the "Process content" item we have
  *      inserted for the startup folder.
+ *
+ *@@changed V0.9.9 (2001-03-19) [pr]: changed message sent to thread 1
  */
 
 SOM_Scope BOOL  SOMLINK xfstup_wpMenuItemSelected(XFldStartup *somSelf,
@@ -241,8 +418,7 @@ SOM_Scope BOOL  SOMLINK xfstup_wpMenuItemSelected(XFldStartup *somSelf,
                              MB_YESNO | MB_DEFBUTTON2)
                 == MBID_YES)
         {
-
-            krnPostThread1ObjectMsg(T1M_BEGINSTARTUP, MPNULL, MPNULL);
+            krnPostThread1ObjectMsg(T1M_STARTCONTENT, (MPARAM)somSelf, MPFROMSHORT(FALSE));
         }
         return (TRUE);
     }
@@ -320,10 +496,40 @@ SOM_Scope BOOL  SOMLINK xfstup_wpAddSettingsPages(XFldStartup *somSelf,
 }
 
 /*
+ *@@ wpclsQueryXStartupFolder:
+ *      queries the linked list of XStartup folders
+ *      for the next item in the chain.
+ *
+ *@@added V0.9.9 (2001-03-19) [pr]
+ */
+
+SOM_Scope XFldStartup*  SOMLINK xfstupM_xwpclsQueryXStartupFolder(M_XFldStartup *somSelf,
+                                                                  XFldStartup* pFolder)
+{
+    /* M_XFldStartupData *somThis = M_XFldStartupGetData(somSelf); */
+    WPObject *pDesktop;
+
+    M_XFldStartupMethodDebug("M_XFldStartup","xfstupM_xwpclsQueryXStartupFolder");
+
+    pDesktop = cmnQueryActiveDesktop();
+    do
+    {
+        pFolder = objEnumList(G_XSavedStartupFolders,
+                              pFolder,
+                              INIKEY_XSAVEDSTARTUPFOLDERS,
+                              0);
+    }
+    while (pFolder && !wpshResidesBelow(pFolder, pDesktop));
+
+    return(pFolder);
+}
+
+/*
  *@@ wpclsInitData:
  *      initialize XFldStartup class data.
  *
  *@@changed V0.9.0 [umoeller]: added class object to KERNELGLOBALS
+ *@@changed V0.9.9 (2001-03-19) [pr]: multiple startup folder mods.
  */
 
 SOM_Scope void  SOMLINK xfstupM_wpclsInitData(M_XFldStartup *somSelf)
@@ -338,7 +544,41 @@ SOM_Scope void  SOMLINK xfstupM_wpclsInitData(M_XFldStartup *somSelf)
         PKERNELGLOBALS   pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
         if (pKernelGlobals)
         {
-            pKernelGlobals->fXFldStartup = TRUE;
+            if (pKernelGlobals->fXFldStartup == FALSE)
+            {
+                BOOL        brc = FALSE;
+                ULONG       ulSize;
+                PSZ         pszHandles;
+
+                // first call:
+                // store the class object in KERNELGLOBALS
+                pKernelGlobals->fXFldStartup = TRUE;
+
+                // initialize linked lists
+                G_XStartupFolders = lstCreate(FALSE);    // no auto-free
+                G_XSavedStartupFolders = lstCreate(FALSE);    // no auto-free
+                // copy INI setting
+                brc = PrfQueryProfileSize(HINI_USERPROFILE,
+                                          (PSZ)INIAPP_XWORKPLACE,
+                                          (PSZ)INIKEY_XSTARTUPFOLDERS,
+                                          &ulSize);
+                if (   brc
+                    && ((pszHandles = malloc(ulSize)) != NULL)
+                   )
+                {
+                    brc = PrfQueryProfileString(HINI_USERPROFILE,
+                                                (PSZ)INIAPP_XWORKPLACE,
+                                                (PSZ)INIKEY_XSTARTUPFOLDERS,
+                                                "", pszHandles, ulSize);
+                    if (brc)
+                        PrfWriteProfileString(HINI_USERPROFILE,
+                                              (PSZ)INIAPP_XWORKPLACE,
+                                              (PSZ)INIKEY_XSAVEDSTARTUPFOLDERS,
+                                              pszHandles);
+
+                    free(pszHandles);
+                }
+            }
             krnUnlockGlobals();
         }
     }
@@ -364,6 +604,8 @@ SOM_Scope PSZ  SOMLINK xfstupM_wpclsQueryTitle(M_XFldStartup *somSelf)
  *@@ wpclsQueryStyle:
  *      we return a flag so that no templates are created
  *      for the Startup folder.
+ *
+ *@@changed V0.9.9 (2001-03-19) [pr]: allow copy
  */
 
 SOM_Scope ULONG  SOMLINK xfstupM_wpclsQueryStyle(M_XFldStartup *somSelf)
@@ -373,7 +615,7 @@ SOM_Scope ULONG  SOMLINK xfstupM_wpclsQueryStyle(M_XFldStartup *somSelf)
 
     return (M_XFldStartup_parent_M_XFolder_wpclsQueryStyle(somSelf)
                 | CLSSTYLE_NEVERTEMPLATE
-                | CLSSTYLE_NEVERCOPY
+                // | CLSSTYLE_NEVERCOPY
                 // | CLSSTYLE_NEVERDELETE
            );
 

@@ -142,7 +142,8 @@ HWND XwpFileDlg(HWND hwndO,
 
     if (pfd)
     {
-        // check if XWP is running
+        // check if XWP is running; if so, a block of
+        // named shared memory must exist
         PXWPGLOBALSHARED pXwpGlobalShared = 0;
         APIRET arc = DosGetNamedSharedMem((PVOID*)&pXwpGlobalShared,
                                           SHMEM_XWPGLOBAL,
@@ -153,10 +154,11 @@ HWND XwpFileDlg(HWND hwndO,
             PID pidWPS = 0;
             TID tidWPS = 0;
 
+            // create temporary object window for notifications from XFLDR.DLL
             HWND hwndNotify = winhCreateObjectWindow(WC_STATIC, NULL);
             HAB hab = WinQueryAnchorBlock(hwndNotify);
 
-            // check if the thread-1 object window is running
+            // check if the thread-1 object in XFLDR.DLL window is running
             if (    (pXwpGlobalShared->hwndThread1Object)
                  && (WinIsWindow(hab, pXwpGlobalShared->hwndThread1Object))
                  && (WinQueryWindowProcess(pXwpGlobalShared->hwndThread1Object,
@@ -165,20 +167,20 @@ HWND XwpFileDlg(HWND hwndO,
                )
             {
                 // yes:
+                PXWPFILEDLG pfdShared = NULL;
+
                 // check how much memory we need for WinFileDlg
 
                 // 1) at least the size of FILEDLG
                 ULONG       cbShared = sizeof(XWPFILEDLG);
-                                    // current offset where to copy into shared mem;
-                                    // this includes FILEDLG and the szFullFile array
-                PXWPFILEDLG pfdShared = NULL;
 
+                // 2) add memory for extra fields
                 if (pfd->pszTitle)
                     cbShared += strlen(pfd->pszTitle) + 1;
                 if (pfd->pszOKButton)
                     cbShared += strlen(pfd->pszOKButton) + 1;
 
-                // types array
+                // 3) types array
                 if (pfd->pszIType)
                     cbShared += strlen(pfd->pszIType) + 1;
                 if (pfd->papszITypeList)
@@ -191,7 +193,7 @@ HWND XwpFileDlg(HWND hwndO,
                     }
                 }
 
-                // drives array
+                // 4) drives array
                 if (pfd->pszIType)
                     cbShared += strlen(pfd->pszIDrive) + 1;
                 if (pfd->papszIDriveList)
@@ -341,9 +343,9 @@ HWND XwpFileDlg(HWND hwndO,
 
                 } // end DosAllocSharedMem
 
-                WinDestroyWindow(hwndNotify);
-
             } // end if hwndNotify and stuff
+
+            WinDestroyWindow(hwndNotify);
         }
     }
 

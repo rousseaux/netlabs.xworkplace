@@ -108,6 +108,10 @@
     extern const char *INIKEY_FONTSAMPLESTRING;
     extern const char *INIKEY_FONTSAMPLEHINTS;
 
+    // added V0.9.9 (2001-03-19) [pr]
+    extern const char *INIKEY_XSTARTUPFOLDERS;
+    extern const char *INIKEY_XSAVEDSTARTUPFOLDERS;
+
     extern const char *INIAPP_XWPFILETYPES;   // added V0.9.0
     extern const char *INIAPP_XWPFILEFILTERS; // added V0.9.0
 
@@ -1351,6 +1355,8 @@
             ULONG          ulFirstTime;
             PFNWP          pfnwpCallback;
             ULONG          ulCallbackParam;
+            BOOL           fStartAll;
+            WPFolder        *pFolder;
             BOOL           fCancelled;
         } PROCESSCONTENTINFO, *PPROCESSCONTENTINFO;
     #endif

@@ -188,7 +188,7 @@ $(OUTPUTDIR)\kernel.obj: \
      $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
         $(HLPINC)\prfh.h $(HLPINC)\procstat.h $(HLPINC)\stringh.h \
         $(HLPINC)\threads.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
-     $(INC)\classes\xfldr.h \
+     $(INC)\classes\xfldr.ih $(INC)\classes\xfstart.ih \
      $(INC)\dlgids.h $(INC)\xwpapi.h \
      $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
      $(INC)\hook\xwphook.h \

@@ -49,12 +49,18 @@ interface XFldStartup : XFolder
      */
 
     ULONG xwpAddXFldStartupPage(in HWND hwndDlg);
+    ULONG xwpSetXStartup(in BOOL fInsert);
+    ULONG xwpQueryXStartupType();
+    ULONG xwpQueryXStartupObjectDelay();
 
 #ifdef __SOMIDL__
   implementation {
 
     releaseorder:
-        xwpAddXFldStartupPage;
+        xwpAddXFldStartupPage,
+        xwpSetXStartup,
+        xwpQueryXStartupType,
+        xwpQueryXStartupObjectDelay;
 
     /*
      * Class Modifiers:
@@ -70,15 +76,33 @@ interface XFldStartup : XFolder
     dllname = "xfldr.dll";
     callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
+    passthru C_h =
+    "#define XSTARTUP_NONE               0"
+    "#define XSTARTUP_REBOOTSONLY        1"
+    "#define XSTARTUP_EVERYWPSRESTART    2"
+    ""
+    "#define XSTARTUP_DEFAULTOBJECTDELAY 1000";
+
     /*
      * Internal instance variables for XFldStartup:
      *
      */
 
+    ULONG           ulType;
+    ULONG           ulObjectDelay;
+
     /*
      * XFolder methods overridden by XFldStartup:
      *
      */
+
+    wpInitData: override;
+    wpObjectReady: override;
+
+    wpFree: override;
+
+    wpSaveState: override;
+    wpRestoreState: override;
 
     wpFilterPopupMenu: override;
     wpModifyPopupMenu: override;
@@ -111,8 +135,13 @@ interface M_XFldStartup : M_XFolder
      *
      */
 
+    XFldStartup xwpclsQueryXStartupFolder(in XFldStartup pFolder);
+
 #ifdef __SOMIDL__
   implementation {
+
+    releaseorder:
+            xwpclsQueryXStartupFolder;
 
     /*
      * Class Modifiers:

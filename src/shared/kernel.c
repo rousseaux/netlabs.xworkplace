@@ -75,9 +75,7 @@
 #define INCL_WINSWITCHLIST
 #define INCL_WINSHELLDATA
 #define INCL_WINSTDFILE
-
 #include <os2.h>
-
 // C library headers
 #include <stdio.h>              // needed for except.h
 #include <setjmp.h>             // needed for except.h
@@ -102,8 +100,8 @@
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
-#pragma hdrstop                         // VAC++ keeps crashing otherwise
-#include "xfldr.h"
+#include "xfldr.ih"
+#include "xfstart.ih"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -638,7 +636,9 @@ BOOL krnNeed2ProcessStartupFolder(VOID)
             if (pXwpGlobalShared->fProcessStartupFolder)
             {
                 brc = TRUE;
-                pXwpGlobalShared->fProcessStartupFolder = FALSE;
+                // V0.9.9 (2001-03-19) [pr]: clear this after all startup
+                // folders have been processed
+                // pDaemonShared->fProcessStartupFolder = FALSE;
             }
         }
     }
@@ -1031,8 +1031,6 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
              */
 
             case WM_APPTERMINATENOTIFY:
-                /* _Pmpf((__FUNCTION__ ": WM_APPTERMINATENOTIFY happ 0x%lX ulrc %d",
-                        mp1, mp2)); */
                 progAppTerminateNotify((HAPP)mp1);
             break;
 
@@ -1044,29 +1042,113 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
              *      performed by (again) the Worker thread.
              *
              *      Parameters: none.
+             *
+             *@@changed V0.9.9 (2001-03-19) [pr]: multiple startup folders
              */
 
             case T1M_BEGINSTARTUP:
             {
                 PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                 PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-                XFolder         *pStartupFolder;
+                XFldStartup *pFolder;
 
                 #ifdef DEBUG_STARTUP
                     _Pmpf(("T1M_BEGINSTARTUP"));
                 #endif
 
-                // no: find startup folder
-                if (pStartupFolder = _wpclsQueryFolder(_WPFolder, (PSZ)XFOLDER_STARTUPID, TRUE))
+                // load XFldStartup class if not already loaded
+                if (!_XFldStartup)
                 {
-                    // startup folder exists: create status window w/ progress bar,
-                    // start folder content processing in worker thread
-                    ULONG   hPOC;
-                    HWND    hwndStartupStatus = WinLoadDlg(HWND_DESKTOP, NULLHANDLE,
-                                                           fnwpStartupDlg,
-                                                           cmnQueryNLSModuleHandle(FALSE),
-                                                           ID_XFD_STARTUPSTATUS,
-                                                           NULL);
+                    #ifdef DEBUG_STARTUP
+                        _Pmpf(("Loading XFldStartup class"));
+                    #endif
+                    XFldStartupNewClass(XFldStartup_MajorVersion,
+                                        XFldStartup_MinorVersion);
+                    _wpclsIncUsage(_XFldStartup);
+                }
+
+                // find startup folder(s)
+                if (pFolder = _xwpclsQueryXStartupFolder(_XFldStartup, NULL))
+                    WinSendMsg(hwndObject,
+                               T1M_STARTCONTENT,
+                               (MPARAM)pFolder,
+                               MPFROMSHORT(TRUE));
+                else
+                    // no startup folders exist, so notify File thread we've done with startup
+                    xthrPostFileMsg(FIM_STARTUPFOLDERDONE,
+                                    (MPARAM) 1,
+                                    MPNULL);
+            break; }
+
+            /*
+             *@@ T1M_STARTCONTENT:
+             *      this msg is used to start a folder full of objects.
+             *      It is used by the startup folder processing and
+             *      the Start Content menu item.
+             *
+             *      Parameters: none.
+             *      --  XFolder *mp1: folder to start
+             *      --  BOOL mp2: if TRUE start all startup folders,
+             *                    else just specified folder
+             *
+             *@@changed V0.9.9 (2001-03-19) [pr]: multiple startup folders
+             */
+
+            case T1M_STARTCONTENT:
+            {
+                // startup folder exists: create status window w/ progress bar,
+                // start folder content processing in worker thread
+                XFolder *pFolder = (XFolder *) mp1;
+                BOOL    fStartAll = (BOOL) mp2;
+                ULONG   hPOC;
+                HWND    hwndStartupStatus;
+
+                #ifdef DEBUG_STARTUP
+                    _Pmpf(("T1M_STARTCONTENT: pFolder = %08X, fStartAll = %u", pFolder, fStartAll));
+                #endif
+
+                // skip folders which should only be started on bootup
+                // except if we have specified that we want to start
+                // them again when restarting the WPS
+                if (   fStartAll
+                    && !krnNeed2ProcessStartupFolder()
+                   )
+                {
+                    while (   pFolder
+                           && (_xwpQueryXStartupType(pFolder) == XSTARTUP_REBOOTSONLY)
+                          )
+                    {
+                        #ifdef DEBUG_STARTUP
+                            _Pmpf(("Skipping startup folder %s", _wpQueryTitle(pFolder)));
+                        #endif
+                        pFolder = _xwpclsQueryXStartupFolder(_XFldStartup, pFolder);
+
+                        // V0.9.9 (2001-03-25) [umoeller]
+                        if (!pFolder)
+                            // we did have folders, but we didn't find any
+                            // next one which should be processed:
+                            // notify File thread we've done with startup
+                            xthrPostFileMsg(FIM_STARTUPFOLDERDONE,
+                                            (MPARAM) 1,
+                                            MPNULL);
+                        // end V0.9.9 (2001-03-25) [umoeller]; this was missing
+                        // and left the boot logo on the screen forever, Paul
+                    }
+                }
+
+                if (pFolder)
+                {
+                    ULONG ulDelay;
+                    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
+                    #ifdef DEBUG_STARTUP
+                        _Pmpf(("Processing startup folder %s", _wpQueryTitle(pFolder)));
+                    #endif
+                    hwndStartupStatus = WinLoadDlg(HWND_DESKTOP, NULLHANDLE,
+                                                   fnwpStartupDlg,
+                                                   cmnQueryNLSModuleHandle(FALSE),
+                                                   ID_XFD_STARTUPSTATUS,
+                                                   NULL);
                     if (pGlobalSettings->ShowStartupProgress)
                     {
                         // get last window position from INI
@@ -1077,18 +1159,19 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
                                              SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
                     }
 
-                    hPOC = _xwpBeginProcessOrderedContent(pStartupFolder,
-                                                          pGlobalSettings->ulStartupObjectDelay,
+                    if (_somIsA(pFolder, _XFldStartup))
+                        ulDelay = _xwpQueryXStartupObjectDelay(pFolder);
+                    else
+                        ulDelay = pGlobalSettings->ulStartupObjectDelay;
+
+                    hPOC = _xwpBeginProcessOrderedContent(pFolder,
+                                                          (BOOL) mp2,
+                                                          ulDelay,
                                                           &fncbStartup,
                                                           (ULONG)hwndStartupStatus);
 
                     WinSetWindowULong(hwndStartupStatus, QWL_USER, hPOC);
                 }
-                else
-                    // startup folder does not exist:
-                    xthrPostFileMsg(FIM_STARTUPFOLDERDONE,
-                                    (MPARAM)1,      // done with startup
-                                    MPNULL);
             break; }
 
             /*
@@ -1113,8 +1196,8 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
                 {
                     ppci->hwndView = (HWND)((*(ppci->pfnwpCallback))(ppci->ulCallbackParam,
                                                                     (ULONG)ppci->pObject,
-                                                                    (MPARAM)ppci->ulObjectNow,
-                                                                    (MPARAM)ppci->ulObjectMax));
+                                                                    mp1,
+                                                                    mp2));
                 }
             break; }
 
@@ -1725,10 +1808,13 @@ MRESULT EXPENTRY fnwpStartupDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *      during Startup folder processing;
  *      updates the status window and opens objects.
  *      This is guaranteed to run on thread 1.
+ *
+ *@@changed V0.9.9 (2001-03-19) [pr]: multiple startup folders
  */
 
-MRESULT EXPENTRY fncbStartup(HWND hwndStatus, ULONG ulObject, MPARAM mpNow, MPARAM mpMax)
+MRESULT EXPENTRY fncbStartup(HWND hwndStatus, ULONG ulObject, MPARAM mp1, MPARAM mp2)
 {
+    PPROCESSCONTENTINFO pPCI = (PPROCESSCONTENTINFO) mp1;
     CHAR szStarting2[200], szTemp[200];
     HWND rc = 0;
     #ifdef DEBUG_STARTUP
@@ -1757,17 +1843,30 @@ MRESULT EXPENTRY fncbStartup(HWND hwndStatus, ULONG ulObject, MPARAM mpNow, MPAR
         if (pGlobalSettings->ShowStartupProgress)
             WinSendMsg(WinWindowFromID(hwndStatus, ID_SDDI_PROGRESSBAR),
                        WM_UPDATEPROGRESSBAR,
-                       mpNow, mpMax);
+                       MPFROMLONG(pPCI->ulObjectNow),
+                       MPFROMLONG(pPCI->ulObjectMax));
     }
     else
     {
         // NULL: last object, close window
         winhSaveWindowPos(hwndStatus, HINI_USER, INIAPP_XWORKPLACE, INIKEY_WNDPOSSTARTUP);
         WinDestroyWindow(hwndStatus);
-        // and notify File thread to go on
-        xthrPostFileMsg(FIM_STARTUPFOLDERDONE,
-                        (MPARAM)1,      // done with startup
-                        MPNULL);
+        if (pPCI->fStartAll)  // starting all startup folders
+        {
+            XFolder *pFolder = _xwpclsQueryXStartupFolder(_XFldStartup,
+                                                          pPCI->pFolder);
+
+            if (pFolder)
+                // start next startup folder
+                krnPostThread1ObjectMsg(T1M_STARTCONTENT,
+                                        (MPARAM)pFolder,
+                                        (MPARAM)TRUE);
+            else
+                // notify File thread we've done with startup
+                xthrPostFileMsg(FIM_STARTUPFOLDERDONE,
+                                (MPARAM) 1,
+                                MPNULL);
+        }
     }
     return (MRESULT)rc;
 }

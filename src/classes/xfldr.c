@@ -757,6 +757,8 @@ SOM_Scope BOOL  SOMLINK xf_xwpEndEnumContent(XFolder *somSelf,
  *      Upon errors, null is returned.
  *
  *      Parameters:
+ *      -- BOOL fStartAll      indicates whether we are processing all
+ *                                  startup folders or not.
  *      -- ULONG ulTiming:     the time to wait between starting objects
  *                                  in milliseconds; if set to 0, this function
  *                                  will work in "Wait" mode, i.e. the next
@@ -774,15 +776,14 @@ SOM_Scope BOOL  SOMLINK xf_xwpEndEnumContent(XFolder *somSelf,
  *      -- ULONG msg:      will contain the current object of the
  *                              folder on which this mthd is invoked;
  *                              this must be cast manually to (WPObject*);
- *      -- MPARAM mp1:     contains the current object count
- *                              (starting with 1 and increasing for each
- *                              subsequent object);
- *      -- MPARAM mp2:     the (constant) number of objects in the folder.
+ *      -- MPARAM mp1:     contains a pointer to the PROCESSCONTENTINFO structure
+ *                         which is used by the callback function
  *
  *      This callback func may be used for implementing a progress bar.
  *      You can use ulCallbackParam for the msg window handle and display
- *      the progress according to mp1 and mp2; the object title may be
- *      obtained by calling _wpQueryTitle((WPObject*)msg).
+ *      the progress according to fields in the PROCESSCONTENTINFO structure
+ *      pointed to by mp1; the object title may be obtained by calling
+ *      _wpQueryTitle((WPObject*)msg).
  *
  *      Note that even though the processing of the folder is done in the
  *      Worker thread, the callback func is actually called on thread 1
@@ -814,9 +815,11 @@ SOM_Scope BOOL  SOMLINK xf_xwpEndEnumContent(XFolder *somSelf,
  *      so that the Worker thread can wait for this window to be closed.
  *
  *@@changed V0.9.0 [umoeller]: updated for new linklist.c functions
+ *@@changed V0.9.9 (2001-03-19) [pr]: multiple startup folder mods.
  */
 
 SOM_Scope ULONG  SOMLINK xf_xwpBeginProcessOrderedContent(XFolder *somSelf,
+                                                          BOOL fStartAll,
                                                           ULONG ulTiming,
                                                           PFNWP pfnwpCallback,
                                                           ULONG ulCallbackParam)
@@ -833,6 +836,8 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginProcessOrderedContent(XFolder *somSelf,
         pPCI->ulTiming = ulTiming;
         pPCI->pfnwpCallback = pfnwpCallback;
         pPCI->ulCallbackParam = ulCallbackParam;
+        pPCI->pFolder = somSelf;
+        pPCI->fStartAll = fStartAll;
         pPCI->fCancelled = FALSE;
 
         xthrPostWorkerMsg(WOM_PROCESSORDEREDCONTENT, (MPARAM)somSelf, pPCI);

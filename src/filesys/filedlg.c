@@ -3450,7 +3450,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
                 {
                     cnrhSetView(   CV_TREE | CA_TREELINE | CV_ICON
                                  | CV_MINI);
-                    cnrhSetTreeIndent(30);
+                    cnrhSetTreeIndent(20);
                 } END_CNRINFO(WinData.hwndDrivesCnr);
 
                 lstAppendItem(&WinData.llDialogControls, (PVOID)WinData.hwndDrivesCnr);

@@ -875,16 +875,18 @@
 #define ID_SDDI_STARTUP_OBJDELAY_TXT1   2140
 #define ID_SDDI_STARTUP_OBJDELAY_SLID   2141
 #define ID_SDDI_STARTUP_OBJDELAY_TXT2   2142
+#define ID_SDDI_STARTUP_REBOOTSONLY     2143
+#define ID_SDDI_STARTUP_EVERYWPSRESTART 2144
 
-#define ID_SDDI_REBOOTEXT               2143
-#define ID_SDDI_AUTOCLOSEDETAILS        2144
-#define ID_SDDI_APMVERSION              2145
-#define ID_SDDI_APMVERSION_TXT          2146
-#define ID_SDDI_APMSYS                  2147
-#define ID_SDDI_APMSYS_TXT              2148
+#define ID_SDDI_REBOOTEXT               2145
+#define ID_SDDI_AUTOCLOSEDETAILS        2146
+#define ID_SDDI_APMVERSION              2147
+#define ID_SDDI_APMVERSION_TXT          2148
+#define ID_SDDI_APMSYS                  2149
+#define ID_SDDI_APMSYS_TXT              2150
 
-#define ID_SDDI_SAVEINIS_TXT            2149
-#define ID_SDDI_SAVEINIS_LIST           2150
+#define ID_SDDI_SAVEINIS_TXT            2151
+#define ID_SDDI_SAVEINIS_LIST           2152
 
 // XFldDesktop "Archives" replacement page (V0.9.0)
 #define ID_XSD_DTP_ARCHIVES             2155

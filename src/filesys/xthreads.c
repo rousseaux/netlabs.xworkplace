@@ -1474,7 +1474,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
             #ifdef DEBUG_STARTUP
                 _Pmpf(("    Posting XDM_DESKTOPREADY (0x%lX) to daemon",
-                        hwndActiveDesktop));
+                        cmnQueryActiveDesktopHWND()));
             #endif
 
             // notify daemon of WPS desktop window handle
@@ -1484,7 +1484,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
             #ifdef DEBUG_STARTUP
                 _Pmpf(("    Posting FIM_STARTUP (1) to File thread",
-                        hwndActiveDesktop));
+                        cmnQueryActiveDesktopHWND()));
             #endif
 
             // go for startup folder
@@ -1508,7 +1508,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
          *              This checks for the "just installed" flag
          *              in OS2.INI and creates the config folders
          *              and posts WOM_WELCOME to the Worker thread.
-         *      -- 2:   start processing XWorkplace Startup folder.
+         *      -- 2:   start processing XWorkplace Startup folders.
          *      -- 3:   populate Quick Open folders
          *      -- 4:   destroy boot logo
          *      -- 0:   done, post no next FIM_STARTUP.
@@ -1560,7 +1560,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                     fPostNext = TRUE;
                     // initiate processing of startup folder; this is
                     // again done by the Thread-1 object window.
-                    if (krnNeed2ProcessStartupFolder())
+                    // if (krnNeed2ProcessStartupFolder()) // V0.9.9 (2001-03-19) [pr]: check this elsewhere
                     {
                         PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
                         // check if startup folder is to be skipped
@@ -1636,10 +1636,21 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
         case FIM_STARTUPFOLDERDONE:
         {
             ULONG ulNextAction = 0;
+
+            #ifdef DEBUG_STARTUP
+                _Pmpf(("fnwpFileObject: got FIM_STARTUPFOLDERDONE(%d)", (ULONG)mp1));
+            #endif
+
             switch ((ULONG)mp1)
             {
-                case 1: ulNextAction = 3; break;
-                case 2: ulNextAction = 4; break;
+                case 1:
+                    krnSetProcessStartupFolder(FALSE); //V0.9.9 (2001-03-19) [pr]
+                    ulNextAction = 3;
+                break;
+
+                case 2:
+                    ulNextAction = 4;
+                break;
             }
 
             xthrPostFileMsg(FIM_STARTUP,
