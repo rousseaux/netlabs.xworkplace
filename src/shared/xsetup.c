@@ -2547,8 +2547,6 @@ BOOL setFeaturesMessages(PNOTEBOOKPAGE pnbp,
             {
                 case DID_TOOLTIP:
 
-                    _PmpfF(("got WM_CONTROL for DID_TOOLTIP"));
-
                     if (usNotifyCode == TTN_NEEDTEXT)
                     {
                         PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
@@ -2556,8 +2554,6 @@ BOOL setFeaturesMessages(PNOTEBOOKPAGE pnbp,
                         HWND         hwndCnr = WinWindowFromID(pnbp->hwndDlgPage,
                                                                ID_XCDI_CONTAINER);
                         POINTL       ptlMouse;
-
-                        _Pmpf(("  is TTN_NEEDTEXT"));
 
                         // we use pUser2 for the Tooltip string
                         if (pnbp->pUser2)
@@ -2569,14 +2565,12 @@ BOOL setFeaturesMessages(PNOTEBOOKPAGE pnbp,
                         // find record under mouse
                         WinQueryMsgPos(WinQueryAnchorBlock(pnbp->hwndDlgPage),
                                        &ptlMouse);
-                        precc = (PCHECKBOXRECORDCORE)cnrhFindRecordFromPoint(
+                        if (precc = (PCHECKBOXRECORDCORE)cnrhFindRecordFromPoint(
                                                             hwndCnr,
                                                             &ptlMouse,
                                                             NULL,
                                                             CMA_ICON | CMA_TEXT,
-                                                            FRFP_SCREENCOORDS);
-                        // _Pmpf(("    precc is 0x%lX", precc));
-                        if (precc)
+                                                            FRFP_SCREENCOORDS))
                         {
                             if (precc->ulStyle & WS_VISIBLE)
                             {
@@ -3893,6 +3887,10 @@ VOID setDebugInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         // the notebook page is destroyed
         pnbp->pUser = malloc(sizeof(G_aDebugs));        // setup.h
 
+        WinSetDlgItemText(pnbp->hwndDlgPage,
+                          ID_XFDI_CNR_GROUPTITLE,
+                          "Each box enables a group of Pmprintf calls.");
+
         if (!ctlMakeCheckboxContainer(pnbp->hwndDlgPage,
                                       ID_XFDI_CNR_CNR))
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -3915,7 +3913,6 @@ VOID setDebugInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
                 // copy FEATURESITEM to record core
                 preccThis->ulStyle = WS_VISIBLE | BS_AUTOCHECKBOX;
-                _PmpfF(("inserting item i = %d (ul = %d)", i, ul));
                 preccThis->ulItemID = 1000 + i;
                 preccThis->usCheckState = G_aDebugs[i];
                 preccThis->recc.pszTree = strdup(G_aDebugDescrs[ul].pcsz);
@@ -3957,8 +3954,6 @@ MRESULT setDebugItemChanged(PNOTEBOOKPAGE pnbp,
         PCHECKBOXRECORDCORE precc = (PCHECKBOXRECORDCORE)ulExtra;
         ULONG   ul;
 
-        _PmpfF(("ulitemID is %d", precc->ulItemID));
-
         for (ul = 0;
              ul < ARRAYITEMCOUNT(G_aDebugDescrs);
              ++ul)
@@ -3966,8 +3961,6 @@ MRESULT setDebugItemChanged(PNOTEBOOKPAGE pnbp,
             ULONG i = G_aDebugDescrs[ul].i;
             if (precc->ulItemID - 1000 == i)
             {
-                _PmpfF(("found item %d (%s)", i, G_aDebugDescrs[ul].pcsz));
-
                 G_aDebugs[i] = precc->usCheckState;     // 1 or 0
 
                 PrfWriteProfileData(HINI_USER,
@@ -4011,7 +4004,7 @@ ULONG setInsertNotebookPages(XWPSetup *somSelf,
     inbp.hmod = savehmod;
     inbp.usPageStyleFlags = BKA_MAJOR;
     inbp.pcszName = cmnGetString(ID_XSSI_PARANOIA);  // pszParanoia
-    inbp.ulDlgID = ID_XFD_EMPTYDLG, // ID_XCD_PARANOIA; V0.9.19 (2002-04-17) [umoeller]
+    inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_XCD_PARANOIA; V0.9.19 (2002-04-17) [umoeller]
     // inbp.usFirstControlID = ID_XCDI_VARMENUOFFSET;
     inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PARANOIA;
     inbp.ulPageID = SP_SETUP_PARANOIA;
@@ -4098,6 +4091,8 @@ ULONG setInsertNotebookPages(XWPSetup *somSelf,
 #endif
 
     #ifdef __DEBUG__
+        ntbInsertPage(&inbp);
+
         memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
         inbp.somSelf = somSelf;
         inbp.hwndNotebook = hwndDlg;
