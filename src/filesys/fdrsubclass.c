@@ -526,7 +526,7 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
             if (hwndCnr)
             {
                 #ifdef DEBUG_SORT
-                    _Pmpf((__FUNCTION__ ": setting folder sort"));
+                    _PmpfF(("setting folder sort"));
                 #endif
                 fdrSetFldrCnrSort(somSelf,
                                   hwndCnr,
@@ -629,7 +629,7 @@ static VOID FormatFrame(PSUBCLFOLDERVIEW psfv, // in: frame information
             // by stbCreate.
             #ifdef DEBUG_STATUSBARS
             {
-                _Pmpf((__FUNCTION__ ": psfv->fNeedCnrScroll: %d", psfv->fNeedCnrScroll));
+                _PmpfF(("psfv->fNeedCnrScroll: %d", psfv->fNeedCnrScroll));
                 cnrhQueryCnrInfo(hwndThis, &CnrInfo);
 
                 #ifdef DEBUG_STATUSBARS
@@ -1013,7 +1013,7 @@ static BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
 
     psfv->ulLastSelMenuItem = usItem;
 
-    // _Pmpf((__FUNCTION__ ": usPostCommand = 0x%lX", usPostCommand));
+    // _PmpfF(("usPostCommand = 0x%lX", usPostCommand));
 
     if (    (usPostCommand)
         && (    (usItem <  0x8000) // avoid system menu

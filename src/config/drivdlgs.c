@@ -308,7 +308,7 @@ BOOL drvLoadPlugins(HAB hab)
                 strcat(szPluginsDir, "\\plugins\\drvdlgs");
                 sprintf(szSearchMask, "%s\\%s", szPluginsDir, "*.dll");
 
-                // _Pmpf((__FUNCTION__ ": searching for '%s'", szSearchMask));
+                // _PmpfF(("searching for '%s'", szSearchMask));
 
                 arc = DosFindFirst(szSearchMask,
                                    &hdirFindHandle,
@@ -362,7 +362,7 @@ BOOL drvLoadPlugins(HAB hab)
                                 lstAppendItem(&G_llCheckDrivers,
                                               (PVOID)pDef);
 
-                                _Pmpf((__FUNCTION__ ": got CheckDriverName 0x%lX for module 0x%lX",
+                                _PmpfF(("got CheckDriverName 0x%lX for module 0x%lX",
                                             pDef->pfnCheckDriverName,
                                             pDef->hmodPlugin));
 
@@ -430,7 +430,7 @@ VOID drvUnloadPlugins(VOID)
                     {
                         HMODULE hmod = (HMODULE)pNode->pItemData;
 
-                        _Pmpf((__FUNCTION__ ": unloading hmod 0x%lX",
+                        _PmpfF(("unloading hmod 0x%lX",
                                     hmod));
 
                         DosFreeModule(hmod);

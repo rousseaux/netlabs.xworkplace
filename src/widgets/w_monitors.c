@@ -719,7 +719,7 @@ BOOL UpdateDiskMonitors(HWND hwnd,
         {
             ULONG ul;
 
-            // _Pmpf((__FUNCTION__ ": gave 0x%lX to pid 0x%lX", pAddDiskWatch, pidDaemon));
+            // _PmpfF(("gave 0x%lX to pid 0x%lX", pAddDiskWatch, pidDaemon));
 
             ZERO(pAddDiskWatch);
             pAddDiskWatch->hwndNotify = hwnd;
@@ -1504,7 +1504,7 @@ VOID MwgtPaint2(HWND hwnd,
 
         case MWGT_DISKFREE:
             #ifdef DEBUG_XTIMERS
-                _Pmpf((__FUNCTION__ ": calling RefreshDiskfreeBitmap"));
+                _PmpfF(("calling RefreshDiskfreeBitmap"));
             #endif
             RefreshDiskfreeBitmap(hwnd,
                                   pPrivate,
@@ -1669,7 +1669,7 @@ VOID MwgtTimer(HWND hwnd, MPARAM mp1, MPARAM mp2)
                     ULONG ulLogicalDrive,
                           cFlashing = 0;
 
-                    // _Pmpf((__FUNCTION__ ": timer 2000"));
+                    // _PmpfF(("timer 2000"));
 
                     // run over the array of DISKDATA's and update
                     // all the drive flags that are currently flashing;
@@ -1759,7 +1759,7 @@ VOID UpdateLogicalDrive(HWND hwnd, MPARAM mp1, MPARAM mp2)
     {
         PDISKDATA       pThis = &pPrivate->paDiskDatas[(ULONG)mp1];
 
-        // _Pmpf((__FUNCTION__ ": drive %d", (ULONG)mp1));
+        // _PmpfF(("drive %d", (ULONG)mp1));
 
         // flash the rectangle
         pThis->fl |= (DFFL_FLASH | DFFL_REPAINT);

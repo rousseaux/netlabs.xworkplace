@@ -348,7 +348,7 @@ APIRET slogLogOn(PXWPLOGGEDON pNewUser,     // in/out: user info
     XWPUSERDBENTRY  uiLogon;
     XWPGROUPDBENTRY giLogon;
 
-    _Pmpf((__FUNCTION__ ": entering, user \"%s\", pwd \"%s\"",
+    _PmpfF(("entering, user \"%s\", pwd \"%s\"",
                 pNewUser->szUserName,
                 pcszPassword));
 
@@ -417,7 +417,7 @@ APIRET slogLogOn(PXWPLOGGEDON pNewUser,     // in/out: user info
         }
     }
 
-    _Pmpf((__FUNCTION__ ": leaving, returning %d", arc));
+    _PmpfF(("leaving, returning %d", arc));
 
     return arc;
 }

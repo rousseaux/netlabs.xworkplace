@@ -620,7 +620,7 @@ VOID trshFreeMapping(XWPTrashCan *pTrashCan,
                 ULONG ulDriveOfs = pszSourceRealName[0] - 'C';
                         // 0 for C:, 1 for D:, ...
                 #ifdef DEBUG_TRASHCAN
-                _Pmpf((__FUNCTION__ ": setting drive ofs %d dirty", ulDriveOfs));
+                _PmpfF(("setting drive ofs %d dirty", ulDriveOfs));
                 #endif
                 G_abMappingDrivesDirty[ulDriveOfs] = 1;
 
@@ -661,7 +661,7 @@ VOID trshSaveMappings(XWPTrashCan *pTrashCan)
         if (LOCK_OBJECT(Lock, pTrashCan))
         {
             #ifdef DEBUG_TRASHCAN
-            _Pmpf((__FUNCTION__ ": Entering"));
+            _PmpfF(("Entering"));
             #endif
 
             if (G_fMappingsTreeInitialized)
@@ -714,7 +714,7 @@ VOID trshSaveMappings(XWPTrashCan *pTrashCan)
                                 cDrive);
 
                         #ifdef DEBUG_TRASHCAN
-                        _Pmpf((__FUNCTION__ ": got %d entries: \n%s",
+                        _PmpfF(("got %d entries: \n%s",
                                     cEntries,
                                     strMappings.psz));
                         #endif

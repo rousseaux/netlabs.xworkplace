@@ -2178,7 +2178,7 @@ PCSZ cmnQueryStatusBarSetting(USHORT usSetting)
                                               sizeof(G_szStatusBarFont));
                         sscanf(G_szStatusBarFont, "%d.*%s", &(G_ulStatusBarHeight));
                         G_ulStatusBarHeight += 15;
-                        /* _Pmpf((__FUNCTION__ ": got font %s, height is %d",
+                        /* _PmpfF(("got font %s, height is %d",
                                 G_szStatusBarFont,
                                 G_ulStatusBarHeight)); */
                     }
@@ -3202,7 +3202,7 @@ VOID cmnLoadGlobalSettings(VOID)
     // first set all settings to safe defaults
     // according to the table
 
-    // _Pmpf((__FUNCTION__ ": Initializing defaults"));
+    // _PmpfF(("Initializing defaults"));
     // we can't use cmnSetDefaultSettings here
     // because that would modify the INI entries
     for (ul2 = 0;
@@ -3230,7 +3230,7 @@ VOID cmnLoadGlobalSettings(VOID)
                             (PSZ)INIKEY_GLOBALSETTINGS,
                             pSettings,
                             &cb);
-        // _Pmpf((__FUNCTION__ ": Converting old settings"));
+        // _PmpfF(("Converting old settings"));
         ConvertOldGlobalSettings(pSettings);
         free(pSettings);
 
@@ -3245,7 +3245,7 @@ VOID cmnLoadGlobalSettings(VOID)
     {
         // no GLOBALSETTINGS structure any more:
         // load settings explicitly
-        // _Pmpf((__FUNCTION__ ": no old settings, loading new"));
+        // _PmpfF(("no old settings, loading new"));
         for (ul2 = 0;
              ul2 < ARRAYITEMCOUNT(G_aSettingInfos);
              ul2++)
@@ -5105,7 +5105,7 @@ static APIRET GetExeFromControl(HWND hwnd,
                                            ARRAYITEMCOUNT(G_apcszExtensions))))
                 nlsUpper(pszExecutable, 0);
 
-            // _Pmpf((__FUNCTION__ ": doshFindExecutable returned %d", arc));
+            // _PmpfF(("doshFindExecutable returned %d", arc));
 
             free(pszExec);
         }
@@ -6851,7 +6851,7 @@ BOOL cmnFileDlg2(HWND hwndOwner,    // in: owner for file dlg
     // default: copy pszFile
     strcpy(fd.szFullFile, pszFile);
 
-    // _Pmpf((__FUNCTION__ ": pszFile = %s", pszFile));
+    // _PmpfF(("pszFile = %s", pszFile));
 
     if (    (hini)
          && (flFlags & WINH_FOD_INILOADDIR)
@@ -6885,7 +6885,7 @@ BOOL cmnFileDlg2(HWND hwndOwner,    // in: owner for file dlg
         strcat(fd.szFullFile, pcszMask);
     }
 
-    // _Pmpf((__FUNCTION__ ": fd.szFullFile now = %s", fd.szFullFile));
+    // _PmpfF(("fd.szFullFile now = %s", fd.szFullFile));
 
     if (fUseNewFileDlg)
         hwndFileDlg = fdlgFileDlg(hwndOwner, // owner
@@ -6900,7 +6900,7 @@ BOOL cmnFileDlg2(HWND hwndOwner,    // in: owner for file dlg
          && (fd.lReturn == DID_OK)
        )
     {
-        // _Pmpf((__FUNCTION__ ": got DID_OK"));
+        // _PmpfF(("got DID_OK"));
 
         // save path back?
         if (    (hini)

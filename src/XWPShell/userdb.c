@@ -295,7 +295,7 @@ APIRET CreateGroup(PXWPUSERDB pDB,
                           pCDATA->pstrNodeValue->psz,
                           sizeof(pNewGroup->szGroupName));
 
-                _Pmpf((__FUNCTION__ ": created group \"%s\"", pNewGroup->szGroupName));
+                _PmpfF(("created group \"%s\"", pNewGroup->szGroupName));
 
                 // add to database
                 lstAppendItem(&pDB->llGroups, pNewGroup);
@@ -306,7 +306,7 @@ APIRET CreateGroup(PXWPUSERDB pDB,
             free(pNewGroup);
     }
 
-    _Pmpf((__FUNCTION__ ": returning %d", arc));
+    _PmpfF(("returning %d", arc));
 
     return arc;
 }
@@ -398,7 +398,7 @@ APIRET CreateUser(PXWPUSERDB pDB,
                               pCDATA->pstrNodeValue->psz,
                               sizeof(pNewUser->szFullName));
 
-                    _Pmpf((__FUNCTION__ ": created user \"%s\", pass \"%s\"",
+                    _PmpfF(("created user \"%s\", pass \"%s\"",
                                 pNewUser->szUserName,
                                 pNewUser->szPassword));
 
@@ -412,7 +412,7 @@ APIRET CreateUser(PXWPUSERDB pDB,
             free(pNewUser);
     }
 
-    _Pmpf((__FUNCTION__ ": returning %d", arc));
+    _PmpfF(("returning %d", arc));
 
     return arc;
 }
@@ -459,7 +459,7 @@ APIRET LoadDB(VOID)
             pszDBPath = NULL;
     CHAR    szDBPath[CCHMAXPATH];
 
-    _Pmpf((__FUNCTION__ ": entering"));
+    _PmpfF(("entering"));
 
     lstInit(&G_Database.llGroups, TRUE);      // auto-free
     lstInit(&G_Database.llUsers, TRUE);       // auto-free
@@ -501,7 +501,7 @@ APIRET LoadDB(VOID)
                     // 2) get all GROUP elements
                     PLINKLIST pllGroups;
 
-                    _Pmpf((__FUNCTION__ ": loading groups"));
+                    _PmpfF(("loading groups"));
 
                     if (pllGroups = xmlGetElementsByTagName(pRootElement,
                                                             "GROUP"))
@@ -509,7 +509,7 @@ APIRET LoadDB(VOID)
                         // copy all groups to our private data
                         PLISTNODE pGroupNode;
 
-                        _Pmpf((__FUNCTION__ ": got %d groups", lstCountItems(pllGroups)));
+                        _PmpfF(("got %d groups", lstCountItems(pllGroups)));
 
                         for (pGroupNode = lstQueryFirstNode(pllGroups);
                              (pGroupNode) && (!arc);
@@ -522,7 +522,7 @@ APIRET LoadDB(VOID)
 
                         lstFree(&pllGroups);
 
-                        _Pmpf((__FUNCTION__ ": loading users"));
+                        _PmpfF(("loading users"));
 
                         if (!arc)
                         {
@@ -534,7 +534,7 @@ APIRET LoadDB(VOID)
                                 // copy all users to our private data
                                 PLISTNODE pUserNode;
 
-                                _Pmpf((__FUNCTION__ ": got %d users", lstCountItems(pllUsers)));
+                                _PmpfF(("got %d users", lstCountItems(pllUsers)));
 
                                 for (pUserNode = lstQueryFirstNode(pllUsers);
                                      (pUserNode) && (!arc);
@@ -564,7 +564,7 @@ APIRET LoadDB(VOID)
         free(pszUserDB);
     }
 
-    _Pmpf((__FUNCTION__ ": returning %d", arc));
+    _PmpfF(("returning %d", arc));
 
     return arc;
 }
@@ -644,7 +644,7 @@ APIRET sudbAuthenticateUser(PXWPUSERDBENTRY pUserInfo,   // in/out: user info
 
     BOOL fLocked = (LockUserDB() == NO_ERROR);
 
-    _Pmpf((__FUNCTION__ ": entering"));
+    _PmpfF(("entering"));
 
     if (!fLocked)
         arc = XWPSEC_CANNOT_GET_MUTEX;
@@ -687,7 +687,7 @@ APIRET sudbAuthenticateUser(PXWPUSERDBENTRY pUserInfo,   // in/out: user info
     if (fLocked)
         UnlockUserDB();
 
-    _Pmpf((__FUNCTION__ ": leaving"));
+    _PmpfF(("leaving"));
 
     return arc;
 }
@@ -763,7 +763,7 @@ APIRET sudbQueryUsers(PULONG pcUsers,               // out: user count
 
     fLocked = (LockUserDB() == NO_ERROR);
 
-    _Pmpf((__FUNCTION__ ": entering"));
+    _PmpfF(("entering"));
 
     if (!fLocked)
         arc = XWPSEC_CANNOT_GET_MUTEX;
@@ -814,7 +814,7 @@ APIRET sudbQueryUsers(PULONG pcUsers,               // out: user count
     if (fLocked)
         UnlockUserDB();
 
-    _Pmpf((__FUNCTION__ ": leaving"));
+    _PmpfF(("leaving"));
 
     return arc;
 }
@@ -848,7 +848,7 @@ APIRET sudbQueryGroups(PULONG pcGroups,               // out: user count
 
     fLocked = (LockUserDB() == NO_ERROR);
 
-    _Pmpf((__FUNCTION__ ": entering"));
+    _PmpfF(("entering"));
 
     if (!fLocked)
         arc = XWPSEC_CANNOT_GET_MUTEX;
@@ -887,7 +887,7 @@ APIRET sudbQueryGroups(PULONG pcGroups,               // out: user count
     if (fLocked)
         UnlockUserDB();
 
-    _Pmpf((__FUNCTION__ ": leaving"));
+    _PmpfF(("leaving"));
 
     return arc;
 }

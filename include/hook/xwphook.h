@@ -35,6 +35,7 @@
     #define INIKEY_HOOK_PAGERWINPOS     "PagerWinPos"
                             // changed V0.9.19 (2002-05-07) [umoeller]
     #define INIKEY_HOOK_FUNCTIONKEYS    "FuncKeys"          // added V0.9.3 (2000-04-19) [umoeller]
+    #define INIKEY_HOOK_MOUSEMAPPINGS   "MouseMappings"     // added V0.9.19 (2002-04-20) [lafaix]
 
     /* ******************************************************************
      *
@@ -232,18 +233,18 @@
 
         // More mouse mappings: V0.9.1 (99-12-03)
 
-        BOOL            fChordWinList;
+        BOOL            fChordWinList;       // deprecated V0.9.19 (2002-04-20) [lafaix]
                 // show window list on mb1+2 chord
-        BOOL            fSysMenuMB2TitleBar;
+        BOOL            fSysMenuMB2TitleBar; // deprecated V0.9.19 (2002-04-20) [lafaix]
                 // show system menu on mb2 title-bar click
 
         // Mouse-button-3 scrolling: V0.9.1 (99-12-03)
 
-        BOOL            fMB3Scroll;
+        BOOL            fMB3Scroll;          // deprecated V0.9.19 (2002-04-20) [lafaix]
                 // scroll window contents on MB3Drag
-        BOOL            fMB3ScrollReverse;
+        BOOL            fMB3ScrollReverse;   // deprecated V0.9.19 (2002-04-20) [lafaix]
                 // reverse scrolling
-        USHORT          usScrollMode;
+        USHORT          usScrollMode;        // deprecated V0.9.19 (2002-04-20) [lafaix]
                 // one of the following:
                 //  -- SM_LINEWISE (0): scroll fixed, line-wise
                 //  -- SM_AMPLIFIED (1): scroll amplified, relative to window size
@@ -286,7 +287,7 @@
 
         // Mouse-button-3 single-clicks to MB1 double-clicks
         // V0.9.4 (2000-06-12) [umoeller]
-        BOOL            fMB3Click2MB1DblClk;
+        BOOL            fMB3Click2MB1DblClk; // deprecated V0.9.19 (2002-04-20) [lafaix]
 
         // Screen corner objects:
         // moved the array down here (there's a dummy above)
@@ -347,8 +348,8 @@
         ULONG           ulCornerSensitivity;
 
         // Mouse-button-3 autoscroll and push to bottom features
-        BOOL            fMB3AutoScroll;
-        BOOL            fMB3Push2Bottom;
+        BOOL            fMB3AutoScroll;      // deprecated V0.9.19 (2002-04-20) [lafaix]
+        BOOL            fMB3Push2Bottom;     // deprecated V0.9.19 (2002-04-20) [lafaix]
 
         // Auto hide and automatic pointer movement options
         // V0.9.14 (2001-08-02) [lafaix]
@@ -356,6 +357,7 @@
         BOOL            __fAutoMoveMouse;
         ULONG           __ulAutoMoveFlags;
         ULONG           __ulAutoMoveDelay;            // V0.9.14 (2001-08-21) [umoeller]
+        ULONG           __ulMouseMappingsCount;       // V0.9.19 (2002-04-20) [lafaix]
     } HOOKCONFIG, *PHOOKCONFIG;
 
     /*
@@ -412,6 +414,75 @@
                         // this is normally the HOBJECT of the object to be
                         // opened.
     } GLOBALHOTKEY, *PGLOBALHOTKEY;
+
+    /*
+     *@@ MOUSEMAPPING:
+     *      single XWorkplace mouse mapping definition.
+     *      Arrays of this are allocated in shared memory and
+     *      used by xwphook.c, xwpdaemn.c, and also XWPMouse
+     *      for mouse mappings manipulation and detection.
+     *
+     *@@added V0.9.19 (2002-04-20) [lafaix]
+     */
+
+    typedef struct _MOUSEMAPPING
+    {
+        USHORT  usEvent;
+                        // One of the MME_* values (or MME_XBUTTON_FIRST+n
+                        // to denote extra button n,  0 <= n < 32).
+                  // standard mouse events
+                  #define MME_BUTTON1CLICK   0x0001
+                  #define MME_BUTTON2CLICK   0x0002
+                  #define MME_BUTTON3CLICK   0x0003
+                  #define MME_BUTTON1DRAG    0x0004
+                  #define MME_BUTTON2DRAG    0x0005
+                  #define MME_BUTTON3DRAG    0x0006
+                  #define MME_CHORD          0x0007
+                  // wheel/stick events
+                  #define MME_UP             0x1001
+                  #define MME_DOWN           0x1002
+                  #define MME_LEFT           0x1003
+                  #define MME_RIGHT          0x1004
+                  // the 2X and 3X variants are handy when mapping an action
+                  // to a wheel/stick movement.  They map at least 2 (or 3)
+                  // consecutive events, and hence disambiguate an unexpected
+                  // wheel/stick event.
+                  #define MME_UP2X           0x2001
+                  #define MME_DOWN2X         0x2002
+                  #define MME_LEFT2X         0x2003
+                  #define MME_RIGHT2X        0x2004
+                  #define MME_UP3X           0x3001
+                  #define MME_DOWN3X         0x3002
+                  #define MME_LEFT3X         0x3003
+                  #define MME_RIGHT3X        0x3004
+                  // extra buttons
+                  #define MME_XBUTTON_FIRST  0x4000
+                  // type helpers
+                  #define MME_TYPE_MASK      0xF000
+                  #define MME_TYPE_STANDARD  0x0000
+                  #define MME_TYPE_WHEEL     0x1000
+                  #define MME_TYPE_WHEEL2X   0x2000
+                  #define MME_TYPE_WHEEL3X   0x3000
+                  #define MME_TYPE_XBUTTON   0x4000
+                  #define MME_TYPE_DISABLED  0x8000
+
+        USHORT  usModifiers;
+                        // A possibly empty combination of KC_SHIFT, KC_CTRL,
+                        // and KC_ALT.
+        CHAR    achLocation[32];
+                        // The class name upon which this mapping applies.
+                        // An empty location (i.e., achLocation[0] = 0) means
+                        // a global mapping.
+        CHAR    achPluginName[8];
+                        // The plugin library providing the action defined for
+                        // this mapping.  An empty location (i.e.,
+                        // achPluginName[0] = 0) means a buildin action.
+        USHORT  usAction;
+                        // The action (relative to the plugin) defined for
+                        // this event.
+        BYTE    abSetup[16];
+                        // A private area possibly refining the action.
+    } MOUSEMAPPING, *PMOUSEMAPPING;
 
     /*
      *@@ FUNCTIONKEY:
@@ -521,6 +592,9 @@
 
     #define XDM_QUERYWINLIST        (WM_USER + 428)
 
+    #define XDM_REMOVEWINLISTWATCH  (WM_USER + 429) // V0.9.19 (2002-06-14) [lafaix]
+
+    #define XDM_REMOVECLICKWATCH    (WM_USER + 430) // V0.9.19 (2002-06-14) [lafaix]
 #endif
 
 

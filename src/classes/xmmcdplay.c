@@ -543,7 +543,7 @@ SOM_Scope BOOL  SOMLINK cdp_wpSetup(XMMCDPlayer *somSelf, PSZ pszSetupString)
                            szValue,
                            &cbValue))
     {
-        _Pmpf((__FUNCTION__ ": got XWPCDPLAY=%s", szValue));
+        _PmpfF(("got XWPCDPLAY=%s", szValue));
 
         /*
          * "PLAY":

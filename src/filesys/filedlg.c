@@ -302,7 +302,7 @@ static ULONG ParseFileString(PFILEDLGDATA pWinData,
        )
         return 0;
 
-    _Pmpf((__FUNCTION__ ": parsing %s", pcszFullFile));
+    _PmpfF(("parsing %s", pcszFullFile));
 
     if (!(arc2 = doshGetDriveSpec(pcszFullFile,
                                   pWinData->szDrive,
@@ -790,7 +790,7 @@ static BOOL UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
         // which matches the current logical drive
         PLISTNODE pNode = lstQueryFirstNode(&pWinData->sv.llDisks);
 
-        _Pmpf((__FUNCTION__ ": pWinData->szDrive = %s",
+        _PmpfF(("pWinData->szDrive = %s",
                pWinData->szDrive));
 
         while (pNode)
@@ -944,7 +944,7 @@ static BOOL UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
         brc = TRUE;
     }
 
-    _Pmpf((__FUNCTION__ ": exiting"));
+    _PmpfF(("exiting"));
 
     return brc;
 }
@@ -1268,7 +1268,7 @@ static MRESULT EXPENTRY fnwpPopulate(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
                                FM_UPDATEPOINTER,
                                0, 0);
 
-                    _Pmpf((__FUNCTION__ ": populating %s", _wpQueryTitle(pFolder)));
+                    _PmpfF(("populating %s", _wpQueryTitle(pFolder)));
 
                     if (fdrCheckIfPopulated(pFolder,
                                             fFoldersOnly))
@@ -1348,7 +1348,7 @@ static MRESULT EXPENTRY fnwpPopulate(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
                 WPFolder            *pFolder = (WPObject*)mp1;
                 PMINIRECORDCORE     precParent = _wpQueryCoreRecord(pFolder);
 
-                _Pmpf((__FUNCTION__ ": CM_ADDFIRSTCHILD %s", _wpQueryTitle(mp1)));
+                _PmpfF(("CM_ADDFIRSTCHILD %s", _wpQueryTitle(mp1)));
 
                 AddFirstChild(pFolder,
                               precParent,
@@ -1697,7 +1697,7 @@ static MRESULT MainControlChar(HWND hwnd, MPARAM mp1, MPARAM mp2)
         // key down msg?
         if ((usFlags & KC_KEYUP) == 0)
         {
-            _Pmpf((__FUNCTION__ ": usFlags = 0x%lX, usch = %d, usvk = %d",
+            _PmpfF(("usFlags = 0x%lX, usch = %d, usvk = %d",
                         usFlags, usch, usvk));
 
             if (usFlags & KC_VIRTUALKEY)
@@ -2248,7 +2248,7 @@ static MRESULT EXPENTRY fnwpMainControl(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM
             BOOL        fFolderChanged = FALSE;
             WPFolder    *pFolder;
 
-            _Pmpf((__FUNCTION__ ": CM_FILLFOLDER %s, fFdrsOnly %d",
+            _PmpfF(("CM_FILLFOLDER %s, fFdrsOnly %d",
                         prec->pszIcon,
                         mp2));
 
@@ -2298,7 +2298,7 @@ static MRESULT EXPENTRY fnwpMainControl(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM
 
         case FM_POPULATED_FILLTREE:
 
-            _Pmpf((__FUNCTION__ ": FM_POPULATED_FILLTREE %s",
+            _PmpfF(("FM_POPULATED_FILLTREE %s",
                         mp1
                             ? ((PMINIRECORDCORE)mp1)->pszIcon
                             : "NULL"));
@@ -2354,7 +2354,7 @@ static MRESULT EXPENTRY fnwpMainControl(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM
             PFILEDLGDATA pWinData = WinQueryWindowPtr(hwnd, QWL_USER);
             BOOL        fOld = pWinData->sv.fFileDlgReady;
 
-            _Pmpf((__FUNCTION__ ": FM_POPULATED_SCROLLTO %s",
+            _PmpfF(("FM_POPULATED_SCROLLTO %s",
                         mp1
                             ? ((PMINIRECORDCORE)mp1)->pszIcon
                             : "NULL"));
@@ -2400,7 +2400,7 @@ static MRESULT EXPENTRY fnwpMainControl(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM
 
         case FM_POPULATED_FILLFILES:
 
-            _Pmpf((__FUNCTION__ ": FM_POPULATED_FILLFILES %s",
+            _PmpfF(("FM_POPULATED_FILLFILES %s",
                         mp1
                             ? ((PMINIRECORDCORE)mp1)->pszIcon
                             : "NULL"));
@@ -2532,7 +2532,7 @@ static MRESULT EXPENTRY fnwpSubclassedDrivesFrame(HWND hwndFrame, ULONG msg, MPA
                              && (prec != pWinData->sv.precFolderContentsShowing)
                            )
                         {
-                            _Pmpf((__FUNCTION__ ": CN_EMPHASIS %s",
+                            _PmpfF(("CN_EMPHASIS %s",
                                     prec->pszIcon));
 
                             PostFillFolder(pWinData,
@@ -2562,7 +2562,7 @@ static MRESULT EXPENTRY fnwpSubclassedDrivesFrame(HWND hwndFrame, ULONG msg, MPA
                              && (prec = (PMINIRECORDCORE)mp2)
                            )
                         {
-                            _Pmpf((__FUNCTION__ ": CN_EXPANDTREE %s",
+                            _PmpfF(("CN_EXPANDTREE %s",
                                     prec->pszIcon));
 
                             PostFillFolder(pWinData,
@@ -2907,7 +2907,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
         ParseFileString(&WinData,
                         szCurDir);
 
-        _Pmpf((__FUNCTION__ ": pfd->szFullFile is %s", pfd->szFullFile));
+        _PmpfF(("pfd->szFullFile is %s", pfd->szFullFile));
         flInitialParse = ParseFileString(&WinData,
                                          pfd->szFullFile);
                             // store the initial parse flags so we
@@ -2969,7 +2969,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
                 {
                     PSZ     *ppszTypeThis = pfd->papszITypeList[ul];
 
-                    _Pmpf((__FUNCTION__ ": pszTypeThis[%d] = %s", ul,
+                    _PmpfF(("pszTypeThis[%d] = %s", ul,
                                         (*ppszTypeThis) ? *ppszTypeThis : "NULL"));
 
                     if (!*ppszTypeThis)
@@ -3213,7 +3213,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
     lstClear(&WinData.sv.llDisks);
     lstClear(&WinData.llDialogControls);
 
-    _Pmpf((__FUNCTION__ ": exiting, pfd->lReturn is %d", pfd->lReturn));
+    _PmpfF(("exiting, pfd->lReturn is %d", pfd->lReturn));
     _Pmpf(("  pfd->szFullFile is %s", pfd->szFullFile));
     _Pmpf(("  returning 0x%lX", hwndReturn));
 

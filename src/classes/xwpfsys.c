@@ -323,7 +323,7 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetTitleAndRenameFile(XWPFileSystem *somSelf,
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpSetTitleAndRenameFile");
 
     #ifdef DEBUG_TURBOFOLDERS
-    _Pmpf((__FUNCTION__ ": new title is \"%s\"", STRINGORNULL(pszNewTitle)));
+    _PmpfF(("new title is \"%s\"", STRINGORNULL(pszNewTitle)));
     #endif
 
 /*
@@ -371,7 +371,7 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetTitleAndRenameFile(XWPFileSystem *somSelf,
                                                                     fConfirmations);
 
     #ifdef DEBUG_TURBOFOLDERS
-    _Pmpf((__FUNCTION__ ": exiting, rc = %d", brc));
+    _PmpfF(("exiting, rc = %d", brc));
     #endif
 
     return brc;
@@ -429,7 +429,7 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetRealName(XWPFileSystem *somSelf,
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpSetRealName");
 
     #ifdef DEBUG_TURBOFOLDERS
-    _Pmpf((__FUNCTION__ ": new real name is \"%s\"", STRINGORNULL(pszName)));
+    _PmpfF(("new real name is \"%s\"", STRINGORNULL(pszName)));
     #endif
 
 #ifndef __NOTURBOFOLDERS__
@@ -477,7 +477,7 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetRealName(XWPFileSystem *somSelf,
                                                           pszName);
 
     #ifdef DEBUG_TURBOFOLDERS
-    _Pmpf((__FUNCTION__ ": exiting, rc = %d", brc));
+    _PmpfF(("exiting, rc = %d", brc));
     #endif
 
     return brc;
@@ -872,7 +872,7 @@ SOM_Scope WPObject*  SOMLINK xfsM_wpclsObjectFromHandle(M_XWPFileSystem *somSelf
     /* M_XWPFileSystemData *somThis = M_XWPFileSystemGetData(somSelf); */
     M_XWPFileSystemMethodDebug("M_XWPFileSystem","xfsM_wpclsObjectFromHandle");
 
-    _Pmpf((__FUNCTION__ ": HOBJECT 0x%lX", hObject));
+    _PmpfF(("HOBJECT 0x%lX", hObject));
 
     return (M_XWPFileSystem_parent_M_WPFileSystem_wpclsObjectFromHandle(somSelf,
                                                                         hObject));

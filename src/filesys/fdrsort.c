@@ -573,6 +573,11 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
         // step 1:
         // check if one of the sort criteria was selected
 
+        #ifdef DEBUG_SORT
+        _PmpfF(("lMenuId2 %d, fShiftPressed %d",
+                lMenuId2, fShiftPressed));
+        #endif
+
         switch (lMenuId2)
         {
             // new sort items
@@ -596,8 +601,12 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
                 fAlwaysSort = (_lAlwaysSort == SET_DEFAULT)
                                   ? cmnQuerySetting(sfAlwaysSort)
                                   : _lAlwaysSort;
-                _Pmpf((__FUNCTION__ ": ID_XFMI_OFS_ALWAYSSORT, old fAlwaysSort: %d",
+
+                #ifdef DEBUG_SORT
+                _PmpfF(("ID_XFMI_OFS_ALWAYSSORT, old fAlwaysSort: %d",
                             fAlwaysSort));
+                #endif
+
                 _xwpSetFldrSort(somSelf,
                                 lDefaultSort,
                                 lFoldersFirst,
@@ -607,8 +616,10 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
                                        ulMenuId,
                                        !fAlwaysSort);
 
-                _Pmpf(("    pbDismiss is 0x%lX",
-                            fAlwaysSort));
+                #ifdef DEBUG_SORT
+                _Pmpf(("    pbDismiss is 0x%lX", fAlwaysSort));
+                #endif
+
                 if (pbDismiss)
                     // do not dismiss menu
                     *pbDismiss = FALSE;
@@ -675,6 +686,11 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
             {
                 // shift was pressed, and not from hotkey:
                 // change the folder sort settings
+                #ifdef DEBUG_SORT
+                _Pmpf(("    calling _xwpSetFldrSort(%s, hwnd 0x%lX, lSort %d)",
+                        _wpQueryTitle(somSelf), hwndFrame, lSort));
+                #endif
+
                 _xwpSetFldrSort(somSelf,
                                 lSort,
                                 lFoldersFirst,
@@ -689,11 +705,18 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
                     *pbDismiss = FALSE;
             }
             else
+            {
                 // shift was NOT pressed, or hotkey:
                 // just sort once
+                #ifdef DEBUG_SORT
+                _Pmpf(("calling _xwpSortViewOnce(%s, hwnd 0x%lX, lSort %d)",
+                        _wpQueryTitle(somSelf), hwndFrame, lSort));
+                #endif
+
                 _xwpSortViewOnce(somSelf,
                                  hwndFrame,
                                  lSort);
+            }
 
             // say "processed"
             brc = TRUE;
@@ -1026,7 +1049,7 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
                             ? cmnQuerySetting(sfFoldersFirst)
                             : _lFoldersFirst;
 
-    // _Pmpf((__FUNCTION__ ": FOLDERS_FIRST = %d", fFoldersFirst));
+    // _PmpfF(("FOLDERS_FIRST = %d", fFoldersFirst));
 
     if (lSort == SET_DEFAULT)
         lSort = cmnQuerySetting(slDefSortCrit);
@@ -1272,7 +1295,15 @@ BOOL fdrSortViewOnce(WPFolder *somSelf,
             {
                 HWND hwndCnr;
 
-                if (hwndCnr = wpshQueryCnrFromFrame(hwndFrame))
+                _PmpfF(("[%s]{%s} hwndFrame = 0x%lX, lSort = %d",
+                            _wpQueryTitle(somSelf),
+                            _somGetClassName(somSelf),
+                            hwndFrame, lSort));
+
+                if (!(hwndCnr = wpshQueryCnrFromFrame(hwndFrame)))
+                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                           "hwndCnr is NULLHANDLE, cannot sort");
+                else
                 {
                     CNRINFO CnrInfo;
                     ULONG   ulStyle = 0;
@@ -1383,7 +1414,7 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
                 cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
 
                 #ifdef DEBUG_SORT
-                    _Pmpf((__FUNCTION__ ": %s with hwndCnr = 0x%lX",
+                    _PmpfF(("%s with hwndCnr = 0x%lX",
                             _wpQueryTitle(somSelf), hwndCnr ));
                     _Pmpf(( "  _Always: %d, Global->Always: %d",
                             _lAlwaysSort, cmnQuerySetting(sfAlwaysSort) ));
@@ -1503,7 +1534,7 @@ MRESULT EXPENTRY fdrUpdateFolderSorts(HWND hwndView,   // frame wnd handle
     MRESULT     mrc = (MPARAM)FALSE;
 
     #ifdef DEBUG_SORT
-        _Pmpf((__FUNCTION__ ": %s", _wpQueryTitle(somSelf) ));
+        _PmpfF(("%s", _wpQueryTitle(somSelf) ));
     #endif
 
     if (   ((ULONG)mpView == OPEN_CONTENTS)
@@ -1770,7 +1801,7 @@ MRESULT fdrSortItemChanged(PNOTEBOOKPAGE pnbp,
                 BOOL fAlways = winhIsDlgItemChecked(pnbp->hwndDlgPage,
                                                     ID_XSDI_ALWAYSSORT);
 
-                _Pmpf((__FUNCTION__ ": ulSortIndex = %d", ulSortIndex));
+                _PmpfF(("ulSortIndex = %d", ulSortIndex));
                 _Pmpf(("  handle of selected = %d", lDefaultSort));
                 _Pmpf(("  fFoldersFirst = %d", fFoldersFirst));
                 _Pmpf(("  fAlways = %d", fAlways));

@@ -410,7 +410,7 @@ static BOOL SwitchToTray(PTRAYWIDGETPRIVATE pPrivate,
         PPRIVATEWIDGETSETTING ppws = (PPRIVATEWIDGETSETTING)pWidget->pvWidgetSetting;
         PTRAYSETTING pNewTray = NULL;
 
-        _Pmpf((__FUNCTION__ ": old tray %d, new tray %d",
+        _PmpfF(("old tray %d, new tray %d",
                     ppws->ulCurrentTray,
                     ulNewTray));
 

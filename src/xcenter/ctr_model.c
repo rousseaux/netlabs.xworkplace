@@ -333,7 +333,7 @@ VOID ctrpLoadClasses(VOID)
                 strcat(szPluginsDir, "\\plugins\\xcenter");
                 sprintf(szSearchMask, "%s\\%s", szPluginsDir, "*.dll");
 
-                // _Pmpf((__FUNCTION__ ": searching for '%s'", szSearchMask));
+                // _PmpfF(("searching for '%s'", szSearchMask));
 
                 arc = DosFindFirst(szSearchMask,
                                    &hdirFindHandle,
@@ -653,7 +653,7 @@ VOID ctrpFreeClasses(VOID)
                 }
             }
 
-            // _Pmpf((__FUNCTION__ ": leaving, G_ulWidgetClassesRefCount is %d", G_ulWidgetClassesRefCount));
+            // _PmpfF(("leaving, G_ulWidgetClassesRefCount is %d", G_ulWidgetClassesRefCount));
         }
     }
     CATCH(excpt2) {} END_CATCH();
@@ -1602,7 +1602,7 @@ VOID ctrpFreeWidgets(XCenter *somSelf)
         if (LOCK_OBJECT(Lock, somSelf))
         {
             XCenterData *somThis = XCenterGetData(somSelf);
-            // _Pmpf((__FUNCTION__ ": entering, _pllWidgetSettings is %lX", _pllWidgetSettings));
+            // _PmpfF(("entering, _pllWidgetSettings is %lX", _pllWidgetSettings));
             if (_pllAllWidgetSettings)
             {
                 PLINKLIST pll = _pllAllWidgetSettings;
@@ -1694,7 +1694,7 @@ PSZ ctrpStuffSettings(XCenter *somSelf,
     xstrInit(&strTray, 200);
     xstrInit(&strEncoded, 200);
 
-    // _Pmpf((__FUNCTION__ ": entering, _pszPackedWidgetSettings is %lX", _pszPackedWidgetSettings));
+    // _PmpfF(("entering, _pszPackedWidgetSettings is %lX", _pszPackedWidgetSettings));
 
     if (_pllAllWidgetSettings)
     {
@@ -1832,7 +1832,7 @@ static VOID DecodeSubwidgets(PSZ p,                    // in: entire subwidgets 
                     pNextCloseBracket = NULL;
         ULONG cbClassName = 0;
 
-        // _Pmpf((__FUNCTION__ ": decoding widgets for tray %s", pTray->pszTrayName));
+        // _PmpfF(("decoding widgets for tray %s", pTray->pszTrayName));
 
         if (pNextOpenBracket)
         {
@@ -2105,7 +2105,7 @@ ULONG ctrpUnstuffSettings(XCenter *somSelf)
                 // this is the marker:
                 // decode it and add the tray settings to the
                 // PRIVATEWIDGETSETTING from the last loop
-                // _Pmpf((__FUNCTION__ ": found tray settings %s", p));
+                // _PmpfF(("found tray settings %s", p));
 
                 if (pPrevSetting)
                     DecodeTraySettings(p + sizeof(TRAYSETTINGSMARKER) - 1,

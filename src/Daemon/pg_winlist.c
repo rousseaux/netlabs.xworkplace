@@ -617,7 +617,7 @@ BOOL pgrIsSticky(HWND hwnd,
                 {
                     int             pos, length;
                     ERE_MATCHINFO   mi;
-                    // _Pmpf((__FUNCTION__ ": checking %s", pcszSwtitle));
+                    // _PmpfF(("checking %s", pcszSwtitle));
                     if (rxpMatch_fwd(pERE,
                                      0,
                                      pcszSwtitle,
@@ -880,7 +880,7 @@ VOID CheckWindow(HAB hab,
                     #ifdef __DEBUG__
                         CHAR szClass[30];
                         WinQueryClassName(pCtrlThis->hwnd, sizeof(szClass), szClass);
-                        _Pmpf((__FUNCTION__ ": hwnd 0x%lX is not in list (%s, %s)",
+                        _PmpfF(("hwnd 0x%lX is not in list (%s, %s)",
                                pCtrlThis->hwnd,
                             pCtrlThis->szSwtitle,
                             szClass));
@@ -903,7 +903,7 @@ VOID CheckWindow(HAB hab,
                     {
                         // session title changed:
                         #ifdef DEBUG_WINDOWLIST
-                        _Pmpf((__FUNCTION__ ": title changed hwnd 0x%lX (old %s, new %s)",
+                        _PmpfF(("title changed hwnd 0x%lX (old %s, new %s)",
                             pCtrlThis->hwnd,
                             pInfo->swctl.szSwtitle,
                             pCtrlThis->szSwtitle
@@ -935,7 +935,7 @@ VOID CheckWindow(HAB hab,
                     {
                         // icon changed:
                         #ifdef DEBUG_WINDOWLIST
-                        _Pmpf((__FUNCTION__ ": icon changed hwnd 0x%lX", pCtrlThis->hwnd));
+                        _PmpfF(("icon changed hwnd 0x%lX", pCtrlThis->hwnd));
                         #endif
 
                         WinPostMsg(G_pHookData->hwndDaemonObject,
@@ -1019,10 +1019,10 @@ VOID _Optlink fntWinlistThread(PTHREADINFO pti)
                     PPAGERWININFO pWinInfo = (PPAGERWININFO)pNode->pItemData;
                     if (!WinIsWindow(pti->hab,
                                      pWinInfo->swctl.hwnd))
-                    WinPostMsg(G_pHookData->hwndDaemonObject,
-                               XDM_WINDOWCHANGE,
-                               (MPARAM)pWinInfo->swctl.hwnd,
-                               (MPARAM)WM_DESTROY);
+                        WinPostMsg(G_pHookData->hwndDaemonObject,
+                                   XDM_WINDOWCHANGE,
+                                   (MPARAM)pWinInfo->swctl.hwnd,
+                                   (MPARAM)WM_DESTROY);
 
                     pNode = pNode->pNext;
                 }

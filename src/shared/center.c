@@ -1098,7 +1098,7 @@ static BOOL DwgtRender(HWND hwnd,
     HWND            hwndClient;
     PXCENTERWINDATA pXCenterData;
 
-    _Pmpf((__FUNCTION__ ": entering"));
+    _PmpfF(("entering"));
 
     if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
          && (DrgVerifyRMF(pdt->pditem, "DRM_OS2FILE", NULL))
@@ -1166,7 +1166,7 @@ static BOOL DwgtRender(HWND hwnd,
     // V0.9.19 (2002-06-08) [umoeller]
     DrgFreeDragtransfer(pdt);
 
-    _Pmpf((__FUNCTION__ ": leaving, returning %d", brc));
+    _PmpfF(("leaving, returning %d", brc));
 
     return brc;
 }

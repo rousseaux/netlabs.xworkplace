@@ -256,7 +256,7 @@ BOOL hifEnableXPager(BOOL fEnable)
     PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
     PXWPGLOBALSHARED pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared;
 
-    _Pmpf((__FUNCTION__ ": %d", fEnable));
+    _PmpfF(("%d", fEnable));
 
     // (de)install the hook by notifying the daemon
     if (!pXwpGlobalShared)
@@ -270,7 +270,7 @@ BOOL hifEnableXPager(BOOL fEnable)
         else
         {
             BOOL fNewState;
-            _Pmpf((__FUNCTION__ ": Sending XDM_STARTSTOPPAGER"));
+            _PmpfF(("Sending XDM_STARTSTOPPAGER"));
             fNewState = (BOOL)WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
                                          XDM_STARTSTOPPAGER,
                                          (MPARAM)fEnable,
@@ -2998,7 +2998,7 @@ VOID hifMouseCornersInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         HWND    hwndDrop = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_MOUSE_SPECIAL_DROP);
         ULONG   ulCurrentObj;
 
-        _Pmpf((__FUNCTION__ ": CBI_SET, sel: %d", G_ulScreenCornerSelectedIndex));
+        _PmpfF(("CBI_SET, sel: %d", G_ulScreenCornerSelectedIndex));
 
         // corner sensitivity
         G_fShutUpSlider = TRUE;
@@ -3110,7 +3110,7 @@ MRESULT hifMouseCornersItemChanged(PNOTEBOOKPAGE pnbp,
     if (G_fShutUpSlider)
         return 0;             // V0.9.9 (2001-03-27) [umoeller]
 
-    _Pmpf((__FUNCTION__ ": usItemID: %d ulExtra: %d", ulItemID, ulExtra));
+    _PmpfF(("usItemID: %d ulExtra: %d", ulItemID, ulExtra));
     _Pmpf(("  selected index: %d", G_ulScreenCornerSelectedIndex));
 
     switch (ulItemID)

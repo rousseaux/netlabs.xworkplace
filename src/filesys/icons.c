@@ -1319,7 +1319,7 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
                         // skip the entire table for speed
 #ifdef DEBUG_ICONREPLACEMENTS
                         CHAR szBuf[100];
-                        _Pmpf((__FUNCTION__ ": skipping type %d (%s), %d entries",
+                        _PmpfF(("skipping type %d (%s), %d entries",
                                       ulTypeThis,
                                       progGetWinResourceTypeName(szBuf, ulTypeThis),
                                       typeinfo.rt_nres));
@@ -1334,7 +1334,7 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
 
 #ifdef DEBUG_ICONREPLACEMENTS
                         CHAR szBuf[100];
-                        _Pmpf((__FUNCTION__ ": entering type %d (%s), %d entries",
+                        _PmpfF(("entering type %d (%s), %d entries",
                                       ulTypeThis,
                                       progGetWinResourceTypeName(szBuf, ulTypeThis),
                                       typeinfo.rt_nres));
@@ -1580,7 +1580,7 @@ APIRET LoadRootResDirectory(PEXECUTABLE pExec,
     int i;
 
 #ifdef DEBUG_ICONREPLACEMENTS
-    _Pmpf((__FUNCTION__ ": entering, %d sections, looking for 0x%lX",
+    _PmpfF(("entering, %d sections, looking for 0x%lX",
                 pPEHeader->FileHeader.usNumberOfSections,
                 ulAddressFind));
 #endif
@@ -1611,7 +1611,7 @@ APIRET LoadRootResDirectory(PEXECUTABLE pExec,
             PIMAGE_RESOURCE_DIRECTORY pResDir;
 
 #ifdef DEBUG_ICONREPLACEMENTS
-            _Pmpf((__FUNCTION__ ": raw data size %d, ptr %d",
+            _PmpfF(("raw data size %d, ptr %d",
                     pThis->ulSizeOfRawData,
                     pThis->ulPointerToRawData,
                     sizeof(IMAGE_RESOURCE_DIRECTORY)));
@@ -2048,7 +2048,7 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
                                                     &cbData);
 #ifdef DEBUG_ICONREPLACEMENTS
                         if (arc)
-                            _Pmpf((__FUNCTION__ ": LoadOS2NEResource returned %d", arc));
+                            _PmpfF(("LoadOS2NEResource returned %d", arc));
 #endif
                     break;
 
@@ -2061,7 +2061,7 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
                                                 &cbData);
 #ifdef DEBUG_ICONREPLACEMENTS
                         if (arc)
-                            _Pmpf((__FUNCTION__ ": LoadWinNEResource returned %d", arc));
+                            _PmpfF(("LoadWinNEResource returned %d", arc));
 #endif
                     break;
 
@@ -2077,7 +2077,7 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
                                         &pbData,
                                         &cbData);
 #ifdef DEBUG_ICONREPLACEMENTS
-                _Pmpf((__FUNCTION__ ": LoadWinPEResource returned %d", arc));
+                _PmpfF(("LoadWinPEResource returned %d", arc));
 #endif
             break;
 
@@ -2133,7 +2133,7 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
 
 #ifdef DEBUG_ICONREPLACEMENTS
     if (arc)
-        _Pmpf((__FUNCTION__ ": returning %d", arc));
+        _PmpfF(("returning %d", arc));
 #endif
 
     return arc;
@@ -2415,7 +2415,7 @@ APIRET icoLoadIconData(WPObject *pobj,             // in: object whose icon to q
        )
     {
 #ifdef DEBUG_ICONREPLACEMENTS
-        _Pmpf((__FUNCTION__ ": allocated %d bytes", cbIconInfo));
+        _PmpfF(("allocated %d bytes", cbIconInfo));
 #endif
 
         // ask the object again
@@ -2550,7 +2550,7 @@ APIRET icoLoadIconData(WPObject *pobj,             // in: object whose icon to q
     }
 
 #ifdef DEBUG_ICONREPLACEMENTS
-    _Pmpf((__FUNCTION__ ": returning %d", arc));
+    _PmpfF(("returning %d", arc));
 #endif
 
     return arc;

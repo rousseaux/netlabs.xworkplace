@@ -403,7 +403,7 @@ static BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
 
                     if (!pNodeFound)
                     {
-                        // _Pmpf((__FUNCTION__ ": not on list, appending."));
+                        // _PmpfF(("not on list, appending."));
                         // not on list yet:
                         lstAppendItem(&G_llWorkAreaViews,
                                       pXCenterData);
@@ -968,7 +968,7 @@ static ULONG ReformatWidgets(PXCENTERWINDATA pXCenterData,
                                pGlobals->cyInnerClient,
                                fShow);
 
-    // _Pmpf((__FUNCTION__ ": leaving"));
+    // _PmpfF(("leaving"));
 
     WinInvalidateRect(pGlobals->hwndClient, NULL, FALSE);
 
@@ -1985,7 +1985,7 @@ HWND ctrpDragWidget(HWND hwnd,
                                     // until things have been dropped or drag
                                     // has been cancelled
 
-                            _Pmpf((__FUNCTION__ ": DrgDrag returned hwndDrop 0x%lX",
+                            _PmpfF(("DrgDrag returned hwndDrop 0x%lX",
                                       hwndDrop));
                         }
                     }
@@ -3036,7 +3036,7 @@ APIRET ctrpDrop(HWND hwndClient,          // in: XCenter client
             arc = ERROR_PROTECTION_VIOLATION;
         } END_CATCH();
 
-        _Pmpf((__FUNCTION__ ": returning arc %d", arc));
+        _PmpfF(("returning arc %d", arc));
 
         DrgFreeDraginfo(pdrgInfo);
     } // end if (DrgAccessDraginfo(pdrgInfo))
@@ -3760,9 +3760,9 @@ static BOOL FrameTimer(HWND hwnd,
                         HWND hwndDaemon;
                         if (hwndDaemon = krnQueryDaemonObject())
                             WinSendMsg(hwndDaemon,
-                                       XDM_ADDCLICKWATCH,
+                                       XDM_REMOVECLICKWATCH,
                                        (MPARAM)pXCenterData->Globals.hwndClient,
-                                       (MPARAM)-1);         // remove
+                                       NULL);
                     }
                 }
 
@@ -4810,7 +4810,7 @@ static MRESULT ClientControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
     USHORT  usID = SHORT1FROMMP(mp1),
             usNotifyCode = SHORT2FROMMP(mp1);
 
-    // _Pmpf((__FUNCTION__ ": id 0x%lX, notify 0x%lX", usID, usNotifyCode));
+    // _PmpfF(("id 0x%lX, notify 0x%lX", usID, usNotifyCode));
 
     if (usID == ID_XCENTER_TOOLTIP)
     {
@@ -5045,7 +5045,7 @@ static MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, 
              */
 
             case DM_DRAGLEAVE:
-                _Pmpf((__FUNCTION__ ": DM_DRAGLEAVE"));
+                _PmpfF(("DM_DRAGLEAVE"));
                 // remove emphasis
                 ctrpRemoveDragoverEmphasis(hwnd);
             break;
@@ -5056,14 +5056,14 @@ static MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, 
              */
 
             case DM_DROP:
-                _Pmpf((__FUNCTION__ ": DM_DROP"));
+                _PmpfF(("DM_DROP"));
                 ctrpDrop(hwnd,
                          NULLHANDLE,      // tray widget window
                          (PDRAGINFO)mp1);
             break;
 
             case DM_ENDCONVERSATION:
-                _Pmpf((__FUNCTION__ ": DM_ENDCONVERSATION"));
+                _PmpfF(("DM_ENDCONVERSATION"));
                 mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
             break;
 

@@ -1116,7 +1116,7 @@ static BOOL IsCtrlFiltered(PLINKLIST pllFilters,   // in: pPrivate->Setup.llFilt
     if (!(pCtrlOrig->uchVisibility & SWL_VISIBLE))
     {
         #ifdef DEBUG_WINDOWLIST
-        _Pmpf((__FUNCTION__ ": SWL_VISIBLE is null, filtering"));
+        _PmpfF(("SWL_VISIBLE is null, filtering"));
         #endif
 
         brc = TRUE;
@@ -1125,7 +1125,7 @@ static BOOL IsCtrlFiltered(PLINKLIST pllFilters,   // in: pPrivate->Setup.llFilt
     else if (IsCtrlDesktopOrXCenter(pCtrlOrig->hwnd))
     {
         #ifdef DEBUG_WINDOWLIST
-        _Pmpf((__FUNCTION__ ": item is desktop or XCenter, filtering"));
+        _PmpfF(("item is desktop or XCenter, filtering"));
         #endif
 
         brc = TRUE;
@@ -1212,7 +1212,7 @@ static PWINLISTENTRY AddEntry(PWINLISTPRIVATE pPrivate,
     PWINLISTENTRY pCtrl = NULL;
 
     #ifdef DEBUG_WINDOWLIST
-    _Pmpf((__FUNCTION__ ": %lX (%s)", pOrigEntry->hwnd, pOrigEntry->szSwtitle));
+    _PmpfF(("%lX (%s)", pOrigEntry->hwnd, pOrigEntry->szSwtitle));
     #endif
 
     if (    (!IsCtrlFiltered(&pPrivate->Setup.llFilters,
@@ -1735,9 +1735,9 @@ static VOID WwgtDestroy(HWND hwnd)
                            pPrivate->ulTimerID); */
 
         // stop winlist watch V0.9.19 (2002-05-28) [umoeller]
-        pkrnSendDaemonMsg(XDM_ADDWINLISTWATCH,
+        pkrnSendDaemonMsg(XDM_REMOVEWINLISTWATCH,
                           (MPARAM)hwnd,
-                          (MPARAM)-1);
+                          NULL);
 
         if (pPrivate->hwndContextMenuHacked)
             WinDestroyWindow(pPrivate->hwndContextMenuHacked);
@@ -1946,15 +1946,15 @@ static VOID WwgtWindowChange(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 #pragma info(none)
                 case WM_CREATE: // (HWND)mp1 was created.
                     #ifdef DEBUG_WINDOWLIST
-                    _Pmpf((__FUNCTION__ ": WLM_WINDOWCHANGE %lX, WM_CREATE", mp1));
+                    _PmpfF(("WLM_WINDOWCHANGE %lX, WM_CREATE", mp1));
                     #endif
                 case WM_SETWINDOWPARAMS:
                     #ifdef DEBUG_WINDOWLIST
-                    _Pmpf((__FUNCTION__ ": WLM_WINDOWCHANGE %lX, WM_SETWINDOWPARAMS", mp1));
+                    _PmpfF(("WLM_WINDOWCHANGE %lX, WM_SETWINDOWPARAMS", mp1));
                     #endif
                 case WM_WINDOWPOSCHANGED:
                     #ifdef DEBUG_WINDOWLIST
-                    _Pmpf((__FUNCTION__ ": WLM_WINDOWCHANGE %lX, WM_WINDOWPOSCHANGED", mp1));
+                    _PmpfF(("WLM_WINDOWCHANGE %lX, WM_WINDOWPOSCHANGED", mp1));
                     #endif
 #pragma info(restore)
                     hwndRefresh = (HWND)mp1;
@@ -1965,7 +1965,7 @@ static VOID WwgtWindowChange(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                     PLISTNODE pNode = plstQueryFirstNode(&pPrivate->llWinList);
                     ULONG ulIndexThis = 0;
                     #ifdef DEBUG_WINDOWLIST
-                    _Pmpf((__FUNCTION__ ": WLM_WINDOWCHANGE %lX, WM_DESTROY", mp1));
+                    _PmpfF(("WLM_WINDOWCHANGE %lX, WM_DESTROY", mp1));
                     #endif
                     while (pNode)
                     {
@@ -2016,7 +2016,7 @@ static VOID WwgtWindowChange(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                 pCtrlRedraw = (PWINLISTENTRY)pNode->pItemData;
                 pCtrlRedraw->hptr = (HPOINTER)mp2;
                 #ifdef DEBUG_WINDOWLIST
-                _Pmpf((__FUNCTION__ ": WLM_ICONCHANGE %lX (%s), %lX",
+                _PmpfF(("WLM_ICONCHANGE %lX (%s), %lX",
                         mp1,
                         pCtrlRedraw->swctl.szSwtitle,
                         mp2));

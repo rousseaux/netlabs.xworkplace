@@ -843,7 +843,7 @@ MRESULT fonDrop(XWPFontFolder *pFontFolder,
         // OK:
         // start "move to trashcan" with the new list
         FOPSRET frc;
-        _Pmpf((__FUNCTION__ ": starting XFT_INSTALLFONTS (%d items)", cItems));
+        _PmpfF(("starting XFT_INSTALLFONTS (%d items)", cItems));
         if (frc = fopsStartTaskFromList(XFT_INSTALLFONTS,
                                         NULLHANDLE,       // no anchor block, asynchronously
                                         NULL,             // source folder: not needed
@@ -1705,7 +1705,7 @@ static MRESULT EXPENTRY fon_fnwpFontSampleClient(HWND hwnd, ULONG msg, MPARAM mp
                 {
                     if (pWinData->lcidFont)
                     {
-                        _Pmpf((__FUNCTION__ ": GpiDeleteSetId"));
+                        _PmpfF(("GpiDeleteSetId"));
                         GpiSetCharSet(pWinData->hps, LCID_DEFAULT);
                         if (!GpiDeleteSetId(pWinData->hps, pWinData->lcidFont))
                             cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -1713,7 +1713,7 @@ static MRESULT EXPENTRY fon_fnwpFontSampleClient(HWND hwnd, ULONG msg, MPARAM mp
                                    WinGetLastError(WinQueryAnchorBlock(hwnd)));
                     }
                     GpiAssociate(pWinData->hps, NULLHANDLE);
-                    _Pmpf((__FUNCTION__ ": GpiDestroyPS"));
+                    _PmpfF(("GpiDestroyPS"));
                     if (!GpiDestroyPS(pWinData->hps))
                         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                                "GpiDestroyPS failed with %d",

@@ -738,7 +738,7 @@ static BOOL ProgramIconHandler(XWPProgram *somSelf,
                         ULONG ulStdIcon = 0;
 
                         #ifdef DEBUG_ICONREPLACEMENTS
-                            _Pmpf((__FUNCTION__ ": %s, calling _xwpQueryProgType", pszExec));
+                            _PmpfF(("%s, calling _xwpQueryProgType", pszExec));
                         #endif
 
                         if (!(ulProgType = pData->ProgType.progc))
@@ -964,7 +964,7 @@ SOM_Scope ULONG  SOMLINK xpg_wpQueryIconData(XWPProgram *somSelf,
             sprintf(szHandle, "%lX", LOUSHORT(hobj));       // no leading zeros,
                                                             // hex letters in capitals
             #ifdef DEBUG_ICONREPLACEMENTS
-                _Pmpf((__FUNCTION__ ": trying to load %s, %s",
+                _PmpfF(("trying to load %s, %s",
                             WPINIAPP_ICONS, szHandle));
             #endif
 
@@ -1031,7 +1031,7 @@ SOM_Scope ULONG  SOMLINK xpg_wpQueryIconData(XWPProgram *somSelf,
                 {
                     // not icon file: run the icon handler again
                     #ifdef DEBUG_ICONREPLACEMENTS
-                        _Pmpf((__FUNCTION__ ": calling ProgramIconHandler, cbRequired %d, pIconInfo 0x%lX",
+                        _PmpfF(("calling ProgramIconHandler, cbRequired %d, pIconInfo 0x%lX",
                               cbRequired, pIconInfo));
                     #endif
 
@@ -1092,7 +1092,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetIconData(XWPProgram *somSelf,
             sprintf(szHandle, "%lX", LOUSHORT(hobj));       // no leading zeros,
                                                             // hex letters in capitals
             #ifdef DEBUG_ICONREPLACEMENTS
-                _Pmpf((__FUNCTION__ ": deleting %s, %s",
+                _PmpfF(("deleting %s, %s",
                             WPINIAPP_ICONS, szHandle));
             #endif
 
@@ -1317,7 +1317,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpQueryProgDetails(XWPProgram *somSelf,
                                           pulSize);
 
                 #ifdef DEBUG_PROGRAMSTART
-                    _Pmpf((__FUNCTION__ ": progFillProgDetails returned %d", brc));
+                    _PmpfF(("progFillProgDetails returned %d", brc));
                 #endif
             }
         }
@@ -1329,7 +1329,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpQueryProgDetails(XWPProgram *somSelf,
             _wpReleaseObjectMutexSem(somSelf);
 
         #ifdef DEBUG_PROGRAMSTART
-            _Pmpf((__FUNCTION__ ": returning %d", brc));
+            _PmpfF(("returning %d", brc));
         #endif
 
         return brc;

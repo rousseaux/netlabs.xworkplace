@@ -1057,7 +1057,7 @@ static WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
 
     static ULONG s_ulWPDataFileLen = 0;
 
-    // _Pmpf((__FUNCTION__ ": processing %s", pszRealName));
+    // _PmpfF(("processing %s", pszRealName));
 
     // now, ignore "." and ".." which we don't want to see
     // in the folder, of course
@@ -1187,7 +1187,7 @@ static WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
                 // hidden in the macro code), somFindClass _will_
                 // return the proper replacement classes.
 
-                // _Pmpf((__FUNCTION__ ": checking %s", pszTitle));
+                // _PmpfF(("checking %s", pszTitle));
 
                 // decode the .CLASSINFO EA, which may give us a
                 // class name and the OBJDATA buffer
@@ -1510,18 +1510,18 @@ static void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
                 DosResetEventSem(pspt->hevBufTaken, &ulPosted);
                 // 3) tell second thread we're going for DosFindNext
                 // now, which will block on this
-                // _Pmpf((__FUNCTION__ ": posting hevBufPtrChanged"));
+                // _PmpfF(("posting hevBufPtrChanged"));
                 DosPostEventSem(pspt->hevBufPtrChanged);
 
                 if (!ptiMyself->fExit)
                 {
                     // 4) release buffer mutex; the second thread
                     //    is blocked on this and will then run off
-                    // _Pmpf((__FUNCTION__ ": releasing hmtxBuffer"));
+                    // _PmpfF(("releasing hmtxBuffer"));
                     DosReleaseMutexSem(pspt->hmtxBuffer);
                     fSemBuffer = FALSE;
 
-                    // _Pmpf((__FUNCTION__ ": blocking on hevBufTaken"));
+                    // _PmpfF(("blocking on hevBufTaken"));
                     if (    (!ptiMyself->fExit)
                          && (!(arc = DosWaitEventSem(pspt->hevBufTaken,
                                                      SEM_INDEFINITE_WAIT)))
@@ -1534,7 +1534,7 @@ static void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
                         // and re-loop; above, we will block
                         // again until the second thread has
                         // taken the new buffer
-                        // _Pmpf((__FUNCTION__ ": blocking on hmtxBuffer"));
+                        // _PmpfF(("blocking on hmtxBuffer"));
                         if (!(arc = DosRequestMutexSem(pspt->hmtxBuffer,
                                                        SEM_INDEFINITE_WAIT)))
                         {
@@ -1548,7 +1548,7 @@ static void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
                                 pbCurrentBuffer = (PBYTE)pspt->pBuf1;
 
                             // find next:
-                            // _Pmpf((__FUNCTION__ ": DosFindNext"));
+                            // _PmpfF(("DosFindNext"));
                             ulFindCount = FIND_COUNT;
                             arc = DosFindNext(hdirFindHandle,
                                               pbCurrentBuffer,
@@ -1605,7 +1605,7 @@ static void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
     // return what we have
     pspt->arcReturn = arc;
 
-    // _Pmpf((__FUNCTION__ ": exiting"));
+    // _PmpfF(("exiting"));
 }
 
 /*
@@ -1702,11 +1702,11 @@ BOOL fsysPopulateWithFSObjects(WPFolder *somSelf,
             while (!arc)
             {
                 // go block until find-files has set the buf ptr
-                // _Pmpf((__FUNCTION__ ": blocking on hevBufPtrChanged"));
+                // _PmpfF(("blocking on hevBufPtrChanged"));
                 if (!(arc = WinWaitEventSem(spt.hevBufPtrChanged,
                                             SEM_INDEFINITE_WAIT)))
                 {
-                    // _Pmpf((__FUNCTION__ ": blocking on hmtxBuffer"));
+                    // _PmpfF(("blocking on hmtxBuffer"));
                     if (!(arc = WinRequestMutexSem(spt.hmtxBuffer,
                                                    SEM_INDEFINITE_WAIT)))
                     {
@@ -1743,7 +1743,7 @@ BOOL fsysPopulateWithFSObjects(WPFolder *somSelf,
                                 // process this item
                                 RefreshOrAwake(somSelf,     // folder
                                                pfb3);       // file
-                                // _Pmpf((__FUNCTION__ ": done with RefreshOrAwake"));
+                                // _PmpfF(("done with RefreshOrAwake"));
 
                                 // next item in buffer
                                 if (pfb3->oNextEntryOffset)
@@ -1792,7 +1792,7 @@ BOOL fsysPopulateWithFSObjects(WPFolder *somSelf,
         // before freeing the buffers!!
         while (tidFindFiles)
         {
-            // _Pmpf((__FUNCTION__ ": tidFindFiles %lX is %d",
+            // _PmpfF(("tidFindFiles %lX is %d",
                //  &tidFindFiles,
                 // tidFindFiles));
             DosSleep(0);

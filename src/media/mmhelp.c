@@ -342,7 +342,7 @@ ULONG xmmOpenWaveDevice(HWND hwndObject,       // in: Media thread object wnd
         // open one then
 
         #ifdef DEBUG_SOUNDS
-            _Pmpf((__FUNCTION__ ": Opening new device"));
+            _PmpfF(("Opening new device"));
         #endif
 
         // now we open the default sound device;
@@ -354,7 +354,7 @@ ULONG xmmOpenWaveDevice(HWND hwndObject,       // in: Media thread object wnd
                              MCI_DEVTYPE_WAVEFORM_AUDIO,   // in: MCI_DEVTYPE_* ID
                              0,             // in: device index (0 for default)
                              pusDeviceID);   // in/out: MMPM/2 device ID
-        // _Pmpf((__FUNCTION__ ": xmmOpenDevice returned 0x%lX", ulrc));
+        // _PmpfF(("xmmOpenDevice returned 0x%lX", ulrc));
     }
     else
     {
@@ -375,7 +375,7 @@ ULONG xmmOpenWaveDevice(HWND hwndObject,       // in: Media thread object wnd
                                 &mgp,
                                 0);
         #ifdef DEBUG_SOUNDS
-            _Pmpf((__FUNCTION__ ": MCI_STOP returned 0x%lX", ulrc));
+            _PmpfF(("MCI_STOP returned 0x%lX", ulrc));
         #endif
     }
 
@@ -410,7 +410,7 @@ ULONG xmmPlaySound(HWND hwndObject,     // in: Media thread object wnd
                             MCI_WAIT | MCI_OPEN_ELEMENT | MCI_READONLY,
                             &mlp,
                             0);
-    // _Pmpf((__FUNCTION__ ": MCI_LOAD returned 0X%LX", ulrc));
+    // _PmpfF(("MCI_LOAD returned 0X%LX", ulrc));
 
     if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
     {
@@ -421,7 +421,7 @@ ULONG xmmPlaySound(HWND hwndObject,     // in: Media thread object wnd
                                 MCI_SET,
                                 MCI_WAIT | MCI_SET_AUDIO | MCI_SET_VOLUME,
                                 &msp, 0);
-        // _Pmpf((__FUNCTION__ ": MCI_SET returned 0x%lX", ulrc));
+        // _PmpfF(("MCI_SET returned 0x%lX", ulrc));
 
         if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
         {
@@ -434,7 +434,7 @@ ULONG xmmPlaySound(HWND hwndObject,     // in: Media thread object wnd
                                     MCI_FROM | MCI_NOTIFY,
                                     (PVOID)&mpp,
                                     0);
-            // _Pmpf((__FUNCTION__ ": MCI_PLAY returned 0x%lX", ulrc));
+            // _PmpfF(("MCI_PLAY returned 0x%lX", ulrc));
         }
     }
 
@@ -471,7 +471,7 @@ ULONG xmmStopSound(PUSHORT pusDeviceID)
                             MCI_WAIT,
                             &mgp,
                             0);
-    // _Pmpf((__FUNCTION__ ": MCI_STOP returned 0x%lX", ulrc));
+    // _PmpfF(("MCI_STOP returned 0x%lX", ulrc));
 
     // go release the device
     ulrc = G_mciSendCommand(*pusDeviceID,
@@ -479,7 +479,7 @@ ULONG xmmStopSound(PUSHORT pusDeviceID)
                             MCI_RETURN_RESOURCE, // MCI_WAIT,
                             &mgp,
                             0);
-    // _Pmpf((__FUNCTION__ ": MCI_RELEASEDEVICE returned 0x%lX", ulrc));
+    // _PmpfF(("MCI_RELEASEDEVICE returned 0x%lX", ulrc));
 
     return (ulrc);
 }
@@ -587,7 +587,7 @@ ULONG xmmCDOpenDevice(PXMMCDPLAYER *ppPlayer,
                                  MCI_DEVTYPE_CD_AUDIO,
                                  ulDeviceIndex,
                                  &pPlayer->usDeviceID);
-            _Pmpf((__FUNCTION__ ": xmmOpenDevice returned 0x%lX, ID is 0x%lX",
+            _PmpfF(("xmmOpenDevice returned 0x%lX, ID is 0x%lX",
                                     ulrc,
                                     pPlayer->usDeviceID));
 
@@ -632,7 +632,7 @@ ULONG xmmCDCloseDevice(PXMMCDPLAYER *ppPlayer)
         {
             ulrc = xmmCloseDevice(&pPlayer->usDeviceID);
 
-            _Pmpf((__FUNCTION__ ": xmmCloseDevice returned 0x%lX", ulrc));
+            _PmpfF(("xmmCloseDevice returned 0x%lX", ulrc));
 
             if (pPlayer->hwndNotify && pPlayer->ulNotifyMsg)
                 WinPostMsg(pPlayer->hwndNotify,
@@ -710,7 +710,7 @@ ULONG xmmCDGetTOC(PXMMCDPLAYER pPlayer)
                                     &msp,
                                     0);                              // No user parm
 
-            _Pmpf((__FUNCTION__ ": MCI_STATUS returned 0x%lX", ulrc));
+            _PmpfF(("MCI_STATUS returned 0x%lX", ulrc));
 
             if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
             {
@@ -739,7 +739,7 @@ ULONG xmmCDGetTOC(PXMMCDPLAYER pPlayer)
                     {
                         CHAR szError[1000];
                         G_mciGetErrorString(ulrc, szError, sizeof(szError));
-                        _Pmpf((__FUNCTION__ ": DeviceID %d has error %d (\"%s\")",
+                        _PmpfF(("DeviceID %d has error %d (\"%s\")",
                                pPlayer->usDeviceID, LOUSHORT(ulrc), szError));
 
                         free(mtp.pBuf);
@@ -750,7 +750,7 @@ ULONG xmmCDGetTOC(PXMMCDPLAYER pPlayer)
             {
                 CHAR szError[1000];
                 G_mciGetErrorString(ulrc, szError, sizeof(szError));
-                _Pmpf((__FUNCTION__ ": DeviceID %d has error %d (\"%s\")",
+                _PmpfF(("DeviceID %d has error %d (\"%s\")",
                        pPlayer->usDeviceID, LOUSHORT(ulrc), szError));
             }
         }
@@ -797,7 +797,7 @@ ULONG xmmCDQueryStatus(USHORT usDeviceID)
                                     &msp,
                                     0);                              // No user parm
 
-            _Pmpf((__FUNCTION__ ": MCI_STATUS returned 0x%lX", ulrc));
+            _PmpfF(("MCI_STATUS returned 0x%lX", ulrc));
 
             if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
                 ulReturn = LOUSHORT(msp.ulReturn);
@@ -805,7 +805,7 @@ ULONG xmmCDQueryStatus(USHORT usDeviceID)
             {
                 CHAR szError[1000];
                 G_mciGetErrorString(ulrc, szError, sizeof(szError));
-                _Pmpf((__FUNCTION__ ": DeviceID %d has error %d (\"%s\")",
+                _PmpfF(("DeviceID %d has error %d (\"%s\")",
                        usDeviceID, LOUSHORT(ulrc), szError));
             }
         }
@@ -860,7 +860,7 @@ ULONG xmmCDQueryCurrentTrack(PXMMCDPLAYER pPlayer)
                                         &msp,
                                         0);                              // No user parm
 
-                _Pmpf((__FUNCTION__ ": MCI_STATUS returned 0x%lX", ulrc));
+                _PmpfF(("MCI_STATUS returned 0x%lX", ulrc));
 
                 if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
                     ulReturn = LOUSHORT(msp.ulReturn);
@@ -868,7 +868,7 @@ ULONG xmmCDQueryCurrentTrack(PXMMCDPLAYER pPlayer)
                 {
                     CHAR szError[1000];
                     G_mciGetErrorString(ulrc, szError, sizeof(szError));
-                    _Pmpf((__FUNCTION__ ": DeviceID %d has error %d (\"%s\")",
+                    _PmpfF(("DeviceID %d has error %d (\"%s\")",
                            pPlayer->usDeviceID, LOUSHORT(ulrc), szError));
                 }
             }
@@ -917,7 +917,7 @@ ULONG xmmCDPlay(PXMMCDPLAYER pPlayer,
                                       fShowWaitPointer);
                                    // this also gets the TOC
 
-                _Pmpf((__FUNCTION__ ": xmmCDPlayTrack returned 0x%lX", ulrc));
+                _PmpfF(("xmmCDPlayTrack returned 0x%lX", ulrc));
 
                 /* MCI_PLAY_PARMS mpp = {0};
                 ULONG fl = 0;
@@ -942,7 +942,7 @@ ULONG xmmCDPlay(PXMMCDPLAYER pPlayer,
                                         &mgp,
                                         0);
 
-                _Pmpf((__FUNCTION__ ": MCI_RESUME returned 0x%lX", ulrc));
+                _PmpfF(("MCI_RESUME returned 0x%lX", ulrc));
 
                 if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
                 {
@@ -952,7 +952,7 @@ ULONG xmmCDPlay(PXMMCDPLAYER pPlayer,
                 {
                     CHAR szError[1000];
                     G_mciGetErrorString(ulrc, szError, sizeof(szError));
-                    _Pmpf((__FUNCTION__ ": DeviceID %d has error %d (\"%s\")",
+                    _PmpfF(("DeviceID %d has error %d (\"%s\")",
                            pPlayer->usDeviceID, LOUSHORT(ulrc), szError));
                 }
             }
@@ -993,7 +993,7 @@ ULONG xmmCDPlayTrack(PXMMCDPLAYER pPlayer,
                 // ain't got no toc yet:
                 // go get it
                 ulrc = xmmCDGetTOC(pPlayer);
-                _Pmpf((__FUNCTION__ ": xmmCDGetTOC returned 0x%lX", ulrc));
+                _PmpfF(("xmmCDGetTOC returned 0x%lX", ulrc));
             }
 
             if (pPlayer->aTocEntries)
@@ -1008,7 +1008,7 @@ ULONG xmmCDPlayTrack(PXMMCDPLAYER pPlayer,
                                         &msetp,
                                         0);
 
-                _Pmpf((__FUNCTION__ ": MCI_SET returned 0x%lX", ulrc));
+                _PmpfF(("MCI_SET returned 0x%lX", ulrc));
 
                 if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
                 {
@@ -1031,7 +1031,7 @@ ULONG xmmCDPlayTrack(PXMMCDPLAYER pPlayer,
                                             &mpp,
                                             0);
 
-                    _Pmpf((__FUNCTION__ ": MCI_PLAY from returned 0x%lX", ulrc));
+                    _PmpfF(("MCI_PLAY from returned 0x%lX", ulrc));
 
                     if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
                     {
@@ -1041,7 +1041,7 @@ ULONG xmmCDPlayTrack(PXMMCDPLAYER pPlayer,
                     {
                         CHAR szError[1000];
                         G_mciGetErrorString(ulrc, szError, sizeof(szError));
-                        _Pmpf((__FUNCTION__ ": DeviceID %d has error %d (\"%s\")",
+                        _PmpfF(("DeviceID %d has error %d (\"%s\")",
                                pPlayer->usDeviceID, LOUSHORT(ulrc), szError));
                     }
                 }
@@ -1049,7 +1049,7 @@ ULONG xmmCDPlayTrack(PXMMCDPLAYER pPlayer,
                 {
                     CHAR szError[1000];
                     G_mciGetErrorString(ulrc, szError, sizeof(szError));
-                    _Pmpf((__FUNCTION__ ": DeviceID %d has error %d (\"%s\")",
+                    _PmpfF(("DeviceID %d has error %d (\"%s\")",
                            pPlayer->usDeviceID, LOUSHORT(ulrc), szError));
                 }
             }
@@ -1172,7 +1172,7 @@ ULONG xmmCDPositionAdvise(PXMMCDPLAYER pPlayer,
             {
                 CHAR szError[1000];
                 G_mciGetErrorString(ulrc, szError, sizeof(szError));
-                _Pmpf((__FUNCTION__ ": DeviceID %d has error %d (\"%s\")",
+                _PmpfF(("DeviceID %d has error %d (\"%s\")",
                        pPlayer->usDeviceID, LOUSHORT(ulrc), szError));
                 pPlayer->hwndNotify = hwndNotify;
             }
@@ -1207,7 +1207,7 @@ ULONG xmmCDPause(PXMMCDPLAYER pPlayer)
                                     MCI_WAIT,
                                     &mgp,
                                     0);
-            _Pmpf((__FUNCTION__ ": MCI_PAUSE returned 0x%lX", ulrc));
+            _PmpfF(("MCI_PAUSE returned 0x%lX", ulrc));
 
             if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
                 pPlayer->ulStatus = MCI_MODE_PAUSE;
@@ -1251,7 +1251,7 @@ ULONG xmmCDStop(PXMMCDPLAYER *ppPlayer)
                     {
                         CHAR szError[1000];
                         G_mciGetErrorString(ulrc, szError, sizeof(szError));
-                        _Pmpf((__FUNCTION__ ": DeviceID %d has error %d (\"%s\")",
+                        _PmpfF(("DeviceID %d has error %d (\"%s\")",
                                pPlayer->usDeviceID, LOUSHORT(ulrc), szError));
                     }
                 }
@@ -1296,7 +1296,7 @@ ULONG xmmCDEject(PXMMCDPLAYER *ppPlayer)
                 {
                     CHAR szError[1000];
                     G_mciGetErrorString(ulrc, szError, sizeof(szError));
-                    _Pmpf((__FUNCTION__ ": DeviceID %d has error %d (\"%s\")",
+                    _PmpfF(("DeviceID %d has error %d (\"%s\")",
                            pPlayer->usDeviceID, LOUSHORT(ulrc), szError));
                 }
             }
@@ -1335,7 +1335,7 @@ ULONG xmmQueryMasterVolume(PULONG pulVolume)
                             MCI_MASTERVOL | MCI_QUERYCURRENTSETTING | MCI_WAIT,
                             &mvp,
                             0);
-    _Pmpf((__FUNCTION__ ": MCI_MASTERAUDIO returned 0x%lX", ulrc));
+    _PmpfF(("MCI_MASTERAUDIO returned 0x%lX", ulrc));
 
     if (LOUSHORT(ulrc) == MCIERR_SUCCESS)
         *pulVolume = mvp.ulReturn;

@@ -210,7 +210,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpDestroyStorage(XFolder *somSelf)
     {
         APIRET arc = DosDeleteDir(szFilename);
 
-        // _Pmpf((__FUNCTION__ ": DosDelete returned %d", arc));
+        // _PmpfF(("DosDelete returned %d", arc));
 
         switch (arc)
         {
@@ -299,17 +299,17 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
                                           long lFoldersFirst,
                                           long lAlwaysSort)
 {
-    BOOL        Update = FALSE;
     XFolderData *somThis = XFolderGetData(somSelf);
 
-    BOOL fLocked = FALSE;
+    BOOL fLocked = FALSE,
+         fUpdate = FALSE;
 
     WPSHLOCKSTRUCT Lock = {0};
 
     #ifdef DEBUG_SORT
-        _Pmpf((__FUNCTION__ " for %s", _wpQueryTitle(somSelf) ));
+        _PmpfF(("[%s]{%s}",_wpQueryTitle(somSelf),
+                            _somGetClassName(somSelf)));
         _Pmpf(("  Old: Default %d, Always %d", _lDefSortCrit, _lAlwaysSort));
-        _Pmpf(("  New: Default %d, Always %d", lDefaultSort, lAlwaysSort));
     #endif
 
     TRY_LOUD(excpt1)
@@ -318,30 +318,34 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
         {
             XFolderMethodDebug("XFolder","xf_xwpSetFldrSort");
 
-            if (lDefaultSort != _lDefSortCrit)
+            if (    (lDefaultSort != _lDefSortCrit)
+                 && (    ((lDefaultSort >= -4) && (lDefaultSort < 0))
+                      || (lDefaultSort == SET_DEFAULT)
+                      || (_wpIsSortAttribAvailable(somSelf,
+                                                   lDefaultSort))
+                    )
+               )
             {
-                if (    ((lDefaultSort >= -4) && (lDefaultSort < 0))
-                     || (lDefaultSort == SET_DEFAULT)
-                     || (_wpIsSortAttribAvailable(somSelf,
-                                                  lDefaultSort))
-                   )
-                {
-                    _lDefSortCrit = lDefaultSort;
-                    Update = TRUE;
-                }
+                _lDefSortCrit = lDefaultSort;
+                fUpdate = TRUE;
             }
 
             if (lFoldersFirst != _lFoldersFirst)
             {
                 _lFoldersFirst = lFoldersFirst;
-                Update = TRUE;
+                fUpdate = TRUE;
             }
 
             if (lAlwaysSort != _lAlwaysSort)
             {
                 _lAlwaysSort = lAlwaysSort;
-                Update = TRUE;
+                fUpdate = TRUE;
             }
+
+            #ifdef DEBUG_SORT
+            _Pmpf(("  New: Default %d, Always %d", _lDefSortCrit, _lAlwaysSort));
+            #endif
+
         } // end if (fFolderLocked)
     }
     CATCH(excpt1) {} END_CATCH();
@@ -349,7 +353,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
     if (Lock.fLocked)
         _wpReleaseObjectMutexSem(Lock.pObject);
 
-    if (Update)
+    if (fUpdate)
     {
         // update open views of this folder
 #ifndef __ALWAYSEXTSORT__
@@ -367,7 +371,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
         _wpSaveDeferred(somSelf);
     }
 
-    return (Update);
+    return (fUpdate);
 }
 
 /*
@@ -429,7 +433,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpGetIconPos(XFolder *somSelf,
 
     usStartPos = 21; // with OS/2 2.1 and above, Henk Kelder says
 
-    _Pmpf((__FUNCTION__ ": flags for %s are %lX", _wpQueryTitle(pObject), fl));
+    _PmpfF(("flags for %s are %lX", _wpQueryTitle(pObject), fl));
 
     // first step: the icon position of each object within a given
     // .ICONPOS EA starts with a string identifying the object; so
@@ -439,13 +443,13 @@ SOM_Scope BOOL  SOMLINK xf_xwpGetIconPos(XFolder *somSelf,
     {
         // abstract object:
         HOBJECT  hObject = _wpQueryHandle(pObject);
-        _Pmpf((__FUNCTION__ ": object %s is abstract", _wpQueryTitle(pObject)));
+        _PmpfF(("object %s is abstract", _wpQueryTitle(pObject)));
         sprintf(szKey, "%s:A%lX", pszClass, LOUSHORT(hObject));
     }
     else if (fl & OBJFL_WPFILESYSTEM)
     {
         // file system object
-        _Pmpf((__FUNCTION__ ": object %s is file-system", _wpQueryTitle(pObject)));
+        _PmpfF(("object %s is file-system", _wpQueryTitle(pObject)));
         if (_wpQueryFilename(pObject, szPath, FALSE))
         {
             sprintf(szKey,
@@ -574,7 +578,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
                         // of the object handle
                         HOBJECT hobjSearch = _wpQueryHandle(pObj);
 
-                        _Pmpf((__FUNCTION__ ": object %s is abstract", _wpQueryTitle(pObj)));
+                        _PmpfF(("object %s is abstract", _wpQueryTitle(pObj)));
 
                         sprintf(poliNew->szIdentity, ":A%lX", (hobjSearch & 0xFFFF));
                     }
@@ -583,7 +587,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
                         // for file-system objects, this is the object's real name
                         ULONG   ulSize = sizeof(poliNew->szIdentity) - 2;
 
-                        _Pmpf((__FUNCTION__ ": object %s is file-system", _wpQueryTitle(pObj)));
+                        _PmpfF(("object %s is file-system", _wpQueryTitle(pObj)));
 
                         if (fl & OBJFL_WPFOLDER)
                             strcpy(poliNew->szIdentity, ":D");
@@ -651,7 +655,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
                     // now we pass the ICONPOS data to the sort function
                     // defined above
 
-                    _Pmpf((__FUNCTION__ ": sorting %s", _wpQueryTitle(somSelf)));
+                    _PmpfF(("sorting %s", _wpQueryTitle(somSelf)));
 
                     sip.pICONPOS = pICONPOS;
                     sip.usICONPOSSize = ulICONPOSSize;
@@ -1813,7 +1817,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
             _lAlwaysSort = FALSE;
 
     #ifdef DEBUG_SORT
-        _Pmpf((__FUNCTION__ " for %s: _bAlwaysSortInstance is %d",
+        _PmpfF(("[%s] _bAlwaysSortInstance is %d",
                 _wpQueryTitle(somSelf), _lAlwaysSort));
     #endif
 
@@ -2430,7 +2434,7 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
             // if global default views are enabled (user doesn't want
             // inherit from parent), check that value
 
-            // _Pmpf((__FUNCTION__ ": global is %u", cmnQuerySetting(sulDefaultFolderView)));
+            // _PmpfF(("global is %u", cmnQuerySetting(sulDefaultFolderView)));
 
             if (cmnQuerySetting(sulDefaultFolderView))        // 0 means default -> inherit
             {
@@ -2455,7 +2459,7 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
                 // directly from the instance data.
                 ulDefaultView = _xwpQueryRealDefaultView(somSelf);
 
-                // _Pmpf((__FUNCTION__ ": _xwpQueryRealDefaultView returned %d", ulDefaultView));
+                // _PmpfF(("_xwpQueryRealDefaultView returned %d", ulDefaultView));
 
                 // 3) check...
                 switch (ulDefaultView)
@@ -2488,7 +2492,7 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
         // --> inherit from parent (standard WPS behavior)
         ulDefaultView = XFolder_parent_WPFolder_wpQueryDefaultView(somSelf);
 
-    // _Pmpf((__FUNCTION__ ": returning %d", ulDefaultView));
+    // _PmpfF(("returning %d", ulDefaultView));
 
     return (ulDefaultView);
 }
@@ -2741,8 +2745,8 @@ SOM_Scope BOOL  SOMLINK xf_wpRefresh(XFolder *somSelf,
     rc = XFolder_parent_WPFolder_wpRefresh(somSelf, ulView, pReserved);
 
     fdrForEachOpenInstanceView(somSelf,
-                              (ULONG)2,           // update
-                              (PFNWP)stb_UpdateCallback);
+                               (ULONG)2,           // update
+                               (PFNWP)stb_UpdateCallback);
 
     xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, 0);
 
@@ -3832,7 +3836,7 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryDefaultView(M_XFolder *somSelf)
     {
         // something set (0 means standard WPS inheritance behavior):
         // return that
-        // _Pmpf((__FUNCTION__ ": returning %u", cmnQuerySetting(sulDefaultFolderView)));
+        // _PmpfF(("returning %u", cmnQuerySetting(sulDefaultFolderView)));
 
         return (ul);
     }

@@ -305,7 +305,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpQueryDeletion(XFldObject *somSelf,
 
     XFldObjectMethodDebug("XFldObject","xo_xwpQueryDeletion");
 
-    // _Pmpf((__FUNCTION__ ": _cdateDeleted.year %d, returning %d", _cdateDeleted.year, brc));
+    // _PmpfF(("_cdateDeleted.year %d, returning %d", _cdateDeleted.year, brc));
 
     if (brc)
     {
@@ -1119,11 +1119,11 @@ SOM_Scope void  SOMLINK xo_wpInitData(XFldObject *somSelf)
                 s_pWPObject = pClass;
 
                 #ifdef DEBUG_RESTOREDATA
-                    _Pmpf((__FUNCTION__ ": somGetInstanceSize %d",
+                    _PmpfF(("somGetInstanceSize %d",
                                 _somGetInstanceSize(pClass)));
-                    _Pmpf((__FUNCTION__ ": somGetInstancePartSize %d",
+                    _PmpfF(("somGetInstancePartSize %d",
                                 _somGetInstancePartSize(pClass)));
-                    _Pmpf((__FUNCTION__ ": sizeof(IBMOBJECTDATA) %d",
+                    _PmpfF(("sizeof(IBMOBJECTDATA) %d",
                                 sizeof(IBMOBJECTDATA)));
                 #endif
 
@@ -1457,7 +1457,7 @@ SOM_Scope void  SOMLINK xo_wpUnInitData(XFldObject *somSelf)
        )
     {
         #ifdef DEBUG_ICONREPLACEMENTS
-            _Pmpf((__FUNCTION__ ": checking hptr 0x%lX", pmrc->hptrIcon));
+            _PmpfF(("checking hptr 0x%lX", pmrc->hptrIcon));
         #endif
 
         if (cmnIsStandardIcon(pmrc->hptrIcon))
@@ -1668,7 +1668,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
                          && (_flFlags & OBJFL_WPABSTRACT)
                        )
                     {
-                        _Pmpf((__FUNCTION__ ": obj is abstract, saving"));
+                        _PmpfF(("obj is abstract, saving"));
                         _wpSaveDeferred(somSelf);
                     }
 
@@ -1898,7 +1898,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSaveState(XFldObject *somSelf)
        )
     {
         // restore the old object ID for save!!
-        _Pmpf((__FUNCTION__ ": restoring old object ID \"%s\" for save", _pWszOriginalObjectID));
+        _PmpfF(("restoring old object ID \"%s\" for save", _pWszOriginalObjectID));
 
         _pObjectStrings->pszObjectID = _pWszOriginalObjectID;
         fHacked = TRUE;
@@ -1950,13 +1950,13 @@ SOM_Scope BOOL  SOMLINK xo_wpRestoreState(XFldObject *somSelf,
     #ifdef DEBUG_RESTOREDATA
         if (pData = (PIBMOBJECTDATA)_pvWPObjectData)
         {
-            _Pmpf((__FUNCTION__ ": pData->pFolder 0x%lX, _wpQueryFolder 0x%lX",
+            _PmpfF(("pData->pFolder 0x%lX, _wpQueryFolder 0x%lX",
                         pData->pFolder, _wpQueryFolder(somSelf)));
 
-            _Pmpf((__FUNCTION__ ": pData->ulDefaultView 0x%lX, _wpQueryDefaultView 0x%lX",
+            _PmpfF(("pData->ulDefaultView 0x%lX, _wpQueryDefaultView 0x%lX",
                         pData->ulDefaultView, _wpQueryDefaultView(somSelf)));
 
-            _Pmpf((__FUNCTION__ ": pData->pszObjectID 0x%lX, _wpQueryObjectID 0x%lX",
+            _PmpfF(("pData->pszObjectID 0x%lX, _wpQueryObjectID 0x%lX",
                         pData->pszObjectID, _wpQueryObjectID(somSelf)));
         }
     #endif
@@ -2074,7 +2074,7 @@ SOM_Scope ULONG  SOMLINK xo_wpFilterPopupMenu(XFldObject *somSelf,
                                                          hwndCnr,
                                                          fMultiSelect);
     #ifdef DEBUG_MENUS
-        _Pmpf((__FUNCTION__ ": ulMenuFilter & CTXT_CRANOTHER: 0x%lX %d",
+        _PmpfF(("ulMenuFilter & CTXT_CRANOTHER: 0x%lX %d",
                 ulMenuFilter, ((ulMenuFilter) & CTXT_CRANOTHER)));
     #endif
 
@@ -2699,7 +2699,7 @@ SOM_Scope void  SOMLINK xoM_wpclsInitData(M_XFldObject *somSelf)
         if (!fOpenFoldersFound)
         {
             #ifdef DEBUG_SOMMETHODS
-            _Pmpf((__FUNCTION__ ": initializing class %s", _somGetName(somSelf)));
+            _PmpfF(("initializing class %s", _somGetName(somSelf)));
             #endif
 
             // only if no open folders are found:
@@ -2736,7 +2736,7 @@ SOM_Scope WPObject*  SOMLINK xoM_wpclsQueryObject(M_XFldObject *somSelf,
     /* M_XFldObjectData *somThis = M_XFldObjectGetData(somSelf); */
     M_XFldObjectMethodDebug("M_XFldObject","xoM_wpclsQueryObject");
 
-    _Pmpf((__FUNCTION__ ": HOBJECT 0x%lX", hObject));
+    _PmpfF(("HOBJECT 0x%lX", hObject));
 
     return (M_XFldObject_parent_M_WPObject_wpclsQueryObject(somSelf,
                                                             hObject));

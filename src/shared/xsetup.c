@@ -2544,7 +2544,7 @@ BOOL setFeaturesMessages(PNOTEBOOKPAGE pnbp,
             {
                 case DID_TOOLTIP:
 
-                    _Pmpf((__FUNCTION__ ": got WM_CONTROL for DID_TOOLTIP"));
+                    _PmpfF(("got WM_CONTROL for DID_TOOLTIP"));
 
                     if (usNotifyCode == TTN_NEEDTEXT)
                     {

@@ -621,7 +621,7 @@ XWPSETTING mnuQueryMenuWPSSetting(WPObject *somSelf)
         if (cmnIsADesktop(somSelf))
         {
             #ifdef DEBUG_MENUS
-                _Pmpf((__FUNCTION__ ": returning sflMenuDesktopWPS"));
+                _PmpfF(("returning sflMenuDesktopWPS"));
             #endif
 
             return sflMenuDesktopWPS;
@@ -629,7 +629,7 @@ XWPSETTING mnuQueryMenuWPSSetting(WPObject *somSelf)
         else
         {
             #ifdef DEBUG_MENUS
-                _Pmpf((__FUNCTION__ ": returning sflMenuFolderWPS"));
+                _PmpfF(("returning sflMenuFolderWPS"));
             #endif
 
             return sflMenuFolderWPS;
@@ -662,7 +662,7 @@ XWPSETTING mnuQueryMenuXWPSetting(WPObject *somSelf)
         if (cmnIsADesktop(somSelf))
         {
             #ifdef DEBUG_MENUS
-                _Pmpf((__FUNCTION__ ": returning sflMenuDesktopXWP"));
+                _PmpfF(("returning sflMenuDesktopXWP"));
             #endif
 
             return sflMenuDesktopXWP;
@@ -670,7 +670,7 @@ XWPSETTING mnuQueryMenuXWPSetting(WPObject *somSelf)
         else
         {
             #ifdef DEBUG_MENUS
-                _Pmpf((__FUNCTION__ ": returning sflMenuFolderXWP"));
+                _PmpfF(("returning sflMenuFolderXWP"));
             #endif
 
             return sflMenuFolderXWP;
@@ -722,7 +722,7 @@ VOID mnuRemoveMenuItems(WPObject *somSelf,
     ULONG ul;
 
     #ifdef DEBUG_MENUS
-        _Pmpf((__FUNCTION__ ": got 0x%08lX for setting %d", fl, s));
+        _PmpfF(("got 0x%08lX for setting %d", fl, s));
     #endif
 
     for (ul = 0;
@@ -746,7 +746,7 @@ VOID mnuRemoveMenuItems(WPObject *somSelf,
             {
                 if (flTest == G_MenuItemsWithIDs[ul2].flFilter)
                 {
-                    _Pmpf((__FUNCTION__ ": flag %s set, removing id %d",
+                    _PmpfF(("flag %s set, removing id %d",
                             cmnGetString(G_MenuItemsWithIDs[ul2].ulString),
                             G_MenuItemsWithIDs[ul2].idMenu));
 
@@ -1311,7 +1311,7 @@ static BOOL InsertConfigFolderItems(XFolder *somSelf,
             if (!G_fConfigCacheValid)
             {
                 // no: create one
-                _Pmpf((__FUNCTION__ ": calling BuildConfigItemsList"));
+                _PmpfF(("calling BuildConfigItemsList"));
                 BuildConfigItemsList(&G_llConfigContent,
                                      pConfigFolder);
                 G_fConfigCacheValid = TRUE;
@@ -2334,14 +2334,12 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
     #endif
 
     // first check if it's one of the "Sort" menu items
-    fHandled = fdrSortMenuItemSelected(somSelf,
-                                       WinQueryWindow(hwndCnr,
-                                                      QW_PARENT), // frame window
-                                       hwndMenu,
-                                       usItem,
-                                       pfDismiss);   // dismiss flag == return value
-
-    if (!fHandled)
+    if (!(fHandled = fdrSortMenuItemSelected(somSelf,
+                                             WinQueryWindow(hwndCnr,
+                                                            QW_PARENT), // frame window
+                                             hwndMenu,
+                                             usItem,
+                                             pfDismiss))) // dismiss flag == return value
     {
         fHandled = TRUE;
 
@@ -3856,7 +3854,7 @@ static MRESULT mnuItemsItemChanged(PNOTEBOOKPAGE pnbp,
 
                 XWPSETTING s;
 
-                _Pmpf((__FUNCTION__ ": category is %s", cmnGetString(pCategory->ulString)));
+                _PmpfF(("category is %s", cmnGetString(pCategory->ulString)));
                 _Pmpf(("  recc %s, flFilter 0x%08lX",
                       cmnGetString(precc->pItem->ulString), flFilter));
 

@@ -157,6 +157,8 @@ HMTX                G_hmtxSuppressNotify = NULLHANDLE;    // V0.9.14 (2001-08-25
 
 THREADINFO          G_tiMoveThread = {0};
 
+BOOL                G_fActiveChangedPending = FALSE;      // V0.9.19 (2002-06-14) [lafaix]
+
 extern HAB          G_habDaemon;        // xwpdaemn.c
 
 /* ******************************************************************
@@ -1236,6 +1238,48 @@ static MRESULT PagerButtonClick(HWND hwnd,
         {
             if (msg == WM_BUTTON1CLICK)
             {
+               // we first force a desktop switch if follow focus
+               // is disabled
+               // V0.9.19 (2002-06-14) [lafaix]
+               if (G_pHookData->PagerConfig.flPager & PGRFL_NOFOLLOWFOCUS)
+               {
+                   SWP swpActive;
+
+                   if (WinQueryWindowPos(hwndClicked, &swpActive))
+                   {
+                       // calculate the absolute coordinate of the center
+                       // of the active window relative to the bottom
+                       // left desktop:
+                       LONG    cx = G_pHookData->szlEachDesktopFaked.cx,
+                               cy = G_pHookData->szlEachDesktopFaked.cy,
+                               xCurrent = G_pHookData->ptlCurrentDesktop.x,
+                               yCurrent = G_pHookData->ptlCurrentDesktop.y,
+                               x =      (    swpActive.x
+                                           + (swpActive.cx / 2)
+                                           + xCurrent
+                                        ) / cx
+                                          * cx,
+                               y =      (    swpActive.y
+                                           + (swpActive.cy / 2)
+                                           + yCurrent
+                                        ) / cy
+                                          * cy;
+
+                       // bump boundaries
+                       if (    (x >= 0)
+                            && (x <= (G_pHookData->PagerConfig.cDesktopsX * cx))
+                            && (y >= 0)
+                            && (y <= (G_pHookData->PagerConfig.cDesktopsY * cy))
+                          )
+                       {
+                           WinPostMsg(G_pHookData->hwndPagerMoveThread,
+                                      PGRM_MOVEBYDELTA,
+                                      (MPARAM)(xCurrent - x),
+                                      (MPARAM)(yCurrent - y));
+                       }
+                   }
+               }
+
                 // mb1: activate window
                 WinSetActiveWindow(HWND_DESKTOP, hwndClicked);
 
@@ -1630,6 +1674,8 @@ static VOID PagerActiveChanged(HWND hwnd)
                    0);
 
     } // end if (!G_pHookData->fProcessingWraparound)
+
+    G_fActiveChangedPending = FALSE;
 }
 
 /*
@@ -1710,9 +1756,9 @@ static MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             case WM_DESTROY:
                 // un-make the pager a client of the switchlist thread
                 WinSendMsg(G_pHookData->hwndDaemonObject,
-                           XDM_ADDWINLISTWATCH,
+                           XDM_REMOVEWINLISTWATCH,
                            (MPARAM)hwnd,        // window to be notified
-                           (MPARAM)-1);         // remove
+                           NULL);
             break;
 
             case WM_PAINT:
@@ -1769,13 +1815,17 @@ static MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
             case PGRM_WINDOWCHANGE:
                 if ((ULONG)mp2 == WM_ACTIVATE)
+                {
+                    G_fActiveChangedPending = TRUE;
+
                     // at this point, start a timer only so we can
                     // defer processing a bit to avoid flicker
                     WinStartTimer(G_habDaemon,
                                   hwnd,
                                   TIMERID_PGR_ACTIVECHANGED,
                                   200);     // 200 ms
-                else
+                }
+                else if (!G_fActiveChangedPending)
                     // refresh the client bitmap
                     WinPostMsg(hwnd,
                                PGRM_REFRESHCLIENT,
@@ -1839,8 +1889,19 @@ static MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             }
             break;
 
+            /*
+             * WM_SEM2:
+             *      PM semaphore message with priority
+             *      higher only than WM_PAINT; set by
+             *      PGRM_REFRESHCLIENT to refresh the client.
+             */
+
             case WM_SEM2:
-                WinInvalidateRect(hwnd, NULL, FALSE);
+                // ignore the refresh request if an ACTIVECHANGED timer
+                // is pending; this prevent unnecessary repainting
+                // V0.9.19 (2002-06-14) [lafaix]
+                if (!G_fActiveChangedPending)
+                    WinInvalidateRect(hwnd, NULL, FALSE);
             break;
 
             /*

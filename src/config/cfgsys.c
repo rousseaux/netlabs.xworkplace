@@ -782,7 +782,7 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
                         {
                             ULONG ul = 0;
                             sscanf(p, "%d", &ul);
-                            _Pmpf((__FUNCTION__ ": got VIRADL=%d", ul));
+                            _PmpfF(("got VIRADL=%d", ul));
 
                             if (ul > 512)
                                 ulSliderIndex = ( (ul - 512) / 512);

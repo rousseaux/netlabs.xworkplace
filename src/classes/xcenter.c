@@ -677,7 +677,7 @@ SOM_Scope ULONG  SOMLINK xctr_xwpRenameTray(XCenter *somSelf,
                 }
             }
 
-            _Pmpf((__FUNCTION__ ": returning %d", arc));
+            _Pmpf(("returning %d", arc));
         }
     }
     CATCH(excpt1)
@@ -1426,7 +1426,7 @@ SOM_Scope BOOL  SOMLINK xctr_wpSwitchTo(XCenter *somSelf, ULONG View)
                     // frame... V0.9.16 (2001-12-31) [umoeller]
                 if (hwndClient = WinWindowFromID(pViewItem->handle, FID_CLIENT))
                 {
-                    // _Pmpf((__FUNCTION__ ": posting XFMF_RESURFACE to %lX", hwndClient));
+                    // _PmpfF(("posting XFMF_RESURFACE to %lX", hwndClient));
                     WinPostMsg(hwndClient,
                                XCM_REFORMAT,
                                (MPARAM)XFMF_RESURFACE,
@@ -1554,7 +1554,7 @@ SOM_Scope void  SOMLINK xctrM_wpclsInitData(M_XCenter *somSelf)
 
     // resolve WinSetDesktopWorkArea etc. (ctr_engine.c)
     arc = ctrpDesktopWorkareaSupported();
-    // _Pmpf((__FUNCTION__ ": ctrpChangeDesktopSupported returned %d.", arc));
+    // _PmpfF(("ctrpChangeDesktopSupported returned %d.", arc));
 }
 
 /*

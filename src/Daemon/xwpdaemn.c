@@ -827,12 +827,15 @@ VOID InstallHook(VOID)
  *      daemon exit list in case the daemon crashes.
  *
  *@@changed V0.9.4 (2000-07-14) [umoeller]: timers kept running after this; fixed
+ *@@changed V0.9.19 (2002-06-15) [lafaix]: minor cleanup
  */
 
 VOID DeinstallHook(VOID)
 {
     if (G_pXwpGlobalShared->fAllHooksInstalled)
     {
+        G_pXwpGlobalShared->fAllHooksInstalled = FALSE;
+
 #ifndef __NOMOVEMENT2FEATURES__
         // if mouse pointer is currently hidden,
         // show it now (otherwise it'll be lost...)
@@ -846,7 +849,6 @@ VOID DeinstallHook(VOID)
 #endif
 
         hookKill();
-        G_pXwpGlobalShared->fAllHooksInstalled = FALSE;
 
         // stop timers which might still be running V0.9.4 (2000-07-14) [umoeller]
 #ifndef __NOSLIDINGFOCUS__
@@ -864,8 +866,6 @@ VOID DeinstallHook(VOID)
 #endif
 
         // _Pmpf(("XWPDAEMON: hookKilled called"));
-
-        G_pXwpGlobalShared->fAllHooksInstalled = FALSE;
     }
     G_pHookData = NULL;
 }
@@ -1265,7 +1265,7 @@ static VOID ProcessHotCorner(MPARAM mp1)
     {
         UCHAR ucScanCode = 0;
 
-        // _Pmpf((__FUNCTION__ ": got hot corner %d", lIndex));
+        // _PmpfF(("got hot corner %d", lIndex));
 
         switch (hobjIndex)
         {
@@ -1807,9 +1807,13 @@ static MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 
 /*
  *@@ ProcessAddNotify:
- *      implementation for XDM_ADDCLICKWATCH in fnwpDaemonObject.
+ *      implementation for XDM_ADDCLICKWATCH and XDM_ADDWINLISTWATCH
+ *      in fnwpDaemonObject.
+ *
+ *      Returns TRUE if successful, FALSE otherwise.
  *
  *@@added V0.9.19 (2002-03-28) [umoeller]
+ *@@changed V0.9.19 (2002-06-14) [lafaix]: moved remove action to ProcessRemoveNotify
  */
 
 static MRESULT ProcessAddNotify(HWND hwndNotify,            // in: window to receive notifications
@@ -1843,36 +1847,75 @@ static MRESULT ProcessAddNotify(HWND hwndNotify,            // in: window to rec
             pNode = pNext;
         }
 
-        if (ulMessage == -1)
-        {
-            // remove watch:
-            if (pNodeFound)
-            {
-                lstRemoveNode(pllNotifies, pNodeFound);
-                // DosBeep(500, 100);
-                mrc = (MPARAM)TRUE;
-            }
-        }
-        else
-        {
-            // add watch:
-            if (!pNodeFound)
-                // we didn't already have one for this window:
-                p = NEW(NOTIFYCLIENT);
-            // else: p still points to the item found
+        // add watch:
+        if (!pNodeFound)
+            // we didn't already have one for this window:
+            p = NEW(NOTIFYCLIENT);
+        // else: p still points to the item found
 
-            p->hwndNotify = hwndNotify;
-            p->ulMessage = ulMessage;
-            if (!pNodeFound)
-                lstAppendItem(pllNotifies, p);
+        p->hwndNotify = hwndNotify;
+        p->ulMessage = ulMessage;
+        if (!pNodeFound)
+            lstAppendItem(pllNotifies, p);
 
-            mrc = (MPARAM)TRUE;
-        }
+        mrc = (MPARAM)TRUE;
 
         // refresh flag for hook
         if (pcNotifies)
             *pcNotifies = lstCountItems(pllNotifies);
 
+    } // end if (G_pHookData)
+
+    return mrc;
+}
+
+/*
+ *@@ ProcessRemoveNotify:
+ *      removes the specified windows from the notify list.
+ *
+ *      Returns TRUE if successful, FALSE otherwise.
+ *
+ *@@added V0.9.19 (2002-06-14) [lafaix]
+ */
+
+static MRESULT ProcessRemoveNotify(HWND hwndNotify,         // in: window to remove
+                                   PLINKLIST pllNotifies,   // in/out: list of CLIENTNOTIFY structs
+                                   PULONG pcNotifies)          // out: no. of notifications on the list
+{
+    MRESULT mrc = (MRESULT)FALSE;
+
+    // check if the hook is running first;
+    // or we'll get crashes if not
+    if (G_pHookData)
+    {
+        // no need to lock here, since the daemon object
+        // is the only one using this list
+        PNOTIFYCLIENT p = NULL;
+
+        PLISTNODE pNode = lstQueryFirstNode(pllNotifies),
+                  pNodeFound = NULL;
+        while (pNode)
+        {
+            PLISTNODE pNext = pNode->pNext;
+            p = (PNOTIFYCLIENT)pNode->pItemData;
+            if (p->hwndNotify == hwndNotify)
+            {
+                pNodeFound = pNode;
+                break;
+            }
+            pNode = pNext;
+        }
+
+        if (pNodeFound)
+        {
+            lstRemoveNode(pllNotifies, pNodeFound);
+            // DosBeep(500, 100);
+            mrc = (MPARAM)TRUE;
+
+            // refresh flag for hook
+            if (pcNotifies)
+                *pcNotifies = lstCountItems(pllNotifies);
+        }
     } // end if (G_pHookData)
 
     return mrc;
@@ -1996,7 +2039,7 @@ static MRESULT ProcessStartApp(MPARAM mp1, MPARAM mp2)
             ((PPROGDETAILS)mp2)->Length = happ;
 
             #ifdef DEBUG_PROGRAMSTART
-                _Pmpf((__FUNCTION__ ": got happ 0x%lX", happ));
+                _PmpfF(("got happ 0x%lX", happ));
             #endif
 
             // VIO and fullscreen sessions keep ending up in the
@@ -2022,7 +2065,7 @@ static MRESULT ProcessStartApp(MPARAM mp1, MPARAM mp2)
             PERRINFO pei;
 
             #ifdef DEBUG_PROGRAMSTART
-                _Pmpf((__FUNCTION__ ": WinStartApp failed"));
+                _PmpfF(("WinStartApp failed"));
             #endif
 
             // unfortunately WinStartApp doesn't
@@ -2100,7 +2143,11 @@ static MRESULT ProcessStartApp(MPARAM mp1, MPARAM mp2)
  *      notify list, with the given MPARAM's.
  *
  *@@added V0.9.19 (2002-05-28) [umoeller]
+ *@@changed V0.9.19 (2002-06-15) [lafaix]: no longer removing inexistant list entries
  */
+
+#define PN_WINDOWCHANGE 0
+#define PN_ICONCHANGE   1
 
 static VOID ProcessNotifies(ULONG ulMsgOffset,
                             MPARAM mp1,
@@ -2111,17 +2158,24 @@ static VOID ProcessNotifies(ULONG ulMsgOffset,
     {
         PLISTNODE pNext = pNode->pNext;
         PNOTIFYCLIENT pNotify = (PNOTIFYCLIENT)pNode->pItemData;
-        if (!WinIsWindow(G_habDaemon, pNotify->hwndNotify))
-            // window is no longer valid:
-            ProcessAddNotify(pNotify->hwndNotify,
-                             -1,
-                             &G_llWinlistWatches,
-                             &G_pHookData->cWinlistWatches);
-        else
+        if (WinIsWindow(G_habDaemon, pNotify->hwndNotify))
             WinPostMsg(pNotify->hwndNotify,
                        pNotify->ulMessage + ulMsgOffset,
                        mp1,
                        mp2);
+// we should not do that, it breaks the winlist watcher thread stuff;
+// if an invalid entry has not been removed, it's harmless anyway.
+// removed V0.9.19 (2002-06-15) [lafaix]
+// I beg to differ, Martin: only XWPDAEMON thread one accesses
+// G_llWinlistWatches through the XDM_ADDWINLISTWATCH message,
+// and this func only gets called on thread 1 also. So there
+// can't possibly be any synchronization problems as far as I can see.
+// V0.9.19 (2002-06-15) [umoeller]
+        else
+            // window is no longer valid:
+            ProcessRemoveNotify(pNotify->hwndNotify,
+                                &G_llWinlistWatches,
+                                &G_pHookData->cWinlistWatches);
 
         pNode = pNext;
     }
@@ -2143,7 +2197,7 @@ static VOID ProcessWindowChange(MPARAM mp1, MPARAM mp2)
         case WM_CREATE:
             fPost = pgrCreateWinInfo((HWND)mp1);
             #ifdef DEBUG_WINDOWLIST
-            _Pmpf((__FUNCTION__ ": pgrCreateWinInfo 0x%lX", mp1));
+            _PmpfF(("pgrCreateWinInfo 0x%lX", mp1));
             #endif
         break;
 
@@ -2159,7 +2213,7 @@ static VOID ProcessWindowChange(MPARAM mp1, MPARAM mp2)
     if (fPost)
     {
         // process notifies
-        ProcessNotifies(0,     // message offset
+        ProcessNotifies(PN_WINDOWCHANGE,
                         mp1,
                         mp2);
     }
@@ -2177,11 +2231,11 @@ static VOID ProcessIconChange(MPARAM mp1, MPARAM mp2)
     {
         // process notifies
         #ifdef DEBUG_WINDOWLIST
-        _Pmpf((__FUNCTION__ ": sending iconchange for hwnd 0x%lX",
+        _PmpfF(("posting iconchange for hwnd 0x%lX",
                 mp1));
         #endif
 
-        ProcessNotifies(1,     // message offset
+        ProcessNotifies(PN_ICONCHANGE,
                         mp1,
                         mp2);
     }
@@ -2232,11 +2286,13 @@ static VOID ProcessIconChange(MPARAM mp1, MPARAM mp2)
  *      --  XDM_QUERYDISKS (get info about disks on the
  *          system).
  *
- *      --  XDM_ADDCLICKWATCH
+ *      --  XDM_ADDCLICKWATCH, XDM_REMOVECLICKWATCH
  *
  *      --  XDM_DISABLEHOTKEYSTEMP
  *
  *      --  XDM_STARTAPP
+ *
+ *      --  XDM_ADDWINLISTWATCH, XDM_REMOVEWINLISTWATCH
  *
  *@@changed V0.9.3 (2000-04-12) [umoeller]: added exception handling
  *@@changed V0.9.5 (2000-09-20) [pr]: fixed sliding focus bug
@@ -2245,6 +2301,7 @@ static VOID ProcessIconChange(MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added click watches support
  *@@changed V0.9.15 (2001-08-26) [umoeller]: move-ptr-to-button animation left circles on screen, fixed
  *@@changed V0.9.19 (2002-03-28) [umoeller]: moved more code out of main proc for better cache locality
+ *@@changed V0.9.19 (2002-06-15) [lafaix]: added XDM_REMOVECLICKWATCH and XDM_REMOVEWINLISTWATCH
  */
 
 MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2286,7 +2343,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              */
 
             case XDM_HOOKINSTALL:
-                // _Pmpf((__FUNCTION__ ": got XDM_HOOKINSTALL (%d)", mp1));
+                // _PmpfF(("got XDM_HOOKINSTALL (%d)", mp1));
                 if (mp1)
                     // install the hook:
                     InstallHook();
@@ -2759,8 +2816,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *         mouse clicks.
              *
              *      -- ULONG mp2: message to be posted on
-             *         mouse clicks to that window. If -1,
-             *         the click watch for mp1 is removed.
+             *         mouse clicks to that window.
              *
              *      That message will be posted on each mouse
              *      click on the system with the following
@@ -2778,6 +2834,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *
              *@@added V0.9.14 (2001-08-21) [umoeller]
              *@@changed V0.9.17 (2002-02-05) [umoeller]: fixed crash if hook not running
+             *@@changed V0.9.19 (2002-06-14) [lafaix]: removed the -1 mp2 stuff
              */
 
             case XDM_ADDCLICKWATCH:
@@ -2785,6 +2842,32 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                                        (ULONG)mp2,
                                        &G_llClickWatches,
                                        &G_pHookData->cClickWatches);
+            break;
+
+            /*
+             *@@ XDM_REMOVECLICKWATCH:
+             *      removes a "mouse click watch" from the daemon.
+             *      This way any window can remove itself from the
+             *      list of windows notified whenever a mouse click
+             *      occurs anywhere on the system.
+             *
+             *      This must be sent, not posted, to
+             *      the daemon.
+             *
+             *      Parameters:
+             *
+             *      -- HWND mp1: window to be notified on
+             *         mouse clicks.
+             *
+             *      Returns TRUE on success.
+             *
+             *@@added V0.9.19 (2002-06-14) [lafaix]
+             */
+
+            case XDM_REMOVECLICKWATCH:
+                mrc = ProcessRemoveNotify((HWND)mp1,
+                                          &G_llClickWatches,
+                                          &G_pHookData->cClickWatches);
             break;
 
             /*
@@ -2881,14 +2964,13 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *      Parameters:
              *
              *      -- HWND mp1: window to be notified on
-             *         mouse clicks.
+             *         window list changes.
              *
              *      -- ULONG mp2: messages to be posted on
              *         window list changes. Note that the
              *         window specified in mp1 will receive
-             *         _this_ message plus this message + 1
-             *         (see below). If -1, the watch for mp1
-             *         is removed.
+             *         two kind of messages: _this_ message
+             *         as well as this message + 1 (see below).
              *
              *      The message specified in mp2 will be posted
              *      every time the window list changes with the
@@ -2931,27 +3013,54 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                                                 &G_pHookData->cWinlistWatches))
                    )
                 {
-                    if ((ULONG)mp2 != -1)
+                    if (G_pHookData->cWinlistWatches == 1)
                     {
-                        if (G_pHookData->cWinlistWatches == 1)
-                        {
-                            _Pmpf((__FUNCTION__ ": initializing winlist"));
-                            // we just added the first winlist watch:
-                            // then scan the full switch list so we
-                            // don't produce a flurry of messages on
-                            // the winlist thread
-                            pgrBuildWinlist();
+                        _Pmpf((__FUNCTION__ ": initializing winlist"));
+                        // we just added the first winlist watch:
+                        // then scan the full switch list so we
+                        // don't produce a flurry of messages on
+                        // the winlist thread
+                        pgrBuildWinlist();
 
-                            // and start the winlist thread if it's not running
-                            thrCreate(&G_tiWinlistThread,
-                                      fntWinlistThread,
-                                      NULL,
-                                      "WinList",
-                                      THRF_PMMSGQUEUE,
-                                      0);
-                        }
+                        // and start the winlist thread if it's not running
+                        thrCreate(&G_tiWinlistThread,
+                                  fntWinlistThread,
+                                  NULL,
+                                  "WinList",
+                                  THRF_PMMSGQUEUE,
+                                  0);
                     }
-                    else if (!G_pHookData->cWinlistWatches)
+                }
+            break;
+
+            /*
+             *@@ XDM_REMOVEWINLISTWATCH:
+             *      similar to XDM_REMOVECLICKWATCH, removes a
+             *      "window list watch".
+             *      This way any window can request not to be
+             *      notified anymore whenever the window list changes.
+             *
+             *      This must be sent, not posted, to
+             *      the daemon.
+             *
+             *      Parameters:
+             *
+             *      -- HWND mp1: window to be notified on
+             *         mouse clicks.
+             *
+             *      Returns TRUE on success.
+             *
+             *@@added V0.9.19 (2002-06-14) [lafaix]
+             */
+
+            case XDM_REMOVEWINLISTWATCH:
+                if (    (G_pHookData)
+                     && (mrc = ProcessRemoveNotify((HWND)mp1,
+                                                   &G_llWinlistWatches,
+                                                   &G_pHookData->cWinlistWatches))
+                   )
+                {
+                    if (!G_pHookData->cWinlistWatches)
                     {
                         // we just removed the last winlist watch:
                         // stop winlist thread

@@ -514,7 +514,7 @@ SOM_Scope XFldStartup*  SOMLINK xfstupM_xwpclsQueryXStartupFolder(M_XFldStartup 
 
     M_XFldStartupMethodDebug("M_XFldStartup","xfstupM_xwpclsQueryXStartupFolder");
 
-    // _Pmpf((__FUNCTION__ ": getting next, pFolder is %s",
+    // _PmpfF(("getting next, pFolder is %s",
        //      (pFolder) ? _wpQueryTitle(pFolder) : "NULL"));
     pDesktop = cmnQueryActiveDesktop();
     do

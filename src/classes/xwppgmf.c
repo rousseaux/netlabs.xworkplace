@@ -568,7 +568,7 @@ SOM_Scope BOOL  SOMLINK xpgf_wpRestoreState(XWPProgramFile *somSelf,
     // XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
     XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpRestoreState");
 
-    /* _Pmpf((__FUNCTION__ ": %s, old style: 0x%lX %s %s",
+    /* _PmpfF(("%s, old style: 0x%lX %s %s",
                 _wpQueryTitle(somSelf),
                  ulStyle = _wpQueryStyle(somSelf),
                  (ulStyle & OBJSTYLE_NOTDEFAULTICON) ? "OBJSTYLE_NOTDEFAULTICON" : "",
@@ -580,7 +580,7 @@ SOM_Scope BOOL  SOMLINK xpgf_wpRestoreState(XWPProgramFile *somSelf,
 
     brc = XWPProgramFile_parent_WPProgramFile_wpRestoreState(somSelf,
                                                               ulReserved);
-    /* _Pmpf((__FUNCTION__ ": %s, new style: 0x%lX %s %s",
+    /* _PmpfF(("%s, new style: 0x%lX %s %s",
                 _wpQueryTitle(somSelf),
                  ulStyle = _wpQueryStyle(somSelf),
                  (ulStyle & OBJSTYLE_NOTDEFAULTICON) ? "OBJSTYLE_NOTDEFAULTICON" : "",
@@ -672,7 +672,7 @@ static BOOL ProgramFileIconHandler(XWPProgramFile *somSelf,
 
         #ifdef DEBUG_ICONREPLACEMENTS
             ULONG ulStyle = _wpQueryStyle(somSelf);
-            _Pmpf((__FUNCTION__ ": %s, old style: 0x%lX %s %s",
+            _PmpfF(("%s, old style: 0x%lX %s %s",
                         _wpQueryTitle(somSelf),
                          ulStyle,
                          (ulStyle & OBJSTYLE_NOTDEFAULTICON) ? "OBJSTYLE_NOTDEFAULTICON" : "",
@@ -735,7 +735,7 @@ static BOOL ProgramFileIconHandler(XWPProgramFile *somSelf,
                           NULL);
 
                 #ifdef DEBUG_ICONREPLACEMENTS
-                    _Pmpf((__FUNCTION__ ": %s, calling exehOpen",
+                    _PmpfF(("%s, calling exehOpen",
                             szProgramFile));
                 #endif
 
@@ -995,7 +995,7 @@ SOM_Scope ULONG  SOMLINK xpgf_wpQueryIconData(XWPProgramFile *somSelf,
             {
                 // not icon file: run the icon handler again
                 #ifdef DEBUG_ICONREPLACEMENTS
-                    _Pmpf((__FUNCTION__ ": calling ProgramFileIconHandler, cbRequired %d, pIconInfo 0x%lX",
+                    _PmpfF(("calling ProgramFileIconHandler, cbRequired %d, pIconInfo 0x%lX",
                               cbRequired, pIconInfo));
                 #endif
 

@@ -845,7 +845,7 @@ FOPSRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
                 ULONG           ulFindCount = 1;  // look for 1 file at a time
                 ULONG           ulFullPathLen;
 
-                // _Pmpf((__FUNCTION__ ": doing DosFindFirst for %s",
+                // _PmpfF(("doing DosFindFirst for %s",
                    //          szFolderPath));
 
                 // prepare full path V0.9.19 (2002-04-17) [umoeller]
@@ -1046,7 +1046,7 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                     cSubDormantFilesTemp = 0;
 
             #ifdef DEBUG_TRASHCAN
-                _Pmpf((__FUNCTION__ ": expanding %s", _wpQueryTitle(pfu->pSourceObject)));
+                _PmpfF(("expanding %s", _wpQueryTitle(pfu->pSourceObject)));
             #endif
 
             // say "collecting objects"
@@ -1158,7 +1158,7 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                         }
 
                         #ifdef DEBUG_TRASHCAN
-                            _Pmpf((__FUNCTION__ ": calling _wpIsDeleteable"));
+                            _PmpfF(("calling _wpIsDeleteable"));
                         #endif
 
                         if (!_wpIsDeleteable(pSubObjThis))
@@ -1225,7 +1225,7 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                             } // end if (_somIsA(pSubObjThis, _WPFolder))
 
                             #ifdef DEBUG_TRASHCAN
-                                _Pmpf((__FUNCTION__ ": calling _wpFree"));
+                                _PmpfF(("calling _wpFree"));
                             #endif
 
                             if (!_wpFree(pSubObjThis))
@@ -1366,7 +1366,7 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
     PFILETASKLIST pftl = (PFILETASKLIST)hftl;
 
     #ifdef DEBUG_FOPS
-        _Pmpf((__FUNCTION__ ": 0x%lX", hftl));
+        _PmpfF(("0x%lX", hftl));
     #endif
 
     TRY_LOUD(excpt2)

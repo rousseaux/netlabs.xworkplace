@@ -2031,7 +2031,7 @@ VOID objReady(WPObject *somSelf,
             _pvllWidgetNotifies = NULL;
 
             #ifdef DEBUG_ICONREPLACEMENTS
-                _Pmpf((__FUNCTION__ ": object \"%s\" created from source \"%s\"",
+                _PmpfF(("object \"%s\" created from source \"%s\"",
                         _wpQueryTitle(somSelf),
                         _wpQueryTitle(refObject)));
 
@@ -2278,7 +2278,7 @@ static BOOL LoadObjectsList(POBJECTLIST pll,
     // ULONG       ulSize;
     PSZ         pszHandles = NULL;
 
-    // _Pmpf((__FUNCTION__ ":   loading %s, pll 0x%lX", pcszIniKey, pll));
+    // _PmpfF(("  loading %s, pll 0x%lX", pcszIniKey, pll));
 
     if (pll->fLoaded)
     {
@@ -2615,7 +2615,7 @@ WPObject* objEnumList(POBJECTLIST pll,        // in: linked list of WPObject* po
     WPObject    *pObjectFound = NULL;
     BOOL        fSemOwned = FALSE;
 
-    // _Pmpf((__FUNCTION__ ": entering, pObjectFind = %s",
+    // _PmpfF(("entering, pObjectFind = %s",
        //          (pObjectFind) ? _wpQueryTitle(pObjectFind) : "NULL"));
 
     TRY_LOUD(excpt1)
@@ -2996,7 +2996,7 @@ BOOL objAddToDirtyList(WPObject *pobj)
                     if (brc)
                     {
                         /*
-                        _Pmpf((__FUNCTION__ ": added obj 0x%lX (%s, class %s)",
+                        _PmpfF(("added obj 0x%lX (%s, class %s)",
                                             pobj,
                                             _wpQueryTitle(pobj),
                                             _somGetClassName(pobj) ));
@@ -3024,7 +3024,7 @@ BOOL objAddToDirtyList(WPObject *pobj)
 
                     // else
                         // already on list:
-                        // _Pmpf((__FUNCTION__ ": DID NOT ADD obj 0x%lX (%s)", pobj, _wpQueryTitle(pobj) ));
+                        // _PmpfF(("DID NOT ADD obj 0x%lX (%s)", pobj, _wpQueryTitle(pobj) ));
                 }
             }
         }
@@ -3080,7 +3080,7 @@ BOOL objRemoveFromDirtyList(WPObject *pobj)
                            pNode);
                 free(pNode);
 
-                /* _Pmpf((__FUNCTION__ ": removed obj 0x%lX (%s, class %s), %d remaining",
+                /* _PmpfF(("removed obj 0x%lX (%s, class %s), %d remaining",
                                     pobj,
                                     _wpQueryTitle(pobj),
                                     _somGetClassName(pobj),

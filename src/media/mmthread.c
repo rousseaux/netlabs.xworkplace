@@ -296,7 +296,7 @@ MRESULT EXPENTRY xmm_fnwpPartyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
                         // and play when MM_MCIPASSDEVICE comes in
 
                         #ifdef DEBUG_SOUNDS
-                            _Pmpf((__FUNCTION__ ": xmmOpenWaveDevice returned 0x%lX", ulrc));
+                            _PmpfF(("xmmOpenWaveDevice returned 0x%lX", ulrc));
                         #endif
                     }
                 }
@@ -342,7 +342,7 @@ MRESULT EXPENTRY xmm_fnwpPartyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
             BOOL fGainingUse = (SHORT1FROMMP(mp2) == MCI_GAINING_USE);
 
             #ifdef DEBUG_SOUNDS
-                _Pmpf((__FUNCTION__ ": MM_MCIPASSDEVICE: mp1 = 0x%lX, mp2 = 0x%lX", mp1, mp2 ));
+                _PmpfF(("MM_MCIPASSDEVICE: mp1 = 0x%lX, mp2 = 0x%lX", mp1, mp2 ));
                 _Pmpf(( "    --> %s use", (fGainingUse) ? "Gaining" : "Losing" ));
             #endif
 
@@ -383,7 +383,7 @@ MRESULT EXPENTRY xmm_fnwpPartyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
                )
             {
                 #ifdef DEBUG_SOUNDS
-                    _Pmpf((__FUNCTION__ ": MM_MCINOTIFY: usNotifyCode = 0x%lX", usNotifyCode));
+                    _PmpfF(("MM_MCINOTIFY: usNotifyCode = 0x%lX", usNotifyCode));
                 #endif
                 if (usNotifyCode == MCI_NOTIFY_SUCCESSFUL)
                 {

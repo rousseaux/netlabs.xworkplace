@@ -312,14 +312,14 @@ BOOL dmnQueryDisks(ULONG ulLogicalDrive,
     {
         PXDISKINFO  paDiskInfos = (PXDISKINFO)mpDiskInfos;
 
-        // _Pmpf((__FUNCTION__ ": paDiskInfos is 0x%lX", paDiskInfos));
+        // _PmpfF(("paDiskInfos is 0x%lX", paDiskInfos));
 
         if (ulLogicalDrive == -1)
         {
             ULONG ul;
 
             // all disks:
-            // _Pmpf((__FUNCTION__ ": ulLogicalDrive == -1, getting all disks"));
+            // _PmpfF(("ulLogicalDrive == -1, getting all disks"));
             for (ul = 0; ul < 26; ul++)
             {
                 doshGetDriveInfo(ul + 1,
@@ -398,7 +398,7 @@ void _Optlink fntDiskWatch(PTHREADINFO ptiMyself)
                             if (dFree != pWatch->dFreeLast)
                             {
                                 // free space changed:
-                                // _Pmpf((__FUNCTION__ ": drive %d changed, old: %f, new: %f",
+                                // _PmpfF(("drive %d changed, old: %f, new: %f",
                                 //         pWatch->ulLogicalDrive,
                                    //      pWatch->dFreeLast,
                                       //   dFree));

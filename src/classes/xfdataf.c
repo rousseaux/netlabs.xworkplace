@@ -211,7 +211,7 @@ SOM_Scope void  SOMLINK xdf_wpUnInitData(XFldDataFile *somSelf)
     #ifdef DEBUG_ICONREPLACEMENTS
     {
         PMINIRECORDCORE pmrc = _wpQueryCoreRecord(somSelf);
-        _Pmpf((__FUNCTION__ " for %s: OBJSTYLE_NOTDEFAULTICON %lX",
+        _PmpfF(("[%s] OBJSTYLE_NOTDEFAULTICON %lX",
                 _wpQueryTitle(somSelf),
                 _wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON));
         _Pmpf(("    OBJSTYLE_TEMPLATE %lX",
@@ -281,7 +281,7 @@ SOM_Scope BOOL  SOMLINK xdf_wpRestoreState(XFldDataFile *somSelf,
             ULONG flNewStyle = 0;
 
             #ifdef DEBUG_ICONREPLACEMENTS
-                _Pmpf((__FUNCTION__ ": obj 0x%lX: pFSData is 0x%lX", somSelf, pFSData));
+                _PmpfF(("obj 0x%lX: pFSData is 0x%lX", somSelf, pFSData));
             #endif
 
             if (    (!prec->hptrIcon)
@@ -1263,7 +1263,7 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryIcon(XFldDataFile *somSelf)
         PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
 
         #ifdef DEBUG_ICONREPLACEMENTS
-            _Pmpf((__FUNCTION__ ": obj 0x%lX: prec->hptrIcon is 0x%lX", somSelf, prec->hptrIcon));
+            _PmpfF(("obj 0x%lX: prec->hptrIcon is 0x%lX", somSelf, prec->hptrIcon));
         #endif
 
         TRY_LOUD(excpt1)

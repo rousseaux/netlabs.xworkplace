@@ -1733,7 +1733,7 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                     }
 
                     #ifdef DEBUG_SHUTDOWN
-                        _Pmpf((__FUNCTION__ ": pData->pPartitionsList is 0x%lX",
+                        _PmpfF(("pData->pPartitionsList is 0x%lX",
                                 pData->pPartitionsList));
                     #endif
 
@@ -3927,7 +3927,7 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
         {
             brc = _wpSaveImmediate(pobjThis);
             #ifdef DEBUG_SHUTDOWN
-                _Pmpf((__FUNCTION__ ": saved obj 0x%lX (%s, class %s)",
+                _PmpfF(("saved obj 0x%lX (%s, class %s)",
                                 pobjThis,
                                 _wpQueryTitle(pobjThis),
                                 _somGetClassName(pobjThis)));

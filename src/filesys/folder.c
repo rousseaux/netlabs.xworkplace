@@ -952,6 +952,7 @@ BOOL fdrQuerySetup(WPObject *somSelf,
  *      will still be passed the root folder in pFolder!#
  *
  *@@changed V0.9.1 (2000-02-04) [umoeller]: this used to be XFolder::xwpForEachOpenView
+ *@@changed V0.9.19 (2002-06-13) [umoeller]: this broke for root folders, fixed
  */
 
 BOOL fdrForEachOpenInstanceView(WPFolder *somSelf,
@@ -963,13 +964,19 @@ BOOL fdrForEachOpenInstanceView(WPFolder *somSelf,
     // XFolderData *somThis = XFolderGetData(somSelf);
     // XFolderMethodDebug("XFolder","xf_xwpForEachOpenView");
 
-    /* if (_somIsA(somSelf, _WPRootFolder))
+    if (_somIsA(somSelf, _WPRootFolder))
         // for disk/root folder views: root folders have no
         // open view, instead the disk object is registered
         // to have the open view. Duh. So we need to find
         // the disk object first
-        somSelf2 = _xwpclsQueryDiskObject(_XFldDisk, somSelf);
-    else */
+        // V0.9.19 (2002-06-13) [umoeller]: this code was disabled...
+        // it used an XFldDisk class method that I removed ages
+        // ago, but apparently wpQueryDisk works as well.
+        // This code is needed by xf_xwpSetFldrSort, among other
+        // things, to update root folder views after sort criteria
+        // change!
+        somSelf2 = _wpQueryDisk(somSelf);
+    else
         somSelf2 = somSelf;
 
     if (somSelf2)
@@ -984,14 +991,14 @@ BOOL fdrForEachOpenInstanceView(WPFolder *somSelf,
                  pViewItem;
                  pViewItem = _wpFindViewItem(somSelf2, VIEW_ANY, pViewItem))
             {
-                if ((*pfnwpCallback)(pViewItem->handle,
-                                     ulMsg,
-                                     (MPARAM)pViewItem->view,
-                                     // but even if we have found a disk object
-                                     // above, we need to pass it the root folder
-                                     // pointer, because otherwise the callback
-                                     // might get into trouble
-                                     (MPARAM)somSelf)
+                if (pfnwpCallback(pViewItem->handle,
+                                  ulMsg,
+                                  (MPARAM)pViewItem->view,
+                                  // but even if we have found a disk object
+                                  // above, we need to pass it the root folder
+                                  // pointer, because otherwise the callback
+                                  // might get into trouble
+                                  (MPARAM)somSelf)
                             == (MPARAM)TRUE)
                     brc = TRUE;
             } // end for
@@ -1028,9 +1035,9 @@ BOOL fdrForEachOpenGlobalView(ULONG ulMsg,
     // M_XFolderData *somThis = M_XFolderGetData(somSelf);
     // M_XFolderMethodDebug("M_XFolder","xfM_xwpclsForEachOpenView");
 
-    for ( pFolder = _wpclsQueryOpenFolders(pWPFolderClass, NULL, QC_FIRST, FALSE);
-          pFolder;
-          pFolder = _wpclsQueryOpenFolders(pWPFolderClass, pFolder, QC_NEXT, FALSE))
+    for (pFolder = _wpclsQueryOpenFolders(pWPFolderClass, NULL, QC_FIRST, FALSE);
+         pFolder;
+         pFolder = _wpclsQueryOpenFolders(pWPFolderClass, pFolder, QC_NEXT, FALSE))
     {
         if (_somIsA(pFolder, pWPFolderClass))
             fdrForEachOpenInstanceView(pFolder, ulMsg, pfnwpCallback);
@@ -1302,7 +1309,7 @@ BOOL fdrSnapToGrid(WPFolder *somSelf,
             // use the WPS method (wpQueryContent) because this is too
             // slow. Instead, we query the container directly.
 
-            _Pmpf((__FUNCTION__ ": x= %d, y = %d, cx = %d, cy = %d",
+            _PmpfF(("x= %d, y = %d, cx = %d, cy = %d",
                         cmnQuerySetting(sulGridX),
                         cmnQuerySetting(sulGridY),
                         cmnQuerySetting(sulGridCX),

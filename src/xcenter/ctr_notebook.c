@@ -583,7 +583,7 @@ static BOOL CreateWidgetFromString(XCenter *somSelf,
     WIDGETPOSITION pos2;
     APIRET arc;
 
-    _Pmpf((__FUNCTION__ ": creating \"%s\", \"%s\"",
+    _PmpfF(("creating \"%s\", \"%s\"",
                 STRINGORNULL(pcszClass),
                 STRINGORNULL(pcszSetup)));
 
@@ -684,7 +684,7 @@ static BOOL ParseTraysList(XCenter *somSelf,
                         brc = FALSE;
                     else
                     {
-                        _Pmpf((__FUNCTION__ ": recursing with string \"%s\"",
+                        _PmpfF(("recursing with string \"%s\"",
                               pszSubwidgetsList));
 
                         brc = ParseWidgetsString(somSelf,
@@ -692,7 +692,7 @@ static BOOL ParseTraysList(XCenter *somSelf,
                                                  ulTrayWidgetIndex,
                                                  cTraysSet);
 
-                        _Pmpf((__FUNCTION__ ": ParseWidgetsString returned %d", brc));
+                        _PmpfF(("ParseWidgetsString returned %d", brc));
 
                         free(pszSubwidgetsList);
                     }
@@ -975,7 +975,7 @@ BOOL ctrpSetup(XCenter *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        _Pmpf((__FUNCTION__ ": string is \"%s\"", pszSetupString));
+        _PmpfF(("string is \"%s\"", pszSetupString));
 
         // now comes the non-standard stuff:
         if (brc = cmnSetupScanString(somSelf,
@@ -1508,7 +1508,7 @@ APIRET ctrpReadFromFile(PCSZ pszSource,     // in: source file name
             if (!(pszBuff = malloc(fs3.cbFile + 1)))
             {
                 arc = ERROR_NOT_ENOUGH_MEMORY;
-                _Pmpf((__FUNCTION__ ": malloc I failed (%d bytes)", fs3.cbFile + 1));
+                _PmpfF(("malloc I failed (%d bytes)", fs3.cbFile + 1));
             }
             else
             {

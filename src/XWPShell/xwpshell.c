@@ -640,7 +640,7 @@ APIRET StartUserShell(VOID)
             HSWITCH hsw;
             if (!(hsw = winhHSWITCHfromHAPP(G_happWPS)))
             {
-                _Pmpf((__FUNCTION__ ": Cannot find HSWITCH for happ 0x%lX", G_happWPS));
+                _PmpfF(("Cannot find HSWITCH for happ 0x%lX", G_happWPS));
             }
             else
             {
@@ -650,10 +650,10 @@ APIRET StartUserShell(VOID)
                     arc = scxtCreateSecurityContext(swc.idProcess,
                                                     loLocal.hsubjUser,
                                                     loLocal.hsubjGroup);
-                    _Pmpf((__FUNCTION__ ": scxtCreateSecurityContext returned %d", arc));
+                    _PmpfF(("scxtCreateSecurityContext returned %d", arc));
                 }
                 else
-                    _Pmpf((__FUNCTION__ ": WinQuerySwitchEntry for shell failed"));
+                    _PmpfF(("WinQuerySwitchEntry for shell failed"));
             }
         }
     }
@@ -685,7 +685,7 @@ APIRET LocalLogon(VOID)
     memset(&uiLogon, 0, sizeof(XWPUSERDBENTRY));
     memset(&LoggedOnUser, 0, sizeof(XWPLOGGEDON));
 
-    _Pmpf((__FUNCTION__ ": entering"));
+    _PmpfF(("entering"));
 
     if (WinDlgBox(HWND_DESKTOP,
                   NULLHANDLE,      // owner
@@ -757,7 +757,7 @@ APIRET LocalLogon(VOID)
         }
     }
 
-    _Pmpf((__FUNCTION__ ": leaving, returning %d", arc));
+    _PmpfF(("leaving, returning %d", arc));
 
     return arc;
 }
@@ -1610,7 +1610,7 @@ void _Optlink fntRing3Daemon(PTHREADINFO ptiMyself)
                      0,
                      NULL);
 
-            _Pmpf((__FUNCTION__ ": access control disabled."));
+            _PmpfF(("access control disabled."));
 
             if (arc != NO_ERROR)
                 Error("fntRing3Daemon: Error %d occured.", arc);
@@ -1843,7 +1843,7 @@ void _Optlink fntQueueThread(PTHREADINFO ptiMyself)
             PXWPSHELLQUEUEDATA  pSharedQueueData = (PXWPSHELLQUEUEDATA)(rq.ulData);
             HEV hev = pSharedQueueData->hevData;
 
-            _Pmpf((__FUNCTION__ ": got queue item, pSharedQueueData->ulCommand: %d",
+            _PmpfF(("got queue item, pSharedQueueData->ulCommand: %d",
                         pSharedQueueData->ulCommand));
 
             if (!DosOpenEventSem(NULL,
@@ -1869,7 +1869,7 @@ void _Optlink fntQueueThread(PTHREADINFO ptiMyself)
             }
         }
         else
-            _Pmpf((__FUNCTION__ ": DosReadQueue returned %d", arc));
+            _PmpfF(("DosReadQueue returned %d", arc));
     }
 }
 

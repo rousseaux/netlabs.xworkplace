@@ -852,7 +852,7 @@ static BOOL HackContentPointers(WPFolder *somSelf,
                 if (!*pulContainerFlag)
                    *pulContainerFlag = TRUE;
 
-                // _Pmpf((__FUNCTION__ ": adding %s to %d",
+                // _PmpfF(("adding %s to %d",
                 //         _wpQueryTitle(pObject),
                 //         _wpQueryTitle(somSelf) ));
 
@@ -1055,7 +1055,7 @@ BOOL fdrRealNameChanged(WPFolder *somSelf,          // in: folder of pFSObject
         nlsUpper(szNewUpperRealName, 0);
 
         #ifdef DEBUG_TURBOFOLDERS
-        _Pmpf((__FUNCTION__ ": old %s, new %s", pszOldRealName, szNewUpperRealName));
+        _PmpfF(("old %s, new %s", pszOldRealName, szNewUpperRealName));
         #endif
 
         if (strcmp(pszOldRealName, szNewUpperRealName))
@@ -1891,7 +1891,7 @@ WPFileSystem* fdrQueryAwakeFSObject(PCSZ pcszFQPath)
 VOID fdrDebugDumpFolderFlags(WPFolder *somSelf)
 {
     /* ULONG fl = _wpQueryFldrFlags(somSelf);
-    _Pmpf((__FUNCTION__ ": flags for folder %s", _wpQueryTitle(somSelf)));
+    _PmpfF(("flags for folder %s", _wpQueryTitle(somSelf)));
     if (fl & FOI_POPULATEINPROGRESS)
         _Pmpf(("    FOI_POPULATEINPROGRESS"));
     if (fl & FOI_REFRESHINPROGRESS)
@@ -2156,7 +2156,7 @@ BOOL fdrPopulate(WPFolder *somSelf,
     TRY_LOUD(excpt1)
     {
         #ifdef DEBUG_TURBOFOLDERS
-        _Pmpf((__FUNCTION__ ": POPULATING %s", pcszFolderFullPath));
+        _PmpfF(("POPULATING %s", pcszFolderFullPath));
         #endif
 
         // there can only be one populate at a time
@@ -2261,7 +2261,7 @@ BOOL fdrPopulate(WPFolder *somSelf,
         fdrReleaseFindMutexSem(somSelf);
 
     #ifdef DEBUG_TURBOFOLDERS
-    _Pmpf((__FUNCTION__ ": returning %d", fSuccess));
+    _PmpfF(("returning %d", fSuccess));
     #endif
 
     return (fSuccess);

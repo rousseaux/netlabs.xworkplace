@@ -296,7 +296,7 @@ HWND stbCreate(PSUBCLFOLDERVIEW psli2)
     // XFolderData *somThis = XFolderGetData(somSelf);
 
     #ifdef DEBUG_STATUSBARS
-        _Pmpf((__FUNCTION__ " for %s: fShow = %d", _wpQueryTitle(somSelf), fShow));
+        _PmpfF(("[%s] fShow = %d", _wpQueryTitle(somSelf), fShow));
     #endif
 
     if (psli2)
@@ -835,7 +835,7 @@ static VOID StatusTimer(HWND hwndBar,
                         sprintf(szView, "unknown %d", ulView);
                         pcszView = szView;
                 }
-                _Pmpf((__FUNCTION__ ":  View is %s", pcszView));
+                _PmpfF((" View is %s", pcszView));
                 fdrDebugDumpFolderFlags(psbd->somSelf);
             #endif
 
@@ -1912,7 +1912,7 @@ static BOOL CheckLogicalDrive(PULONG pulLogicalDrive,
                 *pulLogicalDrive = 0;
         }
 
-        _Pmpf((__FUNCTION__ ": *pulLogicalDrive = %d", *pulLogicalDrive));
+        _PmpfF(("*pulLogicalDrive = %d", *pulLogicalDrive));
     }
 
     return (*pulLogicalDrive != 0);

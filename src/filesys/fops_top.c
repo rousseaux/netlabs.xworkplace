@@ -756,7 +756,7 @@ FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fops
                     FOPSRET     frc2;
                     WPObject    *pAddObject = pObject;
                     #ifdef DEBUG_FOPS
-                        _Pmpf((__FUNCTION__ ": got object %s", _wpQueryTitle(pObject)));
+                        _PmpfF(("got object %s", _wpQueryTitle(pObject)));
                     #endif
 
                     if (fRelatedObjects)
@@ -850,7 +850,7 @@ FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fops
         frc = FOPSERR_INVALID_OBJECT;
 
     #ifdef DEBUG_FOPS
-        _Pmpf((__FUNCTION__ ": returning FOPSRET %d", frc));
+        _PmpfF(("returning FOPSRET %d", frc));
     #endif
 
     return (frc);
@@ -889,7 +889,7 @@ FOPSRET fopsStartTaskFromList(ULONG ulOperation,
     PGENERICPROGRESSWINDATA ppwd;
 
     #ifdef DEBUG_FOPS
-        _Pmpf((__FUNCTION__ ": op: %d, source: %s, target: %s",
+        _PmpfF(("op: %d, source: %s, target: %s",
                 ulOperation,
                 (pSourceFolder) ? _wpQueryTitle(pSourceFolder) : "NULL",
                 (pTargetFolder) ? _wpQueryTitle(pTargetFolder) : "NULL"
@@ -920,7 +920,7 @@ FOPSRET fopsStartTaskFromList(ULONG ulOperation,
                 FOPSRET frc2;
 
                 #ifdef DEBUG_FOPS
-                    _Pmpf((__FUNCTION__ ": got object %s", _wpQueryTitle(pObject) ));
+                    _PmpfF(("got object %s", _wpQueryTitle(pObject) ));
                 #endif
 
                 frc2 = fopsAddObjectToTask(hftl, pObject);
@@ -943,7 +943,7 @@ FOPSRET fopsStartTaskFromList(ULONG ulOperation,
             if (!frc)
             {
                 // *** go!!!
-                _Pmpf((__FUNCTION__ ": calling StartWithGenericProgress with %d objects",
+                _PmpfF(("calling StartWithGenericProgress with %d objects",
                             cObjects));
                 frc = StartWithGenericProgress(hftl,
                                                ulOperation,
@@ -965,7 +965,7 @@ FOPSRET fopsStartTaskFromList(ULONG ulOperation,
         frc = ERROR_NOT_ENOUGH_MEMORY;
 
     #ifdef DEBUG_FOPS
-        _Pmpf((__FUNCTION__ ": FOPSRET %d", frc));
+        _PmpfF(("FOPSRET %d", frc));
     #endif
 
     return (frc);
@@ -1038,7 +1038,7 @@ FOPSRET fopsStartDeleteFromCnr(HAB hab,                 // in: as with fopsStart
         {
             ulConfirmations = _wpQueryConfirmations(pSourceObject);
             #ifdef DEBUG_FOPS
-                _Pmpf((__FUNCTION__ ": first obj is %s", _wpQueryTitle(pSourceObject)));
+                _PmpfF(("first obj is %s", _wpQueryTitle(pSourceObject)));
                 _Pmpf(("  ulConfirmations: 0x%lX", ulConfirmations));
             #endif
 

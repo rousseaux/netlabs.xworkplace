@@ -277,7 +277,7 @@ ULONG ftypRegisterInstanceTypesAndFilters(M_WPFileSystem *pClassObject)
             pszFilters = NULL;
 
         #ifdef DEBUG_TURBOFOLDERS
-            _Pmpf((__FUNCTION__ ": entering for class %s", _somGetName(pClassObject)));
+            _PmpfF(("entering for class %s", _somGetName(pClassObject)));
         #endif
 
         // go for the types
@@ -704,7 +704,7 @@ static VOID BuildTypesWithFiltersCache(VOID)
 
     #ifdef DEBUG_ASSOCS
         DosBeep(1000, 100);
-        _Pmpf((__FUNCTION__ ": rebuilding list"));
+        _PmpfF(("rebuilding list"));
     #endif
 
     if (!(arc = prfhQueryKeysForApp(HINI_USER,
@@ -941,7 +941,7 @@ static PWPSTYPEASSOCTREENODE FindWPSTypeAssoc(PCSZ pcszType)
     if (G_fWPSTypesValid)
     {
         #ifdef DEBUG_ASSOCS
-            _Pmpf((__FUNCTION__ ": looking for %s now...", pcszType));
+            _PmpfF(("looking for %s now...", pcszType));
         #endif
 
         return ((PWPSTYPEASSOCTREENODE)treeFind(G_WPSTypeAssocsTreeRoot,
@@ -1114,7 +1114,7 @@ static ULONG AppendTypesForFile(PCSZ pcszObjectTitle,
         PLINKLIST pllTypesWithFilters = ftypGetCachedTypesWithFilters();
 
         #ifdef DEBUG_ASSOCS
-        _Pmpf((__FUNCTION__ ": getting types for objtitle %s", pcszObjectTitle));
+        _PmpfF(("getting types for objtitle %s", pcszObjectTitle));
         #endif
 
         if (pllTypesWithFilters)
@@ -1222,7 +1222,7 @@ static ULONG ListAssocsForType(PLINKLIST *ppllAssocs, // in/out: list of WPProgr
         ULONG cb;
 
         #ifdef DEBUG_ASSOCS
-            _Pmpf((__FUNCTION__ ": got %d handles for type %s",
+            _PmpfF(("got %d handles for type %s",
                 (pWPSType) ? pWPSType->cHandles : 0,
                 pcszTypeThis));
         #endif
@@ -1451,7 +1451,7 @@ static ULONG RemoveAssocReferences(PCSZ pcszHandle,     // in: decimal object ha
                     if (!strcmp(pAssoc, pcszHandle))
                     {
                         #ifdef DEBUG_ASSOCS
-                            _Pmpf((__FUNCTION__ ": removing handle %s from %s",
+                            _PmpfF(("removing handle %s from %s",
                                         pcszHandle,
                                         pKey));
                         #endif
@@ -1545,7 +1545,7 @@ ULONG ftypAssocObjectDeleted(HOBJECT hobj)
             sprintf(szHandle, "%d", hobj);
 
             #ifdef DEBUG_ASSOCS
-                _Pmpf((__FUNCTION__ ": running with %s", szHandle));
+                _PmpfF(("running with %s", szHandle));
             #endif
 
             ulrc += RemoveAssocReferences(szHandle,
@@ -1679,7 +1679,7 @@ PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
                     nlsUpper(pszUpperTitle, ulObjectTitleLen);
 
                     #ifdef DEBUG_ASSOCS
-                        _Pmpf((__FUNCTION__ ": entering for \"%s\", fUsePlainTextAsDefault = %d",
+                        _PmpfF(("entering for \"%s\", fUsePlainTextAsDefault = %d",
                                     pszUpperTitle,
                                     fUsePlainTextAsDefault));
                     #endif
@@ -5411,7 +5411,7 @@ MRESULT ftypAssociationsItemChanged(PNOTEBOOKPAGE pnbp,
                 xstrInitCopy(&str, pszTypes, 0);
 
                 #ifdef DEBUG_ASSOCS
-                _Pmpf((__FUNCTION__ ": pre: str.psz is %s (ulLength: %u)",
+                _PmpfF(("pre: str.psz is %s (ulLength: %u)",
                             (str.psz) ? str.psz : "NULL",
                             str.ulLength));
                 #endif
@@ -5422,7 +5422,7 @@ MRESULT ftypAssociationsItemChanged(PNOTEBOOKPAGE pnbp,
                                     ",");      // types separator
 
                 #ifdef DEBUG_ASSOCS
-                _Pmpf((__FUNCTION__ ": post: str.psz is %s (ulLength: %u)",
+                _PmpfF(("post: str.psz is %s (ulLength: %u)",
                             (str.psz) ? str.psz : "NULL",
                             str.ulLength));
                 #endif
@@ -5667,7 +5667,7 @@ static APIRET ImportTypes(PDOMNODE pParentElement,
                 ULONG cb = 0;
 
                 #ifdef DEBUG_ASSOCS
-                _Pmpf((__FUNCTION__ ": importing %s, parent is %s",
+                _PmpfF(("importing %s, parent is %s",
                         pstrTypeName->psz,
                         (pcszParentType) ? pcszParentType : "NULL"));
                 #endif
@@ -5947,7 +5947,7 @@ static APIRET ExportAddType(PDOMNODE pParentNode,          // in: type's parent 
     }
     #ifdef DEBUG_ASSOCS
     else
-        _Pmpf((__FUNCTION__ ": xmlCreateElementNode returned %d for %s",
+        _PmpfF(("xmlCreateElementNode returned %d for %s",
                     arc,
                     pliAssoc->pszFileType));
     #endif
@@ -6107,7 +6107,7 @@ static APIRET ExportAddTypesTree(PDOMNODE pRootElement)
             {
                 PDOMNODE pNewElement;
                 #ifdef DEBUG_ASSOCS
-                _Pmpf((__FUNCTION__ ": processing %s", pKey));
+                _PmpfF(("processing %s", pKey));
                 #endif
                 arc = ExportAddFileTypeAndAllParents(pRootElement,
                                                      &llFileTypes,
@@ -6116,10 +6116,10 @@ static APIRET ExportAddTypesTree(PDOMNODE pRootElement)
                                                 // this will recurse
                 #ifdef DEBUG_ASSOCS
                 if (arc)
-                    _Pmpf((__FUNCTION__ ": ExportAddFileTypeAndAllParents returned %d for %s",
+                    _PmpfF(("ExportAddFileTypeAndAllParents returned %d for %s",
                                 arc, pKey));
                 else
-                    _Pmpf((__FUNCTION__ ": %s processed OK", pKey));
+                    _PmpfF(("%s processed OK", pKey));
                 #endif
 
                 // go for next key
@@ -6146,7 +6146,7 @@ static APIRET ExportAddTypesTree(PDOMNODE pRootElement)
                                         &pNewElement);
                     #ifdef DEBUG_ASSOCS
                     if (arc)
-                        _Pmpf((__FUNCTION__ ": xmlCreateElementNode returned %d", arc));
+                        _PmpfF(("xmlCreateElementNode returned %d", arc));
                     #endif
                 }
                 pAssocNode = pAssocNode->pNext;
@@ -6239,7 +6239,7 @@ APIRET ftypExportTypes(PCSZ pcszFilename)        // in: XML file name
             }
             #ifdef DEBUG_ASSOCS
             else
-                _Pmpf((__FUNCTION__ ": xmlCreateDocument returned %d", arc));
+                _PmpfF(("xmlCreateDocument returned %d", arc));
             #endif
         }
     }

@@ -172,7 +172,7 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpModifyPopupMenu(XFldDisk *somSelf,
     // XFldDiskData *somThis = XFldDiskGetData(somSelf);
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpModifyPopupMenu");
 
-    _Pmpf((__FUNCTION__ ": entering"));
+    _PmpfF(("entering"));
 
     if (rc = XFldDisk_parent_WPDisk_wpModifyPopupMenu(somSelf,
                                                       hwndMenu,
@@ -203,7 +203,7 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpModifyPopupMenu(XFldDisk *somSelf,
                                           iPosition);
     }
 
-    _Pmpf((__FUNCTION__ ": leaving"));
+    _PmpfF(("leaving"));
 
     return (rc);
 }
@@ -282,7 +282,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpViewObject(XFldDisk *somSelf,
     /* XFldDiskData *somThis = XFldDiskGetData(somSelf); */
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpViewObject");
 
-    _Pmpf((__FUNCTION__ ": entering"));
+    _PmpfF(("entering"));
 
     // "Drive not ready" replacement enabled?
 #ifndef __NEVERREPLACEDRIVENOTREADY__
@@ -312,7 +312,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpViewObject(XFldDisk *somSelf,
                                                         ulView,
                                                         param);
 
-    _Pmpf((__FUNCTION__ ": leaving"));
+    _PmpfF(("leaving"));
 
     return (hwndFrame);
 }
@@ -349,7 +349,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
 {
     HWND            hwndNewFrame = NULLHANDLE; // default: error occured
 
-    _Pmpf((__FUNCTION__ ": entering"));
+    _PmpfF(("entering"));
 
     switch (ulView)
     {
@@ -467,7 +467,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
                                                          param);
     } // switch (ulView)
 
-    _Pmpf((__FUNCTION__ ": leaving"));
+    _PmpfF(("leaving"));
 
     return (hwndNewFrame);
 }

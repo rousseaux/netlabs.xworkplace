@@ -224,7 +224,7 @@ BOOL dskQueryInfo(PXDISKINFO paDiskInfos,
     else
         cb = sizeof(XDISKINFO);
 
-    _Pmpf((__FUNCTION__ ": allocating %d bytes shared", cb));
+    _PmpfF(("allocating %d bytes shared", cb));
 
     if (    (hwndDaemon = krnQueryDaemonObject())
          && (WinQueryWindowProcess(hwndDaemon,

@@ -565,7 +565,7 @@ ULONG progQueryProgType(PCSZ pszFullFile,
     BOOL            fCallQueryAppType = FALSE;
 
     #ifdef DEBUG_ASSOCS
-        _Pmpf((__FUNCTION__ ": %s, before: 0x%lX (%s)",
+        _PmpfF(("%s, before: 0x%lX (%s)",
             pszFullFile, ulAppType, appDescribeAppType(ulAppType)));
     #endif
 
@@ -580,7 +580,7 @@ ULONG progQueryProgType(PCSZ pszFullFile,
             pExec = (PEXECUTABLE)pvExec;
         else
         {
-            // _Pmpf((__FUNCTION__ ": %s, calling exehOpen", pszFullFile));
+            // _PmpfF(("%s, calling exehOpen", pszFullFile));
             if (!(arc = exehOpen(pszFullFile, &pExec)))
                 // close this again on exit
                 fClose = TRUE;
@@ -1854,7 +1854,7 @@ PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
     APIRET          arc = NO_ERROR;
     DOSENVIRONMENT  Env = {0};
 
-    // _Pmpf((__FUNCTION__ ": pcszEnv is %s", (pcszEnv) ? pcszEnv : "NULL"));
+    // _PmpfF(("pcszEnv is %s", (pcszEnv) ? pcszEnv : "NULL"));
 
     if (pcszEnv)
         // environment specified:
@@ -2129,7 +2129,7 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
                 } // end if (ProgDetails.pszExecutable)
 
                 #ifdef DEBUG_PROGRAMSTART
-                    _Pmpf((__FUNCTION__ ": returning %d", arc));
+                    _PmpfF(("returning %d", arc));
                 #endif
 
                 if (!arc)
@@ -2156,7 +2156,7 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
     if (pProgDetails)
         free(pProgDetails);
 
-    // _Pmpf((__FUNCTION__ ": leaving, rc = %d", arc));
+    // _PmpfF(("leaving, rc = %d", arc));
 
     return arc;
 }

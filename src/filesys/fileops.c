@@ -180,7 +180,7 @@ FOPSRET fopsLoopSneaky(WPFolder *pFolder,       // in: folder
         ULONG           cbFFB3 = sizeof(FILEFINDBUF3);
         ULONG           ulFindCount = 1;  // look for 1 file at a time
 
-        // _Pmpf((__FUNCTION__ ": doing DosFindFirst for %s", szFolderPath));
+        // _PmpfF(("doing DosFindFirst for %s", szFolderPath));
 
         // now go find...
         sprintf(szSearchMask, "%s\\*", szFolderPath);
@@ -578,7 +578,7 @@ FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pl
                         if (fFoldersOnly)
                         {
                             ULONG ulSizeContents = 0;       // not used
-                            // _Pmpf((__FUNCTION__ ": calling fopsLoopSneaky; count pre: %d",
+                            // _PmpfF(("calling fopsLoopSneaky; count pre: %d",
                                //                   *pulDormantFilesCount));
                             frc = fopsLoopSneaky(pObject,
                                                  pulDormantFilesCount,
@@ -608,12 +608,12 @@ FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pl
     // contents come before the folder in the list
     if (frc == NO_ERROR)
     {
-        // _Pmpf((__FUNCTION__ ": appending %s", _wpQueryTitle(pObject) ));
+        // _PmpfF(("appending %s", _wpQueryTitle(pObject) ));
         lstAppendItem(pllObjects, pObject);
         if (pulObjectCount)
             (*pulObjectCount)++;
     }
-        // _Pmpf((__FUNCTION__ ": error %d for %s", _wpQueryTitle(pObject) ));
+        // _PmpfF(("error %d for %s", _wpQueryTitle(pObject) ));
 
     return (frc);
 }
@@ -759,7 +759,7 @@ WPFileSystem* fopsFindObjectWithSameTitle(WPFolder *pFolder,    // in: folder to
     if (!pszFind)
         return NULL;
 
-    _Pmpf((__FUNCTION__ ": checking %s for %s",
+    _PmpfF(("checking %s for %s",
             _wpQueryTitle(pFolder),
             pszFind));
 
@@ -1165,7 +1165,7 @@ static ULONG ConfirmObjectTitle(WPFolder *Folder,          // in: target folder 
     CHAR            szTemp[CCHMAXPATH];
 
     _wpQueryFilename(Folder, szTemp, TRUE);
-    _Pmpf((__FUNCTION__ ": entering for folder %s, pszTitle %s",
+    _PmpfF(("entering for folder %s, pszTitle %s",
                 szTemp, pszTitle));
 
     // check if an object with the same title
@@ -1316,7 +1316,7 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
     TRY_LOUD(excpt1)
     {
 
-        _Pmpf((__FUNCTION__ ": menuID is 0x%lX", menuID));
+        _PmpfF(("menuID is 0x%lX", menuID));
 
         if (    (!Folder)
              || (!_somIsA(Folder, _WPFolder))

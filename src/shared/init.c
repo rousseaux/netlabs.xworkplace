@@ -2017,7 +2017,7 @@ static void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
             {
                 // pFolder now has the startup folder to be processed
 
-                // _Pmpf((__FUNCTION__ ": found startup folder %s",
+                // _PmpfF(("found startup folder %s",
                    //          _wpQueryTitle(pFolder)));
 
                 // skip folders which should only be started on bootup
@@ -2050,7 +2050,7 @@ static void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
                              _wpQueryTitle(pFolder));
             }
 
-            // _Pmpf((__FUNCTION__ ": done with startup folders"));
+            // _PmpfF(("done with startup folders"));
 
             initLog("  done with startup folders");
 

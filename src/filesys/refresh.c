@@ -458,7 +458,7 @@ static ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
                                               &fs3,
                                               sizeof(fs3));
 
-                // _Pmpf((__FUNCTION__ ": DosQueryPathInfo ret'd %d", arc));
+                // _PmpfF(("DosQueryPathInfo ret'd %d", arc));
 
                 switch (arc)
                 {
@@ -593,7 +593,7 @@ static BOOL PumpNotifications(VOID)
         // get current milliseconds
         ULONG       ulMSNow = doshQuerySysUptime();
 
-        // _Pmpf((__FUNCTION__ ": %d notifications to be pumped.", lstCountItems(&G_llAllNotifications)));
+        // _PmpfF(("%d notifications to be pumped.", lstCountItems(&G_llAllNotifications)));
 
         while (pGlobalNodeThis)
         {
@@ -686,11 +686,11 @@ static VOID _Optlink fntPumpThread(PTHREADINFO ptiMyself)
         BOOL    fSemOwned = FALSE;
         ULONG   ulPostCount = 0;
 
-        // _Pmpf((__FUNCTION__ ": pump thread blocking on HEV."));
+        // _PmpfF(("pump thread blocking on HEV."));
 
         WinWaitEventSem(G_hevNotificationPump, ulWaitTime);
 
-        // _Pmpf((__FUNCTION__ ": pump event posted."));
+        // _PmpfF(("pump event posted."));
 
         TRY_LOUD(excpt1)
         {
@@ -996,7 +996,7 @@ static VOID FindFolderForNotification(PXWPNOTIFY pNotify,
                 {
                     BOOL    fRefreshFolderOnOpen = FALSE;
 
-                    /* _Pmpf((__FUNCTION__ ": %s \"%s\"",
+                    /* _PmpfF(("%s \"%s\"",
                             (pNotify->CNInfo.bAction == RCNF_FILE_ADDED) ? "RCNF_FILE_ADDED"
                                 : (pNotify->CNInfo.bAction == RCNF_FILE_DELETED) ? "RCNF_FILE_DELETED"
                                 : (pNotify->CNInfo.bAction == RCNF_DIR_ADDED) ? "RCNF_DIR_ADDED"
@@ -1529,7 +1529,7 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
 
                 } // while (arc == NO_ERROR)
 
-                // _Pmpf((__FUNCTION__ ": !!! arc == %d !!!", arc));
+                // _PmpfF(("!!! arc == %d !!!", arc));
 
                 // we got an error:
 
