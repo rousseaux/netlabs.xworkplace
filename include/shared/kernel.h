@@ -357,7 +357,8 @@
 
     #define T1M_EXCEPTIONCAUGHT         (WM_USER+276)
 
-    #define T1M_EXTERNALSHUTDOWN        (WM_USER+277)
+    // #define T1M_EXTERNALSHUTDOWN        (WM_USER+277)
+            // removed V0.9.18 (2002-03-27) [umoeller]
 
     #define T1M_DESTROYARCHIVESTATUS    (WM_USER+278)    // added V0.9.0
 
@@ -365,14 +366,14 @@
 
     #define T1M_DAEMONREADY             (WM_USER+281)    // added V0.9.0
 
-    #define T1M_PAGERCLOSED          (WM_USER+282)    // added V0.9.2 (2000-02-23) [umoeller]
+    #define T1M_PAGERCLOSED             (WM_USER+282)    // added V0.9.2 (2000-02-23) [umoeller]
 
     #define T1M_QUERYXFOLDERVERSION     (WM_USER+283)
                 // V0.9.2 (2000-02-26) [umoeller]:
                 // msg value changed to break compatibility with V0.8x
 
 #ifndef __NOPAGER__
-    #define T1M_PAGERCONFIGDELAYED   (WM_USER+284)
+    #define T1M_PAGERCONFIGDELAYED      (WM_USER+284)
 #endif
 
     /*
@@ -397,15 +398,15 @@
 
     #define T1M_OPENOBJECTFROMPTR       (WM_USER+287)    // added V0.9.9 (2001-02-06) [umoeller]
 
-    #define T1M_MENUITEMSELECTED        (WM_USER+288)    // added V0.9.11 (2001-04-18) [umoeller]
+    #define T1M_MENUITEMSELECTED        (WM_USER+289)    // added V0.9.11 (2001-04-18) [umoeller]
 
-    #define T1M_PAGERCTXTMENU        (WM_USER+289)    // V0.9.11 (2001-04-25) [umoeller]
+    #define T1M_PAGERCTXTMENU           (WM_USER+290)    // V0.9.11 (2001-04-25) [umoeller]
 
-    #define T1M_INITIATEXSHUTDOWN       (WM_USER+290)    // V0.9.12 (2001-04-28) [umoeller]
+    #define T1M_INITIATEXSHUTDOWN       (WM_USER+291)    // V0.9.12 (2001-04-28) [umoeller]
 
-    #define T1M_OPENRUNDIALOG           (WM_USER+291)    // V0.9.14 (2001-08-07) [pr]
+    #define T1M_OPENRUNDIALOG           (WM_USER+292)    // V0.9.14 (2001-08-07) [pr]
 
-    #define T1M_PROGOPENPROGRAM         (WM_USER+292)    // V0.9.16 (2001-12-02) [umoeller]
+    #define T1M_PROGOPENPROGRAM         (WM_USER+293)    // V0.9.16 (2001-12-02) [umoeller]
 
     BOOL krnPostThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
 

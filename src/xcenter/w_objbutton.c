@@ -1007,18 +1007,6 @@ static VOID OwgtButton1Down(HWND hwnd)
 
                 if (pPrivate->hwndMenuMain)
                 {
-/*                    RECTL rclButton;
-                    WinQueryWindowRect(hwnd, &rclButton);
-                    // rclButton now has button coordinates;
-                    // convert this to screen coordinates:
-                    WinMapWindowPoints(hwnd,
-                                       HWND_DESKTOP,
-                                       (PPOINTL)&rclButton,
-                                       2);          // rectl == 2 points
-
-                    if (pWidget->pGlobals->ulPosition == XCENTER_TOP)
-                        cmnuSetPositionBelow((PPOINTL)&rclButton); */
-
                     if (pPrivate->ulType == BTF_OBJBUTTON)
                     {
                         // object buttons needs special treatment here
@@ -1084,10 +1072,13 @@ static VOID OwgtButton1Up(HWND hwnd)
                         // V0.9.16 (2002-01-04) [umoeller]: do this on thread 1
                         // always, or we get very strange system hangs with
                         // some executables
-                        krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
+                        /* krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
                                                 (MPARAM)pPrivate->pobjButton,
-                                                (MPARAM)OPEN_DEFAULT);
-
+                                                (MPARAM)OPEN_DEFAULT); */
+                        _wpViewObject(pPrivate->pobjButton,
+                                      NULLHANDLE,
+                                      OPEN_DEFAULT,
+                                      NULLHANDLE);
                         // unset button sunk state
                         // (no toggle)
                         pPrivate->fButtonSunk = FALSE;
@@ -1370,8 +1361,8 @@ static BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
                     // destroyed)... redirect this to thread 1
                     // V0.9.11 (2001-04-18) [umoeller]
                     krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
-                                           (MPARAM)pObject,
-                                           (MPARAM)OPEN_DEFAULT);
+                                            (MPARAM)pObject,
+                                            (MPARAM)OPEN_DEFAULT);
 
                     fProcessed = TRUE;
                 }

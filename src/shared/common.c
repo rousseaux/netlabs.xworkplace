@@ -5263,165 +5263,172 @@ static MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPA
 HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLHANDLE for active desktop
                        PCSZ pcszStartupDir)  // in: startup dir or NULL
 {
-    static HWND hwndDlg = NULLHANDLE;
     HAPP        happ = NULLHANDLE;
 
-    // activate the current Run dialog if user tries to open a new one V0.9.14
-    if (hwndDlg)
+    TRY_LOUD(excpt1)
     {
-        HWND    hwnd = hwndDlg, hwndTmp;
+        static HWND hwndDlg = NULLHANDLE;
 
-        // find the Browse dialog if it is open
-        HENUM   henum = WinBeginEnumWindows(HWND_DESKTOP);
-        while (hwndTmp = WinGetNextWindow(henum))
-            if (WinQueryWindow(hwndTmp, QW_OWNER) == hwndDlg)
-            {
-                hwnd = hwndTmp;
-                break;
-            }
-        WinEndEnumWindows(henum);
-
-        WinSetFocus (HWND_DESKTOP, hwnd);
-        return(happ);
-    }
-
-    /* V0.9.14 This is a very bad idea as it means the desktop is disabled;
-    this is one of the things that causes Win-OS/2 full screen to fail
-    V0.9.14 (2001-08-03) [pr]
-    if (!hwndOwner)
-        hwndOwner = cmnQueryActiveDesktopHWND(); */
-
-    if (hwndDlg = WinLoadDlg(HWND_DESKTOP,
-                             hwndOwner,
-                             fnwpRunCommandLine,
-                             cmnQueryNLSModuleHandle(FALSE),
-                             ID_XFD_RUN,
-                             NULL))
-    {
-        HWND    hwndCommand = WinWindowFromID(hwndDlg, ID_XFD_RUN_COMMAND),
-                hwndStartup = WinWindowFromID(hwndDlg, ID_XFD_RUN_STARTUPDIR);
-
-        winhSetEntryFieldLimit(hwndCommand, CCHMAXPATH);
-        if (LoadRunHistory(hwndCommand))
+        // activate the current Run dialog if user tries to open a new one V0.9.14
+        if (hwndDlg)
         {
-            HWND hwndOK = WinWindowFromID(hwndDlg, DID_OK);
-            HWND hwndCancel = WinWindowFromID(hwndDlg, DID_CANCEL);
+            HWND    hwnd = hwndDlg, hwndTmp;
 
-            WinEnableWindow(hwndOK, TRUE);
-            WinSetWindowULong(hwndDlg, QWL_DEFBUTTON, DID_OK);
-            WinSetWindowBits(hwndOK, QWL_STYLE, -1, WS_GROUP | BS_DEFAULT );
-            WinSetWindowBits(hwndCancel, QWL_STYLE, 0, WS_GROUP | BS_DEFAULT);
+            // find the Browse dialog if it is open
+            HENUM   henum = WinBeginEnumWindows(HWND_DESKTOP);
+            while (hwndTmp = WinGetNextWindow(henum))
+                if (WinQueryWindow(hwndTmp, QW_OWNER) == hwndDlg)
+                {
+                    hwnd = hwndTmp;
+                    break;
+                }
+            WinEndEnumWindows(henum);
+
+            WinSetFocus (HWND_DESKTOP, hwnd);
+            return(happ);
         }
 
-        winhSetEntryFieldLimit(hwndStartup, CCHMAXPATH);
-        WinSetWindowText(hwndStartup, pcszStartupDir);
+        /* V0.9.14 This is a very bad idea as it means the desktop is disabled;
+        this is one of the things that causes Win-OS/2 full screen to fail
+        V0.9.14 (2001-08-03) [pr]
+        if (!hwndOwner)
+            hwndOwner = cmnQueryActiveDesktopHWND(); */
 
-        cmnSetControlsFont(hwndDlg, 1, 10000);
-        winhSetDlgItemChecked(hwndDlg, ID_XFD_RUN_AUTOCLOSE, TRUE);
-        winhSetDlgItemChecked(hwndDlg, ID_XFD_RUN_ENHANCED, TRUE); // V0.9.14
-        winhCenterWindow(hwndDlg);
-
-        // go!
-        if (WinProcessDlg(hwndDlg) == DID_OK)
+        if (hwndDlg = WinLoadDlg(HWND_DESKTOP,
+                                 hwndOwner,
+                                 fnwpRunCommandLine,
+                                 cmnQueryNLSModuleHandle(FALSE),
+                                 ID_XFD_RUN,
+                                 NULL))
         {
-            PSZ pszCommand = winhQueryWindowText(hwndCommand);
-            PSZ pszStartup = winhQueryWindowText(hwndStartup);
+            HWND    hwndCommand = WinWindowFromID(hwndDlg, ID_XFD_RUN_COMMAND),
+                    hwndStartup = WinWindowFromID(hwndDlg, ID_XFD_RUN_STARTUPDIR);
 
-            if (pszCommand)
+            winhSetEntryFieldLimit(hwndCommand, CCHMAXPATH);
+            if (LoadRunHistory(hwndCommand))
             {
-                APIRET  arc = NO_ERROR;
-                PSZ     pszExec,
-                        pParams = NULL;
-                CHAR    szExecutable[CCHMAXPATH];
+                HWND hwndOK = WinWindowFromID(hwndDlg, DID_OK);
+                HWND hwndCancel = WinWindowFromID(hwndDlg, DID_CANCEL);
 
-                UpdateRunHistory(hwndCommand);
-                SaveRunHistory(hwndCommand);
-                if (!pszStartup)
-                {
-                    pszStartup = strdup("?:\\");
-                    *pszStartup = doshQueryBootDrive();
-                }
-
-                pszExec = StripParams(pszCommand,
-                                      &pParams);
-                if (!pszExec)
-                    arc = ERROR_INVALID_PARAMETER;
-                else
-                {
-                    arc = doshFindExecutable(pszExec,
-                                             szExecutable,
-                                             sizeof(szExecutable),
-                                             G_apcszExtensions,
-                                             ARRAYITEMCOUNT(G_apcszExtensions));
-                    free(pszExec);
-                }
-
-                if (arc != NO_ERROR)
-                {
-                    PSZ pszError;
-                    if (pszError = doshQuerySysErrorMsg(arc))
-                    {
-                        cmnMessageBox(hwndOwner,
-                                      pszCommand,
-                                      pszError,
-                                      MB_CANCEL);
-                        free(pszError);
-                    }
-                }
-                else
-                {
-                    PROGDETAILS pd;
-                    ULONG   ulDosAppType, ulFlags = 0;
-                    memset(&pd, 0, sizeof(pd));
-
-                    if (!(arc = appQueryAppType(szExecutable,
-                                                &ulDosAppType,
-                                                &pd.progt.progc)))
-                    {
-                        pd.progt.fbVisible = SHE_VISIBLE;
-                        pd.pszExecutable = szExecutable;
-                        nlsUpper(szExecutable, 0);
-                        pd.pszParameters = (PSZ)pParams;
-                        pd.pszStartupDir = pszStartup;
-
-                        pd.swpInitial.hwndInsertBehind = HWND_TOP; // V0.9.14
-                        if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_MINIMIZED))
-                            pd.swpInitial.fl = SWP_MINIMIZE;
-                        else
-                            pd.swpInitial.fl = SWP_ACTIVATE; // V0.9.14
-
-                        if (!winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_AUTOCLOSE))
-                            pd.swpInitial.fl |= SWP_NOAUTOCLOSE; // V0.9.14
-
-                        if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_FULLSCREEN))
-                            ulFlags |= APP_RUN_FULLSCREEN;
-
-                        if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_ENHANCED))
-                            ulFlags |= APP_RUN_ENHANCED;
-                        else
-                            ulFlags |= APP_RUN_STANDARD;
-
-                        if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_SEPARATE))
-                            ulFlags |= APP_RUN_SEPARATE;
-
-                        arc = appStartApp(NULLHANDLE,        // no notify
-                                          &pd,
-                                          ulFlags, //V0.9.14
-                                          &happ,
-                                          0,
-                                          NULL);
-                    }
-                }
+                WinEnableWindow(hwndOK, TRUE);
+                WinSetWindowULong(hwndDlg, QWL_DEFBUTTON, DID_OK);
+                WinSetWindowBits(hwndOK, QWL_STYLE, -1, WS_GROUP | BS_DEFAULT );
+                WinSetWindowBits(hwndCancel, QWL_STYLE, 0, WS_GROUP | BS_DEFAULT);
             }
 
-            if (pszCommand)
-                free(pszCommand);
-            if (pszStartup)
-                free(pszStartup);
+            winhSetEntryFieldLimit(hwndStartup, CCHMAXPATH);
+            WinSetWindowText(hwndStartup, pcszStartupDir);
+
+            cmnSetControlsFont(hwndDlg, 1, 10000);
+            winhSetDlgItemChecked(hwndDlg, ID_XFD_RUN_AUTOCLOSE, TRUE);
+            winhSetDlgItemChecked(hwndDlg, ID_XFD_RUN_ENHANCED, TRUE); // V0.9.14
+            winhCenterWindow(hwndDlg);
+
+            // go!
+            if (WinProcessDlg(hwndDlg) == DID_OK)
+            {
+                PSZ pszCommand = winhQueryWindowText(hwndCommand);
+                PSZ pszStartup = winhQueryWindowText(hwndStartup);
+
+                if (pszCommand)
+                {
+                    APIRET  arc = NO_ERROR;
+                    PSZ     pszExec,
+                            pParams = NULL;
+                    CHAR    szExecutable[CCHMAXPATH];
+
+                    UpdateRunHistory(hwndCommand);
+                    SaveRunHistory(hwndCommand);
+                    if (!pszStartup)
+                    {
+                        pszStartup = strdup("?:\\");
+                        *pszStartup = doshQueryBootDrive();
+                    }
+
+                    pszExec = StripParams(pszCommand,
+                                          &pParams);
+                    if (!pszExec)
+                        arc = ERROR_INVALID_PARAMETER;
+                    else
+                    {
+                        arc = doshFindExecutable(pszExec,
+                                                 szExecutable,
+                                                 sizeof(szExecutable),
+                                                 G_apcszExtensions,
+                                                 ARRAYITEMCOUNT(G_apcszExtensions));
+                        free(pszExec);
+                    }
+
+                    if (arc != NO_ERROR)
+                    {
+                        PSZ pszError;
+                        if (pszError = doshQuerySysErrorMsg(arc))
+                        {
+                            cmnMessageBox(hwndOwner,
+                                          pszCommand,
+                                          pszError,
+                                          MB_CANCEL);
+                            free(pszError);
+                        }
+                    }
+                    else
+                    {
+                        PROGDETAILS pd;
+                        ULONG   ulDosAppType, ulFlags = 0;
+                        memset(&pd, 0, sizeof(pd));
+
+                        if (!(arc = appQueryAppType(szExecutable,
+                                                    &ulDosAppType,
+                                                    &pd.progt.progc)))
+                        {
+                            pd.progt.fbVisible = SHE_VISIBLE;
+                            pd.pszExecutable = szExecutable;
+                            nlsUpper(szExecutable, 0);
+                            pd.pszParameters = (PSZ)pParams;
+                            pd.pszStartupDir = pszStartup;
+
+                            pd.swpInitial.hwndInsertBehind = HWND_TOP; // V0.9.14
+                            if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_MINIMIZED))
+                                pd.swpInitial.fl = SWP_MINIMIZE;
+                            else
+                                pd.swpInitial.fl = SWP_ACTIVATE; // V0.9.14
+
+                            if (!winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_AUTOCLOSE))
+                                pd.swpInitial.fl |= SWP_NOAUTOCLOSE; // V0.9.14
+
+                            if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_FULLSCREEN))
+                                ulFlags |= APP_RUN_FULLSCREEN;
+
+                            if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_ENHANCED))
+                                ulFlags |= APP_RUN_ENHANCED;
+                            else
+                                ulFlags |= APP_RUN_STANDARD;
+
+                            if (winhIsDlgItemChecked(hwndDlg, ID_XFD_RUN_SEPARATE))
+                                ulFlags |= APP_RUN_SEPARATE;
+
+                            arc = appStartApp(NULLHANDLE,        // no notify
+                                              &pd,
+                                              ulFlags, //V0.9.14
+                                              &happ,
+                                              0,
+                                              NULL);
+                        }
+                    }
+                }
+
+                if (pszCommand)
+                    free(pszCommand);
+                if (pszStartup)
+                    free(pszStartup);
+            }
+            WinDestroyWindow(hwndDlg);
+            hwndDlg = NULLHANDLE; // V0.9.14
         }
-        WinDestroyWindow(hwndDlg);
-        hwndDlg = NULLHANDLE; // V0.9.14
     }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
 
     return (happ);      // V0.9.12 (2001-05-26) [umoeller]
 }

@@ -125,9 +125,7 @@
  *
  ********************************************************************/
 
-MRESULT EXPENTRY krn_fnwpAPIObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
-
-MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
+VOID krnCreateObjectWindows(VOID);
 
 #ifdef __XWPMEMDEBUG__
 VOID krnMemoryError(PCSZ pcszMsg);
@@ -1058,8 +1056,8 @@ static ULONG CheckDesktop(PXFILE pLogFile,
  *      a) Initialize XWorkplace's globals: the GLOBALSETTINGS,
  *         the KERNELGLOBALS, and such.
  *
- *      b) Create the Thread-1 object window (krn_fnwpThread1Object)
- *         and the API object window (krn_fnwpAPIObject).
+ *      b) Create the Thread-1 object window (fnwpThread1Object)
+ *         and the API object window (fnwpAPIObject).
  *
  *      c) If the "Shift" key is pressed, show the "Panic" dialog
  *         (new with V0.9.0). In that case, we pause the WPS
@@ -1177,7 +1175,7 @@ VOID initMain(VOID)
                                     // moved to xthreads.c V0.9.9 (2001-04-04) [umoeller]
 
     // create thread-1 object window
-    WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
+    /* WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
                      (PSZ)WNDCLASS_THREAD1OBJECT,    // class name
                      (PFNWP)krn_fnwpThread1Object,   // Window procedure
                      0,                  // class style
@@ -1185,23 +1183,13 @@ VOID initMain(VOID)
     G_KernelGlobals.hwndThread1Object
         = winhCreateObjectWindow(WNDCLASS_THREAD1OBJECT, // class name
                                  NULL);        // create params
+    */
+
+    krnCreateObjectWindows();       // V0.9.18 (2002-03-27) [umoeller]
 
     doshWriteLogEntry(pLogFile,
                       "XWorkplace thread-1 object window created, HWND 0x%lX",
                       G_KernelGlobals.hwndThread1Object);
-
-    // store HAB of WPS thread 1 V0.9.9 (2001-04-04) [umoeller]
-    G_habThread1 = WinQueryAnchorBlock(G_KernelGlobals.hwndThread1Object);
-
-    // create API object window V0.9.9 (2001-03-23) [umoeller]
-    WinRegisterClass(G_habThread1,
-                     (PSZ)WNDCLASS_APIOBJECT,    // class name
-                     (PFNWP)krn_fnwpAPIObject,   // Window procedure
-                     0,                  // class style
-                     0);                 // extra window words
-    G_KernelGlobals.hwndAPIObject
-        = winhCreateObjectWindow(WNDCLASS_APIOBJECT, // class name
-                                 NULL);        // create params
 
     doshWriteLogEntry(pLogFile,
                       "XWorkplace API object window created, HWND 0x%lX",

@@ -14,13 +14,13 @@
  *
  *      -- the KERNELGLOBALS interface (krnQueryGlobals);
  *
- *      -- the thread-1 object window (krn_fnwpThread1Object);
+ *      -- the thread-1 object window (fnwpThread1Object);
  *
  *      In this file, I have assembled code which you might consider
  *      useful for extensions. For example, if you need code to
  *      execute on thread 1 of PMSHELL.EXE (which is required for
  *      some WPS methods to work, unfortunately), you can add a
- *      message to be processed in krn_fnwpThread1Object.
+ *      message to be processed in fnwpThread1Object.
  *
  *      If you need stuff to be executed upon Desktop startup, you can
  *      insert a function into initMain.
@@ -826,8 +826,58 @@ BOOL krnPostDaemonMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
  *
  ********************************************************************/
 
-BOOL     fLimitMsgOpen = FALSE;
-HWND     hwndArchiveStatus = NULLHANDLE;
+static BOOL     G_fLimitMsgOpen = FALSE;
+static HWND     G_hwndArchiveStatus = NULLHANDLE;
+static PFNWP    G_pfnwpStatic = NULL;
+
+static MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
+static MRESULT EXPENTRY fnwpAPIObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
+
+/*
+ *@@ krnCreateObjectWindows:
+ *      called from initMain to create the thread-1 and API
+ *      object windows.
+ *
+ *@@added V0.9.18 (2002-03-27) [umoeller]
+ */
+
+VOID krnCreateObjectWindows(VOID)
+{
+    if (G_KernelGlobals.hwndThread1Object = WinCreateWindow(
+                                                HWND_OBJECT,
+                                                WC_STATIC,
+                                                "",
+                                                0,          // not visible
+                                                0, 0, 10, 10,
+                                                NULLHANDLE, // owner
+                                                HWND_BOTTOM,
+                                                0,
+                                                NULL,
+                                                NULL))
+    {
+        G_pfnwpStatic = WinSubclassWindow(G_KernelGlobals.hwndThread1Object,
+                                          fnwpThread1Object);
+
+        // store HAB of WPS thread 1 V0.9.9 (2001-04-04) [umoeller]
+        G_habThread1 = WinQueryAnchorBlock(G_KernelGlobals.hwndThread1Object);
+    }
+
+    if (G_KernelGlobals.hwndAPIObject = WinCreateWindow(
+                                                HWND_OBJECT,
+                                                WC_STATIC,
+                                                "",
+                                                0,          // not visible
+                                                0, 0, 10, 10,
+                                                NULLHANDLE, // owner
+                                                HWND_BOTTOM,
+                                                0,
+                                                NULL,
+                                                NULL))
+    {
+        G_pfnwpStatic = WinSubclassWindow(G_KernelGlobals.hwndAPIObject,
+                                          fnwpAPIObject);
+    }
+}
 
 /*
  *@@ T1M_DaemonReady:
@@ -889,7 +939,7 @@ static VOID T1M_DaemonReady(VOID)
 /*
  *@@ T1M_OpenObjectFromHandle:
  *      implementation for T1M_OPENOBJECTFROMHANDLE in
- *      krn_fnwpThread1Object.
+ *      fnwpThread1Object.
  *
  *      Parameters:
  *      -- HOBJECT mp1: object handle to open.
@@ -916,174 +966,178 @@ static VOID T1M_OpenObjectFromHandle(HWND hwndObject,
                                      MPARAM mp1,
                                      MPARAM mp2)
 {
-    HOBJECT hobjStart;
-
-    // make sure the desktop is already fully populated
-    // V0.9.16 (2001-10-25) [umoeller]
-    if (!G_KernelGlobals.fDesktopPopulated)
-        return;
-
-    // make sure we're not shutting down,
-    // but allow object hotkeys while confirmation
-    // dialogs are open
-    // V0.9.16 (2001-11-22) [umoeller]
-    if (xsdIsShutdownRunning() > 1)
-        return;
-
-    if (hobjStart = (HOBJECT)mp1)
+    TRY_LOUD(excpt1)
     {
-        if ((ULONG)hobjStart < 0xFFFF0000)
+        HOBJECT hobjStart;
+
+        // make sure the desktop is already fully populated
+        // V0.9.16 (2001-10-25) [umoeller]
+        if (!G_KernelGlobals.fDesktopPopulated)
+            return;
+
+        // make sure we're not shutting down,
+        // but allow object hotkeys while confirmation
+        // dialogs are open
+        // V0.9.16 (2001-11-22) [umoeller]
+        if (xsdIsShutdownRunning() > 1)
+            return;
+
+        if (hobjStart = (HOBJECT)mp1)
         {
-            // normal object handle:
-            WPObject *pobjStart = _wpclsQueryObject(_WPObject,
-                                                    hobjStart);
-
-            #ifdef DEBUG_KEYS
-                _Pmpf(("T1Object: received hobj 0x%lX -> 0x%lX",
-                        hobjStart,
-                        pobjStart));
-            #endif
-
-            if (pobjStart)
+            if ((ULONG)hobjStart < 0xFFFF0000)
             {
-                HWND hwnd;
-
-#ifndef __NOXSYSTEMSOUNDS__
-                if ((ULONG)mp2 == 0)
-                    // object hotkey, not screen corner:
-                    cmnPlaySystemSound(MMSOUND_XFLD_HOTKEYPRSD);
-                                // V0.9.3 (2000-04-20) [umoeller]
-#endif
-
-                // open the object, or resurface if already open
-                hwnd = _wpViewObject(pobjStart,
-                                     NULLHANDLE,   // hwndCnr (?!?)
-                                     OPEN_DEFAULT,
-                                     0);           // "optional parameter" (?!?)
+                // normal object handle:
+                WPObject *pobjStart = _wpclsQueryObject(_WPObject,
+                                                        hobjStart);
 
                 #ifdef DEBUG_KEYS
-                    _Pmpf(("T1M_OpenObjectFromHandle: opened hwnd 0x%lX", hwnd));
+                    _Pmpf(("T1Object: received hobj 0x%lX -> 0x%lX",
+                            hobjStart,
+                            pobjStart));
                 #endif
 
-                if (hwnd)
+                if (pobjStart)
                 {
-                    if (WinIsWindow(WinQueryAnchorBlock(hwndObject),
-                                    hwnd))
+                    HWND hwnd;
+
+    #ifndef __NOXSYSTEMSOUNDS__
+                    if ((ULONG)mp2 == 0)
+                        // object hotkey, not screen corner:
+                        cmnPlaySystemSound(MMSOUND_XFLD_HOTKEYPRSD);
+                                    // V0.9.3 (2000-04-20) [umoeller]
+    #endif
+
+                    // open the object, or resurface if already open
+                    hwnd = _wpViewObject(pobjStart,
+                                         NULLHANDLE,   // hwndCnr (?!?)
+                                         OPEN_DEFAULT,
+                                         0);           // "optional parameter" (?!?)
+
+                    #ifdef DEBUG_KEYS
+                        _Pmpf(("T1M_OpenObjectFromHandle: opened hwnd 0x%lX", hwnd));
+                    #endif
+
+                    if (hwnd)
                     {
-                        // it's a window:
-                        // move to front
-                        WinSetActiveWindow(HWND_DESKTOP, hwnd);
-                    }
-                    else
-                    {
-                        // wpViewObject only returns a window handle for
-                        // WPS windows. By contrast, if a program object is
-                        // started, an obscure USHORT value is returned.
-                        // I suppose this is a HAPP instead.
-                        // From my testing, the lower byte (0xFF) contains
-                        // the session ID of the started application, while
-                        // the higher byte (0xFF00) contains the application
-                        // type, which is:
-                        // --   0x0300  presentation manager
-                        // --   0x0200  VIO
-
-                        // IBM, this is sick.
-
-                        // So now we go thru the switch list and find the
-                        // session which has this lo-byte. V0.9.4 (2000-06-15) [umoeller]
-
-                        PSWBLOCK pSwBlock;
-                                // now using winhQuerySwitchList V0.9.13 (2001-06-23) [umoeller]
-
-                        if (pSwBlock = winhQuerySwitchList(G_habThread1))
+                        if (WinIsWindow(WinQueryAnchorBlock(hwndObject),
+                                        hwnd))
                         {
-                            // loop through all the tasklist entries
-                            ULONG ul;
-                            for (ul = 0; ul < (pSwBlock->cswentry); ul++)
-                            {
-                                #ifdef DEBUG_KEYS
-                                    _Pmpf((" swlist %d: hwnd 0x%lX, hprog 0x%lX, idSession 0x%lX",
-                                            ul,
-                                            pSwBlock->aswentry[ul].swctl.hwnd,
-                                            pSwBlock->aswentry[ul].swctl.hprog, // always 0...
-                                            pSwBlock->aswentry[ul].swctl.idSession));
-                                #endif
+                            // it's a window:
+                            // move to front
+                            WinSetActiveWindow(HWND_DESKTOP, hwnd);
+                        }
+                        else
+                        {
+                            // wpViewObject only returns a window handle for
+                            // WPS windows. By contrast, if a program object is
+                            // started, an obscure USHORT value is returned.
+                            // I suppose this is a HAPP instead.
+                            // From my testing, the lower byte (0xFF) contains
+                            // the session ID of the started application, while
+                            // the higher byte (0xFF00) contains the application
+                            // type, which is:
+                            // --   0x0300  presentation manager
+                            // --   0x0200  VIO
 
-                                if (pSwBlock->aswentry[ul].swctl.idSession == (hwnd & 0xFF))
+                            // IBM, this is sick.
+
+                            // So now we go thru the switch list and find the
+                            // session which has this lo-byte. V0.9.4 (2000-06-15) [umoeller]
+
+                            PSWBLOCK pSwBlock;
+                                    // now using winhQuerySwitchList V0.9.13 (2001-06-23) [umoeller]
+
+                            if (pSwBlock = winhQuerySwitchList(G_habThread1))
+                            {
+                                // loop through all the tasklist entries
+                                ULONG ul;
+                                for (ul = 0; ul < (pSwBlock->cswentry); ul++)
                                 {
-                                    // got it:
                                     #ifdef DEBUG_KEYS
-                                        _Pmpf(("      Found!"));
+                                        _Pmpf((" swlist %d: hwnd 0x%lX, hprog 0x%lX, idSession 0x%lX",
+                                                ul,
+                                                pSwBlock->aswentry[ul].swctl.hwnd,
+                                                pSwBlock->aswentry[ul].swctl.hprog, // always 0...
+                                                pSwBlock->aswentry[ul].swctl.idSession));
                                     #endif
 
-                                    WinSetActiveWindow(HWND_DESKTOP,
-                                                       pSwBlock->aswentry[ul].swctl.hwnd);
+                                    if (pSwBlock->aswentry[ul].swctl.idSession == (hwnd & 0xFF))
+                                    {
+                                        // got it:
+                                        #ifdef DEBUG_KEYS
+                                            _Pmpf(("      Found!"));
+                                        #endif
+
+                                        WinSetActiveWindow(HWND_DESKTOP,
+                                                           pSwBlock->aswentry[ul].swctl.hwnd);
+                                    }
                                 }
+                                free(pSwBlock);  // V0.9.7 (2000-11-29) [umoeller]
                             }
-                            free(pSwBlock);  // V0.9.7 (2000-11-29) [umoeller]
                         }
                     }
                 }
             }
-        }
-        else
-        {
-            // special objects:
-            switch ((ULONG)hobjStart)
+            else
             {
-                case 0xFFFF0000:
-                    // show window list
-                    WinPostMsg(cmnQueryActiveDesktopHWND(),
-                               WM_COMMAND,
-                               (MPARAM)0x8011,
-                               MPFROM2SHORT(CMDSRC_MENU,
-                                            TRUE));
-                break;
-
-                case 0xFFFF0001:
+                // special objects:
+                switch ((ULONG)hobjStart)
                 {
-                    // show Desktop's context menu V0.9.1 (99-12-19) [umoeller]
-                    WPObject* pActiveDesktop = cmnQueryActiveDesktop();
-                    HWND hwndFrame = cmnQueryActiveDesktopHWND();
-                    if ((pActiveDesktop) && (hwndFrame))
+                    case 0xFFFF0000:
+                        // show window list
+                        WinPostMsg(cmnQueryActiveDesktopHWND(),
+                                   WM_COMMAND,
+                                   (MPARAM)0x8011,
+                                   MPFROM2SHORT(CMDSRC_MENU,
+                                                TRUE));
+                    break;
+
+                    case 0xFFFF0001:
                     {
-                        HWND hwndClient = wpshQueryCnrFromFrame(hwndFrame);
-                        POINTL ptlPopup = { 0, 0 }; // default: lower left
-                        WinQueryPointerPos(HWND_DESKTOP, &ptlPopup);
-                        /* switch ((ULONG)mp2)
+                        // show Desktop's context menu V0.9.1 (99-12-19) [umoeller]
+                        WPObject* pActiveDesktop = cmnQueryActiveDesktop();
+                        HWND hwndFrame = cmnQueryActiveDesktopHWND();
+                        if ((pActiveDesktop) && (hwndFrame))
                         {
-                            // corner reached:
-                            case 2: // top left
-                                ptlPopup.x = 0;
-                                ptlPopup.y = WinQuerySysValue(HWND_DESKTOP, SV_CYSCREEN);
-                            break;
+                            HWND hwndClient = wpshQueryCnrFromFrame(hwndFrame);
+                            POINTL ptlPopup = { 0, 0 }; // default: lower left
+                            WinQueryPointerPos(HWND_DESKTOP, &ptlPopup);
+                            /* switch ((ULONG)mp2)
+                            {
+                                // corner reached:
+                                case 2: // top left
+                                    ptlPopup.x = 0;
+                                    ptlPopup.y = WinQuerySysValue(HWND_DESKTOP, SV_CYSCREEN);
+                                break;
 
-                            case 3: // lower right
-                                ptlPopup.x = WinQuerySysValue(HWND_DESKTOP, SV_CXSCREEN);
-                                ptlPopup.y = 0;
-                            break;
+                                case 3: // lower right
+                                    ptlPopup.x = WinQuerySysValue(HWND_DESKTOP, SV_CXSCREEN);
+                                    ptlPopup.y = 0;
+                                break;
 
-                            case 4: // top right
-                                ptlPopup.x = WinQuerySysValue(HWND_DESKTOP, SV_CXSCREEN);
-                                ptlPopup.y = WinQuerySysValue(HWND_DESKTOP, SV_CYSCREEN);
-                            break;
-                        } */
-                        _wpDisplayMenu(pActiveDesktop,
-                                       hwndFrame,       // owner
-                                       hwndClient,
-                                       &ptlPopup,
-                                       MENU_OPENVIEWPOPUP,
-                                       0);      // reserved
+                                case 4: // top right
+                                    ptlPopup.x = WinQuerySysValue(HWND_DESKTOP, SV_CXSCREEN);
+                                    ptlPopup.y = WinQuerySysValue(HWND_DESKTOP, SV_CYSCREEN);
+                                break;
+                            } */
+                            _wpDisplayMenu(pActiveDesktop,
+                                           hwndFrame,       // owner
+                                           hwndClient,
+                                           &ptlPopup,
+                                           MENU_OPENVIEWPOPUP,
+                                           0);      // reserved
+                        }
                     }
+                    break;
                 }
-                break;
             }
         }
     }
+    CATCH(excpt1) {} END_CATCH();
 }
 
 /*
- *@@ krn_fnwpThread1Object:
+ *@@ fnwpThread1Object:
  *      wnd proc for the thread-1 object window.
  *
  *      This is needed for processing messages which must be
@@ -1129,603 +1183,594 @@ static VOID T1M_OpenObjectFromHandle(HWND hwndObject,
  *@@changed V0.9.14 (2001-08-07) [pr]: added T1M_OPENRUNDIALOG
  */
 
-MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MPARAM  mrc = NULL;
-    BOOL    fCallDefault = FALSE;
 
-    TRY_LOUD(excpt1)
+    switch(msg)
     {
-        switch(msg)
-        {
-            /*
-             * WM_TIMER:
-             *
-             */
+        /*
+         * WM_TIMER:
+         *
+         */
 
-            case WM_TIMER:
-                switch ((USHORT)mp1)    // timer ID
-                {
-                    case 1:
-                        // archive status timer
-                        WinDestroyWindow(hwndArchiveStatus);
-                    break;
+        case WM_TIMER:
+            switch ((USHORT)mp1)    // timer ID
+            {
+                case 1:
+                    // archive status timer
+                    WinDestroyWindow(G_hwndArchiveStatus);
+                break;
 
 #ifndef __NOPAGER__
-                    case 2: // started from T1M_PAGERCONFIGDELAYED
-                    {
-                        PXWPGLOBALSHARED   pXwpGlobalShared = G_KernelGlobals.pXwpGlobalShared;
+                case 2: // started from T1M_PAGERCONFIGDELAYED
+                {
+                    PXWPGLOBALSHARED   pXwpGlobalShared;
 
-                        if (pXwpGlobalShared)
-                            if (pXwpGlobalShared->hwndDaemonObject)
-                            {
-                                // cross-process send msg: this
-                                // does not return until the daemon
-                                // has re-read the data
-                                BOOL brc = (BOOL)WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
-                                                            XDM_PAGERCONFIG,
-                                                            (MPARAM)G_XPagerConfigFlags,
-                                                            0);
-                                // reset flags
-                                G_XPagerConfigFlags = 0;
-                            }
+                    if (    (pXwpGlobalShared = G_KernelGlobals.pXwpGlobalShared)
+                         && (pXwpGlobalShared->hwndDaemonObject)
+                       )
+                    {
+                        // cross-process send msg: this
+                        // does not return until the daemon
+                        // has re-read the data
+                        BOOL brc = (BOOL)WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
+                                                    XDM_PAGERCONFIG,
+                                                    (MPARAM)G_XPagerConfigFlags,
+                                                    0);
+                        // reset flags
+                        G_XPagerConfigFlags = 0;
                     }
-                    break;
+                }
+                break;
 #endif
-                }
-
-                // stop timer; this was missing!! V0.9.3 (2000-04-09) [umoeller]
-                WinStopTimer(WinQueryAnchorBlock(hwndObject),
-                             hwndObject,
-                             (USHORT)mp1);      // timer ID
-            break;
-
-            /*
-             * WM_APPTERMINATENOTIFY:
-             *      this gets posted from PM since we use
-             *      this object window as the notify window
-             *      to WinStartApp when we start program objects
-             *      (progOpenProgram, filesys/program.c).
-             *
-             *      We must then remove source emphasis for
-             *      the corresponding object.
-             */
-
-            case WM_APPTERMINATENOTIFY:
-                progAppTerminateNotify((HAPP)mp1);
-            break;
-
-            /*
-             *@@ T1M_LIMITREACHED:
-             *      this is posted by cmnAppendMi2List when too
-             *      many menu items are in use, i.e. the user has
-             *      opened a zillion folder content menus; we
-             *      will display a warning dlg, which will also
-             *      destroy the open menu.
-             */
-
-            case T1M_LIMITREACHED:
-                if (!fLimitMsgOpen)
-                {
-                    // avoid more than one dlg window
-                    fLimitMsgOpen = TRUE;
-                    cmnSetDlgHelpPanel(ID_XFH_LIMITREACHED);
-                    WinDlgBox(HWND_DESKTOP,         // parent is desktop
-                              HWND_DESKTOP,             // owner is desktop
-                              (PFNWP)cmn_fnwpDlgWithHelp,    // dialog procedure, defd. at bottom
-                              cmnQueryNLSModuleHandle(FALSE),  // from resource file
-                              ID_XFD_LIMITREACHED,        // dialog resource id
-                              (PVOID)NULL);             // no dialog parameters
-                    fLimitMsgOpen = FALSE;
-                }
-            break;
-
-            /*
-             *@@ T1M_EXCEPTIONCAUGHT:
-             *      this is posted from the various XFolder threads
-             *      when something trapped; it is assumed that
-             *      mp1 is a PSZ to an error msg allocated with
-             *      malloc(), and after displaying the error,
-             *      (PSZ)mp1 is freed here. If mp2 != NULL, the WPS will
-             *      be restarted (this is demanded by XSHutdown traps).
-             *
-             *@@changed V0.9.4 (2000-08-03) [umoeller]: fixed heap bug
-             */
-
-            case T1M_EXCEPTIONCAUGHT:
-                if (mp1)
-                {
-                    XSTRING strMsg;
-                    xstrInitSet(&strMsg, (PSZ)mp1);
-                    if (mp2)
-                    {
-                        // restart Desktop: Yes/No box
-                        if (WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
-                                          strMsg.psz,
-                                          (PSZ)"XFolder: Exception caught",
-                                          0,
-                                          MB_YESNO | MB_ICONEXCLAMATION | MB_MOVEABLE)
-                                 == MBID_YES)
-                            // if yes: terminate the current process,
-                            // which is PMSHELL.EXE. We cannot use DosExit()
-                            // directly, because this might mess up the
-                            // C runtime library.
-                            exit(99);
-                    }
-                    else
-                    {
-                        // just report:
-                        xstrcat(&strMsg,
-                                "\n\nPlease post a bug report to "
-                                "xworkplace-user@yahoogroups.com and attach the the file "
-                                "XWPTRAP.LOG, which you will find in the root "
-                                "directory of your boot drive. ", 0);
-                        winhDebugBox(HWND_DESKTOP, "XFolder: Exception caught", strMsg.psz);
-                    }
-
-                    xstrClear(&strMsg);
-                }
-            break;
-
-            /*
-             *@@ T1M_QUERYXFOLDERVERSION:
-             *      this msg may be send to the XFolder object
-             *      window from external programs to query the
-             *      XFolder version number which is currently
-             *      installed. We will return:
-             *          mrc = MPFROM2SHORT(major, minor)
-             *      which may be broken down by the external
-             *      program using the SHORT1/2FROMMP macros.
-             *      This is used by the XShutdown command-line
-             *      interface (XSHUTDWN.EXE) to assert that
-             *      XFolder is up and running, but can be used
-             *      by other software too.
-             */
-
-            case T1M_QUERYXFOLDERVERSION:
-            {
-                ULONG   ulMajor = 0,
-                        ulMinor = 0;
-                sscanf(XFOLDER_VERSION, // e.g. 0.9.2, this is defined in dlgids.h
-                        "%d.%d", &ulMajor, &ulMinor);   // V0.9.0
-
-                mrc = MPFROM2SHORT(ulMajor, ulMinor);
             }
-            break;
 
-            /*
-             *@@ T1M_EXTERNALSHUTDOWN:
-             *      this msg may be posted to the XFolder object
-             *      window from external programs to initiate
-             *      the eXtended shutdown. mp1 is assumed to
-             *      point to a block of shared memory containing
-             *      a SHUTDOWNPARAMS structure.
-             */
+            // stop timer; this was missing!! V0.9.3 (2000-04-09) [umoeller]
+            WinStopTimer(WinQueryAnchorBlock(hwndObject),
+                         hwndObject,
+                         (USHORT)mp1);      // timer ID
+        break;
 
-            case T1M_EXTERNALSHUTDOWN:
+        /*
+         * WM_APPTERMINATENOTIFY:
+         *      this gets posted from PM since we use
+         *      this object window as the notify window
+         *      to WinStartApp when we start program objects
+         *      (progOpenProgram, filesys/program.c).
+         *
+         *      We must then remove source emphasis for
+         *      the corresponding object.
+         */
+
+        case WM_APPTERMINATENOTIFY:
+            progAppTerminateNotify((HAPP)mp1);
+        break;
+
+        /*
+         *@@ T1M_LIMITREACHED:
+         *      this is posted by cmnAppendMi2List when too
+         *      many menu items are in use, i.e. the user has
+         *      opened a zillion folder content menus; we
+         *      will display a warning dlg, which will also
+         *      destroy the open menu.
+         */
+
+        case T1M_LIMITREACHED:
+            if (!G_fLimitMsgOpen)
             {
-                PSHUTDOWNPARAMS psdpShared = (PSHUTDOWNPARAMS)mp1;
+                // avoid more than one dlg window
+                G_fLimitMsgOpen = TRUE;
+                cmnSetDlgHelpPanel(ID_XFH_LIMITREACHED);
+                WinDlgBox(HWND_DESKTOP,         // parent is desktop
+                          HWND_DESKTOP,             // owner is desktop
+                          (PFNWP)cmn_fnwpDlgWithHelp,    // dialog procedure, defd. at bottom
+                          cmnQueryNLSModuleHandle(FALSE),  // from resource file
+                          ID_XFD_LIMITREACHED,        // dialog resource id
+                          (PVOID)NULL);             // no dialog parameters
+                G_fLimitMsgOpen = FALSE;
+            }
+        break;
 
-                if ((ULONG)mp2 != 1234)
+        /*
+         *@@ T1M_EXCEPTIONCAUGHT:
+         *      this is posted from the various XFolder threads
+         *      when something trapped; it is assumed that
+         *      mp1 is a PSZ to an error msg allocated with
+         *      malloc(), and after displaying the error,
+         *      (PSZ)mp1 is freed here. If mp2 != NULL, the WPS will
+         *      be restarted (this is demanded by XSHutdown traps).
+         *
+         *@@changed V0.9.4 (2000-08-03) [umoeller]: fixed heap bug
+         */
+
+        case T1M_EXCEPTIONCAUGHT:
+            if (mp1)
+            {
+                XSTRING strMsg;
+                xstrInitSet(&strMsg, (PSZ)mp1);
+                if (mp2)
                 {
-                    // not special code:
-                    // that's the send-msg from XSHUTDWN.EXE;
-                    // copy the memory to local memory and
-                    // return, otherwise XSHUTDWN.EXE hangs
-                    APIRET arc = DosGetSharedMem(psdpShared, PAG_READ | PAG_WRITE);
-                    if (arc == NO_ERROR)
-                    {
-                        // shared memory successfully accessed:
-                        // the block has now two references (XSHUTDWN.EXE and
-                        // PMSHELL.EXE);
-                        // repost msg with that ptr to ourselves
-                        WinPostMsg(hwndObject, T1M_EXTERNALSHUTDOWN, mp1, (MPARAM)1234);
-                        // return TRUE to XSHUTDWN.EXE, which will then terminate
-                        mrc = (MPARAM)TRUE;
-                        // after XSHUTDWN.EXE terminates, the shared mem
-                        // is not freed yet, because we still own it;
-                        // we process that in the second msg (below)
-                    }
-                    else
-                    {
-                        winhDebugBox(0,
-                                 "External XShutdown call",
-                                 "Error calling DosGetSharedMem.");
-                        mrc = (MPARAM)FALSE;
-                    }
+                    // restart Desktop: Yes/No box
+                    if (WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
+                                      strMsg.psz,
+                                      (PSZ)"XFolder: Exception caught",
+                                      0,
+                                      MB_YESNO | MB_ICONEXCLAMATION | MB_MOVEABLE)
+                             == MBID_YES)
+                        // if yes: terminate the current process,
+                        // which is PMSHELL.EXE. We cannot use DosExit()
+                        // directly, because this might mess up the
+                        // C runtime library.
+                        exit(99);
                 }
                 else
                 {
-                    // mp2 == 1234: second call
-                    xsdInitiateShutdownExt(psdpShared);
-                    // finally free shared mem
-                    DosFreeMem(psdpShared);
+                    // just report:
+                    xstrcat(&strMsg,
+                            "\n\nPlease post a bug report to "
+                            "xworkplace-user@yahoogroups.com and attach the the file "
+                            "XWPTRAP.LOG, which you will find in the root "
+                            "directory of your boot drive. ", 0);
+                    winhDebugBox(HWND_DESKTOP, "XFolder: Exception caught", strMsg.psz);
+                }
+
+                xstrClear(&strMsg);
+            }
+        break;
+
+        /*
+         *@@ T1M_QUERYXFOLDERVERSION:
+         *      this msg may be send to the XFolder object
+         *      window from external programs to query the
+         *      XFolder version number which is currently
+         *      installed. We will return:
+         *          mrc = MPFROM2SHORT(major, minor)
+         *      which may be broken down by the external
+         *      program using the SHORT1/2FROMMP macros.
+         *      This is used by the XShutdown command-line
+         *      interface (XSHUTDWN.EXE) to assert that
+         *      XFolder is up and running, but can be used
+         *      by other software too.
+         */
+
+        case T1M_QUERYXFOLDERVERSION:
+        {
+            ULONG   ulMajor = 0,
+                    ulMinor = 0;
+            sscanf(XFOLDER_VERSION, // e.g. 0.9.2, this is defined in dlgids.h
+                    "%d.%d", &ulMajor, &ulMinor);   // V0.9.0
+
+            mrc = MPFROM2SHORT(ulMajor, ulMinor);
+        }
+        break;
+
+        /*
+         * T1M_EXTERNALSHUTDOWN:
+         *      this msg may be posted to the XFolder object
+         *      window from external programs to initiate
+         *      the eXtended shutdown. mp1 is assumed to
+         *      point to a block of shared memory containing
+         *      a SHUTDOWNPARAMS structure.
+         * removed V0.9.18 (2002-03-27) [umoeller]
+         */
+
+        /* case T1M_EXTERNALSHUTDOWN:
+        {
+            PSHUTDOWNPARAMS psdpShared = (PSHUTDOWNPARAMS)mp1;
+
+            if ((ULONG)mp2 != 1234)
+            {
+                // not special code:
+                // that's the send-msg from XSHUTDWN.EXE;
+                // copy the memory to local memory and
+                // return, otherwise XSHUTDWN.EXE hangs
+                APIRET arc = DosGetSharedMem(psdpShared, PAG_READ | PAG_WRITE);
+                if (arc == NO_ERROR)
+                {
+                    // shared memory successfully accessed:
+                    // the block has now two references (XSHUTDWN.EXE and
+                    // PMSHELL.EXE);
+                    // repost msg with that ptr to ourselves
+                    WinPostMsg(hwndObject, T1M_EXTERNALSHUTDOWN, mp1, (MPARAM)1234);
+                    // return TRUE to XSHUTDWN.EXE, which will then terminate
+                    mrc = (MPARAM)TRUE;
+                    // after XSHUTDWN.EXE terminates, the shared mem
+                    // is not freed yet, because we still own it;
+                    // we process that in the second msg (below)
+                }
+                else
+                {
+                    winhDebugBox(0,
+                             "External XShutdown call",
+                             "Error calling DosGetSharedMem.");
+                    mrc = (MPARAM)FALSE;
                 }
             }
-            break;
+            else
+            {
+                // mp2 == 1234: second call
+                xsdInitiateShutdownExt(psdpShared);
+                // finally free shared mem
+                DosFreeMem(psdpShared);
+            }
+        }
+        break; */
 
-            /*
-             *@@ T1M_DESTROYARCHIVESTATUS:
-             *      this gets posted from arcCheckIfBackupNeeded,
-             *      which gets called from initMain
-             *      with the handle of this object wnd and this message ID.
-             */
+        /*
+         *@@ T1M_DESTROYARCHIVESTATUS:
+         *      this gets posted from arcCheckIfBackupNeeded,
+         *      which gets called from initMain
+         *      with the handle of this object wnd and this message ID.
+         */
 
-            case T1M_DESTROYARCHIVESTATUS:
-                hwndArchiveStatus = (HWND)mp1;
-                WinStartTimer(WinQueryAnchorBlock(hwndObject),
-                              hwndObject,
-                              1,
-                              10);
-            break;
+        case T1M_DESTROYARCHIVESTATUS:
+            G_hwndArchiveStatus = (HWND)mp1;
+            WinStartTimer(WinQueryAnchorBlock(hwndObject),
+                          hwndObject,
+                          1,
+                          10);
+        break;
 
-            /*
-             *@@ T1M_OPENOBJECTFROMHANDLE:
-             *      this can be posted to the thread-1 object
-             *      window from anywhere to have an object
-             *      opened in its default view. As opposed to
-             *      WinOpenObject, which opens the object on
-             *      thread 13 (on my system), the thread-1
-             *      object window will always open the object
-             *      on thread 1, which leads to less problems.
-             *
-             *      See T1M_OpenObjectFromHandle for the
-             *      parameters.
-             *
-             *      Most notably, this is posted from the daemon
-             *      to open "screen border objects" and global
-             *      hotkey objects.
-             */
+        /*
+         *@@ T1M_OPENOBJECTFROMHANDLE:
+         *      this can be posted to the thread-1 object
+         *      window from anywhere to have an object
+         *      opened in its default view. As opposed to
+         *      WinOpenObject, which opens the object on
+         *      thread 13 (on my system), the thread-1
+         *      object window will always open the object
+         *      on thread 1, which leads to less problems.
+         *
+         *      See T1M_OpenObjectFromHandle for the
+         *      parameters.
+         *
+         *      Most notably, this is posted from the daemon
+         *      to open "screen border objects" and global
+         *      hotkey objects.
+         */
 
-            case T1M_OPENOBJECTFROMHANDLE:
-                T1M_OpenObjectFromHandle(hwndObject, mp1, mp2);
-            break;
+        case T1M_OPENOBJECTFROMHANDLE:
+            T1M_OpenObjectFromHandle(hwndObject, mp1, mp2);
+        break;
 
-            /*
-             *@@ T1M_OPENOBJECTFROMPTR:
-             *      this can be posted or sent to the thread-1
-             *      object window from anywhere to have an object
-             *      opened in a specific view and have the HWND
-             *      returned (on send only, of course).
-             *
-             *      This is useful if you must make sure that
-             *      an object view is running on thread 1 and
-             *      nowhere else. Used with the XCenter settings
-             *      view, for example.
-             *
-             *      Parameters:
-             *
-             *      -- WPObject *mp1: SOM object pointer on which
-             *         wpViewObject is to be invoked.
-             *
-             *      -- ULONG mp2: ulView to open (OPEN_DEFAULT,
-             *         OPEN_SETTINGS, ...)
-             *
-             *      wpViewObject will be invoked with hwndCnr
-             *      and param == NULL.
-             *
-             *      Returns the return value of wpViewObject,
-             *      which is either a HWND or a HAPP.
-             *
-             *@@added V0.9.9 (2001-02-06) [umoeller]
-             */
+        /*
+         *@@ T1M_OPENOBJECTFROMPTR:
+         *      this can be posted or sent to the thread-1
+         *      object window from anywhere to have an object
+         *      opened in a specific view and have the HWND
+         *      returned (on send only, of course).
+         *
+         *      This is useful if you must make sure that
+         *      an object view is running on thread 1 and
+         *      nowhere else. Used with the XCenter settings
+         *      view, for example.
+         *
+         *      Parameters:
+         *
+         *      -- WPObject *mp1: SOM object pointer on which
+         *         wpViewObject is to be invoked.
+         *
+         *      -- ULONG mp2: ulView to open (OPEN_DEFAULT,
+         *         OPEN_SETTINGS, ...)
+         *
+         *      wpViewObject will be invoked with hwndCnr
+         *      and param == NULL.
+         *
+         *      Returns the return value of wpViewObject,
+         *      which is either a HWND or a HAPP.
+         *
+         *@@added V0.9.9 (2001-02-06) [umoeller]
+         */
 
-            case T1M_OPENOBJECTFROMPTR:
-                mrc = (MPARAM)_wpViewObject((WPObject*)mp1,
-                                            NULLHANDLE,     // hwndCnr
-                                            (ULONG)mp2,
-                                            0);             // param
-            break;
+        case T1M_OPENOBJECTFROMPTR:
+            mrc = (MPARAM)_wpViewObject((WPObject*)mp1,
+                                        NULLHANDLE,     // hwndCnr
+                                        (ULONG)mp2,
+                                        0);             // param
+        break;
 
-            /*
-             *@@ T1M_MENUITEMSELECTED:
-             *      calls wpMenuItemSelected on thread 1.
-             *      This can be posted or sent, we don't care.
-             *      This is used from the XCenter to make sure
-             *      views won't get opened on the XCenter thread.
-             *
-             *      Parameters:
-             *
-             *      --  WPObject* mp1: object on which to
-             *          invoke wpMenuItemSelected.
-             *
-             *      --  ULONG mp2: menu item ID to pass to
-             *          wpMenuItemSelected.
-             *
-             *      Returns the BOOL rc of wpMenuItemSelected.
-             *
-             *@@added V0.9.11 (2001-04-18) [umoeller]
-             */
+        /*
+         *@@ T1M_MENUITEMSELECTED:
+         *      calls wpMenuItemSelected on thread 1.
+         *      This can be posted or sent, we don't care.
+         *      This is used from the XCenter to make sure
+         *      views won't get opened on the XCenter thread.
+         *
+         *      Parameters:
+         *
+         *      --  WPObject* mp1: object on which to
+         *          invoke wpMenuItemSelected.
+         *
+         *      --  ULONG mp2: menu item ID to pass to
+         *          wpMenuItemSelected.
+         *
+         *      Returns the BOOL rc of wpMenuItemSelected.
+         *
+         *@@added V0.9.11 (2001-04-18) [umoeller]
+         */
 
-            case T1M_MENUITEMSELECTED:
-                mrc = (MPARAM)_wpMenuItemSelected((WPObject*)mp1,
-                                                  NULLHANDLE,       // hwndFrame
-                                                  (ULONG)mp2);
-            break;
+        case T1M_MENUITEMSELECTED:
+            mrc = (MPARAM)_wpMenuItemSelected((WPObject*)mp1,
+                                              NULLHANDLE,       // hwndFrame
+                                              (ULONG)mp2);
+        break;
 
-            /*
-             *@@ T1M_DAEMONREADY:
-             *      posted by the XWorkplace daemon after it has
-             *      successfully created its object window.
-             *      This can happen in two situations:
-             *
-             *      -- during Desktop startup, after initMain
-             *         has started the daemon;
-             *      -- any time later, if the daemon has been restarted
-             *         (shouldn't happen).
-             *
-             *      The thread-1 object window will then send XDM_HOOKINSTALL
-             *      back to the daemon if the global settings have the
-             *      hook enabled.
-             */
+        /*
+         *@@ T1M_DAEMONREADY:
+         *      posted by the XWorkplace daemon after it has
+         *      successfully created its object window.
+         *      This can happen in two situations:
+         *
+         *      -- during Desktop startup, after initMain
+         *         has started the daemon;
+         *      -- any time later, if the daemon has been restarted
+         *         (shouldn't happen).
+         *
+         *      The thread-1 object window will then send XDM_HOOKINSTALL
+         *      back to the daemon if the global settings have the
+         *      hook enabled.
+         */
 
-            case T1M_DAEMONREADY:
-                T1M_DaemonReady();
-            break;
+        case T1M_DAEMONREADY:
+            T1M_DaemonReady();
+        break;
 
 #ifndef __NOPAGER__
-            /*
-             *@@ T1M_PAGERCLOSED:
-             *      this gets posted by dmnKillXPager when
-             *      the user has closed the XPager window.
-             *      We then disable XPager in the GLOBALSETTINGS.
-             *
-             *      Parameters:
-             *      -- BOOL mp1: if TRUE, XPager will be disabled
-             *                   in the global settings.
-             *
-             *@@added V0.9.2 (2000-02-23) [umoeller]
-             *@@changed V0.9.3 (2000-04-25) [umoeller]: added mp1 parameter
-             */
+        /*
+         *@@ T1M_PAGERCLOSED:
+         *      this gets posted by dmnKillXPager when
+         *      the user has closed the XPager window.
+         *      We then disable XPager in the GLOBALSETTINGS.
+         *
+         *      Parameters:
+         *      -- BOOL mp1: if TRUE, XPager will be disabled
+         *                   in the global settings.
+         *
+         *@@added V0.9.2 (2000-02-23) [umoeller]
+         *@@changed V0.9.3 (2000-04-25) [umoeller]: added mp1 parameter
+         */
 
-            case T1M_PAGERCLOSED:
-                if (mp1)
-                    cmnSetSetting(sfEnableXPager, FALSE);
+        case T1M_PAGERCLOSED:
+            if (mp1)
+                cmnSetSetting(sfEnableXPager, FALSE);
 
-                // update "Features" page, if open
-                ntbUpdateVisiblePage(NULL, SP_SETUP_FEATURES);
-            break;
+            // update "Features" page, if open
+            ntbUpdateVisiblePage(NULL, SP_SETUP_FEATURES);
+        break;
 
-            /*
-             *@@ T1M_PAGERCONFIGDELAYED:
-             *      posted by XWPScreen when any XPager configuration
-             *      has changed. We delay sending XDM_PAGERCONFIG to
-             *      the daemon for a little while in order not to overload
-             *      the system, because XPager needs to reconfigure itself
-             *      every time.
-             *
-             *      Parameters:
-             *      -- ULONG mp1: same flags as with XDM_PAGERCONFIG
-             *              mp1.
-             *
-             *@@added V0.9.3 (2000-04-09) [umoeller]
-             */
+        /*
+         *@@ T1M_PAGERCONFIGDELAYED:
+         *      posted by XWPScreen when any XPager configuration
+         *      has changed. We delay sending XDM_PAGERCONFIG to
+         *      the daemon for a little while in order not to overload
+         *      the system, because XPager needs to reconfigure itself
+         *      every time.
+         *
+         *      Parameters:
+         *      -- ULONG mp1: same flags as with XDM_PAGERCONFIG
+         *              mp1.
+         *
+         *@@added V0.9.3 (2000-04-09) [umoeller]
+         */
 
-            case T1M_PAGERCONFIGDELAYED:
-                // add flags to global variable which will be
-                // passed (and reset) when timer elapses
-                G_XPagerConfigFlags |= (ULONG)mp1;
-                // start timer 2
-                WinStartTimer(WinQueryAnchorBlock(hwndObject),
-                              hwndObject,
-                              2,
-                              500);     // half a second delay
-            break;
+        case T1M_PAGERCONFIGDELAYED:
+            // add flags to global variable which will be
+            // passed (and reset) when timer elapses
+            G_XPagerConfigFlags |= (ULONG)mp1;
+            // start timer 2
+            WinStartTimer(WinQueryAnchorBlock(hwndObject),
+                          hwndObject,
+                          2,
+                          500);     // half a second delay
+        break;
 #endif
 
 #ifndef __XWPLITE__
-            /*
-             *@@ T1M_WELCOME:
-             *      posted if XWorkplace has just been installed.
-             *
-             *      This post comes from the Startup thread after
-             *      all other startup processing (startup folders,
-             *      quick open, etc.) has completed, but only if
-             *      the "just installed" flag was set in OS2.INI
-             *      (which has then been removed).
-             *
-             *      Starting with V0.9.9, we now allow the user
-             *      to create the XWorkplace standard objects
-             *      here. We no longer do this from WarpIn because
-             *      we also defer class registration into the OS2.INI
-             *      file to avoid the frequent error messages that
-             *      WarpIN produces otherwise.
-             *
-             *@@added V0.9.7 (2001-01-07) [umoeller]
-             *@@changed V0.9.9 (2001-03-27) [umoeller]: added obj creation here
-             */
+        /*
+         *@@ T1M_WELCOME:
+         *      posted if XWorkplace has just been installed.
+         *
+         *      This post comes from the Startup thread after
+         *      all other startup processing (startup folders,
+         *      quick open, etc.) has completed, but only if
+         *      the "just installed" flag was set in OS2.INI
+         *      (which has then been removed).
+         *
+         *      Starting with V0.9.9, we now allow the user
+         *      to create the XWorkplace standard objects
+         *      here. We no longer do this from WarpIn because
+         *      we also defer class registration into the OS2.INI
+         *      file to avoid the frequent error messages that
+         *      WarpIN produces otherwise.
+         *
+         *@@added V0.9.7 (2001-01-07) [umoeller]
+         *@@changed V0.9.9 (2001-03-27) [umoeller]: added obj creation here
+         */
 
-            case T1M_WELCOME:
-                if (cmnMessageBoxMsg(NULLHANDLE,
-                                     121,
-                                     211,       // create objects?
-                                     MB_OKCANCEL)
-                        == MBID_OK)
-                {
-                    // produce objects NOW
-                    xthrPostFileMsg(FIM_RECREATECONFIGFOLDER,
-                                    (MPARAM)RCF_MAININSTALLFOLDER,
-                                    0);
-                }
-            break;
+        case T1M_WELCOME:
+            if (cmnMessageBoxMsg(NULLHANDLE,
+                                 121,
+                                 211,       // create objects?
+                                 MB_OKCANCEL)
+                    == MBID_OK)
+            {
+                // produce objects NOW
+                xthrPostFileMsg(FIM_RECREATECONFIGFOLDER,
+                                (MPARAM)RCF_MAININSTALLFOLDER,
+                                0);
+            }
+        break;
 #endif
 
-            /*
-             *@@ T1M_PAGERCTXTMENU:
-             *      gets posted from XPager if the user
-             *      right-clicked onto an empty space in the pager
-             *      window (and not on a mini-window).
-             *
-             *      We should then display the XPager context
-             *      menu here because
-             *
-             *      1)  XPager cannot handle the commands in
-             *          the first place (such as open settings)
-             *
-             *      2)  we don't want NLS stuff in the daemon.
-             *
-             *      Parameters:
-             *
-             *      SHORT1FROMMP(mp1): desktop x coordinate of
-             *                         mouse click.
-             *      SHORT2FROMMP(mp1): desktop y coordinate of
-             *                         mouse click.
-             *
-             *@@added V0.9.11 (2001-04-25) [umoeller]
-             */
+        /*
+         *@@ T1M_PAGERCTXTMENU:
+         *      gets posted from XPager if the user
+         *      right-clicked onto an empty space in the pager
+         *      window (and not on a mini-window).
+         *
+         *      We should then display the XPager context
+         *      menu here because
+         *
+         *      1)  XPager cannot handle the commands in
+         *          the first place (such as open settings)
+         *
+         *      2)  we don't want NLS stuff in the daemon.
+         *
+         *      Parameters:
+         *
+         *      SHORT1FROMMP(mp1): desktop x coordinate of
+         *                         mouse click.
+         *      SHORT2FROMMP(mp1): desktop y coordinate of
+         *                         mouse click.
+         *
+         *@@added V0.9.11 (2001-04-25) [umoeller]
+         */
 
-            case T1M_PAGERCTXTMENU:
-                if (!G_hwndXPagerContextMenu)
-                    G_hwndXPagerContextMenu = WinLoadMenu(hwndObject,
-                                                            cmnQueryNLSModuleHandle(FALSE),
-                                                            ID_XSM_PAGERCTXTMENU);
+        case T1M_PAGERCTXTMENU:
+            if (!G_hwndXPagerContextMenu)
+                G_hwndXPagerContextMenu = WinLoadMenu(hwndObject,
+                                                        cmnQueryNLSModuleHandle(FALSE),
+                                                        ID_XSM_PAGERCTXTMENU);
 
-                WinPopupMenu(HWND_DESKTOP,      // parent
-                             hwndObject,        // owner
-                             G_hwndXPagerContextMenu,
-                             SHORT1FROMMP(mp1),
-                             SHORT2FROMMP(mp1),
-                             0,
-                             PU_HCONSTRAIN | PU_VCONSTRAIN | PU_MOUSEBUTTON1
-                                | PU_MOUSEBUTTON2 | PU_KEYBOARD);
-                                    // WM_COMMAND is handled below
-            break;
+            WinPopupMenu(HWND_DESKTOP,      // parent
+                         hwndObject,        // owner
+                         G_hwndXPagerContextMenu,
+                         SHORT1FROMMP(mp1),
+                         SHORT2FROMMP(mp1),
+                         0,
+                         PU_HCONSTRAIN | PU_VCONSTRAIN | PU_MOUSEBUTTON1
+                            | PU_MOUSEBUTTON2 | PU_KEYBOARD);
+                                // WM_COMMAND is handled below
+        break;
 
-            /*
-             * WM_COMMAND:
-             *      handle commands from the XPager context menu
-             *      here (thread-1 object window was specified as
-             *      menu's owner above).
-             * added V0.9.11 (2001-04-25) [umoeller]
-             */
+        /*
+         * WM_COMMAND:
+         *      handle commands from the XPager context menu
+         *      here (thread-1 object window was specified as
+         *      menu's owner above).
+         * added V0.9.11 (2001-04-25) [umoeller]
+         */
 
-            case WM_COMMAND:
-                switch ((USHORT)mp1)
+        case WM_COMMAND:
+            switch ((USHORT)mp1)
+            {
+                case ID_CRMI_PROPERTIES:
                 {
-                    case ID_CRMI_PROPERTIES:
-                    {
-                        // open "Screen" object
-                        HOBJECT hobj;
-                        if (hobj = WinQueryObject((PSZ)XFOLDER_SCREENID))
-                            T1M_OpenObjectFromHandle(hwndObject,
-                                                    (MPARAM)hobj,
-                                                    (MPARAM)0);   // no screen corner
-                    }
-                    break;
-
-                    case ID_CRMI_HELP:
-                        cmnDisplayHelp(NULL,        // active desktop
-                                       ID_XSH_PAGER_INTRO);
-                    break;
+                    // open "Screen" object
+                    HOBJECT hobj;
+                    if (hobj = WinQueryObject((PSZ)XFOLDER_SCREENID))
+                        T1M_OpenObjectFromHandle(hwndObject,
+                                                 (MPARAM)hobj,
+                                                 (MPARAM)0);   // no screen corner
                 }
-            break;
+                break;
 
-            /*
-             *@@ T1M_INITIATEXSHUTDOWN:
-             *      posted from the XCenter X-button widget
-             *      to have XShutdown initiated with the
-             *      current settings.
-             *
-             *      (ULONG)mp1 must be one of the following:
-             *      --  ID_CRMI_LOGOFF: logoff.
-             *      --  ID_CRMI_RESTARTWPS: restart Desktop.
-             *      --  ID_CRMI_SHUTDOWN: "real" shutdown.
-             *
-             *      These are the menu item IDs from the
-             *      X-button menu.
-             *
-             *      We have this message here now because
-             *      initiating XShutdown from an XCenter
-             *      thread means asking for trouble.
-             *
-             *@@added V0.9.12 (2001-04-28) [umoeller]
-             */
+                case ID_CRMI_HELP:
+                    cmnDisplayHelp(NULL,        // active desktop
+                                   ID_XSH_PAGER_INTRO);
+                break;
+            }
+        break;
 
-            case T1M_INITIATEXSHUTDOWN:
-                switch ((ULONG)mp1)
-                {
-                    case ID_CRMI_LOGOFF:
-                        xsdInitiateRestartWPS(TRUE);    // logoff
-                    break;
+        /*
+         *@@ T1M_INITIATEXSHUTDOWN:
+         *      posted from the XCenter X-button widget
+         *      to have XShutdown initiated with the
+         *      current settings.
+         *
+         *      (ULONG)mp1 must be one of the following:
+         *      --  ID_CRMI_LOGOFF: logoff.
+         *      --  ID_CRMI_RESTARTWPS: restart Desktop.
+         *      --  ID_CRMI_SHUTDOWN: "real" shutdown.
+         *
+         *      These are the menu item IDs from the
+         *      X-button menu.
+         *
+         *      We have this message here now because
+         *      initiating XShutdown from an XCenter
+         *      thread means asking for trouble.
+         *
+         *@@added V0.9.12 (2001-04-28) [umoeller]
+         */
 
-                    case ID_CRMI_RESTARTWPS:
-                        xsdInitiateRestartWPS(FALSE);   // restart Desktop, no logoff
-                    break;
+        case T1M_INITIATEXSHUTDOWN:
+            switch ((ULONG)mp1)
+            {
+                case ID_CRMI_LOGOFF:
+                    xsdInitiateRestartWPS(TRUE);    // logoff
+                break;
 
-                    case ID_CRMI_SHUTDOWN:
-                        /* if (cmnQuerySetting(sfXShutdown))
-                            xsdInitiateShutdown();
-                        else */
-                        WinPostMsg(cmnQueryActiveDesktopHWND(),
-                                   WM_COMMAND,
-                                   MPFROMSHORT(WPMENUID_SHUTDOWN),
-                                   MPFROM2SHORT(CMDSRC_MENU,
-                                                FALSE));
-                    break;
-                }
-            break;
+                case ID_CRMI_RESTARTWPS:
+                    xsdInitiateRestartWPS(FALSE);   // restart Desktop, no logoff
+                break;
 
-            /*
-             *@@ T1M_OPENRUNDIALOG:
-             *      this gets posted from the XCenter thread
-             *      to open the Run dialog.
-             *
-             *@@added V0.9.14 (2001-08-07) [pr]
-             */
+                case ID_CRMI_SHUTDOWN:
+                    WinPostMsg(cmnQueryActiveDesktopHWND(),
+                               WM_COMMAND,
+                               MPFROMSHORT(WPMENUID_SHUTDOWN),
+                               MPFROM2SHORT(CMDSRC_MENU,
+                                            FALSE));
+                break;
+            }
+        break;
 
-            case T1M_OPENRUNDIALOG:
-                cmnRunCommandLine((HWND)mp1,
-                                  (PCSZ)mp2);
-            break;
+        /*
+         *@@ T1M_OPENRUNDIALOG:
+         *      this gets posted from the XCenter thread
+         *      to open the Run dialog.
+         *
+         *@@added V0.9.14 (2001-08-07) [pr]
+         */
 
-            /*
-             *@@ T1M_PROGOPENPROGRAM:
-             *      calls progOpenProgramThread1 to make sure the
-             *      application gets started from thread 1
-             *      (to avoid the system hangs with Win-OS/2
-             *      full-screen sessions).
-             *
-             *      This is used only by progOpenProgram and
-             *      shouldn't be used otherwise because we
-             *      use the thread-1 object window as the
-             *      WinStartApp notify window.
-             *
-             *      Parameters:
-             *
-             *      --  PPROGOPENDATA mp1: program data.
-             *
-             *      --  mp2: always null.
-             *
-             *      No return code.
-             *
-             *@@added V0.9.16 (2001-12-02) [umoeller]
-             */
+        case T1M_OPENRUNDIALOG:
+            cmnRunCommandLine((HWND)mp1,
+                              (PCSZ)mp2);
+        break;
 
-            case T1M_PROGOPENPROGRAM:
-                progOpenProgramThread1(mp1);
-            break;
+        /*
+         *@@ T1M_PROGOPENPROGRAM:
+         *      calls progOpenProgramThread1 to make sure the
+         *      application gets started from thread 1
+         *      (to avoid the system hangs with Win-OS/2
+         *      full-screen sessions).
+         *
+         *      This is used only by progOpenProgram and
+         *      shouldn't be used otherwise because we
+         *      use the thread-1 object window as the
+         *      WinStartApp notify window.
+         *
+         *      Parameters:
+         *
+         *      --  PPROGOPENDATA mp1: program data.
+         *
+         *      --  mp2: always null.
+         *
+         *      No return code.
+         *
+         *@@added V0.9.16 (2001-12-02) [umoeller]
+         */
+
+        case T1M_PROGOPENPROGRAM:
+            progOpenProgramThread1(mp1);
+        break;
 
 #ifdef __DEBUG__
-            case XM_CRASH:          // posted by debugging context menu of XFldDesktop
-                CRASH;
-            break;
+        case XM_CRASH:          // posted by debugging context menu of XFldDesktop
+            CRASH;
+        break;
 #endif
 
-            default:
-                fCallDefault = TRUE;
-        }
+        default:
+            mrc = G_pfnwpStatic(hwndObject, msg, mp1, mp2);
     }
-    CATCH(excpt1) {} END_CATCH();
-
-    if (fCallDefault)
-        mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
 
     return (mrc);
 }
 
 /*
  *@@ krnPostThread1ObjectMsg:
- *      post msg to thread-1 object window (krn_fnwpThread1Object).
+ *      post msg to thread-1 object window (fnwpThread1Object).
  *      See include\shared\kernel.h for the supported T1M_*
  *      messages.
  *      This is used from all kinds of places and different threads.
@@ -1744,7 +1789,7 @@ BOOL krnPostThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
 
 /*
  *@@ krnSendThread1ObjectMsg:
- *      send msg to thread-1 object window (krn_fnwpThread1Object).
+ *      send msg to thread-1 object window (fnwpThread1Object).
  *      See include\shared\kernel.h for the supported T1M_*
  *      messages.
  *      Note that, as usual, sending a message from another
@@ -1769,11 +1814,11 @@ MRESULT krnSendThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
  ********************************************************************/
 
 /*
- *@@ krn_fnwpAPIObject:
+ *@@ fnwpAPIObject:
  *      window proc for the XWorkplace API object window.
  *
  *      This API object window is quite similar to the thread-1
- *      object window (krn_fnwpThread1Object), except that its
+ *      object window (fnwpThread1Object), except that its
  *      messages are defined in include\xwpapi.h. As a result,
  *      this thing handles public messages to allow external
  *      processes to communicate with XWorkplace in the WPS
@@ -1786,7 +1831,7 @@ MRESULT krnSendThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
  *@@added V0.9.9 (2001-03-23) [umoeller]
  */
 
-MRESULT EXPENTRY krn_fnwpAPIObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
+static MRESULT EXPENTRY fnwpAPIObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 

@@ -2992,9 +2992,14 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
                     }
 
                     // have the object opened on thread-1
-                    hwndCurrentView = (HWND)krnSendThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
+                    /* hwndCurrentView = (HWND)krnSendThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
                                                                     (MPARAM)ppf->pObject,
-                                                                    (MPARAM)OPEN_DEFAULT);
+                                                                    (MPARAM)OPEN_DEFAULT); */
+
+                    hwndCurrentView = _wpViewObject(ppf->pObject,
+                                                    NULLHANDLE,
+                                                    OPEN_DEFAULT,
+                                                    0);
 
                     // update status bar
                     if (cmnQuerySetting(sfShowStartupProgress))

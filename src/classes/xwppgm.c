@@ -118,7 +118,7 @@ static PCSZ     G_pcszWPProgramOrig = "WPProgramRef";
 
 #ifdef _PMPRINTF_
 
-void DumpMemoryBlock(PBYTE pb,       // in: start address
+static void DumpMemoryBlock(PBYTE pb,       // in: start address
                      ULONG ulSize,   // in: size of block
                      ULONG ulIndent) // in: how many spaces to put
                                      //     before each output line
@@ -1540,8 +1540,8 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
             }
 
             #ifdef DEBUG_PROGRAMSTART
-                _Pmpf(("   new hfs 0x%lX", _usExecutableHandle));
-                _Pmpf(("   new _pszExecutable %s", _pWszExecutable));
+                _Pmpf(("   new hfs 0x%lX", pData->ulExecutableHandle));
+                _Pmpf(("   new _pszExecutable %s", pData->pszExecutable));
             #endif
 
             // startup dir

@@ -91,7 +91,6 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
-#include "helpers\apps.h"               // application helpers
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
@@ -104,6 +103,8 @@
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
+
+#include "helpers\apps.h"               // application helpers
 
 // SOM headers which don't crash with prec. header files
 #include "xfobj.ih"
@@ -1388,7 +1389,7 @@ static VOID FixSpacesInFilename(PXSTRING pstr)
 
 static BOOL HandlePlaceholder(PCSZ p,           // in: placeholder (starting with "%")
                               PCSZ pcszFilename, // in: data file name;
-                                                        // ptr is always valid, but can point to ""
+                                                 // ptr is always valid, but can point to ""
                               PXSTRING pstrTemp,       // out: replacement string (e.g. filename)
                               PULONG pcReplace,        // out: no. of chars to replace (w/o null terminator)
                               PBOOL pfAppendDataFilename)  // out: if FALSE, do not append full filename
@@ -1605,15 +1606,15 @@ static BOOL HandlePlaceholder(PCSZ p,           // in: placeholder (starting wit
  *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed spaces-in-filename problem (new implementation)
  *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed params prompt hangs (new implementation)
  *@@changed V0.9.7 (2000-12-10) [umoeller]: extracted HandlePlaceholder
+ *@@changed V0.9.18 (2002-03-27) [umoeller]: fixed trailing space that was always appended
  */
 
 BOOL progSetupArgs(PCSZ pcszParams,
                    WPFileSystem *pFile,         // in: file or NULL
-                   PSZ *ppszParamsNew)          // out: new params
+                   XSTRING *pstrParams)         // out: new params (string must be init'ed)
 {
     BOOL    brc = TRUE;
 
-    XSTRING strParamsNew;
     BOOL    fAppendDataFilename = TRUE;
     CHAR    szDataFilename[2*CCHMAXPATH] = "";
 
@@ -1626,8 +1627,6 @@ BOOL progSetupArgs(PCSZ pcszParams,
                          TRUE);
     }
     // else no file: szDataFilename is empty
-
-    xstrInit(&strParamsNew, 500);
 
     if (pcszParams)
     {
@@ -1663,7 +1662,7 @@ BOOL progSetupArgs(PCSZ pcszParams,
                     {
                         // handled:
                         // append replacement
-                        xstrcat(&strParamsNew, strTemp.psz, strTemp.ulLength);
+                        xstrcats(pstrParams, &strTemp);
                         // skip placeholder (cReplace has been set by HandlePlaceholder)
                         p += cReplace;
                         // disable appending the full filename
@@ -1674,7 +1673,7 @@ BOOL progSetupArgs(PCSZ pcszParams,
                     {
                         // not handled:
                         // just append
-                        xstrcatc(&strParamsNew, *p);
+                        xstrcatc(pstrParams, *p);
                         p++;
                     }
                     xstrClear(&strTemp);
@@ -1698,7 +1697,7 @@ BOOL progSetupArgs(PCSZ pcszParams,
                         if (DisplayParamsPrompt(&strPrompt))
                         {
                             // user pressed "OK":
-                            xstrcat(&strParamsNew, strPrompt.psz, strPrompt.ulLength);
+                            xstrcats(pstrParams, &strPrompt);
                             // next character to copy is
                             // character after closing bracket
                             p = pEnd + 1;
@@ -1718,7 +1717,7 @@ BOOL progSetupArgs(PCSZ pcszParams,
 
                 default:
                     // any other character: append
-                    xstrcatc(&strParamsNew, *p);
+                    xstrcatc(pstrParams, *p);
                     p++;
             } // end switch (*p)
         } // end while ( (*p) && (brc == TRUE) )
@@ -1733,7 +1732,11 @@ BOOL progSetupArgs(PCSZ pcszParams,
 
         // now check if we should still add the filename
 
-        if (fAppendDataFilename)
+        if (    fAppendDataFilename
+             && pFile               // bogus, we don't wanna add a trailing space
+                                    // if there's no file at all
+                                    // V0.9.18 (2002-03-27) [umoeller]
+           )
         {
             // this is still TRUE if none of the "%" placeholders have
             // been found;
@@ -1743,25 +1746,72 @@ BOOL progSetupArgs(PCSZ pcszParams,
 
             // if we have parameters already, append space
             // if the last char isn't a space yet
-            if (strParamsNew.ulLength)
+            if (pstrParams->ulLength)
                 // space as last character?
-                if (    *(strParamsNew.psz + strParamsNew.ulLength - 1)
-                     != ' ')
-                    xstrcatc(&strParamsNew, ' ');
+                if (pstrParams->psz[pstrParams->ulLength - 1] != ' ')
+                    xstrcatc(pstrParams, ' ');
 
             FixSpacesInFilename(&strDataFilename); // V0.9.7 (2000-12-10) [umoeller]
-            xstrcats(&strParamsNew, &strDataFilename);
+            xstrcats(pstrParams, &strDataFilename);
         }
-
-        // return new params to caller
-        *ppszParamsNew = strParamsNew.psz;
-
     } // end if (brc)
     else
         // cancelled or error:
-        xstrClear(&strParamsNew);
+        xstrClear(pstrParams);
 
     return (brc);
+}
+
+/*
+ *@@ progSetupStartupDir:
+ *
+ *@@added V0.9.18 (2002-03-27) [umoeller]
+ */
+
+VOID progSetupStartupDir(PPROGDETAILS pProgDetails,
+                         WPFileSystem *pArgDataFile,         // in: file or NULL
+                         XSTRING *pstrStartupDirNew)
+{
+    // if startup dir is empty, set a default startup dir:
+    if (    (!pProgDetails->pszStartupDir)
+         || (pProgDetails->pszStartupDir[0] == '\0')
+       )
+    {
+        CHAR    szNewStartupDir[CCHMAXPATH] = "";
+        ULONG cb;
+        // no startup dir:
+        // if we have a data file argument, use its directory
+        if (pArgDataFile)
+        {
+            WPFolder *pStartupFolder;
+            if (pStartupFolder = _wpQueryFolder(pArgDataFile))
+                _wpQueryFilename(pStartupFolder, szNewStartupDir, TRUE);
+        }
+        else
+        {
+            // no data file: use executable's directory
+            // V0.9.16 (2002-01-04) [umoeller]
+            PSZ p;
+            if (p = strrchr(pProgDetails->pszExecutable + 2, '\\'))
+            {
+                cb = _min(p - pProgDetails->pszExecutable,
+                          CCHMAXPATH - 1);
+                memcpy(szNewStartupDir,
+                       pProgDetails->pszExecutable,
+                       cb);
+                szNewStartupDir[cb] = '\0';
+            }
+        }
+
+        // this returns "K:" only for root folders, so check!!
+        if (    (cb = strlen(szNewStartupDir))
+             && (cb < 3)
+           )
+            strcpy(szNewStartupDir + 1, ":\\");
+
+        xstrcpy(pstrStartupDirNew, szNewStartupDir, 0);
+        pProgDetails->pszStartupDir = pstrStartupDirNew->psz;
+    }
 }
 
 /*
@@ -1868,11 +1918,14 @@ PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
 typedef struct _PROGOPENDATA
 {
     PPROGDETAILS    pProgDetails;
+
     HAPP            *phapp;         // out: HAPP
+
+    HWND            hwndNotify;
+
     ULONG           cbFailingName;
     PSZ             pszFailingName;
 
-    HWND            hwndNotify;
 } PROGOPENDATA, *PPROGOPENDATA;
 
 /*
@@ -1921,6 +1974,11 @@ APIRET progOpenProgramThread1(PVOID pvData)
     return (arc);
 }
 
+HAPP EXPENTRY ShlStartApp(WPObject *pObject,
+                          PPROGDETAILS pDetails,
+                          ULONG ulUnknown1,
+                          ULONG ulUnknown2);
+
 /*
  *@@ progOpenProgram:
  *      this opens the specified program object, which
@@ -1939,13 +1997,17 @@ APIRET progOpenProgramThread1(PVOID pvData)
  *      using the standard WPS methods, I had to rewrite
  *      all this.
  *
- *      Presently, this gets called from:
+ *      Presently, if extended assocs are enabled, this
+ *      gets called from:
  *
- *      -- XFldDataFile::wpOpen to open a program (file)
- *         object which has been associated with a data
- *         file. In that case, pArgDataFile is set to
- *         the data file whose association is to be started
- *         with the data file as an argument.
+ *      --  XFldDataFile::wpOpen to open a program (file)
+ *          object which has been associated with a data
+ *          file. In that case, pArgDataFile is set to
+ *          the data file whose association is to be started
+ *          with the data file as an argument.
+ *
+ *      --  XWPProgram::wpOpen to open a program. In that
+ *          case, pArgDataFile is NULL.
  *
  *      Features:
  *
@@ -1983,6 +2045,21 @@ APIRET progOpenProgramThread1(PVOID pvData)
  *      calls winhStartApp in turn), the calling thread must
  *      have a message queue.
  *
+ *      This returns:
+ *
+ *      --  NO_ERROR: app started successfully.
+ *
+ *      --  ERROR_NOT_ENOUGH_MEMORY
+ *
+ *      --  ERROR_INVALID_PARAMETER: invalid argument.
+ *
+ *      --  ERROR_PROTECTION_VIOLATION: crash somewhere.
+ *
+ *      --  ERROR_INTERRUPT (95): user cancelled a parameters
+ *          dialog.
+ *
+ *      plus the many error codes from appStartApp.
+ *
  *@@added V0.9.6 (2000-10-16) [umoeller]
  *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed startup dir with data files
  *@@changed V0.9.7 (2000-12-17) [umoeller]: now building environment correctly
@@ -1991,6 +2068,7 @@ APIRET progOpenProgramThread1(PVOID pvData)
  *@@changed V0.9.16 (2001-10-19) [umoeller]: fixed prototype for APIRET
  *@@changed V0.9.16 (2001-10-19) [umoeller]: fixed root folder problems
  *@@changed V0.9.16 (2001-12-02) [umoeller]: moved all code to progOpenProgramThread1; added thread-1 sync
+ *@@changed V0.9.18 (2002-03-27) [umoeller]: workaround for VIO hangs if not thread 1
  */
 
 APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgramFile
@@ -2000,13 +2078,16 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
                        ULONG cbFailingName,
                        PSZ pszFailingName)
 {
-    APIRET          arc = FOPSERR_NOT_HANDLED_ABORT;
+    APIRET          arc = NO_ERROR;
     PPROGDETAILS    pProgDetails = NULL;
-    PSZ             pszParams = NULL;
-    PSZ             pszNewStartupDir = NULL;
+    XSTRING         strParamsNew,
+                    strStartupDirNew;
     PSZ             pszNewEnvironment = NULL;
 
     // INT3();
+
+    xstrInit(&strParamsNew, 0);
+    xstrInit(&strStartupDirNew, 0);
 
     TRY_LOUD(excpt1)
     {
@@ -2037,55 +2118,24 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
             // fix parameters (placeholders etc.)
             if (!(progSetupArgs(pProgDetails->pszParameters,
                                 pArgDataFile,
-                                &pszParams)))
+                                &strParamsNew)))
                 arc = ERROR_INTERRUPT;
             else
             {
-                PROGOPENDATA Data;
+                PROGDETAILS     ProgDetails;
+                XSTRING         strExecutablePatched,
+                                strParamsPatched;
+                PSZ             pszWinOS2Env = 0;
+
+                /* PROGOPENDATA Data;
+                memset(&Data, 0, sizeof(Data)); */
 
                 // set the new params
-                pProgDetails->pszParameters = pszParams;
+                pProgDetails->pszParameters = strParamsNew.psz;
 
-                // if startup dir is empty, set a default startup dir:
-                if (    (!pProgDetails->pszStartupDir)
-                     || (pProgDetails->pszStartupDir[0] == '\0')
-                   )
-                {
-                    CHAR    szNewStartupDir[CCHMAXPATH] = "";
-                    ULONG cb;
-                    // no startup dir:
-                    // if we have a data file argument, use its directory
-                    if (pArgDataFile)
-                    {
-                        WPFolder *pStartupFolder;
-                        if (pStartupFolder = _wpQueryFolder(pArgDataFile))
-                            _wpQueryFilename(pStartupFolder, szNewStartupDir, TRUE);
-                    }
-                    else
-                    {
-                        // no data file: use executable's directory
-                        // V0.9.16 (2002-01-04) [umoeller]
-                        PSZ p;
-                        if (p = strrchr(pProgDetails->pszExecutable + 2, '\\'))
-                        {
-                            cb = _min(p - pProgDetails->pszExecutable,
-                                      CCHMAXPATH - 1);
-                            memcpy(szNewStartupDir,
-                                   pProgDetails->pszExecutable,
-                                   cb);
-                            szNewStartupDir[cb] = '\0';
-                        }
-                    }
-
-                    // this returns "K:" only for root folders, so check!!
-                    if (    (cb = strlen(szNewStartupDir))
-                         && (cb < 3)
-                       )
-                        strcpy(szNewStartupDir + 1, ":\\");
-
-                    pszNewStartupDir = strdup(szNewStartupDir);
-                    pProgDetails->pszStartupDir = pszNewStartupDir;
-                }
+                progSetupStartupDir(pProgDetails,
+                                    pArgDataFile,
+                                    &strStartupDirNew);
 
                 // build the new environment V0.9.7 (2000-12-17) [umoeller]
                 pszNewEnvironment
@@ -2094,31 +2144,67 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
                                    pArgDataFile);
                 pProgDetails->pszEnvironment = pszNewEnvironment;
 
+                // V0.9.18 (2002-03-27) [umoeller]
+                // well the thread redirection hangs the system
+                // in any case... I get tired of this bullshit and
+                // the frequent system hangs for no apparent reason,
+                // so we just use this entry point into PMWP.DLL
+                // which apparently works... I have no freaking
+                // idea why that works and my code doesn't!!!
+
+                if (pszFailingName)
+                    *pszFailingName = '\0';
+
+                xstrInit(&strExecutablePatched, 0);
+                xstrInit(&strParamsPatched, 0);
+
+                if (!(arc = appFixProgDetails(&ProgDetails,
+                                              pProgDetails,
+                                              0,
+                                              &strExecutablePatched,
+                                              &strParamsPatched,
+                                              &pszWinOS2Env)))
+                {
+                    if (!(*phapp = ShlStartApp(NULL, &ProgDetails, 0, 0)))
+                        arc = ERROR_FILE_NOT_FOUND;
+                } // end if (ProgDetails.pszExecutable)
+
+                xstrClear(&strParamsPatched);
+                xstrClear(&strExecutablePatched);
+
+                if (pszWinOS2Env)
+                    free(pszWinOS2Env);
+
+                #ifdef DEBUG_PROGRAMSTART
+                    _Pmpf((__FUNCTION__ ": returning %d", arc));
+                #endif
+
                 // _Pmpf((__FUNCTION__ ": hacked exec: \"%s\"", (pProgDetails->pszExecutable) ? pProgDetails->pszExecutable : "NULL"));
                 // _Pmpf(("  hacked params: \"%s\"", (pProgDetails->pszParameters) ? pProgDetails->pszParameters : "NULL"));
                 // _Pmpf(("  hacked startup: \"%s\"", (pProgDetails->pszStartupDir) ? pProgDetails->pszStartupDir : "NULL"));
 
-                Data.pProgDetails = pProgDetails;
+                /* Data.pProgDetails = pProgDetails;
                 Data.phapp = phapp;
                 Data.cbFailingName = cbFailingName;
                 Data.pszFailingName = pszFailingName;
-                Data.hwndNotify = NULLHANDLE;
 
-                if (doshMyTID() == 1)
+                // if we're running on thread 1, we don't need
+                // the below overhead
+
+                if (    (doshMyTID() == 1)
+                     || (!appIsWindowsApp(pProgDetails->progt.progc))
+                   )
                 {
-                    // if we're running on thread 1, we don't need
-                    // the below overhead
                     // _Pmpf((__FUNCTION__ ": calling progOpenProgramThread1 directly"));
                     arc = progOpenProgramThread1(&Data);
                 }
                 else
                 {
+                    // Win-OS/2 app, and not thread 1:
+
                     HAB hab;
                     PCKERNELGLOBALS pKernelGlobals;
 
-                    // _Pmpf((__FUNCTION__ ": entering msg loop"));
-
-                    // not thread 1:
                     // create notify window for progOpenProgramThread1;
                     // using WinSendMsg hangs the system (for god's sake)
                     if (    (Data.hwndNotify = winhCreateObjectWindow(WC_STATIC, NULL))
@@ -2158,7 +2244,7 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
                         WinDestroyWindow(Data.hwndNotify);
 
                     // _Pmpf((__FUNCTION__ ": left message loop"));
-                }
+                } */
 
                 if (!arc)
                     // app started OK:
@@ -2176,10 +2262,9 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
         arc = ERROR_PROTECTION_VIOLATION;
     } END_CATCH();
 
-    if (pszParams)
-        free(pszParams);
-    if (pszNewStartupDir)
-        free(pszNewStartupDir);
+    xstrClear(&strParamsNew);
+    xstrClear(&strStartupDirNew);
+
     if (pszNewEnvironment)
         free(pszNewEnvironment);
     if (pProgDetails)
