@@ -167,6 +167,10 @@
     // messages WM_USER+250 to WM_USER+269 are used by Media thread
 
     // messages WM_USER+270 to WM_USER+299 are used by thread-1 object window
+    // (include\shared\kernel.h)
+
+    // messages WM_USER+300 to WM_USER+310 are used by API object window
+    // (include\xwpapi.h)
 
     /********************************************************************
      *                                                                  *

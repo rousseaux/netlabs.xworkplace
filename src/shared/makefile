@@ -189,10 +189,10 @@ $(OUTPUTDIR)\kernel.obj: \
         $(HLPINC)\prfh.h $(HLPINC)\procstat.h $(HLPINC)\stringh.h \
         $(HLPINC)\threads.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
      $(INC)\classes\xfldr.h \
-     $(INC)\dlgids.h \
+     $(INC)\dlgids.h $(INC)\xwpapi.h \
      $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
      $(INC)\hook\xwphook.h \
-     $(INC)\filesys\refresh.h $(INC)\filesys\program.h $(INC)\filesys\xthreads.h \
+     $(INC)\filesys\filedlg.h $(INC)\filesys\refresh.h $(INC)\filesys\program.h $(INC)\filesys\xthreads.h \
      $(INC)\media\media.h \
      $(INC)\security\xwpsecty.h \
      $(INC)\startshut\archives.h $(INC)\startshut\shutdown.h \
@@ -204,7 +204,7 @@ $(OUTPUTDIR)\xsetup.obj: \
         $(HLPINC)\procstat.h $(HLPINC)\stringh.h $(HLPINC)\syssound.h \
         $(HLPINC)\threads.h $(HLPINC)\tmsgfile.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
      $(INC)\classes\xwpsetup.ih $(INC)\classes\xtrash.h \
-     $(INC)\dlgids.h \
+     $(INC)\dlgids.h $(INC)\xwpapi.h \
      $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
      $(INC)\config\hookintf.h $(INC)\config\sound.h \
      $(INC)\filesys\fileops.h $(INC)\filesys\xthreads.h \

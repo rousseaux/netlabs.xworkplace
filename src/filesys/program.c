@@ -302,7 +302,7 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
  *
  *      --  the item from the list.
  *
- *      This normally gets called from krn_fnwpThread1Object
+ *      This normally gets called from fnwpThread1Object
  *      when WM_APPTERMINATENOTIFY comes in.
  *
  *@@added V0.9.6 (2000-10-16) [umoeller]
@@ -1099,10 +1099,10 @@ PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
  *          which gets called from here.
  *
  *          Note: The XWorkplace thread-1 object window
- *          (krn_fnwpThread1Object) is used as the notify
+ *          (fnwpThread1Object) is used as the notify
  *          window to WinStartApp to receive WM_APPTERMINATENOTIFY
  *          so we can properly remove source emphasis later.
- *          krn_fnwpThread1Object then calls progAppTerminateNotify.
+ *          fnwpThread1Object then calls progAppTerminateNotify.
  *
  *      Since this calls progSetupArgs, this might display modal
  *      dialogs before returning. As a result (and because this

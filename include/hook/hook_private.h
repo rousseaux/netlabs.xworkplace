@@ -142,7 +142,7 @@
                 // wnd used for notification of events;
                 // this is the daemon object window
                 // (fnwpDaemonObject) as passed to hookInit
-                // and is the same as DAEMONSHARED.hwndDaemonObject.
+                // and is the same as XWPGLOBALSHARED.hwndDaemonObject.
                 // This receives lots of messages from the hook for
                 // further processing.
 

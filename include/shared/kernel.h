@@ -29,9 +29,6 @@
 #ifndef KERNEL_HEADER_INCLUDED
     #define KERNEL_HEADER_INCLUDED
 
-    // required header files
-    // #include "helpers\threads.h"
-
     #ifndef INCL_DOSSEMAPHORES
         #error kernel.h requires INCL_DOSSEMAPHORES to be defined.
     #endif
@@ -43,9 +40,9 @@
     #define XFOLDER_DMNCRASHLOG     "xdmntrap.log"
 
     /* ******************************************************************
-     *                                                                  *
-     *   Resource protection (thread safety)                            *
-     *                                                                  *
+     *
+     *   Resource protection (thread safety)
+     *
      ********************************************************************/
 
     BOOL krnLock(const char *pcszSourceFile,
@@ -56,15 +53,10 @@
 
     ULONG krnQueryLock(VOID);
 
-    // #ifdef EXCEPT_HEADER_INCLUDED
-    // VOID APIENTRY krnOnKillDuringLock(PEXCEPTIONREGISTRATIONRECORD2 pRegRec2);
-    // removed V0.9.7 (2000-12-09) [umoeller]
-    // #endif
-
     /********************************************************************
-     *                                                                  *
-     *   KERNELGLOBALS structure                                        *
-     *                                                                  *
+     *
+     *   KERNELGLOBALS structure
+     *
      ********************************************************************/
 
     #ifdef SOM_WPObject_h
@@ -175,8 +167,8 @@
             HAPP                happDaemon;
                     // != NULLHANDLE if daemon was started
 
-            PVOID               pDaemonShared;
-                    // ptr to DAEMONSHARED structure
+            PVOID               pXwpGlobalShared;
+                    // ptr to XWPGLOBALSHARED structure
 
             PVOID               pXWPShellShared;
                     // ptr to XWPSHELLSHARED structure
@@ -188,15 +180,21 @@
              *      This is always created.
              */
 
-            // XFolder Workplace object window handle
             HWND                hwndThread1Object;
+
+            /*
+             * API object window:
+             *      additional object window on thread 1.
+             *      This is always created.
+             */
+
+            HWND                hwndAPIObject;  // V0.9.9 (2001-03-23) [umoeller]
 
             /*
              * Worker thread:
              *      this thread is always running.
              */
 
-            // THREADINFO          tiWorkerThread;
             HWND                hwndWorkerObject;
 
             ULONG               ulWorkerMsgCount;
@@ -260,9 +258,6 @@
 
             BOOL                fShutdownRunning;
 
-            // CONFIG.SYS filename (XFldSystem)
-            // CHAR                szConfigSys[CCHMAXPATH];
-
             // desktop already populated?
             BOOL                fDesktopPopulated;
 
@@ -281,9 +276,9 @@
     #endif
 
     /* ******************************************************************
-     *                                                                  *
-     *   Startup/Daemon interface                                       *
-     *                                                                  *
+     *
+     *   Startup/Daemon interface
+     *
      ********************************************************************/
 
     VOID krnSetProcessStartupFolder(BOOL fReuse);
@@ -293,9 +288,9 @@
     BOOL krnPostDaemonMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Thread-1 object window                                         *
-     *                                                                  *
+     *
+     *   Thread-1 object window
+     *
      ********************************************************************/
 
     #define T1M_BEGINSTARTUP            (WM_USER+270)
@@ -317,17 +312,13 @@
 
     #define T1M_DAEMONREADY             (WM_USER+281)    // added V0.9.0
 
-// #ifdef __PAGEMAGE__
     #define T1M_PAGEMAGECLOSED          (WM_USER+282)    // added V0.9.2 (2000-02-23) [umoeller]
-// #endif
 
     #define T1M_QUERYXFOLDERVERSION     (WM_USER+283)
                 // V0.9.2 (2000-02-26) [umoeller]:
                 // msg value changed to break compatibility with V0.8x
 
-// #ifdef __PAGEMAGE__
     #define T1M_PAGEMAGECONFIGDELAYED   (WM_USER+284)
-// #endif
 
     /*
      *@@ T1M_FOPS_TASK_DONE:
@@ -349,16 +340,14 @@
 
     #define T1M_OPENOBJECTFROMPTR       (WM_USER+287)    // added V0.9.9 (2001-02-06) [umoeller]
 
-    MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
-
     BOOL krnPostThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
 
     MRESULT krnSendThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
 
     /* ******************************************************************
-     *                                                                  *
-     *   XWorkplace initialization                                      *
-     *                                                                  *
+     *
+     *   XWorkplace initialization
+     *
      ********************************************************************/
 
     BOOL krnReplaceRefreshEnabled(VOID);

@@ -182,7 +182,7 @@ $(OUTPUTDIR)\hookintf.obj: \
     $(INC)\setup.h \
     $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\prfh.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
     $(INC)\classes\xfobj.ih \
-    $(INC)\dlgids.h \
+    $(INC)\dlgids.h $(INC)\xwpapi.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
     $(INC)\hook\xwphook.h \
     $(INC)\filesys\xthreads.h \

@@ -248,15 +248,17 @@ BOOL dtpSetup(WPDesktop *somSelf,
                            szValue,
                            &cbValue))
     {
+        CHAR    szFullFile[CCHMAXPATH] = "";
+        strcpy(szFullFile, szValue);
         if (cmnFileDlg(cmnQueryActiveDesktopHWND(),
-                       szValue,
+                       szFullFile,
                        0,
                        NULLHANDLE,
                        NULL,
                        NULL))
             winhDebugBox(NULLHANDLE,
                          "Test file dlg",
-                         szValue);
+                         szFullFile);
     }
 
     return (brc);

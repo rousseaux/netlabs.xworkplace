@@ -56,6 +56,21 @@ CHECK ON A CLEAN SYSTEM
 NOT-SO-SERIOUS PROBLEMS
 -----------------------
 
+--  object lists: presently, favorite folders etc. are removed when
+    objects go dormant. Differentiate between dormant and free, and
+    remove from list only when freed.
+
+    >While we are on the topic of these lists, I found during debugging that
+    >there is an irritating problem that causes the INI file to be accessed
+    >every time you bring up a folder context menu, if you have no favorites
+    >folder entries i.e. the list is null.
+    >_xwpclsQueryFavoriteFolder will call objEnumList which calls
+    >LoadObjectsList and that calls PrfQueryProfileString.
+    >There must be some optimization we can do here.... perhaps a flag in
+    >the LINKLIST structure to say that the list has been initialized? Then
+    >objEnumList can test that flag as well as testing for pNode being null
+    >before it calls LoadObjectsList pointlessly.
+
 --  install:
 
     >1. The un-installer fails to remove the font folder and the Xworkplace

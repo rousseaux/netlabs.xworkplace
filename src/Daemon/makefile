@@ -55,13 +55,10 @@ EXE_OUTPUTDIR = $(BASE_OUTPUTDIR)\exe_mt
 # These will be put into BIN\.
 # If you add a new source, add the corresponding .OBJ file here.
 OBJS = $(EXE_OUTPUTDIR)\xwpdaemn.obj \
-!ifdef PAGEMAGE
        $(EXE_OUTPUTDIR)\pgmg_control.obj \
        $(EXE_OUTPUTDIR)\pgmg_move.obj \
        $(EXE_OUTPUTDIR)\pgmg_settings.obj \
        $(EXE_OUTPUTDIR)\pgmg_winscan.obj
-!endif
-
 
 # The main target:
 # If we're called from the main makefile, MAINMAKERUNNING is defined,
@@ -112,30 +109,32 @@ MYOWNINC = $(INC)\hook
 # recompiled when its SOM header files change (due to SOM recompilation)
 # or when other headers (in MAIN or HELPERS) have changed.
 
+SHAREDINC = $(INC)\xwpapi.h $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
+
 $(EXE_OUTPUTDIR)\xwpdaemn.obj: \
         $(INC)\setup.h \
         $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h $(HLPINC)\threads.h \
         $(INC)\shared\kernel.h \
-        $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
+        $(@B).c $(SHAREDINC)
 
 $(EXE_OUTPUTDIR)\pgmg_control.obj: \
         $(INC)\setup.h \
         $(HLPINC)\except.h $(HLPINC)\linklist.h \
-        $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
+        $(@B).c $(SHAREDINC)
 
 $(EXE_OUTPUTDIR)\pgmg_move.obj: \
         $(INC)\setup.h \
         $(HLPINC)\except.h $(HLPINC)\linklist.h $(HLPINC)\threads.h \
-        $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
+        $(@B).c $(SHAREDINC)
 
 $(EXE_OUTPUTDIR)\pgmg_settings.obj: \
         $(INC)\setup.h \
-        $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
+        $(@B).c $(SHAREDINC)
 
 $(EXE_OUTPUTDIR)\pgmg_winscan.obj: \
         $(INC)\setup.h \
         $(HLPINC)\linklist.h $(HLPINC)\shapewin.h \
-        $(@B).c $(MYOWNINC)\xwphook.h $(MYOWNINC)\hook_private.h $(MYOWNINC)\xwpdaemn.h
+        $(@B).c $(SHAREDINC)
 
 $(EXE_OUTPUTDIR)\xwpdaemn.res: *.ico $(@B).rc
     $(RC) -r $(@B).rc $(EXE_OUTPUTDIR)\$(@B).res

@@ -40,6 +40,8 @@
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\threads.h"
 
+#include "xwpapi.h"                     // public XWorkplace definitions
+
 #include "hook\xwphook.h"
 #include "hook\hook_private.h"
 #include "hook\xwpdaemn.h"              // PageMage and daemon declarations

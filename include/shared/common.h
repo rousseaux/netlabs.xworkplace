@@ -198,6 +198,7 @@
 
     extern const char *WNDCLASS_THREAD1OBJECT;
     extern const char *WNDCLASS_SUPPLOBJECT;
+    extern const char *WNDCLASS_APIOBJECT;
 
     /********************************************************************
      *

@@ -26,8 +26,7 @@
 #ifndef FILEDLG_HEADER_INCLUDED
     #define FILEDLG_HEADER_INCLUDED
 
-    HWND APIENTRY fdlgFileDlg(HWND hwndParent,
-                              HWND hwndOwner,
+    HWND APIENTRY fdlgFileDlg(HWND hwndOwner,
                               PFILEDLG pfd);
 
 #endif

@@ -23,15 +23,6 @@
 
     /* ******************************************************************
      *                                                                  *
-     *   Shared mem/semaphore IDs                                       *
-     *                                                                  *
-     ********************************************************************/
-
-    #define SHMEM_DAEMON          "\\SHAREMEM\\XWORKPLC\\DMNSHARE.DAT"
-            // shared memory name of DAEMONSHARED structure
-
-    /* ******************************************************************
-     *                                                                  *
      *   OS2.INI applications and keys                                  *
      *                                                                  *
      ********************************************************************/
@@ -296,50 +287,6 @@
                             // on sliding focus
 
     } HOOKCONFIG, *PHOOKCONFIG;
-
-    /*
-     *@@ DAEMONSHARED:
-     *      block of shared memory which is used for
-     *      communication between the XWorkplace daemon
-     *      and XFLDR.DLL (kernel.c).
-     *
-     *      This is allocated upon initial WPS startup
-     *      by krnInitializeXWorkplace and then requested
-     *      by the daemon. See xwpdaemn.c for details.
-     *
-     *      Since the daemon keeps this block requested,
-     *      it can be re-accessed by XFLDR.DLL upon
-     *      WPS restarts and be used for storing data
-     *      in between WPS session restarts.
-     *
-     *      The data in this structure is not stored
-     *      anywhere. This structure must only be modified
-     *      when either the daemon or the WPS is started.
-     *      For hook configuration, HOOKCONFIG is used
-     *      instead, since the hook does NOT see this
-     *      structure.
-     */
-
-    typedef struct _DAEMONSHARED
-    {
-        HWND        hwndDaemonObject;
-                // daemon object window (fnwpDaemonObject, xwpdaemn.c);
-                // this is set by the daemon after it has created the object window,
-                // so if this is != NULLHANDLE, the daemon is running
-        HWND        hwndThread1Object;
-                // XFLDR.DLL thread-1 object window (krn_fnwpThread1Object, shared\kernel.c);
-                // this is set by krnInitializeXWorkplace before starting the daemon
-                // and after the WPS re-initializes
-        BOOL        fAllHooksInstalled;
-                // TRUE if hook is currently installed;
-                // dynamically changed by the daemon upon XDM_HOOKINSTALL
-        ULONG       ulWPSStartupCount;
-                // WPS startup count maintained by krnInitializeXWorkplace:
-                // 1 at first WPS startup, 2 at next, ...
-        BOOL        fProcessStartupFolder;
-                // TRUE if startup folder should be processed;
-                // set by krnInitializeXWorkplace and XShutdown (upon WPS restart)
-    } DAEMONSHARED, *PDAEMONSHARED;
 
     /*
      *@@ GLOBALHOTKEY:

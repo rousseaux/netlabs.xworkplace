@@ -10,14 +10,14 @@
  *
  *      In detail, we have:
  *      -- the KERNELGLOBALS interface (krnQueryGlobals);
- *      -- the thread-1 object window (krn_fnwpThread1Object);
+ *      -- the thread-1 object window (fnwpThread1Object);
  *      -- the XWorkplace initialization code (krnInitializeXWorkplace).
  *
  *      In this file, I have assembled code which you might consider
  *      useful for extensions. For example, if you need code to
  *      execute on thread 1 of PMSHELL.EXE (which is required for
  *      some WPS methods to work, unfortunately), you can add a
- *      message to be processed in krn_fnwpThread1Object.
+ *      message to be processed in fnwpThread1Object.
  *
  *      If you need stuff to be executed upon WPS startup, you can
  *      insert a function into krnInitializeXWorkplace.
@@ -74,6 +74,8 @@
 #define INCL_WINPROGRAMLIST     // needed for PROGDETAILS, wppgm.h
 #define INCL_WINSWITCHLIST
 #define INCL_WINSHELLDATA
+#define INCL_WINSTDFILE
+
 #include <os2.h>
 
 // C library headers
@@ -105,11 +107,14 @@
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
+#include "xwpapi.h"                     // public XWorkplace definitions
+
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
+#include "filesys\filedlg.h"            // replacement file dialog implementation
 #include "filesys\refresh.h"            // folder auto-refresh
 #include "filesys\program.h"            // program implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
@@ -574,7 +579,7 @@ VOID krnMemoryError(const char *pcszMsg)
 /*
  *@@ krnSetProcessStartupFolder:
  *      this gets called during XShutdown to set
- *      the flag in the DAEMONSHARED shared-memory
+ *      the flag in the XWPGLOBALSHARED shared-memory
  *      structure whether the XWorkplace startup
  *      folder should be re-used at the next WPS
  *      startup.
@@ -595,11 +600,11 @@ VOID krnSetProcessStartupFolder(BOOL fReuse)
         pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
         if (pKernelGlobals)
         {
-            if (pKernelGlobals->pDaemonShared)
+            if (pKernelGlobals->pXwpGlobalShared)
             {
                 // cast PVOID
-                PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
-                pDaemonShared->fProcessStartupFolder = fReuse;
+                PXWPGLOBALSHARED pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared;
+                pXwpGlobalShared->fProcessStartupFolder = fReuse;
             }
         }
     }
@@ -616,7 +621,7 @@ VOID krnSetProcessStartupFolder(BOOL fReuse)
  *      this returns TRUE if the startup folder needs to
  *      be processed. See krnSetProcessStartupFolder.
  *
- *@@changed V0.9.0 [umoeller]: completely rewritten; now using DAEMONSHARED shared memory.
+ *@@changed V0.9.0 [umoeller]: completely rewritten; now using XWPGLOBALSHARED shared memory.
  */
 
 BOOL krnNeed2ProcessStartupFolder(VOID)
@@ -626,14 +631,14 @@ BOOL krnNeed2ProcessStartupFolder(VOID)
 
     if (pKernelGlobals)
     {
-        if (pKernelGlobals->pDaemonShared)
+        if (pKernelGlobals->pXwpGlobalShared)
         {
             // cast PVOID
-            PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
-            if (pDaemonShared->fProcessStartupFolder)
+            PXWPGLOBALSHARED pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared;
+            if (pXwpGlobalShared->fProcessStartupFolder)
             {
                 brc = TRUE;
-                pDaemonShared->fProcessStartupFolder = FALSE;
+                pXwpGlobalShared->fProcessStartupFolder = FALSE;
             }
         }
     }
@@ -660,17 +665,17 @@ BOOL krnPostDaemonMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
     if (pKernelGlobals)
     {
         // cast PVOID
-        PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
-        if (!pDaemonShared)
+        PXWPGLOBALSHARED pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared;
+        if (!pXwpGlobalShared)
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "pDaemonShared is NULL.");
+                   "pXwpGlobalShared is NULL.");
         else
             // get the handle of the daemon's object window
-            if (!pDaemonShared->hwndDaemonObject)
+            if (!pXwpGlobalShared->hwndDaemonObject)
                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "pDaemonShared->hwndDaemonObject is NULLHANDLE.");
+                       "pXwpGlobalShared->hwndDaemonObject is NULLHANDLE.");
             else
-                brc = WinPostMsg(pDaemonShared->hwndDaemonObject, msg, mp1, mp2);
+                brc = WinPostMsg(pXwpGlobalShared->hwndDaemonObject, msg, mp1, mp2);
     }
 
     return (brc);
@@ -698,15 +703,15 @@ VOID krn_T1M_DaemonReady(VOID)
 
     // _Pmpf(("krn_T1M_DaemonReady"));
 
-    if (G_KernelGlobals.pDaemonShared)
+    if (G_KernelGlobals.pXwpGlobalShared)
     {
         // cast PVOID
-        PDAEMONSHARED pDaemonShared = G_KernelGlobals.pDaemonShared;
+        PXWPGLOBALSHARED pXwpGlobalShared = G_KernelGlobals.pXwpGlobalShared;
         if (    (pGlobalSettings->fEnableXWPHook)
-             && (pDaemonShared->hwndDaemonObject)
+             && (pXwpGlobalShared->hwndDaemonObject)
            )
         {
-            if (WinSendMsg(pDaemonShared->hwndDaemonObject,
+            if (WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
                            XDM_HOOKINSTALL,
                            (MPARAM)TRUE,
                            0))
@@ -728,7 +733,7 @@ VOID krn_T1M_DaemonReady(VOID)
 // #ifdef __PAGEMAGE__
                 if (pGlobalSettings->fEnablePageMage)
                     // PageMage is enabled too:
-                    WinSendMsg(pDaemonShared->hwndDaemonObject,
+                    WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
                                XDM_STARTSTOPPAGEMAGE,
                                (MPARAM)TRUE,
                                0);
@@ -741,7 +746,7 @@ VOID krn_T1M_DaemonReady(VOID)
 /*
  *@@ krn_T1M_OpenObjectFromHandle:
  *      implementation for T1M_OPENOBJECTFROMHANDLE in
- *      krn_fnwpThread1Object.
+ *      fnwpThread1Object.
  *
  *      Parameters:
  *      -- HOBJECT mp1: object handle to open.
@@ -918,7 +923,7 @@ VOID krn_T1M_OpenObjectFromHandle(HWND hwndObject,
 }
 
 /*
- *@@ krn_fnwpThread1Object:
+ *@@ fnwpThread1Object:
  *      wnd proc for the thread-1 object window.
  *
  *      This is needed for processing messages which must be
@@ -963,7 +968,7 @@ VOID krn_T1M_OpenObjectFromHandle(HWND hwndObject,
  *@@changed V0.9.6 (2000-10-16) [umoeller]: added WM_APPTERMINATENOTIFY
  */
 
-MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
+MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MPARAM  mrc = NULL;
     BOOL    fCallDefault = FALSE;
@@ -987,16 +992,16 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
 
                     case 2: // started from T1M_PAGEMAGECONFIGDELAYED
                     {
-                        PDAEMONSHARED   pDaemonShared = G_KernelGlobals.pDaemonShared;
+                        PXWPGLOBALSHARED   pXwpGlobalShared = G_KernelGlobals.pXwpGlobalShared;
 
-                        if (pDaemonShared)
-                            if (pDaemonShared->hwndDaemonObject)
+                        if (pXwpGlobalShared)
+                            if (pXwpGlobalShared->hwndDaemonObject)
                             {
 // #ifdef __PAGEMAGE__
                                 // cross-process send msg: this
                                 // does not return until the daemon
                                 // has re-read the data
-                                BOOL brc = (BOOL)WinSendMsg(pDaemonShared->hwndDaemonObject,
+                                BOOL brc = (BOOL)WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
                                                             XDM_PAGEMAGECONFIG,
                                                             (MPARAM)G_PageMageConfigFlags,
                                                             0);
@@ -1610,7 +1615,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
 
 /*
  *@@ krnPostThread1ObjectMsg:
- *      post msg to thread-1 object window (krn_fnwpThread1Object).
+ *      post msg to thread-1 object window (fnwpThread1Object).
  *      See include\shared\kernel.h for the supported T1M_*
  *      messages.
  *      This is used from all kinds of places and different threads.
@@ -1629,7 +1634,7 @@ BOOL krnPostThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
 
 /*
  *@@ krnSendThread1ObjectMsg:
- *      send msg to thread-1 object window (krn_fnwpThread1Object).
+ *      send msg to thread-1 object window (fnwpThread1Object).
  *      See include\shared\kernel.h for the supported T1M_*
  *      messages.
  *      Note that, as usual, sending a message from another
@@ -1650,7 +1655,7 @@ MRESULT krnSendThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
 /*
  *@@ fnwpStartupDlg:
  *      dlg proc for the Startup status window, which
- *      runs on the main PM thread (krn_fnwpThread1Object).
+ *      runs on the main PM thread (fnwpThread1Object).
  */
 
 MRESULT EXPENTRY fnwpStartupDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1662,7 +1667,7 @@ MRESULT EXPENTRY fnwpStartupDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         case WM_INITDLG:
         {
             // WinSetWindowULong(hwnd, QWL_USER, (ULONG)mp2);
-                // we don't need this here, it's done by krn_fnwpThread1Object
+                // we don't need this here, it's done by fnwpThread1Object
             ctlProgressBarFromStatic(WinWindowFromID(hwnd, ID_SDDI_PROGRESSBAR),
                                      PBA_ALIGNCENTER | PBA_BUTTONSTYLE);
             mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
@@ -1781,7 +1786,7 @@ MRESULT EXPENTRY fnwpQuickOpenDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         case WM_INITDLG:
         {
             // WinSetWindowULong(hwnd, QWL_USER, (ULONG)mp2);
-            // we don't need this here, it's done by krn_fnwpThread1Object
+            // we don't need this here, it's done by fnwpThread1Object
             ctlProgressBarFromStatic(WinWindowFromID(hwnd, ID_SDDI_PROGRESSBAR),
                                      PBA_ALIGNCENTER | PBA_BUTTONSTYLE);
             mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
@@ -1858,6 +1863,85 @@ MRESULT EXPENTRY fncbQuickOpen(HWND hwndFolder,
 
     // if "Cancel" has been pressed, return FALSE
     return ((MPARAM)(!G_fQuickOpenCancelled));
+}
+
+/* ******************************************************************
+ *
+ *   API object window
+ *
+ ********************************************************************/
+
+/*
+ *@@ fnwpAPIObject:
+ *      window proc for the XWorkplace API object window.
+ *
+ *      This API object window is quite similar to the thread-1
+ *      object window (fnwpThread1Object), except that its
+ *      messages are defined in include\xwpapi.h. As a result,
+ *      this thing handles public messages to allow external
+ *      processes to communicate with XWorkplace in the WPS
+ *      process.
+ *
+ *      Like the thread-1 object window, this is created on
+ *      WPS startup by krnInitializeXWorkplace and runs on
+ *      thread-1 of the WPS always.
+ *
+ *@@added V0.9.9 (2001-03-23) [umoeller]
+ */
+
+MRESULT EXPENTRY fnwpAPIObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    switch (msg)
+    {
+        /*
+         *@@ APIM_FILEDLG:
+         *      opens the XWorkplace file dialog.
+         *
+         *      Parameters:
+         *
+         *      -- PXWPFILEDLG mp1: file dialog parameters. NOTE:
+         *         If this message comes from another process,
+         *         this better point to shared memory, and all
+         *         member pointers must point to shared memory
+         *         as well. This shared memory must also be
+         *         given to the WPS process.
+         *
+         *      -- mp2: not used, always 0.
+         *
+         *      This message must be POSTED to the API object
+         *      window, and the posting thread should then enter
+         *      a modal message loop until XWPFILEDLG.hwndNotify
+         *      receives WM_USER.
+         *
+         *      Returns: HWND like WinFileDlg.
+         *
+         *@@added V0.9.9 (2001-03-23) [umoeller]
+         */
+
+        case APIM_FILEDLG:
+        {
+            PXWPFILEDLG pfd = (PXWPFILEDLG)mp1;
+            if (pfd)
+            {
+                // open the (modal) file dialog; this does
+                // not return until the dialog is dismissed
+                pfd->hwndReturn = fdlgFileDlg(pfd->hwndOwner,
+                                              &pfd->fd);
+                // now post WM_USER back to the notify window
+                // given to us
+                WinPostMsg(pfd->hwndNotify,
+                           WM_USER,
+                           0, 0);
+            }
+        break; }
+
+        default:
+            mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
+    }
+
+    return (mrc);
 }
 
 /* ******************************************************************
@@ -2397,7 +2481,8 @@ VOID krnReplaceWheelWatcher(FILE *DumpFile)
  *         bootup simply by not returning from this function
  *         until the dialog is dismissed.
  *
- *      c) Create the Thread-1 object window (krn_fnwpThread1Object).
+ *      c) Create the Thread-1 object window (fnwpThread1Object)
+ *         and API object window (fnwpAPIObject).
  *
  *      d) Call xthrStartThreads to have the additional XWorkplace
  *         threads started. The Speedy thread will then display the
@@ -2421,6 +2506,7 @@ VOID krnReplaceWheelWatcher(FILE *DumpFile)
  *@@changed V0.9.5 (2000-08-10) [umoeller]: added XWPSHELL interface
  *@@changed V0.9.7 (2000-12-13) [umoeller]: moved config.sys path composition here
  *@@changed V0.9.7 (2000-12-17) [umoeller]: got crashes if archiving displayed a msg box; moved archiving up
+ *@@changed V0.9.9 (2001-03-23) [umoeller]: added API object window
  */
 
 VOID krnInitializeXWorkplace(VOID)
@@ -2510,7 +2596,7 @@ VOID krnInitializeXWorkplace(VOID)
         // create thread-1 object window
         WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
                          (PSZ)WNDCLASS_THREAD1OBJECT,    // class name
-                         (PFNWP)krn_fnwpThread1Object,    // Window procedure
+                         (PFNWP)fnwpThread1Object,   // Window procedure
                          0,                  // class style
                          0);                 // extra window words
         G_KernelGlobals.hwndThread1Object
@@ -2521,6 +2607,21 @@ VOID krnInitializeXWorkplace(VOID)
             fprintf(DumpFile,
                     "XWorkplace thread-1 object window created, HWND 0x%lX\n",
                     G_KernelGlobals.hwndThread1Object);
+
+        // create API object window V0.9.9 (2001-03-23) [umoeller]
+        WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
+                         (PSZ)WNDCLASS_APIOBJECT,    // class name
+                         (PFNWP)fnwpAPIObject,   // Window procedure
+                         0,                  // class style
+                         0);                 // extra window words
+        G_KernelGlobals.hwndAPIObject
+            = winhCreateObjectWindow(WNDCLASS_APIOBJECT, // class name
+                                     NULL);        // create params
+
+        if (DumpFile)
+            fprintf(DumpFile,
+                    "XWorkplace API object window created, HWND 0x%lX\n",
+                    G_KernelGlobals.hwndAPIObject);
 
         // if shift is pressed, show "Panic" dialog
         // V0.9.7 (2001-01-24) [umoeller]: moved this behind creation
@@ -2573,13 +2674,13 @@ VOID krnInitializeXWorkplace(VOID)
      */
 
     {
-        // check for the DAEMONSHARED structure, which
+        // check for the XWPGLOBALSHARED structure, which
         // is used for communication between the daemon
         // and XFLDR.DLL (see src/Daemon/xwpdaemn.c).
         // We take advantage of the fact that OS/2 keeps
         // reference of the processes which allocate or
         // request access to a block of shared memory.
-        // The DAEMONSHARED struct is allocated here
+        // The XWPGLOBALSHARED struct is allocated here
         // (just below) and requested by the daemon.
         //
         // -- If requesting the shared memory works at this point,
@@ -2595,14 +2696,14 @@ VOID krnInitializeXWorkplace(VOID)
         //    if the daemon stopped for some reason (crash, kill)
         //    and the user then restarts the WPS.
 
-        PDAEMONSHARED pDaemonShared = 0;
-        APIRET arc = DosGetNamedSharedMem((PVOID*)&pDaemonShared,
-                                          SHMEM_DAEMON,
+        PXWPGLOBALSHARED pXwpGlobalShared = 0;
+        APIRET arc = DosGetNamedSharedMem((PVOID*)&pXwpGlobalShared,
+                                          SHMEM_XWPGLOBAL,
                                           PAG_READ | PAG_WRITE);
 
         if (DumpFile)
             fprintf(DumpFile,
-                    "\nAttempted to access " SHMEM_DAEMON ", DosGetNamedSharedMem returned %d\n",
+                    "\nAttempted to access " SHMEM_XWPGLOBAL ", DosGetNamedSharedMem returned %d\n",
                     arc);
 
         if (arc != NO_ERROR)
@@ -2617,9 +2718,9 @@ VOID krnInitializeXWorkplace(VOID)
             if (DumpFile)
                 fprintf(DumpFile, "--> XWPDAEMN not running, starting now.\n");
 
-            arc = DosAllocSharedMem((PVOID*)&pDaemonShared,
-                                    SHMEM_DAEMON,
-                                    sizeof(DAEMONSHARED), // rounded up to 4KB
+            arc = DosAllocSharedMem((PVOID*)&pXwpGlobalShared,
+                                    SHMEM_XWPGLOBAL,
+                                    sizeof(XWPGLOBALSHARED), // rounded up to 4KB
                                     PAG_COMMIT | PAG_READ | PAG_WRITE);
 
             if (DumpFile)
@@ -2631,13 +2732,15 @@ VOID krnInitializeXWorkplace(VOID)
                         szExe[CCHMAXPATH];
 
                 // shared mem successfully allocated:
-                memset(pDaemonShared, 0, sizeof(DAEMONSHARED));
+                memset(pXwpGlobalShared, 0, sizeof(XWPGLOBALSHARED));
                 // store the thread-1 object window, which
                 // gets messages from the daemon
-                pDaemonShared->hwndThread1Object = G_KernelGlobals.hwndThread1Object;
-                pDaemonShared->ulWPSStartupCount = 1;
+                pXwpGlobalShared->hwndThread1Object = G_KernelGlobals.hwndThread1Object;
+                pXwpGlobalShared->hwndAPIObject = G_KernelGlobals.hwndAPIObject;
+                        // V0.9.9 (2001-03-23) [umoeller]
+                pXwpGlobalShared->ulWPSStartupCount = 1;
                 // at the first WPS start, always process startup folder
-                pDaemonShared->fProcessStartupFolder = TRUE;
+                pXwpGlobalShared->fProcessStartupFolder = TRUE;
 
                 // now start the daemon;
                 // we need to specify XWorkplace's "BIN"
@@ -2694,16 +2797,19 @@ VOID krnInitializeXWorkplace(VOID)
                 fprintf(DumpFile, "--> XWPDAEMN already running, refreshing.\n");
 
             // store new thread-1 object wnd
-            pDaemonShared->hwndThread1Object = G_KernelGlobals.hwndThread1Object;
-            // increase WPS startup count
-            pDaemonShared->ulWPSStartupCount++;
+            pXwpGlobalShared->hwndThread1Object = G_KernelGlobals.hwndThread1Object;
+            pXwpGlobalShared->hwndAPIObject = G_KernelGlobals.hwndAPIObject;
+                        // V0.9.9 (2001-03-23) [umoeller]
 
-            if (pDaemonShared->hwndDaemonObject)
+            // increase WPS startup count
+            pXwpGlobalShared->ulWPSStartupCount++;
+
+            if (pXwpGlobalShared->hwndDaemonObject)
             {
-                WinSendMsg(pDaemonShared->hwndDaemonObject,
+                WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
                            XDM_HOOKCONFIG,
                            0, 0);
-                WinSendMsg(pDaemonShared->hwndDaemonObject,
+                WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
                            XDM_HOTKEYSCHANGED,
                            0, 0);
                     // cross-process post, synchronously:
@@ -2714,7 +2820,7 @@ VOID krnInitializeXWorkplace(VOID)
             // the last WPS restart
         }
 
-        G_KernelGlobals.pDaemonShared = pDaemonShared;
+        G_KernelGlobals.pXwpGlobalShared = pXwpGlobalShared;
     }
 
     /*

@@ -36,6 +36,8 @@
 #include "helpers\shapewin.h"           // shaped windows;
                                         // only needed for the window class names
 
+#include "xwpapi.h"                     // public XWorkplace definitions
+
 #include "hook\xwphook.h"
 #include "hook\hook_private.h"
 #include "hook\xwpdaemn.h"              // PageMage and daemon declarations

@@ -798,7 +798,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpEndEnumContent(XFolder *somSelf,
  *
  *      2)   The Worker thread then goes thru the (ordered) contents of
  *                the specified folder. For each object found, it posts
- *                T1M_POCCALLBACK to krn_fnwpThread1Object, which will then in
+ *                T1M_POCCALLBACK to fnwpThread1Object, which will then in
  *                turn call your callback on thread 1.
  *
  *      3)   The Worker thread then either waits for the object to

@@ -1867,7 +1867,7 @@ MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwndFrame,
  *      different window, which we own all alone.
  *
  *      We cannot use the global XFolder object window either
- *      (krn_fnwpThread1Object, kernel.c) because sometimes
+ *      (fnwpThread1Object, kernel.c) because sometimes
  *      folder windows do not run in the main PM thread
  *      (TID 1), esp. when they're opened using WinOpenObject or
  *      REXX functions. I have found that manipulating windows

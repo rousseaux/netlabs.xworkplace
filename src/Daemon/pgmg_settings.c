@@ -37,6 +37,8 @@
 
 #include "helpers\gpih.h"               // GPI helper routines
 
+#include "xwpapi.h"                     // public XWorkplace definitions
+
 #include "hook\xwphook.h"
 #include "hook\hook_private.h"
 #include "hook\xwpdaemn.h"              // PageMage and daemon declarations

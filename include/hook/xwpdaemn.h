@@ -145,7 +145,7 @@
     ULONG               G_pidDaemon;
     extern HAB          G_habDaemon;
     extern PHOOKDATA    G_pHookData;
-    extern PDAEMONSHARED G_pDaemonShared;
+    extern PXWPGLOBALSHARED G_pXwpGlobalShared;
 
     extern HPOINTER     G_hptrDaemon;
 

@@ -82,6 +82,8 @@
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
+#include "xwpapi.h"                     // public XWorkplace definitions
+
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
@@ -149,23 +151,23 @@ BOOL hifEnableHook(BOOL fEnable)
 {
     BOOL    brc = FALSE;
     PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
-    PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
+    PXWPGLOBALSHARED pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared;
 
     _Pmpf(("hifEnableHook (%d)", fEnable));
 
     // (de)install the hook by notifying the daemon
-    if (!pDaemonShared)
+    if (!pXwpGlobalShared)
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "pDaemonShared is NULL.");
+                       "pXwpGlobalShared is NULL.");
     else
     {
-        if (!pDaemonShared->hwndDaemonObject)
+        if (!pXwpGlobalShared->hwndDaemonObject)
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "pDaemonShared->hwndDaemonObject is NULLHANDLE.");
+                       "pXwpGlobalShared->hwndDaemonObject is NULLHANDLE.");
         else
         {
             _Pmpf(("  Sending XDM_HOOKINSTALL"));
-            if (WinSendMsg(pDaemonShared->hwndDaemonObject,
+            if (WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
                            XDM_HOOKINSTALL,
                            (MPARAM)(fEnable),
                            0))
@@ -208,10 +210,10 @@ BOOL hifXWPHookReady(VOID)
 {
     BOOL brc = FALSE;
     PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-    PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
+    PXWPGLOBALSHARED pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    if (pDaemonShared)
-        if (pDaemonShared->fAllHooksInstalled)
+    if (pXwpGlobalShared)
+        if (pXwpGlobalShared->fAllHooksInstalled)
             if (pGlobalSettings->fEnableXWPHook)
                 brc = TRUE;
     return (brc);
@@ -233,23 +235,23 @@ BOOL hifEnablePageMage(BOOL fEnable)
 
 // #ifdef __PAGEMAGE__
     PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
-    PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
+    PXWPGLOBALSHARED pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared;
 
     _Pmpf(("hifEnablePageMage: %d", fEnable));
 
     // (de)install the hook by notifying the daemon
-    if (!pDaemonShared)
+    if (!pXwpGlobalShared)
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "pDaemonShared is NULL.");
+                       "pXwpGlobalShared is NULL.");
     else
     {
-        if (!pDaemonShared->hwndDaemonObject)
+        if (!pXwpGlobalShared->hwndDaemonObject)
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "pDaemonShared->hwndDaemonObject is NULLHANDLE. XWPDAEMN.EXE is probably not running.");
+                   "pXwpGlobalShared->hwndDaemonObject is NULLHANDLE. XWPDAEMN.EXE is probably not running.");
         else
         {
             _Pmpf(("hifEnablePageMage: Sending XDM_STARTSTOPPAGEMAGE"));
-            if (WinSendMsg(pDaemonShared->hwndDaemonObject,
+            if (WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
                            XDM_STARTSTOPPAGEMAGE,
                            (MPARAM)(fEnable),
                            0))
@@ -295,7 +297,7 @@ BOOL hifHookConfigChanged(PVOID pvdc)
         PHOOKCONFIG   pdc = (PHOOKCONFIG)pvdc;
 
         PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
-        PDAEMONSHARED   pDaemonShared = pKernelGlobals->pDaemonShared;
+        PXWPGLOBALSHARED   pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared;
 
         brc = PrfWriteProfileData(HINI_USER,
                                   INIAPP_XWPHOOK,
@@ -308,18 +310,18 @@ BOOL hifHookConfigChanged(PVOID pvdc)
                        "PrfWriteProfileData failed.");
         else
         {
-            if (!pDaemonShared)
+            if (!pXwpGlobalShared)
                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "pDaemonShared is NULL.");
+                       "pXwpGlobalShared is NULL.");
             else
-                if (!pDaemonShared->hwndDaemonObject)
+                if (!pXwpGlobalShared->hwndDaemonObject)
                     cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "pDaemonShared->hwndDaemonObject is NULLHANDLE.");
+                       "pXwpGlobalShared->hwndDaemonObject is NULLHANDLE.");
                 else
                     // cross-process send msg: this
                     // does not return until the daemon
                     // has re-read the data
-                    brc = (BOOL)WinSendMsg(pDaemonShared->hwndDaemonObject,
+                    brc = (BOOL)WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
                                            XDM_HOOKCONFIG,
                                            0, 0);
         }

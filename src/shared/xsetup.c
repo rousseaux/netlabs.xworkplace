@@ -86,6 +86,8 @@
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
+#include "xwpapi.h"                     // public XWorkplace definitions
+
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
@@ -1575,7 +1577,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_ENABLE)
     {
-        PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
+        PXWPGLOBALSHARED pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared;
 
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_REPLACEFILEPAGE,
                 (  (pKernelGlobals->fXFolder)
@@ -1591,7 +1593,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 (pKernelGlobals->fXFolder));
 
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_XWPHOOK,
-                (pDaemonShared->hwndDaemonObject != NULLHANDLE));
+                (pXwpGlobalShared->hwndDaemonObject != NULLHANDLE));
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_GLOBALHOTKEYS,
                 hifXWPHookReady());
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_PAGEMAGE,
@@ -2595,16 +2597,16 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     // XWPHook status
     {
-        PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
+        PXWPGLOBALSHARED pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared;
         PSZ         psz = "Disabled";
-        if (pDaemonShared)
+        if (pXwpGlobalShared)
         {
             // WPS restarts V0.9.1 (99-12-29) [umoeller]
             WinSetDlgItemShort(pcnbp->hwndDlgPage, ID_XCDI_INFO_WPSRESTARTS,
-                               pDaemonShared->ulWPSStartupCount - 1,
+                               pXwpGlobalShared->ulWPSStartupCount - 1,
                                FALSE);  // unsigned
 
-            if (pDaemonShared->fAllHooksInstalled)
+            if (pXwpGlobalShared->fAllHooksInstalled)
                 psz = "Loaded, OK";
             else
                 psz = "Not loaded";

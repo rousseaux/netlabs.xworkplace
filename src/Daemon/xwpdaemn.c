@@ -42,7 +42,7 @@
  *
  *          b) When the WPS is started for the first time (after
  *             a reboot), krnInitializeXWorkplace (XFLDR.DLL)
- *             checks for whether a DAEMONSHARED structure (xwphook.h)
+ *             checks for whether a XWPGLOBALSHARED structure (xwphook.h)
  *             has already been allocated as a block of shared memory.
  *
  *             At system startup, this is not the case. As a result,
@@ -52,9 +52,9 @@
  *          c) The daemon then requests access to that block of
  *             shared memory, creates the daemon object window
  *             (fnwpDaemonObject) and posts T1M_DAEMONREADY to
- *             krn_fnwpThread1Object in XFLDR.DLL.
+ *             fnwpThread1Object in XFLDR.DLL.
  *
- *             krn_fnwpThread1Object will then send XDM_HOOKINSTALL
+ *             fnwpThread1Object will then send XDM_HOOKINSTALL
  *             to the daemon object window to install the hook (if
  *             the hook is enabled in XWPSetup). If PageMage has
  *             been enabled also, XDM_STARTSTOPPAGEMAGE will also
@@ -76,28 +76,28 @@
  *             of a crash or explicitly by the user), the daemon
  *             (and thus the hook) is not terminated, but stays
  *             active. Since OS/2 maintains a reference count
- *             for shared memory, the DAEMONSHARED structure
+ *             for shared memory, the XWPGLOBALSHARED structure
  *             is not freed, because the daemon is still using
  *             it.
  *
  *          e) When the WPS is re-initializing, krnInitializeXWorkplace
- *             this time realizes that the DAEMONSHARED structure is
+ *             this time realizes that the XWPGLOBALSHARED structure is
  *             still in use and will thus find out that the WPS is not
  *             started for the first time. Instead, access to the
- *             existing DAEMONSHARED structure is requested (so
+ *             existing XWPGLOBALSHARED structure is requested (so
  *             we have a reference count of two again).
  *
  *             XFLDR.DLL then posts the new Desktop window handle with
  *             XDM_DESKTOPREADY so the daemon data can be updated.
  *
- *             After the Desktop is up, if DAEMONSHARED.fProcessStartupFolder
+ *             After the Desktop is up, if XWPGLOBALSHARED.fProcessStartupFolder
  *             is TRUE (which has been set to this by XShutdown if the
  *             respective checkbox was checked), the XWorkplace
  *             startup folder is processed again.
  *
  *          In short, at any time after the WPS is starting for
  *          the first time, at least one process is using the
- *          DAEMONSHARED structure: either the WPS process (with
+ *          XWPGLOBALSHARED structure: either the WPS process (with
  *          XFLDR.DLL) or XWPDAEMON.EXE or both. The structure
  *          only gets freed if both processes are killed, which
  *          is not probable under normal circumstances.
@@ -176,6 +176,8 @@
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\threads.h"
 
+#include "xwpapi.h"                     // public XWorkplace definitions
+
 #include "hook\xwphook.h"               // hook and daemon definitions
 #include "hook\hook_private.h"          // private hook and daemon definitions
 #include "hook\xwpdaemn.h"              // PageMage and daemon declarations
@@ -201,7 +203,7 @@ HMQ             G_hmqDaemon;
 // this includes HOOKCONFIG
 PHOOKDATA       G_pHookData = NULL;
 // pointer to shared-memory daemon globals
-PDAEMONSHARED   G_pDaemonShared = NULL;
+PXWPGLOBALSHARED   G_pXwpGlobalShared = NULL;
 
 // daemon icon from resources
 HPOINTER        G_hptrDaemon = NULLHANDLE;
@@ -529,7 +531,7 @@ VOID dmnKillPageMage(BOOL fNotifyKernel)    // in: if TRUE, we post T1M_PAGEMAGE
 
         // notify kernel that PageMage has been closed
         // so that the global settings can be updated
-        WinPostMsg(G_pDaemonShared->hwndThread1Object,
+        WinPostMsg(G_pXwpGlobalShared->hwndThread1Object,
                    T1M_PAGEMAGECLOSED,
                    (MPARAM)fNotifyKernel,       // if TRUE, PageMage will be disabled
                    0);
@@ -698,7 +700,7 @@ BOOL LoadHookConfig(BOOL fHook,         // in: reload hook settings
 
 VOID InstallHook(VOID)
 {
-    if (!G_pDaemonShared->fAllHooksInstalled)
+    if (!G_pXwpGlobalShared->fAllHooksInstalled)
     {
         /* HMTX hmtx;
         if (NO_ERROR == DosCreateMutexSem(NULL,  // unnamed
@@ -710,7 +712,7 @@ VOID InstallHook(VOID)
                                           FALSE))    // unowned
         { */
             // install hook
-            G_pHookData = hookInit(G_pDaemonShared->hwndDaemonObject);
+            G_pHookData = hookInit(G_pXwpGlobalShared->hwndDaemonObject);
 
             // _Pmpf(("XWPDAEMON: hookInit called, pHookData: 0x%lX", G_pHookData));
 
@@ -720,7 +722,7 @@ VOID InstallHook(VOID)
                    )
                 {
                     // success:
-                    G_pDaemonShared->fAllHooksInstalled = TRUE;
+                    G_pXwpGlobalShared->fAllHooksInstalled = TRUE;
                     // load hotkeys list from OS2.INI
                     LoadHotkeysForHook();
                     // load config from OS2.INI
@@ -745,7 +747,7 @@ VOID InstallHook(VOID)
 
 VOID DeinstallHook(VOID)
 {
-    if (G_pDaemonShared->fAllHooksInstalled)
+    if (G_pXwpGlobalShared->fAllHooksInstalled)
     {
         // if mouse pointer is currently hidden,
         // show it now (otherwise it'll be lost...)
@@ -755,17 +757,17 @@ VOID DeinstallHook(VOID)
 
         dmnKillPageMage(FALSE);
         hookKill();
-        G_pDaemonShared->fAllHooksInstalled = FALSE;
+        G_pXwpGlobalShared->fAllHooksInstalled = FALSE;
 
         // stop timers which might still be running V0.9.4 (2000-07-14) [umoeller]
         WinStopTimer(G_habDaemon,
-                     G_pDaemonShared->hwndDaemonObject,
+                     G_pXwpGlobalShared->hwndDaemonObject,
                      TIMERID_SLIDINGFOCUS);
         WinStopTimer(G_habDaemon,
-                     G_pDaemonShared->hwndDaemonObject,
+                     G_pXwpGlobalShared->hwndDaemonObject,
                      TIMERID_SLIDINGMENU);
         WinStopTimer(G_habDaemon,
-                     G_pDaemonShared->hwndDaemonObject,
+                     G_pXwpGlobalShared->hwndDaemonObject,
                      TIMERID_AUTOHIDEMOUSE);
 
         // _Pmpf(("XWPDAEMON: hookKilled called"));
@@ -1100,7 +1102,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 else
                     DeinstallHook();
 
-                mrc = (MPARAM)(G_pDaemonShared->fAllHooksInstalled);
+                mrc = (MPARAM)(G_pXwpGlobalShared->fAllHooksInstalled);
             break;
 
             /*
@@ -1225,9 +1227,9 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 {
                     // _Pmpf(("Forwarding 0x%lX to 0x%lX",
                     //         mp1,
-                    //         G_pDaemonShared->hwndThread1Object));
+                    //         G_pXwpGlobalShared->hwndThread1Object));
                     // forward msg (cross-process post)
-                    WinPostMsg(G_pDaemonShared->hwndThread1Object,
+                    WinPostMsg(G_pXwpGlobalShared->hwndThread1Object,
                                T1M_OPENOBJECTFROMHANDLE,
                                mp1,
                                mp2);
@@ -1430,7 +1432,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                             }
                             else
                                 // no: let XFLDR.DLL thread-1 object handle this
-                                WinPostMsg(G_pDaemonShared->hwndThread1Object,
+                                WinPostMsg(G_pXwpGlobalShared->hwndThread1Object,
                                            T1M_OPENOBJECTFROMHANDLE,
                                            // pass HOBJECT or special function (0xFFFF000x)
                                            (MPARAM)(G_pHookData->HookConfig.ahobjHotCornerObjects[lIndex]),
@@ -1599,8 +1601,8 @@ VOID APIENTRY DaemonExitList(ULONG ulCode)
 {
     // de-install the hook
     DeinstallHook();
-    if (G_pDaemonShared)
-        G_pDaemonShared->hwndDaemonObject = NULLHANDLE;
+    if (G_pXwpGlobalShared)
+        G_pXwpGlobalShared->hwndDaemonObject = NULLHANDLE;
 
     // and exit (we must not use return here)
     DosExitList(EXLST_EXIT,
@@ -1615,7 +1617,7 @@ VOID APIENTRY DaemonExitList(ULONG ulCode)
  *      is a security measure so that this program does
  *      not get started by curious XWorkplace users.
  *
- *      Then, we access the DAEMONSHARED structure which
+ *      Then, we access the XWPGLOBALSHARED structure which
  *      has been allocated by krnInitializeXWorkplace
  *      (filesys\kernel.c).
  *
@@ -1623,7 +1625,7 @@ VOID APIENTRY DaemonExitList(ULONG ulCode)
  *      to which the hook will post messages.
  *
  *      This does not install the hooks yet, but posts
- *      T1M_DAEMONREADY to pDaemonShared->hwndThread1Object only.
+ *      T1M_DAEMONREADY to pXwpGlobalShared->hwndThread1Object only.
  *      To actually install the hook, XFLDR.DLL then posts
  *      XDM_HOOKINSTALL to the daemon object window.
  *
@@ -1679,8 +1681,8 @@ int main(int argc, char *argv[])
                         //    daemon;
                         // b) at any time later (if the daemon is restarted
                         //    manually), we have no problem either
-                        APIRET arc = DosGetNamedSharedMem((PVOID*)&G_pDaemonShared,
-                                                          SHMEM_DAEMON,
+                        APIRET arc = DosGetNamedSharedMem((PVOID*)&G_pXwpGlobalShared,
+                                                          SHMEM_XWPGLOBAL,
                                                           PAG_READ | PAG_WRITE);
                         if (arc == NO_ERROR)
                         {
@@ -1715,7 +1717,7 @@ int main(int argc, char *argv[])
                                              (PFNWP)fnwpDaemonObject,
                                              0,                  // class style
                                              0);                 // extra window words
-                            G_pDaemonShared->hwndDaemonObject
+                            G_pXwpGlobalShared->hwndDaemonObject
                                 = WinCreateWindow(HWND_OBJECT,
                                                   (PSZ)WNDCLASS_DAEMONOBJECT,
                                                   (PSZ)"",
@@ -1727,16 +1729,16 @@ int main(int argc, char *argv[])
                                                   NULL,
                                                   NULL);
 
-                            // _Pmpf(("hwndDaemonObject: 0x%lX", G_pDaemonShared->hwndDaemonObject));
+                            // _Pmpf(("hwndDaemonObject: 0x%lX", G_pXwpGlobalShared->hwndDaemonObject));
 
-                            if (G_pDaemonShared->hwndDaemonObject)
+                            if (G_pXwpGlobalShared->hwndDaemonObject)
                             {
                                 QMSG    qmsg;
 
                                 // OK: post msg to XFLDR.DLL thread-1 object window
                                 // that we're ready, which will in turn send
                                 // XDM_HOOKINSTALL
-                                WinPostMsg(G_pDaemonShared->hwndThread1Object,
+                                WinPostMsg(G_pXwpGlobalShared->hwndThread1Object,
                                            T1M_DAEMONREADY,
                                            0, 0);
 
@@ -1758,8 +1760,8 @@ int main(int argc, char *argv[])
                             DosExitList(EXLST_REMOVE,
                                         DaemonExitList);
 
-                            WinDestroyWindow(G_pDaemonShared->hwndDaemonObject);
-                            G_pDaemonShared->hwndDaemonObject = NULLHANDLE;
+                            WinDestroyWindow(G_pXwpGlobalShared->hwndDaemonObject);
+                            G_pXwpGlobalShared->hwndDaemonObject = NULLHANDLE;
                             // _Pmpf(("main: hwndDaemonObject destroyed"));
                         } // end if DosGetNamedSharedMem
                         else

@@ -62,7 +62,9 @@
 # PROJECT_BASE_DIR is used by "setup.in"
 # to identify the root of the source
 # tree. This is passed to the sub-makefiles.
+!ifndef PROJECT_BASE_DIR
 PROJECT_BASE_DIR = $(CVS_WORK_ROOT)\xworkplace
+!endif
 
 # include setup (compiler options etc.)
 !include setup.in

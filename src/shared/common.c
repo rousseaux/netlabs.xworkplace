@@ -369,6 +369,7 @@ const char      *WNDCLASS_FILEOBJECT           = "XWPFileObject";
 
 const char      *WNDCLASS_THREAD1OBJECT        = "XWPThread1Object";
 const char      *WNDCLASS_SUPPLOBJECT          = "XWPSupplFolderObject";
+const char      *WNDCLASS_APIOBJECT            = "XWPAPIObject";
 
 /* ******************************************************************
  *
@@ -4827,12 +4828,13 @@ BOOL cmnFileDlg(HWND hwndOwner,    // in: owner for file dlg
         }
     }
 
-    if (    fdlgFileDlg(HWND_DESKTOP,    // parent
-                        hwndOwner, // owner
+    if (    fdlgFileDlg(hwndOwner, // owner
                         &fd)
         && (fd.lReturn == DID_OK)
        )
     {
+        _Pmpf((__FUNCTION__ ": got DID_OK"));
+
         // save path back?
         if (    (hini)
              && (flFlags & WINH_FOD_INISAVEDIR)

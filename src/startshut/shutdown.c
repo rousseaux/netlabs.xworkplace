@@ -4152,7 +4152,7 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist.c functions
  *@@changed V0.9.0 [umoeller]: fixed some inconsistensies in ID_SDMI_CLOSEVIO
  *@@changed V0.9.0 [umoeller]: changed shutdown logging to stdio functions (fprintf etc.)
- *@@changed V0.9.0 [umoeller]: changed "reuse WPS startup folder" to use DAEMONSHARED
+ *@@changed V0.9.0 [umoeller]: changed "reuse WPS startup folder" to use XWPGLOBALSHARED
  *@@changed V0.9.0 [umoeller]: added xsdFlushWPS2INI call
  *@@changed V0.9.1 (99-12-10) [umoeller]: extracted VIO code to xsdCloseVIO
  *@@changed V0.9.4 (2000-07-11) [umoeller]: added wpWaitForClose for Desktop
