@@ -1,0 +1,64 @@
+<HTML WIDTH=70% XPOS=right NOSUBLINKS="intro" NOSUBLINKS="xices" NOSUBLINKS="vers_">
+<HEAD>
+    <TITLE>
+        XWorkplace 0.9.13
+    </TITLE>
+</HEAD>
+<!-- Note: This file changes almost with every XFolder version.
+     I do not recommend translating it, because I do not keep logs
+     about changes to this file.
+     Simply use the English original instead. -->
+<BODY>
+<P><B>XWorkplace 0.9.13 (June 3, 2001)</B>
+
+<P>New features:
+
+<UL><LI>XCenter: Added tray widgets, per popular request.
+<P><LI>XCenter: Added "Spacing lines" setting to XCenter view styles.
+<P><LI>XCenter: Added drop support and in-use emphasis to object button widgets.
+<P><LI>XCenter: Added detailed system information to tooltips for pulse and sentinel
+widgets.
+
+</UL><P>Miscellaneous changes:
+
+<UL><LI>Removed the temporary archive marker file that was previously used to check
+for whether a WPS archive was just restored. Thanks, Stefan Mielcke.
+<P><LI>"Sort" menu: Per popular request, the menu is dismissed again, unless shift
+is held down while clicking or "always sort" or "folders first" were clicked on.
+<P><LI>"Multimedia" object: Device detection on page 1 was completely rewritten.
+Hopefully this fixes the system hangs some people experienced with buggy multimedia
+drivers. While I was at it, I added lots of information to the display.
+<P><LI>Font sample view: default window size was a bit small. Fixed, now using almost
+the whole screen.
+<P><LI>XCenter: Made some xwplog.log messages more verbose.
+
+</UL>Bugfixes:
+
+<UL><LI>General: Added lots of new checks for audio CDs in the library code. This should
+finally prevent the stupid white error boxes on WPS startup, with the status bars
+in the "Drives" folder, and on disk double-clicks if an audio CD was inserted in a
+CD-ROM drive.
+<P><LI>"Sort" menu: Fixed confusion with check marks in certain situations.
+<P><LI>XCenter: "Add widget" menu never worked with sliding menus enabled. Fixed.
+<P><LI>XCenter: Paul Ratcliffe fixed the context menu font.
+<P><LI>XCenter: Fixed a memory leak on widget destruction.
+<P><LI>XCenter: Tooltips weren't managed properly for widgets that were just created
+or destroyed by the user. Fixed.
+<P><LI>XCenter: Fixed minor pointer change problem while settings dialog was displayed.
+<P><LI>System sounds: Changes in 0.9.13 caused Win-OS/2 to complain that sound device
+was busy. Fixed, hopefully.
+<P><LI>"Snap to grid" page: Values for Y origin and Y spacing were confused. Fixed.
+<P><LI>Boot logos: "Undo" button on "Startup" page in desktop's settings notebook
+never restored the boot logo file setting, which could lead to trouble if your boss
+came into the office. Fixed; thanks, Steve Wendt, for pointing this out.
+<P><LI>XShutdown: daemon crashed during shutdown if hook wasn't active. Fixed.
+<P><LI>XShutdown: 0.9.12 code broke WM_SAVEAPPLICATION behavior for some apps. Fixed;
+went back to pre-0.9.12 code there.
+<P><LI>XShutdown: Shutdown thread kept marching even if an exception was currently
+being processed on another thread, which prevented the trap logs from being written.
+Fixed, shutdown thread is now waiting if an exception handler is running somewhere.
+
+</UL>
+</BODY>
+</HTML>
+
