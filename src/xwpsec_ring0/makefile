@@ -22,7 +22,8 @@
 !endif
 
 # include setup (compiler options etc.)
-!include ..\..\setup.in
+!include ..\..\config.in
+!include ..\..\make\setup.in
 
 !ifndef DDKBASE
 !error DDKBASE is not defined.

@@ -111,6 +111,7 @@
 #include "filesys\fileops.h"            // file operations implementation
 #include "filesys\filetype.h"           // extended file types implementation
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\fdrcommand.h"         // folder command handling
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\icons.h"              // icons handling
 #include "filesys\object.h"             // XFldObject implementation
@@ -1265,7 +1266,7 @@ SOM_Scope BOOL  SOMLINK xdf_wpMenuItemHelpSelected(XFldDataFile *somSelf,
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpMenuItemHelpSelected");
 
     // call the common help processor in fdrmenus.c;
-    if (mnuMenuItemHelpSelected(somSelf, MenuId))
+    if (fcmdMenuItemHelpSelected(somSelf, MenuId))
         // if this returns TRUE, help was requested for one
         // of the new menu items
         return TRUE;

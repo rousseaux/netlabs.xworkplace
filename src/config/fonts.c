@@ -852,15 +852,15 @@ MRESULT fonDrop(XWPFontFolder *pFontFolder,
 }
 
 /*
- *@@ fonProcessObjectCommand:
- *      implementation for XWPTrashCan::xwpProcessObjectCommand.
+ *@@ fonProcessViewCommand:
+ *      implementation for XWPTrashCan::xwpProcessViewCommand.
  */
 
-BOOL fonProcessObjectCommand(WPFolder *somSelf,
-                             USHORT usCommand,
-                             HWND hwndCnr,
-                             WPObject* pFirstObject,
-                             ULONG ulSelectionFlags)
+BOOL fonProcessViewCommand(WPFolder *somSelf,
+                           USHORT usCommand,
+                           HWND hwndCnr,
+                           WPObject* pFirstObject,
+                           ULONG ulSelectionFlags)
 {
     BOOL brc = TRUE;        // default: processed
 
@@ -883,19 +883,19 @@ BOOL fonProcessObjectCommand(WPFolder *somSelf,
             // whether default processing should occur
 
             // manually resolve parent method
-            somTD_XWPFontFolder_xwpProcessObjectCommand pxwpProcessObjectCommand;
+            somTD_XWPFontFolder_xwpProcessViewCommand pxwpProcessViewCommand;
 
-            if (pxwpProcessObjectCommand
-                = (somTD_XWPFontFolder_xwpProcessObjectCommand)wpshResolveFor(
+            if (pxwpProcessViewCommand
+                = (somTD_XWPFontFolder_xwpProcessViewCommand)wpshResolveFor(
                                                        somSelf,
                                                        _somGetParent(_XWPFontFolder),
-                                                       "xwpProcessObjectCommand"))
+                                                       "xwpProcessViewCommand"))
                 // let parent method return TRUE or FALSE
-                brc = pxwpProcessObjectCommand(somSelf,
-                                               usCommand,
-                                               hwndCnr,
-                                               pFirstObject,
-                                               ulSelectionFlags);
+                brc = pxwpProcessViewCommand(somSelf,
+                                             usCommand,
+                                             hwndCnr,
+                                             pFirstObject,
+                                             ulSelectionFlags);
         }
     }
 

@@ -22,7 +22,8 @@
 !endif
 
 # include setup (compiler options etc.)
-!include ..\..\setup.in
+!include ..\..\config.in
+!include ..\..\make\setup.in
 
 MYDIR = $(MAKEDIR)
 
@@ -77,41 +78,39 @@ dep:
     $(RUN_FASTDEP) *.c
     @echo ----- Leaving $(MAKEDIR)
 
-.c.{$(OUTPUTDIR)}.obj:
-        @echo $(MAKEDIR)\makefile [$@]: Compiling $(@B).c
-!ifndef PRECH
-# precompiled headers disabled:
-        $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
-!else
-        $(CC_EXE_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
-!endif
+# V0.9.21: Use the inference rule in \make\comp_standalone.in now,
+# which is shared for all makefiles that generate code for standalone
+# executables.
+# This sets up the compiler rule to compile .c files to .obj files
+# in the $(OUTPUTDIR).
+!include $(PROJECT_BASE_DIR)\make\comp_standalone.in
 
 # build targets
 xwpshell.def: ..\..\include\bldlevel.h makefile
-          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "$(XWPNAME) Security shell starter"
+    $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "$(XWPNAME) Security shell starter"
 
 $(OUTPUTDIR)\xwpshell.res: $(@B).rc *.ico
-          $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
+    $(RC) -i $(MAKEDIR) -r $(MAKEDIR)\$(@B).rc $(OUTPUTDIR)\$(@B).res
 
 $(MODULESDIR)\xwpshell.exe: $(ALL_OBJ1) $(@B).def $(OUTPUTDIR)\$(@B).res makefile
-          $(LINK) /out:$(MODULESDIR)\$(@B).exe $(ALL_OBJ1) $(HELPERS_BASE)\src\helpers\pmprintf.lib $(@B).def
-          $(RC) $(OUTPUTDIR)\$(@B).res $(MODULESDIR)\$(@B).exe
+    $(LINK) /out:$(MODULESDIR)\$(@B).exe $(ALL_OBJ1) $(HELPERS_BASE)\src\helpers\pmprintf.lib $(@B).def
+    $(RC) $(OUTPUTDIR)\$(@B).res $(MODULESDIR)\$(@B).exe
 !ifdef XWP_OUTPUT_ROOT_DRIVE
-        @$(XWP_OUTPUT_ROOT_DRIVE)
+    @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif
-          @cd $(MODULESDIR)
-          mapsym xwpshell.map
+    @cd $(MODULESDIR)
+    mapsym xwpshell.map
 !ifdef CVS_WORK_ROOT_DRIVE
-        @$(CVS_WORK_ROOT_DRIVE)
+    @$(CVS_WORK_ROOT_DRIVE)
 !endif
-          @cd $(MYDIR)
+    @cd $(MYDIR)
 
 # main target
 $(XWPRUNNING)\bin\xwpshell.exe: $(MODULESDIR)\$(@B).exe
-          $(RUN_UNLOCK) $(XWPRUNNING)\bin\$(@B).exe
-          cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
-          cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
-          cmd.exe /c copy $(MODULESDIR)\$(@B).exe E:\os2
+    $(RUN_UNLOCK) $(XWPRUNNING)\bin\$(@B).exe
+    cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
+    cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
+    cmd.exe /c copy $(MODULESDIR)\$(@B).exe E:\os2
 
 # The .OBJ-from-sources dependencies are now automatically
 # created by "nmake dep" into the .depend include file.

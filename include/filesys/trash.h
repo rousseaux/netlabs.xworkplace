@@ -103,11 +103,11 @@
 
     APIRET trshValidateTrashObject(XWPTrashObject *somSelf);
 
-    BOOL trshProcessObjectCommand(WPFolder *somSelf,
-                                  USHORT usCommand,
-                                  HWND hwndCnr,
-                                  WPObject* pFirstObject,
-                                  ULONG ulSelectionFlags);
+    BOOL trshProcessViewCommand(WPFolder *somSelf,
+                                USHORT usCommand,
+                                HWND hwndCnr,
+                                WPObject* pFirstObject,
+                                ULONG ulSelectionFlags);
 
     /* ******************************************************************
      *

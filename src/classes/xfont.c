@@ -128,30 +128,32 @@ SOM_Scope ULONG  SOMLINK fon_xwpAddFontsPage(XWPFontFolder *somSelf,
 }
 
 /*
- *@@ xwpProcessObjectCommand:
+ *@@ xwpProcessViewCommand:
  *      this XFolder method processes WM_COMMAND messages
  *      for objects in a container. For details refer to
- *      XFolder::xwpProcessObjectCommand.
+ *      XFolder::xwpProcessViewCommand.
  *
  *      This is really a method override... but since SOM
  *      IDL doesn't know that XWPTrashCan is in fact
  *      derived from XFolder, we have to do it this way.
+ *
+ *@@changed V0.9.21 (2002-08-26) [umoeller]: method renamed
  */
 
-SOM_Scope BOOL  SOMLINK fon_xwpProcessObjectCommand(XWPFontFolder *somSelf,
-                                                    USHORT usCommand,
-                                                    HWND hwndCnr,
-                                                    WPObject* pFirstObject,
-                                                    ULONG ulSelectionFlags)
+SOM_Scope BOOL  SOMLINK fon_xwpProcessViewCommand(XWPFontFolder *somSelf,
+                                                  USHORT usCommand,
+                                                  HWND hwndCnr,
+                                                  WPObject* pFirstObject,
+                                                  ULONG ulSelectionFlags)
 {
     // XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
-    XWPFontFolderMethodDebug("XWPFontFolder","fon_xwpProcessObjectCommand");
+    XWPFontFolderMethodDebug("XWPFontFolder","fon_xwpProcessViewCommand");
 
-    return (fonProcessObjectCommand(somSelf,
-                                    usCommand,
-                                    hwndCnr,
-                                    pFirstObject,
-                                    ulSelectionFlags));
+    return fonProcessViewCommand(somSelf,
+                                 usCommand,
+                                 hwndCnr,
+                                 pFirstObject,
+                                 ulSelectionFlags);
 }
 
 /*

@@ -499,7 +499,7 @@ BOOL fdrModifySortMenu(WPFolder *somSelf,
  *      This gets called from two locations:
  *
  *      --  from mnuFolderSelectingMenuItem in the context
- *          of fnwpSubclassedFolderFrame to intercept
+ *          of fnwpSubclassedWPFolderWindow to intercept
  *          the folder sort menu items even before they
  *          get passed to wpMenuItemSelected so that we
  *          can keep the menu open instead of dismissing
@@ -527,7 +527,7 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
                              HWND hwndMenu,      // may be NULLHANDLE if
                                                  // pbDismiss is NULL also
                              ULONG ulMenuId,
-                             PBOOL pbDismiss)    // out: dismiss flag for fnwpSubclassedFolderFrame
+                             PBOOL pbDismiss)    // out: dismiss flag for fnwpSubclassedWPFolderWindow
 {
     BOOL            brc = FALSE;
 #ifndef __ALWAYSEXTSORT__

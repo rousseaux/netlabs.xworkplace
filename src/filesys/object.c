@@ -273,11 +273,8 @@
 
 // other SOM headers
 #pragma hdrstop
-// #include <wptrans.h>                    // WPTransient
 #include <wpclsmgr.h>                   // WPClassMgr
 #include <wpshadow.h>
-
-#include "helpers\undoc.h"              // some undocumented stuff
 
 /* ******************************************************************
  *
@@ -2338,9 +2335,11 @@ BOOL objSetObjectHotkey(WPObject *somSelf,
         {
             PGLOBALHOTKEY   pHotkeys;
             ULONG           cHotkeys = 0;
+
             #ifdef DEBUG_KEYS
                 _Pmpf(("Entering xwpSetObjectHotkey usFlags = 0x%lX, usKeyCode = 0x%lX",
-                        usFlags, usKeyCode));
+                        pHotkey->usFlags,
+                        pHotkey->usKeyCode));
             #endif
 
             if (pHotkeys = hifQueryObjectHotkeys(&cHotkeys))

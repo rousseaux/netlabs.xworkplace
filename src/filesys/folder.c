@@ -125,8 +125,6 @@
 // other SOM headers
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
-#include "helpers\undoc.h"              // some undocumented stuff
-
 /* ******************************************************************
  *
  *   Setup strings
@@ -1262,6 +1260,85 @@ BOOL fdrUpdateAllFrameWindows(WPFolder *somSelf,
     ntbUpdateVisiblePage(somSelf, SP_XFOLDER_FLDR);
 
     return brc;
+}
+
+/* ******************************************************************
+ *
+ *   Folder refresh
+ *
+ ********************************************************************/
+
+/*
+ *@@ fntFdrRefresh:
+ *      transient thread which refreshes a folder.
+ *      Started from fdrForceRefresh only.
+ *
+ *      This thread is created with a PM message queue.
+ *
+ *@@added V0.9.21 (2002-08-26) [umoeller]
+ */
+
+static VOID _Optlink fntFdrRefresh(PTHREADINFO ptiMyself)
+{
+    TRY_LOUD(excpt1)
+    {
+        WPFolder *pFolder = (WPFolder*)ptiMyself->ulData;
+
+        _wpRefresh(pFolder, NULLHANDLE, NULL);
+    }
+    CATCH(excpt1) {} END_CATCH();
+}
+
+/*
+ *@@ fdrForceRefresh:
+ *      forces a full folder refresh.
+ *
+ *      If the folder has an open view, the refresh is
+ *      started on a second thread. Otherwise we only
+ *      set the folder flags to have the refresh happen
+ *      when the folder is opened for the next time.
+ *
+ *@@added V0.9.21 (2002-08-26) [umoeller]
+ */
+
+BOOL fdrForceRefresh(WPFolder *pFolder)
+{
+    ULONG   fl = _wpQueryFldrFlags(pFolder);
+
+    _PmpfF(("entering [%s]", _wpQueryTitle(pFolder)));
+
+    // refresh the folder if it's not currently refreshing
+    if (0 == (fl & (FOI_POPULATEINPROGRESS | FOI_REFRESHINPROGRESS)))
+    {
+        // we need a full refresh on the folder...
+        // set FOI_ASYNCREFRESHONOPEN, clear
+        // FOI_POPULATEDWITHFOLDERS | FOI_POPULATEDWITHALL,
+        // which will cause the folder contents to be refreshed
+        // on open
+        _wpModifyFldrFlags(pFolder,
+                           FOI_ASYNCREFRESHONOPEN
+                                | FOI_POPULATEDWITHFOLDERS
+                                | FOI_POPULATEDWITHALL
+                                | FOI_TREEPOPULATED,
+                           FOI_ASYNCREFRESHONOPEN);
+
+        // if the folder is currently open, do a
+        // full refresh NOW
+        if (_wpFindViewItem(pFolder,
+                            VIEW_ANY,
+                            NULL))
+        {
+            return !!thrCreate(NULL,
+                               fntFdrRefresh,
+                               NULL,
+                               "FdrRefresh",
+                               THRF_PMMSGQUEUE | THRF_TRANSIENT,
+                               // thread param: folder pointer
+                               (ULONG)pFolder);
+        }
+    }
+
+    return FALSE;
 }
 
 /* ******************************************************************

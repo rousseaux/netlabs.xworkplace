@@ -65,13 +65,14 @@
 !endif
 
 # include setup (compiler options etc.)
-!include setup.in
+!include config.in
+!include make\setup.in
 
 # VARIABLES
 # ---------
 
 # objects.in defines the .OBJ files to be compiled.
-!include objects.in
+!include make\objects.in
 
 OUTPUTDIR = $(XWP_OUTPUT_ROOT)
 
@@ -313,7 +314,7 @@ src\shared\xwp.def
 src\shared\xwp.def: include\bldlevel.h makefile
         $(RUN_BLDLEVEL) $@ include\bldlevel.h "$(XWPNAME) main module"
 
-$(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(MODDEFFILE) objects.in
+$(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(MODDEFFILE) make\objects.in
         @echo $(MAKEDIR)\makefile [$@]: Linking $@
         $(LINK) @<<$(TEMP)\XFLDR.LNK
 /OUT:$@ $(MODDEFFILE) $(OBJS) $(HLPOBJS) $(LIBS)

@@ -723,7 +723,7 @@ SOM_Scope BOOL  SOMLINK xtro_wpModifyPopupMenu(XWPTrashObject *somSelf,
  *
  *      Actually, this method doesn't get called any longer
  *      for the operations which are checked for here
- *      because XWPTrashCan::xwpProcessObjectCommand already
+ *      because XWPTrashCan::xwpProcessViewCommand already
  *      handles those commands.
  *
  *@@changed V0.9.12 (2001-05-22) [umoeller]: added destroy

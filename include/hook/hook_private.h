@@ -26,6 +26,23 @@
 
     /* ******************************************************************
      *
+     *   Declarations
+     *
+     ********************************************************************/
+
+    /*
+     * HK_PREACCEL:
+     *      additional undocumented PM hook type,
+     *      for pre-accelerator table hooks.
+     *      This definition taken out of the
+     *      ProgramCommander/2 source (thanks,
+     *      Roman Stangl).
+     */
+
+    #define HK_PREACCEL             17
+
+    /* ******************************************************************
+     *
      *   Shared mem/semaphore IDs
      *
      ********************************************************************/
@@ -275,7 +292,7 @@
     } HOOKDATA, *PHOOKDATA;
 
     // special key for WM_MOUSEMOVE with delayed sliding menus
-    #define         HT_DELAYEDSLIDINGMENU   (HT_NORMAL+2)
+    #define         HT_DELAYEDSLIDINGMENU   (HT_NORMAL + 2)
 
     /* ******************************************************************
      *
@@ -283,15 +300,15 @@
      *
      ********************************************************************/
 
-#ifndef __NOPAGER__
-    #define PGRM_POSITIONFRAME      (WM_USER + 301)
-    #define PGRM_REFRESHCLIENT      (WM_USER + 302)
-    #define PGRM_WINDOWCHANGE       (WM_USER + 303)
-    #define PGRM_ICONCHANGE         (WM_USER + 304)
-    #define PGRM_WRAPAROUND         (WM_USER + 305)
-    #define PGRM_PAGERHOTKEY        (WM_USER + 306)
-    #define PGRM_MOVEBYDELTA        (WM_USER + 307)
-#endif
+    #ifndef __NOPAGER__
+        #define PGRM_POSITIONFRAME      (WM_USER + 301)
+        #define PGRM_REFRESHCLIENT      (WM_USER + 302)
+        #define PGRM_WINDOWCHANGE       (WM_USER + 303)
+        #define PGRM_ICONCHANGE         (WM_USER + 304)
+        #define PGRM_WRAPAROUND         (WM_USER + 305)
+        #define PGRM_PAGERHOTKEY        (WM_USER + 306)
+        #define PGRM_MOVEBYDELTA        (WM_USER + 307)
+    #endif
 
     /* ******************************************************************
      *
@@ -332,19 +349,19 @@
 
     BOOL _Optlink WMChar_Main(PQMSG pqmsg);
 
-    extern HOOKDATA        G_HookData;
-    extern PGLOBALHOTKEY   G_paGlobalHotkeys;
-    extern ULONG           G_cGlobalHotkeys;
-    extern PFUNCTIONKEY    G_paFunctionKeys;
-    extern ULONG           G_cFunctionKeys;
-    extern HMTX            G_hmtxGlobalHotkeys;
+    extern HOOKDATA         G_HookData;
+    extern PGLOBALHOTKEY    G_paGlobalHotkeys;
+    extern ULONG            G_cGlobalHotkeys;
+    extern PFUNCTIONKEY     G_paFunctionKeys;
+    extern ULONG            G_cFunctionKeys;
+    extern HMTX             G_hmtxGlobalHotkeys;
 
-    extern HWND    G_hwndUnderMouse;
-    extern HWND    G_hwndLastFrameUnderMouse;
-    extern HWND    G_hwndLastSubframeUnderMouse;
-    extern POINTS  G_ptsMousePosWin;
-    extern POINTL  G_ptlMousePosDesktop;
-    extern HWND    G_hwndRootMenu;
+    extern HWND             G_hwndUnderMouse;
+    extern HWND             G_hwndLastFrameUnderMouse;
+    extern HWND             G_hwndLastSubframeUnderMouse;
+    extern POINTS           G_ptsMousePosWin;
+    extern POINTL           G_ptlMousePosDesktop;
+    extern HWND             G_hwndRootMenu;
 #endif
 
 

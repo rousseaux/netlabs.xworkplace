@@ -78,11 +78,11 @@
         MRESULT fonDrop(XWPFontFolder *pFontFolder,
                         PDRAGINFO pdrgInfo);
 
-        BOOL fonProcessObjectCommand(WPFolder *somSelf,
-                                     USHORT usCommand,
-                                     HWND hwndCnr,
-                                     WPObject* pFirstObject,
-                                     ULONG ulSelectionFlags);
+        BOOL fonProcessViewCommand(WPFolder *somSelf,
+                                   USHORT usCommand,
+                                   HWND hwndCnr,
+                                   WPObject* pFirstObject,
+                                   ULONG ulSelectionFlags);
     #endif
 
     #ifdef NOTEBOOK_HEADER_INCLUDED

@@ -4,11 +4,11 @@
  *      implementation file for the XFolder folder hotkeys.
  *
  *      This code gets interfaced from method overrides in
- *      xfldr.c, from fnwpSubclassedFolderFrame, and from
+ *      xfldr.c, from fnwpSubclWPFolderWindow, and from
  *      XFldWPS (xfwps.c).
  *
  *      This is for _folder_ hotkeys only, which are implemented
- *      thru folder subclassing (fnwpSubclassedFolderFrame),
+ *      thru folder subclassing (fnwpSubclWPFolderWindow),
  *      which in turn calls fdrProcessFldrHotkey.
  *      The global object hotkeys are instead implemented using
  *      the XWorkplace hook (xwphook.c).
@@ -84,7 +84,6 @@
 
 // other SOM headers
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
-#include "helpers\undoc.h"              // some undocumented stuff
 
 /* ******************************************************************
  *
@@ -294,7 +293,7 @@ BOOL fdrFindHotkey(USHORT usCommand,
 
 /*
  *@@ fdrProcessFldrHotkey:
- *      this is called by fnwpSubclassedFolderFrame to
+ *      this is called by fnwpSubclWPFolderWindow to
  *      check for whether a given WM_CHAR message matches
  *      one of the folder hotkeys.
  *
@@ -305,11 +304,19 @@ BOOL fdrFindHotkey(USHORT usCommand,
  *      cause the defined action to occur (that is, the WPS
  *      will call the proper wpMenuItemSelected method).
  *
+ *      Note that you should pass in WM_CHAR even if KC_KEYUP
+ *      is not set to be able to determine whether the key
+ *      should be swallowed (V0.9.21). We check for the flag
+ *      here and post the message only if the flag is clear,
+ *      but return TRUE (for "swallow the message") in both
+ *      cases.
+ *
  *@@changed V0.9.0 [umoeller]: moved this here from common.c
  *@@changed V0.9.1 (2000-01-31) [umoeller]: changed prototype; this was using MPARAMS previously
  *@@changed V0.9.9 (2001-02-28) [pr]: allow multiple actions on same hotkey
  *@@changed V0.9.14 (2001-07-28) [umoeller]: now disabling sort and arrange hotkeys for desktop, if those menu items are disabled
  *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu handling
+ *@@changed V0.9.21 (2002-08-24) [umoeller]: fixed key up/down processing
  */
 
 BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
@@ -319,11 +326,13 @@ BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
                           USHORT usvk)
 {
     BOOL brc = FALSE;
+
     // now check if the key is relevant: filter out KEY UP
     // messages and check if either a virtual key (such as F5)
     // or Ctrl or Alt was pressed
-    if (    ((usFlags & KC_KEYUP) == 0)
-        &&  (     ((usFlags & KC_VIRTUALKEY) != 0)
+    if (    // ((usFlags & KC_KEYUP) == 0)      nope, process both key down and up
+            //                                  V0.9.21 (2002-08-24) [umoeller]
+            (     ((usFlags & KC_VIRTUALKEY) != 0)
                   // Ctrl pressed?
                || ((usFlags & KC_CTRL) != 0)
                   // Alt pressed?
@@ -338,8 +347,11 @@ BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
             )
        )
     {
-        USHORT us = 0;
-        USHORT usKeyCode  = 0;
+        USHORT  us = 0;
+        USHORT  usKeyCode,
+                usAllFlags;
+
+        USHORT  usCommand;
 
         if (usFlags & KC_VIRTUALKEY)
             usKeyCode = usvk;
@@ -347,17 +359,21 @@ BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
             usKeyCode = usch;
 
         // filter out unwanted flags
+        usAllFlags = usFlags;
         usFlags &= (KC_VIRTUALKEY | KC_CTRL | KC_ALT | KC_SHIFT);
 
         #ifdef DEBUG_KEYS
-            _Pmpf(("fdrProcessFldrHotkey: usKeyCode: 0x%lX, usFlags: 0x%lX", usKeyCode, usFlags));
+            _PmpfF(("hwndFrame: 0x%lX, usKeyCode: 0x%lX, usFlags: 0x%lX",
+                    hwndFrame,
+                    usKeyCode,
+                    usFlags));
         #endif
 
         // now go through the global accelerator list and check
-        // if the pressed key was assigned an action to
-        while (G_FolderHotkeys[us].usCommand)
+        // if the pressed key was assigned an action to;
+        // the array is terminated with a null usCommand
+        while (usCommand = G_FolderHotkeys[us].usCommand)
         {
-            USHORT usCommand;
             if (      (G_FolderHotkeys[us].usFlags == usFlags)
                    && (G_FolderHotkeys[us].usKeyCode == usKeyCode)
                )
@@ -369,7 +385,6 @@ BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
                 // find the corresponding
                 // "command" (= menu ID) and post it to the frame
                 // window, which will execute it
-                usCommand = G_FolderHotkeys[us].usCommand;
 
                 // now, if sort or arrange are disabled for
                 // the desktop and this is a sort or arrange
@@ -424,15 +439,21 @@ BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
                         usCommand += cmnQuerySetting(sulVarMenuOffset);
                     }
 
-                    WinPostMsg(hwndFrame,
-                               WM_COMMAND,
-                               (MPARAM)usCommand,
-                               MPFROM2SHORT(CMDSRC_MENU,
-                                            FALSE) );     // results from keyboard operation
+                    // post only if this is a "key down" message
+                    // V0.9.21 (2002-08-24) [umoeller]
+                    if (!(usAllFlags & KC_KEYUP))
+                    {
+                        WinPostMsg(hwndFrame,
+                                   WM_COMMAND,
+                                   (MPARAM)usCommand,
+                                   MPFROM2SHORT(CMDSRC_MENU,
+                                                FALSE)  // results from keyboard operation
+                                  );
 
-                    #ifdef DEBUG_KEYS
-                        _Pmpf(("  Posting command 0x%lX", usCommand));
-                    #endif
+                        #ifdef DEBUG_KEYS
+                            _Pmpf(("  Posting command 0x%lX", usCommand));
+                        #endif
+                    }
                 }
 
                 // return TRUE even if we did NOT post;
@@ -440,6 +461,7 @@ BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
                 // by parent winproc
                 brc = TRUE;
             }
+
             us++;
         }
     }
@@ -742,7 +764,15 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
         CHAR    szDescription[100];
         BOOL    fCnrWhitespace = wpshIsViewCnr(somSelf, hwndCnr);
 
+        USHORT  idMenu = WinQueryWindowUShort(hwndMenu, QWS_ID);
+
         ULONG   ulVarMenuOffset = cmnQuerySetting(sulVarMenuOffset);
+
+        #ifdef DEBUG_KEYS
+            _PmpfF(("hwndMenu 0x%lX, id 0x%lX",
+                    hwndMenu,
+                    idMenu));
+        #endif
 
         if (!fCnrWhitespace)
         {
@@ -1134,13 +1164,12 @@ MRESULT fdrHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
 
         case ID_XSDI_SETACCEL:
         {
-            HWND hwndEdit = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_DESCRIPTION);
+            HWND        hwndEdit = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_DESCRIPTION);
             PXFLDHOTKEY pHotkeyFound = NULL;
-            USHORT usCommand;
-            pHotkeyFound = FindHotkeyFromLBSel(pnbp->hwndDlgPage,
-                                               &usCommand);
+            USHORT      usCommand;
 
-            if (pHotkeyFound == NULL)
+            if (!(pHotkeyFound = FindHotkeyFromLBSel(pnbp->hwndDlgPage,
+                                                     &usCommand)))
             {
                 // no hotkey defined yet: append a new one
                 pHotkeyFound = fdrQueryFldrHotkeys();
@@ -1164,7 +1193,9 @@ MRESULT fdrHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
                 pHotkeyFound->usKeyCode    = pshef->usKeyCode;
 
                 #ifdef DEBUG_KEYS
-                    _Pmpf(("Stored usFlags = 0x%lX, usKeyCode = 0x%lX", usFlags, usKeyCode));
+                    _Pmpf(("Stored usFlags = 0x%lX, usKeyCode = 0x%lX",
+                            pshef->usFlags,
+                            pshef->usKeyCode));
                 #endif
 
                 // show description

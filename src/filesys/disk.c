@@ -81,7 +81,6 @@
 #include "hook\xwphook.h"               // hook and daemon definitions
 
 // other SOM headers
-#include "helpers\undoc.h"              // some undocumented stuff
 
 #pragma hdrstop
 

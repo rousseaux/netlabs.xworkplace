@@ -106,8 +106,7 @@
 
         WPFileSystem*  wpshContainsFile(WPFolder *pFolder, PCSZ pcszRealName);
 
-        WPObject* wpshCreateFromTemplate(HAB hab,
-                                         WPObject *pTemplate,
+        WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
                                          WPFolder* pFolder,
                                          HWND hwndFrame,
                                          USHORT usOpenSettings,

@@ -86,6 +86,7 @@ $(OUTPUTDIR)\sound.obj
 XFLDR_OBJS_FILESYS = \
 $(OUTPUTDIR)\desktop.obj \
 $(OUTPUTDIR)\disk.obj \
+$(OUTPUTDIR)\fdrcommand.obj \
 $(OUTPUTDIR)\fdrcontent.obj \
 $(OUTPUTDIR)\fdrhotky.obj \
 $(OUTPUTDIR)\fdrnotebooks.obj \

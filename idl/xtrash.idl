@@ -61,10 +61,10 @@ interface XWPTrashCan : WPFolder
                            in PULONG pulDeleted,
                            in HWND hwndConfirmOwner);
 
-    BOOL xwpProcessObjectCommand(in USHORT usCommand,
-                                 in HWND hwndCnr,
-                                 in WPObject pFirstObject,
-                                 in ULONG ulSelectionFlags);
+    BOOL xwpProcessViewCommand(in USHORT usCommand,
+                               in HWND hwndCnr,
+                               in WPObject pFirstObject,
+                               in ULONG ulSelectionFlags);
 
     BOOL xwpUpdateStatusBar(in HWND hwndStatusBar, in HWND hwndCnr);
 
@@ -82,7 +82,7 @@ interface XWPTrashCan : WPFolder
             xwpSetCorrectTrashIcon,
             xwpEmptyTrashCan,
             xwpUpdateStatusBar,
-            xwpProcessObjectCommand;
+            xwpProcessViewCommand;
 
     /*
      * Class Modifiers:

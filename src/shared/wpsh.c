@@ -566,15 +566,16 @@ BOOL wpshCheckObject(WPObject *pObject)
  *      Details view to this func, and you'll get
  *      OPEN_DETAILS back.
  *
- *      Returns 0 upon errors.
+ *      Returns OPEN_UNKNOWN (-1) upon errors.
  *
  *@@changed V0.9.2 (2000-03-06) [umoeller]: added object mutex protection
+ *@@changed V0.9.21 (2002-08-26) [umoeller]: now returning -1 on errors because 0 is OPEN_DEFAULT
  */
 
 ULONG wpshQueryView(WPObject* somSelf,      // in: object to examine
                     HWND hwndFrame)         // in: frame window of open view of somSelf
 {
-    ULONG   ulView = 0;
+    ULONG   ulView = OPEN_UNKNOWN;      // -1 V0.9.21 (2002-08-26) [umoeller]
 
     WPObject *pobjLock = NULL;
     TRY_LOUD(excpt1)
@@ -620,11 +621,29 @@ ULONG wpshQueryView(WPObject* somSelf,      // in: object to examine
  *      hwndCnr passed with wpModifyPopupMenu.
  *
  *@@added V0.9.2 (2000-03-08) [umoeller]
+ *@@changed V0.9.21 (2002-08-26) [umoeller]: rewritten to be much faster and work with split views too
  */
 
 BOOL wpshIsViewCnr(WPObject *somSelf,
                    HWND hwndCnr)
 {
+#if 1
+    HWND    hwndFrame;
+
+    if (hwndFrame = WinQueryWindow(hwndCnr, QW_PARENT))
+    {
+        if (    (WPObject*)WinSendMsg(hwndFrame,
+                                      WM_QUERYOBJECTPTR,
+                                      NULL,
+                                      NULL)
+             == somSelf
+           )
+            return TRUE;
+    }
+
+    return FALSE;
+
+#else
     BOOL    brc = FALSE;
 
     WPObject *pobjLock = NULL;
@@ -652,6 +671,7 @@ BOOL wpshIsViewCnr(WPObject *somSelf,
         _wpReleaseObjectMutexSem(pobjLock);
 
     return brc;
+#endif
 }
 
 /*
@@ -1302,11 +1322,11 @@ WPFileSystem* wpshContainsFile(WPFolder *pFolder,   // in: folder to examine
  *@@changed V0.9.2 (2000-02-26) [umoeller]: removed CM_QUERYRECORDINFO
  *@@changed V0.9.9 (2001-03-27) [umoeller]: now using wpCopyObject instead of wpCreateFromTemplate; this should fix the system hangs
  *@@changed V0.9.14 (2001-07-28) [umoeller]: fixed invisible new obj in tree views (workaround for WPS bug)
+ *@@changed V0.9.21 (2002-08-26) [umoeller]: removed hab param which was never used; optimized
+ *@@changed V0.9.21 (2002-08-26) [umoeller]: fixed tree view, finally
  */
 
-WPObject* wpshCreateFromTemplate(HAB hab,
-                                    // in: anchor block
-                                 WPObject *pTemplate,
+WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
                                     // in: the template to create from
                                  WPFolder* pFolder,
                                     // in: the target folder to create the new object in
@@ -1326,25 +1346,34 @@ WPObject* wpshCreateFromTemplate(HAB hab,
     WPObject            *pNewObject = NULL;
     HPOINTER            hptrOld;
     BOOL                fChangeIconPos = FALSE,
-                        // fFolderSemOwned = FALSE,
-                        // fNewObjSemOwned = FALSE,
                         fShiftPressed = doshQueryShiftState();
 
     TRY_LOUD(excpt1)
     {
+        HWND    hwndCnr;
+
         // change the mouse pointer to "wait" state
         hptrOld = winhSetWaitPointer();
 
-        if ((pFolder) && (pTemplate) && (hwndFrame))
+        if (    (pFolder)
+             && (pTemplate)
+             && (hwndFrame)
+             && (hwndCnr = WinWindowFromID(hwndFrame, FID_CLIENT))
+           )
         {
-            HWND            hwndCnr;
             CNRINFO         CnrInfo;
+            POINTL          ptlMoveTo;
 
-            if (hwndCnr = WinWindowFromID(hwndFrame, FID_CLIENT))
-                cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
+            #ifdef DEBUG_MENUS
+                _PmpfF(("[%s] entering", _wpQueryTitle(pTemplate)));
+            #endif
+
+            cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
 
             // position newly created object in window?
-            if ((hwndCnr) && (fReposition) && (pptlMenuMousePos))
+            if (    (fReposition)
+                 && (pptlMenuMousePos)
+               )
             {
                 // only do this in "true" Icon views (not Tree, not Name, not Text)
                 if (    ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
@@ -1352,29 +1381,32 @@ WPObject* wpshCreateFromTemplate(HAB hab,
                      && (CnrInfo.pSortRecord == NULL)
                    )
                 {
-                    SWP swp;
-                    HWND hwndFrame2 = // wpshQueryFrameFromView(pFolder, OPEN_CONTENTS);
-                            WinQueryWindow(hwndCnr, QW_PARENT);
+                    ptlMoveTo.x = pptlMenuMousePos->x;
+                    ptlMoveTo.y = pptlMenuMousePos->y;
 
-                    if (hwndFrame2)
-                    {
-                        // the passed mouse coords are relative to screen,
-                        // so subtract frame wnd coords
-                        WinQueryWindowPos(hwndFrame2, &swp);
-                        pptlMenuMousePos->x -= swp.x;
-                        pptlMenuMousePos->y -= swp.y;
+                    WinMapWindowPoints(HWND_DESKTOP,
+                                       hwndCnr,
+                                       &ptlMoveTo,
+                                       1);
 
-                        // subtract cnr coords also
-                        WinQueryWindowPos(hwndCnr, &swp);
-                        pptlMenuMousePos->x -= swp.x;
-                        pptlMenuMousePos->y -= swp.y;
+                    /*  replaced this V0.9.21 (2002-08-26) [umoeller]
+                    // the passed mouse coords are relative to screen,
+                    // so subtract frame wnd coords
+                    WinQueryWindowPos(hwndFrame, &swp);
+                    pptlMenuMousePos->x -= swp.x;
+                    pptlMenuMousePos->y -= swp.y;
 
-                        // add cnr work area offset
-                        pptlMenuMousePos->x += CnrInfo.ptlOrigin.x;
-                        pptlMenuMousePos->y += CnrInfo.ptlOrigin.y;
+                    // subtract cnr coords also
+                    WinQueryWindowPos(hwndCnr, &swp);
+                    pptlMenuMousePos->x -= swp.x;
+                    pptlMenuMousePos->y -= swp.y;
+                    */
 
-                        fChangeIconPos = TRUE;
-                    }
+                    // add cnr work area offset
+                    ptlMoveTo.x += CnrInfo.ptlOrigin.x;
+                    ptlMoveTo.y += CnrInfo.ptlOrigin.y;
+
+                    fChangeIconPos = TRUE;
                 }
             } // end if ((hwndCnr) && (fReposition) && (pptlMenuMousePos))
 
@@ -1389,200 +1421,208 @@ WPObject* wpshCreateFromTemplate(HAB hab,
                                            pFolder,
                                            TRUE))       // lock
             {
-                PMINIRECORDCORE pmrc = NULL;
+                PMINIRECORDCORE pmrc,
+                                precParent = NULL;
+                BOOL            fInsert = TRUE;
+
                 _wpModifyStyle(pNewObject,
                                OBJSTYLE_TEMPLATE,
                                0);
 
-                while (!_wpIsObjectInitialized(pNewObject))
-                    winhSleep(50);
+                // now check if the object is already inserted in
+                // the container; this is the case usually for
+                // icon and details views, but we have a problem
+                // with tree views (because templates are not inserted
+                // and the tree view does not pick up the style change)
+                // and split views as well. So check if the cnr has
+                // the object inserted:
 
-                pmrc = _wpQueryCoreRecord(pNewObject);
-
-                if ( (hwndCnr) && (pmrc) )
+                if (CnrInfo.flWindowAttr & CV_TREE)
                 {
-                    // move new object to mouse pos, if allowed;
-                    // we must do this "manually" by manipulating the
-                    // cnr itself, because the WPS methods for setting
-                    // icon positions simply don't work (I think this
-                    // broke with Warp 3)
+                    // insert only if the new object is a folder,
+                    // or if the folder has "show all in tree view"
+                    // set
 
-                    WPFolder *pParentFolder;
-                    PMINIRECORDCORE precParent;
-
-                    if (fChangeIconPos)       // valid-data flag set above
+                    if (fInsert =    (_somIsA(pNewObject, _WPFolder))
+                                  || (fdrHasShowAllInTreeView(pFolder))
+                       )
                     {
-                        // the WPS shares records among views, so we need
-                        // to update the record core info first
-                        WinSendMsg(hwndCnr,
-                                   CM_QUERYRECORDINFO,
-                                   (MPARAM)&pmrc,
-                                   (MPARAM)1);         // one record only
-
-                        // un-display the new object at the old (default) location
-                        WinSendMsg(hwndCnr,
-                                   CM_ERASERECORD,
-                                       // this only changes the visibility of the
-                                       // record without changing the recordcore;
-                                       // this msg is intended for drag'n'drop and such
-                                   (MPARAM)pmrc,
-                                   NULL);
-
-                        // move object
-                        pmrc->ptlIcon.x = pptlMenuMousePos->x;
-                        pmrc->ptlIcon.y = pptlMenuMousePos->y;
-
-                        // repaint at new position
-                        WinSendMsg(hwndCnr,
-                                   CM_INVALIDATERECORD,
-                                   (MPARAM)&pmrc,
-                                   MPFROM2SHORT(1,     // one record only
-                                       CMA_REPOSITION | CMA_ERASE));
-                    }
-                    else if (    (hwndCnr)
-                              && (CnrInfo.flWindowAttr & CV_TREE)
-                              && (pParentFolder = _wpQueryFolder(pNewObject))
-                              && (precParent = _wpQueryCoreRecord(pParentFolder))
-                            )
-                    {
-                        // we're in tree view:
-                        // in most cases (unless the tree view has
-                        // "show all in tree view" set), the object
-                        // was not automatically inserted because it
-                        // was a template. The bug in the WPS is that
-                        // even though we unset the template flag
-                        // above, the object still doesn't show up...
-                        // so just insert it now, if this fails, no
-                        // problem...
-                        // V0.9.14 (2001-07-28) [umoeller]
-                        POINTL ptlIcon = {0, 0};
+                        // if we're in tree view, insert the new
+                        // object under the folder where we just
+                        // created the thing
+                        precParent = _wpQueryCoreRecord(pFolder);
 
                         // populate the folder (synchronously)
-                        fdrCheckIfPopulated(pParentFolder,
-                                            // folders only:
-                                            FALSE);
+                        fdrCheckIfPopulated(pFolder,
+                                            TRUE);      // folders only
 
-                        _wpCnrInsertObject(pNewObject,
-                                           hwndCnr,
-                                           &ptlIcon,
-                                           precParent,
-                                           NULL);       // next avail position
                         WinSendMsg(hwndCnr,
                                    CM_EXPANDTREE,
                                    (MPARAM)precParent,
                                    0);
                     }
+                }
 
-                    // scroll cnr work area to make the new object visible
-                    cnrhScrollToRecord(hwndCnr,
-                                       (PRECORDCORE)pmrc,
-                                       CMA_TEXT,
-                                       FALSE);
+                if (fInsert)
+                {
+                    if (!fdrIsObjectInCnr(pNewObject,
+                                           hwndCnr))
+                        // object still not in there: insert it then
+                        _wpCnrInsertObject(pNewObject,
+                                           hwndCnr,
+                                           &ptlMoveTo,
+                                           precParent,  // NULL if not tree view
+                                           NULL);
 
-                    // the object is now created; depending on the
-                    // Global settings, we will now either open
-                    // the settings notebook of it or make its title
-                    // editable
-
-                    if (    (usOpenSettings == 1)
-                         || (fShiftPressed)
-                       )
+                    if (pmrc = _wpQueryCoreRecord(pNewObject))
                     {
-                        // open settings of the newly created object
-                        _wpViewObject(pNewObject,
-                                      NULLHANDLE,
-                                      OPEN_SETTINGS,
-                                      0L);
-                    }
-                    else if (usOpenSettings == 2)
-                    {
-                        // make the title of the newly created object
-                        // editable (container "direct editing"), if
-                        // the settings allow it and the folder is open
-                        BOOL            fStartEditing = TRUE;
-                        CNREDITDATA     CnrEditData = {0};
+                        // move new object to mouse pos, if allowed;
+                        // we must do this "manually" by manipulating the
+                        // cnr itself, because the WPS methods for setting
+                        // icon positions simply don't work (I think this
+                        // broke with Warp 3)
 
-                        // the WPS shares records among views, so we need
-                        // to update the record core info first
-                        WinSendMsg(hwndCnr,
-                                   CM_QUERYRECORDINFO,
-                                   (MPARAM)&pmrc,
-                                   (MPARAM)1);         // one record only
-
-                        // first check if the folder window whose
-                        // context menu was used is in Details view
-                        // or other
-                        if (CnrInfo.flWindowAttr & CV_DETAIL)
+                        if (fChangeIconPos)       // valid-data flag set above
                         {
-                            PFIELDINFO      pFieldInfo = 0;
+                            // the WPS shares records among views, so we need
+                            // to update the record core info first
+                            WinSendMsg(hwndCnr,
+                                       CM_QUERYRECORDINFO,
+                                       (MPARAM)&pmrc,
+                                       (MPARAM)1);         // one record only
 
-                            // Details view: now, this is wicked; we
-                            // need to find out the "Title" column of
-                            // the container which we need to pass to
-                            // the container for enabling direct editing
-                            pFieldInfo = (PFIELDINFO)WinSendMsg(hwndCnr,
-                                                                CM_QUERYDETAILFIELDINFO,
-                                                                MPNULL,
-                                                                (MPARAM)CMA_FIRST);
+                            // un-display the new object at the old (default) location
+                            WinSendMsg(hwndCnr,
+                                       CM_ERASERECORD,
+                                           // this only changes the visibility of the
+                                           // record without changing the recordcore;
+                                           // this msg is intended for drag'n'drop and such
+                                       (MPARAM)pmrc,
+                                       NULL);
 
-                            // pFieldInfo now points to the first Details
-                            // column; now we go through all the Details
-                            // columns until we find one which is not
-                            // read-only (which should be the title); we
-                            // cannot assume "column two" or anything like
-                            // this, because this folder might have
-                            // Details settings which are different from
-                            // the defaults
-                            while ((pFieldInfo) && ((LONG)pFieldInfo != -1))
+                            // move object
+                            pmrc->ptlIcon.x = ptlMoveTo.x;
+                            pmrc->ptlIcon.y = ptlMoveTo.y;
+
+                            // repaint at new position
+                            WinSendMsg(hwndCnr,
+                                       CM_INVALIDATERECORD,
+                                       (MPARAM)&pmrc,
+                                       MPFROM2SHORT(1,     // one record only
+                                                    CMA_REPOSITION | CMA_ERASE));
+                        }
+
+                        // scroll cnr work area to make the new object visible
+                        cnrhScrollToRecord(hwndCnr,
+                                           (PRECORDCORE)pmrc,
+                                           CMA_TEXT,
+                                           FALSE);
+
+                        // the object is now created; depending on the
+                        // Global settings, we will now either open
+                        // the settings notebook of it or make its title
+                        // editable
+
+                        if (    (usOpenSettings == 1)
+                             || (fShiftPressed)
+                           )
+                        {
+                            // open settings of the newly created object
+                            _wpViewObject(pNewObject,
+                                          NULLHANDLE,
+                                          OPEN_SETTINGS,
+                                          0L);
+                        }
+                        else if (usOpenSettings == 2)
+                        {
+                            // make the title of the newly created object
+                            // editable (container "direct editing"), if
+                            // the settings allow it and the folder is open
+                            BOOL            fStartEditing = TRUE;
+                            CNREDITDATA     CnrEditData = {0};
+
+                            // the WPS shares records among views, so we need
+                            // to update the record core info first
+                            WinSendMsg(hwndCnr,
+                                       CM_QUERYRECORDINFO,
+                                       (MPARAM)&pmrc,
+                                       (MPARAM)1);         // one record only
+
+                            // first check if the folder window whose
+                            // context menu was used is in Details view
+                            // or other
+                            if (CnrInfo.flWindowAttr & CV_DETAIL)
                             {
-                                if (pFieldInfo->flData & CFA_FIREADONLY)
-                                    break; // while
+                                PFIELDINFO      pFieldInfo = 0;
 
-                                // else get next column
+                                // Details view: now, this is wicked; we
+                                // need to find out the "Title" column of
+                                // the container which we need to pass to
+                                // the container for enabling direct editing
                                 pFieldInfo = (PFIELDINFO)WinSendMsg(hwndCnr,
                                                                     CM_QUERYDETAILFIELDINFO,
-                                                                    pFieldInfo,
-                                                                    (MPARAM)CMA_NEXT);
-                            }
+                                                                    MPNULL,
+                                                                    (MPARAM)CMA_FIRST);
 
-                            if (pFieldInfo)
-                            {
-                                // found:
-                                // in Details view, direct editing needs the
-                                // column info plus a fixed constant
-                                CnrEditData.pFieldInfo = pFieldInfo;
-                                CnrEditData.id = CID_LEFTDVWND;
+                                // pFieldInfo now points to the first Details
+                                // column; now we go through all the Details
+                                // columns until we find one which is not
+                                // read-only (which should be the title); we
+                                // cannot assume "column two" or anything like
+                                // this, because this folder might have
+                                // Details settings which are different from
+                                // the defaults
+                                while ((pFieldInfo) && ((LONG)pFieldInfo != -1))
+                                {
+                                    if (pFieldInfo->flData & CFA_FIREADONLY)
+                                        break; // while
+
+                                    // else get next column
+                                    pFieldInfo = (PFIELDINFO)WinSendMsg(hwndCnr,
+                                                                        CM_QUERYDETAILFIELDINFO,
+                                                                        pFieldInfo,
+                                                                        (MPARAM)CMA_NEXT);
+                                }
+
+                                if (pFieldInfo)
+                                {
+                                    // found:
+                                    // in Details view, direct editing needs the
+                                    // column info plus a fixed constant
+                                    CnrEditData.pFieldInfo = pFieldInfo;
+                                    CnrEditData.id = CID_LEFTDVWND;
+                                }
+                                else
+                                    fStartEditing = FALSE;
                             }
                             else
-                                fStartEditing = FALSE;
-                        }
-                        else
-                        {
-                            // other than Details view: that's easy,
-                            // we only need the container ID
-                            CnrEditData.pFieldInfo = NULL;
-                            CnrEditData.id = WinQueryWindowUShort(hwndCnr, QWS_ID);
-                        }
+                            {
+                                // other than Details view: that's easy,
+                                // we only need the container ID
+                                CnrEditData.pFieldInfo = NULL;
+                                CnrEditData.id = WinQueryWindowUShort(hwndCnr, QWS_ID);
+                            }
 
-                        if (fStartEditing)
-                        {
-                            CnrEditData.cb = sizeof(CnrEditData);
-                            CnrEditData.hwndCnr = hwndCnr;
-                            // pass the MINIRECORDCORE of the new object
-                            CnrEditData.pRecord = (PRECORDCORE)pmrc;
-                            // use existing (template default) title
-                            CnrEditData.ppszText = NULL;
-                            CnrEditData.cbText = 0;
+                            if (fStartEditing)
+                            {
+                                CnrEditData.cb = sizeof(CnrEditData);
+                                CnrEditData.hwndCnr = hwndCnr;
+                                // pass the MINIRECORDCORE of the new object
+                                CnrEditData.pRecord = (PRECORDCORE)pmrc;
+                                // use existing (template default) title
+                                CnrEditData.ppszText = NULL;
+                                CnrEditData.cbText = 0;
 
-                            // finally, this message switches to
-                            // direct editing of the title
-                            WinSendMsg(hwndCnr,
-                                       CM_OPENEDIT,
-                                       (MPARAM)&CnrEditData,
-                                       MPNULL);
-                        }
-                    } // end else if (usOpenSettings == 2)
-                } // end if ( (hwndCnr) && (pmrc) )
+                                // finally, this message switches to
+                                // direct editing of the title
+                                WinSendMsg(hwndCnr,
+                                           CM_OPENEDIT,
+                                           (MPARAM)&CnrEditData,
+                                           MPNULL);
+                            }
+                        } // end else if (usOpenSettings == 2)
+                    }
+                } // end if (fInsert)
             } // end if (pNewObject);
         } // end if ((pFolder) && (pTemplate) && (hwndFrame))
 

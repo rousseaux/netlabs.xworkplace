@@ -134,8 +134,6 @@
 // other SOM headers
 #pragma hdrstop
 
-#include "helpers\undoc.h"              // some undocumented stuff
-
 #include <wpdataf.h>
 
 /* ******************************************************************
@@ -2820,6 +2818,7 @@ SOM_Scope ULONG  SOMLINK xo_wpReleaseObjectMutexSem(XFldObject *somSelf)
  *
  *@@changed V0.9.5 (2000-09-20) [pr]: fixed context menu flags
  *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu handling
+ *@@changed V0.9.21 (2002-08-26) [umoeller]: removing copy etc. for split views
  */
 
 SOM_Scope ULONG  SOMLINK xo_wpFilterPopupMenu(XFldObject *somSelf,
@@ -2827,7 +2826,9 @@ SOM_Scope ULONG  SOMLINK xo_wpFilterPopupMenu(XFldObject *somSelf,
                                               HWND hwndCnr,
                                               BOOL fMultiSelect)
 {
-    ULONG ulMenuFilter = 0;
+    ULONG   ulMenuFilter = 0;
+    HWND    hwndFrame;
+    BOOL    fRemoveFileOps = TRUE;
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpFilterPopupMenu");
 
@@ -2839,6 +2840,47 @@ SOM_Scope ULONG  SOMLINK xo_wpFilterPopupMenu(XFldObject *somSelf,
         _PmpfF(("ulMenuFilter & CTXT_CRANOTHER: 0x%lX %d",
                 ulMenuFilter, ((ulMenuFilter) & CTXT_CRANOTHER)));
     #endif
+
+    // check if hwndCnr is part of a standard WPS view frame,
+    // that is, it belongs to a frame that is registered
+    // as OPEN_CONTENTS and the like; if it is NOT, then
+    // it is very probably part of our split view, and
+    // the WPS is TOTALLY CONFUSED about how to deal with
+    // that in the copy/move/create shadow dialog, so remove
+    // those menu items entirely
+    // V0.9.21 (2002-08-26) [umoeller]
+    if (hwndFrame = WinQueryWindow(hwndCnr, QW_PARENT))
+    {
+        BOOL fLocked = FALSE;
+
+        TRY_LOUD(excpt1)
+        {
+            if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+            {
+                PVIEWITEM pvi;
+                #define CHECKVIEWS (VIEW_CONTENTS | VIEW_DETAILS | VIEW_TREE)
+                for (pvi = _wpFindViewItem(somSelf, CHECKVIEWS, NULL);
+                     pvi;
+                     pvi = _wpFindViewItem(somSelf, CHECKVIEWS, pvi))
+                {
+                    if (pvi->handle == hwndFrame)
+                    {
+                        fRemoveFileOps = FALSE;
+                        break;
+                    }
+                }
+            }
+        }
+        CATCH(excpt1)
+        {
+        } END_CATCH();
+
+        if (fLocked)
+            _wpReleaseObjectMutexSem(somSelf);
+    }
+
+    if (fRemoveFileOps)
+        ulMenuFilter &= ~ (CTXT_COPY | CTXT_LINK | CTXT_MOVE | CTXT_NEW);
 
     // if object has been deleted already (ie. is in trashcan),
     // remove delete... not that I can see how we can get a context
@@ -2852,16 +2894,17 @@ SOM_Scope ULONG  SOMLINK xo_wpFilterPopupMenu(XFldObject *somSelf,
     // ready-made for this function; the "Workplace Shell"
     // notebook page for removing menu items sets this field with
     // the proper CTXT_xxx flags
-    return ((ulMenuFilter
-            // first we add "Create another", because for
-            // some reason it's always disabled if XFolder
-            // is installed; I don't know why
-            // V0.9.5 (2000-09-20) [pr] No it's not. This causes problems
-            // with objects wrongly having Create Another options.
-            /*| CTXT_CRANOTHER*/ ) // V0.9.5 (2000-09-20) [pr]
-            // then disable items, this may include CTXT_CRANOTHER
-            & ~(cmnQuerySetting(mnuQueryMenuWPSSetting(somSelf)))
-        );
+    return (    (ulMenuFilter
+                 // first we add "Create another", because for
+                 // some reason it's always disabled if XFolder
+                 // is installed; I don't know why
+                 // V0.9.5 (2000-09-20) [pr] No it's not. This causes problems
+                 // with objects wrongly having Create Another options.
+                 /*| CTXT_CRANOTHER*/ ) // V0.9.5 (2000-09-20) [pr]
+                 // then disable items, this may include CTXT_CRANOTHER
+                   & ~(cmnQuerySetting(mnuQueryMenuWPSSetting(somSelf))
+                )
+           );
 }
 
 /*
@@ -2922,7 +2965,7 @@ SOM_Scope BOOL  SOMLINK xo_wpModifyPopupMenu(XFldObject *somSelf,
  *      this method by one of the objects.
  *
  *      In order to be able to process all objects at
- *      once, we now have XFolder::xwpProcessObjectCommand,
+ *      once, we now have XFolder::xwpProcessViewCommand,
  *      which can intercept the menu ID even before this
  *      method is invoked on each object and process all
  *      objects in one flush.

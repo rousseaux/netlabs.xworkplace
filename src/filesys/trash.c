@@ -100,7 +100,6 @@
 // other SOM headers
 #pragma hdrstop
 #include "xfobj.h"
-#include "helpers\undoc.h"              // some undocumented stuff
 
 /* ******************************************************************
  *
@@ -2197,8 +2196,8 @@ APIRET trshValidateTrashObject(XWPTrashObject *somSelf)
 }
 
 /*
- *@@ trshProcessObjectCommand:
- *      implementation for XWPTrashCan::xwpProcessObjectCommand.
+ *@@ trshProcessViewCommand:
+ *      implementation for XWPTrashCan::xwpProcessViewCommand.
  *
  *      This replaces trash can subclassing now, which
  *      was used before V0.9.7. Here we intercept the
@@ -2208,11 +2207,11 @@ APIRET trshValidateTrashObject(XWPTrashObject *somSelf)
  *@@added V0.9.7 (2001-01-13) [umoeller]
  */
 
-BOOL trshProcessObjectCommand(WPFolder *somSelf,
-                              USHORT usCommand,
-                              HWND hwndCnr,
-                              WPObject* pFirstObject,
-                              ULONG ulSelectionFlags)
+BOOL trshProcessViewCommand(WPFolder *somSelf,
+                            USHORT usCommand,
+                            HWND hwndCnr,
+                            WPObject* pFirstObject,
+                            ULONG ulSelectionFlags)
 {
     BOOL brc = TRUE;        // default: processed
 
@@ -2247,19 +2246,19 @@ BOOL trshProcessObjectCommand(WPFolder *somSelf,
             // whether default processing should occur
 
             // manually resolve parent method
-            somTD_XWPTrashCan_xwpProcessObjectCommand pxwpProcessObjectCommand;
+            somTD_XWPTrashCan_xwpProcessViewCommand pxwpProcessViewCommand;
 
-            if (pxwpProcessObjectCommand
-                = (somTD_XWPTrashCan_xwpProcessObjectCommand)wpshResolveFor(
+            if (pxwpProcessViewCommand
+                = (somTD_XWPTrashCan_xwpProcessViewCommand)wpshResolveFor(
                                                        somSelf,
                                                        _somGetParent(_XWPTrashCan),
-                                                       "xwpProcessObjectCommand"))
+                                                       "xwpProcessViewCommand"))
                 // let parent method return TRUE or FALSE
-                brc = pxwpProcessObjectCommand(somSelf,
-                                               usCommand,
-                                               hwndCnr,
-                                               pFirstObject,
-                                               ulSelectionFlags);
+                brc = pxwpProcessViewCommand(somSelf,
+                                             usCommand,
+                                             hwndCnr,
+                                             pFirstObject,
+                                             ulSelectionFlags);
         }
     }
 
@@ -2478,7 +2477,7 @@ APIRET trshIsOnSupportedDrive(WPObject *pObject)
  *  by the subclassed folder frame procedure. We don't really
  *  need the overhead of subclassing trash can frames again.
  *
- *  Instead, we have now introduced XFolder::xwpProcessObjectCommand,
+ *  Instead, we have now introduced XFolder::xwpProcessViewCommand,
  *  which is overridden for XWPTrashCan.
  */
 

@@ -127,8 +127,6 @@
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 
-#include "helpers\undoc.h"              // some undocumented stuff
-
 /* ******************************************************************
  *
  *   Expanded object lists

@@ -789,7 +789,7 @@
 #define ID_XCDI_PARANOIA_INTRO          1159
 #define ID_XCDI_VARMENUOFFSET_TXT       1160
 #define ID_XCDI_VARMENUOFFSET           1161
-#define ID_XCDI_NOFREAKYMENUS           1162
+// #define ID_XCDI_NOFREAKYMENUS           1162     removed V0.9.21 (2002-08-26) [umoeller]
 #ifndef __ALWAYSSUBCLASS__
 #define ID_XCDI_NOSUBCLASSING           1163
 #endif

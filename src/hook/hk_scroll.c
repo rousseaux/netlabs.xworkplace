@@ -46,8 +46,6 @@
 #define DONT_REPLACE_MALLOC         // in case mem debug is enabled
 #include "setup.h"
 
-#include "helpers\undoc.h"
-
 #include "hook\xwphook.h"
 #include "hook\hook_private.h"          // private hook and daemon definitions
 

@@ -1047,7 +1047,7 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
  *
  *      This must then be called from the menu's owner window proc
  *      when WM_INITMENU is received for a folder content menu item.
- *      For example, fnwpSubclassedFolderFrame calls this for
+ *      For example, fnwpSubclWPFolderWindow calls this for
  *      folder content menus.
  *
  *      This way, we can fill the folder content submenus only when
@@ -1166,7 +1166,7 @@ PVARMENULISTITEM cmnuGetVarItem(ULONG ulOfs)
 /*
  *@@ cmnuPrepareOwnerDraw:
  *      this is called from the subclassed folder frame procedure
- *      (fnwpSubclassedFolderFrame in xfldr.c) when it receives
+ *      (fnwpSubclWPFolderWindow in xfldr.c) when it receives
  *      WM_INITMENU for a folder content submenu. We can now
  *      do a few queries to get important data which we need for
  *      owner-drawing later.
@@ -1240,7 +1240,7 @@ VOID cmnuPrepareOwnerDraw(// SHORT sMenuIDMsg, // from WM_INITMENU: SHORT mp1 su
 /*
  *@@ cmnuMeasureItem:
  *      this is called from the subclassed folder frame procedure
- *      (fnwpSubclassedFolderFrame in xfldr.c) when it receives
+ *      (fnwpSubclWPFolderWindow in xfldr.c) when it receives
  *      WM_MEASUREITEM for each owner-draw folder content menu item.
  *      We will use the data queried above to calculate the dimensions
  *      of the items we're going to draw later.
@@ -1361,7 +1361,7 @@ MRESULT cmnuMeasureItem(POWNERITEM poi)     // owner-draw info structure
 /*
  *@@ cmnuDrawItem:
  *      this is called from the subclassed folder frame procedure
- *      (fnwpSubclassedFolderFrame in xfldr.c) when it receives
+ *      (fnwpSubclWPFolderWindow in xfldr.c) when it receives
  *      WM_DRAWITEM for each owner-draw folder content menu item.
  *      We will draw one menu item including the icons with each
  *      call of this function.

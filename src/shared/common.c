@@ -140,7 +140,6 @@
 #include "security\xwpsecty.h"          // XWorkplace Security
 
 // other SOM headers
-#include "helpers\undoc.h"              // some undocumented stuff
 
 #pragma hdrstop
 
@@ -3153,9 +3152,9 @@ static const SETTINGINFO G_aSettingInfos[] =
         sfWorkerPriorityBeep, FIELDOFFSET(OLDGLOBALSETTINGS, fWorkerPriorityBeep), 1,
             SP_SETUP_PARANOIA, 0,
             "fWorkerPriorityBeep",
-        sfNoFreakyMenus, FIELDOFFSET(OLDGLOBALSETTINGS, fNoFreakyMenus), 1,
-            SP_SETUP_PARANOIA, 0,
-            "fNoFreakyMenus",
+        // sfNoFreakyMenus, FIELDOFFSET(OLDGLOBALSETTINGS, fNoFreakyMenus), 1,
+        //     SP_SETUP_PARANOIA, 0,
+        //     "fNoFreakyMenus",            removed V0.9.21 (2002-08-26) [umoeller]
 #endif
 
         // misc

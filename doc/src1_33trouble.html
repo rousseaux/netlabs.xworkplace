@@ -10,6 +10,12 @@ Troubleshooting
 <OL><LI>If you get errors from the <B>makefiles,</B> make sure you have set up
 <A HREF="src1_32env.html">config.in</A> correctly.
 
+<P><LI>In addition, if you have just checked out and the sources complain
+about ".depend" not found or a missing header file, run <code>nmake dep</code>.
+This is required before the first make anyway, but sometimes, if header files
+get renamed or removed, another <code>nmake dep</code> is required. It is
+good practice to run this once after every checkout.
+
 <P><LI>Same thing if the compiler cannot find an include file, or the linker
 cannot find libraries.
 
@@ -69,7 +75,8 @@ or comment out the <CODE>PRECH</CODE> line in <CODE>setup.in</CODE> to disable
 precompiled headers altogether. I have also found that killing <CODE>DDE4LOAD.EXE</CODE>
 (the VAC background process) helps sometimes, for whatever reason.
 
-<P><LI>If you <B>cannot install XWorkplace</B> after the build, you have probably built
+<P><LI>If you <B>cannot install XWorkplace</B> after the build or, after the WPS
+restart, none of the XWorkplace classes seem to be loaded, you have probably built
 the debug version, but the PMPRINTF DLLs are not on your LIBPATH.
 <B>Do not build the debug version if you haven't downloaded PMPRINTF yet.</B>
 See <A HREF="src1_880debug.html">"Debugging"</A> for details.

@@ -20,7 +20,8 @@
 !endif
 
 # include setup (compiler options etc.)
-!include ..\..\setup.in
+!include ..\..\config.in
+!include ..\..\make\setup.in
 
 # FIXED MACROS
 # ------------
@@ -94,12 +95,12 @@ dep:
     @echo ----- Leaving $(MAKEDIR)
 
 .c.{$(OUTPUTDIR)}.obj:
-    @echo $(MAKEDIR)\makefile [$@]: Compiling $(@B).c
+    @echo $(MAKEDIR)\makefile [$@]: Compiling $(MAKEDIR)\$(@B).c
 !ifndef PRECH
 # precompiled headers disabled:
-    $(CC_DLL_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+    $(CC_DLL_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(MAKEDIR)\$(@B).c
 !else
-    $(CC_DLL_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
+    $(CC_DLL_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(OUTPUTDIR)\$(@B).obj $(MAKEDIR)\$(@B).c
 !endif
 
 # The .OBJ-from-sources dependencies are now automatically

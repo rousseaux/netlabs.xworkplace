@@ -20,7 +20,8 @@
 !endif
 
 # include setup (compiler options etc.)
-!include ..\..\setup.in
+!include ..\..\config.in
+!include ..\..\make\setup.in
 
 # FIXED MACROS
 # ------------
@@ -70,28 +71,12 @@ dep:
     $(RUN_FASTDEP) *.cpp
     @echo ----- Leaving $(MAKEDIR)
 
-# Now define inference rules for what to do with certain file
-# types, based on their file extension.
-# The syntax we need here is ".fromext.toext".
-# So whenever NMAKE encounters a .toext file, it
-# executes what we specify here.
-# The ugly {} brackets are some awkward syntax for specifying
-# files in other directories.
-
-# Special macros used here: $(@B) is the current target w/out ext.
-
-# -- compile C files to .OBJ files, using the CC macro above.
-#    The output will be placed in the directory specified by
-#    the OUTPUTDIR variable (set above).
-
-.cpp.{$(OUTPUTDIR)}.obj:
-        @echo $(MAKEDIR)\makefile [$@]: Compiling $(@B).cpp
-!ifndef PRECH
-# precompiled headers disabled:
-        $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).cpp
-!else
-        $(CC_EXE_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(OUTPUTDIR)\$(@B).obj $(@B).cpp
-!endif
+# V0.9.21: Use the inference rule in \make\comp_standalone.in now,
+# which is shared for all makefiles that generate code for standalone
+# executables.
+# This sets up the compiler rule to compile .c files to .obj files
+# in the $(OUTPUTDIR).
+!include $(PROJECT_BASE_DIR)\make\comp_standalone.in
 
 # build targets
 $(APPNAME).def: ..\..\include\bldlevel.h makefile

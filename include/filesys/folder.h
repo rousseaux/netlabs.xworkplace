@@ -6,10 +6,10 @@
  *      This file is ALL new with V0.9.0.
  *
  *@@include #include <os2.h>
- *@@include #include "helpers\linklist.h"  // for some structures
- *@@include #include "helpers\tree.h"  // for some structures
+ *@@include #include "helpers\linklist.h"   // for some structures
+ *@@include #include "helpers\tree.h"       // for some structures
  *@@include #include <wpfolder.h>
- *@@include #include "shared\notebook.h"   // for notebook callback prototypes
+ *@@include #include "shared\notebook.h"    // for notebook callback prototypes
  *@@include #include "filesys\folder.h"
  */
 
@@ -232,15 +232,16 @@
      *   Additional declarations for xfldr.c
      *
      ********************************************************************/
-/*
-#define VIEW_CONTENTS      0x00000001
-#define VIEW_SETTINGS      0x00000002
-#define VIEW_HELP          0x00000004
-#define VIEW_RUNNING       0x00000008
-#define VIEW_DETAILS       0x00000010
-#define VIEW_TREE          0x00000020
-#define VIEW_ANY           0xFFFFFFFF
-*/
+
+    /*
+    #define VIEW_CONTENTS      0x00000001
+    #define VIEW_SETTINGS      0x00000002
+    #define VIEW_HELP          0x00000004
+    #define VIEW_RUNNING       0x00000008
+    #define VIEW_DETAILS       0x00000010
+    #define VIEW_TREE          0x00000020
+    #define VIEW_ANY           0xFFFFFFFF
+    */
 
     #define VIEW_SPLIT         0x00002000
 
@@ -337,6 +338,14 @@
 
     /* ******************************************************************
      *
+     *   Folder refresh
+     *
+     ********************************************************************/
+
+    BOOL fdrForceRefresh(WPFolder *pFolder);
+
+    /* ******************************************************************
+     *
      *   Quick Open
      *
      ********************************************************************/
@@ -407,18 +416,14 @@
      *
      ********************************************************************/
 
-    #define BARPULL_FOLDER      0       // never set
-    #define BARPULL_EDIT        2
-    #define BARPULL_VIEW        3
-    #define BARPULL_HELP        4
-
     /*
      *@@ SUBCLFOLDERVIEW:
-     *      linked list structure used with folder frame
-     *      window subclassing. One of these structures
-     *      is created for each folder view (window) which
-     *      is subclassed by fdrSubclassFolderView and
-     *      stored in a global linked list.
+     *      structure used with folder frame window subclassing.
+     *
+     *      One of these structures is created for each folder
+     *      view frame which is subclassed by fdrSubclassFolderView
+     *      and stored in a window word of the folder frame.
+     *      See fdrCreateSFV() for details.
      *
      *      This is one of the most important kludges which
      *      XFolder uses to hook itself into the WPS.
@@ -462,13 +467,16 @@
                                         // container source emphasis
 
         ULONG       ulLastSelMenuItem;  // last selected menu item ID
+
         WPObject    *pSourceObject;     // object whose record core has source
                                         // emphasis;
                                         // this field is valid only between
                                         // WM_INITMENU and WM_COMMAND; if this
                                         // is NULL, the entire folder whitespace
                                         // has source emphasis
-        ULONG       ulSelection;        // SEL_* flags;
+        ULONG       ulSelection;        // one of SEL_WHITESPACE, SEL_SINGLESEL,
+                                        // SEL_MULTISEL, SEL_SINGLEOTHER, SEL_NONEATALL
+                                        // (see wpshQuerySourceObject);
                                         // this field is valid only between
                                         // WM_INITMENU and WM_COMMAND
     } SUBCLFOLDERVIEW, *PSUBCLFOLDERVIEW;
@@ -493,12 +501,6 @@
 
     VOID fdrRemoveSFV(PSUBCLFOLDERVIEW psfv);
 
-    BOOL fdrProcessObjectCommand(WPFolder *somSelf,
-                                 USHORT usCommand,
-                                 HWND hwndCnr,
-                                 WPObject* pFirstObject,
-                                 ULONG ulSelectionFlags);
-
     VOID fdrCalcFrameRect(MPARAM mp1, MPARAM mp2);
 
     VOID fdrFormatFrame(HWND hwndFrame,
@@ -514,11 +516,9 @@
                                  PSUBCLFOLDERVIEW psfv,
                                  PFNWP pfnwpOriginal);
 
-    // Supplementary object window msgs (for each
+    // supplementary object window msgs (for each
     // subclassed folder frame, xfldr.c)
     #define SOM_ACTIVATESTATUSBAR       (WM_USER+100)
-    // #define SOM_CREATEFROMTEMPLATE      (WM_USER+101)
-                // removed V0.9.9 (2001-03-27) [umoeller]
 
     MRESULT EXPENTRY fdr_fnwpSupplFolderObject(HWND hwndObject,
                                                ULONG msg,
@@ -556,18 +556,18 @@
      *
      ********************************************************************/
 
+    WPFileSystem* fdrGetFSFromRecord(PMINIRECORDCORE precc,
+                                     BOOL fFoldersOnly);
+
+    BOOL fdrIsInsertable(WPObject *pObject,
+                         BOOL ulFoldersOnly,
+                         PCSZ pcszFileMask);
+
+    BOOL fdrIsObjectInCnr(WPObject *pObject,
+                          HWND hwndCnr);
+
     #ifdef LINKLIST_HEADER_INCLUDED
     #ifdef THREADS_HEADER_INCLUDED
-
-        WPFileSystem* fdrGetFSFromRecord(PMINIRECORDCORE precc,
-                                         BOOL fFoldersOnly);
-
-        BOOL fdrIsInsertable(WPObject *pObject,
-                             BOOL ulFoldersOnly,
-                             PCSZ pcszFileMask);
-
-        BOOL fdrIsObjectInCnr(WPObject *pObject,
-                              HWND hwndCnr);
 
         #define INSERT_ALL              0
         #define INSERT_FILESYSTEMS      1

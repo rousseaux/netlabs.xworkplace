@@ -4,7 +4,7 @@
  *      XWorkplace extended system sounds implementation.
  *      Note that the actual playing of the sounds occurs
  *      at various parts of the XWorkplace code, such as
- *      fnwpSubclassedFolderFrame.
+ *      fnwpSubclassedWPFolderWindow.
  *
  *      This also has some implementation code for XWPSound
  *      class.

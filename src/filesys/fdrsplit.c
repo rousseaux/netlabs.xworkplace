@@ -232,8 +232,10 @@ VOID DrawBitmapClipped(HPS hps,             // in: presentation space
     RECTL   rclSubBitmap;
     POINTL  ptl;
 
-    _PmpfF(("pptlOrigin->x: %d, pptlOrigin->y: %d",
-        pptlOrigin->x, pptlOrigin->y));
+    #ifdef DEBUG_CNRBITMAPS
+        _PmpfF(("pptlOrigin->x: %d, pptlOrigin->y: %d",
+            pptlOrigin->x, pptlOrigin->y));
+    #endif
 
     /*
        -- pathological case:
@@ -270,7 +272,10 @@ VOID DrawBitmapClipped(HPS hps,             // in: presentation space
          || (prclClip->yTop <= pptlOrigin->y)
        )
     {
-        _Pmpf(("  pathological case, returning"));
+        #ifdef DEBUG_CNRBITMAPS
+            _Pmpf(("  pathological case, returning"));
+        #endif
+
         return;
     }
 
@@ -514,11 +519,13 @@ MRESULT PaintCnrBackground(HWND hwndCnr,
                 RECTL   rclClip;
                 memcpy(&rclClip, &pob->rclBackground, sizeof(RECTL));
 
-                _PmpfF(("BKGND_SCALED"));
-                _Pmpf(("    szlCnr.cx %d, cy %d",
-                    pSubCnr->szlCnr.cx, pSubCnr->szlCnr.cy));
-                _Pmpf(("    rclClip.xLeft %d, yBottom %d, xRight %d, yTop %d",
-                    rclClip.xLeft, rclClip.yBottom, rclClip.xRight, rclClip.yTop));
+                #ifdef DEBUG_CNRBITMAPS
+                    _PmpfF(("BKGND_SCALED"));
+                    _Pmpf(("    szlCnr.cx %d, cy %d",
+                        pSubCnr->szlCnr.cx, pSubCnr->szlCnr.cy));
+                    _Pmpf(("    rclClip.xLeft %d, yBottom %d, xRight %d, yTop %d",
+                        rclClip.xLeft, rclClip.yBottom, rclClip.xRight, rclClip.yTop));
+                #endif
 
                 // reset clip region to "all" to quickly
                 // get the old clip region; we must save
@@ -721,7 +728,7 @@ LONG ResolveColor(LONG lcol)         // in: explicit color or SYSCLR_* index
     // SYSCLR_WINDOW, so check this
     else if (lcol & 0xFF000000)
     {
-#ifdef __DEBUG__
+#ifdef DEBUG_CNRBITMAPS
         #define DUMPCOL(i) case i: pcsz = # i; break
         PCSZ pcsz = "unknown index";
         switch (lcol)
@@ -770,7 +777,8 @@ LONG ResolveColor(LONG lcol)         // in: explicit color or SYSCLR_* index
         }
 
         _Pmpf(("  --> %d (%s)", lcol, pcsz));
-#endif  // __DEBUG__
+
+#endif  // DEBUG_CNRBITMAPS
 
         lcol = WinQuerySysColor(HWND_DESKTOP,
                                 lcol,
@@ -1380,11 +1388,21 @@ VOID fdrInsertContents(WPFolder *pFolder,              // in: populated folder
 
     TRY_LOUD(excpt1)
     {
+        // lock the folder contents for wpQueryContent
         if (fFolderLocked = !_wpRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
         {
-            // count objects that should be inserted
+            // build an array of objects that should be inserted
+            // (we use an array because we want to use
+            // _wpclsInsertMultipleObjects);
+            // we run through the folder and check if the object
+            // is insertable and, if so, add it to the array,
+            // which is increased in size in chunks of 1000 pointers
             WPObject    *pObject;
-            ULONG       cObjects = 0;
+            WPObject    **papObjects = NULL;
+            ULONG       cObjects = 0,
+                        cArray = 0,
+                        cAddFirstChilds = 0;
+
             for (   pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                     pObject;
                     pObject = *__get_pobjNext(pObject)
@@ -1393,103 +1411,82 @@ VOID fdrInsertContents(WPFolder *pFolder,              // in: populated folder
                 if (fdrIsInsertable(pObject,
                                     ulFoldersOnly,
                                     pcszFileMask))
-                    cObjects++;
+                {
+                    // _wpclsInsertMultipleObjects fails on the
+                    // entire array if only one is already in the
+                    // cnr, so make sure it isn't
+                    if (!fdrIsObjectInCnr(pObject, hwndCnr))
+                    {
+                        // create/expand array if necessary
+                        if (cObjects >= cArray)     // on the first iteration,
+                                                    // both are null
+                        {
+                            cArray += 1000;
+                            papObjects = (WPObject**)realloc(papObjects, // NULL on first call
+                                                             cArray * sizeof(WPObject*));
+                        }
+
+                        // store in array
+                        papObjects[cObjects++] = pObject;
+
+                        // if caller wants a list, add that to
+                        if (pllObjects)
+                            lstAppendItem(pllObjects, pObject);
+                    }
+
+                    // even if the object is already in the
+                    // cnr, if we are in "add first child"
+                    // mode, add the first child later;
+                    // this works because hwndAddFirstChild
+                    // is on the same thread
+                    if (    (hwndAddFirstChild)
+                         && (objIsAFolder(pObject))
+                       )
+                    {
+                        if (!cAddFirstChilds)
+                        {
+                            // first post: tell thread to update
+                            // the wait pointer
+                            WinPostMsg(hwndAddFirstChild,
+                                       FM2_ADDFIRSTCHILD_BEGIN,
+                                       0,
+                                       0);
+                            cAddFirstChilds++;
+                        }
+
+                        WinPostMsg(hwndAddFirstChild,
+                                   FM2_ADDFIRSTCHILD_NEXT,
+                                   (MPARAM)pObject,
+                                   NULL);
+                    }
+                }
             }
 
-            _PmpfF(("--> run 1: got %d objects", cObjects));
+            #ifdef DEBUG_POPULATESPLITVIEW
+                _PmpfF(("--> got %d objects to insert, %d to add first child",
+                        cObjects, cAddFirstChilds));
+            #endif
 
-            // 2) build array
             if (cObjects)
+                _wpclsInsertMultipleObjects(_somGetClass(pFolder),
+                                            hwndCnr,
+                                            NULL,
+                                            (PVOID*)papObjects,
+                                            precParent,
+                                            cObjects);
+
+            if (papObjects)
+                free(papObjects);
+
+            if (cAddFirstChilds)
             {
-                // allocate array of objects to be inserted
-                WPObject    **papObjects;
-                ULONG       cAddFirstChilds = 0;
-
-                if (papObjects = (WPObject**)malloc(sizeof(WPObject*) * cObjects))
-                {
-                    ULONG ul;
-                    WPObject **ppThis = papObjects;
-                    // reset object count, this might change
-                    cObjects = 0;
-
-                    for (   pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
-                            pObject;
-                            pObject = *__get_pobjNext(pObject)
-                        )
-                    {
-                        if (fdrIsInsertable(pObject,
-                                            ulFoldersOnly,
-                                            pcszFileMask))
-                        {
-                            if (!fdrIsObjectInCnr(pObject, hwndCnr))
-                            {
-                                *ppThis = pObject;
-                                ppThis++;
-                                cObjects++;
-                            }
-
-                            if (    (hwndAddFirstChild)
-                                 && (_somIsA(pObject, _WPFolder))
-                               )
-                            {
-                                if (!cAddFirstChilds)
-                                {
-                                    // first post: tell thread to update
-                                    // the wait pointer
-                                    WinPostMsg(hwndAddFirstChild,
-                                               FM2_ADDFIRSTCHILD_BEGIN,
-                                               0,
-                                               0);
-                                    cAddFirstChilds++;
-                                }
-
-                                WinPostMsg(hwndAddFirstChild,
-                                           FM2_ADDFIRSTCHILD_NEXT,
-                                           (MPARAM)pObject,
-                                           NULL);
-                            }
-                        }
-                    }
-
-                    _PmpfF(("--> run 2: got %d objects", cObjects));
-
-                    _wpclsInsertMultipleObjects(_somGetClass(pFolder),
-                                                hwndCnr,
-                                                NULL,
-                                                (PVOID*)papObjects,
-                                                precParent,
-                                                cObjects);
-
-                    for (ul = 0;
-                         ul < cObjects;
-                         ul++)
-                    {
-                        // BOOL fAppend = FALSE;
-                        WPObject *pobjThis = papObjects[ul];
-
-                        // lock the object!! we must make sure
-                        // the WPS won't let it go dormant
-                        // _wpLockObject(pobjThis);
-                                // no, populate has locked it already
-                                // V0.9.18 (2002-02-06) [umoeller]
-                                // unlock is in "clear container"
-                        if (pllObjects)
-                            lstAppendItem(pllObjects, pobjThis);
-                    }
-
-                    free(papObjects);
-                }
-
-                if (cAddFirstChilds)
-                {
-                    // we had any "add-first-child" posts:
-                    // post another msg which will get processed
-                    // after all the "add-first-child" things
-                    // so that the wait ptr can be reset
-                    WinPostMsg(hwndAddFirstChild,
-                               FM2_ADDFIRSTCHILD_DONE,
-                               0, 0);
-                }
+                // we had any "add-first-child" posts:
+                // post another msg which will get processed
+                // after all the "add-first-child" things
+                // so that the wait ptr can be reset
+                WinPostMsg(hwndAddFirstChild,
+                           FM2_ADDFIRSTCHILD_DONE,
+                           0, 0);
             }
         }
     }
@@ -1575,6 +1572,8 @@ ULONG fdrClearContainer(HWND hwndCnr,              // in: cnr to clear
  *      each folder. This is an imitation of the standard
  *      WPS behavior in Tree views.
  *
+ *      Runs on the split populate thread (fntSplitPopulate).
+ *
  *@@added V0.9.18 (2002-02-06) [umoeller]
  */
 
@@ -1598,7 +1597,9 @@ static WPObject* AddFirstChild(WPFolder *pFolder,
         BOOL    fFolderLocked = FALSE,
                 fFindLocked = FALSE;
 
-        _Pmpf(("  "__FUNCTION__": CM_QUERYRECORD returned NULL"));
+        #ifdef DEBUG_POPULATESPLITVIEW
+            _Pmpf(("  "__FUNCTION__": CM_QUERYRECORD returned NULL"));
+        #endif
 
         TRY_LOUD(excpt1)
         {
@@ -1627,7 +1628,9 @@ static WPObject* AddFirstChild(WPFolder *pFolder,
                     fFolderLocked = FALSE;
                 }
 
-                _Pmpf(("  "__FUNCTION__": pFirstChildFolder pop is 0x%lX", pFirstChildFolder));
+                #ifdef DEBUG_POPULATESPLITVIEW
+                    _Pmpf(("  "__FUNCTION__": pFirstChildFolder pop is 0x%lX", pFirstChildFolder));
+                #endif
 
                 if (!pFirstChildFolder)
                 {
@@ -1645,7 +1648,9 @@ static WPObject* AddFirstChild(WPFolder *pFolder,
                     _wpQueryFilename(pFolder, szFolder, TRUE);
                     sprintf(szSearchMask, "%s\\*", szFolder);
 
-                    _Pmpf(("  "__FUNCTION__": searching %s", szSearchMask));
+                    #ifdef DEBUG_POPULATESPLITVIEW
+                        _Pmpf(("  "__FUNCTION__": searching %s", szSearchMask));
+                    #endif
 
                     ulFindCount = 1;
                     arc = DosFindFirst(szSearchMask,
@@ -1659,7 +1664,9 @@ static WPObject* AddFirstChild(WPFolder *pFolder,
 
                     while ((arc == NO_ERROR))
                     {
-                        _Pmpf(("      "__FUNCTION__": got %s", ffb3.achName));
+                        #ifdef DEBUG_POPULATESPLITVIEW
+                            _Pmpf(("      "__FUNCTION__": got %s", ffb3.achName));
+                        #endif
 
                         // do not use "." and ".."
                         if (    (strcmp(ffb3.achName, ".") != 0)
@@ -1669,7 +1676,11 @@ static WPObject* AddFirstChild(WPFolder *pFolder,
                             // this is good:
                             CHAR szFolder2[CCHMAXPATH];
                             sprintf(szFolder2, "%s\\%s", szFolder, ffb3.achName);
-                            _Pmpf(("      "__FUNCTION__": awaking %s", szFolder2));
+
+                            #ifdef DEBUG_POPULATESPLITVIEW
+                                _Pmpf(("      "__FUNCTION__": awaking %s", szFolder2));
+                            #endif
+
                             pObject = _wpclsQueryFolder(_WPFolder,
                                                         szFolder2,
                                                         TRUE);
@@ -1724,6 +1735,8 @@ static WPObject* AddFirstChild(WPFolder *pFolder,
 /*
  *@@ fnwpSplitPopulate:
  *      object window for populate thread.
+ *
+ *      Runs on the split populate thread (fntSplitPopulate).
  */
 
 static MRESULT EXPENTRY fnwpSplitPopulate(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1787,7 +1800,9 @@ static MRESULT EXPENTRY fnwpSplitPopulate(HWND hwnd, ULONG msg, MPARAM mp1, MPAR
                            0,
                            0);
 
-                _PmpfF(("populating %s", _wpQueryTitle(pFolder)));
+                #ifdef DEBUG_POPULATESPLITVIEW
+                    _PmpfF(("populating %s", _wpQueryTitle(pFolder)));
+                #endif
 
                 if (fdrCheckIfPopulated(pFolder,
                                         fFoldersOnly))
@@ -1865,7 +1880,9 @@ static MRESULT EXPENTRY fnwpSplitPopulate(HWND hwnd, ULONG msg, MPARAM mp1, MPAR
                 WPFolder            *pFolder = (WPObject*)mp1;
                 PMINIRECORDCORE     precParent = _wpQueryCoreRecord(pFolder);
 
-                _PmpfF(("CM_ADDFIRSTCHILD %s", _wpQueryTitle(mp1)));
+                #ifdef DEBUG_POPULATESPLITVIEW
+                    _PmpfF(("CM_ADDFIRSTCHILD %s", _wpQueryTitle(mp1)));
+                #endif
 
                 AddFirstChild(pFolder,
                               precParent,
@@ -1927,7 +1944,9 @@ static VOID _Optlink fntSplitPopulate(PTHREADINFO ptiMyself)
         QMSG qmsg;
         PFDRSPLITVIEW psv = (PFDRSPLITVIEW)ptiMyself->ulData;
 
-        _PmpfF(("thread starting"));
+        #ifdef DEBUG_POPULATESPLITVIEW
+            _PmpfF(("thread starting"));
+        #endif
 
         WinRegisterClass(ptiMyself->hab,
                          (PSZ)WC_SPLITPOPULATE,
@@ -1947,7 +1966,10 @@ static VOID _Optlink fntSplitPopulate(PTHREADINFO ptiMyself)
 
         WinDestroyWindow(psv->hwndSplitPopulate);
 
-        _PmpfF(("thread ending"));
+        #ifdef DEBUG_POPULATESPLITVIEW
+            _PmpfF(("thread ending"));
+        #endif
+
     }
     CATCH(excpt1) {} END_CATCH();
 
@@ -1958,13 +1980,41 @@ static VOID _Optlink fntSplitPopulate(PTHREADINFO ptiMyself)
  *      posts FM2_POPULATE to fnwpSplitPopulate to
  *      populate the folder represented by the
  *      given MINIRECORDCORE according to fl.
+ *
+ *      fnwpSplitPopulate does the following:
+ *
+ *      1)  Before populating, raise psv->cThreadsRunning
+ *          and post FM_UPDATEPOINTER to hwndMainControl.
+ *          to have it display the "wait" pointer.
+ *
+ *      2)  Run _wpPopulate on the folder represented
+ *          by prec.
+ *
+ *      3)  Post FM_POPULATED_FILLTREE back to hwndMainControl
+ *          in any case to fill the tree under prec with the
+ *          subfolders that were found.
+ *
+ *      4)  If the FFL_SCROLLTO flag is set, post
+ *          FM_POPULATED_SCROLLTO back to hwndMainControl
+ *          so that the tree can be scrolled properly.
+ *
+ *      5)  If the FFL_FOLDERSONLY flag was _not_ set,
+ *          post FM_POPULATED_FILLFILES to hwndMainControl
+ *          so it can insert all objects into the files
+ *          container.
+ *
+ *      6)  Decrement psv->cThreadsRunning and post
+ *          FM_UPDATEPOINTER again to reset the wait
+ *          pointer.
  */
 
 VOID fdrSplitPopulate(PFDRSPLITVIEW psv,
                       PMINIRECORDCORE prec,
                       ULONG fl)
 {
-    _PmpfF(("psv->hwndSplitPopulate: 0x%lX", psv->hwndSplitPopulate));
+    #ifdef DEBUG_POPULATESPLITVIEW
+        _PmpfF(("psv->hwndSplitPopulate: 0x%lX", psv->hwndSplitPopulate));
+    #endif
 
     WinPostMsg(psv->hwndSplitPopulate,
                FM2_POPULATE,
@@ -1972,7 +2022,7 @@ VOID fdrSplitPopulate(PFDRSPLITVIEW psv,
                (MPARAM)fl);
 }
 
-#ifdef __DEBUG__
+#ifdef DEBUG_POPULATESPLITVIEW
 VOID DumpFlags(ULONG fl)
 {
     _Pmpf(("  fl %s %s %s",
@@ -1981,15 +2031,17 @@ VOID DumpFlags(ULONG fl)
                 (fl & FFL_EXPAND) ? "FFL_EXPAND " : ""));
 }
 #else
-#define DumpFlags(fl)
+    #define DumpFlags(fl)
 #endif
 
 /*
- *@@ PostFillFolder:
+ *@@ fdrPostFillFolder:
  *      posts FM_FILLFOLDER to the main control
  *      window with the given parameters.
  *
- *@@added V0.9.18 (2002-02-06) [umoeller]
+ *      The main control window will then call
+ *      fdrSplitPopulate to have FM2_POPULATE
+ *      posted to the split populate thread.
  */
 
 VOID fdrPostFillFolder(PFDRSPLITVIEW psv,
@@ -2011,8 +2063,6 @@ VOID fdrPostFillFolder(PFDRSPLITVIEW psv,
  *
  *      Returns a HPOINTER for either the wait or
  *      arrow pointer.
- *
- *@@changed V0.9.16 (2001-10-19) [umoeller]: fixed sticky wait pointer
  */
 
 HPOINTER fdrSplitQueryPointer(PFDRSPLITVIEW psv)
@@ -2340,12 +2390,15 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
 
         /*
          *@@ FM_FILLFOLDER:
-         *      posted to the main control to fill
-         *      the dialog when a new folder has been
-         *      selected in the left drives tree.
+         *      posted to the main control from the tree
+         *      frame to fill the dialog when a new folder
+         *      has been selected in the tree.
+         *
+         *      Use fdrPostFillFolder for posting this
+         *      message, which is type-safe.
          *
          *      This automatically offloads populate
-         *      to fntPopulate, which will then post
+         *      to fntSplitPopulate, which will then post
          *      a bunch of messages back to us so we
          *      can update the dialog properly.
          *
@@ -2377,6 +2430,10 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
          *          populate and run "add first child" for
          *          each subrecord that was inserted.
          *
+         *      --  If FFL_SETBACKGROUND is set, we will
+         *          revamp the files container to use the
+         *          view settings of the given folder.
+         *
          *@@added V0.9.18 (2002-02-06) [umoeller]
          */
 
@@ -2387,19 +2444,24 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
             {
                 PMINIRECORDCORE prec = (PMINIRECORDCORE)mp1;
 
-                _PmpfF(("FM_FILLFOLDER %s",
-                            prec->pszIcon));
+                #ifdef DEBUG_POPULATESPLITVIEW
+                    _PmpfF(("FM_FILLFOLDER %s", prec->pszIcon));
+                #endif
+
                 DumpFlags((ULONG)mp2);
 
-                if (0 == ((ULONG)mp2 & FFL_FOLDERSONLY))
+                if (!((ULONG)mp2 & FFL_FOLDERSONLY))
                 {
-                    WPFolder    *pFolder;
-
                     // not folders-only: then we need to
                     // refresh the files list
+
+                    WPFolder    *pFolder;
+
                     fdrClearContainer(psv->hwndFilesCnr,
                                       &psv->llFileObjectsInserted);
 
+                    // change files container background NOW
+                    // to give user immediate feedback
                     if (    ((ULONG)mp2 & FFL_SETBACKGROUND)
                          && (pFolder = fdrGetFSFromRecord(prec,
                                                           TRUE)) // folders only
@@ -2411,6 +2473,7 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                     }
                 }
 
+                // post FM2_POPULATE
                 fdrSplitPopulate(psv,
                                  prec,
                                  (ULONG)mp2);
@@ -2420,7 +2483,7 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
 
         /*
          *@@ FM_POPULATED_FILLTREE:
-         *      posted by fntPopulate after populate has been
+         *      posted by fntSplitPopulate after populate has been
          *      done for a folder. This gets posted in any case,
          *      if the folder was populated in folders-only mode
          *      or not.
@@ -2433,6 +2496,12 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
          *      --  ULONG mp2: FFL_* flags for whether to
          *          expand.
          *
+         *      This then calls fdrInsertContents to insert
+         *      the subrecords into the tree. If FFL_EXPAND
+         *      was set, the tree is expanded, and we pass
+         *      the controller window handle to fdrInsertContents
+         *      so that we can "add first child" messages back.
+         *
          *@@added V0.9.18 (2002-02-06) [umoeller]
          */
 
@@ -2441,10 +2510,12 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
             PFDRSPLITVIEW  psv;
             PMINIRECORDCORE prec;
 
-            _PmpfF(("FM_POPULATED_FILLTREE %s",
+            #ifdef DEBUG_POPULATESPLITVIEW
+                _PmpfF(("FM_POPULATED_FILLTREE %s",
                         mp1
                             ? ((PMINIRECORDCORE)mp1)->pszIcon
                             : "NULL"));
+            #endif
 
             if (    (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
                  && (prec = (PMINIRECORDCORE)mp1)
@@ -2500,16 +2571,16 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                 BOOL    fOld = psv->fFileDlgReady;
                 ULONG   ul;
 
-                _PmpfF(("FM_POPULATED_SCROLLTO %s",
+                #ifdef DEBUG_POPULATESPLITVIEW
+                    _PmpfF(("FM_POPULATED_SCROLLTO %s",
                             mp1
                                 ? ((PMINIRECORDCORE)mp1)->pszIcon
                                 : "NULL"));
+                #endif
 
                 // stop control notifications from messing with this
                 psv->fFileDlgReady = FALSE;
 
-                /* cnrhExpandFromRoot(pWinData->hwndTreeCnr,
-                                   (PRECORDCORE)mp1); */
                 ul = cnrhScrollToRecord(psv->hwndTreeCnr,
                                         (PRECORDCORE)mp1,
                                         CMA_ICON | CMA_TEXT | CMA_TREEICON,
@@ -2529,7 +2600,7 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
 
         /*
          *@@ FM_POPULATED_FILLFILES:
-         *      posted by fntPopulate after populate has been
+         *      posted by fntSplitPopulate after populate has been
          *      done for the newly selected folder, if this
          *      was not in folders-only mode. We must then fill
          *      the right half of the dialog with all the objects.
@@ -2551,11 +2622,12 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
             if (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
             {
 
-                _PmpfF(("FM_POPULATED_FILLFILES %s",
+                #ifdef DEBUG_POPULATESPLITVIEW
+                    _PmpfF(("FM_POPULATED_FILLFILES %s",
                             mp1
                                 ? ((PMINIRECORDCORE)mp1)->pszIcon
                                 : "NULL"));
-
+                #endif
 
                 if ((mp1) && (mp2))
                 {
@@ -2659,14 +2731,16 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
 
         /*
          * WM_CLOSE:
-         *      window list is being closed:
          *      clean up
          */
 
         case WM_CLOSE:
         {
             PFDRSPLITVIEW  psv;
-            _PmpfF(("WM_CLOSE"));
+            #ifdef DEBUG_POPULATESPLITVIEW
+                _PmpfF(("WM_CLOSE"));
+            #endif
+
             if (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
             {
                 // clear all containers, stop populate thread etc.
@@ -2695,7 +2769,13 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
 
 /*
  *@@ fnwpSubclassedTreeFrame:
+ *      subclassed frame window on the right for the
+ *      "Files" container. This has the files cnr
+ *      as its FID_CLIENT.
  *
+ *      We use the XFolder subclassed window proc for
+ *      most messages. In addition, we intercept a
+ *      couple more for extra features.
  */
 
 MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2703,16 +2783,17 @@ MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
     MRESULT             mrc = 0;
     BOOL                fCallDefault = FALSE;
     PSUBCLFOLDERVIEW    psfv = WinQueryWindowPtr(hwndFrame, QWL_USER);
+    HWND                hwndMainControl;
+    PFDRSPLITVIEW       psv;
+    PMINIRECORDCORE     prec;
 
     switch (msg)
     {
         case WM_CONTROL:
         {
-            USHORT usID = SHORT1FROMMP(mp1),
-                   usNotifyCode = SHORT2FROMMP(mp1);
-            if (usID == FID_CLIENT)     // that's the container
+            if (SHORT1FROMMP(mp1) == FID_CLIENT)     // that's the container
             {
-                switch (usNotifyCode)
+                switch (SHORT2FROMMP(mp1))
                 {
                     /*
                      * CN_EMPHASIS:
@@ -2721,10 +2802,7 @@ MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
 
                     case CN_EMPHASIS:
                     {
-                        HWND            hwndMainControl;
-                        PFDRSPLITVIEW   psv;
                         PNOTIFYRECORDEMPHASIS pnre = (PNOTIFYRECORDEMPHASIS)mp2;
-                        PMINIRECORDCORE prec;
 
                         if (    (pnre->pRecord)
                              && (pnre->fEmphasisMask & CRA_SELECTED)
@@ -2736,8 +2814,10 @@ MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
                              && (psv->fFileDlgReady)
                            )
                         {
-                            _PmpfF(("CN_EMPHASIS %s",
+                            #ifdef DEBUG_POPULATESPLITVIEW
+                                _PmpfF(("CN_EMPHASIS %s",
                                     prec->pszIcon));
+                            #endif
 
                             // record changed?
                             if (prec != psv->precFolderContentsShowing)
@@ -2750,7 +2830,7 @@ MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
 
                             if (psv->hwndStatusBar)
                             {
-                                #ifdef DEBUG_STATUSBARS
+                                #ifdef DEBUG_POPULATESPLITVIEW
                                     _Pmpf(( "CN_EMPHASIS: posting STBM_UPDATESTATUSBAR to hwnd %lX",
                                             psfv->hwndStatusBar ));
                                 #endif
@@ -2775,11 +2855,6 @@ MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
                      */
 
                     case CN_EXPANDTREE:
-                    {
-                        HWND            hwndMainControl;
-                        PFDRSPLITVIEW   psv;
-                        PMINIRECORDCORE prec;
-
                         if (    (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
                              && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
                              // notifications not disabled?
@@ -2787,8 +2862,10 @@ MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
                              && (prec = (PMINIRECORDCORE)mp2)
                            )
                         {
-                            _PmpfF(("CN_EXPANDTREE %s",
+                            #ifdef DEBUG_POPULATESPLITVIEW
+                                _PmpfF(("CN_EXPANDTREE %s",
                                     prec->pszIcon));
+                            #endif
 
                             fdrPostFillFolder(psv,
                                               prec,
@@ -2798,7 +2875,6 @@ MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
                             // handles auto-scroll
                             fCallDefault = TRUE;
                         }
-                    }
                     break;
 
                     /*
@@ -2818,7 +2894,6 @@ MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
                     case CN_ENTER:
                     {
                         PNOTIFYRECORDENTER pnre;
-                        PMINIRECORDCORE prec;
 
                         if (    (pnre = (PNOTIFYRECORDENTER)mp2)
                              && (prec = (PMINIRECORDCORE)pnre->pRecord)
@@ -2837,6 +2912,43 @@ MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
                     }
                     break;
 
+                    /*
+                     * CN_CONTEXTMENU:
+                     *      we need to intercept this for context menus
+                     *      on whitespace, because the WPS won't do it.
+                     *      We pass all other cases on because the WPS
+                     *      does do things correctly for object menus.
+                     */
+
+                    case CN_CONTEXTMENU:
+                    {
+                        fCallDefault = TRUE;
+
+                        if (    (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
+                             && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
+                             && (!mp2)      // whitespace:
+                                // display the menu for the root folder
+                           )
+                        {
+                            POINTL  ptl;
+                            WinQueryPointerPos(HWND_DESKTOP, &ptl);
+                            // convert to cnr coordinates
+                            WinMapWindowPoints(HWND_DESKTOP,        // from
+                                               psv->hwndTreeCnr,   // to
+                                               &ptl,
+                                               1);
+                            _wpDisplayMenu(psv->pRootFolder,
+                                           psv->hwndTreeFrame, // owner
+                                           psv->hwndTreeCnr,   // parent
+                                           &ptl,
+                                           MENU_OPENVIEWPOPUP,
+                                           0);
+
+                            fCallDefault = FALSE;
+                        }
+                    }
+                    break;
+
                     default:
                         fCallDefault = TRUE;
                 }
@@ -2844,14 +2956,6 @@ MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
             else
                 fCallDefault = TRUE;
         }
-        break;
-
-        case WM_CHAR:
-            // forward to main client
-            WinPostMsg(WinQueryWindow(hwndFrame, QW_OWNER),
-                       msg,
-                       mp1,
-                       mp2);
         break;
 
         case WM_SYSCOMMAND:
@@ -2863,11 +2967,39 @@ MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
                        mp2);
         break;
 
+        /*
+         * WM_QUERYOBJECTPTR:
+         *      we receive this message from the WPS somewhere
+         *      when it tries to process menu items for the
+         *      whitespace context menu. I guess normally this
+         *      message is taken care of when a frame is registered
+         *      as a folder view, but this frame is not. So we must
+         *      answer by returning the folder that this frame
+         *      represents.
+         *
+         *      Answering this message will enable all WPS whitespace
+         *      magic: both displaying the whitespace context menu
+         *      and making messages work for the whitespace menu items.
+         */
+
+        case WM_QUERYOBJECTPTR:
+            _PmpfF(("WM_QUERYOBJECTPTR"));
+            if (    (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
+                 && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
+               )
+                return OBJECT_FROM_PREC(psv->precFolderContentsShowing);
+        break;
+
+        /*
+         * WM_CONTROLPOINTER:
+         *      show wait pointer if we're busy.
+         */
+
         case WM_CONTROLPOINTER:
         {
-            HWND hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER);
+            hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER);
                                     // the main client
-            PFDRSPLITVIEW psv = WinQueryWindowPtr(hwndMainControl, QWL_USER);
+            psv = WinQueryWindowPtr(hwndMainControl, QWL_USER);
 
             mrc = (MPARAM)fdrSplitQueryPointer(psv);
         }
@@ -2895,9 +3027,151 @@ MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
  ********************************************************************/
 
 /*
+ *@@ FilesFrameControl:
+ *      implementation for WM_CONTROL for FID_CLIENT
+ *      in
+ *
+ *      Set *pfCallDefault to TRUE if you want the
+ *      parent window proc to be called.
+ *
+ *@@added V0.9.21 (2002-08-26) [umoeller]
+ */
+
+MRESULT FilesFrameControl(HWND hwndFrame,
+                          MPARAM mp1,
+                          MPARAM mp2,
+                          PBOOL pfCallDefault)
+{
+    MRESULT mrc = 0;
+    HWND                hwndMainControl;
+    PFDRSPLITVIEW       psv;
+
+    switch (SHORT2FROMMP(mp1))
+    {
+        /*
+         * CN_EMPHASIS:
+         *      selection changed: refresh
+         *      the status bar.
+         */
+
+        case CN_EMPHASIS:
+        {
+            PNOTIFYRECORDEMPHASIS pnre = (PNOTIFYRECORDEMPHASIS)mp2;
+            PMINIRECORDCORE prec;
+
+            if (    // (pnre->pRecord)
+                 // && (pnre->fEmphasisMask & CRA_SELECTED)
+                 // && (prec = (PMINIRECORDCORE)pnre->pRecord)
+                 // && (prec->flRecordAttr & CRA_SELECTED)
+                    (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
+                 && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
+                 // notifications not disabled?
+                 && (psv->fFileDlgReady)
+               )
+            {
+                if (psv->hwndStatusBar)
+                {
+                    #ifdef DEBUG_POPULATESPLITVIEW
+                        _Pmpf(( "CN_EMPHASIS: posting STBM_UPDATESTATUSBAR to hwnd %lX",
+                                psfv->hwndStatusBar ));
+                    #endif
+
+                    // have the status bar updated and make
+                    // sure the status bar retrieves its info
+                    // from the _left_ cnr
+                    WinPostMsg(psv->hwndStatusBar,
+                               STBM_UPDATESTATUSBAR,
+                               (MPARAM)psv->hwndFilesCnr,
+                               MPNULL);
+                }
+            }
+        }
+        break;
+
+        /*
+         * CN_ENTER:
+         *      double-click on tree record: intercept
+         *      folders so we can influence the tree
+         *      view on the right.
+         */
+
+        case CN_ENTER:
+        {
+            PNOTIFYRECORDENTER pnre;
+            PMINIRECORDCORE prec;
+            WPObject *pobj;
+
+            if (    (pnre = (PNOTIFYRECORDENTER)mp2)
+                 && (prec = (PMINIRECORDCORE)pnre->pRecord)
+                            // can be null for whitespace!
+                 && (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
+                 && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
+                 && (pobj = fdrGetFSFromRecord(prec,
+                                               TRUE))       // folders only:
+               )
+            {
+                // double click on folder:
+
+            }
+            else
+                *pfCallDefault = TRUE;
+        }
+        break;
+
+        /*
+         * CN_CONTEXTMENU:
+         *      we need to intercept this for context menus
+         *      on whitespace, because the WPS won't do it.
+         *      We pass all other cases on because the WPS
+         *      does do things correctly for object menus.
+         */
+
+        case CN_CONTEXTMENU:
+        {
+            WPFolder *pCurrent;
+
+            *pfCallDefault = TRUE;
+
+            if (    (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
+                 && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
+                    // display the menu for the folder that is
+                    // currently selected on the right;
+                    // store the record core in our psv
+                 && (!(psv->precContextMenu = (PMINIRECORDCORE)mp2))
+                 && (pCurrent = OBJECT_FROM_PREC(psv->precFolderContentsShowing))
+               )
+            {
+                POINTL  ptl;
+                WinQueryPointerPos(HWND_DESKTOP, &ptl);
+                // convert to cnr coordinates
+                WinMapWindowPoints(HWND_DESKTOP,        // from
+                                   psv->hwndFilesCnr,   // to
+                                   &ptl,
+                                   1);
+                _wpDisplayMenu(pCurrent,
+                               psv->hwndFilesFrame, // owner
+                               psv->hwndFilesCnr,   // parent
+                               &ptl,
+                               MENU_OPENVIEWPOPUP,
+                               0);
+
+                *pfCallDefault = FALSE;
+            }
+        }
+        break;
+
+        default:
+            *pfCallDefault = TRUE;
+    }
+
+    return mrc;
+}
+
+/*
  *@@ fnwpSubclassedFilesFrame:
  *      subclassed frame window on the right for the
- *      "Files" container.
+ *      "Files" container. This has the tree cnr
+ *      as its FID_CLIENT.
  *
  *      We use the XFolder subclassed window proc for
  *      most messages. In addition, we intercept a
@@ -2917,153 +3191,13 @@ static MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPAR
         case WM_CONTROL:
         {
             if (SHORT1FROMMP(mp1) == FID_CLIENT)     // that's the container
-            {
-                switch (SHORT2FROMMP(mp1))
-                {
-                    /*
-                     * CN_EMPHASIS:
-                     *      selection changed: refresh
-                     *      the status bar.
-                     */
-
-                    case CN_EMPHASIS:
-                    {
-                        PNOTIFYRECORDEMPHASIS pnre = (PNOTIFYRECORDEMPHASIS)mp2;
-                        PMINIRECORDCORE prec;
-
-                        if (    // (pnre->pRecord)
-                             // && (pnre->fEmphasisMask & CRA_SELECTED)
-                             // && (prec = (PMINIRECORDCORE)pnre->pRecord)
-                             // && (prec->flRecordAttr & CRA_SELECTED)
-                                (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
-                             && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
-                             // notifications not disabled?
-                             && (psv->fFileDlgReady)
-                           )
-                        {
-                            if (psv->hwndStatusBar)
-                            {
-                                #ifdef DEBUG_STATUSBARS
-                                    _Pmpf(( "CN_EMPHASIS: posting STBM_UPDATESTATUSBAR to hwnd %lX",
-                                            psfv->hwndStatusBar ));
-                                #endif
-
-                                // have the status bar updated and make
-                                // sure the status bar retrieves its info
-                                // from the _left_ cnr
-                                WinPostMsg(psv->hwndStatusBar,
-                                           STBM_UPDATESTATUSBAR,
-                                           (MPARAM)psv->hwndFilesCnr,
-                                           MPNULL);
-                            }
-                        }
-                    }
-                    break;
-
-                    /*
-                     * CN_ENTER:
-                     *      double-click on tree record: intercept
-                     *      folders so we can influence the tree
-                     *      view on the right.
-                     */
-
-                    case CN_ENTER:
-                    {
-                        PNOTIFYRECORDENTER pnre;
-                        PMINIRECORDCORE prec;
-                        WPObject *pobj;
-
-                        if (    (pnre = (PNOTIFYRECORDENTER)mp2)
-                             && (prec = (PMINIRECORDCORE)pnre->pRecord)
-                                        // can be null for whitespace!
-                             && (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
-                             && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
-                             && (pobj = fdrGetFSFromRecord(prec,
-                                                           TRUE))       // folders only:
-                           )
-                        {
-                            // double click on folder:
-
-                        }
-                        else
-                            fCallDefault = TRUE;
-                    }
-                    break;
-
-                    /*
-                     * CN_CONTEXTMENU:
-                     *      we need to intercept this for context menus
-                     *      on whitespace, because the WPS won't do it.
-                     *      We pass all other cases on because the WPS
-                     *      does do things correctly for object menus.
-                     */
-
-                    case CN_CONTEXTMENU:
-                    {
-                        WPFolder *pCurrent;
-
-                        fCallDefault = TRUE;
-
-                        if (    (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
-                             && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
-                                // store the record core in our psv
-                             && (!(psv->precContextMenu = (PMINIRECORDCORE)mp2))
-                             && (pCurrent = OBJECT_FROM_PREC(psv->precFolderContentsShowing))
-                           )
-                        {
-                            POINTL  ptl;
-                            WinQueryPointerPos(HWND_DESKTOP, &ptl);
-                            // convert to cnr coordinates
-                            WinMapWindowPoints(HWND_DESKTOP,        // from
-                                               psv->hwndFilesCnr,   // to
-                                               &ptl,
-                                               1);
-                            _wpDisplayMenu(pCurrent,
-                                           psv->hwndFilesFrame, // owner
-                                           psv->hwndFilesCnr,   // parent
-                                           &ptl,
-                                           MENU_OPENVIEWPOPUP,
-                                           0);
-
-                            fCallDefault = FALSE;
-                        }
-                    }
-                    break;
-
-                    default:
-                        fCallDefault = TRUE;
-                }
-            }
+                mrc = FilesFrameControl(hwndFrame,
+                                        mp1,
+                                        mp2,
+                                        &fCallDefault);
             else
                 fCallDefault = TRUE;
         }
-        break;
-
-        case WM_COMMAND:
-            // the WPS handles this only for context menus
-            // on object records; we need to handle the
-            // whitespace context menu ourselves...
-            if (    (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
-                 && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
-                 && (!(psv->precContextMenu))
-               )
-            {
-                WPFolder *pFolder;
-                if (pFolder = OBJECT_FROM_PREC(psv->precFolderContentsShowing))
-                    _wpMenuItemSelected(pFolder,
-                                        psv->hwndFilesFrame,
-                                        (ULONG)mp1);
-            }
-            else
-                fCallDefault = TRUE;
-        break;
-
-        case WM_CHAR:
-            // forward to main client
-            WinPostMsg(WinQueryWindow(hwndFrame, QW_OWNER),
-                       msg,
-                       mp1,
-                       mp2);
         break;
 
         case WM_SYSCOMMAND:
@@ -3075,6 +3209,34 @@ static MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPAR
                        mp1,
                        mp2);
         break;
+
+        /*
+         * WM_QUERYOBJECTPTR:
+         *      we receive this message from the WPS somewhere
+         *      when it tries to process menu items for the
+         *      whitespace context menu. I guess normally this
+         *      message is taken care of when a frame is registered
+         *      as a folder view, but this frame is not. So we must
+         *      answer by returning the folder that this frame
+         *      represents.
+         *
+         *      Answering this message will enable all WPS whitespace
+         *      magic: both displaying the whitespace context menu
+         *      and making messages work for the whitespace menu items.
+         */
+
+        case WM_QUERYOBJECTPTR:
+            _PmpfF(("WM_QUERYOBJECTPTR"));
+            if (    (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
+                 && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
+               )
+                return OBJECT_FROM_PREC(psv->precFolderContentsShowing);
+        break;
+
+        /*
+         * WM_CONTROLPOINTER:
+         *      show wait pointer if we're busy.
+         */
 
         case WM_CONTROLPOINTER:
             if (    (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
@@ -3295,7 +3457,9 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
             if (psvd = (PSPLITVIEWDATA)WinQueryWindowPtr(hwndFrame,
                                                          QWL_USER))
             {
-                _PmpfF(("PSPLITVIEWDATA is 0x%lX", psvd));
+                #ifdef DEBUG_POPULATESPLITVIEW
+                    _PmpfF(("PSPLITVIEWDATA is 0x%lX", psvd));
+                #endif
 
                 _wpDeleteFromObjUseList(psvd->sv.pRootFolder,  // somSelf
                                         &psvd->ui);
@@ -3416,7 +3580,7 @@ HWND fdrCreateSplitView(WPFolder *somSelf,
             if (psvd->sv.hwndMainFrame = winhCreateStdWindow(HWND_DESKTOP, // parent
                                                              NULL,         // pswp
                                                              flFrame,
-                                                             0,            // window style, not yet visible
+                                                             WS_ANIMATE,   // frame style, not yet visible
                                                              "Split view",
                                                              0,            // resids
                                                              WC_SPLITVIEWCLIENT,

@@ -1037,6 +1037,7 @@ APIRET fopsStartDeleteFromCnr(HAB hab,                 // in: as with fopsStartT
         else
         {
             ulConfirmations = _wpQueryConfirmations(pSourceObject);
+
             #ifdef DEBUG_FOPS
                 _PmpfF(("first obj is %s", _wpQueryTitle(pSourceObject)));
                 _Pmpf(("  ulConfirmations: 0x%lX", ulConfirmations));
@@ -1052,6 +1053,7 @@ APIRET fopsStartDeleteFromCnr(HAB hab,                 // in: as with fopsStartT
             if (fTrueDelete)
             {
                 ulOperation = XFT_TRUEDELETE;
+
                 if (fConfirm)
                 {
                     Confirm.ulMsgSingle = 177;
@@ -1128,7 +1130,7 @@ APIRET fopsStartDeleteFromCnr(HAB hab,                 // in: as with fopsStartT
 
 /*
  *@@ fopsStartTrashRestoreFromCnr:
- *      this gets called from trshProcessObjectCommand
+ *      this gets called from trshProcessViewCommand
  *      if WM_COMMAND with ID_XFMI_OFS_TRASHRESTORE has
  *      been intercepted.
  *
@@ -1162,7 +1164,7 @@ APIRET fopsStartTrashRestoreFromCnr(HAB hab,                 // in: as with fops
 
 /*
  *@@ fopsStartTrashDestroyFromCnr:
- *      this gets called from trshProcessObjectCommand
+ *      this gets called from trshProcessViewCommand
  *      if WM_COMMAND with ID_XFMI_OFS_TRASHDESTROY has
  *      been intercepted.
  *
@@ -1260,7 +1262,7 @@ APIRET fopsStartPopulate(HAB hab,              // in: as with fopsStartTask
 
 /*
  *@@ fopsStartFontDeinstallFromCnr:
- *      this gets called from fonProcessObjectCommand
+ *      this gets called from fonProcessViewCommand
  *      if WM_COMMAND with ID_XFMI_OFS_FONT_DEINSTALL has
  *      been intercepted.
  *

@@ -174,7 +174,7 @@ static BOOL        G_fDrivesInitialized = FALSE;
  *      trash can. This can be called in any context, but
  *      is mostly called from the XWP file operations
  *      engine (fops_bottom.c) when WPS "delete" operations
- *      are intercepted in XFolder::xwpProcessObjectCommand.
+ *      are intercepted in XFolder::xwpProcessViewCommand.
  *
  *      In other words, this gets called for every object
  *      on which the "Del" key was pressed in a folder or
@@ -569,36 +569,37 @@ SOM_Scope ULONG SOMLINK xtrc_xwpEmptyTrashCan(XWPTrashCan *somSelf,
 }
 
 /*
- *@@ xwpProcessObjectCommand:
+ *@@ xwpProcessViewCommand:
  *      this XFolder method processes WM_COMMAND messages
  *      for objects in a container. For details refer to
- *      XFolder::xwpProcessObjectCommand.
+ *      XFolder::xwpProcessViewCommand.
  *
  *      This is really a method override... but since SOM
  *      IDL doesn't know that XWPTrashCan is in fact
  *      derived from XFolder, we have to do it this way.
  *
  *      This replaces trash can subclassing now, which was
- *      used before V0.9.7. See trshProcessObjectCommand for
+ *      used before V0.9.7. See trshProcessViewCommand for
  *      the implementation.
  *
  *@@added V0.9.7 (2001-01-13) [umoeller]
+ *@@changed V0.9.21 (2002-08-26) [umoeller]: method renamed
  */
 
-SOM_Scope BOOL  SOMLINK xtrc_xwpProcessObjectCommand(XWPTrashCan *somSelf,
-                                                     USHORT usCommand,
-                                                     HWND hwndCnr,
-                                                     WPObject* pFirstObject,
-                                                     ULONG ulSelectionFlags)
+SOM_Scope BOOL  SOMLINK xtrc_xwpProcessViewCommand(XWPTrashCan *somSelf,
+                                                   USHORT usCommand,
+                                                   HWND hwndCnr,
+                                                   WPObject* pFirstObject,
+                                                   ULONG ulSelectionFlags)
 {
     // XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
-    XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpProcessObjectCommand");
+    XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpProcessViewCommand");
 
-    return (trshProcessObjectCommand(somSelf,
-                                     usCommand,
-                                     hwndCnr,
-                                     pFirstObject,
-                                     ulSelectionFlags));
+    return trshProcessViewCommand(somSelf,
+                                  usCommand,
+                                  hwndCnr,
+                                  pFirstObject,
+                                  ulSelectionFlags);
 }
 
 /*

@@ -47,8 +47,6 @@
 #                                   "001"
 #
 
-!include config.in
-
 # set up PROJECT_BASE_DIR, which is required by other
 # makefiles (and most importantly by xwphelpers)
 PROJECT_BASE_DIR = $(CVS_WORK_ROOT)\$(XWPDIR)

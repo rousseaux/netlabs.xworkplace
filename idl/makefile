@@ -17,7 +17,8 @@
 !if [@echo +++++ Entering $(MAKEDIR)]
 !endif
 
-!include ..\setup.in
+!include ..\config.in
+!include ..\make\setup.in
 
 # Define the suffixes for files which NMAKE will work on.
 # .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for

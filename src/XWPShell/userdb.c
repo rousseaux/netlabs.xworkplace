@@ -483,6 +483,8 @@ APIRET LoadDB(VOID)
         PXMLDOM pDom = NULL;
         if (!(arc = xmlCreateDOM(0,             // no validation
                                  NULL,
+                                 0,
+                                 NULL,
                                  NULL,
                                  NULL,
                                  &pDom)))

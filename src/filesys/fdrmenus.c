@@ -1,25 +1,19 @@
 
 /*
  *@@sourcefile fdrmenus.c:
- *      this file contains the menu manipulation and selection
- *      logic for most of the XFolder context menu features.
+ *      this file contains the menu manipulation  logic for
+ *      most of the XWorkplace menu features.
  *
  *      The functions in here are called by the XFolder and
  *      XFldDisk WPS methods for context menus. Since those two
  *      classes share many common menu items, they also share
  *      the routines for handling them.
  *
- *      The two most important entry points into all this are:
+ *      mnuModifyFolderPopupMenu, which gets called from
+ *      XFolder::wpModifyPopupMenu and XFldDisk::wpModifyPopupMenu,
+ *      modifies folder and disk context menu items.
  *
- *      --  mnuModifyFolderPopupMenu, which gets called from
- *          XFolder::wpModifyPopupMenu and XFldDisk::wpModifyPopupMenu;
- *          this modifies folder and disk context menu items.
- *
- *      --  mnuMenuItemSelected, which gets called from
- *          XFolder::wpMenuItemSelected and XFldDisk::wpMenuItemSelected;
- *          this reacts to folder and disk context menu items.
- *
- *      This code mainly does three things:
+ *      This code mainly does two things:
  *
  *      --  Remove default WPS menu items according to the
  *          flags that were set on the "Menu" page in
@@ -32,16 +26,6 @@
  *
  *      --  Handle folder content menus, with the help of the
  *          shared content menu functions in src\shared\contentmenus.c.
- *
- *      --  Hack the folder sort and folder view submenus and
- *          allow the context menu to stay open when a menu
- *          item was selected, with the help of the subclassed
- *          folder frame winproc (fnwpSubclassedFolderFrame).
- *
- *      This code does NOT intercept the menu commands for the
- *      new file operations engine (such as "delete" for deleting
- *      objects into the trash can). See XFolder::xwpProcessObjectCommand
- *      for that.
  *
  *      Function prefix for this file:
  *      --  mnu*
@@ -60,6 +44,9 @@
  *      With V0.9.7, all menu functions related to folder _content_
  *      menus have been moved to src\shared\contentmenus.c to
  *      allow sharing with other code parts, such as the XCenter.
+ *
+ *      With V0.9.21, the menu _selection_ logic was moved to
+ *      fdrcommand.c.
  *
  *@@header "filesys\fdrmenus.h"
  */
@@ -173,8 +160,6 @@
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 #include <wppgm.h>                      // WPProgram, needed for program hacks
 
-#include "helpers\undoc.h"              // some undocumented stuff
-
 /* ******************************************************************
  *
  *   Global variables
@@ -186,9 +171,9 @@ static HMTX     G_hmtxConfigContent = NULLHANDLE;   // V0.9.9 (2001-04-04) [umoe
 static LINKLIST G_llConfigContent;
 static BOOL     G_fConfigCacheValid;                // if FALSE, cache is rebuilt
 
-static POINTL   G_ptlMouseMenu;              // ptr position when menu was opened
-                                                // moved this here from XFolder instance
-                                                // data V0.9.16 (2001-10-23) [umoeller]
+extern POINTL   G_ptlMouseMenu = {0, 0};    // ptr position when menu was opened
+                                            // moved this here from XFolder instance
+                                            // data V0.9.16 (2001-10-23) [umoeller]
 
 /* ******************************************************************
  *
@@ -797,7 +782,7 @@ VOID mnuRemoveMenuItems(WPObject *somSelf,
  *      -- mnuModifyFolderPopupMenu for regular popup
  *         menus;
  *
- *      -- fnwpSubclassedFolderFrame upon WM_INITMENU
+ *      -- fnwpSubclWPFolderWindow upon WM_INITMENU
  *         for the "View" pulldown in folder menu bars.
  *
  *      hwndViewSubmenu contains the submenu to add
@@ -815,159 +800,159 @@ VOID mnuRemoveMenuItems(WPObject *somSelf,
  *@@changed V0.9.0 [umoeller]: fixed wrong separators
  *@@changed V0.9.0 [umoeller]: now using cmnQueryObjectFromID to get the config folder
  *@@changed V0.9.0 [umoeller]: fixed broken "View" item in menu bar
+ *@@changed V0.9.21 (2002-08-24) [umoeller]: changed prototype to receive CNRINFO instead of cnr
  */
 
 BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context menu
                             HWND hwndViewSubmenu,   // in: submenu to add items to
                             BOOL fInsertNewMenu,    // in: insert "View" into hwndViewSubmenu?
-                            HWND hwndCnr,           // in: cnr hwnd passed to
-                                                    //     mnuModifyFolderPopupMenu
+                            PCNRINFO pCnrInfo,      // in: cnr info
                             ULONG ulView)           // in: OPEN_* flag
 {
     BOOL        brc = FALSE;
     XFolderData *somThis = XFolderGetData(somSelf);
 
+    // we have a valid open view:
+    ULONG       ulOfs = cmnQuerySetting(sulVarMenuOffset);
+    ULONG       ulAttr = 0;
+    USHORT      usIconsAttr;
+
     #ifdef DEBUG_MENUS
-        _Pmpf(("mnuInsertFldrViewItems, hwndCnr: 0x%X", hwndCnr));
+        _PmpfF(("entering"));
     #endif
 
-    if (hwndCnr)
+
+    // add "small icons" item for all view types,
+    // but disable for Details view
+    if (ulView == OPEN_DETAILS)
     {
-        // we have a valid open view:
-        ULONG       ulOfs = cmnQuerySetting(sulVarMenuOffset);
-        ULONG       ulAttr = 0;
-        USHORT      usIconsAttr;
-        CNRINFO     CnrInfo;
-        cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
+        // Details view: disable and check
+        // "mini icons"
+        usIconsAttr = (MIA_DISABLED | MIA_CHECKED);
+    }
+    else
+    {
+        // otherwise: set "mini icons" to cnr info data
+        usIconsAttr = (pCnrInfo->flWindowAttr & CV_MINI)
+                              ? MIA_CHECKED
+                              : 0;
+    }
 
-        // add "small icons" item for all view types,
-        // but disable for Details view
-        if (ulView == OPEN_DETAILS)
-        {
-            // Details view: disable and check
-            // "mini icons"
-            usIconsAttr = (MIA_DISABLED | MIA_CHECKED);
-        }
-        else
-        {
-            // otherwise: set "mini icons" to cnr info data
-            usIconsAttr = (CnrInfo.flWindowAttr & CV_MINI)
-                                  ? MIA_CHECKED
-                                  : 0;
-        }
+    if (fInsertNewMenu)
+    {
+        // on Warp 3, we need to add a "View" submenu
+        // for the folder view flags, because Warp 3
+        // doesn't have one
+        hwndViewSubmenu = winhInsertSubmenu(hwndViewSubmenu,
+                                            MIT_END,
+                                            ulOfs + ID_XFM_OFS_WARP3FLDRVIEW,
+                                            cmnGetString(ID_XFSI_FLDRSETTINGS), // pszWarp3FldrView */
+                                                MIS_SUBMENU,
+                                            // item
+                                            ulOfs + ID_XFMI_OFS_SMALLICONS,
+                                            cmnGetString(ID_XFSI_SMALLICONS), // pszSmallIcons */
+                                            MIS_TEXT,
+                                            usIconsAttr);
+    }
+    else
+        winhInsertMenuItem(hwndViewSubmenu,
+                           MIT_END,
+                           ulOfs + ID_XFMI_OFS_SMALLICONS,
+                           cmnGetString(ID_XFSI_SMALLICONS),  // pszSmallIcons
+                           MIS_TEXT,
+                           usIconsAttr);
 
-        if (fInsertNewMenu)
-        {
-            // on Warp 3, we need to add a "View" submenu
-            // for the folder view flags, because Warp 3
-            // doesn't have one
-            hwndViewSubmenu = winhInsertSubmenu(hwndViewSubmenu,
-                                                MIT_END,
-                                                ulOfs + ID_XFM_OFS_WARP3FLDRVIEW,
-                                                cmnGetString(ID_XFSI_FLDRSETTINGS), // pszWarp3FldrView */
-                                                    MIS_SUBMENU,
-                                                // item
-                                                ulOfs + ID_XFMI_OFS_SMALLICONS,
-                                                cmnGetString(ID_XFSI_SMALLICONS), // pszSmallIcons */
-                                                MIS_TEXT,
-                                                usIconsAttr);
-        }
-        else
-            winhInsertMenuItem(hwndViewSubmenu,
-                               MIT_END,
-                               ulOfs + ID_XFMI_OFS_SMALLICONS,
-                               cmnGetString(ID_XFSI_SMALLICONS),  // pszSmallIcons
-                               MIS_TEXT,
-                               usIconsAttr);
+    brc = TRUE; // modified flag
 
-        brc = TRUE; // modified flag
-
-        if (ulView == OPEN_CONTENTS)
-        {
-            // icon view:
-            winhInsertMenuSeparator(hwndViewSubmenu, MIT_END,
-                        (ulOfs + ID_XFMI_OFS_SEPARATOR));
+    if (ulView == OPEN_CONTENTS)
+    {
+        // icon view:
+        winhInsertMenuSeparator(hwndViewSubmenu, MIT_END,
+                    (ulOfs + ID_XFMI_OFS_SEPARATOR));
 
 
-            winhInsertMenuItem(hwndViewSubmenu, MIT_END,
-                               ulOfs + ID_XFMI_OFS_NOGRID,
-                               cmnGetString(ID_XFSI_NOGRID),  MIS_TEXT, // pszNoGrid
-                               ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
-                                    ? MIA_CHECKED
-                                    : 0);
-            winhInsertMenuItem(hwndViewSubmenu, MIT_END,
-                               ulOfs + ID_XFMI_OFS_FLOWED,
-                               cmnGetString(ID_XFSI_FLOWED),  MIS_TEXT, // pszFlowed
-                               ((CnrInfo.flWindowAttr & (CV_NAME | CV_FLOW)) == (CV_NAME | CV_FLOW))
-                                    ? MIA_CHECKED
-                                    : 0);
-            winhInsertMenuItem(hwndViewSubmenu, MIT_END,
-                               ulOfs + ID_XFMI_OFS_NONFLOWED,
-                               cmnGetString(ID_XFSI_NONFLOWED),  MIS_TEXT, // pszNonFlowed
-                               ((CnrInfo.flWindowAttr & (CV_NAME | CV_FLOW)) == (CV_NAME))
-                                    ? MIA_CHECKED
-                                    : 0);
-        }
-
-        // for all views: add separator before menu and status bar items
-        // if one of these is enabled
-        if (    (G_fIsWarp4)
-#ifndef __NOCFGSTATUSBARS__
-             || (cmnQuerySetting(sfStatusBars))  // added V0.9.0
-#endif
-           )
-            winhInsertMenuSeparator(hwndViewSubmenu, MIT_END,
-                                    ulOfs + ID_XFMI_OFS_SEPARATOR);
-
-        // on Warp 4, insert "menu bar" item (V0.9.0)
-        if (G_fIsWarp4)
-        {
-            winhInsertMenuItem(hwndViewSubmenu, MIT_END,
-                               ulOfs + ID_XFMI_OFS_WARP4MENUBAR,
-                               cmnGetString(ID_XFSI_WARP4MENUBAR),  MIS_TEXT, // pszWarp4MenuBar
-                               (_xwpQueryMenuBarVisibility(somSelf))
-                                   ? MIA_CHECKED
-                                   : 0);
-        }
-
-        // insert "status bar" item if status bar feature
-        // is enabled in XWPSetup
-#ifndef __NOCFGSTATUSBARS__
-        if (cmnQuerySetting(sfStatusBars))
-#endif
-        {
-            BOOL fDefaultVis = cmnQuerySetting(sfDefaultStatusBarVisibility);
-
-            if (!stbClassCanHaveStatusBars(somSelf)) // V0.9.19 (2002-04-17) [umoeller]
-                // always disable for Desktop
-                ulAttr = MIA_DISABLED;
-            else if (ctsIsRootFolder(somSelf))
-                // for root folders (WPDisk siblings),
-                // check global setting only
-                ulAttr = MIA_DISABLED
-                            | ( (fDefaultVis)
+        // "as placed"
+        winhInsertMenuItem(hwndViewSubmenu, MIT_END,
+                           ulOfs + ID_XFMI_OFS_NOGRID,
+                           cmnGetString(ID_XFSI_NOGRID),  MIS_TEXT,
+                           ((pCnrInfo->flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
                                 ? MIA_CHECKED
                                 : 0);
-            else
-                // for regular folders, check both instance
-                // and global status bar setting
-                ulAttr = (    (_bStatusBarInstance == STATUSBAR_ON)
-                           || (    (_bStatusBarInstance == STATUSBAR_DEFAULT)
-                                && (fDefaultVis)
-                              )
-                         )
-                            ? MIA_CHECKED
-                            : 0;
-
-            // insert status bar item with the above attribute
-            winhInsertMenuItem(hwndViewSubmenu,
-                               MIT_END,
-                               ulOfs + ID_XFMI_OFS_SHOWSTATUSBAR,
-                               cmnGetString(ID_XFSI_SHOWSTATUSBAR),  // pszShowStatusBar
-                               MIS_TEXT,
-                               ulAttr);
-        }
+        // "multiple columns"
+        winhInsertMenuItem(hwndViewSubmenu, MIT_END,
+                           ulOfs + ID_XFMI_OFS_FLOWED,
+                           cmnGetString(ID_XFSI_FLOWED),  MIS_TEXT, // pszFlowed
+                           ((pCnrInfo->flWindowAttr & (CV_NAME | CV_FLOW)) == (CV_NAME | CV_FLOW))
+                                ? MIA_CHECKED
+                                : 0);
+        // "single column"
+        winhInsertMenuItem(hwndViewSubmenu, MIT_END,
+                           ulOfs + ID_XFMI_OFS_NONFLOWED,
+                           cmnGetString(ID_XFSI_NONFLOWED),  MIS_TEXT, // pszNonFlowed
+                           ((pCnrInfo->flWindowAttr & (CV_NAME | CV_FLOW)) == (CV_NAME))
+                                ? MIA_CHECKED
+                                : 0);
     }
+
+    // for all views: add separator before menu and status bar items
+    // if one of these is enabled
+    if (    (G_fIsWarp4)
+#ifndef __NOCFGSTATUSBARS__
+         || (cmnQuerySetting(sfStatusBars))  // added V0.9.0
+#endif
+       )
+        winhInsertMenuSeparator(hwndViewSubmenu, MIT_END,
+                                ulOfs + ID_XFMI_OFS_SEPARATOR);
+
+    // on Warp 4, insert "menu bar" item (V0.9.0)
+    if (G_fIsWarp4)
+    {
+        winhInsertMenuItem(hwndViewSubmenu, MIT_END,
+                           ulOfs + ID_XFMI_OFS_WARP4MENUBAR,
+                           cmnGetString(ID_XFSI_WARP4MENUBAR),  MIS_TEXT, // pszWarp4MenuBar
+                           (_xwpQueryMenuBarVisibility(somSelf))
+                               ? MIA_CHECKED
+                               : 0);
+    }
+
+    // insert "status bar" item if status bar feature
+    // is enabled in XWPSetup
+#ifndef __NOCFGSTATUSBARS__
+    if (cmnQuerySetting(sfStatusBars))
+#endif
+    {
+        BOOL fDefaultVis = cmnQuerySetting(sfDefaultStatusBarVisibility);
+
+        if (!stbClassCanHaveStatusBars(somSelf)) // V0.9.19 (2002-04-17) [umoeller]
+            // always disable for Desktop
+            ulAttr = MIA_DISABLED;
+        else if (ctsIsRootFolder(somSelf))
+            // for root folders (WPDisk siblings),
+            // check global setting only
+            ulAttr = MIA_DISABLED
+                        | ( (fDefaultVis)
+                            ? MIA_CHECKED
+                            : 0);
+        else
+            // for regular folders, check both instance
+            // and global status bar setting
+            ulAttr = (    (_bStatusBarInstance == STATUSBAR_ON)
+                       || (    (_bStatusBarInstance == STATUSBAR_DEFAULT)
+                            && (fDefaultVis)
+                          )
+                     )
+                        ? MIA_CHECKED
+                        : 0;
+
+        // insert status bar item with the above attribute
+        winhInsertMenuItem(hwndViewSubmenu,
+                           MIT_END,
+                           ulOfs + ID_XFMI_OFS_SHOWSTATUSBAR,
+                           cmnGetString(ID_XFSI_SHOWSTATUSBAR),  // pszShowStatusBar
+                           MIS_TEXT,
+                           ulAttr);
+    }
+
     return brc;
 }
 
@@ -1411,7 +1396,7 @@ static BOOL InsertConfigFolderItems(XFolder *somSelf,
  *@@changed V0.9.3 (2000-04-10) [umoeller]: snap2grid feature setting was ignored; fixed
  *@@changed V0.9.12 (2001-05-22) [umoeller]: "refresh now" was added even for non-open-view menus
  *@@changed V0.9.14 (2001-08-07) [pr]: added Run menu item
- *@@changed V0.9.21 (2002-08-24) [umoeller]: added split view
+ *@@changed V0.9.21 (2002-08-24) [umoeller]: various changes for split view support
  */
 
 BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
@@ -1435,23 +1420,64 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
         // some preparations
         XFolderData *somThis = XFolderGetData(somSelf);
         HWND        hwndFrame = NULLHANDLE;
-        ULONG       ulView = -1;
+        CNRINFO     CnrInfo;
+        ULONG       ulView = OPEN_UNKNOWN,  // receives OPEN_* flag based on cnrinfo
+                    ulRealWPSView = OPEN_UNKNOWN;
+                                            // receives OPEN_* flag based on wpshQueryView
+                                            // V0.9.21 (2002-08-26) [umoeller]
+                                          /*
+                                            #define OPEN_UNKNOWN      -1
+                                            #define OPEN_DEFAULT       0
+                                            #define OPEN_CONTENTS      1
+                                            #define OPEN_SETTINGS      2
+                                            #define OPEN_HELP          3
+                                            #define OPEN_RUNNING       4
+                                            #define OPEN_PROMPTDLG     5
+                                            #define OPEN_PALETTE       121
+                                            #define CLOSED_ICON        122
+                                            #define OPEN_USER          0x6500
+                                          */
         BOOL        bSepAdded = FALSE;
+        BOOL        fOpen;
 
         if (hwndCnr)
-            hwndFrame = WinQueryWindow(hwndCnr, QW_PARENT);
+        {
+            // get view (OPEN_CONTENTS etc.)
+            // V0.9.21 (2002-08-24) [umoeller]: do this
+            // from cnrinfo now to make this work with
+            // split views
+            cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
+            if (CnrInfo.flWindowAttr & CV_TREE)
+                ulView = OPEN_TREE;
+            else if (CnrInfo.flWindowAttr & CV_DETAIL)
+                ulView = OPEN_DETAILS;
+            else if (CnrInfo.flWindowAttr & (CV_ICON | CV_NAME | CV_TEXT))
+                ulView = OPEN_CONTENTS;
+
+            if (hwndFrame = WinQueryWindow(hwndCnr, QW_PARENT))
+                // check if this is a registered "real" WPS view;
+                // this rules out split views for the "view" menu
+                // items below
+                ulRealWPSView = wpshQueryView(somSelf, hwndFrame);
+                        // V0.9.21 (2002-08-26) [umoeller]
+                        // returns OPEN_UNKNOWN if not found
+        }
 
         // store mouse pointer position for creating objects from templates
         WinQueryMsgPos(G_habThread1,
                        &G_ptlMouseMenu);   // V0.9.16 (2001-10-23) [umoeller]
 
         #ifdef DEBUG_MENUS
-            _Pmpf(("mnuModifyFolderPopupMenu, hwndCnr: 0x%lX", hwndCnr));
-        #endif
+            _PmpfF(("[%s] hwndCnr: 0x%lX", _wpQueryTitle(somSelf), hwndCnr));
 
-        // get view (OPEN_CONTENTS etc.)
-        if (hwndFrame)
-            ulView = wpshQueryView(somSelf, hwndFrame);
+            _Pmpf(("  ulView is 0x%lX (%s)",
+                    ulView,
+                    (ulView == OPEN_CONTENTS) ? "OPEN_CONTENTS"
+                    : (ulView == OPEN_DETAILS) ? "OPEN_DETAILS"
+                    : (ulView == OPEN_TREE) ? "OPEN_TREE"
+                    : (ulView == ulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW) ? "ID_XFMI_OFS_SPLITVIEW"
+                    : "unknown"));
+        #endif
 
         // in wpFilterPopupMenu, because no codes are provided;
         // we only do this if the Global Settings want it
@@ -1462,10 +1488,10 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
          */
 
         // hack in split view V0.9.21 (2002-08-24) [umoeller]
-        if (WinSendMsg(hwndMenu,
-                       MM_QUERYITEM,
-                       MPFROM2SHORT(WPMENUID_OPEN, TRUE),
-                       (MPARAM)&mi))
+        if (fOpen = winhQueryMenuItem(hwndMenu,
+                                      WPMENUID_OPEN,
+                                      TRUE,
+                                      &mi))
         {
             winhInsertMenuItem(mi.hwndSubMenu,
                                MIT_END,
@@ -1473,24 +1499,6 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                                cmnGetString(ID_XFSI_FDR_SPLITVIEW),
                                MIS_TEXT, 0);
         }
-
-        /* if (_somIsA(somSelf, _WPDrives))
-        {
-            // get handle to the WPObject's "Help" submenu in the
-            // the folder's popup menu
-            if (WinSendMsg(hwndMenu,
-                           MM_QUERYITEM,
-                           MPFROM2SHORT(WPMENUID_OPEN, TRUE),
-                           (MPARAM)&mi))
-            {
-                // mi.hwndSubMenu now contains "Open" submenu handle,
-                // which we add items to now
-                winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                                   ulVarMenuOfs + ID_XFMI_OFS_XWPVIEW,
-                                   cmnGetString(ID_XSSI_OPENPARTITIONS),  // pszOpenPartitions
-                                   MIS_TEXT, 0);
-            }
-        } */
 
 #ifndef __NOFDRDEFAULTDOCS__
         /*
@@ -1500,29 +1508,26 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
 
         if (cmnQuerySetting(sfFdrDefaultDoc))
         {
-            WPFileSystem *pDefDoc = _xwpQueryDefaultDocument(somSelf);
-            if (pDefDoc)
-                // we have a default document for this folder:
-                if (winhQueryMenuItem(hwndMenu,
-                                      WPMENUID_OPEN,
-                                      TRUE,
-                                      &mi))
-                {
-                    // mi.hwndSubMenu now contains "Open" submenu handle;
+            WPFileSystem *pDefDoc;
+            if (    (pDefDoc = _xwpQueryDefaultDocument(somSelf))
+                 && (fOpen) // mi.hwndSubMenu still contains "Open" submenu handle
+               )
+            {
+                // add "Default document"
+                CHAR szDefDoc[2*CCHMAXPATH];
+                sprintf(szDefDoc,
+                        "%s \"%s\"",
+                        cmnGetString(ID_XSSI_FDRDEFAULTDOC),
+                        _wpQueryTitle(pDefDoc));
 
-                    CHAR szDefDoc[2*CCHMAXPATH];
-                    sprintf(szDefDoc,
-                            "%s \"%s\"",
-                            cmnGetString(ID_XSSI_FDRDEFAULTDOC),  // pszFdrDefaultDoc
-                            _wpQueryTitle(pDefDoc));
-                    winhInsertMenuSeparator(mi.hwndSubMenu, MIT_END,
-                                            ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
-                    // add "Default document"
-                    winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                                       ulVarMenuOfs + ID_XFMI_OFS_FDRDEFAULTDOC,
-                                       szDefDoc,
-                                       MIS_TEXT, 0);
-                }
+                winhInsertMenuSeparator(mi.hwndSubMenu, MIT_END,
+                                        ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+
+                winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
+                                   ulVarMenuOfs + ID_XFMI_OFS_FDRDEFAULTDOC,
+                                   szDefDoc,
+                                   MIS_TEXT, 0);
+            }
         }
 #endif
 
@@ -1536,28 +1541,17 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
             cmnAddProductInfoMenuItem(somSelf, hwndMenu);
 #endif
 
-        // work on the "View" submenu; do the following only
-        // if the "View" menu has not been removed (Warp 4)
-        // or the "Select" menu has not been removed (Warp 3)
-        if (
-                (    (G_fIsWarp4)
-                  && (!(flWPS & CTXT_VIEW))
-                )
-/*
-             || (    (!G_fIsWarp4)
-                  && (!(flWPS & CTXT_SELECT))
-                )
-*/
+        // on Warp 4, work on the "View" submenu; do this only
+        // if the "View" menu has not been removed entirely
+        // (yes, Warp 3 support is broken now)
+        if (    (G_fIsWarp4)
+             && (!(flWPS & CTXT_VIEW))
            )
         {
             SHORT sPos = MIT_END;
 
             if (winhQueryMenuItem(hwndMenu,
-                                  (G_fIsWarp4)
-                                  // in Warp 4, these items are in the "View" submenu;
-                                  // in Warp 3, "Select" is  a separate submenu
-                                       ? WPMENUID_VIEW // ID_WPM_VIEW           // 0x68
-                                       : WPMENUID_SELECT, // 0x04,      // WPMENUID_SELECT
+                                  WPMENUID_VIEW,    // 0x68
                                   TRUE,
                                   &mi))
             {
@@ -1577,15 +1571,13 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                         )
                    )
                 {
-                    if (G_fIsWarp4)
-                        // get position of "Refresh now";
-                        // we'll add behind that item
-                        sPos = (SHORT)WinSendMsg(mi.hwndSubMenu,
-                                                 MM_ITEMPOSITIONFROMID,
-                                                 MPFROM2SHORT(WPMENUID_REFRESH,
-                                                              FALSE),
-                                                 MPNULL);
-                    // else: using MIT_END (above)
+                    // get position of "Refresh now";
+                    // we'll add behind that item
+                    sPos = (SHORT)WinSendMsg(mi.hwndSubMenu,
+                                             MM_ITEMPOSITIONFROMID,
+                                             MPFROM2SHORT(WPMENUID_REFRESH,
+                                                          FALSE),
+                                             MPNULL);
 
                     if (!(flXWP & XWPCTXT_SELECTSOME))
                         winhInsertMenuItem(mi.hwndSubMenu,
@@ -1602,29 +1594,27 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                                            cmnGetString(ID_XSDI_MENU_BATCHRENAME),
                                            MIS_TEXT, 0);
 
-                    if (G_fIsWarp4)
-                    {
-                        winhInsertMenuSeparator(mi.hwndSubMenu,
-                                                sPos,
-                                                ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+                    // another separator before "Refresh now"
+                    winhInsertMenuSeparator(mi.hwndSubMenu,
+                                            sPos,
+                                            ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
 
-                        // if all the "switch view" items are disabled, we
-                        // end up with a leading separator on top... the
-                        // WPS uses ID 7000 for the separator, so check
-                        // if the first menu item with that ID has the index
-                        // null now
-                        // V0.9.19 (2002-04-17) [umoeller]
-                        /*
-                        sPos = (SHORT)WinSendMsg(mi.hwndSubMenu,
-                                                 MM_ITEMIDFROMPOSITION,
-                                                 (SHORT)0,
-                                                 MPNULL);
-                        _Pmpf(("id of view position 0 is %d", sPos));
-                        damn, this doesn't work... if CTXT_CHANGETOICON
-                        and the like are set, apparently the wps only
-                        removes these items after ModifyPopupMenu
-                        */
-                    }
+                    // if all the "switch view" items are disabled, we
+                    // end up with a leading separator on top... the
+                    // WPS uses ID 7000 for the separator, so check
+                    // if the first menu item with that ID has the index
+                    // null now
+                    // V0.9.19 (2002-04-17) [umoeller]
+                    /*
+                    sPos = (SHORT)WinSendMsg(mi.hwndSubMenu,
+                                             MM_ITEMIDFROMPOSITION,
+                                             (SHORT)0,
+                                             MPNULL);
+                    _Pmpf(("id of view position 0 is %d", sPos));
+                    damn, this doesn't work... if CTXT_CHANGETOICON
+                    and the like are set, apparently the wps only
+                    removes these items after ModifyPopupMenu
+                    */
                 }
 
                 // additional "view" items (icon size etc.)
@@ -1632,9 +1622,11 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                 {
                     // rule out possible user views
                     // of WPFolder subclasses
-                    if (    (ulView == OPEN_TREE)
-                         || (ulView == OPEN_CONTENTS)
-                         || (ulView == OPEN_DETAILS)
+                    // V0.9.21 (2002-08-26) [umoeller]: now using
+                    // ulRealWPSView to rule out split views as well
+                    if (    (ulRealWPSView == OPEN_TREE)
+                         || (ulRealWPSView == OPEN_CONTENTS)
+                         || (ulRealWPSView == OPEN_DETAILS)
                        )
                     {
                         if (G_fIsWarp4)
@@ -1659,7 +1651,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                             mnuInsertFldrViewItems(somSelf,
                                                    mi.hwndSubMenu,
                                                    FALSE,       // no submenu
-                                                   hwndCnr,
+                                                   &CnrInfo,
                                                    ulView);
                         }
                         else
@@ -1667,7 +1659,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                             mnuInsertFldrViewItems(somSelf,
                                                    hwndMenu,
                                                    TRUE, // on Warp 3, insert new submenu
-                                                   hwndCnr,
+                                                   &CnrInfo,
                                                    ulView);
                     }
                 }
@@ -2144,1315 +2136,6 @@ BOOL mnuModifyDataFilePopupMenu(WPObject *somSelf,  // in: data file
 #endif
 
     return TRUE;
-}
-
-/* ******************************************************************
- *
- *   "Selecting menu items" reaction
- *
- ********************************************************************/
-
-/*
- *  The following functions are called on objects even before
- *  wpMenuItemSelected is called, i.e. right after a
- *  menu item has been selected by the user, and before
- *  the menu is dismissed.
- */
-
-/*
- *@@ mnuFileSystemSelectingMenuItem:
- *      this is called for file-system objects (folders and
- *      data files) even before wpMenuItemSelected.
- *
- *      This call is the result of a WM_MENUSELECT intercept
- *      of the subclassed frame window procedure of an open folder
- *      (fnwpSubclassedFolderFrame).
- *
- *      We can intercept certain menu item selections here so
- *      that they are not passed to wpMenuItemSelected. This is
- *      the only way we can react to a menu selection and _not_
- *      dismiss the menu (ie. keep it visible after the selection).
- *
- *      Note that somSelf might be a file-system object, but
- *      it might also be a shadow pointing to one, so we might
- *      need to dereference it.
- *
- *      Return value:
- *      -- TRUE          the menu item was handled here; in this case,
- *                       we set *pfDismiss to either TRUE or FALSE.
- *                       If TRUE, the menu will be dismissed and, if
- *                       if (fPostCommand), wpMenuItemSelected will be
- *                       called later.
- *                       If FALSE, the menu will _not_ be dismissed,
- *                       and wpMenuItemSelected will _not_ be called
- *                       later. This is what we return for menu items
- *                       that we have handled here already.
- *      -- FALSE         the menu item was _not_ handled.
- *                       We do _not_ touch *pfDismiss then. In any
- *                       case, wpMenuItemSelected will be called.
- *
- *@@changed V0.9.4 (2000-06-09) [umoeller]: added default documents
- */
-
-BOOL mnuFileSystemSelectingMenuItem(WPObject *somSelf,
-                                       // in: file-system object on which the menu was
-                                       // opened
-                                    USHORT usItem,
-                                       // in: selected menu item
-                                    BOOL fPostCommand,
-                                       // in: this signals whether wpMenuItemSelected
-                                       // can be called afterwards
-                                    HWND hwndMenu,
-                                       // in: current menu control
-                                    HWND hwndCnr,
-                                       // in: cnr hwnd involved in the operation
-                                    ULONG ulSelection,
-                                       // one of the following:
-                                       // -- SEL_WHITESPACE: the context menu was opened on the
-                                       //                   whitespace in an open container view
-                                       //                   of somSelf (which is a folder then)
-                                       // -- SEL_SINGLESEL: the context menu was opened for a
-                                       //                   single selected object: somSelf can
-                                       //                   be any object then, including folders
-                                       // -- SEL_MULTISEL:   the context menu was opened on one
-                                       //                   of a multitude of selected objects.
-                                       //                   Again, somSelf can be any object
-                                       // -- SEL_SINGLEOTHER: the context menu was opened for a
-                                       //                   single object _other_ than the selected
-                                       //                   objects
-                                    BOOL *pfDismiss)
-                                       // out: if TRUE is returned (ie. the menu item was handled
-                                       // here), this determines whether the menu should be dismissed
-{
-    ULONG           ulMenuId2 = usItem - cmnQuerySetting(sulVarMenuOffset);
-    BOOL            fHandled = TRUE;
-    WPObject        *pObject = somSelf;
-    WPFileSystem    *pFileSystem = objResolveIfShadow(pObject);
-
-    #ifdef DEBUG_MENUS
-        _Pmpf(("mnuFileSystemSelectingMenuItem"));
-    #endif
-
-    switch (ulMenuId2)
-    {
-
-        /*
-         * ID_XFMI_OFS_ATTR_ARCHIVED etc.:
-         *      update file attributes
-         */
-
-        case ID_XFMI_OFS_ATTR_ARCHIVED:
-        case ID_XFMI_OFS_ATTR_SYSTEM:
-        case ID_XFMI_OFS_ATTR_HIDDEN:
-        case ID_XFMI_OFS_ATTR_READONLY:
-        {
-            ULONG       ulFileAttr;
-            ULONG       ulMenuAttr;
-            HPOINTER    hptrOld;
-
-            ulFileAttr = _wpQueryAttr(pFileSystem);
-            ulMenuAttr = (ULONG)WinSendMsg(hwndMenu,
-                                           MM_QUERYITEMATTR,
-                                           MPFROM2SHORT(usItem, FALSE),
-                                           (MPARAM)MIA_CHECKED);
-            // toggle "checked" flag in menu
-            ulMenuAttr ^= MIA_CHECKED;  // XOR checked flag;
-            WinSendMsg(hwndMenu,
-                       MM_SETITEMATTR,
-                       MPFROM2SHORT(usItem, FALSE),
-                       MPFROM2SHORT(MIA_CHECKED, ulMenuAttr));
-
-            // toggle file attribute
-            ulFileAttr ^= // XOR flag depending on menu item
-                      (ulMenuId2 == ID_XFMI_OFS_ATTR_ARCHIVED) ? FILE_ARCHIVED
-                    : (ulMenuId2 == ID_XFMI_OFS_ATTR_SYSTEM  ) ? FILE_SYSTEM
-                    : (ulMenuId2 == ID_XFMI_OFS_ATTR_HIDDEN  ) ? FILE_HIDDEN
-                    : FILE_READONLY;
-
-            // loop thru the selected objects
-            // change the mouse pointer to "wait" state
-            hptrOld = winhSetWaitPointer();
-
-            while (pObject)
-            {
-                if (pFileSystem)
-                {
-                    #ifdef DEBUG_MENUS
-                        _Pmpf(("  Settings attrs for %s", _wpQueryTitle(pFileSystem)));
-                    #endif
-
-                    _wpSetAttr(pFileSystem, ulFileAttr);
-
-                    // update open "File" notebook pages for this object
-                    ntbUpdateVisiblePage(pFileSystem, SP_FILE1);
-                }
-
-                if (ulSelection == SEL_MULTISEL)
-                    pObject = wpshQueryNextSourceObject(hwndCnr, pObject);
-                        // note that we're passing pObject, which might
-                        // be the shadow
-                else
-                    pObject = NULL;
-
-                // dereference shadows again
-                pFileSystem = objResolveIfShadow(pObject);
-            }
-
-            WinSetPointer(HWND_DESKTOP, hptrOld);
-
-            // prevent dismissal of menu
-            *pfDismiss = FALSE;
-        }
-        break;  // file attributes
-
-        /*
-         * ID_XFMI_OFS_COPYFILENAME_MENU:
-         *
-         */
-
-        case ID_XFMI_OFS_COPYFILENAME_MENU:
-            objCopyObjectFileName(pObject,
-                                  hwndCnr,
-                                  doshQueryShiftState());
-                // note again that we're passing pObject instead
-                // of pFileSystem, so that this routine can
-                // query all selected objects from shadows too
-
-            // dismiss menu
-            *pfDismiss = TRUE;
-        break;
-
-        /*
-         * ID_XFMI_OFS_FDRDEFAULTDOC:
-         *      V0.9.4 (2000-06-09) [umoeller]
-         */
-
-        case ID_XFMI_OFS_FDRDEFAULTDOC:
-        {
-            WPFolder *pMyFolder = _wpQueryFolder(somSelf);
-            if (_xwpQueryDefaultDocument(pMyFolder) == somSelf)
-                // we are already the default document:
-                // unset
-                _xwpSetDefaultDocument(pMyFolder, NULL);
-            else
-                _xwpSetDefaultDocument(pMyFolder, somSelf);
-        }
-        break;
-
-        default:
-            fHandled = FALSE;
-    }
-
-    return (fHandled);
-}
-
-/*
- *@@ HandleFolderEditMenuItems:
- *      handles folder menu items that appear in both
- *      the "Edit" pulldown and in the folder context
- *      menu, such as "select some" and "batch rename".
- *
- *      We need to handle these in both mnuFolderSelectingMenuItem
- *      and mnuMenuItemSelected:
- *
- *      1)  If we don't handle it in mnuFolderSelectingMenuItem,
- *          the command will never work from the edit pulldown
- *          if an object is selected because the WPS will then
- *          invoke wpMenuItemSelected on that object.
- *
- *      2)  If we don't handle it in mnuMenuItemSelected,
- *          the folder hotkeys will break.
- *
- *      Finally got all situations right with V0.9.20, I hope.
- *
- *      Returns TRUE if the item was processed.
- *
- *@@added V0.9.20 (2002-08-08) [umoeller]
- */
-
-static BOOL HandleFolderEditMenuItems(WPFolder *somSelf,
-                                      HWND hwndFrame,
-                                      USHORT usItem)
-{
-    // Note V0.9.19 (2002-06-18) [umoeller]:
-    // ID_XFMI_OFS_SELECTSOME was moved here from
-    // mnuMenuItemSelected because it never worked
-    // from the "Edit" pulldown menu as soon as any
-    // non-folder object was selected in the folder,
-    // becasue the WPS then called wpMenuItemSelected
-    // on that object. So it was moved here, and
-    // "batch rename" was added at the same time.
-
-    ULONG       ulVarMenuOffset = cmnQuerySetting(sulVarMenuOffset);
-    ULONG       ulMenuId2 = usItem - ulVarMenuOffset;
-    BOOL        fProcessed = TRUE;
-
-    switch (ulMenuId2)
-    {
-        /*
-         * ID_XFMI_OFS_SELECTSOME:
-         *      show "Select by name" dialog.
-         */
-
-        case ID_XFMI_OFS_SELECTSOME:
-            fdrShowSelectSome(hwndFrame);
-                    // V0.9.19 (2002-04-17) [umoeller]
-        break;
-
-        /*
-         * ID_XFMI_OFS_BATCHRENAME:
-         *      show "batch rename" dialog.
-         *      V0.9.19 (2002-06-18) [umoeller]
-         */
-
-        case ID_XFMI_OFS_BATCHRENAME:
-            fdrShowBatchRename(hwndFrame);
-        break;
-
-        default:
-            // anything else:
-            fProcessed = FALSE;
-    }
-
-    return fProcessed;
-}
-
-/*
- *@@ mnuFolderSelectingMenuItem:
- *      this is called for folders before wpMenuItemSelected.
- *      See mnuFileSystemSelectingMenuItem for details.
- *
- *      Note that somSelf here will never be a shadow pointing
- *      to a folder. It will always be a folder.
- *
- *@@changed V0.9.0 [umoeller]: added support for "Menu bar" item
- *@@changed V0.9.19 (2002-06-18) [umoeller]: ID_XFMI_OFS_SELECTSOME never worked right from edit pulldown, fixed
- *@@changed V0.9.19 (2002-06-18) [umoeller]: added "batch rename"
- *@@changed V0.9.20 (2002-08-08) [umoeller]: added replacement "Paste"
- */
-
-BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
-                                USHORT usItem,
-                                BOOL fPostCommand,
-                                HWND hwndMenu,
-                                HWND hwndCnr,
-                                ULONG ulSelection,
-                                BOOL *pfDismiss)
-{
-    ULONG       ulVarMenuOffset = cmnQuerySetting(sulVarMenuOffset);
-    ULONG       ulMenuId2 = usItem - ulVarMenuOffset;
-    BOOL        fHandled;
-    HWND        hwndFrame = WinQueryWindow(hwndCnr, QW_PARENT);
-
-    #ifdef DEBUG_MENUS
-        _Pmpf(("mnuFolderSelectingMenuItem"));
-    #endif
-
-    // first check if it's one of the "Sort" menu items
-    if (!(fHandled = fdrSortMenuItemSelected(somSelf,
-                                             hwndFrame,
-                                             hwndMenu,
-                                             usItem,
-                                             pfDismiss))) // dismiss flag == return value
-    {
-        fHandled = TRUE;
-
-        // no "sort" menu item:
-        switch (ulMenuId2)
-        {
-            /*
-             * ID_XFMI_OFS_SMALLICONS:
-             *
-             */
-
-            case ID_XFMI_OFS_SMALLICONS:
-            {
-                // toggle small icons for folder; this menu item
-                // only exists for open Icon and Tree views
-                CNRINFO CnrInfo;
-                ULONG ulViewAttr, ulCnrView;
-                ULONG ulMenuAttr = (ULONG)WinSendMsg(hwndMenu,
-                                                     MM_QUERYITEMATTR,
-                                                     MPFROM2SHORT(usItem,
-                                                                  FALSE),
-                                                     (MPARAM)MIA_CHECKED);
-                // toggle "checked" flag in menu
-                ulMenuAttr ^= MIA_CHECKED;  // XOR checked flag;
-                WinSendMsg(hwndMenu,
-                           MM_SETITEMATTR,
-                           MPFROM2SHORT(usItem, FALSE),
-                           MPFROM2SHORT(MIA_CHECKED, ulMenuAttr));
-
-                // toggle cnr flags
-                cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
-                ulCnrView = (CnrInfo.flWindowAttr & CV_TREE) ? OPEN_TREE : OPEN_CONTENTS;
-                ulViewAttr = _wpQueryFldrAttr(somSelf, ulCnrView);
-                ulViewAttr ^= CV_MINI;      // XOR mini-icons flag
-                _wpSetFldrAttr(somSelf,
-                               ulViewAttr,
-                               ulCnrView);
-
-                *pfDismiss = FALSE;
-            }
-            break;
-
-            case ID_XFMI_OFS_FLOWED:
-            case ID_XFMI_OFS_NONFLOWED:
-            case ID_XFMI_OFS_NOGRID:
-            {
-                // these items exist for icon views only
-                ULONG ulViewAttr = _wpQueryFldrAttr(somSelf, OPEN_CONTENTS);
-                switch (ulMenuId2)
-                {
-                    case ID_XFMI_OFS_FLOWED:
-                        // == CV_NAME | CV_FLOW; not CV_ICON
-                        ulViewAttr = (ulViewAttr & ~CV_ICON) | CV_NAME | CV_FLOW;
-                    break;
-
-                    case ID_XFMI_OFS_NONFLOWED:
-                        // == CV_NAME only; not CV_ICON
-                        ulViewAttr = (ulViewAttr & ~(CV_ICON | CV_FLOW)) | CV_NAME;
-                    break;
-
-                    case ID_XFMI_OFS_NOGRID:
-                        ulViewAttr = (ulViewAttr & ~(CV_NAME | CV_FLOW)) | CV_ICON;
-                    break;
-                }
-
-                _wpSetFldrAttr(somSelf,
-                               ulViewAttr,
-                               OPEN_CONTENTS);
-
-                winhSetMenuItemChecked(hwndMenu,
-                                       ulVarMenuOffset + ID_XFMI_OFS_FLOWED,
-                                       (ulMenuId2 == ID_XFMI_OFS_FLOWED));
-                winhSetMenuItemChecked(hwndMenu,
-                                       ulVarMenuOffset + ID_XFMI_OFS_NONFLOWED,
-                                       (ulMenuId2 == ID_XFMI_OFS_NONFLOWED));
-                winhSetMenuItemChecked(hwndMenu,
-                                       ulVarMenuOffset + ID_XFMI_OFS_NOGRID,
-                                       (ulMenuId2 == ID_XFMI_OFS_NOGRID));
-
-                // do not dismiss menu
-                *pfDismiss = FALSE;
-            }
-            break;
-
-            case ID_XFMI_OFS_SHOWSTATUSBAR:
-            {
-                // toggle status bar for folder
-                ULONG ulMenuAttr = (ULONG)WinSendMsg(hwndMenu,
-                                                     MM_QUERYITEMATTR,
-                                                     MPFROM2SHORT(usItem,
-                                                                  FALSE),
-                                                     (MPARAM)MIA_CHECKED);
-                _xwpSetStatusBarVisibility(somSelf,
-                                           (ulMenuAttr & MIA_CHECKED)
-                                              ? STATUSBAR_OFF
-                                              : STATUSBAR_ON,
-                                           TRUE);  // update open folder views
-
-                // toggle "checked" flag in menu
-                ulMenuAttr ^= MIA_CHECKED;  // XOR checked flag;
-                WinSendMsg(hwndMenu,
-                           MM_SETITEMATTR,
-                           MPFROM2SHORT(usItem, FALSE),
-                           MPFROM2SHORT(MIA_CHECKED, ulMenuAttr));
-
-                // do not dismiss menu
-                *pfDismiss = FALSE;
-            }
-            break;
-
-            /*
-             * ID_XFMI_OFS_WARP4MENUBAR (added V0.9.0):
-             *      "Menu bar" item in "View" context submenu.
-             *      This is only inserted if Warp 4 is running,
-             *      so we do no additional checks here.
-             */
-
-            case ID_XFMI_OFS_WARP4MENUBAR:
-            {
-                BOOL fMenuVisible = _xwpQueryMenuBarVisibility(somSelf);
-                // in order to change the menu bar visibility,
-                // we need to resolve the method by name, since
-                // we don't have the Warp 4 toolkit headers
-                xfTD_wpSetMenuBarVisibility pwpSetMenuBarVisibility
-                    = (xfTD_wpSetMenuBarVisibility)somResolveByName(
-                                                    somSelf,
-                                                    "wpSetMenuBarVisibility");
-
-                if (pwpSetMenuBarVisibility)
-                    pwpSetMenuBarVisibility(somSelf, !fMenuVisible);
-                else
-                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                        "Unable to resolve wpSetMenuBarVisibility.");
-
-                WinSendMsg(hwndMenu,
-                           MM_SETITEMATTR,
-                           MPFROM2SHORT(usItem, FALSE),
-                           MPFROM2SHORT(MIA_CHECKED,
-                                        (fMenuVisible)
-                                            ? 0
-                                            : MIA_CHECKED));
-                // do not dismiss menu
-                *pfDismiss = FALSE;
-            }
-            break;
-
-            default:
-                // added call to HandleFolderEditMenuItems
-                // V0.9.20 (2002-08-08) [umoeller]
-                fHandled = HandleFolderEditMenuItems(somSelf,
-                                                     hwndFrame,
-                                                     usItem);
-        }
-    }
-
-    return fHandled;
-}
-
-/* ******************************************************************
- *
- *   "Menu item selected" reaction
- *
- ********************************************************************/
-
-/*
- *@@  ProgramObjectSelected:
- *      this subroutine is called by mnuMenuItemSelected whenever a
- *      program object from the config folders is to be handled;
- *      it does all the necessary fuddling with the program object's
- *      data before opening it, ie. changing the working dir to the
- *      folder's, inserting clipboard data and so on.
- *
- *@@changed V0.9.19 (2002-04-24) [umoeller]: replaced embarassing dialog from XFolder days
- */
-
-static BOOL ProgramObjectSelected(WPObject *pFolder,        // in: folder or disk object
-                                  WPProgram *pProgram)
-{
-    PPROGDETAILS    pDetails;
-    ULONG           ulSize;
-
-    CHAR            szRealName[CCHMAXPATH];    // Buffer for wpQueryFilename()
-
-    BOOL            ValidRealName,
-                    StartupChanged = FALSE,
-                    ParamsChanged = FALSE,
-                    TitleChanged = FALSE,
-                    brc = FALSE;
-
-    PSZ             pszOldParams = NULL,
-                    pszOldTitle = NULL;
-    CHAR            szNewTitle[1024] = "";
-
-    HAB             hab;
-
-    // get program object data
-    if ((pDetails = progQueryDetails(pProgram)))
-    {
-        XSTRING         strNewParams;       // V0.9.16 (2001-10-06)
-        xstrInit(&strNewParams, 0);
-
-        brc = TRUE;
-
-        // dereference disk objects
-        if (_somIsA(pFolder, _WPDisk))
-            pFolder = _xwpSafeQueryRootFolder(pFolder,      // disk
-                                              FALSE,
-                                              NULL);
-
-        if (pFolder)
-            ValidRealName = (_wpQueryFilename(pFolder, szRealName, TRUE) != NULL);
-        // now we have the folder's full path
-
-        // there seems to be a bug in wpQueryFilename for
-        // root folders, so we might need to append a "\"
-        if (strlen(szRealName) == 2)
-            strcat(szRealName, "\\");
-
-        // *** first trick:
-        // if the program object's startup dir has not been
-        // set, we will set it to szRealName
-        // temporarily; this will start the
-        // program object in the directory
-        // of the folder whose context menu was selected
-        if (    (ValidRealName)
-             && (!pDetails->pszStartupDir))
-        {
-            StartupChanged = TRUE;
-            pDetails->pszStartupDir = szRealName;
-        }
-
-        // start playing with the object's parameter list,
-        // if the global settings allow it
-        if (cmnQuerySetting(sfAppdParam))
-        {
-            CHAR            szPassRealName[CCHMAXPATH];
-
-            // if the folder's real name contains spaces,
-            // we need to enclose it in quotes
-            if (strchr(szRealName, ' '))
-            {
-                strcpy(szPassRealName, "\"");
-                strcat(szPassRealName, szRealName);
-                strcat(szPassRealName, "\"");
-            }
-            else
-                strcpy(szPassRealName, szRealName);
-
-            // backup prog data for later restore
-            if (pszOldParams = pDetails->pszParameters)
-            {
-                // parameter list not empty:
-
-                // *** second trick:
-                // we will append the current folder path to the parameters
-                // if the program object's parameter list does not
-                // end in "%" ("Netscape support")
-                if (    (ValidRealName)
-                     && (pDetails->pszParameters[strlen(pDetails->pszParameters)-1] != '%'))
-                {
-                    ParamsChanged = TRUE;
-
-                    xstrcpy(&strNewParams, pszOldParams, 0);
-                    xstrcatc(&strNewParams, ' ');
-                    xstrcat(&strNewParams, szPassRealName, 0);
-                }
-
-                // *** third trick:
-                // replace an existing "%**C" in the parameters
-                // with the contents of the clipboard */
-                if (strstr(pszOldParams, CLIPBOARDKEY))
-                {
-                    hab = WinQueryAnchorBlock(HWND_DESKTOP);
-                    if (WinOpenClipbrd(hab))
-                    {
-                        PSZ pszClipText;
-                        if (pszClipText = (PSZ)WinQueryClipbrdData(hab, CF_TEXT))
-                        {
-                            CHAR            szClipBuf[CCHMAXPATH];
-                            ULONG           ulOfs = 0;
-
-                            PSZ pszPos = NULL;
-                            // copy clipboard text from shared memory,
-                            // but limit to 256 chars
-                            strncpy(szClipBuf, pszClipText, CCHMAXPATH);
-                            szClipBuf[CCHMAXPATH-2] = '\0'; // make sure the string is terminated
-                            WinCloseClipbrd(hab);
-
-                            if (!ParamsChanged) // did we copy already?
-                                xstrcpy(&strNewParams, pszOldParams, 0);
-
-                            while (xstrFindReplaceC(&strNewParams,
-                                                    &ulOfs,
-                                                    CLIPBOARDKEY,
-                                                    szClipBuf))
-                                ;
-
-                            ParamsChanged = TRUE;
-                        }
-                        else
-                        {
-                            // no text data in clipboard:
-                            WinCloseClipbrd(hab);
-                            cmnSetDlgHelpPanel(ID_XFH_NOTEXTCLIP);
-                            if (cmnMessageBoxExt(NULLHANDLE,
-                                                 116,   // warning
-                                                 NULL, 0,
-                                                 235,   // no text in clipboard
-                                                 MB_YESNO)
-                                    != MBID_YES)
-                                brc = FALSE;
-
-                            /* replaced this hideously ugly dialog too
-                                V0.9.19 (2002-04-24) [umoeller]
-
-                            if (WinDlgBox(HWND_DESKTOP,         // parent is desktop
-                                          HWND_DESKTOP,             // owner is desktop
-                                          (PFNWP)cmn_fnwpDlgWithHelp, // dialog procedure (common.c)
-                                          cmnQueryNLSModuleHandle(FALSE),  // from resource file
-                                          ID_XFD_NOTEXTCLIP,        // dialog resource id
-                                          (PVOID)NULL)             // no dialog parameters
-                                    == DID_CANCEL)
-                                brc = FALSE;
-                            */
-                        }
-                    }
-                    else
-                    {
-                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                               "Unable to open clipboard.");
-                        brc = FALSE;
-                    }
-                }
-
-                if (ParamsChanged)
-                    pDetails->pszParameters = strNewParams.psz;
-            }
-            else
-                // parameter list is empty: simply set params
-                if (ValidRealName)
-                {
-                    ParamsChanged = TRUE;
-                    // set parameter list to folder name
-                    pDetails->pszParameters = szPassRealName;
-                    // since parameter list is empty, we need not
-                    // search for the clipboard key ("%**C") */
-                }
-        } // end if (cmnQuerySetting(sfAppdParam))
-
-        // now remove "~" from title, if allowed
-        if (    (pszOldTitle = pDetails->pszTitle)
-             && (cmnQuerySetting(sfRemoveX))
-           )
-        {
-            PSZ pszPos;
-            if (pszPos = strchr(pszOldTitle, '~'))
-            {
-                TitleChanged = TRUE;
-                strncpy(szNewTitle, pszOldTitle, (pszPos - pszOldTitle));
-                strcat(szNewTitle, pszPos+1);
-                pDetails->pszTitle = szNewTitle;
-            }
-        }
-
-        // now apply new settings, if necessary
-        if (StartupChanged || ParamsChanged || TitleChanged)
-            if (!_wpSetProgDetails(pProgram, pDetails))
-            {
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "Unable to set new startup directory.");
-                brc = FALSE;
-            }
-
-        if (brc)
-            // open the object with new settings
-            if (!_wpViewObject(pProgram, NULLHANDLE, OPEN_DEFAULT, 0))
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "wpViewObject failed.");
-
-        // now restore the old settings, if necessary
-        if (StartupChanged)
-            pDetails->pszStartupDir = NULL;
-        if (ParamsChanged)
-            pDetails->pszParameters = pszOldParams;
-        if (TitleChanged)
-            pDetails->pszTitle = pszOldTitle;
-        if (StartupChanged || ParamsChanged || TitleChanged)
-            _wpSetProgDetails(pProgram, pDetails);
-
-        free(pDetails);
-        xstrClear(&strNewParams);
-    }
-    else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "wpQueryProgDetails failed.");
-
-    return brc;
-}
-
-/*
- *@@ CheckForVariableMenuItems:
- *      called from mnuMenuItemSelected for the default
- *      case, i.e. checks if one of the variable menu
- *      items (from config folder or folder content
- *      menus) was selected.
- *
- *      Must return TRUE if the menu item was processed.
- *
- *@@added V0.9.14 (2001-07-14) [umoeller]
- */
-
-static BOOL CheckForVariableMenuItems(WPFolder *somSelf,  // in: folder or root folder
-                                      HWND hwndFrame,    // in: as in wpMenuItemSelected
-                                      ULONG ulMenuId)    // in: selected menu item
-{
-    BOOL brc = FALSE;
-
-    PVARMENULISTITEM    pItem;
-    WPObject            *pObject = NULL;
-
-    ULONG ulFirstVarMenuId = cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_VARIABLE;
-    if (     (ulMenuId >= ulFirstVarMenuId)
-          && (ulMenuId <  ulFirstVarMenuId + G_ulVarItemCount)
-       )
-    {
-        // yes, variable menu item selected:
-        // get corresponding menu list item from the list that
-        // was created by mnuModifyFolderPopupMenu
-        if (pItem = cmnuGetVarItem(ulMenuId - ulFirstVarMenuId))
-            pObject = pItem->pObject;
-
-        if (pObject)    // defaults to NULL
-        {
-            // OK, we've found the corresponding object
-            switch (pItem->ulObjType)
-            {
-                // this data has previously been saved by InsertObjectsFromList when
-                // the context menu was created; it contains a flag telling us
-                // what kind of menu item we're dealing with
-
-                case OC_TEMPLATE:
-                {
-                    // if the object is a template, we create a new
-                    // object from it; do this in the supplementary
-                    // object window V0.9.2 (2000-02-26) [umoeller]
-                    PSUBCLFOLDERVIEW psfv;
-                    if (psfv = fdrQuerySFV(hwndFrame,
-                                           NULL))
-                    {
-                        XFolderData     *somThis = XFolderGetData(somSelf);
-
-                        wpshCreateFromTemplate(WinQueryAnchorBlock(hwndFrame),
-                                               pObject,  // template
-                                               somSelf,    // folder
-                                               hwndFrame, // view frame
-                                               cmnQuerySetting(sulTemplatesOpenSettings),
-                                                        // 0: do nothing after creation
-                                                        // 1: open settings notebook
-                                                        // 2: make title editable
-                                               cmnQuerySetting(sfTemplatesReposition),
-                                               &G_ptlMouseMenu); // V0.9.16 (2001-10-23) [umoeller]
-                        /* G_ptlTemplateMousePos.x = _MenuMousePosX;
-                        G_ptlTemplateMousePos.y = _MenuMousePosY;
-                        WinPostMsg(psfv->hwndSupplObject,
-                                   SOM_CREATEFROMTEMPLATE,
-                                   (MPARAM)pObject, // template
-                                   (MPARAM)somSelf); // folder
-                                */
-                    }
-                }
-                break;  // end OC_TEMPLATE
-
-                case OC_PROGRAM:
-                    // WPPrograms are handled separately, for we will perform
-                    // tricks on the startup directory and parameters
-                    ProgramObjectSelected(somSelf, pObject);
-                break;  // end OC_PROGRAM
-
-                case OC_XWPSTRING:      // V0.9.14 (2001-08-25) [umoeller]
-                {
-                    PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-                    if (    (krnIsClassReady(G_pcszXWPString))
-                         && (_somIsA(pObject, _XWPString))
-                       )
-                        _xwpInvokeString(pObject,       // string object
-                                         1,             // one target
-                                         &somSelf);      // target: the folder
-                }
-                break;
-
-                default:
-                    // objects other than WPProgram and WPFolder (which is handled by
-                    // the OS/2 menu handling) will simply be opened without further
-                    // discussion.
-                    // This includes folder content menu items,
-                    // which are marked as OC_CONTENT; MB2 clicks into
-                    // content menus are handled by the subclassed folder wnd proc
-                    _wpViewObject(pObject, NULLHANDLE, OPEN_DEFAULT, 0);
-
-            } // end switch
-        } //end else (pObject == NULL)
-        brc = TRUE;
-    } // end if ((ulMenuId >= ID_XFM_VARIABLE) && (ulMenuId < ID_XFM_VARIABLE+varItemCount))
-    // else none of our variable menu items: brc still false
-
-    return brc;
-}
-
-/*
- *@@ mnuMenuItemSelected:
- *      this gets called by XFolder::wpMenuItemSelected and
- *      XFldDisk::wpMenuItemSelected. Since both classes have
- *      most menu items in common, the handling of the
- *      selections can be done for both in one routine.
- *
- *      This routine now checks if one of XFolder's menu items
- *      was selected; if so, it executes corresponding action
- *      and returns TRUE, otherwise it does nothing and
- *      returns FALSE, upon which the caller should
- *      call its parent method to process the menu item.
- *
- *      Note that when called from XFldDisk, somSelf points
- *      to the "root folder" of the disk object instead of
- *      the disk object itself (wpQueryRootFolder).
- *
- *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
- *@@changed V0.9.0 [umoeller]: "Refresh" item now moved to File thread
- *@@changed V0.9.1 (99-11-29) [umoeller]: "Open parent and close" closed even the Desktop; fixed
- *@@changed V0.9.1 (99-12-01) [umoeller]: "Open parent" crashed for root folders; fixed
- *@@changed V0.9.4 (2000-06-09) [umoeller]: added default document
- *@@changed V0.9.6 (2000-10-16) [umoeller]: fixed "Refresh now"
- *@@changed V0.9.9 (2001-03-27) [umoeller]: removed SOM_CREATEFROMTEMPLATE crap, now calling wpshCreateFromTemplate directly
- *@@changed V0.9.12 (2001-05-03) [umoeller]: removed "Partitions" for WPDrives
- *@@changed V0.9.20 (2002-08-08) [umoeller]: Ctrl+S hotkey was broken, fixed
- */
-
-BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
-                         HWND hwndFrame,    // in: as in wpMenuItemSelected
-                         ULONG ulMenuId)    // in: selected menu item
-{
-    BOOL                brc = FALSE;     // "not processed" flag
-
-    if (!somSelf)
-        return FALSE;
-
-    TRY_LOUD(excpt1)
-    {
-        ULONG   ulMenuId2 = ulMenuId - cmnQuerySetting(sulVarMenuOffset);
-
-        BOOL        fDummy;
-        WPFolder    *pFolder = NULL;
-
-        /*
-         *  "Sort" menu items:
-         *
-         */
-
-        if (fdrSortMenuItemSelected(somSelf,
-                                    hwndFrame,
-                                    NULLHANDLE,     // we don't know the menu hwnd
-                                    ulMenuId,
-                                    &fDummy))
-            brc = TRUE;
-
-        // no sort menu item:
-        // check other variable IDs
-        else switch (ulMenuId2)
-        {
-            /*
-             * ID_XFMI_OFS_OPENPARTITIONS:
-             *      open WPDrives "Partitions" view
-             *
-             *  V0.9.2 (2000-02-29) [umoeller]
-             */
-
-            /* case ID_XFMI_OFS_XWPVIEW:
-                partCreatePartitionsView(somSelf,
-                                         ulMenuId);
-            break; */ // disabled V0.9.12 (2001-05-03) [umoeller]
-
-            /*
-             * ID_XFMI_OFS_FDRDEFAULTDOC:
-             *      open folder's default document
-             *
-             *  V0.9.4 (2000-06-09) [umoeller]
-             */
-
-            case ID_XFMI_OFS_FDRDEFAULTDOC:
-            {
-                WPFileSystem *pDefaultDoc;
-                if (pDefaultDoc = _xwpQueryDefaultDocument(somSelf))
-                    _wpViewObject(pDefaultDoc, NULLHANDLE, OPEN_DEFAULT, 0);
-            }
-            break;
-
-#ifndef __XWPLITE__
-            /*
-             * ID_XFMI_OFS_PRODINFO:
-             *      "Product Information"
-             */
-
-            case ID_XFMI_OFS_PRODINFO:
-                cmnShowProductInfo(NULLHANDLE,      // owner
-                                   MMSOUND_SYSTEMSTARTUP);
-                brc = TRUE;
-            break;
-#endif
-
-#if 0       // moved this to mnuFolderSelectingMenuItem, see remarks there
-        // V0.9.19 (2002-06-18) [umoeller]
-
-            /*
-             * ID_XFMI_OFS_SELECTSOME:
-             *      show "Select by name" dialog.
-             */
-
-            case ID_XFMI_OFS_SELECTSOME:
-                fdrShowSelectSome(hwndFrame);
-                        // V0.9.19 (2002-04-17) [umoeller]
-                brc = TRUE;
-            break;
-
-            /*
-             * ID_XFMI_OFS_BATCHRENAME:
-             *      show "batch rename" dialog.
-             *      V0.9.19 (2002-06-18) [umoeller]
-             */
-
-            case ID_XFMI_OFS_BATCHRENAME:
-                fdrShowBatchRename(hwndFrame);
-                brc = TRUE;
-            break;
-#endif
-
-            /*
-             * ID_XFMI_OFS_COPYFILENAME_SHORT:
-             * ID_XFMI_OFS_COPYFILENAME_FULL:
-             *      these are no real menu items, but only
-             *      pseudo-commands posted by the corresponding
-             *      folder hotkeys
-             */
-
-            case ID_XFMI_OFS_COPYFILENAME_SHORT:
-            case ID_XFMI_OFS_COPYFILENAME_FULL:
-            {
-                // if the user presses hotkeys for "copy filename",
-                // we don't want the filename of the folder
-                // (which somSelf points to here...), but of the
-                // selected objects, so we repost the msg to
-                // the first selected object, which will handle
-                // the rest
-                HWND hwndCnr;
-                if (hwndCnr = WinWindowFromID(hwndFrame, FID_CLIENT))
-                {
-                    PMINIRECORDCORE pmrc = WinSendMsg(hwndCnr,
-                                                      CM_QUERYRECORDEMPHASIS,
-                                                      (MPARAM)CMA_FIRST, // query first
-                                                      (MPARAM)CRA_SELECTED);
-                    if ((pmrc != NULL) && ((ULONG)pmrc != -1))
-                    {
-                        // get object from record core
-                        WPObject *pObject2;
-                        if (pObject2 = OBJECT_FROM_PREC(pmrc))
-                            objCopyObjectFileName(pObject2,
-                                                  hwndFrame,
-                                                  // full path:
-                                                  (ulMenuId2 == ID_XFMI_OFS_COPYFILENAME_FULL));
-                    }
-                }
-            }
-            break;
-
-#ifndef __NOSNAPTOGRID__
-            /*
-             * ID_XFMI_OFS_SNAPTOGRID:
-             *      "Snap to grid"
-             */
-
-            case ID_XFMI_OFS_SNAPTOGRID:
-                fdrSnapToGrid(somSelf, TRUE);
-                brc = TRUE;
-            break;
-#endif
-
-            /*
-             * ID_XFMI_OFS_OPENPARENT:
-             *      "Open parent folder":
-             *      only used by folder hotkeys also
-             *
-             * ID_XFMI_OFS_OPENPARENTANDCLOSE:
-             *      "open parent, close current"
-             *      only used by folder hotkeys also
-             */
-
-            case ID_XFMI_OFS_OPENPARENT:
-            case ID_XFMI_OFS_OPENPARENTANDCLOSE:
-                if (pFolder = _wpQueryFolder(somSelf))
-                    _wpViewObject(pFolder, NULLHANDLE, OPEN_DEFAULT, 0);
-                else
-                    WinAlarm(HWND_DESKTOP, WA_WARNING);
-
-                if (    (ulMenuId2 == ID_XFMI_OFS_OPENPARENTANDCLOSE)
-                     && (somSelf != cmnQueryActiveDesktop())
-                   )
-                    // fixed V0.9.0 (UM 99-11-29); before it was
-                    // possible to close the Desktop...
-                    _wpClose(somSelf);
-                brc = TRUE;
-            break;
-
-            /*
-             * ID_XFMI_OFS_CONTEXTMENU:
-             *      "Show context menu":
-             *      only used by folder hotkeys also
-             */
-
-            case ID_XFMI_OFS_CONTEXTMENU:
-            {
-                HWND hwndCnr = WinWindowFromID(hwndFrame, FID_CLIENT);
-                POINTS pts = {0, 0};
-                WinPostMsg(hwndCnr,
-                           WM_CONTEXTMENU,
-                           (MPARAM)&pts,
-                           MPFROM2SHORT(0, TRUE));
-                brc = TRUE;
-            }
-            break;
-
-            /*
-             * ID_XFMI_OFS_REFRESH:
-             *      "Refresh now":
-             *      pass to File thread (V0.9.0)
-             */
-
-            case ID_XFMI_OFS_REFRESH:
-                // we used to call _wpRefresh ourselves...
-                // apparently this wasn't such a good idea,
-                // because the WPS is doing a lot more things
-                // than just calling "Refresh". We get messed
-                // up container record cores if we just call
-                // _wpRefresh this way, so instead we post the
-                // WPS the command as if the item from the
-                // "View" submenu was selected...
-
-                WinPostMsg(hwndFrame,
-                           WM_COMMAND,
-                           MPFROMSHORT(WPMENUID_REFRESH),
-                           MPFROM2SHORT(CMDSRC_MENU,
-                                        FALSE));     // keyboard
-
-                brc = TRUE; // V0.9.11 (2001-04-22) [umoeller]
-            break;
-
-            /*
-             * ID_XFMI_OFS_CLOSE:
-             *      this is only used for the "close window"
-             *      folder hotkey;
-             *      repost sys command
-             */
-
-            case ID_XFMI_OFS_CLOSE:
-                WinPostMsg(hwndFrame,
-                           WM_SYSCOMMAND,
-                           (MPARAM)SC_CLOSE,
-                           MPFROM2SHORT(CMDSRC_MENU,
-                                        FALSE));        // keyboard
-                brc = TRUE;
-            break;
-
-            /*
-             * ID_XFMI_OFS_BORED:
-             *      "[Config folder empty]" menu item...
-             *      show a msg box
-             */
-
-            case ID_XFMI_OFS_BORED:
-                // explain how to configure XFolder
-                cmnMessageBoxExt(HWND_DESKTOP,
-                                 116,
-                                 NULL, 0,
-                                 135,
-                                 MB_OK);
-                brc = TRUE;
-            break;
-
-
-            /*
-             * ID_XFMI_OFS_RUN:
-             *      open Run dialog
-             *
-             *  V0.9.14 (2001-08-07) [pr]
-             */
-
-            case ID_XFMI_OFS_RUN:
-                cmnRunCommandLine(NULLHANDLE, NULL);
-                brc = TRUE;
-            break;
-
-            /*
-             * ID_XFMI_OFS_SPLITVIEW:
-             *      "Open" -> "split view".
-             *
-             * V0.9.21 (2002-08-21) [umoeller]
-             */
-
-            case ID_XFMI_OFS_SPLITVIEW:
-                _wpViewObject(somSelf,
-                              WinWindowFromID(hwndFrame, FID_CLIENT),
-                                            // hwndCnr
-                              ulMenuId,     // varmenuofs + ID_XFMI_OFS_SPLITVIEW
-                              NULLHANDLE);
-            break;
-
-            /*
-             * default:
-             *      check for variable menu items
-             *      (ie. from config folder or folder
-             *      content menus)
-             */
-
-            default:
-                // added call to HandleFolderEditMenuItems
-                // to fix broken hotkeys
-                // V0.9.20 (2002-08-08) [umoeller]
-                if (!(brc = HandleFolderEditMenuItems(somSelf,
-                                                      hwndFrame,
-                                                      ulMenuId)))
-                    if (    (ulMenuId == WPMENUID_PASTE)        // V0.9.20 (2002-08-08) [umoeller]
-#ifndef __ALWAYSREPLACEPASTE__
-                         && (cmnQuerySetting(sfReplacePaste))
-#endif
-                       )
-                    {
-                        fdrShowPasteDlg(somSelf, hwndFrame);
-                        brc = TRUE;
-                    }
-                    else
-                        // anything else: check if it's one of our variable menu items
-                        brc = CheckForVariableMenuItems(somSelf,
-                                                        hwndFrame,
-                                                        ulMenuId);
-
-        } // end switch;
-    }
-    CATCH(excpt1)
-    {
-    } END_CATCH();
-
-    return brc;
-    // this flag is FALSE by default; it signals to the caller (which
-    // is wpMenuItemSelected of either XFolder or XFldDisk) whether the
-    // parent method still needs to be called. If TRUE, we have processed
-    // something, if FALSE, we haven't, then call the parent.
-}
-
-/*
- *@@ mnuMenuItemHelpSelected:
- *           display help for a context menu item; this routine is
- *           shared by all XFolder classes also, so you'll find
- *           XFldDesktop items in here too.
- *
- *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
- *@@changed V0.9.4 (2000-08-03) [umoeller]: "View" submenu items never worked; fixed
- *@@changed V0.9.19 (2002-04-17) [umoeller]: replacing help for folder view items now
- */
-
-BOOL mnuMenuItemHelpSelected(WPObject *somSelf,
-                             ULONG MenuId)
-{
-    ULONG   ulFirstVarMenuId;
-    ULONG   ulPanel = 0;
-    ULONG   ulVarMenuOffset = cmnQuerySetting(sulVarMenuOffset);
-    ULONG   ulMenuId2 = MenuId - ulVarMenuOffset;
-
-    // first check for variable menu item IDs
-    switch(ulMenuId2)
-    {
-        case ID_XFMI_OFS_RESTARTWPS:
-            ulPanel = ID_XMH_RESTARTWPS;
-        break;
-
-        case ID_XFMI_OFS_SNAPTOGRID:
-            ulPanel = ID_XMH_SNAPTOGRID;
-        break;
-
-        case ID_XFMI_OFS_REFRESH:
-            ulPanel = ID_XMH_REFRESH;
-        break;
-
-        case ID_XFMI_OFS_SELECTSOME:
-            ulPanel = ID_XFH_SELECTSOME;
-        break;
-
-        case ID_XFMI_OFS_BATCHRENAME:       // V0.9.19 (2002-06-18) [umoeller]
-            ulPanel = ID_XFH_BATCHRENAME;
-        break;
-
-        // items in "View" submenu
-        case ID_XFMI_OFS_SMALLICONS:
-        case ID_XFMI_OFS_FLOWED:
-        case ID_XFMI_OFS_NONFLOWED:
-        case ID_XFMI_OFS_NOGRID:
-        case ID_XFMI_OFS_WARP4MENUBAR:
-        case ID_XFMI_OFS_SHOWSTATUSBAR:
-            ulPanel = ID_XFH_VIEW_MENU_ITEMS;
-        break;
-
-        case ID_XFMI_OFS_COPYFILENAME_MENU:
-            ulPanel = ID_XMH_COPYFILENAME;
-        break;
-
-        case ID_XFMI_OFS_SORTBYEXT:
-        case ID_XFMI_OFS_SORTBYCLASS:
-        case ID_XFMI_OFS_ALWAYSSORT:
-        case ID_XFMI_OFS_SORTFOLDERSFIRST:
-            ulPanel = ID_XSH_SETTINGS_FLDRSORT;
-        break;
-
-        default:
-            // none of the variable item ids:
-            if (
-#ifndef __ALWAYSEXTSORT__
-                    (cmnQuerySetting(sfExtendedSorting))
-                 &&
-#endif
-                    (    (MenuId == ID_WPMI_SORTBYNAME)
-                      || (MenuId == ID_WPMI_SORTBYREALNAME)
-                      // or one of the details columns:
-                      || (    (MenuId >= 6002)
-                           && (MenuId <= 6200)
-                         )
-                    )
-               )
-                ulPanel = ID_XSH_SETTINGS_FLDRSORT;
-            else switch (MenuId)
-            {
-                // replacing help for icon, tree, details views
-#ifndef __NOXSHUTDOWN__
-                case WPMENUID_SHUTDOWN:
-                    if (cmnQuerySetting(sfXShutdown))
-                        ulPanel = ID_XMH_XSHUTDOWN;
-                break;
-#endif
-
-                // replace help for icon, tree, details views
-                // V0.9.19 (2002-04-17) [umoeller]
-                case WPMENUID_TREE:
-                case WPMENUID_ICON:
-                case WPMENUID_DETAILS:
-                case WPMENUID_CHANGETOICON:
-                case WPMENUID_CHANGETOTREE:
-                case WPMENUID_CHANGETODETAILS:
-                    ulPanel = ID_XSH_FOLDER_VIEWS;
-                break;
-
-                default:
-                    // if F1 was pressed over one of the variable menu items,
-                    // open a help panel with generic help on XFolder
-                    ulFirstVarMenuId = (ulVarMenuOffset + ID_XFMI_OFS_VARIABLE);
-                    if ( (MenuId >= ulFirstVarMenuId)
-                            && (MenuId < ulFirstVarMenuId + G_ulVarItemCount)
-                         )
-                    {
-                        PVARMENULISTITEM pItem;
-                        if (pItem = cmnuGetVarItem(MenuId - ulFirstVarMenuId))
-                        {
-                            // OK, we've found the corresponding object
-                            switch (pItem->ulObjType)
-                            {
-                                // this data has previously been saved by InsertObjectsFromList when
-                                // the context menu was created; it contains a flag telling us
-                                // what kind of menu item we're dealing with
-
-                                case OC_CONTENTFOLDER:
-                                case OC_CONTENT:
-                                    ulPanel = ID_XMH_FOLDERCONTENT;
-                                break;
-
-                                default:
-                                    ulPanel = ID_XMH_VARIABLE;
-                                break;
-                            }
-                        }
-                    }
-                break;
-            }
-        break;
-    }
-
-    if (ulPanel)
-    {
-        // now open the help panel we've set above
-        cmnDisplayHelp(somSelf,
-                       ulPanel);
-        return TRUE;
-    }
-    else
-        // none of our items: pass on to parent
-        return FALSE;
 }
 
 /* ******************************************************************

@@ -47,10 +47,10 @@ interface XWPFontFolder : WPFolder
 
     ULONG xwpAddFontsPage(in HWND hwndDlg);
 
-    BOOL xwpProcessObjectCommand(in USHORT usCommand,
-                                 in HWND hwndCnr,
-                                 in WPObject pFirstObject,
-                                 in ULONG ulSelectionFlags);
+    BOOL xwpProcessViewCommand(in USHORT usCommand,
+                               in HWND hwndCnr,
+                               in WPObject pFirstObject,
+                               in ULONG ulSelectionFlags);
 
     BOOL xwpUpdateStatusBar(in HWND hwndStatusBar, in HWND hwndCnr);
 
@@ -68,7 +68,7 @@ interface XWPFontFolder : WPFolder
             xwpUpdateStatusBar,
             _get_fFilledWithFonts,
             _set_fFilledWithFonts,
-            xwpProcessObjectCommand,
+            xwpProcessViewCommand,
             xwpChangeFontsCount;
 
     /*

@@ -91,12 +91,12 @@
 
 #include "filesys\disk.h"               // XFldDisk implementation
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\fdrcommand.h"         // folder command handling
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\statbars.h"           // status bar translation logic
 
 // other SOM headers
-#include "helpers\undoc.h"              // some undocumented stuff
 #pragma hdrstop
 
 /* ******************************************************************
@@ -285,11 +285,12 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpMenuItemSelected(XFldDisk *somSelf,
     // XFldDiskData *somThis = XFldDiskGetData(somSelf);
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpMenuItemSelected");
 
-    if (mnuMenuItemSelected(pFolder, hwndFrame, ulMenuId))
+    if (fcmdMenuItemSelected(pFolder, hwndFrame, ulMenuId))
         return TRUE;
     else
-        return (XFldDisk_parent_WPDisk_wpMenuItemSelected(somSelf, hwndFrame,
-                                                   ulMenuId));
+        return XFldDisk_parent_WPDisk_wpMenuItemSelected(somSelf,
+                                                         hwndFrame,
+                                                         ulMenuId);
 }
 
 /*
@@ -305,11 +306,11 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpMenuItemHelpSelected(XFldDisk *somSelf,
     // XFldDiskData *somThis = XFldDiskGetData(somSelf);
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpMenuItemHelpSelected");
 
-    if (mnuMenuItemHelpSelected(pFolder, MenuId))
+    if (fcmdMenuItemHelpSelected(pFolder, MenuId))
         return TRUE;
     else
-        return (XFldDisk_parent_WPDisk_wpMenuItemHelpSelected(somSelf,
-                                                           MenuId));
+        return XFldDisk_parent_WPDisk_wpMenuItemHelpSelected(somSelf,
+                                                             MenuId);
 }
 
 /*

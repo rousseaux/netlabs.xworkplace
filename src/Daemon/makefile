@@ -20,7 +20,8 @@
 !endif
 
 # include setup (compiler options etc.)
-!include ..\..\setup.in
+!include ..\..\config.in
+!include ..\..\make\setup.in
 
 # FIXED MACROS
 # ------------
@@ -120,14 +121,11 @@ dep:
     $(RUN_FASTDEP) *.c
     @echo ----- Leaving $(MAKEDIR)
 
-.c.{$(OUTPUTDIR)}.obj:
-    @echo $(MAKEDIR)\makefile [$@]: Compiling $(@B).c
-!ifndef PRECH
-# precompiled headers disabled:
-    $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
-!else
-    $(CC_EXE_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
-!endif
+# V0.9.21: Use the inference rule in \make\comp_classcode.in now,
+# which is shared for all makefiles that generate code for XFLDR.DLL.
+# This sets up the compiler rule to compile .c files to .obj files
+# in the $(OUTPUTDIR).
+!include $(PROJECT_BASE_DIR)\make\comp_standalone.in
 
 $(OUTPUTDIR)\xwpdaemn.res: *.ico *.bmp $(@B).rc
     $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res

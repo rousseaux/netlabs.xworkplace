@@ -43,6 +43,30 @@
 #ifndef COMMON_HEADER_INCLUDED
     #define COMMON_HEADER_INCLUDED
 
+    /* ******************************************************************
+     *
+     *   Global declarations
+     *
+     ********************************************************************/
+
+    // moved these here from various other locations
+    // V0.9.21 (2002-08-26) [umoeller]
+
+    // Toolkit 4 declarations
+
+    #ifndef OBJSTYLE_LOCKEDINPLACE
+        #define OBJSTYLE_LOCKEDINPLACE  0x00020000
+    #endif
+
+    // found these two in the DDK headers
+    #ifndef WM_QUERYOBJECTPTR
+        #define WM_QUERYOBJECTPTR       0x0407
+    #endif
+
+    #ifndef WM_SETOBJECTPTR
+        #define WM_SETOBJECTPTR         0x0408
+    #endif
+
     /*
      *  All these constants are declared as "extern" in
      *  common.h. They all used to be #define's in common.h,
@@ -997,7 +1021,7 @@
             //      2: regular +/-0
         sfWorkerPriorityBeep,
             // XWPSetup "Paranoia": beep on priority change
-        sfNoFreakyMenus,
+        // sfNoFreakyMenus,     // removed V0.9.21 (2002-08-26) [umoeller]
             // on XWPSetup "Paranoia" page
 #endif
 

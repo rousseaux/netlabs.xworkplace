@@ -3563,7 +3563,7 @@ MRESULT setObjectsItemChanged(PNOTEBOOKPAGE pnbp,
 static const XWPSETTING G_ParanoiaBackup[] =
     {
         sulVarMenuOffset,
-        sfNoFreakyMenus,
+        // sfNoFreakyMenus,     removed V0.9.21 (2002-08-26) [umoeller]
 #ifndef __ALWAYSSUBCLASS__
         sfNoSubclassing,
 #endif
@@ -3597,7 +3597,8 @@ static const CONTROLDEF
 #ifndef __ALWAYSSUBCLASS__
     NoSubclassingCB = LOADDEF_AUTOCHECKBOX(ID_XCDI_NOSUBCLASSING),
 #endif
-    NoFreakyMenusCB = LOADDEF_AUTOCHECKBOX(ID_XCDI_NOFREAKYMENUS),
+    // NoFreakyMenusCB = LOADDEF_AUTOCHECKBOX(ID_XCDI_NOFREAKYMENUS),
+            // removed V0.9.21 (2002-08-26) [umoeller]
     Use8HelvCB = LOADDEF_AUTOCHECKBOX(ID_XCDI_USE8HELVFONT),
     NoExcptBeepsCB = LOADDEF_AUTOCHECKBOX(ID_XCDI_NOEXCPTBEEPS),
     WorkerPrtyGroup = LOADDEF_GROUP(ID_XCDI_WORKERPRTY_GROUP, SZL_AUTOSIZE),
@@ -3632,8 +3633,8 @@ static const DLGHITEM dlgParanoia[] =
                     START_ROW(ROW_VALIGN_CENTER),
                         CONTROL_DEF(&NoSubclassingCB),
 #endif
-                    START_ROW(ROW_VALIGN_CENTER),
-                        CONTROL_DEF(&NoFreakyMenusCB),
+                    // START_ROW(ROW_VALIGN_CENTER),    removed V0.9.21 (2002-08-26) [umoeller]
+                    //     CONTROL_DEF(&NoFreakyMenusCB),
                     START_ROW(ROW_VALIGN_CENTER),
                         CONTROL_DEF(&Use8HelvCB),
                     START_ROW(ROW_VALIGN_CENTER),
@@ -3694,8 +3695,10 @@ VOID setParanoiaInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         winhSetDlgItemSpinData(pnbp->hwndDlgPage, ID_XCDI_VARMENUOFFSET,
                                                 100, 2000,
                                                 cmnQuerySetting(sulVarMenuOffset));
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XCDI_NOFREAKYMENUS,
-                                               cmnQuerySetting(sfNoFreakyMenus));
+        // winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XCDI_NOFREAKYMENUS,
+        //                                        cmnQuerySetting(sfNoFreakyMenus));
+        // removed V0.9.21 (2002-08-26) [umoeller]
+
 #ifndef __ALWAYSSUBCLASS__
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XCDI_NOSUBCLASSING,
                                                cmnQuerySetting(sfNoSubclassing));
@@ -3752,9 +3755,9 @@ MRESULT setParanoiaItemChanged(PNOTEBOOKPAGE pnbp,
             cmnSetSetting(sulVarMenuOffset, ulExtra);
         break;
 
-        case ID_XCDI_NOFREAKYMENUS:
-            cmnSetSetting(sfNoFreakyMenus, ulExtra);
-        break;
+        // case ID_XCDI_NOFREAKYMENUS:
+        //     cmnSetSetting(sfNoFreakyMenus, ulExtra);
+        // break;       removed V0.9.21 (2002-08-26) [umoeller]
 
 #ifndef __ALWAYSSUBCLASS__
         case ID_XCDI_NOSUBCLASSING:
@@ -3810,23 +3813,6 @@ MRESULT setParanoiaItemChanged(PNOTEBOOKPAGE pnbp,
             // "Undo" button: get pointer to backed-up Global Settings
             cmnRestoreSettings(pnbp->pUser,
                                ARRAYITEMCOUNT(G_ParanoiaBackup));
-
-            /*
-            PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pnbp->pUser);
-
-            // and restore the settings for this page
-            cmnSetSetting(sulVarMenuOffset, pGSBackup->VarMenuOffset);
-            cmnSetSetting(sfNoFreakyMenus, pGSBackup->fNoFreakyMenus);
-#ifndef __ALWAYSSUBCLASS__
-            cmnSetSetting(sfNoSubclassing, pGSBackup->__fNoSubclassing);
-#endif
-            // cmnSetSetting(sNoWorkerThread, pGSBackup->NoWorkerThread);
-            cmnSetSetting(sfUse8HelvFont, pGSBackup->fUse8HelvFont);
-            cmnSetSetting(sfNoExcptBeeps, pGSBackup->fNoExcptBeeps);
-            cmnQuerySetting(sulDefaultWorkerThreadPriority)
-                                             = pGSBackup->bDefaultWorkerThreadPriority;
-            cmnSetSetting(sfWorkerPriorityBeep, pGSBackup->fWorkerPriorityBeep);
-               */
 
             // update the display by calling the INIT callback
             pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);

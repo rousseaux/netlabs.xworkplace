@@ -216,7 +216,7 @@
     BOOL mnuInsertFldrViewItems(WPFolder *somSelf,
                                 HWND hwndViewSubmenu,
                                 BOOL fInsertNewMenu,
-                                HWND hwndCnr,
+                                PCNRINFO pCnrInfo,
                                 ULONG ulView);
 
     VOID mnuInvalidateConfigCache(VOID);
@@ -230,41 +230,6 @@
                                     HWND hwndMenu,
                                     HWND hwndCnr,
                                     ULONG iPosition);
-
-    /* ******************************************************************
-     *
-     *   "Selecting menu items" reaction
-     *
-     ********************************************************************/
-
-    BOOL mnuFileSystemSelectingMenuItem(WPObject *somSelf,
-                                        USHORT usItem,
-                                        BOOL fPostCommand,
-                                        HWND hwndMenu,
-                                        HWND hwndCnr,
-                                        ULONG ulSelection,
-                                        BOOL *pfDismiss);
-
-    BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
-                                    USHORT usItem,
-                                    BOOL fPostCommand,
-                                    HWND hwndMenu,
-                                    HWND hwndCnr,
-                                    ULONG ulSelection,
-                                    BOOL *pfDismiss);
-
-    /* ******************************************************************
-     *
-     *   "Menu item selected" reaction
-     *
-     ********************************************************************/
-
-    BOOL mnuMenuItemSelected(WPFolder *somSelf,
-                             HWND hwndFrame,
-                             ULONG ulMenuId);
-
-    BOOL mnuMenuItemHelpSelected(WPObject *somSelf,
-                                 ULONG MenuId);
 
     /* ******************************************************************
      *

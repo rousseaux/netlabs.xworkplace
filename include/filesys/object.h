@@ -29,18 +29,6 @@
 
     /* ******************************************************************
      *
-     *   Declarations
-     *
-     ********************************************************************/
-
-    // Toolkit 4 declarations
-
-    #ifndef OBJSTYLE_LOCKEDINPLACE
-        #define OBJSTYLE_LOCKEDINPLACE  0x00020000
-    #endif
-
-    /* ******************************************************************
-     *
      *   Object internals
      *
      ********************************************************************/
@@ -340,9 +328,9 @@
      ********************************************************************/
 
     #ifdef XWPHOOK_HEADER_INCLUDED
-    PGLOBALHOTKEY objFindHotkey(PGLOBALHOTKEY pHotkeys,
-                                ULONG cHotkeys,
-                                HOBJECT hobj);
+        PGLOBALHOTKEY objFindHotkey(PGLOBALHOTKEY pHotkeys,
+                                    ULONG cHotkeys,
+                                    HOBJECT hobj);
     #endif
 
     #ifdef SOM_XFldObject_h

@@ -120,7 +120,7 @@
 #include "config\hookintf.h"            // daemon/hook interface
 
 // other SOM headers
-#include "helpers\undoc.h"              // some undocumented stuff
+
 #pragma hdrstop
 
 /* ******************************************************************

@@ -17,7 +17,7 @@
  *
  *      -- XFolder::wpOpen calls fdrManipulateNewView, which
  *         subclasses a newly opened folder view frame window
- *         with fnwpSubclassedFolderFrame -- one of the most
+ *         with fnwpSubclWPFolderWindow -- one of the most
  *         complex parts of XWorkplace.
  *         This window procedure intercepts lots of messages
  *         which are needed for the more advanced features.
@@ -141,6 +141,7 @@
 
 #include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\fdrcommand.h"         // folder menu command reactions
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\icons.h"              // icons handling
 #include "filesys\object.h"             // XFldObject implementation
@@ -1040,10 +1041,10 @@ SOM_Scope ULONG  SOMLINK xf_xwpQueryStatusBarVisibility(XFolder *somSelf)
 }
 
 /*
- *@@ xwpProcessObjectCommand:
+ *@@ xwpProcessViewCommand:
  *      this new XFolder instance method gets called when
  *      XFolder's subclassed window procedure
- *      (fnwpSubclassedFolderFrame) intercepts a WM_COMMAND
+ *      (fnwpSubclWPFolderWindow) intercepts a WM_COMMAND
  *      message. This gets called before the WPS gets a
  *      chance to process that command, which will probably
  *      result in a call to wpMenuItemSelected for each of
@@ -1074,27 +1075,30 @@ SOM_Scope ULONG  SOMLINK xf_xwpQueryStatusBarVisibility(XFolder *somSelf)
  *      -- pFirstObject has the first of the selected objects.
  *
  *      -- ulSelectionFlags has information on the context why
- *         pFirstObject was considered selected. You can use
- *         wpshQueryNextSourceObject to get the others, if this
- *         is indicated here.
+ *         pFirstObject was considered selected. This is one
+ *         of SEL_WHITESPACE, SEL_SINGLESEL, SEL_MULTISEL,
+ *         SEL_SINGLEOTHER, SEL_NONEATALL (see wpshQuerySourceObject
+ *         for details). You can use wpshQueryNextSourceObject to
+ *         get the others, if this is indicated here.
  *
  *@@added V0.9.7 (2001-01-13) [umoeller]
+ *@@changed V0.9.21 (2002-08-26) [umoeller]: method renamed from processObjectCommand
  */
 
-SOM_Scope BOOL  SOMLINK xf_xwpProcessObjectCommand(XFolder *somSelf,
-                                                   USHORT usCommand,
-                                                   HWND hwndCnr,
-                                                   WPObject* pFirstObject,
-                                                   ULONG ulSelectionFlags)
+SOM_Scope BOOL  SOMLINK xf_xwpProcessViewCommand(XFolder *somSelf,
+                                                 USHORT usCommand,
+                                                 HWND hwndCnr,
+                                                 WPObject* pFirstObject,
+                                                 ULONG ulSelectionFlags)
 {
     // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_xwpProcessObjectCommand");
+    XFolderMethodDebug("XFolder","xf_xwpProcessViewCommand");
 
-    return fdrProcessObjectCommand(somSelf,
-                                   usCommand,
-                                   hwndCnr,
-                                   pFirstObject,
-                                   ulSelectionFlags);
+    return fcmdProcessViewCommand(somSelf,
+                                  usCommand,
+                                  hwndCnr,
+                                  pFirstObject,
+                                  ulSelectionFlags);
 }
 
 /*
@@ -2426,7 +2430,7 @@ SOM_Scope BOOL  SOMLINK xf_wpModifyPopupMenu(XFolder *somSelf,
         // on container whitespace, hwndCnr is passed as
         // NULLHANDLE; we therefore use this ugly
         // workaround
-        hwndCnr2 = _hwndCnrSaved;   // set by WM_INITMENU in fnwpSubclassedFolderFrame
+        hwndCnr2 = _hwndCnrSaved;   // set by WM_INITMENU in fnwpSubclWPFolderWindow
     }
 
     // call menu manipulator common to XFolder and XFldDisk (fdrmenus.c)
@@ -2464,7 +2468,7 @@ SOM_Scope BOOL  SOMLINK xf_wpMenuItemSelected(XFolder *somSelf,
     // call the menu item checker common to XFolder and XFldDisk
     // (fdrmenus.c); this returns TRUE if one of the manipulated
     // menu items was selected
-    if (mnuMenuItemSelected(somSelf, hwndFrame, ulMenuId))
+    if (fcmdMenuItemSelected(somSelf, hwndFrame, ulMenuId))
         return TRUE;
 
     // none of our menu items: pass on to parent
@@ -2485,7 +2489,7 @@ SOM_Scope BOOL  SOMLINK xf_wpMenuItemHelpSelected(XFolder *somSelf,
     // call the common help processor in fdrmenus.c;
     // if this returns TRUE, help was requested for one
     // of the new menu items
-    if (mnuMenuItemHelpSelected(somSelf, MenuId))
+    if (fcmdMenuItemHelpSelected(somSelf, MenuId))
         return TRUE;
 
     // else: none of our menu items, call default
@@ -2514,7 +2518,7 @@ SOM_Scope BOOL  SOMLINK xf_wpMenuItemHelpSelected(XFolder *somSelf,
  *      We call the parent method first (which will create
  *      the folder window) and then subclass the
  *      resulting frame window with the new
- *      fnwpSubclassedFolderFrame window procedure.
+ *      fnwpSubclWPFolderWindow window procedure.
  *
  *@@changed V0.9.2 (2000-03-04) [umoeller]: fixed work-area hangs
  *@@changed V0.9.4 (2000-06-09) [umoeller]: added default documents

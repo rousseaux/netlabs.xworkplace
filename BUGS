@@ -21,13 +21,23 @@ CURRENT PROBLEMS
 
     --  drag and drop
 
-    --  menus (menu bar and whitespace context menu)
+    --  folder sort
+
+    --  menu bars
 
     --  object locking
 
     --  double-clicking on folders in right view
 
-    --  folder refresh
+    --  folder refresh, register view etc.
+
+--  shift+view click does not keep the menu open
+
+--  delete: intercept _wpMenuItemSelected too because "delete" from
+    sysbutton menu won't work, and from context menu item neither
+
+--  deadlocks when icons pop up on desktop (drag pictures from netscape
+    etc.)
 
 --  when hook is disabled, window list widget doesn't work; restart of
     XCenter required for getting it to work

@@ -3990,10 +3990,6 @@ static VOID FrameDestroy(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
     pfnwpOrig(hwnd, msg, mp1, mp2);
 }
 
-// found these two in the DKK headers
-#define WM_QUERYOBJECTPTR    0x0407
-#define WM_SETOBJECTPTR      0x0408
-
 /*
  *@@ fnwpXCenterMainFrame:
  *      window proc for the XCenter frame.

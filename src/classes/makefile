@@ -20,7 +20,8 @@
 !endif
 
 # include setup (compiler options etc.)
-!include ..\..\setup.in
+!include ..\..\config.in
+!include ..\..\make\setup.in
 
 # FIXED MACROS
 # ------------
@@ -49,7 +50,7 @@ OUTPUTDIR = $(XWP_OUTPUT_ROOT)
 # The OBJS macro contains all the .OBJ files which need to be
 # created from the files in this directory.
 # If you add a new source, add the corresponding .OBJ file here.
-!include ..\..\objects.in
+!include ..\..\make\objects.in
 OBJS = $(XFLDR_OBJS_CLASSES)
 
 # The main target:
@@ -79,28 +80,11 @@ dep:
     $(RUN_FASTDEP) *.c
     @echo ----- Leaving $(MAKEDIR)
 
-# Now define inference rules for what to do with certain file
-# types, based on their file extension.
-# The syntax we need here is ".fromext.toext".
-# So whenever NMAKE encounters a .toext file, it
-# executes what we specify here.
-# The ugly {} brackets are some awkward syntax for specifying
-# files in other directories.
-
-# Special macros used here: $(@B) is the current target w/out ext.
-
-# -- compile C files to .OBJ files, using the CC macro above.
-#    The output will be placed in the directory specified by
-#    the OUTPUTDIR variable (set above).
-
-.c.{$(OUTPUTDIR)}.obj:
-        @echo $(MAKEDIR)\makefile [$@]: Compiling $(@B).c
-!ifndef PRECH
-# precompiled headers disabled:
-        $(CC_DLL_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
-!else
-        $(CC_DLL_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
-!endif
+# V0.9.21: Use the inference rule in \make\comp_classcode.in now,
+# which is shared for all makefiles that generate code for XFLDR.DLL.
+# This sets up the compiler rule to compile .c files to .obj files
+# in the $(OUTPUTDIR).
+!include $(PROJECT_BASE_DIR)\make\comp_classcode.in
 
 # The .OBJ-from-sources dependencies are now automatically
 # created by "nmake dep" into the .depend include file.

@@ -313,33 +313,6 @@ VOID refrClearFolderNotifications(WPFolder *pFolder)
 
 /* ******************************************************************
  *
- *   Refresh thread
- *
- ********************************************************************/
-
-/*
- *@@ fntOverflowRefresh:
- *      transient thread which refreshes a folder after
- *      an overflow. Gets started from PumpAgedNotification.
- *
- *      This thread is created with a PM message queue.
- *
- *@@added V0.9.12 (2001-05-19) [umoeller]
- */
-
-static VOID _Optlink fntOverflowRefresh(PTHREADINFO ptiMyself)
-{
-    TRY_LOUD(excpt1)
-    {
-        WPFolder *pFolder = (WPFolder*)ptiMyself->ulData;
-
-        _wpRefresh(pFolder, NULLHANDLE, NULL);
-    }
-    CATCH(excpt1) {} END_CATCH();
-}
-
-/* ******************************************************************
- *
  *   Pump thread
  *
  ********************************************************************/
@@ -536,38 +509,9 @@ static ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
             // tell caller that we nuked the list
             ulrc = REMOVE_FOLDER;
 
-            // refresh the folder if it's not currently refreshing
-            if (0 == (flFolder & (FOI_POPULATEINPROGRESS | FOI_REFRESHINPROGRESS)))
-            {
-                // we need a full refresh on the folder...
-                // set FOI_ASYNCREFRESHONOPEN, clear
-                // FOI_POPULATEDWITHFOLDERS | FOI_POPULATEDWITHALL,
-                // which will cause the folder contents to be refreshed
-                // on open
-                // fixed flags V0.9.16 (2002-01-09) [umoeller]
-                _wpModifyFldrFlags(pFolder,
-                                   FOI_ASYNCREFRESHONOPEN | FOI_POPULATEDWITHFOLDERS | FOI_POPULATEDWITHALL,
-                                   FOI_ASYNCREFRESHONOPEN);
-
-                // if the folder is currently open, do a
-                // full refresh NOW
-                if (_wpFindViewItem(pFolder,
-                                    VIEW_ANY,
-                                    NULL))
-                {
-                    // alright, refresh NOW.... however, we can't
-                    // do this on this thread while we're holding
-                    // the WPS notify mutex, so start a transient
-                    // thread just for refreshing
-                    thrCreate(NULL,
-                              fntOverflowRefresh,
-                              NULL,
-                              "OverflowRefresh",
-                              THRF_PMMSGQUEUE | THRF_TRANSIENT,
-                              // thread param: folder pointer
-                              (ULONG)pFolder);
-                }
-            }
+            // moved the refresh code to folder.c
+            // V0.9.21 (2002-08-26) [umoeller]
+            fdrForceRefresh(pFolder);
         }
         break;
     }

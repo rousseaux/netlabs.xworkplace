@@ -22,7 +22,8 @@
 !endif
 
 # include setup (compiler options etc.)
-!include ..\..\setup.in
+!include ..\..\config.in
+!include ..\..\make\setup.in
 
 # OUTPUTDIR specifies the directory where all the output .OBJ
 # files will be created in. $(XWP_OUTPUT_ROOT) is set by
@@ -70,29 +71,27 @@ dep:
     $(RUN_FASTDEP) *.c
     @echo ----- Leaving $(MAKEDIR)
 
-.c.{$(OUTPUTDIR)}.obj:
-        @echo $(MAKEDIR)\makefile [$@]: Compiling $(@B).c
-!ifndef PRECH
-# precompiled headers disabled:
-        $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
-!else
-        $(CC_EXE_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
-!endif
+# V0.9.21: Use the inference rule in \make\comp_standalone.in now,
+# which is shared for all makefiles that generate code for standalone
+# executables.
+# This sets up the compiler rule to compile .c files to .obj files
+# in the $(OUTPUTDIR).
+!include $(PROJECT_BASE_DIR)\make\comp_standalone.in
 
 # build targets
 $(EXENAME).def: ..\..\include\bldlevel.h makefile
-          $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "$(XWPNAME) Netscape DDE Interface"
+    $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "$(XWPNAME) Netscape DDE Interface"
 
 $(OUTPUTDIR)\$(EXENAME).res: $(EXENAME).rc $(EXENAME).h $(EXENAME).dlg
-          $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
+    $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
 
 $(MODULESDIR)\$(EXENAME).exe: $(ALL_OBJ1) $(@B).def $(OUTPUTDIR)\$(@B).res
-          $(LINK) /out:$(MODULESDIR)\$(@B).exe $(ALL_OBJ1) $(HELPERS_BASE)\src\helpers\pmprintf.lib $(@B).def
-          $(RC) $(OUTPUTDIR)\$(@B).res $(MODULESDIR)\$(@B).exe
+    $(LINK) /out:$(MODULESDIR)\$(@B).exe $(ALL_OBJ1) $(HELPERS_BASE)\src\helpers\pmprintf.lib $(@B).def
+    $(RC) $(OUTPUTDIR)\$(@B).res $(MODULESDIR)\$(@B).exe
 
 # main target
 $(XWPRUNNING)\bin\$(EXENAME).exe: $(MODULESDIR)\$(@B).exe
-          cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
+    cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
 
 # The .OBJ-from-sources dependencies are now automatically
 # created by "nmake dep" into the .depend include file.

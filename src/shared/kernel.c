@@ -1188,7 +1188,7 @@ static VOID T1M_OpenObjectFromHandle(HWND hwndObject,
  *      This is needed for processing messages which must be
  *      processed on thread 1. We cannot however process these
  *      messages in the subclassed folder frame wnd proc
- *      (fnwpSubclassedFolderFrame in folder.c),
+ *      (fnwpSubclWPFolderWindow in folder.c),
  *      because adding user messages to that wnd proc could
  *      conflict with default WPFolder messages or those of
  *      some other WPS enhancer, and we can also never be
