@@ -1,13 +1,13 @@
-/                                           umoeller
+/                                           umoeller,pr
 /CVSROOT                                    umoeller,ktk
-/001                                        umoeller
-/046                                        umoeller
-/046_                                       umoeller
-/049                                        umoeller,chennecke
-/034                                        umoeller,xwp_es
-/idl                                        umoeller
-/include                                    umoeller
-/release                                    umoeller
-/src                                        umoeller
-/tools                                      umoeller
+/001                                        umoeller,pr
+/046                                        umoeller,pr
+/046_                                       umoeller,pr
+/049                                        umoeller,chennecke,pr
+/034                                        umoeller,xwp_es,pr
+/idl                                        umoeller,pr
+/include                                    umoeller,pr
+/release                                    umoeller,pr
+/src                                        umoeller,pr
+/tools                                      umoeller,pr
 

@@ -991,7 +991,7 @@ STATIC VOID _Optlink fntCollect(PTHREADINFO ptiMyself)
  *      implementation for WM_CREATE.
  *
  *@@changed V0.9.12 (2001-05-20) [umoeller]: now using second thread
- *@@changed V1.0.2 (2003-08-10) [bvl]: Calculating the size off the tooltip based on the string resource size @@fixes 490
+ *@@changed V1.0.2 (2003-08-10) [bvl]: Calculating the size of the tooltip based on the string resource size @@fixes 490
  */
 
 STATIC MRESULT PwgtCreate(HWND hwnd, MPARAM mp1)

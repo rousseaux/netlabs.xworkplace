@@ -865,6 +865,7 @@ BOOL WgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@ WgtPaint:
  *      implementation for WM_PAINT.
  *
+ *@@changed V1.0.2 (2003-12-10) [pr]: Fixed bad display if drive could not be accessed @@fixes 525
  */
 
 void WgtPaint(HWND hwnd,
@@ -919,7 +920,11 @@ void WgtPaint(HWND hwnd,
             }
 
             // calculate percent
-            dPercentFree = pPrivate->dAktDriveFree * 100 / pPrivate->dAktDriveSize;
+            // V1.0.2 (2003-12-10) [pr]: @@fixes 525
+            if (pPrivate->dAktDriveSize)
+                dPercentFree = pPrivate->dAktDriveFree * 100 / pPrivate->dAktDriveSize;
+            else
+                dPercentFree = 0;
 
             if (pPrivate->Setup.chDrive == '*') // == multi-view-clickable
             {
@@ -1157,6 +1162,7 @@ void WgtPresParamChanged(HWND hwnd,
  *      and the display should therefore be updated.
  *
  *@@changed V0.9.11 (2001-04-25) [umoeller]: added error checking
+ *@@changed V1.0.2 (2003-12-10) [pr]: Fixed bad display if drive could not be accessed @@fixes 525
  */
 
 BOOL GetDriveInfo(PDISKFREEPRIVATE pPrivate)
@@ -1164,6 +1170,11 @@ BOOL GetDriveInfo(PDISKFREEPRIVATE pPrivate)
     double dOldDriveFree = pPrivate->dAktDriveFree;
 
     APIRET arc;
+
+    strcpy(pPrivate->szAktDriveType,"???");
+    pPrivate->bFSIcon = 0;
+    pPrivate->dAktDriveFree = 0;
+    pPrivate->dAktDriveSize = 0;
     if (!(arc = pdoshQueryDiskFSType(pPrivate->chAktDrive-64,
                                      (PSZ)pPrivate->szAktDriveType,
                                      sizeof(pPrivate->szAktDriveType))))
@@ -1183,7 +1194,7 @@ BOOL GetDriveInfo(PDISKFREEPRIVATE pPrivate)
             return((BOOL)pPrivate->dAktDriveFree != dOldDriveFree);
     }
 
-    return FALSE;
+    return TRUE;
 }
 
 /*
