@@ -12,36 +12,36 @@ Seit V0.9.9 kann &xwp; den automatischen Aktualisierungsmechanismus der Workplac
 ersetzen.
  
 <P>Sie werden wahrscheinlich mit dieser Funktion der Workplace Shell vertraut sein.
-Wenn Sie einen Ordner ge&ouml;ffnet haben und Dateien in diesem Ordner von der
-Befehlszeile aus manipulieren, werden Sie sehen, da&szlig; die WPS auf magische
-Weise von diesen Modifikationen erf&auml;hrt und den Ordnerinhalt automatisch
+Wenn Sie einen Ordner geîffnet haben und Dateien in diesem Ordner von der
+Befehlszeile aus manipulieren, werden Sie sehen, da· die WPS auf magische
+Weise von diesen Modifikationen erfÑhrt und den Ordnerinhalt automatisch
 aktualisiert.
  
-<P>W&auml;hrend dies theoretisch eine gro&szlig;artige Funktion ist, gibt es
-schwerwiegende Einschr&auml;nkungen ihrer Standardimplementation in der WPS.
-Am wichtigsten ist, da&szlig; die WPS exzessiv Dateisystem-Handles f&uuml;r alle
-automatisch aktualisierten Objekte anlegt, wodurch die INI-Dateien unn&ouml;tigerweise
-vergr&ouml;&szlig;ert werden. Beachten Sie, da&szlig; dies sogar passiert, wenn sich
+<P>WÑhrend dies theoretisch eine gro·artige Funktion ist, gibt es
+schwerwiegende EinschrÑnkungen ihrer Standardimplementation in der WPS.
+Am wichtigsten ist, da· die WPS exzessiv Dateisystem-Handles fÅr alle
+automatisch aktualisierten Objekte anlegt, wodurch die INI-Dateien unnîtigerweise
+vergrî·ert werden. Beachten Sie, da· dies sogar geschieht, wenn sich
 die Anweisung <CODE>AUTOREFRESHFOLDERS=NO</CODE> in Ihrer &cfgsys;-Datei befindet.
  
 <P>&xwp; kann diesen ganzen Mechanismus nun ersetzen, wenn Sie die Ersetzung
-auf der Seite "Funktionalit&auml;t" des
+auf der Seite "FunktionalitÑt" des
 <A HREF="sys_2global.html">Objektes "&xwp;-Konfiguration"</A> aktivieren.
  
 <P>Ist die Ersetzung aktiviert, verhindert &xwp; den Betrieb der internen WPS-Threads,
-die f&uuml;r die automatische Aktualisierung der Ordner verantwortlich sind. Unter anderem
+die fÅr die automatische Aktualisierung der Ordner verantwortlich sind. Unter anderem
 verhindert dies die Erzeugung von Dateisystem-Handles. Stattdessen startet &xwp; eigene
-Threads, welche die Aktivit&auml;t des Dateisystems &uuml;berwachen und dann Ordner
+Threads, welche die AktivitÑt des Dateisystems Åberwachen und dann Ordner
 automatisch aktualisieren.
  
-<P>Beachten Sie, da&szlig; die Aktivierung und Deaktivierung der Ersetzung einen
+<P>Beachten Sie, da· die Aktivierung und Deaktivierung der Ersetzung einen
 Neustart der WPS erforderlich macht, da &xwp; die Ersetzung nur vornehmen kann,
-w&auml;hrend die WPS hochf&auml;hrt.
+wÑhrend die WPS hochfÑhrt.
  
 <P>Ist die Ersetzung jedoch erst einmal vollzogen und die WPS neu gestartet,
-k&ouml;nnen Sie die automatische Aktualisierung der Ordner auf der Seite "Anzeige"
+kînnen Sie die automatische Aktualisierung der Ordner auf der Seite "Anzeige"
 des Objektes "Workplace Shell" aktivieren und deaktivieren, ohne die WPS neu starten
-zu m&uuml;ssen.
+zu mÅssen.
 <BR>
 </BODY>
 </HTML>

@@ -14,6 +14,17 @@
 #define xcenter "XCenter"
 #define xbutton "X-Button"
 #define xshutdown "XShutdown"
+#define pgr "XPager"
+#define contact-user "xworkplace-user@yahoogroups.com"
+#define contact-dev "xworkplace-dev@yahoogroups.com"
+
+#define auml "Ñ"
+#define Auml "é"
+#define ouml "î"
+#define Ouml "ô"
+#define uuml "Å"
+#define Uuml "ö"
+#define szlig "·"
 
 #define cfgsys "<CODE>CONFIG.SYS</CODE>"
 

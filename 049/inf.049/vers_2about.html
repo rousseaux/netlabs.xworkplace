@@ -1,0 +1,41 @@
+<HTML WIDTH=70% XPOS=right NOSUBLINKS="intro" NOSUBLINKS="xices" NOSUBLINKS="vers_">
+<HEAD>
+    <TITLE>
+        šber die Numerierung bei &xwp;-Versionen
+    </TITLE>
+</HEAD>
+<!-- this page is all new with V0.9.0 -->
+<BODY>
+Mit dem Release von &xwp; V0.9.0 wurde <B>das Format der Versionsnumerierung</B>
+ge„ndert. hnlich der Versionsnumerierung bei Linux gibt es nun drei Unterziffern
+in der Versionsnummer, die nun das Format <CODE>hauptversion.unterversion.revision</CODE>
+hat.
+ 
+<!-- V0.9.3: added this paragraph -->
+<P>Wie bei Linux werden <B>ungerade Unterversionsnummern</B> fr "Entwicklerversionen"
+verwendet, bei denen es keine Garantie fr Stabilit„t gibt. Nach einigen Entwicklerversionen
+erh„lt die n„chste Version eine <B>gerade Unterversionsnummer</B>, wenn der Code als
+stabil angesehen wird. Beispielsweise k”nnte nach V0.9.19 V1.0.0 herauskommen.
+ 
+<P>Dies wurde ge„ndert, um zu verdeutlichen, welche <A HREF="inst_4nls.html">Sprachuntersttzungs
+(NLS)-Pakete</A> fr einen bestimmten &xwp;-Release verwendet werden k”nnen. Ein
+NLS-Paket, welches die gleiche Hauptversions- und Unterversionsnummer wie das
+&xwp;-Basispaket hat, kann mit dieser Version benutzt werden.
+ 
+<!-- V0.9.3: added this paragraph -->
+<P>Dies trifft nicht auf Entwickler-Releases zu. Wenn Sie also eine ungerade
+Unterversionsnummer haben, beispielsweise bei allen V0.9.x-Releases, verwenden
+Sie nur ein NLS-Paket mit exakt derselben Versionsnummer.
+ 
+<!-- V0.9.3: removed all this
+In other words, if only the revision part is raised, NLS packages for the
+previous version will still be working.
+Note that the revision number will be raised for each single release,
+even if the previous release was called a "beta" version. I only add the "beta" if I
+think that a release has not been tested enough to be considered stable. If there is
+a "beta" version, there will never be a non-beta version with the same version number,
+but the release number will be raised for the non-beta release. -->
+<BR>
+</BODY>
+</HTML>
+ 

@@ -5,7 +5,7 @@
  *
  */
 
-#define xwp "eWorkplace"
+#define xwp "eComStation"
 #define os2 "eComStation"
 #define warp "OS/2 Warp"
 #define warp4 "OS/2 Warp 4"
@@ -14,6 +14,9 @@
 #define xcenter "eCenter"
 #define xbutton "eButton"
 #define xshutdown "eShutdown"
+#define pgr "ePager"
+#define contact-user "xworkplace-user@yahoogroups.com"
+#define contact-dev "xworkplace-dev@yahoogroups.com"
 
 #define cfgsys "<CODE>CONFIG.SYS</CODE>"
 
