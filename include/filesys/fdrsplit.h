@@ -45,12 +45,14 @@
         #define FFL_EXPAND                  0x0004
         #define FFL_SETBACKGROUND           0x0008
         #define FFL_UNLOCKOBJECTS           0x1000
+        #define FFL_POPULATEFAILED          0x2000
 
     #define FM_POPULATED_FILLTREE   (WM_USER + 2)
     #define FM_POPULATED_SCROLLTO   (WM_USER + 3)
     #define FM_POPULATED_FILLFILES  (WM_USER + 4)
     #define FM_UPDATEPOINTER        (WM_USER + 5)
     #define FM_DELETINGFDR          (WM_USER + 6)
+    #define FM_SETCNRLAYOUT         (WM_USER + 7)
 
     #define FM2_POPULATE            (WM_USER + 10)
     #define FM2_ADDFIRSTCHILD_BEGIN (WM_USER + 11)
@@ -225,6 +227,29 @@
 
     #define SN_FRAMECLOSE           0x1004
 
+    /*
+     *@@ SN_VKEY:
+     *      WM_CONTROL notification code sent (!) from the
+     *      split view controller (fnwpSplitController)
+     *      to its parent, the main frame, which should
+     *      be subclassed to intercept this notification.
+     *
+     *      SHORT1FROMMP(mp1) is always FID_CLIENT.
+     *
+     *      This notification gets sent when the split
+     *      view has received a virtual keypress such
+     *      as backspace or tab. This only comes in for
+     *      the "key down" event; mp2 then has the
+     *      SHORT2FROMMP(mp2) from WM_CHAR. The handler
+     *      must return TRUE if the message was processed;
+     *      otherwise it is passed to the default XFolder
+     *      frame proc.
+     *
+     *@@added V0.9.21 (2002-11-23) [umoeller]
+     */
+
+    #define SN_VKEY                 0x1005
+
     #ifdef THREADS_HEADER_INCLUDED
     #ifdef FDRSUBCLASS_HEADER_INCLUDED
 
@@ -269,17 +294,17 @@
                                 // cooperation);
                                 // created in fdlgFileDlg only once
 
-            PMINIRECORDCORE precFolderToPopulate,
+            PMINIRECORDCORE precToPopulate,
                                 // gets set to the folder to populate when
                                 // the user selects a record in the tree
                                 // on the left; we then start a timer to
                                 // delay the actual populate in case the
                                 // user runs through a lot of folders;
                                 // reset to NULL when the timer has elapsed
-                            precFolderPopulating,
+                            precPopulating,
                                 // while populate is running, this holds
-                                // the folder that is populating to avoid
-                                // duplicate populate posts
+                                // the object (folder, disk, shadow) that is
+                                // populating to avoid duplicate populate posts
                             precTreeSelected,
                                 // record that is currently selected
                                 // in the tree on the left

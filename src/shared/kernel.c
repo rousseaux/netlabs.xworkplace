@@ -64,6 +64,7 @@
 #define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSQUEUES
+#define INCL_DOSMISC
 #define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
@@ -453,6 +454,41 @@ BOOL krnIsClassReady(PCSZ pcszClassName)
  ********************************************************************/
 
 /*
+ *@@ krnMakeLogFilename:
+ *      produces a log filename in pszBuf.
+ *      If $(XWPLOGDIR) is set, that directory
+ *      is used; otherwise we use the root
+ *      directory of the boot drive.
+ *
+ *@@added V0.9.21 (2002-09-20) [umoeller]
+ */
+
+BOOL krnMakeLogFilename(PSZ pszBuf,             // out: fully qualified filename
+                        PCSZ pcszFilename)      // in: short log filename
+{
+    CHAR    szBoot[] = "?:";
+    PSZ     pszLogDir;
+    if (DosScanEnv("LOGFILES",      // new eCS 1.1 setting
+                   &pszLogDir))
+    {
+        // variable not set:
+#ifdef __EWORKPLACE__
+        return FALSE;
+#else
+        szBoot[0] = doshQueryBootDrive();
+        pszLogDir = szBoot;
+#endif
+    }
+
+    sprintf(pszBuf,
+            "%s\\%s",
+            pszLogDir,
+            pcszFilename);
+
+    return TRUE;
+}
+
+/*
  *@@ krnExceptOpenLogFile:
  *      this opens or creates C:\XFLDTRAP.LOG and writes
  *      a debug header into it (date and time); returns
@@ -471,11 +507,13 @@ BOOL krnIsClassReady(PCSZ pcszClassName)
 
 FILE* _System krnExceptOpenLogFile(VOID)
 {
-    CHAR        szFileName[CCHMAXPATH];
-    FILE        *file;
+    CHAR        szFilename[CCHMAXPATH];
+    FILE        *file = NULL;
 
-    sprintf(szFileName, "%c:\\%s", doshQueryBootDrive(), XFOLDER_CRASHLOG);
-    if (file = fopen(szFileName, "a"))
+    if (    (krnMakeLogFilename(szFilename,
+                                XFOLDER_CRASHLOG))
+         && (file = fopen(szFilename, "a"))
+       )
     {
         DATETIME    dt;
         DosGetDateTime(&dt);

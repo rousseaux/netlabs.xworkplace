@@ -3080,7 +3080,9 @@ SOM_Scope BOOL  SOMLINK xo_wpModifyMenu(XFldObject *somSelf,
         // descriptions, but DONT do this for folders or data files,
         // because those menu items will only be added later... for
         // folders, we call this function in XFolder::wpMenuItemSelected
-        if (!(_flObject & OBJFL_WPFILESYSTEM))
+        if (   !(_flObject & OBJFL_WPFILESYSTEM)
+            && !(ctsIsDisk(somSelf))  // V0.9.21 (2002-09-23) [pr]: Stop double hotkeys on disks
+           )
             fdrAddHotkeysToMenu(somSelf,
                                 hwndCnr,
                                 hwndMenu,

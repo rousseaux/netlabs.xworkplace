@@ -437,7 +437,7 @@ MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1
  *      or otherwise we'll quickly run out of menu item IDs.
  *
  *      For folder context menus, this gets called from
- *      mnuModifyFolderPopupMenu.
+ *      mnuModifyFolderMenu.
  *
  *@@added V0.9.7 (2000-11-29) [umoeller]
  */

@@ -9,8 +9,8 @@
  *      classes share many common menu items, they also share
  *      the routines for handling them.
  *
- *      mnuModifyFolderPopupMenu, which gets called from
- *      XFolder::wpModifyPopupMenu and XFldDisk::wpModifyPopupMenu,
+ *      mnuModifyFolderMenu, which gets called from
+ *      XFolder::wpModifyMenu and XFldDisk::wpModifyMenu,
  *      modifies folder and disk context menu items.
  *
  *      This code mainly does two things:
@@ -600,10 +600,10 @@ static const MENUITEMDEF G_MenuItemsWithIDs[] =
         ID_XSDI_MENU_LOGOFFNETWORKNOW, WPMENUID_LOGOFF,
                 CONFFL_WPDESKTOP,
                 XWPCTXT_HIGHBIT | XWPCTXT_LOGOFF,
-        // "Shut ~down..."
-        ID_XSDI_MENU_SHUTDOWN, WPMENUID_SHUTDOWN,
+        // "~Restart Desktop..." V0.9.21 (2002-10-08) [pr]
+        ID_SDSI_RESTARTWPS, ID_XFMI_OFS_RESTARTWPS,
                 CONFFL_WPDESKTOP,
-                CTXT_SHUTDOWN,
+                XWPCTXT_HIGHBIT | XWPCTXT_RESTARTWPS,
         // "Shut ~down..."
         ID_XSDI_MENU_SHUTDOWN, WPMENUID_SHUTDOWN,
                 CONFFL_WPDESKTOP,
@@ -641,7 +641,7 @@ static const MENUITEMDEF G_MenuItemsWithIDs[] =
                 CONFFL_WPDATAFILE | CONFFL_WPFOLDER,
                 XWPCTXT_HIGHBIT | XWPCTXT_ATTRIBUTESMENU,
         // "Co~py filename"
-        ID_XSSI_COPYFILENAME, ID_XFMI_OFS_COPYFILENAME_MENU,
+        ID_XSSI_COPYFILENAME, ID_XFM_OFS_COPYFILENAME,
                 CONFFL_WPDATAFILE | CONFFL_WPFOLDER,
                 XWPCTXT_HIGHBIT | XWPCTXT_COPYFILENAME,
 #ifndef __NOMOVEREFRESHNOW__
@@ -811,20 +811,15 @@ VOID mnuRemoveMenuItems(WPObject *somSelf,
  *
  *      This gets called from two places:
  *
- *      -- mnuModifyFolderPopupMenu for regular popup
+ *      -- mnuModifyFolderMenu for regular popup
  *         menus;
  *
  *      -- fnwpSubclWPFolderWindow upon WM_INITMENU
  *         for the "View" pulldown in folder menu bars.
  *
  *      hwndViewSubmenu contains the submenu to add
- *      items to:
- *
- *      --  on Warp 4, this is the default "View" submenu
- *          (either in the context menu or the "View" pulldown)
- *
- *      --  on Warp 3, mnuModifyFolderPopupMenu creates a new
- *          "View" submenu, which is passed to this func.
+ *      items to. This is the default "View" submenu
+ *      (either in the context menu or the "View" pulldown).
  *
  *      Returns TRUE if the menu items were inserted.
  *
@@ -1309,7 +1304,7 @@ VOID mnuInvalidateConfigCache(VOID)
 
 /*
  *@@ InsertConfigFolderItems:
- *      this gets called from mnuModifyFolderPopupMenu to insert
+ *      this gets called from mnuModifyFolderMenu to insert
  *      the config folder items into a folder's context menu.
  *
  *      When this is called for the first time, a list of
@@ -1392,6 +1387,85 @@ STATIC BOOL InsertConfigFolderItems(XFolder *somSelf,
     } */
 
     return brc;
+}
+
+/*
+ *@@ InsertCopyFilename:
+ *      adds the "copy filename" submenu to the given
+ *      menu.
+ *
+ *@@added V0.9.21 (2002-11-09) [umoeller] @@fixes 219
+ */
+
+STATIC VOID InsertCopyFilename(WPObject *somSelf,
+                               HWND hwndCnr,
+                               HWND hwndMenu,       // in: menu to add submenu to
+                               SHORT sPosition)     // in: position or MIT_END
+{
+    PMINIRECORDCORE pmrcSelf = _wpQueryCoreRecord(somSelf),
+                    pmrcSelected = (PMINIRECORDCORE)CMA_FIRST;
+    ULONG           ulVarMenuOfs = cmnQuerySetting(sulVarMenuOfs),
+                    cSelected = 0;
+    BOOL            fSelfSelected = FALSE,
+                    fMultiple = FALSE;
+    HWND            hwndSubmenu;
+
+    do
+    {
+        // get the first or the next _selected_ item
+        pmrcSelected = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
+                                                   CM_QUERYRECORDEMPHASIS,
+                                                   (MPARAM)pmrcSelected,
+                                                   (MPARAM)CRA_SELECTED);
+
+        if ((pmrcSelected != 0) && (((ULONG)pmrcSelected) != -1))
+        {
+            // compare the selection with pmrcSelf
+            if (pmrcSelected == pmrcSelf)
+                fSelfSelected = TRUE;
+
+            cSelected++;
+        }
+    } while ((pmrcSelected) && (((ULONG)pmrcSelected) != -1));
+
+    if (fSelfSelected && cSelected > 1)
+        fMultiple = TRUE;
+
+    hwndSubmenu = winhInsertSubmenu(hwndMenu,
+                                    sPosition,
+                                    ulVarMenuOfs + ID_XFM_OFS_COPYFILENAME,
+                                    cmnGetString(ID_XSSI_COPYFILENAME),
+                                    MIS_TEXT,
+                                    ulVarMenuOfs + ID_XFMI_OFS_COPYFILENAME_SHORTSP,
+                                    cmnGetString(fMultiple
+                                                   ? ID_XSSI_COPYFILENAME_SHORTSP
+                                                   : ID_XSSI_COPYFILENAME_SHORT1),
+                                    MIS_TEXT,
+                                    0);
+    winhInsertMenuItem(hwndSubmenu,
+                       MIT_END,
+                       ulVarMenuOfs + ID_XFMI_OFS_COPYFILENAME_FULLSP,
+                       cmnGetString(fMultiple
+                                        ? ID_XSSI_COPYFILENAME_FULLSP
+                                        : ID_XSSI_COPYFILENAME_FULL1),
+                       MIS_TEXT,
+                       0);
+
+    if (fMultiple)
+    {
+        winhInsertMenuItem(hwndSubmenu,
+                           MIT_END,
+                           ulVarMenuOfs + ID_XFMI_OFS_COPYFILENAME_SHORTNL,
+                           cmnGetString(ID_XSSI_COPYFILENAME_SHORTNL),
+                           MIS_TEXT,
+                           0);
+        winhInsertMenuItem(hwndSubmenu,
+                           MIT_END,
+                           ulVarMenuOfs + ID_XFMI_OFS_COPYFILENAME_FULLNL,
+                           cmnGetString(ID_XSSI_COPYFILENAME_FULLNL),
+                           MIS_TEXT,
+                           0);
+    }
 }
 
 /*
@@ -1719,10 +1793,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                                     ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
             bSepAdded = TRUE; // V0.9.14
 
-            winhInsertMenuItem(hwndMenu, MIT_END,
-                               ulVarMenuOfs + ID_XFMI_OFS_COPYFILENAME_MENU,
-                               cmnGetString(ID_XSSI_COPYFILENAME), // (pNLSStrings)->pszCopyFilename,
-                               0, 0);
+            InsertCopyFilename(somSelf, hwndCnr, hwndMenu, MIT_END);
         }
 
         // V0.9.14
@@ -2101,7 +2172,7 @@ BOOL mnuModifyFolderMenu(WPFolder *somSelf,
  *      We kick out the standard "close" menu item
  *      and replace it with a submenu. See
  *      XFolder::wpDisplayMenu for remarks why we
- *      can't do it in mnuModifyFolderPopupMenu.
+ *      can't do it in mnuModifyFolderMenu.
  *
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
@@ -2328,12 +2399,7 @@ BOOL mnuModifyDataFilePopupMenu(WPObject *somSelf,  // in: data file
     // insert "Copy filename" for data files
     // (the XFolder class does this also)
     if (fAddCopyFilenameItem)
-        winhInsertMenuItem(hwndMenu,
-                           MIT_END,
-                           ulVarMenuOfs + ID_XFMI_OFS_COPYFILENAME_MENU,
-                           cmnGetString(ID_XSSI_COPYFILENAME), // (pNLSStrings)->pszCopyFilename,
-                           0,
-                           0);
+        InsertCopyFilename(somSelf, hwndCnr, hwndMenu, MIT_END);        // V0.9.21 (2002-11-09) [umoeller]
 
     // insert "Default document" if enabled
 #ifndef __NOFDRDEFAULTDOCS__

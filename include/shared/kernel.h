@@ -66,6 +66,9 @@
      *
      ********************************************************************/
 
+    BOOL krnMakeLogFilename(PSZ pszBuf,
+                            PCSZ pcszFilename);
+
     #ifdef INCL_DOSPROCESS
     FILE* _System krnExceptOpenLogFile(VOID);
 

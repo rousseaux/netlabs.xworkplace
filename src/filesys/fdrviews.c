@@ -45,6 +45,7 @@
 #define INCL_WINPOINTERS
 #define INCL_WININPUT
 #define INCL_WINSTDCNR
+#define INCL_WINSTDDRAG
 #define INCL_WINSHELLDATA
 #define INCL_WINSCROLLBARS
 #define INCL_WINSYS
@@ -1373,16 +1374,27 @@ STATIC ULONG XWPENTRY fncbClearCnr(HWND hwndCnr,
  *          unlock every object that we remove once.
  *
  *@@changed V0.9.21 (2002-09-13) [umoeller]: added flClear
+ *@@changed V0.9.21 (2002-11-23) [umoeller]: fixed broken lazy drag in progress
  */
 
 ULONG fdrvClearContainer(HWND hwndCnr,      // in: cnr to clear
                          ULONG flClear)     // in: CLEARFL_* flags
 {
-    ULONG ulrc;
+    ULONG       ulrc;
+    PDRAGINFO   pdrgInfo;
 
     // disable window updates
     // for the cnr or this takes forever
     WinEnableWindowUpdate(hwndCnr, FALSE);
+
+    // if this container is the current source of a
+    // lazy drag operation, cancel the lazy drag
+    // before clearing the container
+    if (    (DrgQueryDragStatus() == DGS_LAZYDRAGINPROGRESS)
+         && (pdrgInfo = DrgQueryDraginfoPtr(NULL))
+         && (pdrgInfo->hwndSource == hwndCnr)
+       )
+        DrgCancelLazyDrag();
 
     ulrc = cnrhForAllRecords(hwndCnr,
                              // recurse only for tree view

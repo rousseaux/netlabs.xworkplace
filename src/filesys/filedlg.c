@@ -1166,19 +1166,26 @@ MRESULT EXPENTRY fnwpFileDlgFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                 switch (SHORT2FROMMP(mp1))
                 {
                     case SN_FOLDERCHANGING:
-                        // say "populating"
-                        PMPF_POPULATESPLITVIEW(("SN_FOLDERCHANGING"));
-                        WinSetWindowText(pWinData->hwndDirValue,
-                                         cmnGetString(ID_XFSI_FDLG_WORKING));
-
-                        // update our file path etc.
-                        if (_wpQueryFilename((WPFolder*)mp2,
-                                             szTemp,
-                                             TRUE))
+                        if (mp2)
                         {
-                            ParseFileString(pWinData,
-                                            szTemp);
+                            // say "populating"
+                            PMPF_POPULATESPLITVIEW(("SN_FOLDERCHANGING"));
+                            WinSetWindowText(pWinData->hwndDirValue,
+                                             cmnGetString(ID_XFSI_FDLG_WORKING));
+
+                            // update our file path etc.
+                            if (_wpQueryFilename((WPFolder*)mp2,
+                                                 szTemp,
+                                                 TRUE))
+                            {
+                                ParseFileString(pWinData,
+                                                szTemp);
+                            }
                         }
+                        else
+                            // populate failed:
+                            WinSetWindowText(pWinData->hwndDirValue, "");
+
                     break;
 
                     case SN_FOLDERCHANGED:
@@ -1199,12 +1206,18 @@ MRESULT EXPENTRY fnwpFileDlgFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                     {
                         WPFileSystem *pobjFS;
 
-                        if (pobjFS = fdrvGetFSFromRecord((PMINIRECORDCORE)mp2,
-                                                         FALSE))
+                        // this resolves shadows
+                        if (    (pobjFS = fdrvGetFSFromRecord((PMINIRECORDCORE)mp2,
+                                                              FALSE))
+                             && (pWinData = WinQueryWindowPtr(hwndFrame, QWL_USER))
+                           )
                         {
+                            // if this points to some other folder, paste
+                            // the fully qualified filename (files and folders)
                             _wpQueryFilename(pobjFS,
                                              szTemp,
-                                             FALSE);
+                                             (_wpQueryFolder(pobjFS) != pWinData->sv.psfvFiles->somSelf));
+
                             WinSetWindowText(pWinData->hwndFileEntry,
                                              szTemp);
                         }
@@ -1220,6 +1233,40 @@ MRESULT EXPENTRY fnwpFileDlgFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
 
                         // prevent the split view from opening the object
                         mrc = (MRESULT)TRUE;
+                    }
+                    break;
+
+                    case SN_VKEY:
+                    {
+                        mrc = (MRESULT)TRUE;
+
+                        switch ((USHORT)mp2)
+                        {
+                            case VK_TAB:
+                                // find next focus window
+                                dlghSetNextFocus(&pWinData->llDialogControls);
+                            break;
+
+                            case VK_BACKTAB:
+                                // note: shift+tab produces this!!
+                                dlghSetPrevFocus(&pWinData->llDialogControls);
+                            break;
+
+                            case VK_ESC:
+                                WinPostMsg(hwndFrame,
+                                           WM_COMMAND,
+                                           (MPARAM)DID_CANCEL,
+                                           0);
+                            break;
+
+                            case VK_NEWLINE:        // this comes from the main key
+                            case VK_ENTER:          // this comes from the numeric keypad
+                                dlghEnter(&pWinData->llDialogControls);
+                            break;
+
+                            default:
+                                mrc = (MRESULT)FALSE;       // not processed
+                        } // end switch
                     }
                     break;
 
@@ -1283,6 +1330,10 @@ MRESULT EXPENTRY fnwpFileDlgFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                         // V0.9.21 (2002-09-13) [umoeller]
                     break;
                 }
+        break;
+
+        case WM_CHAR:
+            mrc = FrameChar(hwndFrame, mp1, mp2);
         break;
 
         default:

@@ -57,7 +57,14 @@
 
 <--XFL0110-->: &xsd;: Error
 
-<--XFL0111-->: An error occured saving the INI files. There is a possibility that the Workplace Shell might be damaged at the next reboot. Instead of continuing the eXtended Shutdown, you can now restart the WPS, disable the eXtended Shutdown, and perform a regular &os2; shutdown. Do you wish to restart the WPS now?
+;
+; 111 changed with V0.9.21
+;
+<--XFL0111-->: Error %1 occured saving the INI files. Error description:
+
+%2
+
+There is a possibility that the Workplace Shell might be damaged at the next reboot. Instead of continuing the eXtended Shutdown, you can now restart the WPS, disable the eXtended Shutdown, and perform a regular &os2; shutdown. Do you wish to restart the WPS now?
 
 <--XFL0112-->: Select Object Class
 

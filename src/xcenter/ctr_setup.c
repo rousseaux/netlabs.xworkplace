@@ -1081,7 +1081,7 @@ STATIC BOOL CreateDefaultWidgets(XCenter *somSelf)
 
     xstrClear(&str);
 
-    return brc;
+    return TRUE;        // don't let this fail  V0.9.21 (2002-09-20) [umoeller]
 }
 
 /*

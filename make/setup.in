@@ -460,7 +460,7 @@ LINK_ALWAYSPACK = $(LINK) /optfunc
 
 RCDEFS =
 !ifdef XWPLITE
-RCDEFS = -D__XWPLITE__
+RCDEFS = -d __XWPLITE__
 !endif
 
 RC      = rc -p -x2 -n -i $(TKBASE)\h -i $(PROJECT_BASE_DIR)\include $(RCDEFS)

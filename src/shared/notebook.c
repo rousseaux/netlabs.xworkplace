@@ -1948,22 +1948,12 @@ BOOL ntbTurnToPage(HWND hwndNotebook,       // in: notebook control (FID_CLIENT 
 {
     PNOTEBOOKPAGE pnbp = NULL;
 
-    _PmpfF(("entering, hwndNotebook 0x%lX, page %d", hwndNotebook, ulPageID));
-
     while (pnbp = ntbQueryOpenPages(pnbp))
     {
-        _Pmpf(("   got hwndNotebook 0x%lX, page %d [%s]",
-                pnbp->inbp.hwndNotebook,
-                pnbp->inbp.ulPageID,
-                pnbp->inbp.pcszName));
-
         if (    (hwndNotebook == pnbp->inbp.hwndNotebook)
              && (pnbp->inbp.ulPageID == ulPageID)
            )
         {
-            _Pmpf(("    MATCH: pnbp->ulNotebookPageID is 0x%lX (%d)",
-                        pnbp->ulNotebookPageID,
-                        pnbp->ulNotebookPageID));
             return (BOOL)WinSendMsg(hwndNotebook,
                                     BKM_TURNTOPAGE,
                                     (MPARAM)pnbp->ulNotebookPageID,

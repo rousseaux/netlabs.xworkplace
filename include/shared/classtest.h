@@ -48,5 +48,7 @@
 
     BOOL ctsDescendedFromSharedDir(SOMClass *pClassObject);
 
+    BOOL ctsIsDisk(WPObject *somSelf);
+
 #endif
 

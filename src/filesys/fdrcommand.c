@@ -151,6 +151,182 @@ extern POINTL   G_ptlMouseMenu;         // ptr position when menu was opened;
 
 /* ******************************************************************
  *
+ *   Copy object filenames
+ *
+ ********************************************************************/
+
+/*
+ *@@ CopyOneObject:
+ *
+ *@@added V0.9.19 (2002-06-02) [umoeller]
+ */
+
+STATIC VOID CopyOneObject(PXSTRING pstr,
+                          WPObject *pObject,
+                          BOOL fFullPath,
+                          const XSTRING *pstrSep)
+{
+    CHAR szRealName[CCHMAXPATH];
+    if (    (pObject = objResolveIfShadow(pObject))
+         && (_somIsA(pObject, _WPFileSystem))
+         && (_wpQueryFilename(pObject, szRealName, fFullPath))
+       )
+    {
+        if (pstr->ulLength)
+            xstrcats(pstr, pstrSep);
+
+        xstrcat(pstr, szRealName, 0);
+    }
+}
+
+/*
+ *@@ CopyObjectFileName:
+ *      copy object filename(s) to clipboard. This method is
+ *      called from several overrides of wpMenuItemSelected.
+ *
+ *      If somSelf does not have CRA_SELECTED emphasis in the
+ *      container, its filename is copied. If it does have
+ *      CRA_SELECTED emphasis, all filenames which have CRA_SELECTED
+ *      emphasis are copied, separated by spaces.
+ *
+ *      Note that somSelf might not neccessarily be a file-system
+ *      object. It can also be a shadow to one, so we might need
+ *      to dereference that.
+ *
+ *@@changed V0.9.0 [umoeller]: fixed a minor bug when memory allocation failed
+ *@@changed V0.9.19 (2002-06-02) [umoeller]: fixed buffer overflow with many objects
+ *@@changed V0.9.19 (2002-06-02) [umoeller]: renamed from wpshCopyObjectFileName, moved here
+ *@@changed V0.9.21 (2002-11-09) [umoeller]: moved here, added cSep
+ */
+
+STATIC BOOL CopyObjectFileName(WPObject *somSelf, // in: the object which was passed to wpMenuItemSelected
+                               HWND hwndCnr, // in: the container of the hwmdFrame
+                                    // of wpMenuItemSelected
+                               BOOL fFullPath, // in: if TRUE, the full path will be
+                                    // copied; otherwise the filename only
+                               PCSZ pcszSep)    // in: separator if multiple filenames (CRLF or space)
+{
+    BOOL        fSuccess = FALSE,
+                fSingleMode = TRUE;
+    XSTRING     strFilenames;
+    XSTRING     strSep;
+
+    // get the record core of somSelf
+    PMINIRECORDCORE pmrcSelf = _wpQueryCoreRecord(somSelf);
+
+    // now we go through all the selected records in the container
+    // and check if pmrcSelf is among these selected records;
+    // if so, this means that we want to copy the filenames
+    // of all the selected records.
+    // However, if pmrcSelf is not among these, this means that
+    // either the context menu of the _folder_ has been selected
+    // or the menu of an object which is not selected; we will
+    // then only copy somSelf's filename.
+
+    PMINIRECORDCORE pmrcSelected = (PMINIRECORDCORE)CMA_FIRST;
+
+    xstrInit(&strFilenames, 1000);
+    xstrInitCopy(&strSep, pcszSep, 0);
+
+    do
+    {
+        // get the first or the next _selected_ item
+        pmrcSelected = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
+                                                   CM_QUERYRECORDEMPHASIS,
+                                                   (MPARAM)pmrcSelected,
+                                                   (MPARAM)CRA_SELECTED);
+
+        if ((pmrcSelected != 0) && (((ULONG)pmrcSelected) != -1))
+        {
+            // first or next record core found:
+            // copy filename to buffer
+            CopyOneObject(&strFilenames,
+                          OBJECT_FROM_PREC(pmrcSelected),
+                          fFullPath,
+                          &strSep);
+
+            // compare the selection with pmrcSelf
+            if (pmrcSelected == pmrcSelf)
+                fSingleMode = FALSE;
+        }
+    } while ((pmrcSelected) && (((ULONG)pmrcSelected) != -1));
+
+    if (fSingleMode)
+    {
+        // if somSelf's record core does NOT have the "selected"
+        // emphasis: this means that the user has requested a
+        // context menu for an object other than the selected
+        // objects in the folder, or the folder's context menu has
+        // been opened: we will only copy somSelf then.
+        xstrClear(&strFilenames);
+        CopyOneObject(&strFilenames, somSelf, fFullPath, &strSep);
+    }
+
+    if (strFilenames.ulLength)
+    {
+        // something was copied:
+        // copy to clipboard
+        fSuccess = winhSetClipboardText(WinQueryAnchorBlock(hwndCnr),
+                                        strFilenames.psz,
+                                        strFilenames.ulLength + 1);
+    }
+
+    xstrClear(&strFilenames);
+    xstrClear(&strSep);
+
+    return fSuccess;
+}
+
+/*
+ *@@ CopyObjectFileName2:
+ *      calls CopyObjectFileName with the parameters
+ *      determined from the given menu item ID.
+ *
+ *@@added V0.9.21 (2002-11-09) [umoeller]
+ */
+
+STATIC BOOL CopyObjectFileName2(WPObject *somSelf, // in: the object which was passed to wpMenuItemSelected
+                                HWND hwndCnr, // in: the container of the hwmdFrame
+                                    // of wpMenuItemSelected
+                                ULONG ulMenuId2)     // in: _OFS_ menu item ID
+{
+    BOOL    fFullPath;
+    PCSZ    pcszSep = NULL;
+
+    switch (ulMenuId2)
+    {
+        case ID_XFMI_OFS_COPYFILENAME_SHORTSP:
+            fFullPath = FALSE;
+            pcszSep = " ";
+        break;
+
+        case ID_XFMI_OFS_COPYFILENAME_FULLSP:
+            fFullPath = TRUE;
+            pcszSep = " ";
+        break;
+
+        case ID_XFMI_OFS_COPYFILENAME_SHORTNL:
+            fFullPath = FALSE;
+            pcszSep = "\r\n";
+        break;
+
+        case ID_XFMI_OFS_COPYFILENAME_FULLNL:
+            fFullPath = TRUE;
+            pcszSep = "\r\n";
+        break;
+    }
+
+    if (pcszSep)
+        return CopyObjectFileName(somSelf,
+                                  hwndCnr,
+                                  fFullPath,
+                                  pcszSep);
+
+    return FALSE;
+}
+
+/* ******************************************************************
+ *
  *   "Selecting menu items" reaction
  *
  ********************************************************************/
@@ -305,14 +481,17 @@ BOOL fcmdSelectingFsysMenuItem(WPObject *somSelf,
         break;  // file attributes
 
         /*
-         * ID_XFMI_OFS_COPYFILENAME_MENU:
-         *
+         * ID_XFMI_OFS_COPYFILENAME_X:
+         *      rewritten V0.9.21 (2002-11-09) [umoeller]
          */
 
-        case ID_XFMI_OFS_COPYFILENAME_MENU:
-            objCopyObjectFileName(pObject,
-                                  hwndCnr,
-                                  doshQueryShiftState());
+        case ID_XFMI_OFS_COPYFILENAME_SHORTSP:
+        case ID_XFMI_OFS_COPYFILENAME_FULLSP:
+        case ID_XFMI_OFS_COPYFILENAME_SHORTNL:
+        case ID_XFMI_OFS_COPYFILENAME_FULLNL:
+            CopyObjectFileName2(pObject,
+                                hwndCnr,
+                                ulMenuId2);
                 // note again that we're passing pObject instead
                 // of pFileSystem, so that this routine can
                 // query all selected objects from shadows too
@@ -964,7 +1143,7 @@ STATIC BOOL CheckForVariableMenuItems(WPFolder *somSelf,  // in: folder or root 
     {
         // yes, variable menu item selected:
         // get corresponding menu list item from the list that
-        // was created by mnuModifyFolderPopupMenu
+        // was created by mnuModifyFolderMenu
         if (pItem = cmnuGetVarItem(ulMenuId - ulFirstVarMenuId))
             pObject = pItem->pObject;
 
@@ -1112,15 +1291,18 @@ BOOL fcmdMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
 #endif
 
             /*
-             * ID_XFMI_OFS_COPYFILENAME_SHORT:
-             * ID_XFMI_OFS_COPYFILENAME_FULL:
-             *      these are no real menu items, but only
-             *      pseudo-commands posted by the corresponding
-             *      folder hotkeys
+             * ID_XFMI_OFS_COPYFILENAME_X:
+             *      we have to handle these again in the command
+             *      routine because these can come in from folder
+             *      hotkeys as well
+             *
+             *      rewritten V0.9.21 (2002-11-09) [umoeller]
              */
 
-            case ID_XFMI_OFS_COPYFILENAME_SHORT:
-            case ID_XFMI_OFS_COPYFILENAME_FULL:
+            case ID_XFMI_OFS_COPYFILENAME_SHORTSP:
+            case ID_XFMI_OFS_COPYFILENAME_FULLSP:
+            case ID_XFMI_OFS_COPYFILENAME_SHORTNL:
+            case ID_XFMI_OFS_COPYFILENAME_FULLNL:
             {
                 // if the user presses hotkeys for "copy filename",
                 // we don't want the filename of the folder
@@ -1140,10 +1322,9 @@ BOOL fcmdMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                         // get object from record core
                         WPObject *pObject2;
                         if (pObject2 = OBJECT_FROM_PREC(pmrc))
-                            objCopyObjectFileName(pObject2,
-                                                  hwndFrame,
-                                                  // full path:
-                                                  (ulMenuId2 == ID_XFMI_OFS_COPYFILENAME_FULL));
+                            CopyObjectFileName2(pObject2,
+                                                hwndFrame,
+                                                ulMenuId2);
                     }
                 }
             }
@@ -1383,7 +1564,12 @@ BOOL fcmdMenuItemHelpSelected(WPObject *somSelf,
             ulPanel = ID_XFH_VIEW_MENU_ITEMS;
         break;
 
-        case ID_XFMI_OFS_COPYFILENAME_MENU:
+        // the following adjusted V0.9.21 (2002-11-09) [umoeller]
+        case ID_XFM_OFS_COPYFILENAME:
+        case ID_XFMI_OFS_COPYFILENAME_SHORTSP:
+        case ID_XFMI_OFS_COPYFILENAME_FULLSP:
+        case ID_XFMI_OFS_COPYFILENAME_SHORTNL:
+        case ID_XFMI_OFS_COPYFILENAME_FULLNL:
             ulPanel = ID_XMH_COPYFILENAME;
         break;
 

@@ -216,7 +216,7 @@ void fdrLoadDefaultFldrHotkeys(VOID)
     // Ctrl+insert: copy filename (w/out path)
     G_FolderHotkeys[14].usKeyCode  = VK_INSERT;
     G_FolderHotkeys[14].usFlags    = KC_VIRTUALKEY+KC_CTRL;
-    G_FolderHotkeys[14].usCommand  = ID_XFMI_OFS_COPYFILENAME_SHORT;
+    G_FolderHotkeys[14].usCommand  = ID_XFMI_OFS_COPYFILENAME_SHORTSP;
 
     // list terminator
     G_FolderHotkeys[15].usCommand = 0;
@@ -579,8 +579,8 @@ FLDRHOTKEYDESC G_aDescriptions[FLDRHOTKEYCOUNT] =
          ID_XSSI_LB_CONTEXTMENU, ID_XFMI_OFS_CONTEXTMENU, ID_XFMI_OFS_CONTEXTMENU, FALSE,
          ID_XSSI_LB_TASKLIST, 0x8011, 0, FALSE,
 
-         ID_XSSI_LB_COPYFILENAME_SHORT, ID_XFMI_OFS_COPYFILENAME_SHORT, 0, FALSE,
-         ID_XSSI_LB_COPYFILENAME_FULL, ID_XFMI_OFS_COPYFILENAME_FULL, 0, FALSE,
+         ID_XSSI_LB_COPYFILENAME_SHORT, ID_XFMI_OFS_COPYFILENAME_SHORTSP, 0, FALSE,
+         ID_XSSI_LB_COPYFILENAME_FULL, ID_XFMI_OFS_COPYFILENAME_FULLSP, 0, FALSE,
 
          // V0.9.21 (2002-09-05) [lafaix]
          ID_XSSI_LB_PICKUPDROPCOPY, WPMENUID_PUTDOWN_COPY, WPMENUID_PUTDOWN_COPY, TRUE,
@@ -723,11 +723,11 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
                 if (!(flMenuXWP & XWPCTXT_COPYFILENAME))
                 {
                     AddHotkeyToMenuItem(hwndMenu,
-                                        ID_XFMI_OFS_COPYFILENAME_SHORT,
-                                        ID_XFMI_OFS_COPYFILENAME_MENU);
+                                        ID_XFMI_OFS_COPYFILENAME_SHORTSP,
+                                        ID_XFMI_OFS_COPYFILENAME_SHORTSP); // ID_XFMI_OFS_COPYFILENAME_MENU);
                     AddHotkeyToMenuItem(hwndMenu,
-                                        ID_XFMI_OFS_COPYFILENAME_FULL,
-                                        ID_XFMI_OFS_COPYFILENAME_MENU); // same menu item!
+                                        ID_XFMI_OFS_COPYFILENAME_FULLSP,
+                                        ID_XFMI_OFS_COPYFILENAME_FULLSP); // ID_XFMI_OFS_COPYFILENAME_MENU); // same menu item!
                 }
             break;
 

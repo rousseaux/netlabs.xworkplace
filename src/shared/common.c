@@ -1032,29 +1032,27 @@ VOID cmnLog(PCSZ pcszSourceFile, // in: source file name
             PCSZ pcszFormat,     // in: format string (like with printf)
             ...)                        // in: additional stuff (like with printf)
 {
-#ifndef __EWORKPLACE__
     va_list     args;
-    CHAR        szLogFileName[100];
+    CHAR        szLogFilename[100];
     FILE        *fileLog = 0;
 
 #ifndef __NOEXCEPTIONBEEPS__
     DosBeep(100, 50);
 #endif
 
-    sprintf(szLogFileName,
-            "%c:\\%s",
-            doshQueryBootDrive(),
-            XFOLDER_LOGLOG);
-
-    if (fileLog = fopen(szLogFileName, "a"))  // text file, append
+    if (    (krnMakeLogFilename(szLogFilename,
+                                XFOLDER_LOGLOG))
+         && (fileLog = fopen(szLogFilename, "a"))  // text file, append
+       )
     {
-        DATETIME DT;
-        DosGetDateTime(&DT);
+        DATETIME dt;
+        DosGetDateTime(&dt);
         fprintf(fileLog,
-                "%04d-%02d-%02d %02d:%02d:%02d "
+                "%04d-%02d-%02d %02d:%02d:%02d:%02d T%03d "
                 "%s (%s, line %d):\n    ",
-                DT.year, DT.month, DT.day,
-                DT.hours, DT.minutes, DT.seconds,
+                dt.year, dt.month, dt.day,
+                dt.hours, dt.minutes, dt.seconds, dt.hundredths,
+                doshMyTID(),
                 pcszFunction, pcszSourceFile, ulLine);
         va_start(args, pcszFormat);
         vfprintf(fileLog, pcszFormat, args);
@@ -1062,7 +1060,6 @@ VOID cmnLog(PCSZ pcszSourceFile, // in: source file name
         fprintf(fileLog, "\n");
         fclose (fileLog);
     }
-#endif
 }
 
 /* ******************************************************************
@@ -3173,7 +3170,7 @@ static const SETTINGINFO G_aSettingInfos[] =
             "fMenuCascadeMode",
 
         sfFixLockInPlace, FIELDOFFSET(OLDGLOBALSETTINGS, fFixLockInPlace), 1,
-            SP_MENUSETTINGS, 0,
+            SP_MENUSETTINGS, 1,     // default changed V0.9.21 (2002-09-20) [umoeller]
             "fFixLockInPlace",
 
         // folder view settings

@@ -87,15 +87,15 @@
 // XFolder version flags; since this file is
 // #include'd in the NLS DLLs also, this string
 // will be readable as a resource in the NLS DLL
-#define XFOLDER_VERSION        "0.9.21"
+#define XFOLDER_VERSION        "1.0.0"
 
-#define XFOLDER_MAJOR          0
-#define XFOLDER_MINOR          9
-#define XFOLDER_REVISION       21
+#define XFOLDER_MAJOR          1
+#define XFOLDER_MINOR          0
+#define XFOLDER_REVISION       0
 
 // this sets the minimum version number for NLS DLLS
 // which XFolder will accept
-#define MINIMUM_NLS_VERSION    "0.9.21"
+#define MINIMUM_NLS_VERSION    "1.0.0"
 
 /* ******************************************************************
  *
@@ -1647,6 +1647,14 @@
         // removed V0.9.7 (2000-12-14) [umoeller]
 #define ID_XSSI_RUN               5022      // new with V0.9.14
 
+// copy filename submenu V0.9.21 (2002-11-09) [umoeller]
+#define ID_XSSI_COPYFILENAME_SHORTSP 5023
+#define ID_XSSI_COPYFILENAME_FULLSP  5024
+#define ID_XSSI_COPYFILENAME_SHORTNL 5025
+#define ID_XSSI_COPYFILENAME_FULLNL  5026
+#define ID_XSSI_COPYFILENAME_SHORT1  5027
+#define ID_XSSI_COPYFILENAME_FULL1   5028
+
 // folder hotkeys: key descriptions
 #define ID_XSSI_KEY_CTRL             5201
 #define ID_XSSI_KEY_Alt              5202
@@ -2627,9 +2635,9 @@
 
 #define ID_XFMI_OFS_FLDRCONTENT         (WPMENUID_USER+12)
 #define ID_XFMI_OFS_DUMMY               (WPMENUID_USER+13)
-#define ID_XFMI_OFS_COPYFILENAME_MENU   (WPMENUID_USER+14)      // menu item
-#define ID_XFMI_OFS_COPYFILENAME_SHORT  (WPMENUID_USER+15)      // folder hotkeys
-#define ID_XFMI_OFS_COPYFILENAME_FULL   (WPMENUID_USER+16)      // folder hotkyes
+#define ID_XFM_OFS_COPYFILENAME         (WPMENUID_USER+14)      // submenu (changed V0.9.21 (2002-11-09) [umoeller])
+#define ID_XFMI_OFS_COPYFILENAME_SHORTSP (WPMENUID_USER+15)      // short name with spaces changed V0.9.21 (2002-11-09) [umoeller]
+#define ID_XFMI_OFS_COPYFILENAME_FULLSP  (WPMENUID_USER+16)      // full name with spaces V0.9.21 (2002-11-09) [umoeller]
 #define ID_XFMI_OFS_BORED               (WPMENUID_USER+17)
 #define ID_XFMI_OFS_SELECTSOME          (WPMENUID_USER+18)
 #define ID_XFMI_OFS_PROCESSCONTENT      (WPMENUID_USER+19)
@@ -2695,12 +2703,15 @@
 // batch rename V0.9.19 (2002-06-18) [umoeller]
 #define ID_XFMI_OFS_BATCHRENAME         (WPMENUID_USER+57)
 
+#define ID_XFMI_OFS_COPYFILENAME_SHORTNL (WPMENUID_USER+58)      // short name with newlines, added V0.9.21 (2002-11-09) [umoeller]
+#define ID_XFMI_OFS_COPYFILENAME_FULLNL  (WPMENUID_USER+59)      // full name with newlines, added V0.9.21 (2002-11-09) [umoeller]
+
 // this is the value used for variable menu items, i.e.
 // those inserted according to the config folder and by
 // the "folder content" functions; XFolder will use this
 // value (i.e. WPMENUID_USER + "menu item id offset"
 // + FIRST_VARIABLE) and increment it until 0x8000 is reached
-#define FIRST_VARIABLE                  60      // raised V0.9.4 (2000-06-10) [umoeller]
+#define FIRST_VARIABLE                  65      // raised V0.9.21 (2002-11-09) [umoeller]
 #define ID_XFMI_OFS_VARIABLE            (WPMENUID_USER+FIRST_VARIABLE)
 
 #endif

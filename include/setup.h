@@ -573,17 +573,19 @@
         #include <string.h>
     #endif
 
+    /*
     #ifdef __XWPLITE__
         #ifndef __DEBUG__
             // no trap logs with eWorkplace
             #define __NO_LOUD_EXCEPTION_HANDLERS__
         #endif
     #endif
+    */
 
     #ifdef __DEBUG__
         // enable memory debugging; comment out this line
         // if you don't want it
-        #define __XWPMEMDEBUG__
+        // #define __XWPMEMDEBUG__
 
         #include "helpers\memdebug.h"
 

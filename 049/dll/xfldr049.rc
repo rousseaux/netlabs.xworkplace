@@ -353,6 +353,13 @@ BEGIN
 
     ID_XSSI_FLDRCONTENT             "~Ordnerinhalt"
     ID_XSSI_COPYFILENAME            "Dateiname ko~pieren"
+    /* the following six added V0.9.21 (2002-11-09) [umoeller] */
+    ID_XSSI_COPYFILENAME_SHORTSP    "file names only, separated by spaces"
+    ID_XSSI_COPYFILENAME_FULLSP     "including path, separated by spaces"
+    ID_XSSI_COPYFILENAME_SHORTNL    "file names only, multiple lines"
+    ID_XSSI_COPYFILENAME_FULLNL     "including path, multiple lines"
+    ID_XSSI_COPYFILENAME_SHORT1     "file name only"
+    ID_XSSI_COPYFILENAME_FULL1      "including path"
     ID_XSSI_BORED                   "[Konfigurationsordner ist leer]"
     ID_XSSI_FLDREMPTY               "[leer]"
     ID_XSSI_SELECTSOME              "Nach ~Name auswÑhlen..."
@@ -1198,6 +1205,8 @@ BEGIN
     ID_XSDI_SNAPTOGRID                  """Am ~Gitter ausrichten"" hinzufÅgen"
     ID_XSDI_ACCELERATORS                "Auf Tastenk~Årzel reagieren"
     ID_XSDI_ENABLESTATUSBAR             "~Statuszeile anzeigen"
+    ID_XSDI_SHOWINMENUS                 "KÅrzel in ~MenÅs anzeigen"
+    ID_XSDI_HOTKEYS_GROUP               "Folder hotkeys"
 
     /* strings formerly in ID_XSD_DTP_MENUITEMS
         all removed with V0.9.19  */

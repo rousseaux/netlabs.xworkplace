@@ -160,11 +160,12 @@ extern PIBMDRIVEDATA    G_paDriveData = NULL;
 static THREADINFO       G_tiSentinel = {0};
 
 #define DESKTOP_VALID               0
-#define HANDLES_BROKEN              1       // V0.9.20 (2002-08-04) [umoeller]
-#define NO_DESKTOP_ID               2
-#define DESKTOP_HANDLE_NOT_FOUND    3
-#define DESKTOP_DIR_DOESNT_EXIST    4
-#define DESKTOP_IS_NO_DIRECTORY     5
+#define NO_ACTIVE_HANDLES           1       // V0.9.21 (2002-09-20) [umoeller]
+#define HANDLES_BROKEN              2       // V0.9.20 (2002-08-04) [umoeller]
+#define NO_DESKTOP_ID               3
+#define DESKTOP_HANDLE_NOT_FOUND    4
+#define DESKTOP_DIR_DOESNT_EXIST    5
+#define DESKTOP_IS_NO_DIRECTORY     6
 
 static ULONG            G_ulDesktopValid = -1;      // unknown at this point
 static APIRET           G_arcHandles = 0;               // V0.9.20 (2002-08-04) [umoeller]
@@ -1337,7 +1338,7 @@ VOID initMain(VOID)
     static BOOL fInitialized = FALSE;
 
     HOBJECT     hobjDesktop;
-    CHAR        szDesktopPath[CCHMAXPATH];
+    CHAR        szPath[CCHMAXPATH];
 
     // check if we're called for the first time,
     // because we better initialize this only once
@@ -1383,13 +1384,13 @@ VOID initMain(VOID)
         APIRET  arc;
         ULONG   cbFile = 0;
 
-        CHAR    szDumpFile[] = "?:\\" STARTUPLOG;       // name changed V0.9.19 (2002-05-01) [umoeller]
-        szDumpFile[0] = doshQueryBootDrive();
-
-        if (!(arc = doshOpen(szDumpFile,
-                             XOPEN_READWRITE_APPEND,        // not XOPEN_BINARY
-                             &cbFile,
-                             &G_pStartupLogFile)))
+        if (    (krnMakeLogFilename(szPath,
+                                    STARTUPLOG))
+             && (!(arc = doshOpen(szPath,
+                                  XOPEN_READWRITE_APPEND,        // not XOPEN_BINARY
+                                  &cbFile,
+                                  &G_pStartupLogFile)))
+           )
         {
             doshWrite(G_pStartupLogFile,
                       0,
@@ -1483,7 +1484,49 @@ VOID initMain(VOID)
         G_usHiwordFileSystem = 3;
 
         if (arc = wphQueryActiveHandles(HINI_SYSTEM, &pszActiveHandles))
-            initLog("WARNING: wphQueryActiveHandles returned %d", arc);
+        {
+            // OK, new situation here. If XWP is installed via INI.RC,
+            // this code gets called on the first WPS startup before
+            // any objects are created. In that case, the handles
+            // section does indeed no exist yet. We must not bug the
+            // user with a report in that situation. So check if we
+            // have the special "fCDBoot" entry in os2.ini, which means
+            // that we're currently being installed, and only in that
+            // case, set G_ulDesktopValid to DESKTOP_VALID to shut up
+            // the message box.
+            // V0.9.21 (2002-09-20) [umoeller]
+            ULONG   fCDBoot = 0,
+                    cb = sizeof(fCDBoot);
+            PrfQueryProfileData(HINI_USER,
+                                (PSZ)INIAPP_XWORKPLACE,
+                                "fCDBoot",
+                                &fCDBoot,
+                                &cb);
+            initLog("fCDBoot is %d", fCDBoot);
+
+            if (fCDBoot)
+            {
+                G_ulDesktopValid = DESKTOP_VALID;
+                // assume the 99% defaults for the hiword stuff
+                G_usHiwordAbstract = 2;
+                G_usHiwordFileSystem = 3;
+
+                // and delete the key
+                PrfWriteProfileData(HINI_USER,
+                                    (PSZ)INIAPP_XWORKPLACE,
+                                    "fCDBoot",
+                                    NULL,
+                                    0);
+            }
+            else
+            {
+                initLog("WARNING: wphQueryActiveHandles returned %d", arc);
+                G_ulDesktopValid = NO_ACTIVE_HANDLES;
+                        // this was missing, G_ulDesktopValid was still -1 in
+                        // that case V0.9.21 (2002-09-20) [umoeller]
+                G_arcHandles = arc;
+            }
+        }
         else
         {
             HHANDLES hHandles;
@@ -1849,6 +1892,11 @@ BOOL initRepairDesktopIfBroken(VOID)
     {
         case DESKTOP_VALID:
             brc = TRUE;
+        break;
+
+        case NO_ACTIVE_HANDLES:     // V0.9.21 (2002-09-20) [umoeller]
+            sprintf(szMsg,
+                    "The active handles marker was not found in OS2SYS.INI.");
         break;
 
         case HANDLES_BROKEN:        // V0.9.20 (2002-08-04) [umoeller]

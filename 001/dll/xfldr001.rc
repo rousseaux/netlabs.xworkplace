@@ -356,6 +356,14 @@ BEGIN
 
     ID_XSSI_FLDRCONTENT             "F~older contents"
     ID_XSSI_COPYFILENAME            "Co~py filename"
+    /* the following six added V0.9.21 (2002-11-09) [umoeller] */
+    ID_XSSI_COPYFILENAME_SHORTSP    "file names only, separated by spaces"
+    ID_XSSI_COPYFILENAME_FULLSP     "including path, separated by spaces"
+    ID_XSSI_COPYFILENAME_SHORTNL    "file names only, multiple lines"
+    ID_XSSI_COPYFILENAME_FULLNL     "including path, multiple lines"
+    ID_XSSI_COPYFILENAME_SHORT1     "file name only"
+    ID_XSSI_COPYFILENAME_FULL1      "including path"
+
     ID_XSSI_BORED                   "[Configuration folder is empty]"
     ID_XSSI_FLDREMPTY               "[empty]"
     ID_XSSI_SELECTSOME              "Select by ~name..."
@@ -448,8 +456,8 @@ BEGIN
     ID_XSSI_LB_CLOSEWINDOW          "Close window"
     ID_XSSI_LB_CONTEXTMENU          "Show context menu"
     ID_XSSI_LB_TASKLIST             "Show task list"
-    ID_XSSI_LB_COPYFILENAME_SHORT   "Copy filename (without path)"
-    ID_XSSI_LB_COPYFILENAME_FULL    "Copy filename (including path)"
+    ID_XSSI_LB_COPYFILENAME_SHORT   "Copy filenames (without path)"
+    ID_XSSI_LB_COPYFILENAME_FULL    "Copy filenames (including path)"
 /* V0.9.21: added remaining Pickup choices [lafaix] */
     ID_XSSI_LB_PICKUPDROPCOPY       "Drop (Copy)"
     ID_XSSI_LB_PICKUPDROPMOVE       "Drop (Move)"
@@ -1204,7 +1212,7 @@ BEGIN
     ID_XSDI_ACCELERATORS                "React to folder h~otkeys"
     ID_XSDI_ENABLESTATUSBAR             "Display ~status bar"
     ID_XSDI_SHOWINMENUS                 "Sho~w hotkeys in menus"
-    ID_XSDI_HOTKEYS_GROUP               "Folder hotkeys"
+    ID_XSDI_HOTKEYS_GROUP               "Ordner-TastenkÅrzel"
 
     /* strings formerly in ID_XSD_DTP_MENUITEMS
         all removed with V0.9.19  */

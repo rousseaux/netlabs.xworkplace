@@ -1611,14 +1611,13 @@ STATIC BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
             {
                 // yes, variable menu item selected:
                 // get corresponding menu list item from the list that
-                // was created by mnuModifyFolderPopupMenu
-                PVARMENULISTITEM pItem = cmnuGetVarItem(ulMenuId - ulFirstVarMenuId);
-                WPObject    *pObject = NULL;
+                // was created by mnuModifyFolderMenu
+                PVARMENULISTITEM pItem;
+                WPObject    *pObject;
 
-                if (pItem)
-                    pObject = pItem->pObject;
-
-                if (pObject)    // defaults to NULL
+                if (    (pItem = cmnuGetVarItem(ulMenuId - ulFirstVarMenuId))
+                     && (pObject = pItem->pObject)
+                   )
                 {
                     // _wpViewObject(pObject, NULLHANDLE, OPEN_DEFAULT, 0);
                     // no.... we're running on the XCenter thread here

@@ -434,6 +434,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
     ULONG ulShutdownAttr = 0;
 
     ULONG ulOfs = cmnQuerySetting(sulVarMenuOfs);
+    ULONG fl = cmnQuerySetting(mnuQueryMenuXWPSetting(somSelf));  // V0.9.21 (2002-10-11) [pr]
 
     if (fShutdownRunning)
         // disable all those menu items if XShutdown is currently running
@@ -503,7 +504,8 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
 
     } // end if (cmnQuerySetting(sfXShutdown)) ...
 
-    if (cmnQuerySetting(sfRestartDesktop))
+    if (   (!(fl & XWPCTXT_RESTARTWPS))  // V0.9.21 (2002-10-11) [pr]
+        && cmnQuerySetting(sfRestartDesktop))
     {
         // insert "Restart Desktop"
         winhInsertMenuItem(hwndMenuInsert,  // either main menu or "Shutdown" submenu

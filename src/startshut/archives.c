@@ -641,7 +641,9 @@ APIRET arcSetArchiveByte(UCHAR byte,        // in: byte to write
 
     if (arc)
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Got error %d");
+               "doshSetPathAttr(%s) returned error %d",
+               G_szArcBaseFilename,
+               arc);
 
     return arc;
 }
@@ -1016,7 +1018,7 @@ APIRET arcSwitchArchivingOn(BOOL fSwitchOn)
 
     if (arc)
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Got error %d");
+               "Got error %d", arc);
 
     return arc;
 }

@@ -107,6 +107,7 @@
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\wphandle.h"           // file-system object handles
 #include "helpers\xprf.h"               // replacement profile (INI) functions
+#include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
 #include "xfldr.ih"                     // needed for shutdown folder
@@ -1784,13 +1785,14 @@ STATIC void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
     {
         CHAR    szLogFileName[CCHMAXPATH];
         ULONG   cbFile = 0;
-        sprintf(szLogFileName, "%c:\\%s", doshQueryBootDrive(), XFOLDER_SHUTDOWNLOG);
-        if (arc = doshOpen(szLogFileName,
-                           XOPEN_READWRITE_APPEND,        // not XOPEN_BINARY
-                           &cbFile,
-                           &LogFile))
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "Cannot create log file %s", szLogFileName);
+        if (krnMakeLogFilename(szLogFileName,
+                               XFOLDER_SHUTDOWNLOG))
+            if (arc = doshOpen(szLogFileName,
+                               XOPEN_READWRITE_APPEND,        // not XOPEN_BINARY
+                               &cbFile,
+                               &LogFile))
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Cannot create log file %s", szLogFileName);
 
         pShutdownData->ShutdownLogFile = LogFile;
     }
@@ -3481,7 +3483,10 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
 
             arc = xprfSaveINIs(pShutdownData->habShutdownThread,
                                xsd_fnSaveINIsProgress,
-                               pShutdownData->hwndProgressBar);
+                               pShutdownData->hwndProgressBar,
+                               NULL,
+                               NULL,
+                               NULL);
             doshWriteLogEntry(pShutdownData->ShutdownLogFile, "Done with xprfSaveINIs.");
 #ifndef __NOXSHUTDOWN__
         break;
@@ -3490,21 +3495,35 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
 
     if (arc != NO_ERROR)
     {
+        CHAR    szErrorNo[30];
+        XSTRING strErrDescr;
+        PCSZ    apcsz[2];
         doshWriteLogEntry(pShutdownData->ShutdownLogFile, "--- Error %d was reported!", arc);
 
         // error occured: ask whether to restart the WPS
+        sprintf(szErrorNo, "%d", arc);
+        apcsz[0] = szErrorNo;
+        xstrInit(&strErrDescr, 0);
+        cmnDescribeError(&strErrDescr,
+                         arc,
+                         NULL,
+                         TRUE);
+        apcsz[1] = strErrDescr.psz;
         if (cmnMessageBoxExt(pShutdownData->SDConsts.hwndShutdownStatus,
                              110,
-                             NULL, 0,
+                             apcsz, 2,      // V0.9.21 (2002-09-17) [umoeller]
                              111,
                              MB_YESNO)
                     == MBID_YES)
         {
-            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "User requested to restart Desktop.");
+            doshWriteLogEntry(pShutdownData->ShutdownLogFile,
+                              "User requested to restart Desktop.");
             xsdRestartWPS(pShutdownData->habShutdownThread,
                           FALSE);
                     // doesn't return
         }
+
+        xstrClear(&strErrDescr);
     }
 
     doshWriteLogEntry(pShutdownData->ShutdownLogFile, "Now preparing shutdown...");

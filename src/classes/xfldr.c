@@ -3155,7 +3155,6 @@ SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
                )
             {
                 PUSEITEM pui;
-
                 for (pui = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
                      pui;
                      pui = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pui))
@@ -3402,6 +3401,68 @@ SOM_Scope BOOL  SOMLINK xf_wpSetFldrSort(XFolder *somSelf,
     }
 
     return brc;
+}
+
+/*
+ *@@ wpRedrawFolderBackground:
+ *      this undocumented WPFolder method appears to get
+ *      called when the background needs to be redrawn
+ *      for open folder views. This happens, for example,
+ *      when the user changes the settings on a folder's
+ *      "Background" settings notebook page.
+ *
+ *      We intercept this notification to redraw split
+ *      views as well.
+ *
+ *@@added V0.9.21 (2002-09-24) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xf_wpRedrawFolderBackground(XFolder *somSelf)
+{
+    XFolderData *somThis = XFolderGetData(somSelf);
+    BOOL        fLocked = FALSE;
+    XFolderMethodDebug("XFolder","xf_wpRedrawFolderBackground");
+
+    XFolder_parent_WPFolder_wpRedrawFolderBackground(somSelf);
+
+    TRY_LOUD(excpt1)
+    {
+        PMPF_POPULATESPLITVIEW(("checking viewitems"));
+        if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+        {
+            PUSEITEM pui = NULL;
+            while (pui = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pui))
+            {
+                PVIEWITEM   pvi = (PVIEWITEM)(pui + 1);
+
+                if (         // is this folder currently showing in the right half
+                             // of a split view?
+                        (    (pvi->view == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW_SHOWING)
+                             // is this folder currently showing as the root of
+                             // a split view (i.e. in the left half of a split view)?
+                          || ((pvi->view == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW))
+                        )
+                     // we set the following flag in the split view while we're
+                     // populating
+                     && (!(pvi->ulViewState & VIEWSTATE_OPENING))
+                   )
+                {
+                    // yes: update
+                    PMPF_POPULATESPLITVIEW(("found hwnd 0x%lX", pvi->handle));
+                    WinPostMsg(pvi->handle,
+                               FM_SETCNRLAYOUT,
+                               (MPARAM)somSelf,
+                               0);
+                }
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
+
+    if (fLocked)
+        _wpReleaseObjectMutexSem(somSelf);
 }
 
 /*

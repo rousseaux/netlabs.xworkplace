@@ -154,7 +154,7 @@
     #define XWPCTXT_UNLOCKDISK          0x00000100
     #define XWPCTXT_COPYFILENAME        0x00000200
     #define XWPCTXT_ATTRIBUTESMENU      0x00000400
-
+    #define XWPCTXT_RESTARTWPS          0x00000800    // V0.9.21 (2002-10-08) [pr]
     #define XWPCTXT_SELALL              0x00001000
     #define XWPCTXT_DESELALL            0x00002000
     #define XWPCTXT_SELECTSOME          0x00004000
@@ -280,9 +280,11 @@
 
     VOID mnuInvalidateConfigCache(VOID);
 
+    /*
     BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,
                                   HWND hwndMenu,
                                   HWND hwndCnr);
+       */
 
     BOOL mnuModifyFolderMenu(WPFolder *somSelf,
                              HWND hwndMenu,

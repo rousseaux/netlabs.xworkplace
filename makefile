@@ -249,13 +249,15 @@ nls: $(XWP_LANG_CODE)
 link: $(XWPRUNNING)\bin\xfldr.dll \
       $(XWPRUNNING)\bin\xwpres.dll \
       $(XWPRUNNING)\plugins\xcenter\diskfree.dll \
-      $(XWPRUNNING)\plugins\xcenter\ipmon.dll \
       $(XWPRUNNING)\plugins\xcenter\monitors.dll \
       $(XWPRUNNING)\plugins\xcenter\winlist.dll \
       $(XWPRUNNING)\plugins\xcenter\sentinel.dll \
+!ifndef XWPLITE
+      $(XWPRUNNING)\plugins\xcenter\ipmon.dll \
       $(XWPRUNNING)\plugins\xcenter\xwHealth.dll \
       $(XWPRUNNING)\plugins\xcenter\sample.dll \
       $(XWPRUNNING)\plugins\drvdlgs\d_cdfs.dll \
+!endif
 #      $(XWPRUNNING)\bin\xwphook.dll \
 #      $(XWPRUNNING)\bin\xwpdaemn.exe
 #      $(XWPRUNNING)\bin\xwpfonts.fon
@@ -858,10 +860,8 @@ release: really_all
 !endif
 !ifndef XWPLITE
     $(COPY) $(XWP_LANG_CODE)\misc\sound001.cmd $(XWPRELEASE_NLS)\install
-    $(COPY) $(XWP_LANG_CODE)\misc\*.msg $(XWPRELEASE_NLS)\install
 !ifdef BUILD_049_TOO
-    $(COPY) 049\misc\sound001.cmd $(XWPRELEASE_049)\install
-    $(COPY) 049\misc\*.msg $(XWPRELEASE_049)\install
+    $(COPY) 049\misc\sound049.cmd $(XWPRELEASE_049)\install
 !endif
 !endif
 # 7) wav
@@ -888,8 +888,6 @@ release: really_all
 !endif
     $(COPY) $(MODULESDIR)\diskfree.dll $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\diskfree.sym $(XWPRELEASE_MAIN)\plugins\xcenter
-    $(COPY) $(MODULESDIR)\ipmon.dll $(XWPRELEASE_MAIN)\plugins\xcenter
-    $(COPY) $(MODULESDIR)\ipmon.sym $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\monitors.dll $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\monitors.sym $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\winlist.dll $(XWPRELEASE_MAIN)\plugins\xcenter
@@ -897,6 +895,8 @@ release: really_all
     $(COPY) $(MODULESDIR)\sentinel.dll $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\sentinel.sym $(XWPRELEASE_MAIN)\plugins\xcenter
 !ifndef XWPLITE
+    $(COPY) $(MODULESDIR)\ipmon.dll $(XWPRELEASE_MAIN)\plugins\xcenter
+    $(COPY) $(MODULESDIR)\ipmon.sym $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\d_cdfs.dll $(XWPRELEASE_MAIN)\plugins\drvdlgs
     $(COPY) $(MODULESDIR)\d_cdfs.sym $(XWPRELEASE_MAIN)\plugins\drvdlgs
     $(COPY) $(MODULESDIR)\xwHealth.dll $(XWPRELEASE_HEALTH)\plugins\xcenter

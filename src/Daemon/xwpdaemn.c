@@ -2584,7 +2584,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
             case XDM_ISTRANSIENTSTICKY:
                 // DosBeep(1000, 30);
-                _Pmpf(("IsTransientSticky called for HWND %08x", (HWND)mp1));
+                // _Pmpf(("IsTransientSticky called for HWND %08x", (HWND)mp1));
                 mrc = (MRESULT)pgrIsWindowTransientSticky((HWND)mp1);
             break;
 #endif

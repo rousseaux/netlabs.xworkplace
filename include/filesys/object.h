@@ -345,14 +345,6 @@
 
     BOOL objRemoveObjectHotkey(HOBJECT hobj);
 
-    /* ******************************************************************
-     *
-     *   Object menus
-     *
-     ********************************************************************/
-
-    BOOL objCopyObjectFileName(WPObject *somSelf, HWND hwndCnr, BOOL fCopyFullPath);
-
 #endif
 
 

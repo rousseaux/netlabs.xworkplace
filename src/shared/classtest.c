@@ -71,6 +71,7 @@
 #include <wprootf.h>                    // WPRootFolder
 #include <wpserver.h>                   // WPServer
 #include <wpshdir.h>                    // WPSharedDir
+#include <wpdisk.h>                     // WPDisk
 
 #include "shared\classtest.h"           // some cheap funcs for WPS class checks
 #include "filesys\object.h"             // XFldObject implementation
@@ -237,4 +238,18 @@ BOOL ctsDescendedFromSharedDir(SOMClass *pClassObject)
     return _somDescendedFrom(pClassObject, _WPSharedDir);
 }
 
+/*
+ *@@ ctsIsDisk:
+ *      returns TRUE if somSelf is a Disk
+ *      (of the WPDisk class).
+ *
+ *      WPDisk objects function as root folders.
+ *
+ *@@added V0.9.21 (2002-09-23) [pr]
+ */
+
+BOOL ctsIsDisk(WPObject *somSelf)
+{
+    return _somIsA(somSelf, _WPDisk);
+}
 
