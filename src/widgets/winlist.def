@@ -17,7 +17,7 @@
 ;
 
 LIBRARY WINLIST INITGLOBAL TERMGLOBAL
-Description '@#Ulrich M”ller:0.9.16#@ eWorkplace window-list plugin DLL'
+Description '@#Ulrich M”ller:0.9.16#@ XWorkplace window-list plugin DLL'
 PROTMODE
 
 DATA              MULTIPLE READWRITE LOADONCALL NONSHARED

@@ -82,6 +82,11 @@ $(OUTPUTDIR)\memdebug.obj \
 $(OUTPUTDIR)\shapewin.obj \
 $(OUTPUTDIR)\stringh.obj \
 $(OUTPUTDIR)\threads.obj \
+!ifdef XWP_DEBUG
+$(OUTPUTDIR)\nls.obj \
+$(OUTPUTDIR)\prfh.obj \
+$(OUTPUTDIR)\tree.obj \
+!endif
 $(OUTPUTDIR)\xstring.obj \
 $(XWP_OUTPUT_ROOT)\xwphook.lib
 

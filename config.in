@@ -58,8 +58,12 @@ XWPHELPERSDIR = xwphelpers
 # TKBASE: the main Toolkit directory.
 # This must be the parent of the "h" and "lib"
 # directories with the include files and libraries.
+!ifdef TK3BASE
+TKBASE = $(TK3BASE)
+!else
 !ifndef TKBASE
 TKBASE = D:\develop\Toolkit45
+!endif
 !endif
 
 # VACBASE: the main directory of your IBM

@@ -80,6 +80,8 @@ interface XFldDataFile : WPDataFile
      *
      */
 
+    wpRestoreState: override;
+
     wpDisplayMenu: override;
     wpFilterPopupMenu: override;
     wpModifyPopupMenu: override;
@@ -96,6 +98,7 @@ interface XFldDataFile : WPDataFile
 
     wpQueryAssociatedProgram: override;
 
+    wpQueryIcon: override;
     wpSetAssociatedFileIcon: override;
 
 #ifdef __PRIVATE__

@@ -29,6 +29,26 @@
 
     /* ******************************************************************
      *
+     *   Icon data handling
+     *
+     ********************************************************************/
+
+    APIRET icoBuildPtrHandle(PBYTE pbData,
+                             HPOINTER *phptr);
+
+    APIRET icoLoadICOFile(PCSZ pcszFilename,
+                          HPOINTER *phptr);
+
+    APIRET icoBuildPtrFromFEA2List(PFEA2LIST pFEA2List,
+                                   HPOINTER *phptr);
+
+    #ifdef DOSH_HEADER_INCLUDED
+        APIRET icoLoadExeIcon(PEXECUTABLE pExec,
+                              HPOINTER *phptr);
+    #endif
+
+    /* ******************************************************************
+     *
      *   Notebook callbacks (notebook.c) for new XFldObject "Icon" page
      *
      ********************************************************************/

@@ -1259,6 +1259,8 @@ MRESULT YwgtMenuEnd(HWND hwnd, MPARAM mp1, MPARAM mp2)
 /*
  *@@ YwgtContextMenu:
  *      implementation for WM_CONTEXTMENU in  in fnwpTrayWidget.
+ *
+ *@@changed V0.9.16 (2001-12-08) [umoeller]: "delete" wasn't disabled if there was only one tray
  */
 
 MRESULT YwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
@@ -1328,9 +1330,11 @@ MRESULT YwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
         WinEnableMenuItem(hwndContextMenu,
                           ID_CRMI_RENAMETRAY,
                           (fTrayValid));
-        WinEnableMenuItem(hwndContextMenu,
+        /* WinEnableMenuItem(hwndContextMenu,
                           ID_CRMI_REMOVETRAY,
                           (fTrayValid));
+            */      // wow, what was this doing in here?
+                    // V0.9.16 (2001-12-08) [umoeller]
     }
 
     // let default widget proc display context menu

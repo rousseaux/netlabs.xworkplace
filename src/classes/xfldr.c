@@ -2721,17 +2721,23 @@ SOM_Scope BOOL  SOMLINK xf_wpPopulate(XFolder *somSelf,
 
 /*
  *@@ wpRefresh:
- *      this method updates a folder; after doing
- *      this, we will also update the title of the
- *      window and maybe status bars.
+ *      this WPFileSystem method compares the internal
+ *      object data with the data on disk and refreshes
+ *      the object, if necessary.
+ *
+ *      See XWPFileSystem::wpRefresh for details.
+ *
+ *      The WPFolder override apparently recurses into
+ *      subfolders as well.
  *
  *      Note that this method normally does _not_
  *      get called on thread 1, but some other
  *      thread, so this better be thread-safe.
  */
 
-SOM_Scope BOOL  SOMLINK xf_wpRefresh(XFolder *somSelf, ULONG ulView,
-                                        PVOID pReserved)
+SOM_Scope BOOL  SOMLINK xf_wpRefresh(XFolder *somSelf,
+                                     ULONG ulView,
+                                     PVOID pReserved)
 {
     BOOL        rc;
 
@@ -3723,7 +3729,7 @@ SOM_Scope void  SOMLINK xfM_wpclsInitData(M_XFolder *somSelf)
 
             // create the standard GEA2LIST for turbo populate
             // V0.9.16 (2001-10-28) [umoeller]
-            fdrCreateStandardGEAList();     // fdrcontent.c
+            fsysCreateStandardGEAList();     // filesys.c
         }
 
         krnUnlock();

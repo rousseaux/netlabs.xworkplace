@@ -19,6 +19,7 @@
             // THIS NAME MUST NOT BE CHANGED, fafner relies on this
 
     // PM window class name for XCenter client (needed by XWPDaemon)
+    #define WC_XCENTER_FRAME      "XWPCenterFrame"
     #define WC_XCENTER_CLIENT     "XWPCenterClient"
 
     /*

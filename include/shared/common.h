@@ -74,8 +74,9 @@
      *
      ********************************************************************/
 
-    #define FOPSERR_FIRST_CODE 30000
-    #define XCENTER_FIRST_CODE 31000
+    #define FOPSERR_FIRST_CODE  30000
+    #define XCENTER_FIRST_CODE  31000
+    #define ICONS_FIRST_CODE    32000
 
     #define FOPSERR_NOT_HANDLED_ABORT         (FOPSERR_FIRST_CODE + 1)
     #define FOPSERR_INVALID_OBJECT            (FOPSERR_FIRST_CODE + 2)
@@ -140,6 +141,12 @@
     #define XCERR_INVALID_SUBWIDGET_INDEX       (XCENTER_FIRST_CODE + 4)
 
     typedef unsigned long XCRET;
+
+    #define ICONERR_INVALID_OFFSET              (ICONS_FIRST_CODE + 1)
+    #define ICONERR_BUILDPTR_FAILED             (ICONS_FIRST_CODE + 2)
+    #define ICONERR_EXPANDPAGE1_TOOSMALL        (ICONS_FIRST_CODE + 3)
+    #define ICONERR_EXPANDPAGE1_OUTOFBOUND      (ICONS_FIRST_CODE + 4)
+    #define ICONERR_BAD_COMPRESSED_PAGE         (ICONS_FIRST_CODE + 5)
 
     /********************************************************************
      *
@@ -1331,6 +1338,14 @@
                                   ULONG cDlgItems);
     #endif
 
+    /* ******************************************************************
+     *
+     *   Pointers
+     *
+     ********************************************************************/
+
+    HPOINTER cmnLoadPointer(ULONG idResource);
+
     /********************************************************************
      *
      *   XFolder Global Settings
@@ -1664,9 +1679,17 @@
     ULONG XWPENTRY cmnDosErrorMsgBox(HWND hwndOwner,
                                      CHAR cDrive,
                                      PCSZ pcszTitle,
+                                     PCSZ pcszPrefix,
                                      APIRET arc,
+                                     PCSZ pcszSuffix,
                                      ULONG ulFlags,
                                      BOOL fShowExplanation);
+
+    #ifdef SOM_WPObject_h
+        ULONG cmnProgramErrorMsgBox(HWND hwndOwner,
+                                    WPObject *pProgram,
+                                    APIRET arc);
+    #endif
 
     PSZ XWPENTRY cmnTextEntryBox(HWND hwndOwner,
                                  const char *pcszTitle,

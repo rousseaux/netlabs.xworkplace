@@ -49,7 +49,7 @@ interface XFldProgramFile : WPProgramFile
     ULONG xwpAddModulePage(in HWND hwndNotebook);
     ULONG xwpAddAssociationsPage(in HWND hwndNotebook);
 
-    ULONG xwpQueryProgType();
+    ULONG xwpQueryProgType(in PVOID pvExec);
 
     BOOL xwpQuerySetup2(in PVOID pstrSetup);
 
@@ -70,8 +70,8 @@ interface XFldProgramFile : WPProgramFile
      *
      */
 
-    externalprefix = xfpgmf_;
-    externalstem = xfpgmf;
+    externalprefix = xpgf_;
+    externalstem = xpgf;
     majorversion = 1;
     minorversion = 1;
     filestem = xfpgmf;           //# specifies the filestem for sc-generated files
@@ -84,11 +84,15 @@ interface XFldProgramFile : WPProgramFile
      *
      */
 
-    HPOINTER    hptrThis;        // set by wpSetIcon
-    BOOL        fProgIconSet;    // TRUE if the current icon was set
-                                 // using wpSetProgIcon
     ULONG       ulDosAppType;    // return value from DosQueryAppType
     ULONG       ulAppType;       // XFPGMF_* flag
+
+    // pointers into WPProgramFile instance data
+    PULONG      pulStartupDirHandle;        // 16-bit file-system handle for startup dir
+    PPROGTYPE   pProgType;
+    PSZ         *ppszStartupDir;
+    PSZ         *ppszEnvironment;
+    PSWP        pswpInitial;
 
     /*
      * WPProgramFile methods overridden by XFldProgramFile:
@@ -98,14 +102,15 @@ interface XFldProgramFile : WPProgramFile
     wpInitData: override;
     wpObjectReady: override;
 
-    wpQueryStyle: override;
+    wpRestoreState: override;
+    wpRestoreData: override;
 
-    wpSetIcon: override;
     wpSetProgIcon: override;
 
     wpSetAssociationType: override;
 
     wpQueryDefaultView: override;
+    wpQueryProgDetails: override;
 
     wpAddProgramAssociationPage: override;
     wpAddProgramPage: override;
@@ -143,9 +148,9 @@ interface M_XFldProgramFile : M_WPProgramFile
      *
      */
 
-    externalprefix = xfpgmfM_;
-    externalstem = xfpgmfM;
-    functionprefix = xfpgmfM_;
+    externalprefix = xpgfM_;
+    externalstem = xpgfM;
+    functionprefix = xpgfM_;
     majorversion = 1;
     minorversion = 1;
     filestem = xfpgmf;           //# specifies the filestem for sc-generated files

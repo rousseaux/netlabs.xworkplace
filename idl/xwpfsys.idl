@@ -75,6 +75,8 @@ interface XWPFileSystem : WPFileSystem
 
     PSZ         pszUpperRealName;
 
+    ULONG       ulCnrRefresh;
+
     /*
      * The following is forced into the .H file:
      *
@@ -89,7 +91,13 @@ interface XWPFileSystem : WPFileSystem
     wpUnInitData: override;
     wpObjectReady: override;
 
+    wpOpen: override;
+
     wpSetTitleAndRenameFile: override;
+
+    wpRefresh: override;
+
+    wpCnrRefreshDetails: override;
 
 #ifdef __PRIVATE__
 
@@ -138,6 +146,7 @@ interface M_XWPFileSystem : M_WPFileSystem
     wpclsInitData: override;
 
     wpclsQueryAwakeObject: override;
+    wpclsFileSysExists: override;
 
   };
 #endif /* __SOMIDL__ */

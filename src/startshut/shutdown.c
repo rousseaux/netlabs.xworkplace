@@ -2247,7 +2247,7 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
             }
 
-            doshExecClose(pExec);
+            doshExecClose(&pExec);
         }
 
 #ifndef __EASYSHUTDOWN__

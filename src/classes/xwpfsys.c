@@ -186,6 +186,7 @@ SOM_Scope void  SOMLINK xfs_wpInitData(XWPFileSystem *somSelf)
 
     _ulHandle = 0;
     _pszUpperRealName = NULL;
+    _ulCnrRefresh = -1;
 }
 
 /*
@@ -227,6 +228,63 @@ SOM_Scope void  SOMLINK xfs_wpObjectReady(XWPFileSystem *somSelf,
 
     XWPFileSystem_parent_WPFileSystem_wpObjectReady(somSelf,
                                                     ulCode, refObject);
+}
+
+/*
+ *@@ wpOpen:
+ *      this WPObject instance method gets called when
+ *      a new view needs to be opened. Normally, this
+ *      gets called after wpViewObject has scanned the
+ *      object's USEITEMs and has determined that a new
+ *      view is needed.
+ *
+ *      This _normally_ runs on thread 1 of the WPS, but
+ *      this is not always the case. If this gets called
+ *      in response to a menu selection from the "Open"
+ *      submenu or a double-click in the folder, this runs
+ *      on the thread of the folder (which _normally_ is
+ *      thread 1). However, if this results from WinOpenObject
+ *      or an OPEN setup string, this will not be on thread 1.
+ *
+ *      We check for OPEN_SETTINGS here because
+ *      WPFileSystem::wpOpen evilly refreshes the file-system
+ *      data under our back and keeps nuking our replacement
+ *      icons. As a result, we call our refresh replacement
+ *      instead.
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+SOM_Scope HWND  SOMLINK xfs_wpOpen(XWPFileSystem *somSelf, HWND hwndCnr,
+                                   ULONG ulView, ULONG param)
+{
+    XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
+    XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpOpen");
+
+    if (ulView == OPEN_SETTINGS)
+    {
+        somTD_WPObject_wpOpen pwpOpen;
+
+        // now call the WPObject method by skipping the WPFileSystem
+        // implementation
+        if (pwpOpen = (somTD_WPObject_wpOpen)wpshResolveFor(
+                                     somSelf,
+                                     _WPObject,     // class to resolve for
+                                     "wpOpen"))
+        {
+            // this allows us to replace the method, dammit
+            _wpRefresh(somSelf,
+                       NULLHANDLE,      // view
+                       NULL);           // reserved
+
+            return pwpOpen(somSelf, hwndCnr, ulView, param);
+        }
+    }
+
+    return (XWPFileSystem_parent_WPFileSystem_wpOpen(somSelf,
+                                                     hwndCnr,
+                                                     ulView,
+                                                     param));
 }
 
 /*
@@ -293,6 +351,69 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetTitleAndRenameFile(XWPFileSystem *somSelf,
     return (XWPFileSystem_parent_WPFileSystem_wpSetTitleAndRenameFile(somSelf,
                                                                       pszNewTitle,
                                                                       fConfirmations));
+}
+
+
+/*
+ *@@ wpRefresh:
+ *      this WPFileSystem method compares the internal
+ *      object data with the data on disk and refreshes
+ *      the object, if necessary.
+ *
+ *      The original WPFileSystem implementation is truly
+ *      evil. It keeps nuking icons behind our back, for
+ *      example. As a result, this has now been rewritten
+ *      with V0.9.16.
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfs_wpRefresh(XWPFileSystem *somSelf,
+                                      ULONG ulView, PVOID pReserved)
+{
+    XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
+    XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpRefresh");
+
+    if (cmnIsFeatureEnabled(IconReplacements))
+    {
+        fsysRefresh(somSelf, pReserved);
+    }
+
+    return (XWPFileSystem_parent_WPFileSystem_wpRefresh(somSelf,
+                                                        ulView,
+                                                        pReserved));
+}
+
+
+/*
+ *@@ wpCnrRefreshDetails:
+ *      this WPObject instance method causes all currently visible
+ *      RECORDCORE structures to  be refreshed with the current
+ *      object details. Unfortunately, this gets called way too
+ *      often during wpRefresh, so we hack this a little bit
+ *      to avoid flickering details views.
+ *
+ *      The way this works is that our wpInitData sets the instance
+ *      variable _ulCnrRefresh to -1, meaning that we should always
+ *      call the parent. If that is != -1, we simply do not call
+ *      the parent, but raise the variable by 1;
+ *      this way we can count pending changes during wpRefresh and
+ *      then reset the variable to -1 and call this explicitly.
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xfs_wpCnrRefreshDetails(XWPFileSystem *somSelf)
+{
+    XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
+    XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpCnrRefreshDetails");
+
+    if (_ulCnrRefresh == -1)
+        XWPFileSystem_parent_WPFileSystem_wpCnrRefreshDetails(somSelf);
+    else
+        // just count, we're in wpRefresh
+        (_ulCnrRefresh)++;
+
 }
 
 
@@ -392,5 +513,35 @@ SOM_Scope WPObject*  SOMLINK xfsM_wpclsQueryAwakeObject(M_XWPFileSystem *somSelf
 
     return (M_XWPFileSystem_parent_M_WPFileSystem_wpclsQueryAwakeObject(somSelf,
                                                                         pszInputPath));
+}
+
+
+/*
+ *@@ wpclsFileSysExists:
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+SOM_Scope WPObject*  SOMLINK xfsM_wpclsFileSysExists(M_XWPFileSystem *somSelf,
+                                                     WPFolder* Folder,
+                                                     PSZ pszFilename,
+                                                     ULONG attrFile)
+{
+    /* M_XWPFileSystemData *somThis = M_XWPFileSystemGetData(somSelf); */
+    M_XWPFileSystemMethodDebug("M_XWPFileSystem","xfsM_wpclsFileSysExists");
+
+    /* if (    (cmnIsFeatureEnabled(TurboFolders))
+            // we can't handle UNC yet
+         && (pszInputPath[0] != '\\')
+         && (pszInputPath[1] != '\\')
+       )
+    */
+
+    // @@todo!!
+
+    return (M_XWPFileSystem_parent_M_WPFileSystem_wpclsFileSysExists(somSelf,
+                                                                     Folder,
+                                                                     pszFilename,
+                                                                     attrFile));
 }
 

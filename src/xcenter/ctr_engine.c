@@ -64,6 +64,7 @@
 #define INCL_WINSYS
 #define INCL_WINTIMER
 #define INCL_WINMENUS
+#define INCL_WINSWITCHLIST
 
 #define INCL_GPIPRIMITIVES
 #define INCL_GPILOGCOLORTABLE
@@ -3069,17 +3070,11 @@ BOOL SetWidgetSize(PXCENTERWINDATA pXCenterData,
  *@@ FrameCommand:
  *      implementation for WM_COMMAND in fnwpXCenterMainFrame.
  *      This handles "Close" and "Add widget" items.
- *
- *      Returns TRUE if the msg was processed. On FALSE,
- *      the parent winproc should be called.
  */
 
-BOOL FrameCommand(HWND hwnd, USHORT usCmd)
+VOID FrameCommand(HWND hwnd, USHORT usCmd)
 {
-    BOOL                fProcessed = TRUE;
     PXCENTERWINDATA     pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
-    // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
-    // XCenterData         *somThis = XCenterGetData(pXCenterData->somSelf);
 
     switch (usCmd)
     {
@@ -3101,12 +3096,12 @@ BOOL FrameCommand(HWND hwnd, USHORT usCmd)
             }
             else
                 // some other command (probably WPS menu items):
-                fProcessed = FALSE;
+                _wpMenuItemSelected(pXCenterData->somSelf,
+                                    NULLHANDLE,     // frame
+                                    usCmd);
         }
         break;
     }
-
-    return (fProcessed);
 }
 
 /*
@@ -3193,8 +3188,8 @@ BOOL FrameTimer(HWND hwnd,
                                 pXCenterData->cyFrame,
                                 SWP_MOVE | SWP_SIZE | SWP_SHOW | SWP_ZORDER);
             }
-
-        break; } // case TIMERID_UNFOLDFRAME
+        }
+        break; // case TIMERID_UNFOLDFRAME
 
         /*
          * TIMERID_SHOWWIDGETS:
@@ -3229,7 +3224,8 @@ BOOL FrameTimer(HWND hwnd,
                 // start auto-hide now
                 StartAutoHide(pXCenterData);
             }
-        break; }
+        }
+        break;
 
         /*
          * TIMERID_AUTOHIDE_START:
@@ -3349,7 +3345,8 @@ BOOL FrameTimer(HWND hwnd,
                             pXCenterData->cxFrame,
                             pXCenterData->cyFrame,
                             SWP_MOVE | SWP_SIZE | SWP_SHOW /* | SWP_ZORDER */ );
-        break; }
+        }
+        break;
 
         default:
             // other timer:
@@ -3423,16 +3420,20 @@ VOID FrameDestroy(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *
  *      See fnwpXCenterMainClient for an overview.
  *
- *      This window proc is used for subclassing the
- *      regular PM WC_FRAME which is created for the
- *      XCenter view in ctrpCreateXCenterView. The
- *      original WC_FRAME window proc is stored in
- *      the XCenter view's XCENTERWINDATA, which
- *      in turn resides in the frame's QWL_USER.
+ *      Before V0.9.16, we were using an actual WC_FRAME
+ *      window which was then subclassed with this. This
+ *      has changed with V0.9.16: we now register our
+ *      own private class, and this is its window procedure.
+ *      This is because the XCenter keeps getting activated
+ *      if it's a frame, and this we don't want. We can't
+ *      use one of the other system classes (as WarpCenter
+ *      does with WC_BUTTON) because we need the CS_CLIPSIBLINGS
+ *      class style also. So here we go.
  *
  *      The frame is really not visible because it
  *      is completely covered by the client. But the
- *      WPS requires us to use a WC_FRAME for the view.
+ *      WPS requires us to have some window which has an
+ *      FID_CLIENT.
  *
  *@@changed V0.9.7 (2001-01-19) [umoeller]: fixed active window bugs
  *@@changed V0.9.9 (2001-02-06) [umoeller]: fixed WM_CLOSE problems on wpClose
@@ -3453,6 +3454,20 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
     {
         switch (msg)
         {
+            /*
+             * WM_CREATE:
+             *      get XCENTERDATA from WinCreateWindow.
+             *      This is required now that we have our
+             *      own window class.
+             *
+             * added V0.9.16 (2001-12-08) [umoeller]
+             */
+
+            case WM_CREATE:
+                WinSetWindowPtr(hwnd, QWL_USER, mp1);       // XCENTERDATA
+                mrc = (MPARAM)FALSE;        // continue creation
+            break;
+
             /*
              * WM_SYSCOMMAND:
              *      we must intercept this; since we don't have
@@ -3534,7 +3549,8 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
                         mp1,
                         pcsz,
                         mrc));
-            break; }
+            }
+            break;
             */
 
             /*
@@ -3633,6 +3649,56 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
                     mrc = (MPARAM)HT_ERROR;
             break;
 
+            case WM_BUTTON1DOWN:
+            case WM_BUTTON1UP:
+            case WM_BUTTON1CLICK:
+            case WM_BUTTON1DBLCLK:
+            case WM_BUTTON1MOTIONSTART:
+            case WM_BUTTON1MOTIONEND:
+            case WM_BUTTON2DOWN:
+            case WM_BUTTON2UP:
+            case WM_BUTTON2CLICK:
+            case WM_BUTTON2DBLCLK:
+            case WM_BUTTON2MOTIONSTART:
+            case WM_BUTTON2MOTIONEND:
+            case WM_BUTTON3DOWN:
+            case WM_BUTTON3UP:
+            case WM_BUTTON3CLICK:
+            case WM_BUTTON3DBLCLK:
+            case WM_BUTTON3MOTIONSTART:
+            case WM_BUTTON3MOTIONEND:
+                mrc = (MPARAM)TRUE;
+            break;
+
+            case WM_PAINT:
+            {
+                HPS hps = WinBeginPaint(hwnd, NULLHANDLE, NULL);
+                WinEndPaint(hps);
+            }
+            break;
+
+            /*
+             * WM_WINDOWPOSCHANGED:
+             *      the WC_FRAME used to adjust the client
+             *      for us, but this is no longer so (V0.9.16).
+             *      So do this manually now.
+             */
+
+            case WM_WINDOWPOSCHANGED:
+            {
+                PSWP pswp = (PSWP)mp1;
+                WinSetWindowPos(WinWindowFromID(hwnd, FID_CLIENT),
+                                HWND_TOP,
+                                0,
+                                0,
+                                pswp->cx,
+                                pswp->cy,
+                                SWP_MOVE | SWP_SIZE | SWP_ZORDER);
+            }
+            break;
+
+
+
             /*
              * WM_ACTIVATE:
              *      we must swallow this because we _never_
@@ -3664,9 +3730,7 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
              */
 
             case WM_COMMAND:
-                if (!FrameCommand(hwnd, (USHORT)mp1))
-                    // not processed:
-                    fCallDefault = TRUE;
+                FrameCommand(hwnd, (USHORT)mp1);
             break;
 
             /*
@@ -4330,12 +4394,9 @@ BOOL ClientSaveSetup(HWND hwndClient,
             // got the settings:
             PPRIVATEWIDGETSETTING pSetting = (PPRIVATEWIDGETSETTING)pSettingsNode->pItemData;
 
-            if (pSetting->Public.pszSetupString)
-                // we already had a setup string:
-                free(pSetting->Public.pszSetupString);
-
-            pSetting->Public.pszSetupString = strhdup(pcszSetupString, NULL);
-                                // can be NULL
+            strhStore(&pSetting->Public.pszSetupString,
+                      pcszSetupString,      // can be NULL
+                      NULL);
 
             brc = TRUE;
 
@@ -4470,7 +4531,8 @@ MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
                                                           &G_pViewOver,
                                                           NULL);
                 mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
-            break; }
+            }
+            break;
 
             /*
              * WM_BUTTON1MOTIONSTART:
@@ -4567,7 +4629,8 @@ MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
             {
                 PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
                 SetWidgetSize(pXCenterData, (HWND)mp1, (ULONG)mp2);
-            break; }
+            }
+            break;
 
             case XCM_REFORMAT:
             {
@@ -4575,7 +4638,8 @@ MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
                 if (pXCenterData->fFrameFullyShown) // V0.9.9 (2001-02-08) [umoeller]
                     ctrpReformat(pXCenterData,
                                  (ULONG)mp1);       // flags
-            break; }
+            }
+            break;
 
             case XCM_SAVESETUP:
                 mrc = (MRESULT)ClientSaveSetup(hwnd, (HWND)mp1, (PSZ)mp2);
@@ -4591,7 +4655,8 @@ MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
                                        &pXCenterData->llWidgets,
                                        (PPRIVATEWIDGETSETTING)mp1,
                                        (ULONG)mp2);        // ulWidgetIndex
-            break; }
+            }
+            break;
 
             case XCM_DESTROYWIDGET:
                 // this msg is only used for destroying the window on the
@@ -5225,7 +5290,7 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
 
 void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
 {
-    BOOL fCreated = FALSE;
+    BOOL        fCreated = FALSE;
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)ptiMyself->ulData;
 
     /* #ifdef __DEBUG__
@@ -5240,6 +5305,10 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
 
         TRY_LOUD(excpt1)
         {
+            /* FRAMECDATA  fcdata = {0};
+            fcdata.cb            = sizeof(FRAMECDATA);
+            fcdata.flCreateFlags = FCF_NOBYTEALIGN; */
+
             // set priority to what user wants
             DosSetPriority(PRTYS_THREAD,
                            _ulPriorityClass,
@@ -5297,8 +5366,40 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
             RegisterOpenView(pXCenterData,
                              FALSE);            // no remove
 
+            pXCenterData->pfnwpFrameOrig = WinDefWindowProc;
+
             // now go create XCenter frame and client
-            pGlobals->hwndFrame
+            if (    (pGlobals->hwndFrame = WinCreateWindow(HWND_DESKTOP,    // parent
+                                                           WC_XCENTER_FRAME, // WC_BUTTON, // WC_FRAME,
+                                                           _wpQueryTitle(pXCenterData->somSelf),
+                                                           _ulWindowStyle,   // frame style
+                                                           swpFrame.x,
+                                                           swpFrame.y,
+                                                           swpFrame.cx,
+                                                           swpFrame.cy,
+                                                           NULLHANDLE,      // owner
+                                                           HWND_TOP,        // z-order
+                                                           0,               // ID
+                                                           pXCenterData,    // ctl data
+                                                           NULL))           // presparams
+                 && (pGlobals->hwndClient= WinCreateWindow(pGlobals->hwndFrame, // parent
+                                                           WC_XCENTER_CLIENT, // client class
+                                                           "",
+                                                           WS_VISIBLE,      // style
+                                                           0,
+                                                           0,
+                                                           swpFrame.cx,
+                                                           swpFrame.cy,
+                                                           pGlobals->hwndFrame,      // owner
+                                                           HWND_TOP,        // z-order
+                                                           FID_CLIENT,      // ID
+                                                           pXCenterData,    // ctl data
+                                                           NULL))           // presparams
+               )
+                // frame and client created:
+                fCreated = TRUE;
+
+            /* pGlobals->hwndFrame
                 = winhCreateStdWindow(HWND_DESKTOP, // frame's parent
                                       &swpFrame,
                                       FCF_NOBYTEALIGN,
@@ -5313,8 +5414,8 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                                             // out: client window
 
             if ((pGlobals->hwndFrame) && (pGlobals->hwndClient))
-                // frame and client created:
                 fCreated = TRUE;
+               */
         }
         CATCH(excpt1) {} END_CATCH();
 
@@ -5326,6 +5427,8 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
 
         if (fCreated)
         {
+            HSWITCH hsw2Remove = NULLHANDLE;
+
             // successful above:
             // protect the entire thread with the exception
             // handler while the XCenter is running
@@ -5381,10 +5484,14 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                                 pGlobals->hwndFrame,
                                 ENTITY_XCENTER);
 
+                hsw2Remove = WinQuerySwitchHandle(pGlobals->hwndFrame,
+                                                  doshMyPID());
+                        // V0.9.16 (2001-12-08) [umoeller]
+
                 // subclass the frame AGAIN (the WPS has subclassed it
                 // with wpRegisterView)
-                if (pXCenterData->pfnwpFrameOrig = WinSubclassWindow(pGlobals->hwndFrame,
-                                                                     fnwpXCenterMainFrame))
+                // if (pXCenterData->pfnwpFrameOrig = WinSubclassWindow(pGlobals->hwndFrame,
+                //                                                      fnwpXCenterMainFrame))
                 {
                     // subclassing succeeded:
                     QMSG qmsg;
@@ -5512,6 +5619,14 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                 }
                 CATCH(excpt1) {} END_CATCH();
             }
+
+            // if the switch list entry still exists, remove it;
+            // for some reason, since I have switched away from
+            // using WC_FRAME, these things are never removed
+            // V0.9.16 (2001-12-08) [umoeller]
+            if (hsw2Remove)
+                WinRemoveSwitchEntry(hsw2Remove);
+
         } // end if (fCreated)
 
         // _tid = NULLHANDLE;          // wpClose is waiting on this!!
@@ -5563,12 +5678,17 @@ HWND ctrpCreateXCenterView(XCenter *somSelf,
             if (!s_fXCenterClassRegistered)
             {
                 // get window proc for WC_FRAME
-                if (   (WinRegisterClass(hab,
-                                         WC_XCENTER_CLIENT,
-                                         fnwpXCenterMainClient,
-                                         CS_PARENTCLIP | CS_CLIPCHILDREN | CS_SIZEREDRAW | CS_SYNCPAINT,
-                                         sizeof(PXCENTERWINDATA))) // additional bytes to reserve
-                    && (RegisterBuiltInWidgets(hab))
+                if (    (WinRegisterClass(hab,
+                                          WC_XCENTER_FRAME,
+                                          fnwpXCenterMainFrame,
+                                          CS_CLIPSIBLINGS,
+                                          sizeof(PXCENTERWINDATA))) // additional bytes to reserve
+                     && (WinRegisterClass(hab,
+                                          WC_XCENTER_CLIENT,
+                                          fnwpXCenterMainClient,
+                                          CS_PARENTCLIP | CS_CLIPCHILDREN | CS_SIZEREDRAW | CS_SYNCPAINT,
+                                          sizeof(PXCENTERWINDATA))) // additional bytes to reserve
+                     && (RegisterBuiltInWidgets(hab))
                    )
                 {
                     s_fXCenterClassRegistered = TRUE;

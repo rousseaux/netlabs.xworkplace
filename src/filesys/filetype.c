@@ -1670,14 +1670,14 @@ WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,       // in: data file
             else
                 ulIndex = 0;
 
-            pAssocObjectNode = lstNodeFromIndex(pllAssocObjects,
-                                                ulIndex);
-            if (pAssocObjectNode)
+            if (pAssocObjectNode = lstNodeFromIndex(pllAssocObjects,
+                                                    ulIndex))
             {
                 pObjReturn = (WPObject*)pAssocObjectNode->pItemData;
                 // raise lock count on this object again (i.e. lock
                 // twice) because ftypFreeAssocsList unlocks each
-                // object on the list once
+                // object on the list once, and this one better
+                // stay locked
                 _wpLockObject(pObjReturn);
             }
         }
@@ -5043,6 +5043,7 @@ VOID ftypDatafileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,
  *      Reacts to changes of any of the dialog controls.
  *
  *@@added V0.9.9 (2001-03-27) [umoeller]
+ *@@changed V0.9.16 (2001-12-08) [umoeller]: now refreshing icon on changes
  */
 
 MRESULT ftypDatafileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -5074,6 +5075,10 @@ MRESULT ftypDatafileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                 : NULL,         // remove
                            0);
                 xstrClear(&str);
+
+                // refresh the icon, it might have changed
+                // V0.9.16 (2001-12-08) [umoeller]
+                _wpSetAssociatedFileIcon(pcnbp->somSelf);
             }
         break;
 
@@ -5086,6 +5091,9 @@ MRESULT ftypDatafileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 _wpSetType(pcnbp->somSelf, pdftp->pszTypesBackup, 0);
                 // call "init" callback to reinitialize the page
                 pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+                // refresh the icon, it might have changed
+                // V0.9.16 (2001-12-08) [umoeller]
+                _wpSetAssociatedFileIcon(pcnbp->somSelf);
             }
         }
         break;
@@ -5095,6 +5103,9 @@ MRESULT ftypDatafileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             _wpSetType(pcnbp->somSelf, NULL, 0);
             // call "init" callback to reinitialize the page
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            // refresh the icon, it might have changed
+            // V0.9.16 (2001-12-08) [umoeller]
+            _wpSetAssociatedFileIcon(pcnbp->somSelf);
         break;
 
     } // end switch (ulItemID)

@@ -50,6 +50,7 @@
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSRESOURCES
+#define INCL_DOSMODULEMGR
 #define INCL_DOSMISC
 #define INCL_DOSERRORS
 
@@ -111,7 +112,8 @@
 // headers in /hook
 #include "hook\xwphook.h"
 
-#include "filesys\icons.h"              // various file-system object implementation code
+#include "filesys\filesys.h"            // various file-system object implementation code
+#include "filesys\icons.h"              // icons handling
 #include "filesys\object.h"             // XFldObject implementation
 
 #include "config\hookintf.h"            // daemon/hook interface
@@ -120,6 +122,771 @@
 #include "helpers\undoc.h"              // some undocumented stuff
 #pragma hdrstop
 #include <wpshadow.h>                   // WPShadow
+
+/* ******************************************************************
+ *
+ *   Icon data handling
+ *
+ ********************************************************************/
+
+typedef HPOINTER APIENTRY WINBUILDPTRHANDLE(PBYTE pbData);
+typedef WINBUILDPTRHANDLE *PWINBUILDPTRHANDLE;
+
+/*
+ *@@ icoBuildPtrHandle:
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+APIRET icoBuildPtrHandle(PBYTE pbData,
+                         HPOINTER *phptr)
+{
+    APIRET      arc = NO_ERROR;
+    HPOINTER    hptr = NULLHANDLE;
+
+    static  PWINBUILDPTRHANDLE WinBuildPtrHandle = NULL;
+    BOOL    fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
+        {
+            if (!WinBuildPtrHandle)
+            {
+                // first call:
+                HMODULE hmod;
+                if (!(arc = DosQueryModuleHandle("PMMERGE",
+                                                 &hmod)))
+                    arc = DosQueryProcAddr(hmod,
+                                           5117,        // WinBuildPtrHandle (32-bit)
+                                           NULL,
+                                           (PFN*)&WinBuildPtrHandle);
+
+                if (arc)
+                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                           "Error %d resolving WinBuildPtrHandle.");
+            }
+
+            krnUnlock();
+            fLocked = FALSE;
+        }
+
+        if ( (!arc) && (!WinBuildPtrHandle))
+            arc = ERROR_INVALID_ORDINAL;
+
+        if (!arc)
+            if (!(*phptr = WinBuildPtrHandle(pbData)))
+                arc = ICONERR_BUILDPTR_FAILED;
+    }
+    CATCH(excpt1)
+    {
+        arc = ERROR_PROTECTION_VIOLATION;
+    } END_CATCH();
+
+    if (fLocked)
+        krnUnlock();
+
+    return (arc);
+}
+
+/*
+ *@@ icoLoadICOFile:
+ *      attempts to load the specified .ICO file
+ *      and turn it into a new HPOINTER.
+ *
+ *      If NO_ERROR is returned, *hptr receives
+ *      a newly allocated pointer handle.
+ *
+ *      Otherwise this returns:
+ *
+ *      --
+ *
+ *      plus the error codes of DosQueryModuleHandle,
+ *      DosQueryProcAddr.
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+APIRET icoLoadICOFile(PCSZ pcszFilename,
+                      HPOINTER *phptr)
+{
+    APIRET  arc = NO_ERROR;
+    PXFILE  pxf = NULL;
+    ULONG   cbFile = 0;
+
+    PBYTE   pbData = NULL;
+
+    TRY_LOUD(excpt1)
+    {
+        if (!(arc = doshOpen(pcszFilename,
+                             XOPEN_READ_EXISTING | XOPEN_BINARY,
+                             &cbFile,
+                             &pxf)))
+        {
+            if (!cbFile)
+                arc = ERROR_NO_DATA;
+            else
+            {
+                if (!(pbData = malloc(cbFile)))
+                    arc = ERROR_NOT_ENOUGH_MEMORY;
+                else
+                {
+                    ULONG ulDummy;
+                    if (!(arc = DosRead(pxf->hf,
+                                        pbData,
+                                        cbFile,
+                                        &ulDummy)))
+                    {
+                        // use this undocumented PM API to build the pointer
+                        // from the icon data directly, which is the
+                        // BITMAPARRAYHEADER normally
+                        if (!(arc = icoBuildPtrHandle(pbData,
+                                                      phptr)))
+                            /* _Pmpf((__FUNCTION__ ": built hptr %lX from %s",
+                                   *phptr,
+                                   pcszFilename))*/ ;
+                    }
+                }
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+        arc = ERROR_PROTECTION_VIOLATION;
+    } END_CATCH();
+
+    if (pbData)
+        free(pbData);
+
+    doshClose(&pxf);
+
+    /* if (arc)
+        _Pmpf((__FUNCTION__ ": returning %d for %s",
+               arc,
+               pcszFilename));
+       */
+    return (arc);
+}
+
+/*
+ *@@ icoBuildPtrFromFEA2List:
+ *      builds a pointer from the .ICON data in
+ *      the given FEA2LIST, if there's some.
+ *
+ *      Returns:
+ *
+ *      --  NO_ERROR: ptr was built.
+ *
+ *      --  ERROR_NO_DATA: no .ICON EA found.
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+APIRET icoBuildPtrFromFEA2List(PFEA2LIST pFEA2List,
+                               HPOINTER *phptr)
+{
+    APIRET arc = ERROR_NO_DATA;
+
+    PBYTE pbValue;
+    if (pbValue = fsysFindEAValue(pFEA2List,
+                                  ".ICON",
+                                  NULL))
+    {
+        // got something:
+        PUSHORT pusType = (PUSHORT)pbValue;
+        if (*pusType == EAT_ICON)
+        {
+            // next ushort has data length
+            PUSHORT pcbValue = pusType + 1;
+            if (*pcbValue)
+            {
+                PBYTE pbIconData = (PBYTE)(pcbValue + 1);
+                arc = icoBuildPtrHandle(pbIconData,
+                                        phptr);
+            }
+        }
+    }
+
+    return (arc);
+}
+
+// page flags (OBJECTPAGETABLEENTRY.o32_pageflags)
+#define VALID           0x0000                // Valid Physical Page in .EXE
+#define ITERDATA        0x0001                // Iterated Data Page
+#define INVALID         0x0002                // Invalid Page
+#define ZEROED          0x0003                // Zero Filled Page
+#define RANGE           0x0004                // Range of pages
+#define ITERDATA2       0x0005                // Iterated Data Page Type II
+
+/*
+ *@@ ExpandIterdata1:
+ *      expands a page compressed with the old exepack
+ *      method introduced with OS/2 2.0 (plain /EXEPACK).
+ *
+ *      (C) Knut Stange Osmundsen. Used with permission.
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+APIRET ExpandIterdata1(char *pabTarget,         // out: page data (pagesize as in lx spec)
+                       int cbTarget,            // in: sizeof *pabTarget (pagesize as in lx spec)
+                       const char *pabSource,   // in: compressed source data in EXEPACK:1 format
+                       int cbSource)            // in: sizeof *pabSource
+{
+    PLXITER             pIter = (PLXITER)pabSource;
+    // store the pointer for boundary checking
+    char                *pabTargetOriginal = pabTarget;
+
+    // validate size of data
+    if (cbSource >= cbTarget - 2)
+        return (ICONERR_EXPANDPAGE1_TOOSMALL);
+
+    // expand the page
+    while (    (pIter->LX_nIter)
+            && (cbSource > 0)
+          )
+    {
+        // check if we're out of bound
+        if (    pabTarget - pabTargetOriginal + pIter->LX_nIter * pIter->LX_nBytes > cbTarget
+             || cbSource <= 0
+           )
+            return ICONERR_EXPANDPAGE1_OUTOFBOUND;
+
+        if (pIter->LX_nBytes == 1)
+        {
+            // one databyte
+            memset(pabTarget, pIter->LX_Iterdata, pIter->LX_nIter);
+            pabTarget += pIter->LX_nIter;
+            cbSource -= 4 + 1;
+            pIter++;
+        }
+        else
+        {
+            int i;
+            for (i = pIter->LX_nIter;
+                 i > 0;
+                 i--, pabTarget += pIter->LX_nBytes)
+                memcpy(pabTarget, &pIter->LX_Iterdata, pIter->LX_nBytes);
+            cbSource -= 4 + pIter->LX_nBytes;
+            pIter   = (PLXITER)((char*)pIter + 4 + pIter->LX_nBytes);
+        }
+    }
+
+    // zero remaining part of the page
+    if (pabTarget - pabTargetOriginal < cbTarget)
+        memset(pabTarget, 0, cbTarget - (pabTarget - pabTargetOriginal));
+
+    return NO_ERROR;
+}
+
+/*
+ *@@ ExpandIterdata2:
+ *      expands a page compressed with the new exepack
+ *      method introduced with OS/2 Warp 3.0 (/EXEPACK:2).
+ *
+ *      (C) Knut Stange Osmundsen. Used with permission.
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+int ExpandIterdata2(char *pachPage,
+                    int cchPage,
+                    const char *pachSrcPage,
+                    int cchSrcPage)
+{
+    char *          pachDestPage = pachPage; /* Store the pointer for boundrary checking. */
+
+    while (cchSrcPage > 0)
+    {
+        switch (*pachSrcPage & 0x03)
+        {
+            case 0:
+            {
+                if (*pachSrcPage)
+                {
+                    int cch = *pachSrcPage >> 2;
+                    if (cchPage  < cch || cchSrcPage < cch + 1)
+                        return ICONERR_BAD_COMPRESSED_PAGE;
+                    memcpy(pachPage, pachSrcPage+1, cch);
+                    pachPage += cch, cchPage -= cch;
+                    pachSrcPage += cch + 1, cchSrcPage -= cch + 1;
+                    break;
+                }
+
+                if (cchSrcPage < 2)
+                    return ICONERR_BAD_COMPRESSED_PAGE;
+                else
+                {
+                    int cch = pachSrcPage[1];
+                    if (cch == 0)
+                    {
+                        pachSrcPage += 2, cchSrcPage -= 2;
+                        goto endloop;
+                    }
+                    if (cchSrcPage < 3 || cchPage < cch)
+                        return ICONERR_BAD_COMPRESSED_PAGE;
+                    memset(pachPage, pachSrcPage[2], cch);
+                    pachPage += cch, cchPage -= cch;
+                    pachSrcPage += 3, cchSrcPage -= 3;
+                }
+            }
+            break;
+
+            case 1:
+            {
+                if (cchSrcPage < 2)
+                    return ICONERR_BAD_COMPRESSED_PAGE;
+                else
+                {
+                    int off = *(unsigned short*)pachSrcPage >> 7;
+                    int cch1 = *pachSrcPage >> 2 & 3;
+                    int cch2 = (*pachSrcPage >> 4 & 7) + 3;
+                    pachSrcPage += 2, cchSrcPage -= 2;
+                    if (cchSrcPage < cch1 || cchPage < cch1 + cch2 || pachPage + cch1 - off < pachDestPage)
+                        return ICONERR_BAD_COMPRESSED_PAGE;
+                    memcpy(pachPage, pachSrcPage, cch1);
+                    pachPage += cch1, cchPage -= cch1;
+                    pachSrcPage += cch1, cchSrcPage -= cch1;
+                    memcpy(pachPage, pachPage - off, cch2);
+                    pachPage += cch2, cchPage -= cch2;
+                }
+            }
+            break;
+
+            case 2:
+            {
+                if (cchSrcPage < 2)
+                    return ICONERR_BAD_COMPRESSED_PAGE;
+                else
+                {
+                    int off  = *(unsigned short*)pachSrcPage >> 4;
+                    int cch1 = (*pachSrcPage >> 2 & 3) + 3;
+                    if (cchPage < cch1 || pachPage - off < pachDestPage)
+                        return ICONERR_BAD_COMPRESSED_PAGE;
+                    memcpy(pachPage,  pachPage - off, cch1);
+                    pachPage += cch1, cchPage -= cch1;
+                    pachSrcPage += 2, cchSrcPage -= 2;
+                }
+            }
+            break;
+
+            case 3:
+            {
+                if (cchSrcPage < 3)
+                    return ICONERR_BAD_COMPRESSED_PAGE;
+                else
+                {
+                    int cch1 = *(unsigned short*)pachSrcPage >> 2 & 0x000f;
+                    int cch2 = *(unsigned short*)pachSrcPage >> 6 & 0x003f;
+                    int off  = *(unsigned short*)(pachSrcPage+1) >> 4;
+                    pachSrcPage += 3, cchSrcPage -= 3;
+                    if (cchSrcPage < cch1 || cchPage < cch1 + cch2 || pachPage - off + cch1 < pachDestPage)
+                        return ICONERR_BAD_COMPRESSED_PAGE;
+                    memcpy(pachPage, pachSrcPage, cch1);
+                    pachPage += cch1, cchPage -= cch1;
+                    pachSrcPage += cch1, cchSrcPage -= cch1;
+                    memcpy(pachPage, pachPage - off, cch2);
+                    pachPage += cch2, cchPage -= cch2;
+                }
+            }
+            break;
+        }
+    }
+
+endloop:;
+    /*
+     * Zero the rest of the page.
+     */
+    if (cchPage > 0)
+        memset(pachPage, 0, cchPage);
+
+    return 0;
+}
+
+/*
+ *@@ GetOfsFromPageTableIndex:
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+APIRET GetOfsFromPageTableIndex(PEXECUTABLE pExec,     // in: executable from doshExecOpen
+                                ULONG ulObjPageTblIndexThis,
+                                PULONG pulFlags,
+                                PULONG pulSize,
+                                PULONG pulPageOfs)      // out: page ofs (add pLXHeader->ulDataPagesOfs to this)
+{
+    OBJECTPAGETABLEENTRY *pObjPageTblEntry;
+
+    PLXHEADER       pLXHeader = pExec->pLXHeader;
+
+    if (ulObjPageTblIndexThis - 1 >= pLXHeader->ulPageCount)
+        return ICONERR_INVALID_OFFSET;
+
+    pObjPageTblEntry = &pExec->pObjPageTbl[ulObjPageTblIndexThis - 1];
+
+    // page offset: shift left by what was specified in LX header
+    *pulPageOfs     =    pObjPageTblEntry->o32_pagedataoffset
+                      << pLXHeader->ulPageLeftShift;
+    *pulFlags       = pObjPageTblEntry->o32_pageflags;
+    *pulSize        = pObjPageTblEntry->o32_pagesize;
+
+    return NO_ERROR;
+}
+
+
+/*
+ *@@ LoadCompressedResourcePages:
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+APIRET LoadCompressedResourcePages(PEXECUTABLE pExec,     // in: executable from doshExecOpen
+                                   RESOURCETABLEENTRY *pRsEntry,  // in: resource table entry for this res
+                                   ULONG ulType,          // in: page type of first page
+                                   PBYTE *ppbResData)    // out: icon data (use DosFreeMem)
+{
+    APIRET  arc = NO_ERROR;
+    PBYTE   pabCompressed = NULL;
+
+    #define PAGESHIFT  12
+
+    TRY_LOUD(excpt1)
+    {
+        PLXHEADER       pLXHeader = pExec->pLXHeader;
+
+        // alloc buffer for compressed data from disk
+        if (!(pabCompressed = malloc(pLXHeader->ulPageSize + 4)))
+            arc = ERROR_NOT_ENOUGH_MEMORY;
+        else
+        {
+            ULONG   ul,
+                    cPages,
+                    cbAlloc;
+
+            OBJECTTABLEENTRY *pObjTblEntry = &pExec->pObjTbl[pRsEntry->obj - 1];
+
+            ULONG   ulObjPageTblIndex =   pObjTblEntry->o32_pagemap
+                                        + (pRsEntry->offset >> PAGESHIFT);
+
+            cPages =   (pRsEntry->cb + pLXHeader->ulPageSize - 1)
+                     / pLXHeader->ulPageSize;
+
+            if (!(arc = doshAllocArray(cPages,
+                                       pLXHeader->ulPageSize,
+                                       ppbResData,
+                                       &cbAlloc)))
+            {
+                // current output pointer: start with head of
+                // buffer, this is advanced by the page size
+                // for each page that was decompressed
+                PBYTE pbCurrent = *ppbResData;
+
+                for (ul = 0;
+                     ul < cPages;
+                     ul++)
+                {
+                    ULONG   ulFlags2,       // page flags... we ignore this and use
+                                            // the flags from the first page always
+                                            // (given to us in ulType)
+                            ulSize,         // size of this page (and bytes read)
+                            ulOffset;       // offset of this page in exe
+
+                    if (!(arc = GetOfsFromPageTableIndex(pExec,
+                                                         ulObjPageTblIndex + ul,
+                                                         &ulFlags2,
+                                                         &ulSize,
+                                                         &ulOffset)))
+                    {
+                        // resources are in data pages
+                        ulOffset += pLXHeader->ulDataPagesOfs;
+
+                        // now go read this compressed page
+                        if (!(arc = doshReadAt(pExec->hfExe,
+                                               ulOffset,
+                                               FILE_BEGIN,
+                                               &ulSize,
+                                               pabCompressed)))
+                        {
+                            // terminate the buf for decompress
+                            memset(pabCompressed + ulSize,
+                                   0,
+                                   4);
+
+                            if (ulType == ITERDATA)
+                                // OS/2 2.x:
+                                arc = ExpandIterdata1(pbCurrent,
+                                                      pLXHeader->ulPageSize,
+                                                      pabCompressed,
+                                                      ulSize);            // this page's size
+                            else
+                                // Warp 3:
+                                arc = ExpandIterdata2(pbCurrent,
+                                                      pLXHeader->ulPageSize,
+                                                      pabCompressed,
+                                                      ulSize);            // this page's size
+
+                            if (!arc)
+                                pbCurrent += pLXHeader->ulPageSize;
+                            else
+                                break;
+                        }
+                        else
+                            break;
+                    }
+                    else
+                        break;
+
+                } // end for
+
+                if (arc)
+                    free(*ppbResData);
+
+            } // end if (!(*ppbResData = malloc(...
+        }
+    }
+    CATCH(excpt1)
+    {
+        arc = ERROR_PROTECTION_VIOLATION;
+    } END_CATCH();
+
+    _Pmpf((__FUNCTION__ ": returning %d", arc));
+
+    if (pabCompressed)
+        free(pabCompressed);
+
+    return (arc);
+}
+
+/*
+ *@@ LoadLXResource:
+ *      attempts to load the data of the resource
+ *      with the specified type and id.
+ *
+ *      If idResource == 0, the first resource of
+ *      the specified type is loaded.
+ *
+ *      If NO_ERROR is returned, *ppbResData receives
+ *      a new buffer with the icon data. The caller
+ *      must free() that buffer.
+ *
+ *      Otherwise this returns:
+ *
+ *      --  ERROR_NO_DATA: resource not found.
+ *
+ *      --  ERROR_BAD_FORMAT: cannot handle resource format.
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+APIRET LoadLXResource(PEXECUTABLE pExec,     // in: executable from doshExecOpen
+                      ULONG ulType,          // in: RT_* type (e.g. RT_POINTER)
+                      ULONG idResource,      // in: resource ID or 0 for first
+                      PBYTE *ppbResData)     // out: icon data (to be free()'d)
+{
+    APIRET          arc = NO_ERROR;
+    ULONG           cResources = 0;
+    PFSYSRESOURCE   paResources = NULL;
+
+    ULONG           ulNewHeaderOfs = 0; // V0.9.12 (2001-05-03) [umoeller]
+
+    PLXHEADER       pLXHeader = pExec->pLXHeader;
+
+    if (pExec->pDosExeHeader)
+        // executable has DOS stub: V0.9.12 (2001-05-03) [umoeller]
+        ulNewHeaderOfs = pExec->pDosExeHeader->ulNewHeaderOfs;
+
+    if (!(cResources = pExec->pLXHeader->ulResTblCnt))
+        // no resources at all:
+        return (ERROR_NO_DATA);
+
+    if (!pExec->fLXMapsLoaded)
+        arc = doshLoadLXMaps(pExec);
+
+    if (!arc)
+    {
+        // alright, we're in:
+
+        // run thru the resources
+        BOOL fPtrFound = FALSE;
+
+        ULONG i;
+        for (i = 0;
+             i < cResources;
+             i++)
+        {
+            // ptr to resource table entry
+            RESOURCETABLEENTRY *pRsEntry = &pExec->pRsTbl[i];
+
+            // check resource type and ID
+            if (    (pRsEntry->type == ulType)
+                 && (    (idResource == 0)
+                      || (idResource == pRsEntry->name)
+                    )
+               )
+            {
+                // hooray
+
+                // here comes the sick part...
+                if (pRsEntry->obj - 1 >= pLXHeader->ulObjCount)
+                    arc = ICONERR_INVALID_OFFSET;
+                else
+                {
+                    // 1) get the object table entry from the object no. in
+                    //    the resource tbl entry
+                    OBJECTTABLEENTRY *pObjTblEntry = &pExec->pObjTbl[pRsEntry->obj - 1];
+                    // 2) from that, get the object _page_ table index
+                    ULONG ulObjPageTblIndex = pObjTblEntry->o32_pagemap;
+                    ULONG ulFlags,
+                          ulSize,
+                          ulOffset;
+
+                    if (!(arc = GetOfsFromPageTableIndex(pExec,
+                                                         ulObjPageTblIndex,
+                                                         &ulFlags,
+                                                         &ulSize,
+                                                         &ulOffset)))
+                    {
+                        ulOffset +=   pLXHeader->ulDataPagesOfs
+                                    + pRsEntry->offset;
+
+                        _Pmpf(("  found RT_POINTER %d, ofs %d, type %s",
+                                pRsEntry->name,
+                                ulOffset,
+                                (ulFlags == 0x0001) ? "ITERDATA"
+                                : (ulFlags == 0x0005) ? "ITERDATA2"
+                                : "uncompressed"));
+
+                        switch (ulFlags)
+                        {
+                            case ITERDATA:
+                                // compressed in OS/2 2.x format:
+                            case ITERDATA2:
+                                if (!(arc = LoadCompressedResourcePages(pExec,
+                                                                        pRsEntry,
+                                                                        ulFlags,
+                                                                        ppbResData)))
+                                    fPtrFound = TRUE;
+                            break;
+
+                            case VALID:
+                            {
+                                // uncompressed
+                                ULONG cb = pRsEntry->cb;        // resource size
+                                PBYTE pb;
+                                if (!(*ppbResData = malloc(cb)))
+                                    arc = ERROR_NOT_ENOUGH_MEMORY;
+                                else
+                                {
+                                    if (!(arc = doshReadAt(pExec->hfExe,
+                                                           ulOffset,
+                                                           FILE_BEGIN,
+                                                           &cb,
+                                                           *ppbResData)))
+                                        fPtrFound = TRUE;
+                                    else
+                                        // error reading:
+                                        free(*ppbResData);
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (fPtrFound || arc)
+                break;
+
+        } // end for
+
+        if ((!fPtrFound) && (!arc))
+            arc = ERROR_NO_DATA;
+    }
+
+    return (arc);
+}
+
+/*
+ *@@ icoLoadExeIcon:
+ *      smarter replacement for WinLoadFileIcon, which
+ *      takes ages on PE executables.
+ *
+ *      Note that as opposed to WinLoadFileIcon, this
+ *      is intended for executables _only_. This does
+ *      not check for an .ICO file in the same directory;
+ *      instead, this will try to find a default icon
+ *      in the resources.
+ *
+ *      Neither will this check for an .ICON EA because
+ *      this is intended for XWPFileSystem::wpSetProgIcon
+ *      which never gets called in the first place for
+ *      that case.
+ *
+ *      Also, if no icon resource could be found in the
+ *      executable, this returns ERROR_NO_DATA instead
+ *      of a default icon. It is then the responsibility
+ *      of the caller to supply a default icon.
+ *
+ *      Otherwise this returns:
+ *
+ *      --  ERROR_INVALID_EXE_SIGNATURE: cannot handle
+ *          this EXE format.
+ *
+ *      --  ERROR_NO_DATA: EXE format understood, but
+ *          the EXE contains no RT_POINTER resources.
+ *
+ *      --  ERROR_NOT_ENOUGH_MEMORY
+ *
+ *      plus the error codes of doshExecOpen.
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+APIRET icoLoadExeIcon(PEXECUTABLE pExec,
+                      HPOINTER *phptr)
+{
+    APIRET arc;
+
+    PBYTE pbIconData = NULL;
+
+    if (!pExec)
+        return ERROR_INVALID_PARAMETER;
+
+    // check the executable type
+    switch (pExec->ulExeFormat)
+    {
+        case EXEFORMAT_LX:
+            // these two we can handle for now
+            arc = LoadLXResource(pExec,
+                                 RT_POINTER,
+                                 0,         // first one found
+                                 &pbIconData);
+        break;
+
+        case EXEFORMAT_OLDDOS:
+        case EXEFORMAT_TEXT_BATCH:
+        case EXEFORMAT_TEXT_REXX:
+
+        case EXEFORMAT_NE:
+        case EXEFORMAT_PE:          // @@todo later
+        default:
+            arc = ERROR_INVALID_EXE_SIGNATURE;
+        break;
+    }
+
+    if (!arc && pbIconData)
+    {
+        if (!(arc = icoBuildPtrHandle(pbIconData,
+                                      phptr)))
+            _Pmpf(("Built hptr %lX", *phptr));
+        free(pbIconData);
+    }
+
+    if (arc)
+        _Pmpf((__FUNCTION__ ": returning %d", arc));
+
+    return (arc);
+}
 
 /* ******************************************************************
  *
@@ -1037,7 +1804,9 @@ VOID ReportError(PCREATENOTEBOOKPAGE pcnbp,
         cmnDosErrorMsgBox(pcnbp->hwndDlgPage,
                           '?',
                           _wpQueryTitle(pcnbp->somSelf),
+                          NULL,
                           arc,
+                          NULL,
                           MB_CANCEL,
                           TRUE);
 }

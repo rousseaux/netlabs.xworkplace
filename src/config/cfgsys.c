@@ -588,6 +588,7 @@ MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
  *@@changed V0.9.7 (2001-01-17) [umoeller]: changed QSV_MAX compile problems; thanks, Martin Lafaix
  *@@changed V0.9.9 (2001-02-28) [pr]: added "edit path"
  *@@changed V0.9.13 (2001-06-23) [umoeller]: added new memory settings
+ *@@changed V0.9.16 (2001-12-08) [umoeller]: fixed memory leak
  */
 
 VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
@@ -1078,11 +1079,10 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                         PSZ p;
 
                         memset(szPaths, 0, sizeof(szPaths));
-                        p = csysGetParameter(pszConfigSys,
-                                             G_apszPathNames[ul],
-                                             szPaths,
-                                             sizeof(szPaths));
-                        if (p)
+                        if (p = csysGetParameter(pszConfigSys,
+                                                 G_apszPathNames[ul],
+                                                 szPaths,
+                                                 sizeof(szPaths)))
                         {
                             // now szPaths has the path list
                             PSZ pStart = szPaths;
@@ -1139,6 +1139,8 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                               (MPARAM)LIT_END,
                                               (MPARAM)pSysPath->pszPathType);
                         }
+                        else
+                            free(pSysPath);     // V0.9.16 (2001-12-08) [umoeller]
                     }
 
                     WinSendDlgItemMsg(hwndDlgPage, ID_OSDI_PATHDROPDOWN,

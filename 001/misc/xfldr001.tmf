@@ -420,6 +420,10 @@ Do you wish to remove this widget from the &xcenter;'s widget list?
 
 <--XFL0226-->: "%1" is a folder. Are you sure you want to permanently delete it, including all of its contents?
 
+<--XFL0227-->: Cannot start program
+<--XFL0228-->: An error occured starting the program "%1". The operating system returned the following error message:
+<--XFL0229-->: Do you wish to open the properties notebook of the program object?
+
 ; ---------------------------------------------------------------------------------
 ;
 ; V0.9.0:

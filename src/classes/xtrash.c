@@ -487,14 +487,6 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpSetCorrectTrashIcon(XWPTrashCan *somSelf,
                     // the WPS destroys the icon when the OBJSTYLE_NOTDEFAULTICON
                     // bit is set (do not use OBJSTYLE_CUSTOMICON, it is ignored by the WPS)
                     _wpModifyStyle(somSelf, OBJSTYLE_NOTDEFAULTICON, 0);
-
-                    // do not automatically destroy icon, because
-                    // we'll need it again; if we don't set this,
-                    // the WPS will automatically destroy the old
-                    // icon, which is still needed by us...
-                    /* _wpSetStyle(somSelf,
-                                _wpQueryStyle(somSelf) & ~OBJSTYLE_NOTDEFAULTICON); */
-                                        // OBJSTYLE_CUSTOMICON doesn't work!!
                 }
                 _fFilledIconSet = fTrashFilled;
 

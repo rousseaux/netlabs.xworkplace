@@ -560,6 +560,7 @@ PLINKLIST ctrpQueryClasses(VOID)
  *@@changed V0.9.9 (2001-03-09) [umoeller]: added PRIVATEWIDGETCLASS wrapping
  *@@changed V0.9.9 (2001-03-09) [umoeller]: converted global array to linked list
  *@@changed V0.9.12 (2001-05-20) [umoeller]: added mutex protection to fix multiple loads
+ *@@changed V0.9.16 (2001-12-08) [umoeller]: added logging if unload fails
  */
 
 VOID ctrpFreeClasses(VOID)
@@ -594,15 +595,21 @@ VOID ctrpFreeClasses(VOID)
                     while (pNode)
                     {
                         HMODULE hmod = (HMODULE)pNode->pItemData;
-                        // _Pmpf((__FUNCTION__ ": Unloading hmod %lX", hmod));
-                        APIRET arc;
+                        APIRET  arc;
+                        CHAR    szModuleName[CCHMAXPATH];
 
-                        if (arc = FreeModule(hmod,
-                                             TRUE))       // call uninit
-                            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                                   "FreeModule returned %d for hmod %lX",
-                                   arc,
-                                   hmod);
+                        // added logging if unload fails
+                        // V0.9.16 (2001-12-08) [umoeller]
+                        if (!DosQueryModuleName(hmod,
+                                                sizeof(szModuleName),
+                                                szModuleName))
+                            if (arc = FreeModule(hmod,
+                                                 TRUE))       // call uninit
+                                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                                       "FreeModule returned %d for %s (hmod %lX)",
+                                       arc,
+                                       szModuleName,
+                                       hmod);
 
                         pNode = pNode->pNext;
                     }
@@ -891,14 +898,13 @@ XCRET ctrpCreateWidgetSetting(XCenter *somSelf,
 
             pNew->pOwningTray = pTray;
 
-            if (!(pNew->Public.pszWidgetClass = strdup(pcszWidgetClass)))
-                arc = ERROR_NOT_ENOUGH_MEMORY;
-            else
-                if (pcszSetupString)
-                    if (!(pNew->Public.pszSetupString = strdup(pcszSetupString)))
-                        arc = ERROR_NOT_ENOUGH_MEMORY;
-
-            if (!arc)
+            if (    (!(arc = strhStore(&pNew->Public.pszWidgetClass,
+                                       pcszWidgetClass,
+                                       NULL)))
+                 && (!(arc = strhStore(&pNew->Public.pszSetupString,
+                                       pcszSetupString,
+                                       NULL)))
+               )
             {
                 if (pTray)
                     // this is a subwidget:

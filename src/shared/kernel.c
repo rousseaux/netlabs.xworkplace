@@ -628,6 +628,8 @@ VOID APIENTRY krnExceptError(const char *pcszFile,
            arc);
 }
 
+#ifdef __XWPMEMDEBUG__
+
 /*
  *@@ krnMemoryError:
  *      reports memory error msgs if XWorkplace is
@@ -643,6 +645,8 @@ VOID krnMemoryError(const char *pcszMsg)
            "Memory error:\n    %s",
            pcszMsg);
 }
+
+#endif
 
 /* ******************************************************************
  *

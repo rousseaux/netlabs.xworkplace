@@ -107,11 +107,12 @@
 #include "filesys\filetype.h"           // extended file types implementation
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrmenus.h"           // shared folder menu logic
+#include "filesys\icons.h"              // icons handling
 #include "filesys\program.h"            // program implementation
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
-#include <wppgmf.h>             // WPProgramFIle
+#include <wppgmf.h>             // WPProgramFile
 
 /* ******************************************************************
  *
@@ -163,6 +164,75 @@ SOM_Scope BOOL  SOMLINK xfdf_xwpNukePhysical(XFldDataFile *somSelf)
             break;
         }
     }
+
+    return (brc);
+}
+
+/*
+ *@@ wpRestoreState:
+ *      this WPObject instance method gets called during object
+ *      initialization (after wpInitData) to restore the data
+ *      which was stored with wpSaveState.
+ *
+ *      The WPDataFile implementation has a _major_bug in here
+ *      in that it turns _on_ the OBJSTYLE_NOTDEFAULTICON bit
+ *      even if no icon was loaded from the EAs. As a result,
+ *      another rewrite was in order here.
+ *
+ *      The interesting thing is that the ulReserved parameter
+ *      points to a MAKEAWAKEFS structure (filesys.h) which
+ *      was passed to wpclsMakeAwake by wpPopulate. As a result,
+ *      we can use to build an icon from the EAs that were
+ *      loaded during populate.
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfdf_wpRestoreState(XFldDataFile *somSelf,
+                                            ULONG ulReserved)
+{
+    ULONG brc;
+    somTD_WPObject_wpRestoreState pwpRestoreState = NULL;
+
+    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
+    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpRestoreState");
+
+    if (cmnIsFeatureEnabled(IconReplacements))
+    {
+        PMAKEAWAKEFS pFSData = (PMAKEAWAKEFS)ulReserved;
+
+        // find the WPFileSystem method by skipping the
+        // buggy WPDataFile implementation
+        if (pwpRestoreState = (somTD_WPObject_wpRestoreState)wpshResolveFor(
+                                     somSelf,
+                                     _WPFileSystem,     // class to resolve for
+                                     "wpRestoreState"))
+        {
+            // found it: then it's safe to run our replacement
+            PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
+            APIRET arc;
+            HPOINTER hptrNew;
+
+            if (    (!prec->hptrIcon)
+                 && (pFSData)
+                 && (pFSData->pFea2List)
+                 && (!(arc = icoBuildPtrFromFEA2List(pFSData->pFea2List,
+                                                     &hptrNew)))
+               )
+            {
+                _wpSetIcon(somSelf, hptrNew);
+                _wpModifyStyle(somSelf,
+                               OBJSTYLE_NOTDEFAULTICON,
+                               OBJSTYLE_NOTDEFAULTICON);
+            }
+
+            brc = pwpRestoreState(somSelf, ulReserved);
+        }
+    }
+
+    if (!pwpRestoreState)
+        brc = XFldDataFile_parent_WPDataFile_wpRestoreState(somSelf,
+                                                            ulReserved);
 
     return (brc);
 }
@@ -591,10 +661,15 @@ SOM_Scope HWND  SOMLINK xfdf_wpOpen(XFldDataFile *somSelf,
                                          &hwnd);
 
             if (arc)
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "progOpenProgram returned %d for %s",
-                       arc,
-                       _wpQueryTitle(pAssocObject));
+            {
+                if (cmnProgramErrorMsgBox(NULLHANDLE,
+                                          pAssocObject,
+                                          arc)
+                            == MBID_YES)
+                    krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
+                                            (MPARAM)pAssocObject,
+                                            (MPARAM)OPEN_SETTINGS);
+            }
                     // _wpUnlockObject(pAssocObject);
                     // do not unlock the assoc object...
                     // this is still needed in the use list!!!
@@ -853,6 +928,65 @@ SOM_Scope WPObject*  SOMLINK xfdf_wpQueryAssociatedProgram(XFldDataFile *somSelf
     #endif
 
     return (pobj);
+}
+
+/*
+ *@@ wpQueryIcon:
+ *      this WPObject instance method returns the HPOINTER
+ *      with the current icon of the object.
+ *
+ *      With data files and all subclasses, this turns out
+ *      to be a major mess. When being made awake, all
+ *      data files initially receive a NULLHANDLE pointer,
+ *      _unless_ the file has an .ICON attribute so the
+ *      WPS can quickly set that up in wpRestoreState.
+ *      Only in that case will the icon initially be set.
+ *      Otherwise the WPS attempts to find a data file
+ *      icon on the first call to this method... how this
+ *      works in detail depends on the class of the
+ *      object too.
+ *
+ *      Unfortunately the WPS always sets OBJSTYLE_NOTDEFAULTICON
+ *      in here, which is not a good idea with our replacement
+ *      associations.
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+SOM_Scope HPOINTER  SOMLINK xfdf_wpQueryIcon(XFldDataFile *somSelf)
+{
+    PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
+    HPOINTER hptrReturn = NULLHANDLE;
+    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
+    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpQueryIcon");
+
+    if (cmnIsFeatureEnabled(IconReplacements))
+    {
+        if (!prec->hptrIcon)
+        {
+            // first call, and icon wasn't set in wpRestoreState:
+            // be smart now...
+
+            // 1) try if we find an association
+            HPOINTER hptr2;
+            if (!(hptr2 = _wpQueryAssociatedFileIcon(somSelf)))
+                // use class icon then
+                hptr2 = _wpclsQueryIcon(_somGetClass(somSelf));
+
+            _wpSetIcon(somSelf, hptr2);
+            _wpModifyStyle(somSelf,
+                           OBJSTYLE_NOTDEFAULTICON,
+                           0);
+        }
+        else
+            // we have an icon already: use that
+            hptrReturn = prec->hptrIcon;
+    }
+
+    if (!hptrReturn)
+        return (XFldDataFile_parent_WPDataFile_wpQueryIcon(somSelf));
+
+    return (hptrReturn);
 }
 
 /*

@@ -558,8 +558,6 @@
      *
      ********************************************************************/
 
-    VOID fdrCreateStandardGEAList(VOID);
-
     #ifdef __DEBUG__
         VOID fdrDebugDumpFolderFlags(WPFolder *somSelf);
     #else

@@ -96,6 +96,67 @@
 
     /* ******************************************************************
      *
+     *   Populate / refresh
+     *
+     ********************************************************************/
+
+    /*
+     *@@ FDATETIME:
+     *
+     *@@added V0.9.16 (2001-10-28) [umoeller]
+     */
+
+    typedef struct _FDATETIME
+    {
+        FDATE       Date;
+        FTIME       Time;
+    } FDATETIME, *PFDATETIME;
+
+    /*
+     *@@ MAKEAWAKEFS:
+     *      structure used with M_WPFileSystem::wpclsMakeAwake.
+     *      Note that this is undocumented and may not work
+     *      with every OS/2 version, although it works here
+     *      with eCS.
+     *
+     *      This mostly has data from the FILEFINDBUF3 that
+     *      we processed, although for some strange reason
+     *      the fields have a different ordering here.
+     *
+     *      This also gets passed to WPFileSystem::wpRestoreState
+     *      in the ulReserved parameter. ;-)
+     *
+     *@@added V0.9.16 (2001-10-25) [umoeller]
+     */
+
+    typedef struct _MAKEAWAKEFS
+    {
+        PSZ         pszRealName;    // real name
+        FDATETIME   Creation;
+        FDATETIME   LastWrite;
+        FDATETIME   LastAccess;
+        ULONG       attrFile;
+        ULONG       cbFile;         // file size
+        ULONG       cbList;         // size of FEA2LIST
+        PFEA2LIST   pFea2List;      // EAs
+    } MAKEAWAKEFS, *PMAKEAWAKEFS;
+
+    VOID fsysCreateStandardGEAList(VOID);
+
+    // buffer size for DosFindFirst
+    #define FINDBUFSIZE             0x10000     // 64K
+
+    APIRET fsysCreateFindBuffer(PEAOP2 *pp);
+
+    PBYTE fsysFindEAValue(PFEA2LIST pFEA2List2,
+                          PCSZ pcszEAName,
+                          PUSHORT pcbValue);
+
+    APIRET fsysRefresh(WPFileSystem *somSelf,
+                       PVOID pvReserved);
+
+    /* ******************************************************************
+     *
      *   "File" pages replacement in WPDataFile/WPFolder
      *
      ********************************************************************/

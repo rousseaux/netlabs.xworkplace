@@ -123,6 +123,8 @@ ew */
 // width of window button borders:
 #define THICK_BUTTON_BORDER     2
 
+#define ICON_TEXT_SPACING       4
+
 // string used for separating filters in setup strings;
 // this better not appear in window titles
 static const char *G_pcszFilterSeparator = "#~^ø@";
@@ -1210,7 +1212,8 @@ ULONG ScanSwitchList(PWINLISTPRIVATE pPrivate,
                     // in a way that a filter now applies
                     // V0.9.12 (2001-04-28) [umoeller]
                     if (!IsCtrlFiltered(pllFilters,
-                                        pPrivate->pWidget->pGlobals->hwndFrame, // XCenter frame
+                                        // pPrivate->pWidget->pGlobals->hwndFrame, // XCenter frame
+                                        pPrivate->pWidget->pGlobals->hwndFrame,
                                         pCtrlThis))
                     {
                         if (fDirty)
@@ -1269,7 +1272,8 @@ ULONG ScanSwitchList(PWINLISTPRIVATE pPrivate,
 
                 // apply filter
                 if (!IsCtrlFiltered(pllFilters,
-                                    pPrivate->pWidget->pGlobals->hwndFrame, // XCenter frame
+                                    // pPrivate->pWidget->pGlobals->hwndFrame, // XCenter frame
+                                    pPrivate->pWidget->pGlobals->hwndFrame,
                                     pCtrlThis))
                 {
                     if (!FindSwitchNodeFromHWND(&pPrivate->llSwitchEntries,
@@ -1512,7 +1516,8 @@ VOID DrawOneCtrl(PWINLISTPRIVATE pPrivate,
         }
 
         // add another pixel for the text
-        rclButtonArea.xLeft++;
+        rclButtonArea.xLeft += ICON_TEXT_SPACING;
+                    // added macro V0.9.16 (2001-12-08) [umoeller]
         // dec right for clipping
         rclButtonArea.xRight--;
 

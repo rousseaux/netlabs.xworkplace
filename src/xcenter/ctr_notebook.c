@@ -261,7 +261,8 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
         //     key for wpSaveState/wpRestoreState
                9,
         //     default, ulExtra,            min, max
-               1,       0,                  0,   10,
+               2,       0,                  0,   10,
+               // changed default V0.9.16 (2001-12-08) [umoeller]
 
         // type,  setup string,     offset,
         STG_LONG, "BORDERSPACING",    FIELDOFFSET(XCenterData, ulBorderSpacing),

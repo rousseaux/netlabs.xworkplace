@@ -96,7 +96,7 @@
                     // anchor block of the XCenter thread and thus
                     // all XCenter windows (including widgets)
         HWND                hwndFrame,
-                    // XCenter frame window (constant)
+                    // be XCenter frame window (constant)
                             hwndClient;
                     // XCenter client (child of XCenter frame) (constant)
 

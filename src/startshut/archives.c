@@ -717,10 +717,11 @@ APIRET arcQueryArchiveByte(UCHAR *pByte,        // out: read byte
                                     | OPEN_FLAGS_NOINHERIT,
                                  &hfArc)))
     {
+        ULONG cb = 1;
         arc = doshReadAt(hfArc,
                          offset,
                          FILE_BEGIN,
-                         1,
+                         &cb,
                          pByte);
 
         DosClose(hfArc);

@@ -130,6 +130,10 @@ MRESULT EXPENTRY fnwpAPIObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp
 
 MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
 
+#ifdef __XWPMEMDEBUG__
+VOID krnMemoryError(const char *pcszMsg);
+#endif
+
 /* ******************************************************************
  *
  *   Global variables
@@ -1247,12 +1251,6 @@ VOID initMain(VOID)
     // force loading of the global settings
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-    // moved this here from xthrStartThreads
-    PTIB        ptib;
-    PPIB        ppib;
-
-    CHAR        szDumpFile[CCHMAXPATH];
-
     HOBJECT     hobjDesktop;
     CHAR        szDesktopPath[CCHMAXPATH];
 
@@ -1263,12 +1261,31 @@ VOID initMain(VOID)
 
     fInitialized = TRUE;
 
+    // zero KERNELGLOBALS
+    memset(&G_KernelGlobals, 0, sizeof(KERNELGLOBALS));
+
+    G_KernelGlobals.pidWPS = doshMyPID();
+    G_KernelGlobals.tidWorkplaceThread = doshMyTID();
+
+    // moved the following up V0.9.16 (2001-12-08) [umoeller]
+    #ifdef __XWPMEMDEBUG__
+        // set global memory error callback
+        G_pMemdLogFunc = krnMemoryError;
+    #endif
+
+    // register exception hooks for /helpers/except.c
+    excRegisterHooks(krnExceptOpenLogFile,
+                     krnExceptExplainXFolder,
+                     krnExceptError,
+                     !pGlobalSettings->fNoExcptBeeps);
+
     if (pGlobalSettings->fWriteXWPStartupLog)       // V0.9.14 (2001-08-21) [umoeller]
     {
-        APIRET arc;
-        ULONG cbFile = 0;
+        APIRET  arc;
+        ULONG   cbFile = 0;
 
-        sprintf(szDumpFile, "%c:\\xwpstart.log", doshQueryBootDrive());
+        CHAR    szDumpFile[] = "?:\\xwpstart.log";
+        szDumpFile[0] = doshQueryBootDrive();
 
         if (!(arc = doshOpen(szDumpFile,
                              XOPEN_READWRITE_APPEND,        // not XOPEN_BINARY
@@ -1281,30 +1298,13 @@ VOID initMain(VOID)
             doshWrite(pLogFile,
                       "------------------------------------------------------\n\n",
                       0);
+
+            doshWriteLogEntry(pLogFile,
+                              __FUNCTION__ ": PID 0x%lX, TID 0x%lX",
+                              G_KernelGlobals.pidWPS,
+                              G_KernelGlobals.tidWorkplaceThread);
         }
     }
-
-    // zero KERNELGLOBALS
-    memset(&G_KernelGlobals, 0, sizeof(KERNELGLOBALS));
-
-    // moved this here from xthrStartThreads V0.9.9 (2001-01-31) [umoeller]
-    if (!DosGetInfoBlocks(&ptib, &ppib))
-    {
-        if (ppib)
-            G_KernelGlobals.pidWPS = ppib->pib_ulpid;
-        if (ptib && ptib->tib_ptib2)
-            G_KernelGlobals.tidWorkplaceThread = ptib->tib_ptib2->tib2_ultid;
-
-        doshWriteLogEntry(pLogFile,
-                          __FUNCTION__ ": PID 0x%lX, TID 0x%lX",
-                          G_KernelGlobals.pidWPS,
-                          G_KernelGlobals.tidWorkplaceThread);
-    }
-
-    #ifdef __XWPMEMDEBUG__
-        // set global memory error callback
-        G_pMemdLogFunc = krnMemoryError;
-    #endif
 
     // store Desktop startup time
     DosGetDateTime(&G_KernelGlobals.StartupDateTime);
@@ -1317,12 +1317,6 @@ VOID initMain(VOID)
     // plain WPObject* pointers)
     // G_KernelGlobals.pllAwakeObjects = lstCreate(FALSE);   // no auto-free items
                                     // moved to xthreads.c V0.9.9 (2001-04-04) [umoeller]
-
-    // register exception hooks for /helpers/except.c
-    excRegisterHooks(krnExceptOpenLogFile,
-                     krnExceptExplainXFolder,
-                     krnExceptError,
-                     !pGlobalSettings->fNoExcptBeeps);
 
     // create thread-1 object window
     WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),

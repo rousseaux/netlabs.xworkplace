@@ -474,6 +474,8 @@ SOM_Scope HWND  SOMLINK xpgm_wpOpen(XWPProgram *somSelf, HWND hwndCnr,
 
 /*
  *@@ wpQueryIcon:
+ *      this WPObject instance method returns the HPOINTER
+ *      with the current icon of the object.
  *
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */

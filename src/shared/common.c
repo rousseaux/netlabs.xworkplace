@@ -397,8 +397,8 @@ VOID cmnLog(const char *pcszSourceFile, // in: source file name
             "%c:\\%s",
             doshQueryBootDrive(),
             XFOLDER_LOGLOG);
-    fileLog = fopen(szLogFileName, "a");  // text file, append
-    if (fileLog)
+
+    if (fileLog = fopen(szLogFileName, "a"))  // text file, append
     {
         DATETIME DT;
         DosGetDateTime(&DT);
@@ -809,6 +809,124 @@ VOID cmnLoadDialogStrings(PDLGHITEM paDlgItems,      // in: definition array
  *added V0.9.9 (2001-03-07) [umoeller]
  *removed again V0.9.9 (2001-04-04) [umoeller]
  */
+
+/* ******************************************************************
+ *
+ *   Pointers
+ *
+ ********************************************************************/
+
+typedef struct _ICONTREENODE
+{
+    TREE        Tree;           // ulkey has the resource ID
+    HPOINTER    hptr;
+} ICONTREENODE, *PICONTREENODE;
+
+HMTX        G_hmtxIconsCache = NULLHANDLE;
+TREE        *G_IconsCache;
+LONG        G_cIconsInCache = 0;
+
+/*
+ *@@ LockIcons:
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+BOOL LockIcons(VOID)
+{
+    BOOL brc = FALSE;
+
+    if (G_hmtxIconsCache == NULLHANDLE)
+    {
+        if (!DosCreateMutexSem(NULL,
+                               &G_hmtxIconsCache,
+                               0,
+                               TRUE))       // request
+        {
+            treeInit(&G_IconsCache,
+                     &G_cIconsInCache);
+            return TRUE;
+        }
+    }
+    else
+        return (!WinRequestMutexSem(G_hmtxIconsCache, SEM_INDEFINITE_WAIT));
+
+    return (FALSE);
+}
+
+/*
+ *@@ UnlockIcons:
+ *
+ *@@added V0.9.9 (2001-04-04) [umoeller]
+ */
+
+VOID UnlockIcons(VOID)
+{
+    DosReleaseMutexSem(G_hmtxIconsCache);
+}
+
+/*
+ *@@ cmnLoadPointer:
+ *      attempts to load a pointer from ICONS.DLL.
+ *      Always use this instead of WinLoadPointer
+ *      to avoid having to load the same pointer
+ *      several times.
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+HPOINTER cmnLoadPointer(ULONG idResource)
+{
+    BOOL        fLocked = FALSE;
+    HPOINTER    hptrReturn = NULLHANDLE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = LockIcons())
+        {
+            // icon loaded yet?
+            PICONTREENODE pNode;
+            if (pNode = (PICONTREENODE)treeFind(G_IconsCache,
+                                                idResource,
+                                                treeCompareKeys))
+            {
+                hptrReturn = pNode->hptr;
+                // _Pmpf((__FUNCTION__ ": returning cached ptr %lX", hptrReturn));
+            }
+            else
+            {
+                // go load the damn thing now; note, we
+                // always create an entry even if loading
+                // fails to avoid having to reload that if
+                // icons.dll is missing or something
+                if (pNode = NEW(ICONTREENODE))
+                {
+                    HMODULE hmodIcons = cmnQueryIconsDLL();     // loads on first call
+                    ZERO(pNode);
+                    pNode->Tree.ulKey = idResource;
+                    if (hmodIcons && idResource)
+                        pNode->hptr = WinLoadPointer(HWND_DESKTOP,
+                                                     hmodIcons,
+                                                     idResource);
+                    hptrReturn = pNode->hptr;
+
+                    // _Pmpf((__FUNCTION__ ": loaded new ptr %lX", hptrReturn));
+
+                    treeInsert(&G_IconsCache,
+                               &G_cIconsInCache,
+                               (TREE*)pNode,
+                               treeCompareKeys);
+                }
+            }
+        }
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fLocked)
+        UnlockIcons();
+
+    return (hptrReturn);
+}
 
 /* ******************************************************************
  *
@@ -4662,12 +4780,15 @@ ULONG cmnMessageBoxMsgExt(HWND hwndOwner,   // in: owner window
  *@@added V0.9.1 (2000-02-08) [umoeller]
  *@@changed V0.9.3 (2000-04-09) [umoeller]: added error explanation
  *@@changed V0.9.13 (2001-06-14) [umoeller]: reduced stack consumption
+ *@@changed V0.9.16 (2001-12-08) [umoeller]: added pcszPrefix/Suffix
  */
 
 ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window.
                         CHAR cDrive,        // in: drive letter
-                        PCSZ pcszTitle,       // in: msgbox title
+                        PCSZ pcszTitle,     // in: msgbox title
+                        PCSZ pcszPrefix,    // in: string before error or NULL
                         APIRET arc,         // in: DOS error code to get msg for
+                        PCSZ pcszSuffix,    // in: string after error or NULL
                         ULONG ulFlags,      // in: as in cmnMessageBox flStyle
                         BOOL fShowExplanation) // in: if TRUE, we'll retrieve an explanation as with the HELP command
 {
@@ -4684,6 +4805,12 @@ ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window.
 
     xstrInit(&strError, 0);
 
+    if (pcszPrefix)
+    {
+        xstrcpy(&strError, pcszPrefix, 0);
+        xstrcat(&strError, "\n\n", 0);
+    }
+
     if (!(arc2 = DosGetMessage(&pszTable, 1,
                                szMsgBuf, sizeof(szMsgBuf),
                                arc,
@@ -4691,7 +4818,7 @@ ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window.
                                &ulLen)))
     {
         szMsgBuf[ulLen] = 0;
-        xstrcpy(&strError, szMsgBuf, 0);
+        xstrcat(&strError, szMsgBuf, 0);
 
         if (fShowExplanation)
         {
@@ -4720,6 +4847,12 @@ ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window.
                       219);          // "error %d occured"
     }
 
+    if (pcszSuffix)
+    {
+        xstrcatc(&strError, '\n');
+        xstrcat(&strError, pcszSuffix, 0);
+    }
+
     mbrc = cmnMessageBox(HWND_DESKTOP,
                          pcszTitle,
                          strError.psz,
@@ -4727,6 +4860,52 @@ ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window.
     xstrClear(&strError);
 
     return (mbrc);
+}
+
+/*
+ *@@ cmnProgramErrorMsgBox:
+ *
+ *      Returns MBID_YES or MBID_NO.
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+ULONG cmnProgramErrorMsgBox(HWND hwndOwner,
+                            WPObject *pProgram,
+                            APIRET arc)
+{
+    XSTRING strTitle,
+            strPrefix,
+            strSuffix;
+    PSZ     psz = _wpQueryTitle(pProgram);
+    ULONG   ulrc;
+
+    xstrInit(&strTitle, 0);
+    xstrInit(&strPrefix, 0);
+    xstrInit(&strSuffix, 0);
+
+    cmnGetMessage(NULL, 0, &strTitle, 227);     // cannot start program
+    cmnGetMessage(&psz, 1, &strPrefix, 228);     // error starting %1
+    cmnGetMessage(NULL, 0, &strSuffix, 229);     // open settings?
+
+    ulrc = cmnDosErrorMsgBox(hwndOwner,
+                             '?',
+                             strTitle.psz,
+                             strPrefix.psz,
+                             arc,
+                             strSuffix.psz,
+                             MB_YESNO,
+                             TRUE);
+    /* cmnLog(__FILE__, __LINE__, __FUNCTION__,
+           "progOpenProgram returned %d for %s",
+           arc,
+           _wpQueryTitle(pAssocObject)); */
+
+    xstrClear(&strTitle);
+    xstrClear(&strPrefix);
+    xstrClear(&strSuffix);
+
+    return (ulrc);
 }
 
 /*

@@ -161,7 +161,9 @@ WPFolder* dskCheckDriveReady(WPDisk *somSelf)
             mbrc = cmnDosErrorMsgBox(HWND_DESKTOP,
                                      _wpQueryLogicalDrive(somSelf) + 'A' - 1,
                                      strTitle.psz,
+                                     NULL,
                                      arc,
+                                     NULL,
                                      MB_RETRYCANCEL,
                                      TRUE); // show explanation
             xstrClear(&strTitle);

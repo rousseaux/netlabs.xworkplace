@@ -846,7 +846,7 @@ VOID DwgtCommand(HWND hwnd,
                     // have the widget show it with the XCenter frame
                     // as its owner
                     ctrpShowSettingsDlg(pXCenterData->somSelf,
-                                        pXCenterData->Globals.hwndFrame,    // owner
+                                        pXCenterData->Globals.hwndFrame,
                                         ulTrayWidgetIndex,
                                         ulTrayIndex,
                                         ulWidgetIndex);

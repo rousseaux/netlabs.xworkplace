@@ -17,8 +17,8 @@
  *      i.e. the methods themselves.
  *      The implementation for this class is in filesys\filesys.c.
  *
- *@@somclass XFldProgramFile xfpgmf_
- *@@somclass M_XFldProgramFile xfpgmfM_
+ *@@somclass XFldProgramFile xpgf_
+ *@@somclass M_XFldProgramFile xpgfM_
  */
 
 /*
@@ -40,8 +40,8 @@
  *      SOM Emitter emitctm: 2.41
  */
 
-#ifndef SOM_Module_xfpgmf_Source
-#define SOM_Module_xfpgmf_Source
+#ifndef SOM_Module_xpgf_Source
+#define SOM_Module_xpgf_Source
 #endif
 #define XFldProgramFile_Class_Source
 #define M_XFldProgramFile_Class_Source
@@ -60,8 +60,11 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
-#define INCL_DOSSESMGR          // DosQueryAppType
+#define INCL_DOSPROCESS
+#define INCL_DOSEXCEPTIONS
 #define INCL_DOSSEMAPHORES
+#define INCL_DOSSESMGR          // DosQueryAppType
+#define INCL_DOSMODULEMGR
 #define INCL_DOSERRORS
 
 #define INCL_WINPOINTERS
@@ -70,14 +73,20 @@
 
 // C library headers
 #include <stdio.h>
+#include <setjmp.h>             // needed for except.h
+#include <assert.h>             // needed for except.h
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
 
+#define DEBUG_ASSOCS        1
+
 // headers in /helpers
 #include "helpers\apps.h"               // application helpers
 #include "helpers\dosh.h"               // Control Program helper routines
+#include "helpers\except.h"             // exception handling
 #include "helpers\nls.h"                // National Language Support helpers
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
@@ -95,10 +104,12 @@
 
 #include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\filetype.h"           // extended file types implementation
+#include "filesys\icons.h"              // icons handling
 #include "filesys\program.h"            // program implementation
 
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 #include <wpcmdf.h>                     // WPCommandFile
+#include <wpfolder.h>
 
 /* ******************************************************************
  *
@@ -126,7 +137,7 @@ static const char *G_pcszInstanceFilter = "OS2KRNL,*.ADD,*.COM,*.DLL,*.DMD,*.EXE
  *@@changed V0.9.9 (2001-03-30) [umoeller]: replaced dialog resource with generic cnr page
  */
 
-SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddResourcesPage(XFldProgramFile *somSelf,
+SOM_Scope ULONG  SOMLINK xpgf_xwpAddResourcesPage(XFldProgramFile *somSelf,
                                                     HWND hwndNotebook)
 {
     ULONG ulrc = SETTINGS_PAGE_REMOVED;
@@ -134,7 +145,7 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddResourcesPage(XFldProgramFile *somSelf,
     PCREATENOTEBOOKPAGE pcnbp;
 
     // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
-    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_xwpAddResourcesPage");
+    XFldProgramFileMethodDebug("XFldProgramFile","xpgf_xwpAddResourcesPage");
 
 #ifndef __NOMODULEPAGES__
     pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
@@ -170,7 +181,7 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddResourcesPage(XFldProgramFile *somSelf,
  *@@changed V0.9.9 (2001-03-30) [umoeller]: replaced dialog resource with generic cnr page
  */
 
-SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddModulePage(XFldProgramFile *somSelf,
+SOM_Scope ULONG  SOMLINK xpgf_xwpAddModulePage(XFldProgramFile *somSelf,
                                                  HWND hwndNotebook)
 {
     ULONG ulrc = SETTINGS_PAGE_REMOVED;
@@ -179,7 +190,7 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddModulePage(XFldProgramFile *somSelf,
     PCREATENOTEBOOKPAGE pcnbp;
 
     // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
-    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_xwpAddModulePage");
+    XFldProgramFileMethodDebug("XFldProgramFile","xpgf_xwpAddModulePage");
 
 #ifndef __NOMODULEPAGES__
     pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
@@ -246,11 +257,11 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddModulePage(XFldProgramFile *somSelf,
  *@@added V0.9.9 (2001-03-07) [umoeller]
  */
 
-SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddAssociationsPage(XFldProgramFile *somSelf,
+SOM_Scope ULONG  SOMLINK xpgf_xwpAddAssociationsPage(XFldProgramFile *somSelf,
                                                        HWND hwndNotebook)
 {
     // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
-    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_xwpAddAssociationsPage");
+    XFldProgramFileMethodDebug("XFldProgramFile","xpgf_xwpAddAssociationsPage");
 
     return (ftypInsertAssociationsPage(somSelf,
                                        hwndNotebook));
@@ -260,111 +271,292 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddAssociationsPage(XFldProgramFile *somSelf,
  *@@ xwpQueryProgType:
  *      this returns the PROG_* flag signalling the executable
  *      type of the program file.
- *      Note that in addition to the PROG_* flags defined in
- *      PROGDETAILS, this may also return the following:
- *               PROG_XWP_DLL     for dynamic link libraries
- *               PROG_PDD, PROG_VDD: for virtual or physical device drivers;
- *                               many files ending in .SYS will be
- *                               recognized as DLL's though.
+ *
+ *      With the PVOID pvExec parameter, you can pass in a
+ *      PEXECUTABLE (from doshExecOpen) if you currently have
+ *      one open. This is used from XFldProgramFile::wpSetProgIcon
+ *      because that method needs to open a PEXECUTABLE anyway
+ *      and we'd rather avoid opening that twice.
+ *
+ *      If NULL is passed in for pvExec, this method calls doshOpen
+ *      itself.
+ *
+ *      Note that if a folder is opened, the first time this gets
+ *      called is as a result of XFldProgramFile::wpSetProgIcon,
+ *      because that is in turn invoked on the first invocation
+ *      of wpQueryIcon (when the folder first needs to display
+ *      the icon). As a result, duplicate doshExecOpen's are only
+ *      invoked in certain pathological cases where speed isn't
+ *      high priority in the first case.
  *
  *@@changed V0.9.9 (2001-03-07) [umoeller]: extracted winhQueryAppType
+ *@@changed V0.9.16 (2001-12-08) [umoeller]: added pvExec param
  */
 
-SOM_Scope ULONG  SOMLINK xfpgmf_xwpQueryProgType(XFldProgramFile *somSelf)
+SOM_Scope ULONG  SOMLINK xpgf_xwpQueryProgType(XFldProgramFile *somSelf,
+                                               PVOID pvExec)
 {
-    PPROGDETAILS    pProgDetails;
-    ULONG           ulSize;
+    CHAR    szProgramFile[CCHMAXPATH];
+
+    PEXECUTABLE pExec = NULL;
+    BOOL fClose = FALSE;
+
+    ULONG ulDosAppType = 0;
+    BOOL fCallQueryAppType = FALSE;
 
     XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
-    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_xwpQueryProgType");
+    XFldProgramFileMethodDebug("XFldProgramFile","xpgf_xwpQueryProgType");
 
-    #ifdef DEBUG_ASSOCS
-        _Pmpf(("  xwpQueryProgType %s, before: 0x%lX",
-            _wpQueryTitle(somSelf), _ulAppType));
-    #endif
+    szProgramFile[0] = '\0';
 
-    if (_ulAppType == -1)
+    /*
+       #define PROG_DEFAULT             (PROGCATEGORY)0
+       #define PROG_FULLSCREEN          (PROGCATEGORY)1
+       #define PROG_WINDOWABLEVIO       (PROGCATEGORY)2
+       #define PROG_PM                  (PROGCATEGORY)3
+       #define PROG_GROUP               (PROGCATEGORY)5
+       #define PROG_REAL                (PROGCATEGORY)4
+       #define PROG_VDM                 (PROGCATEGORY)4
+       #define PROG_WINDOWEDVDM         (PROGCATEGORY)7
+       #define PROG_DLL                 (PROGCATEGORY)6
+       #define PROG_PDD                 (PROGCATEGORY)8
+       #define PROG_VDD                 (PROGCATEGORY)9
+       #define PROG_WINDOW_REAL         (PROGCATEGORY)10
+       #define PROG_WINDOW_PROT         (PROGCATEGORY)11
+       #define PROG_30_STD              (PROGCATEGORY)11
+       #define PROG_WINDOW_AUTO         (PROGCATEGORY)12
+       #define PROG_SEAMLESSVDM         (PROGCATEGORY)13
+       #define PROG_30_STDSEAMLESSVDM   (PROGCATEGORY)13
+       #define PROG_SEAMLESSCOMMON      (PROGCATEGORY)14
+       #define PROG_30_STDSEAMLESSCOMMON (PROGCATEGORY)14
+       #define PROG_31_STDSEAMLESSVDM   (PROGCATEGORY)15
+       #define PROG_31_STDSEAMLESSCOMMON (PROGCATEGORY)16
+       #define PROG_31_ENHSEAMLESSVDM   (PROGCATEGORY)17
+       #define PROG_31_ENHSEAMLESSCOMMON (PROGCATEGORY)18
+       #define PROG_31_ENH              (PROGCATEGORY)19
+       #define PROG_31_STD              (PROGCATEGORY)20
+       #define PROG_DOS_GAME            (PROGCATEGORY)21
+       #define PROG_WIN_GAME            (PROGCATEGORY)22
+       #define PROG_DOS_MODE            (PROGCATEGORY)23
+       #define PROG_RESERVED            (PROGCATEGORY)255
+    */
+
+    TRY_LOUD(excpt1)
     {
-        // not queried yet:
-
-        // get program object data
-        if ((pProgDetails = progQueryDetails(somSelf)))
+        if (_ulAppType == -1)
         {
-            // we base our assumptions on what OS/2 thinks
-            // the app type is
-            _ulAppType = pProgDetails->progt.progc;
+            // not queried yet, and not restored in wpRestoreData:
 
-            #ifdef DEBUG_ASSOCS
-                _Pmpf(("    progdtls.progc: 0x%lX",
-                            _ulAppType));
-            #endif
-
-            // and we modify a few of these assumptions
-            switch (_ulAppType)
+            if (_wpQueryFilename(somSelf, szProgramFile, TRUE))
             {
-                /* case PROG_PDD:
-                case PROG_VDD:
-                    // these two types are documented in pmshl.h,
-                    // but I'm not sure they're ever used; convert
-                    // them to our own driver type
-                    _ulAppType = PROG_XF_DRIVER;
-                break; */
+                PCSZ pcszExt;
 
-                // Windows:
-                case PROG_WINDOW_REAL         :
-                case PROG_30_STD              :
-                case PROG_WINDOW_AUTO         :
-                case PROG_30_STDSEAMLESSVDM   :
-                case PROG_30_STDSEAMLESSCOMMON:
-                case PROG_31_STDSEAMLESSVDM   :
-                case PROG_31_STDSEAMLESSCOMMON:
-                case PROG_31_ENHSEAMLESSVDM   :
-                case PROG_31_ENHSEAMLESSCOMMON:
-                case PROG_31_ENH              :
-                case PROG_31_STD              :
+                #ifdef DEBUG_ASSOCS
+                    _Pmpf((__FUNCTION__ ": %s, before: 0x%lX (%s)",
+                        szProgramFile, _ulAppType, appDescribeAppType(_ulAppType)));
+                #endif
+
+                _ulAppType = PROG_DEFAULT;
+
+                // kick out BAT, CMD, COM files first
+                if (pcszExt = doshGetExtension(szProgramFile))
                 {
-                    // for all the Windows app types, we check
-                    // for whether the extension of the file is
-                    // DLL or 386; if so, we change the type to
-                    // DLL. Otherwise,  all Windows DLL's get
-                    // some default windoze icon.
-                    CHAR    szProgramFile[CCHMAXPATH];
-                    if (_wpQueryFilename(somSelf, szProgramFile, FALSE))
-                    {
-                        PSZ     pLastDot = strrchr(szProgramFile, '.');
-                        nlsUpper(szProgramFile, 0);
-                        if (!strcmp(pLastDot, ".DLL"))
-                            // DLL found:
-                            _ulAppType = PROG_DLL;
-                    }
-                break; }
+                    if (!stricmp(pcszExt, "BAT"))
+                        _ulAppType = PROG_WINDOWEDVDM;
+                    else if (!stricmp(pcszExt, "CMD"))
+                        _ulAppType = PROG_WINDOWABLEVIO;
+                    else if (!stricmp(pcszExt, "COM"))
+                        // COM can be DOS or OS2, so go for
+                        // DosQueryAppType
+                        fCallQueryAppType = TRUE;
+                }
 
-                case PROG_DEFAULT:  // == 0; OS/2 isn't sure what this is
+                if (    (_ulAppType == PROG_DEFAULT)
+                     && (!fCallQueryAppType)
+                   )
                 {
-                    CHAR        szProgramFile[CCHMAXPATH];
-                    APIRET      arc;
+                    // not BAT, nor CMD, nor COM:
 
-                    if (_wpQueryFilename(somSelf, szProgramFile, TRUE))
+                    APIRET arc = NO_ERROR;
+
+                    if (pvExec)
+                        pExec = (PEXECUTABLE)pvExec;
+                    else
+                        if (!(arc = doshExecOpen(szProgramFile, &pExec)))
+                            // close this again on exit
+                            fClose = TRUE;
+
+                    if (arc)
+                        // cannot handle this executable:
+                        fCallQueryAppType = TRUE;
+                    else
                     {
-                        // no type available: get it ourselves
-                        if (arc = appQueryAppType(szProgramFile,
-                                                  &_ulDosAppType,
-                                                  &_ulAppType))
-                            _ulAppType = 0;
+                        // now we have the PEXECUTABLE:
+                        // check what we found
+                        switch (pExec->ulOS)
+                        {
+                            case EXEOS_DOS3:
+                            case EXEOS_DOS4:
+                                _Pmpf(("    EXEOS_DOS4"));
+                                _ulAppType = PROG_WINDOWEDVDM;
+                            break;
+
+                            case EXEOS_OS2:
+                                if (pExec->fLibrary)
+                                    _ulAppType = PROG_DLL;
+                                else
+                                switch (pExec->ulExeFormat)
+                                {
+                                    case EXEFORMAT_LX:
+
+#define E32NOTP          0x8000L        // Library Module - used as NENOTP
+#define E32NOLOAD        0x2000L        // Module not Loadable
+#define E32PMAPI         0x0300L        // Uses PM Windowing API
+#define E32PMW           0x0200L        // Compatible with PM Windowing
+#define E32NOPMW         0x0100L        // Incompatible with PM Windowing
+#define E32NOEXTFIX      0x0020L        // NO External Fixups in .EXE
+#define E32NOINTFIX      0x0010L        // NO Internal Fixups in .EXE
+#define E32SYSDLL        0x0008L        // System DLL, Internal Fixups discarded
+#define E32LIBINIT       0x0004L        // Per-Process Library Initialization
+#define E32LIBTERM       0x40000000L    // Per-Process Library Termination
+#define E32APPMASK       0x0300L        // Application Type Mask
+
+                                        _Pmpf(("    EXEOS_OS2 -- LX"));
+
+                                        switch (pExec->pLXHeader->ulFlags & E32APPMASK)
+                                        {
+                                            case E32PMAPI:
+                                                _ulAppType = PROG_PM;
+                                            break;
+
+                                            case E32PMW:
+                                                _ulAppType = PROG_WINDOWABLEVIO;
+                                            break;
+
+                                            case E32NOPMW:
+                                            default:
+                                                _ulAppType = PROG_FULLSCREEN;
+                                            break;
+                                        }
+                                    break;
+
+                                    case EXEFORMAT_NE:
+#define NENOTP          0x8000          // Not a process
+#define NENOTMPSAFE     0x4000          // Process is not multi-processor safe
+#define NEIERR          0x2000          // Errors in image
+#define NEBOUND         0x0800          // Bound Family/API
+#define NEAPPTYP        0x0700          // Application type mask
+#define NENOTWINCOMPAT  0x0100          // Not compatible with P.M. Windowing
+#define NEWINCOMPAT     0x0200          // Compatible with P.M. Windowing
+#define NEWINAPI        0x0300          // Uses P.M. Windowing API
+#define NEFLTP          0x0080          // Floating-point instructions
+#define NEI386          0x0040          // 386 instructions
+#define NEI286          0x0020          // 286 instructions
+#define NEI086          0x0010          // 8086 instructions
+#define NEPROT          0x0008          // Runs in protected mode only
+#define NEPPLI          0x0004          // Per-Process Library Initialization
+#define NEINST          0x0002          // Instance data
+#define NESOLO          0x0001          // Solo data
+
+                                        _Pmpf(("    EXEOS_OS2 -- NE"));
+
+                                        switch (pExec->pNEHeader->usFlags & NEAPPTYP)
+                                        {
+                                            case NEWINCOMPAT:
+                                                _ulAppType = PROG_WINDOWABLEVIO;
+                                            break;
+
+                                            case NEWINAPI:
+                                                _ulAppType = PROG_PM;
+                                            break;
+
+                                            case NENOTWINCOMPAT:
+                                            default:
+                                                _ulAppType = PROG_FULLSCREEN;
+                                            break;
+                                        }
+                                    break;
+
+                                    default:
+                                        // something else: let
+                                        // OS/2 handle this
+                                        fCallQueryAppType = TRUE;
+                                }
+                            break;
+
+                            case EXEOS_WIN16:
+                            case EXEOS_WIN386:
+                                _Pmpf(("    EXEOS_WIN16"));
+                                _ulAppType = PROG_31_ENHSEAMLESSCOMMON;
+                            break;
+
+                            case EXEOS_WIN32:
+                                _Pmpf(("    EXEOS_WIN32"));
+                                _ulAppType = PROG_WIN32;
+                            break;
+                        }
+
+                        // and we modify a few of these assumptions
+                        switch (_ulAppType)
+                        {
+                            // Windows:
+                            case PROG_WINDOW_REAL         :
+                            case PROG_30_STD              :
+                            case PROG_WINDOW_AUTO         :
+                            case PROG_30_STDSEAMLESSVDM   :
+                            case PROG_30_STDSEAMLESSCOMMON:
+                            case PROG_31_STDSEAMLESSVDM   :
+                            case PROG_31_STDSEAMLESSCOMMON:
+                            case PROG_31_ENHSEAMLESSVDM   :
+                            case PROG_31_ENHSEAMLESSCOMMON:
+                            case PROG_31_ENH              :
+                            case PROG_31_STD              :
+
+                            case EXEOS_WIN32:       // added V0.9.16 (2001-12-08) [umoeller]
+                            {
+                                // for all the Windows app types, we check
+                                // for whether the extension of the file is
+                                // DLL or 386; if so, we change the type to
+                                // DLL. Otherwise,  all Windows DLL's get
+                                // some default windoze icon.
+                                if (    (pcszExt)
+                                     && (!stricmp(pcszExt, "DLL"))
+                                   )
+                                    // DLL found:
+                                    _ulAppType = PROG_DLL;
+                            }
+                            break;
+
+                            // the other values are OK, leave them as is
+
+                        } // end switch (_ulAppType)
                     }
-                break; }
 
-                // the other values are OK, leave them as is
-
-            } // end switch (_ulAppType)
-            free(pProgDetails);
+                    // free(pProgDetails);
+                } // end if (_ulAppType != PROG_DEFAULT)
+            }
         }
-    }
 
-    #ifdef DEBUG_ASSOCS
-        _Pmpf(("  End of xwpQueryProgType, returning: 0x%lX",
-                _ulAppType));
-    #endif
+        #ifdef DEBUG_ASSOCS
+            _Pmpf(("  End of xwpQueryProgType, returning: 0x%lX (%s)",
+                    _ulAppType, appDescribeAppType(_ulAppType)));
+        #endif
+    }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
+
+    if (fClose)
+        // we opened the executable: free that again
+        doshExecClose(&pExec);
+
+    if (fCallQueryAppType)
+        // we were helpless above: call
+        // DosQueryAppType and translate
+        // those flags
+        appQueryAppType(szProgramFile,
+                        &ulDosAppType,
+                        &_ulAppType);
 
     return (_ulAppType);
 
@@ -384,11 +576,11 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpQueryProgType(XFldProgramFile *somSelf)
  *@@changed V0.9.16 (2001-10-11) [umoeller]: adjusted to new implementation
  */
 
-SOM_Scope BOOL  SOMLINK xfpgmf_xwpQuerySetup2(XFldProgramFile *somSelf,
+SOM_Scope BOOL  SOMLINK xpgf_xwpQuerySetup2(XFldProgramFile *somSelf,
                                               PVOID pstrSetup)
 {
     // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
-    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_xwpQuerySetup2");
+    XFldProgramFileMethodDebug("XFldProgramFile","xpgf_xwpQuerySetup2");
 
     // call implementation
     if (progQuerySetup(somSelf, pstrSetup))
@@ -422,13 +614,13 @@ SOM_Scope BOOL  SOMLINK xfpgmf_xwpQuerySetup2(XFldProgramFile *somSelf,
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfpgmf_xwpNukePhysical(XFldProgramFile *somSelf)
+SOM_Scope BOOL  SOMLINK xpgf_xwpNukePhysical(XFldProgramFile *somSelf)
 {
     static somTD_XFldDataFile_xwpNukePhysical pXFldDataFile_xwpNukePhysical = NULL;
 
     BOOL brc = FALSE;
     // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
-    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_xwpNukePhysical");
+    XFldProgramFileMethodDebug("XFldProgramFile","xpgf_xwpNukePhysical");
 
     if (!pXFldDataFile_xwpNukePhysical)
     {
@@ -469,16 +661,20 @@ SOM_Scope BOOL  SOMLINK xfpgmf_xwpNukePhysical(XFldProgramFile *somSelf)
  *      Always call the parent method first.
  */
 
-SOM_Scope void  SOMLINK xfpgmf_wpInitData(XFldProgramFile *somSelf)
+SOM_Scope void  SOMLINK xpgf_wpInitData(XFldProgramFile *somSelf)
 {
     XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
-    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_wpInitData");
+    XFldProgramFileMethodDebug("XFldProgramFile","xpgf_wpInitData");
 
     // initialize instance data
     _ulDosAppType = -1;
     _ulAppType = -1;
-    _fProgIconSet = FALSE;
-    _hptrThis = NULLHANDLE;
+
+    _pulStartupDirHandle = NULL;
+    _pProgType = NULL;
+    _ppszStartupDir = NULL;
+    _ppszEnvironment = NULL;
+    _pswpInitial = NULL;
 
     XFldProgramFile_parent_WPProgramFile_wpInitData(somSelf);
 }
@@ -495,11 +691,11 @@ SOM_Scope void  SOMLINK xfpgmf_wpInitData(XFldProgramFile *somSelf)
  *      this method as a copy constructor.
  */
 
-SOM_Scope void  SOMLINK xfpgmf_wpObjectReady(XFldProgramFile *somSelf,
+SOM_Scope void  SOMLINK xpgf_wpObjectReady(XFldProgramFile *somSelf,
                                              ULONG ulCode, WPObject* refObject)
 {
     XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
-    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_wpObjectReady");
+    XFldProgramFileMethodDebug("XFldProgramFile","xpgf_wpObjectReady");
 
     XFldProgramFile_parent_WPProgramFile_wpObjectReady(somSelf,
                                                        ulCode,
@@ -522,232 +718,264 @@ SOM_Scope void  SOMLINK xfpgmf_wpObjectReady(XFldProgramFile *somSelf,
         // of wpSetProgIcon, the icon will then be set correctly
         _ulDosAppType = -1;
         _ulAppType = -1;
-        _fProgIconSet = FALSE;
-        _hptrThis = NULLHANDLE;
     }
 }
 
-/*
- *@@ wpQueryStyle:
- *      this instance method returns the object style flags.
- */
-
-SOM_Scope ULONG  SOMLINK xfpgmf_wpQueryStyle(XFldProgramFile *somSelf)
+SOM_Scope BOOL  SOMLINK xpgf_wpRestoreState(XFldProgramFile *somSelf,
+                                            ULONG ulReserved)
 {
-    ULONG ulStyle = 0;
+    ULONG ulStyle;
+    BOOL brc;
     // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
-    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_wpQueryStyle");
+    XFldProgramFileMethodDebug("XFldProgramFile","xpgf_wpRestoreState");
 
-    ulStyle = XFldProgramFile_parent_WPProgramFile_wpQueryStyle(somSelf);
+    _Pmpf((__FUNCTION__ ": %s, old style: 0x%lX %s %s",
+                _wpQueryTitle(somSelf),
+                 ulStyle = _wpQueryStyle(somSelf),
+                 (ulStyle & OBJSTYLE_NOTDEFAULTICON) ? "OBJSTYLE_NOTDEFAULTICON" : "",
+                 (ulStyle & OBJSTYLE_CUSTOMICON) ? "OBJSTYLE_CUSTOMICON" : ""));
 
-    #ifdef DEBUG_ASSOCS
-        _Pmpf(("%s: wpQueryStyle: 0x%lX %s %s",
-                    _wpQueryTitle(somSelf),
-                    ulStyle,
-                    (ulStyle & OBJSTYLE_NOTDEFAULTICON) ? "OBJSTYLE_NOTDEFAULTICON" : "",
-                    (ulStyle & OBJSTYLE_CUSTOMICON) ? "OBJSTYLE_CUSTOMICON" : ""));
-    #endif
-    return (ulStyle /* & ~OBJSTYLE_CUSTOMICON */);
+    _wpModifyStyle(somSelf,
+                   OBJSTYLE_NOTDEFAULTICON,
+                   0);
+
+    brc = XFldProgramFile_parent_WPProgramFile_wpRestoreState(somSelf,
+                                                              ulReserved);
+    _Pmpf((__FUNCTION__ ": %s, new style: 0x%lX %s %s",
+                _wpQueryTitle(somSelf),
+                 ulStyle = _wpQueryStyle(somSelf),
+                 (ulStyle & OBJSTYLE_NOTDEFAULTICON) ? "OBJSTYLE_NOTDEFAULTICON" : "",
+                 (ulStyle & OBJSTYLE_CUSTOMICON) ? "OBJSTYLE_CUSTOMICON" : ""));
+    return brc;
 }
 
 /*
- *@@ wpSetIcon:
- *      this instance method sets the current icon for
- *      an object. As opposed to with wpSetIconData,
- *      this does not change the icon permanently.
+ *@@ wpRestoreData:
  *
- *      Note: If the OBJSTYLE_NOTDEFAULTICON object style
- *      flag has been set with wpSetStyle, the old icon
- *      (HPOINTER) will be destroyed.
- *      As a result, that flag needs to be unset if
- *      icons are shared between objects, as with class
- *      default icons. The OBJSTYLE_CUSTOMICON flag does
- *      NOT work, even if the WPS lists it with wpQueryStyle.
- *
- *      Also, the WPS annoyingly resets the icon to its
- *      default when a settings notebook is opened.
+ *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfpgmf_wpSetIcon(XFldProgramFile *somSelf,
-                                         HPOINTER hptrNewIcon)
+SOM_Scope BOOL  SOMLINK xpgf_wpRestoreData(XFldProgramFile *somSelf,
+                                           PSZ pszClass, ULONG ulKey,
+                                           PBYTE pValue, PULONG pcbValue)
 {
-    BOOL brc = TRUE;
-    // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_wpSetIcon");
+    XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
+    XFldProgramFileMethodDebug("XFldProgramFile","xpgf_wpRestoreData");
 
-    #ifdef DEBUG_ASSOCS
-        _Pmpf(("    %s wpSetIcon", _wpQueryTitle(somSelf) ));
-    #endif
-    // icon replacements allowed?
-    /* if (pGlobalSettings->ReplIcons) {
-        XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
-        // we only allow the icon to be changed if
-        // this is a call from _wpSetProgIcon (which
-        // we have overriden) or if the WPS calls this
-        // method for the first time, e.g. because it is
-        // being set by some method other than wpSetProgIcon,
-        // which happens if the WPS has determined the icon
-        // from the executable or .ICON EA's.
-        if (    (_hptrThis == NULLHANDLE)
-             || (_fProgIconSet)
-           )
+    // intercept pointer to internal WPProgram data
+    if (    (pValue)
+         && (!strcmp(pszClass, "WPProgramFile"))
+       )
+    {
+        switch (ulKey)
         {
-            _hptrThis = hptrNewIcon;
-            brc = XFldProgramFile_parent_WPProgramFile_wpSetIcon(somSelf,
-                                                                   hptrNewIcon);
-            // prohibit subsequent calls
-            _fProgIconSet = FALSE;
+            case 10:            // longs array
+                _pulStartupDirHandle = (PULONG)pValue;
+                // progtype comes next
+                _pProgType = (PPROGTYPE)(_pulStartupDirHandle + 1);
+                if (_pProgType->progc)
+                    // if this is set explicitly, we shouldn't
+                    // make the default assumptions in xwpqueryprogtype
+                    _ulAppType = _pProgType->progc;
+            break;
+
+            case 11:            // strings array
+                // ppszStartupDir
+            break;
+
+            case 5:             // environment
+                // _ppszEnvironment = pValue;
+                        // warning, this appears to be a heap buffer
+                        // and can change
+            break;
+
+            case 6:             // initial SWP
+                _pswpInitial = (PSWP)pValue;
+            break;
         }
-        // else: ignore the call. The WPS keeps messing with
-        // program icons from methods other than _wpSetProgIcon,
-        // which we must ignore.
+    }
 
-    } else */
-        brc = XFldProgramFile_parent_WPProgramFile_wpSetIcon(somSelf,
-                                                               hptrNewIcon);
-
-    return (brc);
+    return (XFldProgramFile_parent_WPProgramFile_wpRestoreData(somSelf,
+                                                               pszClass,
+                                                               ulKey,
+                                                               pValue,
+                                                               pcbValue));
 }
 
 /*
  *@@ wpSetProgIcon:
  *      this WPProgramFile instance method sets the visual icon
  *      for this executable file to the appropriate custom or
- *      default icon.
+ *      default icon -- at least WPSREF says.
  *
- *      We override this to change the default icons for program
- *      files using /ICONS/ICONS.DLL, if the global settings allow
- *      this.
+ *      This isn't entirely correct if the executable has its
+ *      own .ICON EA because in that case, WPDataFile::wpRestoreState
+ *      sets the icon directly, and this never gets called.
  *
- *      The following methods are called by the WPS when
- *      an icon is to be determined for a WPProgramFile:
+ *      As a result, this only gets called if the object does _not_
+ *      have an .ICON EA. We then override this to change the
+ *      default icons for program files using /ICONS/ICONS.DLL, if
+ *      the global settings allow this.
  *
- *      -- if the file has its own icon, e.g. from the
- *              .ICON EAs: only wpSetIcon, this method does
- *              _not_ get called then.
- *
- *      -- otherwise (no .ICON):
- *              1)  wpQueryIcon, which calls
- *              2)  wpSetProgIcon, which per default calls
- *              3)  wpSetIcon.
+ *      Normally this gets called the first time
+ *      WPFileSystem::wpQueryIcon gets called.
  *
  *      We must return an individual icon in this method,
  *      so we load the icons from /ICONS/ICONS.DLL every
  *      time we arrive here.
  *
- *      If we return a "global" icon handle which could
- *      have been loaded in wpclsInitData, unfortunately
- *      the WPS will destroy that "global" icon, ruining
- *      the icons of all other program files also.
+ *@@changed V0.9.16 (2001-12-08) [umoeller]: lots of tuning for speed
  */
 
-SOM_Scope BOOL  SOMLINK xfpgmf_wpSetProgIcon(XFldProgramFile *somSelf,
-                                             PFEA2LIST pfeal)
+SOM_Scope BOOL  SOMLINK xpgf_wpSetProgIcon(XFldProgramFile *somSelf,
+                                           PFEA2LIST pfeal)
 {
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     HPOINTER    hptr = NULLHANDLE;
+    BOOL        fNotDefaultIcon = FALSE;
+    APIRET      arc;
 
     XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
-    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_wpSetProgIcon");
+    XFldProgramFileMethodDebug("XFldProgramFile","xpgf_wpSetProgIcon");
 
     // icon replacements allowed?
 #ifndef __NOICONREPLACEMENTS__
     if (cmnIsFeatureEnabled(IconReplacements))
     {
         CHAR        szProgramFile[CCHMAXPATH];
-        HMODULE     hmodIconsDLL = cmnQueryIconsDLL();
+        // HMODULE     hmodIconsDLL = cmnQueryIconsDLL();
 
+        /*
         #ifdef DEBUG_ASSOCS
-            _Pmpf(("%s: wpSetProgIcon",
-                        _wpQueryTitle(somSelf) ));
+            ULONG ulStyle = _wpQueryStyle(somSelf);
+            _Pmpf((__FUNCTION__ ": %s, old style: 0x%lX %s %s",
+                        _wpQueryTitle(somSelf),
+                         ulStyle,
+                         (ulStyle & OBJSTYLE_NOTDEFAULTICON) ? "OBJSTYLE_NOTDEFAULTICON" : "",
+                         (ulStyle & OBJSTYLE_CUSTOMICON) ? "OBJSTYLE_CUSTOMICON" : ""));
+
+            _Pmpf(("   pfeal is %lX", pfeal));
+                    // always NULL... some other relic from better days, i guess
+                    // V0.9.16 (2001-12-08) [umoeller]
         #endif
+        */
 
         if (_wpQueryFilename(somSelf, szProgramFile, TRUE))
         {
             // first: check if an .ICO file of the same filestem
             // exists in the folder. If so, _always_ use that icon.
-            PSZ p = strrchr(szProgramFile, '.');
-            if (p)
+            PSZ p;
+            if (p = strrchr(szProgramFile, '.'))
             {
                 CHAR szIconFile[CCHMAXPATH];
-                strncpy(szIconFile, szProgramFile, (p-szProgramFile));
+                memcpy(szIconFile, szProgramFile, (p - szProgramFile));
                 strcpy(szIconFile + (p-szProgramFile), ".ico");
-                #ifdef DEBUG_ASSOCS
-                    _Pmpf(("   Icon file: %s", szIconFile));
-                #endif
-                hptr = WinLoadFileIcon(szIconFile,
-                                       FALSE);      // no private copy
+                // use the new icoLoadICOFile, this is way faster
+                // V0.9.16 (2001-12-08) [umoeller]
+                if (!(arc = icoLoadICOFile(szIconFile,
+                                           &hptr)))
+                    fNotDefaultIcon = TRUE;
+                // else: .ICO file doesn't exist, or bad format, so go on
             }
 
             if (!hptr)
             {
-                ULONG ulLoadPtr = 0;
+                ULONG ulLoadIconsDLL = 0,
+                      ulLoadPMWP = 0;
 
-                // no such .ICO file exists:
-                // examine the application type we have
-                switch (_xwpQueryProgType(somSelf))
+                PEXECUTABLE pExec = NULL;
+
+                if (!(arc = doshExecOpen(szProgramFile, &pExec)))
                 {
+                    _Pmpf((__FUNCTION__ ": calling _xwpQueryProgType"));
+                    _xwpQueryProgType(somSelf, pExec);
 
-                    // PM:
-                    case PROG_PM                  :
-                    // Windows:
-                    case PROG_WINDOW_REAL         :
-                    case PROG_30_STD              :
-                    case PROG_WINDOW_AUTO         :
-                    case PROG_30_STDSEAMLESSVDM   :
-                    case PROG_30_STDSEAMLESSCOMMON:
-                    case PROG_31_STDSEAMLESSVDM   :
-                    case PROG_31_STDSEAMLESSCOMMON:
-                    case PROG_31_ENHSEAMLESSVDM   :
-                    case PROG_31_ENHSEAMLESSCOMMON:
-                    case PROG_31_ENH              :
-                    case PROG_31_STD              :
-                        // have PM determine the icon
-                        hptr = WinLoadFileIcon(szProgramFile,
-                                               FALSE);
-                    break;
+                    // no such .ICO file exists:
+                    // examine the application type we have
+                    switch (_ulAppType)
+                    {
+                        // PM:
+                        case PROG_PM                  :
+                        // Windows:
+                        case PROG_WINDOW_REAL         :
+                        case PROG_30_STD              :
+                        case PROG_WINDOW_AUTO         :
+                        case PROG_30_STDSEAMLESSVDM   :
+                        case PROG_30_STDSEAMLESSCOMMON:
+                        case PROG_31_STDSEAMLESSVDM   :
+                        case PROG_31_STDSEAMLESSCOMMON:
+                        case PROG_31_ENHSEAMLESSVDM   :
+                        case PROG_31_ENHSEAMLESSCOMMON:     // we get this for PE execs!!
+                        case PROG_31_ENH              :
+                        case PROG_31_STD              :
+                            // have PM determine the icon
+                            if (!(arc = icoLoadExeIcon(pExec,
+                                                       &hptr)))
+                                fNotDefaultIcon = TRUE;
+                            else
+                                if (_ulAppType == PROG_PM)
+                                    ulLoadPMWP = 25; // default PM prog icon
+                                else
+                                    ulLoadPMWP = 52;    // default windoze
+                        break;
 
-                    case PROG_WINDOWABLEVIO:
-                        // "window compatible":
-                        // OS/2 window icon
-                        ulLoadPtr = 108;
-                    break;
+                        case PROG_WINDOWABLEVIO:
+                            // "window compatible":
+                            // OS/2 window icon
+                            ulLoadIconsDLL = 108;
+                        break;
 
-                    case PROG_FULLSCREEN:
-                        // "not window compatible":
-                        // OS/2 fullscreen icon
-                        ulLoadPtr = 107;
-                    break;
+                        case PROG_FULLSCREEN:
+                            // "not window compatible":
+                            // OS/2 fullscreen icon
+                            ulLoadIconsDLL = 107;
+                        break;
 
-                    case PROG_WINDOWEDVDM:
-                        // DOS window
-                        ulLoadPtr = 105;
-                    break;
+                        case PROG_WINDOWEDVDM:
+                            // DOS window
+                            ulLoadIconsDLL = 105;
+                        break;
 
-                    case PROG_VDM: // == PROG_REAL
-                        // DOS fullscreen
-                        ulLoadPtr = 104;
-                    break;
+                        case PROG_VDM: // == PROG_REAL
+                            // DOS fullscreen
+                            ulLoadIconsDLL = 104;
+                        break;
 
-                    case PROG_DLL:
-                        // DLL flag set: load DLL icon
-                        ulLoadPtr = 103;
-                    break;
+                        case PROG_DLL:
+                            // DLL flag set: load DLL icon
+                            ulLoadIconsDLL = 103;
+                        break;
 
-                    case PROG_PDD:
-                    case PROG_VDD:
-                        ulLoadPtr = 106;
-                    break;
+                        case PROG_PDD:
+                        case PROG_VDD:
+                            ulLoadIconsDLL = 106;
+                        break;
 
-                    default:
-                        // unknown:
-                        ulLoadPtr = 102;
+                        default:
+                            // unknown:
+                            ulLoadIconsDLL = 102;
+                    }
+
+                    doshExecClose(&pExec);
+                } // end if (!(arc = doshExecOpen(szProgramFile, &pExec)))
+
+                if (ulLoadIconsDLL)
+                    // use one of our global icons so we
+                    // can share them (these never get unloaded,
+                    // but are loaded only once)
+                    // V0.9.16 (2001-12-08) [umoeller]
+                    hptr = cmnLoadPointer(ulLoadIconsDLL);
+                    /* hptr = WinLoadPointer(HWND_DESKTOP, hmodIconsDLL,
+                                          ulLoadIconsDLL); */
+                else if (ulLoadPMWP)
+                {
+                    HMODULE hmod;
+                    DosQueryModuleHandle("PMWP", &hmod);
+                    hptr = WinLoadPointer(HWND_DESKTOP,
+                                          hmod,
+                                          ulLoadPMWP);
+                    fNotDefaultIcon = TRUE;
                 }
-
-                if (ulLoadPtr)
-                    hptr = WinLoadPointer(HWND_DESKTOP, hmodIconsDLL,
-                                          ulLoadPtr);
-
             }
         }
     }
@@ -763,20 +991,38 @@ SOM_Scope BOOL  SOMLINK xfpgmf_wpSetProgIcon(XFldProgramFile *somSelf,
 #ifndef __NOICONREPLACEMENTS__
     // else:
 
-    // set a flag for our wpSetIcon override
-    _fProgIconSet = TRUE;
-
-    // some icon from /ICONS found: set it
+    // some icon from /ICONS found: set it...
+    // note, for some reason, the object _always_ has
+    // OBJSTYLE_NOTDEFAULTICON set at this point... I am
+    // unsure what WPS code is responsible for this.
     _wpSetIcon(somSelf, hptr);
-    // make sure this icon is not destroyed;
-    // the WPS destroys the icon when the OBJSTYLE_NOTDEFAULTICON
-    // bit is set (do not use OBJSTYLE_CUSTOMICON, it is ignored by the WPS)
-    _wpModifyStyle(somSelf, OBJSTYLE_NOTDEFAULTICON, 0);
-    // _wpModifyStyle(somSelf, OBJSTYLE_CUSTOMICON, 0);
-    // _wpModifyStyle(somSelf, OBJSTYLE_NOTDEFAULTICON, 0);
+    // update the OBJSTYLE_NOTDEFAULTICON flag: wpSetIcon
+    // checks for this, so if we have loaded something
+    // default, _clear_ the flag, or the WPS kills our
+    // common icon
+    _wpModifyStyle(somSelf,
+                   OBJSTYLE_NOTDEFAULTICON,
+                   0);
+        // for now, _always_ clear the flag... dammit, the
+        // WPS keeps nuking my icons because some dumb fuck
+        // keeps switching that flag back on... the below
+        // doesn't work.
+        /*
+                   // flag was set above depending on the
+                   // icon that was loaded:
+                   (fNotDefaultIcon)
+                        ? OBJSTYLE_NOTDEFAULTICON
+                        : 0);
+           */
 
     #ifdef DEBUG_ASSOCS
-        _Pmpf(("End of xfpgmf_wpSetProgIcon"));
+    {
+        ULONG ulStyle;
+        _Pmpf(("End of xpgf_wpSetProgIcon, new style: 0x%lX %s %s",
+                 ulStyle = _wpQueryStyle(somSelf),
+                 (ulStyle & OBJSTYLE_NOTDEFAULTICON) ? "OBJSTYLE_NOTDEFAULTICON" : "",
+                 (ulStyle & OBJSTYLE_CUSTOMICON) ? "OBJSTYLE_CUSTOMICON" : ""));
+    }
     #endif
 
     return (TRUE);
@@ -794,13 +1040,13 @@ SOM_Scope BOOL  SOMLINK xfpgmf_wpSetProgIcon(XFldProgramFile *somSelf,
  *@@added V0.9.9 (2001-04-02) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xfpgmf_wpSetAssociationType(XFldProgramFile *somSelf,
+SOM_Scope BOOL  SOMLINK xpgf_wpSetAssociationType(XFldProgramFile *somSelf,
                                                     PSZ pszType)
 {
     BOOL brc = FALSE;
 
     // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
-    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_wpSetAssociationType");
+    XFldProgramFileMethodDebug("XFldProgramFile","xpgf_wpSetAssociationType");
 
     brc = XFldProgramFile_parent_WPProgramFile_wpSetAssociationType(somSelf,
                                                                     pszType);
@@ -825,13 +1071,14 @@ SOM_Scope BOOL  SOMLINK xfpgmf_wpSetAssociationType(XFldProgramFile *somSelf,
  *      Oh yes, as usual, this value is undocumented. ;-)
  */
 
-SOM_Scope ULONG  SOMLINK xfpgmf_wpQueryDefaultView(XFldProgramFile *somSelf)
+SOM_Scope ULONG  SOMLINK xpgf_wpQueryDefaultView(XFldProgramFile *somSelf)
 {
     ULONG ulView;
-    ULONG ulProgType = _xwpQueryProgType(somSelf);
+
+    ULONG ulProgType = _xwpQueryProgType(somSelf, NULL);
 
     // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
-    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_wpQueryDefaultView");
+    XFldProgramFileMethodDebug("XFldProgramFile","xpgf_wpQueryDefaultView");
 
     #ifdef DEBUG_ASSOCS
         _Pmpf(( "wpQueryDefaultView for %s", _wpQueryTitle(somSelf) ));
@@ -854,6 +1101,112 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpQueryDefaultView(XFldProgramFile *somSelf)
 }
 
 /*
+ *@@ wpQueryProgDetails:
+ *      this returns information about the executable
+ *      program file.
+ *
+ *      This is a complete rewrite. We no longer call
+ *      the parent because it's so damn slow and messes
+ *      with too many things.
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xpgf_wpQueryProgDetails(XFldProgramFile *somSelf,
+                                                PPROGDETAILS pProgDetails,
+                                                PULONG pulSize)
+{
+    BOOL    brc = FALSE;
+    ULONG   ulSize = 0;
+    PSZ     pszTitle;
+    CHAR    szExecutable[CCHMAXPATH];
+
+    XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
+    XFldProgramFileMethodDebug("XFldProgramFile","xpgf_wpQueryProgDetails");
+
+    /* return (XFldProgramFile_parent_WPProgramFile_wpQueryProgDetails(somSelf,
+                                                                    pProgDetails,
+                                                                    pulSize)); */
+
+    if (    (_wpQueryFilename(somSelf, szExecutable, TRUE))
+         && (_pProgType)
+         && (pszTitle = _wpQueryTitle(somSelf))
+         && (pulSize)
+       )
+    {
+        CHAR        szStartupDir[CCHMAXPATH];
+
+        ULONG       cbTitle = 0,
+                    cbExecutable = strlen(szExecutable) + 1,
+                    cbStartupDir = 0;
+
+        if (pszTitle)
+            cbTitle = strlen(pszTitle) + 1;
+
+        if (    (_pulStartupDirHandle)
+             && (*_pulStartupDirHandle)
+           )
+        {
+            // we have a startup dir: get the full path from
+            // the handle
+            WPFolder *pStartup;
+            if (    (pStartup = _wpclsQueryObject(_WPFileSystem, *_pulStartupDirHandle))
+                 && (_somIsA(pStartup, _WPFolder))
+                 && (_wpQueryFilename(pStartup, szStartupDir, TRUE))
+               )
+                cbStartupDir = strlen(szStartupDir) + 1;
+        }
+
+        ulSize =   sizeof(PROGDETAILS)
+                 + cbTitle
+                 + cbExecutable
+                 + cbStartupDir;
+                // @@todo: environment, parameters
+
+        if (!pProgDetails)
+            brc = TRUE;
+        else if (ulSize <= *pulSize)
+        {
+            // caller has supplied sufficient buffer:
+            PBYTE   pbCurrent;
+
+            ZERO(pProgDetails);
+            pProgDetails->Length = sizeof(PROGDETAILS);
+
+            pProgDetails->progt.progc = _xwpQueryProgType(somSelf, NULL);
+            pProgDetails->progt.fbVisible = _pProgType->fbVisible;
+
+            // go copy after PROGDETAILS
+            pbCurrent = (PBYTE)(pProgDetails + 1);
+
+            if (cbTitle)
+            {
+                pProgDetails->pszTitle = pbCurrent;
+                memcpy(pbCurrent, pszTitle, cbTitle);       // includes 0
+                pbCurrent += cbTitle;
+            }
+
+            pProgDetails->pszExecutable = pbCurrent;
+            memcpy(pbCurrent, szExecutable, cbExecutable);  // includes 0
+            pbCurrent += cbExecutable;
+
+            if (cbStartupDir)
+            {
+                pProgDetails->pszStartupDir = pbCurrent;
+                memcpy(pbCurrent, szStartupDir, cbStartupDir);  // includes 0
+                pbCurrent += cbStartupDir;
+            }
+
+            brc = TRUE;
+        }
+
+        *pulSize = ulSize;
+    }
+
+    return (brc);
+}
+
+/*
  *@@ wpAddProgramAssociationPage:
  *      this WPProgramFile method adds the "Associations" page
  *      to an executable's settings notebook.
@@ -870,14 +1223,14 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpQueryDefaultView(XFldProgramFile *somSelf)
  *@@changed V0.9.11 (2001-04-25) [umoeller]: removing page for DLLs and drivers now
  */
 
-SOM_Scope ULONG  SOMLINK xfpgmf_wpAddProgramAssociationPage(XFldProgramFile *somSelf,
+SOM_Scope ULONG  SOMLINK xpgf_wpAddProgramAssociationPage(XFldProgramFile *somSelf,
                                                             HWND hwndNotebook)
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    ULONG ulType = _xwpQueryProgType(somSelf);
+    ULONG ulType = _xwpQueryProgType(somSelf, NULL);
 
     // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
-    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_wpAddProgramAssociationPage");
+    XFldProgramFileMethodDebug("XFldProgramFile","xpgf_wpAddProgramAssociationPage");
 
     // don't add this page for drivers and DLLs V0.9.11 (2001-04-25) [umoeller]
     switch (ulType)
@@ -907,13 +1260,13 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpAddProgramAssociationPage(XFldProgramFile *som
  *@@added V0.9.11 (2001-04-25) [umoeller]
  */
 
-SOM_Scope ULONG  SOMLINK xfpgmf_wpAddProgramPage(XFldProgramFile *somSelf,
+SOM_Scope ULONG  SOMLINK xpgf_wpAddProgramPage(XFldProgramFile *somSelf,
                                                  HWND hwndNotebook)
 {
     // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
-    ULONG ulType = _xwpQueryProgType(somSelf);
+    ULONG ulType = _xwpQueryProgType(somSelf, NULL);
 
-    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_wpAddProgramPage");
+    XFldProgramFileMethodDebug("XFldProgramFile","xpgf_wpAddProgramPage");
 
     // don't add this page for drivers and DLLs V0.9.11 (2001-04-25) [umoeller]
     switch (ulType)
@@ -946,14 +1299,14 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpAddProgramPage(XFldProgramFile *somSelf,
  *@@changed V0.9.11 (2001-04-25) [umoeller]: removing page for DLLs and drivers now
  */
 
-SOM_Scope ULONG  SOMLINK xfpgmf_wpAddProgramSessionPage(XFldProgramFile *somSelf,
+SOM_Scope ULONG  SOMLINK xpgf_wpAddProgramSessionPage(XFldProgramFile *somSelf,
                                                         HWND hwndNotebook)
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    ULONG ulType = _xwpQueryProgType(somSelf);
+    ULONG ulType = _xwpQueryProgType(somSelf, NULL);
 
     // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
-    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_wpAddProgramSessionPage");
+    XFldProgramFileMethodDebug("XFldProgramFile","xpgf_wpAddProgramSessionPage");
 
     // insert "Module" settings page, but not for command files
 #ifndef __NOMODULEPAGES__
@@ -991,16 +1344,16 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpAddProgramSessionPage(XFldProgramFile *somSelf
  *      DLL's and drivers.
  */
 
-SOM_Scope ULONG  SOMLINK xfpgmf_wpFilterPopupMenu(XFldProgramFile *somSelf,
+SOM_Scope ULONG  SOMLINK xpgf_wpFilterPopupMenu(XFldProgramFile *somSelf,
                                                   ULONG ulFlags,
                                                   HWND hwndCnr,
                                                   BOOL fMultiSelect)
 {
     ULONG ulFilter;
-    ULONG ulProgType = _xwpQueryProgType(somSelf);
+    ULONG ulProgType = _xwpQueryProgType(somSelf, NULL);
 
     /* XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf); */
-    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_wpFilterPopupMenu");
+    XFldProgramFileMethodDebug("XFldProgramFile","xpgf_wpFilterPopupMenu");
 
     ulFilter = XFldProgramFile_parent_WPProgramFile_wpFilterPopupMenu(somSelf,
                                                                       ulFlags,
@@ -1032,10 +1385,10 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpFilterPopupMenu(XFldProgramFile *somSelf,
  *@@changed V0.9.0 [umoeller]: added class object to KERNELGLOBALS
  */
 
-SOM_Scope void  SOMLINK xfpgmfM_wpclsInitData(M_XFldProgramFile *somSelf)
+SOM_Scope void  SOMLINK xpgfM_wpclsInitData(M_XFldProgramFile *somSelf)
 {
     // M_XFldProgramFileData *somThis = M_XFldProgramFileGetData(somSelf);
-    M_XFldProgramFileMethodDebug("M_XFldProgramFile","xfpgmfM_wpclsInitData");
+    M_XFldProgramFileMethodDebug("M_XFldProgramFile","xpgfM_wpclsInitData");
 
     M_XFldProgramFile_parent_M_WPProgramFile_wpclsInitData(somSelf);
 
@@ -1059,11 +1412,11 @@ SOM_Scope void  SOMLINK xfpgmfM_wpclsInitData(M_XFldProgramFile *somSelf)
  *      place.
  */
 
-SOM_Scope PSZ  SOMLINK xfpgmfM_wpclsQueryInstanceFilter(M_XFldProgramFile *somSelf)
+SOM_Scope PSZ  SOMLINK xpgfM_wpclsQueryInstanceFilter(M_XFldProgramFile *somSelf)
 {
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* M_XFldProgramFileData *somThis = M_XFldProgramFileGetData(somSelf); */
-    M_XFldProgramFileMethodDebug("M_XFldProgramFile","xfpgmfM_wpclsQueryInstanceFilter");
+    M_XFldProgramFileMethodDebug("M_XFldProgramFile","xpgfM_wpclsQueryInstanceFilter");
 
 #ifndef __NOICONREPLACEMENTS__
     if (    (somSelf == _XFldProgramFile)

@@ -74,6 +74,7 @@
 #include "helpers\except.h"             // exception handling
 #include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\prfh.h"               // INI file helper routines
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\textview.h"           // PM XTextView control
 #include "helpers\threads.h"            // thread helpers
@@ -83,6 +84,7 @@
 // SOM headers which don't crash with prec. header files
 #include "xfldr.ih"
 #include "xfpgmf.ih"
+#include "xwpfsys.ih"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -92,11 +94,20 @@
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\filesys.h"            // various file-system object implementation code
+#include "filesys\icons.h"              // icons handling
 #include "filesys\program.h"            // program implementation
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
-// #include <wpdesk.h>             // this includes wpfolder.h
+
+/* ******************************************************************
+ *
+ *   Global variables
+ *
+ ********************************************************************/
+
+static PGEA2LIST    G_StandardGEA2List = NULL;
+static ULONG        G_cbStandardGEA2List = 0;
 
 /* ******************************************************************
  *
@@ -396,11 +407,439 @@ BOOL fsysRefreshFSInfo(WPFileSystem *somSelf,
                                                  NULL, // use somSelf's class
                                                  "wpRefreshFSInfo"))
         brc = pwpRefreshFSInfo(somSelf,
-                               0,
+                               NULLHANDLE,
                                pfb3,
                                TRUE);
 
     return (brc);
+}
+
+/* ******************************************************************
+ *
+ *   Populate / refresh
+ *
+ ********************************************************************/
+
+/*
+ *@@ fsysCreateStandardGEAList:
+ *      sets up a pointer to the GEA2LIST which
+ *      describes the EA names to look for during
+ *      file-system populate. Since we always use
+ *      the same list, we create this on
+ *      M_XFolder::wpclsInitData and reuse that list
+ *      forever.
+ *
+ *      GetGEAList then makes a copy of that for
+ *      fdrPopulate. See remarks there.
+ *
+ *@@added V0.9.16 (2001-10-25) [umoeller]
+ */
+
+VOID fsysCreateStandardGEAList(VOID)
+{
+    /* Entries in the GEA2 list
+    must be aligned on a doubleword boundary. Each oNextEntryOffset
+    field must contain the number of bytes from the beginning of the
+    current entry to the beginning of the next entry. */
+
+    /* typedef struct _GEA2LIST {
+        ULONG     cbList;   // Total bytes of structure including full list.
+        GEA2      list[1];  // Variable-length GEA2 structures.
+    } GEA2LIST;
+
+    /* typedef struct _GEA2 {
+        ULONG     oNextEntryOffset;  // Offset to next entry.
+        BYTE      cbName;            // Name length not including NULL.
+        CHAR      szName[1];         // Attribute name.
+      } GEA2;
+    */
+
+    if (!G_StandardGEA2List)
+    {
+        // first call:
+
+        PCSZ apcszEANames[] =
+            {
+                ".CLASSINFO",
+                ".LONGNAME",
+                ".TYPE",
+                ".ICON"
+            };
+
+        // check how much memory we need:
+        ULONG   ul;
+
+        G_cbStandardGEA2List = sizeof(ULONG);       // GEA2LIST.cbList
+
+        for (ul = 0;
+             ul < ARRAYITEMCOUNT(apcszEANames);
+             ul++)
+        {
+            G_cbStandardGEA2List +=   sizeof(ULONG)         // GEA2.oNextEntryOffset
+                                    + sizeof(BYTE)          // GEA2.cbName
+                                    + strlen(apcszEANames[ul])
+                                    + 1;                    // null terminator
+
+            // add padding, each entry must be dword-aligned
+            G_cbStandardGEA2List += 4;
+        }
+
+        if (G_StandardGEA2List = (PGEA2LIST)malloc(G_cbStandardGEA2List))
+        {
+            PGEA2 pThis, pLast;
+
+            G_StandardGEA2List->cbList = G_cbStandardGEA2List;
+            pThis = G_StandardGEA2List->list;
+
+            for (ul = 0;
+                 ul < ARRAYITEMCOUNT(apcszEANames);
+                 ul++)
+            {
+                pThis->cbName = strlen(apcszEANames[ul]);
+                memcpy(pThis->szName,
+                       apcszEANames[ul],
+                       pThis->cbName + 1);
+
+                pThis->oNextEntryOffset =   sizeof(ULONG)
+                                          + sizeof(BYTE)
+                                          + pThis->cbName
+                                          + 1;
+
+                pThis->oNextEntryOffset += 3 - ((pThis->oNextEntryOffset + 3) & 0x03);
+                            // 1:   1 + 3 = 4  = 0      should be 3
+                            // 2:   2 + 3 = 5  = 1      should be 2
+                            // 3:   3 + 3 = 6  = 2      should be 1
+                            // 4:   4 + 3 = 7  = 3      should be 0
+
+                pLast = pThis;
+                pThis = (PGEA2)(((PBYTE)pThis) + pThis->oNextEntryOffset);
+            }
+
+            pLast->oNextEntryOffset = 0;
+        }
+    }
+}
+
+/*
+ *@@ GetGEA2List:
+ *      returns a copy of the GEA2 list created by
+ *      fsysCreateStandardGEAList. CPREF says that
+ *      this buffer is modified internally by
+ *      DosFindFirst/Next, so we need a separate
+ *      buffer for each populate.
+ *
+ *      The caller is responsible for free()ing
+ *      the buffer.
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+PGEA2LIST GetGEA2List(VOID)
+{
+    PGEA2LIST pList;
+    if (pList = malloc(G_cbStandardGEA2List))
+        memcpy(pList, G_StandardGEA2List, G_cbStandardGEA2List);
+
+    return (pList);
+}
+
+/*
+ *@@ fsysCreateFindBuffer:
+ *      called from PopulateWithFileSystems to
+ *      allocate and set up a buffer for DosFindFirst/Next
+ *      or DosQueryPathInfo.
+ *
+ *@@added V0.9.16 (2001-10-28) [umoeller]
+ */
+
+APIRET fsysCreateFindBuffer(PEAOP2 *pp)
+{
+    APIRET arc;
+
+    if (!(arc = DosAllocMem((PVOID*)pp,
+                            FINDBUFSIZE,
+                            OBJ_TILE | PAG_COMMIT | PAG_READ | PAG_WRITE)))
+    {
+        // set up the EAs list... sigh
+
+        /*  CPREF: On input, pfindbuf contains an EAOP2 data structure. */
+        PEAOP2      peaop2 = *pp;
+                    /*  typedef struct _EAOP2 {
+                          PGEA2LIST     fpGEA2List;
+                          PFEA2LIST     fpFEA2List;
+                          ULONG         oError;
+                        } EAOP2; */
+
+        /*  CPREF: fpGEA2List contains a pointer to a GEA2 list, which
+            defines the EA names whose values are to be returned. */
+
+        // since we try the same EAs for the objects, we
+        // create a GEA2LIST only once and reuse that forever:
+        peaop2->fpGEA2List = GetGEA2List();     // freed on exit
+
+        // set up FEA2LIST output buffer: right after the leading EAOP2
+        peaop2->fpFEA2List          = (PFEA2LIST)(peaop2 + 1);
+        peaop2->fpFEA2List->cbList  = FINDBUFSIZE - sizeof(EAOP2);
+        peaop2->oError              = 0;
+    }
+
+    return (arc);
+}
+
+/*
+ *@@ FindEAValue:
+ *      returns the pointer to the EA value
+ *      if the EA with the given name exists
+ *      in the given FEA2LIST.
+ *
+ *      Within the FEA structure
+ *
+ +          typedef struct _FEA2 {
+ +              ULONG      oNextEntryOffset;  // Offset to next entry.
+ +              BYTE       fEA;               // Extended attributes flag.
+ +              BYTE       cbName;            // Length of szName, not including NULL.
+ +              USHORT     cbValue;           // Value length.
+ +              CHAR       szName[1];         // Extended attribute name.
+ +          } FEA2;
+ *
+ *      the EA value starts right after szName (plus its null
+ *      terminator). The first USHORT of the value should
+ *      normally signify the type of the EA, e.g. EAT_ASCII.
+ *      This returns a pointer to that type USHORT.
+ *
+ *@@added V0.9.16 (2001-10-25) [umoeller]
+ */
+
+PBYTE fsysFindEAValue(PFEA2LIST pFEA2List2,      // in: file EA list
+                      PCSZ pcszEAName,           // in: EA name to search for (e.g. ".LONGNAME")
+                      PUSHORT pcbValue)          // out: length of value (ptr can be NULL)
+{
+    ULONG ulEANameLen;
+
+    /*
+    typedef struct _FEA2LIST {
+        ULONG     cbList;   // Total bytes of structure including full list.
+                            // Apparently, if EAs aren't supported, this
+                            // is == sizeof(ULONG).
+        FEA2      list[1];  // Variable-length FEA2 structures.
+    } FEA2LIST;
+
+    typedef struct _FEA2 {
+        ULONG      oNextEntryOffset;  // Offset to next entry.
+        BYTE       fEA;               // Extended attributes flag.
+        BYTE       cbName;            // Length of szName, not including NULL.
+        USHORT     cbValue;           // Value length.
+        CHAR       szName[1];         // Extended attribute name.
+    } FEA2;
+    */
+
+    if (    (pFEA2List2->cbList > sizeof(ULONG))
+                    // FAT32 and CDFS return 4 for anything here, so
+                    // we better not mess with anything else; I assume
+                    // any FS which doesn't support EAs will do so then
+         && (pcszEAName)
+         && (ulEANameLen = strlen(pcszEAName))
+       )
+    {
+        PFEA2 pThis = &pFEA2List2->list[0];
+        // maintain a current offset so we will never
+        // go beyond the end of the buffer accidentally...
+        // who knows what these stupid EA routines return!
+        ULONG ulOfsThis = sizeof(ULONG),
+              ul = 0;
+
+        do
+        {
+            if (    (ulEANameLen == pThis->cbName)
+                 && (!memcmp(pThis->szName,
+                             pcszEAName,
+                             ulEANameLen))
+               )
+            {
+                if (pThis->cbValue)
+                {
+                    PBYTE pbValue =   (PBYTE)pThis
+                                    + sizeof(FEA2)
+                                    + pThis->cbName;
+                    if (pcbValue)
+                        *pcbValue = pThis->cbValue;
+                    return (pbValue);
+                }
+                else
+                    // no value:
+                    return NULL;
+            }
+
+            if (!pThis->oNextEntryOffset)
+                return (NULL);
+
+            ulOfsThis += pThis->oNextEntryOffset;
+            if (ulOfsThis >= pFEA2List2->cbList)
+                return (NULL);
+
+            pThis = (PFEA2)(((PBYTE)pThis) + pThis->oNextEntryOffset);
+            ul++;
+
+        } while (TRUE);
+    }
+
+    return (NULL);
+}
+
+/*
+ *@@ fsysRefresh:
+ *      implementation for our replacement XWPFileSystem::wpRefresh.
+ *
+ *@@added V0.9.16 (2001-12-08) [umoeller]
+ */
+
+APIRET fsysRefresh(WPFileSystem *somSelf,
+                   PVOID pvReserved)
+{
+    APIRET          arc = NO_ERROR;
+
+    PFILEFINDBUF3   pfb3;
+    PEAOP2          peaop = NULL;
+
+    CHAR            szFilename[CCHMAXPATH];
+
+    if (pvReserved)
+        // caller gave us data (probably from wpPopulate):
+        // use that
+        pfb3 = (PFILEFINDBUF3)pvReserved;
+    else
+    {
+        // no info given: get it then
+        _wpQueryFilename(somSelf, szFilename, TRUE);
+        if (!(arc = fsysCreateFindBuffer(&peaop)))
+                    // freed at bottom
+        {
+            HDIR        hdirFindHandle = HDIR_CREATE;
+            ULONG       ulFindCount = 1;
+            if (!(arc = DosFindFirst(szFilename,
+                                     &hdirFindHandle,
+                                     FILE_DIRECTORY
+                                        | FILE_ARCHIVED | FILE_HIDDEN | FILE_SYSTEM | FILE_READONLY,
+                                     peaop,     // buffer
+                                     FINDBUFSIZE,
+                                     &ulFindCount,
+                                     FIL_QUERYEASFROMLIST)))
+            {
+                pfb3 = (PFILEFINDBUF3)(peaop + sizeof(EAOP2));
+            }
+
+            DosFindClose(hdirFindHandle);
+        }
+    }
+
+    if (!arc)
+    {
+        // alright, we got valid information, either from the
+        // caller, or we got it ourselves:
+
+        WPSHLOCKSTRUCT Lock = {0};
+
+        TRY_LOUD(excpt1)
+        {
+            if (LOCK_OBJECT(Lock, somSelf))
+            {
+                XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
+
+                ULONG flRefresh = fsysQueryRefreshFlags(somSelf);
+
+                PFEA2LIST pFEA2List2 = (PFEA2LIST)(   ((PBYTE)pfb3)
+                                                    + FIELDOFFSET(FILEFINDBUF3,
+                                                                  cchName));
+
+                // next comes a UCHAR with the name length
+                PUCHAR puchNameLen = (PUCHAR)(((PBYTE)pFEA2List2) + pFEA2List2->cbList);
+
+                // finally, the (real) name of the object
+                PSZ pszRealName = ((PBYTE)puchNameLen) + sizeof(UCHAR);
+
+                PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
+                HPOINTER hptrNew = NULLHANDLE;
+
+                if (flRefresh & 0x20000000)
+                    fsysSetRefreshFlags(somSelf, flRefresh & ~0x20000000);
+
+                // set the instance variable for wpCnrRefreshDetails to
+                // 0 so that we can count pending changes... see
+                // XWPFileSystem::wpCnrRefreshDetails
+                _ulCnrRefresh = 0;
+
+                // refresh various file-system info
+                _wpSetAttr(somSelf, pfb3->attrFile);
+                        // this calls _wpCnrRefreshDetails
+
+                // this is funny: we can pass in pFEA2List2, but only
+                // if we also set pszTypes to -1... so much for lucid APIs
+                _wpSetType(somSelf,
+                           (PSZ)-1,
+                           pFEA2List2);
+                        // this does not call _wpCnrRefreshDetails
+                _wpSetDateInfo(somSelf, (PFILEFINDBUF4)pfb3);
+                        // this does not call _wpCnrRefreshDetails
+                _wpSetFileSizeInfo(somSelf,
+                                   pfb3->cbFile,        // file size
+                                   pFEA2List2->cbList);       // EA size
+                        // this calls _wpCnrRefreshDetails
+
+                // if we had an icon previously (WPS defers this
+                // if the record hasn't been made visible yet),
+                // check if we need to refresh this
+                if (prec->hptrIcon)
+                {
+                    // check if we have an .ICON EA... in that case,
+                    // always set the icon data
+                    if (!(arc = icoBuildPtrFromFEA2List(pFEA2List2,
+                                                        &hptrNew)))
+                    {
+                        _wpSetIcon(somSelf, hptrNew);
+                        _wpModifyStyle(somSelf,
+                                       OBJSTYLE_NOTDEFAULTICON,
+                                       OBJSTYLE_NOTDEFAULTICON);
+                        (_ulCnrRefresh)++;
+                    }
+
+                    // if we didn't get an icon, do some default stuff
+                    if (!hptrNew)
+                    {
+                        if (_somIsA(somSelf, _WPProgramFile))
+                            // try to refresh the program icon,
+                            // in case somebody just ran the resource
+                            // compiler or something
+                            _wpSetProgIcon(somSelf, NULL);
+                        else if (_somIsA(somSelf, _WPDataFile))
+                            // data file other than program file:
+                            // set the association icon
+                            _wpSetAssociatedFileIcon(somSelf);
+                    }
+                }
+
+                if (_ulCnrRefresh)
+                {
+                    // something changed:
+                    _ulCnrRefresh = -1;
+                    _wpCnrRefreshDetails(somSelf);
+                }
+                else
+                    _ulCnrRefresh = -1;
+            }
+        }
+        CATCH(excpt1)
+        {
+            arc = ERROR_PROTECTION_VIOLATION;
+        } END_CATCH();
+
+        if (Lock.fLocked)
+            _wpReleaseObjectMutexSem(Lock.pObject);
+    }
+
+    if (peaop)
+        DosFreeMem(peaop);
+
+    return (arc);
 }
 
 /* ******************************************************************
@@ -1039,6 +1478,7 @@ ULONG fsysInsertFilePages(WPObject *somSelf,    // in: must be a WPFileSystem, r
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.12 (2001-05-19) [umoeller]: now using textview control for description, added extended info
+ *@@changed V0.9.16 (2001-12-08) [umoeller]: fixed crash for OS code
  */
 
 VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
@@ -1135,16 +1575,20 @@ VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                     break;
                 }
 
-                strcpy(szOS, pszOS);
+                // fixed crash here V0.9.16 (2001-12-08) [umoeller]
+                if (pszOS)
+                    strcpy(szOS, pszOS);
+                else
+                    sprintf(szOS, "unknown OS code %d", pExec->ulOS);
+
                 if (pExec->f32Bits)
                     strcat(szOS, " (32-bit)");
                 else
                     strcat(szOS, " (16-bit)");
 
-                if (pszOS)
-                    WinSetDlgItemText(pcnbp->hwndDlgPage,
-                                      ID_XSDI_PROG_TARGETOS,
-                                      szOS);
+                WinSetDlgItemText(pcnbp->hwndDlgPage,
+                                  ID_XSDI_PROG_TARGETOS,
+                                  szOS);
 
                 // now get buildlevel info
                 if (doshExecQueryBldLevel(pExec) == NO_ERROR)
@@ -1208,7 +1652,7 @@ VOID fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                     xstrClear(&str);
                 }
 
-                doshExecClose(pExec);
+                doshExecClose(&pExec);
             }
         } // end if (_wpQueryFilename...
 
@@ -1338,7 +1782,7 @@ void _Optlink fntInsertModules(PTHREADINFO pti)
                     doshExecFreeImportedModules(pcnbp->pUser);
                 pcnbp->pUser = paModules;
 
-                doshExecClose(pExec);
+                doshExecClose(&pExec);
             }
         }
     }
@@ -1557,7 +2001,7 @@ void _Optlink fntInsertFunctions(PTHREADINFO pti)
                     doshExecFreeExportedFunctions(pcnbp->pUser);
                 pcnbp->pUser = paFunctions;
 
-                doshExecClose(pExec);
+                doshExecClose(&pExec);
             }
         }
     }
@@ -1876,7 +2320,7 @@ void _Optlink fntInsertResources(PTHREADINFO pti)
                 // store resources
                 pcnbp->pUser = paResources; // can be NULL
 
-                doshExecClose(pExec);
+                doshExecClose(&pExec);
             } // end if (doshExecOpen(szFilename, &pExec) == NO_ERROR)
         }
     }

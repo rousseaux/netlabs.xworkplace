@@ -195,14 +195,6 @@
 
 /* ******************************************************************
  *
- *   Global variables
- *
- ********************************************************************/
-
-static PGEA2LIST G_StandardGEA2List = NULL;
-
-/* ******************************************************************
- *
  *   Folder semaphores
  *
  ********************************************************************/
@@ -1760,102 +1752,6 @@ WPFileSystem* fdrQueryAwakeFSObject(PCSZ pcszFQPath)
  *
  ********************************************************************/
 
-/*
- *@@ fdrCreateStandardGEAList:
- *      sets up the global pointer to the GEA2LIST which
- *      describes the EA names to look for during
- *      file-system populate. Since we always use
- *      the same list, we create this on
- *      M_XFolder::wpclsInitData and reuse that list
- *      forever.
- *
- *@@added V0.9.16 (2001-10-25) [umoeller]
- */
-
-VOID fdrCreateStandardGEAList(VOID)
-{
-    /* Entries in the GEA2 list
-    must be aligned on a doubleword boundary. Each oNextEntryOffset
-    field must contain the number of bytes from the beginning of the
-    current entry to the beginning of the next entry. */
-
-    /* typedef struct _GEA2LIST {
-        ULONG     cbList;   // Total bytes of structure including full list.
-        GEA2      list[1];  // Variable-length GEA2 structures.
-    } GEA2LIST;
-
-    /* typedef struct _GEA2 {
-        ULONG     oNextEntryOffset;  // Offset to next entry.
-        BYTE      cbName;            // Name length not including NULL.
-        CHAR      szName[1];         // Attribute name.
-      } GEA2;
-    */
-
-    if (!G_StandardGEA2List)
-    {
-        // first call:
-
-        PCSZ apcszEANames[] =
-            {
-                ".CLASSINFO",
-                ".LONGNAME",
-                ".TYPE",
-                ".ICON"
-            };
-
-        // check how much memory we need:
-        ULONG   cbList = sizeof(ULONG),       // GEA2LIST.cbList
-                ul;
-
-        for (ul = 0;
-             ul < ARRAYITEMCOUNT(apcszEANames);
-             ul++)
-        {
-            cbList +=   sizeof(ULONG)         // GEA2.oNextEntryOffset
-                      + sizeof(BYTE)          // GEA2.cbName
-                      + strlen(apcszEANames[ul])
-                      + 1;                    // null terminator
-
-            // add padding, each entry must be dword-aligned
-            cbList += 4;
-        }
-
-        if (G_StandardGEA2List = (PGEA2LIST)malloc(cbList))
-        {
-            PGEA2 pThis, pLast;
-
-            G_StandardGEA2List->cbList = cbList;
-            pThis = G_StandardGEA2List->list;
-
-            for (ul = 0;
-                 ul < ARRAYITEMCOUNT(apcszEANames);
-                 ul++)
-            {
-                pThis->cbName = strlen(apcszEANames[ul]);
-                memcpy(pThis->szName,
-                       apcszEANames[ul],
-                       pThis->cbName + 1);
-
-                pThis->oNextEntryOffset =   sizeof(ULONG)
-                                          + sizeof(BYTE)
-                                          + pThis->cbName
-                                          + 1;
-
-                pThis->oNextEntryOffset += 3 - ((pThis->oNextEntryOffset + 3) & 0x03);
-                            // 1:   1 + 3 = 4  = 0      should be 3
-                            // 2:   2 + 3 = 5  = 1      should be 2
-                            // 3:   3 + 3 = 6  = 2      should be 1
-                            // 4:   4 + 3 = 7  = 3      should be 0
-
-                pLast = pThis;
-                pThis = (PGEA2)(((PBYTE)pThis) + pThis->oNextEntryOffset);
-            }
-
-            pLast->oNextEntryOffset = 0;
-        }
-    }
-}
-
 #ifdef __DEBUG__
 
 /*
@@ -1883,150 +1779,9 @@ VOID fdrDebugDumpFolderFlags(WPFolder *somSelf)
 
 #endif
 
-// buffer size for DosFindFirst
-#define FINDBUFSIZE 0x10000     // 64K
-
-/*
- *@@ CreateFindFirstBuffer:
- *      called from PopulateWithFileSystems to
- *      allocate and set up a buffer for DosFindFirst/Next.
- *
- *@@added V0.9.16 (2001-10-28) [umoeller]
- */
-
-APIRET CreateFindFirstBuffer(PEAOP2 *pp)
-{
-    APIRET arc;
-
-    if (!(arc = DosAllocMem((PVOID*)pp,
-                            FINDBUFSIZE,
-                            OBJ_TILE | PAG_COMMIT | PAG_READ | PAG_WRITE)))
-    {
-        // set up the EAs list... sigh
-
-        /*  CPREF: On input, pfindbuf contains an EAOP2 data structure. */
-        PEAOP2      peaop2 = *pp;
-                    /*  typedef struct _EAOP2 {
-                          PGEA2LIST     fpGEA2List;
-                          PFEA2LIST     fpFEA2List;
-                          ULONG         oError;
-                        } EAOP2; */
-
-        /*  CPREF: fpGEA2List contains a pointer to a GEA2 list, which
-            defines the EA names whose values are to be returned. */
-
-        // since we try the same EAs for the objects, we
-        // create a GEA2LIST only once and reuse that forever:
-        peaop2->fpGEA2List = G_StandardGEA2List;
-
-        // set up FEA2LIST output buffer: right after the leading EAOP2
-        peaop2->fpFEA2List          = (PFEA2LIST)(peaop2 + 1);
-        peaop2->fpFEA2List->cbList  = FINDBUFSIZE - sizeof(EAOP2);
-        peaop2->oError              = 0;
-    }
-
-    return (arc);
-}
-
-/*
- *@@ FindEAValue:
- *      returns the pointer to the EA value
- *      if the EA with the given name exists
- *      in the given FEA2LIST.
- *
- *      Within the FEA structure
- *
- +          typedef struct _FEA2 {
- +              ULONG      oNextEntryOffset;  // Offset to next entry.
- +              BYTE       fEA;               // Extended attributes flag.
- +              BYTE       cbName;            // Length of szName, not including NULL.
- +              USHORT     cbValue;           // Value length.
- +              CHAR       szName[1];         // Extended attribute name.
- +          } FEA2;
- *
- *      the EA value starts right after szName (plus its null
- *      terminator). The first USHORT of the value should
- *      normally signify the type of the EA, e.g. EAT_ASCII.
- *      This returns a pointer to that type USHORT.
- *
- *@@added V0.9.16 (2001-10-25) [umoeller]
- */
-
-PBYTE FindEAValue(PFEA2LIST pFEA2List2,      // in: file EA list
-                  PCSZ pcszEAName,           // in: EA name to search for (e.g. ".LONGNAME")
-                  PUSHORT pcbValue)          // out: length of value (ptr can be NULL)
-{
-    ULONG ulEANameLen;
-
-    /*
-    typedef struct _FEA2LIST {
-        ULONG     cbList;   // Total bytes of structure including full list.
-                            // Apparently, if EAs aren't supported, this
-                            // is == sizeof(ULONG).
-        FEA2      list[1];  // Variable-length FEA2 structures.
-    } FEA2LIST;
-
-    typedef struct _FEA2 {
-        ULONG      oNextEntryOffset;  // Offset to next entry.
-        BYTE       fEA;               // Extended attributes flag.
-        BYTE       cbName;            // Length of szName, not including NULL.
-        USHORT     cbValue;           // Value length.
-        CHAR       szName[1];         // Extended attribute name.
-    } FEA2;
-    */
-
-    if (    (pFEA2List2->cbList > sizeof(ULONG))
-                    // FAT32 and CDFS return 4 for anything here, so
-                    // we better not mess with anything else; I assume
-                    // any FS which doesn't support EAs will do so then
-         && (pcszEAName)
-         && (ulEANameLen = strlen(pcszEAName))
-       )
-    {
-        PFEA2 pThis = &pFEA2List2->list[0];
-        // maintain a current offset so we will never
-        // go beyond the end of the buffer accidentally...
-        // who knows what these stupid EA routines return!
-        ULONG ulOfsThis = sizeof(ULONG),
-              ul = 0;
-
-        do
-        {
-            if (    (ulEANameLen == pThis->cbName)
-                 && (!memcmp(pThis->szName,
-                             pcszEAName,
-                             ulEANameLen))
-               )
-            {
-                if (pThis->cbValue)
-                {
-                    PBYTE pbValue =   (PBYTE)pThis
-                                    + sizeof(FEA2)
-                                    + pThis->cbName;
-                    if (pcbValue)
-                        *pcbValue = pThis->cbValue;
-                    return (pbValue);
-                }
-                else
-                    // no value:
-                    return NULL;
-            }
-
-            if (!pThis->oNextEntryOffset)
-                return (NULL);
-
-            ulOfsThis += pThis->oNextEntryOffset;
-            if (ulOfsThis >= pFEA2List2->cbList)
-                return (NULL);
-
-            pThis = (PFEA2)(((PBYTE)pThis) + pThis->oNextEntryOffset);
-            ul++;
-
-        } while (TRUE);
-    }
-
-    return (NULL);
-}
+// find this many files at a time
+#define FIND_COUNT              300
+            // doesn't make a whole lot of difference
 
 /*
  *@@ DecodeLongname:
@@ -2039,9 +1794,9 @@ BOOL DecodeLongname(PFEA2LIST pFEA2List2,
 {
     PBYTE pbValue;
 
-    if (pbValue = FindEAValue(pFEA2List2,
-                              ".LONGNAME",
-                              NULL))
+    if (pbValue = fsysFindEAValue(pFEA2List2,
+                                  ".LONGNAME",
+                                  NULL))
     {
         PUSHORT pusType = (PUSHORT)pbValue;
         if (*pusType == EAT_ASCII)
@@ -2106,9 +1861,9 @@ PCSZ DecodeClassInfo(PFEA2LIST pFEA2List2,
 
     *ppObjData = NULL;
 
-    if (pbValue = FindEAValue(pFEA2List2,
-                              ".CLASSINFO",
-                              NULL))
+    if (pbValue = fsysFindEAValue(pFEA2List2,
+                                  ".CLASSINFO",
+                                  NULL))
     {
         PUSHORT pusType = (PUSHORT)pbValue;
         if (*pusType == EAT_BINARY)
@@ -2159,9 +1914,9 @@ PCSZ FindBestDataFileClass(PFEA2LIST pFEA2List2,
 
     PBYTE pbValue;
 
-    if (pbValue = FindEAValue(pFEA2List2,
-                              ".TYPE",
-                              NULL))
+    if (pbValue = fsysFindEAValue(pFEA2List2,
+                                  ".TYPE",
+                                  NULL))
     {
         // file has .TYPE EA:
         PUSHORT pusType = (PUSHORT)pbValue;
@@ -2226,44 +1981,6 @@ PCSZ FindBestDataFileClass(PFEA2LIST pFEA2List2,
 
     return (pcszClassName);     // can be NULL
 }
-
-/*
- *@@ FDATETIME:
- *
- *@@added V0.9.16 (2001-10-28) [umoeller]
- */
-
-typedef struct _FDATETIME
-{
-    FDATE       Date;
-    FTIME       Time;
-} FDATETIME, *PFDATETIME;
-
-/*
- *@@ MAKEAWAKEFS:
- *      structure used with M_WPFileSystem::wpclsMakeAwake.
- *      Note that this is undocumented and may not work
- *      with every OS/2 version, although it works here
- *      with eCS.
- *
- *      This mostly has data from the FILEFINDBUF3 that
- *      we processed, although for some strange reason
- *      the fields have a different ordering here.
- *
- *@@added V0.9.16 (2001-10-25) [umoeller]
- */
-
-typedef struct _MAKEAWAKEFS
-{
-    PSZ         pszRealName;    // real name
-    FDATETIME   Creation;
-    FDATETIME   LastWrite;
-    FDATETIME   LastAccess;
-    ULONG       attrFile;
-    ULONG       cbFile;         // file size
-    ULONG       cbList;         // size of FEA2LIST
-    PFEA2LIST   pFea2List;      // EAs
-} MAKEAWAKEFS, *PMAKEAWAKEFS;
 
 /*
  *@@ RefreshOrAwake:
@@ -2372,7 +2089,13 @@ WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
            )
         {
             // object changed: go refresh it
-            fsysRefreshFSInfo(pAwake, pfb3);
+            if (_somIsA(pAwake, _WPFolder))
+                fsysRefreshFSInfo(pAwake, pfb3);
+            else
+                // regular fs object: call wpRefresh directly,
+                // which we might have replaced if icon replacements
+                // are on
+                _wpRefresh(pAwake, NULLHANDLE, pfb3);
         }
     }
     else
@@ -2542,7 +2265,7 @@ typedef struct _SYNCHPOPULATETHREADS
     // PopulateWithFileSystems() can process that buffer,
     // while fntFindFiles can already run DosFindNext on the
     // second buffer.
-    PEAOP2          pBuf1,
+    PEAOP2          pBuf1,      // fpGEA2List has GetGEA2List buffer to be freed
                     pBuf2;
 
     // current buffer to work on for PopulateWithFileSystems;
@@ -2553,6 +2276,7 @@ typedef struct _SYNCHPOPULATETHREADS
     // As a special rule, if fntFindFiles sets this to NULL,
     // it is done with DosFindFirst/Next.
     PFILEFINDBUF3   pfb3;
+    ULONG           ulFindCount;        // find count from DosFindFirst/Next
 
     // synchronization semaphores:
     // 1) current owner of the buffer
@@ -2668,7 +2392,7 @@ void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
             // on the first call, use buffer 1
             pbCurrentBuffer = (PBYTE)pspt->pBuf1;
 
-            ulFindCount = 1;
+            ulFindCount = FIND_COUNT;
             arc = DosFindFirst(szFullMask,
                                &hdirFindHandle,
                                attrFind,
@@ -2678,7 +2402,9 @@ void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
                                FIL_QUERYEASFROMLIST);
 
             // start looping...
-            while (arc == NO_ERROR)
+            while (    (arc == NO_ERROR)
+                    || (arc == ERROR_BUFFER_OVERFLOW)
+                  )
             {
                 // go process this file or directory
                 ULONG ulPosted;
@@ -2697,6 +2423,7 @@ void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
 
                 // 1) set buffer pointer for populate thread
                 pspt->pfb3 = (PFILEFINDBUF3)(pbCurrentBuffer + sizeof(EAOP2));
+                pspt->ulFindCount = ulFindCount;        // items found
                 // 2) unset "buffer taken" event sem
                 DosResetEventSem(pspt->hevBufTaken, &ulPosted);
                 // 3) tell second thread we're going for DosFindNext
@@ -2741,7 +2468,7 @@ void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
 
                             // find next:
                             // _Pmpf((__FUNCTION__ ": DosFindNext"));
-                            ulFindCount = 1;
+                            ulFindCount = FIND_COUNT;
                             arc = DosFindNext(hdirFindHandle,
                                               pbCurrentBuffer,
                                               FINDBUFSIZE,
@@ -2831,8 +2558,8 @@ BOOL PopulateWithFileSystems(WPFolder *somSelf,
     spt.fFoldersOnly = fFoldersOnly;
 
             // allocate two 64K buffers
-    if (    (!(arc = CreateFindFirstBuffer(&spt.pBuf1)))
-         && (!(arc = CreateFindFirstBuffer(&spt.pBuf2)))
+    if (    (!(arc = fsysCreateFindBuffer(&spt.pBuf1)))
+         && (!(arc = fsysCreateFindBuffer(&spt.pBuf2)))
             // create the find-files thread
          && (thrCreate(&tiFindFiles,
                        fntFindFiles,
@@ -2858,17 +2585,18 @@ BOOL PopulateWithFileSystems(WPFolder *somSelf,
                         // OK, find-files released that sem:
                         // we either have data now or we're done
                         PFILEFINDBUF3   pfb3;
+                        ULONG           ulFindCount;
                         ULONG           ulPosted;
 
                         fBufSem = TRUE;
 
                         DosResetEventSem(spt.hevBufPtrChanged, &ulPosted);
 
+                        // take the buffer pointer and the find count
                         pfb3 = spt.pfb3;
+                        ulFindCount = spt.ulFindCount;
 
                         // tell find-files we've taken that buffer
-                        // _Pmpf((__FUNCTION__ ": got 0x%lX, posting hevBufTaken",
-                           //      pfb3));
                         DosPostEventSem(spt.hevBufTaken);
                         // release buffer mutex, on which
                         // find-files may have blocked
@@ -2878,16 +2606,23 @@ BOOL PopulateWithFileSystems(WPFolder *somSelf,
                         if (pfb3)
                         {
                             // we have more data:
-                            /* if (tidFindFiles)
-                                // before processing, give away timeslice
-                                // so find-files can go for DosFindNext, which
-                                // will probably block on file-system activity
-                                DosSleep(0); */
+                            // run thru the buffer array
+                            ULONG ul;
+                            for (ul = 0;
+                                 ul < ulFindCount;
+                                 ul++)
+                            {
+                                // process this item
+                                RefreshOrAwake(somSelf,     // folder
+                                               pfb3);       // file
+                                // _Pmpf((__FUNCTION__ ": done with RefreshOrAwake"));
 
-                            // process this item
-                            RefreshOrAwake(somSelf,
-                                           pfb3);
-                            // _Pmpf((__FUNCTION__ ": done with RefreshOrAwake"));
+                                // next item in buffer
+                                if (pfb3->oNextEntryOffset)
+                                    pfb3 = (PFILEFINDBUF3)(   (PBYTE)pfb3
+                                                            + pfb3->oNextEntryOffset
+                                                          );
+                            }
                         }
                         else
                             // no more data, exit now!
@@ -2926,9 +2661,17 @@ BOOL PopulateWithFileSystems(WPFolder *somSelf,
     }
 
     if (spt.pBuf1)
+    {
+        if (spt.pBuf1->fpGEA2List)
+            free(spt.pBuf1->fpGEA2List);
         DosFreeMem(spt.pBuf1);
+    }
     if (spt.pBuf2)
+    {
+        if (spt.pBuf2->fpGEA2List)
+            free(spt.pBuf2->fpGEA2List);
         DosFreeMem(spt.pBuf2);
+    }
     if (spt.hevBufTaken)
         DosCloseEventSem(spt.hevBufTaken);
     if (spt.hevBufPtrChanged)
@@ -3090,16 +2833,24 @@ BOOL PopulateWithAbstracts(WPFolder *somSelf,
  *      QUICKOPEN=IMMEDIATE setup string, so no container
  *      management involved):
  *
- +      +--------------------+-------------+-------------+
- +      |                    | turbo on    |  turbo off  |
- +      |                    | DosSleep(0) |             |
- +      +--------------------+-------------+-------------+
- +      |   JFS folder with  |     53 s    |      160 s  |
- +      |   10.000 files     |             |             |
- +      +--------------------+-------------+-------------+
- +      |   HPFS folder with |     56 s    |             |
- +      |   10.000 files     |             |             |
- +      +--------------------+-------------+-------------+
+ +      +--------------------+-------------+-------------+-------------+
+ +      |                    | turbo on    | turbo on    |  turbo off  |
+ +      |                    | findcnt 1   | findcnt 300 |             |
+ +      +--------------------+-------------+-------------+-------------+
+ +      |   JFS folder with  |     53 s    |             |      160 s  |
+ +      |   10000 files      |             |             |             |
+ +      +--------------------+-------------+-------------+-------------+
+ +      |   JFS folder with  |     60 s    |     60 s    |      211 s  |
+ +      |   13000 files      |             |             |             |
+ +      +--------------------+-------------+-------------+-------------+
+ +      |   HPFS folder with |     56 s    |             |             |
+ +      |   10.000 files     |             |             |             |
+ +      +--------------------+-------------+-------------+-------------+
+ *
+ *      The time that the default WPS populate takes increases
+ *      exponentially with the no. of objects in the folder.
+ *      As a result, the fuller a folder is, the better
+ *      this replacement becomes in comparison.
  *
  *      In addition, this supports an exit flag which, when
  *      set to TRUE, will cancel populate. This
@@ -3123,6 +2874,9 @@ BOOL fdrPopulate(WPFolder *somSelf,
     BOOL    fSuccess = FALSE;
     BOOL    fFindSem = FALSE;
 
+    ULONG   ulOldPrtyClass = -1,
+            ulOldPrtyDelta = -1;
+
     ULONG   flFolderNew = 0;            // new folder flags
 
     PMINIRECORDCORE pMyRecord = _wpQueryCoreRecord(somSelf);
@@ -3134,10 +2888,26 @@ BOOL fdrPopulate(WPFolder *somSelf,
         // there can only be one populate at a time
         if (fFindSem = !fdrRequestFindMutexSem(somSelf, SEM_INDEFINITE_WAIT))
         {
+            PPIB ppib;
+            PTIB ptib;
+
             // tell everyone that we're populating
             _wpModifyFldrFlags(somSelf,
                                FOI_POPULATEINPROGRESS,
                                FOI_POPULATEINPROGRESS);
+
+            // the standard WPS populate thread normally runs with
+            // a higher priority, so make sure this is regular...
+            // otherwise the folder window won't open, and the
+            // system is hogged
+            DosGetInfoBlocks(&ptib, &ppib);
+            ulOldPrtyClass = (((ptib->tib_ptib2->tib2_ulpri) >> 8) & 0x00FF);
+            ulOldPrtyDelta = ((ptib->tib_ptib2->tib2_ulpri) & 0x001F);
+
+            DosSetPriority(PRTYS_THREAD,
+                           PRTYC_REGULAR,
+                           0,
+                           0);      // current thread
 
             fdrDebugDumpFolderFlags(somSelf);
 
@@ -3200,6 +2970,14 @@ BOOL fdrPopulate(WPFolder *somSelf,
 
     if (fFindSem)
         fdrReleaseFindMutexSem(somSelf);
+
+    if (    (ulOldPrtyClass != -1)
+         && (ulOldPrtyDelta != -1)
+       )
+        DosSetPriority(PRTYS_THREAD,
+                       ulOldPrtyClass,
+                       ulOldPrtyDelta,
+                       0);      // current thread
 
     // _Pmpf((__FUNCTION__ ": returning %d", fSuccess));
 

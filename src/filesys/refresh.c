@@ -367,7 +367,13 @@ ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
             if (pobj = fdrFindFSFromName(pNotify->pFolder,
                                          pNotify->pShortName))
             {
-                fsysRefreshFSInfo(pobj, NULL);
+                if (_somIsA(pobj, _WPFolder))
+                    fsysRefreshFSInfo(pobj, NULL);
+                else
+                    // regular fs object: call wpRefresh directly,
+                    // which we might have replaced if icon replacements
+                    // are on
+                    _wpRefresh(pobj, NULLHANDLE, NULL);
             }
         }
         break;

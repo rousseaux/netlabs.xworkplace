@@ -342,7 +342,7 @@ void InsertDrivers(HWND hwndCnr,              // in: container
                         if (pExec->pszVendor)
                             strcpy(precc->szVendor, pExec->pszVendor);
                     }
-                    doshExecClose(pExec);
+                    doshExecClose(&pExec);
                 }
                 else
                     // error:
