@@ -673,7 +673,7 @@ VOID DwgtDestroy(HWND hwnd)
             if (wpshLockObject(&Lock, pXCenterData->somSelf))
             {
                 // stop all running timers
-                tmrStopAllTimers(hwnd);
+                // tmrStopAllTimers(hwnd);
 
                 if (pXCenterData)
                 {
@@ -769,6 +769,7 @@ VOID DwgtDestroy(HWND hwnd)
  *         menu item IDs >= 1000.
  *
  *@@added V0.9.7 (2000-12-02) [umoeller]
+ *@@changed V0.9.9 (2001-03-01) [lafaix]: added XCM_* handling
  */
 
 MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -815,6 +816,67 @@ MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
         default:
             mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
+    }
+
+    return (mrc);
+}
+
+/*
+ *@@ ctrDefContainerWidgetProc:
+ *      default window procedure for container widgets. This is
+ *      exported from XFLDR.DLL.
+ *
+ *      There are a few rules which must be followed
+ *      with the window procedures of the widget classes:
+ *
+ *      -- At the very least, the widget's window proc must
+ *         implement WM_CREATE, WM_PAINT, and (if cleanup
+ *         is necessary) WM_DESTROY. WM_PRESPARAMCHANGED
+ *         would also be nice to support fonts and colors
+ *         dropped on the widget.
+ *
+ *      -- On WM_CREATE, the widget receives a pointer to
+ *         its XCENTERWIDGET structure in mp1.
+ *
+ *         The first thing the widget MUST do on WM_CREATE
+ *         is to store the XCENTERWIDGET pointer (from mp1)
+ *         in its QWL_USER window word by calling:
+ *
+ +              WinSetWindowPtr(hwnd, QWL_USER, mp1);
+ *
+ *      -- All unprocessed messages should be routed
+ *         to ctrDefContainerWidgetProc instead of WinDefWindowProc.
+ *
+ *      -- WM_MENUEND must _always_ be passed on after your
+ *         own processing (if any) to remove source emphasis
+ *         for popup menus.
+ *
+ *      -- WM_DESTROY must _always_ be passed on after
+ *         your own cleanup code to avoid memory leaks,
+ *         because this function performs important cleanup
+ *         as well.
+ *
+ *      -- WM_COMMAND command values below 1000 are reserved.
+ *         If you extend the context menu given to you in
+ *         XCENTERWIDGET.hwndContextMenu, you must use
+ *         menu item IDs >= 1000.
+ *
+ *@@added V0.9.9 (2001-02-27) [lafaix]
+ */
+
+MRESULT EXPENTRY ctrDefContainerWidgetProc(HWND hwnd,
+                                           ULONG msg,
+                                           MPARAM mp1,
+                                           MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    switch (msg)
+    {
+        // **lafaix: these used to be your messages here
+
+        default:
+            mrc = ctrDefWidgetProc(hwnd, msg, mp1, mp2);
     }
 
     return (mrc);

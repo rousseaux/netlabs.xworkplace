@@ -121,6 +121,7 @@
 CHAR    G_aszAllDrives[30][5];  // 30 strings with 5 chars each for spin button
 PSZ     G_apszAllDrives[30];    // 30 pointers to the buffers
 LONG    G_lDriveCount = 0;
+HWND    G_hwndDlgDoubleFiles = NULLHANDLE;  // V0.9.9 (2001-02-28) [pr]
 
 // #define SYSPATHCOUNT 5
 PSZ G_apszPathNames[] =
@@ -297,6 +298,7 @@ MRESULT EXPENTRY fnwpNewSystemPathDlg(HWND hwndDlg,
                               EM_SETTEXTLIMIT,
                               (MPARAM)250,
                               MPNULL);
+            WinSetDlgItemText(hwndDlg, ID_XSDI_FT_ENTRYFIELD, mp2); // V0.9.9 (2001-02-28) [pr]
 
             // store pointer to buffer in window words
             // for later
@@ -411,6 +413,7 @@ typedef struct _DOUBLEFILESWINDATA
 {
     DOUBLEFILES     df;
     XADJUSTCTRLS    xac;
+    HWND            hwndCaller; // V0.9.9 (2001-02-28) [pr]
 } DOUBLEFILESWINDATA, *PDOUBLEFILESWINDATA;
 
 /*
@@ -435,6 +438,8 @@ MPARAM ampDoubleFilesControls[] =
  *
  *      This thing interoperates with the File thread
  *      to have the double files collected.
+ *
+ *@@changed V0.9.9 (2001-02-28) [pr]: made this modal
  */
 
 MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
@@ -462,6 +467,7 @@ MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
             PDOUBLEFILESWINDATA pWinData = malloc(sizeof(DOUBLEFILESWINDATA));
             memset(pWinData, 0, sizeof(DOUBLEFILESWINDATA));
             WinSetWindowPtr(hwndDlg, QWL_USER, pWinData);
+            pWinData->hwndCaller = (HWND) mp2; // V0.9.9 (2001-02-28) [pr]
 
             // set up cnr details view
             xfi[i].ulFieldOffset = FIELDOFFSET(RECORDCORE, pszIcon);
@@ -605,6 +611,25 @@ MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
         break; }
 
         /*
+         * WM_COMMAND:
+         *
+         * added V0.9.9 (2001-02-28) [pr]
+         */
+
+        case WM_COMMAND:
+        {
+            switch (SHORT1FROMMP(mp1))  // source id
+            {
+                case DID_OK:
+                    WinDestroyWindow(hwndDlg);
+                    break;
+
+                default:
+                    mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+            }
+        break; }
+
+        /*
          * WM_DESTROY:
          *
          */
@@ -619,6 +644,11 @@ MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
                                sizeof(ampDoubleFilesControls) / sizeof(MPARAM),
                                0,
                                &pWinData->xac);
+            // V0.9.9 (2001-02-28) [pr]
+            G_hwndDlgDoubleFiles = NULLHANDLE;
+            WinEnableWindow(WinWindowFromID(pWinData->hwndCaller,
+                                            ID_OSDI_DOUBLEFILES),
+                            TRUE);
             free(pWinData);
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
         break; }
@@ -646,6 +676,7 @@ MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
  *@@changed V0.9.7 (2000-12-17) [umoeller]: moved config.sys path composition to krnInitializeXWorkplace
  *@@changed V0.9.7 (2000-12-17) [umoeller]: raised buffer size for syspaths page
  *@@changed V0.9.7 (2001-01-17) [umoeller]: changed QSV_MAX compile problems; thanks, Martin Lafaix
+ *@@changed V0.9.9 (2001-02-28) [pr]: added "edit path"
  */
 
 VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
@@ -769,7 +800,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                     &ulTotPhysMem,
                                     sizeof(ulTotPhysMem));
                     sprintf(szMemory, "%d",
-                            (ulTotPhysMem + (512*1000)) / 1024 / 1024);
+                            ((ulTotPhysMem / 1024) + 512) / 1024); // V0.9.9 (2001-02-28) [pr]
                     WinSetDlgItemText(pcnbp->hwndDlgPage, ID_OSDI_PHYSICALMEMORY, szMemory);
 
                     // parse SWAPPATH command
@@ -1194,6 +1225,8 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
             {
                 case 0:
                     // no items selected:
+                    WinEnableControl(pcnbp->hwndDlgPage, ID_OSDI_PATHEDIT, FALSE);
+                            // V0.9.9 (2001-02-28) [pr]
                     WinEnableControl(pcnbp->hwndDlgPage, ID_OSDI_PATHDELETE, FALSE);
                     WinEnableControl(pcnbp->hwndDlgPage, ID_OSDI_PATHUP, FALSE);
                     WinEnableControl(pcnbp->hwndDlgPage, ID_OSDI_PATHDOWN, FALSE);
@@ -1201,6 +1234,8 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
                 case 1:
                     // exactly one item selected:
+                    WinEnableControl(pcnbp->hwndDlgPage, ID_OSDI_PATHEDIT, TRUE);
+                            // V0.9.9 (2001-02-28) [pr]
                     WinEnableControl(pcnbp->hwndDlgPage, ID_OSDI_PATHDELETE, TRUE);
                     WinEnableControl(pcnbp->hwndDlgPage, ID_OSDI_PATHUP,
                             (ulLastSel > 0));
@@ -1210,6 +1245,8 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
                 default:
                     // more than one item selected:
+                    WinEnableControl(pcnbp->hwndDlgPage, ID_OSDI_PATHEDIT, TRUE);
+                            // V0.9.9 (2001-02-28) [pr]
                     WinEnableControl(pcnbp->hwndDlgPage, ID_OSDI_PATHDELETE, TRUE);
                     WinEnableControl(pcnbp->hwndDlgPage, ID_OSDI_PATHUP, FALSE);
                     WinEnableControl(pcnbp->hwndDlgPage, ID_OSDI_PATHDOWN, FALSE);
@@ -1257,6 +1294,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
  *
  *@@changed V0.9.0 [umoeller]: added "System paths" page handling
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
+ *@@changed V0.9.9 (2001-02-28) [pr]: added "edit path"
  */
 
 MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1338,6 +1376,16 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                 if (ulSelection != LIT_NONE)
                 {
+                    // V0.9.9 (2001-02-28) [pr]
+                    if (G_hwndDlgDoubleFiles)
+                    {
+                        WinDestroyWindow(G_hwndDlgDoubleFiles);
+                        G_hwndDlgDoubleFiles = NULLHANDLE;
+                        WinEnableWindow(WinWindowFromID(pcnbp->hwndDlgPage,
+                                                        ID_OSDI_DOUBLEFILES),
+                                        TRUE);
+                    }
+
                     G_pSysPathSelected = lstItemFromIndex(G_pllSysPathsList, ulSelection);
                     // clear listbox
                     WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_OSDI_PATHLISTBOX,
@@ -1381,6 +1429,8 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_OSDI_PATHNEW:
         {
             CHAR szNewPath[CCHMAXPATH];
+            szNewPath[0] = 0; // V0.9.9 (2001-02-28) [pr]
+
             if (WinDlgBox(HWND_DESKTOP,         // parent
                           pcnbp->hwndFrame,      // owner
                           fnwpNewSystemPathDlg,
@@ -1404,6 +1454,53 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                   (MPARAM)sInserted,
                                   (MPARAM)TRUE); // select flag
             }
+        break; }
+
+        // V0.9.9 (2001-02-28) [pr]: added path edit capability
+        case ID_OSDI_PATHEDIT:
+        {
+            PLISTNODE pNode = 0;
+            ULONG ulNextSel = LIT_FIRST;
+
+            do {
+                // go thru all selected items
+                ulNextSel = (ULONG)WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_OSDI_PATHLISTBOX,
+                                                     LM_QUERYSELECTION,
+                                                     (MPARAM) ulNextSel,
+                                                     MPNULL);
+                if (ulNextSel == LIT_NONE)
+                    break;
+
+                pNode = lstNodeFromIndex(G_pSysPathSelected->pllPaths, ulNextSel);
+                if (pNode)
+                {
+                    CHAR szNewPath[CCHMAXPATH];
+                    // make a copy of the item
+                    strcpy (szNewPath, pNode->pItemData);
+
+                    if (WinDlgBox(HWND_DESKTOP,         // parent
+                                  pcnbp->hwndFrame,     // owner
+                                  fnwpNewSystemPathDlg,
+                                  cmnQueryNLSModuleHandle(FALSE),
+                                  ID_OSD_NEWSYSPATH,
+                                  szNewPath)            // pass buffer as create param;
+                                                        // this will have the directory
+                        == DID_OK)
+                    {
+                        PSZ     pszPathCopy = strdup(szNewPath);
+
+                        // update listbox and linked list
+                        WinSendDlgItemMsg(pcnbp->hwndDlgPage,
+                                          ID_OSDI_PATHLISTBOX,
+                                          LM_SETITEMTEXT,
+                                          (MPARAM)ulNextSel,
+                                          pszPathCopy);
+                        free(pNode->pItemData);
+                        pNode->pItemData = pszPathCopy;
+                    }
+                }
+            } while (TRUE);
+
         break; }
 
         case ID_OSDI_PATHDELETE:
@@ -1516,18 +1613,21 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             if (G_pSysPathSelected)
             {
-                HWND hwndDlg = WinLoadDlg(HWND_DESKTOP,        // parent
-                                          pcnbp->hwndFrame, // pcnbp->hwndPage,     // owner
-                                          fnwpDoubleFilesDlg,
-                                          cmnQueryNLSModuleHandle(FALSE),
-                                          ID_OSD_FILELIST,
-                                          G_pSysPathSelected);
-                if (hwndDlg)
+                // V0.9.9 (2001-02-28) [pr]
+                G_hwndDlgDoubleFiles = WinLoadDlg(HWND_DESKTOP,        // parent
+                                                  pcnbp->hwndFrame, // pcnbp->hwndPage,     // owner
+                                                  fnwpDoubleFilesDlg,
+                                                  cmnQueryNLSModuleHandle(FALSE),
+                                                  ID_OSD_FILELIST,
+                                                  (PVOID) pcnbp->hwndDlgPage);
+                if (G_hwndDlgDoubleFiles)
                 {
-                    winhCenterWindow(hwndDlg);
-                    cmnSetControlsFont(hwndDlg, 0, 5000);
-                    WinProcessDlg(hwndDlg);
-                    WinDestroyWindow(hwndDlg);
+                    winhCenterWindow(G_hwndDlgDoubleFiles);
+                    cmnSetControlsFont(G_hwndDlgDoubleFiles, 0, 5000);
+                    WinShowWindow(G_hwndDlgDoubleFiles, TRUE);
+                    WinEnableWindow(WinWindowFromID(pcnbp->hwndDlgPage,
+                                                    ID_OSDI_DOUBLEFILES),
+                                    FALSE);
                 }
             }
 

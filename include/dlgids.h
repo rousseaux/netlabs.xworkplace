@@ -655,42 +655,43 @@
 #define ID_OSDI_PATHLISTBOX             1573
 #define ID_OSDI_PATHNEW                 1574
 #define ID_OSDI_PATHDELETE              1575
-#define ID_OSDI_PATHUP                  1576
-#define ID_OSDI_PATHDOWN                1577
-#define ID_OSDI_VALIDATE                1578
-#define ID_OSDI_PATHINFOTXT             1579
-#define ID_OSDI_DOUBLEFILES             1580
+#define ID_OSDI_PATHEDIT                1576
+#define ID_OSDI_PATHUP                  1577
+#define ID_OSDI_PATHDOWN                1578
+#define ID_OSDI_VALIDATE                1579
+#define ID_OSDI_PATHINFOTXT             1580
+#define ID_OSDI_DOUBLEFILES             1581
 
-#define ID_OSD_FILELIST                 1581
-#define ID_OSDI_FILELISTSYSPATH1        1582
-#define ID_OSDI_FILELISTSYSPATH2        1583
-#define ID_OSDI_FILELISTCNR             1584
+#define ID_OSD_FILELIST                 1582
+#define ID_OSDI_FILELISTSYSPATH1        1583
+#define ID_OSDI_FILELISTSYSPATH2        1584
+#define ID_OSDI_FILELISTCNR             1585
 
 // "Drivers" page (V0.9.0)
-#define ID_OSD_SETTINGS_DRIVERS         1585
-#define ID_OSDI_DRIVR_CNR               1586
-#define ID_OSDI_DRIVR_STATICDATA        1587
-#define ID_OSDI_DRIVR_PARAMS            1588
-#define ID_OSDI_DRIVR_CONFIGURE         1589
-#define ID_OSDI_DRIVR_APPLYTHIS         1590 // "Apply", non-notebook button
-#define ID_OSDI_DRIVR_GROUP1            1591
-#define ID_OSDI_DRIVR_GROUP2            1592
-#define ID_OSDI_DRIVR_PARAMS_TXT        1593
+#define ID_OSD_SETTINGS_DRIVERS         1590
+#define ID_OSDI_DRIVR_CNR               1591
+#define ID_OSDI_DRIVR_STATICDATA        1592
+#define ID_OSDI_DRIVR_PARAMS            1593
+#define ID_OSDI_DRIVR_CONFIGURE         1594
+#define ID_OSDI_DRIVR_APPLYTHIS         1595 // "Apply", non-notebook button
+#define ID_OSDI_DRIVR_GROUP1            1596
+#define ID_OSDI_DRIVR_GROUP2            1597
+#define ID_OSDI_DRIVR_PARAMS_TXT        1598
 
-#define ID_OSD_DRIVER_HPFS386           1597
-#define ID_OSD_DRIVER_FAT               1598
-#define ID_OSD_DRIVER_HPFS              1599
+#define ID_OSD_DRIVER_HPFS386           1600
+#define ID_OSD_DRIVER_FAT               1601
+#define ID_OSD_DRIVER_HPFS              1602
 
-#define ID_OSD_DRIVER_CDFS              1600
-#define ID_OSDI_CDFS_JOLIET             1601
-#define ID_OSDI_CDFS_KANJI              1602
-#define ID_OSDI_CDFS_CACHESLIDER        1603
-#define ID_OSDI_CDFS_CACHETXT           1604
-#define ID_OSDI_CDFS_SECTORSSLIDER      1605
-#define ID_OSDI_CDFS_SECTORSTXT         1606
-#define ID_OSDI_CDFS_INITDEFAULT        1607
-#define ID_OSDI_CDFS_INITQUIET          1608
-#define ID_OSDI_CDFS_INITVERBOSE        1609
+#define ID_OSD_DRIVER_CDFS              1610
+#define ID_OSDI_CDFS_JOLIET             1611
+#define ID_OSDI_CDFS_KANJI              1612
+#define ID_OSDI_CDFS_CACHESLIDER        1613
+#define ID_OSDI_CDFS_CACHETXT           1614
+#define ID_OSDI_CDFS_SECTORSSLIDER      1615
+#define ID_OSDI_CDFS_SECTORSTXT         1616
+#define ID_OSDI_CDFS_INITDEFAULT        1617
+#define ID_OSDI_CDFS_INITQUIET          1618
+#define ID_OSDI_CDFS_INITVERBOSE        1619
 
 // "IBM1S506" dialog; do not modify these IDs, because
 // the TMF file uses these too

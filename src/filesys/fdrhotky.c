@@ -301,6 +301,7 @@ BOOL fdrFindHotkey(USHORT usCommand,
  *
  *@@changed V0.9.0 [umoeller]: moved this here from common.c
  *@@changed V0.9.1 (2000-01-31) [umoeller]: changed prototype; this was using MPARAMS previously
+ *@@changed V0.9.9 (2001-02-28) [pr]: allow multiple actions on same hotkey
  */
 
 BOOL fdrProcessFldrHotkey(HWND hwndFrame,   // in: folder frame
@@ -308,6 +309,7 @@ BOOL fdrProcessFldrHotkey(HWND hwndFrame,   // in: folder frame
                           USHORT usch,
                           USHORT usvk)
 {
+    BOOL brc = FALSE;
     // now check if the key is relevant: filter out KEY UP
     // messages and check if either a virtual key (such as F5)
     // or Ctrl or Alt was pressed
@@ -375,12 +377,13 @@ BOOL fdrProcessFldrHotkey(HWND hwndFrame,   // in: folder frame
                     _Pmpf(("  Posting command 0x%lX", usCommand));
                 #endif
 
-                return (TRUE);
+                brc = TRUE;
             }
             us++;
         }
     }
-    return (FALSE);
+
+    return (brc);
 }
 
 /* ******************************************************************

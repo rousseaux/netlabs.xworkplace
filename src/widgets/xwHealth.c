@@ -167,8 +167,8 @@ PGPIHSWITCHTORGB pgpihSwitchToRGB = NULL;
 PSTRHDATETIME pstrhDateTime = NULL;
 PSTRHTHOUSANDSULONG pstrhThousandsULong = NULL;
 
-PTMRSTARTTIMER ptmrStartTimer = NULL;
-PTMRSTOPTIMER ptmrStopTimer = NULL;
+PTMRSTARTXTIMER ptmrStartXTimer = NULL;
+PTMRSTOPXTIMER ptmrStopXTimer = NULL;
 
 PWINHCENTERWINDOW pwinhCenterWindow = NULL;
 PWINHFREE pwinhFree = NULL;
@@ -192,8 +192,8 @@ RESOLVEFUNCTION G_aImports[] =
     "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
     "strhDateTime", (PFN*)&pstrhDateTime,
     "strhThousandsULong", (PFN*)&pstrhThousandsULong,
-    "tmrStartTimer", (PFN*)&ptmrStartTimer,
-    "tmrStopTimer", (PFN*)&ptmrStopTimer,
+    "tmrStartXTimer", (PFN*)&ptmrStartXTimer,
+    "tmrStopXTimer", (PFN*)&ptmrStopXTimer,
     "winhFree", (PFN*)&pwinhFree,
     "winhCenterWindow", (PFN*)&pwinhCenterWindow,
     "winhQueryPresColor", (PFN*)&pwinhQueryPresColor,
@@ -648,7 +648,10 @@ MRESULT MwgtCreate(HWND hwnd,
             break;
     }
     // start update timer
-    pPrivate->ulTimerID = ptmrStartTimer(hwnd, 1, 1500);
+    pPrivate->ulTimerID = ptmrStartXTimer(pWidget->pGlobals->pvXTimerSet,
+                                         hwnd,
+                                         1,
+                                         1500);
     return (mrc);
 }
 
@@ -1026,7 +1029,8 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
             if (pPrivate)
             {
                 if (pPrivate->ulTimerID)
-                    ptmrStopTimer(hwnd,
+                    ptmrStopXTimer(pPrivate->pWidget->pGlobals->pvXTimerSet,
+                                  hwnd,
                                   pPrivate->ulTimerID);
                 free(pPrivate);
             } // end if (pPrivate)

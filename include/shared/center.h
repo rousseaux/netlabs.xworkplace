@@ -128,6 +128,14 @@
         ULONG               ulSpacing;
                     // spacing between widgets
 
+        PVOID               pvXTimerSet;
+                    // XCenter timer set, which can be used by widgets
+                    // to start XTimers instead of regular PM timers.
+                    // See src\helpers\timer.c for an introduction.
+                    // This pointer is really an XTIMERSET pointer but
+                    // has been declared as PVOID to avoid having to
+                    // #include include\helpers\timer.h all the time.
+
     } XCENTERGLOBALS, *PXCENTERGLOBALS;
 
     // forward declaration
@@ -485,7 +493,12 @@
     typedef CTRDISPLAYHELP *PCTRDISPLAYHELP;
 
     MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
-                // a pointer to this is in XCENTERWIDGET
+                // a pointer to this is in XCENTERWIDGET if the widget
+                // is a non-container widget
+
+    MRESULT EXPENTRY ctrDefContainerWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
+                // a pointer to this is in XCENTERWIDGET if the widget
+                // is a container widget
 
     /* ******************************************************************
      *
@@ -525,7 +538,7 @@
      *      ("greedy" widgets). This is what the window list
      *      widget does, for example.
      *
-     *      If several widgets request to be greedy, the
+     *      If several widgets request to be "greedy", the
      *      remaining space on the XCenter bar is evenly
      *      distributed among the greedy widgets.
      *
@@ -594,6 +607,219 @@
      */
 
     #define XN_OBJECTDESTROYED          3
+
+    /*
+     *@@ XN_QUERYSETUP:
+     *      notification code for WM_CONTROL sent to a widget
+     *      when the sender needs to know the widget's setup string.
+     *
+     *      Parameters:
+     *
+     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
+     *
+     *      -- SHORT2FROMMP(mp1): notify code (XN_QUERYSETUP).
+     *
+     *      -- char *mp2: buffer into which the setup string is
+     *                    copied.  It can be NULL, in which case
+     *                    nothing is copied.  Otherwise, it is
+     *                    expected to contain enough room for the
+     *                    whole setup string.
+     *
+     *      The widget must return the minimum required size needed
+     *      to store the setup string (even if mp2 is NULL).
+     *
+     *      **lafaix: copied this from your center.h. I don't quite
+     *      understand why this notification is needed... The XCenter
+     *      keeps a copy of each widget's setup string internally
+     *      already. The concept was that a widget only composes a
+     *      setup string itself when it itself thinks that a new setup
+     *      string is needed, e.g. because a font has been dropped
+     *      on it. It then sends XCM_SAVESETUP to the client to tell
+     *      the XCenter to update its internal structures.
+     *
+     *      This allows the widget to DECIDE ITSELF whether and when
+     *      it wants to compose setup strings.
+     *
+     *      Your concept here again is quite the reverse... it forces
+     *      the widget to compose its setup string when the XCenter
+     *      thinks this is needed. I don't think this is a good idea.
+     *
+     *@@added V0.9.9 (2001-03-01) [lafaix]
+     */
+
+    // #define XN_QUERYSETUP               4
+
+    /*
+     *@@ XN_BEGINANIMATE:
+     *      notification code for WM_CONTROL sent to a widget from
+     *      an XCenter when it is about to begin animating.
+     *
+     *      Parameters:
+     *
+     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
+     *
+     *      -- SHORT2FROMMP(mp1): notify code (XN_BEGINANIMATE).
+     *
+     *      -- ULONG mp2: XAF_SHOW if the parent initiate a 'show' animation,
+     *                    XAF_HIDE if the parent initiate a 'hide' animation.
+     *
+     *      This notification is sent regardless of whether the XCenter
+     *      actually does animation.  If it does no animation,
+     *      XN_ENDANIMATE immediately follows XN_BEGINANIMATE.
+     *
+     *      An active widget can react to this message to start or
+     *      stop doing something.  For example, a gauge widget can
+     *      choose to stop running when the container is hidden, to
+     *      save CPU cycles.
+     *
+     *      **lafaix: copied this from your center.h. NOTE: How is the
+     *      "animate" XCenter view setting taken into account here? Is
+     *      this code always sent even if "animate" is disabled? Is the
+     *      widget itself supposed to check that setting in XCENTERGLOBALS?
+     *
+     *@added V0.9.9 (2001-03-01) [lafaix]
+     */
+
+    #define XN_BEGINANIMATE             5
+
+    /*
+     *@@ XN_ENDANIMATE:
+     *      notification code for WM_CONTROL sent to a widget from
+     *      an XCenter when it has ended animating.
+     *
+     *      Parameters:
+     *
+     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
+     *
+     *      -- SHORT2FROMMP(mp1): notify code (XN_ENDANIMATE).
+     *
+     *      -- ULONG mp2: XAF_SHOW if the parent ended a 'show' animation,
+     *                    XAF_HIDE if the parent ended a 'hide' animation.
+     *
+     *      This notification is sent regardless of whether the XCenter
+     *      actually does animation.  If it does no animation,
+     *      XN_ENDANIMATE immediately follows XN_BEGINANIMATE.
+     *
+     *      An active widget can react to this message to start or
+     *      stop doing something.  For example, a gauge widget can
+     *      choose to stop running when the container is hidden, to
+     *      save CPU cycles.
+     *
+     *      **lafaix: copied this from your center.h
+     *
+     *@added V0.9.9 (2001-03-01) [lafaix]
+     */
+
+    #define XN_ENDANIMATE               6
+
+    /*
+     *@@ XN_QUERYWIDGETCOUNT:
+     *      notification code for WM_CONTROL sent from the XCenter
+     *      to a widget when it needs to know how many elements a
+     *      container-widget contains.
+     *
+     *      Parameters:
+     *
+     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
+     *
+     *      -- SHORT2FROMMP(mp1): notify code (XN_QUERYWIDGETCOUNT).
+     *
+     *      -- mp2: reserved, must be 0.
+     *
+     *      The widgets count must only include first level elements.
+     *      That is, if a container contains other containers, the
+     *      elements in those sub-containers should not be included.
+     *
+     *      The widget must return the count.
+     *
+     *      **lafaix: copied this from your center.h
+     *
+     *@@added V0.9.9 (2001-02-23) [lafaix]
+     */
+
+    #define XN_QUERYWIDGETCOUNT         7
+
+    /*
+     *@@ XN_QUERYWIDGET:
+     *      notification code for WM_CONTROL sent from the XCenter
+     *      to a widget when it needs to know the widget present at
+     *      a given position.
+     *
+     *      Parameters:
+     *
+     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
+     *
+     *      -- SHORT2FROMMP(mp1): notify code (XN_QUERYWIDGET).
+     *
+     *      -- ULONG mp2: widget index (0 is the first widget).
+     *
+     *      The widget must return 0 if no widget exists at that index.
+     *      Otherwise it must return a pointer to the corresponding
+     *      XCENTERWIDGET structure.
+     *
+     *      **lafaix: copied this from your center.h
+     *
+     *@@added V0.9.9 (2001-02-23) [lafaix]
+     */
+
+    #define XN_QUERYWIDGET              8
+
+    // structure needed for XN_INSERTWIDGET
+    typedef struct _WIDGETINFO
+    {
+        SHORT          sOffset;
+                   // either WGT_END or the 0-based offset
+        PXCENTERWIDGET pWidget;
+                   // the widget to be inserted
+    } WIDGETINFO, *PWIDGETINFO;
+
+    /*
+     *@@ XN_INSERTWIDGET:
+     *      notification code for WM_CONTROL sent from the XCenter
+     *      to a widget when it needs to add a widget at a specified
+     *      offset to a container-widget.
+     *
+     *      Parameters:
+     *
+     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
+     *
+     *      -- SHORT2FROMMP(mp1): notify code (XN_INSERTWIDGET).
+     *
+     *      -- PWIDGETINFO mp2: a pointer to a WIDGETINFO structure
+     *                          that details the insertion.
+     *
+     *      The widget must return WGT_ERROR if the insertion failed.
+     *      Otherwise it must return the inserted widget's offset.
+     *
+     *      **lafaix: copied this from your center.h
+     *
+     *@@added V0.9.9 (2001-02-23) [lafaix]
+     */
+
+    #define XN_INSERTWIDGET             9
+
+    /*
+     *@@ XN_DELETEWIDGET:
+     *      notification code for WM_CONTROL sent from the XCenter
+     *      to a widget when it needs to remove a widget at a specified
+     *      offset.
+     *
+     *      Parameters:
+     *
+     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
+     *
+     *      -- SHORT2FROMMP(mp1): notify code (XN_INSERTWIDGET).
+     *
+     *      -- SHORT mp2: the to be removed widget's offset.
+     *
+     *      The widget must return the count of remaining widgets.
+     *
+     *      **lafaix: copied this from your center.h
+     *
+     *@@added V0.9.9 (2001-02-23) [lafaix]
+     */
+
+    #define XN_DELETEWIDGET             10
 
     /* ******************************************************************
      *
@@ -723,8 +949,8 @@
     typedef FNWGTUNINITMODULE *PFNWGTUNINITMODULE;
 
     // query version (ordinal 3; added V0.9.9 (2001-02-01) [umoeller])
-    // IF QUERY-VERSION IS EXPORTED (@3, see below) THE NEW
-    // PROTOTYPE FOR INIT_MODULE (above) WILL BE USED
+    // IF QUERY-VERSION IS EXPORTED,THE NEW PROTOTYPE FOR
+    // INIT_MODULE (above) WILL BE USED
     typedef VOID EXPENTRY FNWGTQUERYVERSION(PULONG pulMajor,
                                             PULONG pulMinor,
                                             PULONG pulRevision);

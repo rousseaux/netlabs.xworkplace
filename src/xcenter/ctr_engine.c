@@ -151,6 +151,8 @@ VOID ClientPaint2(HWND hwndClient, HPS hps);
  *
  ********************************************************************/
 
+static PXTIMERSET           G_pLastXTimerSet = NULL;
+
 static COUNTRYSETTINGS      G_CountrySettings = {0};
 
 // array of classes created by ctrpLoadClasses
@@ -498,6 +500,30 @@ BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
     } // end if (G_fWorkAreaSupported)
 
     return (brc);
+}
+
+/* ******************************************************************
+ *
+ *   Timer wrappers
+ *
+ ********************************************************************/
+
+USHORT APIENTRY tmrStartTimer(HWND hwnd,
+                              USHORT usTimerID,
+                              ULONG ulTimeout)
+{
+    return (tmrStartXTimer(G_pLastXTimerSet,
+                           hwnd,
+                           usTimerID,
+                           ulTimeout));
+}
+
+BOOL APIENTRY tmrStopTimer(HWND hwnd,
+                           USHORT usTimerID)
+{
+    return (tmrStopXTimer(G_pLastXTimerSet,
+                          hwnd,
+                          usTimerID));
 }
 
 /* ******************************************************************
@@ -970,16 +996,20 @@ VOID RemoveDragoverEmphasis(HWND hwndClient)
 
 VOID StopAutoHide(PXCENTERWINDATA pXCenterData)
 {
+    PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
+
     if (pXCenterData->idTimerAutohideRun)
     {
-        tmrStopTimer(pXCenterData->Globals.hwndFrame,
-                     TIMERID_AUTOHIDE_RUN);
+        tmrStopXTimer((PXTIMERSET)pGlobals->pvXTimerSet,
+                      pGlobals->hwndFrame,
+                      TIMERID_AUTOHIDE_RUN);
         pXCenterData->idTimerAutohideRun = 0;
     }
     if (pXCenterData->idTimerAutohideStart)
     {
-        tmrStopTimer(pXCenterData->Globals.hwndFrame,
-                     TIMERID_AUTOHIDE_START);
+        tmrStopXTimer((PXTIMERSET)pGlobals->pvXTimerSet,
+                      pGlobals->hwndFrame,
+                      TIMERID_AUTOHIDE_START);
         pXCenterData->idTimerAutohideStart = 0;
     }
 }
@@ -999,9 +1029,10 @@ VOID StartAutoHide(PXCENTERWINDATA pXCenterData)
         // auto-hide enabled:
         // (re)start timer
         pXCenterData->idTimerAutohideStart
-                = tmrStartTimer(pGlobals->hwndFrame,
-                                TIMERID_AUTOHIDE_START,
-                                _ulAutoHide);
+                = tmrStartXTimer((PXTIMERSET)pGlobals->pvXTimerSet,
+                                 pGlobals->hwndFrame,
+                                 TIMERID_AUTOHIDE_START,
+                                 _ulAutoHide);
     }
     else
         // auto-hide disabled:
@@ -1527,6 +1558,7 @@ BOOL FrameCommand(HWND hwnd, USHORT usCmd)
  *      the parent winproc should be called.
  *
  *@@changed V0.9.7 (2000-12-08) [umoeller]: got rid of dtGetULongTime
+ *@@changed V0.9.9 (2001-02-28) [umoeller]: adjusted for new helpers\timer.c
  */
 
 BOOL FrameTimer(HWND hwnd,
@@ -1538,6 +1570,15 @@ BOOL FrameTimer(HWND hwnd,
 
     switch (usTimerID)
     {
+        /*
+         * TIMERID_XTIMERSET:
+         *      this is the PM timer for the XTIMERSET.
+         */
+
+        case TIMERID_XTIMERSET:
+            tmrTimerTick((PXTIMERSET)pGlobals->pvXTimerSet);
+        break;
+
         /*
          * TIMERID_UNFOLDFRAME:
          *      animation timer for unfolding the frame
@@ -1577,12 +1618,14 @@ BOOL FrameTimer(HWND hwnd,
                     cxCurrent = pXCenterData->cxFrame;
 
                     // stop this timer
-                    tmrStopTimer(hwnd,
-                                 usTimerID);
+                    tmrStopXTimer((PXTIMERSET)pGlobals->pvXTimerSet,
+                                  hwnd,
+                                  usTimerID);
                     // start second timer for showing the widgets
-                    tmrStartTimer(hwnd,
-                                  TIMERID_SHOWWIDGETS,
-                                  100);
+                    tmrStartXTimer((PXTIMERSET)pGlobals->pvXTimerSet,
+                                   hwnd,
+                                   TIMERID_SHOWWIDGETS,
+                                   100);
                     pXCenterData->ulStartTime = 0;
                 }
 
@@ -1614,8 +1657,9 @@ BOOL FrameTimer(HWND hwnd,
             {
                 XCenterData *somThis = XCenterGetData(pXCenterData->somSelf);
                 // no more widgets: we're done
-                tmrStopTimer(hwnd,
-                             usTimerID);
+                tmrStopXTimer((PXTIMERSET)pGlobals->pvXTimerSet,
+                              hwnd,
+                              usTimerID);
                 pXCenterData->ulWidgetsShown = 0;
 
                 // OK, XCenter is ready now.
@@ -1645,8 +1689,9 @@ BOOL FrameTimer(HWND hwnd,
             HWND hwndFocus = WinQueryFocus(HWND_DESKTOP);
 
             // this is only for the delay
-            tmrStopTimer(hwnd,
-                         usTimerID);
+            tmrStopXTimer((PXTIMERSET)pGlobals->pvXTimerSet,
+                          hwnd,
+                          usTimerID);
             pXCenterData->idTimerAutohideStart = 0;
 
             // disable auto-hide if a settings dialog is currently open
@@ -1684,9 +1729,10 @@ BOOL FrameTimer(HWND hwnd,
 
             if (fStart)
                 pXCenterData->idTimerAutohideRun
-                    = tmrStartTimer(hwnd,
-                                    TIMERID_AUTOHIDE_RUN,
-                                    50);
+                    = tmrStartXTimer((PXTIMERSET)pGlobals->pvXTimerSet,
+                                     hwnd,
+                                     TIMERID_AUTOHIDE_RUN,
+                                     50);
             else
                 StartAutoHide(pXCenterData);
         break; }
@@ -1747,8 +1793,9 @@ BOOL FrameTimer(HWND hwnd,
                     // last step:
                     cySubtractCurrent = cySubtractMax;
                     // stop this timer
-                    tmrStopTimer(hwnd,
-                                 usTimerID);
+                    tmrStopXTimer((PXTIMERSET)pGlobals->pvXTimerSet,
+                                  hwnd,
+                                  usTimerID);
                     pXCenterData->idTimerAutohideRun = 0;
                     pXCenterData->ulStartTime = 0;
 
@@ -1992,14 +2039,17 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
              */
 
             case WM_DESTROY:
-                tmrStopAllTimers(hwnd);
+            {
+                PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
+                // tmrStopAllTimers(hwnd);
+                tmrDestroySet((PXTIMERSET)pXCenterData->Globals.pvXTimerSet);
                 fCallDefault = TRUE;
                 // stop the XCenter thread we're running on
                 WinPostMsg(NULLHANDLE,      // post into the queue
                            WM_QUIT,
                            0,
                            0);
-            break;
+            break; }
 
             default:
                 fCallDefault = TRUE;
@@ -4291,6 +4341,12 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                                 QWL_USER,
                                 pXCenterData);
 
+                // create XTimerSet
+                pGlobals->pvXTimerSet = tmrCreateSet(pGlobals->hwndFrame,
+                                                     TIMERID_XTIMERSET);
+
+                G_pLastXTimerSet = pGlobals->pvXTimerSet;
+
                 // store client area;
                 // we must use WinQueryWindowPos because WinQueryWindowRect
                 // returns a 0,0,0,0 rectangle for invisible windows
@@ -4404,9 +4460,10 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                         // the next timer(s) will be started automatically
                         // until the frame is fully showing and ctrpReformat
                         // will eventually be called
-                        tmrStartTimer(pGlobals->hwndFrame,
-                                      TIMERID_UNFOLDFRAME,
-                                      50);
+                        tmrStartXTimer((PXTIMERSET)pGlobals->pvXTimerSet,
+                                       pGlobals->hwndFrame,
+                                       TIMERID_UNFOLDFRAME,
+                                       50);
                     }
                     else
                     {

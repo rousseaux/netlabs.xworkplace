@@ -142,7 +142,7 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
         //     key for wpSaveState/wpRestoreState
                0,      // bitfield! only first item!
         //     default, bitflag,            min, max
-               0,       WS_ANIMATE,         0,   0,
+               WS_ANIMATE,  WS_ANIMATE,     0,   0,    // V0.9.9 (2001-02-28) [pr]: fix setup string default
 
         /*
          * flDisplayStyle bitfield... first a LONG, then the bitfields
@@ -353,7 +353,7 @@ ULONG ctrpQuerySetup(XCenter *somSelf,
                         XSTRING strSetup2;
 
                         // characters that must be encoded
-                        CHAR    achEncode[] = "%,();=";
+                        // CHAR    achEncode[] = ;
 
                         ULONG   ul = 0;
 
@@ -368,37 +368,8 @@ ULONG ctrpQuerySetup(XCenter *somSelf,
                         // add first separator
                         xstrcatc(&strTemp, '(');
 
-                        // now encode the widget setup string...
-                        for (ul = 0;
-                             ul < strlen(achEncode);
-                             ul++)
-                        {
-                            CHAR        szFind[3] = "?",
-                                        szReplace[10] = "%xx";
-                            XSTRING     strFind,
-                                        strReplace;
-                            size_t  ShiftTable[256];
-                            BOOL    fRepeat = FALSE;
-                            ULONG ulOfs = 0;
-
-                            // search string:
-                            szFind[0] = achEncode[ul];
-                            xstrInitSet(&strFind, szFind);
-
-                            // replace string: ASCII encoding
-                            sprintf(szReplace, "%c%lX", '%', achEncode[ul]);
-                            xstrInitSet(&strReplace, szReplace);
-
-                            // replace all occurences
-                            while (xstrFindReplace(&strSetup2,
-                                                   &ulOfs,
-                                                   &strFind,
-                                                   &strReplace,
-                                                   ShiftTable,
-                                                   &fRepeat))
-                                    ;
-
-                        } // for ul; next encoding
+                        xstrEncode(&strSetup2,
+                                   "%,();=");
 
                         // now append encoded widget setup string
                         xstrcat(&strTemp, strSetup2.psz, strSetup2.ulLength);
@@ -740,7 +711,8 @@ static ULONG    G_aulView1SetupOffsets[]
             FIELDOFFSET(XCenterData, fReduceDesktopWorkarea),
             FIELDOFFSET(XCenterData, ulPosition),
             FIELDOFFSET(XCenterData, ulWindowStyle),
-            FIELDOFFSET(XCenterData, ulAutoHide)
+            FIELDOFFSET(XCenterData, ulAutoHide),
+            FIELDOFFSET(XCenterData, lPriorityDelta)   // V0.9.9 (2001-02-28) [pr]: added
       };
 
 static ULONG    G_aulView2SetupOffsets[]

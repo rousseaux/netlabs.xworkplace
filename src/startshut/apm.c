@@ -92,6 +92,7 @@ PSZ apmQueryVersion(VOID)
  *      off" checkbox will be enabled or not (i.e. cannot
  *      be selected).
  *
+ *@@changed V0.9.9 (2001-02-28) [umoeller]: now allowing power-off with APM 1.1 also
  */
 
 BOOL apmPowerOffSupported(VOID)
@@ -136,7 +137,9 @@ BOOL apmPowerOffSupported(VOID)
                     ? usBIOSVersion : usDriverVersion;
 
                 // check APM version whether power-off is supported
-                if (G_usAPMVersion >= 0x102)  // version 1.2 or above
+                // if (G_usAPMVersion >= 0x102)  // version 1.2 or above
+                // changed V0.9.9 (2001-02-28) [umoeller]:
+                if (G_usAPMVersion >= 0x101)  // version 1.1 or above
                     G_ulAPMStat = APM_OK;
                 else
                     G_ulAPMStat = APM_IGNORE;

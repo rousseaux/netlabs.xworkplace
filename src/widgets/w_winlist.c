@@ -189,8 +189,8 @@ PLSTMALLOC plstMalloc = NULL;
 PLSTQUERYFIRSTNODE plstQueryFirstNode = NULL;
 PLSTSTRDUP plstStrDup = NULL;
 
-PTMRSTARTTIMER ptmrStartTimer = NULL;
-PTMRSTOPTIMER ptmrStopTimer = NULL;
+PTMRSTARTXTIMER ptmrStartXTimer = NULL;
+PTMRSTOPXTIMER ptmrStopXTimer = NULL;
 
 PWINHCENTERWINDOW pwinhCenterWindow = NULL;
 PWINHFREE pwinhFree = NULL;
@@ -225,8 +225,8 @@ RESOLVEFUNCTION G_aImports[] =
         "lstMalloc", (PFN*)&plstMalloc,
         "lstQueryFirstNode", (PFN*)&plstQueryFirstNode,
         "lstStrDup", (PFN*)&plstStrDup,
-        "tmrStartTimer", (PFN*)&ptmrStartTimer,
-        "tmrStopTimer", (PFN*)&ptmrStopTimer,
+        "tmrStartXTimer", (PFN*)&ptmrStartXTimer,
+        "tmrStopXTimer", (PFN*)&ptmrStopXTimer,
         "winhCenterWindow", (PFN*)&pwinhCenterWindow,
         "winhFree", (PFN*)&pwinhFree,
         "winhQueryPresColor", (PFN*)&pwinhQueryPresColor,
@@ -1792,9 +1792,10 @@ MRESULT WwgtCreate(HWND hwnd,
     ScanSwitchList(pPrivate);
 
     // start update timer
-    pPrivate->ulTimerID = ptmrStartTimer(hwnd,
-                                             1,
-                                             300);
+    pPrivate->ulTimerID = ptmrStartXTimer(pWidget->pGlobals->pvXTimerSet,
+                                         hwnd,
+                                         1,
+                                         300);
 
     return (mrc);
 }
@@ -2587,7 +2588,8 @@ MRESULT WwgtDestroy(HWND hwnd)
             if (pPrivate->hwndContextMenuHacked)
                 WinDestroyWindow(pPrivate->hwndContextMenuHacked);
             if (pPrivate->ulTimerID)
-                ptmrStopTimer(hwnd,
+                ptmrStopXTimer(pWidget->pGlobals->pvXTimerSet,
+                              hwnd,
                               pPrivate->ulTimerID);
             if (pPrivate->pswBlock)
                 pwinhFree(pPrivate->pswBlock);

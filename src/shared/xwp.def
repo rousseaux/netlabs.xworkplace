@@ -61,6 +61,8 @@ EXPORTS
    strhThousandsULong
    tmrStartTimer
    tmrStopTimer
+   tmrStartXTimer
+   tmrStopXTimer
    winhCenterWindow
    winhFree
    winhQueryPresColor

@@ -43,10 +43,12 @@
         #define WS_TOPMOST  0x00200000L
     #endif
 
-    #define TIMERID_UNFOLDFRAME     1
-    #define TIMERID_SHOWWIDGETS     2
-    #define TIMERID_AUTOHIDE_START  3
-    #define TIMERID_AUTOHIDE_RUN    4
+    #define TIMERID_XTIMERSET       1
+
+    #define TIMERID_UNFOLDFRAME     2
+    #define TIMERID_SHOWWIDGETS     3
+    #define TIMERID_AUTOHIDE_START  4
+    #define TIMERID_AUTOHIDE_RUN    5
 
     #define MAX_UNFOLDFRAME         500     // ms total unfold time
     #define MAX_AUTOHIDE            500     // ms total autohide animation time
@@ -194,6 +196,19 @@
      ********************************************************************/
 
     APIRET ctrpDesktopWorkareaSupported(VOID);
+
+    /* ******************************************************************
+     *
+     *   Timer wrappers
+     *
+     ********************************************************************/
+
+    USHORT APIENTRY tmrStartTimer(HWND hwnd,
+                                  USHORT usTimerID,
+                                  ULONG ulTimeout);
+
+    BOOL APIENTRY tmrStopTimer(HWND hwnd,
+                               USHORT usTimerID);
 
     /* ******************************************************************
      *

@@ -384,9 +384,10 @@ MRESULT PwgtCreate(HWND hwnd, MPARAM mp1)
 
     if (pPrivate->arc == NO_ERROR)
     {
-        pPrivate->ulTimerID = tmrStartTimer(hwnd,
-                                              1,
-                                              1000);
+        pPrivate->ulTimerID = tmrStartXTimer((PXTIMERSET)pWidget->pGlobals->pvXTimerSet,
+                                             hwnd,
+                                             1,
+                                             1000);
     }
 
     pPrivate->fUpdateGraph = TRUE;
@@ -911,8 +912,9 @@ VOID PwgtDestroy(HWND hwnd)
         if (pPrivate)
         {
             if (pPrivate->ulTimerID)
-                tmrStopTimer(hwnd,
-                             pPrivate->ulTimerID);
+                tmrStopXTimer((PXTIMERSET)pWidget->pGlobals->pvXTimerSet,
+                              hwnd,
+                              pPrivate->ulTimerID);
 
             if (pPrivate->hbmGraph)
             {

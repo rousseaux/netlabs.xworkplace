@@ -417,7 +417,7 @@ SOM_Scope BOOL  SOMLINK xfsysM_wpclsQuerySettingsPageSize(M_XFldSystem *somSelf,
                                                                     pSizl);
     if (brc)
     {
-        pSizl->cy = 162;        // this is the height of the "WPS Classes" page,
+        pSizl->cy = 177;        // this is the height of the "WPS Classes" page,
                                 // which seems to be the largest in the "Workplace
                                 // Shell" object
         if (doshIsWarp4())
