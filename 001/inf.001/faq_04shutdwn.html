@@ -6,7 +6,7 @@
 </HEAD>
 <!-- This file is all new with V0.82. -->
 <!-- changes for V0.84: see notes below -->
-<!-- Changed with V0.9.0: replace XFolder with XWorkplace;
+<!-- Changed with V0.9.0: replace XFolder with &xwp;;
                           also see notes below -->
 <BODY>
 <OL>
@@ -15,7 +15,7 @@
 <P>I don't know, on some systems it just doesn't, for
 example my Warp 3 with FixPak 35, but it does on my Warp 4. I was unable
 to figure out what the reason for this is, but a few users have also reported this, and the
-problem also occurs with the WarpEnhancer reboot feature, so I guess it's not XWorkplace's
+problem also occurs with the WarpEnhancer reboot feature, so I guess it's not &xwp;'s
 <!-- V0.9.6: changed the following line -->
 fault. (The reboot feature uses an undocumented IOCtl to <CODE>DOS.SYS</CODE> anyway,
 so there is probably no guarantee by IBM that it will always work.) If you
@@ -28,7 +28,7 @@ page 1 -> "Actions").
 XShutdown was initiated, because the WPS <I>delays</I> saving folder positions
 in some background
 thread to which I have found no access, and the format of the folder position entries
-in OS/2.INI is not documented, so I cannot do it myself. The same applies to
+in OS2.INI is not documented, so I cannot do it myself. The same applies to
 folders which are closed by XShutdown itself. If you want folder positions to
 be saved, close them manually and wait a few (about 10-20) seconds before
 starting XShutdown.
@@ -36,7 +36,7 @@ starting XShutdown.
 not the positions of the icons in a folder. These are properly saved.)
 <P>Also, XShutdown cannot save changes to the Tasklist window (e.g. fonts or
 colors being dropped on them). If you want these changes saved, you'll have to
-use OS/2's regular shutdown just once.
+use &os2;'s regular shutdown just once.
 
 <P><LI><B>Why do I keep getting errors while the INI files are being saved?</B>
 <!-- the following added with V0.9.0 -->
@@ -56,7 +56,7 @@ I believe that with large INI files, PM runs out of shared memory, which is used
 INI file management. The limit above which the errors start to occur is dependent on
 how much shared memory is already used on the respective machine, but it's usually
 way above 1 MB per INI file.
-<P>Basically, <B>before V0.9.5,</B> XWorkplace used PrfOpenProfile to create a
+<P>Basically, <B>before V0.9.5,</B> &xwp; used PrfOpenProfile to create a
 new INI file (for the user and system INI file, respectively)
 and then went through all applications and keys in the profile and simply copied them.
 This caused quite some stress on the PM shared memory management.
@@ -83,12 +83,12 @@ of the INI files, I wrote a set of routines which write these without using shar
 memory. Apparently, this helped. This is the "new method" which is now selectable
 on the "XShutdown" page in the Desktop's settings notebook.
 </UL>
-<!-- the following Q&A added with V0.9.4 -->
+<!-- the following Q added with V0.9.4 -->
 <P><LI><B>After using Xhutdown, at the next reboot, the screen is reset to VGA, and
 I get a dialog saying that the Desktop could not be found. What is this?</B>
 
 <P>This is the same problem as described in the previous question. Obviously, your INI
-files have not been properly saved. As a result, OS/2 reverts to default values for
+files have not been properly saved. As a result, &os2; reverts to default values for
 the screen and cannot find your desktop.
 
 <P>If this happens, you will find a backup copy of both OS2.INI and OS2SYS.INI in your
@@ -100,7 +100,7 @@ backups back to *.INI.
 <P><LI><B>Why is APM power-off is not working on my system?</B>
 <!-- V0.9.13: rewrote this -->
 <P>I don't know. On some systems, it just doesn't. I'm pretty sure it's not
-XWorkplace's fault because XWorkplace does nothing but calling into the
+&xwp;'s fault because &xwp; does nothing but calling into the
 <CODE>APM.SYS</CODE> device driver, after which it has no control over what
 that driver is doing to power off the system.
 <P>IBM updated the APM APM support with Warp 4 Fixpak 6 (and possibly
@@ -112,7 +112,7 @@ in the BIOS, and this might be the problem too.
 
 <P><LI><B>APM power-off works, but at the next reboot I am getting CHKDSKs.</B>
 
-<P>Again, XWorkplace can't do much about this. I am getting these CHKDSKs too on
+<P>Again, &xwp; can't do much about this. I am getting these CHKDSKs too on
 my laptop, even though it's working fine on my desktop machine.
 Apparently <CODE>APM.SYS</CODE> does not wait long enough for some hard disk with
 large internal caches to flush their caches to disk before the system power is killed.

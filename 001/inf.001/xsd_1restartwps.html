@@ -4,18 +4,18 @@
         Restart WPS
     </TITLE>
 </HEAD>
-<!-- Changed with V0.9.0: replace XFolder with XWorkplace -->
+<!-- Changed with V0.9.0: replace XFolder with &xwp; -->
 <!-- Changed with V0.9.0: see notes below -->
 <BODY>
 <!-- V0.9.0: add the following line -->
 <B>Classes: XFldObject, XFldDesktop</B><HR>
 <!-- V0.9.0 -->
-XWorkplace can also add a "Restart WPS" item to the context menu of the Desktop.
+&xwp; can also add a "Restart WPS" item to the context menu of the Desktop.
 <P>After selecting "Restart WPS", a dialog box similar to the one of the
 <A HREF="xsd_2xshutdown.html">Extended Shutdown</A> will appear. The difference is that
 after all windows have been closed, not the whole computer is restarted, but only the
 Workplace Shell Process (PMSHELL.EXE).
-<P>To understand the difference it might be helpful to know that the OS/2 user interface is
+<P>To understand the difference it might be helpful to know that the &os2; user interface is
 structured into three "layers", so-to-say, which sit on top of each other:
 <PRE>
    旼컴컴컴컴컴컴컴컴컴컴컴컴컴컴�
@@ -32,13 +32,13 @@ structured into three "layers", so-to-say, which sit on top of each other:
 such as device access and multitasking. Without it, nothing would work on your system.
 <P>The <STRONG>Presentation Manager (PM)</STRONG> is responsible for the graphics on your system,
 such as windows, icons, menus, pictures, and a few more non-graphical things, such as INI files.
-OS/2 can run text-mode applications (e.g. the OS/2 command line, CMD.EXE) without PM,
+&os2; can run text-mode applications (e.g. the &os2; command line, CMD.EXE) without PM,
 but all other applications require that PM be running. A typical PM application is Netscape,
 for example.
 <P>The <STRONG>Workplace Shell (WPS)</STRONG> is just another, however very complex PM application.
 It is responsible for displaying folders, starting programs when you double-click on their
-icons, associating files to programs, in short: everything you see after your OS/2 has finished
-booting. This is the context in which XWorkplace is running.
+icons, associating files to programs, in short: everything you see after your &os2; has finished
+booting. This is the context in which &xwp; is running.
 <P>The <STRONG>"Restart WPS"</STRONG> menu item
 now terminates the topmost layer of the aforementioned three only,
 the Workplace Shell. This takes a lot less time than rebooting your whole computer, because
@@ -50,8 +50,8 @@ work with files a lot) or if you have installed software which changes WPS class
 <P><STRONG>Important notes:</STRONG>
 <UL><LI>Please keep in mind that this is not the way
 of restarting the Workplace Shell that IBM intended when developing it.
-"Restart WPS" forces the WPS to restart by simply terminating it. Since XWorkplace
-is part of the WPS process, it can simply exit. OS/2 will then restart this process
+"Restart WPS" forces the WPS to restart by simply terminating it. Since &xwp;
+is part of the WPS process, it can simply exit. &os2; will then restart this process
 automatically.
 The result is almost the same as if
 the WPS had crashed and was restarted, although the WPS data will be saved before restarting.
@@ -80,7 +80,7 @@ DLLs have been programmed by IBM.)
 <BR><LI>Depending on your system, the number of WPS restarts you may successfully
 execute will be limited. Some users have reported that this works only once, on my
 system I've successfully restarted the WPS many times (about 30) before the system
-crashed. (This sounds like many times, but when programming XWorkplace, this is necessary,
+crashed. (This sounds like many times, but when programming &xwp;, this is necessary,
 unfortunately.)
 
 </UL>You can turn this feature off on a new settings page of the

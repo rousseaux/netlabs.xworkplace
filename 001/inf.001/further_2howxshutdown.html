@@ -4,12 +4,12 @@
         How Does XShutdown Work?
     </TITLE>
 </HEAD>
-<!-- changes with V0.9.0: replace XFolder with XWorkplace -->
+<!-- changes with V0.9.0: replace XFolder with &xwp; -->
 <BODY>
 The XShutdown feature has cost me a lot of thought, because it is really not documented
 anywhere what happens during the normal shutdown process.
 
-<P>OS/2 per default knows two different shutdown APIs:
+<P>&os2; per default knows two different shutdown APIs:
 <UL><LI><CITE>DosShutdown</CITE> only closes all open files, flushes
 all file-system buffers und unmounts all file systems; this is what happens
 after pressing Ctrl-Alt-Del. No applications are properly closed, and the WPS
@@ -29,19 +29,19 @@ had to recode a complete new <CITE>WinShutdownSystem</CITE>,
 which will now be explained. This was quite difficult, since IBM hardly explains
 anything about what is really going on during <CITE>WinShutdownSystem</CITE>.
 
-<P>Note: In XWorkplace, the "eXtended Shutdown" and
+<P>Note: In &xwp;, the "eXtended Shutdown" and
 "Restart WPS" routines share the same code; they
 only differ in what happens after all windows have been closed. I will thus use the term
 "XShutdown" in the following explanations for both features, unless otherwise stated.
 
 <P>XShutdown is <STRONG>integrated into the WPS</STRONG>
-and relies heavily on the XWorkplace class replacements.
+and relies heavily on the &xwp; class replacements.
 I have intentionally not put the XShutdown code into a separate .EXE file for
 two reasons: for one, XShutdown needs access to WPS internal data, which is
 only available from the SOM context; second, I want to prevent people from
 trying to use XShutdown separately, without having the
-XWorkplace classes installed, because this could severely damage the Workplace Shell.
-In more detail, XShutdown relies on the XFldObject replacement class and the XWorkplace Worker
+&xwp; classes installed, because this could severely damage the Workplace Shell.
+In more detail, XShutdown relies on the XFldObject replacement class and the &xwp; Worker
 thread, which cooperatively keep track of the WPS internal data.
 
 <P>To understand what XShutdown is now doing, it is necessary to understand how the
@@ -77,7 +77,7 @@ the WPS calls several methods (among them <CITE>wpInitData</CITE> and
 <CITE>wpObjectReady</CITE>).
 XFldObject overrides these and passes the object address in memory
 to the Worker thread, which will then
-properly update an XWorkplace-internal list of all currently awake objects.
+properly update an &xwp;-internal list of all currently awake objects.
 As far as I know, there
 is no other way to find out which objects are currently awake; at least
 there is no documented API for enumerating them.
@@ -87,7 +87,7 @@ two new threads for the following shutdown procedure,
 which run parallel to the regular WPS threads: the main <STRONG>"Shutdown thread"</STRONG>
 with the message queue for
 the status window, and the <STRONG>"Update thread",</STRONG>
-which monitors the OS/2 Window List and posts messages to the main shutdown thread,
+which monitors the &os2; Window List and posts messages to the main shutdown thread,
 if the status window needs to be updated.
 So closing all currently open windows is a fairly complex
 process of interaction between these two threads:
@@ -113,7 +113,7 @@ In addition, shutdown took ages then.)
 following:
 
 <UL><LI>If you selected <STRONG>"Restart WPS",</STRONG> the Shutdown thread
-simply executes <CITE>DosExit(EXIT_PROCESS, 0)</CITE>. Since XWorkplace is part of
+simply executes <CITE>DosExit(EXIT_PROCESS, 0)</CITE>. Since &xwp; is part of
 the Workplace process, and all parts of the WPS are running in this one process
 (the second instance of <CITE>PMSHELL.EXE</CITE>),
 this will terminate the whole Workplace Shell. The Shell process
@@ -126,7 +126,7 @@ to disk. This is necessary, because <CITE>DosShutdown,</CITE>
 which is called afterwards, does not save them either.
 (I guess it's because the INI file API's belong to Presentation Manager.)
 Since the PM INI file API's prohibit simply closing the user and system profiles
-(which does write their data to disk for all other profiles), XWorkplace copies them
+(which does write their data to disk for all other profiles), &xwp; copies them
 to two temporary profiles, deletes the originals, and then renames the temporary
 profiles to the names of the originals.
 After <CITE>DosShutdown</CITE>

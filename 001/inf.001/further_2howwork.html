@@ -1,19 +1,19 @@
 <HTML WIDTH=70% XPOS=right>
 <HEAD>
     <TITLE>
-        How Does XWorkplace Work?
+        How Does &xwp; Work?
     </TITLE>
 </HEAD>
 <!-- changes for V0.84: the paragraph about "wpclsQueryIconDataN" has
      been removed, since it was no longer accurate. -->
-<!-- changed with V0.9.0: replace XFolder with XWorkplace (only some) -->
+<!-- changed with V0.9.0: replace XFolder with &xwp; (only some) -->
 <BODY>
-XWorkplace registers and/or replaces a whole number of WPS classes. Take a look at the
-<CODE>INSTALL.CMD</CODE> script in the XWorkplace installation directory to find out
+&xwp; registers and/or replaces a whole number of WPS classes. Take a look at the
+<CODE>INSTALL.CMD</CODE> script in the &xwp; installation directory to find out
 more about this.
-<P>The most important XWorkplace class replacements are:
+<P>The most important &xwp; class replacements are:
 <OL><LI><B>XFolder</B> for regular folders, which contains
-the main functionality of XWorkplace,  <!-- xxx -->
+the main functionality of &xwp;,  <!-- xxx -->
 <BR><LI><B>XFldDisk</B> for "disk" objects, which appear in the
 "Drives" folder,
 <BR><LI><B>XFldObject,</B> the WPS root class, for being able to access
@@ -150,7 +150,7 @@ not to make disk objects regular folders, but implemented a different class for 
 so XFolder needs a separate class too.
 
 <P><B>XFldObject</B> doesn't do much visibly either,
-except for suppressing OS/2 default menu items
+except for suppressing &os2; default menu items
 and adding the "Copy filename" feature. It is however required by other XFolder parts
 internally in order to be notified of some internal WPS events, especially the
 XShutdown feature, which is described in detail on the
@@ -164,7 +164,7 @@ Desktop menu items and for XShutdown, which is described in detail on the
 object in the "System setup" folder contained more notebook pages to access XFolder's
 Global Settings, with V0.80 this behavior has changed. Instead, XFolder registers
 two new classes derived from WPSystem without replacing it. These two classes are
-<B>XFldSystem</B> and <B>XFldWPS</B> for the "OS/2 Kernel" and "Workplace Shell" objects,
+<B>XFldSystem</B> and <B>XFldWPS</B> for the "&os2; Kernel" and "Workplace Shell" objects,
 respectively.
 The settings that you specify
 here are (mostly) stored in OS2.INI and

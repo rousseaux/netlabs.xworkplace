@@ -8,7 +8,7 @@
 <BODY>
 <B>Classes: XFldObject, XFolder</B><HR>
 
-Starting with V0.9.9, XWorkplace can replace the Workplace Shell's folder auto-refresh
+Starting with V0.9.9, &xwp; can replace the Workplace Shell's folder auto-refresh
 mechanism.
 
 <P>You are probably familiar with this feature of the Workplace Shell. If you have
@@ -22,17 +22,17 @@ excessive file-system handles for all objects that are auto-refreshed, which wil
 unnecessarily blow up your INI files. Note that this even happens if you have the
 <CODE>AUTOREFRESHFOLDERS=NO</CODE> setting in your <CODE>CONFIG.SYS</CODE> file.
 
-<P>XWorkplace can now replace this entire mechanism if you have enabled this replacement
-on the "Features" page in the <A HREF="sys_2global.html">"XWorkplace Setup" object.</A>
+<P>&xwp; can now replace this entire mechanism if you have enabled this replacement
+on the "Features" page in the <A HREF="sys_2global.html">"&xwp; Setup" object.</A>
 
-<P>If the replacement is enabled, XWorkplace will prevent the internal WPS threads
+<P>If the replacement is enabled, &xwp; will prevent the internal WPS threads
 which are responsible for folder auto-refresh from running. Among other things, this
-will prevent file-system handles from being created. Instead, XWorkplace will start
+will prevent file-system handles from being created. Instead, &xwp; will start
 its own threads which will start monitoring file-system activity and automatically
 refresh folders then.
 
 <P>Note that as a result, enabling or disabling the replacement requires a WPS restart
-because XWorkplace can only do this replacement while the WPS is starting up.
+because &xwp; can only do this replacement while the WPS is starting up.
 
 <P>However, once the replacement has been enabled and the WPS has been restarted,
 you can enable and disable folder auto-refresh on the "View" page in the

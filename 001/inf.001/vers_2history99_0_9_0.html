@@ -1,7 +1,7 @@
 <HTML WIDTH=70% XPOS=right NOSUBLINKS="intro" NOSUBLINKS="xices" NOSUBLINKS="vers_">
 <HEAD>
     <TITLE>
-        XWorkplace 0.9.0
+        &xwp; 0.9.0
     </TITLE>
 </HEAD>
 <!-- Note: This file changes almost with every XFolder version.
@@ -9,15 +9,15 @@
      about changes to this file.
      Simply use the English original instead. -->
 <BODY>
-<B>XWorkplace 0.9.0 (November 28, 1999)</B>
+<B>&xwp; 0.9.0 (November 28, 1999)</B>
 <P>Obviously, I've renamed the whole thing. This version was never released
 as a binary version, but only uploaded in source to the Netlabs CVS server.
 
 <P>New features (lots of major ones):
-<UL><LI><A HREF="sys_1intro.html">"XWorkplace Setup" object</A> with more general settings.
+<UL><LI><A HREF="sys_1intro.html">"&xwp; Setup" object</A> with more general settings.
 <P><LI>Extended association mechanism.
-<P><LI><A HREF="file_2trashcan.html">XWorkplace trash can.</A>
-<P><LI>New <A HREF="06341intro_mousekey.html">XWorkplace PM hook</A> for mouse and keyboard
+<P><LI><A HREF="file_2trashcan.html">&xwp; trash can.</A>
+<P><LI>New <A HREF="06341intro_mousekey.html">&xwp; PM hook</A> for mouse and keyboard
 features (object hotkeys, sliding focus, screen corner objects).
 <P><LI>The <A HREF="sys_4wpsclasses.html">"WPS Class List"</A> has been greatly enhanced.
 This is now in a separate object, with a split view for a more lucid display.
@@ -36,8 +36,8 @@ additional information from the executable direcly.
 now has a history of the last 10 file masks which were entered.
 <P><LI>Status bars can now dereference shadows (new setting in "Workplace Shell").
 <P><LI>New "Menu bar" setting in Warp 4's "View" context submenu.
-<P><LI>New "XWorkplace panic" dialog when Shift key is held down during WPS startup,
-which allows you to selectively disable XWorkplace features.
+<P><LI>New "&xwp; panic" dialog when Shift key is held down during WPS startup,
+which allows you to selectively disable &xwp; features.
 <P><LI>New "Startup" and "Shutdown" pages in Desktop's settings notebook. Startup
 page allows you to configure the <A HREF="xsd_03bootlogo.html">boot logo</A> now.
 There are now two boot logo styles,
@@ -47,7 +47,7 @@ for many people preferred the old blow-up style over the transparent boot logos.
 <P><LI>New "Partitions" button in user-reboot items dialog to automatically add
 BootManager partitions.
 <P><LI>Per popular request, exception handler beeping can be disabled now
-("XWorkplace Setup", "Paranoia" page).
+("&xwp; Setup", "Paranoia" page).
 <P><LI>Treesize: is now NLS enabled and dynamically updates the directory sizes even
 while collecting files (instead of just displaying "working...").
 
@@ -64,7 +64,7 @@ Lots of new function in menus.c for this.
 <P><LI>Raised default "variable menu item ID offset" to 700 for
 <A HREF="vers_1compat.html">Object Desktop compatibility</A>.
 <P><LI>Included Christian Langanke's new TMF functions for message handling.
-XWorkplace message files are now plain text; MKMSGF.EXE is no longer needed
+&xwp; message files are now plain text; MKMSGF.EXE is no longer needed
 to translate message files.
 <P><LI>Removed the "default class title" for the XFolder class. Folder default
 titles are no longer changed.
@@ -108,9 +108,9 @@ this now displays the drive letter.
 <P><LI>The WPS class list produced an exception every time a class was deregistered
 using the context menus. Fixed; container record cores are now freed before the
 corresponding data is freed.
-<P><LI>Previous versions sometimes forgot to process the contents of the XWorkplace
+<P><LI>Previous versions sometimes forgot to process the contents of the &xwp;
 startup folder upon first bootup. This has been completely reworked, now using the
-XWorkplace daemon (XWPDAEMON.EXE).
+&xwp; daemon (XWPDAEMON.EXE).
 <P><LI>XShutdown would crash when the INI file names were specified in lower case
 in CONFIG.SYS. Fixed.
 <P><LI>XShutdown sent WM_CLOSE to some applications instead of just WM_QUIT. For

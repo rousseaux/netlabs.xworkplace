@@ -4,7 +4,7 @@
         WPS Menu IDs
     </TITLE>
 </HEAD>
-<!-- Changed with V0.9.0: replace XFolder with XWorkplace -->
+<!-- Changed with V0.9.0: replace XFolder with &xwp; -->
 <BODY>
 When using the WPObject setup string <CITE>MENUITEMSELECTED</CITE>,
 the following menu IDs
@@ -12,12 +12,12 @@ might be useful to you. Please keep in mind that not all of these are intended f
 all kinds of objects; for example, "Format disk" does not make sense on folders,
 and I don't know what will happen if you try this out. If you're lucky, nothing
 happens.
-<P>Note that the new menu items introduced by XWorkplace have no <I>fixed</I> menu IDs,
-so they're not listed here. Instead, the XWorkplace menu items have <I>variable</I> menu IDs,
-whose base is specified with the "XWorkplace menu item ID offset" global setting.
+<P>Note that the new menu items introduced by &xwp; have no <I>fixed</I> menu IDs,
+so they're not listed here. Instead, the &xwp; menu items have <I>variable</I> menu IDs,
+whose base is specified with the "&xwp; menu item ID offset" global setting.
 This base is added to <CITE>WPMENUID_USER</CITE>, which is 0x6500 (25856 decimal),
-and the XWorkplace menu ID's are then added to that base to allow compatibility with
-other WPS enhancers. So if you wish to use an XWorkplace menu item with
+and the &xwp; menu ID's are then added to that base to allow compatibility with
+other WPS enhancers. So if you wish to use an &xwp; menu item with
 <CITE>MENUITEMSELECTED</CITE>, you need some utility such as <CITE>XRAY</CITE> to
 figure out the "real" menu id. The ID will of course change again if you change the
 offset setting.
@@ -67,7 +67,7 @@ offset setting.
 <DT><CITE>WPMENUID_DETAILS                   304</CITE>
 <DD>("Open" -> "Details view")
 <DT><CITE>WPMENUID_ARRANGE                   309</CITE>
-<DD>(on Warp 4, this is the "Default" Arrange item)
+<DD>(on &warp4; and higher, this is the "Default" Arrange item)
 <BR>
 <DT><STRONG>WPDesktop items:</STRONG>
 <DT><CITE>WPMENUID_SHUTDOWN                  704</CITE> (WPDesktop items)
@@ -89,17 +89,18 @@ offset setting.
 <DT><CITE>WPMENUID_UNLOCKDISK                186</CITE>
 </DL>
 <BR>The following IDs are not officially documented by IBM, thus their symbols
-are not official (but invented by me). Most of them are available on OS/2 Warp 4 only.
+are not official (but invented by me). Most of them are available on &warp4; and
+higher only.
 The menu IDs are now in hexadecimal
 (use the REXX function X2D to convert them to decimal):
 <P><DL>
 <DT><CITE>WPMENUID_PASTE                   0x2CB</CITE>
 <DT><CITE>WPMENUID_VIEW_ICON               0x2CC</CITE>
-<DD>("View" -> "Icon view", as opposed to "Open"; Warp 4 only)
+<DD>("View" -> "Icon view", as opposed to "Open"; &warp4; and higher only)
 <DT><CITE>WPMENUID_VIEW_TREE               0x2CD</CITE>
-<DD>("View" -> "Tree view", as opposed to "Open"; Warp 4 only)
+<DD>("View" -> "Tree view", as opposed to "Open"; &warp4; and higher only)
 <DT><CITE>WPMENUID_VIEW_DETAILS            0x2CE</CITE>
-<DD>("View" -> "Details view", as opposed to "Open"; Warp 4 only)
+<DD>("View" -> "Details view", as opposed to "Open"; &warp4; and higher only)
 <DT>
 <DT><CITE>WPMENUID_SORTBYNAME             0x1770</CITE>
 <DT><CITE>WPMENUID_SORTBYTYPE             0x1771</CITE>

@@ -1,22 +1,22 @@
 <HTML XPOS=right WIDTH=70%>
 <HEAD>
     <TITLE>
-        XWorkplace INI Keys
+        &xwp; INI Keys
     </TITLE>
 </HEAD>
 <!-- This file is all new with V0.9.0. -->
 <BODY>
-XWorkplace stores all its global settings in your OS2.INI file. (By contrast,
+&xwp; stores all its global settings in your OS2.INI file. (By contrast,
 the settings for individual WPS objects are stored by the WPS, mostly in
 the <CODE>.CLASSINFO</CODE> extended attributes.)
 <!-- the following changed with V0.9.1 -->
-<P>This section is supposed to explain the keys in the "XWorkplace" section
-in OS2.INI. If you had XFolder installed previously, XWorkplace copies this
+<P>This section is supposed to explain the keys in the "&xwp;" section
+in OS2.INI. If you had XFolder installed previously, &xwp; copies this
 data from the "XFolder" section, which remains in OS2.INI so that you can
-switch back to XFolder later if you choose to de-install XWorkplace.
-<P>Note: XWorkplace does not rely on the INI keys. If you really mess up something
+switch back to XFolder later if you choose to de-install &xwp;.
+<P>Note: &xwp; does not rely on the INI keys. If you really mess up something
 bad, you can simply delete a key with an INI editor or the whole "XFolder"
-section altogether. After the next WPS restart, XWorkplace will reinitialize itself
+section altogether. After the next WPS restart, &xwp; will reinitialize itself
 with safe default values.
 <P>Here we go:
 
@@ -25,7 +25,7 @@ with safe default values.
 <DD>This has the list of folder hotkeys. This data is binary, and you should not
 change it manually.
 This is an array of <CODE>XFLDHOTKEY</CODE> structures,
-as defined in <CODE>\shared\common.h</CODE> of the XWorkplace sources.
+as defined in <CODE>\shared\common.h</CODE> of the &xwp; sources.
 <B>Defaults:</B> as described on the
 <A HREF="fldr_5xelerators.html">"Folder hotkeys"</A> page.
 
@@ -40,7 +40,7 @@ OS/2 V1.3 .BMP file to use for the WPS boot logo, as set by the "Startup"
 page in the Desktop's settings notebook. This is a plain zero-terminated string.
 
 <DT><CODE>DialogFont</CODE>
-<DD>The font to use for XWorkplace message boxes. This gets set when you drop a font
+<DD>The font to use for &xwp; message boxes. This gets set when you drop a font
 on one of them.
 <B>Default:</B> 9.WarpSans, I think.
 
@@ -52,20 +52,20 @@ as hex object handles separated by spaces.
 <DD>This is a large array of ULONGs with all kinds of settings, mostly from
 the "Workplace Shell" object. This corresponds to
 the <CODE>GLOBALSETTINGS</CODE> structure
-as defined in <CODE>\shared\common.h</CODE> of the XWorkplace sources. You better not
-change values in here manually, but you can delete this whole key to reset XWorkplace
+as defined in <CODE>\shared\common.h</CODE> of the &xwp; sources. You better not
+change values in here manually, but you can delete this whole key to reset &xwp;
 to safe default values (after the next WPS startup).
 This gets rewritten every time some global setting is
 changed in any of the settings objects.
 
 <DT><CODE>JustInstalled</CODE>
-<DD>This key only exists right after XWorkplace has been installed and leads to
-the "Welcome" information of XWorkplace and the config folder being created.
+<DD>This key only exists right after &xwp; has been installed and leads to
+the "Welcome" information of &xwp; and the config folder being created.
 Afterwards, this key is deleted again.
 
 <DT><CODE>Language</CODE>
-<DD>XWorkplace's three-digit language code, from which the NLS to be loaded is
-determined. This can be set in "XWorkplace Setup" and
+<DD>&xwp;'s three-digit language code, from which the NLS to be loaded is
+determined. This can be set in "&xwp; Setup" and
 <B>defaults</B> to "001", if not found.
 
 <DT><CODE>NameClashLastFocus</CODE>
@@ -91,21 +91,21 @@ terminated with a null byte.
 
 <!-- the following added with V0.9.1 -->
 <DT><CODE>TrashCan::Drives</CODE>
-<DD>A binary array of bytes specifying drives support for the XWorkplace trash can.
+<DD>A binary array of bytes specifying drives support for the &xwp; trash can.
 
 <DT><CODE>Version</CODE>
-<DD>The XWorkplace version which is running. This is only set for informational
+<DD>The &xwp; version which is running. This is only set for informational
 purposes (e.g. for other applications which might be interested), but not read
-by XWorkplace itself.
+by &xwp; itself.
 
 <DT><CODE>WndPos*</CODE>
 <DD>Various window positions to make them reappear where you closed them. These
 entries use a plain SWP structure each (I don't use WinStoreWindowPos).
 
 <DT><CODE>XFolderPath</CODE>
-<DD>The main directory of where XWorkplace is installed.
+<DD>The main directory of where &xwp; is installed.
 This gets set by the install script and is required by TREESIZE.EXE to find
-the NLS DLL. The XWorkplace core however does not use this key.
+the NLS DLL. The &xwp; core however does not use this key.
 
 <DT><CODE>XWPSound:LastDir</CODE>
 <DD>The "Sound" object replacement remembers the last directory used with

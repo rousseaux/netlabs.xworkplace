@@ -65,10 +65,10 @@ icon resource ID in the dynamic link library (DLL)
 <CODE><I>dllfile</I></CODE>.
 For folders, this specifies the "closed" icon.
 
-<P><DT><CODE><B>LOCKEDINPLACE</B>={YES|NO}</CODE> (Warp 4 only)
+<P><DT><CODE><B>LOCKEDINPLACE</B>={YES|NO}</CODE> (&warp4; and higher only)
 <DD>Specifies whether the object is fixed or not fixed in position.
 
-<P><DT><CODE><B>MENUITEMSELECTED</B> <I>menu-item-id</I></CODE> (Warp 4 only)
+<P><DT><CODE><B>MENUITEMSELECTED</B> <I>menu-item-id</I></CODE> (&warp4; and higher only)
 <DD>Simulates selecting the specified
 menu item from the object's popup menu.
 <CODE><I>menu-item-id</I></CODE> must be a numeric value.
@@ -78,7 +78,7 @@ is available on the Internet. Or look on the respective
 (Hey, this setting works for XFolder menu items also, BTW.)
 <BR>This is not really a "setting", but rather a command to be performed on the folder.
 
-<P><DT><CODE><B>MENUS</B>={SHORT|LONG}</CODE> (Warp 4 only)
+<P><DT><CODE><B>MENUS</B>={SHORT|LONG}</CODE> (&warp4; and higher only)
 <DD>Determine whether this object has a short popup menu
 (without menu entries that duplicate
 drag 'n' drop functions) or the full one.
@@ -146,7 +146,7 @@ wish to be able to open it from REXX also, you must assign it an Object ID.
 <P><DT><CODE><B>OPEN</B>={SETTINGS|DEFAULT|ICON|TREE|DETAILS}</CODE>
 <DD>Open a view now.
 This is the clever trick used by a zillion REXX scripts on the Internet to open an
-object from the OS/2 command line.
+object from the &os2; command line.
 <BR><CODE>OPEN=DEFAULT</CODE> will open the default view of the object (as if
 you had double-clicked on it). <CODE>OPEN=SETTINGS</CODE> will open the object's
 settings notebook. All the other values are valid for folders only.

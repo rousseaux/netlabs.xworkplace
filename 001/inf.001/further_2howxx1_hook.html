@@ -1,7 +1,7 @@
 <HTML WIDTH=70% XPOS=right>
 <HEAD>
     <TITLE>
-        How Does the XWorkplace PM Hook work?
+        How Does the &xwp; PM Hook work?
     </TITLE>
 </HEAD>
 <!-- this is all new with V0.9.3 -->
@@ -43,27 +43,27 @@ swallow the message so that the target window won't receive it.
 
 <P>This is how all the well-known PM hook utilities
 (such NPS WPS, FeelX, ProgramCommander/2, X-it, Styler/2,
-and the XWorkplace PM hook as well) work. They intercept certain messages and
+and the &xwp; PM hook as well) work. They intercept certain messages and
 manipulate them.
 
-<P>For example, every time the XWorkplace PM hook encounters a <CODE>WM_CHAR</CODE>
+<P>For example, every time the &xwp; PM hook encounters a <CODE>WM_CHAR</CODE>
 message (that is, when a key on the keyboard is pressed or released), it will check
 if that key is on the global hotkeys list. If so, the message is swallowed (so
 that the target window won't receive it) and
-some part of the XWorkplace WPS code is notified instead, which can then open
+some part of the &xwp; WPS code is notified instead, which can then open
 the corresponding object which has been defined by the user for that hotkey.
 
-<P>The way the XWorkplace hook is implemented differs slightly from that of the
+<P>The way the &xwp; hook is implemented differs slightly from that of the
 typical hook utilities. Most of those utilities register their hook function with
 PM when they are started and de-register the hook again when the program is ended
 (for example, if "close" is chosen from the window list).
 
-<P>Instead, XWorkplace's PM hook is registered from a special program which is not visible
-in the window list -- the <B>XWorkplace daemon,</B> <CODE>XWPDAEMN.EXE</CODE>. You can
+<P>Instead, &xwp;'s PM hook is registered from a special program which is not visible
+in the window list -- the <B>&xwp; daemon,</B> <CODE>XWPDAEMN.EXE</CODE>. You can
 see it with WatchCat or any other process lister though. Try killing that program:
 you will see that all hook functionality will be gone.
 
-<P><CODE>XWPDAEMN.EXE</CODE> is started by XWorkplace while the WPS is starting up
+<P><CODE>XWPDAEMN.EXE</CODE> is started by &xwp; while the WPS is starting up
 for the first time and keeps running until the system is shut down. That is, the
 daemon even keeps running between WPS restarts.
 
@@ -85,10 +85,10 @@ complex in itself.
 
 <P><LI>Since the daemon keeps running between WPS restarts, it can also keep track
 of certain data which is needed between WPS restarts. For example, the
-XWorkplace startup folder shouldn't be processed again when the WPS is restarted
+&xwp; startup folder shouldn't be processed again when the WPS is restarted
 (unless the user requests this). Try it out: If you kill the daemon and then restart
-the WPS, you'll see that the XWorkplace startup folder will get processed again, because
-the XWorkplace WPS classes see that the daemon is not running and
+the WPS, you'll see that the &xwp; startup folder will get processed again, because
+the &xwp; WPS classes see that the daemon is not running and
 then think that the WPS is starting up for the first time.
 
 <P><LI>PageMage is part of the daemon as well and is thus independent of the WPS.

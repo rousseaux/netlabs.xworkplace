@@ -213,6 +213,8 @@ SENTINELOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_sentinel.obj $(PMPRINTF_LIB) libs\wi
 HEALTHOBJS = $(XWP_OUTPUT_ROOT)\widgets\xwHealth.obj $(PMPRINTF_LIB)
 SAMPLEOBJS = $(XWP_OUTPUT_ROOT)\widgets\____sample.obj $(PMPRINTF_LIB)
 
+D_CDFSOBJS = $(XWP_OUTPUT_ROOT)\widgets\d_cdfs.obj $(PMPRINTF_LIB)
+
 # The PGMGDMNOBJS macro contains all the PageMage .OBJ files,
 # which go into XWPDAEMN.EXE.
 PGMGDMNOBJS = \
@@ -397,10 +399,29 @@ link: $(XWPRUNNING)\bin\xfldr.dll \
       $(XWPRUNNING)\plugins\xcenter\sentinel.dll \
       $(XWPRUNNING)\plugins\xcenter\xwHealth.dll \
       $(XWPRUNNING)\plugins\xcenter\sample.dll \
+      $(XWPRUNNING)\plugins\drvdlgs\d_cdfs.dll \
       $(XWPRUNNING)\bin\xwphook.dll \
       $(XWPRUNNING)\bin\xwpdaemn.exe
 #      $(XWPRUNNING)\bin\xwpfonts.fon
 #      $(XWPRUNNING)\bin\xdebug.dll
+
+#
+# generic inference rules for copying and stuff
+#
+
+{$(MODULESDIR)}.dll{$(XWPRUNNING)\plugins\xcenter}.dll:
+!ifdef XWP_UNLOCK_MODULES
+        $(RUN_UNLOCK) $@
+!endif
+        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
+        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
+
+{$(MODULESDIR)}.dll{$(XWPRUNNING)\plugins\drvdlgs}.dll:
+!ifdef XWP_UNLOCK_MODULES
+        $(RUN_UNLOCK) $@
+!endif
+        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\drvdlgs
+        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\drvdlgs
 
 # Finally, define rules for linking the target DLLs and EXEs
 # This uses the $OBJS and $HLPOBJS macros defined at the top.
@@ -476,15 +497,12 @@ $(MODULESDIR)\xwpres.dll: $(XWP_OUTPUT_ROOT)\dummyfont.obj src\shared\xwpres.def
 !endif
         @cd $(CURRENT_DIR)
 
+# XCENTER PLUGINS LINKER PSEUDOTARGETS
+# ------------------------------------
+
 #
 # Linking WINLIST.DLL
 #
-$(XWPRUNNING)\plugins\xcenter\winlist.dll: $(MODULESDIR)\$(@B).dll
-!ifdef XWP_UNLOCK_MODULES
-        $(RUN_UNLOCK) $@
-!endif
-        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
-        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
 
 # update DEF file if buildlevel has changed
 src\widgets\winlist.def: include\bldlevel.h
@@ -635,6 +653,31 @@ $(MODULESDIR)\sample.dll: $(SAMPLEOBJS) src\widgets\$(@B).def
         @echo $(MAKEDIR)\makefile: Linking $@
         $(LINK) /OUT:$@ src\widgets\$(@B).def @<<
 $(SAMPLEOBJS)
+<<
+!ifdef XWP_OUTPUT_ROOT_DRIVE
+        @$(XWP_OUTPUT_ROOT_DRIVE)
+!endif
+        @cd $(MODULESDIR)
+        mapsym /n $(@B).map > NUL
+!ifdef CVS_WORK_ROOT_DRIVE
+        @$(CVS_WORK_ROOT_DRIVE)
+!endif
+        @cd $(CURRENT_DIR)
+
+# DRIVER PLUGINS LINKER PSEUDOTARGETS
+# -----------------------------------
+#
+# Linking D_CDFS.DLL
+#
+
+# update DEF file if buildlevel has changed
+src\widgets\d_cdfs.def: include\bldlevel.h
+        $(RUN_BLDLEVEL) $@ include\bldlevel.h "CDFS.IFS driver plugin DLL"
+
+$(MODULESDIR)\d_cdfs.dll: $(D_CDFSOBJS) src\widgets\$(@B).def
+        @echo $(MAKEDIR)\makefile: Linking $@
+        $(LINK) /OUT:$@ src\widgets\$(@B).def @<<
+$(D_CDFSOBJS)
 <<
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
@@ -885,6 +928,8 @@ release: really_all
 !endif
 !if [@md $(XWPRELEASE_HEALTH)\plugins\xcenter 2> NUL]
 !endif
+!if [@md $(XWPRELEASE_HEALTH)\plugins\drvdlgs 2> NUL]
+!endif
     $(COPY) $(MODULESDIR)\diskfree.dll $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\diskfree.sym $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\monitors.dll $(XWPRELEASE_MAIN)\plugins\xcenter
@@ -893,16 +938,21 @@ release: really_all
     $(COPY) $(MODULESDIR)\winlist.sym $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\sentinel.dll $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\sentinel.sym $(XWPRELEASE_MAIN)\plugins\xcenter
+    $(COPY) $(MODULESDIR)\d_cdfs.dll $(XWPRELEASE_MAIN)\plugins\drvdlgs
+    $(COPY) $(MODULESDIR)\d_cdfs.sym $(XWPRELEASE_MAIN)\plugins\drvdlgs
     $(COPY) $(MODULESDIR)\xwHealth.dll $(XWPRELEASE_HEALTH)\plugins\xcenter
     $(COPY) $(MODULESDIR)\xwHealth.sym $(XWPRELEASE_HEALTH)\plugins\xcenter
-    @echo $(MAKEDIR)\makefile: Done copying files.
 # 9) toolkit
 !if [@md $(XWPRELEASE_MAIN)\toolkit 2> NUL]
 !endif
 !if [@md $(XWPRELEASE_MAIN)\toolkit\shared 2> NUL]
 !endif
+!if [@md $(XWPRELEASE_MAIN)\toolkit\config 2> NUL]
+!endif
     $(COPY) src\widgets\miniwdgt.c $(XWPRELEASE_MAIN)\toolkit
     $(COPY) include\shared\center.h $(XWPRELEASE_MAIN)\toolkit\shared
+    $(COPY) include\config\drivdlgs.h $(XWPRELEASE_MAIN)\toolkit\config
+    @echo $(MAKEDIR)\makefile: Done copying files.
 # now go shrink executables V0.9.13 (2001-06-17) [umoeller]
 !ifndef XWP_DEBUG
 !ifdef LXLITEPATH

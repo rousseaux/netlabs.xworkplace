@@ -47,7 +47,7 @@ LANGUAGE = 001
 # THIS HAS CHANGED WITH V0.84.
 # HTML2IPF = ..\tools\html2ipf.cmd
 # now using h2i V0.9.13 (2001-06-23) [umoeller]
-HTML2IPF = $(RUN_H2I) -i$(PROJECT_BASE_DIR)\include\shared\helppanels.h
+HTML2IPF = $(RUN_H2I) -s -i$(PROJECT_BASE_DIR)\include\shared\helppanels.h -i..\$(ENTITYDEFS)
 
 # Change this to the directory where the output file (INF)
 # should be copied to.

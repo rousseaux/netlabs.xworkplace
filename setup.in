@@ -206,6 +206,10 @@ RUN_UNLOCK = $(CVS_WORK_ROOT)\$(XWPDIR)\tools\unlock.exe
 
 RUN_STRRPL = $(CVS_WORK_ROOT)\$(XWPDIR)\tools\strrpl.exe
 
+!ifndef ENTITYDEFS
+ENTITYDEFS = entities.h
+!endif
+
 !ifndef RUN_H2I
 RUN_H2I = $(HELPERS_BASE)\h2i.exe
 !endif

@@ -46,9 +46,9 @@ the same PM class though.
 
 <P>Some widget classes are built into the XCenter itself (i.e. reside in
 <CODE>XFLDR.DLL</CODE>), but the XCenter can obviously load external plug-in DLLs too.
-Several of the widget classes that come with XWorkplace have been created as plug-ins to
+Several of the widget classes that come with &xwp; have been created as plug-ins to
 show you how it's done. If you have the
-<A HREF="notices_40source.html">XWorkplace source code</A>,
+<A HREF="notices_40source.html">&xwp; source code</A>,
 look for the <CODE>src\widgets</CODE> directory.
 
 <P><LI>A <B>"PM window class"</B> is not an XCenter definition... this
@@ -57,7 +57,7 @@ is explained in detail in the <I>Presentation Manager Programming Reference.</I>
 <P>Basically, PM organizes windows into classes. For example, if you create
 a PM button, you invoke <CODE>WinCreateWindow</CODE> with the name of the
 button window class (<CODE>WC_BUTTON</CODE>), which is a standard window class
-of every OS/2 system.
+of every &os2; system.
 
 <P>It is possible to create new window classes though. The XCenter makes use
 of this feature to implement widget classes. So again, a widget class is a
@@ -78,7 +78,7 @@ be created), it does call <CODE>WinCreateWindow</CODE> with the PM window class
 name that was specified with the widget class. So this is really not too spectacular.
 
 <P><LI>A <B>"widget plugin DLL"</B> is a separate DLL which resides
-in the <CODE>plugins\xcenter</CODE> directory of the XWorkplace
+in the <CODE>plugins\xcenter</CODE> directory of the &xwp;
 installation directory. This must contain one or
 several widget classes. There are three procedures that a widget plugin DLL
 is required to export to make the XCenter see the widget classes. This is

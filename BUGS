@@ -17,6 +17,23 @@ Ulrich M”ller.
 MINOR PROBLEMS
 --------------
 
+winlist widget behavior: make buttons wider (configurable)
+
+There's a INI file entry for the font size for VIO windows It's possible to change that
+entry; start a new VIO window, and change it back to the original value. I wrote a REXX
+script that does this - it's part of my INF file REXX Tips & Tricks. The only strange thing
+is, that the name of the key is language dependent.
+
+> >When i try to copy an existing object in an folder e.g. 123.bmp and
+> >give it a new name e.g. 456.bmp and press the "copy" button next
+then,
+> >the file exists dialog appears telling me that file 123.bmp already
+exists.
+
+undo wpDelete into trashcan (breaks shredder)
+
+object hotkeys: assign doesn't work if hotkey is invalid
+
 XCenter:
     -- make object buttons droppable!
 
@@ -135,6 +152,7 @@ hotkeys:
         --> check VIO hacks?
 
 PageMage:
+    --  bring window to current screen before making it sticky
     --  causes PM lockups at times (Ctrl+Esc unlocks)
     --  stops switching at times
     --  make window larger than desktop, set pagemage 1x4 and move big window

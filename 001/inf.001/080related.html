@@ -8,32 +8,32 @@
         V0.81: see notes below
         V0.83: see notes below
         V0.84: see notes below -->
-<!-- Changed with V0.9.0: replace XFolder with XWorkplace -->
+<!-- Changed with V0.9.0: replace XFolder with &xwp; -->
 <BODY>
-There are a number of files in the different subdirectory of the XWorkplace
+There are a number of files in the different subdirectory of the &xwp;
 installation directory that might be useful to you:
 
 <!-- this item changed with V0.83 -->
 <UL><LI><CITE><STRONG>BOOTMGR.CMD</STRONG></CITE> is new with V0.83.
 This script was supplied by
 Duane A. Chamblee <duanec@ibm.net> and will automatically add all the
-current BootManager choices to the XWorkplace user-reboot actions for XShutdown.
-This is done by modifying the XWorkplace keys in OS2.INI directly. No guarantee
+current BootManager choices to the &xwp; user-reboot actions for XShutdown.
+This is done by modifying the &xwp; keys in OS2.INI directly. No guarantee
 that this will actually work on your system!
 
 <P><LI><CITE><STRONG>CROBJxxx.CMD</STRONG></CITE>
 (with xxx being a three-digit language code,
 as described in <A HREF="inst_4nls.html">National Language Support</A>) are used
-by XWorkplace to create the default Configuration Folders. These are just plain REXX
+by &xwp; to create the default Configuration Folders. These are just plain REXX
 scripts which create a number of objects on your desktop.
-<P>These scripts are called both after XWorkplace has been installed (after the first
-WPS restart) and also whenever XWorkplace fails to locate its Configuration Folder.
+<P>These scripts are called both after &xwp; has been installed (after the first
+WPS restart) and also whenever &xwp; fails to locate its Configuration Folder.
 <P>You may modify these scripts to have a different default configuration created.
 However, you should be very careful in changing the various object settings, especially
-the <CITE>OBJECTID</CITE> keywords, because XWorkplace might rely on these.
+the <CITE>OBJECTID</CITE> keywords, because &xwp; might rely on these.
 
 <P><LI><CITE><STRONG>NEWOBJ.CMD</STRONG></CITE>
-was used in previous versions of XWorkplace
+was used in previous versions of &xwp;
 (before 0.52)
 to create objects. This is
 <A HREF="menu_2template.html">now done with templates,</A> but this script is still
@@ -58,7 +58,7 @@ see the <A HREF="069netscdde.html">separate chapter</A> in this documentation.
 
 <!-- xxx -->
 <P><LI><CITE><STRONG>REPCLASS.EXE</STRONG></CITE>
-is used by the installation script to register the various XWorkplace class and replace
+is used by the installation script to register the various &xwp; class and replace
 WPFolder with it. It needs the following parameters on the command line:
 <PRE>repclass &lt;oldclass&gt; &lt;replacewithclass&gt; [&lt;dllname&gt;]</PRE>
 <P><CITE>&lt;oldclass&gt;</CITE> is the WPS class that you wish to replace.
@@ -73,7 +73,7 @@ to specify the full path.
 <P>If <CITE>&lt;dllname&gt;</CITE> is omitted, <CITE>&lt;replacewithclass&gt;</CITE>
 will be de-registered and removed
 from the replacement list for <CITE>&lt;oldclass&gt;</CITE>.
-<P>Example for XWorkplace itself: the classes to be replaced are
+<P>Example for &xwp; itself: the classes to be replaced are
 <CITE>WPFolder</CITE>, <CITE>WPDisk</CITE>, and <CITE>WPSystem</CITE>, the
 new XFolder classes are <CITE>XFolder</CITE>, <CITE>XFldDisk</CITE>, and <CITE>XFldSystem</CITE>,
 which all reside in the XFLDR.DLL file.
@@ -81,11 +81,11 @@ which all reside in the XFLDR.DLL file.
 the WPS with WPSRESET.EXE (see below).
 
 <!-- V0.9.6: removed this
-Warning: Do not attempt to replace single XWorkplace classes or to undo
-a certain XWorkplace replacement manually. The XWorkplace classes are designed to work
+Warning: Do not attempt to replace single &xwp; classes or to undo
+a certain &xwp; replacement manually. The &xwp; classes are designed to work
 together and are depend on each other. If you register / deregister not all of them,
 the WPS might hang itself up already at boot-up. For registering or deregistering
-of the XWorkplace classes, always use the install script. -->
+of the &xwp; classes, always use the install script. -->
 
 <P><LI><CITE><STRONG>SOUNDxxx.CMD</STRONG></CITE>
 (with xxx being a three-digit language code,
@@ -93,14 +93,14 @@ as described in <A HREF="inst_4nls.html">National Language Support</A>) must be 
 <!-- V0.9.3: link changed -->
 by you to activate the new <A HREF="mm_2sounds.html">system sounds</A>.
 These little scripts will write a few language-dependent
-strings into the INI files of the OS/2
-Multimedia Subsystem (MMPM/2), which will then be visible in the OS/2 "Sound" object.
-Only if XWorkplace finds these, it will play system sounds
+strings into the INI files of the &os2;
+Multimedia Subsystem (MMPM/2), which will then be visible in the &os2; "Sound" object.
+Only if &xwp; finds these, it will play system sounds
 at all.
 
 <P><LI><CITE><STRONG>SOUNDOFF.CMD</STRONG></CITE>
 will turn sounds off again by deleting the respective entries from the MMPM/2 INI files.
-XWorkplace will then stop playing system sounds.
+&xwp; will then stop playing system sounds.
 
 <P><B>Note:</B> The <CITE>SOUND</CITE> files assume that that your MMPM/2 directory is <CITE>\MMOS2</CITE>
 on your boot drive. If it is not, you must alter the files yourself.
@@ -118,7 +118,7 @@ onto the main window, whose size will be calculated then also.
 <P><LI><CITE><STRONG>WPSRESET.EXE</STRONG></CITE>
 can restart your WPS without rebooting your computer
 altogether (see the <A HREF="xsd_1restartwps.html">"Restart WPS"</A> page for details).
-It is now (V0.71) only used by the install script any more, while XWorkplace does its
+It is now (V0.71) only used by the install script any more, while &xwp; does its
 own WPS restarting internally.
 In order to prevent accidental execution, WPSRESET.EXE must be started with a
 <CITE>"-D"</CITE> parameter on the command line. (I have forgotten what "-D" stands
@@ -133,14 +133,14 @@ also available at
 find extensive documentation of xhelp.
 
 <!-- V0.9.7: changed this -->
-<P>In XWorkplace's context, xhelp was previously used by the text-mode install program.
-XWorkplace is now using WarpIN for installation, so xhelp is only included any more in
+<P>In &xwp;'s context, xhelp was previously used by the text-mode install program.
+&xwp; is now using WarpIN for installation, so xhelp is only included any more in
 case someone still wants to use the text-mode install.
 
 <P><LI><CITE><STRONG>XSHUTDWN.EXE</STRONG></CITE> has been removed with V0.9.7.
 
-<P><LI><STRONG>All the other .CMD files</STRONG> in the XWorkplace directory
-are REXX scripts used by the default XWorkplace configuration to quickly set
+<P><LI><STRONG>All the other .CMD files</STRONG> in the &xwp; directory
+are REXX scripts used by the default &xwp; configuration to quickly set
 certain folder settings (they can be found in the "Quick Settings" submenu).
 The scripts are very similar, varying only in the settings that are applied
 to a folder. ALWSSORT.CMD is commented, so you can look through it and see what it

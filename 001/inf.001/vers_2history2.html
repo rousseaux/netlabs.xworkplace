@@ -9,7 +9,7 @@
      about changes to this file.
      Simply use the English original instead. -->
 <BODY>
-This page lists the changes made to XFolder (before XWorkplace 0.9.0 was released)
+This page lists the changes made to XFolder (before &xwp; 0.9.0 was released)
 and is identical to the "Revision history" page of the XFolder V0.85 documentation.
 
 <P><B>Version 0.85 (March 15, 1999)</B>
@@ -33,8 +33,8 @@ instead of XFolder's own "bin" dir. Fixed.
 <H6>First non-beta. Hope this works better.
 <P>New features:
 <UL><LI>Implemented new drive checking when Disk objects ("root folders")
-are opened to avoid the annoying system error messages of OS/2. You'll
-get a slightly more comfortable message box now with the default OS/2
+are opened to avoid the annoying system error messages of &os2;. You'll
+get a slightly more comfortable message box now with the default &os2;
 SYSxxx error message. That's a bit better, I think.
 <P><LI>Finally, a number of WPS
 <A HREF="065icons.html">default icons</A> can be freely replaced.
@@ -123,10 +123,10 @@ a context menu of several shadows. Fixed (same place).
 <P><LI>Replacement "File conflict" dialog sometimes displayed outdated file
 size/date/time information. Fixed (wpConfirmObjectTitle, xfobj.c).
 <P><LI>With V0.82, XFolder forgot how to write CONFIG.SYS to disk. That rendered the whole
-"OS/2 Kernel" object pretty useless. Fixed, sorry (fncbConfigItemChanged, xfsys.c).
+"&os2; Kernel" object pretty useless. Fixed, sorry (fncbConfigItemChanged, xfsys.c).
 <P><LI>SUPPRESSPOPUPS wasn't properly read from CONFIG.SYS ("Errors" page). Fixed.
 <P><LI>The second "Screen" page which is inserted into the "System" object for some
-video drivers did not appear in "OS/2 Kernel", but somewhere in "Workplace Shell".
+video drivers did not appear in "&os2; Kernel", but somewhere in "Workplace Shell".
 Fixed (wpAddDMQSDisplayTypePage, xfsys.*).
 <P><LI>XShutdown sometimes reported a data size of 0 when saving INI keys. This is
 now silently ignored, so that those error messages shouldn't appear any longer.
@@ -145,7 +145,7 @@ due to my use of unsigned int variables, which can only hold values up to some 4
 the previous version, but I've cleaned up a lot of things.
 <P>New features:
 <UL><LI>More Treesize settings: size display format, low-priority search.
-<P><LI>XFolder <I>finally</I> has Warp 4 notebook buttons. There's a new function
+<P><LI>XFolder <I>finally</I> has &warp4; notebook buttons. There's a new function
 winhAssertWarp4Notebook in /helpers/winh.c which can do this with any notebook
 page without having to change the dialog resources. Thanks, Martin Lafaix, for
 the necessary information.
@@ -177,7 +177,7 @@ keyword which is replaced contains lower-case characters too (fnwpConfigCommon, 
 and str* helper functions in /helpers/dosh.*).
 <P><LI>Fixed a coupla things with NLS DLL loading to make V0.82 work with V0.81 NLS DLLs
 (cmnQueryNLSModuleHandle, common.c).
-<P><LI>XFolder can now write SUPPRESSPOPUPS=0 on "Errors" page in "OS/2 Kernel". This
+<P><LI>XFolder can now write SUPPRESSPOPUPS=0 on "Errors" page in "&os2; Kernel". This
 is a new setting since FP29 (fnwpConfigCommon, xfsys.c).
 <P><LI>Sped up confirmation dialog display (XFldObject::wpConfirmObjectTitle, xfobj.c).
 <P><LI>Treesize is now much faster collecting extended attributes (up to 300%). Also
@@ -262,8 +262,8 @@ from wpclsQueryStyle so that no additional templates are produced in the Templat
 folder.
 <P><LI>Reworked status bar code completely. Should be quite a bit faster now; however,
 each code is only translated _once_ now.
-<P><LI>Rearranged the pages in the "OS/2 Kernel" and "Workplace Shell" objects. Also
-changed the replaced SOM methods (xfsys.*). "OS/2 Kernel" should now contain all the
+<P><LI>Rearranged the pages in the "&os2; Kernel" and "Workplace Shell" objects. Also
+changed the replaced SOM methods (xfsys.*). "&os2; Kernel" should now contain all the
 settings which require a reboot to take effect. I guess this is a more logical
 rule.
 <P><LI>Removed those darn xfclsQueryModule methods which were used to query the
@@ -288,7 +288,7 @@ xfsys.c.
 <P><LI>"Errors" page wrote "REIPL=YES" instead of "REIPL=ON". Fixed.
 <P><LI>"Object Internals" page displayed object handles only 25% of the time, depending
 on how large your object repository was. Fixed.
-<P><LI>Install script failed to create "Workplace Shell" and "OS/2 Kernel" objects
+<P><LI>Install script failed to create "Workplace Shell" and "&os2; Kernel" objects
 if the XFolder Configuration folder already existed. Fixed.
 <P><LI>Creating objects from context menus caused non-reproduceable system hangs
 from time to time (really bad ones where even C-A-D faild).
@@ -311,7 +311,7 @@ sounds were enabled. Fixed.
 <P><LI>XFolder sometimes conflicted with the WPS container manipulation when extended
 sorting was on. Icons could still be moved within a folder even though "Always sort"
 was on. Fixed.
-<P><LI>Install script failed to create the new "Workplace Shell" and "OS/2 Kernel"
+<P><LI>Install script failed to create the new "Workplace Shell" and "&os2; Kernel"
 objects when the config folder already existed. Fixed. There are now two additional
 scripts in \INSTALL.
 
@@ -329,7 +329,7 @@ menu item in its context menu: "Start folder content" allows you to start all
 the objects in it even after the WPS is up.
 <P><LI><A HREF="fldr_5quickopen.html">"QuickOpen"</A> feature for folders.
 <P><LI>The "System" object is now split into two new
-"OS/2 Kernel" and "Workplace Shell" objects. Refer to
+"&os2; Kernel" and "Workplace Shell" objects. Refer to
 <A HREF="sys_1intro.html">this page</A> for more.
 <P><LI>New settings pages therein to change
 those risky and obscure CONFIG.SYS settings.
@@ -489,7 +489,7 @@ Again, I don't have those keys, but I've fixed something. Let's see if it works.
 <P><LI>Since the WPS crashes big time when menu IDs > 0x8000 are used, XFolder now checks
 for this (folder content menus) and aborts processing then.
 <P><LI>The Warp 4 "Insert" menu item is actually called "Paste". Sorry, I have a
-German OS/2. Fixed.
+German &os2;. Fixed.
 <P><LI>"Restart WPS" now saves and closes all open WPS windows, including the Desktop,
 regardless of whether "Close all open windows" was checked. Since all WPS windows will
 be closed anyway when the WPS terminates, I might just as well do it myself. This has the
@@ -582,7 +582,7 @@ although they were not visibly open. This applied especially to the XFolder Conf
 This is now fixed; all awake folders are saved too.
 <P><LI>XShutdown sometimes failed to save INI files properly. Error checking is now implemented.
 <P><LI>XShutdown sometimes failed to close non-PM sessions.
-At least DOS/Win-OS/2 sessions had to be closed manually. This
+At least DOS/&winos2; sessions had to be closed manually. This
 was due to a bug (feature?!?) in WinQueryWindowProcess, which does not return the process and
 session IDs of DOS machines, but those of the first PMSHELL instance. I don't know what this
 should be good for... anyway, it's fixed.
@@ -664,7 +664,7 @@ more than just the English version is available. I am planning to distribute Nat
 files in separate packages. NLS support is now on page 5 of the Global Settings, to where I also moved
 two settings which were formerly on page 1.
 Please <A HREF="notices_3comments.html">contact the developer's team</A>
-if you're interested in translating XWorkplace to
+if you're interested in translating &xwp; to
 your language. You don't have to be a programmer, but knowing HTML would help.
 <P><LI>A few renovations on the settings pages: most importantly,
 settings which don't apply are now grayed out.

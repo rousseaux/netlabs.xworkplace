@@ -6,57 +6,57 @@
 </HEAD>
 <!-- This file is all new with V0.82. -->
 <!-- Changes for V0.84: see notes below -->
-<!-- Changed with V0.9.0: replace XFolder with XWorkplace;
+<!-- Changed with V0.9.0: replace XFolder with &xwp;;
                           also see notes below -->
 <BODY>
 First of all: look into the <A HREF="sys_2global.html">"Workplace Shell"</A>
 object,
-where you will find a lot of useful levers to make XWorkplace behave.
-<P>If you don't find the answer to your question here, please look at XWorkplace's
+where you will find a lot of useful levers to make &xwp; behave.
+<P>If you don't find the answer to your question here, please look at &xwp;'s
 <A HREF="notices_3comments.html">web homepage</A> also. I am now
 maintaining a public bug list, which might answer your question too.
 
 <OL>
-<LI><B>Does XWorkplace slow down the WPS?</B>
+<LI><B>Does &xwp; slow down the WPS?</B>
 <P>I don't think this is true in general. I have not done any tests, but in general,
-XWorkplace only slows down <I>certain</I> WPS features, but not the WPS in general.
+&xwp; only slows down <I>certain</I> WPS features, but not the WPS in general.
 <!-- V0.9.0: changed the following -->
 <P>The most obvious slowdown is opening folder context menus, because the Configuration
 Folder has to be read in (including all subfolders) to build the context menu
 accordingly.
-<P>However, with V0.9.0, XWorkplace now caches the contents of the Configuration Folder
+<P>However, with V0.9.0, &xwp; now caches the contents of the Configuration Folder
 internally, so the contents are only read once, until you modify
 the Configuration Folder or one of its subfolders. This should result in some speedup.
 Also, with V0.9.0, I have reworked my internal linked-list functions, which should also
 result in a speed increase.
 <!-- V0.9.13: changed the following -->
-<P>As for the other features of XWorkplace, it depends. Some things might actually
+<P>As for the other features of &xwp;, it depends. Some things might actually
 slow down the system slightly (such as retrieving information for the status bars),
-but there are areas where XWorkplace's routines will actually be faster than the
+but there are areas where &xwp;'s routines will actually be faster than the
 WPS code. For example, if extended file associations are enabled, folder populating
-is much faster because XWorkplace is using very efficient caching routines for
+is much faster because &xwp; is using very efficient caching routines for
 object handles internally.
 <!-- end V0.9.13 -->
-<P>Also, as opposed to some other WPS enhancers, XWorkplace doesn't use excessive
+<P>Also, as opposed to some other WPS enhancers, &xwp; doesn't use excessive
 amounts of memory. I have checked this once on my system, and in addition to the
-size of the XWorkplace DLLs themselves, XWorkplace only keeps a few 100 KBs of
+size of the &xwp; DLLs themselves, &xwp; only keeps a few 100 KBs of
 memory allocated and dynamically frees storage when it's no longer needed.
 
 <!-- this item added with V0.82 -->
-<P><LI><B>Why are the XWorkplace dialog windows so ugly on Warp 3?</B>
-<P>XWorkplace uses the <B>WarpSans</B> font for most of its dialogs, because it's
+<P><LI><B>Why are the &xwp; dialog windows so ugly on Warp 3?</B>
+<P>&xwp; uses the <B>WarpSans</B> font for most of its dialogs, because it's
 so much prettier than "System Proportional". This font only
-comes with OS/2 Warp 4, so on Warp 3 it's not found, and the system uses the default
+comes with &warp4; and higher, so on Warp 3 it's not found, and the system uses the default
 system font (System Proportional) instead.
-<P>If you can get hold of some Warp 4 <CITE>\OS2\DLL\DSPRES.DLL</CITE> file,
+<P>If you can get hold of some &warp4; <CITE>\OS2\DLL\DSPRES.DLL</CITE> file,
 simply copy it over the same file in your Warp 3 \OS2\DLL directory.
 This file contains many system resources, among others the
 WarpSans font. Warp 3 will work with the Warp 4 version without problems.
-(This only works if you boot OS/2 to the command line, using Alt-F1 at startup,
+(This only works if you boot &os2; to the command line, using Alt-F1 at startup,
 <!-- the following added with V0.9.0 -->
 because that DLL gets locked as soon as the system switches to graphics mode.)
-<P>Starting with XWorkplace V0.9.0, the "Paranoia" page in "XWorkplace Setup" has
-a checkbox where you can force XWorkplace to use the "8.Helv" font in most places.
+<P>Starting with &xwp; V0.9.0, the "Paranoia" page in "&xwp; Setup" has
+a checkbox where you can force &xwp; to use the "8.Helv" font in most places.
 
 <!-- this item added with V0.82 -->
 <P><LI><B>Why are the new system sounds not playing?</B>
@@ -64,7 +64,7 @@ a checkbox where you can force XWorkplace to use the "8.Helv" font in most place
 <!-- V0.9.3: link changed -->
 <A HREF="mm_2sounds.html">corresponding page</A> for more.
 <!-- V0.9.6: added the following -->
-<P>Some people reported that after upgrading their sound cards, XWorkplace's system
+<P>Some people reported that after upgrading their sound cards, &xwp;'s system
 sounds no longer works. This turned out to be a problem with the multimedia setup.
 Open the standard "Multimedia Configuration" object, "Digital Audio" page, and make
 sure that the "WAV" file extension appears in the extensions associations list.
@@ -86,7 +86,7 @@ fine again (until the media is exchanged again).
 <!-- V0.9.6: added this -->
 <P>Note that I do not have removeable drives, other than a CD-ROM drive and a CD writer.
 I therefore cannot reproduce these problems here. If somebody can take a look at
-XWorkplace's source code to find out what might cause this, this would be a great help.
+&xwp;'s source code to find out what might cause this, this would be a great help.
 
 <P>IBM has introduced some new removeable media support with Warp 4 Fixpak 6, so maybe
 we have a problem there. Christian Hennecke &lt;christian.hennecke@ruhr-uni-bochum.de&gt;
@@ -94,15 +94,15 @@ wrote in some newsgroup that replacing <CODE>PMWP.DLL</CODE> with a
 pre-fixpak 6 version appears to help. You'll also have to install NEWDASD, which should
 still be available on Hobbes and Leo.
 
-<P><LI><B>Why do XWorkplace's features only work with some folders and not with others?</B>
+<P><LI><B>Why do &xwp;'s features only work with some folders and not with others?</B>
 <P>This is tricky. Some people have reported this in all variations, i.e.
 hotkeys work for the Desktop only, or not in URL folders, or not in Group Folders
 (an IBM EWS utility), etc.pp.. The same applies to status bars.
-<P>From what I can see, this is related to folder subclassing. XWorkplace needs certain
+<P>From what I can see, this is related to folder subclassing. &xwp; needs certain
 window messages to introduce these features, and if some other WPS class intercepts
-these messages, XWorkplace's features behave funny or cause crashes or do simply not work.
+these messages, &xwp;'s features behave funny or cause crashes or do simply not work.
 <P>In general, the more WPS class replacements you have installed, the more likely
-these errors are likely to appear. With a "clean" WPS, XWorkplace usually works fine, but
+these errors are likely to appear. With a "clean" WPS, &xwp; usually works fine, but
 the people who have reported these errors sometimes had four folder class replacements
 installed, and it's really difficult for me to track down these errors then.
 Try to de-install some WPS extensions which you don't absolutely need.
@@ -112,12 +112,12 @@ package, which you should run from time to time anyway, to clean up the INI file
 This is still continually updated and available at Hobbes.
 <P>I have also found that installation order is important. Some WPS extensions seem
 to simply "swallow" messages which they don't need, assuming that they are the only
-WPS extension on the system. (This might apply to XWorkplace also, but I have tried to
-avoid this.) Now, if XWorkplace comes before this greedy WPS extension in the WPS class
-replacement list, which is the case if XWorkplace was installed first, it does get the
+WPS extension on the system. (This might apply to &xwp; also, but I have tried to
+avoid this.) Now, if &xwp; comes before this greedy WPS extension in the WPS class
+replacement list, which is the case if &xwp; was installed first, it does get the
 message before the other WPS extension.
 
-<P><LI><B>Does XWorkplace cooperate with Object Desktop?</B>
+<P><LI><B>Does &xwp; cooperate with Object Desktop?</B>
 <P>In theory, yes. Practically, sometimes. For details about this (and for other
 WPS utilities also), see the separate <A HREF="vers_1compat.html">"Compatibility"</A>
 page.
@@ -125,7 +125,7 @@ page.
 <!-- this item added with V0.84 -->
 <P><LI><B>Why do I hear the disk drives running every time I open the "Drives"
 folder?</B>
-<P>The reason for this is that the XWorkplace status bars query the free space on a
+<P>The reason for this is that the &xwp; status bars query the free space on a
 drive. If the first object in your "Drives" folder represents a floppy drive, it's
 this drive that's queried.
 <P>To avoid this, change the status bar information for
@@ -134,14 +134,14 @@ information will not be queried.
 <P>Alternatively, you can disable status bars for the "Drives" folder only on the
 "XFolder" page in the Drives folder's settings notebook.
 
-<P><LI><B>Does XWorkplace run on Macintosh systems?</B>
+<P><LI><B>Does &xwp; run on Macintosh systems?</B>
 <P>No.
 </OL>
 
-Shameless self-advertisement: XWorkplace cooperates perfectly with
+Shameless self-advertisement: &xwp; cooperates perfectly with
 the fantastic <STRONG>CommandPak</STRONG> from the same author, available also at
 <A HREF="http://www2.rz.hu-berlin.de/~h0444vnd/os2.htm">my homepage</A>. This package
-will improve the OS/2 command line dramatically, among others offering some WPS support
+will improve the &os2; command line dramatically, among others offering some WPS support
 from the command line also.
 
 <BR>
