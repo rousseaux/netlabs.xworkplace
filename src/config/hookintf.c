@@ -928,13 +928,12 @@ VOID hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
  */
 
 MRESULT hifKeybdHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                   USHORT usItemID, USHORT usNotifyCode,
+                                   ULONG ulItemID, USHORT usNotifyCode,
                                    ULONG ulExtra)      // for checkboxes: contains new state
 {
-    // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     MRESULT mrc = (MPARAM)0;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_XFDI_CNR_CNR:
             switch (usNotifyCode)
@@ -1353,12 +1352,12 @@ VOID hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
  */
 
 MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                        USHORT usItemID, USHORT usNotifyCode,
+                                        ULONG ulItemID, USHORT usNotifyCode,
                                         ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT mrc = (MPARAM)0;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_XFDI_CNR_CNR:
 
@@ -1434,7 +1433,7 @@ MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 G_pfnwpEntryFieldOrig = WinSubclassWindow(hwndEntryField,
                                                           hif_fnwpSubclassedFuncKeyEF);
 
-                if (usItemID == ID_XSMI_FUNCK_EDIT)
+                if (ulItemID == ID_XSMI_FUNCK_EDIT)
                 {
                     // if we have "edit" (not "new"), set the dialog items
                     PFUNCTIONKEYRECORD precc = (PFUNCTIONKEYRECORD)pcnbp->preccSource;
@@ -1460,7 +1459,7 @@ MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                     paKeys = hifQueryFunctionKeys(&cKeys);
 
-                    if (usItemID == ID_XSMI_FUNCK_EDIT)
+                    if (ulItemID == ID_XSMI_FUNCK_EDIT)
                     {
                         // if we have "edit" (not "new"), use the
                         // existing record
@@ -1727,14 +1726,14 @@ VOID hifMouseMappings2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
  */
 
 MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                     USHORT usItemID, USHORT usNotifyCode,
+                                     ULONG ulItemID, USHORT usNotifyCode,
                                      ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT mrc = 0;
     PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
     BOOL    fSave = TRUE;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_XSDI_MOUSE_CHORDWINLIST:
             hifLoadHookConfig(pdc);
@@ -1749,7 +1748,7 @@ MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_MOUSE_MB3CLICK_DROP:
         {
             // new mappings selected from drop-down box:
-            HWND hwndDrop = WinWindowFromID(pcnbp->hwndDlgPage, usItemID);
+            HWND hwndDrop = WinWindowFromID(pcnbp->hwndDlgPage, ulItemID);
             LONG lIndex = winhQueryLboxSelectedItem(hwndDrop, LIT_FIRST);
 
             hifLoadHookConfig(pdc);
@@ -2074,16 +2073,16 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
  */
 
 MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                    USHORT usItemID, USHORT usNotifyCode,
+                                    ULONG ulItemID, USHORT usNotifyCode,
                                     ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT mrc = 0;
     PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
     BOOL    fSave = TRUE;
 
-    _Pmpf(("hifMouseMovementItemChanged: usItemID: %d ulExtra: %d", usItemID, ulExtra));
+    _Pmpf(("hifMouseMovementItemChanged: usItemID: %d ulExtra: %d", ulItemID, ulExtra));
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         /*
          * ID_XSDI_MOUSE_SLIDINGFOCUS:
@@ -2221,7 +2220,7 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         /*
          * DID_UNDO:
          *
-         *@@changed V0.9.9 (2001-03-25) [lafaix]: saving settings here
+         *changed V0.9.9 (2001-03-25) [lafaix]: saving settings here
          */
 
         case DID_UNDO:
@@ -2442,8 +2441,8 @@ VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
  */
 
 MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                    USHORT usItemID, USHORT usNotifyCode,
-                                    ULONG ulExtra)      // for checkboxes: contains new state
+                                   ULONG ulItemID, USHORT usNotifyCode,
+                                   ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT mrc = 0;
     PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
@@ -2452,10 +2451,10 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     if (G_fShutUpSlider)
         return (0);             // V0.9.9 (2001-03-27) [umoeller]
 
-    _Pmpf((__FUNCTION__ ": usItemID: %d ulExtra: %d", usItemID, ulExtra));
+    _Pmpf((__FUNCTION__ ": usItemID: %d ulExtra: %d", ulItemID, ulExtra));
     _Pmpf(("  selected index: %d", G_ulScreenCornerSelectedIndex));
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         /*
          * ID_XSDI_MOUSE_RADIO_TOPLEFT:
@@ -2480,8 +2479,8 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             winhSetDlgItemChecked(pcnbp->hwndDlgPage, G_ulScreenCornerSelectedID, FALSE);
 
             // update global and then update controls on page
-            G_ulScreenCornerSelectedID = usItemID;
-            UpdateScreenCornerIndex(usItemID);
+            G_ulScreenCornerSelectedID = ulItemID;
+            UpdateScreenCornerIndex(ulItemID);
             winhSetDlgItemChecked(pcnbp->hwndDlgPage, G_ulScreenCornerSelectedID, TRUE);
 
             /* _Pmpf(("ctrl: %lX, index: %lX",
@@ -2562,7 +2561,7 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_MOUSE_SPECIAL_DROP:
         {
             // new special function selected from drop-down box:
-            HWND hwndDrop = WinWindowFromID(pcnbp->hwndDlgPage, usItemID);
+            HWND hwndDrop = WinWindowFromID(pcnbp->hwndDlgPage, ulItemID);
             LONG lIndex = winhQueryLboxSelectedItem(hwndDrop, LIT_FIRST);
             hifLoadHookConfig(pdc);
 

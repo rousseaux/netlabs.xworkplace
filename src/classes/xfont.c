@@ -70,6 +70,7 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
+#include "shared\notebook.h"            // generic XWorkplace notebook handling
 
 #include "config\fonts.h"               // font folder implementation
 
@@ -101,11 +102,26 @@ static XWPFontFolder *G_pDefaultFontFolder = NULL;
 SOM_Scope ULONG  SOMLINK fon_xwpAddFontsPage(XWPFontFolder *somSelf,
                                              HWND hwndDlg)
 {
-    XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
+    PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+    PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+
+    // XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
     XWPFontFolderMethodDebug("XWPFontFolder","fon_xwpAddFontsPage");
 
-    /* Return statement to be customized: */
-    return 0;
+    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+
+    pcnbp->somSelf = somSelf;
+    pcnbp->hwndNotebook = hwndDlg;
+    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+    pcnbp->ulDlgID = ID_FND_SAMPLETEXT;
+    pcnbp->ulPageID = SP_FONT_SAMPLETEXT;
+    pcnbp->usPageStyleFlags = BKA_MAJOR;
+    pcnbp->pszName = pNLSStrings->pszFontSampleView;
+    pcnbp->ulDefaultHelpPanel  = ID_XSH_FONTFOLDER_TEXT;
+    pcnbp->pfncbInitPage    = fonSampleTextInitPage;
+    pcnbp->pfncbItemChanged = fonSampleTextItemChanged;
+
+    return (ntbInsertPage(pcnbp));
 }
 
 /*
@@ -293,6 +309,9 @@ SOM_Scope BOOL  SOMLINK fon_wpPopulate(XWPFontFolder *somSelf,
 
         if (!fFoldersOnly)      // V0.9.9 (2001-03-11) [umoeller]
         {
+            // tell XFolder to override wpAddToContent...
+            _xwpSetDisableCnrAdd(somSelf, TRUE);
+
             // now create font objects...
             fonPopulateFirstTime(somSelf);
             _fFilledWithFonts = TRUE;
@@ -397,11 +416,16 @@ SOM_Scope MRESULT  SOMLINK fon_wpDrop(XWPFontFolder *somSelf,
 SOM_Scope BOOL  SOMLINK fon_wpAddSettingsPages(XWPFontFolder *somSelf,
                                                HWND hwndNotebook)
 {
+    BOOL brc = FALSE;
+
     XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
     XWPFontFolderMethodDebug("XWPFontFolder","fon_wpAddSettingsPages");
 
-    return (XWPFontFolder_parent_WPFolder_wpAddSettingsPages(somSelf,
-                                                             hwndNotebook));
+    brc = XWPFontFolder_parent_WPFolder_wpAddSettingsPages(somSelf,
+                                                           hwndNotebook);
+    _xwpAddFontsPage(somSelf, hwndNotebook);
+
+    return (brc);
 }
 
 

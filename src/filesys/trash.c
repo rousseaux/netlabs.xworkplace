@@ -2555,27 +2555,15 @@ VOID trshTrashCanSettingsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
  */
 
 MRESULT trshTrashCanSettingsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                        USHORT usItemID, USHORT usNotifyCode,
+                                        ULONG ulItemID, USHORT usNotifyCode,
                                         ULONG ulExtra)      // for checkboxes: contains new state
 {
     GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     MRESULT mrc = (MPARAM)0;
     BOOL fSave = TRUE;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
-        /* case ID_XTDI_DELETE:
-            pGlobalSettings->fTrashDelete = ulExtra;
-        break; */
-
-        /* case ID_XTDI_EMPTYSTARTUP:
-            pGlobalSettings->fTrashEmptyStartup = ulExtra;
-        break;
-
-        case ID_XTDI_EMPTYSHUTDOWN:
-            pGlobalSettings->fTrashEmptyShutdown = ulExtra;
-        break; */
-
         case ID_XTDI_CONFIRMEMPTY:
             if (ulExtra)
                 pGlobalSettings->ulTrashConfirmEmpty |= TRSHCONF_EMPTYTRASH;
@@ -2773,7 +2761,7 @@ BOOL StoreSupportedDrives(HWND hwndSupportedLB, // in: list box with supported d
  */
 
 MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                      USHORT usItemID, USHORT usNotifyCode,
+                                      ULONG ulItemID, USHORT usNotifyCode,
                                       ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT mrc = (MPARAM)0;
@@ -2781,7 +2769,7 @@ MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
     static BOOL fNoDeselection = FALSE;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         /*
          * ID_XTDI_UNSUPPORTED_LB:
@@ -2800,7 +2788,7 @@ MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     fNoDeselection = TRUE;
                             // this recurses
                     winhLboxSelectAll(WinWindowFromID(pcnbp->hwndDlgPage,
-                                                      ((usItemID == ID_XTDI_UNSUPPORTED_LB)
+                                                      ((ulItemID == ID_XTDI_UNSUPPORTED_LB)
                                                         ? ID_XTDI_SUPPORTED_LB
                                                         : ID_XTDI_UNSUPPORTED_LB)),
                                       FALSE); // deselect
@@ -2962,12 +2950,12 @@ VOID trshTrashCanIconInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
  */
 
 MRESULT trshTrashCanIconItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                    USHORT usItemID, USHORT usNotifyCode,
+                                    ULONG ulItemID, USHORT usNotifyCode,
                                     ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT mrc = (MPARAM)0;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_XTDI_ICON_TITLEMLE:
             switch (usNotifyCode)

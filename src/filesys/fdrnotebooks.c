@@ -180,7 +180,7 @@ VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  */
 
 MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                           USHORT usItemID, USHORT usNotifyCode,
+                           ULONG ulItemID, USHORT usNotifyCode,
                            ULONG ulExtra)      // for checkboxes: contains new state
 {
     GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
@@ -190,7 +190,7 @@ MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
     // LONG lTemp;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_XSDI_FULLPATH:
             pGlobalSettings->FullPath  = ulExtra;
@@ -339,7 +339,7 @@ VOID fdrGridInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  */
 
 MRESULT fdrGridItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                           USHORT usItemID,
+                           ULONG ulItemID,
                            USHORT usNotifyCode,
                            ULONG ulExtra)      // for checkboxes: contains new state
 {
@@ -347,7 +347,7 @@ MRESULT fdrGridItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     MRESULT mrc = (MPARAM)0;
     BOOL fSave = TRUE;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_XSDI_SNAPTOGRID:
             pGlobalSettings->fAddSnapToGridDefault = ulExtra;
@@ -519,14 +519,14 @@ VOID fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
  */
 
 MRESULT fdrXFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                              USHORT usItemID,
+                              ULONG ulItemID,
                               USHORT usNotifyCode,
                               ULONG ulExtra)      // for checkboxes: contains new state
 {
     XFolderData *somThis = XFolderGetData(pcnbp->somSelf);
     BOOL fUpdate = TRUE;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_XSDI_SNAPTOGRID:
             _bSnapToGridInstance = ulExtra;
@@ -717,13 +717,13 @@ VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp,
  */
 
 MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                           USHORT usItemID,
+                           ULONG ulItemID,
                            USHORT usNotifyCode,
                            ULONG ulExtra)      // for checkboxes: contains new state
 {
     BOOL fUpdate = TRUE;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_XSDI_ALWAYSSORT:
         case ID_XSDI_SORTLISTBOX:
@@ -944,7 +944,7 @@ VOID fdrStartupFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
  */
 
 MRESULT fdrStartupFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                    USHORT usItemID, USHORT usNotifyCode,
+                                    ULONG ulItemID, USHORT usNotifyCode,
                                     ULONG ulExtra)      // for checkboxes: contains new state
 {
     GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
@@ -952,7 +952,7 @@ MRESULT fdrStartupFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     BOOL fUpdate = TRUE;
     XFldStartupData *somThis = XFldStartupGetData(pcnbp->somSelf);
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_SDDI_SHOWSTARTUPPROGRESS:
             pGlobalSettings->ShowStartupProgress = ulExtra;

@@ -27,16 +27,24 @@ plus the "toolkit" directory with the binary release.
 <P><LI>XCenters can be enlarged vertically now with the mouse.
 <P><LI>Widgets can now be dragged within their XCenter to allow reordering them.
 <P><LI>Added delay setting for XCenter auto-hide.
+<P><LI>"Pulse" widget now displays IRQ load as well.
 <P><LI>Added "Sentinel" widget.
 <P><LI>fonz contributed the "Disk Usage" widget.
 <P><LI>Stefan Mielcke contributed the "Health" widget.
 <P><LI>Object button widgets can display WPS context menus now... sort of.
 <P><LI>Added "Run" command to X-Button widget.
 <P><LI>Pressing "Shift+Delete" in a folder performs a "true delete" now, if enabled.
+<P><LI>Added replacement "Types" page for data files, which now displays the
+extended file types correctly.
 <P><LI>File types can now be renamed on "File types" page in "Workplace Shell".
 <P><LI>Added "Unknown only" checkbox to "Import WPS filters" dialog to hide known
 WPS filters.
+<P><LI>New settings for MB3 clicks on "Mouse mappings" page 2. Thanks, Martin Lafaix.
+<P><LI>MB3 drag scrolling has nice icons and pointers now. Thanks, Martin Lafaix.
 <P><LI>Added "Threads" page to XWPSetup.
+<P><LI>Paul Ratcliffe reworked the startup folders so that several of them may
+exist and you can set for each of them individually whether they should be processed
+on each WPS restart or after bootup only.
 <P><LI>Now allowing XShutdown power-off with APM 1.1 also. Use at your own risk; if
 it ain't working, don't blame me.
 
@@ -45,6 +53,10 @@ it ain't working, don't blame me.
 that this would break the code for 386 and 486 processors, but the VAC documentation
 clearly says this is not so. If this information is incorrect, please notify me,
 if you can still reach your system.
+<P><LI>Worked some more on the standard XCenter widgets.
+<P><LI>Moved "Screen corners" page from XWPMouse to XWPScreen, where it seems more
+logical.
+<P><LI>Reworked PageMage settings pages in XWPScreen. Thanks, Martin Lafaix.
 <P><LI>Per popular request, the "Duplicates" window on the "System paths" page in
 "OS/2 Kernel" is now non-modal. Besides, an "Edit" button and more system paths
 have been added. Thanks, Paul Ratcliffe.
@@ -60,37 +72,46 @@ speeds up folder populating in some situations.
 out how to do it, go ahead. Otherwise don't. Thanks, Paul Ratcliffe.
 <P><LI>Changed the prototype for the "init" export of XCenter plug-in DLLs so that
 widgets can easily know about their own HMODULE.
-<P><LI>Worked some more on the standard XCenter widgets.
 <P><LI>Font settings weren't respected by "Import WPS filters" dialog.
 <P><LI>Further optimized string routines.
 
 </UL>Bugfixes:
 <UL><LI>Fixed problems if the trash can did not have the &lt;XWP_TRASHCAN&gt; ID.
 <P><LI>Fixed a problem with internal list notifications on object delete. Thanks,
-Martin Lafaix.
+Martin Lafaix. Optimized lists also to cause less INI accesses.
 <P><LI>Deleting the font folder or trash can caused hundreds of stupid WPS
 "cannot delete object" message boxes to pop up. Oh my, this infinite wisdom of the WPS.
 Fixed, the transient objects are now quietly nuked.
 <P><LI>Fixed problems with XCenter closing on shutdown and WPS restart. This was
 several problems actually... a race condition during XShutdown, and improper thread
 termination with the timers. The separate timer thread has been removed.
-<P><LI>"Pulse" widget broke CPU counters on close. Fixed.
-<P><LI>"Undo" and "Default" on XCenter settings pages never worked. Fixed.
 <P><LI>Dragging objects on XCenter bar caused them to always appear on the left. Fixed,
 they are now properly added to the right.
 <P><LI>"Delete" from folder menu bar crashed. Fixed by Paul Ratcliffe.
+<P><LI>Global "Menu bar" setting in folder "View" submenu was sometimes queried wrong.
+Fixed.
+<P><LI>Fixed (I hope) infinitely growing swapper with XWorkplace "Create another"
+menu items from config folder (as mentioned in readme for quite a while)... I tested
+this and it appears to work now.
 <P><LI>XCenter settings view sometimes appeared on the XCenter view thread, which
 wasn't such a good idea. This is now redirected to thread 1.
 <P><LI>Some XCenter default values were reported wrong in its setup string. Fixed by
 Paul Ratcliffe.
 <P><LI>Widgets drag'n'drop on "Widgets" settings page got badly confused with the widget
 order at times. Fixed.
+<P><LI>"Pulse" widget broke CPU counters on close. Fixed.
+<P><LI>"Undo" and "Default" on XCenter settings pages never worked. Fixed.
+<P><LI>"Undo" and "Default" also had problems on several hook-related pages. Fixed
+by Martin Lafaix.
 <P><LI>Object count on "Status" page in XWPSetup went below zero sometimes. Fixed by
 Paul Ratcliffe.
 <P><LI>Sliding menus sometimes caused a flickering focus if delay was enabled and
 user clicked on menu item before delay elapsed. Fixed.
 <P><LI>Fixed "conditional cascade sensitivity" for sliding menus to always hilite
 the menu item but only open the submenu if mouse is over the menu button.
+<P><LI>Fixed bad system hangs when "File exists" replacement was enabled. This was
+mostly caused by deadlocks between several WPS mutexes. Also the new dialog hung
+the system with certain file names.
 <P><LI>"Shutdown" etc. menu items weren't disabled on XCenter X-button if shutdown
 was already running. Desktop "Shutdown" menu item wasn't either if submenu was disabled.
 

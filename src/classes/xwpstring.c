@@ -322,7 +322,7 @@ VOID xwstrStringInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  */
 
 MRESULT xwstrStringItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                               USHORT usItemID, USHORT usNotifyCode,
+                               ULONG ulItemID, USHORT usNotifyCode,
                                ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT     mrc = 0;
@@ -331,7 +331,7 @@ MRESULT xwstrStringItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
     static HOBJECT hobjBeingDragged = NULLHANDLE;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_XSD_XWPSTRING_STRING_MLE:
             if (usNotifyCode == MLN_KILLFOCUS)

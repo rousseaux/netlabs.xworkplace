@@ -905,14 +905,14 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  */
 
 MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                              USHORT usItemID,
+                              ULONG ulItemID,
                               USHORT usNotifyCode,
                               ULONG ulExtra)      // for checkboxes: contains new state
 {
     GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     MRESULT mrc = (MPARAM)0;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_XSDI_ACCELERATORS:
             pGlobalSettings->fFolderHotkeysDefault = ulExtra;

@@ -35,12 +35,12 @@
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
         VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                  ULONG flFlags);
+                                 ULONG flFlags);
 
         MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                        USHORT usItemID,
-                                        USHORT usNotifyCode,
-                                        ULONG ulExtra);
+                                       ULONG ulItemID,
+                                       USHORT usNotifyCode,
+                                       ULONG ulExtra);
     #endif
 
     /********************************************************************

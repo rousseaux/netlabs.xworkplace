@@ -49,7 +49,7 @@
                                ULONG flFlags);
 
         MRESULT setStatusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                     USHORT usItemID, USHORT usNotifyCode,
+                                     ULONG ulItemID, USHORT usNotifyCode,
                                      ULONG ulExtra);
 
         VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,
@@ -59,7 +59,7 @@
                                  ULONG flFlags);
 
         MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                       USHORT usItemID, USHORT usNotifyCode,
+                                       ULONG ulItemID, USHORT usNotifyCode,
                                        ULONG ulExtra);
 
         BOOL setFeaturesMessages(PCREATENOTEBOOKPAGE pcnbp,
@@ -70,14 +70,14 @@
                                 ULONG flFlags);
 
         MRESULT setObjectsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                      USHORT usItemID, USHORT usNotifyCode,
+                                      ULONG ulItemID, USHORT usNotifyCode,
                                       ULONG ulExtra);
 
         VOID setParanoiaInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                  ULONG flFlags);
 
         MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                       USHORT usItemID, USHORT usNotifyCode,
+                                       ULONG ulItemID, USHORT usNotifyCode,
                                        ULONG ulExtra);
 
     #endif

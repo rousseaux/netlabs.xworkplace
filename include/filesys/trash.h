@@ -191,21 +191,21 @@
                                           ULONG flFlags);
 
         MRESULT trshTrashCanSettingsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                                USHORT usItemID, USHORT usNotifyCode,
+                                                ULONG ulItemID, USHORT usNotifyCode,
                                                 ULONG ulExtra);
 
         VOID trshTrashCanDrivesInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                         ULONG flFlags);
 
         MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                              USHORT usItemID, USHORT usNotifyCode,
+                                              ULONG ulItemID, USHORT usNotifyCode,
                                               ULONG ulExtra);
 
         VOID trshTrashCanIconInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                       ULONG flFlags);
 
         MRESULT trshTrashCanIconItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                            USHORT usItemID, USHORT usNotifyCode,
+                                            ULONG ulItemID, USHORT usNotifyCode,
                                             ULONG ulExtra);
     #endif
 

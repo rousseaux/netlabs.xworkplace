@@ -69,20 +69,20 @@
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
         VOID dtpMenuItemsInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                      ULONG flFlags);
+                                  ULONG flFlags);
 
         MRESULT dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                            USHORT usItemID,
-                                            USHORT usNotifyCode,
-                                            ULONG ulExtra);
+                                        ULONG ulItemID,
+                                        USHORT usNotifyCode,
+                                        ULONG ulExtra);
 
         VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                    ULONG flFlags);
+                                ULONG flFlags);
 
         MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                          USHORT usItemID,
-                                          USHORT usNotifyCode,
-                                          ULONG ulExtra);
+                                      ULONG ulItemID,
+                                      USHORT usNotifyCode,
+                                      ULONG ulExtra);
     #else
         #error "shared\notebook.h needs to be included before including desktop.h".
     #endif

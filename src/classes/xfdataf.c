@@ -588,11 +588,10 @@ SOM_Scope HWND  SOMLINK xfdf_wpOpen(XFldDataFile *somSelf,
 
 /*
  *@@ wpAddFile1Page:
- *      this normally adds the first "File" page to
- *      the file's settings notebook; if allowed,
- *      we will replace this with our own version,
- *      which combines the three "File" pages into
- *      one single page.
+ *      this WPFileSystem method normally adds the first
+ *      "File" page to the file's settings notebook; since we
+ *      combine the three "File" pages into one,
+ *      we'll remove this page, if allowed.
  *
  *      We cannot override this in XWPFileSystem because
  *      WPFolder overrides this too.
@@ -619,8 +618,8 @@ SOM_Scope ULONG  SOMLINK xfdf_wpAddFile1Page(XFldDataFile *somSelf,
 
 /*
  *@@ wpAddFile2Page:
- *      this normally adds the second "File" page to
- *      the file's settings notebook; since we
+ *      this WPFileSystem method normally adds the second
+ *      "File" page to the file's settings notebook; since we
  *      combine the three "File" pages into one,
  *      we'll remove this page, if allowed.
  *
@@ -646,8 +645,8 @@ SOM_Scope ULONG  SOMLINK xfdf_wpAddFile2Page(XFldDataFile *somSelf,
 
 /*
  *@@ wpAddFile3Page:
- *      this normally adds the second "File" page to
- *      the file's settings notebook; since we
+ *      this WPFileSystem method normally adds the third
+ *      "File" page to the file's settings notebook; since we
  *      combine the three "File" pages into one,
  *      we'll remove this page, if allowed.
  *
@@ -669,6 +668,51 @@ SOM_Scope ULONG  SOMLINK xfdf_wpAddFile3Page(XFldDataFile *somSelf,
     else
         return (XFldDataFile_parent_WPDataFile_wpAddFile3Page(somSelf,
                                                               hwndNotebook));
+}
+
+/*
+ *@@ wpAddFileTypePage:
+ *      this WPDataFile method normally adds the "Type"
+ *      page to a data file's settings notebook.
+ *
+ *      If extended associations are enabled, we replace
+ *      this with our own version to allow the user to
+ *      view the automatic and explicit types separately.
+ *
+ *@@added V0.9.9 (2001-03-27) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xfdf_wpAddFileTypePage(XFldDataFile *somSelf,
+                                                HWND hwndNotebook)
+{
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
+    XFldDataFileMethodDebug("XFldDataFile","xfdf_wpAddFileTypePage");
+
+    if (pGlobalSettings->fExtAssocs)
+    {
+        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+
+        PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+        pcnbp->somSelf = somSelf;
+        pcnbp->hwndNotebook = hwndNotebook;
+        pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+        pcnbp->ulDlgID = ID_XSD_DATAF_TYPES;
+        pcnbp->ulPageID = SP_DATAFILE_TYPES;
+        pcnbp->pampControlFlags = G_pampDatafileTypesPage;
+        pcnbp->cControlFlags = G_cDatafileTypesPage;
+        pcnbp->usPageStyleFlags = BKA_MAJOR;
+        pcnbp->pszName = pNLSStrings->pszFileTypesPage;
+        pcnbp->ulDefaultHelpPanel  = ID_XSH_DATAFILE_TYPES;
+        pcnbp->pfncbInitPage    = ftypDatafileTypesInitPage;
+        pcnbp->pfncbItemChanged = ftypDatafileTypesItemChanged;
+
+        return (ntbInsertPage(pcnbp));
+    }
+    else
+        return (XFldDataFile_parent_WPDataFile_wpAddFileTypePage(somSelf,
+                                                                 hwndNotebook));
 }
 
 /*

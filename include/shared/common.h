@@ -332,21 +332,24 @@
     #define ID_XSH_WIDGET_HEALTH_SETTINGS   112     // V0.9.9: Health widget main help
 
     #define ID_XSH_FONTFOLDER               113
-    #define ID_XSH_FONTFILE                 114
-    #define ID_XSH_FONTOBJECT               115
-    #define ID_XSH_FONTSAMPLEVIEW           116
-    #define ID_XSH_FONTSAMPLEHINTS          117
+    #define ID_XSH_FONTFOLDER_TEXT          114     // V0.9.9 (2001-03-27) [umoeller]
+    #define ID_XSH_FONTFILE                 115
+    #define ID_XSH_FONTOBJECT               116
+    #define ID_XSH_FONTSAMPLEVIEW           117
+    #define ID_XSH_FONTSAMPLEHINTS          118
 
-    #define ID_XSH_XFIX_INTRO               118
+    #define ID_XSH_XFIX_INTRO               119
 
-    #define ID_XSH_RUN                      119
+    #define ID_XSH_RUN                      120
 
-    #define ID_XSH_SETTINGS_PGM_ASSOCIATIONS 120
-    #define ID_XSH_SETTINGS_XC_THREADS      121
-    #define ID_XSH_SETTINGS_PGMFILE_MODULE1 122
-    #define ID_XSH_SETTINGS_PGMFILE_MODULE2 123
+    #define ID_XSH_SETTINGS_PGM_ASSOCIATIONS 121
+    #define ID_XSH_SETTINGS_XC_THREADS      122
+    #define ID_XSH_SETTINGS_PGMFILE_MODULE1 123
+    #define ID_XSH_SETTINGS_PGMFILE_MODULE2 124
 
-    #define ID_XSH_SETTINGS_PAGEMAGE_WINDOW 124     // V0.9.9: XWPScreen "PageMage" page V0.9.9 (2001-03-15) [lafaix]
+    #define ID_XSH_SETTINGS_PAGEMAGE_WINDOW 125     // V0.9.9: XWPScreen "PageMage" page V0.9.9 (2001-03-15) [lafaix]
+
+    #define ID_XSH_DATAFILE_TYPES           126     // V0.9.9: XWPScreen "PageMage" page V0.9.9 (2001-03-15) [lafaix]
 
     /********************************************************************
      *
@@ -467,7 +470,7 @@
     // #define SP_DTP2                 10   // removed (V0.9.0)
     #define SP_28STATUSBAR2         11
     // #define SP_FILEOPS              12   // removed (V0.9.0)
-    #define SP_FILETYPES            13      // new with V0.9.0
+    #define SP_FILETYPES            13      // new with V0.9.0 (XFldWPS)
 
     // 2) in "OS/2 Kernel"
     #define SP_SCHEDULER            20
@@ -502,6 +505,7 @@
     // 7) "File" page in XFldDataFile/XFolder
     #define SP_FILE1                60      // new with V0.9.0
     #define SP_FILE2                61      // new with V0.9.1 (2000-01-22) [umoeller]
+    #define SP_DATAFILE_TYPES       62      // XFldDataFile "Types" page V0.9.9 (2001-03-27) [umoeller]
 
     // 8) "Sounds" page in XWPSound
     #define SP_SOUNDS               70
@@ -559,6 +563,9 @@
     // 18) WPProgram/WPProgramFile
     #define SP_PGM_ASSOCS           180     // new with V0.9.9 (2001-03-07) [umoeller]
     #define SP_PGMFILE_ASSOCS       181     // new with V0.9.9 (2001-03-07) [umoeller]
+
+    // 19) XWPFontFolder
+    #define SP_FONT_SAMPLETEXT      190     // new with V0.9.9 (2001-03-27) [umoeller]
 
     /********************************************************************
      *

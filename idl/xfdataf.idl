@@ -70,20 +70,6 @@ interface XFldDataFile : WPDataFile
      *
      */
 
-    // PVOID   pvAssocObjectsList;
-                // this is really a PLINKLIST, pointing
-                // to a list of WPObject's (really:
-                // WPProgram or WPProgramFile instances),
-                // containing all the associations for
-                // this data file.
-                // This is declared as PVOID because SOM
-                // knows nothing about LINKLIST's.
-                // This is NULL initially (wpInitData).
-
-    // BOOL    fAssocObjectsListReady;
-                // TRUE if the assocs list has been built
-                // already; initially FALSE (wpInitData).
-
     /*
      * The following is forced into the .H file:
      *
@@ -105,6 +91,8 @@ interface XFldDataFile : WPDataFile
     wpAddFile1Page: override;
     wpAddFile2Page: override;
     wpAddFile3Page: override;
+
+    wpAddFileTypePage: override;
 
     wpQueryAssociatedProgram: override;
 

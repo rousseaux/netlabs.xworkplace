@@ -164,14 +164,15 @@
                                      ULONG flFlags);
 
         MRESULT hifKeybdHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                           USHORT usItemID, USHORT usNotifyCode,
+                                           ULONG ulItemID,
+                                           USHORT usNotifyCode,
                                            ULONG ulExtra);
 
         VOID hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                           ULONG flFlags);
 
         MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                                USHORT usItemID, USHORT usNotifyCode,
+                                                ULONG ulItemID, USHORT usNotifyCode,
                                                 ULONG ulExtra);
 
         /* ******************************************************************
@@ -184,21 +185,21 @@
                                        ULONG flFlags);
 
         MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                             USHORT usItemID, USHORT usNotifyCode,
+                                             ULONG ulItemID, USHORT usNotifyCode,
                                              ULONG ulExtra);
 
         VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                      ULONG flFlags);
+                                     ULONG flFlags);
 
         MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                            USHORT usItemID, USHORT usNotifyCode,
-                                            ULONG ulExtra);
+                                           ULONG ulItemID, USHORT usNotifyCode,
+                                           ULONG ulExtra);
 
         VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                       ULONG flFlags);
 
         MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                            USHORT usItemID, USHORT usNotifyCode,
+                                            ULONG ulItemID, USHORT usNotifyCode,
                                             ULONG ulExtra);
     #endif
 

@@ -9,21 +9,24 @@ parse arg inifile
 if inifile == "" then do
     Say "freshini.cmd (C) 2001 Ulrich M”ller"
     Say "Sets up the INI file for a new XWorkplace installation."
-    Say "This must not be invoked on the current INI file, but only"
-    Say "on a new INI file created by standard MAKEINI.";
 
     Say "Usage: freshini <inifile>";
     Say "with <inifile> being the full path specification of an INI file."
-    Say "Only in cases of emergency, specify 'USER'.";
+    Say "Specify USER to manipulate the OS2.INI which is currently in use.";
     exit;
 end
 
 /* get the directory from where we're started */
 parse source mydir;
 parse var mydir x1 x2 mydir;
+
+say mydir
+
 mydir = filespec("D", mydir)||filespec("P", mydir);
 if (right(mydir, 1) = "\") then
     mydir = left(mydir, length(mydir)-1);
+
+say mydir
 
 /* mydir now has the install subdir of the xwp dir...
         note that this works even if we are started from
@@ -31,7 +34,7 @@ if (right(mydir, 1) = "\") then
    replace "install" with "bin" to get the directory
    of xfldr.dll */
 
-p = pos("\install", mydir);
+p = pos("\INSTALL", translate(mydir));
 basedir = left(mydir, p - 1);
 
 /* basedir now has the base dir without trailing \ */
@@ -46,7 +49,7 @@ if (rc == 0) then do
     exit;
 end
 
-rc = SysINI(inifile, "XWorkplace", "XFolderPath", basedir);
+rc = SysINI(inifile, "XWorkplace", "XFolderPath", basedir || '00'x);
 
 rc = RegisterClass("XFolder");
 rc = RegisterClass("XFldObject");
@@ -121,3 +124,4 @@ say "Replacing "oldclass" with "newclass;
 rc = SysIni(inifile, "PM_InstallClassReplacement", oldclass, newclass);
 
 return rc;
+

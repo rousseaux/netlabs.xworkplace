@@ -189,28 +189,28 @@
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
         VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                     ULONG flFlags);
+                                 ULONG flFlags);
 
         MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                           USHORT usItemID,
-                                           USHORT usNotifyCode,
-                                           ULONG ulExtra);
+                                       ULONG ulItemID,
+                                       USHORT usNotifyCode,
+                                       ULONG ulExtra);
 
         VOID mnuConfigFolderMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                              ULONG flFlags);
+                                          ULONG flFlags);
 
         MRESULT mnuConfigFolderMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                                    USHORT usItemID,
-                                                    USHORT usNotifyCode,
-                                                    ULONG ulExtra);
+                                                ULONG ulItemID,
+                                                USHORT usNotifyCode,
+                                                ULONG ulExtra);
 
         VOID mnuRemoveMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                        ULONG flFlags);
+                                    ULONG flFlags);
 
         MRESULT mnuRemoveMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                              USHORT usItemID,
-                                              USHORT usNotifyCode,
-                                              ULONG ulExtra);
+                                          ULONG ulItemID,
+                                          USHORT usNotifyCode,
+                                          ULONG ulExtra);
     #endif
 
 #endif

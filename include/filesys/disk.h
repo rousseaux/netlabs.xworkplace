@@ -42,12 +42,12 @@
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
         VOID dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                     ULONG flFlags);
+                                ULONG flFlags);
 
         MRESULT dskDetailsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                           USHORT usItemID,
-                                           USHORT usNotifyCode,
-                                           ULONG ulExtra);
+                                      ULONG ulItemID,
+                                      USHORT usNotifyCode,
+                                      ULONG ulExtra);
     #else
         #error "shared\notebook.h needs to be included before including disk.h".
     #endif

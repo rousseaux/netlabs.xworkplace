@@ -43,16 +43,32 @@
 
     #ifdef LINKLIST_HEADER_INCLUDED
 
+        /*
+         *@@ OBJECTLIST:
+         *      encapsulation for object lists, for
+         *      use with the obj* list APIs.
+         *
+         *      See objAddToList for details.
+         *
+         *@@added V0.9.9 (2001-03-27) [umoeller]
+         */
+
+        typedef struct _OBJECTLIST
+        {
+            LINKLIST    ll;
+            BOOL        fLoaded;
+        } OBJECTLIST, *POBJECTLIST;
+
         BOOL objAddToList(WPObject *somSelf,
-                          PLINKLIST pllFolders,
+                          POBJECTLIST pllFolders,
                           BOOL fInsert,
                           const char *pcszIniKey,
                           ULONG ulListFlag);
 
         BOOL objIsOnList(WPObject *somSelf,
-                         PLINKLIST pllFolders);
+                         POBJECTLIST pllFolders);
 
-        WPObject* objEnumList(PLINKLIST pllFolders,
+        WPObject* objEnumList(POBJECTLIST pllFolders,
                               WPObject *pFolder,
                               const char *pcszIniKey,
                               ULONG ulListFlag);

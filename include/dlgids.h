@@ -454,17 +454,11 @@
 #define ID_XSDI_PROG_VERSION            787
 #define ID_XSDI_PROG_DESCRIPTION        788
 
-// "Resources" page (XFldProgramFile, V0.9.7)
-#define ID_XSD_PGMFILE_RESOURCES        790
-#define ID_XSDI_PROG_RESOURCES          791
-
-// "Imported modules" page (XFldProgramFile, V0.9.9)
-#define ID_XSD_PGMFILE_MODULE1          800
-#define ID_XSDI_PROG_MODULE1            801
-
-// "Exported functions" page (XFldProgramFile, V0.9.9)
-#define ID_XSD_PGMFILE_MODULE2          810
-#define ID_XSDI_PROG_MODULE2            811
+// "Types" page in XFldDataFile V0.9.9 (2001-03-27) [umoeller]
+#define ID_XSD_DATAF_TYPES              820
+#define ID_XSDI_DATAF_AVAILABLE_TXT     821
+#define ID_XSDI_DATAF_AVAILABLE_CNR     822
+#define ID_XSDI_DATAF_GROUP             825
 
 /******************************************
  * XWPSound (V0.9.0)              >= 1000  *
@@ -1070,6 +1064,13 @@
 #define ID_XSD_XWPSTRING_OBJ_CLEAR      3803
 #define ID_XSD_XWPSTRING_CONFIRM        3804
 
+
+/******************************************
+ * XWPFont V0.9.9           >= 3900
+ ******************************************/
+
+#define ID_FND_SAMPLETEXT               3900
+#define ID_FNDI_SAMPLETEXT_MLE          3901
 
 /******************************************
  *          Shutdown defs                 *

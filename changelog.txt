@@ -32,6 +32,12 @@ Changes for V0.9.9
     -- ID_OSDI_PATHEDIT added.
     -- ID_XCD_STATUS changed.
     -- ID_CRD_SETTINGS_VIEW changed.
+    -- ID_CRD_SETTINGS_VIEW2 added.
+    -- ID_XFD_CREATINGCONFIG changed.
+    -- ID_XSD_DATAF_TYPES added.
+    -- ID_FND_SAMPLETEXT added.
+    -- ID_SCD_PAGEMAGE_GENERAL changed.
+    -- ID_XSD_STARTUPFOLDER changed.
 
 
 Changes for V0.9.7

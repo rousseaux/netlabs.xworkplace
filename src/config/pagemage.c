@@ -298,7 +298,7 @@ _Pmpf(("CBI_SET ended"));
  */
 
 MRESULT pgmiPageMageGeneralItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                       USHORT usItemID, USHORT usNotifyCode,
+                                       ULONG ulItemID, USHORT usNotifyCode,
                                        ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT mrc = 0;
@@ -308,7 +308,7 @@ MRESULT pgmiPageMageGeneralItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     // access settings
     PAGEMAGECONFIG* pPgmgConfig = (PAGEMAGECONFIG*)pcnbp->pUser;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_SCDI_PGMG1_X_SLIDER:
         {
@@ -566,7 +566,7 @@ VOID pgmiPageMageWindowInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info st
  */
 
 MRESULT pgmiPageMageWindowItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                      USHORT usItemID, USHORT usNotifyCode,
+                                      ULONG ulItemID, USHORT usNotifyCode,
                                       ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT mrc = 0;
@@ -576,7 +576,7 @@ MRESULT pgmiPageMageWindowItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     // access settings
     PAGEMAGECONFIG* pPgmgConfig = (PAGEMAGECONFIG*)pcnbp->pUser;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_SCDI_PGMG1_TITLEBAR:
             LoadPageMageConfig(pcnbp->pUser);
@@ -866,12 +866,12 @@ VOID pgmiPageMageStickyInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info st
  */
 
 MRESULT pgmiPageMageStickyItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                      USHORT usItemID, USHORT usNotifyCode,
+                                      ULONG ulItemID, USHORT usNotifyCode,
                                       ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT mrc = 0;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_SCDI_PGMG_STICKY_CNR:
             switch (usNotifyCode)
@@ -1259,12 +1259,12 @@ VOID pgmiPageMageColorsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info st
  */
 
 MRESULT pgmiPageMageColorsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                      USHORT usItemID, USHORT usNotifyCode,
+                                      ULONG ulItemID, USHORT usNotifyCode,
                                       ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT mrc = 0;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         /*
          * DID_DEFAULT:

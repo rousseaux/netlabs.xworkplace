@@ -1303,14 +1303,14 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
  */
 
 MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                             USHORT usItemID,
+                             ULONG ulItemID,
                              USHORT usNotifyCode,
                              ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT mrc = (MPARAM)0;
     LONG    lGrid = 0;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
 
         case ID_OSDI_MAXTHREADS:
@@ -1344,7 +1344,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 || (usNotifyCode == SPBN_DOWNARROW)
                )
             {
-                winhAdjustDlgItemSpinData(pcnbp->hwndDlgPage, usItemID,
+                winhAdjustDlgItemSpinData(pcnbp->hwndDlgPage, ulItemID,
                                           lGrid, usNotifyCode);
             }
         break;
@@ -1562,7 +1562,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                               pNode);
 
                 // new position to insert at
-                if (usItemID == ID_OSDI_PATHUP)
+                if (ulItemID == ID_OSDI_PATHUP)
                     ulSel--;
                 else
                     ulSel++;
@@ -2641,7 +2641,7 @@ VOID cfgSyslevelInitPage(PCREATENOTEBOOKPAGE pcnbp,
  */
 
 MRESULT cfgSyslevelItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                               USHORT usItemID,
+                               ULONG ulItemID,
                                USHORT usNotifyCode,
                                ULONG ulExtra)
 {

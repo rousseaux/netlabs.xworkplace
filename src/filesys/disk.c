@@ -329,13 +329,13 @@ VOID dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
  */
 
 MRESULT dskDetailsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                              USHORT usItemID,
+                              ULONG ulItemID,
                               USHORT usNotifyCode,
                               ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT mrc = 0;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         /*
          * ID_XSDI_DISK_LABEL:

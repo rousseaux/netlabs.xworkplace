@@ -113,7 +113,7 @@
                                    ULONG flFlags);
 
         MRESULT stbStatusBar1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                         USHORT usItemID,
+                                         ULONG ulItemID,
                                          USHORT usNotifyCode,
                                          ULONG ulExtra);
 
@@ -121,7 +121,7 @@
                                    ULONG flFlags);
 
         MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                         USHORT usItemID,
+                                         ULONG ulItemID,
                                          USHORT usNotifyCode,
                                          ULONG ulExtra);
     #endif

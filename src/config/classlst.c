@@ -2886,15 +2886,15 @@ VOID cllClassListInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
  */
 
 MRESULT cllClassListItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                 USHORT usItemID,
-                                 USHORT usNotifyCode,
-                                 ULONG ulExtra)      // for checkboxes: contains new state
+                                ULONG ulItemID,
+                                USHORT usNotifyCode,
+                                ULONG ulExtra)      // for checkboxes: contains new state
 {
     XWPClassListData *somThis = XWPClassListGetData(pcnbp->somSelf);
     BOOL    fUpdate = TRUE,
             fOldShowMethods = _fShowMethods;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_XLDI_SHOWSOMOBJECT:
             _fShowSOMObject = ulExtra;
@@ -2905,7 +2905,8 @@ MRESULT cllClassListItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break;
 
         case DID_UNDO:
-            if (pcnbp->pUser) {
+            if (pcnbp->pUser)
+            {
                 XWPClassListData *Backup = (pcnbp->pUser);
                 // "Undo" button: restore backed up instance data
                 _fShowSOMObject = Backup->fShowSOMObject;

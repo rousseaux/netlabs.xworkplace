@@ -48,8 +48,8 @@
                                 ULONG flFlags);
 
         MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                      USHORT usItemID, USHORT usNotifyCode,
-                                      ULONG ulExtra);
+                                     ULONG ulItemID, USHORT usNotifyCode,
+                                     ULONG ulExtra);
     #endif
 #endif
 

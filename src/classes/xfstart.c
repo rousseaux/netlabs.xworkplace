@@ -118,8 +118,8 @@ static const char*  G_pcszXFldStartup = "XFldStartup";
 
 // roots of linked lists for XStartup folders
 // these hold plain WPObject pointers, no auto-free
-PLINKLIST           G_XSavedStartupFolders = NULL;
-PLINKLIST           G_XStartupFolders = NULL;
+OBJECTLIST          G_llSavedStartupFolders = {0};
+OBJECTLIST          G_llStartupFolders = {0};
 
 /* ******************************************************************
  *                                                                  *
@@ -175,7 +175,7 @@ SOM_Scope ULONG  SOMLINK xfstup_xwpSetXStartup(XFldStartup *somSelf,
     XFldStartupMethodDebug("XFldStartup","xfstup_xwpSetXStartup");
 
     return (objAddToList(somSelf,
-                         G_XStartupFolders,
+                         &G_llStartupFolders,
                          fInsert,
                          INIKEY_XSTARTUPFOLDERS,
                          0));
@@ -514,7 +514,7 @@ SOM_Scope XFldStartup*  SOMLINK xfstupM_xwpclsQueryXStartupFolder(M_XFldStartup 
     pDesktop = cmnQueryActiveDesktop();
     do
     {
-        pFolder = objEnumList(G_XSavedStartupFolders,
+        pFolder = objEnumList(&G_llSavedStartupFolders,
                               pFolder,
                               INIKEY_XSAVEDSTARTUPFOLDERS,
                               0);
@@ -555,8 +555,11 @@ SOM_Scope void  SOMLINK xfstupM_wpclsInitData(M_XFldStartup *somSelf)
                 pKernelGlobals->fXFldStartup = TRUE;
 
                 // initialize linked lists
-                G_XStartupFolders = lstCreate(FALSE);    // no auto-free
-                G_XSavedStartupFolders = lstCreate(FALSE);    // no auto-free
+                lstInit(&G_llStartupFolders.ll, FALSE);    // no auto-free
+                G_llStartupFolders.fLoaded = FALSE;
+                lstInit(&G_llSavedStartupFolders.ll, FALSE);    // no auto-free
+                G_llSavedStartupFolders.fLoaded = FALSE;
+
                 // copy INI setting
                 brc = PrfQueryProfileSize(HINI_USERPROFILE,
                                           (PSZ)INIAPP_XWORKPLACE,

@@ -1,6 +1,6 @@
 Netlabs CVS README
 (W) Ulrich M”ller, November 12, 1999
-Last updated January 22, 2001 by Ulrich M”ller
+Last updated March 29, 2001 by Ulrich M”ller
 
 
 0. CONTENTS OF THIS FILE
@@ -11,6 +11,13 @@ Last updated January 22, 2001 by Ulrich M”ller
     3. SETUP
     4. CVS CONCEPTS
     5. CHECKING OUT THE CODE
+
+0. ABOUT THIS DOCUMENT
+======================
+
+    This is for people who would like to access the XWorkplace
+    source code. If you have never written a C program before,
+    you will probably not be interested in this document.
 
 
 1. INTRODUCTION TO CVS
@@ -128,23 +135,6 @@ Last updated January 22, 2001 by Ulrich M”ller
 
     You are now ready to download ("check out") a project. See section
     5 below.
-
-    --> NOTE: The IP address of Netlabs has changed twice in 12/2000
-        and 01/2001.
-
-        If CVS refuses to connect, in the above, replace "www.netlabs.org"
-        with "62.67.42.10", or add the following line to your HOSTS file
-        in \MPTN\ETC:
-
-            62.67.42.10          www.netlabs.org
-
-        I finally found out that a reboot is not necessary after changes
-        to the HOSTS file. ;-) Using the HOSTS file has the advantage
-        that the local CVS maintenance files will still contain the
-        correct URL and you don't have to re-checkout everything later.
-
-        The new IP address should be updated in the domain name servers
-        shortly.
 
 
 4. CVS TERMINOLOGY

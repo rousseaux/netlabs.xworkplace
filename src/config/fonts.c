@@ -43,6 +43,7 @@
 #define INCL_WINFRAMEMGR
 #define INCL_WININPUT
 #define INCL_WINMENUS
+#define INCL_WINMLE
 #define INCL_WINCOUNTRY
 #define INCL_WINSHELLDATA
 #define INCL_WINERRORS
@@ -79,6 +80,7 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
+#include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "config\fonts.h"               // font folder implementation
@@ -109,8 +111,6 @@ ULONG               G_ulFontSampleHints = 0;
                                     | HINTS_BASELINE_REDLINE
                                     | HINTS_LOWERCASEASCENT_REDRECT; */
                             // exported in fonts.h
-
-static const char   *G_pcszFontSampleText = "The Quick Brown Fox Jumps Over The Lazy Dog.";
 
 typedef struct _HINTMENUITEM
 {
@@ -934,6 +934,74 @@ BOOL fonProcessObjectCommand(WPFolder *somSelf,
     return (brc);
 }
 
+/*
+ *@@ fonSampleTextInitPage:
+ *
+ *@@added V0.9.9 (2001-03-27) [umoeller]
+ */
+
+VOID fonSampleTextInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                           ULONG flFlags)
+{
+    if (flFlags & CBI_INIT)
+    {
+        // backup old string for "Undo"; if not defined,
+        // this returns NULL
+        pcnbp->pUser = prfhQueryProfileData(HINI_USER,
+                                            INIAPP_XWORKPLACE,
+                                            INIKEY_FONTSAMPLESTRING,
+                                            NULL);
+    }
+
+    if (flFlags & CBI_SET)
+    {
+        PSZ psz = prfhQueryProfileData(HINI_USER,
+                                       INIAPP_XWORKPLACE,
+                                       INIKEY_FONTSAMPLESTRING,
+                                       NULL);
+        WinSetDlgItemText(pcnbp->hwndDlgPage,
+                          ID_FNDI_SAMPLETEXT_MLE,
+                          ((psz) && strlen(psz))
+                            ? psz
+                            : "The Quick Brown Fox Jumps Over The Lazy Dog.");
+        if (psz)
+            free(psz);
+    }
+}
+
+/*
+ *@@ fonSampleTextItemChanged:
+ *
+ *@@added V0.9.9 (2001-03-27) [umoeller]
+ */
+
+MRESULT fonSampleTextItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                 ULONG ulItemID,
+                                 USHORT usNotifyCode,
+                                 ULONG ulExtra)
+{
+    MRESULT mrc = 0;
+
+    switch (ulItemID)
+    {
+        case ID_FNDI_SAMPLETEXT_MLE:
+            if (usNotifyCode == MLN_KILLFOCUS)
+            {
+                PSZ psz = winhQueryWindowText(pcnbp->hwndControl);
+
+                PrfWriteProfileString(HINI_USER,
+                                      (PSZ)INIAPP_XWORKPLACE,
+                                      (PSZ)INIKEY_FONTSAMPLESTRING,
+                                      psz);
+
+                if (psz)
+                    free(psz);
+            }
+    }
+
+    return (mrc);
+}
+
 /* ******************************************************************
  *
  *   Font object implementation
@@ -1104,6 +1172,8 @@ typedef struct _FONTSAMPLEDATA
                         cyViewport;
     ULONG               xOfs,               // current ofs of win in viewport
                         yOfs;
+
+    PSZ                 pszSampleText;
 } FONTSAMPLEDATA, *PFONTSAMPLEDATA;
 
 /*
@@ -1349,7 +1419,7 @@ VOID FontSamplePaint(HWND hwnd,
             sprintf(szTemp,
                     "%d pt: %s",
                     aulSizes[ul],
-                    G_pcszFontSampleText);
+                    pWinData->pszSampleText);
             GpiCharString(hps, strlen(szTemp), (PSZ)szTemp);
 
             // current position is now at the right where the
@@ -1669,6 +1739,8 @@ MRESULT EXPENTRY fon_fnwpFontSampleClient(HWND hwnd, ULONG msg, MPARAM mp1, MPAR
                 _wpDeleteFromObjUseList(pWinData->somSelf,
                                         &pWinData->UseItem);
 
+                free(pWinData->pszSampleText);
+
                 _wpFreeMem(pWinData->somSelf,
                            (PBYTE)pWinData);
             }
@@ -1720,6 +1792,13 @@ HWND fonCreateFontSampleView(XWPFontObject *somSelf,
                 memset(pData, 0, sizeof(*pData));
 
                 pData->somSelf = somSelf;
+
+                pData->pszSampleText = prfhQueryProfileData(HINI_USER,
+                                                            INIAPP_XWORKPLACE,
+                                                            INIKEY_FONTSAMPLESTRING,
+                                                            NULL);
+                if (!pData->pszSampleText)
+                    pData->pszSampleText = strdup("The Quick Brown Fox Jumps Over The Lazy Dog.");
 
                 swpFrame.x = 10;
                 swpFrame.y = 10;

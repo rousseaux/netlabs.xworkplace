@@ -880,7 +880,7 @@ VOID ctrpView1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  */
 
 MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                             USHORT usItemID, USHORT usNotifyCode,
+                             ULONG ulItemID, USHORT usNotifyCode,
                              ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT     mrc = 0;
@@ -890,7 +890,7 @@ MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
     ULONG       ulUpdateFlags = XFMF_DISPLAYSTYLECHANGED;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_CRDI_VIEW_REDUCEWORKAREA:
             _fReduceDesktopWorkarea = ulExtra;
@@ -1116,7 +1116,7 @@ VOID ctrpView2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  */
 
 MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                             USHORT usItemID, USHORT usNotifyCode,
+                             ULONG ulItemID, USHORT usNotifyCode,
                              ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT     mrc = 0;
@@ -1126,7 +1126,7 @@ MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     LONG        lSliderIndex;
     ULONG       ulDisplayFlagChanged = 0;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_CRDI_VIEW2_3DBORDER_SLIDER:
             lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
@@ -1388,13 +1388,13 @@ static PWIDGETRECORD G_precDragged = NULL,
  */
 
 MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                               USHORT usItemID, USHORT usNotifyCode,
+                               ULONG ulItemID, USHORT usNotifyCode,
                                ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT     mrc = 0;
     XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_XFDI_CNR_CNR:
             switch (usNotifyCode)
@@ -1764,7 +1764,7 @@ VOID ctrpClassesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  */
 
 MRESULT ctrpClassesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                               USHORT usItemID, USHORT usNotifyCode,
+                               ULONG ulItemID, USHORT usNotifyCode,
                                ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT     mrc = 0;

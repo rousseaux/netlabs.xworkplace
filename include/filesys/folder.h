@@ -37,8 +37,10 @@
     extern PFNWP        G_pfnwpFolderContentMenuOriginal;
 
     #ifdef LINKLIST_HEADER_INCLUDED
-        extern PLINKLIST    G_pllFavoriteFolders,
-                            G_pllQuickOpenFolders;
+    #ifdef OBJECT_HEADER_INCLUDED
+        extern OBJECTLIST   G_llFavoriteFolders,
+                            G_llQuickOpenFolders;
+    #endif
     #endif
 
     /* ******************************************************************
@@ -310,7 +312,8 @@
         // Supplementary object window msgs (for each
         // subclassed folder frame, xfldr.c)
         #define SOM_ACTIVATESTATUSBAR       (WM_USER+100)
-        #define SOM_CREATEFROMTEMPLATE      (WM_USER+101)
+        // #define SOM_CREATEFROMTEMPLATE      (WM_USER+101)
+                    // removed V0.9.9 (2001-03-27) [umoeller]
 
         MRESULT EXPENTRY fdr_fnwpSupplFolderObject(HWND hwndObject,
                                                    ULONG msg,
@@ -366,11 +369,11 @@
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
         VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                        ULONG flFlags);
+                             ULONG flFlags);
 
         MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                              USHORT usItemID, USHORT usNotifyCode,
-                                              ULONG ulExtra);
+                                   ULONG ulItemID, USHORT usNotifyCode,
+                                   ULONG ulExtra);
 
     /* ******************************************************************
      *
@@ -379,12 +382,12 @@
      ********************************************************************/
 
         VOID fdrGridInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                      ULONG flFlags);
+                             ULONG flFlags);
 
         MRESULT fdrGridItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                            USHORT usItemID,
-                                            USHORT usNotifyCode,
-                                            ULONG ulExtra);
+                                   ULONG ulItemID,
+                                   USHORT usNotifyCode,
+                                   ULONG ulExtra);
 
     /* ******************************************************************
      *
@@ -394,19 +397,19 @@
 
 
         VOID fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                 ULONG flFlags);
+                                ULONG flFlags);
 
         MRESULT fdrXFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                       USHORT usItemID,
-                                       USHORT usNotifyCode,
-                                       ULONG ulExtra);
+                                      ULONG ulItemID,
+                                      USHORT usNotifyCode,
+                                      ULONG ulExtra);
 
         VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp, ULONG flFlags);
 
         MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                    USHORT usItemID,
-                                    USHORT usNotifyCode,
-                                    ULONG ulExtra);
+                                   ULONG ulItemID,
+                                   USHORT usNotifyCode,
+                                   ULONG ulExtra);
 
     /* ******************************************************************
      *
@@ -418,7 +421,7 @@
                                        ULONG flFlags);
 
         MRESULT fdrStartupFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                        USHORT usItemID, USHORT usNotifyCode,
+                        ULONG ulItemID, USHORT usNotifyCode,
                         ULONG ulExtra);
     #endif
 
@@ -472,12 +475,12 @@
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
         VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                        ULONG flFlags);
+                                ULONG flFlags);
 
         MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                              USHORT usItemID,
-                                              USHORT usNotifyCode,
-                                              ULONG ulExtra);
+                                      ULONG ulItemID,
+                                      USHORT usNotifyCode,
+                                      ULONG ulExtra);
     #endif
 
     /********************************************************************

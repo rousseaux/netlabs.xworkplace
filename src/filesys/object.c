@@ -388,9 +388,10 @@ VOID UnlockObjectsList(VOID)
  *
  *@@added V0.9.7 (2001-01-18) [umoeller]
  *@@changed V0.9.9 (2001-03-19) [pr]: tidied up
+ *@@changed V0.9.9 (2001-03-27) [umoeller]: added OBJECTLIST encapsulation
  */
 
-BOOL LoadObjectsList(PLINKLIST pll,
+BOOL LoadObjectsList(POBJECTLIST pll,
                      ULONG ulListFlag,          // in: list flag for xwpModifyListNotify
                      const char *pcszIniKey)
 {
@@ -423,7 +424,7 @@ BOOL LoadObjectsList(PLINKLIST pll,
                     if (wpshCheckObject(pobj))
                     {
                         // object is already locked
-                        lstAppendItem(pll,
+                        lstAppendItem(&pll->ll,
                                       pobj);
                         if (ulListFlag)
                         {
@@ -444,6 +445,8 @@ BOOL LoadObjectsList(PLINKLIST pll,
         free(pszHandles);
     }
 
+    pll->fLoaded = TRUE;
+
     return (brc);
 }
 
@@ -456,45 +459,49 @@ BOOL LoadObjectsList(PLINKLIST pll,
  *      Preconditions: caller must lock the list.
  *
  *@@added V0.9.7 (2001-01-18) [umoeller]
+ *@@changed V0.9.9 (2001-03-27) [umoeller]: added OBJECTLIST encapsulation
  */
 
-BOOL WriteObjectsList(PLINKLIST pll,
+BOOL WriteObjectsList(POBJECTLIST pll,
                       const char *pcszIniKey)
 {
     BOOL brc = FALSE;
 
-    PLISTNODE pNode = lstQueryFirstNode(pll);
-    if (pNode)
+    if (pll->fLoaded)
     {
-        // list is not empty: recompose string
-        XSTRING strTemp;
-        xstrInit(&strTemp, 100);
-
-        while (pNode)
+        PLISTNODE pNode = lstQueryFirstNode(&pll->ll);
+        if (pNode)
         {
-            CHAR szHandle[30];
-            WPObject *pobj = (WPObject*)pNode->pItemData;
-            sprintf(szHandle,
-                    "%lX ",
-                    _wpQueryHandle(pobj));
+            // list is not empty: recompose string
+            XSTRING strTemp;
+            xstrInit(&strTemp, 100);
 
-            xstrcat(&strTemp, szHandle, 0);
+            while (pNode)
+            {
+                CHAR szHandle[30];
+                WPObject *pobj = (WPObject*)pNode->pItemData;
+                sprintf(szHandle,
+                        "%lX ",
+                        _wpQueryHandle(pobj));
 
-            pNode = pNode->pNext;
+                xstrcat(&strTemp, szHandle, 0);
+
+                pNode = pNode->pNext;
+            }
+
+            brc = PrfWriteProfileString(HINI_USERPROFILE,
+                                        (PSZ)INIAPP_XWORKPLACE, (PSZ)pcszIniKey,
+                                        strTemp.psz);
+
+            xstrClear(&strTemp);
         }
-
-        brc = PrfWriteProfileString(HINI_USERPROFILE,
-                                    (PSZ)INIAPP_XWORKPLACE, (PSZ)pcszIniKey,
-                                    strTemp.psz);
-
-        xstrClear(&strTemp);
-    }
-    else
-    {
-        // list is empty: remove
-        brc = PrfWriteProfileData(HINI_USERPROFILE,
-                                  (PSZ)INIAPP_XWORKPLACE, (PSZ)pcszIniKey,
-                                  NULL, 0);
+        else
+        {
+            // list is empty: remove
+            brc = PrfWriteProfileData(HINI_USERPROFILE,
+                                      (PSZ)INIAPP_XWORKPLACE, (PSZ)pcszIniKey,
+                                      NULL, 0);
+        }
     }
 
     return (brc);
@@ -531,19 +538,17 @@ BOOL WriteObjectsList(PLINKLIST pll,
  *@@changed V0.9.7 (2001-01-18) [umoeller]: removed mallocs(), this wasn't needed
  *@@changed V0.9.9 (2001-01-29) [lafaix]: wrong object set, fixed
  *@@changed V0.9.9 (2001-03-19) [pr]: lock/unlock objects on the lists
+ *@@changed V0.9.9 (2001-03-27) [umoeller]: added OBJECTLIST encapsulation
  */
 
 BOOL objAddToList(WPObject *somSelf,
-                  PLINKLIST pll,        // in: linked list of WPObject* pointers
+                  POBJECTLIST pll,        // in: linked list of WPObject* pointers
                   BOOL fInsert,
                   const char *pcszIniKey,
                   ULONG ulListFlag)     // in: list flag for xwpModifyListNotify
 {
     BOOL    brc = FALSE,
             fSemOwned = FALSE;
-
-    ULONG   ulNesting = 0;
-    DosEnterMustComplete(&ulNesting);
 
     TRY_LOUD(excpt1)
     {
@@ -554,8 +559,15 @@ BOOL objAddToList(WPObject *somSelf,
             WPObject    *pobj,
                         *pobjFound = NULL;
 
+            if (!pll->fLoaded)
+                // if the list of favorite folders has not yet been built
+                // yet, we will do this now
+                LoadObjectsList(pll,
+                                ulListFlag,
+                                pcszIniKey);
+
             // find folder on list
-            pNode = lstQueryFirstNode(pll);
+            pNode = lstQueryFirstNode(&pll->ll);
             while (pNode)
             {
                 pobj = pNode->pItemData;
@@ -577,7 +589,7 @@ BOOL objAddToList(WPObject *somSelf,
                     // lock object to stop it going dormant
                     _wpLockObject(somSelf);
                     // not on list yet: append
-                    lstAppendItem(pll,
+                    lstAppendItem(&pll->ll,
                                   somSelf);
 
                     if (ulListFlag)
@@ -594,13 +606,13 @@ BOOL objAddToList(WPObject *somSelf,
                 // remove mode:
                 if (pobjFound)
                 {
-                    lstRemoveItem(pll,
+                    lstRemoveItem(&pll->ll,
                                   pobjFound);
                     // unlock object to allow it to go dormant
                     _wpUnlockObject(somSelf);
 
                     if (ulListFlag)
-                        // set list notify flag
+                        // unset list notify flag
                         _xwpModifyListNotify(pobj,
                                              0,                 // clear
                                              ulListFlag);       // mask
@@ -628,8 +640,6 @@ BOOL objAddToList(WPObject *somSelf,
         fSemOwned = FALSE;
     }
 
-    DosExitMustComplete(&ulNesting);
-
     return (brc);
 }
 
@@ -648,23 +658,21 @@ BOOL objAddToList(WPObject *somSelf,
  *@@added V0.9.0 (99-11-16) [umoeller]
  *@@changed V0.9.7 (2001-01-18) [umoeller]: made this generic for all objs... renamed from fdr*
  *@@changed V0.9.7 (2001-01-18) [umoeller]: removed mallocs(), this wasn't needed
+ *@@changed V0.9.9 (2001-03-27) [umoeller]: added OBJECTLIST encapsulation
  */
 
 BOOL objIsOnList(WPObject *somSelf,
-                 PLINKLIST pll)     // in: linked list of WPObject* pointers
+                 POBJECTLIST pll)     // in: linked list of WPObject* pointers
 {
     BOOL                 rc = FALSE,
                          fSemOwned = FALSE;
-
-    ULONG   ulNesting = 0;
-    DosEnterMustComplete(&ulNesting);
 
     TRY_LOUD(excpt1)
     {
         fSemOwned = LockObjectsList();
         if (fSemOwned)
         {
-            PLISTNODE pNode = lstQueryFirstNode(pll);
+            PLISTNODE pNode = lstQueryFirstNode(&pll->ll);
             while (pNode)
             {
                 WPObject *pobj = (WPObject*)pNode->pItemData;
@@ -689,8 +697,6 @@ BOOL objIsOnList(WPObject *somSelf,
         fSemOwned = FALSE;
     }
 
-    DosExitMustComplete(&ulNesting);
-
     return (rc);
 }
 
@@ -713,9 +719,10 @@ BOOL objIsOnList(WPObject *somSelf,
  *@@added V0.9.0 (99-11-16) [umoeller]
  *@@changed V0.9.7 (2001-01-18) [umoeller]: made this generic for all objs... renamed from fdr*
  *@@changed V0.9.7 (2001-01-18) [umoeller]: removed mallocs(), this wasn't needed
+ *@@changed V0.9.9 (2001-03-27) [umoeller]: added OBJECTLIST encapsulation
  */
 
-WPObject* objEnumList(PLINKLIST pll,        // in: linked list of WPObject* pointers
+WPObject* objEnumList(POBJECTLIST pll,        // in: linked list of WPObject* pointers
                       WPObject *pObjectFind,
                       const char *pcszIniKey,
                       ULONG ulListFlag)     // in: list flag for xwpModifyListNotify
@@ -723,27 +730,22 @@ WPObject* objEnumList(PLINKLIST pll,        // in: linked list of WPObject* poin
     WPObject    *pObjectFound = NULL;
     BOOL        fSemOwned = FALSE;
 
-    ULONG   ulNesting = 0;
-    DosEnterMustComplete(&ulNesting);
-
     TRY_LOUD(excpt1)
     {
         fSemOwned = LockObjectsList();
         if (fSemOwned)
         {
-            PLISTNODE       pNode = lstQueryFirstNode(pll);
+            PLISTNODE       pNode = NULL;
 
-            if (pNode == NULL)
-            {
+            if (!pll->fLoaded)
                 // if the list of favorite folders has not yet been built
                 // yet, we will do this now
                 LoadObjectsList(pll,
                                 ulListFlag,
                                 pcszIniKey);
-            }
 
-            // OK, now we have a valid list
-            pNode = lstQueryFirstNode(pll);
+            // OK, we should now have a valid list
+            pNode = lstQueryFirstNode(&pll->ll);
 
             if (pObjectFind)
             {
@@ -779,8 +781,6 @@ WPObject* objEnumList(PLINKLIST pll,        // in: linked list of WPObject* poin
         UnlockObjectsList();
         fSemOwned = FALSE;
     }
-
-    DosExitMustComplete(&ulNesting);
 
     return (pObjectFound);
 }
@@ -1000,7 +1000,7 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
         if (pszObjectID)
             AddObjectUsage2Cnr(hwndCnr, preccLevel2,
                                pszObjectID,
-                               (strcmp(pszObjectID, "<WP_DESKTOP") != 0
+                               (strcmp(pszObjectID, "<WP_DESKTOP>") != 0
                                     ? 0 // editable!
                                     : CRA_RECORDREADONLY)); // for the Desktop
         else

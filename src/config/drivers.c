@@ -813,13 +813,13 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
  */
 
 MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                              USHORT usItemID,
+                              ULONG ulItemID,
                               USHORT usNotifyCode,
                               ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT mrc = (MPARAM)0;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         /*
          * ID_OSDI_DRIVR_CNR:

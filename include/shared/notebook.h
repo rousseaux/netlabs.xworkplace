@@ -52,7 +52,8 @@
 
     // 2)  item-changed callback
     typedef MRESULT (FNCBITEMCHANGED)(PCREATENOTEBOOKPAGE,
-                                      USHORT,   // usItemID
+                                      ULONG,    // ulItemID
+                                            // V0.9.9 (2001-03-27) [umoeller]: turned USHORT into ULONG
                                       USHORT,   // usNotifyCode
                                       ULONG);   // ulExtra
     typedef FNCBITEMCHANGED *PFNCBITEMCHANGED;

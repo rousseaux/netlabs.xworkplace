@@ -170,8 +170,8 @@ static const char*  G_pcszXFolder = "XFolder";
 
 // roots of linked lists for favorite/quick-open folders
 // these hold plain WPObject pointers, no auto-free
-PLINKLIST           G_pllFavoriteFolders = NULL,
-                    G_pllQuickOpenFolders = NULL;
+OBJECTLIST          G_llFavoriteFolders = {0},
+                    G_llQuickOpenFolders = {0};
                             // these two are exported in folder.h
 
 /* ******************************************************************
@@ -890,7 +890,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpMakeFavoriteFolder(XFolder *somSelf,
     XFolderMethodDebug("XFolder","xf_xwpMakeFavoriteFolder");
 
     return (objAddToList(somSelf,
-                         G_pllFavoriteFolders,
+                         &G_llFavoriteFolders,
                          fInsert,
                          INIKEY_FAVORITEFOLDERS,
                          OBJLIST_FAVORITEFOLDER));
@@ -911,7 +911,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpIsFavoriteFolder(XFolder *somSelf)
     XFolderMethodDebug("XFolder","xf_xwpIsFavoriteFolder");
 
     return (objIsOnList(somSelf,
-                        G_pllFavoriteFolders));
+                        &G_llFavoriteFolders));
 }
 
 /*
@@ -932,7 +932,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpSetQuickOpen(XFolder *somSelf,
     XFolderMethodDebug("XFolder","xf_xwpSetQuickOpen");
 
     return (objAddToList(somSelf,
-                         G_pllQuickOpenFolders,
+                         &G_llQuickOpenFolders,
                          fQuickOpen,
                          INIKEY_QUICKOPENFOLDERS,
                          OBJLIST_QUICKOPENFOLDER));
@@ -953,7 +953,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryQuickOpen(XFolder *somSelf)
     XFolderMethodDebug("XFolder","xf_xwpSetQuickOpen");
 
     return (objIsOnList(somSelf,
-                        G_pllQuickOpenFolders));
+                        &G_llQuickOpenFolders));
 }
 
 /*
@@ -1055,6 +1055,7 @@ SOM_Scope WPFileSystem*  SOMLINK xf_xwpQueryDefaultDocument(XFolder *somSelf)
  *      XWorkplace to run on Warp 3 also, so I have rewritten this.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.9 (2001-03-27) [umoeller]: global default was assumed wrong, fixed
  */
 
 SOM_Scope BOOL  SOMLINK xf_xwpQueryMenuBarVisibility(XFolder *somSelf)
@@ -1072,7 +1073,6 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryMenuBarVisibility(XFolder *somSelf)
         if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
             if (_pFolderLongArray)
             {
-                // _Pmpf(("cbFldrLongArray: %d", _cbFldrLongArray));
                 ULONG   ulMenuBarVisibility = _pFolderLongArray->ulMenuBarVisibility;
                             // 0 = off, 1 = on, 2 = default
                 if (ulMenuBarVisibility == 1)
@@ -1084,7 +1084,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryMenuBarVisibility(XFolder *somSelf)
                     PrfQueryProfileString(HINI_USER,
                                           "PM_Workplace",
                                           "FolderMenuBar",
-                                          "OFF",
+                                          "ON",         // V0.9.9 (2001-03-27) [umoeller]
                                           szTemp,
                                           sizeof(szTemp));
                     if (strcmp(szTemp, "ON") == 0)
@@ -3245,15 +3245,11 @@ SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
     #endif
 
     if (_fDisableAutoCnrAdd)
-    {
         // do not call the parent!!
         // call our own implementation instead
         brc = fdrAddToContent(somSelf, Object);
-    }
     else
-    {
         brc = XFolder_parent_WPFolder_wpAddToContent(somSelf, Object);
-    }
 
     if (brc)
         _cObjects++;
@@ -3750,7 +3746,7 @@ SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryFavoriteFolder(M_XFolder *somSelf,
 
     M_XFolderMethodDebug("M_XFolder","xfM_xwpclsQueryFavoriteFolder");
 
-    return (objEnumList(G_pllFavoriteFolders,
+    return (objEnumList(&G_llFavoriteFolders,
                         pFolder,
                         INIKEY_FAVORITEFOLDERS,
                         OBJLIST_FAVORITEFOLDER));
@@ -3776,7 +3772,7 @@ SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryQuickOpenFolder(M_XFolder *somSelf,
 
     M_XFolderMethodDebug("M_XFolder","xfM_xwpclsQueryQuickOpenFolder");
 
-    return (objEnumList(G_pllQuickOpenFolders,
+    return (objEnumList(&G_llQuickOpenFolders,
                         pFolder,
                         INIKEY_QUICKOPENFOLDERS,
                         OBJLIST_QUICKOPENFOLDER));
@@ -3844,8 +3840,11 @@ SOM_Scope void  SOMLINK xfM_wpclsInitData(M_XFolder *somSelf)
                 pKernelGlobals->fXFolder = TRUE;
 
                 // initialize other data
-                G_pllFavoriteFolders = lstCreate(FALSE);    // no auto-free
-                G_pllQuickOpenFolders = lstCreate(FALSE);   // no auto-free
+                lstInit(&G_llFavoriteFolders.ll, FALSE);    // no auto-free
+                G_llFavoriteFolders.fLoaded = FALSE;
+
+                lstInit(&G_llQuickOpenFolders.ll, FALSE);      // no auto-free
+                G_llQuickOpenFolders.fLoaded = FALSE;
 
                 fdrLoadFolderHotkeys();
 

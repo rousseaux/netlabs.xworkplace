@@ -230,8 +230,9 @@ $(OUTPUTDIR)\filesys.obj: \
 
 $(OUTPUTDIR)\filetype.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h \
-            $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\tree.h \
+    $(HLPINC)\cnrh.h $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\linklist.h \
+            $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\tree.h \
+            $(HLPINC)\xstring.h \
     $(INC)\classes\xfdataf.ih $(INC)\classes\xfwps.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\notebook.h \

@@ -839,21 +839,15 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  */
 
 MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                               USHORT usItemID,
+                               ULONG ulItemID,
                                USHORT usNotifyCode,
                                ULONG ulExtra)      // for checkboxes: contains new state
 {
     ULONG ulChange = 1;
     ULONG ulFlag = -1;
 
-    // LONG lTemp;
-
-    switch (usItemID)
+    switch (ulItemID)
     {
-        /* case ID_SDDI_ENABLED:
-            ulFlag = XSD_ENABLED;
-        break; */
-
         case ID_SDDI_REBOOT:
             ulFlag = XSD_REBOOT;
         break;

@@ -109,12 +109,13 @@
 
         WPFileSystem*  wpshContainsFile(WPFolder *pFolder, const char *pcszRealName);
 
-        WPObject* wpshCreateFromTemplate(WPObject *pTemplate,
-                                    WPFolder* pFolder,
-                                    HWND hwndFrame,
-                                    USHORT usOpenSettings,
-                                    BOOL fReposition,
-                                    POINTL* pptlMenuMousePos);
+        WPObject* wpshCreateFromTemplate(HAB hab,
+                                         WPObject *pTemplate,
+                                         WPFolder* pFolder,
+                                         HWND hwndFrame,
+                                         USHORT usOpenSettings,
+                                         BOOL fReposition,
+                                         POINTL* pptlMenuMousePos);
 
         HWND wpshQueryFrameFromView(WPFolder *somSelf, ULONG ulView);
 

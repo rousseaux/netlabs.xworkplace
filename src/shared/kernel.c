@@ -265,7 +265,7 @@ BOOL krnLock(const char *pcszSourceFile,        // in: __FILE__
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                "krnLock mutex request failed!!\n"
                "    First requestor: %s (%s, line %d))\n"
-               "    Second (failed) requestor: %s (%s, line %d))\n",
+               "    Second (failed) requestor: %s (%s, line %d))",
                (G_pcszReqFunction) ? G_pcszReqFunction : "NULL",
                (G_pcszReqSourceFile) ? G_pcszReqSourceFile : "NULL",
                G_ulReqLine,
@@ -1002,7 +1002,6 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
                         if (pXwpGlobalShared)
                             if (pXwpGlobalShared->hwndDaemonObject)
                             {
-// #ifdef __PAGEMAGE__
                                 // cross-process send msg: this
                                 // does not return until the daemon
                                 // has re-read the data
@@ -1010,7 +1009,6 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
                                                             XDM_PAGEMAGECONFIG,
                                                             (MPARAM)G_PageMageConfigFlags,
                                                             0);
-// #endif
                                 // reset flags
                                 G_PageMageConfigFlags = 0;
                             }
@@ -1663,24 +1661,36 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
             /*
              *@@ T1M_WELCOME:
              *      posted if XWorkplace has just been installed.
-             *      This shows a little "Welcom" dialog on thread 1.
-             *      This used to be a worker thread msg, but starting
-             *      windows there wasn't such a good idea.
+             *
+             *      This post comes from the File thread after
+             *      all other startup processing (startup folders,
+             *      quick open, etc.) has completed, but only if
+             *      the "just installed" flag was set in OS2.INI
+             *      (which has then been removed).
+             *
+             *      Starting with V0.9.9, we now allow the user
+             *      to create the XWorkplace standard objects
+             *      here. We no longer do this from WarpIn because
+             *      we also defer class registration into the OS2.INI
+             *      file to avoid the frequent error messages that
+             *      WarpIN produces otherwise.
              *
              *@@added V0.9.7 (2001-01-07) [umoeller]
+             *@@changed V0.9.9 (2001-03-27) [umoeller]: added obj creation here
              */
 
             case T1M_WELCOME:
-            /* {
-                WPObject *pobj = wpshQueryObjectFromID(XFOLDER_MAINID,
-                                                       NULL);
-                if (pobj)
-                    if (_wpViewObject(pobj, NULLHANDLE, OPEN_CONTENTS, 0))
-                        cmnMessageBoxMsg(NULLHANDLE,
-                                         121,       // xwp
-                                         199,       // welcome
-                                         MB_OK);
-                */ // @@todo currently disabled... this hangs the system, dammit
+                if (cmnMessageBoxMsg(NULLHANDLE,
+                                     121,
+                                     211,       // create objects?
+                                     MB_OKCANCEL)
+                        == MBID_OK)
+                {
+                    // produce objects NOW
+                    xthrPostFileMsg(FIM_RECREATECONFIGFOLDER,
+                                    (MPARAM)RCF_MAININSTALLFOLDER,
+                                    0);
+                }
             break;
 
             #ifdef __DEBUG__

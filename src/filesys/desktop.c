@@ -738,7 +738,7 @@ VOID dtpMenuItemsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  */
 
 MRESULT dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                USHORT usItemID,
+                                ULONG ulItemID,
                                 USHORT usNotifyCode,
                                 ULONG ulExtra)      // for checkboxes: contains new state
 {
@@ -747,7 +747,7 @@ MRESULT dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
     // LONG lTemp;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_XSDI_DTP_SORT:
             pGlobalSettings->fDTMSort = ulExtra;
@@ -960,7 +960,7 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  */
 
 MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                              USHORT usItemID,
+                              ULONG ulItemID,
                               USHORT usNotifyCode,
                               ULONG ulExtra)      // for checkboxes: contains new state
 {
@@ -971,7 +971,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     {
        GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
 
-       switch (usItemID)
+       switch (ulItemID)
        {
            case ID_XSDI_DTP_BOOTLOGO:
                pGlobalSettings->BootLogo = ulExtra;
@@ -1041,7 +1041,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         // second switch-case with non-global settings stuff
         PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-        switch (usItemID)
+        switch (ulItemID)
         {
             /*
              * ID_XSDI_DTP_LOGOFILE:

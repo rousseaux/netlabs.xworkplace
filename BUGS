@@ -15,65 +15,8 @@ PageMage especially.
 Ulrich M”ller.
 
 
-SERIOUS PROBLEMS
-----------------
-
---  "create another" for folders can lead to black-screen trap (see readme)
-
-
-FIXPAK 13/14
-------------
-
-This is my private bug list for FP13/14:
-
--- Sometimes after a WPS restart, the WPS doesn't populate
-   the Desktop, and the system hangs. I'm not sure what this
-   is about. This doesn't happen with FP11, and it happens
-   with my Desktop even if I disable XWP.
-
-   This has been fixed with FP 15.
-
--- IBM has ruined the DosQProcStat and DosQuerySysState APIs.
-   These still return garbage with FP14 sometimes.
-
-   Apparently, this has been fixed with FP 15 too.
-
--- Please don't complain about misaligned text in Details
-   views, which is no longer vertically centered. It's not
-   XWorkplace's fault, but another bug introduced with FP13
-   or 14, I don't know. I only noticed it now after installing
-   FP14.
-
-   This is still showing with FP15.
-
-
 NOT-SO-SERIOUS PROBLEMS
 -----------------------
-
---  object lists: presently, favorite folders etc. are removed when
-    objects go dormant. Differentiate between dormant and free, and
-    remove from list only when freed.
-
-    >While we are on the topic of these lists, I found during debugging that
-    >there is an irritating problem that causes the INI file to be accessed
-    >every time you bring up a folder context menu, if you have no favorites
-    >folder entries i.e. the list is null.
-    >_xwpclsQueryFavoriteFolder will call objEnumList which calls
-    >LoadObjectsList and that calls PrfQueryProfileString.
-    >There must be some optimization we can do here.... perhaps a flag in
-    >the LINKLIST structure to say that the list has been initialized? Then
-    >objEnumList can test that flag as well as testing for pNode being null
-    >before it calls LoadObjectsList pointlessly.
-
---  install:
-
-    >1. The un-installer fails to remove the font folder and the Xworkplace
-    >Installation folder.
-    >2. The un-installer fails to remove several templates.  Checkini will
-    >find and remove these.
-    >3. The un-installer fails to remove Xtrashcan entries in OS2.INI.
-    >4. The installer does not default to install the font folder.  It will
-    >fail to populate the font folder if it already exists.
 
 --  xcenter:
     stays visible with lockup screen and stay-on-top.
@@ -88,26 +31,11 @@ NOT-SO-SERIOUS PROBLEMS
     in the queue! Once the print job is killed manually, everything works
     fine.
 
---    I think there are some problems (not severe) probably with variables
-    initialisation somewhere in XWPS. I have "Folder menu bars" as well as
-    "Status bars" permanently turned on. When I try to turn them on/off
-    from the "View" menu on a folder menu bar, it has no effect. Now when I
-    go to the folder properties and disable both features (Menu bars and
-    status bars) and then enable them again by :
-    "Folder system menu"->"View"->"Menu bars"/"Status bars" these option in
-    the "View" menu on the _menu_bar_ start to work as expected.
-    When I close and reopen the folder these options in the "View" menu of
-    the "Menu bar" do not work again.
-
 tooltips:
     -- rewrite auto-pop
 
 fonts:
-    -- populate doesn't work
-
-    -- set sample text (Quick brown fox...)
-
-    -- try install?
+    -- first populate doesn't work
 
 XCenter:
     -- put menus on object buttons on top of the bar, not on top of the button.
@@ -121,8 +49,6 @@ XCenter:
     -- make object buttons droppable
 
 extended assocs:
-
-    --  break SysOpenObject REXX API?
 
     --  multiple associations with the same app (object) should not be shown
         in the file-open menu. (if HTML is text/html as well for instance)

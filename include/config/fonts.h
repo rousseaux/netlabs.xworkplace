@@ -85,6 +85,16 @@
                                      ULONG ulSelectionFlags);
     #endif
 
+    #ifdef NOTEBOOK_HEADER_INCLUDED
+        VOID fonSampleTextInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                   ULONG flFlags);
+
+        MRESULT fonSampleTextItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                         ULONG ulItemID,
+                                         USHORT usNotifyCode,
+                                         ULONG ulExtra);
+    #endif
+
     /* ******************************************************************
      *
      *   Font object implementation

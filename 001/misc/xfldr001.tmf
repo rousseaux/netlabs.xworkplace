@@ -378,6 +378,16 @@ You can always disable the extended file associations again to get the old WPS m
 
 <--XFL0210-->: The file type %1 already exists and cannot be used for renaming.
 
+<--XFL0211-->: XWorkplace will now create the standard installation objects for you.
+
+This will add a number of objects to your "System setup" folder for detailed configuration of XWorkplace and the WPS.
+
+In addition, this will produce an "XWorkplace installation" folder on your desktop with a standard configuration folder for your folder context menus.
+
+If you do not wish to have this done, press "Cancel" now. You should only do this though if you are sure that you do not want the objects to be created; this will prevent you from being able to configure XWorkplace, if the objects do not exist yet.
+
+Otherwise, press "OK" to continue.
+
 ; ---------------------------------------------------------------------------------
 ;
 ; V0.9.0:

@@ -1039,12 +1039,12 @@ VOID sndSoundsInitPage(PCREATENOTEBOOKPAGE pcnbp,           // notebook info str
  */
 
 MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
-                             USHORT usItemID, USHORT usNotifyCode,
+                             ULONG ulItemID, USHORT usNotifyCode,
                              ULONG ulExtra)      // for checkboxes: contains new state
 {
     PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pcnbp->pUser;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
 
         /*

@@ -426,28 +426,28 @@
                                ULONG flFlags);
 
         MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                    USHORT usItemID, USHORT usNotifyCode,
-                                    ULONG ulExtra);
+                                     ULONG ulItemID, USHORT usNotifyCode,
+                                     ULONG ulExtra);
 
         VOID ctrpView2InitPage(PCREATENOTEBOOKPAGE pcnbp,
                                ULONG flFlags);
 
         MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                    USHORT usItemID, USHORT usNotifyCode,
-                                    ULONG ulExtra);
+                                     ULONG ulItemID, USHORT usNotifyCode,
+                                     ULONG ulExtra);
 
         VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                  ULONG flFlags);
 
         MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                       USHORT usItemID, USHORT usNotifyCode,
+                                       ULONG ulItemID, USHORT usNotifyCode,
                                        ULONG ulExtra);
 
         VOID ctrpClassesInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                  ULONG flFlags);
 
         MRESULT ctrpClassesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                       USHORT usItemID, USHORT usNotifyCode,
+                                       ULONG ulItemID, USHORT usNotifyCode,
                                        ULONG ulExtra);
     #endif
 

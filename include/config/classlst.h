@@ -88,7 +88,7 @@
                                    ULONG flFlags);
 
         MRESULT cllClassListItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                         USHORT usItemID,
+                                         ULONG ulItemID,
                                          USHORT usNotifyCode,
                                          ULONG ulExtra);
     #endif

@@ -1731,9 +1731,9 @@ VOID stbStatusBar1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  */
 
 MRESULT stbStatusBar1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                     USHORT usItemID,
-                                     USHORT usNotifyCode,
-                                     ULONG ulExtra)      // for checkboxes: contains new state
+                                 ULONG ulItemID,
+                                 USHORT usNotifyCode,
+                                 ULONG ulExtra)      // for checkboxes: contains new state
 {
     GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     MRESULT mrc = (MPARAM)0;
@@ -1741,7 +1741,7 @@ MRESULT stbStatusBar1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          fShowStatusBars = FALSE,
          fRefreshStatusBars = FALSE;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_XSDI_ENABLESTATUSBAR:
             pGlobalSettings->fDefaultStatusBarVisibility = ulExtra;
@@ -1981,7 +1981,7 @@ VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  */
 
 MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                 USHORT usItemID,
+                                 ULONG ulItemID,
                                  USHORT usNotifyCode,
                                  ULONG ulExtra)      // for checkboxes: contains new state
 {
@@ -1989,7 +1989,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     BOOL fSave = TRUE;
     CHAR szDummy[CCHMAXMNEMONICS];
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_XSDI_SBTEXTNONESEL:
             if (usNotifyCode == EN_KILLFOCUS)   // changed V0.9.0

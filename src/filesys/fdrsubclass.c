@@ -1958,31 +1958,6 @@ MRESULT EXPENTRY fdr_fnwpSupplFolderObject(HWND hwndObject, ULONG msg, MPARAM mp
                 }
         break; }
 
-        /*
-         *@@ SOM_CREATEFROMTEMPLATE:
-         *      posted from mnuMenuItemSelected when
-         *      a template from a config folder menu
-         *      has been selected. We now need to
-         *      create a new object from that template
-         *      and move it to the mouse position.
-         *      This is again done in fdrmenus.c by
-         *      mnuCreateFromTemplate, we just use
-         *      this message to do this asynchronously
-         *      and to make sure that function runs on
-         *      the folder view thread.
-         *
-         *      Parameters:
-         *      -- WPObject* mp1: template object from menu
-         *      -- WPFolder* mp2: folder in which to create
-         *
-         *@@added V0.9.2 (2000-02-26) [umoeller]
-         */
-
-        case SOM_CREATEFROMTEMPLATE:
-            mnuCreateFromTemplate((WPObject*)mp1,
-                                  (WPFolder*)mp2);
-        break;
-
         default:
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
     }

@@ -272,15 +272,15 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  */
 
 MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                USHORT usItemID,
-                                USHORT usNotifyCode,
-                                ULONG ulExtra)      // for checkboxes: contains new state
+                               ULONG ulItemID,
+                               USHORT usNotifyCode,
+                               ULONG ulExtra)      // for checkboxes: contains new state
 {
     PWPSARCOSETTINGS pArcSettings = arcQuerySettings();
     ULONG           ulSetFlags = 0;
     BOOL            fSave = TRUE;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_XSDI_ARC_ENABLE:
             ulSetFlags |= ARCF_ENABLED;
@@ -307,7 +307,7 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 float   flTemp = 0;
                 // query current spin button array
                 // item as a string
-                WinSendDlgItemMsg(pcnbp->hwndDlgPage, usItemID,
+                WinSendDlgItemMsg(pcnbp->hwndDlgPage, ulItemID,
                                   SPBM_QUERYVALUE,
                                   (MPARAM)szTemp,
                                   MPFROM2SHORT(sizeof(szTemp),
@@ -323,7 +323,7 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XSDI_ARC_DAYS_SPIN:
             pArcSettings->ulEveryDays = winhAdjustDlgItemSpinData(pcnbp->hwndDlgPage,
-                                                                  usItemID,
+                                                                  ulItemID,
                                                                   0,              // no grid
                                                                   usNotifyCode);
         break;
@@ -335,7 +335,7 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_ARC_ARCHIVES_SPIN:
         {
             CHAR    cArchivesCount = (CHAR)winhAdjustDlgItemSpinData(pcnbp->hwndDlgPage,
-                                                                     usItemID,
+                                                                     ulItemID,
                                                                      0,              // no grid
                                                                      usNotifyCode);
             arcSetNumArchives(&cArchivesCount,

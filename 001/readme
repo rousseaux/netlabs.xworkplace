@@ -1,7 +1,7 @@
 
 XWorkplace 0.9.8 README
 (W) Ulrich M”ller, Feb 7, 2000
-Last updated January 26, 2001
+Last updated March 28, 2001
 
 
 0. CONTENTS OF THIS FILE
@@ -20,7 +20,7 @@ Last updated January 26, 2001
 1. INTRODUCTION
 ===============
 
-    Welcome to XWorkplace V0.9.8.
+    Welcome to XWorkplace V0.9.9.
 
     XWorkplace is a complex set of replacement classes for the
     OS/2 Workplace Shell to enhance the WPS's behavior in many
@@ -37,18 +37,9 @@ Last updated January 26, 2001
     About this release
     ------------------
 
-    This version fixes a number of bugs reported for V0.9.6.
-    V0.9.7 was never officially released, but since some
-    people managed to get hold of it anyway, that version
-    number was skipped to avoid confusion.
-
-    Many people will be pleased to hear that PageMage is
-    finally becoming more usable. In addition, you get the
-    prototype for the XCenter, a WarpCenter replacement.
-    After installation, you should find an XCenter in the
-    XWorkplace installation folder. Third, you get a font
-    folder for viewing, installing, and deinstalling PM
-    fonts.
+    This version has enhancements to pretty much all parts of
+    XWorkplace. Some major bugs have been removed, and PageMage,
+    XCenter, and the hook functions were enhanced further.
 
     For details, refer to the "Version Notices" in the
     "XWorkplace User Guide". To extract the documentation
@@ -143,41 +134,8 @@ Last updated January 26, 2001
 6. KNOWN LIMITATIONS
 ====================
 
-    The following issues are known to cause problems with this
-    release.
-
     Please check the BUGS and FEATURES files in this package also
     before reporting bugs or suggesting features. Thank you.
-
-    As opposed to what XFLDR001.INF might be saying, the following
-    does not work:
-
-    1)  Christian Langanke's Animated Mouse Pointers for OS/2 are
-        not yet included. This is still in the works and will be
-        added to a later release.
-
-        If you have Christian's old package installed, you can keep
-        it running, it causes no problems.
-
-    2)  There are problems with WPS restarts and FP13/14. This is
-        an OS/2 kernel bug which IBM says has been fixed with kernel
-        build level 14.050, so this will probably be fixed with FP15
-        as well.
-
-    3)  From time to time, creating folders from templates (using the
-        context menu items) can solidly crash the system with a black
-        screen. Some people never get this, but I do from time to time.
-        This problem has been reported for all XFolder and XWorkplace
-        versions, and it's apparently a WPS bug.
-
-        If you have never had problems with "Create another", don't
-        worry, nothing has changed.
-
-        However, if, after using "Create another", the system freezes
-        and the hard disk rattles like crazy, press Ctrl+Alt+Del
-        IMMEDIATELY to avoid the black screen. This is a symptom of
-        the swap file growing constantly until the swap disk is full,
-        which will then cause a trap somewhere.
 
 
 7. LICENSE, COPYRIGHT, DISCLAIMER

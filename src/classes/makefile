@@ -255,7 +255,7 @@ $(OUTPUTDIR)\xfont.obj: \
             \
             $(INC)\dlgids.h \
             $(INC)\classes\xfontobj.ih $(INC)\classes\xfldr.ih \
-            $(INC)\shared\common.h $(INC)\shared\kernel.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(INC)\config\fonts.h \
             $(INC)\filesys\folder.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h

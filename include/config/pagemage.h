@@ -40,28 +40,28 @@
                                          ULONG flFlags);
 
         MRESULT pgmiPageMageGeneralItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                               USHORT usItemID, USHORT usNotifyCode,
+                                               ULONG ulItemID, USHORT usNotifyCode,
                                                ULONG ulExtra);
 
         VOID pgmiPageMageStickyInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                         ULONG flFlags);
 
         MRESULT pgmiPageMageStickyItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                              USHORT usItemID, USHORT usNotifyCode,
+                                              ULONG ulItemID, USHORT usNotifyCode,
                                               ULONG ulExtra);
 
         VOID pgmiPageMageColorsInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                         ULONG flFlags);
 
         MRESULT pgmiPageMageColorsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                              USHORT usItemID, USHORT usNotifyCode,
+                                              ULONG ulItemID, USHORT usNotifyCode,
                                               ULONG ulExtra);
 
         VOID pgmiPageMageWindowInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                         ULONG flFlags);
 
         MRESULT pgmiPageMageWindowItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                              USHORT usItemID, USHORT usNotifyCode,
+                                              ULONG ulItemID, USHORT usNotifyCode,
                                               ULONG ulExtra);
     #else
         #error "shared\notebook.h needs to be included before including pagemage.h".

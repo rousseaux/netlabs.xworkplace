@@ -1399,6 +1399,7 @@ VOID CollectDoubleFiles(MPARAM mp1)
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.3 (2000-04-25) [umoeller]: startup folder was permanently disabled when panic flag was set; fixed
  *@@changed V0.9.3 (2000-04-25) [umoeller]: redid initial desktop open processing
+ *@@changed V0.9.9 (2001-03-27) [umoeller]: earlier daemon notification of desktop open
  */
 
 MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1434,26 +1435,6 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                 _Pmpf(("fnwpFileObject: got FIM_DESKTOPPOPULATED"));
             #endif
 
-            /* if ((_wpQueryFldrFlags((WPFolder*)mp1)
-                        & FOI_POPULATEDWITHALL) == 0)
-            {
-                #ifdef DEBUG_STARTUP
-                    _Pmpf(("    Desktop not populated yet, reposting FIM_DESKTOPPOPULATED"));
-                #endif
-
-                DosSleep(100);
-                // if Desktop is not populated yet, post this
-                // msg again
-
-                WinPostMsg(hwndObject, FIM_DESKTOPPOPULATED, mp1, mp2);
-                // do not continue
-                break;
-            } */
-
-            #ifdef DEBUG_STARTUP
-                _Pmpf(("    Desktop populated, sleep(1000)"));
-            #endif
-
             // V0.9.9 (2001-03-10) [umoeller]
             TRY_LOUD(excpt1)
             {
@@ -1468,19 +1449,21 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
             if (pKernelGlobals)
                 krnUnlockGlobals();
 
-            // sleep a little while more
-            // V0.9.4 (2000-08-02) [umoeller]
-            winhSleep(pGlobalSettings->ulStartupInitialDelay);
-
             #ifdef DEBUG_STARTUP
                 _Pmpf(("    Posting XDM_DESKTOPREADY (0x%lX) to daemon",
                         cmnQueryActiveDesktopHWND()));
             #endif
 
             // notify daemon of WPS desktop window handle
+            // V0.9.9 (2001-03-27) [umoeller]: moved this up,
+            // we don't have to wait here
             krnPostDaemonMsg(XDM_DESKTOPREADY,
                              (MPARAM)cmnQueryActiveDesktopHWND(),
                              (MPARAM)0);
+
+            // sleep a little while more
+            // V0.9.4 (2000-08-02) [umoeller]
+            winhSleep(pGlobalSettings->ulStartupInitialDelay);
 
             #ifdef DEBUG_STARTUP
                 _Pmpf(("    Posting FIM_STARTUP (1) to File thread",
@@ -1506,8 +1489,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
          *      Valid values for mp1:
          *      -- 1:   initial posting by FIM_DESKTOPREADY.
          *              This checks for the "just installed" flag
-         *              in OS2.INI and creates the config folders
-         *              and posts WOM_WELCOME to the Worker thread.
+         *              in OS2.INI.
          *      -- 2:   start processing XWorkplace Startup folders.
          *      -- 3:   populate Quick Open folders
          *      -- 4:   destroy boot logo
@@ -1529,29 +1511,9 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
             {
                 case 1: // "just installed" check
                 {
-                    // if XFolder was just installed, check for
-                    // existence of config folders and
-                    // display welcome msg
-                    if (PrfQueryProfileInt(HINI_USER,
-                                           (PSZ)INIAPP_XWORKPLACE,
-                                           (PSZ)INIKEY_JUSTINSTALLED,
-                                           0x123) != 0x123)
-                    {   // XFolder was just installed:
-                        // delete "just installed" INI key
-                        PrfWriteProfileString(HINI_USER,
-                                              (PSZ)INIAPP_XWORKPLACE,
-                                              (PSZ)INIKEY_JUSTINSTALLED,
-                                              NULL);
-                        // even if the installation folder exists, create a
-                        // a new one
-                        // if (!_wpclsQueryFolder(_WPFolder, XFOLDER_MAINID, TRUE))
-                            /* xthrPostFileMsg(FIM_RECREATECONFIGFOLDER,
-                                            (MPARAM)RCF_MAININSTALLFOLDER,
-                                            MPNULL); */
-
-                        krnPostThread1ObjectMsg(T1M_WELCOME, MPNULL, MPNULL);
-                    }
-
+                    // V0.9.9 (2001-03-27) [umoeller]
+                    // this used to be "just installed" check...
+                    // moved this down
                     fPostNext = TRUE;
                 break; }
 
@@ -1578,10 +1540,6 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
                 case 3: // populate config folders
                 {
-                    /* XFolder *pFolder = _xwpclsQueryConfigFolder(_XFolder); // changed V0.9.0
-                    if (pFolder)
-                        wpshPopulateTree(pFolder); */
-
                     // now go for the "Quick open" folders;
                     krnPostThread1ObjectMsg(T1M_BEGINQUICKOPEN, MPNULL, MPNULL);
                             // this posts FIM_STARTUPFOLDERDONE(2)
@@ -1598,6 +1556,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                     // destroy boot logo, if present
                     xthrPostSpeedyMsg(QM_DESTROYLOGO, 0, 0);
 
+                    // destroy archive marker file, if it exists
                     if (_wpQueryFilename(cmnQueryActiveDesktop(),
                                          szDesktopDir,
                                          TRUE))     // fully q'fied
@@ -1610,6 +1569,24 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                         if (pMarkerFile)
                             // exists:
                             _wpFree(pMarkerFile);
+                    }
+
+                    // if XFolder was just installed, check for
+                    // existence of config folders and
+                    // display welcome msg
+                    if (PrfQueryProfileInt(HINI_USER,
+                                           (PSZ)INIAPP_XWORKPLACE,
+                                           (PSZ)INIKEY_JUSTINSTALLED,
+                                           0x123) != 0x123)
+                    {
+                        // XWorkplace was just installed:
+                        // delete "just installed" INI key
+                        PrfWriteProfileString(HINI_USER,
+                                              (PSZ)INIAPP_XWORKPLACE,
+                                              (PSZ)INIKEY_JUSTINSTALLED,
+                                              NULL);
+
+                        krnPostThread1ObjectMsg(T1M_WELCOME, MPNULL, MPNULL);
                     }
                 break; }
             } // end switch
@@ -1660,8 +1637,25 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
         /*
          *@@ FIM_RECREATECONFIGFOLDER:
-         *    this msg is posted if the
-         *    config folder was not found.
+         *      this msg is posted to recreate the config
+         *      folder and/or installation folders.
+         *
+         *      (ULONG)mp1 must be one of the following:
+         *
+         *      -- RCF_QUERYACTION: prompt the user for what
+         *         should be created.
+         *
+         *      -- RCF_EMPTYCONFIGFOLDERONLY: produce empty
+         *         config folder.
+         *
+         *      -- RCF_DEFAULTCONFIGFOLDER: produce standard
+         *         config folder by executing install\crobjXXX.cmd.
+         *
+         *      -- RCF_MAININSTALLFOLDER: produce full install
+         *         folder, including config folder, by executing
+         *         install\instlXXX.cmd, which calls crobjXXX.cmd
+         *         in turn.
+         *
          */
 
         case FIM_RECREATECONFIGFOLDER:
@@ -1693,6 +1687,8 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                 fWarningOpen = FALSE;
             }
 
+            // ulReturn is either set from dialog or
+            // from initial value, if no prompt
             if (ulReturn == RCF_EMPTYCONFIGFOLDERONLY)
             {
                 CHAR szObjectID[50];
@@ -1708,7 +1704,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                     )
             {
                 HWND    hwndCreating;
-                CHAR    szPath[CCHMAXPATH], szPath2[CCHMAXPATH], szPath3[CCHMAXPATH];
+                CHAR    szPath[CCHMAXPATH], szPath2[CCHMAXPATH];
                 if (cmnQueryXWPBasePath(szPath))
                 {   // INI entry found: append "\" if necessary
                     PID     pid;
@@ -1720,7 +1716,6 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                                 : "instl",      // script for full installation folder
                                                 // (used after first WPS bootup)
                             cmnQueryLanguageCode());
-                    strcpy(szPath3, &(szPath2[3]));
 
                     // "creating config" window
                     hwndCreating = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,

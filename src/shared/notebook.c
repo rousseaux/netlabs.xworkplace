@@ -320,6 +320,7 @@ VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp)
  *@@changed V0.9.4 (2000-07-11) [umoeller]: added CN_HELP and fPassCnrHelp handling
  *@@changed V0.9.9 (2001-02-06) [umoeller]: added support for direct editing
  *@@changed V0.9.9 (2001-03-15) [lafaix]: added support for valuesets
+ *@@changed V0.9.9 (2001-03-27) [umoeller]: changed ulExtra for CN_RECORDCHECKED
  */
 
 MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
@@ -329,7 +330,7 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
     MRESULT mrc = 0;
 
     // identify the source of the msg
-    USHORT  usItemID = SHORT1FROMMP(mp1),
+    ULONG   ulItemID = SHORT1FROMMP(mp1),
             usNotifyCode = SHORT2FROMMP(mp1);
 
     BOOL    fCallItemChanged = FALSE;
@@ -347,7 +348,7 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
     {
         ULONG   ulExtra = -1;
 
-        pcnbp->hwndControl = WinWindowFromID(pcnbp->hwndDlgPage, usItemID);
+        pcnbp->hwndControl = WinWindowFromID(pcnbp->hwndDlgPage, ulItemID);
 
         // we identify the control by querying its class.
         // The standard PM classes have those wicked "#xxxx" classnames;
@@ -512,16 +513,13 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
 
                                 case CN_RECORDCHECKED:
                                 {
-                                    // extra check-box cnr notification
-                                    // code: we make this work just like
-                                    // BN_CLICKED
+                                    // extra check-box cnr notification code
+                                    // (cctl_checkcnr.c)
                                     PCHECKBOXRECORDCORE precc = (PCHECKBOXRECORDCORE)mp2;
                                     if (precc)
                                     {
-                                        ulExtra = precc->usCheckState;
-                                        // change usItemID to that of
-                                        // the record
-                                        usItemID = precc->usItemID;
+                                        ulExtra = (ULONG)precc;
+                                                // changed V0.9.9 (2001-03-27) [umoeller]
                                         fCallItemChanged = TRUE;
                                     }
                                 break; }
@@ -624,7 +622,7 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                         // "important" message found:
                         // call "item changed" callback
                         mrc = pcnbp->pfncbItemChanged(pcnbp,
-                                                      usItemID,
+                                                      ulItemID,
                                                       usNotifyCode,
                                                       ulExtra);
                     }
@@ -1440,38 +1438,48 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  *
  *      The <B>ulPageID</B> is not required, but strongly recommended
  *      to tell the different notebook pages apart (esp. when using
- *      ntbUpdateVisiblePage). Use any ULONG you like, this has nothing
- *      to do with the dialog resources. XWorkplace usese the SP_* IDs
- *      from common.h.
+ *      ntbUpdateVisiblePage). This can be used to easily update all
+ *      open settings pages with ntbUpdateVisiblePage. For example,
+ *      if a global setting changes which affects instance notebook
+ *      pages as well, all of these can be easily updated. Use any
+ *      ULONG you like, this has nothing to do with the dialog resources.
+ *      XWorkplace uses the SP_* IDs from common.h.
  *
  *      <B>The "init" callback</B>
  *
- *      The "init" callback gets the following parameters:
+ *      The "init" callback receives the following parameters:
+ *
  *      --  PCREATENOTEBOOKPAGE pcnbp: notebook info struct
+ *
  *      --  ULONG flFlags:           CBI_* flags (notebook.h), which determine
  *                                   the context of the call.
  *
  *      ntb_fnwpPageCommon will call this init callback itself
  *      in the following situations:
+ *
  *      -- When the page is initialized (WM_INITDLG), flFlags is
  *         CBI_INIT | CBI_SET | CBI_ENABLE.
+ *
  *      -- When the page is later turned away from, flFlags is
  *         CBI_HIDE.
+ *
  *      -- When the page is later turned to, flFlags is
  *         CBI_SHOW | CBI_ENABLE.
+ *
  *      -- When the page is destroyed (when the notebook is closed),
  *         flFlags is CBI_DESTROY.
  *
- *      It is recommended to have six blocks in your "init" callback
+ *      It is recommended to have up to six blocks in your "init" callback
  *      (but you probably won't need all of them):
  *
  +      VOID fncbWhateverInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
  +                                ULONG flFlags)              // CBI_* flags (notebook.h)
  +      {
- +          if (flFlags & CBI_INIT) // initialize page; this gets called only once
+ +          if (flFlags & CBI_INIT) // initialize page; this gets called exactly once
  +          {
  +              pcnbp->pUser = malloc(...); // allocate memory for "Undo";
  +                                          // this will be free()'d automatically
+ +                                          // on destroy
  +              memcpy((PVOID)pcnbp->pUser, ...)  // backup data for "Undo"
  +
  +                   ...        // initialize controls (set styles, subclass controls, etc.)
@@ -1513,10 +1521,14 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  *      anything if you don't install this (which might be OK if your
  *      page is "read-only").
  *
- *      Parameters:
+ *      The "item changed" callback receives the following parameters:
+ *
  *      --  PCREATENOTEBOOKPAGE pcnbp: notebook info struct
- *      --  USHORT usItemId:           ID of the changing item
+ *
+ *      --  ULONG ulItemId:            ID of the changing item
+ *
  *      --  USHORT usNotifyCode:       as in WM_CONTROL; NULL for WM_COMMAND
+ *
  *      --  ULONG  ulExtra:            additional control data.
  *
  *      <B>ulExtra</B> has the following:
@@ -1552,6 +1564,9 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  *      -- Container CN_BEGINEDIT, CN_REALLOCPSZ, CN_ENDEDIT: has the
  *              PCNREDITDATA (mp2) (added with V0.9.9 (2001-02-06) [umoeller]).
  *
+ *      -- Check-box container CN_RECORDCHECKED (see cctl_checkcnr.c):
+ *              has the CHECKBOXRECORDCORE pointer that was clicked.
+ *
  *      -- For circular and linear sliders (CSN_CHANGED or CSN_TRACKING),
  *                this has the new slider value.
  *
@@ -1561,8 +1576,8 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  *      -- For all other controls/messages, this is always -1.
  *
  *      Whatever the "item changed" callback returns will be the
- *      return value ntb_fnwpPageCommon. Normally, you should return 0,
- *      except for the container d'n'd messages.
+ *      return value of ntb_fnwpPageCommon. Normally, you should
+ *      return 0, except for the container d'n'd messages.
  *
  *      A couple of remarks about using this on radio buttons...
  *      If radio buttons just won't work in your dialog:
@@ -1611,6 +1626,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  *@@changed V0.9.1 (99-12-06) [umoeller]: added notebook subclassing
  *@@changed V0.9.1 (2000-02-14) [umoeller]: reversed order of functions; now subclassing is last
  *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed mutex problems
+ *@@changed V0.9.9 (2001-03-27) [umoeller]: changed usItemID to ULONG in "item changed" callback
  */
 
 ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)

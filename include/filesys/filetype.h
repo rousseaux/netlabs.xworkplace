@@ -57,18 +57,35 @@
          *
          ********************************************************************/
 
-        VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                      ULONG flFlags);
-
-        MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                            USHORT usItemID,
-                                            USHORT usNotifyCode,
-                                            ULONG ulExtra);
-
         extern MPARAM *G_pampFileTypesPage;
         extern ULONG G_cFileTypesPage;
 
+        VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                   ULONG flFlags);
+
+        MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                         ULONG ulItemID,
+                                         USHORT usNotifyCode,
+                                         ULONG ulExtra);
+
         MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
+
+        /* ******************************************************************
+         *
+         *   XFldDataFile notebook callbacks (notebook.c)
+         *
+         ********************************************************************/
+
+        extern MPARAM *G_pampDatafileTypesPage;
+        extern ULONG G_cDatafileTypesPage;
+
+        VOID ftypDatafileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                       ULONG flFlags);
+
+        MRESULT ftypDatafileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                             ULONG ulItemID,
+                                             USHORT usNotifyCode,
+                                             ULONG ulExtra);
 
         /* ******************************************************************
          *
@@ -80,7 +97,7 @@
                                       ULONG flFlags);
 
         MRESULT ftypAssociationsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                            USHORT usItemID,
+                                            ULONG ulItemID,
                                             USHORT usNotifyCode,
                                             ULONG ulExtra);
     #endif

@@ -57,7 +57,7 @@
                                ULONG flFlags);
 
         MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                     USHORT usItemID,
+                                     ULONG ulItemID,
                                      USHORT usNotifyCode,
                                      ULONG ulExtra);
 
@@ -71,7 +71,7 @@
                                 ULONG flFlags);
 
         MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                      USHORT usItemID,
+                                      ULONG ulItemID,
                                       USHORT usNotifyCode,
                                       ULONG ulExtra);
 
@@ -79,7 +79,7 @@
                                  ULONG flFlags);
 
         MRESULT cfgSyslevelItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                       USHORT usItemID,
+                                       ULONG ulItemID,
                                        USHORT usNotifyCode,
                                        ULONG ulExtra);
     #endif

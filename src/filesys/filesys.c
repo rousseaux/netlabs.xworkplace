@@ -556,7 +556,7 @@ VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
  */
 
 MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
-                             USHORT usItemID,
+                             ULONG ulItemID,
                              USHORT usNotifyCode,
                              ULONG ulExtra)      // for checkboxes: contains new state
 {
@@ -564,7 +564,7 @@ MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
 
     // CHAR    szFilename[CCHMAXPATH];
 
-    switch (usItemID)
+    switch (ulItemID)
     {
 
         case ID_XSDI_FILES_WORKAREA:
@@ -600,9 +600,9 @@ MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
 
             // toggle file attribute
             ulFileAttr ^= // XOR flag depending on item checked
-                      (usItemID == ID_XSDI_FILES_ATTR_ARCHIVED) ? FILE_ARCHIVED
-                    : (usItemID == ID_XSDI_FILES_ATTR_SYSTEM  ) ? FILE_SYSTEM
-                    : (usItemID == ID_XSDI_FILES_ATTR_HIDDEN  ) ? FILE_HIDDEN
+                      (ulItemID == ID_XSDI_FILES_ATTR_ARCHIVED) ? FILE_ARCHIVED
+                    : (ulItemID == ID_XSDI_FILES_ATTR_SYSTEM  ) ? FILE_SYSTEM
+                    : (ulItemID == ID_XSDI_FILES_ATTR_HIDDEN  ) ? FILE_HIDDEN
                     : FILE_READONLY;
 
             _wpSetAttr(pcnbp->somSelf, ulFileAttr);
@@ -636,7 +636,7 @@ MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
         case ID_XSDI_FILES_COMMENTS:
             if (usNotifyCode == MLN_KILLFOCUS)
             {
-                HWND    hwndMLE = WinWindowFromID(pcnbp->hwndDlgPage, usItemID);
+                HWND    hwndMLE = WinWindowFromID(pcnbp->hwndDlgPage, ulItemID);
                 PSZ     pszText = winhQueryWindowText(hwndMLE);
                 fsysSetEAComments(pcnbp->somSelf, pszText);
                 if (pszText)
@@ -653,7 +653,7 @@ MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
         case ID_XSDI_FILES_KEYPHRASES:
             if (usNotifyCode == MLN_KILLFOCUS)
             {
-                HWND    hwndMLE = WinWindowFromID(pcnbp->hwndDlgPage, usItemID);
+                HWND    hwndMLE = WinWindowFromID(pcnbp->hwndDlgPage, ulItemID);
                 PSZ     pszText = winhQueryWindowText(hwndMLE);
                 fsysSetEAKeyphrases(pcnbp->somSelf, pszText);
                 if (pszText)
@@ -768,11 +768,11 @@ VOID fsysFile2InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
  */
 
 MRESULT fsysFile2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
-                             USHORT usItemID,
+                             ULONG ulItemID,
                              USHORT usNotifyCode,
                              ULONG ulExtra)      // for checkboxes: contains new state
 {
-    switch (usItemID)
+    switch (ulItemID)
     {
         /*
          * ID_XSDI_FILES_EALIST:
@@ -1111,10 +1111,107 @@ typedef struct _IMPORTEDMODULERECORD
 } IMPORTEDMODULERECORD, *PIMPORTEDMODULERECORD;
 
 /*
+ *@@ fntInsertModules:
+ *      transient thread started by fsysProgram1InitPage
+ *      to insert modules into the "Imported modules" container.
+ *
+ *      This thread is created with a msg queue.
+ *
+ *@@added V0.9.9 (2001-03-26) [lafaix]
+ *@@changed V0.9.9 (2001-03-30) [umoeller]: replaced dialog resource with generic cnr page
+ *@@changed V0.9.9 (2001-03-30) [umoeller]: sped up display
+ */
+
+void _Optlink fntInsertModules(PTHREADINFO pti)
+{
+    PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(pti->ulData);
+
+    TRY_LOUD(excpt1)
+    {
+        ULONG         cModules = 0,
+                      ul;
+        PFSYSMODULE   paModules;
+        CHAR          szFilename[CCHMAXPATH] = "";
+
+        pcnbp->fShowWaitPointer = TRUE;
+
+        if (_wpQueryFilename(pcnbp->somSelf, szFilename, TRUE))
+        {
+            PEXECUTABLE     pExec = NULL;
+
+            if (doshExecOpen(szFilename, &pExec) == NO_ERROR)
+            {
+                paModules = doshExecQueryImportedModules(pExec, &cModules);
+
+                if (paModules)
+                {
+                    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+
+                    // V0.9.9 (2001-03-30) [umoeller]
+                    // changed all this to allocate all records at once...
+                    // this is way faster, because
+                    // 1) inserting records into a details view always causes
+                    //    a full container repaint (dumb cnr control)
+                    // 2) each insert record causes a cross-thread WinSendMsg,
+                    //    which is pretty slow
+
+                    PIMPORTEDMODULERECORD preccFirst
+                        = (PIMPORTEDMODULERECORD)cnrhAllocRecords(hwndCnr,
+                                                                  sizeof(IMPORTEDMODULERECORD),
+                                                                  cModules);
+                                // the container gives us a linked list of
+                                // records here, whose head we store in preccFirst
+
+                    if (preccFirst)
+                    {
+                        // start with first record and follow the linked list
+                        PIMPORTEDMODULERECORD preccThis = preccFirst;
+                        ULONG cRecords = 0;
+
+                        for (ul = 0;
+                             ul < cModules;
+                             ul++)
+                        {
+                            if (preccThis)
+                            {
+                                preccThis->pszModuleName = paModules[ul].achModuleName;
+                                preccThis = (PIMPORTEDMODULERECORD)preccThis->recc.preccNextRecord;
+                                cRecords++;
+                            }
+                            else
+                                break;
+                        }
+
+                        cnrhInsertRecords(hwndCnr,
+                                          NULL,
+                                          (PRECORDCORE)preccFirst,
+                                          TRUE, // invalidate
+                                          NULL,
+                                          CRA_RECORDREADONLY,
+                                          cRecords);
+                    }
+                }
+
+                // store resources
+                if (pcnbp->pUser)
+                    doshExecFreeImportedModules(pcnbp->pUser);
+                pcnbp->pUser = paModules;
+
+                doshExecClose(pExec);
+            }
+        }
+    }
+    CATCH(excpt1) {}  END_CATCH();
+
+    pcnbp->fShowWaitPointer = FALSE;
+}
+
+/*
  *@@ fsysProgram1InitPage:
  *      "Imported modules" page notebook callback function (notebook.c).
  *
  *@@added V0.9.9 (2001-03-11) [lafaix]
+ *@@changed V0.9.9 (2001-03-30) [umoeller]: replaced dialog resource with generic cnr page
  *@@todo: corresponding ItemChanged page
  */
 
@@ -1122,7 +1219,7 @@ VOID fsysProgram1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                           ULONG flFlags)                // CBI_* flags (notebook.h)
 {
     // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_PROG_MODULE1);
+    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
     /*
      * CBI_INIT:
@@ -1140,7 +1237,7 @@ VOID fsysProgram1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         xfi[i].ulFieldOffset = FIELDOFFSET(IMPORTEDMODULERECORD, pszModuleName);
         xfi[i].pszColumnTitle = pNLSStrings->pszColmnModuleName;
         xfi[i].ulDataType = CFA_STRING;
-        xfi[i++].ulOrientation = CFA_RIGHT;
+        xfi[i++].ulOrientation = CFA_LEFT;
 
         pfi = cnrhSetFieldInfos(hwndCnr,
                                 xfi,
@@ -1162,6 +1259,12 @@ VOID fsysProgram1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
     if (flFlags & CBI_SET)
     {
         // fill container with imported modules
+        thrCreate(NULL,
+                  fntInsertModules,
+                  NULL, // running flag
+                  "InsertModules",
+                  THRF_PMMSGQUEUE | THRF_TRANSIENT,
+                  (ULONG)pcnbp);
     }
 
     /*
@@ -1171,7 +1274,9 @@ VOID fsysProgram1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
 
     if (flFlags & CBI_DESTROY)
     {
-        pcnbp->pUser = NULL;
+        if (pcnbp->pUser)
+            doshExecFreeImportedModules(pcnbp->pUser);
+         pcnbp->pUser = NULL;
     }
 }
 
@@ -1191,10 +1296,135 @@ typedef struct _EXPORTEDFUNCTIONRECORD
 } EXPORTEDFUNCTIONRECORD, *PEXPORTEDFUNCTIONRECORD;
 
 /*
+ *@@fsysGetExportedFunctionTypeName:
+ *      returns a human-readable name from an exported function type.
+ *
+ *@@added V0.9.9 (2001-03-28) [lafaix]
+ */
+
+PSZ fsysGetExportedFunctionTypeName(ULONG ulType)
+{
+    switch (ulType)
+    {
+        case 1:
+            return "ENTRY16";
+        case 2:
+            return "CALLBACK";
+        case 3:
+            return "ENTRY32";
+        case 4:
+            return "FORWARDER";
+    }
+
+    return "Unknown export type"; // !!! Should return value too
+}
+
+/*
+ *@@ fntInsertFunctions:
+ *      transient thread started by fsysProgram2InitPage
+ *      to insert functions into the "Exported functions" container.
+ *
+ *      This thread is created with a msg queue.
+ *
+ *@@added V0.9.9 (2001-03-28) [lafaix]
+ *@@changed V0.9.9 (2001-03-30) [umoeller]: replaced dialog resource with generic cnr page
+ *@@changed V0.9.9 (2001-03-30) [umoeller]: sped up display
+ */
+
+void _Optlink fntInsertFunctions(PTHREADINFO pti)
+{
+    PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(pti->ulData);
+
+    TRY_LOUD(excpt1)
+    {
+        ULONG         cFunctions = 0,
+                      ul;
+        PFSYSFUNCTION paFunctions;
+        CHAR          szFilename[CCHMAXPATH] = "";
+
+        pcnbp->fShowWaitPointer = TRUE;
+
+        if (_wpQueryFilename(pcnbp->somSelf, szFilename, TRUE))
+        {
+            PEXECUTABLE     pExec = NULL;
+
+            if (doshExecOpen(szFilename, &pExec) == NO_ERROR)
+            {
+                paFunctions = doshExecQueryExportedFunctions(pExec, &cFunctions);
+
+                if (paFunctions)
+                {
+                    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+
+                    // V0.9.9 (2001-03-30) [umoeller]
+                    // changed all this to allocate all records at once...
+                    // this is way faster, because
+                    // 1) inserting records into a details view always causes
+                    //    a full container repaint (dumb cnr control)
+                    // 2) each insert record causes a cross-thread WinSendMsg,
+                    //    which is pretty slow
+
+                    PEXPORTEDFUNCTIONRECORD preccFirst
+                        = (PEXPORTEDFUNCTIONRECORD)cnrhAllocRecords(hwndCnr,
+                                                                    sizeof(IMPORTEDMODULERECORD),
+                                                                    cFunctions);
+                                // the container gives us a linked list of
+                                // records here, whose head we store in preccFirst
+
+                    if (preccFirst)
+                    {
+                        // start with first record and follow the linked list
+                        PEXPORTEDFUNCTIONRECORD preccThis = preccFirst;
+                        ULONG cRecords = 0;
+
+                        for (ul = 0;
+                             ul < cFunctions;
+                             ul++)
+                        {
+                            if (preccThis)
+                            {
+                                preccThis->ulFunctionOrdinal = paFunctions[ul].ulOrdinal;
+                                preccThis->pszFunctionType
+                                    = fsysGetExportedFunctionTypeName(paFunctions[ul].ulType);
+                                preccThis->pszFunctionName = paFunctions[ul].achFunctionName;
+
+                                preccThis = (PEXPORTEDFUNCTIONRECORD)preccThis->recc.preccNextRecord;
+                                cRecords++;
+                            }
+                            else
+                                break;
+                        }
+
+                        cnrhInsertRecords(hwndCnr,
+                                          NULL,
+                                          (PRECORDCORE)preccFirst,
+                                          TRUE, // invalidate
+                                          NULL,
+                                          CRA_RECORDREADONLY,
+                                          cRecords);
+                    }
+                }
+
+                // store functions
+                if (pcnbp->pUser)
+                    doshExecFreeExportedFunctions(pcnbp->pUser);
+                pcnbp->pUser = paFunctions;
+
+                doshExecClose(pExec);
+            }
+        }
+    }
+    CATCH(excpt1) {}  END_CATCH();
+
+    pcnbp->fShowWaitPointer = FALSE;
+}
+
+/*
  *@@ fsysProgram2InitPage:
  *      "Exported functions" page notebook callback function (notebook.c).
  *
  *@@added V0.9.9 (2001-03-11) [lafaix]
+ *@@changed V0.9.9 (2001-03-30) [umoeller]: replaced dialog resource with generic cnr page
  *@@todo: corresponding ItemChanged page
  */
 
@@ -1202,7 +1432,7 @@ VOID fsysProgram2InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                           ULONG flFlags)                // CBI_* flags (notebook.h)
 {
     // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_PROG_MODULE2);
+    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
     /*
      * CBI_INIT:
@@ -1252,6 +1482,12 @@ VOID fsysProgram2InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
     if (flFlags & CBI_SET)
     {
         // fill container with functions
+        thrCreate(NULL,
+                  fntInsertFunctions,
+                  NULL, // running flag
+                  "InsertFunctions",
+                  THRF_PMMSGQUEUE | THRF_TRANSIENT,
+                  (ULONG)pcnbp);
     }
 
     /*
@@ -1261,6 +1497,9 @@ VOID fsysProgram2InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
 
     if (flFlags & CBI_DESTROY)
     {
+        if (pcnbp->pUser)
+            doshExecFreeExportedFunctions(pcnbp->pUser);
+        pcnbp->pUser = NULL;
     }
 }
 
@@ -1387,6 +1626,8 @@ PSZ fsysGetResourceTypeName(ULONG ulResourceType)
  *      This thread is created with a msg queue.
  *
  *@@added V0.9.7 (2000-12-17) [lafaix]
+ *@@changed V0.9.9 (2001-03-30) [umoeller]: replaced dialog resource with generic cnr page
+ *@@changed V0.9.9 (2001-03-30) [umoeller]: sped up display
  */
 
 void _Optlink fntInsertResources(PTHREADINFO pti)
@@ -1412,33 +1653,56 @@ void _Optlink fntInsertResources(PTHREADINFO pti)
 
                 if (paResources)
                 {
-                    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_PROG_RESOURCES);
+                    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
-                    for (ul = 0;
-                         ul < cResources;
-                         ul++)
+                    // V0.9.9 (2001-03-30) [umoeller]
+                    // changed all this to allocate all records at once...
+                    // this is way faster, because
+                    // 1) inserting records into a details view always causes
+                    //    a full container repaint (dumb cnr control)
+                    // 2) each insert record causes a cross-thread WinSendMsg,
+                    //    which is pretty slow
+
+                    PRESOURCERECORD preccFirst
+                        = (PRESOURCERECORD)cnrhAllocRecords(hwndCnr,
+                                                            sizeof(IMPORTEDMODULERECORD),
+                                                            cResources);
+                                // the container gives us a linked list of
+                                // records here, whose head we store in preccFirst
+
+                    if (preccFirst)
                     {
-                        PRESOURCERECORD precc
-                            = (PRESOURCERECORD)cnrhAllocRecords(hwndCnr,
-                                                                sizeof(RESOURCERECORD),
-                                                                1);
-                        if (precc)
-                        {
-                            precc->ulResourceID = paResources[ul].ulID;
-                            precc->pszResourceType
-                                = fsysGetResourceTypeName(paResources[ul].ulType);
-                            precc->ulResourceSize = paResources[ul].ulSize;
-                            precc->pszResourceFlag
-                                = fsysGetResourceFlagName(paResources[ul].ulFlag);
+                        // start with first record and follow the linked list
+                        PRESOURCERECORD preccThis = preccFirst;
+                        ULONG cRecords = 0;
 
-                            cnrhInsertRecords(hwndCnr,
-                                              NULL,
-                                              (PRECORDCORE)precc,
-                                              TRUE, // invalidate
-                                              NULL,
-                                              CRA_RECORDREADONLY,
-                                              1);
+                        for (ul = 0;
+                             ul < cResources;
+                             ul++)
+                        {
+                            if (preccThis)
+                            {
+                                preccThis->ulResourceID = paResources[ul].ulID;
+                                preccThis->pszResourceType
+                                    = fsysGetResourceTypeName(paResources[ul].ulType);
+                                preccThis->ulResourceSize = paResources[ul].ulSize;
+                                preccThis->pszResourceFlag
+                                    = fsysGetResourceFlagName(paResources[ul].ulFlag);
+
+                                preccThis = (PRESOURCERECORD)preccThis->recc.preccNextRecord;
+                                cRecords++;
+                            }
+                            else
+                                break;
                         }
+
+                        cnrhInsertRecords(hwndCnr,
+                                          NULL,
+                                          (PRECORDCORE)preccFirst,
+                                          TRUE, // invalidate
+                                          NULL,
+                                          CRA_RECORDREADONLY,
+                                          cRecords);
                     }
                 }
 
@@ -1461,6 +1725,7 @@ void _Optlink fntInsertResources(PTHREADINFO pti)
  *      "Resources" page notebook callback function (notebook.c).
  *
  *@@added V0.9.7 (2000-12-17) [lafaix]
+ *@@changed V0.9.9 (2001-03-30) [umoeller]: replaced dialog resource with generic cnr page
  *@@todo: corresponding ItemChanged page
  */
 
@@ -1468,7 +1733,7 @@ VOID fsysResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                            ULONG flFlags)                // CBI_* flags (notebook.h)
 {
     // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_PROG_RESOURCES);
+    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
     /*
      * CBI_INIT:

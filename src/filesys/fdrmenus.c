@@ -396,11 +396,6 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
 
         brc = TRUE; // modified flag
 
-        /* if (    ((pCnrInfo->flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
-             || ((pCnrInfo->flWindowAttr & CV_NAME) == CV_NAME)
-             || ((pCnrInfo->flWindowAttr & CV_TEXT) == CV_TEXT)
-           ) */
-
         if (ulView == OPEN_CONTENTS)
         {
             // icon view:
@@ -1785,31 +1780,6 @@ BOOL mnuIsSortMenuItemSelected(XFolder* somSelf,
 }
 
 /*
- *@@ mnuCreateFromTemplate:
- *      creates a new object in the specified folder.
- *      Gets called from fdr_fnwpSupplFolderObject
- *      upon SOM_CREATEFROMTEMPLATE. We use a few
- *      global variables for temporary storage.
- *
- *@@added V0.9.2 (2000-02-26) [umoeller]
- */
-
-VOID mnuCreateFromTemplate(WPObject *pTemplate,
-                           WPFolder *pFolder)
-{
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    wpshCreateFromTemplate(pTemplate,  // template
-                           pFolder,    // folder
-                           G_hwndTemplateFrame, // view frame
-                           pGlobalSettings->TemplatesOpenSettings,
-                                    // 0: do nothing after creation
-                                    // 1: open settings notebook
-                                    // 2: make title editable
-                           pGlobalSettings->TemplatesReposition,
-                           &G_ptlTemplateMousePos);
-}
-
-/*
  *@@ mnuMenuItemSelected:
  *      this gets called by XFolder::wpMenuItemSelected and
  *      XFldDisk::wpMenuItemSelected. Since both classes have
@@ -1832,6 +1802,7 @@ VOID mnuCreateFromTemplate(WPObject *pTemplate,
  *@@changed V0.9.1 (99-12-01) [umoeller]: "Open parent" crashed for root folders; fixed
  *@@changed V0.9.4 (2000-06-09) [umoeller]: added default document
  *@@changed V0.9.6 (2000-10-16) [umoeller]: fixed "Refresh now"
+ *@@changed V0.9.9 (2001-03-27) [umoeller]: removed SOM_CREATEFROMTEMPLATE crap, now calling wpshCreateFromTemplate directly
  */
 
 BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
@@ -2123,13 +2094,27 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                                     if (psfv)
                                     {
                                         XFolderData     *somThis = XFolderGetData(somSelf);
-                                        G_hwndTemplateFrame = hwndFrame;
-                                        G_ptlTemplateMousePos.x = _MenuMousePosX;
+                                        POINTL          ptlMousePos;
+                                        ptlMousePos.x = _MenuMousePosX;
+                                        ptlMousePos.y = _MenuMousePosY;
+
+                                        wpshCreateFromTemplate(WinQueryAnchorBlock(hwndFrame),
+                                                               pObject,  // template
+                                                               somSelf,    // folder
+                                                               hwndFrame, // view frame
+                                                               pGlobalSettings->TemplatesOpenSettings,
+                                                                        // 0: do nothing after creation
+                                                                        // 1: open settings notebook
+                                                                        // 2: make title editable
+                                                               pGlobalSettings->TemplatesReposition,
+                                                               &ptlMousePos);
+                                        /* G_ptlTemplateMousePos.x = _MenuMousePosX;
                                         G_ptlTemplateMousePos.y = _MenuMousePosY;
                                         WinPostMsg(psfv->hwndSupplObject,
                                                    SOM_CREATEFROMTEMPLATE,
                                                    (MPARAM)pObject, // template
                                                    (MPARAM)somSelf); // folder
+                                                */
                                     }
                                 break; } // end OC_TEMPLATE
 
@@ -2774,7 +2759,7 @@ VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  */
 
 MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                               USHORT usItemID,
+                               ULONG ulItemID,
                                USHORT usNotifyCode,
                                ULONG ulExtra)      // for checkboxes: contains new state
 {
@@ -2782,7 +2767,7 @@ MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     MRESULT mrc = (MPARAM)0;
     BOOL fSave = TRUE;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_XSDI_FILEATTRIBS:
             pGlobalSettings->FileAttribs = ulExtra;
@@ -2918,7 +2903,7 @@ VOID mnuConfigFolderMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
  */
 
 MRESULT mnuConfigFolderMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                        USHORT usItemID,
+                                        ULONG ulItemID,
                                         USHORT usNotifyCode,
                                         ULONG ulExtra)      // for checkboxes: contains new state
 {
@@ -2926,7 +2911,7 @@ MRESULT mnuConfigFolderMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     MRESULT mrc = (MPARAM)0;
     BOOL fSave = TRUE;
 
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_XSDI_CASCADE:
             pGlobalSettings->MenuCascadeMode   = ulExtra;
@@ -3097,7 +3082,7 @@ VOID mnuRemoveMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  */
 
 MRESULT mnuRemoveMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                  USHORT usItemID,
+                                  ULONG ulItemID,
                                   USHORT usNotifyCode,
                                   ULONG ulExtra)      // for checkboxes: contains new state
 {
@@ -3105,9 +3090,7 @@ MRESULT mnuRemoveMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     MRESULT mrc = (MPARAM)0;
     BOOL fSave = TRUE;
 
-    // LONG lTemp;
-
-    switch (usItemID)
+    switch (ulItemID)
     {
         case ID_XSDI_HELP:
             if (ulExtra)

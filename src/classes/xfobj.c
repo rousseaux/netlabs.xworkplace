@@ -103,10 +103,11 @@
 
 #include "shared\center.h"              // public XCenter interfaces
 
+#include "filesys\object.h"             // XFldObject implementation
+
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\fileops.h"            // file operations implementation
 #include "filesys\folder.h"             // XFolder implementation
-#include "filesys\object.h"             // XFldObject implementation
 #include "filesys\program.h"            // program implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
@@ -1037,7 +1038,7 @@ SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
         {
             _ulListNotify &= ~OBJLIST_FAVORITEFOLDER;
             objAddToList(somSelf,
-                         G_pllFavoriteFolders,      // folder.h
+                         &G_llFavoriteFolders,      // folder.h
                          FALSE,         // remove
                          INIKEY_FAVORITEFOLDERS,
                          0);            // no modify flags... we're being destroyed
@@ -1047,7 +1048,7 @@ SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
         {
             _ulListNotify &= ~OBJLIST_QUICKOPENFOLDER;
             objAddToList(somSelf,
-                         G_pllQuickOpenFolders,      // folder.h
+                         &G_llQuickOpenFolders,      // folder.h
                          FALSE,         // remove
                          INIKEY_QUICKOPENFOLDERS,
                          0);            // no modify flags... we're being destroyed

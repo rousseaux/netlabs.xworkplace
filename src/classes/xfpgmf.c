@@ -113,6 +113,7 @@ static const char *G_pcszInstanceFilter = "*.ADD,*.COM,*.DLL,*.DMD,*.EXE,*.FLT,*
  *      XFldProgramFile::wpAddProgramSessionPage override.
  *
  *@@added V0.9.9 (2001-03-07) [umoeller]
+ *@@changed V0.9.9 (2001-03-30) [umoeller]: replaced dialog resource with generic cnr page
  */
 
 SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddResourcesPage(XFldProgramFile *somSelf,
@@ -130,9 +131,12 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddResourcesPage(XFldProgramFile *somSelf,
     pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
     pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->pszName = pNLSStrings->pszResourcesPage;
-    pcnbp->ulDlgID = ID_XSD_PGMFILE_RESOURCES;
+    pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // ID_XSD_PGMFILE_RESOURCES;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_RESOURCES;
     pcnbp->ulPageID = SP_PROG_RESOURCES;
+    // V0.9.9 (2001-03-30) [umoeller]: added resize
+    pcnbp->pampControlFlags = G_pampGenericCnrPage;
+    pcnbp->cControlFlags = G_cGenericCnrPage;
     pcnbp->pfncbInitPage    = fsysResourcesInitPage;
     return (ntbInsertPage(pcnbp));
 }
@@ -147,6 +151,7 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddResourcesPage(XFldProgramFile *somSelf,
  *
  *@@added V0.9.9 (2001-03-07) [umoeller]
  *@@changed V0.9.9 (2001-03-11) [lafaix]: added two subpages (imports and exports)
+ *@@changed V0.9.9 (2001-03-30) [umoeller]: replaced dialog resource with generic cnr page
  */
 
 SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddModulePage(XFldProgramFile *somSelf,
@@ -165,9 +170,12 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddModulePage(XFldProgramFile *somSelf,
     pcnbp->usPageStyleFlags = BKA_MINOR;
     pcnbp->fEnumerate = TRUE;
     pcnbp->pszName = pNLSStrings->pszModule2Page;
-    pcnbp->ulDlgID = ID_XSD_PGMFILE_MODULE2;
+    pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // ID_XSD_PGMFILE_MODULE2;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_MODULE2;
     pcnbp->ulPageID = SP_PROG_DETAILS2;
+    // V0.9.9 (2001-03-30) [umoeller]: added resize
+    pcnbp->pampControlFlags = G_pampGenericCnrPage;
+    pcnbp->cControlFlags = G_cGenericCnrPage;
     pcnbp->pfncbInitPage    = fsysProgram2InitPage;
     ntbInsertPage(pcnbp);
 
@@ -179,9 +187,12 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddModulePage(XFldProgramFile *somSelf,
     pcnbp->usPageStyleFlags = BKA_MINOR;
     pcnbp->fEnumerate = TRUE;
     pcnbp->pszName = pNLSStrings->pszModule1Page;
-    pcnbp->ulDlgID = ID_XSD_PGMFILE_MODULE1;
+    pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // ID_XSD_PGMFILE_MODULE1;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_MODULE1;
     pcnbp->ulPageID = SP_PROG_DETAILS1;
+    // V0.9.9 (2001-03-30) [umoeller]: added resize
+    pcnbp->pampControlFlags = G_pampGenericCnrPage;
+    pcnbp->cControlFlags = G_cGenericCnrPage;
     pcnbp->pfncbInitPage    = fsysProgram1InitPage;
     ntbInsertPage(pcnbp);
 
