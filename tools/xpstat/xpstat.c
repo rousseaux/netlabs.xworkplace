@@ -661,20 +661,35 @@ VOID ProcessSelected(VOID)
             }
 
             // dump 32-bit semaphores
-            sprintf(szTemp, "\nPrivate 32-bit semaphores: 0x%lX\n", pProcess->ulPrivSem32Count);
+            sprintf(szTemp, "\nPrivate 32-bit semaphores: %d\n", pProcess->ulPrivSem32Count);
             xstrcat(&pszCurrentInfo, szTemp);
-            {
-                PQSEM32STRUC32 pSem32 = G_pInfo->pSem32Data;
-                if (pSem32)
-                    while (pSem32)
-                    {
-                        sprintf(szTemp,
-                                "sem32: %s\n",
-                                pSem32->SmuxSem.pszName);
-                        xstrcat(&pszCurrentInfo, szTemp);
+            sprintf(szTemp, "ofs in proc struct: %d\n", pProcess->ulPrivSem32s);
+            xstrcat(&pszCurrentInfo, szTemp);
+            sprintf(szTemp, "global pSem32Data: %d\n", G_pInfo->pSem32Data);
+            xstrcat(&pszCurrentInfo, szTemp);
 
-                        pSem32 = pSem32->pNext;
-                    }
+            {
+                // semaphore data is right after process structure
+                PQSEM32STRUC32 pSem32 = (PQSEM32STRUC32)((PBYTE)pProcess)
+                                                         + sizeof(*pProcess);
+                if (pSem32)
+                {
+                    PSZ psz;
+
+                    sprintf(szTemp,
+                            "sem32.pNext: 0x%lX\n",
+                            pSem32->pNext);
+                    xstrcat(&pszCurrentInfo, szTemp);
+
+                    psz = strhCreateDump((PBYTE)pProcess,
+                                         sizeof(QPROCESS32) + 100,
+                                         8);
+                    xstrcat(&pszCurrentInfo, "\n");
+                    xstrcat(&pszCurrentInfo, psz);
+                    free (psz);
+
+                    pSem32 = pSem32->pNext;
+                }
                 else
                 {
                     PQSEM16STRUC32  pSemData = G_pInfo->pSem16Data;
@@ -1518,13 +1533,13 @@ BOOL LoadNLS(VOID)
         {
             CHAR    szMessage[2000];
             sprintf(szMessage,
-                    "Treesize was unable to load \"%s\", "
+                    "xpstat was unable to load \"%s\", "
                     "the National Language DLL which "
                     "is specified for XWorkplace in OS2.INI.",
                     szNLSDLL);
             WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
                           szMessage,
-                          "Treesize: Fatal Error",
+                          "xpstat: Fatal Error",
                           0, MB_OK | MB_MOVEABLE);
             Proceed = FALSE;
         }

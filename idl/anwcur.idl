@@ -14,23 +14,23 @@ interface M_XWPWinCursor;
 interface XWPWinCursor : WPDataFile
 {
    // neue Methoden
-   VOID  wpRefreshFileIcon();
-   ULONG wpGetAnimationTimeframeValue();
-   BOOL  wpSetAnimationTimeframeValue( in ULONG ulNewValue);
-   ULONG InsertAnimationPage1( in HWND hwndDlg );
-   ULONG InsertAnimationPage2( in HWND hwndDlg );
-   ULONG InsertAnimationPage3( in HWND hwndDlg );
+   VOID  xwpRefreshFileIcon();
+   ULONG xwpGetAnimationTimeframeValue();
+   BOOL  xwpSetAnimationTimeframeValue( in ULONG ulNewValue);
+   ULONG xwpInsertAnimationPage1( in HWND hwndDlg );
+   ULONG xwpInsertAnimationPage2( in HWND hwndDlg );
+   ULONG xwpInsertAnimationPage3( in HWND hwndDlg );
 
    #ifdef __SOMIDL__
    implementation
    {
       releaseorder:
-         wpRefreshFileIcon,
-         wpGetAnimationTimeframeValue,
-         wpSetAnimationTimeframeValue,
-         InsertAnimationPage1,
-         InsertAnimationPage2,
-         InsertAnimationPage3;
+         xwpRefreshFileIcon,
+         xwpGetAnimationTimeframeValue,
+         xwpSetAnimationTimeframeValue,
+         xwpInsertAnimationPage1,
+         xwpInsertAnimationPage2,
+         xwpInsertAnimationPage3;
 
       /*
        * Class Modifiers

@@ -1,6 +1,6 @@
-XWorkplace 0.9.3 README
+XWorkplace 0.9.4 README
 (W) Ulrich M”ller, July 2, 1999
-Last updated June 5, 2000, Ulrich M”ller
+Last updated August 9, 2000, Ulrich M”ller
 
 
 0. CONTENTS OF THIS FILE
@@ -58,20 +58,28 @@ Last updated June 5, 2000, Ulrich M”ller
     tree. As a result, you also need to check out the WarpIN source
     code before compiling XWorkplace.
 
-    To check out the most current XWorkplace sources, use:
+    First, do a "cvs login" with "readonly" as your password.
+
+    Then, to check out the most current XWorkplace sources, create a
+    subdirectory in your CVS root dir called "xworkplace".
+    Then use:
         CVSROOT=:pserver:guest@www.netlabs.org:d:/netlabs.src/xworkplace
         USER=guest
+    and do a "cvs checkout" from the "xworkplace" subdirectory.
 
-    To check out the most current WarpIN sources, use:
+    To check out the most current WarpIN sources, create a
+    subdirectory in your CVS root dir called "warpin".
+    Then use:
         CVSROOT=:pserver:guest@www.netlabs.org:d:/netlabs.src/warpin
         USER=guest
-
-    Do a "cvs login" with "readonly" as your password.
-
-    Then do a "cvs checkout".
+    and do a "cvs checkout" from the "warpin" subdirectory.
 
     Alternatively, use the Netlabs Open Source Archive Client (NOSAC).
     See http://www.netlabs.org/nosa for details.
+
+    In any case, I strongly recommend to create a file in $(HOME)
+    called ".cvsrc" and add "cvs -z9" in there to enable maximum
+    compression during transfers.
 
     Here comes a quick-start guide; for details, please refer to
     PROGREF.INF.

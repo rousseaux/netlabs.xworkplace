@@ -6,10 +6,20 @@ this file. Thank you.
 
 everywhere:
     -- remember split bar positions
-    -- make WPS notebooks resizeable
+    -- Shift-click on "Open" submenu items changes default view
+
+startup:
+    -- environment var for X, Y pos of classes initialization dlg
+
+hook:
+    -- Z-order move one/bottommost
+    -- an extended Lockup (like the one from PC/2) which can be accessed through a
+       shortcut (in the keyboard object).
+    -- window list filtering from WarpEnhancer
+    -- PageMage and screen corner actions ("flash")
+    -- corners: add user-configurable delay
 
 PageMage:
-    -- add sticky windows config to "Screen"
     -- When moving windows within the virtual desktop display,
         >they should only be moved from a position in one desktop to
         >the same position in another, except if the user presses e.g.
@@ -19,9 +29,13 @@ PageMage:
         >it scales back)
 
 folders:
+    -- Ctrl+right mouse: folder contents menu
     -- more than one config folder
     -- "invert selection"
     -- sorting: hotkey for reverse sorting
+
+create objects:
+    -- select editable title
 
 setup strings:
     -- make setup strings editable
@@ -59,18 +73,6 @@ folder hotkey for deleting THIS folder
 
 archives:
     -- second page with os2.key file which files are 2be archived
-
-hook:
-    -- Z-order move one/bottommost
-    -- 3) an extended Lockup (like the one from PC/2) which can be accessed through a
-       shortcut (in the keyboard object).
-    -- add screen edges to hot corners too
-    -- window list filtering from WarpEnhancer
-    -- PageMage and screen corner actions ("flash")
-    -- corners: add screen edges too
-
-startup:
-    -- environment var for X, Y pos of classes initialization dlg
 
 shutdown:
     -- disable animations

@@ -16,6 +16,9 @@ Tools description:
     definition files.
     See EDM/2 5/06 for details.
 
+    Note: BuildLevel.cmd has been updated with V0.9.4 to support
+    device driver DEF files. Please use the newest version.
+
 --  copydbg.exe strips the debug code out of any executable (EXE
     or DLL) into a .DBG file with the same file stem. This is
     from the EXCEPT3 package available at hobbes. Source code is

@@ -47,10 +47,14 @@ interface XFldProgramFile : WPProgramFile
 
     ULONG xwpQueryProgType();
 
+    ULONG xwpQuerySetup2(in PSZ pszSetupString,
+                         in ULONG cbSetupString);
+
 #ifdef __SOMIDL__
   implementation {
 
-    releaseorder: xwpQueryProgType;
+    releaseorder: xwpQueryProgType,
+                  xwpQuerySetup2;
 
     /*
      * Class Modifiers:

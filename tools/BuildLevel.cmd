@@ -65,7 +65,7 @@ BldLevel_Trailer="@#"
 Parse Arg DefinitionFile HeaderFile InfoOverride        /* (*UM) */
 
 if ((DefinitionFile = "") | (HeaderFile = "")) then do  /* (*UM) */
-    Say "BuildLevel V1.00, (W) 1996-2000 Roman Stangl, Ulrich M”ller"
+    Say "BuildLevel V1.00, (W) 1996-99 Roman Stangl, Ulrich M”ller"
     Say "Syntax: BuildLevel <def> <h> [<info>]"
     Say "with:"
     Say "   <def>           .DEF file to be modified"
@@ -81,7 +81,11 @@ Do While (DefinitionFile\="" & HeaderFile\="")
                                         /* We have valid commandline arguments, so first see
                                            if the Headerfile contents are ok for us */
     ReturnCode=ParseHeaderFile()
-    If ReturnCode\=0 Then Leave
+    If ReturnCode\=0 then do
+        Say "Error "||ReturnCode||" parsing header file";
+        Leave
+    end
+
     if (InfoOverride \= "") then do
         /* BLDLEVEL_INFO overridden: (*UM) */
         if (substr(InfoOverride, 1, 1) = '"') then
@@ -91,7 +95,10 @@ Do While (DefinitionFile\="" & HeaderFile\="")
                                         /* Parse the definition file (*.DEF) for the module
                                            name, to see if we got a valid file */
     ReturnCode=ParseDefinitionFile()
-    If ReturnCode\=0 Then Leave
+    If ReturnCode\=0 then do
+        Say "Error "||ReturnCode||" parsing DEF file";
+        Leave
+    end
                                         /* Copy the definition file, because we're going to
                                            change the original */
     Command="@copy "||DefinitionFile||" "||DefinitionCopy||" /v >NUL"
@@ -205,15 +212,24 @@ ParseDefinitionFile:
                                            NAME/LIBRARY ModuleName Options */
                                         /* Kill that ... tabs */
         CurrentLine=Translate(CurrentLine, ' ', X2C(9))
-        Parse Var CurrentLine Statement Module Options
-        Parse Upper Var Statement Statement
-        Statement=Space(Statement, 0)
+        if (left(CurrentLine, 15) == "PHYSICAL DEVICE") then do
+            statement = "PHYSICAL DEVICE";
+            Parse var CurrentLine x1 x2 Module Options
+        end
+        else do
+            /* parse current line into "statement" and "module" */
+            Parse Var CurrentLine Statement Module Options
+            Parse Upper Var Statement Statement
+            Statement=Space(Statement, 0)
+        end
         Module=Space(Module, 0)
         If (Module\="") Then Do
             If (Statement="NAME") Then
                 ModuleName=Module||".exe"
             If (Statement="LIBRARY") Then
                 ModuleName=Module||".dll"
+            If (Statement="PHYSICAL DEVICE") Then
+                ModuleName=Module||".sys"
         End
                                         /* See if there is a DESCRIPTION statement */
         Parse Var CurrentLine Statement Options
@@ -231,8 +247,12 @@ ParseDefinitionFile:
     Command=Stream(DefinitionFile, 'C', 'CLOSE')
     If (ModuleName\="" & DescriptionStatement\="") Then
         Return 0
-    Else
+    Else do
+        say "parse error in ParseDefinitionFile"
+        say "ModuleName is:" ModuleName
+        say "DescriptionStatement is:" DescriptionStatement
         Return 20
+    end
 
 /*--------------------------------------------------------------------------------------*\
  * Parse a C/C++ module definition file to modify the DESCRIPTION statement into a form *

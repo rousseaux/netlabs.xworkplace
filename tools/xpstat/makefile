@@ -26,7 +26,7 @@ PROJECT_BASE_DIR = $(MAKEDIR)\..\..
 # include setup (compiler options etc.)
 !include ..\..\setup.in
 
-OUTPUTDIR = ..\..\bin\exes
+OUTPUTDIR = ..\..\bin\exe_mt
 MODULESDIR = ..\..\bin\modules
 
 # create output directory
@@ -45,7 +45,7 @@ HLPINC = $(HELPERS_BASE)\include\helpers
 
 HEADERS = $(HLPINC)\eah.h $(HLPINC)\dosh.h $(HLPINC)\winh.h
 
-ALL_OBJ1 = $(OUTPUTDIR)\xpstat.obj ..\..\bin\helpers.lib
+ALL_OBJ1 = $(OUTPUTDIR)\xpstat.obj $(OUTPUTDIR)\helpers.lib $(HELPERS_BASE)\src\helpers\pmprintf.lib
 
 MYDIR = $(MAKEDIR)
 
@@ -69,17 +69,17 @@ $(OUTPUTDIR)\xpstat.obj: $(@B).c $(@B).h \
 
 # build targets
 xpstat.def: ..\..\include\bldlevel.h
-          cmd.exe /c BuildLevel.cmd $*.def ..\..\include\bldlevel.h "XWorkplace process status Utility"
+    cmd.exe /c BuildLevel.cmd $*.def ..\..\include\bldlevel.h "XWorkplace process status utility"
 
 $(OUTPUTDIR)\xpstat.res: $(@B).rc *.ico
-          $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
+    $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
 
-$(MODULESDIR)\xpstat.exe: $(ALL_OBJ1) $(@B).def $(OUTPUTDIR)\$(@B).res
-          $(LINK) /out:$(MODULESDIR)\$(@B).exe $(ALL_OBJ1) $(HELPERS_BASE)\src\helpers\pmprintf.lib $(@B).def
-          $(RC) $(OUTPUTDIR)\$(@B).res $(MODULESDIR)\$(@B).exe
+$(MODULESDIR)\xpstat.exe: $(ALL_OBJ1) $(@B).def $(OUTPUTDIR)\$(@B).res makefile
+    $(LINK) /out:$(MODULESDIR)\$(@B).exe $(ALL_OBJ1) $(@B).def
+    $(RC) $(OUTPUTDIR)\$(@B).res $(MODULESDIR)\$(@B).exe
 
 # main target
 $(XWPRUNNING)\bin\xpstat.exe: $(MODULESDIR)\$(@B).exe
-          cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
+    cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
 
 

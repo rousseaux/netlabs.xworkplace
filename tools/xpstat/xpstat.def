@@ -1,14 +1,8 @@
 NAME XPSTAT WINDOWAPI
 
-Description '@#Ulrich M”ller:0.9.4#@ XWorkplace process status Utility'
+DESCRIPTION '@#Ulrich M”ller:0.9.4#@ XWorkplace process status utility'
 
-CODE  MOVEABLE
-DATA  MOVEABLE MULTIPLE
-
-STACKSIZE   24576
-HEAPSIZE    10240
-
-PROTMODE
+STACKSIZE   65536
 
 IMPORTS
     DOSQPROCSTATUS = DOSCALLS.154

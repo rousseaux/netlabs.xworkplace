@@ -12,7 +12,7 @@
 #
 #       Input:          specify the target(s) to be made, which can be:
 #
-#                       --  "all" (default): build XFLDR.DLL, SOUND.DLL,
+#                       --  "all" (default): build XFLDR.DLL,
 #                           XWPHOOK.DLL, XWPDAEMN.EXE.
 #                       --  "really_all": "all" plus external EXEs
 #                           (Treesize, Netscape DDE, et al) plus NLS
@@ -20,7 +20,7 @@
 #                           which defaults to "001" (setup.in).
 #
 #                       The following subtargets exist (which get called
-#                       by the "all" target):
+#                       by the "all" or "really_all" targets):
 #
 #                       --  nls: compile $(XWP_LANG_CODE)\ directory
 #                       --  tools: compile TOOLS\ directory
@@ -32,7 +32,9 @@
 #                       Use "nmake -a [<targets>] to _re_build the targets,
 #                       even if they are up to date.
 #
-#                       Other special targets not used by "all" or "really_all":
+#                       Other special targets not used by "all" or "really_all"
+#                       (these must be specified explicitly on the nmake
+#                       command line):
 #
 #                       --  dlgedit: invoke dialog editor on NLS DLL
 #                       --  release: create/update release tree in directory
@@ -40,12 +42,11 @@
 #                           in turn.
 #
 #       Output:         All XWorkplace Files code files. This calls the other
-#                       makefiles. Note that this does _not_ build the NLS
-#                       directories (XFLDRxxx.DLL, INF, HLP files); use
-#                       MAKE.CMD for that, which calls this makefile in turn.
+#                       makefiles.
 #
-#                       Output files are first created in bin\, then copied
-#                       to XWPRUNNING, which must be defined externally or
+#                       Output files are first created in bin\ (which is
+#                       created if it doesn't exist), then copied to
+#                       XWPRUNNING, which must be defined externally or
 #                       thru "setup.in".
 #
 #       Edit "setup.in" to set up the make process (compilation flags etc.).
@@ -91,13 +92,14 @@ OBJS = \
     bin\cfgsys.obj bin\classlst.obj bin\drivdlgs.obj bin\drivers.obj bin\hookintf.obj \
     bin\pagemage.obj bin\partitions.obj bin\sound.obj \
 # code from filesys\
-    bin\disk.obj bin\fdrhotky.obj bin\fdrnotebooks.obj bin\fdrsubclass.obj bin\fileops.obj bin\filesys.obj \
+    bin\disk.obj bin\fdrhotky.obj bin\fdrnotebooks.obj bin\fdrsubclass.obj bin\fileops.obj \
+    bin\filesys.obj bin\fops_bottom.obj bin\fops_top.obj \
     bin\filetype.obj bin\folder.obj bin\menus.obj bin\object.obj bin\desktop.obj \
     bin\statbars.obj bin\trash.obj bin\xthreads.obj \
 # code from media\
     bin\mmhelp.obj bin\mmthread.obj \
 # code from startshut\
-    bin\apm.obj bin\archives.obj bin\shutdown.obj
+    bin\apm.obj bin\archives.obj bin\shutdown.obj bin\winlist.obj
 
 OBJS_ANICLASSES = bin\anand.obj bin\anos2ptr.obj bin\anwani.obj bin\anwcur.obj
 OBJS_ANICONVERT = bin\cursor.obj bin\pointer.obj bin\script.obj
@@ -117,11 +119,18 @@ ANIOBJS =
 # created from the files in HELPERS\. You probably won't have to change this.
 HLPOBJS = bin\helpers.lib
 
+!ifdef PAGEMAGE
+PGMGDMNOBJS = bin\exe_mt\pgmg_control.obj bin\exe_mt\pgmg_move.obj bin\exe_mt\pgmg_settings.obj \
+    bin\exe_mt\pgmg_winscan.obj
+!else
+PGMGDMNOBJS =
+!endif
+
 # The DMNOBJS macro contains all the .OBJ files for XWPDAEMN.EXE.
 DMNOBJS = bin\exe_mt\xwpdaemn.obj \
-          bin\exe_mt\pgmg_control.obj bin\exe_mt\pgmg_move.obj bin\exe_mt\pgmg_settings.obj \
-                bin\exe_mt\pgmg_winscan.obj \
-          bin\helpers.lib
+          $(PGMGDMNOBJS) \
+          bin\exe_mt\debug.obj bin\exe_mt\except.obj bin\exe_mt\dosh.obj bin\exe_mt\threads.obj \
+          bin\xwphook.lib
 
 # objects for XDEBUG.DLL (debugging only)
 DEBUG_OBJS = bin\xdebug.obj bin\xdebug_folder.obj
@@ -160,7 +169,7 @@ really_all: tools all nls
 
 # If you add a subdirectory to SRC\, add a target to
 # "cpl_main" also to have automatic recompiles.
-cpl_main: helpers classes config filesys media \
+cpl_main: helpers helpers_exe_mt classes config filesys media \
 !ifdef ANIMATED_MOUSE_POINTERS
 pointers \
 !endif
@@ -213,12 +222,21 @@ helpers:
 # which is prepared for this. The helpers.lib file
 # is created in the .\bin directory and can be used
 # with both EXE's and DLL's (VAC++ user guide says).
-    @echo $(MAKEDIR)\makefile: Going for subdir src\helpers (from WarpIN source tree)
+    @echo $(MAKEDIR)\makefile: Going for WarpIN subdir src\helpers (DLL version)
     @cd $(HELPERS_BASE)\src\helpers
     @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
-"HELPERS_OUTPUT_DIR=$(PROJECT_BASE_DIR)\bin"
+"HELPERS_OUTPUT_DIR=$(PROJECT_BASE_DIR)\bin" "CC_HELPERS=$(CC_HELPERS_DLL)"
 # according to VAC++ user guide, we need to use /ge+ for libs
 # even if the lib will be linked to a DLL
+    @cd $(CURRENT_DIR)
+
+helpers_exe_mt:
+# helpers_exe_mt:
+# same as the above, but this builds a multithread lib for EXEs.
+    @echo $(MAKEDIR)\makefile: Going for WarpIN subdir src\helpers (EXE MT version)
+    @cd $(HELPERS_BASE)\src\helpers
+    @nmake -nologo all "MAINMAKERUNNING=YES" $(SUBMAKE_PASS_STRING) \
+"HELPERS_OUTPUT_DIR=$(PROJECT_BASE_DIR)\bin\exe_mt" "CC_HELPERS=$(CC_HELPERS_EXE_MT)"
     @cd $(CURRENT_DIR)
 
 shared:
@@ -321,7 +339,7 @@ $(XWPRUNNING)\bin\xfldr.dll: $(MODULESDIR)\$(@B).dll
 
 # update DEF file if buildlevel has changed
 src\shared\xwp.def: include\bldlevel.h
-        cmd.exe /c BuildLevel.cmd src\shared\$(@B).def include\bldlevel.h "XWorkplace Main WPS Classes Module"
+        cmd.exe /c BuildLevel.cmd src\shared\$(@B).def include\bldlevel.h "XWorkplace main WPS classes module"
 
 $(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(ANIOBJS) src\shared\xwp.def bin\xwp.res
         @echo $(MAKEDIR)\makefile: Linking $(MODULESDIR)\$(@B).dll
@@ -348,15 +366,15 @@ $(XWPRUNNING)\bin\xwpdaemn.exe: $(MODULESDIR)\$(@B).exe
 
 # update DEF file if buildlevel has changed
 src\Daemon\xwpdaemn.def: include\bldlevel.h
-        cmd.exe /c BuildLevel.cmd src\Daemon\$(@B).def include\bldlevel.h "XWorkplace PM Daemon"
+        cmd.exe /c BuildLevel.cmd src\Daemon\$(@B).def include\bldlevel.h "XWorkplace PM daemon"
 
 # create import library from XWPHOOK.DLL
 bin\xwphook.lib: $(MODULESDIR)\$(@B).dll src\hook\$(@B).def
         implib /nologo bin\$(@B).lib $(MODULESDIR)\$(@B).dll
 
-$(MODULESDIR)\xwpdaemn.exe: src\Daemon\$(@B).def bin\xwphook.lib $(DMNOBJS) bin\exe_mt\$(@B).res
+$(MODULESDIR)\xwpdaemn.exe: src\Daemon\$(@B).def $(DMNOBJS) bin\exe_mt\$(@B).res
         @echo $(MAKEDIR)\makefile: Linking $(MODULESDIR)\$(@B).exe
-        $(LINK) /OUT:$(MODULESDIR)\$(@B).exe src\Daemon\$(@B).def $(DMNOBJS) bin\xwphook.lib $(PMPRINTF_LIB)
+        $(LINK) /OUT:$(MODULESDIR)\$(@B).exe src\Daemon\$(@B).def $(DMNOBJS) $(PMPRINTF_LIB)
         @cd $(MODULESDIR)
         $(RC) ..\exe_mt\$(@B).res $(@B).exe
 !ifndef DEBUG
@@ -388,7 +406,7 @@ $(XWPRUNNING)\bin\xwphook.dll: $(MODULESDIR)\$(@B).dll
 
 # update DEF file if buildlevel has changed
 src\hook\xwphook.def: include\bldlevel.h
-        cmd.exe /c BuildLevel.cmd src\hook\$(@B).def include\bldlevel.h "XWorkplace PM Hook Module"
+        cmd.exe /c BuildLevel.cmd src\hook\$(@B).def include\bldlevel.h "XWorkplace PM hook module"
 
 $(MODULESDIR)\xwphook.dll: src\hook\$(@B).def bin\$(@B).obj
         @echo $(MAKEDIR)\makefile: Linking $(MODULESDIR)\$(@B).dll

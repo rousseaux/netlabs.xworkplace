@@ -51,13 +51,15 @@ interface XWPTrashCan : WPFolder
     ULONG xwpAddTrashCanDrivesPage(in HWND hwndDlg);
     ULONG xwpAddTrashCanGeneralPage(in HWND hwndDlg);
 
-    BOOL xwpTrashCanBusy(in SHORT sBusy);
+    BOOL xwpTrashCanBusy(in LONG lBusy);
     VOID xwpAddObjectSize(in ULONG ulNewSize);
     ULONG xwpQueryTrashObjectsCount();
 
     BOOL xwpSetCorrectTrashIcon(in BOOL fForce);
 
-    BOOL xwpEmptyTrashCan(in BOOL fConfirm);
+    BOOL xwpEmptyTrashCan(in ULONG hab,
+                          in PULONG pulDeleted,
+                          in HWND hwndConfirmOwner);
 
     BOOL xwpUpdateStatusBar(in HWND hwndStatusBar, in HWND hwndCnr);
 
@@ -109,6 +111,11 @@ interface XWPTrashCan : WPFolder
 
     ULONG   ulBusyCount;            // raised or lowered with every xwpTrashCanBusy call
 
+    HPOINTER    hptrEmpty;          // icon for empty trash can
+    HPOINTER    hptrFull;           // icon for full trash can
+
+    BOOL    fOpeningSettings;       // TRUE while in wpOpen for settings view
+
     /*
      * WPFolder methods overridden by XWPTrashCan:
      *
@@ -145,6 +152,8 @@ interface XWPTrashCan : WPFolder
     wpAddFolderView2Page: override;
 
     wpAddSettingsPages: override;
+
+    wpSetIcon: override;
 
 #ifdef __PRIVATE__
 

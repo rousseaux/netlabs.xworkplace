@@ -10,11 +10,11 @@ XWorkplace uses two kinds of settings: global and instance settings.
 <P>
 The <B>global settings</B> are set both in the &quot;Workplace Shell&quot; object and
 on the &quot;XDesktop&quot; notebook page and are stored in the &quot;XWorkplace&quot; app
-in <CODE>OS2.INI</CODE>. All the global notebook logic is in <CODE>xfsys.c</CODE>.
+in <CODE>OS2.INI</CODE>. All the global notebook logic is in <CODE>src\shared\notebook.c</CODE>.
 <P>
 XWorkplace's code accesses these settings via a large structure called
 <CODE>GLOBALSETTINGS</CODE> (suprise!) defined in <CODE>common.h</CODE>, to which a pointer be
-obtained using <CODE>cmnQueryGlobalSettings</CODE> (<CODE>common.c</CODE>).
+obtained using <CODE>cmnQueryGlobalSettings</CODE> (<CODE>src\shared\common.c</CODE>).
 <P>
 By contrast, the <B>individual object settings</B> are stored in
 instance data, which is declared in the <CODE>.IDL</CODE> files. Most of these are

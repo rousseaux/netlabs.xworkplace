@@ -283,6 +283,7 @@ interface XFolder : WPFolder
     BYTE            bSnapToGridInstance,
                     bFolderHotkeysInstance,
                     bFullPathInstance,
+                    bKeepTitleInstance,
                     bStatusBarInstance;
 
     // the following two are for XFolder's replacement sort
@@ -397,6 +398,7 @@ interface XFolder : WPFolder
     wpStoreIconPosData: override;
 
     wpMoveObject: override;
+    wpDelete: override;
     wpSetTitle: override;
 
     wpSetFldrSort: override;
@@ -478,6 +480,5 @@ interface M_XFolder : M_WPFolder
   };
 #endif /* __SOMIDL__ */
 };
-
 
 

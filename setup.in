@@ -36,15 +36,11 @@
 !error in setup.in: PROJECT_BASE_DIR must be set before including "setup.in". Terminating.
 !endif
 
+!ifndef VACPATH
+VACPATH=J:\develop\IBMVAC
+!endif
+
 HELPERS_OUTPUT_DIR = $(PROJECT_BASE_DIR)\bin
-
-# ANIMATED MOUSE POINTERS
-# -----------------------
-
-# If the following is uncommented, the makefiles will compile the
-# animated mouse pointers as well.
-
-ANIMATED_MOUSE_POINTERS=YES
 
 # DEBUG CODE
 # ----------
@@ -108,9 +104,16 @@ XWPRUNNING = J:\Tools\WPS\XWorkplace
 # XWORKPLACE RELEASE
 # ------------------
 
+# XWPRELEASE must specify the path of where to create an
+# XWorkplace release tree, which can easily be turned into
+# a WarpIN archive (.WPI file). This is only used with
+# an explicit "nmake release".
+
 !ifndef XWPRELEASE
 XWPRELEASE = K:\projects\distrib\XWorkplace\current
 !endif
+
+# produce subdirectories
 
 XWPRELEASE_MAIN = $(XWPRELEASE)\kernel
 XWPRELEASE_NLS = $(XWPRELEASE)\$(XWP_LANG_CODE)
@@ -199,15 +202,21 @@ PRECH = $(TEMP)
 # No need to change this. Change the variables above instead.
 #
 !ifndef MAINMAKERUNNING
-!ifdef SES_MAIN_DIR
-# SES defined:
-PROJECT_INCLUDE = $(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classes;$(HELPERS_BASE)\include;$(SES_MAIN_DIR)\h;$(STL_DIR)
-!else
-# SES not defined:
-PROJECT_INCLUDE = $(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classes;$(HELPERS_BASE)\include;$(STL_DIR)
-!endif
+
+INCLUDE_TEMP=
+
+!ifdef DDKPATH
+INCLUDE_TEMP1=$(DDKPATH)\h;
 !endif
 
+!ifdef SES_MAIN_DIR
+# SES defined:
+INCLUDE_TEMP2=$(SES_MAIN_DIR)\h;
+!endif
+
+PROJECT_INCLUDE = $(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classes;$(HELPERS_BASE)\include;$(INCLUDE_TEMP2)
+
+!endif
 
 # COMPILER OPTIONS
 # ----------------
@@ -225,8 +234,22 @@ CC = error_in_setup_in_do_not_use_CC_directly
 CC_WARNINGS  = /w3 /Wcmp+ /Wcnd- /Wcns+ /Wcnv+ /Wgen /Wcns /Wcpy /Wobs /Word- /Wpro /Wrea /Wret /Wtru
 # /Wuse+ /Wuni+
 
+# compose DEFINES_STRING passed with all #defines for the compiler (/D options);
+# this can contain:
+#   __PAGEMAGE__: include PageMage code
+#   __ANIMATED_MOUSE_POINTERS__: include AMPTR code
+DEFINES_STRING =
+
+!ifdef PAGEMAGE
+DEFINES_STRING = /D__PAGEMAGE__=1
+!endif
+
+!ifdef ANIMATED_MOUSE_POINTERS
+DEFINES_STRING = $(DEFINES_STRING) /D__ANIMATED_MOUSE_POINTERS__=1
+!endif
+
 # compiler options which are the same with debug and release code
-CC_SHARED    = icc /I$(PROJECT_INCLUDE) /c /gd- /gi+ /q+ /se /ss
+CC_SHARED    = icc $(DEFINES_STRING) /I$(PROJECT_INCLUDE) /c /gd- /gi+ /q+ /se /ss
 
 !ifdef XWP_DEBUG
 # debug code
@@ -237,23 +260,18 @@ CC_TEMP      = $(CC_SHARED) /o- /oi- /ol- /ti+ /D__DEBUG__=1
 CC_TEMP      = $(CC_SHARED) /o+ /oi- /ol-
 !endif
 
-!ifdef ANIMATED_MOUSE_POINTERS
-AMPTR_STRING = /D__ANIMATED_MOUSE_POINTERS__=1
-!else
-AMPTR_STRING =
-!endif
-
 # DLL code (multi-threaded)
-CC_DLL = $(CC_TEMP) /ge- /gm+ $(CC_WARNINGS) $(AMPTR_STRING)
+CC_DLL = $(CC_TEMP) /ge- /gm+ $(CC_WARNINGS)
 # EXE code (multi-threaded)
-CC_EXE_MT = $(CC_TEMP) /ge+ /gm+ $(CC_WARNINGS) $(AMPTR_STRING)
+CC_EXE_MT = $(CC_TEMP) /ge+ /gm+ $(CC_WARNINGS)
 # EXE code (single-threaded)
-CC_EXE_ST = $(CC_TEMP) /ge+ /gm- $(CC_WARNINGS) $(AMPTR_STRING)
+CC_EXE_ST = $(CC_TEMP) /ge+ /gm- $(CC_WARNINGS)
 
 # compiler options for WarpIN helpers;
 # this is necessary because WarpIN uses a different compiler
 # setup to compile the helpers
-CC_HELPERS = $(CC_EXE_MT)
+CC_HELPERS_EXE_MT = $(CC_EXE_MT)
+CC_HELPERS_DLL    = $(CC_DLL)
 
 # Some VisualAge C++ compiler options explained [default in brackets]:
 # /c:   compile only, no link (we'll call the linker explicitly)
