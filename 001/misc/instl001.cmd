@@ -206,7 +206,7 @@ call CreateObject;
 
 /* the following three added with V0.9.19
    and redone with V0.9.20 */
-commonXWPString = "DEFAULTOBJECT=<WP_DESKTOP>;CONFIRMINVOCATION=NO;NOSTRINGPAGE=YES;HELPLIBRARY=WPHELP.HLP;HELPPANEL="
+commonXWPString = "DEFAULTOBJECT=<WP_DESKTOP>;CONFIRMINVOCATION=NO;NOSTRINGPAGE=YES;HELPLIBRARY=WPHELP.HLP;HELPPANEL"
 
 /* create "Lockup" setup string object */
 class = "XWPString";

@@ -1455,7 +1455,9 @@ SOM_Scope BOOL  SOMLINK xo_wpFree(XFldObject *somSelf)
                 // both our private dirty list AND the IBM dirty list,
                 // but does not actually save the data because only
                 // the storage classes (WPAbstract, WPFileSystem) call
-                // wpSaveState
+                // wpSaveState... this fix probably solves the problems
+                // that people were reporting with CHECKINI restoring
+                // lots of objects already
 
             // then there's another undocumented method call... i'm unsure
             // what this does, but what the heck. We need to resolve this
@@ -2512,6 +2514,8 @@ SOM_Scope BOOL  SOMLINK xo_wpQueryDefaultHelp(XFldObject *somSelf,
                 // Network folder under System Setup
                 "<WP_CONFIG_NET>",          ID_XSH_SYSSETUP_NET,
                 "<TCP/IP>",                 ID_XSH_SYSSETUP_NET,
+                // "Refresh removeable media" in Drives
+                "<LVMREFRESH>",             ID_XSH_DRIVES_REFRESHMEDIA,
             };
 
             for (ul = 0;

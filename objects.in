@@ -8,9 +8,7 @@ $(OUTPUTDIR)\anwani.obj \
 $(OUTPUTDIR)\anwcur.obj \
 !endif
 $(OUTPUTDIR)\xcenter.obj \
-!ifndef XWPLITE
 $(OUTPUTDIR)\xclslist.obj \
-!endif
 $(OUTPUTDIR)\xfdataf.obj \
 $(OUTPUTDIR)\xfdesk.obj \
 $(OUTPUTDIR)\xfdisk.obj \
@@ -70,8 +68,8 @@ $(OUTPUTDIR)\wpsh.obj
 XFLDR_OBJS_CONFIG = \
 !ifndef XWPLITE
 $(OUTPUTDIR)\cfgsys.obj \
-$(OUTPUTDIR)\classlst.obj \
 !endif
+$(OUTPUTDIR)\classlst.obj \
 $(OUTPUTDIR)\drivexports.obj \
 !ifndef XWPLITE
 $(OUTPUTDIR)\drivdlgs.obj \

@@ -2314,6 +2314,7 @@ static VOID ProcessIconChange(MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.15 (2001-08-26) [umoeller]: move-ptr-to-button animation left circles on screen, fixed
  *@@changed V0.9.19 (2002-03-28) [umoeller]: moved more code out of main proc for better cache locality
  *@@changed V0.9.19 (2002-06-15) [lafaix]: added XDM_REMOVECLICKWATCH and XDM_REMOVEWINLISTWATCH
+ *@@changed V0.9.20 (2002-07-19) [lafaix]: disabled auto-move if a mouse button is down
  */
 
 MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2850,10 +2851,11 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              */
 
             case XDM_ADDCLICKWATCH:
-                mrc = ProcessAddNotify((HWND)mp1,
-                                       (ULONG)mp2,
-                                       &G_llClickWatches,
-                                       &G_pHookData->cClickWatches);
+                if (G_pHookData)
+                    mrc = ProcessAddNotify((HWND)mp1,
+                                           (ULONG)mp2,
+                                           &G_llClickWatches,
+                                           &G_pHookData->cClickWatches);
             break;
 
             /*
@@ -2877,9 +2879,10 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              */
 
             case XDM_REMOVECLICKWATCH:
-                mrc = ProcessRemoveNotify((HWND)mp1,
-                                          &G_llClickWatches,
-                                          &G_pHookData->cClickWatches);
+                if (G_pHookData)
+                    mrc = ProcessRemoveNotify((HWND)mp1,
+                                              &G_llClickWatches,
+                                              &G_pHookData->cClickWatches);
             break;
 
             /*
@@ -2908,10 +2911,15 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *      --  HWND mp1: default button to move to.
              *
              *@@added V0.9.14 (2001-08-21) [umoeller]
+             *@@changed V0.9.20 (2002-07-19) [lafaix]: don't move if a button is down
              */
 
             case XDM_MOVEPTRTOBUTTON:
-                ProcessMovePtrToButton(hwndObject, mp1);
+                if (    ((WinGetKeyState(HWND_DESKTOP, VK_BUTTON1) & 0x8000) == 0)
+                     && ((WinGetKeyState(HWND_DESKTOP, VK_BUTTON2) & 0x8000) == 0)
+                     && ((WinGetKeyState(HWND_DESKTOP, VK_BUTTON3) & 0x8000) == 0)
+                   )
+                    ProcessMovePtrToButton(hwndObject, mp1);
             break;
 #endif
 
@@ -2932,7 +2940,8 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              */
 
             case XDM_DISABLEHOTKEYSTEMP:
-                G_pHookData->fHotkeysDisabledTemp = (BOOL)mp1;
+                if (G_pHookData)
+                    G_pHookData->fHotkeysDisabledTemp = (BOOL)mp1;
             break;
 
             /*
@@ -3107,10 +3116,13 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *      --  WM_ACTIVATE
              *
              *@@added V0.9.19 (2002-05-07) [umoeller]
+             *@@changed V0.9.20 (2002-07-19) [pr]: prevent trap when unhooking
              */
 
             case XDM_WINDOWCHANGE:
-                if (G_pHookData->cWinlistWatches)
+                if (    G_pHookData
+                     && G_pHookData->cWinlistWatches
+                   )
                     ProcessWindowChange(mp1, mp2);
             break;
 
@@ -3127,10 +3139,13 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *      --  HPOINTER mp2: new icon.
              *
              *@@added V0.9.19 (2002-05-28) [umoeller]
+             *@@changed V0.9.20 (2002-07-19) [pr]: prevent trap when unhooking
              */
 
             case XDM_ICONCHANGE:
-                if (G_pHookData->cWinlistWatches)
+                if (    G_pHookData
+                     && G_pHookData->cWinlistWatches
+                   )
                     ProcessIconChange(mp1, mp2);
             break;
 

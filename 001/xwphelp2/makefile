@@ -148,11 +148,19 @@ BMPS = \
     img\os2internet.bmp \
     img\os2wpnetwork.bmp \
     img\os2wpnetgrp.bmp \
+    img\os2wpnetgrp_mini.bmp \
+    img\os2wpserver.bmp \
+    img\os2wpserver_mini.bmp \
     img\setup_look.bmp \
     img\setup_look_mini.bmp \
     img\estyler.bmp \
     img\os2country.bmp \
-    img\drag.bmp
+    img\drag.bmp \
+    img\net_clientserver.bmp \
+    img\net_peer.bmp \
+    img\os2wpprinter.bmp \
+    img\os2wpprinter_mini.bmp \
+    img\os2instrem.bmp
 
 # main target
 all: $(BMPS) $(COPYTO)\xfldr$(LANGUAGE).hlp

@@ -785,7 +785,7 @@ APIRET fopsFileThreadConfirmDeleteFolder(PFILETASKLIST pftl,
  *      if the file is not awake, or by XFldDataFile::xwpDestroyStorage
  *      if it is.
  *
- *@@added V0.9.20 (2002-07-12) [umoeller]
+ *@@added V0.9.20 (2002-07-16) [umoeller]
  */
 
 BOOL fopsUseForceDelete(PCSZ pcszFilename)
@@ -819,7 +819,7 @@ BOOL fopsUseForceDelete(PCSZ pcszFilename)
  *      can safely delete using Dos* functions.
  *
  *@@added V0.9.6 (2000-10-25) [umoeller]
- *@@changed V0.9.20 (2002-07-12) [umoeller]: optimizations and adjustments for fopsUseForceDelete
+ *@@changed V0.9.20 (2002-07-16) [umoeller]: optimizations and adjustments for fopsUseForceDelete
  */
 
 APIRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
@@ -1026,7 +1026,7 @@ APIRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
  *@@changed V0.9.19 (2002-04-17) [umoeller]: fixed bad FOI_DELETEINPROGRESS flag which caused refresh to fail after true delet
  *@@changed V0.9.19 (2002-04-17) [umoeller]: fixed duplicate updates in progress dlg and other overhead
  *@@changed V0.9.20 (2002-07-12) [umoeller]: optimizations and adjustments for fopsUseForceDelete
- *@@changed V0.9.20 (2002-07-12) [umoeller]: fixed deleting FTP folders
+ *@@changed V0.9.20 (2002-07-16) [umoeller]: fixed deleting FTP folders
  */
 
 APIRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,

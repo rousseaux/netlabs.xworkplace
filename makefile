@@ -703,18 +703,16 @@ release: really_all
     $(COPY) release\bin\alwssort.cmd $(XWPRELEASE_MAIN)\bin
     $(COPY) release\bin\bm-lvm.cmd $(XWPRELEASE_MAIN)\bin
     $(COPY) release\bin\bootmgr.cmd $(XWPRELEASE_MAIN)\bin
-!endif
     $(COPY) release\bin\defdetls.cmd $(XWPRELEASE_MAIN)\bin
     $(COPY) release\bin\deficon.cmd $(XWPRELEASE_MAIN)\bin
     $(COPY) release\bin\deftree.cmd $(XWPRELEASE_MAIN)\bin
     $(COPY) release\bin\iconorm.cmd $(XWPRELEASE_MAIN)\bin
     $(COPY) release\bin\icosmall.cmd $(XWPRELEASE_MAIN)\bin
-!ifndef XWPLITE
     $(COPY) release\bin\newobj.cmd $(XWPRELEASE_MAIN)\bin
 !endif
     $(COPY) release\bin\packtree.cmd $(XWPRELEASE_MAIN)\bin
-    $(COPY) release\bin\showall.cmd $(XWPRELEASE_MAIN)\bin
 !ifndef XWPLITE
+    $(COPY) release\bin\showall.cmd $(XWPRELEASE_MAIN)\bin
     $(COPY) release\bin\xhelp.cmd $(XWPRELEASE_MAIN)\bin
     $(COPY) release\bin\xshutdwn.cmd $(XWPRELEASE_MAIN)\bin
     $(COPY) release\bin\xshutdwn.ico

@@ -339,6 +339,8 @@ APIRET LoadXMLFile(const char *pcszFilename,    // in: file:/K:\...
                                   CRLF2LF);
 
             arc = xmlCreateDOM(DF_PARSEDTD | DF_DROP_WHITESPACE,
+                               NULL,  // V0.9.20 (2002-07-17) [pr]
+                               0,
                                GetCPData,
                                ParseExternal,
                                NULL,

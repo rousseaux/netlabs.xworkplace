@@ -2441,7 +2441,7 @@ static BOOL LoadObjectsList(POBJECTLIST pll,
 
 /*
  *@@ objAddToList:
- *      appends or removes the given folder to or from
+ *      appends or removes the given object to or from
  *      the given object list.
  *
  *      An "object list" is an abstract concept of a list
@@ -2477,10 +2477,10 @@ static BOOL LoadObjectsList(POBJECTLIST pll,
  *@@changed V0.9.14 (2001-07-31) [pr]: fixed confusing code
  */
 
-BOOL objAddToList(WPObject *somSelf,
-                  POBJECTLIST pll,        // in: linked list of WPObject* pointers
-                  BOOL fInsert,
-                  PCSZ pcszIniKey,
+BOOL objAddToList(WPObject *somSelf,    // in: object to add or remove
+                  POBJECTLIST pll,      // in: linked list of WPObject* pointers
+                  BOOL fInsert,         // in: add or remove?
+                  PCSZ pcszIniKey,      // in: INI key for saving the list
                   ULONG ulListFlag)     // in: list flag for xwpModifyListNotify
 {
     BOOL    brc = FALSE,

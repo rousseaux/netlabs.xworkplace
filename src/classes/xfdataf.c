@@ -144,7 +144,7 @@
  *      TRUE, since the file was obviously already deleted.
  *
  *@@added V0.9.9 (2001-02-04) [umoeller]
- *@@changed V0.9.20 (2002-07-12) [umoeller]: now using DosForceDelete if the file is in the trash can
+ *@@changed V0.9.20 (2002-07-16) [umoeller]: now using DosForceDelete if the file is in the trash can
  */
 
 SOM_Scope BOOL  SOMLINK xdf_xwpDestroyStorage(XFldDataFile *somSelf)

@@ -614,7 +614,7 @@ VOID StandardCommands(HWND hwndFrame, USHORT usCmd)
                        MB_OK | MB_MOVEABLE,
                        "xfix V" BLDLEVEL_VERSION " built " __DATE__ "\n"
                        "(C) 2000-2002 Ulrich M”ller\n\n"
-                       "XWorkplace File Handles Fixer.");
+                       XWORKPLACE_STRING " File Handles Fixer.");
         }
         break;
     }
@@ -2771,15 +2771,26 @@ BOOL WriteAllBlocks(PSZ pszHandles,
 
 VOID WriteBack(VOID)
 {
+    const char msg[] =
+    // rewritten V0.9.20 (2002-07-16) [umoeller]
+    "This will write all the changes that you have made back to the OS2.INI and "
+    "OS2SYS.INI files.\n\n"
+    "Please mind the following:\n\n"
+    "1. You should have started xfix from the " XWORKPLACE_STRING " 'Panic' dialog that "
+    "comes up if you hold down the 'Shift' key while the WPS is starting. "
+    "If you run xfix while the WPS is running and write back your handles, "
+    "your changes will soon be overwritten by the WPS again.\n\n"
+    "2. Be warned that if you have deleted handles that are critical to "
+    "the operation of the Workplace Shell, such as the Desktop itself, your "
+    "Desktop might no longer start.\n\n"
+    "3. As a result, be sure that you have a current WPS backup, for example as "
+    "created by the WPS archiving mechanism that can be enabled on the 'Archives' "
+    "page in the Desktop's own settings notebook.\n\n"
+    "So, are you sure you want to do this?";
+
     if (MessageBox(G_hwndMain,
                    MB_YESNO | MB_DEFBUTTON2 | MB_MOVEABLE,
-                   "This will write all changes back to the OS2.INI and OS2SYS.INI files. "
-                   "You should be sure of at least the following:\n"
-                   "-- your changes won't nuke your system;\n"
-                   "-- the WPS is not currently running, or you have started xfix from "
-                   "the XWorkplace \"Panic\" dialog;\n"
-                   "-- you have a working WPS backup somewhere.\n"
-                   "So, are you sure you want to do this?")
+                   msg)
             != MBID_YES)
     {
         // "no":

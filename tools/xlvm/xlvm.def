@@ -1,6 +1,6 @@
-NAME XMLVIEW WINDOWAPI
+NAME XLVM WINDOWAPI
 
-Description '@#Ulrich M”ller:0.9.18#@ XML tester'
+Description '@#Ulrich M”ller:0.9.20#@ XWorkplace LVM utility'
 
 CODE  MOVEABLE
 DATA  MOVEABLE MULTIPLE

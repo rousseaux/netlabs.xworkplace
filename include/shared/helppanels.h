@@ -352,5 +352,6 @@
     #define ID_XSH_INTERNETFDR              233
     #define ID_XSH_WPNETWORK                234
     #define ID_XSH_WPNETGRP                 235
+    #define ID_XSH_DRIVES_REFRESHMEDIA      236
 #endif
 

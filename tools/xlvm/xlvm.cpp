@@ -507,6 +507,7 @@ ULONG MessageBox(HWND hwndOwner,
                            G_hptrDrive,
                            APPTITLE,
                            pstr->psz,
+                           NULL,
                            fl,
                            "9.WarpSans",
                            &MsgBoxStrings));
@@ -1013,7 +1014,7 @@ VOID ConfirmDelete(PLVMDATA pData)
         {
             // the volume can be hidden and have no drive letter
             if (pData->pPartitionSource->Volume_Drive_Letter)
-                xstrprintf(&str,
+                xstrPrintf(&str,
                         "You have selected to delete the volume %c: -- \"%s\", which is "
                         "assigned to partition %d -- \"%s\". "
                         "Deleting the volume will completely erase all the data that is "
@@ -1026,7 +1027,7 @@ VOID ConfirmDelete(PLVMDATA pData)
                                          pData->pPartitionSource),
                         pData->pPartitionSource->Partition_Name);
             else
-                xstrprintf(&str,
+                xstrPrintf(&str,
                         "You have selected to delete the hidden volume \"%s\", which is "
                         "assigned to partition %d -- \"%s\". "
                         "Even though the data on this volume is currently not visible to OS/2, "
@@ -1041,7 +1042,7 @@ VOID ConfirmDelete(PLVMDATA pData)
         }
         else
             // no volume:
-            xstrprintf(&str,
+            xstrPrintf(&str,
                     "You have selected to delete the partition \"%s\", which is "
                     "currently not assigned to any volume. "
                     "Even though the data on this partition is currently not visible to OS/2, "
@@ -1103,7 +1104,7 @@ VOID ConfirmHideVolume(PLVMDATA pData)
     xstrInit(&str, 0);
     if (pData->pPartitionSource)
     {
-        xstrprintf(&str,
+        xstrPrintf(&str,
                 "This will make volume %c: (\"%s\") inaccessible to OS/2. "
                 "Even though no data will be deleted, "
                 "the drive letter that was assigned will no longer exist, and "
@@ -1148,7 +1149,7 @@ VOID ConfirmAddToBootMgr(PLVMDATA pData)
 
     if (pData->pPartitionSource)
     {
-        xstrprintf(&str,
+        xstrPrintf(&str,
                 "This will add %s to the boot manager menu. "
                 "\n\nAre you sure you want to do this?",
                 CreateVolumeString(sz2, pData));
@@ -1187,7 +1188,7 @@ VOID ConfirmRemoveFromBootMgr(PLVMDATA pData)
 
     if (pData->pPartitionSource)
     {
-        xstrprintf(&str,
+        xstrPrintf(&str,
                 "This will remove %s from the boot manager menu. "
                 "\n\nAre you sure you want to do this?",
                 CreateVolumeString(sz2, pData));
@@ -1935,7 +1936,7 @@ MRESULT EXPENTRY fnwpClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM mp2)
         {
             XSTRING str;
             xstrInit(&str, 0);
-            xstrprintf(&str,
+            xstrPrintf(&str,
                     "An error returned in the LVM engine. %s returned error code %d (%s).",
                     mp2,
                     mp1,
@@ -2005,6 +2006,7 @@ MRESULT EXPENTRY fnwpClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM mp2)
                 {
                     case CHTN_EMPHASISCHANGED:
                     case CHTN_CONTEXTMENU:
+                    case CHTN_SETFOCUS:  // V0.9.20 (2002-07-17) [pr]
                     {
                         PLVMDATA pData = (PLVMDATA)WinQueryWindowPtr(hwndClient, QWL_USER);
 
@@ -2019,8 +2021,10 @@ MRESULT EXPENTRY fnwpClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM mp2)
                             PEMPHASISNOTIFY pen = (PEMPHASISNOTIFY)mp2;
                             if (pen)
                             {
-                                if (    (uscode == CHTN_EMPHASISCHANGED)
-                                     && (pen->ulEmphasis == 0)      // selection changed
+                                if (   (   (uscode == CHTN_EMPHASISCHANGED)
+                                        && (pen->ulEmphasis == 0)      // selection changed
+                                       )
+                                    || (uscode == CHTN_SETFOCUS)  // V0.9.20 (2002-07-17) [pr]
                                    )
                                 {
                                     if (pen->lIndex == -1)

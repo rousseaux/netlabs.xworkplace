@@ -730,7 +730,7 @@ static BOOL ParseTraysList(XCenter *somSelf,
  */
 
 static BOOL ParseWidgetsString(XCenter *somSelf,
-                               PSZ pszWidgets,      // in: WIDGETS= data only
+                               PSZ pszWidgets,      // in: data from WIDGETS= only
                                ULONG ulTrayWidgetIndex,
                                ULONG ulTrayIndex)
 {
@@ -955,6 +955,128 @@ static BOOL ParseWidgetsString(XCenter *somSelf,
 }
 
 /*
+ *@@ AppendObjects:
+ *      helper for CreateDefaultWidgets.
+ *
+ *@@added V0.9.19 (2002-04-25) [umoeller]
+ */
+
+static ULONG AppendObjects(PXSTRING pstr,
+                           PCSZ *apcsz,
+                           ULONG c)
+{
+    ULONG cAdded = 0;
+    ULONG ul;
+    for (ul = 0;
+         ul < c;
+         ++ul)
+    {
+        if (wpshQueryObjectFromID(apcsz[ul], NULL))
+        {
+            if (cAdded)
+                xstrcatc(pstr, ',');
+
+            xstrcat(pstr,
+                    "ObjButton(OBJECTHANDLE%3D",
+                    0);
+            xstrcat(pstr,
+                    apcsz[ul],
+                    0);
+            xstrcat(pstr,
+                    "%3B)",
+                    0);
+
+            ++cAdded;
+        }
+    }
+
+    return cAdded;
+}
+
+/*
+ *@@ CreateDefaultWidgets:
+ *      this creates the default widgets in the XCenter.
+ *      by creating a setup string accordingly and then
+ *      calling ParseWidgetsString directly, which will
+ *      go create the widgets from the string.
+ *
+ *      NOTE: This
+ *
+ *@@added V0.9.20 (2002-07-19) [umoeller]
+ */
+
+static BOOL CreateDefaultWidgets(XCenter *somSelf)
+{
+    BOOL brc;
+
+    static const char *apcszMain[] =
+        {
+            "<XWP_LOCKUPSTR>",
+            "<XWP_FINDSTR>",
+            "<XWP_SHUTDOWNSTR>",
+        };
+    static const char *apcszTray1[] =
+        {
+            "<WP_DRIVES>",
+            "<WP_CONFIG>",
+            "<WP_PROMPTS>"
+        };
+    ULONG ul;
+    XSTRING str;
+    WPObject *pobj;
+    CHAR sz[200];
+
+    xstrInitCopy(&str,
+                 "XButton(),",
+                 0);
+
+    if (AppendObjects(&str,
+                      apcszMain,
+                      ARRAYITEMCOUNT(apcszMain)))
+        xstrcatc(&str, ',');
+
+    xstrcat(&str,
+            "Pulse(),"
+            "Tray(){",
+            0);
+
+    // create a default tray
+    sprintf(sz,
+            cmnGetString(ID_CRSI_TRAY),     // tray %d
+            1);
+    xstrcat(&str,
+            sz,
+            0);
+
+    xstrcatc(&str, '[');
+
+    AppendObjects(&str,
+                  apcszTray1,
+                  ARRAYITEMCOUNT(apcszTray1));
+
+    xstrcat(&str,
+            "]},WindowList,"
+            "Time",
+            0);
+
+    // on laptops, add battery widget too
+    if (apmhHasBattery())
+        xstrcat(&str,
+                 ",Power()",
+                 0);
+
+    // call ParseWidgetsString directly
+    brc = ParseWidgetsString(somSelf,
+                             str.psz,
+                             -1,
+                             -1);
+
+    xstrClear(&str);
+
+    return brc;
+}
+
+/*
  *@@ ctrpSetup:
  *      implementation for XCenter::wpSetup.
  *
@@ -1054,6 +1176,11 @@ BOOL ctrpSetup(XCenter *somSelf,
                         // V0.9.19 (2002-04-25) [umoeller]
                         if (!stricmp(pszWidgets, "CLEAR"))
                             ;
+                        // allow "RESET" to reset the widgets to
+                        // the defaults
+                        // V0.9.20 (2002-07-19) [umoeller]
+                        else if (!stricmp(pszWidgets, "RESET"))
+                            brc = CreateDefaultWidgets(somSelf);
                         else
                             brc = ParseWidgetsString(somSelf,
                                                      pszWidgets,
@@ -1074,49 +1201,13 @@ BOOL ctrpSetup(XCenter *somSelf,
 }
 
 /*
- *@@ AppendObjects:
- *
- *@@added V0.9.19 (2002-04-25) [umoeller]
- */
-
-static ULONG AppendObjects(PXSTRING pstr,
-                           PCSZ *apcsz,
-                           ULONG c)
-{
-    ULONG cAdded = 0;
-    ULONG ul;
-    for (ul = 0;
-         ul < c;
-         ++ul)
-    {
-        if (wpshQueryObjectFromID(apcsz[ul], NULL))
-        {
-            if (cAdded)
-                xstrcatc(pstr, ',');
-
-            xstrcat(pstr,
-                    "ObjButton(OBJECTHANDLE%3D",
-                    0);
-            xstrcat(pstr,
-                    apcsz[ul],
-                    0);
-            xstrcat(pstr,
-                    "%3B)",
-                    0);
-
-            ++cAdded;
-        }
-    }
-
-    return cAdded;
-}
-
-/*
  *@@ ctrpSetupOnce:
  *      implementation for XCenter::wpSetupOnce.
+ *      Creates the default widgets if none are given.
  *
  *@@added V0.9.16 (2001-10-15) [umoeller]
  *@@changed V0.9.19 (2002-04-25) [umoeller]: added default tray with objects
+ *@@changed V0.9.20 (2002-07-19) [umoeller]: now checking for whether WIDGETS is specified
  */
 
 BOOL ctrpSetupOnce(XCenter *somSelf,
@@ -1127,74 +1218,21 @@ BOOL ctrpSetupOnce(XCenter *somSelf,
     WPObject *pobjLock = NULL;
     TRY_LOUD(excpt1)
     {
-        if (pobjLock = cmnLockObject(somSelf))
+        ULONG cb;
+        // create default widgets if we have no widgets yet
+        // AND the WIDGETS string is not specified on
+        // creation (otherwise ctrpSetup will handle this)
+        if (    (!_wpScanSetupString(somSelf,           // V0.9.20 (2002-07-19) [umoeller]
+                                     pszSetupString,
+                                     "WIDGETS",
+                                     NULL,
+                                     &cb))
+             && (pobjLock = cmnLockObject(somSelf))
+           )
         {
             PLINKLIST pllSettings = ctrpQuerySettingsList(somSelf);
             if (!lstCountItems(pllSettings))
-            {
-                // we have no widgets:
-                // create some
-                static const char *apcszMain[] =
-                    {
-                        "<XWP_LOCKUPSTR>",
-                        "<XWP_FINDSTR>",
-                        "<XWP_SHUTDOWNSTR>",
-                    };
-                static const char *apcszTray1[] =
-                    {
-                        "<WP_DRIVES>",
-                        "<WP_CONFIG>",
-                        "<WP_PROMPTS>"
-                    };
-                ULONG ul;
-                XSTRING str;
-                WPObject *pobj;
-                CHAR sz[200];
-
-                xstrInitCopy(&str,
-                             "WIDGETS=XButton(),",
-                             0);
-
-                if (AppendObjects(&str,
-                                  apcszMain,
-                                  ARRAYITEMCOUNT(apcszMain)))
-                    xstrcatc(&str, ',');
-
-                xstrcat(&str,
-                        "Pulse(),"
-                        "Tray(){",
-                        0);
-
-                // create a default tray
-                sprintf(sz,
-                        cmnGetString(ID_CRSI_TRAY),     // tray %d
-                        1);
-                xstrcat(&str,
-                        sz,
-                        0);
-
-                xstrcatc(&str, '[');
-
-                AppendObjects(&str,
-                              apcszTray1,
-                              ARRAYITEMCOUNT(apcszTray1));
-
-                xstrcat(&str,
-                        "]},WindowList,"
-                        "Time",
-                        0);
-
-                // on laptops, add battery widget too
-                if (apmhHasBattery())
-                    xstrcat(&str,
-                             ",Power()",
-                             0);
-                xstrcatc(&str, ';');
-
-                ctrpSetup(somSelf,
-                          str.psz);
-                xstrClear(&str);
-            }
+                CreateDefaultWidgets(somSelf);
         }
     }
     CATCH(excpt1) {} END_CATCH();

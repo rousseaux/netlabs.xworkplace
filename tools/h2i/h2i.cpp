@@ -1472,7 +1472,7 @@ PCSZ HandleA(PARTICLETREENODE pFile2Process,
                         // special HLP cross-link support:
                         // syntax is "helpfile.hlp#panel" here
                         PSZ p3 = pExt + 4;
-                        printf("\ngot \"%s\"", pszAttrib);
+
                         if (*p3 == '#')
                         {
                             *p3 = '\0';

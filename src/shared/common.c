@@ -6070,7 +6070,7 @@ ULONG cmnMessageBoxExt(HWND hwndOwner,   // in: owner window
  *
  *@@added V0.9.19 (2002-03-28) [umoeller]
  *@@changed V0.9.19 (2002-06-13) [umoeller]: added ERROR_PROTECTION_VIOLATION
- *@@changed V0.9.20 (2002-07-12) [umoeller]: optimized
+ *@@changed V0.9.20 (2002-07-16) [umoeller]: optimized
  */
 
 VOID cmnDescribeError(PXSTRING pstr,        // in/out: string buffer (must be init'ed)

@@ -291,9 +291,7 @@
     DECLARE_CMN_STRING(G_pcszXFldStartup, "XFldStartup");
     DECLARE_CMN_STRING(G_pcszXFldShutdown, "XFldShutdown");
 #endif
-#ifndef __XWPLITE__
     DECLARE_CMN_STRING(G_pcszXWPClassList, "XWPClassList");
-#endif
     DECLARE_CMN_STRING(G_pcszXWPTrashCan, "XWPTrashCan");
     DECLARE_CMN_STRING(G_pcszXWPTrashObject, "XWPTrashObject");
     DECLARE_CMN_STRING(G_pcszXWPString, "XWPString");

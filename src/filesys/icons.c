@@ -3820,7 +3820,7 @@ static MRESULT HandleENHotkey(POBJICONPAGEDATA pData,
  *@@changed V0.9.16 (2001-12-08) [umoeller]: now disabling hotkeys while entryfield has the focus
  *@@changed V0.9.19 (2002-04-25) [umoeller]: this didn't allow empty titles, fixed
  *@@changed V0.9.19 (2002-05-23) [umoeller]: title was read before page was ready, fixed
- *@@changed V0.9.20 (2002-07-12) [umoeller]: fixed excessive rename when page was inited
+ *@@changed V0.9.20 (2002-07-16) [umoeller]: fixed excessive rename when page was inited
  */
 
 MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
