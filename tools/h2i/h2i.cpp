@@ -49,7 +49,7 @@
  */
 
 /*
- *      Copyright (C) 2001 Ulrich M”ller.
+ *      Copyright (C) 2001-2002 Ulrich M”ller.
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -254,8 +254,8 @@ VOID Error(ULONG ulCategory,
 {
     if (G_ulVerbosity <= 1)
         printf("\n");
-    if (G_ulVerbosity > 2)
-        printf("h2i (%s %u %s)",
+    if (G_ulVerbosity)
+        printf("h2i (%s line %u, %s)",
                pcszFile,
                ulLine,
                pcszFunction);
@@ -282,9 +282,17 @@ VOID Error(ULONG ulCategory,
         printf("\n");
 }
 
+#define H2I_HEADER "h2i V"BLDLEVEL_VERSION" ("__DATE__") (C) 2001-2002 Ulrich M”ller"
+
+/*
+ * PrintHeader:
+ *
+ *
+ */
+
 VOID PrintHeader(VOID)
 {
-    printf("h2i V"BLDLEVEL_VERSION" ("__DATE__") (C) 2001 Ulrich M”ller\n");
+    printf(H2I_HEADER "\n");
     printf("  Part of the XWorkplace package.\n");
     printf("  This is free software under the GNU General Public Licence (GPL).\n");
     printf("  Refer to the COPYING file in the XWorkplace installation dir for details.\n");
@@ -372,8 +380,6 @@ int TREEENTRY fnCompareStrings(ULONG ul1, ULONG ul2)
 
 BOOL AddDefinition(PDEFINENODE p)
 {
-    // lstAppendItem(&G_llDefines, p);
-    // return (TRUE);
     return (!treeInsert(&G_DefinesTreeRoot,
                         NULL,
                         (TREE*)p,
@@ -390,18 +396,6 @@ PDEFINENODE FindDefinition(const char *pcszIdentifier)
     return ((PDEFINENODE)treeFind(G_DefinesTreeRoot,
                                   (ULONG)pcszIdentifier,
                                   fnCompareStrings));
-
-    /* PLISTNODE pNode = lstQueryFirstNode(&G_llDefines);
-    while (pNode)
-    {
-        PDEFINENODE p = (PDEFINENODE)pNode->pItemData;
-        if (!strcmp(p->pszIdentifier, pcszIdentifier))
-            return (p);
-
-        pNode = pNode->pNext;
-    }
-
-    return (0); */
 }
 
 /*
@@ -416,13 +410,18 @@ APIRET ResolveEntities(PARTICLETREENODE pFile2Process,
     {
         // we have include files:
         PSZ p = pstrSource->psz;
+
+        // extract the entity (between '&' and ';')
         while (p = strchr(p, '&'))
         {
-            PSZ p2 = strchr(p, ';');
-            if (!p2)
+            PSZ p2;
+            if (!(p2 = strchr(p, ';')))
                 p++;
             else
             {
+                // find the definition for the entity in
+                // the global list; so make this null-terminated
+                // first
                 *p2 = '\0';
 
                 PDEFINENODE pDef = 0;
@@ -432,6 +431,9 @@ APIRET ResolveEntities(PARTICLETREENODE pFile2Process,
                         printf("\n   found entity \"%s\" --> \"%s\"",
                                p + 1, pDef->pszValue);
                     *p2 = ';';
+
+                    // replace the entity string with the
+                    // definition string
                     ULONG ulPos = (p - pstrSource->psz),
                           ulReplLen = pDef->ulValueLength;
                     xstrrpl(pstrSource,
@@ -443,8 +445,9 @@ APIRET ResolveEntities(PARTICLETREENODE pFile2Process,
                             pDef->pszValue,
                             ulReplLen);
 
-                    // pointer has changed, adjust source position
-                    p = pstrSource->psz + ulPos; //  + ulReplLen;
+                    // string buffer might have changed, so
+                    // re-adjust source position
+                    p = pstrSource->psz + ulPos;
 
                     G_ulReplacements++;
                 }
@@ -464,22 +467,6 @@ APIRET ResolveEntities(PARTICLETREENODE pFile2Process,
                               p,
                               strhCount(pstrSource->psz, '\n') + 1,
                               (PSZ)pFile2Process->Tree.ulKey);      // filename
-
-                        /* if (G_ulVerbosity > 3)
-                        {
-                            printf("All definitions:\n");
-                            PDEFINENODE pNode = (PDEFINENODE)treeFirst(G_DefinesTreeRoot);
-                            while (pNode)
-                            {
-                                printf("  \"%s\" = \"%s\"\n",
-                                       pNode->pszIdentifier,
-                                       pNode->pszValue);
-
-                                pNode = (PDEFINENODE)treeNext((TREE*)pNode);
-                            }
-
-                            exit(99);
-                        } */
                     }
 
                     *p2 = ';';
@@ -555,13 +542,12 @@ PARTICLETREENODE GetOrCreateArticle(const char *pcszFilename,
 {
     PARTICLETREENODE pMapping;
 
+    // check if we have an article for this file name already
     if (pMapping = (PARTICLETREENODE)treeFind(G_LinkIDsTreeRoot,
                                               (ULONG)pcszFilename,
                                               fnCompareStrings))
-    {
         // exists:
         return (pMapping);
-    }
     else
         if (ulCurrentLevel != -1)
         {
@@ -585,19 +571,23 @@ PARTICLETREENODE GetOrCreateArticle(const char *pcszFilename,
                 {
                     // this is a new file...
                     // if it's not an HTML link, check if this exists
-                    if (    (strncmp(pcszFilename, "http://", 7))
-                         && (strncmp(pcszFilename, "ftp://", 6))
-                         && (access(pcszFilename, 0))
-                       )
+                    if (access(pcszFilename, 0))
                     {
-                        // does not exist:
-                        // probably a URL or something...
-                        if (G_ulVerbosity)
-                            printf("\n  Warning: Link from \"%s\" to \"%s\" was not found.",
-                                   (pParent)
-                                       ? (PSZ)pParent->Tree.ulKey // pszFilename,
-                                       : "none",
-                                   (PSZ)pMapping->Tree.ulKey), // pszFilename,
+                        // file does not exist:
+                        if (    (strncmp(pcszFilename, "http://", 7))
+                             && (strncmp(pcszFilename, "ftp://", 6))
+                             && (strncmp(pcszFilename, "mailto:", 7))
+                           )
+                        {
+                            if (G_ulVerbosity)
+                                printf("\n  Warning: Link from \"%s\" to \"%s\" was not found.",
+                                       (pParent)
+                                           ? (PSZ)pParent->Tree.ulKey // pszFilename,
+                                           : "none",
+                                       (PSZ)pMapping->Tree.ulKey); // pszFilename,
+                        }
+
+                        // do not try to load this file!
                         pMapping->ulHeaderLevel = -1; // special flag
                     }
 
@@ -669,8 +659,8 @@ VOID PushList(PSTATUS pstat,    // in/out: parser status
 BOOL CheckListTop(PSTATUS pstat,    // in: status
                   ULONG ulList)     // in: LIST_* flag
 {
-    PLISTNODE pNode = lstQueryLastNode(&pstat->llListStack);
-    if (pNode)
+    PLISTNODE pNode;
+    if (pNode = lstQueryLastNode(&pstat->llListStack))
         if ((ULONG)pNode->pItemData == ulList)
             return (TRUE);
     return (FALSE);
@@ -877,7 +867,7 @@ PCSZ HandleIFDEF(PARTICLETREENODE pFile2Process,
                 if (pEndOfSkip = strstr(pstat->pNextClose + 1,
                                         "</IFDEF>"))
                 {
-                    // search on after </TITLE>
+                    // search on after </IFDEF>
                     if (G_ulVerbosity > 1)
                         printf("\n<IFDEF '%s'> is FALSE, skipping %d chars",
                                pDef,
@@ -931,7 +921,7 @@ PCSZ HandleIFNDEF(PARTICLETREENODE pFile2Process,
                 if (pEndOfSkip = strstr(pstat->pNextClose + 1,
                                         "</IFNDEF>"))
                 {
-                    // search on after </TITLE>
+                    // search on after </IFNDEF>
                     if (G_ulVerbosity > 1)
                         printf("\n<IFNDEF '%s'> is FALSE, skipping %d chars",
                                pDef,
@@ -2215,7 +2205,7 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
                    lstCountItems(&G_llFiles2Process) - (ulNextResID - 10000));
 
         /*
-         * loop 2:
+         * loop 3:
          *
          */
 
@@ -2325,7 +2315,7 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
             xstrInit(&strExtras, 0);
 
             /*
-             * loop 3:
+             * loop 4:
              *
              */
 
@@ -2346,7 +2336,7 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
                     // this will recurse
 
             /*
-             * loop 4:
+             * loop 5:
              *
              */
 
@@ -2519,6 +2509,7 @@ BOOL AddDefine(const char *pcszDefine)      // in: first char after #define
                         && (*pEnd != '\n')
                       )
                     pEnd++;
+
                 if (    (*pEnd == ' ')
                      || (*pEnd == '\t')
                      || ((pszIdentifier) && (*pEnd == '\n'))
@@ -2649,12 +2640,18 @@ APIRET ParseCHeader(const char *pcszHeaderFile,
 
 /*
  *@@ main:
+ *      program entry point.
  *
  */
 
 int main(int argc, char* argv[])
 {
     int     rc = 0;
+
+    /*
+     * 1) initialization
+     *
+     */
 
     xstrInit(&G_strError, 0);
     xstrInit(&G_strCrashContext, 0);
@@ -2673,6 +2670,11 @@ int main(int argc, char* argv[])
 
         LINKLIST llIncludes;
         lstInit(&llIncludes, TRUE);         // will hold plain -i filenames from strdup
+
+        /*
+         * 2) parse command line
+         *
+         */
 
         xstrcpy(&G_strCrashContext, "Parsing command line", 0);
 
@@ -2778,7 +2780,11 @@ int main(int argc, char* argv[])
             if (G_ulVerbosity)
                 PrintHeader();
 
-            // build handlers tree
+            /*
+             * build handlers tree
+             *
+             */
+
             treeInit(&G_HandlersTreeRoot, NULL);
 
             ULONG ul;
@@ -2795,7 +2801,11 @@ int main(int argc, char* argv[])
                            fnCompareStrings);
             }
 
-            // parse includes, if any
+            /*
+             * parse includes
+             *
+             */
+
             xstrcpy(&G_strCrashContext, "Parsing include files", 0);
 
             PLISTNODE pNode = lstQueryFirstNode(&llIncludes);
@@ -2821,6 +2831,12 @@ int main(int argc, char* argv[])
                 pNode = pNode->pNext;
             }
 
+            /*
+             * finally, convert HTML to IPF
+             *
+             */
+
+            // main buffer:
             XSTRING str;
             xstrInit(&str, 100*1000);
 
@@ -2831,7 +2847,7 @@ int main(int argc, char* argv[])
                     ":docprof toc=12345.\n",   // let heading levels 1-5 appear in TOC
                     0);
             xstrcat(&str,
-                    ".* Created by h2i (C) Ulrich M”ller\n",
+                    ".* Converted from HTML to IPF by " H2I_HEADER "\n",
                     0);
 
             xstrcpy(&G_strCrashContext, "Reading root article", 0);

@@ -341,12 +341,14 @@ static STANDARDOBJECT G_WPSObjects[] =
             &XFOLDER_CONFIGID, &G_pcszWPFolder, "<XWP_MAINFLDR>",
                     "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
                     210, 0,
+#ifndef __NOXWPSTARTUP__
             &XFOLDER_STARTUPID, &G_pcszXFldStartup, "<XWP_MAINFLDR>",
                     "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
                     211, 0,
             &XFOLDER_SHUTDOWNID, &G_pcszXFldShutdown, "<XWP_MAINFLDR>",
                     "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
                     212, 0,
+#endif
             &XFOLDER_FONTFOLDERID, &G_pcszXWPFontFolder, "<WP_CONFIG>", // V0.9.9
                     "DEFAULTVIEW=DETAILS;DETAILSCLASS=XWPFontObject;SORTCLASS=XWPFontObject;",  // added SORTCLASS V0.9.9 (2001-04-07) [umoeller]
                     213, 0,
@@ -615,12 +617,14 @@ static const XWPCLASSITEM G_aClasses[] =
             NULL, 0,
             1269,
 #endif
+#ifndef __NOXWPSTARTUP__
         &G_pcszXFldStartup, NULL,
             G_RequirementsXFldStartupShutdown, ARRAYITEMCOUNT(G_RequirementsXFldStartupShutdown),
             1263,
         &G_pcszXFldShutdown, NULL,
             G_RequirementsXFldStartupShutdown, ARRAYITEMCOUNT(G_RequirementsXFldStartupShutdown),
             1264,
+#endif
 
 #ifndef __XWPLITE__
         &G_pcszXWPClassList, NULL,

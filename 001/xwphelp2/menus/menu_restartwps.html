@@ -9,10 +9,12 @@ With the "Restart Desktop" menu item in the Desktop's context menu
 you can restart the Workplace Shell process only, without having
 to reboot your computer.
 
-<P>After selecting this item, &xwp; will perform pretty much the same procedure as
-with the <A HREF="menus/menu_xsd.html">Extended Shutdown</A>. The difference is that after
-all windows have been closed, the system is not shut down, but only the Workplace process
-(PMSHELL.EXE) is terminated and then restarted.
+<!-- V0.9.16: rewrote the following -->
+<P>Selecting this menu item will close open windows, as if you had selected
+the "Shutdown" menu item. However, afterwards the system is not completely
+shut down, but only the Workplace process (<CODE>PMSHELL.EXE</CODE>) is
+terminated and then restarted.
+<!-- end V0.9.16 -->
 
 <P>This can be very handy if you have installed WPS software which requires
 a restart of the WPS, for example because the WPS class list was changed.
@@ -23,7 +25,6 @@ a restart of the WPS, for example because the WPS class list was changed.
 <A HREF="objects/obj_xwpsetup.html">"&xwp; Setup" object</A>.
 <P><B>Warning:</B> Before using this, be sure to read the respective section in the
 <I>&xwp; User Guide,</I> which comments on some problems which might arise.
-</IFNDEF>
 
 <P>In the <B>confirmation window,</B> which is displayed if you have enabled
 confirmations in the Desktop's <A HREF="glossary/gls_notebook.html">properties notebook</A>,
@@ -55,6 +56,8 @@ You can then re-enable the confirmations in the Desktop's
 <A HREF="glossary/gls_notebook.html">properties notebook</A> on
 the "&xshutdown;" page.
 </UL>
+</IFNDEF>
+
 </BODY>
 </HTML>
 

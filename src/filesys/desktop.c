@@ -1055,11 +1055,13 @@ static CONTROLDEF
                             -1,
                             -1),
 #endif
+#ifndef __NOXWPSTARTUP__
     CreateStartupFolderButton = CONTROLDEF_PUSHBUTTON(
                             LOAD_STRING, // "Create ~XWorkplace Startup folder",
                             ID_XSDI_DTP_CREATESTARTUPFLDR,
                             -1,
                             30),
+#endif
     NumLockOnCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING, // "Enable ~NumLock at startup",
                             ID_XSDI_DTP_NUMLOCKON,
@@ -1106,8 +1108,10 @@ static const DLGHITEM dlgDesktopStartup[] =
 #endif
             START_ROW(0),
                 CONTROL_DEF(&NumLockOnCB),
+#ifndef __NOXWPSTARTUP__
             START_ROW(0),
                 CONTROL_DEF(&CreateStartupFolderButton),
+#endif
             START_ROW(0),       // notebook buttons (will be moved)
                 CONTROL_DEF(&G_UndoButton),         // notebook.c
                 CONTROL_DEF(&G_DefaultButton),      // notebook.c
@@ -1270,8 +1274,10 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DTP_TESTLOGO, fBootLogoFileExists);
 #endif
 
+#ifndef __NOXWPSTARTUP__
         if (WinQueryObject((PSZ)XFOLDER_STARTUPID))
             winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DTP_CREATESTARTUPFLDR, FALSE);
+#endif
     }
 }
 
@@ -1588,6 +1594,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             break; }
 #endif
 
+#ifndef __NOXWPSTARTUP__
             /*
              *@@ ID_XSDI_DTP_CREATESTARTUPFLDR:
              *      "Create startup folder"
@@ -1612,6 +1619,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                      104, 105,
                                      MB_OK);
             break; }
+#endif
 
         }
     } // end if (!fProcessed)

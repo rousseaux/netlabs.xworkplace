@@ -56,21 +56,23 @@
  *          start in practice when replacing the WPS standard
  *          icons.
  *
- *      3)  For data file objects, the WPS appears to defer icon
- *          loading until the first call to wpQueryIcon, which
- *          is usually the case when the object first becomes
- *          visible in a container window. This saves the WPS
- *          from loading all icons of a folder if only a small
- *          subset of the icons actually ever becomes visible.
- *          You can notice this when scrolling thru a folder
- *          with many data file objects.
+ *      3)  For data file objects, including WPProgramFile,
+ *          the WPS appears to defer icon loading until the
+ *          first call to wpQueryIcon, which is usually the
+ *          case when the object first becomes visible in a
+ *          container window. This saves the WPS from loading
+ *          all icons of a folder if only a small subset of
+ *          the icons actually ever becomes visible. You can
+ *          notice this when scrolling thru a folder with many
+ *          data file objects (especially executables).
  *
  *          So, as opposed to the standard model explained
  *          under (2), for data file objects the HPOINTER is only
  *          created during wpRestoreState if the object _does_
  *          have an .ICON EA. It is not created if the object
  *          does not have a custom icon and will later receive
- *          the icon of its associated program.
+ *          the icon of its associated program (or from the
+ *          executable file).
  *
  *          The reason for this is speed; wpPopulate already
  *          retrieves all the EA info from disk, including the
@@ -101,13 +103,13 @@
  *              icon of the associated program object set for
  *              the data file too.
  *
- *          --  For WPDisk, WPDisk::wpSetCorrectDiskIcon is called
- *              to set the icon to one of the hard disk, CD-ROM
- *              or floppy icons.
- *
  *          --  For WPProgramFile, WPProgramFile::wpSetProgIcon
  *              attempts to load an icon from the executable file.
  *              If that fails, a standard executable icon is used.
+ *
+ *          --  For WPDisk, WPDisk::wpSetCorrectDiskIcon is called
+ *              to set the icon to one of the hard disk, CD-ROM
+ *              or floppy icons.
  *
  *          If all of this fails, or for other classes, the WPS
  *          gets the class's default icon from wpclsQueryIcon.

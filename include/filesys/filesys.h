@@ -100,19 +100,6 @@
 
         #pragma pack(1)
 
-        #define FSYS_FAT            1
-        #define FSYS_HPFS_JFS       2
-        #define FSYS_CDFS           3
-        #define FSYS_REMOTE         10
-
-        #define DISKTYPE_HARDDISK   0
-        #define DISKTYPE_FLOPPY     1
-        #define DISKTYPE_TAPE       2
-        #define DISKTYPE_VDISK      3
-        #define DISKTYPE_CDROM      4
-        #define DISKTYPE_LAN        5
-        #define DISKTYPE_UNKNOWN    255
-
         /*
          *@@ WPSDRIVEDATA:
          *

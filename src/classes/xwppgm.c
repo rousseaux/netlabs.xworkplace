@@ -105,6 +105,8 @@
  *
  ********************************************************************/
 
+static PCSZ     G_pcszWPProgramOrig = "WPProgramRef";
+
 /* ******************************************************************
  *
  *   XWPProgram instance methods
@@ -236,6 +238,10 @@ SOM_Scope BOOL  SOMLINK xpg_xwpDestroyStorage(XWPProgram *somSelf)
  *      executable and do not want to go thru the overhead
  *      of calling wpQueryProgDetails.
  *
+ *      If TRUE is returned, pszBuffer has received the
+ *      program's executable name, which may or may not
+ *      be fully qualified.
+ *
  *      Returns FALSE if the internal executable data is
  *      empty or invalid.
  *
@@ -327,6 +333,108 @@ SOM_Scope void  SOMLINK xpg_wpUnInitData(XWPProgram *somSelf)
 }
 
 /*
+ *@@ StoreString:
+ *
+ *@@added V0.9.16 (2002-01-13) [umoeller]
+ */
+
+VOID StoreString(PBYTE *ppb,
+                 ULONG ulIndex,
+                 PCSZ pcsz)
+{
+    PBYTE pbTemp;
+    ULONG cb;
+    if (    (ppb)
+         && (pbTemp = *ppb)
+         && (pcsz)
+         && (cb = strlen(pcsz))
+       )
+    {
+        *(PUSHORT)pbTemp = ulIndex;
+        pbTemp += sizeof(USHORT);
+        memcpy(pbTemp,
+               pcsz,
+               cb + 1);
+        *ppb = pbTemp + cb + 1;
+    }
+}
+
+/*
+ *@@ SaveStringArray:
+ *      composes a WPS string array from an array
+ *      of PSZ pointers and saves it using
+ *      wpSaveData with the given keyword and key.
+ *
+ *@@added V0.9.16 (2002-01-13) [umoeller]
+ */
+
+VOID SaveStringArray(WPObject *somSelf,
+                     PCSZ pcszKeyword,
+                     ULONG ulKey,
+                     PSZ *ppsz,
+                     ULONG cStrings)
+{
+    ULONG   cb = 0,
+            cbThis,
+            ul;
+
+    for (ul = 0;
+         ul < cStrings;
+         ul++)
+    {
+        PSZ p = ppsz[ul];
+        if (    (p)
+             && (cbThis = strlen(p))
+           )
+            cb += sizeof(USHORT) + cbThis + 1;
+    }
+
+    _Pmpf(("cb is %d", cb));
+
+    if (cb)
+    {
+        PBYTE pbTemp;
+        cb += sizeof(USHORT);       // for 0xFFFF terminator
+        if (pbTemp = malloc(cb))
+        {
+            PBYTE pb2 = pbTemp;
+
+            for (ul = 0;
+                 ul < cStrings;
+                 ul++)
+                StoreString(&pb2, ul, ppsz[ul]);
+
+            // terminate with 0xFFFF
+            *(PUSHORT)pb2 = 0xFFFF;
+
+#ifdef __DEBUG__
+            {
+                PSZ psz;
+                if (psz = strhCreateDump(pbTemp, cb, 4))
+                {
+                    _Pmpf(("\n%s", psz));
+                    free(psz);
+                }
+            }
+#endif
+
+            _wpSaveData(somSelf,
+                        (PSZ)pcszKeyword,
+                        ulKey,
+                        pbTemp,
+                        cb);
+
+            free(pbTemp);
+        }
+    }
+}
+
+#define ID_WPPROGRAM_ENVIRONMENT         6
+#define ID_WPPROGRAM_SWPINITIAL          7
+#define ID_WPPROGRAM_STRINGSARRAY       10
+#define ID_WPPROGRAM_LONGSARRAY         11
+
+/*
  *@@ wpSaveState:
  *      this WPObject instance method saves an object's state
  *      persistently so that it can later be re-initialized
@@ -334,16 +442,110 @@ SOM_Scope void  SOMLINK xpg_wpUnInitData(XWPProgram *somSelf)
  *      wpSaveImmediate or wpSaveDeferred processing.
  *      All persistent instance variables should be stored here.
  *
+ *      We need a full rewrite here too because there are
+ *      cases where the WPS instance data is empty, but only
+ *      our replacement instance data contains the program's
+ *      data, most importantly, when a new object was created
+ *      (because we have replaced wpSetProgDetails also which
+ *      does not call the parent). So we need to try to imitate
+ *      the WPS's WPProgram save data here.
+ *
  *@@added V0.9.12 (2001-05-26) [umoeller]
  */
 
 SOM_Scope BOOL  SOMLINK xpg_wpSaveState(XWPProgram *somSelf)
 {
     BOOL brc;
-    // XWPProgramData *somThis = XWPProgramGetData(somSelf);
+    somTD_WPObject_wpSaveState pwpSaveState = NULL;
+
+    XWPProgramData *somThis = XWPProgramGetData(somSelf);
     XWPProgramMethodDebug("XWPProgram","xpg_wpSaveState");
 
-    brc = XWPProgram_parent_WPProgram_wpSaveState(somSelf);
+    _Pmpf((__FUNCTION__ ": entering for %s", _wpQueryTitle(somSelf)));
+
+    // save only if we have something to save at all
+    if (    (    (_usExecutableHandle)
+              || (_pszExecutable)
+              || (_usStartupDirHandle)
+            )
+            // resolve WPAbstract::wpSaveState so we can call
+            // the parent but skip WPProgram
+         && (pwpSaveState = (somTD_WPObject_wpSaveState)wpshResolveFor(
+                                         somSelf,
+                                         _WPAbstract,     // class to resolve for
+                                         "wpSaveState"))
+       )
+    {
+        TRY_LOUD(excpt1)
+        {
+            ULONG   aulLongs[7] =
+                {
+                    _usExecutableHandle,
+                    _usStartupDirHandle,
+                    0,          // unknown
+                    _ProgType.progc,
+                    _ProgType.fbVisible,
+                    0,          // unknown
+                    0           // unknown
+                };
+
+            PSZ     apsz[2] =
+                {
+                    _pszExecutable,
+                    _pszParameters
+                };
+
+            ULONG   cb;
+
+            // 1)   save LONGS array
+            _wpSaveData(somSelf,
+                        (PSZ)G_pcszWPProgramOrig,
+                        ID_WPPROGRAM_LONGSARRAY,
+                        (PBYTE)aulLongs,
+                        sizeof(aulLongs));
+
+            // 2)   save strings array
+                        // 1) executable
+                        // 2) parameters
+            SaveStringArray(somSelf,
+                            G_pcszWPProgramOrig,
+                            ID_WPPROGRAM_STRINGSARRAY,
+                            apsz,
+                            ARRAYITEMCOUNT(apsz));
+
+            // 3)   save initial SWP
+            _wpSaveData(somSelf,
+                        (PSZ)G_pcszWPProgramOrig,
+                        ID_WPPROGRAM_SWPINITIAL,
+                        (PBYTE)&_swpInitial,
+                        sizeof(SWP));
+
+            // 4)   save environment
+            if (    (_pszEnvironment)
+                 && (cb = appQueryEnvironmentLen(_pszEnvironment))
+               )
+            {
+                _Pmpf((" environment cb is %d", cb));
+                brc = _wpSaveData(somSelf,
+                                  (PSZ)G_pcszWPProgramOrig,
+                                  ID_WPPROGRAM_ENVIRONMENT,
+                                  (PBYTE)_pszEnvironment,
+                                  cb);
+            }
+
+            // call parent method, skipping WPProgram
+            brc = pwpSaveState(somSelf);
+
+            _Pmpf(("WPAbstract::wpSaveState returned %d", brc));
+        }
+        CATCH(excpt1)
+        {
+            brc = FALSE;
+        } END_CATCH();
+    }
+
+    /* else
+        brc = XWPProgram_parent_WPProgram_wpSaveState(somSelf); */
 
     return (brc);
 }
@@ -381,11 +583,11 @@ SOM_Scope BOOL  SOMLINK xpg_wpRestoreState(XWPProgram *somSelf,
  *
  *      This method normally isn't designed to be overridden.
  *      However, since this gets called by WPProgram::wpRestoreState,
- *      we override this method to be able to intercept pointers
- *      to the WPProgram instance data, which we cannot access
- *      otherwise. We can store these pointers in the XWPProgram
- *      instance data then and read/write the WPProgram instance
- *      data this way.
+ *      we override this method to be able to intercept the data
+ *      that was restored. Even though we then have two copies
+ *      of the data (one in WPProgram, one in our own XWPProgram
+ *      instance data), this shouldn't matter since we override
+ *      all the other methods anyway.
  *
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
@@ -410,14 +612,14 @@ SOM_Scope BOOL  SOMLINK xpg_wpRestoreData(XWPProgram *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        // now copy the data that was restored to our
-        // own buffers
-        if (!strcmp(pszClass, "WPProgramRef"))
+        // now copy the data that was restored
+        if (    (brc)           // data found?
+             && (!strcmp(pszClass, G_pcszWPProgramOrig))        // WPProgram class?
+           )
         {
             switch (ulKey)
             {
-                case 6:             // internal WPProgram key for environment
-                                    // string array
+                case ID_WPPROGRAM_ENVIRONMENT: // 6:      // internal WPProgram key for environment string array
                     // note, this comes in twice, first call has
                     // pValue == NULL to query the size of the data
                     if (pValue)
@@ -435,17 +637,14 @@ SOM_Scope BOOL  SOMLINK xpg_wpRestoreData(XWPProgram *somSelf,
                     }
                 break;
 
-                case 7:             // internal WPProgram key for SWP
+                case ID_WPPROGRAM_SWPINITIAL: // 7:             // internal WPProgram key for initial SWP
                     if (pValue)
                         memcpy(&_swpInitial, pValue, sizeof(SWP));
                 break;
 
-                case 10:        // internal WPProgram key for array of strings
+                case ID_WPPROGRAM_STRINGSARRAY: // 10:        // internal WPProgram key for array of strings
                 {
-                    // this is tricky, because in this case we won't have
-                    // a pointer to WPProgram data... seems like a temporary
-                    // stack pointer. Call the parent first to get the data
-                    // and then parse the buffer below.
+                    // this is tricky
                     PSZ pThis;
 
                     if (pThis = (PSZ)pValue)
@@ -461,15 +660,25 @@ SOM_Scope BOOL  SOMLINK xpg_wpRestoreData(XWPProgram *somSelf,
 
                             // string data comes after the USHORT
                             pThis += sizeof(USHORT);
+                            if (pThis > pValue + *pcbValue)
+                            {
+                                _Pmpf(("excessive string value"));
+                                break;
+                            }
+
                             switch (usIndex)
                             {
                                 case 0:
+                                    _Pmpf((__FUNCTION__ ": got exec \"%s\"",
+                                            pThis));
                                     strhStore(&_pszExecutable,
                                               pThis,
                                               NULL);
                                 break;
 
                                 case 1:
+                                    _Pmpf((__FUNCTION__ ": got params \"%s\"",
+                                            pThis));
                                     strhStore(&_pszParameters,
                                               pThis,
                                               NULL);
@@ -482,7 +691,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpRestoreData(XWPProgram *somSelf,
                 }
                 break;
 
-                case 11:        // internal WPProgram key for array of LONG values
+                case ID_WPPROGRAM_LONGSARRAY: // 11:        // internal WPProgram key for array of LONG values
                     // apparently, this points to several LONG values then:
                     // 0) executable fsh; even though this is 16-bit, it's a ULONG
                     // 1) startup dir fsh; even though this is 16-bit, it's a ULONG
@@ -1142,14 +1351,19 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
                 // executable specified:
                 ULONG hfs;
 
+                _Pmpf((__FUNCTION__ ": got exec \"%s\"", pProgDetails->pszExecutable));
+
                 // "*" means command prompt
                 if (pProgDetails->pszExecutable[0] == '*')
                 {
-                    FREE(_pszExecutable);
-                    if (_usExecutableHandle != 0xFFFF)
+                    if (    (_pszExecutable)
+                         || (_usExecutableHandle != 0xFFFF)
+                       )
                     {
                         // handle changed:
+                        strhStore(&_pszExecutable, NULL, NULL);
                         _usExecutableHandle = 0xFFFF;
+                        _Pmpf(("   set hfs 0x%lX", _usExecutableHandle));
                         fSetProgIcon = TRUE;
                     }
                 }
@@ -1160,11 +1374,14 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
                         )
                 {
                     // got executable file handle:
-                    FREE(_pszExecutable);
-                    if (_usExecutableHandle != hfs)
+                    if (    (_pszExecutable)
+                         || (_usExecutableHandle != hfs)
+                       )
                     {
                         // handle changed:
+                        strhStore(&_pszExecutable, NULL, NULL);
                         _usExecutableHandle = hfs;
+                        _Pmpf(("   set hfs 0x%lX", _usExecutableHandle));
                         fSetProgIcon = TRUE;
                     }
                 }
@@ -1180,6 +1397,8 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
                         strhStore(&_pszExecutable,
                                   pProgDetails->pszExecutable,
                                   NULL);
+                        _usExecutableHandle = 0;
+                        _Pmpf((" set _pszExecutable %s", _pszExecutable));
                         fSetProgIcon = TRUE;
                     }
                 }
@@ -1187,7 +1406,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
             else
             {
                 // executable not specified: nuke it then
-                FREE(_pszExecutable);
+                strhStore(&_pszExecutable, NULL, NULL);
                 _usExecutableHandle = NULLHANDLE;
                 fSetProgIcon = TRUE;
             }

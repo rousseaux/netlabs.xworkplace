@@ -1471,12 +1471,14 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
                     pobjSelected = pobj;        // NOT dereferenced if shadow!
                 }
 
+#ifndef __NOCFGSTATUSBARS__
                 if (cmnQuerySetting(sflDereferenceShadows) & STBF_DEREFSHADOWS_MULTIPLE)
                 {
                     // deref multiple shadows
                     if (pDeref && _somIsA(pDeref, pclsWPShadow))
                         pDeref = _wpQueryShadowedObject(pDeref, TRUE);
                 }
+#endif
 
                 if (pDeref && _somIsA(pDeref, pclsWPFileSystem))
                 {
@@ -1547,7 +1549,9 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         // different mnemonics for different WPS classes
 
         // dereference shadows (V0.9.0)
+#ifndef __NOCFGSTATUSBARS__
         if (cmnQuerySetting(sflDereferenceShadows) & STBF_DEREFSHADOWS_SINGLE)
+#endif
             if (_somIsA(pobjSelected, pclsWPShadow))
                 pobjSelected = _wpQueryShadowedObject(pobjSelected, TRUE);
 

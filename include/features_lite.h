@@ -35,9 +35,10 @@
 #define __ALWAYSREPLACEARCHIVING__              1
 #define __NOBOOTLOGO__                          1
 #define __NOBOOTUPSTATUS__                      1
+#define __NOXWPSTARTUP__                        1
 
 #define __NOXSHUTDOWN__                         1
-// #define __EASYSHUTDOWN__                        1
+#define __EASYSHUTDOWN__                        1
 
 // file operations
 #define __ALWAYSREPLACEFILEEXISTS__             1

@@ -355,8 +355,10 @@
 #ifndef __XWPLITE__
     DECLARE_CMN_STRING(G_pcszXWPMedia, "XWPMedia");
 #endif
+#ifndef __NOXWPSTARTUP__
     DECLARE_CMN_STRING(G_pcszXFldStartup, "XFldStartup");
     DECLARE_CMN_STRING(G_pcszXFldShutdown, "XFldShutdown");
+#endif
 #ifndef __XWPLITE__
     DECLARE_CMN_STRING(G_pcszXWPClassList, "XWPClassList");
 #endif

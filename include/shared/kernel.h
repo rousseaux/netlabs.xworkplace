@@ -90,7 +90,9 @@
 #ifndef __NOBOOTLOGO__
         #define SUF_SKIPBOOTLOGO            0x0001  // skip boot logo
 #endif
+#ifndef __NOXWPSTARTUP__
         #define SUF_SKIPXFLDSTARTUP         0x0002  // skip XFldStartup processing
+#endif
 #ifndef __NOQUICKOPEN__
         #define SUF_SKIPQUICKOPEN           0x0004  // skip "quick open" folder processing
 #endif

@@ -1986,9 +1986,9 @@ PCSZ cmnQueryStatusBarSetting(USHORT usSetting)
                                               sizeof(G_szStatusBarFont));
                         sscanf(G_szStatusBarFont, "%d.*%s", &(G_ulStatusBarHeight));
                         G_ulStatusBarHeight += 15;
-                        _Pmpf((__FUNCTION__ ": got font %s, height is %d",
+                        /* _Pmpf((__FUNCTION__ ": got font %s, height is %d",
                                 G_szStatusBarFont,
-                                G_ulStatusBarHeight));
+                                G_ulStatusBarHeight)); */
                     }
 
                     rc = G_szStatusBarFont;
@@ -2844,9 +2844,11 @@ static const SETTINGINFO G_aSettingInfos[] =
         sflSBForViews, FIELDOFFSET(OLDGLOBALSETTINGS, SBForViews), 4,
             SP_27STATUSBAR, SBV_ICON | SBV_DETAILS,
             "flSBForViews",
+#ifndef __NOCFGSTATUSBARS__
         sflDereferenceShadows, FIELDOFFSET(OLDGLOBALSETTINGS, bDereferenceShadows), 1,
             SP_27STATUSBAR, STBF_DEREFSHADOWS_SINGLE,
             "flDereferenceShadows",
+#endif
 
         // startup settings
         sfShowStartupProgress, FIELDOFFSET(OLDGLOBALSETTINGS, ShowStartupProgress), 4,
@@ -2978,12 +2980,12 @@ VOID ConvertOldGlobalSettings(POLDGLOBALSETTINGS pOld)
             LONG lSetting;
             BYTE b;
             SHORT sh;
-            _Pmpf(("  %s has %d bytes",  pStore->pcszIniKey, pStore->cbOld));
+            // _Pmpf(("  %s has %d bytes",  pStore->pcszIniKey, pStore->cbOld));
             switch (pStore->cbOld)
             {
                 case 1:
                     b = *((PBYTE)pOld + pStore->ulOffsetIntoOld);
-                    _Pmpf(("        byte value %d",  b));
+                    // _Pmpf(("        byte value %d",  b));
                     lSetting = (ULONG)b;
                 break;
 
@@ -3022,7 +3024,7 @@ VOID cmnLoadGlobalSettings(VOID)
     // first set all settings to safe defaults
     // according to the table
 
-    _Pmpf((__FUNCTION__ ": Initializing defaults"));
+    // _Pmpf((__FUNCTION__ ": Initializing defaults"));
     // we can't use cmnSetDefaultSettings here
     // because that would modify the INI entries
     for (ul2 = 0;
@@ -3050,7 +3052,7 @@ VOID cmnLoadGlobalSettings(VOID)
                             (PSZ)INIKEY_GLOBALSETTINGS,
                             pSettings,
                             &cb);
-        _Pmpf((__FUNCTION__ ": Converting old settings"));
+        // _Pmpf((__FUNCTION__ ": Converting old settings"));
         ConvertOldGlobalSettings(pSettings);
         free(pSettings);
 
@@ -3065,7 +3067,7 @@ VOID cmnLoadGlobalSettings(VOID)
     {
         // no GLOBALSETTINGS structure any more:
         // load settings explicitly
-        _Pmpf((__FUNCTION__ ": no old settings, loading new"));
+        // _Pmpf((__FUNCTION__ ": no old settings, loading new"));
         for (ul2 = 0;
              ul2 < ARRAYITEMCOUNT(G_aSettingInfos);
              ul2++)
@@ -3074,7 +3076,7 @@ VOID cmnLoadGlobalSettings(VOID)
             PULONG pulThis = &G_aulSettings[pThis->s];
             cb = sizeof(ULONG);
 
-            _Pmpf(("      trying to load %s", pThis->pcszIniKey));
+            // _Pmpf(("      trying to load %s", pThis->pcszIniKey));
             if (!PrfQueryProfileData(HINI_USER,
                                      (PSZ)INIAPP_XWORKPLACE,
                                      (PSZ)pThis->pcszIniKey,
@@ -3082,12 +3084,12 @@ VOID cmnLoadGlobalSettings(VOID)
                                      &cb))
             {
                 // data not found: use default then
-                _Pmpf(("            PrfQueryProfileData failed"));
+                // _Pmpf(("            PrfQueryProfileData failed"));
                 *pulThis = pThis->ulDefaultValue;
             }
             else if (cb != sizeof(ULONG))
             {
-                _Pmpf(("            cb is %d", cb));
+                // _Pmpf(("            cb is %d", cb));
                 *pulThis = pThis->ulDefaultValue;
             }
         }
@@ -3249,8 +3251,8 @@ BOOL cmnSetSetting(XWPSETTING s,
                                 pulWrite,
                                 sizeof(ULONG));
 
-            _Pmpf(("    "__FUNCTION__ ": set %s to %d",
-                    pStore->pcszIniKey, ulValue));
+            // _Pmpf(("    "__FUNCTION__ ": set %s to %d",
+              //       pStore->pcszIniKey, ulValue));
         }
     }
     else
@@ -4881,7 +4883,7 @@ APIRET GetExeFromControl(HWND hwnd,
                                            ARRAYITEMCOUNT(G_apcszExtensions))))
                 nlsUpper(pszExecutable, 0);
 
-            _Pmpf((__FUNCTION__ ": doshFindExecutable returned %d", arc));
+            // _Pmpf((__FUNCTION__ ": doshFindExecutable returned %d", arc));
 
             free(pszExec);
         }
@@ -5976,7 +5978,7 @@ BOOL cmnFileDlg(HWND hwndOwner,    // in: owner for file dlg
     // default: copy pszFile
     strcpy(fd.szFullFile, pszFile);
 
-    _Pmpf((__FUNCTION__ ": pszFile = %s", pszFile));
+    // _Pmpf((__FUNCTION__ ": pszFile = %s", pszFile));
 
     if (    (hini)
          && (flFlags & WINH_FOD_INILOADDIR)
@@ -6010,7 +6012,7 @@ BOOL cmnFileDlg(HWND hwndOwner,    // in: owner for file dlg
         strcat(fd.szFullFile, pcszMask);
     }
 
-    _Pmpf((__FUNCTION__ ": fd.szFullFile now = %s", fd.szFullFile));
+    // _Pmpf((__FUNCTION__ ": fd.szFullFile now = %s", fd.szFullFile));
 
 #ifndef __NEVERNEWFILEDLG__
     if (cmnQuerySetting(sfNewFileDlg))
@@ -6027,7 +6029,7 @@ BOOL cmnFileDlg(HWND hwndOwner,    // in: owner for file dlg
          && (fd.lReturn == DID_OK)
        )
     {
-        _Pmpf((__FUNCTION__ ": got DID_OK"));
+        // _Pmpf((__FUNCTION__ ": got DID_OK"));
 
         // save path back?
         if (    (hini)

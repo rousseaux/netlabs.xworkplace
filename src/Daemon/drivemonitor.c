@@ -259,7 +259,9 @@ BOOL dmnAddDiskfreeMonitor(ULONG ulLogicalDrive,    // in: disk to be watched or
                 PLISTNODE pNode = lstQueryFirstNode(&G_llDrives);
                 while (pNode)
                 {
+                    PLISTNODE pNext = pNode->pNext;
                     PDISKWATCHITEM pThis = (PDISKWATCHITEM)pNode->pItemData;
+
                     if (    (pThis->hwndNotify == hwndNotify)
                          && (    (ulLogicalDrive == -1)
                               || (pThis->ulLogicalDrive == ulLogicalDrive)
@@ -277,7 +279,7 @@ BOOL dmnAddDiskfreeMonitor(ULONG ulLogicalDrive,    // in: disk to be watched or
                             // not remove all drives: stop here
                             break;
                     }
-                    pNode = pNode->pNext;
+                    pNode = pNext;
                 }
             }
         }
@@ -291,63 +293,6 @@ BOOL dmnAddDiskfreeMonitor(ULONG ulLogicalDrive,    // in: disk to be watched or
         UnlockDrivesList();
 
     return (brc);
-}
-
-/*
- *@@ GetOneDiskInfo:
- *
- *@@added V0.9.14 (2001-08-01) [umoeller]
- */
-
-VOID GetOneDiskInfo(ULONG ulLogicalDrive,
-                    CHAR cBootDrive,
-                    PXDISKINFO pdi)
-{
-    BOOL    fFixed = 0;
-
-    // _Pmpf((__FUNCTION__ ": getting disk %d", ulLogicalDrive));
-
-    memset(pdi, 0, sizeof(XDISKINFO));
-
-    pdi->cDriveLetter = 'A' + ulLogicalDrive - 1;
-    pdi->cLogicalDrive = ulLogicalDrive;
-
-    switch (ulLogicalDrive)
-    {
-        case 1:
-        case 2:
-            // drive A: and B: are special cases,
-            // we don't even want to touch them (click, click)
-            strcpy(pdi->szFileSystem, "FAT");
-
-            // @@todo test bios parameter block
-        break;
-
-        default:
-            if (!(pdi->arc = doshIsFixedDisk(ulLogicalDrive,
-                                             &fFixed)))
-            {
-                if (fFixed)
-                    pdi->flType |= DFL_FIXED;
-
-                if (!(pdi->arc = doshQueryDiskParams(ulLogicalDrive,
-                                                     &pdi->bpb)))
-                {
-                    if (!fFixed)
-                        if (doshIsCDROM(&pdi->bpb))
-                            pdi->flType |= DFL_CDROM;
-
-                    if (cBootDrive == pdi->cDriveLetter)
-                        pdi->flType |= DFL_BOOTDRIVE;
-
-                    if (!(pdi->arc = doshQueryDiskFSType(ulLogicalDrive,
-                                                         pdi->szFileSystem,
-                                                         sizeof(pdi->szFileSystem))))
-                    {
-                    }
-                }
-            }
-    }
 }
 
 /*
@@ -365,7 +310,6 @@ BOOL dmnQueryDisks(ULONG ulLogicalDrive,
     TRY_LOUD(excpt1)
     {
         PXDISKINFO  paDiskInfos = (PXDISKINFO)mpDiskInfos;
-        CHAR        cBootDrive = doshQueryBootDrive();
 
         // _Pmpf((__FUNCTION__ ": paDiskInfos is 0x%lX", paDiskInfos));
 
@@ -377,16 +321,16 @@ BOOL dmnQueryDisks(ULONG ulLogicalDrive,
             // _Pmpf((__FUNCTION__ ": ulLogicalDrive == -1, getting all disks"));
             for (ul = 0; ul < 26; ul++)
             {
-                GetOneDiskInfo(ul + 1,
-                               cBootDrive,
-                               &paDiskInfos[ul]);
+                doshGetDriveInfo(ul + 1,
+                                 0,
+                                 &paDiskInfos[ul]);
             }
         }
         else
             // just one:
-            GetOneDiskInfo(ulLogicalDrive,
-                           cBootDrive,
-                           paDiskInfos);
+            doshGetDriveInfo(ulLogicalDrive,
+                             0,
+                             paDiskInfos);
     }
     CATCH(excpt1)
     {

@@ -142,7 +142,7 @@ static LINKLIST    G_llRunning;
  ********************************************************************/
 
 /*
- *@@ fsysQueryProgramSetup:
+ *@@ progQuerySetup:
  *      called to retrieve a setup string for programs.
  *
  *      Both XWPProgram and XWPProgramFile call
@@ -407,7 +407,19 @@ BOOL progFillProgDetails(PPROGDETAILS pProgDetails,     // can be NULL
                      && (_somIsA(pStartup, _WPFolder))
                      && (_wpQueryFilename(pStartup, szStartupDir, TRUE))
                    )
+                {
                     cbStartupDir = strlen(szStartupDir) + 1;
+
+                    // for root folders, we get "C:" instead of "C:\", so fix this
+                    if (    (cbStartupDir == 3)
+                         && (szStartupDir[1] == ':')
+                       )
+                    {
+                        szStartupDir[2] = '\\';
+                        szStartupDir[3] = '\0';
+                        cbStartupDir++;
+                    }
+                }
             }
 
             // 4) parameters
@@ -1866,6 +1878,7 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
     APIRET          arc = FOPSERR_NOT_HANDLED_ABORT;
     PPROGDETAILS    pProgDetails = NULL;
     PSZ             pszParams = NULL;
+    PSZ             pszNewStartupDir = NULL;
     PSZ             pszNewEnvironment = NULL;
 
     TRY_LOUD(excpt1)
@@ -1902,13 +1915,16 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
             else
             {
                 PROGOPENDATA Data;
-                CHAR    szNewStartupDir[CCHMAXPATH] = "";
+
+                // set the new params
+                pProgDetails->pszParameters = pszParams;
 
                 // if startup dir is empty, set a default startup dir:
                 if (    (!pProgDetails->pszStartupDir)
                      || (pProgDetails->pszStartupDir[0] == '\0')
                    )
                 {
+                    CHAR    szNewStartupDir[CCHMAXPATH] = "";
                     ULONG cb;
                     // no startup dir:
                     // if we have a data file argument, use its directory
@@ -1939,11 +1955,10 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
                          && (cb < 3)
                        )
                         strcpy(szNewStartupDir + 1, ":\\");
-                    pProgDetails->pszStartupDir = szNewStartupDir;
-                }
 
-                // set the new params and startup dir
-                pProgDetails->pszParameters = pszParams;
+                    pszNewStartupDir = strdup(szNewStartupDir);
+                    pProgDetails->pszStartupDir = pszNewStartupDir;
+                }
 
                 // build the new environment V0.9.7 (2000-12-17) [umoeller]
                 pszNewEnvironment
@@ -2034,6 +2049,8 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
 
     if (pszParams)
         free(pszParams);
+    if (pszNewStartupDir)
+        free(pszNewStartupDir);
     if (pszNewEnvironment)
         free(pszNewEnvironment);
     if (pProgDetails)

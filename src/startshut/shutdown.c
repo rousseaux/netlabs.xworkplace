@@ -419,7 +419,9 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
                     NULL);
 
         // set radio buttons
+#ifndef __NOXSHUTDOWN__
         winhSetDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN, psdParms->optConfirm);
+#endif
 
         if (cmnTrashCanReady())
         {
@@ -631,16 +633,20 @@ static CONTROLDEF
                             ID_SDDI_WPS_CLOSEWINDOWS,
                             -1,
                             -1),
+#ifndef __NOXWPSTARTUP__
     StartupFoldersCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,
                             ID_SDDI_WPS_STARTUPFOLDER,
                             -1,
                             -1),
+#endif
+#ifndef __NOXSHUTDOWN__
     MessageAgainCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,
                             ID_SDDI_MESSAGEAGAIN,
                             -1,
                             -1),
+#endif
     OKButton = CONTROLDEF_DEFPUSHBUTTON(
                             0,
                             DID_OK,
@@ -668,10 +674,14 @@ static const DLGHITEM dlgConfirmRestartDesktop[] =
                 END_TABLE,
             START_ROW(0),
                 CONTROL_DEF(&CloseAllSessionsCB),
+#ifndef __NOXWPSTARTUP__
             START_ROW(0),
                 CONTROL_DEF(&StartupFoldersCB),
+#endif
+#ifndef __NOXSHUTDOWN__
             START_ROW(0),
                 CONTROL_DEF(&MessageAgainCB),
+#endif
             START_ROW(ROW_VALIGN_CENTER),
                 CONTROL_DEF(&OKButton),
                 CONTROL_DEF(&CancelButton),
@@ -681,10 +691,11 @@ static const DLGHITEM dlgConfirmRestartDesktop[] =
 
 /*
  *@@ xsdConfirmRestartWPS:
- *      this displays the Desktop restart
+ *      this displays the "Restart Desktop"
  *      confirmation box. Returns MBID_OK/CANCEL.
  *
  *@@changed V0.9.5 (2000-08-10) [umoeller]: added XWPSHELL.EXE interface
+ *@@changed V0.9.16 (2002-01-13) [umoeller]: rewritten to use dialog formatter
  */
 
 ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
@@ -735,16 +746,21 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
             psdParms->optWPSCloseWindows = TRUE;
             psdParms->optWPSReuseStartupFolder = TRUE;
             winhEnableDlgItem(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, FALSE);
+#ifndef __NOXSHUTDOWN__
             winhEnableDlgItem(hwndConfirm, ID_SDDI_WPS_STARTUPFOLDER, FALSE);
-
+#endif
             // replace confirmation text
             WinSetDlgItemText(hwndConfirm, ID_SDDI_CONFIRM_TEXT,
                               cmnGetString(ID_XSSI_XSD_CONFIRMLOGOFFMSG)) ; // pszXSDConfirmLogoffMsg
         }
 
         winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, psdParms->optWPSCloseWindows);
+#ifndef __NOXWPSTARTUP__
         winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_STARTUPFOLDER, psdParms->optWPSCloseWindows);
+#endif
+#ifndef __NOXSHUTDOWN__
         winhSetDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN, psdParms->optConfirm);
+#endif
 
         xsdLoadAnimation(&G_sdAnim);
         ctlPrepareAnimation(WinWindowFromID(hwndConfirm, ID_SDDI_ICON),
@@ -765,9 +781,9 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
 
         if (ulReturn == DID_OK)
         {
-    #ifndef __NOXSHUTDOWN__
+#ifndef __NOXSHUTDOWN__
             ULONG fl = cmnQuerySetting(sflXShutdown);
-    #endif
+#endif
 
             psdParms->optWPSCloseWindows = winhIsDlgItemChecked(hwndConfirm,
                                                                 ID_SDDI_WPS_CLOSEWINDOWS);
@@ -775,22 +791,24 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
             {
                 // regular restart Desktop:
                 // save close windows/startup folder settings
-    #ifndef __NOXSHUTDOWN__
+#ifndef __NOXSHUTDOWN__
                 if (psdParms->optWPSCloseWindows)
                     fl |= XSD_WPS_CLOSEWINDOWS;
                 else
                     fl &= ~XSD_WPS_CLOSEWINDOWS;
-    #endif
+#endif
+#ifndef __NOXWPSTARTUP__
                 psdParms->optWPSReuseStartupFolder = winhIsDlgItemChecked(hwndConfirm,
                                                                           ID_SDDI_WPS_STARTUPFOLDER);
+#endif
             }
-    #ifndef __NOXSHUTDOWN__
+#ifndef __NOXSHUTDOWN__
             if (!(winhIsDlgItemChecked(hwndConfirm,
                                        ID_SDDI_MESSAGEAGAIN)))
                 fl |= XSD_NOCONFIRM;
 
             cmnSetSetting(sflXShutdown, fl);
-    #endif
+#endif
         }
 
         WinDestroyWindow(hwndConfirm);

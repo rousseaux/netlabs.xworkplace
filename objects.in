@@ -24,8 +24,8 @@ $(OUTPUTDIR)\xwppgmf.obj \
 $(OUTPUTDIR)\xfsys.obj \
 !endif
 $(OUTPUTDIR)\xfwps.obj \
-$(OUTPUTDIR)\xfstart.obj \
 !ifndef XWPLITE
+$(OUTPUTDIR)\xfstart.obj \
 $(OUTPUTDIR)\xmmcdplay.obj \
 $(OUTPUTDIR)\xmmvolume.obj \
 !endif

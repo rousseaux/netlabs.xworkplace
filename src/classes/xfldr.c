@@ -3142,6 +3142,7 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFolderView1Page(XFolder *somSelf,
 SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
                                           WPObject* Object)
 {
+    XFolderData *somThis = XFolderGetData(somSelf);
     // XFolderMethodDebug("XFolder","xf_wpAddToContent");
 
     BOOL    brc,
@@ -3153,10 +3154,13 @@ SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
              _wpQueryTitle(Object)));
     #endif
 
+    if (
+            (_fDisableAutoCnrAdd)
 #ifndef __NOTURBOFOLDERS__
-    if (cmnQuerySetting(sfTurboFolders))
-        brc = fdrAddToContent(somSelf, Object, &fCallParent);
+         || (cmnQuerySetting(sfTurboFolders))
 #endif
+       )
+        brc = fdrAddToContent(somSelf, Object, &fCallParent);
 
     if (fCallParent)
         brc = XFolder_parent_WPFolder_wpAddToContent(somSelf, Object);

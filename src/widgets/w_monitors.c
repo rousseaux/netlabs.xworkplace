@@ -1896,7 +1896,7 @@ VOID HackContextMenu(PMONITORPRIVATE pPrivate)
                                      );
 
                 if (   // list all fixed drives
-                       (pThis->flType & DFL_FIXED)
+                       (pThis->flDevice & DFL_FIXED)
                        // even if the drive is not listed as "fixed", make
                        // sure we list the drives that are currently showing;
                        // otherwise the user can't get rid of broken drives

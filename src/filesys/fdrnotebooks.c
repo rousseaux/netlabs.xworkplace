@@ -933,6 +933,8 @@ MRESULT fdrXFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     return ((MPARAM)0);
 }
 
+#ifndef __NOXWPSTARTUP__
+
 /* ******************************************************************
  *
  *   XFldStartup notebook callbacks (notebook.c)
@@ -1139,4 +1141,4 @@ MRESULT fdrStartupFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     return ((MPARAM)0);
 }
 
-
+#endif

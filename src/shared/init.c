@@ -287,11 +287,13 @@ static CONTROLDEF
                             -1,
                             -1),
 #endif
+#ifndef __NOXWPSTARTUP__
     SkipStartupFolderCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,    // "Skip XWorkplace S~tartup folder once",
                             ID_XFDI_PANIC_SKIPXFLDSTARTUP,
                             -1,
                             -1),
+#endif
 #ifndef __NOQUICKOPEN__
     SkipQuickOpenCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,    // "Skip ""~Quick open"" folders once",
@@ -393,8 +395,10 @@ static const DLGHITEM dlgPanic[] =
             START_ROW(0),
                 CONTROL_DEF(&SkipBootLogoCB),
 #endif
+#ifndef __NOXWPSTARTUP__
             START_ROW(0),
                 CONTROL_DEF(&SkipStartupFolderCB),
+#endif
 #ifndef __NOQUICKOPEN__
             START_ROW(0),
                 CONTROL_DEF(&SkipQuickOpenCB),
@@ -568,8 +572,10 @@ VOID ShowPanicDlg(VOID)
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPBOOTLOGO))
                         G_KernelGlobals.ulPanicFlags |= SUF_SKIPBOOTLOGO;
 #endif
+#ifndef __NOXWPSTARTUP__
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPXFLDSTARTUP))
                         G_KernelGlobals.ulPanicFlags |= SUF_SKIPXFLDSTARTUP;
+#endif
 #ifndef __NOQUICKOPEN__
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPQUICKOPEN))
                         G_KernelGlobals.ulPanicFlags |= SUF_SKIPQUICKOPEN;
@@ -994,14 +1000,10 @@ ULONG CheckDesktop(PXFILE pLogFile,
  *      --  The SOM kernel appears to be fully initialized.
  *
  *      --  The WPObject class object (_WPObject) is _being_
- *          initialized. The SOM kernel initializes a class
- *          object when the first instance (object) of a
- *          class is being created. I have no idea which
- *          object gets initialized first by the WPS, but
- *          maybe it's even the Desktop.
- *          Or maybe the class object is initialized
- *          explicitly by PMSHELL.EXE, while it is processing
- *          the WPS class list from OS2.INI, who knows.
+ *          initialized. I believe that the WPS instantiates
+ *          the WPObject class (including its replacements)
+ *          explicitly, so at this point, no SOM object
+ *          actually exists.
  *
  *      --  A number of WPS threads are already running... I
  *          can count 12 here at the time this function is called.
@@ -1916,6 +1918,7 @@ void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
          *
          */
 
+#ifndef __NOXWPSTARTUP__
         // check if startup folder is to be skipped
         if (!(pKernelGlobals->ulPanicFlags & SUF_SKIPXFLDSTARTUP))
                 // V0.9.3 (2000-04-25) [umoeller]
@@ -1975,6 +1978,7 @@ void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
             // done with startup folders:
             krnSetProcessStartupFolder(FALSE); //V0.9.9 (2001-03-19) [pr]
         } // if (!(pKernelGlobals->ulPanicFlags & SUF_SKIPXFLDSTARTUP))
+#endif
 
         /*
          *  quick-open folders

@@ -293,7 +293,9 @@
 #ifndef __NOBOOTLOGO__
 #define ID_XFDI_PANIC_SKIPBOOTLOGO      401
 #endif
+#ifndef __NOXWPSTARTUP__
 #define ID_XFDI_PANIC_SKIPXFLDSTARTUP   402
+#endif
 #ifndef __NOQUICKOPEN__
 #define ID_XFDI_PANIC_SKIPQUICKOPEN     403
 #endif
@@ -1011,7 +1013,9 @@
 #define ID_XSDI_DTP_LOGOBITMAP          2115
 #define ID_XSDI_DTP_TESTLOGO            2116
 #endif
+#ifndef __NOXWPSTARTUP__
 #define ID_XSDI_DTP_CREATESTARTUPFLDR   2117
+#endif
 #ifndef __NOBOOTLOGO__
 #define ID_XSDI_DTP_LOGOFILETXT         2118
 #define ID_XSDI_DTP_LOGOFILE            2119
@@ -1313,12 +1317,16 @@
 #define ID_SDDI_STATUS                  4306
 #define ID_SDDI_SKIPAPP                 4307
 #define ID_SDDI_PERCENT                 4309
+#ifndef __NOXSHUTDOWN__
 #define ID_SDDI_MESSAGEAGAIN            4310
+#endif
 #define ID_SDDI_VDMAPPTEXT              4311
 #define ID_SDDI_WPS_CLOSEWINDOWS        4312
 #define ID_SDDI_ICON                    4313
 #define ID_SDDI_BOOTMGR                 4314
+#ifndef __NOXWPSTARTUP__
 #define ID_SDDI_WPS_STARTUPFOLDER       4315
+#endif
 #define ID_SDDI_SHUTDOWNONLY            4316
 #define ID_SDDI_STANDARDREBOOT          4317
 #define ID_SDDI_REBOOTTO                4318
