@@ -13,7 +13,7 @@
 //     The rest of the line makes up the description which appears in the "Information"
 //     window. Do not add any line breaks in this description, or it will be truncated.
 //     Even though this file is mostly sorted alphabetically, this is not necessary.
-//     (C) 1998-2003 Ulrich M”ller. See the GPL for details.
+//     (C) 1998-2004 Ulrich M”ller. See the GPL for details.
 
 AdvAccount 1 (OS/2 V3) This class belongs to the IBM Advantis Dialer. If you're using a different Internet Access Provider, you may remove this class.
 AdvCust 1 (OS/2 V3) This class belongs to the IBM Advantis Dialer. If you're using a different Internet Access Provider, you may remove this class.
@@ -257,7 +257,7 @@ IWFRouter 1 Some class for the IBM Workframe/2 (as it comes with Visual Age C++ 
 
 // Items changed with V0.9.1
 
-UnknownClass 0 No information available for this class. If you know what this class is about, please post a description to xworkplace-user@yahoogroups.com so a class description can be added.
+UnknownClass 0 No information available for this class. If you know what this class is about, please post a description to xworkplace-user@netlabs.org so a class description can be added.
 
 LSPeerUser 1 Undocumented LAN Server class. This is included with the networking functionality of Warp 4 and appears to be related to network logon and resource management.
 LSPeerWorkstation 1 Undocumented LAN Server class. This is included with the networking functionality of Warp 4 and appears to be related to network logon and resource management.
