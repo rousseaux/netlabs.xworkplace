@@ -195,6 +195,9 @@
     // V0.9.16 (2001-10-19) [umoeller]
     DECLARE_CMN_STRING(INIKEY_ICONPAGE_LASTDIR, "IconPageLastDir");
 
+    // keyboard macros V0.9.20 (2002-07-03) [umoeller]
+    DECLARE_CMN_STRING(INIKEY_KEYBOARD_MACROS, "KeybMacros");
+
     /*
      * file type hierarchies:
      *
@@ -593,6 +596,7 @@
     // 13) XWPKeyboard
     #define SP_KEYB_OBJHOTKEYS      120     // new with V0.9.0
     #define SP_KEYB_FUNCTIONKEYS    121     // new with V0.9.3 (2000-04-18) [umoeller]
+    #define SP_KEYB_MACROS          122     // new with V0.9.20 (2002-07-03) [umoeller]
 
     // 13) XWPMouse
     #define SP_MOUSE_MOVEMENT       130     // new with V0.9.2 (2000-02-26) [umoeller]

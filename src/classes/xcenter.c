@@ -5,6 +5,13 @@
  *
  *      --  XCenter: a WarpCenter replacement.
  *
+ *      This class interface does not contain a whole lot of
+ *      code but is rather responsible for making the XCenter
+ *      behave like a decent abstract object. The key entry
+ *      point is XCenter::wpOpen, which goes into the mess
+ *      of code in src\xcenter, which has all the important
+ *      stuff.
+ *
  *      See src\shared\center.c for an introduction.
  *
  *      Installation of this class is completely optional.
@@ -905,7 +912,7 @@ SOM_Scope ULONG SOMLINK xctr_xwpDeleteWidget(XCenter *somSelf,
 /*
  *@@ xwpMoveWidget:
  *      moves a widget to a new position within the
- *      XCenter.
+ *      same XCenter.
  *
  *      ulIndex2Move specifies the widget to be moved
  *      (with 0 being the leftmost widget).
@@ -941,7 +948,8 @@ SOM_Scope BOOL  SOMLINK xctr_xwpMoveWidget(XCenter *somSelf,
  */
 
 SOM_Scope BOOL  SOMLINK xctr_xwpSetPriority(XCenter *somSelf,
-                                            ULONG ulClass, long lDelta)
+                                            ULONG ulClass,
+                                            long lDelta)
 {
     BOOL    brc = FALSE;
     BOOL    fLocked = FALSE;
@@ -959,7 +967,6 @@ SOM_Scope BOOL  SOMLINK xctr_xwpSetPriority(XCenter *somSelf,
 
             if (_pvOpenView)
             {
-                // PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
                 DosSetPriority(PRTYS_THREAD,
                                ulClass,
                                lDelta,
@@ -1089,16 +1096,16 @@ SOM_Scope void  SOMLINK xctr_wpInitData(XCenter *somSelf)
 }
 
 /*
+ * wpObjectReady: override;     removed V0.9.9 (2001-03-13) [umoeller]
+ */
+
+/*
  *@@ wpUnInitData:
  *      this WPObject instance method is called when the object
  *      is destroyed as a SOM object, either because it's being
  *      made dormant or being deleted. All allocated resources
  *      should be freed here.
  *      The parent method must always be called last.
- */
-
-/*
- * wpObjectReady: override;     removed V0.9.9 (2001-03-13) [umoeller]
  */
 
 SOM_Scope void  SOMLINK xctr_wpUnInitData(XCenter *somSelf)
@@ -1133,16 +1140,15 @@ SOM_Scope void  SOMLINK xctr_wpUnInitData(XCenter *somSelf)
 
 SOM_Scope BOOL  SOMLINK xctr_wpSetup(XCenter *somSelf, PSZ pszSetupString)
 {
-    BOOL brc = FALSE;
     // XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_wpSetup");
 
-    if (brc = XCenter_parent_WPAbstract_wpSetup(somSelf, pszSetupString))
-        brc = ctrpSetup(somSelf,
-                        pszSetupString);
+    if (XCenter_parent_WPAbstract_wpSetup(somSelf, pszSetupString))
+        return ctrpSetup(somSelf,
+                         pszSetupString);
             // V0.9.19 (2002-04-25) [umoeller]
 
-    return brc;
+    return FALSE;
 }
 
 /*
@@ -1166,7 +1172,7 @@ SOM_Scope BOOL  SOMLINK xctr_wpSetup(XCenter *somSelf, PSZ pszSetupString)
 
 SOM_Scope BOOL  SOMLINK xctr_wpSetupOnce(XCenter *somSelf, PSZ pszSetupString)
 {
-    XCenterData *somThis = XCenterGetData(somSelf);
+    // XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_wpSetupOnce");
 
     if (XCenter_parent_WPAbstract_wpSetupOnce(somSelf, pszSetupString))

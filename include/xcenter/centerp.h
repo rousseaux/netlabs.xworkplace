@@ -381,7 +381,8 @@
 
             LONG                yFrame;             // current frame y pos
             ULONG               cxFrame,            // always screen width
-                                cyFrame;            // XCenter frame height (even if hidden)
+                                cyFrame;            // XCenter frame height
+                                                    // (even if hidden)
 
             HWND                hwndContextMenu;    // if != NULLHANDLE, a context menu is showing
 

@@ -2454,7 +2454,9 @@ SOM_Scope BOOL  SOMLINK xo_wpAddSettingsPages(XFldObject *somSelf,
                       || (ul == TRUE)
                         // WPSharedDir returns TRUE, violating the specs...
                     )
+#ifndef __ALWAYSREPLACEICONPAGE__
                  && (cmnQuerySetting(sfReplaceIconPage))
+#endif
                  // but do this trick only for certain classes, we
                  // better make sure we don't mess with user classes
                  && (ctsIsSharedDir(somSelf))

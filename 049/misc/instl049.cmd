@@ -86,7 +86,9 @@ call CreateObject;
 /* User Guide */
 class = "WPProgram";
 title = OnlineReference;
-setup = "EXENAME=view.exe;PARAMETERS="pdir||OnlineReferenceFile";"
+setup = "EXENAME=view.exe;PARAMETERS="pdir||OnlineReferenceFile" %;"
+/* added % to parameters list in order not to break the config folder shadow
+    V0.9.20 (2002-07-03) [umoeller] */
 id = "<XWP_REF>"
 target = "<XWP_MAINFLDR>";
 call CreateObject;

@@ -60,7 +60,8 @@ ew */
 #include <stdio.h>
 
 // generic headers
-#define DONT_REPLACE_MALLOC         // in case mem debug is enabled
+#define DONT_REPLACE_MALLOC             // in case mem debug is enabled
+#define DONT_REPLACE_FOR_DBCS           // do not replace strchr with DBCS version
 #include "setup.h"                      // code generation and debugging options
 
 // disable wrappers, because we're not linking statically

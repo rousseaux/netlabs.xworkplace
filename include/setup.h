@@ -464,9 +464,9 @@
     // XWP uses strchr and the like in many places, which are
     // not DBCS-aware. So globally replace these funcs with the
     // NLS-aware replacements in the helpers.
-    // V0.9.19 (2002-06-13) [umoeller]
+    // V0.9.20 (2002-07-03) [umoeller]
 
-    /* #ifndef DONT_REPLACE_FOR_DBCS
+    #ifndef DONT_REPLACE_FOR_DBCS
         #include "helpers\nls.h"
 
         #ifdef strchr
@@ -478,7 +478,7 @@
             #undef strrchr
         #endif
         #define strrchr(p, c) nlsrchr(p, c)
-    #endif */
+    #endif
 
 #endif
 

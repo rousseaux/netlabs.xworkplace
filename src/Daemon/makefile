@@ -73,14 +73,14 @@ $(OUTPUTDIR)\gpih.obj \
 $(OUTPUTDIR)\linklist.obj \
 $(OUTPUTDIR)\except.obj \
 $(OUTPUTDIR)\dosh.obj \
-$(OUTPUTDIR)\memdebug.obj \
 $(OUTPUTDIR)\regexp.obj \
 $(OUTPUTDIR)\shapewin.obj \
 $(OUTPUTDIR)\stringh.obj \
 $(OUTPUTDIR)\threads.obj \
-!ifdef XWP_DEBUG
 $(OUTPUTDIR)\nls.obj \
 $(OUTPUTDIR)\prfh.obj \
+!ifdef XWP_DEBUG
+$(OUTPUTDIR)\memdebug.obj \
 $(OUTPUTDIR)\tree.obj \
 !endif
 $(OUTPUTDIR)\xstring.obj \

@@ -1285,7 +1285,7 @@ static const CONTROLDEF
     AttrList = CONTROLDEF_DROPDOWNLIST(
                             ID_SCDI_STICKY_ATTRIBUTE_DROP,
                             ATTRWIDTH,
-                            150),
+                            70),        // reduced V0.9.20 (2002-07-03) [umoeller]
     OperTxt = CONTROLDEF_TEXT_CENTER(
                             LOAD_STRING,
                             ID_SCDI_STICKY_OPERATOR,
@@ -1294,7 +1294,7 @@ static const CONTROLDEF
     OperList = CONTROLDEF_DROPDOWNLIST(
                             ID_SCDI_STICKY_OPERATOR_DROP,
                             OPERWIDTH,
-                            150),
+                            70),        // reduced V0.9.20 (2002-07-03) [umoeller]
     ValueTxt = CONTROLDEF_TEXT_CENTER(
                             LOAD_STRING,
                             ID_SCDI_STICKY_VALUE,
@@ -1303,7 +1303,7 @@ static const CONTROLDEF
     ValueList = CONTROLDEF_DROPDOWN(
                             ID_SCDI_STICKY_VALUE_DROP,
                             VALUEWIDTH,
-                            400),
+                            100),       // reduced V0.9.20 (2002-07-03) [umoeller]
     MatchingGroup = LOADDEF_GROUP(ID_SCDI_STICKY_MATCHINGGROUP, SZL_AUTOSIZE),
     IncludeRadio = LOADDEF_FIRST_AUTORADIO(ID_SCDI_STICKY_RADIO_INCLUDE),
     ExcludeRadio = LOADDEF_NEXT_AUTORADIO(ID_SCDI_STICKY_RADIO_EXCLUDE);
@@ -1311,8 +1311,8 @@ static const CONTROLDEF
 static const DLGHITEM dlgAddSticky[] =
     {
         START_TABLE,            // root table, required
-            START_ROW(0),
-                CONTROL_DEF(&G_PagerDisabled),
+/*             START_ROW(0),        no, not in the dialog V0.9.20 (2002-07-03) [umoeller]
+                CONTROL_DEF(&G_PagerDisabled), */
             START_ROW(0),
                 START_GROUP_TABLE(&CriteriaGroup),
                     START_ROW(0),
@@ -1424,6 +1424,7 @@ static MRESULT EXPENTRY fnwpEditStickyRecord(HWND hwndDlg, ULONG msg, MPARAM mp1
  *
  *@@added V0.9.19 (2002-04-14) [lafaix]
  *@@changed V0.9.19 (2002-04-17) [umoeller]: now using dialog formatter, added regexps
+ *@@changed V0.9.20 (2002-07-03) [umoeller]: removed "pager is disabled" in sticky dialog, fixed excessive drop-downs
  */
 
 static VOID EditStickyRecord(PSTICKYRECORD pRec,
@@ -1637,10 +1638,9 @@ static VOID PagerStickyInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 {
     if (flFlags & CBI_INIT)
     {
-        HWND hwndCnr;
-
-        XFIELDINFO xfi[5];
-        int        i = 0;
+        HWND        hwndCnr;
+        XFIELDINFO  xfi[4];
+        int         i = 0;
 
         // first call: create PAGERCONFIG
         // structure;

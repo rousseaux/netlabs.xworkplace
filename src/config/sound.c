@@ -448,9 +448,8 @@ static BOOL SaveSoundSchemeAs(PNOTEBOOKPAGE pnbp,
         if (WinProcessDlg(hwndDlg) == DID_OK)
         {
             CHAR    szNewScheme[100];
-            // CHAR    szNewAppName[200] = "PM_SOUNDS_";
-            // PSZ     pszExisting = 0;
             BOOL    fOverwrite = TRUE;
+            PSZ     pszDelete = NULL;
 
             // get new scheme name from dlg
             WinQueryDlgItemText(hwndDlg, ID_XSDI_FT_ENTRYFIELD,
@@ -463,7 +462,8 @@ static BOOL SaveSoundSchemeAs(PNOTEBOOKPAGE pnbp,
 
             // check in OS2SYS.INI's scheme list whether that
             // scheme exists already
-            if (sndDoesSchemeExist(szNewScheme))
+            if (sndDoesSchemeExist(szNewScheme,
+                                   &pszDelete))     // V0.9.20 (2002-07-03) [umoeller]
             {
                 PCSZ     psz = szNewScheme;
                 // exists: have user confirm this
@@ -474,7 +474,7 @@ static BOOL SaveSoundSchemeAs(PNOTEBOOKPAGE pnbp,
                                         MB_YESNO)
                         == MBID_YES)
                 {
-                    sndDestroySoundScheme(szNewScheme);
+                    sndDestroySoundScheme(pszDelete);   // V0.9.20 (2002-07-03) [umoeller]
                 }
                 else
                     fOverwrite = FALSE;
@@ -483,15 +483,16 @@ static BOOL SaveSoundSchemeAs(PNOTEBOOKPAGE pnbp,
             // shall we proceed?
             if (fOverwrite)
             {
-                HINI hiniMMPM = PrfOpenProfile(pspd->hab,
-                                               pspd->szMMPM);
-                if (hiniMMPM)
+                HINI hiniMMPM;
+                if (hiniMMPM = PrfOpenProfile(pspd->hab,
+                                              pspd->szMMPM))
                 {
                     SHORT sNewSchemeIndex = LIT_NONE;
                     // write new sound scheme
-                    APIRET arc = arc = sndCreateSoundScheme(hiniMMPM,
-                                                            szNewScheme);
-                    if (arc == NO_ERROR)
+                    APIRET arc;
+
+                    if (!(arc = sndCreateSoundScheme(hiniMMPM,
+                                                     szNewScheme)))
                     {
                         // OK, everything has worked out fine:
                         // update the "Schemes" drop-down
@@ -524,6 +525,10 @@ static BOOL SaveSoundSchemeAs(PNOTEBOOKPAGE pnbp,
                     PrfCloseProfile(hiniMMPM);
                 } // end if (hiniMMPM)
             } // end if (fOverwrite)
+
+            if (pszDelete)
+                free(pszDelete);
+
         } // end if (WinProcessDlg(hwndDlg) == DID_OK)
     } // end if (hwndDlg)
 

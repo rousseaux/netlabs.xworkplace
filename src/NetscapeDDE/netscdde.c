@@ -48,6 +48,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#define DONT_REPLACE_FOR_DBCS       // do not replace strchr with DBCS version
 #include "setup.h"
 
 #include "xwpapi.h"

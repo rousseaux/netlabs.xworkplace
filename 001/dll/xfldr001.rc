@@ -1567,6 +1567,7 @@ BEGIN
     ID_XSDI_MOUSE_MB3AMPLIFIED          "~Amplified mode"
     ID_XSDI_MOUSE_MB3AMP_TXT1           "Am~plification:"
     ID_XSDI_MOUSE_MB3SCROLLREVERSE      "~Reverse scrolling"
+
 END
 
 /* Treesize definitions; added V0.9.0 */

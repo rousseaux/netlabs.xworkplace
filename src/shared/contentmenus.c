@@ -1147,6 +1147,10 @@ PVARMENULISTITEM cmnuGetVarItem(ULONG ulOfs)
  *
  ********************************************************************/
 
+#ifndef RGB_DARKGRAY // [lafaix]
+  #define RGB_DARKGRAY 0x00808080L
+#endif
+
 /*
  *@@ cmnuPrepareOwnerDraw:
  *      this is called from the subclassed folder frame procedure
@@ -1160,10 +1164,6 @@ PVARMENULISTITEM cmnuGetVarItem(ULONG ulOfs)
  *@@changed V0.9.7 (2001-01-21) [lafaix]: added border colors and CharBox
  *@@changed V0.9.7 (2001-01-26) [lafaix]: fixed nonrecursive queries
  */
-
-#ifndef RGB_DARKGRAY // [lafaix]
-  #define RGB_DARKGRAY 0x00808080L
-#endif
 
 VOID cmnuPrepareOwnerDraw(// SHORT sMenuIDMsg, // from WM_INITMENU: SHORT mp1 submenu id
                           HWND hwndMenuMsg) // from WM_INITMENU: HWND  mp2 menu window handle

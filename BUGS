@@ -14,8 +14,24 @@ XWorkplace features in the "XWorkplace Setup" object.
 Ulrich M”ller.
 
 
+FIXED SINCE 0.9.19
+------------------
+
+--  In the desktop RMB menu, XWorkPlace->XWorkPlace User Guide yields the
+    view.exe error message, "Topic not found"
+
+
 CURRENT PROBLEMS
 ----------------
+
+--  WarpCenter doesn't disappear from window list
+
+--  vertical resizing of pager doesn't work, even though mouse
+    pointer is changed to size on frame
+
+--  sticky windows: adding a sticky window that is currently on
+    a non-active desktop will always keep it off the current
+    desktop --> bring it to current before making it sticky
 
 --  SHADOWS: with turbofolders/ext assocs, apparently when
     WPShadow makes objects awake, it bypasses my initialization

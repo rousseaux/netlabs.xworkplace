@@ -2458,6 +2458,7 @@ VOID DoRename(HWND hwndDlg)
  *      folder window, which is stored in QWL_USER.
  *
  *@@added V0.9.19 (2002-06-18) [umoeller]
+ *@@changed V0.9.20 (2002-07-03) [umoeller]: "start renaming" button wasn't enabled properly, fixed
  */
 
 static MRESULT EXPENTRY fnwpBatchRename(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2506,9 +2507,9 @@ static MRESULT EXPENTRY fnwpBatchRename(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
             {
                 case ID_XFDI_BATCH_SOURCEEF:
                 case ID_XFDI_BATCH_TARGETEF:
-                    if (SHORT2FROMMP(mp1) == EN_CHANGE)
+                    if (SHORT2FROMMP(mp1) == CBN_EFCHANGE)
+                            // V0.9.20 (2002-07-03) [umoeller]
                     {
-                        DosBeep(1000, 10);
                         WinPostMsg(hwndDlg, XM_ENABLEITEMS, 0, 0);
                     }
                 break;

@@ -1558,6 +1558,7 @@ BEGIN
     ID_XSDI_MOUSE_MB3AMPLIFIED          "~Verst„rkungsmodus"
     ID_XSDI_MOUSE_MB3AMP_TXT1           "Ve~rst„rkung:"
     ID_XSDI_MOUSE_MB3SCROLLREVERSE      "~Umgekehrtes Scrollen"
+
 END
 
 

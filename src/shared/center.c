@@ -20,7 +20,7 @@
  *      of dynamically loading and unloading plugin widgets from a DLL.
  *      Best of all, it will automatically free the DLL when it's
  *      no longer used (e.g. when all XCenters are closed) so that
- *      Desktop restarts are _not_ needed for writing plugins.
+ *      Desktop restarts are _not_ needed for testing plugins.
  *
  *      See fnwpXCenterMainClient for a description of the XCenter
  *      window hierarchy.
@@ -32,9 +32,10 @@
  *      There are a bunch of structures which are used for communication
  *      between the various windows and classes.
  *
- *      -- On XCenter view creation, an XCENTERGLOBALS structure is
- *         created in the XCenter's window words, which is later
- *         made public to the widgets as well.
+ *      -- On XCenter view creation (ctrpCreateXCenterView), an
+ *         XCENTERGLOBALS structure is created in the XCenter's
+ *         window words, which is later made public to the widgets
+ *         as well.
  *
  *      -- Each known @widget_class (either one of the built-ins in
  *         XFLDR.DLL or those loaded from a @plugin_dll) is described
@@ -1159,9 +1160,6 @@ static BOOL DwgtRender(HWND hwnd,
                        (MPARAM)pdt,
                        (MPARAM)((brc) ? DMFL_RENDEROK
                                       : DMFL_RENDERFAIL));
-            // ah shit, it doesn't matter... we still leak,
-            // looks like the target (WPFolder?) isn't
-            // cleaning up properly
 
     // and this was missing, which leaked many KBs per drag
     // V0.9.19 (2002-06-08) [umoeller]

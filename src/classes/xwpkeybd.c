@@ -151,8 +151,7 @@ SOM_Scope ULONG  SOMLINK xkb_xwpAddKeyboardFunctionKeysPage(XWPKeyboard *somSelf
     XWPKeyboardMethodDebug("XWPKeyboard","xkb_xwpAddKeyboardHotkeysPage");
 
     // insert "Hotkeys" page if the hook has been enabled
-    if (    (hifXWPHookReady())
-       )
+    if (hifXWPHookReady())
     {
         memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
         inbp.somSelf = somSelf;
@@ -204,9 +203,11 @@ SOM_Scope ULONG  SOMLINK xkb_wpFilterPopupMenu(XWPKeyboard *somSelf,
  *@@ wpAddKeyboardSpecialNeedsPage:
  *      this WPKeyboard instance method inserts the "Special
  *      Needs" page into the keyboard object's settings notebook.
+ *
  *      We override this to get an opportunity to insert our
  *      own pages behind that page by calling
- *      XWPKeyboard::xwpAddKeyboardHotkeysPage.
+ *      XWPKeyboard::xwpAddKeyboardHotkeysPage and
+ *      XWPKeyboard::xwpAddKeyboardFunctionKeysPage.
  */
 
 SOM_Scope ULONG  SOMLINK xkb_wpAddKeyboardSpecialNeedsPage(XWPKeyboard *somSelf,
@@ -219,8 +220,8 @@ SOM_Scope ULONG  SOMLINK xkb_wpAddKeyboardSpecialNeedsPage(XWPKeyboard *somSelf,
 
     _xwpAddKeyboardFunctionKeysPage(somSelf, hwndNotebook);
 
-    return (XWPKeyboard_parent_WPKeyboard_wpAddKeyboardSpecialNeedsPage(somSelf,
-                                                                        hwndNotebook));
+    return XWPKeyboard_parent_WPKeyboard_wpAddKeyboardSpecialNeedsPage(somSelf,
+                                                                       hwndNotebook);
 }
 
 

@@ -234,7 +234,7 @@ VOID pgrUnlockHook(VOID)
 /*
  *@@ pgrCalcClientCY:
  *      calculates the new client height according to
- *      the frame width, so that the frame can be
+ *      the client width, so that the frame can be
  *      sized proportionally.
  *
  *@@added V0.9.2 (2000-02-23) [umoeller]
@@ -1632,6 +1632,7 @@ static VOID PagerHotkey(MPARAM mp1)
  *      mini windows.
  *
  *@@added V0.9.19 (2002-05-07) [umoeller]
+ *@@changed V0.9.20 (2002-07-03) [umoeller]: reduced activate delay from 200 to 50 ms
  */
 
 static MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1740,7 +1741,8 @@ static MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                     WinStartTimer(G_habDaemon,
                                   hwnd,
                                   TIMERID_PGR_ACTIVECHANGED,
-                                  200);     // 200 ms
+                                  50);     // reduced from 200 ms
+                                           // V0.9.20 (2002-07-03) [umoeller]
                 }
                 else if (!G_fActiveChangedPending)
                     // refresh the client bitmap
@@ -1960,12 +1962,13 @@ static MRESULT EXPENTRY fnwpSubclPagerFrame(HWND hwnd, ULONG msg, MPARAM mp1, MP
 
                 if (G_pHookData->PagerConfig.flPager & PGRFL_PRESERVEPROPS)
                 {
-                    LONG cx =   pswp->cx
-                              - 2 * WinQuerySysValue(HWND_DESKTOP,
-                                                     SV_CXSIZEBORDER);
+                    LONG cxFrame = WinQuerySysValue(HWND_DESKTOP, SV_CXSIZEBORDER),
+                         cyFrame = WinQuerySysValue(HWND_DESKTOP, SV_CYSIZEBORDER);
+
+                    LONG  cx =   pswp->cx
+                               - 2 * cxFrame;
                     pswp->cy =   pgrCalcClientCY(cx)
-                               + 2 * WinQuerySysValue(HWND_DESKTOP,
-                                                      SV_CYSIZEBORDER);
+                               + 2 * cyFrame;
                 }
 
                 // we never want to become active:

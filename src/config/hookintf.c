@@ -1613,9 +1613,6 @@ MRESULT hifKeybdFunctionKeysItemChanged(PNOTEBOOKPAGE pnbp,
             }
         }
         break;
-
-        default:
-        break;
     }
 
     return mrc;

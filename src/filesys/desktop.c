@@ -121,6 +121,7 @@
  *
  *@@added V0.9.7 (2001-01-25) [umoeller]
  *@@changed V0.9.14 (2001-07-28) [umoeller]: added SHOWRUNDLG
+ *@@changed V0.9.20 (2002-07-03) [umoeller]: added POSTSHUTDOWN
  */
 
 BOOL dtpSetup(WPDesktop *somSelf,
@@ -143,30 +144,6 @@ BOOL dtpSetup(WPDesktop *somSelf,
         // one time... as a result, we fill a SHUTDOWNPARAMS
         // structure with the current settings and override
         // them when parsing szValue now.
-
-            /* typedef struct _SHUTDOWNPARAMS
-            {
-                BOOL        optReboot,
-                            optConfirm,
-                            optDebug;
-                ULONG       ulRestartWPS;
-                    // changed V0.9.5 (2000-08-10) [umoeller]:
-                    // restart Desktop flag, meaning:
-                    // -- 0: no, do shutdown
-                    // -- 1: yes, restart Desktop
-                    // -- 2: yes, restart Desktop, but logoff also
-                    //          (only if XWPSHELL is running)
-                BOOL        optWPSCloseWindows,
-                            optAutoCloseVIO,
-                            optLog,
-                            optAnimate,
-                            optAPMPowerOff,
-                            optAPMDelay,
-                            optWPSReuseStartupFolder,
-                            optEmptyTrashCan,
-                            optWarpCenterFirst;
-                CHAR        szRebootCommand[CCHMAXPATH];
-            } SHUTDOWNPARAMS, *PSHUTDOWNPARAMS; */
 
         SHUTDOWNPARAMS xsd;
         PSZ pszToken;
@@ -254,6 +231,23 @@ BOOL dtpSetup(WPDesktop *somSelf,
             } while (pszToken = strtok(NULL, ", "));
 
         brc = xsdInitiateShutdownExt(&xsd);
+    }
+    // added POSTSHUTDOWN string to support eStylerLite
+    // shutdown; if we use MENUITEMSELECTED=704, it cannot
+    // intercept the shutdown, so we have to post a WM_COMMAND
+    // instead
+    // V0.9.20 (2002-07-03) [umoeller]
+    else if (_wpScanSetupString(somSelf,
+                                (PSZ)pcszSetupString,
+                                "POSTSHUTDOWN",
+                                szValue,
+                                &cbValue))
+    {
+        WinPostMsg(cmnQueryActiveDesktopHWND(),
+                   WM_COMMAND,
+                   MPFROMSHORT(WPMENUID_SHUTDOWN),
+                   MPFROM2SHORT(CMDSRC_MENU,
+                                FALSE));
     }
 
     // V0.9.14 (2001-07-28) [umoeller]

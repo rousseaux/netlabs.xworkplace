@@ -1788,8 +1788,8 @@ VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
 VOID ctrpRemoveDragoverEmphasis(HWND hwndClient)
 {
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient, QWL_USER);
-    HPS hps = DrgGetPS(pXCenterData->Globals.hwndClient);
-    if (hps)
+    HPS hps;
+    if (hps = DrgGetPS(pXCenterData->Globals.hwndClient))
     {
         gpihSwitchToRGB(hps);
         ctrpDrawEmphasis(pXCenterData,
@@ -1838,7 +1838,7 @@ VOID ctrpRemoveDragoverEmphasis(HWND hwndClient)
  *          --  In the case of a folder, it figures out
  *              that the widget supports DRM_OS2FILE,
  *              among other things. So it accepts the
- *              dragover.
+ *              dragover too.
  *
  *      3)  On drop, things get more complicated.
  *
@@ -1848,10 +1848,11 @@ VOID ctrpRemoveDragoverEmphasis(HWND hwndClient)
  *              DM_DROP comes in. See ctrpDrop. In that
  *              case, everything happens synchronously,
  *              and the widget is copied or moved before
- *              DrgDrag returns.
+ *              DrgDrag returns in this function.
  *
  *          --  In the case of dropping on the desktop,
- *              we have _source_ rendering. The following
+ *              we have _source_ rendering -- in other
+ *              words, a terrible mess. The following
  *              sequence takes place:
  *
  *              1)  DM_DROP on a folder ends up in
@@ -1879,12 +1880,14 @@ VOID ctrpRemoveDragoverEmphasis(HWND hwndClient)
  *      quietly in WPFolder::wpRenderComplete (which causes
  *      a giant memory leak because the WPS exception handler
  *      then skips over the proper free code apparently).
+ *      This has finally been fixed with V0.9.19.
  *
  *@@added V0.9.9 (2001-03-09) [umoeller]
  *@@changed V0.9.13 (2001-06-27) [umoeller]: fixes for tray widgets
  *@@changed V0.9.14 (2001-07-31) [lafaix]: defines a default name for the widget
  *@@changed V0.9.14 (2001-08-05) [lafaix]: widgets can be copied too, now
- *@@changed V0.9.19 (2002-06-08) [umoeller]: added excpt handling to avoid massive memory leak
+ *@@changed V0.9.19 (2002-06-08) [umoeller]: added excpt handling
+ *@@changed V0.9.19 (2002-06-08) [umoeller]: fixed massive memory leaks
  */
 
 HWND ctrpDragWidget(HWND hwnd,
@@ -2057,11 +2060,11 @@ BOOL ctrpVerifyType(PDRAGITEM pdrgItem,
 
         strcat(pBuffer, ",");
 
-        if (pNeedle = malloc(strlen(pszType)+3))
+        if (pNeedle = malloc(strlen(pszType) + 3))
         {
             PSZ pszCur = pBuffer;
             pNeedle[0] = ',';
-            strcpy(pNeedle+1, pszType);
+            strcpy(pNeedle + 1, pszType);
             strcat(pNeedle, ",");
 
             while (*pszCur)
@@ -2139,11 +2142,6 @@ static PLINKLIST GetDragoverObjects(PDRAGINFO pdrgInfo,
                     pllObjects = lstCreate(FALSE);
 
                 // dereference shadows
-                /* while ((pReal) && (_somIsA(pReal, _WPShadow)))
-                    pReal = _wpQueryShadowedObject(pReal,
-                                                   TRUE); // lock
-                   */
-
                 if (pReal = objResolveIfShadow(pReal))
                     lstAppendItem(pllObjects, pReal);
 
@@ -2565,6 +2563,10 @@ MRESULT ctrpDragOver(HWND hwndClient,
 
 /*
  *@@ CopyWidgetSetting:
+ *      copies a widget setting properly, including all
+ *      trays and subwidgets if the widget is a tray widget.
+ *
+ *      Used from CopyOrMoveWidget.
  *
  *@@added V0.9.19 (2002-05-14) [umoeller]
  */
@@ -2656,13 +2658,17 @@ static APIRET CopyWidgetSetting(PPRIVATEWIDGETSETTING pSettingSource,
 
 /*
  *@@ CopyOrMoveWidget:
+ *      part of the implementation of ctrpDrop, when a
+ *      widget is dropped on an XCenter. Depending on
+ *      whether the Ctrl key is pressed, we copy or
+ *      move the widget.
  *
  *@@added V0.9.19 (2002-05-23) [umoeller]
  */
 
 static APIRET CopyOrMoveWidget(PXCENTERWINDATA pXCenterData,
-                               PDRAGINFO pdrgInfo,
-                               PWIDGETPOSITION pposTarget)
+                               PDRAGINFO pdrgInfo,          // in: widget's draginfo
+                               PWIDGETPOSITION pposTarget)  // in: target position for widget
 {
     APIRET      arc = NO_ERROR;
     XCenter     *pobjSourceLocked = NULL;
@@ -2814,13 +2820,16 @@ static APIRET CopyOrMoveWidget(PXCENTERWINDATA pXCenterData,
 
 /*
  *@@ CreateWidgetsFromFiles:
+ *      part of the implementation of ctrpDrop, when
+ *      widget _files_ are dropped on an XCenter. We
+ *      then create widgets accordingly.
  *
  *@@added V0.9.19 (2002-05-23) [umoeller]
  */
 
 static APIRET CreateWidgetsFromFiles(PXCENTERWINDATA pXCenterData,
-                                     PDRAGINFO pdrgInfo,
-                                     PWIDGETPOSITION pposTarget)
+                                     PDRAGINFO pdrgInfo,            // in: draginfo for files
+                                     PWIDGETPOSITION pposTarget)    // in: target position for new widgets
 {
     APIRET arc = NO_ERROR;
 

@@ -38,7 +38,8 @@
 #include <assert.h>             // needed for except.h
 
 // generic headers
-#define DONT_REPLACE_MALLOC         // in case mem debug is enabled
+#define DONT_REPLACE_MALLOC             // in case mem debug is enabled
+#define DONT_REPLACE_FOR_DBCS           // do not replace strchr with DBCS version
 #include "setup.h"                      // code generation and debugging options
 
 // disable wrappers, because we're not linking statically
@@ -401,10 +402,6 @@ void WgtScanSetup(PCSZ pcszSetupString,
     }
     // else: leave this field null
 
-
-
-    ////////////////////////////////////////////////////////////////
-
     // view:  *..multi-view | otherwise..single-view where setup-string is drive-letter
     if (p = pctrScanSetupString(pcszSetupString,
                                 "VIEW"))
@@ -432,43 +429,46 @@ void WgtScanSetup(PCSZ pcszSetupString,
  *      composes a new setup string.
  *      The caller must invoke xstrClear on the
  *      string after use.
+ *
+ *@@changed V0.9.20 (2002-07-03) [umoeller]: WIDTH save was missing, fixed
  */
 
 void WgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared first)
                   PDISKFREESETUP pSetup)
 {
     CHAR    szTemp[100];
-    // PSZ     psz = 0;
     pxstrInit(pstrSetup, 100);
 
+    // width was missing V0.9.20 (2002-07-03) [umoeller]
+    pdrv_sprintf(szTemp, "WIDTH=%d;",
+                 pSetup->cx);
+    pxstrcat(pstrSetup, szTemp, 0);
+
     pdrv_sprintf(szTemp, "BGNDCOL=%06lX;",
-            pSetup->lcolBackground);
+                 pSetup->lcolBackground);
     pxstrcat(pstrSetup, szTemp, 0);
 
     pdrv_sprintf(szTemp, "TEXTCOL=%06lX;",
-            pSetup->lcolForeground);
+                 pSetup->lcolForeground);
     pxstrcat(pstrSetup, szTemp, 0);
 
     if (pSetup->pszFont)
     {
         // non-default font:
         pdrv_sprintf(szTemp, "FONT=%s;",
-                pSetup->pszFont);
+                     pSetup->pszFont);
         pxstrcat(pstrSetup, szTemp, 0);
     }
 
+    // view:  *..multi-view | otherwise..single-view where setup-string is drive-letter
+    pdrv_sprintf(szTemp, "VIEW=%c;",
+                 pSetup->chDrive);
+    pxstrcat(pstrSetup, szTemp, 0);
 
-   ////////////////////////////////////////////////////////////////
-
-   // view:  *..multi-view | otherwise..single-view where setup-string is drive-letter
-   pdrv_sprintf(szTemp, "VIEW=%c;",
-           pSetup->chDrive);
-   pxstrcat(pstrSetup, szTemp, 0);
-
-   // different 'show-styles'
-   pdrv_sprintf(szTemp, "SHOW=%02d;",
-           pSetup->lShow);
-   pxstrcat(pstrSetup, szTemp, 0);
+    // different 'show-styles'
+    pdrv_sprintf(szTemp, "SHOW=%02d;",
+                 pSetup->lShow);
+    pxstrcat(pstrSetup, szTemp, 0);
 }
 
 /* ******************************************************************
@@ -826,8 +826,7 @@ BOOL WgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                  *      us in mp2.
                  *
                  *      NOTE: This only comes in with settings
-                 *      dialogs. Since we don't have one, this
-                 *      really isn't necessary.
+                 *      dialogs.
                  */
 
                 case XN_SETUPCHANGED:
@@ -1175,6 +1174,11 @@ BOOL GetDriveInfo(PDISKFREEPRIVATE pPrivate)
     return FALSE;
 }
 
+/*
+ *@@ GetDrive:
+ *
+ */
+
 void GetDrive(HWND hwnd,
               PXCENTERWIDGET pWidget,
               BOOL fNext)
@@ -1286,6 +1290,7 @@ void WgtDestroy(HWND hwnd,
  *
  *@@changed V0.9.11 (2001-04-18) [umoeller]: couple of fixes for the winproc.
  *@@changed V0.9.19 (2002-05-07) [umoeller]: added double-click for open and timer, thanks yuri
+ *@@changed V0.9.20 (2002-07-03) [umoeller]: width was never saved, fixed
  */
 
 MRESULT EXPENTRY fnwpSampleWidget(HWND hwnd,
@@ -1400,8 +1405,6 @@ MRESULT EXPENTRY fnwpSampleWidget(HWND hwnd,
         break;
 #endif
 
-
-
         case WM_PAINT:
             WgtPaint(hwnd, pWidget);
         break;
@@ -1442,6 +1445,34 @@ MRESULT EXPENTRY fnwpSampleWidget(HWND hwnd,
                         WinInvalidateRect(hwnd, NULLHANDLE, TRUE);
                 }
             }
+        break;
+
+        /*
+         * WM_WINDOWPOSCHANGED:
+         *      save new width in setup string V0.9.20 (2002-07-03) [umoeller].
+         */
+
+        case WM_WINDOWPOSCHANGED:
+        {
+            PSWP pswpNew = (PSWP)mp1,
+                 pswpOld = pswpNew + 1;
+            if (    (pswpNew->fl & SWP_SIZE)
+                 && (pswpNew->cx != pswpOld->cx)
+               )
+            {
+                XSTRING strSetup;
+                PDISKFREEPRIVATE pPrivate = (PDISKFREEPRIVATE)pWidget->pUser;
+                pPrivate->Setup.cx = pswpNew->cx;
+                WgtSaveSetup(&strSetup,
+                             &pPrivate->Setup);
+                if (strSetup.ulLength)
+                    WinSendMsg(WinQueryWindow(hwnd, QW_PARENT),
+                               XCM_SAVESETUP,
+                               (MPARAM)hwnd,
+                               (MPARAM)strSetup.psz);
+                pxstrClear(&strSetup);
+            }
+        }
         break;
 
         /*

@@ -271,5 +271,7 @@
     #define ID_XSH_OBJICONPAGE1_X           161     // V0.9.19 (2002-06-15) [umoeller]
 
     #define ID_XFH_BATCHRENAME              162     // V0.9.19 (2002-06-18) [umoeller]
+
+    #define ID_XSH_SETTINGS_MACROS          163     // V0.9.20 (2002-07-03) [umoeller]
 #endif
 
