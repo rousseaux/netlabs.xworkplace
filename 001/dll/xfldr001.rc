@@ -1188,6 +1188,10 @@ BEGIN
     DID_EDIT                            "~Edit..."
     DID_REMOVE                          "~Remove"
 
+    /* and these with V0.9.21 (2002-09-13) [umoeller] */
+    DID_OPEN                            "~Open"
+    DID_SAVE                            "~Save"
+
     /* strings formerly in ID_XSD_SET25ADDMENUS
         all removed V0.9.19 */
 

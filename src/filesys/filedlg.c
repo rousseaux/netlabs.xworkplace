@@ -731,13 +731,16 @@ HWND CreateControlFont(HWND hwndParent,
 }
 
 /*
- *@@ MainControlCreate:
+ *@@ FrameCreateControls:
  *
  *@@changed V0.9.21 (2002-08-21) [umoeller]: extracted fdrSetupSplitView
  */
 
-STATIC VOID MainControlCreate(PFILEDLGDATA pWinData)
+STATIC VOID FrameCreateControls(PFILEDLGDATA pWinData)
 {
+    PFILEDLG    pfd = pWinData->pfd;
+    PCSZ        pcszOKButton;
+
     // create static on top of left tree view
     pWinData->hwndTreeCnrTxt
         = CreateControlFont(pWinData->sv.hwndMainControl,           // parent
@@ -824,12 +827,21 @@ STATIC VOID MainControlCreate(PFILEDLGDATA pWinData)
     winhSetEntryFieldLimit(pWinData->hwndFileEntry, CCHMAXPATH - 1);
     lstAppendItem(&pWinData->llDialogControls, (PVOID)pWinData->hwndFileEntry);
 
+    // text for the OK button depends
+    if (!(pcszOKButton = pfd->pszOKButton))
+        // not specified by caller:
+        // use "Open" or "Save" then ("OK" is meaningless, if you ask me)
+        // V0.9.21 (2002-09-13) [umoeller]
+        pcszOKButton = cmnGetString( (pfd->fl & FDS_SAVEAS_DIALOG)
+                                        ? DID_SAVE
+                                        : DID_OPEN);
+
     pWinData->hwndOK
         = CreateControlFont(pWinData->sv.hwndMainControl,           // parent
                             pWinData->sv.hwndMainFrame,
                             WC_BUTTON,
-                            (pWinData->pfd->pszOKButton)
-                              ? pWinData->pfd->pszOKButton
+                            (pfd->pszOKButton)
+                              ? pfd->pszOKButton
                               : cmnGetString(DID_OK),
                             WS_VISIBLE | BS_PUSHBUTTON | BS_DEFAULT,
                             DID_OK);
@@ -844,7 +856,7 @@ STATIC VOID MainControlCreate(PFILEDLGDATA pWinData)
                             DID_CANCEL);
     lstAppendItem(&pWinData->llDialogControls, (PVOID)pWinData->hwndCancel);
 
-    if (pWinData->pfd->fl & FDS_HELPBUTTON)
+    if (pfd->fl & FDS_HELPBUTTON)
     {
         pWinData->hwndHelp
             = CreateControlFont(pWinData->sv.hwndMainControl,           // parent
@@ -858,13 +870,13 @@ STATIC VOID MainControlCreate(PFILEDLGDATA pWinData)
 }
 
 /*
- *@@ MainControlChar:
+ *@@ FrameChar:
  *      implementation for WM_CHAR in fnwpMainControl.
  *
  *@@added V0.9.9 (2001-03-13) [umoeller]
  */
 
-STATIC MRESULT MainControlChar(HWND hwnd, MPARAM mp1, MPARAM mp2)
+STATIC MRESULT FrameChar(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     BOOL brc = FALSE;               // not processed
     PFILEDLGDATA pWinData = WinQueryWindowPtr(hwnd, QWL_USER);
@@ -1466,7 +1478,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
                                   _wpQueryCoreRecord(pDrivesFolder),
                                   FFL_FOLDERSONLY | FFL_EXPAND);
 
-                MainControlCreate(&WinData);
+                FrameCreateControls(&WinData);
 
                 PMPF_POPULATESPLITVIEW(("subclassing hwndMainFrame"));
 

@@ -891,19 +891,6 @@ warpin: release
     warpin_001.cmd
     $(RUN_DCD) $(CURRENT_DIR)
 
-#
-# Special target "transfer": this is not called by "all",
-# but must be set on the NMAKE command line.
-# Will work only on my private system.
-#
-
-transfer: warpin
-    @echo $(MAKEDIR)\makefile [$@]: Transferring WPI from $(XWPRELEASE).
-    $(RUN_DCD) $(XWPRELEASE)
-    cd ..
-    sendfile laptop xwp-temp.wpi D:\install\xwp-transferred.wpi
-    $(RUN_DCD) $(CURRENT_DIR)
-
 daily: release
     @echo $(MAKEDIR)\makefile [$@]: Building WPI from $(XWPRELEASE).
     K:

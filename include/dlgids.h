@@ -207,6 +207,8 @@
 #define DID_ABORT              85
 #define DID_RETRY              84
 #define DID_IGNORE             83
+#define DID_OPEN               82           // V0.9.21 (2002-09-13) [umoeller]
+#define DID_SAVE               81           // V0.9.21 (2002-09-13) [umoeller]
 
 /* DID_OK and DID_CANCEL are def'd somewhere in os2.h */
 

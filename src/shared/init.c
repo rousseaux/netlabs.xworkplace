@@ -1760,6 +1760,7 @@ VOID initMain(VOID)
     // checks for whether XWP was just installed; if so, T1M_WELCOME is
     // posted to the thread-1 object window.
 
+    initLog("Leaving initMain");
 }
 
 /* ******************************************************************
@@ -1804,6 +1805,8 @@ BOOL initRepairDesktopIfBroken(VOID)
 
     WPFolder    *pBootRootFolder;
 
+    initLog("Entering " __FUNCTION__"...");
+
     // get the global pointer to the WPS's drive data
     // array; we KNOW that the boot drive is valid,
     // so we call _wpQueryRootFolder to get the root
@@ -1814,11 +1817,11 @@ BOOL initRepairDesktopIfBroken(VOID)
     {
         PIBMDRIVEDATA   pDriveDataBoot;
 
-        PMPF_STARTUP(("pBootRootFolder is 0x%lX", pBootRootFolder));
+        initLog("  pBootRootFolder is 0x%lX", pBootRootFolder);
 
         if (pDriveDataBoot = _wpQueryDriveData(pBootRootFolder))
         {
-            PMPF_STARTUP(("pDriveDataBoot is 0x%lX", pDriveDataBoot));
+            initLog("  pDriveDataBoot is 0x%lX", pDriveDataBoot);
 
             // this is the pointer to the n'th item in the
             // global drive data array; the first index in
@@ -1828,14 +1831,12 @@ BOOL initRepairDesktopIfBroken(VOID)
                             - (szBootRoot[0] - 'A');        // 0 for A:, 1 for B:, ...
         }
         else
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "_wpQueryDriveData returned NULL for boot root folder 0x%lX",
-                   pBootRootFolder);
+            initLog("  WARNING: _wpQueryDriveData returned NULL for boot root folder 0x%lX",
+                     pBootRootFolder);
     }
     else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "_wpclsQueryObjectFromPath(\"%s\") returned NULL",
-               szBootRoot);
+        initLog("  WARNING: _wpclsQueryObjectFromPath(\"%s\") returned NULL",
+                szBootRoot);
 
     // now check if the desktop was considered valid
     // during initMain()
@@ -2017,6 +2018,8 @@ BOOL initRepairDesktopIfBroken(VOID)
 
         } while (fRepeat);
     }
+
+    initLog("Leaving " __FUNCTION__ ", returning BOOL %d.", brc);
 
     return brc;
 }
