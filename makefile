@@ -64,13 +64,6 @@
 !if [@echo +++++ Entering $(MAKEDIR)]
 !endif
 
-# PROJECT_BASE_DIR is used by "setup.in"
-# to identify the root of the source
-# tree. This is passed to the sub-makefiles.
-!ifndef PROJECT_BASE_DIR
-PROJECT_BASE_DIR = $(CVS_WORK_ROOT)\xworkplace
-!endif
-
 # include setup (compiler options etc.)
 !include setup.in
 
@@ -427,8 +420,8 @@ src\shared\xwp.def: include\bldlevel.h
 
 $(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(ANIOBJS) src\shared\xwp.def
         @echo $(MAKEDIR)\makefile: Linking $@
-        $(LINK) /OUT:$@ src\shared\xwp.def @<<link.tmp
-$(OBJS) $(HLPOBJS) $(ANIOBJS) $(LIBS)
+        $(LINK) @<<
+/OUT:$@ src\shared\xwp.def $(OBJS) $(HLPOBJS) $(ANIOBJS) $(LIBS)
 <<
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
@@ -655,7 +648,9 @@ $(XWP_OUTPUT_ROOT)\xwphook.lib: $(MODULESDIR)\$(@B).dll src\hook\$(@B).def
 
 $(MODULESDIR)\xwpdaemn.exe: src\Daemon\$(@B).def $(DMNOBJS) $(XWP_OUTPUT_ROOT)\exe_mt\$(@B).res
         @echo $(MAKEDIR)\makefile: Linking $(MODULESDIR)\$(@B).exe
-        $(LINK) /OUT:$(MODULESDIR)\$(@B).exe src\Daemon\$(@B).def $(DMNOBJS) $(PMPRINTF_LIB)
+        $(LINK) @<<
+/OUT:$(MODULESDIR)\$(@B).exe src\Daemon\$(@B).def $(DMNOBJS) $(PMPRINTF_LIB)
+<<
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif

@@ -31,16 +31,15 @@
  *      CLASSFIELDINFO.flData has the SORTBY_SUPPORTED flag
  *      set (even if the details column is never visible),
  *      the WPS will make this detail available as a sort
- *      criterion. That is, if such a sort flag is set for
- *      an object detail, the WPS inserts the column title
+ *      criterion -- that is, the WPS inserts the column title
  *      in the "Sort" submenu, shows it on the "Sort" page,
- *      and sets some corresponding comparison function for
- *      the folder containers automatically.
+ *      and will use some corresponding comparison function
+ *      for the folder containers automatically.
  *
  *      The details to be taken into account for sorting are
  *      determined by the folder's "sort class". For example,
  *      the trash can's sort class is set to XWPTrashObject
- *      (instead of the standard WPFileSystem) and boom! we
+ *      (instead of the standard WPFileSystem), and boom! we
  *      get the trash object details in the sort menu.
  *
  *      Over the years, I have tried several approaches to
@@ -97,7 +96,7 @@
  *      own set of global and instance settings for both the default
  *      sort criterion and the "always sort" flag and then _always_
  *      sets its own comparison function directly on the container.
- *      As a result, only XWP does all the sorting now.
+ *      As a result, XWP has to do _all_ the sorting now.
  *
  *      To be able to still get the WPSSORTINFO which sits somewhere
  *      in the WPFolder instance data, we added XFolder::wpRestoreData,
@@ -107,7 +106,8 @@
  *      and store it in XWorkplace's instance data. We can therefore
  *      manipulate the "Always sort" flag in there also.
  *
- *      So, what's new with 0.9.12?
+ *      We add that with the old XFolder already. So, what's
+ *      new with 0.9.12?
  *
  *      The old folder sort code (back from XFolder, used
  *      before 0.9.12) simply assumed that all items in
@@ -163,6 +163,15 @@
  *          func ourselves and not let the WPS do it, because the WPS
  *          doesn't know about the additional criteria. (This doesn't
  *          always work, but eventually we WILL set the sort func.)
+ *
+ *          If one of the "special" criteria is queried, we return
+ *          a hard-coded sort func then (in shared\cnrsort.c).
+ *          All of them now come in two flavors, depending on
+ *          whether "folders first" is enabled.
+ *
+ *          Otherwise fnCompareDetailsColumn is used, which compares
+ *          the details columns and takes the "folders first" setting
+ *          into account itself.
  *
  *          When a folder is opened, the XWP sort func is then set
  *          from fdrManipulateNewView.

@@ -25,15 +25,9 @@
 #
 #       $(RC)        call resource compiler
 
-!ifndef PROJECT_BASE_DIR
-!error in setup.in: PROJECT_BASE_DIR must be set before including "setup.in". Terminating.
-!endif
-
-!ifndef CVS_WORK_ROOT
-!error in setup.in: You must set CVS_WORK_ROOT to the root of your CVS tree. See PROGREF.INF for details.
-!endif
-
 !include config.in
+
+PROJECT_BASE_DIR = $(CVS_WORK_ROOT)\xworkplace
 
 # RUNNING XWORKPLACE
 # ------------------
