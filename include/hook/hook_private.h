@@ -131,9 +131,11 @@
         // this gets loaded from OS2.INI
         HOOKCONFIG  HookConfig;
 
+#ifndef __NOPAGEMAGE__
         // PageMage configuration data shared by daemon and the hook;
         // this gets loaded from OS2.INI also
         PAGEMAGECONFIG PageMageConfig;
+#endif
 
         BOOL        fSendMsgHooked,     // send-message hook installed?
                     fLockupHooked,      // lockup hook installed?
@@ -151,12 +153,14 @@
         HAB         habDaemonObject;
                 // anchor block of hwndDaemonObject; cached for speed
 
+#ifndef __NOPAGEMAGE__
         HWND        hwndPageMageClient;
                 // PageMage client window, created by pgmcCreateMainControlWnd
         HWND        hwndPageMageFrame;
                 // PageMage frame window, created by pgmcCreateMainControlWnd
         HWND        hwndPageMageMoveThread;
                 // PageMage move thread (fnwpMoveThread)
+#endif
 
         HMODULE     hmodDLL;
                 // XWPHOOK.DLL module handle
@@ -208,11 +212,13 @@
                 // TRUE if mouse pointer has been hidden
 
         // PageMage
+#ifndef __NOPAGEMAGE__
         BOOL        fDisablePgmgSwitching;
         BOOL        fDisableMouseSwitch;
                 // TRUE if processing a mouse switch request.  Focus
                 // changes are disable during this.
                 /// V0.9.9 (2001-03-14) [lafaix]
+#endif
 
         // sliding menus
         HWND        hwndMenuUnderMouse;
@@ -237,6 +243,7 @@
      *                                                                  *
      ********************************************************************/
 
+#ifndef __NOPAGEMAGE__
     #define PGMG_INVALIDATECLIENT   (WM_USER + 300)
     #define PGMG_ZAPPO              (WM_USER + 301)
     // #define PGMG_LOCKUP             (WM_USER + 302)
@@ -252,6 +259,7 @@
     #define PGOM_HOOKKEY            (WM_USER + 323)
     #define PGOM_FOCUSCHANGE        (WM_USER + 324)
     #define PGOM_MOUSESWITCH        (WM_USER + 325)
+#endif
 
     /* ******************************************************************
      *
@@ -279,6 +287,11 @@
     VOID _Optlink WMButton_SystemMenuContext(HWND hwnd);
 
     BOOL _Optlink WMMouseMove_MB3Scroll(HWND hwnd);
+
+    BOOL _Optlink HandleMB3Msgs(PQMSG pqmsg,
+                                PBOOL pfRestartAutoHide);
+
+    HWND _Optlink GetFrameWindow(HWND hwndTemp);
 
     BOOL _Optlink WMMouseMove(PQMSG pqmsg,
                               PBOOL pfRestartAutoHide);

@@ -85,43 +85,46 @@
     #define FOPSERR_FILE_THREAD_CRASHED       (FOPSERR_FIRST_CODE + 5)
             // fopsFileThreadProcessing crashed
     #define FOPSERR_CANCELLEDBYUSER           (FOPSERR_FIRST_CODE + 6)
-    #define FOPSERR_MOVE2TRASH_READONLY       (FOPSERR_FIRST_CODE + 7)
+    #define FOPSERR_NO_TRASHCAN               (FOPSERR_FIRST_CODE + 7)
+            // trash can doesn't exist, cannot delete
+            // V0.9.16 (2001-11-10) [umoeller]
+    #define FOPSERR_MOVE2TRASH_READONLY       (FOPSERR_FIRST_CODE + 8)
             // moving WPFileSystem which has read-only:
             // this should prompt the user
-    #define FOPSERR_MOVE2TRASH_NOT_DELETABLE  (FOPSERR_FIRST_CODE + 8)
+    #define FOPSERR_MOVE2TRASH_NOT_DELETABLE  (FOPSERR_FIRST_CODE + 9)
             // moving non-deletable to trash can: this should abort
-    #define FOPSERR_DELETE_READONLY           (FOPSERR_FIRST_CODE + 9)
+    #define FOPSERR_DELETE_READONLY           (FOPSERR_FIRST_CODE + 10)
             // deleting WPFileSystem which has read-only flag;
             // this should prompt the user
-    #define FOPSERR_DELETE_NOT_DELETABLE      (FOPSERR_FIRST_CODE + 10)
+    #define FOPSERR_DELETE_NOT_DELETABLE      (FOPSERR_FIRST_CODE + 11)
             // deleting not-deletable; this should abort
-    #define FOPSERR_TRASHDRIVENOTSUPPORTED    (FOPSERR_FIRST_CODE + 11)
-    #define FOPSERR_WPFREE_FAILED             (FOPSERR_FIRST_CODE + 12)
-    #define FOPSERR_LOCK_FAILED               (FOPSERR_FIRST_CODE + 13)
+    #define FOPSERR_TRASHDRIVENOTSUPPORTED    (FOPSERR_FIRST_CODE + 12)
+    #define FOPSERR_WPFREE_FAILED             (FOPSERR_FIRST_CODE + 13)
+    #define FOPSERR_LOCK_FAILED               (FOPSERR_FIRST_CODE + 14)
             // requesting object mutex failed
-    #define FOPSERR_START_FAILED              (FOPSERR_FIRST_CODE + 14)
+    #define FOPSERR_START_FAILED              (FOPSERR_FIRST_CODE + 15)
             // fopsStartTask failed
-    #define FOPSERR_POPULATE_FOLDERS_ONLY     (FOPSERR_FIRST_CODE + 15)
+    #define FOPSERR_POPULATE_FOLDERS_ONLY     (FOPSERR_FIRST_CODE + 16)
             // fopsAddObjectToTask works on folders only with XFT_POPULATE
-    #define FOPSERR_POPULATE_FAILED           (FOPSERR_FIRST_CODE + 16)
+    #define FOPSERR_POPULATE_FAILED           (FOPSERR_FIRST_CODE + 17)
             // wpPopulate failed on folder during XFT_POPULATE
-    #define FOPSERR_WPQUERYFILENAME_FAILED    (FOPSERR_FIRST_CODE + 17)
+    #define FOPSERR_WPQUERYFILENAME_FAILED    (FOPSERR_FIRST_CODE + 18)
             // wpQueryFilename failed
-    #define FOPSERR_WPSETATTR_FAILED          (FOPSERR_FIRST_CODE + 18)
+    #define FOPSERR_WPSETATTR_FAILED          (FOPSERR_FIRST_CODE + 19)
             // wpSetAttr failed
-    #define FOPSERR_GETNOTIFYSEM_FAILED       (FOPSERR_FIRST_CODE + 19)
+    #define FOPSERR_GETNOTIFYSEM_FAILED       (FOPSERR_FIRST_CODE + 20)
             // fdrGetNotifySem failed
-    #define FOPSERR_REQUESTFOLDERMUTEX_FAILED (FOPSERR_FIRST_CODE + 20)
+    #define FOPSERR_REQUESTFOLDERMUTEX_FAILED (FOPSERR_FIRST_CODE + 21)
             // wpshRequestFolderSem failed
-    #define FOPSERR_NOT_FONT_FILE             (FOPSERR_FIRST_CODE + 21)
+    #define FOPSERR_NOT_FONT_FILE             (FOPSERR_FIRST_CODE + 22)
             // with XFT_INSTALLFONTS: non-XWPFontFile passed
-    #define FOPSERR_FONT_ALREADY_INSTALLED    (FOPSERR_FIRST_CODE + 22)
+    #define FOPSERR_FONT_ALREADY_INSTALLED    (FOPSERR_FIRST_CODE + 23)
             // with XFT_INSTALLFONTS: XWPFontFile is already installed
-    #define FOPSERR_NOT_FONT_OBJECT           (FOPSERR_FIRST_CODE + 23)
+    #define FOPSERR_NOT_FONT_OBJECT           (FOPSERR_FIRST_CODE + 24)
             // with XFT_DEINSTALLFONTS: non-XWPFontObject passed
-    #define FOPSERR_FONT_ALREADY_DELETED      (FOPSERR_FIRST_CODE + 24)
+    #define FOPSERR_FONT_ALREADY_DELETED      (FOPSERR_FIRST_CODE + 25)
             // with XFT_DEINSTALLFONTS: font no longer present in OS2.INI.
-    #define FOPSERR_FONT_STILL_IN_USE         (FOPSERR_FIRST_CODE + 25)
+    #define FOPSERR_FONT_STILL_IN_USE         (FOPSERR_FIRST_CODE + 26)
             // with XFT_DEINSTALLFONTS: font is still in use;
             // this is only a warning, it will be gone after a reboot
 
@@ -296,7 +299,9 @@
     DECLARE_CMN_STRING(XFOLDER_FONTFOLDERID, "<XWP_FONTFOLDER>");
 
     DECLARE_CMN_STRING(XFOLDER_WPSID, "<XWP_WPS>");
+#ifndef __NOOS2KERNEL__
     DECLARE_CMN_STRING(XFOLDER_KERNELID, "<XWP_KERNEL>");
+#endif
     DECLARE_CMN_STRING(XFOLDER_SCREENID, "<XWP_SCREEN>");
 
 #ifndef __XWPLITE__
@@ -333,7 +338,9 @@
     DECLARE_CMN_STRING(G_pcszXWPKeyboard, "XWPKeyboard");
 
     DECLARE_CMN_STRING(G_pcszXWPSetup, "XWPSetup");
+#ifndef __NOOS2KERNEL__
     DECLARE_CMN_STRING(G_pcszXFldSystem, "XFldSystem");
+#endif
     DECLARE_CMN_STRING(G_pcszXFldWPS, "XFldWPS");
     DECLARE_CMN_STRING(G_pcszXWPScreen, "XWPScreen");
 #ifndef __XWPLITE__
@@ -754,6 +761,9 @@
 #ifndef __ALWAYSREPLACEICONPAGE__
         ReplaceIconPage,
 #endif
+#ifndef __NOREPLACEFILEEXISTS__
+        ReplaceFileExists,
+#endif
         TurboFolders,            // warning: this will return the setting
                                  // that was once determined on WPS startup
         ___dummy
@@ -924,7 +934,7 @@
                         // V0.9.0, was: WpsShowClassInfo;
         ULONG       SBForViews,
                         // XFldWPS: SBV_xxx flags
-                    fReplFileExists,
+                    __fReplFileExists,
                         // V0.9.0, was: ReplConfirms;
                         // XFldWPS, replace "File Exists" dialog
                     __fBootLogo,
@@ -1276,8 +1286,6 @@
                                  USHORT usFlags,
                                  USHORT usKeyCode);
 
-    BOOL XWPENTRY cmnAddProductInfoMenuItem(HWND hwndMenu);
-
     VOID XWPENTRY cmnAddCloseMenuItem(HWND hwndMenu);
 
     /* ******************************************************************
@@ -1549,6 +1557,18 @@
 
     /********************************************************************
      *
+     *   Product info
+     *
+     ********************************************************************/
+
+    #ifndef __XWPLITE__
+        BOOL XWPENTRY cmnAddProductInfoMenuItem(HWND hwndMenu);
+    #endif
+
+    VOID XWPENTRY cmnShowProductInfo(HWND hwndOwner, ULONG ulSound);
+
+    /********************************************************************
+     *
      *   Miscellaneae
      *
      ********************************************************************/
@@ -1571,8 +1591,6 @@
         HWND XWPENTRY cmnQueryActiveDesktopHWND(VOID);
     #endif
 
-    VOID XWPENTRY cmnShowProductInfo(HWND hwndOwner, ULONG ulSound);
-
     #define RUN_MAXITEMS 20
 
     HAPP XWPENTRY cmnRunCommandLine(HWND hwndOwner,
@@ -1585,6 +1603,8 @@
     VOID XWPENTRY cmnSetControlsFont(HWND hwnd, SHORT usIDMin, SHORT usIDMax);
     typedef VOID XWPENTRY CMNSETCONTROLSFONT(HWND hwnd, SHORT usIDMin, SHORT usIDMax);
     typedef CMNSETCONTROLSFONT *PCMNSETCONTROLSFONT;
+
+    HPOINTER XWPENTRY cmnQueryDlgIcon(VOID);
 
     ULONG XWPENTRY cmnMessageBox(HWND hwndOwner,
                                  const char *pcszTitle,

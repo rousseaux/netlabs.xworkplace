@@ -99,7 +99,9 @@
 #define ID_SHUTICON1           106
 #define ID_SHUTICON2           107
 
+#ifndef __XWPLITE__
 #define ID_ICONSYS             108
+#endif
 #define ID_ICONWPS             109
 
 #define ID_ICONSDANIM1         110
@@ -119,16 +121,20 @@
 #define ID_ICONXWPTRASHEMPTY   121
 #define ID_ICONXWPTRASHFILLED  122
 
+#ifndef __XWPLITE__
 #define ID_ICONXWPMEDIA        123
+#endif
 #define ID_ICONXWPSTRING       124
 #define ID_ICONXMMCDPLAY       125
 #define ID_ICONXMMVOLUME       126
 #define ID_ICONXCENTER         127
 #define ID_ICONXMINI           128
 
+#ifndef __XWPLITE__
 #define ID_ICONXWPADMIN        129  // added V0.9.9 (2001-02-08) [umoeller]
+#endif
 
-#define ID_XFLDRBITMAP         130
+// #define ID_XFLDRBITMAP         130       // removed V0.9.16 (2001-11-10) [umoeller]
 
 #define ID_XWPBIGLOGO          131
 
@@ -194,9 +200,10 @@
  ******************************************/
 
 // for product info
-#define ID_XFD_PRODINFO                 200
+// #define ID_XFD_PRODINFO                 200      // removed V0.9.16 (2001-11-10) [umoeller]
 #define ID_XFD_PRODLOGO                 201
-#define ID_XFDI_XFLDVERSION             202
+// #define ID_XFDI_XFLDVERSION             202      // removed V0.9.16 (2001-11-10) [umoeller]
+#define ID_XSDI_INFO_STRING             203
 
 // "Select by name" dlg items
 #define ID_XFD_SELECTSOME               210
@@ -243,7 +250,7 @@
 #define ID_XFD_NOTEXTCLIP               280
 // #define ID_XFD_NOICONVIEW               281      removed V0.9.2 (2000-03-04) [umoeller]
 
-#define ID_XFD_WELCOME                  290
+// #define ID_XFD_WELCOME                  290      removed V0.9.16 (2001-11-10) [umoeller]
 #define ID_XFD_CREATINGCONFIG           291
 
 #define ID_XFD_STARTUPSTATUS            292
@@ -508,10 +515,12 @@
 #define ID_XSDI_FILES_EASIZE            747
 #define ID_XSDI_FILES_WORKAREA          748     // added V0.9.1 (99-12-20) [umoeller]
 
+#ifndef __NOFILEPAGE2__
 #define ID_XSD_FILESPAGE2               760
 #define ID_XSDI_FILES_EALIST            761
 #define ID_XSDI_FILES_EAINFO            762
 #define ID_XSDI_FILES_EACONTENTS        763
+#endif
 
 // "Details" page replacement (XFldDisk, V0.9.0)
 #define ID_XSD_DISK_DETAILS             770
@@ -1038,7 +1047,8 @@
 #define ID_SDDI_SHAREDGROUP             2154
 
 // XFldDesktop "Archives" replacement page (V0.9.0)
-#define ID_XSD_DTP_ARCHIVES             2155
+// #define ID_XSD_DTP_ARCHIVES             2155     // removed V0.9.16 (2001-11-22) [umoeller]
+#define ID_XSDI_ARC_CRITERIA_GROUP      2155        // V0.9.16 (2001-11-22) [umoeller]
 #define ID_XSDI_ARC_ENABLE              2156
 #define ID_XSDI_ARC_ALWAYS              2157
 #define ID_XSDI_ARC_NEXT                2158
@@ -1049,7 +1059,10 @@
 #define ID_XSDI_ARC_DAYS_SPIN           2163
 #define ID_XSDI_ARC_DAYS_SPINTXT1       2164
 #define ID_XSDI_ARC_SHOWSTATUS          2165
-#define ID_XSDI_ARC_ARCHIVES_SPIN       2166
+#define ID_XSDI_ARC_ARCHIVES_GROUP      2166        // V0.9.16 (2001-11-22) [umoeller]
+#define ID_XSDI_ARC_ARCHIVES_NO_TXT1    2167
+#define ID_XSDI_ARC_ARCHIVES_NO_SPIN    2168
+#define ID_XSDI_ARC_ARCHIVES_NO_TXT2    2169
 
 // "extended reboot" / "auto-close" dlg items
 #define ID_XSD_REBOOTEXT                2170
@@ -1959,7 +1972,9 @@
 #define ID_XCSI_FILEOPERATIONS          6040
 #define ID_XCSI_EXTASSOCS               6041
 #define ID_XCSI_CLEANUPINIS             6042
+#ifndef __NOREPLACEFILEEXISTS__
 #define ID_XCSI_REPLFILEEXISTS          6043
+#endif
 #define ID_XCSI_REPLDRIVENOTREADY       6044
 #define ID_XCSI_XWPTRASHCAN             6045
 #define ID_XCSI_REPLACEDELETE           6046
@@ -2042,10 +2057,12 @@
 #define ID_XSSI_COLMN_RESOURCESIZE      6155           // "Size"
 #define ID_XSSI_COLMN_RESOURCEFLAGS     6156           // "Flags"
 
+#ifndef __NOPAGEMAGE__
 #define ID_XSSI_SPECIAL_PAGEMAGEUP      6157           // "One screen up"
 #define ID_XSSI_SPECIAL_PAGEMAGERIGHT   6158           // "One screen right"
 #define ID_XSSI_SPECIAL_PAGEMAGEDOWN    6159           // "One screen down"
 #define ID_XSSI_SPECIAL_PAGEMAGELEFT    6160           // "One screen left"
+#endif
 
 #define ID_XSSI_MB3_AUTOSCROLL          6161           // "AutoScroll"
 #define ID_XSSI_MB3_DBLCLICK            6162           // "Double click"
@@ -2088,6 +2105,8 @@
 
 #define ID_CRSI_ENTERNEWTRAY            6191           // "Please enter a name for the tray to be created:"
 #define ID_CRSI_ENTERRENAMETRAY         6192           // "Please enter a new name for this tray:"
+
+#define ID_XSSI_WPSFDRVIEWPAGE          6193           // "Folder views"
 
 /******************************************
  *  string IDs for status bar mnemonics

@@ -1,9 +1,9 @@
 
-XWorkplace 0.9.15 README
+XWorkplace 0.9.16 README
 
 (W) Ulrich M”ller, Feb 7, 2000
 
-Last updated August 25, 2001
+Last updated November 3, 2001
 
 
 0. CONTENTS OF THIS FILE
@@ -29,7 +29,7 @@ Last updated August 25, 2001
 1. INTRODUCTION
 ===============
 
-    Welcome to XWorkplace V0.9.15.
+    Welcome to XWorkplace V0.9.16.
 
     XWorkplace is a complex set of replacement classes for the
     OS/2 Workplace Shell to enhance the WPS's behavior in many
@@ -46,11 +46,8 @@ Last updated August 25, 2001
     About this release
     ------------------
 
-    V0.9.15 is an interim release for the IBM Warp Community Workshop,
-    September to 21, 2001, Heidelberg, Germany. This only fixes a
-    couple of bugs compared to V0.9.14. However, since PageMage
-    appears to be finally mostly fixed now (which most users
-    complained about), this was released anyway.
+    This release fixes more bugs and (again) adds new features
+    which I wrote when I got tired of bugfixing.
 
     For details, refer to the "Version Notices" in the
     "XWorkplace User Guide". To extract the documentation

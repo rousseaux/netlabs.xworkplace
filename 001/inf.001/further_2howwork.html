@@ -73,8 +73,12 @@ WPS whenever a context menu item
 is selected by the user.
 <P>XFolder checks if one of its own (variable) menu items was selected; if so,
 it finds the corresponding object in the configuration folder and opens it. If this object
-is of the WPProgram class, the <A HREF="menu_4wpprogram.html">previously</A>
-described tricks are performed. If the object is
+is of the WPProgram class,
+<!-- V0.9.16: replaced the following -->
+&xwp; performs the usual tricks on it
+(see the context help for the &xwp; Configuration Folder for details).
+<!-- end V0.9.16 -->
+If the object is
 a template, no matter of what WPS class,
 it is not opened, but XFolder creates a new object from it in the current
 folder (via <CODE>wpCreateFromTemplate</CODE>).

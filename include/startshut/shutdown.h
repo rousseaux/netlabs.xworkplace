@@ -163,7 +163,7 @@
 
     VOID xsdQueryShutdownSettings(PSHUTDOWNPARAMS psdp);
 
-    BOOL xsdIsShutdownRunning(VOID);
+    ULONG xsdIsShutdownRunning(VOID);
 
     BOOL xsdInitiateShutdown(VOID);
 

@@ -30,6 +30,8 @@
 #ifndef PAGEMAGE_HEADER_INCLUDED
     #define PAGEMAGE_HEADER_INCLUDED
 
+#ifndef __NOPAGEMAGE__
+
     #define TIMEOUT_HMTX_WINLIST    20*1000
                 // raised V0.9.12 (2001-05-31) [umoeller]
 
@@ -138,6 +140,8 @@
 
     HWND pgmwGetWindowFromClientPoint(ULONG ulX,
                                       ULONG ulY);
+
+#endif
 
     /* ******************************************************************
      *

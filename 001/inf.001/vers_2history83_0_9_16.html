@@ -19,6 +19,11 @@ replaces the "Icon" page in every settings notebook.
 <P><LI>Common: WPS "Browse" buttons now use my new WPS file dialog routines.
 Try the "Browse" button on the new "Icon" page.
 
+<P><LI>Folders: Finally documented that setup string objects can be put
+into the &xwp; Configuration Folder as well to have the setup string invoked
+on the folder whose context menu was selected. This feature has been active
+for a while, but I forgot to document it.
+
 <P><LI>File types: Added icon display to "File types" page in "Workplace Shell".
 Also added "Properties" and "Open folder" items to association context menu.
 
@@ -60,6 +65,9 @@ for every message that is needed.
 buffered fprintf() calls sometimes didn't end up in the log at all (especially
 on crashes).
 
+<P><LI>Common: Per popular request, finally gave the status dialogs the usual
+thick dialog borders.
+
 <P><LI>Archiving: Changed the settings format for the WPS extended archiving. Please
 reconfigure.
 
@@ -89,6 +97,9 @@ in various places.
 <P><LI>Common: Removed all remaining must-complete sections in the code which
 sometimes prevented PMSHELL from exiting on kill or crashes.
 
+<P><LI>Common: Fixed a build problem which caused XWP to fail on some Warp 3 systems
+since some of the Warp 4 SOM imports cannot be resolved there.
+
 <P><LI>Startup: Fixed endlessly looping startup folders.
 
 <P><LI>Programs: Added more error checking to progOpenProgram.
@@ -116,6 +127,12 @@ the power icon was changed. Fixed.
 
 <P><LI>PageMage: &xcenter;s are now sticky always and do not have to be added manually
 to the "Stickies" list any more.
+
+<P><LI>PageMage: Repaint broke after PageMage was disabled and then re-opened. Fixed
+by Paul Ratcliffe.
+
+<P><LI>Hook: Object hotkeys stopped working after screen lockup, unless PageMage
+was enabled. Fixed.
 
 <P><LI>&xshutdown;: Paul Ratcliffe fixed bug trying to close the first switch list
 item twice.

@@ -109,6 +109,7 @@
                                      USHORT usNotifyCode,
                                      ULONG ulExtra);
 
+#ifndef __NOFILEPAGE2__
         VOID XWPENTRY fsysFile2InitPage(PCREATENOTEBOOKPAGE pcnbp,
                                         ULONG flFlags);
 
@@ -116,6 +117,7 @@
                                      ULONG ulItemID,
                                      USHORT usNotifyCode,
                                      ULONG ulExtra);
+#endif
 
         ULONG fsysInsertFilePages(WPObject *somSelf,
                                   HWND hwndNotebook);
@@ -126,7 +128,7 @@
      *
      ********************************************************************/
 
-#ifndef __NOMODULES__
+#ifndef __NOMODULEPAGES__
         VOID XWPENTRY fsysProgramInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                           ULONG flFlags);
 

@@ -47,8 +47,13 @@ FILES_TO_COPY = \
 all: $(FILES_TO_COPY)
     @echo ----- Leaving $(MAKEDIR)
 
-$(XWPRUNNING)\help\xfldr$(LANGUAGE).tmf: xfldr$(LANGUAGE).tmf
-    $(COPY) $(@B).tmf $(XWPRUNNING)\help
+!ifdef XWPLITE
+$(XWPRUNNING)\help\xfldr$(LANGUAGE).tmf: xfldr$(LANGUAGE).tmf xwplite$(LANGUAGE).tmf
+    $(COPY) $(@B).tmf+xwplite$(LANGUAGE).tmf $(XWPRUNNING)\help\$(@B).tmf
+!else
+$(XWPRUNNING)\help\xfldr$(LANGUAGE).tmf: xfldr$(LANGUAGE).tmf xwpfull$(LANGUAGE).tmf
+    $(COPY) $(@B).tmf+xwpfull$(LANGUAGE).tmf $(XWPRUNNING)\help\$(@B).tmf
+!endif
 
 $(XWPRUNNING)\install\crobj$(LANGUAGE).cmd: $(@B).cmd
     $(COPY) $(@B).cmd $(XWPRUNNING)\install

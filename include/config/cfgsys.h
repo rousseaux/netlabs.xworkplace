@@ -28,26 +28,6 @@
 
     /* ******************************************************************
      *
-     *   External APIs
-     *
-     ********************************************************************/
-
-    BOOL XWPENTRY cfgParseSwapPath(const char *pcszConfigSys,
-                                   PSZ pszSwapPath,
-                                   PULONG pulMinFree,
-                                   PULONG pulMinSize);
-    typedef BOOL XWPENTRY CFGPARSESWAPPATH(const char *pcszConfigSys,
-                                           PSZ pszSwapPath,
-                                           PULONG pulMinFree,
-                                           PULONG pulMinSize);
-    typedef CFGPARSESWAPPATH *PCFGPARSESWAPPATH;
-
-    ULONG XWPENTRY cfgQuerySwapperSize(VOID);
-    typedef ULONG XWPENTRY CFGQUERYSWAPPERSIZE(VOID);
-    typedef CFGQUERYSWAPPERSIZE *PCFGQUERYSWAPPERSIZE;
-
-    /* ******************************************************************
-     *
      *   XFldDisk notebook callbacks (notebook.c)
      *
      ********************************************************************/

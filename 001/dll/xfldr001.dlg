@@ -1,7 +1,7 @@
 #ifndef OS2_INCLUDED
    #include <os2.h>
 #endif
-DLGINCLUDE 1 "K:\projects\cvs\xworkplace\001\dll\dlgids.h"
+DLGINCLUDE 1 "R:\projects\cvs\xworkplace\001\dll\dlgids.h"
 
 DLGTEMPLATE ID_CRD_WINLISTWGT_SETTINGS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
@@ -659,8 +659,8 @@ END
 
 DLGTEMPLATE ID_SDD_CONFIRMWPS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "Restart Desktop", ID_SDD_CONFIRMWPS, 37, 24, 178, 78, , FCF_SYSMENU |
-            FCF_TITLEBAR
+    DIALOG  "Restart Desktop", ID_SDD_CONFIRMWPS, 37, 24, 178, 78, ,
+            FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
         ICON            ID_SDICON, ID_SDDI_ICON, 10, 53, 20, 16, WS_GROUP
         LTEXT           "Are you sure you wish to restart the Workplace Shel"
@@ -852,18 +852,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XFD_ARCHIVINGSTATUS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "XWorkplace Archive Maintenance", ID_XFD_ARCHIVINGSTATUS, 15, 54,
-            240, 37, NOT FS_DLGBORDER | FS_BORDER | FS_SCREENALIGN,
-            FCF_TITLEBAR
-    BEGIN
-        ICON            ID_ICONDLG, -1, 5, 18, 20, 16, WS_GROUP
-        LTEXT           "to be replaced", ID_XFDI_GENERICDLGTEXT, 30, 3, 205,
-                        30, DT_WORDBREAK
-    END
-END
-
 DLGTEMPLATE ID_XFD_BOOTUPSTATUS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "XWorkplace", ID_XFD_BOOTUPSTATUS, 75, 8, 195, 16, NOT
@@ -901,25 +889,6 @@ BEGIN
                         15, DT_VCENTER | DT_WORDBREAK
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         ICON            ID_ICONDLG, -1, 0, 0, 20, 16, WS_GROUP
-    END
-END
-
-DLGTEMPLATE ID_XFD_FILEOPSSTATUS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "to be replaced", ID_XFD_FILEOPSSTATUS, 10, 6, 200, 64, NOT
-            FS_DLGBORDER | FS_BORDER, FCF_SYSMENU | FCF_TITLEBAR
-    BEGIN
-        PUSHBUTTON      "~Pause", DID_CANCEL, 140, 5, 55, 12
-        CONTROL         "", ID_SDDI_PROGRESSBAR, 5, 6, 130, 10, WC_STATIC,
-                        SS_FGNDRECT | WS_VISIBLE
-                        PRESPARAMS PP_FOREGROUNDCOLOR, 0x00FF0000L
-        LTEXT           "Source:", -1, 6, 48, 42, 8
-        LTEXT           "", ID_XSDI_SOURCEFOLDER, 48, 48, 146, 8
-        LTEXT           "Object:", -1, 6, 40, 42, 8
-        LTEXT           "", ID_XSDI_SOURCEOBJECT, 48, 40, 146, 8
-        LTEXT           "", ID_XSDI_SUBOBJECT, 48, 32, 146, 8
-        LTEXT           "Target:", ID_XSDI_TARGETFOLDER_TXT, 6, 24, 42, 8
-        LTEXT           "", ID_XSDI_TARGETFOLDER, 48, 24, 146, 8
     END
 END
 
@@ -1000,29 +969,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XFD_PRODINFO LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "XWorkplace Product Information", ID_XFD_PRODINFO, 20, 8, 266,
-            129, FS_SCREENALIGN, FCF_SYSMENU | FCF_TITLEBAR
-    BEGIN
-        GROUPBOX        "XWorkplace %a", ID_XFDI_XFLDVERSION, 6, 24, 254, 99
-        LTEXT           "OpenSource Workplace Shell enhancer. Consider this "
-                        "your next OS/2 Warp upgrade.", -1, 16, 90, 139, 17,
-                        DT_WORDBREAK
-        LTEXT           "XWorkplace is a Netlabs project. See http://xworkpl"
-                        "ace.netlabs.org for details.", -1, 16, 74, 139, 17,
-                        DT_WORDBREAK
-        DEFPUSHBUTTON   "~OK", DID_OK, 5, 6, 60, 12
-        PUSHBUTTON      "Open User Guide", ID_XLD_CLASSLIST, 154, 6, 105, 12,
-                        BS_HELP | BS_NOPOINTERFOCUS
-        CONTROL         "", ID_XLDI_TEXT2, 15, 30, 235, 40, WC_MLE,
-                        MLS_READONLY | MLS_WORDWRAP | MLS_VSCROLL | WS_GROUP |
-                        WS_TABSTOP | WS_VISIBLE
-        CONTROL         "", ID_XFD_PRODLOGO, 164, 76, 86, 38, WC_STATIC,
-                        SS_FGNDFRAME | WS_GROUP | WS_VISIBLE
-    END
-END
-
 DLGTEMPLATE ID_XFD_SELECTSOME LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "XWorkplace: Object Selection", ID_XFD_SELECTSOME, 30, -45, 165,
@@ -1052,23 +998,6 @@ BEGIN
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         PUSHBUTTON      "~Help", -1, 85, 3, 75, 12, BS_HELP |
                         BS_NOPOINTERFOCUS
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-    END
-END
-
-DLGTEMPLATE ID_XFD_STARTUPSTATUS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "System Startup", ID_XFD_STARTUPSTATUS, 10, 6, 200, 32, NOT
-            FS_DLGBORDER | FS_BORDER, FCF_SYSMENU | FCF_TITLEBAR
-    BEGIN
-        LTEXT           "Initializing, please wait...", ID_SDDI_STATUS, 5,
-                        19, 185, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~Cancel", DID_CANCEL, 140, 5, 55, 12
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        CONTROL         "", ID_SDDI_PROGRESSBAR, 5, 6, 130, 10, WC_STATIC,
-                        SS_FGNDRECT | WS_VISIBLE
-                        PRESPARAMS PP_FOREGROUNDCOLOR, 0x00FF0000L
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
     END
 END
@@ -1123,45 +1052,6 @@ BEGIN
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
         PUSHBUTTON      "~Help", DID_HELP, 165, 3, 75, 12, BS_HELP
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-    END
-END
-
-DLGTEMPLATE ID_XFD_WELCOME LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "Welcome to XWorkplace!", ID_XFD_WELCOME, 12, 12, 293, 156, ,
-            FCF_SYSMENU | FCF_TITLEBAR
-    BEGIN
-        CONTROL         ID_XFLDRBITMAP, -1, 225, 111, 23, 16, WC_STATIC,
-                        SS_BITMAP | WS_GROUP | WS_VISIBLE
-        LTEXT           "XWorkplace was developed to add a number of things "
-                        "to the Workplace Shell that are frequently missed a"
-                        "nd IBM hasn't cared to implement so far.", -1, 5,
-                        111, 210, 29, DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        DEFPUSHBUTTON   "~OK", DID_OK, 205, 6, 80, 12
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        LTEXT           "Welcome to XWorkplace!", -1, 5, 141, 140, 11,
-                        DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        LTEXT           "The install program has created an object for the X"
-                        "Folder Online Reference on your Desktop, which expl"
-                        "ains XWorkplace's features in detail.", -1, 5, 38,
-                        280, 23, DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        LTEXT           "Among other things you now get freely configurable "
-                        "context menus, folder hotkeys, folder status bars, "
-                        "display of folder contents in context menus, and mu"
-                        "ch more.", -1, 5, 81, 275, 23, DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        LTEXT           "In order to get to know XWorkplace, simply click wi"
-                        "th mouse button 2 on your Desktop, and you will alr"
-                        "eady see the new context menu items.", -1, 5, 62,
-                        280, 17, DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        LTEXT           """I'll never forget the first time I started Window"
-                        "s, but I'm trying.""", -1, 5, 6, 195, 17,
-                        DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
     END
 END
 
@@ -1394,46 +1284,6 @@ BEGIN
         LTEXT           "this will be the chart", ID_XSDI_DISK_CHART, 60, 27,
                         140, 24
                         PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans Bold"
-    END
-END
-
-DLGTEMPLATE ID_XSD_DTP_ARCHIVES LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_DTP_ARCHIVES, 0, 0, 275, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "Archiving Criteria", -1, 4, 52, 205, 75
-        AUTOCHECKBOX    "~Archive Desktop", ID_XSDI_ARC_ENABLE, 10, 110, 195,
-                        8
-        AUTOCHECKBOX    "at ~every Desktop startup", ID_XSDI_ARC_ALWAYS, 20, 102,
-                        185, 8
-        AUTOCHECKBOX    "at ~next Desktop startup only", ID_XSDI_ARC_NEXT, 20,
-                        92, 185, 8
-        AUTOCHECKBOX    "if ~INI files have changed", ID_XSDI_ARC_INI, 20,
-                        80, 110, 10
-        SPINBUTTON      ID_XSDI_ARC_INI_SPIN, 134, 82, 48, 12, SPBS_MASTER |
-                        SPBS_JUSTLEFT | SPBS_JUSTRIGHT | SPBS_JUSTCENTER |
-                        SPBS_FASTSPIN | WS_GROUP
-        LTEXT           "%", ID_XSDI_ARC_INI_SPINTXT1, 184, 80, 20, 10,
-                        DT_VCENTER
-        AUTOCHECKBOX    "e~very", ID_XSDI_ARC_DAYS, 20, 68, 40, 10
-        SPINBUTTON      ID_XSDI_ARC_DAYS_SPIN, 60, 70, 48, 12, SPBS_MASTER |
-                        SPBS_JUSTLEFT | SPBS_JUSTRIGHT | SPBS_JUSTCENTER |
-                        SPBS_FASTSPIN | WS_GROUP
-        LTEXT           "days", ID_XSDI_ARC_DAYS_SPINTXT1, 110, 68, 20, 10,
-                        DT_VCENTER
-        AUTOCHECKBOX    "Sho~w archiving status at Desktop startup",
-                        ID_XSDI_ARC_SHOWSTATUS, 20, 58, 185, 8
-        GROUPBOX        "Archives", -1, 4, 28, 205, 22
-        LTEXT           "Kee~p", -1, 10, 30, 24, 10, DT_VCENTER |
-                        DT_MNEMONIC
-        SPINBUTTON      ID_XSDI_ARC_ARCHIVES_SPIN, 36, 32, 48, 12,
-                        SPBS_MASTER | SPBS_JUSTLEFT | SPBS_JUSTRIGHT |
-                        SPBS_JUSTCENTER | WS_GROUP
-        LTEXT           "archives", -1, 86, 30, 35, 10, DT_VCENTER
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 65, 12
-        PUSHBUTTON      "~Default", DID_DEFAULT, 75, 6, 65, 12
-        PUSHBUTTON      "~Help", DID_HELP, 145, 6, 65, 12, BS_HELP
     END
 END
 
@@ -1779,35 +1629,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_SET27STATUSBARS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_SET27STATUSBARS, 0, 0, 224, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        AUTOCHECKBOX    "~Enable folder status bars",
-                        ID_XSDI_ENABLESTATUSBAR, 5, 123, 165, 10
-        GROUPBOX        "Visible in...", -1, 5, 78, 175, 40
-        AUTOCHECKBOX    "~Icon views", ID_XSDI_SBFORICONVIEWS, 10, 99, 165,
-                        10, WS_GROUP
-        AUTOCHECKBOX    "~Tree views", ID_XSDI_SBFORTREEVIEWS, 10, 90, 165,
-                        10
-        AUTOCHECKBOX    "Det~ails views", ID_XSDI_SBFORDETAILSVIEWS, 10, 81,
-                        165, 10
-        GROUPBOX        "Style", -1, 5, 24, 175, 48, NOT WS_GROUP
-        AUTORADIOBUTTON "Warp ~3 raised", ID_XSDI_SBSTYLE_3RAISED, 10, 54,
-                        160, 10, WS_GROUP | WS_TABSTOP
-        AUTORADIOBUTTON "Warp 3 ~sunk", ID_XSDI_SBSTYLE_3SUNKEN, 10, 45, 160,
-                        10, WS_TABSTOP
-        AUTORADIOBUTTON "Warp ~4 button", ID_XSDI_SBSTYLE_4RECT, 10, 36, 160,
-                        10, WS_TABSTOP
-        AUTORADIOBUTTON "War~p 4 menu", ID_XSDI_SBSTYLE_4MENU, 10, 27, 160,
-                        10, WS_TABSTOP
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
-        PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_XSD_SET2REMOVEMENUS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_XSD_SET2REMOVEMENUS, 0, 0, 244, 132, NOT FS_DLGBORDER |
@@ -2021,15 +1842,15 @@ BEGIN
                         42, 8
         RTEXT           "unknown", ID_XCDI_INFO_KERNEL_RELEASE, 58, 108, 138,
                         8
-        LTEXT           "Awake Desktop objects:", ID_XCDI_INFO_AWAKEOBJECTS_TXT,
-                        14, 100, 95, 8
+        LTEXT           "Awake Desktop objects:",
+                        ID_XCDI_INFO_AWAKEOBJECTS_TXT, 14, 100, 95, 8
         RTEXT           "unknown", ID_XCDI_INFO_AWAKEOBJECTS, 152, 100, 44,
                         8
         LTEXT           "WPS thread count:", ID_XCDI_INFO_WPSTHREADS_TXT, 14,
                         92, 95, 8
         RTEXT           "unknown", ID_XCDI_INFO_WPSTHREADS, 152, 92, 44, 8
-        LTEXT           "Desktop restarts:", ID_XCDI_INFO_WPSRESTARTS_TXT, 14,
-                        84, 95, 8
+        LTEXT           "Desktop restarts:", ID_XCDI_INFO_WPSRESTARTS_TXT,
+                        14, 84, 95, 8
         RTEXT           "unknown", ID_XCDI_INFO_WPSRESTARTS, 152, 84, 44, 8
         LTEXT           "Sound status:", ID_XCDI_INFO_SOUNDSTATUS_TXT, 14,
                         76, 70, 8
@@ -2577,7 +2398,8 @@ BEGIN
                         BS_NOPOINTERFOCUS | NOT WS_TABSTOP
         AUTOCHECKBOX    "Close window on e~xit", ID_XFD_RUN_AUTOCLOSE, 5, 42,
                         105, 8, BS_NOPOINTERFOCUS | NOT WS_TABSTOP
-        GROUPBOX        "Win-OS/2 settings", ID_XFD_RUN_WINOS2_GROUP, 116, 38, 108, 28
+        GROUPBOX        "Win-OS/2 settings", ID_XFD_RUN_WINOS2_GROUP, 116,
+                        38, 108, 28
         AUTOCHECKBOX    "~Enhanced mode", ID_XFD_RUN_ENHANCED, 122, 50, 92,
                         8, BS_NOPOINTERFOCUS | NOT WS_TABSTOP | WS_DISABLED
         AUTOCHECKBOX    "~Separate session", ID_XFD_RUN_SEPARATE, 122, 42,
@@ -2600,3 +2422,67 @@ BEGIN
     END
 END
 
+DLGTEMPLATE ID_XFD_STARTUPSTATUS LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "System Startup", ID_XFD_STARTUPSTATUS, 10, 6, 200, 32, ,
+            FCF_SYSMENU | FCF_TITLEBAR
+    BEGIN
+        LTEXT           "Initializing, please wait...", ID_SDDI_STATUS, 5,
+                        19, 185, 8
+                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
+        PUSHBUTTON      "~Cancel", DID_CANCEL, 140, 5, 55, 12
+                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
+        CONTROL         "", ID_SDDI_PROGRESSBAR, 5, 6, 130, 10, WC_STATIC,
+                        SS_FGNDRECT | WS_VISIBLE
+                        PRESPARAMS PP_FOREGROUNDCOLOR, 0x00FF0000L
+                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
+    END
+END
+
+DLGTEMPLATE ID_XFD_FILEOPSSTATUS LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "to be replaced", ID_XFD_FILEOPSSTATUS, 10, 6, 200, 64, ,
+            FCF_SYSMENU | FCF_TITLEBAR
+    BEGIN
+        PUSHBUTTON      "~Pause", DID_CANCEL, 140, 5, 55, 12
+        CONTROL         "", ID_SDDI_PROGRESSBAR, 5, 6, 130, 10, WC_STATIC,
+                        SS_FGNDRECT | WS_VISIBLE
+                        PRESPARAMS PP_FOREGROUNDCOLOR, 0x00FF0000L
+        LTEXT           "Source:", -1, 6, 48, 42, 8
+        LTEXT           "", ID_XSDI_SOURCEFOLDER, 48, 48, 146, 8
+        LTEXT           "Object:", -1, 6, 40, 42, 8
+        LTEXT           "", ID_XSDI_SOURCEOBJECT, 48, 40, 146, 8
+        LTEXT           "", ID_XSDI_SUBOBJECT, 48, 32, 146, 8
+        LTEXT           "Target:", ID_XSDI_TARGETFOLDER_TXT, 6, 24, 42, 8
+        LTEXT           "", ID_XSDI_TARGETFOLDER, 48, 24, 146, 8
+    END
+END
+
+DLGTEMPLATE ID_XSD_SET27STATUSBARS LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_SET27STATUSBARS, 0, 0, 224, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        AUTOCHECKBOX    "~Enable folder status bars",
+                        ID_XSDI_ENABLESTATUSBAR, 5, 123, 165, 10
+        GROUPBOX        "Visible in...", -1, 5, 78, 175, 40
+        AUTOCHECKBOX    "~Icon views", ID_XSDI_SBFORICONVIEWS, 10, 99, 165,
+                        10, WS_GROUP
+        AUTOCHECKBOX    "~Tree views", ID_XSDI_SBFORTREEVIEWS, 10, 90, 165,
+                        10
+        AUTOCHECKBOX    "Det~ails views", ID_XSDI_SBFORDETAILSVIEWS, 10, 81,
+                        165, 10
+        GROUPBOX        "Style", -1, 5, 24, 175, 48, NOT WS_GROUP
+        AUTORADIOBUTTON "Raised bo~x", ID_XSDI_SBSTYLE_3RAISED, 10, 54, 160,
+                        10, WS_GROUP | WS_TABSTOP
+        AUTORADIOBUTTON "~Sunk box", ID_XSDI_SBSTYLE_3SUNKEN, 10, 45, 160,
+                        10, WS_TABSTOP
+        AUTORADIOBUTTON "~Button", ID_XSDI_SBSTYLE_4RECT, 10, 36, 160, 10,
+                        WS_TABSTOP
+        AUTORADIOBUTTON "~Menu", ID_XSDI_SBSTYLE_4MENU, 10, 27, 160, 10,
+                        WS_TABSTOP
+        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12, WS_GROUP
+        PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
+        PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
+    END
+END

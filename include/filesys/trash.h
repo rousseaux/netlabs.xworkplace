@@ -115,7 +115,7 @@
 
     VOID trshLoadDrivesSupport(M_XWPTrashCan *somSelf);
 
-    BOOL trshIsOnSupportedDrive(WPObject *pObject);
+    APIRET trshIsOnSupportedDrive(WPObject *pObject);
 
     /* ******************************************************************
      *

@@ -284,7 +284,8 @@
              *      while XShutdown is in progress.
              */
 
-            BOOL                fShutdownRunning;
+            // BOOL                fShutdownRunning;
+                    // removbed V0.9.16 (2001-11-22) [umoeller]
 
             // desktop already populated?
             BOOL                fDesktopPopulated;
@@ -364,7 +365,9 @@
                 // V0.9.2 (2000-02-26) [umoeller]:
                 // msg value changed to break compatibility with V0.8x
 
+#ifndef __NOPAGEMAGE__
     #define T1M_PAGEMAGECONFIGDELAYED   (WM_USER+284)
+#endif
 
     /*
      *@@ T1M_FOPS_TASK_DONE:

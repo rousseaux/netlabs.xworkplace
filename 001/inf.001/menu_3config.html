@@ -40,60 +40,15 @@ So if you add something to the Configuration Folder or remove some object from i
 will immediately affect all folder context menus.
 
 <P>However, the action which XFolder performs upon selecting a context menu items depends
-on the type of object that corresponds to the menu item. You need to differentiate between
-the following types of objects:
+on the type of object that corresponds to the menu item.
 
-<OL><LI><B>Program objects</B> in the Configuration Folder will be started when the
-corresponding menu item is selected.
-(Actually, not the program object will be started, but the program defined in the
-program object's Settings notebook.)
-<P>The four "command line" objects are pretty much copies of the ones that are also installed
-by &os2; itself.
-<!-- V0.9.1: removed all this
-The objects in the "Create a~nother"
-folder all point to
-a little REXX script in the &xwp;
-installation directory, which can create folders and program objects. -->
-<P>XFolder can perform a number of useful tricks on program objects.
-Please read through the <A HREF="menu_4wpprogram.html">"Extra features for program objects"</A>
-page to learn more.
+<!-- V0.9.16: removed all the following, instead added this: -->
 
-<BR><LI>Putting <B>another folder</B> in the configuration folder will
-create a cascading submenu
-in the context menus. In this "subfolder", you can place more objects and folders.
-This way, you can create a whole popup menu hierarchy (as can be seen in the default setup above).
-<!-- V0.9.1: added this phrase -->
-There's no limit on nesting folders, so you may create hierarchies many levels deep.
+For details about how this works, please go to the &xwp; installation folder and
+select "Help" for the Configuration Folder which you will find there.
 
-<BR><LI>A <B>template or shadow of a template</B> will result in the creation of a
-new object from it when the respective menu item is selected. The new object will be created in
-the folder whose context menu was used.
-<P>For example, if you have created a folder template with
-special settings for fonts, colors, etc., you can put a shadow of it into a configuration
-folder, and when you select its corresponding menu item from a folder's context menu, a new
-folder will be created in this folder, just as if you had dragged a folder from the template.
-<P>See <A HREF="menu_2template.html">"Creating objects with XFolder"</A> for more.
+<!-- end V0.9.16 -->
 
-<BR><LI><B>All other objects</B> will simply be opened when their corresponding menu
-item was selected. This includes shadows of program objects, shadows of folders, "real" files,
-shadows of them, and so on.
-<P>For example, you can put a shadow of your favorite data file (e.g. "To-do list") into
-the context menus. Another example is the shadow of the
-<!-- V0.9.1: changed OS/2 System to this -->
-"&xwp; Setup" object in the
-<!-- V0.9.0: change XFolder to &xwp; -->
-"&xwp;" submenu, with which you can access the
-<!-- V0.9.0: change XFolder to &xwp; -->
-<A HREF="sys_2global.html">&xwp; Global Settings</A>.
-
-<BR><LI>Starting with version 0.50, you can insert <B>menu separators</B> by putting a program title with the
-exact title of <CITE>"---"</CITE> into a configuration folder. See the
-<A HREF="menu_4wpprogram.html">next page</A> for
-details.
-
-</OL>Note that the <CITE>"~"</CITE>
-character within an object's title turns into an underlined character
-in the context menu, allowing for keyboard shortcuts.
 <P>As simple it may seem, the combined folder/object approach of the
 XFolder configuration folder is very powerful. You can add all your favorite programs, templates,
 and data files here

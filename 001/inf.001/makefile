@@ -43,11 +43,15 @@ OUTPUTDIR = $(XWP_OUTPUT_ROOT)\modules
 # the makefile will support your langauge.
 LANGUAGE = 001
 
+FEATURES_STRING =
+!ifdef XWPLITE
+FEATURES_STRING = -i..\..\include\features_lite.h
+!endif
+
 # Change this to the full path of the HTML2IPF utility.
 # THIS HAS CHANGED WITH V0.84.
-# HTML2IPF = ..\tools\html2ipf.cmd
 # now using h2i V0.9.13 (2001-06-23) [umoeller]
-HTML2IPF = $(RUN_H2I) -s -i$(PROJECT_BASE_DIR)\include\shared\helppanels.h -i..\$(ENTITYDEFS)
+HTML2IPF = $(RUN_H2I) -s -i$(PROJECT_BASE_DIR)\include\shared\helppanels.h -i..\$(ENTITYDEFS) $(FEATURES_STRING)
 
 # Change this to the directory where the output file (INF)
 # should be copied to.
@@ -82,10 +86,11 @@ all: $(COPYTO)\xfldr$(LANGUAGE).inf
 $(COPYTO)\xfldr$(LANGUAGE).inf: $(OUTPUTDIR)\xfldr$(LANGUAGE).inf
         cmd.exe /c copy $(OUTPUTDIR)\$(@B).inf $(COPYTO)
 
-xfldr$(LANGUAGE).ipf: *.html *.gif makefile ..\$(ENTITYDEFS)
+$(OUTPUTDIR)\xfldr$(LANGUAGE).ipf: *.html *.gif makefile ..\$(ENTITYDEFS)
         $(HTML2IPF) xfldr$(LANGUAGE).html
+        $(COPY) xfldr$(LANGUAGE).ipf $(OUTPUTDIR)
 
-$(OUTPUTDIR)\xfldr$(LANGUAGE).inf: xfldr$(LANGUAGE).ipf
-        ipfc xfldr001.ipf $(OUTPUTDIR)\xfldr$(LANGUAGE).inf
+$(OUTPUTDIR)\xfldr$(LANGUAGE).inf: $(OUTPUTDIR)\xfldr$(LANGUAGE).ipf
+        ipfc $(OUTPUTDIR)\xfldr001.ipf $(OUTPUTDIR)\xfldr$(LANGUAGE).inf
 
 

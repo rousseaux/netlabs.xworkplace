@@ -42,30 +42,7 @@
     // selectively. The source code reacts to those #defines.
 
     #ifdef __XWPLITE__
-        // general features
-        #define __NOICONREPLACEMENTS__
-        #define __ALWAYSRESIZESETTINGSPAGES__
-        #define __ALWAYSREPLACEFILEPAGE__
-        #define __ALWAYSREPLACEICONPAGE__
-
-        // folder features
-        #define __ALWAYSSUBCLASS__
-        #define __NOCFGSTATUSBARS__
-        #define __NOSNAPTOGRID__
-        #define __NOFOLDERCONTENTS__
-        #define __NOMOVEREFRESHNOW__
-        #define __NOQUICKOPEN__
-        #define __NOFDRDEFAULTDOCS__
-        #define __ALWAYSFDRHOTKEYS__
-
-        // modules features
-        #define __NOMODULES__
-
-        // startup/shutdown
-        #define __NOBOOTLOGO__
-        #define __NOBOOTUPSTATUS__      // WPS classes display
-
-        #define __EASYSHUTDOWN__
+        #include "features_lite.h"
     #endif
 
     /*************************************************************

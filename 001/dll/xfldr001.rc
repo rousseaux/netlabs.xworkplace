@@ -49,7 +49,8 @@ rcinclude "amptr001.dlg" */
 POINTER ID_ICONDLG LOADONCALL MOVEABLE DISCARDABLE xfldrdlg.ico
 POINTER ID_SDICON LOADONCALL MOVEABLE DISCARDABLE xfldshut.ico
 
-BITMAP ID_XFLDRBITMAP LOADONCALL MOVEABLE DISCARDABLE xfolder.bmp
+/* BITMAP ID_XFLDRBITMAP LOADONCALL MOVEABLE DISCARDABLE xfolder.bmp
+   removed V0.9.16 (2001-11-10) [umoeller] */
 
 /* Context menus for the "WPS Class List" object */
 /* these two MENUs have been changed with V0.9.0 */
@@ -855,6 +856,9 @@ BEGIN
     ID_CRSI_ENTERRENAMETRAY             "Please enter a new name for this tray:"
 
     ID_XSSI_RUN                         "~Run..."
+
+    /* the following have been added with V0.9.16 */
+    ID_XSSI_WPSFDRVIEWPAGE              "Folder ~views"
 END
 
 /* string IDs for status bar mnemonics (all new with V0.9.14) */
@@ -1031,6 +1035,23 @@ BEGIN
     ID_CRDI_VIEW2_SUNKBORDERS           "Fra~me around statics"
     ID_CRDI_VIEW2_HATCHINUSE            "Hatch ~open objects"
 
+    /* strings formerly in ID_XFD_ARCHIVINGSTATUS */
+    ID_XFD_ARCHIVINGSTATUS              "Desktop Archiving"
+
+    /* strings formerly in ID_XSD_DTP_ARCHIVES */
+    ID_XSDI_ARC_CRITERIA_GROUP          "Archiving criteria"
+    ID_XSDI_ARC_ENABLE                  "~Archive Desktop"
+    ID_XSDI_ARC_ALWAYS                  "at ~every Desktop startup"
+    ID_XSDI_ARC_NEXT                    "at ~next Desktop startup only"
+    ID_XSDI_ARC_INI                     "if ~INI files have changed"
+    ID_XSDI_ARC_INI_SPINTXT1            "%"
+    ID_XSDI_ARC_DAYS                    "e~very"
+    ID_XSDI_ARC_DAYS_SPINTXT1           "days"
+    ID_XSDI_ARC_SHOWSTATUS              "Sho~w archiving status at Desktop startup"
+    ID_XSDI_ARC_ARCHIVES_GROUP          "Archives"
+    ID_XSDI_ARC_ARCHIVES_NO_TXT1        "Kee~p"
+    ID_XSDI_ARC_ARCHIVES_NO_TXT2        "archives"
+
     /* new "Icon" page replacement */
     ID_XSDI_ICON_TITLE_TEXT             "T~itle:"
     ID_XSDI_ICON_GROUP                  "Current icon"
@@ -1048,6 +1069,7 @@ BEGIN
     ID_XSDI_DETAILS_DIALOG              "Object details"
     ID_XSDI_DETAILS_GROUP               "~Details"
     ID_XSDI_DETAILS_SETUPSTR_GROUP      "~Setup string"
+
 END
 
 /* Treesize definitions; added V0.9.0 */
