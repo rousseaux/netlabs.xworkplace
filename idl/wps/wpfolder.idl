@@ -119,7 +119,7 @@ interface WPFolder : WPFileSystem
 
     WPObject wpAddFirstChild();
 
-//# new non-public methods hacked in for XWorkplace
+//# new non-public Warp 3 methods hacked in for XWorkplace
 
     PVOID wpQueryRWMonitorObject();
 
@@ -249,7 +249,24 @@ interface WPFolder : WPFileSystem
                   wpSetFolderSelfClosePageID,
                   wpQueryFolderSelfClosePageID,
                   wpQueryIconDataN,
-                  wpApplyIconPosData;
+                  wpApplyIconPosData
+#ifndef __NOWARP4METHODS__
+                  ,
+                  wpAddFolderMenu2Page,
+                  wpSetMenuBarVisibility,
+                  wpQueryMenuBarVisibility,
+                  wpFolderPrivate43,
+                  wpFolderPrivate44,
+                  wpFolderPrivate45,
+                  wpFlushNotifications,
+                  wpSetShadowTextColor,
+                  wpQueryShadowTextColor,
+                  wpSetFldrBackground,
+                  wpQueryFldrBackground,
+                  wpSetFldrGrid,
+                  wpQueryFldrGrid
+#endif
+                  ;
 
     externalstem = wpfdr;
     local;
@@ -352,7 +369,6 @@ interface WPFolder : WPFileSystem
     wpSaveState: override;
     wpRestoreState: override;
     wpMenuItemSelected: override;
-    wpModifyPopupMenu: override;
     wpAddSettingsPages: override;
     wpOpen: override;
     wpSetup: override;
@@ -365,12 +381,15 @@ interface WPFolder : WPFileSystem
     wpFormatDragItem: override;
     wpRender: override;
     wpRefresh: override;
-    wpFilterPopupMenu: override;
     wpQueryDefaultView: override;
     wpRenderComplete: override;
+    wpAddFileMenuPage: override;
     wpQueryDefaultHelp: override;
     wpObjectReady: override;
     wpAddObjectWindowPage: override;
+    wpModifyMenu: override;
+    wpFilterMenu: override;
+    wpDisplayMenu: override;
     somDefaultInit: override;
     somDestruct: override;
     wpSetIconData: override;
@@ -386,6 +405,14 @@ interface M_WPFolder : M_WPFileSystem
     WPFolder wpclsQueryOpenFolders(in WPFolder Folder,
                                    in ULONG ulOption,
                                    in BOOL fLock);
+
+//# new non-public Warp 3 methods hacked in for XWorkplace
+
+    BOOL wpclsGetNotifySem(in ULONG ulTimeout);
+
+    VOID wpclsReleaseNotifySem();
+
+//# no new class methods for Warp 4
 
 #ifdef __SOMIDL__
   implementation {
@@ -404,6 +431,7 @@ interface M_WPFolder : M_WPFileSystem
     filestem = wpfolder;
     callstyle = oidl;
     dllname = "pmwp.dll";
+
     wpclsInitData: override;
     wpclsQueryDefaultView: override;
     wpclsQueryTitle: override;

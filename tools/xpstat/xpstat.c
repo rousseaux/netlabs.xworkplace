@@ -205,14 +205,13 @@ VOID SetupWindows(HWND hwndClient)
 
     memset(&xtxvCData, 0, sizeof(xtxvCData));
     xtxvCData.cbData = sizeof(xtxvCData);
-    xtxvCData.flStyle = XTXF_HSCROLL | XTXF_VSCROLL
-                          | XTXF_AUTOHHIDE | XTXF_AUTOVHIDE;
     xtxvCData.ulXBorder = 20;
     xtxvCData.ulYBorder = 20;
     G_hwndProcView = WinCreateWindow(hwndClient,
                                      WC_XTEXTVIEW,
                                      "",
-                                     WS_VISIBLE,
+                                     WS_VISIBLE | XS_HSCROLL | XS_VSCROLL
+                                        | XS_AUTOHHIDE | XS_AUTOVHIDE,
                                      0, 0, 100, 100,
                                      hwndClient,
                                      HWND_TOP,

@@ -122,7 +122,7 @@
 // headers in /hook
 #include "hook\xwphook.h"
 
-#include "filesys\fdrmenus.h"           // shared folder menu logic
+// #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 

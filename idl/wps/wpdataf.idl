@@ -13,6 +13,10 @@
 interface M_WPDataFile;
 interface WPDataFile : WPFileSystem
 {
+#ifndef __NOWARP4METHODS__
+    ULONG wpAddBecomePage(in HWND hwndNotebook);
+#endif
+
     ULONG wpAddFileTypePage(in HWND hwndNotebook);
 
     BOOL wpPrintMetaFile(in PPRINTDEST pPrintDest);
@@ -33,6 +37,19 @@ interface WPDataFile : WPFileSystem
 
     HPOINTER wpQueryAssociatedFileIcon();
 
+#ifndef __NOWARP4METHODS__
+    BOOL wpSetContentsFromPointer(in PVOID pData);
+
+    PVOID wpQueryPointerFromContents();
+
+    BOOL wpSetContentsFromHandle(in LHANDLE handle);
+
+    LHANDLE wpQueryHandleFromContents();
+
+    BOOL wpRenderFromClipboard(in ULONG aRenderAs);
+
+#endif
+
 #ifdef __SOMIDL__
   implementation {
     releaseorder: wpAddFileTypePage,
@@ -42,7 +59,17 @@ interface WPDataFile : WPFileSystem
                   wpPrintUnknownFile,
                   wpQueryAssociatedProgram,
                   wpSetAssociatedFileIcon,
-                  wpQueryAssociatedFileIcon;
+                  wpQueryAssociatedFileIcon
+#ifndef __NOWARP4METHODS__
+                  ,
+                  wpSetContentsFromPointer,
+                  wpQueryPointerFromContents,
+                  wpSetContentsFromHandle,
+                  wpQueryHandleFromContents,
+                  wpAddBecomePage,
+                  wpRenderFromClipboard
+#endif
+                  ;
 
     externalstem = wpdf;
     local;

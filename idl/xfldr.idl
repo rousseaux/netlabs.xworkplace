@@ -300,9 +300,10 @@ interface XFolder : WPFolder
                             // flag for wpUnInitData, which seems
                             // to get called more than once sometimes
 
-    HWND            hwndCnrSaved;
-                            // workaround for wpModifyPopupMenu bug,
-                            // which often gets hwndCnr as NULLHANDLE
+    //# HWND            hwndCnrSaved;
+                            //# workaround for wpModifyPopupMenu bug,
+                            //# which often gets hwndCnr as NULLHANDLE
+                            //# removed V0.9.21 (2002-08-31) [umoeller]
 
     PVOID           pfnResolvedUpdateStatusBar;
                             // resolved function pointer to
@@ -443,7 +444,8 @@ interface XFolder : WPFolder
 
     wpDisplayMenu: override;
     wpFilterPopupMenu: override;
-    wpModifyPopupMenu: override;
+    //# wpModifyPopupMenu: override;        removed V0.9.21 (2002-08-31) [umoeller]
+    wpModifyMenu: override;                 //# added V0.9.21 (2002-08-31) [umoeller]
 
     wpMenuItemSelected: override;
     wpMenuItemHelpSelected: override;

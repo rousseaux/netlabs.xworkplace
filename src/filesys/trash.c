@@ -93,7 +93,7 @@
 
 #include "filesys\fileops.h"            // file operations implementation
 #include "filesys\folder.h"             // XFolder implementation
-#include "filesys\object.h"             // XFldObject implementation
+// #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\trash.h"              // trash can implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 

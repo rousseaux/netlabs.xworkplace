@@ -2547,6 +2547,14 @@
 #define ID_XSMI_STICKY_EDIT             (WPMENUID_USER+1146) // added V0.9.19 (2002-04-15) [lafaix]
 #define ID_XSMI_STICKY_DELETEALL        (WPMENUID_USER+1147)
 
+/* split view menu bar V0.9.21 (2002-08-28) [umoeller] */
+#define ID_XFM_SPLITVIEWBAR             (WPMENUID_USER+1150)
+#define ID_XFM_BAR_FOLDER               (WPMENUID_USER+1151)
+#define ID_XFM_BAR_EDIT                 (WPMENUID_USER+1152)
+#define ID_XFM_BAR_VIEW                 (WPMENUID_USER+1153)
+#define ID_XFM_BAR_SELECTED             (WPMENUID_USER+1154)
+#define ID_XFM_BAR_HELP                 (WPMENUID_USER+1155)
+
 #define ID_XSM_PAGERCTXTMENU            220
 
 // The following menu ID's (with _OFS_ in their names)

@@ -10,6 +10,8 @@
  *@@include #include "helpers\tree.h"
  *@@include #include <wpfolder.h>
  *@@include #include "filesys\folder.h"
+ *@@include #include "filesys\fdrsubclass.h"
+ *@@include #include "filesys\fdrsplit.h"
  */
 
 /*
@@ -58,9 +60,11 @@
     #define SPLIT_FDRSTYLES         0x0002
     #define SPLIT_MULTIPLESEL       0x0004
     #define SPLIT_STATUSBAR         0x0008
+    #define SPLIT_MENUBAR           0x0010
 
     #ifdef LINKLIST_HEADER_INCLUDED
     #ifdef THREADS_HEADER_INCLUDED
+    #ifdef FDRSUBCLASS_HEADER_INCLUDED
 
         /*
          *@@ FDRSPLITVIEW:
@@ -71,10 +75,12 @@
         {
             USHORT          cbStruct;
 
-            LONG            lSplitBarPos;       // initial split bar position in percent
+            LONG            lSplitBarPos;   // initial split bar position in percent
 
-            WPFolder        *pRootFolder;       // root folder to populate, whose contents
-                                                // appear in left tree (constant)
+            WPObject        *pRootObject;   // root object; normally a folder, but
+                                            // be a disk object to, for which we
+                                            // then query the root folder
+            WPFolder        *pRootsFolder;  // unless this is a disk, == pRootObject
 
             ULONG           flSplit;
                                 // current split operation mode
@@ -190,7 +196,8 @@
 
         VOID fdrCleanupSplitView(PFDRSPLITVIEW psv);
 
-        BOOL fdrSplitCreateFrame(WPFolder *pRootFolder,
+        BOOL fdrSplitCreateFrame(WPObject *pRootObject,
+                                 WPFolder *pRootsFolder,
                                  PFDRSPLITVIEW psv,
                                  ULONG flFrame,
                                  PCSZ pcszTitle,
@@ -200,8 +207,10 @@
 
     #endif
     #endif
+    #endif
 
-    HWND fdrCreateSplitView(WPFolder *somSelf,
+    HWND fdrCreateSplitView(WPObject *pRootObject,
+                            WPFolder *pRootsFolder,
                             ULONG ulView);
 
 #endif

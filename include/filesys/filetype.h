@@ -28,6 +28,8 @@
 #ifndef FILETYPE_HEADER_INCLUDED
     #define FILETYPE_HEADER_INCLUDED
 
+    #define MAX_ASSOCS_PER_OBJECT       20
+
     #ifdef SOM_WPFileSystem_h
 
         ULONG ftypRegisterInstanceTypesAndFilters(M_WPFileSystem *pClassObject);
@@ -135,8 +137,6 @@
      *   Implementation definitions
      *
      ********************************************************************/
-
-    #define MAX_ASSOCS_PER_OBJECT       20
 
     #ifdef FILETYPE_PRIVATE
 

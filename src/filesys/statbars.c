@@ -126,6 +126,7 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\fdrsubclass.h"        // folder subclassing engine
 #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 #include "filesys\statbars.h"           // status bar translation logic
@@ -3013,7 +3014,10 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         {
             XSTRING strNew;
             CHAR sz[300];
-            sprintf(sz, "{%s} ", _somGetClassName(pobjSelected));
+            sprintf(sz,
+                    "%d {%s} ",
+                    _xwpQueryLocks(pobjSelected),
+                    _somGetClassName(pobjSelected));
             xstrInitCopy(&strNew,
                          sz,
                          0);
@@ -3033,7 +3037,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         while (p2 = strchr(strText.psz, '\t'))
             *p2 = '$';
 
-        return (strText.psz);       // do not free the string!
+        return strText.psz;       // do not free the string!
     }
 
     // else:

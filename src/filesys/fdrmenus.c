@@ -148,6 +148,7 @@
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\fdrhotky.h"           // folder hotkey handling
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
@@ -174,6 +175,50 @@ static BOOL     G_fConfigCacheValid;                // if FALSE, cache is rebuil
 extern POINTL   G_ptlMouseMenu = {0, 0};    // ptr position when menu was opened
                                             // moved this here from XFolder instance
                                             // data V0.9.16 (2001-10-23) [umoeller]
+
+/* ******************************************************************
+ *
+ *   Miscellaneous
+ *
+ ********************************************************************/
+
+/*
+ *@@ mnuQueryViewName:
+ *      returns the name of the given view type as
+ *      a string (e.g. "OPEN_CONTENTS"), or a localized
+ *      "unknown" string if not recognized.
+ *
+ *@@added V0.9.21 (2002-08-31) [umoeller]
+ */
+
+PCSZ mnuQueryViewName(ULONG ulView)
+{
+    switch (ulView)
+    {
+        #define CHECKVIEW(v) case v: return # v
+
+        CHECKVIEW(OPEN_DEFAULT);
+        CHECKVIEW(OPEN_HELP);
+        CHECKVIEW(OPEN_RUNNING);
+        CHECKVIEW(OPEN_PROMPTDLG);
+        CHECKVIEW(OPEN_PALETTE);
+        CHECKVIEW(CLOSED_ICON);
+        CHECKVIEW(OPEN_CONTENTS);
+        CHECKVIEW(OPEN_TREE);
+        CHECKVIEW(OPEN_SETTINGS);
+        CHECKVIEW(OPEN_DETAILS);
+
+        default:
+            switch (ulView - *G_pulVarMenuOfs)
+            {
+                CHECKVIEW(ID_XFMI_OFS_XWPVIEW);
+                CHECKVIEW(ID_XFMI_OFS_SPLITVIEW);
+                CHECKVIEW(ID_XFMI_OFS_SPLITVIEW_SHOWING);
+            }
+    }
+
+    return cmnGetString(ID_SDDI_APMVERSION); // "unknown"
+}
 
 /* ******************************************************************
  *
@@ -625,11 +670,12 @@ static const MENUITEMDEF G_MenuItemsWithIDs[] =
 XWPSETTING mnuQueryMenuWPSSetting(WPObject *somSelf)
 {
     ULONG flObject = objQueryFlags(somSelf);
+
     if (flObject & OBJFL_WPFOLDER)
     {
         if (cmnIsADesktop(somSelf))
         {
-            #ifdef DEBUG_MENUS
+            #ifdef DEBUG_MENUS2
                 _PmpfF(("returning sflMenuDesktopWPS"));
             #endif
 
@@ -637,7 +683,7 @@ XWPSETTING mnuQueryMenuWPSSetting(WPObject *somSelf)
         }
         else
         {
-            #ifdef DEBUG_MENUS
+            #ifdef DEBUG_MENUS2
                 _PmpfF(("returning sflMenuFolderWPS"));
             #endif
 
@@ -670,7 +716,7 @@ XWPSETTING mnuQueryMenuXWPSetting(WPObject *somSelf)
     {
         if (cmnIsADesktop(somSelf))
         {
-            #ifdef DEBUG_MENUS
+            #ifdef DEBUG_MENUS2
                 _PmpfF(("returning sflMenuDesktopXWP"));
             #endif
 
@@ -678,7 +724,7 @@ XWPSETTING mnuQueryMenuXWPSetting(WPObject *somSelf)
         }
         else
         {
-            #ifdef DEBUG_MENUS
+            #ifdef DEBUG_MENUS2
                 _PmpfF(("returning sflMenuFolderXWP"));
             #endif
 
@@ -1397,12 +1443,12 @@ static BOOL InsertConfigFolderItems(XFolder *somSelf,
  *@@changed V0.9.12 (2001-05-22) [umoeller]: "refresh now" was added even for non-open-view menus
  *@@changed V0.9.14 (2001-08-07) [pr]: added Run menu item
  *@@changed V0.9.21 (2002-08-24) [umoeller]: various changes for split view support
+ *@@changed V0.9.21 (2002-08-31) [umoeller]: remove iPosition param which was never used
  */
 
 BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                               HWND hwndMenu,      // in: main context menu hwnd
-                              HWND hwndCnr,       // in: cnr hwnd
-                              ULONG iPosition)    // in: dunno
+                              HWND hwndCnr)       // in: cnr hwnd
 {
     XFolder         *pFavorite;
     BOOL            rc = TRUE;
@@ -1872,7 +1918,177 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
         }
     } END_CATCH();
 
-    return (rc);
+    return rc;
+}
+
+/*
+ *@@ mnuModifyFolderMenu:
+ *      shared implementation for XFolder::wpModifyMenu
+ *      and XFldDisk::wpModifyMenu, now that we're
+ *      overriding the Warp 4 methods finally.
+ *
+ *      This will call the legacy mnuModifyFolderPopupMenu
+ *      method if the menu request is for a folder instance.
+ *
+ *@@added V0.9.21 (2002-08-31) [umoeller]
+ */
+
+BOOL mnuModifyFolderMenu(WPFolder *somSelf,
+                         HWND hwndMenu,
+                         HWND hwndCnr,
+                         ULONG ulMenuType,
+                         ULONG ulView)
+{
+    const ULONG *paulIDs = NULL;
+    ULONG       cIDs = 0;
+    BOOL        fHotkeysInMenus = FALSE;
+
+    static const ULONG aulEditMenuIDs[] =
+        {
+            ID_XFMI_OFS_SELECTSOME,
+            WPMENUID_SELALL,
+            WPMENUID_DESELALL,
+            // WPMENUID_PASTE,
+                 // do not add hotkey for paste because that only
+                 // applies to the selected object
+            WPMENUID_FIND
+        };
+
+    static const ULONG aulViewMenuIds[] =
+        {
+            WPMENUID_REFRESH,
+            ID_WPMI_SORTBYNAME,
+            ID_WPMI_SORTBYSIZE,
+            ID_WPMI_SORTBYTYPE,
+            ID_WPMI_SORTBYREALNAME,
+            ID_WPMI_SORTBYWRITEDATE,
+            ID_WPMI_SORTBYACCESSDATE,
+            ID_WPMI_SORTBYCREATIONDATE,
+            ID_XFMI_OFS_SORTBYEXT,
+            ID_XFMI_OFS_SORTFOLDERSFIRST,
+            ID_XFMI_OFS_SORTBYCLASS,
+            WPMENUID_CHANGETOICON,
+            WPMENUID_CHANGETODETAILS,
+            WPMENUID_CHANGETOTREE,
+            WPMENUID_ARRANGETOP,
+            WPMENUID_ARRANGELEFT,
+            WPMENUID_ARRANGERIGHT,
+            WPMENUID_ARRANGEBOTTOM,
+            WPMENUID_PERIMETER,
+            WPMENUID_SELECTEDHORZ,
+            WPMENUID_SELECTEDVERT,
+        };
+
+    if (
+ #ifndef __ALWAYSFDRHOTKEYS__
+            (cmnQuerySetting(sfFolderHotkeys))
+         &&
+ #endif
+            (cmnQuerySetting(sfShowHotkeysInMenus))
+        )
+        fHotkeysInMenus = TRUE;
+
+    switch (ulMenuType)
+    {
+        case MENU_EDITPULLDOWN:
+            // since this might come in TWICE if a folder is
+            // currently selected in the view, make sure we
+            // only take the second call for the view
+            if (ulView != CLOSED_ICON)
+            {
+                // find position of "Deselect all" item
+                SHORT sPos = (SHORT)WinSendMsg(hwndMenu,
+                                               MM_ITEMPOSITIONFROMID,
+                                               MPFROM2SHORT(0x73,
+                                                            FALSE),
+                                               MPNULL);
+                ULONG flXWP = cmnQuerySetting(mnuQueryMenuXWPSetting(somSelf));
+
+                #ifdef DEBUG_MENUS
+                    _Pmpf(("  'Edit' pulldown found"));
+                #endif
+
+                // insert "Select by name" after that item
+                // fixed V0.9.19 (2002-06-18) [umoeller]:
+                // only if menu item is enabled
+                if (!(flXWP & XWPCTXT_SELECTSOME))
+                {
+                    winhInsertMenuItem(hwndMenu,
+                                       ++sPos,
+                                       *G_pulVarMenuOfs + ID_XFMI_OFS_SELECTSOME,
+                                       cmnGetString(ID_XSSI_SELECTSOME),
+                                       MIS_TEXT, 0);
+                }
+
+                // insert "Batch rename" V0.9.19 (2002-06-18) [umoeller]
+                if (!(flXWP & XWPCTXT_BATCHRENAME))
+                    winhInsertMenuItem(hwndMenu,
+                                       ++sPos,
+                                       *G_pulVarMenuOfs + ID_XFMI_OFS_BATCHRENAME,
+                                       cmnGetString(ID_XSDI_MENU_BATCHRENAME),
+                                       MIS_TEXT, 0);
+
+                if (fHotkeysInMenus)
+                {
+                    paulIDs = aulEditMenuIDs;
+                    cIDs = ARRAYITEMCOUNT(aulEditMenuIDs);
+                }
+            }
+        break;
+
+        case MENU_VIEWPULLDOWN:
+        {
+            CNRINFO     CnrInfo;
+
+            // modify the "Sort" menu, as we would
+            // do it for context menus also
+            fdrModifySortMenu(somSelf,
+                              hwndMenu);
+
+            cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
+            // and now insert the "folder view" items
+            winhInsertMenuSeparator(hwndMenu,
+                                    MIT_END,
+                                    (*G_pulVarMenuOfs
+                                            + ID_XFMI_OFS_SEPARATOR));
+            mnuInsertFldrViewItems(somSelf,
+                                   hwndMenu,
+                                   FALSE,
+                                   &CnrInfo,
+                                   ulView);
+
+            if (fHotkeysInMenus)
+            {
+                paulIDs = aulViewMenuIds;
+                cIDs = ARRAYITEMCOUNT(aulViewMenuIds);
+            }
+        }
+        break;
+
+        case MENU_OBJECTPOPUP:
+        case MENU_OPENVIEWPOPUP:
+        case MENU_FOLDERPULLDOWN:
+        case MENU_TITLEBARPULLDOWN:
+        case MENU_SELECTEDPULLDOWN:
+            // call legacy menu manipulator
+            mnuModifyFolderPopupMenu(somSelf,
+                                     hwndMenu,
+                                     hwndCnr);
+
+            if (fHotkeysInMenus)
+                fdrAddHotkeysToMenu(somSelf,
+                                    hwndCnr,
+                                    hwndMenu,
+                                    ulMenuType);
+        break;
+    }
+
+    if (paulIDs && cIDs)
+        fdrAddHotkeysToPulldown(hwndMenu,
+                                paulIDs,
+                                cIDs);
+
+    return TRUE;
 }
 
 /*
@@ -1983,12 +2199,12 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.4 (2000-06-09) [umoeller]: added default documents
  *@@changed V0.9.4 (2000-06-09) [umoeller]: fixed separators
+ *@@changed V0.9.21 (2002-08-31) [umoeller]: removed iPosition param which was never used
  */
 
 BOOL mnuModifyDataFilePopupMenu(WPObject *somSelf,  // in: data file
                                 HWND hwndMenu,
-                                HWND hwndCnr,
-                                ULONG iPosition)
+                                HWND hwndCnr)
 {
     ULONG           ulVarMenuOfs = cmnQuerySetting(sulVarMenuOfs);
 

@@ -2366,7 +2366,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 else
                     DeinstallHook();
 
-                mrc = (MRESULT)(G_pXwpGlobalShared->fAllHooksInstalled);
+                mrc = (MRESULT)G_pXwpGlobalShared->fAllHooksInstalled;
             break;
 
             /*

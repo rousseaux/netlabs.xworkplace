@@ -182,7 +182,9 @@
 #include "filesys\filetype.h"           // extended file types implementation
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrcommand.h"         // folder menu command reactions
+#include "filesys\fdrhotky.h"           // folder hotkey handling
 #include "filesys\fdrmenus.h"           // shared folder menu logic
+#include "filesys\fdrsubclass.h"        // folder subclassing engine
 #include "filesys\icons.h"              // icons handling
 #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\statbars.h"           // status bar translation logic
@@ -757,52 +759,81 @@ MRESULT FormatFrame2(PSUBCLFOLDERVIEW psfv,     // in: frame information
 }
 
 /*
- * CalcFrameRect:
- *      implementation for WM_CALCFRAMERECT in fnwpSubclWPFolderWindow.
+ *@@ fdrManipulatePulldown:
  *
- *      Part of the needed frame hacks for folder status bars.
- *
- *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
+ *@@added V0.9.21 (2002-08-28) [umoeller]
  */
 
-VOID fdrCalcFrameRect(MPARAM mp1, MPARAM mp2)
+VOID fdrManipulatePulldown(PSUBCLFOLDERVIEW psfv,     // in: frame information
+                           SHORT sMenuID,
+                           HWND hwndMenuMsg)          // in: mp2 from WM_INITMENU
 {
-    PRECTL prclPassed = (PRECTL)mp1;
-    ULONG ulStatusBarHeight = cmnQueryStatusBarHeight();
-
-    if (mp2)
-        //     TRUE:  Frame rectangle provided, calculate client
-        //     FALSE: Client area rectangle provided, calculate frame
+    switch (sMenuID)
     {
-        //  TRUE: calculate the rectl of the client;
-        //  call default window procedure to subtract child frame
-        //  controls from the rectangle's height
-        LONG lClientHeight;
+        case 0x2CF: // "Folder" pulldown
+        case ID_XFM_BAR_FOLDER:     // in split view V0.9.21 (2002-08-28) [umoeller]
+            #ifdef DEBUG_MENUS
+                _Pmpf(("  'Folder' pulldown found"));
+            #endif
 
-        //  position the static text frame extension below the client
-        lClientHeight = prclPassed->yTop - prclPassed->yBottom;
-        if (ulStatusBarHeight > lClientHeight)
+            // set the "source" object for menu item
+            // selections to the folder
+            psfv->pSourceObject = psfv->somSelf;
+                    // V0.9.21 (2002-08-24) [umoeller]
+        break;
+
+        case 0x2D0: // "Edit" submenu
+        case ID_XFM_BAR_EDIT:       // in split view V0.9.21 (2002-08-28) [umoeller]
         {
-            // extension is taller than client, so set client height to 0
-            prclPassed->yTop = prclPassed->yBottom;
+            // set the "source" object for menu item
+            // selections to the folder
+            psfv->pSourceObject = psfv->somSelf;
+                    // V0.9.12 (2001-05-29) [umoeller]
+
         }
-        else
+        break;
+
+        case 0x2D1: // "View" submenu
+        case ID_XFM_BAR_VIEW:       // in split view V0.9.21 (2002-08-28) [umoeller]
         {
-            //  set the origin of the client and shrink it based upon the
-            //  static text control's height
-            prclPassed->yBottom += ulStatusBarHeight;
-            prclPassed->yTop -= ulStatusBarHeight;
+            #ifdef DEBUG_MENUS
+                _Pmpf(("  'View' pulldown found"));
+            #endif
+
+            // set the "source" object for menu item
+            // selections to the folder
+            psfv->pSourceObject = psfv->somSelf;
+                    // V0.9.12 (2001-05-29) [umoeller]
         }
-    }
-    else
-    {
-        //  FALSE: calculate the rectl of the frame;
-        //  call default window procedure to subtract child frame
-        //  controls from the rectangle's height;
-        //  set the origin of the frame and increase it based upon the
-        //  static text control's height
-        prclPassed->yBottom -= ulStatusBarHeight;
-        prclPassed->yTop += ulStatusBarHeight;
+        break;
+
+        /* case 0x2D2:     // "Selected" submenu:
+        case ID_XFM_BAR_SELECTED:   // in split view V0.9.21 (2002-08-28) [umoeller]
+        break; */
+
+        case 0x2D3: // "Help" submenu: add XFolder product info
+        case ID_XFM_BAR_HELP:
+            #ifdef DEBUG_MENUS
+                _Pmpf(("  'Help' pulldown found"));
+            #endif
+
+            // set the "source" object for menu item
+            // selections to the folder
+            psfv->pSourceObject = psfv->somSelf;
+                    // V0.9.12 (2001-05-29) [umoeller]
+
+#ifndef __XWPLITE__
+            winhInsertMenuSeparator(hwndMenuMsg, MIT_END,
+                                   (*G_pulVarMenuOfs
+                                           + ID_XFMI_OFS_SEPARATOR));
+            winhInsertMenuItem(hwndMenuMsg, MIT_END,
+                               (*G_pulVarMenuOfs
+                                       + ID_XFMI_OFS_PRODINFO),
+                               cmnGetString(ID_XSSI_PRODUCTINFO),  // pszProductInfo
+                               MIS_TEXT, 0);
+#endif
+
+        break;
     }
 }
 
@@ -861,13 +892,12 @@ VOID fdrCalcFrameRect(MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.20 (2002-08-08) [umoeller]: fixed missing hotkey specs for edit and view
  */
 
-static VOID InitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
-                     ULONG sMenuIDMsg,          // in: mp1 from WM_INITMENU
-                     HWND hwndMenuMsg)          // in: mp2 from WM_INITMENU
+VOID fdrInitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
+                 ULONG sMenuIDMsg,          // in: mp1 from WM_INITMENU
+                 HWND hwndMenuMsg)          // in: mp2 from WM_INITMENU
 {
     // get XFolder instance data
     XFolderData     *somThis = XFolderGetData(psfv->somSelf);
-    ULONG           ulVarMenuOffset = cmnQuerySetting(sulVarMenuOfs);
 
     #ifdef DEBUG_MENUS
         _Pmpf(( "WM_INITMENU: sMenuIDMsg = %lX, hwndMenuMsg = %lX",
@@ -894,11 +924,6 @@ static VOID InitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
         #endif
     }
 
-    // store the container window handle in instance
-    // data for wpModifyPopupMenu workaround;
-    // buggy Warp 3 keeps setting hwndCnr to NULLHANDLE in there
-    _hwndCnrSaved = psfv->hwndCnr;
-
     // play system sound
 #ifndef __NOXSYSTEMSOUNDS__
     if (    (sMenuIDMsg < 0x8000) // avoid system menu
@@ -914,7 +939,7 @@ static VOID InitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
                           MM_ITEMIDFROMPOSITION,
                           (MPARAM)0,        // menu item index
                           MPNULL)
-               == (ulVarMenuOffset + ID_XFMI_OFS_DUMMY))
+               == (*G_pulVarMenuOfs + ID_XFMI_OFS_DUMMY))
     {
         // okay, let's go
 #ifndef __NOFOLDERCONTENTS__
@@ -953,173 +978,9 @@ static VOID InitMenu(PSUBCLFOLDERVIEW psfv,     // in: frame information
             // we need to check the last selected
             // menu item, which was stored in the psfv
             // structure by WM_MENUSELECT (below)
-
-            switch (psfv->ulLastSelMenuItem)
-            {
-                case 0x2CF: // "Folder" pulldown
-                    #ifdef DEBUG_MENUS
-                        _Pmpf(("  'Folder' pulldown found"));
-                    #endif
-
-                    // set the "source" object for menu item
-                    // selections to the folder
-                    psfv->pSourceObject = psfv->somSelf;
-                            // V0.9.21 (2002-08-24) [umoeller]
-                break;
-
-                case 0x2D0: // "Edit" submenu
-                {
-                    // find position of "Deselect all" item
-                    SHORT sPos = (SHORT)WinSendMsg(hwndMenuMsg,
-                                                   MM_ITEMPOSITIONFROMID,
-                                                   MPFROM2SHORT(0x73,
-                                                                FALSE),
-                                                   MPNULL);
-                    ULONG flXWP = cmnQuerySetting(mnuQueryMenuXWPSetting(psfv->somSelf));
-
-                    // hotkey specs were missing V0.9.20 (2002-08-08) [umoeller]
-                    static const ULONG aulEditMenuIds[] =
-                        {
-                            ID_XFMI_OFS_SELECTSOME,
-                            WPMENUID_SELALL,
-                            WPMENUID_DESELALL,
-                            // WPMENUID_PASTE,
-                                 // do not add hotkey for paste because that only
-                                 // applies to the selected object
-                            WPMENUID_FIND
-                        };
-
-                    #ifdef DEBUG_MENUS
-                        _Pmpf(("  'Edit' pulldown found"));
-                    #endif
-
-                    // set the "source" object for menu item
-                    // selections to the folder
-                    psfv->pSourceObject = psfv->somSelf;
-                            // V0.9.12 (2001-05-29) [umoeller]
-
-                    // insert "Select by name" after that item
-                    // fixed V0.9.19 (2002-06-18) [umoeller]:
-                    // only if menu item is enabled
-                    if (!(flXWP & XWPCTXT_SELECTSOME))
-                    {
-                        winhInsertMenuItem(hwndMenuMsg,
-                                           ++sPos,
-                                           ulVarMenuOffset + ID_XFMI_OFS_SELECTSOME,
-                                           cmnGetString(ID_XSSI_SELECTSOME),
-                                           MIS_TEXT, 0);
-                    }
-
-                    // insert "Batch rename" V0.9.19 (2002-06-18) [umoeller]
-                    if (!(flXWP & XWPCTXT_BATCHRENAME))
-                        winhInsertMenuItem(hwndMenuMsg,
-                                           ++sPos,
-                                           ulVarMenuOffset + ID_XFMI_OFS_BATCHRENAME,
-                                           cmnGetString(ID_XSDI_MENU_BATCHRENAME),
-                                           MIS_TEXT, 0);
-
-                    // hotkey specs were missing V0.9.20 (2002-08-08) [umoeller]
-                    fdrAddHotkeysToPulldown(hwndMenuMsg,
-                                            aulEditMenuIds,
-                                            ARRAYITEMCOUNT(aulEditMenuIds));
-                }
-                break;
-
-                case 0x2D1: // "View" submenu
-                {
-                    CNRINFO     CnrInfo;
-                    ULONG       ulView;
-
-                    // hotkey specs were missing V0.9.20 (2002-08-08) [umoeller]
-                    static const ULONG aulViewMenuIds[] =
-                        {
-                            WPMENUID_REFRESH,
-                            ID_WPMI_SORTBYNAME,
-                            ID_WPMI_SORTBYSIZE,
-                            ID_WPMI_SORTBYTYPE,
-                            ID_WPMI_SORTBYREALNAME,
-                            ID_WPMI_SORTBYWRITEDATE,
-                            ID_WPMI_SORTBYACCESSDATE,
-                            ID_WPMI_SORTBYCREATIONDATE,
-                            ID_XFMI_OFS_SORTBYEXT,
-                            ID_XFMI_OFS_SORTFOLDERSFIRST,
-                            ID_XFMI_OFS_SORTBYCLASS,
-                            WPMENUID_CHANGETOICON,
-                            WPMENUID_CHANGETODETAILS,
-                            WPMENUID_CHANGETOTREE,
-                            WPMENUID_ARRANGETOP,
-                            WPMENUID_ARRANGELEFT,
-                            WPMENUID_ARRANGERIGHT,
-                            WPMENUID_ARRANGEBOTTOM,
-                            WPMENUID_PERIMETER,
-                            WPMENUID_SELECTEDHORZ,
-                            WPMENUID_SELECTEDVERT,
-                        };
-
-                    #ifdef DEBUG_MENUS
-                        _Pmpf(("  'View' pulldown found"));
-                    #endif
-
-                    // set the "source" object for menu item
-                    // selections to the folder
-                    psfv->pSourceObject = psfv->somSelf;
-                            // V0.9.12 (2001-05-29) [umoeller]
-
-                    // modify the "Sort" menu, as we would
-                    // do it for context menus also
-                    fdrModifySortMenu(psfv->somSelf,
-                                      hwndMenuMsg);
-
-                    cnrhQueryCnrInfo(psfv->hwndCnr, &CnrInfo);
-                    // and now insert the "folder view" items
-                    winhInsertMenuSeparator(hwndMenuMsg,
-                                            MIT_END,
-                                            (ulVarMenuOffset
-                                                    + ID_XFMI_OFS_SEPARATOR));
-                    ulView = wpshQueryView(psfv->somSelf,
-                                           psfv->hwndFrame);
-                    if (ulView != OPEN_UNKNOWN)     // -1
-                            // V0.9.21 (2002-08-26) [umoeller]
-                        mnuInsertFldrViewItems(psfv->somSelf,
-                                               hwndMenuMsg,  // hwndViewSubmenu
-                                               FALSE,
-                                               &CnrInfo,
-                                               ulView);
-
-                    // hotkey specs were missing V0.9.20 (2002-08-08) [umoeller]
-                    fdrAddHotkeysToPulldown(hwndMenuMsg,
-                                            aulViewMenuIds,
-                                            ARRAYITEMCOUNT(aulViewMenuIds));
-                }
-                break;
-
-                /* case 0x2D2:     // "Selected" submenu:
-                break; */
-
-                case 0x2D3: // "Help" submenu: add XFolder product info
-                    #ifdef DEBUG_MENUS
-                        _Pmpf(("  'Help' pulldown found"));
-                    #endif
-
-                    // set the "source" object for menu item
-                    // selections to the folder
-                    psfv->pSourceObject = psfv->somSelf;
-                            // V0.9.12 (2001-05-29) [umoeller]
-
-#ifndef __XWPLITE__
-                    winhInsertMenuSeparator(hwndMenuMsg, MIT_END,
-                                           (ulVarMenuOffset
-                                                   + ID_XFMI_OFS_SEPARATOR));
-                    winhInsertMenuItem(hwndMenuMsg, MIT_END,
-                                       (ulVarMenuOffset
-                                               + ID_XFMI_OFS_PRODINFO),
-                                       cmnGetString(ID_XSSI_PRODUCTINFO),  // pszProductInfo
-                                       MIS_TEXT, 0);
-#endif
-
-                break;
-
-            } // end switch (psfv->usLastSelMenuItem)
+            fdrManipulatePulldown(psfv,
+                                  psfv->ulLastSelMenuItem,
+                                  hwndMenuMsg);
         } // end if (SHORT1FROMMP(mp1) == 0x8005)
     }
 
@@ -1313,6 +1174,42 @@ static BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
 
     return fHandled;
 }
+
+/*
+ *@@ fdrWMCommand:
+ *      implementation for WM_COMMAND in fdrProcessFolderMsgs.
+ *
+ *      Returns TRUE if the item was processed, FALSE otherwise
+ *      and the parent func should be called.
+ *
+ *@@added V0.9.21 (2002-08-28) [umoeller]
+ */
+
+BOOL fdrWMCommand(PSUBCLFOLDERVIEW psfv,
+                  SHORT sCommand)
+{
+    BOOL    brc = FALSE;
+
+    // resolve method by name
+    somTD_XFolder_xwpProcessViewCommand pxwpProcessViewCommand
+        = (somTD_XFolder_xwpProcessViewCommand)somResolveByName(
+                              psfv->somSelf,
+                              "xwpProcessViewCommand");
+
+    if (    (pxwpProcessViewCommand)
+         && (pxwpProcessViewCommand(psfv->somSelf,
+                                    sCommand,
+                                    psfv->hwndCnr,
+                                    psfv->pSourceObject,
+                                    psfv->ulSelection))
+       )
+        brc = TRUE;
+
+    psfv->pSourceObject = NULL;
+
+    return brc;
+}
+
 
 /*
  *@@ WMChar_Delete:
@@ -2088,7 +1985,10 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
 
                 if (psfv->hwndStatusBar)
                     // we have a status bar: calculate its rectangle
-                    fdrCalcFrameRect(mp1, mp2);
+                    // fdrCalcFrameRect(mp1, mp2);
+                    winhCalcExtFrameRect(mp1,
+                                         mp2,
+                                         cmnQueryStatusBarHeight());
             break;
 
             /* *************************
@@ -2109,12 +2009,12 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                 // is subclassing folders (ObjectDesktop?!?);
                 // from what I've checked, the WPS does NOTHING
                 // with this message, not even for menu bars...
-                mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
+                mrc = pfnwpOriginal(hwndFrame, msg, mp1, mp2);
 
                 // added V0.9.3 (2000-03-28) [umoeller]
-                InitMenu(psfv,
-                         (ULONG)mp1,
-                         (HWND)mp2);
+                fdrInitMenu(psfv,
+                            (ULONG)mp1,
+                            (HWND)mp2);
             break;
 
             /*
@@ -2140,7 +2040,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
 
                 // always call the default, in case someone else
                 // is subclassing folders (ObjectDesktop?!?)
-                mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
+                mrc = pfnwpOriginal(hwndFrame, msg, mp1, mp2);
 
                 // added V0.9.3 (2000-03-28) [umoeller]
                 // now handle our stuff; this might modify mrc to
@@ -2186,7 +2086,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                     psfv->fRemoveSourceEmphasis = FALSE;
                 }
 
-                mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
+                mrc = pfnwpOriginal(hwndFrame, msg, mp1, mp2);
             break;
 
             /*
@@ -2211,7 +2111,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                 }
                 else
                     // none of our items: pass to original wnd proc
-                    mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
+                    mrc = pfnwpOriginal(hwndFrame, msg, mp1, mp2);
             break;
 
             /* *************************
@@ -2296,26 +2196,8 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
              */
 
             case WM_COMMAND:
-            {
-                // resolve method by name
-                somTD_XFolder_xwpProcessViewCommand pxwpProcessViewCommand
-                    = (somTD_XFolder_xwpProcessViewCommand)somResolveByName(
-                                          psfv->somSelf,
-                                          "xwpProcessViewCommand");
-
-                if (!pxwpProcessViewCommand)
-                    fCallDefault = TRUE;
-                else
-                    if (!pxwpProcessViewCommand(psfv->somSelf,
-                                                SHORT1FROMMP(mp1),
-                                                psfv->hwndCnr,
-                                                psfv->pSourceObject,
-                                                psfv->ulSelection))
-                        // not processed:
-                        fCallDefault = TRUE;
-
-                psfv->pSourceObject = NULL;
-            }
+                fCallDefault = !fdrWMCommand(psfv,
+                                             SHORT1FROMMP(mp1));
             break;
 
 #ifndef __NOXSHUTDOWN__
@@ -2460,7 +2342,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
 
                         case CN_ENTER:
                             cmnPlaySystemSound(MMSOUND_XFLD_CNRDBLCLK);
-                            mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
+                            mrc = pfnwpOriginal(hwndFrame, msg, mp1, mp2);
                         break;
 #endif
 
@@ -2471,7 +2353,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                          */
 
                         case CN_EMPHASIS:
-                            mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
+                            mrc = pfnwpOriginal(hwndFrame, msg, mp1, mp2);
 
                             if (psfv->hwndStatusBar)
                             {
@@ -2494,7 +2376,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                          */
 
                         case CN_EXPANDTREE:
-                            mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
+                            mrc = pfnwpOriginal(hwndFrame, msg, mp1, mp2);
 
                             if (cmnQuerySetting(sfTreeViewAutoScroll))
                                 xthrPostBushMsg(QM_TREEVIEWAUTOSCROLL,
@@ -2562,7 +2444,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
         // responsible for, which was the case with XFolder < 0.85
         // (i.e. exceptions in WPFolder or Object Desktop or whatever).
         if (pfnwpOriginal)
-            mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
+            mrc = pfnwpOriginal(hwndFrame, msg, mp1, mp2);
         else
         {
             cmnLog(__FILE__, __LINE__, __FUNCTION__,

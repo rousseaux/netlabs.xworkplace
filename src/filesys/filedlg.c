@@ -106,9 +106,10 @@
 
 #include "filesys\filedlg.h"            // replacement file dialog implementation
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\fdrsubclass.h"        // folder subclassing engine
 #include "filesys\fdrsplit.h"           // folder split views
 #include "filesys\fdrviews.h"           // common code for folder views
-#include "filesys\object.h"             // XFldObject implementation
+// #include "filesys\object.h"             // XFldObject implementation
 
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
@@ -1261,6 +1262,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
             _PmpfF(("calling fdrSplitCreateFrame"));
 
             if (fdrSplitCreateFrame(pDrivesFolder,
+                                    pDrivesFolder,
                                     &WinData.sv,
                                     FCF_NOBYTEALIGN
                                           | FCF_TITLEBAR

@@ -75,7 +75,7 @@
 
 #include "filesys\disk.h"               // XFldDisk implementation
 #include "filesys\folder.h"             // XFolder implementation
-#include "filesys\fdrmenus.h"           // shared folder menu logic
+// #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\statbars.h"           // status bar translation logic
 
 #include "hook\xwphook.h"               // hook and daemon definitions

@@ -93,7 +93,9 @@
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrcommand.h"         // folder command handling
 #include "filesys\fdrmenus.h"           // shared folder menu logic
-#include "filesys\object.h"             // XFldObject implementation
+#include "filesys\fdrsubclass.h"        // folder subclassing engine
+#include "filesys\fdrsplit.h"           // folder split views
+// #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\statbars.h"           // status bar translation logic
 
 // other SOM headers
@@ -122,7 +124,6 @@
  *
  *      On errors, NULL is returned, and *pulErrorCode
  *      receives the APIRET from doshAssertDrive.
- *
  *      If you're not interested in the return code,
  *      you may pass pulErrorCode as NULL.
  *
@@ -168,54 +169,169 @@ SOM_Scope WPRootFolder*  SOMLINK xfdisk_xwpSafeQueryRootFolder(XFldDisk *somSelf
 }
 
 /*
+ *@@ wpInitData:
+ *      this WPObject instance method gets called when the
+ *      object is being initialized (on wake-up or creation).
+ *      We initialize our additional instance data here.
+ *      Always call the parent first.
+ *
+ *@@added V0.9.21 (2002-08-31) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xfdisk_wpInitData(XFldDisk *somSelf)
+{
+    XFldDiskData *somThis = XFldDiskGetData(somSelf);
+    XFldDiskMethodDebug("XFldDisk","xfdisk_wpInitData");
+
+    XFldDisk_parent_WPDisk_wpInitData(somSelf);
+
+    _pMenuRootFolder = (WPObject*)-1;
+}
+
+/*
+ *@@ wpFilterMenu:
+ *      this WPObject instance method was new with Warp 4
+ *      allows the object to filter out standard menu items
+ *      in a more fine-grained way than wpModifyPopupMenu.
+ *      For one, this gives the object the menu type that
+ *      is being built, and secondly this allows for
+ *      filtering more items than the 32 bits of the filter
+ *      flag in wpFilterPopupMenu have room for.
+ *
+ *      Once again however, the description of this method
+ *      in WPSREF is unusable. As input, this method
+ *      receives an array of ULONGs in pFlags. wpobject.h
+ *      in the 4.5 Toolkit lists the CTXT_* flags together
+ *      with the ULONG array item index where each flag
+ *      applies.
+ *
+ *@@added V0.9.21 (2002-08-31) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfdisk_wpFilterMenu(XFldDisk *somSelf,
+                                            FILTERFLAGS* pFlags,
+                                            HWND hwndCnr,
+                                            BOOL fMultiSelect,
+                                            ULONG ulMenuType,
+                                            ULONG ulView,
+                                            ULONG ulReserved)
+{
+    BOOL    brc;
+
+    /* XFldDiskData *somThis = XFldDiskGetData(somSelf); */
+    XFldDiskMethodDebug("XFldDisk","xfdisk_wpFilterMenu");
+
+    #ifdef DEBUG_MENUS
+        _PmpfF(("[%s] entering", _wpQueryTitle(somSelf)));
+    #endif
+
+    if (brc = XFldDisk_parent_WPDisk_wpFilterMenu(somSelf,
+                                                  pFlags,
+                                                  hwndCnr,
+                                                  fMultiSelect,
+                                                  ulMenuType,
+                                                  ulView,
+                                                  ulReserved))
+    {
+        static const struct
+        {
+            ULONG   flXWP,
+                    flWPS1;
+        } aSuppressFlags[] =
+            {
+                XWPCTXT_CHKDSK, CTXT_CHECKDISK,
+                XWPCTXT_FORMAT, CTXT_FORMATDISK,
+                XWPCTXT_COPYDSK, CTXT_COPYDISK,
+                XWPCTXT_LOCKDISK, CTXT_LOCKDISK,
+                XWPCTXT_EJECTDISK, CTXT_EJECTDISK,
+                XWPCTXT_UNLOCKDISK, CTXT_UNLOCKDISK,
+            };
+
+        ULONG   ul,
+                flWPS = cmnQuerySetting(mnuQueryMenuWPSSetting(somSelf)),
+                flXWP = cmnQuerySetting(mnuQueryMenuXWPSetting(somSelf));
+
+        pFlags->Flags[0] &= ~(   flWPS
+                               | CTXT_NEW);
+
+        // the disk-specific items from the array above are
+        // all in array index 1
+        for (ul = 0;
+             ul < ARRAYITEMCOUNT(aSuppressFlags);
+             ++ul)
+        {
+            // if flag is currently set in settings, remove menu item
+            if (flXWP & aSuppressFlags[ul].flXWP)
+                pFlags->Flags[1] &= ~aSuppressFlags[ul].flWPS1;
+        }
+    }
+
+    #ifdef DEBUG_MENUS
+        _PmpfF(("[%s] leaving, returning %d", _wpQueryTitle(somSelf), brc));
+    #endif
+
+    return brc;
+}
+
+/*
  *@@ wpFilterPopupMenu:
- *      this WPObject instance method allows the object to
- *      filter out unwanted menu items from the context menu.
- *      This gets called before wpModifyPopupMenu.
  *
- *      We remove default entries for disks according to the
- *      global menu settings.
- *
- *@@changed V0.9.5 (2000-09-18) [umoeller]: now removing "Create another" always
- *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu handling
+ *@@added V0.9.21 (2002-08-31) [umoeller]
  */
 
 SOM_Scope ULONG  SOMLINK xfdisk_wpFilterPopupMenu(XFldDisk *somSelf,
-                                                ULONG ulFlags,
-                                                HWND hwndCnr,
-                                                BOOL fMultiSelect)
+                                                  ULONG ulFlags,
+                                                  HWND hwndCnr,
+                                                  BOOL fMultiSelect)
 {
-    ULONG ulrc;
-    // XFldDiskData *somThis = XFldDiskGetData(somSelf);
+    BOOL    brc;
+
+    /* XFldDiskData *somThis = XFldDiskGetData(somSelf); */
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpFilterPopupMenu");
 
-    ulrc = (    XFldDisk_parent_WPDisk_wpFilterPopupMenu(somSelf,
-                                                         ulFlags,
-                                                         hwndCnr,
-                                                         fMultiSelect)
-             &  ~(
-                    // hack out items where the CTXT_* flag is
-                    // set for disks V0.9.19 (2002-04-17) [umoeller]
-                    cmnQuerySetting(mnuQueryMenuWPSSetting(somSelf))
-                  | CTXT_NEW
-                 )
-           );
+    #ifdef DEBUG_MENUS
+        _PmpfF(("[%s] entering", _wpQueryTitle(somSelf)));
+    #endif
 
-    return (ulrc);
+    brc = XFldDisk_parent_WPDisk_wpFilterPopupMenu(somSelf,
+                                                   ulFlags,
+                                                   hwndCnr,
+                                                   fMultiSelect);
+
+    #ifdef DEBUG_MENUS
+        _PmpfF(("[%s] leaving, returning %d", _wpQueryTitle(somSelf), brc));
+    #endif
+
+    return brc;
 }
 
 /*
  *@@ wpModifyPopupMenu:
- *      this WPObject instance methods gets called by the WPS
- *      when a context menu needs to be built for the object
- *      and allows the object to manipulate its context menu.
- *      This gets called _after_ wpFilterPopupMenu.
+ *      this legacy popup menu method is only overridden because
+ *      the brain-dead peer classes provoke the white "drive not
+ *      ready" box TWICE per popup menu.
  *
- *      We add the various XFolder menu entries here
- *      by calling mnuModifyFolderPopupMenu in fdrmenus.c,
- *      which is also used by the XFolder class.
+ *      The order of processing within wpDisplayMenu is
  *
- *@@todo hwndCnr is NULLHANDLE always
+ *      1)  wpFilterMenu (which is overridden by both WPDisk
+ *          and ourselves)
+ *
+ *      2)  wpFilterPopupMenu (which does not seem to be
+ *          overridden)
+ *
+ *      3)  wpModifyPopupMenu (which we override here to fix
+ *          the white error boxes)
+ *
+ *      4)  wpModifyMenu (which is overridden by both WPDisk
+ *          and ourselves).
+ *
+ *      In our wpDisplayMenu override, if "replace drive not
+ *      ready" is enabled, we store a temp root folder pointer
+ *      in the instance data. If that pointer is -1, the
+ *      setting is disabled. If it's NULL, the disk is not
+ *      ready. Otherwise we have a valid root folder.
+ *
+ *@@added V0.9.21 (2002-08-31) [umoeller]
  */
 
 SOM_Scope BOOL  SOMLINK xfdisk_wpModifyPopupMenu(XFldDisk *somSelf,
@@ -223,45 +339,207 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpModifyPopupMenu(XFldDisk *somSelf,
                                                  HWND hwndCnr,
                                                  ULONG iPosition)
 {
-    BOOL            rc;
+    BOOL    brc = TRUE;
 
-    // XFldDiskData *somThis = XFldDiskGetData(somSelf);
+    XFldDiskData *somThis = XFldDiskGetData(somSelf);
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpModifyPopupMenu");
 
-    _PmpfF(("entering"));
+    #ifdef DEBUG_MENUS
+        _PmpfF(("[%s] entering", _wpQueryTitle(somSelf)));
+    #endif
 
-    if (rc = XFldDisk_parent_WPDisk_wpModifyPopupMenu(somSelf,
-                                                      hwndMenu,
-                                                      hwndCnr,
-                                                      iPosition))
+    if (!_pMenuRootFolder)
+        // wpDisplayMenu has checked the root folder,
+        // and the disk is not ready:
+        // DO NOT CALL THE PARENT METHOD
+        brc = FALSE;
+
+    if (brc)
+        brc = XFldDisk_parent_WPDisk_wpModifyPopupMenu(somSelf,
+                                                       hwndMenu,
+                                                       hwndCnr,
+                                                       iPosition);
+
+    #ifdef DEBUG_MENUS
+        _PmpfF(("[%s] leaving, returning %d", _wpQueryTitle(somSelf), brc));
+    #endif
+
+    return brc;
+}
+
+/*
+ *@@ wpModifyMenu:
+ *      this WPObject instance method was new with Warp 4 and
+ *      allows the object to manipulate its menu in a more
+ *      fine-grained way than wpModifyPopupMenu.
+ *
+ *      With V0.9.21, while adding support for the split view
+ *      to the menu methods, I finally got tired of all the
+ *      send-msg hacks to get Warp 4 menu items to work and
+ *      decided to finally break Warp 3 support for XWorkplace.
+ *      It's been fun while it lasted, but enough is enough.
+ *      We are now overriding this method directly through
+ *      the IDL files.
+ *
+ *      ulMenuType will be one of the following:
+ *
+ *      --  MENU_OBJECTPOPUP: Pop-up menu for the object icon.
+ *          This can come in for any object.
+ *
+ *      --  MENU_OPENVIEWPOPUP: Pop-up menu for an open view.
+ *          I think this can reasonably only come in for folders,
+ *          although it seems to be handled by the WPObject method.
+ *
+ *      --  MENU_FOLDERPULLDOWN: Pull-down menu for a folder.
+ *          This comes in for folders only.
+ *
+ *      --  MENU_EDITPULLDOWN: Pull-down menu for the Edit menu option.
+ *          This comes in TWICE, first on the selected object in
+ *          the view's container (if any) with ulView == CLOSED_ICON,
+ *          and then a second time on the view's folder with ulView
+ *          set to the folder's current view.
+ *
+ *      --  MENU_VIEWPULLDOWN: Pull-down menu for the View menu option.
+ *          This comes in for folders only.
+ *
+ *      --  MENU_SELECTEDPULLDOWN: Pull-down menu for the Selected menu option.
+ *          This comes in for non-folder objects also to let the object
+ *          decide what options it wants to present in the folder's
+ *          "Selected" pulldown.
+ *
+ *      --  MENU_HELPPULLDOWN: Pull-down menu for the Help menu option.
+ *          This comes in for folders only.
+ *
+ *      --  MENU_TITLEBARPULLDOWN: this is listed in the toolkit headers,
+ *          but not described in WPSREF. I think this is what comes in
+ *          if the system menu is being built for an open object view.
+ *
+ *@@added V0.9.21 (2002-08-31) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfdisk_wpModifyMenu(XFldDisk *somSelf,
+                                            HWND hwndMenu,
+                                            HWND hwndCnr,
+                                            ULONG iPosition,
+                                            ULONG ulMenuType,
+                                            ULONG ulView,
+                                            ULONG ulReserved)
+{
+    BOOL        brc = FALSE;
+    WPFolder*   pRootFolder;
+
+    XFldDiskData *somThis = XFldDiskGetData(somSelf);
+    XFldDiskMethodDebug("XFldDisk","xfdisk_wpModifyMenu");
+
+    #ifdef DEBUG_MENUS
+        _PmpfF(("[%s] entering", _wpQueryTitle(somSelf)));
+    #endif
+
+    if ((ULONG)_pMenuRootFolder != -1)
     {
-        WPFolder *pFolder = _wpQueryRootFolder(somSelf);
+        // wpDisplayMenu has tested the root folder:
+        // use that pointer, it can be NULL if the
+        // disk is not ready
+        pRootFolder = _pMenuRootFolder;
+    }
+    else
+        pRootFolder = _wpQueryRootFolder(somSelf);
 
-        static const ULONG aSuppressFlags[] =
-            {
-                XWPCTXT_CHKDSK,
-                XWPCTXT_FORMAT,
-                XWPCTXT_COPYDSK,
-                XWPCTXT_LOCKDISK,
-                XWPCTXT_EJECTDISK,
-                XWPCTXT_UNLOCKDISK,
-            };
-        mnuRemoveMenuItems(somSelf,
-                           hwndMenu,
-                           aSuppressFlags,
-                           ARRAYITEMCOUNT(aSuppressFlags));
-
-        if (pFolder)
-            // drive ready:
-            rc = mnuModifyFolderPopupMenu(pFolder,
-                                          hwndMenu,
-                                          hwndCnr,    // @@todo this seems to be NULLHANDLE
-                                          iPosition);
+    if (brc = XFldDisk_parent_WPDisk_wpModifyMenu(somSelf,
+                                                  hwndMenu,
+                                                  hwndCnr,
+                                                  iPosition,
+                                                  ulMenuType,
+                                                  ulView,
+                                                  ulReserved))
+    {
+        if (pRootFolder)
+            brc = mnuModifyFolderMenu(pRootFolder,
+                                      hwndMenu,
+                                      hwndCnr,
+                                      ulMenuType,
+                                      ulView);
     }
 
-    _PmpfF(("leaving"));
+    #ifdef DEBUG_MENUS
+        _PmpfF(("[%s] leaving, returning %d", _wpQueryTitle(somSelf), brc));
+    #endif
 
-    return (rc);
+    return brc;
+}
+
+/*
+ *@@ wpDisplayMenu:
+ *      this WPObject instance method creates and displays
+ *      an object's popup menu, which is returned.
+ *
+ *      From my testing (after overriding menu methods),
+ *      I found out that wpDisplayMenu calls the following
+ *      methods in this order:
+ *
+ *      --  wpFilterMenu (Warp-4-specific);
+ *
+ *      --  wpFilterPopupMenu;
+ *
+ *      --  wpModifyPopupMenu;
+ *
+ *      --  wpModifyMenu (Warp-4-specific).
+ *
+ *      If "replace drive not ready" is enabled, we do a
+ *      quick check here if the drive has media because
+ *      the peer classes have problems doing that in
+ *      their wpModifyPopupMenu overrides. See
+ *      XFldDisk::wpModifyPopupMenu.
+ *
+ *@@added V0.9.21 (2002-08-31) [umoeller]
+ */
+
+SOM_Scope HWND  SOMLINK xfdisk_wpDisplayMenu(XFldDisk *somSelf,
+                                             HWND hwndOwner,
+                                             HWND hwndClient,
+                                             POINTL* ptlPopupPt,
+                                             ULONG ulMenuType,
+                                             ULONG ulReserved)
+{
+    HWND hwndMenu;
+    XFldDiskData *somThis = XFldDiskGetData(somSelf);
+    XFldDiskMethodDebug("XFldDisk","xfdisk_wpDisplayMenu");
+
+    #ifdef DEBUG_MENUS
+        _PmpfF(("[%s] entering", _wpQueryTitle(somSelf)));
+    #endif
+
+    _pMenuRootFolder = (WPObject*)-1;
+
+    switch (ulMenuType)
+    {
+        case MENU_OBJECTPOPUP:
+        case MENU_SELECTEDPULLDOWN:
+#ifndef __NEVERREPLACEDRIVENOTREADY__
+            if (cmnQuerySetting(sfReplaceDriveNotReady))
+            {
+                _PmpfF(("safe-checking root folder"));
+                // yes: use the safe way of opening the drive
+                _pMenuRootFolder = _xwpSafeQueryRootFolder(somSelf, FALSE, NULL);
+            }
+#endif
+        break;
+    }
+
+    hwndMenu = XFldDisk_parent_WPDisk_wpDisplayMenu(somSelf,
+                                                    hwndOwner,
+                                                    hwndClient,
+                                                    ptlPopupPt,
+                                                    ulMenuType,
+                                                    ulReserved);
+
+    _pMenuRootFolder = (WPObject*)-1;
+
+    #ifdef DEBUG_MENUS
+        _PmpfF(("[%s] leaving, returning 0x%lX", _wpQueryTitle(somSelf), hwndMenu));
+    #endif
+
+    return hwndMenu;
 }
 
 /*
@@ -405,6 +683,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
                                       ULONG param)
 {
     HWND            hwndNewFrame = NULLHANDLE; // default: error occured
+    XFolder         *pRootFolder = NULL;
 
     _PmpfF(("entering"));
 
@@ -415,7 +694,6 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
         case OPEN_DETAILS:
         case OPEN_SETTINGS:     // V0.9.16 (2001-10-23) [umoeller]
         {
-            XFolder*        pRootFolder = 0;
             // XFldDiskData *somThis = XFldDiskGetData(somSelf);
             XFldDiskMethodDebug("XFldDisk","xfdisk_wpOpen");
 
@@ -517,11 +795,20 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
         break;
 
         default:
-            // e.g. settings view
-            hwndNewFrame = XFldDisk_parent_WPDisk_wpOpen(somSelf,
-                                                         hwndCnr,
-                                                         ulView,
-                                                         param);
+            // added split view
+            // V0.9.21 (2002-08-28) [umoeller]
+            if (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
+            {
+                if (pRootFolder = dskCheckDriveReady(somSelf))
+                    hwndNewFrame = fdrCreateSplitView(somSelf,
+                                                      pRootFolder,
+                                                      ulView);
+            }
+            else
+                hwndNewFrame = XFldDisk_parent_WPDisk_wpOpen(somSelf,
+                                                             hwndCnr,
+                                                             ulView,
+                                                             param);
     } // switch (ulView)
 
     _PmpfF(("leaving"));

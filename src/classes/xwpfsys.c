@@ -94,7 +94,7 @@
 #include "filesys\filetype.h"           // extended file types implementation
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\icons.h"              // icons handling
-#include "filesys\object.h"             // XFldObject implementation
+// #include "filesys\object.h"             // XFldObject implementation
 
 // other SOM headers
 #pragma hdrstop

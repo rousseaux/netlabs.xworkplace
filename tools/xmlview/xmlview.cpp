@@ -1148,9 +1148,9 @@ static CONTROLDEF
                         WS_VISIBLE | SS_TEXT | DT_LEFT | DT_TOP,
                         0,
                         CTL_COMMON_FONT,
-                        0,
                         { 300, 30 },
-                        5
+                        5,
+                        NULL
                     },
             Static2 =
                     {
@@ -1159,9 +1159,9 @@ static CONTROLDEF
                         WS_VISIBLE | SS_TEXT | DT_LEFT | DT_TOP,
                         0,
                         CTL_COMMON_FONT,
-                        0,
                         { 300, 30 },
-                        5
+                        5,
+                        NULL
                     },
             Cnr =
                     {
@@ -1170,9 +1170,9 @@ static CONTROLDEF
                         WS_VISIBLE | WS_TABSTOP,
                         0,
                         CTL_COMMON_FONT,
-                        0,
                         { 100, 100 },
-                        5
+                        5,
+                        NULL
                     },
             CnrGroup =
                     {
@@ -1181,9 +1181,9 @@ static CONTROLDEF
                         WS_VISIBLE | SS_GROUPBOX | DT_MNEMONIC,
                         0,
                         CTL_COMMON_FONT,
-                        0,
                         { 100, 100 },       // ignored
-                        5
+                        5,
+                        NULL
                     },
             OKButton =
                     {
@@ -1192,9 +1192,9 @@ static CONTROLDEF
                         WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON | BS_DEFAULT,
                         0,
                         CTL_COMMON_FONT,
-                        0,
                         { SZL_AUTOSIZE, 30 },
-                        5
+                        5,
+                        NULL
                     },
             CancelButton =
                     {
@@ -1203,9 +1203,9 @@ static CONTROLDEF
                         WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
                         0,
                         CTL_COMMON_FONT,
-                        0,
                         { SZL_AUTOSIZE, 30 },
-                        5
+                        5,
+                        NULL
                     };
 
 static _DLGHITEM aDlgItems[] =

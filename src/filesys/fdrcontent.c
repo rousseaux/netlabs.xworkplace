@@ -172,7 +172,7 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
-#include "filesys\fdrmenus.h"           // shared folder menu logic
+// #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\fileops.h"            // file operations implementation
 #include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\folder.h"             // XFolder implementation
@@ -1390,8 +1390,8 @@ static WPFileSystem* ProcessParticles(WPFolder *pCurrentFolder,
                         // so the cache ptr is invalidated
                         // once this thing goes dormant
                         _xwpModifyFlags(pCurrentFolder,
-                                             OBJLIST_QUERYAWAKEFSOBJECT,
-                                             OBJLIST_QUERYAWAKEFSOBJECT);
+                                        OBJLIST_QUERYAWAKEFSOBJECT,
+                                        OBJLIST_QUERYAWAKEFSOBJECT);
                     }
                     // return this
                     return (pFound);

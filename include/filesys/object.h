@@ -349,9 +349,6 @@
      *
      ********************************************************************/
 
-    VOID objModifyPopupMenu(WPObject* somSelf,
-                            HWND hwndMenu);
-
     BOOL objCopyObjectFileName(WPObject *somSelf, HWND hwndCnr, BOOL fCopyFullPath);
 
 #endif

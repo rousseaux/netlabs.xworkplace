@@ -29,6 +29,16 @@ interface WPDisk : WPAbstract
 
     BOOL wpSetCorrectDiskIcon();
 
+//# new non-public Warp 3 methods hacked in for XWorkplace
+
+    BOOL wpSetLogicalDrive(in ULONG ulLogicalDrive);
+
+    BOOL wpSetDiskInfo();
+
+    void wpTouchDisk();
+
+//# Warp 4 has added no methods to WPDisk
+
 #ifdef __SOMIDL__
   implementation {
     releaseorder: wpAddDiskDetailsPage,
@@ -61,8 +71,6 @@ interface WPDisk : WPAbstract
     wpSaveState: override;
     wpRestoreState: override;
     wpAddSettingsPages: override;
-    wpFilterPopupMenu: override;
-    wpModifyPopupMenu: override;
     wpMenuItemHelpSelected: override;
     wpMenuItemSelected: override;
     wpSetTitle: override;
@@ -74,6 +82,8 @@ interface WPDisk : WPAbstract
     wpSetIconData: override;
     wpViewObject: override;
     wpUnInitData: override;
+    wpFilterMenu: override;
+    wpModifyMenu: override;
     somDefaultInit: override;
     somDestruct: override;
     wpAddObjectWindowPage: override;

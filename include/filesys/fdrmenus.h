@@ -169,6 +169,57 @@
 
     #define XWPCTXT_HIGHBIT             0x80000000
 
+    // wpDisplayMenu flags V0.9.21 (2002-08-28) [umoeller]
+    #ifndef MENU_FOLDERPULLDOWN
+        #define MENU_FOLDERPULLDOWN       0x00000005
+        #define MENU_VIEWPULLDOWN         0x00000006
+        #define MENU_HELPPULLDOWN         0x00000007
+        #define MENU_EDITPULLDOWN         0x00000008
+        #define MENU_SELECTEDPULLDOWN     0x00000009
+        #define MENU_FOLDERMENUBAR        0x0000000A
+        #define MENU_NODISPLAY            0x40000000
+    #endif
+
+    // OPEN_TREE and OPEN_DETAILS are only defined in wpfolder.h,
+    // which makes it a hassle for us, so add the definitions
+    // here too V0.9.21 (2002-08-31) [umoeller]
+    #ifndef OPEN_TREE
+        #define OPEN_TREE               101
+    #endif
+    #ifndef OPEN_DETAILS
+        #define OPEN_DETAILS            102
+    #endif
+    #ifndef OPEN_UNKNOWN
+        #define OPEN_UNKNOWN      -1
+    #endif
+    #ifndef OPEN_DEFAULT
+        #define OPEN_DEFAULT       0
+    #endif
+    #ifndef OPEN_CONTENTS
+        #define OPEN_CONTENTS      1
+    #endif
+    #ifndef OPEN_SETTINGS
+        #define OPEN_SETTINGS      2
+    #endif
+    #ifndef OPEN_HELP
+        #define OPEN_HELP          3
+    #endif
+    #ifndef OPEN_RUNNING
+        #define OPEN_RUNNING       4
+    #endif
+    #ifndef OPEN_PROMPTDLG
+        #define OPEN_PROMPTDLG     5
+    #endif
+    #ifndef OPEN_PALETTE
+        #define OPEN_PALETTE       121
+    #endif
+    #ifndef CLOSED_ICON
+        #define CLOSED_ICON        122
+    #endif
+    #ifndef OPEN_USER
+        #define OPEN_USER          0x6500
+    #endif
+
     /* ******************************************************************
      *
      *   Global variables
@@ -178,6 +229,14 @@
     // original wnd proc for folder content menus,
     // which we must subclass (var sits in folder.c)
     extern PFNWP G_pfnwpFolderContentMenuOriginal;
+
+    /* ******************************************************************
+     *
+     *   Miscellaneous
+     *
+     ********************************************************************/
+
+    PCSZ mnuQueryViewName(ULONG ulView);
 
     /* ******************************************************************
      *
@@ -223,13 +282,17 @@
 
     BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,
                                   HWND hwndMenu,
-                                  HWND hwndCnr,
-                                  ULONG iPosition);
+                                  HWND hwndCnr);
+
+    BOOL mnuModifyFolderMenu(WPFolder *somSelf,
+                             HWND hwndMenu,
+                             HWND hwndCnr,
+                             ULONG ulMenuType,
+                             ULONG ulView);
 
     BOOL mnuModifyDataFilePopupMenu(WPObject *somSelf,
                                     HWND hwndMenu,
-                                    HWND hwndCnr,
-                                    ULONG iPosition);
+                                    HWND hwndCnr);
 
     /* ******************************************************************
      *

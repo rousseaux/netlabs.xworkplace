@@ -771,34 +771,28 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
              pUseItem = _wpFindUseItem(pObject, USAGE_OPENVIEW, pUseItem))
         {
             PVIEWITEM   pViewItem = (PVIEWITEM)(pUseItem+1);
-            switch (pViewItem->view)
-            {
-                case OPEN_SETTINGS: strcpy(szTemp1, "Settings"); break;
-                case OPEN_CONTENTS: strcpy(szTemp1, "Icon"); break;
-                case OPEN_DETAILS:  strcpy(szTemp1, "Details"); break;
-                case OPEN_TREE:     strcpy(szTemp1, "Tree"); break;
-                case OPEN_RUNNING:  strcpy(szTemp1, "Program running"); break;
-                case OPEN_PROMPTDLG:strcpy(szTemp1, "Prompt dialog"); break;
-                case OPEN_PALETTE:  strcpy(szTemp1, "Palette"); break;
-                default:            sprintf(szTemp1,
-                                            "%s (0x%lX)",
-                                            cmnGetString(ID_SDDI_APMVERSION), // "unknown"
-                                            pViewItem->view);
-                                    break;
-            }
+
+            // V0.9.21 (2002-08-31) [umoeller]
+            PCSZ        pcszViewName = mnuQueryViewName(pViewItem->view);
 
             if (pViewItem->view != OPEN_RUNNING)
             {
                 PID pid;
                 TID tid;
                 WinQueryWindowProcess(pViewItem->handle, &pid, &tid);
-                sprintf(szText, "%s (HWND: 0x%lX, TID: 0x%lX)",
-                        szTemp1, pViewItem->handle, tid);
+                sprintf(szText,
+                        "0x%lX (%s, HWND 0x%lX, TID 0x%lX)",
+                        pViewItem->view,
+                        pcszViewName,
+                        pViewItem->handle,
+                        tid);
             }
             else
             {
-                sprintf(szText, "%s (HAPP: 0x%lX)",
-                        szTemp1, pViewItem->handle);
+                sprintf(szText, "0x%lX (%s, HAPP 0x%lX)",
+                        pViewItem->view,
+                        pcszViewName,
+                        pViewItem->handle);
             }
 
             if (!preccLevel3)

@@ -101,6 +101,8 @@ interface XFldObject : WPObject
 
     HOBJECT xwpQueryHandle(in BOOL fCreate);
 
+    ULONG xwpQueryLocks();
+
     ULONG xwpAddReplacementIconPage(in HWND hwndNotebook,
                                     in ULONG ulPageID,
                                     in ULONG ulDefaultHelpPanel);
@@ -151,7 +153,8 @@ interface XFldObject : WPObject
                   xwpQueryOriginalObjectID,
                   xwpHotkeyOrBorderAction,
                   xwpAddReplacementIconPage,
-                  xwpQueryHandle;
+                  xwpQueryHandle,
+                  xwpQueryLocks;
 
     /*
      * Class Modifiers:
@@ -283,8 +286,10 @@ interface XFldObject : WPObject
 
     //# 5)  menu methods
 
-    wpFilterPopupMenu: override;
-    wpModifyPopupMenu: override;
+    //# wpFilterPopupMenu: override;        removed V0.9.21 (2002-08-31) [umoeller]
+    wpFilterMenu: override;                 //# added V0.9.21 (2002-08-31) [umoeller]
+    //# wpModifyPopupMenu: override;        removed V0.9.21 (2002-08-31) [umoeller]
+    wpModifyMenu: override;                 //# added V0.9.21 (2002-08-31) [umoeller]
     wpMenuItemSelected: override;
     wpMenuItemHelpSelected: override;
 

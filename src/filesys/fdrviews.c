@@ -73,6 +73,7 @@
 // SOM headers which don't crash with prec. header files
 #include "xfldr.ih"
 #include "xfdisk.ih"
+#include "xfdataf.ih"
 #include "xfobj.ih"
 
 // XWorkplace implementation headers
@@ -836,16 +837,6 @@ BOOL fdrvRemoveFromImageCache(WPObject *pobjImage)
     return brc;
 }
 
-typedef BOOL32 _System somTP_wpQueryBitmapHandle(WPObject *somSelf,
-                                                 HBITMAP *phBitmap,
-                                                 HPAL *phPalette,
-                                                 ULONG ulWidth,
-                                                 ULONG ulHeight,
-                                                 ULONG ulFlags,
-                                                 LONG lBackgroundColor,
-                                                 BOOL *pbQuitEarly);
-typedef somTP_wpQueryBitmapHandle *somTD_wpQueryBitmapHandle;
-
 /*
  *@@ GetBitmap:
  *      returns the bitmap handle for the given folder
@@ -959,38 +950,22 @@ HBITMAP GetBitmap(PIBMFDRBKGND pBkgnd)
                     {
                         // image file was not in cache:
                         // then create a HBITMAP and add a cache entry
-                        somTD_wpQueryBitmapHandle _wpQueryBitmapHandle;
-                        if (_wpQueryBitmapHandle = (somTD_wpQueryBitmapHandle)wpshResolveFor(
-                                                                pobjImage,
-                                                                NULL,
-                                                                "wpQueryBitmapHandle"))
+                        if (hbm = _wpQueryHandleFromContents(pobjImage))
                         {
-                            if (    (_wpQueryBitmapHandle(pobjImage,
-                                                          &hbm,
-                                                          NULL,      // no palette
-                                                          0,         // width (do not scale)
-                                                          0,         // height (do not scale)
-                                                          0,         // flags, unused apparently
-                                                          0,         // background color
-                                                          NULL))
-                                 && (hbm)
-                               )
+                            PIMAGECACHEENTRY pice;
+                            if (pice = NEW(IMAGECACHEENTRY))
                             {
-                                PIMAGECACHEENTRY pice;
-                                if (pice = NEW(IMAGECACHEENTRY))
-                                {
-                                    ZERO(pice);
-                                    pice->pobjImage = pobjImage;
-                                    pice->hbm = hbm;
+                                ZERO(pice);
+                                pice->pobjImage = pobjImage;
+                                pice->hbm = hbm;
 
-                                    lstAppendItem(&G_llImages,
-                                                  pice);
+                                lstAppendItem(&G_llImages,
+                                              pice);
 
-                                    // remove from cache when it goes dormant
-                                    _xwpModifyFlags(pobjImage,
-                                                    OBJLIST_IMAGECACHE,
-                                                    OBJLIST_IMAGECACHE);
-                                }
+                                // remove from cache when it goes dormant
+                                _xwpModifyFlags(pobjImage,
+                                                OBJLIST_IMAGECACHE,
+                                                OBJLIST_IMAGECACHE);
                             }
                         }
                     }

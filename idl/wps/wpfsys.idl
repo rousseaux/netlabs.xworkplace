@@ -138,8 +138,15 @@ interface WPFileSystem : WPObject
                   wpAddUserItemsToPopupMenu,
                   wpRemoveFileAttrs,
                   wpIsDiskSwapped,
-                  wpRefreshFSInfo;
-
+                  wpRefreshFSInfo
+#ifndef __NOWARP4METHODS__
+                  ,
+                  wpQueryEASupport,
+                  wpFilesystemPrivate7,
+                  wpFilesystemPrivate8,
+                  wpFilesystemPrivate9
+#endif
+                  ;
     externalstem = wpfs;
     local;
     externalprefix = fs_;

@@ -45,6 +45,7 @@
 #define INCL_WINFRAMEMGR
 #define INCL_WINPOINTERS
 #define INCL_WININPUT
+#define INCL_WINMENUS
 #define INCL_WINSTDCNR
 #define INCL_WINSHELLDATA
 #define INCL_WINSCROLLBARS
@@ -83,10 +84,13 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\classtest.h"           // some cheap funcs for WPS class checks
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\contentmenus.h"        // shared menu logic
 #include "shared\cnrsort.h"             // container sort comparison functions
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\folder.h"             // XFolder implementation
+// #include "filesys\fdrmenus.h"           // shared folder menu logic
+#include "filesys\fdrsubclass.h"        // folder subclassing engine
 #include "filesys\fdrsplit.h"           // folder split views
 #include "filesys\fdrviews.h"           // common code for folder views
 #include "filesys\object.h"             // XFldObject implementation
@@ -992,9 +996,6 @@ VOID fdrCleanupSplitView(PFDRSPLITVIEW psv)
     fdrvClearContainer(psv->hwndFilesCnr,
                        &psv->llFileObjectsInserted);
 
-    if (psv->pRootFolder)
-        _wpUnlockObject(psv->pRootFolder);
-
     // clean up
     if (psv->hwndSplitWindow)
         WinDestroyWindow(psv->hwndSplitWindow);
@@ -1671,7 +1672,7 @@ MRESULT TreeFrameControl(HWND hwndFrame,
                                    psv->hwndTreeCnr,   // to
                                    &ptl,
                                    1);
-                _wpDisplayMenu(psv->pRootFolder,
+                _wpDisplayMenu(psv->pRootObject,
                                psv->hwndTreeFrame, // owner
                                psv->hwndTreeCnr,   // parent
                                &ptl,
@@ -1801,7 +1802,7 @@ MRESULT EXPENTRY fnwpSubclassedTreeFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, 
                 if (    (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
                      && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
                    )
-                    mrc = (MRESULT)psv->pRootFolder;
+                    mrc = (MRESULT)psv->pRootObject;
             break;
 
             /*
@@ -2138,7 +2139,8 @@ static MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPAR
  *@@added V0.9.21 (2002-08-28) [umoeller]
  */
 
-BOOL fdrSplitCreateFrame(WPFolder *pRootFolder,
+BOOL fdrSplitCreateFrame(WPObject *pRootObject,
+                         WPFolder *pRootsFolder,
                          PFDRSPLITVIEW psv,
                          ULONG flFrame,
                          PCSZ pcszTitle,
@@ -2150,7 +2152,8 @@ BOOL fdrSplitCreateFrame(WPFolder *pRootFolder,
 
     psv->cbStruct = sizeof(*psv);
     psv->lSplitBarPos = lSplitBarPos;
-    psv->pRootFolder = pRootFolder;
+    psv->pRootObject = pRootObject;
+    psv->pRootsFolder = pRootsFolder;
     psv->flSplit = flSplit;
 
     psv->pcszFileMask = pcszFileMask;
@@ -2174,15 +2177,20 @@ BOOL fdrSplitCreateFrame(WPFolder *pRootFolder,
 
         psv->habGUI = WinQueryAnchorBlock(psv->hwndMainFrame);
 
+        if (flSplit & SPLIT_MENUBAR)
+            WinLoadMenu(psv->hwndMainFrame,
+                        cmnQueryNLSModuleHandle(FALSE),
+                        ID_XFM_SPLITVIEWBAR);
+
         if (flSplit & SPLIT_STATUSBAR)
-            psv->hwndStatusBar = stbCreateBar(pRootFolder,
-                                              pRootFolder,
+            psv->hwndStatusBar = stbCreateBar(pRootsFolder,
+                                              pRootObject,
                                               psv->hwndMainFrame,
                                               psv->hwndTreeCnr);
 
 
         // insert somSelf as the root of the tree
-        pRootRec = _wpCnrInsertObject(pRootFolder,
+        pRootRec = _wpCnrInsertObject(pRootObject,
                                       psv->hwndTreeCnr,
                                       &ptlIcon,
                                       NULL,       // parent record
@@ -2195,15 +2203,15 @@ BOOL fdrSplitCreateFrame(WPFolder *pRootFolder,
         psv->psfvTree = fdrCreateSFV(psv->hwndTreeFrame,
                                      psv->hwndTreeCnr,
                                      QWL_USER,
-                                     pRootFolder,
-                                     pRootFolder);
+                                     pRootsFolder,
+                                     pRootObject);
         psv->psfvTree->pfnwpOriginal = WinSubclassWindow(psv->hwndTreeFrame,
                                                          fnwpSubclassedTreeFrame);
 
         // same thing for files frame; however we need to
         // insert a temp object first to let the WPS subclass
         // the cnr owner first
-        _wpCnrInsertObject(pRootFolder,
+        _wpCnrInsertObject(pRootsFolder,
                            psv->hwndFilesCnr,
                            &ptlIcon,
                            NULL,
@@ -2211,13 +2219,13 @@ BOOL fdrSplitCreateFrame(WPFolder *pRootFolder,
         psv->psfvFiles = fdrCreateSFV(psv->hwndFilesFrame,
                                       psv->hwndFilesCnr,
                                       QWL_USER,
-                                      pRootFolder,
-                                      pRootFolder);
+                                      pRootsFolder,
+                                      pRootObject);
         psv->psfvFiles->pfnwpOriginal = WinSubclassWindow(psv->hwndFilesFrame,
                                                           fnwpSubclassedFilesFrame);
 
         // remove the temp object again
-        _wpCnrRemoveObject(pRootFolder,
+        _wpCnrRemoveObject(pRootsFolder,
                            psv->hwndFilesCnr);
 
         // and populate this once we're running
@@ -2263,14 +2271,17 @@ typedef struct _SPLITVIEWPOS
 
 typedef struct _SPLITVIEWDATA
 {
-    USHORT          cb;
+    USHORT              cb;
 
-    USEITEM         ui;
-    VIEWITEM        vi;
+    USEITEM             ui;
+    VIEWITEM            vi;
 
-    CHAR            szFolderPosKey[10];
+    CHAR                szFolderPosKey[10];
 
-    FDRSPLITVIEW    sv;         // pRootFolder == somSelf
+    FDRSPLITVIEW        sv;         // pRootFolder == somSelf
+
+    PSUBCLFOLDERVIEW    psfvBar;    // SUBCLFOLDERVIEW of either the three
+                                    // or the files frame for menu bar support
 
 } SPLITVIEWDATA, *PSPLITVIEWDATA;
 
@@ -2283,6 +2294,7 @@ typedef struct _SPLITVIEWDATA
 MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
+    PSPLITVIEWDATA psvd;
 
     switch (msg)
     {
@@ -2292,8 +2304,6 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
          */
 
         case WM_SYSCOMMAND:
-        {
-            PSPLITVIEWDATA psvd;
             if (    (SHORT1FROMMP(mp1) == SC_CLOSE)
                  && (psvd = (PSPLITVIEWDATA)WinQueryWindowPtr(hwndFrame,
                                                               QWL_USER))
@@ -2319,7 +2329,6 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
             }
 
             mrc = G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
-        }
         break;
 
         /*
@@ -2335,7 +2344,6 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
             // query the standard frame controls count
             ULONG ulCount = (ULONG)G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
 
-            PSPLITVIEWDATA psvd;
             if (    (psvd = (PSPLITVIEWDATA)WinQueryWindowPtr(hwndFrame,
                                                               QWL_USER))
                  && (psvd->sv.hwndStatusBar)
@@ -2370,7 +2378,7 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
         {
             //  query the number of standard frame controls
             ULONG ulCount = (ULONG)G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
-            PSPLITVIEWDATA psvd;
+
             if (    (psvd = (PSPLITVIEWDATA)WinQueryWindowPtr(hwndFrame,
                                                               QWL_USER))
                  && (psvd->sv.hwndStatusBar)
@@ -2405,17 +2413,187 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
          */
 
         case WM_CALCFRAMERECT:
-        {
-            PSPLITVIEWDATA psvd;
             mrc = G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
+
             if (    (psvd = (PSPLITVIEWDATA)WinQueryWindowPtr(hwndFrame,
                                                               QWL_USER))
                  && (psvd->sv.hwndStatusBar)
                )
             {
-                fdrCalcFrameRect(mp1, mp2);
+                winhCalcExtFrameRect(mp1,
+                                     mp2,
+                                     cmnQueryStatusBarHeight());
             }
-        }
+        break;
+
+        /*
+         * WM_INITMENU:
+         *      fill the menu bar pulldowns.
+         */
+
+        case WM_INITMENU:
+            mrc = G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
+
+            if (psvd = (PSPLITVIEWDATA)WinQueryWindowPtr(hwndFrame,
+                                                         QWL_USER))
+            {
+                ULONG ulMenuType = 0;
+
+                // init menu doesn't recognize our new menu
+                // bars, so check for these explicitly
+
+                switch (SHORT1FROMMP(mp1))
+                {
+                    case ID_XFM_BAR_FOLDER:
+                        _PmpfF(("ID_XFM_BAR_FOLDER, (HWND)mp2 is 0x%lX", mp2));
+                        ulMenuType = MENU_FOLDERPULLDOWN;
+
+                        // this operates on the root folder
+                        psvd->psfvBar = psvd->sv.psfvTree;
+                    break;
+
+                    case ID_XFM_BAR_EDIT:
+                        _PmpfF(("ID_XFM_BAR_EDIT, (HWND)mp2 is 0x%lX", mp2));
+                        ulMenuType = MENU_EDITPULLDOWN;
+
+                        // this operates on the folder whose
+                        // contents are showing on the right
+                        psvd->psfvBar = psvd->sv.psfvFiles;
+                    break;
+
+                    case ID_XFM_BAR_VIEW:
+                        _PmpfF(("ID_XFM_BAR_VIEW, (HWND)mp2 is 0x%lX", mp2));
+                        ulMenuType = MENU_VIEWPULLDOWN;
+
+                        // this operates on the folder whose
+                        // contents are showing on the right
+                        psvd->psfvBar = psvd->sv.psfvFiles;
+                    break;
+
+                    case ID_XFM_BAR_SELECTED:
+                        _PmpfF(("ID_XFM_BAR_SELECTED, (HWND)mp2 is 0x%lX", mp2));
+                        ulMenuType = MENU_SELECTEDPULLDOWN;
+
+                        // this operates on the folder whose
+                        // contents are showing on the right
+                        psvd->psfvBar = psvd->sv.psfvFiles;
+                    break;
+
+                    case ID_XFM_BAR_HELP:
+                        _PmpfF(("ID_XFM_BAR_HELP, (HWND)mp2 is 0x%lX", mp2));
+                        ulMenuType = MENU_HELPPULLDOWN;
+
+                        // this operates on the folder whose
+                        // contents are showing on the right
+                        psvd->psfvBar = psvd->sv.psfvFiles;
+                    break;
+                }
+
+                if (ulMenuType)
+                {
+                    HWND        hwndMenu;
+                    if (hwndMenu = _wpDisplayMenu(psvd->sv.pRootsFolder,
+                                                  hwndFrame,
+                                                  psvd->sv.hwndFilesCnr,
+                                                  NULL,
+                                                  ulMenuType | MENU_NODISPLAY,
+                                                  0))
+                    {
+                        // empty the old pulldown
+                        winhClearMenu((HWND)mp2);
+
+                        winhMergeMenus((HWND)mp2,
+                                       MIT_END,
+                                       hwndMenu,
+                                       0);
+
+                        // call our own routine to hack in new items
+                        fdrManipulatePulldown(psvd->sv.psfvFiles,
+                                              (ULONG)mp1,
+                                              (HWND)mp2);
+
+                        // since we used MENU_NODISPLAY, apparently
+                        // we have to delete the menu ourselves,
+                        // or we end up with thousands of menus
+                        // under HWND_DESKTOP
+                        WinDestroyWindow(hwndMenu);
+                    }
+
+                    _Pmpf(("    _wpDisplayMenu returned 0x%lX", hwndMenu));
+                }
+
+                // rare case, but if the user clicked on the title
+                // bar then psvd->psfvBar is not set; to be safe,
+                // set it to the root folder (tree view)
+                if (!psvd->psfvBar)
+                    psvd->psfvBar = psvd->sv.psfvTree;
+
+                // call init menu in fdrsubclass.c for sounds
+                // and content menu items support
+                fdrInitMenu(psvd->psfvBar,
+                            (ULONG)mp1,
+                            (HWND)mp2);
+
+            }
+        break;
+
+        /*
+         * WM_MEASUREITEM:
+         *      same processing as in fdrProcessFolderMsgs.
+         */
+
+        case WM_MEASUREITEM:
+            if (   (SHORT)mp1
+                 > cmnQuerySetting(sulVarMenuOfs) + ID_XFMI_OFS_VARIABLE
+               )
+            {
+                // call the measure-item func in fdrmenus.c
+                mrc = cmnuMeasureItem((POWNERITEM)mp2);
+            }
+            else
+                // none of our items: pass to original wnd proc
+                mrc = G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
+        break;
+
+        /*
+         * WM_DRAWITEM:
+         *      same processing as in fdrProcessFolderMsgs,
+         *      except that we do not need cnr owner draw
+         *      for FID_CLIENT.
+         */
+
+        case WM_DRAWITEM:
+            if (   (SHORT)mp1
+                 > cmnQuerySetting(sulVarMenuOfs) + ID_XFMI_OFS_VARIABLE
+               )
+            {
+                // variable menu item: this must be a folder-content
+                // menu item, because for others no WM_DRAWITEM is sent
+                if (cmnuDrawItem(mp1, mp2))
+                    mrc = (MRESULT)TRUE;
+                else // error occured:
+                    mrc = G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
+            }
+            else
+                mrc = G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
+        break;
+
+        /*
+         * WM_COMMAND:
+         *
+         */
+
+        case WM_COMMAND:
+            if (psvd = (PSPLITVIEWDATA)WinQueryWindowPtr(hwndFrame,
+                                                         QWL_USER))
+            {
+                if (    (!psvd->psfvBar)
+                     || (!fdrWMCommand(psvd->psfvBar,
+                                       SHORT1FROMMP(mp1)))
+                   )
+                    // not processed:
+                    mrc = G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
+            }
         break;
 
         /*
@@ -2424,9 +2602,6 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
          */
 
         case WM_DESTROY:
-        {
-            PSPLITVIEWDATA psvd;
-
             if (psvd = (PSPLITVIEWDATA)WinQueryWindowPtr(hwndFrame,
                                                          QWL_USER))
             {
@@ -2434,18 +2609,17 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
                     _PmpfF(("PSPLITVIEWDATA is 0x%lX", psvd));
                 #endif
 
-                _wpDeleteFromObjUseList(psvd->sv.pRootFolder,  // somSelf
+                _wpDeleteFromObjUseList(psvd->sv.pRootObject,
                                         &psvd->ui);
 
                 if (psvd->sv.hwndStatusBar)
                     WinDestroyWindow(psvd->sv.hwndStatusBar);
 
-                _wpFreeMem(psvd->sv.pRootFolder,  // somSelf,
+                _wpFreeMem(psvd->sv.pRootObject,
                            (PBYTE)psvd);
             }
 
             mrc = G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
-        }
         break;
 
         default:
@@ -2465,12 +2639,15 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
  *
  */
 
-HWND fdrCreateSplitView(WPFolder *somSelf,
+HWND fdrCreateSplitView(WPObject *pRootObject,
+                        WPFolder *pRootsFolder,
                         ULONG ulView)
 {
-    static  s_fRegistered = FALSE;
+    static      s_fRegistered = FALSE;
 
-    HWND    hwndReturn = NULLHANDLE;
+    HWND        hwndReturn = NULLHANDLE;
+
+    WPFolder    *pFolder;
 
     TRY_LOUD(excpt1)
     {
@@ -2491,7 +2668,7 @@ HWND fdrCreateSplitView(WPFolder *somSelf,
         // allocate our SPLITVIEWDATA, which contains the
         // FDRSPLITVIEW for the split view engine, plus
         // the useitem for this view
-        if (psvd = (PSPLITVIEWDATA)_wpAllocMem(somSelf,
+        if (psvd = (PSPLITVIEWDATA)_wpAllocMem(pRootObject,
                                                sizeof(SPLITVIEWDATA),
                                                &rc))
         {
@@ -2502,7 +2679,7 @@ HWND fdrCreateSplitView(WPFolder *somSelf,
                                   | FCF_SYSMENU
                                   | FCF_SIZEBORDER
                                   | FCF_AUTOICON;
-            ULONG   ulButton = _wpQueryButtonAppearance(somSelf);
+            ULONG   ulButton = _wpQueryButtonAppearance(pRootObject);
             ULONG   flSplit;
 
             ZERO(psvd);
@@ -2526,7 +2703,7 @@ HWND fdrCreateSplitView(WPFolder *somSelf,
             // allow for saving the split position
             sprintf(psvd->szFolderPosKey,
                     "%lX",
-                    _wpQueryHandle(somSelf));
+                    _wpQueryHandle(pRootObject));
             cbPos = sizeof(pos);
             if (    (!(PrfQueryProfileData(HINI_USER,
                                            (PSZ)INIAPP_FDRSPLITVIEWPOS,
@@ -2544,15 +2721,21 @@ HWND fdrCreateSplitView(WPFolder *somSelf,
                 pos.lSplitBarPos = 30;
             }
 
-            flSplit = SPLIT_ANIMATE | SPLIT_FDRSTYLES | SPLIT_MULTIPLESEL;
+            flSplit =   SPLIT_ANIMATE
+                      | SPLIT_FDRSTYLES
+                      | SPLIT_MULTIPLESEL;
 
-            if (stbFolderWantsStatusBars(somSelf))
+            if (stbFolderWantsStatusBars(pRootsFolder))
                 flSplit |= SPLIT_STATUSBAR;
+
+            if (_xwpQueryMenuBarVisibility(pRootsFolder))
+                flSplit |= SPLIT_MENUBAR;
 
             // create the frame and the client;
             // the client gets psvd in mp1 with WM_CREATE
             // and creates the split window and everything else
-            if (fdrSplitCreateFrame(somSelf,
+            if (fdrSplitCreateFrame(pRootObject,
+                                    pRootsFolder,
                                     &psvd->sv,
                                     flFrame,
                                     "",
@@ -2569,11 +2752,22 @@ HWND fdrCreateSplitView(WPFolder *somSelf,
                                                    fnwpSplitViewFrame);
 
                 // register the view
-                cmnRegisterView(somSelf,
+                cmnRegisterView(pRootObject,
                                 &psvd->ui,
                                 ulView,
                                 psvd->sv.hwndMainFrame,
                                 cmnGetString(ID_XFSI_FDR_SPLITVIEW));
+
+                // change the window title to full path, if allowed
+                // (not for WPDisk)
+                if (pRootObject == pRootsFolder)
+                {
+                    XFolderData *somThis = XFolderGetData(pRootObject);
+                    if (    (_bFullPathInstance == 1)
+                         || ((_bFullPathInstance == 2) && (cmnQuerySetting(sfFullPath)))
+                       )
+                        fdrSetOneFrameWndTitle(pRootObject, psvd->sv.hwndMainFrame);
+                }
 
                 // subclass the cnrs to let us paint the bitmaps
                 fdrvMakeCnrPaint(psvd->sv.hwndTreeCnr);
@@ -2581,7 +2775,7 @@ HWND fdrCreateSplitView(WPFolder *somSelf,
 
                 // set tree view colors
                 fdrvSetCnrLayout(psvd->sv.hwndTreeCnr,
-                                 somSelf,
+                                 pRootsFolder,
                                  OPEN_TREE);
 
                 // now go show the damn thing

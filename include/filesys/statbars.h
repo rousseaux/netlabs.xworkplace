@@ -101,7 +101,7 @@
     BOOL stbViewHasStatusBars(WPFolder *somSelf,
                               ULONG ulView);
 
-    #ifdef FOLDER_HEADER_INCLUDED
+    #ifdef FDRSUBCLASS_HEADER_INCLUDED
         HWND stbCreate(PSUBCLFOLDERVIEW psli2);
 
         HWND stbCreateBar(WPFolder *somSelf,

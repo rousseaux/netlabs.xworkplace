@@ -25,6 +25,45 @@ interface WPDesktop : WPFolder
 
     ULONG wpAddDesktopDefDT1Page(in HWND hwndNotebook);
 
+#ifndef __NOWARP4METHODS__
+
+    ULONG wpQueryDefaultDropOp();
+
+    BOOL wpSetDefaultDropOp(in ULONG ulDefaultDropOp);
+
+    BOOL wpQueryAutoLockup ();
+
+    VOID wpSetAutoLockup (in BOOL bAutoLockup);
+
+    ULONG wpQueryLockupTimeout ();
+
+    VOID wpSetLockupTimeout (in ULONG ulLockupTimeout);
+
+    BOOL wpQueryLockupOnStartup ();
+
+    VOID wpSetLockupOnStartup (in BOOL bLockupOnStartup);
+
+    BOOL wpQueryLockupFullScreen ();
+
+    VOID wpSetLockupFullScreen (in BOOL bLockupFullScreen);
+
+    BOOL wpQueryLockupAutoDim ();
+
+    VOID wpSetLockupAutoDim (in BOOL bLockupAutoDim);
+
+    VOID wpQueryLockupBackground (inout PSZ ppszImageFileName,
+                                  inout ULONG pulImageMode,
+                                  inout ULONG pulScaleFactor,
+                                  inout ULONG pulBackgroundType,
+                                  inout LONG plBackgroundColor);
+
+    VOID wpSetLockupBackground (in PSZ pszImageFileName,
+                                in ULONG ulImageMode,
+                                in ULONG ulScaleFactor,
+                                in ULONG ulBackgroundType,
+                                in LONG lBackgroundColor);
+#endif
+
 #ifdef __SOMIDL__
   implementation {
     releaseorder: wpIsCurrentDesktop,
@@ -32,7 +71,25 @@ interface WPDesktop : WPFolder
                   wpAddDesktopLockup2Page,
                   wpAddDesktopLockup3Page,
                   wpAddDesktopArcRest1Page,
-                  wpAddDesktopDefDT1Page;
+                  wpAddDesktopDefDT1Page
+#ifndef __NOWARP4METHODS__
+                  ,
+                  wpQueryDefaultDropOp,
+                  wpSetDefaultDropOp,
+                  wpQueryAutoLockup,
+                  wpSetAutoLockup,
+                  wpQueryLockupTimeout,
+                  wpSetLockupTimeout,
+                  wpQueryLockupOnStartup,
+                  wpSetLockupOnStartup,
+                  wpQueryLockupFullScreen,
+                  wpSetLockupFullScreen,
+                  wpQueryLockupAutoDim,
+                  wpSetLockupAutoDim,
+                  wpQueryLockupBackground,
+                  wpSetLockupBackground
+#endif
+                  ;
 
     externalstem = WPDesktop;
     local;

@@ -140,7 +140,7 @@
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
-#include "filesys\fdrmenus.h"           // shared folder menu logic
+// #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\icons.h"              // icons handling
 #include "filesys\trash.h"              // trash can implementation

@@ -1479,6 +1479,7 @@ WPObject* ftypQueryAssociatedProgram(WPDataFile *somSelf,       // in: data file
  *
  *@@added V0.9.0 (99-11-27) [umoeller]
  *@@changed V0.9.20 (2002-07-25) [umoeller]: got rid of linked list
+ *@@changed V0.9.21 (2002-08-31) [umoeller]: fixed deletion of WPMENUID_PROPERTIES
  */
 
 BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf, // in: data file in question
@@ -1502,23 +1503,38 @@ BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf, // in: data file in ques
         {
             // delete existing:
             // find first item
+            SHORT sPos = 0;
+
             do
             {
                 ulItemID = (ULONG)WinSendMsg(hwndOpenSubmenu,
                                              MM_ITEMIDFROMPOSITION,
-                                             0,       // first item
+                                             (MPARAM)sPos,      // V0.9.21 (2002-08-31) [umoeller]
                                              0);      // reserved
-                if ((ulItemID) && (ulItemID != MIT_ERROR))
+                if (    (ulItemID)
+                     && (ulItemID != MIT_ERROR)
+                   )
                 {
-                    #ifdef DEBUG_ASSOCS
-                        PSZ pszItemText = winhQueryMenuItemText(hwndOpenSubmenu, ulItemID);
-                        _Pmpf(("mnuModifyDataFilePopupMenu: removing 0x%lX (%s)",
-                                    ulItemID,
-                                    pszItemText));
-                        free(pszItemText);
-                    #endif
+                    // only remove items >= 0x1000 because at this
+                    // point, the "properties" menu item is still
+                    // in the menu (dammit, IBM)
+                    // V0.9.21 (2002-08-31) [umoeller]
+                    if (ulItemID < 0x1000)
+                    {
+                        ++sPos;
+                    }
+                    else
+                    {
+                        #ifdef DEBUG_ASSOCS
+                            PSZ pszItemText = winhQueryMenuItemText(hwndOpenSubmenu, ulItemID);
+                            _Pmpf(("mnuModifyDataFilePopupMenu: removing 0x%lX (%s)",
+                                        ulItemID,
+                                        pszItemText));
+                            free(pszItemText);
+                        #endif
 
-                    winhDeleteMenuItem(hwndOpenSubmenu, ulItemID);
+                        winhDeleteMenuItem(hwndOpenSubmenu, ulItemID);
+                    }
 
                     brc = TRUE;
                 }

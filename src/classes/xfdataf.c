@@ -94,6 +94,7 @@
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\standards.h"          // some standard macros
+#include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
 #include "xfdataf.ih"
@@ -112,9 +113,10 @@
 #include "filesys\filetype.h"           // extended file types implementation
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrcommand.h"         // folder command handling
+#include "filesys\fdrhotky.h"           // folder hotkey handling
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\icons.h"              // icons handling
-#include "filesys\object.h"             // XFldObject implementation
+// #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 
 // other SOM headers
@@ -942,99 +944,6 @@ SOM_Scope void  SOMLINK xdf_wpSetAssociatedFileIcon(XFldDataFile *somSelf)
 }
 
 /*
- *@@ wpDisplayMenu:
- *      this WPObject instance method creates and displays
- *      an object's popup menu, which is returned.
- *
- *      From my testing (after overriding menu methods),
- *      I found out that wpDisplayMenu calls the following
- *      methods in this order:
- *
- *      --  wpFilterMenu (Warp-4-specific);
- *      --  wpFilterPopupMenu;
- *      --  wpModifyPopupMenu;
- *      --  wpModifyMenu (Warp-4-specific).
- *
- *      Normally, this method does not need to be overridden
- *      to modify menus. HOWEVER, with Warp 4, IBM was kind
- *      enough to ignore all changes to the list of associated
- *      programs added to the "Open" submenu, because most
- *      apparently, Warp 4 no longer adds the programs in
- *      the wpModifyPopupMenu method, but in the Warp-4-specific
- *      wpModifyMenu method, which is called too late for me.
- *
- *      Unfortunately, it is thus impossible to prevent the WPS
- *      from adding program objects to the "Open" submenu, except
- *      for overriding this method and removing them all again, or
- *      breaking compatibility with Warp 3. Duh.
- *
- *      Soooo... to support extended file assocs on both Warp 3
- *      and Warp 4, we had to split this.
- *
- *      1. For Warp 3, we do the processing in wpDisplayMenu.
- *         Seems to work. After the menu has been completely
- *         built, we call ftypModifyDataFileOpenSubmenu.
- *
- *      2. For Warp 4, we do some more ugly hacks. We override
- *         wpModifyMenu and do the processing there. See
- *         XFldDataFile::wpModifyMenu.
- *
- *@@added V0.9.0 [umoeller]
- */
-
-SOM_Scope HWND  SOMLINK xdf_wpDisplayMenu(XFldDataFile *somSelf,
-                                          HWND hwndOwner,
-                                          HWND hwndClient,
-                                          POINTL* ptlPopupPt,
-                                          ULONG ulMenuType,
-                                          ULONG ulReserved)
-{
-    HWND hwndMenu = 0;
-
-    // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
-    XFldDataFileMethodDebug("XFldDataFile","xdf_wpDisplayMenu");
-
-    // added exception handling V0.9.16 (2001-01-23) [umoeller]
-    TRY_LOUD(excpt1)
-    {
-        hwndMenu = XFldDataFile_parent_WPDataFile_wpDisplayMenu(somSelf,
-                                                                hwndOwner,
-                                                                hwndClient,
-                                                                ptlPopupPt,
-                                                                ulMenuType,
-                                                                ulReserved);
-
-#ifndef __NEVEREXTASSOCS__
-        if (!G_fIsWarp4)
-        {
-            // on Warp 3, manipulate the "Open" submenu...
-            if (cmnQuerySetting(sfExtAssocs))
-            {
-                MENUITEM        mi;
-                // find "Open" submenu
-                if (WinSendMsg(hwndMenu,
-                               MM_QUERYITEM,
-                               MPFROM2SHORT(WPMENUID_OPEN, TRUE),
-                               (MPARAM)&mi))
-                {
-                    // found:
-                    ftypModifyDataFileOpenSubmenu(somSelf,
-                                                  mi.hwndSubMenu,
-                                                  TRUE);        // delete existing
-                }
-            }
-        }
-#endif
-    }
-    CATCH(excpt1)
-    {
-    }
-    END_CATCH();
-
-    return (hwndMenu);
-}
-
-/*
  *@@ wpFilterPopupMenu:
  *      this WPObject instance method allows the object to
  *      filter out unwanted menu items from the context menu.
@@ -1073,107 +982,123 @@ SOM_Scope ULONG  SOMLINK xdf_wpFilterPopupMenu(XFldDataFile *somSelf,
     // the proper CTXT_xxx flags
     ulMenuFilter &= ~(cmnQuerySetting(mnuQueryMenuWPSSetting(somSelf)));
 
-    return (ulMenuFilter);
+    return ulMenuFilter;
 }
-
-#ifndef __NEVEREXTASSOCS__
 
 /*
  *@@ wpModifyMenu:
- *      this WPObject method is Warp-4 specific and
- *      is a "supermethod" to wpModifyPopupMenu. This
- *      supports manipulation of folder menu bars as
- *      well.
+ *      this WPObject instance method was new with Warp 4 and
+ *      allows the object to manipulate its menu in a more
+ *      fine-grained way than wpModifyPopupMenu.
  *
- *      The standard version of this calls wpModifyPopupMenu
- *      in turn.
+ *      With V0.9.21, while adding support for the split view
+ *      to the menu methods, I finally got tired of all the
+ *      send-msg hacks to get Warp 4 menu items to work and
+ *      decided to finally break Warp 3 support for XWorkplace.
+ *      It's been fun while it lasted, but enough is enough.
+ *      We are now overriding this method directly through
+ *      the IDL files.
  *
- *      NOTE: This "method" isn't really a SOM method
- *      in that it doesn't appear in our IDL file. As
- *      a result, this prototype has _not_ been created
- *      by the SOM compiler.
+ *      ulMenuType will be one of the following:
  *
- *      Instead, we "manually" hack the WPDataFile
- *      method table to point to this function instead.
- *      This is done in M_XFldDataFile::wpclsInitData
- *      by calling wpshOverrideStaticMethod.
+ *      --  MENU_OBJECTPOPUP: Pop-up menu for the object icon.
+ *          This can come in for any object.
  *
- *@@added V0.9.6 (2000-10-16) [umoeller]
+ *      --  MENU_OPENVIEWPOPUP: Pop-up menu for an open view.
+ *          I think this can reasonably only come in for folders,
+ *          although it seems to be handled by the WPObject method.
+ *
+ *      --  MENU_FOLDERPULLDOWN: Pull-down menu for a folder.
+ *          This comes in for folders only.
+ *
+ *      --  MENU_EDITPULLDOWN: Pull-down menu for the Edit menu option.
+ *          This comes in TWICE, first on the selected object in
+ *          the view's container (if any) with ulView == CLOSED_ICON,
+ *          and then a second time on the view's folder with ulView
+ *          set to the folder's current view.
+ *
+ *      --  MENU_VIEWPULLDOWN: Pull-down menu for the View menu option.
+ *          This comes in for folders only.
+ *
+ *      --  MENU_SELECTEDPULLDOWN: Pull-down menu for the Selected menu option.
+ *          This comes in for non-folder objects also to let the object
+ *          decide what options it wants to present in the folder's
+ *          "Selected" pulldown.
+ *
+ *      --  MENU_HELPPULLDOWN: Pull-down menu for the Help menu option.
+ *          This comes in for folders only.
+ *
+ *      --  MENU_TITLEBARPULLDOWN: this is listed in the toolkit headers,
+ *          but not described in WPSREF. I think this is what comes in
+ *          if the system menu is being built for an open object view.
+ *
+ *@@added V0.9.21 (2002-08-31) [umoeller]
  */
 
-BOOL _System xdf_wpModifyMenu(XFldDataFile *somSelf,
-                              HWND hwndMenu,
-                              HWND hwndCnr,
-                              ULONG iPosition,
-                              ULONG ulMenuType,
-                              ULONG ulView,
-                              ULONG ulReserved)
+SOM_Scope BOOL  SOMLINK xdf_wpModifyMenu(XFldDataFile *somSelf,
+                                         HWND hwndMenu,
+                                         HWND hwndCnr,
+                                         ULONG iPosition,
+                                         ULONG ulMenuType,
+                                         ULONG ulView,
+                                         ULONG ulReserved)
 {
-    BOOL    brc = FALSE;
-    xfTD_wpModifyMenu _parent_wpModifyMenu = NULL;
-    BOOL    fExtAssocs = FALSE;
-    somMethodTabs pParentMTab;
-    SOMClass      *pParentClass;
-    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
+    BOOL    brc;
+
+    // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpModifyMenu");
 
-    fExtAssocs = cmnQuerySetting(sfExtAssocs);
-
-    // resolve parent method.... this is especially sick:
-
-    // a) if extended associations are disabled,
-    //    we go for WPDataFile
-    // b) if extended associations are enabled, this is fun:
-    //    we skip the _WPDataFile method completely and call WPFileSystem directly!
-    if (fExtAssocs)
+    if (brc = XFldDataFile_parent_WPDataFile_wpModifyMenu(somSelf,
+                                                          hwndMenu,
+                                                          hwndCnr,
+                                                          iPosition,
+                                                          ulMenuType,
+                                                          ulView,
+                                                          ulReserved))
     {
-        // WPFileSystem
-        pParentClass = _WPFileSystem;
-        pParentMTab = WPFileSystemCClassData.parentMtab;
-    }
-    else
-    {
-        // WPDataFile
-        pParentClass = _XFldDataFile;
-        pParentMTab = XFldDataFileCClassData.parentMtab;
-    }
+        #ifdef DEBUG_MENUS
+            _PmpfF(("[%s]",
+                    _wpQueryTitle(somSelf)));
+            _Pmpf(("   type = 0x%lX (%s), view = 0x%lX (%s)",
+                    ulMenuType,
+                    (ulMenuType == MENU_OBJECTPOPUP) ? "MENU_OBJECTPOPUP"
+                    : (ulMenuType == MENU_OPENVIEWPOPUP) ? "MENU_OPENVIEWPOPUP"
+                    : (ulMenuType == MENU_TITLEBARPULLDOWN) ? "MENU_TITLEBARPULLDOWN"
+                    : (ulMenuType == MENU_TITLEBARPULLDOWNINT) ? "MENU_TITLEBARPULLDOWNINT"
+                    : (ulMenuType == MENU_FOLDERPULLDOWN) ? "MENU_FOLDERPULLDOWN"
+                    : (ulMenuType == MENU_VIEWPULLDOWN) ? "MENU_VIEWPULLDOWN"
+                    : (ulMenuType == MENU_HELPPULLDOWN) ? "MENU_HELPPULLDOWN"
+                    : (ulMenuType == MENU_EDITPULLDOWN) ? "MENU_EDITPULLDOWN"
+                    : (ulMenuType == MENU_SELECTEDPULLDOWN) ? "MENU_SELECTEDPULLDOWN"
+                    : (ulMenuType == MENU_FOLDERMENUBAR) ? "MENU_FOLDERMENUBAR"
+                    : (ulMenuType == MENU_USER) ? "MENU_USER"
+                    : "unknown",
+                    ulView,
+                    mnuQueryViewName(ulView)
+                    ));
 
-    // resolve!
-    _parent_wpModifyMenu
-        = (xfTD_wpModifyMenu)wpshParentNumResolve(_WPFileSystem,
-                                                  pParentMTab,
-                                                  "wpModifyMenu");
-    if (!_parent_wpModifyMenu)
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "wpshParentNumResolve failed.");
-    else
-    {
-        // call parent method
-        brc = _parent_wpModifyMenu(somSelf, hwndMenu, hwndCnr,
-                                   iPosition, ulMenuType,
-                                   ulView, ulReserved);
+        #endif
 
-        if ((brc) && (fExtAssocs))
+        // now check which type of menu we have
+        switch (ulMenuType)
         {
-            // extended assocs have been enabled:
-            // this means that the WPDataFile method has been SKIPPED
-            // and we need to manually tweak some of the data file
-            // settings, as WPDataFile would normally do it...
+            case MENU_OPENVIEWPOPUP:
+            case MENU_TITLEBARPULLDOWN:
+            case MENU_OBJECTPOPUP:
+            case MENU_SELECTEDPULLDOWN:
 
-            // now check which type of menu we have
-            switch (ulMenuType)
-            {
-                #ifndef MENU_SELECTEDPULLDOWN
-                    // Warp 4 definition...
-                    #define MENU_SELECTEDPULLDOWN     0x00000009
-                #endif
-                case MENU_OPENVIEWPOPUP:
-                case MENU_TITLEBARPULLDOWN:
-                case MENU_OBJECTPOPUP:
-                case MENU_SELECTEDPULLDOWN:
+                mnuModifyDataFilePopupMenu(somSelf,
+                                           hwndMenu,
+                                           hwndCnr);
+
+                if (cmnQuerySetting(sfExtAssocs))
                 {
-                    // find "Open" submenu
+                    // extended assocs have been enabled:
+                    // this means we need to manually tweak some of the data file
+                    // settings, as WPDataFile would normally do it...
                     MENUITEM        mi;
+
+                    // find "Open" submenu
                     if (WinSendMsg(hwndMenu,
                                    MM_QUERYITEM,
                                    MPFROM2SHORT(WPMENUID_OPEN, TRUE),
@@ -1198,60 +1123,19 @@ BOOL _System xdf_wpModifyMenu(XFldDataFile *somSelf,
 
                         ftypModifyDataFileOpenSubmenu(somSelf,
                                                       mi.hwndSubMenu,
-                                                      FALSE);        // do not delete existing
+                                                      TRUE);        // delete existing
                     }
                 }
-                break;
-            }
+            break;
         }
+
+        fdrAddHotkeysToMenu(somSelf,
+                            hwndCnr,
+                            hwndMenu,
+                            ulMenuType);
     }
 
     return brc;
-}
-
-#endif
-
-/*
- *@@ wpModifyPopupMenu:
- *      this WPObject instance methods gets called by the WPS
- *      when a context menu needs to be built for the object
- *      and allows the object to manipulate its context menu.
- *      This gets called _after_ wpFilterPopupMenu.
- *
- *      We add the datafile object popup menu entries.
- *
- *      We don't need a wpMenuItemSelected method override
- *      for data files, because the new menu items are
- *      completely handled by the subclassed folder frame
- *      window procedure by calling the functions in fdrmenus.c.
- */
-
-SOM_Scope BOOL  SOMLINK xdf_wpModifyPopupMenu(XFldDataFile *somSelf,
-                                              HWND hwndMenu,
-                                              HWND hwndCnr,
-                                              ULONG iPosition)
-{
-    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    XFldDataFileMethodDebug("XFldDataFile","xdf_wpModifyPopupMenu");
-
-    if (    (XFldDataFile_parent_WPDataFile_wpModifyPopupMenu(somSelf,
-                                                              hwndMenu,
-                                                              hwndCnr,
-                                                              iPosition))
-            // manipulate the data file menu according to our needs
-         && (mnuModifyDataFilePopupMenu(somSelf,
-                                        hwndMenu,
-                                        hwndCnr,
-                                        iPosition))
-       )
-    {
-        fdrAddHotkeysToMenu(somSelf,
-                            hwndCnr,
-                            hwndMenu);
-        return TRUE;
-    }
-
-    return FALSE;
 }
 
 /*
@@ -1671,7 +1555,7 @@ SOM_Scope void  SOMLINK xdfM_wpclsInitData(M_XFldDataFile *somSelf)
      *
      */
 
-#ifndef __NEVEREXTASSOCS__
+#if 0       // V0.9.21 (2002-08-31) [umoeller]
     // this gets called for subclasses too, so patch
     // this only for the parent class...
     // descendant classes will inherit this anyway

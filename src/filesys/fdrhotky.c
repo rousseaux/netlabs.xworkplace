@@ -79,8 +79,9 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
+#include "filesys\folder.h"             // XFolder implementation
+#include "filesys\fdrhotky.h"           // folder hotkey handling
 #include "filesys\fdrmenus.h"           // shared folder menu logic
-#include "filesys\folder.h"
 
 // other SOM headers
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
@@ -670,8 +671,7 @@ static PXFLDHOTKEY FindHotkeyFromLBSel(HWND hwndDlg,
 
 static VOID AddHotkeyToMenuItem(HWND hwndMenu,
                                 USHORT usPostCommand2Find,
-                                USHORT usMenuCommand,
-                                ULONG ulVarMenuOffset) // cmnQuerySetting(sulVarMenuOfs)
+                                USHORT usMenuCommand)
 {
     USHORT  usFlags, usKeyCode;
     CHAR    szDescription[100];
@@ -685,12 +685,12 @@ static VOID AddHotkeyToMenuItem(HWND hwndMenu,
            )
             // it's one of the "variable" menu items:
             // add the global variable menu offset
-            usMenuCommand += ulVarMenuOffset;
+            usMenuCommand += *G_pulVarMenuOfs;
 
         cmnDescribeKey(szDescription,
                        usFlags,
                        usKeyCode);
-        // _Pmpf(("Found %s", szDescription));
+
         winhAppend2MenuItemText(hwndMenu,
                                 usMenuCommand,
                                 szDescription,
@@ -719,8 +719,6 @@ VOID fdrAddHotkeysToPulldown(HWND hwndPulldown,     // in: submenu handle
             (cmnQuerySetting(sfShowHotkeysInMenus))
         )
     {
-        ULONG   ulVarMenuOffset = cmnQuerySetting(sulVarMenuOfs);
-
         ULONG ul;
         for (ul = 0;
              ul < cMenuIDs;
@@ -728,8 +726,7 @@ VOID fdrAddHotkeysToPulldown(HWND hwndPulldown,     // in: submenu handle
         {
             AddHotkeyToMenuItem(hwndPulldown,
                                 paulMenuIDs[ul],
-                                paulMenuIDs[ul],
-                                ulVarMenuOffset);
+                                paulMenuIDs[ul]);
         }
     }
 }
@@ -745,14 +742,14 @@ VOID fdrAddHotkeysToPulldown(HWND hwndPulldown,     // in: submenu handle
  *@@added V0.9.2 (2000-03-06) [umoeller]
  *@@changed V0.9.4 (2000-06-11) [umoeller]: hotkeys showed up even if hotkeys were globally disabled; fixed
  *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu handling
+ *@@changed V0.9.21 (2002-08-31) [umoeller]: changed prototype for Warp 4 method overrides
  */
 
 VOID fdrAddHotkeysToMenu(WPObject *somSelf,
                          HWND hwndCnr,
-                         HWND hwndMenu) // in: menu created by wpDisplayMenu
+                         HWND hwndMenu,     // in: menu created by wpDisplayMenu
+                         ULONG ulMenuType)  // in: menu type from wpModifyMenu
 {
-    ULONG flMenuXWP = cmnQuerySetting(mnuQueryMenuXWPSetting(somSelf));
-                    // V0.9.19 (2002-04-17) [umoeller]
     if (
 #ifndef __ALWAYSFDRHOTKEYS__
             (cmnQuerySetting(sfFolderHotkeys)) // V0.9.4 (2000-06-11) [umoeller]
@@ -762,86 +759,82 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
        )
     {
         CHAR    szDescription[100];
-        BOOL    fCnrWhitespace = wpshIsViewCnr(somSelf, hwndCnr);
+        ULONG   flMenuXWP = cmnQuerySetting(mnuQueryMenuXWPSetting(somSelf));
 
-        USHORT  idMenu = WinQueryWindowUShort(hwndMenu, QWS_ID);
-
-        ULONG   ulVarMenuOffset = cmnQuerySetting(sulVarMenuOfs);
-
-        #ifdef DEBUG_KEYS
+        #ifdef DEBUG_MENUS
+            USHORT  idMenu = WinQueryWindowUShort(hwndMenu, QWS_ID);
             _PmpfF(("hwndMenu 0x%lX, id 0x%lX",
                     hwndMenu,
                     idMenu));
         #endif
 
-        if (!fCnrWhitespace)
+        switch (ulMenuType)
         {
-            // menu opened for object inserted into
-            // container (not for cnr whitespace):
+            case MENU_OBJECTPOPUP:
+            case MENU_SELECTEDPULLDOWN:
+                // delete
+                winhAppend2MenuItemText(hwndMenu,
+                                        WPMENUID_DELETE,
+                                        cmnGetString(ID_XSSI_KEY_DELETE),  // pszDelete
+                                        TRUE);
 
-            // delete
-            winhAppend2MenuItemText(hwndMenu,
-                                    WPMENUID_DELETE,
-                                    cmnGetString(ID_XSSI_KEY_DELETE),  // pszDelete
-                                    TRUE);
+                // open settings
+                cmnDescribeKey(szDescription,
+                               KC_ALT | KC_VIRTUALKEY,
+                               VK_ENTER);
+                winhAppend2MenuItemText(hwndMenu,
+                                        WPMENUID_PROPERTIES,
+                                        szDescription,
+                                        TRUE);
 
-            // open settings
-            cmnDescribeKey(szDescription,
-                           KC_ALT | KC_VIRTUALKEY,
-                           VK_ENTER);
-            winhAppend2MenuItemText(hwndMenu,
-                                    WPMENUID_PROPERTIES,
-                                    szDescription,
-                                    TRUE);
+                // default help
+                cmnDescribeKey(szDescription,
+                               KC_VIRTUALKEY,
+                               VK_F1);
+                winhAppend2MenuItemText(hwndMenu,
+                                        WPMENUID_EXTENDEDHELP,
+                                        szDescription,
+                                        TRUE);
 
-            // default help
-            cmnDescribeKey(szDescription,
-                           KC_VIRTUALKEY,
-                           VK_F1);
-            winhAppend2MenuItemText(hwndMenu,
-                                    WPMENUID_EXTENDEDHELP,
-                                    szDescription,
-                                    TRUE);
-
-            // copy filename
-            if (!(flMenuXWP & XWPCTXT_COPYFILENAME))
-            {
-                AddHotkeyToMenuItem(hwndMenu,
-                                    ID_XFMI_OFS_COPYFILENAME_SHORT,
-                                    ID_XFMI_OFS_COPYFILENAME_MENU,
-                                    ulVarMenuOffset);
-                AddHotkeyToMenuItem(hwndMenu,
-                                    ID_XFMI_OFS_COPYFILENAME_FULL,
-                                    ID_XFMI_OFS_COPYFILENAME_MENU, // same menu item!
-                                    ulVarMenuOffset);
-            }
-        }
-        else
-        {
-            // menu on cnr whitespace:
-            ULONG       ul;
-
-            for (ul = 0;
-                 ul < ARRAYITEMCOUNT(G_aDescriptions);
-                 ++ul)
-            {
-                // menu modification allowed for this command?
-                if (G_aDescriptions[ul].usMenuCommand)
+                // copy filename
+                if (!(flMenuXWP & XWPCTXT_COPYFILENAME))
                 {
                     AddHotkeyToMenuItem(hwndMenu,
-                                        G_aDescriptions[ul].usPostCommand, // usPostCommand2Find
-                                        G_aDescriptions[ul].usMenuCommand, // usMenuCommand
-                                        ulVarMenuOffset);
+                                        ID_XFMI_OFS_COPYFILENAME_SHORT,
+                                        ID_XFMI_OFS_COPYFILENAME_MENU);
+                    AddHotkeyToMenuItem(hwndMenu,
+                                        ID_XFMI_OFS_COPYFILENAME_FULL,
+                                        ID_XFMI_OFS_COPYFILENAME_MENU); // same menu item!
                 }
-            }
+            break;
+
+            case MENU_OPENVIEWPOPUP:
+            case MENU_FOLDERPULLDOWN:
+            {
+                // menu on cnr whitespace:
+                ULONG       ul;
+
+                for (ul = 0;
+                     ul < ARRAYITEMCOUNT(G_aDescriptions);
+                     ++ul)
+                {
+                    // menu modification allowed for this command?
+                    if (G_aDescriptions[ul].usMenuCommand)
+                    {
+                        AddHotkeyToMenuItem(hwndMenu,
+                                            G_aDescriptions[ul].usPostCommand, // usPostCommand2Find
+                                            G_aDescriptions[ul].usMenuCommand); // usMenuCommand
+                    }
+                }
 
 #ifndef __NOMOVEREFRESHNOW__
-            if (!(flMenuXWP & XWPCTXT_REFRESH_IN_MAIN))
-                AddHotkeyToMenuItem(hwndMenu,
-                                    WPMENUID_REFRESH,
-                                    ID_XFMI_OFS_REFRESH,
-                                    ulVarMenuOffset);
+                if (!(flMenuXWP & XWPCTXT_REFRESH_IN_MAIN))
+                    AddHotkeyToMenuItem(hwndMenu,
+                                        WPMENUID_REFRESH,
+                                        ID_XFMI_OFS_REFRESH);
 #endif
+            }
+            break;
         }
     } // end if (cmnQuerySetting(sfShowHotkeysInMenus))
 }

@@ -142,8 +142,10 @@
 #include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrcommand.h"         // folder menu command reactions
+#include "filesys\fdrhotky.h"           // folder hotkey handling
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\fdrsplit.h"           // folder split views
+#include "filesys\fdrsubclass.h"        // folder subclassing engine
 #include "filesys\icons.h"              // icons handling
 #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\refresh.h"            // folder auto-refresh
@@ -1353,7 +1355,6 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
     */
 
     _fUnInitCalled = FALSE;
-    _hwndCnrSaved = NULLHANDLE;
 
     _pfnResolvedUpdateStatusBar = NULL;
 
@@ -2336,8 +2337,11 @@ SOM_Scope BOOL  SOMLINK xf_wpQueryDefaultHelp(XFolder *somSelf,
  *      methods in this order:
  *
  *      --  wpFilterMenu (Warp-4-specific);
+ *
  *      --  wpFilterPopupMenu;
+ *
  *      --  wpModifyPopupMenu;
+ *
  *      --  wpModifyMenu (Warp-4-specific).
  *
  *      Normally, we wouldn't need to override this method...
@@ -2422,52 +2426,111 @@ SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
 }
 
 /*
- *@@ wpModifyPopupMenu:
- *      this WPObject instance methods gets called by the WPS
- *      when a context menu needs to be built for the object
- *      and allows the object to manipulate its context menu.
- *      This gets called _after_ wpFilterPopupMenu.
+ *@@ wpModifyMenu:
+ *      this WPObject instance method was new with Warp 4 and
+ *      allows the object to manipulate its menu in a more
+ *      fine-grained way than wpModifyPopupMenu.
  *
- *      We add the various XFolder menu entries here
- *      by calling the common XFolder function in fdrmenus.c,
- *      which is also used by the XFldDisk class.
+ *      With V0.9.21, while adding support for the split view
+ *      to the menu methods, I finally got tired of all the
+ *      send-msg hacks to get Warp 4 menu items to work and
+ *      decided to finally break Warp 3 support for XWorkplace.
+ *      It's been fun while it lasted, but enough is enough.
+ *      We are now overriding this method directly through
+ *      the IDL files.
+ *
+ *      ulMenuType will be one of the following:
+ *
+ *      --  MENU_OBJECTPOPUP: Pop-up menu for the object icon.
+ *          This can come in for any object.
+ *
+ *      --  MENU_OPENVIEWPOPUP: Pop-up menu for an open view.
+ *          I think this can reasonably only come in for folders,
+ *          although it seems to be handled by the WPObject method.
+ *
+ *      --  MENU_FOLDERPULLDOWN: Pull-down menu for a folder.
+ *          This comes in for folders only.
+ *
+ *      --  MENU_EDITPULLDOWN: Pull-down menu for the Edit menu option.
+ *          This comes in TWICE, first on the selected object in
+ *          the view's container (if any) with ulView == CLOSED_ICON,
+ *          and then a second time on the view's folder with ulView
+ *          set to the folder's current view.
+ *
+ *      --  MENU_VIEWPULLDOWN: Pull-down menu for the View menu option.
+ *          This comes in for folders only.
+ *
+ *      --  MENU_SELECTEDPULLDOWN: Pull-down menu for the Selected menu option.
+ *          This comes in for non-folder objects also to let the object
+ *          decide what options it wants to present in the folder's
+ *          "Selected" pulldown.
+ *
+ *      --  MENU_HELPPULLDOWN: Pull-down menu for the Help menu option.
+ *          This comes in for folders only.
+ *
+ *      --  MENU_TITLEBARPULLDOWN: this is listed in the toolkit headers,
+ *          but not described in WPSREF. I think this is what comes in
+ *          if the system menu is being built for an open object view.
+ *
+ *@@added V0.9.21 (2002-08-31) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xf_wpModifyPopupMenu(XFolder *somSelf,
-                                             HWND  hwndMenu,
-                                             HWND  hwndCnr,
-                                             ULONG iPosition)
+SOM_Scope BOOL  SOMLINK xf_wpModifyMenu(XFolder *somSelf,
+                                        HWND hwndMenu,
+                                        HWND hwndCnr,
+                                        ULONG iPosition,
+                                        ULONG ulMenuType,
+                                        ULONG ulView,
+                                        ULONG ulReserved)
 {
-    BOOL        rc = TRUE;
-    XFolderData *somThis = XFolderGetData(somSelf);
+    BOOL brc;
 
-    /* _Pmpf(("wpModifyPopupMenu cbFldrLongArray: %d", _cbFldrLongArray));
-    _Pmpf(("  somThis for %s: 0x%lX", _wpQueryTitle(somSelf), somThis)); */
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpModifyMenu");
 
-    XFolderMethodDebug("XFolder","xf_wpModifyPopupMenu");
+    #ifdef DEBUG_MENUS
+        _PmpfF(("[%s] hwndMenu 0x%lX hwndCnr 0x%lX",
+                _wpQueryTitle(somSelf),
+                hwndMenu,
+                hwndCnr));
+        _Pmpf(("   type = 0x%lX (%s), view = 0x%lX (%s)",
+                ulMenuType,
+                (ulMenuType == MENU_OBJECTPOPUP) ? "MENU_OBJECTPOPUP"
+                : (ulMenuType == MENU_OPENVIEWPOPUP) ? "MENU_OPENVIEWPOPUP"
+                : (ulMenuType == MENU_TITLEBARPULLDOWN) ? "MENU_TITLEBARPULLDOWN"
+                : (ulMenuType == MENU_TITLEBARPULLDOWNINT) ? "MENU_TITLEBARPULLDOWNINT"
+                : (ulMenuType == MENU_FOLDERPULLDOWN) ? "MENU_FOLDERPULLDOWN"
+                : (ulMenuType == MENU_VIEWPULLDOWN) ? "MENU_VIEWPULLDOWN"
+                : (ulMenuType == MENU_HELPPULLDOWN) ? "MENU_HELPPULLDOWN"
+                : (ulMenuType == MENU_EDITPULLDOWN) ? "MENU_EDITPULLDOWN"
+                : (ulMenuType == MENU_SELECTEDPULLDOWN) ? "MENU_SELECTEDPULLDOWN"
+                : (ulMenuType == MENU_FOLDERMENUBAR) ? "MENU_FOLDERMENUBAR"
+                : (ulMenuType == MENU_USER) ? "MENU_USER"
+                : "unknown",
+                ulView,
+                mnuQueryViewName(ulView)
+                ));
 
-    // call parent
-    XFolder_parent_WPFolder_wpModifyPopupMenu(somSelf, hwndMenu, hwndCnr, iPosition);
+    #endif
 
-    // _Pmpf(("wpModifyPopupMenu cbFldrLongArray: %d", _cbFldrLongArray));
+    if (brc = XFolder_parent_WPFolder_wpModifyMenu(somSelf,
+                                                   hwndMenu,
+                                                   hwndCnr,
+                                                   iPosition,
+                                                   ulMenuType,
+                                                   ulView,
+                                                   ulReserved))
+    {
+        brc = mnuModifyFolderMenu(somSelf,
+                                  hwndMenu,
+                                  hwndCnr,
+                                  ulMenuType,
+                                  ulView);
+    }
 
-    if (!hwndCnr)
-        // bug in Warp 3: if the popup menu is requested
-        // on container whitespace, hwndCnr is passed as
-        // NULLHANDLE; we therefore use this ugly
-        // workaround
-        hwndCnr = _hwndCnrSaved;   // set by WM_INITMENU in fnwpSubclWPFolderWindow
+    _PmpfF(("returning %d", brc));
 
-    // call menu manipulator common to XFolder and XFldDisk (fdrmenus.c)
-    if (rc = mnuModifyFolderPopupMenu(somSelf,
-                                      hwndMenu,
-                                      hwndCnr,
-                                      iPosition))
-        fdrAddHotkeysToMenu(somSelf,
-                            hwndCnr,
-                            hwndMenu);
-
-    return rc;
+    return brc;
 }
 
 /*
@@ -2598,6 +2661,7 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
         if (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
         {
             hwndNewFrame = fdrCreateSplitView(somSelf,
+                                              somSelf,
                                               ulView);
         }
         else

@@ -126,6 +126,7 @@
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\fileops.h"            // file operations implementation
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\fdrhotky.h"           // folder hotkey handling
 #include "filesys\icons.h"              // icons handling
 #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
@@ -235,6 +236,26 @@ SOM_Scope HOBJECT  SOMLINK xo_xwpQueryHandle(XFldObject *somSelf,
     XFldObjectMethodDebug("XFldObject","xo_xwpQueryHandle");
 
     return _wpQueryHandle(somSelf);
+}
+
+/*
+ *@@ xwpQueryLocks:
+ *      returns the current lock count of somSelf.
+ *      This is needed because wpIsLocked only returns
+ *      TRUE or FALSE and we'd like to debug.
+ *
+ *@@added V0.9.21 (2002-08-28) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xo_xwpQueryLocks(XFldObject *somSelf)
+{
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_xwpQueryLocks");
+
+    if (_pvWPObjectData)
+        return ((PIBMOBJECTDATA)_pvWPObjectData)->cLocks;
+
+    return -1;
 }
 
 /*
@@ -2809,135 +2830,192 @@ SOM_Scope ULONG  SOMLINK xo_wpReleaseObjectMutexSem(XFldObject *somSelf)
 }
 
 /*
- *@@ wpFilterPopupMenu:
- *      this WPObject instance method allows the object to
- *      filter out unwanted menu items from the context menu.
- *      This gets called before wpModifyPopupMenu.
+ *@@ wpFilterMenu:
+ *      this WPObject instance method was new with Warp 4
+ *      allows the object to filter out standard menu items
+ *      in a more fine-grained way than wpModifyPopupMenu.
+ *      For one, this gives the object the menu type that
+ *      is being built, and secondly this allows for
+ *      filtering more items than the 32 bits of the filter
+ *      flag in wpFilterPopupMenu have room for.
  *
- *      We remove default entries according to global settings.
+ *      Once again however, the description of this method
+ *      in WPSREF is unusable. As input, this method
+ *      receives an array of ULONGs in pFlags. wpobject.h
+ *      in the 4.5 Toolkit lists the CTXT_* flags together
+ *      with the ULONG array item index where each flag
+ *      applies.
  *
- *@@changed V0.9.5 (2000-09-20) [pr]: fixed context menu flags
- *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu handling
- *@@changed V0.9.21 (2002-08-26) [umoeller]: removing copy etc. for split views
+ *@@added V0.9.21 (2002-08-31) [umoeller]
  */
 
-SOM_Scope ULONG  SOMLINK xo_wpFilterPopupMenu(XFldObject *somSelf,
-                                              ULONG ulFlags,
-                                              HWND hwndCnr,
-                                              BOOL fMultiSelect)
+SOM_Scope BOOL  SOMLINK xo_wpFilterMenu(XFldObject *somSelf,
+                                        FILTERFLAGS* pFlags,
+                                        HWND hwndCnr,
+                                        BOOL fMultiSelect,
+                                        ULONG ulMenuType,
+                                        ULONG ulView,
+                                        ULONG ulReserved)
 {
-    ULONG   ulMenuFilter = 0;
-    HWND    hwndFrame;
-    BOOL    fRemoveFileOps = TRUE;
+    BOOL    brc;
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xo_wpFilterPopupMenu");
+    XFldObjectMethodDebug("XFldObject","xo_wpFilterMenu");
 
-    ulMenuFilter = XFldObject_parent_WPObject_wpFilterPopupMenu(somSelf,
-                                                         ulFlags,
-                                                         hwndCnr,
-                                                         fMultiSelect);
-    #ifdef DEBUG_MENUS
-        _PmpfF(("ulMenuFilter & CTXT_CRANOTHER: 0x%lX %d",
-                ulMenuFilter, ((ulMenuFilter) & CTXT_CRANOTHER)));
-    #endif
-
-#if 0
-    // check if hwndCnr is part of a standard WPS view frame,
-    // that is, it belongs to a frame that is registered
-    // as OPEN_CONTENTS and the like; if it is NOT, then
-    // it is very probably part of our split view, and
-    // the WPS is TOTALLY CONFUSED about how to deal with
-    // that in the copy/move/create shadow dialog, so remove
-    // those menu items entirely
-    // V0.9.21 (2002-08-26) [umoeller]
-    if (hwndFrame = WinQueryWindow(hwndCnr, QW_PARENT))
+    if (brc = XFldObject_parent_WPObject_wpFilterMenu(somSelf,
+                                                      pFlags,
+                                                      hwndCnr,
+                                                      fMultiSelect,
+                                                      ulMenuType,
+                                                      ulView,
+                                                      ulReserved))
     {
-        BOOL fLocked = FALSE;
+        // if object has been deleted already (ie. is in trashcan),
+        // remove delete... not that I can see how we can get a context
+        // menu for the object then ;-)
+        if (_xwpQueryDeletion(somSelf, NULL, NULL))    // V0.9.20 (2002-07-25) [umoeller]
+            pFlags->Flags[0] &= ~CTXT_DELETE; // V0.9.5 (2000-09-20) [pr]
 
-        TRY_LOUD(excpt1)
-        {
-            if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
-            {
-                PVIEWITEM pvi;
-                #define CHECKVIEWS (VIEW_CONTENTS | VIEW_DETAILS | VIEW_TREE)
-                for (pvi = _wpFindViewItem(somSelf, CHECKVIEWS, NULL);
-                     pvi;
-                     pvi = _wpFindViewItem(somSelf, CHECKVIEWS, pvi))
-                {
-                    if (pvi->handle == hwndFrame)
-                    {
-                        fRemoveFileOps = FALSE;
-                        break;
-                    }
-                }
-            }
-        }
-        CATCH(excpt1)
-        {
-        } END_CATCH();
+        // now suppress default menu items according to
+        // Global Settings;
+        // the global "WPSSetting" settings are ready-made
+        // for this function; the "Workplace Shell" notebook page
+        // for removing menu items set these fields with the proper
+        // CTXT_xxx flags
+        pFlags->Flags[0] &= ~(cmnQuerySetting(mnuQueryMenuWPSSetting(somSelf)));
 
-        if (fLocked)
-            _wpReleaseObjectMutexSem(somSelf);
+        if (cmnQuerySetting(mnuQueryMenuXWPSetting(somSelf)) & XWPCTXT_LOCKEDINPLACE)
+            // remove WPObject's "Lock in place" submenu
+            pFlags->Flags[1] &= ~CTXT_LOCKEDINPLACE;
+            // winhDeleteMenuItem(hwndMenu, WPMENUID_LOCKEDINPLACE); // ID_WPM_LOCKINPLACE);
     }
 
-    if (fRemoveFileOps)
-        ulMenuFilter &= ~ (CTXT_COPY | CTXT_LINK | CTXT_MOVE | CTXT_NEW);
-#endif
-
-    // if object has been deleted already (ie. is in trashcan),
-    // remove delete... not that I can see how we can get a context
-    // menu for the object then ;-)
-    if (_xwpQueryDeletion(somSelf, NULL, NULL))    // V0.9.20 (2002-07-25) [umoeller]
-        ulMenuFilter &= ~CTXT_DELETE; // V0.9.5 (2000-09-20) [pr]
-
-    // now suppress default menu items according to
-    // Global Settings;
-    // the DefaultMenuItems field in pGlobalSettings is
-    // ready-made for this function; the "Workplace Shell"
-    // notebook page for removing menu items sets this field with
-    // the proper CTXT_xxx flags
-    return (    (ulMenuFilter
-                 // first we add "Create another", because for
-                 // some reason it's always disabled if XFolder
-                 // is installed; I don't know why
-                 // V0.9.5 (2000-09-20) [pr] No it's not. This causes problems
-                 // with objects wrongly having Create Another options.
-                 /*| CTXT_CRANOTHER*/ ) // V0.9.5 (2000-09-20) [pr]
-                 // then disable items, this may include CTXT_CRANOTHER
-                   & ~(cmnQuerySetting(mnuQueryMenuWPSSetting(somSelf))
-                )
-           );
+    return brc;
 }
 
 /*
- *@@ wpModifyPopupMenu:
- *      this WPObject instance methods gets called by the WPS
- *      when a context menu needs to be built for the object
- *      and allows the object to manipulate its context menu.
- *      This gets called _after_ wpFilterPopupMenu.
+ *@@ wpModifyMenu:
+ *      this WPObject instance method was new with Warp 4 and
+ *      allows the object to manipulate its menu in a more
+ *      fine-grained way than wpModifyPopupMenu.
  *
- *      We remove the "Lock in place" item here because there's
- *      no flag for that in wpFilterPopupMenu.
+ *      With V0.9.21, while adding support for the split view
+ *      to the menu methods, I finally got tired of all the
+ *      send-msg hacks to get Warp 4 menu items to work and
+ *      decided to finally break Warp 3 support for XWorkplace.
+ *      It's been fun while it lasted, but enough is enough.
+ *      We are now overriding this method directly through
+ *      the IDL files.
  *
- *@@changed V0.9.7 (2000-12-10) [umoeller]: added "fix lock in place"
+ *      ulMenuType will be one of the following:
+ *
+ *      --  MENU_OBJECTPOPUP: Pop-up menu for the object icon.
+ *          This can come in for any object.
+ *
+ *      --  MENU_OPENVIEWPOPUP: Pop-up menu for an open view.
+ *          I think this can reasonably only come in for folders,
+ *          although it seems to be handled by the WPObject method.
+ *
+ *      --  MENU_FOLDERPULLDOWN: Pull-down menu for a folder.
+ *          This comes in for folders only.
+ *
+ *      --  MENU_EDITPULLDOWN: Pull-down menu for the Edit menu option.
+ *          This comes in TWICE, first on the selected object in
+ *          the view's container (if any) with ulView == CLOSED_ICON,
+ *          and then a second time on the view's folder with ulView
+ *          set to the folder's current view.
+ *
+ *      --  MENU_VIEWPULLDOWN: Pull-down menu for the View menu option.
+ *          This comes in for folders only.
+ *
+ *      --  MENU_SELECTEDPULLDOWN: Pull-down menu for the Selected menu option.
+ *          This comes in for non-folder objects also to let the object
+ *          decide what options it wants to present in the folder's
+ *          "Selected" pulldown.
+ *
+ *      --  MENU_HELPPULLDOWN: Pull-down menu for the Help menu option.
+ *          This comes in for folders only.
+ *
+ *      --  MENU_TITLEBARPULLDOWN: this is listed in the toolkit headers,
+ *          but not described in WPSREF. I think this is what comes in
+ *          if the system menu is being built for an open object view.
+ *
+ *@@added V0.9.21 (2002-08-31) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xo_wpModifyPopupMenu(XFldObject *somSelf,
-                                             HWND hwndMenu,
-                                             HWND hwndCnr,
-                                             ULONG iPosition)
+SOM_Scope BOOL  SOMLINK xo_wpModifyMenu(XFldObject *somSelf,
+                                        HWND hwndMenu,
+                                        HWND hwndCnr,
+                                        ULONG iPosition,
+                                        ULONG ulMenuType,
+                                        ULONG ulView,
+                                        ULONG ulReserved)
 {
-    BOOL        rc;
-    XFldObjectMethodDebug("XFldObject","xo_wpModifyPopupMenu");
+    BOOL brc;
+    XFldObjectMethodDebug("XFldObject","xo_wpModifyMenu");
 
-    if (rc = XFldObject_parent_WPObject_wpModifyPopupMenu(somSelf,
-                                                          hwndMenu,
-                                                          hwndCnr,
-                                                          iPosition))
+    if (brc = XFldObject_parent_WPObject_wpModifyMenu(somSelf,
+                                                      hwndMenu,
+                                                      hwndCnr,
+                                                      iPosition,
+                                                      ulMenuType,
+                                                      ulView,
+                                                      ulReserved))
     {
         XFldObjectData *somThis = XFldObjectGetData(somSelf);
 
-        objModifyPopupMenu(somSelf, hwndMenu);  // V0.9.7 (2000-12-10) [umoeller]
+        #ifdef DEBUG_MENUS
+            _PmpfF(("[%s] hwndMenu 0x%lX hwndCnr 0x%lX",
+                    _wpQueryTitle(somSelf),
+                    hwndMenu,
+                    hwndCnr));
+            _Pmpf(("   type = 0x%lX (%s), view = 0x%lX (%s)",
+                    ulMenuType,
+                    (ulMenuType == MENU_OBJECTPOPUP) ? "MENU_OBJECTPOPUP"
+                    : (ulMenuType == MENU_OPENVIEWPOPUP) ? "MENU_OPENVIEWPOPUP"
+                    : (ulMenuType == MENU_TITLEBARPULLDOWN) ? "MENU_TITLEBARPULLDOWN"
+                    : (ulMenuType == MENU_TITLEBARPULLDOWNINT) ? "MENU_TITLEBARPULLDOWNINT"
+                    : (ulMenuType == MENU_FOLDERPULLDOWN) ? "MENU_FOLDERPULLDOWN"
+                    : (ulMenuType == MENU_VIEWPULLDOWN) ? "MENU_VIEWPULLDOWN"
+                    : (ulMenuType == MENU_HELPPULLDOWN) ? "MENU_HELPPULLDOWN"
+                    : (ulMenuType == MENU_EDITPULLDOWN) ? "MENU_EDITPULLDOWN"
+                    : (ulMenuType == MENU_SELECTEDPULLDOWN) ? "MENU_SELECTEDPULLDOWN"
+                    : (ulMenuType == MENU_FOLDERMENUBAR) ? "MENU_FOLDERMENUBAR"
+                    : (ulMenuType == MENU_USER) ? "MENU_USER"
+                    : "unknown",
+                    ulView,
+                    mnuQueryViewName(ulView)
+                    ));
+
+        #endif
+
+        if (cmnQuerySetting(sfFixLockInPlace)) // V0.9.7 (2000-12-10) [umoeller]
+        {
+            // get text first... this saves us our own NLS resource
+            PSZ pszLockInPlace;
+            if (pszLockInPlace = winhQueryMenuItemText(hwndMenu, WPMENUID_LOCKEDINPLACE)) // ID_WPM_LOCKINPLACE))
+            {
+                MENUITEM mi;
+                if (winhQueryMenuItem(hwndMenu,
+                                      WPMENUID_LOCKEDINPLACE,
+                                      FALSE,
+                                      &mi))
+                {
+                    // delete old (incl. submenu)
+                    winhDeleteMenuItem(hwndMenu, WPMENUID_LOCKEDINPLACE);
+                    // insert new
+                    winhInsertMenuItem(hwndMenu,
+                                       mi.iPosition,        // at old position
+                                       WPMENUID_LOCKEDINPLACE,
+                                       pszLockInPlace,
+                                       MIS_TEXT,
+                                       (_wpQueryStyle(somSelf) & OBJSTYLE_LOCKEDINPLACE)
+                                          ? MIA_CHECKED
+                                          : 0);
+                }
+
+                free(pszLockInPlace);
+            }
+        }
 
         // now that the menu is completely built, let's add hotkey
         // descriptions, but DONT do this for folders or data files,
@@ -2946,10 +3024,11 @@ SOM_Scope BOOL  SOMLINK xo_wpModifyPopupMenu(XFldObject *somSelf,
         if (!(_flObject & OBJFL_WPFILESYSTEM))
             fdrAddHotkeysToMenu(somSelf,
                                 hwndCnr,
-                                hwndMenu);
+                                hwndMenu,
+                                ulMenuType);
     }
 
-    return rc;
+    return brc;
 }
 
 /*

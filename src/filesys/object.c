@@ -261,9 +261,9 @@
 // headers in /hook
 #include "hook\xwphook.h"
 
-#include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\icons.h"              // icons handling
 #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
@@ -2576,53 +2576,6 @@ BOOL objRemoveObjectHotkey(HOBJECT hobj)
  *   Object menus
  *
  ********************************************************************/
-
-/*
- *@@ objModifyPopupMenu:
- *      implementation for XFldObject::wpModifyPopupMenu.
- *      This now implements "lock in place" hacks.
- *
- *@@added V0.9.7 (2000-12-10) [umoeller]
- *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu handling
- */
-
-VOID objModifyPopupMenu(WPObject* somSelf,
-                        HWND hwndMenu)
-{
-    if (G_fIsWarp4)
-    {
-        if (cmnQuerySetting(mnuQueryMenuXWPSetting(somSelf)) & XWPCTXT_LOCKEDINPLACE)
-            // remove WPObject's "Lock in place" submenu
-            winhDeleteMenuItem(hwndMenu, WPMENUID_LOCKEDINPLACE); // ID_WPM_LOCKINPLACE);
-        else if (cmnQuerySetting(sfFixLockInPlace)) // V0.9.7 (2000-12-10) [umoeller]
-        {
-            // get text first... this saves us our own NLS resource
-            PSZ pszLockInPlace;
-            if (pszLockInPlace = winhQueryMenuItemText(hwndMenu, WPMENUID_LOCKEDINPLACE)) // ID_WPM_LOCKINPLACE))
-            {
-                MENUITEM mi;
-                if (winhQueryMenuItem(hwndMenu,
-                                      WPMENUID_LOCKEDINPLACE,
-                                      FALSE,
-                                      &mi))
-                {
-                    // delete old (incl. submenu)
-                    winhDeleteMenuItem(hwndMenu, WPMENUID_LOCKEDINPLACE);
-                    // insert new
-                    winhInsertMenuItem(hwndMenu,
-                                       mi.iPosition,        // at old position
-                                       WPMENUID_LOCKEDINPLACE,
-                                       pszLockInPlace,
-                                       MIS_TEXT,
-                                       (_wpQueryStyle(somSelf) & OBJSTYLE_LOCKEDINPLACE)
-                                          ? MIA_CHECKED
-                                          : 0);
-                }
-                free(pszLockInPlace);
-            }
-        }
-    }
-}
 
 /*
  *@@ CopyOneObject:

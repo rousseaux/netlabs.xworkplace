@@ -97,7 +97,7 @@
 
 #include "filesys\desktop.h"            // XFldDesktop implementation
 #include "filesys\folder.h"             // XFolder implementation
-#include "filesys\object.h"             // XFldObject implementation
+// #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 #include "startshut\archives.h"         // archiving declarations

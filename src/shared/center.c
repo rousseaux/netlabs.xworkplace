@@ -349,7 +349,7 @@
 #include "shared\center.h"              // public XCenter interfaces
 #include "xcenter\centerp.h"            // private XCenter implementation
 
-#include "filesys\object.h"             // XFldObject implementation
+// #include "filesys\object.h"             // XFldObject implementation
 
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
