@@ -19,8 +19,8 @@
  *      GNU General Public License for more details.
  */
 
-#ifndef MTHREAD_HEADER_INCLUDED
-    #define MTHREAD_HEADER_INCLUDED
+#ifndef MEDIA_HEADER_INCLUDED
+    #define MEDIA_HEADER_INCLUDED
 
     /********************************************************************
      *
@@ -96,19 +96,19 @@
      ********************************************************************/
 
     // flags for XMM_CDPLAYER mp1
-    #define XMMCD_PLAY                  1
+    /* #define XMMCD_PLAY                  1
     #define XMMCD_STOP                  2
     #define XMMCD_PAUSE                 3
     #define XMMCD_TOGGLEPLAY            4
     #define XMMCD_NEXTTRACK             5
     #define XMMCD_PREVTRACK             6
-    #define XMMCD_EJECT                 7
+    #define XMMCD_EJECT                 7 */
 
     #define XMM_PLAYSOUND                (WM_USER+251)
 
     #define XMM_PLAYSYSTEMSOUND          (WM_USER+252)
 
-    #define XMM_CDPLAYER                 (WM_USER+253)
+    // #define XMM_CDPLAYER                 (WM_USER+253)
 
     // MMPM/2 status flags in KERNELGLOBALS.ulMMPM2Working;
     // these reflect the status of SOUND.DLL.
@@ -134,9 +134,9 @@
 
     BOOL xmmOpenDevice(USHORT usDeviceTypeID,
                        USHORT usDeviceIndex,
-                       PUSHORT pusMMDeviceID);
+                       PUSHORT pusDeviceID);
 
-    BOOL xmmCloseDevice(PUSHORT pusMMDeviceID);
+    BOOL xmmCloseDevice(PUSHORT pusDeviceID);
 
     VOID xmmCleanup(VOID);
 
@@ -162,20 +162,72 @@
      *
      ********************************************************************/
 
-    BOOL xmmCDOpenDevice(PUSHORT pusMMDeviceID);
+    #ifdef INCL_MCIOS2
 
-    ULONG xmmCDQueryStatus(USHORT usDeviceID);
+        /*
+         *@@ XMMCDPLAYER:
+         *
+         *@@added V0.9.7 (2000-12-21) [umoeller]
+         */
 
-    ULONG xmmCDQueryLastTrack(USHORT usDeviceID);
+        typedef struct _XMMCDPLAYER
+        {
+            USHORT      usDeviceID;
+            ULONG       ulStatus;
+                            // -- 0: invalid device.
+                            // -- MCI_MODE_NOT_READY (1)
+                            // -- MCI_MODE_PAUSE (2)
+                            // -- MCI_MODE_PLAY (3)
+                            // -- MCI_MODE_STOP (4)
 
-    ULONG xmmCDQueryCurrentTrack(USHORT usDeviceID);
+            USHORT      cTracks,
+                        usCurrentTrack;     // 0 if not playing
 
-    BOOL xmmCDPlay(USHORT usDeviceID);
+            // CD's table of contents
+            MCI_TOC_REC *aTocEntries;
+            USHORT      cTocEntries;
 
-    BOOL xmmCDPlayTrack(USHORT usDeviceID,
-                        USHORT usTrack);
+            BOOL        fPositionAdvising;
+                    // TRUE if position advise is currently running
 
-    BOOL xmmCDPause(USHORT usDeviceID);
+            // current time, if fPositionAdvising is TRUE
+            HWND        hwndNotify;
+            ULONG       ulNotifyMsg;
+            ULONG       ulMMTime;
+            ULONG       ulTrack;
+            ULONG       ulSecondsInTrack;
+
+        } XMMCDPLAYER, *PXMMCDPLAYER;
+
+        BOOL xmmCDOpenDevice(PXMMCDPLAYER pPlayer,
+                             ULONG ulDeviceIndex);
+
+        VOID xmmCDCloseDevice(PXMMCDPLAYER pPlayer);
+
+        BOOL xmmCDGetTOC(PXMMCDPLAYER pPlayer);
+
+        BOOL xmmCDPlay(PXMMCDPLAYER pPlayer,
+                       BOOL fShowWaitPointer);
+
+        BOOL xmmCDPlayTrack(PXMMCDPLAYER pPlayer,
+                            USHORT usTrack,
+                            BOOL fShowWaitPointer);
+
+        ULONG xmmCDCalcTrack(PXMMCDPLAYER pPlayer,
+                             ULONG ulMMTime,
+                             PULONG pulSecondsInTrack);
+
+        BOOL xmmCDPositionAdvise(PXMMCDPLAYER pPlayer,
+                                 HWND hwndNotify,
+                                 ULONG ulNotifyMsg);
+
+        BOOL xmmCDPause(PXMMCDPLAYER pPlayer);
+
+        BOOL xmmCDStop(PXMMCDPLAYER pPlayer);
+
+        BOOL xmmCDEject(PXMMCDPLAYER pPlayer);
+
+    #endif // MCIOS2
 
     /* ******************************************************************
      *
@@ -228,7 +280,23 @@
 
     /* ******************************************************************
      *
-     *   Volume Control (mmvolume.c)
+     *   CD player (mmcdplay.c)
+     *
+     ********************************************************************/
+
+    #ifdef SOM_WPObject_h
+        HWND xmmCreateCDPlayerView(WPObject *somSelf,
+                                   HWND hwndCnr,
+                                   ULONG ulView);
+    #endif
+
+    #define WC_CDPLAYER_CLIENT      "XMMCDPlayerClient"
+
+    #define CDM_POSITIONUPDATE      WM_USER
+
+    /* ******************************************************************
+     *
+     *   Volume control (mmvolume.c)
      *
      ********************************************************************/
 

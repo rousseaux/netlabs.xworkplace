@@ -129,11 +129,7 @@ interface XCenter : WPAbstract
     wpSaveState: override;
     wpRestoreState: override;
 
-    wpFilterPopupMenu: override;
     wpModifyPopupMenu: override;
-
-    wpMenuItemSelected: override;
-    wpMenuItemHelpSelected: override;
 
     wpQueryDefaultHelp: override;
     wpQueryDefaultView: override;
@@ -190,8 +186,6 @@ interface M_XCenter : M_WPAbstract
     wpclsQueryTitle: override;
 
     wpclsQueryIconData: override;
-
-    wpclsQuerySettingsPageSize: override;
   };
 #endif /* __SOMIDL__ */
 };

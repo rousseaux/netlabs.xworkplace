@@ -1,6 +1,6 @@
-XWorkplace 0.9.6 README
+XWorkplace 0.9.7 README
 (W) Ulrich M”ller, July 2, 1999
-Last updated November 25, 2000, Ulrich M”ller
+Last updated December 30, Ulrich M”ller
 
 
 0. CONTENTS OF THIS FILE
@@ -72,13 +72,15 @@ Last updated November 25, 2000, Ulrich M”ller
 4. GETTING STARTED
 ==================
 
-    See "001\readme" for this.
+    See "001\readme" for this, which is the readme that comes with
+    the binary release.
 
 
 5. KNOWN LIMITATIONS
 ====================
 
-    See "001\readme" for this.
+    See "001\readme" for this, which is the readme that comes with
+    the binary release.
 
 
 6. CONTRIBUTORS
@@ -88,7 +90,8 @@ Last updated November 25, 2000, Ulrich M”ller
     author acronyms are used in the code:
 
         umoeller            Ulrich M”ller (ulrich.moeller@rz.hu-berlin.de)
-        pr                  Paul Ratcliffe (paul@orac.clara.co.uk)
-        jsmall              John Small (jsmall@lynxus.com)
 
+        jsmall              John Small (jsmall@lynxus.com)
+        lafaix              Martin Lafaix (lafaix@ibm.net)
+        pr                  Paul Ratcliffe (paul@orac.clara.co.uk)
 

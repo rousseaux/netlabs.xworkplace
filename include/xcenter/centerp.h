@@ -186,6 +186,8 @@
                 // reposition widgets
     #define XFMF_SHOWWIDGETS            0x0010
                 // set WS_VISIBLE on widgets
+    #define XFMF_RESURFACE              0x0020
+                // put the XCenter to HWND_TOP z-order
 
     VOID ctrpReformatHWND(HWND hwnd,
                           ULONG ulFlags);

@@ -115,13 +115,21 @@
 
 #define ID_ICONXWPMEDIA        123
 #define ID_ICONXWPSTRING       124
-#define ID_ICONXMMVOLUME       125
-#define ID_ICONXCENTER         126
-#define ID_ICONXMINI           127
+#define ID_ICONXMMCDPLAY       125
+#define ID_ICONXMMVOLUME       126
+#define ID_ICONXCENTER         127
+#define ID_ICONXMINI           128
 
 #define ID_XFLDRBITMAP         130
 
 #define ID_XWPBIGLOGO          131
+
+#define ID_ICON_CDEJECT        140
+#define ID_ICON_CDNEXT         141
+#define ID_ICON_CDPAUSE        142
+#define ID_ICON_CDPLAY         143
+#define ID_ICON_CDPREV         144
+#define ID_ICON_CDSTOP         145
 
 /******************************************
  * generics                        < 100  *
@@ -424,6 +432,10 @@
 #define ID_XSDI_PROG_VENDOR             786
 #define ID_XSDI_PROG_VERSION            787
 #define ID_XSDI_PROG_DESCRIPTION        788
+
+// "Resources" page (XFldProgramFile, V0.9.7)
+#define ID_XSD_PGMFILE_RESOURCES        790
+#define ID_XSDI_PROG_RESOURCES          791
 
 /******************************************
  * XWPSound (V0.9.0)              >= 1000  *
@@ -991,6 +1003,7 @@
 #define ID_XSD_XWPSTRING_OBJ_CNR        3802
 #define ID_XSD_XWPSTRING_OBJ_CLEAR      3803
 #define ID_XSD_XWPSTRING_CONFIRM        3804
+
 
 /******************************************
  *          Shutdown defs                 *
@@ -1610,6 +1623,9 @@
 // "bytes" strings for status bars V0.9.6 (2000-11-23) [umoeller]
 #define ID_XSSI_BYTE                    5979
 #define ID_XSSI_BYTES                   5980
+
+// title of "Resources" page V0.9.7 (2000-12-20) [umoeller]
+#define ID_XSSI_PGMFILE_RESOURCES       5981
 
 /******************************************
  *  Features on XWPSetup "Features" page  *

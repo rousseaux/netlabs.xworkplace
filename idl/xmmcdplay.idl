@@ -1,12 +1,12 @@
 
 /*
- * xmmvolume.idl:
+ * xmmcdplay.idl:
  *      SOM interface description file for the following
  *      XWorkplace classes (in this order):
- *          XMMVolume
+ *          XMMCDPlayer
  *      and the respective metaclasses.
  *
- *      See src\classes\xmmvolume.c for details.
+ *      See src\classes\xmmcdplay.c for details.
  *
  *      Copyright (C) 2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
@@ -23,53 +23,90 @@
 #include <wpabs.idl>         // this is SOM for WPAbstract
 
 /*
-   CLASS: XMMVolume
+   CLASS: XMMCDPlayer
 
    CLASS HIERARCHY:
 
        SOMObject
          ÀÄÄ WPObject
                ÀÄÄ WPAbstract
-                     ÀÄÄ XMMVolume
+                     ÀÄÄ XMMCDPlayer
 */
 
-interface M_XMMVolume;            // forward reference to metaclass
+interface M_XMMCDPlayer;            // forward reference to metaclass
 
-interface XMMVolume : WPAbstract
+interface XMMCDPlayer : WPAbstract
 {
     /*
-     * New instance methods for XMMVolume:
+     * New instance methods for XMMCDPlayer:
      *
      */
 
-    ULONG xwpAddXMMVolumePages(in HWND hwndNotebook);
+    ULONG xwpCDQueryStatus();
+
+    BOOL xwpCDPlay();
+
+    BOOL xwpCDTogglePlay();
+
+    BOOL xwpCDPause();
+
+    BOOL xwpCDStop();
+
+    ULONG xwpCDQueryCurrentTrack();
+
+    BOOL xwpCDNextTrack();
+
+    BOOL xwpCDPrevTrack();
+
+    BOOL xwpCDEject();
+
+    BOOL xwpAddXMMCDPlayerPages(in HWND hwndNotebook);
 
 #ifdef __SOMIDL__
   implementation {
 
-    releaseorder: xwpAddXMMVolumePages;
+    releaseorder:   xwpCDQueryStatus,
+                    xwpCDPlay,
+                    xwpCDTogglePlay,
+                    xwpCDPause,
+                    xwpCDStop,
+                    xwpCDQueryCurrentTrack,
+                    xwpCDNextTrack,
+                    xwpCDPrevTrack,
+                    xwpCDEject,
+                    xwpAddXMMCDPlayerPages;
 
     /*
      * Class Modifiers:
      *
      */
 
-    externalprefix = vol_;
-    externalstem = vol;
+    externalprefix = cdp_;
+    externalstem = cdp;
     majorversion = 1;
     minorversion = 1;
-    filestem = xmmvolume;           //# specifies the filestem for sc-generated files
-    metaclass = M_XMMVolume;
+    filestem = xmmcdplay;           //# specifies the filestem for sc-generated files
+    metaclass = M_XMMCDPlayer;
     dllname = "xfldr.dll";
     callstyle = oidl;           //# forget CORBA stuff (*ev and such)
 
     /*
-     * Internal instance variables for XMMVolume:
+     * Internal instance variables for XMMCDPlayer:
      *
      */
 
+    HWND    hwndOpenView;           // client if frame is open; NULLHANDLE otherwise
+
+    PVOID   pvPlayer;               // pointer to XMMCDPLAYER structure, if running
+
+    LONG    lcolBackground;
+    LONG    lcolForeground;
+    PSZ     pszFont;
+
+    BOOL    fShowingOpenViewMenu;
+
     /*
-     * WPAbstract methods overridden by XMMVolume:
+     * WPAbstract methods overridden by XMMCDPlayer:
      *
      */
 
@@ -77,14 +114,13 @@ interface XMMVolume : WPAbstract
     wpUnInitData: override;
     wpObjectReady: override;
 
+    wpSetup: override;
+
     wpSaveState: override;
     wpRestoreState: override;
 
     wpFilterPopupMenu: override;
     wpModifyPopupMenu: override;
-
-    wpMenuItemSelected: override;
-    wpMenuItemHelpSelected: override;
 
     wpQueryDefaultHelp: override;
     wpQueryDefaultView: override;
@@ -104,7 +140,7 @@ interface XMMVolume : WPAbstract
 //# ---------------------
 //#
 
-interface M_XMMVolume : M_WPAbstract
+interface M_XMMCDPlayer : M_WPAbstract
 {
 
 #ifdef __SOMIDL__
@@ -115,12 +151,12 @@ interface M_XMMVolume : M_WPAbstract
      *
      */
 
-    externalprefix = volM_;
-    externalstem = volM;
-    functionprefix = volM_;
+    externalprefix = cdpM_;
+    externalstem = cdpM;
+    functionprefix = cdpM_;
     majorversion = 1;
     minorversion = 1;
-    filestem = xmmvolume;           //# specifies the filestem for sc-generated files
+    filestem = xmmcdplay;           //# specifies the filestem for sc-generated files
     dllname = "xfldr.dll";
     callstyle = oidl;
 
@@ -130,7 +166,7 @@ interface M_XMMVolume : M_WPAbstract
      */
 
     /*
-     * M_WPAbstract methods overridden by M_XMMVolume:
+     * M_WPAbstract methods overridden by M_XMMCDPlayer:
      *
      */
 
@@ -139,6 +175,7 @@ interface M_XMMVolume : M_WPAbstract
     wpclsQueryTitle: override;
 
     wpclsQueryIconData: override;
+
   };
 #endif /* __SOMIDL__ */
 };

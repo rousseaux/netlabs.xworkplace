@@ -205,7 +205,7 @@
      *      5)  calls _somUninit, which in turn calls _wpUnInitData.
      *
      *      For example, _wpMakeDormant on a data file would
-     *      only remove the SOM representation of the data
+     *      only destroy the SOM representation of the data
      *      file, without deleting the file itself.
      *
      *      By contrast, _wpFree on a data file would first

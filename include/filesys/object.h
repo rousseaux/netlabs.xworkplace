@@ -35,6 +35,8 @@
 
     #define OBJLIST_RUNNINGSTORED           0x0001
 
+    #define OBJLIST_CONFIGFOLDER            0x0002
+
     /* ******************************************************************
      *
      *   Object "Internals" page

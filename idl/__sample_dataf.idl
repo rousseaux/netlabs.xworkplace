@@ -95,18 +95,23 @@ interface SampleDataFile : WPDataFile   //# &&& SampleDataFile is a WPDataFile s
      *      override the following methods:
      *
      *      -- wpInitData must initialize the variable to something,
-     *         or its value will be undefined.
+     *         or its value will be undefined. This method can be
+     *         considered a constructor.
      *
      *      -- If you allocated memory, wpUnInitData must clean up.
+     *         This is the equivalent of a destructor.
      *
-     *      -- If you want a WPS setup string for this instance variable,
-     *         wpSetup must parse the setup string and set the variable.
+     *      -- If you want a WPS setup string for this instance
+     *         variable, wpSetup must parse the setup string, set
+     *         the variable, and update open views of the object.
      *
-     *      -- If the value of the variable is to be persistent between
-     *         WPS restarts, wpSaveState and wpRestoreState must save and
-     *         restore the value to the object's persistent data (OS2.INI
-     *         for WPAbstract, extended attributes (.CLASSINFO) for
-     *         WPFileSystem).
+     *      -- If the value of the variable is to be persistent
+     *         between WPS restarts, wpSaveState and wpRestoreState
+     *         must save and restore the value to the object's
+     *         persistent data. Where this data is stored depends
+     *         on the class's descendant; subclasses of WPAbstract
+     *         will use OS2.INI, subclasses of WPFileSystem will
+     *         use the .CLASSINFO extended attribute.
      */
 
     BOOL    fSampleBOOL;

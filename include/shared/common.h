@@ -126,6 +126,10 @@
     // window position of XMMVolume control V0.9.6 (2000-11-09) [umoeller]
     #define INIKEY_WNDPOSXMMVOLUME  "WndPosXMMVolume"
 
+    // window position of XMMCDPlayer V0.9.7 (2000-12-20) [umoeller]
+    #define INIKEY_WNDPOSXMMCDPLAY  "WndPosXMMCDPlayer::"
+                    // object handle appended
+
     /*
      * file type hierarchies:
      *
@@ -304,18 +308,20 @@
 
     #define ID_XFH_CLOSEVIO                  95     // V0.9.6: was missing
 
-    #define ID_XSH_XCENTER_MAIN              96     // V0.9.7: XCenter default help
-    #define ID_XSH_XCENTER_VIEW              97     // V0.9.7: XCenter "View" page
-    #define ID_XSH_XCENTER_WIDGETS           98     // V0.9.7: XCenter "Widgets" page
+    #define ID_XSH_SETTINGS_PGMFILE_RESOURCES 96    // V0.9.7: progfile "Resources" page
 
-    #define ID_XSH_WIDGET_CLOCK_MAIN         99     // V0.9.7: Winlist widget main help
-    #define ID_XSH_WIDGET_MEMORY_MAIN       100     // V0.9.7: Memory widget main help
-    #define ID_XSH_WIDGET_OBJBUTTON_MAIN    101     // V0.9.7: Object button widget main help
-    #define ID_XSH_WIDGET_PULSE_MAIN        102     // V0.9.7: Pulse widget main help
-    #define ID_XSH_WIDGET_SWAP_MAIN         103     // V0.9.7: Swapper widget main help
-    #define ID_XSH_WIDGET_WINLIST_MAIN      104     // V0.9.7: Winlist widget main help
-    #define ID_XSD_WIDGET_WINLIST_SETTINGS  105     // V0.9.7: Winlist widget properties
-    #define ID_XSH_WIDGET_XBUTTON_MAIN      106     // V0.9.7: X-Button widget main help
+    #define ID_XSH_XCENTER_MAIN              97     // V0.9.7: XCenter default help
+    #define ID_XSH_XCENTER_VIEW              98     // V0.9.7: XCenter "View" page
+    #define ID_XSH_XCENTER_WIDGETS           99     // V0.9.7: XCenter "Widgets" page
+
+    #define ID_XSH_WIDGET_CLOCK_MAIN        100     // V0.9.7: Winlist widget main help
+    #define ID_XSH_WIDGET_MEMORY_MAIN       101     // V0.9.7: Memory widget main help
+    #define ID_XSH_WIDGET_OBJBUTTON_MAIN    102     // V0.9.7: Object button widget main help
+    #define ID_XSH_WIDGET_PULSE_MAIN        103     // V0.9.7: Pulse widget main help
+    #define ID_XSH_WIDGET_SWAP_MAIN         104     // V0.9.7: Swapper widget main help
+    #define ID_XSH_WIDGET_WINLIST_MAIN      105     // V0.9.7: Winlist widget main help
+    #define ID_XSD_WIDGET_WINLIST_SETTINGS  106     // V0.9.7: Winlist widget properties
+    #define ID_XSH_WIDGET_XBUTTON_MAIN      107     // V0.9.7: X-Button widget main help
 
     /********************************************************************
      *
@@ -488,6 +494,7 @@
     // 11) "Details" pages
     #define SP_DISK_DETAILS         100     // new with V0.9.0
     #define SP_PROG_DETAILS         101     // new with V0.9.0
+    #define SP_PROG_RESOURCES       102     // new with V0.9.7 (2000-12-17) [lafaix]
 
     // 12) XWPClassList
     #define SP_CLASSLIST            110     // new with V0.9.0
@@ -1189,7 +1196,10 @@
 
                 // "bytes" strings for status bars V0.9.6 (2000-11-23) [umoeller]
                 pszByte,
-                pszBytes;
+                pszBytes,
+
+                // title of XFldProgramFile "Resources" page V0.9.7 (2000-12-20) [umoeller]
+                pszResourcesPage;
     } NLSSTRINGS;
 
     typedef const NLSSTRINGS* PNLSSTRINGS;
@@ -1316,6 +1326,8 @@
     BOOL cmnDescribeKey(PSZ pszBuf,
                         USHORT usFlags,
                         USHORT usKeyCode);
+
+    VOID cmnAddCloseMenuItem(HWND hwndMenu);
 
     /********************************************************************
      *

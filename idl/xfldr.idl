@@ -288,8 +288,12 @@ interface XFolder : WPFolder
 
     // the following two are for XFolder's replacement sort
     // settings; these have a transparent default value also
-    BYTE            bAlwaysSortInstance,
-                    bDefaultSortInstance;
+    BYTE            bAlwaysSort,
+                    bDefaultSort;
+
+    BOOL            fXFolderSortSettingRestored;
+            // this is TRUE after wpRestoreState has detected
+            // an XFolder sort setting...
 
     LONG            MenuMousePosX,
                     MenuMousePosY;

@@ -6,6 +6,9 @@
  *      all parts of the XCenter and to implement widget
  *      plugin DLLs.
  *
+ *      WARNING: The XCenter is still work in progress. The
+ *      definitions in this file are still subject to change.
+ *
  *@@include #include "shared\center.h"
  */
 
@@ -45,12 +48,6 @@
     // display style
     #define XCS_BUTTON              0
     #define XCS_FLAT                1
-
-    // widget class flags
-    #define WGTF_SIZEABLE               0x0001
-    #define WGTF_NOUSERCREATE           0x0002
-    #define WGTF_UNIQUEPERXCENTER       0x0004
-    #define WGTF_UNIQUEGLOBAL          (0x0008 + 0x0004)
 
     /*
      *@@ XCENTERGLOBALS:
@@ -153,6 +150,12 @@
 
     typedef VOID EXPENTRY WGTSHOWSETTINGSDLG(PWIDGETSETTINGSDLGDATA);
     typedef WGTSHOWSETTINGSDLG *PWGTSHOWSETTINGSDLG;
+
+    // widget class flags
+    #define WGTF_SIZEABLE               0x0001
+    #define WGTF_NOUSERCREATE           0x0002
+    #define WGTF_UNIQUEPERXCENTER       0x0004
+    #define WGTF_UNIQUEGLOBAL          (0x0008 + 0x0004)
 
     /*
      *@@ XCENTERWIDGETCLASS:
@@ -421,6 +424,12 @@
      *      the XCenter will assume some dumb default for
      *      the widget size.
      *
+     *      After all widgets have been created, the XCenter
+     *      (and all widgets) are resized to have the largest
+     *      cy requested. As a result, your window proc cannot
+     *      assume that it will always have the size it
+     *      requested.
+     *
      *@@added V0.9.7 (2000-12-14) [umoeller]
      */
 
@@ -465,7 +474,7 @@
      *      this msg can be posted to the client
      *      from a widget if it wants to change
      *      its size, e.g. because its display
-     *      has changed and needs more room.
+     *      has changed and it needs more room.
      *
      *      Parameters:
      *

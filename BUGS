@@ -86,21 +86,15 @@ extended assocs:
     --  multiple associations with the same app (object) should not be shown
         in the file-open menu. (if HTML is text/html as well for instance)
 
-file types:
-    -- help menu items don't work
-    -- fix environments; WPOBJ_HANDLE env var not set
-
 XWPSetup:
     -- "Undo" and "Default" don't affect newer settings (trashcan);
        PageMage isn't affected
 
 sounds:
-    -- broke with V0.9.6
     -- "Enable system sounds" on "Sound" page has no immediate effect;
        however, this didn't work for old WPS page either
     -- Do not use default device for WAV files. Instead, open the default
        device and let it play the WAV files.
-    -- codecs page hangs sometimes
 
 folders:
     -- dragging stuff to folders crashes WPS if folder is being populated
@@ -121,8 +115,6 @@ trash can:
        if a program tries to UPDATE the object that has been deleted, it
        effectively updates the object in the TrashCan, while it should
        create a new one.
-    -- In the trash can, the Size of the object deleted is not displayed
-       using the user's country specific settings.
 
 NetscDDE:
     -- With the Netscape DDE feature Netscape does not get the right location of
@@ -139,6 +131,15 @@ PageMage:
         the FS app!)
     3)  The title of an application windows is not updated properly (if at
         all) in the pagemage window
+
+hotkeys:
+    > > >There's one more problem - my batchfiles should start in
+    > > minimized state,
+    > > >but from time to time they appear on desktop. Can you check this?
+    > > Not XWP's fault. XWP opens the object in its default view,
+    > > which, for batch files, is handled by the internal WPS
+    > > code.
+    --> check VIO hacks?
 
 hook:
     --  sliding menus:

@@ -159,14 +159,14 @@
      *          XFolderData         *somThis
      */
 
-    #define DEFAULT_SORT ((_bDefaultSortInstance == SET_DEFAULT) ? pGlobalSettings->DefaultSort : _bDefaultSortInstance)
+    #define DEFAULT_SORT ((_bDefaultSort == SET_DEFAULT) ? pGlobalSettings->DefaultSort : _bDefaultSort)
 
     /*
      *@@ ALWAYS_SORT:
      *      the same for AlwaysSort
      */
 
-    #define ALWAYS_SORT ((_bAlwaysSortInstance == SET_DEFAULT) ? pGlobalSettings->AlwaysSort : _bAlwaysSortInstance)
+    #define ALWAYS_SORT ((_bAlwaysSort == SET_DEFAULT) ? pGlobalSettings->AlwaysSort : _bAlwaysSort)
 
     /* ******************************************************************
      *

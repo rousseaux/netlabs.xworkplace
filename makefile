@@ -84,7 +84,8 @@ MODULESDIR=bin\modules
 OBJS = \
 # code from classes\
     bin\xcenter.obj bin\xfobj.obj bin\xfldr.obj bin\xfdesk.obj bin\xfsys.obj bin\xfwps.obj \
-    bin\xfdisk.obj bin\xfdataf.obj bin\xfpgmf.obj bin\xfstart.obj bin\xmmvolume.obj \
+    bin\xfdisk.obj bin\xfdataf.obj bin\xfpgmf.obj bin\xfstart.obj \
+    bin\xmmcdplay.obj bin\xmmvolume.obj \
     bin\xclslist.obj bin\xwpsound.obj bin\xtrash.obj bin\xtrashobj.obj bin\xwpfsys.obj \
     bin\xwpkeybd.obj bin\xwpmedia.obj bin\xwpmouse.obj bin\xwpsetup.obj bin\xwpscreen.obj \
     bin\xwpstring.obj \
@@ -101,7 +102,7 @@ OBJS = \
     bin\folder.obj bin\object.obj bin\desktop.obj \
     bin\program.obj bin\statbars.obj bin\trash.obj bin\xthreads.obj \
 # code from media\
-    bin\mmhelp.obj bin\mmthread.obj bin\mmvolume.obj \
+    bin\mmcdplay.obj bin\mmhelp.obj bin\mmthread.obj bin\mmvolume.obj \
 # code from startshut\
     bin\apm.obj bin\archives.obj bin\shutdown.obj bin\winlist.obj \
 # code from xcenter\
@@ -128,6 +129,7 @@ HLPOBJS = bin\helpers.lib
 # The following macros contains the .OBJ files for the XCenter plugins.
 WINLISTOBJS = bin\widgets\w_winlist.obj
 MONITOROBJS = bin\widgets\w_monitors.obj
+SAMPLEOBJS = bin\widgets\____sample.obj
 
 !ifdef PAGEMAGE
 PGMGDMNOBJS = bin\exe_mt\pgmg_control.obj bin\exe_mt\pgmg_move.obj bin\exe_mt\pgmg_settings.obj \
@@ -349,6 +351,7 @@ link: $(XWPRUNNING)\bin\xfldr.dll \
       $(XWPRUNNING)\bin\xwpres.dll \
       $(XWPRUNNING)\plugins\xcenter\monitors.dll \
       $(XWPRUNNING)\plugins\xcenter\winlist.dll \
+      $(XWPRUNNING)\plugins\xcenter\sample.dll \
       $(XWPRUNNING)\bin\xwphook.dll \
       $(XWPRUNNING)\bin\xwpdaemn.exe
 #      $(XWPRUNNING)\bin\xwpfonts.fon
@@ -480,6 +483,34 @@ $(MONITOROBJS)
 !endif
         @cd $(CURRENT_DIR)
 
+#
+# Linking SAMPLE.DLL
+#
+$(XWPRUNNING)\plugins\xcenter\sample.dll: $(MODULESDIR)\$(@B).dll
+!ifdef XWP_UNLOCK_MODULES
+        unlock $@
+!endif
+        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
+!ifndef DEBUG
+# copy symbol file, which is only needed if debug code is disabled
+        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
+!endif
+
+# update DEF file if buildlevel has changed
+src\widgets\sample.def: include\bldlevel.h
+        cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XCenter sample plugin DLL"
+
+$(MODULESDIR)\sample.dll: $(SAMPLEOBJS) src\widgets\$(@B).def
+        @echo $(MAKEDIR)\makefile: Linking $@
+        $(LINK) /OUT:$@ src\widgets\$(@B).def @<<link.tmp
+$(SAMPLEOBJS)
+<<
+        @cd $(MODULESDIR)
+!ifndef DEBUG
+# create symbol file, which is only needed if debug code is disabled
+        mapsym /n $(@B).map > NUL
+!endif
+        @cd $(CURRENT_DIR)
 
 #
 # Linking XWPDAEMN.EXE

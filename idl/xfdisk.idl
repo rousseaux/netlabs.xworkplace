@@ -66,17 +66,10 @@ interface XFldDisk : WPDisk
      *
      */
 
-    USHORT  usMMDeviceID;
-
     /*
      * WPDisk methods overridden by XFldDisk:
      *
      */
-
-    wpInitData: override;
-    wpObjectReady: override;
-
-    wpSetup: override;
 
     wpAddDiskDetailsPage: override;
 
