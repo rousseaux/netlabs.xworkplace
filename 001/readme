@@ -1,7 +1,7 @@
 
-XWorkplace 0.9.4 README
+XWorkplace 0.9.5 README
 (W) Ulrich M”ller, Feb 7, 2000
-Last updated August 9, 2000
+Last updated October 7, 2000
 
 
 0. CONTENTS OF THIS FILE
@@ -20,13 +20,17 @@ Last updated August 9, 2000
 1. INTRODUCTION
 ===============
 
-    Welcome to XWorkplace V0.9.4.
+    Welcome to XWorkplace V0.9.5.
 
     XWorkplace is a complex set of replacement classes for the
-    OS/2 Workplace Shell. Consider this the WPS upgrade IBM
-    should have released with OS/2 Warp 4. XWorkplace is the
-    successor to XFolder V0.85 and contains all of it, except
-    the bugs.
+    OS/2 Workplace Shell to enhance the WPS's behavior in many
+    ways. It now also contains a PM hook (a la NPSWPS) to enhance
+    mouse and keyboard operations. As opposed to other PM hooks,
+    all configuration is done via true WPS settings notebooks.
+
+    Consider this the WPS upgrade IBM should have released with
+    OS/2 Warp 4. XWorkplace is the successor to XFolder V0.85 and
+    contains all of it, except the bugs.
 
     XWorkplace can add features to pretty much all parts of the
     system, such as generic object features, folder enhancements,
@@ -48,18 +52,21 @@ Last updated August 9, 2000
     ------------------
 
     This version is mainly another bugfix release compared
-    to previous versions. This version should work much better
-    than V0.9.3. Dozens of bugs have been fixed.
+    to previous versions. While V0.9.4 was pretty stable
+    already, this version fixes two major bugs:
+
+        -- The XShutdown INI problems appear to be
+           finally solved for good.
+
+        -- Object hotkeys should work now without
+           hanging the system when assigning them.
 
     For details, refer to the "XWorkplace User Guide" after
     unpacking the files. To extract the documentation only,
     see "2. INSTALLATION" below.
 
-    Even though stability has increased, this is still a
-    developer's  release. It is not guaranteed to be stable
-    in every environment. It is running on my system for
-    everyday's work, but that doesn't mean it will run on
-    yours.
+    This version is planned to be the last developer's
+    release of XWorkplace before V1.0.0 comes out.
 
 
 2. INSTALLATION
@@ -80,12 +87,15 @@ Last updated August 9, 2000
 
     To do this, disable the "Register WPS classes" flag on the
     respective page which WarpIN will show you after you press
-    the "Next" button a few times.
+    the "Next" button a few times. Until the WPS classes are
+    registered, XWorkplace will do NOTHING on your system.
 
-    You can then read through XWorkplace's documentation first
-    and decide then whether to actually register XWorkplace's
-    classes. To do this later, simply double-click on
-    XWorkplace's WarpIN (.WPI) archive again.
+    This way can then read through XWorkplace's documentation
+    first and decide then whether to actually register
+    XWorkplace's classes. To do this later, simply double-click
+    on XWorkplace's WarpIN (.WPI) archive again.
+
+    ---> NOTE: In any case, before installing, MAKE A WPS BACKUP.
 
 
 3. UPGRADING
@@ -184,15 +194,14 @@ Last updated August 9, 2000
         submenu, but clicking on them will not open the proper
         association.
 
-    3)  Even though I've fixed many PageMage bugs with this release,
-        there might still be a number of problems left. At least
-        PageMage doesn't hang the system all the time any more.
-        Besides, sticky windows work now.
+    3)  Even though I've fixed many PageMage bugs with V0.9.4,
+        there are still a number of problems left. PageMage doesn't
+        shouldn't hang system any more, but it has problems tracking
+        windows at times. PageMage 0.9.5 is essentially unchanged
+        from 0.9.4.
 
-    4)  I had some problems with WPS restarts and XWorkplace 0.9.3
-        under Warp 4, FP 13. I have now installed FP14, and it seems
-        to be working mostly OK with V0.9.4. See the "BUGS" file for
-        more.
+    4)  There are problems with WPS restarts and FP13/14. This has
+        little to do with XWorkplace.
 
     5)  From time to time, creating folders from templates (using the
         context menu items) can solidly crash the system with a black
@@ -211,7 +220,9 @@ Last updated August 9, 2000
         the swap file growing constantly until the swap disk is full,
         which will then cause a trap somewhere.
 
-    6)  Drag'n'drop to XWPString doesn't work yet.
+    6)  XWPString is still experimental. Drag'n'drop and confirmations
+        don't work. XWPString will be replaced with a different
+        implementation in the future, so don't count on it.
 
 
 7. LICENSE, COPYRIGHT, DISCLAIMER

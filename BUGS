@@ -28,18 +28,13 @@ This is my private bug list for FP13/14:
 
 -- Sometimes after a WPS restart, the WPS doesn't populate
    the Desktop, and the system hangs. I'm not sure what this
-   is about. This doesn't happen with FP11.
+   is about. This doesn't happen with FP11, and it happens
+   with my Desktop even if I disable XWP.
 
 -- IBM has ruined the DosQProcStat and DosQuerySysState APIs.
    These still return garbage with FP14 sometimes.
 
 -- Apparently, DosPerfSysCall doesn't work any more either.
-
--- Something's wrong with DosReplaceModule as well. When I
-   do an XWorkplace compile and unlock XFLDR.DLL this way,
-   I sure get a WPS hang after the next WPS restart. This
-   might lead to problems with WarpIN installations, since
-   WarpIN can unlock modules too.
 
 -- Please don't complain about misaligned text in Details
    views, which is no longer vertically centered. It's not
@@ -50,9 +45,6 @@ This is my private bug list for FP13/14:
 
 NOT-SO-SERIOUS PROBLEMS
 -----------------------
-
-shutdown:
-    Is it possible to power off a machine with shutdwn.exe?
 
 XWPString:
     -- d'n'd no work!
@@ -95,8 +87,6 @@ PageMage:
 hook:
     -- Mouse pointer doesn't reappear when clicking buttons if hide mouse
        pointer is enabled.
-    -- Disabling auto-hide mouse pointer doesn't work. The pointer
-       disappears permanently after the timeout.
 
     -- sliding focus:
        -- topmost window doesn't become active after previous wnd destroy

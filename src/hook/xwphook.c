@@ -1618,7 +1618,7 @@ BOOL WMMouseMove_MB3OneScrollbar(HWND hwnd,                  // in: window with 
                                                              lDeltaPels,
                                                              fHorizontal);
                     else
-                        // swallow anyways
+                        // swallow anyway
                         brc = TRUE;
                 }
                 else
@@ -1632,7 +1632,7 @@ BOOL WMMouseMove_MB3OneScrollbar(HWND hwnd,                  // in: window with 
                         pScrollData->sMB3InitialScreenMousePos = sCurrentScreenMousePos;
                     }
                     else
-                        // swallow anyways
+                        // swallow anyway
                         brc = TRUE;
             }
         }

@@ -531,7 +531,7 @@ SOM_Scope void  SOMLINK xwstr_wpInitData(XWPString *somSelf)
     _pszSetupString = NULL;
     _hobjStatic = NULLHANDLE;
     _fConfirm = TRUE;
-    _pvSetupThread = NULL;
+    _pvtiSetupThread = NULL;
 }
 
 /*
@@ -556,10 +556,10 @@ SOM_Scope void  SOMLINK xwstr_wpUnInitData(XWPString *somSelf)
         _pszSetupString = NULL;
     }
 
-    if (_pvSetupThread)
+    if (_pvtiSetupThread)
     {
-        free(_pvSetupThread);
-        _pvSetupThread = NULL;
+        free(_pvtiSetupThread);
+        _pvtiSetupThread = NULL;
     }
 
     XWPString_parent_WPAbstract_wpUnInitData(somSelf);
@@ -830,14 +830,19 @@ SOM_Scope HWND  SOMLINK xwstr_wpOpen(XWPString *somSelf, HWND hwndCnr,
         BOOL brc = FALSE;
         if ((_hobjStatic) && (_pszSetupString))
         {
-            if (_pvSetupThread == 0)
-                // first call: allocate memory
-                _pvSetupThread = malloc(sizeof(THREADINFO));
+            PTHREADINFO     pti = (PTHREADINFO)_pvtiSetupThread;
 
-            if (_pvSetupThread)
-                if (!thrQueryID((PTHREADINFO)_pvSetupThread))
+            if (pti == 0)
+            {
+                // first call: allocate memory
+                pti = malloc(sizeof(THREADINFO));
+                _pvtiSetupThread = pti;
+            }
+
+            if (pti)
+                if (!thrQueryID(pti))
                 {
-                    thrCreate((PTHREADINFO)_pvSetupThread,
+                    thrCreate(pti,
                               xwstrfntSetupThread,
                               NULL, // running flag
                               THRF_PMMSGQUEUE,

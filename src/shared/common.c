@@ -71,6 +71,7 @@
 #define INCL_WINSYS
 
 #define INCL_GPILOGCOLORTABLE
+#define INCL_GPIBITMAPS
 #include <os2.h>
 
 // C library headers
@@ -86,6 +87,7 @@
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
+#include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\stringh.h"            // string helper routines
@@ -1948,7 +1950,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
             G_pGlobalSettings->lSBTextColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_OUTPUTTEXT, 0);
             cmnSetStatusBarSetting(SBS_TEXTNONESEL, NULL);
             cmnSetStatusBarSetting(SBS_TEXTMULTISEL, NULL);
-            G_pGlobalSettings->fDereferenceShadows = 1;
+            G_pGlobalSettings->bDereferenceShadows = STBF_DEREFSHADOWS_SINGLE;
         break;
 
         case SP_3SNAPTOGRID:
@@ -2324,11 +2326,131 @@ HWND cmnQueryActiveDesktopHWND(VOID)
 }
 
 /*
+ * PRODUCTINFODATA:
+ *      small struct for QWL_USER in cmn_fnwpProductInfo.
+ */
+
+typedef struct _PRODUCTINFODATA
+{
+    HBITMAP hbm;
+    POINTL  ptlBitmap;
+} PRODUCTINFODATA, *PPRODUCTINFODATA;
+
+/*
+ *@@ cmn_fnwpProductInfo:
+ *      dialog func which paints the XWP logo directly
+ *      as a bitmap, instead of using a static control.
+ *
+ *@@added V0.9.5 (2000-10-07) [umoeller]
+ */
+
+MRESULT EXPENTRY cmn_fnwpProductInfo(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    BOOL fCallDefault = TRUE;
+
+    switch (msg)
+    {
+        case WM_INITDLG:
+        {
+            PPRODUCTINFODATA ppd = (PPRODUCTINFODATA)malloc(sizeof(PRODUCTINFODATA));
+            if (ppd)
+            {
+                HPS hpsTemp = 0;
+                memset(ppd, 0, sizeof(PRODUCTINFODATA));
+
+                hpsTemp = WinGetPS(hwndDlg);
+                if (hpsTemp)
+                {
+                    ppd->hbm = GpiLoadBitmap(hpsTemp,
+                                             cmnQueryNLSModuleHandle(FALSE),
+                                             ID_XFLDRBITMAP,
+                                             0, 0); // no stretch
+                    if (ppd->hbm)
+                    {
+                        HWND    hwndStatic = WinWindowFromID(hwndDlg, ID_XFD_PRODLOGO);
+                        if (hwndStatic)
+                        {
+                            SWP     swpFrame;
+                            BITMAPINFOHEADER2 bmih2;
+                            bmih2.cbFix = sizeof(bmih2);
+                            if (GpiQueryBitmapInfoHeader(ppd->hbm, &bmih2))
+                            {
+                                if (WinQueryWindowPos(hwndStatic,
+                                                      &swpFrame))
+                                {
+                                    ppd->ptlBitmap.x = swpFrame.x
+                                                       + ((swpFrame.cx - (LONG)bmih2.cx) / 2);
+                                    ppd->ptlBitmap.y = swpFrame.y
+                                                       + ((swpFrame.cy - (LONG)bmih2.cy) / 2);
+                                }
+
+                                WinDestroyWindow(hwndStatic);
+                            }
+                        }
+                    }
+
+                    WinReleasePS(hpsTemp);
+                }
+            }
+
+            WinSetWindowPtr(hwndDlg, QWL_USER, ppd);
+        break; }
+
+        case WM_PAINT:
+        {
+            HPS hpsPaint = 0;
+            mrc = cmn_fnwpDlgWithHelp(hwndDlg, msg, mp1, mp2);
+
+            hpsPaint = WinGetPS(hwndDlg);
+            if (hpsPaint)
+            {
+                PPRODUCTINFODATA ppd = (PPRODUCTINFODATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
+                if (ppd)
+                {
+                    if (ppd->hbm)
+                    {
+                        POINTL ptlDest;
+                        ptlDest.x = ppd->ptlBitmap.x;
+                        ptlDest.y = ppd->ptlBitmap.y;
+                        WinDrawBitmap(hpsPaint,
+                                      ppd->hbm,
+                                      NULL,
+                                      &ptlDest,
+                                      0, 0, DBM_NORMAL);
+                    }
+                }
+
+                WinReleasePS(hpsPaint);
+            }
+        break; }
+
+        case WM_DESTROY:
+        {
+            PPRODUCTINFODATA ppd = (PPRODUCTINFODATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
+            if (ppd)
+            {
+                if (ppd->hbm)
+                    GpiDeleteBitmap(ppd->hbm);
+                free(ppd);
+            }
+        break; }
+    }
+
+    if (fCallDefault)
+        mrc = cmn_fnwpDlgWithHelp(hwndDlg, msg, mp1, mp2);
+
+    return (mrc);
+}
+
+/*
  *@@ cmnShowProductInfo:
  *      shows the XWorkplace "Product info" dlg.
  *      This calls WinProcessDlg in turn.
  *
  *@@added V0.9.1 (2000-02-13) [umoeller]
+ *@@changed V0.9.5 (2000-10-07) [umoeller]: now using cmn_fnwpProductInfo
  */
 
 VOID cmnShowProductInfo(ULONG ulSound) // in: sound intex to play
@@ -2338,7 +2460,7 @@ VOID cmnShowProductInfo(ULONG ulSound) // in: sound intex to play
     PSZ     pszGPLInfo;
     LONG    lBackClr = CLR_WHITE;
     HWND hwndInfo = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
-                               cmn_fnwpDlgWithHelp,
+                               cmn_fnwpProductInfo,
                                cmnQueryNLSModuleHandle(FALSE),
                                ID_XFD_PRODINFO,
                                NULL),

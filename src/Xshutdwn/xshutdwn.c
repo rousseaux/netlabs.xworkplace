@@ -88,6 +88,15 @@ int main(int argc, char *argv[])
                                 }
                             break;
 
+                            case 'p':
+                                psdp->optAPMPowerOff = TRUE;
+                            break;
+
+                            case 'P':
+                                psdp->optAPMPowerOff = TRUE;
+                                psdp->optAPMDelay = TRUE;
+                            break;
+
                             case 'D':
                                 psdp->optDebug = TRUE;
                             break;

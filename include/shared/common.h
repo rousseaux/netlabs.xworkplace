@@ -297,6 +297,8 @@
 
     #define ID_XSH_XWPMEDIA                  93     // V0.9.5: XWPMedia main panel
 
+    #define ID_XSH_XWP_CLASSESDLG            94     // V0.9.5: XWP "Classes" dlg
+
     /********************************************************************
      *                                                                  *
      *   Various other identifiers/flag declarations                    *
@@ -501,6 +503,10 @@
     // flags for GLOBALSETTINGS.ulConfirmEmpty
     #define TRSHCONF_EMPTYTRASH     0x00000001
     #define TRSHCONF_DESTROYOBJ     0x00000002
+
+    // flags for GLOBALSETTINGS.bDereferenceShadows
+    #define STBF_DEREFSHADOWS_SINGLE        0x01
+    #define STBF_DEREFSHADOWS_MULTIPLE      0x02
 
     #pragma pack(4)     // just to make sure;
                         // the following is stored as binary in OS2.INI
@@ -733,9 +739,12 @@
                         //      0 = transparent
                         //      1 = blow-up
 
-                    fDereferenceShadows,
+                    bDereferenceShadows,
                         // XFldWPS "Status bars" page 2:
                         // deference shadows flag
+                        // changed V0.9.5 (2000-10-07) [umoeller]: now bit flags...
+                        // -- STBF_DEREFSHADOWS_SINGLE        0x01
+                        // -- STBF_DEREFSHADOWS_MULTIPLE      0x02
 
         // trashcan settings
                     fTrashDelete,

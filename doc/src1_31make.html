@@ -27,7 +27,8 @@ and linker setup. If you use environment variables, there's normally no need to
 modify that file.
 
 <P><LI>Make sure you have at least 60 MB of free space in your TEMP directory. This
-is needed for precompiled headers.
+is needed for precompiled headers. I strongly recommend using RAMFS.IFS for your
+TEMP directory. This dramatically speeds up things if you have 128 MB RAM or more.
 
 <P><LI>Put the .EXE and .CMD files from <CODE>TOOLS\</CODE> somewhere on your
 PATH. These are used by the makefiles. Or add the tools
@@ -43,12 +44,13 @@ and call that one instead, which invokes <CODE>nmake</CODE> in turn.
 <P><B>Rebuilding the whole thing.</B> To rebuild everything, you have three
 options:
 
-<UL><LI>Use <CODE>NMAKE -A</CODE> on the main makefile. This will even re-invoke
+<UL><LI>Delete the entire <CODE>bin\</CODE> tree. This will cause all object
+files to be recompiled.
+
+<P><LI>Use <CODE>nmake -a</CODE> on the main makefile. This will even re-invoke
 the SOM compiler on all <CODE>.IDL</CODE> files.
 
-<P><LI>Delete the entire <CODE>bin\</CODE> tree.
-
-<P><LI>Open and save (or touch) <CODE>include/setup.h</CODE> to make
+<P><LI>Open and save (or <CODE>touch</CODE>) <CODE>include/setup.h</CODE> to make
 it newer than the target files. This is
 #include'd in all XWorkplace C files, and the makefiles' inference
 rules will then enforce recompilation of <I>all</I> C files.

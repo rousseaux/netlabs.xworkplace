@@ -2668,7 +2668,7 @@ PSHUTLISTITEM xsdQueryCurrentItem(VOID)
 PSHUTLISTITEM xsdAppendShutListItem(PLINKLIST pList,    // in/out: linked list to work on
                                     SWCNTRL* pswctl,    // in: tasklist entry to add
                                     WPObject *pObject,  // in: !=NULL: WPS object
-                                    LONG lSpecial)      // XSD_* flags; > 0 if Desktop or WarpCenter
+                                    LONG lSpecial)
 {
     PSHUTLISTITEM  pNewItem = NULL;
 
@@ -2720,7 +2720,11 @@ PSHUTLISTITEM xsdAppendShutListItem(PLINKLIST pList,    // in/out: linked list t
         }
         else
         {
-            PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
+            // no WPS object: get window class name
+            WinQueryClassName(pswctl->hwnd,               // old V0.9.3 code
+                              sizeof(pNewItem->szClass)-1,
+                              pNewItem->szClass);
+            /* PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
             // strcpy(pNewItem->szClass, "pObj is NULL");
 
             if (pObject == pKernelGlobals->pAwakeWarpCenter)
@@ -2731,7 +2735,7 @@ PSHUTLISTITEM xsdAppendShutListItem(PLINKLIST pList,    // in/out: linked list t
                 // no WPS object: get window class name
                 WinQueryClassName(pswctl->hwnd,
                                   sizeof(pNewItem->szClass)-1,
-                                  pNewItem->szClass);
+                                  pNewItem->szClass); */
         }
 
         // append to list
@@ -2806,7 +2810,7 @@ LONG xsdIsClosable(HAB hab,                 // in: caller's anchor block
     else if (pSwEntry->swctl.uchVisibility != SWL_VISIBLE)
         return (XSD_INVISIBLE);
 
-    #ifdef __DEBUG__
+#ifdef __DEBUG__
     // if we're in debug mode, skip the PMPRINTF window
     // because we want to see debug output
     else if (strncmp(szSwUpperTitle, "PMPRINTF", 8) == 0)
@@ -2815,7 +2819,7 @@ LONG xsdIsClosable(HAB hab,                 // in: caller's anchor block
     // PMSHELL.EXE
     else if (strcmp(szSwUpperTitle, "ICSDEBUG.EXE") == 0)
         return (XSD_DEBUGNEED);
-    #endif
+#endif
 
     // now fix the data in the switch list entries,
     // if necessary
@@ -2854,15 +2858,20 @@ LONG xsdIsClosable(HAB hab,                 // in: caller's anchor block
             *ppObject = _wpclsQueryObjectFromFrame(pConsts->pWPDesktop, // _WPDesktop
                                                    pSwEntry->swctl.hwnd);
 
+            if (*ppObject == G_pActiveDesktop)
+                lrc = XSD_DESKTOP;
+            else if (*ppObject == pConsts->pKernelGlobals->pAwakeWarpCenter)
+                lrc = XSD_WARPCENTER;
+
             // is WarpCenter?
-            if (*ppObject == pConsts->pKernelGlobals->pAwakeWarpCenter)
+            /* if (*ppObject == pConsts->pKernelGlobals->pAwakeWarpCenter)
             {
                 *ppObject = pConsts->pKernelGlobals->pAwakeWarpCenter;
                 lrc = XSD_WARPCENTER;
-            }
+            } */
 
             // object not found?
-            if (!*ppObject)
+            /* if (!*ppObject)
             {
                 // WarpCenter awake? (Worker thread)
                 if (pConsts->pKernelGlobals->pAwakeWarpCenter)
@@ -2888,7 +2897,7 @@ LONG xsdIsClosable(HAB hab,                 // in: caller's anchor block
                     } // end while WinGetNextWindow()
                     WinEndEnumWindows(henum);
                 }
-            }
+            } */
         }
     }
 
@@ -2927,7 +2936,7 @@ void xsdBuildShutList(PSHUTDOWNCONSTS pSDConsts,
     CHAR            szSwUpperTitle[100];
     WPObject        *pObj;
     BOOL            Append;
-    BOOL            fWarpCenterFound = FALSE;
+    // BOOL            fWarpCenterFound = FALSE;
 
     // get all the tasklist entries into a buffer
     cbItems = WinQuerySwitchList(NULLHANDLE, NULL, 0);
@@ -2951,7 +2960,9 @@ void xsdBuildShutList(PSHUTDOWNCONSTS pSDConsts,
             Append = TRUE;
 
             // check for special objects
-            if (lrc == XSD_DESKTOP)
+            if (    (lrc == XSD_DESKTOP)
+                 || (lrc == XSD_WARPCENTER)
+               )
                 // Desktop needs special handling,
                 // will be closed last always
                 Append = FALSE;
@@ -4080,7 +4091,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                         {
                             // we have a WPS window:
                             // check if it's the WarpCenter
-                            if (pItem->lSpecial == XSD_WARPCENTER)
+                            /* if (pItem->lSpecial == XSD_WARPCENTER)
                             {
                                 WinPostMsg(pItem->swctl.hwnd,
                                            WM_COMMAND,
@@ -4091,7 +4102,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                                                         FALSE));     // keyboard?!?
                                 xsdLog("      Open WarpCenter, posting WM_COMMAND 0x66F7\n");
                             }
-                            else
+                            else */
                             {
                                 // otherwise use proper method
                                 // to ensure that window data is saved
@@ -4393,6 +4404,23 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                                         5*1000,     // timeout value
                                         TRUE);      // force close for new views
                                     // added V0.9.4 (2000-07-11) [umoeller]
+
+                        // close WarpCenter next (V0.9.5, from V0.9.3)
+                        if (pKernelGlobals->pAwakeWarpCenter)
+                        {
+                            // WarpCenter open?
+                            if (_wpFindUseItem(pKernelGlobals->pAwakeWarpCenter,
+                                               USAGE_OPENVIEW,
+                                               NULL)       // get first useitem
+                                )
+                            {
+                                // if open: close it
+                                xsdUpdateClosingStatus(_wpQueryTitle(pKernelGlobals->pAwakeWarpCenter));
+                                xsdLog("    Found open WarpCenter USEITEM, closing...\n");
+
+                                _wpClose(pKernelGlobals->pAwakeWarpCenter);
+                            }
+                        }
 
                         WinPostMsg(G_hwndMain, WM_COMMAND,
                                    MPFROM2SHORT(ID_SDMI_PREPARESAVEWPS, 0),

@@ -865,7 +865,7 @@ FOPSRET fopsStartTaskFromList(ULONG ulOperation,
  *      Tree view hierarchy gets deleted, the progress window would
  *      otherwise display the main folder being deleted, which
  *      might panic the user. The source folder for delete operations
- *      is only for display anyways; the file operations engine
+ *      is only for display anyway; the file operations engine
  *      doesn't really need it.
  *
  *@@added V0.9.1 (2000-01-29) [umoeller]

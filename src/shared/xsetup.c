@@ -1063,8 +1063,8 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                         free(pszReg);
                     if (pszDereg)
                         free(pszDereg);
-                }
-            }
+                } // end if ((fReg) || (fDereg))
+            } // end if ((USHORT)mp1 == DID_OK)
 
             if (fDismiss)
                 // dismiss dialog
@@ -1154,6 +1154,8 @@ MRESULT EXPENTRY fnwpXWorkplaceClasses(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 
         case WM_HELP:
         {
+            cmnDisplayHelp(NULL,        // active desktop
+                           ID_XSH_XWP_CLASSESDLG);
         break; }
 
         /*

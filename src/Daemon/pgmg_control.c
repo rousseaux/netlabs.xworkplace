@@ -740,7 +740,7 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
             case WM_ERASEBACKGROUND:
                 mReturn = MRFROMLONG(FALSE);
                     // pretend we've processed this;
-                    // we paint the entire bitmap in WM_PAINT anyways
+                    // we paint the entire bitmap in WM_PAINT anyway
                 break;
 
             /*

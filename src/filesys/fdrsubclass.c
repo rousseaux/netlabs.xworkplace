@@ -979,13 +979,16 @@ BOOL MenuSelect(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
 
 VOID WMChar_Delete(PSUBCLASSEDFOLDERVIEW psfv)
 {
-    ULONG   ulSelection = 0;
-    WPObject *pSelected = wpshQuerySourceObject(psfv->somSelf,
-                                                psfv->hwndCnr,
-                                                TRUE,       // keyboard mode
-                                                &ulSelection);
+    ULONG       ulSelection = 0;
+    WPObject    *pSelected = 0;
+
+    pSelected = wpshQuerySourceObject(psfv->somSelf,
+                                      psfv->hwndCnr,
+                                      TRUE,       // keyboard mode
+                                      &ulSelection);
     #ifdef DEBUG_TRASHCAN
-        _Pmpf(("WM_CHAR delete: first obj is %s", _wpQueryTitle(pSelected)));
+        _Pmpf(("WM_CHAR delete: first obj is %s",
+                (pSelected) ? _wpQueryTitle(pSelected) : "NULL"));
     #endif
 
     if (    (pSelected)

@@ -926,6 +926,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
  *@@changed V0.9.0 [umoeller]: prototype changed to return new buffer instead of BOOL
  *@@changed V0.9.0 [umoeller]: added shadow dereferencing
  *@@changed V0.9.3 (2000-04-08) [umoeller]: added cnr error return code check
+ *@@changed V0.9.5 (2000-10-07) [umoeller]: added "Dereference shadows" for multiple mode
  */
 
 PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
@@ -970,6 +971,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
                 *pObject2 = NULL;
     PSZ         p;
     CHAR        *p2;
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     // get thousands separator from "Country" object
     CHAR        cThousands = cmnQueryThousandsSeparator(),
@@ -989,8 +991,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         {
             // error: V0.9.3 (2000-04-08) [umoeller]
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "Unable to query container records for status bar.",
-                   _wpQueryTitle(somSelf));
+                   "Unable to query container records for status bar.");
             break;
         }
 
@@ -1002,8 +1003,16 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
             if (pObject)
                 if (wpshCheckObject(pObject))
                 {
-                    if (_somIsA(pObject, _WPFileSystem))
-                        ulSizeSelected += _wpQueryFileSize(pObject);
+                    WPObject *pDeref = pObject;
+                    if (pGlobalSettings->bDereferenceShadows & STBF_DEREFSHADOWS_MULTIPLE)
+                    {
+                        // deref multiple shadows
+                        while ((pDeref) && (_somIsA(pDeref, _WPShadow)))
+                            pDeref = _wpQueryShadowedObject(pDeref, TRUE);
+                    }
+
+                    if (_somIsA(pDeref, _WPFileSystem))
+                        ulSizeSelected += _wpQueryFileSize(pDeref);
                 }
                 else
                     pObject = NULL;
@@ -1023,8 +1032,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         // different mnemonics for different WPS classes
 
         // dereference shadows (V0.9.0)
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-        if (pGlobalSettings->fDereferenceShadows)
+        if (pGlobalSettings->bDereferenceShadows & STBF_DEREFSHADOWS_SINGLE)
             if (_somIsA(pObject, _WPShadow))
                 pObject = _wpQueryShadowedObject(pObject, TRUE);
 
@@ -1574,6 +1582,7 @@ MRESULT stbStatusBar1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  *@@changed V0.9.0 [umoeller]: added "Dereference shadows"
  *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
+ *@@changed V0.9.5 (2000-10-07) [umoeller]: added "Dereference shadows" for multiple mode
  */
 
 VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -1652,8 +1661,9 @@ VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         // dereference shadows
         winhSetDlgItemChecked(pcnbp->hwndDlgPage,
-                              ID_XSDI_DEREFERENCESHADOWS,
-                              pGlobalSettings->fDereferenceShadows);
+                              ID_XSDI_DEREFSHADOWS_SINGLE,
+                              (pGlobalSettings->bDereferenceShadows & STBF_DEREFSHADOWS_SINGLE)
+                                    != 0);
 
         // multiple-objects mode
         WinSendDlgItemMsg(pcnbp->hwndDlgPage,
@@ -1664,6 +1674,11 @@ VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         WinSetDlgItemText(pcnbp->hwndDlgPage,
                           ID_XSDI_SBTEXTMULTISEL,
                           (PSZ)cmnQueryStatusBarSetting(SBS_TEXTMULTISEL));
+
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage,
+                              ID_XSDI_DEREFSHADOWS_MULTIPLE,
+                              (pGlobalSettings->bDereferenceShadows & STBF_DEREFSHADOWS_MULTIPLE)
+                                    != 0);
     }
 
     if (flFlags & CBI_DESTROY)
@@ -1684,6 +1699,7 @@ VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  *@@changed V0.9.0 [umoeller]: added "Dereference shadows"
  *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
+ *@@changed V0.9.5 (2000-10-07) [umoeller]: added "Dereference shadows" for multiple mode
  */
 
 MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1730,10 +1746,13 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             }
         break;
 
-        case ID_XSDI_DEREFERENCESHADOWS:    // added V0.9.0
+        case ID_XSDI_DEREFSHADOWS_SINGLE:    // added V0.9.0
         {
             GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
-            pGlobalSettings->fDereferenceShadows = (BOOL)ulExtra;
+            if (ulExtra)
+                pGlobalSettings->bDereferenceShadows |= STBF_DEREFSHADOWS_SINGLE;
+            else
+                pGlobalSettings->bDereferenceShadows &= ~STBF_DEREFSHADOWS_SINGLE;
             cmnUnlockGlobalSettings();
         break; }
 
@@ -1745,6 +1764,16 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 cmnSetStatusBarSetting(SBS_TEXTMULTISEL, szDummy);
             }
         break;
+
+        case ID_XSDI_DEREFSHADOWS_MULTIPLE:    // added V0.9.5 (2000-10-07) [umoeller]
+        {
+            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(5000);
+            if (ulExtra)
+                pGlobalSettings->bDereferenceShadows |= STBF_DEREFSHADOWS_MULTIPLE;
+            else
+                pGlobalSettings->bDereferenceShadows &= ~STBF_DEREFSHADOWS_MULTIPLE;
+            cmnUnlockGlobalSettings();
+        break; }
 
         // "Select class" on "Status Bars" page:
         // set up WPS classes dialog

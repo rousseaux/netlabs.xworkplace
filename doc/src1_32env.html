@@ -81,7 +81,7 @@ LIBPATH,</B> or otherwise you'll spend days figuring out why XWorkplace is
 simply not working any more.
 (I had this once after a reinstall
 of OS/2, after which the DLLs where gone.) That is, XWorkplace classes
-will not load at WPS startup, because the PMPRINTF imports cannot be
+will not load at WPS startup, because the PMPRINTF DLL imports cannot be
 resolved. Neither will registering XWorkplace classes succeed. And don't
 expect to get an error message other than FALSE. <CODE>:-(</CODE>
 
@@ -107,8 +107,8 @@ environment variable is not set, modules are <I>not</I> unlocked now. So only se
 the variable if you're not running Warp 4 FP13. I guess this behaviour will be the
 same with Warp Server for e-business (Aurora).
 
-<P>The exception to this is <CODE>XWPDAEMN.EXE</CODE>, which is not unlocked.
-This is intentional.
+<P>The exception to this are <CODE>XWPDAEMN.EXE</CODE> and <CODE>XWPHOOK.DLL</CODE>,
+which are never unlocked. This is intentional.
 Unlocking an executable which has registered a system hook
 (which becomes part of every PM process on the system)
 will _never_ release the DLL containing the hook again, so you'd have to

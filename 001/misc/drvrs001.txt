@@ -243,7 +243,7 @@ CATEGORY "SCSI"
                  DRVF_CMDREF | DRVF_NOPARAMS),
         DRIVER ( "BASEDEV=", "OS2ASPI.DMD",
                  "OS/2 ASPI interface",
-                DRVF_CMDREF),
+                0),
         DRIVER ( "DEVICE=", "ASPIROUT.SYS",
                  "ASPI router",
                  DRVF_NOPARAMS)
@@ -395,7 +395,7 @@ CATEGORY "Other peripherals"
 
         DRIVER ( "BASEDEV=", "PRINT01.SYS",
                  "Standard printer",
-                 DRVF_CMDREF),
+                 0),
         DRIVER ( "BASEDEV=", "PRINT02.SYS",
                  "Microchannel printer",
                  DRVF_CMDREF),

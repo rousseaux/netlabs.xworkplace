@@ -20,27 +20,31 @@ has changed in a source file. I recommend having some "grep"
 utility handy to be able to search for strings like "V0.9.0".
 \OS2\APPS\PMSEEK.EXE should do also.
 
-
-Changes for V0.9.4
-==================
+Changes for V0.9.4/V0.9.5
+=========================
 
     --  ID_OSD_SETTINGS_DRIVERS modified.
+    --  ID_OSD_SETTINGS_HPFS removed.
+    --  ID_OSD_DRIVER_HPFS386 added.
     --  ID_SCD_PAGEMAGE_GENERAL added.
     --  ID_SCD_PAGEMAGE_NEWSTICKY added.
     --  ID_SCD_PAGEMAGE_STICKY added.
     --  ID_SDD_CONFIRM modified.
+    --  ID_SDD_CONFIRMWPS modified.
     --  ID_XCD_FEATURES modified.
     --  ID_XCD_XWPINSTALLEDCLASSES modified.
     --  ID_XFD_CONTAINERPAGE modified.
+    --  ID_XFD_PRODINFO modified.
     --  ID_XSD_DTP_SHUTDOWN modified.
     --  ID_XSD_FOLDERVIEWS modified.
     --  ID_XSD_MOUSEMAPPINGS2 modified.
     --  ID_XSD_MOUSE_CORNERS modified.
-    --  ID_XSD_STARTUPFOLDER modified.
+    --  ID_XSD_OBJECTDETAILS modified.
+    --  ID_XSD_SET28STATUSBARS2 modified.
     --  ID_XSD_SETTINGS_FLDR1 modified.
+    --  ID_XSD_STARTUPFOLDER modified.
     --  ID_XTD_ICONPAGE added.
     --  ID_XTD_SETTINGS modified.
-    --  ID_OSD_SETTINGS_HPFS removed.
 
 Changes between V0.9.0 and V0.9.3
 =================================

@@ -12,7 +12,7 @@
  *             for details.
  *
  *             We use WPTransient in order not to clutter up OS2.INI
- *             with abstract objects which have no data to save anyways.
+ *             with abstract objects which have no data to save anyway.
  *
  *      XWPTrashObject must be installed if XWPTrashCan is installed.
  *

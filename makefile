@@ -42,14 +42,14 @@
 #                           in turn.
 #
 #       Environment:    You MUST set a number of environment variables before
-#                       compiling. See readme.txt and PROGREF.INF.
+#                       compiling. See PROGREF.INF.
 #
 #       Output:         All XWorkplace Files code files. This calls the other
-#                       makefiles.
+#                       makefiles in the subdirectories.
 #
 #                       Output files are first created in bin\ (which is
 #                       created if it doesn't exist), then copied to
-#                       XWPRUNNING, which must be defined externally or
+#                       $(XWPRUNNING), which must be defined externally or
 #                       thru "setup.in".
 #
 #       Edit "setup.in" to set up the make process (compilation flags etc.).

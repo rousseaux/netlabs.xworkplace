@@ -523,7 +523,7 @@ PLINKLIST InsertDriverCategories(HWND hwndCnr,
             }
             else
                 // no drivers found: destroy the list
-                // again, it's empty anyways
+                // again, it's empty anyway
                 lstFree(pllDriverSpecsForCategory);
 
             free(pszBlock);

@@ -17,15 +17,20 @@ is no longer anything to take away."
 This page lists the revision history of XWorkplace (since V0.9.0 was released).
 The history of the previous XFolder packages are on a <A HREF="vers_2history2.html">separate page</A>.
 
-<P><B>XWorkplace 0.9.5 (August 9, 2000)</B>
+<P><B>XWorkplace 0.9.5 (October 7, 2000)</B>
 
 <H6>New features:
-<UL><LI>Added HPFS386 driver configuration dialog.
+<UL><LI>New XWorkplace logo.
+<P><LI>Added "Dereference shadows" setting to status bars page 2 even when
+multiple objects are selected.
+<P><LI>Added HPFS386 driver configuration dialog.
+<P><LI>Added flags for APM power-off to <A HREF="xsd_4cmdline.html">XSHUTDWN.EXE</A>.
 
 </UL>Miscellaneous changes:
 <UL><LI>File operations confirmation windows now use folders as owner windows.
 <P><LI>Added "Set" button to object hotkeys entry field.
 <P><LI>Added a few more help panels.
+<P><LI>Went back to the V0.9.3 code for closing the WarpCenter during shutdown.
 
 </UL>Bugfixes:
 <UL><LI>XWorkplace Installation folder got deleted on every install, leading to
@@ -508,7 +513,7 @@ properly, cmnSubclassFolderFrame, common.c).
 <P><LI>Folder content menus would sometimes crash with titles > 100 chars.
 <P><LI>"View" pulldown in Warp 4 folder menu bars lacked the additional items.
 I'm not sure if this was broken in V0.85 already or if I broke this since then,
-but it's working now anyways. ;-)
+but it's working now anyway. ;-)
 <P><LI>Right-click on status bars opened the closed-view context menu (open-view
 items were missing). Fixed (fnwpStatusBar, xfldr.c).
 <P><LI>The "Select by name" dialog had problems finding files according to

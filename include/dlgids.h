@@ -316,7 +316,8 @@
 #define ID_XSDI_SBSELECTCLASS           583
 #define ID_XSDI_SBTEXT1SEL              584
 #define ID_XSDI_SBTEXTMULTISEL          585
-#define ID_XSDI_DEREFERENCESHADOWS      586     // new (V0.9.0)
+#define ID_XSDI_DEREFSHADOWS_SINGLE     586     // new V0.9.5 (2000-10-07) [umoeller]
+#define ID_XSDI_DEREFSHADOWS_MULTIPLE   587     // new V0.9.5 (2000-10-07) [umoeller]
 
 // extended "sort" page
 #define ID_XSD_SETTINGS_FLDRSORT        590

@@ -1,15 +1,18 @@
-/* XWorkplace installation program
-   (C) 1998-2000 Ulrich M”ller */
+/* XWorkplace installation script
+   (C) 1998-2000 Ulrich M”ller
 
-/* NOTE: this is just an updated version of the XFolder
-   install script. Future versions will be installed
-   using WarpIN. */
+   NOTE: THIS SCRIPT IS OUTDATED AND SHOULD NOT BE USED.
 
-/* Optional parameters: three-digit language code
+   This is just an updated version of the XFolder
+   install script. XWorkplace now uses WarpIN to install.
+   This file is actually obsolete and only retained in
+   case somebody wants to do some testing.
+
+   Optional parameters: three-digit language code
    to start installation with a certain language
-   without being prompted. */
+   without being prompted.
 
-/* This script is language-independent. It relies on
+   This script is language-independent. It relies on
    the files in the ./INSTALL subdirectory which should
    contain the necessary language-dependent strings. */
 

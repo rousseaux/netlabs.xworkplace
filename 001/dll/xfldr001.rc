@@ -249,7 +249,7 @@ BEGIN
     ID_XSSI_XFOLDERVERSION          XFOLDER_VERSION
 
     ID_XSSI_FLDRCONTENT             "F~older contents"
-    ID_XSSI_COPYFILENAME            "~Copy filename"
+    ID_XSSI_COPYFILENAME            "Co~py filename"
     ID_XSSI_BORED                   "[Configuration folder is empty]"
     ID_XSSI_FLDREMPTY               "[empty]"
     ID_XSSI_SELECTSOME              "Select by ~name..."
