@@ -1519,7 +1519,6 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
             // if the folder has an open view... pmrc->hptrIcon
             // ALWAYS has the closed icon for folders!
             WPObject *pobjTest = pobjDraw;
-            BOOL    fTestLocked = FALSE;
 
             if (    (    (flObject & OBJFL_WPFOLDER)
                       || (    (pobjTest = objResolveIfShadow(pobjDraw))
@@ -1530,16 +1529,12 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
                  // no, no, no! _wpFindViewItem requests the object mutex
                  // if the current thread doesn't have it, which can deadlock
                  // the system if a shadow is just being created!
-                 // so use OBJFL_HASOPENVIEW instead, which is now
-                 // maintained by our useitem overrides
+                 // so use CRA_INUSE instead, which should be correct
                  // V0.9.21 (2002-09-17) [umoeller]
-                 && (flObject & OBJFL_HASOPENVIEW)
+                 && (poi->fsAttribute & CRA_INUSE)
                )
                 hptrPaint = _wpQueryIconN(pobjTest, 1);
             // else: leave hptrPaint with pmrc->hptrIcon
-
-            if (fTestLocked)
-                _wpReleaseObjectMutexSem(pobjTest);
         }
 
         // determine whether to draw mini icon and set
