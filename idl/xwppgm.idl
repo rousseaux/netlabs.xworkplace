@@ -81,6 +81,10 @@ interface XWPProgram : WPProgram
 
     BOOL        fNeedsSetProgIcon;      // flag for WPProgram::wpSetProgIcon
 
+    PSZ         pWszUsingIconFile;      // if we are using an .ICO file for the
+                                        // icon, this holds the icon filename
+                                        // V0.9.18 (2002-03-19) [umoeller]
+
     // pointer WPProgram instance data (see wpInitData)
     // all the following replaced V0.9.18 (2002-03-16) [umoeller]
 

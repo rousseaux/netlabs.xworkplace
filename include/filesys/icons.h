@@ -46,6 +46,11 @@
                                    PULONG pcbIconData,
                                    PBYTE pbIconData);
 
+    APIRET icoBuildPtrFromEAs(PCSZ pcszFilename,
+                              HPOINTER *phptr,
+                              PULONG pcbIconInfo,
+                              PICONINFO pIconInfo);
+
     #ifdef EXEH_HEADER_INCLUDED
         APIRET icoLoadExeIcon(PEXECUTABLE pExec,
                               ULONG idResource,
@@ -53,6 +58,14 @@
                               PULONG pcbIconData,
                               PBYTE pbIconData);
     #endif
+
+    /* ******************************************************************
+     *
+     *   Object icon management
+     *
+     ********************************************************************/
+
+    BOOL icoRunReplacement(VOID);
 
     /* ******************************************************************
      *

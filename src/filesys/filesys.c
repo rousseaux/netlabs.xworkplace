@@ -614,6 +614,49 @@ APIRET fsysCreateFindBuffer(PEAOP2 *pp)
 }
 
 /*
+ *@@ fsysFillFindBuffer:
+ *      fills a FILEFINDBUF3 for the given file system
+ *      object, including all the EAs.
+ *
+ *      This calls fsysCreateFindBuffer internally,
+ *      so the caller is responsible for calling
+ *      fsysFreeFindBuffer(peaop) when done.
+ *
+ *      For convenience, *ppfb3 is set to the address
+ *      of the FILEFINDBUF3 within the EAOP2 buffer.
+ *
+ *@@added V0.9.18 (2002-03-19) [umoeller]
+ */
+
+APIRET fsysFillFindBuffer(PCSZ pcszFilename,       // in: fully q'fied filename to check
+                          PFILEFINDBUF3 *ppfb3,    // out: ptr into *ppeaop
+                          PEAOP2 *ppeaop)          // out: buffer to be freed
+{
+    APIRET arc;
+    if (!(arc = fsysCreateFindBuffer(ppeaop)))
+                // freed at bottom
+    {
+        HDIR        hdirFindHandle = HDIR_CREATE;
+        ULONG       ulFindCount = 1;
+        if (!(arc = DosFindFirst((PSZ)pcszFilename,
+                                 &hdirFindHandle,
+                                 FILE_DIRECTORY
+                                    | FILE_ARCHIVED | FILE_HIDDEN | FILE_SYSTEM | FILE_READONLY,
+                                 *ppeaop,     // buffer
+                                 FINDBUFSIZE, // 64K
+                                 &ulFindCount,
+                                 FIL_QUERYEASFROMLIST)))
+        {
+            *ppfb3 = (PFILEFINDBUF3)(((PBYTE)*ppeaop) + sizeof(EAOP2));
+        }
+
+        DosFindClose(hdirFindHandle);
+    }
+
+    return arc;
+}
+
+/*
  *@@ fsysFreeFindBuffer:
  *
  *@@added V0.9.16 (2002-01-01) [umoeller]
@@ -1734,26 +1777,10 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
     else
     {
         // no info given: get it then
-        _wpQueryFilename(somSelf, szFilename, TRUE);
-        if (!(arc = fsysCreateFindBuffer(&peaop)))
-                    // freed at bottom
-        {
-            HDIR        hdirFindHandle = HDIR_CREATE;
-            ULONG       ulFindCount = 1;
-            if (!(arc = DosFindFirst(szFilename,
-                                     &hdirFindHandle,
-                                     FILE_DIRECTORY
-                                        | FILE_ARCHIVED | FILE_HIDDEN | FILE_SYSTEM | FILE_READONLY,
-                                     peaop,     // buffer
-                                     FINDBUFSIZE, // 64K
-                                     &ulFindCount,
-                                     FIL_QUERYEASFROMLIST)))
-            {
-                pfb3 = (PFILEFINDBUF3)((PBYTE)peaop + sizeof(EAOP2));
-            }
-
-            DosFindClose(hdirFindHandle);
-        }
+        if (!_wpQueryFilename(somSelf, szFilename, TRUE))
+            arc = ERROR_FILE_NOT_FOUND;
+        else
+            arc = fsysFillFindBuffer(szFilename, &pfb3, &peaop);
     }
 
     if (!arc)
@@ -1964,13 +1991,12 @@ static VOID SetDlgDateTime(HWND hwndDlg,           // in: dialog
  *          This is also EAT_MVMT and used like .COMMENTS.
  *
  *@@changed V0.9.1 (2000-01-22) [umoeller]: renamed from fsysFileInitPage
+ *@@changed V0.9.18 (2002-03-19) [umoeller]: now refreshing page when turned back to
  */
 
 VOID fsysFile1InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                        ULONG flFlags)                // CBI_* flags (notebook.h)
 {
-    // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     if (flFlags & CBI_INIT)
     {
         if (pnbp->pUser == NULL)
@@ -2020,7 +2046,8 @@ VOID fsysFile1InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                           (MPARAM)(260), MPNULL);
     }
 
-    if (flFlags & CBI_SET)
+    if (flFlags & (CBI_SET | CBI_SHOW))     // refresh page when turned back to
+                                            // V0.9.18 (2002-03-19) [umoeller]
     {
         // prepare file date/time etc. for display in window
         CHAR    szFilename[CCHMAXPATH];
@@ -2155,11 +2182,8 @@ MRESULT fsysFile1ItemChanged(PNOTEBOOKPAGE pnbp,    // notebook info struct
 {
     BOOL fUpdate = TRUE;
 
-    // CHAR    szFilename[CCHMAXPATH];
-
     switch (ulItemID)
     {
-
         case ID_XSDI_FILES_WORKAREA:
             if (_somIsA(pnbp->inbp.somSelf, _WPFolder))
             {
@@ -2315,6 +2339,7 @@ MRESULT fsysFile1ItemChanged(PNOTEBOOKPAGE pnbp,    // notebook info struct
  *      This is used by both XFolder and XFldDataFile.
  *
  *@@added V0.9.1 (2000-01-22) [umoeller]
+ *@@changed V0.9.18 (2002-03-19) [umoeller]: now refreshing page when turned back to
  */
 
 VOID fsysFile2InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
@@ -2327,7 +2352,8 @@ VOID fsysFile2InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
         WinSendMsg(hwndContents, MLM_SETREADONLY, (MPARAM)TRUE, 0);
     }
 
-    if (flFlags & CBI_SET)
+    if (flFlags & (CBI_SET | CBI_SHOW))     // refresh page when turned back to
+                                            // V0.9.18 (2002-03-19) [umoeller]
     {
         CHAR szFilename[CCHMAXPATH];
         if (_wpQueryFilename(pnbp->inbp.somSelf, szFilename, TRUE))
@@ -2335,6 +2361,7 @@ VOID fsysFile2InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
             PEALIST peal = eaPathReadAll(szFilename),
                     pealThis = peal;
             HWND hwndEAList = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_FILES_EALIST);
+            winhDeleteAllItems(hwndEAList);         // V0.9.18 (2002-03-19) [umoeller]
             while (pealThis)
             {
                 PEABINDING peabThis = pealThis->peab;
@@ -2349,6 +2376,15 @@ VOID fsysFile2InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
             }
 
             eaFreeList(peal);
+
+            // clear info fields, this might be a refresh
+            // V0.9.18 (2002-03-19) [umoeller]
+            WinSetDlgItemText(pnbp->hwndDlgPage,
+                              ID_XSDI_FILES_EAINFO,
+                              NULL);
+            WinSetDlgItemText(pnbp->hwndDlgPage,
+                              ID_XSDI_FILES_EACONTENTS,
+                              NULL);
         }
     }
 }
@@ -2378,107 +2414,106 @@ MRESULT fsysFile2ItemChanged(PNOTEBOOKPAGE pnbp,    // notebook info struct
         case ID_XSDI_FILES_EALIST:
             if (usNotifyCode == LN_SELECT)
             {
+                CHAR szFilename[CCHMAXPATH];
                 HWND hwndEAList = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_FILES_EALIST);
                 ULONG ulSelection = (ULONG)WinSendMsg(hwndEAList,
                                                       LM_QUERYSELECTION,
                                                       MPNULL,
                                                       MPNULL);
-                if (ulSelection != LIT_NONE)
+                if (    (ulSelection != LIT_NONE)
+                     && (_wpQueryFilename(pnbp->inbp.somSelf, szFilename, TRUE))
+                   )
                 {
-                    CHAR szFilename[CCHMAXPATH];
-                    if (_wpQueryFilename(pnbp->inbp.somSelf, szFilename, TRUE))
+                    PSZ pszEAName;
+                    if (pszEAName = winhQueryLboxItemText(hwndEAList,
+                                                          ulSelection))
                     {
-                        PSZ pszEAName = winhQueryLboxItemText(hwndEAList,
-                                                              ulSelection);
-                        if (pszEAName)
+                        PEABINDING peab;
+                        if (peab = eaPathReadOneByName(szFilename,
+                                                       pszEAName))
                         {
-                            PEABINDING peab = eaPathReadOneByName(szFilename,
-                                                                  pszEAName);
-                            if (peab)
+                            PSZ     pszContents = NULL;
+                            XSTRING strInfo;
+                            USHORT  usEAType = eaQueryEAType(peab);
+                            CHAR    szTemp[100];
+                            BOOL    fDumpBinary = TRUE;
+
+                            xstrInit(&strInfo, 200);
+                            xstrcpy(&strInfo, pszEAName, 0);
+
+                            switch (usEAType)
                             {
-                                PSZ     pszContents = NULL;
-                                XSTRING strInfo;
-                                USHORT  usEAType = eaQueryEAType(peab);
-                                CHAR    szTemp[100];
-                                BOOL    fDumpBinary = TRUE;
+                                case EAT_BINARY:
+                                    xstrcat(&strInfo, " (EAT_BINARY", 0);
+                                break;
 
-                                xstrInit(&strInfo, 200);
-                                xstrcpy(&strInfo, pszEAName, 0);
+                                case EAT_ASCII:
+                                    xstrcat(&strInfo, " (EAT_ASCII", 0);
+                                    pszContents = eaCreatePSZFromBinding(peab);
+                                    fDumpBinary = FALSE;
+                                break;
 
-                                switch (usEAType)
+                                case EAT_BITMAP:
+                                    xstrcat(&strInfo, " (EAT_BITMAP", 0);
+                                break;
+
+                                case EAT_METAFILE:
+                                    xstrcat(&strInfo, " (EAT_METAFILE", 0);
+                                break;
+
+                                case EAT_ICON:
+                                    xstrcat(&strInfo, " (EAT_ICON", 0);
+                                break;
+
+                                case EAT_EA:
+                                    xstrcat(&strInfo, " (EAT_EA", 0);
+                                break;
+
+                                case EAT_MVMT:
+                                    xstrcat(&strInfo, " (EAT_MVMT", 0);
+                                break;
+
+                                case EAT_MVST:
+                                    xstrcat(&strInfo, " (EAT_MVST", 0);
+                                break;
+
+                                case EAT_ASN1:
+                                    xstrcat(&strInfo, " (EAT_ASN1", 0);
+                                break;
+
+                                default:
                                 {
-                                    case EAT_BINARY:
-                                        xstrcat(&strInfo, " (EAT_BINARY", 0);
-                                    break;
-
-                                    case EAT_ASCII:
-                                        xstrcat(&strInfo, " (EAT_ASCII", 0);
-                                        pszContents = eaCreatePSZFromBinding(peab);
-                                        fDumpBinary = FALSE;
-                                    break;
-
-                                    case EAT_BITMAP:
-                                        xstrcat(&strInfo, " (EAT_BITMAP", 0);
-                                    break;
-
-                                    case EAT_METAFILE:
-                                        xstrcat(&strInfo, " (EAT_METAFILE", 0);
-                                    break;
-
-                                    case EAT_ICON:
-                                        xstrcat(&strInfo, " (EAT_ICON", 0);
-                                    break;
-
-                                    case EAT_EA:
-                                        xstrcat(&strInfo, " (EAT_EA", 0);
-                                    break;
-
-                                    case EAT_MVMT:
-                                        xstrcat(&strInfo, " (EAT_MVMT", 0);
-                                    break;
-
-                                    case EAT_MVST:
-                                        xstrcat(&strInfo, " (EAT_MVST", 0);
-                                    break;
-
-                                    case EAT_ASN1:
-                                        xstrcat(&strInfo, " (EAT_ASN1", 0);
-                                    break;
-
-                                    default:
-                                    {
-                                        sprintf(szTemp, " (type 0x%lX", usEAType);
-                                        xstrcat(&strInfo, szTemp, 0);
-                                    }
+                                    sprintf(szTemp, " (type 0x%lX", usEAType);
+                                    xstrcat(&strInfo, szTemp, 0);
                                 }
-
-                                sprintf(szTemp, ", %d bytes)", peab->usValueLength);
-                                xstrcat(&strInfo, szTemp, 0);
-
-                                if (fDumpBinary)
-                                {
-                                    pszContents = strhCreateDump(peab->pszValue,
-                                                                 peab->usValueLength,
-                                                                 0);
-                                }
-
-                                // set static above MLE
-                                WinSetDlgItemText(pnbp->hwndDlgPage,
-                                                  ID_XSDI_FILES_EAINFO,
-                                                  strInfo.psz);
-
-                                // set MLE; this might be empty
-                                WinSetDlgItemText(pnbp->hwndDlgPage,
-                                                  ID_XSDI_FILES_EACONTENTS,
-                                                  pszContents);
-
-                                eaFreeBinding(peab);
-                                xstrClear(&strInfo);
-                                if (pszContents)
-                                    free(pszContents);
                             }
-                            free(pszEAName);
+
+                            sprintf(szTemp, ", %d bytes)", peab->usValueLength);
+                            xstrcat(&strInfo, szTemp, 0);
+
+                            if (fDumpBinary)
+                            {
+                                pszContents = strhCreateDump(peab->pszValue,
+                                                             peab->usValueLength,
+                                                             0);
+                            }
+
+                            // set static above MLE
+                            WinSetDlgItemText(pnbp->hwndDlgPage,
+                                              ID_XSDI_FILES_EAINFO,
+                                              strInfo.psz);
+
+                            // set MLE; this might be empty
+                            WinSetDlgItemText(pnbp->hwndDlgPage,
+                                              ID_XSDI_FILES_EACONTENTS,
+                                              pszContents);
+
+                            eaFreeBinding(peab);
+                            xstrClear(&strInfo);
+                            if (pszContents)
+                                free(pszContents);
                         }
+                        free(pszEAName);
                     }
                 }
             }

@@ -99,6 +99,8 @@ interface XWPFileSystem : WPFileSystem
 
     wpQueryIcon: override;
 
+    wpSetIconData: override;
+
     wpRefresh: override;
 
     wpCnrRefreshDetails: override;

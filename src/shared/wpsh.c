@@ -466,8 +466,8 @@ BOOL wpshOverrideStaticMethod(SOMClass *somSelf,            // in: class object 
  */
 
 APIRET wpshStore(WPObject *somSelf,
-                 PSZ *ppszTarget,
-                 PCSZ pcszSource,
+                 PSZ *ppszTarget,         // in/out: string pointer
+                 PCSZ pcszSource,         // in: string to store
                  PULONG pulLength)        // out: length of new string (ptr can be NULL)
 {
     ULONG   ulLength = 0;

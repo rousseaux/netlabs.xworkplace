@@ -88,6 +88,10 @@ interface XWPProgramFile : WPProgramFile
     ULONG       ulDosAppType;    // return value from DosQueryAppType
     ULONG       ulAppType;       // XFPGMF_* flag
 
+    PSZ         pWszUsingIconFile;      // if we are using an .ICO file for the
+                                        // icon, this holds the icon filename
+                                        // V0.9.18 (2002-03-19) [umoeller]
+
     // pointers into WPProgramFile instance data
     PULONG      pulStartupDirHandle;        // 16-bit file-system handle for startup dir
     PPROGTYPE   pProgType;                  // prog type and visibility flag; two ULONGs!
@@ -108,6 +112,7 @@ interface XWPProgramFile : WPProgramFile
 
     wpSetProgIcon: override;
     wpQueryIconData: override;
+    wpSetIconData: override;
 
     wpSetAssociationType: override;
 

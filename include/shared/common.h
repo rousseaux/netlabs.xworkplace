@@ -442,7 +442,7 @@
         DECLARE_CMN_STRING(ENTITY_XCENTER, "XCenter");
         DECLARE_CMN_STRING(ENTITY_XSHUTDOWN, "XShutdown");
     #else
-        DECLARE_CMN_STRING(ENTITY_XWORKPLACE, "eWorkplace");
+        DECLARE_CMN_STRING(ENTITY_XWORKPLACE, "eComStation");
         DECLARE_CMN_STRING(ENTITY_OS2, "eComStation");
         DECLARE_CMN_STRING(ENTITY_WARPCENTER, "eComCenter");
         DECLARE_CMN_STRING(ENTITY_XCENTER, "eCenter");
@@ -789,7 +789,7 @@
 #ifndef __NOCFGSTATUSBARS__
         sfStatusBars,
 #endif
-#ifndef __ALWAYSCHECKDESKTOP__
+#ifndef __NEVERCHECKDESKTOP__
         sfCheckDesktop,
 #endif
 #ifndef __NOSNAPTOGRID__
@@ -1167,6 +1167,7 @@
 
     APIRET cmnGetStandardIcon(ULONG ulStdIcon,
                               HPOINTER *phptr,
+                              PULONG pcbIconInfo,
                               PICONINFO pIconInfo);
 
     BOOL cmnIsStandardIcon(HPOINTER hptrIcon);

@@ -25,12 +25,23 @@ the pager window now drags across virtual screens, keeping the window's position
 the desktop's integrity on startup, since so many people had problems with it.
 Added a corresponding flag to the "Panic" dialog also.
 
+<P><LI>Object button widgets are no longer shown in the "Add widget" menu since
+they were always disabled anyway.
+
+<P><LI>Saved a previous PM timer in the Worker thread that was used for
+close to nothing.
+
 </UL>Bugfixes:
 
 <UL><LI>Common: Fixed another problem with AM/PM (12-hour) time display, which
 always ended up with "00:" when "12:" should have been displayed.
 
-<P><LI>Extended associations: Fixed memory problems with my WinStartApp wrapper which
+<P><LI>Program objects: Fixed a bunch of problems with programs not starting
+and the bug that program objects could no longer be created properly at all.
+Duh, that was a hard one. Added exception handling to a number of replacement
+methods too.
+
+<P><LI>Programs: Fixed memory problems with my WinStartApp wrapper which
 sometimes ate parts of the environment of the process to be started.
 
 <P><LI>Turbo folders: Miscellanous fixes for thread synchronization problems which
@@ -40,6 +51,10 @@ could lead to duplicate objects for the same file.
 
 <P><LI>File dialog: Large number of fixes for duplicate objects in tree view plus
 frequent bad scrolling.
+
+<P><LI>XCenter: Knut St. Osmundsen fixed a bunch of display problems introduced
+with the recent SMP update. He reported this now works fine on SMP. Display
+looks much better now.
 
 <P><LI>&pgr;: Martin Lafaix fixed a large number of glitches with &pgr;'s display
 plus some problems with minimized/maximized windows.

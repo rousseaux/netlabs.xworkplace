@@ -70,6 +70,8 @@ interface XFldDataFile : WPDataFile
      *
      */
 
+    BOOL        fHasIconEA;            // set to TRUE in wpRestoreState if so
+
     /*
      * The following is forced into the .H file:
      *
@@ -80,6 +82,7 @@ interface XFldDataFile : WPDataFile
      *
      */
 
+    wpInitData: override;
     wpRestoreState: override;
 
     wpDisplayMenu: override;
@@ -99,10 +102,11 @@ interface XFldDataFile : WPDataFile
     wpQueryDefaultHelp: override;
     wpQueryAssociatedProgram: override;
     wpQueryAssociatedFileIcon: override;
+    wpSetAssociatedFileIcon: override;
 
     wpQueryIcon: override;
     wpQueryIconData: override;
-    wpSetAssociatedFileIcon: override;
+    wpSetIconData: override;
 
 #ifdef __PRIVATE__
 

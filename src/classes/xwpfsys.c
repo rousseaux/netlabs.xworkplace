@@ -62,6 +62,7 @@
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSPROCESS
 #define INCL_DOSERRORS
+#define INCL_WINPOINTERS
 #include <os2.h>
 
 // C library headers
@@ -91,6 +92,7 @@
 #include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\filetype.h"           // extended file types implementation
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\icons.h"              // icons handling
 
 // other SOM headers
 #pragma hdrstop
@@ -417,6 +419,85 @@ SOM_Scope HPOINTER  SOMLINK xfs_wpQueryIcon(XWPFileSystem *somSelf)
         hptrReturn = XWPFileSystem_parent_WPFileSystem_wpQueryIcon(somSelf);
 
     return (hptrReturn);
+}
+
+/*
+ *@@ wpSetIconData:
+ *      this WPObject method sets a new persistent icon for
+ *      the object and stores the new icon permanently.
+ *
+ *      We need to override this for our icon replacements
+ *      because the WPS will do evil things to our standard
+ *      icons again.
+ *
+ *      Note that XFldProgramFile and XWPProgramFile override
+ *      this too to support their better ICON_CLEAR case.
+ *
+ *@@added V0.9.18 (2002-03-19) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfs_wpSetIconData(XWPFileSystem *somSelf,
+                                          PICONINFO pIconInfo)
+{
+    CHAR        szFilename[CCHMAXPATH];
+    HPOINTER    hptrNew = NULLHANDLE;
+
+    XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
+    XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpSetIconData");
+
+    if (icoRunReplacement())
+    {
+        BOOL    brc = FALSE;
+        BOOL    fNotDefaultIcon = FALSE;
+
+        if (    (pIconInfo)
+             && (_wpQueryFilename(somSelf, szFilename, TRUE))
+           )
+        {
+            switch (pIconInfo->fFormat)
+            {
+                case ICON_DATA:
+                case ICON_RESOURCE:
+                case ICON_FILE:
+                    // WinSetFileIcon supports this
+                    if (WinSetFileIcon(szFilename, pIconInfo))
+                    {
+                        // change the visible icon too
+                        if (hptrNew = WinLoadFileIcon(szFilename, FALSE))
+                            fNotDefaultIcon = TRUE;
+
+                        brc = TRUE;
+                    }
+                break;
+
+                case ICON_CLEAR:
+                    // WinSetFileIcon(ICON_CLEAR) clears the .ICON
+                    // EA for us, so no need to worry...
+                    // note, this case is now overridden by XFldDataFile
+                    // and XWPProgramFile
+                    if (WinSetFileIcon(szFilename, pIconInfo))
+                    {
+                        // use class default icon
+                        hptrNew = _wpclsQueryIcon(_somGetClass(somSelf));
+                        brc = TRUE;
+                    }
+                break;
+            }
+        }
+
+        if (hptrNew)
+        {
+            _wpSetIcon(somSelf, hptrNew);
+            _wpModifyStyle(somSelf,
+                           OBJSTYLE_NOTDEFAULTICON,
+                           (fNotDefaultIcon) ? OBJSTYLE_NOTDEFAULTICON : 0);
+        }
+
+        return (brc);
+    }
+
+    return (XWPFileSystem_parent_WPFileSystem_wpSetIconData(somSelf,
+                                                            pIconInfo));
 }
 
 /*

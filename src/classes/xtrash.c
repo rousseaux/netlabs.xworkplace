@@ -475,6 +475,7 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpSetCorrectTrashIcon(XWPTrashCan *somSelf,
 
                 if (!cmnGetStandardIcon(ulID,
                                         &hptr,
+                                        NULL,
                                         NULL))
                                 // V0.9.16 (2002-01-01) [umoeller]
                 {

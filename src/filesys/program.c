@@ -700,21 +700,57 @@ ULONG progQueryProgType(PCSZ pszFullFile,
  *      In that case the OBJSTYLE_NOTDEFAULTICON flag must be
  *      set clear.
  *
- *      This is shared code between XWPProgram and XWPProgramFile.
+ *      This is shared code between XWPProgram and XWPProgramFile,
+ *      for both the wpSetProgicon and the wpQueryIconData
+ *      method overrides.
+ *
+ *      This can be called in several modes:
+ *
+ *      --  If phptr != NULL, this builds an icon for wpSetProgIcon
+ *          to be used for the object and puts the icon handle
+ *          into that buffer.
+ *
+ *      --  If pcbIconInfo != NULL, this puts the required size
+ *          for the ICONINFO to be returned into that buffer.
+ *          This is to support wpQueryIconData with a NULL
+ *          pIconInfo where the required size must be returned.
+ *
+ *      --  If pIconInfo != NULL, this assumes that pIconInfo
+ *          points to an ICONINFO structure with a sufficient
+ *          size for returning the icon data.
+ *          See XWPProgramFile::wpQueryIconData for information
+ *          about the formats. This is to support the second
+ *          wpQueryIconData call where the caller has allocated
+ *          a sufficient buffer and wants the data.
+ *
+ *          Note that we cannot check whether the buffer is large
+ *          enough to hold the data because the stupid
+ *          wpQueryIconData method definition has no way to tell
+ *          how large the input buffer really is (since it only
+ *          _returns_ the size of the data). Bad design, really.
+ *
+ *      Returns:
+ *
+ *      --  NO_ERROR: output data was set.
+ *
+ *      --  ERROR_PROTECTION_VIOLATION
  *
  *@@added V0.9.16 (2002-01-01) [umoeller]
+ *@@changed V0.9.18 (2002-03-16) [umoeller]: added support for wpQueryIconData
  */
 
 APIRET progFindIcon(PEXECUTABLE pExec,          // in: executable from exehOpen
                     ULONG ulAppType,            // in: PROG_* app type
                     HPOINTER *phptr,            // out: if != NULL, icon handle
+                    PULONG pcbIconInfo,         // out: if != NULL, size of ICONINFO buffer required
                     PICONINFO pIconInfo,        // out: if != NULL, icon info
-                    PBOOL pfNotDefaultIcon)     // out: set to TRUE if non-default icon
+                    PBOOL pfNotDefaultIcon)     // out: set to TRUE if non-default icon (ptr can be NULL)
 {
     APIRET      arc = NO_ERROR;
     ULONG       ulStdIcon = 0;
 
-    *pfNotDefaultIcon = FALSE;
+    if (pfNotDefaultIcon)
+        *pfNotDefaultIcon = FALSE;
 
     TRY_LOUD(excpt1)
     {
@@ -743,14 +779,48 @@ APIRET progFindIcon(PEXECUTABLE pExec,          // in: executable from exehOpen
             case PROG_31_STD:
 
             case PROG_WIN32:                    // we get this for non-DLL PE!
+            {
+                // prepare ICONINFO bufs if caller wants them
+                ULONG cbRequired = sizeof(ICONINFO);
+                ULONG cbIconData;
+                PULONG pcbIconData = NULL;
+                PBYTE pbIconData = NULL;
+                if (pIconInfo)
+                {
+                    // caller wants data (second querydata call):
+                    // assume that the buffer is large enough
+                    pbIconData = (PBYTE)(pIconInfo + 1);
+                }
+                if (pcbIconInfo)
+                {
+                    // caller needs required size (first querydata call):
+                    pcbIconData = &cbIconData;
+                    // leave pbIconData NULL, so we get the size only
+                }
+
                 // try icon resource
                 if (!icoLoadExeIcon(pExec,
-                                    0,          // first icon found
-                                    phptr,
-                                    NULL,
-                                    NULL))
+                                    0,              // first icon found
+                                    phptr,          // HPOINTER*, can be NULL
+                                    pcbIconData,    // PULONG pcbIconData, can be NULL
+                                    pbIconData))    // PBYTE pbIconData, can be NULL
                 {
-                    *pfNotDefaultIcon = TRUE;
+                    if (pfNotDefaultIcon)
+                        *pfNotDefaultIcon = TRUE;
+
+                    cbRequired += cbIconData;
+
+                    if (pIconInfo)
+                    {
+                        ZERO(pIconInfo);
+                        pIconInfo->cb = cbRequired;
+                        pIconInfo->fFormat = ICON_DATA;
+                        pIconInfo->cbIconData = cbIconData;
+                        pIconInfo->pIconData = pbIconData;
+                    }
+
+                    if (pcbIconInfo)
+                        *pcbIconInfo = cbRequired;
                 }
                 else
                     if (ulAppType == PROG_PM)
@@ -759,6 +829,7 @@ APIRET progFindIcon(PEXECUTABLE pExec,          // in: executable from exehOpen
                         ulStdIcon = STDICON_WIN32;
                     else
                         ulStdIcon = STDICON_WIN16; // default windoze
+            }
             break;
 
             case PROG_WINDOWABLEVIO:
@@ -799,9 +870,13 @@ APIRET progFindIcon(PEXECUTABLE pExec,          // in: executable from exehOpen
         }
 
         if (ulStdIcon)
+        {
             cmnGetStandardIcon(ulStdIcon,
-                               phptr,
-                               NULL);
+                               phptr,           // can be NULL
+                               pcbIconInfo,     // can be NULL
+                               pIconInfo);      // can be NULL
+
+        }
     }
     CATCH(excpt1)
     {

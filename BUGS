@@ -19,16 +19,7 @@ CURRENT PROBLEMS
 
 --  override all wpQuery/SetIconData too
 
---  align icon page 2 for folders
-
 --  program objects:
-
-    --  changes in the properties of a program object is not reflected
-        1) change path in properties
-        2) wps doesn't pick up change on double-click
-        3) path is still correct in properties
-
-    --  conflicts with dragtext
 
     --  still hangs with many VIO programs if not started on thread 1
 

@@ -319,7 +319,9 @@
 #ifndef __NOTURBOFOLDERS__
 #define ID_XFDI_PANIC_DISABLETURBOFOLDERS 419   // V0.9.16 (2001-10-25) [umoeller]
 #endif
+#ifndef __NEVERCHECKDESKTOP__
 #define ID_XFDI_PANIC_DISABLECHECKDESKTOP   420    // V0.9.17 (2002-02-05) [umoeller]
+#endif
 
 /******************************************
  * "Workplace Shell" (XFldWPS)     >= 500 *
@@ -2019,7 +2021,7 @@
 #define ID_XCSI_RESTARTWPS              6022
 #define ID_XCSI_XSHUTDOWN               6023
 #endif
-#ifndef __ALWAYSCHECKDESKTOP__
+#ifndef __NEVERCHECKDESKTOP__
 #define ID_XCSI_CHECKDESKTOP            6024
 #endif
 

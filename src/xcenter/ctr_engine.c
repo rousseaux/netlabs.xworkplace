@@ -3514,6 +3514,8 @@ static MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, M
              *      and its actual object pointer will no
              *      longer work.
              *
+             *      Found the message in the DDK headers.
+             *
              * added V0.9.16 (2002-01-13) [umoeller]
              */
 
@@ -3871,6 +3873,7 @@ static MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, M
  *
  *@@added V0.9.7 (2001-01-18) [umoeller]
  *@@changed V0.9.13 (2001-06-19) [umoeller]: added spacing lines painting
+ *@@changed V0.9.18 (2002-03-19) [umoeller]: changed bottom 3D color to black
  */
 
 static VOID ClientPaint2(HWND hwndClient,
@@ -3901,7 +3904,8 @@ static VOID ClientPaint2(HWND hwndClient,
                             &rclWin,            // inclusive
                             ul3DBorderWidth,      // width
                             pGlobals->lcol3DLight,
-                            pGlobals->lcol3DDark);
+                            RGBCOL_BLACK); // pGlobals->lcol3DDark);
+                                    // V0.9.18 (2002-03-19) [umoeller]
 
             rclWin.xLeft += ul3DBorderWidth;
             rclWin.xRight -= ul3DBorderWidth;
@@ -3921,7 +3925,7 @@ static VOID ClientPaint2(HWND hwndClient,
             {
                 // XCenter on top:
                 // draw dark line on bottom
-                GpiSetColor(hps, pGlobals->lcol3DDark);
+                GpiSetColor(hps, RGBCOL_BLACK); // pGlobals->lcol3DDark);
                 yLine = rclWin.yBottom;
                 // exclude bottom from client rectangle for later
                 rclWin.yBottom += ul3DBorderWidth;
@@ -4550,11 +4554,9 @@ static MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, 
 
             case WM_BUTTON1DOWN:
             case WM_BUTTON2DOWN:
-            {
-                PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
                 G_fSizeable = FALSE;
                 G_pViewOver = NULL;
-                G_ulWidgetFromXY = FindWidgetFromClientXY(pXCenterData,
+                G_ulWidgetFromXY = FindWidgetFromClientXY((PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER),
                                                           NULLHANDLE,
                                                           SHORT1FROMMP(mp1),
                                                           SHORT2FROMMP(mp1),
@@ -4562,7 +4564,6 @@ static MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, 
                                                           &G_pViewOver,
                                                           NULL);
                 mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
-            }
             break;
 
             /*
@@ -4650,10 +4651,9 @@ static MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, 
             // break;
 
             case XCM_SETWIDGETSIZE:
-            {
-                PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
-                SetWidgetSize(pXCenterData, (HWND)mp1, (ULONG)mp2);
-            }
+                SetWidgetSize((PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER),
+                              (HWND)mp1,
+                              (ULONG)mp2);
             break;
 
             case XCM_REFORMAT:
@@ -4671,9 +4671,9 @@ static MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, 
 
             case XCM_CREATEWIDGET:
             {
+                PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
                 // this msg is only used for creating the window on the
                 // GUI thread because method calls may run on any thread...
-                PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
                 ctrpCreateWidgetWindow(pXCenterData,
                                        NULL,        // no owning tray
                                        &pXCenterData->llWidgets,

@@ -14,6 +14,7 @@
 #define xcenter "eCenter"
 #define xbutton "eButton"
 #define xshutdown "eShutdown"
+#define pgr "ePager"
 
 #define cfgsys "<CODE>CONFIG.SYS</CODE>"
 

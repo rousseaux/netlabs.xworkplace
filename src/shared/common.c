@@ -1737,14 +1737,26 @@ static PICONTREENODE LoadNewIcon(ULONG ulStdIcon)
  *          ID. Note that the HPOINTER is built even
  *          if (phptr == NULL) for later calls.
  *
- *      --  If (pIconInfo != NULL), pIconInfo is fully
- *          filled with data for wpQueryIconInfo.
- *          fFormat is set to either ICON_FILE or
- *          ICON_RESOURCE, depending on where the internal
- *          standard icon was retrieved from, and the
- *          other fields are either zeroed or set accordingly.
- *          Freeing these values is not necessary and
- *          taken care of by the cache functions.
+ *      --  If (pcbIconInfo != NULL), this puts the required size
+ *          for the ICONINFO to be returned into that buffer.
+ *          This is to support wpQueryIconData with a NULL
+ *          pIconInfo where the required size must be returned.
+ *
+ *      --  If (pIconInfo != NULL), this assumes that pIconInfo
+ *          points to an ICONINFO structure with a sufficient
+ *          size for returning the icon data.
+ *          See XWPProgramFile::wpQueryIconData for information
+ *          about the formats. This is to support the second
+ *          wpQueryIconData call where the caller has allocated
+ *          a sufficient buffer and wants the data.
+ *          Note that we cannot check whether the buffer is large
+ *          enough to hold the data because the stupid
+ *          wpQueryIconData method definition has no way to tell
+ *          how large the input buffer really is (since it only
+ *          _returns_ the size of the data). Bad design, really.
+ *          This function will always set ICONINFO.fFormat to
+ *          either ICON_FILE or ICON_RESOURCE, depending on
+ *          where the internal standard icon was retrieved from.
  *
  *      As indicated above, for the same ID, this will reuse
  *      the same HPOINTER to reduce the load on PM. This is
@@ -1765,7 +1777,7 @@ static PICONTREENODE LoadNewIcon(ULONG ulStdIcon)
  *      --  The various wpclsQueryIconData overrides to
  *          change WPS default icons (folders, data files,
  *          desktops). To support ICON_FILE, we have also
- *          overridden XFldObject::wpclsSetIconData (see
+ *          overridden M_XFldObject::wpclsSetIconData (see
  *          remarks there).
  *
  *      --  The trash can to load the open and closed
@@ -1774,11 +1786,23 @@ static PICONTREENODE LoadNewIcon(ULONG ulStdIcon)
  *      --  Program (files) to get default icons for the
  *          various executable types.
  *
+ *      Returns:
+ *
+ *      --  NO_ERROR: data was set.
+ *
+ *      --  ERROR_TIMEOUT: internal mutex failed somehow.
+ *
+ *      --  ERROR_NOT_ENOUGH_MEMORY
+ *
+ *      --  ERROR_PROTECTION_VIOLATION
+ *
  *@@added V0.9.16 (2001-12-08) [umoeller]
+ *@@changed V0.9.18 (2002-03-19) [umoeller]: added pcbIconInfo for proper wpQueryIconData support
  */
 
 APIRET cmnGetStandardIcon(ULONG ulStdIcon,
-                          HPOINTER *phptr,      // out: if != NULL, icon handle
+                          HPOINTER *phptr,      // out: if != NULL, newly build icon handle
+                          PULONG pcbIconInfo,   // out: if != NULL, size of ICONINFO buffer required
                           PICONINFO pIconInfo)  // out: if != NULL, icon info
 {
     BOOL        fLocked = FALSE;
@@ -1786,7 +1810,9 @@ APIRET cmnGetStandardIcon(ULONG ulStdIcon,
 
     TRY_LOUD(excpt1)
     {
-        if (fLocked = LockIcons())
+        if (!(fLocked = LockIcons()))
+            arc = ERROR_TIMEOUT;        // V0.9.18 (2002-03-16) [umoeller]
+        else
         {
             // icon loaded yet?
             PICONTREENODE pNode;
@@ -1799,20 +1825,35 @@ APIRET cmnGetStandardIcon(ULONG ulStdIcon,
 
             if (pNode)
             {
+                ULONG cbRequired = sizeof(ICONINFO);
+                ULONG ulNameLen = 0;
+
+                if (pNode->pszIconFile)
+                {
+                    // loaded from file:
+                    ulNameLen = strlen(pNode->pszIconFile);
+                    cbRequired += ulNameLen + 1;
+                }
+
                 // output data, depending on what
                 // the caller wants
                 if (phptr)
                     *phptr = pNode->hptr;
 
+                if (pcbIconInfo)
+                    *pcbIconInfo = cbRequired;          // V0.9.18 (2002-03-19) [umoeller]
+
                 if (pIconInfo)
                 {
                     ZERO(pIconInfo);
-                    pIconInfo->cb = sizeof(ICONINFO);
-                    if (pNode->pszIconFile)
+                    pIconInfo->cb = cbRequired;
+                    if (ulNameLen)
                     {
                         // loaded from file:
+                        PSZ psz = (PSZ)(pIconInfo + 1);
                         pIconInfo->fFormat = ICON_FILE;
-                        pIconInfo->pszFileName = pNode->pszIconFile;
+                        memcpy(psz, pNode->pszIconFile, ulNameLen + 1);
+                        pIconInfo->pszFileName = psz;
                     }
                     else
                     {
@@ -2623,7 +2664,7 @@ static const SETTINGINFO G_aSettingInfos[] =
             "ulSaveINIS",
 #endif
 
-#ifndef __ALWAYSCHECKDESKTOP__
+#ifndef __NEVERCHECKDESKTOP__
         sfCheckDesktop, -1, 0,
             SP_SETUP_FEATURES, 1,
             "fCheckDesktop",

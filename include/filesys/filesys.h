@@ -193,6 +193,12 @@
 
     APIRET fsysCreateFindBuffer(PEAOP2 *pp);
 
+    APIRET fsysFillFindBuffer(PCSZ pszFilename,
+                              PFILEFINDBUF3 *ppfb3,
+                              PEAOP2 *ppeaop);
+
+    VOID fsysFreeFindBuffer(PEAOP2 *pp);
+
     PBYTE fsysFindEAValue(PFEA2LIST pFEA2List2,
                           PCSZ pcszEAName,
                           PUSHORT pcbValue);

@@ -306,11 +306,13 @@ static CONTROLDEF
                             ID_XFDI_PANIC_NOARCHIVING,
                             -1,
                             -1),
+#ifndef __NEVERCHECKDESKTOP__
     DisableCheckDesktopCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,
                             ID_XFDI_PANIC_DISABLECHECKDESKTOP,
                             -1,
                             -1),
+#endif
     DisableReplRefreshCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,
                             ID_XFDI_PANIC_DISABLEREPLREFRESH,
@@ -410,8 +412,10 @@ static const DLGHITEM dlgPanic[] =
 #endif
             START_ROW(0),
                 CONTROL_DEF(&SkipArchivingCB),
+#ifndef __NEVERCHECKDESKTOP__
             START_ROW(0),
                 CONTROL_DEF(&DisableCheckDesktopCB),
+#endif
             START_ROW(0),
                 CONTROL_DEF(&DisableReplRefreshCB),
 #ifndef __NOTURBOFOLDERS__
@@ -555,8 +559,10 @@ static VOID ShowPanicDlg(BOOL fForceShow)      // V0.9.17 (2002-02-05) [umoeller
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_NOARCHIVING,
                               cmnQuerySetting(sfReplaceArchiving));
 #endif
+#ifndef __NEVERCHECKDESKTOP__
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLECHECKDESKTOP,
                               cmnQuerySetting(sfCheckDesktop));
+#endif
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEREPLREFRESH,
                               krnReplaceRefreshEnabled());
 #ifndef __NOTURBOFOLDERS__
@@ -599,8 +605,10 @@ static VOID ShowPanicDlg(BOOL fForceShow)      // V0.9.17 (2002-02-05) [umoeller
                         pArcSettings->ulArcFlags &= ~ARCF_ENABLED;
                     }
 
+#ifndef __NEVERCHECKDESKTOP__
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLECHECKDESKTOP))
                         cmnSetSetting(sfCheckDesktop, FALSE);
+#endif
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEREPLREFRESH))
                         krnEnableReplaceRefresh(FALSE);
 #ifndef __NOTURBOFOLDERS__
@@ -1257,6 +1265,7 @@ VOID initMain(VOID)
                 G_usHiwordAbstract = ((PHANDLESBUF)hHandles)->usHiwordAbstract;
                 G_usHiwordFileSystem = ((PHANDLESBUF)hHandles)->usHiwordFileSystem;
 
+#ifndef __NEVERCHECKDESKTOP__
                 if (cmnQuerySetting(sfCheckDesktop)) // V0.9.17 (2002-02-05) [umoeller]
                 {
                     // go build the handles cache explicitly... CheckDesktop
@@ -1298,6 +1307,7 @@ VOID initMain(VOID)
                     }
                 } // if (cmnQuerySetting(sfCheckDesktop)) // V0.9.17 (2002-02-05) [umoeller]
                 else
+#endif
                     G_ulDesktopValid = DESKTOP_VALID;
 
                 wphFreeHandles(&hHandles);

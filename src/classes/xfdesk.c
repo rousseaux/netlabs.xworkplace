@@ -664,11 +664,15 @@ SOM_Scope ULONG  SOMLINK xfdeskM_wpclsQueryIconData(M_XFldDesktop *somSelf,
 
         // now using cmnGetStandardIcon
         // V0.9.16 (2002-01-13) [umoeller]
-        if (pIconInfo)
-            if (!cmnGetStandardIcon(STDICON_DESKTOP_CLOSED,
-                                    NULL,            // no hpointer
-                                    pIconInfo))      // fill icon info
-                ulrc = sizeof(ICONINFO);
+        ULONG cb = 0;
+        if (!cmnGetStandardIcon(STDICON_DESKTOP_CLOSED,
+                                NULL,            // no hpointer
+                                &cb,
+                                pIconInfo))      // fill icon info
+            return cb;
+
+        return 0;
+
     }
 
     if (!ulrc)
@@ -709,11 +713,14 @@ SOM_Scope ULONG  SOMLINK xfdeskM_wpclsQueryIconDataN(M_XFldDesktop *somSelf,
 
         // now using cmnGetStandardIcon
         // V0.9.16 (2002-01-13) [umoeller]
-        if (pIconInfo)
-            if (!cmnGetStandardIcon(STDICON_DESKTOP_OPEN,
-                                    NULL,            // no hpointer
-                                    pIconInfo))      // fill icon info
-                ulrc = sizeof(ICONINFO);
+        ULONG cb = 0;
+        if (!cmnGetStandardIcon(STDICON_DESKTOP_OPEN,
+                                NULL,            // no hpointer
+                                &cb,
+                                pIconInfo))      // fill icon info
+            return cb;
+
+        return 0;
     }
 
     if (!ulrc)

@@ -427,9 +427,11 @@ APIRET icoBuildPtrHandle(PBYTE pbData,
  *          data is copied into that buffer. The
  *          caller is responsible for allocating
  *          and freeing that buffer.
- *
- *          In that case, *pcbIconData must also
- *          contain the size of the buffer on input.
+ *          To properly support wpQueryIconData
+ *          where it is impossible to tell the
+ *          function what size the passed-in buffer
+ *          is, we do not check whether the buffer
+ *          is sufficiently large (V0.9.18).
  *
  *      The above is only valid if NO_ERROR is
  *      returned.
@@ -445,16 +447,18 @@ APIRET icoBuildPtrHandle(PBYTE pbData,
  *          pbIconData was != NULL.
  *
  *      --  ERROR_BUFFER_OVERFLOW: *pcbIconData is too
- *          small a size of pbIconData.
+ *          small a size of pbIconData. (No longer
+ *          returned, V0.9.18).
  *
  *      plus the error codes of icoBuildPtrHandle.
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
+ *@@changed V0.9.18 (2002-03-19) [umoeller]: no longer checking buffer size
  */
 
 APIRET icoLoadICOFile(PCSZ pcszFilename,
                       HPOINTER *phptr,          // out: if != NULL, newly built HPOINTER
-                      PULONG pcbIconData,       // in/out: if != NULL, size of buffer required
+                      PULONG pcbIconData,       // out: if != NULL, size of buffer required
                       PBYTE pbIconData)         // out: if != NULL, icon data that was loaded
 {
     APIRET  arc = NO_ERROR;
@@ -495,11 +499,11 @@ APIRET icoLoadICOFile(PCSZ pcszFilename,
                                         phptr);
 
             if (pbIconData)
-                if (!pcbIconData)
+                /* if (!pcbIconData)
                     arc = ERROR_INVALID_PARAMETER;
                 else if (*pcbIconData < cbData)
                     arc = ERROR_BUFFER_OVERFLOW;
-                else
+                else */     // V0.9.18 (2002-03-19) [umoeller]
                     memcpy(pbIconData,
                            pbData,
                            cbData);
@@ -543,16 +547,18 @@ APIRET icoLoadICOFile(PCSZ pcszFilename,
  *          pbIconData was != NULL.
  *
  *      --  ERROR_BUFFER_OVERFLOW: *pcbIconData is too
- *          small a size of pbIconData.
+ *          small a size of pbIconData. (No longer
+ *          returned, V0.9.18).
  *
  *      plus the error codes of icoBuildPtrHandle.
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
+ *@@changed V0.9.18 (2002-03-19) [umoeller]: no longer checking buffer size
  */
 
 APIRET icoBuildPtrFromFEA2List(PFEA2LIST pFEA2List,     // in: FEA2LIST to check for .ICON EA
                                HPOINTER *phptr,         // out: if != NULL, newly built HPOINTER
-                               PULONG pcbIconData,      // in/out: if != NULL, size of buffer required
+                               PULONG pcbIconData,      // out: if != NULL, size of buffer required
                                PBYTE pbIconData)        // out: if != NULL, icon data that was loaded
 {
     APIRET arc = NO_ERROR;
@@ -583,11 +589,11 @@ APIRET icoBuildPtrFromFEA2List(PFEA2LIST pFEA2List,     // in: FEA2LIST to check
                                                 phptr);
 
                     if (pbIconData)
-                        if (!pcbIconData)
+                        /* if (!pcbIconData)
                             arc = ERROR_INVALID_PARAMETER;
                         else if (*pcbIconData < cbData)
                             arc = ERROR_BUFFER_OVERFLOW;
-                        else
+                        else */ // V0.9.18 (2002-03-19) [umoeller]
                             memcpy(pbIconData,
                                    pbData,
                                    cbData);
@@ -603,6 +609,94 @@ APIRET icoBuildPtrFromFEA2List(PFEA2LIST pFEA2List,     // in: FEA2LIST to check
         }
         else
             arc = ERROR_NO_DATA;
+    }
+
+    return (arc);
+}
+
+/*
+ *@@ icoBuildPtrFromEAs:
+ *      checks if the given file has an .ICON EA
+ *      and, if so, calls icoBuildPtrFromFEA2List.
+ *
+ *      Only if NO_ERROR is returned, the output depends
+ *      on the pointers that are passed in:
+ *
+ *      --  If (phptr != NULL), *phptr receives the
+ *          HPOINTER that was built from the .ICON EA.
+ *
+ *      --  If (pcbIconInfo != NULL), this puts the required size
+ *          for the ICONINFO to be returned into that buffer.
+ *          This is to support wpQueryIconData with a NULL
+ *          pIconInfo where the required size must be returned.
+ *          This will always be sizeof(ICONINFO) plus the
+ *          size of the buffer for the icon data from the EA.
+ *
+ *      --  If (pIconInfo != NULL), this assumes that pIconInfo
+ *          points to an ICONINFO structure with a sufficient
+ *          size for returning the icon data.
+ *          Note that we cannot check whether the buffer is large
+ *          enough to hold the data because the stupid
+ *          wpQueryIconData method definition has no way to tell
+ *          how large the input buffer really is (since it only
+ *          _returns_ the size of the data). Bad design, really.
+ *          This function will always set ICONINFO.fFormat to
+ *          ICON_DATA in that case, and adjust cbIconData and
+ *          pIconData. The icon data is put right after the
+ *          ICONINFO structure in the buffer.
+ *
+ *@@added V0.9.18 (2002-03-19) [umoeller]
+ */
+
+APIRET icoBuildPtrFromEAs(PCSZ pcszFilename,
+                          HPOINTER *phptr,      // out: if != NULL, newly build icon handle
+                          PULONG pcbIconInfo,   // out: if != NULL, size of ICONINFO buffer required
+                          PICONINFO pIconInfo)  // out: if != NULL, icon info
+{
+    APIRET          arc;
+    PFILEFINDBUF3   pfb3;
+    PEAOP2          peaop = NULL;
+
+    ULONG           cbRequired = sizeof(ICONINFO);
+
+    if (!(arc = fsysFillFindBuffer(pcszFilename,
+                                   &pfb3,
+                                   &peaop)))
+    {
+        ULONG cbData;
+        PBYTE pbIconData = NULL;
+
+        PFEA2LIST pFEA2List2 = (PFEA2LIST)(   ((PBYTE)pfb3)
+                                            + FIELDOFFSET(FILEFINDBUF3,
+                                                          cchName));
+
+        // if caller has given us a buffer already,
+        // use that
+        if (pIconInfo)
+            pbIconData = (PBYTE)(pIconInfo + 1);
+
+        if (!(arc = icoBuildPtrFromFEA2List(pFEA2List2,
+                                            NULL,     // hptr
+                                            &cbData,
+                                            pbIconData)))
+        {
+            // got it:
+            cbRequired += cbData;
+            if (pIconInfo)
+            {
+                // caller wants data too:
+                ZERO(pIconInfo);
+                pIconInfo->cb = cbRequired;
+                pIconInfo->fFormat = ICON_DATA;
+                pIconInfo->cbIconData = cbData;
+                pIconInfo->pIconData = pbIconData;
+            }
+
+            if (pcbIconInfo)
+                *pcbIconInfo = cbRequired;
+        }
+
+        fsysFreeFindBuffer(&peaop);
     }
 
     return (arc);
@@ -1851,17 +1945,19 @@ APIRET LoadWinPEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
  *          pbIconData was != NULL.
  *
  *      --  ERROR_BUFFER_OVERFLOW: *pcbIconData is too
- *          small a size of pbIconData.
+ *          small a size of pbIconData. (No longer
+ *          returned, V0.9.18.)
  *
  *      plus the error codes of exehOpen and icoBuildPtrHandle.
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
+ *@@changed V0.9.18 (2002-03-19) [umoeller]: no longer checking buffer size
  */
 
 APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
                       ULONG idResource,         // in: resource ID or 0 for first
                       HPOINTER *phptr,          // out: if != NULL, newly built HPOINTER
-                      PULONG pcbIconData,       // in/out: if != NULL, size of buffer required
+                      PULONG pcbIconData,       // out: if != NULL, size of buffer required
                       PBYTE pbIconData)         // out: if != NULL, icon data that was loaded
 {
     APIRET  arc;
@@ -1943,11 +2039,11 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
                                             phptr);
 
                 if (pbIconData)
-                    if (!pcbIconData)
+                    /* if (!pcbIconData)
                         arc = ERROR_INVALID_PARAMETER;
                     else if (*pcbIconData < cbData)
                         arc = ERROR_BUFFER_OVERFLOW;
-                    else
+                    else */ // V0.9.18 (2002-03-19) [umoeller]
                         memcpy(pbIconData,
                                pbData,
                                cbData);
@@ -1979,6 +2075,32 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
  *   Object icon management
  *
  ********************************************************************/
+
+/*
+ *@@ icoRunReplacement:
+ *      returns TRUE if either turbo folders or
+ *      extended associations are enabled.
+ *
+ *@@added V0.9.18 (2002-03-16) [umoeller]
+ */
+
+BOOL icoRunReplacement(VOID)
+{
+    BOOL        fRunReplacement = FALSE;
+
+    // turbo folders enabled?
+#ifndef __NOTURBOFOLDERS__
+    fRunReplacement = cmnQuerySetting(sfTurboFolders);
+#endif
+
+#ifndef __NOICONREPLACEMENTS__
+    if (!fRunReplacement)
+        if (cmnQuerySetting(sfIconReplacements))
+            fRunReplacement = TRUE;
+#endif
+
+    return (fRunReplacement);
+}
 
 /*
  *@@ icoQueryIconN:
@@ -2154,22 +2276,62 @@ HPOINTER icoClsQueryIconN(SOMClass *pClassObject,
 }
 
 /*
- *@@ LoadIconData:
- *      helper for icoLoadIconData.
+ *@@ icoLoadIconData:
+ *      retrieves the ICONINFO for the specified
+ *      object and animation index in a new buffer.
  *
- *@@added V0.9.16 (2001-10-19) [umoeller]
+ *      If ulIndex == 0, this retrieves the standard
+ *      icon. Otherwise this returns the animation icon.
+ *      Even though the WPS always uses this stupid
+ *      index with the icon method calls, I don't think
+ *      any index besides 1 is actually supported.
+ *
+ *      If this returns NO_ERROR, the given PICONINFO*
+ *      will receive a pointer to a newly allocated
+ *      ICONINFO buffer whose format is always ICON_DATA.
+ *      This will properly load an icon resource if the
+ *      object has the icon format set to ICON_RESOURCE
+ *      or ICON_FILE.
+ *
+ *      If NO_ERROR is returned, the caller must free()
+ *      this pointer.
+ *
+ *      Otherwise this might return the following errors:
+ *
+ *      --  ERROR_NO_DATA: icon format not understood.
+ *
+ *      --  ERROR_FILE_NOT_FOUND: icon file doesn't exist.
+ *
+ *      plus those of doshMalloc and DosGetResource, such as
+ *      ERROR_NOT_ENOUGH_MEMORY.
+ *
+ *      This is ICONINFO:
+ *
+ +      typedef struct _ICONINFO {
+ +        ULONG       cb;           // Length of the ICONINFO structure.
+ +        ULONG       fFormat;      // Indicates where the icon resides.
+ +        PSZ         pszFileName;  // Name of the file containing icon data (ICON_FILE)
+ +        HMODULE     hmod;         // Module containing the icon resource (ICON_RESOURCE)
+ +        ULONG       resid;        // Identity of the icon resource (ICON_RESOURCE)
+ +        ULONG       cbIconData;   // Length of the icon data in bytes (ICON_DATA)
+ +        PVOID       pIconData;    // Pointer to the buffer containing icon data (ICON_DATA)
+ +      } ICONINFO;
+ *
+ *@@added V0.9.16 (2001-10-15) [umoeller]
+ *@@changed V0.9.18 (2002-03-19) [umoeller]: no longer recursing, which didn't work anyway
  */
 
-static APIRET LoadIconData(WPObject *pobj,             // in: object whose icon to query
-                           ULONG ulIndex,              // in: animation index or 0 for regular icon
-                           PICONINFO *ppIconInfo,      // out: ICONINFO allocated via _wpAllocMem
-                           BOOL fMayRecurse)           // in: if TRUE, this may recurse
+APIRET icoLoadIconData(WPObject *pobj,             // in: object whose icon to query
+                       ULONG ulIndex,              // in: animation index or 0 for regular icon
+                       PICONINFO *ppIconInfo)      // out: ICONINFO allocated via _wpAllocMem
 {
     APIRET arc = NO_ERROR;
     PICONINFO pData = NULL;
     ULONG cbIconInfo;
 
     arc = ERROR_NO_DATA;     // whatever, this shouldn't fail
+
+    *ppIconInfo = NULL;
 
     // find out how much memory the object needs for this
     if (    (cbIconInfo = icoQueryIconDataN(pobj,
@@ -2180,11 +2342,15 @@ static APIRET LoadIconData(WPObject *pobj,             // in: object whose icon 
          && (pData = doshMalloc(cbIconInfo, &arc))
        )
     {
+        _Pmpf((__FUNCTION__ ": allocated %d bytes", cbIconInfo));
+
         // ask the object again
         if (icoQueryIconDataN(pobj,
                               ulIndex,
                               pData))
         {
+            _Pmpf(("   got %d bytes data", cbIconInfo));
+
             // get the icon data depending on the format
             switch (pData->fFormat)
             {
@@ -2192,6 +2358,7 @@ static APIRET LoadIconData(WPObject *pobj,             // in: object whose icon 
                 {
                     ULONG   cbResource;
                     PVOID   pvResourceTemp;
+                    _Pmpf(("   ICON_RESOURCE 0x%lX, %d", pData->hmod, pData->resid));
                     // object has specified icon resource:
                     // load resource data...
                     if (    (!(arc = DosQueryResourceSize(pData->hmod,
@@ -2237,44 +2404,53 @@ static APIRET LoadIconData(WPObject *pobj,             // in: object whose icon 
                 break;
 
                 case ICON_DATA:
+                    _Pmpf(("   ICON_DATA"));
                     // this is OK, no conversion needed
                     *ppIconInfo = pData;
+                    arc = NO_ERROR;
                 break;
 
                 case ICON_FILE:
-                    if (fMayRecurse)
+                {
+                    WPFileSystem *pfs;
+                    _Pmpf(("   ICON_FILE \"%s\"", pData->pszFileName));
+                    if (    (pData->pszFileName)
+                         && (pfs = _wpclsQueryObjectFromPath(_WPFileSystem,
+                                                             pData->pszFileName))
+                       )
                     {
-                        WPFileSystem *pfs;
-                        if (    (pData->pszFileName)
-                             && (pfs = _wpclsQueryObjectFromPath(_WPFileSystem,
-                                                                 pData->pszFileName))
-                           )
+                        ULONG cbRequired;
+                        if (!(cbRequired = _wpQueryIconData(pfs, NULL)))
+                            arc = ERROR_NO_DATA;
+                        else
                         {
-                            // recurse
                             PICONINFO pData2;
-                            if (!(arc = LoadIconData(pfs,
-                                                     ulIndex,
-                                                     &pData2,
-                                                     FALSE))) // may _not_ recurse
+                            if (pData2 = doshMalloc(cbRequired, &arc))
                             {
-                                // got the data:
-                                // return the new struct
-                                *ppIconInfo = pData2;
-
-                                free(pData);
-                                pData = NULL;       // do not free again below
+                                if (!_wpQueryIconData(pfs, pData2))
+                                {
+                                    arc = ERROR_NO_DATA;
+                                    free(pData2);
+                                }
+                                else
+                                {
+                                    free(pData);
+                                    *ppIconInfo = pData2;
+                                    arc = NO_ERROR;
+                                }
                             }
                         }
-                        else
-                            arc = ERROR_FILE_NOT_FOUND;
+
+                        _wpUnlockObject(pfs);
                     }
                     else
-                        // invalid recursion:
-                        arc = ERROR_NESTING_NOT_ALLOWED;
+                        arc = ERROR_FILE_NOT_FOUND;
+                }
                 break;
 
                 default:
                     // any other format:
+                    _Pmpf(("    invalid format %d", pData->fFormat));
                     arc = ERROR_INVALID_DATA;
             } // end switch (pData->Format)
         } // end if (_wpQueryIconData(pobj, pData))
@@ -2285,65 +2461,9 @@ static APIRET LoadIconData(WPObject *pobj,             // in: object whose icon 
             free(pData);
     }
 
+    _Pmpf((__FUNCTION__ ": returning %d", arc));
+
     return (arc);
-}
-
-/*
- *@@ icoLoadIconData:
- *      retrieves the ICONINFO for the specified
- *      object and animation index in a new buffer.
- *
- *      If ulIndex == 0, this retrieves the standard
- *      icon. Otherwise this returns the animation icon.
- *      Even though the WPS always uses this stupid
- *      index with the icon method calls, I don't think
- *      any index besides 1 is actually supported.
- *
- *      If this returns NO_ERROR, the given PICONINFO*
- *      will receive a pointer to a newly allocated
- *      ICONINFO buffer whose format is always ICON_DATA.
- *      This will properly load an icon resource if the
- *      object has the icon format set to ICON_RESOURCE
- *      or ICON_FILE.
- *
- *      If NO_ERROR is returned, the caller must free()
- *      this pointer.
- *
- *      Otherwise this might return the following errors:
- *
- *      --  ERROR_NO_DATA: icon format not understood.
- *
- *      --  ERROR_FILE_NOT_FOUND: icon file doesn't exist.
- *
- *      --  ERROR_NESTING_NOT_ALLOWED: invalid internal recursion.
- *
- *      plus those of doshMalloc and DosGetResource, such as
- *      ERROR_NOT_ENOUGH_MEMORY.
- *
- *      This is ICONINFO:
- *
- +      typedef struct _ICONINFO {
- +        ULONG       cb;           // Length of the ICONINFO structure.
- +        ULONG       fFormat;      // Indicates where the icon resides.
- +        PSZ         pszFileName;  // Name of the file containing icon data (ICON_FILE)
- +        HMODULE     hmod;         // Module containing the icon resource (ICON_RESOURCE)
- +        ULONG       resid;        // Identity of the icon resource (ICON_RESOURCE)
- +        ULONG       cbIconData;   // Length of the icon data in bytes (ICON_DATA)
- +        PVOID       pIconData;    // Pointer to the buffer containing icon data (ICON_DATA)
- +      } ICONINFO;
- *
- *@@added V0.9.16 (2001-10-15) [umoeller]
- */
-
-APIRET icoLoadIconData(WPObject *pobj,             // in: object whose icon to query
-                       ULONG ulIndex,              // in: animation index or 0 for regular icon
-                       PICONINFO *ppIconInfo)      // out: ICONINFO allocated via _wpAllocMem
-{
-    *ppIconInfo = NULL;
-    return (LoadIconData(pobj,
-                         ulIndex,
-                         ppIconInfo,
-                         TRUE));            // may recurse
 }
 
 /*
@@ -2441,6 +2561,7 @@ VOID objResetIcon(WPObject *somSelf,
  *      don't use it excessively.
  *
  *@@added V0.9.16 (2001-10-19) [umoeller]
+ *@@changed V0.9.18 (2002-03-19) [umoeller]: fixed disappearing animation icon
  */
 
 BOOL icoIsUsingDefaultIcon(WPObject *pobj,
@@ -2461,7 +2582,9 @@ BOOL icoIsUsingDefaultIcon(WPObject *pobj,
            )
             brc = TRUE;
 
-        WinDestroyPointer(hptrClass);
+        // WinDestroyPointer(hptrClass);
+                // this is probably not a good idea
+                // V0.9.18 (2002-03-19) [umoeller]
 
         return (brc);
     }

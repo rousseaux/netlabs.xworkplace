@@ -102,6 +102,20 @@ BMPS = \
 all: $(BMPS) $(COPYTO)\xfldr$(LANGUAGE).hlp
     @echo ----- Leaving $(MAKEDIR)
 
+
+SRCHTML = *.html \
+fsys\*.html \
+glossary\*.html \
+hook\*.html \
+kernel\*.html \
+media\*.html \
+menus\*.html \
+objects\*.html \
+setup\*.html \
+wps\*.html \
+xcenter\*.html \
+xshutdown\*.html
+
 #
 # Now define inference rules for the different file types.
 #
@@ -111,7 +125,7 @@ IPFFILE = $(OUTPUTDIR)\hlp$(LANGUAGE).ipf
 $(COPYTO)\xfldr$(LANGUAGE).hlp: $(OUTPUTDIR)\xfldr$(LANGUAGE).hlp
         cmd.exe /c copy $(OUTPUTDIR)\$(@B).hlp $(COPYTO)
 
-$(IPFFILE): *.html fsys\*.html glossary\*.html hook\*.html kernel\*.html media\*.html menus\*.html objects\*.html setup\*.html wps\*.html xcenter\*.html xshutdown\*.html makefile ..\$(ENTITYDEFS)
+$(IPFFILE): $(SRCHTML) makefile ..\$(ENTITYDEFS)
         $(HTML2IPF) xfldr$(LANGUAGE).html
         $(COPY) xfldr$(LANGUAGE).ipf $(IPFFILE)
 

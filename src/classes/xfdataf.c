@@ -93,6 +93,7 @@
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\standards.h"          // some standard macros
 
 // SOM headers which don't crash with prec. header files
 #include "xfdataf.ih"
@@ -172,6 +173,26 @@ SOM_Scope BOOL  SOMLINK xdf_xwpDestroyStorage(XFldDataFile *somSelf)
 }
 
 /*
+ *@@ wpInitData:
+ *      this WPObject instance method gets called when the
+ *      object is being initialized (on wake-up or creation).
+ *      We initialize our additional instance data here.
+ *      Always call the parent method first.
+ *
+ *@@added V0.9.18 (2002-03-19) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xdf_wpInitData(XFldDataFile *somSelf)
+{
+    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpInitData");
+
+    XFldDataFile_parent_WPDataFile_wpInitData(somSelf);
+
+    _fHasIconEA = FALSE;
+}
+
+/*
  *@@ wpRestoreState:
  *      this WPObject instance method gets called during object
  *      initialization (after wpInitData) to restore the data
@@ -197,7 +218,7 @@ SOM_Scope BOOL  SOMLINK xdf_wpRestoreState(XFldDataFile *somSelf,
     ULONG brc;
     somTD_WPObject_wpRestoreState pwpRestoreState = NULL;
 
-    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
+    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpRestoreState");
 
 #ifndef __NOTURBOFOLDERS__
@@ -217,6 +238,8 @@ SOM_Scope BOOL  SOMLINK xdf_wpRestoreState(XFldDataFile *somSelf,
             APIRET arc;
             HPOINTER hptrNew;
 
+            _Pmpf((__FUNCTION__ ": obj 0x%lX: pFSData is 0x%lX", somSelf, pFSData));
+
             if (    (!prec->hptrIcon)
                  && (pFSData)
                  && (pFSData->pFea2List)
@@ -230,10 +253,24 @@ SOM_Scope BOOL  SOMLINK xdf_wpRestoreState(XFldDataFile *somSelf,
                 _wpModifyStyle(somSelf,
                                OBJSTYLE_NOTDEFAULTICON,
                                OBJSTYLE_NOTDEFAULTICON);
+
+                _Pmpf(("    custom prec->hptrIcon is 0x%lX", prec->hptrIcon));
+
+                // set our instance data flag so that we know that
+                // we should NEVER EVER use an association icon
+                // here... dumb WPS keeps looking for the
+                // OBJSTYLE_NOTDEFAULTICON and always assumes that
+                // if this is set, the data file uses an assoc
+                // icon, which is simply not true any more
+                // V0.9.18 (2002-03-19) [umoeller]
+                _fHasIconEA = TRUE;
             }
 
             brc = pwpRestoreState(somSelf, ulReserved);
         }
+        else
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "Cannot resolve WPFileSystem::wpRestoreState.");
     }
 
     if (!pwpRestoreState)
@@ -1012,39 +1049,105 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
     if (cmnQuerySetting(sfExtAssocs))
     {
         HPOINTER hptr = NULLHANDLE;
-        ULONG ulView = _wpQueryDefaultView(somSelf);
-                    // should return 0x1000 unless the user
-                    // has changed the data file's default view
-        WPObject *pobjAssoc = ftypQueryAssociatedProgram(somSelf,
-                                                         &ulView,
-                                                         // do not use "plain text" as default,
-                                                         // this affects the icon:
-                                                         FALSE);
-                                // locks the object
 
-        if (pobjAssoc)
+        TRY_LOUD(excpt1)
         {
-            // get the assoc icon
-            if (hptr = _wpQueryIcon(pobjAssoc))
-                // and make it global so that other processes
-                // can use it (otherwise PMMail won't display
-                // icons for attachments) V0.9.18 (2002-02-06) [umoeller]
-                WinSetPointerOwner(hptr,
-                                   (PID)0,
-                                   // magic flag used by the WPS,
-                                   // whatever this is for
-                                   0x77482837);
+            ULONG ulView = _wpQueryDefaultView(somSelf);
+                        // should return 0x1000 unless the user
+                        // has changed the data file's default view
+            WPObject *pobjAssoc = ftypQueryAssociatedProgram(somSelf,
+                                                             &ulView,
+                                                             // do not use "plain text" as default,
+                                                             // this affects the icon:
+                                                             FALSE);
+                                    // locks the object
 
-            // _wpUnlockObject(pobjAssoc);
-                    // is this smart? may the program go dormant?
-                    // default method does this though, so we do it too
+            if (pobjAssoc)
+            {
+                // get the assoc icon
+                if (hptr = _wpQueryIcon(pobjAssoc))
+                    // and make it global so that other processes
+                    // can use it (otherwise PMMail won't display
+                    // icons for attachments) V0.9.18 (2002-02-06) [umoeller]
+                    WinSetPointerOwner(hptr,
+                                       (PID)0,
+                                       // magic flag used by the WPS,
+                                       // whatever this is for
+                                       0x77482837);
+
+                // _wpUnlockObject(pobjAssoc);
+                        // is this smart? may the program go dormant?
+                        // default method does this though, so we do it too
+            }
         }
+        CATCH(excpt1)
+        {
+        } END_CATCH();
 
         return (hptr);      // NULLHANDLE still for "plain text"
     }
 #endif
 
     return (XFldDataFile_parent_WPDataFile_wpQueryAssociatedFileIcon(somSelf));
+}
+
+/*
+ *@@ wpSetAssociatedFileIcon:
+ *      this method gets called by the WPS when a data
+ *      file object is being initialized, to have it
+ *      set its icon to that of the default association.
+ *
+ *      This gets called from various places in the WPS
+ *      whenever data file attributes change so that
+ *      the association might have changed.
+ *
+ *      The problem with this method is that it appears
+ *      to check internally for the OBJSTYLE_NOTDEFAULTICON
+ *      flag, which is rarely set any more since we
+ *      share the association icons with the executables.
+ *
+ *@@added V0.9.18 (2002-03-19) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xdf_wpSetAssociatedFileIcon(XFldDataFile *somSelf)
+{
+    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpSetAssociatedFileIcon");
+
+#ifndef __NEVEREXTASSOCS__
+    // only call the parent if we don't have an .ICON EA,
+    // otherwise do nothing
+    // V0.9.18 (2002-03-19) [umoeller]
+    if (    (!_fHasIconEA)
+         && (cmnQuerySetting(sfExtAssocs))
+       )
+    {
+        if (    (!_somIsA(somSelf, _WPIcon))
+             && (!_somIsA(somSelf, _WPPointer))
+           )
+        {
+            HPOINTER hptr;
+
+            if (!(hptr = _wpQueryAssociatedFileIcon(somSelf)))
+                // use class icon then
+                hptr = _wpclsQueryIcon(_somGetClass(somSelf));
+
+            if (hptr)
+            {
+                _wpSetIcon(somSelf, hptr);
+
+                // make sure this is turned off!!!
+                _wpModifyStyle(somSelf,
+                               OBJSTYLE_NOTDEFAULTICON,
+                               0);
+            }
+        }
+
+        return;
+    }
+#endif
+
+    XFldDataFile_parent_WPDataFile_wpSetAssociatedFileIcon(somSelf);
 }
 
 /*
@@ -1085,50 +1188,59 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
 SOM_Scope HPOINTER  SOMLINK xdf_wpQueryIcon(XFldDataFile *somSelf)
 {
     HPOINTER hptrReturn = NULLHANDLE;
+    PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
+
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpQueryIcon");
 
+    _Pmpf((__FUNCTION__ ": obj 0x%lX: prec->hptrIcon is 0x%lX", somSelf, prec->hptrIcon));
+
 #ifndef __NOTURBOFOLDERS__
-    if (cmnQuerySetting(sfTurboFolders))
+    if (cmnQuerySetting(sfExtAssocs))
     {
-        PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
-        if (!(hptrReturn = prec->hptrIcon))
+        TRY_LOUD(excpt1)
         {
-            ULONG flNewStyle = 0;
-            // first call, and icon wasn't set in wpRestoreState:
-            // be smart now...
-
-            // 1) if we're an icon or pointer file, load
-            //    the icon from there
-            if (    (_somIsA(somSelf, _WPIcon))
-                 || (_somIsA(somSelf, _WPPointer))
-               )
+            if (!(hptrReturn = prec->hptrIcon))
             {
-                CHAR szFilename[CCHMAXPATH];
-                _wpQueryFilename(somSelf, szFilename, TRUE);
-                if (!icoLoadICOFile(szFilename,
-                                    &hptrReturn,
-                                    NULL,
-                                    NULL))
-                    flNewStyle = OBJSTYLE_NOTDEFAULTICON;
-            }
+                ULONG flNewStyle = 0;
+                // first call, and icon wasn't set in wpRestoreState:
+                // be smart now...
 
-            // 2) try if we find an association
-            if (!hptrReturn)
-                hptrReturn = _wpQueryAssociatedFileIcon(somSelf);
+                // 1) if we're an icon or pointer file, load
+                //    the icon from there
+                if (    (_somIsA(somSelf, _WPIcon))
+                     || (_somIsA(somSelf, _WPPointer))
+                   )
+                {
+                    CHAR szFilename[CCHMAXPATH];
+                    _wpQueryFilename(somSelf, szFilename, TRUE);
+                    if (!icoLoadICOFile(szFilename,
+                                        &hptrReturn,
+                                        NULL,
+                                        NULL))
+                        flNewStyle = OBJSTYLE_NOTDEFAULTICON;
+                }
 
-            if (!hptrReturn)
-                // 3) use class icon then
-                hptrReturn = _wpclsQueryIcon(_somGetClass(somSelf));
+                // 2) try if we find an association
+                if (!hptrReturn)
+                    hptrReturn = _wpQueryAssociatedFileIcon(somSelf);
 
-            if (hptrReturn)
-            {
-                _wpSetIcon(somSelf, hptrReturn);
-                _wpModifyStyle(somSelf,
-                               OBJSTYLE_NOTDEFAULTICON,
-                               flNewStyle);
+                if (!hptrReturn)
+                    // 3) use class icon then
+                    hptrReturn = _wpclsQueryIcon(_somGetClass(somSelf));
+
+                if (hptrReturn)
+                {
+                    _wpSetIcon(somSelf, hptrReturn);
+                    _wpModifyStyle(somSelf,
+                                   OBJSTYLE_NOTDEFAULTICON,
+                                   flNewStyle);
+                }
             }
         }
+        CATCH(excpt1)
+        {
+        } END_CATCH();
     }
 
     if (!hptrReturn)
@@ -1140,9 +1252,16 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryIcon(XFldDataFile *somSelf)
 
 /*
  *@@ wpQueryIconData:
- *      @@todo
+ *      this WPObject instance method can be called to find out the
+ *      object's icon data.
  *
- *@@added V0.9.16 (2002-01-26) [umoeller]
+ *      See XWPProgramFile::wpQueryIconData for more information.
+ *
+ *      We need to override this too to fully support our replacement
+ *      extended association icons in the WPS. Up to V0.9.18, the "Icon"
+ *      notebook page was severly broken for data files.
+ *
+ *@@added V0.9.18 (2002-03-19) [umoeller]
  */
 
 SOM_Scope ULONG  SOMLINK xdf_wpQueryIconData(XFldDataFile *somSelf,
@@ -1151,33 +1270,160 @@ SOM_Scope ULONG  SOMLINK xdf_wpQueryIconData(XFldDataFile *somSelf,
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpQueryIconData");
 
+#ifndef __NEVEREXTASSOCS__
+    // turbo folders enabled?
+    if (cmnQuerySetting(sfExtAssocs))
+    {
+        ULONG           cbRequired = sizeof(ICONINFO);
+
+        TRY_LOUD(excpt1)
+        {
+            BOOL            fFound = FALSE;
+            CHAR            szFilename[CCHMAXPATH];
+
+            // FIRST of all, check if we have a non-default icon
+            // from an .ICON EA... if so, this overrides anything else
+            if (_wpQueryFilename(somSelf, szFilename, TRUE))
+                if (!icoBuildPtrFromEAs(szFilename,
+                                        NULL,              // no HPOINTER
+                                        &cbRequired,
+                                        pIconInfo))        // can be NULL
+                        // returns NO_ERROR only if we have an .ICON EA
+                    fFound = TRUE;
+
+            if (!fFound)
+            {
+                // .ICON EA not found, or bad data:
+
+                // if we're an icon or pointer file, support
+                // ICON_DATA format for compatibility
+                if (    (_somIsA(somSelf, _WPIcon))
+                     || (_somIsA(somSelf, _WPPointer))
+                   )
+                {
+                    PBYTE pbData = NULL;
+                    ULONG cbData;
+                    if (pIconInfo)
+                        pbData = (PBYTE)(pIconInfo + 1);
+
+                    if (!icoLoadICOFile(szFilename,
+                                        NULL,
+                                        &cbData,
+                                        pbData))     // can be NULL
+                    {
+                        cbRequired += cbData;
+
+                        if (pIconInfo)
+                        {
+                            ZERO(pIconInfo);
+                            pIconInfo->cb = cbRequired;
+                            pIconInfo->fFormat = ICON_DATA;
+                            pIconInfo->cbIconData = cbData;
+                            pIconInfo->pIconData = pbData;
+                        }
+
+                        fFound = TRUE;
+                    }
+                }
+
+                if (!fFound)
+                {
+                    // not icon file, or format not supported:
+                    // check if we have an association
+                    ULONG ulView = _wpQueryDefaultView(somSelf);
+                                // should return 0x1000 unless the user
+                                // has changed the data file's default view
+                    WPObject *pobjAssoc = ftypQueryAssociatedProgram(somSelf,
+                                                                     &ulView,
+                                                                     // do not use "plain text" as default,
+                                                                     // this affects the icon:
+                                                                     FALSE);
+                                            // locks the object
+
+                    if (pobjAssoc)
+                    {
+                        // call the assoc object's wpQueryIconData
+                        cbRequired = _wpQueryIconData(pobjAssoc,
+                                                      pIconInfo);
+
+                        _wpUnlockObject(pobjAssoc);
+                    }
+                    else
+                    {
+                        // no assoc object:
+                        // use class default
+                        cbRequired = _wpclsQueryIconData(_somGetClass(somSelf),
+                                                         pIconInfo);
+                    }
+                }
+            }
+        }
+        CATCH(excpt1)
+        {
+            cbRequired = 0;
+        } END_CATCH();
+
+        return (cbRequired);
+    }
+#endif
+
     return (XFldDataFile_parent_WPDataFile_wpQueryIconData(somSelf,
                                                            pIconInfo));
 }
 
 /*
- *@@ wpSetAssociatedFileIcon:
- *      this method gets called by the WPS when a data
- *      file object is being initialized, to have it
- *      set its icon to that of the default association.
+ *@@ wpSetIconData:
+ *      this WPObject method sets a new persistent icon for
+ *      the object and stores the new icon permanently.
  *
- *      From what I see, this method only seems to be called
- *      when a Settings view is _opened_, not when it's closed,
- *      which doesn't really make sense. It does _not_ get
- *      called during folder populate (during the normal
- *      _wpQueryIcon processing).
+ *      We need to override this for our icon replacements
+ *      because the WPS will do evil things to our standard
+ *      icons again.
  *
- *@@added V0.9.0 [umoeller]
+ *      Note that we only handle the ICON_CLEAR case here
+ *      to reload the exe default icon. The other cases
+ *      are handled by our XWPFileSystem::wpSetIconData
+ *      override.
+ *
+ *@@added V0.9.18 (2002-03-19) [umoeller]
  */
 
-SOM_Scope void  SOMLINK xdf_wpSetAssociatedFileIcon(XFldDataFile *somSelf)
+SOM_Scope BOOL  SOMLINK xdf_wpSetIconData(XFldDataFile *somSelf,
+                                          PICONINFO pIconInfo)
 {
-    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
-    XFldDataFileMethodDebug("XFldDataFile","xdf_wpSetAssociatedFileIcon");
+    CHAR        szFilename[CCHMAXPATH];
 
-    // _Pmpf(("Entering wpSetAssociatedFileIcon for %s", _wpQueryTitle(somSelf)));
-    XFldDataFile_parent_WPDataFile_wpSetAssociatedFileIcon(somSelf);
-    // _Pmpf(("End of wpSetAssociatedFileIcon for %s", _wpQueryTitle(somSelf)));
+    XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
+    XFldDataFileMethodDebug("XFldDataFile","xdf_wpSetIconData");
+
+#ifndef __NEVEREXTASSOCS__
+    if (cmnQuerySetting(sfExtAssocs))
+    {
+        if (    (pIconInfo)
+             && (pIconInfo->fFormat == ICON_CLEAR)
+             && (_wpQueryFilename(somSelf, szFilename, TRUE))
+           )
+        {
+            // this case is now overridden by XFldDataFile
+            // and XWPProgramFile
+            if (WinSetFileIcon(szFilename, pIconInfo))
+            {
+                // clear private flag so that
+                // _wpSetAssociatedFileIcon works
+                _fHasIconEA = FALSE;
+                // use default assoc icon
+                _wpSetAssociatedFileIcon(somSelf);
+                return (TRUE);
+            }
+        }
+    }
+#endif
+
+    // all other cases, or icon replacements disabled:
+    // call parent, which will end up in XWPFileSystem
+    // (WPProgramFile doesn't override this)
+    return (XFldDataFile_parent_WPDataFile_wpSetIconData(somSelf,
+                                                         pIconInfo));
 }
 
 
@@ -1333,11 +1579,14 @@ SOM_Scope ULONG  SOMLINK xdfM_wpclsQueryIconData(M_XFldDataFile *somSelf,
 
         // now using cmnGetStandardIcon
         // V0.9.16 (2002-01-13) [umoeller]
-        if (pIconInfo)
-            if (!cmnGetStandardIcon(STDICON_DATAFILE,
-                                    NULL,            // no hpointer
-                                    pIconInfo))      // fill icon info
-                ulrc = sizeof(ICONINFO);
+        ULONG cb = 0;
+        if (!cmnGetStandardIcon(STDICON_DATAFILE,
+                                NULL,            // no hpointer
+                                &cb,
+                                pIconInfo))      // can be NULL
+            return cb;
+
+        return 0;
     }
 
     if (!ulrc)

@@ -62,6 +62,7 @@
 
 #define INCL_WINPOINTERS
 #define INCL_WINPROGRAMLIST     // needed for PROGDETAILS, wppgm.h
+#define INCL_WINSHELLDATA
 #include <os2.h>
 
 // C library headers
@@ -77,6 +78,7 @@
 #include "helpers\dosh.h"
 #include "helpers\except.h"             // exception handling
 #include "helpers\exeh.h"               // executable helpers
+#include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"
@@ -137,32 +139,6 @@ void DumpMemoryBlock(PBYTE pb,       // in: start address
 }
 
 #endif
-
-/*
- *@@ RunReplacement:
- *      returns TRUE if either turbo folders or
- *      extended associations are enabled.
- *
- *@@added V0.9.18 (2002-03-16) [umoeller]
- */
-
-static BOOL RunReplacement(VOID)
-{
-    BOOL        fRunReplacement = FALSE;
-
-    // turbo folders enabled?
-#ifndef __NOTURBOFOLDERS__
-    fRunReplacement = cmnQuerySetting(sfTurboFolders);
-#endif
-
-#ifndef __NOICONREPLACEMENTS__
-    if (!fRunReplacement)
-        if (cmnQuerySetting(sfIconReplacements))
-            fRunReplacement = TRUE;
-#endif
-
-    return (fRunReplacement);
-}
 
 /* ******************************************************************
  *
@@ -377,6 +353,8 @@ SOM_Scope void  SOMLINK xpg_wpInitData(XWPProgram *somSelf)
 
     _fNeedsSetProgIcon = FALSE;
 
+    _pWszUsingIconFile = NULL;
+
     // V0.9.18 (2002-03-16) [umoeller]
 
     // Alright, here's the new hack for getting a pointer to the
@@ -487,6 +465,13 @@ SOM_Scope void  SOMLINK xpg_wpUnInitData(XWPProgram *somSelf)
             // method won't try to free this again
             pData->pszParameters = NULL;
         }
+        if (pData->pszEnvironment && _fWeAllocatedEnvironment)
+        {
+            _wpFreeMem(somSelf, pData->pszEnvironment);
+            // set the ptr to NULL so that the IBM parent
+            // method won't try to free this again
+            pData->pszEnvironment = NULL;
+        }
     }
 
     XWPProgram_parent_WPProgram_wpUnInitData(somSelf);
@@ -519,7 +504,7 @@ SOM_Scope void  SOMLINK xpg_wpObjectReady(XWPProgram *somSelf,
 
     XWPProgram_parent_WPProgram_wpObjectReady(somSelf, ulCode,
                                               refObject);
-    if (RunReplacement())
+    if (icoRunReplacement())
     {
         XWPProgramData *somThis = XWPProgramGetData(somSelf);
 
@@ -627,7 +612,7 @@ SOM_Scope HPOINTER  SOMLINK xpg_wpQueryIcon(XWPProgram *somSelf)
 {
     XWPProgramMethodDebug("XWPProgram","xpg_wpQueryIcon");
 
-    if (RunReplacement())
+    if (icoRunReplacement())
     {
         XWPProgramData *somThis = XWPProgramGetData(somSelf);
         PMINIRECORDCORE pmrc = _wpQueryCoreRecord(somSelf);
@@ -644,6 +629,150 @@ SOM_Scope HPOINTER  SOMLINK xpg_wpQueryIcon(XWPProgram *somSelf)
     }
 
     return (XWPProgram_parent_WPProgram_wpQueryIcon(somSelf));
+}
+
+/*
+ *@@ ProgramIconHandler:
+ *      common handler for XWPProgram::wpSetProgIcon
+ *      and XWPProgram::wpQueryIconData. See remarks there.
+ *
+ *      Returns FALSE only on crashes.
+ *
+ *@@added V0.9.18 (2002-03-19) [umoeller]
+ */
+
+static BOOL ProgramIconHandler(XWPProgram *somSelf,
+                               PWPPROGRAMPRIVATE pData,
+                               XWPProgramData *somThis,
+                               HPOINTER *phptr,
+                               PULONG pcbIconInfo,   // out: if != NULL, size of ICONINFO buffer required
+                               PICONINFO pIconInfo,  // out: if != NULL, icon info
+                               BOOL *pfNotDefaultIcon)
+{
+    BOOL        brc = FALSE;
+    BOOL        fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        CHAR            szExecutable[CCHMAXPATH];
+        APIRET          arc;
+        BOOL            fFound = FALSE;
+
+        if (    (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+             && (_xwpQueryExecutable(somSelf, szExecutable))
+           )
+        {
+            CHAR    szFQExecutable[CCHMAXPATH];
+            PSZ     pszExec = NULL;
+
+            if (    (szExecutable[1] != ':')
+                 && (!strchr(szExecutable, '\\'))
+               )
+            {
+                // prog is not fully qualified: find it on path
+                if (!doshSearchPath("PATH",
+                                    szExecutable,
+                                    szFQExecutable,
+                                    sizeof(szFQExecutable)))
+                    // alright, found it:
+                    pszExec = szFQExecutable;
+            }
+            else
+                pszExec = szExecutable;
+
+            if (pszExec)
+            {
+                // first: check if an .ICO file of the same filestem
+                // exists in the folder. If so, _always_ use that icon.
+                PCSZ pExt;
+                if (pExt = doshGetExtension(pszExec))
+                {
+                    ULONG ulStemLen = pExt - pszExec;
+                    CHAR szIconFile[CCHMAXPATH];
+                    memcpy(szIconFile, pszExec, ulStemLen);
+                    memcpy(szIconFile + ulStemLen, "ico", 4);   // include 0
+                    // use the new icoLoadICOFile, this is way faster
+                    // V0.9.16 (2001-12-08) [umoeller]
+                            // NOTE: This only gets called for "create icon"
+                            // mode, never with the "fill icon info" mode,
+                            // because in that case wpQueryIconData checks
+                            // _pWszUsingIconFile
+                            // V0.9.18 (2002-03-19) [umoeller]
+                    if (!(arc = icoLoadICOFile(szIconFile,
+                                               phptr,       // can be NULL
+                                               NULL,
+                                               NULL)))
+                    {
+                        // store this in the instance data so
+                        // that wpQueryIconData can properly
+                        // return this... we can't do this
+                        // otherwise because we can't check
+                        // if the icon file data is valid
+                        // without building a pointer handle
+                        // V0.9.18 (2002-03-19) [umoeller]
+                        wpshStore(somSelf,
+                                  &_pWszUsingIconFile,
+                                  szIconFile,
+                                  NULL);
+
+                        if (pfNotDefaultIcon)
+                            *pfNotDefaultIcon = TRUE;
+                        fFound = TRUE;
+                    }
+                    // else: .ICO file doesn't exist, or bad format, so go on
+                }
+
+                if (!fFound)
+                {
+                    PEXECUTABLE pExec = NULL;
+
+                    wpshStore(somSelf,
+                              &_pWszUsingIconFile,
+                              NULL,
+                              NULL);
+
+                    if (!(arc = exehOpen(pszExec, &pExec)))
+                    {
+                        ULONG ulProgType;
+                        ULONG ulStdIcon = 0;
+
+                        // _Pmpf((__FUNCTION__ ": %s, calling _xwpQueryProgType", pszExec));
+
+                        if (!(ulProgType = pData->ProgType.progc))
+                            ulProgType = progQueryProgType(pszExec,
+                                                           pExec);
+
+                        if (!progFindIcon(pExec,
+                                          ulProgType,
+                                          phptr,
+                                          pcbIconInfo,
+                                          pIconInfo,
+                                          pfNotDefaultIcon))
+                            fFound = TRUE;
+
+                        exehClose(&pExec);
+
+                    } // end if (!(arc = exehOpen(pszExec, &pExec)))
+                }
+            }
+        }
+
+        if (!fFound)
+            cmnGetStandardIcon(STDICON_PROG_UNKNOWN,
+                               phptr,
+                               pcbIconInfo,
+                               pIconInfo);
+
+        brc = TRUE;
+    }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
+
+    if (fLocked)
+        _wpReleaseObjectMutexSem(somSelf);
+
+    return (brc);
 }
 
 /*
@@ -680,7 +809,7 @@ SOM_Scope HPOINTER  SOMLINK xpg_wpQueryIcon(XWPProgram *somSelf)
  *          WPAbstract::wpRestoreState.
  *
  *      3)  WPAbstract::wpRestoreState calls WPObject::wpRestoreState
- *          and restores the object style. Even if we set
+ *          and restores the object style. Even if we cleared
  *          OBJSTYLE_NOTDEFAULTICON a thousand times here,
  *          that style will be overwritten there.
  *
@@ -712,6 +841,7 @@ SOM_Scope HPOINTER  SOMLINK xpg_wpQueryIcon(XWPProgram *somSelf)
  *      executable).
  *
  *@@added V0.9.12 (2001-05-22) [umoeller]
+ *@@changed V0.9.18 (2002-03-19) [umoeller]: extracted ProgramIconHandler, reworked logic to no longer call the parent
  */
 
 SOM_Scope BOOL  SOMLINK xpg_wpSetProgIcon(XWPProgram *somSelf,
@@ -725,11 +855,12 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgIcon(XWPProgram *somSelf,
     // have we found the WPProgram instance data yet?
     if (    (pData = (PWPPROGRAMPRIVATE)_pvWPProgramData)
             // either turbo folders or ext assocs enabled?
-         && (RunReplacement())
+         && (icoRunReplacement())
        )
     {
-        BOOL brc = FALSE;
-        BOOL fLocked = FALSE;
+        BOOL        brc = FALSE;
+        HPOINTER    hptr = NULLHANDLE;
+        BOOL        fNotDefaultIcon = FALSE;
 
         // here's the important check that prevents our
         // standard icon from being nuked:
@@ -745,104 +876,21 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgIcon(XWPProgram *somSelf,
             return TRUE;
         }
 
-        TRY_LOUD(excpt1)
+        if (brc = ProgramIconHandler(somSelf,
+                                     pData,
+                                     somThis,
+                                     &hptr,
+                                     NULL,
+                                     NULL,
+                                     &fNotDefaultIcon))
         {
-            CHAR            szExecutable[CCHMAXPATH];
-            HPOINTER        hptr = NULLHANDLE;
-            BOOL            fNotDefaultIcon = FALSE;
-            APIRET          arc;
-
-            if (    (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
-                 && (_xwpQueryExecutable(somSelf, szExecutable))
-               )
-            {
-                CHAR    szFQExecutable[CCHMAXPATH];
-                PSZ     pszExec = NULL;
-
-                if (    (szExecutable[1] != ':')
-                     && (!strchr(szExecutable, '\\'))
-                   )
-                {
-                    // prog is not fully qualified: find it on path
-                    if (!doshSearchPath("PATH",
-                                        szExecutable,
-                                        szFQExecutable,
-                                        sizeof(szFQExecutable)))
-                        // alright, found it:
-                        pszExec = szFQExecutable;
-                }
-                else
-                    pszExec = szExecutable;
-
-                if (pszExec)
-                {
-                    // first: check if an .ICO file of the same filestem
-                    // exists in the folder. If so, _always_ use that icon.
-                    PCSZ pExt;
-                    if (pExt = doshGetExtension(pszExec))
-                    {
-                        ULONG ulStemLen = pExt - pszExec;
-                        CHAR szIconFile[CCHMAXPATH];
-                        memcpy(szIconFile, pszExec, ulStemLen);
-                        memcpy(szIconFile + ulStemLen, "ico", 4);   // include 0
-                        // use the new icoLoadICOFile, this is way faster
-                        // V0.9.16 (2001-12-08) [umoeller]
-                        if (!(arc = icoLoadICOFile(szIconFile,
-                                                   &hptr,
-                                                   NULL,
-                                                   NULL)))
-                            fNotDefaultIcon = TRUE;
-                        // else: .ICO file doesn't exist, or bad format, so go on
-                    }
-
-                    if (!hptr)
-                    {
-                        PEXECUTABLE pExec = NULL;
-
-                        if (!(arc = exehOpen(pszExec, &pExec)))
-                        {
-                            ULONG ulProgType;
-                            ULONG ulStdIcon = 0;
-
-                            // _Pmpf((__FUNCTION__ ": %s, calling _xwpQueryProgType", pszExec));
-
-                            if (!(ulProgType = pData->ProgType.progc))
-                                ulProgType = progQueryProgType(pszExec,
-                                                               pExec);
-
-                            progFindIcon(pExec,
-                                         ulProgType,
-                                         &hptr,
-                                         NULL,
-                                         &fNotDefaultIcon);
-
-                            exehClose(&pExec);
-
-                        } // end if (!(arc = exehOpen(pszExec, &pExec)))
-                    }
-                }
-            }
-
-            if (!hptr)
-                cmnGetStandardIcon(STDICON_PROG_UNKNOWN,
-                                   &hptr,
-                                   NULL);
-
             _wpSetIcon(somSelf, hptr);
             _wpModifyStyle(somSelf,
                            OBJSTYLE_NOTDEFAULTICON,
                            (fNotDefaultIcon) ? OBJSTYLE_NOTDEFAULTICON : 0);
-
-            brc = TRUE;
         }
-        CATCH(excpt1)
-        {
-        } END_CATCH();
 
-        if (fLocked)
-            _wpReleaseObjectMutexSem(somSelf);
-
-        return (brc);
+        return brc;
     }
 
     return (XWPProgram_parent_WPProgram_wpSetProgIcon(somSelf, pfeal));
@@ -850,16 +898,130 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgIcon(XWPProgram *somSelf,
 
 /*
  *@@ wpQueryIconData:
- *      @@todo
+ *      this WPObject instance method can be called to find out the
+ *      object's icon data.
  *
- *@@added V0.9.16 (2002-01-26) [umoeller]
+ *      See XWPProgramFile::wpQueryIconData for more information.
+ *
+ *      We need to override this too to fully support our replacement
+ *      program icons in the WPS. Up to V0.9.18, the "Icon"
+ *      notebook page was severly broken for programs.
+ *
+ *@@added V0.9.18 (2002-03-19) [umoeller]
  */
 
 SOM_Scope ULONG  SOMLINK xpg_wpQueryIconData(XWPProgram *somSelf,
                                              PICONINFO pIconInfo)
 {
-    /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
+    PWPPROGRAMPRIVATE  pData;
+
+    XWPProgramData *somThis = XWPProgramGetData(somSelf);
     XWPProgramMethodDebug("XWPProgram","xpg_wpQueryIconData");
+
+    // have we found the WPProgram instance data yet?
+    if (    (pData = (PWPPROGRAMPRIVATE)_pvWPProgramData)
+            // either turbo folders or ext assocs enabled?
+         && (icoRunReplacement())
+       )
+    {
+        ULONG           cbRequired = sizeof(ICONINFO);
+
+        TRY_LOUD(excpt1)
+        {
+            ULONG           cbData;
+            // FIRST of all, check if we have a non-default icon
+            // from OS2.INI... if so, this overrides anything else
+            HOBJECT         hobj = _wpQueryHandle(somSelf);
+            // abstract handles have the 16-bit hex handle as
+            // the ini key
+            CHAR            szHandle[10];
+            sprintf(szHandle, "%lX", LOUSHORT(hobj));       // no leading zeros,
+                                                            // hex letters in capitals
+            _Pmpf((__FUNCTION__ ": trying to load %s, %s",
+                        WPINIAPP_ICONS, szHandle));
+            if (    (PrfQueryProfileSize(HINI_USER,
+                                         (PSZ)WPINIAPP_ICONS,  // "PM_Abstract:Icons"
+                                         szHandle,
+                                         &cbData))
+                 && (cbData)
+               )
+            {
+                // got custom icon data for this program object:
+                cbRequired += cbData;
+
+                wpshStore(somSelf,
+                          &_pWszUsingIconFile,
+                          NULL,
+                          NULL);
+
+                if (pIconInfo)
+                {
+                    // caller wants data too:
+                    ZERO(pIconInfo);
+                    pIconInfo->cb = cbRequired;
+                    pIconInfo->fFormat = ICON_DATA;
+                    pIconInfo->cbIconData = cbData;
+                    pIconInfo->pIconData = (PBYTE)(pIconInfo + 1);
+
+                    if (!PrfQueryProfileData(HINI_USER,
+                                             (PSZ)WPINIAPP_ICONS,  // "PM_Abstract:Icons"
+                                             szHandle,
+                                             pIconInfo->pIconData,
+                                             &cbData))
+                        cbRequired = 0;
+                        // if this fails, we're out of luck anyway... we
+                        // can't fall back to loading from the exe because
+                        // we probably won't have enough buffer
+                }
+            }
+            else
+            {
+                // .ICON EA not found, or bad data:
+                PMINIRECORDCORE pmrc = _wpQueryCoreRecord(somSelf);
+                if (!pmrc->hptrIcon)
+                    // we haven't set the icon yet (improbable but possible):
+                    _wpSetProgIcon(somSelf, NULL);
+
+                // now we can use the cached instance data fields
+                if (_pWszUsingIconFile)
+                {
+                    // wpSetProgIcon has found an .ICO file:
+                    ULONG ulNameLen = strlen(_pWszUsingIconFile);
+                    cbRequired += ulNameLen;
+                    if (pIconInfo)
+                    {
+                        PSZ psz = (PSZ)(pIconInfo + 1);
+                        ZERO(pIconInfo);
+                        pIconInfo->cb = cbRequired;
+                        pIconInfo->fFormat = ICON_FILE;
+                        memcpy(psz, _pWszUsingIconFile, ulNameLen + 1);
+                        pIconInfo->pszFileName = psz;
+                    }
+                }
+                else
+                {
+                    // not icon file: run the icon handler again
+                    _Pmpf((__FUNCTION__ ": calling ProgramIconHandler, cbRequired %d, pIconInfo 0x%lX",
+                              cbRequired, pIconInfo));
+                    if (!(ProgramIconHandler(somSelf,
+                                             pData,
+                                             somThis,
+                                             NULL,          // HPOINTER *phptr,
+                                             &cbRequired,   // PULONG pcbIconInfo,
+                                             pIconInfo,     // can be NULL
+                                             NULL)))
+                        // crash:
+                        cbRequired = 0;
+                }
+            }
+        }
+        CATCH(excpt1)
+        {
+            cbRequired = 0;
+        } END_CATCH();
+
+        return (cbRequired);
+    }
 
     return (XWPProgram_parent_WPProgram_wpQueryIconData(somSelf,
                                                         pIconInfo));
@@ -867,8 +1029,17 @@ SOM_Scope ULONG  SOMLINK xpg_wpQueryIconData(XWPProgram *somSelf,
 
 /*
  *@@ wpSetIconData:
+ *      this WPObject method sets a new persistent icon for
+ *      the object and stores the new icon permanently.
  *
- *@@added V0.9.12 (2001-05-22) [umoeller]
+ *      We need to override this for our icon replacements
+ *      because the WPS will do evil things to our standard
+ *      icons again.
+ *
+ *      Note that we only handle the ICON_CLEAR case here
+ *      to reload the exe default icon.
+ *
+ *@@added V0.9.18 (2002-03-19) [umoeller]
  */
 
 SOM_Scope BOOL  SOMLINK xpg_wpSetIconData(XWPProgram *somSelf,
@@ -877,6 +1048,35 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetIconData(XWPProgram *somSelf,
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
     XWPProgramMethodDebug("XWPProgram","xpg_wpSetIconData");
 
+    if (icoRunReplacement())
+    {
+        if (    (pIconInfo)
+             && (pIconInfo->fFormat == ICON_CLEAR)
+           )
+        {
+            // nuke icon data in OS2.INI
+            HOBJECT         hobj = _wpQueryHandle(somSelf);
+            CHAR            szHandle[10];
+            sprintf(szHandle, "%lX", LOUSHORT(hobj));       // no leading zeros,
+                                                            // hex letters in capitals
+            _Pmpf((__FUNCTION__ ": deleting %s, %s",
+                        WPINIAPP_ICONS, szHandle));
+            PrfWriteProfileData(HINI_USER,
+                                (PSZ)WPINIAPP_ICONS,  // "PM_Abstract:Icons"
+                                szHandle,
+                                NULL,
+                                0);
+
+            // reset default executable icon
+            _wpSetProgIcon(somSelf, NULL);
+
+            // do not call parent
+            return (TRUE);
+        }
+    }
+
+    // all other cases, or icon replacements disabled:
+    // call parent (WPProgram)
     return (XWPProgram_parent_WPProgram_wpSetIconData(somSelf,
                                                       pIconInfo));
 }
@@ -978,7 +1178,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpQueryProgDetails(XWPProgram *somSelf,
     // have we found the WPProgram instance data yet?
     if (    (pData = (PWPPROGRAMPRIVATE)_pvWPProgramData)
             // either turbo folders or ext assocs enabled?
-         && (RunReplacement())
+         && (icoRunReplacement())
        )
     {
         BOOL brc = FALSE;
@@ -1210,7 +1410,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
     // have we found the WPProgram instance data yet?
     if (    (pData = (PWPPROGRAMPRIVATE)_pvWPProgramData)
             // either turbo folders or ext assocs enabled?
-         && (RunReplacement())
+         && (icoRunReplacement())
        )
     {
         TRY_LOUD(excpt1)

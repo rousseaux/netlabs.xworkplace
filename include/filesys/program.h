@@ -126,6 +126,7 @@
         APIRET progFindIcon(PEXECUTABLE pExec,
                             ULONG ulAppType,
                             HPOINTER *phptr,
+                            PULONG pcbIconInfo,
                             PICONINFO pIconInfo,
                             PBOOL pfNotDefaultIcon);
     #endif

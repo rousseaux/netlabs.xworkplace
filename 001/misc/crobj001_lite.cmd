@@ -22,7 +22,7 @@ OS2                 = "eCS"
 /* Config Folder title */
 ConfigFolder        = XWorkplace||" Configuration Folder";
 /* here come the objects in the config folder */
-CommandLines        = "~Command lines";
+CommandLines        = "~Command prompts";
 OS2Win              = "~"||OS2||" window";
 OS2Fullscreen       = OS2||" ~fullscreen";
 DosWin              = "~DOS window";
