@@ -164,9 +164,10 @@ static COUNTRYSETTINGS      G_CountrySettings = {0};
 // replaced this with a linked list V0.9.9 (2001-03-09) [umoeller]
 static LINKLIST             G_llWidgetClasses;
 static BOOL                 G_fWidgetClassesLoaded = FALSE;
-// static ULONG                G_cWidgetClasses = 0;
 // reference count (raised with each ctrpLoadClasses call)
 static ULONG                G_ulWidgetClassesRefCount = 0;
+// mutex protecting the list    V0.9.12 (2001-05-20) [umoeller]
+static HMTX                 G_hmtxClasses = NULLHANDLE;
 
 // global array of plugin modules which were loaded
 static LINKLIST             G_llModules;      // this contains plain HMODULEs as data
@@ -811,12 +812,23 @@ ULONG ReformatWidgets(PXCENTERWINDATA pXCenterData,
  *
  *@@added V0.9.7 (2000-12-07) [umoeller]
  *@@changed V0.9.11 (2001-04-25) [umoeller]: rewritten, prototype changed
+ *@@changed V0.9.12 (2001-05-20) [umoeller]: moved show dlg outside locks
  */
 
 VOID ctrpShowSettingsDlg(XCenter *somSelf,
                          HWND hwndOwner,    // proposed owner of settings dlg
                          ULONG ulIndex)     // in: widget index
 {
+    // these two structures get filled by the sick code below
+    WGTSETTINGSTEMP Temp = {0};
+    WIDGETSETTINGSDLGDATA DlgData = {0};
+
+    PWGTSHOWSETTINGSDLG pShowSettingsDlg = NULL;
+
+    XCenterData *somThis = XCenterGetData(somSelf);
+    PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
+                            // can be NULL if we have no open view
+
     WPSHLOCKSTRUCT Lock;
     if (wpshLockObject(&Lock,
                        somSelf))
@@ -827,9 +839,6 @@ VOID ctrpShowSettingsDlg(XCenter *somSelf,
         if (pSetting)
         {
             PXCENTERWIDGETCLASS pClass = ctrpFindClass(pSetting->pszWidgetClass);
-            XCenterData *somThis = XCenterGetData(somSelf);
-            PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
-                                    // can be NULL if we have no open view
             PXCENTERGLOBALS pGlobals = NULL;
             PXCENTERWIDGET pViewData = NULL;
 
@@ -846,9 +855,6 @@ VOID ctrpShowSettingsDlg(XCenter *somSelf,
                  && (pClass->pShowSettingsDlg)
                )
             {
-                WGTSETTINGSTEMP Temp;
-                WIDGETSETTINGSDLGDATA DlgData = {0};
-
                 // compose the "ugly hack" structure
                 // represented by the obscure "hSettings" field
                 // in the DlgData... this implementation is
@@ -869,98 +875,36 @@ VOID ctrpShowSettingsDlg(XCenter *somSelf,
                 DlgData.pUser = NULL;
                 DlgData.pctrSetSetupString = ctrSetSetupString;       // func pointer V0.9.9 (2001-02-06) [umoeller]
 
-                // disable auto-hide while we're showing the dlg
-                if (pXCenterData)
-                    pXCenterData->fShowingSettingsDlg = TRUE;
+                // set the function pointer for below
+                pShowSettingsDlg = pClass->pShowSettingsDlg;
 
-                // disable the XCenter while doing this V0.9.11 (2001-04-18) [umoeller]
-                if (hwndOwner)
-                    WinEnableWindow(hwndOwner, FALSE);
-
-                TRY_LOUD(excpt1)
-                {
-                    pClass->pShowSettingsDlg(&DlgData);
-                                // @@todo no, this must be outside of the lock
-                }
-                CATCH(excpt1) {} END_CATCH();
-
-                if (hwndOwner)
-                    WinEnableWindow(hwndOwner, TRUE);
-
-                pXCenterData->fShowingSettingsDlg = FALSE;
             } // end if (pViewData->pShowSettingsDlg)
         } // end if (pClass);
     } // end if (wpshLockObject)
     wpshUnlockObject(&Lock);
-}
 
-/*
- *@@ ctrpShowViewSettingsDlg:
- *      displays the settings dialog for an open widget view.
- *      This gets called when the respective widget context
- *      menu item is selected by the user (and its WM_COMMAND
- *      is caught by ctrDefWidgetProc).
- *
- *      This may be called on any thread.
- *
- *@@added V0.9.7 (2000-12-07) [umoeller]
- *@@changed V0.9.11 (2001-04-25) [umoeller]: renamed from ctrpShowSettingsDlg
- */
-
-/* VOID ctrpShowViewSettingsDlg(PXCENTERWINDATA pXCenterData,
-                             PXCENTERWIDGET pViewData)    // in: view data; must not be NULL
-{
-    WPSHLOCKSTRUCT Lock;
-    if (wpshLockObject(&Lock,
-                       pXCenterData->somSelf))
+    if (pShowSettingsDlg)
     {
-        PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
-        PXCENTERWIDGETCLASS pClass = ctrpFindClass(pViewData->pcszWidgetClass);
-        if (pClass)
+        // disable auto-hide while we're showing the dlg
+        if (pXCenterData)
+            pXCenterData->fShowingSettingsDlg = TRUE;
+
+        // disable the XCenter while doing this V0.9.11 (2001-04-18) [umoeller]
+        if (hwndOwner)
+            WinEnableWindow(hwndOwner, FALSE);
+
+        TRY_LOUD(excpt1)
         {
-            if (pClass->pShowSettingsDlg)
-            {
-                ULONG ulIndex = ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
-                                                             pViewData->hwndWidget);
-                PLINKLIST pllWidgetSettings = ctrpQuerySettingsList(pXCenterData->somSelf);
-                PLISTNODE pSettingsNode = lstNodeFromIndex(pllWidgetSettings, ulIndex);
-                if (pSettingsNode)
-                {
-                    PXCENTERWIDGETSETTING pSetting = (PXCENTERWIDGETSETTING)pSettingsNode->pItemData;
-                    WGTSETTINGSTEMP Temp;
-                    WIDGETSETTINGSDLGDATA DlgData = {0};
+            pShowSettingsDlg(&DlgData);
+        }
+        CATCH(excpt1) {} END_CATCH();
 
-                    Temp.somSelf = pXCenterData->somSelf;
-                    Temp.pSetting = pSetting;
-                    Temp.pWidget = pViewData;
-                    Temp.ulIndex = ulIndex;
+        if (hwndOwner)
+            WinEnableWindow(hwndOwner, TRUE);
 
-                    DlgData.hwndOwner = pGlobals->hwndFrame;
-                    DlgData.pcszSetupString = pSetting->pszSetupString;       // can be 0
-                    *(PULONG)&DlgData.hSettings = (LHANDLE)&Temp;         // ugly hack
-                    DlgData.pGlobals = pGlobals;
-                    DlgData.pView = pViewData;
-                    DlgData.pUser = NULL;
-                    DlgData.pctrSetSetupString = ctrSetSetupString;       // func pointer V0.9.9 (2001-02-06) [umoeller]
-
-                    // disable auto-hide while we're showing the dlg
-                    pXCenterData->fShowingSettingsDlg = TRUE;
-
-                    // disable the XCenter while doing this V0.9.11 (2001-04-18) [umoeller]
-                    WinEnableWindow(pGlobals->hwndFrame, FALSE);
-
-                    pClass->pShowSettingsDlg(&DlgData);
-                                // @@todo no, this must be outside of the lock
-
-                    WinEnableWindow(pGlobals->hwndFrame, TRUE);
-
-                    pXCenterData->fShowingSettingsDlg = FALSE;
-                } // end if (pSettingsNode)
-            } // end if (pViewData->pShowSettingsDlg)
-        } // end if (pClass);
-    } // end if (wpshLockObject)
-    wpshUnlockObject(&Lock);
-} */
+        pXCenterData->fShowingSettingsDlg = FALSE;
+    }
+}
 
 /*
  *@@ ctrpDrawEmphasis:
@@ -1531,146 +1475,159 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
  *      May only run on the XCenter GUI thread.
  *
  *@@added V0.9.7 (2000-12-02) [umoeller]
+ *@@changed V0.9.12 (2001-05-20) [umoeller]: added classes mutex protection
  */
 
 PWIDGETVIEWSTATE CreateOneWidget(PXCENTERWINDATA pXCenterData,
                                  PXCENTERWIDGETSETTING pSetting,
                                  ULONG ulIndex)
 {
-    PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
     PWIDGETVIEWSTATE pNewView = NULL;
 
-    // NOTE: We must not request the XCenter mutex here because
-    // this function can get called during message sends from
-    // thread 1 while thread 1 is holding the mutex. Requesting
-    // the mutex here again would cause deadlocks.
-
-    if (!pSetting)
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "PXCENTERWIDGETSETTING is NULL.");
-    else
+    BOOL fLocked = FALSE;
+    TRY_LOUD(excpt2)
     {
-        pNewView = (PWIDGETVIEWSTATE)malloc(sizeof(WIDGETVIEWSTATE));
-                        // this includes the public XCENTERWIDGET struct
-
-        if (pNewView)
+        if (fLocked = ctrpLockClasses())
         {
-            // get ptr to XCENTERWIDGET struct
-            PXCENTERWIDGET pWidget = &pNewView->Widget;
-            // find the widget class for this
-            PXCENTERWIDGETCLASS pWidgetClass = ctrpFindClass(pSetting->pszWidgetClass);
-            memset(pNewView, 0, sizeof(*pNewView));
+            PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
 
-            if (pWidgetClass)
+            // NOTE: We must not request the XCenter mutex here because
+            // this function can get called during message sends from
+            // thread 1 while thread 1 is holding the mutex. Requesting
+            // the mutex here again would cause deadlocks.
+
+            if (!pSetting)
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "PXCENTERWIDGETSETTING is NULL.");
+            else
             {
-                // set some safe defaults
-                pWidget->habWidget = WinQueryAnchorBlock(pGlobals->hwndClient);
+                pNewView = (PWIDGETVIEWSTATE)malloc(sizeof(WIDGETVIEWSTATE));
+                                // this includes the public XCENTERWIDGET struct
 
-                pWidget->pfnwpDefWidgetProc = ctrDefWidgetProc;
-
-                pWidget->pGlobals = pGlobals;
-
-                pWidget->pWidgetClass = pWidgetClass;
-                pWidget->pcszWidgetClass = strdup(pWidgetClass->pcszWidgetClass);
-                            // cleaned up in WM_DESTROY of ctrDefWidgetProc
-                pWidget->ulClassFlags = pWidgetClass->ulClassFlags;
-
-                pNewView->xCurrent = 0;         // changed later
-                pNewView->szlCurrent.cx = 20;
-                pNewView->szlCurrent.cy = 20;
-
-                // set up fields
-                pNewView->szlWanted.cx = 20;
-                pNewView->szlWanted.cy = 20;
-
-                pWidget->fSizeable = ((pWidgetClass->ulClassFlags & WGTF_SIZEABLE) != 0);
-
-                pWidget->pcszSetupString = pSetting->pszSetupString;
-                            // can be NULL
-
-                pWidget->hwndWidget = WinCreateWindow(pGlobals->hwndClient,  // parent
-                                                      (PSZ)pWidgetClass->pcszPMClass,
-                                                      "",        // title
-                                                      0, // WS_VISIBLE,
-                                                      // x, y:
-                                                      0,
-                                                      0,
-                                                      // cx, cy:
-                                                      20,
-                                                      20,
-                                                      // owner:
-                                                      pGlobals->hwndClient,
-                                                      HWND_TOP,
-                                                      ulIndex,                // ID
-                                                      pWidget, // pNewView,
-                                                      0);              // presparams
-                        // this sends WM_CREATE to the new widget window
-
-                // clean up setup string
-                pWidget->pcszSetupString = NULL;
-
-                // unset widget class ptr; this is valid only during WM_CREATE
-                pWidget->pWidgetClass = NULL;
-
-                if (pWidget->hwndWidget)
+                if (pNewView)
                 {
-                    PSZ pszStdMenuFont = prfhQueryProfileData(HINI_USER,
-                                                              "PM_Default_Colors",
-                                                              "MenuTextFont",
-                                                              NULL);
+                    // get ptr to XCENTERWIDGET struct
+                    PXCENTERWIDGET pWidget = &pNewView->Widget;
+                    // find the widget class for this
+                    PXCENTERWIDGETCLASS pWidgetClass = ctrpFindClass(pSetting->pszWidgetClass);
+                    memset(pNewView, 0, sizeof(*pNewView));
 
-                    // store view data in widget's QWL_USER,
-                    // in case the widget forgot; but this won't help
-                    // much since the widget gets messages before WinCreateWindow
-                    // returns....
-                    WinSetWindowPtr(pWidget->hwndWidget, QWL_USER, pNewView);
-
-                    // ask the widget for its size
-                    GetWidgetSize(pNewView);
-                    if (pNewView->szlWanted.cy > pGlobals->cyWidgetMax)
-                        pGlobals->cyWidgetMax = pNewView->szlWanted.cy;
-                    // now we know the tallest widget... check if the client
-                    // height is smaller than that V0.9.9 (2001-03-09) [umoeller]
-                    if (pGlobals->cyWidgetMax > pGlobals->cyInnerClient)
-                        // yes: adjust client height
-                        pGlobals->cyInnerClient = pGlobals->cyWidgetMax;
-
-                    // load standard context menu
-                    pWidget->hwndContextMenu = WinLoadMenu(pWidget->hwndWidget,
-                                                           cmnQueryNLSModuleHandle(FALSE),
-                                                           ID_CRM_WIDGET);
-                    if (pszStdMenuFont)
+                    if (pWidgetClass)
                     {
-                        // set a font presparam for this menu because
-                        // otherwise it will inherit the widget's font
-                        // presparam (duh)
-                        winhSetWindowFont(pWidget->hwndContextMenu,
-                                          pszStdMenuFont);
-                        free(pszStdMenuFont);
+                        // set some safe defaults
+                        pWidget->habWidget = WinQueryAnchorBlock(pGlobals->hwndClient);
+
+                        pWidget->pfnwpDefWidgetProc = ctrDefWidgetProc;
+
+                        pWidget->pGlobals = pGlobals;
+
+                        pWidget->pWidgetClass = pWidgetClass;
+                        pWidget->pcszWidgetClass = strdup(pWidgetClass->pcszWidgetClass);
+                                    // cleaned up in WM_DESTROY of ctrDefWidgetProc
+                        pWidget->ulClassFlags = pWidgetClass->ulClassFlags;
+
+                        pNewView->xCurrent = 0;         // changed later
+                        pNewView->szlCurrent.cx = 20;
+                        pNewView->szlCurrent.cy = 20;
+
+                        // set up fields
+                        pNewView->szlWanted.cx = 20;
+                        pNewView->szlWanted.cy = 20;
+
+                        pWidget->fSizeable = ((pWidgetClass->ulClassFlags & WGTF_SIZEABLE) != 0);
+
+                        pWidget->pcszSetupString = pSetting->pszSetupString;
+                                    // can be NULL
+
+                        pWidget->hwndWidget = WinCreateWindow(pGlobals->hwndClient,  // parent
+                                                              (PSZ)pWidgetClass->pcszPMClass,
+                                                              "",        // title
+                                                              0, // WS_VISIBLE,
+                                                              // x, y:
+                                                              0,
+                                                              0,
+                                                              // cx, cy:
+                                                              20,
+                                                              20,
+                                                              // owner:
+                                                              pGlobals->hwndClient,
+                                                              HWND_TOP,
+                                                              ulIndex,                // ID
+                                                              pWidget, // pNewView,
+                                                              0);              // presparams
+                                // this sends WM_CREATE to the new widget window
+
+                        // clean up setup string
+                        pWidget->pcszSetupString = NULL;
+
+                        // unset widget class ptr; this is valid only during WM_CREATE
+                        pWidget->pWidgetClass = NULL;
+
+                        if (pWidget->hwndWidget)
+                        {
+                            PSZ pszStdMenuFont = prfhQueryProfileData(HINI_USER,
+                                                                      "PM_Default_Colors",
+                                                                      "MenuTextFont",
+                                                                      NULL);
+
+                            // store view data in widget's QWL_USER,
+                            // in case the widget forgot; but this won't help
+                            // much since the widget gets messages before WinCreateWindow
+                            // returns....
+                            WinSetWindowPtr(pWidget->hwndWidget, QWL_USER, pNewView);
+
+                            // ask the widget for its size
+                            GetWidgetSize(pNewView);
+                            if (pNewView->szlWanted.cy > pGlobals->cyWidgetMax)
+                                pGlobals->cyWidgetMax = pNewView->szlWanted.cy;
+                            // now we know the tallest widget... check if the client
+                            // height is smaller than that V0.9.9 (2001-03-09) [umoeller]
+                            if (pGlobals->cyWidgetMax > pGlobals->cyInnerClient)
+                                // yes: adjust client height
+                                pGlobals->cyInnerClient = pGlobals->cyWidgetMax;
+
+                            // load standard context menu
+                            pWidget->hwndContextMenu = WinLoadMenu(pWidget->hwndWidget,
+                                                                   cmnQueryNLSModuleHandle(FALSE),
+                                                                   ID_CRM_WIDGET);
+                            if (pszStdMenuFont)
+                            {
+                                // set a font presparam for this menu because
+                                // otherwise it will inherit the widget's font
+                                // presparam (duh)
+                                winhSetWindowFont(pWidget->hwndContextMenu,
+                                                  pszStdMenuFont);
+                                free(pszStdMenuFont);
+                            }
+
+                            // store view
+                            if (    (ulIndex == -1)
+                                 || (ulIndex >= lstCountItems(&pXCenterData->llWidgets))
+                               )
+                                // append at the end:
+                                lstAppendItem(&pXCenterData->llWidgets,
+                                              pNewView);
+                            else
+                                lstInsertItemBefore(&pXCenterData->llWidgets,
+                                                    pNewView,
+                                                    ulIndex);
+                        } // end if (pWidget->hwndWidget)
+                    } // end if pWidgetClass
+
+                    if (!pWidget->hwndWidget)
+                    {
+                        free(pNewView);
+                        pNewView = NULL;
                     }
 
-                    // store view
-                    if (    (ulIndex == -1)
-                         || (ulIndex >= lstCountItems(&pXCenterData->llWidgets))
-                       )
-                        // append at the end:
-                        lstAppendItem(&pXCenterData->llWidgets,
-                                      pNewView);
-                    else
-                        lstInsertItemBefore(&pXCenterData->llWidgets,
-                                            pNewView,
-                                            ulIndex);
-                } // end if (pWidget->hwndWidget)
-            } // end if pWidgetClass
+                } // end if pNewView
+            } // end if pSetting
+        }
+    }
+    CATCH(excpt2) {} END_CATCH();
 
-            if (!pWidget->hwndWidget)
-            {
-                free(pNewView);
-                pNewView = NULL;
-            }
-
-        } // end if pNewView
-    } // end if pSetting
+    if (fLocked)
+        ctrpUnlockClasses();
 
     return (pNewView);
 }
@@ -3565,7 +3522,7 @@ MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
 
             /*
              * WM_DESTROY:
-             *      moved this to client V0.9.9 (2001-03-07) [umoeller]
+             *      moved this to frame V0.9.9 (2001-03-07) [umoeller]
              */
 
             // case WM_DESTROY:
@@ -3624,12 +3581,42 @@ MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
  ********************************************************************/
 
 /*
+ *@@ ctrpLockClasses:
+ *      locks the XCenter widget classes list.
+ *
+ *@@added V0.9.12 (2001-05-20) [umoeller]
+ */
+
+BOOL ctrpLockClasses(VOID)
+{
+    if (!G_hmtxClasses)
+        return (!DosCreateMutexSem(NULL,
+                                   &G_hmtxClasses,
+                                   0,
+                                   TRUE));       // request now
+
+    return (!WinRequestMutexSem(G_hmtxClasses, SEM_INDEFINITE_WAIT));
+}
+
+/*
+ *@@ ctrpUnlockClasses:
+ *
+ *@@added V0.9.12 (2001-05-20) [umoeller]
+ */
+
+VOID ctrpUnlockClasses(VOID)
+{
+    DosReleaseMutexSem(G_hmtxClasses);
+}
+
+/*
  *@@ ctrFreeModule:
  *      wrapper around DosFreeModule which
  *      attempts to call the "UnInitModule"
  *      export from the widget DLL beforehand.
  *
- *      May run on any thread.
+ *      May run on any thread. Caller must hold
+ *      classes mutex.
  *
  *@@added V0.9.7 (2000-12-07) [umoeller]
  *@@changed V0.9.9 (2001-02-06) [umoeller]: added fCallUnInit
@@ -3678,266 +3665,276 @@ APIRET ctrpFreeModule(HMODULE hmod,
  *@@changed V0.9.9 (2001-02-06) [umoeller]: added version management
  *@@changed V0.9.9 (2001-03-09) [umoeller]: added PRIVATEWIDGETCLASS wrapping
  *@@changed V0.9.9 (2001-03-09) [umoeller]: converted global array to linked list
+ *@@changed V0.9.12 (2001-05-20) [umoeller]: added mutex protection to fix multiple loads
  */
 
 VOID ctrpLoadClasses(VOID)
 {
-    // _Pmpf((__FUNCTION__ ": G_ulWidgetClassesRefCount is %d", G_ulWidgetClassesRefCount));
-
-    if (!G_fModulesInitialized)
+    BOOL fLocked = FALSE;
+    TRY_LOUD(excpt1)
     {
-        // very first call:
-        lstInit(&G_llWidgetClasses, FALSE);
-        lstInit(&G_llModules, FALSE);
-        G_fModulesInitialized = TRUE;
-    }
-
-    if (!G_fWidgetClassesLoaded)
-    {
-        // widget classes not loaded yet (or have been released again):
-
-        HAB             hab = WinQueryAnchorBlock(cmnQueryActiveDesktopHWND());
-
-        HMODULE         hmodXFLDR = cmnQueryMainCodeModuleHandle();
-
-        // built-in widget classes:
-        APIRET          arc = NO_ERROR;
-        CHAR            szPluginsDir[2*CCHMAXPATH],
-                        szSearchMask[2*CCHMAXPATH];
-        HDIR            hdirFindHandle = HDIR_CREATE;
-        FILEFINDBUF3    ffb3 = {0};      // returned from FindFirst/Next
-        ULONG           cbFFB3 = sizeof(FILEFINDBUF3);
-        ULONG           ulFindCount = 1;  // look for 1 file at a time
-        ULONG           ul;
-
-        // step 1: append built-in widgets to list
-        for (ul = 0;
-             ul < ARRAYITEMCOUNT(G_aBuiltInWidgets);
-             ul++)
+        if (fLocked = ctrpLockClasses()) // V0.9.12 (2001-05-20) [umoeller]
         {
-            PPRIVATEWIDGETCLASS pClass = (PPRIVATEWIDGETCLASS)malloc(sizeof(*pClass));
-            memset(pClass,
-                   0,
-                   sizeof(*pClass));
-            memcpy(&pClass->Public,
-                   &G_aBuiltInWidgets[ul],
-                   sizeof(XCENTERWIDGETCLASS));
-            lstAppendItem(&G_llWidgetClasses,
-                          pClass);
-        }
-
-        // step 2: append plugin DLLs to list
-        // compose path for widget plugin DLLs
-        cmnQueryXWPBasePath(szPluginsDir);
-        strcat(szPluginsDir, "\\plugins\\xcenter");
-        sprintf(szSearchMask, "%s\\%s", szPluginsDir, "*.dll");
-
-        // _Pmpf((__FUNCTION__ ": searching for '%s'", szSearchMask));
-
-        arc = DosFindFirst(szSearchMask,
-                           &hdirFindHandle,
-                           // find everything except directories
-                           FILE_ARCHIVED | FILE_HIDDEN | FILE_SYSTEM | FILE_READONLY,
-                           &ffb3,
-                           cbFFB3,
-                           &ulFindCount,
-                           FIL_STANDARD);
-        // and start looping...
-        while (arc == NO_ERROR)
-        {
-            // alright... we got the file's name in ffb3.achName
-            CHAR            szDLL[2*CCHMAXPATH],
-                            szError[CCHMAXPATH] = "";
-            HMODULE         hmod = NULLHANDLE;
-            APIRET          arc2 = NO_ERROR;
-
-            sprintf(szDLL, "%s\\%s", szPluginsDir, ffb3.achName);
-
-            arc2 = DosLoadModule(szError,
-                                 sizeof(szError),
-                                 szDLL,
-                                 &hmod);
-
-            if (arc2 != NO_ERROR)
+            if (!G_fModulesInitialized)
             {
-                // error loading module:
-                // log this, but we'd rather not have a message box here
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "Unable to load plugin DLL \"%s\"."
-                       "\n    DosLoadModule returned code %d and string: \"%s\"",
-                       szDLL,
-                       arc2,
-                       szError);
-
+                // very first call:
+                lstInit(&G_llWidgetClasses, FALSE);
+                lstInit(&G_llModules, FALSE);
+                G_fModulesInitialized = TRUE;
             }
-            else
+
+            if (!G_fWidgetClassesLoaded)
             {
-                CHAR    szErrorMsg[500] = "nothing.";
-                        // room for error msg by DLL
+                // widget classes not loaded yet (or have been released again):
 
-                // OK, since we've changed the prototype for the init module,
-                // it's time to do version management.
-                // V0.9.9 (2001-02-06) [umoeller]
+                HAB             hab = WinQueryAnchorBlock(cmnQueryActiveDesktopHWND());
 
-                // Check if the widget has the "query version" export.
-                PFNWGTQUERYVERSION pfnWgtQueryVersion = NULL;
-                // standard version if this fails: 0.9.8
-                ULONG       ulMajor = 0,
-                            ulMinor = 9,
-                            ulRevision = 8;
-                arc2 = DosQueryProcAddr(hmod,
-                                        3,      // ordinal
-                                        NULL,
-                                        (PFN*)(&pfnWgtQueryVersion));
+                HMODULE         hmodXFLDR = cmnQueryMainCodeModuleHandle();
 
-                // (protect this with an exception handler, because
-                // this might crash)
-                TRY_QUIET(excpt2)
+                // built-in widget classes:
+                APIRET          arc = NO_ERROR;
+                CHAR            szPluginsDir[2*CCHMAXPATH],
+                                szSearchMask[2*CCHMAXPATH];
+                HDIR            hdirFindHandle = HDIR_CREATE;
+                FILEFINDBUF3    ffb3 = {0};      // returned from FindFirst/Next
+                ULONG           cbFFB3 = sizeof(FILEFINDBUF3);
+                ULONG           ulFindCount = 1;  // look for 1 file at a time
+                ULONG           ul;
+
+                // step 1: append built-in widgets to list
+                for (ul = 0;
+                     ul < ARRAYITEMCOUNT(G_aBuiltInWidgets);
+                     ul++)
                 {
-                    BOOL    fSufficientVersion = TRUE;
+                    PPRIVATEWIDGETCLASS pClass = (PPRIVATEWIDGETCLASS)malloc(sizeof(*pClass));
+                    memset(pClass,
+                           0,
+                           sizeof(*pClass));
+                    memcpy(&pClass->Public,
+                           &G_aBuiltInWidgets[ul],
+                           sizeof(XCENTERWIDGETCLASS));
+                    lstAppendItem(&G_llWidgetClasses,
+                                  pClass);
+                }
 
-                    if ((arc2 == NO_ERROR) && (pfnWgtQueryVersion))
+                // step 2: append plugin DLLs to list
+                // compose path for widget plugin DLLs
+                cmnQueryXWPBasePath(szPluginsDir);
+                strcat(szPluginsDir, "\\plugins\\xcenter");
+                sprintf(szSearchMask, "%s\\%s", szPluginsDir, "*.dll");
+
+                // _Pmpf((__FUNCTION__ ": searching for '%s'", szSearchMask));
+
+                arc = DosFindFirst(szSearchMask,
+                                   &hdirFindHandle,
+                                   // find everything except directories
+                                   FILE_ARCHIVED | FILE_HIDDEN | FILE_SYSTEM | FILE_READONLY,
+                                   &ffb3,
+                                   cbFFB3,
+                                   &ulFindCount,
+                                   FIL_STANDARD);
+                // and start looping...
+                while (arc == NO_ERROR)
+                {
+                    // alright... we got the file's name in ffb3.achName
+                    CHAR            szDLL[2*CCHMAXPATH],
+                                    szError[CCHMAXPATH] = "";
+                    HMODULE         hmod = NULLHANDLE;
+                    APIRET          arc2 = NO_ERROR;
+
+                    sprintf(szDLL, "%s\\%s", szPluginsDir, ffb3.achName);
+
+                    arc2 = DosLoadModule(szError,
+                                         sizeof(szError),
+                                         szDLL,
+                                         &hmod);
+
+                    if (arc2 != NO_ERROR)
                     {
-                        ULONG   ulXCenterMajor,
-                                ulXCenterMinor,
-                                ulXCenterRevision;
-                        // we got the export:
-                        pfnWgtQueryVersion(&ulMajor,
-                                           &ulMinor,
-                                           &ulRevision);
+                        // error loading module:
+                        // log this, but we'd rather not have a message box here
+                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                               "Unable to load plugin DLL \"%s\"."
+                               "\n    DosLoadModule returned code %d and string: \"%s\"",
+                               szDLL,
+                               arc2,
+                               szError);
 
-                        // check if this widget can live with this
-                        // XCenter build level
-                        sscanf(BLDLEVEL_VERSION,
-                               "%d.%d.%d",
-                               &ulXCenterMajor,
-                               &ulXCenterMinor,
-                               &ulXCenterRevision);
-
-                        if (    (ulMajor > ulXCenterMajor)
-                             || (    (ulMajor == ulXCenterMajor)
-                                  && (    (ulMinor > ulXCenterMinor)
-                                       || (    (ulMinor == ulXCenterMinor)
-                                            && (ulRevision > ulXCenterRevision)
-                                          )
-                                     )
-                                )
-                           )
-                            fSufficientVersion = FALSE;
                     }
-
-                    if (fSufficientVersion)
+                    else
                     {
-                        PXCENTERWIDGETCLASS paClasses = NULL;
-                        ULONG   cClassesThis = 0;
+                        CHAR    szErrorMsg[500] = "nothing.";
+                                // room for error msg by DLL
 
-                        // now check which INIT we can call
-                        if (    (ulMajor > 0)
-                             || (ulMinor > 9)
-                             || (ulRevision > 8)
-                           )
-                        {
-                            // new widget:
-                            // we can then afford the new prototype
-                            PFNWGTINITMODULE_099 pfnWgtInitModule = NULL;
-                            arc2 = DosQueryProcAddr(hmod,
-                                                    1,      // ordinal
-                                                    NULL,
-                                                    (PFN*)(&pfnWgtInitModule));
-                            if ((arc2 == NO_ERROR) && (pfnWgtInitModule))
-                                cClassesThis = pfnWgtInitModule(hab,
-                                                                hmod,       // new!
-                                                                hmodXFLDR,
-                                                                &paClasses,
-                                                                szErrorMsg);
-                        }
-                        else
-                        {
-                            // use the old prototype:
-                            PFNWGTINITMODULE_OLD pfnWgtInitModule = NULL;
-                            arc2 = DosQueryProcAddr(hmod,
-                                                    1,      // ordinal
-                                                    NULL,
-                                                    (PFN*)(&pfnWgtInitModule));
-                            if ((arc2 == NO_ERROR) && (pfnWgtInitModule))
-                                cClassesThis = pfnWgtInitModule(hab,
-                                                                hmodXFLDR,
-                                                                &paClasses,
-                                                                szErrorMsg);
-                        }
+                        // OK, since we've changed the prototype for the init module,
+                        // it's time to do version management.
+                        // V0.9.9 (2001-02-06) [umoeller]
 
-                        if (cClassesThis)
+                        // Check if the widget has the "query version" export.
+                        PFNWGTQUERYVERSION pfnWgtQueryVersion = NULL;
+                        // standard version if this fails: 0.9.8
+                        ULONG       ulMajor = 0,
+                                    ulMinor = 9,
+                                    ulRevision = 8;
+                        arc2 = DosQueryProcAddr(hmod,
+                                                3,      // ordinal
+                                                NULL,
+                                                (PFN*)(&pfnWgtQueryVersion));
+
+                        // (protect this with an exception handler, because
+                        // this might crash)
+                        TRY_QUIET(excpt2)
                         {
-                            // paClasses must now point to an array of
-                            // cClassesThis XCENTERWIDGETCLASS structures;
-                            // copy these
-                            for (ul = 0;
-                                 ul < cClassesThis;
-                                 ul++)
+                            BOOL    fSufficientVersion = TRUE;
+
+                            if ((arc2 == NO_ERROR) && (pfnWgtQueryVersion))
                             {
-                                PPRIVATEWIDGETCLASS pClass = (PPRIVATEWIDGETCLASS)malloc(sizeof(*pClass));
-                                memset(pClass,
-                                       0,
-                                       sizeof(*pClass));
-                                memcpy(&pClass->Public,
-                                       &paClasses[ul],
-                                       sizeof(XCENTERWIDGETCLASS));
-                                // store version
-                                pClass->ulVersionMajor = ulMajor;
-                                pClass->ulVersionMinor = ulMinor;
-                                pClass->ulVersionRevision = ulRevision;
+                                ULONG   ulXCenterMajor,
+                                        ulXCenterMinor,
+                                        ulXCenterRevision;
+                                // we got the export:
+                                pfnWgtQueryVersion(&ulMajor,
+                                                   &ulMinor,
+                                                   &ulRevision);
 
-                                // store module
-                                pClass->hmod = hmod;
-                                lstAppendItem(&G_llWidgetClasses,
-                                              pClass);
+                                // check if this widget can live with this
+                                // XCenter build level
+                                sscanf(BLDLEVEL_VERSION,
+                                       "%d.%d.%d",
+                                       &ulXCenterMajor,
+                                       &ulXCenterMinor,
+                                       &ulXCenterRevision);
+
+                                if (    (ulMajor > ulXCenterMajor)
+                                     || (    (ulMajor == ulXCenterMajor)
+                                          && (    (ulMinor > ulXCenterMinor)
+                                               || (    (ulMinor == ulXCenterMinor)
+                                                    && (ulRevision > ulXCenterRevision)
+                                                  )
+                                             )
+                                        )
+                                   )
+                                    fSufficientVersion = FALSE;
                             }
 
-                            // append this module to the global list of
-                            // loaded modules
-                            lstAppendItem(&G_llModules,
-                                          (PVOID)hmod);
-                        } // end if (cClassesThis)
-                        else
-                            // no classes in module or error:
-                            arc2 = ERROR_INVALID_DATA;
-                    }
-                }
-                CATCH(excpt2)
-                {
-                    arc2 = ERROR_INVALID_ORDINAL;
-                } END_CATCH();
+                            if (fSufficientVersion)
+                            {
+                                PXCENTERWIDGETCLASS paClasses = NULL;
+                                ULONG   cClassesThis = 0;
 
-                if (arc2)
-                {
-                    // error occured (or crash):
-                    // unload the module again
-                    ctrpFreeModule(hmod,
-                                   FALSE);
+                                // now check which INIT we can call
+                                if (    (ulMajor > 0)
+                                     || (ulMinor > 9)
+                                     || (ulRevision > 8)
+                                   )
+                                {
+                                    // new widget:
+                                    // we can then afford the new prototype
+                                    PFNWGTINITMODULE_099 pfnWgtInitModule = NULL;
+                                    arc2 = DosQueryProcAddr(hmod,
+                                                            1,      // ordinal
+                                                            NULL,
+                                                            (PFN*)(&pfnWgtInitModule));
+                                    if ((arc2 == NO_ERROR) && (pfnWgtInitModule))
+                                        cClassesThis = pfnWgtInitModule(hab,
+                                                                        hmod,       // new!
+                                                                        hmodXFLDR,
+                                                                        &paClasses,
+                                                                        szErrorMsg);
+                                }
+                                else
+                                {
+                                    // use the old prototype:
+                                    PFNWGTINITMODULE_OLD pfnWgtInitModule = NULL;
+                                    arc2 = DosQueryProcAddr(hmod,
+                                                            1,      // ordinal
+                                                            NULL,
+                                                            (PFN*)(&pfnWgtInitModule));
+                                    if ((arc2 == NO_ERROR) && (pfnWgtInitModule))
+                                        cClassesThis = pfnWgtInitModule(hab,
+                                                                        hmodXFLDR,
+                                                                        &paClasses,
+                                                                        szErrorMsg);
+                                }
 
-                    if (arc2 == ERROR_INVALID_DATA)
-                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                               "InitModule call (export @1) failed for plugin DLL \"%s\"."
-                                  "\n    DLL returned error msg: %s",
-                               szDLL,
-                               szErrorMsg);
-                }
-            } // end if DosLoadModule
+                                if (cClassesThis)
+                                {
+                                    // paClasses must now point to an array of
+                                    // cClassesThis XCENTERWIDGETCLASS structures;
+                                    // copy these
+                                    for (ul = 0;
+                                         ul < cClassesThis;
+                                         ul++)
+                                    {
+                                        PPRIVATEWIDGETCLASS pClass = (PPRIVATEWIDGETCLASS)malloc(sizeof(*pClass));
+                                        memset(pClass,
+                                               0,
+                                               sizeof(*pClass));
+                                        memcpy(&pClass->Public,
+                                               &paClasses[ul],
+                                               sizeof(XCENTERWIDGETCLASS));
+                                        // store version
+                                        pClass->ulVersionMajor = ulMajor;
+                                        pClass->ulVersionMinor = ulMinor;
+                                        pClass->ulVersionRevision = ulRevision;
 
-            // find next DLL
-            ulFindCount = 1;
-            arc = DosFindNext(hdirFindHandle,
-                              &ffb3,
-                              cbFFB3,
-                              &ulFindCount);
-        } // while (arc == NO_ERROR)
+                                        // store module
+                                        pClass->hmod = hmod;
+                                        lstAppendItem(&G_llWidgetClasses,
+                                                      pClass);
+                                    }
 
-        DosFindClose(hdirFindHandle);
+                                    // append this module to the global list of
+                                    // loaded modules
+                                    lstAppendItem(&G_llModules,
+                                                  (PVOID)hmod);
+                                } // end if (cClassesThis)
+                                else
+                                    // no classes in module or error:
+                                    arc2 = ERROR_INVALID_DATA;
+                            }
+                        }
+                        CATCH(excpt2)
+                        {
+                            arc2 = ERROR_INVALID_ORDINAL;
+                        } END_CATCH();
 
-        G_fWidgetClassesLoaded = TRUE;
+                        if (arc2)
+                        {
+                            // error occured (or crash):
+                            // unload the module again
+                            ctrpFreeModule(hmod,
+                                           FALSE);
+
+                            if (arc2 == ERROR_INVALID_DATA)
+                                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                                       "InitModule call (export @1) failed for plugin DLL \"%s\"."
+                                          "\n    DLL returned error msg: %s",
+                                       szDLL,
+                                       szErrorMsg);
+                        }
+                    } // end if DosLoadModule
+
+                    // find next DLL
+                    ulFindCount = 1;
+                    arc = DosFindNext(hdirFindHandle,
+                                      &ffb3,
+                                      cbFFB3,
+                                      &ulFindCount);
+                } // while (arc == NO_ERROR)
+
+                DosFindClose(hdirFindHandle);
+
+                G_fWidgetClassesLoaded = TRUE;
+            }
+
+            G_ulWidgetClassesRefCount++;
+        }
     }
+    CATCH(excpt1) {} END_CATCH();
 
-    G_ulWidgetClassesRefCount++;
+    if (fLocked)
+        ctrpUnlockClasses();
 }
 
 /*
@@ -3972,55 +3969,65 @@ PLINKLIST ctrpQueryClasses(VOID)
  *
  *      May run on any thread.
  *
- *      @@todo add a global mutex for this
- *
  *@@added V0.9.7 (2000-12-02) [umoeller]
  *@@changed V0.9.9 (2001-03-09) [umoeller]: added PRIVATEWIDGETCLASS wrapping
  *@@changed V0.9.9 (2001-03-09) [umoeller]: converted global array to linked list
+ *@@changed V0.9.12 (2001-05-20) [umoeller]: added mutex protection to fix multiple loads
  */
 
 VOID ctrpFreeClasses(VOID)
 {
-    if (G_ulWidgetClassesRefCount == 0)
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "G_ulWidgetClassesRefCount is already 0!");
-    else
+    BOOL fLocked = FALSE;
+    TRY_LOUD(excpt2)
     {
-        G_ulWidgetClassesRefCount--;
-        if (G_ulWidgetClassesRefCount == 0)
+        if (fLocked = ctrpLockClasses())
         {
-            // no more references to the data:
-            PLISTNODE pNode = lstQueryFirstNode(&G_llWidgetClasses);
-            while (pNode)
+            if (G_ulWidgetClassesRefCount == 0)
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                               "G_ulWidgetClassesRefCount is already 0!");
+            else
             {
-                PPRIVATEWIDGETCLASS pClass
-                    = (PPRIVATEWIDGETCLASS)pNode->pItemData;
+                G_ulWidgetClassesRefCount--;
+                if (G_ulWidgetClassesRefCount == 0)
+                {
+                    // no more references to the data:
+                    PLISTNODE pNode = lstQueryFirstNode(&G_llWidgetClasses);
+                    while (pNode)
+                    {
+                        PPRIVATEWIDGETCLASS pClass
+                            = (PPRIVATEWIDGETCLASS)pNode->pItemData;
 
-                free(pClass);
+                        free(pClass);
 
-                pNode = pNode->pNext;
+                        pNode = pNode->pNext;
+                    }
+
+                    // unload modules
+                    pNode = lstQueryFirstNode(&G_llModules);
+                    while (pNode)
+                    {
+                        HMODULE hmod = (HMODULE)pNode->pItemData;
+                        // _Pmpf((__FUNCTION__ ": Unloading hmod %lX", hmod));
+                        ctrpFreeModule(hmod,
+                                       TRUE);
+
+                        pNode = pNode->pNext;
+                    }
+
+                    lstClear(&G_llModules);
+                    lstClear(&G_llWidgetClasses);
+
+                    G_fWidgetClassesLoaded = FALSE;
+                }
             }
 
-            // unload modules
-            pNode = lstQueryFirstNode(&G_llModules);
-            while (pNode)
-            {
-                HMODULE hmod = (HMODULE)pNode->pItemData;
-                // _Pmpf((__FUNCTION__ ": Unloading hmod %lX", hmod));
-                ctrpFreeModule(hmod,
-                               TRUE);
-
-                pNode = pNode->pNext;
-            }
-
-            lstClear(&G_llModules);
-            lstClear(&G_llWidgetClasses);
-
-            G_fWidgetClassesLoaded = FALSE;
+            // _Pmpf((__FUNCTION__ ": leaving, G_ulWidgetClassesRefCount is %d", G_ulWidgetClassesRefCount));
         }
     }
+    CATCH(excpt2) {} END_CATCH();
 
-    // _Pmpf((__FUNCTION__ ": leaving, G_ulWidgetClassesRefCount is %d", G_ulWidgetClassesRefCount));
+    if (fLocked)
+        ctrpUnlockClasses();
 }
 
 /*
@@ -4033,6 +4040,8 @@ VOID ctrpFreeClasses(VOID)
  *
  *      --  The widget classes must have been loaded
  *          first (by calling ctrpLoadClasses).
+ *
+ *      --  Caller must hold the classes mutex.
  *
  *      Postconditions:
  *
@@ -4930,7 +4939,8 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                            0);      // current thread
 
             pXCenterData->tidXCenter = ptiMyself->tid;
-            _tid = ptiMyself->tid;          // moved this here V0.9.9 (2001-04-04) [umoeller]
+            // _tid = ptiMyself->tid;          // moved this here V0.9.9 (2001-04-04) [umoeller]
+                   // removed, thrCreate has set this
 
             // initialize various data:
 
@@ -5224,7 +5234,8 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
             }
         } // end if (fCreated)
 
-        _tid = NULLHANDLE;          // wpClose is waiting on this!!
+        // _tid = NULLHANDLE;          // wpClose is waiting on this!!
+                // removed, thread functions handle this now
 
     } // if (pXCenterData)
 
@@ -5250,6 +5261,8 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
  *      by ctrp_fntXCenter when the XCenter view has been
  *      created on the new thread so that we can return
  *      the HWND of the XCenter frame here.
+ *
+ *@@changed V0.9.12 (2001-05-20) [umoeller]: added _tid check to fix duplicate open
  */
 
 HWND ctrpCreateXCenterView(XCenter *somSelf,
@@ -5260,71 +5273,74 @@ HWND ctrpCreateXCenterView(XCenter *somSelf,
     XCenterData *somThis = XCenterGetData(somSelf);
     HWND hwndFrame = NULLHANDLE;
 
-    TRY_LOUD(excpt1)
+    if (!_tidRunning)          // XCenter thread not currently running?
+                        // V0.9.12 (2001-05-20) [umoeller]
     {
-        static BOOL     s_fXCenterClassRegistered = FALSE;
-
-        if (!s_fXCenterClassRegistered)
+        TRY_LOUD(excpt1)
         {
-            // get window proc for WC_FRAME
-            if (   (WinRegisterClass(hab,
-                                     WC_XCENTER_CLIENT,
-                                     fnwpXCenterMainClient,
-                                     CS_PARENTCLIP | CS_CLIPCHILDREN | CS_SIZEREDRAW | CS_SYNCPAINT,
-                                     sizeof(PXCENTERWINDATA))) // additional bytes to reserve
-                && (RegisterBuiltInWidgets(hab))
-               )
+            static BOOL     s_fXCenterClassRegistered = FALSE;
+
+            if (!s_fXCenterClassRegistered)
             {
-                s_fXCenterClassRegistered = TRUE;
-            }
-            else
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "Error registering PM window classes.");
-        }
-
-        if (s_fXCenterClassRegistered)
-        {
-            PXCENTERWINDATA pXCenterData =
-                (PXCENTERWINDATA)_wpAllocMem(somSelf,
-                                             sizeof(XCENTERWINDATA),
-                                             NULL);
-            if (pXCenterData)
-            {
-                BOOL fRunning = FALSE;
-                memset(pXCenterData, 0, sizeof(*pXCenterData));
-
-                pXCenterData->cbSize = sizeof(*pXCenterData);
-
-                pXCenterData->somSelf = somSelf;
-                pXCenterData->ViewItem.view = ulView;
-
-                DosCreateEventSem(NULL,     // unnamed
-                                  &pXCenterData->hevRunning,
-                                  0,        // unshared
-                                  FALSE);   // not posted
-                if (thrCreate(NULL,
-                              ctrp_fntXCenter,
-                              &fRunning,
-                              "XCenter",
-                              THRF_TRANSIENT | THRF_PMMSGQUEUE | THRF_WAIT,
-                              (ULONG)pXCenterData))
+                // get window proc for WC_FRAME
+                if (   (WinRegisterClass(hab,
+                                         WC_XCENTER_CLIENT,
+                                         fnwpXCenterMainClient,
+                                         CS_PARENTCLIP | CS_CLIPCHILDREN | CS_SIZEREDRAW | CS_SYNCPAINT,
+                                         sizeof(PXCENTERWINDATA))) // additional bytes to reserve
+                    && (RegisterBuiltInWidgets(hab))
+                   )
                 {
-                    // thread created:
-                    // wait until it's created the XCenter frame
-                    WinWaitEventSem(pXCenterData->hevRunning,
-                                    10*1000);
-                    // return the frame HWND from this (which will
-                    // return it from wpOpen)
-                    hwndFrame = pXCenterData->Globals.hwndFrame;
-                    if (hwndFrame)
-                       *ppvOpenView = pXCenterData;
+                    s_fXCenterClassRegistered = TRUE;
                 }
-
-                DosCloseEventSem(pXCenterData->hevRunning);
+                else
+                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                           "Error registering PM window classes.");
             }
-        } // end if (s_fXCenterClassRegistered)
-    }
-    CATCH(excpt1) {} END_CATCH();
+
+            if (s_fXCenterClassRegistered)
+            {
+                PXCENTERWINDATA pXCenterData =
+                    (PXCENTERWINDATA)_wpAllocMem(somSelf,
+                                                 sizeof(XCENTERWINDATA),
+                                                 NULL);
+                if (pXCenterData)
+                {
+                    memset(pXCenterData, 0, sizeof(*pXCenterData));
+
+                    pXCenterData->cbSize = sizeof(*pXCenterData);
+
+                    pXCenterData->somSelf = somSelf;
+                    pXCenterData->ViewItem.view = ulView;
+
+                    DosCreateEventSem(NULL,     // unnamed
+                                      &pXCenterData->hevRunning,
+                                      0,        // unshared
+                                      FALSE);   // not posted
+                    if (thrCreate(NULL,
+                                  ctrp_fntXCenter,
+                                  &_tidRunning,     // V0.9.12 (2001-05-20) [umoeller]
+                                  "XCenter",
+                                  THRF_TRANSIENT | THRF_PMMSGQUEUE | THRF_WAIT,
+                                  (ULONG)pXCenterData))
+                    {
+                        // thread created:
+                        // wait until it's created the XCenter frame
+                        WinWaitEventSem(pXCenterData->hevRunning,
+                                        10*1000);
+                        // return the frame HWND from this (which will
+                        // return it from wpOpen)
+                        hwndFrame = pXCenterData->Globals.hwndFrame;
+                        if (hwndFrame)
+                           *ppvOpenView = pXCenterData;
+                    }
+
+                    DosCloseEventSem(pXCenterData->hevRunning);
+                }
+            } // end if (s_fXCenterClassRegistered)
+        }
+        CATCH(excpt1) {} END_CATCH();
+    } // end if (!_tid)
 
     return (hwndFrame);
 }

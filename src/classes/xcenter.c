@@ -403,7 +403,7 @@ SOM_Scope void  SOMLINK xctr_wpInitData(XCenter *somSelf)
     ctrpInitData(somSelf);
 
     _pvOpenView = NULL;
-    _tid = 0;
+    _tidRunning = 0;
 
     _fShowingOpenViewMenu = FALSE;
 
@@ -629,7 +629,7 @@ SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,
 
     if (ulView == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW))
     {
-        if (!_pvOpenView)
+        if (!_tidRunning)       // V0.9.12 (2001-05-20) [umoeller]
         {
             // no open view yet (just make sure!)
             HAB hab;
@@ -666,18 +666,16 @@ SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,
 
         // make sure we don't open the other views on the XCenter
         // view thread... this causes problems in various situations
-        if (_tid)
+        if (    (_tidRunning)
+             && (doshMyTID() == _tidRunning)
+           )
         {
-            // XCenter is running:
-            if (doshMyTID() == _tid)
-                // we're on the XCenter thread here:
-                fRedirect = TRUE;
-        }
-
-        if (fRedirect)
+            // we're on the XCenter thread here:
+            // redirect to thread 1
             hwndNewView = (HWND)krnSendThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
                                                         (MPARAM)somSelf,
                                                         (MPARAM)ulView);
+        }
         else
             hwndNewView = XCenter_parent_WPAbstract_wpOpen(somSelf,
                                                            hwndCnr,

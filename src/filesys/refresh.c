@@ -26,18 +26,18 @@
  *          It does not have a PM message queue and now
  *          handles the Dos*ChangeNotify APIs.
  *
- *      2)  The "Notify worker" thread gets started by the
+ *      2)  The "Find Folder" thread gets started by the
  *          Sentinel thread and processes the notification
  *          in more detail. Since the sentinel must get the
  *          notifications processed as quickly as possible
  *          (because these come directly from the kernel),
  *          it does not check them but posts them to the
- *          notify worker in an XWPNOTIFY struct.
+ *          "find folder" thread in an XWPNOTIFY struct.
  *
- *          For each XWPNOTIFY, the find-notify worker checks
+ *          For each XWPNOTIFY, the "find folder" thread checks
  *          if the notification is for a folder that is already
  *          awake. If so, it adds the notification to the
- *          folder queue.
+ *          folder's notification queue.
  *
  *      3)  The "Pump thread" is then responsible for actually
  *          refreshing the folders after a reasonable delay.
@@ -51,8 +51,8 @@
  *      in "Workplace shell" (which is in GLOBALSETTINGS) is only
  *      respected by the Sentinel thread. Disabling that setting
  *      does not stop the threads from running... it will only
- *      disable posting messages from the Sentinel to the "Notify
- *      worker".
+ *      disable posting messages from the Sentinel to the
+ *      "find folder" thread, thus effectively disabling refresh.
  *
  *      This file is ALL new with V0.9.9 (2001-01-29) [umoeller]
  *
@@ -134,10 +134,10 @@
  *
  ********************************************************************/
 
-// notify worker thread
-static THREADINFO      G_tiNotifyWorker = {0};
-static HWND            G_hwndNotifyWorker = NULLHANDLE;
-static HEV             G_hevNotifyWorkerReady = NULLHANDLE;
+// find folder thread
+static THREADINFO      G_tiFindFolder = {0};
+static HWND            G_hwndFindFolder = NULLHANDLE;
+static HEV             G_hevFindFolderReady = NULLHANDLE;
 
 // pump thread
 static THREADINFO      G_tiPumpThread = {0};
@@ -166,7 +166,7 @@ static BOOL            G_fExitAllRefreshThreads = FALSE;
  *      list of the folder that is specified in the
  *      notification.
  *
- *      Called on the Notify Worker thread.
+ *      Called on the find-folder thread.
  *
  *      Preconditions:
  *
@@ -286,6 +286,33 @@ VOID refrClearFolderNotifications(WPFolder *pFolder)
 
 /* ******************************************************************
  *
+ *   Refresh thread
+ *
+ ********************************************************************/
+
+/*
+ *@@ fntOverflowRefresh:
+ *      transient thread which refreshes a folder after
+ *      an overflow. Gets started from PumpAgedNotification.
+ *
+ *      This thread is created with a PM message queue.
+ *
+ *@@added V0.9.12 (2001-05-19) [umoeller]
+ */
+
+VOID _Optlink fntOverflowRefresh(PTHREADINFO ptiMyself)
+{
+    TRY_LOUD(excpt1)
+    {
+        WPFolder *pFolder = (WPFolder*)ptiMyself->ulData;
+
+        _wpRefresh(pFolder, NULLHANDLE, NULL);
+    }
+    CATCH(excpt1) {} END_CATCH();
+}
+
+/* ******************************************************************
+ *
  *   Pump thread
  *
  ********************************************************************/
@@ -299,6 +326,10 @@ VOID refrClearFolderNotifications(WPFolder *pFolder)
  *      Preconditions:
  *
  *      -- The caller must hold the WPS notify mutex.
+ *
+ *      Postconditions:
+ *
+ *      -- This will remove pNotify.
  *
  *@@added V0.9.9 (2001-02-04) [umoeller]
  *@@changed V0.9.12 (2001-05-18) [umoeller]: added full refresh on overflow
@@ -393,8 +424,34 @@ VOID PumpAgedNotification(PXWPNOTIFY pNotify,
 
             case RCNF_XWP_FULLREFRESH:
             {
-                refrClearFolderNotifications(pNotify->pFolder);
-                _wpRefresh(pNotify->pFolder, NULLHANDLE, NULL);
+                WPFolder *pFolder = pNotify->pFolder;
+
+                refrClearFolderNotifications(pFolder);
+
+                // we need a full refresh on the folder...
+                // set the folder flag which causes the folder
+                // contents to be refreshed on open
+                _wpModifyFldrFlags(pFolder,
+                                   FOI_ASYNCREFRESHONOPEN,
+                                   FOI_ASYNCREFRESHONOPEN);
+
+                // if the folder is currently open, do a
+                // full refresh NOW
+                if (_wpFindViewItem(pFolder,
+                                    VIEW_ANY,
+                                    NULL))
+                {
+                    // alright, refresh NOW.... However, we can't
+                    // do this on this thread while we're holding
+                    // the WPS notify mutex... so start a transient
+                    // thread just for refreshing.
+                    thrCreate(NULL,
+                              fntOverflowRefresh,
+                              NULL,
+                              "OverflowRefresh",
+                              THRF_PMMSGQUEUE | THRF_TRANSIENT,
+                              (ULONG)pFolder);
+                }
 
                 fRemoveThis = FALSE;
             break; }
@@ -539,7 +596,7 @@ VOID _Optlink refr_fntPumpThread(PTHREADINFO ptiMyself)
             // if we crashed, stop all refresh threads. This
             // can become very annoying otherwise.
             G_fExitAllRefreshThreads = TRUE;
-            WinPostMsg(G_hwndNotifyWorker, WM_QUIT, 0, 0);
+            WinPostMsg(G_hwndFindFolder, WM_QUIT, 0, 0);
         } END_CATCH();
 
         if (fSemOwned)
@@ -552,7 +609,7 @@ VOID _Optlink refr_fntPumpThread(PTHREADINFO ptiMyself)
 
 /* ******************************************************************
  *
- *   Notify worker thread
+ *   Find Folder thread
  *
  ********************************************************************/
 
@@ -686,7 +743,7 @@ BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
  *      this does the hard work of finding a folder
  *      etc. for every notification.
  *
- *      Gets called when fnwpNotifyWorker receives
+ *      Gets called when fnwpFindFolder receives
  *      NM_NOTIFICATION. pNotify points to the
  *      XWPNOTIFY structure which was allocated by
  *      refr_fntSentinel.
@@ -828,23 +885,23 @@ VOID FindFolderForNotification(PXWPNOTIFY pNotify,
                          && (_somIsA(pNotify->pFolder, _WPFolder))
                        )
                     {
-                        // request the global WPS notify sem;
-                        // we'll wait ten seconds for this -- if we can't
-                        // get the mutex in that time, we'll just drop
-                        // the notification
-                        if (fSemOwned = wpshGetNotifySem(10 * 1000))
+                        ULONG flFolder = _wpQueryFldrFlags(pNotify->pFolder);
+
+                        /* _Pmpf(("    --> folder %s, flags: 0x%lX",
+                                    _wpQueryTitle(pNotify->pFolder),
+                                    flFolder)); */
+
+                        // ignore if delete or populate or refresh is in progress
+                        if (0 == (flFolder & (  FOI_DELETEINPROGRESS
+                                              | FOI_POPULATEINPROGRESS
+                                              | FOI_REFRESHINPROGRESS)
+                           ))
                         {
-                            ULONG flFolder = _wpQueryFldrFlags(pNotify->pFolder);
-
-                            /* _Pmpf(("    --> folder %s, flags: 0x%lX",
-                                        _wpQueryTitle(pNotify->pFolder),
-                                        flFolder)); */
-
-                            // ignore if delete or populate or refresh is in progress
-                            if (0 == (flFolder & (  FOI_DELETEINPROGRESS
-                                                  | FOI_POPULATEINPROGRESS
-                                                  | FOI_REFRESHINPROGRESS)
-                               ))
+                            // request the global WPS notify sem;
+                            // we'll wait ten seconds for this -- if we can't
+                            // get the mutex in that time, we'll just drop
+                            // the notification
+                            if (fSemOwned = wpshGetNotifySem(10 * 1000))
                             {
                                 // see if it's populated; we can safely
                                 // drop the notification if the folder
@@ -884,12 +941,12 @@ VOID FindFolderForNotification(PXWPNOTIFY pNotify,
                                     // mark the folder for refresh on next open
                                     fRefreshFolderOnOpen = TRUE;
 
-                            } // end if delete or refresh in progress
-                        } // end if (fSemOwned)
-                        else
-                            // can't get the semaphore in time:
-                            // mark the folder for refresh
-                            fRefreshFolderOnOpen = TRUE;
+                            } // end if (fSemOwned)
+                            else
+                                // can't get the semaphore in time:
+                                // mark the folder for refresh
+                                fRefreshFolderOnOpen = TRUE;
+                        } // end if delete or refresh in progress
 
                         if (fRefreshFolderOnOpen)
                             _wpModifyFldrFlags(pNotify->pFolder,
@@ -904,7 +961,7 @@ VOID FindFolderForNotification(PXWPNOTIFY pNotify,
                     // if we crashed, stop all refresh threads. This
                     // can become very annoying otherwise.
                     G_fExitAllRefreshThreads = TRUE;
-                    WinPostMsg(G_hwndNotifyWorker, WM_QUIT, 0, 0);
+                    WinPostMsg(G_hwndFindFolder, WM_QUIT, 0, 0);
                 } END_CATCH();
 
                 if (fSemOwned)
@@ -919,14 +976,14 @@ VOID FindFolderForNotification(PXWPNOTIFY pNotify,
 }
 
 /*
- *@@ fnwpNotifyWorker:
- *      object window proc for the "notify worker" thread.
+ *@@ fnwpFindFolder:
+ *      object window proc for the "find folder" thread.
  *
  *@@added V0.9.9 (2001-01-29) [umoeller]
  *@@changed V0.9.12 (2001-05-18) [umoeller]: added full refresh on overflow
  */
 
-MRESULT EXPENTRY fnwpNotifyWorker(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+MRESULT EXPENTRY fnwpFindFolder(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -997,7 +1054,7 @@ MRESULT EXPENTRY fnwpNotifyWorker(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         // if we crashed, stop all refresh threads. This
         // can become very annoying otherwise.
         G_fExitAllRefreshThreads = TRUE;
-        WinPostMsg(G_hwndNotifyWorker, WM_QUIT, 0, 0);
+        WinPostMsg(G_hwndFindFolder, WM_QUIT, 0, 0);
 
         pLastValidFolder = NULL;
 
@@ -1010,10 +1067,10 @@ MRESULT EXPENTRY fnwpNotifyWorker(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 }
 
 /*
- *@@ refr_fntNotifyWorker:
+ *@@ refr_fntFindFolder:
  *      second thread for folder auto-refresh. This
  *      has a PM message queue and an object window
- *      (fnwpNotifyWorker) which does the hard work
+ *      (fnwpFindFolder) which does the hard work
  *      for folder auto-refresh.
  *
  *      This receives an NM_NOTIFICATION message
@@ -1023,15 +1080,15 @@ MRESULT EXPENTRY fnwpNotifyWorker(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *@@added V0.9.9 (2001-01-29) [umoeller]
  */
 
-VOID _Optlink refr_fntNotifyWorker(PTHREADINFO ptiMyself)
+VOID _Optlink refr_fntFindFolder(PTHREADINFO ptiMyself)
 {
     QMSG qmsg;
 
     WinCancelShutdown(ptiMyself->hmq, TRUE);
 
-    G_hwndNotifyWorker = WinCreateWindow(HWND_OBJECT,
+    G_hwndFindFolder = WinCreateWindow(HWND_OBJECT,
                                          WC_STATIC,
-                                         "XWPNotifyWorker",
+                                         "XWPFindFolder",
                                          0,
                                          0, 0, 0, 0,
                                          NULLHANDLE,
@@ -1039,19 +1096,19 @@ VOID _Optlink refr_fntNotifyWorker(PTHREADINFO ptiMyself)
                                          0,
                                          NULL,
                                          NULL);
-    WinSubclassWindow(G_hwndNotifyWorker,
-                      fnwpNotifyWorker);
+    WinSubclassWindow(G_hwndFindFolder,
+                      fnwpFindFolder);
 
     // tell the sentinel that we're ready
-    DosPostEventSem(G_hevNotifyWorkerReady);
+    DosPostEventSem(G_hevFindFolderReady);
 
     // now enter the message loop
     while (WinGetMsg(ptiMyself->hab, &qmsg, NULLHANDLE, 0, 0))
         WinDispatchMsg(ptiMyself->hab, &qmsg);
                     // loop until WM_QUIT
 
-    WinDestroyWindow(G_hwndNotifyWorker);
-    G_hwndNotifyWorker = NULLHANDLE;
+    WinDestroyWindow(G_hwndFindFolder);
+    G_hwndFindFolder = NULLHANDLE;
 }
 
 /* ******************************************************************
@@ -1063,11 +1120,11 @@ VOID _Optlink refr_fntNotifyWorker(PTHREADINFO ptiMyself)
 /*
  *@@ PostXWPNotify:
  *      called from refr_fntSentinel for each
- *      notification to be posted to fnwpNotifyWorker.
+ *      notification to be posted to fnwpFindFolder.
  *
  *      This takes a kernel CNINFO structure and creates
  *      an XWPNOTIFY from it, which is then posted to the
- *      notify-worker msg queue.
+ *      find-folder msg queue.
  *
  *@@added V0.9.12 (2001-05-18) [umoeller]
  */
@@ -1075,7 +1132,7 @@ VOID _Optlink refr_fntNotifyWorker(PTHREADINFO ptiMyself)
 VOID PostXWPNotify(PCNINFO pCNInfo)
 {
     // create an XWPNOTIFY struct which has
-    // a CNINFO in it... the find-notify worker
+    // a CNINFO in it... the find-folder worker
     // will set up the other fields then
     ULONG   cbThis =   sizeof(XWPNOTIFY)
                      + pCNInfo->cbName
@@ -1090,13 +1147,13 @@ VOID PostXWPNotify(PCNINFO pCNInfo)
         *(pInfo2->CNInfo.szName + pCNInfo->cbName) = '\0';
 
         // notify worker
-        if (!WinPostMsg(G_hwndNotifyWorker,
+        if (!WinPostMsg(G_hwndFindFolder,
                         NM_NOTIFICATION,
                         (MPARAM)pInfo2,
                         0))
         {
             // error posting:
-            // either notify-worker has crashed,
+            // either find-folder has crashed,
             // or queue is full... in any case,
             // we discard the notification then
             free(pInfo2);
@@ -1111,7 +1168,7 @@ VOID PostXWPNotify(PCNINFO pCNInfo)
  *      This replaces the WPS's "WheelWatcher" thread
  *      and processes the DosFindNotify* functions.
  *
- *      On startup, this creates the "notify worker"
+ *      On startup, this creates the "find folder"
  *      and "pump" threads in turn.
  *
  *      This thread does NOT have a PM message queue.
@@ -1119,18 +1176,19 @@ VOID PostXWPNotify(PCNINFO pCNInfo)
  *      If folder auto-refresh has been replaced in
  *      XWPSetup, this thread gets created from
  *      krnReplaceWheelWatcher and starts the other
- *      two threads (refr_fntNotifyWorker, refr_fntPumpThread)
+ *      two threads (refr_fntFindFolder, refr_fntPumpThread)
  *      in turn.
  *
  *      These three threads get created even if folder
  *      auto-refresh has been disabled on the "View" page
  *      in "Workplace shell". That setting will only disable
- *      posting messages from the Sentinel to the notify
- *      worker.
+ *      posting messages from the Sentinel to the "find folder"
+ *      thread.
  *
  *@@added V0.9.9 (2001-01-31) [umoeller]
  *@@changed V0.9.12 (2001-05-18) [umoeller]: multiple notifications in the same buffer were missing, fixed
  *@@changed V0.9.12 (2001-05-18) [umoeller]: sped up allocation, added filter
+ *@@changed V0.9.12 (2001-05-20) [umoeller]: fixed stupid pointer error which caused a trap D on DosResetChangeNotify
  */
 
 VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
@@ -1150,17 +1208,17 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
 
     // create a second thread with a PM object window
     // which can process our notifications asynchronously
-    DosCreateEventSem(NULL, &G_hevNotifyWorkerReady, 0, FALSE);
-    thrCreate(&G_tiNotifyWorker,
-              refr_fntNotifyWorker,
+    DosCreateEventSem(NULL, &G_hevFindFolderReady, 0, FALSE);
+    thrCreate(&G_tiFindFolder,
+              refr_fntFindFolder,
               NULL,
-              "NotifyWorker",
+              "RefreshFindFolder",
               THRF_PMMSGQUEUE,
               0);
     // wait for the object window to be created
-    DosWaitEventSem(G_hevNotifyWorkerReady, 20*1000);
-    DosResetEventSem(G_hevNotifyWorkerReady, &ulPostCount);
-    DosCloseEventSem(G_hevNotifyWorkerReady);
+    DosWaitEventSem(G_hevFindFolderReady, 20*1000);
+    DosResetEventSem(G_hevFindFolderReady, &ulPostCount);
+    DosCloseEventSem(G_hevFindFolderReady);
 
     // and create the "Pump" thread for aging and
     // inserting the notifications into the folder
@@ -1168,17 +1226,21 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
     thrCreate(&G_tiPumpThread,
               refr_fntPumpThread,
               NULL,
-              "NotificationPump",
+              "RefreshNotificationPump",
               THRF_PMMSGQUEUE,
               0);
 
     TRY_LOUD(excpt1)
     {
-        // allocate a block of tiled memory...
-        ULONG       cb = sizeof(CNINFO) + (2 * CCHMAXPATH);
+        PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+        PCKERNELGLOBALS      pKernelGlobals = krnQueryGlobals();
+
+        // allocate a block of memory... we can't use malloc,
+        // or the Dos*Notify APIs will trap
+        ULONG       cb = 2 * (sizeof(CNINFO) + CCHMAXPATH);
                                 // we can't use more, this will hang the system
-        PCNINFO     pCNInfo = NULL;
-        APIRET      arc = DosAllocMem((PVOID*)&pCNInfo,
+        PCNINFO     pBuffer = NULL;
+        APIRET      arc = DosAllocMem((PVOID*)&pBuffer,
                                       cb,
                                       PAG_COMMIT
                                         | OBJ_TILE
@@ -1187,29 +1249,26 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
                             // ^^^ moved this up, we don't have to reallocate
                             // on every loop
 
-        if ((arc == NO_ERROR) && (pCNInfo))
+        if ((arc == NO_ERROR) && (pBuffer))
         {
             // now loop forever... at least while the other threads
-            // haven't stopped. If the notify worker terminates for
-            // whatever reason, it resets G_hwndNotifyWorker to NULLHANDLE.
-            while (G_hwndNotifyWorker)
+            // haven't stopped. If the "find folder" thread terminates for
+            // whatever reason, it resets G_hwndFindFolder to NULLHANDLE.
+            while (G_hwndFindFolder)
             {
-                PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
-                PCKERNELGLOBALS      pKernelGlobals = krnQueryGlobals();
-
                 arc = DosOpenChangeNotify(NULL,
                                           0,
                                           &hdir,
                                           0);
 
-                while (    (G_hwndNotifyWorker)
+                while (    (G_hwndFindFolder)
                         && (arc == NO_ERROR)
                       )
                 {
-                    TRY_QUIET(excpt2)
+                    TRY_LOUD(excpt2)
                     {
                         ULONG cLogs = 0;
-                        arc = DosResetChangeNotify(pCNInfo,
+                        arc = DosResetChangeNotify(pBuffer,
                                                    cb,
                                                    &cLogs,
                                                    hdir);
@@ -1217,7 +1276,7 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
                             // but for the "rename" sequence
                             // there are usually two
 
-                        if (    (G_hwndNotifyWorker)
+                        if (    (G_hwndFindFolder)
                              && (pKernelGlobals->fDesktopPopulated)
                              && (arc == NO_ERROR)
                            )
@@ -1227,18 +1286,19 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
                             // since we better get out of the processing
                             // as quickly as possible.
                             // Instead, we create a copy of this notification
-                            // and have the "notify worker" thread do the
+                            // and have the "find folder" thread do the
                             // work of finding the folder etc.
-                            while (    (pCNInfo)
+                            PCNINFO pcniThis = pBuffer;
+                            while (    (pcniThis)
                                     && (!pGlobalSettings->fFdrAutoRefreshDisabled)
                                   )
                             {
-                                if (pCNInfo->cbName)
+                                if (pcniThis->cbName)
                                     // filter out the items which the
-                                    // notify worker doesn't understand
+                                    // "find folder" thrad doesn't understand
                                     // anyway, this saves us a malloc() call
                                     // V0.9.12 (2001-05-18) [umoeller]
-                                    switch (pCNInfo->bAction)
+                                    switch (pcniThis->bAction)
                                     {
                                         case RCNF_FILE_ADDED:
                                         case RCNF_FILE_DELETED:
@@ -1246,14 +1306,14 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
                                         case RCNF_DIR_DELETED:
                                         case RCNF_OLDNAME:
                                         case RCNF_NEWNAME:
-                                            PostXWPNotify(pCNInfo);
+                                            PostXWPNotify(pcniThis);
                                     }
 
                                 // go for next entry in the buffer
-                                if (pCNInfo->oNextEntryOffset)
-                                    pCNInfo = (PCNINFO)(   (PBYTE)pCNInfo
-                                                         + pCNInfo->oNextEntryOffset
-                                                       );
+                                if (pcniThis->oNextEntryOffset)
+                                    pcniThis = (PCNINFO)(   (PBYTE)pcniThis
+                                                          + pcniThis->oNextEntryOffset
+                                                        );
                                 else
                                     // no next entry:
                                     break;
@@ -1275,32 +1335,36 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
 
                 // we got an error:
 
+                // close the directory handle
+                DosCloseChangeNotify(hdir);
+                hdir = NULLHANDLE;
+
                 // in addition, check if we get error 111
                 // (ERROR_BUFFER_OVERFLOW); this comes in frequently
                 // when there's too many notifications flooding in,
                 // e.g. when hundreds of files are unzipped into a
                 // folder
                 if (    (arc == ERROR_BUFFER_OVERFLOW)
-                     && (G_hwndNotifyWorker)
+                     && (G_hwndFindFolder)
                      && (!pGlobalSettings->fFdrAutoRefreshDisabled)
                    )
-                    // tell the notify worker to refresh the
+                {
+                    // tell the "find folder" thread to refresh the
                     // entire folder then... we have no valid
                     // data now, so we'll use the previous notification
                     // then
-                    WinPostMsg(G_hwndNotifyWorker,
+                    WinPostMsg(G_hwndFindFolder,
                                NM_OVERFLOW,
                                0, 0);
 
-                // close the directory handle
-                DosCloseChangeNotify(hdir);
-                hdir = NULLHANDLE;
+                    DosSleep(1000);
+                }
 
                 // and start over
 
-            } // end while (G_hwndNotifyWorker)
+            } // end while (G_hwndFindFolder)
 
-            DosFreeMem(pCNInfo);
+            DosFreeMem(pBuffer);
 
         } // end if ((arc == NO_ERROR) && (pCNInfo))
     }

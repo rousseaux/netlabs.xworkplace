@@ -358,7 +358,7 @@ FILE        *G_LogFile = NULL;
 HFILE       G_hfSec32DD = NULLHANDLE;
 
 THREADINFO  G_tiRing3Daemon = {0};
-BOOL        G_fRing3DaemonRunning = FALSE;
+ULONG       G_tidRing3DaemonRunning = FALSE;
 HEV         G_hevCallback = NULLHANDLE;
 
 PXWPSHELLSHARED G_pXWPShellShared = 0;
@@ -1598,7 +1598,7 @@ APIRET InitDaemon(VOID)
             // interfaces ring-0 driver...
             if (!thrCreate(&G_tiRing3Daemon,
                            fntRing3Daemon,
-                           &G_fRing3DaemonRunning,
+                           &G_tidRing3DaemonRunning,
                            "Ring3Daemon",
                            THRF_WAIT,
                            G_hfSec32DD))      // driver file handle

@@ -488,8 +488,8 @@ THREADINFO  G_tiLoadBitmap = {0};
 
 // scroll bar data
 BITMAPINFOHEADER G_bmihBitmapLoaded;
-LONG        G_lVertScrollOfs,
-            G_lHorzScrollOfs;
+ULONG       G_ulVertScrollOfs,
+            G_ulHorzScrollOfs;
 
 #define VERT_SCROLL_UNIT 10
 #define HORZ_SCROLL_UNIT 10
@@ -576,13 +576,13 @@ VOID UpdateScrollBars(HWND hwndClient)
         winhUpdateScrollBar(hwndVScroll,
                             szlViewport.cy,
                             G_bmihBitmapLoaded.cy,
-                            G_lVertScrollOfs,
+                            G_ulVertScrollOfs,
                             FALSE);      // auto-hide
         // horizontal (width)
         winhUpdateScrollBar(hwndHScroll,
                             szlViewport.cx,
                             G_bmihBitmapLoaded.cx,
-                            G_lHorzScrollOfs,
+                            G_ulHorzScrollOfs,
                             FALSE);      // auto-hide
     }
 }
@@ -714,6 +714,7 @@ BOOL WMCommand_FileOpen(HWND hwndClient)
         thrCreate(&G_tiLoadBitmap,
                   fntLoadBitmap,
                   &G_fLoadingBitmap,        // running flag
+                  "LoadBitmap",
                   THRF_PMMSGQUEUE | THRF_WAIT,
                   hwndClient);      // user param
         UpdateMenuItems();
@@ -761,8 +762,8 @@ VOID WMDoneLoadingBitmap(HWND hwndClient,
         GpiQueryBitmapParameters(G_hbmLoaded,
                                  &G_bmihBitmapLoaded);
         // reset scroller
-        G_lVertScrollOfs = 0;
-        G_lHorzScrollOfs = 0;
+        G_ulVertScrollOfs = 0;
+        G_ulHorzScrollOfs = 0;
 
         if (G_GlobalSettings.fResizeAfterLoad)
             SetWinSize2BmpSize();
@@ -847,7 +848,7 @@ VOID PaintClient(HWND hwndClient,
                 // So if it's zero, we must use -ulClipped.
                 ptlDest.y -= ulClipped;
                 // if it's above zero, we must add to y.
-                ptlDest.y += G_lVertScrollOfs;
+                ptlDest.y += G_ulVertScrollOfs;
             }
 
             if (G_bmihBitmapLoaded.cx < szlViewport.cx)
@@ -863,7 +864,7 @@ VOID PaintClient(HWND hwndClient,
                 // So if it's zero, we must use -ulClipped.
                 // ptlDest.x -= ulClipped;
                 // if it's above zero, we must further subtract from x.
-                ptlDest.x -= G_lHorzScrollOfs;
+                ptlDest.x -= G_ulHorzScrollOfs;
             }
 
             WinDrawBitmap(hps,
@@ -989,7 +990,7 @@ MRESULT EXPENTRY fnwpMainClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM m
             WinQueryWindowRect(hwndClient, &rcl);
             winhHandleScrollMsg(hwndClient,
                                 WinWindowFromID(G_hwndMain, FID_VERTSCROLL),
-                                &G_lVertScrollOfs,
+                                &G_ulVertScrollOfs,
                                 &rcl,
                                 G_bmihBitmapLoaded.cy,
                                 10,
@@ -1004,7 +1005,7 @@ MRESULT EXPENTRY fnwpMainClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM m
             _Pmpf(("WM_HSCROLL"));
             winhHandleScrollMsg(hwndClient,
                                 WinWindowFromID(G_hwndMain, FID_HORZSCROLL),
-                                &G_lHorzScrollOfs,
+                                &G_ulHorzScrollOfs,
                                 &rcl,
                                 G_bmihBitmapLoaded.cx,
                                 10,
@@ -1141,6 +1142,7 @@ int main(int argc,
         thrCreate(&G_tiLoadBitmap,
                   fntLoadBitmap,
                   &G_fLoadingBitmap,        // running flag
+                  "LoadBitmap",
                   THRF_PMMSGQUEUE | THRF_WAIT,
                   hwndClient);      // user param
     }

@@ -54,6 +54,8 @@ EXPORTS
     gpihBox
     gpihCreateBitmap
     gpihCreateMemPS
+    gpihCreateXBitmap
+    gpihDestroyXBitmap
     gpihDraw3DFrame
     gpihManipulateRGB
     gpihSwitchToRGB

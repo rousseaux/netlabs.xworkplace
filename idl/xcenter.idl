@@ -125,14 +125,27 @@ interface XCenter : WPAbstract
     LONG lcolClientBackground;      // client background color
                                     // V0.9.9 (2001-03-07) [umoeller]
 
+    // Open view data:
+    ULONG tidRunning;               // thread ID of running XCenter thread or NULLHANDLE
     PVOID pvOpenView;               // if != NULLHANDLE, XCenter is currently open,
                                     // and this has a PXCENTERWINDATA pointer
-                                    // which contains all the view data...
+                                    // which contains all the view data.
+                // A remark on these two fields...
+                // tidRunning is set directly by the thread functions
+                // in helpers\threads.c, since &_tidRunning is passed
+                // to thrCreate. As a result, this should be the first
+                // check for whether an XCenter view is only open.
+                // Even though tidRunning may be != null, pvOpenView
+                // may still be NULL since that field is only set
+                // while the XCenter view is fully operable (which
+                // might not be the case while the view is being
+                // created or destroyed).
+                // So do not rely on the pvOpenView field. Check
+                // tidRunning instead.
 
-    ULONG tid;                      // thread ID of running XCenter thread or null
+    BOOL fShowingOpenViewMenu;      // TRUE if context menu on open XCenter client
 
-    BOOL fShowingOpenViewMenu;      // TRUE if context menu on XCenter client
-
+    // Widget settings:
     PSZ pszPackedWidgetSettings;    // packed widget settings restored in wpRestoreState
                                     // (allocated with malloc())
     ULONG cbPackedWidgetSettings;   // size of that buffer

@@ -30,7 +30,8 @@ to prevent inheriting the default view from the parent folder.
 non-default sort classes (e.g. in the trash can, which can finally be sorted now too).
 Also added "Folders first" as an additional sort setting.
 <P><LI>XFldProgramFile: "Module" pages support NOSTUB executables now (e.g. JFS.IFS).
-<P><LI>XCenter: Added "lockup" to X-button menu.
+<P><LI>XCenter: added "lockup" to X-button menu.
+<P><LI>XWPString: added setup string support.
 
 </UL>Miscellaneous changes:
 <UL><LI>General: Reworked trap logs a bit for more lucid output. Added seg:ofs translation of
@@ -72,8 +73,14 @@ race conditions.
 <P><LI>XCenter: Winlist widget now shows hidden windows on click.
 <P><LI>XCenter: Winlist widget filter changes weren't picked up any longer since
 the changes in 0.9.11. Fixed.
+<P><LI>XCenter: Pulse widget didn't update display if some app occupied the SIQ.
+Fixed; now using separate thread to get performance data from OS/2 kernel.
+<P><LI>XCenter: Trapped sometimes when several threads attempted to load the
+widget classes. Fixed, added mutex protection to DLL loading.
+<P><LI>XCenter: Added extra checks for view creation/destruction.
 <P><LI>XCenter: Hopefully fixed hang on XShutdown.
-<P><LI>XCenter: X-Button now starts shutdown/restart WPS etc. on thread 1.
+<P><LI>XCenter: X-Button started shutdown/restart WPS etc. on XCenter thread. Fixed,
+now started on thread 1.
 <P><LI>XShutdown: Animations frequently didn't show. Fixed.
 <P><LI>XShutdown: Now recovering all windows from other desktops to screen before
 closing windows.

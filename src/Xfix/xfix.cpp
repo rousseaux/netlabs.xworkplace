@@ -84,8 +84,8 @@ PNODE       G_aRootNodes[27] = {0};         // nodes for each root dir
 
 THREADINFO  G_tiInsertHandles = {0},
             G_tiCheckFiles = {0};
-BOOL        G_fInsertHandlesRunning = FALSE,
-            G_fCheckFilesRunning = FALSE;
+ULONG       G_tidInsertHandlesRunning = 0,
+            G_tidCheckFilesRunning = 0;
 BOOL        G_fResolvingRefs = FALSE;
 ULONG       G_ulPercentDone = 0;
 
@@ -1293,7 +1293,7 @@ VOID UpdateMenuItems(USHORT usSortCmd)
     HWND    hmenuMain = WinWindowFromID(G_hwndMain, FID_MENU);
 
     // view menu
-    BOOL fEnable = (!G_fInsertHandlesRunning && !G_fCheckFilesRunning);
+    BOOL fEnable = (!G_tidInsertHandlesRunning && !G_tidCheckFilesRunning);
     WinEnableMenuItem(hmenuMain, IDM_ACTIONS,
                       fEnable);
     WinEnableMenuItem(hmenuMain, IDM_SELECT,
@@ -1395,7 +1395,7 @@ VOID StartInsertHandles(HWND hwndCnr)
     // start collect thread
     thrCreate(&G_tiInsertHandles,
               fntInsertHandles,
-              &G_fInsertHandlesRunning,
+              &G_tidInsertHandlesRunning,
               "InsertHandles",
               THRF_WAIT | THRF_PMMSGQUEUE,
               hwndCnr);     // thread param
@@ -2263,7 +2263,7 @@ VOID FrameCommand(HWND hwndFrame,
             case IDMI_ACTIONS_FILES:
                 thrCreate(&G_tiCheckFiles,
                           fntCheckFiles,
-                          &G_fCheckFilesRunning,
+                          &G_tidCheckFilesRunning,
                           "CheckFiles",
                           THRF_WAIT | THRF_PMMSGQUEUE,
                           0);     // thread param
@@ -2574,7 +2574,7 @@ MRESULT EXPENTRY winh_fnwpFrameWithStatusBar(HWND hwndFrame, ULONG msg, MPARAM m
         case WM_TIMER:
         {
             ULONG ulID = (ULONG)mp1;
-            if (G_fInsertHandlesRunning)
+            if (G_tidInsertHandlesRunning)
             {
                 CHAR sz[100];
                 if (G_fResolvingRefs)
@@ -2586,7 +2586,7 @@ MRESULT EXPENTRY winh_fnwpFrameWithStatusBar(HWND hwndFrame, ULONG msg, MPARAM m
                 WinSetWindowText(G_hwndStatusBar,
                                  sz);
             }
-            else if (G_fCheckFilesRunning)
+            else if (G_tidCheckFilesRunning)
             {
                 CHAR sz[100];
                 sprintf(sz, "Checking files, %03d%% done...",
@@ -2908,9 +2908,9 @@ int main(int argc, char* argv[])
                 WinDispatchMsg(hab, &qmsg);
             }
 
-            if (G_fInsertHandlesRunning)
+            if (G_tidInsertHandlesRunning)
                 thrFree(&G_tiInsertHandles);
-            if (G_fCheckFilesRunning)
+            if (G_tidCheckFilesRunning)
                 thrFree(&G_tiCheckFiles);
         }
     }

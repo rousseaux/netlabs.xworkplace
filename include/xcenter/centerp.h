@@ -287,6 +287,10 @@
      *
      ********************************************************************/
 
+    BOOL ctrpLockClasses(VOID);
+
+    VOID ctrpUnlockClasses(VOID);
+
     VOID ctrpLoadClasses(VOID);
 
     #ifdef LINKLIST_HEADER_INCLUDED

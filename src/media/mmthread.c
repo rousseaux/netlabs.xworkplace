@@ -238,10 +238,9 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
          *
          *      Playing sounds is a three-step process:
          *
-         *      1)  We call xmmOpenSound in SOUND.DLL first
-         *          to open a waveform device for this sound
-         *          file as a _shareable_ device and then
-         *          stop for the moment.
+         *      1)  We call xmmOpenSound first to open a waveform
+         *          device for this sound file as a _shareable_
+         *          device and then stop for the moment.
          *
          *      2)  If this device is accessible, MMPM/2 then
          *          posts us MM_MCIPASSDEVICE (below) so we can
@@ -278,6 +277,7 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
          *      to allow multimedia applications to behave
          *      politely when several applications use the
          *      same device. This is posted to us in two cases:
+         *
          *      1)  opening the device above was successful
          *          and the device is available (that is, no
          *          other application needs exclusive access
@@ -285,9 +285,11 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
          *          MCI_GAINING_USE flag set, and we can call
          *          xmmPlaySound in SOUND.DLL to actually
          *          play the sound.
+         *
          *          The device is _not_ available, for example,
-         *          when a Win-OS/2 session is running which
+         *          if a Win-OS/2 session is running which
          *          uses sounds.
+         *
          *      2)  While we are playing, another application
          *          is trying to get access to the device; in
          *          this case, mp2 has the MCI_LOSING_USE flag
@@ -341,6 +343,11 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
                     xmmStopSound(&G_usSoundDeviceID);
             }
         break; }
+
+        /*
+         * MM_MCIPOSITIONCHANGE:
+         *
+         */
 
         case MM_MCIPOSITIONCHANGE:
         {

@@ -98,6 +98,7 @@
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
+#include "xfobj.ih"
 #include "xwpstring.ih"
 
 // XWorkplace implementation headers
@@ -108,8 +109,8 @@
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 // other SOM headers
-
 #pragma hdrstop
+#include <wpfsys.h>
 
 /* ******************************************************************
  *                                                                  *
@@ -695,6 +696,128 @@ SOM_Scope BOOL  SOMLINK xwstr_xwpInvokeString(XWPString *somSelf,
 }
 
 /*
+ *@@ xwpQuerySetup2:
+ *      this XFldObject method is overridden to support
+ *      setup strings for program files.
+ *
+ *      See XFldObject::xwpQuerySetup2 for details.
+ *
+ *@@added V0.9.12 (2001-05-20) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xwstr_xwpQuerySetup2(XWPString *somSelf,
+                                              PSZ pszSetupString,
+                                              ULONG cbSetupString)
+{
+    XSTRING strTemp;
+    CHAR szTemp[CCHMAXPATH];
+    ULONG ulReturn = 0;
+    // method pointer for parent class
+    somTD_XFldObject_xwpQuerySetup pfn_xwpQuerySetup2 = 0;
+
+    XWPStringData *somThis = XWPStringGetData(somSelf);
+    XWPStringMethodDebug("XWPString","xwstr_xwpQuerySetup2");
+
+    // setup string implementation
+    xstrInit(&strTemp, 1000);
+
+    // SETUPSTRING= (encoded setup string)
+    if (_pszSetupString)
+    {
+        XSTRING str2;
+        xstrInitCopy(&str2, _pszSetupString, 0);
+        xstrEncode(&str2, "%,();=");
+
+        xstrcat(&strTemp, "SETUPSTRING=", 0);
+        xstrcats(&strTemp, &str2);
+        xstrcatc(&strTemp, ';');
+    }
+
+    // DEFAULTOBJECT
+    // this uses (in this order):
+    // -- DEFAULTOBJECT=<OBJECTID>
+    // -- DEFAULTOBJECT=c:\path\filename
+    // -- DEFAULTOBJECT=*handle
+    xstrcat(&strTemp, "DEFAULTOBJECT=", 0);
+
+    if (_hobjStatic)
+    {
+        WPObject *pobj = _wpclsQueryObject(_WPObject, _hobjStatic);
+        if (pobj)
+        {
+            PSZ psz;
+            if (psz = _wpQueryObjectID(pobj))
+                // object has an ID:
+                xstrcat(&strTemp, psz, 0);
+            else
+                // no object ID: check if it's a WPFileSystem
+                if (    (_somIsA(pobj, _WPFileSystem))
+                     && (_wpQueryFilename(pobj, szTemp, TRUE))
+                   )
+                    xstrcat(&strTemp, szTemp, 0);
+                else
+                    // no WPFileSystem: append handle then
+                    pobj = NULL;
+        }
+
+        if (!pobj)
+        {
+            sprintf(szTemp, "*%lX", _hobjStatic);
+            xstrcat(&strTemp, szTemp, 0);
+        }
+
+        xstrcatc(&strTemp, ';');
+    }
+    else
+        // no member object:
+        xstrcat(&strTemp, "NONE;", 0);
+
+    // CONFIRMINVOCATION
+    xstrcat(&strTemp, "CONFIRMINVOCATION=", 0);
+    xstrcat(&strTemp, (_fConfirm) ? "YES;" : "NO;", 0);
+
+    /*
+     * append string
+     *
+     */
+
+    if (strTemp.ulLength)
+    {
+        // return string if buffer is given
+        if ((pszSetupString) && (cbSetupString))
+            strhncpy0(pszSetupString,   // target
+                      strTemp.psz,      // source
+                      cbSetupString);   // buffer size
+
+        // always return length of string
+        ulReturn = strTemp.ulLength;
+    }
+
+    xstrClear(&strTemp);
+
+    // manually resolve parent method
+    pfn_xwpQuerySetup2
+        = (somTD_XFldObject_xwpQuerySetup)wpshResolveFor(somSelf,
+                                                         _somGetParent(_XWPString),
+                                                         "xwpQuerySetup2");
+    if (pfn_xwpQuerySetup2)
+    {
+        // now call XFldObject method
+        if ( (pszSetupString) && (cbSetupString) )
+            // string buffer already specified:
+            // tell XFldObject to append to that string
+            ulReturn += pfn_xwpQuerySetup2(somSelf,
+                                           pszSetupString + ulReturn, // append to existing
+                                           cbSetupString - ulReturn); // remaining size
+        else
+            // string buffer not yet specified: return length only
+            ulReturn += pfn_xwpQuerySetup2(somSelf, 0, 0);
+    }
+
+    return (ulReturn);
+}
+
+/*
  *@@ wpInitData:
  *      this WPObject instance method gets called when the
  *      object is being initialized (on wake-up or creation).
@@ -796,6 +919,108 @@ SOM_Scope void  SOMLINK xwstr_wpObjectReady(XWPString *somSelf,
                     _pszSetupString = strdup(somThat->pszSetupString);
             }
     }
+}
+
+/*
+ *@@ wpSetup:
+ *      this WPObject instance method is called to allow an
+ *      object to set itself up according to setup strings.
+ *      As opposed to wpSetupOnce, this gets called any time
+ *      a setup string is invoked.
+ *
+ *      We examine the XWPString setup strings here.
+ *
+ *@@added V0.9.12 (2001-05-20) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xwstr_wpSetup(XWPString *somSelf, PSZ pszSetupString)
+{
+    BOOL brc;
+    CHAR        szValue[CCHMAXPATH + 1];
+    ULONG       cbValue;
+
+    XWPStringData *somThis = XWPStringGetData(somSelf);
+    XWPStringMethodDebug("XWPString","xwstr_wpSetup");
+
+    brc = XWPString_parent_WPAbstract_wpSetup(somSelf, pszSetupString);
+
+    if (brc)
+    {
+        TRY_LOUD(excpt1)
+        {
+            // SETUPSTRING= (encoded setup string)
+            cbValue = 0;
+            // get size of buffer first
+            if (_wpScanSetupString(somSelf, pszSetupString,
+                                   "SETUPSTRING", NULL, &cbValue))
+            {
+                PSZ psz = (PSZ)malloc(cbValue);
+                if (psz)
+                {
+                    if (_wpScanSetupString(somSelf, pszSetupString,
+                                           "SETUPSTRING", psz, &cbValue))
+                    {
+                        XSTRING str;
+                        xstrInitSet(&str, psz);
+
+                        xstrDecode(&str);
+
+                        _xwpSetString(somSelf, str.psz);
+
+                        xstrClear(&str);
+                    }
+                    else
+                    {
+                        free(psz);
+                        brc = FALSE;
+                    }
+                }
+            }
+
+            // DEFAULTOBJECT
+            // this uses (in this order):
+            // -- DEFAULTOBJECT=<OBJECTID>
+            // -- DEFAULTOBJECT=c:\path\filename
+            // -- DEFAULTOBJECT=*handle
+            // -- DEFAULTOBJECT=NONE
+            cbValue = sizeof(szValue);
+            if (_wpScanSetupString(somSelf, pszSetupString,
+                                   "DEFAULTOBJECT", szValue, &cbValue))
+            {
+                WPObject *pobj = NULL;
+
+                if (szValue[0] == '*')
+                    // this is a handle:
+                    pobj = _wpclsQueryObject(_WPObject, strtol(&szValue[1], NULL, 16));
+                else
+                    // either object ID, or full path:
+                    pobj = _wpclsQueryObjectFromPath(_WPFileSystem, szValue);
+                    // returns NULL for "NONE"
+
+                _xwpSetStaticObject(somSelf,
+                                    pobj);       // can be NULL
+            }
+
+            // CONFIRMINVOCATION
+            cbValue = sizeof(szValue);
+            if (_wpScanSetupString(somSelf, pszSetupString,
+                                   "CONFIRMINVOCATION", szValue, &cbValue))
+            {
+                if (!strcmp(szValue, "YES"))
+                    _fConfirm = TRUE;
+                else if (!strcmp(szValue, "NO"))
+                    _fConfirm = FALSE;
+                else
+                    brc = FALSE;
+            }
+        }
+        CATCH(excpt1)
+        {
+            brc = FALSE;
+        } END_CATCH();
+    }
+
+    return (brc);
 }
 
 /*

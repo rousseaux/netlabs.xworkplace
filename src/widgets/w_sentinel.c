@@ -215,6 +215,8 @@ PGPIHCREATEBITMAP pgpihCreateBitmap = NULL;
 PGPIHCREATEMEMPS pgpihCreateMemPS = NULL;
 PGPIHDRAW3DFRAME pgpihDraw3DFrame = NULL;
 PGPIHSWITCHTORGB pgpihSwitchToRGB = NULL;
+PGPIHCREATEXBITMAP pgpihCreateXBitmap = NULL;
+PGPIHDESTROYXBITMAP pgpihDestroyXBitmap = NULL;
 
 PSTRHDATETIME pstrhDateTime = NULL;
 PSTRHTHOUSANDSULONG pstrhThousandsULong = NULL;
@@ -245,6 +247,8 @@ RESOLVEFUNCTION G_aImports[] =
         "gpihCreateMemPS", (PFN*)&pgpihCreateMemPS,
         "gpihDraw3DFrame", (PFN*)&pgpihDraw3DFrame,
         "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
+        "gpihCreateXBitmap", (PFN*)&pgpihCreateXBitmap,
+        "gpihDestroyXBitmap", (PFN*)&pgpihDestroyXBitmap,
         "strhDateTime", (PFN*)&pstrhDateTime,
         "strhThousandsULong", (PFN*)&pstrhThousandsULong,
         "tmrStartXTimer", (PFN*)&ptmrStartXTimer,
@@ -289,7 +293,7 @@ typedef struct _MONITORSETUP
             // if != NULL, non-default font (in "8.Helv" format);
             // this has been allocated using local malloc()!
 
-    LONG            cx;
+    LONG        cx;
             // current width; we're sizeable, and we wanna
             // store this
 } MONITORSETUP, *PMONITORSETUP;
@@ -316,11 +320,14 @@ typedef struct _WIDGETPRIVATE
 
     ULONG           ulTimerID;              // if != NULLHANDLE, update timer is running
 
-    HDC             hdcMem;
+    PXBITMAP        pBitmap;        // bitmap for pulse graph; this contains only
+                                    // the "client" (without the 3D frame)
+
+    /* HDC             hdcMem;
     HPS             hpsMem;
 
-    HBITMAP         hbmGraph;       // bitmap for pulse graph; this contains only
-                                    // the "client" (without the 3D frame)
+    HBITMAP         hbmGraph; */
+
     BOOL            fUpdateGraph;
 
     ULONG           cyNeeded;       // returned for XN_QUERYSIZE... this is initialized
@@ -644,6 +651,10 @@ BOOL TwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@ PaintGraphLine:
  *      paints one of those funny lines in
  *      the memory graph.
+ *
+ *      Preconditions:
+ *
+ *      -- pPrivate->pBitmap must exist.
  */
 
 VOID PaintGraphLine(PWIDGETPRIVATE pPrivate,
@@ -653,60 +664,63 @@ VOID PaintGraphLine(PWIDGETPRIVATE pPrivate,
                     LONG yTop,          // in: yTop of bitmap rect
                     LONG lFillBkgnd)    // in: if != -1, bkgnd color
 {
-    HPS hpsMem = pPrivate->hpsMem;
-    PMONITORSETUP pSetup = &pPrivate->Setup;
-    POINTL ptl;
-    ptl.x = x;
-
-    if (ulMaxMemKB)           // avoid division by zero
+    if (pPrivate->pBitmap)
     {
-        ptl.y = 0;
-        GpiMove(hpsMem, &ptl);
+        HPS hpsMem = pPrivate->pBitmap->hpsMem;
+        PMONITORSETUP pSetup = &pPrivate->Setup;
+        POINTL ptl;
+        ptl.x = x;
 
-        // win32k.sys available?
-        if (pThis->ulSwapperFreeKB)
+        if (ulMaxMemKB)           // avoid division by zero
         {
-            // yes: paint "swapper free"
+            ptl.y = 0;
+            GpiMove(hpsMem, &ptl);
+
+            // win32k.sys available?
+            if (pThis->ulSwapperFreeKB)
+            {
+                // yes: paint "swapper free"
+                GpiSetColor(hpsMem,
+                            pSetup->lcolSwapFree);
+                ptl.y += yTop * pThis->ulSwapperFreeKB / ulMaxMemKB;
+                GpiLine(hpsMem, &ptl);
+
+                // paint "swapper used"
+                GpiSetColor(hpsMem,
+                            pSetup->lcolSwap);
+                ptl.y += yTop * (pThis->ulSwapperSizeKB - pThis->ulSwapperFreeKB) / ulMaxMemKB;
+                GpiLine(hpsMem, &ptl);
+            }
+            else
+            {
+                // win32.sys not available:
+                // paint "swapper size"
+                GpiSetColor(hpsMem,
+                            pSetup->lcolSwap);
+                ptl.y += yTop * pThis->ulSwapperSizeKB / ulMaxMemKB;
+                GpiLine(hpsMem, &ptl);
+            }
+
+            // paint "physically used mem"
             GpiSetColor(hpsMem,
-                        pSetup->lcolSwapFree);
-            ptl.y += yTop * pThis->ulSwapperFreeKB / ulMaxMemKB;
+                        pSetup->lcolPhysInUse);
+            ptl.y += yTop * pThis->ulPhysInUseKB / ulMaxMemKB;
             GpiLine(hpsMem, &ptl);
 
-            // paint "swapper used"
+            // paint "free mem" in green
             GpiSetColor(hpsMem,
-                        pSetup->lcolSwap);
-            ptl.y += yTop * (pThis->ulSwapperSizeKB - pThis->ulSwapperFreeKB) / ulMaxMemKB;
+                        pSetup->lcolPhysFree);
+            ptl.y += yTop * pThis->ulPhysFreeKB / ulMaxMemKB;
             GpiLine(hpsMem, &ptl);
         }
-        else
+
+        if (lFillBkgnd != -1)
         {
-            // win32.sys not available:
-            // paint "swapper size"
-            GpiSetColor(hpsMem,
-                        pSetup->lcolSwap);
-            ptl.y += yTop * pThis->ulSwapperSizeKB / ulMaxMemKB;
+            GpiSetColor(hpsMem, lFillBkgnd);
+            ptl.y = yTop;
             GpiLine(hpsMem, &ptl);
         }
-
-        // paint "physically used mem"
-        GpiSetColor(hpsMem,
-                    pSetup->lcolPhysInUse);
-        ptl.y += yTop * pThis->ulPhysInUseKB / ulMaxMemKB;
-        GpiLine(hpsMem, &ptl);
-
-        // paint "free mem" in green
-        GpiSetColor(hpsMem,
-                    pSetup->lcolPhysFree);
-        ptl.y += yTop * pThis->ulPhysFreeKB / ulMaxMemKB;
-        GpiLine(hpsMem, &ptl);
-    }
-
-    if (lFillBkgnd != -1)
-    {
-        GpiSetColor(hpsMem, lFillBkgnd);
-        ptl.y = yTop;
-        GpiLine(hpsMem, &ptl);
-    }
+    } // end if (pPrivate->pBitmap)
 }
 
 /*
@@ -732,118 +746,108 @@ VOID TwgtUpdateGraph(HWND hwnd,
     rclBmp.xRight -= 2;
     rclBmp.yTop -= 2;
 
-    if (pPrivate->hpsMem == NULLHANDLE)
+    if (!pPrivate->pBitmap)
     {
-        // create memory PS for bitmap
-        SIZEL szlPS;
-        szlPS.cx = rclBmp.xRight;
-        szlPS.cy = rclBmp.yTop;
-        pgpihCreateMemPS(pWidget->habWidget,
-                         &szlPS,
-                         &pPrivate->hdcMem,
-                         &pPrivate->hpsMem);
-        pgpihSwitchToRGB(pPrivate->hpsMem);
-
+        // bitmap needs to be created:
+        pPrivate->pBitmap = pgpihCreateXBitmap(pWidget->habWidget,
+                                               rclBmp.xRight,
+                                               rclBmp.yTop);
         // make sure we repaint below
         pPrivate->ulMaxMemKBLast = NULLHANDLE;
     }
 
-    if (pPrivate->hbmGraph == NULLHANDLE)
+    if (pPrivate->pBitmap)
     {
-        pPrivate->hbmGraph = pgpihCreateBitmap(pPrivate->hpsMem,
-                                               rclBmp.xRight,
-                                               rclBmp.yTop);
-        GpiSetBitmap(pPrivate->hpsMem,
-                     pPrivate->hbmGraph);
-    }
+        HPS hpsMem = pPrivate->pBitmap->hpsMem;
 
-    if (!pPrivate->paSnapshots)
-    {
-        // no snapshots yet:
-        // just fill the bitmap rectangle
-        GpiSetColor(pPrivate->hpsMem,
-                    pPrivate->Setup.lcolBackground);
-        pgpihBox(pPrivate->hpsMem,
-                 DRO_FILL,
-                 &rclBmp);
-    }
-    else
-    {
-        // find the max total RAM value first
-        ULONG ulMaxMemKB = 0;
-        for (ul = 0;
-             ((ul < pPrivate->cSnapshots) && (ul < rclBmp.xRight));
-             ul++)
+        if (!pPrivate->paSnapshots)
         {
-            PSNAPSHOT pThis = &pPrivate->paSnapshots[ul];
-            ULONG ulThis = pThis->ulVirtTotalKB;
-            if (ulThis > ulMaxMemKB)
-                ulMaxMemKB = ulThis;
-        }
-
-        if (ulMaxMemKB != pPrivate->ulMaxMemKBLast)
-        {
-            // scaling has changed (or first call):
-            // well, then we need to repaint the entire
-            // damn bitmap
-            POINTL  ptl;
-            ptl.x = pPrivate->ulTextWidth;
-
-            // fill the bitmap rectangle
-            GpiSetColor(pPrivate->hpsMem,
+            // no snapshots yet:
+            // just fill the bitmap rectangle
+            GpiSetColor(hpsMem,
                         pPrivate->Setup.lcolBackground);
-            pgpihBox(pPrivate->hpsMem,
+            pgpihBox(hpsMem,
                      DRO_FILL,
                      &rclBmp);
-
-            for (ul = pPrivate->ulTextWidth;
+        }
+        else
+        {
+            // find the max total RAM value first
+            ULONG ulMaxMemKB = 0;
+            for (ul = 0;
                  ((ul < pPrivate->cSnapshots) && (ul < rclBmp.xRight));
                  ul++)
             {
                 PSNAPSHOT pThis = &pPrivate->paSnapshots[ul];
-
-                PaintGraphLine(pPrivate,
-                               pThis,
-                               ulMaxMemKB,
-                               ptl.x,
-                               rclBmp.yTop,
-                               -1);             // no bkgnd, we just filled that
-                ptl.x++;
+                ULONG ulThis = pThis->ulVirtTotalKB;
+                if (ulThis > ulMaxMemKB)
+                    ulMaxMemKB = ulThis;
             }
 
-            // store this for next time
-            pPrivate->ulMaxMemKBLast = ulMaxMemKB;
-        }
-        else
-        {
-            // scaling has not changed:
-            // we can then bitblt the bitmap one to the left
-            // and only paint the rightmost column
-            POINTL      ptlCopy[3];
+            if (ulMaxMemKB != pPrivate->ulMaxMemKBLast)
+            {
+                // scaling has changed (or first call):
+                // well, then we need to repaint the entire
+                // damn bitmap
+                POINTL  ptl;
+                ptl.x = pPrivate->ulTextWidth;
 
-            // lower left of target
-            ptlCopy[0].x = pPrivate->ulTextWidth;
-            ptlCopy[0].y = 0;
-            // upper right of target (inclusive!)
-            ptlCopy[1].x = rclBmp.xRight - 1;
-            ptlCopy[1].y = rclBmp.yTop;
-            // lower left of source
-            ptlCopy[2].x = ptlCopy[0].x + 1;
-            ptlCopy[2].y = 0;
-            GpiBitBlt(pPrivate->hpsMem,
-                      pPrivate->hpsMem,
-                      (LONG)3,
-                      ptlCopy,
-                      ROP_SRCCOPY,
-                      BBO_IGNORE);
+                // fill the bitmap rectangle
+                GpiSetColor(hpsMem,
+                            pPrivate->Setup.lcolBackground);
+                pgpihBox(hpsMem,
+                         DRO_FILL,
+                         &rclBmp);
 
-            // add a new column to the right
-            PaintGraphLine(pPrivate,
-                           &pPrivate->paSnapshots[pPrivate->cSnapshots - 1],
-                           ulMaxMemKB,
-                           pPrivate->cSnapshots - 1,
-                           rclBmp.yTop,
-                           pPrivate->Setup.lcolBackground);
+                for (ul = pPrivate->ulTextWidth;
+                     ((ul < pPrivate->cSnapshots) && (ul < rclBmp.xRight));
+                     ul++)
+                {
+                    PSNAPSHOT pThis = &pPrivate->paSnapshots[ul];
+
+                    PaintGraphLine(pPrivate,
+                                   pThis,
+                                   ulMaxMemKB,
+                                   ptl.x,
+                                   rclBmp.yTop,
+                                   -1);             // no bkgnd, we just filled that
+                    ptl.x++;
+                }
+
+                // store this for next time
+                pPrivate->ulMaxMemKBLast = ulMaxMemKB;
+            }
+            else
+            {
+                // scaling has not changed:
+                // we can then bitblt the bitmap one to the left
+                // and only paint the rightmost column
+                POINTL      ptlCopy[3];
+
+                // lower left of target
+                ptlCopy[0].x = pPrivate->ulTextWidth;
+                ptlCopy[0].y = 0;
+                // upper right of target (inclusive!)
+                ptlCopy[1].x = rclBmp.xRight - 1;
+                ptlCopy[1].y = rclBmp.yTop;
+                // lower left of source
+                ptlCopy[2].x = ptlCopy[0].x + 1;
+                ptlCopy[2].y = 0;
+                GpiBitBlt(hpsMem,
+                          hpsMem,
+                          (LONG)3,
+                          ptlCopy,
+                          ROP_SRCCOPY,
+                          BBO_IGNORE);
+
+                // add a new column to the right
+                PaintGraphLine(pPrivate,
+                               &pPrivate->paSnapshots[pPrivate->cSnapshots - 1],
+                               ulMaxMemKB,
+                               pPrivate->cSnapshots - 1,
+                               rclBmp.yTop,
+                               pPrivate->Setup.lcolBackground);
+            }
         }
     }
 
@@ -899,7 +903,6 @@ VOID TwgtPaint2(HWND hwnd,
     ULONG       ulBorder = 1;
     CHAR        szPaint[100] = "";
     ULONG       ulPaintLen = 0;
-    POINTL      ptlBmpDest;
 
     // now paint button frame
     WinQueryWindowRect(hwnd,
@@ -936,15 +939,19 @@ VOID TwgtPaint2(HWND hwnd,
         // graph bitmap needs to be updated:
         TwgtUpdateGraph(hwnd, pPrivate);
 
-    ptlBmpDest.x = rclWin.xLeft + ulBorder;
-    ptlBmpDest.y = rclWin.yBottom + ulBorder;
-    // now paint graph from bitmap
-    WinDrawBitmap(hps,
-                  pPrivate->hbmGraph,
-                  NULL,     // entire bitmap
-                  &ptlBmpDest,
-                  0, 0,
-                  DBM_NORMAL);
+    if (pPrivate->pBitmap)
+    {
+        POINTL      ptlBmpDest;
+        ptlBmpDest.x = rclWin.xLeft + ulBorder;
+        ptlBmpDest.y = rclWin.yBottom + ulBorder;
+        // now paint graph from bitmap
+        WinDrawBitmap(hps,
+                      pPrivate->pBitmap->hbm,
+                      NULL,     // entire bitmap
+                      &ptlBmpDest,
+                      0, 0,
+                      DBM_NORMAL);
+    }
 
     if (pPrivate->paSnapshots)
     {
@@ -1130,23 +1137,8 @@ VOID TwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
                 // destroy the buffer bitmap because we
                 // need a new one with a different size
-                if (pPrivate->hbmGraph)
-                {
-                    GpiSetBitmap(pPrivate->hpsMem, NULLHANDLE);
-                    GpiDeleteBitmap(pPrivate->hbmGraph);
-                    pPrivate->hbmGraph = NULLHANDLE;
-                            // recreated in PwgtUpdateGraph with the current size
-                }
-
-                if (pPrivate->hpsMem)
-                {
-                    // memory PS already allocated: have those recreated
-                    // as well
-                    GpiDestroyPS(pPrivate->hpsMem);
-                    pPrivate->hpsMem = NULLHANDLE;
-                    DevCloseDC(pPrivate->hdcMem);
-                    pPrivate->hdcMem = NULLHANDLE;
-                }
+                if (pPrivate->pBitmap)
+                    pgpihDestroyXBitmap(&pPrivate->pBitmap);
 
                 if (pswpNew->cx != pswpOld->cx)
                 {
@@ -1317,23 +1309,9 @@ VOID TwgtButton1DblClick(HWND hwnd,
 
 /*
  *@@ fnwpMonitorWidgets:
- *      window procedure for the various "Monitor" widget classes.
+ *      window procedure for the "Sentinel".
  *
- *      This window proc is shared among the "Monitor" widgets,
- *      which all have in common that they are text-only display
- *      widgets with a little bit of extra functionality.
- *
- *      Presently, the following widgets are implemented this way:
- *
- *      -- clock;
- *
- *      -- swapper monitor;
- *
- *      -- available-memory monitor.
- *
- *      Supported setup strings:
- *
- *      -- "TYPE={CLOCK|SWAPPER|MEMORY}"
+ *@@changed V0.9.12 (2001-05-20) [umoeller]: fixed resource leak on destroy
  */
 
 MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1444,6 +1422,10 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                                   pPrivate->ulTimerID);
 
                 libWin32kTerm();
+
+                if (pPrivate->pBitmap)
+                    pgpihDestroyXBitmap(&pPrivate->pBitmap);
+                            // this was missing V0.9.12 (2001-05-20) [umoeller]
 
                 free(pPrivate);
             } // end if (pPrivate)

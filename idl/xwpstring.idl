@@ -54,6 +54,9 @@ interface XWPString : WPAbstract
     BOOL xwpInvokeString(in ULONG cObjects,
                          in WPObject apObjects[1]);
 
+    ULONG xwpQuerySetup2(in PSZ pszSetupString,
+                         in ULONG cbSetupString);
+
 #ifdef __SOMIDL__
   implementation {
 
@@ -62,7 +65,8 @@ interface XWPString : WPAbstract
                   xwpQueryStaticObject,
                   xwpSetStaticObject,
                   xwpAddXWPStringPages,
-                  xwpInvokeString;
+                  xwpInvokeString,
+                  xwpQuerySetup2;
 
     /*
      * Class Modifiers:
@@ -103,6 +107,8 @@ interface XWPString : WPAbstract
     wpInitData: override;
     wpUnInitData: override;
     wpObjectReady: override;
+
+    wpSetup: override;
 
     wpSaveState: override;
     wpRestoreState: override;

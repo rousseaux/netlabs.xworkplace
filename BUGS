@@ -51,9 +51,6 @@ XCenter:
         that would be for a maximized window, should be 0
         and 0 ?)
 
---  sliding menus:
-    new method won't work with system menus
-
 --  folder refresh:
     causes all DLL icons to be reset.
 
@@ -120,7 +117,8 @@ hook:
         object setting won't stick sometimes.
 
     --  sliding menus:
-            -- no submenu delays for menu bars (immediate open)
+        --  no submenu delays for menu bars (immediate open)
+        --  new method won't work with system menus
 
     --  there is a little bug with the settings notebook of the mouse - movement 2.
         I can drag and drop objects to the open object, but it doesn't work with

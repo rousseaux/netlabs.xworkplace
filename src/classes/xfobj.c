@@ -679,6 +679,7 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpSetObjectHotkey(XFldObject *somSelf,
  *      for details.
  *
  *@@added V0.9.1 (2000-01-16) [umoeller]
+ *@@changed V0.9.12 (2001-05-19) [umoeller]: added object lock
  */
 
 SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
@@ -686,8 +687,10 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
                                              ULONG cbSetupString)
 {
     ULONG ulrc = 0;
+    WPSHLOCKSTRUCT Lock;
     XFldObjectMethodDebug("XFldObject","xfobj_xwpQuerySetup");
 
+    if (wpshLockObject(&Lock, somSelf))
     {
         // obtain "xwpQuerySetup2" method pointer
         somTD_XFldObject_xwpQuerySetup2 pfn_xwpQuerySetup2
@@ -697,6 +700,7 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
             // method resolved: call it
             ulrc  = pfn_xwpQuerySetup2(somSelf, pszSetupString, cbSetupString);
     }
+    wpshUnlockObject(&Lock);
 
     return (ulrc);
 }
@@ -740,6 +744,10 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
  *
  *      4.  Always terminate your setup strings with a semicolon (";"),
  *          even if it's the last.
+ *
+ *      5.  While this method is running, XWP has locked the object
+ *          using its object mutex. So sending messages and other
+ *          stuff is a no-no.
  *
  *      So use the following code to call the parent method:
  *

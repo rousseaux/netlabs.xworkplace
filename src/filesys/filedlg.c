@@ -185,7 +185,7 @@ typedef struct _FILEDLGDATA
 
     // "add children" thread info (keeps running, has object window)
     THREADINFO  tiAddChildren;
-    BOOL        fAddChildrenRunning;
+    ULONG       tidAddChildrenRunning;
     HWND        hwndAddChildren;        // "add children" object window (fnwpAddChildren)
 
     LINKLIST    llDriveObjectsInserted; // linked list of plain WPObject* pointers
@@ -201,7 +201,7 @@ typedef struct _FILEDLGDATA
 
     // transient "insert contents" thread, restarted on every selection
     THREADINFO  tiInsertContents;
-    BOOL        fInsertContentsRunning;
+    ULONG       tidInsertContentsRunning;
     LINKLIST    llFileObjectsInserted;
 
     // full file name etc., parsed and set by ParseFileString()
@@ -1585,8 +1585,7 @@ HPOINTER QueryCurrentPointer(HWND hwndMainClient)
     PFILEDLGDATA    pWinData = WinQueryWindowPtr(hwndMainClient, QWL_USER);
 
     if (pWinData)
-        if (    pWinData->fInsertContentsRunning
-           )
+        if (pWinData->tidInsertContentsRunning)
             idPtr = SPTR_WAIT;
 
     return (WinQuerySysPointer(HWND_DESKTOP,
@@ -2077,7 +2076,7 @@ VOID _Optlink fntInsertContents(PTHREADINFO ptiMyself)
 BOOL StartInsertContents(PFILEDLGDATA pWinData,
                          PMINIRECORDCORE precc)      // in: record of folder (never NULL)
 {
-    if (pWinData->fInsertContentsRunning)
+    if (pWinData->tidInsertContentsRunning)
         return (FALSE);
     else
     {
@@ -2089,7 +2088,7 @@ BOOL StartInsertContents(PFILEDLGDATA pWinData,
             lstAppendItem(pData->pll, precc);
             thrCreate(&pWinData->tiInsertContents,
                       fntInsertContents,
-                      &pWinData->fInsertContentsRunning,
+                      &pWinData->tidInsertContentsRunning,
                       "InsertContents",
                       THRF_PMMSGQUEUE | THRF_WAIT,
                       (ULONG)pData);
@@ -3495,7 +3494,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
                     // create the "add children" thread
                     thrCreate(&WinData.tiAddChildren,
                               fntAddChildren,
-                              &WinData.fAddChildrenRunning,
+                              &WinData.tidAddChildrenRunning,
                               "AddChildren",
                               THRF_PMMSGQUEUE | THRF_WAIT_EXPLICIT,
                                         // "add child" posts event sem
@@ -3598,8 +3597,8 @@ HWND fdlgFileDlg(HWND hwndOwner,
     WinData.tiAddChildren.fExit = TRUE;
     WinData.tiInsertContents.fExit = TRUE;
     DosSleep(0);
-    while (    (WinData.fAddChildrenRunning)
-            || (WinData.fInsertContentsRunning)
+    while (    (WinData.tidAddChildrenRunning)
+            || (WinData.tidInsertContentsRunning)
           )
     {
         winhSleep(50);

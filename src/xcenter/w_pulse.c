@@ -48,6 +48,7 @@
 
 #define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR
+#define INCL_WINMESSAGEMGR
 #define INCL_WININPUT
 #define INCL_WINSYS
 #define INCL_WINTIMER
@@ -73,6 +74,7 @@
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\stringh.h"            // string helper routines
+#include "helpers\threads.h"            // thread helpers
 #include "helpers\timer.h"              // replacement PM timers
 #include "helpers\xstring.h"            // extended string helpers
 
@@ -138,16 +140,26 @@ typedef struct _WIDGETPRIVATE
     PULSESETUP      Setup;
             // widget settings that correspond to a setup string
 
-    ULONG           ulTimerID;      // if != NULLHANDLE, clock timer is running
-
-    HDC             hdcMem;
-    HPS             hpsMem;
-
-    HBITMAP         hbmGraph;       // bitmap for pulse graph; this contains only
+    PXBITMAP        pBitmap;        // bitmap for pulse graph; this contains only
                                     // the "client" (without the 3D frame)
+
     BOOL            fUpdateGraph;
                                     // if TRUE, PwgtPaint recreates the entire
                                     // bitmap
+
+    THREADINFO      tiCollect;      // collect thread
+
+    HEV             hevExit;        // event semaphore posted on destroy to tell
+                                    // collect thread to exit
+    HEV             hevExitComplete; // posted by collect thread when it's done
+
+    HMTX            hmtxData;       // mutex for protecting the data
+
+    // All the following data must be protected with the mutex.
+    // Rules about the data: main thread allocates it according
+    // to the window size, collect thread moves data around,
+    // but never reallocates.
+
     PDOSHPERFSYS    pPerfData;      // performance data (doshPerf* calls)
 
     ULONG           cLoads;
@@ -366,13 +378,213 @@ VOID EXPENTRY PwgtSetupStringChanged(PXCENTERWIDGET pWidget,
 
 /* ******************************************************************
  *
+ *   Thread synchronization
+ *
+ ********************************************************************/
+
+/*
+ *@@ LockData:
+ *      locks the private data. Note that we only
+ *      wait half a second for the mutex to be available
+ *      and return FALSE otherwise.
+ *
+ *@@added V0.9.12 (2001-05-20) [umoeller]
+ */
+
+BOOL LockData(PWIDGETPRIVATE pPrivate)
+{
+    return (!DosRequestMutexSem(pPrivate->hmtxData, 500));
+}
+
+/*
+ *@@ UnlockData:
+ *      unlocks the private data.
+ *
+ *@@added V0.9.12 (2001-05-20) [umoeller]
+ */
+
+VOID UnlockData(PWIDGETPRIVATE pPrivate)
+{
+    DosReleaseMutexSem(pPrivate->hmtxData);
+}
+
+/* ******************************************************************
+ *
+ *   "Collect" thread
+ *
+ ********************************************************************/
+
+/*
+ *@@ fntCollect:
+ *      extra thread to collect the performance data from
+ *      the OS/2 kernel.
+ *
+ *      This thread does NOT have a PM message queue. It
+ *      is started from PwgtCreate and will simply collect
+ *      the performance data every second.
+ *
+ *      Before 0.9.12, we collected the performance data
+ *      on the widget thread (i.e. the XCenter thread).
+ *      This worked OK as long as no application hogged
+ *      the input queue... in that situation, no performance
+ *      data was collected while the SIQ was locked which
+ *      lead to a highly incorrect display for any busy
+ *      PM application.
+ *
+ *      So what we do now is collect the data on this new
+ *      thread and only do the display on the PM thread.
+ *      The display is still not updated while the SIQ
+ *      is busy, but after the SIQ becomes unlocked, it
+ *      is then updated with all the data that was collected
+ *      here in the meantime.
+ *
+ *      The optimal solution would be to move all drawing
+ *      to this second thread... maybe at a later time.
+ *
+ *      The thread data is a pointer to WIDGETPRIVATE.
+ *
+ *      Note: This thread does not allocate the data fields
+ *      WIDGETPRIVATE. It only updates the fields, while
+ *      the allocations (and the resizes) are still done
+ *      on the main thread.
+ *
+ *@@added V0.9.12 (2001-05-20) [umoeller]
+ */
+
+VOID _Optlink fntCollect(PTHREADINFO ptiMyself)
+{
+    PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)ptiMyself->ulData;
+    if (pPrivate)
+    {
+        BOOL    fLocked = FALSE;
+
+        // give this thread a higher-than-regular priority;
+        // this way, the "loads" array is always up-to-date,
+        // while the display may be delayed if the system
+        // is really busy
+
+        DosSetPriority(PRTYS_THREAD,
+                       PRTYC_TIMECRITICAL,  // 3, second highest class
+                       0,                   // delta, let's not overdo it
+                       0);                  // current thread
+
+        TRY_LOUD(excpt1)
+        {
+            // open the performance counters
+            if (!(pPrivate->arc = doshPerfOpen(&pPrivate->pPerfData)))
+            {
+                // alright:
+                // start collecting
+
+                while (TRUE)
+                {
+                    // LOCK the data while we're moving around here
+                    if (fLocked = LockData(pPrivate))
+                    {
+                        // has main thread allocated data already?
+                        if (pPrivate->palLoads || pPrivate->palIntrs)
+                        {
+                            // get new loads from OS/2 kernel
+                            if (!(pPrivate->arc = doshPerfGet(pPrivate->pPerfData)))
+                            {
+                                // in the array of loads, move each entry one to the front;
+                                // drop the oldest entry
+                                if (pPrivate->palLoads)
+                                {
+                                    memcpy(&pPrivate->palLoads[0],
+                                           &pPrivate->palLoads[1],
+                                           sizeof(LONG) * (pPrivate->cLoads - 1));
+
+                                    // and update the last entry with the current value
+                                    pPrivate->palLoads[pPrivate->cLoads - 1]
+                                        = pPrivate->pPerfData->palLoads[0];
+                                }
+
+                                // same thing for interrupt loads
+                                if (pPrivate->palIntrs)
+                                {
+                                    memcpy(&pPrivate->palIntrs[0],
+                                           &pPrivate->palIntrs[1],
+                                           sizeof(LONG) * (pPrivate->cLoads - 1));
+                                    pPrivate->palIntrs[pPrivate->cLoads - 1]
+                                        = pPrivate->pPerfData->palIntrs[0];
+                                }
+                            }
+                        }
+
+                        UnlockData(pPrivate);
+                        fLocked = FALSE;
+                    } // if (fLocked)
+
+                    // have main thread update the display
+                    // (if SIQ is hogged, several WM_TIMERs
+                    // will pile up)
+                    if (!ptiMyself->fExit)
+                    {
+                        pPrivate->fUpdateGraph = TRUE;
+                        WinPostMsg(pPrivate->pWidget->hwndWidget,
+                                   WM_TIMER,
+                                   (MPARAM)1,
+                                   0);
+                    }
+
+                    // some security checks: do not sleep
+                    // if we have problems
+                    if (    (!pPrivate->arc)
+                         && (!ptiMyself->fExit)         // or should exit
+                         && (!pPrivate->fCrashed)
+                       )
+                    {
+                        // OK, we need to sleep for a second before
+                        // we get the next chunk of performance
+                        // data. However, we should not use DosSleep
+                        // because we MUST exit quickly when the
+                        // widget gets destroyed. The trick is to
+                        // wait on an event semaphore: this gets
+                        // posted by by PwgtDestroy(), but we specify
+                        // a timeout of 1 second, so we get the
+                        // effect of DosSleep as well.
+                        if (DosWaitEventSem(pPrivate->hevExit,
+                                            1000)       // timeout == 1 second
+                                != ERROR_TIMEOUT)
+                            // whoa, semaphore was posted:
+                            // GET OUTTA HERE
+                            break;
+                        // else timeout: continue, we then slept for a second
+                    }
+                    else
+                        // stop right here
+                        break;
+
+                } // end while (TRUE);
+            } // if (!(pPrivate->arc = doshPerfOpen(&pPrivate->pPerfData)))
+        }
+        CATCH(excpt1)
+        {
+            pPrivate->fCrashed = TRUE;
+        }
+        END_CATCH();
+
+        if (fLocked)
+            UnlockData(pPrivate);
+
+        // PwgtDestroy is blocking on hevExitComplete,
+        // so tell main thread we're done
+        DosPostEventSem(pPrivate->hevExitComplete);
+    }
+}
+
+/* ******************************************************************
+ *
  *   PM window class implementation
  *
  ********************************************************************/
 
 /*
  *@@ PwgtCreate:
+ *      implementation for WM_CREATE.
  *
+ *@@changed V0.9.12 (2001-05-20) [umoeller]: now using second thread
  */
 
 MRESULT PwgtCreate(HWND hwnd, MPARAM mp1)
@@ -404,15 +616,29 @@ MRESULT PwgtCreate(HWND hwnd, MPARAM mp1)
     pWidget->pcszHelpLibrary = cmnQueryHelpLibrary();
     pWidget->ulHelpPanelID = ID_XSH_WIDGET_PULSE_MAIN;
 
-    pPrivate->arc = doshPerfOpen(&pPrivate->pPerfData);
+    // create mutex for data protection
+    DosCreateMutexSem(NULL,
+                      &pPrivate->hmtxData,
+                      0,
+                      FALSE);           // no request
 
-    if (pPrivate->arc == NO_ERROR)
-    {
-        pPrivate->ulTimerID = tmrStartXTimer((PXTIMERSET)pWidget->pGlobals->pvXTimerSet,
-                                             hwnd,
-                                             1,
-                                             1000);
-    }
+    // create event sems for collect thread
+    DosCreateEventSem(NULL,
+                      &pPrivate->hevExit,
+                      0,
+                      0);               // not posted
+    DosCreateEventSem(NULL,
+                      &pPrivate->hevExitComplete,
+                      0,
+                      0);               // not posted
+
+    // start the collect thread V0.9.12 (2001-05-20) [umoeller]
+    thrCreate(&pPrivate->tiCollect,
+              fntCollect,
+              NULL,
+              "PulseWidgetCollectThread",
+              THRF_WAIT,
+              (ULONG)pPrivate);        // thread data
 
     pPrivate->fUpdateGraph = TRUE;
 
@@ -467,11 +693,13 @@ BOOL PwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 /*
  *@@ PwgtUpdateGraph:
  *      updates the graph bitmap. This does not paint
- *      on the screen.
+ *      on the screen yet.
  *
  *      Preconditions:
- *      --  pPrivate->hbmGraph must be selected into
- *          pPrivate->hpsMem.
+ *
+ *      --  pPrivate->pBitmap must be ready.
+ *
+ *      --  Caller must hold the data mutex.
  *
  *@@changed V0.9.9 (2001-03-14) [umoeller]: added interrupts graph
  */
@@ -480,6 +708,7 @@ VOID PwgtUpdateGraph(HWND hwnd,
                      PWIDGETPRIVATE pPrivate)
 {
     PXCENTERWIDGET pWidget = pPrivate->pWidget;
+
     RECTL   rclBmp;
     POINTL  ptl;
 
@@ -489,62 +718,50 @@ VOID PwgtUpdateGraph(HWND hwnd,
     rclBmp.xRight -= 2;
     rclBmp.yTop -= 2;
 
-    if (pPrivate->hpsMem == NULLHANDLE)
+    if (!pPrivate->pBitmap)
+        pPrivate->pBitmap = gpihCreateXBitmap(pWidget->habWidget,
+                                              rclBmp.xRight,
+                                              rclBmp.yTop);
+    if (pPrivate->pBitmap)
     {
-        // create memory PS for bitmap
-        SIZEL szlPS;
-        szlPS.cx = rclBmp.xRight;
-        szlPS.cy = rclBmp.yTop;
-        gpihCreateMemPS(pWidget->habWidget,
-                        &szlPS,
-                        &pPrivate->hdcMem,
-                        &pPrivate->hpsMem);
-        gpihSwitchToRGB(pPrivate->hpsMem);
-    }
-    if (pPrivate->hbmGraph == NULLHANDLE)
-    {
-        pPrivate->hbmGraph = gpihCreateBitmap(pPrivate->hpsMem,
-                                                rclBmp.xRight,
-                                                rclBmp.yTop);
-        GpiSetBitmap(pPrivate->hpsMem,
-                     pPrivate->hbmGraph);
-    }
+        HPS hpsMem = pPrivate->pBitmap->hpsMem;
 
-    // fill the bitmap rectangle
-    GpiSetColor(pPrivate->hpsMem,
-                pPrivate->Setup.lcolBackground);
-    gpihBox(pPrivate->hpsMem,
-            DRO_FILL,
-            &rclBmp);
+        // fill the bitmap rectangle
+        GpiSetColor(hpsMem,
+                    pPrivate->Setup.lcolBackground);
+        gpihBox(hpsMem,
+                DRO_FILL,
+                &rclBmp);
 
-    // go thru all values in the "Loads" LONG array
-    for (ptl.x = 0;
-         ((ptl.x < pPrivate->cLoads) && (ptl.x < rclBmp.xRight));
-         ptl.x++)
-    {
-        ptl.y = 0;
-
-        // interrupt load on bottom
-        if (pPrivate->palIntrs)
+        // go thru all values in the "Loads" LONG array
+        for (ptl.x = 0;
+             ((ptl.x < pPrivate->cLoads) && (ptl.x < rclBmp.xRight));
+             ptl.x++)
         {
-            GpiSetColor(pPrivate->hpsMem,
-                        pPrivate->Setup.lcolGraphIntr);
-            // go thru all values in the "Interrupt Loads" LONG array
-            // Note: number of "loads" entries and "intrs" entries is the same
-            GpiMove(pPrivate->hpsMem, &ptl);
-            ptl.y += rclBmp.yTop * pPrivate->palIntrs[ptl.x] / 1000;
-            GpiLine(pPrivate->hpsMem, &ptl);
-        }
+            ptl.y = 0;
 
-        // scan the CPU loads
-        if (pPrivate->palLoads)
-        {
-            GpiSetColor(pPrivate->hpsMem,
-                        pPrivate->Setup.lcolGraph);
-            GpiMove(pPrivate->hpsMem, &ptl);
-            ptl.y += rclBmp.yTop * pPrivate->palLoads[ptl.x] / 1000;
-            GpiLine(pPrivate->hpsMem, &ptl);
-        }
+            // interrupt load on bottom
+            if (pPrivate->palIntrs)
+            {
+                GpiSetColor(hpsMem,
+                            pPrivate->Setup.lcolGraphIntr);
+                // go thru all values in the "Interrupt Loads" LONG array
+                // Note: number of "loads" entries and "intrs" entries is the same
+                GpiMove(hpsMem, &ptl);
+                ptl.y += rclBmp.yTop * pPrivate->palIntrs[ptl.x] / 1000;
+                GpiLine(hpsMem, &ptl);
+            }
+
+            // scan the CPU loads
+            if (pPrivate->palLoads)
+            {
+                GpiSetColor(hpsMem,
+                            pPrivate->Setup.lcolGraph);
+                GpiMove(hpsMem, &ptl);
+                ptl.y += rclBmp.yTop * pPrivate->palLoads[ptl.x] / 1000;
+                GpiLine(hpsMem, &ptl);
+            }
+        } // end if (fLocked)
     }
 
     pPrivate->fUpdateGraph = FALSE;
@@ -564,13 +781,16 @@ VOID PwgtUpdateGraph(HWND hwnd,
  *      Otherwise an error msg is displayed.
  *
  *@@changed V0.9.9 (2001-03-14) [umoeller]: added interrupts graph
+ *@@changed V0.9.12 (2001-05-20) [umoeller]: added mutex
  */
 
 VOID PwgtPaint2(HWND hwnd,
-                PWIDGETPRIVATE pPrivate,
                 HPS hps,
+                PWIDGETPRIVATE pPrivate,
                 BOOL fDrawFrame)     // in: if TRUE, everything is painted
 {
+    BOOL fLocked = FALSE;
+
     TRY_LOUD(excpt1)
     {
         PXCENTERWIDGET pWidget = pPrivate->pWidget;
@@ -579,9 +799,9 @@ VOID PwgtPaint2(HWND hwnd,
         CHAR        szPaint[100] = "";
         ULONG       ulPaintLen = 0;
 
-        // now paint button frame
         WinQueryWindowRect(hwnd,
                            &rclWin);        // exclusive
+
         gpihSwitchToRGB(hps);
 
         rclWin.xRight--;
@@ -617,32 +837,40 @@ VOID PwgtPaint2(HWND hwnd,
             POINTL      ptlBmpDest;
             LONG        lLoad1000 = 0;
 
-            if (pPrivate->fUpdateGraph)
-                // graph bitmap needs to be updated:
-                PwgtUpdateGraph(hwnd, pPrivate);
+            // lock out the collect thread, we're reading the loads array
+            if (fLocked = LockData(pPrivate))
+            {
+                if (pPrivate->fUpdateGraph)
+                    // graph bitmap needs to be updated:
+                    PwgtUpdateGraph(hwnd, pPrivate);
 
-            ptlBmpDest.x = rclWin.xLeft + ulBorder;
-            ptlBmpDest.y = rclWin.yBottom + ulBorder;
-            // now paint graph from bitmap
-            WinDrawBitmap(hps,
-                          pPrivate->hbmGraph,
-                          NULL,     // entire bitmap
-                          &ptlBmpDest,
-                          0, 0,
-                          DBM_NORMAL);
+                // in the string, display the total load
+                // (busy plus interrupt) V0.9.9 (2001-03-14) [umoeller]
+                if (pPrivate->palLoads)
+                    lLoad1000 = pPrivate->pPerfData->palLoads[0];
+                if (pPrivate->palIntrs)
+                    lLoad1000 += pPrivate->pPerfData->palIntrs[0];
 
-            // in the string, display the total load
-            // (busy plus interrupt) V0.9.9 (2001-03-14) [umoeller]
-            if (pPrivate->palLoads)
-                lLoad1000 = pPrivate->pPerfData->palLoads[0];
-            if (pPrivate->palIntrs)
-                lLoad1000 += pPrivate->pPerfData->palIntrs[0];
+                // everything below is safe, so unlock
+                UnlockData(pPrivate);
+                fLocked = FALSE;
 
-            sprintf(szPaint, "%lu%c%lu%c",
-                    lLoad1000 / 10,
-                    pCountrySettings->cDecimal,
-                    lLoad1000 % 10,
-                    '%');
+                ptlBmpDest.x = rclWin.xLeft + ulBorder;
+                ptlBmpDest.y = rclWin.yBottom + ulBorder;
+                // now paint graph from bitmap
+                WinDrawBitmap(hps,
+                              pPrivate->pBitmap->hbm,
+                              NULL,     // entire bitmap
+                              &ptlBmpDest,
+                              0, 0,
+                              DBM_NORMAL);
+
+                sprintf(szPaint, "%lu%c%lu%c",
+                        lLoad1000 / 10,
+                        pCountrySettings->cDecimal,
+                        lLoad1000 % 10,
+                        '%');
+            }
         }
         else
         {
@@ -668,6 +896,9 @@ VOID PwgtPaint2(HWND hwnd,
     {
         pPrivate->fCrashed = TRUE;
     } END_CATCH();
+
+    if (fLocked)
+        UnlockData(pPrivate);
 }
 
 /*
@@ -677,24 +908,20 @@ VOID PwgtPaint2(HWND hwnd,
 
 VOID PwgtPaint(HWND hwnd)
 {
-    HPS hps = WinBeginPaint(hwnd, NULLHANDLE, NULL);
-    if (hps)
+    PXCENTERWIDGET pWidget;
+    PWIDGETPRIVATE pPrivate;
+
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
+       )
     {
-        // get widget data and its button data from QWL_USER
-        PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-        if (pWidget)
-        {
-            PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
-            if (pPrivate)
-            {
-                PwgtPaint2(hwnd,
-                           pPrivate,
-                           hps,
-                           TRUE);        // draw frame
-            } // end if (pPrivate)
-        } // end if (pWidget)
+        HPS hps = WinBeginPaint(hwnd, NULLHANDLE, NULL);
+        PwgtPaint2(hwnd,
+                   hps,
+                   pPrivate,
+                   TRUE);        // draw frame
         WinEndPaint(hps);
-    } // end if (hps)
+    } // end if (pWidget && pPrivate)
 }
 
 /*
@@ -703,27 +930,35 @@ VOID PwgtPaint(HWND hwnd)
  *      and invalidates the window.
  *
  *@@changed V0.9.9 (2001-03-14) [umoeller]: added interrupts graph
+ *@@changed V0.9.12 (2001-05-20) [umoeller]: added mutex
  */
 
 VOID PwgtGetNewLoad(HWND hwnd)
 {
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    PWIDGETPRIVATE pPrivate;
+
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
+       )
     {
-        PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
-        if (pPrivate)
+        BOOL fLocked = FALSE;
+
+        TRY_LOUD(excpt1)
         {
-            TRY_LOUD(excpt1)
+            if (    (!pPrivate->fCrashed)
+                 && (pPrivate->arc == NO_ERROR)
+               )
             {
-                if (    (!pPrivate->fCrashed)
-                     && (pPrivate->arc == NO_ERROR)
-                   )
+                RECTL rclClient;
+                WinQueryWindowRect(hwnd, &rclClient);
+
+                // lock out the collect thread
+                if (fLocked = LockData(pPrivate))
                 {
-                    HPS hps;
-                    RECTL rclClient;
-                    WinQueryWindowRect(hwnd, &rclClient);
-                    if (rclClient.xRight)
+                    if (rclClient.xRight > 3)
                     {
+                        HPS hps;
                         ULONG ulGraphCX = rclClient.xRight - 2;    // minus border
                         if (pPrivate->palLoads == NULL)
                         {
@@ -741,56 +976,29 @@ VOID PwgtGetNewLoad(HWND hwnd)
                             memset(pPrivate->palIntrs, 0, sizeof(LONG) * pPrivate->cLoads);
                         }
 
-
-                        if (pPrivate->palLoads || pPrivate->palIntrs)
-                        {
-                            pPrivate->arc = doshPerfGet(pPrivate->pPerfData);
-                            if (pPrivate->arc == NO_ERROR)
-                            {
-                                // in the array of loads, move each entry one to the front;
-                                // drop the oldest entry
-                                if (pPrivate->palLoads)
-                                {
-                                    memcpy(&pPrivate->palLoads[0],
-                                           &pPrivate->palLoads[1],
-                                           sizeof(LONG) * (pPrivate->cLoads - 1));
-
-                                    // and update the last entry with the current value
-                                    pPrivate->palLoads[pPrivate->cLoads - 1]
-                                        = pPrivate->pPerfData->palLoads[0];
-                                }
-
-                                if (pPrivate->palIntrs)
-                                {
-                                    memcpy(&pPrivate->palIntrs[0],
-                                           &pPrivate->palIntrs[1],
-                                           sizeof(LONG) * (pPrivate->cLoads - 1));
-
-                                    // and update the last entry with the current value
-                                    pPrivate->palIntrs[pPrivate->cLoads - 1]
-                                        = pPrivate->pPerfData->palIntrs[0];
-                                }
-
-                                // update display
-                                pPrivate->fUpdateGraph = TRUE;
-                            }
-                        }
+                        UnlockData(pPrivate);
+                        fLocked = FALSE;
 
                         hps = WinGetPS(hwnd);
                         PwgtPaint2(hwnd,
-                                   pPrivate,
                                    hps,
-                                   FALSE);       // do not draw frame
+                                   pPrivate,
+                                   FALSE);        // no draw frame
                         WinReleasePS(hps);
+
                     } // end if (rclClient.xRight)
                 }
             }
-            CATCH(excpt1)
-            {
-                pPrivate->fCrashed = TRUE;
-            } END_CATCH();
-        } // end if (pPrivate)
-    } // end if (pWidget)
+        }
+        CATCH(excpt1)
+        {
+            pPrivate->fCrashed = TRUE;
+        } END_CATCH();
+
+        if (fLocked)
+            UnlockData(pPrivate);
+
+    } // end if (pWidget && pPrivate);
 }
 
 /*
@@ -803,44 +1011,37 @@ VOID PwgtGetNewLoad(HWND hwnd)
 
 VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
-    TRY_LOUD(excpt1)
+    PXCENTERWIDGET pWidget;
+    PWIDGETPRIVATE pPrivate;
+
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
+       )
     {
-        PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-        if (pWidget)
+        BOOL fLocked = FALSE;
+
+        TRY_LOUD(excpt1)
         {
-            PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
-            if (pPrivate)
+            PSWP pswpNew = (PSWP)mp1,
+                 pswpOld = pswpNew + 1;
+            if (pswpNew->fl & SWP_SIZE)
             {
-                PSWP pswpNew = (PSWP)mp1,
-                     pswpOld = pswpNew + 1;
-                if (pswpNew->fl & SWP_SIZE)
+                // window was resized:
+
+                // destroy the bitmap because we need a new one
+                if (pPrivate->pBitmap)
+                    gpihDestroyXBitmap(&pPrivate->pBitmap);
+
+                if (pswpNew->cx != pswpOld->cx)
                 {
-                    // window was resized:
+                    // width changed:
+                    XSTRING strSetup;
 
-                    // destroy the buffer bitmap because we
-                    // need a new one with a different size
-                    if (pPrivate->hbmGraph)
-                    {
-                        GpiSetBitmap(pPrivate->hpsMem, NULLHANDLE);
-                        GpiDeleteBitmap(pPrivate->hbmGraph);
-                        pPrivate->hbmGraph = NULLHANDLE;
-                                // recreated in PwgtUpdateGraph with the current size
-                    }
+                    // update load arrays
 
-                    if (pPrivate->hpsMem)
+                    // lock out the collect thread
+                    if (fLocked = LockData(pPrivate))
                     {
-                        // memory PS already allocated: have those recreated
-                        // as well
-                        GpiDestroyPS(pPrivate->hpsMem);
-                        pPrivate->hpsMem = NULLHANDLE;
-                        DevCloseDC(pPrivate->hdcMem);
-                        pPrivate->hdcMem = NULLHANDLE;
-                    }
-
-                    if (pswpNew->cx != pswpOld->cx)
-                    {
-                        XSTRING strSetup;
-                        // width changed:
                         if (pPrivate->palLoads)
                         {
                             // we also need a new array of past loads
@@ -914,26 +1115,35 @@ VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
                         } // end if (pPrivate->palLoads)
 
-                        pPrivate->Setup.cx = pswpNew->cx;
-                        PwgtSaveSetup(&strSetup,
-                                      &pPrivate->Setup);
-                        if (strSetup.ulLength)
-                            WinSendMsg(pWidget->pGlobals->hwndClient,
-                                       XCM_SAVESETUP,
-                                       (MPARAM)hwnd,
-                                       (MPARAM)strSetup.psz);
-                        xstrClear(&strSetup);
-                    } // end if (pswpNew->cx != pswpOld->cx)
+                        UnlockData(pPrivate);
+                        fLocked = FALSE;
+                    } // end if fLocked
 
-                    // force recreation of bitmap
-                    pPrivate->fUpdateGraph = TRUE;
-                    WinInvalidateRect(hwnd, NULL, FALSE);
-                } // end if (pswpNew->fl & SWP_SIZE)
-            } // end if (pPrivate)
-        } // end if (pWidget)
-    }
-    CATCH(excpt1)
-    { } END_CATCH();
+
+                    pPrivate->Setup.cx = pswpNew->cx;
+                    PwgtSaveSetup(&strSetup,
+                                  &pPrivate->Setup);
+                    if (strSetup.ulLength)
+                        WinSendMsg(pWidget->pGlobals->hwndClient,
+                                   XCM_SAVESETUP,
+                                   (MPARAM)hwnd,
+                                   (MPARAM)strSetup.psz);
+                    xstrClear(&strSetup);
+                } // end if (pswpNew->cx != pswpOld->cx)
+
+                // force recreation of bitmap
+                pPrivate->fUpdateGraph = TRUE;
+                WinInvalidateRect(hwnd, NULL, FALSE);
+            } // end if (pswpNew->fl & SWP_SIZE)
+        }
+        CATCH(excpt1)
+        {
+            pPrivate->fCrashed = TRUE;
+        } END_CATCH();
+
+        if (fLocked)
+            UnlockData(pPrivate);
+    } // end if (pWidget && pPrivate)
 }
 
 /*
@@ -944,72 +1154,72 @@ VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
 VOID PwgtPresParamChanged(HWND hwnd,
                           ULONG ulAttrChanged)
 {
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    PWIDGETPRIVATE pPrivate;
+
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
+       )
     {
-        PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
-        if (pPrivate)
+        BOOL fInvalidate = TRUE;
+        switch (ulAttrChanged)
         {
-            BOOL fInvalidate = TRUE;
-            switch (ulAttrChanged)
-            {
-                case 0:     // layout palette thing dropped
-                case PP_BACKGROUNDCOLOR:
-                case PP_FOREGROUNDCOLOR:
-                    pPrivate->Setup.lcolBackground
-                        = winhQueryPresColor(hwnd,
-                                             PP_BACKGROUNDCOLOR,
-                                             FALSE,
-                                             SYSCLR_DIALOGBACKGROUND);
-                    pPrivate->Setup.lcolGraph
-                        = winhQueryPresColor(hwnd,
-                                             PP_FOREGROUNDCOLOR,
-                                             FALSE,
-                                             -1);
-                    if (pPrivate->Setup.lcolGraph == -1)
-                        pPrivate->Setup.lcolGraph = RGBCOL_DARKCYAN;
-                break;
+            case 0:     // layout palette thing dropped
+            case PP_BACKGROUNDCOLOR:
+            case PP_FOREGROUNDCOLOR:
+                pPrivate->Setup.lcolBackground
+                    = winhQueryPresColor(hwnd,
+                                         PP_BACKGROUNDCOLOR,
+                                         FALSE,
+                                         SYSCLR_DIALOGBACKGROUND);
+                pPrivate->Setup.lcolGraph
+                    = winhQueryPresColor(hwnd,
+                                         PP_FOREGROUNDCOLOR,
+                                         FALSE,
+                                         -1);
+                if (pPrivate->Setup.lcolGraph == -1)
+                    pPrivate->Setup.lcolGraph = RGBCOL_DARKCYAN;
+            break;
 
-                case PP_FONTNAMESIZE:
+            case PP_FONTNAMESIZE:
+            {
+                PSZ pszFont = 0;
+                if (pPrivate->Setup.pszFont)
                 {
-                    PSZ pszFont = 0;
-                    if (pPrivate->Setup.pszFont)
-                    {
-                        free(pPrivate->Setup.pszFont);
-                        pPrivate->Setup.pszFont = NULL;
-                    }
+                    free(pPrivate->Setup.pszFont);
+                    pPrivate->Setup.pszFont = NULL;
+                }
 
-                    pszFont = winhQueryWindowFont(hwnd);
-                    if (pszFont)
-                    {
-                        // we must use local malloc() for the font
-                        pPrivate->Setup.pszFont = strdup(pszFont);
-                        winhFree(pszFont);
-                    }
-                break; }
+                pszFont = winhQueryWindowFont(hwnd);
+                if (pszFont)
+                {
+                    // we must use local malloc() for the font
+                    pPrivate->Setup.pszFont = strdup(pszFont);
+                    winhFree(pszFont);
+                }
+            break; }
 
-                default:
-                    fInvalidate = FALSE;
-            }
+            default:
+                fInvalidate = FALSE;
+        }
 
-            if (fInvalidate)
-            {
-                XSTRING strSetup;
-                // force recreation of bitmap
-                pPrivate->fUpdateGraph = TRUE;
-                WinInvalidateRect(hwnd, NULL, FALSE);
+        if (fInvalidate)
+        {
+            XSTRING strSetup;
+            // force recreation of bitmap
+            pPrivate->fUpdateGraph = TRUE;
+            WinInvalidateRect(hwnd, NULL, FALSE);
 
-                PwgtSaveSetup(&strSetup,
-                              &pPrivate->Setup);
-                if (strSetup.ulLength)
-                    WinSendMsg(pWidget->pGlobals->hwndClient,
-                               XCM_SAVESETUP,
-                               (MPARAM)hwnd,
-                               (MPARAM)strSetup.psz);
-                xstrClear(&strSetup);
-            }
-        } // end if (pPrivate)
-    } // end if (pWidget)
+            PwgtSaveSetup(&strSetup,
+                          &pPrivate->Setup);
+            if (strSetup.ulLength)
+                WinSendMsg(pWidget->pGlobals->hwndClient,
+                           XCM_SAVESETUP,
+                           (MPARAM)hwnd,
+                           (MPARAM)strSetup.psz);
+            xstrClear(&strSetup);
+        }
+    } // end if (pWidget && pPrivate)
 }
 
 /*
@@ -1021,34 +1231,38 @@ VOID PwgtPresParamChanged(HWND hwnd,
 
 VOID PwgtDestroy(HWND hwnd)
 {
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    PWIDGETPRIVATE pPrivate;
+
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
+       )
     {
-        PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
-        if (pPrivate)
-        {
-            if (pPrivate->ulTimerID)
-                tmrStopXTimer((PXTIMERSET)pWidget->pGlobals->pvXTimerSet,
-                              hwnd,
-                              pPrivate->ulTimerID);
+        // FIRST thing to do is stop the collect thread
+        // a) set fExit flag so that collect thread won't
+        //    collect any more
+        pPrivate->tiCollect.fExit = TRUE;
+        // b) post exit event, in case the collect thread
+        //    is currently sleeping
+        DosPostEventSem(pPrivate->hevExit);
+        // c) now wait for collect thread to post "exit done"
+        WinWaitEventSem(pPrivate->hevExitComplete, 2000);
 
-            if (pPrivate->hbmGraph)
-            {
-                GpiSetBitmap(pPrivate->hpsMem, NULLHANDLE);
-                GpiDeleteBitmap(pPrivate->hbmGraph);
-            }
+        if (pPrivate->pBitmap)
+            gpihDestroyXBitmap(&pPrivate->pBitmap);
 
-            if (pPrivate->hpsMem)
-                GpiDestroyPS(pPrivate->hpsMem);
-            if (pPrivate->hdcMem)
-                DevCloseDC(pPrivate->hdcMem);
+        DosCloseMutexSem(pPrivate->hmtxData);
+        DosCloseEventSem(pPrivate->hevExit);
+        DosCloseEventSem(pPrivate->hevExitComplete);
 
-            if (pPrivate->pPerfData)
-                doshPerfClose(&pPrivate->pPerfData);
+        if (pPrivate->pPerfData)
+            doshPerfClose(&pPrivate->pPerfData);
 
-            free(pPrivate);
-        } // end if (pPrivate)
-    } // end if (pWidget)
+        // do not destroy pPrivate->hdcWin, it is
+        // destroyed automatically
+
+        free(pPrivate);
+    } // end if (pWidget && pPrivate);
 }
 
 /*

@@ -451,6 +451,7 @@ $(OUTPUTDIR)\xwpstring.obj: \
             $(INC)\setup.h \
             $(HLPINC)\cnrh.h $(HLPINC)\except.h $(HLPINC)\stringh.h $(HLPINC)\threads.h \
                 $(HLPINC)\winh.h $(HLPINC)\xstring.h \
+            $(INC)\classes\xfobj.ih \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
