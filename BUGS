@@ -14,18 +14,51 @@ XWorkplace features in the "XWorkplace Setup" object.
 Ulrich M”ller.
 
 
-CURRENT PROBLEMS
-----------------
+FIXED SINCE 0.9.18
+------------------
 
---  pagemage: vx-rexx patch breaks visual slick edit
+--  Object details dialog has no keyboard support for direct text
+    editing on object ID field.
+
+--  If true delete was on but trash can was disabled, "Del" key
+    did not perform the XWP replacement but called the WPS code.
+
+--  "Pre-populate desktop" stopped pagemage from getting the
+    correct desktop window handle.
+
+--  put strings in fnwpDoubleFilesDlg (cfgsys.c) into NLS resources
+
+--  switching languages breaks strings for dialog formatter (global variables,
+    ntbFormatPage)
 
 --  object not refreshed after alt-click rename
 
+
+CURRENT PROBLEMS
+----------------
+
+--  file(2) page: allow delete of EAs, edit EAT_ASCII
+
+--  create two folders
+    rename one to have the name of the other
+    press 'ok' in the dialog (accept the new name)
+    now.. the name you see is NOT the name it actually got..
+    change 'focus' to the other folder and the title is updated
+
+--  pagemage: vx-rexx patch breaks several apps, such as
+    visual slick edit and mr2ice status window
+
+--  enabling hook won't stick on some systems
+
+--  files and folders deleted by trash can get recreated by checkini?
+
 --  replacement icons:
+
+    --  xshutdown in xwp folder has default vio icon
 
     --  pronews.exe shows default icon in program object
 
-    --  lost icons for FTP-PM
+    --  lost icons for FTP-PM, Lotus Approach
 
 --  when you open the object properties of an application from the File
     Types tab of the Workplace Shell object, the icon disappears. Selecting
@@ -155,6 +188,12 @@ XWPSetup:
     -- "Undo" and "Default" don't affect newer settings (trashcan);
        PageMage isn't affected
 
+    --  3.- This is purely cosmetic, I think: if you go to XWP settings, "Features"
+        page, and expand the "file operations" tree USING THE MOUSE, and then
+        collapse it using the mouse again, the focus will be passed to the
+        "startup/shutdown features" entry, instead to the "file operations". All the
+        other entries behave OK, and all respond ok to keyboard expand/collapse.
+
 folders:
     --  sorting: sorts wrong after renaming file (intercept cnr msg)
 
@@ -169,7 +208,7 @@ OS/2 Kernel:
     -- Set Path -> Browse will not work (Standard file dialog doesn't react when
        OK is pressed -> nothing happens.
 
-    -- Select invalid on classpath selects all zip files.
+    -- "Select invalid" on CLASSPATH selects all zip files.
 
 hotkeys:
        if batchfiles should start in minimized state, from time to time
