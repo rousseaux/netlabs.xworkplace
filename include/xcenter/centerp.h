@@ -175,6 +175,11 @@
          *      we can use this to cache additional data
          *      that the widget itself should not see.
          *
+         *      Since XCENTERWIDGET is the first member of
+         *      this structure, one can use the QWL_USER
+         *      window ptr for getting this structure
+         *      from a widget window as well.
+         *
          *@@added V0.9.7 (2000-12-14) [umoeller]
          */
 
@@ -210,6 +215,14 @@
                         // has a pointer to the tray widget which
                         // owns this widget
                         // V0.9.13 (2001-06-19) [umoeller]
+
+            PLINKLIST        pllSubwidgetViews;
+                        // if this is a tray widget, linked list of
+                        // WIDGETVIEWSTATE structures containing
+                        // the subwidget views for the current tray,
+                        // similar to XCenter's own list
+                        // (invisible trays never have subwidget views)
+                        // V0.9.13 (2001-06-23) [umoeller]
 
         } WIDGETVIEWSTATE, *PWIDGETVIEWSTATE;
 
@@ -333,6 +346,10 @@
 
     #ifdef LINKLIST_HEADER_INCLUDED
 
+        ULONG ctrpBroadcastWidgetNotify(PLINKLIST pllWidgets,
+                                        USHORT usNotifyCode,
+                                        MPARAM mp2);
+
         ULONG ctrpPositionWidgets(PXCENTERGLOBALS pGlobals,
                                   PLINKLIST pllWidgets,
                                   ULONG x,
@@ -426,9 +443,27 @@
 
     /* ******************************************************************
      *
-     *   XCenter settings implementation
+     *   Widget settings management
      *
      ********************************************************************/
+
+    #ifdef LINKLIST_HEADER_INCLUDED
+
+        PTRAYSETTING XWPENTRY ctrpCreateTray(PPRIVATEWIDGETSETTING ppws,
+                                             const char *pcszTrayName,
+                                             PULONG pulIndex);
+
+        BOOL XWPENTRY ctrpDeleteTray(PPRIVATEWIDGETSETTING ppws,
+                                     ULONG ulIndex);
+
+        PTRAYSUBWIDGET XWPENTRY ctrpCreateWidgetSetting(PTRAYSETTING pTray,
+                                                        const char *pcszWidgetClass,
+                                                        const char *pcszSetupString,
+                                                        ULONG ulIndex);
+
+        BOOL XWPENTRY ctrpDeleteWidgetSetting(PTRAYSUBWIDGET pSubwidget);
+
+    #endif
 
     #ifdef SOM_XCenter_h
 
@@ -441,11 +476,15 @@
             PLINKLIST ctrpQuerySettingsList(XCenter *somSelf);
         #endif
 
+    #endif
+
     /* ******************************************************************
      *
      *   XCenter view implementation
      *
      ********************************************************************/
+
+    #ifdef SOM_XCenter_h
 
         ULONG ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
                                            HWND hwnd);
@@ -571,82 +610,24 @@
 
     #define XCM_SWITCHTOTRAY            (WM_USER + 6)
 
-    /* ******************************************************************
+    /*
+     *@@ XCM_CREATEOBJECTBUTTON:
+     *      sent to a tray widget by the engine's d'n'd
+     *      code if an object button widget should be
+     *      created in the current tray.
      *
-     *   Private tray widget instance data
+     *      Parameters:
      *
-     ********************************************************************/
+     *      -- PSZ mp1: setup string for new object
+     *         button.
+     *
+     *      -- ULONG mp2: index where to insert (-1
+     *         for rightmost).
+     *
+     *@@added V0.9.13 (2001-06-23) [umoeller]
+     */
 
-    #ifdef LINKLIST_HEADER_INCLUDED
-
-        /*
-         *@@ TRAYSETUP:
-         *      instance data to which setup strings correspond.
-         *      This is also a member of TRAYWIDGETPRIVATE.
-         */
-
-        typedef struct _TRAYSETUP
-        {
-            ULONG       cx;     // widget width
-
-            ULONG       ulCurrentTray;
-                                // current tray index (from 0)
-                                // or -1 if none
-
-        } TRAYSETUP, *PTRAYSETUP;
-
-        /*
-         *@@ TRAYWIDGETPRIVATE:
-         *      more window data for the "pulse" widget.
-         *
-         *      An instance of this is created on WM_CREATE in
-         *      fnwpPulseWidget and stored in XCENTERWIDGET.pUser.
-         */
-
-        typedef struct _TRAYWIDGETPRIVATE
-        {
-            PXCENTERWIDGET  pWidget;
-                    // reverse ptr to general widget data ptr; we need
-                    // that all the time and don't want to pass it on
-                    // the stack with each function call
-
-            TRAYSETUP       Setup;
-                    // widget settings that correspond to a setup string
-
-            LINKLIST        llSubwidgetViews;
-                    // linked list of WIDGETVIEWSTATE structures containing
-                    // the subwidget views, similar to XCenter's own list;
-                    // however, this only has the widget views for the
-                    // current tray (invisible trays never have subwidget
-                    // views)
-
-            HPOINTER        hptrTray,       // tray icon
-                            hptrHand;       // hand pointer
-
-            BOOL            fMouseButton1Down,
-                            fButtonSunk,
-                            fMouseCaptured;
-
-            HWND            hwndTraysMenu;
-
-            SIZEL           szlCurrent;
-                    // our own current width height, which is the same as the
-                    // height of the tallest member widget
-
-            BOOL            fContextMenuHacked;
-                    // TRUE after widget context menu has been modified
-                    // for the first time. This is necessary because
-                    // the context menu in XCENTERWIDGET is only valid
-                    // after WM_CREATE.
-
-        } TRAYWIDGETPRIVATE, *PTRAYWIDGETPRIVATE;
-
-        PTRAYSUBWIDGET YwgtCreateSubwidget(PXCENTERWINDATA pXCenterData,
-                                           PTRAYWIDGETPRIVATE pPrivate,
-                                           const char *pcszWidgetClass,
-                                           const char *pcszSetupString,
-                                           ULONG ulIndex);
-    #endif
+    #define XCM_CREATEOBJECTBUTTON      (WM_USER + 7)
 
     /* ******************************************************************
      *

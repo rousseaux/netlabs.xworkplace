@@ -29,8 +29,14 @@ internally, so the contents are only read once, until you modify
 the Configuration Folder or one of its subfolders. This should result in some speedup.
 Also, with V0.9.0, I have reworked my internal linked-list functions, which should also
 result in a speed increase.
-<P>With the other functions, I don't know. Naturally, painting the status bars does
-take some time, but this is normally not noticeable.
+<!-- V0.9.13: changed the following -->
+<P>As for the other features of XWorkplace, it depends. Some things might actually
+slow down the system slightly (such as retrieving information for the status bars),
+but there are areas where XWorkplace's routines will actually be faster than the
+WPS code. For example, if extended file associations are enabled, folder populating
+is much faster because XWorkplace is using very efficient caching routines for
+object handles internally.
+<!-- end V0.9.13 -->
 <P>Also, as opposed to some other WPS enhancers, XWorkplace doesn't use excessive
 amounts of memory. I have checked this once on my system, and in addition to the
 size of the XWorkplace DLLs themselves, XWorkplace only keeps a few 100 KBs of

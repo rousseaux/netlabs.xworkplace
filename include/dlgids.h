@@ -677,6 +677,12 @@
 #define ID_OSDI_MINSWAPSIZE             1508
 #define ID_OSDI_MINSWAPFREE             1509
 #define ID_OSDI_SWAPPATH                1510
+#define ID_OSDI_HIMEM_GROUP             1511
+#define ID_OSDI_HIMEM_VALIMIT_TXT1      1512
+#define ID_OSDI_HIMEM_VALIMIT_SLIDER    1513
+#define ID_OSDI_HIMEM_VALIMIT_TXT2      1514
+#define ID_OSDI_HIMEM_DLLBASINGOFF      1515
+#define ID_OSDI_HIMEM_JAVAHIMEM         1516
 
 // FAT page; this is also used by the driver dialogs
 #define ID_OSD_SETTINGS_FAT             1521

@@ -4,52 +4,9 @@
         Additional Disk Object Codes
     </TITLE>
 </HEAD>
-<!-- This file is all new with V0.84 and contains the status bar codes
-     previously described in fldr_32statusbars.html. Nothing else has changed. -->
-<!-- Changed with V0.9.0: see notes below -->
 <BODY>
-<!-- V0.9.0: add the following line -->
-<B>Class: XFolder</B><HR>
-<B>Disk objects</B> (WPDisk class, i.e. the objects in the "Drives" folder)
-support the following codes <I>in addition</I> to the codes for all objects:
-<BR><DL>
-<!-- V0.9.11: rewrote the following -->
-<DT><CITE>  $fb     </CITE><DD>free space on the drive
-<DT><CITE>  $zb     </CITE><DD>total size of the drive  (V0.9.11)
-
-<P>In the above two, <CODE>b</CODE> is a format specifier and can actually be
-one of the following:
-
-<UL><LI><CODE>b    </CODE> display the value in bytes.
-<LI><CODE>k    </CODE> display the value in kBytes, i.e. bytes / 1000.
-<LI><CODE>K    </CODE> display the value in KBytes, i.e. bytes / 1024.
-<LI><CODE>m    </CODE> display the value in mBytes, i.e. bytes / 1,000,000.
-<LI><CODE>M    </CODE> display the value in MBytes, i.e. bytes / 1,048,576.
-<LI><CODE>a    </CODE> display the value in bytes/kBytes/mBytes, depending on the
-size of the value (V0.9.6).
-<LI><CODE>A    </CODE> display the value in bytes/KBytes/MBytes, depending on the
-size of the value (V0.9.6).
-</UL>
-<!-- end V0.9.11: rewrote the following -->
-
-<BR><DT><CITE>  $F      </CITE><DD>file-system type (FAT, HPFS, CDFS, ...)
-
-<BR><DT><CITE>  $L      </CITE><DD>disk label (V0.9.11)
-</DL>
-
-<BR><B>Notes:</B> If you are using these keys, you should make sure that you have
-OS/2's hardware error messages disabled, because otherwise you'll get a
-"drive not ready" message every time no disk is inserted.
-The new <A HREF="sys_1intro.html">"OS/2 Kernel"</A>
-object lets you do this on the "Errors" page.
-
-<!-- V0.9.11: changed the following line -->
-<P>Note also that the <CITE>$f</CITE> and <CODE>$T</CODE> codes are <I>redefined</I>
-for disk objects. Normally, they display the space on the drive on which the
-<I>folder</I> resides, which, for the "Drives" folder, would of course always return
-the same value for the drive on which your Desktop resides.
-Thus this code has been redefined for drive objects.
-
+<!-- V0.9.13: This file has been completely moved to the HLP
+     file and is no longer used here. -->
 <BR>
 </BODY>
 </HTML>

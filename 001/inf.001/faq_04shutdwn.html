@@ -95,24 +95,30 @@ the screen and cannot find your desktop.
 \OS2 directory, renamed to .BAK. Before XShutdown saves the INI files, it renames the
 old ones. Boot to a command line (using Alt-F1 during startup) and rename these two
 backups back to *.INI.
-
 <!-- the following is unchanged -->
+
 <P><LI><B>Why is APM power-off is not working on my system?</B>
-<P>I don't know. My computer does not support APM power-off, so I cannot test this myself.
-Please contact ARAKAWA Atsushi, arakaw@ibm.net, who has written the APM code.
-<!-- this paragraph nrew with V0.84 -->
-<P>Some users have reported that using APM power-off causes a CHKDSK at the next reboot
-of OS/2. Apparently, only newer OS/2 kernels have file system functions which support
-this features.
-IBM has introduced a newer APM support with Warp 4 Fixpak 6, so maybe installing
-that fixpak will solve that problem. The "XShutdown" page in the Desktop's settings
+<!-- V0.9.13: rewrote this -->
+<P>I don't know. On some systems, it just doesn't. I'm pretty sure it's not
+XWorkplace's fault because XWorkplace does nothing but calling into the
+<CODE>APM.SYS</CODE> device driver, after which it has no control over what
+that driver is doing to power off the system.
+<P>IBM updated the APM APM support with Warp 4 Fixpak 6 (and possibly
+later too). The "XShutdown" page in the Desktop's settings
 notebook displays the version number of the installed APM driver, which should be
 at least 1.2 to make APM power-off work.
-<!-- this paragraph new with V0.9.0 -->
-<P>Finally, I was told that APM does not wait long enough for some hard disk with
+<P>Even worse, there are many systems which have no 100% compatible APM support
+in the BIOS, and this might be the problem too.
+
+<P><LI><B>APM power-off works, but at the next reboot I am getting CHKDSKs.</B>
+
+<P>Again, XWorkplace can't do much about this. I am getting these CHKDSKs too on
+my laptop, even though it's working fine on my desktop machine.
+Apparently <CODE>APM.SYS</CODE> does not wait long enough for some hard disk with
 large internal caches to flush their caches to disk before the system power is killed.
 This appears to be a generic problem which I've also read about with Win95, so you'll
-probably have to disable APM altogether, if this is the cause.
+probably have to disable APM altogether in this case.
+<!-- end V0.9.13 -->
 </OL>
 </BODY>
 </HTML>

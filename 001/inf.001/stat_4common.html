@@ -4,53 +4,9 @@
         Common Codes for All Modes
     </TITLE>
 </HEAD>
-<!-- This file is all new with V0.84 and contains the status bar codes
-     previously described in fldr_32statusbars.html. Nothing else has changed. -->
-<!-- Changed with V0.9.0: see notes below -->
-<!-- V0.9.11 (2001-04-22) [umoeller]: largely rewritten. -->
 <BODY>
-<!-- V0.9.0: add the following line -->
-<B>Class: XFolder</B><HR>
-The following codes work <B>in all three modes:</B>
-<BR><DL>
-<DT><CITE>  $c      </CITE><DD>number of currently selected objects
-<DT><CITE>  $C      </CITE><DD>total number of objects in folder
-
-<BR><DT><CITE>  $sb     </CITE><DD>total size of selected objects
-<DT><CITE>  $Sb     </CITE><DD>total size of folder content
-<!-- V0.9.11: rewrote the following -->
-<DT><CITE>  $fb     </CITE><DD>free space on the folder's drive
-<DT><CITE>  $zb     </CITE><DD>total size of the folder's drive (V0.9.11)
-
-<P>In the above four, <CODE>b</CODE> is a format specifier and can actually be
-one of the following:
-
-<UL><LI><CODE>b    </CODE> display the value in bytes.
-<LI><CODE>k    </CODE> display the value in kBytes, i.e. bytes / 1000.
-<LI><CODE>K    </CODE> display the value in KBytes, i.e. bytes / 1024.
-<LI><CODE>m    </CODE> display the value in mBytes, i.e. bytes / 1,000,000.
-<LI><CODE>M    </CODE> display the value in MBytes, i.e. bytes / 1,048,576.
-<LI><CODE>a    </CODE> display the value in bytes/kBytes/mBytes, depending on the
-size of the value (V0.9.6).
-<LI><CODE>A    </CODE> display the value in bytes/KBytes/MBytes, depending on the
-size of the value (V0.9.6).
-</UL>
-<!-- end V0.9.11: rewrote the following -->
-
-<BR><DT><CITE>  $x(xxx) </CITE><DD>Left-oriented tabulator:
-print the following information at X position "xxx" (relative to the left border of
-the status bar).
-<BR>Example: <CITE>$x(300)$sK</CITE> will always print the total size of the selected
-objects at X position 300.
-<DT><CITE>  $x(-xxx) </CITE><DD>like before, but relative to the right border of
-the status bar.
-<BR>Example: <CITE>$x(-150)$sK</CITE> will print the total size of the selected objects
-at X position 100, if the status bar is currently 250 pixels wide.
-<DT><CITE>  $x(xx%) </CITE><DD>like before, but the X position will be calculated
-using "xx" as a percentage relative to the current width of the status bar.
-<BR>Example: <CITE>$x(50%)$sK</CITE> will always print the total size of the selected
-objects in the center of the status bar.
-</DL>
+<!-- V0.9.13: This file has been completely moved to the HLP
+     file and is no longer used here. -->
 <BR>
 </BODY>
 </HTML>

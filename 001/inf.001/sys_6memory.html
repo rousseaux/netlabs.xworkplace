@@ -4,58 +4,9 @@
         OS/2 Memory Management
     </TITLE>
 </HEAD>
-<!-- this file changed with V0.82; see notes below -->
-<!-- Changed with V0.9.0: change XFolder to XWorkplace -->
 <BODY>
-<!-- V0.9.0: add the following line -->
-<B>Class: XFldSystem</B>
-<IMG SRC="xfsys.gif" ALIGN=right>
-<HR>
-Memory management is done by the OS/2 Kernel also. It takes care that processes
-may acquire memory, protects processes against each other's memory accesses, and
-most importantly manages "virtual memory".
 
-<P><B>"Virtual memory"</B> is the common term for memory which does not exist
-physically in a computer, which may however still be allocated by using a
-<B>swap file</B> on the hard disk. As a result, an application may use more memory
-than what is physically installed in the computer.
-
-<P>If an OS/2 application allocates memory and not enough physical memory is available,
-OS/2 takes an area of the main memory (RAM) which is not currently used and stores it
-into the swap file on the hard disk. This part of memory is then available and given
-to the requesting application.
-
-<P>By contrast, if another application, to which the swapped memory region belongs,
-needs the swapped memory again, OS/2 intercepts this memory access (because the
-"memory" now resides on the hard disk) and loads that region back into memory
-from the hard disk before the application actually accesses it. (If necessary,
-OS/2 will have to swap another memory region to the swap file first
-to make room for the memory region which is to be loaded back into memory.)
-
-<P>Naturally, a hard disk is much slower than physical RAM: an average hard disk
-might have a throughput of 2 to 7 MB per second, while RAM might have a throughput of
-20 to several 100 MB per second, depending on your processor speed and on whether that
-portion of memory has already been loaded into the processor memory caches.
-
-<P>This is why plenty of RAM is the most important prerequisite for an acceptably
-fast OS/2 installation. Even though you may install OS/2 with only 8 MB of RAM
-(OS/2 Warp 3 allegedly even with 4), you will then only hear the hard disk rattle
-because OS/2 has to permanently swap in and out.
-
-<!-- V0.82: changed 32+40=70 to 72 -- oops! -->
-<P>Even if you have a relatively large amount of RAM installed (for example, I have
-32 MB), OS/2 will need to swap a lot, depending on how much memory your applications
-demand. For example, one complete build of XWorkplace using VisualAge C++ will make my
-swap file grow to more than 40 MB, meaning that OS/2 is actually using 32+40 = 72 MB
-of memory.
-
-<P>OS/2's memory management, especially the swap file management, may be influenced
-by a number of CONFIG.SYS commands. Even though there several of these commands,
-I recommend that you only change the <CITE>SWAPPPATH</CITE> command, for which
-the "Memory" page in the "OS/2 Kernel" object offers you an interface.
-
-<P>Press the <B>"Help"</B> button there to receive a more detailed description of
-the different settings.
+<!-- V0.9.13: this file is no longer used. -->
 
 <BR>
 </BODY>

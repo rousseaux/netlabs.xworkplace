@@ -323,7 +323,9 @@
     #define WGTF_UNIQUEGLOBAL          (0x0008 + 0x0004)
     #define WGTF_TOOLTIP                0x0010
     #define WGTF_TOOLTIP_AT_MOUSE      (0x0020 + 0x0010)
-    #define WGTF_TRAYABLE               0x0040
+    #define WGTF_TRANSPARENT            0x0040
+    #define WGTF_NONFOCUSTRAVERSABLE    0x0100
+    #define WGTF_TRAYABLE               0x0200
 
     /*
      *@@ XCENTERWIDGETCLASS:
@@ -364,6 +366,17 @@
      *
      *         --  XN_SETUPCHANGED: widget's setup string has
      *             changed.
+     *
+     *         --  XN_BEGINANIMATE: the widget is about to be
+     *             shown/hidden.
+     *
+     *         --  XN_ENDANIMATE: the widget is now fully shown/hidden.
+     *
+     *         --  XN_HITTEST:  for transparent widgets, the XCenter
+     *             wants to know if the specified location is covered.
+     *
+     *         All unprocessed notifications should be routed
+     *         to ctrDefWidgetProc instead of being swallowed.
      *
      *      -- You must never use WinSetWindowPos on your widget
      *         window yourself because this will solidly confuse
@@ -492,6 +505,12 @@
                 //    tooltip is not centered above the widget, but put
                 //    at the mouse position instead.
                 //    This implies WGTF_TOOLTIP.
+                // -- WGTF_TRANSPARENT: some parts of the widget window
+                //    are transparent.  The widget will receive WM_CONTROL
+                //    messages with the XN_HITTEST notification code.
+                //    If the widget returns FALSE to the notification,
+                //    the action will be forwarded to its parent (the XCenter
+                //    or a tray widget).
                 // -- WGTF_TRAYABLE: widget is "trayable", that is, it
                 //    supports being created inside a tray widget.
                 //    Note: Restrictions apply if you want your widget
@@ -843,27 +862,221 @@
     #define XN_OBJECTDESTROYED          3
 
     /*
-     *@@ XN_INUSECHANGED:
-     *      notification code for WM_CONTROL posted (!)
-     *      to a widget if it has registered itself with
-     *      XFldObject::xwpSetWidgetNotify.
-     *
-     *      This is posted from XFldObject::wpCnrSetEmphasis
-     *      when the object's in-use emphasis changes.
+     *@@ XN_QUERYSETUP:
+     *      notification code for WM_CONTROL sent to a widget
+     *      when the sender needs to know the widget's setup string.
      *
      *      Parameters:
      *
      *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
      *
-     *      -- SHORT2FROMMP(mp1): notify code (XN_INUSECHANGED).
+     *      -- SHORT2FROMMP(mp1): notify code (XN_QUERYSETUP).
      *
-     *      -- WPObject* mp2: SOM object pointer of object whose
-     *                  emphasis changed.
+     *      -- char *mp2: buffer into which the setup string is
+     *                    copied.  It can be NULL, in which case
+     *                    nothing is copied.  Otherwise, it is
+     *                    expected to contain enough room for the
+     *                    whole setup string.
      *
-     *@@added V0.9.13 (2001-06-21) [umoeller]
+     *      The widget must return the minimum required size needed
+     *      to store the setup string (even if mp2 is NULL).
+     *
+     *@@added V0.9.9 (2001-03-01) [lafaix]
      */
 
-    #define XN_INUSECHANGED             4
+    // #define XN_QUERYSETUP               4
+
+    // flags for XN_BEGINANIMATE and XN_ENDANIMATE
+    #define XAF_SHOW                    1
+    #define XAF_HIDE                    2
+
+    /*
+     *@@ XN_BEGINANIMATE:
+     *      notification code for WM_CONTROL sent to a widget from
+     *      an XCenter when it is about to begin animating.
+     *
+     *      Parameters:
+     *
+     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
+     *
+     *      -- SHORT2FROMMP(mp1): notify code (XN_BEGINANIMATE).
+     *
+     *      -- ULONG mp2: XAF_SHOW if the parent initiate a 'show' animation,
+     *                    XAF_HIDE if the parent initiate a 'hide' animation.
+     *
+     *      This notification is sent regardless of whether the XCenter
+     *      actually does animation.  If it does no animation,
+     *      XN_ENDANIMATE immediately follows XN_BEGINANIMATE.
+     *
+     *      An active widget can react to this message to start or
+     *      stop doing something.  For example, a gauge widget can
+     *      choose to stop running when the container is hidden, to
+     *      save CPU cycles.
+     *
+     *@added V0.9.9 (2001-03-01) [lafaix]
+     */
+
+    #define XN_BEGINANIMATE             5
+
+    /*
+     *@@ XN_ENDANIMATE:
+     *      notification code for WM_CONTROL sent to a widget from
+     *      an XCenter when it has ended animating.
+     *
+     *      Parameters:
+     *
+     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
+     *
+     *      -- SHORT2FROMMP(mp1): notify code (XN_ENDANIMATE).
+     *
+     *      -- ULONG mp2: XAF_SHOW if the parent ended a 'show' animation,
+     *                    XAF_HIDE if the parent ended a 'hide' animation.
+     *
+     *      This notification is sent regardless of whether the XCenter
+     *      actually does animation.  If it does no animation,
+     *      XN_ENDANIMATE immediately follows XN_BEGINANIMATE.
+     *
+     *      An active widget can react to this message to start or
+     *      stop doing something.  For example, a gauge widget can
+     *      choose to stop running when the container is hidden, to
+     *      save CPU cycles.
+     *
+     *@added V0.9.9 (2001-03-01) [lafaix]
+     */
+
+    #define XN_ENDANIMATE               6
+
+    /*
+     *@@ XN_QUERYWIDGETCOUNT:
+     *      notification code for WM_CONTROL sent from the XCenter
+     *      to a widget when it needs to know how many elements a
+     *      container-widget contains.
+     *
+     *      Parameters:
+     *
+     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
+     *
+     *      -- SHORT2FROMMP(mp1): notify code (XN_QUERYWIDGETCOUNT).
+     *
+     *      -- PULONG mp2: pointer to an ULONG in which the widget
+     *                     must fill in its widget count.
+     *
+     *      The widgets count must only include first level elements.
+     *      That is, if a container contains other containers, the
+     *      elements in those sub-containers should not be included.
+     *
+     *      The widget must return TRUE if it has put its count in the
+     *      ULONG.  Otherwise, the XCenter will assume some dumb default
+     *      for the count.
+     *
+     *@@added V0.9.9 (2001-02-23) [lafaix]
+     *@@changed V0.9.9 (2001-03-11) [lafaix]: uses a PULONG to return the count.
+     */
+
+    // #define XN_QUERYWIDGETCOUNT         7
+
+    /*
+     *@@ XN_QUERYWIDGET:
+     *      notification code for WM_CONTROL sent from the XCenter
+     *      to a widget when it needs to know the widget present at
+     *      a given position.
+     *
+     *      Parameters:
+     *
+     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
+     *
+     *      -- SHORT2FROMMP(mp1): notify code (XN_QUERYWIDGET).
+     *
+     *      -- ULONG mp2: widget index (0 is the first widget).
+     *
+     *      The widget must return 0 if no widget exists at that index.
+     *      Otherwise it must return a pointer to the corresponding
+     *      XCENTERWIDGET structure.
+     *
+     *@@added V0.9.9 (2001-02-23) [lafaix]
+     */
+
+    // #define XN_QUERYWIDGET              8
+
+    // structure needed for XN_INSERTWIDGET
+    typedef struct _WIDGETINFO
+    {
+        SHORT          sOffset;
+                   // either WGT_END or the 0-based offset
+        PXCENTERWIDGET pWidget;
+                   // the widget to be inserted
+    } WIDGETINFO, *PWIDGETINFO;
+
+    // flags and return values for XN_INSERTWIDGET:
+    #define WGT_END                     (-1)
+    #define WGT_ERROR                   (-1)
+
+    /*
+     *@@ XN_INSERTWIDGET:
+     *      notification code for WM_CONTROL sent from the XCenter
+     *      to a widget when it needs to add a widget at a specified
+     *      offset to a container-widget.
+     *
+     *      Parameters:
+     *
+     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
+     *
+     *      -- SHORT2FROMMP(mp1): notify code (XN_INSERTWIDGET).
+     *
+     *      -- PWIDGETINFO mp2: a pointer to a WIDGETINFO structure
+     *                          that details the insertion.
+     *
+     *      The widget must return WGT_ERROR if the insertion failed.
+     *      Otherwise it must return the offset of the widget following
+     *      the inserted one.
+     *
+     *@@added V0.9.9 (2001-02-23) [lafaix]
+     */
+
+    // #define XN_INSERTWIDGET             9
+
+    /*
+     *@@ XN_DELETEWIDGET:
+     *      notification code for WM_CONTROL sent from the XCenter
+     *      to a widget when it needs to remove a widget at a specified
+     *      offset.
+     *
+     *      Parameters:
+     *
+     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
+     *
+     *      -- SHORT2FROMMP(mp1): notify code (XN_INSERTWIDGET).
+     *
+     *      -- SHORT mp2: the to be removed widget's offset.
+     *
+     *      The widget must return the count of remaining widgets.
+     *
+     *@@added V0.9.9 (2001-02-23) [lafaix]
+     */
+
+    // #define XN_DELETEWIDGET             10
+
+    /*
+     *@@ XN_HITTEST:
+     *      notification code for WM_CONTROL sent from the XCenter
+     *      to a widget when it needs to know whether a specific
+     *      location is covered by the widget.
+     *
+     *      Parameters:
+     *
+     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
+     *
+     *      -- SHORT2FROMMP(mp1): notify code (XN_HITTEST).
+     *
+     *      -- POINTS mp2: the location to test.
+     *
+     *      The widget must return TRUE if the location is covered, or
+     *      FALSE otherwise.
+     *
+     *@@added V0.9.13 (2001-06-23) [umoeller]
+     */
+
+    #define XN_HITTEST                  11
 
     /*
      *@@ XN_DISPLAYSTYLECHANGED:
@@ -894,7 +1107,30 @@
      *@@added V0.9.13 (2001-06-21) [umoeller]
      */
 
-    #define XN_DISPLAYSTYLECHANGED      5
+    #define XN_DISPLAYSTYLECHANGED      12
+
+    /*
+     *@@ XN_INUSECHANGED:
+     *      notification code for WM_CONTROL posted (!)
+     *      to a widget if it has registered itself with
+     *      XFldObject::xwpSetWidgetNotify.
+     *
+     *      This is posted from XFldObject::wpCnrSetEmphasis
+     *      when the object's in-use emphasis changes.
+     *
+     *      Parameters:
+     *
+     *      -- SHORT1FROMMP(mp1): ID, always ID_XCENTER_CLIENT.
+     *
+     *      -- SHORT2FROMMP(mp1): notify code (XN_INUSECHANGED).
+     *
+     *      -- WPObject* mp2: SOM object pointer of object whose
+     *                  emphasis changed.
+     *
+     *@@added V0.9.13 (2001-06-21) [umoeller]
+     */
+
+    #define XN_INUSECHANGED             13
 
     /* ******************************************************************
      *
@@ -1033,7 +1269,7 @@
 
     #define XCM_SAVESETUP               (WM_USER + 2)
 
-    // WM_USER + 3 and WM_USER + 4 are reserved
+    // WM_USER + 3 to WM_USER + 10 are reserved
 
     /* ******************************************************************
      *
