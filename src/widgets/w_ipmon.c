@@ -293,6 +293,7 @@ PCMNQUERYHELPLIBRARY pcmnQueryHelpLibrary = NULL;
 
 PCTLMAKECOLORRECT pctlMakeColorRect = NULL;
 
+PCTRDEFWIDGETPROC pctrDefWidgetProc = NULL;
 PCTRFREESETUPVALUE pctrFreeSetupValue = NULL;
 PCTRPARSECOLORSTRING pctrParseColorString = NULL;
 PCTRSCANSETUPSTRING pctrScanSetupString = NULL;
@@ -306,6 +307,8 @@ PGPIHDRAW3DFRAME pgpihDraw3DFrame = NULL;
 PGPIHSWITCHTORGB pgpihSwitchToRGB = NULL;
 PGPIHCREATEXBITMAP pgpihCreateXBitmap = NULL;
 PGPIHDESTROYXBITMAP pgpihDestroyXBitmap = NULL;
+
+PNLSTHOUSANDSULONG pnlsThousandsULong = NULL;
 
 PTMRSTARTXTIMER ptmrStartXTimer = NULL;
 PTMRSTOPXTIMER ptmrStopXTimer = NULL;
@@ -323,6 +326,7 @@ PWINHCENTERWINDOW pwinhCenterWindow = NULL;
 PXSTRCAT pxstrcat = NULL;
 PXSTRCLEAR pxstrClear = NULL;
 PXSTRINIT pxstrInit = NULL;
+PXSTRPRINTF pxstrPrintf = NULL;
 
 static const RESOLVEFUNCTION G_aImports[] =
     {
@@ -330,6 +334,7 @@ static const RESOLVEFUNCTION G_aImports[] =
         "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
         "cmnQueryHelpLibrary", (PFN*)&pcmnQueryHelpLibrary,
         "ctlMakeColorRect", (PFN*)&pctlMakeColorRect,
+        "ctrDefWidgetProc", (PFN*)&pctrDefWidgetProc,
         "ctrFreeSetupValue", (PFN*)&pctrFreeSetupValue,
         "ctrParseColorString", (PFN*)&pctrParseColorString,
         "ctrScanSetupString", (PFN*)&pctrScanSetupString,
@@ -341,6 +346,7 @@ static const RESOLVEFUNCTION G_aImports[] =
         "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
         "gpihCreateXBitmap", (PFN*)&pgpihCreateXBitmap,
         "gpihDestroyXBitmap", (PFN*)&pgpihDestroyXBitmap,
+        "nlsThousandsULong", (PFN*)&pnlsThousandsULong,
         "tmrStartXTimer", (PFN*)&ptmrStartXTimer,
         "tmrStopXTimer", (PFN*)&ptmrStopXTimer,
         "winhFree", (PFN*)&pwinhFree,
@@ -355,7 +361,8 @@ static const RESOLVEFUNCTION G_aImports[] =
 
         "xstrcat", (PFN*)&pxstrcat,
         "xstrClear", (PFN*)&pxstrClear,
-        "xstrInit", (PFN*)&pxstrInit
+        "xstrInit", (PFN*)&pxstrInit,
+        "xstrPrintf", (PFN*)&pxstrPrintf
     };
 
 /* ******************************************************************
@@ -396,7 +403,7 @@ typedef struct _MONITORSETUP
             // store this
 
     ULONG       ulDevIndex;
-    ULONG       ulLastDevIndex;
+    ULONG       ulPrevDevIndex;
             // eo:  Added to avoid extreme values upon interface change
 
 } MONITORSETUP, *PMONITORSETUP;
@@ -443,7 +450,7 @@ typedef struct _WIDGETPRIVATE
     // rate for input and output, respectively.
     ULONG           ulPrevTotalIn,
                     ulPrevTotalOut,
-                    ulLastMilliseconds;
+                    ulPrevMillisecs;
 
     BOOL            fCreating;      // TRUE while in WM_CREATE (anti-recursion)
 
@@ -466,7 +473,9 @@ typedef struct _WIDGETPRIVATE
 
     BOOL            fTooltipShowing;    // TRUE only while tooltip is currently
                                         // showing over this widget
-    CHAR            szTooltipText[100]; // tooltip text
+
+    PSZ             pszTooltipFormat;   // NLS tooltip format string
+    XSTRING         strTooltipText;     // current tooltip text
 
 } WIDGETPRIVATE, *PWIDGETPRIVATE;
 
@@ -480,13 +489,13 @@ typedef struct _WIDGETPRIVATE
  */
 
 /*
- *@@ TwgtFreeSetup:
+ *@@ IwgtFreeSetup:
  *      cleans up the data in the specified setup
  *      structure, but does not free the structure
  *      itself.
  */
 
-VOID TwgtFreeSetup(PMONITORSETUP pSetup)
+VOID IwgtFreeSetup(PMONITORSETUP pSetup)
 {
     if (pSetup)
     {
@@ -499,7 +508,7 @@ VOID TwgtFreeSetup(PMONITORSETUP pSetup)
 }
 
 /*
- *@@ TwgtScanSetup:
+ *@@ IwgtScanSetup:
  *      scans the given setup string and translates
  *      its data into the specified binary setup
  *      structure.
@@ -509,7 +518,7 @@ VOID TwgtFreeSetup(PMONITORSETUP pSetup)
  *
  */
 
-VOID TwgtScanSetup(PCSZ pcszSetupString,
+VOID IwgtScanSetup(PCSZ pcszSetupString,
                    PMONITORSETUP pSetup)
 {
     PSZ p;
@@ -588,13 +597,13 @@ VOID TwgtScanSetup(PCSZ pcszSetupString,
 }
 
 /*
- *@@ TwgtSaveSetup:
+ *@@ IwgtSaveSetup:
  *      composes a new setup string.
  *      The caller must invoke xstrClear on the
  *      string after use.
  */
 
-VOID TwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared first)
+VOID IwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared first)
                    PMONITORSETUP pSetup)
 {
     CHAR    szTemp[100];
@@ -634,15 +643,15 @@ VOID TwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
 }
 
 /*
- *@@ TwgtSaveSetupAndSend:
+ *@@ IwgtSaveSetupAndSend:
  *
  */
 
-VOID TwgtSaveSetupAndSend(HWND hwnd,
+VOID IwgtSaveSetupAndSend(HWND hwnd,
                           PMONITORSETUP pSetup)
 {
     XSTRING strSetup;
-    TwgtSaveSetup(&strSetup,
+    IwgtSaveSetup(&strSetup,
                   pSetup);
     if (strSetup.ulLength)
         // changed V0.9.13 (2001-06-21) [umoeller]:
@@ -810,7 +819,7 @@ VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
     {
         // go scan the setup string
         MONITORSETUP  Setup;
-        TwgtScanSetup(pData->pcszSetupString,
+        IwgtScanSetup(pData->pcszSetupString,
                       &Setup);
 
         // for each color control, set the background color
@@ -858,7 +867,7 @@ VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
             Setup.lcolForeground = GetColor(hwndDlg,
                                             1000 + INDEX_FOREGROUND);
 
-            TwgtSaveSetup(&strSetup,
+            IwgtSaveSetup(&strSetup,
                           &Setup);
 
             pData->pctrSetSetupString(pData->hSettings,
@@ -882,14 +891,15 @@ VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
  */
 
 /*
- *@@ TwgtCreate:
+ *@@ IwgtCreate:
  *      implementation for WM_CREATE.
  */
 
-MRESULT TwgtCreate(HWND hwnd,
-                   PXCENTERWIDGET pWidget)
+static MRESULT IwgtCreate(HWND hwnd,
+                          PXCENTERWIDGET pWidget)
 {
     MRESULT mrc = 0;        // continue window creation
+    CHAR    szTemp[200];
 
     PWIDGETPRIVATE pPrivate = malloc(sizeof(WIDGETPRIVATE));
     memset(pPrivate, 0, sizeof(WIDGETPRIVATE));
@@ -899,8 +909,33 @@ MRESULT TwgtCreate(HWND hwnd,
 
     pPrivate->fCreating = TRUE;
 
+    pxstrInit(&pPrivate->strTooltipText, 0);
+
+    // compose tooltip format string... something like
+    // "%s\nin: %lu%c%lu KB/s (%s bytes total)\nout: %lu%c%lu KB/s (%s bytes total)"
+    strcpy(szTemp,
+           "%s\n");
+    strcat(szTemp,
+           pcmnGetString(ID_CRSI_IPWGT_GRAPHINCOLOR));      // "Incoming"
+    strcat(szTemp,
+           ": %lu%c%lu KB/s (%s ");
+    strcat(szTemp,
+           pcmnGetString(ID_CRSI_IPWGT_BYTESTOTAL));        // "bytes total"
+    strcat(szTemp,
+           ")\n");
+    strcat(szTemp,
+           pcmnGetString(ID_CRSI_IPWGT_GRAPHOUTCOLOR));      // "Outgoing"
+    strcat(szTemp,
+           ": %lu%c%lu KB/s (%s ");
+    strcat(szTemp,
+           pcmnGetString(ID_CRSI_IPWGT_BYTESTOTAL));        // "bytes total"
+    strcat(szTemp,
+           ")");
+
+    pPrivate->pszTooltipFormat = strdup(szTemp);
+
     // initialize binary setup structure from setup string
-    TwgtScanSetup(pWidget->pcszSetupString,
+    IwgtScanSetup(pWidget->pcszSetupString,
                   &pPrivate->Setup);
 
     sock_init();
@@ -932,8 +967,8 @@ MRESULT TwgtCreate(HWND hwnd,
 
             DosQuerySysInfo(QSV_MS_COUNT,
                             QSV_MS_COUNT,
-                            (PVOID)&pPrivate->ulLastMilliseconds,
-                            sizeof(pPrivate->ulLastMilliseconds));
+                            (PVOID)&pPrivate->ulPrevMillisecs,
+                            sizeof(pPrivate->ulPrevMillisecs));
         }
     }
 
@@ -944,7 +979,7 @@ MRESULT TwgtCreate(HWND hwnd,
 
     // enable context menu help
     pWidget->pcszHelpLibrary = pcmnQueryHelpLibrary();
-    pWidget->ulHelpPanelID = ID_XSH_WIDGET_SENTINEL_MAIN;
+    pWidget->ulHelpPanelID = ID_XSH_WIDGET_IPMON_MAIN;
 
     // start update timer
     pPrivate->ulTimerID = ptmrStartXTimer(pWidget->pGlobals->pvXTimerSet,
@@ -955,17 +990,50 @@ MRESULT TwgtCreate(HWND hwnd,
 
     pPrivate->fCreating = FALSE;
 
-    pPrivate->szTooltipText[0] = '\0';
-
     return mrc;
 }
 
 /*
- *@@ TwgtControl:
+ *@@ IwgtDestroy:
+ *
+ *@@added V0.9.19 (2002-06-08) [umoeller]
+ */
+
+static VOID IwgtDestroy(HWND hwnd)
+{
+    PXCENTERWIDGET pWidget;
+    PWIDGETPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
+       )
+    {
+        if (pPrivate->ulTimerID)
+            ptmrStopXTimer(pPrivate->pWidget->pGlobals->pvXTimerSet,
+                           hwnd,
+                           pPrivate->ulTimerID);
+
+        if (pPrivate->pBitmap)
+            pgpihDestroyXBitmap(&pPrivate->pBitmap);
+                    // this was missing V0.9.12 (2001-05-20) [umoeller]
+
+        if (pPrivate->paSnapshots)
+            free(pPrivate->paSnapshots);
+
+        soclose(pPrivate->sock);
+
+        pxstrClear(&pPrivate->strTooltipText);
+        free(pPrivate->pszTooltipFormat);
+
+        free(pPrivate);
+    } // end if (pPrivate)
+}
+
+/*
+ *@@ IwgtControl:
  *      implementation for WM_CONTROL.
  */
 
-BOOL TwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
+static BOOL IwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     BOOL brc = FALSE;
 
@@ -1009,8 +1077,8 @@ BOOL TwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         const char *pcszNewSetupString = (const char*)mp2;
 
                         // reinitialize the setup data
-                        TwgtFreeSetup(&pPrivate->Setup);
-                        TwgtScanSetup(pcszNewSetupString,
+                        IwgtFreeSetup(&pPrivate->Setup);
+                        IwgtScanSetup(pcszNewSetupString,
                                       &pPrivate->Setup);
 
                         WinInvalidateRect(pWidget->hwndWidget, NULL, FALSE);
@@ -1027,7 +1095,7 @@ BOOL TwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                     case TTN_NEEDTEXT:
                     {
                         PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
-                        pttt->pszText = pPrivate->szTooltipText;
+                        pttt->pszText = pPrivate->strTooltipText.psz;
                         pttt->ulFormat = TTFMT_PSZ;
                     }
                     break;
@@ -1048,7 +1116,7 @@ BOOL TwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 }
 
 /*
- *@@ TwgtUpdateGraph:
+ *@@ IwgtUpdateGraph:
  *      updates the graph bitmap. This does not paint
  *      on the screen.
  *
@@ -1057,8 +1125,8 @@ BOOL TwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *          pPrivate->hpsMem.
  */
 
-VOID TwgtUpdateGraph(HWND hwnd,
-                     PWIDGETPRIVATE pPrivate)
+static VOID IwgtUpdateGraph(HWND hwnd,
+                            PWIDGETPRIVATE pPrivate)
 {
     PXCENTERWIDGET pWidget = pPrivate->pWidget;
     RECTL   rclBmp;
@@ -1069,15 +1137,12 @@ VOID TwgtUpdateGraph(HWND hwnd,
     rclBmp.xRight -= 2;
     rclBmp.yTop -= 2;
 
-    if (!pPrivate->pBitmap)
-    {
-        // bitmap needs to be created:
-        pPrivate->pBitmap = pgpihCreateXBitmap(pWidget->habWidget,
-                                               rclBmp.xRight,
-                                               rclBmp.yTop);
-    }
-
-    if (pPrivate->pBitmap)
+    if (    (pPrivate->pBitmap)
+            // bitmap needs to be created:
+         || (pPrivate->pBitmap = pgpihCreateXBitmap(pWidget->habWidget,
+                                                    rclBmp.xRight,
+                                                    rclBmp.yTop))
+       )
     {
         HPS     hpsMem = pPrivate->pBitmap->hpsMem;
         POINTL  ptl;
@@ -1090,6 +1155,15 @@ VOID TwgtUpdateGraph(HWND hwnd,
 
         if (pPrivate->paSnapshots)
         {
+            PSNAPSHOT   pLatest = &pPrivate->paSnapshots[pPrivate->cSnapshots - 1];
+            PCOUNTRYSETTINGS
+                        pCountrySettings = (PCOUNTRYSETTINGS)pWidget->pGlobals->pCountrySettings;
+            ULONG       ulIn = pLatest->ulIn * 10 / 1024,
+                        ulOut = pLatest->ulOut * 10 / 1024,
+                        ulDevice = pPrivate->Setup.ulDevIndex;
+            CHAR        szTemp1[50],
+                        szTemp2[50];
+
             // paint input graph
             GpiSetColor(hpsMem, pPrivate->Setup.lcolIn);
 
@@ -1104,7 +1178,7 @@ VOID TwgtUpdateGraph(HWND hwnd,
                  ptl.x < pPrivate->cSnapshots;
                  ++ptl.x)
             {
-                ptl.y =    pPrivate->paSnapshots[ptl.x].ulIn
+                ptl.y =  pPrivate->paSnapshots[ptl.x].ulIn
                          * rclBmp.yTop
                          / pPrivate->ulMax;
                 GpiLine(hpsMem,
@@ -1131,18 +1205,50 @@ VOID TwgtUpdateGraph(HWND hwnd,
                 GpiLine(hpsMem,
                         &ptl);
             }
+
+            // recompose tooltip string
+            pxstrPrintf(&pPrivate->strTooltipText,
+                        pPrivate->pszTooltipFormat,
+                                // NLS format string from WM_CREATE:
+                                // "%s\nin: %lu%c%lu KB/s (%s bytes total)\nout: %lu%c%lu KB/s (%s bytes total)"
+                        // interface name:
+                        pPrivate->statif.iftable[ulDevice].ifDescr,
+                        // in kb/s:
+                        ulIn / 10,
+                        pCountrySettings->cDecimal,
+                        ulIn % 10,
+                        // in total:
+                        pnlsThousandsULong(szTemp1,
+                                           pPrivate->statif.iftable[ulDevice].ifInOctets,
+                                           pCountrySettings->cThousands),
+                        // out kb/s:
+                        ulOut / 10,
+                        pCountrySettings->cDecimal,
+                        ulOut % 10,
+                        // out total:
+                        pnlsThousandsULong(szTemp2,
+                                           pPrivate->statif.iftable[ulDevice].ifOutOctets,
+                                           pCountrySettings->cThousands));
         }
     }
+
+    if (pPrivate->fTooltipShowing)
+        // tooltip currently showing:
+        // refresh its display
+        WinSendMsg(pWidget->pGlobals->hwndTooltip,
+                   TTM_UPDATETIPTEXT,
+                   (MPARAM)pPrivate->strTooltipText.psz,
+                   0);
 
     pPrivate->fUpdateGraph = FALSE;
 }
 
 /*
- * TwgtPaint2:
+ * IwgtPaint2:
  *      this does the actual painting of the frame (if
  *      fDrawFrame==TRUE) and the pulse bitmap.
  *
- *      Gets called by TwgtPaint.
+ *      Gets called by IwgtPaint.
  *
  *      The specified HPS is switched to RGB mode before
  *      painting.
@@ -1151,10 +1257,10 @@ VOID TwgtUpdateGraph(HWND hwnd,
  *      Otherwise an error msg is displayed.
  */
 
-VOID TwgtPaint2(HWND hwnd,
-                PWIDGETPRIVATE pPrivate,
-                HPS hps,
-                BOOL fDrawFrame)     // in: if TRUE, everything is painted
+static VOID IwgtPaint2(HWND hwnd,
+                       PWIDGETPRIVATE pPrivate,
+                       HPS hps,
+                       BOOL fDrawFrame)     // in: if TRUE, everything is painted
 {
     PXCENTERWIDGET pWidget = pPrivate->pWidget;
     PMONITORSETUP pSetup = &pPrivate->Setup;
@@ -1195,7 +1301,7 @@ VOID TwgtPaint2(HWND hwnd,
 
     if (pPrivate->fUpdateGraph)
         // graph bitmap needs to be updated:
-        TwgtUpdateGraph(hwnd, pPrivate);
+        IwgtUpdateGraph(hwnd, pPrivate);
 
     if (pPrivate->pBitmap)
     {
@@ -1212,14 +1318,21 @@ VOID TwgtPaint2(HWND hwnd,
 
         if (pPrivate->paSnapshots)
         {
-            ULONG       ulIn, ulOut, ul;
-            ulIn = pPrivate->paSnapshots[pPrivate->cSnapshots - 1].ulIn * 10 / 1024;
-            ulOut = pPrivate->paSnapshots[pPrivate->cSnapshots - 1].ulOut * 10 / 1024;
+            PSNAPSHOT   pLatest = &pPrivate->paSnapshots[pPrivate->cSnapshots - 1];
+            PCOUNTRYSETTINGS
+                        pCountrySettings = (PCOUNTRYSETTINGS)pWidget->pGlobals->pCountrySettings;
+            ULONG       ulIn = pLatest->ulIn * 10 / 1024,
+                        ulOut = pLatest->ulOut * 10 / 1024,
+                        ul;
+
+            // text to print above bitmap
             ul = pdrv_sprintf(szTemp,
-                              "%d.%d | %d.%d",
+                              "%lu%c%lu | %lu%c%lu",
                               ulIn / 10,
+                              pCountrySettings->cDecimal,
                               ulIn % 10,
                               ulOut / 10,
+                              pCountrySettings->cDecimal,
                               ulOut % 10);
 
             GpiSetColor(hps, pPrivate->Setup.lcolForeground);
@@ -1235,11 +1348,11 @@ VOID TwgtPaint2(HWND hwnd,
 }
 
 /*
- *@@ TwgtPaint:
+ *@@ IwgtPaint:
  *      implementation for WM_PAINT.
  */
 
-VOID TwgtPaint(HWND hwnd)
+static VOID IwgtPaint(HWND hwnd)
 {
     HPS hps;
     if (hps = WinBeginPaint(hwnd, NULLHANDLE, NULL))
@@ -1251,7 +1364,7 @@ VOID TwgtPaint(HWND hwnd)
              && (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
            )
         {
-            TwgtPaint2(hwnd,
+            IwgtPaint2(hwnd,
                        pPrivate,
                        hps,
                        TRUE);        // draw frame
@@ -1268,10 +1381,8 @@ VOID TwgtPaint(HWND hwnd)
  *      array with the current IP values.
  */
 
-VOID GetSnapshot(PWIDGETPRIVATE pPrivate)
+static VOID GetSnapshot(PWIDGETPRIVATE pPrivate)
 {
-    PSNAPSHOT pLatest = &pPrivate->paSnapshots[pPrivate->cSnapshots - 1];
-
     if (pPrivate->sock > 0)
     {
         if (!ioctl(pPrivate->sock,
@@ -1279,32 +1390,38 @@ VOID GetSnapshot(PWIDGETPRIVATE pPrivate)
                    (caddr_t)&pPrivate->statif,
                    sizeof(pPrivate->statif)))
         {
-            ULONG ulMilliseconds;
-            ULONG ulDivisor;
-            ULONG i;
+            ULONG       ulMillisecs,
+                        ulDivisor,
+                        ulIndex,
+                        ulIn,
+                        ulOut;
+            PSNAPSHOT   pLatest = &pPrivate->paSnapshots[pPrivate->cSnapshots - 1];
 
             DosQuerySysInfo(QSV_MS_COUNT,
                             QSV_MS_COUNT,
-                            (PVOID)&ulMilliseconds,
+                            (PVOID)&ulMillisecs,
                             sizeof(ULONG));
 
-            if (!(ulDivisor = ulMilliseconds - pPrivate->ulLastMilliseconds))
+            if (!(ulDivisor = ulMillisecs - pPrivate->ulPrevMillisecs))
                 // avoid div by zero
                 ulDivisor = 1;
 
-            pPrivate->ulLastMilliseconds = ulMilliseconds;
+            pPrivate->ulPrevMillisecs = ulMillisecs;
 
             // do not crash the array
             if (pPrivate->Setup.ulDevIndex >= IFMIB_ENTRIES)
                 pPrivate->Setup.ulDevIndex = 0;
 
+            ulIndex = pPrivate->Setup.ulDevIndex;
+            ulIn = pPrivate->statif.iftable[ulIndex].ifInOctets;
+            ulOut = pPrivate->statif.iftable[ulIndex].ifOutOctets;
+
             // eo: Check if interface has changed, in that case update Prev* values.
-            i = pPrivate->Setup.ulDevIndex;
-            if (i!=pPrivate->Setup.ulLastDevIndex)
+            if (ulIndex != pPrivate->Setup.ulPrevDevIndex)
             {
-                pPrivate->ulPrevTotalIn  = pPrivate->statif.iftable[i].ifInOctets;
-                pPrivate->ulPrevTotalOut = pPrivate->statif.iftable[i].ifOutOctets;
-                pPrivate->Setup.ulLastDevIndex=i;
+                pPrivate->ulPrevTotalIn  = ulIn;
+                pPrivate->ulPrevTotalOut = ulOut;
+                pPrivate->Setup.ulPrevDevIndex = ulIndex;
             }
 
             // now update "latest" with the data of the
@@ -1314,55 +1431,51 @@ VOID GetSnapshot(PWIDGETPRIVATE pPrivate)
             // total bytes value from the new one
 
             // 1) input bytes
-            if (pPrivate->statif.iftable[i].ifInOctets < pPrivate->ulPrevTotalIn) // eo:  If octet count has wrapped around (ULONG), compensate.
-            {
-                pLatest->ulIn =   (   (double)pPrivate->statif.iftable[i].ifInOctets
+            if (ulIn < pPrivate->ulPrevTotalIn)
+                // eo:  If octet count has wrapped around (ULONG), compensate.
+                pLatest->ulIn =   (   (double)ulIn
                                     + (0xffffffff - pPrivate->ulPrevTotalIn)
                                   ) * 1000
                                   / ulDivisor;
-            }
             else
-            {
-                pLatest->ulIn =   (   (double)pPrivate->statif.iftable[i].ifInOctets
+                pLatest->ulIn =   (   (double)ulIn
                                     - pPrivate->ulPrevTotalIn
                                   ) * 1000
                                   / ulDivisor;
-            }
+
             if (pLatest->ulIn > pPrivate->ulMax)
                 pPrivate->ulMax = pLatest->ulIn;
 
-            pPrivate->ulPrevTotalIn = pPrivate->statif.iftable[i].ifInOctets;
+            pPrivate->ulPrevTotalIn = ulIn;
 
             // 2) output bytes
-            if (pPrivate->statif.iftable[i].ifOutOctets < pPrivate->ulPrevTotalOut) // eo:  If octet count has wrapped around (ULONG), compensate.
-            {
-                pLatest->ulOut =   (   (double)pPrivate->statif.iftable[i].ifOutOctets
+            if (ulOut < pPrivate->ulPrevTotalOut)
+                // eo:  If octet count has wrapped around (ULONG), compensate.
+                pLatest->ulOut =   (   (double)ulOut
                                      + (0xffffffff - pPrivate->ulPrevTotalOut)
                                    ) * 1000
                                    / ulDivisor;
-            }
             else
-            {
-                pLatest->ulOut =   (   (double)pPrivate->statif.iftable[i].ifOutOctets
+                pLatest->ulOut =   (   (double)ulOut
                                      - pPrivate->ulPrevTotalOut
                                    ) * 1000
                                    / ulDivisor;
-            }
+
             if (pLatest->ulOut > pPrivate->ulMax)
                 pPrivate->ulMax = pLatest->ulOut;
 
-            pPrivate->ulPrevTotalOut = pPrivate->statif.iftable[i].ifOutOctets;
+            pPrivate->ulPrevTotalOut = ulOut;
         }
     }
 }
 
 /*
- *@@ TwgtTimer:
+ *@@ IwgtTimer:
  *      updates the snapshots array, updates the
  *      graph bitmap, and invalidates the window.
  */
 
-VOID TwgtTimer(HWND hwnd)
+static VOID IwgtTimer(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     PWIDGETPRIVATE pPrivate;
@@ -1377,7 +1490,7 @@ VOID TwgtTimer(HWND hwnd)
         {
             ULONG ulGraphCX = rclClient.xRight - 2;    // minus border
 
-            if (pPrivate->paSnapshots == NULL)
+            if (!pPrivate->paSnapshots)
             {
                 // create array of loads
                 ULONG cb = sizeof(SNAPSHOT) * ulGraphCX;
@@ -1401,7 +1514,7 @@ VOID TwgtTimer(HWND hwnd)
                 pPrivate->fUpdateGraph = TRUE;
 
                 hps = WinGetPS(hwnd);
-                TwgtPaint2(hwnd,
+                IwgtPaint2(hwnd,
                            pPrivate,
                            hps,
                            FALSE);       // do not draw frame
@@ -1412,12 +1525,12 @@ VOID TwgtTimer(HWND hwnd)
 }
 
 /*
- *@@ TwgtWindowPosChanged:
+ *@@ IwgtWindowPosChanged:
  *      implementation for WM_WINDOWPOSCHANGED.
  *
  */
 
-VOID TwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
+static VOID IwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     PXCENTERWIDGET pWidget;
     PWIDGETPRIVATE pPrivate;
@@ -1479,7 +1592,7 @@ VOID TwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
                 } // end if (pPrivate->palLoads)
 
                 pPrivate->Setup.cx = pswpNew->cx;
-                TwgtSaveSetupAndSend(hwnd, &pPrivate->Setup);
+                IwgtSaveSetupAndSend(hwnd, &pPrivate->Setup);
             } // end if (pswpNew->cx != pswpOld->cx)
 
             // force recreation of bitmap
@@ -1490,17 +1603,20 @@ VOID TwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
 }
 
 /*
- *@@ TwgtPresParamChanged:
+ *@@ IwgtPresParamChanged:
  *      implementation for WM_PRESPARAMCHANGED.
  *
  */
 
-VOID TwgtPresParamChanged(HWND hwnd,
-                          ULONG ulAttrChanged,
-                          PXCENTERWIDGET pWidget)
+static VOID IwgtPresParamChanged(HWND hwnd,
+                                 ULONG ulAttrChanged)
 {
-    PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
-    if (pPrivate)
+    PXCENTERWIDGET pWidget;
+    PWIDGETPRIVATE pPrivate;
+    // WM_PRESPARAMCHANGED gets sent before pWidget is set!
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
+       )
     {
         BOOL fInvalidate = TRUE;
         switch (ulAttrChanged)
@@ -1522,7 +1638,6 @@ VOID TwgtPresParamChanged(HWND hwnd,
 
             case PP_FONTNAMESIZE:
             {
-                // HPS hps;
                 PSZ pszFont = 0;
                 if (pPrivate->Setup.pszFont)
                 {
@@ -1557,7 +1672,7 @@ VOID TwgtPresParamChanged(HWND hwnd,
             XSTRING strSetup;
             WinInvalidateRect(hwnd, NULL, FALSE);
 
-            TwgtSaveSetup(&strSetup,
+            IwgtSaveSetup(&strSetup,
                           &pPrivate->Setup);
             if (strSetup.ulLength)
                 // changed V0.9.13 (2001-06-21) [umoeller]:
@@ -1577,7 +1692,7 @@ VOID TwgtPresParamChanged(HWND hwnd,
  *
  */
 
-VOID HackContextMenu(PWIDGETPRIVATE pPrivate)
+static VOID HackContextMenu(PWIDGETPRIVATE pPrivate)
 {
     HWND hwndSubmenu;
     SHORT s = (SHORT)WinSendMsg(pPrivate->pWidget->hwndContextMenu,
@@ -1619,8 +1734,51 @@ VOID HackContextMenu(PWIDGETPRIVATE pPrivate)
                             0);
 
         pPrivate->fContextMenuHacked = TRUE;
-        pPrivate->fContextMenuSource = hwndSubmenu; // eo: Store submenu handle for later updating upon interface change
+        pPrivate->fContextMenuSource = hwndSubmenu;
+            // eo: Store submenu handle for later updating upon interface change
     }
+}
+
+/*
+ *@@ IwgtContextMenu:
+ *      implementation for WM_CONTEXTMENU.
+ *
+ *@@added V0.9.19 (2002-06-08) [umoeller]
+ */
+
+static MRESULT IwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
+{
+    PXCENTERWIDGET pWidget;
+    PWIDGETPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
+       )
+    {
+        if (    (pWidget->hwndContextMenu)
+             && (!pPrivate->fContextMenuHacked)
+           )
+        {
+            // first call for diskfree:
+            // hack the context menu given to us
+            HackContextMenu(pPrivate);
+        }
+        else
+        {
+            // eo: Update submenu to indicate selected interface without redrawing entire menu
+            ULONG i;
+            for (i = 0; i < IFMIB_ENTRIES; i++)
+            {
+                if (pPrivate->statif.iftable[i].ifDescr[0])
+                {
+                    WinCheckMenuItem(pPrivate->fContextMenuSource, 2000 + i, (i == pPrivate->Setup.ulDevIndex) ? MIA_CHECKED : 0 );
+                }
+            }
+        }
+
+        return pctrDefWidgetProc(hwnd, WM_CONTEXTMENU, mp1, mp2);
+    }
+
+    return (MRESULT)0;
 }
 
 /*
@@ -1632,8 +1790,6 @@ VOID HackContextMenu(PWIDGETPRIVATE pPrivate)
 MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-                    // this ptr is valid after WM_CREATE
 
     switch (msg)
     {
@@ -1654,107 +1810,12 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
 
         case WM_CREATE:
             WinSetWindowPtr(hwnd, QWL_USER, mp1);
-            pWidget = (PXCENTERWIDGET)mp1;
-            if ((pWidget) && (pWidget->pfnwpDefWidgetProc))
-                mrc = TwgtCreate(hwnd, pWidget);
+            if (mp1)
+                mrc = IwgtCreate(hwnd, (PXCENTERWIDGET)mp1);
             else
                 // stop window creation!!
                 mrc = (MPARAM)TRUE;
         break;
-
-        /*
-         * WM_CONTROL:
-         *      process notifications/queries from the XCenter.
-         */
-
-        case WM_CONTROL:
-            mrc = (MPARAM)TwgtControl(hwnd, mp1, mp2);
-        break;
-
-        /*
-         * WM_PAINT:
-         *
-         */
-
-        case WM_PAINT:
-            TwgtPaint(hwnd);
-        break;
-
-        /*
-         * WM_TIMER:
-         *      clock timer --> repaint.
-         */
-
-        case WM_TIMER:
-            TwgtTimer(hwnd);
-        break;
-
-        /*
-         * WM_WINDOWPOSCHANGED:
-         *      on window resize, allocate new bitmap.
-         */
-
-        case WM_WINDOWPOSCHANGED:
-            TwgtWindowPosChanged(hwnd, mp1, mp2);
-        break;
-
-        /*
-         * WM_PRESPARAMCHANGED:
-         *
-         */
-
-        case WM_PRESPARAMCHANGED:
-            if (pWidget)
-                // this gets sent before this is set!
-                TwgtPresParamChanged(hwnd, (ULONG)mp1, pWidget);
-        break;
-
-        case WM_CONTEXTMENU:
-        {
-            PWIDGETPRIVATE pPrivate;
-            if (    (pWidget)
-                 && (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
-               )
-            {
-                if (    (pWidget->hwndContextMenu)
-                     && (!pPrivate->fContextMenuHacked)
-                   )
-                {
-                    // first call for diskfree:
-                    // hack the context menu given to us
-                    HackContextMenu(pPrivate);
-                } else { // eo: Update submenu to indicate selected interface without redrawing entire menu
-                    ULONG i;
-                    for (i = 0; i < IFMIB_ENTRIES; i++)
-                    {
-                        if (pPrivate->statif.iftable[i].ifDescr[0])
-                        {
-                            WinCheckMenuItem(pPrivate->fContextMenuSource, 2000 + i, (i == pPrivate->Setup.ulDevIndex) ? MIA_CHECKED : 0 );
-                        }
-                    }
-                }
-
-                mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
-            }
-        }
-        break;
-
-        case WM_COMMAND:
-        {
-            PWIDGETPRIVATE pPrivate;
-            if (    (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
-                 && ((SHORT)mp1) >= 2000
-                 && ((SHORT)mp1) < 2000 + IFMIB_ENTRIES
-               )
-            {
-                pPrivate->Setup.ulDevIndex = (SHORT)mp1 - 2000;
-                TwgtSaveSetupAndSend(hwnd, &pPrivate->Setup);
-            }
-            else
-                mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
-        }
-        break;
-
 
         /*
          * WM_DESTROY:
@@ -1763,35 +1824,80 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
          */
 
         case WM_DESTROY:
+            IwgtDestroy(hwnd);
+            mrc = pctrDefWidgetProc(hwnd, msg, mp1, mp2);
+        break;
+
+        /*
+         * WM_CONTROL:
+         *      process notifications/queries from the XCenter.
+         */
+
+        case WM_CONTROL:
+            mrc = (MPARAM)IwgtControl(hwnd, mp1, mp2);
+        break;
+
+        /*
+         * WM_PAINT:
+         *
+         */
+
+        case WM_PAINT:
+            IwgtPaint(hwnd);
+        break;
+
+        /*
+         * WM_TIMER:
+         *      clock timer --> repaint.
+         */
+
+        case WM_TIMER:
+            IwgtTimer(hwnd);
+        break;
+
+        /*
+         * WM_WINDOWPOSCHANGED:
+         *      on window resize, allocate new bitmap.
+         */
+
+        case WM_WINDOWPOSCHANGED:
+            IwgtWindowPosChanged(hwnd, mp1, mp2);
+        break;
+
+        /*
+         * WM_PRESPARAMCHANGED:
+         *
+         */
+
+        case WM_PRESPARAMCHANGED:
+            IwgtPresParamChanged(hwnd, (ULONG)mp1);
+        break;
+
+        case WM_CONTEXTMENU:
+            mrc = IwgtContextMenu(hwnd, mp1, mp2);
+        break;
+
+        case WM_COMMAND:
         {
+            PXCENTERWIDGET pWidget;
             PWIDGETPRIVATE pPrivate;
-            if (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
+            if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+                 && (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
+                 && ((SHORT)mp1) >= 2000
+                 && ((SHORT)mp1) < 2000 + IFMIB_ENTRIES
+               )
             {
-                if (pPrivate->ulTimerID)
-                    ptmrStopXTimer(pPrivate->pWidget->pGlobals->pvXTimerSet,
-                                   hwnd,
-                                   pPrivate->ulTimerID);
-
-                if (pPrivate->pBitmap)
-                    pgpihDestroyXBitmap(&pPrivate->pBitmap);
-                            // this was missing V0.9.12 (2001-05-20) [umoeller]
-
-                if (pPrivate->paSnapshots)
-                    free(pPrivate->paSnapshots);
-
-                soclose(pPrivate->sock);
-
-                free(pPrivate);
-            } // end if (pPrivate)
-            mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
+                pPrivate->Setup.ulDevIndex = (SHORT)mp1 - 2000;
+                IwgtSaveSetupAndSend(hwnd, &pPrivate->Setup);
+            }
+            else
+                mrc = pctrDefWidgetProc(hwnd, msg, mp1, mp2);
         }
         break;
 
         default:
-            if (pWidget)
-                mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
-            else
-                mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
+            mrc = pctrDefWidgetProc(hwnd, msg, mp1, mp2);
+
     } // end switch(msg)
 
     return mrc;
@@ -1804,7 +1910,7 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
  ********************************************************************/
 
 /*
- *@@ TwgtInitModule:
+ *@@ IwgtInitModule:
  *      required export with ordinal 1, which must tell
  *      the XCenter how many widgets this DLL provides,
  *      and give the XCenter an array of XCENTERWIDGETCLASS
@@ -1851,7 +1957,7 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
  *
  */
 
-ULONG EXPENTRY TwgtInitModule(HAB hab,         // XCenter's anchor block
+ULONG EXPENTRY IwgtInitModule(HAB hab,         // XCenter's anchor block
                               HMODULE hmodPlugin, // module handle of the widget DLL
                               HMODULE hmodXFLDR,    // XFLDR.DLL module handle
                               PCXCENTERWIDGETCLASS *ppaClasses,
@@ -1906,7 +2012,7 @@ ULONG EXPENTRY TwgtInitModule(HAB hab,         // XCenter's anchor block
 }
 
 /*
- *@@ TwgtUnInitModule:
+ *@@ IwgtUnInitModule:
  *      optional export with ordinal 2, which can clean
  *      up global widget class data.
  *
@@ -1917,12 +2023,12 @@ ULONG EXPENTRY TwgtInitModule(HAB hab,         // XCenter's anchor block
  *      gets unloaded right away.
  */
 
-VOID EXPENTRY TwgtUnInitModule(VOID)
+VOID EXPENTRY IwgtUnInitModule(VOID)
 {
 }
 
 /*
- *@@ TwgtQueryVersion:
+ *@@ IwgtQueryVersion:
  *      this new export with ordinal 3 can return the
  *      XWorkplace version number which is required
  *      for this widget to run. For example, if this
@@ -1936,13 +2042,13 @@ VOID EXPENTRY TwgtUnInitModule(VOID)
  *      the new FNWGTINITMODULE_099 format (see center.h).
  */
 
-VOID EXPENTRY TwgtQueryVersion(PULONG pulMajor,
+VOID EXPENTRY IwgtQueryVersion(PULONG pulMajor,
                                PULONG pulMinor,
                                PULONG pulRevision)
 {
     *pulMajor = XFOLDER_MAJOR;              // dlgids.h
     *pulMinor = XFOLDER_MINOR;
-    *pulRevision = 16; // XFOLDER_REVISION;
+    *pulRevision = XFOLDER_REVISION;
 }
 
 

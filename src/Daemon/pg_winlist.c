@@ -866,6 +866,7 @@ VOID CheckWindow(HAB hab,
                                              (PVOID*)&pNode)))
                 {
                     // window is not in list: add it then
+                    /*
                     #ifdef __DEBUG__
                         CHAR szClass[30];
                         WinQueryClassName(pCtrlThis->hwnd, sizeof(szClass), szClass);
@@ -874,6 +875,7 @@ VOID CheckWindow(HAB hab,
                             pCtrlThis->szSwtitle,
                             szClass));
                     #endif
+                    */
 
                     WinPostMsg(G_pHookData->hwndDaemonObject,
                                XDM_WINDOWCHANGE,
@@ -890,10 +892,7 @@ VOID CheckWindow(HAB hab,
                     if (strcmp(pCtrlThis->szSwtitle, pInfo->swctl.szSwtitle))
                     {
                         // session title changed:
-                        _Pmpf((__FUNCTION__ ": title changed hwnd 0x%lX (%s, %s)",
-                               pCtrlThis->hwnd,
-                               pCtrlThis->szSwtitle,
-                               pInfo->szClassName));
+                        // _Pmpf((__FUNCTION__ ": title changed hwnd 0x%lX (%s, %s)", pCtrlThis->hwnd, pCtrlThis->szSwtitle, pInfo->szClassName));
 
                         memcpy(pInfo->swctl.szSwtitle,
                                pCtrlThis->szSwtitle,
@@ -919,8 +918,7 @@ VOID CheckWindow(HAB hab,
                     if (hptrNew != hptrOld)
                     {
                         // icon changed:
-                        _Pmpf((__FUNCTION__ ": icon changed hwnd 0x%lX",
-                               pCtrlThis->hwnd));
+                        // _Pmpf((__FUNCTION__ ": icon changed hwnd 0x%lX", pCtrlThis->hwnd));
 
                         WinPostMsg(G_pHookData->hwndDaemonObject,
                                    XDM_ICONCHANGE,

@@ -951,6 +951,7 @@
             // this is a LONG because it can have negative values
             // (see XFolder::xwpSetFldrSort)
 
+#ifndef __NOPARANOIA__
         // paranoia settings
         sfNoExcptBeeps,
             // XWPSetup "Paranoia": disable exception beeps
@@ -966,6 +967,7 @@
             // XWPSetup "Paranoia": beep on priority change
         sfNoFreakyMenus,
             // on XWPSetup "Paranoia" page
+#endif
 
         // misc
 #ifndef __NOXSYSTEMSOUNDS__
@@ -994,14 +996,14 @@
             // -- OPEN_DETAILS (102): details view
 
         // the following are new with V0.9.19
-        sflMenuObjectWPS,         // CTXT_* flags, bit set means remove item
-        sflMenuObjectXWP,         // XWPCTXT_* flags, bit set means remove item
+        sflMenuObjectWPS,       // CTXT_* flags, bit set means remove item
+        sflMenuObjectXWP,       // XWPCTXT_* flags, bit set means remove item
         sflMenuFileWPS,         // CTXT_* flags, bit set means remove item
         sflMenuFileXWP,         // XWPCTXT_* flags, bit set means remove item
-        sflMenuFolderWPS,         // CTXT_* flags, bit set means remove item
-        sflMenuFolderXWP,         // XWPCTXT_* flags, bit set means remove item
-        sflMenuDesktopWPS,         // CTXT_* flags, bit set means remove item
-        sflMenuDesktopXWP,         // XWPCTXT_* flags, bit set means remove item
+        sflMenuFolderWPS,       // CTXT_* flags, bit set means remove item
+        sflMenuFolderXWP,       // XWPCTXT_* flags, bit set means remove item
+        sflMenuDesktopWPS,      // CTXT_* flags, bit set means remove item
+        sflMenuDesktopXWP,      // XWPCTXT_* flags, bit set means remove item
         sflMenuDiskWPS,         // CTXT_* flags, bit set means remove item
         sflMenuDiskXWP,         // XWPCTXT_* flags, bit set means remove item
 

@@ -352,7 +352,7 @@ static ULONG WaitForApp(PCSZ pcszTitle,
         }
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -477,12 +477,12 @@ static APIRET StartCmdExe(HWND hwndNotify,
     pd.progt.progc = PROG_WINDOWABLEVIO;
     pd.progt.fbVisible = SHE_VISIBLE;
     pd.pszExecutable = "*";        // use OS2_SHELL
-    return (appStartApp(hwndNotify,
-                        &pd,
-                        0, // V0.9.14
-                        phappCmd,
-                        0,
-                        NULL));
+    return appStartApp(hwndNotify,
+                       &pd,
+                       0, // V0.9.14
+                       phappCmd,
+                       0,
+                       NULL);
 }
 
 /*
@@ -1027,7 +1027,7 @@ static ULONG CheckDesktop(HHANDLES hHandles)       // in: handles buffer from wp
             }
         }
 
-    return (ulResult);
+    return ulResult;
 }
 
 /*
@@ -1764,12 +1764,10 @@ static MRESULT EXPENTRY fnwpQuickOpenDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARA
     switch (msg)
     {
         case WM_INITDLG:
-        {
             WinSetWindowPtr(hwnd, QWL_USER, mp2);       // ptr to QUICKOPENDATA
             ctlProgressBarFromStatic(WinWindowFromID(hwnd, ID_SDDI_PROGRESSBAR),
                                      PBA_ALIGNCENTER | PBA_BUTTONSTYLE);
             mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
-        }
         break;
 
         case WM_COMMAND:
@@ -1790,7 +1788,6 @@ static MRESULT EXPENTRY fnwpQuickOpenDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARA
         break;
 
         case WM_SYSCOMMAND:
-        {
             switch (SHORT1FROMMP(mp1))
             {
                 case SC_HIDE:
@@ -1803,11 +1800,6 @@ static MRESULT EXPENTRY fnwpQuickOpenDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARA
                 default:
                     mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
             }
-        }
-        break;
-
-        case WM_DESTROY:
-            mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
         break;
 
         default:
@@ -1845,7 +1837,7 @@ static BOOL _Optlink fncbQuickOpen(WPFolder *pFolder,
                       (MPARAM)(pqod->cQuicks * 100));
 
     // if "Cancel" has been pressed, return FALSE
-    return (!pqod->fCancelled);
+    return !pqod->fCancelled;
 }
 
 #ifndef __NOQUICKOPEN__

@@ -31,7 +31,7 @@ SEGMENTS
 CODE              LOADONCALL
 
 EXPORTS
-    TwgtInitModule      @1
-    TwgtUnInitModule    @2
-    TwgtQueryVersion    @3
+    IwgtInitModule      @1
+    IwgtUnInitModule    @2
+    IwgtQueryVersion    @3
 

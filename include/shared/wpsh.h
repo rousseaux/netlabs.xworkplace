@@ -83,8 +83,6 @@
 
     BOOL wpshCloseAllViews(WPObject *pObject);
 
-    BOOL wpshCopyObjectFileName(WPObject *somSelf, HWND hwndCnr, BOOL fCopyFullPath);
-
     ULONG wpshQueryDraggedObject(PDRAGITEM pdrgItem,
                                  WPObject **ppObjectFound);
 

@@ -926,8 +926,8 @@ BEGIN
     ID_CRSI_PWGT_OTHERCOLORS            "Andere Farben"
     ID_CRSI_PWGT_BACKGROUNDCOLOR        "Hintergrund"
     ID_CRSI_PWGT_TEXTCOLOR              "Text"
-    ID_CRSI_PWGT_TOOLTIP1               "CPU-Anzahl: %d&nl;CPU 0 IRQ: %lu%c%lu%c"
-    ID_CRSI_PWGT_TOOLTIP2               "&nl;CPU %d Benutzer: %lu%c%lu%c"
+    ID_CRSI_PWGT_TOOLTIP1               "CPU-Anzahl: %d&nl;CPU 0 IRQ-Last: %lu%c%lu%c"
+    ID_CRSI_PWGT_TOOLTIP2               "&nl;CPU %d Benutzerlast: %lu%c%lu%c"
             /* warning: the above two are strings for sprintf, so you _must_
                get the % flags exactly correct, or the pulse will crash */
 
@@ -1034,8 +1034,9 @@ BEGIN
     ID_CRSI_WINLIST_KILL2               "~Kill process (PID 0x%lX)"
 
     ID_CRSI_IPWGT_GRAPHCOLORS           "Graphenfarben"
-    ID_CRSI_IPWGT_GRAPHINCOLOR          "Ankommende KB"
-    ID_CRSI_IPWGT_GRAPHOUTCOLOR         "Ausgehende KB"
+    ID_CRSI_IPWGT_GRAPHINCOLOR          "Eingehend"
+    ID_CRSI_IPWGT_GRAPHOUTCOLOR         "Ausgehend"
+    ID_CRSI_IPWGT_BYTESTOTAL            "bytes insgesamt"
 END
 
 /* string IDs for status bar mnemonics (all new with V0.9.14) */

@@ -158,8 +158,6 @@
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
-// #include "config\partitions.h"          // WPDrives "Partitions" view
-
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\object.h"             // XFldObject implementation
@@ -2268,9 +2266,9 @@ BOOL mnuFileSystemSelectingMenuItem(WPObject *somSelf,
          */
 
         case ID_XFMI_OFS_COPYFILENAME_MENU:
-            wpshCopyObjectFileName(pObject,
-                                   hwndCnr,
-                                   doshQueryShiftState());
+            objCopyObjectFileName(pObject,
+                                  hwndCnr,
+                                  doshQueryShiftState());
                 // note again that we're passing pObject instead
                 // of pFileSystem, so that this routine can
                 // query all selected objects from shadows too
@@ -2988,11 +2986,10 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                             // get object from record core
                             WPObject *pObject2;
                             if (pObject2 = OBJECT_FROM_PREC(pmrc))
-                                wpshCopyObjectFileName(pObject2,
-                                                       hwndFrame,
-                                                       // full path:
-                                                       (ulMenuId2 ==
-                                                          ID_XFMI_OFS_COPYFILENAME_FULL));
+                                objCopyObjectFileName(pObject2,
+                                                      hwndFrame,
+                                                      // full path:
+                                                      (ulMenuId2 == ID_XFMI_OFS_COPYFILENAME_FULL));
                         }
                     }
                 }

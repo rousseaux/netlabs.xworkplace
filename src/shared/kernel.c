@@ -251,10 +251,10 @@ BOOL krnLock(PCSZ pcszSourceFile,        // in: __FILE__
         // first call:
         treeInit(&G_ClassNamesTree,        // V0.9.16 (2001-09-29) [umoeller]
                  NULL);
-        return (!DosCreateMutexSem(NULL,         // unnamed
-                                   &G_hmtxCommonLock,
-                                   0,            // unshared
-                                   TRUE));       // request now
+        return !DosCreateMutexSem(NULL,         // unnamed
+                                  &G_hmtxCommonLock,
+                                  0,            // unshared
+                                  TRUE);       // request now
     }
 
     // subsequent calls:
@@ -267,22 +267,20 @@ BOOL krnLock(PCSZ pcszSourceFile,        // in: __FILE__
         G_pcszReqFunction = pcszFunction;
         return TRUE;
     }
-    else
-    {
-        // request failed within ten seconds:
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "krnLock mutex request failed!!\n"
-               "    First requestor: %s (%s, line %d))\n"
-               "    Second (failed) requestor: %s (%s, line %d))",
-               (G_pcszReqFunction) ? G_pcszReqFunction : "NULL",
-               (G_pcszReqSourceFile) ? G_pcszReqSourceFile : "NULL",
-               G_ulReqLine,
-               pcszFunction,
-               pcszSourceFile,
-               ulLine);
 
-        return FALSE;
-    }
+    // request failed within ten seconds:
+    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+           "krnLock mutex request failed!!\n"
+           "    First requestor: %s (%s, line %d))\n"
+           "    Second (failed) requestor: %s (%s, line %d))",
+           (G_pcszReqFunction) ? G_pcszReqFunction : "NULL",
+           (G_pcszReqSourceFile) ? G_pcszReqSourceFile : "NULL",
+           G_ulReqLine,
+           pcszFunction,
+           pcszSourceFile,
+           ulLine);
+
+    return FALSE;
 }
 
 /*
@@ -357,8 +355,8 @@ PKERNELGLOBALS krnLockGlobals(PCSZ pcszSourceFile,
 {
     if (krnLock(pcszSourceFile, ulLine, pcszFunction))
         return (&G_KernelGlobals);
-    else
-        return NULL;
+
+    return NULL;
 }
 
 /*
@@ -406,7 +404,6 @@ BOOL krnClassInitialized(PCSZ pcszClassName)
             // krnLock initializes the tree now
     {
         TREE *pNew;
-
         if (pNew = NEW(TREE))
         {
             pNew->ulKey = (ULONG)pcszClassName;
@@ -495,7 +492,8 @@ FILE* _System krnExceptOpenLogFile(VOID)
                 "\nRunning XFLDR.DLL version: " BLDLEVEL_VERSION " built " __DATE__ "\n");
 
     }
-    return (file);
+
+    return file;
 }
 
 /*
@@ -697,7 +695,7 @@ BOOL krnReplaceRefreshEnabled(VOID)
     if (getenv("XWP_NO_REPLACE_REFRESH"))
         fReplaceFolderRefresh = FALSE;
 
-    return (fReplaceFolderRefresh);
+    return fReplaceFolderRefresh;
 }
 
 /*
@@ -746,26 +744,19 @@ VOID krnSetProcessStartupFolder(BOOL fReuse)
 
 BOOL krnNeed2ProcessStartupFolder(VOID)
 {
-    BOOL brc = FALSE;
-    PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
+    PCKERNELGLOBALS pKernelGlobals;
+    PXWPGLOBALSHARED pXwpGlobalShared;
 
-    if (pKernelGlobals)
-    {
-        if (pKernelGlobals->pXwpGlobalShared)
-        {
+    if (    (pKernelGlobals = krnQueryGlobals())
             // cast PVOID
-            PXWPGLOBALSHARED pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared;
-            if (pXwpGlobalShared->fProcessStartupFolder)
-            {
-                brc = TRUE;
-                // V0.9.9 (2001-03-19) [pr]: clear this after all startup
-                // folders have been processed
-                // pDaemonShared->fProcessStartupFolder = FALSE;
-            }
-        }
+         && (pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared)
+         && (pXwpGlobalShared->fProcessStartupFolder)
+       )
+    {
+        return TRUE;
     }
 
-    return brc;
+    return FALSE;
 }
 
 /*
@@ -779,8 +770,8 @@ BOOL krnNeed2ProcessStartupFolder(VOID)
 
 HWND krnQueryDaemonObject(VOID)
 {
-    PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-    if (pKernelGlobals)
+    PCKERNELGLOBALS pKernelGlobals;
+    if (pKernelGlobals = krnQueryGlobals())
     {
         // cast PVOID
         PXWPGLOBALSHARED pXwpGlobalShared;
@@ -846,7 +837,7 @@ HAPP krnStartDaemon(VOID)
                           pd.pszExecutable,
                           G_KernelGlobals.happDaemon);
 
-        return (G_KernelGlobals.happDaemon);
+        return G_KernelGlobals.happDaemon;
     }
 
     return NULLHANDLE;
@@ -1214,7 +1205,7 @@ static VOID T1M_OpenObjectFromHandle(HWND hwndObject,
  *
  *      But of course, since this is on thread 1, we must get out of
  *      here quickly (0.1 seconds rule), because while we're processing
- *      something in here, the WPS user interface ist blocked.
+ *      something in here, the WPS user interface is blocked.
  *
  *      Note: Another view-specific object window is created
  *      for every folder view that is opened, because sometimes
@@ -1682,8 +1673,8 @@ static MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1
         case T1M_PAGERCTXTMENU:
             if (!G_hwndXPagerContextMenu)
                 G_hwndXPagerContextMenu = WinLoadMenu(hwndObject,
-                                                        cmnQueryNLSModuleHandle(FALSE),
-                                                        ID_XSM_PAGERCTXTMENU);
+                                                      cmnQueryNLSModuleHandle(FALSE),
+                                                      ID_XSM_PAGERCTXTMENU);
 
             WinPopupMenu(HWND_DESKTOP,      // parent
                          hwndObject,        // owner
@@ -1770,7 +1761,7 @@ static MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1
         /*
          *@@ T1M_OPENRUNDIALOG:
          *      this gets posted from the XCenter thread
-         *      to open the Run dialog.
+         *      to open the Run dialog on thread 1.
          *
          *@@added V0.9.14 (2001-08-07) [pr]
          */
@@ -1831,13 +1822,11 @@ static MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1
 
 BOOL krnPostThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
 {
-    BOOL rc = FALSE;
     PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-
     if (pKernelGlobals->hwndThread1Object)
-        rc = WinPostMsg(pKernelGlobals->hwndThread1Object, msg, mp1, mp2);
+        return WinPostMsg(pKernelGlobals->hwndThread1Object, msg, mp1, mp2);
 
-    return (rc);
+    return FALSE;
 }
 
 /*
@@ -1851,13 +1840,11 @@ BOOL krnPostThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
 
 MRESULT krnSendThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
 {
-    MRESULT mrc = MPNULL;
     PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-
     if (pKernelGlobals->hwndThread1Object)
-        mrc = WinSendMsg(pKernelGlobals->hwndThread1Object, msg, mp1, mp2);
+        return WinSendMsg(pKernelGlobals->hwndThread1Object, msg, mp1, mp2);
 
-    return mrc;
+    return (MRESULT)NULL;
 }
 
 /* ******************************************************************

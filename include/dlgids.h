@@ -2194,7 +2194,7 @@
 // the following added with V0.9.18 (2002-02-12) [pr]
 #define ID_XSSI_SPECIAL_SCREENWRAP      6215    // "Screen wrap"
 
-// the following added with V0.9.19 (2002-04-02) [umoeller]
+// all the following added with V0.9.19 (2002-04-02) [umoeller]
 #define ID_XSSI_DOUBLEFILES_FILENAME    6216
 #define ID_XSSI_DOUBLEFILES_DIR         6217
 #define ID_XSSI_DOUBLEFILES_SIZE        6218
@@ -2278,6 +2278,7 @@
 #define ID_CRSI_IPWGT_GRAPHCOLORS       6288
 #define ID_CRSI_IPWGT_GRAPHINCOLOR      6289
 #define ID_CRSI_IPWGT_GRAPHOUTCOLOR     6290
+#define ID_CRSI_IPWGT_BYTESTOTAL        6291
 
 /* ******************************************************************
  *

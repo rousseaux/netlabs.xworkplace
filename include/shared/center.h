@@ -832,6 +832,8 @@
     MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
                 // a pointer to this is in XCENTERWIDGET if the widget
                 // is a non-container widget
+    typedef MRESULT EXPENTRY CTRDEFWIDGETPROC(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
+    typedef CTRDEFWIDGETPROC *PCTRDEFWIDGETPROC;
 
     /* ******************************************************************
      *

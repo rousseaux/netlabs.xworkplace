@@ -72,7 +72,6 @@
 #define INCL_WINWINDOWMGR
 #define INCL_WINPOINTERS
 #define INCL_WINSHELLDATA
-#define INCL_WINCLIPBOARD
 #define INCL_WINSTDCNR
 #include <os2.h>
 
@@ -245,7 +244,7 @@ PVOID wpshResolveFor(SOMObject *somSelf,  // in: instance
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                "Cannot get somId for %s.", pcszMethodName);
 
-    return (pvrc);
+    return pvrc;
 }
 
 /*
@@ -272,8 +271,8 @@ PVOID wpshParentNumResolve(SOMClass *pClass,    // in: any class object which su
 {
     PVOID pvrc = 0;
 
-    somId somidMethod = somIdFromString((PSZ)pcszMethodName);
-    if (somidMethod)
+    somId somidMethod;
+    if (somidMethod = somIdFromString((PSZ)pcszMethodName))
     {
         // get method token for parent class
         /* SOMClass *pParentClass = _somGetParent(pClass);
@@ -287,9 +286,8 @@ PVOID wpshParentNumResolve(SOMClass *pClass,    // in: any class object which su
             // always the same for parent classes and
             // subclasses V0.9.12 (2001-05-22) [umoeller]
 
-        somMToken tok = _somGetMethodToken(pClass,
-                                           somidMethod);
-        if (tok)
+        somMToken tok;
+        if (tok = _somGetMethodToken(pClass, somidMethod))
         {
             // somMethodTabs pmt = _somGetPClsMtabs(pParentClass);
             // finally, resolve method for parent
@@ -302,7 +300,7 @@ PVOID wpshParentNumResolve(SOMClass *pClass,    // in: any class object which su
         SOMFree(somidMethod);
     }
 
-    return (pvrc);
+    return pvrc;
 }
 
 /*
@@ -422,19 +420,18 @@ BOOL wpshOverrideStaticMethod(SOMClass *somSelf,            // in: class object 
                               somMethodPtr pMethodPtr)      // in: new method override implementation
 {
     BOOL brc = FALSE;
-    somId somidMethod = somIdFromString("wpModifyMenu");
-    if (!somidMethod)
+    somId somidMethod;
+    if (!(somidMethod = somIdFromString("wpModifyMenu")))
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                "Cannot get id for \"%s\".", pcszMethodName);
     else
     {
         // check if the method exists
-        somMToken tok = _somGetMethodToken(somSelf,
-                                           somidMethod);
+        somMToken tok;
                 // somMToken is typedef'd from somToken,
                 // which in turn is typedef'd from void*
                 // see sombtype.h
-        if (!tok)
+        if (!(tok = _somGetMethodToken(somSelf, somidMethod)))
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
                    "Cannot get method token for \"%s\".", pcszMethodName);
         else
@@ -607,7 +604,7 @@ WPObject* wpshQueryObjectFromID(const char *pcszObjectID,   // in: object ID (e.
         if (pulErrorCode)
             *pulErrorCode = 1;      // ID not found
 
-    return (pObject);
+    return pObject;
 }
 
 /*
@@ -654,7 +651,7 @@ ULONG wpshQueryView(WPObject* somSelf,      // in: object to examine
     if (Lock.fLocked)
         _wpReleaseObjectMutexSem(Lock.pObject);
 
-    return (ulView);
+    return ulView;
 }
 
 /*
@@ -797,12 +794,10 @@ WPObject* wpshQuerySourceObject(WPFolder *somSelf,     // in: folder with open m
         {
             // not keyboard, but mouse mode:
             // get first object with source emphasis
-            pmrcSource = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
-                                                     CM_QUERYRECORDEMPHASIS,
-                                                     (MPARAM)CMA_FIRST,
-                                                     (MPARAM)CRA_SOURCE);
-
-            if (pmrcSource == NULL)
+            if (!(pmrcSource = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
+                                                           CM_QUERYRECORDEMPHASIS,
+                                                           (MPARAM)CMA_FIRST,
+                                                           (MPARAM)CRA_SOURCE)))
             {
                 // if CM_QUERYRECORDEMPHASIS returns NULL
                 // for source emphasis (CRA_SOUCE),
@@ -813,7 +808,7 @@ WPObject* wpshQuerySourceObject(WPFolder *somSelf,     // in: folder with open m
                 // we're done
                 break;
             }
-            else if (((LONG)pmrcSource) == -1)
+            else if ((LONG)pmrcSource == -1)
                 // error:
                 break;
             // else: we have at least one object with source emphasis
@@ -824,7 +819,7 @@ WPObject* wpshQuerySourceObject(WPFolder *somSelf,     // in: folder with open m
                                                    CM_QUERYRECORDEMPHASIS,
                                                    (MPARAM)CMA_FIRST,
                                                    (MPARAM)CRA_SELECTED);
-        if (((LONG)pmrcSelected) == -1)
+        if ((LONG)pmrcSelected == -1)
             // error:
             break;
 
@@ -870,12 +865,11 @@ WPObject* wpshQuerySourceObject(WPFolder *somSelf,     // in: folder with open m
         // b)   we're in keyboard mode and any
         //      selected object was found.
         // Now, are several objects selected?
-        pmrcSelected = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
-                                                   CM_QUERYRECORDEMPHASIS,
-                                                   (MPARAM)pmrcSelected,
-                                                        // get second obj
-                                                   (MPARAM)CRA_SELECTED);
-        if (pmrcSelected)
+        if (pmrcSelected = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
+                                                       CM_QUERYRECORDEMPHASIS,
+                                                       (MPARAM)pmrcSelected,
+                                                            // get second obj
+                                                       (MPARAM)CRA_SELECTED))
             // several objects:
             *pulSelection = SEL_MULTISEL;
         else
@@ -888,7 +882,7 @@ WPObject* wpshQuerySourceObject(WPFolder *somSelf,     // in: folder with open m
     // finding other selected objects in the same
     // folder; dereferencing shadows is therefore
     // the responsibility of the caller
-    return (pObject);       // can be NULL
+    return pObject;       // can be NULL
 }
 
 /*
@@ -907,9 +901,8 @@ WPObject* wpshQuerySourceObject(WPFolder *somSelf,     // in: folder with open m
 WPObject* wpshQueryNextSourceObject(HWND hwndCnr,
                                     WPObject *pObject)
 {
-    WPObject *pObject2 = NULL;
-    PMINIRECORDCORE pmrcCurrent = _wpQueryCoreRecord(pObject);
-    if (pmrcCurrent)
+    PMINIRECORDCORE pmrcCurrent;
+    if (pmrcCurrent = _wpQueryCoreRecord(pObject))
     {
         PMINIRECORDCORE pmrcNext
             = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
@@ -919,10 +912,10 @@ WPObject* wpshQueryNextSourceObject(HWND hwndCnr,
         if (    (pmrcNext)
              && ((LONG)pmrcNext != -1)
            )
-            pObject2 = OBJECT_FROM_PREC(pmrcNext);
+            return OBJECT_FROM_PREC(pmrcNext);
     }
 
-    return (pObject2);
+    return NULL;
 }
 
 /*
@@ -941,14 +934,15 @@ WPObject* wpshQueryNextSourceObject(HWND hwndCnr,
 
 BOOL wpshCloseAllViews(WPObject *pObject)
 {
-    BOOL brc = _wpClose(pObject);
-    if (brc)
+    BOOL brc;
+
+    if (brc = _wpClose(pObject))
     {
         if (_somIsA(pObject, _WPFolder))
         {
             // it's a folder:
-            PLINKLIST pllOpenFolders = lstCreate(FALSE);
-            if (pllOpenFolders)
+            PLINKLIST pllOpenFolders;
+            if (pllOpenFolders = lstCreate(FALSE))
             {
                 WPFolder *pOpenFolder;
                 PLISTNODE pFolderNode = NULL;
@@ -965,8 +959,7 @@ BOOL wpshCloseAllViews(WPObject *pObject)
                 while (pFolderNode)
                 {
                     pOpenFolder = (WPFolder*)pFolderNode->pItemData;
-                    brc = _wpClose(pOpenFolder);
-                    if (!brc)
+                    if (!(brc = _wpClose(pOpenFolder)))
                         // error:
                         break;
 
@@ -981,134 +974,6 @@ BOOL wpshCloseAllViews(WPObject *pObject)
     }
 
     return brc;
-}
-
-/*
- *@@ wpshCopyObjectFileName:
- *      copy object filename(s) to clipboard. This method is
- *      called from several overrides of wpMenuItemSelected.
- *
- *      If somSelf does not have CRA_SELECTED emphasis in the
- *      container, its filename is copied. If it does have
- *      CRA_SELECTED emphasis, all filenames which have CRA_SELECTED
- *      emphasis are copied, separated by spaces.
- *
- *      Note that somSelf might not neccessarily be a file-system
- *      object. It can also be a shadow to one, so we might need
- *      to dereference that.
- *
- *@@changed V0.9.0 [umoeller]: fixed a minor bug when memory allocation failed
- */
-
-BOOL wpshCopyObjectFileName(WPObject *somSelf, // in: the object which was passed to
-                                // wpMenuItemSelected
-                            HWND hwndCnr, // in: the container of the hwmdFrame
-                                // of wpMenuItemSelected
-                            BOOL fFullPath) // in: if TRUE, the full path will be
-                                // copied; otherwise the filename only
-{
-    PSZ     pszDest = NULL;
-    BOOL    fSuccess = FALSE,
-            fSingleMode = TRUE;
-    CHAR    szToClipboard[3000] = "";
-    ULONG   ulLength;
-    HAB     hab = WinQueryAnchorBlock(hwndCnr);
-
-    // get the record core of somSelf
-    PMINIRECORDCORE pmrcSelf = _wpQueryCoreRecord(somSelf);
-
-    // now we go through all the selected records in the container
-    // and check if pmrcSelf is among these selected records;
-    // if so, this means that we want to copy the filenames
-    // of all the selected records.
-    // However, if pmrcSelf is not among these, this means that
-    // either the context menu of the _folder_ has been selected
-    // or the menu of an object which is not selected; we will
-    // then only copy somSelf's filename.
-
-    PMINIRECORDCORE pmrcSelected = (PMINIRECORDCORE)CMA_FIRST;
-
-    do
-    {
-        // get the first or the next _selected_ item
-        pmrcSelected =
-            (PMINIRECORDCORE)WinSendMsg(hwndCnr,
-                    CM_QUERYRECORDEMPHASIS,
-                    (MPARAM)pmrcSelected,
-                    (MPARAM)CRA_SELECTED);
-
-        if ((pmrcSelected != 0) && (((ULONG)pmrcSelected) != -1))
-        {
-            // first or next record core found:
-            CHAR       szRealName[CCHMAXPATH];
-
-            // get SOM object pointer
-            WPObject *pObject = (WPObject*)OBJECT_FROM_PREC(pmrcSelected);
-
-            // dereference shadows
-            /* if (pObject)
-                if (_somIsA(pObject, _WPShadow))
-                    pObject = _wpQueryShadowedObject(pObject, TRUE); */
-
-            // check if it's a file-system object
-            if (pObject = objResolveIfShadow(pObject))
-                if (_somIsA(pObject, _WPFileSystem))
-                    if (_wpQueryFilename(pObject, szRealName, fFullPath))
-                        sprintf(szToClipboard+strlen(szToClipboard), "%s ", szRealName);
-
-            // compare the selection with pmrcSelf
-            if (pmrcSelected == pmrcSelf)
-                fSingleMode = FALSE;
-        }
-    } while ((pmrcSelected != 0) && (((ULONG)pmrcSelected) != -1));
-
-    if (fSingleMode)
-    {
-        // if somSelf's record core does NOT have the "selected"
-        // emphasis: this means that the user has requested a
-        // context menu for an object other than the selected
-        // objects in the folder, or the folder's context menu has
-        // been opened: we will only copy somSelf then.
-
-        CHAR       szRealName[CCHMAXPATH];
-
-        WPObject *pObject; /*  = somSelf;
-        if (_somIsA(pObject, _WPShadow))
-            pObject = _wpQueryShadowedObject(pObject, TRUE); */
-
-        if (pObject = objResolveIfShadow(somSelf))
-            if (_somIsA(pObject, _WPFileSystem))
-                if (_wpQueryFilename(pObject, szRealName, fFullPath))
-                    sprintf(szToClipboard, "%s ", szRealName);
-    }
-
-    if (ulLength = strlen(szToClipboard))
-    {
-        // something was copied:
-        szToClipboard[ulLength-1] = '\0'; // remove last space
-
-        // copy to clipboard (stolen from PMREF)
-        if (WinOpenClipbrd(hab))
-        {
-            if (0 == DosAllocSharedMem((PVOID*)(&pszDest),       // pointer to shared memory object
-                                                NULL,            // use unnamed shared memory
-                                                ulLength,        // include 0 byte (used to be last space)
-                                                PAG_WRITE  |     // allow write access
-                                                PAG_COMMIT |     // commit the shared memory
-                                                OBJ_GIVEABLE))   // make pointer giveable
-            {
-                strcpy(pszDest, szToClipboard);
-                WinEmptyClipbrd(hab);
-                fSuccess = WinSetClipbrdData(hab,       // anchor-block handle
-                                             (ULONG)pszDest, // pointer to text data
-                                             CF_TEXT,        // data is in text format
-                                             CFI_POINTER);   // passing a pointer
-            }
-            WinCloseClipbrd(hab);   // moved V0.9.0
-        }
-    }
-
-    return (fSuccess);
 }
 
 /*
@@ -1177,7 +1042,7 @@ ULONG wpshQueryDraggedObject(PDRAGITEM pdrgItem,
         }
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -1264,7 +1129,7 @@ MRESULT wpshQueryDraggedObjectCnr(PCNRDRAGINFO pcdi,
     }
 
     // and return the drop flags
-    return (MRFROM2SHORT(usIndicator, usOp));
+    return MRFROM2SHORT(usIndicator, usOp);
 }
 
 /* ******************************************************************
@@ -1319,7 +1184,7 @@ WPFolder* wpshQueryRootFolder(WPDisk* somSelf, // in: disk to check
     if (parc)
         *parc = arc;
 
-    return (pReturnFolder);
+    return pReturnFolder;
 }
 
 /*
@@ -1466,7 +1331,8 @@ BOOL wpshResidesBelow(WPObject *pChild,
                 pObj = _wpQueryFolder(pObj);
         }
     }
-    return (rc);
+
+    return rc;
 }
 
 /*
@@ -1512,11 +1378,10 @@ WPFileSystem* wpshContainsFile(WPFolder *pFolder,   // in: folder to examine
                           FIL_STANDARD);
         DosFindClose(hdirFindHandle);
         if (rc == NO_ERROR)
-        {
             prc = _wpclsQueryObjectFromPath(_WPFileSystem, szRealName);
-        }
     }
-    return (prc);
+
+    return prc;
 }
 
 /*
@@ -1827,7 +1692,7 @@ WPObject* wpshCreateFromTemplate(HAB hab,
     {
     } END_CATCH();
 
-    return (pNewObject);
+    return pNewObject;
 }
 
 /*
@@ -1849,7 +1714,8 @@ HWND wpshQueryFrameFromView(WPFolder *somSelf,  // in: folder to examine
     HWND                hwndFrame = 0;
 
     if (_wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL))
-    { // folder has an open view
+    {
+        // folder has an open view:
         // now we go search the open views of the folder and get the
         // frame handle of the desired view (ulView)
         for (pViewItem = _wpFindViewItem(somSelf, VIEW_ANY, NULL);
@@ -1860,7 +1726,8 @@ HWND wpshQueryFrameFromView(WPFolder *somSelf,  // in: folder to examine
                  hwndFrame = pViewItem->handle;
         } // end for
     } // end if
-    return (hwndFrame);
+
+    return hwndFrame;
 }
 
 /*

@@ -405,8 +405,8 @@ PSZ ctrScanSetupString(PCSZ pcszSetupString, // in: entire setup string
             {
                 // keyword found:
                 // get value
-                PCSZ pEOValue = strchr(pEquals, ';');
-                if (pEOValue)
+                PCSZ pEOValue;
+                if (pEOValue = strchr(pEquals, ';'))
                     // value is before another separator:
                     pszValue = strhSubstr(pEquals + 1, pEOValue);
                 else
@@ -419,8 +419,7 @@ PSZ ctrScanSetupString(PCSZ pcszSetupString, // in: entire setup string
 
             // else not our keyword:
             // go on
-            pKeywordThis = strchr(pEquals, ';');
-            if (!pKeywordThis)
+            if (!(pKeywordThis = strchr(pEquals, ';')))
                 // was last keyword:
                 break; // while
             else
@@ -451,10 +450,10 @@ PSZ ctrScanSetupString(PCSZ pcszSetupString, // in: entire setup string
 
 LONG ctrParseColorString(PCSZ p)
 {
-    LONG lrc = 0;
     if (p)
-        lrc = strtol(p, NULL, 16);
-    return (lrc);
+        return strtol(p, NULL, 16);
+
+    return 0;
 }
 
 /*
@@ -724,8 +723,8 @@ VOID ctrShowContextMenu(PXCENTERWIDGET pWidget,
                         HWND hwndContextMenu)
 {
     HWND hwndClient = pWidget->pGlobals->hwndClient;
-    PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient, QWL_USER);
-    if (pXCenterData)
+    PXCENTERWINDATA pXCenterData;
+    if (pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient, QWL_USER))
     {
         POINTL  ptl;
         WinQueryPointerPos(HWND_DESKTOP, &ptl);
@@ -762,8 +761,8 @@ VOID ctrDrawWidgetEmphasis(PXCENTERWIDGET pWidget,
     HWND hwndClient = pWidget->pGlobals->hwndClient;
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient,
                                                                       QWL_USER);
-    HPS hps = DrgGetPS(hwndClient);
-    if (hps)
+    HPS hps;
+    if (hps = DrgGetPS(hwndClient))
     {
         gpihSwitchToRGB(hps);
         // draw source emphasis around widget
@@ -792,8 +791,8 @@ VOID ctrDrawWidgetEmphasis(PXCENTERWIDGET pWidget,
 
 static VOID DwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    if (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
     {
         // if transparent, use the parent context menu instead
         if (    (pWidget->ulClassFlags & WGTF_TRANSPARENT)
@@ -850,8 +849,8 @@ static VOID DwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 static VOID DwgtMenuEnd(HWND hwnd,
                         HWND hwndMenu)
 {
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    if (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
     {
         if (hwndMenu == pWidget->hwndContextMenu)
             WinInvalidateRect(WinQueryWindow(hwnd, QW_PARENT),
@@ -978,8 +977,8 @@ static VOID DwgtCommand(HWND hwnd,
 
 static MRESULT DwgtBeginDrag(HWND hwnd, MPARAM mp1)
 {
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-    if (pWidget)
+    PXCENTERWIDGET pWidget;
+    if (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
     {
         HWND hwndDrop = ctrpDragWidget(hwnd,
                                        pWidget);
@@ -1010,7 +1009,6 @@ static VOID DwgtDestroy(HWND hwnd)
     {
         HWND hwndClient = pWidget->pGlobals->hwndClient;
         PXCENTERWINDATA pXCenterData;
-
         if (pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient,
                                                               QWL_USER))
         {
@@ -1101,11 +1099,8 @@ static BOOL DwgtRender(HWND hwnd,
        )
     {
         HWND hwndClient = pWidget->pGlobals->hwndClient;
-        PXCENTERWINDATA pXCenterData
-            = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient,
-                                                 QWL_USER);
-
-        if (pXCenterData)
+        PXCENTERWINDATA pXCenterData;
+        if (pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient, QWL_USER))
         {
             XCenter        *somSelf = pXCenterData->somSelf;
             WPSHLOCKSTRUCT Lock = {0};
@@ -1251,7 +1246,6 @@ MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         case DM_DROP:
         {
             PXCENTERWIDGET pWidget;
-
             if (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
             {
                 // if transparent, use the parent context menu instead
@@ -1284,7 +1278,6 @@ MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         case WM_BUTTON1UP:
         {
             PXCENTERWIDGET pWidget;
-
             if (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
             {
                 // if transparent, do not swallow

@@ -685,7 +685,6 @@ PCSZ cmnQueryMessageFile(VOID)
 PSZ cmnQueryBootLogoFile(VOID)
 {
     PSZ pszReturn;
-
     if (!(pszReturn = prfhQueryProfileData(HINI_USER,
                                            INIAPP_XWORKPLACE,
                                            INIKEY_BOOTLOGOFILE,
@@ -1427,10 +1426,47 @@ const CONTROLDEF
  *      for those CONTROLDEF's that have their
  *      pcszText set to LOAD_STRING ((PCSZ)-1).
  *
- *      The caller should then used the newly created
- *      array and free() that afterwards.
+ *      The point for this function is that the
+ *      dialog formatter (src\helpers\dialog.c)
+ *      expects all strings to be properly set and
+ *      cannot load strings from resources. As a
+ *      result, we have to do this here. We used to
+ *      simply override the LOAD_STRING values in
+ *      the global variables, but this blew up the
+ *      system after an NLS language change because
+ *      then the string pointers pointed to data
+ *      that was already freed. So we need a heap
+ *      copy of the DLGHITEM arrays.
  *
- *      Used by ntbFormatPage.
+ *      The caller should pass the newly created
+ *      DLGHITEM array to dlghCreateDlg and
+ *      free() that afterwards:
+ +
+ +      static const DLGHITEM dlgOrig[] = {...};
+ +      PDLGHITEM paNew;
+ +      APIRET arc;
+ +
+ +      if (!(arc = cmnLoadDialogStrings(dlgOrig,
+ +                                       ARRAYITEMCOUNT(dlgOrig),
+ +                                       &paNew)))
+ +      {
+ +          HWND hwndDlg;
+ +          if (!(arc = dlghCreateDlg(&hwndDlg,
+ +                                    hwndOwner,
+ +                                    FCF_FIXED_DLG,
+ +                                    fnwpWhatever,
+ +                                    "Title",
+ +                                    paNew,        // new array with NLS strings
+ +                                    ARRAYITEMCOUNT(dlgOrig), // same as before
+ +                                    ...)))
+ +          {
+ +              ...
+ +          }
+ +
+ +          free(paNew);
+ +      }
+ *
+ *      Also used by ntbFormatPage.
  *
  *@@added V0.9.16 (2001-10-08) [umoeller]
  *@@changed V0.9.19 (2002-04-02) [umoeller]: now building copy to avoid blowups on NLS changes
@@ -1444,7 +1480,12 @@ APIRET cmnLoadDialogStrings(PCDLGHITEM paDlgItems,     // in: definition array
     PDLGHITEM paNew;
     PCONTROLDEF pDefTargetThis;
 
-    // first check how much mem we need
+    // loop 1:
+    // first check how much mem we need;
+    // we not only allocate an array of DLGHITEM
+    // structs but we also put the CONTROLDEFs
+    // they point to in the same memory buffer
+    // if they contain NLS strings
     ULONG ul;
     ULONG cb;
     for (ul = 0;
@@ -1453,6 +1494,9 @@ APIRET cmnLoadDialogStrings(PCDLGHITEM paDlgItems,     // in: definition array
     {
         PCDLGHITEM pThis = &paDlgItems[ul];
         PCONTROLDEF pDef;
+        // allocate an extra CONTROLDEF if the
+        // DLGHITEM points to one and the control
+        // def has a LOAD_STRING entry
         if (    (    (pThis->Type == TYPE_CONTROL_DEF)
                   || (pThis->Type == TYPE_START_NEW_TABLE)
                 )
@@ -1476,6 +1520,8 @@ APIRET cmnLoadDialogStrings(PCDLGHITEM paDlgItems,     // in: definition array
     // first CONTROLDEF comes after DLGHITEMs array
     pDefTargetThis = (PCONTROLDEF)(((PBYTE)paNew) + (cDlgItems * sizeof(DLGHITEM)));
 
+    // loop 2: fill the memory buffer
+
     for (ul = 0;
          ul < cDlgItems;
          ul++)
@@ -1485,6 +1531,9 @@ APIRET cmnLoadDialogStrings(PCDLGHITEM paDlgItems,     // in: definition array
         PCONTROLDEF pDef;
         memcpy(&paNew[ul], pThis, sizeof(DLGHITEM));
 
+        // again, if the DLGHITEM points to a CONTOLDEF
+        // and the control def has a LOAD_STRING entry,
+        // use one of the array items allocated above
         if (    (    (pThis->Type == TYPE_CONTROL_DEF)
                   || (pThis->Type == TYPE_START_NEW_TABLE)
                 )
@@ -1494,11 +1543,14 @@ APIRET cmnLoadDialogStrings(PCDLGHITEM paDlgItems,     // in: definition array
         {
             // then use a new CONTROLDEF as well
             memcpy(pDefTargetThis, pDef, sizeof(CONTROLDEF));
+            // and replace the LOAD_STRING with the real string
             pDefTargetThis->pcszText = cmnGetString(pDef->usID);
             // and point DLGHITEM to this CONTROLDEF instead
             paNew[ul].ulData = (ULONG)pDefTargetThis;
             ++pDefTargetThis;
         }
+        // otherwise we use the const DLGHITEM that was
+        // given to us in paDlgItems for this entry
     }
 
     // output pointer
@@ -1843,11 +1895,9 @@ static PICONTREENODE LoadNewIcon(ULONG ulStdIcon)
 
             ulResID = pStdIcon->ulPMWP & ~XWP_MODULE_BIT;
 
-            hptrReturn = WinLoadPointer(HWND_DESKTOP,
-                                        hmod,
-                                        ulResID);
-
-            if (!hptrReturn)
+            if (!(hptrReturn = WinLoadPointer(HWND_DESKTOP,
+                                              hmod,
+                                              ulResID)))
                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "Cannot load icon id %d", ulStdIcon);
         }
@@ -3348,6 +3398,7 @@ ULONG cmnQuerySetting(XWPSETTING s)
  *      Returns TRUE, unless "s" is out of range.
  *
  *@@added V0.9.16 (2002-01-05) [umoeller]
+ *@@changed V0.9.19 (2002-06-02) [umoeller]: fixed bad return value
  */
 
 BOOL cmnSetSetting(XWPSETTING s,
@@ -3372,19 +3423,17 @@ BOOL cmnSetSetting(XWPSETTING s,
             else
                 pulWrite = NULL;
 
-            PrfWriteProfileData(HINI_USER,
-                                (PSZ)INIAPP_XWORKPLACE,
-                                (PSZ)pStore->pcszIniKey,
-                                pulWrite,
-                                sizeof(ULONG));
-
-            // _Pmpf(("    "__FUNCTION__ ": set %s to %d",
-              //       pStore->pcszIniKey, ulValue));
+            return PrfWriteProfileData(HINI_USER,
+                                       (PSZ)INIAPP_XWORKPLACE,
+                                       (PSZ)pStore->pcszIniKey,
+                                       pulWrite,
+                                       sizeof(ULONG));
+                // return was missing V0.9.19 (2002-06-02) [umoeller]
         }
     }
-    else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Warning: Invalid setting %d set.", s);
+
+    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+           "Warning: Invalid setting %d set.", s);
 
     return FALSE;
 }
@@ -4344,14 +4393,12 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
 
 BOOL cmnDeleteIntoDefTrashCan(WPObject *pObject)
 {
-    BOOL brc = FALSE;
     XWPTrashCan *pDefaultTrashCan;
-
     if (pDefaultTrashCan = _xwpclsQueryDefaultTrashCan(_XWPTrashCan))
-        brc = _xwpDeleteIntoTrashCan(pDefaultTrashCan,
-                                     pObject);
+        return _xwpDeleteIntoTrashCan(pDefaultTrashCan,
+                                      pObject);
 
-    return brc;
+    return FALSE;
 }
 
 /*
@@ -4364,23 +4411,21 @@ BOOL cmnDeleteIntoDefTrashCan(WPObject *pObject)
  *
  *@@added V0.9.4 (2000-08-03) [umoeller]
  *@@changed V0.9.7 (2001-01-17) [umoeller]: now returning ULONG
+ *@@changed V0.9.19 (2002-06-02) [umoeller]: fixed error code
  */
 
 APIRET cmnEmptyDefTrashCan(HAB hab,        // in: synchronously?
                            PULONG pulDeleted, // out: if TRUE is returned, no. of deleted objects; can be 0
                            HWND hwndConfirmOwner) // in: if != NULLHANDLE, confirm empty
 {
-    LONG ulrc = FALSE;
-    XWPTrashCan *pDefaultTrashCan = _xwpclsQueryDefaultTrashCan(_XWPTrashCan);
-    if (pDefaultTrashCan)
-    {
-        ulrc = _xwpEmptyTrashCan(pDefaultTrashCan,
+    XWPTrashCan *pDefaultTrashCan;
+    if (pDefaultTrashCan = _xwpclsQueryDefaultTrashCan(_XWPTrashCan))
+        return _xwpEmptyTrashCan(pDefaultTrashCan,
                                  hab,
                                  pulDeleted,
                                  hwndConfirmOwner);
-    }
 
-    return (ulrc);
+    return FOPSERR_NO_TRASHCAN; // V0.9.19 (2002-06-02) [umoeller]
 }
 
 /* ******************************************************************
@@ -4578,10 +4623,13 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
 
     if (hbmLogo)
         GpiDeleteBitmap(hbmLogo);
-    xstrClear(&strInfo);
-}
 
-#undef __XWPLITE__
+    xstrClear(&strInfo);
+#ifdef __XWPLITE__
+    xstrClear(&strInfoECS1);
+    xstrClear(&strInfoECS2);
+#endif
+}
 
 /* ******************************************************************
  *
@@ -4636,8 +4684,7 @@ CHAR cmnQueryThousandsSeparator(VOID)
 BOOL cmnIsValidHotkey(USHORT usFlags,
                       USHORT usKeyCode)
 {
-    BOOL brc
-        = (
+    return (
                 // must be a virtual key
                 (  (  ((usFlags & KC_VIRTUALKEY) != 0)
                 // or Ctrl or Alt must be pressed
@@ -4663,7 +4710,6 @@ BOOL cmnIsValidHotkey(USHORT usFlags,
                    )
                 )
            );
-    return brc;
 }
 
 /*
@@ -4899,7 +4945,7 @@ BOOL cmnPlaySystemSound(USHORT usIndex)
 
 BOOL cmnIsADesktop(WPObject *somSelf)
 {
-    return (_somIsA(somSelf, _WPDesktop));
+    return _somIsA(somSelf, _WPDesktop);
 }
 
 /*
@@ -4915,7 +4961,7 @@ BOOL cmnIsADesktop(WPObject *somSelf)
 
 WPObject* cmnQueryActiveDesktop(VOID)
 {
-    return (_wpclsQueryActiveDesktop(_WPDesktop));
+    return _wpclsQueryActiveDesktop(_WPDesktop);
 }
 
 /*
@@ -4931,7 +4977,7 @@ WPObject* cmnQueryActiveDesktop(VOID)
 
 HWND cmnQueryActiveDesktopHWND(VOID)
 {
-    return (_wpclsQueryActiveDesktopHWND(_WPDesktop));
+    return _wpclsQueryActiveDesktopHWND(_WPDesktop);
 }
 
 /*
@@ -5001,8 +5047,8 @@ static PSZ StripParams(PSZ pcszCommand,
         // parameters
         if (*pcszCommand == '\"')
         {
-            PSZ pSecondQuote = strchr(pcszCommand + 1, '\"');
-            if (pSecondQuote)
+            PSZ pSecondQuote;
+            if (pSecondQuote = strchr(pcszCommand + 1, '\"'))
             {
                 pszReturn = strhSubstr(pcszCommand + 1, pSecondQuote);
                 if (ppParams)
@@ -5652,7 +5698,7 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
 
 PCSZ cmnQueryDefaultFont(VOID)
 {
-#ifndef __XWPLITE__
+#ifndef __NOPARANOIA__
     if (cmnQuerySetting(sfUse8HelvFont))
         return ("8.Helv");
     else

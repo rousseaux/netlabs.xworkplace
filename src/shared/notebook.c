@@ -372,6 +372,7 @@ static VOID PageDestroy(PNOTEBOOKPAGE pnbp)
  *@@changed V0.9.9 (2001-03-15) [lafaix]: added support for valuesets
  *@@changed V0.9.9 (2001-03-27) [umoeller]: changed ulExtra for CN_RECORDCHECKED
  *@@changed V0.9.19 (2002-04-15) [lafaix]: added support for CN_ENTER
+ *@@changed V0.9.19 (2002-06-02) [umoeller]: optimizations
  */
 
 static MRESULT EXPENTRY PageWmControl(PNOTEBOOKPAGE pnbp,
@@ -738,14 +739,12 @@ static VOID PageWindowPosChanged(PNOTEBOOKPAGE pnbp,
         // notebook is being resized:
         // was winhAdjustControls prepared?
         if (pnbp->pxac)
-        {
             // yes:
             winhAdjustControls(pnbp->hwndDlgPage,
                                pnbp->inbp.pampControlFlags,
                                pnbp->inbp.cControlFlags,
                                pswp,
                                pnbp->pxac);
-        }
     }
 }
 
@@ -876,10 +875,8 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 
             // get the notebook creation struct, which was passed
             // to ntbInsertPage, from the window words
-
-            // run message callback defined by caller, if any
-
             if (    (pnbp = (PNOTEBOOKPAGE)WinQueryWindowPtr(hwndDlg, QWL_USER))
+                 // run message callback defined by caller, if any
                  && (pnbp->inbp.pfncbMessage)
                  && (pnbp->inbp.pfncbMessage(pnbp, msg, mp1, mp2, &mrc2))
                )
@@ -899,7 +896,6 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 
             switch(msg)
             {
-
                 /*
                  * WM_CONTROL:
                  *
@@ -1138,6 +1134,7 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
  *      a mutex block.
  *
  *@@added V0.9.7 (2000-12-09) [umoeller]
+ *@@changed V0.9.19 (2002-06-02) [umoeller]: optimized
  */
 
 static PNOTEBOOKPAGELISTITEM CreateNBLI(PNOTEBOOKPAGE pnbp) // in: new struct from ntbInsertPage
@@ -1149,14 +1146,28 @@ static PNOTEBOOKPAGELISTITEM CreateNBLI(PNOTEBOOKPAGE pnbp) // in: new struct fr
 
     TRY_LOUD(excpt1)
     {
+        HWND        hwndDesktop = NULLHANDLE,
+                    hwndCurrent = pnbp->inbp.hwndNotebook;
+        PLISTNODE   pNode;
+        BOOL        fNotebookAlreadySubclassed = FALSE;
+
+        // get frame to which this window belongs
+        hwndDesktop = WinQueryDesktopWindow(WinQueryAnchorBlock(pnbp->inbp.hwndNotebook),
+                                            NULLHANDLE);
+
+        // find frame window handle of "Workplace Shell" window
+        while ( (hwndCurrent) && (hwndCurrent != hwndDesktop))
+        {
+            pnbp->hwndFrame = hwndCurrent;
+            hwndCurrent = WinQueryWindow(hwndCurrent, QW_PARENT);
+        }
+
+        if (!hwndCurrent)
+            pnbp->hwndFrame = NULLHANDLE;
+
         // store new page in linked list
         if (fSemOwned = LockNotebooks())
         {
-            HWND        hwndDesktop = NULLHANDLE,
-                        hwndCurrent = pnbp->inbp.hwndNotebook;
-            PLISTNODE   pNode;
-            BOOL        fNotebookAlreadySubclassed = FALSE;
-
             pnbliNew = malloc(sizeof(NOTEBOOKPAGELISTITEM));
 
             pnbliNew->pnbp = pnbp;
@@ -1164,20 +1175,6 @@ static PNOTEBOOKPAGELISTITEM CreateNBLI(PNOTEBOOKPAGE pnbp) // in: new struct fr
             // store new list item in structure, so we can easily
             // find it upon WM_DESTROY
             pnbp->pnbli = (PVOID)pnbliNew;
-
-            // get frame to which this window belongs
-            hwndDesktop = WinQueryDesktopWindow(WinQueryAnchorBlock(HWND_DESKTOP),
-                                                NULLHANDLE);
-
-            // find frame window handle of "Workplace Shell" window
-            while ( (hwndCurrent) && (hwndCurrent != hwndDesktop))
-            {
-                pnbp->hwndFrame = hwndCurrent;
-                hwndCurrent = WinQueryWindow(hwndCurrent, QW_PARENT);
-            }
-
-            if (!hwndCurrent)
-                pnbp->hwndFrame = NULLHANDLE;
 
             lstAppendItem(&G_llOpenPages,
                           pnbliNew);
@@ -1230,7 +1227,7 @@ static PNOTEBOOKPAGELISTITEM CreateNBLI(PNOTEBOOKPAGE pnbp) // in: new struct fr
     if (fSemOwned)
         UnlockNotebooks();
 
-    return (pnbliNew);
+    return pnbliNew;
 }
 
 /*
@@ -1370,9 +1367,8 @@ static MRESULT EXPENTRY fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM m
 {
     MRESULT mrc = 0;
 
-    PSUBCLNOTEBOOKLISTITEM pSubclNBLI = FindNBLI(hwndNotebook);
-
-    if (pSubclNBLI)
+    PSUBCLNOTEBOOKLISTITEM pSubclNBLI;
+    if (pSubclNBLI = FindNBLI(hwndNotebook))
     {
         switch (msg)
         {

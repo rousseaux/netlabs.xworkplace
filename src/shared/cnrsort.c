@@ -92,7 +92,6 @@
 #include "filesys\object.h"             // XFldObject implementation
 
 #pragma hdrstop
-// #include <wpshadow.h>      // WPShadow
 
 /*
  *@@ fnCompareExt:

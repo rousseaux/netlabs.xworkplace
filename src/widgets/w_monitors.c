@@ -246,6 +246,7 @@ PCMNQUERYDEFAULTFONT pcmnQueryDefaultFont = NULL;
 PCMNQUERYHELPLIBRARY pcmnQueryHelpLibrary = NULL;
 PCMNQUERYMAINRESMODULEHANDLE pcmnQueryMainResModuleHandle = NULL;
 
+PCTRDEFWIDGETPROC pctrDefWidgetProc = NULL;
 PCTRFREESETUPVALUE pctrFreeSetupValue = NULL;
 PCTRPARSECOLORSTRING pctrParseColorString = NULL;
 PCTRSCANSETUPSTRING pctrScanSetupString = NULL;
@@ -293,6 +294,7 @@ static const RESOLVEFUNCTION G_aImports[] =
         "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
         "cmnQueryHelpLibrary", (PFN*)&pcmnQueryHelpLibrary,
         "cmnQueryMainResModuleHandle", (PFN*)&pcmnQueryMainResModuleHandle,
+        "ctrDefWidgetProc", (PFN*)&pctrDefWidgetProc,
         "ctrFreeSetupValue", (PFN*)&pctrFreeSetupValue,
         "ctrParseColorString", (PFN*)&pctrParseColorString,
         "ctrScanSetupString", (PFN*)&pctrScanSetupString,
@@ -875,6 +877,67 @@ MRESULT MwgtCreate(HWND hwnd,
 }
 
 /*
+ *@@ FreeBitmapData:
+ *
+ *@@added V0.9.14 (2001-08-03) [umoeller]
+ */
+
+VOID FreeBitmapData(PMONITORPRIVATE pPrivate)
+{
+    if (pPrivate->pBitmap)
+    {
+        if (pPrivate->lcidFont)
+        {
+            GpiSetCharSet(pPrivate->pBitmap->hpsMem, LCID_DEFAULT);
+            GpiDeleteSetId(pPrivate->pBitmap->hpsMem, pPrivate->lcidFont);
+            pPrivate->lcidFont = NULLHANDLE;
+        }
+
+        pgpihDestroyXBitmap(&pPrivate->pBitmap);
+    }
+}
+
+/*
+ *@@ MwgtDestroy:
+ *
+ *@@added V0.9.12 (2001-05-26) [umoeller]
+ *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed memory leak
+ */
+
+VOID MwgtDestroy(HWND hwnd)
+{
+    PXCENTERWIDGET pWidget;
+    PMONITORPRIVATE pPrivate;
+
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PMONITORPRIVATE)pWidget->pUser)
+       )
+    {
+        if (pPrivate->ulTimerID)
+            ptmrStopXTimer(pPrivate->pWidget->pGlobals->pvXTimerSet,
+                           pWidget->hwndWidget,
+                           pPrivate->ulTimerID);
+
+        if (pPrivate->pApm)
+            papmhClose(&pPrivate->pApm);
+
+        if (pPrivate->hptrAC)
+            WinDestroyPointer(pPrivate->hptrAC);
+        if (pPrivate->hptrBattery)
+            WinDestroyPointer(pPrivate->hptrBattery);
+
+        MwgtFreeSetup(&pPrivate->Setup);        // V0.9.14 (2001-08-01) [umoeller]
+
+        if (pPrivate->paDiskDatas)
+            free(pPrivate->paDiskDatas);
+
+        FreeBitmapData(pPrivate);
+
+        free(pPrivate);
+    } // end if (pPrivate)
+}
+
+/*
  *@@ MwgtControl:
  *      implementation for WM_CONTROL.
  *
@@ -1015,7 +1078,7 @@ LONG CalcHatchCol(LONG lcolBackground,
 
 /*
  *@@ RefreshDiskfreeBitmap:
- *      called from MwgtPaint for diskfree type only.
+ *      called from MwgtPaint2 for diskfree type only.
  *
  *      This is another major mess because this also
  *      handles the flashing for each drive rectangle
@@ -1300,28 +1363,7 @@ VOID RefreshDiskfreeBitmap(HWND hwnd,
 }
 
 /*
- *@@ FreeBitmapData:
- *
- *@@added V0.9.14 (2001-08-03) [umoeller]
- */
-
-VOID FreeBitmapData(PMONITORPRIVATE pPrivate)
-{
-    if (pPrivate->pBitmap)
-    {
-        if (pPrivate->lcidFont)
-        {
-            GpiSetCharSet(pPrivate->pBitmap->hpsMem, LCID_DEFAULT);
-            GpiDeleteSetId(pPrivate->pBitmap->hpsMem, pPrivate->lcidFont);
-            pPrivate->lcidFont = NULLHANDLE;
-        }
-
-        pgpihDestroyXBitmap(&pPrivate->pBitmap);
-    }
-}
-
-/*
- * MwgtPaint:
+ * MwgtPaint2:
  *      implementation for WM_PAINT.
  *
  *      The specified HPS is switched to RGB mode before
@@ -1331,10 +1373,10 @@ VOID FreeBitmapData(PMONITORPRIVATE pPrivate)
  *@@changed V0.9.16 (2002-01-13) [umoeller]: no longer allowing the widget to shrink, just expand
  */
 
-VOID MwgtPaint(HWND hwnd,
-               PMONITORPRIVATE pPrivate,
-               HPS hps,
-               BOOL fDrawFrame)
+VOID MwgtPaint2(HWND hwnd,
+                PMONITORPRIVATE pPrivate,
+                HPS hps,
+                BOOL fDrawFrame)
 {
     RECTL       rclWin;
     CHAR        szPaint[400] = "";
@@ -1528,21 +1570,49 @@ VOID MwgtPaint(HWND hwnd,
 VOID ForceRepaint(PMONITORPRIVATE pPrivate)
 {
     HWND hwnd = pPrivate->pWidget->hwndWidget;
-    HPS hps = WinGetPS(hwnd);
-    if (hps)
+    HPS hps;
+    if (hps = WinGetPS(hwnd))
     {
-        // _Pmpf((__FUNCTION__ ": calling MwgtPaint"));
-
         // force refresh of bitmap (diskfree only)
         pPrivate->ulRefreshBitmap = 1;
 
-        MwgtPaint(hwnd,
-                  pPrivate,
-                  hps,
-                  FALSE);   // text only
+        MwgtPaint2(hwnd,
+                   pPrivate,
+                   hps,
+                   FALSE);   // text only
 
         WinReleasePS(hps);
     } // end if (pPrivate)
+}
+
+/*
+ *@@ MwgtPaint:
+ *      implementation for WM_PAINT.
+ *
+ *@@added V0.9.19 (2002-06-08) [umoeller]
+ */
+
+static VOID MwgtPaint(HWND hwnd)
+{
+    HPS hps;
+    if (hps = WinBeginPaint(hwnd, NULLHANDLE, NULL))
+    {
+        // get widget data and its button data from QWL_USER
+        PXCENTERWIDGET pWidget;
+        PMONITORPRIVATE pPrivate;
+
+        if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+             && (pPrivate = (PMONITORPRIVATE)pWidget->pUser)
+           )
+        {
+            MwgtPaint2(hwnd,
+                       pPrivate,
+                       hps,
+                       TRUE);        // draw everything
+        }
+
+        WinEndPaint(hps);
+    }
 }
 
 /*
@@ -1552,12 +1622,16 @@ VOID ForceRepaint(PMONITORPRIVATE pPrivate)
  *@@changed V0.9.16 (2001-09-20) [umoeller]: battery widget didn't repaint background on status change, fixed
  */
 
-VOID MwgtTimer(PXCENTERWIDGET pWidget, MPARAM mp1, MPARAM mp2)
+VOID MwgtTimer(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     USHORT usTimerID = (USHORT)mp1;
 
+    PXCENTERWIDGET pWidget;
     PMONITORPRIVATE pPrivate;
-    if (pPrivate = (PMONITORPRIVATE)pWidget->pUser)
+
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PMONITORPRIVATE)pWidget->pUser)
+       )
     {
         switch (usTimerID)
         {
@@ -1655,7 +1729,7 @@ VOID MwgtTimer(PXCENTERWIDGET pWidget, MPARAM mp1, MPARAM mp2)
             break;
 
             default:
-                pWidget->pfnwpDefWidgetProc(pWidget->hwndWidget, WM_TIMER, mp1, mp2);
+                pctrDefWidgetProc(pWidget->hwndWidget, WM_TIMER, mp1, mp2);
         }
     }
 }
@@ -1671,10 +1745,13 @@ VOID MwgtTimer(PXCENTERWIDGET pWidget, MPARAM mp1, MPARAM mp2)
  *@@added V0.9.14 (2001-08-01) [umoeller]
  */
 
-VOID UpdateLogicalDrive(PXCENTERWIDGET pWidget, MPARAM mp1, MPARAM mp2)
+VOID UpdateLogicalDrive(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
+    PXCENTERWIDGET pWidget;
     PMONITORPRIVATE pPrivate;
-    if (    (pPrivate = (PMONITORPRIVATE)pWidget->pUser)
+
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PMONITORPRIVATE)pWidget->pUser)
          && (pPrivate->paDiskDatas)
          && ((ULONG)mp1 > 0)
          && ((ULONG)mp1 < 27)
@@ -1745,11 +1822,14 @@ VOID MwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
  */
 
 VOID MwgtPresParamChanged(HWND hwnd,
-                          ULONG ulAttrChanged,
-                          PXCENTERWIDGET pWidget)
+                          ULONG ulAttrChanged)
 {
-    PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
-    if (pPrivate)
+    PXCENTERWIDGET pWidget;
+    PMONITORPRIVATE pPrivate;
+    // WM_PRESPARAMCHANGED gets sent before XCENTERWIDGET is set!
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PMONITORPRIVATE)pWidget->pUser)
+       )
     {
         BOOL fInvalidate = TRUE;
         switch (ulAttrChanged)
@@ -1868,11 +1948,14 @@ CHAR FindDriveFromWidgetX(PMONITORPRIVATE pPrivate,
  */
 
 VOID MwgtButton1DblClick(HWND hwnd,
-                         PXCENTERWIDGET pWidget,
                          MPARAM mp1)
 {
+    PXCENTERWIDGET pWidget;
     PMONITORPRIVATE pPrivate;
-    if (pPrivate = (PMONITORPRIVATE)pWidget->pUser)
+
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PMONITORPRIVATE)pWidget->pUser)
+       )
     {
         PCSZ        pcszID = NULL,
                     pcszBackupID = NULL;
@@ -2055,7 +2138,7 @@ MRESULT MwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
             HackContextMenu(pPrivate);
         }
 
-        return (pWidget->pfnwpDefWidgetProc(hwnd, WM_CONTEXTMENU, mp1, mp2));
+        return pctrDefWidgetProc(hwnd, WM_CONTEXTMENU, mp1, mp2);
     }
 
     return 0;
@@ -2148,46 +2231,10 @@ MRESULT MwgtMenuSelect(HWND hwnd, MPARAM mp1, MPARAM mp2)
             }
         }
 
-        return (pWidget->pfnwpDefWidgetProc(hwnd, WM_MENUSELECT, mp1, mp2));
+        return pctrDefWidgetProc(hwnd, WM_MENUSELECT, mp1, mp2);
     }
 
     return 0;
-}
-
-/*
- *@@ MwgtDestroy:
- *
- *@@added V0.9.12 (2001-05-26) [umoeller]
- *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed memory leak
- */
-
-VOID MwgtDestroy(PXCENTERWIDGET pWidget)
-{
-    PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
-    if (pPrivate)
-    {
-        if (pPrivate->ulTimerID)
-            ptmrStopXTimer(pPrivate->pWidget->pGlobals->pvXTimerSet,
-                           pWidget->hwndWidget,
-                           pPrivate->ulTimerID);
-
-        if (pPrivate->pApm)
-            papmhClose(&pPrivate->pApm);
-
-        if (pPrivate->hptrAC)
-            WinDestroyPointer(pPrivate->hptrAC);
-        if (pPrivate->hptrBattery)
-            WinDestroyPointer(pPrivate->hptrBattery);
-
-        MwgtFreeSetup(&pPrivate->Setup);        // V0.9.14 (2001-08-01) [umoeller]
-
-        if (pPrivate->paDiskDatas)
-            free(pPrivate->paDiskDatas);
-
-        FreeBitmapData(pPrivate);
-
-        free(pPrivate);
-    } // end if (pPrivate)
 }
 
 /*
@@ -2212,8 +2259,6 @@ VOID MwgtDestroy(PXCENTERWIDGET pWidget)
 MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-                    // this ptr is valid after WM_CREATE
 
     switch (msg)
     {
@@ -2234,12 +2279,22 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
 
         case WM_CREATE:
             WinSetWindowPtr(hwnd, QWL_USER, mp1);
-            pWidget = (PXCENTERWIDGET)mp1;
-            if ((pWidget) && (pWidget->pfnwpDefWidgetProc))
-                mrc = MwgtCreate(hwnd, pWidget);
+            if (mp1)
+                mrc = MwgtCreate(hwnd, (PXCENTERWIDGET)mp1);
             else
                 // stop window creation!!
                 mrc = (MPARAM)TRUE;
+        break;
+
+        /*
+         * WM_DESTROY:
+         *      clean up. This _must_ be passed on to
+         *      ctrDefWidgetProc.
+         */
+
+        case WM_DESTROY:
+            MwgtDestroy(hwnd);
+            mrc = pctrDefWidgetProc(hwnd, msg, mp1, mp2);
         break;
 
         /*
@@ -2257,23 +2312,7 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
          */
 
         case WM_PAINT:
-        {
-            HPS hps;
-            if (hps = WinBeginPaint(hwnd, NULLHANDLE, NULL))
-            {
-                // get widget data and its button data from QWL_USER
-                PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
-                if (pPrivate)
-                {
-                    MwgtPaint(hwnd,
-                              pPrivate,
-                              hps,
-                              TRUE);        // draw everything
-                } // end if (pPrivate)
-
-                WinEndPaint(hps);
-            }
-        }
+            MwgtPaint(hwnd);
         break;
 
         /*
@@ -2282,7 +2321,7 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
          */
 
         case WM_TIMER:
-            MwgtTimer(pWidget, mp1, mp2);
+            MwgtTimer(hwnd, mp1, mp2);
         break;
 
         /*
@@ -2300,9 +2339,7 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
          */
 
         case WM_PRESPARAMCHANGED:
-            if (pWidget)
-                // this gets sent before this is set!
-                MwgtPresParamChanged(hwnd, (ULONG)mp1, pWidget);
+            MwgtPresParamChanged(hwnd, (ULONG)mp1);
         break;
 
         /*
@@ -2312,7 +2349,7 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
          */
 
         case WM_BUTTON1DBLCLK:
-            MwgtButton1DblClick(hwnd, pWidget, mp1);
+            MwgtButton1DblClick(hwnd, mp1);
             mrc = (MPARAM)TRUE;     // message processed
         break;
 
@@ -2350,25 +2387,12 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
          */
 
         case WM_USER:
-            UpdateLogicalDrive(pWidget, mp1, mp2);
-        break;
-
-        /*
-         * WM_DESTROY:
-         *      clean up. This _must_ be passed on to
-         *      ctrDefWidgetProc.
-         */
-
-        case WM_DESTROY:
-            MwgtDestroy(pWidget);
-            mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
+            UpdateLogicalDrive(hwnd, mp1, mp2);
         break;
 
         default:
-            if (pWidget)
-                mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
-            else
-                mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
+            mrc = pctrDefWidgetProc(hwnd, msg, mp1, mp2);
+
     } // end switch(msg)
 
     return mrc;

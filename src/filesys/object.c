@@ -9,18 +9,37 @@
  *      about how the WPS maintains Desktop objects as SOM objects
  *      in memory.
  *
- *      Basically, there are two situations where objects are
- *      created and destroyed.
+ *      The basic object life cycle is like this:
  *
- *      1)  Scenario 1 involves creating and destroying objects
- *          in memory ONLY without affecting the physical
- *          storage of the object. For abstract objects,
- *          "physical storage" is the OS2.INI file; for file-system
- *          objects, the file system. WPTransients have no physical
- *          storage at all.
+ +        wpclsNew
+ +        wpCopyObject
+ +        wpCreateFromTemplate
+ +              ³
+ +              ³      ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+ +              ³      ³ awake object ³
+ +              ÀÄÄÄÄ> ³ (physical    ³ <ÄÄ wpclsMakeAwake ÄÄÄ¿
+ +                     ³ and memory)  ³                       ³
+ +                     ÀÄÄÄÄÄÂÄÂÄÄÄÄÄÄÙ                       ³
+ +                           ³ ³                              ³
+ +          \ /              ³ ³                   ÚÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄ¿
+ +           X   <ÄÄ wpFree ÄÙ ÀÄ wpMakeDormant Ä> ³ dormant object ³
+ +          / \                                    ³ (physical only)³
+ +                                                 ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
  *
- *          The WPS calls this "make awake" and "make dormant".
- *          Objects are most frequently made awake when a folder
+ *      The basic rule is that there is the concept of a
+ *      "dormant object". This can be any file-system thing
+ *      on disk or an abstract object in OS2.INI.
+ *
+ *      By contrast, an object is said to be "awake" if it
+ *      exists as a SOM object in memory. Per definition, an
+ *      awake object also has a physical representation: for
+ *      abstract objects, "physical storage" is the OS2.INI
+ *      file; for file-system objects, the file system.
+ *      Only WPTransients have no physical storage at all;
+ *      as a consequence, there is really no such thing as
+ *      a dormant transient object.
+ *
+ *      1)  Objects are most frequently made awake when a folder
  *          is populated (mostly on folder open). Of course this
  *          does not physically create objects... they are only
  *          instantiated in memory then from their physical
@@ -30,11 +49,11 @@
  *          single object, call M_WPObject::wpclsMakeAwake.
  *          This is a bit difficult to manage, so
  *          WPFileSystem::wpclsQueryObjectFromPath is easier
- *          for waking up FS objects.
+ *          for waking up FS objects (which calls wpclsMakeAwake
+ *          internally). wpclsMakeAwake also gets called from
+ *          within WPFolder::wpPopulate.
  *
- *          WPFolder::wpPopulate calls these in turn somehow.
- *
- *          Even though this isn't documented anywhere, the
+ *      2)  Even though this isn't documented anywhere, the
  *          WPS also supports the reverse concept of making
  *          the object dormant again. This will destroy the
  *          SOM object in memory, but not the physical representation.
@@ -66,20 +85,20 @@
  *          --  Finally, wpMakeDormant calls wpUnInitData, which
  *              should clean up the object.
  *
- *      2)  Scenario 2 means that an object is physically created
- *          or destroyed through the WPS.
- *
- *          An object is created through either M_WPObject::wpclsNew
- *          or WPObject::wpCopyObject or WPObject::wpCreateAnother.
+ *      3)  An object is physically created through either
+ *          M_WPObject::wpclsNew or WPObject::wpCopyObject or
+ *          WPObject::wpCreateAnother or WPObject::wpCreateFromTemplate.
  *          These are the "object factories" of the WPS. Depending
  *          on which class the method is invoked on, the new object
  *          will be of that class.
  *
  *          Depending on the object's class, wpclsNew will create
  *          a physical representation (e.g. file, folder) of the
- *          object _and_ a SOM object.
+ *          object _and_ a SOM object. So calling, for example,
+ *          M_WPFolder::wpclsNew will create a new folder on disk
+ *          and return a SOM object that represents it.
  *
- *          Deleting an object can really be done in two ways:
+ *      4)  Deleting an object can really be done in two ways:
  *
  *          --  WPObject::wpDelete looks like the most natural
  *              way. However this really only displays a
@@ -199,6 +218,7 @@
 #define INCL_WINPROGRAMLIST     // needed for wppgm.h
 #define INCL_WINSWITCHLIST
 #define INCL_WINSHELLDATA
+#define INCL_WINCLIPBOARD
 #include <os2.h>
 
 // C library headers
@@ -399,8 +419,8 @@ BOOL objSetup(WPObject *somSelf,
                            NULL,            // get size
                            &cb))
     {
-        PSZ pszRexxFile = malloc(cb);
-        if (pszRexxFile)
+        PSZ pszRexxFile;
+        if (pszRexxFile = malloc(cb))
         {
             if (_wpScanSetupString(somSelf,
                                    pszSetupString,
@@ -800,7 +820,7 @@ static ULONG WriteOutObjectSetup(FILE *RexxFile,
     }
 
     // return total object count
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -883,18 +903,23 @@ static POBJECTUSAGERECORD AddObjectUsage2Cnr(HWND hwndCnr,     // in: container 
                                              PCSZ pcszTitle,     // in: text to appear in cnr
                                              ULONG flAttrs)    // in: CRA_* flags for record
 {
-    POBJECTUSAGERECORD preccNew
-        = (POBJECTUSAGERECORD)cnrhAllocRecords(hwndCnr, sizeof(OBJECTUSAGERECORD), 1);
+    POBJECTUSAGERECORD preccNew;
 
-    strhncpy0(preccNew->szText, pcszTitle, sizeof(preccNew->szText));
-    cnrhInsertRecords(hwndCnr,
-                      (PRECORDCORE)preccParent,       // parent
-                      (PRECORDCORE)preccNew,          // new record
-                      FALSE, // invalidate
-                      preccNew->szText,
-                      flAttrs,
-                      1);
-    return (preccNew);
+    if (preccNew = (POBJECTUSAGERECORD)cnrhAllocRecords(hwndCnr,
+                                                        sizeof(OBJECTUSAGERECORD),
+                                                        1))
+    {
+        strhncpy0(preccNew->szText, pcszTitle, sizeof(preccNew->szText));
+        cnrhInsertRecords(hwndCnr,
+                          (PRECORDCORE)preccParent,       // parent
+                          (PRECORDCORE)preccNew,          // new record
+                          FALSE, // invalidate
+                          preccNew->szText,
+                          flAttrs,
+                          1);
+    }
+
+    return preccNew;
 }
 
 /*
@@ -1082,8 +1107,7 @@ static VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
                         "Error %d",
                         arc);
             else
-                sprintf(szObjectHandle,
-                        cmnGetString(ID_XSSI_OBJDET_NONESET));
+                strcpy(szObjectHandle, cmnGetString(ID_XSSI_OBJDET_NONESET));
         AddObjectUsage2Cnr(hwndCnr, preccLevel2,
                            szObjectHandle,
                            CRA_RECORDREADONLY);
@@ -3532,7 +3556,7 @@ BOOL objRemoveObjectHotkey(HOBJECT hobj)
 
 /* ******************************************************************
  *
- *   Object setup strings
+ *   Object menus
  *
  ********************************************************************/
 
@@ -3581,6 +3605,144 @@ VOID objModifyPopupMenu(WPObject* somSelf,
             }
         }
     }
+}
+
+/*
+ *@@ CopyOneObject:
+ *
+ *@@added V0.9.19 (2002-06-02) [umoeller]
+ */
+
+static VOID CopyOneObject(PXSTRING pstr,
+                          WPObject *pObject,
+                          BOOL fFullPath)
+{
+    CHAR szRealName[CCHMAXPATH];
+    if (    (pObject = objResolveIfShadow(pObject))
+         && (_somIsA(pObject, _WPFileSystem))
+         && (_wpQueryFilename(pObject, szRealName, fFullPath))
+       )
+    {
+        xstrcat(pstr, szRealName, 0);
+        xstrcatc(pstr, ' ');
+    }
+}
+
+/*
+ *@@ objCopyObjectFileName:
+ *      copy object filename(s) to clipboard. This method is
+ *      called from several overrides of wpMenuItemSelected.
+ *
+ *      If somSelf does not have CRA_SELECTED emphasis in the
+ *      container, its filename is copied. If it does have
+ *      CRA_SELECTED emphasis, all filenames which have CRA_SELECTED
+ *      emphasis are copied, separated by spaces.
+ *
+ *      Note that somSelf might not neccessarily be a file-system
+ *      object. It can also be a shadow to one, so we might need
+ *      to dereference that.
+ *
+ *@@changed V0.9.0 [umoeller]: fixed a minor bug when memory allocation failed
+ *@@changed V0.9.19 (2002-06-02) [umoeller]: fixed buffer overflow with many objects
+ *@@changed V0.9.19 (2002-06-02) [umoeller]: renamed from wpshCopyObjectFileName, moved here
+ */
+
+BOOL objCopyObjectFileName(WPObject *somSelf, // in: the object which was passed to
+                                // wpMenuItemSelected
+                           HWND hwndCnr, // in: the container of the hwmdFrame
+                                // of wpMenuItemSelected
+                           BOOL fFullPath) // in: if TRUE, the full path will be
+                                // copied; otherwise the filename only
+{
+    BOOL        fSuccess = FALSE,
+                fSingleMode = TRUE;
+    XSTRING     strFilenames;
+
+    // get the record core of somSelf
+    PMINIRECORDCORE pmrcSelf = _wpQueryCoreRecord(somSelf);
+
+    // now we go through all the selected records in the container
+    // and check if pmrcSelf is among these selected records;
+    // if so, this means that we want to copy the filenames
+    // of all the selected records.
+    // However, if pmrcSelf is not among these, this means that
+    // either the context menu of the _folder_ has been selected
+    // or the menu of an object which is not selected; we will
+    // then only copy somSelf's filename.
+
+    PMINIRECORDCORE pmrcSelected = (PMINIRECORDCORE)CMA_FIRST;
+
+    xstrInit(&strFilenames, 1000);
+
+    do
+    {
+        // get the first or the next _selected_ item
+        pmrcSelected = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
+                                                   CM_QUERYRECORDEMPHASIS,
+                                                   (MPARAM)pmrcSelected,
+                                                   (MPARAM)CRA_SELECTED);
+
+        if ((pmrcSelected != 0) && (((ULONG)pmrcSelected) != -1))
+        {
+            // first or next record core found:
+            // copy filename to buffer
+            CopyOneObject(&strFilenames,
+                          OBJECT_FROM_PREC(pmrcSelected),
+                          fFullPath);
+
+            // compare the selection with pmrcSelf
+            if (pmrcSelected == pmrcSelf)
+                fSingleMode = FALSE;
+        }
+    } while ((pmrcSelected != 0) && (((ULONG)pmrcSelected) != -1));
+
+    if (fSingleMode)
+        // if somSelf's record core does NOT have the "selected"
+        // emphasis: this means that the user has requested a
+        // context menu for an object other than the selected
+        // objects in the folder, or the folder's context menu has
+        // been opened: we will only copy somSelf then.
+        CopyOneObject(&strFilenames, somSelf, fFullPath);
+
+    if (strFilenames.ulLength)
+    {
+        // something was copied:
+        HAB     hab = WinQueryAnchorBlock(hwndCnr);
+
+        // remove last space
+        strFilenames.psz[--(strFilenames.ulLength)] = '\0';
+
+        // copy to clipboard
+        if (WinOpenClipbrd(hab))
+        {
+            PSZ pszDest;
+            if (!DosAllocSharedMem((PVOID*)&pszDest,
+                                   NULL,
+                                   strFilenames.ulLength + 1,
+                                   PAG_WRITE | PAG_COMMIT | OBJ_GIVEABLE))
+            {
+                memcpy(pszDest,
+                       strFilenames.psz,
+                       strFilenames.ulLength + 1);
+
+                WinEmptyClipbrd(hab);
+
+                fSuccess = WinSetClipbrdData(hab,       // anchor-block handle
+                                             (ULONG)pszDest, // pointer to text data
+                                             CF_TEXT,        // data is in text format
+                                             CFI_POINTER);   // passing a pointer
+
+                // PMREF says (implicitly) it is not necessary to call
+                // DosFreeMem. I hope that is correct.
+                // V0.9.19 (2002-06-02) [umoeller]
+            }
+            WinCloseClipbrd(hab);
+        }
+    }
+
+    xstrClear(&strFilenames);
+
+    return fSuccess;
 }
 
 

@@ -54,6 +54,13 @@ FIXED SINCE 0.9.18
 CURRENT PROBLEMS
 ----------------
 
+--  SHADOWS: apparently when WPShadow makes objects awake,
+    it bypasses our initialization code, which at least does
+    NOT work in the case that a file-system object contains
+    several dots in the filename (because our list isn't
+    checked) --> wrong datafile class (possibly broken icons
+    too)
+
 --  XFldProgramFile: Parameter and Working dir settings
     specified in a settings notebook are presently ignored.
 

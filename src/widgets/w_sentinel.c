@@ -214,6 +214,7 @@ PCMNGETSTRING pcmnGetString = NULL;
 PCMNQUERYDEFAULTFONT pcmnQueryDefaultFont = NULL;
 PCMNQUERYHELPLIBRARY pcmnQueryHelpLibrary = NULL;
 
+PCTRDEFWIDGETPROC pctrDefWidgetProc = NULL;
 PCTRFREESETUPVALUE pctrFreeSetupValue = NULL;
 PCTRPARSECOLORSTRING pctrParseColorString = NULL;
 PCTRSCANSETUPSTRING pctrScanSetupString = NULL;
@@ -250,6 +251,7 @@ static const RESOLVEFUNCTION G_aImports[] =
         "cmnGetString", (PFN*)&pcmnGetString,
         "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
         "cmnQueryHelpLibrary", (PFN*)&pcmnQueryHelpLibrary,
+        "ctrDefWidgetProc", (PFN*)&pctrDefWidgetProc,
         "ctrFreeSetupValue", (PFN*)&pctrFreeSetupValue,
         "ctrParseColorString", (PFN*)&pctrParseColorString,
         "ctrScanSetupString", (PFN*)&pctrScanSetupString,
@@ -558,8 +560,6 @@ MRESULT TwgtCreate(HWND hwnd,
 {
     MRESULT mrc = 0;        // continue window creation
 
-    // PSZ p;
-
     PWIDGETPRIVATE pPrivate = malloc(sizeof(WIDGETPRIVATE));
     memset(pPrivate, 0, sizeof(WIDGETPRIVATE));
     // link the two together
@@ -607,6 +607,39 @@ MRESULT TwgtCreate(HWND hwnd,
     pPrivate->szTooltipText[0] = '\0';
 
     return mrc;
+}
+
+/*
+ *@@ TwgtDestroy:
+ *      implementation for WM_DESTROY.
+ *
+ *@@added V0.9.19 (2002-06-08) [umoeller]
+ */
+
+static VOID TwgtDestroy(HWND hwnd)
+{
+    PXCENTERWIDGET pWidget;
+    PWIDGETPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
+       )
+    {
+        if (pPrivate->ulTimerID)
+            ptmrStopXTimer(pPrivate->pWidget->pGlobals->pvXTimerSet,
+                          hwnd,
+                          pPrivate->ulTimerID);
+
+        libWin32kTerm();
+
+        if (pPrivate->pBitmap)
+            pgpihDestroyXBitmap(&pPrivate->pBitmap);
+                    // this was missing V0.9.12 (2001-05-20) [umoeller]
+
+        if (pPrivate->paSnapshots)
+            free(pPrivate->paSnapshots);
+
+        free(pPrivate);
+    } // end if (pPrivate)
 }
 
 /*
@@ -1274,11 +1307,14 @@ VOID TwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
  */
 
 VOID TwgtPresParamChanged(HWND hwnd,
-                          ULONG ulAttrChanged,
-                          PXCENTERWIDGET pWidget)
+                          ULONG ulAttrChanged)
 {
-    PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
-    if (pPrivate)
+    PXCENTERWIDGET pWidget;
+    PWIDGETPRIVATE pPrivate;
+    // WM_PRESPARAMCHANGED gets sent before XCENTERWIDGET is set!
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
+       )
     {
         BOOL fInvalidate = TRUE;
         switch (ulAttrChanged)
@@ -1358,16 +1394,17 @@ VOID TwgtPresParamChanged(HWND hwnd,
  *      implementation for WM_BUTTON1DBLCLK.
  */
 
-VOID TwgtButton1DblClick(HWND hwnd,
-                         PXCENTERWIDGET pWidget)
+VOID TwgtButton1DblClick(HWND hwnd)
 {
-    PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
-    if (pPrivate)
+    PXCENTERWIDGET pWidget;
+    PWIDGETPRIVATE pPrivate;
+    if (    (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
+         && (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
+       )
     {
         PCSZ pcszID = "<XWP_KERNEL>";
-        HOBJECT hobj = WinQueryObject((PSZ)pcszID);
-
-        if (hobj)
+        HOBJECT hobj;
+        if (hobj = WinQueryObject((PSZ)pcszID))
         {
             WinOpenObject(hobj,
                           2, // OPEN_SETTINGS,
@@ -1386,8 +1423,6 @@ VOID TwgtButton1DblClick(HWND hwnd,
 MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
-    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-                    // this ptr is valid after WM_CREATE
 
     switch (msg)
     {
@@ -1408,12 +1443,22 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
 
         case WM_CREATE:
             WinSetWindowPtr(hwnd, QWL_USER, mp1);
-            pWidget = (PXCENTERWIDGET)mp1;
-            if ((pWidget) && (pWidget->pfnwpDefWidgetProc))
-                mrc = TwgtCreate(hwnd, pWidget);
+            if (mp1)
+                mrc = TwgtCreate(hwnd, (PXCENTERWIDGET)mp1);
             else
                 // stop window creation!!
                 mrc = (MPARAM)TRUE;
+        break;
+
+        /*
+         * WM_DESTROY:
+         *      clean up. This _must_ be passed on to
+         *      ctrDefWidgetProc.
+         */
+
+        case WM_DESTROY:
+            TwgtDestroy(hwnd);
+            mrc = pctrDefWidgetProc(hwnd, msg, mp1, mp2);
         break;
 
         /*
@@ -1458,9 +1503,7 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
          */
 
         case WM_PRESPARAMCHANGED:
-            if (pWidget)
-                // this gets sent before this is set!
-                TwgtPresParamChanged(hwnd, (ULONG)mp1, pWidget);
+            TwgtPresParamChanged(hwnd, (ULONG)mp1);
         break;
 
         /*
@@ -1470,46 +1513,13 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
          */
 
         case WM_BUTTON1DBLCLK:
-            TwgtButton1DblClick(hwnd, pWidget);
+            TwgtButton1DblClick(hwnd);
             mrc = (MPARAM)TRUE;     // message processed
         break;
 
-        /*
-         * WM_DESTROY:
-         *      clean up. This _must_ be passed on to
-         *      ctrDefWidgetProc.
-         */
-
-        case WM_DESTROY:
-        {
-            PWIDGETPRIVATE pPrivate;
-            if (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
-            {
-                if (pPrivate->ulTimerID)
-                    ptmrStopXTimer(pPrivate->pWidget->pGlobals->pvXTimerSet,
-                                  hwnd,
-                                  pPrivate->ulTimerID);
-
-                libWin32kTerm();
-
-                if (pPrivate->pBitmap)
-                    pgpihDestroyXBitmap(&pPrivate->pBitmap);
-                            // this was missing V0.9.12 (2001-05-20) [umoeller]
-
-                if (pPrivate->paSnapshots)
-                    free(pPrivate->paSnapshots);
-
-                free(pPrivate);
-            } // end if (pPrivate)
-            mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
-        }
-        break;
-
         default:
-            if (pWidget)
-                mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
-            else
-                mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
+            mrc = pctrDefWidgetProc(hwnd, msg, mp1, mp2);
+
     } // end switch(msg)
 
     return mrc;

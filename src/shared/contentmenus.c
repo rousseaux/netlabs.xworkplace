@@ -564,11 +564,10 @@ ULONG cmnuInsertOneObjectMenuItem(HWND       hAddToMenu,   // hwnd of menu to ad
                        0);
 
     if (cmnuAppendMi2List(pObject, ulObjType))
-        // give signal for calling function that we found
-        // something
-        return (rc);
-    else
-        return 0; // report error
+        // give signal for calling function that we found something
+        return rc;
+
+    return 0; // report error
 }
 
 /*
@@ -675,9 +674,9 @@ SHORT XWPENTRY fncbSortContentMenuItems(PVOID pItem1, PVOID pItem2, PVOID hab)
     {
         case WCS_LT:    return (-1);
         case WCS_GT:    return (1);
-        default:        return 0;
     }
 
+    return 0;
 }
 
 /*
@@ -1109,8 +1108,8 @@ VOID cmnuFillContentSubmenu(SHORT sMenuId, // in: menu ID of selected folder con
 
 PVARMENULISTITEM cmnuGetVarItem(ULONG ulOfs)
 {
-    return ((PVARMENULISTITEM)lstItemFromIndex(&G_llVarMenuItems,
-                                               ulOfs));
+    return (PVARMENULISTITEM)lstItemFromIndex(&G_llVarMenuItems,
+                                              ulOfs);
 }
 
 /* ******************************************************************
@@ -1215,8 +1214,6 @@ VOID cmnuPrepareOwnerDraw(// SHORT sMenuIDMsg, // from WM_INITMENU: SHORT mp1 su
 
 MRESULT cmnuMeasureItem(POWNERITEM poi)     // owner-draw info structure
 {
-    MRESULT mrc = (MRESULT)FALSE;
-
     PVARMENULISTITEM pItem;
 
     if (G_ulMiniIconSize == 0)
@@ -1271,9 +1268,7 @@ MRESULT cmnuMeasureItem(POWNERITEM poi)     // owner-draw info structure
             poi->rclItem.yTop = G_ulMiniIconSize + 2;
     }
 
-    mrc = MRFROMSHORT(poi->rclItem.yTop); //(MPARAM)poi->rclItem.yTop;
-
-    return mrc;
+    return MRFROMSHORT(poi->rclItem.yTop);
 }
 
 /*
@@ -1296,10 +1291,8 @@ BOOL cmnuDrawItem(MPARAM mp1,     // from WM_DRAWITEM: USHORT menu item id
                   MPARAM mp2)     // from WM_DRAWITEM: POWNERITEM structure
 {
     BOOL brc = FALSE;
-    // HBITMAP hbm;
     RECTL      rcl;
-    // ULONG      x;
-    LONG       lColor; // , lBmpBackground;
+    LONG       lColor;
     POWNERITEM poi = (POWNERITEM)mp2;
     POINTL     ptl;
 
@@ -1346,10 +1339,8 @@ BOOL cmnuDrawItem(MPARAM mp1,     // from WM_DRAWITEM: USHORT menu item id
             // above
             if (poi->fsAttribute & MIA_HILITED)
                 lColor = G_lHiliteBackground;
-                // lBmpBackground = lBackground;
             else
                 lColor = G_lBackground;
-                // lBmpBackground = lHiliteBackground;
 
             // draw rectangle in lColor, size of whole item
             rcl = poi->rclItem;

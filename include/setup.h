@@ -56,6 +56,7 @@
     #pragma alloc_text(FREQ_CODE1, doshUnsetExceptionHandler)
     #pragma alloc_text(FREQ_CODE1, PerformMatch)
     #pragma alloc_text(FREQ_CODE1, doshMatch)
+    #pragma alloc_text(FREQ_CODE1, doshMatchCase)
     #pragma alloc_text(FREQ_CODE1, doshQuerySysUptime)
 
     // winh.c

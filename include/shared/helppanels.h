@@ -267,5 +267,7 @@
     #define ID_XSH_CANNOT_FIND_TRASHCAN     158     // V0.9.19 (2002-04-17) [umoeller]
     #define ID_XSH_TRASH_NODRIVESUPPORT     159     // V0.9.19 (2002-04-17) [umoeller]
 
+    #define ID_XSH_WIDGET_IPMON_MAIN        160     // V0.9.19 (2002-06-05) [umoeller]
+
 #endif
 

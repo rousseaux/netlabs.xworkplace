@@ -933,10 +933,10 @@ BEGIN
     ID_CRSI_PWGT_OTHERCOLORS            "Other colors"
     ID_CRSI_PWGT_BACKGROUNDCOLOR        "Background"
     ID_CRSI_PWGT_TEXTCOLOR              "Text"
-    ID_CRSI_PWGT_TOOLTIP1               "CPU count: %d&nl;CPU 0 IRQ: %lu%c%lu%c"
-    ID_CRSI_PWGT_TOOLTIP2               "&nl;CPU %d User: %lu%c%lu%c"
+    ID_CRSI_PWGT_TOOLTIP1               "CPU count: %d&nl;CPU 0 IRQ load: %lu%c%lu%c"
+    ID_CRSI_PWGT_TOOLTIP2               "&nl;CPU %d user load: %lu%c%lu%c"
             /* warning: the above two are strings for sprintf, so you _must_
-               get the % flags exactly correct, or the pulse will crsh */
+               get the % flags exactly correct, or the pulse will crash */
 
     ID_XSSI_WPSFDRVIEWPAGE              "Folder ~views"
 
@@ -1042,8 +1042,9 @@ BEGIN
 
     /* IP monitor */
     ID_CRSI_IPWGT_GRAPHCOLORS           "Graph colors"
-    ID_CRSI_IPWGT_GRAPHINCOLOR          "Incoming KB"
-    ID_CRSI_IPWGT_GRAPHOUTCOLOR         "Outgoing KB"
+    ID_CRSI_IPWGT_GRAPHINCOLOR          "Incoming"
+    ID_CRSI_IPWGT_GRAPHOUTCOLOR         "Outgoing"
+    ID_CRSI_IPWGT_BYTESTOTAL            "bytes total"
 END
 
 /* string IDs for status bar mnemonics (all new with V0.9.14) */

@@ -184,26 +184,27 @@ typedef struct _WIDGETPRIVATE
     // to the window size, collect thread moves data around,
     // but never reallocates.
 
-    PDOSHPERFSYS    pPerfData;      // performance data (doshPerf* calls)
+    PDOSHPERFSYS    pPerfData;          // performance data (doshPerf* calls)
 
-    ULONG           cProcessors;          // CPU Count V0.9.16 (2002-01-05) [umoeller]
+    ULONG           cProcessors;        // CPU Count V0.9.16 (2002-01-05) [umoeller]
     ULONG           cLoads;
-    PLONG           palLoads;       // ptr to an array of LONGs containing previous
-                                    // CPU loads
-    PLONG           palIntrs;       // ptr to an array of LONGs containing previous
-                                    // CPU interrupt loads
-                                    // added V0.9.9 (2001-03-14) [umoeller]
+    PLONG           palLoads;           // ptr to an array of LONGs containing
+                                        // previous CPU loads
+    PLONG           palIntrs;           // ptr to an array of LONGs containing
+                                        // previous CPU interrupt loads
+                                        // added V0.9.9 (2001-03-14) [umoeller]
 
-    APIRET          arc;            // if != NO_ERROR, an error occured, and
-                                    // the error code is displayed instead.
+    APIRET          arc;                // if != NO_ERROR, an error occured, and
+                                        // the error code is displayed instead,
+                                        // effectively disabling the widget
 
     BOOL            fTooltipShowing;    // TRUE only while tooltip is showing over
-                                    // this widget
+                                        // this widget
     CHAR            szTooltipText[100]; // current tooltip text
 
-    BOOL            fCrashed;       // set to TRUE if the pulse crashed somewhere.
-                                    // This will disable display then to avoid
-                                    // crashing again on each timer tick.
+    BOOL            fCrashed;           // set to TRUE if the pulse crashed somewhere.
+                                        // This will disable display then to avoid
+                                        // crashing again on each timer tick.
 
 } WIDGETPRIVATE, *PWIDGETPRIVATE;
 
