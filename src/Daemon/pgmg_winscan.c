@@ -331,10 +331,18 @@ BOOL pgmwWindowListRescan(VOID)
                 }
                 else
                 {
-                    if (memcmp(&G_MainWindowList[usIdx], &hwndListTemp, sizeof(hwndListTemp))
+                    if (memcmp(&G_MainWindowList[usIdx],
+                               &hwndListTemp,
+                               sizeof(hwndListTemp))
                             != 0)
+                    {
                         // changed:
                         brc = TRUE;
+                        // V0.9.7 (2001-01-17) [dk]
+                        memcpy(&G_MainWindowList[usIdx],
+                               &hwndListTemp,
+                               sizeof(hwndListTemp));
+                    }
                 }
             }
         }
