@@ -515,6 +515,7 @@ BOOL objQuerySetup(WPObject *somSelf,
             ulStyle = 0,
             ulClassStyle = 0;
     PSZ     pszValue = 0;
+    WPObject    *pObj;
 
     XFldObjectData  *somThis = XFldObjectGetData(somSelf);
     SOMClass        *pMyClass = _somGetClass(somSelf);
@@ -653,6 +654,46 @@ BOOL objQuerySetup(WPObject *somSelf,
         // ignore MINWIN_DEFAULT
     }
 
+    // V1.0.3 (2004-06-19) [pr]
+    // OPEN
+    ulValue = _wpQueryDefaultView(somSelf);
+    switch (ulValue)
+    {
+        case OPEN_CONTENTS:
+            APPEND("OPEN=CONTENTS;");
+        break;
+
+        case OPEN_DEFAULT:      // ignore
+        break;
+
+        case OPEN_DETAILS:
+            APPEND("OPEN=DETAILS;");
+        break;
+
+        case OPEN_HELP:
+            APPEND("OPEN=HELP;");
+        break;
+
+        case OPEN_RUNNING:
+            APPEND("OPEN=RUNNING;");
+        break;
+
+        case OPEN_SETTINGS:
+            APPEND("OPEN=SETTINGS;");
+        break;
+
+        case OPEN_TREE:
+            APPEND("OPEN=TREE;");
+        break;
+
+        default:
+        {
+            CHAR szTemp[20];
+            sprintf(szTemp, "OPEN=%u;", ulValue);
+            xstrcat(pstrSetup, szTemp, 0);
+        }
+    }
+
     // compare wpQueryStyle with clsStyle
     // V0.9.18 (2002-03-23) [umoeller]: rewritten
     ulStyle = _wpQueryStyle(somSelf);
@@ -728,6 +769,22 @@ BOOL objQuerySetup(WPObject *somSelf,
             xstrcat(pstrSetup, pszValue);
             xstrcat(pstrSetup, ";");
     } */
+
+    // V1.0.3 (2004-06-19) [pr]
+    // SHADOWID
+    if (   objIsAShadow(somSelf)
+        && (pObj = _wpQueryShadowedObject(somSelf, FALSE))
+       )
+    {
+        if (   (pszValue = _wpQueryObjectID(pObj))
+            && (ulValue = strlen(pszValue))
+           )
+        {
+            APPEND("SHADOWID=");
+            xstrcat(pstrSetup, pszValue, ulValue);
+            xstrcatc(pstrSetup, ';');
+        }
+    }
 
     // OBJECTID: always append this LAST!
     if (    (pszValue = _wpQueryObjectID(somSelf))
