@@ -553,11 +553,24 @@ VOID PwgtPaint2(HWND hwnd,
 
         if (fDrawFrame)
         {
+            LONG lDark, lLight;
+
+            if (pPrivate->pWidget->pGlobals->flDisplayStyle & XCS_SUNKBORDERS)
+            {
+                lDark = pWidget->pGlobals->lcol3DDark;
+                lLight = pWidget->pGlobals->lcol3DLight;
+            }
+            else
+            {
+                lDark =
+                lLight = pPrivate->Setup.lcolBackground;
+            }
+
             gpihDraw3DFrame(hps,
                             &rclWin,        // inclusive
                             ulBorder,
-                            pWidget->pGlobals->lcol3DDark,
-                            pWidget->pGlobals->lcol3DLight);
+                            lDark,
+                            lLight);
         }
 
         if (pPrivate->arc == NO_ERROR)

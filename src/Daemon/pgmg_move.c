@@ -324,6 +324,7 @@ BOOL pgmmMoveIt(LONG lXDelta,
  *      This calls pgmmMoveIt in turn.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
+ *@@changed V0.9.7 (2001-01-18) [umoeller]: added window rescan before switching; this fixes lost windows
  */
 
 BOOL pgmmZMoveIt(LONG lXDelta,
@@ -544,6 +545,8 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
              *      window changes. We then check whether
              *      we need to switch desktops and whether
              *      the PageMage client needs to be repainted.
+             *
+             *@@changed V0.9.7 (2001-01-19) [umoeller]: switch list entry checks never worked at all, fixed.
              */
 
             case PGOM_FOCUSCHANGE:
@@ -552,64 +555,88 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                 // get the new active window
                 HWND hwndActive = WinQueryActiveWindow(HWND_DESKTOP);
 
-                // test if this is a stick window;
-                // if so, never switch desktops
-                // V0.9.7 (2000-12-04) [umoeller]
-                HSWITCH hsw = WinQuerySwitchHandle(hwndActive, 0);
-                if (hsw)
+                _Pmpf((__FUNCTION__ ": PGOM_FOCUSCHANGE, hwndActive: 0x%lX", hwndActive));
+
+                if (hwndActive)
                 {
-                    SWCNTRL swc;
-                    if (WinQuerySwitchEntry(hsw, &swc))
-                        if (pgmwStickyCheck(swc.szSwtitle))
-                            // it's sticky: get outta here
-                            break;
-                }
+                    // test if this is a sticky window;
+                    // if so, never switch desktops
+                    // V0.9.7 (2000-12-04) [umoeller]
+                    HSWITCH hsw = WinQuerySwitchHandle(hwndActive, 0);
 
-                // check if the active window is valid
-                WinQueryWindowPos(hwndActive, &swpActive);
-
-                // do not switch to hidden or minimized windows
-                if (0 == (swpActive.fl & (SWP_HIDE | SWP_MINIMIZE)))
-                {
-                    // this was rewritten V0.9.7 (2001-01-18) [umoeller]
-
-                    LONG        bx = WinQuerySysValue(HWND_DESKTOP, SV_CXSIZEBORDER);
-                    LONG        by = WinQuerySysValue(HWND_DESKTOP, SV_CYSIZEBORDER);
-
-                    BOOL bVisible
-                            = !(    // is right edge too wide to the left?
-                                    ((swpActive.x + bx) >= G_szlEachDesktopReal.cx)
-                                 || ((swpActive.x + swpActive.cx - bx) <= 0)
-                                 || ((swpActive.y + by) >= G_szlEachDesktopReal.cy)
-                                 || ((swpActive.y + swpActive.cy - by) <= 0)
-                               );
-
-                    if (!bVisible)
+                    _Pmpf(("  hSwitch: 0x%lX", hsw));
+                    if (hsw)
                     {
-                        // calculate the absolute coordinate (top left is (0,0))
-                        // of the active window relative to all desktops:
-                        LONG lAbsX = swpActive.x + (swpActive.cx / 2);
-                        LONG lAbsY = swpActive.y + (swpActive.cy / 2);
-                        lAbsX += G_ptlCurrPos.x;
-                        lAbsY = G_ptlCurrPos.y + G_szlEachDesktopReal.cy - lAbsY;
-
-                        // if we intend to move into a valid window
-                        if (    (lAbsX >= 0)
-                             && (lAbsX <= (pptlMaxDesktops->x
-                                           * G_szlEachDesktopReal.cx))
-                             && (lAbsY >= 0)
-                             && (lAbsY <= (pptlMaxDesktops->y
-                                           * G_szlEachDesktopReal.cy))
-                           )
+                        SWCNTRL swc;
+                        // if (WinQuerySwitchEntry(hsw, &swc))
+                        if (0 == WinQuerySwitchEntry(hsw, &swc))
+                                // fixed V0.9.7 (2001-01-19) [umoeller]...
+                                // for some reason, this returns 0 on success!!
                         {
-                            // put abs coord of desktop in lAbs
-                            lAbsX /= G_szlEachDesktopReal.cx;
-                            lAbsY /= G_szlEachDesktopReal.cy;
-                            lAbsX *= G_szlEachDesktopReal.cx;
-                            lAbsY *= G_szlEachDesktopReal.cy;
+                            BOOL fSticky = pgmwStickyCheck(swc.szSwtitle);
+                            _Pmpf(("  switch entry: %s --> sticky: %d",
+                                    swc.szSwtitle, fSticky));
+                            if (fSticky)
+                                // it's sticky: get outta here
+                                break;
+                        }
+                        else
+                        {
+                            _Pmpf(("  switch entry failed, exiting"));
+                            break; // V0.9.7 (2001-01-19) [umoeller]
+                        }
+                    }
+                    else
+                        // no switch entry available: do not switch
+                        // V0.9.7 (2001-01-19) [umoeller]
+                        break;
 
-                            lDeltaX = G_ptlCurrPos.x - lAbsX;
-                            lDeltaY = lAbsY - G_ptlCurrPos.y;
+                    // check if the active window is valid
+                    WinQueryWindowPos(hwndActive, &swpActive);
+
+                    // do not switch to hidden or minimized windows
+                    if (0 == (swpActive.fl & (SWP_HIDE | SWP_MINIMIZE)))
+                    {
+                        // this was rewritten V0.9.7 (2001-01-18) [umoeller]
+
+                        LONG        bx = WinQuerySysValue(HWND_DESKTOP, SV_CXSIZEBORDER);
+                        LONG        by = WinQuerySysValue(HWND_DESKTOP, SV_CYSIZEBORDER);
+
+                        BOOL bVisible
+                                = !(    // is right edge too wide to the left?
+                                        ((swpActive.x + bx) >= G_szlEachDesktopReal.cx)
+                                     || ((swpActive.x + swpActive.cx - bx) <= 0)
+                                     || ((swpActive.y + by) >= G_szlEachDesktopReal.cy)
+                                     || ((swpActive.y + swpActive.cy - by) <= 0)
+                                   );
+
+                        if (!bVisible)
+                        {
+                            // calculate the absolute coordinate (top left is (0,0))
+                            // of the active window relative to all desktops:
+                            LONG lAbsX = swpActive.x + (swpActive.cx / 2);
+                            LONG lAbsY = swpActive.y + (swpActive.cy / 2);
+                            lAbsX += G_ptlCurrPos.x;
+                            lAbsY = G_ptlCurrPos.y + G_szlEachDesktopReal.cy - lAbsY;
+
+                            // if we intend to move into a valid window
+                            if (    (lAbsX >= 0)
+                                 && (lAbsX <= (pptlMaxDesktops->x
+                                               * G_szlEachDesktopReal.cx))
+                                 && (lAbsY >= 0)
+                                 && (lAbsY <= (pptlMaxDesktops->y
+                                               * G_szlEachDesktopReal.cy))
+                               )
+                            {
+                                // put abs coord of desktop in lAbs
+                                lAbsX /= G_szlEachDesktopReal.cx;
+                                lAbsY /= G_szlEachDesktopReal.cy;
+                                lAbsX *= G_szlEachDesktopReal.cx;
+                                lAbsY *= G_szlEachDesktopReal.cy;
+
+                                lDeltaX = G_ptlCurrPos.x - lAbsX;
+                                lDeltaY = lAbsY - G_ptlCurrPos.y;
+                            }
                         }
                     }
                 }

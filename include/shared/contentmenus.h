@@ -130,6 +130,8 @@
                                       WPObject   *pObject,
                                       ULONG      ulObjType);
 
+    VOID cmnuSetPositionBelow(PPOINTL pptlBelow);
+
     SHORT cmnuPrepareContentSubmenu(WPFolder *somSelf,
                                     HWND hwndMenu,
                                     PSZ pszTitle,

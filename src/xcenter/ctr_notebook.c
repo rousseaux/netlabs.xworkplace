@@ -168,13 +168,12 @@ MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     BOOL        fSave = TRUE,
                 fCallInitCallback = FALSE;
 
-    ULONG       ulUpdateFlags = 0;
+    ULONG       ulUpdateFlags = XFMF_DISPLAYSTYLECHANGED;
 
     switch (usItemID)
     {
         case ID_CRDI_VIEW_REDUCEWORKAREA:
             _fReduceDesktopWorkarea = ulExtra;
-            // ulUpdateFlags |= RE
             if (_ulAutoHide)
                 // this conflicts with auto-hide...
                 // disable that.
@@ -263,7 +262,7 @@ MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // this can be on a different thread, so post msg
             WinPostMsg(pXCenterData->Globals.hwndClient,
                        XCM_REFORMAT,
-                       (MPARAM)ulUpdateFlags,           // reposition only
+                       (MPARAM)ulUpdateFlags,
                        0);
         }
     }
@@ -321,11 +320,8 @@ VOID ctrpView2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     if (flFlags & CBI_SET)
     {
         HWND hwndSlider;
-        if (_flDisplayStyle & XCS_FLATBUTTONS)
-            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_FLATSTYLE, TRUE);
-        else
-            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_BUTTONSTYLE, TRUE);
 
+        // 3D borders
         hwndSlider = WinWindowFromID(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_3DBORDER_SLIDER);
         winhSetSliderArmPosition(hwndSlider,
                                  SMA_INCREMENTVALUE,
@@ -334,7 +330,10 @@ VOID ctrpView2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                            ID_CRDI_VIEW_PRTY_TEXT,
                            _ul3DBorderWidth,
                            FALSE);      // unsigned
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_ALL3DBORDERS,
+                              ((_flDisplayStyle & XCS_ALL3DBORDERS) != 0));
 
+        // border spacing
         hwndSlider = WinWindowFromID(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_BDRSPACE_SLIDER);
         winhSetSliderArmPosition(hwndSlider,
                                  SMA_INCREMENTVALUE,
@@ -344,6 +343,7 @@ VOID ctrpView2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                            _ulBorderSpacing,
                            FALSE);      // unsigned
 
+        // widget spacing
         hwndSlider = WinWindowFromID(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_WGTSPACE_SLIDER);
         winhSetSliderArmPosition(hwndSlider,
                                  SMA_INCREMENTVALUE,
@@ -352,7 +352,16 @@ VOID ctrpView2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                            ID_CRDI_VIEW_PRTY_TEXT,
                            _ulWidgetSpacing,
                            FALSE);      // unsigned
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_SIZINGBARS,
+                              ((_flDisplayStyle & XCS_SIZINGBARS) != 0));
 
+
+        // default widget styles
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_FLATBUTTONS,
+                            ((_flDisplayStyle & XCS_FLATBUTTONS) != 0));
+
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_SUNKBORDERS,
+                            ((_flDisplayStyle & XCS_SUNKBORDERS) != 0));
     }
 }
 
@@ -373,8 +382,8 @@ MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
     BOOL        fSave = TRUE,
                 fDisplayStyleChanged = FALSE;
-    // ULONG       ulUpdateFlags = 0;
     LONG        lSliderIndex;
+    ULONG       ulDisplayFlagChanged = 0;
 
     switch (usItemID)
     {
@@ -386,6 +395,10 @@ MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                lSliderIndex,
                                FALSE);      // unsigned
             _ul3DBorderWidth = lSliderIndex;
+        break;
+
+        case ID_CRDI_VIEW2_ALL3DBORDERS:
+            ulDisplayFlagChanged = XCS_ALL3DBORDERS;
         break;
 
         case ID_CRDI_VIEW2_BDRSPACE_SLIDER:
@@ -408,16 +421,20 @@ MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             _ulWidgetSpacing = lSliderIndex + 1;
         break;
 
-        case ID_CRDI_VIEW2_FLATSTYLE:
-            _flDisplayStyle |= XCS_FLATBUTTONS;
+        case ID_CRDI_VIEW2_SIZINGBARS:
+            ulDisplayFlagChanged = XCS_SIZINGBARS;
         break;
 
-        case ID_CRDI_VIEW2_BUTTONSTYLE:
-            _flDisplayStyle &= ~XCS_FLATBUTTONS;
+        case ID_CRDI_VIEW2_FLATBUTTONS:
+            ulDisplayFlagChanged = XCS_FLATBUTTONS;
+        break;
+
+        case ID_CRDI_VIEW2_SUNKBORDERS:
+            ulDisplayFlagChanged = XCS_SUNKBORDERS;
         break;
 
         case DID_DEFAULT:
-            _flDisplayStyle = XCS_SUNKBORDERS;
+            _flDisplayStyle = XCS_SUNKBORDERS | XCS_FLATBUTTONS | XCS_SIZINGBARS;
             _ul3DBorderWidth = 1;
             _ulBorderSpacing = 1;
             _ulWidgetSpacing = 2;
@@ -438,6 +455,14 @@ MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         default:
             fSave = FALSE;
+    }
+
+    if (ulDisplayFlagChanged)
+    {
+        if (ulExtra)
+            _flDisplayStyle |= ulDisplayFlagChanged;
+        else
+            _flDisplayStyle &= ~ulDisplayFlagChanged;
     }
 
     if (fSave)

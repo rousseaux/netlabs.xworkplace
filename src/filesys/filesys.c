@@ -1110,6 +1110,7 @@ typedef struct _RESOURCERECORD
     ULONG ulResourceID; // !!! Could be a string with Windows or Open32 execs
     PSZ   pszResourceType;
     ULONG ulResourceSize;
+    PSZ   pszResourceFlag;
 } RESOURCERECORD, *PRESOURCERECORD;
 
 /*
@@ -1123,7 +1124,23 @@ typedef struct _FSYSRESOURCE
     ULONG ulID;
     ULONG ulType;
     ULONG ulSize;
+    ULONG ulFlag;
 } FSYSRESOURCE, *PFSYSRESOURCE;
+
+#define OBJWRITE         0x0002L            /* Writeable Object  */
+#define OBJDISCARD       0x0010L            /* Object is Discardable */
+#define OBJSHARED        0x0020L            /* Object is Shared */
+#define OBJPRELOAD       0x0040L            /* Object has preload pages  */
+
+#define NSDISCARD       0x0010L             /* Object is Discardable */
+#define NSMOVE          NSDISCARD           /* Moveable object is for sure Discardabable */
+#define NSSHARED        0x0020              /* Shared segment flag */
+#define NSPRELOAD       0x0040L             /* Object has preload pages  */
+
+#define RNMOVE      0x0010      /* Moveable resource */
+#define RNPURE      0x0020      /* Pure (read-only) resource */
+#define RNPRELOAD   0x0040      /* Preloaded resource */
+#define RNDISCARD   0xF000      /* Discard priority level for resource */
 
 /*
  *@@ fsysQueryResources:
@@ -1164,10 +1181,21 @@ PFSYSRESOURCE fsysQueryResources(PEXECUTABLE pExec, PULONG pcResources)
                         unsigned long       offset; /* Offset within object */
                     } rs;
 
+                    struct o32_obj                    /* Flat .EXE object table entry */
+                    {
+                        unsigned long   o32_size;     /* Object virtual size */
+                        unsigned long   o32_base;     /* Object base virtual address */
+                        unsigned long   o32_flags;    /* Attribute flags */
+                        unsigned long   o32_pagemap;  /* Object page map index */
+                        unsigned long   o32_mapsize;  /* Number of entries in object page map */
+                        unsigned long   o32_reserved; /* Reserved */
+                    } ot;
+
                     paResources = malloc(sizeof(FSYSRESOURCE) * cResources);
 
                     DosSetFilePtr(pExec->hfExe,
-                                  pExec->pLXHeader->ulResTblOfs + pExec->pDosExeHeader->ulNewHeaderOfs,
+                                  pExec->pLXHeader->ulResTblOfs
+                                    + pExec->pDosExeHeader->ulNewHeaderOfs,
                                   FILE_BEGIN,
                                   &ulDummy);
 
@@ -1177,6 +1205,27 @@ PFSYSRESOURCE fsysQueryResources(PEXECUTABLE pExec, PULONG pcResources)
                         paResources[i].ulID = rs.name;
                         paResources[i].ulType = rs.type;
                         paResources[i].ulSize = rs.cb;
+                        paResources[i].ulFlag = rs.obj; // Temp storage for Object
+                                                        // number.  Will be filled
+                                                        // with resource flag
+                                                        // later.
+                    }
+
+                    for (i = 0; i < cResources; i++)
+                    {
+                        DosSetFilePtr(pExec->hfExe,
+                                      pExec->pLXHeader->ulObjTblOfs
+                                        + pExec->pDosExeHeader->ulNewHeaderOfs
+                                        + (   sizeof(ot)
+                                            * (paResources[i].ulFlag - 1)),
+                                      FILE_BEGIN,
+                                      &ulDummy);
+                        DosRead(pExec->hfExe, &ot, sizeof(ot), &ulDummy);
+
+                        paResources[i].ulFlag  = (ot.o32_flags & OBJWRITE) ? 0 : RNPURE;
+                        paResources[i].ulFlag |= (ot.o32_flags & OBJDISCARD) ? 4096 : 0;
+                        paResources[i].ulFlag |= (ot.o32_flags & OBJSHARED) ? RNMOVE : 0;
+                        paResources[i].ulFlag |= (ot.o32_flags & OBJPRELOAD) ? RNPRELOAD : 0;
                     }
                 }
             }
@@ -1201,7 +1250,8 @@ PFSYSRESOURCE fsysQueryResources(PEXECUTABLE pExec, PULONG pcResources)
 
                    // We first read the resources IDs and types
                    DosSetFilePtr(pExec->hfExe,
-                                 pExec->pNEHeader->usResTblOfs + pExec->pDosExeHeader->ulNewHeaderOfs,
+                                 pExec->pNEHeader->usResTblOfs
+                                    + pExec->pDosExeHeader->ulNewHeaderOfs,
                                  FILE_BEGIN,
                                  &ulDummy);
 
@@ -1212,15 +1262,26 @@ PFSYSRESOURCE fsysQueryResources(PEXECUTABLE pExec, PULONG pcResources)
                        paResources[i].ulType = rti.type;
                    }
 
-                   // And we then read their sizes
+                   // And we then read their sizes and flags
                    for (i = 0; i < cResources; i++)
                    {
                        DosSetFilePtr(pExec->hfExe,
-                                     pExec->pDosExeHeader->ulNewHeaderOfs+pExec->pNEHeader->usSegTblOfs+sizeof(ns)*i,
+                                     pExec->pDosExeHeader->ulNewHeaderOfs
+                                            + pExec->pNEHeader->usSegTblOfs
+                                            + (sizeof(ns)
+                                                * (  pExec->pNEHeader->usSegTblEntries
+                                                   - pExec->pNEHeader->usResSegmCount
+                                                   + i)),
                                      FILE_BEGIN,
                                      &ulDummy);
                        DosRead(pExec->hfExe, &ns, sizeof(ns), &ulDummy);
+
                        paResources[i].ulSize = ns.ns_cbseg;
+
+                       paResources[i].ulFlag  = (ns.ns_flags & NSPRELOAD) ? RNPRELOAD : 0;
+                       paResources[i].ulFlag |= (ns.ns_flags & NSSHARED) ? RNPURE : 0;
+                       paResources[i].ulFlag |= (ns.ns_flags & NSMOVE) ? RNMOVE : 0;
+                       paResources[i].ulFlag |= (ns.ns_flags & NSDISCARD) ? 4096 : 0;
                    }
                }
             }
@@ -1248,60 +1309,102 @@ BOOL fsysFreeResources(PFSYSRESOURCE paResources)
 }
 
 /*
+ *@@fsysGetResourceFlagName:
+ *      returns a human-readable name from a resource flag.
+ *
+ *@@added V0.9.7 (2001-01-10) [lafaix]
+ */
+
+PSZ fsysGetResourceFlagName(ULONG ulResourceFlag)
+{
+    #define FLAG_MASK 0x1050
+
+    if ((ulResourceFlag & FLAG_MASK) == 0x1050)
+        return "Preload";
+    if ((ulResourceFlag & FLAG_MASK) == 0x1040)
+        return "Preload, fixed";
+    if ((ulResourceFlag & FLAG_MASK) == 0x1010)
+        return "Default"; // default flag
+    if ((ulResourceFlag & FLAG_MASK) == 0x1000)
+        return "Fixed";
+    if ((ulResourceFlag & FLAG_MASK) == 0x0050)
+        return "Preload, not discardable";
+    if ((ulResourceFlag & FLAG_MASK) == 0x0040)
+        return "Preload, fixed, not discardable";
+    if ((ulResourceFlag & FLAG_MASK) == 0x0010)
+        return "Not discardable";
+    if ((ulResourceFlag & FLAG_MASK) == 0)
+        return "Fixed, not discardable";
+
+    return ("Unknown");
+}
+
+/*
  *@@fsysGetResourceTypeName:
  *      returns a human-readable name from a resource type.
  *
  *@@added V0.9.7 (2000-12-20) [lafaix]
  */
+
 PSZ fsysGetResourceTypeName(ULONG ulResourceType)
 {
-    if (ulResourceType == RT_POINTER)
-        return "RT_POINTER";
-    if (ulResourceType == RT_BITMAP)
-        return "RT_BITMAP";
-    if (ulResourceType == RT_MENU)
-        return "RT_MENU";
-    if (ulResourceType == RT_DIALOG)
-        return "RT_DIALOG";
-    if (ulResourceType == RT_STRING)
-        return "RT_STRING";
-    if (ulResourceType == RT_FONTDIR)
-        return "RT_FONTDIR";
-    if (ulResourceType == RT_FONT)
-        return "RT_FONT";
-    if (ulResourceType == RT_ACCELTABLE)
-        return "RT_ACCELTABLE";
-    if (ulResourceType == RT_RCDATA)
-        return "RT_RCDATA";
-    if (ulResourceType == RT_MESSAGE)
-        return "RT_MESSAGE";
-    if (ulResourceType == RT_DLGINCLUDE)
-        return "RT_DLGINCLUDE";
-    if (ulResourceType == RT_VKEYTBL)
-        return "RT_VKEYTBL";
-    if (ulResourceType == RT_KEYTBL)
-        return "RT_KEYTBL";
-    if (ulResourceType == RT_CHARTBL)
-        return "RT_CHARTBL";
-    if (ulResourceType == RT_DISPLAYINFO)
-        return "RT_DISPLAYINFO";
+    switch (ulResourceType)
+    {
+        case RT_POINTER:
+            return "Mouse pointer shape (RT_POINTER)";
+        case RT_BITMAP:
+            return "Bitmap (RT_BITMAP)";
+        case RT_MENU:
+            return "Menu template (RT_MENU)";
+        case RT_DIALOG:
+            return "Dialog template (RT_DIALOG)";
+        case RT_STRING:
+            return "String table (RT_STRING)";
+        case RT_FONTDIR:
+            return "Font directory (RT_FONTDIR)";
+        case RT_FONT:
+            return "Font (RT_FONT)";
+        case RT_ACCELTABLE:
+            return "Accelerator table (RT_ACCELTABLE)";
+        case RT_RCDATA:
+            return "Binary data (RT_RCDATA)";
+        case RT_MESSAGE:
+            return "Error message table (RT_MESSAGE)";
+        case RT_DLGINCLUDE:
+            return "Dialog include file name (RT_DLGINCLUDE)";
+        case RT_VKEYTBL:
+            return "Virtual key table (RT_VKEYTBL)";
+        case RT_KEYTBL:
+            return "Key table (RT_KEYTBL)";
+        case RT_CHARTBL:
+            return "Character table (RT_CHARTBL)";
+        case RT_DISPLAYINFO:
+            return "Display information (RT_DISPLAYINFO)";
 
-    if (ulResourceType == RT_FKASHORT)
-        return "RT_FKASHORT";
-    if (ulResourceType == RT_FKALONG)
-        return "RT_FKALONG";
+        case RT_FKASHORT:
+            return "Short-form function key area (RT_FKASHORT)";
+        case RT_FKALONG:
+            return "Long-form function key area (RT_FKALONG)";
 
-    if (ulResourceType == RT_HELPTABLE)
-        return "RT_HELPTABLE";
-    if (ulResourceType == RT_HELPSUBTABLE)
-        return "RT_HELPSUBTABLE";
+        case RT_HELPTABLE:
+            return "Help table (RT_HELPTABLE)";
+        case RT_HELPSUBTABLE:
+            return "Help subtable (RT_HELPSUBTABLE)";
 
-    if (ulResourceType == RT_FDDIR)
-        return "RT_FDDIR";
-    if (ulResourceType == RT_FD)
-        return "RT_FD";
+        case RT_FDDIR:
+            return "DBCS uniq/font driver directory (RT_FDDIR)";
+        case RT_FD:
+            return "DBCS uniq/font driver (RT_FD)";
 
-    return "Unknown";
+        #ifndef RT_RESNAMES
+            #define RT_RESNAMES         255
+        #endif
+
+        case RT_RESNAMES:
+            return "String ID table";
+    }
+
+    return "Application specific"; // !!! Should return value too
 }
 
 /*
@@ -1350,8 +1453,11 @@ void _Optlink fntInsertResources(PTHREADINFO pti)
                         if (precc)
                         {
                             precc->ulResourceID = paResources[ul].ulID;
-                            precc->pszResourceType = fsysGetResourceTypeName(paResources[ul].ulType);
+                            precc->pszResourceType
+                                = fsysGetResourceTypeName(paResources[ul].ulType);
                             precc->ulResourceSize = paResources[ul].ulSize;
+                            precc->pszResourceFlag
+                                = fsysGetResourceFlagName(paResources[ul].ulFlag);
 
                             cnrhInsertRecords(hwndCnr,
                                               NULL,
@@ -1397,7 +1503,7 @@ VOID fsysResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
 
     if (flFlags & CBI_INIT)
     {
-        XFIELDINFO xfi[5];
+        XFIELDINFO xfi[6];
         PFIELDINFO pfi = NULL;
         int        i = 0;
 
@@ -1422,6 +1528,11 @@ VOID fsysResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, ulResourceSize);
         xfi[i].pszColumnTitle = "Size"; // !!! to be localized
         xfi[i].ulDataType = CFA_ULONG;
+        xfi[i++].ulOrientation = CFA_RIGHT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, pszResourceFlag);
+        xfi[i].pszColumnTitle = "Flags"; // !!! to be localized
+        xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         pfi = cnrhSetFieldInfos(hwndCnr,
@@ -1433,6 +1544,8 @@ VOID fsysResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         BEGIN_CNRINFO()
         {
             cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES);
+            cnrhSetSplitBarAfter(pfi);  // V0.9.7 (2001-01-18) [umoeller]
+            cnrhSetSplitBarPos(250);
         } END_CNRINFO(hwndCnr);
     }
 

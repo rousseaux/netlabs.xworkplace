@@ -10,17 +10,30 @@
  *      and open folders and objects in their default views
  *      when selected.
  *
+ *      As opposed to the WarpCenter though, XWorkplace uses
+ *      the PM menu control. This requires a lot of trickery
+ *      though...
+ *
  *      Folder content menus are neither exactly trivial to
  *      implement nor trivial to use because they require
  *      menu owner draw (for displaying icons in a menu)
  *      and subclassing popup menu controls (for intercepting
- *      mouse button 2).
+ *      mouse button 2). Besides, while these menus are
+ *      open, we need to maintain a list of objects that
+ *      were inserted together with the respective menu item
+ *      ID that was used. This is done with the help of a
+ *      global linked list of VARMENULISTITEM structs.
  *
  *      You can only use folder content menus if you have
- *      access to messages send or posted to the menus's
- *      owner. For example, for folder popup menus, this is
- *      the case because XFolder subclasses the folder window
- *      frame, which owns the menu.
+ *      access to messages sent or posted to the menus's
+ *      owner. In other words, the functions in here need
+ *      the cooperation of the menu owner to work.
+ *
+ *      For folder popup menus, this is the case because
+ *      XFolder subclasses the folder window frame, which
+ *      owns the menu. For XCenter object button widgets,
+ *      the same is true, of course... they have their
+ *      own widget window procedure.
  *
  *      To use folder content menus, perform the following
  *      steps:
@@ -29,7 +42,8 @@
  *          folder content submenus, call cmnuInitItemCache.
  *
  *      2)  For each folder content submenu to insert, call
- *          cmnuPrepareContentSubmenu.
+ *          cmnuPrepareContentSubmenu. This inserts a submenu
+ *          with only a dull stub menu item at this point.
  *
  *      3)  Intercept WM_INITMENU in the menu owner's window
  *          procedure. This msg gets sent to a menu's owner
@@ -195,6 +209,9 @@ static PFNWP               G_pfnwpFolderContentMenuOriginal = NULL;
 /* BOOL                G_fFldrContentMenuMoved = FALSE,
                     G_fFldrContentMenuButtonDown = FALSE; */
 
+static POINTL       G_ptlPositionBelow;         // in screen coords
+static BOOL         G_fPositionBelow = FALSE;
+
 #define CX_ARROW 21
 
 // global data for owner draw
@@ -214,10 +231,17 @@ static LONG    G_lHiliteBackground,
 /*
  *@@ fnwpSubclFolderContentMenu:
  *      this is the subclassed wnd proc for folder content menus.
+ *
  *      We need to intercept mouse button 2 msgs to open a folder
  *      (WarpCenter behavior).
  *
+ *      In addition, we hack WM_ADJUSTWINDOWPOS to be able to
+ *      position popup menus anywhere we want, which is kinda
+ *      difficult with regular menus.
+ *
  *@@changed V0.9.0 [umoeller]: moved this func here from xfldr.c
+ *@@changed V0.9.7 (2001-01-19) [umoeller]: reworked WM_ADJUSTWINDOWPOS for screen constrain
+ *@@changed V0.9.7 (2001-01-19) [umoeller]: added support for cmnuSetPositionBelow
  */
 
 MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -242,58 +266,79 @@ MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1
 
         switch(msg)
         {
-            /* case WM_ADJUSTWINDOWPOS:
+            case WM_ADJUSTWINDOWPOS:
             {
+                // here comes the fun stuff...
+
+                // This comes in several times and appears to represent
+                // a terrible mess in the PM menu control.
+
+                // 1) First call: x = y = cx = cy = 0; at this point, we
+                //    still only have the "dummy" item.
+
+                // 2) Then the menu sends WM_INITMENU. Our caller
+                //    (e.g. OwgtInitMenu) calls cmnuInsertObjectsIntoMenu,
+                //    which inserts all the variable items.
+                //    So we get a MM_INSERTITEM for each.
+
+                // 3) Since cmnuInsertObjectsIntoMenu sends an
+                //    MM_QUERYITEMRECT to the menu, the menu will
+                //    attempt to calculate its size. We get a WM_ADJUSTWINDOWPOS
+                //    again, which causes a flurry of WM_MEASUREITEM messages
+                //    on fnwpObjButtonWidget. On exit of that WM_ADJUSTWINDOWPOS,
+                //    we have correct cx and cy sizes, but x and y are still 0.
+
+                // 4) cmnuInsertObjectsIntoMenu sends MM_QUERYITEMCOUNT.
+
+                // 5) cmnuInsertObjectsIntoMenu returns, OwgtInitMenu returns.
+
+                // 6) For some reason, we then get another WM_ADJUSTWINDOWPOS
+                //    with all fields == 0, which goes thru the WM_MEASUREITEM
+                //    mess again.
+
+                // 7) Then we get the first WM_ADJUSTWINDOWPOS with a valid
+                //    x and y. APPARENTLY, this is from WinPopupMenu... but
+                //    who knows. After that, we get the first WM_PAINT, so
+                //    apparently the menu is now visible.
+
+                // So what we do:
+                // Every time WM_ADJUSTWINDOWPOS comes in, we check for whether
+                // x and y are valid. If so, this is the right call... we hack it.
                 PSWP pswp = (PSWP)mp1;
-                BOOL fAdjusted = FALSE;
-                #ifdef DEBUG_MENUS
-                    _Pmpf(("WM_ADJUSTWINDOWPOS"));
-                #endif
-
-                if ((pswp->fl & (SWP_MOVE)) == (SWP_MOVE))
+                if (pswp)
                 {
-                    #ifdef DEBUG_MENUS
-                        _Pmpf(("  SWP_MOVE set"));
-                    #endif
-
-                    // if (!G_fFldrContentMenuMoved)
+                    // is this the message that really sets the window?
+                    if (pswp->x && pswp->y && pswp->cx && pswp->cy)
                     {
-                        #ifdef DEBUG_MENUS
-                            _Pmpf(("    Checking bounds"));
-                        #endif
-                        if ((pswp->x + pswp->cx)
-                               > WinQuerySysValue(HWND_DESKTOP, SV_CXSCREEN))
+                        // yes:
+                        ULONG   cxScreen = WinQuerySysValue(HWND_DESKTOP, SV_CXSCREEN),
+                                cyScreen = WinQuerySysValue(HWND_DESKTOP, SV_CYSCREEN);
+
+                        if (G_fPositionBelow)
                         {
-                            pswp->x = 0;
-                            #ifdef DEBUG_MENUS
-                                _Pmpf(("    Changed x pos"));
-                            #endif
-                            // avoid several changes for this menu;
-                            // this flag is reset by WM_INITMENU in
-                            // fdr_fnwpSubclassedFolderFrame
-                            // G_fFldrContentMenuMoved = TRUE;
-                            fAdjusted = TRUE;
+                            // position menu below button:
+                            pswp->x = G_ptlPositionBelow.x;
+                            pswp->y = G_ptlPositionBelow.y - pswp->cy;
+                            // only do this once
+                            G_fPositionBelow = FALSE;
                         }
-                        if ((pswp->y + pswp->cy) >
-                                WinQuerySysValue(HWND_DESKTOP, SV_CYSCREEN))
-                        {
-                            pswp->y = 0;
-                            #ifdef DEBUG_MENUS
-                                _Pmpf(("    Changed y pos"));
-                            #endif
-                            // avoid several changes for this menu;
-                            // this flag is reset by WM_INITMENU in
-                            // fdr_fnwpSubclassedFolderFrame
-                            G_fFldrContentMenuMoved = TRUE;
-                            fAdjusted = TRUE;
-                        }
+
+                        // always constrain the damn thing to the screen...
+                        // PM makes large popup menus show up off the screen
+                        // which is not terribly helpful.
+                        if (pswp->x + pswp->cx > cxScreen)
+                            // off screen:
+                            if (pswp->cx < cxScreen)
+                                pswp->x = cxScreen - pswp->cx;
+
+                        if (pswp->y + pswp->cy > cyScreen)
+                            // off screen:
+                            if (pswp->cy < cyScreen)
+                                pswp->y = cyScreen - pswp->cy;
                     }
                 }
-                if (fAdjusted)
-                    pswp->fl |= (SWP_NOADJUST);
-                mrc = (MRESULT)(pfnwpOrig)(hwndMenu, msg, mp1, mp2);
-                G_fFldrContentMenuButtonDown = FALSE;
-            break; } */
+                mrc = pfnwpOrig(hwndMenu, msg, mp1, mp2);
+            break; }
 
             #ifdef DEBUG_MENUS
                 case MM_SELECTITEM:
@@ -325,20 +370,21 @@ MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1
                     );
             break;
 
-            case WM_BUTTON1DOWN:
+            /* case WM_BUTTON1DOWN:
                 // let this be handled by the default proc
                 #ifdef DEBUG_MENUS
                     _Pmpf(("WM_BUTTON1DOWN"));
                 #endif
                 // G_fFldrContentMenuButtonDown = TRUE;
-                mrc = (MRESULT)(pfnwpOrig)(hwndMenu, msg, mp1, mp2);
-            break;
+                mrc = pfnwpOrig(hwndMenu, msg, mp1, mp2);
+            break; */
 
             case WM_BUTTON1DBLCLK:
             case WM_BUTTON2UP:
             {
-                // upon receiving these, we will open the object directly; we need to
-                // cheat a little bit because sending MM_SELECTITEM would open the submenu
+                // upon receiving these, we will open the object directly;
+                // we need to cheat a little bit because sending
+                // MM_SELECTITEM would open the submenu
                 #ifdef DEBUG_MENUS
                     _Pmpf(("WM_BUTTON2UP"));
                 #endif
@@ -359,14 +405,14 @@ MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1
             break; }
 
             default:
-                mrc = (MRESULT)(pfnwpOrig)(hwndMenu, msg, mp1, mp2);
+                mrc = pfnwpOrig(hwndMenu, msg, mp1, mp2);
             break;
         } // end switch
     }
     CATCH(excpt1)
     {
         // exception occured:
-        return (MRESULT)0; // keep compiler happy
+        mrc = 0;
     } END_CATCH();
 
     return (mrc);
@@ -432,9 +478,8 @@ VOID cmnuInitItemCache(PCGLOBALSETTINGS pGlobalSettings) // in: from cmnQueryGlo
 BOOL cmnuAppendMi2List(WPObject *pObject,
                        ULONG ulObjType)     // in: OC_* flag
 {
-    // CHAR* p;
-    /* remember program object's data for later use in wpMenuItemSelected
-       itemCount is unique for each inserted object */
+    // remember program object's data for later use in wpMenuItemSelected
+    // itemCount is unique for each inserted object
     PVARMENULISTITEM pNewItem = (PVARMENULISTITEM)malloc(sizeof(VARMENULISTITEM));
     pNewItem->pObject = pObject;
     strhncpy0(pNewItem->szTitle,
@@ -511,9 +556,38 @@ ULONG cmnuInsertOneObjectMenuItem(HWND       hAddToMenu,   // hwnd of menu to ad
 }
 
 /*
+ *@@ cmnuSetPositionBelow:
+ *      sets the position _below_ which the next menu
+ *      filled with cmnuInsertObjectsIntoMenu should
+ *      appear.
+ *
+ *      This has been added for the XCenter object button
+ *      widgets. Unfortunately it is impossible to position
+ *      a menu _below_ something with WinPopupMenu, which
+ *      will always put the menu to the top right of the
+ *      given coordinates.
+ *
+ *      Since we're subclassing the menus anyway... we
+ *      can use the coordinates given here to reposition
+ *      the menu anywhere we want.
+ *
+ *@@added V0.9.7 (2001-01-19) [umoeller]
+ */
+
+VOID cmnuSetPositionBelow(PPOINTL pptlBelow)
+{
+    if (pptlBelow)
+    {
+        G_ptlPositionBelow.x = pptlBelow->x;
+        G_ptlPositionBelow.y = pptlBelow->y;
+        G_fPositionBelow = TRUE;
+    }
+}
+
+/*
  *@@ cmnuPrepareContentSubmenu:
- *      prepares a "folder content" submenu by inserting a
- *      submenu menu item with pszTitle into hwndMenu.
+ *      prepares a folder content submenu by inserting a
+ *      submenu named pszTitle into hwndMenu.
  *
  *      This submenu then only contains the "empty" menu item,
  *      however, this menu can be filled with objects if the
@@ -527,7 +601,7 @@ ULONG cmnuInsertOneObjectMenuItem(HWND       hAddToMenu,   // hwnd of menu to ad
  *      folder content menus when the context menu is initially
  *      opened.
  *
- *      This function returns the submenu item ID.
+ *      This function returns the new submenu's menu item ID.
  */
 
 SHORT cmnuPrepareContentSubmenu(WPFolder *somSelf, // in: folder whose content is to be displayed
@@ -593,7 +667,7 @@ SHORT EXPENTRY fncbSortContentMenuItems(PVOID pItem1, PVOID pItem2, PVOID hab)
 
 /*
  *@@ cmnuInsertObjectsIntoMenu:
- *      this does the real work for mnuFillContentSubmenu:
+ *      this does the real work for cmnuFillContentSubmenu:
  *      collecting the folder's contents, sorting that into
  *      folders and objects and reformatting the submenu in
  *      columns.
@@ -815,12 +889,12 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
         else
             pNode = NULL;
 
-        {
+        /* {
             SWP swpMenu;
             WinQueryWindowPos(hwndMenu, &swpMenu);
             _Pmpf(("current window pos: %d, %d, %d, %d",
                     swpMenu.x, swpMenu.y, swpMenu.cx, swpMenu.cy));
-        }
+        } */
     }
 
     // did we leave out any objects?
@@ -831,6 +905,7 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
         winhInsertMenuSeparator(hwndMenu, MIT_END,
                                 (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
         sprintf(szMsgItem, "... %d objects dropped,", ulObjectsLeftOut);
+                            // ### NLS!
         winhInsertMenuItem(hwndMenu,
                            MIT_END,
                            (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY),

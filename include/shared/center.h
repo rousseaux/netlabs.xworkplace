@@ -48,6 +48,8 @@
     // display style
     #define XCS_FLATBUTTONS         0x0001
     #define XCS_SUNKBORDERS         0x0002
+    #define XCS_SIZINGBARS          0x0004
+    #define XCS_ALL3DBORDERS        0x0008
 
     /*
      *@@ XCENTERGLOBALS:
@@ -96,11 +98,23 @@
         ULONG               flDisplayStyle;
                     // XCenter display style flags;
                     // a widget may or may not want to consider these.
-                    // These flags can be:
+                    // These flags can be any combination of the following:
                     // -- XCS_FLATBUTTONS: paint buttons flat. If not set,
                     //      paint them raised.
                     // -- XCS_SUNKBORDERS: paint static controls (e.g. CPU meter)
                     //      with a "sunk" 3D frame. If not set, do not.
+                    // -- XCS_SIZINGBARS: XCenter should automatically paint
+                    //      sizing bars for sizeable widgets.
+                    // -- XCS_ALL3DBORDERS: XCenter should draw all four 3D
+                    //      borders around itself. If not set, it will only
+                    //      draw one border (the one towards the screen).
+
+        ULONG               ulPosition;
+                    // XCenter position on screen, if a widget cares...
+                    // This is _one_ of the following:
+                    // -- XCENTER_BOTTOM
+                    // -- XCENTER_TOP
+                    // Left and right are not yet supported.
 
         ULONG               ul3DBorderWidth;
                     // 3D border width
@@ -365,6 +379,10 @@
                 // This is initially set to TRUE if the widget's
                 // class has the WGTF_SIZEABLE flag, but can be
                 // changed by the widget at any time.
+                // NOTE: If your widget is "greedy", i.e. wants
+                // all remaining size on the XCenter bar (by
+                // returning -1 for cx with WM_CONTROL and
+                //
 
         HWND        hwndContextMenu;
                 // default context menu for this widget.
@@ -467,6 +485,16 @@
      *      desired size into the SIZEL structure. Otherwise
      *      the XCenter will assume some dumb default for
      *      the widget size.
+     *
+     *      As a special case, a widget can put -1 into the
+     *      cx field of the SIZEL structure. It will then
+     *      receive all remaining space on the XCenter bar
+     *      ("greedy" widgets). This is what the window list
+     *      widget does, for example.
+     *
+     *      If several widgets request to be greedy, the
+     *      remaining space on the XCenter bar is evenly
+     *      distributed among the greedy widgets.
      *
      *      After all widgets have been created, the XCenter
      *      (and all widgets) are resized to have the largest

@@ -139,6 +139,11 @@ typedef WINQUERYDESKTOPWORKAREA *PWINQUERYDESKTOPWORKAREA;
 VOID StartAutoHide(PXCENTERWINDATA pXCenterData);
 VOID ClientPaint2(HWND hwndClient, HPS hps);
 
+// width of the sizing bar... this is always drawn as
+// a 3D rectangle three pixels wide, and we need one
+// extra pixel on each side
+#define SIZING_BAR_WIDTH        5
+
 /* ******************************************************************
  *
  *   Global variables
@@ -536,11 +541,14 @@ BOOL RegisterBuiltInWidgets(HAB hab)
 VOID CopyDisplayStyle(PXCENTERWINDATA pXCenterData,     // target: view data
                       XCenterData *somThis)             // source: XCenter instance data
 {
-    pXCenterData->Globals.flDisplayStyle = _flDisplayStyle;
+    PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
+    pGlobals->flDisplayStyle = _flDisplayStyle;
 
-    pXCenterData->Globals.ul3DBorderWidth = _ul3DBorderWidth;       // can be 0
-    pXCenterData->Globals.ulBorderSpacing = _ulBorderSpacing;       // can be 0
-    pXCenterData->Globals.ulSpacing = _ulWidgetSpacing;
+    pGlobals->ul3DBorderWidth = _ul3DBorderWidth;       // can be 0
+    pGlobals->ulBorderSpacing = _ulBorderSpacing;       // can be 0
+    pGlobals->ulSpacing = _ulWidgetSpacing;
+
+    pGlobals->ulPosition = _ulPosition;     // XCENTER_TOP or XCENTER_BOTTOM
 }
 
 /*
@@ -572,6 +580,9 @@ VOID GetWidgetSize(PWIDGETVIEWSTATE pWidgetThis)
  *      If (fShow == TRUE), this also shows all affected
  *      widgets, but not the frame.
  *
+ *      This invalidates the client as well, since it's the
+ *      client that draws the sizing bars.
+ *
  *      Preconditions:
  *
  *      -- The client window must have been positioned in
@@ -587,6 +598,8 @@ VOID GetWidgetSize(PWIDGETVIEWSTATE pWidgetThis)
 ULONG ReformatWidgets(PXCENTERWINDATA pXCenterData,
                       BOOL fShow)               // in: show widgets?
 {
+    PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
+
     ULONG       ulrc = FALSE,
                 x = 0,
                 y = 0,
@@ -601,29 +614,45 @@ ULONG ReformatWidgets(PXCENTERWINDATA pXCenterData,
                 fl = SWP_MOVE | SWP_SIZE
                         | SWP_NOADJUST;
                             // do not give the widgets a chance to mess with us!
+
     RECTL       rclXCenterClient;
 
     PLISTNODE   pNode = lstQueryFirstNode(&pXCenterData->llWidgets);
 
-    WinQueryWindowRect(pXCenterData->Globals.hwndClient,
+    WinQueryWindowRect(pGlobals->hwndClient,
                        &rclXCenterClient);
 
     // calc available space for widgets:
     // size of client rect - borders
     cxWidgetsSpace = rclXCenterClient.xRight
-                      - 2 * pXCenterData->Globals.ul3DBorderWidth       // can be 0
-                      - 2 * pXCenterData->Globals.ulBorderSpacing;      // can be 0
+                      - 2 * pGlobals->ulBorderSpacing;      // can be 0
+
     // start at border
-    x =   pXCenterData->Globals.ul3DBorderWidth
-        + pXCenterData->Globals.ulBorderSpacing;
-    y = x;          // this doesn't change
+    x = pGlobals->ulBorderSpacing;
+    y = x;
+
+    if (pGlobals->flDisplayStyle & XCS_ALL3DBORDERS)
+    {
+        // all 3D borders enabled: then we have even less space
+        cxWidgetsSpace -= (2 * pGlobals->ul3DBorderWidth);
+        x += pGlobals->ul3DBorderWidth;
+        // bottom for all widgets: same as initial X
+        y = x;          // this doesn't change
+    }
+    else
+    {
+        // all 3D borders disabled: if XCenter is on top,
+        // add 3D border to y then
+        if (pGlobals->ulPosition == XCENTER_TOP)
+            y += pGlobals->ul3DBorderWidth;
+    }
 
     if (fShow)
         fl |= SWP_SHOW;
 
     _Pmpf((__FUNCTION__ ": entering"));
 
-    // pass 1: get each widget's desired size,
+    // pass 1:
     // calculate max cx of all static widgets
     // and count "greedy" widgets (that want all remaining space)
     while (pNode)
@@ -634,9 +663,18 @@ ULONG ReformatWidgets(PXCENTERWINDATA pXCenterData,
             // this widget wants all remaining space:
             cGreedies++;
         else
+        {
             // static widget:
             // add its size to the size of all static widgets
-            cxStatics += (pWidgetThis->szlWanted.cx + pXCenterData->Globals.ulSpacing);
+            cxStatics += (pWidgetThis->szlWanted.cx + pGlobals->ulSpacing);
+
+            // if sizing bars are enabled and widget is sizeable:
+            if (    (pGlobals->flDisplayStyle & XCS_SIZINGBARS)
+                 && (pWidgetThis->Widget.fSizeable)
+               )
+                // add space for sizing bar
+                cxStatics += SIZING_BAR_WIDTH;
+        }
 
         pNode = pNode->pNext;
     }
@@ -647,11 +685,12 @@ ULONG ReformatWidgets(PXCENTERWINDATA pXCenterData,
     if (cGreedies)
     {
         // we have greedy widgets:
+        // calculate space for each of them
         cxPerGreedy = (   (cxWidgetsSpace)  // client width
                         // subtract space needed for statics:
                         - (cxStatics)
                         // subtract borders between greedy widgets:
-                        - ((cGreedies - 1) * pXCenterData->Globals.ulSpacing)
+                        - ((cGreedies - 1) * pGlobals->ulSpacing)
                       ) / cGreedies;
     }
 
@@ -662,41 +701,55 @@ ULONG ReformatWidgets(PXCENTERWINDATA pXCenterData,
     while (pNode)
     {
         PWIDGETVIEWSTATE pWidgetThis = (PWIDGETVIEWSTATE)pNode->pItemData;
-        ULONG   cx = pWidgetThis->szlWanted.cx;
+
+        LONG    cx = pWidgetThis->szlWanted.cx;
+
         if (cx == -1)
             // greedy widget:
             // use size we calculated above instead
             cx = cxPerGreedy;
 
-        /* if (x == 0)
-            // first loop, and we didn't start from the beginning:
-            x = pWidgetThis->xCurrent;
-        else */
-            // pWidgetThis->xCurrent = x;
-
         pWidgetThis->xCurrent = x;
-        pWidgetThis->cxCurrent = cx;
-        pWidgetThis->cyCurrent = pXCenterData->Globals.cyTallestWidget;
+        pWidgetThis->szlCurrent.cx = cx;
+        pWidgetThis->szlCurrent.cy = pGlobals->cyTallestWidget;
 
         _Pmpf(("  Setting widget %d, %d, %d, %d",
-                    x, 0, cx, pXCenterData->Globals.cyTallestWidget));
+                    x, 0, cx, pGlobals->cyTallestWidget));
 
         WinSetWindowPos(pWidgetThis->Widget.hwndWidget,
                         NULLHANDLE,
                         x,
                         y,
                         cx,
-                        pXCenterData->Globals.cyTallestWidget,
+                        pGlobals->cyTallestWidget,
                         fl);
         WinInvalidateRect(pWidgetThis->Widget.hwndWidget, NULL, TRUE);
 
-        x += cx + pXCenterData->Globals.ulSpacing;
+        x += cx + pGlobals->ulSpacing;
+
+        if (    // sizing bars enabled?
+                (pGlobals->flDisplayStyle & XCS_SIZINGBARS)
+             && (pWidgetThis->Widget.fSizeable)
+           )
+        {
+            // widget is sizeable: store x pos just right of the
+            // widget so that WM_PAINT in the client can quickly
+            // paint the sizing bar after this widget
+            pWidgetThis->xSizingBar = x;
+            // add space for sizing bar
+            x += SIZING_BAR_WIDTH;
+        }
+        else
+            // not sizeable:
+            pWidgetThis->xSizingBar = 0;
 
         pNode = pNode->pNext;
         ulrc++;
     }
 
     _Pmpf((__FUNCTION__ ": leaving"));
+
+    WinInvalidateRect(pGlobals->hwndClient, NULL, FALSE);
 
     return (ulrc);
 }
@@ -720,6 +773,7 @@ VOID ctrpShowSettingsDlg(PXCENTERWINDATA pXCenterData,
     if (wpshLockObject(&Lock,
                        pXCenterData->somSelf))
     {
+        PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
         PXCENTERWIDGETCLASS pClass = ctrpFindClass(pViewData->pcszWidgetClass);
         if (pClass)
         {
@@ -741,10 +795,10 @@ VOID ctrpShowSettingsDlg(PXCENTERWINDATA pXCenterData,
                           };
                     WIDGETSETTINGSDLGDATA DlgData
                         = {
-                            pXCenterData->Globals.hwndFrame,
+                            pGlobals->hwndFrame,
                             pSetting->pszSetupString,       // can be 0
                             (LHANDLE)&Temp,     // ugly hack
-                            &pXCenterData->Globals,
+                            pGlobals,
                             pViewData,
                             0           // pUser
                           };
@@ -791,6 +845,7 @@ VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
                       HPS hpsPre)       // in: presentation space; if NULLHANDLE,
                                         // we use WinGetPS in here
 {
+    PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
     HPS hps;
 
     if (hpsPre)
@@ -799,7 +854,7 @@ VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
     else
     {
         // no presentation space given: get one
-        hps = WinGetPS(pXCenterData->Globals.hwndClient);
+        hps = WinGetPS(pGlobals->hwndClient);
         gpihSwitchToRGB(hps);
     }
 
@@ -811,10 +866,10 @@ VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
         // get window's rectangle
         WinQueryWindowRect(hwnd,
                            &rcl);
-        if (hwnd != pXCenterData->Globals.hwndClient)
+        if (hwnd != pGlobals->hwndClient)
             // widget window specified: convert to client coords
             WinMapWindowPoints(hwnd,
-                               pXCenterData->Globals.hwndClient,
+                               pGlobals->hwndClient,
                                (PPOINTL)&rcl,
                                2);
         if (fRemove)
@@ -823,26 +878,32 @@ VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
             /* GpiSetColor(hps, WinQuerySysColor(HWND_DESKTOP,
                                               SYSCLR_INACTIVEBORDER,  // same as frame!
                                               0)); */
-            ClientPaint2(pXCenterData->Globals.hwndClient, hps);
+            ClientPaint2(pGlobals->hwndClient, hps);
         }
         else
         {
             // add emphasis:
+
+            // before we do anything, calculate the width
+            // we can use on the client
+            ULONG ulClientSpacing = pGlobals->ulBorderSpacing;
+            if (pGlobals->flDisplayStyle & XCS_ALL3DBORDERS)
+                // then we can also draw on the 3D border
+                ulClientSpacing += pGlobals->ul3DBorderWidth;
+
             GpiSetColor(hps, RGBCOL_BLACK);
             GpiSetLineType(hps, LINETYPE_DOT);
 
-            if (hwnd != pXCenterData->Globals.hwndClient)
+            if (hwnd != pGlobals->hwndClient)
             {
                 // widget window given:
                 // we draw emphasis _around_ the widget window
                 // on the client, so add the border spacing or
                 // the widget spacing, whichever is smaller,
                 // to the widget rect
-                ulEmphasisWidth = pXCenterData->Globals.ulSpacing;
-                if (ulEmphasisWidth >   pXCenterData->Globals.ul3DBorderWidth
-                                      + pXCenterData->Globals.ulBorderSpacing)
-                    ulEmphasisWidth =   pXCenterData->Globals.ul3DBorderWidth
-                                      + pXCenterData->Globals.ulBorderSpacing;
+                ulEmphasisWidth = pGlobals->ulSpacing;
+                if (ulEmphasisWidth > ulClientSpacing)
+                    ulEmphasisWidth = ulClientSpacing;
 
                 rcl.xLeft -= ulEmphasisWidth;
                 rcl.yBottom -= ulEmphasisWidth;
@@ -851,8 +912,7 @@ VOID ctrpDrawEmphasis(PXCENTERWINDATA pXCenterData,
             }
             else
                 // client window given: we just use that
-                ulEmphasisWidth =   pXCenterData->Globals.ul3DBorderWidth
-                                  + pXCenterData->Globals.ulBorderSpacing;
+                ulEmphasisWidth = ulClientSpacing;
 
             if (ulEmphasisWidth)
             {
@@ -898,6 +958,28 @@ VOID RemoveDragoverEmphasis(HWND hwndClient)
 }
 
 /*
+ *@@ StopAutoHide:
+ *
+ *@@added V0.9.7 (2001-01-19) [umoeller]
+ */
+
+VOID StopAutoHide(PXCENTERWINDATA pXCenterData)
+{
+    if (pXCenterData->idTimerAutohideRun)
+    {
+        tmrStopTimer(pXCenterData->Globals.hwndFrame,
+                     TIMERID_AUTOHIDE_RUN);
+        pXCenterData->idTimerAutohideRun = 0;
+    }
+    if (pXCenterData->idTimerAutohideStart)
+    {
+        tmrStopTimer(pXCenterData->Globals.hwndFrame,
+                     TIMERID_AUTOHIDE_START);
+        pXCenterData->idTimerAutohideStart = 0;
+    }
+}
+
+/*
  *@@ StartAutoHide:
  *
  *@@added V0.9.7 (2000-12-04) [umoeller]
@@ -905,23 +987,21 @@ VOID RemoveDragoverEmphasis(HWND hwndClient)
 
 VOID StartAutoHide(PXCENTERWINDATA pXCenterData)
 {
+    PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
     XCenterData *somThis = XCenterGetData(pXCenterData->somSelf);
     if (_ulAutoHide)
     {
         // auto-hide enabled:
-        pXCenterData->idTimerAutohide = tmrStartTimer(pXCenterData->Globals.hwndFrame,
-                                                      TIMERID_AUTOHIDE_START,
-                                                      _ulAutoHide);
+        // (re)start timer
+        pXCenterData->idTimerAutohideStart
+                = tmrStartTimer(pGlobals->hwndFrame,
+                                TIMERID_AUTOHIDE_START,
+                                _ulAutoHide);
     }
     else
         // auto-hide disabled:
-        if (pXCenterData->idTimerAutohide)
-        {
-            // but timer still running (i.e. setting changed):
-            tmrStopTimer(pXCenterData->Globals.hwndFrame,
-                         TIMERID_AUTOHIDE_START);
-            pXCenterData->idTimerAutohide = 0;
-        }
+        // make sure timer is not running
+        StopAutoHide(pXCenterData);
 }
 
 /*
@@ -963,6 +1043,7 @@ VOID StartAutoHide(PXCENTERWINDATA pXCenterData)
 VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
                   ULONG ulFlags)                // in: XFMF_* flags (shared\center.h)
 {
+    PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
     XCenterData *somThis = XCenterGetData(pXCenterData->somSelf);
 
     // NOTE: We must not request the XCenter mutex here because
@@ -974,7 +1055,7 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
 
     // refresh the style bits; these might have changed
     // (mask out only the ones we're interested in changing)
-    WinSetWindowBits(pXCenterData->Globals.hwndFrame,
+    WinSetWindowBits(pGlobals->hwndFrame,
                      QWL_STYLE,
                      _ulWindowStyle,            // flags
                      WS_TOPMOST | WS_ANIMATE);  // mask
@@ -1015,24 +1096,26 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
         // recalculate tallest widget
         PLISTNODE pNode = lstQueryFirstNode(&pXCenterData->llWidgets);
 
-        pXCenterData->Globals.cyTallestWidget = 0;
+        pGlobals->cyTallestWidget = 0;
 
         while (pNode)
         {
             PWIDGETVIEWSTATE pViewThis = (PWIDGETVIEWSTATE)pNode->pItemData;
 
-            if (pViewThis->szlWanted.cy > pXCenterData->Globals.cyTallestWidget)
+            if (pViewThis->szlWanted.cy > pGlobals->cyTallestWidget)
             {
-                pXCenterData->Globals.cyTallestWidget = pViewThis->szlWanted.cy;
+                pGlobals->cyTallestWidget = pViewThis->szlWanted.cy;
             }
 
             pNode = pNode->pNext;
         }
 
         // recalc cyFrame
-        pXCenterData->cyFrame = 2 * (  pXCenterData->Globals.ul3DBorderWidth
-                                     + pXCenterData->Globals.ulBorderSpacing )
-                                + pXCenterData->Globals.cyTallestWidget;
+        pXCenterData->cyFrame =   pGlobals->ul3DBorderWidth
+                                + 2 * pGlobals->ulBorderSpacing
+                                + pGlobals->cyTallestWidget;
+        if (pGlobals->flDisplayStyle & XCS_ALL3DBORDERS)
+            pXCenterData->cyFrame += pGlobals->ul3DBorderWidth;
 
         ulFlags |= XFMF_REPOSITIONWIDGETS;
     }
@@ -1044,7 +1127,7 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
                         ((ulFlags & XFMF_SHOWWIDGETS) != 0));
     }
 
-    if (_ulPosition == XCENTER_TOP)
+    if (pGlobals->ulPosition == XCENTER_TOP)
         pXCenterData->yFrame = winhQueryScreenCY() - pXCenterData->cyFrame;
     else
         pXCenterData->yFrame = 0;
@@ -1052,7 +1135,9 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
     if (ulFlags & XFMF_RESURFACE)
         flSWP |= SWP_ZORDER;
 
-    WinSetWindowPos(pXCenterData->Globals.hwndFrame,
+    StopAutoHide(pXCenterData);
+
+    WinSetWindowPos(pGlobals->hwndFrame,
                     HWND_TOP,       // only relevant if SWP_ZORDER was added above
                     0,
                     pXCenterData->yFrame,
@@ -1100,6 +1185,7 @@ PWIDGETVIEWSTATE CreateOneWidget(PXCENTERWINDATA pXCenterData,
                                  PXCENTERWIDGETSETTING pSetting,
                                  ULONG ulIndex)
 {
+    PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
     PWIDGETVIEWSTATE pNewView = NULL;
 
     // NOTE: We must not request the XCenter mutex here because
@@ -1126,11 +1212,11 @@ PWIDGETVIEWSTATE CreateOneWidget(PXCENTERWINDATA pXCenterData,
             if (pWidgetClass)
             {
                 // set some safe defaults
-                pWidget->habWidget = WinQueryAnchorBlock(pXCenterData->Globals.hwndClient);
+                pWidget->habWidget = WinQueryAnchorBlock(pGlobals->hwndClient);
 
                 pWidget->pfnwpDefWidgetProc = ctrDefWidgetProc;
 
-                pWidget->pGlobals = &pXCenterData->Globals;
+                pWidget->pGlobals = pGlobals;
 
                 pWidget->pWidgetClass = pWidgetClass;
                 pWidget->pcszWidgetClass = strdup(pWidgetClass->pcszWidgetClass);
@@ -1138,8 +1224,8 @@ PWIDGETVIEWSTATE CreateOneWidget(PXCENTERWINDATA pXCenterData,
                 pWidget->ulClassFlags = pWidgetClass->ulClassFlags;
 
                 pNewView->xCurrent = 0;         // changed later
-                pNewView->cxCurrent = 20;
-                pNewView->cyCurrent = 20;
+                pNewView->szlCurrent.cx = 20;
+                pNewView->szlCurrent.cy = 20;
 
                 // setup fields
                 pNewView->szlWanted.cx = 20;
@@ -1153,7 +1239,7 @@ PWIDGETVIEWSTATE CreateOneWidget(PXCENTERWINDATA pXCenterData,
                 _Pmpf(("  pNewView->pcszSetupString is %s",
                         (pWidget->pcszSetupString) ? pWidget->pcszSetupString : "NULL"));
 
-                pWidget->hwndWidget = WinCreateWindow(pXCenterData->Globals.hwndClient,  // parent
+                pWidget->hwndWidget = WinCreateWindow(pGlobals->hwndClient,  // parent
                                                       (PSZ)pWidgetClass->pcszPMClass,
                                                       "",        // title
                                                       0, // WS_VISIBLE,
@@ -1164,7 +1250,7 @@ PWIDGETVIEWSTATE CreateOneWidget(PXCENTERWINDATA pXCenterData,
                                                       20,
                                                       20,
                                                       // owner:
-                                                      pXCenterData->Globals.hwndClient,
+                                                      pGlobals->hwndClient,
                                                       HWND_TOP,
                                                       ulIndex,                // ID
                                                       pWidget, // pNewView,
@@ -1192,8 +1278,8 @@ PWIDGETVIEWSTATE CreateOneWidget(PXCENTERWINDATA pXCenterData,
 
                     // ask the widget for its size
                     GetWidgetSize(pNewView);
-                    if (pNewView->szlWanted.cy > pXCenterData->Globals.cyTallestWidget)
-                        pXCenterData->Globals.cyTallestWidget = pNewView->szlWanted.cy;
+                    if (pNewView->szlWanted.cy > pGlobals->cyTallestWidget)
+                        pGlobals->cyTallestWidget = pNewView->szlWanted.cy;
 
                     // load standard context menu
                     pWidget->hwndContextMenu = WinLoadMenu(pWidget->hwndWidget,
@@ -1432,6 +1518,7 @@ BOOL FrameTimer(HWND hwnd,
                 PXCENTERWINDATA pXCenterData,
                 USHORT usTimerID)
 {
+    PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
     BOOL brc = TRUE;            // processed
 
     switch (usTimerID)
@@ -1454,8 +1541,6 @@ BOOL FrameTimer(HWND hwnd,
                 // initial value for XCenter:
                 // start with a square
                 cxCurrent = pXCenterData->cyFrame;
-                         /* 2 * (   pXCenterData->ul3DBorderWidth
-                                  + pXCenterData->ulBorderSpacing); */
             }
             else
             {
@@ -1521,8 +1606,10 @@ BOOL FrameTimer(HWND hwnd,
                 // OK, XCenter is ready now.
                 pXCenterData->fFrameFullyShown = TRUE;
 
+                // invalidate the client so it can paint the sizing bars
+                WinInvalidateRect(pGlobals->hwndClient, NULL, FALSE);
+
                 // resize the desktop
-                // ctrpReformat(pXCenterData, 0);
                 UpdateDesktopWorkarea(pXCenterData, FALSE);
                 // start auto-hide now
                 StartAutoHide(pXCenterData);
@@ -1545,7 +1632,7 @@ BOOL FrameTimer(HWND hwnd,
             // this is only for the delay
             tmrStopTimer(hwnd,
                          usTimerID);
-            pXCenterData->idTimerAutohide = 0;
+            pXCenterData->idTimerAutohideStart = 0;
 
             // disable auto-hide if a settings dialog is currently open
             if (pXCenterData->fShowingSettingsDlg)
@@ -1561,7 +1648,7 @@ BOOL FrameTimer(HWND hwnd,
                     {
                         // it's a menu:
                         /*  if (WinQueryWindow(hwndFocus, QW_OWNER)
-                                == pXCenterData->Globals.hwndClient) */
+                                == pGlobals->hwndClient) */
                             fStart = FALSE;
                     }
                 }
@@ -1576,14 +1663,15 @@ BOOL FrameTimer(HWND hwnd,
                 if (WinWindowFromPoint(HWND_DESKTOP,
                                        &ptlMouseDtp,
                                        FALSE)
-                        == pXCenterData->Globals.hwndFrame)
+                        == pGlobals->hwndFrame)
                     fStart = FALSE;
             }
 
             if (fStart)
-                tmrStartTimer(hwnd,
-                              TIMERID_AUTOHIDE_RUN,
-                              50);
+                pXCenterData->idTimerAutohideRun
+                    = tmrStartTimer(hwnd,
+                                    TIMERID_AUTOHIDE_RUN,
+                                    50);
             else
                 StartAutoHide(pXCenterData);
         break; }
@@ -1613,9 +1701,15 @@ BOOL FrameTimer(HWND hwnd,
             else
             {
                 XCenterData *somThis = XCenterGetData(pXCenterData->somSelf);
-                ULONG ulNowTime;
-                ULONG cySubtractMax;
-                // ULONG ulMSPassed;
+                ULONG   ulNowTime;
+                ULONG   cySubtractMax;
+                ULONG   ulMinSize = pGlobals->ul3DBorderWidth;
+                if (ulMinSize == 0)
+                    // if user has set 3D border width to 0,
+                    // we must not use that, or the frame will
+                    // disappear completely...
+                    ulMinSize = 1;
+
                 DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT,
                                 &ulNowTime,
                                 sizeof(ulNowTime));
@@ -1624,7 +1718,7 @@ BOOL FrameTimer(HWND hwnd,
                 // subtracted from the full frame width to
                 // get only a single dlg frame
                 cySubtractMax =   pXCenterData->cyFrame
-                                - pXCenterData->Globals.ul3DBorderWidth;
+                                - ulMinSize;
 
                 // total animation should last two seconds,
                 // so check where we are now compared to
@@ -1640,20 +1734,21 @@ BOOL FrameTimer(HWND hwnd,
                     // stop this timer
                     tmrStopTimer(hwnd,
                                  usTimerID);
+                    pXCenterData->idTimerAutohideRun = 0;
                     pXCenterData->ulStartTime = 0;
 
                     // mark frame as "hidden"
                     pXCenterData->fFrameAutoHidden = TRUE;
 
                     if (_ulWindowStyle & WS_TOPMOST)
-                        if (WinIsWindowVisible(pXCenterData->Globals.hwndFrame))
+                        if (WinIsWindowVisible(pGlobals->hwndFrame))
                             // repaint the XCenter, because if we're topmost,
                             // we sometimes have display errors that will never
                             // go away
-                            WinInvalidateRect(pXCenterData->Globals.hwndClient, NULL, FALSE);
+                            WinInvalidateRect(pGlobals->hwndClient, NULL, FALSE);
                 }
 
-                if (_ulPosition == XCENTER_BOTTOM)
+                if (pGlobals->ulPosition == XCENTER_BOTTOM)
                 {
                     // XCenter sits at bottom:
                     // move downwards
@@ -1699,6 +1794,8 @@ BOOL FrameTimer(HWND hwnd,
  *      original WC_FRAME window proc is stored in
  *      the XCenter view's XCENTERWINDATA, which
  *      in turn resides in the frame's QWL_USER.
+ *
+ *@@changed V0.9.7 (2001-01-19) [umoeller]: fixed active window bugs
  */
 
 MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1739,11 +1836,7 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
                 }
             break;
 
-            /* case WM_FOCUSCHANGE:
-                // do NOTHING!
-            break;
-
-            case WM_QUERYFOCUSCHAIN:
+            /* case WM_QUERYFOCUSCHAIN:
                 // do NOTHING!
             break;
 
@@ -1762,9 +1855,51 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
             {
                 PSWP pswp = (PSWP)mp1;
                 if (pswp->fl & SWP_ACTIVATE)
+                {
                     pswp->fl &= ~SWP_ACTIVATE;
+                    pswp->fl |= SWP_DEACTIVATE;
+                }
                 mrc = (MRESULT)AWP_DEACTIVATE;
             break; }
+
+            /*
+             * WM_FOCUSCHANGE:
+             *      the default frame window proc sends out
+             *      the flurry of WM_SETFOCUS and WM_ACTIVATE
+             *      messages, which is not what we want...
+             *      we never want the XCenter to become active.
+             *
+             *      The default winproc sends this message to
+             *      its owner or parent if it's not the desktop.
+             *      As a result, when the user clicks on a widget
+             *      which does not intercept this, NORMALLY
+             *
+             *      1)  the default winproc called by the widget
+             *          winproc sends it to the XCenter client;
+             *
+             *      2)  the default winproc called by the client
+             *          would send it here;
+             *
+             *      3)  the default frame proc called from here
+             *          would send out WM_SETFOCUS and WM_ACTIVATE.
+             *
+             *      NOW, we intercept this message in the client
+             *      already (2) in order to swallow it. Still,
+             *      we get this message for the frame directly
+             *      sometimes too, so we swallow it here as well.
+             *
+             *      If we don't do all this, the XCenter becomes
+             *      active when the user clicks on a widget. That
+             *      would make the window list widget's checks
+             *      for the currently active window fail, which
+             *      is needed for painting the respective window
+             *      button depressed.
+             */
+
+            case WM_FOCUSCHANGE:
+                // do nothing!
+                // DosBeep(100, 100);
+            break;
 
             case WM_ADJUSTFRAMEPOS:
                 // do NOTHING!
@@ -1888,16 +2023,26 @@ BOOL FindWidgetFromClientXY(PXCENTERWINDATA pXCenterData,
                             PWIDGETVIEWSTATE *ppViewOver,    // out: widget mouse is over
                             PULONG pulIndexOver)             // out: that widget's index
 {
+    PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
     BOOL brc = FALSE;
     ULONG ul = 0;
     PLISTNODE pNode = lstQueryFirstNode(&pXCenterData->llWidgets);
     while (pNode)
     {
         PWIDGETVIEWSTATE pView = (PWIDGETVIEWSTATE)pNode->pItemData;
-        ULONG   ulRightEdge = pView->xCurrent + pView->cxCurrent;
+        ULONG   ulRightEdge =   pView->xCurrent
+                              + pView->szlCurrent.cx;
+        ULONG   ulSpacingThis = pGlobals->ulSpacing;
+
+        if (pView->xSizingBar)
+            // widget is sizeable and sizing bars are on: then
+            // include the sizing bar (actually between two widgets,
+            // painted by the client) in the rectangle of this widget
+            ulSpacingThis += SIZING_BAR_WIDTH;
+
         if (sx >= ulRightEdge)
         {
-            if (sx <= ulRightEdge + pXCenterData->Globals.ulSpacing)
+            if (sx <= ulRightEdge + ulSpacingThis)
             {
                 // we're over the spacing border to the right of this view:
                 brc = TRUE;
@@ -2005,29 +2150,80 @@ PLINKLIST GetDragoverObjects(PDRAGINFO pdrgInfo,
 VOID ClientPaint2(HWND hwndClient, HPS hps)
 {
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient, QWL_USER);
-    RECTL rclWin;
+    PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
+    RECTL           rclWin;
+    ULONG           ul3DBorderWidth = pGlobals->ul3DBorderWidth;
 
     // draw 3D frame
     WinQueryWindowRect(hwndClient,
                        &rclWin);        // exclusive
+    // _Pmpf((__FUNCTION__ ": rclWin.xRight = %d",  rclWin.xRight));
+            // prints 1024, correct
+
     // make rect inclusive
     rclWin.xRight--;
     rclWin.yTop--;
 
-    if (pXCenterData->Globals.ul3DBorderWidth)
+    if (ul3DBorderWidth)
     {
-        gpihDraw3DFrame(hps,
-                        &rclWin,            // inclusive
-                        pXCenterData->Globals.ul3DBorderWidth,      // width
-                        pXCenterData->Globals.lcol3DLight,
-                        pXCenterData->Globals.lcol3DDark);
+        // 3D border enabled at all:
+        // check if we want all four borders
+        if (pGlobals->flDisplayStyle & XCS_ALL3DBORDERS)
+        {
+            // yes: draw 3D frame
+            gpihDraw3DFrame(hps,
+                            &rclWin,            // inclusive
+                            ul3DBorderWidth,      // width
+                            pGlobals->lcol3DLight,
+                            pGlobals->lcol3DDark);
 
-        rclWin.xLeft += pXCenterData->Globals.ul3DBorderWidth;
-        rclWin.xRight -= pXCenterData->Globals.ul3DBorderWidth;
-        rclWin.yBottom += pXCenterData->Globals.ul3DBorderWidth;
-        rclWin.yTop -= pXCenterData->Globals.ul3DBorderWidth;
-    }
+            rclWin.xLeft += ul3DBorderWidth;
+            rclWin.xRight -= ul3DBorderWidth;
+            rclWin.yBottom += ul3DBorderWidth;
+            rclWin.yTop -= ul3DBorderWidth;
+        }
+        else
+        {
+            // "all four borders" disabled: draw line only,
+            // either on top or at the bottom, depending on
+            // the position
+            // XCenterData *somThis = XCenterGetData(pXCenterData->somSelf);
+            RECTL       rcl2;
+            LONG        yLine = 0;
 
+            if (pGlobals->ulPosition == XCENTER_TOP)
+            {
+                // XCenter on top:
+                // draw dark line on bottom
+                GpiSetColor(hps, pGlobals->lcol3DDark);
+                yLine = rclWin.yBottom;
+                // exclude bottom from client rectangle for later
+                rclWin.yBottom += ul3DBorderWidth;
+            }
+            else
+            {
+                // XCenter on bottom:
+                // draw light line on top
+                GpiSetColor(hps, pGlobals->lcol3DLight);
+                yLine =   rclWin.yTop         // inclusive
+                        - ul3DBorderWidth
+                        + 1;
+                // exclude top from client rectangle for later
+                rclWin.yTop -= ul3DBorderWidth;
+            }
+
+            // draw 3D border
+            rcl2.xLeft = rclWin.xLeft;
+            rcl2.yBottom = yLine;
+            rcl2.xRight = rclWin.xRight;                // inclusive
+            rcl2.yTop = yLine + ul3DBorderWidth - 1;    // inclusive
+            gpihBox(hps,
+                    DRO_FILL,
+                    &rcl2);
+        }
+    } // end if (ul3DBorderWidth)
+
+    // fill client; rclWin has been reduced properly above
     GpiSetColor(hps,
                 WinQuerySysColor(HWND_DESKTOP,
                                  SYSCLR_INACTIVEBORDER,  // same as frame!
@@ -2035,6 +2231,43 @@ VOID ClientPaint2(HWND hwndClient, HPS hps)
     gpihBox(hps,
             DRO_FILL,
             &rclWin);
+
+    // check if we're currently doing the "unfold frame"
+    // animation
+    if (pXCenterData->fFrameFullyShown)
+    {
+        // go thru all widgets and check if we have sizeables;
+        // draw sizing bar after each sizeable widget
+        PLISTNODE pNode = lstQueryFirstNode(&pXCenterData->llWidgets);
+        while (pNode)
+        {
+            PWIDGETVIEWSTATE pWidgetThis = (PWIDGETVIEWSTATE)pNode->pItemData;
+            RECTL rcl2;
+
+            // check pWidgetThis->xSizingBar... this has been set
+            // to the xpos of the sizing bar by ReformatWidgets
+            // if the widget is sizeable, otherwise it's 0
+            if (pWidgetThis->xSizingBar)
+            {
+                rcl2.xLeft = pWidgetThis->xSizingBar;
+                rcl2.yBottom =   rclWin.yBottom
+                               + pGlobals->ulBorderSpacing
+                               + 1;
+                rcl2.xRight = rcl2.xLeft + 2;       // inclusive!
+                rcl2.yTop =   rclWin.yTop           // inclusive!
+                            - pGlobals->ulBorderSpacing
+                            - 1;
+
+                gpihDraw3DFrame(hps,
+                                &rcl2,
+                                1,          // width
+                                pGlobals->lcol3DLight,
+                                pGlobals->lcol3DDark);
+            }
+
+            pNode = pNode->pNext;
+        }
+    }
 }
 
 /*
@@ -2108,6 +2341,7 @@ MRESULT ClientMouseMove(HWND hwnd, MPARAM mp1)
 MRESULT ClientButton1Down(HWND hwnd, MPARAM mp1)
 {
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
+    PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
     SHORT           sx = SHORT1FROMMP(mp1);
     SHORT           sy = SHORT2FROMMP(mp1);
     PWIDGETVIEWSTATE pViewOver = NULL;
@@ -2129,8 +2363,8 @@ MRESULT ClientButton1Down(HWND hwnd, MPARAM mp1)
             WinQueryWindowPos(pViewOver->Widget.hwndWidget,
                               &swpWidget);
             memset(&ti, 0, sizeof(ti));
-            ti.cxBorder = pXCenterData->Globals.ulSpacing;
-            ti.cyBorder = pXCenterData->Globals.ulSpacing;
+            ti.cxBorder = pGlobals->ulSpacing;
+            ti.cyBorder = pGlobals->ulSpacing;
             ti.cxGrid = 0;
             ti.cyGrid = 0;
             ti.rclTrack.xLeft = swpWidget.x;
@@ -2170,6 +2404,7 @@ MRESULT ClientButton1Down(HWND hwnd, MPARAM mp1)
 MRESULT ClientContextMenu(HWND hwnd, MPARAM mp1)
 {
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
+    PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
     XCenterData     *somThis = XCenterGetData(pXCenterData->somSelf);
     POINTL          ptlPopup;
     HPS             hps;
@@ -2192,9 +2427,9 @@ MRESULT ClientContextMenu(HWND hwnd, MPARAM mp1)
     pXCenterData->hwndContextMenu
             = _wpDisplayMenu(pXCenterData->somSelf,
                              // owner: the frame
-                             pXCenterData->Globals.hwndFrame,
+                             pGlobals->hwndFrame,
                              // client: our client
-                             pXCenterData->Globals.hwndClient,
+                             pGlobals->hwndClient,
                              &ptlPopup,
                              MENU_OPENVIEWPOPUP, //  | MENU_NODISPLAY,
                              0);
@@ -2210,6 +2445,7 @@ MRESULT ClientContextMenu(HWND hwnd, MPARAM mp1)
 VOID ClientMenuEnd(HWND hwnd, MPARAM mp2)
 {
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
+    PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
 
     if (   (pXCenterData->hwndContextMenu)
         && (((HWND)mp2) == pXCenterData->hwndContextMenu)
@@ -2217,7 +2453,7 @@ VOID ClientMenuEnd(HWND hwnd, MPARAM mp2)
     {
         // context menu closing:
         // remove emphasis
-        WinInvalidateRect(pXCenterData->Globals.hwndClient, NULL, FALSE);
+        WinInvalidateRect(pGlobals->hwndClient, NULL, FALSE);
         pXCenterData->hwndContextMenu = NULLHANDLE;
     }
 }
@@ -2230,6 +2466,7 @@ VOID ClientMenuEnd(HWND hwnd, MPARAM mp2)
 MRESULT ClientDragOver(HWND hwnd, MPARAM mp1)
 {
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
+    PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
     PDRAGINFO       pdrgInfo = (PDRAGINFO)mp1;
     // default return values
     USHORT          usIndicator = DOR_NEVERDROP,
@@ -2240,7 +2477,7 @@ MRESULT ClientDragOver(HWND hwnd, MPARAM mp1)
                         // user operation (we don't want
                         // the WPS to copy anything)
 
-    HPS hps = DrgGetPS(pXCenterData->Globals.hwndFrame);
+    HPS hps = DrgGetPS(pGlobals->hwndFrame);
     if (hps)
     {
         gpihSwitchToRGB(hps);
@@ -2277,7 +2514,9 @@ MRESULT ClientDragOver(HWND hwnd, MPARAM mp1)
 VOID ClientDrop(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
+    PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
     PDRAGINFO       pdrgInfo = (PDRAGINFO)mp1;
+
     if (DrgAccessDraginfo(pdrgInfo))
     {
         PLINKLIST pll = GetDragoverObjects(pdrgInfo,
@@ -2336,7 +2575,7 @@ VOID ClientDrop(HWND hwnd, MPARAM mp1, MPARAM mp2)
         lstFree(pll);
         DrgFreeDraginfo(pdrgInfo);
     }
-    WinInvalidateRect(pXCenterData->Globals.hwndFrame, NULL, FALSE);
+    WinInvalidateRect(pGlobals->hwndFrame, NULL, FALSE);
 }
 
 /*
@@ -2480,6 +2719,8 @@ VOID ClientDestroy(HWND hwnd)
  *      a quick way to check if the window under the mouse is
  *      an XCenter, simply by testing FID_CLIENT for the window
  *      class.
+ *
+ *@@changed V0.9.7 (2001-01-19) [umoeller]: fixed active window bugs
  */
 
 MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2509,6 +2750,22 @@ MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
 
             case WM_PAINT:
                 ClientPaint(hwnd);
+            break;
+
+            /*
+             * WM_FOCUSCHANGE:
+             *      the default winproc sends this msg to
+             *      the owner or the parent, which is not
+             *      what we want. We just swallow this in
+             *      order no NEVER let the XCenter become
+             *      active.
+             *
+             *      See WM_FOCUSCHANGE in fnwpXCenterMainFrame for details.
+             */
+
+            case WM_FOCUSCHANGE:
+                // do nothing!
+                // DosBeep(200, 100);
             break;
 
             /*
@@ -3261,15 +3518,16 @@ BOOL ctrpInsertWidget(XCenter *somSelf,
                 {
                     // XCenter view currently open:
                     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
+                    PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
                     // we must send msg instead of calling CreateOneWidget
                     // directly, because that func may only run on the
                     // XCenter GUI thread
-                    WinSendMsg(pXCenterData->Globals.hwndClient,
+                    WinSendMsg(pGlobals->hwndClient,
                                XCM_CREATEWIDGET,
                                (MPARAM)pSetting,
                                (MPARAM)ulWidgetIndex);
                             // new widget is invisible, and at a random position
-                    WinPostMsg(pXCenterData->Globals.hwndClient,
+                    WinPostMsg(pGlobals->hwndClient,
                                XCM_REFORMAT,
                                (MPARAM)(XFMF_RECALCHEIGHT
                                         | XFMF_REPOSITIONWIDGETS
@@ -3309,6 +3567,7 @@ BOOL ctrpRemoveWidget(XCenter *somSelf,
         PLINKLIST pllWidgetSettings = ctrpQuerySettingsList(somSelf);
         PLISTNODE pSettingsNode = lstNodeFromIndex(pllWidgetSettings, ulIndex);
         PXCENTERWINDATA pXCenterData = NULL;
+        PXCENTERGLOBALS pGlobals = &pXCenterData->Globals;
 
         if (pSettingsNode)
         {
@@ -3329,7 +3588,7 @@ BOOL ctrpRemoveWidget(XCenter *somSelf,
                     // directly because only the XCenter GUI thread can
                     // destroy the window
                     PWIDGETVIEWSTATE pView = (PWIDGETVIEWSTATE)pViewNode->pItemData;
-                    WinSendMsg(pXCenterData->Globals.hwndClient,
+                    WinSendMsg(pGlobals->hwndClient,
                                XCM_DESTROYWIDGET,
                                (MPARAM)pView->Widget.hwndWidget,
                                0);
@@ -3359,7 +3618,7 @@ BOOL ctrpRemoveWidget(XCenter *somSelf,
         if (pXCenterData)
         {
             // we found the open view above:
-            WinPostMsg(pXCenterData->Globals.hwndClient,
+            WinPostMsg(pGlobals->hwndClient,
                        XCM_REFORMAT,
                        (MPARAM)(XFMF_RECALCHEIGHT | XFMF_REPOSITIONWIDGETS),
                        0);
@@ -4027,7 +4286,7 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
             lstInit(&pXCenterData->llWidgets,
                     FALSE);      // no auto-free
 
-            pXCenterData->Globals.pCountrySettings = &G_CountrySettings;
+            pGlobals->pCountrySettings = &G_CountrySettings;
             prfhQueryCountrySettings(&G_CountrySettings);
 
             pXCenterData->cxFrame = winhQueryScreenCX();
@@ -4172,7 +4431,7 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                         // according to the class flags
                         PLISTNODE pNode;
                         TOOLINFO    ti = {0};
-                        if (_ulPosition == XCENTER_BOTTOM)
+                        if (pGlobals->ulPosition == XCENTER_BOTTOM)
                             ti.ulFlags = TTF_CENTERABOVE | TTF_SUBCLASS;
                         else
                             ti.ulFlags = TTF_CENTERBELOW | TTF_SUBCLASS;
@@ -4353,6 +4612,8 @@ HWND ctrpCreateXCenterView(XCenter *somSelf,
                     // wait until it's created the XCenter frame
                     WinWaitEventSem(pXCenterData->hevRunning,
                                     10*1000);
+                    // return the frame HWND from this (which will
+                    // return it from wpOpen)
                     hwndFrame = pXCenterData->Globals.hwndFrame;
                     if (hwndFrame)
                        *ppvOpenView = pXCenterData;

@@ -557,25 +557,28 @@ VOID MwgtPaint(HWND hwnd,
     WinQueryWindowRect(hwnd, &rclWin);
     pgpihSwitchToRGB(hps);
 
-    if (fDrawFrame)
+    if (pPrivate->pWidget->pGlobals->flDisplayStyle & XCS_SUNKBORDERS)
     {
-        RECTL rcl2;
-        rcl2.xLeft = rclWin.xLeft;
-        rcl2.yBottom = rclWin.yBottom;
-        rcl2.xRight = rclWin.xRight - 1;
-        rcl2.yTop = rclWin.yTop - 1;
-        pgpihDraw3DFrame(hps,
-                         &rcl2,
-                         ulBorder,
-                         pPrivate->pWidget->pGlobals->lcol3DDark,
-                         pPrivate->pWidget->pGlobals->lcol3DLight);
-    }
+        if (fDrawFrame)
+        {
+            RECTL rcl2;
+            rcl2.xLeft = rclWin.xLeft;
+            rcl2.yBottom = rclWin.yBottom;
+            rcl2.xRight = rclWin.xRight - 1;
+            rcl2.yTop = rclWin.yTop - 1;
+            pgpihDraw3DFrame(hps,
+                             &rcl2,
+                             ulBorder,
+                             pPrivate->pWidget->pGlobals->lcol3DDark,
+                             pPrivate->pWidget->pGlobals->lcol3DLight);
+        }
 
-    // now paint middle
-    rclWin.xLeft += ulBorder;
-    rclWin.yBottom += ulBorder;
-    rclWin.xRight -= ulBorder;
-    rclWin.yTop -= ulBorder;
+        // now paint middle
+        rclWin.xLeft += ulBorder;
+        rclWin.yBottom += ulBorder;
+        rclWin.xRight -= ulBorder;
+        rclWin.yTop -= ulBorder;
+    }
 
     if (fDrawFrame)
         WinFillRect(hps,

@@ -387,7 +387,8 @@ SOM_Scope void  SOMLINK xctr_wpInitData(XCenter *somSelf)
 
     _ulPosition = XCENTER_BOTTOM;
 
-    _flDisplayStyle = XCS_SUNKBORDERS;
+    _flDisplayStyle = XCS_SUNKBORDERS | XCS_FLATBUTTONS | XCS_SIZINGBARS;
+            // but not XCS_ALL3DBORDERS
 
     _ul3DBorderWidth = 1;
     _ulBorderSpacing = 1;

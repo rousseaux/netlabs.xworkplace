@@ -64,6 +64,17 @@ the "View" menu on the _menu_bar_ start to work as expected.
 When I close and reopen the folder these options in the "View" menu of
 the "Menu bar" do not work again.
 
+XCenter:
+    -- >No, I meant when you d'n'd an icon from the desktop for example to the
+       >XCenter. If you drop it (almost) anywhere on the grey bar, it gets
+       >added to the extreme left of everything on the XCenter. If you drop it
+       >right next to the rightmost icon, then it goes on the right where you
+       >would expect it.
+
+    -- put menus on object buttons on top of the bar, not on top of the button.
+
+    -- add option for tooltip shadows.
+
 extended assocs:
     --  break SysOpenObject REXX API?
     --  multiple associations with the same app (object) should not be shown

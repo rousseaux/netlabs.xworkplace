@@ -294,7 +294,9 @@ VOID xmmCleanup(VOID)
         while (pNode = lstQueryFirstNode(&G_lstOpenDevices))
         {
             USHORT usDeviceID = (USHORT)(pNode->pItemData);
-            DosBeep(1000, 100);
+            #ifdef __DEBUG__
+                DosBeep(1000, 100);
+            #endif
             xmmCloseDevice(&usDeviceID);
             lstRemoveNode(&G_lstOpenDevices, pNode);       // V0.9.7 (2000-12-21) [umoeller]
         }

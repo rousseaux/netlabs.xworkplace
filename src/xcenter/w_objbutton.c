@@ -104,6 +104,12 @@
 
 /* ******************************************************************
  *
+ *   Global variables
+ *
+ ********************************************************************/
+
+/* ******************************************************************
+ *
  *   Private widget instance data
  *
  ********************************************************************/
@@ -729,12 +735,24 @@ VOID OwgtButton1Down(HWND hwnd)
                         }
                     }
 
-                    _Pmpf((__FUNCTION__ ": calling ctlDisplayButtonMenu"));
-                    ctlDisplayButtonMenu(hwnd,
-                                         pPrivate->hwndMenuMain);
-                    _Pmpf((__FUNCTION__ ": ctlDisplayButtonMenu returned"));
+                    if (pPrivate->hwndMenuMain)
+                    {
+                        RECTL rclButton;
+                        WinQueryWindowRect(hwnd, &rclButton);
+                        // rclButton now has button coordinates;
+                        // convert this to screen coordinates:
+                        WinMapWindowPoints(hwnd,
+                                           HWND_DESKTOP,
+                                           (PPOINTL)&rclButton,
+                                           2);          // rectl == 2 points
 
-                }
+                        if (pWidget->pGlobals->ulPosition == XCENTER_TOP)
+                            cmnuSetPositionBelow((PPOINTL)&rclButton);
+
+                        ctlDisplayButtonMenu(hwnd,
+                                             pPrivate->hwndMenuMain);
+                    }
+                } // end if (!pPrivate->fButtonSunk)
             }
         } // end if (pPrivate)
     } // end if (pWidget)
@@ -842,9 +860,9 @@ VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
                 if (pPrivate->pobjButton)
                 {
+                    // just to make sure it's a folder:
                     if (_somIsA(pPrivate->pobjButton, _WPFolder))
                     {
-                        // just to make sure it's a folder:
                         // show "Wait" pointer
                         HPOINTER    hptrOld = winhSetWaitPointer();
 
@@ -852,30 +870,25 @@ VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         wpshCheckIfPopulated(pPrivate->pobjButton,
                                              FALSE);    // full populate
 
+                        WinSetPointer(HWND_DESKTOP, hptrOld);
+
                         if (_wpQueryContent(pPrivate->pobjButton, NULL, QC_FIRST))
                         {
                             // folder does contain objects: go!
                             // insert all objects (this takes a long time)...
-                            /* WinSendMsg(pPrivate->hwndMenuMain,
-                                       MM_REMOVEITEM,
-                                       MPFROM2SHORT(cmnuPrepareContentSubmenu(pobj,
-                                                                              pPrivate->hwndMenuMain,
-                                                                              "gimme some",
-                                                                              MIT_END,
-                                                                              FALSE), // no owner draw
-                                                    FALSE),
-                                       MPNULL); */
                             _Pmpf((__FUNCTION__ ": calling cmnuInsertObjectsIntoMenu"));
                             cmnuInsertObjectsIntoMenu(pPrivate->pobjButton,
                                                       pPrivate->hwndMenuMain);
+                            _Pmpf((__FUNCTION__ ": cmnuInsertObjectsIntoMenu returned"));
+
+                            /* winhDumpSWP(__FUNCTION__ " hmenu",
+                                        pPrivate->hwndMenuMain); */
 
                             // fix menu position...
                         }
-
-                        WinSetPointer(HWND_DESKTOP, hptrOld);
                     }
                 } // end if (pobj)
-            }
+            } // end if (   (pPrivate->ulType == BTF_OBJBUTTON) ...
             else
             {
                 // find out whether the menu of which we are notified
@@ -909,6 +922,8 @@ VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
         }
     }
     _Pmpf((__FUNCTION__ ": leaving"));
+        // strange... after this, another flurry of WM_MEASUREITEM
+        // things comes in...
 }
 
 /*
@@ -1140,6 +1155,16 @@ MRESULT EXPENTRY fnwpObjButtonWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
 
         case WM_INITMENU:
             OwgtInitMenu(hwnd, mp1, mp2);
+        break;
+
+        case WM_MENUSELECT:
+            _Pmpf((__FUNCTION__ ": WM_MENUSELECT"));
+            mrc = (MPARAM)TRUE;
+        break;
+
+        case WM_NEXTMENU:
+            _Pmpf((__FUNCTION__ ": WM_NEXTMENU"));
+            mrc = (MPARAM)TRUE;
         break;
 
         /*

@@ -79,12 +79,21 @@
                         // two structs having the same address
 
             SIZEL           szlWanted;
-                        // the widget's desired size
+                        // the widget's desired size (as was
+                        // last queried using WM_CONTROL with
+                        // XN_QUERYSIZE)
 
-            LONG            xCurrent,
-                            cxCurrent,
-                            cyCurrent;
-                        // widget's current pos and extension
+            LONG            xCurrent;
+                        // widget's current position; y is fixed currently
+            LONG            xSizingBar;
+                        // position of sizing bar to draw after this
+                        // widget, if Widget.fSizeable == TRUE;
+                        // otherwise this is 0
+            SIZEL           szlCurrent;
+                        // widget's current width and height;
+                        // the width is normally the same as
+                        // szlWanted.cx, except when the widget
+                        // is sizeable
 
         } WIDGETVIEWSTATE, *PWIDGETVIEWSTATE;
 
@@ -137,7 +146,9 @@
 
             ULONG               ulStartTime;        // for animation 1 (TIMERID_UNFOLDFRAME)
             ULONG               ulWidgetsShown;     // for animation 2 (TIMERID_SHOWWIDGETS)
-            ULONG               idTimerAutohide;    // if != 0, TIMERID_AUTOHIDE_START is running
+
+            ULONG               idTimerAutohideStart; // if != 0, TIMERID_AUTOHIDE_START is running
+            ULONG               idTimerAutohideRun; // if != 0, TIMERID_AUTOHIDE_RUN is running
 
             BOOL                fFrameFullyShown;   // FALSE while the "unfold" animation is still
                                                     // running; always TRUE afterwards.

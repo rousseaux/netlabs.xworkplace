@@ -963,15 +963,19 @@ VOID EXPENTRY WwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
  *      be used for painting the buttons.
  */
 
-VOID GetPaintableRect(HWND hwnd,
+VOID GetPaintableRect(PWINLISTPRIVATE pPrivate,
                       PRECTL prcl)
 {
-    WinQueryWindowRect(hwnd,
+    WinQueryWindowRect(pPrivate->pWidget->hwndWidget,
                        prcl);
-    prcl->xLeft += WIDGET_BORDER;
-    prcl->xRight -= WIDGET_BORDER;
-    prcl->yBottom += WIDGET_BORDER;
-    prcl->yTop -= WIDGET_BORDER;
+
+    // if (pPrivate->pWidget->pGlobals->flDisplayStyle & XCS_SUNKBORDERS)
+    {
+        prcl->xLeft += WIDGET_BORDER;
+        prcl->xRight -= WIDGET_BORDER;
+        prcl->yBottom += WIDGET_BORDER;
+        prcl->yTop -= WIDGET_BORDER;
+    }
 
     // we won't use WinInflateRect... what the hell
     // does this API need an anchor block for to
@@ -1230,8 +1234,10 @@ VOID DrawOneCtrl(const WINLISTPRIVATE *pPrivate,
         }
 
         // draw button middle
-        rclButtonArea.xLeft++;
-        rclButtonArea.yBottom++;
+        rclButtonArea.xLeft += lButtonBorder;
+        rclButtonArea.yBottom += lButtonBorder;
+        rclButtonArea.xRight -= (lButtonBorder - 1);
+        rclButtonArea.yTop -= (lButtonBorder - 1);
         WinFillRect(hps,
                     &rclButtonArea,         // exclusive
                     pPrivate->Setup.lcolBackground);
@@ -1336,7 +1342,7 @@ VOID RedrawActiveChanged(PWINLISTPRIVATE pPrivate,
         {
             RECTL rclSubclient;
             pgpihSwitchToRGB(hps);
-            GetPaintableRect(hwndWidget, &rclSubclient);
+            GetPaintableRect(pPrivate, &rclSubclient);
 
             if (pPrivate->pCtrlActive)
             {
@@ -1499,7 +1505,7 @@ VOID UpdateSwitchList(HWND hwnd,
                 RECTL       rclSubclient;
                 HWND        hwndActive = WinQueryActiveWindow(HWND_DESKTOP);
 
-                GetPaintableRect(hwnd, &rclSubclient);
+                GetPaintableRect(pPrivate, &rclSubclient);
                 pgpihSwitchToRGB(hps);
                 if (hps)
                 {
@@ -1553,7 +1559,7 @@ VOID UpdateSwitchList(HWND hwnd,
         if (hps)
         {
             RECTL rclSubclient;
-            GetPaintableRect(hwnd, &rclSubclient);
+            GetPaintableRect(pPrivate, &rclSubclient);
             pgpihSwitchToRGB(hps);
             DrawAllCtrls(pPrivate,
                          hps,
@@ -1781,17 +1787,21 @@ VOID WwgtPaint(HWND hwnd)
                                    &rclWin);        // exclusive
                 pgpihSwitchToRGB(hps);
 
-                rclWin.xRight--;
-                rclWin.yTop--;
-                pgpihDraw3DFrame(hps,
-                                 &rclWin,           // inclusive
-                                 WIDGET_BORDER,
-                                 pWidget->pGlobals->lcol3DDark,
-                                 pWidget->pGlobals->lcol3DLight);
+                // if (pPrivate->pWidget->pGlobals->flDisplayStyle & XCS_SUNKBORDERS)
+                {
+                    rclWin.xRight--;
+                    rclWin.yTop--;
+                    pgpihDraw3DFrame(hps,
+                                     &rclWin,           // inclusive
+                                     WIDGET_BORDER,
+                                     pWidget->pGlobals->lcol3DDark,
+                                     pWidget->pGlobals->lcol3DLight);
+
+                    rclWin.xLeft++;
+                    rclWin.yBottom++;
+                }
 
                 // now paint buttons in the middle
-                rclWin.xLeft++;
-                rclWin.yBottom++;
                 DrawAllCtrls(pPrivate,
                              hps,
                              &rclWin);
@@ -1845,7 +1855,7 @@ VOID WwgtButton1Down(HWND hwnd,
 
             ptlClick.x = SHORT1FROMMP(mp1);
             ptlClick.y = SHORT2FROMMP(mp1);
-            GetPaintableRect(hwnd, &rclSubclient);
+            GetPaintableRect(pPrivate, &rclSubclient);
             pCtrlClicked = FindCtrlFromPoint(pPrivate,
                                              &ptlClick,
                                              &rclSubclient);
@@ -2077,7 +2087,7 @@ MRESULT WwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                     HackContextMenu(pPrivate);
                 } // if (!pPrivate->fContextMenuHacked)
 
-                GetPaintableRect(hwnd, &rclSubclient);
+                GetPaintableRect(pPrivate, &rclSubclient);
                 pCtlUnderMouse = FindCtrlFromPoint(pPrivate,
                                                    &ptlWidget,
                                                    &rclSubclient);
