@@ -76,6 +76,7 @@
 #include "helpers\apps.h"               // application helpers
 #include "helpers\dosh.h"
 #include "helpers\except.h"             // exception handling
+#include "helpers\exeh.h"               // executable helpers
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"
@@ -553,64 +554,13 @@ SOM_Scope void  SOMLINK xpg_wpObjectReady(XWPProgram *somSelf,
 SOM_Scope HWND  SOMLINK xpg_wpOpen(XWPProgram *somSelf, HWND hwndCnr,
                                     ULONG ulView, ULONG param)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XWPProgramData *somThis = XWPProgramGetData(somSelf);
     XWPProgramMethodDebug("XWPProgram","xpg_wpOpen");
 
 #ifndef __NEVEREXTASSOCS__
-    if (cmnIsFeatureEnabled(ExtAssocs))
+    if (cmnQuerySetting(sfExtAssocs))
     {
-        /* _Pmpf((__FUNCTION__ ": _pvProgramLongs is 0x%lX", _pvProgramLongs));
-        if (_pvProgramLongs)
-        {
-            CHAR sz[CCHMAXPATH] = "unknown";
-            HOBJECT hobj = *(PULONG)_pvProgramLongs;
-            if (hobj)
-            {
-                WPObject *pobj;
-                if (    (pobj = _wpclsQueryObject(_WPObject,
-                                                  hobj | (G_usHiwordFileSystem << 16)))
-                     && (_somIsA(pobj, _WPFileSystem))
-                   )
-                    _wpQueryFilename(pobj, sz, TRUE);
-            }
-            _Pmpf(("  executable: hobj = 0x%lX, \"%s\"", hobj, sz));
-        }
-
-        _Pmpf((__FUNCTION__ ": _pvStringArray is 0x%lX, cb %d",
-                            _pvStringArray, _cbStringArray));
-        if (_pvStringArray && _cbStringArray)
-        {
-            // WPS uses a very strange format for the string array:
-            // each string starts with a USHORT string _index_,
-            // followed by the null-terminated string; the last
-            // string is marked with a USHORT 0xFFFF index
-            PBYTE pThis = _pvStringArray;
-            USHORT usIndexThis;
-
-            while (0xFFFF != (usIndexThis = *(PUSHORT)pThis))
-            {
-                pThis += sizeof(USHORT);
-
-                _Pmpf(("  string %d: \"%s\"", usIndexThis, pThis));
-
-                pThis += strlen(pThis) + 1;
-            }
-        }
-
-        _Pmpf((__FUNCTION__ ": _pvpszEnvironment is 0x%lX",
-                            _pvpszEnvironment));
-        if (_pvpszEnvironment)
-        {
-            PSZ pszThis = _pvpszEnvironment;
-            while (*pszThis != 0)
-            {
-                _Pmpf(("  \"%s\"", pszThis));
-                pszThis += strlen(pszThis) + 1;
-            }
-        }
-        */
-
         if (ulView == OPEN_RUNNING)
         {
             HWND hwnd = NULLHANDLE;
@@ -638,7 +588,7 @@ SOM_Scope HWND  SOMLINK xpg_wpOpen(XWPProgram *somSelf, HWND hwndCnr,
 
             return (hwnd);
         }
-    } // end if (pGlobalSettings->fExtAssocs)
+    } // end if (cmnQuerySetting(sfExtAssocs))
 #endif
 
     return (XWPProgram_parent_WPProgram_wpOpen(somSelf, hwndCnr,
@@ -749,11 +699,11 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgIcon(XWPProgram *somSelf,
     XWPProgramMethodDebug("XWPProgram","xpg_wpSetProgIcon");
 
     // turbo folders enabled?
-    fRunReplacement = cmnIsFeatureEnabled(TurboFolders);
+    fRunReplacement = cmnQuerySetting(sfTurboFolders);
 
 #ifndef __NOICONREPLACEMENTS__
     if (!fRunReplacement)
-        if (cmnIsFeatureEnabled(IconReplacements))
+        if (cmnQuerySetting(sfIconReplacements))
             fRunReplacement = TRUE;
 #endif
 
@@ -819,7 +769,7 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgIcon(XWPProgram *somSelf,
                 {
                     PEXECUTABLE pExec = NULL;
 
-                    if (!(arc = doshExecOpen(pszExec, &pExec)))
+                    if (!(arc = exehOpen(pszExec, &pExec)))
                     {
                         ULONG ulProgType;
                         ULONG ulStdIcon = 0;
@@ -839,9 +789,9 @@ SOM_Scope BOOL  SOMLINK xpg_wpSetProgIcon(XWPProgram *somSelf,
                                      NULL,
                                      &fNotDefaultIcon);
 
-                        doshExecClose(&pExec);
+                        exehClose(&pExec);
 
-                    } // end if (!(arc = doshExecOpen(pszExec, &pExec)))
+                    } // end if (!(arc = exehOpen(pszExec, &pExec)))
                 }
             }
         }
@@ -1090,13 +1040,13 @@ SOM_Scope ULONG  SOMLINK xpg_wpAddProgramSessionPage(XWPProgram *somSelf,
 SOM_Scope ULONG  SOMLINK xpg_wpAddProgramAssociationPage(XWPProgram *somSelf,
                                                           HWND hwndNotebook)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
     XWPProgramMethodDebug("XWPProgram","xwppgm_wpAddProgramAssociationPage");
 
 #ifndef __NEVEREXTASSOCS__
-    if (cmnIsFeatureEnabled(ExtAssocs))
+    if (cmnQuerySetting(sfExtAssocs))
         return (_xwpAddAssociationsPage(somSelf, hwndNotebook));
     else
 #endif

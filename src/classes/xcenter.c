@@ -621,11 +621,11 @@ SOM_Scope BOOL  SOMLINK xctr_wpQueryDefaultHelp(XCenter *somSelf,
 
 SOM_Scope ULONG  SOMLINK xctr_wpQueryDefaultView(XCenter *somSelf)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XCenterData *somThis = XCenterGetData(somSelf); */
     XCenterMethodDebug("XCenter","xctr_wpQueryDefaultView");
 
-    return (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW);
+    return (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW);
 }
 
 /*
@@ -655,11 +655,11 @@ SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,
                                     ULONG param)
 {
     HWND    hwndNewView = NULLHANDLE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_wpOpen");
 
-    if (ulView == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW))
+    if (ulView == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW))
     {
         if (!_tidRunning)       // V0.9.12 (2001-05-20) [umoeller]
         {
@@ -737,12 +737,12 @@ SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,
 SOM_Scope BOOL  SOMLINK xctr_wpSwitchTo(XCenter *somSelf, ULONG View)
 {
     BOOL brc = FALSE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XCenterData *somThis = XCenterGetData(somSelf);
     XCenterMethodDebug("XCenter","xctr_wpSwitchTo");
 
     // check if we should switch to the existing XCenter view
-    if (View == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW))
+    if (View == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW))
     {
         // yes:
         PUSEITEM    pUseItem = NULL;

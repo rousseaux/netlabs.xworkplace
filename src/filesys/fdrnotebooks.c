@@ -223,6 +223,20 @@ DLGHITEM dlgView[] =
         END_TABLE
     };
 
+XWPSETTING G_ViewBackup[] =
+    {
+        sfFullPath,
+        sfKeepTitle,
+        sulMaxPathChars,
+        sfTreeViewAutoScroll,
+#ifndef __NOFDRDEFAULTDOCS__
+        sfFdrDefaultDoc,
+        sfFdrDefaultDocView,
+#endif
+        sfFdrAutoRefreshDisabled,
+        sulDefaultFolderView
+    };
+
 /*
  *@@ fdrViewInitPage:
  *      notebook callback function (notebook.c) for the
@@ -242,7 +256,7 @@ VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                      ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (flFlags & CBI_INIT)
     {
@@ -252,8 +266,11 @@ VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
-            pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
+            pcnbp->pUser = cmnBackupSettings(G_ViewBackup,
+                                             ARRAYITEMCOUNT(G_ViewBackup));
+            /* malloc(sizeof(GLOBALSETTINGS));
             memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+               */
 
             // insert the controls using the dialog formatter
             // V0.9.16 (2001-10-11) [umoeller]
@@ -268,29 +285,29 @@ VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         ULONG ulid;
 
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FULLPATH,
-                              pGlobalSettings->FullPath);
+                              cmnQuerySetting(sfFullPath));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_KEEPTITLE,
-                              pGlobalSettings->KeepTitle);
+                              cmnQuerySetting(sfKeepTitle));
         // maximum path chars spin button
         winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_XSDI_MAXPATHCHARS,
                                11, 200,        // limits
-                               pGlobalSettings->MaxPathChars);  // data
+                               cmnQuerySetting(sulMaxPathChars));  // data
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_TREEVIEWAUTOSCROLL,
-                              pGlobalSettings->TreeViewAutoScroll);
+                              cmnQuerySetting(sfTreeViewAutoScroll));
 
 #ifndef __NOFDRDEFAULTDOCS__
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FDRDEFAULTDOC,
-                              pGlobalSettings->_fFdrDefaultDoc);
+                              cmnQuerySetting(sfFdrDefaultDoc));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FDRDEFAULTDOCVIEW,
-                              pGlobalSettings->_fFdrDefaultDocView);
+                              cmnQuerySetting(sfFdrDefaultDocView));
 #endif
 
         if (pKernelGlobals->fAutoRefreshReplaced)
             winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FDRAUTOREFRESH,
-                                  !pGlobalSettings->fFdrAutoRefreshDisabled);
+                                  !cmnQuerySetting(sfFdrAutoRefreshDisabled));
 
         // folder default views V0.9.12 (2001-04-30) [umoeller]
-        switch (pGlobalSettings->bDefaultFolderView)
+        switch (cmnQuerySetting(sulDefaultFolderView))
         {
             case OPEN_CONTENTS: ulid = ID_XSDI_FDRVIEW_ICON; break;
             case OPEN_TREE:     ulid = ID_XSDI_FDRVIEW_TREE; break;
@@ -306,14 +323,14 @@ VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     {
 #ifndef __ALWAYSSUBCLASS__
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_TREEVIEWAUTOSCROLL,
-                (    // (pGlobalSettings->NoWorkerThread == FALSE)
+                (    // (cmnQuerySetting(sNoWorkerThread) == FALSE)
                         // // removed this setting V0.9.16 (2002-01-04) [umoeller]
-                   (!cmnIsFeatureEnabled(NoSubclassing))
+                   (!cmnQuerySetting(sfNoSubclassing))
                 ));
 #endif
 #ifndef __NOFDRDEFAULTDOCS__
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FDRDEFAULTDOCVIEW,
-                         pGlobalSettings->_fFdrDefaultDoc);
+                         cmnQuerySetting(sfFdrDefaultDoc));
 #endif
 
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FDRAUTOREFRESH,
@@ -338,7 +355,7 @@ MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                            ULONG ulItemID, USHORT usNotifyCode,
                            ULONG ulExtra)      // for checkboxes: contains new state
 {
-    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+    // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     MRESULT mrc = (MRESULT)0;
     BOOL fSave = TRUE,
          fUpdate = FALSE;
@@ -348,77 +365,80 @@ MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     switch (ulItemID)
     {
         case ID_XSDI_FULLPATH:
-            pGlobalSettings->FullPath  = ulExtra;
+            cmnSetSetting(sfFullPath, ulExtra);
             fUpdate = TRUE;
         break;
 
         case ID_XSDI_KEEPTITLE:
-            pGlobalSettings->KeepTitle = ulExtra;
+            cmnSetSetting(sfKeepTitle, ulExtra);
             fUpdate = TRUE;
         break;
 
         case ID_XSDI_TREEVIEWAUTOSCROLL:
-            pGlobalSettings->TreeViewAutoScroll = ulExtra;
+            cmnSetSetting(sfTreeViewAutoScroll, ulExtra);
         break;
 
         case ID_XSDI_MAXPATHCHARS:  // spinbutton
-            pGlobalSettings->MaxPathChars = ulExtra;
+            cmnSetSetting(sulMaxPathChars, ulExtra);
             fUpdate = TRUE;
         break;
 
 #ifndef __NOFDRDEFAULTDOCS__
         case ID_XSDI_FDRDEFAULTDOC:
-            pGlobalSettings->_fFdrDefaultDoc = ulExtra;
+            cmnSetSetting(sfFdrDefaultDoc, ulExtra);
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break;
 
         case ID_XSDI_FDRDEFAULTDOCVIEW:
-            pGlobalSettings->_fFdrDefaultDocView = ulExtra;
+            cmnSetSetting(sfFdrDefaultDocView, ulExtra);
         break;
 #endif
 
         case ID_XSDI_FDRAUTOREFRESH:
-            pGlobalSettings->fFdrAutoRefreshDisabled = (ulExtra == 0);
+            cmnSetSetting(sfFdrAutoRefreshDisabled, (ulExtra == 0));
         break;
 
         case ID_XSDI_FDRVIEW_ICON:
-            pGlobalSettings->bDefaultFolderView = OPEN_CONTENTS;
+            cmnSetSetting(sulDefaultFolderView, OPEN_CONTENTS);
         break;
 
         case ID_XSDI_FDRVIEW_TREE:
-            pGlobalSettings->bDefaultFolderView = OPEN_TREE;
+            cmnSetSetting(sulDefaultFolderView, OPEN_TREE);
         break;
 
         case ID_XSDI_FDRVIEW_DETAILS:
-            pGlobalSettings->bDefaultFolderView = OPEN_DETAILS;
+            cmnSetSetting(sulDefaultFolderView, OPEN_DETAILS);
         break;
 
         case ID_XSDI_FDRVIEW_INHERIT:
-            pGlobalSettings->bDefaultFolderView = 0;
+            cmnSetSetting(sulDefaultFolderView, 0);
         break;
 
 
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
-            PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
+            // PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
 
             // and restore the settings for this page
-            pGlobalSettings->FullPath  = pGSBackup->FullPath ;
-            pGlobalSettings->KeepTitle = pGSBackup->KeepTitle;
-            pGlobalSettings->TreeViewAutoScroll = pGSBackup->TreeViewAutoScroll;
-            pGlobalSettings->MaxPathChars = pGSBackup->MaxPathChars;
+            cmnRestoreSettings(pcnbp->pUser,
+                               ARRAYITEMCOUNT(G_ViewBackup));
+            /*
+            cmnQuerySetting(sfFullPath)  = pGSBackup->FullPath ;
+            cmnSetSetting(sfKeepTitle, pGSBackup->KeepTitle);
+            cmnSetSetting(sfTreeViewAutoScroll, pGSBackup->TreeViewAutoScroll);
+            cmnSetSetting(sulMaxPathChars, pGSBackup->MaxPathChars);
 
 #ifndef __NOFDRDEFAULTDOCS__
-            pGlobalSettings->_fFdrDefaultDoc = pGSBackup->_fFdrDefaultDoc;
-            pGlobalSettings->_fFdrDefaultDocView = pGSBackup->_fFdrDefaultDocView;
+            cmnSetSetting(sfFdrDefaultDoc, pGSBackup->_fFdrDefaultDoc);
+            cmnSetSetting(sfFdrDefaultDocView, pGSBackup->_fFdrDefaultDocView);
 #endif
 
-            pGlobalSettings->fFdrAutoRefreshDisabled = pGSBackup->fFdrAutoRefreshDisabled;
+            cmnSetSetting(sfFdrAutoRefreshDisabled, pGSBackup->fFdrAutoRefreshDisabled);
 
-            pGlobalSettings->bDefaultFolderView = pGSBackup->bDefaultFolderView;
-
+            cmnSetSetting(sulDefaultFolderView, pGSBackup->bDefaultFolderView);
+               */
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
             fUpdate = TRUE;
@@ -439,10 +459,10 @@ MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             fSave = FALSE;
     }
 
-    cmnUnlockGlobalSettings();
+    // cmnUnlockGlobalSettings();
 
-    if (fSave)
-        cmnStoreGlobalSettings();
+    /* if (fSave)
+        cmnStoreGlobalSettings(); */
 
     if (fUpdate)
         // have Worker thread update all open folder windows
@@ -462,6 +482,15 @@ MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
 #ifndef __NOSNAPTOGRID__
 
+static XWPSETTING G_GridBackup[] =
+    {
+        sfAddSnapToGridDefault,
+        sulGridX,
+        sulGridY,
+        sulGridCX,
+        sulGridCY
+    };
+
 /*
  *@@ fdrGridInitPage:
  *      notebook callback function (notebook.c) for the
@@ -475,7 +504,7 @@ MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 VOID fdrGridInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                      ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (flFlags & CBI_INIT)
     {
@@ -485,27 +514,30 @@ VOID fdrGridInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
-            pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
+            /* pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
             memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+            */
+            pcnbp->pUser = cmnBackupSettings(G_GridBackup,
+                                             ARRAYITEMCOUNT(G_GridBackup));
         }
     }
 
     if (flFlags & CBI_SET)
     {
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SNAPTOGRID,
-                              pGlobalSettings->fAddSnapToGridDefault);
+                              cmnQuerySetting(sfAddSnapToGridDefault));
         winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_XSDI_GRID_X,
                                0, 500,
-                               pGlobalSettings->GridX);
+                               cmnQuerySetting(sulGridX));
         winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_XSDI_GRID_Y,
                                0, 500,
-                               pGlobalSettings->GridY);
+                               cmnQuerySetting(sulGridY));
         winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_XSDI_GRID_CX,
                                1, 500,
-                               pGlobalSettings->GridCX);
+                               cmnQuerySetting(sulGridCX));
         winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_XSDI_GRID_CY,
                                1, 500,
-                               pGlobalSettings->GridCY);
+                               cmnQuerySetting(sulGridCY));
     }
 }
 
@@ -523,44 +555,47 @@ MRESULT fdrGridItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                            USHORT usNotifyCode,
                            ULONG ulExtra)      // for checkboxes: contains new state
 {
-    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+    // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     MRESULT mrc = (MRESULT)0;
     BOOL fSave = TRUE;
 
     switch (ulItemID)
     {
         case ID_XSDI_SNAPTOGRID:
-            pGlobalSettings->fAddSnapToGridDefault = ulExtra;
+            cmnSetSetting(sfAddSnapToGridDefault, ulExtra);
         break;
 
         case ID_XSDI_GRID_X:
-            pGlobalSettings->GridX = ulExtra;
+            cmnSetSetting(sulGridX, ulExtra);
         break;
 
         case ID_XSDI_GRID_Y:
-            pGlobalSettings->GridY = ulExtra;
+            cmnSetSetting(sulGridY, ulExtra);
         break;
 
         case ID_XSDI_GRID_CX:
-            pGlobalSettings->GridCX = ulExtra;
+            cmnSetSetting(sulGridCX, ulExtra);
         break;
 
         case ID_XSDI_GRID_CY:
-            pGlobalSettings->GridCY = ulExtra;
+            cmnSetSetting(sulGridCY, ulExtra);
         break;
 
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
-            PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
+            // PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
 
             // and restore the settings for this page
-            pGlobalSettings->fAddSnapToGridDefault = pGSBackup->fAddSnapToGridDefault;
-            pGlobalSettings->GridX = pGSBackup->GridX;
-            pGlobalSettings->GridY = pGSBackup->GridY;
-            pGlobalSettings->GridCX = pGSBackup->GridCX;
-            pGlobalSettings->GridCY = pGSBackup->GridCY;
-
+            cmnRestoreSettings(pcnbp->pUser,
+                               ARRAYITEMCOUNT(G_GridBackup));
+            /*
+            cmnSetSetting(sfAddSnapToGridDefault, pGSBackup->fAddSnapToGridDefault);
+            cmnSetSetting(sulGridX, pGSBackup->GridX);
+            cmnSetSetting(sulGridY, pGSBackup->GridY);
+            cmnSetSetting(sulGridCX, pGSBackup->GridCX);
+            cmnSetSetting(sulGridCY, pGSBackup->GridCY);
+               */
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break; }
@@ -579,10 +614,10 @@ MRESULT fdrGridItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             fSave = FALSE;
     }
 
-    cmnUnlockGlobalSettings();
+    // cmnUnlockGlobalSettings();
 
-    if (fSave)
-        cmnStoreGlobalSettings();
+    /* if (fSave)
+        cmnStoreGlobalSettings(); */
 
     return (mrc);
 }
@@ -687,7 +722,7 @@ DLGHITEM dlgXFolder[] =
 VOID fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
                         ULONG flFlags)              // CBI_* flags (notebook.h)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XFolderData *somThis = XFolderGetData(pcnbp->somSelf);
 
     if (flFlags & CBI_INIT)
@@ -723,29 +758,29 @@ VOID fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
 
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FULLPATH,
                               (     ((_bFullPathInstance == 2)
-                                       ? pGlobalSettings->FullPath
+                                       ? cmnQuerySetting(sfFullPath)
                                        : _bFullPathInstance )
                                  != 0));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_KEEPTITLE,
                               (     ((_bKeepTitleInstance == 2)
-                                       ? pGlobalSettings->KeepTitle
+                                       ? cmnQuerySetting(sfKeepTitle)
                                        : _bKeepTitleInstance )
                                  != 0));
 #ifndef __NOSNAPTOGRID__
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SNAPTOGRID,
                               (     ((_bSnapToGridInstance == 2)
-                                       ? pGlobalSettings->fAddSnapToGridDefault
+                                       ? cmnQuerySetting(sfAddSnapToGridDefault)
                                        : _bSnapToGridInstance )
                                  != 0));
 #endif
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ACCELERATORS,
                               (     ((_bFolderHotkeysInstance == 2)
-                                       ? pGlobalSettings->fFolderHotkeysDefault
+                                       ? cmnQuerySetting(sfFolderHotkeysDefault)
                                        : _bFolderHotkeysInstance )
                                  != 0));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ENABLESTATUSBAR,
                               (   (     ((_bStatusBarInstance == STATUSBAR_DEFAULT)
-                                           ? pGlobalSettings->fDefaultStatusBarVisibility
+                                           ? cmnQuerySetting(sfDefaultStatusBarVisibility)
                                            : _bStatusBarInstance )
                                      != 0)
                                   // always uncheck for Desktop
@@ -762,34 +797,34 @@ VOID fdrXFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
                               1
 #ifndef __ALWAYSSUBCLASS__
                            &&
-                              !cmnIsFeatureEnabled(NoSubclassing)
+                              !cmnQuerySetting(sfNoSubclassing)
                            &&
 #endif
 #ifndef __ALWAYSFDRHOTKEYS__
-                              (cmnIsFeatureEnabled(FolderHotkeys))
+                              (cmnQuerySetting(sfFolderHotkeys))
 #endif
                          ));
 
         winhEnableDlgItem(pcnbp->hwndDlgPage,
                          ID_XSDI_KEEPTITLE,
                          ( (_bFullPathInstance == 2)
-                             ? pGlobalSettings->FullPath
+                             ? cmnQuerySetting(sfFullPath)
                              : _bFullPathInstance ));
 
 #ifndef __NOSNAPTOGRID__
         winhEnableDlgItem(pcnbp->hwndDlgPage,
                          ID_XSDI_SNAPTOGRID,  // added V0.9.1 (99-12-28) [umoeller]
-                         cmnIsFeatureEnabled(Snap2Grid));
+                         cmnQuerySetting(sfSnap2Grid));
 #endif
         winhEnableDlgItem(pcnbp->hwndDlgPage,
                          ID_XSDI_ENABLESTATUSBAR,
                          // always disable for Desktop
                          (   (pcnbp->somSelf != cmnQueryActiveDesktop())
 #ifndef __ALWAYSSUBCLASS__
-                          && (!cmnIsFeatureEnabled(NoSubclassing))
+                          && (!cmnQuerySetting(sfNoSubclassing))
 #endif
 #ifndef __NOCFGSTATUSBARS__
-                          && (cmnIsFeatureEnabled(StatusBars))
+                          && (cmnQuerySetting(sfStatusBars))
 #endif
                          ));
     }
@@ -904,6 +939,12 @@ MRESULT fdrXFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *
  ********************************************************************/
 
+static XWPSETTING G_StartupFolderBackup[] =
+    {
+        sulStartupInitialDelay,
+        sfShowStartupProgress
+    };
+
 /*
  * fdrStartupFolderInitPage:
  *      notebook callback function (notebook.c) for the
@@ -922,7 +963,7 @@ MRESULT fdrXFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 VOID fdrStartupFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                               ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XFldStartupData *somThis = NULL;
 
     somThis = XFldStartupGetData(pcnbp->somSelf);
@@ -936,10 +977,14 @@ VOID fdrStartupFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
-            pcnbp->pUser = malloc(sizeof(XFldStartupData) + sizeof(GLOBALSETTINGS));
+            /* pcnbp->pUser = malloc(sizeof(XFldStartupData) + sizeof(GLOBALSETTINGS));
             memcpy(pcnbp->pUser, somThis, sizeof(XFldStartupData));
             memcpy((char *) pcnbp->pUser + sizeof(XFldStartupData),
-                   pGlobalSettings, sizeof(GLOBALSETTINGS));
+                   pGlobalSettings, sizeof(GLOBALSETTINGS)); */
+            pcnbp->pUser = cmnBackupSettings(G_StartupFolderBackup,
+                                             ARRAYITEMCOUNT(G_StartupFolderBackup));
+            pcnbp->pUser2 = malloc(sizeof(XFldStartupData));
+            memcpy(pcnbp->pUser2, somThis, sizeof(XFldStartupData));
         }
 
         // set up sliders
@@ -960,14 +1005,14 @@ VOID fdrStartupFolderInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
         // initial delay
         winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage, ID_SDDI_STARTUP_INITDELAY_SLID),
                                  SMA_INCREMENTVALUE,
-                                 (pGlobalSettings->ulStartupInitialDelay / 500) - 1);
+                                 (cmnQuerySetting(sulStartupInitialDelay) / 500) - 1);
         // per-object delay
         winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage, ID_SDDI_STARTUP_OBJDELAY_SLID),
                                  SMA_INCREMENTVALUE,
                                  (_ulObjectDelay / 500) - 1);
 
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_SHOWSTARTUPPROGRESS,
-                              pGlobalSettings->ShowStartupProgress);
+                              cmnQuerySetting(sfShowStartupProgress));
         if (_ulType == XSTARTUP_REBOOTSONLY)
             winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_STARTUP_REBOOTSONLY, TRUE);
 
@@ -998,7 +1043,7 @@ MRESULT fdrStartupFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                     ULONG ulItemID, USHORT usNotifyCode,
                                     ULONG ulExtra)      // for checkboxes: contains new state
 {
-    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+    // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     ULONG   ulChange = 1;
     BOOL fUpdate = TRUE;
     XFldStartupData *somThis = XFldStartupGetData(pcnbp->somSelf);
@@ -1006,7 +1051,7 @@ MRESULT fdrStartupFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     switch (ulItemID)
     {
         case ID_SDDI_SHOWSTARTUPPROGRESS:
-            pGlobalSettings->ShowStartupProgress = ulExtra;
+            cmnSetSetting(sfShowStartupProgress, ulExtra);
             fUpdate = FALSE;
         break;
 
@@ -1022,7 +1067,7 @@ MRESULT fdrStartupFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                               ID_SDDI_STARTUP_INITDELAY_TXT2,
                               szMS);
 
-            pGlobalSettings->ulStartupInitialDelay = lMS;
+            cmnSetSetting(sulStartupInitialDelay, lMS);
             fUpdate = FALSE;
         break; }
 
@@ -1055,13 +1100,16 @@ MRESULT fdrStartupFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case DID_UNDO:
             if (pcnbp->pUser)
             {
-                XFldStartupData *Backup = (pcnbp->pUser);
-                PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)((char *) pcnbp->pUser + sizeof(XFldStartupData));
+                XFldStartupData *Backup = pcnbp->pUser2;
+                // PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)((char *) pcnbp->pUser + sizeof(XFldStartupData));
                 // "Undo" button: restore backed up instance & global data
                 _ulType = Backup->ulType;
                 _ulObjectDelay = Backup->ulObjectDelay;
-                pGlobalSettings->ShowStartupProgress = pGSBackup->ShowStartupProgress;
-                pGlobalSettings->ulStartupInitialDelay = pGSBackup->ulStartupInitialDelay;
+                cmnRestoreSettings(pcnbp->pUser,
+                                   ARRAYITEMCOUNT(G_StartupFolderBackup));
+                /* cmnSetSetting(sfShowStartupProgress, pGSBackup->ShowStartupProgress);
+                cmnSetSetting(sulStartupInitialDelay, pGSBackup->ulStartupInitialDelay);
+                */
                 // update the display by calling the INIT callback
                 pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
             }
@@ -1080,10 +1128,10 @@ MRESULT fdrStartupFolderItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             ulChange = 0;
     }
 
-    cmnUnlockGlobalSettings();
+    // cmnUnlockGlobalSettings();
 
-    if (ulChange)
-        cmnStoreGlobalSettings();
+    /* if (ulChange)
+        cmnStoreGlobalSettings(); */
 
     if (fUpdate)
         _wpSaveDeferred(pcnbp->somSelf);

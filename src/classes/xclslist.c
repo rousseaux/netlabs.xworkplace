@@ -359,11 +359,11 @@ SOM_Scope BOOL  SOMLINK xwlist_wpMenuItemSelected(XWPClassList *somSelf,
 
 SOM_Scope ULONG  SOMLINK xwlist_wpQueryDefaultView(XWPClassList *somSelf)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XWPClassListData *somThis = XWPClassListGetData(somSelf); */
     XWPClassListMethodDebug("XWPClassList","xwlist_wpQueryDefaultView");
 
-    return (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW);
+    return (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW);
 }
 
 /*
@@ -425,13 +425,13 @@ SOM_Scope HWND  SOMLINK xwlist_wpOpen(XWPClassList *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         XWPClassListData *somThis = XWPClassListGetData(somSelf);
 
         fLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
         if (fLocked)
         {
-            if (ulView == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW))
+            if (ulView == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW))
             {
                 hwndNewView = cllCreateClassListView(somSelf, hwndCnr, ulView);
                 _hwndOpenView = hwndNewView;

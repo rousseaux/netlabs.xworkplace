@@ -29,9 +29,6 @@ XCenter:
         or data file, and have it opened.
     --  "Run" TCP/IP support (ftp, http, etc.)
 
-xfix:
-    --  "select by name", e.g. "*.jpg"
-
 shadows:
     --  allow different title (Win95 shortcuts);
         check http://hobbes.nmsu.edu/pub/os2/util/wps/shortcut.zip

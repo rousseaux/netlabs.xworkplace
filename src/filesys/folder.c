@@ -155,7 +155,7 @@ BOOL fdrHasShowAllInTreeView(WPFolder *somSelf)
 BOOL fdrSetup(WPFolder *somSelf,
               const char *pszSetupString)
 {
-    PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
     XFolderData *somThis = XFolderGetData(somSelf);
 
     BOOL        rc = TRUE,
@@ -268,7 +268,7 @@ BOOL fdrSetup(WPFolder *somSelf,
     }
 
 #ifndef __ALWAYSEXTSORT__
-    if (cmnIsFeatureEnabled(ExtendedSorting))
+    if (cmnQuerySetting(sfExtendedSorting))
 #endif
     {
         cbValue = sizeof(szValue);
@@ -402,7 +402,7 @@ BOOL fdrQuerySetup(WPObject *somSelf,
         #define WP_GLOBAL_COLOR         0x40000000
 
         XFolderData *somThis = XFolderGetData(somSelf);
-        PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+        // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
 
         // temporary buffer for building the setup string
         XSTRING // strTemp,
@@ -446,7 +446,7 @@ BOOL fdrQuerySetup(WPObject *somSelf,
         // SORTBYATTR... don't think we need this
 
 #ifndef __ALWAYSEXTSORT__
-        if (cmnIsFeatureEnabled(ExtendedSorting))
+        if (cmnQuerySetting(sfExtendedSorting))
 #endif
         {
             if (_lAlwaysSort != SET_DEFAULT)
@@ -1054,11 +1054,11 @@ BOOL fdrSetOneFrameWndTitle(WPFolder *somSelf,
                         pNextSlash = 0;
     CHAR                szTemp[CCHMAXPATH] = "";
     XFolderData         *somThis = XFolderGetData(somSelf);
-    PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
     BOOL                brc = FALSE;
 
     if (    (_bFullPathInstance == 1)
-         || ((_bFullPathInstance == 2) && (pGlobalSettings->FullPath))
+         || ((_bFullPathInstance == 2) && (cmnQuerySetting(sfFullPath)))
        )
     {
         // settings allow full path in title for this folder:
@@ -1068,10 +1068,10 @@ BOOL fdrSetOneFrameWndTitle(WPFolder *somSelf,
 
         // now truncate path if it's longer than allowed by user
         pFirstSlash = strchr(szTemp, '\\');
-        if ((pFirstSlash) && (pGlobalSettings->MaxPathChars > 10))
+        if ((pFirstSlash) && (cmnQuerySetting(sulMaxPathChars) > 10))
         {
             pSrchSlash = pFirstSlash+3;
-            while (strlen(szTemp) > pGlobalSettings->MaxPathChars)
+            while (strlen(szTemp) > cmnQuerySetting(sulMaxPathChars))
             {
                 if (pNextSlash = strchr(pSrchSlash, '\\'))
                 {
@@ -1088,7 +1088,7 @@ BOOL fdrSetOneFrameWndTitle(WPFolder *somSelf,
 
         // now either append the full path in brackets to or replace window title
         if (    (_bKeepTitleInstance == 1)
-             || ((_bKeepTitleInstance == 2) && (pGlobalSettings->KeepTitle))
+             || ((_bKeepTitleInstance == 2) && (cmnQuerySetting(sfKeepTitle)))
            ) // V0.9.4 (2000-08-02) [umoeller]
         {
             CHAR szFullPathTitle[CCHMAXPATH*2] = "";
@@ -1291,7 +1291,7 @@ BOOL fdrSnapToGrid(WPFolder *somSelf,
     // only the selected ones
     BOOL                fShiftPressed = doshQueryShiftState();
 
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     // first we need the frame handle of a currently open icon view;
     // all others don't make sense
@@ -1306,10 +1306,10 @@ BOOL fdrSnapToGrid(WPFolder *somSelf,
             // slow. Instead, we query the container directly.
 
             _Pmpf((__FUNCTION__ ": x= %d, y = %d, cx = %d, cy = %d",
-                        pGlobalSettings->GridX,
-                        pGlobalSettings->GridY,
-                        pGlobalSettings->GridCX,
-                        pGlobalSettings->GridCY));
+                        cmnQuerySetting(sulGridX),
+                        cmnQuerySetting(sulGridY),
+                        cmnQuerySetting(sulGridCX),
+                        cmnQuerySetting(sulGridCY)));
 
             pmrc = NULL;
             do
@@ -1357,16 +1357,16 @@ BOOL fdrSnapToGrid(WPFolder *somSelf,
                                NULL);
 
                     // now play with the objects coordinates
-                    lNewX = ( ( (   (pmrc->ptlIcon.x - pGlobalSettings->GridX)
-                                  + (pGlobalSettings->GridCX / 2)
-                                ) / pGlobalSettings->GridCX
-                              ) * pGlobalSettings->GridCX
-                            ) + pGlobalSettings->GridX;
-                    lNewY = ( ( (   (pmrc->ptlIcon.y - pGlobalSettings->GridY)
-                                  + (pGlobalSettings->GridCY / 2)
-                                ) / pGlobalSettings->GridCY
-                              ) * pGlobalSettings->GridCY
-                            ) + pGlobalSettings->GridY;
+                    lNewX = ( ( (   (pmrc->ptlIcon.x - cmnQuerySetting(sulGridX))
+                                  + (cmnQuerySetting(sulGridCX) / 2)
+                                ) / cmnQuerySetting(sulGridCX)
+                              ) * cmnQuerySetting(sulGridCX)
+                            ) + cmnQuerySetting(sulGridX);
+                    lNewY = ( ( (   (pmrc->ptlIcon.y - cmnQuerySetting(sulGridY))
+                                  + (cmnQuerySetting(sulGridCY) / 2)
+                                ) / cmnQuerySetting(sulGridCY)
+                              ) * cmnQuerySetting(sulGridCY)
+                            ) + cmnQuerySetting(sulGridY);
 
                     // update the record core
                     if ( (lNewX) && (lNewX != pmrc->ptlIcon.x) )
@@ -1694,31 +1694,33 @@ MRESULT EXPENTRY fncbUpdateStatusBars(HWND hwndView,        // folder frame
             else
             {
                 // show/hide flag:
-                PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+                // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
                 XFolderData *somThis = XFolderGetData(mpFolder);
+                ULONG flViews;
                 BOOL fVisible = (
                                     // status bar feature enabled?
 #ifndef __NOCFGSTATUSBARS__
-                                    (cmnIsFeatureEnabled(StatusBars))
+                                    (cmnQuerySetting(sfStatusBars))
                                 &&
 #endif
                                     // status bars either enabled for this instance
                                     // or in global settings?
                                     (    (_bStatusBarInstance == STATUSBAR_ON)
                                       || (    (_bStatusBarInstance == STATUSBAR_DEFAULT)
-                                           && (pGlobalSettings->fDefaultStatusBarVisibility)
+                                           && (cmnQuerySetting(sfDefaultStatusBarVisibility))
                                          )
                                     )
+                                && (flViews = cmnQuerySetting(sflSBForViews))
                                 &&
                                     // status bars enabled for current view type?
                                     (   (   ((ULONG)mpView == OPEN_CONTENTS)
-                                         && (pGlobalSettings->SBForViews & SBV_ICON)
+                                         && (flViews & SBV_ICON)
                                         )
                                      || (   ((ULONG)mpView == OPEN_TREE)
-                                         && (pGlobalSettings->SBForViews & SBV_TREE)
+                                         && (flViews & SBV_TREE)
                                         )
                                      || (   ((ULONG)mpView == OPEN_DETAILS)
-                                         && (pGlobalSettings->SBForViews & SBV_DETAILS)
+                                         && (flViews & SBV_DETAILS)
                                         )
                                     )
                                 );
@@ -1978,7 +1980,7 @@ VOID StatusPaint(HWND hwndBar)
 {
     // preparations:
     HPS     hps = WinBeginPaint(hwndBar, NULLHANDLE, NULL);
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     TRY_LOUD(excpt1)
     {
@@ -1990,6 +1992,7 @@ VOID StatusPaint(HWND hwndBar)
         USHORT  usLength;
         LONG    lNextX;
         PSZ     p1, p2, p3;
+        ULONG   ulStyle = cmnQuerySetting(sulSBStyle);
         LONG    lHiColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONLIGHT, 0),
                 lLoColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONDARK, 0);
 
@@ -2001,7 +2004,7 @@ VOID StatusPaint(HWND hwndBar)
         // 1) draw background
         WinFillRect(hps,
                     &rclBar,                // exclusive
-                    pGlobalSettings->lSBBgndColor);
+                    cmnQuerySetting(slSBBgndColor));
 
         rclPaint.xLeft = rclBar.xLeft;
         rclPaint.yBottom = rclBar.yBottom;
@@ -2009,59 +2012,64 @@ VOID StatusPaint(HWND hwndBar)
         rclPaint.yTop = rclBar.yTop - 1;
 
         // 2) draw 3D frame in selected style
-        if (pGlobalSettings->SBStyle == SBSTYLE_WARP3RAISED)
-            // Warp 3 style, raised
-            gpihDraw3DFrame(hps,
-                            &rclPaint,
-                            1,
-                            lHiColor,
-                            lLoColor);
-        else if (pGlobalSettings->SBStyle == SBSTYLE_WARP3SUNKEN)
-            // Warp 3 style, sunken
-            gpihDraw3DFrame(hps,
-                            &rclPaint,
-                            1,
-                            lLoColor,
-                            lHiColor);
-        else if (pGlobalSettings->SBStyle == SBSTYLE_WARP4MENU)
+        switch (ulStyle)
         {
-            // Warp 4 menu style: draw 3D line at top only
-            rclPaint.yBottom = rclPaint.yTop - 1;
-            gpihDraw3DFrame(hps,
-                            &rclPaint,
-                            1,
-                            lLoColor,
-                            lHiColor);
-        }
-        else
-        {
-            // Warp 4 button style
-            // draw "sunken" outer rect
-            gpihDraw3DFrame(hps,
-                            &rclPaint,
-                            2,
-                            lLoColor,
-                            lHiColor);
-            // draw "raised" inner rect
-            rclPaint.xLeft++;
-            rclPaint.yBottom++;
-            rclPaint.xRight--;
-            rclPaint.yTop--;
-            gpihDraw3DFrame(hps,
-                            &rclPaint,
-                            2,
-                            lHiColor,
-                            lLoColor);
+            case SBSTYLE_WARP3RAISED:
+                // Warp 3 style, raised
+                gpihDraw3DFrame(hps,
+                                &rclPaint,
+                                1,
+                                lHiColor,
+                                lLoColor);
+            break;
+
+            case SBSTYLE_WARP3SUNKEN:
+                // Warp 3 style, sunken
+                gpihDraw3DFrame(hps,
+                                &rclPaint,
+                                1,
+                                lLoColor,
+                                lHiColor);
+            break;
+
+            case SBSTYLE_WARP4MENU:
+                // Warp 4 menu style: draw 3D line at top only
+                rclPaint.yBottom = rclPaint.yTop - 1;
+                gpihDraw3DFrame(hps,
+                                &rclPaint,
+                                1,
+                                lLoColor,
+                                lHiColor);
+            break;
+
+            default:
+                // Warp 4 button style
+                // draw "sunken" outer rect
+                gpihDraw3DFrame(hps,
+                                &rclPaint,
+                                2,
+                                lLoColor,
+                                lHiColor);
+                // draw "raised" inner rect
+                rclPaint.xLeft++;
+                rclPaint.yBottom++;
+                rclPaint.xRight--;
+                rclPaint.yTop--;
+                gpihDraw3DFrame(hps,
+                                &rclPaint,
+                                2,
+                                lHiColor,
+                                lLoColor);
+            break;
         }
 
         // 3) start working on text; we do "simple" GpiCharString
         //    if no tabulators are defined, but calculate some
         //    subrectangles otherwise
-        pszText = winhQueryWindowText(hwndBar);
+        if (pszText = winhQueryWindowText(hwndBar))
+        {
                 // pszText now has the translated status bar text
                 // except for the tabulators ("$x" keys)
-        if (pszText)
-        {
             p1 = pszText;
             p2 = NULL;
             ptl1.x = 7;
@@ -2104,10 +2112,10 @@ VOID StatusPaint(HWND hwndBar)
                 else
                     usLength = strlen(p1);
 
-                ptl1.y = (pGlobalSettings->SBStyle == SBSTYLE_WARP4MENU) ? 5 : 7;
+                ptl1.y = (cmnQuerySetting(sulSBStyle) == SBSTYLE_WARP4MENU) ? 5 : 7;
                 // set the text color to the global value;
                 // this might have changed via color drag'n'drop
-                GpiSetColor(hps, pGlobalSettings->lSBTextColor);
+                GpiSetColor(hps, cmnQuerySetting(slSBTextColor));
                     // the font is already preset by the static
                     // text control (phhhh...)
 
@@ -2207,43 +2215,30 @@ VOID StatusPresParamChanged(HWND hwndBar,
             // might have changed)
             WinSendMsg(WinQueryWindow(hwndBar, QW_PARENT),
                     WM_UPDATEFRAME, MPNULL, MPNULL);
-        break; }
+        }
+        break;
 
         case PP_FOREGROUNDCOLOR:
         case PP_BACKGROUNDCOLOR:
         {
-            GLOBALSETTINGS* pGlobalSettings = NULL;
-            // ULONG ulNesting;
-            // DosEnterMustComplete(&ulNesting);
-            TRY_LOUD(excpt1)
-            {
-                ULONG   ul = 0,
-                        attrFound = 0;
-                pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+            ULONG   ul = 0,
+                    attrFound = 0;
 
-                WinQueryPresParam(hwndBar,
-                                  (ULONG)mp1,
-                                  0,
-                                  &attrFound,
-                                  (ULONG)sizeof(ul),
-                                  (PVOID)&ul,
-                                  0);
-                if ((ULONG)mp1 == PP_FOREGROUNDCOLOR)
-                    pGlobalSettings->lSBTextColor = ul;
-                else
-                    pGlobalSettings->lSBBgndColor = ul;
-            }
-            CATCH(excpt1) {} END_CATCH();
-
-            if (pGlobalSettings)
-                cmnUnlockGlobalSettings();
-
-            // DosExitMustComplete(&ulNesting);
-
-            cmnStoreGlobalSettings();
+            WinQueryPresParam(hwndBar,
+                              (ULONG)mp1,
+                              0,
+                              &attrFound,
+                              (ULONG)sizeof(ul),
+                              (PVOID)&ul,
+                              0);
+            if ((ULONG)mp1 == PP_FOREGROUNDCOLOR)
+                cmnSetSetting(slSBTextColor, ul);
+            else
+                cmnSetSetting(slSBBgndColor, ul);
 
             WinPostMsg(hwndBar, STBM_UPDATESTATUSBAR, MPNULL, MPNULL);
-        break; }
+        }
+        break;
     }
 
     // finally, broadcast this message to all other status bars;
@@ -2514,7 +2509,8 @@ MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
             winhEntryFieldSelectAll(hwndDropDown);
 
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-        break; }
+        }
+        break;
 
         /*
          * WM_COMMAND:
@@ -2606,50 +2602,50 @@ MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                                               szMask);
                         }
                     }
-                break; }
+                }
+                break;
 
                 case ID_XFDI_SOME_SELECTALL:
                 case ID_XFDI_SOME_DESELECTALL:
                 {
-                    HWND hwndFrame = WinQueryWindowULong(hwndDlg, QWL_USER);
-                    if (hwndFrame)
+                    HWND hwndFrame, hwndCnr;
+                    if (    (hwndFrame = WinQueryWindowULong(hwndDlg, QWL_USER))
+                         && (hwndCnr = wpshQueryCnrFromFrame(hwndFrame))
+                       )
                     {
-                        HWND hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
-                        if (hwndCnr)
-                        {
-                            PMINIRECORDCORE pmrc = NULL;
-                            do {
-                                pmrc =
-                                    (PMINIRECORDCORE)WinSendMsg(hwndCnr,
-                                                                CM_QUERYRECORD,
-                                                                (MPARAM)pmrc,
-                                                                MPFROM2SHORT(
-                                                                    (pmrc)
-                                                                        ? CMA_NEXT
-                                                                        : CMA_FIRST,
-                                                                    CMA_ITEMORDER)
-                                                                );
-                                if (pmrc)
-                                {
-                                    WinSendMsg(hwndCnr,
-                                               CM_SETRECORDEMPHASIS,
-                                               pmrc,
-                                               MPFROM2SHORT(
-                                                   // select or deselect flag
-                                                   (SHORT1FROMMP(mp1) == ID_XFDI_SOME_SELECTALL),
-                                                   CRA_SELECTED
-                                               ));
-                                }
-                            } while (pmrc);
+                        PMINIRECORDCORE pmrc = NULL;
+                        do {
+                            pmrc =
+                                (PMINIRECORDCORE)WinSendMsg(hwndCnr,
+                                                            CM_QUERYRECORD,
+                                                            (MPARAM)pmrc,
+                                                            MPFROM2SHORT(
+                                                                (pmrc)
+                                                                    ? CMA_NEXT
+                                                                    : CMA_FIRST,
+                                                                CMA_ITEMORDER)
+                                                            );
+                            if (pmrc)
+                            {
+                                WinSendMsg(hwndCnr,
+                                           CM_SETRECORDEMPHASIS,
+                                           pmrc,
+                                           MPFROM2SHORT(
+                                               // select or deselect flag
+                                               (SHORT1FROMMP(mp1) == ID_XFDI_SOME_SELECTALL),
+                                               CRA_SELECTED
+                                           ));
+                            }
+                        } while (pmrc);
 
-                            winhSetDlgItemFocus(hwndDlg, ID_XFDI_SOME_ENTRYFIELD);
-                            WinSendDlgItemMsg(hwndDlg, ID_XFDI_SOME_ENTRYFIELD,
-                                              EM_SETSEL,
-                                              MPFROM2SHORT(0, 1000), // select all
-                                              MPNULL);
-                        }
+                        winhSetDlgItemFocus(hwndDlg, ID_XFDI_SOME_ENTRYFIELD);
+                        WinSendDlgItemMsg(hwndDlg, ID_XFDI_SOME_ENTRYFIELD,
+                                          EM_SETSEL,
+                                          MPFROM2SHORT(0, 1000), // select all
+                                          MPNULL);
                     }
-                break; }
+                }
+                break;
 
                 case DID_CANCEL:
                     WinPostMsg(hwndDlg, WM_CLOSE, 0, 0);
@@ -2873,26 +2869,19 @@ MRESULT EXPENTRY fnwpStartupDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         break;
 
         case WM_SYSCOMMAND:
-        {
             switch (SHORT1FROMMP(mp1))
             {
                 case SC_CLOSE:
                 case SC_HIDE:
                 {
-                    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-                    if (pGlobalSettings)
-                    {
-                        pGlobalSettings->ShowStartupProgress = 0;
-                        cmnUnlockGlobalSettings();
-                        cmnStoreGlobalSettings();
-                    }
+                    cmnSetSetting(sfShowStartupProgress, 0);
                     mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
                 break; }
 
                 default:
                     mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
             }
-        break; }
+        break;
 
         default:
             mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
@@ -2913,7 +2902,7 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
 {
     PPROCESSFOLDER      ppf = (PPROCESSFOLDER)ptiMyself->ulData;
     WPFolder            *pFolder = ppf->pFolder;
-    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
 
     while (!ppf->fCancelled)
     {
@@ -2961,7 +2950,7 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
                     // open the object:
 
                     // 1) update the status window
-                    if (pGlobalSettings->ShowStartupProgress)
+                    if (cmnQuerySetting(sfShowStartupProgress))
                     {
                         CHAR szStarting2[500], szTemp[500];
                         // update status text ("Starting xxx")
@@ -2979,7 +2968,7 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
                                                                     (MPARAM)OPEN_DEFAULT);
 
                     // update status bar
-                    if (pGlobalSettings->ShowStartupProgress)
+                    if (cmnQuerySetting(sfShowStartupProgress))
                         WinSendDlgItemMsg(ppf->hwndStatus, ID_SDDI_PROGRESSBAR,
                                           WM_UPDATEPROGRESSBAR,
                                           MPFROMLONG(ppf->ulObjectThis),
@@ -3116,7 +3105,7 @@ ULONG fdrStartFolderContents(WPFolder *pFolder,
     ULONG ulrc = 0;
 
     PROCESSFOLDER       pf;
-    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
 
     memset(&pf, 0, sizeof(pf));
 
@@ -3133,7 +3122,7 @@ ULONG fdrStartFolderContents(WPFolder *pFolder,
     // set title V0.9.13 (2001-06-27) [umoeller]
     WinSetWindowText(pf.hwndStatus, _wpQueryTitle(pFolder));
 
-    if (pGlobalSettings->ShowStartupProgress)
+    if (cmnQuerySetting(sfShowStartupProgress))
     {
         // get last window position from INI
         winhRestoreWindowPos(pf.hwndStatus,

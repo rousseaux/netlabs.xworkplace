@@ -118,7 +118,7 @@ SOM_Scope ULONG  SOMLINK xwpscr_xwpAddXWPScreenPages(XWPScreen *somSelf,
     // hook installed?
     if (hifXWPHookReady())
     {
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         PCREATENOTEBOOKPAGE pcnbp;
         HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
         // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
@@ -140,7 +140,7 @@ SOM_Scope ULONG  SOMLINK xwpscr_xwpAddXWPScreenPages(XWPScreen *somSelf,
         ulrc = ntbInsertPage(pcnbp);
 
 #ifndef __NOPAGEMAGE__
-        if (pGlobalSettings->fEnablePageMage)
+        if (cmnQuerySetting(sfEnablePageMage))
         {
             // "PageMage" colors
             pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));

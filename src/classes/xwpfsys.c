@@ -317,7 +317,7 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetTitleAndRenameFile(XWPFileSystem *somSelf,
 
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpSetTitleAndRenameFile");
 
-    if (    (cmnIsFeatureEnabled(TurboFolders))
+    if (    (cmnQuerySetting(sfTurboFolders))
             // we only need to handle the case where the object's name
             // is being changed, so skip if we aren't even initialized yet
          && (_wpIsObjectInitialized(somSelf))
@@ -351,7 +351,7 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetTitleAndRenameFile(XWPFileSystem *somSelf,
             fdrReleaseFolderWriteMutexSem(pMyFolder);
 
         return (brc);
-    } // end if (cmnIsFeatureEnabled(TurboFolders))
+    } // end if (cmnQuerySetting(sfTurboFolders))
 
     return (XWPFileSystem_parent_WPFileSystem_wpSetTitleAndRenameFile(somSelf,
                                                                       pszNewTitle,
@@ -397,7 +397,7 @@ SOM_Scope HPOINTER  SOMLINK xfs_wpQueryIcon(XWPFileSystem *somSelf)
     // XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpQueryIcon");
 
-    if (cmnIsFeatureEnabled(TurboFolders))
+    if (cmnQuerySetting(sfTurboFolders))
     {
         PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
         if (!(hptrReturn = prec->hptrIcon))
@@ -442,7 +442,7 @@ SOM_Scope BOOL  SOMLINK xfs_wpRefresh(XWPFileSystem *somSelf,
     XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpRefresh");
 
-    if (cmnIsFeatureEnabled(TurboFolders))
+    if (cmnQuerySetting(sfTurboFolders))
     {
         return !fsysRefresh(somSelf, pReserved);
     }
@@ -500,7 +500,7 @@ SOM_Scope void  SOMLINK xfs_wpCnrRefreshDetails(XWPFileSystem *somSelf)
 
 SOM_Scope void  SOMLINK xfsM_wpclsInitData(M_XWPFileSystem *somSelf)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     /* M_XWPFileSystemData *somThis = M_XWPFileSystemGetData(somSelf); */
     M_XWPFileSystemMethodDebug("M_XWPFileSystem","xfsM_wpclsInitData");
@@ -508,17 +508,17 @@ SOM_Scope void  SOMLINK xfsM_wpclsInitData(M_XWPFileSystem *somSelf)
     if (krnClassInitialized(G_pcszXWPFileSystem))
     {
         // make a copy of the "turbo folders" setting _now_, which
-        // will then be returned by cmnIsFeatureEnabled for the rest
+        // will then be returned by cmnQuerySetting for the rest
         // of this WPS session; doing this here ensures that the
         // setting is only enabled if XWPFileSystem is installed
-        G_fTurboSettingsEnabled = pGlobalSettings->__fTurboFolders;
+        G_fTurboSettingsEnabled = FALSE; // cmnQuerySetting(s__fTurboFolders;)
+                    // @@todo
     }
 
 #ifdef __REPLHANDLES__
     // query once at system startup whether handles
     // management has been replaced
-    G_fReplaceHandles = pGlobalSettings->fReplaceHandles;
-    if (G_fReplaceHandles)
+    if (G_fReplaceHandles = cmnQuerySetting(sfReplaceHandles))
         // enabled:
         // initialize handles
         fhdlLoadHandles();
@@ -571,7 +571,7 @@ SOM_Scope WPObject*  SOMLINK xfsM_wpclsQueryAwakeObject(M_XWPFileSystem *somSelf
     /* M_XWPFileSystemData *somThis = M_XWPFileSystemGetData(somSelf); */
     M_XWPFileSystemMethodDebug("M_XWPFileSystem","xfsM_wpclsQueryAwakeObject");
 
-    if (    (cmnIsFeatureEnabled(TurboFolders))
+    if (    (cmnQuerySetting(sfTurboFolders))
             // we can't handle UNC yet
          && (pszInputPath[0] != '\\')
          && (pszInputPath[1] != '\\')
@@ -605,7 +605,7 @@ SOM_Scope WPObject*  SOMLINK xfsM_wpclsFileSysExists(M_XWPFileSystem *somSelf,
     /* M_XWPFileSystemData *somThis = M_XWPFileSystemGetData(somSelf); */
     M_XWPFileSystemMethodDebug("M_XWPFileSystem","xfsM_wpclsFileSysExists");
 
-    if (    (cmnIsFeatureEnabled(TurboFolders))
+    if (    (cmnQuerySetting(sfTurboFolders))
             // we can't handle UNC yet
          && (_wpQueryFilename(Folder, szFolder, TRUE))
          && (szFolder[0] != '\\')

@@ -59,6 +59,10 @@
 #define INCL_WININPUT
 #define INCL_WINSYS
 #define INCL_WINTIMER
+#define INCL_WINDIALOGS
+#define INCL_WINSTATICS
+#define INCL_WINBUTTONS
+#define INCL_WINENTRYFIELDS
 
 #define INCL_GPICONTROL
 #define INCL_GPIPRIMITIVES
@@ -76,11 +80,13 @@
 
 // headers in /helpers
 #include "helpers\comctl.h"             // common controls (window procs)
+#include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\timer.h"              // replacement PM timers
@@ -89,6 +95,7 @@
 // SOM headers which don't crash with prec. header files
 
 // XWorkplace implementation headers
+#include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 
@@ -102,6 +109,8 @@
  *
  ********************************************************************/
 
+#define XM_NEWDATAAVAILABLE WM_USER
+
 /*
  *@@ PULSESETUP:
  *      instance data to which setup strings correspond.
@@ -113,14 +122,17 @@
  *      both the open widget window and a settings dialog.
  *
  *@@added V0.9.7 (2000-12-07) [umoeller]
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: added new fields for SMP support
  */
 
 typedef struct _PULSESETUP
 {
     LONG            lcolBackground,
-                    lcolGraph,
                     lcolGraphIntr,
                     lcolText;
+
+    PLONG           palcolGraph;        // array of graph colors for each CPU
+                                        // V0.9.16 (2002-01-05) [umoeller]
 
     PSZ             pszFont;
             // if != NULL, non-default font (in "8.Helv" format);
@@ -137,6 +149,8 @@ typedef struct _PULSESETUP
  *
  *      An instance of this is created on WM_CREATE in
  *      fnwpPulseWidget and stored in XCENTERWIDGET.pUser.
+ *
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: added new fields for SMP support
  */
 
 typedef struct _WIDGETPRIVATE
@@ -171,6 +185,7 @@ typedef struct _WIDGETPRIVATE
 
     PDOSHPERFSYS    pPerfData;      // performance data (doshPerf* calls)
 
+    ULONG           cProcessors;          // CPU Count V0.9.16 (2002-01-05) [umoeller]
     ULONG           cLoads;
     PLONG           palLoads;       // ptr to an array of LONGs containing previous
                                     // CPU loads
@@ -205,6 +220,50 @@ typedef struct _WIDGETPRIVATE
  *      both an open widget window and a settings dialog.
  */
 
+#define INDEX_BACKGROUND        1000
+#define INDEX_TEXT              1001
+#define INDEX_IRQLOAD           1002
+
+/*
+ *@@ QueryDefaultColor:
+ *      returns the default color for the given CPU index.
+ *
+ *      Special indices:
+ *
+ *      --  INDEX_BACKGROUND: background color.
+ *      --  INDEX_TEXT:       text color.
+ *      --  INDEX_IRQLOAD:    IRQ load color.
+ *
+ *@@added V0.9.16 (2002-01-05) [umoeller]
+ */
+
+LONG QueryDefaultColor(ULONG ulIndex)
+{
+    switch (ulIndex)
+    {
+        case INDEX_BACKGROUND:
+            return WinQuerySysColor(HWND_DESKTOP, SYSCLR_DIALOGBACKGROUND, 0);
+
+        case INDEX_TEXT:
+            return WinQuerySysColor(HWND_DESKTOP, SYSCLR_WINDOWTEXT, 0);
+
+        case INDEX_IRQLOAD:
+            return RGBCOL_RED;
+
+        case 0:
+            return RGBCOL_DARKCYAN;
+
+        case 1:
+            return RGBCOL_DARKBLUE;
+
+        case 2:
+            return RGBCOL_GREEN;
+    }
+
+    // any other CPU (3 or higher):
+    return RGBCOL_DARKGRAY;
+}
+
 /*
  *@@ PwgtClearSetup:
  *      cleans up the data in the specified setup
@@ -216,11 +275,8 @@ VOID PwgtClearSetup(PPULSESETUP pSetup)
 {
     if (pSetup)
     {
-        if (pSetup->pszFont)
-        {
-            free(pSetup->pszFont);
-            pSetup->pszFont = NULL;
-        }
+        FREE(pSetup->pszFont);
+        FREE(pSetup->palcolGraph);
     }
 }
 
@@ -235,12 +291,15 @@ VOID PwgtClearSetup(PPULSESETUP pSetup)
  *
  *@@added V0.9.7 (2000-12-07) [umoeller]
  *@@changed V0.9.9 (2001-03-14) [umoeller]: added interrupts graph
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: added SMP support, added proper default colors
  */
 
 VOID PwgtScanSetup(const char *pcszSetupString,
-                   PPULSESETUP pSetup)
+                   PPULSESETUP pSetup,
+                   ULONG cProcessors)               // in: CPU count from WIDGETPRIVATE
 {
-    PSZ p;
+    PSZ     p;
+    ULONG   ul;
 
     // width
     if (p = ctrScanSetupString(pcszSetupString,
@@ -260,17 +319,31 @@ VOID PwgtScanSetup(const char *pcszSetupString,
         ctrFreeSetupValue(p);
     }
     else
-        pSetup->lcolBackground = WinQuerySysColor(HWND_DESKTOP, SYSCLR_DIALOGBACKGROUND, 0);
+        pSetup->lcolBackground = QueryDefaultColor(INDEX_BACKGROUND);
 
-    // graph color:
-    if (p = ctrScanSetupString(pcszSetupString,
-                               "GRPHCOL"))
+    // graph color for each CPU:
+    // V0.9.16 (2002-01-05) [umoeller]
+    if (pSetup->palcolGraph = malloc(sizeof(LONG) * cProcessors))
     {
-        pSetup->lcolGraph = ctrParseColorString(p);
-        ctrFreeSetupValue(p);
+        for (ul = 0;
+             ul < cProcessors;
+             ul++)
+        {
+            LONG lColor;
+            CHAR szKeyThis[100];
+            sprintf(szKeyThis, "GRPHCOL%d", ul);
+            if (p = ctrScanSetupString(pcszSetupString,
+                                       szKeyThis))
+            {
+                lColor = ctrParseColorString(p);
+                ctrFreeSetupValue(p);
+            }
+            else
+                lColor = QueryDefaultColor(ul);
+
+            pSetup->palcolGraph[ul] = lColor;
+        }
     }
-    else
-        pSetup->lcolGraph = RGBCOL_DARKCYAN; // RGBCOL_BLUE;
 
     // graph color: (interrupt load)
     if (p = ctrScanSetupString(pcszSetupString,
@@ -280,7 +353,7 @@ VOID PwgtScanSetup(const char *pcszSetupString,
         ctrFreeSetupValue(p);
     }
     else
-        pSetup->lcolGraphIntr = RGBCOL_DARKBLUE;
+        pSetup->lcolGraphIntr = QueryDefaultColor(INDEX_IRQLOAD);
 
 
     // text color:
@@ -291,7 +364,7 @@ VOID PwgtScanSetup(const char *pcszSetupString,
         ctrFreeSetupValue(p);
     }
     else
-        pSetup->lcolText = WinQuerySysColor(HWND_DESKTOP, SYSCLR_WINDOWSTATICTEXT, 0);
+        pSetup->lcolText = QueryDefaultColor(INDEX_TEXT);
 
     // font:
     // we set the font presparam, which automatically
@@ -310,30 +383,59 @@ VOID PwgtScanSetup(const char *pcszSetupString,
  *      composes a new setup string.
  *      The caller must invoke xstrClear on the
  *      string after use.
+ *
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: added SMP support
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: now adding string only if not default color
  */
 
 VOID PwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared first)
-                   PPULSESETUP pSetup)
+                   PPULSESETUP pSetup,
+                   ULONG cProcessors)            // added V0.9.16 (2002-01-05) [umoeller]
 {
     CHAR    szTemp[100];
-    // PSZ     psz = 0;
+    ULONG   ul;
+
     xstrInit(pstrSetup, 100);
 
     sprintf(szTemp, "WIDTH=%d;",
             pSetup->cx);
     xstrcat(pstrSetup, szTemp, 0);
 
-    sprintf(szTemp, "BGNDCOL=%06lX;",
-            pSetup->lcolBackground);
-    xstrcat(pstrSetup, szTemp, 0);
+    if (pSetup->lcolBackground != QueryDefaultColor(INDEX_BACKGROUND))
+    {
+        sprintf(szTemp, "BGNDCOL=%06lX;",
+                pSetup->lcolBackground);
+        xstrcat(pstrSetup, szTemp, 0);
+    }
 
-    sprintf(szTemp, "GRPHCOL=%06lX;",
-            pSetup->lcolGraph);
-    xstrcat(pstrSetup, szTemp, 0);
+    // graph colors for each CPU V0.9.16 (2002-01-05) [umoeller]
+    if (pSetup->palcolGraph)
+        for (ul = 0;
+             ul < cProcessors;
+             ul++)
+        {
+            if (pSetup->palcolGraph[ul] != QueryDefaultColor(ul))
+            {
+                sprintf(szTemp, "GRPHCOL%d=%06lX;",
+                        ul,
+                        pSetup->palcolGraph[ul]);
+                xstrcat(pstrSetup, szTemp, 0);
+            }
+        }
 
-    sprintf(szTemp, "TEXTCOL=%06lX;",
-            pSetup->lcolText);
-    xstrcat(pstrSetup, szTemp, 0);
+    if (pSetup->lcolGraphIntr != QueryDefaultColor(INDEX_IRQLOAD))
+    {
+        sprintf(szTemp, "GRPHINTRCOL=%06lX;",
+                pSetup->lcolGraphIntr);
+        xstrcat(pstrSetup, szTemp, 0);
+    }
+
+    if (pSetup->lcolText != QueryDefaultColor(INDEX_TEXT))
+    {
+        sprintf(szTemp, "TEXTCOL=%06lX;",
+                pSetup->lcolText);
+        xstrcat(pstrSetup, szTemp, 0);
+    }
 
     if (pSetup->pszFont)
     {
@@ -346,13 +448,395 @@ VOID PwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
 
 /* ******************************************************************
  *
+ *   Helpers
+ *
+ ********************************************************************/
+
+/*
+ *@@ GetProcessorCount:
+ *      returns the no. of processors on the system.
+ *      I guess we could use DosQuerySysInfo also
+ *      but this one should return the value from
+ *      doshPerfGet which we should rather use.
+ *
+ *      Expensive call, so use with caution.
+ *
+ *@@added V0.9.16 (2002-01-05) [umoeller]
+ */
+
+APIRET GetProcessorCount(PULONG pcProcessors)
+{
+    APIRET arc;
+    PDOSHPERFSYS    pPerfData;
+    if (!(arc = doshPerfOpen(&pPerfData)))
+    {
+        // already doshPerfOpen gets the CPU count
+        // so there's no need for doshPerfGet
+        *pcProcessors = pPerfData->cProcessors;
+
+        doshPerfClose(&pPerfData);
+    }
+
+    return (arc);
+}
+
+/* ******************************************************************
+ *
  *   Widget settings dialog
  *
  ********************************************************************/
 
-// None currently.
+static PFNWP G_pfnwpOrigStatic = NULL;
 
-// VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
+/*
+ *@@ ctl_fnwpSubclassedColorRect:
+ *      window procedure for subclassed static frames representing
+ *      a color.
+ *
+ *      The control simply paints itself as a rectangle with the
+ *      color specified in its PP_BACKGROUNDCOLOR presentation
+ *      parameter. If a window text is set for the control, it is
+ *      painted with the PP_FOREGROUNDCOLOR color.
+ *
+ *      If the user drags a color onto the control, it notifies
+ *      its owner with the WM_CONTROL message and the EN_CHANGE
+ *      notification code, as with any entry field (since the
+ *      static control knows no notifications, we use that code
+ *      instead).
+ *
+ *@@added V0.9.16 (2002-01-05) [umoeller]
+ */
+
+MRESULT EXPENTRY ctl_fnwpSubclassedColorRect(HWND hwndStatic, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    switch (msg)
+    {
+        case WM_PAINT:
+        {
+            LONG    lColor;
+            RECTL   rclPaint;
+            PSZ     pszText;
+
+            HPS hps = WinBeginPaint(hwndStatic,
+                                    NULLHANDLE, // HPS
+                                    NULL); // PRECTL
+            gpihSwitchToRGB(hps);
+            WinQueryWindowRect(hwndStatic,
+                               &rclPaint);      // exclusive
+            lColor = winhQueryPresColor(hwndStatic,
+                                        PP_BACKGROUNDCOLOR,
+                                        FALSE,      // no inherit
+                                        SYSCLR_DIALOGBACKGROUND);
+
+            // make rect inclusive
+            rclPaint.xRight--;
+            rclPaint.yTop--;
+
+            // draw interior
+            GpiSetColor(hps, lColor);
+            gpihBox(hps,
+                    DRO_FILL,
+                    &rclPaint);
+
+            // draw frame
+            GpiSetColor(hps, RGBCOL_BLACK);
+            gpihBox(hps,
+                    DRO_OUTLINE,
+                    &rclPaint);
+
+            if (pszText = winhQueryWindowText(hwndStatic))
+            {
+                GpiSetColor(hps,
+                            winhQueryPresColor(hwndStatic,
+                                               PP_FOREGROUNDCOLOR,
+                                               FALSE,
+                                               -1));
+                WinDrawText(hps,
+                            strlen(pszText),
+                            pszText,
+                            &rclPaint,
+                            0,
+                            0,
+                            DT_CENTER | DT_VCENTER | DT_TEXTATTRS);
+
+                free(pszText);
+            }
+
+            WinEndPaint(hps);
+        }
+        break;
+
+        case WM_PRESPARAMCHANGED:
+            switch ((ULONG)mp1)
+            {
+                case PP_BACKGROUNDCOLOR:
+                    WinInvalidateRect(hwndStatic,
+                                      NULL,
+                                      FALSE);
+                    // notify owner; since the static control
+                    // doesn't send any notifications, we
+                    // use EN_CHANGED
+                    WinSendMsg(WinQueryWindow(hwndStatic, QW_OWNER),
+                               WM_CONTROL,
+                               MPFROM2SHORT(WinQueryWindowUShort(hwndStatic, QWS_ID),
+                                            EN_CHANGE),
+                               (MPARAM)hwndStatic);
+                break;
+            }
+        break;
+
+        default:
+            mrc = G_pfnwpOrigStatic(hwndStatic, msg, mp1, mp2);
+        break;
+    }
+
+    return (mrc);
+}
+
+/*
+ *@@ SubclassAndSetColor:
+ *
+ *@@added V0.9.16 (2002-01-05) [umoeller]
+ */
+
+VOID SubclassAndSetColor(HWND hwndDlg,
+                         ULONG ulID,
+                         PCSZ pcszTitle,
+                         LONG lColor,
+                         LONG lBackColor)
+{
+    HWND hwnd;
+    if (hwnd = WinWindowFromID(hwndDlg, ulID))
+    {
+        WinSetWindowText(hwnd,
+                         (PSZ)pcszTitle);
+        winhSetPresColor(hwnd,
+                         PP_BACKGROUNDCOLOR,
+                         lColor);
+        if (ulID == 1000 + INDEX_TEXT)
+            winhSetPresColor(hwnd,
+                             PP_FOREGROUNDCOLOR,
+                             lBackColor);
+        G_pfnwpOrigStatic = WinSubclassWindow(hwnd,
+                                              ctl_fnwpSubclassedColorRect);
+    }
+}
+
+/*
+ *@@ GetColor:
+ *
+ *@@added V0.9.16 (2002-01-05) [umoeller]
+ */
+
+LONG GetColor(HWND hwndDlg,
+              ULONG ulID)
+{
+    return (winhQueryPresColor(WinWindowFromID(hwndDlg, ulID),
+                               PP_BACKGROUNDCOLOR,
+                               FALSE,
+                               SYSCLR_DIALOGBACKGROUND));
+}
+
+/*
+ *@@ PwgtShowSettingsDlg:
+ *      shows the pulse widget settings dialog for
+ *      setting up the colors.
+ *
+ *@@added V0.9.16 (2002-01-05) [umoeller]
+ */
+
+VOID EXPENTRY PwgtShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
+{
+    HWND hwndDlg = NULLHANDLE;
+    APIRET arc;
+
+    CONTROLDEF
+        OKButton = CONTROLDEF_DEFPUSHBUTTON(NULL, DID_OK, 100, 30),
+        CancelButton = CONTROLDEF_PUSHBUTTON(NULL, DID_CANCEL, 100, 30),
+
+        ProcessorsGroup = CONTROLDEF_GROUP(NULL, -1),
+
+        IRQLoadColor
+                    = CONTROLDEF_TEXT(NULL,
+                                      1000 + INDEX_IRQLOAD,
+                                      100,
+                                      40),
+
+        ProcessorColor
+                    = CONTROLDEF_TEXT(NULL,
+                                      1000,
+                                      100,
+                                      40),
+
+        OthersGroup = CONTROLDEF_GROUP(NULL, -1),
+
+        BackgroundColor
+                    = CONTROLDEF_TEXT(NULL,
+                                      1000 + INDEX_BACKGROUND,
+                                      100,
+                                      40),
+        TextColor
+                    = CONTROLDEF_TEXT(NULL,
+                                      1000 + INDEX_TEXT,
+                                      100,
+                                      40);
+
+    DLGHITEM
+        dlgFront[] =
+        {
+            START_TABLE,
+                START_ROW(0),
+                    START_GROUP_TABLE(&ProcessorsGroup),
+                        START_ROW(0),
+                            CONTROL_DEF(&IRQLoadColor)
+        },
+        dlgPerProcessor[] =
+        {
+                        START_ROW(0),
+                            CONTROL_DEF(&ProcessorColor),
+        },
+        dlgTail[] =
+        {
+                    END_TABLE,
+                    START_GROUP_TABLE(&OthersGroup),
+                        START_ROW(0),
+                            CONTROL_DEF(&BackgroundColor),
+                        START_ROW(0),
+                            CONTROL_DEF(&TextColor),
+                    END_TABLE,
+                START_ROW(0),
+                    CONTROL_DEF(&OKButton),
+                    CONTROL_DEF(&CancelButton),
+            END_TABLE
+        };
+
+    ULONG       cProcessors = 0;
+    ULONG       ul;
+
+    if (!GetProcessorCount(&cProcessors))
+    {
+        PDLGARRAY pArray = NULL;
+
+        ProcessorsGroup.pcszText = "CPU graph colors"; // @@todo localize
+        OthersGroup.pcszText = "Other colors"; // @@todo localize
+
+        OKButton.pcszText = cmnGetString(ID_XSSI_DLG_OK);
+        CancelButton.pcszText = cmnGetString(ID_XSSI_DLG_CANCEL);
+
+        if (!(arc = dlghCreateArray(   ARRAYITEMCOUNT(dlgFront)
+                                     +    cProcessors
+                                        * ARRAYITEMCOUNT(dlgPerProcessor)
+                                     + ARRAYITEMCOUNT(dlgTail),
+                                    &pArray)))
+        {
+            if (!(arc = dlghAppendToArray(pArray,
+                                          dlgFront,
+                                          ARRAYITEMCOUNT(dlgFront))))
+            {
+                for (ul = 0;
+                     ul < cProcessors;
+                     ul++)
+                {
+                    if (arc = dlghAppendToArray(pArray,
+                                                dlgPerProcessor,
+                                                ARRAYITEMCOUNT(dlgPerProcessor)))
+                        break;
+                }
+            }
+        }
+
+        if (    (!arc)
+             && (!(arc = dlghAppendToArray(pArray,
+                                           dlgTail,
+                                           ARRAYITEMCOUNT(dlgTail))))
+             && (!(arc = dlghCreateDlg(&hwndDlg,
+                                       pData->hwndOwner,
+                                       FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
+                                       WinDefDlgProc,
+                                       "Pulse",          // @@todo localize
+                                       pArray->paDlgItems,
+                                       pArray->cDlgItemsNow,
+                                       NULL,
+                                       cmnQueryDefaultFont())))
+           )
+        {
+            // go scan the setup string
+            PULSESETUP  Setup;
+            PwgtScanSetup(pData->pcszSetupString,
+                          &Setup,
+                          cProcessors);       // @@todo
+
+            // for each color control, set the background color
+            // according to the settings
+            SubclassAndSetColor(hwndDlg,
+                                1000 + INDEX_IRQLOAD,
+                                "IRQ load",     // @@todo localize
+                                Setup.lcolGraphIntr,
+                                Setup.lcolBackground);
+
+            for (ul = 0;
+                 ul < cProcessors;
+                 ul++)
+            {
+                CHAR sz[100];
+                sprintf(sz, "CPU %d user load", ul); // @@todo localize
+                SubclassAndSetColor(hwndDlg,
+                                    1000 + ul,
+                                    sz,
+                                    Setup.palcolGraph[ul],
+                                    Setup.lcolBackground);
+            }
+
+            SubclassAndSetColor(hwndDlg,
+                                1000 + INDEX_BACKGROUND,
+                                "Background",     // @@todo localize
+                                Setup.lcolBackground,
+                                Setup.lcolBackground);
+            SubclassAndSetColor(hwndDlg,
+                                1000 + INDEX_TEXT,
+                                "Text",     // @@todo localize
+                                Setup.lcolText,
+                                Setup.lcolBackground);
+
+            // go!
+            winhCenterWindow(hwndDlg);
+            if (DID_OK == WinProcessDlg(hwndDlg))
+            {
+                XSTRING strSetup;
+
+                // get the colors back from the controls
+                Setup.lcolGraphIntr = GetColor(hwndDlg,
+                                               1000 + INDEX_IRQLOAD);
+                for (ul = 0;
+                     ul < cProcessors;
+                     ul++)
+                {
+                    Setup.palcolGraph[ul] = GetColor(hwndDlg,
+                                                     1000 + ul);
+                }
+
+                Setup.lcolBackground = GetColor(hwndDlg,
+                                                1000 + INDEX_BACKGROUND);
+
+                Setup.lcolText = GetColor(hwndDlg,
+                                          1000 + INDEX_TEXT);
+
+                PwgtSaveSetup(&strSetup,
+                              &Setup,
+                              cProcessors);
+                pData->pctrSetSetupString(pData->hSettings,
+                                          strSetup.psz);
+                xstrClear(&strSetup);
+            }
+
+            WinDestroyWindow(hwndDlg);
+        }
+
+        dlghFreeArray(&pArray);
+    }
+}
 
 /* ******************************************************************
  *
@@ -436,6 +920,7 @@ VOID _Optlink fntCollect(PTHREADINFO ptiMyself)
     if (pPrivate)
     {
         BOOL    fLocked = FALSE;
+        ULONG   cCurCPU;
 
         // give this thread a higher-than-regular priority;
         // this way, the "loads" array is always up-to-date,
@@ -470,34 +955,43 @@ VOID _Optlink fntCollect(PTHREADINFO ptiMyself)
                         {
                             // in the array of loads, move each entry
                             // one to the front; drop the oldest entry
-                            memcpy(&pPrivate->palLoads[0],
-                                   &pPrivate->palLoads[1],
-                                   sizeof(LONG) * (pPrivate->cLoads - 1));
-
-                            // and update the last entry with the current value
-                            pPrivate->palLoads[pPrivate->cLoads - 1]
-                                = pPrivate->pPerfData->palLoads[0];
-
-                            // same thing for interrupt loads
                             memcpy(&pPrivate->palIntrs[0],
                                    &pPrivate->palIntrs[1],
                                    sizeof(LONG) * (pPrivate->cLoads - 1));
+                            // and update the last entry with the current value
                             pPrivate->palIntrs[pPrivate->cLoads - 1]
                                 = pPrivate->pPerfData->palIntrs[0];
+
+                            //get load for every CPU in the system [bvl]
+                            for (cCurCPU=0;
+                                 cCurCPU < pPrivate->cProcessors;
+                                 cCurCPU++)
+                            {
+                                // in the array of loads, move each entry
+                                // one to the front; drop the oldest entry
+                                memcpy(&pPrivate->palLoads[cCurCPU*pPrivate->cLoads],
+                                       &pPrivate->palLoads[(cCurCPU*pPrivate->cLoads)+1],
+                                       sizeof(LONG) * (pPrivate->cLoads - 1));
+
+                                // and update the last entry with the current value
+                                pPrivate->palLoads[(pPrivate->cLoads +(pPrivate->cLoads * cCurCPU))-1]
+                                    = pPrivate->pPerfData->palLoads[cCurCPU];
+                            } // for cCurCPU
                         }
 
                         UnlockData(pPrivate);
                         fLocked = FALSE;
+
                     } // if (fLocked)
 
                     // have main thread update the display
-                    // (if SIQ is hogged, several WM_TIMERs
+                    // (if SIQ is hogged, several XM_NEWDATAAVAILABLEs
                     // will pile up)
                     if (!ptiMyself->fExit)
                     {
                         pPrivate->fUpdateGraph = TRUE;
                         WinPostMsg(pPrivate->pWidget->hwndWidget,
-                                   WM_TIMER,
+                                   XM_NEWDATAAVAILABLE,
                                    (MPARAM)1,
                                    0);
                     }
@@ -565,9 +1059,6 @@ MRESULT PwgtCreate(HWND hwnd, MPARAM mp1)
 {
     MRESULT mrc = 0;        // continue window creation
 
-    // PSZ     p = NULL;
-    // APIRET  arc = NO_ERROR;
-
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)mp1;
     PWIDGETPRIVATE pPrivate = malloc(sizeof(WIDGETPRIVATE));
     memset(pPrivate, 0, sizeof(WIDGETPRIVATE));
@@ -575,8 +1066,12 @@ MRESULT PwgtCreate(HWND hwnd, MPARAM mp1)
     pWidget->pUser = pPrivate;
     pPrivate->pWidget = pWidget;
 
+    // get CPU count for array rceation [bvl]
+    pPrivate->arc = GetProcessorCount(&pPrivate->cProcessors);
+
     PwgtScanSetup(pWidget->pcszSetupString,
-                  &pPrivate->Setup);
+                  &pPrivate->Setup,
+                  pPrivate->cProcessors);
 
     // set window font (this affects all the cached presentation
     // spaces we use)
@@ -663,6 +1158,26 @@ BOOL PwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         brc = TRUE;
                     }
                     break;
+
+                    /*
+                     * XN_SETUPCHANGED:
+                     *      XCenter has a new setup string for
+                     *      us in mp2.
+                     */
+
+                    case XN_SETUPCHANGED:
+                    {
+                        const char *pcszNewSetupString = (const char*)mp2;
+
+                        // reinitialize the setup data
+                        PwgtClearSetup(&pPrivate->Setup);
+                        PwgtScanSetup(pcszNewSetupString,
+                                      &pPrivate->Setup,
+                                      pPrivate->cProcessors);
+
+                        WinInvalidateRect(pWidget->hwndWidget, NULL, FALSE);
+                    }
+                    break;
                 }
             }
             break;
@@ -707,6 +1222,7 @@ BOOL PwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@changed V0.9.9 (2001-03-14) [umoeller]: added interrupts graph
  *@@changed V0.9.13 (2001-06-21) [umoeller]: added tooltip refresh
  *@@changed V0.9.14 (2001-07-12) [umoeller]: fixed sporadic crash on some systems
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: added multiple CPUs support
  */
 
 VOID PwgtUpdateGraph(HWND hwnd,
@@ -739,54 +1255,95 @@ VOID PwgtUpdateGraph(HWND hwnd,
                 DRO_FILL,
                 &rclBmp);
 
-        if (pPrivate->pPerfData && pPrivate->cLoads)    // V0.9.14 (2001-07-12) [umoeller]
+        if (    pPrivate->pPerfData
+             && pPrivate->cLoads
+           )    // V0.9.14 (2001-07-12) [umoeller]
         {
-            LONG    lLoad1000 = pPrivate->pPerfData->palLoads[0],
-                    lIRQ1000 = pPrivate->pPerfData->palIntrs[0];
+            PLONG    palLoad1000 = _alloca(sizeof(LONG) * pPrivate->cProcessors);
+            LONG     lIRQ1000 = pPrivate->pPerfData->palIntrs[0];
+            ULONG    cCurCPU;
+            PSZ      pszTooltipLoc;
 
-            // go thru all values in the "Loads" LONG array
-            for (ptl.x = 0;
-                 ((ptl.x < pPrivate->cLoads) && (ptl.x < rclBmp.xRight));
-                 ptl.x++)
+            for (cCurCPU = 0;
+                 cCurCPU < pPrivate->cProcessors;
+                 cCurCPU++)
             {
-                ptl.y = 0;
-
-                // interrupt load on bottom
-                if (pPrivate->palIntrs)
+                // go thru all values in the "Loads" LONG array
+                for (ptl.x = 0;
+                     (    (ptl.x < pPrivate->cLoads)
+                       && (ptl.x < rclBmp.xRight)
+                     );
+                     ptl.x++)
                 {
-                    GpiSetColor(hpsMem,
-                                pPrivate->Setup.lcolGraphIntr);
-                    // go thru all values in the "Interrupt Loads" LONG array
-                    // Note: number of "loads" entries and "intrs" entries is the same
-                    GpiMove(hpsMem, &ptl);
-                    ptl.y += rclBmp.yTop * pPrivate->palIntrs[ptl.x] / 1000;
-                    GpiLine(hpsMem, &ptl);
-                }
+                    ptl.y = 0;
 
-                // scan the CPU loads
-                if (pPrivate->palLoads)
-                {
-                    GpiSetColor(hpsMem,
-                                pPrivate->Setup.lcolGraph);
-                    GpiMove(hpsMem, &ptl);
-                    ptl.y += rclBmp.yTop * pPrivate->palLoads[ptl.x] / 1000;
-                    GpiLine(hpsMem, &ptl);
-                }
-            } // end if (fLocked)
+                    // interrupt load on bottom
+                    // IRQ processing only takes place on CPU(0) so we only need
+                    // that information ONCE [bvl]
+                    if (pPrivate->palIntrs)
+                    {
+                        GpiSetColor(hpsMem,
+                                    pPrivate->Setup.lcolGraphIntr);
+                        // go thru all values in the "Interrupt Loads" LONG array
+                        // Note: number of "loads" entries and "intrs" entries is the same
+
+                        // bvl: this ensures line mode.. if the this is the first item in the load
+                        //      start at the bottom, otherwise the previous point
+                        if (ptl.x)
+                            ptl.y += rclBmp.yTop * pPrivate->palIntrs[ptl.x-1] / 1000;
+
+                        GpiMove(hpsMem, &ptl);
+                        ptl.y += rclBmp.yTop * pPrivate->palIntrs[ptl.x] / 1000;
+                        GpiLine(hpsMem, &ptl);
+                    }
+
+
+                    // LOAD Information is available for every CPU so itterate over it
+                    palLoad1000[cCurCPU] = pPrivate->pPerfData->palLoads[cCurCPU];
+                    // scan the CPU loads
+                    if (pPrivate->palLoads)
+                    {
+                        if (pPrivate->Setup.palcolGraph)
+                            GpiSetColor(hpsMem,
+                                        pPrivate->Setup.palcolGraph[cCurCPU]);
+
+                        // bvl: this ensures line mode.. if the this is the first item in the load
+                        //      start at the bottom, otherwise the previous point
+                        if (ptl.x != 0)
+                            ptl.y += rclBmp.yTop * pPrivate->palLoads[(pPrivate->cLoads*cCurCPU) + ptl.x-1] / 1000;
+
+                        GpiMove(hpsMem, &ptl);
+                        ptl.y = rclBmp.yTop * pPrivate->palLoads[(pPrivate->cLoads*cCurCPU) + ptl.x] / 1000;
+                        GpiLine(hpsMem, &ptl);
+                    }
+
+                } // end if (fLocked)
+            } // for cCurCPU
 
             // update the tooltip text V0.9.13 (2001-06-21) [umoeller]
-            sprintf(pPrivate->szTooltipText,
-                    "CPU load"                  // @@todo localize
-                    "\nUser: %lu%c%lu%c"
-                    "\nIRQ: %lu%c%lu%c",
-                    lLoad1000 / 10,
-                    pCountrySettings->cDecimal,
-                    lLoad1000 % 10,
-                    '%',
-                    lIRQ1000 / 10,
-                    pCountrySettings->cDecimal,
-                    lIRQ1000 % 10,
-                    '%');
+
+            pszTooltipLoc = pPrivate->szTooltipText;
+            pszTooltipLoc += sprintf(pPrivate->szTooltipText,
+                                     "CPU count: %d"            // bvl: show CPU count
+                                     "\nCPU 0 IRQ: %lu%c%lu%c",
+                                     pPrivate->cProcessors,
+                                     lIRQ1000 / 10,          // only CPU [0] does IRQ management
+                                     pCountrySettings->cDecimal,
+                                     lIRQ1000 % 10,
+                                     '%'
+                                     );
+            for (cCurCPU = 0;
+                 cCurCPU < pPrivate->cProcessors;
+                 cCurCPU++)
+            {
+                pszTooltipLoc += sprintf(pszTooltipLoc, // @@todo localize
+                                         "\nCPU %d User: %lu%c%lu%c",
+                                         cCurCPU,
+                                         palLoad1000[cCurCPU] / 10,
+                                         pCountrySettings->cDecimal,
+                                         palLoad1000[cCurCPU] % 10,
+                                         '%');
+            } // for cCurCPU
 
             if (pPrivate->fTooltipShowing)
                 // tooltip currently showing:
@@ -816,6 +1373,7 @@ VOID PwgtUpdateGraph(HWND hwnd,
  *
  *@@changed V0.9.9 (2001-03-14) [umoeller]: added interrupts graph
  *@@changed V0.9.12 (2001-05-20) [umoeller]: added mutex
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: added multiple CPUs support
  */
 
 VOID PwgtPaint2(HWND hwnd,
@@ -830,7 +1388,7 @@ VOID PwgtPaint2(HWND hwnd,
         PXCENTERWIDGET pWidget = pPrivate->pWidget;
         RECTL       rclWin;
         ULONG       ulBorder = 1;
-        CHAR        szPaint[100] = "";
+        CHAR        szPaint[256] = ""; // slightly larger to support SMP [bvl]
         ULONG       ulPaintLen = 0;
 
         WinQueryWindowRect(hwnd,
@@ -864,12 +1422,17 @@ VOID PwgtPaint2(HWND hwnd,
                             lLight);
         }
 
-        if (pPrivate->arc == NO_ERROR)
+        if (!pPrivate->arc)
         {
             // performance counters are working:
             PCOUNTRYSETTINGS pCountrySettings = (PCOUNTRYSETTINGS)pWidget->pGlobals->pCountrySettings;
             POINTL      ptlBmpDest;
-            LONG        lLoad1000 = 0;
+            PULONG      paulLoad1000;
+            ULONG       cCurCPU;
+            PSZ         pszPaintLoc;
+
+            // allocate array for strings
+            paulLoad1000 = _alloca(sizeof(ULONG) * pPrivate->cProcessors);
 
             // lock out the collect thread, we're reading the loads array
             if (fLocked = LockData(pPrivate))
@@ -880,10 +1443,16 @@ VOID PwgtPaint2(HWND hwnd,
 
                 // in the string, display the total load
                 // (busy plus interrupt) V0.9.9 (2001-03-14) [umoeller]
-                if (pPrivate->palLoads)
-                    lLoad1000 = pPrivate->pPerfData->palLoads[0];
-                if (pPrivate->palIntrs)
-                    lLoad1000 += pPrivate->pPerfData->palIntrs[0];
+                // use for loop to process all CPU's [bvl]
+                for (cCurCPU = 0;
+                     cCurCPU < pPrivate->cProcessors;
+                     cCurCPU++)
+                {
+                    if (pPrivate->palLoads)
+                        paulLoad1000[cCurCPU] = pPrivate->pPerfData->palLoads[cCurCPU];
+                    if (pPrivate->palIntrs)
+                        paulLoad1000[cCurCPU] += pPrivate->pPerfData->palIntrs[cCurCPU];
+                } // for cCurCPU
 
                 // everything below is safe, so unlock
                 UnlockData(pPrivate);
@@ -899,33 +1468,51 @@ VOID PwgtPaint2(HWND hwnd,
                               0, 0,
                               DBM_NORMAL);
 
-                sprintf(szPaint,
-                        "%lu%c%lu%c",
-                        lLoad1000 / 10,
-                        pCountrySettings->cDecimal,
-                        lLoad1000 % 10,
-                        '%');
+                pszPaintLoc = szPaint;
+                for (cCurCPU = 0;
+                     cCurCPU < pPrivate->cProcessors;
+                     cCurCPU++)
+                {
+                    pszPaintLoc += sprintf(pszPaintLoc,
+                                           "%lu%c%lu%c / ",
+                                           paulLoad1000[cCurCPU] / 10,
+                                           pCountrySettings->cDecimal,
+                                           paulLoad1000[cCurCPU] % 10,
+                                           '%');
+                } // for cCurCPU
+
+                // delete trailing / if it was the last CPU
+                if (ulPaintLen = pszPaintLoc - szPaint)
+                {
+                    szPaint[ulPaintLen - 3] = '\0';
+                    ulPaintLen -= 3;
+                }
             }
         }
-        else
+
+        if (pPrivate->arc)
         {
             // performance counters are not working:
             // display error message
             rclWin.xLeft++;     // was made inclusive above
             rclWin.yBottom++;
             WinFillRect(hps, &rclWin, pPrivate->Setup.lcolBackground);
-            sprintf(szPaint, "E %lu", pPrivate->arc);
+            ulPaintLen = sprintf(szPaint, "E %lu", pPrivate->arc);
         }
 
-        ulPaintLen = strlen(szPaint);
         if (ulPaintLen)
+        {
+            // GpiSetColor was missing V0.9.16 (2002-01-05) [umoeller]
+            GpiSetColor(hps,
+                        pPrivate->Setup.lcolText);
             WinDrawText(hps,
                         ulPaintLen,
                         szPaint,
                         &rclWin,
-                        0,      // background, ignored anyway
-                        pPrivate->Setup.lcolText,
-                        DT_CENTER | DT_VCENTER);
+                        0,
+                        0,
+                        DT_CENTER | DT_VCENTER | DT_TEXTATTRS);
+        }
     }
     CATCH(excpt1)
     {
@@ -960,15 +1547,16 @@ VOID PwgtPaint(HWND hwnd)
 }
 
 /*
- *@@ PwgtGetNewLoad:
+ *@@ PwgtNewDataAvailable:
  *      updates the CPU loads array, updates the graph bitmap
  *      and invalidates the window.
  *
  *@@changed V0.9.9 (2001-03-14) [umoeller]: added interrupts graph
  *@@changed V0.9.12 (2001-05-20) [umoeller]: added mutex
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: added multiple CPUs support
  */
 
-VOID PwgtGetNewLoad(HWND hwnd)
+VOID PwgtNewDataAvailable(HWND hwnd)
 {
     PXCENTERWIDGET pWidget;
     PWIDGETPRIVATE pPrivate;
@@ -995,20 +1583,27 @@ VOID PwgtGetNewLoad(HWND hwnd)
                     {
                         HPS hps;
                         ULONG ulGraphCX = rclClient.xRight - 2;    // minus border
+
+                        // memory we need: one array of ULONGs for
+                        // each CPU V0.9.16 (2002-01-05) [umoeller]
+                        ULONG cb =   sizeof(LONG)
+                                   * ulGraphCX   // pPrivate->cLoads
+                                   * pPrivate->cProcessors;
+
                         if (pPrivate->palLoads == NULL)
                         {
                             // create array of loads
                             pPrivate->cLoads = ulGraphCX;
-                            pPrivate->palLoads = (PLONG)malloc(sizeof(LONG) * pPrivate->cLoads);
-                            memset(pPrivate->palLoads, 0, sizeof(LONG) * pPrivate->cLoads);
+                            pPrivate->palLoads = (PLONG)malloc(cb);
+                            memset(pPrivate->palLoads, 0, cb);
                         }
 
                         if (pPrivate->palIntrs == NULL)
                         {
                             // create array of interrupt loads
                             pPrivate->cLoads = ulGraphCX;
-                            pPrivate->palIntrs = (PLONG)malloc(sizeof(LONG) * pPrivate->cLoads);
-                            memset(pPrivate->palIntrs, 0, sizeof(LONG) * pPrivate->cLoads);
+                            pPrivate->palIntrs = (PLONG)malloc(cb);
+                            memset(pPrivate->palIntrs, 0, cb);
                         }
 
                         UnlockData(pPrivate);
@@ -1158,7 +1753,8 @@ VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
                     pPrivate->Setup.cx = pswpNew->cx;
                     PwgtSaveSetup(&strSetup,
-                                  &pPrivate->Setup);
+                                  &pPrivate->Setup,
+                                  pPrivate->cProcessors);
                     if (strSetup.ulLength)
                         // changed V0.9.13 (2001-06-21) [umoeller]:
                         // post it to parent instead of fixed XCenter client
@@ -1213,13 +1809,18 @@ VOID PwgtPresParamChanged(HWND hwnd,
                                          PP_BACKGROUNDCOLOR,
                                          FALSE,
                                          SYSCLR_DIALOGBACKGROUND);
-                pPrivate->Setup.lcolGraph
-                    = winhQueryPresColor(hwnd,
-                                         PP_FOREGROUNDCOLOR,
-                                         FALSE,
-                                         -1);
-                if (pPrivate->Setup.lcolGraph == -1)
-                    pPrivate->Setup.lcolGraph = RGBCOL_DARKCYAN;
+                if (pPrivate->Setup.palcolGraph)
+                {
+                    PLONG pl = &pPrivate->Setup.palcolGraph[0];
+                    // allow the user to change cpu 0's color
+                    // via drag'n'drop
+                    *pl = winhQueryPresColor(hwnd,
+                                             PP_FOREGROUNDCOLOR,
+                                             FALSE,
+                                             -1);
+                    if (*pl == -1)
+                        *pl = QueryDefaultColor(0);
+                }
             break;
 
             case PP_FONTNAMESIZE:
@@ -1238,7 +1839,8 @@ VOID PwgtPresParamChanged(HWND hwnd,
                     pPrivate->Setup.pszFont = strdup(pszFont);
                     winhFree(pszFont);
                 }
-            break; }
+            }
+            break;
 
             default:
                 fInvalidate = FALSE;
@@ -1252,7 +1854,8 @@ VOID PwgtPresParamChanged(HWND hwnd,
             WinInvalidateRect(hwnd, NULL, FALSE);
 
             PwgtSaveSetup(&strSetup,
-                          &pPrivate->Setup);
+                          &pPrivate->Setup,
+                          pPrivate->cProcessors);
             if (strSetup.ulLength)
                 // changed V0.9.13 (2001-06-21) [umoeller]:
                 // post it to parent instead of fixed XCenter client
@@ -1410,12 +2013,13 @@ MRESULT EXPENTRY fnwpPulseWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         break;
 
         /*
-         * WM_TIMER:
-         *      clock timer --> repaint.
+         * XM_NEWDATAAVAILABLE:
+         *      collect thread has new data --> repaint.
+         *
          */
 
-        case WM_TIMER:
-            PwgtGetNewLoad(hwnd);
+        case XM_NEWDATAAVAILABLE:
+            PwgtNewDataAvailable(hwnd);
                 // repaints!
         break;
 

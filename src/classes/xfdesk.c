@@ -351,15 +351,15 @@ SOM_Scope ULONG  SOMLINK xfdesk_wpFilterPopupMenu(XFldDesktop *somSelf,
 {
     // items to suppress
     ULONG   ulSuppress = CTXT_CRANOTHER;
-    PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
 
     // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
     XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpFilterPopupMenu");
 
     // suppress sort menu?
-    if (!pGlobalSettings->fDTMSort)
+    if (!cmnQuerySetting(sfDTMSort))
         ulSuppress |= CTXT_SORT;
-    if (!pGlobalSettings->fDTMArrange)
+    if (!cmnQuerySetting(sfDTMArrange))
         ulSuppress |= CTXT_ARRANGE;
 
     return (XFldDesktop_parent_WPDesktop_wpFilterPopupMenu(somSelf,
@@ -507,12 +507,12 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpPopulate(XFldDesktop *somSelf,
 SOM_Scope ULONG  SOMLINK xfdesk_wpAddDesktopArcRest1Page(XFldDesktop *somSelf,
                                                          HWND hwndNotebook)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
     XFldDesktopMethodDebug("XFldDesktop","xfdesk_wpAddDesktopArcRest1Page");
 
 #ifndef __ALWAYSREPLACEARCHIVING__
-    if (!cmnIsFeatureEnabled(ReplaceArchiving))
+    if (!cmnQuerySetting(sfReplaceArchiving))
         return (XFldDesktop_parent_WPDesktop_wpAddDesktopArcRest1Page(somSelf,
                                                                       hwndNotebook));
 #endif
@@ -549,19 +549,19 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpAddSettingsPages(XFldDesktop *somSelf,
          && (_wpIsCurrentDesktop(somSelf))
        )
     {
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
         // insert "Menu" page
         _xwpInsertXFldDesktopMenuItemsPage(somSelf, hwndNotebook);
 
 
 #ifndef __NOXSHUTDOWN__
-        if (cmnIsFeatureEnabled(XShutdown))
+        if (cmnQuerySetting(sfXShutdown))
             _xwpInsertXFldDesktopShutdownPage(somSelf, hwndNotebook);
 #endif
 
 #ifndef __ALWAYSREPLACEARCHIVING__
-        if (cmnIsFeatureEnabled(ReplaceArchiving))
+        if (cmnQuerySetting(sfReplaceArchiving))
 #endif
             // insert new "Archives" page;
             // at the same time, the old archives page method
@@ -659,7 +659,7 @@ SOM_Scope ULONG  SOMLINK xfdeskM_wpclsQueryIconData(M_XFldDesktop *somSelf,
     M_XFldDesktopMethodDebug("M_XFldDesktop","xfdeskM_wpclsQueryIconData");
 
 #ifndef __NOICONREPLACEMENTS__
-    if (cmnIsFeatureEnabled(IconReplacements))
+    if (cmnQuerySetting(sfIconReplacements))
     {
         hmodIconsDLL = cmnQueryIconsDLL();
         // icon replacements allowed:
@@ -698,7 +698,7 @@ SOM_Scope ULONG  SOMLINK xfdeskM_wpclsQueryIconDataN(M_XFldDesktop *somSelf,
     M_XFldDesktopMethodDebug("M_XFldDesktop","xfdeskM_wpclsQueryIconDataN");
 
 #ifndef __NOICONREPLACEMENTS__
-    if (cmnIsFeatureEnabled(IconReplacements))
+    if (cmnQuerySetting(sfIconReplacements))
     {
         hmodIconsDLL = cmnQueryIconsDLL();
         // icon replacements allowed:

@@ -71,6 +71,7 @@
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\nls.h"                // National Language Support helpers
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\tree.h"               // red-black binary trees
 #include "helpers\winh.h"               // PM helper routines
@@ -302,7 +303,8 @@ ULONG LoadMappingsForDrive(M_WPFolder *pFolderClass,
             pcszTrashDir);
 
     if (    (!doshLoadTextFile(szMapping,
-                               &pszDriveMappings))
+                               &pszDriveMappings,
+                               NULL))
          && (pszDriveMappings)
        )
     {
@@ -2225,8 +2227,8 @@ BOOL trshProcessObjectCommand(WPFolder *somSelf,
 {
     BOOL brc = TRUE;        // default: processed
 
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    LONG lMenuID2 = usCommand - pGlobalSettings->VarMenuOffset;
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    LONG lMenuID2 = usCommand - cmnQuerySetting(sulVarMenuOffset);
 
     switch (lMenuID2)
     {
@@ -2246,7 +2248,7 @@ BOOL trshProcessObjectCommand(WPFolder *somSelf,
                                          ulSelectionFlags,
                                          hwndCnr,
                                          // confirm:
-                                         (pGlobalSettings->ulTrashConfirmEmpty
+                                         (cmnQuerySetting(sflTrashConfirmEmpty)
                                                 & TRSHCONF_DESTROYOBJ)
                                            != 0);
         break;
@@ -2502,6 +2504,11 @@ APIRET trshIsOnSupportedDrive(WPObject *pObject)
  *
  ********************************************************************/
 
+static XWPSETTING G_TrashCanSettingsBackup[] =
+    {
+        sflTrashConfirmEmpty
+    };
+
 /*
  *@@ trshTrashCanSettingsInitPage:
  *      notebook callback function (notebook.c) for the
@@ -2513,7 +2520,7 @@ APIRET trshIsOnSupportedDrive(WPObject *pObject)
 VOID trshTrashCanSettingsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                                   ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (flFlags & CBI_INIT)
     {
@@ -2523,32 +2530,26 @@ VOID trshTrashCanSettingsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
+            /*
             pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
             memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+            */
+            pcnbp->pUser = cmnBackupSettings(G_TrashCanSettingsBackup,
+                                             ARRAYITEMCOUNT(G_TrashCanSettingsBackup));
         }
     }
 
     if (flFlags & CBI_ENABLE)
     {
-        /* PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XTDI_DELETE,
-                          (pKernelGlobals->fXFldObject)); */
     }
 
     if (flFlags & CBI_SET)
     {
-        /* winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XTDI_DELETE,
-                              pGlobalSettings->fTrashDelete); */
-        /* winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XTDI_EMPTYSTARTUP,
-                              pGlobalSettings->fTrashEmptyStartup);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XTDI_EMPTYSHUTDOWN,
-                              pGlobalSettings->fTrashEmptyShutdown); */
+        ULONG fl = cmnQuerySetting(sflTrashConfirmEmpty);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XTDI_CONFIRMEMPTY,
-                              (pGlobalSettings->ulTrashConfirmEmpty & TRSHCONF_EMPTYTRASH)
-                                    != 0);
+                              (fl & TRSHCONF_EMPTYTRASH) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XTDI_CONFIRMDESTROY,
-                              (pGlobalSettings->ulTrashConfirmEmpty & TRSHCONF_DESTROYOBJ)
-                                    != 0);
+                              (fl & TRSHCONF_DESTROYOBJ) != 0);
     }
 }
 
@@ -2563,59 +2564,61 @@ MRESULT trshTrashCanSettingsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                         ULONG ulItemID, USHORT usNotifyCode,
                                         ULONG ulExtra)      // for checkboxes: contains new state
 {
-    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+    // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     MRESULT mrc = (MRESULT)0;
-    BOOL fSave = TRUE;
+
+    ULONG flChanged = 0;
 
     switch (ulItemID)
     {
         case ID_XTDI_CONFIRMEMPTY:
-            if (ulExtra)
-                pGlobalSettings->ulTrashConfirmEmpty |= TRSHCONF_EMPTYTRASH;
-            else
-                pGlobalSettings->ulTrashConfirmEmpty &= ~TRSHCONF_EMPTYTRASH;
+            flChanged = TRSHCONF_EMPTYTRASH;
         break;
 
         case ID_XTDI_CONFIRMDESTROY:
-            if (ulExtra)
-                pGlobalSettings->ulTrashConfirmEmpty |= TRSHCONF_DESTROYOBJ;
-            else
-                pGlobalSettings->ulTrashConfirmEmpty &= ~TRSHCONF_DESTROYOBJ;
+            flChanged = TRSHCONF_DESTROYOBJ;
         break;
 
         case DID_UNDO:
-        {
             // "Undo" button: get pointer to backed-up Global Settings
-            GLOBALSETTINGS *pGSBackup = (GLOBALSETTINGS*)(pcnbp->pUser);
+            // GLOBALSETTINGS *pGSBackup = (GLOBALSETTINGS*)(pcnbp->pUser);
 
             // and restore the settings for this page
-            // pGlobalSettings->fTrashDelete = pGSBackup->fTrashDelete;
-            // pGlobalSettings->fTrashEmptyStartup = pGSBackup->fTrashEmptyStartup;
-            // pGlobalSettings->fTrashEmptyShutdown = pGSBackup->fTrashEmptyShutdown;
-            pGlobalSettings->ulTrashConfirmEmpty = pGSBackup->ulTrashConfirmEmpty;
+            // cmnSetSetting(sfTrashDelete, pGSBackup->fTrashDelete);
+            // cmnSetSetting(sfTrashEmptyStartup, pGSBackup->fTrashEmptyStartup);
+            // cmnSetSetting(sfTrashEmptyShutdown, pGSBackup->fTrashEmptyShutdown);
+            // cmnSetSetting(sulTrashConfirmEmpty, pGSBackup->ulTrashConfirmEmpty);
+            cmnRestoreSettings(pcnbp->pUser,
+                               ARRAYITEMCOUNT(G_TrashCanSettingsBackup));
 
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
+        break;
 
         case DID_DEFAULT:
-        {
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
             // Desktop startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
-
-        default:
-            fSave = FALSE;
+        break;
     }
 
-    cmnUnlockGlobalSettings();
+    if (flChanged)
+    {
+        ULONG fl = cmnQuerySetting(sflTrashConfirmEmpty);
+        if (ulExtra)
+            fl |= flChanged;
+        else
+            fl &= ~flChanged;
+        cmnSetSetting(sflTrashConfirmEmpty, fl);
+    }
 
-    if (fSave)
-        cmnStoreGlobalSettings();
+    // cmnUnlockGlobalSettings();
+
+    /* if (fSave)
+        cmnStoreGlobalSettings(); */
 
     return (mrc);
 }
@@ -2900,8 +2903,8 @@ MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             fSave = FALSE;
     }
 
-    if (fSave)
-        cmnStoreGlobalSettings();
+    /* if (fSave)
+        cmnStoreGlobalSettings(); */
 
     return (mrc);
 }
@@ -2919,7 +2922,7 @@ MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 VOID trshTrashCanIconInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                               ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (flFlags & CBI_INIT)
     {

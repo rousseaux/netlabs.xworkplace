@@ -484,14 +484,16 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
                           ULONG ulView)             // in: OPEN_CONTENTS, OPEN_TREE, or OPEN_DETAILS
 {
     PSUBCLASSEDFOLDERVIEW psfv = 0;
-    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     XFolderData         *somThis = XFolderGetData(somSelf);
     HWND                hwndCnr = wpshQueryCnrFromFrame(hwndNewFrame);
 
 #ifndef __ALWAYSSUBCLASS__
-    if (!cmnIsFeatureEnabled(NoSubclassing)) // V0.9.3 (2000-04-26) [umoeller]
+    if (!cmnQuerySetting(sfNoSubclassing)) // V0.9.3 (2000-04-26) [umoeller]
 #endif
     {
+        ULONG flViews;
+
         // subclass the new folder frame window;
         // this creates a SUBCLASSEDFOLDERVIEW for the view
         psfv = fdrSubclassFolderView(hwndNewFrame,
@@ -501,7 +503,7 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
 
         // change the window title to full path, if allowed
         if (    (_bFullPathInstance == 1)
-             || ((_bFullPathInstance == 2) && (pGlobalSettings->FullPath))
+             || ((_bFullPathInstance == 2) && (cmnQuerySetting(sfFullPath)))
            )
             fdrSetOneFrameWndTitle(somSelf, hwndNewFrame);
 
@@ -509,12 +511,12 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
             // 1) status bar only if allowed for the current folder
         if (
 #ifndef __NOCFGSTATUSBARS__
-               (cmnIsFeatureEnabled(StatusBars))
+               (cmnQuerySetting(sfStatusBars))
             &&
 #endif
                (    (_bStatusBarInstance == STATUSBAR_ON)
                  || (   (_bStatusBarInstance == STATUSBAR_DEFAULT)
-                     && (pGlobalSettings->fDefaultStatusBarVisibility)
+                     && (cmnQuerySetting(sfDefaultStatusBarVisibility))
                     )
                )
             // 2) no status bar for active Desktop
@@ -522,14 +524,16 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
             // 3) check that subclassed list item is valid
             && (psfv)
             // 4) status bar only if allowed for the current view type
-            && (    (   (ulView == OPEN_CONTENTS)
-                     && (pGlobalSettings->SBForViews & SBV_ICON)
+            && (flViews = cmnQuerySetting(sflSBForViews))
+            && (
+                    (   (ulView == OPEN_CONTENTS)
+                     && (flViews & SBV_ICON)
                     )
                  || (   (ulView == OPEN_TREE)
-                     && (pGlobalSettings->SBForViews & SBV_TREE)
+                     && (flViews & SBV_TREE)
                     )
                  || (   (ulView == OPEN_DETAILS)
-                     && (pGlobalSettings->SBForViews & SBV_DETAILS)
+                     && (flViews & SBV_DETAILS)
                     )
                 )
            )
@@ -539,7 +543,7 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
 
         // replace sort stuff
 #ifndef __ALWAYSEXTSORT__
-        if (cmnIsFeatureEnabled(ExtendedSorting))
+        if (cmnQuerySetting(sfExtendedSorting))
 #endif
             if (hwndCnr)
             {
@@ -753,7 +757,7 @@ VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
               ULONG sMenuIDMsg,         // in: mp1 from WM_INITMENU
               HWND hwndMenuMsg)         // in: mp2 from WM_INITMENU
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     // get XFolder instance data
     XFolderData     *somThis = XFolderGetData(psfv->somSelf);
@@ -797,11 +801,11 @@ VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
                           MM_ITEMIDFROMPOSITION,
                           (MPARAM)0,        // menu item index
                           MPNULL)
-               == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY))
+               == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_DUMMY))
     {
         // okay, let's go
 #ifndef __NOFOLDERCONTENTS__
-        if (cmnIsFeatureEnabled(FolderContentShowIcons))
+        if (cmnQuerySetting(sfFolderContentShowIcons))
 #endif
         {
             // show folder content icons ON:
@@ -859,7 +863,7 @@ VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
                         // insert "Select by name" after that item
                         winhInsertMenuItem(hwndMenuMsg,
                                            sPos+1,
-                                           (pGlobalSettings->VarMenuOffset
+                                           (cmnQuerySetting(sulVarMenuOffset)
                                                    + ID_XFMI_OFS_SELECTSOME),
                                            cmnGetString(ID_XSSI_SELECTSOME),  // pszSelectSome
                                            MIS_TEXT, 0);
@@ -887,7 +891,7 @@ VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
                         // and now insert the "folder view" items
                         winhInsertMenuSeparator(hwndMenuMsg,
                                                 MIT_END,
-                                                (pGlobalSettings->VarMenuOffset
+                                                (cmnQuerySetting(sulVarMenuOffset)
                                                         + ID_XFMI_OFS_SEPARATOR));
                         mnuInsertFldrViewItems(psfv->somSelf,
                                                hwndMenuMsg,  // hwndViewSubmenu
@@ -913,10 +917,10 @@ VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
 
 #ifndef __XWPLITE__
                         winhInsertMenuSeparator(hwndMenuMsg, MIT_END,
-                                               (pGlobalSettings->VarMenuOffset
+                                               (cmnQuerySetting(sulVarMenuOffset)
                                                        + ID_XFMI_OFS_SEPARATOR));
                         winhInsertMenuItem(hwndMenuMsg, MIT_END,
-                                           (pGlobalSettings->VarMenuOffset
+                                           (cmnQuerySetting(sulVarMenuOffset)
                                                    + ID_XFMI_OFS_PRODINFO),
                                            cmnGetString(ID_XSSI_PRODUCTINFO),  // pszProductInfo
                                            MIS_TEXT, 0);
@@ -1136,12 +1140,11 @@ BOOL fdrProcessObjectCommand(WPFolder *somSelf,
 
     if (usCommand == WPMENUID_DELETE)
     {
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         BOOL fCallXWPFops = FALSE;
         BOOL fTrueDelete = FALSE;
 
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
-        if (cmnIsFeatureEnabled(TrashDelete))
+        if (cmnQuerySetting(sfTrashDelete))
 #endif
         {
             // delete to trash can enabled:
@@ -1163,7 +1166,7 @@ BOOL fdrProcessObjectCommand(WPFolder *somSelf,
             // real delete:
             // is real delete also replaced?
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
-            if (cmnIsFeatureEnabled(ReplaceTrueDelete))
+            if (cmnQuerySetting(sfReplaceTrueDelete))
 #endif
                 fCallXWPFops = TRUE;
 
@@ -1266,14 +1269,15 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
             case WM_QUERYFRAMECTLCOUNT:
             {
                 // query the standard frame controls count
-                ULONG ulrc = (ULONG)((*pfnwpOriginal)(hwndFrame, msg, mp1, mp2));
+                ULONG ulrc = (ULONG)(pfnwpOriginal(hwndFrame, msg, mp1, mp2));
 
                 // if we have a status bar, increment the count
                 if (psfv->hwndStatusBar)
                     ulrc++;
 
                 mrc = (MPARAM)ulrc;
-            break; }
+            }
+            break;
 
             /*
              * WM_FORMATFRAME:
@@ -1298,7 +1302,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
             case WM_FORMATFRAME:
             {
                 //  query the number of standard frame controls
-                ULONG ulCount = (ULONG)((*pfnwpOriginal)(hwndFrame, msg, mp1, mp2));
+                ULONG ulCount = (ULONG)(pfnwpOriginal(hwndFrame, msg, mp1, mp2));
 
                 #ifdef DEBUG_STATUSBARS
                     _Pmpf(( "WM_FORMATFRAME ulCount = %d", ulCount ));
@@ -1317,7 +1321,8 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                 else
                     // no status bar:
                     mrc = (MRESULT)ulCount;
-            break; }
+            }
+            break;
 
             /*
              * WM_CALCFRAMERECT:
@@ -1331,13 +1336,12 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
              */
 
             case WM_CALCFRAMERECT:
-            {
-                mrc = (*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
+                mrc = pfnwpOriginal(hwndFrame, msg, mp1, mp2);
 
                 if (psfv->hwndStatusBar)
                     // we have a status bar: calculate its rectangle
                     CalcFrameRect(mp1, mp2);
-            break; }
+            break;
 
             /* *************************
              *                         *
@@ -1354,20 +1358,21 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
 
             case WM_INITMENU:
             {
-                PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
                 // call the default, in case someone else
                 // is subclassing folders (ObjectDesktop?!?);
                 // from what I've checked, the WPS does NOTHING
                 // with this message, not even for menu bars...
-                mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
+                mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
 
-                if (pGlobalSettings->fNoFreakyMenus == FALSE)
+                if (cmnQuerySetting(sfNoFreakyMenus) == FALSE)
                     // added V0.9.3 (2000-03-28) [umoeller]
                     InitMenu(psfv,
                              (ULONG)mp1,
                              (HWND)mp2);
-            break; }
+            }
+            break;
 
             /*
              * WM_MENUSELECT:
@@ -1381,7 +1386,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
 
             case WM_MENUSELECT:
             {
-                PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                 BOOL fDismiss = TRUE;
 
                 #ifdef DEBUG_MENUS
@@ -1393,16 +1398,17 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
 
                 // always call the default, in case someone else
                 // is subclassing folders (ObjectDesktop?!?)
-                mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
+                mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
 
-                if (pGlobalSettings->fNoFreakyMenus == FALSE)
+                if (cmnQuerySetting(sfNoFreakyMenus) == FALSE)
                     // added V0.9.3 (2000-03-28) [umoeller]
                     // now handle our stuff; this might modify mrc to
                     // have the menu stay on the screen
                     if (MenuSelect(psfv, mp1, mp2, &fDismiss))
                         // processed: return the modified flag instead
                         mrc = (MRESULT)fDismiss;
-            break; }
+            }
+            break;
 
             /*
              * WM_MENUEND:
@@ -1416,7 +1422,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
 
             case WM_MENUEND:
             {
-                PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                 #ifdef DEBUG_MENUS
                     _Pmpf(( "WM_MENUEND: mp1 = %lX, mp2 = %lX",
                             mp1, mp2 ));
@@ -1426,7 +1432,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                             fFolderContentButtonDown)); */
                 #endif
 
-                if (pGlobalSettings->fNoFreakyMenus == FALSE)
+                if (cmnQuerySetting(sfNoFreakyMenus) == FALSE)
                 {
                     // added V0.9.3 (2000-03-28) [umoeller]
 
@@ -1451,8 +1457,9 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                     // G_fFldrContentMenuMoved = FALSE;
                 }
 
-                mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
-            break; }
+                mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
+            }
+            break;
 
             /*
              * WM_MEASUREITEM:
@@ -1468,16 +1475,17 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
 
             case WM_MEASUREITEM:
             {
-                PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-                if ( (SHORT)mp1 > (pGlobalSettings->VarMenuOffset+ID_XFMI_OFS_VARIABLE) )
+                // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                if ( (SHORT)mp1 > (cmnQuerySetting(sulVarMenuOffset)+ID_XFMI_OFS_VARIABLE) )
                 {
                     // call the measure-item func in fdrmenus.c
-                    mrc = cmnuMeasureItem((POWNERITEM)mp2, pGlobalSettings);
+                    mrc = cmnuMeasureItem((POWNERITEM)mp2); // , pGlobalSettings);
                 }
                 else
                     // none of our items: pass to original wnd proc
-                    mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
-            break; }
+                    mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
+            }
+            break;
 
             /*
              * WM_DRAWITEM:
@@ -1492,23 +1500,23 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
 
             case WM_DRAWITEM:
             {
-                PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-                if ( (SHORT)mp1 > (pGlobalSettings->VarMenuOffset+ID_XFMI_OFS_VARIABLE) )
+                // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                if ( (SHORT)mp1 > (cmnQuerySetting(sulVarMenuOffset)+ID_XFMI_OFS_VARIABLE) )
                 {
                     // variable menu item: this must be a folder-content
                     // menu item, because for others no WM_DRAWITEM is sent
                     // (fdrmenus.c)
-                    if (cmnuDrawItem(pGlobalSettings,
-                                     mp1, mp2))
+                    if (cmnuDrawItem(mp1, mp2))
                         mrc = (MRESULT)TRUE;
                     else // error occured:
                         fCallDefault = TRUE;    // V0.9.3 (2000-04-26) [umoeller]
-                        // mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
+                        // mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
                 }
                 else
                     fCallDefault = TRUE;    // V0.9.3 (2000-04-26) [umoeller]
-                    // mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
-            break; }
+                    // mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
+            }
+            break;
 
             /* *************************
              *                         *
@@ -1555,7 +1563,8 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                         fCallDefault = TRUE;
 
                 psfv->pSourceObject = NULL;
-            break; }
+            }
+            break;
 
             /*
              * WM_SYSCOMMAND:
@@ -1571,8 +1580,8 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                      && (hwndFrame == cmnQueryActiveDesktopHWND())
                    )
                 {
-                    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-                    if (pGlobalSettings->__flXShutdown & XSD_CANDESKTOPALTF4)
+                    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                    if (cmnQuerySetting(sflXShutdown) & XSD_CANDESKTOPALTF4)
                     {
                         WinPostMsg(hwndFrame,
                                    WM_COMMAND,
@@ -1599,14 +1608,14 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                 if ((usFlags & KC_KEYUP) == 0)
                 {
                     XFolderData         *somThis = XFolderGetData(psfv->somSelf);
-                    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
                     USHORT usch       = SHORT1FROMMP(mp2);
                     USHORT usvk       = SHORT2FROMMP(mp2);
 
                     // check whether "delete to trash can" is on
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
-                    if (    (cmnIsFeatureEnabled(TrashDelete))
+                    if (    (cmnQuerySetting(sfTrashDelete))
                        )
 #endif
                     {
@@ -1624,13 +1633,13 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                     // check whether folder hotkeys are allowed at all
                     if (
 #ifndef __ALWAYSFDRHOTKEYS__
-                            (cmnIsFeatureEnabled(FolderHotkeys))
+                            (cmnQuerySetting(sfFolderHotkeys))
                          &&
 #endif
                             // yes: check folder and global settings
                             (   (_bFolderHotkeysInstance == 1)
                             ||  (   (_bFolderHotkeysInstance == 2)   // use global settings:
-                                 && (pGlobalSettings->fFolderHotkeysDefault)
+                                 && (cmnQuerySetting(sfFolderHotkeysDefault))
                                 )
                             )
                        )
@@ -1651,7 +1660,8 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                 }
 
                 fCallDefault = TRUE;
-            break; }
+            }
+            break;
 
             /*
              * WM_CONTROL:
@@ -1705,7 +1715,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
 
                         /* case CN_BEGINEDIT: {
                             PCNREDITDATA pced = (PCNREDITDATA)mp2;
-                            mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
+                            mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
                             if (pced) {
                                 PMINIRECORDCORE pmrc = (PMINIRECORDCORE)pced->pRecord;
                                 if (pmrc) {
@@ -1740,7 +1750,8 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                                     }
                                 }
                             }
-                        break; } */
+                        }
+                        break;  */
 
                         /*
                          * CN_ENTER:
@@ -1750,7 +1761,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
 
                         case CN_ENTER:
                             cmnPlaySystemSound(MMSOUND_XFLD_CNRDBLCLK);
-                            mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
+                            mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
                         break;
 
                         /*
@@ -1760,7 +1771,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                          */
 
                         case CN_EMPHASIS:
-                            mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
+                            mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
                             if (psfv->hwndStatusBar)
                             {
                                 #ifdef DEBUG_STATUSBARS
@@ -1781,20 +1792,22 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
 
                         case CN_EXPANDTREE:
                         {
-                            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-                            mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
-                            if (pGlobalSettings->TreeViewAutoScroll)
+                            // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                            mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
+                            if (cmnQuerySetting(sfTreeViewAutoScroll))
                                 xthrPostSpeedyMsg(QM_TREEVIEWAUTOSCROLL,
                                                   (MPARAM)hwndFrame,
                                                   mp2); // PMINIRECORDCORE
-                        break; }
+                        }
+                        break;
 
                         default:
                             fCallDefault = TRUE;
                         break;
                     } // end switch (SHORT2FROMMP(mp1))      // usNotifyCode
                 }
-            break; }
+            }
+            break;
 
             /*
              * WM_DESTROY:
@@ -1803,7 +1816,6 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
              */
 
             case WM_DESTROY:
-            {
                 // destroy the supplementary object window for this folder
                 // frame window; do this first because this references
                 // the SFV
@@ -1819,7 +1831,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
 
                 // do the default stuff
                 fCallDefault = TRUE;
-            break; }
+            break;
 
             default:
                 fCallDefault = TRUE;
@@ -1847,7 +1859,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
         // responsible for, which was the case with XFolder < 0.85
         // (i.e. exceptions in WPFolder or Object Desktop or whatever).
         if (pfnwpOriginal)
-            mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
+            mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
         else
         {
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -2054,9 +2066,11 @@ MRESULT EXPENTRY fdr_fnwpSupplFolderObject(HWND hwndObject, ULONG msg, MPARAM mp
                         WinSendMsg(hwndFrame, WM_UPDATEFRAME, MPNULL, MPNULL);
                         // update status bar text synchronously
                         WinSendMsg(psfv->hwndStatusBar, STBM_UPDATESTATUSBAR, MPNULL, MPNULL);
-                    break; }
+                    }
+                    break;
                 }
-        break; }
+        }
+        break;
 
         default:
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);

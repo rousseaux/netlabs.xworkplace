@@ -531,7 +531,7 @@ VOID xthrResetWorkerThreadPriority(VOID)
 {
     if (LockWorkerThreadData())
     {
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         ULONG   ulPrty, ulDelta;
 
         if (G_fWorkerThreadHighPriority)
@@ -540,14 +540,14 @@ VOID xthrResetWorkerThreadPriority(VOID)
             ulPrty = PRTYC_REGULAR;
             ulDelta = +31;
 
-            if (pGlobalSettings->fWorkerPriorityBeep)
+            if (cmnQuerySetting(sfWorkerPriorityBeep))
                 DosBeep(1200, 30);
         }
         else
         {
             // default priority:
 
-            switch (pGlobalSettings->bDefaultWorkerThreadPriority)
+            switch (cmnQuerySetting(sulDefaultWorkerThreadPriority))
             {
                 case 0:     // 0: idle +/-0
                     ulPrty = PRTYC_IDLETIME;
@@ -565,7 +565,7 @@ VOID xthrResetWorkerThreadPriority(VOID)
                     break;
             }
 
-            if (pGlobalSettings->fWorkerPriorityBeep)
+            if (cmnQuerySetting(sfWorkerPriorityBeep))
                 DosBeep(1000, 30);
         }
 
@@ -1063,9 +1063,9 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
          *@@changed V0.9.4 (2000-06-16) [umoeller]: moved this to Worker thread from File thread
          */
 
-        case WOM_STOREGLOBALSETTINGS:
+        /* case WOM_STOREGLOBALSETTINGS:
         {
-            GLOBALSETTINGS *pGlobalSettings = NULL;
+            // GLOBALSETTINGS *pGlobalSettings = NULL;
             // ULONG ulNesting;
             // DosEnterMustComplete(&ulNesting);
             TRY_LOUD(excpt1)
@@ -1085,10 +1085,11 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             }
             CATCH(excpt1) {} END_CATCH();
             if (pGlobalSettings)
-                cmnUnlockGlobalSettings();
+                // cmnUnlockGlobalSettings();
             // DosExitMustComplete(&ulNesting);
         }
         break;
+           */
 
         #ifdef __DEBUG__
         case XM_CRASH:          // posted by debugging context menu of XFldDesktop
@@ -1299,13 +1300,7 @@ MRESULT EXPENTRY fnwpQuickOpenDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             {
                 case SC_HIDE:
                 {
-                    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-                    if (pGlobalSettings)
-                    {
-                        pGlobalSettings->ShowStartupProgress = 0;
-                        cmnUnlockGlobalSettings();
-                        cmnStoreGlobalSettings();
-                    }
+                    cmnSetSetting(sfShowStartupProgress, 0);
                     mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
                 }
                 break;
@@ -1373,7 +1368,7 @@ void _Optlink fntQuickOpenFolders(PTHREADINFO ptiMyself)
 {
     PQUICKOPENDATA pqod = (PQUICKOPENDATA)ptiMyself->ulData;
     PLISTNODE pNode;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     for (pNode = lstQueryFirstNode(&pqod->llQuicks);
          pNode;
@@ -1385,13 +1380,13 @@ void _Optlink fntQuickOpenFolders(PTHREADINFO ptiMyself)
              && (_somIsA(pFolder, _WPFolder))
            )
         {
-            if (pGlobalSettings->ShowStartupProgress)
+            if (cmnQuerySetting(sfShowStartupProgress))
             {
                 CHAR szTemp[256];
                 _wpQueryFilename(pFolder, szTemp, TRUE);
                 WinSetDlgItemText(pqod->hwndStatus, ID_SDDI_STATUS, szTemp);
 
-                if (pGlobalSettings->ShowStartupProgress)
+                if (cmnQuerySetting(sfShowStartupProgress))
                     WinSendDlgItemMsg(pqod->hwndStatus, ID_SDDI_PROGRESSBAR,
                                       WM_UPDATEPROGRESSBAR,
                                       (MPARAM)(pqod->ulQuickThis * 100),
@@ -1407,7 +1402,7 @@ void _Optlink fntQuickOpenFolders(PTHREADINFO ptiMyself)
     }
 
     // done: set 100%
-    if (pGlobalSettings->ShowStartupProgress)
+    if (cmnQuerySetting(sfShowStartupProgress))
         WinSendDlgItemMsg(pqod->hwndStatus, ID_SDDI_PROGRESSBAR,
                           WM_UPDATEPROGRESSBAR,
                           (MPARAM)1,
@@ -1463,12 +1458,12 @@ void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
 {
     // HWND                hwndDesktopJustOpened = (HWND)ptiMyself->ulData;
     PCKERNELGLOBALS     pKernelGlobals = krnQueryGlobals();
-    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     // CHAR                szDesktopDir[CCHMAXPATH];
 
     // sleep a little while more
     // V0.9.4 (2000-08-02) [umoeller]
-    DosSleep(pGlobalSettings->ulStartupInitialDelay);
+    DosSleep(cmnQuerySetting(sulStartupInitialDelay));
 
     TRY_LOUD(excpt1)
     {
@@ -1527,7 +1522,7 @@ void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
                     if (_somIsA(pFolder, _XFldStartup))
                         ulTiming = _xwpQueryXStartupObjectDelay(pFolder);
                     else
-                        ulTiming  = pGlobalSettings->ulStartupObjectDelay;
+                        ulTiming  = cmnQuerySetting(sulStartupObjectDelay);
 
                     // start the folder contents synchronously;
                     // this func now displays the progress dialog
@@ -1573,7 +1568,7 @@ void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
             // if we have any quick-open folders: go
             if (qod.cQuicks = lstCountItems(&qod.llQuicks))
             {
-                if (pGlobalSettings->ShowStartupProgress)
+                if (cmnQuerySetting(sfShowStartupProgress))
                 {
                     qod.hwndStatus = WinLoadDlg(HWND_DESKTOP, NULLHANDLE,
                                                 fnwpQuickOpenDlg,
@@ -1600,7 +1595,7 @@ void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
                            "QuickOpen",
                            (ULONG)&qod);
 
-                if (pGlobalSettings->ShowStartupProgress)
+                if (cmnQuerySetting(sfShowStartupProgress))
                 {
                     winhSaveWindowPos(qod.hwndStatus,
                                       HINI_USER,
@@ -1857,7 +1852,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
         case FIM_DESKTOPPOPULATED:
         {
-            // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+            // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
             PKERNELGLOBALS pKernelGlobals = NULL;
 
             #ifdef DEBUG_STARTUP
@@ -2282,7 +2277,7 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
         case WM_CREATE:
         {
             PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+            // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
             // these are already initialized by xfobjM_wpclsInitData
 
             memset(&sb, 0, sizeof(sb));
@@ -2290,11 +2285,11 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             // boot logo disabled because Shift pressed at Desktop startup?
             if ((pKernelGlobals->ulPanicFlags & SUF_SKIPBOOTLOGO) == 0)
                 // no: logo allowed?
-                if (cmnIsFeatureEnabled(BootLogo))
+                if (cmnQuerySetting(sfBootLogo))
                 {
                     PSZ pszBootLogoFile = cmnQueryBootLogoFile();
 
-                    if (pGlobalSettings->_bBootLogoStyle == 1)
+                    if (cmnQuerySetting(sulBootLogoStyle) == 1)
                     {
                         // blow-up mode:
                         HDC         hdcMem;
@@ -2336,7 +2331,7 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     }
 
                     free(pszBootLogoFile);
-                } // end if (pGlobalSettings->BootLogo)
+                } // end if (cmnQuerySetting(sfBootLogo))
 
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
         }
@@ -2349,9 +2344,9 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
         case QM_DESTROYLOGO:
         {
-            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+            // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-            if (pGlobalSettings->_bBootLogoStyle == 0)
+            if (cmnQuerySetting(sulBootLogoStyle) == 0)
                 // was bitmap window created successfully?
                 if (sb.hwndShapeFrame)
                 {
@@ -2642,7 +2637,7 @@ void _Optlink fntSpeedyThread(PTHREADINFO pti)
 BOOL xthrStartThreads(PVOID pLogFile)
 {
     BOOL brc = FALSE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     PKERNELGLOBALS pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
 
     doshWriteLogEntry(pLogFile,
@@ -2664,7 +2659,7 @@ BOOL xthrStartThreads(PVOID pLogFile)
              *
              */
 
-            // if (pGlobalSettings->NoWorkerThread == 0)
+            // if (cmnQuerySetting(sNoWorkerThread) == 0)
                 // removed this setting V0.9.16 (2002-01-04) [umoeller]
             {
                 // threads not disabled:

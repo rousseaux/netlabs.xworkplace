@@ -1104,10 +1104,10 @@ SOM_Scope BOOL  SOMLINK xwstr_wpModifyPopupMenu(XWPString *somSelf,
             {
                 // mi.hwndSubMenu now contains "Open" submenu handle,
                 // which we add items to now
-                PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                 // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
                 winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                                   (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW),
+                                   (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW),
                                    cmnGetString(ID_XSSI_XWPSTRING_OPENMENU),  // pszXWPStringOpenMenu
                                    MIS_TEXT, 0);
             }
@@ -1136,11 +1136,11 @@ SOM_Scope BOOL  SOMLINK xwstr_wpMenuItemSelected(XWPString *somSelf,
                                                  ULONG ulMenuId)
 {
     BOOL brc = FALSE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XWPStringData *somThis = XWPStringGetData(somSelf);
     XWPStringMethodDebug("XWPString","xwstr_wpMenuItemSelected");
 
-    if (ulMenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW))
+    if (ulMenuId == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW))
     {
         // "invoke setup string":
         brc = _wpOpen(somSelf,
@@ -1166,11 +1166,11 @@ SOM_Scope BOOL  SOMLINK xwstr_wpMenuItemHelpSelected(XWPString *somSelf,
                                                      ULONG MenuId)
 {
     BOOL brc = FALSE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XWPStringData *somThis = XWPStringGetData(somSelf);
     XWPStringMethodDebug("XWPString","xwstr_wpMenuItemHelpSelected");
 
-    if (MenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW))
+    if (MenuId == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW))
         brc = cmnDisplayHelp(somSelf,
                              ID_XSH_SETTINGS_XWPSTRING_MAIN);
     else
@@ -1207,11 +1207,11 @@ SOM_Scope HWND  SOMLINK xwstr_wpOpen(XWPString *somSelf,
                                      ULONG param)
 {
     HWND hwnd = NULLHANDLE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XWPStringData *somThis = XWPStringGetData(somSelf);
     XWPStringMethodDebug("XWPString","xwstr_wpOpen");
 
-    if (ulView == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW))
+    if (ulView == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW))
     {
         // invoke setup string
         if (!_xwpInvokeString(somSelf,
@@ -1269,12 +1269,12 @@ SOM_Scope BOOL  SOMLINK xwstr_wpQueryDefaultHelp(XWPString *somSelf,
 
 SOM_Scope ULONG  SOMLINK xwstr_wpQueryDefaultView(XWPString *somSelf)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XWPStringData *somThis = XWPStringGetData(somSelf);
     XWPStringMethodDebug("XWPString","xwstr_wpQueryDefaultView");
 
     if (_hobjStatic)
-        return (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW);
+        return (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW);
     else
         return (OPEN_SETTINGS);     // settings view is default
 }

@@ -780,11 +780,11 @@ SOM_Scope BOOL  SOMLINK cdp_wpQueryDefaultHelp(XMMCDPlayer *somSelf,
 
 SOM_Scope ULONG  SOMLINK cdp_wpQueryDefaultView(XMMCDPlayer *somSelf)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XMMCDPlayerData *somThis = XMMCDPlayerGetData(somSelf); */
     XMMCDPlayerMethodDebug("XMMCDPlayer","cdp_wpQueryDefaultView");
 
-    return (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW);
+    return (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW);
 }
 
 /*
@@ -808,11 +808,11 @@ SOM_Scope HWND  SOMLINK cdp_wpOpen(XMMCDPlayer *somSelf, HWND hwndCnr,
                                    ULONG ulView, ULONG param)
 {
     HWND    hwndNewView = 0;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XMMCDPlayerData *somThis = XMMCDPlayerGetData(somSelf); */
     XMMCDPlayerMethodDebug("XMMCDPlayer","cdp_wpOpen");
 
-    if (ulView == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW))
+    if (ulView == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW))
         hwndNewView = xmmCreateCDPlayerView(somSelf, hwndCnr, ulView);
                                 // src/media/mmcdplay.c
     else

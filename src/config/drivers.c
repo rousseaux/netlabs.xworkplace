@@ -77,6 +77,7 @@
 #include "helpers\configsys.h"          // CONFIG.SYS routines
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\dosh.h"               // Control Program helper routines
+#include "helpers\exeh.h"               // executable helpers
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\textview.h"           // PM XTextView control
@@ -326,10 +327,10 @@ void InsertDrivers(HWND hwndCnr,              // in: container
                         szRestOfLine);
 
                 // get BLDLEVEL
-                if (!(arc = doshExecOpen(precc->szDriverNameFull,
+                if (!(arc = exehOpen(precc->szDriverNameFull,
                                          &pExec)))
                 {
-                    if (!(arc = doshExecQueryBldLevel(pExec)))
+                    if (!(arc = exehQueryBldLevel(pExec)))
                     {
                         if (pExec->pszVersion)
                         {
@@ -340,7 +341,7 @@ void InsertDrivers(HWND hwndCnr,              // in: container
                         if (pExec->pszVendor)
                             strcpy(precc->szVendor, pExec->pszVendor);
                     }
-                    doshExecClose(&pExec);
+                    exehClose(&pExec);
                 }
                 else
                     // error:
@@ -637,7 +638,8 @@ void _Optlink fntDriversThread(PTHREADINFO pti)
 
         // load drivers.txt file; freed below
         if (doshLoadTextFile(szDriverSpecsFilename,
-                             &pszDriverSpecsFile)
+                             &pszDriverSpecsFile,
+                             NULL)
                 != NO_ERROR)
             winhDebugBox(HWND_DESKTOP,
                      szDriverSpecsFilename,

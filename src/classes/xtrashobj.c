@@ -616,7 +616,7 @@ SOM_Scope BOOL  SOMLINK xtro_wpModifyPopupMenu(XWPTrashObject *somSelf,
                                                               iPosition);
     if (brc)
     {
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
         ULONG           ulAttr = 0;
 
@@ -624,6 +624,7 @@ SOM_Scope BOOL  SOMLINK xtro_wpModifyPopupMenu(XWPTrashObject *somSelf,
         if (pTrashCan)
             if (_somIsA(pTrashCan, _XWPTrashCan))
             {
+                ULONG   ulOfs = cmnQuerySetting(sulVarMenuOffset);
                 CHAR    szDestroyItem[300];
                 if (_xwpTrashCanBusy(pTrashCan,
                                      0))     // query busy
@@ -632,22 +633,22 @@ SOM_Scope BOOL  SOMLINK xtro_wpModifyPopupMenu(XWPTrashObject *somSelf,
 
                 // insert separator
                 winhInsertMenuSeparator(hwndMenu, MIT_END,
-                                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                                        (ulOfs + ID_XFMI_OFS_SEPARATOR));
 
                 // insert "Restore object"
                 winhInsertMenuItem(hwndMenu, MIT_END,
-                                   (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHRESTORE),
+                                   (ulOfs + ID_XFMI_OFS_TRASHRESTORE),
                                    cmnGetString(ID_XTSI_TRASHRESTORE),  // pszTrashRestore
                                    MIS_TEXT,   // style
                                    ulAttr);    // attributes, can be "disabled"
 
                 // insert "Destroy object"
                 strcpy(szDestroyItem, cmnGetString(ID_XTSI_TRASHDESTROY)) ; // pszTrashDestroy
-                if (pGlobalSettings->ulTrashConfirmEmpty & TRSHCONF_DESTROYOBJ)
+                if (cmnQuerySetting(sflTrashConfirmEmpty) & TRSHCONF_DESTROYOBJ)
                     // confirm destroy on:
                     strcat(szDestroyItem, "...");
                 winhInsertMenuItem(hwndMenu, MIT_END,
-                                   (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHDESTROY),
+                                   (ulOfs + ID_XFMI_OFS_TRASHDESTROY),
                                    szDestroyItem,
                                    MIS_TEXT,   // style
                                    ulAttr);    // attributes, can be "disabled"
@@ -681,20 +682,21 @@ SOM_Scope BOOL  SOMLINK xtro_wpMenuItemSelected(XWPTrashObject *somSelf,
                                                 ULONG ulMenuId)
 {
     BOOL brc = FALSE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    ULONG ulOfs = cmnQuerySetting(sulVarMenuOffset);
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpMenuItemSelected");
 
     // Note, these menu items should never be called really...
     // the subclassed folder frame window proc already intercepts
     // these.
-    if (ulMenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHRESTORE))
+    if (ulMenuId == (ulOfs + ID_XFMI_OFS_TRASHRESTORE))
     {
         // "Restore object":
         brc = _xwpRestoreFromTrashCan(somSelf,
                                       NULL);       // use original folder
     }
-    else if (ulMenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHDESTROY))
+    else if (ulMenuId == (ulOfs + ID_XFMI_OFS_TRASHDESTROY))
     {
         // "Destroy object":
         // free related object
@@ -723,12 +725,13 @@ SOM_Scope BOOL  SOMLINK xtro_wpMenuItemSelected(XWPTrashObject *somSelf,
 SOM_Scope BOOL  SOMLINK xtro_wpMenuItemHelpSelected(XWPTrashObject *somSelf,
                                                     ULONG MenuId)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    ULONG ulOfs = cmnQuerySetting(sulVarMenuOffset);
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf); */
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpMenuItemHelpSelected");
 
-    if (    (MenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHRESTORE))
-         || (MenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHDESTROY))
+    if (    (MenuId == (ulOfs + ID_XFMI_OFS_TRASHRESTORE))
+         || (MenuId == (ulOfs + ID_XFMI_OFS_TRASHDESTROY))
        )
     {
         // now open the help panel we've set above

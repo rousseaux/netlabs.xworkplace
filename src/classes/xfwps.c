@@ -113,7 +113,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddWPSMenuPages(XFldWPS *somSelf,
 {
     PCREATENOTEBOOKPAGE pcnbp;
     HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XFldWPSData *somThis = XFldWPSGetData(somSelf); */
     XFldWPSMethodDebug("XFldWPS","xfwps_xwpAddWPSMenuPages");
 
@@ -192,13 +192,13 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
 {
     PCREATENOTEBOOKPAGE pcnbp;
     HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldWPSData *somThis = XFldWPSGetData(somSelf);
     XFldWPSMethodDebug("XFldWPS","xfwps_xwpAddXFldWPSPages");
 
     // insert "Sort" page
 #ifndef __ALWAYSEXTSORT__
-    if (cmnIsFeatureEnabled(ExtendedSorting))
+    if (cmnQuerySetting(sfExtendedSorting))
 #endif
     {
         // extended sorting enabled:
@@ -225,7 +225,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
 
     // insert "Hotkeys" page
 #ifndef __ALWAYSFDRHOTKEYS__
-    if (cmnIsFeatureEnabled(FolderHotkeys))
+    if (cmnQuerySetting(sfFolderHotkeys))
 #endif
     {
         pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
@@ -245,7 +245,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
 
     // insert "Snap to grid" page
 #ifndef __NOSNAPTOGRID__
-    if (cmnIsFeatureEnabled(Snap2Grid))
+    if (cmnQuerySetting(sfSnap2Grid))
     {
         pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
         memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
@@ -269,13 +269,13 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
 
     if (
 #ifndef __ALWAYSSUBCLASS__
-            (!cmnIsFeatureEnabled(NoSubclassing))
+            (!cmnQuerySetting(sfNoSubclassing))
 #else
         1
 #endif
         &&
 #ifndef __NOCFGSTATUSBARS__
-            (cmnIsFeatureEnabled(StatusBars))
+            (cmnQuerySetting(sfStatusBars))
 #else
         1
 #endif
@@ -347,7 +347,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
      */
 
 #ifndef __NEVEREXTASSOCS__
-    if (cmnIsFeatureEnabled(ExtAssocs))
+    if (cmnQuerySetting(sfExtAssocs))
     {
         pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
         memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));

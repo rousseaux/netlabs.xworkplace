@@ -65,6 +65,7 @@
 
 // headers in /helpers
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
@@ -360,7 +361,7 @@ BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
                 // OK: this is a hotkey...
 
                 BOOL                fPost = TRUE;
-                PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+                // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
 
                 // find the corresponding
                 // "command" (= menu ID) and post it to the frame
@@ -385,7 +386,7 @@ BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
                         case ID_XFMI_OFS_SORTBYEXT:
                         case ID_XFMI_OFS_SORTFOLDERSFIRST:
                         case ID_XFMI_OFS_SORTBYCLASS:
-                            if (!pGlobalSettings->fDTMSort)
+                            if (!cmnQuerySetting(sfDTMSort))
                                 fPost = FALSE;
                         break;
 
@@ -397,7 +398,7 @@ BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
                         case ID_WPMI_ARRANGEPERIMETER:
                         case ID_WPMI_ARRANGEHORIZONTALLY:
                         case ID_WPMI_ARRANGEVERTICALLY:
-                            if (!pGlobalSettings->fDTMArrange)
+                            if (!cmnQuerySetting(sfDTMArrange))
                                 fPost = FALSE;
                         break;
 
@@ -417,7 +418,7 @@ BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
                     {
                         // it's one of the "variable" menu items:
                         // add the global variable menu offset
-                        usCommand += pGlobalSettings->VarMenuOffset;
+                        usCommand += cmnQuerySetting(sulVarMenuOffset);
                     }
 
                     WinPostMsg(hwndFrame,
@@ -628,7 +629,7 @@ PXFLDHOTKEY FindHotkeyFromLBSel(HWND hwndDlg,
 VOID AddHotkeyToMenuItem(HWND hwndMenu,
                          USHORT usPostCommand2Find,
                          USHORT usMenuCommand,
-                         ULONG ulVarMenuOffset) // pGlobalSettings->VarMenuOffset
+                         ULONG ulVarMenuOffset) // cmnQuerySetting(sulVarMenuOffset)
 {
     USHORT  usFlags, usKeyCode;
     CHAR    szDescription[100];
@@ -671,14 +672,14 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
                          HWND hwndCnr,
                          HWND hwndMenu) // in: menu created by wpDisplayMenu
 {
-    PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
 
     if (
 #ifndef __ALWAYSFDRHOTKEYS__
-            (cmnIsFeatureEnabled(FolderHotkeys)) // V0.9.4 (2000-06-11) [umoeller]
+            (cmnQuerySetting(sfFolderHotkeys)) // V0.9.4 (2000-06-11) [umoeller]
          &&
 #endif
-            (pGlobalSettings->fShowHotkeysInMenus)
+            (cmnQuerySetting(sfShowHotkeysInMenus))
        )
     {
         CHAR        szDescription[100];
@@ -716,16 +717,16 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
                                     TRUE);
 
             // copy filename
-            if (pGlobalSettings->AddCopyFilenameItem)
+            if (cmnQuerySetting(sfAddCopyFilenameItem))
             {
                 AddHotkeyToMenuItem(hwndMenu,
                                     ID_XFMI_OFS_COPYFILENAME_SHORT,
                                     ID_XFMI_OFS_COPYFILENAME_MENU,
-                                    pGlobalSettings->VarMenuOffset);
+                                    cmnQuerySetting(sulVarMenuOffset));
                 AddHotkeyToMenuItem(hwndMenu,
                                     ID_XFMI_OFS_COPYFILENAME_FULL,
                                     ID_XFMI_OFS_COPYFILENAME_MENU, // same menu item!
-                                    pGlobalSettings->VarMenuOffset);
+                                    cmnQuerySetting(sulVarMenuOffset));
             }
         }
         else
@@ -745,21 +746,21 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
                     AddHotkeyToMenuItem(hwndMenu,
                                         G_aDescriptions[ul].usPostCommand, // usPostCommand2Find
                                         G_aDescriptions[ul].usMenuCommand, // usMenuCommand
-                                        pGlobalSettings->VarMenuOffset);
+                                        cmnQuerySetting(sulVarMenuOffset));
                 }
             }
 
             // OK, now we got most menu items;
             // we need a few more special checks
 #ifndef __NOMOVEREFRESHNOW__
-            if (cmnIsFeatureEnabled(MoveRefreshNow))
+            if (cmnQuerySetting(sfMoveRefreshNow))
                 AddHotkeyToMenuItem(hwndMenu,
                                     WPMENUID_REFRESH,
                                     ID_XFMI_OFS_REFRESH,
-                                    pGlobalSettings->VarMenuOffset);
+                                    cmnQuerySetting(sulVarMenuOffset));
 #endif
         }
-    } // end if (pGlobalSettings->fShowHotkeysInMenus)
+    } // end if (cmnQuerySetting(sfShowHotkeysInMenus))
 }
 
 typedef struct _SUBCLHOTKEYEF
@@ -891,6 +892,12 @@ MRESULT EXPENTRY fnwpFolderHotkeyEntryField(HWND hwndEdit, ULONG msg, MPARAM mp1
     return (mrc);
 }
 
+static XWPSETTING G_HotkeysBackup[] =
+    {
+        sfFolderHotkeysDefault,
+        sfShowHotkeysInMenus
+    };
+
 /*
  *@@ fdrHotkeysInitPage:
  *      notebook callback function (notebook.c) for the
@@ -904,7 +911,7 @@ MRESULT EXPENTRY fnwpFolderHotkeyEntryField(HWND hwndEdit, ULONG msg, MPARAM mp1
 VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                         ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     HWND    hwndEditField = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_DESCRIPTION);
     HWND    hwndListbox = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_LISTBOX);
@@ -923,8 +930,10 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
-            pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+            /* pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
+            memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS)); */
+            pcnbp->pUser = cmnBackupSettings(G_HotkeysBackup,
+                                             ARRAYITEMCOUNT(G_HotkeysBackup));
             // and also backup the Folder Hotkeys array in the
             // second pointer
             pcnbp->pUser2 = malloc(FLDRHOTKEYSSIZE);
@@ -962,10 +971,10 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     if (flFlags & CBI_SET)
     {
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ACCELERATORS,
-                              pGlobalSettings->fFolderHotkeysDefault);
+                              cmnQuerySetting(sfFolderHotkeysDefault));
 
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SHOWINMENUS,
-                              pGlobalSettings->fShowHotkeysInMenus);
+                              cmnQuerySetting(sfShowHotkeysInMenus));
 
         WinSendMsg(hwndListbox, LM_DELETEALL, 0, 0);
         WinSetWindowText(hwndEditField, "");
@@ -986,7 +995,7 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     if (flFlags & CBI_ENABLE)
     {
 #ifndef __ALWAYSSUBCLASS__
-        BOOL fEnable = !cmnIsFeatureEnabled(NoSubclassing);
+        BOOL fEnable = !cmnQuerySetting(sfNoSubclassing);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ACCELERATORS, fEnable);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_LISTBOX, fEnable);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, fEnable);
@@ -1009,19 +1018,19 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                               USHORT usNotifyCode,
                               ULONG ulExtra)      // for checkboxes: contains new state
 {
-    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+    // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     MRESULT mrc = (MRESULT)0;
 
     switch (ulItemID)
     {
         case ID_XSDI_ACCELERATORS:
-            pGlobalSettings->fFolderHotkeysDefault = ulExtra;
-            cmnStoreGlobalSettings();
+            cmnSetSetting(sfFolderHotkeysDefault, ulExtra);
+            // cmnStoreGlobalSettings();
         break;
 
         case ID_XSDI_SHOWINMENUS:
-            pGlobalSettings->fShowHotkeysInMenus = ulExtra;
-            cmnStoreGlobalSettings();
+            cmnSetSetting(sfShowHotkeysInMenus, ulExtra);
+            // cmnStoreGlobalSettings();
         break;
 
         case ID_XSDI_LISTBOX:
@@ -1151,10 +1160,14 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
-            PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
+            // PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
 
             // and restore the settings for this page
-            pGlobalSettings->fFolderHotkeysDefault = pGSBackup->fFolderHotkeysDefault;
+            cmnRestoreSettings(pcnbp->pUser,
+                               ARRAYITEMCOUNT(G_HotkeysBackup));
+
+            // cmnSetSetting(sfFolderHotkeysDefault, pGSBackup->fFolderHotkeysDefault);
+
 
             // here, also restore the backed-up FolderHotkeys array
             // second pointer
@@ -1174,12 +1187,12 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             fdrLoadDefaultFldrHotkeys();
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-            cmnStoreGlobalSettings();
+            // cmnStoreGlobalSettings();
             fdrStoreFldrHotkeys();
         break; }
     }
 
-    cmnUnlockGlobalSettings();
+    // cmnUnlockGlobalSettings();
 
     return (mrc);
 }

@@ -358,7 +358,8 @@ SOM_Scope BOOL  SOMLINK xfstup_wpModifyPopupMenu(XFldStartup *somSelf,
                                                  ULONG iPosition)
 {
     BOOL rc;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    ULONG ulOfs = cmnQuerySetting(sulVarMenuOffset);
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     /* XFldStartupData *somThis = XFldStartupGetData(somSelf); */
     XFldStartupMethodDebug("XFldStartup","xfstup_wpModifyPopupMenu");
@@ -369,11 +370,11 @@ SOM_Scope BOOL  SOMLINK xfstup_wpModifyPopupMenu(XFldStartup *somSelf,
                                                          iPosition);
 
     winhInsertMenuSeparator(hwndMenu, MIT_END,
-            (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+            (ulOfs + ID_XFMI_OFS_SEPARATOR));
 
     winhInsertMenuItem(hwndMenu,
             MIT_END,
-            (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_PROCESSCONTENT),
+            (ulOfs + ID_XFMI_OFS_PROCESSCONTENT),
             cmnGetString(ID_XSSI_PROCESSCONTENT),  // pszProcessContent
             MIS_TEXT, 0);
 
@@ -400,11 +401,11 @@ SOM_Scope BOOL  SOMLINK xfstup_wpMenuItemSelected(XFldStartup *somSelf,
                                                   HWND hwndFrame,
                                                   ULONG ulMenuId)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XFldStartupData *somThis = XFldStartupGetData(somSelf); */
     XFldStartupMethodDebug("XFldStartup","xfstup_wpMenuItemSelected");
 
-    if ( (ulMenuId - pGlobalSettings->VarMenuOffset) == ID_XFMI_OFS_PROCESSCONTENT )
+    if ( (ulMenuId - cmnQuerySetting(sulVarMenuOffset)) == ID_XFMI_OFS_PROCESSCONTENT )
     {
         if (cmnMessageBoxMsg((hwndFrame)
                                 ? hwndFrame

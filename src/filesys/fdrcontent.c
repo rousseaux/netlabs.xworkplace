@@ -1119,6 +1119,87 @@ BOOL fdrDeleteFromContent(WPFolder *somSelf,
 }
 
 /*
+ *@@ fdrIsObjectFiltered:
+ *      returns TRUE if pObject is currently filtered
+ *      in pFolder and should therefore not be visible.
+ *
+ *      An object is "filtered" if it does not match
+ *      the include criteria from the "Include" page
+ *      of the folder.
+ *
+ *      This involves dealing with the undocumented
+ *      "WPFilter" class, which is derived from WPTransient.
+ *      As with the other interesting folder things, this
+ *      class is undocumented, so once again it is
+ *      impossible to deal with a standard folder feature
+ *      properly without hacking into undocumented methods.
+ *      Thanks a bunch, IBM.
+ *
+ *      Here we return FALSE only if
+ *
+ *      --  we can properly resolve all the methods;
+ *
+ *      --  _and_ the folder has a filter object;
+ *
+ *      --  _and_ the filter object excludes pObject
+ *          from its include criteria.
+ *
+ *@@added V0.9.16 (2002-01-05) [umoeller]
+ */
+
+BOOL fdrIsObjectFiltered(WPFolder *pFolder,
+                         WPObject *pObject)
+{
+    BOOL    brc = TRUE;     // if we can't find the filter, make
+                            // the object visible!
+
+    WPObject *pFilter;
+
+    static xfTD_wpQueryFldrFilter pwpQueryFldrFilter = NULL;
+    static xfTD_wpMatchesFilter pwpMatchesFilter = NULL;
+
+    _Pmpf((__FUNCTION__ "_:  obj %s in folder %s",
+                    _wpQueryTitle(pObject),
+                    _wpQueryTitle(pFolder) ));
+
+    if (!pwpQueryFldrFilter)
+        // first call:
+        pwpQueryFldrFilter = (xfTD_wpQueryFldrFilter)wpshResolveFor(
+                                             pFolder,
+                                             NULL, // use somSelf's class
+                                             "wpQueryFldrFilter");
+
+    if (    (pwpQueryFldrFilter)
+         && (pFilter = pwpQueryFldrFilter(pFolder))
+       )
+    {
+        ULONG rc = -1;
+
+        _Pmpf(("   fdr has filter 0x%lX", pFilter));
+
+        // now that we have the WPFilter object, we can try
+        // to resolve the wpMatchesFilter method
+        if (!pwpMatchesFilter)
+            // first call:
+            pwpMatchesFilter = (xfTD_wpMatchesFilter)wpshResolveFor(
+                                                 pFilter,
+                                                 NULL, // use somSelf's class
+                                                 "wpMatchesFilter");
+
+        if (    (pwpMatchesFilter)
+             && (pwpMatchesFilter(pFilter, pObject))
+           )
+        {
+            brc = FALSE;
+        }
+
+        _Pmpf(("  pwpMatchesFilter returned %d", rc));
+    }
+
+    return (brc);
+}
+
+/*
  *@@ fdrQueryContent:
  *      implementation for the XFolder::wpQueryContent override.
  *

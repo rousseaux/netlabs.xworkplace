@@ -1838,7 +1838,7 @@ SOM_Scope ULONG  SOMLINK xfobj_wpFilterPopupMenu(XFldObject *somSelf,
                                                    BOOL fMultiSelect)
 {
     ULONG ulMenuFilter = 0;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_wpFilterPopupMenu");
 
@@ -1870,7 +1870,7 @@ SOM_Scope ULONG  SOMLINK xfobj_wpFilterPopupMenu(XFldObject *somSelf,
             // with objects wrongly having Create Another options.
             /*| CTXT_CRANOTHER*/ ) // V0.9.5 (2000-09-20) [pr]
             // then disable items, this may include CTXT_CRANOTHER
-            & ~(pGlobalSettings->DefaultMenuItems)
+            & ~(cmnQuerySetting(sflDefaultMenuItems))
         );
 }
 
@@ -2041,7 +2041,7 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
             // this is never reached, because the subclassed folder
             // frame winproc already intercepts this
 
-            if (    (pGlobalSettings->fTrashDelete)
+            if (    (cmnQuerySetting(sfTrashDelete))
                  && !_somIsA(somSelf, _WPTransient)  // V0.9.9 (2001-03-10) [pr]: fix print object delete
                )
             {
@@ -2058,8 +2058,8 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
 
         case ID_WPM_LOCKINPLACE:    // V0.9.7 (2000-12-10) [umoeller]
         {
-            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-            if (pGlobalSettings->fFixLockInPlace)
+            // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+            if (cmnQuerySetting(sfFixLockInPlace))
             {
                 // we have replaced the "lock in place" submenu:
                 // we must then intercept this menu item...
@@ -2100,13 +2100,13 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
 SOM_Scope ULONG  SOMLINK xfobj_wpAddObjectGeneralPage(XFldObject *somSelf,
                                                       HWND hwndNotebook)
 {
-    PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_wpAddObjectGeneralPage");
 
 
 #ifndef __ALWAYSREPLACEICONPAGE__
-    if (    (cmnIsFeatureEnabled(ReplaceIconPage))
+    if (    (cmnQuerySetting(sfReplaceIconPage))
             // check if this is a folder;
             // if so, XFolder will insert the page
             // because otherwise this would be between
@@ -2211,7 +2211,7 @@ SOM_Scope ULONG  SOMLINK xfobj_wpConfirmObjectTitle(XFldObject *somSelf,
 {
     ULONG ulrc = NAMECLASH_NONE;
 
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_wpConfirmObjectTitle");
@@ -2231,7 +2231,7 @@ SOM_Scope ULONG  SOMLINK xfobj_wpConfirmObjectTitle(XFldObject *somSelf,
     // first of all, check whether the confirmation
     // dialogs have been replaced in the global settings;
 #ifndef __ALWAYSREPLACEFILEEXISTS__
-    if (cmnIsFeatureEnabled(ReplaceFileExists))
+    if (cmnQuerySetting(sfReplaceFileExists))
     {
 #endif
         // yes: use our replacement (fileops.c)
@@ -2391,7 +2391,7 @@ SOM_Scope BOOL  SOMLINK xfobjM_xwpclsRemoveObjectHotkey(M_XFldObject *somSelf,
 SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
 {
     BOOL    fOpenFoldersFound = FALSE;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                         // this will load the global settings from OS2.INI
 
     // M_XFldObjectData *somThis = M_XFldObjectGetData(somSelf);
@@ -2448,11 +2448,11 @@ SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
 #ifndef __NOBOOTUPSTATUS__
     if (!fOpenFoldersFound)
     {
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         // even if not first invocation (i.e. some class other
         // than WPObject gets initialized): notify Speedy thread
         // of class initialization
-        if (pGlobalSettings->_fShowBootupStatus)
+        if (cmnQuerySetting(sfShowBootupStatus))
             xthrPostSpeedyMsg(QM_BOOTUPSTATUS,
                               (MPARAM)somSelf,       // class object
                               MPNULL);

@@ -186,7 +186,7 @@ SOM_Scope BOOL  SOMLINK xsnd_wpAddSettingsPages(XWPSound *somSelf,
                                                 HWND hwndNotebook)
 {
     // PKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     /* XWPSoundData *somThis = XWPSoundGetData(somSelf); */
     XWPSoundMethodDebug("XWPSound","xsnd_wpAddSettingsPages");
@@ -195,11 +195,11 @@ SOM_Scope BOOL  SOMLINK xsnd_wpAddSettingsPages(XWPSound *somSelf,
     // the user wants this _and_ XSound
     // is working
     /* if (    (pKernelGlobals->ulMMPM2Working == MMSTAT_WORKING)
-         && (pGlobalSettings->XSystemSounds)
+         && (cmnQuerySetting(sXSystemSounds))
        ) */
     {
         // XFolder "Internals" page bottommost
-        /* if (pGlobalSettings->AddObjectPage)
+        /* if (cmnQuerySetting(sAddObjectPage))
             _xwpAddObjectInternalsPage(somSelf, hwndNotebook); */
 
         // "Symbol" page next
@@ -261,11 +261,11 @@ SOM_Scope void  SOMLINK xsndM_wpclsInitData(M_XWPSound *somSelf)
 SOM_Scope ULONG  SOMLINK xsndM_wpclsQueryIconData(M_XWPSound *somSelf,
                                                   PICONINFO pIconInfo)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* M_XWPSoundData *somThis = M_XWPSoundGetData(somSelf); */
     M_XWPSoundMethodDebug("M_XWPSound","xsndM_wpclsQueryIconData");
 
-    /* if (pGlobalSettings->fReplaceIcons)
+    /* if (cmnQuerySetting(sfReplaceIcons))
     {
         if (pIconInfo)
         {

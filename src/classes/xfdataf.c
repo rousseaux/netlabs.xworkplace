@@ -198,7 +198,7 @@ SOM_Scope BOOL  SOMLINK xfdf_wpRestoreState(XFldDataFile *somSelf,
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpRestoreState");
 
-    if (cmnIsFeatureEnabled(TurboFolders))
+    if (cmnQuerySetting(sfTurboFolders))
     {
         PMAKEAWAKEFS pFSData = (PMAKEAWAKEFS)ulReserved;
 
@@ -290,7 +290,7 @@ SOM_Scope HWND  SOMLINK xfdf_wpDisplayMenu(XFldDataFile *somSelf,
 {
     HWND hwndMenu = 0;
 
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpDisplayMenu");
 
@@ -308,7 +308,7 @@ SOM_Scope HWND  SOMLINK xfdf_wpDisplayMenu(XFldDataFile *somSelf,
         if (!doshIsWarp4())
         {
             // on Warp 3, manipulate the "Open" submenu...
-            if (cmnIsFeatureEnabled(ExtAssocs))
+            if (cmnQuerySetting(sfExtAssocs))
             {
                 MENUITEM        mi;
                 // find "Open" submenu
@@ -355,7 +355,7 @@ SOM_Scope ULONG  SOMLINK xfdf_wpFilterPopupMenu(XFldDataFile *somSelf,
                                                 BOOL fMultiSelect)
 {
     ULONG ulMenuFilter = 0;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpFilterPopupMenu");
 
@@ -370,7 +370,7 @@ SOM_Scope ULONG  SOMLINK xfdf_wpFilterPopupMenu(XFldDataFile *somSelf,
     // ready-made for this function; the "Workplace Shell"
     // notebook page for removing menu items sets this field with
     // the proper CTXT_xxx flags
-    ulMenuFilter &= ~pGlobalSettings->DefaultMenuItems;
+    ulMenuFilter &= ~cmnQuerySetting(sflDefaultMenuItems);
 
     return (ulMenuFilter);
 }
@@ -409,7 +409,7 @@ BOOL _System xfdf_wpModifyMenu(XFldDataFile *somSelf,
                                ULONG ulReserved)
 {
     BOOL    brc = FALSE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     xfTD_wpModifyMenu _parent_wpModifyMenu = NULL;
     BOOL    fExtAssocs = FALSE;
     somMethodTabs pParentMTab;
@@ -417,7 +417,7 @@ BOOL _System xfdf_wpModifyMenu(XFldDataFile *somSelf,
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpModifyMenu");
 
-    fExtAssocs = cmnIsFeatureEnabled(ExtAssocs);
+    fExtAssocs = cmnQuerySetting(sfExtAssocs);
 
     // resolve parent method.... this is especially sick:
 
@@ -542,7 +542,10 @@ SOM_Scope BOOL  SOMLINK xfdf_wpModifyPopupMenu(XFldDataFile *somSelf,
 
     if (brc)
         // manipulate the data file menu according to our needs
-        brc = mnuModifyDataFilePopupMenu(somSelf, hwndMenu, hwndCnr, iPosition);
+        brc = mnuModifyDataFilePopupMenu(somSelf,
+                                         hwndMenu,
+                                         hwndCnr,
+                                         iPosition);
 
     if (brc)
         fdrAddHotkeysToMenu(somSelf,
@@ -628,7 +631,7 @@ SOM_Scope HWND  SOMLINK xfdf_wpOpen(XFldDataFile *somSelf,
 {
     HWND        hwnd = NULLHANDLE;
     BOOL        fCallParent = TRUE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpOpen");
 
@@ -637,7 +640,7 @@ SOM_Scope HWND  SOMLINK xfdf_wpOpen(XFldDataFile *somSelf,
     #endif
 
 #ifndef __NEVEREXTASSOCS__
-    if (cmnIsFeatureEnabled(ExtAssocs))
+    if (cmnQuerySetting(sfExtAssocs))
     {
         // "extended associations" allowed:
         if (    ((ulView >= 0x1000) && (ulView < 0x1100))
@@ -717,12 +720,12 @@ SOM_Scope HWND  SOMLINK xfdf_wpOpen(XFldDataFile *somSelf,
 SOM_Scope ULONG  SOMLINK xfdf_wpAddFile1Page(XFldDataFile *somSelf,
                                              HWND hwndNotebook)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpAddFile1Page");
 
 #ifndef __ALWAYSREPLACEFILEPAGE__
-    if (cmnIsFeatureEnabled(ReplaceFilePage))
+    if (cmnQuerySetting(sfReplaceFilePage))
     {
 #endif
         return (fsysInsertFilePages(somSelf,
@@ -751,12 +754,12 @@ SOM_Scope ULONG  SOMLINK xfdf_wpAddFile1Page(XFldDataFile *somSelf,
 SOM_Scope ULONG  SOMLINK xfdf_wpAddFile2Page(XFldDataFile *somSelf,
                                              HWND hwndNotebook)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpAddFile2Page");
 
 #ifndef __ALWAYSREPLACEFILEPAGE__
-    if (cmnIsFeatureEnabled(ReplaceFilePage))
+    if (cmnQuerySetting(sfReplaceFilePage))
 #endif
         return (SETTINGS_PAGE_REMOVED);
 #ifndef __ALWAYSREPLACEFILEPAGE__
@@ -782,12 +785,12 @@ SOM_Scope ULONG  SOMLINK xfdf_wpAddFile2Page(XFldDataFile *somSelf,
 SOM_Scope ULONG  SOMLINK xfdf_wpAddFile3Page(XFldDataFile *somSelf,
                                              HWND hwndNotebook)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpAddFile3Page");
 
 #ifndef __ALWAYSREPLACEFILEPAGE__
-    if (cmnIsFeatureEnabled(ReplaceFilePage))
+    if (cmnQuerySetting(sfReplaceFilePage))
 #endif
         return (SETTINGS_PAGE_REMOVED);
 #ifndef __ALWAYSREPLACEFILEPAGE__
@@ -812,12 +815,12 @@ SOM_Scope ULONG  SOMLINK xfdf_wpAddFile3Page(XFldDataFile *somSelf,
 SOM_Scope ULONG  SOMLINK xfdf_wpAddFileTypePage(XFldDataFile *somSelf,
                                                 HWND hwndNotebook)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpAddFileTypePage");
 
 #ifndef __NEVEREXTASSOCS__
-    if (cmnIsFeatureEnabled(ExtAssocs))
+    if (cmnQuerySetting(sfExtAssocs))
     {
         // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
@@ -899,7 +902,7 @@ SOM_Scope WPObject*  SOMLINK xfdf_wpQueryAssociatedProgram(XFldDataFile *somSelf
                                                            PSZ pszDefaultType)
 {
     WPObject* pobj = 0;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     // XFldDataFileMethodDebug("XFldDataFile","xfdf_wpQueryAssociatedProgram");
@@ -919,7 +922,7 @@ SOM_Scope WPObject*  SOMLINK xfdf_wpQueryAssociatedProgram(XFldDataFile *somSelf
     #endif
 
 #ifndef __NEVEREXTASSOCS__
-    if (cmnIsFeatureEnabled(ExtAssocs))
+    if (cmnQuerySetting(sfExtAssocs))
     {
         // "extended associations" allowed:
         // use our replacement mechanism...
@@ -989,7 +992,7 @@ SOM_Scope HPOINTER  SOMLINK xfdf_wpQueryIcon(XFldDataFile *somSelf)
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpQueryIcon");
 
-    if (cmnIsFeatureEnabled(TurboFolders))
+    if (cmnQuerySetting(sfTurboFolders))
     {
         PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
         if (!(hptrReturn = prec->hptrIcon))
@@ -1098,14 +1101,14 @@ SOM_Scope void  SOMLINK xfdfM_wpclsInitData(M_XFldDataFile *somSelf)
 
 #ifndef __NEVEREXTASSOCS__
     // this gets called for subclasses too, so patch
-    // this only for the parent class... descendant
-    // classes will inherit this anyway
-    if (somSelf == _XFldDataFile)
+    // this only for the parent class...
+    // descendant classes will inherit this anyway
+    // if (somSelf == _XFldDataFile)
     {
         if (doshIsWarp4())
         {
             // on Warp 4, override wpModifyMenu (Warp 4-specific method)
-            wpshOverrideStaticMethod(somSelf,
+            wpshOverrideStaticMethod(_XFldDataFile,
                                      "wpModifyMenu",
                                      (somMethodPtr)xfdf_wpModifyMenu);
         }
@@ -1169,7 +1172,7 @@ SOM_Scope PSZ  SOMLINK xfdfM_wpclsQueryTitle(M_XFldDataFile *somSelf)
     M_XFldDataFileMethodDebug("M_XFldDataFile","xfdfM_wpclsQueryTitle");
 
 #ifndef __ALWAYSFIXCLASSTITLES__
-    if (!cmnIsFeatureEnabled(FixClassTitles))
+    if (!cmnQuerySetting(sfFixClassTitles))
         return (M_XFldDataFile_parent_M_WPDataFile_wpclsQueryTitle(somSelf));
 #endif
 
@@ -1201,7 +1204,7 @@ SOM_Scope ULONG  SOMLINK xfdfM_wpclsQueryIconData(M_XFldDataFile *somSelf,
     M_XFldDataFileMethodDebug("M_XFldDataFile","xfdfM_wpclsQueryIconData");
 
 #ifndef __NOICONREPLACEMENTS__
-    if (cmnIsFeatureEnabled(IconReplacements))
+    if (cmnQuerySetting(sfIconReplacements))
     {
         hmodIconsDLL = cmnQueryIconsDLL();
         // icon replacements allowed:

@@ -113,9 +113,9 @@
 #include "xtrash.h"
 
 /* ******************************************************************
- *                                                                  *
- *   Globals                                                        *
- *                                                                  *
+ *
+ *   Globals
+ *
  ********************************************************************/
 
 /*
@@ -359,9 +359,9 @@ static STANDARDOBJECT
     };
 
 /* ******************************************************************
- *                                                                  *
- *   XWPSetup helper functions                                      *
- *                                                                  *
+ *
+ *   XWPSetup helper functions
+ *
  ********************************************************************/
 
 /*
@@ -434,9 +434,9 @@ VOID AddResourceDLLToLB(HWND hwndDlg,                   // in: dlg with listbox
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XWPSetup "Installed classes" dialog                            *
- *                                                                  *
+ *
+ *   XWPSetup "Installed classes" dialog
+ *
  ********************************************************************/
 
 typedef const char  ***REQ;
@@ -454,7 +454,7 @@ typedef struct _XWPCLASSITEM
     const char  **ppcszReplacesClass;       // if this replaces a class (e.g. "WPProgram"),
                                             // ptr to global string in common.h
 
-    REQ         pRequirements;           // ptr to an array of const char** ptrs
+    REQ         pRequirements;              // ptr to an array of const char** ptrs
                                             // if this class requires other
                                             // classes to be installed; NULL otherwise
     ULONG       cRequirements;              // count of items in that array or 0
@@ -640,7 +640,12 @@ static XWPCLASSITEM G_aClasses[] =
             1271,
         &G_pcszXWPFontObject, NULL,
             NULL, 0,
-            1271
+            1271,
+
+        // XWPVCard added with V0.9.16 (2002-01-05) [umoeller]
+        &G_pcszXWPVCard, NULL,
+            NULL, 0,
+            1274
     };
 
 #define ID_CLASSES_FIRST         1000
@@ -1663,12 +1668,80 @@ BOOL setLogoMessages(PCREATENOTEBOOKPAGE pcnbp,
 
 typedef struct _XWPFEATURESDATA
 {
-    GLOBALSETTINGS      GlobalSettings;
+    PSETTINGSBACKUP     pBackup;
 #ifndef __ALWAYSOBJHOTKEYS__
     BOOL                bObjectHotkeys;
 #endif
     BOOL                bReplaceRefresh;
 } XWPFEATURESDATA, *PXWPFEATURESDATA;
+
+static XWPSETTING G_FeaturesBackup[] =
+    {
+#ifndef __NOICONREPLACEMENTS__
+        sfIconReplacements,
+#endif
+#ifndef __ALWAYSRESIZESETTINGSPAGES__
+        sfResizeSettingsPages,
+#endif
+#ifndef __ALWAYSREPLACEICONPAGE__
+        sfReplaceIconPage,
+#endif
+#ifndef __ALWAYSREPLACEFILEPAGE__
+        sfReplaceFilePage,
+#endif
+        sfXSystemSounds,
+#ifndef __ALWAYSFIXCLASSTITLES__
+        sfFixClassTitles,
+#endif
+#ifndef __NOCFGSTATUSBARS__
+        sfStatusBars,
+#endif
+#ifndef __NOSNAPTOGRID__
+        sfSnap2Grid,
+#endif
+#ifndef __ALWAYSFDRHOTKEYS__
+        sfFolderHotkeys,
+#endif
+#ifndef __ALWAYSEXTSORT__
+        sfExtendedSorting,
+#endif
+        sfTurboFolders,
+#ifndef __ALWAYSHOOK__
+        sfXWPHook,
+#endif
+#ifndef __NOPAGEMAGE__
+        sfEnablePageMage,
+#endif
+
+#ifndef __ALWAYSREPLACEARCHIVING__
+        sfReplaceArchiving,
+#endif
+#ifndef __NOXSHUTDOWN__
+        sfRestartDesktop,
+        sfXShutdown,
+#endif
+
+#ifndef __NEVEREXTASSOCS__
+        sfExtAssocs,
+#endif
+#ifdef __REPLHANDLES__
+        sfReplaceHandles,
+#endif
+#ifndef __ALWAYSREPLACEFILEEXISTS__
+        sfReplaceFileExists,
+#endif
+#ifndef __NEVERREPLACEDRIVENOTREADY__
+        sfReplaceDriveNotReady,
+#endif
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
+        sfTrashDelete,
+        sfReplaceTrueDelete,
+#endif
+
+#ifndef __NEVERNEWFILEDLG__
+        sfNewFileDlg,
+#endif
+    };
 
 /*
  *@@ setFeaturesInitPage:
@@ -1687,7 +1760,7 @@ typedef struct _XWPFEATURESDATA
 VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                          ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
 
     HWND hwndFeaturesCnr = WinWindowFromID(pcnbp->hwndDlgPage,
@@ -1710,7 +1783,8 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
             pcnbp->pUser = pFeaturesData = malloc(sizeof(XWPFEATURESDATA));
-            memcpy(&pFeaturesData->GlobalSettings, pGlobalSettings, sizeof(GLOBALSETTINGS));
+            pFeaturesData->pBackup = cmnBackupSettings(G_FeaturesBackup,
+                                                       ARRAYITEMCOUNT(G_FeaturesBackup));
 #ifndef __ALWAYSOBJHOTKEYS__
             pFeaturesData->bObjectHotkeys = hifObjectHotkeysEnabled();
 #endif
@@ -1832,56 +1906,58 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     {
 #ifndef __NOICONREPLACEMENTS__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEICONS,
-                cmnIsFeatureEnabled(IconReplacements));
+                cmnQuerySetting(sfIconReplacements));
 #endif
 #ifndef __ALWAYSRESIZESETTINGSPAGES__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_RESIZESETTINGSPAGES,
-                cmnIsFeatureEnabled(ResizeSettingsPages));
+                cmnQuerySetting(sfResizeSettingsPages));
 #endif
 #ifndef __ALWAYSREPLACEICONPAGE__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEICONPAGE,
-                pGlobalSettings->__fReplaceIconPage);
+                cmnQuerySetting(sfReplaceIconPage));
 #endif
 #ifndef __ALWAYSREPLACEFILEPAGE__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEFILEPAGE,
-                cmnIsFeatureEnabled(ReplaceFilePage));
+                cmnQuerySetting(sfReplaceFilePage));
 #endif
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XSYSTEMSOUNDS,
-                pGlobalSettings->fXSystemSounds);
+                cmnQuerySetting(sfXSystemSounds));
 #ifndef __ALWAYSFIXCLASSTITLES__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_FIXCLASSTITLES,
-                cmnIsFeatureEnabled(FixClassTitles));   // added V0.9.12 (2001-05-22) [umoeller]
+                cmnQuerySetting(sfFixClassTitles));   // added V0.9.12 (2001-05-22) [umoeller]
 #endif
 #ifndef __NOCFGSTATUSBARS__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ENABLESTATUSBARS,
-                cmnIsFeatureEnabled(StatusBars));
+                cmnQuerySetting(sfStatusBars));
 #endif
 #ifndef __NOSNAPTOGRID__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ENABLESNAP2GRID,
-                cmnIsFeatureEnabled(Snap2Grid));
+                cmnQuerySetting(sfSnap2Grid));
 #endif
 #ifndef __ALWAYSFDRHOTKEYS__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ENABLEFOLDERHOTKEYS,
-                cmnIsFeatureEnabled(FolderHotkeys));
+                cmnQuerySetting(sfFolderHotkeys));
 #endif
 #ifndef __ALWAYSEXTSORT__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_EXTFOLDERSORT,
-                cmnIsFeatureEnabled(ExtendedSorting));
+                cmnQuerySetting(sfExtendedSorting));
 #endif
         // ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_MONITORCDROMS,
-           //      pGlobalSettings->MonitorCDRoms);
+           //      cmnQuerySetting(sMonitorCDRoms));
 
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_TURBOFOLDERS,
                 // return the current global setting;
-                // cmnIsFeatureEnabled would return the initial
+                // cmnQuerySetting would return the initial
                 // WPS startup setting
-                pGlobalSettings->__fTurboFolders);
+                cmnQuerySetting(sfTurboFolders));
 
+#if 0
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ANIMOUSE,
-                pGlobalSettings->fAniMouse);
+                cmnQuerySetting(sfAniMouse));
+#endif
 #ifndef __ALWAYSHOOK__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XWPHOOK,
-                pGlobalSettings->__fEnableXWPHook);
+                cmnQuerySetting(sfXWPHook));
 #endif
 #ifndef __ALWAYSOBJHOTKEYS__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_GLOBALHOTKEYS,
@@ -1889,45 +1965,45 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 #endif
 #ifndef __NOPAGEMAGE__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_PAGEMAGE,
-                pGlobalSettings->fEnablePageMage);
+                cmnQuerySetting(sfEnablePageMage));
 #endif
 
 #ifndef __ALWAYSREPLACEARCHIVING__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ARCHIVING,
-                cmnIsFeatureEnabled(ReplaceArchiving));
+                cmnQuerySetting(sfReplaceArchiving));
 #endif
 #ifndef __NOXSHUTDOWN__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_RESTARTWPS,
-                cmnIsFeatureEnabled(RestartDesktop));
+                cmnQuerySetting(sfRestartDesktop));
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XSHUTDOWN,
-                cmnIsFeatureEnabled(XShutdown));
+                cmnQuerySetting(sfXShutdown));
 #endif
 
 #ifndef __NEVEREXTASSOCS__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_EXTASSOCS,
-                pGlobalSettings->__fExtAssocs);
+                cmnQuerySetting(sfExtAssocs));
 #endif
         // ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_CLEANUPINIS,
-           //      pGlobalSettings->CleanupINIs);
+           //      cmnQuerySetting(sCleanupINIs));
                 // removed for now V0.9.12 (2001-05-15) [umoeller]
 
 #ifdef __REPLHANDLES__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLHANDLES,
-                pGlobalSettings->fReplaceHandles);
+                cmnQuerySetting(sfReplaceHandles));
 #endif
 #ifndef __ALWAYSREPLACEFILEEXISTS__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLFILEEXISTS,
-                pGlobalSettings->__fReplFileExists);
+                cmnQuerySetting(sfReplaceFileExists));
 #endif
 #ifndef __NEVERREPLACEDRIVENOTREADY__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLDRIVENOTREADY,
-                pGlobalSettings->__fReplDriveNotReady);
+                cmnQuerySetting(sfReplaceDriveNotReady));
 #endif
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XWPTRASHCAN,
-                (cmnTrashCanReady() && pGlobalSettings->__fTrashDelete));
+                (cmnTrashCanReady() && cmnQuerySetting(sfTrashDelete)));
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEDELETE,
-                pGlobalSettings->__fReplaceTrueDelete);
+                cmnQuerySetting(sfReplaceTrueDelete));
 #endif
 
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEREFRESH,
@@ -1935,7 +2011,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
 #ifndef __NEVERNEWFILEDLG__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_NEWFILEDLG,
-                cmnIsFeatureEnabled(NewFileDlg));
+                cmnQuerySetting(sfNewFileDlg));
 #endif
     }
 
@@ -2007,7 +2083,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 (fXFldDataFile));
 #endif
         /* ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_CLEANUPINIS,
-                !(pGlobalSettings->NoWorkerThread)); */
+                !(cmnQuerySetting(sNoWorkerThread))); */
 
 #ifndef __NEVERREPLACEDRIVENOTREADY__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_REPLDRIVENOTREADY,
@@ -2042,7 +2118,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     // lock global settings to get write access;
     // WARNING: do not show any dialogs when reacting to
     // controls BEFORE these are not unlocked!!!
-    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+    // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
 
     BOOL fSave = TRUE;
 
@@ -2077,19 +2153,19 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
 #ifndef __NOICONREPLACEMENTS__
             case ID_XCSI_REPLACEICONS:
-                pGlobalSettings->__fIconReplacements = precc->usCheckState;
+                cmnSetSetting(sfIconReplacements, precc->usCheckState);
             break;
 #endif
 
 #ifndef __ALWAYSRESIZESETTINGSPAGES__
             case ID_XCSI_RESIZESETTINGSPAGES:
-                pGlobalSettings->__fResizeSettingsPages = precc->usCheckState;
+                cmnSetSetting(sfResizeSettingsPages, precc->usCheckState);
             break;
 #endif
 
 #ifndef __ALWAYSREPLACEICONPAGE__
             case ID_XCSI_REPLACEICONPAGE:
-                pGlobalSettings->__fReplaceIconPage = precc->usCheckState;
+                cmnSetSetting(sfReplaceIconPage, precc->usCheckState);
             break;
 #endif
 
@@ -2099,7 +2175,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 if (hifEnableHook(precc->usCheckState) == precc->usCheckState)
                 {
                     // success:
-                    pGlobalSettings->__fEnableXWPHook = precc->usCheckState;
+                    cmnSetSetting(sfXWPHook, precc->usCheckState);
 
                     if (precc->usCheckState)
                         ulNotifyMsg = 157;
@@ -2115,12 +2191,12 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
 #ifndef __ALWAYSREPLACEFILEPAGE__
             case ID_XCSI_REPLACEFILEPAGE:
-                pGlobalSettings->__fReplaceFilePage = precc->usCheckState;
+                cmnSetSetting(sfReplaceFilePage, precc->usCheckState);
             break;
 #endif
 
             case ID_XCSI_XSYSTEMSOUNDS:
-                pGlobalSettings->fXSystemSounds = precc->usCheckState;
+                cmnSetSetting(sfXSystemSounds, precc->usCheckState);
                 // check if sounds are to be installed or de-installed:
                 if (sndAddtlSoundsInstalled(WinQueryAnchorBlock(pcnbp->hwndDlgPage))
                              != precc->usCheckState)
@@ -2132,17 +2208,19 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
 #ifndef __ALWAYSFIXCLASSTITLES__
             case ID_XCSI_FIXCLASSTITLES: // added V0.9.12 (2001-05-22) [umoeller]
-                pGlobalSettings->__fFixClassTitles = precc->usCheckState;
+                cmnSetSetting(sfFixClassTitles, precc->usCheckState);
             break;
 #endif
 
+#if 0
             case ID_XCSI_ANIMOUSE:
-                pGlobalSettings->fAniMouse = precc->usCheckState;
+                cmnSetSetting(sfAniMouse, precc->usCheckState);
             break;
+#endif
 
 #ifndef __NOCFGSTATUSBARS__
             case ID_XCSI_ENABLESTATUSBARS:
-                pGlobalSettings->__fEnableStatusBars = precc->usCheckState;
+                cmnSetSetting(sfStatusBars, precc->usCheckState);
                 // update status bars for open folders
                 xthrPostWorkerMsg(WOM_UPDATEALLSTATUSBARS,
                                   (MPARAM)1,
@@ -2155,7 +2233,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
 #ifndef __NOSNAPTOGRID__
             case ID_XCSI_ENABLESNAP2GRID:
-                pGlobalSettings->__fEnableSnap2Grid = precc->usCheckState;
+                cmnSetSetting(sfSnap2Grid, precc->usCheckState);
                 // update open settings notebooks
                 ntbUpdateVisiblePage(NULL,   // all somSelf's
                                      SP_XFOLDER_FLDR);
@@ -2164,7 +2242,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
 #ifndef __ALWAYSFDRHOTKEYS__
             case ID_XCSI_ENABLEFOLDERHOTKEYS:
-                pGlobalSettings->__fEnableFolderHotkeys = precc->usCheckState;
+                cmnSetSetting(sfFolderHotkeys, precc->usCheckState);
                 // update open settings notebooks
                 ntbUpdateVisiblePage(NULL,   // all somSelf's
                                      SP_XFOLDER_FLDR);
@@ -2173,7 +2251,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
 #ifndef __ALWAYSEXTSORT__
             case ID_XCSI_EXTFOLDERSORT:
-                pGlobalSettings->__fExtFolderSort = precc->usCheckState;
+                cmnSetSetting(sfExtendedSorting, precc->usCheckState);
             break;
 #endif
 
@@ -2186,7 +2264,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             break;
 
             case ID_XCSI_TURBOFOLDERS:
-                pGlobalSettings->__fTurboFolders = precc->usCheckState;
+                cmnSetSetting(sfTurboFolders, precc->usCheckState);
                 if (precc->usCheckState)
                     ulNotifyMsg = 223;
                 else
@@ -2199,7 +2277,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 #ifndef __ALWAYSREPLACEICONPAGE__
                 if (precc->usCheckState)
                     // enable object page also, or user can't find hotkeys
-                    pGlobalSettings->__fReplaceIconPage = TRUE;
+                    cmnSetSetting(sfReplaceIconPage, TRUE);
 #endif
                 ulUpdateFlags = CBI_SET | CBI_ENABLE;
             break;
@@ -2209,7 +2287,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             case ID_XCSI_PAGEMAGE:
                 if (hifEnablePageMage(precc->usCheckState) == precc->usCheckState)
                 {
-                    pGlobalSettings->fEnablePageMage = precc->usCheckState;
+                    cmnSetSetting(sfEnablePageMage, precc->usCheckState);
                     // update "Mouse movement" page
                     fUpdateMouseMovementPage = TRUE;
                 }
@@ -2220,17 +2298,17 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
 #ifndef __ALWAYSREPLACEARCHIVING__
             case ID_XCSI_ARCHIVING:
-                pGlobalSettings->__fReplaceArchiving = precc->usCheckState;
+                cmnSetSetting(sfReplaceArchiving, precc->usCheckState);
             break;
 #endif
 
 #ifndef __NOXSHUTDOWN__
             case ID_XCSI_RESTARTWPS:
-                pGlobalSettings->__fRestartWPS = precc->usCheckState;
+                cmnSetSetting(sfRestartDesktop, precc->usCheckState);
             break;
 
             case ID_XCSI_XSHUTDOWN:
-                pGlobalSettings->__fXShutdown = precc->usCheckState;
+                cmnSetSetting(sfXShutdown, precc->usCheckState);
                 // update "Desktop" menu page
                 ntbUpdateVisiblePage(NULL,   // all somSelf's
                                      SP_DTP_MENUITEMS);
@@ -2241,7 +2319,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
 #ifndef __NEVEREXTASSOCS__
             case ID_XCSI_EXTASSOCS:
-                pGlobalSettings->__fExtAssocs = precc->usCheckState;
+                cmnSetSetting(sfExtAssocs, precc->usCheckState);
                 // re-enable controls on this page
                 ulUpdateFlags = CBI_ENABLE;
 
@@ -2252,16 +2330,16 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
 #ifndef __ALWAYSREPLACEFILEEXISTS__
             case ID_XCSI_REPLFILEEXISTS:
-                pGlobalSettings->__fReplFileExists = precc->usCheckState;
+                cmnSetSetting(sfReplaceFileExists, precc->usCheckState);
             break;
 #endif
 #ifndef __NEVERREPLACEDRIVENOTREADY__
             case ID_XCSI_REPLDRIVENOTREADY:
-                pGlobalSettings->__fReplDriveNotReady = precc->usCheckState;
+                cmnSetSetting(sfReplaceDriveNotReady, precc->usCheckState);
             break;
 #endif
             /* case ID_XCSI_CLEANUPINIS:
-                pGlobalSettings->CleanupINIs = precc->usCheckState;
+                cmnSetSetting(sCleanupINIs, precc->usCheckState);
             break; */       // removed for now V0.9.12 (2001-05-15) [umoeller]
 
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
@@ -2270,19 +2348,19 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             break;
 
             case ID_XCSI_REPLACEDELETE:
-                pGlobalSettings->__fReplaceTrueDelete = precc->usCheckState;
+                cmnSetSetting(sfReplaceTrueDelete, precc->usCheckState);
             break;
 #endif
 
     #ifdef __REPLHANDLES__
             case ID_XCSI_REPLHANDLES:
-                pGlobalSettings->fReplaceHandles = precc->usCheckState;
+                cmnSetSetting(sfReplaceHandles, precc->usCheckState);
             break;
     #endif
 
 #ifndef __NEVERNEWFILEDLG__
             case ID_XCSI_NEWFILEDLG:
-                pGlobalSettings->__fNewFileDlg = precc->usCheckState;
+                cmnSetSetting(sfNewFileDlg, precc->usCheckState);
             break;
 #endif
 
@@ -2307,38 +2385,43 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             // "Undo" button: get pointer to backed-up Global Settings
             PXWPFEATURESDATA pFeaturesData = (PXWPFEATURESDATA) pcnbp->pUser;
+
+            cmnRestoreSettings(pFeaturesData->pBackup,
+                               ARRAYITEMCOUNT(G_FeaturesBackup));
+
+            /*
             PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS) &pFeaturesData->GlobalSettings;
 
             // and restore the settings for this page
 #ifndef __NOICONREPLACEMENTS__
-            pGlobalSettings->__fIconReplacements = pGSBackup->__fIconReplacements;
+            cmnSetSetting(s__fIconReplacements, pGSBackup->__fIconReplacements);
 #endif
 #ifndef __ALWAYSRESIZESETTINGSPAGES__
-            pGlobalSettings->__fResizeSettingsPages = pGSBackup->__fResizeSettingsPages;
+            cmnSetSetting(s__fResizeSettingsPages, pGSBackup->__fResizeSettingsPages);
 #endif
 #ifndef __ALWAYSREPLACEICONPAGE__
-            pGlobalSettings->__fReplaceIconPage = pGSBackup->__fReplaceIconPage;
+            cmnSetSetting(s__fReplaceIconPage, pGSBackup->__fReplaceIconPage);
 #endif
 #ifndef __ALWAYSREPLACEFILEPAGE__
-            pGlobalSettings->__fReplaceFilePage = pGSBackup->__fReplaceFilePage;
+            cmnSetSetting(s__fReplaceFilePage, pGSBackup->__fReplaceFilePage);
 #endif
-            pGlobalSettings->fXSystemSounds = pGSBackup->fXSystemSounds;
+            cmnSetSetting(sfXSystemSounds, pGSBackup->fXSystemSounds);
 
 #ifndef __NOCFGSTATUSBARS__
-            pGlobalSettings->__fEnableStatusBars = pGSBackup->__fEnableStatusBars;
+            cmnSetSetting(s__fEnableStatusBars, pGSBackup->__fEnableStatusBars);
 #endif
-            pGlobalSettings->__fEnableSnap2Grid = pGSBackup->__fEnableSnap2Grid;
-            pGlobalSettings->__fEnableFolderHotkeys = pGSBackup->__fEnableFolderHotkeys;
+            cmnSetSetting(s__fEnableSnap2Grid, pGSBackup->__fEnableSnap2Grid);
+            cmnSetSetting(s__fEnableFolderHotkeys, pGSBackup->__fEnableFolderHotkeys);
 #ifndef __ALWAYSEXTSORT__
-            pGlobalSettings->__fExtFolderSort = pGSBackup->__fExtFolderSort;
+            cmnSetSetting(s__fExtFolderSort, pGSBackup->__fExtFolderSort);
 #endif
-            // pGlobalSettings->fMonitorCDRoms = pGSBackup->fMonitorCDRoms;
+            // cmnSetSetting(sfMonitorCDRoms, pGSBackup->fMonitorCDRoms);
 
-            pGlobalSettings->fAniMouse = pGSBackup->fAniMouse;
+            cmnSetSetting(sfAniMouse, pGSBackup->fAniMouse);
 
 #ifndef __ALWAYSHOOK__
             if (hifEnableHook(pGSBackup->__fEnableXWPHook) == pGSBackup->__fEnableXWPHook)
-                pGlobalSettings->__fEnableXWPHook = pGSBackup->__fEnableXWPHook;
+                cmnSetSetting(s__fEnableXWPHook, pGSBackup->__fEnableXWPHook);
 #endif
 
 #ifndef __ALWAYSOBJHOTKEYS__
@@ -2346,45 +2429,48 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 #endif
 #ifndef __ALWAYSREPLACEICONPAGE__
             if (pFeaturesData->bObjectHotkeys)
-                pGlobalSettings->__fReplaceIconPage = TRUE;
+                cmnSetSetting(s__fReplaceIconPage, TRUE);
 #endif
 
 #ifndef __NOPAGEMAGE__
             if (hifEnablePageMage(pGSBackup->fEnablePageMage) == pGSBackup->fEnablePageMage)
             {
-                pGlobalSettings->fEnablePageMage = pGSBackup->fEnablePageMage;
+                cmnSetSetting(sfEnablePageMage, pGSBackup->fEnablePageMage);
                 // update "Mouse movement" page
                 fUpdateMouseMovementPage = TRUE;
             }
 #endif
 
 #ifndef __ALWAYSREPLACEARCHIVING__
-            pGlobalSettings->__fReplaceArchiving = pGSBackup->__fReplaceArchiving;
+            cmnSetSetting(s__fReplaceArchiving, pGSBackup->__fReplaceArchiving);
 #endif
 #ifndef __NOXSHUTDOWN__
-            pGlobalSettings->__fRestartWPS = pGSBackup->__fRestartWPS;
-            pGlobalSettings->__fXShutdown = pGSBackup->__fXShutdown;
+            cmnSetSetting(s__fRestartWPS, pGSBackup->__fRestartWPS);
+            cmnSetSetting(s__fXShutdown, pGSBackup->__fXShutdown);
 #endif
 
 #ifndef __NEVEREXTASSOCS__
-            pGlobalSettings->__fExtAssocs = pGSBackup->__fExtAssocs;
+            cmnSetSetting(s__fExtAssocs, pGSBackup->__fExtAssocs);
 #endif
-            // pGlobalSettings->CleanupINIs = pGSBackup->CleanupINIs;
+            // cmnSetSetting(sCleanupINIs, pGSBackup->CleanupINIs);
                     // removed for now V0.9.12 (2001-05-15) [umoeller]
     #ifdef __REPLHANDLES__
-            pGlobalSettings->fReplaceHandles = pGSBackup->fReplaceHandles;
+            cmnSetSetting(sfReplaceHandles, pGSBackup->fReplaceHandles);
     #endif
 #ifndef __ALWAYSREPLACEFILEEXISTS__
-            pGlobalSettings->__fReplFileExists = pGSBackup->__fReplFileExists;
+            cmnSetSetting(s__fReplFileExists, pGSBackup->__fReplFileExists);
 #endif
 #ifndef __NEVERREPLACEDRIVENOTREADY__
-            pGlobalSettings->__fReplDriveNotReady = pGSBackup->__fReplDriveNotReady;
+            cmnSetSetting(s__fReplDriveNotReady, pGSBackup->__fReplDriveNotReady);
 #endif
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
             cEnableTrashCan = pGSBackup->__fTrashDelete;
-            pGlobalSettings->__fReplaceTrueDelete = pGSBackup->__fReplaceTrueDelete;
+            cmnSetSetting(s__fReplaceTrueDelete, pGSBackup->__fReplaceTrueDelete);
 #endif
             krnEnableReplaceRefresh(pFeaturesData->bReplaceRefresh);
+
+            */
+
             // update the display by calling the INIT callback
             ulUpdateFlags = CBI_SET | CBI_ENABLE;
         }
@@ -2395,14 +2481,15 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // set the default settings for this settings page
             // (this is in common.c because it's also used at Desktop startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
+
 #ifndef __ALWAYSHOOK__
-            hifEnableHook(pGlobalSettings->__fEnableXWPHook);
+            hifEnableHook(cmnQuerySetting(sfXWPHook));
 #endif
 #ifndef __ALWAYSOBJHOTKEYS__
             hifEnableObjectHotkeys(0);
 #endif
 #ifndef __NOPAGEMAGE__
-            if (hifEnablePageMage(pGlobalSettings->fEnablePageMage) == pGlobalSettings->fEnablePageMage)
+            if (hifEnablePageMage(cmnQuerySetting(sfEnablePageMage)) == cmnQuerySetting(sfEnablePageMage))
             {
                 // update "Mouse movement" page
                 fUpdateMouseMovementPage = TRUE;
@@ -2410,7 +2497,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 #endif
 
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
-            cEnableTrashCan = pGlobalSettings->__fTrashDelete;
+            cEnableTrashCan = cmnQuerySetting(sfTrashDelete);
 #endif
 
             krnEnableReplaceRefresh(0);
@@ -2422,11 +2509,11 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
     // now unlock the global settings for the following
     // stuff; otherwise we block other threads
-    cmnUnlockGlobalSettings();
+    // cmnUnlockGlobalSettings();
 
-    if (fSave)
+    /* if (fSave)
         // settings need to be saved:
-        cmnStoreGlobalSettings();
+        cmnStoreGlobalSettings(); */
 
     if (fShowClassesSetup)
         // "classes" dialog to be shown (classes button):
@@ -3473,6 +3560,19 @@ MRESULT setObjectsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *                                                                  *
  ********************************************************************/
 
+static XWPSETTING G_ParanoiaBackup[] =
+    {
+        sulVarMenuOffset,
+        sfNoFreakyMenus,
+#ifndef __ALWAYSSUBCLASS__
+        sfNoSubclassing,
+#endif
+        sfUse8HelvFont,
+        sfNoExcptBeeps,
+        sfWorkerPriorityBeep,
+        sulDefaultWorkerThreadPriority
+    };
+
 /*
  *@@ setParanoiaInitPage:
  *      notebook callback function (notebook.c) for the
@@ -3486,7 +3586,7 @@ MRESULT setObjectsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 VOID setParanoiaInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                          ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (flFlags & CBI_INIT)
     {
@@ -3496,8 +3596,12 @@ VOID setParanoiaInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
+            pcnbp->pUser = cmnBackupSettings(G_ParanoiaBackup,
+                                             ARRAYITEMCOUNT(G_ParanoiaBackup));
+            /*
             pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
             memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+            */
         }
 
         // set up slider
@@ -3511,38 +3615,38 @@ VOID setParanoiaInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         // variable menu ID offset spin button
         winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_XCDI_VARMENUOFFSET,
                                                 100, 2000,
-                                                pGlobalSettings->VarMenuOffset);
+                                                cmnQuerySetting(sulVarMenuOffset));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_NOFREAKYMENUS,
-                                               pGlobalSettings->fNoFreakyMenus);
+                                               cmnQuerySetting(sfNoFreakyMenus));
 #ifndef __ALWAYSSUBCLASS__
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_NOSUBCLASSING,
-                                               pGlobalSettings->__fNoSubclassing);
+                                               cmnQuerySetting(sfNoSubclassing));
 #endif
         // winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_NOWORKERTHREAD,
-           //                                     pGlobalSettings->NoWorkerThread);
+           //                                     cmnQuerySetting(sNoWorkerThread));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_USE8HELVFONT,
-                                               pGlobalSettings->fUse8HelvFont);
+                                               cmnQuerySetting(sfUse8HelvFont));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_NOEXCPTBEEPS,
-                                               pGlobalSettings->fNoExcptBeeps);
+                                               cmnQuerySetting(sfNoExcptBeeps));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_BEEP,
-                                               pGlobalSettings->fWorkerPriorityBeep);
+                                               cmnQuerySetting(sfWorkerPriorityBeep));
 
         winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_SLIDER),
                                  SMA_INCREMENTVALUE,
-                                 pGlobalSettings->bDefaultWorkerThreadPriority);
+                                 cmnQuerySetting(sulDefaultWorkerThreadPriority));
     }
 
     /*
     if (flFlags & CBI_ENABLE)
     {
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_TEXT1,
-                        !(pGlobalSettings->NoWorkerThread));
+                        !(cmnQuerySetting(sNoWorkerThread)));
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_SLIDER,
-                        !(pGlobalSettings->NoWorkerThread));
+                        !(cmnQuerySetting(sNoWorkerThread)));
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_TEXT2,
-                        !(pGlobalSettings->NoWorkerThread));
+                        !(cmnQuerySetting(sNoWorkerThread)));
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_BEEP,
-                        !(pGlobalSettings->NoWorkerThread));
+                        !(cmnQuerySetting(sNoWorkerThread)));
     }
     */
 }
@@ -3561,23 +3665,23 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                ULONG ulItemID, USHORT usNotifyCode,
                                ULONG ulExtra)      // for checkboxes: contains new state
 {
-    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+    // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     BOOL fSave = TRUE,
          fUpdateOtherPages = FALSE;
 
     switch (ulItemID)
     {
         case ID_XCDI_VARMENUOFFSET:
-            pGlobalSettings->VarMenuOffset = ulExtra;
+            cmnSetSetting(sulVarMenuOffset, ulExtra);
         break;
 
         case ID_XCDI_NOFREAKYMENUS:
-            pGlobalSettings->fNoFreakyMenus   = ulExtra;
+            cmnSetSetting(sfNoFreakyMenus, ulExtra);
         break;
 
 #ifndef __ALWAYSSUBCLASS__
         case ID_XCDI_NOSUBCLASSING:
-            pGlobalSettings->__fNoSubclassing   = ulExtra;
+            cmnSetSetting(sfNoSubclassing, ulExtra);
             // set flag to iterate over other notebook pages
             fUpdateOtherPages = TRUE;
         break;
@@ -3585,7 +3689,7 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         /*
         case ID_XCDI_NOWORKERTHREAD:
-            pGlobalSettings->NoWorkerThread  = ulExtra;
+            cmnSetSetting(sNoWorkerThread, ulExtra);
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
             // set flag to iterate over other notebook pages
@@ -3594,11 +3698,11 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         */
 
         case ID_XCDI_USE8HELVFONT:
-            pGlobalSettings->fUse8HelvFont  = ulExtra;
+            cmnSetSetting(sfUse8HelvFont, ulExtra);
         break;
 
         case ID_XCDI_NOEXCPTBEEPS:
-            pGlobalSettings->fNoExcptBeeps = ulExtra;
+            cmnSetSetting(sfNoExcptBeeps, ulExtra);
         break;
 
         case ID_XCDI_WORKERPRTY_SLIDER:
@@ -3620,10 +3724,10 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                               ID_XCDI_WORKERPRTY_TEXT2,
                               pszNewInfo);
 
-            if (lSliderIndex != pGlobalSettings->bDefaultWorkerThreadPriority)
+            if (lSliderIndex != cmnQuerySetting(sulDefaultWorkerThreadPriority))
             {
                 // update the global settings
-                pGlobalSettings->bDefaultWorkerThreadPriority = lSliderIndex;
+                cmnSetSetting(sulDefaultWorkerThreadPriority, lSliderIndex);
 
                 xthrResetWorkerThreadPriority();
             }
@@ -3631,26 +3735,31 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break;
 
         case ID_XCDI_WORKERPRTY_BEEP:
-            pGlobalSettings->fWorkerPriorityBeep = ulExtra;
+            cmnSetSetting(sfWorkerPriorityBeep, ulExtra);
             break;
 
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
+            cmnRestoreSettings(pcnbp->pUser,
+                               ARRAYITEMCOUNT(G_ParanoiaBackup));
+
+            /*
             PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
 
             // and restore the settings for this page
-            pGlobalSettings->VarMenuOffset   = pGSBackup->VarMenuOffset;
-            pGlobalSettings->fNoFreakyMenus   = pGSBackup->fNoFreakyMenus;
+            cmnSetSetting(sulVarMenuOffset, pGSBackup->VarMenuOffset);
+            cmnSetSetting(sfNoFreakyMenus, pGSBackup->fNoFreakyMenus);
 #ifndef __ALWAYSSUBCLASS__
-            pGlobalSettings->__fNoSubclassing   = pGSBackup->__fNoSubclassing;
+            cmnSetSetting(sfNoSubclassing, pGSBackup->__fNoSubclassing);
 #endif
-            // pGlobalSettings->NoWorkerThread  = pGSBackup->NoWorkerThread;
-            pGlobalSettings->fUse8HelvFont   = pGSBackup->fUse8HelvFont;
-            pGlobalSettings->fNoExcptBeeps    = pGSBackup->fNoExcptBeeps;
-            pGlobalSettings->bDefaultWorkerThreadPriority
+            // cmnSetSetting(sNoWorkerThread, pGSBackup->NoWorkerThread);
+            cmnSetSetting(sfUse8HelvFont, pGSBackup->fUse8HelvFont);
+            cmnSetSetting(sfNoExcptBeeps, pGSBackup->fNoExcptBeeps);
+            cmnQuerySetting(sulDefaultWorkerThreadPriority)
                                              = pGSBackup->bDefaultWorkerThreadPriority;
-            pGlobalSettings->fWorkerPriorityBeep = pGSBackup->fWorkerPriorityBeep;
+            cmnSetSetting(sfWorkerPriorityBeep, pGSBackup->fWorkerPriorityBeep);
+               */
 
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
@@ -3676,10 +3785,10 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             fSave = FALSE;
     }
 
-    cmnUnlockGlobalSettings();
+    // cmnUnlockGlobalSettings();
 
-    if (fSave)
-        cmnStoreGlobalSettings();
+    /* if (fSave)
+        cmnStoreGlobalSettings(); */
 
     if (fUpdateOtherPages)
     {

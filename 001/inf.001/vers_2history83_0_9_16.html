@@ -42,6 +42,10 @@ into the &xwp; Configuration Folder as well to have the setup string invoked
 on the folder whose context menu was selected. This feature has been active
 for a while, but I forgot to document it.
 
+<P><LI>Folder content menus: The folder's "Include" criteria are finally
+fully respected so that objects which do not match those criteria do not
+appear in the folder content menus either.
+
 <P><LI>File types: Added icon display to "File types" page in "Workplace Shell".
 Also added "Properties" and "Open folder" items to association context menu.
 
@@ -51,6 +55,13 @@ side effect, this will give you more detailed error messages if the program
 could not be started.
 
 <P><LI>Trash can: Added EMPTYTRASH=IMMEDIATE setup string.
+
+<P><LI>&xcenter;: Pulse widget now supports more than one CPU on SMP systems,
+thanks to Bart van Leeuwen. As a result the display is painting lines instead
+of filled areas now.
+
+<P><LI>&xcenter;: Added "Properties" dialog to "Pulse" widget to allow color
+configuration, finally.
 
 <P><LI>&xcenter;: Pulse widget now opens "OS/2 Kernel" object on double-click.
 
@@ -197,6 +208,11 @@ the context menu item) were never picked up until a Desktop restart. Fixed.
 <P><LI>Folders: Added exception handling to an internal populate helper which tended
 to crash on certain WPS networking classes at times.
 
+<P><LI>Extended associations: If a data file had a type set (either explicitly or
+automatically) but no associations existed for that type, the "Open" submenu
+was empty. Fixed; this now adds the associations for "Plain text" to those
+objects too.
+
 <P><LI>Status bars: For remote disk objects (WPSharedDir), the status bars kept
 querying drive A: for the free space, which was kind of annoying. The reason was
 that WPShared::wpQueryLogicalDrive returns 1 always for some reason only IBM can
@@ -266,6 +282,9 @@ by Paul Ratcliffe.
 was enabled. Fixed. Also fixed the problem that it was possible to use hotkeys before
 the Desktop was ready and during shutdown.
 
+<P><LI>Hook: Now disabling sliding focus while "move ptr to default button" is in
+progress.
+
 <P><LI>&xshutdown;: Paul Ratcliffe fixed bug trying to close the first switch list
 item twice.
 
@@ -277,6 +296,11 @@ deleting the &lt;WP_DESKTOP&gt; object ID (and other object IDs) if they didn't 
 the data in the current INI file, which of course they don't if the object ID is from
 another WPS. Fixed that; the object's instance data is now hacked to keep the old
 object ID.
+
+<P><LI>&xshutdown;: Fixed hang on "Releasing filesystems" on some systems, hopefully.
+I can't really assure this since the bug never occured on my system, but &xwp;
+attempted to load one string resource after DosShutdown, which really isn't a good
+idea... fixed that.
 
 <P><LI>Treesize: Fixed a couple of long-standing cosmetic problems. Added a decent
 help panel.

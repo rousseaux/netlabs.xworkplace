@@ -46,7 +46,8 @@ $(OUTPUTDIR)\xwppgm.obj \
 $(OUTPUTDIR)\xwpsetup.obj \
 $(OUTPUTDIR)\xwpscreen.obj \
 $(OUTPUTDIR)\xwpsound.obj \
-$(OUTPUTDIR)\xwpstring.obj
+$(OUTPUTDIR)\xwpstring.obj \
+$(OUTPUTDIR)\xwpvcard.obj
 
 # code from shared \
 XFLDR_OBJS_SHARED = \

@@ -148,9 +148,12 @@ static HMODULE         G_hmodRes = NULLHANDLE;
 
 // NLS
 static HMODULE         G_hmodNLS = NULLHANDLE;
-// static NLSSTRINGS      *G_pNLSStringsGlobal = NULL;
-static GLOBALSETTINGS  G_GlobalSettings = {0};
-            // removed the pointer here V0.9.16 (2001-10-02) [umoeller]
+
+// static GLOBALSETTINGS  G_GlobalSettings = {0};
+            // removed V0.9.16 (2002-01-05) [umoeller]
+// array of ULONGs with values for cmnGetSetting; this
+// is filled on startup
+static ULONG           G_aulSettings[___LAST_SETTING];
 static BOOL            G_fGlobalSettingsLoaded = FALSE;
 extern BOOL            G_fTurboSettingsEnabled = FALSE;
             // initially set by initMain V0.9.16 (2001-10-25) [umoeller]
@@ -999,7 +1002,7 @@ PICONTREENODE LoadNewIcon(ULONG ulStdIcon)
 #ifndef __NOICONREPLACEMENTS__
         // check if we have an icon in ICONS.DLL
         if (    (pStdIcon->ulIconsDLL)
-             && (cmnIsFeatureEnabled(IconReplacements))
+             && (cmnQuerySetting(sfIconReplacements))
            )
         {
             HMODULE hmodIcons;
@@ -1833,44 +1836,6 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
 }
 
 /*
- *cmnQueryNLSStrings:
- *      returns pointer to global NLSSTRINGS structure which contains
- *      all the language-dependent XFolder strings from the resource
- *      files.
- *
- *changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
- *removed V0.9.9 (2001-04-04) [umoeller]
- */
-
-/* PNLSSTRINGS cmnQueryNLSStrings(VOID)
-{
-    BOOL fLocked = FALSE;
-    ULONG ulNesting;
-    DosEnterMustComplete(&ulNesting);
-
-    TRY_LOUD(excpt1)
-    {
-        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
-        if (fLocked)
-        {
-            if (G_pNLSStringsGlobal == NULL)
-            {
-                G_pNLSStringsGlobal = malloc(sizeof(NLSSTRINGS));
-                memset(G_pNLSStringsGlobal, 0, sizeof(NLSSTRINGS));
-            }
-        }
-    }
-    CATCH(excpt1) { } END_CATCH();
-
-    if (fLocked)
-        krnUnlock();
-
-    DosExitMustComplete(&ulNesting);
-
-    return (G_pNLSStringsGlobal);
-}
-
-/*
  *@@ cmnQueryCountrySettings:
  *      returns the global COUNTRYSETTINGS (see helpers\prfh.c)
  *      as set in the "Country" object, which are cached for speed.
@@ -2067,11 +2032,10 @@ BOOL cmnDescribeKey(PSZ pszBuf,
 
 VOID cmnAddCloseMenuItem(HWND hwndMenu)
 {
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     // add "Close" menu item
     winhInsertMenuSeparator(hwndMenu,
                             MIT_END,
-                            (G_GlobalSettings.VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                            cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SEPARATOR);
     winhInsertMenuItem(hwndMenu,
                        MIT_END,
                        WPMENUID_CLOSE,
@@ -2081,7 +2045,7 @@ VOID cmnAddCloseMenuItem(HWND hwndMenu)
 
 /* ******************************************************************
  *
- *   XFolder Global Settings
+ *   Status bar settings
  *
  ********************************************************************/
 
@@ -2315,200 +2279,896 @@ ULONG cmnQueryStatusBarHeight(VOID)
     return (G_ulStatusBarHeight);
 }
 
+/* ******************************************************************
+ *
+ *   Global settings
+ *
+ ********************************************************************/
+
+#pragma pack(4)
+
+/*
+ *@@ OLDGLOBALSETTINGS:
+ *      old GLOBALSETTINGS structure used before
+ *      XWorkplace V0.9.16.
+ *
+ *@@added V0.9.16 (2002-01-05) [umoeller]
+ */
+
+typedef struct _OLDGLOBALSETTINGS
+{
+    ULONG       __fIconReplacements,
+                MenuCascadeMode,
+                FullPath,
+                    // enable "full path in title"
+                KeepTitle,
+                    // "full path in title": keep existing title
+                RemoveX,
+                AppdParam,
+                __fMoveRefreshNow;
+                    // move "Refresh now" to main context menu
+
+    ULONG       MaxPathChars,
+                    // maximum no. of chars for "full path in title"
+                DefaultMenuItems;
+                    // ready-made CTXT_* flags for wpFilterPopupMenu
+
+    LONG        VarMenuOffset;
+                    // variable menu offset, "Paranoia" page
+
+    ULONG       fAddSnapToGridDefault;
+                    // V0.9.0, was: AddSnapToGridItem
+                    // default setting for adding "Snap to grid";
+                    // can be overridden in XFolder instance settings
+
+    // "snap to grid" values
+    LONG        GridX,
+                GridY,
+                GridCX,
+                GridCY;
+
+    ULONG       fFolderHotkeysDefault,
+                    // V0.9.0, was: FolderHotkeysDefault
+                    // default setting for enabling folder hotkeys;
+                    // can be overridden in XFolder instance settings
+                TemplatesOpenSettings;
+                    // open settings after creating from template;
+                    // 0: do nothing after creation
+                    // 1: open settings notebook
+                    // 2: make title editable
+// XFolder 0.52
+    ULONG       RemoveLockInPlaceItem,
+                    // XFldObject, Warp 4 only
+                RemoveFormatDiskItem,
+                    // XFldDisk
+                RemoveCheckDiskItem,
+                    // XFldDisk
+                RemoveViewMenu,
+                    // XFolder, Warp 4 only
+                RemovePasteItem,
+                    // XFldObject, Warp 4 only
+
+                ulRemoved1,             // was: DebugMode,
+                AddCopyFilenameItem;
+                    // default setting for "Copy filename" (XFldDataFile)
+                    // can be overridden in XFolder instance settings
+    ULONG       __flXShutdown;
+                    // XSD_* shutdown settings
+    ULONG       __ulRemoved3, // was: NoWorkerThread,
+                    // "Paranoia" page
+                __fNoSubclassing,
+                    // "Paranoia" page
+                TreeViewAutoScroll,
+                    // XFolder
+                ShowStartupProgress;
+                    // XFldStartup
+    ULONG       ulStartupObjectDelay;
+                    // was: ulStartupDelay;
+                    // there's a new ulStartupInitialDelay with V0.9.4 (bottom)
+                    // XFldStartup
+
+// XFolder 0.70
+    ULONG       __fAddFolderContentItem,
+                    // general "Folder content" submenu; this does
+                    // not affect favorite folders, which are set
+                    // for each folder individually
+                __fFolderContentShowIcons,
+                    // show icons in folder content menus (both
+                    // "folder content" and favorite folders)
+                fDefaultStatusBarVisibility,
+                    // V0.9.0, was: StatusBar;
+                    // default visibility of status bars (XFldWPS),
+                    // can be overridden in XFolder instance settings
+                    // (unlike fEnableStatusBars below, XWPSetup)
+                SBStyle;
+                    // status bar style
+    LONG        lSBBgndColor,
+                lSBTextColor;
+                    // status bar colors; can be changed via drag'n'drop
+    ULONG       TemplatesReposition;
+                    // reposition new objects after creating from template
+    USHORT      __usLastRebootExt;
+                    // XShutdown: last extended reboot item
+    ULONG       AddSelectSomeItem,
+                    // XFolder: enable "Select by name"
+                __fExtFolderSort,
+                    // V0.9.0, was: ReplaceSort;
+                    // enable XFolder extended sorting (XWPSetup)
+                AlwaysSort,
+                    // default "always sort" flag (BOOL)
+                _removed1, // DefaultSort,
+                    // default sort criterion
+                    // moved this down V0.9.12 (2001-05-18) [umoeller]
+                __disabled1, // CleanupINIs,
+                    // disabled for now V0.9.12 (2001-05-15) [umoeller]
+
+// XFolder 0.80
+                _fShowBootupStatus,
+                ulRemoved3;
+                    // V0.9.0, was: WpsShowClassInfo;
+    ULONG       SBForViews,
+                    // XFldWPS: SBV_xxx flags
+                __fReplFileExists,
+                    // V0.9.0, was: ReplConfirms;
+                    // XFldWPS, replace "File Exists" dialog
+                __fBootLogo,
+                    // V0.9.0, was: ShowXFolderAnim
+                    // XFldDesktop "Startup" page: show boot logo
+                FileAttribs,
+                    // XFldDataFile: show "File attributes" submenu
+                __fReplaceIconPage,
+                    // V0.9.0, was: ShowInternals
+                    // XFldObject: add "Object" page to all settings notebooks
+                    // V0.9.16 (2001-10-15) [umoeller]: now replacing icon
+                    // page instead, renamed also
+                ExtendFldrViewMenu;
+                    // XFolder: extend Warp 4 "View" submenu
+
+// XWorkplace 0.9.0
+    BOOL        fNoExcptBeeps,
+                    // XWPSetup "Paranoia": disable exception beeps
+                fUse8HelvFont,
+                    // XWPSetup "Paranoia": use "8.Helv" font for dialogs;
+                    // on Warp 3, this is enabled per default
+                __fReplaceFilePage,
+                    // XFolder/XFldDataFile: replace three "File" pages
+                    // into one
+                __fExtAssocs,
+                    // XFldDataFile/XFldWPS: extended associations
+
+                // Desktop menu items
+                fDTMSort,
+                fDTMArrange,
+                fDTMSystemSetup,
+                fDTMLockup,
+                fDTMShutdown,
+                fDTMShutdownMenu,
+
+                _ulRemoved4, // fIgnoreFilters,
+                    // XFldDataFile/XFldWPS: extended associations
+                fMonitorCDRoms,
+                __fRestartWPS,
+                    // XWPSetup: enable "Restart Desktop"
+                __fXShutdown,
+                    // XWPSetup: enable XShutdown
+
+                __fEnableStatusBars,
+                    // XWPSetup: whether to enable the status bars at all;
+                    // unlike fDefaultStatusBarVisibility above
+                __fEnableSnap2Grid,
+                    // XWPSetup: whether to enable "Snap to grid" at all;
+                    // unlike fAddSnapToGridDefault above
+                __fEnableFolderHotkeys;
+                    // XWPSetup: whether to enable folder hotkeys at all;
+                    // unlike fFolderHotkeysDefault above
+
+    BYTE        bDefaultWorkerThreadPriority,
+                    // XWPSetup "Paranoia": default priority of Worker thread:
+                    //      0: idle +/-0
+                    //      1: idle +31
+                    //      2: regular +/-0
+
+                fXSystemSounds,
+                    // XWPSetup: enable extended system sounds
+                fWorkerPriorityBeep,
+                    // XWPSetup "Paranoia": beep on priority change
+
+                _bBootLogoStyle,
+                    // XFldDesktop "Startup" page:
+                    // boot logo style:
+                    //      0 = transparent
+                    //      1 = blow-up
+
+                bDereferenceShadows,
+                    // XFldWPS "Status bars" page 2:
+                    // deference shadows flag
+                    // changed V0.9.5 (2000-10-07) [umoeller]: now bit flags...
+                    // -- STBF_DEREFSHADOWS_SINGLE        0x01
+                    // -- STBF_DEREFSHADOWS_MULTIPLE      0x02
+
+    // trashcan settings
+                __fTrashDelete,
+                __fRemoved1, // fTrashEmptyStartup,
+                __fRemoved2; // fTrashEmptyShutdown;
+    ULONG       ulTrashConfirmEmpty;
+                    // TRSHEMPTY_* flags
+
+    BYTE        __fReplDriveNotReady;
+                    // XWPSetup: replace "Drive not ready" dialog
+
+    ULONG       ulIntroHelpShown;
+                    // HLPS_* flags for various classes, whether
+                    // an introductory help page has been shown
+                    // the first time it's been opened
+
+    BYTE        __fEnableXWPHook;
+                    // XWPSetup: enable hook (enables object hotkeys,
+                    // mouse movement etc.)
+
+    BYTE        __fReplaceArchiving;
+                    // XWPSetup: enable Desktop archiving replacement
+
+    BYTE        fAniMouse;
+                    // XWPSetup: enable "animated mouse pointers" page in XWPMouse
+
+    BYTE        fNumLockStartup;
+                    // XFldDesktop "Startup": set NumLock to ON on Desktop startup
+
+    BYTE        fEnablePageMage;
+                    // XWPSetup "PageMage virtual desktops"; this will cause
+                    // XDM_STARTSTOPPAGEMAGE to be sent to the daemon
+
+    BYTE        fShowHotkeysInMenus;
+                    // on XFldWPS "Hotkeys" page
+
+// XWorkplace 0.9.3
+
+    BYTE        fNoFreakyMenus;
+                    // on XWPSetup "Paranoia" page
+
+    BYTE        __fReplaceTrueDelete;
+                    // replace "true delete" also?
+                    // on XWPSetup "Features" page
+
+// XWorkplace 0.9.4
+    BYTE        _fFdrDefaultDoc,
+                    // folder default documents enabled?
+                    // "Workplace Shell" "View" page
+                _fFdrDefaultDocView;
+                    // "default doc = folder default view"
+                    // "Workplace Shell" "View" page
+
+    BYTE        __fResizeSettingsPages;
+                    // XWPSetup: allow resizing of WPS notebook pages?
+
+    ULONG       ulStartupInitialDelay;
+                    // XFldStartup: initial delay
+
+// XWorkplace 0.9.5
+
+#ifdef __REPLHANDLES__
+    BYTE        fReplaceHandles;
+                    // XWPSetup: replace handles management?
+#else
+    BYTE        fDisabled2;
+#endif
+    BYTE        _bSaveINIS;
+                    // XShutdown: save-INIs method:
+                    // -- 0: new method (xprf* APIs)
+                    // -- 1: old method (Prf* APIs)
+                    // -- 2: do not save
+
+// XWorkplace 0.9.7
+    BYTE        fFixLockInPlace;
+                    // "Workplace Shell" menus p3: submenu, checkmark
+    BYTE        fDTMLogoffNetwork;
+                    // "Logoff network now" desktop menu item (XFldDesktop)
+
+// XWorkplace 0.9.9
+    BYTE        fFdrAutoRefreshDisabled;
+                    // "Folder auto-refresh" on "Workplace Shell" "View" page;
+                    // this only has an effect if folder auto-refresh has
+                    // been replaced in XWPSetup in the first place
+// XWorkplace V0.9.12
+    BYTE        bDefaultFolderView;
+                    // "default folder view" on XFldWPS "View" page:
+                    // -- 0: inherit from parent (default, standard WPS)
+                    // -- OPEN_CONTENTS (1): icon view
+                    // -- OPEN_TREE (101): tree view
+                    // -- OPEN_DETAILS (102): details view
+
+    BYTE        fFoldersFirst;
+                    // global sort setting for "folders first"
+                    // (TRUE or FALSE)
+    LONG        lDefSortCrit;
+                    // new global sort criterion (moved this down here
+                    // because the value is incompatible with the earlier
+                    // setting above, which has been disabled);
+                    // this is a LONG because it can have negative values
+                    // (see XFolder::xwpSetFldrSort)
+
+    BYTE        __fFixClassTitles;
+                    // XWPSetup: override wpclsQueryTitle?
+
+    BYTE        fExtendCloseMenu;
+                    // XFldWPS "View" page
+
+    BYTE        fWriteXWPStartupLog;
+                    // V0.9.14 (2001-08-21) [umoeller]
+
+// V0.9.16
+    BYTE        __fTurboFolders;
+                    // V0.9.16 (2001-10-25) [umoeller]
+    BYTE        __fNewFileDlg;
+                    // V0.9.16 (2001-12-02) [umoeller]
+} OLDGLOBALSETTINGS, *POLDGLOBALSETTINGS;
+
+#pragma pack()
+
+/*
+ *@@ SETTINGINFO:
+ *      gives detailed information about an
+ *      XWPSETTING. This is used to find the
+ *      INI key for loading and writing the
+ *      data as well as converting the old
+ *      XWorkplace GLOBALSETTINGS structure
+ *      into an XWPSETTING array. Besides,
+ *      for each setting, this gives a default
+ *      value if it was not found at startup,
+ *      or to reset it from a notebook page.
+ *
+ *      An array of these structures exists
+ *      as a static, private, global variable.
+ *
+ *@@added V0.9.16 (2002-01-05) [umoeller]
+ */
+
+typedef struct _SETTINGINFO
+{
+    XWPSETTING      s;                  // setting this item relates to
+    ULONG           ulOffsetIntoOld;    // offset into OLDGLOBALSETTINGS;
+                                        // if -1, no corresponding entry exists
+    BYTE            cbOld;              // count of bytes in OLDGLOBALSETTINGS (1, 2, or 4)
+    ULONG           ulSettingsPageID;   // SP_* settings page ID of this setting
+    ULONG           ulDefaultValue;     // default value for this setting
+    PCSZ            pcszIniKey;         // INI key for this setting
+} SETTINGINFO, *PSETTINGINFO;
+
+/*
+ *@@ G_aSettingInfos:
+ *      describes the various XWPSETTING's available
+ *      to XWorkplace. If you add a new XWPSETTING,
+ *      you _must_ add an entry here, or everything
+ *      will blow up.
+ *
+ *@@added V0.9.16 (2002-01-05) [umoeller]
+ */
+
+static SETTINGINFO G_aSettingInfos[] =
+    {
+#ifndef __NOICONREPLACEMENTS__
+        sfIconReplacements, FIELDOFFSET(OLDGLOBALSETTINGS, __fIconReplacements), 4,
+            SP_SETUP_FEATURES, 0,
+            "fIconReplacements",
+#endif
+
+#ifndef __NOMOVEREFRESHNOW__
+        sfMoveRefreshNow, FIELDOFFSET(OLDGLOBALSETTINGS, __fMoveRefreshNow), 4,
+            SP_25ADDITEMS, 0,
+            "fMoveRefreshNow",
+#endif
+
+#ifndef __ALWAYSSUBCLASS__
+        sfNoSubclassing, FIELDOFFSET(OLDGLOBALSETTINGS, __fNoSubclassing), 4,
+            SP_SETUP_PARANOIA, 0,
+            "fNoSubclassing",
+#endif
+
+#ifndef __NOFOLDERCONTENTS__
+        sfAddFolderContentItem, FIELDOFFSET(OLDGLOBALSETTINGS, __fAddFolderContentItem), 4,
+            SP_25ADDITEMS, 1,
+            "fAddFolderContentItem",
+        sfFolderContentShowIcons, FIELDOFFSET(OLDGLOBALSETTINGS, __fFolderContentShowIcons), 4,
+            SP_25ADDITEMS, 1,
+            "fFolderContentShowIcons",
+#endif
+
+#ifndef __NOFDRDEFAULTDOCS__
+        sfFdrDefaultDoc, FIELDOFFSET(OLDGLOBALSETTINGS, _fFdrDefaultDoc), 1,
+            SP_1GENERIC, 0,
+            "fFdrDefaultDoc",
+        sfFdrDefaultDocView, FIELDOFFSET(OLDGLOBALSETTINGS, _fFdrDefaultDocView), 1,
+            SP_1GENERIC, 0,
+            "fFdrDefaultDocView",
+#endif
+
+#ifndef __NOBOOTLOGO__
+        sfBootLogo, FIELDOFFSET(OLDGLOBALSETTINGS, __fBootLogo), 4,
+            SP_DTP_STARTUP, 0,
+            "fBootLogo",
+        sulBootLogoStyle, FIELDOFFSET(OLDGLOBALSETTINGS, _bBootLogoStyle), 1,
+            SP_DTP_STARTUP, 0,
+            "ulBootLogoStyle",
+#endif
+
+#ifndef __ALWAYSREPLACEFILEPAGE__
+        sfReplaceFilePage, FIELDOFFSET(OLDGLOBALSETTINGS, __fReplaceFilePage), 4,
+            SP_SETUP_FEATURES, 0,
+            "fReplaceFilePage",
+#endif
+
+#ifndef __NOCFGSTATUSBARS__
+        sfStatusBars, FIELDOFFSET(OLDGLOBALSETTINGS, __fEnableStatusBars), 4,
+            SP_SETUP_FEATURES, 0,
+            "fStatusBars",
+#endif
+
+#ifndef __NOSNAPTOGRID__
+        sfSnap2Grid, FIELDOFFSET(OLDGLOBALSETTINGS, __fEnableSnap2Grid), 4,
+            SP_SETUP_FEATURES, 0,
+            "fSnap2Grid",
+        sfAddSnapToGridDefault, FIELDOFFSET(OLDGLOBALSETTINGS, fAddSnapToGridDefault), 4,
+            SP_3SNAPTOGRID, 1,
+            "fAddSnapToGridDefault",
+        sulGridX, FIELDOFFSET(OLDGLOBALSETTINGS, GridX), 4,
+            SP_3SNAPTOGRID, 15,
+            "ulGridX",
+        sulGridY, FIELDOFFSET(OLDGLOBALSETTINGS, GridY), 4,
+            SP_3SNAPTOGRID, 10,
+            "ulGridY",
+        sulGridCX, FIELDOFFSET(OLDGLOBALSETTINGS, GridCX), 4,
+            SP_3SNAPTOGRID, 20,
+            "ulGridCX",
+        sulGridCY, FIELDOFFSET(OLDGLOBALSETTINGS, GridCY), 4,
+            SP_3SNAPTOGRID, 35,
+            "ulGridCY",
+#endif
+
+#ifndef __ALWAYSFDRHOTKEYS__
+        sfFolderHotkeys, FIELDOFFSET(OLDGLOBALSETTINGS, __fEnableFolderHotkeys), 4,
+            SP_SETUP_FEATURES, 0,
+            "FolderHotkeys",
+        sfFolderHotkeysDefault, FIELDOFFSET(OLDGLOBALSETTINGS, fFolderHotkeysDefault), 4,
+            SP_4ACCELERATORS, 1,
+            "FolderHotkeysDefault",
+#endif
+
+#ifndef __ALWAYSRESIZESETTINGSPAGES__
+        sfResizeSettingsPages, FIELDOFFSET(OLDGLOBALSETTINGS, __fResizeSettingsPages), 1,
+            SP_SETUP_FEATURES, 0,
+            "fResizeSettingsPages",
+#endif
+
+#ifndef __ALWAYSREPLACEICONPAGE__
+        sfReplaceIconPage, FIELDOFFSET(OLDGLOBALSETTINGS, __fReplaceIconPage), 4,
+            SP_SETUP_FEATURES, 0,
+            "fReplaceIconPage",
+#endif
+
+#ifndef __ALWAYSREPLACEFILEEXISTS__
+        sfReplaceFileExists, FIELDOFFSET(OLDGLOBALSETTINGS, __fReplFileExists), 4,
+            SP_SETUP_FEATURES, 0,
+            "fReplaceFileExists",
+#endif
+
+#ifndef __ALWAYSFIXCLASSTITLES__
+        sfFixClassTitles, FIELDOFFSET(OLDGLOBALSETTINGS, __fFixClassTitles), 1,
+            SP_SETUP_FEATURES, 0,
+            "fFixClassTitles",
+#endif
+
+#ifndef __ALWAYSREPLACEARCHIVING__
+        sfReplaceArchiving, FIELDOFFSET(OLDGLOBALSETTINGS, __fReplaceArchiving), 1,
+            SP_SETUP_FEATURES, 0,
+            "fReplaceArchiving",
+#endif
+
+#ifndef __NEVERNEWFILEDLG__
+        sfNewFileDlg, FIELDOFFSET(OLDGLOBALSETTINGS, __fNewFileDlg), 1,
+            SP_SETUP_FEATURES, 0,
+            "fNewFileDlg",
+#endif
+
+#ifndef __NOXSHUTDOWN__
+        sfXShutdown, FIELDOFFSET(OLDGLOBALSETTINGS, __fXShutdown), 4,
+            SP_SETUP_FEATURES, 0,
+            "XShutdown",
+        sfRestartDesktop, FIELDOFFSET(OLDGLOBALSETTINGS, __fRestartWPS), 4,
+            SP_SETUP_FEATURES, 0,
+            "RestartDesktop",
+        sflXShutdown, FIELDOFFSET(OLDGLOBALSETTINGS, __flXShutdown), 4,
+            SP_DTP_SHUTDOWN,
+                    XSD_WPS_CLOSEWINDOWS | XSD_CONFIRM | XSD_REBOOT | XSD_ANIMATE_SHUTDOWN,
+            "flXShutdown",
+        sulSaveINIS, FIELDOFFSET(OLDGLOBALSETTINGS, _bSaveINIS), 1,
+            SP_DTP_SHUTDOWN, 0, // new method, V0.9.5 (2000-08-16) [umoeller]
+            "ulSaveINIS",
+#endif
+
+#ifndef __ALWAYSEXTSORT__
+        sfExtendedSorting, FIELDOFFSET(OLDGLOBALSETTINGS, __fExtFolderSort), 4,
+            SP_SETUP_FEATURES, 0,
+            "fExtendedSorting",
+#endif
+#ifndef __ALWAYSHOOK__
+        sfXWPHook, FIELDOFFSET(OLDGLOBALSETTINGS, __fEnableXWPHook), 1,
+            SP_SETUP_FEATURES, 0,
+            "fXWPHook",
+#endif
+#ifndef __NOPAGEMAGE__
+        sfEnablePageMage, FIELDOFFSET(OLDGLOBALSETTINGS, fEnablePageMage), 1,
+            SP_SETUP_FEATURES, 0,
+            "fEnablePageMage",
+#endif
+#ifndef __NEVEREXTASSOCS__
+        sfExtAssocs, FIELDOFFSET(OLDGLOBALSETTINGS, __fExtAssocs), 4,
+            SP_SETUP_FEATURES, 0,
+            "fExtAssocs",
+#endif
+#ifndef __NEVERREPLACEDRIVENOTREADY__
+        sfReplaceDriveNotReady, FIELDOFFSET(OLDGLOBALSETTINGS, __fReplDriveNotReady), 1,
+            SP_SETUP_FEATURES, 0,
+            "fReplaceDriveNotReady",
+#endif
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
+        sfTrashDelete, FIELDOFFSET(OLDGLOBALSETTINGS, __fTrashDelete), 1,
+            SP_SETUP_FEATURES, 0,
+            "TrashDelete",
+        sfReplaceTrueDelete, FIELDOFFSET(OLDGLOBALSETTINGS, __fReplaceTrueDelete), 1,
+            SP_SETUP_FEATURES, 0,
+            "ReplaceTrueDelete",
+#endif
+#ifndef __NOBOOTUPSTATUS__
+        sfShowBootupStatus, FIELDOFFSET(OLDGLOBALSETTINGS, _fShowBootupStatus), 4,
+            SP_DTP_STARTUP, 0,
+            "fShowBootupStatus",
+#endif
+
+        sfTurboFolders, FIELDOFFSET(OLDGLOBALSETTINGS, __fTurboFolders), 1,
+            SP_SETUP_FEATURES, 0,
+            "fTurboFolders",
+                // @@todo
+
+        sulVarMenuOffset, FIELDOFFSET(OLDGLOBALSETTINGS, VarMenuOffset), 4,
+            SP_SETUP_PARANOIA, 700,
+            "ulVarMenuOffset",
+
+        sfMenuCascadeMode, FIELDOFFSET(OLDGLOBALSETTINGS, MenuCascadeMode), 4,
+            SP_26CONFIGITEMS, 1,
+            "fMenuCascadeMode",
+        sflDefaultMenuItems, FIELDOFFSET(OLDGLOBALSETTINGS, DefaultMenuItems), 4,
+            SP_2REMOVEITEMS, 0,
+            "flDefaultMenuItems",
+
+        sfFileAttribs, FIELDOFFSET(OLDGLOBALSETTINGS, FileAttribs), 4,
+            SP_25ADDITEMS, 1,
+            "fFileAttribs",
+
+        sfRemoveLockInPlaceItem, FIELDOFFSET(OLDGLOBALSETTINGS, RemoveLockInPlaceItem), 4,
+            SP_2REMOVEITEMS, 0,
+            "fRemoveLockInPlaceItem",
+        sfRemoveFormatDiskItem, FIELDOFFSET(OLDGLOBALSETTINGS, RemoveFormatDiskItem), 4,
+            SP_2REMOVEITEMS, 0,
+            "fRemoveFormatDiskItem",
+        sfRemoveCheckDiskItem, FIELDOFFSET(OLDGLOBALSETTINGS, RemoveCheckDiskItem), 4,
+            SP_2REMOVEITEMS, 0,
+            "fRemoveCheckDiskItem",
+        sfRemoveViewMenu, FIELDOFFSET(OLDGLOBALSETTINGS, RemoveViewMenu), 4,
+            SP_2REMOVEITEMS, 0,
+            "fRemoveViewMenu",
+        sfRemovePasteItem, FIELDOFFSET(OLDGLOBALSETTINGS, RemovePasteItem), 4,
+            SP_2REMOVEITEMS, 0,
+            "fRemovePasteItem",
+        sfAddCopyFilenameItem, FIELDOFFSET(OLDGLOBALSETTINGS, AddCopyFilenameItem), 4,
+            SP_25ADDITEMS, 1,
+            "fAddCopyFilenameItem",
+        sfAddSelectSomeItem, FIELDOFFSET(OLDGLOBALSETTINGS, AddSelectSomeItem), 4,
+            SP_25ADDITEMS, 1,
+            "fAddSelectSomeItem",
+        sfExtendFldrViewMenu, FIELDOFFSET(OLDGLOBALSETTINGS, ExtendFldrViewMenu), 4,
+            SP_25ADDITEMS, 1,
+            "fExtendFldrViewMenu",
+        sfFixLockInPlace, FIELDOFFSET(OLDGLOBALSETTINGS, fFixLockInPlace), 1,
+            SP_2REMOVEITEMS, 0,
+            "fFixLockInPlace",
+
+        // Desktop menu items
+        sfDTMSort, FIELDOFFSET(OLDGLOBALSETTINGS, fDTMSort), 4,
+            SP_DTP_MENUITEMS, 1,
+            "fDTMSort",
+        sfDTMArrange, FIELDOFFSET(OLDGLOBALSETTINGS, fDTMArrange), 4,
+            SP_DTP_MENUITEMS, 1,
+            "fDTMArrange",
+        sfDTMSystemSetup, FIELDOFFSET(OLDGLOBALSETTINGS, fDTMSystemSetup), 4,
+            SP_DTP_MENUITEMS, 1,
+            "fDTMSystemSetup",
+        sfDTMLockup, FIELDOFFSET(OLDGLOBALSETTINGS, fDTMLockup), 4,
+            SP_DTP_MENUITEMS, 1,
+            "fDTMLockup",
+        sfDTMShutdown, FIELDOFFSET(OLDGLOBALSETTINGS, fDTMShutdown), 4,
+            SP_DTP_MENUITEMS, 1,
+            "fDTMShutdown",
+        sfDTMShutdownMenu, FIELDOFFSET(OLDGLOBALSETTINGS, fDTMShutdownMenu), 4,
+            SP_DTP_MENUITEMS, 1,
+            "fDTMShutdownMenu",
+        sfDTMLogoffNetwork, FIELDOFFSET(OLDGLOBALSETTINGS, fDTMLogoffNetwork), 1,
+            SP_DTP_MENUITEMS, 1,
+            "fDTMLogoffNetwork",
+
+        // folder view settings
+        sfFullPath, FIELDOFFSET(OLDGLOBALSETTINGS, FullPath), 4,
+            SP_1GENERIC, 1,
+            "fFullPath",
+        sfKeepTitle, FIELDOFFSET(OLDGLOBALSETTINGS, KeepTitle), 4,
+            SP_1GENERIC, 1,
+            "fKeepTitle",
+        sulMaxPathChars, FIELDOFFSET(OLDGLOBALSETTINGS, MaxPathChars), 4,
+            SP_1GENERIC, 25,
+            "ulMaxPathChars",
+        sfRemoveX, FIELDOFFSET(OLDGLOBALSETTINGS, RemoveX), 4,
+            SP_26CONFIGITEMS, 1,
+            "fRemoveX",
+        sfAppdParam, FIELDOFFSET(OLDGLOBALSETTINGS, AppdParam), 4,
+            SP_26CONFIGITEMS, 1,
+            "fAppdParam",
+        sulTemplatesOpenSettings, FIELDOFFSET(OLDGLOBALSETTINGS, TemplatesOpenSettings), 4,
+            SP_26CONFIGITEMS, BM_INDETERMINATE,
+            "ulTemplatesOpenSettings",
+        sfTemplatesReposition, FIELDOFFSET(OLDGLOBALSETTINGS, TemplatesReposition), 4,
+            SP_26CONFIGITEMS, 1,
+            "fTemplatesReposition",
+        sfTreeViewAutoScroll, FIELDOFFSET(OLDGLOBALSETTINGS, TreeViewAutoScroll), 4,
+            SP_1GENERIC, 1,
+            "fTreeViewAutoScroll",
+
+        // status bar settings
+        sfDefaultStatusBarVisibility, FIELDOFFSET(OLDGLOBALSETTINGS, fDefaultStatusBarVisibility), 4,
+            SP_27STATUSBAR, 1,
+            "fDefaultStatusBarVisibility",
+        sulSBStyle, FIELDOFFSET(OLDGLOBALSETTINGS, SBStyle), 4,
+            SP_27STATUSBAR, SBSTYLE_WARP4MENU,
+            // @@todo G_GlobalSettings.SBStyle = (doshIsWarp4() ? SBSTYLE_WARP4MENU : SBSTYLE_WARP3RAISED);
+            "ulSBStyle",
+        slSBBgndColor, FIELDOFFSET(OLDGLOBALSETTINGS, lSBBgndColor), 4,
+            SP_27STATUSBAR, RGBCOL_GRAY,
+            // @@todo lSBBgndColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_INACTIVEBORDER, 0);
+            "lSBBgndColor",
+        slSBTextColor, FIELDOFFSET(OLDGLOBALSETTINGS, lSBTextColor), 4,
+            SP_27STATUSBAR, RGBCOL_BLACK,
+            // @@todo lSBTextColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_OUTPUTTEXT, 0);
+            "lSBTextColor",
+        sflSBForViews, FIELDOFFSET(OLDGLOBALSETTINGS, SBForViews), 4,
+            SP_27STATUSBAR, SBV_ICON | SBV_DETAILS,
+            "flSBForViews",
+        sflDereferenceShadows, FIELDOFFSET(OLDGLOBALSETTINGS, bDereferenceShadows), 1,
+            SP_27STATUSBAR, STBF_DEREFSHADOWS_SINGLE,
+            "flDereferenceShadows",
+
+        // startup settings
+        sfShowStartupProgress, FIELDOFFSET(OLDGLOBALSETTINGS, ShowStartupProgress), 4,
+            SP_STARTUPFOLDER, 1,
+            "fShowStartupProgress",
+        sulStartupInitialDelay, FIELDOFFSET(OLDGLOBALSETTINGS, ulStartupInitialDelay), 4,
+            SP_STARTUPFOLDER, 1000,
+            "ulStartupInitialDelay",
+        sulStartupObjectDelay, FIELDOFFSET(OLDGLOBALSETTINGS, ulStartupObjectDelay), 4,
+            SP_STARTUPFOLDER, 1000,
+            "ulStartupObjectDelay",
+        sfNumLockStartup, FIELDOFFSET(OLDGLOBALSETTINGS, fNumLockStartup), 1,
+            SP_DTP_STARTUP, 0,
+            "fNumLockStartup",
+        sfWriteXWPStartupLog, FIELDOFFSET(OLDGLOBALSETTINGS, fWriteXWPStartupLog), 1,
+            SP_DTP_STARTUP, 0,
+            "fWriteXWPStartupLog",
+
+        // folder sort settings
+        sfAlwaysSort, FIELDOFFSET(OLDGLOBALSETTINGS, AlwaysSort), 4,
+            SP_FLDRSORT_GLOBAL, FALSE,
+            "fAlwaysSort",
+        sfFoldersFirst, FIELDOFFSET(OLDGLOBALSETTINGS, fFoldersFirst), 1,
+            SP_FLDRSORT_GLOBAL, FALSE,
+            "fFoldersFirst",
+        slDefSortCrit, FIELDOFFSET(OLDGLOBALSETTINGS, lDefSortCrit), 4,
+            SP_FLDRSORT_GLOBAL, -2,        // sort by name
+            "lDefSortCrit",
+
+        // paranoia settings
+        sfNoExcptBeeps, FIELDOFFSET(OLDGLOBALSETTINGS, fNoExcptBeeps), 4,
+            SP_SETUP_PARANOIA, 0,
+            "fNoExcptBeeps",
+        sfUse8HelvFont, FIELDOFFSET(OLDGLOBALSETTINGS, fUse8HelvFont), 4,
+            SP_SETUP_PARANOIA, 0,
+            // @@todo G_GlobalSettings.fUse8HelvFont   = (!doshIsWarp4());
+            "fUse8HelvFont",
+        sulDefaultWorkerThreadPriority, FIELDOFFSET(OLDGLOBALSETTINGS, bDefaultWorkerThreadPriority), 1,
+            SP_SETUP_PARANOIA, 1, // idle +31
+            "ulDefaultWorkerThreadPriority",
+        sfWorkerPriorityBeep, FIELDOFFSET(OLDGLOBALSETTINGS, fWorkerPriorityBeep), 1,
+            SP_SETUP_PARANOIA, 0,
+            "fWorkerPriorityBeep",
+        sfNoFreakyMenus, FIELDOFFSET(OLDGLOBALSETTINGS, fNoFreakyMenus), 1,
+            SP_SETUP_PARANOIA, 0,
+            "fNoFreakyMenus",
+
+        // misc
+        sfXSystemSounds, FIELDOFFSET(OLDGLOBALSETTINGS, fXSystemSounds), 1,
+            SP_SETUP_FEATURES, 0,
+            "fXSystemSounds",
+        susLastRebootExt, FIELDOFFSET(OLDGLOBALSETTINGS, __usLastRebootExt), 2,
+            0, 0,
+            "usLastRebootExt",
+        sflTrashConfirmEmpty, FIELDOFFSET(OLDGLOBALSETTINGS, ulTrashConfirmEmpty), 4,
+            SP_TRASHCAN_SETTINGS,
+                    TRSHCONF_DESTROYOBJ | TRSHCONF_EMPTYTRASH,
+            "flTrashConfirmEmpty",
+        sflIntroHelpShown, FIELDOFFSET(OLDGLOBALSETTINGS, ulIntroHelpShown), 4,
+            0, 0,
+            "flIntroHelpShown",
+        sfShowHotkeysInMenus, FIELDOFFSET(OLDGLOBALSETTINGS, fShowHotkeysInMenus), 1,
+            SP_4ACCELERATORS, 1,
+            "fShowHotkeysInMenus",
+        sfFdrAutoRefreshDisabled, FIELDOFFSET(OLDGLOBALSETTINGS, fFdrAutoRefreshDisabled), 1,
+            SP_1GENERIC, 0,
+            "fFdrAutoRefreshDisabled",
+
+        sulDefaultFolderView, FIELDOFFSET(OLDGLOBALSETTINGS, bDefaultFolderView), 1,
+            SP_1GENERIC, 0,
+            "ulDefaultFolderView",
+    };
+
+/*
+ *@@ FindSettingInfo:
+ *
+ *@@added V0.9.16 (2002-01-05) [umoeller]
+ */
+
+PSETTINGINFO FindSettingInfo(XWPSETTING s)
+{
+    ULONG ul2;
+    for (ul2 = 0;
+         ul2 < ARRAYITEMCOUNT(G_aSettingInfos);
+         ul2++)
+    {
+        if (s == G_aSettingInfos[ul2].s)
+        {
+            return (&G_aSettingInfos[ul2]);
+        }
+    }
+
+    return NULL;
+}
+
+/*
+ *@@ ConvertOldGlobalSettings:
+ *      calls cmnSetSetting for each possible value
+ *      with the corresponding value from the
+ *      given OLDGLOBALSETTINGS struct.
+ *
+ *      As a result, this creates a new-format INI
+ *      key for each entry in the old OLDGLOBALSETTINGS.
+ *
+ *      Gets called from cmnLoadGlobalSettings if
+ *      an old-style GLOBALSETTINGS INI entry was
+ *      found. The caller should nuke that INI entry.
+ *
+ *@@added V0.9.16 (2002-01-05) [umoeller]
+ */
+
+VOID ConvertOldGlobalSettings(POLDGLOBALSETTINGS pOld)
+{
+    ULONG s, ul2;
+
+    for (s = 0;
+         s < ___LAST_SETTING;
+         s++)
+    {
+        // look up the corresponding SETTINGINFO
+        PSETTINGINFO pStore;
+        if (    (pStore = FindSettingInfo(s))
+                // does entry exist?
+             && (pStore->ulOffsetIntoOld != -1)
+           )
+        {
+            // unfortunately me dumb ass chose to use BYTE values
+            // for many old global settings, which can't be converted
+            // unless we take this into account
+            LONG lSetting;
+            BYTE b;
+            SHORT sh;
+            _Pmpf(("  %s has %d bytes",  pStore->pcszIniKey, pStore->cbOld));
+            switch (pStore->cbOld)
+            {
+                case 1:
+                    b = *((PBYTE)pOld + pStore->ulOffsetIntoOld);
+                    _Pmpf(("        byte value %d",  b));
+                    lSetting = (ULONG)b;
+                break;
+
+                case 2:
+                    sh = *((PSHORT)((PBYTE)pOld + pStore->ulOffsetIntoOld));
+                    lSetting  = sh;
+                break;
+
+                case 4:
+                    lSetting = *((PULONG)((PBYTE)pOld + pStore->ulOffsetIntoOld));
+                break;
+            }
+            cmnSetSetting(s, lSetting);
+        }
+    }
+}
+
 /*
  *@@ cmnLoadGlobalSettings:
- *      this loads the Global Settings from the INI files; should
- *      not be called directly, because this is done automatically
- *      by cmnQueryGlobalSettings, if necessary.
+ *      loads the global settings from OS2.INI.
  *
- *      Before loading the settings, all settings are initialized
- *      in case the settings in OS2.INI do not contain all the
- *      settings for this XWorkplace version. This allows for
- *      compatibility with older versions, including XFolder versions.
+ *      This is a private function and not prototyped.
+ *      It must only get called from init.c during
+ *      XWorkplace initialization BEFORE anyone else
+ *      uses cmnQuerySetting. All global settings
+ *      will be reinitialized here.
  *
- *      If (fResetDefaults == TRUE), this only resets all settings
- *      to the default values without loading them from OS2.INI.
- *      This does _not_ write the default settings back to OS2.INI;
- *      if this is desired, call cmnStoreGlobalSettings afterwards.
- *
- *@@changed V0.9.0 [umoeller]: added fResetDefaults to prototype
- *@@changed V0.9.0 [umoeller]: changed initializations for new settings pages
- *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
- *@@changed V0.9.16 (2001-09-29) [umoeller]: fixed duplicate status bars code
+ *@@added V0.9.16 (2002-01-05) [umoeller]
  */
 
-PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
+VOID cmnLoadGlobalSettings(VOID)
 {
-    BOOL fLocked = FALSE;
+    ULONG cb;
+    POLDGLOBALSETTINGS pSettings;
 
-    TRY_LOUD(excpt1)
+    // first set all settings to safe defaults
+    // according to the table
+
+    _Pmpf((__FUNCTION__ ": Initializing defaults"));
+    cmnSetDefaultSettings(0);
+
+    if (    (PrfQueryProfileSize(HINI_USER,
+                                 (PSZ)INIAPP_XWORKPLACE,
+                                 (PSZ)INIKEY_GLOBALSETTINGS,
+                                 &cb))
+         && (cb)
+         && (pSettings = malloc(sizeof(OLDGLOBALSETTINGS)))
+       )
     {
-        if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
-        {
-            ULONG       ulCopied1;
+        // we have an old GLOBALSETTINGS structure:
+        // convert it to new format
+        ZERO(pSettings);
+        cb = sizeof(OLDGLOBALSETTINGS);
+        PrfQueryProfileData(HINI_USER,
+                            (PSZ)INIAPP_XWORKPLACE,
+                            (PSZ)INIKEY_GLOBALSETTINGS,
+                            pSettings,
+                            &cb);
+        _Pmpf((__FUNCTION__ ": Converting old settings"));
+        ConvertOldGlobalSettings(pSettings);
+        free(pSettings);
 
-            /* if (G_pGlobalSettings == NULL)
-            {
-                G_pGlobalSettings = malloc(sizeof(GLOBALSETTINGS));
-                memset(G_pGlobalSettings, 0, sizeof(GLOBALSETTINGS));
-            } */
-
-            // first set default settings for each settings page;
-            // we only load the "real" settings from OS2.INI afterwards
-            // because the user might have updated XFolder, and the
-            // settings struct in the INIs might be too short
-            cmnSetDefaultSettings(SP_1GENERIC              );
-            cmnSetDefaultSettings(SP_2REMOVEITEMS          );
-            cmnSetDefaultSettings(SP_25ADDITEMS            );
-            cmnSetDefaultSettings(SP_26CONFIGITEMS         );
-            cmnSetDefaultSettings(SP_27STATUSBAR           );
-            cmnSetDefaultSettings(SP_3SNAPTOGRID           );
-            cmnSetDefaultSettings(SP_4ACCELERATORS         );
-            // cmnSetDefaultSettings(SP_5INTERNALS            );  removed V0.9.0
-            // cmnSetDefaultSettings(SP_DTP2                  );  removed V0.9.0
-            cmnSetDefaultSettings(SP_FLDRSORT_GLOBAL       );
-            // cmnSetDefaultSettings(SP_FILEOPS               );  removed V0.9.0
-
-            // the following are new with V0.9.0
-            cmnSetDefaultSettings(SP_SETUP_INFO            );
-            cmnSetDefaultSettings(SP_SETUP_FEATURES        );
-            cmnSetDefaultSettings(SP_SETUP_PARANOIA        );
-
-            cmnSetDefaultSettings(SP_DTP_MENUITEMS         );
-            cmnSetDefaultSettings(SP_DTP_STARTUP           );
-            cmnSetDefaultSettings(SP_DTP_SHUTDOWN          );
-
-            cmnSetDefaultSettings(SP_STARTUPFOLDER         );
-
-            cmnSetDefaultSettings(SP_TRASHCAN_SETTINGS);
-
-            // cmnSetDefaultSettings(SP_MOUSE_MOVEMENT); does nothing
-            // cmnSetDefaultSettings(SP_MOUSE_CORNERS);  does nothing
-
-            // reset help panels
-            G_GlobalSettings.ulIntroHelpShown = 0;
-
-            if (fResetDefaults == FALSE)
-            {
-                // get global XFolder settings from OS2.INI
-
-                // V0.9.16 (2001-12-02) [umoeller]: moved this up
-                ulCopied1 = sizeof(GLOBALSETTINGS);
-                PrfQueryProfileData(HINI_USERPROFILE,
-                                    (PSZ)INIAPP_XWORKPLACE,
-                                    (PSZ)INIKEY_GLOBALSETTINGS,
-                                    &G_GlobalSettings,
-                                    &ulCopied1);
-
-                // V0.9.16 (2001-12-02) [umoeller]: removed all
-                // status bar settings here, now loading these
-                // on demand in cmnQueryStatusBarSetting
-            }
-        }
+        // @@todo nuke the entry
     }
-    CATCH(excpt1) { } END_CATCH();
-
-    if (fLocked)
-        krnUnlock();
-
-    return (&G_GlobalSettings);
-}
-
-/*
- *@@ cmnQueryGlobalSettings:
- *      returns pointer to the GLOBALSETTINGS structure which
- *      contains the XWorkplace Global Settings valid for all
- *      classes. Loads the settings from the INI files if this
- *      hasn't been done yet.
- *
- *      This is used all the time throughout XWorkplace.
- *
- *      NOTE (UM 99-11-14): This now returns a const pointer
- *      to the global settings, because the settings are
- *      unprotected after this call. Never make changes to the
- *      global settings using the return value of this function;
- *      use cmnLockGlobalSettings instead.
- *
- *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally; now returning a const pointer only
- */
-
-const GLOBALSETTINGS* cmnQueryGlobalSettings(VOID)
-{
-    BOOL fLocked = FALSE;
-
-    TRY_LOUD(excpt1)
-    {
-        if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
-        {
-            if (!G_fGlobalSettingsLoaded)
-            {
-                cmnLoadGlobalSettings(FALSE);       // load from INI
-                        // this locks again
-                G_fGlobalSettingsLoaded = TRUE;
-            }
-        }
-    }
-    CATCH(excpt1) { } END_CATCH();
-
-    if (fLocked)
-        krnUnlock();
-
-    return (&G_GlobalSettings);
-}
-
-/*
- *@@ cmnLockGlobalSettings:
- *      this returns a non-const pointer to the global
- *      settings and locks them, using a mutex semaphore.
- *
- *      If you use this function, ALWAYS call
- *      cmnUnlockGlobalSettings afterwards, as quickly
- *      as possible, because other threads cannot
- *      access the global settings after this call.
- *
- *      Always install an exception handler ...
- *
- *@@added V0.9.0 (99-11-14) [umoeller]
- */
-
-GLOBALSETTINGS* cmnLockGlobalSettings(const char *pcszSourceFile,
-                                      ULONG ulLine,
-                                      const char *pcszFunction)
-{
-    if (krnLock(pcszSourceFile, ulLine, pcszFunction))
-        return (&G_GlobalSettings);
     else
     {
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "krnLock failed.");
-        return (NULL);
+        // no GLOBALSETTINGS structure any more:
+        // load settings explicitly
+        ULONG ul2;
+        for (ul2 = 0;
+             ul2 < ARRAYITEMCOUNT(G_aSettingInfos);
+             ul2++)
+        {
+            PSETTINGINFO pThis = &G_aSettingInfos[ul2];
+            PULONG pulThis = &G_aulSettings[pThis->s];
+            cb = sizeof(ULONG);
+
+            if (    (!PrfQueryProfileData(HINI_USER,
+                                          (PSZ)INIAPP_XWORKPLACE,
+                                          (PSZ)pThis->pcszIniKey,
+                                          pulThis,
+                                          &cb))
+                 || (cb != sizeof(ULONG))
+               )
+                // data not found: use default then
+                *pulThis = pThis->ulDefaultValue;
+        }
     }
-}
-
-/*
- *@@ cmnUnlockGlobalSettings:
- *      antagonist to cmnLockGlobalSettings.
- *
- *@@added V0.9.0 (99-11-14) [umoeller]
- */
-
-VOID cmnUnlockGlobalSettings(VOID)
-{
-    krnUnlock();
-}
-
-/*
- *@@ cmnStoreGlobalSettings:
- *      stores the current Global Settings back into the INI files;
- *      returns TRUE if successful.
- *
- *@@changed V0.9.4 (2000-06-16) [umoeller]: now using Worker thread instead of File thread
- */
-
-BOOL cmnStoreGlobalSettings(VOID)
-{
-    xthrPostWorkerMsg(WOM_STOREGLOBALSETTINGS, 0, 0);
-    return (TRUE);
 }
 
 /*
@@ -2522,311 +3182,211 @@ BOOL cmnStoreGlobalSettings(VOID)
  *      and, when this function gets called for each of the settings
  *      pages in cmnLoadGlobalSettings, globally.
  *
+ *      Warning: If (usSettingsPage == 0), this will globally reset
+ *      all settings on the system to the defaults.
+ *
  *@@changed V0.9.0 [umoeller]: greatly extended for all the new settings pages
  *@@changed V0.9.16 (2001-12-02) [umoeller]: fixed status bar settings problems
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: rewritten
  */
 
 BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
 {
-    switch(usSettingsPage)
+    // run through all setting infos
+    ULONG ul2;
+    for (ul2 = 0;
+         ul2 < ARRAYITEMCOUNT(G_aSettingInfos);
+         ul2++)
     {
-        case SP_1GENERIC:
-            // pGlobalSettings->ShowInternals = 1;   // removed V0.9.0
-            // pGlobalSettings->ReplIcons = 1;       // removed V0.9.0
-            G_GlobalSettings.FullPath = 1;
-            G_GlobalSettings.KeepTitle = 1;
-            G_GlobalSettings.MaxPathChars = 25;
-            G_GlobalSettings.TreeViewAutoScroll = 1;
-                                    // default changed V0.9.16 (2001-11-25) [umoeller]
-
-            G_GlobalSettings._fFdrDefaultDoc = 0;
-            G_GlobalSettings._fFdrDefaultDocView = 0;
-
-            G_GlobalSettings.fFdrAutoRefreshDisabled = 0;
-
-            G_GlobalSettings.bDefaultFolderView = 0;  // V0.9.12 (2001-04-30) [umoeller]
-        break;
-
-        case SP_2REMOVEITEMS:
-            G_GlobalSettings.DefaultMenuItems = 0;
-            G_GlobalSettings.RemoveLockInPlaceItem = 0;
-            G_GlobalSettings.RemoveCheckDiskItem = 0;
-            G_GlobalSettings.RemoveFormatDiskItem = 0;
-            G_GlobalSettings.RemoveViewMenu = 0;
-            G_GlobalSettings.RemovePasteItem = 0;
-            G_GlobalSettings.fFixLockInPlace = 0;     // V0.9.7 (2000-12-10) [umoeller]
-        break;
-
-        case SP_25ADDITEMS:
-            G_GlobalSettings.FileAttribs = 1;
-            G_GlobalSettings.AddCopyFilenameItem = 1;
-            G_GlobalSettings.ExtendFldrViewMenu = 1;
-            G_GlobalSettings.__fMoveRefreshNow = (doshIsWarp4() ? 1 : 0);
-            G_GlobalSettings.AddSelectSomeItem = 1;
-            G_GlobalSettings.__fAddFolderContentItem = 1;
-            G_GlobalSettings.__fFolderContentShowIcons = 1;
-            // G_GlobalSettings.fExtendCloseMenu = 0;
-        break;
-
-        case SP_26CONFIGITEMS:
-            G_GlobalSettings.MenuCascadeMode = 1;       // changed V0.9.16 (2001-11-22) [umoeller]
-            G_GlobalSettings.RemoveX = 1;
-            G_GlobalSettings.AppdParam = 1;
-            G_GlobalSettings.TemplatesOpenSettings = BM_INDETERMINATE;
-            G_GlobalSettings.TemplatesReposition = 1;
-        break;
-
-        case SP_27STATUSBAR:
-            G_GlobalSettings.fDefaultStatusBarVisibility = 1;       // changed V0.9.0
-            G_GlobalSettings.SBStyle = (doshIsWarp4() ? SBSTYLE_WARP4MENU : SBSTYLE_WARP3RAISED);
-            G_GlobalSettings.SBForViews = SBV_ICON | SBV_DETAILS;
-            G_GlobalSettings.lSBBgndColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_INACTIVEBORDER, 0);
-            G_GlobalSettings.lSBTextColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_OUTPUTTEXT, 0);
-            // removed these, these kill the settings on startup
-            // V0.9.16 (2001-12-02) [umoeller]
-            // cmnSetStatusBarSetting(SBS_TEXTNONESEL, NULL);
-            // cmnSetStatusBarSetting(SBS_TEXTMULTISEL, NULL);
-            G_GlobalSettings.bDereferenceShadows = STBF_DEREFSHADOWS_SINGLE;
-        break;
-
-        case SP_3SNAPTOGRID:
-            G_GlobalSettings.fAddSnapToGridDefault = 1;
-            G_GlobalSettings.GridX = 15;
-            G_GlobalSettings.GridY = 10;
-            G_GlobalSettings.GridCX = 20;
-            G_GlobalSettings.GridCY = 35;
-        break;
-
-        case SP_4ACCELERATORS:
-            G_GlobalSettings.fFolderHotkeysDefault = 1;
-            G_GlobalSettings.fShowHotkeysInMenus = 1;
-        break;
-
-        case SP_FLDRSORT_GLOBAL:
-            // G_GlobalSettings.ReplaceSort = 0;        removed V0.9.0
-            G_GlobalSettings.lDefSortCrit = -2;        // sort by name
-            G_GlobalSettings.AlwaysSort = FALSE;
-            G_GlobalSettings.fFoldersFirst = FALSE;   // V0.9.12 (2001-05-18) [umoeller]
-        break;
-
-        case SP_DTP_MENUITEMS:  // extra Desktop page
-            G_GlobalSettings.fDTMSort = 1;
-            G_GlobalSettings.fDTMArrange = 1;
-            G_GlobalSettings.fDTMSystemSetup = 1;
-            G_GlobalSettings.fDTMLockup = 1;
-            G_GlobalSettings.fDTMLogoffNetwork = 1; // V0.9.7 (2000-12-13) [umoeller]
-            G_GlobalSettings.fDTMShutdown = 1;
-            G_GlobalSettings.fDTMShutdownMenu = 1;
-        break;
-
-        case SP_DTP_STARTUP:
-            G_GlobalSettings.fWriteXWPStartupLog = 0;
-            G_GlobalSettings._fShowBootupStatus = 0;
-            G_GlobalSettings.__fBootLogo = 0;
-            G_GlobalSettings._bBootLogoStyle = 0;
-            G_GlobalSettings.fNumLockStartup = 0;
-        break;
-
-        case SP_DTP_SHUTDOWN:
-            G_GlobalSettings.__flXShutdown = // changed V0.9.0
-                XSD_WPS_CLOSEWINDOWS | XSD_CONFIRM | XSD_REBOOT | XSD_ANIMATE_SHUTDOWN;
-            G_GlobalSettings._bSaveINIS = 0; // new method, V0.9.5 (2000-08-16) [umoeller]
-        break;
-
-        case SP_DTP_ARCHIVES:  // all new with V0.9.0
-            // no settings here, these are set elsewhere
-        break;
-
-        case SP_SETUP_FEATURES:   // all new with V0.9.0
-            G_GlobalSettings.__fIconReplacements = 0;
-            G_GlobalSettings.__fResizeSettingsPages = 0;
-            G_GlobalSettings.__fReplaceIconPage = 0;
-            G_GlobalSettings.__fReplaceFilePage = 0;
-            G_GlobalSettings.fXSystemSounds = 0;
-            G_GlobalSettings.__fFixClassTitles = 0;     // added V0.9.12 (2001-05-22) [umoeller]
-
-            G_GlobalSettings.__fEnableStatusBars = 0;
-            G_GlobalSettings.__fEnableSnap2Grid = 0;
-            G_GlobalSettings.__fEnableFolderHotkeys = 0;
-#ifndef __ALWAYSEXTSORT__
-            G_GlobalSettings.__fExtFolderSort = 0;
-#endif
-            G_GlobalSettings.__fTurboFolders = 0;     // added V0.9.16 (2001-10-25) [umoeller]
-
-            G_GlobalSettings.fAniMouse = 0;
-#ifndef __ALWAYSHOOK__
-            G_GlobalSettings.__fEnableXWPHook = 0;
-#endif
-            G_GlobalSettings.fEnablePageMage = 0;
-
-            G_GlobalSettings.__fReplaceArchiving = 0;
-#ifndef __NOXSHUTDOWN__
-            G_GlobalSettings.__fRestartWPS = 0;
-            G_GlobalSettings.__fXShutdown = 0;
-#endif
-            // G_GlobalSettings.fMonitorCDRoms = 0;
-
-#ifndef __NEVEREXTASSOCS__
-            G_GlobalSettings.__fExtAssocs = 0;
-#endif
-            // G_GlobalSettings.CleanupINIs = 0;
-                    // removed for now V0.9.12 (2001-05-12) [umoeller]
-
-#ifdef __REPLHANDLES__
-            G_GlobalSettings.fReplaceHandles = 0; // added V0.9.5 (2000-08-14) [umoeller]
-#endif
-#ifndef __ALWAYSREPLACEFILEEXISTS__
-            G_GlobalSettings.__fReplFileExists = 0;
-#endif
-#ifndef __NEVERREPLACEDRIVENOTREADY__
-            G_GlobalSettings.__fReplDriveNotReady = 0;
-#endif
-#ifndef __ALWAYSTRASHANDTRUEDELETE__
-            G_GlobalSettings.__fTrashDelete = 0;
-            G_GlobalSettings.__fReplaceTrueDelete = 0; // added V0.9.3 (2000-04-26) [umoeller]
-#endif
-            G_GlobalSettings.__fNewFileDlg = 0;
-        break;
-
-        case SP_SETUP_PARANOIA:   // all new with V0.9.0
-            G_GlobalSettings.VarMenuOffset   = 700;     // raised (V0.9.0)
-            G_GlobalSettings.fNoFreakyMenus   = 0;
-            G_GlobalSettings.__fNoSubclassing   = 0;
-            // G_GlobalSettings.NoWorkerThread  = 0;
-                    // removed this setting V0.9.16 (2002-01-04) [umoeller]
-            G_GlobalSettings.fUse8HelvFont   = (!doshIsWarp4());
-            G_GlobalSettings.fNoExcptBeeps    = 0;
-            G_GlobalSettings.bDefaultWorkerThreadPriority = 1;  // idle +31
-            G_GlobalSettings.fWorkerPriorityBeep = 0;
-        break;
-
-        case SP_STARTUPFOLDER:        // all new with V0.9.0
-            G_GlobalSettings.ShowStartupProgress = 1;
-            G_GlobalSettings.ulStartupInitialDelay = 1000;
-            G_GlobalSettings.ulStartupObjectDelay = 1000;
-        break;
-
-        case SP_TRASHCAN_SETTINGS:             // all new with V0.9.0
-            // G_GlobalSettings.fTrashDelete = 0;  // removedV0.9.3 (2000-04-10) [umoeller]
-            // G_GlobalSettings.fTrashEmptyStartup = 0;
-            // G_GlobalSettings.fTrashEmptyShutdown = 0;
-            G_GlobalSettings.ulTrashConfirmEmpty = TRSHCONF_DESTROYOBJ | TRSHCONF_EMPTYTRASH;
-        break;
+        PSETTINGINFO pThis = &G_aSettingInfos[ul2];
+        if (    (usSettingsPage == 0)
+             || (pThis->ulSettingsPageID == usSettingsPage)
+           )
+        {
+            // data must be reset:
+            cmnSetSetting(pThis->s,
+                          pThis->ulDefaultValue);
+        }
     }
 
     return (TRUE);
 }
 
+#ifdef __DEBUG__
+
+ULONG cmnQuerySettingDebug(XWPSETTING s,
+                           const char *pcszSourceFile,
+                           ULONG ulLine,
+                           const char *pcszFunction)
+{
+    if (s < ___LAST_SETTING)
+        return (G_aulSettings[s]);
+
+    cmnLog(pcszSourceFile, ulLine, pcszFunction,
+           __FUNCTION__ " warning: Invalid setting %d queried.", s);
+
+    return FALSE;
+}
+
+#else
+
 /*
- *@@ cmnIsFeatureEnabled:
- *      returns TRUE if the specified feature is
- *      currently enabled.
+ *@@ cmnQuerySetting:
+ *      returns the ULONG setting specified by the
+ *      given XWPSETTING enumeration.
  *
- *      This is reasonably sick code but allows
- *      for maximum safety with the code when
- *      adapted XWorkplace versions are built.
+ *      This code replaces the GLOBALSETTINGS that
+ *      have been in XFolder from the first version
+ *      on.
+ *
+ *      An XWPSETTING is simply an index into our
+ *      private settings array. So instead of
+ +
+ +          PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+ +          value = pGlobalSettings->fIconReplacements;
+ +
+ *      the call now simply goes
+ +
+ +          value = cmnQuerySetting(IconReplacements);
+ +
+ *      Of course this requires that the "s" value is
+ *      a valid entry in the XWPSETTING enum.
+ *
+ *      Note that this function is very fast since we
+ *      can do an array lookup. By contrast, cmnSetSetting
+ *      might take a while.
  *
  *@@added V0.9.16 (2001-10-11) [umoeller]
  */
 
-BOOL cmnIsFeatureEnabled(XWPFEATURE f)
+ULONG cmnQuerySetting(XWPSETTING s)
 {
-    switch (f)
-    {
+    if (s < ___LAST_SETTING)
+        return (G_aulSettings[s]);
 
-#ifndef __NOICONREPLACEMENTS__
-        case IconReplacements: return G_GlobalSettings.__fIconReplacements;
-#endif
-
-#ifndef __NOMOVEREFRESHNOW__
-        case MoveRefreshNow: return G_GlobalSettings.__fMoveRefreshNow;
-#endif
-
-#ifndef __ALWAYSSUBCLASS__
-        case NoSubclassing: return G_GlobalSettings.__fNoSubclassing;
-#endif
-
-#ifndef __NOFOLDERCONTENTS__
-        case AddFolderContentItem: return G_GlobalSettings.__fAddFolderContentItem;
-        case FolderContentShowIcons: return G_GlobalSettings.__fFolderContentShowIcons;
-#endif
-
-#ifndef __NOBOOTLOGO__
-        case BootLogo: return G_GlobalSettings.__fBootLogo;
-#endif
-
-#ifndef __ALWAYSREPLACEFILEPAGE__
-        case ReplaceFilePage: return G_GlobalSettings.__fReplaceFilePage;
-#endif
-
-#ifndef __NOCFGSTATUSBARS__
-        case StatusBars: return G_GlobalSettings.__fEnableStatusBars;
-#endif
-
-#ifndef __NOSNAPTOGRID__
-        case Snap2Grid: return G_GlobalSettings.__fEnableSnap2Grid;
-#endif
-
-#ifndef __ALWAYSFDRHOTKEYS__
-        case FolderHotkeys: return G_GlobalSettings.__fEnableFolderHotkeys;
-#endif
-
-#ifndef __ALWAYSRESIZESETTINGSPAGES__
-        case ResizeSettingsPages: return G_GlobalSettings.__fResizeSettingsPages;
-#endif
-
-#ifndef __ALWAYSREPLACEICONPAGE__
-        case ReplaceIconPage: return G_GlobalSettings.__fReplaceIconPage;
-#endif
-
-#ifndef __ALWAYSREPLACEFILEEXISTS__
-        case ReplaceFileExists: return G_GlobalSettings.__fReplFileExists;
-#endif
-
-#ifndef __ALWAYSFIXCLASSTITLES__
-        case FixClassTitles: return G_GlobalSettings.__fFixClassTitles;
-#endif
-
-#ifndef __ALWAYSREPLACEARCHIVING__
-        case ReplaceArchiving: return G_GlobalSettings.__fReplaceArchiving;
-#endif
-
-#ifndef __NEVERNEWFILEDLG__
-        case NewFileDlg: return G_GlobalSettings.__fNewFileDlg;
-#endif
-
-#ifndef __NOXSHUTDOWN__
-        case XShutdown: return G_GlobalSettings.__fXShutdown;
-        case RestartDesktop: return G_GlobalSettings.__fRestartWPS;
-#endif
-
-#ifndef __ALWAYSEXTSORT__
-        case ExtendedSorting: return G_GlobalSettings.__fExtFolderSort;
-#endif
-#ifndef __ALWAYSHOOK__
-        case XWPHook: return G_GlobalSettings.__fEnableXWPHook;
-#endif
-#ifndef __NEVEREXTASSOCS__
-        case ExtAssocs: return G_GlobalSettings.__fExtAssocs;
-#endif
-#ifndef __NEVERREPLACEDRIVENOTREADY__
-        case ReplaceDriveNotReady: return G_GlobalSettings.__fReplDriveNotReady;
-#endif
-#ifndef __ALWAYSTRASHANDTRUEDELETE__
-        case TrashDelete: return G_GlobalSettings.__fTrashDelete;
-        case ReplaceTrueDelete: return G_GlobalSettings.__fReplaceTrueDelete;
-#endif
-
-        // for turbo folders, return the setting that was initially
-        // copied by initMain(); we can't change this after the WPS is up
-        case TurboFolders: return G_fTurboSettingsEnabled;
-
-        default:
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "Warning: Invalid feature %d queried.", f);
-    }
+    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+           "Warning: Invalid feature %d queried.", s);
 
     return FALSE;
+}
+
+#endif
+
+/*
+ *@@ cmnSetSetting:
+ *      sets the specified global setting to the
+ *      given value. Warning, this modifies the
+ *      system's behavior globally; call this only
+ *      if you know what you're doing.
+ *
+ *      Returns TRUE, unless "s" is out of range.
+ *
+ *@@added V0.9.16 (2002-01-05) [umoeller]
+ */
+
+BOOL cmnSetSetting(XWPSETTING s,
+                   ULONG ulValue)
+{
+    if (s < ___LAST_SETTING)
+    {
+        PSETTINGINFO pStore;
+        if (pStore = FindSettingInfo(s))
+        {
+            PULONG pulWrite;
+
+            // store value
+            G_aulSettings[s] = ulValue;
+
+            // if this is a non-default value, write to OS2.INI;
+            // otherwise delete the key... the default value
+            // will then be used by cmnLoadGlobalSettings, and
+            // this allows us to change defaults between releases
+            if (ulValue != pStore->ulDefaultValue)
+                pulWrite = &ulValue;
+            else
+                pulWrite = NULL;
+
+            PrfWriteProfileData(HINI_USER,
+                                (PSZ)INIAPP_XWORKPLACE,
+                                (PSZ)pStore->pcszIniKey,
+                                pulWrite,
+                                sizeof(ULONG));
+
+            _Pmpf(("    "__FUNCTION__ ": set %s to %d",
+                    pStore->pcszIniKey, ulValue));
+        }
+    }
+    else
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Warning: Invalid feature %d set.", s);
+
+    return FALSE;
+}
+
+/*
+ *@@ cmnBackupSettings:
+ *      makes a backup of a bunch of settings,
+ *      which is returned in a new buffer.
+ *      With paSettings, specify an array of
+ *      exactly cItems XWPSETTING entries.
+ *
+ *      This returns an array of SETTINGSBACKUP
+ *      structures where each "s" has the XWPSETTING
+ *      index that was passed in and the "ul"
+ *      has the corresponding value. The array
+ *      has cItems entries as well. The caller
+ *      is responsible for free()'ing that buffer.
+ *
+ *      This function is very useful for notebook
+ *      pages to back up global settings for "undo",
+ *      since you can also simply store the pointer
+ *      which is returned in the NOTEBOOKPAGE.pUser
+ *      parameter to be cleaned up automatically.
+ *
+ *@@added V0.9.16 (2002-01-05) [umoeller]
+ */
+
+PSETTINGSBACKUP cmnBackupSettings(XWPSETTING *paSettings,
+                                  ULONG cItems)         // in: array item count (NOT array size)
+{
+    PSETTINGSBACKUP p = (PSETTINGSBACKUP)malloc(sizeof(SETTINGSBACKUP) * cItems);
+    ULONG ul;
+    for (ul = 0;
+         ul < cItems;
+         ul++)
+    {
+        p->s = paSettings[ul];
+        p->ul = cmnQuerySetting(p->s);
+        p++;
+    }
+
+    return (p);
+}
+
+/*
+ *@@ cmnRestoreSettings:
+ *      reverse to cmnBackupSettings, this sets
+ *      all the settings from the backup data.
+ *
+ *      To this function, pass in what was returned
+ *      by cmnBackupSettings. cItems _must_ be the
+ *      same as in that call or we'll crash.
+ *
+ *@@added V0.9.16 (2002-01-05) [umoeller]
+ */
+
+VOID cmnRestoreSettings(PSETTINGSBACKUP paSettingsBackup,
+                        ULONG cItems)           // in: array item count (NOT array size)
+{
+    ULONG ul;
+    for (ul = 0;
+         ul < cItems;
+         ul++)
+    {
+        cmnSetSetting(paSettingsBackup->s,
+                      paSettingsBackup->ul);
+        paSettingsBackup++;
+    }
 }
 
 /* ******************************************************************
@@ -3578,12 +4138,7 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
             if (brc)
             {
-                GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-                if (pGlobalSettings)
-                {
-                    pGlobalSettings->__fTrashDelete = TRUE;
-                    cmnUnlockGlobalSettings();
-                }
+                cmnSetSetting(sfTrashDelete, TRUE);
             }
 #endif
         }
@@ -3591,12 +4146,7 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
     else
     {
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
-        GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-        if (pGlobalSettings)
-        {
-            pGlobalSettings->__fTrashDelete = FALSE;
-            cmnUnlockGlobalSettings();
-        }
+        cmnSetSetting(sfTrashDelete, FALSE);
 #endif
 
         if (krnQueryLock())
@@ -3625,7 +4175,7 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
         }
     }
 
-    cmnStoreGlobalSettings();
+    // cmnStoreGlobalSettings();
 
     return (brc);
 }
@@ -3697,9 +4247,9 @@ APIRET cmnEmptyDefTrashCan(HAB hab,        // in: synchronously?
 BOOL cmnAddProductInfoMenuItem(HWND hwndMenu)   // in: main menu with "Help" submenu
 {
     BOOL brc = FALSE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-    if ((pGlobalSettings->DefaultMenuItems & CTXT_HELP) == 0)
+    if ((cmnQuerySetting(sflDefaultMenuItems) & CTXT_HELP) == 0)
     {
         MENUITEM mi;
 
@@ -3717,10 +4267,10 @@ BOOL cmnAddProductInfoMenuItem(HWND hwndMenu)   // in: main menu with "Help" sub
             // which we add items to now
             winhInsertMenuSeparator(mi.hwndSubMenu,
                                     MIT_END,
-                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                                    (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SEPARATOR));
             winhInsertMenuItem(mi.hwndSubMenu,
                                MIT_END,
-                               (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_PRODINFO),
+                               (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_PRODINFO),
                                cmnGetString(ID_XSSI_PRODUCTINFO),  // pszProductInfo
                                MIS_TEXT, 0);
             brc = TRUE;
@@ -4099,8 +4649,8 @@ BOOL cmnRegisterView(WPObject *somSelf,
 BOOL cmnPlaySystemSound(USHORT usIndex)
 {
     BOOL brc = FALSE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    if (pGlobalSettings->fXSystemSounds)    // V0.9.3 (2000-04-10) [umoeller]
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    if (cmnQuerySetting(sfXSystemSounds))    // V0.9.3 (2000-04-10) [umoeller]
     {
         // check if the XWPMedia subsystem is working
         if (xmmQueryStatus() == MMSTAT_WORKING)
@@ -4796,7 +5346,7 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
 const char* cmnQueryDefaultFont(VOID)
 {
 #ifndef __XWPLITE__
-    if (G_GlobalSettings.fUse8HelvFont)
+    if (cmnQuerySetting(sfUse8HelvFont))
         return ("8.Helv");
     else
 #endif
@@ -5412,7 +5962,7 @@ BOOL cmnFileDlg(HWND hwndOwner,    // in: owner for file dlg
     _Pmpf((__FUNCTION__ ": fd.szFullFile now = %s", fd.szFullFile));
 
 #ifndef __NEVERNEWFILEDLG__
-    if (cmnIsFeatureEnabled(NewFileDlg))
+    if (cmnQuerySetting(sfNewFileDlg))
         hwndFileDlg = fdlgFileDlg(hwndOwner, // owner
                                   NULL,
                                   &fd);

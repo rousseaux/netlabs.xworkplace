@@ -283,7 +283,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryFldrSort(XFolder *somSelf,
  *      --  SET_DEFAULT (255): use the global default sort
  *          criterion for this folder.
  *
- *      usAlwaysSort can be 0 or 1 or SET_DEFAULT also.
+ *      usfAlwaysSort can be 0 or 1 or SET_DEFAULT also.
  *
  *      This method updates all open folder views with the new
  *      sort settings.
@@ -303,7 +303,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
 {
     BOOL        Update = FALSE;
     XFolderData *somThis = XFolderGetData(somSelf);
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     #ifdef DEBUG_SORT
         _Pmpf((__FUNCTION__ " for %s", _wpQueryTitle(somSelf)));
@@ -356,7 +356,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
     {
         // update open views of this folder
 #ifndef __ALWAYSEXTSORT__
-        if (cmnIsFeatureEnabled(ExtendedSorting))
+        if (cmnQuerySetting(sfExtendedSorting))
 #endif
         {
             fdrForEachOpenInstanceView(somSelf,
@@ -395,10 +395,10 @@ SOM_Scope BOOL  SOMLINK xf_xwpSortViewOnce(XFolder *somSelf,
                                            long lSort)
 {
     BOOL        rc = FALSE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
 #ifndef __ALWAYSEXTSORT__
-    if (cmnIsFeatureEnabled(ExtendedSorting))
+    if (cmnQuerySetting(sfExtendedSorting))
 #endif
     {
         WPSHLOCKSTRUCT Lock = {0};
@@ -1631,14 +1631,14 @@ SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
 SOM_Scope BOOL  SOMLINK xf_wpFree(XFolder *somSelf)
 {
     BOOL        brc;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // HOBJECT     hObj = NULLHANDLE;
     // XFolder *pCfg = _xwpclsQueryConfigFolder(_XFolder);
 
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpFree");
 
-    /* if (pGlobalSettings->CleanupINIs)
+    /* if (cmnQuerySetting(sCleanupINIs))
     {
         // "clean up INI files": get object handle for
         // folderpos deletion later. This doesn't hurt
@@ -1780,7 +1780,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
 
     // new icon handling code follows
     // V0.9.16 (2002-01-04) [umoeller]
-    if (cmnIsFeatureEnabled(TurboFolders))
+    if (cmnQuerySetting(sfTurboFolders))
     {
         PMAKEAWAKEFS pFSData = (PMAKEAWAKEFS)ulReserved;
         PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
@@ -2252,7 +2252,7 @@ SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
 {
     ULONG ulMenuFilter = 0;
     // XFolderData *somThis = XFolderGetData(somSelf);
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XFolderMethodDebug("XFolder","xf_wpFilterPopupMenu");
 
     ulMenuFilter = XFolder_parent_WPFolder_wpFilterPopupMenu(somSelf,
@@ -2276,7 +2276,7 @@ SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
     // notebook page for removing menu items sets this field with
     // the proper CTXT_xxx flags
     return ((ulMenuFilter)
-            & ~(pGlobalSettings->DefaultMenuItems)
+            & ~(cmnQuerySetting(sflDefaultMenuItems))
         );
 }
 
@@ -2418,7 +2418,7 @@ SOM_Scope HWND  SOMLINK xf_wpDisplayMenu(XFolder *somSelf,
                                          ULONG ulReserved)
 {
     HWND hwndMenu;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpDisplayMenu");
@@ -2454,7 +2454,7 @@ SOM_Scope HWND  SOMLINK xf_wpDisplayMenu(XFolder *somSelf,
 SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
 {
     ULONG   ulDefaultView = 0;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     XFolderMethodDebug("XFolder","xf_wpQueryDefaultView");
 
@@ -2463,8 +2463,8 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
        )
     {
 #ifndef __NOFDRDEFAULTDOCS__
-        if (    (pGlobalSettings->_fFdrDefaultDoc)
-             && (pGlobalSettings->_fFdrDefaultDocView)
+        if (    (cmnQuerySetting(sfFdrDefaultDoc))
+             && (cmnQuerySetting(sfFdrDefaultDocView))
            )
         {
             // XFolderData *somThis = XFolderGetData(somSelf);
@@ -2473,7 +2473,7 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
                 // we have a default document for this folder:
                 // change default view to menu item ID of "open default document"
                 // (same as in mnuModifyDataFilePopupMenu)
-                ulDefaultView = pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_FDRDEFAULTDOC;
+                ulDefaultView = cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_FDRDEFAULTDOC;
         }
 #endif
 
@@ -2485,9 +2485,9 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
             // if global default views are enabled (user doesn't want
             // inherit from parent), check that value
 
-            // _Pmpf((__FUNCTION__ ": global is %u", pGlobalSettings->bDefaultFolderView));
+            // _Pmpf((__FUNCTION__ ": global is %u", cmnQuerySetting(sulDefaultFolderView)));
 
-            if (pGlobalSettings->bDefaultFolderView)        // 0 means default -> inherit
+            if (cmnQuerySetting(sulDefaultFolderView))        // 0 means default -> inherit
             {
                 // global default views enabled:
 
@@ -2522,12 +2522,12 @@ SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
 
                         // call our class method override... we could
                         // simply use
-                        //      ulDefaultView = pGlobalSettings->bDefaultFolderView
+                        //      ulDefaultView = cmnQuerySetting(sulDefaultFolderView)
                         // here, but I'm not sure if some WPFolder subclass
                         // overrides M_WPFolder::wpclsQueryDefaultView, so
                         // we should use the class method.
                         // The XFolder implementation simply returns
-                        // pGlobalSettings->bDefaultFolderView, but a WPFolder
+                        // cmnQuerySetting(sulDefaultFolderView,) but a WPFolder
                         // subclass may change that.
                         ulDefaultView = _wpclsQueryDefaultView(_somGetClass(somSelf));
                     break;
@@ -2620,7 +2620,7 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
                                   ULONG ulView,
                                   ULONG param)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     HWND        hwndNewFrame; // return HWND
     BOOL        fOpenDefaultDoc = FALSE;
 
@@ -2637,15 +2637,15 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
     // default document support
     if (ulView == OPEN_DEFAULT)
     {
-        if (    (pGlobalSettings->_fFdrDefaultDoc)
-             && (pGlobalSettings->_fFdrDefaultDocView)
+        if (    (cmnQuerySetting(sfFdrDefaultDoc))
+             && (cmnQuerySetting(sfFdrDefaultDocView))
              && (!cmnIsADesktop(somSelf))
            )
         {
             fOpenDefaultDoc = TRUE;
         }
     }
-    else if (ulView == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_FDRDEFAULTDOC))
+    else if (ulView == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_FDRDEFAULTDOC))
         fOpenDefaultDoc = TRUE;
 
     if (fOpenDefaultDoc)
@@ -2736,7 +2736,7 @@ SOM_Scope BOOL  SOMLINK xf_wpPopulate(XFolder *somSelf,
     #endif
 
     if (    // turbo folders enabled?
-            (cmnIsFeatureEnabled(TurboFolders))
+            (cmnQuerySetting(sfTurboFolders))
             // but don't dare turbo populate on desktop yet
          && (!cmnIsADesktop(somSelf))
             // and we cannot handle UNC at this point
@@ -2863,12 +2863,12 @@ SOM_Scope ULONG  SOMLINK xf_wpInsertSettingsPage(XFolder *somSelf,
 SOM_Scope ULONG  SOMLINK xf_wpAddObjectGeneralPage2(XFolder *somSelf,
                                                     HWND hwndNotebook)
 {
-    PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpAddObjectGeneralPage2");
 
 #ifndef __ALWAYSREPLACEICONPAGE__
-    if (cmnIsFeatureEnabled(ReplaceIconPage))
+    if (cmnQuerySetting(sfReplaceIconPage))
 #endif
     {
         PCREATENOTEBOOKPAGE pcnbp;
@@ -2914,12 +2914,12 @@ SOM_Scope ULONG  SOMLINK xf_wpAddObjectGeneralPage2(XFolder *somSelf,
 SOM_Scope ULONG  SOMLINK xf_wpAddFile1Page(XFolder *somSelf,
                                            HWND hwndNotebook)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpAddFile1Page");
 
 #ifndef __ALWAYSREPLACEFILEPAGE__
-    if (cmnIsFeatureEnabled(ReplaceFilePage))
+    if (cmnQuerySetting(sfReplaceFilePage))
     {
 #endif
         return (fsysInsertFilePages(somSelf,
@@ -2947,12 +2947,12 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFile1Page(XFolder *somSelf,
 SOM_Scope ULONG  SOMLINK xf_wpAddFile2Page(XFolder *somSelf,
                                            HWND hwndNotebook)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpAddFile2Page");
 
 #ifndef __ALWAYSREPLACEFILEPAGE__
-    if (cmnIsFeatureEnabled(ReplaceFilePage))
+    if (cmnQuerySetting(sfReplaceFilePage))
 #endif
         return (SETTINGS_PAGE_REMOVED);
 #ifndef __ALWAYSREPLACEFILEPAGE__
@@ -2977,12 +2977,12 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFile2Page(XFolder *somSelf,
 SOM_Scope ULONG  SOMLINK xf_wpAddFile3Page(XFolder *somSelf,
                                            HWND hwndNotebook)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpAddFile3Page");
 
 #ifndef __ALWAYSREPLACEFILEPAGE__
-    if (cmnIsFeatureEnabled(ReplaceFilePage))
+    if (cmnQuerySetting(sfReplaceFilePage))
 #endif
         return (SETTINGS_PAGE_REMOVED);
 #ifndef __ALWAYSREPLACEFILEPAGE__
@@ -3033,12 +3033,12 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFolderBackgroundPage(XFolder *somSelf,
 SOM_Scope ULONG  SOMLINK xf_wpAddFolderSortPage(XFolder *somSelf,
                                                    HWND hwndNotebook)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpAddFolderSortPage");
 
 #ifndef __ALWAYSEXTSORT__
-    if (cmnIsFeatureEnabled(ExtendedSorting))
+    if (cmnQuerySetting(sfExtendedSorting))
 #endif
     {
         // extended sorting enabled:
@@ -3149,7 +3149,7 @@ SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
              _wpQueryTitle(Object)));
     #endif
 
-    if (cmnIsFeatureEnabled(TurboFolders))
+    if (cmnQuerySetting(sfTurboFolders))
         brc = fdrAddToContent(somSelf, Object, &fCallParent);
 
     if (fCallParent)
@@ -3187,7 +3187,7 @@ SOM_Scope BOOL  SOMLINK xf_wpDeleteFromContent(XFolder *somSelf,
              _wpQueryTitle(Object)));
     #endif
 
-    if (cmnIsFeatureEnabled(TurboFolders))
+    if (cmnQuerySetting(sfTurboFolders))
         fdrDeleteFromContent(somSelf, Object);
 
     brc = XFolder_parent_WPFolder_wpDeleteFromContent(somSelf, Object);
@@ -3473,11 +3473,11 @@ SOM_Scope BOOL  SOMLINK xf_wpMoveObject(XFolder *somSelf,
 
 SOM_Scope ULONG  SOMLINK xf_wpDelete(XFolder *somSelf, ULONG fConfirmations)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpDelete");
 
-    /* if (pGlobalSettings->fTrashDelete)
+    /* if (cmnQuerySetting(sfTrashDelete))
     {
         if (cmnDeleteIntoDefTrashCan(somSelf))
             return (OK_DELETE);
@@ -3572,10 +3572,10 @@ SOM_Scope BOOL  SOMLINK xf_wpSetFldrSort(XFolder *somSelf,
                                                 ulType);
     if (brc)
     {
-        PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+        // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
 
 #ifndef __ALWAYSEXTSORT__
-        if (cmnIsFeatureEnabled(ExtendedSorting))
+        if (cmnQuerySetting(sfExtendedSorting))
 #endif
         {
             HWND hwndFrame = wpshQueryFrameFromView(somSelf, ulView);
@@ -3827,7 +3827,6 @@ SOM_Scope BOOL  SOMLINK xfM_wpclsCreateDefaultTemplates(M_XFolder *somSelf,
  *@@ wpclsQueryDefaultView:
  *      this WPObject class method returns the default view for
  *      objects of a class.
- *
  *      The way this works is that WPObject::wpQueryDefaultView
  *      apparently checks for whether an instance default view
  *      has been set by the user. If not, this class method gets
@@ -3849,17 +3848,17 @@ SOM_Scope BOOL  SOMLINK xfM_wpclsCreateDefaultTemplates(M_XFolder *somSelf,
 
 SOM_Scope ULONG  SOMLINK xfM_wpclsQueryDefaultView(M_XFolder *somSelf)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // M_XFolderData *somThis = M_XFolderGetData(somSelf);
     M_XFolderMethodDebug("M_XFolder","xfM_wpclsQueryDefaultView");
 
-    if (pGlobalSettings->bDefaultFolderView)
+    if (cmnQuerySetting(sulDefaultFolderView))
     {
         // something set (0 means standard WPS inheritance behavior):
         // return that
-        // _Pmpf((__FUNCTION__ ": returning %u", pGlobalSettings->bDefaultFolderView));
+        // _Pmpf((__FUNCTION__ ": returning %u", cmnQuerySetting(sulDefaultFolderView)));
 
-        return (pGlobalSettings->bDefaultFolderView);
+        return (cmnQuerySetting(sulDefaultFolderView));
     }
 
     // return the stupid 103 code
@@ -3885,7 +3884,7 @@ SOM_Scope PSZ  SOMLINK xfM_wpclsQueryTitle(M_XFolder *somSelf)
     M_XFolderMethodDebug("M_XFolder","xfM_wpclsQueryTitle");
 
 #ifndef __ALWAYSFIXCLASSTITLES__
-    if (!cmnIsFeatureEnabled(FixClassTitles))
+    if (!cmnQuerySetting(sfFixClassTitles))
         return (M_XFolder_parent_M_WPFolder_wpclsQueryTitle(somSelf));
 #endif
 
@@ -3923,7 +3922,7 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryIconData(M_XFolder *somSelf,
     M_XFolderMethodDebug("M_XFolder","xfM_wpclsQueryIconData");
 
 #ifndef __NOICONREPLACEMENTS__
-    if (cmnIsFeatureEnabled(IconReplacements))
+    if (cmnQuerySetting(sfIconReplacements))
     {
         hmodIconsDLL = cmnQueryIconsDLL();
         // icon replacements allowed:
@@ -3962,7 +3961,7 @@ SOM_Scope ULONG  SOMLINK xfM_wpclsQueryIconDataN(M_XFolder *somSelf,
     M_XFolderMethodDebug("M_XFolder","xfM_wpclsQueryIconDataN");
 
 #ifndef __NOICONREPLACEMENTS__
-    if (cmnIsFeatureEnabled(IconReplacements))
+    if (cmnQuerySetting(sfIconReplacements))
     {
         hmodIconsDLL = cmnQueryIconsDLL();
         // icon replacements allowed:

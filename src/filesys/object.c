@@ -877,7 +877,7 @@ BOOL objAddToList(WPObject *somSelf,
 /*
  *@@ objIsOnList:
  *      returns TRUE if the given object is on the
- *      given list of CONTENTMENULISTITEM's.
+ *      given object list.
  *
  *      The list is protected by a global mutex semaphore,
  *      so this is thread-safe.
@@ -1937,11 +1937,11 @@ VOID objModifyPopupMenu(WPObject* somSelf,
 {
     if (doshIsWarp4())
     {
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-        if (pGlobalSettings->RemoveLockInPlaceItem)
+        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        if (cmnQuerySetting(sfRemoveLockInPlaceItem))
             // remove WPObject's "Lock in place" submenu
             winhDeleteMenuItem(hwndMenu, ID_WPM_LOCKINPLACE);
-        else if (pGlobalSettings->fFixLockInPlace) // V0.9.7 (2000-12-10) [umoeller]
+        else if (cmnQuerySetting(sfFixLockInPlace)) // V0.9.7 (2000-12-10) [umoeller]
         {
             // get text first... this saves us our own NLS resource
             PSZ pszLockInPlace = winhQueryMenuItemText(hwndMenu, ID_WPM_LOCKINPLACE);
@@ -3216,9 +3216,9 @@ MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
 
                         case CN_EXPANDTREE:
                         {
-                            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                            // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-                            if (pGlobalSettings->TreeViewAutoScroll)
+                            if (cmnQuerySetting(sfTreeViewAutoScroll))
                             {
                                 pWinData->preccExpanded = (PRECORDCORE)mp2;
                                 WinStartTimer(WinQueryAnchorBlock(hwndDlg),

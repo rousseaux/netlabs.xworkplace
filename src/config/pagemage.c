@@ -92,7 +92,7 @@
  *
  ********************************************************************/
 
-PFNWP   G_pfnwpOrigStatic = NULL;
+static PFNWP   G_pfnwpOrigStatic = NULL;
 
 /* ******************************************************************
  *
@@ -327,7 +327,8 @@ MRESULT pgmiPageMageGeneralItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             UpdateValueSet(WinWindowFromID(pcnbp->hwndDlgPage,
                                            ID_SCDI_PGMG1_VALUESET),
                            pPgmgConfig);
-        break; }
+        }
+        break;
 
         case ID_SCDI_PGMG1_Y_SLIDER:
         {
@@ -345,7 +346,8 @@ MRESULT pgmiPageMageGeneralItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             UpdateValueSet(WinWindowFromID(pcnbp->hwndDlgPage,
                                            ID_SCDI_PGMG1_VALUESET),
                            pPgmgConfig);
-        break; }
+        }
+        break;
 
         case ID_SCDI_PGMG1_WRAPAROUND:
             LoadPageMageConfig(pcnbp->pUser);
@@ -392,7 +394,8 @@ MRESULT pgmiPageMageGeneralItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 WinAlarm(HWND_DESKTOP, WA_ERROR);
                 (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
             }
-        break; }
+        }
+        break;
 
         /*
          * DID_DEFAULT:
@@ -449,7 +452,8 @@ MRESULT pgmiPageMageGeneralItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
 
             fSave = FALSE;
-        break; }
+        }
+        break;
 
         default:
             fSave = FALSE;
@@ -679,7 +683,8 @@ MRESULT pgmiPageMageWindowItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             // call INIT callback to reinitialize page
             (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
+        }
+        break;
 
         default:
             fSave = FALSE;
@@ -871,6 +876,9 @@ MRESULT pgmiPageMageStickyItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 {
     MRESULT mrc = 0;
 
+    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage,
+                                   ID_SCDI_PGMG_STICKY_CNR);
+
     switch (ulItemID)
     {
         case ID_SCDI_PGMG_STICKY_CNR:
@@ -910,7 +918,8 @@ MRESULT pgmiPageMageStickyItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                             (PRECORDCORE)pcnbp->preccSource,
                                             hPopupMenu,
                                             pcnbp->hwndDlgPage);    // owner
-                break; }
+                }
+                break;
             }
         break;
 
@@ -922,63 +931,61 @@ MRESULT pgmiPageMageStickyItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XSMI_STICKY_NEW:
         {
-            HAB         hab = WinQueryAnchorBlock(pcnbp->hwndDlgPage);
-            ULONG       ul,
-                        cbItems    = 0,            // Number of items in list
-                        ulBufSize  = 0;            // Size of buffer for information
-            PSWBLOCK    pSwBlock   = NULL;         // Pointer to information returned
-
-            HWND    hwndDlg,
-                    hwndCombo;
-
-            cmnSetDlgHelpPanel(ID_XSH_SETTINGS_PAGEMAGE_STICKY + 2);
-            hwndDlg = WinLoadDlg(HWND_DESKTOP,
-                                 pcnbp->hwndDlgPage,
-                                 cmn_fnwpDlgWithHelp,
-                                 cmnQueryNLSModuleHandle(FALSE),
-                                 ID_SCD_PAGEMAGE_NEWSTICKY,
-                                 NULL);
-            hwndCombo = WinWindowFromID(hwndDlg, ID_SCD_PAGEMAGE_COMBO_STICKIES);
-            cmnSetControlsFont(hwndDlg, 1, 2000);
-
-            // get all the tasklist entries into a buffer
-            cbItems = WinQuerySwitchList(hab, NULL, 0);
-            ulBufSize = (cbItems * sizeof(SWENTRY)) + sizeof(HSWITCH);
-            pSwBlock = (PSWBLOCK)malloc(ulBufSize);
-            cbItems = WinQuerySwitchList(hab, pSwBlock, ulBufSize);
-
-            // loop through all the tasklist entries
-            for (ul = 0; ul < (pSwBlock->cswentry); ul++)
+            HWND        hwndDlg;
+            if (hwndDlg = WinLoadDlg(HWND_DESKTOP,
+                                     pcnbp->hwndDlgPage,
+                                     cmn_fnwpDlgWithHelp,
+                                     cmnQueryNLSModuleHandle(FALSE),
+                                     ID_SCD_PAGEMAGE_NEWSTICKY,
+                                     NULL))
             {
-                PSWCNTRL pCtrl = &pSwBlock->aswentry[ul].swctl;
-                if (    (strlen(pCtrl->szSwtitle))
-                     && ((pCtrl->uchVisibility & SWL_VISIBLE) != 0) // V0.9.11 (2001-04-25) [umoeller]
-                   )
-                    WinInsertLboxItem(hwndCombo,
-                                      LIT_SORTASCENDING,
-                                      pCtrl->szSwtitle);
-            }
+                PSWBLOCK    pSwBlock;
 
-            if (WinProcessDlg(hwndDlg) == DID_OK)
-            {
-                // OK pressed:
-                PSZ pszSticky = winhQueryWindowText(hwndCombo);
-                if (pszSticky)
+                cmnSetDlgHelpPanel(ID_XSH_SETTINGS_PAGEMAGE_STICKY + 2);
+                cmnSetControlsFont(hwndDlg, 1, 2000);
+
+                // get all the tasklist entries into a buffer
+                // V0.9.16 (2002-01-05) [umoeller]: now using winhQuerySwitchList
+                if (pSwBlock = winhQuerySwitchList(WinQueryAnchorBlock(pcnbp->hwndDlgPage)))
                 {
-                    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage,
-                                                   ID_SCDI_PGMG_STICKY_CNR);
+                    // loop through all the tasklist entries
+                    HWND hwndCombo = WinWindowFromID(hwndDlg, ID_SCD_PAGEMAGE_COMBO_STICKIES);
+                    ULONG       ul;
+                    for (ul = 0;
+                         ul < pSwBlock->cswentry;
+                         ul++)
+                    {
+                        PSWCNTRL pCtrl = &pSwBlock->aswentry[ul].swctl;
+                        if (    (strlen(pCtrl->szSwtitle))
+                             && ((pCtrl->uchVisibility & SWL_VISIBLE) != 0) // V0.9.11 (2001-04-25) [umoeller]
+                           )
+                            WinInsertLboxItem(hwndCombo,
+                                              LIT_SORTASCENDING,
+                                              pCtrl->szSwtitle);
+                    }
 
-                    AddStickyRecord(hwndCnr,
-                                    pszSticky,
-                                    TRUE);          // invalidate
-                    SaveStickies(hwndCnr,
-                                 (PAGEMAGECONFIG*)pcnbp->pUser);
-                    free(pszSticky);
+                    if (WinProcessDlg(hwndDlg) == DID_OK)
+                    {
+                        // OK pressed:
+                        PSZ pszSticky;
+                        if (pszSticky = winhQueryWindowText(hwndCombo))
+                        {
+                            AddStickyRecord(hwndCnr,
+                                            pszSticky,
+                                            TRUE);          // invalidate
+                            SaveStickies(hwndCnr,
+                                         (PAGEMAGECONFIG*)pcnbp->pUser);
+                            free(pszSticky);
+                        }
+                    }
+
+                    free(pSwBlock);
                 }
+
+                WinDestroyWindow(hwndDlg);
             }
-            WinDestroyWindow(hwndDlg);
-            free(pSwBlock);
-        break; }
+        }
+        break;
 
         /*
          * ID_XSMI_STICKY_DELETE:
@@ -986,16 +993,13 @@ MRESULT pgmiPageMageStickyItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          */
 
         case ID_XSMI_STICKY_DELETE:
-        {
-            HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage,
-                                           ID_SCDI_PGMG_STICKY_CNR);
             WinSendMsg(hwndCnr,
                        CM_REMOVERECORD,
                        &(pcnbp->preccSource), // double pointer...
                        MPFROM2SHORT(1, CMA_FREE | CMA_INVALIDATE));
             SaveStickies(hwndCnr,
                          (PAGEMAGECONFIG*)pcnbp->pUser);
-        break; }
+        break;
 
         /*
          * DID_UNDO:
@@ -1004,8 +1008,6 @@ MRESULT pgmiPageMageStickyItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case DID_UNDO:
         {
-            HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage,
-                                           ID_SCDI_PGMG_STICKY_CNR);
             PAGEMAGECONFIG* pPgmgConfig = (PAGEMAGECONFIG*)pcnbp->pUser;
             PAGEMAGECONFIG* pBackup = (PAGEMAGECONFIG*)pcnbp->pUser2;
 
@@ -1019,7 +1021,8 @@ MRESULT pgmiPageMageStickyItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                          pPgmgConfig);
             // call INIT callback to reinitialize page
             (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
+        }
+        break;
 
         /*
          * DID_DEFAULT:
@@ -1027,13 +1030,10 @@ MRESULT pgmiPageMageStickyItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          */
 
         case DID_DEFAULT:
-        {
-            HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage,
-                                           ID_SCDI_PGMG_STICKY_CNR);
             cnrhRemoveAll(hwndCnr);
             SaveStickies(hwndCnr,
                          (PAGEMAGECONFIG*)pcnbp->pUser);
-        break; }
+        break;
     }
 
     return (mrc);
@@ -1116,11 +1116,6 @@ MRESULT EXPENTRY pgmi_fnwpSubclassedStaticRect(HWND hwndStatic, ULONG msg, MPARA
             WinQueryWindowRect(hwndStatic,
                                &rclPaint);      // exclusive
             plColor = GetColorPointer(hwndStatic, pPgmgConfig);
-            /* if (plColor)
-                WinFillRect(hps, &rclPaint, *plColor);
-            else
-                WinFillRect(hps, &rclPaint, CLR_BLACK); // shouldn't happen...
-               */
 
             // make rect inclusive
             rclPaint.xRight--;
@@ -1139,7 +1134,8 @@ MRESULT EXPENTRY pgmi_fnwpSubclassedStaticRect(HWND hwndStatic, ULONG msg, MPARA
                     &rclPaint);
 
             WinEndPaint(hps);
-        break; }
+        }
+        break;
 
         case WM_PRESPARAMCHANGED:
             switch ((ULONG)mp1)
@@ -1167,7 +1163,8 @@ MRESULT EXPENTRY pgmi_fnwpSubclassedStaticRect(HWND hwndStatic, ULONG msg, MPARA
                             SavePageMageConfig(pPgmgConfig,
                                                PGMGCFG_REPAINT);
                     }
-                break; }
+                }
+                break;
             }
         break;
 
@@ -1212,13 +1209,11 @@ VOID pgmiPageMageColorsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info st
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
-            pcnbp->pUser = malloc(sizeof(PAGEMAGECONFIG));
-            if (pcnbp->pUser)
+            if (pcnbp->pUser = malloc(sizeof(PAGEMAGECONFIG)))
                 LoadPageMageConfig(pcnbp->pUser);
 
             // make backup for "undo"
-            pcnbp->pUser2 = malloc(sizeof(PAGEMAGECONFIG));
-            if (pcnbp->pUser2)
+            if (pcnbp->pUser2 = malloc(sizeof(PAGEMAGECONFIG)))
                 memcpy(pcnbp->pUser2, pcnbp->pUser, sizeof(PAGEMAGECONFIG));
 
             // subclass static rectangles
@@ -1292,7 +1287,8 @@ MRESULT pgmiPageMageColorsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             SavePageMageConfig(pPgmgConfig,
                                PGMGCFG_REPAINT | PGMGCFG_REFORMAT);
-        break; }
+        }
+        break;
 
         /*
          * DID_UNDO:
@@ -1319,7 +1315,8 @@ MRESULT pgmiPageMageColorsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             SavePageMageConfig(pPgmgConfig,
                                PGMGCFG_REPAINT | PGMGCFG_REFORMAT);
-        break; }
+        }
+        break;
     }
 
     return (mrc);

@@ -265,6 +265,7 @@
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 
@@ -338,7 +339,7 @@ typedef struct _WPSSORTINFO
 VOID CheckDefaultSortItem(HWND hwndSortMenu,
                           LONG lSort)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     // first run thru the existing menu as composed
     // by the WPS and uncheck the default item.
@@ -361,7 +362,7 @@ VOID CheckDefaultSortItem(HWND hwndSortMenu,
         // we have "always sort" and "folders first", which
         // we don't want to unset
         // V0.9.13 (2001-06-19) [umoeller]
-        if (sidThis == pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR)
+        if (sidThis == cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SEPARATOR)
             break;
 
         winhSetMenuItemChecked(hwndSortMenu,
@@ -386,11 +387,11 @@ VOID CheckDefaultSortItem(HWND hwndSortMenu,
         break;
 
         case -3:
-            sDefID = pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTBYCLASS;
+            sDefID = cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SORTBYCLASS;
         break;
 
         case -4:
-            sDefID = pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTBYEXT;
+            sDefID = cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SORTBYEXT;
         break;
 
         default:
@@ -430,10 +431,10 @@ BOOL fdrModifySortMenu(WPFolder *somSelf,
                        HWND hwndMenuWithSortSubmenu)
 {
     BOOL brc = FALSE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
 #ifndef __ALWAYSEXTSORT__
-    if (cmnIsFeatureEnabled(ExtendedSorting))
+    if (cmnQuerySetting(sfExtendedSorting))
 #endif
     {
         MENUITEM mi;
@@ -463,7 +464,7 @@ BOOL fdrModifySortMenu(WPFolder *somSelf,
                 // "sort by class"
                 winhInsertMenuItem(hwndSortMenu,
                                    mi.iPosition + 1,            // behind "sort by type"
-                                   pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTBYCLASS,
+                                   cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SORTBYCLASS,
                                    cmnGetString(ID_XSSI_SV_CLASS), // pszSortByClass
                                    MIS_TEXT,
                                    0);
@@ -471,7 +472,7 @@ BOOL fdrModifySortMenu(WPFolder *somSelf,
                 // "sort by extension"
                 winhInsertMenuItem(hwndSortMenu,
                                    mi.iPosition + 2,
-                                   (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTBYEXT),
+                                   (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SORTBYEXT),
                                    cmnGetString(ID_XSSI_SV_EXT), // pszSortByExt
                                    MIS_TEXT,
                                    0);
@@ -481,31 +482,31 @@ BOOL fdrModifySortMenu(WPFolder *somSelf,
                 // now check the default sort item...
                 CheckDefaultSortItem(hwndSortMenu,
                                      (_lDefSortCrit == SET_DEFAULT)
-                                        ? pGlobalSettings->lDefSortCrit
+                                        ? cmnQuerySetting(slDefSortCrit)
                                         : _lDefSortCrit);
 
                 // add "folders first"
                 winhInsertMenuSeparator(hwndSortMenu,
                                         MIT_END,
-                                        pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR);
+                                        cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SEPARATOR);
                 f = (_lFoldersFirst == SET_DEFAULT)
-                        ? pGlobalSettings->fFoldersFirst
+                        ? cmnQuerySetting(sfFoldersFirst)
                         : _lFoldersFirst;
                 winhInsertMenuItem(hwndSortMenu,
                                    MIT_END,
-                                   pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SORTFOLDERSFIRST,
+                                   cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SORTFOLDERSFIRST,
                                    cmnGetString(ID_XSSI_SV_FOLDERSFIRST),
                                    MIS_TEXT,
                                    (f) ? MIA_CHECKED : 0);
 
                 // add "always sort"
                 winhInsertMenuSeparator(hwndSortMenu, MIT_END,
-                                  (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                                  (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SEPARATOR));
                 f = (_lAlwaysSort == SET_DEFAULT)
-                        ? pGlobalSettings->AlwaysSort
+                        ? cmnQuerySetting(sfAlwaysSort)
                         : _lAlwaysSort;
                 winhInsertMenuItem(hwndSortMenu, MIT_END,
-                                   (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_ALWAYSSORT),
+                                   (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_ALWAYSSORT),
                                    cmnGetString(ID_XSSI_SV_ALWAYSSORT), // pszAlwaysSort
                                    MIS_TEXT,
                                    (f) ? MIA_CHECKED : 0);
@@ -556,13 +557,13 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
                              PBOOL pbDismiss)    // out: dismiss flag for fdr_fnwpSubclassedFolderFrame
 {
     BOOL            brc = FALSE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
 #ifndef __ALWAYSEXTSORT__
-    if (cmnIsFeatureEnabled(ExtendedSorting))
+    if (cmnQuerySetting(sfExtendedSorting))
 #endif
     {
-        LONG            lMenuId2 = (LONG)ulMenuId - (LONG)pGlobalSettings->VarMenuOffset;
+        LONG            lMenuId2 = (LONG)ulMenuId - (LONG)cmnQuerySetting(sulVarMenuOffset);
         LONG            lAlwaysSort,
                         lFoldersFirst,
                         lDefaultSort;
@@ -595,7 +596,7 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
                                   &lFoldersFirst,
                                   &lAlwaysSort);
                 fAlwaysSort = (_lAlwaysSort == SET_DEFAULT)
-                                  ? pGlobalSettings->AlwaysSort
+                                  ? cmnQuerySetting(sfAlwaysSort)
                                   : _lAlwaysSort;
                 _Pmpf((__FUNCTION__ ": ID_XFMI_OFS_ALWAYSSORT, old fAlwaysSort: %d",
                             fAlwaysSort));
@@ -627,7 +628,7 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
                                   &lFoldersFirst,
                                   &lAlwaysSort);
                 fFoldersFirst = (_lFoldersFirst == SET_DEFAULT)
-                                    ? pGlobalSettings->fFoldersFirst
+                                    ? cmnQuerySetting(sfFoldersFirst)
                                     : _lFoldersFirst;
                 _xwpSetFldrSort(somSelf,
                                 lDefaultSort,
@@ -1018,16 +1019,16 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
                      LONG lSort)        // in: sort criterion
 {
     XFolderData *somThis = XFolderGetData(somSelf);
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     BOOL fFoldersFirst = (_lFoldersFirst == SET_DEFAULT)
-                            ? pGlobalSettings->fFoldersFirst
+                            ? cmnQuerySetting(sfFoldersFirst)
                             : _lFoldersFirst;
 
     // _Pmpf((__FUNCTION__ ": FOLDERS_FIRST = %d", fFoldersFirst));
 
     if (lSort == SET_DEFAULT)
-        lSort =  pGlobalSettings->lDefSortCrit;
+        lSort =  cmnQuerySetting(slDefSortCrit);
 
     switch (lSort)
     {
@@ -1200,14 +1201,14 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
 
 BOOL fdrHasAlwaysSort(WPFolder *somSelf)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XFolderData *somThis = XFolderGetData(somSelf);
 
 #ifndef __ALWAYSEXTSORT__
-    if (cmnIsFeatureEnabled(ExtendedSorting))
+    if (cmnQuerySetting(sfExtendedSorting))
 #endif
         return (_lAlwaysSort == SET_DEFAULT)
-                   ? pGlobalSettings->AlwaysSort
+                   ? cmnQuerySetting(sfAlwaysSort)
                    : _lAlwaysSort;
 
 #ifndef __ALWAYSEXTSORT__
@@ -1303,19 +1304,19 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
         {
             if (LOCK_OBJECT(Lock, somSelf))
             {
-                PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
                 // use our macro for determining this folder's always-sort flag;
                 // this is TRUE if "Always sort" is on either locally or globally
                 BOOL            AlwaysSort = (_lAlwaysSort == SET_DEFAULT)
-                                                ? pGlobalSettings->AlwaysSort
+                                                ? cmnQuerySetting(sfAlwaysSort)
                                                 : _lAlwaysSort;
 
                 // get our sort comparison func
                 PFN             pfnSort =  (AlwaysSort)
                                                ? fdrQuerySortFunc(somSelf,
                                                                   (_lDefSortCrit == SET_DEFAULT)
-                                                                     ? pGlobalSettings->lDefSortCrit
+                                                                     ? cmnQuerySetting(slDefSortCrit)
                                                                      : _lDefSortCrit)
                                                : NULL;
                 CNRINFO         CnrInfo = {0};
@@ -1327,10 +1328,10 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
                     _Pmpf((__FUNCTION__ ": %s with hwndCnr = 0x%lX",
                             _wpQueryTitle(somSelf), hwndCnr ));
                     _Pmpf(( "  _Always: %d, Global->Always: %d",
-                            _lAlwaysSort, pGlobalSettings->AlwaysSort ));
+                            _lAlwaysSort, cmnQuerySetting(sfAlwaysSort) ));
                     _Pmpf(( "  ALWAYS_SORT returned %d", AlwaysSort ));
                     _Pmpf(( "  _Default: %d, Global->Default: %d",
-                            _lDefSortCrit, pGlobalSettings->lDefSortCrit ));
+                            _lDefSortCrit, cmnQuerySetting(slDefSortCrit) ));
                     _Pmpf(( "  pfnSort is 0x%lX", pfnSort ));
                 #endif
 
@@ -1496,6 +1497,13 @@ VOID InsertSortItem(HWND hwndListbox,       // in: sort criteria list box
                           lItemHandle);
 }
 
+static XWPSETTING G_SortBackup[] =
+    {
+        slDefSortCrit,
+        sfFoldersFirst,
+        sfAlwaysSort
+    };
+
 /*
  * fdrSortInitPage:
  *      "Sort" page notebook callback function (notebook.c).
@@ -1518,7 +1526,7 @@ VOID InsertSortItem(HWND hwndListbox,       // in: sort criteria list box
 VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp,
                      ULONG flFlags)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     HWND        hwndListbox = WinWindowFromID(pcnbp->hwndDlgPage,
                                               ID_XSDI_SORTLISTBOX);
 
@@ -1558,8 +1566,11 @@ VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp,
                 // this memory will be freed automatically by the
                 // common notebook window function (notebook.c) when
                 // the notebook page is destroyed
-                pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
+                /* pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
                 memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+                */
+                pcnbp->pUser = cmnBackupSettings(G_SortBackup,
+                                                 ARRAYITEMCOUNT(G_SortBackup));
             }
 
             // sort class: always use _WPFileSystem
@@ -1627,21 +1638,21 @@ VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp,
             // instance notebook:
             XFolderData *somThis = XFolderGetData(pcnbp->somSelf);
             lDefaultSort = (_lDefSortCrit == SET_DEFAULT)
-                                ? pGlobalSettings->lDefSortCrit
+                                ? cmnQuerySetting(slDefSortCrit)
                                 : _lDefSortCrit;
             lFoldersFirst = (_lFoldersFirst == SET_DEFAULT)
-                                  ? pGlobalSettings->fFoldersFirst
+                                  ? cmnQuerySetting(sfFoldersFirst)
                                   : _lFoldersFirst;
             lAlwaysSort = (_lAlwaysSort == SET_DEFAULT)
-                                  ? pGlobalSettings->AlwaysSort
+                                  ? cmnQuerySetting(sfAlwaysSort)
                                   : _lAlwaysSort;
         }
         else
         {
             // "Workplace Shell":
-            lDefaultSort = pGlobalSettings->lDefSortCrit;
-            lFoldersFirst = pGlobalSettings->fFoldersFirst;
-            lAlwaysSort = pGlobalSettings->AlwaysSort;
+            lDefaultSort = cmnQuerySetting(slDefSortCrit);
+            lFoldersFirst = cmnQuerySetting(sfFoldersFirst);
+            lAlwaysSort = cmnQuerySetting(sfAlwaysSort);
         }
 
         // find the list box entry with the matching handle
@@ -1728,7 +1739,7 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 else
                 {
                     // change global data
-                    GLOBALSETTINGS *pGlobalSettings;
+                    // GLOBALSETTINGS *pGlobalSettings;
 
                     // if the user enabled "always sort", check if
                     // the desktop would be sorted
@@ -1758,11 +1769,11 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     _Pmpf(("  updating global sort settings, new defsort: %d", lDefaultSort));
 
                     // moved lock down V0.9.12 (2001-05-20) [umoeller]
-                    pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-                    pGlobalSettings->fFoldersFirst = fFoldersFirst;
-                    pGlobalSettings->lDefSortCrit = lDefaultSort;
-                    pGlobalSettings->AlwaysSort = fAlways;
-                    cmnUnlockGlobalSettings();
+                    // pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+                    cmnSetSetting(sfFoldersFirst, fFoldersFirst);
+                    cmnSetSetting(slDefSortCrit, lDefaultSort);
+                    cmnSetSetting(sfAlwaysSort, fAlways);
+                    // cmnUnlockGlobalSettings();
 
                     fGlobalRefreshViews = TRUE;
                 }
@@ -1787,14 +1798,16 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 else
                 {
                     // global sort page:
-                    GLOBALSETTINGS *pBackup = (GLOBALSETTINGS*)pcnbp->pUser;
+                    // GLOBALSETTINGS *pBackup = (GLOBALSETTINGS*)pcnbp->pUser;
                     // fixed undo V0.9.12 (2001-05-22) [umoeller]
-                    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-                    pGlobalSettings->fFoldersFirst = pBackup->fFoldersFirst;
-                    pGlobalSettings->lDefSortCrit = pBackup->lDefSortCrit;
-                    pGlobalSettings->AlwaysSort = pBackup->AlwaysSort;
-                    cmnUnlockGlobalSettings();
-
+                    // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+                    cmnRestoreSettings(pcnbp->pUser, ARRAYITEMCOUNT(G_SortBackup));
+                    /*
+                    cmnSetSetting(sfFoldersFirst, pBackup->fFoldersFirst);
+                    cmnSetSetting(slDefSortCrit, pBackup->lDefSortCrit);
+                    cmnSetSetting(sfAlwaysSort, pBackup->AlwaysSort);
+                    // cmnUnlockGlobalSettings();
+                      */
                     fGlobalRefreshViews = TRUE;
                 }
 
@@ -1825,7 +1838,7 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             HPOINTER hptrOld = winhSetWaitPointer();
             // global:
 
-            cmnStoreGlobalSettings();
+            // cmnStoreGlobalSettings();
 
             ntbUpdateVisiblePage(NULL,      // any object
                                  SP_FLDRSORT_FLDR);

@@ -229,6 +229,7 @@
 #include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
+#include "helpers\exeh.h"               // executable helpers
 #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
@@ -257,6 +258,7 @@
 #include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\icons.h"              // icons handling
 #include "filesys\object.h"             // XFldObject implementation
+#include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 
 #include "config\hookintf.h"            // daemon/hook interface
 
@@ -397,6 +399,7 @@ APIRET icoBuildPtrHandle(PBYTE pbData,
  *      --  If (phptr != NULL), the icon data
  *          is loaded and turned into a new
  *          HPOINTER by calling icoBuildPtrHandle.
+ *          Use WinFreeFileIcon to free that pointer.
  *
  *      --  If (pcbIconData != NULL), *pcbIconData
  *          is set to the size that is required for
@@ -412,8 +415,8 @@ APIRET icoBuildPtrHandle(PBYTE pbData,
  *          In that case, *pcbIconData must also
  *          contain the size of the buffer on input.
  *
- *      If NO_ERROR is returned, *hptr receives
- *      a newly allocated pointer handle.
+ *      The above is only valid if NO_ERROR is
+ *      returned.
  *
  *      Otherwise this returns:
  *
@@ -513,11 +516,13 @@ APIRET icoLoadICOFile(PCSZ pcszFilename,
  *
  *      Returns:
  *
- *      --  NO_ERROR: ptr was built.
+ *      --  NO_ERROR: output data was set. See
+ *          icoLoadICOFile.
  *
- *      --  ERROR_NO_DATA: no .ICON EA found.
+ *      --  ERROR_NO_DATA: no .ICON EA found,
+ *          or it has a bad format.
  *
- *      --  ERROR_INVALID_PARAMETER: pcszFilename is
+ *      --  ERROR_INVALID_PARAMETER: pFEA2List is
  *          invalid, or pcbIconData was NULL while
  *          pbIconData was != NULL.
  *
@@ -534,821 +539,55 @@ APIRET icoBuildPtrFromFEA2List(PFEA2LIST pFEA2List,     // in: FEA2LIST to check
                                PULONG pcbIconData,      // in/out: if != NULL, size of buffer required
                                PBYTE pbIconData)        // out: if != NULL, icon data that was loaded
 {
-    APIRET arc = ERROR_NO_DATA;
+    APIRET arc = NO_ERROR;
 
-    PBYTE pbValue;
-    if (pbValue = fsysFindEAValue(pFEA2List,
-                                  ".ICON",
-                                  NULL))
-    {
-        // got something:
-        PUSHORT pusType = (PUSHORT)pbValue;
-        if (*pusType == EAT_ICON)
-        {
-            // next ushort has data length
-            PUSHORT pcbValue = pusType + 1;
-            USHORT cbData;
-            if (cbData = *pcbValue)
-            {
-                PBYTE pbData = (PBYTE)(pcbValue + 1);
-
-                // output data
-                if (phptr)
-                    arc = icoBuildPtrHandle(pbData,
-                                            phptr);
-
-                if (pbIconData)
-                    if (!pcbIconData)
-                        arc = ERROR_INVALID_PARAMETER;
-                    else if (*pcbIconData < cbData)
-                        arc = ERROR_BUFFER_OVERFLOW;
-                    else
-                        memcpy(pbIconData,
-                               pbData,
-                               cbData);
-
-                if (pcbIconData)
-                    *pcbIconData = cbData;
-            }
-        }
-    }
-
-    return (arc);
-}
-
-// page flags (OBJECTPAGETABLEENTRY.o32_pageflags)
-#define VALID           0x0000                // Valid Physical Page in .EXE
-#define ITERDATA        0x0001                // Iterated Data Page
-#define INVALID         0x0002                // Invalid Page
-#define ZEROED          0x0003                // Zero Filled Page
-#define RANGE           0x0004                // Range of pages
-#define ITERDATA2       0x0005                // Iterated Data Page Type II
-
-/*
- *@@ ExpandIterdata1:
- *      expands a page compressed with the old exepack
- *      method introduced with OS/2 2.0 (plain /EXEPACK).
- *
- *      (C) Knut Stange Osmundsen. Used with permission.
- *
- *@@added V0.9.16 (2001-12-08) [umoeller]
- */
-
-APIRET ExpandIterdata1(char *pabTarget,         // out: page data (pagesize as in lx spec)
-                       int cbTarget,            // in: sizeof *pabTarget (pagesize as in lx spec)
-                       const char *pabSource,   // in: compressed source data in EXEPACK:1 format
-                       int cbSource)            // in: sizeof *pabSource
-{
-    PLXITER             pIter = (PLXITER)pabSource;
-    // store the pointer for boundary checking
-    char                *pabTargetOriginal = pabTarget;
-
-    // validate size of data
-    if (cbSource >= cbTarget - 2)
-        return (ICONERR_EXPANDPAGE1_TOOSMALL);
-
-    // expand the page
-    while (    (pIter->LX_nIter)
-            && (cbSource > 0)
-          )
-    {
-        // check if we're out of bound
-        ULONG nIter = pIter->LX_nIter,
-              nBytes = pIter->LX_nBytes;
-
-        if (    (pabTarget - pabTargetOriginal + nIter * nBytes > cbTarget)
-             || (cbSource <= 0)
-           )
-            return ICONERR_EXPANDPAGE1_OUTOFBOUND;
-
-        if (nBytes == 1)
-        {
-            // one databyte
-            memset(pabTarget, pIter->LX_Iterdata, nIter);
-            pabTarget += nIter;
-            cbSource -= 4 + 1;
-            pIter++;
-        }
-        else
-        {
-            int i;
-            for (i = nIter;
-                 i > 0;
-                 i--, pabTarget += nBytes)
-                memcpy(pabTarget, &pIter->LX_Iterdata, nBytes);
-            cbSource -= 4 + nBytes;
-            pIter   = (PLXITER)((char*)pIter + 4 + nBytes);
-        }
-    }
-
-    // zero remaining part of the page
-    if (pabTarget - pabTargetOriginal < cbTarget)
-        memset(pabTarget, 0, cbTarget - (pabTarget - pabTargetOriginal));
-
-    return NO_ERROR;
-}
-
-/*
- *@@ memcpyw:
- *      a special memcpy for expandPage2 which performs a
- *      word based copy. The difference between this, memmove
- *      and memcpy is that we'll allways read words.
- *
- *      (C) Knut Stange Osmundsen. Used with permission.
- *
- *@@added V0.9.16 (2001-12-08) [umoeller]
- */
-
-void memcpyw(char *pch1, const char *pch2, size_t cch)
-{
-    /*
-     * Use memcpy if possible.
-     */
-    if ((pch2 > pch1 ? pch2 - pch1 : pch1 - pch2) >= 4)
-    {
-        memcpy(pch1, pch2, cch);        /* BUGBUG! ASSUMES that memcpy move NO more than 4 bytes at the time! */
-        return;
-    }
-
-    /*
-     * Difference is less than 3 bytes.
-     */
-    if (cch & 1)
-        *pch1++ = *pch2++;
-
-    for (cch >>= 1;
-         cch > 0;
-         cch--, pch1 += 2, pch2 += 2)
-        *(PUSHORT)pch1 = *(PUSHORT)pch2;
-}
-
-/*
- *@@ memcpyb:
- *      a special memcpy for expandPage2 which performs a memmove
- *      operation. The difference between this and memmove is that
- *      this one works.
- *
- *      (C) Knut Stange Osmundsen. Used with permission.
- *
- *@@added V0.9.16 (2001-12-08) [umoeller]
- */
-
-void memcpyb(char *pch1, const char *pch2, size_t cch)
-{
-    /*
-     * Use memcpy if possible.
-     */
-    if ((pch2 > pch1 ? pch2 - pch1 : pch1 - pch2) >= 4)
-    {
-        memcpy(pch1, pch2, cch);
-        return;
-    }
-
-    /*
-     * Difference is less than 3 bytes.
-     */
-    while(cch--)
-        *pch1++ = *pch2++;
-}
-
-/*
- *@@ ExpandIterdata2:
- *      expands a page compressed with the new exepack
- *      method introduced with OS/2 Warp 3.0 (/EXEPACK:2).
- *
- *      (C) Knut Stange Osmundsen. Used with permission.
- *
- *@@added V0.9.16 (2001-12-08) [umoeller]
- */
-
-int ExpandIterdata2(char *pachPage,
-                    int cchPage,
-                    const char *pachSrcPage,
-                    int cchSrcPage)
-{
-    char *          pachDestPage = pachPage; /* Store the pointer for boundrary checking. */
-
-    while (cchSrcPage > 0)
-    {
-        /*
-         * Bit 0 and 1 is the encoding type.
-         */
-
-        char cSrc = *pachSrcPage;
-
-        switch (cSrc & 0x03)
-        {
-            /*
-             *
-             *  0  1  2  3  4  5  6  7
-             *  type  |              |
-             *        ----------------
-             *             cch        <cch bytes of data>
-             *
-             * Bits 2-7 is, if not zero, the length of an uncompressed run
-             *   starting at the following byte.
-             *
-             *  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23
-             *  type  |              |  |                    | |                     |
-             *        ----------------  ---------------------- -----------------------
-             *             zero                 cch                char to multiply
-             *
-             * If the bits are zero, the following two bytes describes a
-             *   1 byte interation run. First byte is count, second is the byte to copy.
-             *   A count of zero is means end of data, and we simply stops. In that case
-             *   the rest of the data should be zero.
-             */
-
-            case 0:
-            {
-                if (cSrc)
-                {
-                    int cch = cSrc >> 2;
-                    if (    (cchPage >= cch)
-                         && (cchSrcPage >= cch + 1)
-                       )
-                    {
-                        memcpy(pachPage, pachSrcPage + 1, cch);
-                        pachPage += cch, cchPage -= cch;
-                        pachSrcPage += cch + 1, cchSrcPage -= cch + 1;
-                        break; // switch (cSrc & 0x03)
-                    }
-                    return ICONERR_EXPANDPAGE2_BADDATA;
-                }
-
-                if (cchSrcPage >= 2)
-                {
-                    int cch;
-                    if (cch = pachSrcPage[1])
-                    {
-                        if (    (cchSrcPage >= 3)
-                             && (cchPage >= cch)
-                           )
-                        {
-                            memset(pachPage, pachSrcPage[2], cch);
-                            pachPage += cch, cchPage -= cch;
-                            pachSrcPage += 3, cchSrcPage -= 3;
-                            break; // switch (cSrc & 0x03)
-                        }
-                    }
-                    else
-                        goto endloop;
-                }
-
-                return ICONERR_EXPANDPAGE2_BADDATA;
-            }
-
-
-            /*
-             *  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-             *  type  |  |  |     |  |                       |
-             *        ----  -------  -------------------------
-             *        cch1  cch2 - 3          offset            <cch1 bytes of data>
-             *
-             *  Two bytes layed out as described above, followed by cch1 bytes of data to be copied.
-             *  The cch2(+3) and offset describes an amount of data to be copied from the expanded
-             *    data relative to the current position. The data copied as you would expect it to be.
-             */
-
-            case 1:
-            {
-                if (cchSrcPage >= 2)
-                {
-                    int off = *(PUSHORT)pachSrcPage >> 7;
-                    int cch1 = cSrc >> 2 & 3;
-                    int cch2 = (cSrc >> 4 & 7) + 3;
-                    pachSrcPage += 2, cchSrcPage -= 2;
-                    if (    (cchSrcPage >= cch1)
-                         && (cchPage >= cch1 + cch2)
-                         && (pachPage + cch1 - off >= pachDestPage)
-                       )
-                    {
-                        memcpy(pachPage, pachSrcPage, cch1);
-                        pachPage += cch1, cchPage -= cch1;
-                        pachSrcPage += cch1, cchSrcPage -= cch1;
-                        memcpyb(pachPage, pachPage - off, cch2); //memmove doesn't do a good job here for some stupid reason.
-                        pachPage += cch2, cchPage -= cch2;
-                        break; // switch (cSrc & 0x03)
-                    }
-                }
-                return ICONERR_EXPANDPAGE2_BADDATA;
-            }
-
-            /*
-             *  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-             *  type  |  |  |                                |
-             *        ----  ----------------------------------
-             *       cch-3              offset
-             *
-             *  Two bytes layed out as described above.
-             *  The cch(+3) and offset describes an amount of data to be copied from the expanded
-             *  data relative to the current position.
-             *
-             *  If offset == 1 the data is not copied as expected, but in the memcpyw manner.
-             */
-
-            case 2:
-            {
-                if (cchSrcPage >= 2)
-                {
-                    int off = *(PUSHORT)pachSrcPage >> 4;
-                    int cch = (cSrc >> 2 & 3) + 3;
-                    pachSrcPage += 2, cchSrcPage -= 2;
-                    if (    (cchPage >= cch)
-                         && (pachPage - off >= pachDestPage)
-                       )
-                    {
-                        memcpyw(pachPage, pachPage - off, cch);
-                        pachPage += cch, cchPage -= cch;
-                        break; // switch (cSrc & 0x03)
-                    }
-                }
-                return ICONERR_EXPANDPAGE2_BADDATA;
-            }
-
-
-            /*
-             *  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23
-             *  type  |        |  |              |  |                                |
-             *        ----------  ----------------  ----------------------------------
-             *           cch1           cch2                     offset                <cch1 bytes of data>
-             *
-             *  Three bytes layed out as described above, followed by cch1 bytes of data to be copied.
-             *  The cch2 and offset describes an amount of data to be copied from the expanded
-             *  data relative to the current position.
-             *
-             *  If offset == 1 the data is not copied as expected, but in the memcpyw manner.
-             */
-
-            case 3:
-            {
-                if (cchSrcPage >= 3)
-                {
-                    int cch1 = cSrc >> 2 & 0x000f;
-                    int cch2 = *(PUSHORT)pachSrcPage >> 6 & 0x003f;
-                    int off  = *(PUSHORT)(pachSrcPage + 1) >> 4;
-                    pachSrcPage += 3, cchSrcPage -= 3;
-                    if (    (cchSrcPage >= cch1)
-                         && (cchPage >= cch1 + cch2)
-                         && (pachPage - off + cch1 >= pachDestPage)
-                       )
-                    {
-                        memcpy(pachPage, pachSrcPage, cch1);
-                        pachPage += cch1, cchPage -= cch1;
-                        pachSrcPage += cch1, cchSrcPage -= cch1;
-                        memcpyw(pachPage, pachPage - off, cch2);
-                        pachPage += cch2, cchPage -= cch2;
-                        break; // switch (cSrc & 0x03)
-                    }
-                }
-                return ICONERR_EXPANDPAGE2_BADDATA;
-            }
-        } // end switch (cSrc & 0x03)
-    }
-
-endloop:;
-
-    /*
-     * Zero the rest of the page.
-     */
-    if (cchPage > 0)
-        memset(pachPage, 0, cchPage);
-
-    return 0;
-}
-
-/*
- *@@ GetOfsFromPageTableIndex:
- *
- *@@added V0.9.16 (2001-12-08) [umoeller]
- */
-
-APIRET GetOfsFromPageTableIndex(PLXHEADER pLXHeader,            // in: from EXECUTABLE
-                                OBJECTPAGETABLEENTRY *pObjPageTbl,  // in: from EXECUTABLE
-                                ULONG ulObjPageTblIndexThis,
-                                PULONG pulFlags,        // out: page flags
-                                PULONG pulSize,         // out: page size
-                                PULONG pulPageOfs)      // out: page ofs (add pLXHeader->ulDataPagesOfs to this)
-{
-    OBJECTPAGETABLEENTRY *pObjPageTblEntry;
-
-    if (ulObjPageTblIndexThis - 1 >= pLXHeader->ulPageCount)
-        return ICONERR_INVALID_OFFSET;
-
-    pObjPageTblEntry = &pObjPageTbl[ulObjPageTblIndexThis - 1];
-
-    // page offset: shift left by what was specified in LX header
-    *pulPageOfs     =    pObjPageTblEntry->o32_pagedataoffset
-                      << pLXHeader->ulPageLeftShift;
-    *pulFlags       = pObjPageTblEntry->o32_pageflags;
-    *pulSize        = pObjPageTblEntry->o32_pagesize;
-
-    return NO_ERROR;
-}
-
-/*
- *@@ LoadCompressedResourcePages:
- *      handler for LoadLXResource if the page data is
- *      compressed, either in old or new ITERDATA
- *      format.
- *
- *@@added V0.9.16 (2001-12-08) [umoeller]
- */
-
-APIRET LoadCompressedResourcePages(PEXECUTABLE pExec,   // in: executable from doshExecOpen
-                                   RESOURCETABLEENTRY *pRsEntry,  // in: resource table entry for this res
-                                   ULONG ulType,        // in: page type of first page
-                                   PBYTE *ppbResData,   // out: resource data (to be free()'d)
-                                   PULONG pcbResData)   // out: size of resource data (ptr can be NULL)
-{
-    APIRET  arc = NO_ERROR;
-    PBYTE   pabCompressed = NULL;
-
-    TRY_LOUD(excpt1)
-    {
-        PLXHEADER       pLXHeader = pExec->pLXHeader;
-
-        // alloc buffer for compressed data from disk
-        if (!(pabCompressed = malloc(pLXHeader->ulPageSize + 4)))
-            arc = ERROR_NOT_ENOUGH_MEMORY;
-        else
-        {
-            ULONG   ul,
-                    cPages,
-                    cbAlloc;
-
-            PXFILE  pFile = pExec->pFile;
-            OBJECTTABLEENTRY *pObjTblEntry = &pExec->pObjTbl[pRsEntry->obj - 1];
-
-            ULONG   ulObjPageTblIndex =   pObjTblEntry->o32_pagemap
-                                        + (pRsEntry->offset >> 12);
-
-            cPages =   (pRsEntry->cb + pLXHeader->ulPageSize - 1)
-                     / pLXHeader->ulPageSize;
-
-            if (!(arc = doshAllocArray(cPages,
-                                       pLXHeader->ulPageSize,
-                                       ppbResData,
-                                       &cbAlloc)))
-            {
-                // current output pointer: start with head of
-                // buffer, this is advanced by the page size
-                // for each page that was decompressed
-                PBYTE pbCurrent = *ppbResData;
-
-                for (ul = 0;
-                     ul < cPages;
-                     ul++)
-                {
-                    ULONG   ulFlags2,       // page flags... we ignore this and use
-                                            // the flags from the first page always
-                                            // (given to us in ulType)
-                            ulSize,         // size of this page (and bytes read)
-                            ulOffset;       // offset of this page in exe
-
-                    if (!(arc = GetOfsFromPageTableIndex(pLXHeader,
-                                                         pExec->pObjPageTbl,
-                                                         ulObjPageTblIndex + ul,
-                                                         &ulFlags2,
-                                                         &ulSize,
-                                                         &ulOffset)))
-                    {
-                        // resources are in data pages
-                        ulOffset += pLXHeader->ulDataPagesOfs;
-
-                        // now go read this compressed page
-                        if (!(arc = doshReadAt(pFile,
-                                               ulOffset,
-                                               &ulSize,
-                                               pabCompressed)))
-                        {
-                            // terminate the buf for decompress
-                            *(PULONG)(pabCompressed + ulSize) = 0;
-
-                            if (ulType == ITERDATA)
-                                // OS/2 2.x:
-                                arc = ExpandIterdata1(pbCurrent,
-                                                      pLXHeader->ulPageSize,
-                                                      pabCompressed,
-                                                      ulSize);            // this page's size
-                            else
-                                // Warp 3:
-                                arc = ExpandIterdata2(pbCurrent,
-                                                      pLXHeader->ulPageSize,
-                                                      pabCompressed,
-                                                      ulSize);            // this page's size
-
-                            if (arc)
-                                break;
-
-                            pbCurrent += pLXHeader->ulPageSize;
-                        }
-                        else
-                            break;
-                    }
-                    else
-                        break;
-
-                } // end for
-
-                if (arc)
-                    free(*ppbResData);
-                else if (pcbResData)
-                    *pcbResData = cbAlloc;
-
-            } // end if (!(*ppbResData = malloc(...
-        }
-    }
-    CATCH(excpt1)
-    {
-        arc = ERROR_PROTECTION_VIOLATION;
-    } END_CATCH();
-
-    _Pmpf((__FUNCTION__ ": returning %d", arc));
-
-    if (pabCompressed)
-        free(pabCompressed);
-
-    return (arc);
-}
-
-/*
- *@@ LoadLXResource:
- *      attempts to load the data of the resource
- *      with the specified type and id from an LX
- *      executable.
- *
- *      If idResource == 0, the first resource of
- *      the specified type is loaded.
- *
- *      If NO_ERROR is returned, *ppbResData receives
- *      a new buffer with the icon data. The caller
- *      must free() that buffer.
- *
- *      Otherwise this returns:
- *
- *      --  ERROR_NO_DATA: resource not found.
- *
- *      --  ERROR_BAD_FORMAT: cannot handle resource format.
- *
- *@@added V0.9.16 (2001-12-08) [umoeller]
- */
-
-APIRET LoadLXResource(PEXECUTABLE pExec,     // in: executable from doshExecOpen
-                      ULONG ulType,          // in: RT_* type (e.g. RT_POINTER)
-                      ULONG idResource,      // in: resource ID or 0 for first
-                      PBYTE *ppbResData,     // out: resource data (to be free()'d)
-                      PULONG pcbResData)     // out: size of resource data (ptr can be NULL)
-{
-    APIRET          arc = NO_ERROR;
-    ULONG           cResources = 0;
-
-    ULONG           ulNewHeaderOfs = 0; // V0.9.12 (2001-05-03) [umoeller]
-
-    PLXHEADER       pLXHeader;
-
-    if (!(pLXHeader = pExec->pLXHeader))
-        return (ERROR_INVALID_EXE_SIGNATURE);
-
-    if (pExec->pDosExeHeader)
-        // executable has DOS stub: V0.9.12 (2001-05-03) [umoeller]
-        ulNewHeaderOfs = pExec->pDosExeHeader->ulNewHeaderOfs;
-
-    if (!(cResources = pLXHeader->ulResTblCnt))
-        // no resources at all:
-        return (ERROR_NO_DATA);
-
-    if (!pExec->fLXMapsLoaded)
-        arc = doshLoadLXMaps(pExec);
-
-    if (!arc)
-    {
-        // alright, we're in:
-
-        // run thru the resources
-        PXFILE  pFile = pExec->pFile;
-        BOOL fPtrFound = FALSE;
-
-        ULONG i;
-        for (i = 0;
-             i < cResources;
-             i++)
-        {
-            // ptr to resource table entry
-            RESOURCETABLEENTRY *pRsEntry = &pExec->pRsTbl[i];
-
-            // check resource type and ID
-            if (    (pRsEntry->type == ulType)
-                 && (    (idResource == 0)
-                      || (idResource == pRsEntry->name)
-                    )
-               )
-            {
-                // hooray
-
-                // here comes the sick part...
-                if (pRsEntry->obj - 1 >= pLXHeader->ulObjCount)
-                    arc = ICONERR_INVALID_OFFSET;
-                else
-                {
-                    // 1) get the object table entry from the object no. in
-                    //    the resource tbl entry
-                    OBJECTTABLEENTRY *pObjTblEntry = &pExec->pObjTbl[pRsEntry->obj - 1];
-                    // 2) from that, get the object _page_ table index
-                    ULONG ulObjPageTblIndex = pObjTblEntry->o32_pagemap;
-                    ULONG ulFlags,
-                          ulSize,
-                          ulOffset;
-
-                    if (!(arc = GetOfsFromPageTableIndex(pLXHeader,
-                                                         pExec->pObjPageTbl,
-                                                         ulObjPageTblIndex,
-                                                         &ulFlags,
-                                                         &ulSize,
-                                                         &ulOffset)))
-                    {
-                        ulOffset +=   pLXHeader->ulDataPagesOfs
-                                    + pRsEntry->offset;
-
-                        _Pmpf(("  found RT_POINTER %d, ofs %d, type %s",
-                                pRsEntry->name,
-                                ulOffset,
-                                (ulFlags == 0x0001) ? "ITERDATA"
-                                : (ulFlags == 0x0005) ? "ITERDATA2"
-                                : "uncompressed"));
-
-                        switch (ulFlags)
-                        {
-                            case ITERDATA:
-                                // compressed in OS/2 2.x format:
-                            case ITERDATA2:
-                                if (!(arc = LoadCompressedResourcePages(pExec,
-                                                                        pRsEntry,
-                                                                        ulFlags,
-                                                                        ppbResData,
-                                                                        pcbResData)))
-                                    fPtrFound = TRUE;
-                            break;
-
-                            case VALID:
-                            {
-                                // uncompressed
-                                ULONG cb = pRsEntry->cb;        // resource size
-                                PBYTE pb;
-                                if (!(*ppbResData = malloc(cb)))
-                                    arc = ERROR_NOT_ENOUGH_MEMORY;
-                                else
-                                {
-                                    if (!(arc = doshReadAt(pFile,
-                                                           ulOffset,
-                                                           &cb,
-                                                           *ppbResData)))
-                                    {
-                                        if (pcbResData)
-                                            *pcbResData = cb;
-                                        fPtrFound = TRUE;
-                                    }
-                                    else
-                                        // error reading:
-                                        free(*ppbResData);
-                                }
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (fPtrFound || arc)
-                break;
-
-        } // end for
-
-        if ((!fPtrFound) && (!arc))
-            arc = ERROR_NO_DATA;
-    }
-
-    return (arc);
-}
-
-/*
- *@@ LoadOS2NEResource:
- *      attempts to load the data of the resource
- *      with the specified type and id from an OS/2
- *      NE executable.
- *
- *      Note that NE executables with resources in
- *      OS/2 format are very, very rare. The
- *      only OS/2 NE executables with resources I
- *      could find at this point were in an old 1.3
- *      Toolkit, but with them, this code works.
- *
- *      If idResource == 0, the first resource of
- *      the specified type is loaded.
- *
- *      If NO_ERROR is returned, *ppbResData receives
- *      a new buffer with the icon data. The caller
- *      must free() that buffer.
- *
- *      Otherwise this returns:
- *
- *      --  ERROR_NO_DATA: resource not found.
- *
- *      --  ERROR_BAD_FORMAT: cannot handle resource format.
- *
- *@@added V0.9.16 (2001-12-08) [umoeller]
- */
-
-APIRET LoadOS2NEResource(PEXECUTABLE pExec,     // in: executable from doshExecOpen
-                         ULONG ulType,          // in: RT_* type (e.g. RT_POINTER)
-                         ULONG idResource,      // in: resource ID or 0 for first
-                         PBYTE *ppbResData,     // out: resource data (to be free()'d)
-                         PULONG pcbResData)     // out: size of resource  data (ptr can be NULL)
-{
-    APIRET          arc = NO_ERROR;
-    ULONG           cResources = 0;
-
-    ULONG           ulNewHeaderOfs = 0; // V0.9.12 (2001-05-03) [umoeller]
-
-    PNEHEADER       pNEHeader;
-
-    if (!(pNEHeader = pExec->pNEHeader))
-        return (ERROR_INVALID_EXE_SIGNATURE);
-
-    if (pExec->pDosExeHeader)
-        // executable has DOS stub: V0.9.12 (2001-05-03) [umoeller]
-        ulNewHeaderOfs = pExec->pDosExeHeader->ulNewHeaderOfs;
-
-    _Pmpf((__FUNCTION__ ": entering, checking %d resources", pNEHeader->usResSegmCount));
-
-    if (!(cResources = pNEHeader->usResSegmCount))
-        // no resources at all:
-        return (ERROR_NO_DATA);
-
-    if (!pExec->fOS2NEMapsLoaded)
-        arc = doshLoadOS2NEMaps(pExec);
-
-    if (!arc)
-    {
-        // alright, we're in:
-        PXFILE  pFile = pExec->pFile;
-
-        // run thru the resources
-        BOOL fPtrFound = FALSE;
-
-        ULONG i;
-        POS2NERESTBLENTRY pResTblEntryThis = pExec->paOS2NEResTblEntry;
-        POS2NESEGMENT pSegThis = pExec->paOS2NESegments;
-        for (i = 0;
-             i < cResources;
-             i++, pResTblEntryThis++, pSegThis++)
-        {
-            // check resource type and ID
-            if (    (pResTblEntryThis->usType == ulType)
-                 && (    (idResource == 0)
-                      || (idResource == pResTblEntryThis->usID)
-                    )
-               )
-            {
-                // hooray, we found the resource...
-
-                // look up the corresponding segment
-
-                ULONG ulOffset = (    (ULONG)pSegThis->ns_sector
-                                   << pNEHeader->usLogicalSectShift
-                                 );
-
-                ULONG cb = pSegThis->ns_cbseg;        // resource size
-                PBYTE pb;
-                if (!(*ppbResData = malloc(cb)))
-                    arc = ERROR_NOT_ENOUGH_MEMORY;
-                else
-                {
-                    if (!(arc = doshReadAt(pFile,
-                                           ulOffset,
-                                           &cb,
-                                           *ppbResData)))
-                    {
-                        if (pcbResData)
-                            *pcbResData = cb;
-                        fPtrFound = TRUE;
-                    }
-                    else
-                        // error reading:
-                        free(*ppbResData);
-                }
-            }
-
-            if (fPtrFound || arc)
-                break;
-
-        } // end for
-
-        if ((!fPtrFound) && (!arc))
-            arc = ERROR_NO_DATA;
-    }
+    if (!pFEA2List)
+        arc = ERROR_INVALID_PARAMETER;
     else
-        _Pmpf(("doshLoadOS2NEMaps returned %d"));
+    {
+        PBYTE pbValue;
+        if (pbValue = fsysFindEAValue(pFEA2List,
+                                      ".ICON",
+                                      NULL))
+        {
+            // got something:
+            PUSHORT pusType = (PUSHORT)pbValue;
+            if (*pusType == EAT_ICON)
+            {
+                // next ushort has data length
+                PUSHORT pcbValue = pusType + 1;
+                USHORT cbData;
+                if (cbData = *pcbValue)
+                {
+                    PBYTE pbData = (PBYTE)(pcbValue + 1);
+
+                    // output data
+                    if (phptr)
+                        arc = icoBuildPtrHandle(pbData,
+                                                phptr);
+
+                    if (pbIconData)
+                        if (!pcbIconData)
+                            arc = ERROR_INVALID_PARAMETER;
+                        else if (*pcbIconData < cbData)
+                            arc = ERROR_BUFFER_OVERFLOW;
+                        else
+                            memcpy(pbIconData,
+                                   pbData,
+                                   cbData);
+
+                    if (pcbIconData)
+                        *pcbIconData = cbData;
+                }
+                else
+                    arc = ERROR_NO_DATA;
+            }
+            else
+                arc = ERROR_NO_DATA;
+        }
+        else
+            arc = ERROR_NO_DATA;
+    }
 
     return (arc);
 }
@@ -1450,6 +689,8 @@ static struct _DefaultIconHeader
  *      --  NO_ERROR: icon data was successfully converted,
  *          and *ppbResData has received the OS/2-format
  *          icon data.
+ *
+ *      --  ERROR_NOT_ENOUGH_MEMORY
  *
  *      --  ERROR_BAD_FORMAT: icon format not recognized.
  *          Currently we handle only 32x32 in 16 colors.
@@ -1573,7 +814,9 @@ APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
 
                 struct _DefaultIconHeader *pHeaderDest;
 
+
                 arc = NO_ERROR;
+
                 if (pcbResdata)
                     *pcbResdata = cbDataDest;
 
@@ -1791,6 +1034,11 @@ APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
  *      If idResource == 0, the first resource of
  *      the specified type is loaded.
  *
+ *      From my testing, this code is quite efficient.
+ *      Using doshReadAt, we usually get by with only
+ *      two actual DosRead's from disk, including
+ *      reading the actual resource data.
+ *
  *      If NO_ERROR is returned, *ppbResData receives
  *      a new buffer with the resource data. The caller
  *      must free() that buffer.
@@ -1801,6 +1049,9 @@ APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
  *
  *      Otherwise this returns:
  *
+ *      --  ERROR_INVALID_EXE_SIGNATURE: pExec is not NE
+ *          or not Win16.
+ *
  *      --  ERROR_NO_DATA: resource not found.
  *
  *      --  ERROR_BAD_FORMAT: cannot handle resource format.
@@ -1808,14 +1059,14 @@ APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
  *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
-APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from doshExecOpen
+APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
                          ULONG ulType,          // in: RT_* type (e.g. RT_POINTER)
                          ULONG idResource,      // in: resource ID or 0 for first
                          PBYTE *ppbResData,     // out: converted resource data (to be free()'d)
                          PULONG pcbResData)     // out: size of converted data (ptr can be NULL)
 {
     APIRET          arc = NO_ERROR;
-    ULONG           cb;
+    ULONG           cbRead;
 
     ULONG           ulNewHeaderOfs = 0; // V0.9.12 (2001-05-03) [umoeller]
 
@@ -1833,21 +1084,25 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from doshExecO
 
     // 1) res tbl starts with align leftshift
     pFile = pExec->pFile;
-    cb = sizeof(usAlignShift);
+    cbRead = sizeof(usAlignShift);
     if (!(arc = doshReadAt(pFile,
                            // start of res table
                            pNEHeader->usResTblOfs
                              + ulNewHeaderOfs,
-                           &cb,
+                           &cbRead,
                            (PBYTE)&usAlignShift)))
     {
         // run thru the resources
         BOOL fPtrFound = FALSE;
 
+        // current offset: since we want to use doshReadAt
+        // for caching, we need to maintain this
+        ULONG ulCurrentOfs =   pNEHeader->usResTblOfs
+                             + ulNewHeaderOfs
+                             + cbRead;      // should be sizeof(usAlignShift)
+
         while (!arc)
         {
-            ULONG cbRead;
-
             #pragma pack(1)
             struct WIN16_RESTYPEINFO
             {
@@ -1869,11 +1124,15 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from doshExecO
             //              id (int if 0x8000 set), otherwise offset to string
             //              reserved
             //              reserved
-            if (!(arc = DosRead(pFile->hf,
-                                &typeinfo,
-                                sizeof(typeinfo),
-                                &cbRead)))
+            cbRead = sizeof(typeinfo);
+            if (!(arc = doshReadAt(pFile,
+                                   ulCurrentOfs,
+                                   &cbRead,
+                                   (PBYTE)&typeinfo)))
             {
+                // advance our private file pointer
+                ulCurrentOfs += cbRead;
+
                 if (    (cbRead < sizeof(typeinfo))
                      || (typeinfo.rt_id == 0)
                    )
@@ -1910,14 +1169,17 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from doshExecO
                          || (ulTypeThis != ulType)
                        )
                     {
+                        // this is not our type, so we can simply
+                        // skip the entire table for speed
                         _Pmpf((__FUNCTION__ ": skipping type %d (%s), %d entries",
                                       ulTypeThis,
-                                      fsysGetWinResourceTypeName(ulTypeThis),
+                                      progGetWinResourceTypeName(ulTypeThis),
                                       typeinfo.rt_nres));
-                        arc = DosSetFilePtr(pFile->hf,
+                        /* arc = DosSetFilePtr(pFile->hf,
                                             typeinfo.rt_nres * sizeof(nameinfo),
                                             FILE_CURRENT,
-                                            &cbRead);
+                                            &cbRead); */
+                        ulCurrentOfs += typeinfo.rt_nres * sizeof(nameinfo);
                     }
                     else
                     {
@@ -1927,21 +1189,24 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from doshExecO
 
                         _Pmpf((__FUNCTION__ ": entering type %d (%s), %d entries",
                                       ulTypeThis,
-                                      fsysGetWinResourceTypeName(ulTypeThis),
+                                      progGetWinResourceTypeName(ulTypeThis),
                                       typeinfo.rt_nres));
 
                         if (    (!(arc = doshAllocArray(typeinfo.rt_nres,
                                                         sizeof(nameinfo),
                                                         (PBYTE*)&paNameInfos,
                                                         &cbNameInfos)))
-                             && (!(arc = DosRead(pFile->hf,
-                                                 paNameInfos,
-                                                 cbNameInfos,
-                                                 &cbRead)))
+                             && (cbRead = cbNameInfos)
+                             && (!(arc = doshReadAt(pFile,
+                                                    ulCurrentOfs,
+                                                    &cbRead,
+                                                    (PBYTE)paNameInfos)))
                            )
                         {
                             ULONG ul;
                             nameinfo *pThis = paNameInfos;
+
+                            ulCurrentOfs += cbRead;
 
                             if (cbRead < cbNameInfos)
                                 arc = ERROR_BAD_FORMAT;
@@ -1987,11 +1252,12 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from doshExecO
                                                         if (pcbResData)
                                                             *pcbResData = cbConverted;
                                                         fPtrFound = TRUE;
-                                                        break;
                                                     }
-                                                    else
-                                                        // unknown format: keep looking
-                                                        free(pb);
+                                                    // else unknown format: keep looking
+
+                                                    // but always free the buffer,
+                                                    // since ConvertWinIcon has created one
+                                                    free(pb);
                                                 }
                                                 else
                                                 {
@@ -2000,7 +1266,6 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from doshExecO
                                                     if (pcbResData)
                                                         *pcbResData = cbThis;
                                                     fPtrFound = TRUE;
-                                                    break;
                                                 }
                                             }
                                             else
@@ -2011,6 +1276,10 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from doshExecO
                                             }
                                         }
                                     }
+
+                                    if (fPtrFound)
+                                        break;
+
                                 } // end for
                             }
 
@@ -2039,28 +1308,35 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from doshExecO
 
 /*
  *@@ icoLoadExeIcon:
- *      smarter replacement for WinLoadFileIcon, which
- *      takes ages on PE executables. This takes an
- *      EXECUTABLE as returned from doshExecOpen as
- *      input.
+ *      smarter replacement for WinLoadFileIcon.
+ *      In conjunction with the exeh* functions,
+ *      this is a full rewrite, including all the
+ *      resource loading.
  *
- *      Note that as opposed to WinLoadFileIcon, this
- *      is intended for executables _only_. This does
- *      not check for an .ICO file in the same directory.
+ *      Differences:
  *
- *      Neither will this check for an .ICON EA because
- *      this is intended for XWPFileSystem::wpSetProgIcon
- *      which never gets called in the first place for
- *      that case.
+ *      --  WinLoadFileIcon can take ages on PE files.
  *
- *      Instead, this will "only" try to find a default
- *      icon in the executable's resources. It will _not_
- *      return a default icon if no icon was found.
+ *      --  WinLoadFileIcon _always_ returns an icon,
+ *          which makes it unsuitable for our
+ *          wpSetProgIcon replacements because we'd
+ *          rather replace the default icons and we
+ *          can't find out using WinLoadFileIcon.
+ *
+ *      --  This is intended for executables _only_.
+ *          It does not check for an .ICO file in the
+ *          same directory, nor will this check for
+ *          .ICON EAs.
+ *
+ *      --  This takes an EXECUTABLE from exehOpen
+ *          as input. As a result, only executables
+ *          supported by exehOpen are supported.
  *
  *      Presently the following executable and icon
  *      resource formats are understood:
  *
- *      1)  OS/2 LX and NE;
+ *      1)  OS/2 LX and NE (via exehLoadLXResource
+ *          and exehLoadOS2NEResource);
  *
  *      2)  Win16 NE, but only 32x32 icons in 16 colors.
  *
@@ -2070,8 +1346,8 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from doshExecO
  *
  *      This returns:
  *
- *      --  NO_ERROR: a new pointer was built in *phptr.
- *          Use WinFreeFileIcon to free the pointer.
+ *      --  NO_ERROR: output data was set. See
+ *          icoLoadICOFile.
  *
  *      --  ERROR_INVALID_EXE_SIGNATURE: cannot handle
  *          this EXE format.
@@ -2088,12 +1364,13 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from doshExecO
  *      --  ERROR_BUFFER_OVERFLOW: *pcbIconData is too
  *          small a size of pbIconData.
  *
- *      plus the error codes of doshExecOpen.
+ *      plus the error codes of exehOpen and icoBuildPtrHandle.
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
-APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from doshExecOpen
+APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
+                      ULONG idResource,         // in: resource ID or 0 for first
                       HPOINTER *phptr,          // out: if != NULL, newly built HPOINTER
                       PULONG pcbIconData,       // in/out: if != NULL, size of buffer required
                       PBYTE pbIconData)         // out: if != NULL, icon data that was loaded
@@ -2112,22 +1389,22 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from doshExecO
         {
             case EXEFORMAT_LX:
                 // these two we can handle for now
-                arc = LoadLXResource(pExec,
-                                     RT_POINTER,
-                                     0,         // first one found
-                                     &pbData,
-                                     &cbData);
+                arc = exehLoadLXResource(pExec,
+                                         RT_POINTER,
+                                         idResource,
+                                         &pbData,
+                                         &cbData);
             break;
 
             case EXEFORMAT_NE:
                 switch (pExec->ulOS)
                 {
                     case EXEOS_OS2:
-                        arc = LoadOS2NEResource(pExec,
-                                                RT_POINTER,
-                                                0,         // first one found
-                                                &pbData,
-                                                &cbData);
+                        arc = exehLoadOS2NEResource(pExec,
+                                                    RT_POINTER,
+                                                    idResource,
+                                                    &pbData,
+                                                    &cbData);
                         if (arc)
                             _Pmpf((__FUNCTION__ ": LoadOS2NEResource returned %d", arc));
                     break;
@@ -2136,7 +1413,7 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from doshExecO
                     case EXEOS_WIN386:
                         arc = LoadWinNEResource(pExec,
                                                 WINRT_ICON,
-                                                0,         // first one found
+                                                idResource,
                                                 &pbData,
                                                 &cbData);
                         if (arc)

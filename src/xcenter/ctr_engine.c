@@ -5227,7 +5227,7 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
         {
             XCenterData *somThis = XCenterGetData(somSelf);
             MENUITEM mi;
-            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+            // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
             // get handle to the "Open" submenu in the
             // the popup menu
             if (winhQueryMenuItem(hwndMenu,
@@ -5239,7 +5239,7 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
                 // which we add items to now
                 // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
                 winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                                   (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW),
+                                   (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW),
                                    ENTITY_XCENTER,
                                    MIS_TEXT, 0);
             }
@@ -5250,7 +5250,7 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
 
                 winhInsertMenuSeparator(hwndMenu,
                                         MIT_END,
-                                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                                        (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SEPARATOR));
 
                 // add the "Add widget" submenu with all the available widget classes
                 ctrpAddWidgetsMenu(somSelf,

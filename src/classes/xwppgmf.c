@@ -88,6 +88,7 @@
 #include "helpers\apps.h"               // application helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
+#include "helpers\exeh.h"               // executable helpers
 #include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\winh.h"               // PM helper routines
@@ -164,7 +165,8 @@ SOM_Scope ULONG  SOMLINK xpgf_xwpAddResourcesPage(XWPProgramFile *somSelf,
     // V0.9.9 (2001-03-30) [umoeller]: added resize
     pcnbp->pampControlFlags = G_pampGenericCnrPage;
     pcnbp->cControlFlags = G_cGenericCnrPage;
-    pcnbp->pfncbInitPage    = fsysResourcesInitPage;
+    pcnbp->pfncbInitPage    = progResourcesInitPage;
+    pcnbp->pfncbMessage     = progResourcesMessage;
     ulrc = ntbInsertPage(pcnbp);
 #endif
 
@@ -210,7 +212,7 @@ SOM_Scope ULONG  SOMLINK xpgf_xwpAddModulePage(XWPProgramFile *somSelf,
     // V0.9.9 (2001-03-30) [umoeller]: added resize
     pcnbp->pampControlFlags = G_pampGenericCnrPage;
     pcnbp->cControlFlags = G_cGenericCnrPage;
-    pcnbp->pfncbInitPage    = fsysProgram2InitPage;
+    pcnbp->pfncbInitPage    = progFile2InitPage;
     ntbInsertPage(pcnbp);
 
     pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
@@ -227,7 +229,7 @@ SOM_Scope ULONG  SOMLINK xpgf_xwpAddModulePage(XWPProgramFile *somSelf,
     // V0.9.9 (2001-03-30) [umoeller]: added resize
     pcnbp->pampControlFlags = G_pampGenericCnrPage;
     pcnbp->cControlFlags = G_cGenericCnrPage;
-    pcnbp->pfncbInitPage    = fsysProgram1InitPage;
+    pcnbp->pfncbInitPage    = progFile1InitPage;
     ntbInsertPage(pcnbp);
 
     pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
@@ -241,7 +243,7 @@ SOM_Scope ULONG  SOMLINK xpgf_xwpAddModulePage(XWPProgramFile *somSelf,
     pcnbp->ulDlgID = ID_XSD_PGMFILE_MODULE;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_MODULE;
     pcnbp->ulPageID = SP_PROG_DETAILS;
-    pcnbp->pfncbInitPage    = fsysProgramInitPage;
+    pcnbp->pfncbInitPage    = progFileInitPage;
     ulrc = ntbInsertPage(pcnbp);
 #endif
 
@@ -281,7 +283,7 @@ SOM_Scope ULONG  SOMLINK xpgf_xwpAddAssociationsPage(XWPProgramFile *somSelf,
  *      type of the program file.
  *
  *      With the PVOID pvExec parameter, you can pass in a
- *      PEXECUTABLE (from doshExecOpen) if you currently have
+ *      PEXECUTABLE (from exehOpen) if you currently have
  *      one open. This is used from XWPProgramFile::wpSetProgIcon
  *      because that method needs to open a PEXECUTABLE anyway
  *      and we'd rather avoid opening that twice.
@@ -298,7 +300,7 @@ SOM_Scope ULONG  SOMLINK xpgf_xwpAddAssociationsPage(XWPProgramFile *somSelf,
  *      called is as a result of XWPProgramFile::wpSetProgIcon,
  *      because that is in turn invoked on the first invocation
  *      of wpQueryIcon (when the folder first needs to display
- *      the icon). As a result, duplicate doshExecOpen's are only
+ *      the icon). As a result, duplicate exehOpen's are only
  *      invoked in certain pathological cases where speed isn't
  *      high priority in the first case.
  *
@@ -666,7 +668,7 @@ SOM_Scope BOOL  SOMLINK xpgf_wpRestoreData(XWPProgramFile *somSelf,
 SOM_Scope BOOL  SOMLINK xpgf_wpSetProgIcon(XWPProgramFile *somSelf,
                                            PFEA2LIST pfeal)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     HPOINTER    hptr = NULLHANDLE;
     BOOL        fNotDefaultIcon = FALSE;
     APIRET      arc;
@@ -676,11 +678,11 @@ SOM_Scope BOOL  SOMLINK xpgf_wpSetProgIcon(XWPProgramFile *somSelf,
     XWPProgramFileMethodDebug("XWPProgramFile","xpgf_wpSetProgIcon");
 
     // turbo folders enabled?
-    fRunReplacement = cmnIsFeatureEnabled(TurboFolders);
+    fRunReplacement = cmnQuerySetting(sfTurboFolders);
 
 #ifndef __NOICONREPLACEMENTS__
     if (!fRunReplacement)
-        if (cmnIsFeatureEnabled(IconReplacements))
+        if (cmnQuerySetting(sfIconReplacements))
             fRunReplacement = TRUE;
 #endif
 
@@ -728,10 +730,10 @@ SOM_Scope BOOL  SOMLINK xpgf_wpSetProgIcon(XWPProgramFile *somSelf,
             {
                 PEXECUTABLE pExec = NULL;
 
-                if (!(arc = doshExecOpen(szProgramFile, &pExec)))
+                _Pmpf((__FUNCTION__ ": %s, calling exehOpen",
+                            szProgramFile));
+                if (!(arc = exehOpen(szProgramFile, &pExec)))
                 {
-                    _Pmpf((__FUNCTION__ ": %s, calling _xwpQueryProgType",
-                                szProgramFile));
                     _xwpQueryProgType(somSelf,
                                       pExec,                // can be NULL
                                       szProgramFile);
@@ -742,19 +744,28 @@ SOM_Scope BOOL  SOMLINK xpgf_wpSetProgIcon(XWPProgramFile *somSelf,
                                  NULL,
                                  &fNotDefaultIcon);
 
-                    doshExecClose(&pExec);
+                    exehClose(&pExec);
 
-                } // end if (!(arc = doshExecOpen(szProgramFile, &pExec)))
+                } // end if (!(arc = exehOpen(szProgramFile, &pExec)))
             }
+
+            /*
+            if (!hptr)
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Couldn't find icon for %s, calling default method",
+                       szProgramFile);
+            */
         }
     }
 
     if (hptr == NULLHANDLE)
+    {
         // something went really wrong, or the features
         // are disabled:
         // call default parent method
         return (XWPProgramFile_parent_WPProgramFile_wpSetProgIcon(somSelf,
                                                                    pfeal));
+    }
 
     // else:
 
@@ -944,7 +955,7 @@ SOM_Scope BOOL  SOMLINK xpgf_wpSetProgDetails(XWPProgramFile *somSelf,
 SOM_Scope ULONG  SOMLINK xpgf_wpAddProgramAssociationPage(XWPProgramFile *somSelf,
                                                           HWND hwndNotebook)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     ULONG ulType = _xwpQueryProgType(somSelf, NULL, NULL);
 
     // XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
@@ -960,7 +971,7 @@ SOM_Scope ULONG  SOMLINK xpgf_wpAddProgramAssociationPage(XWPProgramFile *somSel
     }
 
 #ifndef __NEVEREXTASSOCS__
-    if (cmnIsFeatureEnabled(ExtAssocs))
+    if (cmnQuerySetting(sfExtAssocs))
         return (_xwpAddAssociationsPage(somSelf, hwndNotebook));
 #endif
 
@@ -1022,7 +1033,7 @@ SOM_Scope ULONG  SOMLINK xpgf_wpAddProgramPage(XWPProgramFile *somSelf,
 SOM_Scope ULONG  SOMLINK xpgf_wpAddProgramSessionPage(XWPProgramFile *somSelf,
                                                       HWND hwndNotebook)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     ULONG ulType = _xwpQueryProgType(somSelf, NULL, NULL);
 
     // XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
@@ -1032,7 +1043,7 @@ SOM_Scope ULONG  SOMLINK xpgf_wpAddProgramSessionPage(XWPProgramFile *somSelf,
 #ifndef __NOMODULEPAGES__
     if (!_somIsA(somSelf, _WPCommandFile))
     {
-        if (cmnIsFeatureEnabled(ReplaceFilePage))
+        if (cmnQuerySetting(sfReplaceFilePage))
         {
             _xwpAddResourcesPage(somSelf, hwndNotebook);
 
@@ -1136,14 +1147,14 @@ SOM_Scope void  SOMLINK xpgfM_wpclsInitData(M_XWPProgramFile *somSelf)
 
 SOM_Scope PSZ  SOMLINK xpgfM_wpclsQueryInstanceFilter(M_XWPProgramFile *somSelf)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* M_XWPProgramFileData *somThis = M_XWPProgramFileGetData(somSelf); */
     M_XWPProgramFileMethodDebug("M_XWPProgramFile","xpgfM_wpclsQueryInstanceFilter");
 
     if (somSelf == _XWPProgramFile)
     {
 #ifndef __NOICONREPLACEMENTS__
-        if (cmnIsFeatureEnabled(IconReplacements))
+        if (cmnQuerySetting(sfIconReplacements))
             return ((PSZ)G_pcszInstanceFilter);
 #endif
 

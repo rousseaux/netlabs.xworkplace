@@ -284,7 +284,7 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanGeneralPage(XWPTrashCan *somSelf,
     pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
 
 #ifndef __ALWAYSREPLACEICONPAGE__
-    if (    (cmnIsFeatureEnabled(ReplaceIconPage))
+    if (    (cmnQuerySetting(sfReplaceIconPage))
             // check if this is a folder;
             // if so, XFolder will insert the page
             // because otherwise this would be between
@@ -670,7 +670,7 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpUpdateStatusBar(XWPTrashCan *somSelf,
 
 SOM_Scope void  SOMLINK xtrc_wpInitData(XWPTrashCan *somSelf)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpInitData");
 
@@ -692,7 +692,7 @@ SOM_Scope void  SOMLINK xtrc_wpInitData(XWPTrashCan *somSelf)
     _hptrFull = NULLHANDLE;
 
 #ifndef __NOICONREPLACEMENTS__
-    if (cmnIsFeatureEnabled(IconReplacements))
+    if (cmnQuerySetting(sfIconReplacements))
     {
         // attempt to load user-defined replacement icon
         // from ICONS.DLL
@@ -953,25 +953,26 @@ SOM_Scope BOOL  SOMLINK xtrc_wpModifyPopupMenu(XWPTrashCan *somSelf,
          && (_ulTrashObjectCount)
        )
     {
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         CHAR        szEmptyItem[200];
         ULONG       ulAttr = 0;
+        ULONG       ulOfs = cmnQuerySetting(sulVarMenuOffset);
 
         if (_xwpTrashCanBusy(somSelf, 0))
             // currently populating:
             ulAttr = MIA_DISABLED;
 
         winhInsertMenuSeparator(hwndMenu, MIT_END,
-                                (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                                (ulOfs + ID_XFMI_OFS_SEPARATOR));
 
         // "empty trash can"
         strcpy(szEmptyItem, cmnGetString(ID_XTSI_TRASHEMPTY)) ; // pszTrashEmpty
-        if (pGlobalSettings->ulTrashConfirmEmpty & TRSHCONF_EMPTYTRASH)
+        if (cmnQuerySetting(sflTrashConfirmEmpty) & TRSHCONF_EMPTYTRASH)
             // confirm empty on:
             strcat(szEmptyItem, "...");
         winhInsertMenuItem(hwndMenu, MIT_END,
-                           (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHEMPTY),
+                           (ulOfs + ID_XFMI_OFS_TRASHEMPTY),
                            szEmptyItem,
                            MIS_TEXT,
                            ulAttr);
@@ -998,8 +999,8 @@ SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemSelected(XWPTrashCan *somSelf,
                                                 ULONG ulMenuId)
 {
     BOOL                brc = TRUE;
-    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
-    ULONG               ulMenuId2 = ulMenuId - pGlobalSettings->VarMenuOffset;
+    // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+    ULONG               ulMenuId2 = ulMenuId - cmnQuerySetting(sulVarMenuOffset);
 
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpMenuItemSelected");
@@ -1010,7 +1011,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemSelected(XWPTrashCan *somSelf,
         _xwpEmptyTrashCan(somSelf,
                           WinQueryAnchorBlock(hwndFrame), // synchronously
                           NULL,
-                          (pGlobalSettings->ulTrashConfirmEmpty & TRSHCONF_EMPTYTRASH)
+                          (cmnQuerySetting(sflTrashConfirmEmpty) & TRSHCONF_EMPTYTRASH)
                                 // confirmations:
                                 ? hwndFrame
                                 : NULLHANDLE
@@ -1042,11 +1043,11 @@ SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemSelected(XWPTrashCan *somSelf,
 SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemHelpSelected(XWPTrashCan *somSelf,
                                                     ULONG MenuId)
 {
-    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpMenuItemHelpSelected");
 
-    if (MenuId - pGlobalSettings->VarMenuOffset == ID_XFMI_OFS_TRASHEMPTY)
+    if (MenuId - cmnQuerySetting(sulVarMenuOffset) == ID_XFMI_OFS_TRASHEMPTY)
     {
         // now open the help panel we've set above
         cmnDisplayHelp(somSelf,
@@ -1471,11 +1472,11 @@ SOM_Scope ULONG  SOMLINK xtrc_wpAddObjectGeneralPage(XWPTrashCan *somSelf,
 SOM_Scope ULONG  SOMLINK xtrc_wpAddObjectGeneralPage2(XWPTrashCan *somSelf,
                                                       HWND hwndNotebook)
 {
-    PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpAddObjectGeneralPage2");
 
-    /* if (pGlobalSettings->AddObjectPage)
+    /* if (cmnQuerySetting(sAddObjectPage))
         _xwpAddObjectInternalsPage(somSelf, hwndNotebook); */
             // @@todo
 

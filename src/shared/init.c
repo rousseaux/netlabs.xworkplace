@@ -129,6 +129,8 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
 VOID krnMemoryError(const char *pcszMsg);
 #endif
 
+VOID cmnLoadGlobalSettings(VOID);
+
 /* ******************************************************************
  *
  *   Global variables
@@ -501,7 +503,7 @@ VOID ShowPanicDlg(VOID)
         // shift pressed: show "panic" dialog
         ULONG   ulrc = 0;
         APIRET  arc;
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         HWND hwndPanic;
 
         fRepeat = FALSE;
@@ -525,22 +527,22 @@ VOID ShowPanicDlg(VOID)
 #ifndef __NOBOOTLOGO__
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_SKIPBOOTLOGO,
 
-                              cmnIsFeatureEnabled(BootLogo));
+                              cmnQuerySetting(sfBootLogo));
 #endif
 #ifndef __ALWAYSREPLACEARCHIVING__
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_NOARCHIVING,
-                              cmnIsFeatureEnabled(ReplaceArchiving));
+                              cmnQuerySetting(sfReplaceArchiving));
 #endif
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEREPLREFRESH,
                               krnReplaceRefreshEnabled());
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLETURBOFOLDERS,
-                              pGlobalSettings->__fTurboFolders);
+                              cmnQuerySetting(sfTurboFolders));
 #ifndef __NOICONREPLACEMENTS__
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS,
-                              cmnIsFeatureEnabled(IconReplacements));
+                              cmnQuerySetting(sfIconReplacements));
 #endif
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEPAGEMAGE,
-                              pGlobalSettings->fEnablePageMage);
+                              cmnQuerySetting(sfEnablePageMage));
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA,
                               (xmmQueryStatus() == MMSTAT_WORKING));
 
@@ -550,9 +552,6 @@ VOID ShowPanicDlg(VOID)
             {
                 case ID_XFDI_PANIC_CONTINUE:        // continue
                 {
-                    GLOBALSETTINGS *pGlobalSettings2 = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-                    BOOL fStore = FALSE;
-
 #ifndef __NOBOOTLOGO__
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPBOOTLOGO))
                         G_KernelGlobals.ulPanicFlags |= SUF_SKIPBOOTLOGO;
@@ -573,41 +572,29 @@ VOID ShowPanicDlg(VOID)
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEREPLREFRESH))
                         krnEnableReplaceRefresh(FALSE);
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLETURBOFOLDERS))
-                    {
-                        pGlobalSettings2->__fTurboFolders = FALSE;
-                        fStore = TRUE;
-                    }
+                        cmnSetSetting(sfTurboFolders, FALSE);
 
 #ifndef __NOICONREPLACEMENTS__
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS))
-                    {
-                        pGlobalSettings2->__fIconReplacements = FALSE;
-                        fStore = TRUE;
-                    }
+                        cmnSetSetting(sfIconReplacements, FALSE);
 #endif
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEPAGEMAGE))
-                    {
-                        pGlobalSettings2->fEnablePageMage = FALSE;  // @@todo
-                        fStore = TRUE;
-                    }
+                        cmnSetSetting(sfEnablePageMage, FALSE);  // @@todo
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA))
                     {
                         xmmDisable();
                     }
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEFEATURES))
-                    {
-                        cmnLoadGlobalSettings(TRUE);        // reset defaults
-                        fStore = TRUE;
-                    }
+                        cmnSetDefaultSettings(0);       // reset all!
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_REMOVEHOTKEYS))
                         PrfWriteProfileData(HINI_USER,
                                             INIAPP_XWPHOOK,
                                             INIKEY_HOOK_HOTKEYS,
                                             0, 0);      // delete INI key
 
-                    cmnUnlockGlobalSettings();
-                    if (fStore)
-                        cmnStoreGlobalSettings();
+                    // cmnUnlockGlobalSettings();
+                    /* if (fStore)
+                        cmnStoreGlobalSettings(); */
                 }
                 break;
 
@@ -722,8 +709,7 @@ VOID ShowStartupDlgs(VOID)
                                 INIAPP_XWORKPLACE);
                 }
 
-                // reload
-                cmnLoadGlobalSettings(FALSE);
+                cmnLoadGlobalSettings();
             }
         }
     }
@@ -737,16 +723,8 @@ VOID ShowStartupDlgs(VOID)
 
 #ifndef __ALWAYSSUBCLASS__
     if (getenv("XWP_NO_SUBCLASSING"))
-    {
         // V0.9.3 (2000-04-26) [umoeller]
-        GLOBALSETTINGS *pGlobalSettings2 = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-        if (pGlobalSettings2)
-        {
-            pGlobalSettings2->__fNoSubclassing = TRUE;
-            cmnUnlockGlobalSettings();
-            // _Pmpf(("ShowStartupDlgs: disabled subclassing"));
-        }
-    }
+        cmnSetSetting(sfNoSubclassing, TRUE);
 #endif
 }
 
@@ -1265,9 +1243,6 @@ VOID initMain(VOID)
 
     static BOOL fInitialized = FALSE;
 
-    // force loading of the global settings
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
     HOBJECT     hobjDesktop;
     CHAR        szDesktopPath[CCHMAXPATH];
 
@@ -1277,6 +1252,9 @@ VOID initMain(VOID)
         return;
 
     fInitialized = TRUE;
+
+    // force loading of the global settings
+    cmnLoadGlobalSettings();
 
     // zero KERNELGLOBALS
     memset(&G_KernelGlobals, 0, sizeof(KERNELGLOBALS));
@@ -1294,9 +1272,9 @@ VOID initMain(VOID)
     excRegisterHooks(krnExceptOpenLogFile,
                      krnExceptExplainXFolder,
                      krnExceptError,
-                     !pGlobalSettings->fNoExcptBeeps);
+                     !cmnQuerySetting(sfNoExcptBeeps));
 
-    if (pGlobalSettings->fWriteXWPStartupLog)       // V0.9.14 (2001-08-21) [umoeller]
+    if (cmnQuerySetting(sfWriteXWPStartupLog))       // V0.9.14 (2001-08-21) [umoeller]
     {
         APIRET  arc;
         ULONG   cbFile = 0;
@@ -1390,7 +1368,7 @@ VOID initMain(VOID)
      *      V0.9.1 (99-12-19) [umoeller]
      */
 
-    if (pGlobalSettings->fNumLockStartup)
+    if (cmnQuerySetting(sfNumLockStartup))
         winhSetNumLock(TRUE);
 
     TRY_LOUD(excpt1)
@@ -1455,7 +1433,7 @@ VOID initMain(VOID)
      */
 
 #ifndef __ALWAYSREPLACEARCHIVING__
-    if (cmnIsFeatureEnabled(ReplaceArchiving))
+    if (cmnQuerySetting(sfReplaceArchiving))
 #endif
         // check whether we need a WPS backup (archives.c)
         arcCheckIfBackupNeeded(G_KernelGlobals.hwndThread1Object,

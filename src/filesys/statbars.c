@@ -781,7 +781,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
 
             if (pszFilename)
             {
-                doshLoadTextFile(pszFilename, &pszURL);
+                doshLoadTextFile(pszFilename, &pszURL, NULL);
                 if (pszURL)
                 {
                     if (strlen(pszURL) > 100)
@@ -1409,7 +1409,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
                 *pobjSelected = NULL;
     PSZ         p;
     CHAR        *p2;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     PMINIRECORDCORE prec;
 
     // get country settings from "Country" object
@@ -1471,7 +1471,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
                     pobjSelected = pobj;        // NOT dereferenced if shadow!
                 }
 
-                if (pGlobalSettings->bDereferenceShadows & STBF_DEREFSHADOWS_MULTIPLE)
+                if (cmnQuerySetting(sflDereferenceShadows) & STBF_DEREFSHADOWS_MULTIPLE)
                 {
                     // deref multiple shadows
                     if (pDeref && _somIsA(pDeref, pclsWPShadow))
@@ -1547,7 +1547,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         // different mnemonics for different WPS classes
 
         // dereference shadows (V0.9.0)
-        if (pGlobalSettings->bDereferenceShadows & STBF_DEREFSHADOWS_SINGLE)
+        if (cmnQuerySetting(sflDereferenceShadows) & STBF_DEREFSHADOWS_SINGLE)
                 // @@todo xwplite
             if (_somIsA(pobjSelected, pclsWPShadow))
                 pobjSelected = _wpQueryShadowedObject(pobjSelected, TRUE);
@@ -1944,6 +1944,13 @@ MRESULT EXPENTRY fncbWPSStatusBarClassSelected(HWND hwndCnr,
 
 #endif
 
+static XWPSETTING G_StatusBar1Backup[] =
+    {
+        sfDefaultStatusBarVisibility,
+        sflSBForViews,
+        sulSBStyle
+    };
+
 /*
  *@@ stbStatusBar1InitPage:
  *      notebook callback function (notebook.c) for the
@@ -1958,7 +1965,7 @@ MRESULT EXPENTRY fncbWPSStatusBarClassSelected(HWND hwndCnr,
 VOID stbStatusBar1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                            ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (flFlags & CBI_INIT)
     {
@@ -1968,37 +1975,53 @@ VOID stbStatusBar1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
+            /*
             pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
             memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+            */
+            pcnbp->pUser = cmnBackupSettings(G_StatusBar1Backup,
+                                             ARRAYITEMCOUNT(G_StatusBar1Backup));
         }
     }
 
     if (flFlags & CBI_SET)
     {
+        ULONG fl;
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ENABLESTATUSBAR,
-                              pGlobalSettings->fDefaultStatusBarVisibility);
+                              cmnQuerySetting(sfDefaultStatusBarVisibility));
 
+        fl = cmnQuerySetting(sflSBForViews);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBFORICONVIEWS,
-                              (pGlobalSettings->SBForViews & SBV_ICON) != 0);
+                              (fl & SBV_ICON) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBFORTREEVIEWS,
-                              (pGlobalSettings->SBForViews & SBV_TREE) != 0);
+                              (fl & SBV_TREE) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBFORDETAILSVIEWS,
-                              (pGlobalSettings->SBForViews & SBV_DETAILS) != 0);
+                              (fl & SBV_DETAILS) != 0);
 
-        if (pGlobalSettings->SBStyle == SBSTYLE_WARP3RAISED)
-            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3RAISED, TRUE);
-        else if (pGlobalSettings->SBStyle == SBSTYLE_WARP3SUNKEN)
-            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3SUNKEN, TRUE);
-        else if (pGlobalSettings->SBStyle == SBSTYLE_WARP4RECT)
-            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4RECT, TRUE);
-        else
-            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4MENU, TRUE);
+        fl = cmnQuerySetting(sulSBStyle);
+        switch (fl)
+        {
+            case SBSTYLE_WARP3RAISED:
+                winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3RAISED, TRUE);
+            break;
+
+            case SBSTYLE_WARP3SUNKEN:
+                winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3SUNKEN, TRUE);
+            break;
+
+            case SBSTYLE_WARP4RECT:
+                winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4RECT, TRUE);
+            break;
+
+            default:
+                winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4MENU, TRUE);
+        }
     }
 
     if (flFlags & CBI_ENABLE)
     {
 #ifndef __ALWAYSSUBCLASS__
-        BOOL fEnable = !cmnIsFeatureEnabled(NoSubclassing);
+        BOOL fEnable = !cmnQuerySetting(sfNoSubclassing);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ENABLESTATUSBAR, fEnable);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3RAISED, fEnable);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3SUNKEN, fEnable);
@@ -2027,73 +2050,70 @@ MRESULT stbStatusBar1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                  USHORT usNotifyCode,
                                  ULONG ulExtra)      // for checkboxes: contains new state
 {
-    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+    // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     MRESULT mrc = (MRESULT)0;
-    BOOL fSave = TRUE,
-         fShowStatusBars = FALSE,
-         fRefreshStatusBars = FALSE;
+    BOOL    fSave = TRUE,
+            fShowStatusBars = FALSE,
+            fRefreshStatusBars = FALSE;
+
+    ULONG   flStyleChanged = 0;
 
     switch (ulItemID)
     {
         case ID_XSDI_ENABLESTATUSBAR:
-            pGlobalSettings->fDefaultStatusBarVisibility = ulExtra;
+            cmnSetSetting(sfDefaultStatusBarVisibility, ulExtra);
             fShowStatusBars = TRUE;
         break;
 
         case ID_XSDI_SBFORICONVIEWS:
-            if (ulExtra)
-                pGlobalSettings->SBForViews |= SBV_ICON;
-            else
-                pGlobalSettings->SBForViews &= ~SBV_ICON;
+            flStyleChanged = SBV_ICON;
             fShowStatusBars = TRUE;
         break;
 
         case ID_XSDI_SBFORTREEVIEWS:
-            if (ulExtra)
-                pGlobalSettings->SBForViews |= SBV_TREE;
-            else
-                pGlobalSettings->SBForViews &= ~SBV_TREE;
+            flStyleChanged = SBV_TREE;
             fShowStatusBars = TRUE;
         break;
 
         case ID_XSDI_SBFORDETAILSVIEWS:
-            if (ulExtra)
-                pGlobalSettings->SBForViews |= SBV_DETAILS;
-            else
-                pGlobalSettings->SBForViews &= ~SBV_DETAILS;
+            flStyleChanged = SBV_DETAILS;
             fShowStatusBars = TRUE;
         break;
 
         case ID_XSDI_SBSTYLE_3RAISED:
-            pGlobalSettings->SBStyle = SBSTYLE_WARP3RAISED;
+            cmnSetSetting(sulSBStyle, SBSTYLE_WARP3RAISED);
             fRefreshStatusBars = TRUE;
         break;
 
         case ID_XSDI_SBSTYLE_3SUNKEN:
-            pGlobalSettings->SBStyle = SBSTYLE_WARP3SUNKEN;
+            cmnSetSetting(sulSBStyle, SBSTYLE_WARP3SUNKEN);
             fRefreshStatusBars = TRUE;
         break;
 
         case ID_XSDI_SBSTYLE_4RECT:
-            pGlobalSettings->SBStyle = SBSTYLE_WARP4RECT;
+            cmnSetSetting(sulSBStyle, SBSTYLE_WARP4RECT);
             fRefreshStatusBars = TRUE;
         break;
 
         case ID_XSDI_SBSTYLE_4MENU:
-            pGlobalSettings->SBStyle = SBSTYLE_WARP4MENU;
+            cmnSetSetting(sulSBStyle, SBSTYLE_WARP4MENU);
             fRefreshStatusBars = TRUE;
         break;
 
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
+            /*
             PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
 
             // and restore the settings for this page
-            pGlobalSettings->fDefaultStatusBarVisibility  = pGSBackup->fDefaultStatusBarVisibility;
-            pGlobalSettings->SBForViews = pGSBackup->SBForViews;
-            pGlobalSettings->SBStyle = pGSBackup->SBStyle;
+            cmnSetSetting(sfDefaultStatusBarVisibility, pGSBackup->fDefaultStatusBarVisibility);
+            cmnSetSetting(sflSBForViews, pGSBackup->SBForViews);
+            cmnSetSetting(sulSBStyle, pGSBackup->SBStyle);
+               */
 
+            cmnRestoreSettings(pcnbp->pUser,
+                               ARRAYITEMCOUNT(G_StatusBar1Backup));
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
             fRefreshStatusBars = TRUE;
@@ -2118,10 +2138,20 @@ MRESULT stbStatusBar1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             fSave = FALSE;
     }
 
-    cmnUnlockGlobalSettings();
+    if (flStyleChanged)
+    {
+        ULONG fl = cmnQuerySetting(sflSBForViews);
+        if (ulExtra)
+            fl |= flStyleChanged;
+        else
+            fl &= ~flStyleChanged;
+        cmnSetSetting(sflSBForViews, fl);
+    }
 
-    if (fSave)
-        cmnStoreGlobalSettings();
+    // cmnUnlockGlobalSettings();
+
+    /* if (fSave)
+        cmnStoreGlobalSettings(); */
 
     // have the Worker thread update the
     // status bars for all currently open
@@ -2168,6 +2198,11 @@ VOID RefreshClassObject(PSTATUSBARPAGEDATA psbpd)
     }
 }
 
+static XWPSETTING G_StatusBar2Backup[] =
+    {
+        sflDereferenceShadows
+    };
+
 /*
  *@@ stbStatusBar2InitPage:
  *      notebook callback function (notebook.c) for the
@@ -2185,7 +2220,7 @@ VOID RefreshClassObject(PSTATUSBARPAGEDATA psbpd)
 VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                                ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     PSTATUSBARPAGEDATA psbpd = (PSTATUSBARPAGEDATA)pcnbp->pUser2;
 
     if (flFlags & CBI_INIT)
@@ -2198,8 +2233,12 @@ VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
+            /*
             pcnbp->pUser = NEW(GLOBALSETTINGS);
             memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+               */
+            pcnbp->pUser = cmnBackupSettings(G_StatusBar2Backup,
+                                             ARRAYITEMCOUNT(G_StatusBar2Backup));
 
             pcnbp->pUser2
             = psbpd
@@ -2266,7 +2305,7 @@ VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         // dereference shadows
         winhSetDlgItemChecked(pcnbp->hwndDlgPage,
                               ID_XSDI_DEREFSHADOWS_SINGLE,
-                              (pGlobalSettings->bDereferenceShadows & STBF_DEREFSHADOWS_SINGLE)
+                              (cmnQuerySetting(sflDereferenceShadows) & STBF_DEREFSHADOWS_SINGLE)
                                     != 0);
 
         // multiple-objects mode
@@ -2281,7 +2320,7 @@ VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         winhSetDlgItemChecked(pcnbp->hwndDlgPage,
                               ID_XSDI_DEREFSHADOWS_MULTIPLE,
-                              (pGlobalSettings->bDereferenceShadows & STBF_DEREFSHADOWS_MULTIPLE)
+                              (cmnQuerySetting(sflDereferenceShadows) & STBF_DEREFSHADOWS_MULTIPLE)
                                     != 0);
     }
 
@@ -2558,6 +2597,8 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     CHAR        szDummy[CCHMAXMNEMONICS];
     PSTATUSBARPAGEDATA psbpd = (PSTATUSBARPAGEDATA)pcnbp->pUser2;
 
+    ULONG       flChanged = 0;
+
     switch (ulItemID)
     {
         case ID_XSDI_SBTEXTNONESEL:
@@ -2575,14 +2616,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break;
 
         case ID_XSDI_DEREFSHADOWS_SINGLE:    // added V0.9.0
-        {
-            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-            if (ulExtra)
-                pGlobalSettings->bDereferenceShadows |= STBF_DEREFSHADOWS_SINGLE;
-            else
-                pGlobalSettings->bDereferenceShadows &= ~STBF_DEREFSHADOWS_SINGLE;
-            cmnUnlockGlobalSettings();
-        }
+            flChanged = STBF_DEREFSHADOWS_SINGLE;
         break;
 
         case ID_XSDI_SBTEXTMULTISEL:
@@ -2593,14 +2627,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break;
 
         case ID_XSDI_DEREFSHADOWS_MULTIPLE:    // added V0.9.5 (2000-10-07) [umoeller]
-        {
-            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-            if (ulExtra)
-                pGlobalSettings->bDereferenceShadows |= STBF_DEREFSHADOWS_MULTIPLE;
-            else
-                pGlobalSettings->bDereferenceShadows &= ~STBF_DEREFSHADOWS_MULTIPLE;
-            cmnUnlockGlobalSettings();
-        }
+            flChanged = STBF_DEREFSHADOWS_MULTIPLE;
         break;
 
         // "Select class" on "Status Bars" page:
@@ -2678,13 +2705,16 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
-            GLOBALSETTINGS *pGSBackup = (GLOBALSETTINGS*)(pcnbp->pUser);
+            // GLOBALSETTINGS *pGSBackup = (GLOBALSETTINGS*)(pcnbp->pUser);
 
             // and restore the settings for this page
-            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-            pGlobalSettings->bDereferenceShadows = pGSBackup->bDereferenceShadows;
+            // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+            // cmnSetSetting(sflDereferenceShadows, pGSBackup->bDereferenceShadows);
                         // V0.9.14 (2001-07-31) [umoeller]
-            cmnUnlockGlobalSettings();
+            // cmnUnlockGlobalSettings();
+
+            cmnRestoreSettings(pcnbp->pUser,
+                               ARRAYITEMCOUNT(G_StatusBar2Backup));
 
             cmnSetStatusBarSetting(SBS_TEXTNONESEL,
                                    psbpd->szSBTextNoneSelBackup);
@@ -2708,14 +2738,14 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
             // Desktop startup)
-            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+            // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
 
             cmnSetStatusBarSetting(SBS_TEXTNONESEL, NULL);  // load default
             cmnSetStatusBarSetting(SBS_TEXTMULTISEL, NULL); // load default
 
-            pGlobalSettings->bDereferenceShadows = STBF_DEREFSHADOWS_SINGLE;
+            cmnSetSetting(sflDereferenceShadows, STBF_DEREFSHADOWS_SINGLE);
                         // V0.9.14 (2001-07-31) [umoeller]
-            cmnUnlockGlobalSettings();
+            // cmnUnlockGlobalSettings();
 
             if (!psbpd->pSBClassObjectSelected)
                 RefreshClassObject(psbpd);
@@ -2824,6 +2854,16 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         }
     }
 
+    if (flChanged)
+    {
+        ULONG fl = cmnQuerySetting(sflDereferenceShadows);
+        if (ulExtra)
+            fl |= flChanged;
+        else
+            fl &= ~flChanged;
+        cmnSetSetting(sflDereferenceShadows, fl);
+    }
+
     if (fSave)
     {
         if (fReadEFs)
@@ -2853,7 +2893,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             cmnSetStatusBarSetting(SBS_TEXTMULTISEL, szDummy);
         }
 
-        cmnStoreGlobalSettings();
+        // cmnStoreGlobalSettings();
 
         // have the Worker thread update the
         // status bars for all currently open

@@ -70,8 +70,12 @@
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
+
 #define INCL_WINMESSAGEMGR
+#define INCL_WINPOINTERS
 #define INCL_WINDIALOGS
+#define INCL_WINMENUS
+#define INCL_WINSTDCNR
 #define INCL_WINPROGRAMLIST     // needed for wppgm.h
 #define INCL_WINENTRYFIELDS
 #define INCL_WINERRORS
@@ -87,12 +91,16 @@
 
 // headers in /helpers
 #include "helpers\apps.h"               // application helpers
+#include "helpers\cnrh.h"               // container helper routines
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
+#include "helpers\exeh.h"               // executable helpers
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
+#include "helpers\textview.h"           // PM XTextView control
+#include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
 
@@ -105,6 +113,7 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
+#include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\icons.h"              // icons handling
@@ -527,7 +536,9 @@ ULONG progQueryProgType(PCSZ pszFullFile,
             pExec = (PEXECUTABLE)pvExec;
         else
         {
-            if (!(arc = doshExecOpen(pszFullFile, &pExec)))
+            _Pmpf((__FUNCTION__ ": %s, calling exehOpen",
+                        pszFullFile));
+            if (!(arc = exehOpen(pszFullFile, &pExec)))
                 // close this again on exit
                 fClose = TRUE;
         }
@@ -703,7 +714,7 @@ ULONG progQueryProgType(PCSZ pszFullFile,
 
     if (fClose)
         // we opened the executable: free that again
-        doshExecClose(&pExec);
+        exehClose(&pExec);
 
     return (ulAppType);
 }
@@ -750,6 +761,7 @@ APIRET progFindIcon(PEXECUTABLE pExec,
         case PROG_WIN32:
             // try icon resource
             if (!icoLoadExeIcon(pExec,
+                                0,          // first icon found
                                 phptr,
                                 NULL,
                                 NULL))
@@ -1744,9 +1756,7 @@ PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
 
 typedef struct _PROGOPENDATA
 {
-    WPObject        *pProgObject;   // in: WPProgram or WPProgramFile
-    WPFileSystem    *pArgDataFile;  // in: data file as arg or NULL
-    ULONG           ulMenuID;       // in: with data files, menu ID that was used
+    PPROGDETAILS    pProgDetails;
     HAPP            *phapp;         // out: HAPP
     ULONG           cbFailingName;
     PSZ             pszFailingName;
@@ -1760,125 +1770,34 @@ typedef struct _PROGOPENDATA
  *      guaranteed to run on thread 1.
  *
  *@@added V0.9.16 (2001-12-02) [umoeller]
+ *@@changed V0.9.16 (2002-01-04) [umoeller]: fixed bad startup dir if no arg data file was given
  */
 
 APIRET progOpenProgramThread1(PVOID pvData)
 {
     APIRET          arc = NO_ERROR;
     PSZ             pszParams = NULL;
-    PPROGDETAILS    pProgDetails = NULL;
 
     PPROGOPENDATA   pData = (PPROGOPENDATA)pvData;
 
     TRY_LOUD(excpt1)
     {
-        // get the params back
-        WPObject *pProgObject = pData->pProgObject;
-        WPFileSystem *pArgDataFile = pData->pArgDataFile;
-        ULONG ulMenuID = pData->ulMenuID;
-        HAPP *phapp = pData->phapp;
+        PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
-        // get program data
-        // (progQueryDetails checks for whether this is a valid object)
-        if (!(pProgDetails = progQueryDetails(pProgObject)))
-            arc = ERROR_NOT_ENOUGH_MEMORY;
-        else
-        {
-            // OK, now we got the program object data....
-            /*
-            typedef struct _PROGDETAILS {
-              ULONG        Length;          //  Length of structure.
-              PROGTYPE     progt;           //  Program type.
-              PSZ          pszTitle;        //  Title.
-              PSZ          pszExecutable;   //  Executable file name (program name).
-              PSZ          pszParameters;   //  Parameter string.
-              PSZ          pszStartupDir;   //  Start-up directory.
-              PSZ          pszIcon;         //  Icon-file name.
-              PSZ          pszEnvironment;  //  Environment string.
-              SWP          swpInitial;      //  Initial window position and size.
-            } PROGDETAILS; */
-
-            _Pmpf(("exec: \"%s\"", (pProgDetails->pszExecutable) ? pProgDetails->pszExecutable : "NULL"));
-            _Pmpf(("params: \"%s\"", (pProgDetails->pszParameters) ? pProgDetails->pszParameters : "NULL"));
-            _Pmpf(("startup: \"%s\"", (pProgDetails->pszStartupDir) ? pProgDetails->pszStartupDir : "NULL"));
-
-            // fix parameters (placeholders etc.)
-            if (!(progSetupArgs(pProgDetails->pszParameters,
-                                pArgDataFile,
-                                &pszParams)))
-                arc = ERROR_INTERRUPT;
-            else
-            {
-                PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-
-                PSZ     pszStartupDir = pProgDetails->pszStartupDir;
-                CHAR    szDatafileDir[CCHMAXPATH] = "";
-
-                // if startup dir is empty, but data file is given,
-                // use data file's folder as startup dir...
-                if ((!pszStartupDir) || (*pszStartupDir == 0))
-                    if (pArgDataFile)
-                    {
-                        // V0.9.7 (2000-12-10) [umoeller]: better to query folder's dir
-                        WPFolder *pFilesFolder;
-                        if (    (pFilesFolder = _wpQueryFolder(pArgDataFile))
-                             && (_wpQueryFilename(pFilesFolder, szDatafileDir, TRUE))
-                           )
-                        {
-                            // bullshit, this returns "K:" only for root
-                            // folders, so check!!
-                            // @@todo fix this everywhere V0.9.16 (2001-10-19) [umoeller]
-                            if (strlen(szDatafileDir) < 3)
-                                strcpy(szDatafileDir + 1, ":\\");
-                            pszStartupDir = szDatafileDir;
-                        }
-                    }
-
-                // set the new params and startup dir
-                pProgDetails->pszParameters = pszParams;
-                pProgDetails->pszStartupDir = pszStartupDir;
-
-                // build the new environment V0.9.7 (2000-12-17) [umoeller]
-                pProgDetails->pszEnvironment
-                    = progSetupEnv(pProgObject,
-                                   pProgDetails->pszEnvironment,
-                                   pArgDataFile);
-
-                // start the app (more hacks in appStartApp,
-                // which calls WinStartApp in turn)
-                if (!(arc = appStartApp(pKernelGlobals->hwndThread1Object, // notify window: t1 obj wnd
-                                        pProgDetails,
-                                        0,              // APP_RUN_* flags V0.9.14
-                                        phapp,
-                                        pData->cbFailingName,
-                                        pData->pszFailingName)))
-                            // V0.9.16 (2001-12-02) [umoeller]
-                {
-                    // app started OK:
-                    // set in-use emphasis on either
-                    // the data file or the program object
-                    progStoreRunningApp(pProgObject,
-                                        pArgDataFile,
-                                        *phapp,
-                                        ulMenuID);
-                }
-            } // end if progSetupArgs
-        }
+        // start the app (more hacks in appStartApp,
+        // which calls WinStartApp in turn)
+        arc = appStartApp(pKernelGlobals->hwndThread1Object, // notify window: t1 obj wnd
+                          pData->pProgDetails,
+                          0,              // APP_RUN_* flags V0.9.14
+                          pData->phapp,
+                          pData->cbFailingName,
+                          pData->pszFailingName);
+                    // V0.9.16 (2001-12-02) [umoeller]
     }
     CATCH(excpt1)
     {
         arc = ERROR_PROTECTION_VIOLATION;
     } END_CATCH();
-
-    if (pszParams)
-        free(pszParams);
-
-    if (pProgDetails)
-    {
-        if (pProgDetails->pszEnvironment)
-            free(pProgDetails->pszEnvironment);
-        free(pProgDetails);
-    }
 
     // handle notify window that progOpenProgram
     // is waiting on
@@ -1971,65 +1890,1290 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
                        PSZ pszFailingName)
 {
     APIRET          arc = FOPSERR_NOT_HANDLED_ABORT;
-    PROGOPENDATA    Data;
-    PCKERNELGLOBALS pKernelGlobals;
+    PPROGDETAILS    pProgDetails = NULL;
+    PSZ             pszParams = NULL;
+    PSZ             pszNewEnvironment = NULL;
 
-    Data.pProgObject = pProgObject;
-    Data.pArgDataFile = pArgDataFile;
-    Data.ulMenuID = ulMenuID;
-    Data.phapp = phapp;
-    Data.hwndNotify = NULLHANDLE;
-    Data.cbFailingName = cbFailingName;
-    Data.pszFailingName = pszFailingName;
-
-    _Pmpf((__FUNCTION__ ": entering"));
-
-    if (doshMyTID() == 1)
-        // if we're running on thread 1, we don't need
-        // the below overhead
-        arc = progOpenProgramThread1(&Data);
-    else
+    TRY_LOUD(excpt1)
     {
-        // not thread 1:
-        // create notify window for progOpenProgramThread1;
-        // using WinSendMsg hangs the system (for god's sake)
-        if (    (Data.hwndNotify = winhCreateObjectWindow(WC_STATIC, NULL))
-             && (pKernelGlobals = krnQueryGlobals())
-             && (WinPostMsg(pKernelGlobals->hwndThread1Object,
-                            T1M_PROGOPENPROGRAM,
-                            (MPARAM)&Data,
-                            0))
-           )
+        // get program data
+        // (progQueryDetails checks for whether this is a valid object)
+        if (!(pProgDetails = progQueryDetails(pProgObject)))
+            arc = ERROR_NOT_ENOUGH_MEMORY;
+        else if (    (!pProgDetails->pszExecutable)
+                  || (!pProgDetails->pszExecutable[0])
+                )
+            arc = ERROR_INVALID_PARAMETER;
+        else
         {
-            // alright, all this succeeded:
-            // wait for thread-1 to finish all this
-            HAB hab = WinQueryAnchorBlock(Data.hwndNotify);
-            QMSG qmsg;
-            BOOL fQuit = FALSE;
-            while (WinGetMsg(hab,
-                             &qmsg, 0, 0, 0))
+            // OK, now we got the program object data....
+            /*
+            typedef struct _PROGDETAILS {
+              ULONG        Length;          //  Length of structure.
+              PROGTYPE     progt;           //  Program type.
+              PSZ          pszTitle;        //  Title.
+              PSZ          pszExecutable;   //  Executable file name (program name).
+              PSZ          pszParameters;   //  Parameter string.
+              PSZ          pszStartupDir;   //  Start-up directory.
+              PSZ          pszIcon;         //  Icon-file name.
+              PSZ          pszEnvironment;  //  Environment string.
+              SWP          swpInitial;      //  Initial window position and size.
+            } PROGDETAILS; */
+
+            // fix parameters (placeholders etc.)
+            if (!(progSetupArgs(pProgDetails->pszParameters,
+                                pArgDataFile,
+                                &pszParams)))
+                arc = ERROR_INTERRUPT;
+            else
             {
-                // current message for our object window?
-                if (    (qmsg.hwnd == Data.hwndNotify)
-                     && (qmsg.msg == WM_USER)
+                PROGOPENDATA Data;
+                CHAR    szNewStartupDir[CCHMAXPATH] = "";
+
+                // if startup dir is empty, set a default startup dir:
+                if (    (!pProgDetails->pszStartupDir)
+                     || (pProgDetails->pszStartupDir[0] == '\0')
                    )
                 {
-                    fQuit = TRUE;
-                    arc = (ULONG)qmsg.mp1;
+                    ULONG cb;
+                    // no startup dir:
+                    // if we have a data file argument, use its directory
+                    if (pArgDataFile)
+                    {
+                        WPFolder *pStartupFolder;
+                        if (pStartupFolder = _wpQueryFolder(pArgDataFile))
+                            _wpQueryFilename(pStartupFolder, szNewStartupDir, TRUE);
+                    }
+                    else
+                    {
+                        // no data file: use executable's directory
+                        // V0.9.16 (2002-01-04) [umoeller]
+                        PSZ p;
+                        if (p = strrchr(pProgDetails->pszExecutable + 2, '\\'))
+                        {
+                            cb = _min(p - pProgDetails->pszExecutable,
+                                      CCHMAXPATH - 1);
+                            memcpy(szNewStartupDir,
+                                   pProgDetails->pszExecutable,
+                                   cb);
+                            szNewStartupDir[cb] = '\0';
+                        }
+                    }
+
+                    // this returns "K:" only for root folders, so check!!
+                    if (    (cb = strlen(szNewStartupDir))
+                         && (cb < 3)
+                       )
+                        strcpy(szNewStartupDir + 1, ":\\");
+                    pProgDetails->pszStartupDir = szNewStartupDir;
                 }
 
-                WinDispatchMsg(hab, &qmsg);
-                if (fQuit)
-                    break;
-            }
+                // set the new params and startup dir
+                pProgDetails->pszParameters = pszParams;
 
-            WinDestroyWindow(Data.hwndNotify);
+                // build the new environment V0.9.7 (2000-12-17) [umoeller]
+                pszNewEnvironment
+                    = progSetupEnv(pProgObject,
+                                   pProgDetails->pszEnvironment,
+                                   pArgDataFile);
+                pProgDetails->pszEnvironment = pszNewEnvironment;
+
+                _Pmpf((__FUNCTION__ ": hacked exec: \"%s\"", (pProgDetails->pszExecutable) ? pProgDetails->pszExecutable : "NULL"));
+                _Pmpf(("  hacked params: \"%s\"", (pProgDetails->pszParameters) ? pProgDetails->pszParameters : "NULL"));
+                _Pmpf(("  hacked startup: \"%s\"", (pProgDetails->pszStartupDir) ? pProgDetails->pszStartupDir : "NULL"));
+
+                Data.pProgDetails = pProgDetails;
+                Data.phapp = phapp;
+                Data.cbFailingName = cbFailingName;
+                Data.pszFailingName = pszFailingName;
+                Data.hwndNotify = NULLHANDLE;
+
+                if (doshMyTID() == 1)
+                {
+                    // if we're running on thread 1, we don't need
+                    // the below overhead
+                    _Pmpf((__FUNCTION__ ": calling progOpenProgramThread1 directly"));
+                    arc = progOpenProgramThread1(&Data);
+                }
+                else
+                {
+                    HAB hab;
+                    PCKERNELGLOBALS pKernelGlobals;
+
+                    _Pmpf((__FUNCTION__ ": entering msg loop"));
+
+                    // not thread 1:
+                    // create notify window for progOpenProgramThread1;
+                    // using WinSendMsg hangs the system (for god's sake)
+                    if (    (Data.hwndNotify = winhCreateObjectWindow(WC_STATIC, NULL))
+                         && (hab = WinQueryAnchorBlock(Data.hwndNotify))
+                         && (pKernelGlobals = krnQueryGlobals())
+                         && (WinPostMsg(pKernelGlobals->hwndThread1Object,
+                                        T1M_PROGOPENPROGRAM,
+                                        (MPARAM)&Data,
+                                        0))
+                       )
+                    {
+                        // alright, all this succeeded:
+                        // wait for thread-1 to finish all this
+                        QMSG qmsg;
+                        BOOL fQuit = FALSE;
+                        while (WinGetMsg(hab,
+                                         &qmsg, 0, 0, 0))
+                        {
+                            // current message for our object window?
+                            if (    (qmsg.hwnd == Data.hwndNotify)
+                                 && (qmsg.msg == WM_USER)
+                               )
+                            {
+                                _Pmpf((__FUNCTION__ ": got WM_USER"));
+                                fQuit = TRUE;
+                                arc = (ULONG)qmsg.mp1;
+                            }
+
+                            WinDispatchMsg(hab, &qmsg);
+                            if (fQuit)
+                                break;
+                        }
+
+                        WinDestroyWindow(Data.hwndNotify);
+                    }
+
+                    _Pmpf((__FUNCTION__ ": left message loop"));
+                }
+
+                if (!arc)
+                    // app started OK:
+                    // set in-use emphasis on either
+                    // the data file or the program object
+                    progStoreRunningApp(pProgObject,
+                                        pArgDataFile,
+                                        *phapp,
+                                        ulMenuID);
+            }
         }
     }
+    CATCH(excpt1)
+    {
+        arc = ERROR_PROTECTION_VIOLATION;
+    } END_CATCH();
+
+    if (pszParams)
+        free(pszParams);
+    if (pszNewEnvironment)
+        free(pszNewEnvironment);
+    if (pProgDetails)
+        free(pProgDetails);
 
     _Pmpf((__FUNCTION__ ": leaving, rc = %d", arc));
 
     return (arc);
-
 }
+
+
+/* ******************************************************************
+ *
+ *   XWPProgramFile notebook callbacks (notebook.c)
+ *
+ ********************************************************************/
+
+#ifndef __NOMODULEPAGES__
+
+/*
+ *@@ progFileInitPage:
+ *      "Program" page notebook callback function (notebook.c).
+ *      Sets the controls on the page according to the disk's
+ *      characteristics.
+ *
+ *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.12 (2001-05-19) [umoeller]: now using textview control for description, added extended info
+ *@@changed V0.9.16 (2001-12-08) [umoeller]: fixed crash for OS code
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: moved this here from fsys.c, renamed from fsysProgramInitPage
+ */
+
+VOID progFileInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+                      ULONG flFlags)                // CBI_* flags (notebook.h)
+{
+    // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
+    if (flFlags & CBI_INIT)
+    {
+        // replace the static "description" control
+        // with a text view control
+        HWND hwndNew;
+        txvRegisterTextView(WinQueryAnchorBlock(pcnbp->hwndDlgPage));
+        hwndNew = txvReplaceWithTextView(pcnbp->hwndDlgPage,
+                                         ID_XSDI_PROG_DESCRIPTION,
+                                         WS_VISIBLE | WS_TABSTOP,
+                                         XTXF_VSCROLL | XTXF_AUTOVHIDE
+                                            | XTXF_HSCROLL | XTXF_AUTOHHIDE,
+                                         2);
+        winhSetWindowFont(hwndNew, cmnQueryDefaultFont());
+    }
+
+    if (flFlags & CBI_SET)
+    {
+        CHAR            szFilename[CCHMAXPATH] = "";
+
+        // ULONG           cbProgDetails = 0;
+        // PPROGDETAILS    pProgDetails;
+
+        if (_wpQueryFilename(pcnbp->somSelf, szFilename, TRUE))
+        {
+            PEXECUTABLE     pExec = NULL;
+            HWND            hwndTextView = WinWindowFromID(pcnbp->hwndDlgPage,
+                                                           ID_XSDI_PROG_DESCRIPTION);
+
+            WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_PROG_FILENAME,
+                              szFilename);
+            WinSetWindowText(hwndTextView, "\n");
+
+            if (!(exehOpen(szFilename, &pExec)))
+            {
+                PSZ     pszExeFormat = NULL,
+                        pszOS = NULL;
+                CHAR    szOS[400] = "";
+
+                switch (pExec->ulExeFormat)
+                {
+                    case EXEFORMAT_OLDDOS:
+                        pszExeFormat = "DOS 3.x";
+                    break;
+
+                    case EXEFORMAT_NE:
+                        pszExeFormat = "New Executable (NE)";
+                    break;
+
+                    case EXEFORMAT_PE:
+                        pszExeFormat = "Portable Executable (PE)";
+                    break;
+
+                    case EXEFORMAT_LX:
+                        pszExeFormat = "Linear Executable (LX)";
+                    break;
+                }
+
+                if (pszExeFormat)
+                    WinSetDlgItemText(pcnbp->hwndDlgPage,
+                                      ID_XSDI_PROG_EXEFORMAT,
+                                      pszExeFormat);
+
+                switch (pExec->ulOS)
+                {
+                    case EXEOS_DOS3:
+                        pszOS = "DOS 3.x";
+                    break;
+
+                    case EXEOS_DOS4:
+                        pszOS = "DOS 4.x";
+                    break;
+
+                    case EXEOS_OS2:
+                        pszOS = "OS/2";
+                    break;
+
+                    case EXEOS_WIN16:
+                        pszOS = "Win16";
+                    break;
+
+                    case EXEOS_WIN386:
+                        pszOS = "Win386";
+                    break;
+
+                    case EXEOS_WIN32:
+                        pszOS = "Win32";
+                    break;
+                }
+
+                // fixed crash here V0.9.16 (2001-12-08) [umoeller]
+                if (pszOS)
+                    strcpy(szOS, pszOS);
+                else
+                    sprintf(szOS, "unknown OS code %d", pExec->ulOS);
+
+                if (pExec->f32Bits)
+                    strcat(szOS, " (32-bit)");
+                else
+                    strcat(szOS, " (16-bit)");
+
+                WinSetDlgItemText(pcnbp->hwndDlgPage,
+                                  ID_XSDI_PROG_TARGETOS,
+                                  szOS);
+
+                // now get buildlevel info
+                if (exehQueryBldLevel(pExec) == NO_ERROR)
+                {
+                    XSTRING str;
+                    xstrInit(&str, 100);
+
+                    if (pExec->pszVendor)
+                    {
+                        // has BLDLEVEL info:
+                        xstrcpy(&str, "Vendor: ", 0);
+                        xstrcat(&str, pExec->pszVendor, 0);
+                        xstrcat(&str, "\nVersion: ", 0);
+                        xstrcat(&str, pExec->pszVersion, 0);
+                        if (pExec->pszRevision)
+                        {
+                            xstrcat(&str, "\nRevision: ", 0);
+                            xstrcat(&str, pExec->pszRevision, 0);
+                        }
+                        xstrcat(&str, "\nDescription: ", 0);
+                        xstrcat(&str, pExec->pszInfo, 0);
+                        if (pExec->pszBuildDateTime)
+                        {
+                            xstrcat(&str, "\nBuild date/time: ", 0);
+                            xstrcat(&str, pExec->pszBuildDateTime, 0);
+                        }
+                        if (pExec->pszBuildMachine)
+                        {
+                            xstrcat(&str, "\nBuild machine: ", 0);
+                            xstrcat(&str, pExec->pszBuildMachine, 0);
+                        }
+                        if (pExec->pszASD)
+                        {
+                            xstrcat(&str, "\nASD Feature ID: ", 0);
+                            xstrcat(&str, pExec->pszASD, 0);
+                        }
+                        if (pExec->pszLanguage)
+                        {
+                            xstrcat(&str, "\nLanguage: ", 0);
+                            xstrcat(&str, pExec->pszLanguage, 0);
+                        }
+                        if (pExec->pszCountry)
+                        {
+                            xstrcat(&str, "\nCountry: ", 0);
+                            xstrcat(&str, pExec->pszCountry, 0);
+                        }
+                        if (pExec->pszFixpak)
+                        {
+                            xstrcat(&str, "\nFixpak: ", 0);
+                            xstrcat(&str, pExec->pszFixpak, 0);
+                        }
+                    }
+                    else
+                    {
+                        // no BLDLEVEL info:
+                        xstrcpy(&str, pExec->pszDescription, 0);
+                    }
+
+                    xstrcatc(&str, '\n');
+                    WinSetWindowText(hwndTextView, str.psz);
+                    xstrClear(&str);
+                }
+
+                exehClose(&pExec);
+            }
+        } // end if (_wpQueryFilename...
+
+        // V0.9.12 (2001-05-19) [umoeller]
+        // gee, what was this code doing in here?!?
+        /* if ((_wpQueryProgDetails(pcnbp->somSelf, (PPROGDETAILS)NULL, &cbProgDetails)))
+            if ((pProgDetails = (PPROGDETAILS)_wpAllocMem(pcnbp->somSelf,
+                                                          cbProgDetails,
+                                                          NULL))
+                    != NULL)
+            {
+                _wpQueryProgDetails(pcnbp->somSelf, pProgDetails, &cbProgDetails);
+
+                if (pProgDetails->pszParameters)
+                    WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_PROG_PARAMETERS,
+                                      pProgDetails->pszParameters);
+                if (pProgDetails->pszStartupDir)
+                    WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_PROG_WORKINGDIR,
+                                      pProgDetails->pszStartupDir);
+
+                _wpFreeMem(pcnbp->somSelf, (PBYTE)pProgDetails);
+            }
+        */
+    }
+}
+
+/*
+ *@@ IMPORTEDMODULERECORD:
+ *
+ *@@added V0.9.9 (2001-03-11) [lafaix]
+ *@@changed V0.9.9 (2001-04-02) [umoeller]: made PSZ's const
+ */
+
+typedef struct _IMPORTEDMODULERECORD
+{
+    RECORDCORE  recc;
+
+    const char  *pcszModuleName;
+} IMPORTEDMODULERECORD, *PIMPORTEDMODULERECORD;
+
+/*
+ *@@ fntInsertModules:
+ *      transient thread started by progFile1InitPage
+ *      to insert modules into the "Imported modules" container.
+ *
+ *      This thread is created with a msg queue.
+ *
+ *@@added V0.9.9 (2001-03-26) [lafaix]
+ *@@changed V0.9.9 (2001-03-30) [umoeller]: replaced dialog resource with generic cnr page
+ *@@changed V0.9.9 (2001-03-30) [umoeller]: sped up display
+ */
+
+void _Optlink fntInsertModules(PTHREADINFO pti)
+{
+    PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(pti->ulData);
+
+    TRY_LOUD(excpt1)
+    {
+        ULONG         cModules = 0,
+                      ul;
+        PFSYSMODULE   paModules = NULL;
+        CHAR          szFilename[CCHMAXPATH] = "";
+
+        pcnbp->fShowWaitPointer = TRUE;
+
+        if (_wpQueryFilename(pcnbp->somSelf, szFilename, TRUE))
+        {
+            PEXECUTABLE     pExec = NULL;
+
+            if (!(exehOpen(szFilename, &pExec)))
+            {
+                if (    (!exehQueryImportedModules(pExec,
+                                                       &paModules,
+                                                       &cModules))
+                     && (paModules)
+                   )
+                {
+                    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+
+                    // V0.9.9 (2001-03-30) [umoeller]
+                    // changed all this to allocate all records at once...
+                    // this is way faster, because
+                    // 1) inserting records into a details view always causes
+                    //    a full container repaint (dumb cnr control)
+                    // 2) each insert record causes a cross-thread WinSendMsg,
+                    //    which is pretty slow
+
+                    PIMPORTEDMODULERECORD preccFirst
+                        = (PIMPORTEDMODULERECORD)cnrhAllocRecords(hwndCnr,
+                                                                  sizeof(IMPORTEDMODULERECORD),
+                                                                  cModules);
+                                // the container gives us a linked list of
+                                // records here, whose head we store in preccFirst
+
+                    if (preccFirst)
+                    {
+                        // start with first record and follow the linked list
+                        PIMPORTEDMODULERECORD preccThis = preccFirst;
+                        ULONG cRecords = 0;
+
+                        for (ul = 0;
+                             ul < cModules;
+                             ul++)
+                        {
+                            if (preccThis)
+                            {
+                                preccThis->pcszModuleName = paModules[ul].achModuleName;
+                                preccThis = (PIMPORTEDMODULERECORD)preccThis->recc.preccNextRecord;
+                                cRecords++;
+                            }
+                            else
+                                break;
+                        }
+
+                        cnrhInsertRecords(hwndCnr,
+                                          NULL,
+                                          (PRECORDCORE)preccFirst,
+                                          TRUE, // invalidate
+                                          NULL,
+                                          CRA_RECORDREADONLY,
+                                          cRecords);
+                    }
+                }
+
+                // store resources
+                if (pcnbp->pUser)
+                    exehFreeImportedModules(pcnbp->pUser);
+                pcnbp->pUser = paModules;
+
+                exehClose(&pExec);
+            }
+        }
+    }
+    CATCH(excpt1) {}  END_CATCH();
+
+    pcnbp->fShowWaitPointer = FALSE;
+}
+
+/*
+ *@@ progFile1InitPage:
+ *      "Imported modules" page notebook callback function (notebook.c).
+ *
+ *@@added V0.9.9 (2001-03-11) [lafaix]
+ *@@changed V0.9.9 (2001-03-30) [umoeller]: replaced dialog resource with generic cnr page
+ *@@todo: corresponding ItemChanged page
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: moved this here from fsys.c, renamed from fsysProgram1InitPage
+ */
+
+VOID progFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+                          ULONG flFlags)                // CBI_* flags (notebook.h)
+{
+    // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+
+    /*
+     * CBI_INIT:
+     *      initialize page (called only once)
+     */
+
+    if (flFlags & CBI_INIT)
+    {
+        XFIELDINFO xfi[2];
+        // PFIELDINFO pfi = NULL;
+        int        i = 0;
+        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+
+        WinSetDlgItemText(pcnbp->hwndDlgPage,
+                          ID_XFDI_CNR_GROUPTITLE,
+                          cmnGetString(ID_XSSI_PGMFILE_MODULE1)) ; // pszModule1Page
+
+        // set up cnr details view
+        xfi[i].ulFieldOffset = FIELDOFFSET(IMPORTEDMODULERECORD, pcszModuleName);
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_COLMN_MODULENAME);  // pszColmnModuleName
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        /* pfi = */ cnrhSetFieldInfos(hwndCnr,
+                                xfi,
+                                i,             // array item count
+                                TRUE,          // draw lines
+                                1);            // return first column
+
+        BEGIN_CNRINFO()
+        {
+            cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES);
+        } END_CNRINFO(hwndCnr);
+    }
+
+    /*
+     * CBI_SET:
+     *      set controls' data
+     */
+
+    if (flFlags & CBI_SET)
+    {
+        // fill container with imported modules
+        thrCreate(NULL,
+                  fntInsertModules,
+                  NULL, // running flag
+                  "InsertModules",
+                  THRF_PMMSGQUEUE | THRF_TRANSIENT,
+                  (ULONG)pcnbp);
+    }
+
+    /*
+     * CBI_DESTROY:
+     *      clean up page before destruction
+     */
+
+    if (flFlags & CBI_DESTROY)
+    {
+        if (pcnbp->pUser)
+            exehFreeImportedModules(pcnbp->pUser);
+         pcnbp->pUser = NULL;
+    }
+}
+
+/*
+ *@@ EXPORTEDFUNCTIONRECORD:
+ *
+ *@@added V0.9.9 (2001-03-11) [lafaix]
+ *@@changed V0.9.9 (2001-04-02) [umoeller]: made PSZ's const
+ */
+
+typedef struct _EXPORTEDFUNCTIONRECORD
+{
+    RECORDCORE  recc;
+
+    ULONG       ulFunctionOrdinal;
+    const char  *pcszFunctionType;
+    const char  *pcszFunctionName;
+} EXPORTEDFUNCTIONRECORD, *PEXPORTEDFUNCTIONRECORD;
+
+/*
+ *@@fsysGetExportedFunctionTypeName:
+ *      returns a human-readable name from an exported function type.
+ *
+ *@@added V0.9.9 (2001-03-28) [lafaix]
+ *@@changed V0.9.9 (2001-04-02) [umoeller]: return type is const char* now
+ */
+
+const char* fsysGetExportedFunctionTypeName(ULONG ulType)
+{
+    switch (ulType)
+    {
+        case 1:
+            return "ENTRY16";
+        case 2:
+            return "CALLBACK";
+        case 3:
+            return "ENTRY32";
+        case 4:
+            return "FORWARDER";
+    }
+
+    return "Unknown export type"; // !!! Should return value too
+}
+
+/*
+ *@@ fntInsertFunctions:
+ *      transient thread started by progFile2InitPage
+ *      to insert functions into the "Exported functions" container.
+ *
+ *      This thread is created with a msg queue.
+ *
+ *@@added V0.9.9 (2001-03-28) [lafaix]
+ *@@changed V0.9.9 (2001-03-30) [umoeller]: replaced dialog resource with generic cnr page
+ *@@changed V0.9.9 (2001-03-30) [umoeller]: sped up display
+ */
+
+void _Optlink fntInsertFunctions(PTHREADINFO pti)
+{
+    PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(pti->ulData);
+
+    TRY_LOUD(excpt1)
+    {
+        ULONG         cFunctions = 0,
+                      ul;
+        PFSYSFUNCTION paFunctions = NULL;
+        CHAR          szFilename[CCHMAXPATH] = "";
+
+        pcnbp->fShowWaitPointer = TRUE;
+
+        if (_wpQueryFilename(pcnbp->somSelf, szFilename, TRUE))
+        {
+            PEXECUTABLE     pExec = NULL;
+
+            if (!(exehOpen(szFilename, &pExec)))
+            {
+                if (    (!exehQueryExportedFunctions(pExec, &paFunctions, &cFunctions))
+                     && (paFunctions)
+                   )
+                {
+                    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+
+                    // V0.9.9 (2001-03-30) [umoeller]
+                    // changed all this to allocate all records at once...
+                    // this is way faster, because
+                    // 1) inserting records into a details view always causes
+                    //    a full container repaint (dumb cnr control)
+                    // 2) each insert record causes a cross-thread WinSendMsg,
+                    //    which is pretty slow
+
+                    PEXPORTEDFUNCTIONRECORD preccFirst
+                        = (PEXPORTEDFUNCTIONRECORD)cnrhAllocRecords(hwndCnr,
+                                                                    sizeof(EXPORTEDFUNCTIONRECORD),
+                                                                    cFunctions);
+                                // the container gives us a linked list of
+                                // records here, whose head we store in preccFirst
+
+                    if (preccFirst)
+                    {
+                        // start with first record and follow the linked list
+                        PEXPORTEDFUNCTIONRECORD preccThis = preccFirst;
+                        ULONG cRecords = 0;
+
+                        for (ul = 0;
+                             ul < cFunctions;
+                             ul++)
+                        {
+                            if (preccThis)
+                            {
+                                preccThis->ulFunctionOrdinal = paFunctions[ul].ulOrdinal;
+                                preccThis->pcszFunctionType
+                                    = fsysGetExportedFunctionTypeName(paFunctions[ul].ulType);
+                                preccThis->pcszFunctionName = paFunctions[ul].achFunctionName;
+
+                                preccThis = (PEXPORTEDFUNCTIONRECORD)preccThis->recc.preccNextRecord;
+                                cRecords++;
+                            }
+                            else
+                                break;
+                        }
+
+                        cnrhInsertRecords(hwndCnr,
+                                          NULL,
+                                          (PRECORDCORE)preccFirst,
+                                          TRUE, // invalidate
+                                          NULL,
+                                          CRA_RECORDREADONLY,
+                                          cRecords);
+                    }
+                }
+
+                // store functions
+                if (pcnbp->pUser)
+                    exehFreeExportedFunctions(pcnbp->pUser);
+                pcnbp->pUser = paFunctions;
+
+                exehClose(&pExec);
+            }
+        }
+    }
+    CATCH(excpt1) {}  END_CATCH();
+
+    pcnbp->fShowWaitPointer = FALSE;
+}
+
+/*
+ *@@ progFile2InitPage:
+ *      "Exported functions" page notebook callback function (notebook.c).
+ *
+ *@@added V0.9.9 (2001-03-11) [lafaix]
+ *@@changed V0.9.9 (2001-03-30) [umoeller]: replaced dialog resource with generic cnr page
+ *@@todo: corresponding ItemChanged page
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: moved this here from fsys.c, renamed from fsysProgram2InitPage
+ */
+
+VOID progFile2InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+                       ULONG flFlags)                // CBI_* flags (notebook.h)
+{
+    // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+
+    /*
+     * CBI_INIT:
+     *      initialize page (called only once)
+     */
+
+    if (flFlags & CBI_INIT)
+    {
+        XFIELDINFO xfi[4];
+        // PFIELDINFO pfi = NULL;
+        int        i = 0;
+        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+
+        WinSetDlgItemText(pcnbp->hwndDlgPage,
+                          ID_XFDI_CNR_GROUPTITLE,
+                          cmnGetString(ID_XSSI_PGMFILE_MODULE2)) ; // pszModule2Page
+
+        // set up cnr details view
+        xfi[i].ulFieldOffset = FIELDOFFSET(EXPORTEDFUNCTIONRECORD, ulFunctionOrdinal);
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_COLMN_EXPORTORDINAL);  // pszColmnExportOrdinal
+        xfi[i].ulDataType = CFA_ULONG;
+        xfi[i++].ulOrientation = CFA_RIGHT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(EXPORTEDFUNCTIONRECORD, pcszFunctionType);
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_COLMN_EXPORTTYPE);  // pszColmnExportType
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(EXPORTEDFUNCTIONRECORD, pcszFunctionName);
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_COLMN_EXPORTNAME);  // pszColmnExportName
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        /* pfi = */ cnrhSetFieldInfos(hwndCnr,
+                                xfi,
+                                i,             // array item count
+                                TRUE,          // draw lines
+                                1);            // return first column
+
+        BEGIN_CNRINFO()
+        {
+            cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES);
+        } END_CNRINFO(hwndCnr);
+    }
+
+    /*
+     * CBI_SET:
+     *      set controls' data
+     */
+
+    if (flFlags & CBI_SET)
+    {
+        // fill container with functions
+        thrCreate(NULL,
+                  fntInsertFunctions,
+                  NULL, // running flag
+                  "InsertFunctions",
+                  THRF_PMMSGQUEUE | THRF_TRANSIENT,
+                  (ULONG)pcnbp);
+    }
+
+    /*
+     * CBI_DESTROY:
+     *      clean up page before destruction
+     */
+
+    if (flFlags & CBI_DESTROY)
+    {
+        if (pcnbp->pUser)
+            exehFreeExportedFunctions(pcnbp->pUser);
+        pcnbp->pUser = NULL;
+    }
+}
+
+/*
+ *@@ RESOURCERECORD:
+ *
+ *@@added V0.9.7 (2000-12-17) [lafaix]
+ *@@changed V0.9.9 (2001-04-02) [umoeller]: made PSZ's const
+ */
+
+typedef struct _RESOURCERECORD
+{
+    RECORDCORE  recc;
+
+    ULONG       ulResourceID; // !!! Could be a string with Windows or Open32 execs
+    const char  *pcszResourceType;
+    ULONG       ulResourceSize;
+    const char  *pcszResourceFlag;
+
+    HPOINTER    hptrResource;           // for resource type == icon, converted icon
+
+} RESOURCERECORD, *PRESOURCERECORD;
+
+/*
+ *@@ fsysGetResourceFlagName:
+ *      returns a human-readable name from a resource flag.
+ *
+ *@@added V0.9.7 (2001-01-10) [lafaix]
+ *@@changed V0.9.9 (2001-04-02) [umoeller]: now returning const char*
+ */
+
+const char* fsysGetResourceFlagName(ULONG ulResourceFlag)
+{
+    #define FLAG_MASK 0x1050
+
+    if ((ulResourceFlag & FLAG_MASK) == 0x1050)
+        return "Preload";
+    if ((ulResourceFlag & FLAG_MASK) == 0x1040)
+        return "Preload, fixed";
+    if ((ulResourceFlag & FLAG_MASK) == 0x1010)
+        return "Default"; // default flag
+    if ((ulResourceFlag & FLAG_MASK) == 0x1000)
+        return "Fixed";
+    if ((ulResourceFlag & FLAG_MASK) == 0x0050)
+        return "Preload, not discardable";
+    if ((ulResourceFlag & FLAG_MASK) == 0x0040)
+        return "Preload, fixed, not discardable";
+    if ((ulResourceFlag & FLAG_MASK) == 0x0010)
+        return "Not discardable";
+    if ((ulResourceFlag & FLAG_MASK) == 0)
+        return "Fixed, not discardable";
+
+    return ("Unknown");
+}
+
+/*
+ *@@ progGetWinResourceTypeName:
+ *      returns a human-readable name for a Win
+ *      resource type.
+ *
+ *@@added V0.9.16 (2001-12-18) [umoeller]
+ */
+
+PCSZ progGetWinResourceTypeName(ULONG ulTypeThis)
+{
+    switch (ulTypeThis)
+    {
+        case WINRT_ACCELERATOR: return "WINRT_ACCELERATOR";
+        case WINRT_BITMAP: return "WINRT_BITMAP";
+        case WINRT_CURSOR: return "WINRT_CURSOR";
+        case WINRT_DIALOG: return "WINRT_DIALOG";
+        case WINRT_FONT: return "WINRT_FONT";
+        case WINRT_FONTDIR: return "WINRT_FONTDIR";
+        case WINRT_ICON: return "WINRT_ICON";
+        case WINRT_MENU: return "WINRT_MENU";
+        case WINRT_RCDATA: return "WINRT_RCDATA";
+        case WINRT_STRING: return "WINRT_STRING";
+    }
+
+    return ("unknown");
+}
+
+/*
+ *@@ progGetOS2ResourceTypeName:
+ *      returns a human-readable name for an OS/2
+ *      resource type.
+ *
+ *@@added V0.9.7 (2000-12-20) [lafaix]
+ *@@changed V0.9.9 (2001-04-02) [umoeller]: now returning const char*
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: moved this here from fsys.c, renamed from fsysGetOS2ResourceTypeName
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: added icons display
+ */
+
+PCSZ progGetOS2ResourceTypeName(ULONG ulResourceType)
+{
+    switch (ulResourceType)
+    {
+        case RT_POINTER:
+            return "Mouse pointer shape (RT_POINTER)";
+        case RT_BITMAP:
+            return "Bitmap (RT_BITMAP)";
+        case RT_MENU:
+            return "Menu template (RT_MENU)";
+        case RT_DIALOG:
+            return "Dialog template (RT_DIALOG)";
+        case RT_STRING:
+            return "String table (RT_STRING)";
+        case RT_FONTDIR:
+            return "Font directory (RT_FONTDIR)";
+        case RT_FONT:
+            return "Font (RT_FONT)";
+        case RT_ACCELTABLE:
+            return "Accelerator table (RT_ACCELTABLE)";
+        case RT_RCDATA:
+            return "Binary data (RT_RCDATA)";
+        case RT_MESSAGE:
+            return "Error message table (RT_MESSAGE)";
+        case RT_DLGINCLUDE:
+            return "Dialog include file name (RT_DLGINCLUDE)";
+        case RT_VKEYTBL:
+            return "Virtual key table (RT_VKEYTBL)";
+        case RT_KEYTBL:
+            return "Key table (RT_KEYTBL)";
+        case RT_CHARTBL:
+            return "Character table (RT_CHARTBL)";
+        case RT_DISPLAYINFO:
+            return "Display information (RT_DISPLAYINFO)";
+
+        case RT_FKASHORT:
+            return "Short-form function key area (RT_FKASHORT)";
+        case RT_FKALONG:
+            return "Long-form function key area (RT_FKALONG)";
+
+        case RT_HELPTABLE:
+            return "Help table (RT_HELPTABLE)";
+        case RT_HELPSUBTABLE:
+            return "Help subtable (RT_HELPSUBTABLE)";
+
+        case RT_FDDIR:
+            return "DBCS uniq/font driver directory (RT_FDDIR)";
+        case RT_FD:
+            return "DBCS uniq/font driver (RT_FD)";
+
+        #ifndef RT_RESNAMES
+            #define RT_RESNAMES         255
+        #endif
+
+        case RT_RESNAMES:
+            return "String ID table (RT_RESNAMES)";
+    }
+
+    return "Application specific"; // !!! Should return value too
+}
+
+/*
+ *@@ fntInsertResources:
+ *      transient thread started by progResourcesInitPage
+ *      to insert resources into the "Resources" container.
+ *
+ *      This thread is created with a msg queue.
+ *
+ *@@added V0.9.7 (2000-12-17) [lafaix]
+ *@@changed V0.9.9 (2001-03-30) [umoeller]: replaced dialog resource with generic cnr page
+ *@@changed V0.9.9 (2001-03-30) [umoeller]: sped up display
+ *@@changed V0.9.9 (2001-04-03) [umoeller]: fixed cnr crash introduced by 03-30 change
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: fixed bad resource nameing for win resources
+ */
+
+void _Optlink fntInsertResources(PTHREADINFO pti)
+{
+    PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(pti->ulData);
+
+    TRY_LOUD(excpt1)
+    {
+        CHAR          szFilename[CCHMAXPATH] = "";
+        PEXECUTABLE   pExec = NULL;
+        ULONG         cResources = 0;
+        PFSYSRESOURCE paResources = NULL;
+
+        pcnbp->fShowWaitPointer = TRUE;
+
+        if (    (_wpQueryFilename(pcnbp->somSelf, szFilename, TRUE))
+             && (!(exehOpen(szFilename, &pExec)))
+             && (!(exehQueryResources(pExec,
+                                      &paResources,
+                                      &cResources)))
+             && (cResources)
+             && (paResources)
+           )
+        {
+            HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+
+            // V0.9.9 (2001-03-30) [umoeller]
+            // changed all this to allocate all records at once...
+            // this is way faster, because
+            // 1) inserting records into a details view always causes
+            //    a full container repaint (dumb cnr control)
+            // 2) each insert record causes a cross-thread WinSendMsg,
+            //    which is pretty slow
+
+            PRESOURCERECORD preccFirst
+                = (PRESOURCERECORD)cnrhAllocRecords(hwndCnr,
+                                                    sizeof(RESOURCERECORD),
+                                    // duh, wrong size here V0.9.9 (2001-04-03) [umoeller];
+                                    // this was sizeof(IMPORTEDMODULERECORD)
+                                                    cResources);
+                        // the container gives us a linked list of
+                        // records here, whose head we store in preccFirst
+
+            if (preccFirst)
+            {
+                // start with first record and follow the linked list
+                PRESOURCERECORD preccThis = preccFirst;
+                ULONG   cRecords = 0,
+                        ul;
+
+                for (ul = 0;
+                     ul < cResources;
+                     ul++)
+                {
+                    if (preccThis)
+                    {
+                        ULONG ulType = paResources[ul].ulType;
+                        BOOL fLoad = FALSE;
+
+                        preccThis->ulResourceID = paResources[ul].ulID;
+                        preccThis->ulResourceSize = paResources[ul].ulSize;
+
+
+
+                        // fixed bad resource naming for Windows resources
+                        if (pExec->ulOS == EXEOS_WIN16)
+                        {
+                            preccThis->pcszResourceType = progGetWinResourceTypeName(ulType);
+                            if (ulType == WINRT_ICON)
+                                fLoad = TRUE;
+                        }
+                        else
+                        {
+                            // V0.9.16 (2001-12-18) [umoeller]
+                            preccThis->pcszResourceType = progGetOS2ResourceTypeName(ulType);
+                            if (ulType == RT_POINTER)
+                                fLoad = TRUE;
+                            preccThis->pcszResourceFlag
+                                   = fsysGetResourceFlagName(paResources[ul].ulFlag);
+                        }
+
+                        if (fLoad)
+                            // try to load this icon
+                            icoLoadExeIcon(pExec,
+                                           preccThis->ulResourceID,
+                                           &preccThis->hptrResource,
+                                           NULL,
+                                           NULL);
+
+                        preccThis = (PRESOURCERECORD)preccThis->recc.preccNextRecord;
+                        cRecords++;
+                    }
+                    else
+                        break;
+                }
+
+                if (cRecords == cResources)
+                    cnrhInsertRecords(hwndCnr,
+                                      NULL,
+                                      (PRECORDCORE)preccFirst,
+                                      TRUE, // invalidate
+                                      NULL,
+                                      CRA_RECORDREADONLY,
+                                      cRecords);
+            } // if (preccFirst)
+
+        } // if (paResources)
+
+        // clean up existing resources, if any
+        if (pcnbp->pUser)
+            exehFreeResources(pcnbp->pUser);
+        // store resources
+        pcnbp->pUser = paResources; // can be NULL
+
+        exehClose(&pExec);
+    }
+    CATCH(excpt1) {}  END_CATCH();
+
+    pcnbp->fShowWaitPointer = FALSE;
+}
+
+/*
+ *@@ KillPointersInRecords:
+ *
+ *@@added V0.9.16 (2002-01-05) [umoeller]
+ */
+
+ULONG EXPENTRY KillPointersInRecords(HWND hwndCnr,
+                                     PRECORDCORE precc,
+                                     ULONG ulUser1,
+                                     ULONG ulUser2)
+{
+    HPOINTER hptr;
+    if (hptr = ((PRESOURCERECORD)precc)->hptrResource)
+        WinFreeFileIcon(hptr);
+
+    return 0;
+}
+
+/*
+ *@@ progResourcesInitPage:
+ *      "Resources" page notebook callback function (notebook.c).
+ *
+ *@@added V0.9.7 (2000-12-17) [lafaix]
+ *@@changed V0.9.9 (2001-03-30) [umoeller]: replaced dialog resource with generic cnr page
+ *@@todo: corresponding ItemChanged page
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: moved this here from fsys.c, renamed from fsysResourcesInitPage
+ */
+
+VOID progResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+                           ULONG flFlags)                // CBI_* flags (notebook.h)
+{
+    // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+
+    /*
+     * CBI_INIT:
+     *      initialize page (called only once)
+     */
+
+    if (flFlags & CBI_INIT)
+    {
+        XFIELDINFO xfi[6];
+        PFIELDINFO pfi = NULL;
+        int        i = 0;
+        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+
+        WinSetDlgItemText(pcnbp->hwndDlgPage,
+                          ID_XFDI_CNR_GROUPTITLE,
+                          cmnGetString(ID_XSSI_PGMFILE_RESOURCES)) ; // pszResourcesPage
+
+        // set up cnr details view
+        // added resource V0.9.16 (2002-01-05) [umoeller]
+        xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, hptrResource);
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_COLMN_RESOURCEICON); // pszColmnResourceIcon
+        xfi[i].ulDataType = CFA_BITMAPORICON;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, ulResourceID);
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_COLMN_RESOURCEID);  // pszColmnResourceID
+        xfi[i].ulDataType = CFA_ULONG;
+        xfi[i++].ulOrientation = CFA_RIGHT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, pcszResourceType);
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_COLMN_RESOURCETYPE);  // pszColmnResourceType
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, ulResourceSize);
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_COLMN_RESOURCESIZE);  // pszColmnResourceSize
+        xfi[i].ulDataType = CFA_ULONG;
+        xfi[i++].ulOrientation = CFA_RIGHT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(RESOURCERECORD, pcszResourceFlag);
+        xfi[i].pszColumnTitle = cmnGetString(ID_XSSI_COLMN_RESOURCEFLAGS);  // pszColmnResourceFlags
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        pfi = cnrhSetFieldInfos(hwndCnr,
+                                xfi,
+                                i,             // array item count
+                                TRUE,          // draw lines
+                                2);            // return third column
+
+        BEGIN_CNRINFO()
+        {
+            cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES | CA_OWNERDRAW);
+            cnrhSetSplitBarAfter(pfi);  // V0.9.7 (2001-01-18) [umoeller]
+            cnrhSetSplitBarPos(250);
+        } END_CNRINFO(hwndCnr);
+    }
+
+    /*
+     * CBI_SET:
+     *      set controls' data
+     */
+
+    if (flFlags & CBI_SET)
+    {
+        // fill container with resources
+        thrCreate(NULL,
+                  fntInsertResources,
+                  NULL, // running flag
+                  "InsertResources",
+                  THRF_PMMSGQUEUE | THRF_TRANSIENT,
+                  (ULONG)pcnbp);
+    }
+
+    /*
+     * CBI_DESTROY:
+     *      clean up page before destruction
+     */
+
+    if (flFlags & CBI_DESTROY)
+    {
+        // we need to nuke all the pointers that were created
+        // V0.9.16 (2002-01-05) [umoeller]
+
+        cnrhForAllRecords(hwndCnr,
+                          NULL,     // root records
+                          KillPointersInRecords,
+                          0,
+                          0);
+
+        if (pcnbp->pUser)
+            exehFreeResources(pcnbp->pUser);
+        pcnbp->pUser = NULL;
+    }
+}
+
+/*
+ *@@ progResourcesMessage:
+ *      notebook callback function (notebook.c) for the
+ *      "Resources" page.
+ *      This gets really all the messages from the dlg.
+ *
+ *@@added V0.9.16 (2002-01-05) [umoeller]
+ */
+
+BOOL XWPENTRY progResourcesMessage(PCREATENOTEBOOKPAGE pcnbp,
+                                   ULONG msg, MPARAM mp1, MPARAM mp2,
+                                   MRESULT *pmrc)
+{
+    BOOL brc = FALSE;       // not processed
+
+    switch (msg)
+    {
+        case WM_DRAWITEM:
+            // return value: let cnr draw the item
+            *pmrc = (MRESULT)FALSE;
+
+            if ((USHORT)mp1 == ID_XFDI_CNR_CNR)
+            {
+                POWNERITEM poi = (POWNERITEM)mp2;
+                PCNRDRAWITEMINFO pcdii = (PCNRDRAWITEMINFO)poi->hItem;
+
+                if (pcdii->pFieldInfo->flData == CFA_BITMAPORICON)
+                {
+                    HPOINTER hptr;
+                    if (hptr = ((PRESOURCERECORD)pcdii->pRecord)->hptrResource)
+                    {
+                        // let us handle this
+                        WinDrawPointer(poi->hps,
+                                       poi->rclItem.xLeft,
+                                       poi->rclItem.yBottom,
+                                       hptr,
+                                       DP_NORMAL);
+                    }
+
+                    // @@todo os/2 bitmaps
+                }
+            }
+
+            brc = TRUE;     // msg processed
+        break;
+    }
+
+    return (brc);
+}
+
+#endif // __NOMODULEPAGES__
+
+
 

@@ -837,7 +837,7 @@ HWND     hwndArchiveStatus = NULLHANDLE;
 
 VOID krn_T1M_DaemonReady(VOID)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     // _Pmpf(("krn_T1M_DaemonReady"));
 
@@ -847,7 +847,7 @@ VOID krn_T1M_DaemonReady(VOID)
         PXWPGLOBALSHARED pXwpGlobalShared = G_KernelGlobals.pXwpGlobalShared;
         if (
 #ifndef __ALWAYSHOOK__
-                (cmnIsFeatureEnabled(XWPHook))
+                (cmnQuerySetting(sfXWPHook))
              &&
 #endif
                 (pXwpGlobalShared->hwndDaemonObject)
@@ -869,11 +869,11 @@ VOID krn_T1M_DaemonReady(VOID)
                                  (MPARAM)hwndActiveDesktop,
                                  (MPARAM)0);
 
-                // _Pmpf(("    pGlobalSettings->fPageMageEnabled: %d",
-                //        pGlobalSettings->fEnablePageMage));
+                // _Pmpf(("    cmnQuerySetting(sfPageMageEnabled:) %d",
+                //        cmnQuerySetting(sfEnablePageMage)));
 
 #ifndef __NOPAGEMAGE__
-                if (pGlobalSettings->fEnablePageMage)
+                if (cmnQuerySetting(sfEnablePageMage))
                     // PageMage is enabled too:
                     WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
                                XDM_STARTSTOPPAGEMAGE,
@@ -1477,15 +1477,7 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
             case T1M_PAGEMAGECLOSED:
             {
                 if (mp1)
-                {
-                    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-                    if (pGlobalSettings)
-                    {
-                        pGlobalSettings->fEnablePageMage = FALSE;
-                        cmnUnlockGlobalSettings();
-                        // _Pmpf(("  pGlobalSettings->fEnablePageMage = FALSE;"));
-                    }
-                }
+                    cmnSetSetting(sfEnablePageMage, FALSE);
 
                 // update "Features" page, if open
                 ntbUpdateVisiblePage(NULL, SP_SETUP_FEATURES);
@@ -1656,7 +1648,7 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
                     break;
 
                     case ID_CRMI_SHUTDOWN:
-                        /* if (cmnIsFeatureEnabled(XShutdown))
+                        /* if (cmnQuerySetting(sfXShutdown))
                             xsdInitiateShutdown();
                         else */
                         WinPostMsg(cmnQueryActiveDesktopHWND(),

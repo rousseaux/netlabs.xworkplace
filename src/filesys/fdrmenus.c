@@ -244,8 +244,9 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
     {
         // we have a valid open view:
         // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
+        ULONG       ulOfs = cmnQuerySetting(sulVarMenuOffset);
         ULONG       ulAttr = 0;
         USHORT      usIconsAttr;
         CNRINFO     CnrInfo;
@@ -274,13 +275,11 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
             // doesn't have one
             hwndViewSubmenu = winhInsertSubmenu(hwndViewSubmenu,
                                                 MIT_END,
-                                                (pGlobalSettings->VarMenuOffset
-                                                        + ID_XFM_OFS_WARP3FLDRVIEW),
+                                                ulOfs + ID_XFM_OFS_WARP3FLDRVIEW,
                                                 cmnGetString(ID_XFSI_FLDRSETTINGS), // pszWarp3FldrView */
                                                     MIS_SUBMENU,
                                                 // item
-                                                (pGlobalSettings->VarMenuOffset
-                                                        + ID_XFMI_OFS_SMALLICONS),
+                                                ulOfs + ID_XFMI_OFS_SMALLICONS,
                                                 cmnGetString(ID_XFSI_SMALLICONS), // pszSmallIcons */
                                                 MIS_TEXT,
                                                 usIconsAttr);
@@ -288,8 +287,7 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
         else
             winhInsertMenuItem(hwndViewSubmenu,
                                MIT_END,
-                               (pGlobalSettings->VarMenuOffset
-                                    + ID_XFMI_OFS_SMALLICONS),
+                               ulOfs + ID_XFMI_OFS_SMALLICONS,
                                cmnGetString(ID_XFSI_SMALLICONS),  // pszSmallIcons
                                MIS_TEXT,
                                usIconsAttr);
@@ -300,23 +298,23 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
         {
             // icon view:
             winhInsertMenuSeparator(hwndViewSubmenu, MIT_END,
-                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                        (ulOfs + ID_XFMI_OFS_SEPARATOR));
 
 
             winhInsertMenuItem(hwndViewSubmenu, MIT_END,
-                               (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_NOGRID),
+                               ulOfs + ID_XFMI_OFS_NOGRID,
                                cmnGetString(ID_XFSI_NOGRID),  MIS_TEXT, // pszNoGrid
                                ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
                                     ? MIA_CHECKED
                                     : 0);
             winhInsertMenuItem(hwndViewSubmenu, MIT_END,
-                               (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_FLOWED),
+                               ulOfs + ID_XFMI_OFS_FLOWED,
                                cmnGetString(ID_XFSI_FLOWED),  MIS_TEXT, // pszFlowed
                                ((CnrInfo.flWindowAttr & (CV_NAME | CV_FLOW)) == (CV_NAME | CV_FLOW))
                                     ? MIA_CHECKED
                                     : 0);
             winhInsertMenuItem(hwndViewSubmenu, MIT_END,
-                               (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_NONFLOWED),
+                               ulOfs + ID_XFMI_OFS_NONFLOWED,
                                cmnGetString(ID_XFSI_NONFLOWED),  MIS_TEXT, // pszNonFlowed
                                ((CnrInfo.flWindowAttr & (CV_NAME | CV_FLOW)) == (CV_NAME))
                                     ? MIA_CHECKED
@@ -327,17 +325,17 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
         // if one of these is enabled
         if (    (G_fIsWarp4)
 #ifndef __NOCFGSTATUSBARS__
-             || (cmnIsFeatureEnabled(StatusBars))  // added V0.9.0
+             || (cmnQuerySetting(sfStatusBars))  // added V0.9.0
 #endif
            )
             winhInsertMenuSeparator(hwndViewSubmenu, MIT_END,
-                                   (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                                    ulOfs + ID_XFMI_OFS_SEPARATOR);
 
         // on Warp 4, insert "menu bar" item (V0.9.0)
         if (G_fIsWarp4)
         {
             winhInsertMenuItem(hwndViewSubmenu, MIT_END,
-                               (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_WARP4MENUBAR),
+                               ulOfs + ID_XFMI_OFS_WARP4MENUBAR,
                                cmnGetString(ID_XFSI_WARP4MENUBAR),  MIS_TEXT, // pszWarp4MenuBar
                                (_xwpQueryMenuBarVisibility(somSelf))
                                    ? MIA_CHECKED
@@ -347,7 +345,7 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
         // insert "status bar" item if status bar feature
         // is enabled in XWPSetup
 #ifndef __NOCFGSTATUSBARS__
-        if (cmnIsFeatureEnabled(StatusBars))
+        if (cmnQuerySetting(sfStatusBars))
 #endif
         {
             if (cmnIsADesktop(somSelf))
@@ -357,7 +355,7 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
                 // for root folders (WPDisk siblings),
                 // check global setting only
                 ulAttr = MIA_DISABLED
-                            | ((pGlobalSettings->fDefaultStatusBarVisibility)
+                            | ((cmnQuerySetting(sfDefaultStatusBarVisibility))
                                 ? MIA_CHECKED
                                 : 0);
             else
@@ -366,7 +364,7 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
                 ulAttr = (
                            (_bStatusBarInstance == STATUSBAR_ON)
                         || (    (_bStatusBarInstance == STATUSBAR_DEFAULT)
-                             && (pGlobalSettings->fDefaultStatusBarVisibility)
+                             && (cmnQuerySetting(sfDefaultStatusBarVisibility))
                            )
                          )
                             ? MIA_CHECKED
@@ -375,7 +373,7 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
             // insert status bar item with the above attribute
             winhInsertMenuItem(hwndViewSubmenu,
                                MIT_END,
-                               (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SHOWSTATUSBAR),
+                               ulOfs + ID_XFMI_OFS_SHOWSTATUSBAR,
                                cmnGetString(ID_XFSI_SHOWSTATUSBAR),  // pszShowStatusBar
                                MIS_TEXT,
                                ulAttr);
@@ -538,7 +536,7 @@ BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLISTITEM l
 LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take items from (var.)
                            HWND       hMenuThis,      // in: menu to add items to (var.)
                            HWND       hwndCnr,        // in: needed for wpInsertPopupMenuItems (const)
-                           PCGLOBALSETTINGS pGlobalSettings)
+                           ULONG      ulOfs)          // in: cmnQuerySetting(sulVarMenuOffset)
 {
     LONG       lDefaultItem = 0;
     LONG       rc = 0,
@@ -578,7 +576,7 @@ LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take items 
             case OC_SEPARATOR:
                 winhInsertMenuSeparator(hMenuThis,
                                         MIT_END,
-                                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                                        ulOfs + ID_XFMI_OFS_SEPARATOR);
             break;
 
             case OC_FOLDER:
@@ -591,7 +589,7 @@ LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take items 
                                                   G_sNextMenuId,
                                                   pcli->szTitle,
                                                   MIS_TEXT,
-                                                  (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_BORED),
+                                                  ulOfs + ID_XFMI_OFS_BORED,
                                                   cmnGetString(ID_XSSI_BORED), // (cmnQueryNLSStrings())->pszBored,
                                                   MIS_TEXT,
                                                   0);
@@ -602,7 +600,7 @@ LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take items 
                 lDefaultItem = InsertObjectsFromList(pcli->pllFolderContent,
                                                      hNewMenu,
                                                      hwndCnr,
-                                                     pGlobalSettings);
+                                                     ulOfs);
                 // now we're back: check if error occured; if so, exit
                 // immediately to stop recursing
                 if (lDefaultItem == -1)
@@ -614,11 +612,11 @@ LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take items 
                     // remove static "config folder empty" menu item
                     WinSendMsg(hNewMenu,
                                MM_DELETEITEM,
-                               MPFROM2SHORT((pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_BORED),
+                               MPFROM2SHORT((ulOfs + ID_XFMI_OFS_BORED),
                                             TRUE),
                                (MPARAM)NULL);
 
-                    if ((pGlobalSettings->MenuCascadeMode) && (lDefaultItem != 1))
+                    if ((cmnQuerySetting(sfMenuCascadeMode)) && (lDefaultItem != 1))
                     {
                         // make the XFolder submenu cascading
                         winhSetMenuCondCascade(hNewMenu,
@@ -739,7 +737,7 @@ VOID mnuInvalidateConfigCache(VOID)
 BOOL InsertConfigFolderItems(XFolder *somSelf,
                              HWND hwndMenu,
                              HWND hwndCnr,
-                             PCGLOBALSETTINGS pGlobalSettings)
+                             ULONG ulOfs)
 {
     BOOL brc = FALSE;
 
@@ -768,7 +766,7 @@ BOOL InsertConfigFolderItems(XFolder *somSelf,
                 // yes:
                 // append another separator to the menu first
                 winhInsertMenuSeparator(hwndMenu, MIT_END,
-                                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                                        ulOfs + ID_XFMI_OFS_SEPARATOR);
 
                 // now insert items in pConfigFolder into main context menu (hwndMenu);
                 // this routine will call itself recursively if it finds subfolders.
@@ -777,7 +775,7 @@ BOOL InsertConfigFolderItems(XFolder *somSelf,
                 InsertObjectsFromList(&G_llConfigContent,
                                       hwndMenu,
                                       hwndCnr,
-                                      pGlobalSettings);
+                                      ulOfs);
             }
 
             UnlockConfigCache();        // V0.9.9 (2001-04-04) [umoeller]
@@ -841,8 +839,8 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
     MENUITEM        mi;
 
     // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    ULONG           ulVarMenuOfs = pGlobalSettings->VarMenuOffset;
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    ULONG           ulVarMenuOfs = cmnQuerySetting(sulVarMenuOffset);
 
     // set the global variable for whether Warp 4 is running
     G_fIsWarp4 = doshIsWarp4();
@@ -903,7 +901,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
          *
          */
 
-        if (pGlobalSettings->_fFdrDefaultDoc)
+        if (cmnQuerySetting(sfFdrDefaultDoc))
         {
             WPFileSystem *pDefDoc = _xwpQueryDefaultDocument(somSelf);
             if (pDefDoc)
@@ -938,7 +936,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
 
         if (G_fIsWarp4)
         {
-            if (pGlobalSettings->RemoveViewMenu)
+            if (cmnQuerySetting(sfRemoveViewMenu))
             {
                 #ifdef DEBUG_MENUS
                     _Pmpf(("  Removing 'View' submenu"));
@@ -946,7 +944,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                 winhRemoveMenuItem(hwndMenu, ID_WPM_VIEW);
             }
 
-            if (pGlobalSettings->RemovePasteItem)
+            if (cmnQuerySetting(sfRemovePasteItem))
             {
                 #ifdef DEBUG_MENUS
                     _Pmpf(("  Removing 'Paste' menu item"));
@@ -969,10 +967,10 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
         // or the "Select" menu has not been removed (Warp 3)
         if (
                 (   (G_fIsWarp4)
-                 && (pGlobalSettings->RemoveViewMenu == 0)
+                 && (cmnQuerySetting(sfRemoveViewMenu) == 0)
                 )
              || (   (!G_fIsWarp4)
-                 && ((pGlobalSettings->DefaultMenuItems & CTXT_SELECT) == 0)
+                 && ((cmnQuerySetting(sflDefaultMenuItems) & CTXT_SELECT) == 0)
                 )
            )
         {
@@ -996,7 +994,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                 #endif
 
                 // add "Select by name" only if not in Tree view V0.9.1 (2000-02-01) [umoeller]
-                if (    (pGlobalSettings->AddSelectSomeItem)
+                if (    (cmnQuerySetting(sfAddSelectSomeItem))
                      && (   (ulView == OPEN_CONTENTS)
                          || (ulView == OPEN_DETAILS)
                         )
@@ -1029,7 +1027,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                 }
 
                 // additional "view" items (icon size etc.)
-                if (pGlobalSettings->ExtendFldrViewMenu)
+                if (cmnQuerySetting(sfExtendFldrViewMenu))
                 {
                     // rule out possible user views
                     // of WPFolder subclasses
@@ -1073,7 +1071,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
         fdrModifySortMenu(somSelf,
                           hwndMenu);
 
-        if (pGlobalSettings->AddCopyFilenameItem)
+        if (cmnQuerySetting(sfAddCopyFilenameItem))
         {
             winhInsertMenuSeparator(hwndMenu, MIT_END,
                                     ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
@@ -1086,7 +1084,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
         }
 
         // V0.9.14
-/*      if (pGlobalSettings->AddRunItem)
+/*      if (cmnQuerySetting(sAddRunItem))
         {
             if (!bSepAdded)
             {
@@ -1116,7 +1114,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
 
 #ifndef __NOMOVEREFRESHNOW__
             // "Refresh now"
-            if (cmnIsFeatureEnabled(MoveRefreshNow))
+            if (cmnQuerySetting(sfMoveRefreshNow))
                 winhInsertMenuItem(hwndMenu,
                                    MIT_END,
                                    ulVarMenuOfs + ID_XFMI_OFS_REFRESH,
@@ -1127,11 +1125,11 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
 
             // "Snap to grid" feature enabled? V0.9.3 (2000-04-10) [umoeller]
 #ifndef __NOSNAPTOGRID__
-            if (    (cmnIsFeatureEnabled(Snap2Grid))
+            if (    (cmnQuerySetting(sfSnap2Grid))
                  // "Snap to grid" enabled locally or globally?
                  && (    (_bSnapToGridInstance == 1)
                       || (   (_bSnapToGridInstance == 2)
-                          && (pGlobalSettings->fAddSnapToGridDefault)
+                          && (cmnQuerySetting(sfAddSnapToGridDefault))
                          )
                     )
                  // insert only when sorting is off
@@ -1153,7 +1151,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
 
         // now do necessary preparations for all variable menu items
         // (i.e. folder content and config folder items)
-        cmnuInitItemCache(pGlobalSettings);
+        cmnuInitItemCache(); // pGlobalSettings);
 
         /*
          * folder content / favorite folders:
@@ -1165,8 +1163,8 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
         // this if either folder content for every folder is
         // enabled or at least one favorite folder exists
         pFavorite = _xwpclsQueryFavoriteFolder(_XFolder, NULL);
-        if (    (!cmnIsFeatureEnabled(NoSubclassing))
-             && (   (cmnIsFeatureEnabled(AddFolderContentItem))
+        if (    (!cmnQuerySetting(sfNoSubclassing))
+             && (   (cmnQuerySetting(sfAddFolderContentItem))
                  || (pFavorite)
                 )
            )
@@ -1175,7 +1173,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                                     MIT_END,
                                     ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
 
-            if (cmnIsFeatureEnabled(FolderContentShowIcons))
+            if (cmnQuerySetting(sfFolderContentShowIcons))
             {
                 // before actually inserting the content submenus, we need a real
                 // awful cheat, because otherwise the owner draw items won't work
@@ -1192,7 +1190,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                            MPNULL);
             }
 
-            if (cmnIsFeatureEnabled(AddFolderContentItem))
+            if (cmnQuerySetting(sfAddFolderContentItem))
             {
                 // add "Folder content" only if somSelf is not a favorite folder,
                 // because then we will insert the folder content anyway
@@ -1227,7 +1225,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
         InsertConfigFolderItems(somSelf,
                                 hwndMenu,
                                 hwndCnr,
-                                pGlobalSettings);
+                                ulVarMenuOfs);
 
     }
     CATCH(excpt1)
@@ -1277,8 +1275,8 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
 {
     BOOL brc = FALSE;
 
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    ULONG           ulVarMenuOfs = pGlobalSettings->VarMenuOffset;
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    ULONG           ulVarMenuOfs = cmnQuerySetting(sulVarMenuOffset);
 
     HWND hNewMenu;
 
@@ -1369,10 +1367,10 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
                                 HWND hwndCnr,
                                 ULONG iPosition)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    ULONG           ulVarMenuOfs = pGlobalSettings->VarMenuOffset;
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    ULONG           ulVarMenuOfs = cmnQuerySetting(sulVarMenuOffset);
 
-    /* if (pGlobalSettings->fExtAssocs)
+    /* if (cmnQuerySetting(sfExtAssocs))
     {
         // THIS HAS BEEN REMOVED FROM HERE;
         // XFldDataFile now handles extended file associations
@@ -1429,10 +1427,10 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
     } */
 
     // insert separator V0.9.4 (2000-06-09) [umoeller]
-    if (    (pGlobalSettings->FileAttribs)
-         || (pGlobalSettings->AddCopyFilenameItem)
+    if (    (cmnQuerySetting(sfFileAttribs))
+         || (cmnQuerySetting(sfAddCopyFilenameItem))
 #ifndef __NOFDRDEFAULTDOCS__
-         || (pGlobalSettings->_fFdrDefaultDoc)
+         || (cmnQuerySetting(sfFdrDefaultDoc))
 #endif
        )
         winhInsertMenuSeparator(hwndMenu,
@@ -1441,7 +1439,7 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
 
     // insert "Attributes" submenu (for data files
     // only, not for folders
-    if (pGlobalSettings->FileAttribs)
+    if (cmnQuerySetting(sfFileAttribs))
     {
         ULONG ulAttr;
         HWND hwndAttrSubmenu;
@@ -1484,7 +1482,7 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
 
     // insert "Copy filename" for data files
     // (the XFolder class does this also)
-    if (pGlobalSettings->AddCopyFilenameItem)
+    if (cmnQuerySetting(sfAddCopyFilenameItem))
         winhInsertMenuItem(hwndMenu,
                            MIT_END,
                            ulVarMenuOfs + ID_XFMI_OFS_COPYFILENAME_MENU,
@@ -1494,7 +1492,7 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
 
     // insert "Default document" if enabled
 #ifndef __NOFDRDEFAULTDOCS__
-    if (pGlobalSettings->_fFdrDefaultDoc)
+    if (cmnQuerySetting(sfFdrDefaultDoc))
     {
         ULONG flAttr = 0;
         if (_xwpQueryDefaultDocument(_wpQueryFolder(somSelf)) == somSelf)
@@ -1547,7 +1545,7 @@ BOOL mnuProgramObjectSelected(WPObject *pFolder,        // in: folder or disk ob
     CHAR            szNewTitle[1024] = "";
 
     HAB             hab;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     // get program object data
     if ((pDetails = progQueryDetails(pProgram)))
@@ -1591,7 +1589,7 @@ BOOL mnuProgramObjectSelected(WPObject *pFolder,        // in: folder or disk ob
 
         // start playing with the object's parameter list,
         // if the global settings allow it */
-        if (pGlobalSettings->AppdParam)
+        if (cmnQuerySetting(sfAppdParam))
         {
             // CHAR            szNewParams[1024] = "";
             CHAR            szPassRealName[CCHMAXPATH];
@@ -1701,11 +1699,11 @@ BOOL mnuProgramObjectSelected(WPObject *pFolder,        // in: folder or disk ob
                     // since parameter list is empty, we need not
                     // search for the clipboard key ("%**C") */
                 }
-        } // end if (pGlobalSettings->AppdParam)
+        } // end if (cmnQuerySetting(sfAppdParam))
 
         // now remove "~" from title, if allowed
         if (    (pszOldTitle = pDetails->pszTitle)
-             && (pGlobalSettings->RemoveX)
+             && (cmnQuerySetting(sfRemoveX))
            )
         {
             PSZ pszPos;
@@ -1767,15 +1765,14 @@ BOOL mnuProgramObjectSelected(WPObject *pFolder,        // in: folder or disk ob
 
 BOOL CheckForVariableMenuItems(WPFolder *somSelf,  // in: folder or root folder
                                HWND hwndFrame,    // in: as in wpMenuItemSelected
-                               ULONG ulMenuId,    // in: selected menu item
-                               PCGLOBALSETTINGS pGlobalSettings)
+                               ULONG ulMenuId)    // in: selected menu item
 {
     BOOL brc = FALSE;
 
     PVARMENULISTITEM    pItem;
     WPObject            *pObject = NULL;
 
-    ULONG ulFirstVarMenuId = pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE;
+    ULONG ulFirstVarMenuId = cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_VARIABLE;
     if (     (ulMenuId >= ulFirstVarMenuId)
           && (ulMenuId <  ulFirstVarMenuId + G_ulVarItemCount)
        )
@@ -1812,11 +1809,11 @@ BOOL CheckForVariableMenuItems(WPFolder *somSelf,  // in: folder or root folder
                                                pObject,  // template
                                                somSelf,    // folder
                                                hwndFrame, // view frame
-                                               pGlobalSettings->TemplatesOpenSettings,
+                                               cmnQuerySetting(sulTemplatesOpenSettings),
                                                         // 0: do nothing after creation
                                                         // 1: open settings notebook
                                                         // 2: make title editable
-                                               pGlobalSettings->TemplatesReposition,
+                                               cmnQuerySetting(sfTemplatesReposition),
                                                &G_ptlMouseMenu); // V0.9.16 (2001-10-23) [umoeller]
                         /* G_ptlTemplateMousePos.x = _MenuMousePosX;
                         G_ptlTemplateMousePos.y = _MenuMousePosY;
@@ -1902,8 +1899,8 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
 
     TRY_LOUD(excpt1)
     {
-        PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
-        ULONG               ulMenuId2 = ulMenuId - pGlobalSettings->VarMenuOffset;
+        // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+        ULONG               ulMenuId2 = ulMenuId - cmnQuerySetting(sulVarMenuOffset);
 
         if (somSelf)
         {
@@ -2165,8 +2162,7 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                     // anything else: check if it's one of our variable menu items
                     brc = CheckForVariableMenuItems(somSelf,
                                                     hwndFrame,
-                                                    ulMenuId,
-                                                    pGlobalSettings);
+                                                    ulMenuId);
 
             } // end switch;
         } // end if (somSelf)
@@ -2196,8 +2192,8 @@ BOOL mnuMenuItemHelpSelected(WPObject *somSelf, ULONG MenuId)
 {
     ULONG   ulFirstVarMenuId;
     ULONG   ulPanel = 0;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    ULONG   ulMenuId2 = MenuId - pGlobalSettings->VarMenuOffset;
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    ULONG   ulMenuId2 = MenuId - cmnQuerySetting(sulVarMenuOffset);
 
     // first check for variable menu item IDs
     switch(ulMenuId2)
@@ -2243,14 +2239,14 @@ BOOL mnuMenuItemHelpSelected(WPObject *somSelf, ULONG MenuId)
             // none of the variable item ids:
 #ifndef __NOXSHUTDOWN__
             if (    (MenuId == WPMENUID_SHUTDOWN)
-                 && (cmnIsFeatureEnabled(XShutdown))
+                 && (cmnQuerySetting(sfXShutdown))
                )
                 ulPanel = ID_XMH_XSHUTDOWN;
             else
 #endif
                  if (
 #ifndef __ALWAYSEXTSORT__
-                        (cmnIsFeatureEnabled(ExtendedSorting))
+                        (cmnQuerySetting(sfExtendedSorting))
                      &&
 #endif
                         (   (MenuId == ID_WPMI_SORTBYNAME)
@@ -2266,7 +2262,7 @@ BOOL mnuMenuItemHelpSelected(WPObject *somSelf, ULONG MenuId)
             {
                 // if F1 was pressed over one of the variable menu items,
                 // open a help panel with generic help on XFolder
-                ulFirstVarMenuId = (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE);
+                ulFirstVarMenuId = (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_VARIABLE);
                 if ( (MenuId >= ulFirstVarMenuId)
                         && (MenuId < ulFirstVarMenuId + G_ulVarItemCount)
                      )
@@ -2387,8 +2383,8 @@ BOOL mnuFileSystemSelectingMenuItem(WPObject *somSelf,
                                        // out: if TRUE is returned (ie. the menu item was handled
                                        // here), this determines whether the menu should be dismissed
 {
-    PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
-    ULONG               ulMenuId2 = usItem - pGlobalSettings->VarMenuOffset;
+    // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+    ULONG               ulMenuId2 = usItem - cmnQuerySetting(sulVarMenuOffset);
     BOOL                fHandled = TRUE;
     // BOOL                brc = TRUE;     // "dismiss menu" flag
 
@@ -2539,11 +2535,11 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
 {
     // XFolderData *somThis = XFolderGetData(somSelf);
 
-    PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
-    ULONG               ulMenuId2 = usItem - pGlobalSettings->VarMenuOffset;
+    // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+    ULONG               ulMenuId2 = usItem - cmnQuerySetting(sulVarMenuOffset);
     BOOL                fHandled = TRUE;
     // BOOL                brc = TRUE;     // "dismiss menu" flag
-    // USHORT              usAlwaysSort, usDefaultSort;
+    // USHORT              usfAlwaysSort, usDefaultSort;
 
     #ifdef DEBUG_MENUS
         _Pmpf(("mnuFolderSelectingMenuItem"));
@@ -2628,13 +2624,13 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
                                OPEN_CONTENTS);
 
                 winhSetMenuItemChecked(hwndMenu,
-                                       pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_FLOWED,
+                                       cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_FLOWED,
                                        (ulMenuId2 == ID_XFMI_OFS_FLOWED));
                 winhSetMenuItemChecked(hwndMenu,
-                                       pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_NONFLOWED,
+                                       cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_NONFLOWED,
                                        (ulMenuId2 == ID_XFMI_OFS_NONFLOWED));
                 winhSetMenuItemChecked(hwndMenu,
-                                       pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_NOGRID,
+                                       cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_NOGRID,
                                        (ulMenuId2 == ID_XFMI_OFS_NOGRID));
 
                 // do not dismiss menu
@@ -2681,9 +2677,10 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
                 // in order to change the menu bar visibility,
                 // we need to resolve the method by name, since
                 // we don't have the Warp 4 toolkit headers
-                FN_WPSETMENUBARVISIBILITY *pwpSetMenuBarVisibility
-                    = (FN_WPSETMENUBARVISIBILITY*)somResolveByName(somSelf,
-                                                                   "wpSetMenuBarVisibility");
+                xfTD_wpSetMenuBarVisibility pwpSetMenuBarVisibility
+                    = (xfTD_wpSetMenuBarVisibility)somResolveByName(
+                                                    somSelf,
+                                                    "wpSetMenuBarVisibility");
 
                 if (pwpSetMenuBarVisibility)
                     pwpSetMenuBarVisibility(somSelf, !fMenuVisible);
@@ -2802,6 +2799,21 @@ DLGHITEM dlgAddMenus[] =
         END_TABLE
     };
 
+static XWPSETTING G_AddMenusBackup[] =
+    {
+        sfFileAttribs,
+        sfAddCopyFilenameItem,
+        sfExtendFldrViewMenu,
+#ifndef __NOMOVEREFRESHNOW__
+        sfMoveRefreshNow,
+#endif
+        sfAddSelectSomeItem,
+#ifndef __NOFOLDERCONTENTS__
+        sfAddFolderContentItem,
+        sfFolderContentShowIcons
+#endif
+    };
+
 /*
  *@@ mnuAddMenusInitPage:
  *      notebook callback function (notebook.c) for the
@@ -2817,7 +2829,7 @@ DLGHITEM dlgAddMenus[] =
 VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                              ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (flFlags & CBI_INIT)
     {
@@ -2827,9 +2839,11 @@ VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
-            pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
+            /* pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
             memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
-
+               */
+            pcnbp->pUser = cmnBackupSettings(G_AddMenusBackup,
+                                             ARRAYITEMCOUNT(G_AddMenusBackup));
             // insert the controls using the dialog formatter
             // V0.9.16 (2001-09-29) [umoeller]
             ntbFormatPage(pcnbp->hwndDlgPage,
@@ -2841,26 +2855,26 @@ VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     if (flFlags & CBI_SET)
     {
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FILEATTRIBS,
-                              pGlobalSettings->FileAttribs);
+                              cmnQuerySetting(sfFileAttribs));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_COPYFILENAME,
-                              pGlobalSettings->AddCopyFilenameItem);
+                              cmnQuerySetting(sfAddCopyFilenameItem));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FLDRVIEWS,
-                              pGlobalSettings->ExtendFldrViewMenu);
+                              cmnQuerySetting(sfExtendFldrViewMenu));
 #ifndef __NOMOVEREFRESHNOW__
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOVE4REFRESH,
-                              cmnIsFeatureEnabled(MoveRefreshNow));
+                              cmnQuerySetting(sfMoveRefreshNow));
 #endif
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SELECTSOME,
-                              pGlobalSettings->AddSelectSomeItem);
+                              cmnQuerySetting(sfAddSelectSomeItem));
 #ifndef __NOFOLDERCONTENTS__
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FOLDERCONTENT,
-                              cmnIsFeatureEnabled(AddFolderContentItem));
+                              cmnQuerySetting(sfAddFolderContentItem));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FC_SHOWICONS,
-                              cmnIsFeatureEnabled(FolderContentShowIcons));
+                              cmnQuerySetting(sfFolderContentShowIcons));
 #endif
 
         /* winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_EXTENDCLOSEMENU,
-                              pGlobalSettings->fExtendCloseMenu);
+                              cmnQuerySetting(sfExtendCloseMenu));
                 // V0.9.12 (2001-05-22) [umoeller]
                 */
     }
@@ -2870,14 +2884,14 @@ VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         BOOL fViewVisible =
         G_fIsWarp4 = doshIsWarp4();
         fViewVisible =
-               (    ( (G_fIsWarp4)  && (pGlobalSettings->RemoveViewMenu == 0) )
-                 || ( (!G_fIsWarp4) && ((pGlobalSettings->DefaultMenuItems & CTXT_SELECT) == 0)
+               (    ( (G_fIsWarp4)  && (cmnQuerySetting(sfRemoveViewMenu) == 0) )
+                 || ( (!G_fIsWarp4) && ((cmnQuerySetting(sflDefaultMenuItems) & CTXT_SELECT) == 0)
                ));
 #ifndef __NOFOLDERCONTENTS__
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FOLDERCONTENT,
-                         !cmnIsFeatureEnabled(NoSubclassing));
+                         !cmnQuerySetting(sfNoSubclassing));
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FC_SHOWICONS,
-                         !cmnIsFeatureEnabled(NoSubclassing));
+                         !cmnQuerySetting(sfNoSubclassing));
 #endif
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SELECTSOME, fViewVisible);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FLDRVIEWS, fViewVisible);
@@ -2899,68 +2913,71 @@ MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                USHORT usNotifyCode,
                                ULONG ulExtra)      // for checkboxes: contains new state
 {
-    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+    // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     MRESULT mrc = (MRESULT)0;
     BOOL fSave = TRUE;
 
     switch (ulItemID)
     {
         case ID_XSDI_FILEATTRIBS:
-            pGlobalSettings->FileAttribs = ulExtra;
+            cmnSetSetting(sfFileAttribs, ulExtra);
         break;
 
         case ID_XSDI_COPYFILENAME:
-            pGlobalSettings->AddCopyFilenameItem = ulExtra;
+            cmnSetSetting(sfAddCopyFilenameItem, ulExtra);
         break;
 
         case ID_XSDI_FLDRVIEWS:
-            pGlobalSettings->ExtendFldrViewMenu = ulExtra;
+            cmnSetSetting(sfExtendFldrViewMenu, ulExtra);
         break;
 
 #ifndef __NOMOVEREFRESHNOW__
         case ID_XSDI_MOVE4REFRESH:
-            pGlobalSettings->__fMoveRefreshNow = ulExtra;
+            cmnSetSetting(sfMoveRefreshNow, ulExtra);
         break;
 #endif
 
         case ID_XSDI_SELECTSOME:
-            pGlobalSettings->AddSelectSomeItem = ulExtra;
+            cmnSetSetting(sfAddSelectSomeItem, ulExtra);
         break;
 
 #ifndef __NOFOLDERCONTENTS__
         case ID_XSDI_FOLDERCONTENT:
-            pGlobalSettings->__fAddFolderContentItem = ulExtra;
+            cmnSetSetting(sfAddFolderContentItem, ulExtra);
         break;
 
         case ID_XSDI_FC_SHOWICONS:
-            pGlobalSettings->__fFolderContentShowIcons = ulExtra;
+            cmnSetSetting(sfFolderContentShowIcons, ulExtra);
         break;
 #endif
 
         /* case ID_XSDI_EXTENDCLOSEMENU:
-            pGlobalSettings->fExtendCloseMenu = ulExtra;
+            cmnSetSetting(sfExtendCloseMenu, ulExtra);
                 // V0.9.12 (2001-05-22) [umoeller]
         break; */
 
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
-            PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
+            // PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
 
             // and restore the settings for this page
-            pGlobalSettings->FileAttribs = pGSBackup->FileAttribs;
-            pGlobalSettings->AddCopyFilenameItem = pGSBackup->AddCopyFilenameItem;
-            pGlobalSettings->ExtendFldrViewMenu = pGSBackup->ExtendFldrViewMenu;
+            cmnRestoreSettings(pcnbp->pUser,
+                               ARRAYITEMCOUNT(G_AddMenusBackup));
+/*
+            cmnSetSetting(sfFileAttribs, pGSBackup->FileAttribs);
+            cmnSetSetting(sfAddCopyFilenameItem, pGSBackup->AddCopyFilenameItem);
+            cmnSetSetting(sfExtendFldrViewMenu, pGSBackup->ExtendFldrViewMenu);
 #ifndef __NOMOVEREFRESHNOW__
-            pGlobalSettings->__fMoveRefreshNow = pGSBackup->__fMoveRefreshNow;
+            cmnSetSetting(sfMoveRefreshNow, pGSBackup->__fMoveRefreshNow);
 #endif
-            pGlobalSettings->AddSelectSomeItem = pGSBackup->AddSelectSomeItem;
+            cmnSetSetting(sfAddSelectSomeItem, pGSBackup->AddSelectSomeItem);
 #ifndef __NOFOLDERCONTENTS__
-            pGlobalSettings->__fAddFolderContentItem = pGSBackup->__fAddFolderContentItem;
-            pGlobalSettings->__fFolderContentShowIcons = pGSBackup->__fFolderContentShowIcons;
+            cmnSetSetting(sfAddFolderContentItem, pGSBackup->__fAddFolderContentItem);
+            cmnSetSetting(sfFolderContentShowIcons, pGSBackup->__fFolderContentShowIcons);
 #endif
-
-            // pGlobalSettings->fExtendCloseMenu = pGSBackup->fExtendCloseMenu;
+   */
+            // cmnSetSetting(sfExtendCloseMenu, pGSBackup->fExtendCloseMenu);
 
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
@@ -2982,13 +2999,22 @@ MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             fSave = FALSE;
     }
 
-    cmnUnlockGlobalSettings();
+    // cmnUnlockGlobalSettings();
 
-    if (fSave)
-        cmnStoreGlobalSettings();
+    // if (fSave)
+        // cmnStoreGlobalSettings();
 
     return (mrc);
 }
+
+static XWPSETTING G_ConfigFolderMenusBackup[] =
+    {
+        sfMenuCascadeMode,
+        sfRemoveX,
+        sfAppdParam,
+        sulTemplatesOpenSettings,
+        sfTemplatesReposition
+    };
 
 /*
  *@@ mnuConfigFolderMenusInitPage:
@@ -3004,7 +3030,7 @@ MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 VOID mnuConfigFolderMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                                       ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (flFlags & CBI_INIT)
     {
@@ -3014,21 +3040,25 @@ VOID mnuConfigFolderMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
+            pcnbp->pUser = cmnBackupSettings(G_ConfigFolderMenusBackup,
+                                             ARRAYITEMCOUNT(G_ConfigFolderMenusBackup));
+            /*
             pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
             memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+            */
         }
     }
 
     if (flFlags & CBI_SET)
     {
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_CASCADE,
-                              pGlobalSettings->MenuCascadeMode);
+                              cmnQuerySetting(sfMenuCascadeMode));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_REMOVEX,
-                              pGlobalSettings->RemoveX);
+                              cmnQuerySetting(sfRemoveX));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_APPDPARAM,
-                              pGlobalSettings->AppdParam);
+                              cmnQuerySetting(sfAppdParam));
 
-        switch (pGlobalSettings->TemplatesOpenSettings)
+        switch (cmnQuerySetting(sulTemplatesOpenSettings))
         {
             case 0:  winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_TPL_DONOTHING, 1); break;
             case 1:  winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_TPL_OPENSETTINGS, 1); break;
@@ -3036,7 +3066,7 @@ VOID mnuConfigFolderMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
         }
 
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_TPL_POSITION,
-                              pGlobalSettings->TemplatesReposition);
+                              cmnQuerySetting(sfTemplatesReposition));
     }
 }
 
@@ -3055,52 +3085,56 @@ MRESULT mnuConfigFolderMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                         USHORT usNotifyCode,
                                         ULONG ulExtra)      // for checkboxes: contains new state
 {
-    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+    // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     MRESULT mrc = (MRESULT)0;
     BOOL fSave = TRUE;
 
     switch (ulItemID)
     {
         case ID_XSDI_CASCADE:
-            pGlobalSettings->MenuCascadeMode   = ulExtra;
+            cmnSetSetting(sfMenuCascadeMode, ulExtra);
         break;
 
         case ID_XSDI_REMOVEX:
-            pGlobalSettings->RemoveX   = ulExtra;
+            cmnSetSetting(sfRemoveX, ulExtra);
         break;
 
         case ID_XSDI_APPDPARAM:
-            pGlobalSettings->AppdParam = ulExtra;
+            cmnSetSetting(sfAppdParam, ulExtra);
         break;
 
         // "create from templates" settings
         case ID_XSDI_TPL_DONOTHING:
-            pGlobalSettings->TemplatesOpenSettings = 0;
+            cmnSetSetting(sulTemplatesOpenSettings, 0);
         break;
 
         case ID_XSDI_TPL_EDITTITLE:
-            pGlobalSettings->TemplatesOpenSettings = BM_INDETERMINATE;
+            cmnSetSetting(sulTemplatesOpenSettings, BM_INDETERMINATE);
         break;
 
         case ID_XSDI_TPL_OPENSETTINGS:
-            pGlobalSettings->TemplatesOpenSettings = BM_CHECKED;
+            cmnSetSetting(sulTemplatesOpenSettings, BM_CHECKED);
         break;
 
         case ID_XSDI_TPL_POSITION:
-            pGlobalSettings->TemplatesReposition = ulExtra;
+            cmnSetSetting(sfTemplatesReposition, ulExtra);
         break;
 
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
-            PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
+            // PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
 
             // and restore the settings for this page
-            pGlobalSettings->MenuCascadeMode   = pGSBackup->MenuCascadeMode;
-            pGlobalSettings->RemoveX   = pGSBackup->RemoveX;
-            pGlobalSettings->AppdParam = pGSBackup->AppdParam;
-            pGlobalSettings->TemplatesOpenSettings = pGSBackup->TemplatesOpenSettings;
-            pGlobalSettings->TemplatesReposition = pGSBackup->TemplatesReposition;
+            cmnRestoreSettings(pcnbp->pUser,
+                               ARRAYITEMCOUNT(G_ConfigFolderMenusBackup));
+            /*
+            cmnSetSetting(sfMenuCascadeMode, pGSBackup->MenuCascadeMode);
+            cmnSetSetting(sfRemoveX, pGSBackup->RemoveX);
+            cmnSetSetting(sfAppdParam, pGSBackup->AppdParam);
+            cmnSetSetting(sulTemplatesOpenSettings, pGSBackup->TemplatesOpenSettings);
+            cmnSetSetting(sfTemplatesReposition, pGSBackup->TemplatesReposition);
+               */
 
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
@@ -3122,13 +3156,24 @@ MRESULT mnuConfigFolderMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             fSave = FALSE;
     }
 
-    cmnUnlockGlobalSettings();
+    // cmnUnlockGlobalSettings();
 
-    if (fSave)
-        cmnStoreGlobalSettings();
+    /* if (fSave)
+        cmnStoreGlobalSettings(); */
 
     return (mrc);
 }
+
+static XWPSETTING G_RemoveMenusBackup[] =
+    {
+        sflDefaultMenuItems,
+        sfRemoveViewMenu,
+        sfRemovePasteItem,
+        sfRemoveLockInPlaceItem,
+        sfFixLockInPlace,
+        sfRemoveCheckDiskItem,
+        sfRemoveFormatDiskItem
+    };
 
 /*
  *@@ mnuRemoveMenusInitPage:
@@ -3145,7 +3190,7 @@ MRESULT mnuConfigFolderMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 VOID mnuRemoveMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                                 ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (flFlags & CBI_INIT)
     {
@@ -3155,50 +3200,54 @@ VOID mnuRemoveMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
+            /*
             pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
             memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+            */
+            pcnbp->pUser = cmnBackupSettings(G_RemoveMenusBackup,
+                                             ARRAYITEMCOUNT(G_RemoveMenusBackup));
         }
     }
 
     if (flFlags & CBI_SET)
     {
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_HELP  ,
-                              (pGlobalSettings->DefaultMenuItems & CTXT_HELP) == 0);
+                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_HELP) == 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_CRANOTHER,
-                              (pGlobalSettings->DefaultMenuItems & CTXT_CRANOTHER) == 0);
+                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_CRANOTHER) == 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_COPY  ,
-                              (pGlobalSettings->DefaultMenuItems & CTXT_COPY     ) == 0);
+                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_COPY     ) == 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOVE  ,
-                              (pGlobalSettings->DefaultMenuItems & CTXT_MOVE     ) == 0);
+                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_MOVE     ) == 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SHADOW,
-                              (pGlobalSettings->DefaultMenuItems & CTXT_SHADOW   ) == 0);
+                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_SHADOW   ) == 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DELETE,
-                              (pGlobalSettings->DefaultMenuItems & CTXT_DELETE   ) == 0);
+                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_DELETE   ) == 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_PICKUP,
-                              (pGlobalSettings->DefaultMenuItems & CTXT_PICKUP   ) == 0);
+                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_PICKUP   ) == 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FIND  ,
-                              (pGlobalSettings->DefaultMenuItems & CTXT_FIND     ) == 0);
+                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_FIND     ) == 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SELECT,
-                              (pGlobalSettings->DefaultMenuItems & CTXT_SELECT   ) == 0);
+                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_SELECT   ) == 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SORT  ,
-                              (pGlobalSettings->DefaultMenuItems & CTXT_SORT     ) == 0);
+                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_SORT     ) == 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ARRANGE,
-                              (pGlobalSettings->DefaultMenuItems & CTXT_ARRANGE ) == 0);
+                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_ARRANGE ) == 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_PRINT  ,
-                              (pGlobalSettings->DefaultMenuItems & CTXT_PRINT   ) == 0);
+                              (cmnQuerySetting(sflDefaultMenuItems) & CTXT_PRINT   ) == 0);
 
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_WARP4DISPLAY,
-                              !pGlobalSettings->RemoveViewMenu);
+                              !cmnQuerySetting(sfRemoveViewMenu));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_INSERT,
-                              !pGlobalSettings->RemovePasteItem);
+                              !cmnQuerySetting(sfRemovePasteItem));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE,
-                              !pGlobalSettings->RemoveLockInPlaceItem);
+                              !cmnQuerySetting(sfRemoveLockInPlaceItem));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE_NOSUB,
-                              pGlobalSettings->fFixLockInPlace);  // V0.9.7 (2000-12-10) [umoeller]
+                              cmnQuerySetting(sfFixLockInPlace));  // V0.9.7 (2000-12-10) [umoeller]
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_CHECKDISK,
-                              !pGlobalSettings->RemoveCheckDiskItem);
+                              !cmnQuerySetting(sfRemoveCheckDiskItem));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FORMATDISK,
-                              !pGlobalSettings->RemoveFormatDiskItem);
+                              !cmnQuerySetting(sfRemoveFormatDiskItem));
     }
 
     if (flFlags & CBI_ENABLE)
@@ -3208,7 +3257,7 @@ VOID mnuRemoveMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         {
             winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SELECT, FALSE);
             winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE_NOSUB,
-                             !pGlobalSettings->RemoveLockInPlaceItem);
+                             !cmnQuerySetting(sfRemoveLockInPlaceItem));
         }
         else
         {
@@ -3236,136 +3285,105 @@ MRESULT mnuRemoveMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                   USHORT usNotifyCode,
                                   ULONG ulExtra)      // for checkboxes: contains new state
 {
-    GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+    // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
     MRESULT mrc = (MRESULT)0;
     BOOL fSave = TRUE;
+
+    ULONG flChange = 0;
 
     switch (ulItemID)
     {
         case ID_XSDI_HELP:
-            if (ulExtra)
-                pGlobalSettings->DefaultMenuItems &= ~CTXT_HELP;
-            else
-                pGlobalSettings->DefaultMenuItems |= CTXT_HELP;
+            flChange = CTXT_HELP;
         break;
 
         case ID_XSDI_CRANOTHER:
-            if (ulExtra)
-                pGlobalSettings->DefaultMenuItems &= ~CTXT_CRANOTHER;
-            else
-                pGlobalSettings->DefaultMenuItems |= CTXT_CRANOTHER;
+            flChange = CTXT_CRANOTHER;
         break;
 
         case ID_XSDI_COPY:
-            if (ulExtra)
-                pGlobalSettings->DefaultMenuItems &= ~CTXT_COPY;
-            else
-                pGlobalSettings->DefaultMenuItems |= CTXT_COPY;
+            flChange = CTXT_COPY;
         break;
 
         case ID_XSDI_MOVE:
-            if (ulExtra)
-                pGlobalSettings->DefaultMenuItems &= ~CTXT_MOVE;
-            else
-                pGlobalSettings->DefaultMenuItems |= CTXT_MOVE;
+            flChange = CTXT_MOVE;
         break;
 
         case ID_XSDI_SHADOW:
-            if (ulExtra)
-                pGlobalSettings->DefaultMenuItems &= ~CTXT_SHADOW;
-            else
-                pGlobalSettings->DefaultMenuItems |= CTXT_SHADOW;
+            flChange = CTXT_SHADOW;
         break;
 
         case ID_XSDI_DELETE:
-            if (ulExtra)
-                pGlobalSettings->DefaultMenuItems &= ~CTXT_DELETE;
-            else
-                pGlobalSettings->DefaultMenuItems |= CTXT_DELETE;
+            flChange = CTXT_DELETE;
         break;
 
         case ID_XSDI_PICKUP:
-            if (ulExtra)
-                pGlobalSettings->DefaultMenuItems &= ~CTXT_PICKUP;
-            else
-                pGlobalSettings->DefaultMenuItems |= CTXT_PICKUP;
+            flChange = CTXT_PICKUP;
         break;
 
         case ID_XSDI_FIND:
-            if (ulExtra)
-                pGlobalSettings->DefaultMenuItems &= ~CTXT_FIND;
-            else
-                pGlobalSettings->DefaultMenuItems |= CTXT_FIND;
+            flChange = CTXT_FIND;
         break;
 
         case ID_XSDI_SELECT:
-            if (ulExtra)
-                pGlobalSettings->DefaultMenuItems &= ~CTXT_SELECT;
-            else
-                pGlobalSettings->DefaultMenuItems |= CTXT_SELECT;
+            flChange = CTXT_SELECT;
         break;
 
         case ID_XSDI_SORT:
-            if (ulExtra)
-                pGlobalSettings->DefaultMenuItems &= ~CTXT_SORT;
-            else
-                pGlobalSettings->DefaultMenuItems |= CTXT_SORT;
+            flChange = CTXT_SORT;
         break;
 
         case ID_XSDI_ARRANGE:
-            if (ulExtra)
-                pGlobalSettings->DefaultMenuItems &= ~CTXT_ARRANGE;
-            else
-                pGlobalSettings->DefaultMenuItems |= CTXT_ARRANGE;
+            flChange = CTXT_ARRANGE;
         break;
 
         case ID_XSDI_PRINT:
-            if (ulExtra)
-                pGlobalSettings->DefaultMenuItems &= ~CTXT_PRINT;
-            else
-                pGlobalSettings->DefaultMenuItems |= CTXT_PRINT;
+            flChange = CTXT_PRINT;
         break;
 
         case ID_XSDI_WARP4DISPLAY:
-            pGlobalSettings->RemoveViewMenu = 1-ulExtra;
+            cmnSetSetting(sfRemoveViewMenu, 1-ulExtra);
         break;
 
         case ID_XSDI_INSERT:
-            pGlobalSettings->RemovePasteItem = 1-ulExtra;
+            cmnSetSetting(sfRemovePasteItem, 1-ulExtra);
         break;
 
         case ID_XSDI_LOCKINPLACE:
-            pGlobalSettings->RemoveLockInPlaceItem = 1-ulExtra;
+            cmnSetSetting(sfRemoveLockInPlaceItem, 1-ulExtra);
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE); // V0.9.7 (2000-12-10) [umoeller]
         break;
 
         case ID_XSDI_LOCKINPLACE_NOSUB:  // V0.9.7 (2000-12-10) [umoeller]
-            pGlobalSettings->fFixLockInPlace = ulExtra;
+            cmnSetSetting(sfFixLockInPlace, ulExtra);
         break;
 
         case ID_XSDI_CHECKDISK:
-            pGlobalSettings->RemoveCheckDiskItem = 1-ulExtra;
+            cmnSetSetting(sfRemoveCheckDiskItem, 1-ulExtra);
         break;
 
         case ID_XSDI_FORMATDISK:
-            pGlobalSettings->RemoveFormatDiskItem = 1-ulExtra;
+            cmnSetSetting(sfRemoveFormatDiskItem, 1-ulExtra);
         break;
 
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
-            PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
+            // PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
 
             // and restore the settings for this page
-            pGlobalSettings->DefaultMenuItems = pGSBackup->DefaultMenuItems;
-            pGlobalSettings->RemoveViewMenu = pGSBackup->RemoveViewMenu;
-            pGlobalSettings->RemovePasteItem = pGSBackup->RemovePasteItem;
-            pGlobalSettings->RemoveLockInPlaceItem = pGSBackup->RemoveLockInPlaceItem;
-            pGlobalSettings->fFixLockInPlace = pGSBackup->fFixLockInPlace;
-            pGlobalSettings->RemoveCheckDiskItem = pGSBackup->RemoveCheckDiskItem;
-            pGlobalSettings->RemoveFormatDiskItem = pGSBackup->RemoveFormatDiskItem;
-
+            cmnRestoreSettings(pcnbp->pUser,
+                               ARRAYITEMCOUNT(G_RemoveMenusBackup));
+            /*
+            cmnSetSetting(sflDefaultMenuItems, pGSBackup->DefaultMenuItems);
+            cmnSetSetting(sfRemoveViewMenu, pGSBackup->RemoveViewMenu);
+            cmnSetSetting(sfRemovePasteItem, pGSBackup->RemovePasteItem);
+            cmnSetSetting(sfRemoveLockInPlaceItem, pGSBackup->RemoveLockInPlaceItem);
+            cmnSetSetting(sfFixLockInPlace, pGSBackup->fFixLockInPlace);
+            cmnSetSetting(sfRemoveCheckDiskItem, pGSBackup->RemoveCheckDiskItem);
+            cmnSetSetting(sfRemoveFormatDiskItem, pGSBackup->RemoveFormatDiskItem);
+               */
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         }
@@ -3386,10 +3404,21 @@ MRESULT mnuRemoveMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             fSave = FALSE;
     }
 
-    cmnUnlockGlobalSettings();
+    if (flChange)
+    {
+        ULONG fl = cmnQuerySetting(sflDefaultMenuItems);
+        // note, these are reverse
+        if (ulExtra)
+            fl &= ~flChange;
+        else
+            fl |= flChange;
+        cmnSetSetting(sflDefaultMenuItems, fl);
+    }
 
-    if (fSave)
-        cmnStoreGlobalSettings();
+    // cmnUnlockGlobalSettings();
+
+    /* if (fSave)
+        cmnStoreGlobalSettings(); */
 
     return (mrc);
 }

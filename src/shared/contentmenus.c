@@ -438,9 +438,9 @@ MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1
  *@@added V0.9.7 (2000-11-29) [umoeller]
  */
 
-VOID cmnuInitItemCache(PCGLOBALSETTINGS pGlobalSettings) // in: from cmnQueryGlobalSettings()
+VOID cmnuInitItemCache(VOID)
 {
-    G_sNextMenuId = (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE);
+    G_sNextMenuId = (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_VARIABLE);
     G_ulVarItemCount = 0;         // reset the number of variable items to 0
 
     if (G_llContentMenuItems.ulMagic != LINKLISTMAGIC)
@@ -609,7 +609,7 @@ SHORT cmnuPrepareContentSubmenu(WPFolder *somSelf, // in: folder whose content i
 {
     HWND    hwndNewMenu;
     SHORT   sId = G_sNextMenuId;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (hwndNewMenu = winhInsertSubmenu(hwndMenu,
                                         iPosition,
@@ -618,7 +618,7 @@ SHORT cmnuPrepareContentSubmenu(WPFolder *somSelf, // in: folder whose content i
                                         (fOwnerDraw
                                             ? MIS_OWNERDRAW
                                             : 0),
-                                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY),
+                                        (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_DUMMY),
                                         cmnGetString(ID_XSSI_FLDREMPTY),
                                             // (cmnQueryNLSStrings())->pszFldrEmpty,
                                         MIS_TEXT,
@@ -700,6 +700,7 @@ SHORT EXPENTRY fncbSortContentMenuItems(PVOID pItem1, PVOID pItem2, PVOID hab)
  *@@added V0.9.1 (2000-02-01) [umoeller]
  *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
  *@@changed V0.9.7 (2001-01-21) [lafaix]: using MIS_BREAKSEPARATOR instead of MIS_BREAK
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: now applying folder "include" criteria
  */
 
 VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
@@ -709,7 +710,7 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
     HAB             habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
     BOOL            fFolderLocked = FALSE;
     PLISTNODE       pNode = NULL;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     // We will first create two lists in memory
     // for all folders and non-folders; we will
@@ -744,7 +745,7 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
 
         // remove "empty" item (if it exists)
         winhRemoveMenuItem(hwndMenu,
-                           (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY));
+                           (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_DUMMY));
 
         // start collecting stuff; lock the folder contents,
         // do this in a protected block (exception handler,
@@ -763,33 +764,23 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
                  pObject;
                  pObject = *wpshGetNextObjPointer(pObject))
             {
-                // dereference shadows, if necessary
-                pObject2 = pObject;
-                while (pObject2)
+                // apply folder's "include" criteria
+                // V0.9.16 (2002-01-05) [umoeller]
+                if (!fdrIsObjectFiltered(pFolder,
+                                         pObject))
                 {
-                    if (_somIsA(pObject2, _WPShadow))
-                        pObject2 = _wpQueryShadowedObject(pObject2, TRUE);
-                    else
-                        break;
-                }
-
-                if (pObject2)
-                {
-                    // got an object (either real or dereferenced shadow):
-                    BOOL fInsertThis = TRUE;
-
-                    // exclude hidden file system objects
-                    if (_somIsA(pObject, _WPFileSystem))
+                    // object not filtered:
+                    // dereference shadows, if necessary
+                    pObject2 = pObject;
+                    while (pObject2)
                     {
-                        if ( _wpQueryAttr(pObject2) & FILE_HIDDEN )
-                           fInsertThis = FALSE;
+                        if (_somIsA(pObject2, _WPShadow))
+                            pObject2 = _wpQueryShadowedObject(pObject2, TRUE);
+                        else
+                            break;
                     }
 
-                    // exclude hidden Desktop objects
-                    if (_wpQueryStyle(pObject2) & OBJSTYLE_NOTVISIBLE)
-                        fInsertThis = FALSE;
-
-                    if (fInsertThis)
+                    if (pObject2)
                     {
                         BOOL    fIsFolder = (    (_somIsA(pObject2, _WPFolder))
                                               || (_somIsA(pObject2, _WPDisk))
@@ -856,7 +847,7 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
                                             pmli->szItemString,
                                             MIT_END,
 #ifndef __NOFOLDERCONTENTS__
-                                            cmnIsFeatureEnabled(FolderContentShowIcons));
+                                            cmnQuerySetting(sfFolderContentShowIcons));
 #else
                                             TRUE);
 #endif
@@ -872,7 +863,7 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
          && (pllNonFolders->ulCount)
        )
        winhInsertMenuSeparator(hwndMenu, MIT_END,
-                               (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                               (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SEPARATOR));
 
     // insert non-folder objects into menu
     pNode = lstQueryFirstNode(pllNonFolders);
@@ -883,7 +874,7 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
                                               MIT_END,
                                               pmli->szItemString,
 #ifndef __NOFOLDERCONTENTS__
-                                              (cmnIsFeatureEnabled(FolderContentShowIcons))
+                                              (cmnQuerySetting(sfFolderContentShowIcons))
                                                  ? MIS_OWNERDRAW
                                                  : MIS_TEXT,
 #else
@@ -911,20 +902,20 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
         CHAR    szMsgItem[300];
         // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         winhInsertMenuSeparator(hwndMenu, MIT_END,
-                                (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                                (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_SEPARATOR));
         sprintf(szMsgItem,
                 cmnGetString(ID_XSSI_DROPPED1),  // "... %d objects dropped,", // pszDropped1
                 ulObjectsLeftOut);
 
         winhInsertMenuItem(hwndMenu,
                            MIT_END,
-                           (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY),
+                           (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_DUMMY),
                            szMsgItem,
                            MIS_TEXT,
                            MIA_DISABLED);
         winhInsertMenuItem(hwndMenu,
                            MIT_END,
-                           (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY),
+                           (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_DUMMY),
                            cmnGetString(ID_XSSI_DROPPED2),  // "open folder to see them", // pszDropped2
                            MIS_TEXT,
                            MIA_DISABLED);
@@ -1031,7 +1022,7 @@ VOID cmnuFillContentSubmenu(SHORT sMenuId, // in: menu ID of selected folder con
     PLISTNODE       pNode = lstQueryFirstNode(&G_llContentMenuItems);
     PCONTENTMENULISTITEM pcmli = NULL;
 
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     WPFolder        *pFolder = NULL;
 
@@ -1042,7 +1033,7 @@ VOID cmnuFillContentSubmenu(SHORT sMenuId, // in: menu ID of selected folder con
     if ((ULONG)WinSendMsg(hwndMenu,
                           MM_ITEMIDFROMPOSITION,
                           0, 0)
-                == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY)
+                == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_DUMMY)
        )
     {
         // _Pmpf(("    first item is DUMMY"));
@@ -1214,8 +1205,7 @@ VOID cmnuPrepareOwnerDraw(// SHORT sMenuIDMsg, // from WM_INITMENU: SHORT mp1 su
  *@@changed V0.9.16 (2001-10-31) [umoeller]: now using at least system mini-icon height
  */
 
-MRESULT cmnuMeasureItem(POWNERITEM poi,      // owner-draw info structure
-                        PCGLOBALSETTINGS pGlobalSettings) // shortcut to global settings
+MRESULT cmnuMeasureItem(POWNERITEM poi)     // owner-draw info structure
 {
     MRESULT mrc = (MRESULT)FALSE;
 
@@ -1224,7 +1214,7 @@ MRESULT cmnuMeasureItem(POWNERITEM poi,      // owner-draw info structure
     PVARMENULISTITEM pItem
         = (PVARMENULISTITEM)lstItemFromIndex(&G_llVarMenuItems,
                                              (poi->idItem
-                                                - (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE)));
+                                                - (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_VARIABLE)));
 
     if (G_ulMiniIconSize == 0)
         // not queried yet?
@@ -1289,8 +1279,7 @@ MRESULT cmnuMeasureItem(POWNERITEM poi,      // owner-draw info structure
  *@@changed V0.9.16 (2001-10-31) [umoeller]: now using at least system mini-icon height
  */
 
-BOOL cmnuDrawItem(PCGLOBALSETTINGS pGlobalSettings,   // shortcut to global settings
-                  MPARAM mp1,     // from WM_DRAWITEM: USHORT menu item id
+BOOL cmnuDrawItem(MPARAM mp1,     // from WM_DRAWITEM: USHORT menu item id
                   MPARAM mp2)     // from WM_DRAWITEM: POWNERITEM structure
 {
     BOOL brc = FALSE;
@@ -1306,7 +1295,7 @@ BOOL cmnuDrawItem(PCGLOBALSETTINGS pGlobalSettings,   // shortcut to global sett
     PVARMENULISTITEM pItem
         = (PVARMENULISTITEM)lstItemFromIndex(&G_llVarMenuItems,
                                              (poi->idItem
-                                                - (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE)));
+                                                - (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_VARIABLE)));
     HPOINTER hIcon;
 
     if (pItem)

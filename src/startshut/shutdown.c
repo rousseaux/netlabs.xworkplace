@@ -97,6 +97,7 @@
 #include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
+#include "helpers\exeh.h"               // executable helpers
 #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
@@ -309,13 +310,24 @@ HWND CreateDimScreenWindow(VOID)
 
     FRAMECDATA  fcdata;
 
-    HPS hpsScreen = WinGetScreenPS(HWND_DESKTOP);
+    HPS hpsScreen;
     RECTL rcl;
+    HAB hab = winhMyAnchorBlock();      // expensive, but what the heck
+
+    // before capturing the screen, sleep a millisecond,
+    // because otherwise windows are not fully repainted
+    // if the desktop menu was open, and we get that
+    // into the screenshot then... so give the windows
+    // time to repaint
+    winhSleep(10);
+
+    // go capture screen
+    hpsScreen = WinGetScreenPS(HWND_DESKTOP);
     rcl.xLeft = 0;
     rcl.yBottom = 0;
     rcl.xRight = winhQueryScreenCX();
     rcl.yTop = winhQueryScreenCY();
-    if (G_pbmDim = gpihCreateBmpFromPS(winhMyAnchorBlock(),
+    if (G_pbmDim = gpihCreateBmpFromPS(hab,
                                        hpsScreen,
                                        &rcl))
     {
@@ -376,7 +388,6 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
     BOOL        fStore = FALSE;
     HWND        hwndConfirm = NULLHANDLE,
                 hwndDim;
-    BOOL        fSettingsLocked = FALSE; // V0.9.7 (2000-12-13) [umoeller]
 
     TRY_LOUD(excpt1)
     {
@@ -429,7 +440,7 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
                                 (PSZ)INIKEY_BOOTMGR,
                                 &ulKeyLength))
         {
-            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+            // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
             // items exist: evaluate
             if (pINI = malloc(ulKeyLength))
             {
@@ -453,11 +464,11 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
             }
 
             // select reboot item from last time
-            if (pGlobalSettings->__usLastRebootExt != 0xFFFF)
+            if (cmnQuerySetting(susLastRebootExt) != 0xFFFF)
             {
                 if (WinSendDlgItemMsg(hwndConfirm, ID_SDDI_BOOTMGR,
                                       LM_SELECTITEM,
-                                      (MPARAM)pGlobalSettings->__usLastRebootExt, // item index
+                                      (MPARAM)cmnQuerySetting(susLastRebootExt), // item index
                                       (MPARAM)TRUE) // select (not deselect)
                             == (MRESULT)FALSE)
                     // error:
@@ -502,58 +513,55 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
 
         if (ulReturn == DID_OK)
         {
-            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-            if (pGlobalSettings)
+            ULONG flShutdown = cmnQuerySetting(sflXShutdown);
+
+            // check "show this msg again"
+            if (!(winhIsDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN)))
+                flShutdown &= ~XSD_CONFIRM;
+
+            // check empty trash
+            psdParms->optEmptyTrashCan
+                = (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_EMPTYTRASHCAN) != 0);
+
+            // check reboot options
+            psdParms->optReboot = FALSE;
+            if (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_REBOOTTO))
             {
-                fSettingsLocked = TRUE;
-                // check "show this msg again"
-                if (!(winhIsDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN)))
-                    pGlobalSettings->__flXShutdown &= ~XSD_CONFIRM;
+                USHORT usSelected = (USHORT)WinSendDlgItemMsg(hwndConfirm, ID_SDDI_BOOTMGR,
+                                                              LM_QUERYSELECTION,
+                                                              (MPARAM)LIT_CURSOR,
+                                                              MPNULL);
+                USHORT us;
+                psdParms->optReboot = TRUE;
 
-                // check empty trash
-                psdParms->optEmptyTrashCan
-                    = (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_EMPTYTRASHCAN) != 0);
-
-                // check reboot options
-                psdParms->optReboot = FALSE;
-                if (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_REBOOTTO))
+                p = pINI;
+                for (us = 0; us < usSelected; us++)
                 {
-                    USHORT usSelected = (USHORT)WinSendDlgItemMsg(hwndConfirm, ID_SDDI_BOOTMGR,
-                                                                  LM_QUERYSELECTION,
-                                                                  (MPARAM)LIT_CURSOR,
-                                                                  MPNULL);
-                    USHORT us;
-                    psdParms->optReboot = TRUE;
-
-                    p = pINI;
-                    for (us = 0; us < usSelected; us++)
-                    {
-                        // skip description string
-                        p += (strlen(p)+1);
-                        // skip reboot command
-                        p += (strlen(p)+1);
-                    }
-                    // skip description string to get to reboot command
+                    // skip description string
                     p += (strlen(p)+1);
-                    strcpy(psdParms->szRebootCommand, p);
-
-                    pGlobalSettings->__flXShutdown |= XSD_REBOOT;
-                    pGlobalSettings->__usLastRebootExt = usSelected;
+                    // skip reboot command
+                    p += (strlen(p)+1);
                 }
-                else if (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_STANDARDREBOOT))
-                {
-                    psdParms->optReboot = TRUE;
-                    // szRebootCommand is a zero-byte only, which will lead to
-                    // the standard reboot in the Shutdown thread
-                    pGlobalSettings->__flXShutdown |= XSD_REBOOT;
-                    pGlobalSettings->__usLastRebootExt = 0xFFFF;
-                }
-                else
-                    // standard shutdown:
-                    pGlobalSettings->__flXShutdown &= ~XSD_REBOOT;
+                // skip description string to get to reboot command
+                p += (strlen(p)+1);
+                strcpy(psdParms->szRebootCommand, p);
 
-                fStore = TRUE;
-            } // if (pGlobalSettings)
+                flShutdown |= XSD_REBOOT;
+                cmnSetSetting(susLastRebootExt, usSelected);
+            }
+            else if (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_STANDARDREBOOT))
+            {
+                psdParms->optReboot = TRUE;
+                // szRebootCommand is a zero-byte only, which will lead to
+                // the standard reboot in the Shutdown thread
+                flShutdown |= XSD_REBOOT;
+                cmnSetSetting(susLastRebootExt, 0xFFFF);
+            }
+            else
+                // standard shutdown:
+                flShutdown &= ~XSD_REBOOT;
+
+            cmnSetSetting(sflXShutdown, flShutdown);
         }
 
         if (pINI)
@@ -562,12 +570,6 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
     CATCH(excpt1)
     {
     } END_CATCH();
-
-    if (fSettingsLocked)
-        cmnUnlockGlobalSettings(); // V0.9.7 (2000-12-13) [umoeller]
-
-    if (fStore)
-        cmnStoreGlobalSettings();
 
     if (hwndConfirm)
         WinDestroyWindow(hwndConfirm);
@@ -646,7 +648,8 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
 
     if (ulReturn == DID_OK)
     {
-        GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+        ULONG fl = cmnQuerySetting(sflXShutdown);
+
         psdParms->optWPSCloseWindows = winhIsDlgItemChecked(hwndConfirm,
                                                             ID_SDDI_WPS_CLOSEWINDOWS);
         if (psdParms->ulRestartWPS != 2)
@@ -654,17 +657,17 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
             // regular restart Desktop:
             // save close windows/startup folder settings
             if (psdParms->optWPSCloseWindows)
-                pGlobalSettings->__flXShutdown |= XSD_WPS_CLOSEWINDOWS;
+                fl |= XSD_WPS_CLOSEWINDOWS;
             else
-                pGlobalSettings->__flXShutdown &= ~XSD_WPS_CLOSEWINDOWS;
+                fl &= ~XSD_WPS_CLOSEWINDOWS;
             psdParms->optWPSReuseStartupFolder = winhIsDlgItemChecked(hwndConfirm,
                                                                       ID_SDDI_WPS_STARTUPFOLDER);
         }
         if (!(winhIsDlgItemChecked(hwndConfirm,
                                    ID_SDDI_MESSAGEAGAIN)))
-            pGlobalSettings->__flXShutdown &= ~XSD_CONFIRM;
-        cmnUnlockGlobalSettings();
-        cmnStoreGlobalSettings();
+            fl &= ~XSD_CONFIRM;
+
+        cmnSetSetting(sflXShutdown, fl);
     }
 
     WinDestroyWindow(hwndConfirm);
@@ -827,12 +830,14 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
 {
     MRESULT mrc = (MPARAM)NULL;
 
+    PAUTOCLOSEWINDATA pData = (PAUTOCLOSEWINDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
+
     switch (msg)
     {
         case WM_INITDLG:
         {
             // create window data in QWL_USER
-            PAUTOCLOSEWINDATA pData = malloc(sizeof(AUTOCLOSEWINDATA));
+            pData = malloc(sizeof(AUTOCLOSEWINDATA));
             memset(pData, 0, sizeof(AUTOCLOSEWINDATA));
             pData->pllAutoClose = lstCreate(TRUE);  // auto-free items
 
@@ -857,7 +862,8 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
             WinSetWindowULong(hwndDlg, QWL_USER, (ULONG)pData);
 
             WinPostMsg(hwndDlg, XM_UPDATE, MPNULL, MPNULL);
-        break; }
+        }
+        break;
 
         /*
          * WM_CONTROL:
@@ -865,7 +871,6 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
          */
 
         case WM_CONTROL:
-        {
             switch (SHORT1FROMMP(mp1))
             {
                 /*
@@ -875,10 +880,9 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                  */
 
                 case ID_XSDI_XRB_LISTBOX:
-                {
                     if (SHORT2FROMMP(mp1) == LN_SELECT)
                         WinSendMsg(hwndDlg, XM_UPDATE, MPNULL, MPNULL);
-                break; }
+                break;
 
                 /*
                  * ID_XSDI_XRB_ITEMNAME:
@@ -886,11 +890,8 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                  */
 
                 case ID_XSDI_XRB_ITEMNAME:
-                {
                     if (SHORT2FROMMP(mp1) == EN_KILLFOCUS)
                     {
-                        PAUTOCLOSEWINDATA pData =
-                                (PAUTOCLOSEWINDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
                         if (pData)
                         {
                             if (pData->pliSelected)
@@ -905,18 +906,15 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                             }
                         }
                     }
-                break; }
+                break;
 
                 // radio buttons
                 case ID_XSDI_ACL_WMCLOSE:
                 case ID_XSDI_ACL_CTRL_C:
                 case ID_XSDI_ACL_KILLSESSION:
                 case ID_XSDI_ACL_SKIP:
-                {
                     if (SHORT2FROMMP(mp1) == BN_CLICKED)
                     {
-                        PAUTOCLOSEWINDATA pData =
-                                (PAUTOCLOSEWINDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
                         if (pData)
                         {
                             if (pData->pliSelected)
@@ -932,20 +930,17 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                             }
                         }
                     }
-                break; }
+                break;
 
                 default:
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
             }
-        break; }
+        break;
 
         case XM_UPDATE:
         {
             // posted from various locations to wholly update
             // the dlg items
-            PAUTOCLOSEWINDATA pData =
-                    (PAUTOCLOSEWINDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
-            //printf("WM_CONTROL ID_XSDI_XRB_LISTBOX LN_SELECT\n");
             if (pData)
             {
                 pData->pliSelected = NULL;
@@ -1006,10 +1001,10 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                                    && (pData->pliSelected)
                                   ));
             }
-        break; }
+        }
+        break;
 
         case WM_COMMAND:
-        {
             switch (SHORT1FROMMP(mp1))
             {
 
@@ -1020,8 +1015,6 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
 
                 case ID_XSDI_XRB_NEW:
                 {
-                    PAUTOCLOSEWINDATA pData =
-                            (PAUTOCLOSEWINDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
                     PAUTOCLOSELISTITEM pliNew = malloc(sizeof(AUTOCLOSELISTITEM));
                     strcpy(pliNew->szItemName, "???");
                     pliNew->usAction = ACL_SKIP;
@@ -1043,7 +1036,8 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                                       EM_SETSEL,
                                       MPFROM2SHORT(0, 1000), // select all
                                       MPNULL);
-                break; }
+                }
+                break;
 
                 /*
                  * ID_XSDI_XRB_DELETE:
@@ -1052,8 +1046,6 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
 
                 case ID_XSDI_XRB_DELETE:
                 {
-                    PAUTOCLOSEWINDATA pData =
-                            (PAUTOCLOSEWINDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
                     //printf("WM_COMMAND ID_XSDI_XRB_DELETE BN_CLICKED\n");
                     if (pData)
                     {
@@ -1069,7 +1061,8 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                         WinPostMsg(hwndDlg, XM_UPDATE, MPNULL, MPNULL);
                     }
                     winhSetDlgItemFocus(hwndDlg, ID_XSDI_XRB_LISTBOX);
-                break; }
+                }
+                break;
 
                 /*
                  * DID_OK:
@@ -1078,11 +1071,8 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
 
                 case DID_OK:
                 {
-                    PAUTOCLOSEWINDATA pData =
-                        (PAUTOCLOSEWINDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
-
-                    USHORT usInvalid = xsdWriteAutoCloseItems(pData->pllAutoClose);
-                    if (usInvalid)
+                    USHORT usInvalid;
+                    if (usInvalid = xsdWriteAutoCloseItems(pData->pllAutoClose))
                     {
                         WinAlarm(HWND_DESKTOP, WA_ERROR);
                         WinSendDlgItemMsg(hwndDlg, ID_XSDI_XRB_LISTBOX,
@@ -1093,13 +1083,14 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                     else
                         // dismiss dlg
                         mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-                break; }
+                }
+                break;
 
                 default:  // includes DID_CANCEL
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                 break;
             }
-        break; }
+        break;
 
         case WM_HELP:
             cmnDisplayHelp(NULL,
@@ -1113,13 +1104,13 @@ MRESULT EXPENTRY fnwpAutoCloseDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
 
         case WM_DESTROY:
         {
-            PAUTOCLOSEWINDATA pData = (PAUTOCLOSEWINDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
             ctlStopAnimation(WinWindowFromID(hwndDlg, ID_SDDI_ICON));
             xsdFreeAnimation(&G_sdAnim);
             lstFree(&pData->pllAutoClose);
             free(pData);
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-        break; } // continue
+        }
+        break;
 
         default:
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
@@ -1782,36 +1773,36 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 
 VOID xsdQueryShutdownSettings(PSHUTDOWNPARAMS psdp)
 {
-    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+    ULONG flShutdown = cmnQuerySetting(sflXShutdown);
 
     memset(psdp, 0, sizeof(SHUTDOWNPARAMS));
-    psdp->optReboot = ((pGlobalSettings->__flXShutdown & XSD_REBOOT) != 0);
-    psdp->optConfirm = ((pGlobalSettings->__flXShutdown & XSD_CONFIRM) != 0);
+    psdp->optReboot = ((flShutdown & XSD_REBOOT) != 0);
+    psdp->optConfirm = ((flShutdown & XSD_CONFIRM) != 0);
     psdp->optDebug = FALSE;
 
     psdp->ulRestartWPS = 0;         // no, do shutdown
 
     psdp->optWPSCloseWindows = TRUE;
-    psdp->optAutoCloseVIO = ((pGlobalSettings->__flXShutdown & XSD_AUTOCLOSEVIO) != 0);
-    psdp->optLog = ((pGlobalSettings->__flXShutdown & XSD_LOG) != 0);
+    psdp->optAutoCloseVIO = ((flShutdown & XSD_AUTOCLOSEVIO) != 0);
+    psdp->optLog = ((flShutdown & XSD_LOG) != 0);
 
     /* if (psdp->optReboot)
         // animate on reboot? V0.9.3 (2000-05-22) [umoeller]
-        psdp->optAnimate = ((pGlobalSettings->__flXShutdown & XSD_ANIMATE_REBOOT) != 0);
+        psdp->optAnimate = ((flShutdown & XSD_ANIMATE_REBOOT) != 0);
     else
-        psdp->optAnimate = ((pGlobalSettings->__flXShutdown & XSD_ANIMATE_SHUTDOWN) != 0);
+        psdp->optAnimate = ((flShutdown & XSD_ANIMATE_SHUTDOWN) != 0);
        */
 
-    psdp->optAPMPowerOff = (  ((pGlobalSettings->__flXShutdown & XSD_APMPOWEROFF) != 0)
+    psdp->optAPMPowerOff = (  ((flShutdown & XSD_APMPOWEROFF) != 0)
                       && (apmPowerOffSupported())
                      );
-    psdp->optAPMDelay = ((pGlobalSettings->__flXShutdown & XSD_APM_DELAY) != 0);
+    psdp->optAPMDelay = ((flShutdown & XSD_APM_DELAY) != 0);
 
     psdp->optWPSReuseStartupFolder = psdp->optWPSCloseWindows;
 
-    psdp->optEmptyTrashCan = ((pGlobalSettings->__flXShutdown & XSD_EMPTY_TRASH) != 0);
+    psdp->optEmptyTrashCan = ((flShutdown & XSD_EMPTY_TRASH) != 0);
 
-    psdp->optWarpCenterFirst = ((pGlobalSettings->__flXShutdown & XSD_WARPCENTERFIRST) != 0);
+    psdp->optWarpCenterFirst = ((flShutdown & XSD_WARPCENTERFIRST) != 0);
 
     psdp->szRebootCommand[0] = 0;
 }
@@ -1907,7 +1898,6 @@ BOOL xsdInitiateShutdown(VOID)
 {
     BOOL                fStartShutdown = TRUE;
     ULONG               ulSpooled = 0;
-    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     PSHUTDOWNPARAMS     psdp = (PSHUTDOWNPARAMS)malloc(sizeof(SHUTDOWNPARAMS));
 
     if (xsdIsShutdownRunning())
@@ -1919,33 +1909,35 @@ BOOL xsdInitiateShutdown(VOID)
 
     if (fStartShutdown)
     {
+        ULONG flShutdown = cmnQuerySetting(sflXShutdown);
+
         memset(psdp, 0, sizeof(SHUTDOWNPARAMS));
-        psdp->optReboot = ((pGlobalSettings->__flXShutdown & XSD_REBOOT) != 0);
+        psdp->optReboot = ((flShutdown & XSD_REBOOT) != 0);
         psdp->ulRestartWPS = 0;
         psdp->optWPSCloseWindows = TRUE;
         psdp->optWPSReuseStartupFolder = psdp->optWPSCloseWindows;
-        psdp->optConfirm = ((pGlobalSettings->__flXShutdown & XSD_CONFIRM) != 0);
-        psdp->optAutoCloseVIO = ((pGlobalSettings->__flXShutdown & XSD_AUTOCLOSEVIO) != 0);
-        psdp->optWarpCenterFirst = ((pGlobalSettings->__flXShutdown & XSD_WARPCENTERFIRST) != 0);
-        psdp->optLog = ((pGlobalSettings->__flXShutdown & XSD_LOG) != 0);
+        psdp->optConfirm = ((flShutdown & XSD_CONFIRM) != 0);
+        psdp->optAutoCloseVIO = ((flShutdown & XSD_AUTOCLOSEVIO) != 0);
+        psdp->optWarpCenterFirst = ((flShutdown & XSD_WARPCENTERFIRST) != 0);
+        psdp->optLog = ((flShutdown & XSD_LOG) != 0);
         /* if (psdp->optReboot)
             // animate on reboot? V0.9.3 (2000-05-22) [umoeller]
-            psdp->optAnimate = ((pGlobalSettings->__flXShutdown & XSD_ANIMATE_REBOOT) != 0);
+            psdp->optAnimate = ((flShutdown & XSD_ANIMATE_REBOOT) != 0);
         else
-            psdp->optAnimate = ((pGlobalSettings->__flXShutdown & XSD_ANIMATE_SHUTDOWN) != 0);
+            psdp->optAnimate = ((flShutdown & XSD_ANIMATE_SHUTDOWN) != 0);
            */
 
-        psdp->optAPMPowerOff = (  ((pGlobalSettings->__flXShutdown & XSD_APMPOWEROFF) != 0)
+        psdp->optAPMPowerOff = (  ((flShutdown & XSD_APMPOWEROFF) != 0)
                           && (apmPowerOffSupported())
                          );
-        psdp->optAPMDelay = ((pGlobalSettings->__flXShutdown & XSD_APM_DELAY) != 0);
+        psdp->optAPMDelay = ((flShutdown & XSD_APM_DELAY) != 0);
         #ifdef DEBUG_SHUTDOWN
             psdp->optDebug = doshQueryShiftState();
         #else
             psdp->optDebug = FALSE;
         #endif
 
-        psdp->optEmptyTrashCan = ((pGlobalSettings->__flXShutdown & XSD_EMPTY_TRASH) != 0);
+        psdp->optEmptyTrashCan = ((flShutdown & XSD_EMPTY_TRASH) != 0);
 
         psdp->szRebootCommand[0] = 0;
 
@@ -2010,7 +2002,6 @@ BOOL xsdInitiateShutdown(VOID)
 BOOL xsdInitiateRestartWPS(BOOL fLogoff)        // in: if TRUE, perform logoff also
 {
     BOOL                fStartShutdown = TRUE;
-    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     PSHUTDOWNPARAMS     psdp = (PSHUTDOWNPARAMS)malloc(sizeof(SHUTDOWNPARAMS));
 
     if (xsdIsShutdownRunning())
@@ -2022,15 +2013,17 @@ BOOL xsdInitiateRestartWPS(BOOL fLogoff)        // in: if TRUE, perform logoff a
 
     if (fStartShutdown)
     {
+        ULONG flShutdown = cmnQuerySetting(sflXShutdown);
+
         memset(psdp, 0, sizeof(SHUTDOWNPARAMS));
         psdp->optReboot =  FALSE;
         psdp->ulRestartWPS = (fLogoff) ? 2 : 1; // V0.9.5 (2000-08-10) [umoeller]
-        psdp->optWPSCloseWindows = ((pGlobalSettings->__flXShutdown & XSD_WPS_CLOSEWINDOWS) != 0);
+        psdp->optWPSCloseWindows = ((flShutdown & XSD_WPS_CLOSEWINDOWS) != 0);
         psdp->optWPSReuseStartupFolder = psdp->optWPSCloseWindows;
-        psdp->optConfirm = ((pGlobalSettings->__flXShutdown & XSD_CONFIRM) != 0);
-        psdp->optAutoCloseVIO = ((pGlobalSettings->__flXShutdown & XSD_AUTOCLOSEVIO) != 0);
-        psdp->optWarpCenterFirst = ((pGlobalSettings->__flXShutdown & XSD_WARPCENTERFIRST) != 0);
-        psdp->optLog =  ((pGlobalSettings->__flXShutdown & XSD_LOG) != 0);
+        psdp->optConfirm = ((flShutdown & XSD_CONFIRM) != 0);
+        psdp->optAutoCloseVIO = ((flShutdown & XSD_AUTOCLOSEVIO) != 0);
+        psdp->optWarpCenterFirst = ((flShutdown & XSD_WARPCENTERFIRST) != 0);
+        psdp->optLog =  ((flShutdown & XSD_LOG) != 0);
         #ifdef DEBUG_SHUTDOWN
             psdp->optDebug = doshQueryShiftState();
         #else
@@ -2300,6 +2293,14 @@ DLGHITEM dlgShutdown[] =
         END_TABLE
     };
 
+static XWPSETTING G_ShutdownBackup[] =
+    {
+        sflXShutdown,
+#ifndef __EASYSHUTDOWN__
+        sulSaveINIS,
+#endif
+    };
+
 /*
  * xsdShutdownInitPage:
  *      notebook callback function (notebook.c) for the
@@ -2320,8 +2321,7 @@ DLGHITEM dlgShutdown[] =
 VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                          ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    ULONG fl = pGlobalSettings->__flXShutdown;
+    ULONG fl = cmnQuerySetting(sflXShutdown);
 
     if (flFlags & CBI_INIT)
     {
@@ -2330,8 +2330,15 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         HWND        hwndINICombo = NULLHANDLE;
         ULONG       ul;
         PEXECUTABLE pExec;
-        CHAR    szAPMVersion[30];
-        CHAR    szAPMSysFile[CCHMAXPATH];
+        CHAR        szAPMVersion[30];
+        CHAR        szAPMSysFile[CCHMAXPATH];
+
+        ULONG       aulIniStrings[3] =
+            {
+                ID_XSSI_XSD_SAVEINIS_NEW,   // pszXSDSaveInisNew
+                ID_XSSI_XSD_SAVEINIS_OLD,   // pszXSDSaveInisOld
+                ID_XSSI_XSD_SAVEINIS_NONE   // pszXSDSaveInisNone
+            };
 
         if (pcnbp->pUser == NULL)
         {
@@ -2339,8 +2346,12 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
+            /*
             pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
             memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+               */
+            pcnbp->pUser = cmnBackupSettings(G_ShutdownBackup,
+                                             ARRAYITEMCOUNT(G_ShutdownBackup));
 
             // insert the controls using the dialog formatter
             // V0.9.16 (2001-10-08) [umoeller]
@@ -2361,10 +2372,10 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         WinSetDlgItemText(pcnbp->hwndDlgPage, ID_SDDI_APMSYS,
                           "Error");
 
-        if (!(arc = doshExecOpen(szAPMSysFile,
-                                &pExec)))
+        if (!(arc = exehOpen(szAPMSysFile,
+                                 &pExec)))
         {
-            if (!(arc = doshExecQueryBldLevel(pExec)))
+            if (!(arc = exehQueryBldLevel(pExec)))
             {
                 if (pExec->pszVersion)
                     WinSetDlgItemText(pcnbp->hwndDlgPage, ID_SDDI_APMSYS,
@@ -2372,7 +2383,7 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
             }
 
-            doshExecClose(&pExec);
+            exehClose(&pExec);
         }
 
 #ifndef __EASYSHUTDOWN__
@@ -2381,16 +2392,9 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
              ul < 3;
              ul++)
         {
-            PSZ psz = 0;
-            switch (ul)
-            {
-                case 0: psz = cmnGetString(ID_XSSI_XSD_SAVEINIS_NEW);  break; // pszXSDSaveInisNew
-                case 1: psz = cmnGetString(ID_XSSI_XSD_SAVEINIS_OLD);  break; // pszXSDSaveInisOld
-                case 2: psz = cmnGetString(ID_XSSI_XSD_SAVEINIS_NONE);  break; // pszXSDSaveInisNone
-            }
             WinInsertLboxItem(hwndINICombo,
                               ul,
-                              psz);
+                              cmnGetString(aulIniStrings[ul]));
         }
 #endif
     }
@@ -2398,35 +2402,35 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     if (flFlags & CBI_SET)
     {
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_REBOOT,
-            (fl & XSD_REBOOT) != 0);
+                              (fl & XSD_REBOOT) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_CANDESKTOPALTF4,
-            (fl & XSD_CANDESKTOPALTF4) != 0);
+                              (fl & XSD_CANDESKTOPALTF4) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_ANIMATE_SHUTDOWN,
-            (fl & XSD_ANIMATE_SHUTDOWN) != 0);
+                              (fl & XSD_ANIMATE_SHUTDOWN) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_ANIMATE_REBOOT,
-            (fl & XSD_ANIMATE_REBOOT) != 0);
+                              (fl & XSD_ANIMATE_REBOOT) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_APMPOWEROFF,
-            (apmPowerOffSupported())
-                ? ((fl & XSD_APMPOWEROFF) != 0)
-                : FALSE
-            );
+                              (apmPowerOffSupported())
+                                  ? ((fl & XSD_APMPOWEROFF) != 0)
+                                  : FALSE
+                              );
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_DELAY,
-                (fl & XSD_APM_DELAY) != 0);
+                              (fl & XSD_APM_DELAY) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_EMPTYTRASHCAN,
-            (fl & XSD_EMPTY_TRASH) != 0);
+                              (fl & XSD_EMPTY_TRASH) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_CONFIRM,
-            (fl & XSD_CONFIRM) != 0);
+                              (fl & XSD_CONFIRM) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEVIO,
-            (fl & XSD_AUTOCLOSEVIO) != 0);
+                              (fl & XSD_AUTOCLOSEVIO) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_WARPCENTERFIRST,
-            (fl & XSD_WARPCENTERFIRST) != 0);
+                              (fl & XSD_WARPCENTERFIRST) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_LOG,
-            (fl & XSD_LOG) != 0);
+                              (fl & XSD_LOG) != 0);
 
 #ifndef __EASYSHUTDOWN__
         WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST,
                           LM_SELECTITEM,
-                          (MPARAM)(pGlobalSettings->_bSaveINIS),
+                          (MPARAM)(cmnQuerySetting(sulSaveINIS)),
                           (MPARAM)TRUE);        // select
 #endif
     }
@@ -2434,16 +2438,16 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     if (flFlags & CBI_ENABLE)
     {
         PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-        BOOL fXShutdownValid = TRUE; // (pGlobalSettings->NoWorkerThread == 0);
+        BOOL fXShutdownValid = TRUE; // (cmnQuerySetting(sNoWorkerThread) == 0);
         BOOL fXShutdownEnabled =
                 (   (fXShutdownValid)
-                 && (cmnIsFeatureEnabled(XShutdown))
+                 && (cmnQuerySetting(sfXShutdown))
                 );
         BOOL fXShutdownOrWPSValid =
-                (   (   (cmnIsFeatureEnabled(XShutdown))
-                     || (cmnIsFeatureEnabled(RestartDesktop))
+                (   (   (cmnQuerySetting(sfXShutdown))
+                     || (cmnQuerySetting(sfRestartDesktop))
                     )
-                 // && (pGlobalSettings->NoWorkerThread == 0)
+                 // && (cmnQuerySetting(sNoWorkerThread) == 0)
                 );
 
         // winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_ENABLED, fXShutdownValid);
@@ -2456,18 +2460,15 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_ANIMATE_REBOOT, fXShutdownEnabled);
 
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_APMPOWEROFF,
-                    ( fXShutdownEnabled && (apmPowerOffSupported()) )
-                );
+                          ( fXShutdownEnabled && apmPowerOffSupported() ) );
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_DELAY,
-                    (      fXShutdownEnabled
-                        && (apmPowerOffSupported())
-                        && ((fl & XSD_APMPOWEROFF) != 0)
-                    )
-                );
+                          (      fXShutdownEnabled
+                              && (apmPowerOffSupported())
+                              && ((fl & XSD_APMPOWEROFF) != 0)
+                          ));
 
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_EMPTYTRASHCAN,
-                    ( fXShutdownEnabled && (cmnTrashCanReady()) )
-                );
+                          ( fXShutdownEnabled && (cmnTrashCanReady()) ) );
 
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_CONFIRM, fXShutdownOrWPSValid);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEVIO, fXShutdownOrWPSValid);
@@ -2476,10 +2477,10 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         // enable "warpcenter first" if shutdown or WPS have been enabled
         // AND if the WarpCenter was found
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_WARPCENTERFIRST,
-                         ((fXShutdownOrWPSValid)
-                         && (pKernelGlobals->pAwakeWarpCenter != NULL)));
-                                // @@todo this doesn't find the WarpCenter
-                                // if started thru CONFIG.SYS
+                          ((fXShutdownOrWPSValid)
+                          && (pKernelGlobals->pAwakeWarpCenter != NULL)));
+                                 // @@todo this doesn't find the WarpCenter
+                                 // if started thru CONFIG.SYS
 
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_LOG, fXShutdownOrWPSValid);
 
@@ -2622,37 +2623,21 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break; }
 
         case DID_UNDO:
-        {
             // "Undo" button: get pointer to backed-up Global Settings
-            PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
-            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-            if (pGlobalSettings)
-            {
-                // and restore the settings for this page
-                pGlobalSettings->__flXShutdown = pGSBackup->__flXShutdown;
-#ifndef __EASYSHUTDOWN__
-                pGlobalSettings->_bSaveINIS = pGSBackup->_bSaveINIS;
-#endif
-                // update the display by calling the INIT callback
-                pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-                cmnUnlockGlobalSettings();
-            }
-        break; }
+            cmnRestoreSettings(pcnbp->pUser,
+                               ARRAYITEMCOUNT(G_ShutdownBackup));
+            // update the display by calling the INIT callback
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+        break;
 
         case DID_DEFAULT:
-        {
-            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-            if (pGlobalSettings)
-            {
-                // set the default settings for this settings page
-                // (this is in common.c because it's also used at
-                // Desktop startup)
-                cmnSetDefaultSettings(pcnbp->ulPageID);
-                // update the display by calling the INIT callback
-                pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-                cmnUnlockGlobalSettings();
-            }
-        break; }
+            // set the default settings for this settings page
+            // (this is in common.c because it's also used at
+            // Desktop startup)
+            cmnSetDefaultSettings(pcnbp->ulPageID);
+            // update the display by calling the INIT callback
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+        break;
 
         default:
             ulChange = 0;
@@ -2664,29 +2649,26 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 #endif
        )
     {
-        GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-        if (pGlobalSettings)
+        if (ulFlag != -1)
         {
-            if (ulFlag != -1)
-                if (ulExtra)
-                    pGlobalSettings->__flXShutdown |= ulFlag;
-                else
-                    pGlobalSettings->__flXShutdown &= ~ulFlag;
-
-#ifndef __EASYSHUTDOWN__
-            if (ulSaveINIS != -1)
-                pGlobalSettings->_bSaveINIS = (CHAR) ulSaveINIS;
-#endif
-
-            cmnUnlockGlobalSettings();
+            ULONG flShutdown = cmnQuerySetting(sflXShutdown);
+            if (ulExtra)
+                flShutdown |= ulFlag;
+            else
+                flShutdown &= ~ulFlag;
+            cmnSetSetting(sflXShutdown, flShutdown);
         }
+#ifndef __EASYSHUTDOWN__
+        if (ulSaveINIS != -1)
+            cmnSetSetting(sulSaveINIS, ulSaveINIS);;
+#endif
     }
 
     if (ulChange)
     {
         // enable/disable items
         xsdShutdownInitPage(pcnbp, CBI_ENABLE);
-        cmnStoreGlobalSettings();
+        // cmnStoreGlobalSettings();
     }
 
     return ((MPARAM)0);
@@ -5539,7 +5521,7 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
 {
     // ULONG       ulShutdownFunc2 = 0;
     APIRET      arc = NO_ERROR;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     // change the mouse pointer to wait state
     winhSetWaitPointer();
@@ -5549,7 +5531,7 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
                       cmnGetString(ID_SDSI_SAVINGPROFILES)) ; // pszSDSavingProfiles
 
 #ifndef __EASYSHUTDOWN__
-    switch (pGlobalSettings->_bSaveINIS)
+    switch (cmnQuerySetting(sulSaveINIS))
     {
         case 2:         // do nothing:
             doshWriteLogEntry(pShutdownData->ShutdownLogFile, "Saving INIs has been disabled, skipping.");
@@ -5684,7 +5666,7 @@ VOID PowerOffAnim(HPS hpsScreen)
 
 VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData)
 {
-    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+    ULONG flShutdown = cmnQuerySetting(sflXShutdown);
     HPS hpsScreen = WinGetScreenPS(HWND_DESKTOP);
 
     // setup Ctrl+Alt+Del message window; this needs to be done
@@ -5704,7 +5686,7 @@ VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData)
         pShutdownData->ShutdownLogFile = NULL;
     }
 
-    if (pGlobalSettings->__flXShutdown & XSD_ANIMATE_SHUTDOWN)
+    if (flShutdown & XSD_ANIMATE_SHUTDOWN)
         // cute power-off animation
         PowerOffAnim(hpsScreen);
     else
@@ -5746,15 +5728,19 @@ VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData)
  *
  *@@changed V0.9.3 (2000-05-22) [umoeller]: added reboot animation
  *@@changed V0.9.12 (2001-05-12) [umoeller]: animations frequently didn't show up, fixed
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: fixed hang on loading string resource
  */
 
 VOID xsdFinishStandardReboot(PSHUTDOWNDATA pShutdownData)
 {
+    ULONG flShutdown = cmnQuerySetting(sflXShutdown);
     HFILE       hIOCTL;
     ULONG       ulAction;
-    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     BOOL        fShowRebooting = TRUE;
-    HPS hpsScreen = WinGetScreenPS(HWND_DESKTOP);
+    // load string resource before shutting down
+    // V0.9.16 (2002-01-05) [umoeller]
+    PSZ         pszRebooting = cmnGetString(ID_SDSI_REBOOTING);
+    HPS         hpsScreen = WinGetScreenPS(HWND_DESKTOP);
 
     // if (optReboot), open DOS.SYS; this
     // needs to be done before DosShutdown() also
@@ -5778,7 +5764,7 @@ VOID xsdFinishStandardReboot(PSHUTDOWNDATA pShutdownData)
         pShutdownData->ShutdownLogFile = NULL;
     }
 
-    if (pGlobalSettings->__flXShutdown & XSD_ANIMATE_REBOOT)  // V0.9.3 (2000-05-22) [umoeller]
+    if (flShutdown & XSD_ANIMATE_REBOOT)  // V0.9.3 (2000-05-22) [umoeller]
     {
         // cute power-off animation
         PowerOffAnim(hpsScreen);
@@ -5786,12 +5772,13 @@ VOID xsdFinishStandardReboot(PSHUTDOWNDATA pShutdownData)
     }
 
     DosShutdown(0);
+        // @@todo what to do if this fails?
 
     // say "Rebooting..." if we had no animation
     if (fShowRebooting)
     {
         WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus, ID_SDDI_STATUS,
-                          cmnGetString(ID_SDSI_REBOOTING)) ; // pszSDRebooting
+                          pszRebooting) ; // pszSDRebooting
         DosSleep(500);
     }
 
@@ -5823,13 +5810,13 @@ VOID xsdFinishUserReboot(PSHUTDOWNDATA pShutdownData)
     // user reboot item: in this case, we don't call
     // DosShutdown(), which is supposed to be done by
     // the user reboot command
+    ULONG flShutdown = cmnQuerySetting(sflXShutdown);
     CHAR    szTemp[CCHMAXPATH];
     PID     pid;
     ULONG   sid;
-    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     HPS hpsScreen = WinGetScreenPS(HWND_DESKTOP);
 
-    if (pGlobalSettings->__flXShutdown & XSD_ANIMATE_REBOOT)        // V0.9.3 (2000-05-22) [umoeller]
+    if (flShutdown & XSD_ANIMATE_REBOOT)        // V0.9.3 (2000-05-22) [umoeller]
         // cute power-off animation
         PowerOffAnim(hpsScreen);
     else
@@ -5889,7 +5876,7 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData)
 {
     CHAR        szAPMError[500];
     ULONG       ulrcAPM = 0;
-    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+    ULONG flShutdown = cmnQuerySetting(sflXShutdown);
     HPS hpsScreen = WinGetScreenPS(HWND_DESKTOP);
 
     // prepare APM power off
@@ -5957,7 +5944,7 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData)
         pShutdownData->ShutdownLogFile = NULL;
     }
 
-    if (pGlobalSettings->__flXShutdown & XSD_ANIMATE_SHUTDOWN)
+    if (flShutdown & XSD_ANIMATE_SHUTDOWN)
         // cute power-off animation
         PowerOffAnim(hpsScreen);
     else

@@ -717,15 +717,16 @@ PLINKLIST GetCachedTypesWithFilters(VOID)
                 // get filters for that (e.g. "*.c");
                 // this is another list of null-terminated strings
                 ULONG cbFiltersForTypeList = 0;
-                PSZ pszFiltersForTypeList = prfhQueryProfileData(HINI_USER,
+                PSZ pszFiltersForTypeList;
+
+                if (pszFiltersForTypeList = prfhQueryProfileData(HINI_USER,
                                                                  INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
                                                                  pTypeWithFilterThis,
-                                                                 &cbFiltersForTypeList);
-                        // this would be e.g. "*.c" now
-                if (pszFiltersForTypeList)
+                                                                 &cbFiltersForTypeList))
                 {
-                    PXWPTYPEWITHFILTERS pNew = malloc(sizeof(XWPTYPEWITHFILTERS));
-                    if (pNew)
+                    // this would be e.g. "*.c" now
+                    PXWPTYPEWITHFILTERS pNew;
+                    if (pNew = malloc(sizeof(XWPTYPEWITHFILTERS)))
                     {
                         pNew->pszType = strdup(pTypeWithFilterThis);
                         pNew->pszFilters = pszFiltersForTypeList;
@@ -773,6 +774,7 @@ int TREEENTRY CompareTypeStrings(ULONG ul1, ULONG ul2)
  *
  *@@added V0.9.12 (2001-05-22) [umoeller]
  *@@changed V0.9.16 (2001-10-19) [umoeller]: fixed bad types count
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: some optimizations for empty strings
  */
 
 VOID BuildWPSTypesCache(VOID)
@@ -794,6 +796,17 @@ VOID BuildWPSTypesCache(VOID)
                                                                   WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
                                                                   pTypeThis,
                                                                   &pNewNode->cbObjectHandles);
+
+                // many types only have a single null byte if there's
+                // no assocs currently defined (just to name the type);
+                // in that case, there's no need to keep a single
+                // byte allocated to pollute our global heap
+                // V0.9.16 (2002-01-05) [umoeller]
+                if (pNewNode->cbObjectHandles < 2)
+                {
+                    FREE(pNewNode->pszObjectHandles);
+                    pNewNode->cbObjectHandles = 0;
+                }
 
                 #ifdef DEBUG_ASSOCS
                     _Pmpf((__FUNCTION__ ": inserting type %s, %d bytes data", pTypeThis, pNewNode->cbObjectHandles));
@@ -850,9 +863,6 @@ PWPSTYPEASSOCTREENODE FindWPSTypeAssoc(const char *pcszType)
         return ((PWPSTYPEASSOCTREENODE)treeFind(G_WPSTypeAssocsTreeRoot,
                                                 (ULONG)pcszType,
                                                 CompareTypeStrings));
-        #ifdef DEBUG_ASSOCS
-            _Pmpf(("    got 0x%lX", pWPSType));
-        #endif
     }
 
     return (NULL);
@@ -1505,6 +1515,7 @@ ULONG ftypAssocObjectDeleted(HOBJECT hobj)
  *@@changed V0.9.6 (2000-10-16) [umoeller]: now returning a PLINKLIST
  *@@changed V0.9.7 (2001-01-11) [umoeller]: no longer using plain text always
  *@@changed V0.9.9 (2001-03-27) [umoeller]: no longer creating list if no assocs exist, returning NULL now
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: this never added "plain text" if the object had a type but no associations
  */
 
 PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
@@ -1518,6 +1529,10 @@ PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
     LINKLIST   llTypes;
     ULONG       cTypes = 0;
     lstInit(&llTypes, TRUE);
+
+    #ifdef DEBUG_ASSOCS
+        _Pmpf((__FUNCTION__ ": entering, fUsePlainTextAsDefault = %d", fUsePlainTextAsDefault));
+    #endif
 
     // check if the data file has a file type
     // assigned explicitly
@@ -1533,15 +1548,9 @@ PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
     cTypes += AppendTypesForFile(_wpQueryTitle(somSelf),
                                  &llTypes);
 
-    if ((cTypes == 0) && (fUsePlainTextAsDefault))
-    {
-        // we still have no types: this happens if
-        // 1) no explicit type was assigned and
-        // 2) none of the type filters matched
-        // --> in that case, use "Plain Text"
-        if (lstAppendItem(&llTypes, strdup("Plain Text")))
-            cTypes++;
-    }
+    #ifdef DEBUG_ASSOCS
+        _Pmpf(("  AppendTypesForFile returned %d types", cTypes));
+    #endif
 
     if (cTypes)
     {
@@ -1564,13 +1573,36 @@ PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
                                   pllAssocs);
             pNode = pNode->pNext;
         }
-
-        #ifdef DEBUG_ASSOCS
-            _Pmpf(("    ftypBuildAssocsList: got %d assocs", cAssocObjects));
-        #endif
     }
 
     lstClear(&llTypes);
+
+    // V0.9.16 (2002-01-05) [umoeller]:
+    // moved the following "plain text" addition down...
+    // previously, "plain text" was only added if no _types_
+    // were present, but that isn't entirely correct... really
+    // it should be added if no _associations_ were found,
+    // so check this here instead!
+    if (fUsePlainTextAsDefault)
+    {
+        if (!pllAssocs)
+        {
+            // we don't even have a list:
+            pllAssocs = lstCreate(FALSE);
+            ftypListAssocsForType("Plain Text",
+                                  pllAssocs);
+        }
+        else if (!lstCountItems(pllAssocs))
+            ftypListAssocsForType("Plain Text",
+                                  pllAssocs);
+    }
+
+    #ifdef DEBUG_ASSOCS
+        _Pmpf(("    ftypBuildAssocsList: got %d assocs",
+                    (pllAssocs)
+                        ? lstCountItems(pllAssocs)
+                        : 0));
+    #endif
 
     return (pllAssocs);
 }
@@ -1769,56 +1801,55 @@ BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf, // in: data file in ques
 
         if (brc)
         {
-            PLINKLIST   pllAssocObjects = ftypBuildAssocsList(somSelf,
-                                                              // use "plain text" as default:
-                                                              TRUE);
-            if (pllAssocObjects)
+            PLINKLIST   pllAssocObjects;
+            ULONG       cAssocObjects;
+            if (    (pllAssocObjects = ftypBuildAssocsList(somSelf,
+                                                           // use "plain text" as default:
+                                                           TRUE))
+                 && (cAssocObjects = lstCountItems(pllAssocObjects))
+               )
             {
-                ULONG       cAssocObjects = lstCountItems(pllAssocObjects);
-                if (cAssocObjects)
+                // now add all the associations; this list has
+                // instances of WPProgram and WPProgramFile
+                PLISTNODE       pNode = lstQueryFirstNode(pllAssocObjects);
+
+                // get data file default associations; this should
+                // return something >= 0x1000 also
+                ULONG           ulDefaultView = _wpQueryDefaultView(somSelf);
+
+                // initial menu item ID; all associations must have
+                // IDs >= 0x1000
+                ulItemID = 0x1000;
+
+                while (pNode)
                 {
-                    // now add all the associations; this list has
-                    // instances of WPProgram and WPProgramFile
-                    PLISTNODE       pNode = lstQueryFirstNode(pllAssocObjects);
-
-                    // get data file default associations; this should
-                    // return something >= 0x1000 also
-                    ULONG           ulDefaultView = _wpQueryDefaultView(somSelf);
-
-                    // initial menu item ID; all associations must have
-                    // IDs >= 0x1000
-                    ulItemID = 0x1000;
-
-                    while (pNode)
+                    WPObject *pAssocThis = (WPObject*)pNode->pItemData;
+                    if (pAssocThis)
                     {
-                        WPObject *pAssocThis = (WPObject*)pNode->pItemData;
-                        if (pAssocThis)
+                        PSZ pszAssocTitle;
+                        if (pszAssocTitle = _wpQueryTitle(pAssocThis))
                         {
-                            PSZ pszAssocTitle = _wpQueryTitle(pAssocThis);
-                            if (pszAssocTitle)
-                            {
-                                winhInsertMenuItem(hwndOpenSubmenu,  // still has "Open" submenu
-                                                   MIT_END,
-                                                   ulItemID,
-                                                   pszAssocTitle,
-                                                   MIS_TEXT,
-                                                   // if this is the default view,
-                                                   // mark as default
-                                                   (ulItemID == ulDefaultView)
-                                                        ? MIA_CHECKED
-                                                        : 0);
-                            }
+                            winhInsertMenuItem(hwndOpenSubmenu,  // still has "Open" submenu
+                                               MIT_END,
+                                               ulItemID,
+                                               pszAssocTitle,
+                                               MIS_TEXT,
+                                               // if this is the default view,
+                                               // mark as default
+                                               (ulItemID == ulDefaultView)
+                                                    ? MIA_CHECKED
+                                                    : 0);
                         }
-
-                        ulItemID++;     // raise item ID even if object was invalid;
-                                        // this must be the same in wpMenuItemSelected
-
-                        pNode = pNode->pNext;
                     }
-                } // end if (cAssocObjects)
 
-                ftypFreeAssocsList(&pllAssocObjects);
+                    ulItemID++;     // raise item ID even if object was invalid;
+                                    // this must be the same in wpMenuItemSelected
+
+                    pNode = pNode->pNext;
+                }
             }
+
+            ftypFreeAssocsList(&pllAssocObjects);
         }
     }
 
@@ -3274,7 +3305,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                     // the WPS to copy anything)
 
                     #ifdef DEBUG_ASSOCS
-                    _Pmpf(("CN_DRAGOVER: entering"));
+                        _Pmpf(("CN_DRAGOVER: entering"));
                     #endif
 
                     // get access to the drag'n'drop structures
@@ -3289,7 +3320,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     }
 
                     #ifdef DEBUG_ASSOCS
-                    _Pmpf(("CN_DRAGOVER: returning ind 0x%lX, op 0x%lX", usIndicator, usOp));
+                        _Pmpf(("CN_DRAGOVER: returning ind 0x%lX, op 0x%lX", usIndicator, usOp));
                     #endif
 
                     // and return the drop flags
@@ -3310,7 +3341,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     PCNRDRAGINFO pcdi = (PCNRDRAGINFO)ulExtra;
 
                     #ifdef DEBUG_ASSOCS
-                    _Pmpf(("CN_DROP: entering"));
+                        _Pmpf(("CN_DROP: entering"));
                     #endif
 
                     // check global valid recc, which was set above
@@ -5583,7 +5614,8 @@ APIRET ftypImportTypes(const char *pcszFilename,        // in: XML file name
     PSZ pszContent = NULL;
 
     if (!(arc = doshLoadTextFile(pcszFilename,
-                                 &pszContent)))
+                                 &pszContent,
+                                 NULL)))
     {
         // now go parse
         // create the DOM

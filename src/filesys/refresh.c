@@ -1322,7 +1322,7 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
 
     TRY_LOUD(excpt1)
     {
-        PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+        // PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
         PCKERNELGLOBALS      pKernelGlobals = krnQueryGlobals();
 
         // allocate a block of memory... we can't use malloc,
@@ -1380,7 +1380,7 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
                             // work of finding the folder etc.
                             PCNINFO pcniThis = pBuffer;
                             while (    (pcniThis)
-                                    && (!pGlobalSettings->fFdrAutoRefreshDisabled)
+                                    && (!cmnQuerySetting(sfFdrAutoRefreshDisabled))
                                   )
                             {
                                 if (pcniThis->cbName)
@@ -1441,7 +1441,7 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
                 // folder
                 if (    (arc == ERROR_BUFFER_OVERFLOW)
                      && (G_hwndFindFolder)
-                     && (!pGlobalSettings->fFdrAutoRefreshDisabled)
+                     && (!cmnQuerySetting(sfFdrAutoRefreshDisabled))
                    )
                 {
                     // tell the "find folder" thread to refresh the

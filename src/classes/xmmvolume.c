@@ -249,10 +249,10 @@ SOM_Scope BOOL  SOMLINK vol_wpModifyPopupMenu(XMMVolume *somSelf,
         {
             // mi.hwndSubMenu now contains "Open" submenu handle,
             // which we add items to now
-            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+            // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
             // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
             winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                               (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW),
+                               cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW,
                                cmnGetString(ID_XSSI_VOLUMEVIEW),  // pszVolumeView
                                MIS_TEXT, 0);
         }
@@ -276,11 +276,11 @@ SOM_Scope BOOL  SOMLINK vol_wpMenuItemSelected(XMMVolume *somSelf,
                                                ULONG ulMenuId)
 {
     BOOL brc = FALSE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XMMVolumeData *somThis = XMMVolumeGetData(somSelf); */
     XMMVolumeMethodDebug("XMMVolume","vol_wpMenuItemSelected");
 
-    if (ulMenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW))
+    if (ulMenuId == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW))
     {
         // "Open" --> "Volume":
         // wpViewObject will call wpOpen if a new view is necessary
@@ -348,11 +348,11 @@ SOM_Scope BOOL  SOMLINK vol_wpQueryDefaultHelp(XMMVolume *somSelf,
 
 SOM_Scope ULONG  SOMLINK vol_wpQueryDefaultView(XMMVolume *somSelf)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XMMVolumeData *somThis = XMMVolumeGetData(somSelf); */
     XMMVolumeMethodDebug("XMMVolume","vol_wpQueryDefaultView");
 
-    return (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW);
+    return (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW);
 }
 
 /*
@@ -376,11 +376,11 @@ SOM_Scope HWND  SOMLINK vol_wpOpen(XMMVolume *somSelf, HWND hwndCnr,
                                    ULONG ulView, ULONG param)
 {
     HWND    hwndNewView = 0;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XMMVolumeData *somThis = XMMVolumeGetData(somSelf); */
     XMMVolumeMethodDebug("XMMVolume","vol_wpOpen");
 
-    if (ulView == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW))
+    if (ulView == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW))
         hwndNewView = xmmCreateVolumeView(somSelf, hwndCnr, ulView);
                                 // src/media/mmvolume.c
     else

@@ -189,7 +189,7 @@ VOID UnlockNotebooks(VOID)
 VOID ntbInitPage(PCREATENOTEBOOKPAGE pcnbp,
                  HWND hwndDlg)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     #ifdef DEBUG_NOTEBOOKS
         _Pmpf(("ntb_fnwpPageCommon: WM_INITDLG"));
@@ -212,7 +212,7 @@ VOID ntbInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
     // set controls font to 8.Helv, if global settings
     // want this (paranoia page, V0.9.0)
-    if (pGlobalSettings->fUse8HelvFont)
+    if (cmnQuerySetting(sfUse8HelvFont))
         winhSetControlsFont(pcnbp->hwndDlgPage,
                             0,
                             8000,
@@ -242,7 +242,7 @@ VOID ntbInitPage(PCREATENOTEBOOKPAGE pcnbp,
     // winhAdjustControls desired?
     if (    (pcnbp->pampControlFlags)
 #ifndef __ALWAYSRESIZESETTINGSPAGES__
-         && (cmnIsFeatureEnabled(ResizeSettingsPages))
+         && (cmnQuerySetting(sfResizeSettingsPages))
 #endif
        )
     {
@@ -571,9 +571,9 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
 
                     case CN_EXPANDTREE:
                     {
-                        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                         mrc = WinDefDlgProc(pcnbp->hwndDlgPage, msg, mp1, mp2);
-                        if (pGlobalSettings->TreeViewAutoScroll)
+                        if (cmnQuerySetting(sfTreeViewAutoScroll))
                         {
                             // store record for WM_TIMER later
                             pcnbp->preccExpanded = (PRECORDCORE)mp2;
@@ -867,7 +867,7 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                )
             {
                 // TRUE returned == msg processed:
-                // return return value
+                // return the return value
                 mrc = mrc2;
                 fProcessed = TRUE;
             }

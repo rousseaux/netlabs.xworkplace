@@ -133,7 +133,7 @@ static XCENTERWIDGETCLASS   G_aBuiltInWidgets[]
             "Pulse",
             "CPU load",
             WGTF_SIZEABLE | WGTF_UNIQUEGLOBAL | WGTF_TOOLTIP, // not trayable
-            NULL        // no settings dlg
+            PwgtShowSettingsDlg                 // V0.9.16 (2002-01-05) [umoeller]
         },
         // tray widget
         {
@@ -702,7 +702,7 @@ HWND ctrpAddWidgetsMenu(XCenter *somSelf,
 {
     HWND hwndWidgetsSubmenu;
 
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     PLISTNODE       pClassNode;
     ULONG           ulIndex = 0;
 
@@ -710,7 +710,7 @@ HWND ctrpAddWidgetsMenu(XCenter *somSelf,
 
     hwndWidgetsSubmenu =  winhInsertSubmenu(hwndMenu,
                                             sPosition,
-                                            (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW),
+                                            (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW),
                                                     // fixed ID for sliding menus
                                                     // V0.9.13 (2001-06-14) [umoeller]
                                             cmnGetString(ID_XSSI_ADDWIDGET),
@@ -762,7 +762,7 @@ HWND ctrpAddWidgetsMenu(XCenter *somSelf,
 
         winhInsertMenuItem(hwndWidgetsSubmenu,
                            MIT_END,
-                           pGlobalSettings->VarMenuOffset +
+                           cmnQuerySetting(sulVarMenuOffset) +
                                  ID_XFMI_OFS_VARIABLE
                                  + (ulIndex++),
                            (PSZ)pClass->Public.pcszClassTitle,
@@ -789,8 +789,8 @@ HWND ctrpAddWidgetsMenu(XCenter *somSelf,
 PPRIVATEWIDGETCLASS ctrpFindClassFromMenuCommand(USHORT usCmd)
 {
     PPRIVATEWIDGETCLASS pClass = NULL;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    ULONG ulOfsVariable =  pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE;
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    ULONG ulOfsVariable =  cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_VARIABLE;
     if (    (usCmd >=  ulOfsVariable)
          && (usCmd < (   ulOfsVariable
                        + lstCountItems(&G_llWidgetClasses))

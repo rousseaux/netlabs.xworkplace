@@ -275,7 +275,7 @@ ULONG           G_ulMSMovingPtrStart = 0;
 POINTL          G_ptlMovingPtrStart,
                 G_ptlMovingPtrNow,
                 G_ptlMovingPtrEnd;
-LONG            G_lLastRadius = 0;
+LONG            G_lLastMovingPtrRadius = 0;
 
 // pagemage
 HWND            G_hwndPageMageClient = NULLHANDLE;
@@ -878,6 +878,7 @@ VOID ProcessAutoScroll(PSCROLLDATA pScrollData,
  *@@changed V0.9.3 (2000-05-23) [umoeller]: fixed MDI-subframes problem (VIEW.EXE)
  *@@changed V0.9.4 (2000-06-12) [umoeller]: fixed Win-OS/2 handling, which broke with 0.9.3
  *@@changed V0.9.7 (2000-12-08) [umoeller]: added "ignore XCenter"
+ *@@changed V0.9.16 (2002-01-05) [umoeller]: now disabling sliding focus while "move ptr to button" is in progress
  */
 
 VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook has detected another frame
@@ -904,6 +905,11 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
         if (hwnd2Activate == G_pHookData->hwndPageMageFrame)
             return;
 #endif
+
+    // stop if "move ptr to button" is in progress
+    // V0.9.16 (2002-01-05) [umoeller]
+    if (G_ulMovingPtrTimer)
+        return;
 
     // V0.9.7 (2000-12-08) [umoeller]:
     // rule out XCenter, if "ignore XCenter" is on
@@ -1357,11 +1363,11 @@ MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
                )
                 pulStopTimer = &G_ulMovingPtrTimer;
 
-            if ((hps) && (G_lLastRadius))
+            if ((hps) && (G_lLastMovingPtrRadius))
                 // un-paint the last item
                 GpiFullArc(hps,
                            DRO_OUTLINE,
-                           MAKEFIXED(G_lLastRadius, 0));
+                           MAKEFIXED(G_lLastMovingPtrRadius, 0));
 
             if (lMSElapsed >= G_pHookData->HookConfig.__ulAutoMoveDelay)
             {
@@ -1371,7 +1377,7 @@ MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
                 WinSetPointerPos(HWND_DESKTOP,
                                  G_ptlMovingPtrEnd.x,
                                  G_ptlMovingPtrEnd.y);
-                G_lLastRadius = 0;
+                G_lLastMovingPtrRadius = 0;
             }
             else
             {
@@ -1406,7 +1412,7 @@ MRESULT ProcessTimer(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
                     GpiFullArc(hps,
                                DRO_OUTLINE,
                                MAKEFIXED(lOfs, 0));
-                    G_lLastRadius = lOfs;
+                    G_lLastMovingPtrRadius = lOfs;
                 }
             }
 
@@ -2306,7 +2312,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     // reset last radius, in case animation is on
                     // and was stopped before done last time
                     // V0.9.15 (2001-08-26) [umoeller]
-                    G_lLastRadius = 0;
+                    G_lLastMovingPtrRadius = 0;
 
                     // go (re)start the timer for moving
                     G_ulMovingPtrTimer = WinStartTimer(G_habDaemon,

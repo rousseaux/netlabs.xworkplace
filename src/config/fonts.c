@@ -874,8 +874,8 @@ BOOL fonProcessObjectCommand(WPFolder *somSelf,
 {
     BOOL brc = TRUE;        // default: processed
 
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    LONG lMenuID2 = usCommand - pGlobalSettings->VarMenuOffset;
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    LONG lMenuID2 = usCommand - cmnQuerySetting(sulVarMenuOffset);
 
     switch (lMenuID2)
     {
@@ -996,9 +996,11 @@ VOID fonModifyFontPopupMenu(XWPFontObject *somSelf,
                             HWND hwndMenu)
 {
     XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     MENUITEM mi;
+    ULONG ulOfs = cmnQuerySetting(sulVarMenuOffset);
+
     // get handle to the "Open" submenu in the
     // the popup menu
     if (winhQueryMenuItem(hwndMenu,
@@ -1009,18 +1011,18 @@ VOID fonModifyFontPopupMenu(XWPFontObject *somSelf,
         // mi.hwndSubMenu now contains "Open" submenu handle,
         // which we add items to now
         winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                           (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW),
+                           ulOfs + ID_XFMI_OFS_XWPVIEW,
                            cmnGetString(ID_XSSI_FONTSAMPLEVIEW),  // pszFontSampleView
                            MIS_TEXT, 0);
     }
 
     // insert separator
     winhInsertMenuSeparator(hwndMenu, MIT_END,
-                            (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                            ulOfs+ ID_XFMI_OFS_SEPARATOR);
 
     // add "Deinstall..."
     winhInsertMenuItem(hwndMenu, MIT_END,
-                       (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_FONT_DEINSTALL),
+                       ulOfs + ID_XFMI_OFS_FONT_DEINSTALL,
                        cmnGetString(ID_XSSI_FONTDEINSTALL),  // pszFontDeinstall
                        MIS_TEXT, 0);
 
@@ -1029,7 +1031,7 @@ VOID fonModifyFontPopupMenu(XWPFontObject *somSelf,
         ULONG ul = 0;
         // insert separator
         winhInsertMenuSeparator(hwndMenu, MIT_END,
-                                (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                                ulOfs + ID_XFMI_OFS_SEPARATOR);
 
         // context menu for open view:
         // add view hints submenu
@@ -1060,9 +1062,9 @@ BOOL fonMenuItemSelected(XWPFontObject *somSelf,
                          ULONG ulMenuId)
 {
     BOOL brc = FALSE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-    if (ulMenuId == pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW)
+    if (ulMenuId == cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW)
     {
         _wpViewObject(somSelf,
                       NULLHANDLE,

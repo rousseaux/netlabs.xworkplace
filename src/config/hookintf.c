@@ -221,11 +221,11 @@ BOOL hifXWPHookReady(VOID)
     BOOL brc = FALSE;
     PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
     PXWPGLOBALSHARED pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared;
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     if (pXwpGlobalShared)
         if (pXwpGlobalShared->fAllHooksInstalled)
 #ifndef __ALWAYSHOOK__
-            if (cmnIsFeatureEnabled(XWPHook))
+            if (cmnQuerySetting(sfXWPHook))
 #endif
                 brc = TRUE;
     return (brc);
@@ -832,7 +832,7 @@ VOID hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
 {
     if (flFlags & CBI_INIT)
     {
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         PHOTKEYSPAGEDATA pPageData = 0;
         XFIELDINFO      xfi[7];
         PFIELDINFO      pfi = NULL;
@@ -861,7 +861,7 @@ VOID hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
                                   HWND_TOP,
                                   ID_XFDI_CNR_CNR,
                                   NULL, NULL);
-        if (pGlobalSettings->fUse8HelvFont)  // V0.9.14
+        if (cmnQuerySetting(sfUse8HelvFont))  // V0.9.14
             winhSetControlsFont(pcnbp->hwndDlgPage,
                                 ID_XFDI_CNR_CNR,
                                 ID_XFDI_CNR_CNR,
@@ -1276,7 +1276,7 @@ typedef struct _FUNCKEYSPAGEDATA
 VOID hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                                   ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (flFlags & CBI_INIT)
     {
@@ -2189,7 +2189,7 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
 
     if (flFlags & CBI_ENABLE)
     {
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
 
 #ifndef __NOSLIDINGFOCUS__
@@ -2201,7 +2201,7 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
                           pdc->__fSlidingFocus);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREPAGEMAGE,
                           (pdc->__fSlidingFocus)
-                          && (pGlobalSettings->fEnablePageMage)
+                          && (cmnQuerySetting(sfEnablePageMage))
                          );
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREXCENTER,
                           pdc->__fSlidingFocus);
@@ -2498,7 +2498,7 @@ VOID hifMouseMovement2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
 
     if (flFlags & CBI_ENABLE)
     {
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
 
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_TXT1,

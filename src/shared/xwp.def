@@ -334,3 +334,10 @@ EXPORTS
     M_XWPNetServerClassData
     M_XWPNetServerNewClass
 
+    XWPVCardCClassData
+    XWPVCardClassData
+    XWPVCardNewClass
+    M_XWPVCardCClassData
+    M_XWPVCardClassData
+    M_XWPVCardNewClass
+

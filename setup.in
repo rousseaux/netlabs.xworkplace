@@ -397,7 +397,8 @@ LINK_BASE = ilink /nologo /noe /map:$(MODULESDIR)\$(@B).map /linenumbers $(LIBDI
 LINK =  $(LINK_BASE) /debug
 LINK_ALWAYSPACK = $(LINK_BASE) /exepack:2
 !else
-LINK =  $(LINK_BASE) /exepack:2
+LINK =  $(LINK_BASE)
+# /exepack:2
 LINK_ALWAYSPACK = $(LINK)
 #/packcode /packdata
 # /optfunc
@@ -429,8 +430,8 @@ RCDEFS =
 RCDEFS = -D__XWPLITE__
 !endif
 
-RC      = rc -p -x2 -n -i $(TKBASE)\h -i $(PROJECT_BASE_DIR)\include $(RCDEFS)
-
+RC      = rc -p -x -n -i $(TKBASE)\h -i $(PROJECT_BASE_DIR)\include $(RCDEFS)
+# -x2
 # RC options:
 # -p       pack (64K boundaries)
 # -x2      Warp 3 compression

@@ -76,7 +76,8 @@ all: $(OUTPUTDIR)\anand.h \
      $(OUTPUTDIR)\xwpscreen.h \
      $(OUTPUTDIR)\xwpshadow.h \
      $(OUTPUTDIR)\xwpsound.h \
-     $(OUTPUTDIR)\xwpstring.h
+     $(OUTPUTDIR)\xwpstring.h \
+     $(OUTPUTDIR)\xwpvcard.h
     @echo ----- Leaving $(MAKEDIR)
 
 # Now define inference rules for what to do with certain file
@@ -177,5 +178,7 @@ $(OUTPUTDIR)\xwpshadow.h:        $(@B).idl
 $(OUTPUTDIR)\xwpsound.h:         $(@B).idl
 
 $(OUTPUTDIR)\xwpstring.h:        $(@B).idl
+
+$(OUTPUTDIR)\xwpvcard.h:         $(@B).idl
 
 

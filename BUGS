@@ -20,9 +20,6 @@ Ulrich M”ller.
 
 --  install: subdir plugins\drvdlgs not created?!
 
---  XShutdown:
-    --  reboot hangs on "releasing filesystems" on some systems
-
 --  XCenter:
     --  double-click on tray empty space produces click on icon too
     --  spacing lines are missing on trays

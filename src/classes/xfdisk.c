@@ -127,7 +127,7 @@ SOM_Scope ULONG  SOMLINK xfdisk_wpFilterPopupMenu(XFldDisk *somSelf,
                                                 BOOL fMultiSelect)
 {
     ULONG ulrc;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldDiskData *somThis = XFldDiskGetData(somSelf);
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpFilterPopupMenu");
 
@@ -137,7 +137,7 @@ SOM_Scope ULONG  SOMLINK xfdisk_wpFilterPopupMenu(XFldDisk *somSelf,
                                                          ulFlags,
                                                          hwndCnr,
                                                          fMultiSelect)
-             &  ~( pGlobalSettings->DefaultMenuItems | CTXT_NEW )
+             &  ~( cmnQuerySetting(sflDefaultMenuItems) | CTXT_NEW )
            );
 
     _Pmpf((__FUNCTION__ ": leaving"));
@@ -164,7 +164,7 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpModifyPopupMenu(XFldDisk *somSelf,
                                                  HWND hwndCnr,
                                                  ULONG iPosition)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     BOOL            rc;
 
     // XFldDiskData *somThis = XFldDiskGetData(somSelf);
@@ -179,10 +179,10 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpModifyPopupMenu(XFldDisk *somSelf,
     {
         WPFolder *pFolder = _wpQueryRootFolder(somSelf);
 
-        if (pGlobalSettings->RemoveFormatDiskItem)
+        if (cmnQuerySetting(sfRemoveFormatDiskItem))
             winhRemoveMenuItem(hwndMenu, ID_WPMI_FORMATDISK);
 
-        if (pGlobalSettings->RemoveCheckDiskItem)
+        if (cmnQuerySetting(sfRemoveCheckDiskItem))
             winhRemoveMenuItem(hwndMenu, ID_WPMI_CHECKDISK);
 
         if (pFolder)
@@ -267,7 +267,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpViewObject(XFldDisk *somSelf,
                                             ULONG ulView,
                                             ULONG param)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     HWND            hwndFrame = NULLHANDLE; // default: error occured
 
     /* XFldDiskData *somThis = XFldDiskGetData(somSelf); */
@@ -277,7 +277,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpViewObject(XFldDisk *somSelf,
 
     // "Drive not ready" replacement enabled?
 #ifndef __NEVERREPLACEDRIVENOTREADY__
-    if (    (cmnIsFeatureEnabled(ReplaceDriveNotReady))
+    if (    (cmnQuerySetting(sfReplaceDriveNotReady))
          // && (ulView != OPEN_SETTINGS)
                 // V0.9.16 (2001-10-23) [umoeller]
                 // do this for settings too,
@@ -349,14 +349,14 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
         case OPEN_DETAILS:
         case OPEN_SETTINGS:     // V0.9.16 (2001-10-23) [umoeller]
         {
-            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+            // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
             XFolder*        pRootFolder = 0;
             // XFldDiskData *somThis = XFldDiskGetData(somSelf);
             XFldDiskMethodDebug("XFldDisk","xfdisk_wpOpen");
 
 #ifndef __NEVERREPLACEDRIVENOTREADY__
             // "Drive not ready" replacement enabled?
-            if (cmnIsFeatureEnabled(ReplaceDriveNotReady))
+            if (cmnQuerySetting(sfReplaceDriveNotReady))
             {
                 // query root folder (WPRootFolder class, which is a descendant
                 // of WPFolder/XFolder); each WPDisk is paired with one of those,
@@ -413,32 +413,35 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
                 // setting for this with XFldDisk's
                 if (
 #ifndef __NOCFGSTATUSBARS__
-                        (cmnIsFeatureEnabled(StatusBars))
+                        (cmnQuerySetting(sfStatusBars))
                                                 // feature enabled?
                      &&
 #endif
-                        (pGlobalSettings->fDefaultStatusBarVisibility)
+                        (cmnQuerySetting(sfDefaultStatusBarVisibility))
                                                 // bars visible per default?
                    )
                     // assert that subclassed list item is valid
                     if (psfv)
+                    {
+                        ULONG flViews = cmnQuerySetting(sflSBForViews);
                         // add status bar only if allowed for the current view type
                         if (    (   (ulView == OPEN_CONTENTS)
-                                 && (pGlobalSettings->SBForViews & SBV_ICON)
+                                 && (flViews & SBV_ICON)
                                 )
                              || (   (ulView == OPEN_TREE)
-                                 && (pGlobalSettings->SBForViews & SBV_TREE)
+                                 && (flViews & SBV_TREE)
                                 )
                              || (   (ulView == OPEN_DETAILS)
-                                 && (pGlobalSettings->SBForViews & SBV_DETAILS)
+                                 && (flViews & SBV_DETAILS)
                                 )
                             )
                             // this reformats the window with the status bar
                             fdrCreateStatusBar(pRootFolder, psfv, TRUE);
+                    }
 
                 // extended sort functions
 #ifndef __ALWAYSEXTSORT__
-                if (cmnIsFeatureEnabled(ExtendedSorting))
+                if (cmnQuerySetting(sfExtendedSorting))
 #endif
                     if (hwndCnr)
                         fdrSetFldrCnrSort(pRootFolder,
@@ -476,13 +479,13 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpAddSettingsPages(XFldDisk *somSelf,
                                                   HWND hwndNotebook)
 {
     BOOL brc = FALSE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     /* XFldDiskData *somThis = XFldDiskGetData(somSelf); */
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpAddSettingsPages");
 
 #ifndef __NEVERREPLACEDRIVENOTREADY__
-    if (cmnIsFeatureEnabled(ReplaceDriveNotReady))
+    if (cmnQuerySetting(sfReplaceDriveNotReady))
     {
         WPFolder *pRoot;
         if (!(pRoot = wpshQueryRootFolder(somSelf, FALSE, NULL)))
@@ -508,12 +511,12 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpAddSettingsPages(XFldDisk *somSelf,
 SOM_Scope ULONG  SOMLINK xfdisk_wpAddDiskDetailsPage(XFldDisk *somSelf,
                                                      HWND hwndNotebook)
 {
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     /* XFldDiskData *somThis = XFldDiskGetData(somSelf); */
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpAddDiskDetailsPage");
 
 #ifndef __ALWAYSREPLACEFILEPAGE__
-    if (cmnIsFeatureEnabled(ReplaceFilePage))
+    if (cmnQuerySetting(sfReplaceFilePage))
 #endif
     {
         PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
@@ -585,7 +588,7 @@ SOM_Scope PSZ  SOMLINK xfdiskM_wpclsQueryTitle(M_XFldDisk *somSelf)
     M_XFldDiskMethodDebug("M_XFldDisk","xfdiskM_wpclsQueryTitle");
 
 #ifndef __ALWAYSFIXCLASSTITLES__
-    if (!cmnIsFeatureEnabled(FixClassTitles))
+    if (!cmnQuerySetting(sfFixClassTitles))
         return (M_XFldDisk_parent_M_WPDisk_wpclsQueryTitle(somSelf));
 #endif
 

@@ -638,7 +638,8 @@ BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         pszl->cy = pszl->cx;
 
                         brc = TRUE;
-                    break; }
+                    }
+                    break;
 
                     /*
                      * XN_SETUPCHANGED:
@@ -804,8 +805,7 @@ VOID OwgtPaintButton(HWND hwnd)
  */
 
 VOID BuildXButtonMenu(HWND hwnd,
-                      POBJBUTTONPRIVATE pPrivate,
-                      PCGLOBALSETTINGS pGlobalSettings)
+                      POBJBUTTONPRIVATE pPrivate)
 {
     WPDesktop *pActiveDesktop = cmnQueryActiveDesktop();
     PSZ pszDesktopTitle = _wpQueryTitle(pActiveDesktop);
@@ -826,8 +826,8 @@ VOID BuildXButtonMenu(HWND hwnd,
     }
 
 #ifndef __NOXSHUTDOWN__
-    if (cmnIsFeatureEnabled(XShutdown))
-        if ((pGlobalSettings->__flXShutdown & XSD_CONFIRM) == 0)
+    if (cmnQuerySetting(sfXShutdown))
+        if ((cmnQuerySetting(sflXShutdown) & XSD_CONFIRM) == 0)
         {
             // if XShutdown confirmations have been disabled,
             // remove "..." from the shutdown menu entries
@@ -862,7 +862,7 @@ VOID BuildXButtonMenu(HWND hwnd,
     }
     else
     {
-        if ((pGlobalSettings->__flXShutdown & XSD_CONFIRM) == 0)
+        if ((cmnQuerySetting(sflXShutdown) & XSD_CONFIRM) == 0)
             // if XShutdown confirmations have been disabled,
             // remove "..." from menu entry
             winhMenuRemoveEllipse(hMenu,
@@ -948,16 +948,16 @@ VOID OwgtButton1Down(HWND hwnd)
 
             if (!pPrivate->fButtonSunk)
             {
-                PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                 // toggle state is still UP (i.e. button pressed
                 // for the first time): create menu
 
                 // prepare globals in fdrmenus.c
-                cmnuInitItemCache(pGlobalSettings);
+                cmnuInitItemCache();
 
                 if (pPrivate->ulType == BTF_XBUTTON)
                     // it's an X-button: load default menu
-                    BuildXButtonMenu(hwnd, pPrivate, pGlobalSettings);
+                    BuildXButtonMenu(hwnd, pPrivate);
                 else
                 {
                     // regular object button:
@@ -986,7 +986,7 @@ VOID OwgtButton1Down(HWND hwnd)
                             // can measure its size
                             winhInsertMenuItem(pPrivate->hwndMenuMain,
                                                0,
-                                               pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY,
+                                               cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_DUMMY,
                                                "test",
                                                MIS_TEXT,
                                                0);
@@ -1074,10 +1074,13 @@ VOID OwgtButton1Up(HWND hwnd)
                     {
                         // object is not a folder:
                         // open it on button up!
-                        _wpViewObject(pPrivate->pobjButton,
-                                      NULLHANDLE,
-                                      OPEN_DEFAULT, // default view, same as dblclick
-                                      0);
+                        // V0.9.16 (2002-01-04) [umoeller]: do this on thread 1
+                        // always, or we get very strange system hangs with
+                        // some executables
+                        krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
+                                                (MPARAM)pPrivate->pobjButton,
+                                                (MPARAM)OPEN_DEFAULT);
+
                         // unset button sunk state
                         // (no toggle)
                         pPrivate->fButtonSunk = FALSE;
@@ -1111,7 +1114,7 @@ VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
          && (pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser)
        )
     {
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         SHORT sMenuIDMsg = (SHORT)mp1;
         HWND hwndMenuMsg = (HWND)mp2;
 
@@ -1127,7 +1130,7 @@ VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
             // remove dummy item
             winhRemoveMenuItem(pPrivate->hwndMenuMain,
-                               pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY);
+                               cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_DUMMY);
 
             if (!pPrivate->pobjButton)
                 // object not queried yet:
@@ -1170,11 +1173,11 @@ VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                   MM_ITEMIDFROMPOSITION,
                                   (MPARAM)0,        // menu item index
                                   MPNULL)
-                       == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_DUMMY))
+                       == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_DUMMY))
             {
                // okay, let's go
 #ifndef __NOFOLDERCONTENTS__
-               if (cmnIsFeatureEnabled(FolderContentShowIcons))
+               if (cmnQuerySetting(sfFolderContentShowIcons))
 #endif
                {
                    // show folder content icons ON:
@@ -1334,8 +1337,8 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
             // -- for object buttons; fProcessed is still FALSE
             // -- for the x-button if none of the standard items
             //    was selected; this can be a subitem of "desktop" folder contents too
-            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-            ULONG ulFirstVarMenuId = pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE;
+            // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+            ULONG ulFirstVarMenuId = cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_VARIABLE;
             if (     (ulMenuId >= ulFirstVarMenuId)
                   && (ulMenuId <  ulFirstVarMenuId + G_ulVarItemCount)
                   && (ulMenuId <  0x7f00)       // standard widget menu IDs
@@ -1859,8 +1862,7 @@ MRESULT EXPENTRY fnwpObjButtonWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
          */
 
         case WM_MEASUREITEM:
-            mrc = cmnuMeasureItem((POWNERITEM)mp2,
-                                  cmnQueryGlobalSettings());
+            mrc = cmnuMeasureItem((POWNERITEM)mp2);
         break;
 
         /*
@@ -1874,8 +1876,7 @@ MRESULT EXPENTRY fnwpObjButtonWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
          */
 
         case WM_DRAWITEM:
-            if (cmnuDrawItem(cmnQueryGlobalSettings(),
-                             mp1,
+            if (cmnuDrawItem(mp1,
                              mp2))
                 mrc = (MRESULT)TRUE;
         break;

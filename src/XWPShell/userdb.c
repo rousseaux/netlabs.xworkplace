@@ -404,9 +404,9 @@ APIRET LoadDatabase(PVOID pDatabase)
     }
     sprintf(szUserDB, "%s\\xwpusers.xml", pszDBPath);
 
-    arc = doshLoadTextFile(szUserDB,
-                           &pszUserDB);
-    if (arc == NO_ERROR)
+    if (!(arc = doshLoadTextFile(szUserDB,
+                                 &pszUserDB,
+                                 NULL)))
     {
         // text file loaded:
 

@@ -1380,10 +1380,10 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
             WinPostMsg(pClientData->hwndClassCnrDlg, WM_FILLCNR, MPNULL, MPNULL);
 
             // show help panel if opened for the first time
-            /* if ((pGlobalSettings->ulIntroHelpShown & HLPS_CLASSLIST) == 0)
+            /* if ((cmnQuerySetting(sulIntroHelpShown) & HLPS_CLASSLIST) == 0)
             {
                 WinPostMsg(hwndClient, WM_HELP, 0, 0);
-                pGlobalSettings->ulIntroHelpShown |= HLPS_CLASSLIST;
+                cmnQuerySetting(sulIntroHelpShown) |= HLPS_CLASSLIST;
                 cmnStoreGlobalSettings();
             } */
 
@@ -1814,7 +1814,9 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
                     sprintf(szClassInfoFile+strlen(szClassInfoFile),
                             "\\help\\xfcls%s.txt",
                             cmnQueryLanguageCode());
-                    doshLoadTextFile(szClassInfoFile, &pszClassInfo);
+                    doshLoadTextFile(szClassInfoFile,
+                                     &pszClassInfo,
+                                     NULL);
                 }
                 else
                     return (NULL);
@@ -1859,8 +1861,8 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
                         {
                             if (!fFillingCnr)
                             {
-                                PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-                                if (pGlobalSettings->TreeViewAutoScroll)
+                                // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                                if (cmnQuerySetting(sfTreeViewAutoScroll))
                                 {
                                     pscd->preccExpanded = (PRECORDCORE)mp2;
                                     WinStartTimer(WinQueryAnchorBlock(hwndDlg),
@@ -2925,7 +2927,7 @@ MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
 VOID cllClassListInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
                            ULONG flFlags)              // CBI_* flags (notebook.h)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XWPClassListData *somThis = XWPClassListGetData(pcnbp->somSelf);
 
     if (flFlags & CBI_INIT)
@@ -3046,12 +3048,14 @@ BOOL cllModifyPopupMenu(XWPClassList *somSelf,
                           TRUE,
                           &mi))
     {
+        ULONG ulOfs = cmnQuerySetting(sulVarMenuOffset);
+
         // mi.hwndSubMenu now contains "Open" submenu handle,
         // which we add items to now
-        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
         winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                           (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW),
+                           ulOfs + ID_XFMI_OFS_XWPVIEW,
                            cmnGetString(ID_XFSI_OPENCLASSLIST),  // pszOpenClassList
                            MIS_TEXT, 0);
         // insert "register class" only if this is
@@ -3059,7 +3063,7 @@ BOOL cllModifyPopupMenu(XWPClassList *somSelf,
         if (_fMenuCnrWhitespace)
         {
             winhInsertMenuSeparator(hwndMenu, MIT_END,
-                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                                    ulOfs + ID_XFMI_OFS_SEPARATOR);
             winhInsertMenuItem(hwndMenu, MIT_END,
                                ID_XLMI_REGISTER, // is above WPMENUID_USER
                                cmnGetString(ID_XFSI_REGISTERCLASS),  // pszRegisterClass
@@ -3093,9 +3097,9 @@ BOOL cllMenuItemSelected(XWPClassList *somSelf,
                          ULONG ulMenuId)
 {
     BOOL brc = FALSE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-    if (ulMenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW))
+    if (ulMenuId == (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_XWPVIEW))
     {
         // "Open" --> "Class list":
         // wpViewObject will call wpOpen if a new view is necessary
