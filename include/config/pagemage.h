@@ -34,19 +34,26 @@
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
-        VOID pgmiPageMage1InitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                   ULONG flFlags);
+        VOID pgmiPageMageGeneralInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                         ULONG flFlags);
 
-        MRESULT pgmiPageMage1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                         USHORT usItemID, USHORT usNotifyCode,
-                                         ULONG ulExtra);
+        MRESULT pgmiPageMageGeneralItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                               USHORT usItemID, USHORT usNotifyCode,
+                                               ULONG ulExtra);
 
-        VOID pgmiPageMage2InitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                   ULONG flFlags);
+        VOID pgmiPageMageStickyInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                        ULONG flFlags);
 
-        MRESULT pgmiPageMage2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                         USHORT usItemID, USHORT usNotifyCode,
-                                         ULONG ulExtra);
+        MRESULT pgmiPageMageStickyItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                              USHORT usItemID, USHORT usNotifyCode,
+                                              ULONG ulExtra);
+
+        VOID pgmiPageMageColorsInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                        ULONG flFlags);
+
+        MRESULT pgmiPageMageColorsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                              USHORT usItemID, USHORT usNotifyCode,
+                                              ULONG ulExtra);
     #else
         #error "shared\notebook.h needs to be included before including pagemage.h".
     #endif

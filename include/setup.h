@@ -133,7 +133,7 @@
             // #define DEBUG_MENUS
 
         // debug startup (folder, archives) processing
-            #define DEBUG_STARTUP
+            // #define DEBUG_STARTUP
 
         // debug title clash dialog
             // #define DEBUG_TITLECLASH
@@ -154,7 +154,7 @@
             // #define DEBUG_NOTEBOOKS
 
         // debug trashcan
-            // #define DEBUG_TRASHCAN
+            #define DEBUG_TRASHCAN
     #endif
 
     /********************************************************************

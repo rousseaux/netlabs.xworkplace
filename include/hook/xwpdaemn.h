@@ -44,17 +44,14 @@
     /* Window types */
     // these have been moved to hook_private.h because
     // the hook also needs them
-    #define WINDOW_NORMAL       0
-    #define WINDOW_PAGEMAGE     1
-    #define WINDOW_WPS          2
-    #define STICKY_PERMANENT    3
-    #define STICKY_TEMPORARY    4
-    #define WINDOW_MINIMIZED    5
-    #define WINDOW_RESCAN       7
-
-    #define WINDOW_SPECIAL      99
-
-    /* #define WINDOW_INVISIBLE    8 */
+    #define WINDOW_NORMAL       0x0000
+    #define WINDOW_PAGEMAGE     0x0001      // some PageMage window, always sticky
+    #define WINDOW_WPSDESKTOP   0x0002      // WPS desktop, always sticky
+    #define WINDOW_STICKY       0x0003      // window is on sticky list
+    #define WINDOW_MINIMIZE     0x0005      // window is minimized, treat as sticky
+    #define WINDOW_MAXIMIZE     0x0006      // window is maximized; hide when moving
+    #define WINDOW_MAX_OFF      0x0007      // window was maximized and has been hidden by us
+    #define WINDOW_RESCAN       0x0008
 
     /*
      *@@ HWNDLIST:
@@ -66,7 +63,7 @@
     {
         HWND    hwnd;
         BYTE    bWindowType;
-        CHAR    szWindowName[30];
+        // CHAR    szWindowName[30];
         CHAR    szSwitchName[30];
         CHAR    szClassName[30];
         ULONG   pid;
@@ -78,35 +75,36 @@
     VOID                dmnKillPageMage(BOOL fNotifyKernel);
 
     // pgmg_control.c
-    LONG                pgmcCalcNewFrameCY(LONG cx);
-    MRESULT EXPENTRY    fnwpPageMageClient(HWND, ULONG, MPARAM, MPARAM);
-    MRESULT EXPENTRY    fnwpSubclPageMageFrame(HWND, ULONG, MPARAM, MPARAM);
-    VOID                pgmcSetPgmgFramePos(HWND);
-    BOOL                pgmcCreateMainControlWnd(VOID);
+    BOOL pgmcCreateMainControlWnd(VOID);
+    LONG pgmcCalcNewFrameCY(LONG cx);
+    VOID pgmcSetPgmgFramePos(HWND);
+    USHORT pgmgcStartFlashTimer(VOID);
+    MRESULT EXPENTRY fnwpPageMageClient(HWND, ULONG, MPARAM, MPARAM);
+    MRESULT EXPENTRY fnwpSubclPageMageFrame(HWND, ULONG, MPARAM, MPARAM);
 
     // pgmg_move.c
     #ifdef THREADS_HEADER_INCLUDED
-        VOID    _Optlink    fntMoveQueueThread(PTHREADINFO pti);
+        VOID _Optlink fntMoveQueueThread(PTHREADINFO pti);
     #endif
-    INT                 pgmmMoveIt(LONG, LONG, BOOL);
-    INT                 pgmmZMoveIt(LONG, LONG);
-    VOID                pgmmRecoverAllWindows(VOID);
+    INT pgmmMoveIt(LONG, LONG, BOOL);
+    INT pgmmZMoveIt(LONG, LONG);
+    VOID pgmmRecoverAllWindows(VOID);
 
     // pgmg_settings.c
-    VOID                pgmsSetDefaults(VOID);
-    BOOL                pgmsLoadSettings(ULONG flConfig);
-    BOOL                pgmsSaveSettings(VOID);
+    VOID pgmsSetDefaults(VOID);
+    BOOL pgmsLoadSettings(ULONG flConfig);
+    BOOL pgmsSaveSettings(VOID);
 
     // pgmg_winscan.c
-    BOOL                pgmwGetWinInfo(HWND hwnd,
-                                       HWNDLIST *phl);
-    VOID                pgmwScanAllWindows(VOID);
-    VOID                pgmwWindowListAdd(HWND hwnd);
-    VOID                pgmwWindowListDelete(HWND hwnd);
-    BOOL                pgmwWindowListRescan(VOID);
-    BOOL                pgmwStickyCheck(PCHAR, PCHAR);
-    BOOL                pgmwSticky2Check(HWND);
-    HWND                pgmwGetWindowFromClientPoint(ULONG, ULONG);
+    BOOL pgmwGetWinInfo(HWND hwnd,
+                        HWNDLIST *phl);
+    VOID pgmwScanAllWindows(VOID);
+    VOID pgmwWindowListAdd(HWND hwnd);
+    VOID pgmwWindowListDelete(HWND hwnd);
+    BOOL pgmwWindowListRescan(VOID);
+    BOOL pgmwStickyCheck(/* PCHAR, */ PCHAR);
+    BOOL pgmwSticky2Check(HWND);
+    HWND pgmwGetWindowFromClientPoint(ULONG, ULONG);
 
     /* ******************************************************************
      *                                                                  *
@@ -114,6 +112,7 @@
      *                                                                  *
      ********************************************************************/
 
+    ULONG               G_pidDaemon;
     extern HAB          G_habDaemon;
     extern PHOOKDATA    G_pHookData;
     extern PDAEMONSHARED G_pDaemonShared;
@@ -123,24 +122,12 @@
     extern HWNDLIST     G_MainWindowList[MAX_WINDOWS];
     extern USHORT       G_usWindowCount;
 
-    extern HMTX         G_hmtxPageMage;
     extern HMTX         G_hmtxWindowList;
-    extern HEV          G_hevWindowList;
-    extern HQUEUE       G_hqPageMage;
     extern POINTL       G_ptlCurrPos;
-    extern POINTL       G_ptlMoveDeltaPcnt;
-    extern POINTL       G_ptlMoveDelta;
     extern POINTL       G_ptlPgmgClientSize;
     extern POINTL       G_ptlEachDesktop;
     extern BOOL         G_bConfigChanged;
-    extern BOOL         G_bTitlebarChange;
     extern SWP          G_swpPgmgFrame;
-    extern CHAR         G_chArg0[64];
-    extern CHAR         G_szFacename[TEXTLEN];
-    extern POINTL       G_ptlWhich;
-    extern SWP          G_swpRecover;
-
-    extern PFNWP        G_pfnOldFrameWndProc;
-
+    extern CHAR         G_szFacename[PGMG_TEXTLEN];
 #endif
 

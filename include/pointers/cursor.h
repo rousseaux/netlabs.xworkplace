@@ -94,10 +94,10 @@ BOOL LoadPointerFromWinAnimationFile( PSZ pszName, PHPOINTER pahpointer, PICONIN
 BOOL LoadFirstPointerFromWinAnimationFile( PSZ pszAnimationFileName, PHPOINTER phpointer,
                                            PICONINFO paiconinfo);
 
-BOOL LoadFirstAnimationFromWinanimationFile( PSZ pszAnimationFile,
-                                             PHPOINTER pahpointer,
-                                             PULONG    pulTimeout,
-                                             PULONG pulEntries);
+BOOL LoadFirstAnimationFromWinAnimationFile(PSZ pszAnimationFile,
+                                            PHPOINTER pahpointer,
+                                            PULONG pulTimeout,
+                                            PULONG pulEntries);
 
 APIRET WriteWinAnimationFile( PSZ pszAnimationFileName, PULONG paulTimeout,
                               PICONINFO paiconinfo, ULONG ulEntries,

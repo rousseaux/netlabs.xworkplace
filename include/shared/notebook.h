@@ -35,6 +35,11 @@
      *                                                                  *
      ********************************************************************/
 
+    // resize information for ID_XFD_CONTAINERPAGE, which is used
+    // by many settings pages
+    extern MPARAM *G_pampGenericCnrPage;
+    extern ULONG G_cGenericCnrPage;
+
     // forward-declare the CREATENOTEBOOKPAGE types, because
     // these are needed by the function prototypes below
     typedef struct _CREATENOTEBOOKPAGE *PCREATENOTEBOOKPAGE;
@@ -90,6 +95,7 @@
      *      optional and have safe defaults.
      *
      *@@changed V0.9.0 [umoeller]: typedef was missing, thanks RÅdiger Ihle
+     *@@changed V0.9.4 (2000-07-11) [umoeller]: added fPassCnrHelp
      */
 
     typedef struct _CREATENOTEBOOKPAGE
@@ -105,16 +111,19 @@
         PSZ         pszName;        // title of page (in notebook tab)
 
         // 2) OPTIONAL input to ntbInsertPage; all of these can be null
-        USHORT      usPageStyleFlags; // any combination or none of the following:
-                                    // -- BKA_MAJOR
-                                    // -- BKA_MINOR
-                                    // BKA_STATUSTEXTON will always be added.
-        // BOOL        fMajorTab,      // if TRUE: give the page a major tab
-        BOOL        fEnumerate;     // if TRUE: add "page 1 of 3"-like thingies
         ULONG       ulPageID;       // the page identifier, which should be set to
                                     // uniquely identify the notebook page (e.g. for
                                     // ntbQueryOpenPages); XWorkplace uses the SP_*
                                     // IDs def'd in common.h.
+        USHORT      usPageStyleFlags; // any combination or none of the following:
+                                    // -- BKA_MAJOR
+                                    // -- BKA_MINOR
+                                    // BKA_STATUSTEXTON will always be added.
+        BOOL        fEnumerate;     // if TRUE: add "page 1 of 3"-like thingies
+        BOOL        fPassCnrHelp;   // if TRUE: CN_HELP is not intercepted, but sent
+                                    // to "item changed" callback;
+                                    // if FALSE: CN_HELP is processed like WM_HELP
+                                    // V0.9.4 (2000-07-11) [umoeller]
         ULONG       ulDefaultHelpPanel; // default help panel ID for the whole page
                                     // in the XFolder help file;
                                     // this will be displayed when WM_HELP comes in
@@ -129,6 +138,11 @@
                                     // be displayed.
         ULONG       ulTimer;        // if !=0, a timer will be started and pfncbTimer
                                     // will be called with this frequency (in ms)
+        MPARAM      *pampControlFlags; // if != NULL, winhAdjustControls will be
+                                    // called when the notebook gets resized with
+                                    // the array of MPARAM's specified here
+        ULONG       cControlFlags;  // if (pampControlFlags != NULL), specify the
+                                    // array item count here
         PVOID       pUser,
                     pUser2;         // user data; since you can access this structure
                 // from the "pcnbp" parameter which is always passed to the notebook
@@ -216,7 +230,7 @@
         PRECORDCORE preccLastSelected;
         PRECORDCORE preccExpanded;      // for tree-view auto scroll
         HWND        hwndExpandedCnr;    // for tree-view auto scroll
-
+        PVOID       pxac;               // ptr to XADJUSTCTRLS if (pampControlFlags != NULL)
     } CREATENOTEBOOKPAGE;
 
     /*

@@ -169,6 +169,9 @@
     #define XFOLDER_INTROID         "<XWP_INTRO>"
     #define XFOLDER_USERGUIDE       "<XWP_REF>"
 
+    #define XWORKPLACE_ARCHIVE_MARKER   "xwparchv.tmp"
+                // archive marker file in Desktop directory V0.9.4 (2000-08-03) [umoeller]
+
     /********************************************************************
      *                                                                  *
      *   Thread object windows                                          *
@@ -214,8 +217,6 @@
     #define ID_XFH_REGISTERCLASS    (ID_XFH_BORED+8)
     #define ID_XFH_TITLECLASH       (ID_XFH_BORED+9)
     #define ID_XFH_CLOSEVIO         (ID_XFH_BORED+10)
-
-    #define ID_XFH_SELECTSOME       110
 
     #define ID_XMH_VARIABLE         12
     #define ID_XMH_CONFIGFOLDER     13
@@ -274,8 +275,8 @@
     #define ID_XSH_MOUSE_CORNERS             70     // V0.9.2: XWPMouse "Movement" page 2
     #define ID_XSH_SETTINGS_TRASH_DRIVES     71     // V0.9.2: XWPTrashCan "Drives" page
     #define ID_XSH_SETTINGS_SYSLEVEL         72     // V0.9.3: XFldSystem "Syslevel" page
-    #define ID_XSH_SETTINGS_PAGEMAGE1        73     // V0.9.3: XWPScreen "PageMage" page 1
-    #define ID_XSH_SETTINGS_PAGEMAGE2        74     // V0.9.3: XWPScreen "PageMage" page 2
+    #define ID_XSH_SETTINGS_PAGEMAGE_GENERAL 73     // V0.9.3: XWPScreen "PageMage General" page
+    #define ID_XSH_SETTINGS_PAGEMAGE_COLORS  74     // V0.9.3: XWPScreen "PageMage Colors" page
                 // 75 is for "Mouse actions" descriptions linked to from the above pages
     #define ID_XSH_SETTINGS_FUNCTIONKEYS     76     // V0.9.3: XWPKeyboard "Function keys" page
                 // 77 is for the "edit function key" dlg
@@ -285,14 +286,13 @@
     #define ID_XSH_MEDIA_CODECS              81     // V0.9.3: XWPMedia "Codecs" page
     #define ID_XSH_MEDIA_IOPROCS             82     // V0.9.3: XWPMedia "IOProcs" page
     #define ID_XSH_SETTINGS_TRASHCAN_DRIVES  83     // V0.9.4: XWPTrashCan "Drives" page
-    // "subpanels" for pages with context-sensitive help
-    // #define ID_XSH_SETTINGS_REMOVEMENUS_SUB  81+19  // "Find" item on "Remove menus" page
-    // #define ID_XSH_SETTINGS_ADDMENUS_SUB     98+19
-    // #define ID_XSH_SETTINGS_PARANOIA_SUB     110+19
-    // #define ID_XSH_SETTINGS_DTP1_SUB         121+19
-    // #define ID_XSH_SETTINGS_DTP_SHUTDOWN_SUB 127+19
-    // #define ID_XSH_SETTINGS_CFGM_SUB         135+19
-    // #define ID_XSH_SETTINGS_FILEOPS_SUB      142+19
+    #define ID_XSH_SETTINGS_PAGEMAGE_STICKY  85     // V0.9.3: XWPScreen "PageMage Sticky" page;
+                                                    // three pages
+    #define ID_XSH_SETTINGS_TRASHCAN_ICON    88     // V0.9.4: XWPTrashCan "Icon" page
+    #define ID_XSH_XSHUTDOWN_CONFIRM         89     // V0.9.4: shutdown confirm dlg
+    #define ID_XFH_SELECTSOME                90     // V0.9.4: changed this to have it assigned a fixed no. finally
+    #define ID_XFH_VIEW_MENU_ITEMS           91     // V0.9.4: added for XFolder "View" submenu items
+    #define ID_XSH_DRIVER_HPFS386            92     // V0.9.5: HPFS386 driver dialog help
 
     /********************************************************************
      *                                                                  *
@@ -308,11 +308,6 @@
 
     // miscellaneae
     #define LANGUAGECODELENGTH      30
-
-    // log file names
-    #define XFOLDER_CRASHLOG        "xwptrap.log"
-    #define XFOLDER_SHUTDOWNLOG     "xshutdwn.log"
-    #define XFOLDER_LOGLOG          "xwplog.log"
 
     // common dlg msgs for settings notebook dlg funcs
     #define XM_SETTINGS2DLG         (WM_USER+90)    // set controls
@@ -436,6 +431,7 @@
     // 10) pages for XWPTrashCan
     #define SP_TRASHCAN_SETTINGS    90      // new with V0.9.0; renamed V0.9.1 (99-12-12)
     #define SP_TRASHCAN_DRIVES      91      // new with V0.9.1 (99-12-12)
+    #define SP_TRASHCAN_ICON        92      // new with V0.9.4 (2000-08-03) [umoeller]
 
     // 11) "Details" pages
     #define SP_DISK_DETAILS         100     // new with V0.9.0
@@ -483,17 +479,18 @@
     #define XSD_DTM_LOCKUP          0x00004 */
 
     // #define XSD_ENABLED             0x00010
-    #define XSD_CONFIRM             0x00020
-    #define XSD_REBOOT              0x00040
+    #define XSD_CONFIRM             0x000020
+    #define XSD_REBOOT              0x000040
     // #define XSD_RESTARTWPS          0x00100
-    #define XSD_DEBUG               0x01000
-    #define XSD_AUTOCLOSEVIO        0x02000
-    #define XSD_WPS_CLOSEWINDOWS    0x04000
-    #define XSD_LOG                 0x08000
-    #define XSD_ANIMATE_SHUTDOWN    0x10000     // renamed V0.9.3 (2000-05-22) [umoeller]
-    #define XSD_APMPOWEROFF         0x20000
-    #define XSD_APM_DELAY           0x40000     // added V0.9.2 (2000-03-04) [umoeller]
-    #define XSD_ANIMATE_REBOOT      0x80000     // added V0.9.3 (2000-05-22) [umoeller]
+    #define XSD_DEBUG               0x001000
+    #define XSD_AUTOCLOSEVIO        0x002000
+    #define XSD_WPS_CLOSEWINDOWS    0x004000
+    #define XSD_LOG                 0x008000
+    #define XSD_ANIMATE_SHUTDOWN    0x010000     // renamed V0.9.3 (2000-05-22) [umoeller]
+    #define XSD_APMPOWEROFF         0x020000
+    #define XSD_APM_DELAY           0x040000     // added V0.9.2 (2000-03-04) [umoeller]
+    #define XSD_ANIMATE_REBOOT      0x080000     // added V0.9.3 (2000-05-22) [umoeller]
+    #define XSD_EMPTY_TRASH         0x100000     // added V0.9.4 (2000-08-03) [umoeller]
 
     // flags for GLOBALSETTINGS.ulIntroHelpShown
     #define HLPS_CLASSLIST          0x00000001
@@ -619,7 +616,9 @@
                         // XFolder
                     ShowStartupProgress;
                         // XFldStartup
-        ULONG       ulStartupDelay;
+        ULONG       ulStartupObjectDelay;
+                        // was: ulStartupDelay;
+                        // there's a new ulStartupInitialDelay with V0.9.4 (bottom)
                         // XFldStartup
 
     /* XFolder 0.70 */
@@ -737,8 +736,8 @@
 
         // trashcan settings
                     fTrashDelete,
-                    fTrashEmptyStartup,
-                    fTrashEmptyShutdown;
+                    __fRemoved1, // fTrashEmptyStartup,
+                    __fRemoved2; // fTrashEmptyShutdown;
         ULONG       ulTrashConfirmEmpty;
                         // TRSHEMPTY_* flags
 
@@ -787,6 +786,11 @@
                         // "default doc = folder default view"
                         // "Workplace Shell" "View" page
 
+        BYTE        fResizeSettingsPages;
+                        // XWPSetup: allow resizing of WPS notebook pages?
+
+        ULONG       ulStartupInitialDelay;
+                        // XFldStartup: initial delay
     } GLOBALSETTINGS;
 
     typedef const GLOBALSETTINGS* PCGLOBALSETTINGS;
@@ -1080,7 +1084,16 @@
                 pszFdrDefaultDoc,
 
                 // XCenter V0.9.4 (2000-06-10) [umoeller]
-                pszXCenterPage1;
+                pszXCenterPage1,
+
+                // file operations V0.9.4 (2000-07-27) [umoeller]
+                pszFopsMove2TrashCan,
+                pszFopsRestoreFromTrashCan,
+                pszFopsTrueDelete,
+                pszFopsEmptyingTrashCan,
+
+                pszIconPage;        // added V0.9.4 (2000-08-03) [umoeller]
+
     } NLSSTRINGS;
 
     typedef const NLSSTRINGS* PNLSSTRINGS;
@@ -1233,7 +1246,24 @@
 
     BOOL cmnSetDefaultSettings(USHORT usSettingsPage);
 
-    VOID cmnEnablePageMage(BOOL fEnable);
+    /* ******************************************************************
+     *                                                                  *
+     *   Trash can setup                                                *
+     *                                                                  *
+     ********************************************************************/
+
+    BOOL cmnTrashCanReady(VOID);
+
+    BOOL cmnEnableTrashCan(HWND hwndOwner,
+                           BOOL fEnable);
+
+    #ifdef SOM_WPObject_h
+        BOOL cmnMove2DefTrashCan(WPObject *pObject);
+    #endif
+
+    BOOL cmnEmptyDefTrashCan(HAB hab,
+                             PULONG pulDeleted,
+                             HWND hwndConfirmOwner);
 
     /********************************************************************
      *                                                                  *
@@ -1256,6 +1286,30 @@
     VOID cmnSetControlsFont(HWND hwnd,
                             SHORT usIDMin,
                             SHORT usIDMax);
+
+    /*
+    #define MB_OK                      0x0000
+    #define MB_OKCANCEL                0x0001
+    #define MB_RETRYCANCEL             0x0002
+    #define MB_ABORTRETRYIGNORE        0x0003
+    #define MB_YESNO                   0x0004
+    #define MB_YESNOCANCEL             0x0005
+    #define MB_CANCEL                  0x0006
+    #define MB_ENTER                   0x0007
+    #define MB_ENTERCANCEL             0x0008 */
+    #define MB_YES_YES2ALL_NO          0x0009
+
+    /*
+    #define MBID_OK                    1
+    #define MBID_CANCEL                2
+    #define MBID_ABORT                 3
+    #define MBID_RETRY                 4
+    #define MBID_IGNORE                5
+    #define MBID_YES                   6
+    #define MBID_NO                    7
+    #define MBID_HELP                  8
+    #define MBID_ENTER                 9 */
+    #define MBID_YES2ALL               10
 
     ULONG cmnMessageBox(HWND hwndOwner,
                         PSZ pszTitle,

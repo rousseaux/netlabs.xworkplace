@@ -36,6 +36,12 @@
         #error kernel.h requires INCL_DOSSEMAPHORES to be defined.
     #endif
 
+    // log file names
+    #define XFOLDER_CRASHLOG        "xwptrap.log"
+    #define XFOLDER_SHUTDOWNLOG     "xshutdwn.log"
+    #define XFOLDER_LOGLOG          "xwplog.log"
+    #define XFOLDER_DMNCRASHLOG     "xdmntrap.log"
+
     /* ******************************************************************
      *                                                                  *
      *   Resource protection (thread safety)                            *
@@ -286,13 +292,33 @@
 
     #define T1M_DAEMONREADY             (WM_USER+411)    // added V0.9.0
 
+#ifdef __PAGEMAGE__
     #define T1M_PAGEMAGECLOSED          (WM_USER+412)    // added V0.9.2 (2000-02-23) [umoeller]
+#endif
 
     #define T1M_QUERYXFOLDERVERSION     (WM_USER+413)
                 // V0.9.2 (2000-02-26) [umoeller]:
                 // msg value changed to break compatibility with V0.8x
 
+#ifdef __PAGEMAGE__
     #define T1M_PAGEMAGECONFIGDELAYED   (WM_USER+414)
+#endif
+
+    /*
+     *@@ T1M_FOPS_TASK_DONE:
+     *      posted by file thread every time a file
+     *      operation has completed. This message does
+     *      nothing, but is only checked for in fopsStartTask
+     *      for modal operations.
+     *
+     *      Parameters:
+     *      -- HFILETASKLIST mp1: file task list handle.
+     *      -- FOPSRET mp2: file-operations return code.
+     *
+     *@@added V0.9.4 (2000-08-03) [umoeller]
+     */
+
+    #define T1M_FOPS_TASK_DONE          (WM_USER+415)
 
     MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
 

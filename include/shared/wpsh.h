@@ -32,6 +32,10 @@
 #ifndef XWPS_HEADER_INCLUDED
     #define XWPS_HEADER_INCLUDED
 
+    PVOID wpshResolveForParent(SOMObject *somSelf,
+                               SOMClass *pClass,
+                               const char *pcszMethodName);
+
     BOOL wpshCheckObject(WPObject *pObject);
 
     WPObject* wpshQueryObjectFromID(const PSZ pszObjectID,

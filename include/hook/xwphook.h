@@ -40,6 +40,7 @@
     #define INIKEY_HOOK_HOTKEYS         "Hotkeys"           // added V0.9.0
     #define INIKEY_HOOK_CONFIG          "Config"            // added V0.9.0
     #define INIKEY_HOOK_PGMGCONFIG      "PageMageConfig"    // V0.9.2 (2000-02-25) [umoeller]
+    #define INIKEY_HOOK_PGMGWINPOS      "PageMageWinPos"    // V0.9.4 (2000-08-08) [umoeller]
     #define INIKEY_HOOK_FUNCTIONKEYS    "FuncKeys"          // added V0.9.3 (2000-04-19) [umoeller]
 
     /* ******************************************************************
@@ -48,9 +49,11 @@
      *                                                                  *
      ********************************************************************/
 
+    // do not change the following, or this will break
+    // binary compatibility of the PageMage OS2.INI data
     #define MAX_STICKYS         64
     #define MAX_WINDOWS         256
-    #define TEXTLEN             30
+    #define PGMG_TEXTLEN        30
 
     // flags for HOOKCONFIG.usScrollMode
     #define SM_LINEWISE         0
@@ -59,10 +62,9 @@
     /*
      *@@ PAGEMAGECONFIG:
      *      PageMage configuration data.
-     *      This is stored in a global variable
-     *      in xwpdaemn.c and only visible to
-     *      the daemon (and thus to the PageMage
-     *      code), but not to the hook.
+     *      This is stored within the HOOKDATA structure
+     *      (statically in the hook DLL) so that both
+     *      the daemon and the hook have access to this.
      *
      *@@added V0.9.2 (2000-02-25) [umoeller]
      */
@@ -86,7 +88,7 @@
         BOOL         fStayOnTop;
                 // stay on top
         BOOL         fFlash;
-        ULONG        ulFlashDelay;
+        ULONG        ulFlashDelay;      // in milliseconds
                 // "flash" (temporarily show)
 
         BOOL         fMirrorWindows;
@@ -102,7 +104,7 @@
                 // if TRUE, windows are restored when PageMage is exited
 
         /* Sticky */
-        CHAR         aszSticky[MAX_STICKYS][TEXTLEN];
+        CHAR         aszSticky[MAX_STICKYS][PGMG_TEXTLEN];
         SHORT        usStickyTextNum;
         HWND         hwndSticky2[MAX_STICKYS];
         SHORT        usSticky2Num;
@@ -238,8 +240,9 @@
         BOOL            fGlobalHotkeys;
 
         // PageMage configuration
-        BOOL            fFloat,
-                        fSlidingIgnorePageMage;        // on sliding focus
+        BOOL            fRemoved1, // _fPageMageStayOnTop,
+                        fSlidingIgnorePageMage;
+                                // on sliding focus
 
         // Sliding menus
         BOOL            fSlidingMenus;
@@ -273,6 +276,7 @@
                             // Currently the following exist:
                             //      0xFFFF0000 = show window list;
                             //      0xFFFF0001 = show Desktop's context menu.
+                            //      0xFFFF0002 = show PageMage.
                             // Otherwise (> 0 and < 0xFFFF0000), we have
                             // a "real" object handle, and a regular WPS
                             // object is to be opened.
@@ -405,19 +409,22 @@
      *                                                                  *
      ********************************************************************/
 
-    #define XDM_HOOKCONFIG          (WM_USER + 300)
+    #define XDM_HOOKINSTALL         (WM_USER + 300)
 
-    #define XDM_PAGEMAGECONFIG      (WM_USER + 301)
+    #define XDM_DESKTOPREADY        (WM_USER + 301)
 
-        // flags for XDM_PAGEMAGECONFIG:
-        #define PGMGCFG_REPAINT     0x0001
-        #define PGMGCFG_REFORMAT    0x0002
+    #define XDM_HOOKCONFIG          (WM_USER + 302)
 
-    #define XDM_HOOKINSTALL         (WM_USER + 302)
-
+#ifdef __PAGEMAGE__
     #define XDM_STARTSTOPPAGEMAGE   (WM_USER + 303)
 
-    #define XDM_DESKTOPREADY        (WM_USER + 304)
+    #define XDM_PAGEMAGECONFIG      (WM_USER + 304)
+        // flags for XDM_PAGEMAGECONFIG:
+        #define PGMGCFG_REPAINT     0x0001  // causes PGMG_INVALIDATECLIENT
+        #define PGMGCFG_REFORMAT    0x0002  // causes pgmcSetPgmgFramePos
+        #define PGMGCFG_ZAPPO       0x0004  // reformats the PageMage title bar
+        #define PGMGCFG_STICKIES    0x0008  // sticky windows have changed, rescan winlist
+#endif
 
     #define XDM_HOTKEYPRESSED       (WM_USER + 305)
 
@@ -432,6 +439,8 @@
     #define XDM_HOTCORNER           (WM_USER + 310)
 
     #define XDM_WMCHORDWINLIST      (WM_USER + 311)
+
+    #define XDM_PGMGWINLISTFULL     (WM_USER + 312)
 
 #endif
 

@@ -37,10 +37,8 @@
     #define IDMUTEX_ONEINSTANCE     "\\SEM32\\XWORKPLC\\ONEINST.MTX"
     #define SEM_TIMEOUT             4000
 
-    #define PAGEMAGE_MUTEX          "\\SEM32\\XWORKPLC\\PAGEMAGE.MTX"
-    #define PAGEMAGE_WNDLSTMTX      "\\SEM32\\XWORKPLC\\PGMGWINS.MTX"
-    #define PAGEMAGE_WNDLSTEV       "\\SEM32\\XWORKPLC\\PGMGWINS.EVT"
-    #define PAGEMAGE_WNDQUEUE       "\\QUEUES\\XWORKPLC\\PGMG_Q"
+    #define IDMUTEX_PGMG_WINLIST    "\\SEM32\\XWORKPLC\\PGMGWINS.MTX"
+    #define TIMEOUT_PGMG_WINLIST    6000
 
     // timer IDs for fnwpDaemonObject
     #define TIMERID_SLIDINGFOCUS        1
@@ -154,6 +152,8 @@
                 // PageMage client window, created by pgmcCreateMainControlWnd
         HWND        hwndPageMageFrame;
                 // PageMage frame window, created by pgmcCreateMainControlWnd
+        HWND        hwndPageMageMoveThread;
+                // PageMage move thread (fnwpMoveThread)
 
         HMODULE     hmodDLL;
                 // XWPHOOK.DLL module handle
@@ -232,20 +232,18 @@
     #define PGMG_WNDRESCAN          (WM_USER + 104)
     #define PGMG_CHANGEACTIVE       (WM_USER + 105)
     #define PGMG_LOWERWINDOW        (WM_USER + 106)
-    #define PGMG_PASSTHRU           (WM_USER + 107)
+    #define PGMG_WINLISTFULL        (WM_USER + 107)
 
-    #define PGMGQ_QUIT              0
-    // #define PGMGQ_MOUSEMOVE         1
-    #define PGMGQ_CLICK2ACTIVATE    2
-    #define PGMGQ_CLICK2LOWER       3
-    // #define PGMGQ_KEY               4
-    #define PGMGQ_HOOKKEY           5
-    #define PGMGQ_FOCUSCHANGE       6
+    #define PGOM_CLICK2ACTIVATE     (WM_USER + 121)
+    #define PGOM_CLICK2LOWER        (WM_USER + 122)
+    #define PGOM_HOOKKEY            (WM_USER + 123)
+    #define PGOM_FOCUSCHANGE        (WM_USER + 124)
 
-    #define PGMGQENCODE(msg, parm1, parm2) ((msg << 28) | (parm1 << 14) | (parm2))
+    /* #define PGMGQENCODE(msg, parm1, parm2) ((msg << 28) | (parm1 << 14) | (parm2))
     #define MSGFROMPGMGQ(qmsg) (qmsg >> 28)
     #define PARM1FROMPGMGQ(qmsg) ((qmsg & 0x0FFFFFFF) >> 14)
     #define PARM2FROMPGMGQ(qmsg) (qmsg & 0x00003FFF)
+    */
 
     /* ******************************************************************
      *                                                                  *

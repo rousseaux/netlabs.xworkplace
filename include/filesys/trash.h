@@ -87,7 +87,9 @@
                                      PDRAGINFO pdrgInfo);
 
     BOOL trshEmptyTrashCan(XWPTrashCan *somSelf,
-                           BOOL fConfirm);
+                           HAB hab,
+                           HWND hwndConfirmOwner,
+                           PULONG pulDeleted);
 
     APIRET trshValidateTrashObject(XWPTrashObject *somSelf);
 
@@ -168,6 +170,13 @@
         MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                               USHORT usItemID, USHORT usNotifyCode,
                                               ULONG ulExtra);
+
+        VOID trshTrashCanIconInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                      ULONG flFlags);
+
+        MRESULT trshTrashCanIconItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                            USHORT usItemID, USHORT usNotifyCode,
+                                            ULONG ulExtra);
     #endif
 
 #endif

@@ -40,35 +40,34 @@
     #define FOPSERR_OK                        0
     #define FOPSERR_NOT_HANDLED_ABORT         1
     #define FOPSERR_INVALID_OBJECT            2
-    #define FOPSERR_INTEGRITY_ABORT           3
-    #define FOPSERR_CANCELLEDBYUSER           4
-    #define FOPSERR_MOVE2TRASH_READONLY       6         // non-fatal
+    #define FOPSERR_NO_OBJECTS_FOUND          3         // fatal
+            // no objects found to process
+    #define FOPSERR_INTEGRITY_ABORT           4         // fatal
+    #define FOPSERR_FILE_THREAD_CRASHED       5
+            // fopsFileThreadProcessing crashed
+    #define FOPSERR_CANCELLEDBYUSER           6
+    #define FOPSERR_MOVE2TRASH_READONLY       7         // non-fatal
             // moving WPFileSystem which has read-only:
             // this should prompt the user
-    #define FOPSERR_MOVE2TRASH_NOT_DELETABLE  7         // fatal
+    #define FOPSERR_MOVE2TRASH_NOT_DELETABLE  8         // fatal
             // moving non-deletable to trash can: this should abort
-    #define FOPSERR_DELETE_READONLY           8         // non-fatal
+    #define FOPSERR_DELETE_READONLY           9         // non-fatal
             // deleting WPFileSystem which has read-only flag;
             // this should prompt the user
-    #define FOPSERR_DELETE_NOT_DELETABLE      9         // fatal
+    #define FOPSERR_DELETE_NOT_DELETABLE      10        // fatal
             // deleting not-deletable; this should abort
     #define FOPSERR_TRASHDRIVENOTSUPPORTED    11         // non-fatal
     #define FOPSERR_WPFREE_FAILED             12        // fatal
     #define FOPSERR_LOCK_FAILED               13        // fatal
             // requesting object mutex failed
+    #define FOPSERR_START_FAILED              14        // fatal
+            // fopsStartTask failed
+    #define FOPSERR_POPULATE_FOLDERS_ONLY     15        // fatal
+            // fopsAddObjectToTask works on folders only with XFT_POPULATE
+    #define FOPSERR_POPULATE_FAILED           16
+            // wpPopulate failed on folder during XFT_POPULATE
 
     typedef unsigned char FOPSRET;
-
-    /* ******************************************************************
-     *                                                                  *
-     *   Trash can setup                                                *
-     *                                                                  *
-     ********************************************************************/
-
-    BOOL fopsTrashCanReady(VOID);
-
-    BOOL fopsEnableTrashCan(HWND hwndOwner,
-                            BOOL fEnable);
 
     /* ******************************************************************
      *                                                                  *
@@ -138,6 +137,7 @@
     #define XFT_MOVE2TRASHCAN       1
     #define XFT_RESTOREFROMTRASHCAN 2
     #define XFT_TRUEDELETE          3
+    #define XFT_POPULATE            4
 
     typedef PVOID HFILETASKLIST;
 
@@ -261,28 +261,35 @@
      *
      *      ulError will be one of the following:
      *
-     *      -- FOPSERR_NODELETETRASHOBJECT: cannot move
-     *         XWPTrashObject instances to trash can.
-     *         ulOperation should be switched to
-     *         XFT_DESTROYTRASHOBJECTS instead.
+     *      -- FOPSERR_MOVE2TRASH_READONLY: a read-only
+     *         object is to be moved into the trash can.
+     *         This error is recoverable. If subsequent
+     *         errors of this type are to be ignored,
+     *         the callback should OR *pfIgnoreSubsequent
+     *         with FOPS_ISQ_MOVE2TRASH_READONLY.
      *
-     *      -- FOPSERR_OBJSTYLENODELETE: object to be deleted
-     *         has OBJSTYLE_NODELETE flag.
+     *      -- FOPSERR_DELETE_READONLY: file-system object to
+     *         be deleted is read-only.
+     *         This error is recoverable. If subsequent
+     *         errors of this type are to be ignored,
+     *         the callback should OR *pfIgnoreSubsequent
+     *         with FOPS_ISQ_DELETE_READONLY.
      *
-     *      -- FOPSERR_DESTROYNONTRASHOBJECT: trying to
-     *         destroy trash object which is not of XWPTrashObject
-     *         class. Shouldn't happen.
-     *
-     *      -- FOPSERR_TRASHDRIVENOTSUPPORTED: trying to
-     *         move an object to the trash can whose drive
-     *         is not supported.
+     *      -- FOPSERR_DELETE_NOT_DELETABLE: some other
+     *         object is non-deleteable. This is not
+     *         recoverable.
      *
      *@@added V0.9.2 (2000-03-04) [umoeller]
+     *@@changed V0.9.4 (2000-07-27) [umoeller]: added pfIgnoreSubsequent
      */
 
     typedef FOPSRET APIENTRY FNFOPSERRORCALLBACK(ULONG ulOperation,
                                                  WPObject *pObject,
-                                                 FOPSRET frError);
+                                                 FOPSRET frError,
+                                                 PBOOL pfIgnoreSubsequent);
+
+    #define FOPS_ISQ_MOVE2TRASH_READONLY    0x0001
+    #define FOPS_ISQ_DELETE_READONLY        0x0002
 
     HFILETASKLIST fopsCreateFileTaskList(ULONG ulOperation,
                                          WPFolder *pSourceFolder,
@@ -293,14 +300,17 @@
 
     FOPSRET fopsValidateObjOperation(ULONG ulOperation,
                                      FNFOPSERRORCALLBACK *pfnErrorCallback,
-                                     WPObject *pObject);
+                                     WPObject *pObject,
+                                     PBOOL pfIgnoreSubsequent);
 
     FOPSRET fopsAddObjectToTask(HFILETASKLIST hftl,
                                 WPObject *pObject);
 
-    BOOL fopsStartTaskAsync(HFILETASKLIST hftl);
+    FOPSRET fopsStartTask(HFILETASKLIST hftl,
+                          HAB hab);
 
-    VOID fopsFileThreadProcessing(HFILETASKLIST hftl);
+    VOID fopsFileThreadProcessing(HFILETASKLIST hftl,
+                                  HWND hwndNotify);
 
     BOOL fopsDeleteFileTaskList(HFILETASKLIST hftl);
 
@@ -310,18 +320,33 @@
      *                                                                  *
      ********************************************************************/
 
-    FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,
-                                 WPFolder *pSourceFolder,
-                                 WPFolder *pTargetFolder,
-                                 WPObject *pSourceObject,
-                                 ULONG ulSelection,
-                                 BOOL fRelatedObjects,
-                                 HWND hwndCnr,
-                                 ULONG ulMsgSingle,
-                                 ULONG ulMsgMultiple);
+    /*
+     *@@ FOPSCONFIRM:
+     *      confirmation data passed with fopsStartTaskFromCnr.
+     *
+     *@@added V0.9.5 (2000-08-11) [umoeller]
+     */
+
+    typedef struct _FOPSCONFIRM
+    {
+        ULONG       ulMsgSingle,        // in: msg no. if single object
+                    ulMsgMultiple;      // in: msg no. if multiple objects
+        HWND        hwndOwner;          // in: owner window for msg box
+    } FOPSCONFIRM, *PFOPSCONFIRM;
+
+     FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,
+                                  HAB hab,
+                                  WPFolder *pSourceFolder,
+                                  WPFolder *pTargetFolder,
+                                  WPObject *pSourceObject,
+                                  ULONG ulSelection,
+                                  BOOL fRelatedObjects,
+                                  HWND hwndCnr,
+                                  PFOPSCONFIRM pConfirm);
 
     #ifdef LINKLIST_HEADER_INCLUDED
         FOPSRET fopsStartTaskFromList(ULONG ulOperation,
+                                      HAB hab,
                                       WPFolder *pSourceFolder,
                                       WPFolder *pTargetFolder,
                                       PLINKLIST pllObjects);
@@ -333,21 +358,28 @@
      *                                                                  *
      ********************************************************************/
 
-    FOPSRET fopsStartDeleteFromCnr(WPObject *pSourceObject,
+    FOPSRET fopsStartDeleteFromCnr(HAB hab,
+                                   WPObject *pSourceObject,
                                    ULONG ulSelection,
                                    HWND hwndCnr,
                                    BOOL fTrueDelete);
 
-    FOPSRET fopsStartTrashRestoreFromCnr(WPFolder *pTrashSource,
+    FOPSRET fopsStartTrashRestoreFromCnr(HAB hab,
+                                         WPFolder *pTrashSource,
                                          WPFolder *pTargetFolder,
                                          WPObject *pSourceObject,
                                          ULONG ulSelection,
                                          HWND hwndCnr);
 
-    FOPSRET fopsStartTrashDestroyFromCnr(WPFolder *pTrashSource,
+    FOPSRET fopsStartTrashDestroyFromCnr(HAB hab,
+                                         WPFolder *pTrashSource,
                                          WPObject *pSourceObject,
                                          ULONG ulSelection,
-                                         HWND hwndCnr);
+                                         HWND hwndCnr,
+                                         BOOL fConfirm);
+
+    FOPSRET fopsStartPopulate(HAB hab,
+                              WPFolder *pFolder);
 #endif
 
 

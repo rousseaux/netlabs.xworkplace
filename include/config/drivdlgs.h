@@ -76,6 +76,7 @@ VOID drvConfigSupported(PDRIVERSPEC pSpec);
 
 // driver configuration dialogs
 MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
+MRESULT EXPENTRY drv_fnwpConfigHPFS386(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
 MRESULT EXPENTRY drv_fnwpConfigCDFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
 MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
 

@@ -515,11 +515,14 @@
 #define ID_XCDI_XWPCLS_XWPSCREEN        1267
 #define ID_XCDI_XWPCLS_XWPSTRING        1268
 
+// new classes with V0.9.4
+#define ID_XCDI_XWPCLS_XWPMEDIA         1269
+
 /******************************************
  * XWPScreen ("Screen", PageMage) >= 1400 *
  ******************************************/
 
-#define ID_SCD_PAGEMAGE1                1400
+#define ID_SCD_PAGEMAGE_GENERAL         1400
 #define ID_SCDI_PGMG1_X_SLIDER          1401
 #define ID_SCDI_PGMG1_X_TEXT2           1402
 #define ID_SCDI_PGMG1_Y_SLIDER          1403
@@ -531,12 +534,15 @@
 #define ID_SCDI_PGMG1_PRESERVEPROPS     1409
 #define ID_SCDI_PGMG1_STAYONTOP         1410
 #define ID_SCDI_PGMG1_FLASHTOTOP        1411
-#define ID_SCDI_PGMG1_ARROWHOTKEYS      1412
-#define ID_SCDI_PGMG1_HOTKEYS_CTRL      1413
-#define ID_SCDI_PGMG1_HOTKEYS_SHIFT     1414
-#define ID_SCDI_PGMG1_HOTKEYS_ALT       1415
+#define ID_SCDI_PGMG1_FLASH_TXT1        1412
+#define ID_SCDI_PGMG1_FLASH_SPIN        1413
+#define ID_SCDI_PGMG1_FLASH_TXT2        1414
+#define ID_SCDI_PGMG1_ARROWHOTKEYS      1415
+#define ID_SCDI_PGMG1_HOTKEYS_CTRL      1416
+#define ID_SCDI_PGMG1_HOTKEYS_SHIFT     1417
+#define ID_SCDI_PGMG1_HOTKEYS_ALT       1418
 
-#define ID_SCD_PAGEMAGE2                1430
+#define ID_SCD_PAGEMAGE_COLORS          1430
 #define ID_SCDI_PGMG2_DTP_INACTIVE      1431
 #define ID_SCDI_PGMG2_DTP_ACTIVE        1432
 #define ID_SCDI_PGMG2_DTP_BORDER        1433
@@ -545,6 +551,12 @@
 #define ID_SCDI_PGMG2_WIN_BORDER        1436
 #define ID_SCDI_PGMG2_TXT_INACTIVE      1437
 #define ID_SCDI_PGMG2_TXT_ACTIVE        1438
+
+#define ID_SCD_PAGEMAGE_STICKY          1450
+#define ID_SCDI_PGMG_STICKY_CNR         1451
+
+#define ID_SCD_PAGEMAGE_NEWSTICKY       1460
+#define ID_SCD_PAGEMAGE_COMBO_STICKIES  1461
 
 /******************************************
  * XFldSystem ("OS/2 Kernel")    >= 1500  *
@@ -562,7 +574,7 @@
 #define ID_OSDI_MINSWAPFREE             1509
 #define ID_OSDI_SWAPPATH                1510
 
-#define ID_OSD_SETTINGS_HPFS            1520
+// FAT page; this is also used by the driver dialogs
 #define ID_OSD_SETTINGS_FAT             1521
 #define ID_OSDI_FSINSTALLED             1522
 #define ID_OSDI_CACHESIZE               1523
@@ -576,6 +588,8 @@
 #define ID_OSDI_CACHE_DISKIDLE          1531
 #define ID_OSDI_AUTOCHECK               1532
 #define ID_OSDI_AUTOCHECK_PROPOSE       1533
+#define ID_OSDI_HPFS386INI_GROUP        1534
+#define ID_OSDI_HPFS386INI_CNR          1535
 
 #define ID_OSD_SETTINGS_ERRORS          1540
 #define ID_OSDI_AUTOFAIL                1541
@@ -617,10 +631,14 @@
 #define ID_OSD_SETTINGS_DRIVERS         1585
 #define ID_OSDI_DRIVR_CNR               1586
 #define ID_OSDI_DRIVR_STATICDATA        1587
-#define ID_OSDI_DRIVR_PARAMS            1590
-#define ID_OSDI_DRIVR_CONFIGURE         1591
-#define ID_OSDI_DRIVR_APPLYTHIS         1592 // "Apply", non-notebook button
+#define ID_OSDI_DRIVR_PARAMS            1588
+#define ID_OSDI_DRIVR_CONFIGURE         1589
+#define ID_OSDI_DRIVR_APPLYTHIS         1590 // "Apply", non-notebook button
+#define ID_OSDI_DRIVR_GROUP1            1591
+#define ID_OSDI_DRIVR_GROUP2            1592
+#define ID_OSDI_DRIVR_PARAMS_TXT        1593
 
+#define ID_OSD_DRIVER_HPFS386           1597
 #define ID_OSD_DRIVER_FAT               1598
 #define ID_OSD_DRIVER_HPFS              1599
 
@@ -783,14 +801,19 @@
 #define ID_SDDI_CREATESHUTDOWNFLDR      2135
 #define ID_SDDI_SHOWSTARTUPPROGRESS     2136
 
-#define ID_SDDI_STARTUPDELAY            2137
-#define ID_SDDI_STARTUPDELAYTXT         2138
-#define ID_SDDI_REBOOTEXT               2139
-#define ID_SDDI_AUTOCLOSEDETAILS        2140
-#define ID_SDDI_APMVERSION              2141
-#define ID_SDDI_APMVERSION_TXT          2142
-#define ID_SDDI_APMSYS                  2143
-#define ID_SDDI_APMSYS_TXT              2144
+#define ID_SDDI_STARTUP_INITDELAY_TXT1  2137
+#define ID_SDDI_STARTUP_INITDELAY_SLID  2138
+#define ID_SDDI_STARTUP_INITDELAY_TXT2  2139
+#define ID_SDDI_STARTUP_OBJDELAY_TXT1   2140
+#define ID_SDDI_STARTUP_OBJDELAY_SLID   2141
+#define ID_SDDI_STARTUP_OBJDELAY_TXT2   2142
+
+#define ID_SDDI_REBOOTEXT               2143
+#define ID_SDDI_AUTOCLOSEDETAILS        2144
+#define ID_SDDI_APMVERSION              2145
+#define ID_SDDI_APMVERSION_TXT          2146
+#define ID_SDDI_APMSYS                  2147
+#define ID_SDDI_APMSYS_TXT              2148
 
 // XFldDesktop "Archives" replacement page (V0.9.0)
 #define ID_XSD_DTP_ARCHIVES             2150
@@ -833,8 +856,8 @@
 
 #define ID_XTD_SETTINGS                 3000
 // #define ID_XTDI_DELETE                  3001
-#define ID_XTDI_EMPTYSTARTUP            3002
-#define ID_XTDI_EMPTYSHUTDOWN           3003
+// #define ID_XTDI_EMPTYSTARTUP            3002
+// #define ID_XTDI_EMPTYSHUTDOWN           3003
 #define ID_XTDI_CONFIRMEMPTY            3004
 #define ID_XTDI_CONFIRMDESTROY          3005
 
@@ -843,6 +866,10 @@
 #define ID_XTDI_SUPPORTED_LB            3022
 #define ID_XTDI_ADD_SUPPORTED           3023
 #define ID_XTDI_REMOVE_SUPPORTED        3024
+
+#define ID_XTD_ICONPAGE                 3030
+#define ID_XTDI_ICON_TITLEMLE           3031
+
 
 /******************************************
  * XWPKeyboard (V0.9.0)          >= 3200   *
@@ -955,6 +982,7 @@
 #define ID_SDDI_SHUTDOWNONLY            4316
 #define ID_SDDI_STANDARDREBOOT          4317
 #define ID_SDDI_REBOOTTO                4318
+#define ID_SDDI_EMPTYTRASHCAN           4319
 
 /* command defs (used in the Shutdown wnd proc) */
 #define ID_SDMI_CLOSEITEM               4400
@@ -1035,6 +1063,14 @@
 
 #define ID_XSM_FUNCTIONKEYS_NOSEL       (WPMENUID_USER+1133)
 #define ID_XSMI_FUNCK_NEW               (WPMENUID_USER+1134)
+
+// "Sticky windows" context menus on XWPScreen "PageMage Sticky" page
+// V0.9.4 (2000-07-10) [umoeller]
+#define ID_XSM_STICKY_NOSEL             (WPMENUID_USER+1140)
+#define ID_XSMI_STICKY_NEW              (WPMENUID_USER+1141)
+
+#define ID_XSM_STICKY_SEL               (WPMENUID_USER+1142)
+#define ID_XSMI_STICKY_DELETE           (WPMENUID_USER+1143)
 
 // The following menu ID's (with _OFS_ in their names)
 // are _variable_ menu ID's: XFolder will add the value
@@ -1310,182 +1346,191 @@
 
 // "Yes", "no", etc.
 #define ID_XSSI_DLG_YES                 5800
-#define ID_XSSI_DLG_NO                  5801
-#define ID_XSSI_DLG_OK                  5802
-#define ID_XSSI_DLG_CANCEL              5803
-#define ID_XSSI_DLG_ABORT               5804
-#define ID_XSSI_DLG_RETRY               5805
-#define ID_XSSI_DLG_IGNORE              5806
+#define ID_XSSI_DLG_YES2ALL             5801
+#define ID_XSSI_DLG_NO                  5802
+#define ID_XSSI_DLG_OK                  5803
+#define ID_XSSI_DLG_CANCEL              5804
+#define ID_XSSI_DLG_ABORT               5805
+#define ID_XSSI_DLG_RETRY               5806
+#define ID_XSSI_DLG_IGNORE              5807
 
 // "status bars" page
-#define ID_XSSI_SB_CLASSMNEMONICS       5807
-#define ID_XSSI_SB_CLASSNOTSUPPORTED    5808
+#define ID_XSSI_SB_CLASSMNEMONICS       5808
+#define ID_XSSI_SB_CLASSNOTSUPPORTED    5809
 
 // "WPS Classes" page
-#define ID_XSSI_WPSCLASSLOADED          5809
-#define ID_XSSI_WPSCLASSLOADINGFAILED   5810
-#define ID_XSSI_WPSCLASSREPLACEDBY      5811
-#define ID_XSSI_WPSCLASSORPHANS         5812
-#define ID_XSSI_WPSCLASSORPHANSINFO     5813
+#define ID_XSSI_WPSCLASSLOADED          5810
+#define ID_XSSI_WPSCLASSLOADINGFAILED   5811
+#define ID_XSSI_WPSCLASSREPLACEDBY      5812
+#define ID_XSSI_WPSCLASSORPHANS         5813
+#define ID_XSSI_WPSCLASSORPHANSINFO     5814
 
 // CONFIG.SYS pages
-#define ID_XSSI_SCHEDULER               5814
-#define ID_XSSI_MEMORY                  5815
-#define ID_XSSI_ERRORS                  5816
-#define ID_XSSI_WPS                     5817
-#define ID_XSSI_SYSPATHS                5818    // new with V0.9.0
-#define ID_XSSI_DRIVERS                 5819    // new with V0.9.0
-#define ID_XSSI_DRIVERCATEGORIES        5820    // new with V0.9.0
+#define ID_XSSI_SCHEDULER               5815
+#define ID_XSSI_MEMORY                  5816
+#define ID_XSSI_ERRORS                  5817
+#define ID_XSSI_WPS                     5818
+#define ID_XSSI_SYSPATHS                5819    // new with V0.9.0
+#define ID_XSSI_DRIVERS                 5820    // new with V0.9.0
+#define ID_XSSI_DRIVERCATEGORIES        5821    // new with V0.9.0
 
 // settings submenu strings
-#define ID_XFSI_SETTINGS                5821
-#define ID_XFSI_SETTINGSNOTEBOOK        5822
-#define ID_XFSI_ATTRIBUTES              5823
-#define ID_XFSI_ATTR_ARCHIVED           5824
-#define ID_XFSI_ATTR_SYSTEM             5825
-#define ID_XFSI_ATTR_HIDDEN             5826
-#define ID_XFSI_ATTR_READONLY           5827
+#define ID_XFSI_SETTINGS                5831
+#define ID_XFSI_SETTINGSNOTEBOOK        5832
+#define ID_XFSI_ATTRIBUTES              5833
+#define ID_XFSI_ATTR_ARCHIVED           5834
+#define ID_XFSI_ATTR_SYSTEM             5835
+#define ID_XFSI_ATTR_HIDDEN             5836
+#define ID_XFSI_ATTR_READONLY           5837
 
-#define ID_XFSI_FLDRSETTINGS            5828
-#define ID_XFSI_SMALLICONS              5829
-#define ID_XFSI_FLOWED                  5830
-#define ID_XFSI_NONFLOWED               5831
-#define ID_XFSI_NOGRID                  5832
+#define ID_XFSI_FLDRSETTINGS            5838
+#define ID_XFSI_SMALLICONS              5839
+#define ID_XFSI_FLOWED                  5840
+#define ID_XFSI_NONFLOWED               5841
+#define ID_XFSI_NOGRID                  5842
 
-#define ID_XFSI_WARP4MENUBAR            5833
-#define ID_XFSI_SHOWSTATUSBAR           5834
+#define ID_XFSI_WARP4MENUBAR            5843
+#define ID_XFSI_SHOWSTATUSBAR           5844
 
 // "WPS Class List" (XWPClassList, new with V0.9.0)
-#define ID_XFSI_OPENCLASSLIST           5835
-#define ID_XFSI_XWPCLASSLIST            5836
-#define ID_XFSI_REGISTERCLASS           5837
+#define ID_XFSI_OPENCLASSLIST           5845
+#define ID_XFSI_XWPCLASSLIST            5846
+#define ID_XFSI_REGISTERCLASS           5847
 // XWPSound (new with V0.9.0)
-#define ID_XSSI_SOUNDSCHEMENONE         5838
+#define ID_XSSI_SOUNDSCHEMENONE         5848
 // "System paths" page
-#define ID_XSSI_ITEMSSELECTED           5839    // new with V0.9.0
+#define ID_XSSI_ITEMSSELECTED           5849    // new with V0.9.0
 
 // Trash can (XWPTrashCan, XWPTrashObject, new with V0.9.0)
-#define ID_XTSI_TRASHEMPTY              5840
-#define ID_XTSI_TRASHRESTORE            5841
-#define ID_XTSI_TRASHDESTROY            5842
+#define ID_XTSI_TRASHEMPTY              5850
+#define ID_XTSI_TRASHRESTORE            5851
+#define ID_XTSI_TRASHDESTROY            5852
 
-#define ID_XTSI_TRASHCAN                5843
-#define ID_XTSI_TRASHOBJECT             5844
+#define ID_XTSI_TRASHCAN                5853
+#define ID_XTSI_TRASHOBJECT             5854
 
-#define ID_XTSI_TRASHSETTINGSPAGE       5845
-#define ID_XTSI_TRASHDRIVESPAGE         5846
+#define ID_XTSI_TRASHSETTINGSPAGE       5855
+#define ID_XTSI_TRASHDRIVESPAGE         5856
 
-#define ID_XTSI_ORIGFOLDER              5847
-#define ID_XTSI_DELDATE                 5848
-#define ID_XTSI_DELTIME                 5849
-#define ID_XTSI_SIZE                    5850
-#define ID_XTSI_ORIGCLASS               5851
+#define ID_XTSI_ORIGFOLDER              5857
+#define ID_XTSI_DELDATE                 5858
+#define ID_XTSI_DELTIME                 5859
+#define ID_XTSI_SIZE                    5860
+#define ID_XTSI_ORIGCLASS               5861
 
-#define ID_XTSI_STB_POPULATING          5852
-#define ID_XTSI_STB_OBJCOUNT            5853
+#define ID_XTSI_STB_POPULATING          5862
+#define ID_XTSI_STB_OBJCOUNT            5863
 
 // Details view columns on XWPKeyboard "Hotkeys" page; V0.9.1 (99-12-03)
-#define ID_XSSI_HOTKEY_TITLE            5854
-#define ID_XSSI_HOTKEY_FOLDER           5855
-#define ID_XSSI_HOTKEY_HANDLE           5856
-#define ID_XSSI_HOTKEY_HOTKEY           5857
+#define ID_XSSI_HOTKEY_TITLE            5864
+#define ID_XSSI_HOTKEY_FOLDER           5865
+#define ID_XSSI_HOTKEY_HANDLE           5866
+#define ID_XSSI_HOTKEY_HOTKEY           5867
 
 // Method info columns for XWPClassList; V0.9.1 (99-12-03)
-#define ID_XSSI_CLSLIST_INDEX           5858
-#define ID_XSSI_CLSLIST_METHOD          5859
-#define ID_XSSI_CLSLIST_ADDRESS         5860
-#define ID_XSSI_CLSLIST_CLASS           5861
-#define ID_XSSI_CLSLIST_OVERRIDDENBY    5862
+#define ID_XSSI_CLSLIST_INDEX           5868
+#define ID_XSSI_CLSLIST_METHOD          5869
+#define ID_XSSI_CLSLIST_ADDRESS         5870
+#define ID_XSSI_CLSLIST_CLASS           5871
+#define ID_XSSI_CLSLIST_OVERRIDDENBY    5872
 
 // "Special functions" on XWPMouse "Movement" page
-#define ID_XSSI_SPECIAL_WINDOWLIST      5863
-#define ID_XSSI_SPECIAL_DESKTOPPOPUP    5864
+#define ID_XSSI_SPECIAL_WINDOWLIST      5873
+#define ID_XSSI_SPECIAL_DESKTOPPOPUP    5874
 
 // default title of XWPScreen class V0.9.2 (2000-02-23) [umoeller]
-#define ID_XSSI_XWPSCREENTITLE          5865
+#define ID_XSSI_XWPSCREENTITLE          5875
 
 // "Partitions" item in WPDrives "open" menu V0.9.2 (2000-02-29) [umoeller]
-#define ID_XSSI_OPENPARTITIONS          5866
+#define ID_XSSI_OPENPARTITIONS          5876
 
 // "Syslevel" page title in "OS/2 kernel" V0.9.3 (2000-04-01) [umoeller]
-#define ID_XSSI_SYSLEVELPAGE            5867
+#define ID_XSSI_SYSLEVELPAGE            5877
 
-#define ID_XTSI_CALCULATING             5868
+#define ID_XTSI_CALCULATING             5878
 
-#define ID_MMSI_DEVICETYPE              5869
-#define ID_MMSI_DEVICEINDEX             5870
-#define ID_MMSI_DEVICEINFO              5871
+#define ID_MMSI_DEVICETYPE              5879
+#define ID_MMSI_DEVICEINDEX             5880
+#define ID_MMSI_DEVICEINFO              5881
 
-#define ID_MMSI_TYPE_IMAGE              5872
-#define ID_MMSI_TYPE_AUDIO              5873
-#define ID_MMSI_TYPE_MIDI               5874
-#define ID_MMSI_TYPE_COMPOUND           5875
-#define ID_MMSI_TYPE_OTHER              5876
-#define ID_MMSI_TYPE_UNKNOWN            5877
-#define ID_MMSI_TYPE_VIDEO              5878
-#define ID_MMSI_TYPE_ANIMATION          5879
-#define ID_MMSI_TYPE_MOVIE              5880
+#define ID_MMSI_TYPE_IMAGE              5882
+#define ID_MMSI_TYPE_AUDIO              5883
+#define ID_MMSI_TYPE_MIDI               5884
+#define ID_MMSI_TYPE_COMPOUND           5885
+#define ID_MMSI_TYPE_OTHER              5886
+#define ID_MMSI_TYPE_UNKNOWN            5887
+#define ID_MMSI_TYPE_VIDEO              5888
+#define ID_MMSI_TYPE_ANIMATION          5889
+#define ID_MMSI_TYPE_MOVIE              5890
 
-#define ID_MMSI_TYPE_STORAGE            5881
-#define ID_MMSI_TYPE_FILE               5882
-#define ID_MMSI_TYPE_DATA               5883
+#define ID_MMSI_TYPE_STORAGE            5891
+#define ID_MMSI_TYPE_FILE               5892
+#define ID_MMSI_TYPE_DATA               5893
 
-#define ID_MMSI_DEVTYPE_VIDEOTAPE       5884
-#define ID_MMSI_DEVTYPE_VIDEODISC       5885
-#define ID_MMSI_DEVTYPE_CD_AUDIO        5886
-#define ID_MMSI_DEVTYPE_DAT             5887
-#define ID_MMSI_DEVTYPE_AUDIO_TAPE      5888
-#define ID_MMSI_DEVTYPE_OTHER           5889
-#define ID_MMSI_DEVTYPE_WAVEFORM_AUDIO  5890
-#define ID_MMSI_DEVTYPE_SEQUENCER       5891
-#define ID_MMSI_DEVTYPE_AUDIO_AMPMIX    5892
-#define ID_MMSI_DEVTYPE_OVERLAY         5893
-#define ID_MMSI_DEVTYPE_ANIMATION       5894
-#define ID_MMSI_DEVTYPE_DIGITAL_VIDEO   5895
-#define ID_MMSI_DEVTYPE_SPEAKER         5896
-#define ID_MMSI_DEVTYPE_HEADPHONE       5897
-#define ID_MMSI_DEVTYPE_MICROPHONE      5898
-#define ID_MMSI_DEVTYPE_MONITOR         5899
-#define ID_MMSI_DEVTYPE_CDXA            5900
-#define ID_MMSI_DEVTYPE_FILTER          5901
-#define ID_MMSI_DEVTYPE_TTS             5902
+#define ID_MMSI_DEVTYPE_VIDEOTAPE       5894
+#define ID_MMSI_DEVTYPE_VIDEODISC       5895
+#define ID_MMSI_DEVTYPE_CD_AUDIO        5896
+#define ID_MMSI_DEVTYPE_DAT             5897
+#define ID_MMSI_DEVTYPE_AUDIO_TAPE      5898
+#define ID_MMSI_DEVTYPE_OTHER           5899
+#define ID_MMSI_DEVTYPE_WAVEFORM_AUDIO  5900
+#define ID_MMSI_DEVTYPE_SEQUENCER       5901
+#define ID_MMSI_DEVTYPE_AUDIO_AMPMIX    5902
+#define ID_MMSI_DEVTYPE_OVERLAY         5903
+#define ID_MMSI_DEVTYPE_ANIMATION       5904
+#define ID_MMSI_DEVTYPE_DIGITAL_VIDEO   5905
+#define ID_MMSI_DEVTYPE_SPEAKER         5906
+#define ID_MMSI_DEVTYPE_HEADPHONE       5907
+#define ID_MMSI_DEVTYPE_MICROPHONE      5908
+#define ID_MMSI_DEVTYPE_MONITOR         5909
+#define ID_MMSI_DEVTYPE_CDXA            5910
+#define ID_MMSI_DEVTYPE_FILTER          5911
+#define ID_MMSI_DEVTYPE_TTS             5912
 
-#define ID_MMSI_COLMN_FOURCC            5903
-#define ID_MMSI_COLMN_NAME              5904
-#define ID_MMSI_COLMN_IOPROC_TYPE       5905
-#define ID_MMSI_COLMN_MEDIA_TYPE        5906
-#define ID_MMSI_COLMN_EXTENSION         5907
-#define ID_MMSI_COLMN_DLL               5908
-#define ID_MMSI_COLMN_PROCEDURE         5909
+#define ID_MMSI_COLMN_FOURCC            5913
+#define ID_MMSI_COLMN_NAME              5914
+#define ID_MMSI_COLMN_IOPROC_TYPE       5915
+#define ID_MMSI_COLMN_MEDIA_TYPE        5916
+#define ID_MMSI_COLMN_EXTENSION         5917
+#define ID_MMSI_COLMN_DLL               5918
+#define ID_MMSI_COLMN_PROCEDURE         5919
 
-#define ID_MMSI_PAGETITLE_DEVICES       5910
-#define ID_MMSI_PAGETITLE_IOPROCS       5911
-#define ID_MMSI_PAGETITLE_CODECS        5912
+#define ID_MMSI_PAGETITLE_DEVICES       5920
+#define ID_MMSI_PAGETITLE_IOPROCS       5921
+#define ID_MMSI_PAGETITLE_CODECS        5922
 
-#define ID_XSSI_PAGETITLE_PAGEMAGE      5913
+#define ID_XSSI_PAGETITLE_PAGEMAGE      5923
 
-#define ID_XSSI_XWPSTRING_PAGE          5914
-#define ID_XSSI_XWPSTRING_OPENMENU      5915
+#define ID_XSSI_XWPSTRING_PAGE          5924
+#define ID_XSSI_XWPSTRING_OPENMENU      5925
 
-#define ID_XSSI_COLMN_SYSL_COMPONENT    5916
-#define ID_XSSI_COLMN_SYSL_FILE         5917
-#define ID_XSSI_COLMN_SYSL_VERSION      5918
-#define ID_XSSI_COLMN_SYSL_LEVEL        5919
-#define ID_XSSI_COLMN_SYSL_PREVIOUS     5920
+#define ID_XSSI_COLMN_SYSL_COMPONENT    5926
+#define ID_XSSI_COLMN_SYSL_FILE         5927
+#define ID_XSSI_COLMN_SYSL_VERSION      5928
+#define ID_XSSI_COLMN_SYSL_LEVEL        5929
+#define ID_XSSI_COLMN_SYSL_PREVIOUS     5930
 
-#define ID_XSSI_DRIVERS_VERSION         5921
-#define ID_XSSI_DRIVERS_VENDOR          5922
+#define ID_XSSI_DRIVERS_VERSION         5931
+#define ID_XSSI_DRIVERS_VENDOR          5932
 
-#define ID_XSSI_FUNCKEY_DESCRIPTION     5923
-#define ID_XSSI_FUNCKEY_SCANCODE        5924
-#define ID_XSSI_FUNCKEY_MODIFIER        5925
+#define ID_XSSI_FUNCKEY_DESCRIPTION     5933
+#define ID_XSSI_FUNCKEY_SCANCODE        5934
+#define ID_XSSI_FUNCKEY_MODIFIER        5935
 
 // default documents V0.9.4 (2000-06-09) [umoeller]
-#define ID_XSSI_DATAFILEDEFAULTDOC      5926
-#define ID_XSSI_FDRDEFAULTDOC           5927
+#define ID_XSSI_DATAFILEDEFAULTDOC      5936
+#define ID_XSSI_FDRDEFAULTDOC           5937
 
 // XCenter V0.9.4 (2000-06-10) [umoeller]
-#define ID_XSSI_XCENTERPAGE1            5928
+#define ID_XSSI_XCENTERPAGE1            5938
+
+// file operations V0.9.4 (2000-07-27) [umoeller]
+#define ID_XSSI_FOPS_MOVE2TRASHCAN      5939
+#define ID_XSSI_FOPS_RESTOREFROMTRASHCAN 5940
+#define ID_XSSI_FOPS_TRUEDELETE         5941
+#define ID_XSSI_FOPS_EMPTYINGTRASHCAN   5942
+
+#define ID_XSSI_ICONPAGE                5943
 
 /******************************************
  *  Features on XWPSetup "Features" page  *
@@ -1498,6 +1543,7 @@
 
 #define ID_XCSI_GENERALFEATURES         5999
 #define ID_XCSI_REPLACEICONS            6000
+#define ID_XCSI_RESIZESETTINGSPAGES     6001
 #define ID_XCSI_ADDOBJECTPAGE           6002
 #define ID_XCSI_REPLACEFILEPAGE         6003
 #define ID_XCSI_XSYSTEMSOUNDS           6004
@@ -1817,10 +1863,10 @@
 #define IDMSG_MSGNOTFOUND                 0x6F04
 
 // online Help Id for DisplayHelp
-#define IDPNL_MAIN                     1
+/* #define IDPNL_MAIN                     1
 #define IDPNL_USAGE_NBPAGE             2
 #define IDPNL_USAGE_NBPAGE_CNRSETTINGS 3
-#define IDPNL_USAGE_NBPAGE_CNRLOADSET  4
+#define IDPNL_USAGE_NBPAGE_CNRLOADSET  4 */
 
 // --- res ids for container item popup menu
 

@@ -52,7 +52,8 @@
                     optAnimate,
                     optAPMPowerOff,
                     optAPMDelay,
-                    optWPSReuseStartupFolder;
+                    optWPSReuseStartupFolder,
+                    optEmptyTrashCan;
         CHAR        szRebootCommand[CCHMAXPATH];
     } SHUTDOWNPARAMS, *PSHUTDOWNPARAMS;
 
@@ -87,6 +88,7 @@
             SWCNTRL                 swctl;          // system tasklist structure (see PM ref.)
             WPObject                *pObject;       // NULL for non-WPS windows
             CHAR                    szClass[100];   // window class of the task's main window
+            LONG                    lSpecial;       // XSD_* flags; > 0 if Desktop or WarpCenter
         } SHUTLISTITEM, *PSHUTLISTITEM;
 
         /*
@@ -179,6 +181,48 @@
 
     APIRET xsdFlushWPS2INI(VOID);
 
+    #ifdef INCL_WINSWITCHLIST
+    #ifdef KERNEL_HEADER_INCLUDED
+    #ifdef SOM_WPObject_h
+
+        /*
+         *@@ SHUTDOWNCONSTS:
+         *      structure containing a number of
+         *      shutdown constants which are needed
+         *      by the various parts of XShutdown.
+         *      Use xsdGetShutdownConsts to fill this
+         *      structure.
+         *
+         *@@added V0.9.4 (2000-07-15) [umoeller]
+         */
+
+        typedef struct _SHUTDOWNCONSTS
+        {
+            PCKERNELGLOBALS pKernelGlobals;
+            SOMClass        *pWPDesktop;
+            WPObject        *pActiveDesktop;
+            HWND            hwndActiveDesktop;
+            PID             pidWPS;     // WinQueryWindowProcess(G_hwndMain, &G_pidWPS, NULL);
+            PID             pidPM;      // WinQueryWindowProcess(HWND_DESKTOP, &G_pidPM, NULL);
+        } SHUTDOWNCONSTS, *PSHUTDOWNCONSTS;
+
+        VOID xsdGetShutdownConsts(PSHUTDOWNCONSTS pConsts);
+
+        #define XSD_SYSTEM          -1
+        #define XSD_INVISIBLE       -2
+        #define XSD_DEBUGNEED       -3
+
+        #define XSD_DESKTOP         1
+        #define XSD_WARPCENTER      2
+
+        LONG xsdIsClosable(HAB hab,
+                           PSHUTDOWNCONSTS pConsts,
+                           SWENTRY *pSwEntry,
+                           WPObject **ppObject);
+    #endif
+    #endif
+    #endif
+
     /* ******************************************************************
      *                                                                  *
      *   XShutdown dialogs                                              *
@@ -199,6 +243,16 @@
      *                                                                  *
      ********************************************************************/
 
+    #ifdef THREADS_HEADER_INCLUDED
     void _Optlink fntShutdownThread(PTHREADINFO pti);
+    #endif
+
+    /* ******************************************************************
+     *                                                                  *
+     *   Window list debugging (winlist.c)                              *
+     *                                                                  *
+     ********************************************************************/
+
+    HWND winlCreateWinListWindow(VOID);
 
 #endif

@@ -220,7 +220,7 @@
                                             //   or OPEN_TREE
                                             //   or OPEN_DETAILS
             BOOL        fNeedCnrScroll;     // scroll container after adding status bar?
-            BOOL        fRemoveSrcEmphasis; // flag for whether XFolder has added
+            BOOL        fRemoveSourceEmphasis; // flag for whether XFolder has added
                                             // container source emphasis
             ULONG       ulLastSelMenuItem;  // last selected menu item ID
             WPObject    *pSourceObject;     // object whose record core has source

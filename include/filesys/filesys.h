@@ -59,6 +59,13 @@
                                  ULONG flFlags);
     #endif
 
+    VOID fsysQueryProgramSetup(WPObject *somSelf,
+                               PSZ *ppszTemp);
+
+    ULONG fsysQueryProgramFileSetup(WPObject *somSelf,
+                                    PSZ pszSetupString,
+                                    ULONG cbSetupString);
+
 #endif
 
 

@@ -44,6 +44,9 @@
         VOID cfgConfigTimer(PCREATENOTEBOOKPAGE pcnbp,
                             ULONG ulTimer);
 
+        extern MPARAM *G_pampDriversPage;
+        extern ULONG G_cDriversPage;
+
         VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                 ULONG flFlags);
 

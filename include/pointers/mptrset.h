@@ -78,5 +78,7 @@ ULONG  getHidePointerDelay(VOID);
 VOID  setUseMouseSetup( BOOL fNewUseMouseSetup);
 BOOL  getUseMouseSetup(VOID);
 
+BOOL isnumeric(PSZ pszString);
+
 #endif // MPTRPPL_H
 
