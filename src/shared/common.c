@@ -7220,6 +7220,7 @@ ULONG cmnProgramErrorMsgBox(HWND hwndOwner,
     switch (arc)
     {
         case ERROR_INTERRUPT:           // V0.9.19 (2002-03-28) [umoeller]
+        case ERROR_SMG_START_IN_BACKGROUND:     // V1.0.4 (2005-02-27) [pr]: @@fixes 635
         break;
 
         case BASEERR_DAEMON_DEAD:     // V0.9.19 (2002-03-28) [umoeller]
