@@ -18,18 +18,24 @@ in a way similar to a folder tree view. However, most of the information in this
 window is <I>read-only,</I> i.e. you cannot change it (except for the "Object ID" item).
 
 <P>The <B>"Object handle"</B> is a five-digit hexadecimal number which uniquely
-identifies the object on your system. Abstract objects are always given object handles,
-while file-system objects do not neccessarily have to be assigned one. Note that
+identifies the object on your system.
+Abstract objects are always given object handles,
+while file-system objects do not neccessarily have to be assigned one.
+
+Note that
 object handles cannot be used to identify objects on a different system from yours: you
 cannot, for example, assume that the "Information" folder on your neighbor's computer
 will have the same object handle as it does on your system.
 Object handles only reference an object on <I>your</I> computer.
 
+<!-- V0.9.21: added this link -->
+<P>See <a href="glossary/gls_objhandle.html">Objekt Handles</a> for an introduction.
+
 <P>The <B>"Object ID"</B> however might exist on other computers too. Object IDs always
 have the format <CODE>&lt;OBJECTID&gt;</CODE> and are used to reference objects without
 having to know where they actually reside.
 <!-- V0.9.13: added link -->
-See <A HREF="glossary/gls_objids.html">object IDs</A> for an introduction to object IDs.
+See <A HREF="glossary/gls_objids.html">object IDs</A> for an introduction.
 
 <P>The "Object ID" field may be <B>changed</B> by clicking on it with the "Alt" key pressed.
 Be careful however when you change object IDs. Certain programs might rely on certain
@@ -46,10 +52,15 @@ command line.
 
 <P>The <B>"Object usage"</B> tree shows you additional internal object data. This
 data is mainly useful for programmers and represents the information returned by the
-<CITE>wpFindUseItem</CITE> method.
+<!-- V0.9.21: added two links -->
+<a href="wpsref.inf#wpFindUseItem"><CITE>wpFindUseItem</CITE></a>
+method.<A HREF="_toolkitlink.html">*</A>
 
 <P>For folders, &xwp; also adds the <B>"Folder data"</B> tree. This contains flags which
-represent the data returned by the <CITE>wpQueryFolderFlags</CITE> method, for example
+represent the data returned by the
+<!-- V0.9.21: added two links, method name was wrong -->
+<a href="wpsref.inf#wpQueryFldrFlags"><CITE>wpQueryFldrFlags</CITE></a><A HREF="_toolkitlink.html">*</A>
+method, for example
 whether the folder has been populated or not.
 <BR>
 </BODY>

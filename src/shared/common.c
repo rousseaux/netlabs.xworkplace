@@ -5146,7 +5146,9 @@ static const DLGHITEM dlgProductInfo[] =
                 START_TABLE,
                     START_ROW(0),
                         CONTROL_DEF(&G_OKButton),
+#ifndef __EWORKPLACE__
                         CONTROL_DEF(&BugReportButton),
+#endif
                 END_TABLE,
         END_TABLE
     };

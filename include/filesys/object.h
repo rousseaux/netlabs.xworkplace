@@ -161,12 +161,13 @@
     #define OBJFL_WPSHADOW                  0x00000020
     #define OBJFL_WPPROGRAM                 0x00000040
 
-    #define OBJFL_INITIALIZED               0x00001000
+    #define OBJFL_INITIALIZED               0x00000100
 
-    #define OBJFL_GLOBALICON                0x00002000  // V0.9.20 (2002-07-25) [umoeller]
-    #define OBJFL_LAZYLOADINGICON           0x00004000  // V0.9.20 (2002-07-25) [umoeller]
+    #define OBJFL_GLOBALICON                0x00000200  // V0.9.20 (2002-07-25) [umoeller]
+    #define OBJFL_LAZYLOADINGICON           0x00000400  // V0.9.20 (2002-07-25) [umoeller]
 
-    #define OBJFL_FOLDERVIEW1PAGING         0x00008000  // V0.9.21 (2002-08-31) [umoeller]
+    #define OBJFL_FOLDERVIEW1PAGING         0x00000800  // V0.9.21 (2002-08-31) [umoeller]
+    #define OBJFL_HASOPENVIEW               0x00001000  // V0.9.21 (2002-09-17) [umoeller]
 
     #define OBJLIST_RUNNINGSTORED           0x00010000
     #define OBJLIST_CONFIGFOLDER            0x00020000

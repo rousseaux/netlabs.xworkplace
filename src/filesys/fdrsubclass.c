@@ -1444,6 +1444,7 @@ STATIC BOOL WMChar(HWND hwndFrame,
  *
  *@@added V0.9.20 (2002-08-04) [umoeller]
  *@@changed V0.9.21 (2002-08-21) [umoeller]: fixed painting problems for folder shadows
+ *@@changed V0.9.21 (2002-09-17) [umoeller]: fixed another deadlock for folder shadows
  */
 
 STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we can't use poi->hwnd)
@@ -1518,15 +1519,27 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
             // if the folder has an open view... pmrc->hptrIcon
             // ALWAYS has the closed icon for folders!
             WPObject *pobjTest = pobjDraw;
+            BOOL    fTestLocked = FALSE;
+
             if (    (    (flObject & OBJFL_WPFOLDER)
                       || (    (pobjTest = objResolveIfShadow(pobjDraw))
                            && (objIsAFolder(pobjTest))
                          )
                     )
-                 && (_wpFindViewItem(pobjTest, VIEW_ANY, NULL))
+                 // && (_wpFindViewItem(pobjTest, VIEW_ANY, NULL))
+                 // no, no, no! _wpFindViewItem requests the object mutex
+                 // if the current thread doesn't have it, which can deadlock
+                 // the system if a shadow is just being created!
+                 // so use OBJFL_HASOPENVIEW instead, which is now
+                 // maintained by our useitem overrides
+                 // V0.9.21 (2002-09-17) [umoeller]
+                 && (flObject & OBJFL_HASOPENVIEW)
                )
                 hptrPaint = _wpQueryIconN(pobjTest, 1);
             // else: leave hptrPaint with pmrc->hptrIcon
+
+            if (fTestLocked)
+                _wpReleaseObjectMutexSem(pobjTest);
         }
 
         // determine whether to draw mini icon and set

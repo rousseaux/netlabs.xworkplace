@@ -2509,6 +2509,35 @@ SOM_Scope BOOL  SOMLINK xo_wpSetIcon(XFldObject *somSelf, HPOINTER hptrNewIcon)
 }
 
 /*
+ *@@ RefreshObjViewFlag:
+ *      called from XFldObject::wpAddToObjUseList and
+ *      XFldObject::wpDeleteFromObjUseList whenever
+ *      a useitem with USAGE_OPENVIEW was added or
+ *      removed so we can update the OBJFL_HASOPENVIEW
+ *      object flag.
+ *
+ *      This is necessary for avoiding deadlocks with our
+ *      replacement cnr icon painting. We can't check the
+ *      useitems list there because it requires holding the
+ *      object mutex.
+ *
+ *@@added V0.9.21 (2002-09-17) [umoeller]
+ */
+
+STATIC VOID RefreshObjViewFlag(XFldObject *somSelf)
+{
+    _xwpModifyFlags(somSelf,
+                    OBJFL_HASOPENVIEW,
+                    (_wpFindUseItem(somSelf,
+                                   USAGE_OPENVIEW,
+                                   NULL))
+                       // we have an open view:
+                       ? OBJFL_HASOPENVIEW
+                       // we have no open view:
+                       : 0);
+}
+
+/*
  *@@ wpAddToObjUseList:
  *      this WPObject instance method adds a new item to the
  *      object's in-use list.
@@ -2660,6 +2689,12 @@ SOM_Scope BOOL  SOMLINK xo_wpAddToObjUseList(XFldObject *somSelf,
                 brc = TRUE;
             }
         }
+
+        // refresh our own OBJFL_HASOPENVIEW flag if
+        // USAGE_OPENVIEW was affected
+        // V0.9.21 (2002-09-17) [umoeller]
+        if (pUseItem->type == USAGE_OPENVIEW)
+            RefreshObjViewFlag(somSelf);
     }
     CATCH(excpt1)
     {
@@ -2763,6 +2798,12 @@ SOM_Scope BOOL  SOMLINK xo_wpDeleteFromObjUseList(XFldObject *somSelf,
                 }
             }
         }
+
+        // refresh our own OBJFL_HASOPENVIEW flag if
+        // USAGE_OPENVIEW was affected
+        // V0.9.21 (2002-09-17) [umoeller]
+        if (pUseItem->type == USAGE_OPENVIEW)
+            RefreshObjViewFlag(somSelf);
     }
     CATCH(excpt1)
     {
