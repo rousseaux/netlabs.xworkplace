@@ -809,8 +809,10 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpQueryAssociatedFileIcon");
 
+#ifdef DEBUG_ASSOCS
     _PmpfF(("[%s] entering",
             _wpQueryTitle(somSelf)));
+#endif
 
 #ifndef __NEVEREXTASSOCS__
     if (cmnQuerySetting(sfExtAssocs))
@@ -825,7 +827,9 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
 
             WPObject *pobjAssoc;
 
+            #ifdef DEBUG_ASSOCS
             _PmpfF(("   getting associated program for default view 0x%lX", ulView));
+            #endif
 
             if (pobjAssoc = ftypQueryAssociatedProgram(somSelf,
                                                        &ulView,
@@ -834,7 +838,9 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
                                                        FALSE))
                     // locks the object
             {
+                #ifdef DEBUG_ASSOCS
                 _PmpfF(("   got associated program [%s]", _wpQueryTitle(pobjAssoc)));
+                #endif
 
                 // get the assoc icon
                 // V0.9.20 (2002-07-25) [umoeller]
@@ -853,8 +859,10 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryAssociatedFileIcon(XFldDataFile *somSelf)
         {
         } END_CATCH();
 
+        #ifdef DEBUG_ASSOCS
         _PmpfF(("done, returning 0x%lX",
                 hptr));
+        #endif
 
         return hptr;      // NULLHANDLE still for "plain text"
     }
@@ -1324,7 +1332,9 @@ SOM_Scope HWND  SOMLINK xdf_wpOpen(XFldDataFile *somSelf,
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpOpen");
 
+    #ifdef DEBUG_ASSOCS
     _PmpfF(("[%s] entering, ulView: 0x%lX", _wpQueryTitle(somSelf), ulView));
+    #endif
 
 #ifndef __NEVEREXTASSOCS__
     if (cmnQuerySetting(sfExtAssocs))
@@ -1385,7 +1395,9 @@ SOM_Scope HWND  SOMLINK xdf_wpOpen(XFldDataFile *somSelf,
                                                      ulView,
                                                      param);
 
+    #ifdef DEBUG_ASSOCS
     _PmpfF(("[%s] returning hwnd 0x%lX", _wpQueryTitle(somSelf), hwnd));
+    #endif
 
     return (hwnd);
 

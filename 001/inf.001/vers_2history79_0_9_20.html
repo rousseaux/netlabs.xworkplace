@@ -9,7 +9,7 @@
      about changes to this file.
      Simply use the English original instead. -->
 <BODY>
-<B>&xwp; 0.9.20 (August 9, 2002)</B>
+<B>&xwp; 0.9.20 (August 11, 2002)</B>
 
 <P>New features:
 
@@ -44,6 +44,9 @@ menu now for quicker filtering.
 <P><LI>&pgr;: Selecting "Properties" from the pager context menu opens the "&pgr;"
 page in the "Screen" object directly now.
 
+<P><LI>&pgr;: Shift + MB2 click on an empty area in the pager hides the pager
+immediately now.
+
 </UL>Miscellaneous changes:
 
 <UL><LI>Common: &xwp; no longer holds all messages from the TMF file in memory,
@@ -58,6 +61,9 @@ memory. Awake objects management is no longer done by the Worker thread either.
 
 <P><LI>Common: Optimized my object destruction mechanism to no longer use SOM name
 lookup method resolution, since I found a way to handle undocumented WPS methods better.
+
+<P><LI>Common: Rewrote the &xwp; "Product info" dialog as a testcase for linking
+from my rich text control.
 
 <P><LI>File operations: Reworked replacement "File exists" dialog.
 

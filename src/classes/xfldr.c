@@ -527,16 +527,12 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
                         // of the object handle
                         HOBJECT hobjSearch = _wpQueryHandle(pObj);
 
-                        _PmpfF(("object %s is abstract", _wpQueryTitle(pObj)));
-
                         sprintf(poliNew->szIdentity, ":A%lX", (hobjSearch & 0xFFFF));
                     }
                     else if (fl & OBJFL_WPFILESYSTEM)
                     {
                         // for file-system objects, this is the object's real name
                         ULONG   ulSize = sizeof(poliNew->szIdentity) - 2;
-
-                        _PmpfF(("object %s is file-system", _wpQueryTitle(pObj)));
 
                         if (fl & OBJFL_WPFOLDER)
                             strcpy(poliNew->szIdentity, ":D");
@@ -603,8 +599,6 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
                     // finally, we have the ICONPOS data in _pICONPOS;
                     // now we pass the ICONPOS data to the sort function
                     // defined above
-
-                    _PmpfF(("sorting %s", _wpQueryTitle(somSelf)));
 
                     sip.pICONPOS = pICONPOS;
                     sip.usICONPOSSize = ulICONPOSSize;

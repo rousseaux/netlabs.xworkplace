@@ -762,7 +762,9 @@ VOID mnuRemoveMenuItems(WPObject *somSelf,
             ULONG ul2;
             ULONG flTest = aSuppressFlags[ul] | XWPCTXT_HIGHBIT;
 
+            #ifdef DEBUG_MENUS
             _Pmpf(("   finding flag 0x%08lX", flTest));
+            #endif
 
             for (ul2 = 0;
                  ul2 < ARRAYITEMCOUNT(G_MenuItemsWithIDs);
@@ -770,9 +772,11 @@ VOID mnuRemoveMenuItems(WPObject *somSelf,
             {
                 if (flTest == G_MenuItemsWithIDs[ul2].flFilter)
                 {
+                    #ifdef DEBUG_MENUS
                     _PmpfF(("flag %s set, removing id %d",
                             cmnGetString(G_MenuItemsWithIDs[ul2].ulString),
                             G_MenuItemsWithIDs[ul2].idMenu));
+                    #endif
 
                     // regular ID:
                     winhDeleteMenuItem(hwndMenu, G_MenuItemsWithIDs[ul2].idMenu);
@@ -1277,7 +1281,9 @@ static VOID UnlockConfigCache(VOID)
 
 VOID mnuInvalidateConfigCache(VOID)
 {
+    #ifdef DEBUG_MENUS
     _Pmpf((__FUNCTION__));
+    #endif
 
     if (LockConfigCache())
     {
@@ -1335,7 +1341,10 @@ static BOOL InsertConfigFolderItems(XFolder *somSelf,
             if (!G_fConfigCacheValid)
             {
                 // no: create one
+                #ifdef DEBUG_MENUS
                 _PmpfF(("calling BuildConfigItemsList"));
+                #endif
+
                 BuildConfigItemsList(&G_llConfigContent,
                                      pConfigFolder);
                 G_fConfigCacheValid = TRUE;
@@ -3996,9 +4005,11 @@ static MRESULT mnuItemsItemChanged(PNOTEBOOKPAGE pnbp,
 
                 XWPSETTING s;
 
+                #ifdef DEBUG_MENUS
                 _PmpfF(("category is %s", cmnGetString(pCategory->ulString)));
                 _Pmpf(("  recc %s, flFilter 0x%08lX",
                       cmnGetString(precc->pItem->ulString), flFilter));
+                #endif
 
                 if (flFilter & XWPCTXT_HIGHBIT)
                     // use XWP setting (XWPCTXT_* flag):
@@ -4011,11 +4022,19 @@ static MRESULT mnuItemsItemChanged(PNOTEBOOKPAGE pnbp,
                 flFilter &= ~XWPCTXT_HIGHBIT;
                 // clear bit if record is set and reversely
                 fl = cmnQuerySetting(s);
+
+                #ifdef DEBUG_MENUS
                 _Pmpf(("  old setting %d is 0x%08lX", s, fl));
+                #endif
+
                 fl &= ~flFilter;
                 if (!precc->recc.usCheckState)
                     fl |= flFilter;
+
+                #ifdef DEBUG_MENUS
                 _Pmpf(("  new setting %d is 0x%08lX", s, fl));
+                #endif
+
                 cmnSetSetting(s, fl);
 
                 // if this was the record for a submenu,

@@ -249,11 +249,13 @@ HPOINTER icomShareIcon(WPObject *somSelf,       // in: server object
                      && (somClient->pobjIconServer != somSelf)
                    )
                 {
+                    #ifdef DEBUG_ICONREPLACEMENTS
                     _Pmpf(("Un-sharing pobjClient 0x%lX [%s] from previous server 0x%lX [%s]",
                            pobjClient,
                            (p1 = _wpQueryTitle(pobjClient)) ? p1 : "NULL",
                            somSelf,
                            (p2 = _wpQueryTitle(somSelf)) ? p2 : "NULL"));
+                    #endif
 
                     icomUnShareIcon(somClient->pobjIconServer,
                                     pobjClient);
@@ -507,7 +509,7 @@ static void _Optlink fntLazyIcons(PTHREADINFO ptiMyself)
                     {
                         HPOINTER hptr;
 
-                        #ifdef __DEBUG__
+                        #ifdef DEBUG_ICONREPLACEMENTS
                         {
                             PMINIRECORDCORE pmrc = _wpQueryCoreRecord(pDataFile);
                             _PmpfF(("[%s] calling _wpQueryIcon, hptrIcon is 0x%lX",
@@ -523,7 +525,9 @@ static void _Optlink fntLazyIcons(PTHREADINFO ptiMyself)
                             _wpSetIcon(pDataFile, hptr);
                         }
 
+                        #ifdef DEBUG_ICONREPLACEMENTS
                         _Pmpf(("    loaded hptr 0x%lX", hptr));
+                        #endif
 
                         /*
 
@@ -579,7 +583,9 @@ BOOL icomQueueLazyIcon(WPDataFile *somSelf)
     BOOL fLocked = FALSE,
          brc = FALSE;
 
+    #ifdef DEBUG_ICONREPLACEMENTS
     _PmpfF(("[%s]", _wpQueryTitle(somSelf)));
+    #endif
 
     if (fLocked = LockLazyIcons())
     {

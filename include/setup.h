@@ -329,9 +329,6 @@
         // debug data/program file associations/icons
             // #define DEBUG_ASSOCS
 
-        // debug folder icon replacements
-            // #define DEBUG_FLDRICONS
-
         // debug file operations engine
             // #define DEBUG_FOPS
 

@@ -133,7 +133,7 @@ BOOL plgRegisterCategory(PPLUGINCATEGORY pplgCategory,
                          PVOID pPredefined)
 {
     BOOL brc = FALSE;
-_Pmpf(("plgRegisterCategory called for category %s", pcszCategoryName));
+// _Pmpf(("plgRegisterCategory called for category %s", pcszCategoryName));
     if (pplgCategory && pcszCategoryName)
     {
         pplgCategory->pcszName = pcszCategoryName;

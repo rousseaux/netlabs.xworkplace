@@ -2481,7 +2481,9 @@ SOM_Scope BOOL  SOMLINK xo_wpAddToObjUseList(XFldObject *somSelf,
             // AND this is a USAGE_OPENVIEW:
             // run our replacement
 
+            #ifdef DEBUG_ASSOCS
             _PmpfF(("[%s] entering", _wpQueryTitle(somSelf)));
+            #endif
 
             if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
             {
@@ -2531,9 +2533,11 @@ SOM_Scope BOOL  SOMLINK xo_wpAddToObjUseList(XFldObject *somSelf,
 
                 if (!(puiThis = pod->pUseItemFirst))
                 {
+                    #ifdef DEBUG_ASSOCS
                     _Pmpf(("    adding hwnd %lX as first ui",
                            ((PVIEWITEM)(pUseItem + 1))->handle
                          ));
+                    #endif
                     pod->pUseItemFirst = pUseItem;
                 }
                 else
@@ -2541,16 +2545,21 @@ SOM_Scope BOOL  SOMLINK xo_wpAddToObjUseList(XFldObject *somSelf,
                     while (puiThis->pNext)
                         puiThis = puiThis->pNext;
 
+                    #ifdef DEBUG_ASSOCS
                     _Pmpf(("    adding hwnd %lX as non-first ui",
                            ((PVIEWITEM)(pUseItem + 1))->handle
                          ));
+                    #endif
 
                     puiThis->pNext = pUseItem;
                 }
 
                 if (!pod->hevViewItems)
                 {
+                    #ifdef DEBUG_ASSOCS
                     _Pmpf(("    creating event sem"));
+                    #endif
+
                     DosCreateEventSem(NULL, &pod->hevViewItems, 0, FALSE);
                 }
 
@@ -2615,7 +2624,9 @@ SOM_Scope BOOL  SOMLINK xo_wpDeleteFromObjUseList(XFldObject *somSelf,
             // AND this is a USAGE_OPENVIEW:
             // run our replacement
 
+            #ifdef DEBUG_ASSOCS
             _PmpfF(("[%s] entering", _wpQueryTitle(somSelf)));
+            #endif
 
             if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
             {
@@ -3330,14 +3341,18 @@ SOM_Scope HWND  SOMLINK xo_wpViewObject(XFldObject *somSelf,
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpViewObject");
 
+    #ifdef DEBUG_ASSOCS
     _PmpfF(("[%s] entering", _wpQueryTitle(somSelf)));
+    #endif
 
     hwnd = XFldObject_parent_WPObject_wpViewObject(somSelf,
                                                    hwndCnr,
                                                    ulView,
                                                    param);
 
+    #ifdef DEBUG_ASSOCS
     _PmpfF(("[%s] returning hwnd 0x%lX", _wpQueryTitle(somSelf), hwnd));
+    #endif
 
     return hwnd;
 }
@@ -3912,7 +3927,7 @@ SOM_Scope WPObject*  SOMLINK xoM_wpclsQueryObject(M_XFldObject *somSelf,
     /* M_XFldObjectData *somThis = M_XFldObjectGetData(somSelf); */
     M_XFldObjectMethodDebug("M_XFldObject","xoM_wpclsQueryObject");
 
-    _PmpfF(("HOBJECT 0x%lX", hObject));
+    // _PmpfF(("HOBJECT 0x%lX", hObject));
 
     return M_XFldObject_parent_M_WPObject_wpclsQueryObject(somSelf,
                                                            hObject);

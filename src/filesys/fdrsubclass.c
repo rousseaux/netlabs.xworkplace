@@ -1512,7 +1512,9 @@ static BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
         // case hptrIcon might be NULLHANDLE still
         if (!(hptrPaint = pmrc->hptrIcon))
         {
+            #ifdef DEBUG_ICONREPLACEMENTS
             _Pmpf(("    CMA_ICON, pmrc->hptrIcon is NULLHANDLE"));
+            #endif
 
             // this object does not have an icon yet:
             // lazy icons enabled?
@@ -1545,7 +1547,9 @@ static BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
         cx = poi->rclItem.xRight - poi->rclItem.xLeft;
         cy = poi->rclItem.yTop - poi->rclItem.yBottom;
 
+        #ifdef DEBUG_ICONREPLACEMENTS
         _Pmpf(("    cx = %d, cy = %d", cx, cy));
+        #endif
 
         if (    (flOwnerDraw & 0x80000000)      // force mini-icon (Details view)?
              || (cx < G_cxIconSys)
@@ -1598,7 +1602,9 @@ static BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
             LONG    lcolHiliteBgnd;
             POINTL  ptl;
 
+            #ifdef DEBUG_ICONREPLACEMENTS
             _PmpfF(("[%s] CRA_SELECTED", pmrc->pszIcon));
+            #endif
 
             // switch the HPS to RGB mode, or the below won't work
             fSwitched = GpiCreateLogColorTable(poi->hps,

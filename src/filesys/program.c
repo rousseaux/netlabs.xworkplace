@@ -1016,7 +1016,9 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
 
                     pobjLocked = pobjEmph;
 
+                    #ifdef DEBUG_ASSOCS
                     _PmpfF(("[%s] allocating USAGE_OPENVIEW viewitem", _wpQueryTitle(pobjEmph)));
+                    #endif
 
                     // in any case, add "in-use" emphasis to the object
                     if (pUseItemView = (PUSEITEM)_wpAllocMem(pobjEmph,
@@ -1031,7 +1033,9 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
                         pViewItem->view = OPEN_RUNNING;
                         pViewItem->handle = happ;
 
+                        #ifdef DEBUG_ASSOCS
                         _PmpfF(("[%s] adding USAGE_OPENVIEW viewitem", _wpQueryTitle(pobjEmph)));
+                        #endif
 
                         // yo this call creates a handle!
                         // V0.9.20 (2002-08-04) [umoeller]
@@ -1044,7 +1048,9 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
                             // for data file associations, add VIEWFILE
                             // structure as well
 
+                            #ifdef DEBUG_ASSOCS
                             _PmpfF(("[%s] allocating USAGE_OPENFILE viewitem", _wpQueryTitle(pobjEmph)));
+                            #endif
 
                             if (pUseItemFile =  (PUSEITEM)_wpAllocMem(pobjEmph,
                                                                       sizeof(USEITEM) + sizeof(VIEWFILE),
@@ -1058,7 +1064,9 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
                                 pViewFile->ulMenuId = ulMenuID;
                                 pViewFile->handle  = happ;
 
+                                #ifdef DEBUG_ASSOCS
                                 _PmpfF(("[%s] adding USAGE_OPENFILE viewitem", _wpQueryTitle(pobjEmph)));
+                                #endif
 
                                 brc = _wpAddToObjUseList(pobjEmph,
                                                          pUseItemFile);

@@ -349,6 +349,8 @@ VOID pgrRecoverWindows(HAB hab,
     lstInit(&llSWPs,
             TRUE);      // auto-free
 
+    _PmpfF(("fWPSOnly is %d", fWPSOnly));
+
     henum = WinBeginEnumWindows(HWND_DESKTOP);
     while ((hwnd = WinGetNextWindow(henum)))
     {
@@ -374,6 +376,9 @@ VOID pgrRecoverWindows(HAB hab,
            )
         {
             PSWP pswp;
+
+            _Pmpf(("  restoring hwnd 0x%lX of pid %d", hwnd, pid));
+
             if (pswp = NEW(SWP))
             {
                 memcpy(pswp, &swp, sizeof(SWP));
