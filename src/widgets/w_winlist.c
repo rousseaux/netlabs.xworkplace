@@ -1206,6 +1206,8 @@ VOID HackColor(PBYTE pb, double dFactor)
  *
  *      Preconditions: The switch list should have
  *      been scanned (ScanSwitchList).
+ *
+ *@@changed V0.9.9 (2001-02-08) [umoeller]: now centering icons on button vertically
  */
 
 VOID DrawOneCtrl(const WINLISTPRIVATE *pPrivate,
@@ -1312,9 +1314,15 @@ VOID DrawOneCtrl(const WINLISTPRIVATE *pPrivate,
 
         if (pCtrlThis->hwndIcon)
         {
+            // V0.9.9 (2001-02-08) [umoeller] now centering icons
+            // on buttons vertically, if the widget is really tall
+            ULONG   cy = rclButtonArea.yTop - rclButtonArea.yBottom;
+            LONG    y = rclButtonArea.yBottom + (cy - pGlobals->cxMiniIcon) / 2;
+            if (y < rclButtonArea.yBottom + 1)
+                y = rclButtonArea.yBottom + 1;
             WinDrawPointer(hps,
                            rclButtonArea.xLeft + 1,
-                           rclButtonArea.yBottom + 1,
+                           y,
                            pCtrlThis->hwndIcon,
                            DP_MINI);
             rclButtonArea.xLeft += pGlobals->cxMiniIcon;

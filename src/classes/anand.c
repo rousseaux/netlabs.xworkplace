@@ -649,7 +649,12 @@ SOM_Scope ULONG SOMLINK and_wpFilterPopupMenu(XWPAnimouse * somSelf,
 
 /*
  *@@ wpMenuItemSelected:
+ *      this WPObject method processes menu selections.
+ *      This must be overridden to support new menu
+ *      items which have been added in wpModifyPopupMenu.
  *
+ *      See XFldObject::wpMenuItemSelected for additional
+ *      remarks.
  */
 
 SOM_Scope BOOL SOMLINK and_wpMenuItemSelected(XWPAnimouse * somSelf,

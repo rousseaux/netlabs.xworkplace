@@ -121,6 +121,8 @@
 #define ID_ICONXCENTER         127
 #define ID_ICONXMINI           128
 
+#define ID_ICONXWPADMIN        129  // added V0.9.9 (2001-02-08) [umoeller]
+
 #define ID_XFLDRBITMAP         130
 
 #define ID_XWPBIGLOGO          131

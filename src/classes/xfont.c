@@ -73,6 +73,8 @@
 
 #include "config\fonts.h"               // font folder implementation
 
+#include "filesys\folder.h"             // XFolder implementation
+
 // other SOM headers
 #pragma hdrstop
 
@@ -293,6 +295,52 @@ SOM_Scope BOOL  SOMLINK fon_wpPopulate(XWPFontFolder *somSelf,
     }
 
     return (brc);
+}
+
+/*
+ *@@ wpDeleteContents:
+ *      this WPFolder method gets called when a folder is
+ *      being deleted to first delete the contents of a
+ *      folder before the folder can be deleted. From my
+ *      testing, BOTH WPFolder::wpDelete and WPFolder::wpFree
+ *      call this method to nuke the folder contents.
+ *
+ *      Even though the font folder should not really be
+ *      deleted, if it does, the standard WPFolder::wpDeleteContents
+ *      produces total garbage. It first populates the folder and
+ *      then invokes wpDelete on each item in the folder.
+ *
+ *      For the font folder, this is NOT the way to go. First
+ *      of all, we produce all the font objects during populate,
+ *      so we do NOT want to have the font folder populated during
+ *      delete. Even worse, WPFolder::wpDeleteContents produces a
+ *      silly message box for every single font object then. Duh.
+ *
+ *      So override this method and just invoke wpFree on all
+ *      objects in the folder without further notice.
+ *
+ *@@added V0.9.9 (2001-02-08) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK fon_wpDeleteContents(XWPFontFolder *somSelf,
+                                              ULONG fConfirmations)
+{
+    ULONG ulrc = NO_DELETE;
+    // XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
+    XWPFontFolderMethodDebug("XWPFontFolder","fon_wpDeleteContents");
+
+    /* return (XWPFontFolder_parent_WPFolder_wpDeleteContents(somSelf,
+                                                           fConfirmations)); */
+
+    // note that we do not populate the font folder first... if it
+    // hasn't been populated, we shouldn't have a problem in the first
+    // place, because there should only be font objects in there...
+    // and we don't want to create all objects first and then delete
+    // them again.
+    if (fdrNukeContents(somSelf))
+        ulrc = OK_DELETE;
+
+    return (ulrc);
 }
 
 /*

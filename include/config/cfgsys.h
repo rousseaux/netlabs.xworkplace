@@ -27,9 +27,29 @@
     #define CONFIG_HEADER_INCLUDED
 
     /* ******************************************************************
-     *                                                                  *
-     *   XFldDisk notebook callbacks (notebook.c)                       *
-     *                                                                  *
+     *
+     *   External APIs
+     *
+     ********************************************************************/
+
+    BOOL XWPENTRY cfgParseSwapPath(const char *pcszConfigSys,
+                                   PSZ pszSwapPath,
+                                   PULONG pulMinFree,
+                                   PULONG pulMinSize);
+    typedef BOOL XWPENTRY CFGPARSESWAPPATH(const char *pcszConfigSys,
+                                           PSZ pszSwapPath,
+                                           PULONG pulMinFree,
+                                           PULONG pulMinSize);
+    typedef CFGPARSESWAPPATH *PCFGPARSESWAPPATH;
+
+    ULONG XWPENTRY cfgQuerySwapperSize(VOID);
+    typedef ULONG XWPENTRY CFGQUERYSWAPPERSIZE(VOID);
+    typedef CFGQUERYSWAPPERSIZE *PCFGQUERYSWAPPERSIZE;
+
+    /* ******************************************************************
+     *
+     *   XFldDisk notebook callbacks (notebook.c)
+     *
      ********************************************************************/
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
@@ -62,8 +82,6 @@
                                        USHORT usItemID,
                                        USHORT usNotifyCode,
                                        ULONG ulExtra);
-    #else
-        #error "shared\notebook.h needs to be included before including cfgsys.h".
     #endif
 #endif
 

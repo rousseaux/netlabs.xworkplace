@@ -326,9 +326,9 @@ SOM_Scope BOOL  SOMLINK xwlist_wpModifyPopupMenu(XWPClassList *somSelf,
  *      this WPObject method processes menu selections.
  *      This must be overridden to support new menu
  *      items which have been added in wpModifyPopupMenu.
+ *
  *      See XFldObject::wpMenuItemSelected for additional
- *      information and how to intercept this for multiple
- *      objects.
+ *      remarks.
  *
  *      We need to support "open class list view".
  */

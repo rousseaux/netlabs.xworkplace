@@ -81,7 +81,8 @@ interface XWPTrashCan : WPFolder
             xwpQueryTrashObjectsCount,
             xwpSetCorrectTrashIcon,
             xwpEmptyTrashCan,
-            xwpUpdateStatusBar;
+            xwpUpdateStatusBar,
+            xwpProcessObjectCommand;
 
     /*
      * Class Modifiers:
@@ -146,6 +147,8 @@ interface XWPTrashCan : WPFolder
 
     wpAddToContent: override;
     wpDeleteFromContent: override;
+
+    wpDeleteContents: override;
 
     wpDragOver: override;
     wpDrop: override;

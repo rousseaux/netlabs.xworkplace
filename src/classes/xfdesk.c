@@ -423,9 +423,9 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpModifyPopupMenu(XFldDesktop *somSelf,
  *      this WPObject method processes menu selections.
  *      This must be overridden to support new menu
  *      items which have been added in wpModifyPopupMenu.
+ *
  *      See XFldObject::wpMenuItemSelected for additional
- *      information and how to intercept this for multiple
- *      objects.
+ *      remarks.
  *
  *      We call dtpMenuItemSelected to process desktop
  *      menu items here.

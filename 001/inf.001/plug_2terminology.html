@@ -15,6 +15,11 @@ that an XCenter instance is identical to an XCenter
 view when it's open, but there can be several XCenter
 instances on the system (i.e. one for each screen border).
 
+<P>Even though the XCenter itself is obviously a WPS object, it completely
+isolates the widgets from the WPS stuff internally. This is why SOM/WPS programming
+knowledge is not required to write a new widget class, but you can still do WPS
+programming if you want to.
+
 <P><LI>A <B>"widget"</B> is a PM subwindow of an open XCenter which
 displays something. An open XCenter can contain zero,
 one, or many widgets. Every XCenter keeps a list of
@@ -23,27 +28,28 @@ data. This is totally transparent to the widgets, but if
 you are interested, you can view that data on the "Widgets" page
 of an XCenter's settings notebook.
 
-<P><LI>A <B>"widget class"</B> defines a widget. Basically, it's a
-plain C structure
-(<A HREF="plug_9xcenterwidgetclass.html"><CODE>XCENTERWIDGETCLASS</CODE></A>)
-with the name of a PM window class which is used to create the PM widget windows
-(the "widget instances"). Depending on the widget
-class's attributes, there can be one or several
-instances of a widget class. If you want a different
-widget in the XCenter, you need to write a widget class.
+<P>Again, to make that clear: A widget is a separate PM window inside the XCenter.
 
-<P>A widget class basically boils down to writing a PM
+<P><LI>A <B>"widget class"</B> defines a widget. Basically, it's a
+PM window class with a plain C structure as a wrapper
+(<A HREF="plug_9xcenterwidgetclass.html"><CODE>XCENTERWIDGETCLASS</CODE></A>).
+This structure holds the name of a PM window class which is used by the XCenter
+to create the PM widget windows. Depending on the widget
+class's attributes, there can be one or several
+instances of a widget class. If you want a different widget in the XCenter,
+you need to write a widget class.
+
+<P>Writing a widget class basically boils down to writing a PM
 window class (see below), with some additional rules to follow. To
 make things easier, several widget classes can share
 the same PM class though.
 
-<P>Some widget classes are built into the XCenter itself
-(i.e. reside in <CODE>XFLDR.DLL</CODE>), but the XCenter can load
-external DLLs too. Several of the widget classes that
-come with XWorkplace have been created as plugins to
+<P>Some widget classes are built into the XCenter itself (i.e. reside in
+<CODE>XFLDR.DLL</CODE>), but the XCenter can obviously load external plug-in DLLs too.
+Several of the widget classes that come with XWorkplace have been created as plug-ins to
 show you how it's done. If you have the
 <A HREF="notices_40source.html">XWorkplace source code</A>,
-see the <CODE>src\widgets</CODE> directory.
+look for the <CODE>src\widgets</CODE> directory.
 
 <P><LI>A <B>"PM window class"</B> is not an XCenter definition... this
 is explained in detail in the <I>Presentation Manager Programming Reference.</I>
@@ -58,6 +64,14 @@ of this feature to implement widget classes. So again, a widget class is a
 PM window class with a bit of extra data to give the XCenter more information
 about the widgets that can be created of that class.
 
+<P>The advantage of using separate PM window classes is that a widget is essentially
+free to do whatever it wants. It can say "Hello world", but it can also choose to
+start a dozen subthreads with videos playing.
+
+<P>The disadvantage is that writing a PM window class from scratch is a bit more
+difficult than using standard controls. But that's why there are plenty of samples
+to learn from.
+
 <P>When a widget is created (either because it is added to an open XCenter
 or when an XCenter is opened in the first place and thus all widgets have to
 be created), it does call <CODE>WinCreateWindow</CODE> with the PM window class
@@ -66,9 +80,9 @@ name that was specified with the widget class. So this is really not too spectac
 <P><LI>A <B>"widget plugin DLL"</B> is a separate DLL which resides
 in the <CODE>plugins\xcenter</CODE> directory of the XWorkplace
 installation directory. This must contain one or
-several widget classes. There are a couple of
-procedures that a widget plugin DLL is required to
-export to make the XCenter see the widget classes.
+several widget classes. There are three procedures that a widget plugin DLL
+is required to export to make the XCenter see the widget classes. This is
+explained in detail on the next pages.
 
 </UL>
 </BODY>

@@ -194,7 +194,7 @@ static XCENTERWIDGETCLASS   G_aBuiltInWidgets[]
             0,
             "Pulse",
             "CPU load",
-            WGTF_SIZEABLE | WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP,
+            WGTF_SIZEABLE | WGTF_UNIQUEGLOBAL | WGTF_TOOLTIP,
             NULL        // no settings dlg
         }
     };
@@ -1108,9 +1108,7 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
             PWIDGETVIEWSTATE pViewThis = (PWIDGETVIEWSTATE)pNode->pItemData;
 
             if (pViewThis->szlWanted.cy > pGlobals->cyTallestWidget)
-            {
                 pGlobals->cyTallestWidget = pViewThis->szlWanted.cy;
-            }
 
             pNode = pNode->pNext;
         }
@@ -2531,6 +2529,8 @@ MRESULT ClientDragOver(HWND hwnd, MPARAM mp1)
 /*
  *@@ ClientDrop:
  *      implementation for DM_DROP in fnwpXCenterMainClient.
+ *
+ *@@changed V0.9.9 (2001-02-08) [umoeller]: fixed wrong leftmost widget add
  */
 
 VOID ClientDrop(HWND hwnd, MPARAM mp1, MPARAM mp2)
@@ -2557,20 +2557,23 @@ VOID ClientDrop(HWND hwnd, MPARAM mp1, MPARAM mp2)
                            &ptlDrop,
                            1);
 
-        FindWidgetFromClientXY(pXCenterData,
-                               ptlDrop.x,
-                               ptlDrop.y,
-                               NULL,
-                               &pViewOver,
-                               &ulIndex);
-        if (!pViewOver)
-            ulIndex = 0;        // leftmost
-        else
-            // FindWidgetFromClientXY has returned the
-            // widget whose _right_ border matched the
-            // coordinates... however, we must specify
-            // the index _before_ which we want to insert
-            ulIndex++;
+        if (    (!FindWidgetFromClientXY(pXCenterData,
+                                         ptlDrop.x,
+                                         ptlDrop.y,
+                                         NULL,
+                                         &pViewOver,
+                                         &ulIndex))
+             || (!pViewOver)
+           )
+                // ulIndex = 0;        // leftmost
+                // WROOOONG V0.9.9 (2001-02-08) [umoeller]
+                ulIndex = -1;        // rightmost
+            else
+                // FindWidgetFromClientXY has returned the
+                // widget whose _right_ border matched the
+                // coordinates... however, we must specify
+                // the index _before_ which we want to insert
+                ulIndex++;
 
         while (pNode)
         {
@@ -2892,8 +2895,9 @@ MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
             case XCM_REFORMAT:
             {
                 PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
-                ctrpReformat(pXCenterData,
-                             (ULONG)mp1);       // flags
+                if (pXCenterData->fFrameFullyShown) // V0.9.9 (2001-02-08) [umoeller]
+                    ctrpReformat(pXCenterData,
+                                 (ULONG)mp1);       // flags
             break; }
 
             case XCM_SAVESETUP:
@@ -3063,16 +3067,24 @@ VOID ctrpLoadClasses(VOID)
 
             sprintf(szDLL, "%s\\%s", szPluginsDir, ffb3.achName);
 
-            // _Pmpf(("   found %s", szDLL));
-
             arc2 = DosLoadModule(szError,
                                  sizeof(szError),
                                  szDLL,
                                  &hmod);
 
-            // _Pmpf(("   DosLoadModule returned %d for '%s', szError: '%s'", arc2, szDLL, szError));
+            if (arc2 != NO_ERROR)
+            {
+                // error loading module:
+                // log this, but we'd rather not have a message box here
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Unable to load plugin DLL \"%s\"."
+                       "\n    DosLoadModule returned code %d and string: \"%s\"",
+                       szDLL,
+                       arc2,
+                       szError);
 
-            if (arc2 == NO_ERROR)
+            }
+            else
             {
                 CHAR    szErrorMsg[500] = "nothing.";
                         // room for error msg by DLL
@@ -4235,15 +4247,7 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                 swpFrame.y = winhQueryScreenCY() - swpFrame.cy;
             }
 
-            /* if (_ulDisplayStyle == XCS_BUTTON)
-            {
-                // button style:
-                pGlobals->ulSpacing = WinQuerySysValue(HWND_DESKTOP, SV_CXDLGFRAME);
-            }
-            else
-                pGlobals->ulSpacing = 1;
-            pXCenterData->ulBorderWidth = pGlobals->ulSpacing; */
-
+            // now go create XCenter frame and client
             pGlobals->hwndFrame
                 = winhCreateStdWindow(HWND_DESKTOP, // frame's parent
                                       &swpFrame,
@@ -4265,7 +4269,9 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
         CATCH(excpt1) {} END_CATCH();
 
         // in any case, post the event semaphore
-        // to notify thread 1 that we're done
+        // to notify thread 1 that we're done; this is
+        // waiting in XCenter::wpOpen to return the
+        // frame window handle
         DosPostEventSem(pXCenterData->hevRunning);
 
         if (fCreated)
@@ -4396,14 +4402,15 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                         // the XCenter from the left by repositioning it
                         // with each timer tick... when this is done,
                         // the next timer(s) will be started automatically
-                        // until the frame is fully showing
+                        // until the frame is fully showing and ctrpReformat
+                        // will eventually be called
                         tmrStartTimer(pGlobals->hwndFrame,
                                       TIMERID_UNFOLDFRAME,
                                       50);
                     }
                     else
                     {
-                        // no animation:
+                        // no animation: format the widgets NOW
                         ctrpReformat(pXCenterData,
                                      XFMF_RECALCHEIGHT
                                        | XFMF_REPOSITIONWIDGETS
@@ -4526,7 +4533,6 @@ HWND ctrpCreateXCenterView(XCenter *somSelf,
                 pXCenterData->cbSize = sizeof(*pXCenterData);
 
                 pXCenterData->somSelf = somSelf;
-                // pXCenterData->hab = hab;
                 pXCenterData->ViewItem.view = ulView;
 
                 DosCreateEventSem(NULL,     // unnamed

@@ -1297,12 +1297,13 @@ SOM_Scope BOOL  SOMLINK xfobj_wpModifyPopupMenu(XFldObject *somSelf,
  *      a menu item has been selected for all three of
  *      them, all three objects will receive this method
  *      call. This is true even if FALSE is returned from
- *      this method.
+ *      this method by one of the objects.
  *
  *      In order to be able to process all objects at
  *      once, we now have XFolder::xwpProcessObjectCommand,
  *      which can intercept the menu ID even before this
- *      method is invoked on each object.
+ *      method is invoked on each object and process all
+ *      objects in one flush.
  *
  *      We override this to move objects into the
  *      trash can instead, if necessary.
@@ -1490,7 +1491,8 @@ SOM_Scope ULONG  SOMLINK xfobj_wpAddObjectGeneralPage(XFldObject *somSelf,
  *      a confirmation dialog in case it is not.
  *
  *      Apparently, this method is not overridden by subclasses,
- *      not even WPFileSystem.
+ *      not even WPFileSystem -- except WPShadow, which forwards
+ *      this method call to the linked object.
  *
  *      XWorkplace implements its own "Object exists" dialog here,
  *      if the Global Settings allow it.

@@ -321,14 +321,15 @@
     #define ID_XSH_WIDGET_WINLIST_MAIN      106     // V0.9.7: Winlist widget main help
     #define ID_XSH_WIDGET_WINLIST_SETTINGS  107     // V0.9.7: Winlist widget properties
     #define ID_XSH_WIDGET_XBUTTON_MAIN      108     // V0.9.7: X-Button widget main help
+    #define ID_XSH_WIDGET_SENTINEL_MAIN     109     // V0.9.9: Sentinal widget main help
 
-    #define ID_XSH_FONTFOLDER               109
-    #define ID_XSH_FONTFILE                 110
-    #define ID_XSH_FONTOBJECT               111
-    #define ID_XSH_FONTSAMPLEVIEW           112
-    #define ID_XSH_FONTSAMPLEHINTS          113
+    #define ID_XSH_FONTFOLDER               110
+    #define ID_XSH_FONTFILE                 111
+    #define ID_XSH_FONTOBJECT               112
+    #define ID_XSH_FONTSAMPLEVIEW           113
+    #define ID_XSH_FONTSAMPLEHINTS          114
 
-    #define ID_XSH_XFIX_INTRO               114
+    #define ID_XSH_XFIX_INTRO               115
 
     /********************************************************************
      *

@@ -66,21 +66,18 @@ NOT-SO-SERIOUS PROBLEMS
     >4. The installer does not default to install the font folder.  It will
     >fail to populate the font folder if it already exists.
 
-
 --  xcenter:
     stays visible with lockup screen and stay-on-top.
 
-I discovered the following: In XWP 0.9.4, when I shut down (extended
-shutdown) while a print job is in the queue (forgotten, printer turned
-off), then XWP asks if the print job shall be killed. If I click "yes",
-it will hang on shutdown for quite some time. Then, when turning the
-machine on, it will not start properly but hang at the first or second
-object in the startup-folder. Acitivity is still possible, but at some
-later point, the machine hangs completely. The print job is still found
-in the queue! Once the print job is killed manually, everything works
-fine.
-
---  system sounds changing... trap in speedy thread?!?
+--  when I shut down (extended
+    shutdown) while a print job is in the queue (forgotten, printer turned
+    off), then XWP asks if the print job shall be killed. If I click "yes",
+    it will hang on shutdown for quite some time. Then, when turning the
+    machine on, it will not start properly but hang at the first or second
+    object in the startup-folder. Acitivity is still possible, but at some
+    later point, the machine hangs completely. The print job is still found
+    in the queue! Once the print job is killed manually, everything works
+    fine.
 
 --    I think there are some problems (not severe) probably with variables
     initialisation somewhere in XWPS. I have "Folder menu bars" as well as
@@ -196,16 +193,4 @@ hook:
     -- VIO copy conflicts with WM_CHORD; check window class. Doesn't work on
        Win-OS/2 either?
 
-    --  I did some more experimenting, and I have discovered what is wrong
-        with the "Ignore desktop" option in "Sliding focus".
-        The problem is that somehow WXP forgets its setting between reboots.
-        The option stays selected in the mouse properties notebook, but no longer works.
-        The only solution I have been able to find is to disable the XWP Hook and
-        then re-enable it. This will cure the problem, although the procedure still
-        has to be repeated after every reboot.
-        I hardly ever reboot (my system is kept running on a 24x7 basis), so it
-        took me a while to discover the error, let alone find out what made it happen.
-        BTW, The behaviour is the same with both the Internal Revision 14.044-W4
-        (original FP14) kernel and the Internal Revision 14.057-W4 (the one I wrote
-        about earlier).
 

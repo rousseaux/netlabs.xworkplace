@@ -3161,3 +3161,70 @@ BOOL fdrCnrInsertObject(WPObject *pObject)
     return (brc);
 }
 
+/*
+ *@@ fdrNukeContents:
+ *      deletes all the folder contents without any
+ *      confirmations by invoking wpFree on each awake
+ *      object.
+ *
+ *      Note that this is not a polite way of cleaning
+ *      a folder. This is ONLY used by
+ *      XWPFontFolder::wpDeleteContents and
+ *      XWPTrashCan::wpDeleteContents to nuke all the
+ *      transient objects before those special folders
+ *      get deleted themselves.
+ *
+ *      DO NOT INVOKE THIS METHOD ON REGULAR FOLDERS.
+ *      THERE'S NO WAY TO INTERRUPT THIS PROCESSING.
+ *
+ *      Returns FALSE if killing one of the objects
+ *      failed.
+ *
+ *@@added V0.9.9 (2001-02-08) [umoeller]
+ */
+
+BOOL fdrNukeContents(WPFolder *pFolder)
+{
+    BOOL        brc = FALSE,
+                fFolderLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        fFolderLocked = !wpshRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT);
+        if (fFolderLocked)
+        {
+            somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                    = (somTD_WPFolder_wpQueryContent)wpshResolveFor(pFolder,
+                                                                    NULL,
+                                                                    "wpQueryContent");
+            WPObject *pObject;
+
+            brc = TRUE;
+
+            for (   pObject = rslv_wpQueryContent(pFolder,
+                                                  NULL,
+                                                  QC_FIRST);
+                    pObject;
+                    pObject = rslv_wpQueryContent(pFolder,
+                                                  pObject,
+                                                  QC_NEXT)
+                )
+            {
+                if (!_wpFree(pObject))
+                {
+                    // error:
+                    brc = FALSE;
+                    // and stop
+                    break;
+                }
+            }
+        }
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fFolderLocked)
+        wpshReleaseFolderMutexSem(pFolder);
+
+    return (brc);
+}
+

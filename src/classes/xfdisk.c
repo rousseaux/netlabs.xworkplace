@@ -232,9 +232,9 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpModifyPopupMenu(XFldDisk *somSelf,
  *      this WPObject method processes menu selections.
  *      This must be overridden to support new menu
  *      items which have been added in wpModifyPopupMenu.
+ *
  *      See XFldObject::wpMenuItemSelected for additional
- *      information and how to intercept this for multiple
- *      objects.
+ *      remarks.
  *
  *      We pass the input to mnuMenuItemSelected in fdrmenus.c
  *      because disk menu items are mostly shared with XFolder.
@@ -277,18 +277,15 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpMenuItemHelpSelected(XFldDisk *somSelf,
 
 /*
  *@@ wpViewObject:
- *      this either opens a view of the given Disk object
- *      as a root folder (using wpOpen) or resurfaces an
- *      already open view.
+ *      this WPObject method either opens a new view of the
+ *      object (by calling wpOpen) or resurfaces an already
+ *      open view, if one exists already and "concurrent views"
+ *      are enabled. This gets called every single time when
+ *      an object is to be opened... e.g. on double-clicks.
  *
- *      This gets called every time the user tries to open
- *      a disk object, e.g. by double-clicking on one in the
- *      "Drives" folder. If a new view is needed, this method
- *      normally calls wpOpen.
- *
- *      The WPS seems to be doing no drive checking in here,
- *      which leads to the annoying "Drive not ready" popups.
- *      So we try to implement this here.
+ *      For WPDisks, the WPS seems to be doing no drive checking
+ *      in here, which leads to the annoying "Drive not ready"
+ *      popups. So we try to implement this here.
  *
  *@@changed V0.9.0 [umoeller]: added global setting for disabling this feature
  */

@@ -36,13 +36,21 @@ that were used earlier.
 <P><LI>Added internal caches for the extended data file associations. This dramatically
 speeds up folder populating.
 <P><LI>Auto-hide mouse in the XWP hook now reacts to mouse clicks too.
+<P><LI>Changed the prototype for the "init" export of XCenter plug-in DLLs so that
+widgets can easily know about their own HMODULE.
 <P><LI>Worked some on the standard XCenter widgets.
 
 </UL>Bugfixes:
 <UL><LI>Fixed problems if the trash can did not have the &lt;XWP_TRASHCAN&gt; ID.
 <P><LI>Fixed a problem with internal list notifications on object delete. Thanks,
 Martin Lafaix.
+<P><LI>Deleting the font folder or trash can caused hundreds of stupid WPS
+"cannot delete object" message boxes to pop up. Oh my, this infinite wisdom of the WPS.
+Fixed, the transient objects are now quietly nuked.
+<P><LI>Fixed problems with XCenter closing on shutdown and WPS restart.
 <P><LI>"Undo" and "Default" on XCenter settings pages never worked. Fixed.
+<P><LI>Dragging objects on XCenter bar caused them to always appear on the left. Fixed,
+they are now added to the right.
 
 </UL></H6><B>XWorkplace 0.9.8 (January 26, 2001)</B>
 <P>V0.9.7 was never officially released, but since some people got hold of it

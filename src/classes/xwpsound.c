@@ -108,9 +108,9 @@
 #pragma hdrstop
 
 /* ******************************************************************
- *                                                                  *
- *   XWPSound instance methods                                      *
- *                                                                  *
+ *
+ *   XWPSound instance methods
+ *
  ********************************************************************/
 
 /*
@@ -223,9 +223,9 @@ SOM_Scope BOOL  SOMLINK xsnd_wpAddSettingsPages(XWPSound *somSelf,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XWPSound class methods                                         *
- *                                                                  *
+ *
+ *   XWPSound class methods
+ *
  ********************************************************************/
 
 /*

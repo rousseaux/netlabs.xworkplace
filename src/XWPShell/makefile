@@ -116,8 +116,14 @@ $(OUTPUTDIR)\xwpshell.res: $(@B).rc *.ico
 $(MODULESDIR)\xwpshell.exe: $(ALL_OBJ1) $(@B).def $(OUTPUTDIR)\$(@B).res makefile
           $(LINK) /out:$(MODULESDIR)\$(@B).exe $(ALL_OBJ1) $(HELPERS_BASE)\src\helpers\pmprintf.lib $(@B).def
           $(RC) $(OUTPUTDIR)\$(@B).res $(MODULESDIR)\$(@B).exe
+!ifdef XWP_OUTPUT_ROOT_DRIVE
+        @$(XWP_OUTPUT_ROOT_DRIVE)
+!endif
           @cd $(MODULESDIR)
           mapsym xwpshell.map
+!ifdef CVS_WORK_ROOT_DRIVE
+        @$(CVS_WORK_ROOT_DRIVE)
+!endif
           @cd $(MYDIR)
 
 # main target

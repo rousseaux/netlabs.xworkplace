@@ -86,13 +86,33 @@ MODULESDIR=$(PROJECT_OUTPUT_DIR)\modules
 # created from the files in MAIN\.
 OBJS = \
 # code from classes\
-    $(XWP_OUTPUT_ROOT)\xcenter.obj $(XWP_OUTPUT_ROOT)\xfont.obj $(XWP_OUTPUT_ROOT)\xfontfile.obj $(XWP_OUTPUT_ROOT)\xfontobj.obj $(XWP_OUTPUT_ROOT)\xfobj.obj \
-    $(XWP_OUTPUT_ROOT)\xfldr.obj $(XWP_OUTPUT_ROOT)\xfdesk.obj $(XWP_OUTPUT_ROOT)\xfsys.obj $(XWP_OUTPUT_ROOT)\xfwps.obj $(XWP_OUTPUT_ROOT)\xfdisk.obj \
-    $(XWP_OUTPUT_ROOT)\xfdataf.obj $(XWP_OUTPUT_ROOT)\xfpgmf.obj $(XWP_OUTPUT_ROOT)\xfstart.obj \
-    $(XWP_OUTPUT_ROOT)\xmmcdplay.obj $(XWP_OUTPUT_ROOT)\xmmvolume.obj \
-    $(XWP_OUTPUT_ROOT)\xclslist.obj $(XWP_OUTPUT_ROOT)\xwpsound.obj $(XWP_OUTPUT_ROOT)\xtrash.obj $(XWP_OUTPUT_ROOT)\xtrashobj.obj $(XWP_OUTPUT_ROOT)\xwpfsys.obj \
-    $(XWP_OUTPUT_ROOT)\xwpkeybd.obj $(XWP_OUTPUT_ROOT)\xwpmedia.obj $(XWP_OUTPUT_ROOT)\xwpmouse.obj $(XWP_OUTPUT_ROOT)\xwpsetup.obj $(XWP_OUTPUT_ROOT)\xwpscreen.obj \
-    $(XWP_OUTPUT_ROOT)\xwpstring.obj \
+$(XWP_OUTPUT_ROOT)\xcenter.obj \
+$(XWP_OUTPUT_ROOT)\xclslist.obj \
+$(XWP_OUTPUT_ROOT)\xfdataf.obj \
+$(XWP_OUTPUT_ROOT)\xfdesk.obj \
+$(XWP_OUTPUT_ROOT)\xfdisk.obj \
+$(XWP_OUTPUT_ROOT)\xfldr.obj \
+$(XWP_OUTPUT_ROOT)\xfont.obj \
+$(XWP_OUTPUT_ROOT)\xfontfile.obj \
+$(XWP_OUTPUT_ROOT)\xfontobj.obj \
+$(XWP_OUTPUT_ROOT)\xfobj.obj \
+$(XWP_OUTPUT_ROOT)\xfpgmf.obj \
+$(XWP_OUTPUT_ROOT)\xfsys.obj \
+$(XWP_OUTPUT_ROOT)\xfwps.obj \
+$(XWP_OUTPUT_ROOT)\xfstart.obj \
+$(XWP_OUTPUT_ROOT)\xmmcdplay.obj \
+$(XWP_OUTPUT_ROOT)\xmmvolume.obj \
+$(XWP_OUTPUT_ROOT)\xtrash.obj \
+$(XWP_OUTPUT_ROOT)\xtrashobj.obj \
+$(XWP_OUTPUT_ROOT)\xwpadmin.obj \
+$(XWP_OUTPUT_ROOT)\xwpfsys.obj \
+$(XWP_OUTPUT_ROOT)\xwpkeybd.obj \
+$(XWP_OUTPUT_ROOT)\xwpmedia.obj \
+$(XWP_OUTPUT_ROOT)\xwpmouse.obj \
+$(XWP_OUTPUT_ROOT)\xwpsetup.obj \
+$(XWP_OUTPUT_ROOT)\xwpscreen.obj \
+$(XWP_OUTPUT_ROOT)\xwpsound.obj \
+$(XWP_OUTPUT_ROOT)\xwpstring.obj \
 # code from shared \
     $(XWP_OUTPUT_ROOT)\center.obj $(XWP_OUTPUT_ROOT)\classes.obj $(XWP_OUTPUT_ROOT)\cnrsort.obj $(XWP_OUTPUT_ROOT)\common.obj $(XWP_OUTPUT_ROOT)\contentmenus.obj \
     $(XWP_OUTPUT_ROOT)\notebook.obj $(XWP_OUTPUT_ROOT)\kernel.obj $(XWP_OUTPUT_ROOT)\xsetup.obj $(XWP_OUTPUT_ROOT)\wpsh.obj \
@@ -141,6 +161,7 @@ PMPRINTF_LIB =
 # The following macros contains the .OBJ files for the XCenter plugins.
 WINLISTOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_winlist.obj $(PMPRINTF_LIB)
 MONITOROBJS = $(XWP_OUTPUT_ROOT)\widgets\w_monitors.obj $(PMPRINTF_LIB)
+THESEUSOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_theseus.obj $(PMPRINTF_LIB) src\widgets\theseus0.lib
 HEALTHOBJS = $(XWP_OUTPUT_ROOT)\widgets\xwHealth.obj $(PMPRINTF_LIB)
 SAMPLEOBJS = $(XWP_OUTPUT_ROOT)\widgets\____sample.obj $(PMPRINTF_LIB)
 
@@ -361,6 +382,7 @@ link: $(XWPRUNNING)\bin\xfldr.dll \
       $(XWPRUNNING)\bin\xwpres.dll \
       $(XWPRUNNING)\plugins\xcenter\monitors.dll \
       $(XWPRUNNING)\plugins\xcenter\winlist.dll \
+      $(XWPRUNNING)\plugins\xcenter\xtheseus.dll \
       $(XWPRUNNING)\plugins\xcenter\xwHealth.dll \
       $(XWPRUNNING)\plugins\xcenter\sample.dll \
       $(XWPRUNNING)\bin\xwphook.dll \
@@ -488,6 +510,33 @@ $(MODULESDIR)\monitors.dll: $(MONITOROBJS) src\widgets\$(@B).def
         $(LINK) /OUT:$@ src\widgets\$(@B).def @<<link.tmp
 $(MONITOROBJS)
 <<
+!ifdef XWP_OUTPUT_ROOT_DRIVE
+        @$(XWP_OUTPUT_ROOT_DRIVE)
+!endif
+        @cd $(MODULESDIR)
+        mapsym /n $(@B).map > NUL
+!ifdef CVS_WORK_ROOT_DRIVE
+        @$(CVS_WORK_ROOT_DRIVE)
+!endif
+        @cd $(CURRENT_DIR)
+
+#
+# Linking XTHESEUS.DLL
+#
+$(XWPRUNNING)\plugins\xcenter\xtheseus.dll: $(MODULESDIR)\$(@B).dll
+!ifdef XWP_UNLOCK_MODULES
+        unlock $@
+!endif
+        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
+        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
+
+# update DEF file if buildlevel has changed
+src\widgets\xtheseus.def: include\bldlevel.h
+        cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XCenter Theseus 4 plugin DLL"
+
+$(MODULESDIR)\xtheseus.dll: $(THESEUSOBJS) src\widgets\$(@B).def
+        @echo $(MAKEDIR)\makefile: Linking $@
+        $(LINK) /OUT:$@ src\widgets\$(@B).def $(THESEUSOBJS)
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif
@@ -791,6 +840,8 @@ release: really_all
     $(COPY) $(MODULESDIR)\monitors.sym $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\winlist.dll $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\winlist.sym $(XWPRELEASE_MAIN)\plugins\xcenter
+    $(COPY) $(MODULESDIR)\xtheseus.dll $(XWPRELEASE_MAIN)\plugins\xcenter
+    $(COPY) $(MODULESDIR)\xtheseus.sym $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\xwHealth.dll $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\xwHealth.sym $(XWPRELEASE_MAIN)\plugins\xcenter
     @echo $(MAKEDIR)\makefile: Done copying files.

@@ -157,14 +157,6 @@ static XCENTERWIDGETCLASS G_WidgetClasses[] =
                     WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP,
                     NULL        // no settings dlg
                 }
-                /* {
-                    WNDCLASS_WIDGET_MONITORS,
-                    MWGT_SWAPPER,
-                    "Swapper",
-                    "Swapper size monitor",
-                    WGTF_UNIQUEPERXCENTER,
-                    NULL        // no settings dlg
-                } */
             };
 
 /* ******************************************************************

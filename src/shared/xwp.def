@@ -33,6 +33,7 @@ IMPORTS
     DosQuerySysState = DOSCALLS.368
 
 EXPORTS
+   cfgQuerySwapperSize
    cmnQueryDefaultFont
    cmnQueryHelpLibrary
    cmnQueryNLSModuleHandle
@@ -42,6 +43,9 @@ EXPORTS
    ctrParseColorString
    ctrScanSetupString
    ctrSetSetupString
+   gpihBox
+   gpihCreateBitmap
+   gpihCreateMemPS
    gpihDraw3DFrame
    gpihSwitchToRGB
    lstAppendItem
@@ -252,3 +256,10 @@ EXPORTS
    M_XWPFontObjectCClassData
    M_XWPFontObjectClassData
    M_XWPFontObjectNewClass
+
+   XWPAdminCClassData
+   XWPAdminClassData
+   XWPAdminNewClass
+   M_XWPAdminCClassData
+   M_XWPAdminClassData
+   M_XWPAdminNewClass

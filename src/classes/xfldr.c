@@ -2473,9 +2473,9 @@ SOM_Scope BOOL  SOMLINK xf_wpModifyPopupMenu(XFolder   *somSelf,
  *      this WPObject method processes menu selections.
  *      This must be overridden to support new menu
  *      items which have been added in wpModifyPopupMenu.
+ *
  *      See XFldObject::wpMenuItemSelected for additional
- *      information and how to intercept this for multiple
- *      objects.
+ *      remarks.
  *
  *      We pass the input to mnuMenuItemSelected in fdrmenus.c
  *      because disk menu items are mostly shared with XFldDisk.

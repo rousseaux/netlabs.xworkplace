@@ -92,7 +92,7 @@
 /*
  *@@ PULSESETUP:
  *      instance data to which setup strings correspond.
- *      This is also a member of PULSEPRIVATE.
+ *      This is also a member of WIDGETPRIVATE.
  *
  *      Putting these settings into a separate structure
  *      is no requirement, but comes in handy if you
@@ -118,14 +118,14 @@ typedef struct _PULSESETUP
 } PULSESETUP, *PPULSESETUP;
 
 /*
- *@@ PULSEPRIVATE:
+ *@@ WIDGETPRIVATE:
  *      more window data for the "pulse" widget.
  *
  *      An instance of this is created on WM_CREATE in
  *      fnwpPulseWidget and stored in XCENTERWIDGET.pUser.
  */
 
-typedef struct _PULSEPRIVATE
+typedef struct _WIDGETPRIVATE
 {
     PXCENTERWIDGET pWidget;
             // reverse ptr to general widget data ptr; we need
@@ -153,7 +153,7 @@ typedef struct _PULSEPRIVATE
 
     APIRET          arc;            // if != NO_ERROR, an error occured, and
                                     // the error code is displayed instead.
-} PULSEPRIVATE, *PPULSEPRIVATE;
+} WIDGETPRIVATE, *PWIDGETPRIVATE;
 
 /* ******************************************************************
  *
@@ -328,7 +328,7 @@ VOID PwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
 VOID EXPENTRY PwgtSetupStringChanged(PXCENTERWIDGET pWidget,
                                      const char *pcszNewSetupString)
 {
-    PPULSEPRIVATE pPrivate = (PPULSEPRIVATE)pWidget->pUser;
+    PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
     if (pPrivate)
     {
         // reinitialize the setup data
@@ -359,8 +359,8 @@ MRESULT PwgtCreate(HWND hwnd, MPARAM mp1)
     APIRET  arc = NO_ERROR;
 
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)mp1;
-    PPULSEPRIVATE pPrivate = malloc(sizeof(PULSEPRIVATE));
-    memset(pPrivate, 0, sizeof(PULSEPRIVATE));
+    PWIDGETPRIVATE pPrivate = malloc(sizeof(WIDGETPRIVATE));
+    memset(pPrivate, 0, sizeof(WIDGETPRIVATE));
     // link the two together
     pWidget->pUser = pPrivate;
     pPrivate->pWidget = pWidget;
@@ -408,7 +408,7 @@ BOOL PwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
     if (pWidget)
     {
-        PPULSEPRIVATE pPrivate = (PPULSEPRIVATE)pWidget->pUser;
+        PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
         if (pPrivate)
         {
             USHORT  usID = SHORT1FROMMP(mp1),
@@ -450,7 +450,7 @@ BOOL PwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  */
 
 VOID PwgtUpdateGraph(HWND hwnd,
-                     PPULSEPRIVATE pPrivate)
+                     PWIDGETPRIVATE pPrivate)
 {
     PXCENTERWIDGET pWidget = pPrivate->pWidget;
     ULONG   ul = 0;
@@ -530,7 +530,7 @@ VOID PwgtUpdateGraph(HWND hwnd,
  */
 
 VOID PwgtPaint2(HWND hwnd,
-                PPULSEPRIVATE pPrivate,
+                PWIDGETPRIVATE pPrivate,
                 HPS hps,
                 BOOL fDrawFrame)     // in: if TRUE, everything is painted
 {
@@ -638,7 +638,7 @@ VOID PwgtPaint(HWND hwnd)
         PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
         if (pWidget)
         {
-            PPULSEPRIVATE pPrivate = (PPULSEPRIVATE)pWidget->pUser;
+            PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
             if (pPrivate)
             {
                 PwgtPaint2(hwnd,
@@ -662,7 +662,7 @@ VOID PwgtGetNewLoad(HWND hwnd)
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
     if (pWidget)
     {
-        PPULSEPRIVATE pPrivate = (PPULSEPRIVATE)pWidget->pUser;
+        PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
         if (pPrivate)
         {
             if (pPrivate->arc == NO_ERROR)
@@ -726,7 +726,7 @@ VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
         PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
         if (pWidget)
         {
-            PPULSEPRIVATE pPrivate = (PPULSEPRIVATE)pWidget->pUser;
+            PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
             if (pPrivate)
             {
                 PSWP pswpNew = (PSWP)mp1,
@@ -830,7 +830,7 @@ VOID PwgtPresParamChanged(HWND hwnd,
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
     if (pWidget)
     {
-        PPULSEPRIVATE pPrivate = (PPULSEPRIVATE)pWidget->pUser;
+        PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
         if (pPrivate)
         {
             BOOL fInvalidate = TRUE;
@@ -907,7 +907,7 @@ VOID PwgtDestroy(HWND hwnd)
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
     if (pWidget)
     {
-        PPULSEPRIVATE pPrivate = (PPULSEPRIVATE)pWidget->pUser;
+        PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
         if (pPrivate)
         {
             if (pPrivate->ulTimerID)
@@ -968,7 +968,7 @@ MRESULT EXPENTRY fnwpPulseWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
          *          WinSetWindowPtr(hwnd, QWL_USER, mp1);
          *
          *      We use XCENTERWIDGET.pUser for allocating
-         *      PULSEPRIVATE for our own stuff.
+         *      WIDGETPRIVATE for our own stuff.
          *
          *      Each widget must write its desired width into
          *      XCENTERWIDGET.cx and cy.

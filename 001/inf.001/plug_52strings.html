@@ -9,11 +9,13 @@
 OK, so your minimal widget from step 1 is running.
 
 <P>You probably have figured out already that even though the minimal widget does
-react to fonts and colors dropped on it, those fonts and colors are not saved.
-Similarly, if you changed the minimal widget to be sizeable (by setting the
+react to fonts and colors dropped on it, those fonts and colors are not saved
+when the XCenter is closed and then re-opened.
+
+<P>Similarly, if you changed the minimal widget to be sizeable (by setting the
 <CODE>WGTF_SIZEABLE</CODE> flag in the <CODE>ulClassFlags</CODE> field of
 of <A HREF="plug_9xcenterwidgetclass.html"><CODE>XCENTERWIDGETCLASS</CODE></A>,
-you will find out that the widget's size will not be saved automatically.
+you will find out that the widget's size will not be remembered either.
 
 <P>Of course, the XCenter could have implemented saving these settings for your
 widget. But then, where would your widget store additional data that the XCenter
@@ -49,7 +51,8 @@ in the <CODE>pcszSetupString</CODE> field of its
 comes with <CODE>WM_CREATE</CODE>. You can then allocate your own structure and
 store it in <CODE>XCENTERWIDGET.pUser</CODE>, parse the setup string, and store
 the values in there. Of course, you should set up safe defaults if a setup string
-is missing.
+is missing because there won't be any when your widget is initially created by
+the user.
 
 <P>Reversely, when your widget's data has changed (e.g. because a new background
 color has been dropped on it), it should compose a new full setup string.

@@ -20,9 +20,10 @@ LIBRARY SAMPLE INITGLOBAL TERMGLOBAL
 Description '@#Ulrich M”ller:0.9.9#@ XCenter sample plugin DLL'
 PROTMODE
 
-DATA              SINGLE READWRITE LOADONCALL SHARED
+DATA              MULTIPLE READWRITE LOADONCALL NONSHARED
 ;       doesn't really matter, because the widget is only ever used
-;       in the WPS process
+;       in the WPS process; we use MULTIPLE NONSHARED here to reduce
+;       the amount of shared memory that is needed for the DLL
 
 CODE              LOADONCALL
 

@@ -112,13 +112,12 @@
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
-/* some global variables for "Kernel" pages */
-CHAR    G_szOrigSwapPath[CCHMAXPATH] = "";
+// some global variables for "Kernel" pages
 CHAR    G_aszAllDrives[30][5];  // 30 strings with 5 chars each for spin button
 PSZ     G_apszAllDrives[30];    // 30 pointers to the buffers
 LONG    G_lDriveCount = 0;
@@ -149,10 +148,108 @@ typedef struct _SYSPATH
  *      which in turn contains a linked list of path entries.
  */
 
-PLINKLIST G_pllSysPathsList;
+PLINKLIST   G_pllSysPathsList;
 
 // the currently selected SYSPATH
-PSYSPATH  G_pSysPathSelected = 0;
+PSYSPATH    G_pSysPathSelected = 0;
+
+CHAR        G_szSwapperFilename[CCHMAXPATH] = "";
+
+/* ******************************************************************
+ *
+ *   External APIs
+ *
+ ********************************************************************/
+
+/*
+ *@@ cfgParseSwapPath:
+ *
+ *@@added V0.9.9 (2001-02-08) [umoeller]
+ */
+
+BOOL cfgParseSwapPath(const char *pcszConfigSys,    // in: if NULL, this gets loaded
+                      PSZ pszSwapPath,              // out: swapper directory
+                      PULONG pulMinFree,            // out: min free
+                      PULONG pulMinSize)            // out: min size
+{
+    BOOL brc = FALSE;
+
+    PSZ pszConfigSysTemp = 0;
+
+    if (!pcszConfigSys)
+    {
+        // not specified: load it
+        if (csysLoadConfigSys(NULL, &pszConfigSysTemp) == NO_ERROR)
+            pcszConfigSys = pszConfigSysTemp;
+    }
+
+    if (pcszConfigSys)
+    {
+        // parse SWAPPATH command
+        PSZ p;
+        if (p = csysGetParameter(pcszConfigSys, "SWAPPATH=", NULL, 0))
+        {
+            CHAR    szSwap[CCHMAXPATH];
+            ULONG   ulMinFree = 2048, ulMinSize = 2048;
+            // int     iScanned;
+            sscanf(p,
+                   "%s %d %d",
+                   &szSwap, &ulMinFree, &ulMinSize);
+
+            if (pszSwapPath)
+                strcpy(pszSwapPath, szSwap);
+            if (pulMinFree)
+                *pulMinFree = ulMinFree;
+            if (pulMinSize)
+                *pulMinSize = ulMinSize;
+
+            if (G_szSwapperFilename[0] == '\0')
+            {
+                // first call: copy to global so that the swapper
+                // monitors will always use the old one, in case
+                // the user changes this
+                strcpy(G_szSwapperFilename, szSwap);
+                if (G_szSwapperFilename[strlen(G_szSwapperFilename)-1] != '\\')
+                    strcat(G_szSwapperFilename, "\\");
+                strcat(G_szSwapperFilename, "swapper.dat");
+            }
+
+            brc = TRUE;
+        }
+    }
+
+    if (pszConfigSysTemp)
+        free(pszConfigSysTemp);
+
+    return (brc);
+}
+
+/*
+ *@@ cfgQuerySwapperSize:
+ *
+ *@@added V0.9.9 (2001-02-08) [umoeller]
+ */
+
+ULONG cfgQuerySwapperSize(VOID)
+{
+    ULONG ulrc = 0;
+
+    if (G_szSwapperFilename[0] == '\0')
+    {
+        // first call: compose the path
+        cfgParseSwapPath(NULL,
+                         NULL,
+                         NULL,
+                         NULL);
+    }
+
+    if (G_szSwapperFilename[0])
+    {
+        ulrc = doshQueryPathSize(G_szSwapperFilename);
+    }
+
+    return (ulrc);
+}
 
 /* ******************************************************************
  *
@@ -664,6 +761,8 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                     CHAR    szMemory[30];
                     ULONG   ulTotPhysMem = 0;
                     PSZ     p = 0;
+                    CHAR    szSwapPath[CCHMAXPATH] = "Error";
+                    ULONG   ulMinFree = 2048, ulMinSize = 2048;
 
                     DosQuerySysInfo(QSV_TOTPHYSMEM,     // changed V0.9.7 (2001-01-17) [umoeller]
                                     QSV_TOTPHYSMEM,
@@ -674,14 +773,11 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                     WinSetDlgItemText(pcnbp->hwndDlgPage, ID_OSDI_PHYSICALMEMORY, szMemory);
 
                     // parse SWAPPATH command
-                    if (p = csysGetParameter(pszConfigSys, "SWAPPATH=", NULL, 0))
+                    if (cfgParseSwapPath(pszConfigSys,
+                                         szSwapPath,
+                                         &ulMinFree,
+                                         &ulMinSize))
                     {
-                        CHAR    szSwapPath[CCHMAXPATH] = "Error";
-                        ULONG   ulMinFree = 2048, ulMinSize = 2048;
-                        // int     iScanned;
-                        sscanf(p, "%s %d %d",
-                                    &szSwapPath, &ulMinFree, &ulMinSize);
-
                         WinSetDlgItemText(pcnbp->hwndDlgPage, ID_OSDI_SWAPPATH, szSwapPath);
                         winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_OSDI_MINSWAPSIZE,
                                                2, 100,
@@ -689,14 +785,6 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                         winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_OSDI_MINSWAPFREE,
                                                2, 1000,
                                                (ulMinFree / 1024));
-
-                        if (strlen(G_szOrigSwapPath) == 0)
-                        {
-                            if (szSwapPath[strlen(szSwapPath)-1] != '\\')
-                                sprintf(G_szOrigSwapPath, "%s\\swapper.dat", szSwapPath);
-                            else
-                                sprintf(G_szOrigSwapPath, "%sswapper.dat", szSwapPath);
-                        }
                     }
                 break; }
 
@@ -1878,9 +1966,9 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 {
                     // minsize: get current size, add 50% and
                     // round up to the next multiple of 2 MB
-                    if (strlen(G_szOrigSwapPath) != 0)
+                    if (strlen(G_szSwapperFilename) != 0)
                     {
-                        ULONG ulSize = doshQueryPathSize(G_szOrigSwapPath)/1024/1024;
+                        ULONG ulSize = doshQueryPathSize(G_szSwapperFilename)/1024/1024;
                         winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_OSDI_MINSWAPSIZE,
                                                2, 100,
                                                ( (((ulSize*3)/2)+1) / 2 ) * 2
@@ -2124,9 +2212,9 @@ VOID cfgConfigTimer(PCREATENOTEBOOKPAGE pcnbp,
         break;
 
         case SP_MEMORY:
-            if (strlen(G_szOrigSwapPath) != 0)
+            if (G_szSwapperFilename[0])
             {
-                ULONG ulSize = doshQueryPathSize(G_szOrigSwapPath)/1024/1024;
+                ULONG ulSize = doshQueryPathSize(G_szSwapperFilename)/1024/1024;
                 if (ulSize)
                 {
                     sprintf(szTemp, "%d", ulSize);
@@ -2140,9 +2228,9 @@ VOID cfgConfigTimer(PCREATENOTEBOOKPAGE pcnbp,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   OS/2 Kernel "Syslevel" page                                    *
- *                                                                  *
+ *
+ *   OS/2 Kernel "Syslevel" page
+ *
  ********************************************************************/
 
 typedef struct _SYSLEVELRECORD

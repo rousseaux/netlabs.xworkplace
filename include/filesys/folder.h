@@ -338,6 +338,8 @@
                                         PULONG pulItems);
 
         BOOL fdrCnrInsertObject(WPObject *pObject);
+
+        BOOL fdrNukeContents(WPFolder *pFolder);
     #endif
 
     /* ******************************************************************

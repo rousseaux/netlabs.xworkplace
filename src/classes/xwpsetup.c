@@ -110,9 +110,9 @@
 #include <wpfsys.h>             // WPFileSystem
 
 /* ******************************************************************
- *                                                                  *
- *   XWPSetup Instance Methods                                      *
- *                                                                  *
+ *
+ *   XWPSetup instance methods
+ *
  ********************************************************************/
 
 static MPARAM G_ampFeaturesPage[] =
@@ -304,7 +304,7 @@ SOM_Scope BOOL  SOMLINK xwset_wpQueryDefaultHelp(XWPSetup *somSelf,
  *      (that's what the WPS reference calls it; it's actually
  *      the "Window" page).
  *
- *      We don't want that page in XWPSetup, so we remove it.
+ *      We don't want that page here, so we remove it.
  */
 
 SOM_Scope ULONG  SOMLINK xwset_wpAddObjectWindowPage(XWPSetup *somSelf,
@@ -322,7 +322,7 @@ SOM_Scope ULONG  SOMLINK xwset_wpAddObjectWindowPage(XWPSetup *somSelf,
  *      when the Settings view is opened to have all the
  *      settings page inserted into hwndNotebook.
  *
- *      We add the various XWPSetup pages here.
+ *      We add the various new pages here.
  */
 
 SOM_Scope BOOL  SOMLINK xwset_wpAddSettingsPages(XWPSetup *somSelf,
@@ -340,9 +340,9 @@ SOM_Scope BOOL  SOMLINK xwset_wpAddSettingsPages(XWPSetup *somSelf,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XWPSetup Class Methods                                         *
- *                                                                  *
+ *
+ *   XWPSetup class methods
+ *
  ********************************************************************/
 
 /*
@@ -379,6 +379,7 @@ SOM_Scope ULONG  SOMLINK xwsetM_wpclsQueryStyle(M_XWPSetup *somSelf)
     M_XWPSetupMethodDebug("M_XWPSetup","xwsetM_wpclsQueryStyle");
 
     return (M_XWPSetup_parent_M_WPAbstract_wpclsQueryStyle(somSelf)
+                | CLSSTYLE_DONTTEMPLATE
                 | CLSSTYLE_NEVERPRINT
                 | CLSSTYLE_NEVERCOPY
                 | CLSSTYLE_NEVERDELETE);
@@ -407,7 +408,7 @@ SOM_Scope PSZ  SOMLINK xwsetM_wpclsQueryTitle(M_XWPSetup *somSelf)
  *      found for an object. The exact mechanism of how
  *      this works is not documented.
  *
- *      We override this to give XWPString object a new
+ *      We override this to give XWPSetup objects a new
  *      icon (src\shared\xwpsetup.ico).
  */
 
@@ -446,5 +447,6 @@ SOM_Scope BOOL  SOMLINK xwsetM_wpclsQuerySettingsPageSize(M_XWPSetup *somSelf,
     return (M_XWPSetup_parent_M_WPAbstract_wpclsQuerySettingsPageSize(somSelf,
                                                                        pSizl));
 }
+
 
 

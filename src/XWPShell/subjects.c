@@ -202,20 +202,6 @@ APIRET UnlockSubjects(VOID)
     return (DosReleaseMutexSem(G_hmtxSubjects));
 }
 
-/*
- *@@ fnCompareSubjects:
- *
- */
-
-int fnCompareSubjects(unsigned long id1, unsigned long id2)
-{
-    if (id1 < id2)
-        return -1;
-    if (id1 > id2)
-        return +1;
-    return (0);
-}
-
 /* ******************************************************************
  *
  *   Private Helpers
@@ -242,8 +228,7 @@ PSUBJECTTREENODE FindSubjectInfoFromHandle(HXSUBJECT hSubject)
 {
     PSUBJECTTREENODE pTreeItem
         = (PSUBJECTTREENODE)treeFindEQID(&G_treeSubjects,
-                                         hSubject,
-                                         fnCompareSubjects);
+                                         hSubject);
 
     return (pTreeItem);
 }
@@ -392,7 +377,6 @@ APIRET subjCreateSubject(PXWPSUBJECTINFO pSubjectInfo) // in/out: subject info
                 // append new item
                 if (treeInsertID(&G_treeSubjects,
                                  (TREE*)pNewSubject,
-                                 fnCompareSubjects,
                                  FALSE))
                 {
                     arc = XWPSEC_INTEGRITY;

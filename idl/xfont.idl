@@ -65,7 +65,8 @@ interface XWPFontFolder : WPFolder
             xwpAddFontsPage,
             xwpUpdateStatusBar,
             _get_fFilledWithFonts,
-            _set_fFilledWithFonts;
+            _set_fFilledWithFonts,
+            xwpProcessObjectCommand;
 
     /*
      * Class Modifiers:
@@ -103,6 +104,8 @@ interface XWPFontFolder : WPFolder
 
     wpOpen: override;
     wpPopulate: override;
+
+    wpDeleteContents: override;
 
     wpDragOver: override;
     wpDrop: override;

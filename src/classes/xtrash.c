@@ -896,9 +896,9 @@ SOM_Scope BOOL  SOMLINK xtrc_wpModifyPopupMenu(XWPTrashCan *somSelf,
  *      this WPObject method processes menu selections.
  *      This must be overridden to support new menu
  *      items which have been added in wpModifyPopupMenu.
+ *
  *      See XFldObject::wpMenuItemSelected for additional
- *      information and how to intercept this for multiple
- *      objects.
+ *      remarks.
  *
  *      We need to react to "Empty trash can" here.
  */
@@ -1233,6 +1233,52 @@ SOM_Scope BOOL  SOMLINK xtrc_wpDeleteFromContent(XWPTrashCan *somSelf,
     }
 
     return (brc);
+}
+
+/*
+ *@@ wpDeleteContents:
+ *      this WPFolder method gets called when a folder is
+ *      being deleted to first delete the contents of a
+ *      folder before the folder can be deleted. From my
+ *      testing, BOTH WPFolder::wpDelete and WPFolder::wpFree
+ *      call this method to nuke the folder contents.
+ *
+ *      Even though the trash should not really be deleted,
+ *      if it does, the standard WPFolder::wpDeleteContents
+ *      produces total garbage. It first populates the folder and
+ *      then invokes wpDelete on each item in the folder.
+ *
+ *      For the trash can, this is NOT the way to go. First
+ *      of all, we produce all the trash objects during populate,
+ *      so we do NOT want to have the trash can populated during
+ *      delete. Even worse, WPFolder:.wpDeleteContents produces a
+ *      silly message box for every single trash object then. Duh.
+ *
+ *      So override this method and just invoke wpFree on all
+ *      objects in the folder without further notice.
+ *
+ *@@added V0.9.9 (2001-02-08) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xtrc_wpDeleteContents(XWPTrashCan *somSelf,
+                                               ULONG fConfirmations)
+{
+    ULONG ulrc = NO_DELETE;
+    // XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
+    XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpDeleteContents");
+
+    /* return (XWPTrashCan_parent_WPFolder_wpDeleteContents(somSelf,
+                                                         fConfirmations)); */
+    // note that we do not populate the folder first... if it
+    // hasn't been populated, we shouldn't have a problem in the first
+    // place, because there should only be trash objects in there...
+    // and we don't want to create all objects first and then delete
+    // them again.
+    if (fdrNukeContents(somSelf))
+        ulrc = OK_DELETE;
+
+    return (ulrc);
+
 }
 
 /*

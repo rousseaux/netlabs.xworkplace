@@ -253,11 +253,12 @@
 
         const char      *pcszWidgetClass;
                 // internal widget class name; this is used to identify
-                // the class. This must be unique on the system.
+                // the class. This must be unique on the system and should
+                // not contain any spaces (e.g.: "MySampleClass").
 
         const char      *pcszClassTitle;
                 // widget class title (shown to user in "Add widget" popup
-                // menu).
+                // menu). Example: "Sample widget".
 
         ULONG           ulClassFlags;
                 // WGTF_* flags; any combination of the following:

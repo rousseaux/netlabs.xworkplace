@@ -945,9 +945,9 @@ SOM_Scope BOOL  SOMLINK xwstr_wpModifyPopupMenu(XWPString *somSelf,
  *      this WPObject method processes menu selections.
  *      This must be overridden to support new menu
  *      items which have been added in wpModifyPopupMenu.
+ *
  *      See XFldObject::wpMenuItemSelected for additional
- *      information and how to intercept this for multiple
- *      objects.
+ *      remarks.
  *
  *      We react to the "invoke setup string" menu item here.
  *

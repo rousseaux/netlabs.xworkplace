@@ -138,20 +138,6 @@ APIRET UnlockContexts(VOID)
 }
 
 /*
- *@@ fnComparePIDs:
- *
- */
-
-int fnComparePIDs(unsigned long id1, unsigned long id2)
-{
-    if (id1 < id2)
-        return -1;
-    if (id1 > id2)
-        return +1;
-    return (0);
-}
-
-/*
  *@@ FindContextFromPID:
  *      searches the list of security contexts for the
  *      specified process ID.
@@ -167,8 +153,7 @@ int fnComparePIDs(unsigned long id1, unsigned long id2)
 PCONTEXTTREENODE FindContextFromPID(ULONG ulPID)
 {
     PCONTEXTTREENODE pTreeItem = (PCONTEXTTREENODE)treeFindEQID(&G_treeContexts,
-                                                      ulPID,
-                                                      fnComparePIDs);
+                                                                ulPID);
 
     return (pTreeItem);
 }
@@ -224,7 +209,6 @@ APIRET scxtCreateSecurityContext(ULONG ulPID,
 
                 i = treeInsertID(&G_treeContexts,
                                  (TREE*)pContextItem,
-                                 fnComparePIDs,
                                  FALSE);      // no duplicates
                 if (i != TREE_OK)
                     // shouldn't happen

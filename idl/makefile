@@ -62,12 +62,14 @@ all: $(OUTPUTDIR)\anand.h \
      $(OUTPUTDIR)\xtrashobj.h \
      $(OUTPUTDIR)\xmmcdplay.h \
      $(OUTPUTDIR)\xmmvolume.h \
+     $(OUTPUTDIR)\xwpadmin.h \
      $(OUTPUTDIR)\xwpfsys.h \
      $(OUTPUTDIR)\xwpkeybd.h \
      $(OUTPUTDIR)\xwpmedia.h \
      $(OUTPUTDIR)\xwpmouse.h \
      $(OUTPUTDIR)\xwpsetup.h \
      $(OUTPUTDIR)\xwpscreen.h \
+     $(OUTPUTDIR)\xwpshadow.h \
      $(OUTPUTDIR)\xwpsound.h \
      $(OUTPUTDIR)\xwpstring.h
     @echo ----- Leaving $(MAKEDIR)
@@ -147,6 +149,8 @@ $(OUTPUTDIR)\xmmvolume.h:        $(@B).idl
 
 $(OUTPUTDIR)\xwpfsys.h:          $(@B).idl
 
+$(OUTPUTDIR)\xwpadmin.h:         $(@B).idl
+
 $(OUTPUTDIR)\xwpkeybd.h:         $(@B).idl
 
 $(OUTPUTDIR)\xwpmedia.h:         $(@B).idl
@@ -156,6 +160,8 @@ $(OUTPUTDIR)\xwpmouse.h:         $(@B).idl
 $(OUTPUTDIR)\xwpscreen.h:        $(@B).idl
 
 $(OUTPUTDIR)\xwpsetup.h:         $(@B).idl
+
+$(OUTPUTDIR)\xwpshadow.h:        $(@B).idl
 
 $(OUTPUTDIR)\xwpsound.h:         $(@B).idl
 

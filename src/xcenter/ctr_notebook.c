@@ -128,7 +128,7 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
         //     key for wpSaveState/wpRestoreState
                2,      // bitfield! only first item!
         //     default, bitflag,            min, max
-               0,       WS_TOPMOST,         0,   0,
+               WS_ANIMATE,  0,              0,   0,
 
         // type,  setup string,     offset,
         STG_BITFLAG, "ALWAYSONTOP",  FIELDOFFSET(XCenterData, ulWindowStyle),

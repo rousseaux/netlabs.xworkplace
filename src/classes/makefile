@@ -78,12 +78,14 @@ OBJS = \
        $(OUTPUTDIR)\xtrashobj.obj \
        $(OUTPUTDIR)\xmmcdplay.obj \
        $(OUTPUTDIR)\xmmvolume.obj \
+       $(OUTPUTDIR)\xwpadmin.obj \
        $(OUTPUTDIR)\xwpfsys.obj \
        $(OUTPUTDIR)\xwpkeybd.obj \
        $(OUTPUTDIR)\xwpmedia.obj \
        $(OUTPUTDIR)\xwpmouse.obj \
        $(OUTPUTDIR)\xwpscreen.obj \
        $(OUTPUTDIR)\xwpsetup.obj \
+       $(OUTPUTDIR)\xwpshadow.obj \
        $(OUTPUTDIR)\xwpsound.obj \
        $(OUTPUTDIR)\xwpstring.obj
 
@@ -252,6 +254,7 @@ $(OUTPUTDIR)\xfont.obj: \
             $(INC)\classes\xfontobj.ih $(INC)\classes\xfldr.ih \
             $(INC)\shared\common.h $(INC)\shared\kernel.h \
             $(INC)\config\fonts.h \
+            $(INC)\filesys\folder.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xfontfile.obj: \
@@ -341,6 +344,12 @@ $(OUTPUTDIR)\xmmvolume.obj: \
             $(INC)\media\media.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
+$(OUTPUTDIR)\xwpsetup.obj: \
+            $(INC)\setup.h \
+            $(INC)\dlgids.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
+            $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h \
+
 $(OUTPUTDIR)\xwpfsys.obj: \
             $(INC)\setup.h \
             $(HLPINC)\except.h \
@@ -388,6 +397,11 @@ $(OUTPUTDIR)\xwpsetup.obj: \
             $(INC)\media\media.h \
             $(INC)\hook\xwphook.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h \
+
+$(OUTPUTDIR)\xwpshadow.obj: \
+            $(INC)\setup.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h \
+            $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xwpsound.obj: \
             $(INC)\setup.h \
