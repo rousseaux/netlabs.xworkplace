@@ -35,7 +35,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -2442,7 +2442,7 @@ typedef struct _FILETYPESPAGEDATA
 {
     // reverse linkage to notebook page data
     // (needed for subwindows)
-    PCREATENOTEBOOKPAGE pcnbp;
+    PNOTEBOOKPAGE pnbp;
 
     // linked list of file types (linklist.c);
     // this contains FILETYPELISTITEM structs
@@ -3124,12 +3124,12 @@ extern ULONG G_cFileTypesPage = sizeof(G_ampFileTypesPage) / sizeof(G_ampFileTyp
  *@@changed V0.9.6 (2000-10-16) [umoeller]: fixed excessive menu creation
  */
 
-VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID ftypFileTypesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                            ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_FT_CONTAINER);
+    HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_FT_CONTAINER);
 
     /*
      * CBI_INIT:
@@ -3141,7 +3141,7 @@ VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         // HWND    hwndListBox;
         // CNRINFO CnrInfo;
 
-        if (pcnbp->pUser == NULL)
+        if (pnbp->pUser == NULL)
         {
             PFILETYPESPAGEDATA pftpd;
 
@@ -3151,10 +3151,10 @@ VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
             pftpd = malloc(sizeof(FILETYPESPAGEDATA));
-            pcnbp->pUser = pftpd;
+            pnbp->pUser = pftpd;
             memset(pftpd, 0, sizeof(FILETYPESPAGEDATA));
 
-            pftpd->pcnbp = pcnbp;
+            pftpd->pnbp = pnbp;
 
             lstInit(&pftpd->llFileTypes, TRUE);
 
@@ -3167,8 +3167,8 @@ VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
             // store container hwnd's
             pftpd->hwndTypesCnr = hwndCnr;
-            pftpd->hwndFiltersCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_FT_FILTERSCNR);
-            pftpd->hwndAssocsCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_FT_ASSOCSCNR);
+            pftpd->hwndFiltersCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_FT_FILTERSCNR);
+            pftpd->hwndAssocsCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_FT_ASSOCSCNR);
 
             // set up file types container
             BEGIN_CNRINFO()
@@ -3197,7 +3197,7 @@ VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             } END_CNRINFO(pftpd->hwndAssocsCnr);
 
             // flags for cnr owner draw
-            pcnbp->ulCnrOwnerDraw = CODFL_DISABLEDTEXT | CODFL_MINIICON;
+            pnbp->inbp.ulCnrOwnerDraw = CODFL_DISABLEDTEXT | CODFL_MINIICON;
 
             pftpd->hmenuFileTypeSel = WinLoadMenu(HWND_OBJECT,
                                                   cmnQueryNLSModuleHandle(FALSE),
@@ -3227,7 +3227,7 @@ VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        PFILETYPESPAGEDATA pftpd = (PFILETYPESPAGEDATA)pcnbp->pUser;
+        PFILETYPESPAGEDATA pftpd = (PFILETYPESPAGEDATA)pnbp->pUser;
 
         ClearAvailableTypes(pftpd->hwndTypesCnr,
                             &pftpd->llFileTypes);
@@ -3245,7 +3245,7 @@ VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & (CBI_SHOW | CBI_HIDE))
     {
-        PFILETYPESPAGEDATA pftpd = (PFILETYPESPAGEDATA)pcnbp->pUser;
+        PFILETYPESPAGEDATA pftpd = (PFILETYPESPAGEDATA)pnbp->pUser;
         if (pftpd->hwndWPSImportDlg)
             WinShowWindow(pftpd->hwndWPSImportDlg, (flFlags & CBI_SHOW));
     }
@@ -3257,7 +3257,7 @@ VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_DESTROY)
     {
-        PFILETYPESPAGEDATA pftpd = (PFILETYPESPAGEDATA)pcnbp->pUser;
+        PFILETYPESPAGEDATA pftpd = (PFILETYPESPAGEDATA)pnbp->pUser;
 
         WinDestroyWindow(pftpd->hmenuFileTypeSel);
         WinDestroyWindow(pftpd->hmenuFileTypeNoSel);
@@ -3285,11 +3285,11 @@ VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@added V0.9.16 (2001-12-02) [umoeller]
  */
 
-static VOID ImportNewTypes(PCREATENOTEBOOKPAGE pcnbp)
+static VOID ImportNewTypes(PNOTEBOOKPAGE pnbp)
 {
     CHAR szFilename[CCHMAXPATH];
     sprintf(szFilename, "%c:\\xwptypes.xtp", doshQueryBootDrive());
-    if (cmnFileDlg(pcnbp->hwndDlgPage,
+    if (cmnFileDlg(pnbp->hwndDlgPage,
                    szFilename,
                    WINH_FOD_INILOADDIR | WINH_FOD_INISAVEDIR,
                    HINI_USER,
@@ -3309,9 +3309,9 @@ static VOID ImportNewTypes(PCREATENOTEBOOKPAGE pcnbp)
         if (!arc)
         {
             // call "init" callback to reinitialize the page
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
 
-            cmnMessageBoxMsgExt(pcnbp->hwndDlgPage,
+            cmnMessageBoxMsgExt(pnbp->hwndDlgPage,
                                 121,            // xwp
                                 apsz,
                                 1,
@@ -3320,7 +3320,7 @@ static VOID ImportNewTypes(PCREATENOTEBOOKPAGE pcnbp)
         }
         else
         {
-            cmnMessageBoxMsgExt(pcnbp->hwndDlgPage,
+            cmnMessageBoxMsgExt(pnbp->hwndDlgPage,
                                 104,            // xwp: error
                                 apsz,
                                 2,
@@ -3350,7 +3350,7 @@ static VOID ImportNewTypes(PCREATENOTEBOOKPAGE pcnbp)
  *@@changed V0.9.16 (2001-09-29) [umoeller]: added "properties" and "open folder" assoc items
  */
 
-MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT ftypFileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                                  ULONG ulItemID,
                                  USHORT usNotifyCode,
                                  ULONG ulExtra)      // for checkboxes: contains new state
@@ -3358,7 +3358,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     MRESULT mrc = (MRESULT)0;
 
-    PFILETYPESPAGEDATA pftpd = (PFILETYPESPAGEDATA)pcnbp->pUser;
+    PFILETYPESPAGEDATA pftpd = (PFILETYPESPAGEDATA)pnbp->pUser;
 
     switch (ulItemID)
     {
@@ -3658,9 +3658,9 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     // in the CREATENOTEBOOKPAGE structure
                     // so that the notebook.c function can
                     // remove source emphasis later automatically
-                    pcnbp->hwndSourceCnr = pcnbp->hwndControl;
-                    pcnbp->preccSource = (PRECORDCORE)ulExtra;
-                    if (pcnbp->preccSource)
+                    pnbp->hwndSourceCnr = pnbp->hwndControl;
+                    pnbp->preccSource = (PRECORDCORE)ulExtra;
+                    if (pnbp->preccSource)
                     {
                         // popup menu on container recc:
                         hPopupMenu = pftpd->hmenuFileTypeSel;
@@ -3693,10 +3693,10 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     WinEnableMenuItem(hPopupMenu,
                                       ID_XSMI_FILETYPES_CANCELDRAG,
                                       fDragging);
-                    cnrhShowContextMenu(pcnbp->hwndControl,     // cnr
-                                        (PRECORDCORE)pcnbp->preccSource,
+                    cnrhShowContextMenu(pnbp->hwndControl,     // cnr
+                                        (PRECORDCORE)pnbp->preccSource,
                                         hPopupMenu,
-                                        pcnbp->hwndDlgPage);    // owner
+                                        pnbp->hwndDlgPage);    // owner
                 }
                 break;
 
@@ -3758,7 +3758,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                         if (ulMsg)
                         {
-                            cmnMessageBoxMsgExt(pcnbp->hwndDlgPage,
+                            cmnMessageBoxMsgExt(pnbp->hwndDlgPage,
                                                 104,        // error
                                                 &pszMsg,
                                                 1,
@@ -3813,7 +3813,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XSMI_FILETYPES_DELETE:
         {
-            PFILETYPERECORD pftrecc = (PFILETYPERECORD)pcnbp->preccSource;
+            PFILETYPERECORD pftrecc = (PFILETYPERECORD)pnbp->preccSource;
                         // this has been set in CN_CONTEXTMENU above
             if (pftrecc)
             {
@@ -3843,7 +3843,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSMI_FILETYPES_NEW:
         {
             HWND hwndDlg = WinLoadDlg(HWND_DESKTOP,     // parent
-                                      pcnbp->hwndFrame,  // owner
+                                      pnbp->hwndFrame,  // owner
                                       WinDefDlgProc,
                                       cmnQueryNLSModuleHandle(FALSE),
                                       ID_XSD_NEWFILETYPE,   // "New File Type" dlg
@@ -3864,11 +3864,11 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     {
                         if (!CreateFileType(pftpd,
                                             pszNewType,
-                                            (PFILETYPERECORD)pcnbp->preccSource))
+                                            (PFILETYPERECORD)pnbp->preccSource))
                                                  // can be NULL
                         {
                             PSZ pTable = pszNewType;
-                            cmnMessageBoxMsgExt(pcnbp->hwndFrame,  // owner
+                            cmnMessageBoxMsgExt(pnbp->hwndFrame,  // owner
                                                 104,        // xwp error
                                                 &pTable,
                                                 1,
@@ -3891,8 +3891,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XSMI_FILETYPES_PICKUP:
         {
-            if (    (pcnbp->preccSource)
-                 && (pcnbp->preccSource != (PRECORDCORE)-1)
+            if (    (pnbp->preccSource)
+                 && (pnbp->preccSource != (PRECORDCORE)-1)
                  // lazy drag not currently in progress: V0.9.7 (2000-12-13) [umoeller]
                  && (!DrgQueryDragStatus())
                )
@@ -3900,7 +3900,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 // initialize lazy drag just as if the
                 // user had pressed Alt+MB2
                 cnrhInitDrag(pftpd->hwndTypesCnr,
-                             pcnbp->preccSource,
+                             pnbp->preccSource,
                              CN_PICKUP,
                              DRAG_RMF,
                              DO_MOVEABLE);
@@ -3918,7 +3918,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             DrgLazyDrop(pftpd->hwndTypesCnr,
                         DO_MOVE,        // fixed V0.9.7 (2000-12-13) [umoeller]
-                        &(pcnbp->ptlMenuMousePos));
+                        &pnbp->ptlMenuMousePos);
                             // this is the pointer position at
                             // the time the context menu was
                             // requested (in Desktop coordinates),
@@ -3963,9 +3963,9 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     // in the CREATENOTEBOOKPAGE structure
                     // so that the notebook.c function can
                     // remove source emphasis later automatically
-                    pcnbp->hwndSourceCnr = pcnbp->hwndControl;
-                    pcnbp->preccSource = (PRECORDCORE)ulExtra;
-                    if (pcnbp->preccSource)
+                    pnbp->hwndSourceCnr = pnbp->hwndControl;
+                    pnbp->preccSource = (PRECORDCORE)ulExtra;
+                    if (pnbp->preccSource)
                     {
                         // popup menu on container recc:
                         hPopupMenu = pftpd->hmenuFileFilterSel;
@@ -3980,10 +3980,10 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                           (pftpd->hwndWPSImportDlg == NULLHANDLE));
                     }
 
-                    cnrhShowContextMenu(pcnbp->hwndControl,
-                                        (PRECORDCORE)pcnbp->preccSource,
+                    cnrhShowContextMenu(pnbp->hwndControl,
+                                        (PRECORDCORE)pnbp->preccSource,
                                         hPopupMenu,
-                                        pcnbp->hwndDlgPage);    // owner
+                                        pnbp->hwndDlgPage);    // owner
                 }
                 break;
 
@@ -4002,7 +4002,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             ULONG       ulSelection = 0;
 
             PRECORDCORE precc = cnrhQuerySourceRecord(pftpd->hwndFiltersCnr,
-                                                      pcnbp->preccSource,
+                                                      pnbp->preccSource,
                                                       &ulSelection);
 
             while (precc)
@@ -4038,7 +4038,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSMI_FILEFILTER_NEW:
         {
             HWND hwndDlg = WinLoadDlg(HWND_DESKTOP,     // parent
-                                      pcnbp->hwndFrame,  // owner
+                                      pnbp->hwndFrame,  // owner
                                       WinDefDlgProc,
                                       cmnQueryNLSModuleHandle(FALSE),
                                       ID_XSD_NEWFILTER, // "New Filter" dlg
@@ -4077,7 +4077,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 // dialog not presently open:
                 pftpd->hwndWPSImportDlg = WinLoadDlg(
                                HWND_DESKTOP,     // parent
-                               pcnbp->hwndFrame,  // owner
+                               pnbp->hwndFrame,  // owner
                                fnwpImportWPSFilters,
                                cmnQueryNLSModuleHandle(FALSE),
                                ID_XSD_IMPORTWPS, // "Import WPS Filters" dlg
@@ -4332,8 +4332,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     // in the CREATENOTEBOOKPAGE structure
                     // so that the notebook.c function can
                     // remove source emphasis later automatically
-                    pcnbp->hwndSourceCnr = pcnbp->hwndControl;
-                    pcnbp->preccSource = (PRECORDCORE)ulExtra;
+                    pnbp->hwndSourceCnr = pnbp->hwndControl;
+                    pnbp->preccSource = (PRECORDCORE)ulExtra;
 
                     if (ulExtra)
                     {
@@ -4343,7 +4343,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         // do not allow deletion
                         WinEnableMenuItem(hPopupMenu,
                                           ID_XSMI_FILEASSOC_DELETE,
-                                          ((pcnbp->preccSource->flRecordAttr & CRA_DISABLED) == 0));
+                                          ((pnbp->preccSource->flRecordAttr & CRA_DISABLED) == 0));
                     }
                     else
                     {
@@ -4356,10 +4356,10 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                           (pftpd->hwndWPSImportDlg == NULLHANDLE));
                     }
 
-                    cnrhShowContextMenu(pcnbp->hwndControl,
-                                        (PRECORDCORE)pcnbp->preccSource,
+                    cnrhShowContextMenu(pnbp->hwndControl,
+                                        (PRECORDCORE)pnbp->preccSource,
                                         hPopupMenu,
-                                        pcnbp->hwndDlgPage);    // owner
+                                        pnbp->hwndDlgPage);    // owner
                 }
                 break;
             } // end switch (usNotifyCode)
@@ -4377,7 +4377,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             ULONG       ulSelection = 0;
 
             PRECORDCORE precc = cnrhQuerySourceRecord(pftpd->hwndAssocsCnr,
-                                                      pcnbp->preccSource,
+                                                      pnbp->preccSource,
                                                       &ulSelection);
 
             while (precc)
@@ -4412,7 +4412,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             ULONG ulSelection;
             PRECORDCORE precc = cnrhQuerySourceRecord(pftpd->hwndAssocsCnr,
-                                                      pcnbp->preccSource,
+                                                      pnbp->preccSource,
                                                       &ulSelection);
 
             while (precc)
@@ -4466,7 +4466,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          */
 
         case ID_XSMI_FILETYPES_IMPORT:
-            ImportNewTypes(pcnbp);
+            ImportNewTypes(pnbp);
         break;
 
         /*
@@ -4478,7 +4478,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             CHAR szFilename[CCHMAXPATH];
             sprintf(szFilename, "%c:\\xwptypes.xtp", doshQueryBootDrive());
-            if (cmnFileDlg(pcnbp->hwndDlgPage,
+            if (cmnFileDlg(pnbp->hwndDlgPage,
                            szFilename,
                            WINH_FOD_SAVEDLG | WINH_FOD_INILOADDIR | WINH_FOD_INISAVEDIR,
                            HINI_USER,
@@ -4491,7 +4491,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                 if (    (access(szFilename, 0) != 0)
                         // confirm if file exists
-                     || (cmnMessageBoxMsgExt(pcnbp->hwndDlgPage,
+                     || (cmnMessageBoxMsgExt(pnbp->hwndDlgPage,
                                              121,            // xwp
                                              apsz,
                                              1,
@@ -4506,7 +4506,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     WinSetPointer(HWND_DESKTOP, hptrOld);
 
                     if (!arc)
-                        cmnMessageBoxMsgExt(pcnbp->hwndDlgPage,
+                        cmnMessageBoxMsgExt(pnbp->hwndDlgPage,
                                             121,            // xwp
                                             apsz,
                                             1,
@@ -4515,7 +4515,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     else
                     {
                         sprintf(szError, "%u", arc);
-                        cmnMessageBoxMsgExt(pcnbp->hwndDlgPage,
+                        cmnMessageBoxMsgExt(pnbp->hwndDlgPage,
                                             104,            // xwp: error
                                             apsz,
                                             2,
@@ -4908,8 +4908,8 @@ static MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1
         case WM_HELP:
             // display help using the "Workplace Shell" SOM object
             // (in CREATENOTEBOOKPAGE structure)
-            cmnDisplayHelp(pftpd->pcnbp->somSelf,
-                           pftpd->pcnbp->ulDefaultHelpPanel + 1);
+            cmnDisplayHelp(pftpd->pnbp->inbp.somSelf,
+                           pftpd->pnbp->inbp.ulDefaultHelpPanel + 1);
                             // help panel which follows the one on the main page
         break;
 
@@ -4993,21 +4993,21 @@ typedef struct _INSTANCEFILETYPESPAGE
  *@@added V0.9.9 (2001-04-02) [umoeller]
  */
 
-static VOID InitInstanceFileTypesPage(PCREATENOTEBOOKPAGE pcnbp,
+static VOID InitInstanceFileTypesPage(PNOTEBOOKPAGE pnbp,
                                       PINSTANCEFILETYPESPAGE *pp)  // out: new struct
 {
     PINSTANCEFILETYPESPAGE pdftp = (PINSTANCEFILETYPESPAGE)malloc(sizeof(INSTANCEFILETYPESPAGE));
     if (pdftp)
     {
         memset(pdftp, 0, sizeof(*pdftp));
-        pcnbp->pUser = pdftp;
+        pnbp->pUser = pdftp;
 
         lstInit(&pdftp->llAvailableTypes, TRUE);     // auto-free
 
-        pdftp->hwndTypesCnr = WinWindowFromID(pcnbp->hwndDlgPage,
+        pdftp->hwndTypesCnr = WinWindowFromID(pnbp->hwndDlgPage,
                                               ID_XSDI_DATAF_AVAILABLE_CNR);
 
-        ctlMakeCheckboxContainer(pcnbp->hwndDlgPage,
+        ctlMakeCheckboxContainer(pnbp->hwndDlgPage,
                                  ID_XSDI_DATAF_AVAILABLE_CNR);
                 // this switches to tree view etc., but
                 // we need to override some settings
@@ -5027,12 +5027,12 @@ static VOID InitInstanceFileTypesPage(PCREATENOTEBOOKPAGE pcnbp,
  *@@added V0.9.9 (2001-04-02) [umoeller]
  */
 
-static VOID FillInstanceFileTypesPage(PCREATENOTEBOOKPAGE pcnbp,
+static VOID FillInstanceFileTypesPage(PNOTEBOOKPAGE pnbp,
                                       PCSZ pcszCheck,
                                       CHAR cSeparator,
                                       PLINKLIST pllDisable)
 {
-    PINSTANCEFILETYPESPAGE pdftp = (PINSTANCEFILETYPESPAGE)pcnbp->pUser;
+    PINSTANCEFILETYPESPAGE pdftp = (PINSTANCEFILETYPESPAGE)pnbp->pUser;
     if (pdftp)
     {
         // build list of explicit types to be passed
@@ -5069,9 +5069,9 @@ static VOID FillInstanceFileTypesPage(PCREATENOTEBOOKPAGE pcnbp,
  *@@added V0.9.9 (2001-04-02) [umoeller]
  */
 
-static VOID DestroyInstanceFileTypesPage(PCREATENOTEBOOKPAGE pcnbp)
+static VOID DestroyInstanceFileTypesPage(PNOTEBOOKPAGE pnbp)
 {
-    PINSTANCEFILETYPESPAGE pdftp = (PINSTANCEFILETYPESPAGE)pcnbp->pUser;
+    PINSTANCEFILETYPESPAGE pdftp = (PINSTANCEFILETYPESPAGE)pnbp->pUser;
     if (pdftp)
     {
         ClearAvailableTypes(pdftp->hwndTypesCnr,
@@ -5126,7 +5126,7 @@ static VOID HandleRecordChecked(ULONG ulExtra,         // from "item changed" ca
             xstrcpy(pstrTypes,
                     precc->pliFileType->pszFileType,
                     0);
-            // _wpSetType(pcnbp->somSelf, precc->pliFileType->pszFileType, 0);
+            // _wpSetType(pnbp->inbp.somSelf, precc->pliFileType->pszFileType, 0);
     }
     else
     {
@@ -5196,19 +5196,19 @@ static VOID HandleRecordChecked(ULONG ulExtra,         // from "item changed" ca
  *@@added V0.9.9 (2001-03-27) [umoeller]
  */
 
-VOID ftypDatafileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,
+VOID ftypDatafileTypesInitPage(PNOTEBOOKPAGE pnbp,
                                ULONG flFlags)
 {
     if (flFlags & CBI_INIT)
     {
         PINSTANCEFILETYPESPAGE pdftp = NULL;
 
-        InitInstanceFileTypesPage(pcnbp,
+        InitInstanceFileTypesPage(pnbp,
                                   &pdftp);
 
         if (pdftp)
         {
-            PSZ     pszTypes = _wpQueryType(pcnbp->somSelf);
+            PSZ     pszTypes = _wpQueryType(pnbp->inbp.somSelf);
             // backup existing types for "Undo"
             if (pszTypes)
                 pdftp->pszTypesBackup = strdup(pszTypes);
@@ -5218,15 +5218,15 @@ VOID ftypDatafileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,
     if (flFlags & CBI_SET)
     {
         PLINKLIST pllAutomaticTypes = lstCreate(TRUE);
-        PSZ pszTypes = _wpQueryType(pcnbp->somSelf);
+        PSZ pszTypes = _wpQueryType(pnbp->inbp.somSelf);
 
         // build list of automatic types;
         // all these records will be DISABLED
         // in the container
-        AppendTypesForFile(_wpQueryTitle(pcnbp->somSelf),
+        AppendTypesForFile(_wpQueryTitle(pnbp->inbp.somSelf),
                            pllAutomaticTypes);
 
-        FillInstanceFileTypesPage(pcnbp,
+        FillInstanceFileTypesPage(pnbp,
                                   pszTypes,    // string with types to check
                                   '\n',         // separator char
                                   pllAutomaticTypes);    // items to disable
@@ -5236,7 +5236,7 @@ VOID ftypDatafileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
     if (flFlags & CBI_DESTROY)
     {
-        DestroyInstanceFileTypesPage(pcnbp);
+        DestroyInstanceFileTypesPage(pnbp);
     }
 }
 
@@ -5250,7 +5250,7 @@ VOID ftypDatafileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,
  *@@changed V0.9.16 (2001-12-08) [umoeller]: now refreshing icon on changes
  */
 
-MRESULT ftypDatafileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT ftypDatafileTypesItemChanged(PNOTEBOOKPAGE pnbp,
                                      ULONG ulItemID,
                                      USHORT usNotifyCode,
                                      ULONG ulExtra)
@@ -5263,7 +5263,7 @@ MRESULT ftypDatafileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             if (usNotifyCode == CN_RECORDCHECKED)
             {
                 // get existing types
-                PSZ pszTypes = _wpQueryType(pcnbp->somSelf);
+                PSZ pszTypes = _wpQueryType(pnbp->inbp.somSelf);
                 XSTRING str;
                 xstrInitCopy(&str, pszTypes, 0);
 
@@ -5273,7 +5273,7 @@ MRESULT ftypDatafileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                     "\n");      // types separator
 
                 // set new types
-                _wpSetType(pcnbp->somSelf,
+                _wpSetType(pnbp->inbp.somSelf,
                            (str.ulLength)
                                 ? str.psz
                                 : NULL,         // remove
@@ -5282,7 +5282,7 @@ MRESULT ftypDatafileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                 // refresh the icon, it might have changed
                 // V0.9.16 (2001-12-08) [umoeller]
-                _wpSetAssociatedFileIcon(pcnbp->somSelf);
+                _wpSetAssociatedFileIcon(pnbp->inbp.somSelf);
             }
         break;
 
@@ -5292,24 +5292,24 @@ MRESULT ftypDatafileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             if (pdftp)
             {
                 // set type to what was saved on init
-                _wpSetType(pcnbp->somSelf, pdftp->pszTypesBackup, 0);
+                _wpSetType(pnbp->inbp.somSelf, pdftp->pszTypesBackup, 0);
                 // call "init" callback to reinitialize the page
-                pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+                pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
                 // refresh the icon, it might have changed
                 // V0.9.16 (2001-12-08) [umoeller]
-                _wpSetAssociatedFileIcon(pcnbp->somSelf);
+                _wpSetAssociatedFileIcon(pnbp->inbp.somSelf);
             }
         }
         break;
 
         case DID_DEFAULT:
             // kill all explicit types
-            _wpSetType(pcnbp->somSelf, NULL, 0);
+            _wpSetType(pnbp->inbp.somSelf, NULL, 0);
             // call "init" callback to reinitialize the page
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
             // refresh the icon, it might have changed
             // V0.9.16 (2001-12-08) [umoeller]
-            _wpSetAssociatedFileIcon(pcnbp->somSelf);
+            _wpSetAssociatedFileIcon(pnbp->inbp.somSelf);
         break;
 
     } // end switch (ulItemID)
@@ -5336,23 +5336,22 @@ MRESULT ftypDatafileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 ULONG ftypInsertAssociationsPage(WPObject *somSelf, // in: WPProgram or WPProgramFile
                                  HWND hwndNotebook)
 {
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-    PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+    INSERTNOTEBOOKPAGE inbp;
 
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndNotebook;
-    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_PGM_ASSOCIATIONS);  // pszAssociationsPage
-    pcnbp->ulDlgID = ID_XSD_DATAF_TYPES;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGM_ASSOCIATIONS;
-    pcnbp->ulPageID = SP_PGMFILE_ASSOCS;
-    pcnbp->pampControlFlags = G_pampDatafileTypesPage;
-    pcnbp->cControlFlags = G_cDatafileTypesPage;
-    pcnbp->pfncbInitPage    = ftypAssociationsInitPage;
-    pcnbp->pfncbItemChanged    = ftypAssociationsItemChanged;
-    return (ntbInsertPage(pcnbp));
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndNotebook;
+    inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_PGM_ASSOCIATIONS);  // pszAssociationsPage
+    inbp.ulDlgID = ID_XSD_DATAF_TYPES;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGM_ASSOCIATIONS;
+    inbp.ulPageID = SP_PGMFILE_ASSOCS;
+    inbp.pampControlFlags = G_pampDatafileTypesPage;
+    inbp.cControlFlags = G_cDatafileTypesPage;
+    inbp.pfncbInitPage    = ftypAssociationsInitPage;
+    inbp.pfncbItemChanged    = ftypAssociationsItemChanged;
+    return (ntbInsertPage(&inbp));
 }
 
 /*
@@ -5368,19 +5367,19 @@ ULONG ftypInsertAssociationsPage(WPObject *somSelf, // in: WPProgram or WPProgra
  *@@added V0.9.9 (2001-03-07) [umoeller]
  */
 
-VOID ftypAssociationsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID ftypAssociationsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                               ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
     {
         PINSTANCEFILETYPESPAGE pdftp = NULL;
 
-        InitInstanceFileTypesPage(pcnbp,
+        InitInstanceFileTypesPage(pnbp,
                                   &pdftp);
 
         if (pdftp)
         {
-            PSZ pszTypes = _wpQueryAssociationType(pcnbp->somSelf);
+            PSZ pszTypes = _wpQueryAssociationType(pnbp->inbp.somSelf);
             // backup existing types for "Undo"
             if (pszTypes)
                 pdftp->pszTypesBackup = strdup(pszTypes);
@@ -5389,9 +5388,9 @@ VOID ftypAssociationsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
 
     if (flFlags & CBI_SET)
     {
-        PSZ pszTypes = _wpQueryAssociationType(pcnbp->somSelf);
+        PSZ pszTypes = _wpQueryAssociationType(pnbp->inbp.somSelf);
 
-        FillInstanceFileTypesPage(pcnbp,
+        FillInstanceFileTypesPage(pnbp,
                                   pszTypes,     // string with types to check
                                   ',',          // separator char
                                   NULL);        // items to disable
@@ -5399,7 +5398,7 @@ VOID ftypAssociationsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
 
     if (flFlags & CBI_DESTROY)
     {
-        DestroyInstanceFileTypesPage(pcnbp);
+        DestroyInstanceFileTypesPage(pnbp);
     }
 }
 
@@ -5415,7 +5414,7 @@ VOID ftypAssociationsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
  *@@added V0.9.9 (2001-03-07) [umoeller]
  */
 
-MRESULT ftypAssociationsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT ftypAssociationsItemChanged(PNOTEBOOKPAGE pnbp,
                                     ULONG ulItemID,
                                     USHORT usNotifyCode,
                                     ULONG ulExtra)      // for checkboxes: contains new state
@@ -5428,7 +5427,7 @@ MRESULT ftypAssociationsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             if (usNotifyCode == CN_RECORDCHECKED)
             {
                 // get existing types
-                PSZ pszTypes = _wpQueryAssociationType(pcnbp->somSelf);
+                PSZ pszTypes = _wpQueryAssociationType(pnbp->inbp.somSelf);
                                     // this works for both WPProgram and
                                     // WPProgramFile; even though the two
                                     // methods are differently implemented,
@@ -5456,7 +5455,7 @@ MRESULT ftypAssociationsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 #endif
 
                 // set new types
-                _wpSetAssociationType(pcnbp->somSelf,
+                _wpSetAssociationType(pnbp->inbp.somSelf,
                                       (str.ulLength)
                                            ? str.psz
                                            // : NULL);         // remove
@@ -5474,18 +5473,18 @@ MRESULT ftypAssociationsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             if (pdftp)
             {
                 // set type to what was saved on init
-                _wpSetAssociationType(pcnbp->somSelf, pdftp->pszTypesBackup);
+                _wpSetAssociationType(pnbp->inbp.somSelf, pdftp->pszTypesBackup);
                 // call "init" callback to reinitialize the page
-                pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+                pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
             }
         }
         break;
 
         case DID_DEFAULT:
             // kill all explicit types
-            _wpSetAssociationType(pcnbp->somSelf, NULL);
+            _wpSetAssociationType(pnbp->inbp.somSelf, NULL);
             // call "init" callback to reinitialize the page
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         break;
 
     } // end switch (ulItemID)

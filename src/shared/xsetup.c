@@ -9,7 +9,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -1554,19 +1554,19 @@ typedef struct _XWPSETUPLOGODATA
  *@@added V0.9.6 (2000-11-04) [umoeller]
  */
 
-VOID setLogoInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID setLogoInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                      ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
     {
-        HPS hpsTemp = WinGetPS(pcnbp->hwndDlgPage);
+        HPS hpsTemp = WinGetPS(pnbp->hwndDlgPage);
         if (hpsTemp)
         {
             PXWPSETUPLOGODATA pLogoData = malloc(sizeof(XWPSETUPLOGODATA));
             if (pLogoData)
             {
                 memset(pLogoData, 0, sizeof(XWPSETUPLOGODATA));
-                pcnbp->pUser = pLogoData;
+                pnbp->pUser = pLogoData;
 
                 pLogoData->hbmLogo = GpiLoadBitmap(hpsTemp,
                                                    cmnQueryMainResModuleHandle(),
@@ -1590,7 +1590,7 @@ VOID setLogoInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_DESTROY)
     {
-        PXWPSETUPLOGODATA pLogoData = (PXWPSETUPLOGODATA)pcnbp->pUser;
+        PXWPSETUPLOGODATA pLogoData = (PXWPSETUPLOGODATA)pnbp->pUser;
         if (pLogoData)
         {
             GpiDeleteBitmap(pLogoData->hbmLogo);
@@ -1608,7 +1608,7 @@ VOID setLogoInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@added V0.9.6 (2000-11-04) [umoeller]
  */
 
-BOOL setLogoMessages(PCREATENOTEBOOKPAGE pcnbp,
+BOOL setLogoMessages(PNOTEBOOKPAGE pnbp,
                      ULONG msg, MPARAM mp1, MPARAM mp2,
                      MRESULT *pmrc)
 {
@@ -1620,17 +1620,17 @@ BOOL setLogoMessages(PCREATENOTEBOOKPAGE pcnbp,
             switch ((USHORT)mp1)
             {
                 case DID_HELP:
-                    cmnShowProductInfo(pcnbp->hwndDlgPage,
+                    cmnShowProductInfo(pnbp->hwndDlgPage,
                                        MMSOUND_SYSTEMSTARTUP);
             }
         break;
 
         case WM_PAINT:
         {
-            PXWPSETUPLOGODATA pLogoData = (PXWPSETUPLOGODATA)pcnbp->pUser;
+            PXWPSETUPLOGODATA pLogoData = (PXWPSETUPLOGODATA)pnbp->pUser;
             RECTL   rclDlg,
                     rclPaint;
-            HPS     hps = WinBeginPaint(pcnbp->hwndDlgPage,
+            HPS     hps = WinBeginPaint(pnbp->hwndDlgPage,
                                         NULLHANDLE,
                                         &rclPaint);
             // switch to RGB
@@ -1640,7 +1640,7 @@ BOOL setLogoMessages(PCREATENOTEBOOKPAGE pcnbp,
                         0x00CCCCCC); // 204, 204, 204 -> light gray; that's in the bitmap,
                                      // and it's also the SYSCLR_DIALOGBACKGROUND,
                                      // but just in case the user changed it...
-            WinQueryWindowRect(pcnbp->hwndDlgPage,
+            WinQueryWindowRect(pnbp->hwndDlgPage,
                                &rclDlg);
             if (pLogoData)
             {
@@ -1778,13 +1778,13 @@ static const XWPSETTING G_FeaturesBackup[] =
  *@@changed V0.9.16 (2001-10-25) [umoeller]: added "turbo folders"
  */
 
-VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                          ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
 
-    HWND hwndFeaturesCnr = WinWindowFromID(pcnbp->hwndDlgPage,
+    HWND hwndFeaturesCnr = WinWindowFromID(pnbp->hwndDlgPage,
                                            ID_XCDI_CONTAINER);
 
     if (flFlags & CBI_INIT)
@@ -1793,17 +1793,17 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                             preccParent;
         ULONG               ul,
                             cRecords;
-        HAB                 hab = WinQueryAnchorBlock(pcnbp->hwndDlgPage);
+        HAB                 hab = WinQueryAnchorBlock(pnbp->hwndDlgPage);
         HMODULE             hmodNLS = cmnQueryNLSModuleHandle(FALSE);
 
-        if (pcnbp->pUser == NULL)
+        if (pnbp->pUser == NULL)
         {
             PXWPFEATURESDATA pFeaturesData;
             // first call: backup Global Settings for "Undo" button;
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
-            pcnbp->pUser = pFeaturesData = malloc(sizeof(XWPFEATURESDATA));
+            pnbp->pUser = pFeaturesData = malloc(sizeof(XWPFEATURESDATA));
             pFeaturesData->pBackup = cmnBackupSettings(G_FeaturesBackup,
                                                        ARRAYITEMCOUNT(G_FeaturesBackup));
 #ifndef __ALWAYSOBJHOTKEYS__
@@ -1814,7 +1814,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 #endif
         }
 
-        if (!ctlMakeCheckboxContainer(pcnbp->hwndDlgPage,
+        if (!ctlMakeCheckboxContainer(pnbp->hwndDlgPage,
                                       ID_XCDI_CONTAINER))
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
                    "ctlMakeCheckboxContainer failed.");
@@ -1877,30 +1877,30 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 preccThis = (PCHECKBOXRECORDCORE)preccThis->recc.preccNextRecord;
                 ul++;
             }
-        } // end if (ctlMakeCheckboxContainer(pcnbp->hwndPage,
+        } // end if (ctlMakeCheckboxContainer(inbp.hwndPage,
 
         // register tooltip class
-        if (!ctlRegisterTooltip(WinQueryAnchorBlock(pcnbp->hwndDlgPage)))
+        if (!ctlRegisterTooltip(WinQueryAnchorBlock(pnbp->hwndDlgPage)))
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
                    "ctlRegisterTooltip failed.");
         else
         {
             // create tooltip
-            pcnbp->hwndTooltip = WinCreateWindow(HWND_DESKTOP,  // parent
-                                                 COMCTL_TOOLTIP_CLASS, // wnd class
-                                                 "",            // window text
-                                                 XWP_TOOLTIP_STYLE,
-                                                      // tooltip window style (common.h)
-                                                 10, 10, 10, 10,    // window pos and size, ignored
-                                                 pcnbp->hwndDlgPage, // owner window -- important!
-                                                 HWND_TOP,      // hwndInsertBehind, ignored
-                                                 DID_TOOLTIP, // window ID, optional
-                                                 NULL,          // control data
-                                                 NULL);         // presparams
-
-            if (!pcnbp->hwndTooltip)
-               cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                      "WinCreateWindow failed creating tooltip.");
+            if (!(pnbp->hwndTooltip = WinCreateWindow(HWND_DESKTOP,  // parent
+                                                      COMCTL_TOOLTIP_CLASS, // wnd class
+                                                      "",            // window text
+                                                      XWP_TOOLTIP_STYLE,
+                                                           // tooltip window style (common.h)
+                                                      10, 10, 10, 10,    // window pos and size, ignored
+                                                      pnbp->hwndDlgPage, // owner window -- important!
+                                                      HWND_TOP,      // hwndInsertBehind, ignored
+                                                      DID_TOOLTIP, // window ID, optional
+                                                      NULL,          // control data
+                                                      NULL)))         // presparams
+            {
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "WinCreateWindow failed creating tooltip.");
+            }
             else
             {
                 // tooltip successfully created:
@@ -1908,17 +1908,17 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 // according to the usToolIDs array
                 TOOLINFO    ti = {0};
                 ti.ulFlags = /* TTF_CENTERBELOW | */ TTF_SUBCLASS;
-                ti.hwndToolOwner = pcnbp->hwndDlgPage;
+                ti.hwndToolOwner = pnbp->hwndDlgPage;
                 ti.pszText = PSZ_TEXTCALLBACK;  // send TTN_NEEDTEXT
                 // add cnr as tool to tooltip control
                 ti.hwndTool = hwndFeaturesCnr;
-                WinSendMsg(pcnbp->hwndTooltip,
+                WinSendMsg(pnbp->hwndTooltip,
                            TTM_ADDTOOL,
                            (MPARAM)0,
                            &ti);
 
                 // set timers
-                WinSendMsg(pcnbp->hwndTooltip,
+                WinSendMsg(pnbp->hwndTooltip,
                            TTM_SETDELAYTIME,
                            (MPARAM)TTDT_AUTOPOP,
                            (MPARAM)(40*1000));        // 40 secs for autopop (hide)
@@ -2147,7 +2147,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.14 (2001-07-31) [umoeller]: "Classes" dlg mostly rewritten
  */
 
-MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
                                ULONG ulItemID, USHORT usNotifyCode,
                                ULONG ulExtra)      // for checkboxes: contains new state
 {
@@ -2235,7 +2235,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             case ID_XCSI_XSYSTEMSOUNDS:
                 cmnSetSetting(sfXSystemSounds, precc->usCheckState);
                 // check if sounds are to be installed or de-installed:
-                if (sndAddtlSoundsInstalled(WinQueryAnchorBlock(pcnbp->hwndDlgPage))
+                if (sndAddtlSoundsInstalled(WinQueryAnchorBlock(pnbp->hwndDlgPage))
                              != precc->usCheckState)
                     // yes: set msg for "ask for sound install"
                     // at the bottom when the global semaphores
@@ -2430,7 +2430,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
-            PXWPFEATURESDATA pFeaturesData = (PXWPFEATURESDATA) pcnbp->pUser;
+            PXWPFEATURESDATA pFeaturesData = (PXWPFEATURESDATA) pnbp->pUser;
 
             cmnRestoreSettings(pFeaturesData->pBackup,
                                ARRAYITEMCOUNT(G_FeaturesBackup));
@@ -2526,7 +2526,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             // set the default settings for this settings page
             // (this is in common.c because it's also used at Desktop startup)
-            cmnSetDefaultSettings(pcnbp->ulPageID);
+            cmnSetDefaultSettings(pnbp->inbp.ulPageID);
 
 #ifndef __ALWAYSHOOK__
             hifEnableHook(cmnQuerySetting(sfXWPHook));
@@ -2566,17 +2566,17 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
     if (fShowClassesSetup)
         // "classes" dialog to be shown (classes button):
-        ShowClassesDlg(pcnbp->hwndFrame);
+        ShowClassesDlg(pnbp->hwndFrame);
     else if (ulNotifyMsg)
         // show a notification msg:
-        cmnMessageBoxMsg(pcnbp->hwndFrame,
+        cmnMessageBoxMsg(pnbp->hwndFrame,
                          148,       // "XWorkplace Setup"
                          ulNotifyMsg,
                          MB_OK);
 #ifndef __NOXSYSTEMSOUNDS__
     else if (cAskSoundsInstallMsg != -1)
     {
-        if (cmnMessageBoxMsg(pcnbp->hwndFrame,
+        if (cmnMessageBoxMsg(pnbp->hwndFrame,
                              148,       // "XWorkplace Setup"
                              (cAskSoundsInstallMsg)
                                 ? 166   // "install?"
@@ -2584,20 +2584,20 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                              MB_YESNO)
                 == MBID_YES)
         {
-            sndInstallAddtlSounds(WinQueryAnchorBlock(pcnbp->hwndDlgPage),
+            sndInstallAddtlSounds(WinQueryAnchorBlock(pnbp->hwndDlgPage),
                                   cAskSoundsInstallMsg);
         }
     }
 #endif
     else if (cEnableTrashCan != -1)
     {
-        cmnEnableTrashCan(pcnbp->hwndFrame,
+        cmnEnableTrashCan(pnbp->hwndFrame,
                           cEnableTrashCan);
         ulUpdateFlags = CBI_SET | CBI_ENABLE;
     }
 
     if (ulUpdateFlags)
-        pcnbp->pfncbInitPage(pcnbp, ulUpdateFlags);
+        pnbp->inbp.pfncbInitPage(pnbp, ulUpdateFlags);
 
     if (fUpdateMouseMovementPage)
         // update "Mouse movement" page
@@ -2615,7 +2615,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *@@added V0.9.1 (99-11-30) [umoeller]
  */
 
-BOOL setFeaturesMessages(PCREATENOTEBOOKPAGE pcnbp,
+BOOL setFeaturesMessages(PNOTEBOOKPAGE pnbp,
                          ULONG msg, MPARAM mp1, MPARAM mp2,
                          MRESULT *pmrc)
 {
@@ -2638,21 +2638,21 @@ BOOL setFeaturesMessages(PCREATENOTEBOOKPAGE pcnbp,
                     {
                         PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
                         PCHECKBOXRECORDCORE precc;
-                        HWND         hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage,
+                        HWND         hwndCnr = WinWindowFromID(pnbp->hwndDlgPage,
                                                                ID_XCDI_CONTAINER);
                         POINTL       ptlMouse;
 
                         _Pmpf(("  is TTN_NEEDTEXT"));
 
                         // we use pUser2 for the Tooltip string
-                        if (pcnbp->pUser2)
+                        if (pnbp->pUser2)
                         {
-                            free(pcnbp->pUser2);
-                            pcnbp->pUser2 = NULL;
+                            free(pnbp->pUser2);
+                            pnbp->pUser2 = NULL;
                         }
 
                         // find record under mouse
-                        WinQueryMsgPos(WinQueryAnchorBlock(pcnbp->hwndDlgPage),
+                        WinQueryMsgPos(WinQueryAnchorBlock(pnbp->hwndDlgPage),
                                        &ptlMouse);
                         precc = (PCHECKBOXRECORDCORE)cnrhFindRecordFromPoint(
                                                             hwndCnr,
@@ -2682,11 +2682,11 @@ BOOL setFeaturesMessages(PCREATENOTEBOOKPAGE pcnbp,
                                                  &str,
                                                  szMessageID);
 
-                                pcnbp->pUser2 = str.psz;
+                                pnbp->pUser2 = str.psz;
                                         // freed later
 
                                 pttt->ulFormat = TTFMT_PSZ;
-                                pttt->pszText = pcnbp->pUser2;
+                                pttt->pszText = pnbp->pUser2;
                             }
                         }
 
@@ -2764,10 +2764,10 @@ static VOID ClearThreads(HWND hwndCnr)
  *@@changed V0.9.10 (2001-04-08) [umoeller]: fixed memory leak
  */
 
-VOID setThreadsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID setThreadsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                         ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage,
+    HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage,
                                    ID_XFDI_CNR_CNR);
 
     if (flFlags & CBI_INIT)
@@ -2806,7 +2806,7 @@ VOID setThreadsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             cnrhSetSplitBarPos(200);
         } END_CNRINFO(hwndCnr);
 
-        WinSetDlgItemText(pcnbp->hwndDlgPage,
+        WinSetDlgItemText(pnbp->hwndDlgPage,
                           ID_XFDI_CNR_GROUPTITLE,
                           cmnGetString(ID_XSSI_THREADSGROUPTITLE)) ; // "XWorkplace threads") // pszThreadsGroupTitle
     }
@@ -2921,7 +2921,7 @@ VOID setThreadsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.9 (2001-03-07) [umoeller]: extracted "Threads" page
  */
 
-VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID setStatusInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                        ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
@@ -2971,7 +2971,7 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         // PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
 
-        HAB             hab = WinQueryAnchorBlock(pcnbp->hwndDlgPage);
+        HAB             hab = WinQueryAnchorBlock(pnbp->hwndDlgPage);
 
         ULONG           ulSoundStatus = xmmQueryStatus();
 
@@ -2981,7 +2981,7 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 XFOLDER_VERSION,
                 __DATE__);
 
-        WinSetDlgItemText(pcnbp->hwndDlgPage,
+        WinSetDlgItemText(pnbp->hwndDlgPage,
                           ID_XCDI_INFO_KERNEL_RELEASE,
                           szSearchMask);
 
@@ -3003,11 +3003,11 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                        ? "Disabled"
                : "unknown"
                );
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XCDI_INFO_SOUNDSTATUS,
+        WinSetDlgItemText(pnbp->hwndDlgPage, ID_XCDI_INFO_SOUNDSTATUS,
                           szSearchMask);
 
         // language drop-down box
-        WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_XCDI_INFO_LANGUAGE, LM_DELETEALL, 0, 0);
+        WinSendDlgItemMsg(pnbp->hwndDlgPage, ID_XCDI_INFO_LANGUAGE, LM_DELETEALL, 0, 0);
 
         if (cmnQueryXWPBasePath(szXFolderBasePath))
         {
@@ -3026,7 +3026,7 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                               FIL_STANDARD);        // return level 1 file info
 
             if (rc != NO_ERROR)
-                winhDebugBox(pcnbp->hwndFrame,
+                winhDebugBox(pnbp->hwndFrame,
                              "XWorkplace",
                              "XWorkplace was unable to find any National Language Support DLLs. You need to re-install XWorkplace.");
             else
@@ -3035,7 +3035,7 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 #ifdef DEBUG_LANGCODES
                     _Pmpf(("  Found file: %s", FindBuffer.achName));
                 #endif
-                AddResourceDLLToLB(pcnbp->hwndDlgPage,
+                AddResourceDLLToLB(pnbp->hwndDlgPage,
                                    ID_XCDI_INFO_LANGUAGE,
                                    szXFolderBasePath,
                                    FindBuffer.achName);
@@ -3052,7 +3052,7 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
                     if (rc == NO_ERROR)
                     {
-                        AddResourceDLLToLB(pcnbp->hwndDlgPage,
+                        AddResourceDLLToLB(pnbp->hwndDlgPage,
                                            ID_XCDI_INFO_LANGUAGE,
                                            szXFolderBasePath,
                                            FindBuffer.achName);
@@ -3070,9 +3070,9 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 #ifdef DEBUG_LANGCODES
                     _Pmpf(("  Selecting: %s", cmnQueryLanguageCode()));
                 #endif
-                WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_XCDI_INFO_LANGUAGE,
+                WinSendDlgItemMsg(pnbp->hwndDlgPage, ID_XCDI_INFO_LANGUAGE,
                                   LM_SELECTITEM,
-                                  WinSendDlgItemMsg(pcnbp->hwndDlgPage,
+                                  WinSendDlgItemMsg(pnbp->hwndDlgPage,
                                                     ID_XCDI_INFO_LANGUAGE, // find matching item
                                                     LM_SEARCHSTRING,
                                                     MPFROM2SHORT(LSS_SUBSTRING, LIT_FIRST),
@@ -3084,12 +3084,12 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         // NLS info
         if (WinLoadString(hab, hmodNLS, ID_XSSI_XFOLDERVERSION,
                     sizeof(szSearchMask), szSearchMask))
-            WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XCDI_INFO_NLS_RELEASE,
+            WinSetDlgItemText(pnbp->hwndDlgPage, ID_XCDI_INFO_NLS_RELEASE,
                     szSearchMask);
 
         if (WinLoadString(hab, hmodNLS, ID_XSSI_NLS_AUTHOR,
                     sizeof(szSearchMask), szSearchMask))
-            WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XCDI_INFO_NLS_AUTHOR,
+            WinSetDlgItemText(pnbp->hwndDlgPage, ID_XCDI_INFO_NLS_AUTHOR,
                     szSearchMask);
     } // end if (flFlags & CBI_SET)
 }
@@ -3101,7 +3101,7 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *      Reacts to changes of any of the dialog controls.
  */
 
-MRESULT setStatusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT setStatusItemChanged(PNOTEBOOKPAGE pnbp,
                              ULONG ulItemID, USHORT usNotifyCode,
                              ULONG ulExtra)      // for checkboxes: contains new state
 {
@@ -3121,7 +3121,7 @@ MRESULT setStatusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                 strcpy(szOldLanguageCode, cmnQueryLanguageCode());
 
-                WinQueryDlgItemText(pcnbp->hwndDlgPage, ID_XCDI_INFO_LANGUAGE,
+                WinQueryDlgItemText(pnbp->hwndDlgPage, ID_XCDI_INFO_LANGUAGE,
                                     sizeof(szTemp),
                                     szTemp);
                 p = strhistr(szTemp, " -- XFLDR")+9; // my own case-insensitive routine
@@ -3143,18 +3143,18 @@ MRESULT setStatusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         //   old language
                         cmnSetLanguageCode(szOldLanguageCode);
                         // update display
-                        pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+                        pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
                     }
                     else
                     {
                         HWND      hwndSystemFrame,
-                                  hwndCurrent = pcnbp->hwndDlgPage;
+                                  hwndCurrent = pnbp->hwndDlgPage;
                         HWND      hwndDesktop
                                 = WinQueryDesktopWindow(WinQueryAnchorBlock(HWND_DESKTOP),
                                                         NULLHANDLE);
 
                         // "closing system window"
-                        cmnMessageBoxMsg(pcnbp->hwndFrame,
+                        cmnMessageBoxMsg(pnbp->hwndFrame,
                                          102, 103,
                                          MB_OK);
 
@@ -3191,7 +3191,7 @@ MRESULT setStatusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *@@changed V0.9.4 (2000-07-03) [umoeller]: "Desktop restarts" was 1 too large; fixed
  */
 
-VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID setStatusTimer(PNOTEBOOKPAGE pnbp,   // notebook info struct
                     ULONG ulTimer)
 {
     PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
@@ -3204,7 +3204,7 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     // awake Desktop objects
 
     sprintf(szTemp, "%d", xthrQueryAwakeObjectsCount());
-    WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XCDI_INFO_AWAKEOBJECTS,
+    WinSetDlgItemText(pnbp->hwndDlgPage, ID_XCDI_INFO_AWAKEOBJECTS,
                       szTemp);
 
     if (DosGetInfoBlocks(&ptib, &ppib) == NO_ERROR)
@@ -3216,7 +3216,7 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             PRCPROCESS       prcp;
             // WPS thread count
             prc16QueryProcessInfo(pps, doshMyPID(), &prcp);
-            WinSetDlgItemShort(pcnbp->hwndDlgPage, ID_XCDI_INFO_WPSTHREADS,
+            WinSetDlgItemShort(pnbp->hwndDlgPage, ID_XCDI_INFO_WPSTHREADS,
                                prcp.usThreads,
                                FALSE);  // unsigned
             prc16FreeInfo(pps);
@@ -3230,7 +3230,7 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         if (pXwpGlobalShared)
         {
             // Desktop restarts V0.9.1 (99-12-29) [umoeller]
-            WinSetDlgItemShort(pcnbp->hwndDlgPage, ID_XCDI_INFO_WPSRESTARTS,
+            WinSetDlgItemShort(pnbp->hwndDlgPage, ID_XCDI_INFO_WPSRESTARTS,
                                pXwpGlobalShared->ulWPSStartupCount - 1,
                                FALSE);  // unsigned
 
@@ -3239,7 +3239,7 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             else
                 psz = "Not loaded";
         }
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XCDI_INFO_HOOKSTATUS,
+        WinSetDlgItemText(pnbp->hwndDlgPage, ID_XCDI_INFO_HOOKSTATUS,
                           psz);
     }
 }
@@ -3495,7 +3495,7 @@ static VOID DisableObjectMenuItems(HWND hwndMenu,          // in: button menu ha
  *      Global Settings.
  */
 
-VOID setObjectsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID setObjectsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                         ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
@@ -3504,10 +3504,10 @@ VOID setObjectsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         setFindExistingObjects(FALSE);  // XWorkplace objects
         setFindExistingObjects(TRUE);   // Desktop objects
 
-        ctlMakeMenuButton(WinWindowFromID(pcnbp->hwndDlgPage, ID_XCD_OBJECTS_SYSTEM),
+        ctlMakeMenuButton(WinWindowFromID(pnbp->hwndDlgPage, ID_XCD_OBJECTS_SYSTEM),
                           0, 0);        // query for menu
 
-        ctlMakeMenuButton(WinWindowFromID(pcnbp->hwndDlgPage, ID_XCD_OBJECTS_XWORKPLACE),
+        ctlMakeMenuButton(WinWindowFromID(pnbp->hwndDlgPage, ID_XCD_OBJECTS_XWORKPLACE),
                           0, 0);
     }
 }
@@ -3519,7 +3519,7 @@ VOID setObjectsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *      Reacts to changes of any of the dialog controls.
  */
 
-MRESULT setObjectsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT setObjectsItemChanged(PNOTEBOOKPAGE pnbp,
                               ULONG ulItemID, USHORT usNotifyCode,
                               ULONG ulExtra)      // for checkboxes: contains new state
 {
@@ -3535,7 +3535,7 @@ MRESULT setObjectsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XCD_OBJECTS_SYSTEM:
         {
             HPOINTER hptrOld = winhSetWaitPointer();
-            HWND    hwndMenu = WinLoadMenu(WinWindowFromID(pcnbp->hwndDlgPage, ulItemID),
+            HWND    hwndMenu = WinLoadMenu(WinWindowFromID(pnbp->hwndDlgPage, ulItemID),
                                            cmnQueryNLSModuleHandle(FALSE),
                                            ID_XSM_OBJECTS_SYSTEM);
             DisableObjectMenuItems(hwndMenu,
@@ -3554,7 +3554,7 @@ MRESULT setObjectsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XCD_OBJECTS_XWORKPLACE:
         {
             HPOINTER hptrOld = winhSetWaitPointer();
-            HWND    hwndMenu = WinLoadMenu(WinWindowFromID(pcnbp->hwndDlgPage, ulItemID),
+            HWND    hwndMenu = WinLoadMenu(WinWindowFromID(pnbp->hwndDlgPage, ulItemID),
                                            cmnQueryNLSModuleHandle(FALSE),
                                            ID_XSM_OBJECTS_XWORKPLACE);
             DisableObjectMenuItems(hwndMenu,
@@ -3571,7 +3571,7 @@ MRESULT setObjectsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          */
 
         case ID_XCD_OBJECTS_CONFIGFOLDER:
-            if (cmnMessageBoxMsg(pcnbp->hwndFrame,
+            if (cmnMessageBoxMsg(pnbp->hwndFrame,
                                  148,       // XWorkplace Setup
                                  161,       // config folder?
                                  MB_YESNO)
@@ -3591,12 +3591,12 @@ MRESULT setObjectsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                  && (ulItemID <= OBJECTSIDLAST)
                )
             {
-                if (!setCreateStandardObject(pcnbp->hwndFrame,
+                if (!setCreateStandardObject(pnbp->hwndFrame,
                                              ulItemID,
                                              FALSE))
                     // Desktop objects not found:
                     // try XDesktop objects
-                    setCreateStandardObject(pcnbp->hwndFrame,
+                    setCreateStandardObject(pnbp->hwndFrame,
                                             ulItemID,
                                             TRUE);
             }
@@ -3634,29 +3634,29 @@ static const XWPSETTING G_ParanoiaBackup[] =
  *@@changed V0.9.2 (2000-03-28) [umoeller]: added freaky menus setting
  */
 
-VOID setParanoiaInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID setParanoiaInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                          ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (flFlags & CBI_INIT)
     {
-        if (pcnbp->pUser == NULL)
+        if (pnbp->pUser == NULL)
         {
             // first call: backup Global Settings for "Undo" button;
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
-            pcnbp->pUser = cmnBackupSettings(G_ParanoiaBackup,
+            pnbp->pUser = cmnBackupSettings(G_ParanoiaBackup,
                                              ARRAYITEMCOUNT(G_ParanoiaBackup));
             /*
-            pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+            pnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
+            memcpy(pnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
             */
         }
 
         // set up slider
-        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_SLIDER),
+        winhSetSliderTicks(WinWindowFromID(pnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_SLIDER),
                            (MPARAM)0, 6,
                            (MPARAM)-1, -1);
     }
@@ -3664,25 +3664,25 @@ VOID setParanoiaInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     if (flFlags & CBI_SET)
     {
         // variable menu ID offset spin button
-        winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_XCDI_VARMENUOFFSET,
+        winhSetDlgItemSpinData(pnbp->hwndDlgPage, ID_XCDI_VARMENUOFFSET,
                                                 100, 2000,
                                                 cmnQuerySetting(sulVarMenuOffset));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_NOFREAKYMENUS,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XCDI_NOFREAKYMENUS,
                                                cmnQuerySetting(sfNoFreakyMenus));
 #ifndef __ALWAYSSUBCLASS__
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_NOSUBCLASSING,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XCDI_NOSUBCLASSING,
                                                cmnQuerySetting(sfNoSubclassing));
 #endif
-        // winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_NOWORKERTHREAD,
+        // winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XCDI_NOWORKERTHREAD,
            //                                     cmnQuerySetting(sNoWorkerThread));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_USE8HELVFONT,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XCDI_USE8HELVFONT,
                                                cmnQuerySetting(sfUse8HelvFont));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_NOEXCPTBEEPS,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XCDI_NOEXCPTBEEPS,
                                                cmnQuerySetting(sfNoExcptBeeps));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_BEEP,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_BEEP,
                                                cmnQuerySetting(sfWorkerPriorityBeep));
 
-        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_SLIDER),
+        winhSetSliderArmPosition(WinWindowFromID(pnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_SLIDER),
                                  SMA_INCREMENTVALUE,
                                  cmnQuerySetting(sulDefaultWorkerThreadPriority));
     }
@@ -3690,13 +3690,13 @@ VOID setParanoiaInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     /*
     if (flFlags & CBI_ENABLE)
     {
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_TEXT1,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_TEXT1,
                         !(cmnQuerySetting(sNoWorkerThread)));
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_SLIDER,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_SLIDER,
                         !(cmnQuerySetting(sNoWorkerThread)));
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_TEXT2,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_TEXT2,
                         !(cmnQuerySetting(sNoWorkerThread)));
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_BEEP,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_BEEP,
                         !(cmnQuerySetting(sNoWorkerThread)));
     }
     */
@@ -3712,7 +3712,7 @@ VOID setParanoiaInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.9 (2001-04-01) [pr]: fixed freaky menus undo
  */
 
-MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT setParanoiaItemChanged(PNOTEBOOKPAGE pnbp,
                                ULONG ulItemID, USHORT usNotifyCode,
                                ULONG ulExtra)      // for checkboxes: contains new state
 {
@@ -3742,7 +3742,7 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XCDI_NOWORKERTHREAD:
             cmnSetSetting(sNoWorkerThread, ulExtra);
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
             // set flag to iterate over other notebook pages
             fUpdateOtherPages = TRUE;
         break;
@@ -3761,7 +3761,7 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             PSZ pszNewInfo = "error";
 
             LONG lSliderIndex = winhQuerySliderArmPosition(
-                                            WinWindowFromID(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_SLIDER),
+                                            WinWindowFromID(pnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_SLIDER),
                                             SMA_INCREMENTVALUE);
 
             switch (lSliderIndex)
@@ -3771,7 +3771,7 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 case 2:     pszNewInfo = "Regular ñ0"; break;
             }
 
-            WinSetDlgItemText(pcnbp->hwndDlgPage,
+            WinSetDlgItemText(pnbp->hwndDlgPage,
                               ID_XCDI_WORKERPRTY_TEXT2,
                               pszNewInfo);
 
@@ -3792,11 +3792,11 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
-            cmnRestoreSettings(pcnbp->pUser,
+            cmnRestoreSettings(pnbp->pUser,
                                ARRAYITEMCOUNT(G_ParanoiaBackup));
 
             /*
-            PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
+            PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pnbp->pUser);
 
             // and restore the settings for this page
             cmnSetSetting(sulVarMenuOffset, pGSBackup->VarMenuOffset);
@@ -3813,7 +3813,7 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                */
 
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
             // set flag to iterate over other notebook pages
             fUpdateOtherPages = TRUE;
         }
@@ -3824,9 +3824,9 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
             // Desktop startup)
-            cmnSetDefaultSettings(pcnbp->ulPageID);
+            cmnSetDefaultSettings(pnbp->inbp.ulPageID);
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
             // set flag to iterate over other notebook pages
             fUpdateOtherPages = TRUE;
         }
@@ -3843,14 +3843,14 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
     if (fUpdateOtherPages)
     {
-        PCREATENOTEBOOKPAGE pcnbp2 = NULL;
+        PNOTEBOOKPAGE pnbp2 = NULL;
         // iterate over all currently open notebook pages
-        while (pcnbp2 = ntbQueryOpenPages(pcnbp2))
+        while (pnbp2 = ntbQueryOpenPages(pnbp2))
         {
-            if (pcnbp2->fPageVisible)
-                if (pcnbp2->pfncbInitPage)
+            if (pnbp2->fPageVisible)
+                if (pnbp2->inbp.pfncbInitPage)
                     // enable/disable items on visible page
-                    (*(pcnbp2->pfncbInitPage))(pcnbp2, CBI_ENABLE);
+                    pnbp2->inbp.pfncbInitPage(pnbp2, CBI_ENABLE);
         }
     }
 

@@ -185,6 +185,17 @@
  *      management, which is in this file (icons.c).
  *      Presently NE and LX icons are supported; see icoLoadExeIcon.
  *
+ *      We presently replace the following icon methods:
+ *
+ *      --  XWPProgram::wpQueryIcon, XWPProgram::wpSetProgIcon,
+ *          XWPProgram::wpQueryIconData @@todo
+ *
+ *      --  XWPProgramFile::wpSetProgIcon, XWPProgramFile::wpQueryIconData @@todo
+ *
+ *      --  XFldDataFile::wpQueryIcon, XFldDataFile::wpQueryIconData @@todo
+ *
+ *      --  XWPFileSystem::wpQueryIcon, XWPFileSystem::wpQueryIconData @@todo
+ *
  *      Function prefix for this file:
  *      --  ico*
  *
@@ -2673,7 +2684,7 @@ static const DLGHITEM dlgObjIconTail[] =
  *@@added V0.9.16 (2001-10-15) [umoeller]
  */
 
-VOID icoFormatIconPage(PCREATENOTEBOOKPAGE pcnbp,
+VOID icoFormatIconPage(PNOTEBOOKPAGE pnbp,
                        ULONG flFlags)
 {
     APIRET arc;
@@ -2754,7 +2765,7 @@ VOID icoFormatIconPage(PCREATENOTEBOOKPAGE pcnbp,
                                                ARRAYITEMCOUNT(dlgObjIconTail))))
                )
             {
-                ntbFormatPage(pcnbp->hwndDlgPage,
+                ntbFormatPage(pnbp->hwndDlgPage,
                               pArrayIcon->paDlgItems,
                               pArrayIcon->cDlgItemsNow);
             }
@@ -2797,7 +2808,7 @@ typedef struct _OBJICONPAGEDATA
                 fLockedInPlaceBackup;
 
     // data for subclassed icon
-    PCREATENOTEBOOKPAGE pcnbp;              // reverse linkage for subclassed icon
+    PNOTEBOOKPAGE   pnbp;              // reverse linkage for subclassed icon
     PFNWP           pfnwpIconOriginal;
     WPObject        *pobjDragged;
 
@@ -2833,7 +2844,7 @@ static VOID PaintIcon(POBJICONPAGEDATA pData,
                                                     PP_BACKGROUNDCOLOR,
                                                     TRUE,
                                                     SYSCLR_DIALOGBACKGROUND);
-    HPOINTER    hptr = icoQueryIconN(pData->pcnbp->somSelf,
+    HPOINTER    hptr = icoQueryIconN(pData->pnbp->inbp.somSelf,
                                      pData->ulAnimationIndex);
 
     gpihSwitchToRGB(hps);
@@ -2869,14 +2880,14 @@ static VOID RemoveTargetEmphasis(POBJICONPAGEDATA pData,
  *@@added V0.9.16 (2001-10-19) [umoeller]
  */
 
-static VOID ReportError(PCREATENOTEBOOKPAGE pcnbp,
+static VOID ReportError(PNOTEBOOKPAGE pnbp,
                         APIRET arc,
                         PCSZ pcszContext)
 {
     if (arc)
-        cmnDosErrorMsgBox(pcnbp->hwndDlgPage,
+        cmnDosErrorMsgBox(pnbp->hwndDlgPage,
                           NULL,
-                          _wpQueryTitle(pcnbp->somSelf),
+                          _wpQueryTitle(pnbp->inbp.somSelf),
                           NULL,
                           arc,
                           pcszContext,
@@ -2886,6 +2897,7 @@ static VOID ReportError(PCREATENOTEBOOKPAGE pcnbp,
 
 /*
  *@@ EditIcon:
+ *      starts the icon editor with the current icon.
  *
  *@@added V0.9.16 (2001-10-19) [umoeller]
  */
@@ -2902,10 +2914,12 @@ static VOID EditIcon(POBJICONPAGEDATA pData)
     TRY_LOUD(excpt1)
     {
         pcszContext = "Context: loading icon data";
-        if (!(arc = icoLoadIconData(pData->pcnbp->somSelf,
+        if (!(arc = icoLoadIconData(pData->pnbp->inbp.somSelf,
                                     pData->ulAnimationIndex,
                                     &pIconInfo)))
         {
+            // create a temp file and dump the icon data
+            // into it in one flush
             CHAR szTempFile[CCHMAXPATH];
             pcszContext = "Context: creating temp file name";
             if (!(arc = doshCreateTempFileName(szTempFile,
@@ -2931,6 +2945,7 @@ static VOID EditIcon(POBJICONPAGEDATA pData)
 
                 if (!arc)
                 {
+                    // temp icon file created:
                     CHAR szIconEdit[CCHMAXPATH];
                     FILESTATUS3 fs3Old, fs3New;
 
@@ -2976,7 +2991,7 @@ static VOID EditIcon(POBJICONPAGEDATA pData)
                                 NewIcon.cb = sizeof(ICONINFO);
                                 NewIcon.fFormat = ICON_FILE;
                                 NewIcon.pszFileName = szTempFile;
-                                if (!icoSetIconDataN(pData->pcnbp->somSelf,
+                                if (!icoSetIconDataN(pData->pnbp->inbp.somSelf,
                                                      pData->ulAnimationIndex,
                                                      &NewIcon))
                                     arc = ERROR_FILE_NOT_FOUND;
@@ -2989,7 +3004,7 @@ static VOID EditIcon(POBJICONPAGEDATA pData)
                             arc = ERROR_INVALID_EXE_SIGNATURE;
                     }
 
-                    arc = DosForceDelete(szTempFile);
+                    DosForceDelete(szTempFile);
                 }
             }
 
@@ -3004,7 +3019,7 @@ static VOID EditIcon(POBJICONPAGEDATA pData)
 
     WinSetPointer(HWND_DESKTOP, hptrOld);
 
-    ReportError(pData->pcnbp, arc, pcszContext);
+    ReportError(pData->pnbp, arc, pcszContext);
 }
 
 /*
@@ -3104,7 +3119,7 @@ static MRESULT EXPENTRY fnwpSubclassedIconStatic(HWND hwndStatic, ULONG msg, MPA
         {
             // dragover was valid above:
             APIRET arc;
-            if (arc = icoCopyIconFromObject(pData->pcnbp->somSelf,
+            if (arc = icoCopyIconFromObject(pData->pnbp->inbp.somSelf,
                                             pData->pobjDragged,
                                             pData->ulAnimationIndex))
                 // do not display a msg box during drop,
@@ -3116,12 +3131,12 @@ static MRESULT EXPENTRY fnwpSubclassedIconStatic(HWND hwndStatic, ULONG msg, MPA
             // and repaint
             RemoveTargetEmphasis(pData, hwndStatic);
             // re-enable controls
-            pData->pcnbp->pfncbInitPage(pData->pcnbp, CBI_ENABLE);
+            pData->pnbp->inbp.pfncbInitPage(pData->pnbp, CBI_ENABLE);
         }
         break;
 
         case XM_DISPLAYERROR:
-            ReportError(pData->pcnbp,
+            ReportError(pData->pnbp,
                         (APIRET)mp1,
                         NULL);
         break;
@@ -3142,33 +3157,33 @@ static MRESULT EXPENTRY fnwpSubclassedIconStatic(HWND hwndStatic, ULONG msg, MPA
  *@@added V0.9.16 (2001-10-15) [umoeller]
  */
 
-VOID XWPENTRY icoIcon1InitPage(PCREATENOTEBOOKPAGE pcnbp,
+VOID XWPENTRY icoIcon1InitPage(PNOTEBOOKPAGE pnbp,
                                ULONG flFlags)
 {
-    POBJICONPAGEDATA pData = (POBJICONPAGEDATA)pcnbp->pUser;
+    POBJICONPAGEDATA pData = (POBJICONPAGEDATA)pnbp->pUser;
     ULONG flIconPageFlags = 0;
     if (pData)
         flIconPageFlags = pData->flIconPageFlags;
 
     if (flFlags & CBI_INIT)
     {
-        if (    (pcnbp->pUser == NULL)
+        if (    (pnbp->pUser == NULL)
              // backup data for "undo"
              && (pData = NEW(OBJICONPAGEDATA))
            )
         {
-            ULONG   ulStyle = _wpQueryStyle(pcnbp->somSelf);
+            ULONG   ulStyle = _wpQueryStyle(pnbp->inbp.somSelf);
 
             ZERO(pData);
 
-            pData->fIsFolder = _somIsA(pcnbp->somSelf, _WPFolder);
+            pData->fIsFolder = _somIsA(pnbp->inbp.somSelf, _WPFolder);
 
-            pData->pcnbp = pcnbp;
+            pData->pnbp = pnbp;
 
             // store this in notebook page data
-            pcnbp->pUser = pData;
+            pnbp->pUser = pData;
 
-            switch (pcnbp->ulPageID)
+            switch (pnbp->inbp.ulPageID)
             {
                 case SP_OBJECT_ICONPAGE2:
                     // folder animation icon page 2:
@@ -3212,17 +3227,17 @@ VOID XWPENTRY icoIcon1InitPage(PCREATENOTEBOOKPAGE pcnbp,
             flIconPageFlags = pData->flIconPageFlags;
 
             // insert the controls using the dialog formatter
-            icoFormatIconPage(pcnbp,
+            icoFormatIconPage(pnbp,
                               flIconPageFlags);
 
             // set up controls some more
 
             if (flIconPageFlags & ICONFL_TITLE)
             {
-                HWND hwndMLE = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_ICON_TITLE_EF);
+                HWND hwndMLE = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_ICON_TITLE_EF);
 
                 // backup for undo
-                pData->pszTitleBackup = strhdup(_wpQueryTitle(pcnbp->somSelf), NULL);
+                pData->pszTitleBackup = strhdup(_wpQueryTitle(pnbp->inbp.somSelf), NULL);
 
                 WinSendMsg(hwndMLE,
                            MLM_SETTEXTLIMIT,
@@ -3231,7 +3246,7 @@ VOID XWPENTRY icoIcon1InitPage(PCREATENOTEBOOKPAGE pcnbp,
 
                 // if the object must not be renamed, set
                 // the MLE read-only
-                if (pData->fNoRename = !!(_wpQueryStyle(pcnbp->somSelf)
+                if (pData->fNoRename = !!(_wpQueryStyle(pnbp->inbp.somSelf)
                                                 & OBJSTYLE_NORENAME))
                     WinSendMsg(hwndMLE,
                                MLM_SETREADONLY,
@@ -3241,11 +3256,11 @@ VOID XWPENTRY icoIcon1InitPage(PCREATENOTEBOOKPAGE pcnbp,
 
             if (flIconPageFlags & ICONFL_ICON)
             {
-                BOOL fUsingDefaultIcon = icoIsUsingDefaultIcon(pcnbp->somSelf,
+                BOOL fUsingDefaultIcon = icoIsUsingDefaultIcon(pnbp->inbp.somSelf,
                                                                pData->ulAnimationIndex);
 
                 // go subclass the icon static control
-                pData->hwndIconStatic = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_ICON_STATIC);
+                pData->hwndIconStatic = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_ICON_STATIC);
                 winhSetPresColor(pData->hwndIconStatic,
                                  // PP_BACKGROUNDCOLOR
                                  3L,
@@ -3259,14 +3274,14 @@ VOID XWPENTRY icoIcon1InitPage(PCREATENOTEBOOKPAGE pcnbp,
 
                 if (!fUsingDefaultIcon)
                     // not default icon: load a copy for "undo"
-                    icoLoadIconData(pcnbp->somSelf,
+                    icoLoadIconData(pnbp->inbp.somSelf,
                                     pData->ulAnimationIndex,
                                     &pData->pIconDataBackup);
             }
 
             if (flIconPageFlags & ICONFL_HOTKEY)
             {
-                pData->hwndHotkeyEF = WinWindowFromID(pcnbp->hwndDlgPage,
+                pData->hwndHotkeyEF = WinWindowFromID(pnbp->hwndDlgPage,
                                                       ID_XSDI_ICON_HOTKEY_EF);
 
                 if (pData->fHotkeysWorking = hifXWPHookReady())
@@ -3278,7 +3293,7 @@ VOID XWPENTRY icoIcon1InitPage(PCREATENOTEBOOKPAGE pcnbp,
                     ctlMakeHotkeyEntryField(pData->hwndHotkeyEF);
 
                     // backup original hotkey
-                    if (_xwpQueryObjectHotkey(pcnbp->somSelf,
+                    if (_xwpQueryObjectHotkey(pnbp->inbp.somSelf,
                                               &pData->HotkeyBackup))
                         pData->fInitiallyHadHotkey = TRUE;
                 }
@@ -3287,12 +3302,12 @@ VOID XWPENTRY icoIcon1InitPage(PCREATENOTEBOOKPAGE pcnbp,
             // disable template checkbox if the class style
             // has NEVERTEMPLATE
             if (    (flIconPageFlags & ICONFL_TEMPLATE)
-                 && (_wpclsQueryStyle(_somGetClass(pcnbp->somSelf))
+                 && (_wpclsQueryStyle(_somGetClass(pnbp->inbp.somSelf))
                                     & CLSSTYLE_NEVERTEMPLATE)
                )
             {
                 // keep the "Template" checkbox, but disable it
-                WinEnableControl(pcnbp->hwndDlgPage,
+                WinEnableControl(pnbp->hwndDlgPage,
                                  ID_XSDI_ICON_TEMPLATE_CB,
                                  FALSE);
                 // unset the flag so the code below won't play
@@ -3307,11 +3322,11 @@ VOID XWPENTRY icoIcon1InitPage(PCREATENOTEBOOKPAGE pcnbp,
 
     if (flFlags & CBI_SET)
     {
-        ULONG ulStyle = _wpQueryStyle(pcnbp->somSelf);
+        ULONG ulStyle = _wpQueryStyle(pnbp->inbp.somSelf);
 
         if (flIconPageFlags & ICONFL_TITLE)
-            WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_ICON_TITLE_EF,
-                              _wpQueryTitle(pcnbp->somSelf));
+            WinSetDlgItemText(pnbp->hwndDlgPage, ID_XSDI_ICON_TITLE_EF,
+                              _wpQueryTitle(pnbp->inbp.somSelf));
 
         // no need to set icon handle, this is subclassed and can
         // do this itself; just have it repaint itself to be sure
@@ -3319,11 +3334,11 @@ VOID XWPENTRY icoIcon1InitPage(PCREATENOTEBOOKPAGE pcnbp,
             WinInvalidateRect(pData->hwndIconStatic, NULL, FALSE);
 
         if (flIconPageFlags & ICONFL_TEMPLATE)
-            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ICON_TEMPLATE_CB,
+            winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_ICON_TEMPLATE_CB,
                                   (!!(ulStyle & OBJSTYLE_TEMPLATE)));
 
         if (flIconPageFlags & ICONFL_LOCKEDINPLACE)
-            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ICON_LOCKPOSITION_CB,
+            winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_ICON_LOCKPOSITION_CB,
                                   (!!(ulStyle & OBJSTYLE_LOCKEDINPLACE)));
 
         if (flIconPageFlags & ICONFL_HOTKEY)
@@ -3334,7 +3349,7 @@ VOID XWPENTRY icoIcon1InitPage(PCREATENOTEBOOKPAGE pcnbp,
 
             XFldObject_OBJECTHOTKEY Hotkey;
 
-            if (_xwpQueryObjectHotkey(pcnbp->somSelf,
+            if (_xwpQueryObjectHotkey(pnbp->inbp.somSelf,
                                       &Hotkey))
             {
                 CHAR    szKeyName[200];
@@ -3375,9 +3390,9 @@ VOID XWPENTRY icoIcon1InitPage(PCREATENOTEBOOKPAGE pcnbp,
         {
             // disable "Reset icon" button if
             // the object doesn't have a non-default icon anyway
-            WinEnableControl(pcnbp->hwndDlgPage,
+            WinEnableControl(pnbp->hwndDlgPage,
                              ID_XSDI_ICON_RESET_BUTTON,
-                             !icoIsUsingDefaultIcon(pcnbp->somSelf,
+                             !icoIsUsingDefaultIcon(pnbp->inbp.somSelf,
                                                     pData->ulAnimationIndex));
         }
 
@@ -3386,15 +3401,15 @@ VOID XWPENTRY icoIcon1InitPage(PCREATENOTEBOOKPAGE pcnbp,
             // disable entry field if hotkeys are not working
             WinEnableWindow(pData->hwndHotkeyEF,
                             pData->fHotkeysWorking);
-            WinEnableControl(pcnbp->hwndDlgPage,
+            WinEnableControl(pnbp->hwndDlgPage,
                              ID_XSDI_ICON_HOTKEY_TEXT,
                              pData->fHotkeysWorking);
-            WinEnableControl(pcnbp->hwndDlgPage,
+            WinEnableControl(pnbp->hwndDlgPage,
                              ID_XSDI_ICON_HOTKEY_CLEAR,
                                 (pData->fHotkeysWorking)
                              && (pData->fHasHotkey));
 
-            WinEnableControl(pcnbp->hwndDlgPage,
+            WinEnableControl(pnbp->hwndDlgPage,
                              ID_XSDI_ICON_HOTKEY_SET,
                                 (pData->fHotkeysWorking)
                              && (pData->fHotkeyPending));
@@ -3428,7 +3443,7 @@ VOID XWPENTRY icoIcon1InitPage(PCREATENOTEBOOKPAGE pcnbp,
 static MRESULT HandleENHotkey(POBJICONPAGEDATA pData,
                               ULONG ulExtra)
 {
-    PCREATENOTEBOOKPAGE pcnbp = pData->pcnbp;
+    PNOTEBOOKPAGE   pnbp = pData->pnbp;
 
     ULONG           flReturn = 0;
     PHOTKEYNOTIFY   phkn = (PHOTKEYNOTIFY)ulExtra;
@@ -3468,12 +3483,12 @@ static MRESULT HandleENHotkey(POBJICONPAGEDATA pData,
                      )
                 )
              || (    ((usFlags & (KC_CTRL | KC_SHIFT | KC_ALT)) == KC_ALT)
-                  && (   (WinSendDlgItemMsg(pcnbp->hwndDlgPage,
+                  && (   (WinSendDlgItemMsg(pnbp->hwndDlgPage,
                                             ID_XSDI_ICON_HOTKEY_SET,
                                             WM_MATCHMNEMONIC,
                                             (MPARAM)phkn->usch,
                                             0))
-                      || (WinSendDlgItemMsg(pcnbp->hwndDlgPage,
+                      || (WinSendDlgItemMsg(pnbp->hwndDlgPage,
                                             ID_XSDI_ICON_HOTKEY_CLEAR,
                                             WM_MATCHMNEMONIC,
                                             (MPARAM)phkn->usch,
@@ -3517,7 +3532,7 @@ static MRESULT HandleENHotkey(POBJICONPAGEDATA pData,
 
         pData->fHotkeyPending = TRUE;
 
-        WinEnableControl(pcnbp->hwndDlgPage,
+        WinEnableControl(pnbp->hwndDlgPage,
                          ID_XSDI_ICON_HOTKEY_SET,
                          TRUE);
 
@@ -3536,7 +3551,7 @@ static MRESULT HandleENHotkey(POBJICONPAGEDATA pData,
  *@@changed V0.9.16 (2001-12-08) [umoeller]: now disabling hotkeys while entryfield has the focus
  */
 
-MRESULT XWPENTRY icoIcon1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
                                      ULONG ulItemID, USHORT usNotifyCode,
                                      ULONG ulExtra)
 {
@@ -3554,7 +3569,7 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
     APIRET  arc;
 
-    if (    (pData = (POBJICONPAGEDATA)pcnbp->pUser)
+    if (    (pData = (POBJICONPAGEDATA)pnbp->pUser)
          && (flIconPageFlags = pData->flIconPageFlags)
        )
     {
@@ -3570,16 +3585,16 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                    )
                 {
                     PSZ pszNewTitle;
-                    if (!(pszNewTitle = winhQueryWindowText(pcnbp->hwndControl)))
+                    if (!(pszNewTitle = winhQueryWindowText(pnbp->hwndControl)))
                     {
                         // no title: restore old
-                        cmnMessageBoxMsg(pcnbp->hwndDlgPage,
+                        cmnMessageBoxMsg(pnbp->hwndDlgPage,
                                          104,   // error
                                          187,   // old name restored
                                          MB_OK);
                     }
                     else
-                        _wpSetTitle(pcnbp->somSelf, pszNewTitle);
+                        _wpSetTitle(pnbp->inbp.somSelf, pszNewTitle);
 
                     free(pszNewTitle);
 
@@ -3597,7 +3612,7 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             case DID_BROWSE:
             {
                 CHAR szFilemask[CCHMAXPATH] = "*.ico";
-                if (cmnFileDlg(pcnbp->hwndDlgPage,
+                if (cmnFileDlg(pnbp->hwndDlgPage,
                                szFilemask,
                                WINH_FOD_INILOADDIR | WINH_FOD_INISAVEDIR,
                                HINI_USER,
@@ -3610,20 +3625,20 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         arc = ERROR_FILE_NOT_FOUND;
                     else
                     {
-                        arc = icoCopyIconFromObject(pcnbp->somSelf,
+                        arc = icoCopyIconFromObject(pnbp->inbp.somSelf,
                                                     pfs,
                                                     pData->ulAnimationIndex);
                         WinInvalidateRect(pData->hwndIconStatic, NULL, FALSE);
                     }
 
-                    ReportError(pcnbp, arc, NULL);
+                    ReportError(pnbp, arc, NULL);
                 }
             }
             break;
 
             case ID_XSDI_ICON_RESET_BUTTON:
                 if (pData->flIconPageFlags & ICONFL_ICON)
-                    objResetIcon(pcnbp->somSelf, pData->ulAnimationIndex);
+                    objResetIcon(pnbp->inbp.somSelf, pData->ulAnimationIndex);
             break;
 
             case ID_XSDI_ICON_TEMPLATE_CB:
@@ -3692,7 +3707,7 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             case ID_XSDI_ICON_HOTKEY_SET:
                 // set hotkey
-                _xwpSetObjectHotkey(pcnbp->somSelf,
+                _xwpSetObjectHotkey(pnbp->inbp.somSelf,
                                     &pData->Hotkey);
                 pData->fHotkeyPending = FALSE;
                 pData->fHasHotkey = TRUE;
@@ -3705,7 +3720,7 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             case ID_XSDI_ICON_HOTKEY_CLEAR:
                 // remove hotkey
-                _xwpSetObjectHotkey(pcnbp->somSelf,
+                _xwpSetObjectHotkey(pnbp->inbp.somSelf,
                                     NULL);   // remove
                 WinSetWindowText(pData->hwndHotkeyEF,
                                  cmnGetString(ID_XSSI_NOTDEFINED)); // (cmnQueryNLSStrings())->pszNotDefined);
@@ -3719,8 +3734,8 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
              */
 
             case DID_DETAILS:
-                objShowObjectDetails(pcnbp->hwndNotebook,
-                                     pcnbp->somSelf);
+                objShowObjectDetails(pnbp->inbp.hwndNotebook,
+                                     pnbp->inbp.somSelf);
             break;
 
             /*
@@ -3734,19 +3749,19 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                      && (!pData->fNoRename)
                    )
                     // set backed-up title
-                    _wpSetTitle(pcnbp->somSelf, pData->pszTitleBackup);
+                    _wpSetTitle(pnbp->inbp.somSelf, pData->pszTitleBackup);
 
                 if (flIconPageFlags & ICONFL_ICON)
                 {
                     // restore icon backup
                     if (pData->pIconDataBackup)
                         // was using non-default icon:
-                        icoSetIconDataN(pcnbp->somSelf,
+                        icoSetIconDataN(pnbp->inbp.somSelf,
                                         pData->ulAnimationIndex,
                                         pData->pIconDataBackup);
                     else
                         // was using default icon:
-                        objResetIcon(pcnbp->somSelf, pData->ulAnimationIndex);
+                        objResetIcon(pnbp->inbp.somSelf, pData->ulAnimationIndex);
                 }
 
                 if (flIconPageFlags & ICONFL_TEMPLATE)
@@ -3769,14 +3784,14 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 {
                     if (pData->fInitiallyHadHotkey)
                     {
-                        _xwpSetObjectHotkey(pcnbp->somSelf,
+                        _xwpSetObjectHotkey(pnbp->inbp.somSelf,
                                             &pData->HotkeyBackup);
                         pData->fHasHotkey = TRUE;
                     }
                     else
                     {
                         // no hotkey: delete
-                        _xwpSetObjectHotkey(pcnbp->somSelf,
+                        _xwpSetObjectHotkey(pnbp->inbp.somSelf,
                                             NULL);
                         pData->fHasHotkey = FALSE;
                     }
@@ -3794,12 +3809,12 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                      && (!pData->fNoRename)
                    )
                     // set class default title
-                    _wpSetTitle(pcnbp->somSelf,
-                                _wpclsQueryTitle(_somGetClass(pcnbp->somSelf)));
+                    _wpSetTitle(pnbp->inbp.somSelf,
+                                _wpclsQueryTitle(_somGetClass(pnbp->inbp.somSelf)));
 
                 if (flIconPageFlags & ICONFL_ICON)
                     // reset standard icon
-                    objResetIcon(pcnbp->somSelf, pData->ulAnimationIndex);
+                    objResetIcon(pnbp->inbp.somSelf, pData->ulAnimationIndex);
 
                 if (flIconPageFlags & ICONFL_TEMPLATE)
                     // clear template bit
@@ -3812,7 +3827,7 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 if (flIconPageFlags & ICONFL_HOTKEY)
                 {
                     // delete hotkey
-                    _xwpSetObjectHotkey(pcnbp->somSelf,
+                    _xwpSetObjectHotkey(pnbp->inbp.somSelf,
                                         NULL);
                     pData->fHasHotkey = FALSE;
                     pData->fHotkeyPending = FALSE;
@@ -3827,7 +3842,7 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     if (ulStyleFlags)
     {
         // object style flags are to be changed:
-        _wpModifyStyle(pcnbp->somSelf,
+        _wpModifyStyle(pnbp->inbp.somSelf,
                        ulStyleFlags,        // affected flags
                        ulStyleMask);        // bits to be set or cleared
         fRefresh = TRUE;
@@ -3836,9 +3851,9 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     if (fRefresh)
     {
         // update the display by calling the INIT callback
-        pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+        pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         // and save the object (to be on the safe side)
-        _wpSaveDeferred(pcnbp->somSelf);
+        _wpSaveDeferred(pnbp->inbp.somSelf);
     }
 
     return (mrc);

@@ -87,7 +87,7 @@
  */
 
 /*
- *      Copyright (C) 1998-2000 Ulrich M”ller.
+ *      Copyright (C) 1998-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -179,8 +179,7 @@ SOM_Scope ULONG  SOMLINK xwlist_xwpAddXWPClassListPages(XWPClassList *somSelf,
                                                         HWND hwndDlg)
 {
     CHAR    szTitle[200];
-    PCREATENOTEBOOKPAGE pcnbp;
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    INSERTNOTEBOOKPAGE inbp;
     PSZ     p;
 
     /* XWPClassListData *somThis = XWPClassListGetData(somSelf); */
@@ -192,20 +191,19 @@ SOM_Scope ULONG  SOMLINK xwlist_xwpAddXWPClassListPages(XWPClassList *somSelf,
     if (p)
         strcpy(p, p+1);
 
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = szTitle;
-    pcnbp->ulDlgID = ID_XLD_SETTINGS;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_CLASSLIST;
-    pcnbp->ulPageID = SP_CLASSLIST;
-    pcnbp->pfncbInitPage    = cllClassListInitPage;
-    pcnbp->pfncbItemChanged = cllClassListItemChanged;
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = szTitle;
+    inbp.ulDlgID = ID_XLD_SETTINGS;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_CLASSLIST;
+    inbp.ulPageID = SP_CLASSLIST;
+    inbp.pfncbInitPage    = cllClassListInitPage;
+    inbp.pfncbItemChanged = cllClassListItemChanged;
 
-    return (ntbInsertPage(pcnbp));
+    return (ntbInsertPage(&inbp));
 }
 
 /*

@@ -1282,25 +1282,25 @@ SOM_Scope BOOL  SOMLINK xf_xwpUpdateStatusBar(XFolder *somSelf,
 SOM_Scope ULONG  SOMLINK xf_xwpAddXFolderPages(XFolder *somSelf,
                                                HWND hwndDlg)
 {
-    PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+    INSERTNOTEBOOKPAGE inbp;
 
     XFolderMethodDebug("XFolder","xf_xwpAddXFolderPages");
 
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-    pcnbp->ulDlgID = ID_XFD_EMPTYDLG; // ID_XSD_SETTINGS_FLDR1; V0.9.16 (2001-09-29) [umoeller]
-    pcnbp->ulPageID = SP_XFOLDER_FLDR;
-    pcnbp->usPageStyleFlags = BKA_MAJOR | BKA_MINOR;
-    pcnbp->fEnumerate = TRUE;
-    pcnbp->pszName = cmnGetString(ID_XSSI_VIEWPAGE);    // V0.9.16 (2001-10-23) [umoeller]
-    pcnbp->pszMinorName = cmnGetString(ID_XSSI_GENERALVIEWPAGE);  // V0.9.16 (2001-10-23) [umoeller]
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FLDR1;
-    pcnbp->pfncbInitPage    = fdrXFolderInitPage;
-    pcnbp->pfncbItemChanged = fdrXFolderItemChanged;
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+    inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_XSD_SETTINGS_FLDR1; V0.9.16 (2001-09-29) [umoeller]
+    inbp.ulPageID = SP_XFOLDER_FLDR;
+    inbp.usPageStyleFlags = BKA_MAJOR | BKA_MINOR;
+    inbp.fEnumerate = TRUE;
+    inbp.pcszName = cmnGetString(ID_XSSI_VIEWPAGE);    // V0.9.16 (2001-10-23) [umoeller]
+    inbp.pcszMinorName = cmnGetString(ID_XSSI_GENERALVIEWPAGE);  // V0.9.16 (2001-10-23) [umoeller]
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_FLDR1;
+    inbp.pfncbInitPage    = fdrXFolderInitPage;
+    inbp.pfncbItemChanged = fdrXFolderItemChanged;
 
-    return (ntbInsertPage(pcnbp));
+    return (ntbInsertPage(&inbp));
 }
 
 /*
@@ -1906,7 +1906,6 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreLong(XFolder *somSelf, PSZ pszClass,
             #endif
 
             case IDKEY_FDRTREEVIEWCONTENTS:
-            {
                 // then the pointer given to this method (pValue) must
                 // be the pointer to the WPFolder-internal SHOWALLINTREEVIEW
                 // flag
@@ -1915,7 +1914,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreLong(XFolder *somSelf, PSZ pszClass,
                     XFolderData *somThis = XFolderGetData(somSelf);
                     _pulFolderShowAllInTreeView = pulValue;
                 }
-            break; }
+            break;
         }
     }
 
@@ -2038,30 +2037,25 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
     // data
     if (!strcmp(pszClass, G_pcszWPFolder))
     {
+        XFolderData *somThis = XFolderGetData(somSelf);
+
         switch (ulKey)
         {
             case IDKEY_FDRSORTINFO:
-            {
                 // then the pointer given to this method (pValue) must
                 // be the pointer to the WPFolder-internal FDRSORTINFO
                 // structure (undocumented, I've declared it in
                 // xfldr.idl); we store this pointer in the instance
                 // data so that we can manipulate it later
                 if (cbOrigValue == sizeof(FDRSORTINFO))
-                {
                     if (pValue)
-                    {
-                        XFolderData *somThis = XFolderGetData(somSelf);
                         _pFolderSortInfo = (PFDRSORTINFO)pValue;
-                    }
-                }
                 // _Pmpf(("IDKEY_FDRSORTINFO size %d -> %d", cbOrigValue, *pcbValue));
-            break; }
+            break;
 
             case IDKEY_FDRBACKGROUND:       // size: 2 bytes
                 if (pValue)
                 {
-                    XFolderData *somThis = XFolderGetData(somSelf);
                     _cbFolderBackground = *pcbValue;
                     _pFolderBackground = (PVOID)pValue;
                 }
@@ -2080,19 +2074,15 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
             break; */
 
             case IDKEY_FDRLONGARRAY:        // size: 84 bytes
-            {
-                XFolderData *somThis = XFolderGetData(somSelf);
                 // store the size of the data returned in
                 // folder instance data, in case it is not
                 // 84 bytes (as it is with Warp 4 fixpak 8)
                 _cbFolderLongArray = *pcbValue;
                 if (pValue)
                     _pFolderLongArray = (PFDRLONGARRAY)pValue;
-            break; }
+            break;
 
             case IDKEY_FDRSTRARRAY:         // size: 400 bytes
-            {
-                XFolderData *somThis = XFolderGetData(somSelf);
                 // store the size of the data returned in
                 // folder instance data, in case it is not
                 // 400 bytes (as it is with Warp 4 fixpak 8)
@@ -2101,7 +2091,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
                     _cbFolderStrArray = *pcbValue;
                     _pszFolderStrArray = (PSZ)pValue;
                 }
-            break; }
+            break;
 
             /* case IDKEY_CNRBACKGROUND:
             {
@@ -2867,24 +2857,22 @@ SOM_Scope ULONG  SOMLINK xf_wpAddObjectGeneralPage2(XFolder *somSelf,
     if (cmnQuerySetting(sfReplaceIconPage))
 #endif
     {
-        PCREATENOTEBOOKPAGE pcnbp;
-
-        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndNotebook;
-        pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-        pcnbp->ulDlgID = ID_XFD_EMPTYDLG;
-        pcnbp->ulPageID = SP_OBJECT_ICONPAGE2;      // page 2!
-        pcnbp->usPageStyleFlags = BKA_MINOR;
-        pcnbp->fEnumerate = TRUE;
-        // pcnbp->pszName = cmnGetString(ID_XSSI_ICONPAGE);
+        INSERTNOTEBOOKPAGE inbp;
+        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+        inbp.somSelf = somSelf;
+        inbp.hwndNotebook = hwndNotebook;
+        inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+        inbp.ulDlgID = ID_XFD_EMPTYDLG;
+        inbp.ulPageID = SP_OBJECT_ICONPAGE2;      // page 2!
+        inbp.usPageStyleFlags = BKA_MINOR;
+        inbp.fEnumerate = TRUE;
+        // inbp.pcszName = cmnGetString(ID_XSSI_ICONPAGE);
                     // no title, this should be "page 2/2"
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_OBJICONPAGE2;
-        pcnbp->pfncbInitPage    = icoIcon1InitPage;
-        pcnbp->pfncbItemChanged = icoIcon1ItemChanged;
+        inbp.ulDefaultHelpPanel  = ID_XSH_OBJICONPAGE2;
+        inbp.pfncbInitPage    = icoIcon1InitPage;
+        inbp.pfncbItemChanged = icoIcon1ItemChanged;
 
-        return (ntbInsertPage(pcnbp));
+        return (ntbInsertPage(&inbp));
     }
 
 #ifndef __ALWAYSREPLACEICONPAGE__
@@ -3038,26 +3026,26 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFolderSortPage(XFolder *somSelf,
 #endif
     {
         // extended sorting enabled:
-        PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndNotebook;
-        pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-        pcnbp->ulDlgID = ID_XSD_SETTINGS_FLDRSORT;
-        pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = cmnGetString(ID_XSSI_SORT);  // pszSort
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_SORTPAGE;
+        INSERTNOTEBOOKPAGE inbp;
+        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+        inbp.somSelf = somSelf;
+        inbp.hwndNotebook = hwndNotebook;
+        inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+        inbp.ulDlgID = ID_XSD_SETTINGS_FLDRSORT;
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.pcszName = cmnGetString(ID_XSSI_SORT);  // pszSort
+        inbp.ulDefaultHelpPanel  = ID_XSH_SORTPAGE;
                         // changed V0.9.12 (2001-05-20) [umoeller]
 
         // mark this page as "instance", because both
         // the instance settings notebook and the
         // "Workplace Shell" object use the same
         // callbacks
-        pcnbp->ulPageID = SP_FLDRSORT_FLDR;
-        pcnbp->pfncbInitPage    = fdrSortInitPage;
-        pcnbp->pfncbItemChanged = fdrSortItemChanged;
+        inbp.ulPageID = SP_FLDRSORT_FLDR;
+        inbp.pfncbInitPage    = fdrSortInitPage;
+        inbp.pfncbItemChanged = fdrSortItemChanged;
 
-        return (ntbInsertPage(pcnbp));
+        return (ntbInsertPage(&inbp));
     }
 
 #ifndef __ALWAYSEXTSORT__

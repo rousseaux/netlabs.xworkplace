@@ -2518,7 +2518,6 @@ MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
          */
 
         case WM_COMMAND:
-        {
             switch (SHORT1FROMMP(mp1))
             {
                 /*
@@ -2659,7 +2658,7 @@ MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                 break;
             }
-        break; }
+        break;
 
         case WM_HELP:
             cmnDisplayHelp(NULL,
@@ -2848,23 +2847,23 @@ MRESULT EXPENTRY fnwpStartupDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
     switch (msg)
     {
         case WM_INITDLG:
-        {
             // WinSetWindowULong(hwnd, QWL_USER, (ULONG)mp2);
                 // we don't need this here, it's done by krn_fnwpThread1Object
             ctlProgressBarFromStatic(WinWindowFromID(hwnd, ID_SDDI_PROGRESSBAR),
                                      PBA_ALIGNCENTER | PBA_BUTTONSTYLE);
             mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
-        break; }
+        break;
 
         case WM_COMMAND:
             switch (SHORT1FROMMP(mp1))
             {
                 case DID_CANCEL:
                 {
-                    PPROCESSFOLDER ppf = (PPROCESSFOLDER)WinQueryWindowPtr(hwnd, QWL_USER);
-                    if (ppf)
+                    PPROCESSFOLDER ppf;
+                    if (ppf = (PPROCESSFOLDER)WinQueryWindowPtr(hwnd, QWL_USER))
                         ppf->fCancelled = TRUE;
-                break; }
+                }
+                break;
             }
         break;
 
@@ -2873,10 +2872,9 @@ MRESULT EXPENTRY fnwpStartupDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             {
                 case SC_CLOSE:
                 case SC_HIDE:
-                {
                     cmnSetSetting(sfShowStartupProgress, 0);
                     mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
-                break; }
+                break;
 
                 default:
                     mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);

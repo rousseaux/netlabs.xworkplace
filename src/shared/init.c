@@ -2140,7 +2140,7 @@ static void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
 
 #ifndef __NOBOOTLOGO__
     // destroy boot logo, if present
-    xthrPostSpeedyMsg(QM_DESTROYLOGO, 0, 0);
+    xthrPostBushMsg(QM_DESTROYLOGO, 0, 0);
 #endif
 
 #ifndef __XWPLITE__

@@ -34,7 +34,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -504,7 +504,8 @@ BOOL _System xdf_wpModifyMenu(XFldDataFile *somSelf,
                                                       mi.hwndSubMenu,
                                                       FALSE);        // do not delete existing
                     }
-                break; }
+                }
+                break;
             }
         }
     }
@@ -826,24 +827,22 @@ SOM_Scope ULONG  SOMLINK xdf_wpAddFileTypePage(XFldDataFile *somSelf,
 #ifndef __NEVEREXTASSOCS__
     if (cmnQuerySetting(sfExtAssocs))
     {
-        // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        INSERTNOTEBOOKPAGE inbp;
+        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+        inbp.somSelf = somSelf;
+        inbp.hwndNotebook = hwndNotebook;
+        inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+        inbp.ulDlgID = ID_XSD_DATAF_TYPES;
+        inbp.ulPageID = SP_DATAFILE_TYPES;
+        inbp.pampControlFlags = G_pampDatafileTypesPage;
+        inbp.cControlFlags = G_cDatafileTypesPage;
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.pcszName = cmnGetString(ID_XSSI_FILETYPESPAGE);  // pszFileTypesPage
+        inbp.ulDefaultHelpPanel  = ID_XSH_DATAFILE_TYPES;
+        inbp.pfncbInitPage    = ftypDatafileTypesInitPage;
+        inbp.pfncbItemChanged = ftypDatafileTypesItemChanged;
 
-        PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndNotebook;
-        pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-        pcnbp->ulDlgID = ID_XSD_DATAF_TYPES;
-        pcnbp->ulPageID = SP_DATAFILE_TYPES;
-        pcnbp->pampControlFlags = G_pampDatafileTypesPage;
-        pcnbp->cControlFlags = G_cDatafileTypesPage;
-        pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = cmnGetString(ID_XSSI_FILETYPESPAGE);  // pszFileTypesPage
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_DATAFILE_TYPES;
-        pcnbp->pfncbInitPage    = ftypDatafileTypesInitPage;
-        pcnbp->pfncbItemChanged = ftypDatafileTypesItemChanged;
-
-        return (ntbInsertPage(pcnbp));
+        return (ntbInsertPage(&inbp));
     }
     else
 #endif

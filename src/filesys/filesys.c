@@ -1966,14 +1966,14 @@ static VOID SetDlgDateTime(HWND hwndDlg,           // in: dialog
  *@@changed V0.9.1 (2000-01-22) [umoeller]: renamed from fsysFileInitPage
  */
 
-VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+VOID fsysFile1InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                        ULONG flFlags)                // CBI_* flags (notebook.h)
 {
     // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (flFlags & CBI_INIT)
     {
-        if (pcnbp->pUser == NULL)
+        if (pnbp->pUser == NULL)
         {
             // first call: backup instance data for "Undo" button;
             // this memory will be freed automatically by the
@@ -1982,40 +1982,40 @@ VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
             CHAR            szFilename[CCHMAXPATH];
             PFILEPAGEDATA   pfpd = (PFILEPAGEDATA)malloc(sizeof(FILEPAGEDATA));
             memset(pfpd, 0, sizeof(FILEPAGEDATA));
-            pcnbp->pUser = pfpd;
-            pfpd->ulAttr = _wpQueryAttr(pcnbp->somSelf);
-            _wpQueryFilename(pcnbp->somSelf, szFilename, TRUE);
-            pfpd->pszSubject = fsysQueryEASubject(pcnbp->somSelf);
-            pfpd->pszComments = fsysQueryEAComments(pcnbp->somSelf);
-            pfpd->pszKeyphrases = fsysQueryEAKeyphrases(pcnbp->somSelf);
+            pnbp->pUser = pfpd;
+            pfpd->ulAttr = _wpQueryAttr(pnbp->inbp.somSelf);
+            _wpQueryFilename(pnbp->inbp.somSelf, szFilename, TRUE);
+            pfpd->pszSubject = fsysQueryEASubject(pnbp->inbp.somSelf);
+            pfpd->pszComments = fsysQueryEAComments(pnbp->inbp.somSelf);
+            pfpd->pszKeyphrases = fsysQueryEAKeyphrases(pnbp->inbp.somSelf);
 
             if (doshIsFileOnFAT(szFilename))
             {
                 // on FAT: hide fields
-                winhShowDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FILES_CREATIONDATE,
+                winhShowDlgItem(pnbp->hwndDlgPage, ID_XSDI_FILES_CREATIONDATE,
                                 FALSE);
-                winhShowDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FILES_LASTACCESSDATE,
+                winhShowDlgItem(pnbp->hwndDlgPage, ID_XSDI_FILES_LASTACCESSDATE,
                                 FALSE);
             }
 
-            if (!_somIsA(pcnbp->somSelf, _WPFolder))
+            if (!_somIsA(pnbp->inbp.somSelf, _WPFolder))
             {
                 // this page is not for a folder, but
                 // a data file:
                 // hide "Work area" item
-                winhShowDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FILES_WORKAREA, FALSE);
+                winhShowDlgItem(pnbp->hwndDlgPage, ID_XSDI_FILES_WORKAREA, FALSE);
             }
-            else if (cmnIsADesktop(pcnbp->somSelf))
+            else if (cmnIsADesktop(pnbp->inbp.somSelf))
                 // for the Desktop, disable work area;
                 // this must not be changed
-                winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FILES_WORKAREA,
+                winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_FILES_WORKAREA,
                                   FALSE);
         }
 
         // Even though CPREF says that the .SUBJECT EA was limited to
         // 40 chars altogether, this is wrong apparently, as many users
         // have said after V0.9.1; so limit the entry field to 260 chars
-        WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_XSDI_FILES_SUBJECT,
+        WinSendDlgItemMsg(pnbp->hwndDlgPage, ID_XSDI_FILES_SUBJECT,
                           EM_SETTEXTLIMIT,
                           (MPARAM)(260), MPNULL);
     }
@@ -2035,43 +2035,43 @@ VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         // get file-system object information
         // (we don't use the WPS method because the data
         // in there is frequently outdated)
-        _wpQueryFilename(pcnbp->somSelf, szFilename, TRUE);
+        _wpQueryFilename(pnbp->inbp.somSelf, szFilename, TRUE);
         DosQueryPathInfo(szFilename,
                         FIL_STANDARD,
                         &fs3, sizeof(fs3));
 
         // real name
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_REALNAME,
+        WinSetDlgItemText(pnbp->hwndDlgPage, ID_XSDI_FILES_REALNAME,
                         szFilename);
 
         // file size
         nlsThousandsULong(szTemp, fs3.cbFile, pcs->cThousands);
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_FILESIZE, szTemp);
+        WinSetDlgItemText(pnbp->hwndDlgPage, ID_XSDI_FILES_FILESIZE, szTemp);
 
         // for folders: set work-area flag
-        if (_somIsA(pcnbp->somSelf, _WPFolder))
+        if (_somIsA(pnbp->inbp.somSelf, _WPFolder))
             // this page is not for a folder, but
             // a data file:
             // hide "Work area" item
-            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FILES_WORKAREA,
-                                  ((_wpQueryFldrFlags(pcnbp->somSelf) & FOI_WORKAREA) != 0));
+            winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FILES_WORKAREA,
+                                  ((_wpQueryFldrFlags(pnbp->inbp.somSelf) & FOI_WORKAREA) != 0));
 
         // creation date/time
-        SetDlgDateTime(pcnbp->hwndDlgPage,
+        SetDlgDateTime(pnbp->hwndDlgPage,
                        ID_XSDI_FILES_CREATIONDATE,
                        ID_XSDI_FILES_CREATIONTIME,
                        &fs3.fdateCreation,
                        &fs3.ftimeCreation,
                        pcs);
         // last write date/time
-        SetDlgDateTime(pcnbp->hwndDlgPage,
+        SetDlgDateTime(pnbp->hwndDlgPage,
                        ID_XSDI_FILES_LASTWRITEDATE,
                        ID_XSDI_FILES_LASTWRITETIME,
                        &fs3.fdateLastWrite,
                        &fs3.ftimeLastWrite,
                        pcs);
         // last access date/time
-        SetDlgDateTime(pcnbp->hwndDlgPage,
+        SetDlgDateTime(pnbp->hwndDlgPage,
                        ID_XSDI_FILES_LASTACCESSDATE,
                        ID_XSDI_FILES_LASTACCESSTIME,
                        &fs3.fdateLastAccess,
@@ -2079,23 +2079,23 @@ VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                        pcs);
 
         // attributes
-        ulAttr = _wpQueryAttr(pcnbp->somSelf);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage,
+        ulAttr = _wpQueryAttr(pnbp->inbp.somSelf);
+        winhSetDlgItemChecked(pnbp->hwndDlgPage,
                               ID_XSDI_FILES_ATTR_ARCHIVED,
                               ((ulAttr & FILE_ARCHIVED) != 0));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage,
                               ID_XSDI_FILES_ATTR_READONLY,
                               ((ulAttr & FILE_READONLY) != 0));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage,
                               ID_XSDI_FILES_ATTR_HIDDEN,
                               ((ulAttr & FILE_HIDDEN) != 0));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage,
                               ID_XSDI_FILES_ATTR_SYSTEM,
                               ((ulAttr & FILE_SYSTEM) != 0));
 
         // .SUBJECT EA; this is plain text
-        pszString = fsysQueryEASubject(pcnbp->somSelf);
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_SUBJECT,
+        pszString = fsysQueryEASubject(pnbp->inbp.somSelf);
+        WinSetDlgItemText(pnbp->hwndDlgPage, ID_XSDI_FILES_SUBJECT,
                           pszString);
         if (pszString)
             free(pszString);
@@ -2104,8 +2104,8 @@ VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         // of the sub-types are EAT_ASCII. We need to convert
         // the sub-items into one string and separate the items
         // with CR/LF.
-        pszString = fsysQueryEAComments(pcnbp->somSelf);
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_COMMENTS,
+        pszString = fsysQueryEAComments(pnbp->inbp.somSelf);
+        WinSetDlgItemText(pnbp->hwndDlgPage, ID_XSDI_FILES_COMMENTS,
                           pszString);
         if (pszString)
             free(pszString);
@@ -2114,8 +2114,8 @@ VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         // of the sub-types are EAT_ASCII. We need to convert
         // the sub-items into one string and separate the items
         // with CR/LF.
-        pszString = fsysQueryEAKeyphrases(pcnbp->somSelf);
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_KEYPHRASES,
+        pszString = fsysQueryEAKeyphrases(pnbp->inbp.somSelf);
+        WinSetDlgItemText(pnbp->hwndDlgPage, ID_XSDI_FILES_KEYPHRASES,
                         pszString);
         if (pszString)
             free(pszString);
@@ -2125,7 +2125,7 @@ VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
     {
         // notebook page is being destroyed:
         // free the backup EAs we created before
-        PFILEPAGEDATA   pfpd = pcnbp->pUser;
+        PFILEPAGEDATA   pfpd = pnbp->pUser;
 
         if (pfpd->pszSubject)
             free(pfpd->pszSubject);
@@ -2134,7 +2134,7 @@ VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         if (pfpd->pszKeyphrases)
             free(pfpd->pszKeyphrases);
 
-        // the pcnbp->pUser field itself is free()'d automatically
+        // the pnbp->pUser field itself is free()'d automatically
     }
 }
 
@@ -2148,7 +2148,7 @@ VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
  *@@changed V0.9.1 (2000-01-22) [umoeller]: renamed from fsysFile1InitPage
  */
 
-MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+MRESULT fsysFile1ItemChanged(PNOTEBOOKPAGE pnbp,    // notebook info struct
                              ULONG ulItemID,
                              USHORT usNotifyCode,
                              ULONG ulExtra)      // for checkboxes: contains new state
@@ -2161,15 +2161,15 @@ MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
     {
 
         case ID_XSDI_FILES_WORKAREA:
-            if (_somIsA(pcnbp->somSelf, _WPFolder))
+            if (_somIsA(pnbp->inbp.somSelf, _WPFolder))
             {
-                ULONG ulFlags = _wpQueryFldrFlags(pcnbp->somSelf);
+                ULONG ulFlags = _wpQueryFldrFlags(pnbp->inbp.somSelf);
                 if (ulExtra)
                     // checked:
                     ulFlags |= FOI_WORKAREA;
                 else
                     ulFlags &= ~FOI_WORKAREA;
-                _wpSetFldrFlags(pcnbp->somSelf, ulFlags);
+                _wpSetFldrFlags(pnbp->inbp.somSelf, ulFlags);
             }
         break;
 
@@ -2189,7 +2189,7 @@ MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
         {
             ULONG       ulFileAttr;
 
-            ulFileAttr = _wpQueryAttr(pcnbp->somSelf);
+            ulFileAttr = _wpQueryAttr(pnbp->inbp.somSelf);
 
             // toggle file attribute
             ulFileAttr ^= // XOR flag depending on item checked
@@ -2198,9 +2198,9 @@ MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
                     : (ulItemID == ID_XSDI_FILES_ATTR_HIDDEN  ) ? FILE_HIDDEN
                     : FILE_READONLY;
 
-            _wpSetAttr(pcnbp->somSelf, ulFileAttr);
-
-        break; }
+            _wpSetAttr(pnbp->inbp.somSelf, ulFileAttr);
+        }
+        break;
 
         /*
          * ID_XSDI_FILES_SUBJECT:
@@ -2212,9 +2212,9 @@ MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
             if (usNotifyCode == EN_KILLFOCUS)
             {
                 PSZ         pszSubject = NULL;
-                pszSubject = winhQueryWindowText(WinWindowFromID(pcnbp->hwndDlgPage,
+                pszSubject = winhQueryWindowText(WinWindowFromID(pnbp->hwndDlgPage,
                                                                  ID_XSDI_FILES_SUBJECT));
-                fsysSetEASubject(pcnbp->somSelf, pszSubject);
+                fsysSetEASubject(pnbp->inbp.somSelf, pszSubject);
                 if (pszSubject)
                     free(pszSubject);
             }
@@ -2229,9 +2229,9 @@ MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
         case ID_XSDI_FILES_COMMENTS:
             if (usNotifyCode == MLN_KILLFOCUS)
             {
-                HWND    hwndMLE = WinWindowFromID(pcnbp->hwndDlgPage, ulItemID);
+                HWND    hwndMLE = WinWindowFromID(pnbp->hwndDlgPage, ulItemID);
                 PSZ     pszText = winhQueryWindowText(hwndMLE);
-                fsysSetEAComments(pcnbp->somSelf, pszText);
+                fsysSetEAComments(pnbp->inbp.somSelf, pszText);
                 if (pszText)
                     free(pszText);
             }
@@ -2246,30 +2246,30 @@ MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
         case ID_XSDI_FILES_KEYPHRASES:
             if (usNotifyCode == MLN_KILLFOCUS)
             {
-                HWND    hwndMLE = WinWindowFromID(pcnbp->hwndDlgPage, ulItemID);
+                HWND    hwndMLE = WinWindowFromID(pnbp->hwndDlgPage, ulItemID);
                 PSZ     pszText = winhQueryWindowText(hwndMLE);
-                fsysSetEAKeyphrases(pcnbp->somSelf, pszText);
+                fsysSetEAKeyphrases(pnbp->inbp.somSelf, pszText);
                 if (pszText)
                     free(pszText);
             }
         break;
 
         case DID_UNDO:
-            if (pcnbp->pUser)
+            if (pnbp->pUser)
             {
                 // restore the file's data from the backup data
-                PFILEPAGEDATA   pfpd = (PFILEPAGEDATA)pcnbp->pUser;
+                PFILEPAGEDATA   pfpd = (PFILEPAGEDATA)pnbp->pUser;
 
                 // reset attributes
-                _wpSetAttr(pcnbp->somSelf, pfpd->ulAttr);
+                _wpSetAttr(pnbp->inbp.somSelf, pfpd->ulAttr);
 
                 // reset EAs
-                fsysSetEASubject(pcnbp->somSelf, pfpd->pszSubject); // can be NULL
-                fsysSetEAComments(pcnbp->somSelf, pfpd->pszComments); // can be NULL
-                fsysSetEAKeyphrases(pcnbp->somSelf, pfpd->pszKeyphrases); // can be NULL
+                fsysSetEASubject(pnbp->inbp.somSelf, pfpd->pszSubject); // can be NULL
+                fsysSetEAComments(pnbp->inbp.somSelf, pfpd->pszComments); // can be NULL
+                fsysSetEAKeyphrases(pnbp->inbp.somSelf, pfpd->pszKeyphrases); // can be NULL
 
                 // have the page updated by calling the callback above
-                fsysFile1InitPage(pcnbp, CBI_SET | CBI_ENABLE);
+                fsysFile1InitPage(pnbp, CBI_SET | CBI_ENABLE);
             }
         break;
 
@@ -2278,19 +2278,20 @@ MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
             // "Default" button:
             ULONG           ulAttr = 0;
             // EABINDING       eab;
-            if (_somIsA(pcnbp->somSelf, _WPFolder))
+            if (_somIsA(pnbp->inbp.somSelf, _WPFolder))
                 ulAttr = FILE_DIRECTORY;
             // reset attributes
-            _wpSetAttr(pcnbp->somSelf, ulAttr);
+            _wpSetAttr(pnbp->inbp.somSelf, ulAttr);
 
             // delete EAs
-            fsysSetEASubject(pcnbp->somSelf, NULL);
-            fsysSetEAComments(pcnbp->somSelf, NULL);
-            fsysSetEAKeyphrases(pcnbp->somSelf, NULL);
+            fsysSetEASubject(pnbp->inbp.somSelf, NULL);
+            fsysSetEAComments(pnbp->inbp.somSelf, NULL);
+            fsysSetEAKeyphrases(pnbp->inbp.somSelf, NULL);
 
             // have the page updated by calling the callback above
-            fsysFile1InitPage(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
+            fsysFile1InitPage(pnbp, CBI_SET | CBI_ENABLE);
+        }
+        break;
 
         default:
             fUpdate = FALSE;
@@ -2298,7 +2299,7 @@ MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
     }
 
     if (fUpdate)
-        _wpSaveDeferred(pcnbp->somSelf);
+        _wpSaveDeferred(pnbp->inbp.somSelf);
 
     return ((MPARAM)-1);
 }
@@ -2316,12 +2317,12 @@ MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
  *@@added V0.9.1 (2000-01-22) [umoeller]
  */
 
-VOID fsysFile2InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+VOID fsysFile2InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                        ULONG flFlags)                // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
     {
-        HWND hwndContents = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_FILES_EACONTENTS);
+        HWND hwndContents = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_FILES_EACONTENTS);
         winhSetWindowFont(hwndContents, "8.Courier");
         WinSendMsg(hwndContents, MLM_SETREADONLY, (MPARAM)TRUE, 0);
     }
@@ -2329,11 +2330,11 @@ VOID fsysFile2InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
     if (flFlags & CBI_SET)
     {
         CHAR szFilename[CCHMAXPATH];
-        if (_wpQueryFilename(pcnbp->somSelf, szFilename, TRUE))
+        if (_wpQueryFilename(pnbp->inbp.somSelf, szFilename, TRUE))
         {
             PEALIST peal = eaPathReadAll(szFilename),
                     pealThis = peal;
-            HWND hwndEAList = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_FILES_EALIST);
+            HWND hwndEAList = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_FILES_EALIST);
             while (pealThis)
             {
                 PEABINDING peabThis = pealThis->peab;
@@ -2362,7 +2363,7 @@ VOID fsysFile2InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
  *@@added V0.9.1 (2000-01-22) [umoeller]
  */
 
-MRESULT fsysFile2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+MRESULT fsysFile2ItemChanged(PNOTEBOOKPAGE pnbp,    // notebook info struct
                              ULONG ulItemID,
                              USHORT usNotifyCode,
                              ULONG ulExtra)      // for checkboxes: contains new state
@@ -2377,7 +2378,7 @@ MRESULT fsysFile2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
         case ID_XSDI_FILES_EALIST:
             if (usNotifyCode == LN_SELECT)
             {
-                HWND hwndEAList = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_FILES_EALIST);
+                HWND hwndEAList = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_FILES_EALIST);
                 ULONG ulSelection = (ULONG)WinSendMsg(hwndEAList,
                                                       LM_QUERYSELECTION,
                                                       MPNULL,
@@ -2385,7 +2386,7 @@ MRESULT fsysFile2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
                 if (ulSelection != LIT_NONE)
                 {
                     CHAR szFilename[CCHMAXPATH];
-                    if (_wpQueryFilename(pcnbp->somSelf, szFilename, TRUE))
+                    if (_wpQueryFilename(pnbp->inbp.somSelf, szFilename, TRUE))
                     {
                         PSZ pszEAName = winhQueryLboxItemText(hwndEAList,
                                                               ulSelection);
@@ -2462,12 +2463,12 @@ MRESULT fsysFile2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
                                 }
 
                                 // set static above MLE
-                                WinSetDlgItemText(pcnbp->hwndDlgPage,
+                                WinSetDlgItemText(pnbp->hwndDlgPage,
                                                   ID_XSDI_FILES_EAINFO,
                                                   strInfo.psz);
 
                                 // set MLE; this might be empty
-                                WinSetDlgItemText(pcnbp->hwndDlgPage,
+                                WinSetDlgItemText(pnbp->hwndDlgPage,
                                                   ID_XSDI_FILES_EACONTENTS,
                                                   pszContents);
 
@@ -2502,44 +2503,42 @@ MRESULT fsysFile2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
 ULONG fsysInsertFilePages(WPObject *somSelf,    // in: must be a WPFileSystem, really
                           HWND hwndNotebook)    // in: from wpAddFile1Page
 {
-    PCREATENOTEBOOKPAGE pcnbp;
+    INSERTNOTEBOOKPAGE inbp;
 
 #ifndef __NOFILEPAGE2__
     // page 2
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndNotebook;
-    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-    pcnbp->ulDlgID = ID_XSD_FILESPAGE2;
-    pcnbp->ulPageID = SP_FILE2;
-    pcnbp->pszName = cmnGetString(ID_XSSI_FILEPAGE);  // pszFilePage
-    pcnbp->fEnumerate = TRUE;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILEPAGE2;
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndNotebook;
+    inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+    inbp.ulDlgID = ID_XSD_FILESPAGE2;
+    inbp.ulPageID = SP_FILE2;
+    inbp.pcszName = cmnGetString(ID_XSSI_FILEPAGE);  // pszFilePage
+    inbp.fEnumerate = TRUE;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILEPAGE2;
 
-    pcnbp->pfncbInitPage    = (PFNCBACTION)fsysFile2InitPage;
-    pcnbp->pfncbItemChanged = (PFNCBITEMCHANGED)fsysFile2ItemChanged;
+    inbp.pfncbInitPage    = (PFNCBACTION)fsysFile2InitPage;
+    inbp.pfncbItemChanged = (PFNCBITEMCHANGED)fsysFile2ItemChanged;
 
-    ntbInsertPage(pcnbp);
+    ntbInsertPage(&inbp);
 #endif
 
     // page 1
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndNotebook;
-    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-    pcnbp->ulDlgID = ID_XSD_FILESPAGE1;
-    pcnbp->ulPageID = SP_FILE1;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_FILEPAGE);  // pszFilePage
-    pcnbp->fEnumerate = TRUE;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILEPAGE1;
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndNotebook;
+    inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+    inbp.ulDlgID = ID_XSD_FILESPAGE1;
+    inbp.ulPageID = SP_FILE1;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_FILEPAGE);  // pszFilePage
+    inbp.fEnumerate = TRUE;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILEPAGE1;
 
-    pcnbp->pfncbInitPage    = (PFNCBACTION)fsysFile1InitPage;
-    pcnbp->pfncbItemChanged = (PFNCBITEMCHANGED)fsysFile1ItemChanged;
+    inbp.pfncbInitPage    = (PFNCBACTION)fsysFile1InitPage;
+    inbp.pfncbItemChanged = (PFNCBITEMCHANGED)fsysFile1ItemChanged;
 
-    return (ntbInsertPage(pcnbp));
+    return (ntbInsertPage(&inbp));
 }
 
 

@@ -383,7 +383,8 @@ MRESULT EXPENTRY winl_fnwpWinList(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM
             CATCH(excpt1) {} END_CATCH();
 
             mrc = WinDefWindowProc(hwndClient, msg, mp1, mp2);
-        break; }
+        }
+        break;
 
         case WM_WINDOWPOSCHANGED:
         {
@@ -396,7 +397,8 @@ MRESULT EXPENTRY winl_fnwpWinList(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM
                                 0, 0, pswp->cx, pswp->cy,
                                 SWP_SIZE | SWP_MOVE | SWP_SHOW);
             }
-        break; }
+        }
+        break;
 
         case WM_CONTROL:
         {
@@ -442,7 +444,8 @@ MRESULT EXPENTRY winl_fnwpWinList(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM
                     }
                 }
             }
-        break; }
+        }
+        break;
 
         case WM_COMMAND:
 /*             switch (SHORT1FROMMP(mp1))

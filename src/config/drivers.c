@@ -16,7 +16,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2000 Ulrich M”ller.
+ *      Copyright (C) 1999-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -401,7 +401,7 @@ static VOID FreeDriverSpec(PDRIVERSPEC pSpecThis)
  *      created the root ("Driver categories") record
  *      in hwndCnr.
  *
- *      We use pcnbp->pUser as a PLINKLIST, which
+ *      We use pnbp->pUser as a PLINKLIST, which
  *      holds other PLINKLIST's in turn which in
  *      turn hold the DRIVERSPEC's. Only this way
  *      we can properly free the items.
@@ -595,10 +595,10 @@ static void _Optlink fntDriversThread(PTHREADINFO pti)
 {
     TRY_LOUD(excpt1)
     {
-        PCREATENOTEBOOKPAGE pcnbpDrivers = (PCREATENOTEBOOKPAGE)pti->ulData;
-        PDRIVERPAGEDATA pPageData = pcnbpDrivers->pUser;
+        PNOTEBOOKPAGE   pnbpDrivers = (PNOTEBOOKPAGE)pti->ulData;
+        PDRIVERPAGEDATA pPageData = pnbpDrivers->pUser;
 
-        HWND            hwndDriversCnr = WinWindowFromID(pcnbpDrivers->hwndDlgPage,
+        HWND            hwndDriversCnr = WinWindowFromID(pnbpDrivers->hwndDlgPage,
                                                          ID_OSDI_DRIVR_CNR);
         PSZ             pszConfigSys = NULL;
         PDRIVERRECORD   preccRoot = 0;
@@ -607,7 +607,7 @@ static void _Optlink fntDriversThread(PTHREADINFO pti)
         // PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
         // set wait pointer; this is handled by notebook.c
-        pcnbpDrivers->fShowWaitPointer = TRUE;
+        pnbpDrivers->fShowWaitPointer = TRUE;
 
         // clear container
         WinSendMsg(hwndDriversCnr,
@@ -669,7 +669,7 @@ static void _Optlink fntDriversThread(PTHREADINFO pti)
             free(pszConfigSys);
         }
 
-        pcnbpDrivers->fShowWaitPointer = FALSE;
+        pnbpDrivers->fShowWaitPointer = FALSE;
     }
     CATCH(excpt1)
     {
@@ -717,10 +717,10 @@ extern ULONG G_cDriversPage = sizeof(G_ampDriversPage) / sizeof(G_ampDriversPage
  *@@changed V0.9.6 (2000-10-16) [umoeller]: fixed excessive menu creation
  */
 
-VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
+VOID cfgDriversInitPage(PNOTEBOOKPAGE pnbp,
                         ULONG flFlags)  // notebook info struct
 {
-    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_OSDI_DRIVR_CNR);
+    HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_OSDI_DRIVR_CNR);
 
     if (flFlags & CBI_INIT)
     {
@@ -730,7 +730,7 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
         PDRIVERPAGEDATA pPageData = 0;
 
         // load the driver dialog definitions
-        drvLoadPlugins(WinQueryAnchorBlock(pcnbp->hwndDlgPage));
+        drvLoadPlugins(WinQueryAnchorBlock(pnbp->hwndDlgPage));
 
         BEGIN_CNRINFO()
         {
@@ -741,8 +741,8 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
         } END_CNRINFO(hwndCnr);
 
         // replace MLE with XTextView control
-        txvRegisterTextView(WinQueryAnchorBlock(pcnbp->hwndDlgPage));
-        hwndTextView = txvReplaceWithTextView(pcnbp->hwndDlgPage,
+        txvRegisterTextView(WinQueryAnchorBlock(pnbp->hwndDlgPage));
+        hwndTextView = txvReplaceWithTextView(pnbp->hwndDlgPage,
                                               ID_OSDI_DRIVR_STATICDATA,
                                               WS_VISIBLE | WS_TABSTOP,
                                               XTXF_VSCROLL | XTXF_AUTOVHIDE
@@ -751,7 +751,7 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
         winhSetWindowFont(hwndTextView, (PSZ)cmnQueryDefaultFont());
 
         // create page data
-        pPageData = pcnbp->pUser = malloc(sizeof(DRIVERPAGEDATA));
+        pPageData = pnbp->pUser = malloc(sizeof(DRIVERPAGEDATA));
         memset(pPageData, 0, sizeof(DRIVERPAGEDATA));
 
         // load popup
@@ -762,7 +762,7 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
     if (flFlags & CBI_SET)
     {
-        PDRIVERPAGEDATA pPageData = (PDRIVERPAGEDATA)pcnbp->pUser;
+        PDRIVERPAGEDATA pPageData = (PDRIVERPAGEDATA)pnbp->pUser;
         // set data: create drivers thread, which inserts
         // the drivers tree
         if (!thrQueryID(&pPageData->tiDriversThread))
@@ -772,14 +772,14 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
                       NULL, // running flag
                       "InsertDrivers",
                       THRF_PMMSGQUEUE,        // msgq
-                      (ULONG)pcnbp);        // data
-                // this creates a PLINKLIST in pcnbp->pUser
+                      (ULONG)pnbp);        // data
+                // this creates a PLINKLIST in pnbp->pUser
         }
     }
 
     if (flFlags & CBI_DESTROY)
     {
-        PDRIVERPAGEDATA pPageData = (PDRIVERPAGEDATA)pcnbp->pUser;
+        PDRIVERPAGEDATA pPageData = (PDRIVERPAGEDATA)pnbp->pUser;
         // clean up the linked list of linked lists
         // which was created above
         if (pPageData->pllLists)
@@ -841,7 +841,7 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
  *@@changed V0.9.12 (2001-05-03) [umoeller]: removed stupid SYSxxx messages in display
  */
 
-MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT cfgDriversItemChanged(PNOTEBOOKPAGE pnbp,
                               ULONG ulItemID,
                               USHORT usNotifyCode,
                               ULONG ulExtra)      // for checkboxes: contains new state
@@ -876,9 +876,9 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                     xstrInit(&strText2MLE, 200);
 
-                    if (pcnbp->preccLastSelected)
+                    if (pnbp->preccLastSelected)
                     {
-                        PDRIVERRECORD precc = (PDRIVERRECORD)pcnbp->preccLastSelected;
+                        PDRIVERRECORD precc = (PDRIVERRECORD)pnbp->preccLastSelected;
 
                         // filename
                         pszParams = precc->szParams;
@@ -935,34 +935,35 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         }
 
                         // disable "Apply" button
-                        winhEnableDlgItem(pcnbp->hwndDlgPage,
+                        winhEnableDlgItem(pnbp->hwndDlgPage,
                                           ID_OSDI_DRIVR_APPLYTHIS,
                                           FALSE);
                     }
 
                     if (strText2MLE.ulLength)
                     {
-                        WinSetDlgItemText(pcnbp->hwndDlgPage,
+                        WinSetDlgItemText(pnbp->hwndDlgPage,
                                           ID_OSDI_DRIVR_STATICDATA,
                                           strText2MLE.psz);
                     }
                     else
-                        WinSetDlgItemText(pcnbp->hwndDlgPage,
+                        WinSetDlgItemText(pnbp->hwndDlgPage,
                                           ID_OSDI_DRIVR_STATICDATA,
                                           "");
 
                     xstrClear(&strText2MLE);
 
-                    WinSetDlgItemText(pcnbp->hwndDlgPage,
+                    WinSetDlgItemText(pnbp->hwndDlgPage,
                                       ID_OSDI_DRIVR_PARAMS,
                                       pszParams);
-                    winhEnableDlgItem(pcnbp->hwndDlgPage,
+                    winhEnableDlgItem(pnbp->hwndDlgPage,
                                       ID_OSDI_DRIVR_PARAMS,
                                       fAcceptsParams);
-                    winhEnableDlgItem(pcnbp->hwndDlgPage,
+                    winhEnableDlgItem(pnbp->hwndDlgPage,
                                       ID_OSDI_DRIVR_CONFIGURE,
                                       fEnable);
-                break; } // CN_EMPHASIS
+                }
+                break;  // CN_EMPHASIS
 
                 /*
                  * CN_ENTER:
@@ -971,15 +972,16 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                 case CN_ENTER:
                 {
-                    PDRIVERRECORD precc = (PDRIVERRECORD)pcnbp->preccLastSelected;
-                    if (precc)
+                    PDRIVERRECORD precc;
+                    if (precc = (PDRIVERRECORD)pnbp->preccLastSelected)
                         if (precc->pDriverSpec->pfnShowDriverDlg)
                             // simulate "configure" button
-                            WinPostMsg(pcnbp->hwndDlgPage,
+                            WinPostMsg(pnbp->hwndDlgPage,
                                        WM_COMMAND,
                                        (MPARAM)ID_OSDI_DRIVR_CONFIGURE,
                                        MPFROM2SHORT(CMDSRC_OTHER, TRUE));
-                break; }
+                }
+                break;
 
                 /*
                  * CN_CONTEXTMENU:
@@ -995,13 +997,12 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     // in the CREATENOTEBOOKPAGE structure
                     // so that the notebook.c function can
                     // remove source emphasis later automatically
-                    pcnbp->hwndSourceCnr = pcnbp->hwndControl;
-                    pcnbp->preccSource = (PRECORDCORE)ulExtra;
-                    if (pcnbp->preccSource)
+                    pnbp->hwndSourceCnr = pnbp->hwndControl;
+                    if (pnbp->preccSource = (PRECORDCORE)ulExtra)
                     {
-                        PDRIVERPAGEDATA pPageData = (PDRIVERPAGEDATA)pcnbp->pUser;
+                        PDRIVERPAGEDATA pPageData = (PDRIVERPAGEDATA)pnbp->pUser;
                         BOOL fEnableCmdref = FALSE;
-                        PDRIVERRECORD precc = (PDRIVERRECORD)pcnbp->preccSource;
+                        PDRIVERRECORD precc = (PDRIVERRECORD)pnbp->preccSource;
                         if (precc->pDriverSpec)
                             if (precc->pDriverSpec->ulFlags & DRVF_CMDREF)
                                 // help available in CMDREF.INF:
@@ -1019,11 +1020,12 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     }
 
                     if (hPopupMenu)
-                        cnrhShowContextMenu(pcnbp->hwndControl,  // cnr
-                                            (PRECORDCORE)pcnbp->preccSource,
+                        cnrhShowContextMenu(pnbp->hwndControl,  // cnr
+                                            (PRECORDCORE)pnbp->preccSource,
                                             hPopupMenu,
-                                            pcnbp->hwndDlgPage);    // owner
-                break; } // CN_CONTEXTMENU
+                                            pnbp->hwndDlgPage);    // owner
+                }
+                break;  // CN_CONTEXTMENU
             }
         break;
 
@@ -1035,22 +1037,22 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          */
 
         case ID_OSDI_DRIVR_CONFIGURE:
-            if (pcnbp->preccLastSelected)
+            if (pnbp->preccLastSelected)
             {
-                PDRIVERRECORD precc = (PDRIVERRECORD)pcnbp->preccLastSelected;
+                PDRIVERRECORD precc = (PDRIVERRECORD)pnbp->preccLastSelected;
                 if (    (precc->pDriverSpec)
                      && (precc->pDriverSpec->pfnShowDriverDlg)
                    )
                 {
                     // OK, we have a valid dialog specification:
                     DRIVERDLGDATA ddd = {0};
-                    HWND hwndMLE = WinWindowFromID(pcnbp->hwndDlgPage,
+                    HWND hwndMLE = WinWindowFromID(pnbp->hwndDlgPage,
                                                    ID_OSDI_DRIVR_PARAMS);
                     PSZ  pszParamsBackup = NULL;
 
                     // set up DRIVERDLGDATA structure
-                    ddd.pvKernel = (PVOID)pcnbp->somSelf;
-                    ddd.pcszKernelTitle = _wpQueryTitle(pcnbp->somSelf);
+                    ddd.pvKernel = (PVOID)pnbp->inbp.somSelf;
+                    ddd.pcszKernelTitle = _wpQueryTitle(pnbp->inbp.somSelf);
                     ddd.pDriverSpec = precc->pDriverSpec;
                     WinQueryWindowText(hwndMLE,
                                        sizeof(ddd.szParams),
@@ -1058,7 +1060,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                     // backup parameters
                     if (    (pszParamsBackup = strdup(ddd.szParams))
-                         && (precc->pDriverSpec->pfnShowDriverDlg(pcnbp->hwndDlgPage,
+                         && (precc->pDriverSpec->pfnShowDriverDlg(pnbp->hwndDlgPage,
                                                                   &ddd))
                        )
                     {
@@ -1072,7 +1074,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             WinSetWindowText(hwndMLE,
                                              ddd.szParams);
                             // re-enable the "Apply" button also
-                            winhEnableDlgItem(pcnbp->hwndDlgPage,
+                            winhEnableDlgItem(pnbp->hwndDlgPage,
                                               ID_OSDI_DRIVR_APPLYTHIS,
                                               TRUE);
                         }
@@ -1092,7 +1094,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_OSDI_DRIVR_PARAMS:
             if (usNotifyCode == MLN_CHANGE)
                 // enable "Apply" button
-                winhEnableDlgItem(pcnbp->hwndDlgPage,
+                winhEnableDlgItem(pnbp->hwndDlgPage,
                                   ID_OSDI_DRIVR_APPLYTHIS,
                                   TRUE);
         break;
@@ -1112,14 +1114,15 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pd.progt.fbVisible = SHE_VISIBLE;
             pd.pszExecutable = "view.exe";
             // append short driver name to params (cmdref.inf)
-            strcat(szParams, ((PDRIVERRECORD)pcnbp->preccSource)->szDriverNameOnly);
+            strcat(szParams, ((PDRIVERRECORD)pnbp->preccSource)->szDriverNameOnly);
 
             WinStartApp(NULLHANDLE,         // hwndNotify
                         &pd,
                         szParams,
                         NULL,               // reserved
                         0);                 // options
-        break; }
+        }
+        break;
 
         /*
          * ID_OSDI_DRIVR_APPLYTHIS:
@@ -1129,11 +1132,11 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_OSDI_DRIVR_APPLYTHIS:
         {
-            PDRIVERRECORD precc = (PDRIVERRECORD)pcnbp->preccLastSelected;
+            PDRIVERRECORD precc = (PDRIVERRECORD)pnbp->preccLastSelected;
             // PCKERNELGLOBALS   pKernelGlobals = krnQueryGlobals();
             CHAR szNewParams[500];
             CHAR szNewLine[1500];
-            WinQueryDlgItemText(pcnbp->hwndDlgPage, ID_OSDI_DRIVR_PARAMS,
+            WinQueryDlgItemText(pnbp->hwndDlgPage, ID_OSDI_DRIVR_PARAMS,
                                 sizeof(szNewParams),
                                 szNewParams);
             sprintf(szNewLine, "%s%s %s",
@@ -1145,7 +1148,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             {
                 // no changes made:
                 PSZ  apszTable = precc->szDriverNameOnly;
-                cmnMessageBoxMsgExt(pcnbp->hwndFrame, // pcnbp->hwndPage,
+                cmnMessageBoxMsgExt(pnbp->hwndFrame, // inbp.hwndPage,
                                     100,
                                     &apszTable,
                                     1,
@@ -1159,7 +1162,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 apszTable[0] = precc->szConfigSysLine;
                 apszTable[1] = szNewLine;
 
-                if (cmnMessageBoxMsgExt(pcnbp->hwndFrame, // pcnbp->hwndPage,
+                if (cmnMessageBoxMsgExt(pnbp->hwndFrame, // inbp.hwndPage,
                                         100,
                                         apszTable,
                                         2,   // entries
@@ -1170,7 +1173,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     PSZ     pszConfigSys = NULL;
 
                     if (csysLoadConfigSys(NULL, &pszConfigSys))
-                        winhDebugBox(pcnbp->hwndFrame,
+                        winhDebugBox(pnbp->hwndFrame,
                                  "XWorkplace",
                                  "XWorkplace was unable to open the CONFIG.SYS file.");
                     else
@@ -1192,7 +1195,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         {
                             // "file written" msg
                             PSZ apsz = szBackup;
-                            cmnMessageBoxMsgExt(pcnbp->hwndFrame, // pcnbp->hwndPage,
+                            cmnMessageBoxMsgExt(pnbp->hwndFrame, // inbp.hwndPage,
                                                 100,
                                                 &apsz, 1,
                                                 136,
@@ -1205,7 +1208,8 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     }
                 }
             }
-        break; }
+        }
+        break;
     }
 
     return (mrc);

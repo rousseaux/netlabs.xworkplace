@@ -1075,7 +1075,8 @@ static VOID T1M_OpenObjectFromHandle(HWND hwndObject,
                                        MENU_OPENVIEWPOPUP,
                                        0);      // reserved
                     }
-                break; }
+                }
+                break;
             }
         }
     }
@@ -1168,7 +1169,8 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                                 // reset flags
                                 G_PageMageConfigFlags = 0;
                             }
-                    break; }
+                    }
+                    break;
 #endif
                 }
 
@@ -1203,7 +1205,6 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
              */
 
             case T1M_LIMITREACHED:
-            {
                 if (!fLimitMsgOpen)
                 {
                     // avoid more than one dlg window
@@ -1217,7 +1218,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                               (PVOID)NULL);             // no dialog parameters
                     fLimitMsgOpen = FALSE;
                 }
-            break; }
+            break;
 
             /*
              *@@ T1M_EXCEPTIONCAUGHT:
@@ -1232,7 +1233,6 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
              */
 
             case T1M_EXCEPTIONCAUGHT:
-            {
                 if (mp1)
                 {
                     XSTRING strMsg;
@@ -1265,7 +1265,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
 
                     xstrClear(&strMsg);
                 }
-            break; }
+            break;
 
             /*
              *@@ T1M_QUERYXFOLDERVERSION:
@@ -1290,7 +1290,8 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                         "%d.%d", &ulMajor, &ulMinor);   // V0.9.0
 
                 mrc = MPFROM2SHORT(ulMajor, ulMinor);
-            break; }
+            }
+            break;
 
             /*
              *@@ T1M_EXTERNALSHUTDOWN:
@@ -1340,7 +1341,8 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                     // finally free shared mem
                     DosFreeMem(psdpShared);
                 }
-            break; }
+            }
+            break;
 
             /*
              *@@ T1M_DESTROYARCHIVESTATUS:
@@ -1477,13 +1479,12 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
              */
 
             case T1M_PAGEMAGECLOSED:
-            {
                 if (mp1)
                     cmnSetSetting(sfEnablePageMage, FALSE);
 
                 // update "Features" page, if open
                 ntbUpdateVisiblePage(NULL, SP_SETUP_FEATURES);
-            break; }
+            break;
 
             /*
              *@@ T1M_PAGEMAGECONFIGDELAYED:
@@ -1501,7 +1502,6 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
              */
 
             case T1M_PAGEMAGECONFIGDELAYED:
-            {
                 // add flags to global variable which will be
                 // passed (and reset) when timer elapses
                 G_PageMageConfigFlags |= (ULONG)mp1;
@@ -1510,7 +1510,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                               hwndObject,
                               2,
                               500);     // half a second delay
-            break; }
+            break;
 #endif
 
 #ifndef __XWPLITE__
@@ -1605,12 +1605,13 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                     case ID_CRMI_PROPERTIES:
                     {
                         // open "Screen" object
-                        HOBJECT hobj = WinQueryObject((PSZ)XFOLDER_SCREENID);
-                        if (hobj)
+                        HOBJECT hobj;
+                        if (hobj = WinQueryObject((PSZ)XFOLDER_SCREENID))
                             T1M_OpenObjectFromHandle(hwndObject,
                                                     (MPARAM)hobj,
                                                     (MPARAM)0);   // no screen corner
-                    break; }
+                    }
+                    break;
 
                     case ID_CRMI_HELP:
                         cmnDisplayHelp(NULL,        // active desktop

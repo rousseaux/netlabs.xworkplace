@@ -42,7 +42,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -1965,24 +1965,24 @@ static const XWPSETTING G_StatusBar1Backup[] =
  *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
  */
 
-VOID stbStatusBar1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID stbStatusBar1InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                            ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (flFlags & CBI_INIT)
     {
-        if (pcnbp->pUser == NULL)
+        if (pnbp->pUser == NULL)
         {
             // first call: backup Global Settings for "Undo" button;
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
             /*
-            pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+            pnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
+            memcpy(pnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
             */
-            pcnbp->pUser = cmnBackupSettings(G_StatusBar1Backup,
+            pnbp->pUser = cmnBackupSettings(G_StatusBar1Backup,
                                              ARRAYITEMCOUNT(G_StatusBar1Backup));
         }
     }
@@ -1990,34 +1990,34 @@ VOID stbStatusBar1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     if (flFlags & CBI_SET)
     {
         ULONG fl;
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ENABLESTATUSBAR,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_ENABLESTATUSBAR,
                               cmnQuerySetting(sfDefaultStatusBarVisibility));
 
         fl = cmnQuerySetting(sflSBForViews);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBFORICONVIEWS,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SBFORICONVIEWS,
                               (fl & SBV_ICON) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBFORTREEVIEWS,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SBFORTREEVIEWS,
                               (fl & SBV_TREE) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBFORDETAILSVIEWS,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SBFORDETAILSVIEWS,
                               (fl & SBV_DETAILS) != 0);
 
         fl = cmnQuerySetting(sulSBStyle);
         switch (fl)
         {
             case SBSTYLE_WARP3RAISED:
-                winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3RAISED, TRUE);
+                winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3RAISED, TRUE);
             break;
 
             case SBSTYLE_WARP3SUNKEN:
-                winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3SUNKEN, TRUE);
+                winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3SUNKEN, TRUE);
             break;
 
             case SBSTYLE_WARP4RECT:
-                winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4RECT, TRUE);
+                winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4RECT, TRUE);
             break;
 
             default:
-                winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4MENU, TRUE);
+                winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4MENU, TRUE);
         }
     }
 
@@ -2025,15 +2025,15 @@ VOID stbStatusBar1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     {
 #ifndef __ALWAYSSUBCLASS__
         BOOL fEnable = !cmnQuerySetting(sfNoSubclassing);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ENABLESTATUSBAR, fEnable);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3RAISED, fEnable);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3SUNKEN, fEnable);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4MENU,   fEnable);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4RECT,   fEnable);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_ENABLESTATUSBAR, fEnable);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3RAISED, fEnable);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3SUNKEN, fEnable);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4MENU,   fEnable);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4RECT,   fEnable);
 
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SBFORICONVIEWS,   fEnable);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SBFORTREEVIEWS,   fEnable);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SBFORDETAILSVIEWS,   fEnable);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_SBFORICONVIEWS,   fEnable);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_SBFORTREEVIEWS,   fEnable);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_SBFORDETAILSVIEWS,   fEnable);
 #endif
     }
 }
@@ -2048,7 +2048,7 @@ VOID stbStatusBar1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
  */
 
-MRESULT stbStatusBar1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT stbStatusBar1ItemChanged(PNOTEBOOKPAGE pnbp,
                                  ULONG ulItemID,
                                  USHORT usNotifyCode,
                                  ULONG ulExtra)      // for checkboxes: contains new state
@@ -2107,7 +2107,7 @@ MRESULT stbStatusBar1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             // "Undo" button: get pointer to backed-up Global Settings
             /*
-            PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
+            PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pnbp->pUser);
 
             // and restore the settings for this page
             cmnSetSetting(sfDefaultStatusBarVisibility, pGSBackup->fDefaultStatusBarVisibility);
@@ -2115,10 +2115,10 @@ MRESULT stbStatusBar1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             cmnSetSetting(sulSBStyle, pGSBackup->SBStyle);
                */
 
-            cmnRestoreSettings(pcnbp->pUser,
+            cmnRestoreSettings(pnbp->pUser,
                                ARRAYITEMCOUNT(G_StatusBar1Backup));
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
             fRefreshStatusBars = TRUE;
             fShowStatusBars = TRUE;
         }
@@ -2129,9 +2129,9 @@ MRESULT stbStatusBar1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
             // Desktop startup)
-            cmnSetDefaultSettings(pcnbp->ulPageID);
+            cmnSetDefaultSettings(pnbp->inbp.ulPageID);
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
             fRefreshStatusBars = TRUE;
             fShowStatusBars = TRUE;
         }
@@ -2220,30 +2220,30 @@ static const XWPSETTING G_StatusBar2Backup[] =
  *@@changed V0.9.14 (2001-07-31) [umoeller]: added "Keys" buttons support
  */
 
-VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID stbStatusBar2InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    PSTATUSBARPAGEDATA psbpd = (PSTATUSBARPAGEDATA)pcnbp->pUser2;
+    PSTATUSBARPAGEDATA psbpd = (PSTATUSBARPAGEDATA)pnbp->pUser2;
 
     if (flFlags & CBI_INIT)
     {
 
 
-        if (pcnbp->pUser == NULL)
+        if (pnbp->pUser == NULL)
         {
             // first call: backup Global Settings for "Undo" button;
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
             /*
-            pcnbp->pUser = NEW(GLOBALSETTINGS);
-            memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+            pnbp->pUser = NEW(GLOBALSETTINGS);
+            memcpy(pnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
                */
-            pcnbp->pUser = cmnBackupSettings(G_StatusBar2Backup,
+            pnbp->pUser = cmnBackupSettings(G_StatusBar2Backup,
                                              ARRAYITEMCOUNT(G_StatusBar2Backup));
 
-            pcnbp->pUser2
+            pnbp->pUser2
             = psbpd
                 = NEW(STATUSBARPAGEDATA);
             ZERO(psbpd);
@@ -2269,30 +2269,30 @@ VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             strcpy(psbpd->szSBText1SelBackup,
                    stbQueryClassMnemonics(psbpd->pSBClassObjectSelected));
 
-        ctlMakeMenuButton(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_SBKEYSNONESEL), 0, 0);
-        ctlMakeMenuButton(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_SBKEYS1SEL), 0, 0);
-        ctlMakeMenuButton(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_SBKEYSMULTISEL), 0, 0);
+        ctlMakeMenuButton(WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_SBKEYSNONESEL), 0, 0);
+        ctlMakeMenuButton(WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_SBKEYS1SEL), 0, 0);
+        ctlMakeMenuButton(WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_SBKEYSMULTISEL), 0, 0);
 
     }
 
     if (flFlags & CBI_SET)
     {
         // current class
-        WinSetDlgItemText(pcnbp->hwndDlgPage,
+        WinSetDlgItemText(pnbp->hwndDlgPage,
                           ID_XSDI_SBCURCLASS,
                           psbpd->szSBClassSelected);
 
         // no-object mode
-        WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_XSDI_SBTEXTNONESEL,
+        WinSendDlgItemMsg(pnbp->hwndDlgPage, ID_XSDI_SBTEXTNONESEL,
                           EM_SETTEXTLIMIT,
                           (MPARAM)(CCHMAXMNEMONICS-1),
                           MPNULL);
-        WinSetDlgItemText(pcnbp->hwndDlgPage,
+        WinSetDlgItemText(pnbp->hwndDlgPage,
                           ID_XSDI_SBTEXTNONESEL ,
                           (PSZ)cmnQueryStatusBarSetting(SBS_TEXTNONESEL));
 
         // one-object mode
-        WinSendDlgItemMsg(pcnbp->hwndDlgPage,
+        WinSendDlgItemMsg(pnbp->hwndDlgPage,
                           ID_XSDI_SBTEXT1SEL,
                           EM_SETTEXTLIMIT,
                           (MPARAM)(CCHMAXMNEMONICS-1),
@@ -2301,27 +2301,27 @@ VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             RefreshClassObject(psbpd);
 
         if (psbpd->pSBClassObjectSelected)
-            WinSetDlgItemText(pcnbp->hwndDlgPage,
+            WinSetDlgItemText(pnbp->hwndDlgPage,
                               ID_XSDI_SBTEXT1SEL,
                               stbQueryClassMnemonics(psbpd->pSBClassObjectSelected));
 
         // dereference shadows
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage,
                               ID_XSDI_DEREFSHADOWS_SINGLE,
                               (cmnQuerySetting(sflDereferenceShadows) & STBF_DEREFSHADOWS_SINGLE)
                                     != 0);
 
         // multiple-objects mode
-        WinSendDlgItemMsg(pcnbp->hwndDlgPage,
+        WinSendDlgItemMsg(pnbp->hwndDlgPage,
                           ID_XSDI_SBTEXTMULTISEL,
                           EM_SETTEXTLIMIT,
                           (MPARAM)(CCHMAXMNEMONICS-1),
                           MPNULL);
-        WinSetDlgItemText(pcnbp->hwndDlgPage,
+        WinSetDlgItemText(pnbp->hwndDlgPage,
                           ID_XSDI_SBTEXTMULTISEL,
                           (PSZ)cmnQueryStatusBarSetting(SBS_TEXTMULTISEL));
 
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage,
                               ID_XSDI_DEREFSHADOWS_MULTIPLE,
                               (cmnQuerySetting(sflDereferenceShadows) & STBF_DEREFSHADOWS_MULTIPLE)
                                     != 0);
@@ -2339,7 +2339,7 @@ VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
             free(psbpd);
 
-            pcnbp->pUser2 = NULL;
+            pnbp->pUser2 = NULL;
         }
     }
 }
@@ -2588,7 +2588,7 @@ static MRESULT CreateKeysMenu(PSTATUSBARPAGEDATA psbpd,
  *@@changed V0.9.14 (2001-07-31) [umoeller]: "Undo" didn't undo everything, fixed
  */
 
-MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT stbStatusBar2ItemChanged(PNOTEBOOKPAGE pnbp,
                                  ULONG ulItemID,
                                  USHORT usNotifyCode,
                                  ULONG ulExtra)      // for checkboxes: contains new state
@@ -2598,7 +2598,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 fReadEFs = FALSE;           // read codes from entry fields?
                                             // V0.9.14 (2001-07-31) [umoeller]
     CHAR        szDummy[CCHMAXMNEMONICS];
-    PSTATUSBARPAGEDATA psbpd = (PSTATUSBARPAGEDATA)pcnbp->pUser2;
+    PSTATUSBARPAGEDATA psbpd = (PSTATUSBARPAGEDATA)pnbp->pUser2;
 
     ULONG       flChanged = 0;
 
@@ -2663,14 +2663,14 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             scd.ulHelpPanel = ID_XFH_SELECTCLASS;
 
             // classlst.c
-            if (clsSelectWpsClassDlg(pcnbp->hwndFrame, // owner
+            if (clsSelectWpsClassDlg(pnbp->hwndFrame, // owner
                                      cmnQueryNLSModuleHandle(FALSE),
                                      ID_XLD_SELECTCLASS,
                                      &scd)
                           == DID_OK)
             {
                 strcpy(psbpd->szSBClassSelected, scd.szClassSelected);
-                WinSetDlgItemText(pcnbp->hwndDlgPage,
+                WinSetDlgItemText(pnbp->hwndDlgPage,
                                   ID_XSDI_SBCURCLASS,
                                   psbpd->szSBClassSelected);
                 PrfWriteProfileString(HINI_USER,
@@ -2683,7 +2683,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     // the class's status bar mnemonics
 
                 // update the display by calling the INIT callback
-                pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+                pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
 
                 // refresh the "Undo" data for this
                 strcpy(psbpd->szSBText1SelBackup,
@@ -2708,7 +2708,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
-            // GLOBALSETTINGS *pGSBackup = (GLOBALSETTINGS*)(pcnbp->pUser);
+            // GLOBALSETTINGS *pGSBackup = (GLOBALSETTINGS*)(pnbp->pUser);
 
             // and restore the settings for this page
             // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
@@ -2716,7 +2716,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         // V0.9.14 (2001-07-31) [umoeller]
             // cmnUnlockGlobalSettings();
 
-            cmnRestoreSettings(pcnbp->pUser,
+            cmnRestoreSettings(pnbp->pUser,
                                ARRAYITEMCOUNT(G_StatusBar2Backup));
 
             cmnSetStatusBarSetting(SBS_TEXTNONESEL,
@@ -2732,7 +2732,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                      psbpd->szSBText1SelBackup);
 
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         }
         break;
 
@@ -2758,7 +2758,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                      NULL);  // load default
 
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         }
         break;
 
@@ -2805,7 +2805,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                         if (ulEFID)
                         {
-                            HWND hwndEF = WinWindowFromID(pcnbp->hwndDlgPage,
+                            HWND hwndEF = WinWindowFromID(pnbp->hwndDlgPage,
                                                           ulEFID);
                             MRESULT mr = WinSendMsg(hwndEF,
                                                     EM_QUERYSEL,
@@ -2873,7 +2873,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             // "none selected" codes:
 
-            WinQueryDlgItemText(pcnbp->hwndDlgPage,
+            WinQueryDlgItemText(pnbp->hwndDlgPage,
                                 ID_XSDI_SBTEXTNONESEL,
                                 sizeof(szDummy)-1, szDummy);
             cmnSetStatusBarSetting(SBS_TEXTNONESEL, szDummy);
@@ -2884,14 +2884,14 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // "one selected" codes:
             if (psbpd->pSBClassObjectSelected)
             {
-                WinQueryDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_SBTEXT1SEL,
+                WinQueryDlgItemText(pnbp->hwndDlgPage, ID_XSDI_SBTEXT1SEL,
                                     sizeof(szDummy)-1, szDummy);
                 stbSetClassMnemonics(psbpd->pSBClassObjectSelected,
                                      szDummy);
             }
 
             // "multiple selected" codes:
-            WinQueryDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_SBTEXTMULTISEL,
+            WinQueryDlgItemText(pnbp->hwndDlgPage, ID_XSDI_SBTEXTMULTISEL,
                                 sizeof(szDummy)-1, szDummy);
             cmnSetStatusBarSetting(SBS_TEXTMULTISEL, szDummy);
         }

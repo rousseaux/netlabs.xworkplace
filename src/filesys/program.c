@@ -696,15 +696,15 @@ ULONG progQueryProgType(PCSZ pszFullFile,
  *      If no custom icon was found, *pfNotDefaultIcon is set
  *      to FALSE, and a shared standard icon is returned.
  *      In that case the OBJSTYLE_NOTDEFAULTICON flag must be
- *      clear.
+ *      set clear.
  *
  *      This is shared code between XWPProgram and XWPProgramFile.
  *
  *@@added V0.9.16 (2002-01-01) [umoeller]
  */
 
-APIRET progFindIcon(PEXECUTABLE pExec,
-                    ULONG ulAppType,
+APIRET progFindIcon(PEXECUTABLE pExec,          // in: executable from exehOpen
+                    ULONG ulAppType,            // in: PROG_* app type
                     HPOINTER *phptr,            // out: if != NULL, icon handle
                     PICONINFO pIconInfo,        // out: if != NULL, icon info
                     PBOOL pfNotDefaultIcon)     // out: set to TRUE if non-default icon
@@ -2119,7 +2119,7 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
  *@@changed V0.9.16 (2002-01-05) [umoeller]: moved this here from fsys.c, renamed from fsysProgramInitPage
  */
 
-VOID progFileInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+VOID progFileInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                       ULONG flFlags)                // CBI_* flags (notebook.h)
 {
     // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
@@ -2129,8 +2129,8 @@ VOID progFileInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         // replace the static "description" control
         // with a text view control
         HWND hwndNew;
-        txvRegisterTextView(WinQueryAnchorBlock(pcnbp->hwndDlgPage));
-        hwndNew = txvReplaceWithTextView(pcnbp->hwndDlgPage,
+        txvRegisterTextView(WinQueryAnchorBlock(pnbp->hwndDlgPage));
+        hwndNew = txvReplaceWithTextView(pnbp->hwndDlgPage,
                                          ID_XSDI_PROG_DESCRIPTION,
                                          WS_VISIBLE | WS_TABSTOP,
                                          XTXF_VSCROLL | XTXF_AUTOVHIDE
@@ -2146,13 +2146,13 @@ VOID progFileInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         // ULONG           cbProgDetails = 0;
         // PPROGDETAILS    pProgDetails;
 
-        if (_wpQueryFilename(pcnbp->somSelf, szFilename, TRUE))
+        if (_wpQueryFilename(pnbp->inbp.somSelf, szFilename, TRUE))
         {
             PEXECUTABLE     pExec = NULL;
-            HWND            hwndTextView = WinWindowFromID(pcnbp->hwndDlgPage,
+            HWND            hwndTextView = WinWindowFromID(pnbp->hwndDlgPage,
                                                            ID_XSDI_PROG_DESCRIPTION);
 
-            WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_PROG_FILENAME,
+            WinSetDlgItemText(pnbp->hwndDlgPage, ID_XSDI_PROG_FILENAME,
                               szFilename);
             WinSetWindowText(hwndTextView, "\n");
 
@@ -2186,7 +2186,7 @@ VOID progFileInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                 }
 
                 if (pszExeFormat)
-                    WinSetDlgItemText(pcnbp->hwndDlgPage,
+                    WinSetDlgItemText(pnbp->hwndDlgPage,
                                       ID_XSDI_PROG_EXEFORMAT,
                                       pszExeFormat);
 
@@ -2232,7 +2232,7 @@ VOID progFileInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                 else
                     strcat(szOS, " (16-bit)");
 
-                WinSetDlgItemText(pcnbp->hwndDlgPage,
+                WinSetDlgItemText(pnbp->hwndDlgPage,
                                   ID_XSDI_PROG_TARGETOS,
                                   szOS);
 
@@ -2304,22 +2304,22 @@ VOID progFileInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
 
         // V0.9.12 (2001-05-19) [umoeller]
         // gee, what was this code doing in here?!?
-        /* if ((_wpQueryProgDetails(pcnbp->somSelf, (PPROGDETAILS)NULL, &cbProgDetails)))
-            if ((pProgDetails = (PPROGDETAILS)_wpAllocMem(pcnbp->somSelf,
+        /* if ((_wpQueryProgDetails(pnbp->inbp.somSelf, (PPROGDETAILS)NULL, &cbProgDetails)))
+            if ((pProgDetails = (PPROGDETAILS)_wpAllocMem(pnbp->inbp.somSelf,
                                                           cbProgDetails,
                                                           NULL))
                     != NULL)
             {
-                _wpQueryProgDetails(pcnbp->somSelf, pProgDetails, &cbProgDetails);
+                _wpQueryProgDetails(pnbp->inbp.somSelf, pProgDetails, &cbProgDetails);
 
                 if (pProgDetails->pszParameters)
-                    WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_PROG_PARAMETERS,
+                    WinSetDlgItemText(pnbp->hwndDlgPage, ID_XSDI_PROG_PARAMETERS,
                                       pProgDetails->pszParameters);
                 if (pProgDetails->pszStartupDir)
-                    WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_PROG_WORKINGDIR,
+                    WinSetDlgItemText(pnbp->hwndDlgPage, ID_XSDI_PROG_WORKINGDIR,
                                       pProgDetails->pszStartupDir);
 
-                _wpFreeMem(pcnbp->somSelf, (PBYTE)pProgDetails);
+                _wpFreeMem(pnbp->inbp.somSelf, (PBYTE)pProgDetails);
             }
         */
     }
@@ -2353,7 +2353,7 @@ typedef struct _IMPORTEDMODULERECORD
 
 static void _Optlink fntInsertModules(PTHREADINFO pti)
 {
-    PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(pti->ulData);
+    PNOTEBOOKPAGE pnbp = (PNOTEBOOKPAGE)(pti->ulData);
 
     TRY_LOUD(excpt1)
     {
@@ -2362,9 +2362,9 @@ static void _Optlink fntInsertModules(PTHREADINFO pti)
         PFSYSMODULE   paModules = NULL;
         CHAR          szFilename[CCHMAXPATH] = "";
 
-        pcnbp->fShowWaitPointer = TRUE;
+        pnbp->fShowWaitPointer = TRUE;
 
-        if (_wpQueryFilename(pcnbp->somSelf, szFilename, TRUE))
+        if (_wpQueryFilename(pnbp->inbp.somSelf, szFilename, TRUE))
         {
             PEXECUTABLE     pExec = NULL;
 
@@ -2376,7 +2376,7 @@ static void _Optlink fntInsertModules(PTHREADINFO pti)
                      && (paModules)
                    )
                 {
-                    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+                    HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
                     // V0.9.9 (2001-03-30) [umoeller]
                     // changed all this to allocate all records at once...
@@ -2424,9 +2424,9 @@ static void _Optlink fntInsertModules(PTHREADINFO pti)
                 }
 
                 // store resources
-                if (pcnbp->pUser)
-                    exehFreeImportedModules(pcnbp->pUser);
-                pcnbp->pUser = paModules;
+                if (pnbp->pUser)
+                    exehFreeImportedModules(pnbp->pUser);
+                pnbp->pUser = paModules;
 
                 exehClose(&pExec);
             }
@@ -2434,7 +2434,7 @@ static void _Optlink fntInsertModules(PTHREADINFO pti)
     }
     CATCH(excpt1) {}  END_CATCH();
 
-    pcnbp->fShowWaitPointer = FALSE;
+    pnbp->fShowWaitPointer = FALSE;
 }
 
 /*
@@ -2447,11 +2447,11 @@ static void _Optlink fntInsertModules(PTHREADINFO pti)
  *@@changed V0.9.16 (2002-01-05) [umoeller]: moved this here from fsys.c, renamed from fsysProgram1InitPage
  */
 
-VOID progFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+VOID progFile1InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                           ULONG flFlags)                // CBI_* flags (notebook.h)
 {
     // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+    HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
     /*
      * CBI_INIT:
@@ -2465,7 +2465,7 @@ VOID progFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         int        i = 0;
         // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
-        WinSetDlgItemText(pcnbp->hwndDlgPage,
+        WinSetDlgItemText(pnbp->hwndDlgPage,
                           ID_XFDI_CNR_GROUPTITLE,
                           cmnGetString(ID_XSSI_PGMFILE_MODULE1)) ; // pszModule1Page
 
@@ -2500,7 +2500,7 @@ VOID progFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                   NULL, // running flag
                   "InsertModules",
                   THRF_PMMSGQUEUE | THRF_TRANSIENT,
-                  (ULONG)pcnbp);
+                  (ULONG)pnbp);
     }
 
     /*
@@ -2510,9 +2510,9 @@ VOID progFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
 
     if (flFlags & CBI_DESTROY)
     {
-        if (pcnbp->pUser)
-            exehFreeImportedModules(pcnbp->pUser);
-         pcnbp->pUser = NULL;
+        if (pnbp->pUser)
+            exehFreeImportedModules(pnbp->pUser);
+         pnbp->pUser = NULL;
     }
 }
 
@@ -2571,7 +2571,7 @@ const char* fsysGetExportedFunctionTypeName(ULONG ulType)
 
 static void _Optlink fntInsertFunctions(PTHREADINFO pti)
 {
-    PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(pti->ulData);
+    PNOTEBOOKPAGE pnbp = (PNOTEBOOKPAGE)(pti->ulData);
 
     TRY_LOUD(excpt1)
     {
@@ -2580,9 +2580,9 @@ static void _Optlink fntInsertFunctions(PTHREADINFO pti)
         PFSYSFUNCTION paFunctions = NULL;
         CHAR          szFilename[CCHMAXPATH] = "";
 
-        pcnbp->fShowWaitPointer = TRUE;
+        pnbp->fShowWaitPointer = TRUE;
 
-        if (_wpQueryFilename(pcnbp->somSelf, szFilename, TRUE))
+        if (_wpQueryFilename(pnbp->inbp.somSelf, szFilename, TRUE))
         {
             PEXECUTABLE     pExec = NULL;
 
@@ -2592,7 +2592,7 @@ static void _Optlink fntInsertFunctions(PTHREADINFO pti)
                      && (paFunctions)
                    )
                 {
-                    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+                    HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
                     // V0.9.9 (2001-03-30) [umoeller]
                     // changed all this to allocate all records at once...
@@ -2644,9 +2644,9 @@ static void _Optlink fntInsertFunctions(PTHREADINFO pti)
                 }
 
                 // store functions
-                if (pcnbp->pUser)
-                    exehFreeExportedFunctions(pcnbp->pUser);
-                pcnbp->pUser = paFunctions;
+                if (pnbp->pUser)
+                    exehFreeExportedFunctions(pnbp->pUser);
+                pnbp->pUser = paFunctions;
 
                 exehClose(&pExec);
             }
@@ -2654,7 +2654,7 @@ static void _Optlink fntInsertFunctions(PTHREADINFO pti)
     }
     CATCH(excpt1) {}  END_CATCH();
 
-    pcnbp->fShowWaitPointer = FALSE;
+    pnbp->fShowWaitPointer = FALSE;
 }
 
 /*
@@ -2667,11 +2667,11 @@ static void _Optlink fntInsertFunctions(PTHREADINFO pti)
  *@@changed V0.9.16 (2002-01-05) [umoeller]: moved this here from fsys.c, renamed from fsysProgram2InitPage
  */
 
-VOID progFile2InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+VOID progFile2InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                        ULONG flFlags)                // CBI_* flags (notebook.h)
 {
     // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+    HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
     /*
      * CBI_INIT:
@@ -2685,7 +2685,7 @@ VOID progFile2InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         int        i = 0;
         // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
-        WinSetDlgItemText(pcnbp->hwndDlgPage,
+        WinSetDlgItemText(pnbp->hwndDlgPage,
                           ID_XFDI_CNR_GROUPTITLE,
                           cmnGetString(ID_XSSI_PGMFILE_MODULE2)) ; // pszModule2Page
 
@@ -2730,7 +2730,7 @@ VOID progFile2InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                   NULL, // running flag
                   "InsertFunctions",
                   THRF_PMMSGQUEUE | THRF_TRANSIENT,
-                  (ULONG)pcnbp);
+                  (ULONG)pnbp);
     }
 
     /*
@@ -2740,9 +2740,9 @@ VOID progFile2InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
 
     if (flFlags & CBI_DESTROY)
     {
-        if (pcnbp->pUser)
-            exehFreeExportedFunctions(pcnbp->pUser);
-        pcnbp->pUser = NULL;
+        if (pnbp->pUser)
+            exehFreeExportedFunctions(pnbp->pUser);
+        pnbp->pUser = NULL;
     }
 }
 
@@ -2922,7 +2922,7 @@ PCSZ progGetOS2ResourceTypeName(ULONG ulResourceType)
 
 static void _Optlink fntInsertResources(PTHREADINFO pti)
 {
-    PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(pti->ulData);
+    PNOTEBOOKPAGE pnbp = (PNOTEBOOKPAGE)(pti->ulData);
 
     TRY_LOUD(excpt1)
     {
@@ -2931,9 +2931,9 @@ static void _Optlink fntInsertResources(PTHREADINFO pti)
         ULONG         cResources = 0;
         PFSYSRESOURCE paResources = NULL;
 
-        pcnbp->fShowWaitPointer = TRUE;
+        pnbp->fShowWaitPointer = TRUE;
 
-        if (    (_wpQueryFilename(pcnbp->somSelf, szFilename, TRUE))
+        if (    (_wpQueryFilename(pnbp->inbp.somSelf, szFilename, TRUE))
              && (!(exehOpen(szFilename, &pExec)))
              && (!(exehQueryResources(pExec,
                                       &paResources,
@@ -2942,7 +2942,7 @@ static void _Optlink fntInsertResources(PTHREADINFO pti)
              && (paResources)
            )
         {
-            HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+            HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
             // V0.9.9 (2001-03-30) [umoeller]
             // changed all this to allocate all records at once...
@@ -3026,16 +3026,16 @@ static void _Optlink fntInsertResources(PTHREADINFO pti)
         } // if (paResources)
 
         // clean up existing resources, if any
-        if (pcnbp->pUser)
-            exehFreeResources(pcnbp->pUser);
+        if (pnbp->pUser)
+            exehFreeResources(pnbp->pUser);
         // store resources
-        pcnbp->pUser = paResources; // can be NULL
+        pnbp->pUser = paResources; // can be NULL
 
         exehClose(&pExec);
     }
     CATCH(excpt1) {}  END_CATCH();
 
-    pcnbp->fShowWaitPointer = FALSE;
+    pnbp->fShowWaitPointer = FALSE;
 }
 
 /*
@@ -3066,11 +3066,11 @@ static ULONG EXPENTRY KillPointersInRecords(HWND hwndCnr,
  *@@changed V0.9.16 (2002-01-05) [umoeller]: moved this here from fsys.c, renamed from fsysResourcesInitPage
  */
 
-VOID progResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+VOID progResourcesInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                            ULONG flFlags)                // CBI_* flags (notebook.h)
 {
     // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+    HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
     /*
      * CBI_INIT:
@@ -3084,7 +3084,7 @@ VOID progResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         int        i = 0;
         // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
-        WinSetDlgItemText(pcnbp->hwndDlgPage,
+        WinSetDlgItemText(pnbp->hwndDlgPage,
                           ID_XFDI_CNR_GROUPTITLE,
                           cmnGetString(ID_XSSI_PGMFILE_RESOURCES)) ; // pszResourcesPage
 
@@ -3142,7 +3142,7 @@ VOID progResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                   NULL, // running flag
                   "InsertResources",
                   THRF_PMMSGQUEUE | THRF_TRANSIENT,
-                  (ULONG)pcnbp);
+                  (ULONG)pnbp);
     }
 
     /*
@@ -3161,9 +3161,9 @@ VOID progResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                           0,
                           0);
 
-        if (pcnbp->pUser)
-            exehFreeResources(pcnbp->pUser);
-        pcnbp->pUser = NULL;
+        if (pnbp->pUser)
+            exehFreeResources(pnbp->pUser);
+        pnbp->pUser = NULL;
     }
 }
 
@@ -3176,7 +3176,7 @@ VOID progResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
  *@@added V0.9.16 (2002-01-05) [umoeller]
  */
 
-BOOL XWPENTRY progResourcesMessage(PCREATENOTEBOOKPAGE pcnbp,
+BOOL XWPENTRY progResourcesMessage(PNOTEBOOKPAGE pnbp,
                                    ULONG msg, MPARAM mp1, MPARAM mp2,
                                    MRESULT *pmrc)
 {

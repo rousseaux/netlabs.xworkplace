@@ -515,7 +515,8 @@ BOOL WgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         pszl->cx = 30;      // desired width
                         pszl->cy = 20;      // desired minimum height
                         brc = TRUE;
-                    break; }
+                    }
+                    break;
 
                     /*
                      * XN_SETUPCHANGED:
@@ -536,7 +537,8 @@ BOOL WgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         WgtScanSetup(pcszNewSetupString, &pPrivate->Setup);
 
                         WinInvalidateRect(pWidget->hwndWidget, NULL, FALSE);
-                    break; }
+                    }
+                    break;
                 }
             }
         } // end if (pPrivate)
@@ -657,7 +659,8 @@ VOID WgtPresParamChanged(HWND hwnd,
                     pPrivate->Setup.pszFont = strdup(pszFont);
                     pwinhFree(pszFont);
                 }
-            break; }
+            }
+            break;
 
             default:
                 fInvalidate = FALSE;

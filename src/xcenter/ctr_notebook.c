@@ -1016,15 +1016,15 @@ static BOOL     G_fSetting = FALSE;
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added "hide on click"
  */
 
-VOID ctrpView1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID ctrpView1InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                        ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
+    XCenterData *somThis = XCenterGetData(pnbp->inbp.somSelf);
 
     if (flFlags & CBI_INIT)
     {
         // make backup of instance data
-        if (pcnbp->pUser == NULL)
+        if (pnbp->pUser == NULL)
         {
             // copy data for "Undo"
             XCenterData *pBackup = (XCenterData*)malloc(sizeof(*somThis));
@@ -1032,15 +1032,15 @@ VOID ctrpView1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // be careful about using the copy... we have some pointers in there!
 
             // store in noteboot struct
-            pcnbp->pUser = pBackup;
+            pnbp->pUser = pBackup;
         }
 
-        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
+        winhSetSliderTicks(WinWindowFromID(pnbp->hwndDlgPage,
                                            ID_CRDI_VIEW_AUTOHIDE_SLIDER),
                            MPFROM2SHORT(9, 10), 6,
                            (MPARAM)-1, -1);
 
-        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
+        winhSetSliderTicks(WinWindowFromID(pnbp->hwndDlgPage,
                                            ID_CRDI_VIEW_PRTY_SLIDER),
                            (MPARAM)0, 3,
                            MPFROM2SHORT(9, 10), 6);
@@ -1049,50 +1049,50 @@ VOID ctrpView1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     if (flFlags & CBI_SET)
     {
         LONG lSliderIndex = 0;
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_REDUCEWORKAREA,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_CRDI_VIEW_REDUCEWORKAREA,
                               _fReduceDesktopWorkarea);
 
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_ALWAYSONTOP,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_CRDI_VIEW_ALWAYSONTOP,
                               ((_ulWindowStyle & WS_TOPMOST) != 0));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_ANIMATE,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_CRDI_VIEW_ANIMATE,
                               ((_ulWindowStyle & WS_ANIMATE) != 0));
 
         // autohide
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE,
                               (_ulAutoHide > 0));
         if (_ulAutoHide)
             lSliderIndex = (_ulAutoHide / 1000) - 1;
 
         // prevent the stupid slider control from interfering
         G_fSetting = TRUE;
-        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage,
+        winhSetSliderArmPosition(WinWindowFromID(pnbp->hwndDlgPage,
                                                  ID_CRDI_VIEW_AUTOHIDE_SLIDER),
                                  SMA_INCREMENTVALUE,
                                  lSliderIndex);
         G_fSetting = FALSE;
 
-        WinSetDlgItemShort(pcnbp->hwndDlgPage,
+        WinSetDlgItemShort(pnbp->hwndDlgPage,
                            ID_CRDI_VIEW_AUTOHIDE_TXT2,
                            _ulAutoHide / 1000,
                            FALSE);      // unsigned
 
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_CLICK,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_CLICK,
                               _fHideOnClick);
 
         // priority
-        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage,
+        winhSetSliderArmPosition(WinWindowFromID(pnbp->hwndDlgPage,
                                                  ID_CRDI_VIEW_PRTY_SLIDER),
                                  SMA_INCREMENTVALUE,
                                  _lPriorityDelta);
-        WinSetDlgItemShort(pcnbp->hwndDlgPage,
+        WinSetDlgItemShort(pnbp->hwndDlgPage,
                            ID_CRDI_VIEW_PRTY_TEXT,
                            _lPriorityDelta,
                            FALSE);      // unsigned
 
         if (_ulPosition == XCENTER_TOP)
-            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_TOPOFSCREEN, TRUE);
+            winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_CRDI_VIEW_TOPOFSCREEN, TRUE);
         else
-            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW_BOTTOMOFSCREEN, TRUE);
+            winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_CRDI_VIEW_BOTTOMOFSCREEN, TRUE);
 
     }
 
@@ -1102,15 +1102,15 @@ VOID ctrpView1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                          && (_ulAutoHide != 0);
 
         // disable auto-hide if workarea is to be reduced
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE,
                           (_fReduceDesktopWorkarea == FALSE));
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_TXT1,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_TXT1,
                           fAutoHide);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_SLIDER,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_SLIDER,
                           fAutoHide);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_TXT2,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_TXT2,
                           fAutoHide);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_CLICK,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_CRDI_VIEW_AUTOHIDE_CLICK,
                           fAutoHide);
     }
 }
@@ -1127,12 +1127,12 @@ VOID ctrpView1InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added "hide on click"
  */
 
-MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT ctrpView1ItemChanged(PNOTEBOOKPAGE pnbp,
                              ULONG ulItemID, USHORT usNotifyCode,
                              ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT     mrc = 0;
-    XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
+    XCenterData *somThis = XCenterGetData(pnbp->inbp.somSelf);
     BOOL        fSave = TRUE;
     ULONG       ulCallInitCallback = 0;
 
@@ -1186,9 +1186,9 @@ MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // setting this... stupid, stupid slider control
             if (!G_fSetting)
             {
-                LONG lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
+                LONG lSliderIndex = winhQuerySliderArmPosition(pnbp->hwndControl,
                                                                SMA_INCREMENTVALUE);
-                WinSetDlgItemShort(pcnbp->hwndDlgPage,
+                WinSetDlgItemShort(pnbp->hwndDlgPage,
                                    ID_CRDI_VIEW_AUTOHIDE_TXT2,
                                    lSliderIndex + 1,
                                    FALSE);      // unsigned
@@ -1204,18 +1204,19 @@ MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_CRDI_VIEW_PRTY_SLIDER:
         {
-            LONG lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
+            LONG lSliderIndex = winhQuerySliderArmPosition(pnbp->hwndControl,
                                                            SMA_INCREMENTVALUE);
-            WinSetDlgItemShort(pcnbp->hwndDlgPage,
+            WinSetDlgItemShort(pnbp->hwndDlgPage,
                                ID_CRDI_VIEW_PRTY_TEXT,
                                lSliderIndex,
                                FALSE);      // unsigned
             // _lPriorityDelta = lSliderIndex;
-            _xwpSetPriority(pcnbp->somSelf,
+            _xwpSetPriority(pnbp->inbp.somSelf,
                             _ulPriorityClass,        // unchanged
                             lSliderIndex);
             ulUpdateFlags = 0;
-        break; }
+        }
+        break;
 
         case DID_DEFAULT:
             cmnSetupSetDefaults(G_XCenterSetupSet,
@@ -1228,13 +1229,14 @@ MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case DID_UNDO:
         {
-            XCenterData *pBackup = (XCenterData*)pcnbp->pUser;
+            XCenterData *pBackup = (XCenterData*)pnbp->pUser;
             cmnSetupRestoreBackup(G_aulView1SetupOffsets,
                                   ARRAYITEMCOUNT(G_aulView1SetupOffsets),
                                   somThis,
                                   pBackup);
             ulCallInitCallback = CBI_SET | CBI_ENABLE;
-        break; }
+        }
+        break;
 
         default:
             fSave = FALSE;
@@ -1242,11 +1244,11 @@ MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
     if (ulCallInitCallback)
         // call the init callback to refresh the page controls
-        pcnbp->pfncbInitPage(pcnbp, ulCallInitCallback);
+        pnbp->inbp.pfncbInitPage(pnbp, ulCallInitCallback);
 
     if (fSave)
     {
-        _wpSaveDeferred(pcnbp->somSelf);
+        _wpSaveDeferred(pnbp->inbp.somSelf);
 
         if (_pvOpenView)
         {
@@ -1269,7 +1271,7 @@ MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *
  ********************************************************************/
 
-SLDCDATA
+static SLDCDATA
         BorderWidthSliderCData =
              {
                      sizeof(SLDCDATA),
@@ -1476,15 +1478,15 @@ static const DLGHITEM dlgXCenterStyle[] =
  *@@changed V0.9.16 (2001-10-24) [umoeller]: added hatch-in-use setting
  */
 
-VOID ctrpView2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID ctrpView2InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                        ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
+    XCenterData *somThis = XCenterGetData(pnbp->inbp.somSelf);
 
     if (flFlags & CBI_INIT)
     {
         // make backup of instance data
-        if (pcnbp->pUser == NULL)
+        if (pnbp->pUser == NULL)
         {
             // copy data for "Undo"
             XCenterData *pBackup = (XCenterData*)malloc(sizeof(*somThis));
@@ -1492,26 +1494,26 @@ VOID ctrpView2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // be careful about using the copy... we have some pointers in there!
 
             // store in noteboot struct
-            pcnbp->pUser = pBackup;
+            pnbp->pUser = pBackup;
 
             // insert the controls using the dialog formatter
             // V0.9.16 (2001-10-24) [umoeller]
-            ntbFormatPage(pcnbp->hwndDlgPage,
+            ntbFormatPage(pnbp->hwndDlgPage,
                           dlgXCenterStyle,
                           ARRAYITEMCOUNT(dlgXCenterStyle));
         }
 
-        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
+        winhSetSliderTicks(WinWindowFromID(pnbp->hwndDlgPage,
                                            ID_CRDI_VIEW2_3DBORDER_SLIDER),
                            (MPARAM)0, 3,
                            MPFROM2SHORT(4, 5), 6);
 
-        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
+        winhSetSliderTicks(WinWindowFromID(pnbp->hwndDlgPage,
                                            ID_CRDI_VIEW2_BDRSPACE_SLIDER),
                            (MPARAM)0, 3,
                            MPFROM2SHORT(4, 5), 6);
 
-        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
+        winhSetSliderTicks(WinWindowFromID(pnbp->hwndDlgPage,
                                            ID_CRDI_VIEW2_WGTSPACE_SLIDER),
                            (MPARAM)0, 3,
                            MPFROM2SHORT(4, 5), 6);
@@ -1522,50 +1524,50 @@ VOID ctrpView2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         HWND hwndSlider;
 
         // 3D borders
-        hwndSlider = WinWindowFromID(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_3DBORDER_SLIDER);
+        hwndSlider = WinWindowFromID(pnbp->hwndDlgPage, ID_CRDI_VIEW2_3DBORDER_SLIDER);
         winhSetSliderArmPosition(hwndSlider,
                                  SMA_INCREMENTVALUE,
                                  _ul3DBorderWidth);     // slider scale is from 0 to 10
-        WinSetDlgItemShort(pcnbp->hwndDlgPage,
+        WinSetDlgItemShort(pnbp->hwndDlgPage,
                            ID_CRDI_VIEW_PRTY_TEXT,
                            _ul3DBorderWidth,
                            FALSE);      // unsigned
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_ALL3DBORDERS,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_CRDI_VIEW2_ALL3DBORDERS,
                               ((_flDisplayStyle & XCS_ALL3DBORDERS) != 0));
 
         // border spacing
-        hwndSlider = WinWindowFromID(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_BDRSPACE_SLIDER);
+        hwndSlider = WinWindowFromID(pnbp->hwndDlgPage, ID_CRDI_VIEW2_BDRSPACE_SLIDER);
         winhSetSliderArmPosition(hwndSlider,
                                  SMA_INCREMENTVALUE,
                                  _ulBorderSpacing);     // slider scale is from 0 to 10
-        WinSetDlgItemShort(pcnbp->hwndDlgPage,
+        WinSetDlgItemShort(pnbp->hwndDlgPage,
                            ID_CRDI_VIEW_PRTY_TEXT,
                            _ulBorderSpacing,
                            FALSE);      // unsigned
 
         // widget spacing
-        hwndSlider = WinWindowFromID(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_WGTSPACE_SLIDER);
+        hwndSlider = WinWindowFromID(pnbp->hwndDlgPage, ID_CRDI_VIEW2_WGTSPACE_SLIDER);
         winhSetSliderArmPosition(hwndSlider,
                                  SMA_INCREMENTVALUE,
                                  _ulWidgetSpacing - 1);     // slider scale is from 0 to 9
-        WinSetDlgItemShort(pcnbp->hwndDlgPage,
+        WinSetDlgItemShort(pnbp->hwndDlgPage,
                            ID_CRDI_VIEW_PRTY_TEXT,
                            _ulWidgetSpacing,
                            FALSE);      // unsigned
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_SIZINGBARS,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_CRDI_VIEW2_SIZINGBARS,
                               ((_flDisplayStyle & XCS_SIZINGBARS) != 0));
 
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_SPACINGLINES,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_CRDI_VIEW2_SPACINGLINES,
                               ((_flDisplayStyle & XCS_SPACINGLINES) != 0));
                     // added V0.9.13 (2001-06-19) [umoeller]
 
         // default widget styles
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_FLATBUTTONS,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_CRDI_VIEW2_FLATBUTTONS,
                             ((_flDisplayStyle & XCS_FLATBUTTONS) != 0));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_SUNKBORDERS,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_CRDI_VIEW2_SUNKBORDERS,
                             ((_flDisplayStyle & XCS_SUNKBORDERS) != 0));
         // V0.9.16 (2001-10-24) [umoeller]
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_HATCHINUSE,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_CRDI_VIEW2_HATCHINUSE,
                             ((_flDisplayStyle & XCS_NOHATCHINUSE) == 0));
     }
 }
@@ -1582,12 +1584,12 @@ VOID ctrpView2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.16 (2001-10-24) [umoeller]: added hatch-in-use setting
  */
 
-MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT ctrpView2ItemChanged(PNOTEBOOKPAGE pnbp,
                              ULONG ulItemID, USHORT usNotifyCode,
                              ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT     mrc = 0;
-    XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
+    XCenterData *somThis = XCenterGetData(pnbp->inbp.somSelf);
     BOOL        fSave = TRUE;
                 // fDisplayStyleChanged = FALSE;
     LONG        lSliderIndex;
@@ -1596,9 +1598,9 @@ MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     switch (ulItemID)
     {
         case ID_CRDI_VIEW2_3DBORDER_SLIDER:
-            lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
+            lSliderIndex = winhQuerySliderArmPosition(pnbp->hwndControl,
                                                       SMA_INCREMENTVALUE);
-            WinSetDlgItemShort(pcnbp->hwndDlgPage,
+            WinSetDlgItemShort(pnbp->hwndDlgPage,
                                ID_CRDI_VIEW2_3DBORDER_TEXT,
                                lSliderIndex,
                                FALSE);      // unsigned
@@ -1610,9 +1612,9 @@ MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break;
 
         case ID_CRDI_VIEW2_BDRSPACE_SLIDER:
-            lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
+            lSliderIndex = winhQuerySliderArmPosition(pnbp->hwndControl,
                                                       SMA_INCREMENTVALUE);
-            WinSetDlgItemShort(pcnbp->hwndDlgPage,
+            WinSetDlgItemShort(pnbp->hwndDlgPage,
                                ID_CRDI_VIEW2_BDRSPACE_TEXT,
                                lSliderIndex,
                                FALSE);      // unsigned
@@ -1620,9 +1622,9 @@ MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break;
 
         case ID_CRDI_VIEW2_WGTSPACE_SLIDER:
-            lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
+            lSliderIndex = winhQuerySliderArmPosition(pnbp->hwndControl,
                                                       SMA_INCREMENTVALUE);
-            WinSetDlgItemShort(pcnbp->hwndDlgPage,
+            WinSetDlgItemShort(pnbp->hwndDlgPage,
                                ID_CRDI_VIEW2_WGTSPACE_TEXT,
                                lSliderIndex + 1,
                                FALSE);      // unsigned
@@ -1660,19 +1662,20 @@ MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                 ARRAYITEMCOUNT(G_aulView2SetupOffsets),
                                 somThis);
             // call the init callback to refresh the page controls
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         break;
 
         case DID_UNDO:
         {
-            XCenterData *pBackup = (XCenterData*)pcnbp->pUser;
+            XCenterData *pBackup = (XCenterData*)pnbp->pUser;
             cmnSetupRestoreBackup(G_aulView2SetupOffsets,
                                   ARRAYITEMCOUNT(G_aulView2SetupOffsets),
                                   somThis,
                                   pBackup);
             // call the init callback to refresh the page controls
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
+        }
+        break;
 
         default:
             fSave = FALSE;
@@ -1688,7 +1691,7 @@ MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
     if (fSave)
     {
-        _wpSaveDeferred(pcnbp->somSelf);
+        _wpSaveDeferred(pnbp->inbp.somSelf);
 
         if (_pvOpenView)
         {
@@ -1814,7 +1817,7 @@ DosBeep(100, 100);
                )
             {
                 if (prec->ulRootIndex != -1)        // @@todo
-                    _xwpRemoveWidget(pcnbp->somSelf,
+                    _xwpRemoveWidget(pnbp->inbp.somSelf,
                                      prec->ulRootIndex);
                           // this saves the instance data
                           // and updates the view
@@ -1899,21 +1902,21 @@ static PWIDGETRECORD InsertWidgetSetting(HWND hwndCnr,
  *@@changed V0.9.12 (2001-05-08) [lafaix]: forced class loading/unloading
  */
 
-VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID ctrpWidgetsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                          ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
+    // XCenterData *somThis = XCenterGetData(pnbp->inbp.somSelf);
 
     if (flFlags & CBI_INIT)
     {
         // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
-        HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+        HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
         XFIELDINFO      xfi[5];
         PFIELDINFO      pfi = NULL;
         int             i = 0;
 
         // set group cnr title
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
+        WinSetDlgItemText(pnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
                           cmnGetString(ID_XSSI_WIDGETSPAGE)) ; // pszWidgetsPage
 
         // set up cnr details view
@@ -1957,13 +1960,13 @@ VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         // DM_DISCARDOBJECT without having to climb up the window
         // hierarchy
         // V0.9.14 (2001-07-30) [lafaix]
-        WinSetWindowULong(hwndCnr, QWL_USER, (ULONG)pcnbp);
+        WinSetWindowULong(hwndCnr, QWL_USER, (ULONG)pnbp);
     }
 
     if (flFlags & CBI_SET)
     {
-        HWND        hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
-        PLINKLIST   pllWidgets = ctrpQuerySettingsList(pcnbp->somSelf);
+        HWND        hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+        PLINKLIST   pllWidgets = ctrpQuerySettingsList(pnbp->inbp.somSelf);
         PLISTNODE   pNode = lstQueryFirstNode(pllWidgets);
         ULONG       ulIndex = 0;
 
@@ -2030,11 +2033,11 @@ VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_DESTROY)
     {
-        if (pcnbp->pUser)
+        if (pnbp->pUser)
             // unload menu
-            WinDestroyWindow((HWND)pcnbp->pUser);
+            WinDestroyWindow((HWND)pnbp->pUser);
 
-        pcnbp->pUser = NULL;
+        pnbp->pUser = NULL;
 
         ctrpFreeClasses();
     }
@@ -2063,12 +2066,12 @@ static PWIDGETRECORD G_precDragged = NULL,
  *@@changed V0.9.14 (2001-07-29) [lafaix]: now handles widget settings files dnd
  */
 
-MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT ctrpWidgetsItemChanged(PNOTEBOOKPAGE pnbp,
                                ULONG ulItemID, USHORT usNotifyCode,
                                ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT     mrc = 0;
-    // XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
+    // XCenterData *somThis = XCenterGetData(pnbp->inbp.somSelf);
 
     switch (ulItemID)
     {
@@ -2100,7 +2103,8 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                              WIDGET_PRIVATE_RMF,
                                              DO_COPYABLE | DO_MOVEABLE); // DO_MOVEABLE);
                         }
-                break; }
+                }
+                break;
 
                 /*
                  * CN_DRAGAFTER:
@@ -2184,7 +2188,7 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                     }
                                 }
                                 else
-                                if (pcdi->pDragInfo->hwndSource != pcnbp->hwndControl)
+                                if (pcdi->pDragInfo->hwndSource != pnbp->hwndControl)
                                     // neither case (1) nor (2)
                                     usIndicator = DOR_NEVERDROP;
                                 else
@@ -2236,7 +2240,8 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                     // and return the drop flags
                     mrc = (MRFROM2SHORT(usIndicator, usOp));
-                break; }
+                }
+                break;
 
                 /*
                  * CN_DROP:
@@ -2274,7 +2279,7 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             }
                             if (ulIndex != -2)
                                 // OK... move the widgets around:
-                                _xwpMoveWidget(pcnbp->somSelf,
+                                _xwpMoveWidget(pnbp->inbp.somSelf,
                                                G_precDragged->Position.ulWidgetIndex, // ulRootIndex,  // from
                                                ulIndex);                // to
                                     // this saves the instance data
@@ -2357,7 +2362,7 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                                 *pszSetupString = 0;
                                                 pszSetupString += 2;
 
-                                                _xwpInsertWidget(pcnbp->somSelf,
+                                                _xwpInsertWidget(pnbp->inbp.somSelf,
                                                                  ulIndex,
                                                                  pszBuff,
                                                                  pszSetupString);
@@ -2372,7 +2377,8 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             DrgFreeDraginfo(pcdi->pDragInfo);
                         }
                     }
-                break; }
+                }
+                break;
 
                 /*
                  * CN_CONTEXTMENU:
@@ -2388,21 +2394,21 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     // in the CREATENOTEBOOKPAGE structure
                     // so that the notebook.c function can
                     // remove source emphasis later automatically
-                    pcnbp->hwndSourceCnr = pcnbp->hwndControl;
-                    pcnbp->preccSource = (PRECORDCORE)ulExtra;
-                    if (pcnbp->preccSource)
+                    pnbp->hwndSourceCnr = pnbp->hwndControl;
+                    pnbp->preccSource = (PRECORDCORE)ulExtra;
+                    if (pnbp->preccSource)
                     {
                         PCXCENTERWIDGETCLASS pClass;
 
                         // popup menu on container recc (not whitespace):
 
-                        if (!pcnbp->pUser)
+                        if (!pnbp->pUser)
                             // context menu not yet loaded:
-                            pcnbp->pUser = (PVOID)WinLoadMenu(pcnbp->hwndControl,
+                            pnbp->pUser = (PVOID)WinLoadMenu(pnbp->hwndControl,
                                                        cmnQueryNLSModuleHandle(FALSE),
                                                        ID_CRM_WIDGET);
 
-                        hPopupMenu = (HWND)pcnbp->pUser;
+                        hPopupMenu = (HWND)pnbp->pUser;
 
                         // remove the "Help" menu item... we can't display
                         // help without the widget view from here
@@ -2418,7 +2424,7 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                    0);
 
                         // check if the widget class supports a settings dialog
-                        if (pClass = ctrpFindClass(pcnbp->preccSource->pszIcon))  // class name
+                        if (pClass = ctrpFindClass(pnbp->preccSource->pszIcon))  // class name
                             WinEnableMenuItem(hPopupMenu,
                                               ID_CRMI_PROPERTIES,
                                               (pClass->pShowSettingsDlg != 0));
@@ -2430,11 +2436,12 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     }
 
                     if (hPopupMenu)
-                        cnrhShowContextMenu(pcnbp->hwndControl,  // cnr
-                                            (PRECORDCORE)pcnbp->preccSource,
+                        cnrhShowContextMenu(pnbp->hwndControl,  // cnr
+                                            (PRECORDCORE)pnbp->preccSource,
                                             hPopupMenu,
-                                            pcnbp->hwndDlgPage);    // owner
-                break; } // CN_CONTEXTMENU
+                                            pnbp->hwndDlgPage);    // owner
+                }
+                break;  // CN_CONTEXTMENU
 
             } // end switch (usNotifyCode)
         break;
@@ -2446,33 +2453,20 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_CRMI_PROPERTIES:
         {
-            PCXCENTERWIDGETCLASS pClass;
-            if (    (pcnbp->preccSource)
-                 && (pClass = ctrpFindClass(pcnbp->preccSource->pszIcon))  // class name
+            PWIDGETRECORD           prec;
+            PCXCENTERWIDGETCLASS    pClass;
+
+            if (    (prec = (PWIDGETRECORD)pnbp->preccSource)
+                 && (pClass = ctrpFindClass(pnbp->preccSource->pszIcon))  // class name
                  && (pClass->pShowSettingsDlg != 0)
                )
             {
-                PWIDGETRECORD prec = (PWIDGETRECORD)pcnbp->preccSource;
-                ctrpShowSettingsDlg(pcnbp->somSelf,
-                                    pcnbp->hwndDlgPage, // owner
+                ctrpShowSettingsDlg(pnbp->inbp.somSelf,
+                                    pnbp->hwndDlgPage, // owner
                                     &prec->Position);
-
-                /* if (prec->ulRootIndex != -1)
-                    // root widget:
-                    ctrpShowSettingsDlg(pcnbp->somSelf,
-                                        pcnbp->hwndDlgPage, // owner
-                                        -1,
-                                        0,
-                                        prec->ulRootIndex);
-                else
-                    ctrpShowSettingsDlg(pcnbp->somSelf,
-                                        pcnbp->hwndDlgPage, // owner
-                                        prec->ulParentIndex,
-                                        prec->ulTrayIndex,
-                                        prec->ulSubwidgetIndex);
-                */
             }
-        break; }
+        }
+        break;
 
         /*
          * ID_CRMI_REMOVEWGT:
@@ -2481,16 +2475,18 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_CRMI_REMOVEWGT:
         {
-            PWIDGETRECORD prec = (PWIDGETRECORD)pcnbp->preccSource;
-            if (prec->Position.ulTrayWidgetIndex == -1) // ulRootIndex != -1)        // @@todo
-                _xwpRemoveWidget(pcnbp->somSelf,
+            PWIDGETRECORD prec;
+            if (    (prec = (PWIDGETRECORD)pnbp->preccSource)
+                 && (prec->Position.ulTrayWidgetIndex == -1)    // @@todo
+               )
+                _xwpRemoveWidget(pnbp->inbp.somSelf,
                                  prec->Position.ulWidgetIndex); // ulRootIndex);
                       // this saves the instance data
                       // and updates the view
                       // and also calls the init callback
                       // to update the settings page!
-        break; }
-
+        }
+        break;
     }
 
     return (mrc);
@@ -2531,21 +2527,21 @@ typedef struct _XCLASSRECORD
  *@@added V0.9.7 (2000-12-05) [umoeller]
  */
 
-VOID ctrpClassesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID ctrpClassesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                          ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    // XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
+    // XCenterData *somThis = XCenterGetData(pnbp->inbp.somSelf);
 
     if (flFlags & CBI_INIT)
     {
         // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
-        HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+        HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
         XFIELDINFO      xfi[5];
         PFIELDINFO      pfi = NULL;
         int             i = 0;
 
         // set group cnr title
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
+        WinSetDlgItemText(pnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
                           cmnGetString(ID_XSSI_CLASSESPAGE)) ; // pszClassesPage
 
         // set up cnr details view
@@ -2587,18 +2583,18 @@ VOID ctrpClassesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        PLINKLIST pllClasses = ctrpQueryClasses();
-        ULONG cClasses = lstCountItems(pllClasses);
-
-        if (cClasses)
+        PLINKLIST   pllClasses;
+        ULONG       cClasses;
+        if (    (pllClasses = ctrpQueryClasses())
+             && (cClasses = lstCountItems(pllClasses))
+           )
         {
-            HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
-            PXCLASSRECORD precFirst
-                = (PXCLASSRECORD)cnrhAllocRecords(hwndCnr,
-                                                  sizeof(XCLASSRECORD),
-                                                  cClasses);
+            HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+            PXCLASSRECORD precFirst;
 
-            if (precFirst)
+            if (precFirst = (PXCLASSRECORD)cnrhAllocRecords(hwndCnr,
+                                                            sizeof(XCLASSRECORD),
+                                                            cClasses))
             {
                 PXCLASSRECORD precThis = precFirst;
                 PLISTNODE pNode = lstQueryFirstNode(pllClasses);
@@ -2614,8 +2610,7 @@ VOID ctrpClassesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                                                 sizeof(sz),
                                                 sz))
                         {
-                            p = strrchr(sz, '\\');
-                            if (p)
+                            if (p = strrchr(sz, '\\'))
                             {
                                 strcpy(precThis->szDLL, p + 1);
                                 precThis->pszDLL = precThis->szDLL;
@@ -2642,16 +2637,16 @@ VOID ctrpClassesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                     precThis = (PXCLASSRECORD)precThis->recc.preccNextRecord;
                     pNode = pNode->pNext;
                 }
-            }
 
-            // kah-wump
-            cnrhInsertRecords(hwndCnr,
-                              NULL,         // parent
-                              (PRECORDCORE)precFirst,
-                              TRUE,         // invalidate
-                              NULL,
-                              CRA_RECORDREADONLY,
-                              cClasses);
+                // kah-wump
+                cnrhInsertRecords(hwndCnr,
+                                  NULL,         // parent
+                                  (PRECORDCORE)precFirst,
+                                  TRUE,         // invalidate
+                                  NULL,
+                                  CRA_RECORDREADONLY,
+                                  cClasses);
+            }
         }
     }
 
@@ -2674,7 +2669,7 @@ VOID ctrpClassesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@added V0.9.7 (2000-12-05) [umoeller]
  */
 
-MRESULT ctrpClassesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT ctrpClassesItemChanged(PNOTEBOOKPAGE pnbp,
                                ULONG ulItemID, USHORT usNotifyCode,
                                ULONG ulExtra)      // for checkboxes: contains new state
 {

@@ -773,7 +773,8 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                 EnableItems(hwnd, pSetup);
             }
             mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
-        break; }
+        }
+        break;
 
         /*
          * WM_COMMAND:
@@ -782,111 +783,112 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
         case WM_COMMAND:
         {
-            PWIDGETSETTINGSDLGDATA pData = (PWIDGETSETTINGSDLGDATA)WinQueryWindowPtr(hwnd, QWL_USER);
-            if (pData)
+            PWIDGETSETTINGSDLGDATA pData;
+            PWINLISTSETUP pSetup;
+            if (    (pData = (PWIDGETSETTINGSDLGDATA)WinQueryWindowPtr(hwnd, QWL_USER))
+                 && (pSetup = (PWINLISTSETUP)pData->pUser)
+               )
             {
-                PWINLISTSETUP pSetup = (PWINLISTSETUP)pData->pUser;
-                if (pSetup)
+                USHORT usCmd = (USHORT)mp1;
+                HWND hwndFiltersLB = WinWindowFromID(hwnd, ID_CRDI_FILTERS_CURRENTLB);
+                HWND hwndCombo = WinWindowFromID(hwnd, ID_CRDI_FILTERS_NEWCOMBO);
+
+                switch (usCmd)
                 {
-                    USHORT usCmd = (USHORT)mp1;
-                    HWND hwndFiltersLB = WinWindowFromID(hwnd, ID_CRDI_FILTERS_CURRENTLB);
-                    HWND hwndCombo = WinWindowFromID(hwnd, ID_CRDI_FILTERS_NEWCOMBO);
+                    /*
+                     * ID_CRDI_FILTERS_REMOVE:
+                     *      remove selected filter
+                     */
 
-                    switch (usCmd)
+                    case ID_CRDI_FILTERS_REMOVE:
                     {
-                        /*
-                         * ID_CRDI_FILTERS_REMOVE:
-                         *      remove selected filter
-                         */
-
-                        case ID_CRDI_FILTERS_REMOVE:
+                        SHORT sSel = winhQueryLboxSelectedItem(hwndFiltersLB,
+                                                               LIT_FIRST); // macro
+                        if (sSel != LIT_NONE)
                         {
-                            SHORT sSel = winhQueryLboxSelectedItem(hwndFiltersLB,
-                                                                   LIT_FIRST); // macro
-                            if (sSel != LIT_NONE)
+                            WinDeleteLboxItem(hwndFiltersLB, sSel);
+                            Dlg2Settings(hwnd, pSetup);
+                            EnableItems(hwnd, pSetup);
+
+                            // reset focus to listbox
+                            WinSetFocus(HWND_DESKTOP, hwndFiltersLB);
+                        }
+                    }
+                    break;
+
+                    /*
+                     * ID_CRDI_FILTERS_ADD:
+                     *      add specified filter
+                     */
+
+                    case ID_CRDI_FILTERS_ADD:
+                        if (IsSwlistItemAddable(hwndCombo, pSetup))
+                        {
+                            CHAR szFilter[MAXNAMEL + 4];
+                            // we have an entry:
+                            if (WinQueryWindowText(hwndCombo,
+                                                   sizeof(szFilter),
+                                                   szFilter))
                             {
-                                WinDeleteLboxItem(hwndFiltersLB, sSel);
+                                // SHORT sSel;
+                                WinInsertLboxItem(hwndFiltersLB,
+                                                  LIT_SORTASCENDING,
+                                                  szFilter);
+                                winhSetLboxSelectedItem(hwndFiltersLB,
+                                                        LIT_NONE,
+                                                        0);
+                                // clean up combo
+                                WinSetWindowText(hwndCombo, NULL);
+                                winhSetLboxSelectedItem(hwndCombo,
+                                                        LIT_NONE,
+                                                        0);
+
+                                // get dlg items
                                 Dlg2Settings(hwnd, pSetup);
                                 EnableItems(hwnd, pSetup);
 
-                                // reset focus to listbox
-                                WinSetFocus(HWND_DESKTOP, hwndFiltersLB);
+                                // reset focus to combo
+                                WinSetFocus(HWND_DESKTOP, hwndCombo);
                             }
-                        break; }
+                        }
+                    break;
 
-                        /*
-                         * ID_CRDI_FILTERS_ADD:
-                         *      add specified filter
-                         */
+                    /*
+                     * DID_OK:
+                     *      OK button -> recompose settings
+                     *      and get outta here.
+                     */
 
-                        case ID_CRDI_FILTERS_ADD:
-                        {
-                            if (IsSwlistItemAddable(hwndCombo, pSetup))
-                            {
-                                CHAR szFilter[MAXNAMEL + 4];
-                                // we have an entry:
-                                if (WinQueryWindowText(hwndCombo,
-                                                       sizeof(szFilter),
-                                                       szFilter))
-                                {
-                                    // SHORT sSel;
-                                    WinInsertLboxItem(hwndFiltersLB,
-                                                      LIT_SORTASCENDING,
-                                                      szFilter);
-                                    winhSetLboxSelectedItem(hwndFiltersLB,
-                                                            LIT_NONE,
-                                                            0);
-                                    // clean up combo
-                                    WinSetWindowText(hwndCombo, NULL);
-                                    winhSetLboxSelectedItem(hwndCombo,
-                                                            LIT_NONE,
-                                                            0);
+                    case DID_OK:
+                    {
+                        XSTRING strSetup;
+                        WwgtSaveSetup(&strSetup,
+                                      pSetup);
+                        pData->pctrSetSetupString(pData->hSettings,
+                                                  strSetup.psz);
+                        pxstrClear(&strSetup);
+                        WinDismissDlg(hwnd, DID_OK);
+                    }
+                    break;
 
-                                    // get dlg items
-                                    Dlg2Settings(hwnd, pSetup);
-                                    EnableItems(hwnd, pSetup);
+                    /*
+                     * DID_CANCEL:
+                     *      cancel button...
+                     */
 
-                                    // reset focus to combo
-                                    WinSetFocus(HWND_DESKTOP, hwndCombo);
-                                }
-                            }
-                        break; }
+                    case DID_CANCEL:
+                        WinDismissDlg(hwnd, DID_CANCEL);
+                    break;
 
-                        /*
-                         * DID_OK:
-                         *      OK button -> recompose settings
-                         *      and get outta here.
-                         */
-
-                        case DID_OK:
-                        {
-                            XSTRING strSetup;
-                            WwgtSaveSetup(&strSetup,
-                                          pSetup);
-                            pData->pctrSetSetupString(pData->hSettings,
-                                                      strSetup.psz);
-                            pxstrClear(&strSetup);
-                            WinDismissDlg(hwnd, DID_OK);
-                        break; }
-
-                        /*
-                         * DID_CANCEL:
-                         *      cancel button...
-                         */
-
-                        case DID_CANCEL:
-                            WinDismissDlg(hwnd, DID_CANCEL);
-                        break;
-
-                        case DID_HELP:
-                            pctrDisplayHelp(pData->pGlobals,
-                                            pcmnQueryHelpLibrary(),
-                                            ID_XSH_WIDGET_WINLIST_SETTINGS);
-                        break;
-                    } // end switch (usCmd)
-                } // end if (pSetup)
-            } // end if (pData)
-        break; } // WM_COMMAND
+                    case DID_HELP:
+                        pctrDisplayHelp(pData->pGlobals,
+                                        pcmnQueryHelpLibrary(),
+                                        ID_XSH_WIDGET_WINLIST_SETTINGS);
+                    break;
+                } // end switch (usCmd)
+            } // end if (pSetup)
+        }
+        break; // WM_COMMAND
 
         /*
          * WM_CONTROL:
@@ -895,41 +897,41 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
         case WM_CONTROL:
         {
-            PWIDGETSETTINGSDLGDATA pData = (PWIDGETSETTINGSDLGDATA)WinQueryWindowPtr(hwnd, QWL_USER);
-            if (pData)
+            PWIDGETSETTINGSDLGDATA pData;
+            PWINLISTSETUP pSetup;
+            if (    (pData = (PWIDGETSETTINGSDLGDATA)WinQueryWindowPtr(hwnd, QWL_USER))
+                 && (pSetup = (PWINLISTSETUP)pData->pUser)
+               )
             {
-                PWINLISTSETUP pSetup = (PWINLISTSETUP)pData->pUser;
-                if (pSetup)
+                USHORT usItemID = SHORT1FROMMP(mp1),
+                       usNotifyCode = SHORT2FROMMP(mp1);
+                switch (usItemID)
                 {
-                    USHORT usItemID = SHORT1FROMMP(mp1),
-                           usNotifyCode = SHORT2FROMMP(mp1);
-                    switch (usItemID)
-                    {
-                        // current filters listbox:
-                        case ID_CRDI_FILTERS_CURRENTLB:
-                            if (usNotifyCode == LN_SELECT)
-                                // change "remove" button state
-                                EnableItems(hwnd, pSetup);
-                        break;
+                    // current filters listbox:
+                    case ID_CRDI_FILTERS_CURRENTLB:
+                        if (usNotifyCode == LN_SELECT)
+                            // change "remove" button state
+                            EnableItems(hwnd, pSetup);
+                    break;
 
-                        // switchlist combobox:
-                        case ID_CRDI_FILTERS_NEWCOMBO:
-                            if (usNotifyCode == CBN_EFCHANGE)
-                                // entry field has changed:
-                                // change "add" button state
-                                EnableItems(hwnd, pSetup);
-                            else if (usNotifyCode == CBN_ENTER)
-                                // double-click on list item:
-                                // simulate "add" button
-                                WinPostMsg(hwnd,
-                                           WM_COMMAND,
-                                           (MPARAM)ID_CRDI_FILTERS_ADD,
-                                           MPFROM2SHORT(CMDSRC_OTHER, TRUE));
-                        break;
-                    }
+                    // switchlist combobox:
+                    case ID_CRDI_FILTERS_NEWCOMBO:
+                        if (usNotifyCode == CBN_EFCHANGE)
+                            // entry field has changed:
+                            // change "add" button state
+                            EnableItems(hwnd, pSetup);
+                        else if (usNotifyCode == CBN_ENTER)
+                            // double-click on list item:
+                            // simulate "add" button
+                            WinPostMsg(hwnd,
+                                       WM_COMMAND,
+                                       (MPARAM)ID_CRDI_FILTERS_ADD,
+                                       MPFROM2SHORT(CMDSRC_OTHER, TRUE));
+                    break;
                 }
             }
-        break; }
+        }
+        break;
 
         /*
          * WM_DESTROY:
@@ -938,19 +940,19 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
         case WM_DESTROY:
         {
-            PWIDGETSETTINGSDLGDATA pData = (PWIDGETSETTINGSDLGDATA)WinQueryWindowPtr(hwnd, QWL_USER);
-            if (pData)
+            PWIDGETSETTINGSDLGDATA pData;
+            PWINLISTSETUP pSetup;
+            if (    (pData = (PWIDGETSETTINGSDLGDATA)WinQueryWindowPtr(hwnd, QWL_USER))
+                 && (pSetup = (PWINLISTSETUP)pData->pUser)
+               )
             {
-                PWINLISTSETUP pSetup = (PWINLISTSETUP)pData->pUser;
-                if (pSetup)
-                {
-                    WwgtClearSetup(pSetup);
-                    free(pSetup);
-                } // end if (pSetup)
+                WwgtClearSetup(pSetup);
+                free(pSetup);
             } // end if (pData)
 
             mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
-        break; }
+        }
+        break;
 
         default:
             mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
@@ -1816,7 +1818,8 @@ BOOL WwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                             // flat buttons
                             pszl->cy += 2;      // 2*1 pixel for thin border
                         brc = TRUE;
-                    break; }
+                    }
+                    break;
 
                     /*
                      * XN_SETUPCHANGED:
@@ -1876,7 +1879,8 @@ BOOL WwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
                             pttt->pszText = pPrivate->strTooltip.psz;
                             pttt->ulFormat = TTFMT_PSZ;
-                        break; }
+                        }
+                        break;
                     }
                 }
             }
@@ -2528,7 +2532,8 @@ VOID WwgtPresParamChanged(HWND hwnd,
                         pPrivate->Setup.pszFont = strdup(pszFont);
                         pwinhFree(pszFont);
                     }
-                break; }
+                }
+                break;
 
                 default:
                     fInvalidate = FALSE;
@@ -2634,7 +2639,8 @@ MRESULT EXPENTRY fnwpWinlistWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             else
                 // stop window creation!!
                 mrc = (MPARAM)TRUE;
-        break; }
+        }
+        break;
 
         /*
          * WM_CONTROL:
@@ -2722,10 +2728,11 @@ MRESULT EXPENTRY fnwpWinlistWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
         default:
         {
-            PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
-            if (pWidget)
+            PXCENTERWIDGET pWidget;
+            if (pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER))
                 mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
-        break; }
+        }
+        break;
     } // end switch(msg)
 
     return (mrc);

@@ -471,10 +471,9 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,
     switch(msg)
     {
         case WM_INITDLG:
-        {
-            pData=(PWIDGETSETTINGSDLGDATA)mp2;
+            pData = (PWIDGETSETTINGSDLGDATA)mp2;
             WinPostMsg(hwnd, WMXINT_SETUP, (MPARAM)0, (MPARAM)0); // otherwise all auto(radio)controls are resetted??
-        break; }
+        break;
 
         case WMXINT_SETUP:
         {

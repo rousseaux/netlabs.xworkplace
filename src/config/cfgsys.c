@@ -25,7 +25,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -273,18 +273,20 @@ static MRESULT EXPENTRY fnwpNewSystemPathDlg(HWND hwndDlg,
                                           ID_XLDI_CLASSMODULE,
                                           fd.szFullFile);
                     }
-                break; }
+                }
+                break;
 
                 case DID_OK:
                 {
-                    PSZ pszBuffer = WinQueryWindowPtr(hwndDlg, QWL_USER);
-                    if (pszBuffer)
+                    PSZ pszBuffer;
+                    if (pszBuffer = WinQueryWindowPtr(hwndDlg, QWL_USER))
                         WinQueryDlgItemText(hwndDlg,
                                             ID_XSDI_FT_ENTRYFIELD,
                                             CCHMAXPATH,     // expected size of buffer
                                             pszBuffer);
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-                break; }
+                }
+                break;
 
                 default:
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
@@ -438,7 +440,8 @@ static MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
                              WS_CLIPCHILDREN);
 
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-        break; }
+        }
+        break;
 
         /*
          * XM_UPDATE:
@@ -480,7 +483,8 @@ static MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
                                   CRA_RECORDREADONLY,
                                   ulItems);
             }
-        break; }
+        }
+        break;
 
         /*
          * WM_WINDOWPOSCHANGED:
@@ -518,7 +522,8 @@ static MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
                 }
             }
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-        break; }
+        }
+        break;
 
         /*
          * WM_COMMAND:
@@ -561,7 +566,8 @@ static MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
                             TRUE);
             free(pWinData);
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-        break; }
+        }
+        break;
 
         default:
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
@@ -578,7 +584,7 @@ static MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
  *      statements.
  *
  *      Since this callback is shared among all the CONFIG.SYS
- *      pages, pcnbp->ulPageID is used for telling them apart by
+ *      pages, inbp.ulPageID is used for telling them apart by
  *      using the SP_* identifiers.
  *
  *@@changed V0.9.0 [umoeller]: added "System paths" page
@@ -591,11 +597,11 @@ static MRESULT EXPENTRY fnwpDoubleFilesDlg(HWND hwndDlg,
  *@@changed V0.9.16 (2001-12-08) [umoeller]: fixed memory leak
  */
 
-VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
+VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
                         ULONG flFlags)  // notebook info struct
 {
     PSZ     pszConfigSys = NULL;
-    HWND    hwndDlgPage = pcnbp->hwndDlgPage;
+    HWND    hwndDlgPage = pnbp->hwndDlgPage;
     CHAR    szTemp[300];
 
     if (flFlags & CBI_INIT)
@@ -605,7 +611,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
         // on the "HPFS" page:
         // if the system has any HPFS drives,
         // we disable the "HPFS installed" item
-        /* if (pcnbp->ulPageID == SP_HPFS)
+        /* if (pnbp->inbp.ulPageID == SP_HPFS)
         {
             CHAR szHPFSDrives[30];
             doshEnumDrives(szHPFSDrives,
@@ -615,7 +621,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                 winhEnableDlgItem(hwndDlgPage, ID_OSDI_FSINSTALLED, FALSE);
         }
         else */
-        switch (pcnbp->ulPageID)
+        switch (pnbp->inbp.ulPageID)
         {
             case SP_ERRORS:
             {
@@ -663,13 +669,13 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
         // now read CONFIG.SYS file to initialize the dlg items
         if (csysLoadConfigSys(NULL, &pszConfigSys) != NO_ERROR)
-            winhDebugBox(pcnbp->hwndFrame,
+            winhDebugBox(pnbp->hwndFrame,
                          "XWorkplace",
                          "XWorkplace was unable to open the CONFIG.SYS file.");
         else
         {
             // OK, file read successfully:
-            switch (pcnbp->ulPageID)
+            switch (pnbp->inbp.ulPageID)
             {
                 /*
                  * SP_SCHEDULER:
@@ -703,7 +709,8 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                     winhSetDlgItemChecked(hwndDlgPage,
                                           ID_OSDI_PRIORITYDISKIO,
                                           bl);      // defaults to YES
-                break; }
+                }
+                break;
 
                 /*
                  * SP_MEMORY:
@@ -959,8 +966,8 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                            4, 64,
                                            ulThreshold / 2);
                     WinSetDlgItemText(hwndDlgPage, ID_OSDI_AUTOCHECK, szAutoCheck);
-
-                break; }
+                }
+                break;
 
                 /*
                  * SP_WPS:
@@ -1007,7 +1014,8 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                             fAutoRefreshFolders = FALSE;
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_AUTOREFRESHFOLDERS,
                                 fAutoRefreshFolders);
-                break; }
+                }
+                break;
 
                 /*
                  * SP_ERRORS:
@@ -1053,8 +1061,8 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                           (MPARAM)lIndex,
                                           (MPARAM)NULL);
                     }
-
-                break; }
+                }
+                break;
 
                 /*
                  * SP_SYSPATHS:
@@ -1147,10 +1155,10 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                       LM_SELECTITEM,
                                       (MPARAM)0,        // select first
                                       (MPARAM)TRUE);    // select
+                }
+                break;
 
-                break; }
-
-            } // end switch (pcnbp->ulPageID)
+            } // end switch (pnbp->inbp.ulPageID)
 
             free(pszConfigSys);
             pszConfigSys = NULL;
@@ -1162,7 +1170,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
     if (flFlags & CBI_ENABLE)
     {
         // enable items
-        /* if (pcnbp->ulPageID == SP_HPFS)
+        /* if (pnbp->inbp.ulPageID == SP_HPFS)
         {
             BOOL fLazyWrite = winhIsDlgItemChecked(hwndDlgPage,
                                                    ID_OSDI_CACHE_LAZYWRITE);
@@ -1174,26 +1182,26 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                              ID_OSDI_CACHE_DISKIDLE, fLazyWrite);
         } */
 
-        if (/*     (pcnbp->ulPageID == SP_HPFS)
-            || */  (pcnbp->ulPageID == SP_FAT)
+        if (/*     (pnbp->inbp.ulPageID == SP_HPFS)
+            || */  (pnbp->inbp.ulPageID == SP_FAT)
            )
         {
             winhEnableDlgItem(hwndDlgPage, ID_OSDI_CACHESIZE,
                              !winhIsDlgItemChecked(hwndDlgPage,
                                                    ID_OSDI_CACHESIZE_AUTO));
         }
-        else if (pcnbp->ulPageID == SP_WPS)
+        else if (pnbp->inbp.ulPageID == SP_WPS)
         {
             winhEnableDlgItem(hwndDlgPage, ID_OSDI_AUTO_WARPCENTER, (doshIsWarp4()));
             winhEnableDlgItem(hwndDlgPage, ID_OSDI_AUTOREFRESHFOLDERS, (doshIsWarp4()));
         }
-        else if (pcnbp->ulPageID == SP_ERRORS)
+        else if (pnbp->inbp.ulPageID == SP_ERRORS)
         {
             winhEnableDlgItem(hwndDlgPage, ID_OSDI_SUPRESSP_DRIVE,
                              winhIsDlgItemChecked(hwndDlgPage,
                                                   ID_OSDI_SUPRESSPOPUPS));
         }
-        else if (pcnbp->ulPageID == SP_SYSPATHS)
+        else if (pnbp->inbp.ulPageID == SP_SYSPATHS)
         {
             ULONG   ulSelCount = 0;
             ULONG   ulLastSel = LIT_FIRST;
@@ -1251,7 +1259,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
     if (flFlags & CBI_DESTROY)
     {
-        if (pcnbp->ulPageID == SP_SYSPATHS)
+        if (pnbp->inbp.ulPageID == SP_SYSPATHS)
         {
             PLISTNODE pSysPathNode = lstQueryFirstNode(G_pllSysPathsList);
                     // this list holds SYSPATH entries
@@ -1282,7 +1290,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
  *      This monster function reacts to changes of any of the
  *      dialog controls and reads/writes CONFIG.SYS settings.
  *      Since this callback is shared among all the CONFIG.SYS
- *      pages, pcnbp->ulPageID is used for telling them apart by
+ *      pages, inbp.ulPageID is used for telling them apart by
  *      using the SP_* identifiers.
  *
  *@@changed V0.9.0 [umoeller]: added "System paths" page handling
@@ -1290,14 +1298,14 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
  *@@changed V0.9.9 (2001-02-28) [pr]: added "edit path"
  */
 
-MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT cfgConfigItemChanged(PNOTEBOOKPAGE pnbp,
                              ULONG ulItemID,
                              USHORT usNotifyCode,
                              ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT mrc = (MRESULT)0;
     LONG    lGrid = 0;
-    HWND    hwndDlgPage = pcnbp->hwndDlgPage;
+    HWND    hwndDlgPage = pnbp->hwndDlgPage;
     CHAR    szTemp[500] = "";
 
     switch (ulItemID)
@@ -1340,14 +1348,13 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break;
 
         case ID_OSDI_AUTOCHECK_PROPOSE:
-        {
             // "Propose" button for auto-chkdsk (HPFS/FAT pages):
             // enumerate all HPFS or FAT drives on the system
             doshEnumDrives(szTemp,
                            "FAT",
                            TRUE); // skip removeable drives
             WinSetDlgItemText(hwndDlgPage, ID_OSDI_AUTOCHECK, szTemp);
-        break; }
+        break;
 
         /*
          * ID_OSDI_HIMEM_VALIMIT_SLIDER:
@@ -1357,11 +1364,11 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_OSDI_HIMEM_VALIMIT_SLIDER:
         {
             LONG lSliderIndex = winhQuerySliderArmPosition(
-                                            pcnbp->hwndControl,
+                                            pnbp->hwndControl,
                                             SMA_INCREMENTVALUE);
 
             sprintf(szTemp, "%d MB", (lSliderIndex + 1) * 512);
-            WinSetDlgItemText(pcnbp->hwndDlgPage,
+            WinSetDlgItemText(pnbp->hwndDlgPage,
                               ID_OSDI_HIMEM_VALIMIT_TXT2,
                               szTemp);
         }
@@ -1373,7 +1380,6 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          */
 
         case ID_OSDI_PATHDROPDOWN:
-        {
             if (usNotifyCode == LN_SELECT)
             {
                 // system path selection changed:
@@ -1418,7 +1424,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     }
                 }
             }
-        break; }
+        break;
 
         /*
          * ID_OSDI_PATHLISTBOX:
@@ -1426,10 +1432,9 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          */
 
         case ID_OSDI_PATHLISTBOX:
-        {
             if (usNotifyCode == LN_SELECT)
-                cfgConfigInitPage(pcnbp, CBI_ENABLE); // re-enable items
-        break; }
+                cfgConfigInitPage(pnbp, CBI_ENABLE); // re-enable items
+        break;
 
         /*
          * buttons on "System path" page:
@@ -1437,11 +1442,10 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          */
 
         case ID_OSDI_PATHNEW:
-        {
             szTemp[0] = 0; // V0.9.9 (2001-02-28) [pr]
 
             if (WinDlgBox(HWND_DESKTOP,         // parent
-                          pcnbp->hwndFrame,      // owner
+                          pnbp->hwndFrame,      // owner
                           fnwpNewSystemPathDlg,
                           cmnQueryNLSModuleHandle(FALSE),
                           ID_OSD_NEWSYSPATH,
@@ -1463,7 +1467,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                   (MPARAM)sInserted,
                                   (MPARAM)TRUE); // select flag
             }
-        break; }
+        break;
 
         // V0.9.9 (2001-02-28) [pr]: added path edit capability
         case ID_OSDI_PATHEDIT:
@@ -1487,7 +1491,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     strcpy(szTemp, pNode->pItemData);
 
                     if (WinDlgBox(HWND_DESKTOP,         // parent
-                                  pcnbp->hwndFrame,     // owner
+                                  pnbp->hwndFrame,     // owner
                                   fnwpNewSystemPathDlg,
                                   cmnQueryNLSModuleHandle(FALSE),
                                   ID_OSD_NEWSYSPATH,
@@ -1508,11 +1512,10 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     }
                 }
             } while (TRUE);
-
-        break; }
+        }
+        break;
 
         case ID_OSDI_PATHDELETE:
-        {
             do {
                 // go thru all selected items (for "delete", this can be several)
                 ULONG ulNextSel = (ULONG)WinSendDlgItemMsg(hwndDlgPage, ID_OSDI_PATHLISTBOX,
@@ -1535,8 +1538,8 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             } while (TRUE);
 
-            cfgConfigInitPage(pcnbp, 100); // re-enable items
-        break; }
+            cfgConfigInitPage(pnbp, 100); // re-enable items
+        break;
 
         case ID_OSDI_PATHUP:
         case ID_OSDI_PATHDOWN:
@@ -1582,7 +1585,8 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                   (MPARAM)ulSel,
                                   (MPARAM)TRUE); // select flag
             }
-        break; }
+        }
+        break;
 
         /*
          * ID_OSDI_VALIDATE:
@@ -1609,7 +1613,8 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 pNode = pNode->pNext;
             }
             WinSetPointer(HWND_DESKTOP, hptrOld);
-        break; }
+        }
+        break;
 
         /*
          * ID_OSDI_DOUBLEFILES:
@@ -1617,12 +1622,11 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          */
 
         case ID_OSDI_DOUBLEFILES:
-        {
             if (G_pSysPathSelected)
             {
                 // V0.9.9 (2001-02-28) [pr]
                 G_hwndDlgDoubleFiles = WinLoadDlg(HWND_DESKTOP,        // parent
-                                                  pcnbp->hwndFrame, // pcnbp->hwndPage,     // owner
+                                                  pnbp->hwndFrame, // inbp.hwndPage,     // owner
                                                   fnwpDoubleFilesDlg,
                                                   cmnQueryNLSModuleHandle(FALSE),
                                                   ID_OSD_FILELIST,
@@ -1637,8 +1641,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                     FALSE);
                 }
             }
-
-        break; }
+        break;
 
         /*
          * DID_APPLY:
@@ -1646,10 +1649,9 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          */
 
         case DID_APPLY:
-        {
             // PCKERNELGLOBALS   pKernelGlobals = krnQueryGlobals();
             // have the user confirm this
-            if (cmnMessageBoxMsg(pcnbp->hwndFrame, // pcnbp->hwndPage,
+            if (cmnMessageBoxMsg(pnbp->hwndFrame, // inbp.hwndPage,
                                  100, 101,
                                  MB_YESNO | MB_DEFBUTTON2)
                               == MBID_YES)
@@ -1659,7 +1661,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 if (pszConfigSys == NULL)
                 {
                     if (csysLoadConfigSys(NULL, &pszConfigSys))
-                        winhDebugBox(pcnbp->hwndFrame,
+                        winhDebugBox(pnbp->hwndFrame,
                                  "XWorkplace",
                                  "XWorkplace was unable to open the CONFIG.SYS file.");
                 }
@@ -1671,7 +1673,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     CHAR    szSwapPath[CCHMAXPATH],
                             szBackup[CCHMAXPATH];
 
-                    switch (pcnbp->ulPageID)
+                    switch (pnbp->inbp.ulPageID)
                     {
                         /*
                          * SP_SCHEDULER:
@@ -1679,7 +1681,6 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                          */
 
                         case SP_SCHEDULER:
-                        {
                             WinSendDlgItemMsg(hwndDlgPage, ID_OSDI_MAXTHREADS,
                                               SPBM_QUERYVALUE,
                                               (MPARAM)&ul,
@@ -1702,7 +1703,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                     (winhIsDlgItemChecked(hwndDlgPage, ID_OSDI_PRIORITYDISKIO)
                                             ? "yes" : "no"),
                                     TRUE); // convert to upper case if necessary
-                        break; }
+                        break;
 
                         /*
                          * SP_MEMORY:
@@ -1710,7 +1711,6 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                          */
 
                         case SP_MEMORY:
-                        {
                             WinQueryDlgItemText(hwndDlgPage, ID_OSDI_SWAPPATH,
                                                 sizeof(szSwapPath)-1, szSwapPath);
                             WinSendDlgItemMsg(hwndDlgPage, ID_OSDI_MINSWAPSIZE,
@@ -1763,7 +1763,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                 else
                                     csysDeleteLine(pszConfigSys, "VIRTUALADDRESSLIMIT=");
                             } // end V0.9.13 (2001-06-23) [umoeller]
-                        break; }
+                        break;
 
                         /*
                          * SP_HPFS:
@@ -1861,7 +1861,6 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                          */
 
                         case SP_FAT:
-                        {
                             // "Cache installed" checked?
                             if (winhIsDlgItemChecked(hwndDlgPage, ID_OSDI_FSINSTALLED))
                             {
@@ -1907,7 +1906,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                 // no "Cache installed":
                                 csysDeleteLine(pszConfigSys, "DISKCACHE=");
                             }
-                        break; }
+                        break;
 
                         /*
                          * SP_WPS:
@@ -1966,7 +1965,8 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                                      "SET AUTOREFRESHFOLDERS=",
                                                      "no",
                                                      TRUE); // convert to upper case if necessary
-                        break; }
+                        }
+                        break;
 
                         /*
                          * SP_ERRORS:
@@ -1974,7 +1974,6 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                          */
 
                         case SP_ERRORS:
-                        {
                             if (winhIsDlgItemChecked(hwndDlgPage, ID_OSDI_AUTOFAIL))
                                 csysSetParameter(&pszConfigSys, "AUTOFAIL=", "yes",
                                     TRUE); // convert to upper case if necessary
@@ -2000,9 +1999,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             }
                             else
                                 csysDeleteLine(pszConfigSys, "SUPPRESSPOPUPS=");
-
-
-                        break; }
+                        break;
 
                         /*
                          * SP_SYSPATHS:
@@ -2042,8 +2039,8 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                 // next path
                                 pSysPathNode = pSysPathNode->pNext;
                             }
-
-                        break; }
+                        }
+                        break;
                     } // end switch
 
                     // write file!
@@ -2054,7 +2051,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     {
                         // "file written" msg
                         PSZ apsz = szBackup;
-                        cmnMessageBoxMsgExt(pcnbp->hwndFrame,
+                        cmnMessageBoxMsgExt(pnbp->hwndFrame,
                                             100,
                                             &apsz, 1,
                                             136,              // backup created as %1
@@ -2071,7 +2068,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     }
                 }
             }
-        break; }
+        break;
 
         /*
          * DID_OPTIMIZE:
@@ -2079,8 +2076,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          */
 
         case DID_OPTIMIZE:
-        {
-            switch (pcnbp->ulPageID)
+            switch (pnbp->inbp.ulPageID)
             {
                 case SP_SCHEDULER:
                 {
@@ -2106,7 +2102,8 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     winhSetDlgItemChecked(hwndDlgPage,
                                           ID_OSDI_PRIORITYDISKIO,
                                           TRUE);
-                break; }
+                }
+                break;
 
                 case SP_MEMORY:
                 {
@@ -2134,7 +2131,8 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                                  SMA_INCREMENTVALUE,
                                                  3);        // 2048 MB
                     } // end V0.9.13 (2001-06-23) [umoeller]
-                break; }
+                }
+                break;
 
                 /* case SP_HPFS:
                 {
@@ -2203,11 +2201,10 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                            64);
                     // do not auto-check FAT drives
                     WinSetDlgItemText(hwndDlgPage, ID_OSDI_AUTOCHECK, "");
-
-                break; }
+                }
+                break;
 
                 case SP_WPS:
-                {
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_AUTO_PROGRAMS, TRUE);
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_AUTO_TASKLIST, TRUE);
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_AUTO_CONNECTIONS, TRUE);
@@ -2215,20 +2212,18 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_AUTO_WARPCENTER, FALSE);
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_RESTART_FOLDERS, TRUE);
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_RESTART_REBOOT, FALSE);
-                    winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_AUTOREFRESHFOLDERS,
-                                FALSE);
-                break; }
+                    winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_AUTOREFRESHFOLDERS, FALSE);
+                break;
 
                 case SP_ERRORS:
-                {
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_AUTOFAIL, TRUE);
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_REIPL, FALSE);
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_SUPRESSPOPUPS, FALSE);
-                break; }
+                break;
             } // end switch
 
-            cfgConfigInitPage(pcnbp, 100); // re-enable items
-        break; }
+            cfgConfigInitPage(pnbp, 100); // re-enable items
+        break;
 
         /*
          * DID_DEFAULT:
@@ -2236,11 +2231,9 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
          */
 
         case DID_DEFAULT:
-        {
-            switch (pcnbp->ulPageID)
+            switch (pnbp->inbp.ulPageID)
             {
                 case SP_SCHEDULER:
-                {
                     winhSetDlgItemSpinData(hwndDlgPage, ID_OSDI_MAXTHREADS,
                                            128, 4096,
                                            (doshIsWarp4())
@@ -2251,10 +2244,9 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                            3);
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_PRIORITYDISKIO,
                                           TRUE);
-                break; }
+                break;
 
                 case SP_MEMORY:
-                {
                     winhSetDlgItemSpinData(hwndDlgPage, ID_OSDI_MINSWAPSIZE,
                                            2, 100,
                                            2);
@@ -2274,7 +2266,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                                              ID_OSDI_HIMEM_VALIMIT_SLIDER),
                                              SMA_INCREMENTVALUE,
                                              0);        // 512 MB
-                break; }
+                break;
 
                 /* case SP_HPFS:
                 {
@@ -2308,7 +2300,6 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 break; } */
 
                 case SP_FAT:
-                {
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_FSINSTALLED, TRUE);
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_CACHESIZE_AUTO, TRUE);
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_CACHE_LAZYWRITE, TRUE);
@@ -2319,10 +2310,9 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                            4, 64,
                                            4);
                     WinSetDlgItemText(hwndDlgPage, ID_OSDI_AUTOCHECK, "");
-                break; }
+                break;
 
                 case SP_WPS:
-                {
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_AUTO_PROGRAMS, TRUE);
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_AUTO_TASKLIST, TRUE);
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_AUTO_CONNECTIONS, TRUE);
@@ -2333,18 +2323,17 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_RESTART_REBOOT, FALSE);
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_AUTOREFRESHFOLDERS,
                                     (doshIsWarp4()));
-                break; }
+                break;
 
                 case SP_ERRORS:
-                {
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_AUTOFAIL, FALSE);
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_REIPL, FALSE);
                     winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_SUPRESSPOPUPS, FALSE);
-                break; }
+                break;
             } // end switch
 
-            cfgConfigInitPage(pcnbp, 100); // re-enable items
-        break; }
+            cfgConfigInitPage(pnbp, 100); // re-enable items
+        break;
 
     } // end switch (usItemID)
 
@@ -2353,7 +2342,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
        )
        // if we had any changes, we might need to
        // re-enable controls
-       cfgConfigInitPage(pcnbp, 100);
+       cfgConfigInitPage(pnbp, 100);
 
     return (mrc);
 }
@@ -2367,12 +2356,12 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  */
 
-VOID cfgConfigTimer(PCREATENOTEBOOKPAGE pcnbp,
+VOID cfgConfigTimer(PNOTEBOOKPAGE pnbp,
                      ULONG ulTimer)
 {
     CHAR szTemp[50];
 
-    switch (pcnbp->ulPageID)
+    switch (pnbp->inbp.ulPageID)
     {
         case SP_SCHEDULER:
         {
@@ -2381,7 +2370,7 @@ VOID cfgConfigTimer(PCREATENOTEBOOKPAGE pcnbp,
             {
                 sprintf(szTemp, "%d", prc16QueryThreadCount(pps, 0));
                 prc16FreeInfo(pps);
-                WinSetDlgItemText(pcnbp->hwndDlgPage, ID_OSDI_CURRENTTHREADS, szTemp);
+                WinSetDlgItemText(pnbp->hwndDlgPage, ID_OSDI_CURRENTTHREADS, szTemp);
             }
         }
         break;
@@ -2391,7 +2380,7 @@ VOID cfgConfigTimer(PCREATENOTEBOOKPAGE pcnbp,
             ULONG ulSize = csysQuerySwapperSize();
             ulSize /= 1024*1024;
             sprintf(szTemp, "%d", ulSize);
-            WinSetDlgItemText(pcnbp->hwndDlgPage,
+            WinSetDlgItemText(pnbp->hwndDlgPage,
                               ID_OSDI_CURRENTSWAPSIZE,
                               szTemp);
         }
@@ -2612,12 +2601,12 @@ static VOID AddSyslevelsForDir(HWND hwndCnr,
  *@@changed V0.9.14 (2001-07-07) [umoeller]: this never found TCPIP syslevels, fixed
  */
 
-VOID cfgSyslevelInitPage(PCREATENOTEBOOKPAGE pcnbp,
+VOID cfgSyslevelInitPage(PNOTEBOOKPAGE pnbp,
                          ULONG flFlags)
 {
     if (flFlags & CBI_INIT)
     {
-        HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+        HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
         XFIELDINFO      xfi[5];
         PFIELDINFO      pfi = NULL;
@@ -2625,7 +2614,7 @@ VOID cfgSyslevelInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
         // set group title V0.9.4 (2000-06-13) [umoeller]
         // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
+        WinSetDlgItemText(pnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
                           cmnGetString(ID_XSSI_SYSLEVELPAGE)) ; // pszSyslevelPage
 
         // set up cnr details view
@@ -2670,7 +2659,7 @@ VOID cfgSyslevelInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
     if (flFlags & CBI_SET)
     {
-        HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+        HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
         AddSyslevelsForDir(hwndCnr,
                            "?:\\OS2\\INSTALL\\");
@@ -2704,7 +2693,7 @@ VOID cfgSyslevelInitPage(PCREATENOTEBOOKPAGE pcnbp,
  *@@added V0.9.2 (2000-03-08) [umoeller]
  */
 
-MRESULT cfgSyslevelItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT cfgSyslevelItemChanged(PNOTEBOOKPAGE pnbp,
                                ULONG ulItemID,
                                USHORT usNotifyCode,
                                ULONG ulExtra)

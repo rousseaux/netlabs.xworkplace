@@ -304,7 +304,7 @@ APIRET xsecQueryLocalLoggedOn(PXWPLOGGEDON pLoggedOn)
  *
  ********************************************************************/
 
-VOID admUserInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID admUserInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                      ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
@@ -317,23 +317,23 @@ VOID admUserInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             // error:
             CHAR szError[100];
             sprintf(szError, "Error %d", arc);
-            WinSetDlgItemText(pcnbp->hwndDlgPage,
+            WinSetDlgItemText(pnbp->hwndDlgPage,
                               ID_AMDI_USER_USERNAME,
                               szError);
         }
         else
         {
-            WinSetDlgItemText(pcnbp->hwndDlgPage,
+            WinSetDlgItemText(pnbp->hwndDlgPage,
                               ID_AMDI_USER_USERNAME,
                               LoggedOn.szUserName);
-            WinSetDlgItemShort(pcnbp->hwndDlgPage,
+            WinSetDlgItemShort(pnbp->hwndDlgPage,
                                ID_AMDI_USER_USERID,
                                LoggedOn.uid,
                                FALSE);          // unsigned
-            WinSetDlgItemText(pcnbp->hwndDlgPage,
+            WinSetDlgItemText(pnbp->hwndDlgPage,
                               ID_AMDI_USER_GROUPNAME,
                               LoggedOn.szGroupName);
-            WinSetDlgItemShort(pcnbp->hwndDlgPage,
+            WinSetDlgItemShort(pnbp->hwndDlgPage,
                                ID_AMDI_USER_GROUPID,
                                LoggedOn.gid,
                                FALSE);          // unsigned
@@ -357,7 +357,7 @@ SOM_Scope ULONG  SOMLINK adm_xwpAddXWPAdminPages(XWPAdmin *somSelf,
                                                  HWND hwndDlg)
 {
     ULONG   ulrc;
-    PCREATENOTEBOOKPAGE pcnbp;
+    INSERTNOTEBOOKPAGE  inbp;
     HMODULE             savehmod = cmnQueryNLSModuleHandle(FALSE);
     PID                 pidXWPShell;
     HQUEUE              hqXWPShell;
@@ -365,11 +365,10 @@ SOM_Scope ULONG  SOMLINK adm_xwpAddXWPAdminPages(XWPAdmin *somSelf,
     /* XWPAdminData *somThis = XWPAdminGetData(somSelf); */
     XWPAdminMethodDebug("XWPAdmin","adm_xwpAddXWPAdminPages");
 
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = savehmod;
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
 
     // check if XWPShell is running; if so the queue must exist
     if (DosOpenQueue(&pidXWPShell,
@@ -377,26 +376,26 @@ SOM_Scope ULONG  SOMLINK adm_xwpAddXWPAdminPages(XWPAdmin *somSelf,
                      QUEUE_XWPSHELL))
     {
         // error: display XWP page only then
-        pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = "XWorkplace";
-        pcnbp->ulDlgID = ID_XCD_FIRST;
-        pcnbp->ulPageID = SP_SETUP_XWPLOGO;
-        pcnbp->pfncbInitPage    = setLogoInitPage;
-        pcnbp->pfncbMessage = setLogoMessages;
-        ulrc = ntbInsertPage(pcnbp);
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.pcszName = "XWorkplace";
+        inbp.ulDlgID = ID_XCD_FIRST;
+        inbp.ulPageID = SP_SETUP_XWPLOGO;
+        inbp.pfncbInitPage    = setLogoInitPage;
+        inbp.pfncbMessage = setLogoMessages;
+        ulrc = ntbInsertPage(&inbp);
     }
     else
     {
         // XWPShell running:
         DosCloseQueue(hqXWPShell);
 
-        pcnbp->ulDlgID = ID_AMD_USER;
-        pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = cmnGetString(ID_XSSI_ADMIN_USER);
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_ADMIN_USER;
-        pcnbp->ulPageID = SP_ADMIN_USER;
-        pcnbp->pfncbInitPage    = admUserInitPage;
-        ulrc = ntbInsertPage(pcnbp);
+        inbp.ulDlgID = ID_AMD_USER;
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.pcszName = cmnGetString(ID_XSSI_ADMIN_USER);
+        inbp.ulDefaultHelpPanel  = ID_XSH_ADMIN_USER;
+        inbp.ulPageID = SP_ADMIN_USER;
+        inbp.pfncbInitPage    = admUserInitPage;
+        ulrc = ntbInsertPage(&inbp);
     }
 
     return ulrc;

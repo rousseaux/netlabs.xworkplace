@@ -137,77 +137,72 @@ typedef struct _WPSAVELONGITEM
 SOM_Scope ULONG  SOMLINK xctr_xwpAddXCenterPages(XCenter *somSelf,
                                                  HWND hwndNotebook)
 {
-    PCREATENOTEBOOKPAGE pcnbp;
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    INSERTNOTEBOOKPAGE inbp;
 
     /* XCenterData *somThis = XCenterGetData(somSelf); */
     XCenterMethodDebug("XCenter","xctr_xwpAddXCenterPages");
 
     // add the "Widgets" page
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndNotebook;
-    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_WIDGETSPAGE);  // pszWidgetsPage
-    pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_XCENTER_WIDGETS;
-    pcnbp->ulPageID = SP_XCENTER_WIDGETS;
-    pcnbp->pampControlFlags = G_pampGenericCnrPage;
-    pcnbp->cControlFlags = G_cGenericCnrPage;
-    pcnbp->pfncbInitPage    = ctrpWidgetsInitPage;
-    pcnbp->pfncbItemChanged = ctrpWidgetsItemChanged;
-    ntbInsertPage(pcnbp);
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndNotebook;
+    inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_WIDGETSPAGE);  // pszWidgetsPage
+    inbp.ulDlgID = ID_XFD_CONTAINERPAGE;
+    inbp.ulDefaultHelpPanel  = ID_XSH_XCENTER_WIDGETS;
+    inbp.ulPageID = SP_XCENTER_WIDGETS;
+    inbp.pampControlFlags = G_pampGenericCnrPage;
+    inbp.cControlFlags = G_cGenericCnrPage;
+    inbp.pfncbInitPage    = ctrpWidgetsInitPage;
+    inbp.pfncbItemChanged = ctrpWidgetsItemChanged;
+    ntbInsertPage(&inbp);
 
     // add the "Classes" page
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndNotebook;
-    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_CLASSESPAGE);  // pszClassesPage
-    pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_XCENTER_CLASSES;
-    pcnbp->ulPageID = SP_XCENTER_CLASSES;
-    pcnbp->pampControlFlags = G_pampGenericCnrPage;
-    pcnbp->cControlFlags = G_cGenericCnrPage;
-    pcnbp->pfncbInitPage    = ctrpClassesInitPage;
-    pcnbp->pfncbItemChanged = ctrpClassesItemChanged;
-    ntbInsertPage(pcnbp);
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndNotebook;
+    inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_CLASSESPAGE);  // pszClassesPage
+    inbp.ulDlgID = ID_XFD_CONTAINERPAGE;
+    inbp.ulDefaultHelpPanel  = ID_XSH_XCENTER_CLASSES;
+    inbp.ulPageID = SP_XCENTER_CLASSES;
+    inbp.pampControlFlags = G_pampGenericCnrPage;
+    inbp.cControlFlags = G_cGenericCnrPage;
+    inbp.pfncbInitPage    = ctrpClassesInitPage;
+    inbp.pfncbItemChanged = ctrpClassesItemChanged;
+    ntbInsertPage(&inbp);
 
     // add the "View2" page on top
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndNotebook;
-    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->fEnumerate = TRUE;
-    pcnbp->pszName = cmnGetString(ID_XSSI_STYLEPAGE);  // pszStylePage
-    pcnbp->ulDlgID = ID_XFD_EMPTYDLG;           // V0.9.16 (2001-09-29) [umoeller] ID_CRD_SETTINGS_VIEW2;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_XCENTER_VIEW2;
-    pcnbp->ulPageID = SP_XCENTER_VIEW2;
-    pcnbp->pfncbInitPage    = ctrpView2InitPage;
-    pcnbp->pfncbItemChanged = ctrpView2ItemChanged;
-    ntbInsertPage(pcnbp);
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndNotebook;
+    inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.fEnumerate = TRUE;
+    inbp.pcszName = cmnGetString(ID_XSSI_STYLEPAGE);  // pszStylePage
+    inbp.ulDlgID = ID_XFD_EMPTYDLG;           // V0.9.16 (2001-09-29) [umoeller] ID_CRD_SETTINGS_VIEW2;
+    inbp.ulDefaultHelpPanel  = ID_XSH_XCENTER_VIEW2;
+    inbp.ulPageID = SP_XCENTER_VIEW2;
+    inbp.pfncbInitPage    = ctrpView2InitPage;
+    inbp.pfncbItemChanged = ctrpView2ItemChanged;
+    ntbInsertPage(&inbp);
 
     // add the "View1" page on top
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndNotebook;
-    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->fEnumerate = TRUE;
-    pcnbp->pszName = cmnGetString(ID_XSSI_VIEWPAGE);  // pszViewPage
-    pcnbp->ulDlgID = ID_CRD_SETTINGS_VIEW;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_XCENTER_VIEW1;
-    pcnbp->ulPageID = SP_XCENTER_VIEW1;
-    pcnbp->pfncbInitPage    = ctrpView1InitPage;
-    pcnbp->pfncbItemChanged = ctrpView1ItemChanged;
-    return (ntbInsertPage(pcnbp));
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndNotebook;
+    inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.fEnumerate = TRUE;
+    inbp.pcszName = cmnGetString(ID_XSSI_VIEWPAGE);  // pszViewPage
+    inbp.ulDlgID = ID_CRD_SETTINGS_VIEW;
+    inbp.ulDefaultHelpPanel  = ID_XSH_XCENTER_VIEW1;
+    inbp.ulPageID = SP_XCENTER_VIEW1;
+    inbp.pfncbInitPage    = ctrpView1InitPage;
+    inbp.pfncbItemChanged = ctrpView1ItemChanged;
+    return (ntbInsertPage(&inbp));
 }
 
 /*

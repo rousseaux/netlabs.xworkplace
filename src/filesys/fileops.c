@@ -39,7 +39,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -658,7 +658,6 @@ static MRESULT EXPENTRY fnwpTitleClashDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, M
          */
 
         case WM_CONTROL:
-        {
             switch (SHORT2FROMMP(mp1)) // usNotifyCode
             {
                 case EN_SETFOCUS: // == BN_CLICKED
@@ -676,7 +675,7 @@ static MRESULT EXPENTRY fnwpTitleClashDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, M
                                    (MPARAM)ID_XFDI_CLASH_RENAMEOLDTXT, MPNULL);
                 }
             }
-        break; }
+        break;
 
         case WM_DELAYEDFOCUS:
             winhSetDlgItemFocus(hwndDlg, (HWND)mp1);
@@ -688,8 +687,6 @@ static MRESULT EXPENTRY fnwpTitleClashDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, M
          */
 
         case WM_COMMAND:
-        {
-            mrc = (MRESULT)0;
             switch ((ULONG)mp1)
             {
                 case DID_OK:
@@ -725,13 +722,14 @@ static MRESULT EXPENTRY fnwpTitleClashDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, M
                                 HINI_USER,
                                 INIAPP_XWORKPLACE, INIKEY_WNDPOSNAMECLASH);
                     WinDismissDlg(hwndDlg, ulSelection);
-                break; }
+                }
+                break;
 
                 case DID_CANCEL:
                     WinDismissDlg(hwndDlg, DID_CANCEL);
                 break;
             }
-        break; }
+        break;
 
         case WM_HELP:
             cmnDisplayHelp(NULL,    // active Desktop
@@ -1464,7 +1462,8 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
                         WinQueryDlgItemText(hwndConfirm, ID_XFDI_CLASH_RENAMENEWTXT,
                                             cbTitle-1, pszTitle);
                         ulrc = NAMECLASH_RENAME;
-                    break; }
+                    }
+                    break;
 
                     case ID_XFDI_CLASH_RENAMEOLD:
                     {
@@ -1481,7 +1480,8 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
                             _wpSetTitleAndRenameFile(somSelf, pszTitle, 0);
                         }
                         ulrc = NAMECLASH_NONE;
-                    break; }
+                    }
+                    break;
 
                     case ID_XFDI_CLASH_REPLACE:
                         *ppDuplicate = pFSExisting;

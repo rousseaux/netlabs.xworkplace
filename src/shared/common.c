@@ -4695,7 +4695,7 @@ BOOL cmnPlaySystemSound(USHORT usIndex)
         // check if the XWPMedia subsystem is working
         if (xmmQueryStatus() == MMSTAT_WORKING)
         {
-            brc = xmmPostMediaMsg(XMM_PLAYSYSTEMSOUND,
+            brc = xmmPostPartyMsg(XMM_PLAYSYSTEMSOUND,
                                   (MPARAM)usIndex,
                                   MPNULL);
         }

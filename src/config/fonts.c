@@ -919,14 +919,14 @@ BOOL fonProcessObjectCommand(WPFolder *somSelf,
  *@@added V0.9.9 (2001-03-27) [umoeller]
  */
 
-VOID fonSampleTextInitPage(PCREATENOTEBOOKPAGE pcnbp,
+VOID fonSampleTextInitPage(PNOTEBOOKPAGE pnbp,
                            ULONG flFlags)
 {
     if (flFlags & CBI_INIT)
     {
         // backup old string for "Undo"; if not defined,
         // this returns NULL
-        pcnbp->pUser = prfhQueryProfileData(HINI_USER,
+        pnbp->pUser = prfhQueryProfileData(HINI_USER,
                                             INIAPP_XWORKPLACE,
                                             INIKEY_FONTSAMPLESTRING,
                                             NULL);
@@ -938,7 +938,7 @@ VOID fonSampleTextInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                        INIAPP_XWORKPLACE,
                                        INIKEY_FONTSAMPLESTRING,
                                        NULL);
-        WinSetDlgItemText(pcnbp->hwndDlgPage,
+        WinSetDlgItemText(pnbp->hwndDlgPage,
                           ID_FNDI_SAMPLETEXT_MLE,
                           ((psz) && strlen(psz))
                             ? psz
@@ -954,7 +954,7 @@ VOID fonSampleTextInitPage(PCREATENOTEBOOKPAGE pcnbp,
  *@@added V0.9.9 (2001-03-27) [umoeller]
  */
 
-MRESULT fonSampleTextItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT fonSampleTextItemChanged(PNOTEBOOKPAGE pnbp,
                                  ULONG ulItemID,
                                  USHORT usNotifyCode,
                                  ULONG ulExtra)
@@ -966,7 +966,7 @@ MRESULT fonSampleTextItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_FNDI_SAMPLETEXT_MLE:
             if (usNotifyCode == MLN_KILLFOCUS)
             {
-                PSZ psz = winhQueryWindowText(pcnbp->hwndControl);
+                PSZ psz = winhQueryWindowText(pnbp->hwndControl);
 
                 PrfWriteProfileString(HINI_USER,
                                       (PSZ)INIAPP_XWORKPLACE,
@@ -1502,7 +1502,8 @@ static MRESULT HandleContextMenu(WPObject *somSelf,            // in: object wit
                                      MENU_OPENVIEWPOPUP,
                                      0);
             mrc = (MPARAM)TRUE;     // processed
-        break; }
+        }
+        break;
 
         case WM_MENUEND:
             if (    (*phwndContextMenu)
@@ -1539,7 +1540,8 @@ static MRESULT EXPENTRY fon_fnwpFontSampleFrame(HWND hwnd, ULONG msg, MPARAM mp1
                                     msg, mp1, mp2,
                                     &_fShowingOpenViewMenu,
                                     &pWinData->hwndContextMenu);
-        break; }
+        }
+        break;
 
         default:
             mrc = pWinData->pfnwpFrameOriginal(hwnd, msg, mp1, mp2);
@@ -1591,7 +1593,8 @@ static MRESULT EXPENTRY fon_fnwpFontSampleClient(HWND hwnd, ULONG msg, MPARAM mp
             else
                 // error:
                 mrc = (MPARAM)TRUE;
-        break; }
+        }
+        break;
 
         /*
          * WM_PAINT:
@@ -1611,15 +1614,15 @@ static MRESULT EXPENTRY fon_fnwpFontSampleClient(HWND hwnd, ULONG msg, MPARAM mp
                                     msg, mp1, mp2,
                                     &_fShowingOpenViewMenu,
                                     &pWinData->hwndContextMenu);
-        break; }
+        }
+        break;
 
         case WM_SIZE:
-        {
             UpdateScrollBars(pWinData,
                              SHORT1FROMMP(mp2),  // new cx
                              SHORT2FROMMP(mp2)   // new cy
                              );
-        break; }
+        break;
 
         case WM_VSCROLL:
         case WM_HSCROLL:
@@ -1652,7 +1655,8 @@ static MRESULT EXPENTRY fon_fnwpFontSampleClient(HWND hwnd, ULONG msg, MPARAM mp
                                 8,              // line steps
                                 msg,
                                 mp2);
-        break; }
+        }
+        break;
 
         /*
          * WM_CLOSE:
@@ -1668,7 +1672,8 @@ static MRESULT EXPENTRY fon_fnwpFontSampleClient(HWND hwnd, ULONG msg, MPARAM mp
                               INIAPP_XWORKPLACE,
                               INIKEY_FONTSAMPLEWNDPOS);
             WinDestroyWindow(hwndFrame);
-        break; }
+        }
+        break;
 
         /*
          * WM_HELP:

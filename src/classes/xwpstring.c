@@ -217,16 +217,16 @@ static void _Optlink xwstrfntSetupThread(PTHREADINFO pti)
  *@@added V0.9.3 (2000-04-27) [umoeller]
  */
 
-static VOID xwstrStringInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+static VOID xwstrStringInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                 ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    XWPStringData *somThis = XWPStringGetData(pcnbp->somSelf);
+    XWPStringData *somThis = XWPStringGetData(pnbp->inbp.somSelf);
 
     if (flFlags & CBI_INIT)
     {
-        HWND hwndMLE = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSD_XWPSTRING_STRING_MLE);
+        HWND hwndMLE = WinWindowFromID(pnbp->hwndDlgPage, ID_XSD_XWPSTRING_STRING_MLE);
 
-        if (pcnbp->pUser == NULL)
+        if (pnbp->pUser == NULL)
         {
             // copy data for "Undo"
             XWPStringData *pBackup = (XWPStringData*)malloc(sizeof(*somThis));
@@ -237,7 +237,7 @@ static VOID xwstrStringInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info st
             pBackup->fConfirm = _fConfirm;
 
             // store in noteboot struct
-            pcnbp->pUser = pBackup;
+            pnbp->pUser = pBackup;
         }
 
         // enable word wrap
@@ -256,13 +256,13 @@ static VOID xwstrStringInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info st
         BEGIN_CNRINFO()
         {
             cnrhSetView(CV_NAME | CV_MINI | CA_DRAWICON);
-        } END_CNRINFO(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSD_XWPSTRING_OBJ_CNR));
+        } END_CNRINFO(WinWindowFromID(pnbp->hwndDlgPage, ID_XSD_XWPSTRING_OBJ_CNR));
     }
 
     if (flFlags & CBI_SET)
     {
-        HWND    hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSD_XWPSTRING_OBJ_CNR);
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSD_XWPSTRING_STRING_MLE,
+        HWND    hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XSD_XWPSTRING_OBJ_CNR);
+        WinSetDlgItemText(pnbp->hwndDlgPage, ID_XSD_XWPSTRING_STRING_MLE,
                           _pWszSetupString);
         cnrhRemoveAll(hwndCnr);
         if (_hobjStatic)
@@ -287,20 +287,20 @@ static VOID xwstrStringInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info st
             }
         }
 
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSD_XWPSTRING_CONFIRM,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSD_XWPSTRING_CONFIRM,
                               _fConfirm);
     }
 
     if (flFlags & CBI_ENABLE)
     {
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSD_XWPSTRING_OBJ_CLEAR,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSD_XWPSTRING_OBJ_CLEAR,
                          (_hobjStatic != NULLHANDLE));
     }
 
     if (flFlags & CBI_DESTROY)
     {
         // clean up "Undo" data
-        XWPStringData *pBackup = (XWPStringData*)(pcnbp->pUser);
+        XWPStringData *pBackup = (XWPStringData*)(pnbp->pUser);
         if (pBackup)
             if (pBackup->pWszSetupString)
                 free(pBackup->pWszSetupString);
@@ -318,12 +318,12 @@ static VOID xwstrStringInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info st
  *@@added V0.9.3 (2000-04-27) [umoeller]
  */
 
-static MRESULT xwstrStringItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+static MRESULT xwstrStringItemChanged(PNOTEBOOKPAGE pnbp,
                                       ULONG ulItemID, USHORT usNotifyCode,
                                       ULONG ulExtra)      // for checkboxes: contains new state
 {
     MRESULT     mrc = 0;
-    XWPStringData *somThis = XWPStringGetData(pcnbp->somSelf);
+    XWPStringData *somThis = XWPStringGetData(pnbp->inbp.somSelf);
     BOOL        fSave = TRUE;
 
     static HOBJECT hobjBeingDragged = NULLHANDLE;
@@ -333,8 +333,8 @@ static MRESULT xwstrStringItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSD_XWPSTRING_STRING_MLE:
             if (usNotifyCode == MLN_KILLFOCUS)
             {
-                PSZ pszNew = winhQueryWindowText(pcnbp->hwndControl);
-                _xwpSetString(pcnbp->somSelf, pszNew);
+                PSZ pszNew = winhQueryWindowText(pnbp->hwndControl);
+                _xwpSetString(pnbp->inbp.somSelf, pszNew);
                 if (pszNew)
                     free(pszNew);
             }
@@ -354,7 +354,7 @@ static MRESULT xwstrStringItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     {
                         _hobjStatic = hobjBeingDragged;
                         hobjBeingDragged = NULLHANDLE;
-                        (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
+                        pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
                     }
                 break;
             }
@@ -362,7 +362,7 @@ static MRESULT xwstrStringItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XSD_XWPSTRING_OBJ_CLEAR:
             _hobjStatic = NULLHANDLE;
-            (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         break;
 
         case ID_XSD_XWPSTRING_CONFIRM:
@@ -374,7 +374,7 @@ static MRESULT xwstrStringItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     }
 
     if (fSave)
-        _wpSaveDeferred(pcnbp->somSelf);
+        _wpSaveDeferred(pnbp->inbp.somSelf);
 
     return (mrc);
 }
@@ -497,28 +497,24 @@ SOM_Scope BOOL  SOMLINK xwstr_xwpSetStaticObject(XWPString *somSelf,
 SOM_Scope ULONG  SOMLINK xwstr_xwpAddXWPStringPages(XWPString *somSelf,
                                                     HWND hwndNotebook)
 {
-    PCREATENOTEBOOKPAGE pcnbp;
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    INSERTNOTEBOOKPAGE inbp;
 
     /* XWPStringData *somThis = XWPStringGetData(somSelf); */
     XWPStringMethodDebug("XWPString","xwstr_xwpAddXWPStringPages");
 
     // add the "XWorkplace Startup" page on top
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndNotebook;
-    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_XWPSTRING_PAGE);  // pszXWPStringPage
-    pcnbp->ulDlgID = ID_XSD_XWPSTRING_PAGE;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_XWPSTRING_PAGE;
-    pcnbp->ulPageID = SP_XWPSTRING;
-    pcnbp->pfncbInitPage    = xwstrStringInitPage;
-    pcnbp->pfncbItemChanged = xwstrStringItemChanged;
-    ntbInsertPage(pcnbp);
-
-    return (1);
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndNotebook;
+    inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_XWPSTRING_PAGE);  // pszXWPStringPage
+    inbp.ulDlgID = ID_XSD_XWPSTRING_PAGE;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_XWPSTRING_PAGE;
+    inbp.ulPageID = SP_XWPSTRING;
+    inbp.pfncbInitPage    = xwstrStringInitPage;
+    inbp.pfncbItemChanged = xwstrStringItemChanged;
+    return ntbInsertPage(&inbp);
 }
 
 /*

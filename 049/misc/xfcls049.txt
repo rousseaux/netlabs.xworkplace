@@ -13,7 +13,7 @@
 //     The rest of the line makes up the description which appears in the "Information"
 //     window. Do not add any line breaks in this description, or it will be truncated.
 //     Even though this file is mostly sorted alphabetically, this is not necessary.
-//     (C) 1998-2000 Ulrich Mîller. See the GPL fÅr details.
+//     (C) 1998-2002 Ulrich Mîller. See the GPL fÅr details.
 
 AdvAccount 1 (OS/2 V3) Diese Klasse gehîrt zum IBM Advantis Dialer. Wenn Sie einen anderen Internetprovider verwenden, kînnen Sie diese Klasse entfernen.
 AdvCust 1 (OS/2 V3) Diese Klasse gehîrt zum IBM Advantis Dialer. Wenn Sie einen anderen Internetprovider verwenden, kînnen Sie diese Klasse entfernen.

@@ -280,7 +280,8 @@ BOOL WgtControl(PXCENTERWIDGET pWidget,
                 pszl->cx = 30;      // desired width
                 pszl->cy = 20;      // desired minimum height
                 brc = TRUE;
-            break; }
+            }
+            break;
 
         } // end switch (usNotifyCode)
     } // end if (usID == ID_XCENTER_CLIENT)

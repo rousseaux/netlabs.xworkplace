@@ -28,7 +28,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -133,26 +133,23 @@ static OBJECTLIST          G_llStartupFolders = {0};
 SOM_Scope ULONG  SOMLINK xfstup_xwpAddXFldStartupPage(XFldStartup *somSelf,
                                                       HWND hwndDlg)
 {
-    PCREATENOTEBOOKPAGE pcnbp;
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    INSERTNOTEBOOKPAGE inbp;
 
     /* XFldStartupData *somThis = XFldStartupGetData(somSelf); */
     XFldStartupMethodDebug("XFldStartup","xfstup_xwpAddXFldStartupPage");
 
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_STARTUPPAGE);  // pszStartupPage
-    pcnbp->ulDlgID = ID_XSD_STARTUPFOLDER;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_XFLDSTARTUP;
-    pcnbp->ulPageID = SP_STARTUPFOLDER;
-    pcnbp->pfncbInitPage    = fdrStartupFolderInitPage;
-    pcnbp->pfncbItemChanged = fdrStartupFolderItemChanged;
-
-    return (ntbInsertPage(pcnbp));
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_STARTUPPAGE);  // pszStartupPage
+    inbp.ulDlgID = ID_XSD_STARTUPFOLDER;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_XFLDSTARTUP;
+    inbp.ulPageID = SP_STARTUPFOLDER;
+    inbp.pfncbInitPage    = fdrStartupFolderInitPage;
+    inbp.pfncbItemChanged = fdrStartupFolderItemChanged;
+    return (ntbInsertPage(&inbp));
 }
 
 /*

@@ -187,7 +187,7 @@ typedef struct _MMDEVRECORD
 
 void _Optlink fntInsertDevices(PTHREADINFO pti)
 {
-    PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(pti->ulData);
+    PNOTEBOOKPAGE pnbp = (PNOTEBOOKPAGE)(pti->ulData);
 
     TRY_LOUD(excpt1)
     {
@@ -195,7 +195,7 @@ void _Optlink fntInsertDevices(PTHREADINFO pti)
                     ul;
         PXMMDEVICE  paDevices;
 
-        pcnbp->fShowWaitPointer = TRUE;
+        pnbp->fShowWaitPointer = TRUE;
 
         paDevices = xmmQueryDevices(&cDevices);
 
@@ -205,7 +205,7 @@ void _Optlink fntInsertDevices(PTHREADINFO pti)
                  ul < cDevices;
                  ul++)
             {
-                HWND        hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+                HWND        hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
                 if (pti->fExit)     // V0.9.7 (2000-12-17) [umoeller]
                     break;
@@ -251,16 +251,16 @@ void _Optlink fntInsertDevices(PTHREADINFO pti)
         // store devices
         if (!pti->fExit)     // V0.9.7 (2000-12-17) [umoeller]
         {
-            if (pcnbp->pUser)
+            if (pnbp->pUser)
                 // already set:
-                xmmFreeDevices(pcnbp->pUser); // V0.9.7 (2000-12-20) [umoeller]
-            pcnbp->pUser = paDevices;
+                xmmFreeDevices(pnbp->pUser); // V0.9.7 (2000-12-20) [umoeller]
+            pnbp->pUser = paDevices;
         }
     }
     CATCH(excpt1) {}  END_CATCH();
 
     if (!pti->fExit)
-        pcnbp->fShowWaitPointer = FALSE;
+        pnbp->fShowWaitPointer = FALSE;
 }
 
 /*
@@ -275,20 +275,20 @@ void _Optlink fntInsertDevices(PTHREADINFO pti)
  *@@changed V0.9.13 (2001-06-14) [umoeller]: added more info
  */
 
-VOID xwmmDevicesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID xwmmDevicesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                          ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
     {
         // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
-        HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+        HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
         XFIELDINFO      xfi[8];
         PFIELDINFO      pfi = NULL;
         int             i = 0;
 
         // set group title V0.9.4 (2000-06-13) [umoeller]
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
+        WinSetDlgItemText(pnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
                           cmnGetString(ID_MMSI_PAGETITLE_DEVICES)) ; // pszPagetitleDevices
 
         // set up cnr details view
@@ -345,7 +345,7 @@ VOID xwmmDevicesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                   NULL, // running flag
                   "InsertDevices",
                   THRF_PMMSGQUEUE,
-                  (ULONG)pcnbp);
+                  (ULONG)pnbp);
     }
 
     if (flFlags & CBI_DESTROY)
@@ -353,9 +353,9 @@ VOID xwmmDevicesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         // reversed order V0.9.7 (2000-12-17) [umoeller]
         thrClose(&G_tiInsertDevices);
 
-        if (pcnbp->pUser)
-            xmmFreeDevices(pcnbp->pUser);
-        pcnbp->pUser = NULL;
+        if (pnbp->pUser)
+            xmmFreeDevices(pnbp->pUser);
+        pnbp->pUser = NULL;
     }
 }
 
@@ -462,7 +462,7 @@ typedef struct _IOPROCRECORD
 
 void _Optlink fntInsertIOProcs(PTHREADINFO pti)
 {
-    PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(pti->ulData);
+    PNOTEBOOKPAGE pnbp = (PNOTEBOOKPAGE)(pti->ulData);
 
     TRY_LOUD(excpt1)
     {
@@ -472,7 +472,7 @@ void _Optlink fntInsertIOProcs(PTHREADINFO pti)
         memset(&mmfi, 0, sizeof(mmfi));     // zeroed struct means get all
         mmfi.ulStructLen = sizeof(mmfi);
 
-        pcnbp->fShowWaitPointer = TRUE;
+        pnbp->fShowWaitPointer = TRUE;
 
         if (G_mmioQueryFormatCount(&mmfi,
                                    &lFormatCount,
@@ -501,7 +501,7 @@ void _Optlink fntInsertIOProcs(PTHREADINFO pti)
                          ul < lFormatsRead;
                          ul++)
                     {
-                        HWND        hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+                        HWND        hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
                         if (pti->fExit)     // V0.9.7 (2000-12-17) [umoeller]
                             break;
@@ -604,7 +604,7 @@ void _Optlink fntInsertIOProcs(PTHREADINFO pti)
     CATCH(excpt1) {}  END_CATCH();
 
     if (!pti->fExit)
-        pcnbp->fShowWaitPointer = FALSE;
+        pnbp->fShowWaitPointer = FALSE;
 }
 
 /*
@@ -619,20 +619,20 @@ void _Optlink fntInsertIOProcs(PTHREADINFO pti)
  *@@changed V0.9.7 (2000-12-17) [umoeller]: this used the same global var as the codes page, fixed
  */
 
-VOID xwmmIOProcsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID xwmmIOProcsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                         ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
     {
         // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
-        HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+        HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
         XFIELDINFO      xfi[6];
         PFIELDINFO      pfi = NULL;
         int             i = 0;
 
         // set group title V0.9.4 (2000-06-13) [umoeller]
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
+        WinSetDlgItemText(pnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
                           cmnGetString(ID_MMSI_PAGETITLE_IOPROCS)) ; // pszPagetitleIOProcs
 
         // set up cnr details view
@@ -687,7 +687,7 @@ VOID xwmmIOProcsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                   NULL, // running flag
                   "InsertIOProcs",
                   THRF_PMMSGQUEUE,
-                  (ULONG)pcnbp);
+                  (ULONG)pnbp);
     }
 
     if (flFlags & CBI_DESTROY)
@@ -744,7 +744,7 @@ typedef struct _CODECRECORD
 
 void _Optlink fntInsertCodecs(PTHREADINFO pti)
 {
-    PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(pti->ulData);
+    PNOTEBOOKPAGE pnbp = (PNOTEBOOKPAGE)(pti->ulData);
 
     TRY_LOUD(excpt1)
     {
@@ -753,7 +753,7 @@ void _Optlink fntInsertCodecs(PTHREADINFO pti)
         ULONG               ulIndex = 0,
                             ulFlags = MMIO_FINDPROC | MMIO_MATCHFIRST;
 
-        pcnbp->fShowWaitPointer = TRUE;
+        pnbp->fShowWaitPointer = TRUE;
 
         memset(&cifi, 0, sizeof(cifi));
         cifi.ulStructLen = sizeof(cifi);
@@ -770,7 +770,7 @@ void _Optlink fntInsertCodecs(PTHREADINFO pti)
             else
             {
                 // success:
-                HWND        hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+                HWND        hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
                 if (!hwndCnr)
                     break;
@@ -856,7 +856,7 @@ void _Optlink fntInsertCodecs(PTHREADINFO pti)
     CATCH(excpt1) {}  END_CATCH();
 
     if (!pti->fExit)
-        pcnbp->fShowWaitPointer = FALSE;
+        pnbp->fShowWaitPointer = FALSE;
 }
 
 /*
@@ -870,20 +870,20 @@ void _Optlink fntInsertCodecs(PTHREADINFO pti)
  *@@changed V0.9.7 (2000-12-17) [umoeller]: now terminating thread on early close
  */
 
-VOID xwmmCodecsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID xwmmCodecsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                         ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
     {
         // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
-        HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+        HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
         XFIELDINFO      xfi[6];
         PFIELDINFO      pfi = NULL;
         int             i = 0;
 
         // set group title V0.9.4 (2000-06-13) [umoeller]
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
+        WinSetDlgItemText(pnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
                           cmnGetString(ID_MMSI_PAGETITLE_CODECS)) ; // pszPagetitleCodecs
 
         // set up cnr details view
@@ -938,7 +938,7 @@ VOID xwmmCodecsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                   NULL, // running flag
                   "InsertCodecs",
                   THRF_PMMSGQUEUE,
-                  (ULONG)pcnbp);
+                  (ULONG)pnbp);
     }
 
     if (flFlags & CBI_DESTROY)
@@ -957,7 +957,7 @@ VOID xwmmCodecsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 SOM_Scope ULONG  SOMLINK xwmm_xwpAddXWPMediaPages(XWPMedia *somSelf,
                                                   HWND hwndDlg)
 {
-    PCREATENOTEBOOKPAGE pcnbp;
+    INSERTNOTEBOOKPAGE inbp;
     HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
     // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
     /* XWPMediaData *somThis = XWPMediaGetData(somSelf); */
@@ -967,52 +967,49 @@ SOM_Scope ULONG  SOMLINK xwmm_xwpAddXWPMediaPages(XWPMedia *somSelf,
     if (xmmQueryStatus() == MMSTAT_WORKING)
     {
         // Codecs
-        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndDlg;
-        pcnbp->hmod = savehmod;
-        pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = cmnGetString(ID_MMSI_PAGETITLE_CODECS);  // pszPagetitleCodecs
-        pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_MEDIA_CODECS;
-        pcnbp->ulPageID = SP_MEDIA_CODECS;
-        pcnbp->pampControlFlags = G_pampGenericCnrPage;
-        pcnbp->cControlFlags = G_cGenericCnrPage;
-        pcnbp->pfncbInitPage    = xwmmCodecsInitPage;
-        ntbInsertPage(pcnbp);
+        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+        inbp.somSelf = somSelf;
+        inbp.hwndNotebook = hwndDlg;
+        inbp.hmod = savehmod;
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.pcszName = cmnGetString(ID_MMSI_PAGETITLE_CODECS);  // pszPagetitleCodecs
+        inbp.ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
+        inbp.ulDefaultHelpPanel  = ID_XSH_MEDIA_CODECS;
+        inbp.ulPageID = SP_MEDIA_CODECS;
+        inbp.pampControlFlags = G_pampGenericCnrPage;
+        inbp.cControlFlags = G_cGenericCnrPage;
+        inbp.pfncbInitPage    = xwmmCodecsInitPage;
+        ntbInsertPage(&inbp);
 
         // IOProcs
-        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndDlg;
-        pcnbp->hmod = savehmod;
-        pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = cmnGetString(ID_MMSI_PAGETITLE_IOPROCS);  // pszPagetitleIOProcs
-        pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_MEDIA_IOPROCS;
-        pcnbp->ulPageID = SP_MEDIA_IOPROCS;
-        pcnbp->pampControlFlags = G_pampGenericCnrPage;
-        pcnbp->cControlFlags = G_cGenericCnrPage;
-        pcnbp->pfncbInitPage    = xwmmIOProcsInitPage;
-        ntbInsertPage(pcnbp);
+        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+        inbp.somSelf = somSelf;
+        inbp.hwndNotebook = hwndDlg;
+        inbp.hmod = savehmod;
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.pcszName = cmnGetString(ID_MMSI_PAGETITLE_IOPROCS);  // pszPagetitleIOProcs
+        inbp.ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
+        inbp.ulDefaultHelpPanel  = ID_XSH_MEDIA_IOPROCS;
+        inbp.ulPageID = SP_MEDIA_IOPROCS;
+        inbp.pampControlFlags = G_pampGenericCnrPage;
+        inbp.cControlFlags = G_cGenericCnrPage;
+        inbp.pfncbInitPage    = xwmmIOProcsInitPage;
+        ntbInsertPage(&inbp);
 
         // "Devices" above that
-        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndDlg;
-        pcnbp->hmod = savehmod;
-        pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = cmnGetString(ID_MMSI_PAGETITLE_DEVICES);  // pszPagetitleDevices
-        pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_MEDIA_DEVICES;
-        pcnbp->ulPageID = SP_MEDIA_DEVICES;
-        pcnbp->pampControlFlags = G_pampGenericCnrPage;
-        pcnbp->cControlFlags = G_cGenericCnrPage;
-        pcnbp->pfncbInitPage    = xwmmDevicesInitPage;
-        ntbInsertPage(pcnbp);
+        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+        inbp.somSelf = somSelf;
+        inbp.hwndNotebook = hwndDlg;
+        inbp.hmod = savehmod;
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.pcszName = cmnGetString(ID_MMSI_PAGETITLE_DEVICES);  // pszPagetitleDevices
+        inbp.ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
+        inbp.ulDefaultHelpPanel  = ID_XSH_MEDIA_DEVICES;
+        inbp.ulPageID = SP_MEDIA_DEVICES;
+        inbp.pampControlFlags = G_pampGenericCnrPage;
+        inbp.cControlFlags = G_cGenericCnrPage;
+        inbp.pfncbInitPage    = xwmmDevicesInitPage;
+        ntbInsertPage(&inbp);
     }
 
     return (TRUE);

@@ -1,7 +1,7 @@
 
 /*
  *@@sourcefile mmthread.c:
- *      this has the XWorkplace Media thread, which handles
+ *      this has the XWorkplace Party thread, which handles
  *      multimedia tasks (playing sounds etc.) in XWorkplace.
  *
  *      This is all new with V0.9.3. Most of this code used
@@ -28,7 +28,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -92,14 +92,14 @@
 #include "media\media.h"                // XWorkplace multimedia support
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
-static HAB         G_habMediaThread = NULLHANDLE;
-static HMQ         G_hmqMediaThread = NULLHANDLE;
-extern HWND G_hwndMediaObject = NULLHANDLE;
+static HAB         G_habPartyThread = NULLHANDLE;
+static HMQ         G_hmqPartyThread = NULLHANDLE;
+extern HWND G_hwndPartyObject = NULLHANDLE;
 
 // sound data
 static ULONG       G_ulMMPM2Working = MMSTAT_UNKNOWN;
@@ -108,14 +108,14 @@ static USHORT      G_usSoundDeviceID = 0;
 static ULONG       G_ulVolumeTemp = 0;
 static PSZ         G_pszSoundFile = NULL;
 
-static THREADINFO  G_tiMediaThread = {0};
+static THREADINFO  G_tiPartyThread = {0};
 
-static PCSZ WNDCLASS_MEDIAOBJECT = "XWPMediaThread";
+static PCSZ WNDCLASS_MEDIAOBJECT = "XWPPartyThread";
 
 /* ******************************************************************
- *                                                                  *
- *   Function imports                                               *
- *                                                                  *
+ *
+ *   Function imports
+ *
  ********************************************************************/
 
 // resolved function addresses...
@@ -159,9 +159,9 @@ static const RESOLVEFUNCTION G_aResolveFromMMIO[] =
         };
 
 /* ******************************************************************
- *                                                                  *
- *   Media thread                                                   *
- *                                                                  *
+ *
+ *   Party thread
+ *
  ********************************************************************/
 
 /*
@@ -184,7 +184,7 @@ static VOID ThreadPlaySystemSound(HWND hwndObject,
     #endif
 
     // get system sound from MMPM.INI
-    if (sndQuerySystemSound(G_habMediaThread,
+    if (sndQuerySystemSound(G_habPartyThread,
                             (USHORT)mp1,
                             szDescr,
                             szFile,
@@ -204,9 +204,9 @@ static VOID ThreadPlaySystemSound(HWND hwndObject,
 }
 
 /*
- *@@ xmm_fnwpMediaObject:
- *      window procedure for the Media thread
- *      (xmm_fntMediaThread) object window.
+ *@@ xmm_fnwpPartyObject:
+ *      window procedure for the Party thread
+ *      (xmm_fntPartyThread) object window.
  *
  *@@added V0.9.3 (2000-04-25) [umoeller]
  *@@changed V0.9.7 (2000-12-20) [umoeller]: removed XMM_CDPLAYER
@@ -214,7 +214,7 @@ static VOID ThreadPlaySystemSound(HWND hwndObject,
  *@@changed V0.9.14 (2001-08-01) [umoeller]: fixed memory leak
  */
 
-MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
+MRESULT EXPENTRY xmm_fnwpPartyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = NULL;
 
@@ -223,7 +223,7 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
         /*
          *@@ XMM_PLAYSYSTEMSOUND:
          *      plays system sound specified in MMPM.INI.
-         *      This is posted by xthrPostMediaMsg.
+         *      This is posted by xthrPostPartyMsg.
          *
          *      (USHORT)mp1 must be the MMPM.INI index (see
          *      sndQuerySystemSound for a list).
@@ -404,15 +404,16 @@ MRESULT EXPENTRY xmm_fnwpMediaObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPA
 }
 
 /*
- *@@ xmm_fntMediaThread:
- *      thread func for the Media thread, which creates
- *      an object window (xmm_fnwpMediaObject). This
+ *@@ xmm_fntPartyThread:
+ *      thread func for the Party thread, which creates
+ *      an object window (xmm_fnwpPartyObject). This
  *      is responsible for playing sounds and such.
  *
  *@@added V0.9.3 (2000-04-25) [umoeller]
+ *@@changed V0.9.18 (2002-02-23) [umoeller]: renamed from "Media" thread
  */
 
-void _Optlink xmm_fntMediaThread(PTHREADINFO pti)
+void _Optlink xmm_fntPartyThread(PTHREADINFO pti)
 {
     QMSG                  qmsg;
     // PSZ                   pszErrMsg = NULL;
@@ -420,15 +421,15 @@ void _Optlink xmm_fntMediaThread(PTHREADINFO pti)
 
     TRY_LOUD(excpt1)
     {
-        if (G_habMediaThread = WinInitialize(0))
+        if (G_habPartyThread = WinInitialize(0))
         {
-            if (G_hmqMediaThread = WinCreateMsgQueue(G_habMediaThread, 3000))
+            if (G_hmqPartyThread = WinCreateMsgQueue(G_habPartyThread, 3000))
             {
-                WinCancelShutdown(G_hmqMediaThread, TRUE);
+                WinCancelShutdown(G_hmqPartyThread, TRUE);
 
-                WinRegisterClass(G_habMediaThread,
+                WinRegisterClass(G_habPartyThread,
                                  (PSZ)WNDCLASS_MEDIAOBJECT,    // class name
-                                 (PFNWP)xmm_fnwpMediaObject,    // Window procedure
+                                 (PFNWP)xmm_fnwpPartyObject,    // Window procedure
                                  0,                  // class style
                                  0);                 // extra window words
 
@@ -439,17 +440,17 @@ void _Optlink xmm_fntMediaThread(PTHREADINFO pti)
                                0);
 
                 // create object window
-                G_hwndMediaObject
+                G_hwndPartyObject
                     = winhCreateObjectWindow(WNDCLASS_MEDIAOBJECT, NULL);
 
-                if (!G_hwndMediaObject)
+                if (!G_hwndPartyObject)
                     winhDebugBox(HWND_DESKTOP,
                              "XFolder: Error",
-                             "XFolder failed to create the Media thread object window.");
+                             "XFolder failed to create the Party thread object window.");
 
                 // now enter the message loop
-                while (WinGetMsg(G_habMediaThread, &qmsg, NULLHANDLE, 0, 0))
-                    WinDispatchMsg(G_habMediaThread, &qmsg);
+                while (WinGetMsg(G_habPartyThread, &qmsg, NULLHANDLE, 0, 0))
+                    WinDispatchMsg(G_habPartyThread, &qmsg);
                                 // loop until WM_QUIT
             }
         }
@@ -460,12 +461,12 @@ void _Optlink xmm_fntMediaThread(PTHREADINFO pti)
         fTrapped = TRUE;
     } END_CATCH();
 
-    WinDestroyWindow(G_hwndMediaObject);
-    G_hwndMediaObject = NULLHANDLE;
-    WinDestroyMsgQueue(G_hmqMediaThread);
-    G_hmqMediaThread = NULLHANDLE;
-    WinTerminate(G_habMediaThread);
-    G_habMediaThread = NULLHANDLE;
+    WinDestroyWindow(G_hwndPartyObject);
+    G_hwndPartyObject = NULLHANDLE;
+    WinDestroyMsgQueue(G_hmqPartyThread);
+    G_hmqPartyThread = NULLHANDLE;
+    WinTerminate(G_habPartyThread);
+    G_habPartyThread = NULLHANDLE;
 
     if (fTrapped)
         G_ulMMPM2Working = MMSTAT_CRASHED;
@@ -474,14 +475,14 @@ void _Optlink xmm_fntMediaThread(PTHREADINFO pti)
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Media thread interface                                         *
- *                                                                  *
+ *
+ *   Party thread interface
+ *
  ********************************************************************/
 
 /*
  *@@ xmmInit:
- *      initializes the XWorkplace Media environment
+ *      initializes the XWorkplace Party environment
  *      and resolves the MMPM/2 APIs.
  *      Gets called by initMain on
  *      Desktop startup.
@@ -520,15 +521,15 @@ BOOL xmmInit(PVOID pLogFile)
 
     if (G_ulMMPM2Working == MMSTAT_WORKING)
     {
-        thrCreate(&G_tiMediaThread,
-                  xmm_fntMediaThread,
+        thrCreate(&G_tiPartyThread,
+                  xmm_fntPartyThread,
                   NULL, // running flag
-                  "Media",
+                  "Party",
                   0,    // no msgq
                   0);
         doshWriteLogEntry(pLogFile,
-                          "  Started XWP Media thread, TID: %d",
-                          G_tiMediaThread.tid);
+                          "  Started XWP Party thread, TID: %d",
+                          G_tiPartyThread.tid);
     }
 
     return (G_ulMMPM2Working == MMSTAT_WORKING);
@@ -558,7 +559,7 @@ VOID xmmDisable(VOID)
  +      --  MMSTAT_MMDIRNOTFOUND: MMPM/2 directory not found.
  +      --  MMSTAT_DLLNOTFOUND: MMPM/2 DLLs not found.
  +      --  MMSTAT_IMPORTSFAILED: MMPM/2 imports failed.
- +      --  MMSTAT_CRASHED: Media thread crashed, sounds disabled.
+ +      --  MMSTAT_CRASHED: Party thread crashed, sounds disabled.
  +      --  MMSTAT_DISABLED: media explicitly disabled in startup panic dlg.
  *
  *      You should check this value when using XWorkplace media
@@ -574,28 +575,28 @@ ULONG xmmQueryStatus(VOID)
 }
 
 /*
- *@@ xmmPostMediaMsg:
- *      posts a message to xmm_fnwpMediaObject with
+ *@@ xmmPostPartyMsg:
+ *      posts a message to xmm_fnwpPartyObject with
  *      error checking.
  *
  *@@added V0.9.3 (2000-04-25) [umoeller]
  */
 
-BOOL xmmPostMediaMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
+BOOL xmmPostPartyMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     BOOL rc = FALSE;
-    if (thrQueryID(&G_tiMediaThread))
+    if (thrQueryID(&G_tiPartyThread))
     {
-        if (G_hwndMediaObject)
+        if (G_hwndPartyObject)
             if (G_ulMMPM2Working == MMSTAT_WORKING)
-                rc = WinPostMsg(G_hwndMediaObject, msg, mp1, mp2);
+                rc = WinPostMsg(G_hwndPartyObject, msg, mp1, mp2);
     }
     return (rc);
 }
 
 /*
  *@@ xmmIsPlayingSystemSound:
- *      returns TRUE if the Media thread is
+ *      returns TRUE if the Party thread is
  *      currently playing a system sound.
  *      This is useful for waiting until it's done.
  */

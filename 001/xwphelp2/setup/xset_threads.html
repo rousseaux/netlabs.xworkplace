@@ -29,14 +29,21 @@ while the low byte shows the priority "delta" within a priority class.
 these are running if you enabled "replace folder auto-refresh" on the
 "Features" page and are responsible for watching the file system in the background.
 
-<P><LI><B>Media:</B> The &xwp; "Media" thread is responsible for multimedia,
+<!-- V0.9.18: renamed media thread to Party -->
+<P><LI><B>Party:</B> The &xwp; "Party" thread is responsible for multimedia,
 such as playing system sounds.
 
 <P><LI><B>Worker:</B> See
 <A HREF="glossary/gls_workerthr.html">"The Worker thread"</A> for details.
 
-<P><LI><B>Speedy:</B> Another background thread for high-priority tasks, such
-as displaying the &xwp; boot logo.
+<!-- V0.9.18: renamed Speedy thread to Bush -->
+<P><LI><B>Bush:</B> The &xwp; "Bush" thread is asleep most of the time,
+but suddenly wakes up for certain cosmetic, yet high-priority tasks which require
+immediate attention, such as displaying the &xwp; boot logo.
+
+<!-- V0.9.18: added Wimp thread -->
+<P><LI><B>Wimp:</B> another idle-time thread which awakes only every few minutes
+to perform some memory cleanup and such things.
 
 <P><LI><B>File:</B> The &xwp; "File" thread becomes active when &xwp;
 is doing file operations, such as moving files to the trash can or deleting files.

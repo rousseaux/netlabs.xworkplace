@@ -105,26 +105,23 @@
 SOM_Scope ULONG  SOMLINK fon_xwpAddFontsPage(XWPFontFolder *somSelf,
                                              HWND hwndDlg)
 {
-    PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    INSERTNOTEBOOKPAGE inbp;
 
     // XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
     XWPFontFolderMethodDebug("XWPFontFolder","fon_xwpAddFontsPage");
 
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-    pcnbp->ulDlgID = ID_FND_SAMPLETEXT;
-    pcnbp->ulPageID = SP_FONT_SAMPLETEXT;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_FONTSAMPLEVIEW);  // pszFontSampleView
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_FONTFOLDER_TEXT;
-    pcnbp->pfncbInitPage    = fonSampleTextInitPage;
-    pcnbp->pfncbItemChanged = fonSampleTextItemChanged;
-
-    return (ntbInsertPage(pcnbp));
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+    inbp.ulDlgID = ID_FND_SAMPLETEXT;
+    inbp.ulPageID = SP_FONT_SAMPLETEXT;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_FONTSAMPLEVIEW);  // pszFontSampleView
+    inbp.ulDefaultHelpPanel  = ID_XSH_FONTFOLDER_TEXT;
+    inbp.pfncbInitPage    = fonSampleTextInitPage;
+    inbp.pfncbItemChanged = fonSampleTextItemChanged;
+    return (ntbInsertPage(&inbp));
 }
 
 /*

@@ -136,7 +136,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2000 Ulrich M”ller.
+ *      Copyright (C) 1999-2002 Ulrich M”ller.
  *      Copyright (C) 1993-1999 Roman Stangl.
  *      Copyright (C) 1995-1999 Carlos Ugarte.
  *

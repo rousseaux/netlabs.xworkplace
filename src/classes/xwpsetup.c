@@ -26,7 +26,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2000 Ulrich M”ller.
+ *      Copyright (C) 1999-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -129,114 +129,107 @@ static MPARAM G_ampFeaturesPage[] =
 SOM_Scope ULONG  SOMLINK xwset_xwpAddXWPSetupPages(XWPSetup *somSelf,
                                                    HWND hwndDlg)
 {
-    PCREATENOTEBOOKPAGE pcnbp;
-    HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
-    // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+    INSERTNOTEBOOKPAGE  inbp;
+    HMODULE             savehmod = cmnQueryNLSModuleHandle(FALSE);
 
     /* XWPSetupData *somThis = XWPSetupGetData(somSelf); */
     XWPSetupMethodDebug("XWPSetup","xwset_xwpAddXWPSetupPages");
 
 #ifndef __XWPLITE__
     // insert "Paranoia" page
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = savehmod;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_PARANOIA);  // pszParanoia
-    pcnbp->ulDlgID = ID_XCD_PARANOIA;
-    // pcnbp->usFirstControlID = ID_XCDI_VARMENUOFFSET;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PARANOIA;
-    pcnbp->ulPageID = SP_SETUP_PARANOIA;
-    pcnbp->pfncbInitPage    = setParanoiaInitPage;
-    pcnbp->pfncbItemChanged = setParanoiaItemChanged;
-    ntbInsertPage(pcnbp);
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_PARANOIA);  // pszParanoia
+    inbp.ulDlgID = ID_XCD_PARANOIA;
+    // inbp.usFirstControlID = ID_XCDI_VARMENUOFFSET;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PARANOIA;
+    inbp.ulPageID = SP_SETUP_PARANOIA;
+    inbp.pfncbInitPage    = setParanoiaInitPage;
+    inbp.pfncbItemChanged = setParanoiaItemChanged;
+    ntbInsertPage(&inbp);
 
     // insert "objects" page
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = savehmod;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_OBJECTS);  // pszObjects
-    pcnbp->ulDlgID = ID_XCD_OBJECTS;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_OBJECTS;
-    pcnbp->ulPageID = SP_SETUP_OBJECTS;
-    pcnbp->pfncbInitPage    = setObjectsInitPage;
-    pcnbp->pfncbItemChanged = setObjectsItemChanged;
-    ntbInsertPage(pcnbp);
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_OBJECTS);  // pszObjects
+    inbp.ulDlgID = ID_XCD_OBJECTS;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_OBJECTS;
+    inbp.ulPageID = SP_SETUP_OBJECTS;
+    inbp.pfncbInitPage    = setObjectsInitPage;
+    inbp.pfncbItemChanged = setObjectsItemChanged;
+    ntbInsertPage(&inbp);
 
     // insert "Threads" page
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = savehmod;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_THREADSPAGE);  // pszThreadsPage
-    pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_XC_THREADS;
-    pcnbp->ulPageID = SP_SETUP_THREADS;
-    pcnbp->pampControlFlags = G_pampGenericCnrPage;
-    pcnbp->cControlFlags = G_cGenericCnrPage;
-    pcnbp->pfncbInitPage    = setThreadsInitPage;
-    ntbInsertPage(pcnbp);
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_THREADSPAGE);  // pszThreadsPage
+    inbp.ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_XC_THREADS;
+    inbp.ulPageID = SP_SETUP_THREADS;
+    inbp.pampControlFlags = G_pampGenericCnrPage;
+    inbp.cControlFlags = G_cGenericCnrPage;
+    inbp.pfncbInitPage    = setThreadsInitPage;
+    ntbInsertPage(&inbp);
 
     // insert "XWorkplace Info" page
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = savehmod;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_XWPSTATUS);  // pszXWPStatus
-    pcnbp->ulDlgID = ID_XCD_STATUS;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_XC_INFO;
-    pcnbp->ulPageID = SP_SETUP_INFO;
-    pcnbp->pfncbInitPage    = setStatusInitPage;
-    pcnbp->pfncbItemChanged = setStatusItemChanged;
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_XWPSTATUS);  // pszXWPStatus
+    inbp.ulDlgID = ID_XCD_STATUS;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_XC_INFO;
+    inbp.ulPageID = SP_SETUP_INFO;
+    inbp.pfncbInitPage    = setStatusInitPage;
+    inbp.pfncbItemChanged = setStatusItemChanged;
     // for this page, start a timer
-    pcnbp->ulTimer = 1000;
-    pcnbp->pfncbTimer       = setStatusTimer;
-    ntbInsertPage(pcnbp);
+    inbp.ulTimer = 1000;
+    inbp.pfncbTimer       = setStatusTimer;
+    ntbInsertPage(&inbp);
 #endif
 
     // insert "XWorkplace Features" page
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = savehmod;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_FEATURES);  // pszFeatures
-    pcnbp->ulDlgID = ID_XCD_FEATURES;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_XC_FEATURES;
-    pcnbp->ulPageID = SP_SETUP_FEATURES;
-    pcnbp->pampControlFlags = G_ampFeaturesPage;
-    pcnbp->cControlFlags = sizeof(G_ampFeaturesPage) / sizeof(G_ampFeaturesPage[0]);
-    pcnbp->pfncbInitPage    = setFeaturesInitPage;
-    pcnbp->pfncbItemChanged = setFeaturesItemChanged;
-    pcnbp->pfncbMessage = setFeaturesMessages;
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_FEATURES);  // pszFeatures
+    inbp.ulDlgID = ID_XCD_FEATURES;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_XC_FEATURES;
+    inbp.ulPageID = SP_SETUP_FEATURES;
+    inbp.pampControlFlags = G_ampFeaturesPage;
+    inbp.cControlFlags = sizeof(G_ampFeaturesPage) / sizeof(G_ampFeaturesPage[0]);
+    inbp.pfncbInitPage    = setFeaturesInitPage;
+    inbp.pfncbItemChanged = setFeaturesItemChanged;
+    inbp.pfncbMessage = setFeaturesMessages;
 #ifndef __XWPLITE__
-    ntbInsertPage(pcnbp);
+    ntbInsertPage(&inbp);
 
     // insert logo page  V0.9.6 (2000-11-04) [umoeller]
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = savehmod;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = "XWorkplace";
-    pcnbp->ulDlgID = ID_XCD_FIRST;
-    pcnbp->ulPageID = SP_SETUP_XWPLOGO;
-    pcnbp->pfncbInitPage    = setLogoInitPage;
-    pcnbp->pfncbMessage = setLogoMessages;
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = "XWorkplace";
+    inbp.ulDlgID = ID_XCD_FIRST;
+    inbp.ulPageID = SP_SETUP_XWPLOGO;
+    inbp.pfncbInitPage    = setLogoInitPage;
+    inbp.pfncbMessage = setLogoMessages;
 #endif
 
-    return (ntbInsertPage(pcnbp));
+    return (ntbInsertPage(&inbp));
 }
 
 /*

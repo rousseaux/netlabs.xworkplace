@@ -15,7 +15,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -682,7 +682,7 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
                 xthrPostWorkerMsg(XM_CRASH, 0, 0);
             break;
             case DEBUG_MENUID_CRASH_QUICK:
-                xthrPostSpeedyMsg(XM_CRASH, 0, 0);
+                xthrPostBushMsg(XM_CRASH, 0, 0);
             break;
             case DEBUG_MENUID_CRASH_FILE:
                 xthrPostFileMsg(XM_CRASH, 0, 0);
@@ -830,24 +830,24 @@ static const DLGHITEM dlgDesktopMenus[] =
  *@@changed V0.9.7 (2000-12-13) [umoeller]: added "logoff network now"
  */
 
-VOID dtpMenuItemsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID dtpMenuItemsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                           ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
     {
-        if (pcnbp->pUser == NULL)
+        if (pnbp->pUser == NULL)
         {
             // first call: backup Global Settings for "Undo" button;
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
-            pcnbp->pUser = cmnBackupSettings(G_DtpMenuItemsBackup,
+            pnbp->pUser = cmnBackupSettings(G_DtpMenuItemsBackup,
                                              ARRAYITEMCOUNT(G_DtpMenuItemsBackup));
 
 
             // insert the controls using the dialog formatter
             // V0.9.16 (2001-09-29) [umoeller]
-            ntbFormatPage(pcnbp->hwndDlgPage,
+            ntbFormatPage(pnbp->hwndDlgPage,
                           dlgDesktopMenus,
                           ARRAYITEMCOUNT(dlgDesktopMenus));
         }
@@ -855,21 +855,21 @@ VOID dtpMenuItemsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_SORT,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_DTP_SORT,
                               cmnQuerySetting(sfDTMSort));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_ARRANGE,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_DTP_ARRANGE,
                               cmnQuerySetting(sfDTMArrange));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_SYSTEMSETUP,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_DTP_SYSTEMSETUP,
                               cmnQuerySetting(sfDTMSystemSetup));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_LOCKUP  ,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_DTP_LOCKUP  ,
                               cmnQuerySetting(sfDTMLockup));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_LOGOFFNETWORKNOW,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_DTP_LOGOFFNETWORKNOW,
                               cmnQuerySetting(sfDTMLogoffNetwork)); // V0.9.7 (2000-12-13) [umoeller]
 
 #ifndef __NOXSHUTDOWN__
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_SHUTDOWN,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_DTP_SHUTDOWN,
                               cmnQuerySetting(sfDTMShutdown));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_SHUTDOWNMENU,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_DTP_SHUTDOWNMENU,
                               cmnQuerySetting(sfDTMShutdownMenu));
 #endif
     }
@@ -877,7 +877,7 @@ VOID dtpMenuItemsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     if (flFlags & CBI_ENABLE)
     {
 #ifndef __NOXSHUTDOWN__
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DTP_SHUTDOWNMENU,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_DTP_SHUTDOWNMENU,
                          (     (cmnQuerySetting(sfXShutdown))
                            // &&  (cmnQuerySetting(sfDTMShutdown))
                            // &&  (!cmnQuerySetting(sNoWorkerThread))
@@ -900,16 +900,11 @@ VOID dtpMenuItemsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.9 (2001-04-07) [pr]: fixed Undo
  */
 
-MRESULT dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT dtpMenuItemsItemChanged(PNOTEBOOKPAGE pnbp,
                                 ULONG ulItemID,
                                 USHORT usNotifyCode,
                                 ULONG ulExtra)      // for checkboxes: contains new state
 {
-    // // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-    ULONG ulChange = 1;
-
-    // LONG lTemp;
-
     switch (ulItemID)
     {
         case ID_XSDI_DTP_SORT:
@@ -944,45 +939,22 @@ MRESULT dtpMenuItemsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 #endif
 
         case DID_UNDO:
-        {
-            // "Undo" button: get pointer to backed-up Global Settings
-            /* GLOBALSETTINGS *pGSBackup = (GLOBALSETTINGS*)(pcnbp->pUser);
-
-            // and restore the settings for this page
-            cmnSetSetting(sfDTMSort, pGSBackup->fDTMSort);  // V0.9.9
-            cmnSetSetting(sfDTMArrange, pGSBackup->fDTMArrange);  // V0.9.9
-            cmnSetSetting(sfDTMSystemSetup, pGSBackup->fDTMSystemSetup);
-            cmnSetSetting(sfDTMLockup, pGSBackup->fDTMLockup);
-            cmnSetSetting(sfDTMLogoffNetwork, pGSBackup->fDTMLogoffNetwork);  // V0.9.9
-            cmnSetSetting(sfDTMShutdown, pGSBackup->fDTMShutdown);
-            cmnSetSetting(sfDTMShutdownMenu, pGSBackup->fDTMShutdownMenu);
-               */
-            cmnRestoreSettings(pcnbp->pUser,
+            cmnRestoreSettings(pnbp->pUser,
                                ARRAYITEMCOUNT(G_DtpMenuItemsBackup));
 
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
+        break;
 
         case DID_DEFAULT:
-        {
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
             // Desktop startup)
-            cmnSetDefaultSettings(pcnbp->ulPageID);
+            cmnSetDefaultSettings(pnbp->inbp.ulPageID);
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
-
-        default:
-            ulChange = 0;
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
+        break;
     }
-
-    // cmnUnlockGlobalSettings();
-
-    /* if (ulChange)
-        // enable/disable items
-        cmnStoreGlobalSettings(); */
 
     return ((MPARAM)0);
 }
@@ -1155,41 +1127,41 @@ static const XWPSETTING G_DtpStartupBackup[] =
  *@@changecd V0.9.16 (2001-09-29) [umoeller]: now using dialog formatter
  */
 
-VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID dtpStartupInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                         ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (flFlags & CBI_INIT)
     {
-        if (pcnbp->pUser == NULL)
+        if (pnbp->pUser == NULL)
         {
             // first call: backup Global Settings for "Undo" button;
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
-            pcnbp->pUser = cmnBackupSettings(G_DtpStartupBackup,
+            pnbp->pUser = cmnBackupSettings(G_DtpStartupBackup,
                                              ARRAYITEMCOUNT(G_DtpStartupBackup));
 
             // insert the controls using the dialog formatter
             // V0.9.16 (2001-09-29) [umoeller]
-            ntbFormatPage(pcnbp->hwndDlgPage,
+            ntbFormatPage(pnbp->hwndDlgPage,
                           dlgDesktopStartup,
                           ARRAYITEMCOUNT(dlgDesktopStartup));
 
 #ifndef __NOBOOTLOGO__
             // backup old boot logo file
-            pcnbp->pUser2 = cmnQueryBootLogoFile();     // malloc'ed
+            pnbp->pUser2 = cmnQueryBootLogoFile();     // malloc'ed
                     // fixed V0.9.13 (2001-06-14) [umoeller]
 
             // prepare the control to properly display
             // stretched bitmaps
-            ctlPrepareStretchedBitmap(WinWindowFromID(pcnbp->hwndDlgPage,
+            ctlPrepareStretchedBitmap(WinWindowFromID(pnbp->hwndDlgPage,
                                                       ID_XSDI_DTP_LOGOBITMAP),
                                       TRUE);    // preserve proportions
 
             // set entry field limit
-            winhSetEntryFieldLimit(WinWindowFromID(pcnbp->hwndDlgPage,
+            winhSetEntryFieldLimit(WinWindowFromID(pnbp->hwndDlgPage,
                                                    ID_XSDI_DTP_LOGOFILE),
                                    CCHMAXPATH);
 #endif
@@ -1211,7 +1183,7 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         PSZ         pszBootLogoFile = cmnQueryBootLogoFile();
 
         // "boot logo enabled"
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_BOOTLOGO,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_DTP_BOOTLOGO,
                               cmnQuerySetting(sfBootLogo));
 
         // "boot logo style"
@@ -1219,16 +1191,16 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             usRadioID = ID_XSDI_DTP_LOGO_TRANSPARENT;
         else
             usRadioID = ID_XSDI_DTP_LOGO_BLOWUP;
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, usRadioID,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, usRadioID,
                               BM_CHECKED);
 
         // set boot logo file entry field
-        WinSetDlgItemText(pcnbp->hwndDlgPage,
+        WinSetDlgItemText(pnbp->hwndDlgPage,
                           ID_XSDI_DTP_LOGOFILE,
                           pszBootLogoFile);
 
         // attempt to display the boot logo
-        if (gpihCreateMemPS(WinQueryAnchorBlock(pcnbp->hwndDlgPage),
+        if (gpihCreateMemPS(WinQueryAnchorBlock(pnbp->hwndDlgPage),
                             &szlPage,
                             &hdcMem,
                             &hpsMem))
@@ -1238,7 +1210,7 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                                                  &ulError))
             {
                 // and have the subclassed static control display the thing
-                WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_XSDI_DTP_LOGOBITMAP,
+                WinSendDlgItemMsg(pnbp->hwndDlgPage, ID_XSDI_DTP_LOGOBITMAP,
                                   SM_SETHANDLE,
                                   (MPARAM)(hbmBootLogo),
                                   MPNULL);
@@ -1256,17 +1228,17 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         WinSetPointer(HWND_DESKTOP, hptrOld);
 #endif
         // startup log file
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_WRITEXWPSTARTLOG,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_DTP_WRITEXWPSTARTLOG,
                               cmnQuerySetting(sfWriteXWPStartupLog));
 
 #ifndef __NOBOOTUPSTATUS__
         // bootup status
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_BOOTUPSTATUS,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_DTP_BOOTUPSTATUS,
                               cmnQuerySetting(sfShowBootupStatus));
 #endif
 
         // numlock on
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DTP_NUMLOCKON,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_DTP_NUMLOCKON,
                               cmnQuerySetting(sfNumLockStartup));
     }
 
@@ -1277,14 +1249,14 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         BOOL    fBootLogoFileExists = (access(pszBootLogoFile, 0) == 0);
         free(pszBootLogoFile);
 
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DTP_LOGOBITMAP,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_DTP_LOGOBITMAP,
                          cmnQuerySetting(sfBootLogo));
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DTP_TESTLOGO, fBootLogoFileExists);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_DTP_TESTLOGO, fBootLogoFileExists);
 #endif
 
 #ifndef __NOXWPSTARTUP__
         if (WinQueryObject((PSZ)XFOLDER_STARTUPID))
-            winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DTP_CREATESTARTUPFLDR, FALSE);
+            winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_DTP_CREATESTARTUPFLDR, FALSE);
 #endif
     }
 }
@@ -1299,11 +1271,11 @@ VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@added V0.9.13 (2001-06-14) [umoeller]
  */
 
-static VOID SetBootLogoFile(PCREATENOTEBOOKPAGE pcnbp,
+static VOID SetBootLogoFile(PNOTEBOOKPAGE pnbp,
                             PCSZ pcszNewBootLogoFile,
                             BOOL fWrite)                   // in: if TRUE, write back to OS2.INI
 {
-    winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DTP_TESTLOGO,
+    winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_DTP_TESTLOGO,
                      (access(pcszNewBootLogoFile, 0) == 0));
 
     if (fWrite)
@@ -1314,7 +1286,7 @@ static VOID SetBootLogoFile(PCREATENOTEBOOKPAGE pcnbp,
                               (PSZ)INIKEY_BOOTLOGOFILE,
                               (PSZ)pcszNewBootLogoFile);
         // update the display by calling the INIT callback
-        pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+        pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
     }
 }
 
@@ -1335,7 +1307,7 @@ static VOID SetBootLogoFile(PCREATENOTEBOOKPAGE pcnbp,
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added "write startuplog" setting
  */
 
-MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT dtpStartupItemChanged(PNOTEBOOKPAGE pnbp,
                               ULONG ulItemID,
                               USHORT usNotifyCode,
                               ULONG ulExtra)      // for checkboxes: contains new state
@@ -1382,9 +1354,9 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             case DID_UNDO:
             {
                 // "Undo" button: get pointer to backed-up Global Settings
-                // GLOBALSETTINGS *pGSBackup = (GLOBALSETTINGS*)(pcnbp->pUser);
+                // GLOBALSETTINGS *pGSBackup = (GLOBALSETTINGS*)(pnbp->pUser);
 
-                cmnRestoreSettings(pcnbp->pUser,
+                cmnRestoreSettings(pnbp->pUser,
                                    ARRAYITEMCOUNT(G_DtpStartupBackup));
 
                 // and restore the settings for this page
@@ -1401,13 +1373,13 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                    */
 
 #ifndef __NOBOOTLOGO__
-                SetBootLogoFile(pcnbp,
-                                (PCSZ)pcnbp->pUser2,
+                SetBootLogoFile(pnbp,
+                                (PCSZ)pnbp->pUser2,
                                 TRUE);      // write
 #endif
 
                 // update the display by calling the INIT callback
-                pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+                pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
             break; }
 
             case DID_DEFAULT:
@@ -1415,9 +1387,9 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 // set the default settings for this settings page
                 // (this is in common.c because it's also used at
                 // Desktop startup)
-                cmnSetDefaultSettings(pcnbp->ulPageID);
+                cmnSetDefaultSettings(pnbp->inbp.ulPageID);
                 // update the display by calling the INIT callback
-                pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+                pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
             break; }
 
             default:
@@ -1433,7 +1405,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         // cmnStoreGlobalSettings();
         if (ulChange == 2)
             // enable/disable items
-            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
     }
 
     if (!fProcessed)
@@ -1453,13 +1425,14 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             case ID_XSDI_DTP_LOGOFILE:
             {
-                PSZ pszNewBootLogoFile = winhQueryWindowText(pcnbp->hwndControl);
-                SetBootLogoFile(pcnbp,
+                PSZ pszNewBootLogoFile = winhQueryWindowText(pnbp->hwndControl);
+                SetBootLogoFile(pnbp,
                                 pszNewBootLogoFile,
                                 (usNotifyCode == EN_KILLFOCUS)); // write?
                 if (pszNewBootLogoFile)
                     free(pszNewBootLogoFile);
-            break; }
+            }
+            break;
 
             /*
              * DID_BROWSE:
@@ -1470,7 +1443,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             {
                 // FILEDLG fd;
                 CHAR szFile[CCHMAXPATH] = "*.BMP";
-                PSZ pszNewBootLogoFile = winhQueryWindowText(WinWindowFromID(pcnbp->hwndDlgPage,
+                PSZ pszNewBootLogoFile = winhQueryWindowText(WinWindowFromID(pnbp->hwndDlgPage,
                                                                              ID_XSDI_DTP_LOGOFILE));
 
                 /* memset(&fd, 0, sizeof(FILEDLG));
@@ -1495,11 +1468,11 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 strcat(szFile, "*.bmp");
 
                 /* if (    WinFileDlg(HWND_DESKTOP,    // parent
-                                   pcnbp->hwndFrame, // owner
+                                   pnbp->hwndFrame, // owner
                                    &fd)
                     && (fd.lReturn == DID_OK)
                    ) */
-                if (cmnFileDlg(pcnbp->hwndFrame,
+                if (cmnFileDlg(pnbp->hwndFrame,
                                szFile,
                                0, // WINH_FOD_INILOADDIR | WINH_FOD_INISAVEDIR,
                                0,
@@ -1507,7 +1480,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                0))
                 {
                     // copy file from FOD to page
-                    WinSetDlgItemText(pcnbp->hwndDlgPage,
+                    WinSetDlgItemText(pnbp->hwndDlgPage,
                                       ID_XSDI_DTP_LOGOFILE,
                                       szFile);
                     PrfWriteProfileString(HINI_USER,
@@ -1515,9 +1488,10 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                           (PSZ)INIKEY_BOOTLOGOFILE,
                                           szFile);
                     // update the display by calling the INIT callback
-                    pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+                    pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
                 }
-            break; }
+            }
+            break;
 
             /*
              * ID_XSDI_DTP_TESTLOGO:
@@ -1536,7 +1510,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 PSZ         pszBootLogoFile = cmnQueryBootLogoFile();
 
                 // attempt to load the boot logo
-                if (gpihCreateMemPS(WinQueryAnchorBlock(pcnbp->hwndDlgPage),
+                if (gpihCreateMemPS(WinQueryAnchorBlock(pnbp->hwndDlgPage),
                                     &szlPage,
                                     &hdcMem,
                                     &hpsMem))
@@ -1566,7 +1540,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                             SHAPEFRAME sf;
                             SWP     swpScreen;
 
-                            sf.hab = WinQueryAnchorBlock(pcnbp->hwndDlgPage);
+                            sf.hab = WinQueryAnchorBlock(pnbp->hwndDlgPage);
                             sf.hps = hpsMem;
                             sf.hbm = hbmBootLogo;
                             sf.bmi.cbFix = sizeof(sf.bmi);
@@ -1599,7 +1573,8 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 free(pszBootLogoFile);
 
                 WinSetPointer(HWND_DESKTOP, hptrOld);
-            break; }
+            }
+            break;
 #endif
 
 #ifndef __NOXWPSTARTUP__
@@ -1621,12 +1596,13 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                            szSetup,
                                            (PSZ)WPOBJID_DESKTOP, // "<WP_DESKTOP>",
                                            CO_UPDATEIFEXISTS))
-                    winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DTP_CREATESTARTUPFLDR, FALSE);
+                    winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_DTP_CREATESTARTUPFLDR, FALSE);
                 else
-                    cmnMessageBoxMsg(pcnbp->hwndFrame,
+                    cmnMessageBoxMsg(pnbp->hwndFrame,
                                      104, 105,
                                      MB_OK);
-            break; }
+            }
+            break;
 #endif
 
             default:

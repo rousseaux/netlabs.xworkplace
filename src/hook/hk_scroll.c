@@ -939,7 +939,8 @@ BOOL HandleMB3Msgs(PQMSG pqmsg,
 
             // un-hide mouse if auto-hidden
             *pfRestartAutoHide = TRUE;
-        break; }
+        }
+        break;
 
         /*
          * WM_BUTTON3MOTIONEND:
@@ -1004,7 +1005,8 @@ BOOL HandleMB3Msgs(PQMSG pqmsg,
                     // can translate a sequence of WM_BUTTON3DOWN
                     // WM_BUTTON3UP to WM_BUTTON3CLICK
                 }
-        break; }
+        }
+        break;
 
         /*
          * WM_BUTTON3CLICK:

@@ -21,7 +21,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -368,7 +368,6 @@ static MRESULT EXPENTRY fnwpRegisterClass(HWND hwndDlg, ULONG msg, MPARAM mp1, M
          */
 
         case WM_INITDLG:
-        {
             // CNRINFO CnrInfo;
             WinSetWindowULong(hwndDlg, QWL_USER, (ULONG)mp2);
             prcd = (PREGISTERCLASSDATA)mp2;
@@ -379,33 +378,30 @@ static MRESULT EXPENTRY fnwpRegisterClass(HWND hwndDlg, ULONG msg, MPARAM mp1, M
             WinSendDlgItemMsg(hwndDlg, ID_XLDI_CLASSMODULE, EM_SETTEXTLIMIT,
                               (MPARAM)(255-1), MPNULL);
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-        break; }
+        break;
 
         case WM_CONTROL:
-        {
-                if ( (     (SHORT1FROMMP(mp1) == ID_XLDI_CLASSNAME)
-                        || (SHORT1FROMMP(mp1) == ID_XLDI_CLASSMODULE)
-                     )
-                     && (SHORT2FROMMP(mp1) == EN_CHANGE)
-                   )
+            if ( (     (SHORT1FROMMP(mp1) == ID_XLDI_CLASSNAME)
+                    || (SHORT1FROMMP(mp1) == ID_XLDI_CLASSMODULE)
+                 )
+                 && (SHORT2FROMMP(mp1) == EN_CHANGE)
+               )
+            {
+                BOOL fEnable = FALSE;
+                WinQueryDlgItemText(hwndDlg, ID_XLDI_CLASSNAME,
+                                    sizeof(prcd->szClassName), prcd->szClassName);
+                if (strlen(prcd->szClassName))
                 {
-                    BOOL fEnable = FALSE;
-                    WinQueryDlgItemText(hwndDlg, ID_XLDI_CLASSNAME,
-                                        sizeof(prcd->szClassName), prcd->szClassName);
+                    WinQueryDlgItemText(hwndDlg, ID_XLDI_CLASSMODULE,
+                                        sizeof(prcd->szModName), prcd->szModName);
                     if (strlen(prcd->szClassName))
-                    {
-                        WinQueryDlgItemText(hwndDlg, ID_XLDI_CLASSMODULE,
-                                            sizeof(prcd->szModName), prcd->szModName);
-                        if (strlen(prcd->szClassName))
-                            fEnable = TRUE;
-                    }
-                    winhEnableDlgItem(hwndDlg, DID_OK, fEnable);
+                        fEnable = TRUE;
                 }
-
-        break; }
+                winhEnableDlgItem(hwndDlg, DID_OK, fEnable);
+            }
+        break;
 
         case WM_COMMAND:
-        {
             switch (SHORT1FROMMP(mp1))
             {
                 case DID_OK:
@@ -456,17 +452,14 @@ static MRESULT EXPENTRY fnwpRegisterClass(HWND hwndDlg, ULONG msg, MPARAM mp1, M
                 default:
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
             }
-        break; }
+        break;
 
         case WM_HELP:
-        {
             if (prcd->ulHelpPanel)
-            {
                 _wpDisplayHelp(cmnQueryActiveDesktop(),
                                prcd->ulHelpPanel,
                                (PSZ)prcd->pszHelpLibrary);
-            }
-        break; }
+        break;
 
         default:
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
@@ -1416,7 +1409,8 @@ static MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM m
             }
 
             // return default NULL
-        break; }
+        }
+        break;
 
         /*
          * WM_MINMAXFRAME:
@@ -1432,7 +1426,8 @@ static MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM m
                 WinShowWindow(pClientData->hwndSplitMain, FALSE);
             else if (pswp->fl & SWP_RESTORE)
                 WinShowWindow(pClientData->hwndSplitMain, TRUE);
-        break; }
+        }
+        break;
 
         /*
          * WM_CLOSE:
@@ -1454,7 +1449,8 @@ static MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM m
             WinDestroyWindow(hwndFrame);
 
             // return default NULL
-        break; }
+        }
+        break;
 
         /*
          * WM_DESTROY:
@@ -2828,9 +2824,6 @@ static MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, M
          */
 
         case WM_COMMAND:
-        {
-            // PFNCNRSORT  pfnCnrSort = NULL;
-
             switch (SHORT1FROMMP(mp1))  // menu command
             {
                 // "Help" menu command
@@ -2855,7 +2848,7 @@ static MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, M
                     } END_CNRINFO(WinWindowFromID(hwndDlg, ID_XLDI_CNR));
                 break;
             }
-        break; }
+        break;
 
         /*
          * WM_MENUEND:
@@ -2923,30 +2916,30 @@ static MRESULT EXPENTRY fnwpMethodInfoDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, M
  *
  */
 
-VOID cllClassListInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
+VOID cllClassListInitPage(PNOTEBOOKPAGE pnbp,  // notebook info struct
                            ULONG flFlags)              // CBI_* flags (notebook.h)
 {
     // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    XWPClassListData *somThis = XWPClassListGetData(pcnbp->somSelf);
+    XWPClassListData *somThis = XWPClassListGetData(pnbp->inbp.somSelf);
 
     if (flFlags & CBI_INIT)
     {
-        if (pcnbp->pUser == NULL)
+        if (pnbp->pUser == NULL)
         {
             // first call: backup instance data for "Undo" button;
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
-            pcnbp->pUser = malloc(sizeof(XWPClassListData));
-            memcpy(pcnbp->pUser, somThis, sizeof(XWPClassListData));
+            pnbp->pUser = malloc(sizeof(XWPClassListData));
+            memcpy(pnbp->pUser, somThis, sizeof(XWPClassListData));
         }
     }
 
     if (flFlags & CBI_SET)
     {
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XLDI_SHOWSOMOBJECT,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XLDI_SHOWSOMOBJECT,
                               _fShowSOMObject);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XLDI_SHOWMETHODS,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XLDI_SHOWMETHODS,
                               _fShowMethods);
     }
 
@@ -2963,12 +2956,12 @@ VOID cllClassListInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  */
 
-MRESULT cllClassListItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT cllClassListItemChanged(PNOTEBOOKPAGE pnbp,
                                 ULONG ulItemID,
                                 USHORT usNotifyCode,
                                 ULONG ulExtra)      // for checkboxes: contains new state
 {
-    XWPClassListData *somThis = XWPClassListGetData(pcnbp->somSelf);
+    XWPClassListData *somThis = XWPClassListGetData(pnbp->inbp.somSelf);
     BOOL    fUpdate = TRUE,
             fOldShowMethods = _fShowMethods;
 
@@ -2983,14 +2976,14 @@ MRESULT cllClassListItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break;
 
         case DID_UNDO:
-            if (pcnbp->pUser)
+            if (pnbp->pUser)
             {
-                XWPClassListData *Backup = (pcnbp->pUser);
+                XWPClassListData *Backup = (pnbp->pUser);
                 // "Undo" button: restore backed up instance data
                 _fShowSOMObject = Backup->fShowSOMObject;
                 _fShowMethods = Backup->fShowMethods;
                 // have the page updated by calling the callback above
-                cllClassListInitPage(pcnbp, CBI_SHOW | CBI_ENABLE);
+                cllClassListInitPage(pnbp, CBI_SHOW | CBI_ENABLE);
             }
         break;
 
@@ -2999,7 +2992,7 @@ MRESULT cllClassListItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             _fShowSOMObject = 0;
             _fShowMethods = 1;
             // have the page updated by calling the callback above
-            cllClassListInitPage(pcnbp, CBI_SHOW | CBI_ENABLE);
+            cllClassListInitPage(pnbp, CBI_SHOW | CBI_ENABLE);
         break;
 
         default:
@@ -3008,7 +3001,7 @@ MRESULT cllClassListItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     }
 
     if (fUpdate)
-        _wpSaveDeferred(pcnbp->somSelf);
+        _wpSaveDeferred(pnbp->inbp.somSelf);
 
     if (fOldShowMethods != _fShowMethods)
         if (_hwndOpenView)

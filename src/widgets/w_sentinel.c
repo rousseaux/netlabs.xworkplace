@@ -643,7 +643,8 @@ BOOL TwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         pszl->cy = pPrivate->cyNeeded;
                                     // initially 10, possibly raised later
                         brc = TRUE;
-                    break; }
+                    }
+                    break;
                 }
             }
             break;
@@ -1323,8 +1324,8 @@ VOID TwgtPresParamChanged(HWND hwnd,
                                (MPARAM)XFMF_GETWIDGETSIZES,
                                0);
                 }
-
-            break; }
+            }
+            break;
 
             default:
                 fInvalidate = FALSE;
@@ -1479,8 +1480,8 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
 
         case WM_DESTROY:
         {
-            PWIDGETPRIVATE pPrivate = (PWIDGETPRIVATE)pWidget->pUser;
-            if (pPrivate)
+            PWIDGETPRIVATE pPrivate;
+            if (pPrivate = (PWIDGETPRIVATE)pWidget->pUser)
             {
                 if (pPrivate->ulTimerID)
                     ptmrStopXTimer(pPrivate->pWidget->pGlobals->pvXTimerSet,
@@ -1496,7 +1497,8 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
                 free(pPrivate);
             } // end if (pPrivate)
             mrc = pWidget->pfnwpDefWidgetProc(hwnd, msg, mp1, mp2);
-        break; }
+        }
+        break;
 
         default:
             if (pWidget)

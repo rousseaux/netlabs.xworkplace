@@ -1524,11 +1524,11 @@ static XWPSETTING G_SortBackup[] =
  *@@changed V0.9.12 (2001-05-20) [umoeller]: moved this here from fdrnotebooks.c
  */
 
-VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp,
+VOID fdrSortInitPage(PNOTEBOOKPAGE pnbp,
                      ULONG flFlags)
 {
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    HWND        hwndListbox = WinWindowFromID(pcnbp->hwndDlgPage,
+    HWND        hwndListbox = WinWindowFromID(pnbp->hwndDlgPage,
                                               ID_XSDI_SORTLISTBOX);
 
     if (flFlags & CBI_INIT)
@@ -1539,38 +1539,38 @@ VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp,
                     ul;
         PCLASSFIELDINFO   pcfi;
 
-        if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
+        if (pnbp->inbp.ulPageID == SP_FLDRSORT_FLDR)
         {
             // if we're being called from a folder's notebook,
             // get instance data
-            XFolderData *somThis = XFolderGetData(pcnbp->somSelf);
+            XFolderData *somThis = XFolderGetData(pnbp->inbp.somSelf);
 
-            if (pcnbp->pUser == NULL)
+            if (pnbp->pUser == NULL)
             {
                 // first call: backup instance data for "Undo" button;
                 // this memory will be freed automatically by the
                 // common notebook window function (notebook.c) when
                 // the notebook page is destroyed
-                pcnbp->pUser = malloc(sizeof(XFolderData));
-                memcpy(pcnbp->pUser, somThis, sizeof(XFolderData));
+                pnbp->pUser = malloc(sizeof(XFolderData));
+                memcpy(pnbp->pUser, somThis, sizeof(XFolderData));
             }
 
             // get folder's sort class
-            pSortClass = _wpQueryFldrSortClass(pcnbp->somSelf);
+            pSortClass = _wpQueryFldrSortClass(pnbp->inbp.somSelf);
         }
         else
         {
             // "Workplace Shell" page:
-            if (pcnbp->pUser == NULL)
+            if (pnbp->pUser == NULL)
             {
                 // first call: backup Global Settings for "Undo" button;
                 // this memory will be freed automatically by the
                 // common notebook window function (notebook.c) when
                 // the notebook page is destroyed
-                /* pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-                memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+                /* pnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
+                memcpy(pnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
                 */
-                pcnbp->pUser = cmnBackupSettings(G_SortBackup,
+                pnbp->pUser = cmnBackupSettings(G_SortBackup,
                                                  ARRAYITEMCOUNT(G_SortBackup));
             }
 
@@ -1606,9 +1606,9 @@ VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp,
         {
             BOOL fSortable = TRUE;
 
-            if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
+            if (pnbp->inbp.ulPageID == SP_FLDRSORT_FLDR)
                 // call this method only if somSelf is really a folder!
-                fSortable = _wpIsSortAttribAvailable(pcnbp->somSelf, ul);
+                fSortable = _wpIsSortAttribAvailable(pnbp->inbp.somSelf, ul);
 
             if (    (fSortable)
                     // sortable columns only:
@@ -1634,10 +1634,10 @@ VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp,
              lAlwaysSort;
         ULONG ulIndex;
 
-        if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
+        if (pnbp->inbp.ulPageID == SP_FLDRSORT_FLDR)
         {
             // instance notebook:
-            XFolderData *somThis = XFolderGetData(pcnbp->somSelf);
+            XFolderData *somThis = XFolderGetData(pnbp->inbp.somSelf);
             lDefaultSort = (_lDefSortCrit == SET_DEFAULT)
                                 ? cmnQuerySetting(slDefSortCrit)
                                 : _lDefSortCrit;
@@ -1664,11 +1664,11 @@ VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                     ulIndex,
                                     TRUE);
 
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage,
                               ID_XSDI_SORTFOLDERSFIRST,
                               lFoldersFirst);
 
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage,
                               ID_XSDI_ALWAYSSORT,
                               lAlwaysSort);
     }
@@ -1693,12 +1693,12 @@ VOID fdrSortInitPage(PCREATENOTEBOOKPAGE pcnbp,
  *@@changed V0.9.12 (2001-05-22) [umoeller]: fixed global "Undo", which never worked
  */
 
-MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT fdrSortItemChanged(PNOTEBOOKPAGE pnbp,
                            ULONG ulItemID,
                            USHORT usNotifyCode,
                            ULONG ulExtra)      // for checkboxes: contains new state
 {
-    if (pcnbp->fPageInitialized)        // V0.9.12 (2001-05-22) [umoeller]
+    if (pnbp->fPageInitialized)        // V0.9.12 (2001-05-22) [umoeller]
     {
         BOOL fGlobalRefreshViews = FALSE;
 
@@ -1708,7 +1708,7 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             case ID_XSDI_SORTFOLDERSFIRST:
             case ID_XSDI_SORTLISTBOX:
             {
-                HWND        hwndListbox = WinWindowFromID(pcnbp->hwndDlgPage,
+                HWND        hwndListbox = WinWindowFromID(pnbp->hwndDlgPage,
                                                           ID_XSDI_SORTLISTBOX);
 
                 ULONG ulSortIndex = (USHORT)(WinSendMsg(hwndListbox,
@@ -1717,10 +1717,10 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                                         MPNULL));
                 LONG lDefaultSort = winhQueryLboxItemHandle(hwndListbox, ulSortIndex);
 
-                BOOL fFoldersFirst = winhIsDlgItemChecked(pcnbp->hwndDlgPage,
+                BOOL fFoldersFirst = winhIsDlgItemChecked(pnbp->hwndDlgPage,
                                                           ID_XSDI_SORTFOLDERSFIRST);
 
-                BOOL fAlways = winhIsDlgItemChecked(pcnbp->hwndDlgPage,
+                BOOL fAlways = winhIsDlgItemChecked(pnbp->hwndDlgPage,
                                                     ID_XSDI_ALWAYSSORT);
 
                 _Pmpf((__FUNCTION__ ": ulSortIndex = %d", ulSortIndex));
@@ -1728,10 +1728,10 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 _Pmpf(("  fFoldersFirst = %d", fFoldersFirst));
                 _Pmpf(("  fAlways = %d", fAlways));
 
-                if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
+                if (pnbp->inbp.ulPageID == SP_FLDRSORT_FLDR)
                 {
                     // change instance data
-                    _xwpSetFldrSort(pcnbp->somSelf,
+                    _xwpSetFldrSort(pnbp->inbp.somSelf,
                                     lDefaultSort,
                                     fFoldersFirst,
                                     fAlways);
@@ -1756,7 +1756,7 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         if (lDtpAlwaysSort != 0)
                         {
                             // issue warning that this might also sort the Desktop
-                            if (cmnMessageBoxMsg(pcnbp->hwndFrame,
+                            if (cmnMessageBoxMsg(pnbp->hwndFrame,
                                                  116, 133,
                                                  MB_YESNO)
                                            == MBID_YES)
@@ -1778,19 +1778,20 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                     fGlobalRefreshViews = TRUE;
                 }
-            break; }
+            }
+            break;
 
             // control other than listbox:
             case DID_UNDO:
                 // "Undo" button: restore backed up instance/global data
-                if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
+                if (pnbp->inbp.ulPageID == SP_FLDRSORT_FLDR)
                 {
                     // if we're being called from a folder's notebook,
                     // restore instance data
-                    if (pcnbp->pUser)
+                    if (pnbp->pUser)
                     {
-                        XFolderData *Backup = (pcnbp->pUser);
-                        _xwpSetFldrSort(pcnbp->somSelf,
+                        XFolderData *Backup = (pnbp->pUser);
+                        _xwpSetFldrSort(pnbp->inbp.somSelf,
                                         Backup->lDefSortCrit,
                                         Backup->lFoldersFirst,
                                         Backup->lAlwaysSort);
@@ -1799,10 +1800,10 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 else
                 {
                     // global sort page:
-                    // GLOBALSETTINGS *pBackup = (GLOBALSETTINGS*)pcnbp->pUser;
+                    // GLOBALSETTINGS *pBackup = (GLOBALSETTINGS*)pnbp->pUser;
                     // fixed undo V0.9.12 (2001-05-22) [umoeller]
                     // GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-                    cmnRestoreSettings(pcnbp->pUser, ARRAYITEMCOUNT(G_SortBackup));
+                    cmnRestoreSettings(pnbp->pUser, ARRAYITEMCOUNT(G_SortBackup));
                     /*
                     cmnSetSetting(sfFoldersFirst, pBackup->fFoldersFirst);
                     cmnSetSetting(slDefSortCrit, pBackup->lDefSortCrit);
@@ -1813,13 +1814,13 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 }
 
                 // update the display by calling the INIT callback
-                pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+                pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
             break;
 
             case DID_DEFAULT:
                 // "Default" button:
-                if (pcnbp->ulPageID == SP_FLDRSORT_FLDR)
-                    _xwpSetFldrSort(pcnbp->somSelf,
+                if (pnbp->inbp.ulPageID == SP_FLDRSORT_FLDR)
+                    _xwpSetFldrSort(pnbp->inbp.somSelf,
                                     SET_DEFAULT,
                                     SET_DEFAULT,
                                     SET_DEFAULT);
@@ -1830,7 +1831,7 @@ MRESULT fdrSortItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 }
 
                 // update the display by calling the INIT callback
-                pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+                pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
             break;
         }
 

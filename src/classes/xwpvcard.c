@@ -121,12 +121,12 @@
  *
  */
 
-static VOID SetEFText(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+static VOID SetEFText(PNOTEBOOKPAGE pnbp,    // notebook info struct
                       ULONG ulID,
                       PCSZ pcsz)
 {
     HWND hwnd;
-    if (hwnd = WinWindowFromID(pcnbp->hwndDlgPage, ulID))
+    if (hwnd = WinWindowFromID(pnbp->hwndDlgPage, ulID))
     {
         winhSetEntryFieldLimit(hwnd, 1000);
         WinSetWindowText(hwnd, (PSZ)pcsz);
@@ -196,7 +196,7 @@ static const DLGHITEM dlgSummary[] =
  *
  */
 
-static VOID SetStringOrArray(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+static VOID SetStringOrArray(PNOTEBOOKPAGE pnbp,    // notebook info struct
                              ULONG ulID,
                              PCSZ pcszReal,
                              PCSZ *papcsz,
@@ -231,7 +231,7 @@ static VOID SetStringOrArray(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
         pcszTemp = strTemp.psz;
     }
 
-    SetEFText(pcnbp,
+    SetEFText(pnbp,
               ulID,
               pcszTemp);
     xstrClear(&strTemp);
@@ -243,25 +243,25 @@ static VOID SetStringOrArray(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
  *
  */
 
-static VOID vcfSummaryInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+static VOID vcfSummaryInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                                ULONG flFlags)                // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
     {
-        ntbFormatPage(pcnbp->hwndDlgPage,
+        ntbFormatPage(pnbp->hwndDlgPage,
                       dlgSummary,
                       ARRAYITEMCOUNT(dlgSummary));
     }
 
     if (flFlags & CBI_SET)
     {
-        XWPVCardData *somThis = XWPVCardGetData(pcnbp->somSelf);
+        XWPVCardData *somThis = XWPVCardGetData(pnbp->inbp.somSelf);
         PVCARD      pvc;
         APIRET      arc = NO_ERROR;
         CHAR        sz[CCHMAXPATH];
 
         if (!_pvCard)
-            if (_wpQueryFilename(pcnbp->somSelf, sz, TRUE))
+            if (_wpQueryFilename(pnbp->inbp.somSelf, sz, TRUE))
                 arc = vcfRead(sz, (PVCARD*)&_pvCard);
 
         if (pvc = (PVCARD)_pvCard)
@@ -285,7 +285,7 @@ static VOID vcfSummaryInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info st
                     VCF_VALUE_INDEX_ADR_COUNTRY
                 };
 
-            SetStringOrArray(pcnbp,
+            SetStringOrArray(pnbp,
                              ID_XSDI_VCARD_SUMMARY_NAME_EF,
                              pvc->pcszFormattedName,
                              pvc->apcszName,
@@ -293,11 +293,11 @@ static VOID vcfSummaryInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info st
                              ARRAYITEMCOUNT(aulFormattedNameOrder),
                              aulFormattedNameOrder);
 
-            SetEFText(pcnbp,
+            SetEFText(pnbp,
                       ID_XSDI_VCARD_SUMMARY_TITLE_EF,
                       pvc->pcszJobTitle);
 
-            SetStringOrArray(pcnbp,
+            SetStringOrArray(pnbp,
                              ID_XSDI_VCARD_SUMMARY_ADDRESS_EF,
                              (pvc->cLabels)
                                 ? pvc->paLabels[0].pcszLabel
@@ -309,7 +309,7 @@ static VOID vcfSummaryInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info st
                              ARRAYITEMCOUNT(aulAddressOrder),
                              aulAddressOrder);
 
-            SetEFText(pcnbp,
+            SetEFText(pnbp,
                       ID_XSDI_VCARD_SUMMARY_EMAIL_EF,
                       pvc->pcszEmail);
         }
@@ -390,25 +390,25 @@ static const DLGHITEM dlgName[] =
  *
  */
 
-static VOID vcfNameInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+static VOID vcfNameInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                             ULONG flFlags)                // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
     {
-        ntbFormatPage(pcnbp->hwndDlgPage,
+        ntbFormatPage(pnbp->hwndDlgPage,
                       dlgName,
                       ARRAYITEMCOUNT(dlgName));
     }
 
     if (flFlags & CBI_SET)
     {
-        XWPVCardData *somThis = XWPVCardGetData(pcnbp->somSelf);
+        XWPVCardData *somThis = XWPVCardGetData(pnbp->inbp.somSelf);
         PVCARD      pvc;
         APIRET      arc = NO_ERROR;
         CHAR        sz[CCHMAXPATH];
 
         if (!_pvCard)
-            if (_wpQueryFilename(pcnbp->somSelf, sz, TRUE))
+            if (_wpQueryFilename(pnbp->inbp.somSelf, sz, TRUE))
                 arc = vcfRead(sz, (PVCARD*)&_pvCard);
 
         if (pvc = (PVCARD)_pvCard)
@@ -427,8 +427,9 @@ static VOID vcfNameInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struc
                  ul < ARRAYITEMCOUNT(aulIDs);
                  ul++)
             {
-                SetEFText(pcnbp, aulIDs[ul],
-                                  (PSZ)pvc->apcszName[ul]);
+                SetEFText(pnbp,
+                          aulIDs[ul],
+                          (PSZ)pvc->apcszName[ul]);
             }
         }
     }
@@ -565,31 +566,31 @@ static const DLGHITEM dlgPhone[] =
  *
  */
 
-static VOID vcfPhoneInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+static VOID vcfPhoneInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                              ULONG flFlags)                // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
     {
-        ntbFormatPage(pcnbp->hwndDlgPage,
+        ntbFormatPage(pnbp->hwndDlgPage,
                       dlgPhone,
                       ARRAYITEMCOUNT(dlgPhone));
     }
 
     if (flFlags & CBI_SET)
     {
-        XWPVCardData *somThis = XWPVCardGetData(pcnbp->somSelf);
+        XWPVCardData *somThis = XWPVCardGetData(pnbp->inbp.somSelf);
         PVCARD      pvc;
         APIRET      arc = NO_ERROR;
         CHAR        sz[CCHMAXPATH];
 
         if (!_pvCard)
-            if (_wpQueryFilename(pcnbp->somSelf, sz, TRUE))
+            if (_wpQueryFilename(pnbp->inbp.somSelf, sz, TRUE))
                 arc = vcfRead(sz, (PVCARD*)&_pvCard);
 
         if (pvc = (PVCARD)_pvCard)
         {
             ULONG ul;
-            HWND hwndLB = WinWindowFromID(pcnbp->hwndDlgPage,
+            HWND hwndLB = WinWindowFromID(pnbp->hwndDlgPage,
                                           ID_XSDI_VCARD_PHONE_LISTBOX);
             for (ul = 0;
                  ul < pvc->cPhones;
@@ -609,7 +610,7 @@ static VOID vcfPhoneInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
  *
  */
 
-static MRESULT XWPENTRY vcfPhoneItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+static MRESULT XWPENTRY vcfPhoneItemChanged(PNOTEBOOKPAGE pnbp,
                                             ULONG ulItemID, USHORT usNotifyCode,
                                             ULONG ulExtra)
 {
@@ -620,9 +621,9 @@ static MRESULT XWPENTRY vcfPhoneItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_VCARD_PHONE_LISTBOX:
             if (usNotifyCode == LN_SELECT)
             {
-                XWPVCardData *somThis = XWPVCardGetData(pcnbp->somSelf);
+                XWPVCardData *somThis = XWPVCardGetData(pnbp->inbp.somSelf);
 
-                SHORT sIndex = winhQueryLboxSelectedItem(pcnbp->hwndControl,
+                SHORT sIndex = winhQueryLboxSelectedItem(pnbp->hwndControl,
                                                          LIT_FIRST);
                 PVCARD      pvc;
                 if (    (pvc = (PVCARD)_pvCard)
@@ -665,7 +666,7 @@ static MRESULT XWPENTRY vcfPhoneItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         };
                     ULONG ul;
 
-                    WinSetDlgItemText(pcnbp->hwndDlgPage,
+                    WinSetDlgItemText(pnbp->hwndDlgPage,
                                       ID_XSDI_VCARD_PHONE_NUMBER_EF,
                                       pPhone->pcszNumber);
 
@@ -673,7 +674,7 @@ static MRESULT XWPENTRY vcfPhoneItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                          ul < ARRAYITEMCOUNT(aulIDs);
                          ul++)
                     {
-                        winhSetDlgItemChecked(pcnbp->hwndDlgPage,
+                        winhSetDlgItemChecked(pnbp->hwndDlgPage,
                                               aulIDs[ul],
                                               ((pPhone->fl & aulFlags[ul]) != 0));
                     }
@@ -775,25 +776,25 @@ static const DLGHITEM dlgAddresses[] =
  *
  */
 
-static VOID vcfAddressesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
+static VOID vcfAddressesInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
                                  ULONG flFlags)                // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
     {
-        ntbFormatPage(pcnbp->hwndDlgPage,
+        ntbFormatPage(pnbp->hwndDlgPage,
                       dlgAddresses,
                       ARRAYITEMCOUNT(dlgAddresses));
     }
 
     if (flFlags & CBI_SET)
     {
-        XWPVCardData *somThis = XWPVCardGetData(pcnbp->somSelf);
+        XWPVCardData *somThis = XWPVCardGetData(pnbp->inbp.somSelf);
         PVCARD      pvc;
         APIRET      arc = NO_ERROR;
         CHAR        sz[CCHMAXPATH];
 
         if (!_pvCard)
-            if (_wpQueryFilename(pcnbp->somSelf, sz, TRUE))
+            if (_wpQueryFilename(pnbp->inbp.somSelf, sz, TRUE))
                 arc = vcfRead(sz, (PVCARD*)&_pvCard);
 
         if (pvc = (PVCARD)_pvCard)
@@ -816,8 +817,9 @@ static VOID vcfAddressesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info 
                      ul < ARRAYITEMCOUNT(aulIDs);
                      ul++)
                 {
-                    SetEFText(pcnbp, aulIDs[ul],
-                                      (PSZ)pvc->paDeliveryAddresses[0].apcszAddress[ul]);
+                    SetEFText(pnbp,
+                              aulIDs[ul],
+                              (PSZ)pvc->paDeliveryAddresses[0].apcszAddress[ul]);
                 }
             }
         }
@@ -879,60 +881,56 @@ SOM_Scope BOOL  SOMLINK xvc_wpAddSettingsPages(XWPVCard *somSelf,
     {
         TRY_LOUD(excpt1)
         {
-            PCREATENOTEBOOKPAGE pcnbp;
+            INSERTNOTEBOOKPAGE inbp;
 
-            pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-            memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-            pcnbp->somSelf = somSelf;
-            pcnbp->hwndNotebook = hwndNotebook;
-            pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-            pcnbp->usPageStyleFlags = BKA_MAJOR;
-            pcnbp->pszName = "Addresses",    // @@todo
-            pcnbp->ulDlgID = ID_XFD_EMPTYDLG;
-            pcnbp->ulDefaultHelpPanel  = ID_XSH_VCARD_PAGE; // @@todo
-            pcnbp->ulPageID = SP_VCARD_ADDRESSES;
-            pcnbp->pfncbInitPage    = vcfAddressesInitPage;
-            ntbInsertPage(pcnbp);
+            memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+            inbp.somSelf = somSelf;
+            inbp.hwndNotebook = hwndNotebook;
+            inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+            inbp.usPageStyleFlags = BKA_MAJOR;
+            inbp.pcszName = "Addresses",    // @@todo
+            inbp.ulDlgID = ID_XFD_EMPTYDLG;
+            inbp.ulDefaultHelpPanel  = ID_XSH_VCARD_PAGE; // @@todo
+            inbp.ulPageID = SP_VCARD_ADDRESSES;
+            inbp.pfncbInitPage    = vcfAddressesInitPage;
+            ntbInsertPage(&inbp);
 
-            pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-            memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-            pcnbp->somSelf = somSelf;
-            pcnbp->hwndNotebook = hwndNotebook;
-            pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-            pcnbp->usPageStyleFlags = BKA_MAJOR;
-            pcnbp->pszName = "Phone numbers",    // @@todo
-            pcnbp->ulDlgID = ID_XFD_EMPTYDLG;
-            pcnbp->ulDefaultHelpPanel  = ID_XSH_VCARD_PAGE; // @@todo
-            pcnbp->ulPageID = SP_VCARD_PHONE;
-            pcnbp->pfncbInitPage    = vcfPhoneInitPage;
-            pcnbp->pfncbItemChanged = vcfPhoneItemChanged;
-            ntbInsertPage(pcnbp);
+            memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+            inbp.somSelf = somSelf;
+            inbp.hwndNotebook = hwndNotebook;
+            inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+            inbp.usPageStyleFlags = BKA_MAJOR;
+            inbp.pcszName = "Phone numbers",    // @@todo
+            inbp.ulDlgID = ID_XFD_EMPTYDLG;
+            inbp.ulDefaultHelpPanel  = ID_XSH_VCARD_PAGE; // @@todo
+            inbp.ulPageID = SP_VCARD_PHONE;
+            inbp.pfncbInitPage    = vcfPhoneInitPage;
+            inbp.pfncbItemChanged = vcfPhoneItemChanged;
+            ntbInsertPage(&inbp);
 
-            pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-            memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-            pcnbp->somSelf = somSelf;
-            pcnbp->hwndNotebook = hwndNotebook;
-            pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-            pcnbp->usPageStyleFlags = BKA_MAJOR;
-            pcnbp->pszName = "Name"; // @@todo
-            pcnbp->ulDlgID = ID_XFD_EMPTYDLG;
-            pcnbp->ulDefaultHelpPanel  = ID_XSH_VCARD_PAGE; // @@todo
-            pcnbp->ulPageID = SP_VCARD_NAME;
-            pcnbp->pfncbInitPage    = vcfNameInitPage;
-            ntbInsertPage(pcnbp);
+            memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+            inbp.somSelf = somSelf;
+            inbp.hwndNotebook = hwndNotebook;
+            inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+            inbp.usPageStyleFlags = BKA_MAJOR;
+            inbp.pcszName = "Name"; // @@todo
+            inbp.ulDlgID = ID_XFD_EMPTYDLG;
+            inbp.ulDefaultHelpPanel  = ID_XSH_VCARD_PAGE; // @@todo
+            inbp.ulPageID = SP_VCARD_NAME;
+            inbp.pfncbInitPage    = vcfNameInitPage;
+            ntbInsertPage(&inbp);
 
-            pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-            memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-            pcnbp->somSelf = somSelf;
-            pcnbp->hwndNotebook = hwndNotebook;
-            pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-            pcnbp->usPageStyleFlags = BKA_MAJOR;
-            pcnbp->pszName = "Summary",    // @@todo
-            pcnbp->ulDlgID = ID_XFD_EMPTYDLG;
-            pcnbp->ulDefaultHelpPanel  = ID_XSH_VCARD_PAGE; // @@todo
-            pcnbp->ulPageID = SP_VCARD_SUMMARY;
-            pcnbp->pfncbInitPage    = vcfSummaryInitPage;
-            ntbInsertPage(pcnbp);
+            memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+            inbp.somSelf = somSelf;
+            inbp.hwndNotebook = hwndNotebook;
+            inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+            inbp.usPageStyleFlags = BKA_MAJOR;
+            inbp.pcszName = "Summary",    // @@todo
+            inbp.ulDlgID = ID_XFD_EMPTYDLG;
+            inbp.ulDefaultHelpPanel  = ID_XSH_VCARD_PAGE; // @@todo
+            inbp.ulPageID = SP_VCARD_SUMMARY;
+            inbp.pfncbInitPage    = vcfSummaryInitPage;
+            ntbInsertPage(&inbp);
 
             brc = TRUE;
         }

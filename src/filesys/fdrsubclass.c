@@ -1799,7 +1799,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                             // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                             mrc = (MRESULT)pfnwpOriginal(hwndFrame, msg, mp1, mp2);
                             if (cmnQuerySetting(sfTreeViewAutoScroll))
-                                xthrPostSpeedyMsg(QM_TREEVIEWAUTOSCROLL,
+                                xthrPostBushMsg(QM_TREEVIEWAUTOSCROLL,
                                                   (MPARAM)hwndFrame,
                                                   mp2); // PMINIRECORDCORE
                         }

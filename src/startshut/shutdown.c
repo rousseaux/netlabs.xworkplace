@@ -31,7 +31,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -1362,7 +1362,8 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                               0, 0);
 
             WinPostMsg(hwndDlg, XM_UPDATE, MPNULL, MPNULL);
-        break; }
+        }
+        break;
 
         /*
          * WM_CONTROL:
@@ -1370,7 +1371,6 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
          */
 
         case WM_CONTROL:
-        {
             switch (SHORT1FROMMP(mp1))
             {
                 /*
@@ -1389,7 +1389,6 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                  */
 
                 case ID_XSDI_XRB_ITEMNAME:
-                {
                     if (SHORT2FROMMP(mp1) == EN_KILLFOCUS)
                     {
                         PREBOOTWINDATA pData =
@@ -1409,7 +1408,7 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                             }
                         }
                     }
-                break; }
+                break;
 
                 /*
                  * ID_XSDI_XRB_COMMAND:
@@ -1417,7 +1416,6 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                  */
 
                 case ID_XSDI_XRB_COMMAND:
-                {
                     if (SHORT2FROMMP(mp1) == EN_KILLFOCUS)
                     {
                         PREBOOTWINDATA pData =
@@ -1429,12 +1427,12 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                                                     sizeof(pData->pliSelected->szCommand)-1,
                                                     pData->pliSelected->szCommand);
                     }
-                break; }
+                break;
 
                 default:
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
             }
-        break; }
+        break;
 
         /*
          * XM_UPDATE:
@@ -1444,9 +1442,8 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 
         case XM_UPDATE:
         {
-            PREBOOTWINDATA pData =
-                    (PREBOOTWINDATA)WinQueryWindowPtr(hwndDlg, QWL_USER);
-            if (pData)
+            PREBOOTWINDATA pData;
+            if (pData = (PREBOOTWINDATA)WinQueryWindowPtr(hwndDlg, QWL_USER))
             {
                 pData->pliSelected = NULL;
                 pData->sSelected = (USHORT)WinSendDlgItemMsg(hwndDlg,
@@ -1496,7 +1493,8 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                             )
                         );
             }
-        break; }
+        }
+        break;
 
         /*
          * WM_COMMAND:
@@ -1540,7 +1538,8 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                             EM_SETSEL,
                             MPFROM2SHORT(0, 1000), // select all
                             MPNULL);
-                break; }
+                }
+                break;
 
                 /*
                  * ID_XSDI_XRB_DELETE:
@@ -1548,7 +1547,6 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                  */
 
                 case ID_XSDI_XRB_DELETE:
-                {
                     if (pData)
                     {
                         if (pData->pliSelected)
@@ -1563,7 +1561,7 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                         WinPostMsg(hwndDlg, XM_UPDATE, MPNULL, MPNULL);
                     }
                     winhSetDlgItemFocus(hwndDlg, ID_XSDI_XRB_LISTBOX);
-                break; }
+                break;
 
                 /*
                  * ID_XSDI_XRB_UP:
@@ -1571,7 +1569,6 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                  */
 
                 case ID_XSDI_XRB_UP:
-                {
                     if (pData)
                     {
                         // _Pmpf(( "WM_COMMAND ID_XSDI_XRB_UP BN_CLICKED" ));
@@ -1602,7 +1599,7 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                         WinPostMsg(hwndDlg, XM_UPDATE, MPNULL, MPNULL);
                     }
                     winhSetDlgItemFocus(hwndDlg, ID_XSDI_XRB_LISTBOX);
-                break; }
+                break;
 
                 /*
                  * ID_XSDI_XRB_DOWN:
@@ -1610,7 +1607,6 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                  */
 
                 case ID_XSDI_XRB_DOWN:
-                {
                     if (pData)
                     {
                         // _Pmpf(( "WM_COMMAND ID_XSDI_XRB_DOWN BN_CLICKED" ));
@@ -1642,7 +1638,7 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                         WinPostMsg(hwndDlg, XM_UPDATE, MPNULL, MPNULL);
                     }
                     winhSetDlgItemFocus(hwndDlg, ID_XSDI_XRB_LISTBOX);
-                break; }
+                break;
 
                 /*
                  * ID_XSDI_XRB_PARTITIONS:
@@ -1705,7 +1701,8 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                     WinSetPointer(HWND_DESKTOP, hptrOld);
 
                     mrc = (MRESULT)hMenu;
-                break; }
+                }
+                break;
 
                 /*
                  * DID_OK:
@@ -1778,7 +1775,8 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                     // dismiss dlg
                     if (fValid)
                         mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-                break; }
+                }
+                break;
 
                 default: // includes DID_CANCEL
                     if (    (pData->pPartitionsList)
@@ -1853,7 +1851,8 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                 break;
             }
-        break; }
+        }
+        break;
 
         case WM_HELP:
             cmnDisplayHelp(NULL,
@@ -1875,7 +1874,8 @@ MRESULT EXPENTRY fnwpUserRebootOptions(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                 doshFreePartitionsList(pData->pPartitionsList);
             free(pData);
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-        break; }
+        }
+        break;
 
         default:
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
@@ -2478,7 +2478,7 @@ static const XWPSETTING G_ShutdownBackup[] =
  *@@changed V0.9.16 (2002-01-04) [umoeller]: added "alt+f4 on desktop starts shutdown"
  */
 
-VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID xsdShutdownInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                          ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     ULONG fl = cmnQuerySetting(sflXShutdown);
@@ -2500,28 +2500,28 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 ID_XSSI_XSD_SAVEINIS_NONE   // pszXSDSaveInisNone
             };
 
-        if (pcnbp->pUser == NULL)
+        if (pnbp->pUser == NULL)
         {
             // first call: backup Global Settings for "Undo" button;
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
             /*
-            pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+            pnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
+            memcpy(pnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
                */
-            pcnbp->pUser = cmnBackupSettings(G_ShutdownBackup,
+            pnbp->pUser = cmnBackupSettings(G_ShutdownBackup,
                                              ARRAYITEMCOUNT(G_ShutdownBackup));
 
             // insert the controls using the dialog formatter
             // V0.9.16 (2001-10-08) [umoeller]
-            ntbFormatPage(pcnbp->hwndDlgPage,
+            ntbFormatPage(pnbp->hwndDlgPage,
                           dlgShutdown,
                           ARRAYITEMCOUNT(dlgShutdown));
         }
 
         sprintf(szAPMVersion, "APM %s", apmQueryVersion());
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_SDDI_APMVERSION, szAPMVersion);
+        WinSetDlgItemText(pnbp->hwndDlgPage, ID_SDDI_APMVERSION, szAPMVersion);
         sprintf(szAPMSysFile,
                 "%c:\\OS2\\BOOT\\APM.SYS",
                 doshQueryBootDrive());
@@ -2529,7 +2529,7 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             _Pmpf(("Opening %s", szAPMSysFile));
         #endif
 
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_SDDI_APMSYS,
+        WinSetDlgItemText(pnbp->hwndDlgPage, ID_SDDI_APMSYS,
                           "Error");
 
         if (!(arc = exehOpen(szAPMSysFile,
@@ -2538,7 +2538,7 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             if (!(arc = exehQueryBldLevel(pExec)))
             {
                 if (pExec->pszVersion)
-                    WinSetDlgItemText(pcnbp->hwndDlgPage, ID_SDDI_APMSYS,
+                    WinSetDlgItemText(pnbp->hwndDlgPage, ID_SDDI_APMSYS,
                                       pExec->pszVersion);
 
             }
@@ -2547,7 +2547,7 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         }
 
 #ifndef __EASYSHUTDOWN__
-        hwndINICombo = WinWindowFromID(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST);
+        hwndINICombo = WinWindowFromID(pnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST);
         for (ul = 0;
              ul < 3;
              ul++)
@@ -2561,34 +2561,34 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_REBOOT,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_REBOOT,
                               (fl & XSD_REBOOT) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_CANDESKTOPALTF4,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_CANDESKTOPALTF4,
                               (fl & XSD_CANDESKTOPALTF4) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_ANIMATE_SHUTDOWN,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_ANIMATE_SHUTDOWN,
                               (fl & XSD_ANIMATE_SHUTDOWN) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_ANIMATE_REBOOT,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_ANIMATE_REBOOT,
                               (fl & XSD_ANIMATE_REBOOT) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_APMPOWEROFF,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_APMPOWEROFF,
                               (apmPowerOffSupported())
                                   ? ((fl & XSD_APMPOWEROFF) != 0)
                                   : FALSE
                               );
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_DELAY,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_DELAY,
                               (fl & XSD_APM_DELAY) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_EMPTYTRASHCAN,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_EMPTYTRASHCAN,
                               (fl & XSD_EMPTY_TRASH) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_CONFIRM,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_CONFIRM,
                               ((fl & XSD_NOCONFIRM) == 0));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEVIO,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEVIO,
                               (fl & XSD_AUTOCLOSEVIO) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_WARPCENTERFIRST,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_WARPCENTERFIRST,
                               (fl & XSD_WARPCENTERFIRST) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_LOG,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SDDI_LOG,
                               (fl & XSD_LOG) != 0);
 
 #ifndef __EASYSHUTDOWN__
-        WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST,
+        WinSendDlgItemMsg(pnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST,
                           LM_SELECTITEM,
                           (MPARAM)(cmnQuerySetting(sulSaveINIS)),
                           (MPARAM)TRUE);        // select
@@ -2610,48 +2610,48 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                  // && (cmnQuerySetting(sNoWorkerThread) == 0)
                 );
 
-        // winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_ENABLED, fXShutdownValid);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_CANDESKTOPALTF4, fXShutdownEnabled);
+        // winhEnableDlgItem(pnbp->hwndDlgPage, ID_SDDI_ENABLED, fXShutdownValid);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_SDDI_CANDESKTOPALTF4, fXShutdownEnabled);
 
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_REBOOT,  fXShutdownEnabled);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_REBOOTEXT, fXShutdownEnabled);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_SDDI_REBOOT,  fXShutdownEnabled);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_SDDI_REBOOTEXT, fXShutdownEnabled);
 
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_ANIMATE_SHUTDOWN, fXShutdownEnabled);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_ANIMATE_REBOOT, fXShutdownEnabled);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_SDDI_ANIMATE_SHUTDOWN, fXShutdownEnabled);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_SDDI_ANIMATE_REBOOT, fXShutdownEnabled);
 
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_APMPOWEROFF,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_SDDI_APMPOWEROFF,
                           ( fXShutdownEnabled && apmPowerOffSupported() ) );
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_DELAY,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_SDDI_DELAY,
                           (      fXShutdownEnabled
                               && (apmPowerOffSupported())
                               && ((fl & XSD_APMPOWEROFF) != 0)
                           ));
 
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_EMPTYTRASHCAN,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_SDDI_EMPTYTRASHCAN,
                           ( fXShutdownEnabled && (cmnTrashCanReady()) ) );
 
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_CONFIRM, fXShutdownOrWPSValid);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEVIO, fXShutdownOrWPSValid);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEDETAILS, fXShutdownOrWPSValid);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_SDDI_CONFIRM, fXShutdownOrWPSValid);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEVIO, fXShutdownOrWPSValid);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEDETAILS, fXShutdownOrWPSValid);
 
         // enable "warpcenter first" if shutdown or WPS have been enabled
         // AND if the WarpCenter was found
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_WARPCENTERFIRST,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_SDDI_WARPCENTERFIRST,
                           ((fXShutdownOrWPSValid)
                           && (pKernelGlobals->pAwakeWarpCenter != NULL)));
                                  // @@todo this doesn't find the WarpCenter
                                  // if started thru CONFIG.SYS
 
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_LOG, fXShutdownOrWPSValid);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_SDDI_LOG, fXShutdownOrWPSValid);
 
 #ifndef __EASYSHUTDOWN__
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_TXT, fXShutdownEnabled);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST, fXShutdownEnabled);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_SDDI_SAVEINIS_TXT, fXShutdownEnabled);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST, fXShutdownEnabled);
 #endif
 
         if (WinQueryObject((PSZ)XFOLDER_SHUTDOWNID))
             // shutdown folder exists already: disable button
-            winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_CREATESHUTDOWNFLDR, FALSE);
+            winhEnableDlgItem(pnbp->hwndDlgPage, ID_SDDI_CREATESHUTDOWNFLDR, FALSE);
     }
 }
 
@@ -2669,7 +2669,7 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.9 (2001-04-07) [pr]: added missing Undo and Default processing
  */
 
-MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT xsdShutdownItemChanged(PNOTEBOOKPAGE pnbp,
                                ULONG ulItemID,
                                USHORT usNotifyCode,
                                ULONG ulExtra)      // for checkboxes: contains new state
@@ -2731,19 +2731,20 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 #ifndef __EASYSHUTDOWN__
         case ID_SDDI_SAVEINIS_LIST:
         {
-            ULONG ul = (ULONG)WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST,
+            ULONG ul = (ULONG)WinSendDlgItemMsg(pnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST,
                                                 LM_QUERYSELECTION,
                                                 MPFROMSHORT(LIT_FIRST),
                                                 0);
             if (ul >= 0 && ul <= 2)
                 ulSaveINIS = ul;
-        break; }
+        }
+        break;
 #endif
 
         // Reboot Actions (Desktop page 1)
         case ID_SDDI_REBOOTEXT:
             WinDlgBox(HWND_DESKTOP,         // parent is desktop
-                      pcnbp->hwndFrame,                  // owner
+                      pnbp->hwndFrame,                  // owner
                       (PFNWP)fnwpUserRebootOptions,     // dialog procedure
                       cmnQueryNLSModuleHandle(FALSE),
                       ID_XSD_REBOOTEXT,        // dialog resource id
@@ -2754,7 +2755,7 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         // Auto-close details (Desktop page 1)
         case ID_SDDI_AUTOCLOSEDETAILS:
             WinDlgBox(HWND_DESKTOP,         // parent is desktop
-                      pcnbp->hwndFrame,             // owner
+                      pnbp->hwndFrame,             // owner
                       (PFNWP)fnwpAutoCloseDetails,    // dialog procedure
                       cmnQueryNLSModuleHandle(FALSE),  // from resource file
                       ID_XSD_AUTOCLOSE,        // dialog resource id
@@ -2776,29 +2777,30 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                        szSetup,
                                        (PSZ)WPOBJID_DESKTOP, // "<WP_DESKTOP>",
                                        CO_UPDATEIFEXISTS))
-                winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_CREATESHUTDOWNFLDR, FALSE);
+                winhEnableDlgItem(pnbp->hwndDlgPage, ID_SDDI_CREATESHUTDOWNFLDR, FALSE);
             else
-                cmnMessageBoxMsg(pcnbp->hwndFrame,
+                cmnMessageBoxMsg(pnbp->hwndFrame,
                                  104, 106,
                                  MB_OK);
             ulChange = 0;
-        break; }
+        }
+        break;
 
         case DID_UNDO:
             // "Undo" button: get pointer to backed-up Global Settings
-            cmnRestoreSettings(pcnbp->pUser,
+            cmnRestoreSettings(pnbp->pUser,
                                ARRAYITEMCOUNT(G_ShutdownBackup));
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         break;
 
         case DID_DEFAULT:
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
             // Desktop startup)
-            cmnSetDefaultSettings(pcnbp->ulPageID);
+            cmnSetDefaultSettings(pnbp->inbp.ulPageID);
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         break;
 
         default:
@@ -2829,8 +2831,7 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     if (ulChange)
     {
         // enable/disable items
-        xsdShutdownInitPage(pcnbp, CBI_ENABLE);
-        // cmnStoreGlobalSettings();
+        xsdShutdownInitPage(pnbp, CBI_ENABLE);
     }
 
     return ((MPARAM)0);
@@ -5334,7 +5335,8 @@ static MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1
                                WM_COMMAND,
                                MPFROM2SHORT(ID_SDMI_CLOSEITEM, 0),
                                MPNULL); */
-                break; }
+                }
+                break;
 
                 /*
                  * ID_SDMI_CLOSEITEM:
@@ -5377,7 +5379,8 @@ static MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1
                                    0,
                                    0);
                     }
-                break; }
+                }
+                break;
 
                 /*
                  * ID_SDDI_SKIPAPP:
@@ -5415,7 +5418,8 @@ static MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1
                                    WM_COMMAND,
                                    MPFROM2SHORT(ID_SDMI_UPDATEPROGRESSBAR, 0),
                                    MPNULL);
-                break; }
+                }
+                break;
 
                 /*
                  * ID_SDMI_CLOSEVIO:
@@ -5426,10 +5430,9 @@ static MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1
                  */
 
                 case ID_SDMI_CLOSEVIO:
-                {
                     xsdCloseVIO(pShutdownData,
                                 hwndFrame);
-                break; }
+                break;
 
                 /*
                  * ID_SDMI_UPDATESHUTLIST:
@@ -5536,7 +5539,8 @@ static MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1
                                    WM_COMMAND,
                                    MPFROM2SHORT(ID_SDMI_CLOSEITEM, 0),
                                    MPNULL);
-                break; }
+                }
+                break;
 
                 /*
                  * DID_CANCEL:
@@ -5582,7 +5586,8 @@ static MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1
                 default:
                     mrc = WinDefDlgProc(hwndFrame, msg, mp1, mp2);
             } // end switch;
-        break; } // end case WM_COMMAND
+        }
+        break;  // end case WM_COMMAND
 
         // other msgs: have them handled by the usual WC_FRAME wnd proc
         default:

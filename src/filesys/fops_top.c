@@ -340,12 +340,11 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
     switch (msg)
     {
         case WM_INITDLG:
-        {
             cmnSetControlsFont(hwndProgress, 0, 5000);
             ctlProgressBarFromStatic(WinWindowFromID(hwndProgress, ID_SDDI_PROGRESSBAR),
                                      PBA_ALIGNCENTER | PBA_BUTTONSTYLE);
             mrc = WinDefDlgProc(hwndProgress, msg, mp1, mp2);
-        break; }
+        break;
 
         case WM_COMMAND:
             switch (SHORT1FROMMP(mp1))
@@ -355,7 +354,8 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
                     PGENERICPROGRESSWINDATA ppwd = WinQueryWindowPtr(hwndProgress, QWL_USER);
                     winhEnableDlgItem(hwndProgress, DID_CANCEL, FALSE);
                     ppwd->fCancelPressed = TRUE;
-                break; }
+                }
+                break;
 
                 default:
                     mrc = WinDefDlgProc(hwndProgress, msg, mp1, mp2);
@@ -512,7 +512,8 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
                                   1,
                                   500);
                 }
-        break; }
+        }
+        break;
 
         case WM_TIMER:
             if ((SHORT)mp1 == 1)

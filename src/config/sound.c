@@ -21,7 +21,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -375,13 +375,13 @@ static VOID SelectSoundScheme(PSOUNDPAGEDATA pspd,
  *      current sound scheme to "none".
  */
 
-static VOID UpdateMMPMINI(PCREATENOTEBOOKPAGE pcnbp)
+static VOID UpdateMMPMINI(PNOTEBOOKPAGE pnbp)
 {
-    PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pcnbp->pUser;
+    PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pnbp->pUser;
 
     if (pspd->sEventSelected != LIT_NONE)
     {
-        HINI hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pcnbp->hwndDlgPage),
+        HINI hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pnbp->hwndDlgPage),
                                        pspd->szMMPM);
 
         if (hiniMMPM)
@@ -422,14 +422,14 @@ static VOID UpdateMMPMINI(PCREATENOTEBOOKPAGE pcnbp)
  *      occured.
  */
 
-static BOOL SaveSoundSchemeAs(PCREATENOTEBOOKPAGE pcnbp,
+static BOOL SaveSoundSchemeAs(PNOTEBOOKPAGE pnbp,
                               BOOL fSelectNew)
 {
     BOOL    brc = FALSE;
-    PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pcnbp->pUser;
+    PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pnbp->pUser;
 
     HWND hwndDlg = WinLoadDlg(HWND_DESKTOP,     // parent
-                              pcnbp->hwndFrame,  // owner
+                              pnbp->hwndFrame,  // owner
                               WinDefDlgProc,
                               cmnQueryNLSModuleHandle(FALSE),
                               ID_XSD_NEWSOUNDSCHEME,   // "New Sound Scheme" dlg
@@ -457,7 +457,7 @@ static BOOL SaveSoundSchemeAs(PCREATENOTEBOOKPAGE pcnbp,
                                 sizeof(szNewScheme)-1, szNewScheme);
 
             if (strlen(szNewScheme) < 3)
-                winhDebugBox(pcnbp->hwndFrame,
+                winhDebugBox(pnbp->hwndFrame,
                          "Error",
                          "This is not a valid scheme name.");
 
@@ -467,7 +467,7 @@ static BOOL SaveSoundSchemeAs(PCREATENOTEBOOKPAGE pcnbp,
             {
                 PSZ     psz = szNewScheme;
                 // exists: have user confirm this
-                if (cmnMessageBoxMsgExt(pcnbp->hwndFrame,
+                if (cmnMessageBoxMsgExt(pnbp->hwndFrame,
                                         151,  // "Sound"
                                         &psz, 1,
                                         152,
@@ -483,7 +483,7 @@ static BOOL SaveSoundSchemeAs(PCREATENOTEBOOKPAGE pcnbp,
             // shall we proceed?
             if (fOverwrite)
             {
-                HINI hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pcnbp->hwndDlgPage),
+                HINI hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pnbp->hwndDlgPage),
                                                pspd->szMMPM);
                 if (hiniMMPM)
                 {
@@ -516,7 +516,7 @@ static BOOL SaveSoundSchemeAs(PCREATENOTEBOOKPAGE pcnbp,
                     {
                         CHAR szTemp[100];
                         sprintf(szTemp, "Error code: %d", arc);
-                        winhDebugBox(pcnbp->hwndFrame,
+                        winhDebugBox(pnbp->hwndFrame,
                                  "Error saving scheme",
                                  szTemp);
                     }
@@ -544,12 +544,12 @@ static BOOL SaveSoundSchemeAs(PCREATENOTEBOOKPAGE pcnbp,
  *      No more confirmations in this function.
  */
 
-static BOOL LoadSoundSchemeFrom(PCREATENOTEBOOKPAGE pcnbp)
+static BOOL LoadSoundSchemeFrom(PNOTEBOOKPAGE pnbp)
 {
     BOOL    brc = FALSE;
-    PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pcnbp->pUser;
+    PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pnbp->pUser;
 
-    HINI hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pcnbp->hwndDlgPage),
+    HINI hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pnbp->hwndDlgPage),
                                    pspd->szMMPM);
 
     if (hiniMMPM)
@@ -570,7 +570,7 @@ static BOOL LoadSoundSchemeFrom(PCREATENOTEBOOKPAGE pcnbp)
         {
             CHAR szTemp[100];
             sprintf(szTemp, "Error code: %d", arc);
-            winhDebugBox(pcnbp->hwndFrame,
+            winhDebugBox(pnbp->hwndFrame,
                      "Error loading scheme",
                      szTemp);
         }
@@ -638,8 +638,8 @@ static MRESULT EXPENTRY fnwpSubclassedSoundFile(HWND hwndEntryField,
                                                 MPARAM mp1,
                                                 MPARAM mp2)
 {
-    PCREATENOTEBOOKPAGE pcnbp = (PCREATENOTEBOOKPAGE)(WinQueryWindowPtr(hwndEntryField, QWL_USER));
-    PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pcnbp->pUser;
+    PNOTEBOOKPAGE pnbp = (PNOTEBOOKPAGE)(WinQueryWindowPtr(hwndEntryField, QWL_USER));
+    PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pnbp->pUser;
     MRESULT mrc = 0;
 
     switch (msg)
@@ -754,7 +754,7 @@ static MRESULT EXPENTRY fnwpSubclassedSoundFile(HWND hwndEntryField,
                                 pspd->szPathDropped,
                                 pspd->szFileDropped);
                     WinSetWindowText(hwndEntryField, szNewFileComplete);
-                    UpdateMMPMINI(pcnbp);
+                    UpdateMMPMINI(pnbp);
 
                     // tell the source (the WPS or whoever) that
                     // we're done; otherwise the source will wait
@@ -795,42 +795,42 @@ static MRESULT EXPENTRY fnwpSubclassedSoundFile(HWND hwndEntryField,
  *@@changed V0.9.10 (2001-04-16) [umoeller]: fixed fixed MMPM.INI path location
  */
 
-VOID sndSoundsInitPage(PCREATENOTEBOOKPAGE pcnbp,           // notebook info struct
+VOID sndSoundsInitPage(PNOTEBOOKPAGE pnbp,           // notebook info struct
                        ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     // PGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (flFlags & CBI_INIT)
     {
-        if (pcnbp->pUser == NULL)
+        if (pnbp->pUser == NULL)
         {
             // create SOUNDPAGEDATA structure;
             // this will be free()'d automatically
             // when the notebook page is destroyed
-            pcnbp->pUser = malloc(sizeof(SOUNDPAGEDATA));
-            if (pcnbp->pUser)
+            pnbp->pUser = malloc(sizeof(SOUNDPAGEDATA));
+            if (pnbp->pUser)
             {
                 PSZ     pszLastScheme;
                 SHORT   sSchemeToSelect;
 
-                PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)(pcnbp->pUser);
-                memset(pcnbp->pUser, 0, sizeof(SOUNDPAGEDATA));
+                PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)(pnbp->pUser);
+                memset(pnbp->pUser, 0, sizeof(SOUNDPAGEDATA));
 
                 // sound schemes
-                pspd->hwndSchemesDropDown = WinWindowFromID(pcnbp->hwndDlgPage,
+                pspd->hwndSchemesDropDown = WinWindowFromID(pnbp->hwndDlgPage,
                                                             ID_XSDI_SOUND_SCHEMES_DROPDOWN);
                 // events
-                pspd->hwndEventsListbox = WinWindowFromID(pcnbp->hwndDlgPage,
+                pspd->hwndEventsListbox = WinWindowFromID(pnbp->hwndDlgPage,
                                                           ID_XSDI_SOUND_EVENTSLISTBOX);
                 pspd->sEventSelected = LIT_NONE;
 
                 // others
-                pspd->hwndSoundFile = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_SOUND_FILE);
+                pspd->hwndSoundFile = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_SOUND_FILE);
 
                 // set text length for entry field
                 winhSetEntryFieldLimit(pspd->hwndSoundFile, 255);
                 // store CREATENOTEBOOKPAGE in entry field's QWL_USER
-                WinSetWindowULong(pspd->hwndSoundFile, QWL_USER, (ULONG)pcnbp);
+                WinSetWindowULong(pspd->hwndSoundFile, QWL_USER, (ULONG)pnbp);
                 // subclass the entry field to support drag'n'drop
                 pspd->pfnwpSoundFileOriginal = WinSubclassWindow(pspd->hwndSoundFile,
                                                                  fnwpSubclassedSoundFile);
@@ -840,9 +840,9 @@ VOID sndSoundsInitPage(PCREATENOTEBOOKPAGE pcnbp,           // notebook info str
                         // V0.9.10 (2001-04-16) [umoeller]
 
                 // create circular slider
-                winhReplaceWithCircularSlider(pcnbp->hwndDlgPage, pcnbp->hwndDlgPage,
+                winhReplaceWithCircularSlider(pnbp->hwndDlgPage, pnbp->hwndDlgPage,
                                               // hwndInsertAfter:
-                                              WinWindowFromID(pcnbp->hwndDlgPage,
+                                              WinWindowFromID(pnbp->hwndDlgPage,
                                                               ID_XSDI_SOUND_COMMONVOLUME),
                                               ID_XSDI_SOUND_VOLUMELEVER,
                                               CSS_NOTEXT
@@ -885,10 +885,10 @@ VOID sndSoundsInitPage(PCREATENOTEBOOKPAGE pcnbp,           // notebook info str
 
     if (flFlags & CBI_SET)
     {
-        PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pcnbp->pUser;
+        PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pnbp->pUser;
         HINI    hiniMMPM;
 
-        hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pcnbp->hwndDlgPage),
+        hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pnbp->hwndDlgPage),
                                   pspd->szMMPM);
         if (hiniMMPM)
         {
@@ -985,36 +985,36 @@ VOID sndSoundsInitPage(PCREATENOTEBOOKPAGE pcnbp,           // notebook info str
         }
 
         // "enabled" checkbox
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage,
                               ID_XSDI_SOUND_ENABLE,
                               pspd->fSoundsEnabled);
 
         // "common volume" checkbox
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage,
                               ID_XSDI_SOUND_COMMONVOLUME,
                               pspd->fCommonVolume);
     }
 
     if (flFlags & CBI_ENABLE)
     {
-        PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pcnbp->pUser;
+        PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pnbp->pUser;
         BOOL fFileExists = (access(pspd->szFile, 0) == 0);
 
         // enable "Save as" (sound scheme)
         // only if current scheme is "none"
-        /* winhEnableDlgItem(pcnbp->hwndDlgPage,
+        /* winhEnableDlgItem(pnbp->hwndDlgPage,
                           ID_XSDI_SOUND_SCHEMES_SAVEAS,
                           (pspd->ulSchemeSelectedHandle != 0)); */
                                 // this is != 0 for "pseudo schemes" ("none" or "no sounds")
 
         // disable "Delete" (sound scheme) button
         // if current scheme is "none"
-        winhEnableDlgItem(pcnbp->hwndDlgPage,
+        winhEnableDlgItem(pnbp->hwndDlgPage,
                           ID_XSDI_SOUND_SCHEMES_DELETE,
                           (pspd->sSchemeSelected != LIT_NONE));
 
         // enable "Play" button if the current sound file exists
-        winhEnableDlgItem(pcnbp->hwndDlgPage,
+        winhEnableDlgItem(pnbp->hwndDlgPage,
                           ID_XSDI_SOUND_PLAY,
                           (     (pspd->sEventSelected != LIT_NONE)
                              && (fFileExists)
@@ -1023,7 +1023,7 @@ VOID sndSoundsInitPage(PCREATENOTEBOOKPAGE pcnbp,           // notebook info str
 
         // enable volume knob if either the current sound file
         // exists or "global volume" is enabled
-        /* winhEnableDlgItem(pcnbp->hwndDlgPage,
+        /* winhEnableDlgItem(pnbp->hwndDlgPage,
                           ID_XSDI_SOUND_VOLUMELEVER,
                           (     (   (pspd->sEventSelected != LIT_NONE)
                                 &&  (fFileExists)
@@ -1040,7 +1040,7 @@ VOID sndSoundsInitPage(PCREATENOTEBOOKPAGE pcnbp,           // notebook info str
         // parent first and _then_ the children, so
         // that the entry field will then crash because
         // SOUNDPAGEDATA is gone
-        PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pcnbp->pUser;
+        PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pnbp->pUser;
         WinDestroyWindow(pspd->hwndSoundFile);
     }
 }
@@ -1054,11 +1054,11 @@ VOID sndSoundsInitPage(PCREATENOTEBOOKPAGE pcnbp,           // notebook info str
  *      many controls interacting.
  */
 
-MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
+MRESULT sndSoundsItemChanged(PNOTEBOOKPAGE pnbp,  // notebook info
                              ULONG ulItemID, USHORT usNotifyCode,
                              ULONG ulExtra)      // for checkboxes: contains new state
 {
-    PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pcnbp->pUser;
+    PSOUNDPAGEDATA pspd = (PSOUNDPAGEDATA)pnbp->pUser;
 
     switch (ulItemID)
     {
@@ -1072,7 +1072,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
 
         case ID_XSDI_SOUND_ENABLE:
         {
-            HINI hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pcnbp->hwndDlgPage),
+            HINI hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pnbp->hwndDlgPage),
                                            pspd->szMMPM);
             pspd->fSoundsEnabled = ulExtra;
             if (hiniMMPM)
@@ -1084,7 +1084,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                 PrfCloseProfile(hiniMMPM);
             }
             // re-enable controls
-            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
         break; }
 
         /*
@@ -1126,7 +1126,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                             // in a sound scheme yet, so we better have the
                             // user confirm this
 
-                            ULONG ulAnswer = cmnMessageBoxMsg(pcnbp->hwndFrame,
+                            ULONG ulAnswer = cmnMessageBoxMsg(pnbp->hwndFrame,
                                                               151,
                                                               153, // "save first"?
                                                               MB_YESNOCANCEL);
@@ -1134,7 +1134,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                             switch (ulAnswer)
                             {
                                 case MBID_YES:
-                                    if (SaveSoundSchemeAs(pcnbp,
+                                    if (SaveSoundSchemeAs(pnbp,
                                                           FALSE))
                                                     // do not select the new item
                                         fOverwrite = TRUE;
@@ -1157,10 +1157,10 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                         if (fOverwrite)
                         {
                             // _Pmpf(("  Calling LoadSoundSchemeFrom"));
-                            LoadSoundSchemeFrom(pcnbp);
+                            LoadSoundSchemeFrom(pnbp);
 
                             // now update the whole damn page
-                            pcnbp->pfncbInitPage(pcnbp, CBI_SET);
+                            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET);
                         }
                         else
                         {
@@ -1183,7 +1183,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                 // pspd->ulSchemeSelectedHandle = ulSchemeHandle;
 
                 // re-enable items
-                pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
+                pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
 
                 // save current scheme in OS2.INI
                 if (pspd->sSchemeSelected != LIT_NONE) // pspd->sCustomSchemeIndex)
@@ -1208,10 +1208,9 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
          */
 
         case ID_XSDI_SOUND_SCHEMES_SAVEAS:
-        {
-            SaveSoundSchemeAs(pcnbp,
+            SaveSoundSchemeAs(pnbp,
                               TRUE); // select the new scheme
-        break; }
+        break;
 
         /*
          * ID_XSDI_SOUND_SCHEMES_DELETE:
@@ -1229,7 +1228,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                                sizeof(szCurrentScheme),
                                szCurrentScheme);
 
-            if (cmnMessageBoxMsgExt(pcnbp->hwndFrame,
+            if (cmnMessageBoxMsgExt(pnbp->hwndFrame,
                                     151,
                                     &pszTemp, 1,
                                     154,    // "sure?"
@@ -1245,7 +1244,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                 // select "none" pseudo-scheme
                 SelectSoundScheme(pspd, LIT_NONE);
                 // now re-enable controls
-                pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
+                pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
             }
         break; }
 
@@ -1257,7 +1256,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
 
         case ID_XSDI_SOUND_EVENTSLISTBOX:
         {
-            HINI hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pcnbp->hwndDlgPage),
+            HINI hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pnbp->hwndDlgPage),
                                            pspd->szMMPM);
             if (hiniMMPM)
             {
@@ -1288,12 +1287,12 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                             &pspd->ulVolume))
                     {
                         // set entry field to sound file
-                        WinSetDlgItemText(pcnbp->hwndDlgPage,
+                        WinSetDlgItemText(pnbp->hwndDlgPage,
                                           ID_XSDI_SOUND_FILE,
                                           pspd->szFile);
                         // set volume lever to either global
                         // or individual sound volume
-                        WinSendDlgItemMsg(pcnbp->hwndDlgPage,
+                        WinSendDlgItemMsg(pnbp->hwndDlgPage,
                                           ID_XSDI_SOUND_VOLUMELEVER,
                                           CSM_SETVALUE,
                                           (MPARAM)((pspd->fCommonVolume)
@@ -1326,7 +1325,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                     // focus leaves entry field:
                     // update MMPM.INI with the new sound file
                     if (pspd->fSoundFileChanged)
-                        UpdateMMPMINI(pcnbp);
+                        UpdateMMPMINI(pnbp);
                 break;
 
                 case EN_CHANGE:
@@ -1337,7 +1336,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                                        pspd->szFile);
                     pspd->fSoundFileChanged = TRUE;
                     // and re-enable controls
-                    pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
+                    pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
                 break; }
             }
         break;
@@ -1372,12 +1371,12 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                 strcat(fd.szFullFile, "\\*");
 
             if (    WinFileDlg(HWND_DESKTOP,    // parent
-                               pcnbp->hwndFrame, // owner
+                               pnbp->hwndFrame, // owner
                                &fd)
                 && (fd.lReturn == DID_OK)
                ) */
 
-            if (cmnFileDlg(pcnbp->hwndFrame,        // V0.9.16 (2001-10-19) [umoeller]
+            if (cmnFileDlg(pnbp->hwndFrame,        // V0.9.16 (2001-10-19) [umoeller]
                            szFile,
                            WINH_FOD_INILOADDIR | WINH_FOD_INISAVEDIR,
                            HINI_USER,
@@ -1402,11 +1401,11 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                 } */
 
                 // copy file from FOD to page
-                WinSetDlgItemText(pcnbp->hwndDlgPage,
+                WinSetDlgItemText(pnbp->hwndDlgPage,
                                   ID_XSDI_SOUND_FILE,
                                   szFile);
                 // rewrite that one sound MMPM.INI
-                UpdateMMPMINI(pcnbp);
+                UpdateMMPMINI(pnbp);
             }
         break; }
 
@@ -1418,7 +1417,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
 
         case ID_XSDI_SOUND_PLAY:
         {
-            xmmPostMediaMsg(XMM_PLAYSOUND,
+            xmmPostPartyMsg(XMM_PLAYSOUND,
                             (MPARAM)strdup(pspd->szFile),
                                     // the quick thread wants to free()
                                     // the PSZ passed to it
@@ -1434,7 +1433,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
 
         case ID_XSDI_SOUND_COMMONVOLUME:
         {
-            HINI hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pcnbp->hwndDlgPage),
+            HINI hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pnbp->hwndDlgPage),
                                            pspd->szMMPM);
             pspd->fCommonVolume = ulExtra;
             if (hiniMMPM)
@@ -1447,7 +1446,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
             }
 
             // adjust volume lever
-            WinSendDlgItemMsg(pcnbp->hwndDlgPage,
+            WinSendDlgItemMsg(pnbp->hwndDlgPage,
                               ID_XSDI_SOUND_VOLUMELEVER,
                               CSM_SETVALUE,
                               (MPARAM)((pspd->fCommonVolume)
@@ -1457,7 +1456,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                               (MPARAM)NULL);
 
             // re-enable controls
-            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
         break; }
 
         /*
@@ -1476,7 +1475,7 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
                     // "common volume" flag set:
 
                     // write it back to MMPM.INI
-                    HINI hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pcnbp->hwndDlgPage),
+                    HINI hiniMMPM = PrfOpenProfile(WinQueryAnchorBlock(pnbp->hwndDlgPage),
                                                    pspd->szMMPM);
 
                     if (hiniMMPM)
@@ -1502,21 +1501,20 @@ MRESULT sndSoundsItemChanged(PCREATENOTEBOOKPAGE pcnbp,  // notebook info
             else if (usNotifyCode == CSN_SETFOCUS)
                 // ulExtra is FALSE only if we're losing the focus
                 if (ulExtra == FALSE)
-                    UpdateMMPMINI(pcnbp);
+                    UpdateMMPMINI(pnbp);
         break; }
 
         case DID_UNDO:
             // "Undo" button:
-            if (pcnbp->pUser) {
+            if (pnbp->pUser)
                 // have the page updated by calling the callback above
-                sndSoundsInitPage(pcnbp, CBI_SHOW | CBI_ENABLE);
-            }
+                sndSoundsInitPage(pnbp, CBI_SHOW | CBI_ENABLE);
         break;
 
         case DID_DEFAULT:
             // "Default" button:
             // have the page updated by calling the callback above
-            sndSoundsInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            sndSoundsInitPage(pnbp, CBI_SET | CBI_ENABLE);
         break;
     }
 

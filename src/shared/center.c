@@ -11,7 +11,7 @@
  *      (on XCenter::wpOpen, which in turn calls ctrpCreateXCenterView).
  *
  *      The nice thing about the XCenter (compared to the WarpCenter)
- *      is that the XCenter @widgets can be dynamically replaced,
+ *      is that any XCenter @widget can be dynamically replaced,
  *      even while the XCenter is open.
  *
  *      To write your own widgets, you only need to create a new
@@ -37,7 +37,7 @@
  *         made public to the widgets as well.
  *
  *      -- Each known @widget_class (either one of the built-ins in
- *         XFLDR.DLL or those loaded from a plugin DLL) is described
+ *         XFLDR.DLL or those loaded from a @plugin_dll) is described
  *         in an XCENTERWIDGETCLASS structure. An array of those
  *         structures must be returned by a widget @plugin_dll so
  *         that the XCenter can know what plugin classes are in
@@ -130,6 +130,54 @@
  *      on setup strings only. See WIDGETSETTINGSDLGDATA for
  *      details.
  *
+ *      WARNING: As with all WPS objects, the total instance data
+ *      for each XCenter is limited to 64K due to the dull Prf*
+ *      limitations. Since all the widget setup strings go into
+ *      the XCenter instance data, do _not_ use excessively long
+ *      setup strings.
+ *
+ *      <B>Module handling</B>
+ *
+ *      Any XCenter @plugin_dll will get dynamically loaded and
+ *      unloaded when XCenters are opened and closed. As a general
+ *      rule, all plug-in DLLs get loaded when the first XCenter
+ *      is opened and unloaded when the last XCenter is closed.
+ *      As a result, you can simply close all open XCenters to
+ *      unlock your plug-in DLL.
+ *
+ *      However, this will not work if you register an exit list
+ *      handler in your DLL because DosFreeModule then fails.
+ *      This appears to be a limitation in the OS/2 loader, or
+ *      maybe PM is involved somewhere too, who knows. So do not
+ *      register exit list handlers please.
+ *
+ *      Each plug-in DLL must export at least two, preferrably
+ *      three functions with the ordinals 1, 2, and 3. See the
+ *      bottom of include\shared\center.h for the prototypes.
+ *
+ *      --  Ordinal 1 gets called after the DLL has been loaded.
+ *          This "init module" export must register the PM classes
+ *          for the widget classes in the module and return an
+ *          array of XCENTERWIDGETCLASS structures to the XCenter.
+ *
+ *          See WgtInitModule in src\widgets\____sample.c for
+ *          the prototype and additional information.
+ *
+ *      --  Ordinal 2 gets called right before the DLL gets
+ *          unloaded. This can be used to free global data that
+ *          you might have allocated.
+ *
+ *          See WgtUnInitModule in src\widgets\____sample.c for
+ *          the prototype and additional information.
+ *
+ *      --  Ordinal 3 is optional, but strongly recommended,
+ *          to tell the XCenter the minimum XCenter version that
+ *          is required for the DLL to work. This is to protect
+ *          the DLL from being run on systems that are outdated.
+ *
+ *          See WgtQueryVersion in src\widgets\____sample.c for
+ *          the prototype and additional information.
+ *
  *      <B>Importing functions</B>
  *
  *      The only function that a widget is really required to
@@ -145,6 +193,11 @@
  *      receives the module handle of XFLDR.DLL that it can use
  *      with DosQueryProcAddr to receive a function pointer. See
  *      the samples in src\widgets for how this is done.
+ *
+ *      Since many of the helpers functions use the VAC _Optlink
+ *      calling convention, this will presently only work with
+ *      IBM VAC. However, the ctr* exports have APIENTRY, so you
+ *      should be able to use those with any compiler.
  *
  *      <B>Where is what?</B>
  *
@@ -893,7 +946,8 @@ static VOID DwgtCommand(HWND hwnd,
                         _xwpRemoveWidget(pXCenterData->somSelf,
                                          Pos.ulWidgetIndex);
                 }
-            break; }
+            }
+            break;
         }
     }
 }
@@ -1199,7 +1253,8 @@ MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                 else
                     mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
             }
-        break; }
+        }
+        break;
 
         /*
          * WM_BUTTON1*:
@@ -1226,7 +1281,8 @@ MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                    )
                     mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
             }
-        break; }
+        }
+        break;
 
         /*
          * WM_DESTROY:

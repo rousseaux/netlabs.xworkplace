@@ -2344,7 +2344,8 @@ BOOL trshSetDrivesSupport(PBYTE pabSupportedDrives)
                                     // alright, let's support this
                                     G_abSupportedDrives[bIndex] = XTRC_SUPPORTED;
                             }
-                        break; }
+                        }
+                        break;
 
                         case ERROR_INVALID_DRIVE:
                             G_abSupportedDrives[bIndex] = XTRC_INVALID;
@@ -2506,24 +2507,24 @@ static const XWPSETTING G_TrashCanSettingsBackup[] =
  *      Global Settings.
  */
 
-VOID trshTrashCanSettingsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID trshTrashCanSettingsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                   ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (flFlags & CBI_INIT)
     {
-        if (pcnbp->pUser == NULL)
+        if (pnbp->pUser == NULL)
         {
             // first call: backup Global Settings for "Undo" button;
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
             /*
-            pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+            pnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
+            memcpy(pnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
             */
-            pcnbp->pUser = cmnBackupSettings(G_TrashCanSettingsBackup,
+            pnbp->pUser = cmnBackupSettings(G_TrashCanSettingsBackup,
                                              ARRAYITEMCOUNT(G_TrashCanSettingsBackup));
         }
     }
@@ -2535,9 +2536,9 @@ VOID trshTrashCanSettingsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
     if (flFlags & CBI_SET)
     {
         ULONG fl = cmnQuerySetting(sflTrashConfirmEmpty);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XTDI_CONFIRMEMPTY,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XTDI_CONFIRMEMPTY,
                               (fl & TRSHCONF_EMPTYTRASH) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XTDI_CONFIRMDESTROY,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XTDI_CONFIRMDESTROY,
                               (fl & TRSHCONF_DESTROYOBJ) != 0);
     }
 }
@@ -2549,7 +2550,7 @@ VOID trshTrashCanSettingsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
  *      Reacts to changes of any of the dialog controls.
  */
 
-MRESULT trshTrashCanSettingsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT trshTrashCanSettingsItemChanged(PNOTEBOOKPAGE pnbp,
                                         ULONG ulItemID, USHORT usNotifyCode,
                                         ULONG ulExtra)      // for checkboxes: contains new state
 {
@@ -2570,27 +2571,27 @@ MRESULT trshTrashCanSettingsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case DID_UNDO:
             // "Undo" button: get pointer to backed-up Global Settings
-            // GLOBALSETTINGS *pGSBackup = (GLOBALSETTINGS*)(pcnbp->pUser);
+            // GLOBALSETTINGS *pGSBackup = (GLOBALSETTINGS*)(pnbp->pUser);
 
             // and restore the settings for this page
             // cmnSetSetting(sfTrashDelete, pGSBackup->fTrashDelete);
             // cmnSetSetting(sfTrashEmptyStartup, pGSBackup->fTrashEmptyStartup);
             // cmnSetSetting(sfTrashEmptyShutdown, pGSBackup->fTrashEmptyShutdown);
             // cmnSetSetting(sulTrashConfirmEmpty, pGSBackup->ulTrashConfirmEmpty);
-            cmnRestoreSettings(pcnbp->pUser,
+            cmnRestoreSettings(pnbp->pUser,
                                ARRAYITEMCOUNT(G_TrashCanSettingsBackup));
 
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         break;
 
         case DID_DEFAULT:
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
             // Desktop startup)
-            cmnSetDefaultSettings(pcnbp->ulPageID);
+            cmnSetDefaultSettings(pnbp->inbp.ulPageID);
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         break;
     }
 
@@ -2620,19 +2621,19 @@ MRESULT trshTrashCanSettingsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *      Global Settings.
  */
 
-VOID trshTrashCanDrivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID trshTrashCanDrivesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                 ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
     {
-        if (pcnbp->pUser == NULL)
+        if (pnbp->pUser == NULL)
         {
             // first call: backup drives array for "Undo" button;
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
-            pcnbp->pUser = malloc(CB_SUPPORTED_DRIVES);
-            _xwpclsQueryDrivesSupport(_XWPTrashCan, pcnbp->pUser);
+            pnbp->pUser = malloc(CB_SUPPORTED_DRIVES);
+            _xwpclsQueryDrivesSupport(_XWPTrashCan, pnbp->pUser);
         }
     }
 
@@ -2640,8 +2641,8 @@ VOID trshTrashCanDrivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info st
     {
         ULONG   bIndex = 0;
         CHAR    szDriveName[3] = "C:";
-        HWND    hwndSupportedLB = WinWindowFromID(pcnbp->hwndDlgPage, ID_XTDI_SUPPORTED_LB),
-                hwndUnsupportedLB = WinWindowFromID(pcnbp->hwndDlgPage, ID_XTDI_UNSUPPORTED_LB);
+        HWND    hwndSupportedLB = WinWindowFromID(pnbp->hwndDlgPage, ID_XTDI_SUPPORTED_LB),
+                hwndUnsupportedLB = WinWindowFromID(pnbp->hwndDlgPage, ID_XTDI_UNSUPPORTED_LB);
 
         winhDeleteAllItems(hwndSupportedLB);
         winhDeleteAllItems(hwndUnsupportedLB);
@@ -2676,15 +2677,15 @@ VOID trshTrashCanDrivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info st
     {
         // enable "Add" button if items are selected
         // in the "Unsupported" listbox
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XTDI_ADD_SUPPORTED,
-                         (winhQueryLboxSelectedItem(WinWindowFromID(pcnbp->hwndDlgPage,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XTDI_ADD_SUPPORTED,
+                         (winhQueryLboxSelectedItem(WinWindowFromID(pnbp->hwndDlgPage,
                                                                     ID_XTDI_UNSUPPORTED_LB),
                                                      LIT_FIRST)
                                 != LIT_NONE));
         // enable "Remove" button if items are selected
         // in the "Supported" listbox
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XTDI_REMOVE_SUPPORTED,
-                         (winhQueryLboxSelectedItem(WinWindowFromID(pcnbp->hwndDlgPage,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XTDI_REMOVE_SUPPORTED,
+                         (winhQueryLboxSelectedItem(WinWindowFromID(pnbp->hwndDlgPage,
                                                                     ID_XTDI_SUPPORTED_LB),
                                                      LIT_FIRST)
                                 != LIT_NONE));
@@ -2754,7 +2755,7 @@ static BOOL StoreSupportedDrives(HWND hwndSupportedLB, // in: list box with supp
  *@@changed V0.9.4 (2000-07-15) [umoeller]: multiple selections weren't moved
  */
 
-MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT trshTrashCanDrivesItemChanged(PNOTEBOOKPAGE pnbp,
                                       ULONG ulItemID, USHORT usNotifyCode,
                                       ULONG ulExtra)      // for checkboxes: contains new state
 {
@@ -2781,7 +2782,7 @@ MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 {
                     fNoDeselection = TRUE;
                             // this recurses
-                    winhLboxSelectAll(WinWindowFromID(pcnbp->hwndDlgPage,
+                    winhLboxSelectAll(WinWindowFromID(pnbp->hwndDlgPage,
                                                       ((ulItemID == ID_XTDI_UNSUPPORTED_LB)
                                                         ? ID_XTDI_SUPPORTED_LB
                                                         : ID_XTDI_UNSUPPORTED_LB)),
@@ -2790,7 +2791,7 @@ MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 }
 
                 // re-enable items
-                pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
+                pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
             }
         break;
 
@@ -2803,9 +2804,8 @@ MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XTDI_ADD_SUPPORTED:
         {
-            HWND    hwndSupportedLB = WinWindowFromID(pcnbp->hwndDlgPage, ID_XTDI_SUPPORTED_LB),
-                    hwndUnsupportedLB = WinWindowFromID(pcnbp->hwndDlgPage, ID_XTDI_UNSUPPORTED_LB);
-            // CHAR    szItemText[10];
+            HWND    hwndSupportedLB = WinWindowFromID(pnbp->hwndDlgPage, ID_XTDI_SUPPORTED_LB),
+                    hwndUnsupportedLB = WinWindowFromID(pnbp->hwndDlgPage, ID_XTDI_UNSUPPORTED_LB);
 
             fNoDeselection = TRUE;
             while (TRUE)
@@ -2825,12 +2825,13 @@ MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             fNoDeselection = FALSE;
 
             // re-enable buttons
-            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
 
             // update internal drives data
             StoreSupportedDrives(hwndSupportedLB,
                                  hwndUnsupportedLB);
-        break; }
+        }
+        break;
 
         /*
          * ID_XTDI_REMOVE_SUPPORTED:
@@ -2841,8 +2842,8 @@ MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XTDI_REMOVE_SUPPORTED:
         {
-            HWND    hwndSupportedLB = WinWindowFromID(pcnbp->hwndDlgPage, ID_XTDI_SUPPORTED_LB),
-                    hwndUnsupportedLB = WinWindowFromID(pcnbp->hwndDlgPage, ID_XTDI_UNSUPPORTED_LB);
+            HWND    hwndSupportedLB = WinWindowFromID(pnbp->hwndDlgPage, ID_XTDI_SUPPORTED_LB),
+                    hwndUnsupportedLB = WinWindowFromID(pnbp->hwndDlgPage, ID_XTDI_UNSUPPORTED_LB);
             // CHAR    szItemText[10];
 
             fNoDeselection = TRUE;
@@ -2863,30 +2864,29 @@ MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             fNoDeselection = FALSE;
 
             // re-enable buttons
-            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
 
             // update internal drives data
             StoreSupportedDrives(hwndSupportedLB,
                                  hwndUnsupportedLB);
-        break; }
+        }
+        break;
 
         case DID_UNDO:
-        {
             // copy array back which was stored in init callback
             _xwpclsSetDrivesSupport(_XWPTrashCan,
-                                    pcnbp->pUser);  // backup data
+                                    pnbp->pUser);  // backup data
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
+        break;
 
         case DID_DEFAULT:
-        {
             // set defaults
             _xwpclsSetDrivesSupport(_XWPTrashCan,
                                     NULL);     // defaults
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
+        break;
 
         default:
             fSave = FALSE;
@@ -2908,21 +2908,21 @@ MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *@@added V0.9.4 (2000-08-03) [umoeller]
  */
 
-VOID trshTrashCanIconInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID trshTrashCanIconInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                               ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     // // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (flFlags & CBI_INIT)
     {
-        if (pcnbp->pUser == NULL)
+        if (pnbp->pUser == NULL)
         {
             // first call:
             // backup object title for "Undo" button
-            pcnbp->pUser = strdup(_wpQueryTitle(pcnbp->somSelf));
+            pnbp->pUser = strdup(_wpQueryTitle(pnbp->inbp.somSelf));
         }
 
-        WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_XTDI_ICON_TITLEMLE,
+        WinSendDlgItemMsg(pnbp->hwndDlgPage, ID_XTDI_ICON_TITLEMLE,
                           MLM_SETTEXTLIMIT,
                           (MPARAM)255,
                           0);
@@ -2930,8 +2930,8 @@ VOID trshTrashCanIconInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
 
     if (flFlags & CBI_SET)
     {
-        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XTDI_ICON_TITLEMLE,
-                          _wpQueryTitle(pcnbp->somSelf));
+        WinSetDlgItemText(pnbp->hwndDlgPage, ID_XTDI_ICON_TITLEMLE,
+                          _wpQueryTitle(pnbp->inbp.somSelf));
     }
 }
 
@@ -2944,7 +2944,7 @@ VOID trshTrashCanIconInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
  *@@added V0.9.4 (2000-08-03) [umoeller]
  */
 
-MRESULT trshTrashCanIconItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT trshTrashCanIconItemChanged(PNOTEBOOKPAGE pnbp,
                                     ULONG ulItemID, USHORT usNotifyCode,
                                     ULONG ulExtra)      // for checkboxes: contains new state
 {
@@ -2957,37 +2957,38 @@ MRESULT trshTrashCanIconItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             {
                 case MLN_KILLFOCUS:
                 {
-                    PSZ pszNewTitle = winhQueryWindowText(pcnbp->hwndControl);
-                    if (!pszNewTitle)
+                    PSZ pszNewTitle;
+                    if (!(pszNewTitle = winhQueryWindowText(pnbp->hwndControl)))
                     {
                         // no title: restore old
-                        WinSetWindowText(pcnbp->hwndControl,
-                                         _wpQueryTitle(pcnbp->somSelf));
-                        cmnMessageBoxMsg(pcnbp->hwndDlgPage,
+                        WinSetWindowText(pnbp->hwndControl,
+                                         _wpQueryTitle(pnbp->inbp.somSelf));
+                        cmnMessageBoxMsg(pnbp->hwndDlgPage,
                                          104,   // error
                                          187,   // old name restored
                                          MB_OK);
                     }
                     else
-                        _wpSetTitle(pcnbp->somSelf, pszNewTitle);
+                        _wpSetTitle(pnbp->inbp.somSelf, pszNewTitle);
                     free(pszNewTitle);
-                break; }
+                }
+                break;
             }
         break;
 
         case DID_UNDO:
             // set backed-up title
-            _wpSetTitle(pcnbp->somSelf, (PSZ)pcnbp->pUser);
+            _wpSetTitle(pnbp->inbp.somSelf, (PSZ)pnbp->pUser);
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         break;
 
         case DID_DEFAULT:
             // set class default title
-            _wpSetTitle(pcnbp->somSelf,
-                        _wpclsQueryTitle(_somGetClass(pcnbp->somSelf)));
+            _wpSetTitle(pnbp->inbp.somSelf,
+                        _wpclsQueryTitle(_somGetClass(pnbp->inbp.somSelf)));
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         break;
     }
 

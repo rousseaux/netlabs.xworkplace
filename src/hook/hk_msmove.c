@@ -959,7 +959,7 @@ BOOL WMMouseMove(PQMSG pqmsg,
                     // only if mouse has moved, not
                     // on window change:
 
-                    BYTE    bHotCorner = -1;
+                    ULONG   bHotCorner = -1;
 
                     /*
                      * hot corners:
@@ -1023,7 +1023,7 @@ BOOL WMMouseMove(PQMSG pqmsg,
                                        (MPARAM)bHotCorner,
                                        (MPARAM)NULL);
 
-                     } // end if (!G_HookData.hwndLockupFrame)    // system not locked up V0.9.14
+                    } // end if (!G_HookData.hwndLockupFrame)    // system not locked up V0.9.14
 
                     /*
                      * sliding menus:

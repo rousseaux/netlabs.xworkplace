@@ -12,7 +12,7 @@
  *          running with Idle priority (which is now configurable, V0.9.0);
  *      --  XFolder "File" thread / object window (fntFileThread, fnwpFileObject;
  *          new with V0.9.0), running at regular priority;
- *      --  XFolder "Speedy" thread / object window (fntSpeedyThread, fnwpSpeedyObject),
+ *      --  XFolder "Bush" thread / object window (fntBushThread, fnwpBushObject),
  *          running at maximum regular priority.
  *
  *      Also, we have functions to communicate with these threads.
@@ -24,7 +24,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -137,7 +137,8 @@
 // thread infos: moved these here from KERNELGLOBALS
 // V0.9.9 (2001-03-07) [umoeller]
 static THREADINFO   G_tiWorkerThread,
-                    G_tiSpeedyThread,
+                    G_tiBushThread,
+                    G_tiWimpThread,
                     G_tiFileThread;
 
 // Worker thread -- awake objects
@@ -159,9 +160,9 @@ static HMTX         G_hmtxWorkerThreadData = NULLHANDLE;
 static ULONG        G_ulWorkerMsgCount = 0;     // V0.9.9 (2001-04-04) [umoeller]
 static BOOL         G_fWorkerThreadHighPriority = FALSE; // V0.9.9 (2001-04-04) [umoeller]
 
-// Speedy thread
-static HAB          G_habSpeedyThread = NULLHANDLE;
-static HMQ          G_hmqSpeedyThread = NULLHANDLE;
+// Bush thread
+static HAB          G_habBushThread = NULLHANDLE;
+static HMQ          G_hmqBushThread = NULLHANDLE;
 static CHAR         G_szBootupStatus[256];
 #ifndef __NOBOOTUPSTATUS__
 static HWND         G_hwndBootupStatus = NULLHANDLE;
@@ -729,6 +730,7 @@ MRESULT EXPENTRY fnwpGenericStatus(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
  *@@changed V0.9.7 (2000-12-08) [umoeller]: got rid of dtGetULongTime
  *@@changed V0.9.9 (2001-04-04) [umoeller]: made mutexes more granular
  *@@changed V0.9.12 (2001-04-28) [umoeller]: moved all the startup crap out of here
+ *@@changed V0.9.18 (2002-02-23) [umoeller]: removed dull PM timer by moving code to extra Wimp thread
  */
 
 MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -745,10 +747,11 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
         case WM_CREATE:
         {
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
-            WinStartTimer(G_habWorkerThread,
+            /* WinStartTimer(G_habWorkerThread,
                           hwndObject,
                           2,          // id
                           5*60*1000); // every five minutes
+            */ // moved this to new Wimp thread V0.9.18 (2002-02-23) [umoeller]
         }
         break;
 
@@ -760,33 +763,18 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
          *      settings which we have cached (V0.9.6 (2000-11-12) [umoeller]).
          */
 
+        /*  removed V0.9.18 (2002-02-23) [umoeller]
         case WM_TIMER:
         {
             switch ((USHORT)mp1)   // timer id
             {
                 // timer 2: free unused memory
                 case 2:
-                    #ifdef DEBUG_MEMORYBEEP
-                        DosBeep(3000, 20);
-                    #endif
-
-                    #if (__IBMC__ >= 300)
-                        _heapmin();
-                        // _heapmin returns all unused memory from the default
-                        // runtime heap to the operating system;
-                        // this is VAC++3.0-specific
-                    #endif
-
-                    #ifdef DEBUG_MEMORYBEEP
-                        DosBeep(3500, 20);
-                    #endif
-
-                    // reload country settings
-                    cmnQueryCountrySettings(TRUE);
                 break;
             }
         }
         break;
+        */
 
         /*
          * WOM_QUICKOPEN:
@@ -1777,23 +1765,23 @@ void _Optlink fntFileThread(PTHREADINFO pti)
 
 /* ******************************************************************
  *
- *   here come the Speedy thread functions
+ *   here come the Bush thread functions
  *
  ********************************************************************/
 
 /*
- *@@ xthrPostSpeedyMsg:
- *      this posts a msg to the XFolder Speedy thread object window.
+ *@@ xthrPostBushMsg:
+ *      this posts a msg to the XFolder Bush thread object window.
  */
 
-BOOL xthrPostSpeedyMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
+BOOL xthrPostBushMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     BOOL rc = FALSE;
     PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
-    if (thrQueryID(&G_tiSpeedyThread))
-        if (pKernelGlobals->hwndSpeedyObject)
-            rc = WinPostMsg(pKernelGlobals->hwndSpeedyObject,
+    if (thrQueryID(&G_tiBushThread))
+        if (pKernelGlobals->hwndBushObject)
+            rc = WinPostMsg(pKernelGlobals->hwndBushObject,
                             msg,
                             mp1,
                             mp2);
@@ -1810,15 +1798,15 @@ SHAPEFRAME sb = {0};
 #endif
 
 /*
- *@@ fnwpSpeedyObject:
- *      wnd proc for Speedy thread object window
- *      (see fntSpeedyThread below)
+ *@@ fnwpBushObject:
+ *      wnd proc for Bush thread object window
+ *      (see fntBushThread below)
  *
  *@@changed V0.9.0 [umoeller]: adjusted for new global settings
  *@@changed V0.9.3 (2000-04-25) [umoeller]: moved all multimedia stuff to media\mmthread.c
  */
 
-MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
+MRESULT EXPENTRY fnwpBushObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = NULL;
 
@@ -1853,7 +1841,7 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                         HDC         hdcMem;
                         HPS         hpsMem;
                         SIZEL       szlPage = {0, 0};
-                        if (gpihCreateMemPS(G_habSpeedyThread,
+                        if (gpihCreateMemPS(G_habBushThread,
                                             &szlPage,
                                             &hdcMem,
                                             &hpsMem))
@@ -1880,7 +1868,7 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     else
                     {
                         // transparent mode:
-                        if (shpLoadBitmap(G_habSpeedyThread,
+                        if (shpLoadBitmap(G_habBushThread,
                                           pszBootLogoFile, // from file,
                                           0, 0,     // not from resources
                                           &sb))
@@ -1972,7 +1960,7 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                                       szTemp);
 
                     // show window for 2 secs
-                    WinStartTimer(G_habSpeedyThread, hwndObject, 1, 2000);
+                    WinStartTimer(G_habBushThread, hwndObject, 1, 2000);
                 }
         }
         break;
@@ -2013,7 +2001,7 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
          *          PMINIRECORDCORE mp2:
          *                       the expanded minirecordcore
          *
-         *@@changed V0.9.4 (2000-06-16) [umoeller]: moved this to Speedy thread from File thread
+         *@@changed V0.9.4 (2000-06-16) [umoeller]: moved this to Bush thread from File thread
          *@@changed V0.9.9 (2001-03-11) [umoeller]: fixed possible crash with broken shadows
          */
 
@@ -2043,7 +2031,7 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                         // the same msg again, until the "populated" folder
                         // flag has been set
                         DosSleep(100);
-                        xthrPostSpeedyMsg(QM_TREEVIEWAUTOSCROLL, mp1, mp2);
+                        xthrPostBushMsg(QM_TREEVIEWAUTOSCROLL, mp1, mp2);
                     }
                     else
                     {
@@ -2073,9 +2061,9 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 }
 
 /*
- *@@ fntSpeedyThread:
+ *@@ fntBushThread:
  *          this is the thread function for the XFolder
- *          "Speedy" thread, which is responsible for
+ *          "Bush" thread, which is responsible for
  *
  *          --  showing the bootup logo
  *
@@ -2090,27 +2078,28 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
  *          This thread is also created from initMain.
  *
  *@@changed V0.9.3 (2000-04-25) [umoeller]: moved all multimedia stuff to media\mmthread.c
+ *@@changed V0.9.18 (2002-02-23) [umoeller]: renamed from "Speedy" thread
  */
 
-void _Optlink fntSpeedyThread(PTHREADINFO pti)
+void _Optlink fntBushThread(PTHREADINFO pti)
 {
     QMSG                  qmsg;
     PSZ                   pszErrMsg = NULL;
 
     TRY_LOUD(excpt1)
     {
-        if (G_habSpeedyThread = WinInitialize(0))
+        if (G_habBushThread = WinInitialize(0))
         {
-            if (G_hmqSpeedyThread = WinCreateMsgQueue(G_habSpeedyThread, 3000))
+            if (G_hmqBushThread = WinCreateMsgQueue(G_habBushThread, 3000))
             {
                 PKERNELGLOBALS pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
                 if (pKernelGlobals)
                 {
-                    WinCancelShutdown(G_hmqSpeedyThread, TRUE);
+                    WinCancelShutdown(G_hmqBushThread, TRUE);
 
-                    WinRegisterClass(G_habSpeedyThread,
+                    WinRegisterClass(G_habBushThread,
                                      (PSZ)WNDCLASS_QUICKOBJECT,    // class name
-                                     (PFNWP)fnwpSpeedyObject,    // Window procedure
+                                     (PFNWP)fnwpBushObject,    // Window procedure
                                      0,                  // class style
                                      0);                 // extra window words
 
@@ -2121,21 +2110,21 @@ void _Optlink fntSpeedyThread(PTHREADINFO pti)
                                    0);
 
                     // create object window
-                    pKernelGlobals->hwndSpeedyObject
+                    pKernelGlobals->hwndBushObject
                         = winhCreateObjectWindow(WNDCLASS_QUICKOBJECT, NULL);
 
-                    if (!pKernelGlobals->hwndSpeedyObject)
+                    if (!pKernelGlobals->hwndBushObject)
                         winhDebugBox(HWND_DESKTOP,
                                  "XFolder: Error",
-                                 "XFolder failed to create the Speedy thread object window.");
+                                 "XFolder failed to create the Bush thread object window.");
 
                     krnUnlockGlobals();
                     pKernelGlobals = NULL;
                 }
 
                 // now enter the message loop
-                while (WinGetMsg(G_habSpeedyThread, &qmsg, NULLHANDLE, 0, 0))
-                    WinDispatchMsg(G_habSpeedyThread, &qmsg);
+                while (WinGetMsg(G_habBushThread, &qmsg, NULLHANDLE, 0, 0))
+                    WinDispatchMsg(G_habBushThread, &qmsg);
                                 // loop until WM_QUIT
             }
         }
@@ -2151,7 +2140,7 @@ void _Optlink fntSpeedyThread(PTHREADINFO pti)
             pszErrMsg = malloc(1000);
             if (pszErrMsg)
             {
-                strcpy(pszErrMsg, "An error occured in the XFolder Speedy thread. "
+                strcpy(pszErrMsg, "An error occured in the XFolder Bush thread. "
                         "\n\nThe additional XFolder system sounds will be disabled for the "
                         "rest of this Workplace Shell session. You will need to restart "
                         "the WPS in order to re-enable them. "
@@ -2170,18 +2159,83 @@ void _Optlink fntSpeedyThread(PTHREADINFO pti)
         PKERNELGLOBALS pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
         if (pKernelGlobals)
         {
-            WinDestroyWindow(pKernelGlobals->hwndSpeedyObject);
-            pKernelGlobals->hwndSpeedyObject = NULLHANDLE;
+            WinDestroyWindow(pKernelGlobals->hwndBushObject);
+            pKernelGlobals->hwndBushObject = NULLHANDLE;
         }
 
-        WinDestroyMsgQueue(G_hmqSpeedyThread);
-        G_hmqSpeedyThread = NULLHANDLE;
-        WinTerminate(G_habSpeedyThread);
-        G_habSpeedyThread = NULLHANDLE;
+        WinDestroyMsgQueue(G_hmqBushThread);
+        G_hmqBushThread = NULLHANDLE;
+        WinTerminate(G_habBushThread);
+        G_habBushThread = NULLHANDLE;
 
         krnUnlockGlobals();
     }
 }
+
+/* ******************************************************************
+ *
+ *   Wimp thread
+ *
+ ********************************************************************/
+
+/*
+ *@@ fntWimpThread:
+ *      this thread is new with V0.9.18 and runs with
+ *      idle time priority to perform various tasks
+ *      every few minutes. This code was moved to this
+ *      separate thread from the Worker thread to save
+ *      another PM timer that was previously used for
+ *      close to nothing.
+ *
+ *@@added V0.9.18 (2002-02-23) [umoeller]
+ */
+
+void _Optlink fntWimpThread(PTHREADINFO pti)
+{
+    TRY_LOUD(excpt1)
+    {
+        BOOL dummy = 1;
+
+        DosSetPriority(PRTYS_THREAD,
+                       PRTYC_IDLETIME,
+                       0,
+                       0);      // current thread
+
+        // run forever
+        while (dummy)           // avoid compiler warning
+        {
+            // sleep five minutes
+            DosSleep(5 * 60 * 1000);
+
+            #ifdef DEBUG_MEMORYBEEP
+                DosBeep(3000, 20);
+            #endif
+
+            #if (__IBMC__ >= 300)
+                _heapmin();
+                // _heapmin returns all unused memory from the default
+                // runtime heap to the operating system;
+                // this is VAC++3.0-specific
+            #endif
+
+            #ifdef DEBUG_MEMORYBEEP
+                DosBeep(3500, 20);
+            #endif
+
+            // reload country settings
+            cmnQueryCountrySettings(TRUE);
+        }
+    }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
+}
+
+/* ******************************************************************
+ *
+ *   Startup
+ *
+ ********************************************************************/
 
 /*
  *@@ xthrStartThreads:
@@ -2190,6 +2244,8 @@ void _Optlink fntSpeedyThread(PTHREADINFO pti)
  *      XWorkplace threads.
  *
  *@@changed V0.9.3 (2000-04-25) [umoeller]: moved all multimedia stuff to media\mmthread.c
+ *@@changed V0.9.18 (2002-02-23) [umoeller]: added Wimp thread
+ *@@changed V0.9.18 (2002-02-23) [umoeller]: changed a few thread names for fun
  */
 
 BOOL xthrStartThreads(PVOID pLogFile)
@@ -2205,9 +2261,6 @@ BOOL xthrStartThreads(PVOID pLogFile)
     {
         if (thrQueryID(&G_tiWorkerThread) == NULLHANDLE)
         {
-            // APIRET      arc;
-            // CHAR szSoundDLL[CCHMAXPATH] = "";
-
             // store the thread ID of the calling thread;
             // this should always be 1
             // ... moved this to initMain
@@ -2233,16 +2286,28 @@ BOOL xthrStartThreads(PVOID pLogFile)
                                   "  Started XWP Worker thread, TID: %d",
                                   G_tiWorkerThread.tid);
 
-                thrCreate(&G_tiSpeedyThread,
-                          fntSpeedyThread,
+                thrCreate(&G_tiBushThread,
+                          fntBushThread,
                           NULL, // running flag
-                          "Speedy",
+                          "Bush",
                           THRF_WAIT,    // no msgq, but wait V0.9.9 (2001-01-31) [umoeller]
                           0);
 
                 doshWriteLogEntry(pLogFile,
-                                  "  Started XWP Speedy thread, TID: %d",
-                                  G_tiSpeedyThread.tid);
+                                  "  Started XWP Bush thread, TID: %d",
+                                  G_tiBushThread.tid);
+
+                // start Wimp thread V0.9.18 (2002-02-23) [umoeller]
+                thrCreate(&G_tiWimpThread,
+                          fntWimpThread,
+                          NULL, // running flag
+                          "Wimp",
+                          THRF_WAIT,            // no msgq
+                          0);
+
+                doshWriteLogEntry(pLogFile,
+                                  "  Started XWP Wimp thread, TID: %d",
+                                  G_tiWimpThread.tid);
             }
 
             thrCreate(&G_tiFileThread,

@@ -22,7 +22,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -448,7 +448,8 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
                                           hwndCnr,
                                           FALSE);
             } // if (pRootFolder)
-        break; }
+        }
+        break;
 
         default:
             // e.g. settings view
@@ -519,27 +520,24 @@ SOM_Scope ULONG  SOMLINK xfdisk_wpAddDiskDetailsPage(XFldDisk *somSelf,
     if (cmnQuerySetting(sfReplaceFilePage))
 #endif
     {
-        PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndNotebook;
-        pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-        pcnbp->ulDlgID = ID_XSD_DISK_DETAILS;
-        pcnbp->ulPageID = SP_DISK_DETAILS;
-        pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = cmnGetString(ID_XSSI_DETAILSPAGE);  // pszDetailsPage
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_DISKDETAILS;
-
-        pcnbp->pfncbInitPage    = (PFNCBACTION)dskDetailsInitPage;
-        pcnbp->pfncbItemChanged = dskDetailsItemChanged;
-
-        return (ntbInsertPage(pcnbp));
+        INSERTNOTEBOOKPAGE inbp;
+        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+        inbp.somSelf = somSelf;
+        inbp.hwndNotebook = hwndNotebook;
+        inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+        inbp.ulDlgID = ID_XSD_DISK_DETAILS;
+        inbp.ulPageID = SP_DISK_DETAILS;
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.pcszName = cmnGetString(ID_XSSI_DETAILSPAGE);  // pszDetailsPage
+        inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_DISKDETAILS;
+        inbp.pfncbInitPage    = (PFNCBACTION)dskDetailsInitPage;
+        inbp.pfncbItemChanged = dskDetailsItemChanged;
+        return (ntbInsertPage(&inbp));
     }
+
 #ifndef __ALWAYSREPLACEFILEPAGE__
-    else
-        return (XFldDisk_parent_WPDisk_wpAddDiskDetailsPage(somSelf,
-                                                            hwndNotebook));
+    return (XFldDisk_parent_WPDisk_wpAddDiskDetailsPage(somSelf,
+                                                        hwndNotebook));
 #endif
 }
 

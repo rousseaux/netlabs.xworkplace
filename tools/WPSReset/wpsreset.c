@@ -15,7 +15,7 @@
  *      command line in order to prevent accidental Desktop restarts.
  *      I don't remember what "-D" stands for. Maybe "dumb".
  *
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        printf("wpsreset V"BLDLEVEL_VERSION" ("__DATE__") (C) 1998-2000 Ulrich M”ller\n");
+        printf("wpsreset V"BLDLEVEL_VERSION" ("__DATE__") (C) 1998-2002 Ulrich M”ller\n");
         printf("Restarts the Workplace Shell process.\n");
         printf("Usage: wpsreset -D\n");
     }

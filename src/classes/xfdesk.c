@@ -23,7 +23,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -130,29 +130,25 @@ static BOOL    G_DesktopPopulated = FALSE;
 SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopMenuItemsPage(XFldDesktop *somSelf,
                                                                  HWND hwndNotebook)
 {
-    PCREATENOTEBOOKPAGE pcnbp;
+    INSERTNOTEBOOKPAGE inbp;
     HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
     // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
     XFldDesktopMethodDebug("XFldDesktop","xfdesk_xwpInsertXFldDesktopMenuItemsPage");
 
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndNotebook;
-    pcnbp->hmod = savehmod;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->fEnumerate = TRUE;
-    pcnbp->pszName = cmnGetString(ID_XSSI_DTPMENUPAGE);  // pszDtpMenuPage
-    // pcnbp->usFirstControlID = ID_XSDI_DTP_SORT;
-    // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_DTP1_SUB;   // help panel for "Sort"
-    pcnbp->ulDlgID = ID_XFD_EMPTYDLG; // ID_XSD_DTP_MENUITEMS; V0.9.16 (2002-01-09) [umoeller]
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_DTP_MENUITEMS;
-    pcnbp->ulPageID = SP_DTP_MENUITEMS;
-    pcnbp->pfncbInitPage    = dtpMenuItemsInitPage;
-    pcnbp->pfncbItemChanged = dtpMenuItemsItemChanged;
-    return (ntbInsertPage(pcnbp));
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndNotebook;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.fEnumerate = TRUE;
+    inbp.pcszName = cmnGetString(ID_XSSI_DTPMENUPAGE);  // pszDtpMenuPage
+    inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_XSD_DTP_MENUITEMS; V0.9.16 (2002-01-09) [umoeller]
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_DTP_MENUITEMS;
+    inbp.ulPageID = SP_DTP_MENUITEMS;
+    inbp.pfncbInitPage    = dtpMenuItemsInitPage;
+    inbp.pfncbItemChanged = dtpMenuItemsItemChanged;
+    return (ntbInsertPage(&inbp));
 }
 
 /*
@@ -168,26 +164,25 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopMenuItemsPage(XFldDesktop *s
 SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopStartupPage(XFldDesktop *somSelf,
                                                                HWND hwndNotebook)
 {
-    PCREATENOTEBOOKPAGE pcnbp;
+    INSERTNOTEBOOKPAGE inbp;
     HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
     // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
     // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
     XFldDesktopMethodDebug("XFldDesktop","xfdesk_xwpInsertXFldDesktopStartupPage");
 
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndNotebook;
-    pcnbp->hmod = savehmod;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_STARTUPPAGE);  // pszStartupPage
-    pcnbp->ulDlgID = ID_XFD_EMPTYDLG; // ID_XSD_DTP_STARTUP; V0.9.16 (2001-10-08) [umoeller]
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_DTP_STARTUP;
-    pcnbp->ulPageID = SP_DTP_STARTUP;
-    pcnbp->pfncbInitPage    = dtpStartupInitPage;
-    pcnbp->pfncbItemChanged = dtpStartupItemChanged;
-    return (ntbInsertPage(pcnbp));
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndNotebook;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_STARTUPPAGE);  // pszStartupPage
+    inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_XSD_DTP_STARTUP; V0.9.16 (2001-10-08) [umoeller]
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_DTP_STARTUP;
+    inbp.ulPageID = SP_DTP_STARTUP;
+    inbp.pfncbInitPage    = dtpStartupInitPage;
+    inbp.pfncbItemChanged = dtpStartupItemChanged;
+    return (ntbInsertPage(&inbp));
 }
 
 /*
@@ -203,28 +198,26 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopStartupPage(XFldDesktop *som
 SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopArchivesPage(XFldDesktop *somSelf,
                                                                 HWND hwndNotebook)
 {
-    PCREATENOTEBOOKPAGE pcnbp;
+    INSERTNOTEBOOKPAGE inbp;
     HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
     // XFldDesktopData *somThis = XFldDesktopGetData(somSelf);
     XFldDesktopMethodDebug("XFldDesktop","xfdesk_xwpInsertXFldDesktopArchivesPage");
 
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndNotebook;
-    pcnbp->hmod = savehmod;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_ARCHIVESPAGE);  // pszArchivesPage
-    pcnbp->ulDlgID = ID_XFD_EMPTYDLG;       // ID_XSD_DTP_ARCHIVES; V0.9.16 (2001-11-22) [umoeller]
-    // pcnbp->usFirstControlID = ID_SDDI_ARCHIVES;
-    // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_DTP_SHUTDOWN_SUB;   // help panel for "System setup"
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_DTP_ARCHIVES;
-    pcnbp->ulPageID = SP_DTP_ARCHIVES;
-    pcnbp->pfncbInitPage    = arcArchivesInitPage;
-    pcnbp->pfncbItemChanged = arcArchivesItemChanged;
-    return (ntbInsertPage(pcnbp));
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndNotebook;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_ARCHIVESPAGE);  // pszArchivesPage
+    inbp.ulDlgID = ID_XFD_EMPTYDLG;       // ID_XSD_DTP_ARCHIVES; V0.9.16 (2001-11-22) [umoeller]
+    // inbp.usFirstControlID = ID_SDDI_ARCHIVES;
+    // inbp.ulFirstSubpanel = ID_XSH_SETTINGS_DTP_SHUTDOWN_SUB;   // help panel for "System setup"
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_DTP_ARCHIVES;
+    inbp.ulPageID = SP_DTP_ARCHIVES;
+    inbp.pfncbInitPage    = arcArchivesInitPage;
+    inbp.pfncbItemChanged = arcArchivesItemChanged;
+    return (ntbInsertPage(&inbp));
 }
 
 /*
@@ -243,7 +236,7 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopShutdownPage(XFldDesktop *so
     ULONG ulrc = 0;
 
 #ifndef __NOXSHUTDOWN__
-    PCREATENOTEBOOKPAGE pcnbp;
+    INSERTNOTEBOOKPAGE inbp;
     HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
     // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
@@ -252,22 +245,21 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopShutdownPage(XFldDesktop *so
 
     // insert "XShutdown" page,
     // if Shutdown has been enabled in XWPConfig
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndNotebook;
-    pcnbp->hmod = savehmod;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_XSHUTDOWNPAGE);  // pszXShutdownPage
-    // pcnbp->ulDlgID = ID_XSD_DTP_SHUTDOWN;
-    pcnbp->ulDlgID = ID_XFD_EMPTYDLG;           // V0.9.16 (2001-09-29) [umoeller]
-    // pcnbp->usFirstControlID = ID_SDDI_REBOOT;
-    // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_DTP_SHUTDOWN_SUB;   // help panel for "System setup"
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_DTP_SHUTDOWN;
-    pcnbp->ulPageID = SP_DTP_SHUTDOWN;
-    pcnbp->pfncbInitPage    = xsdShutdownInitPage;
-    pcnbp->pfncbItemChanged = xsdShutdownItemChanged;
-    ulrc = ntbInsertPage(pcnbp);
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndNotebook;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_XSHUTDOWNPAGE);  // pszXShutdownPage
+    // inbp.ulDlgID = ID_XSD_DTP_SHUTDOWN;
+    inbp.ulDlgID = ID_XFD_EMPTYDLG;           // V0.9.16 (2001-09-29) [umoeller]
+    // inbp.usFirstControlID = ID_SDDI_REBOOT;
+    // inbp.ulFirstSubpanel = ID_XSH_SETTINGS_DTP_SHUTDOWN_SUB;   // help panel for "System setup"
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_DTP_SHUTDOWN;
+    inbp.ulPageID = SP_DTP_SHUTDOWN;
+    inbp.pfncbInitPage    = xsdShutdownInitPage;
+    inbp.pfncbItemChanged = xsdShutdownItemChanged;
+    ulrc = ntbInsertPage(&inbp);
 #endif
 
     return (ulrc);

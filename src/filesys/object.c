@@ -1992,7 +1992,8 @@ BOOL objQuerySetup(WPObject *somSelf,
                     CHAR szTemp[30];
                     sprintf(szTemp, "DEFAULTVIEW=%d;", _pObjectLongs->lDefaultView);
                     xstrcat(pstrSetup, szTemp, 0);
-                break; }
+                }
+                break;
             }
         }
     }
@@ -2132,6 +2133,7 @@ BOOL objQuerySetup(WPObject *somSelf,
  *@@ WriteOutObjectSetup:
  *
  *@@added V0.9.9 (2001-04-06) [umoeller]
+ *@@changed V0.9.18 (2002-02-24) [pr]: was freeing setup string twice
  */
 
 static ULONG WriteOutObjectSetup(FILE *RexxFile,
@@ -2215,8 +2217,7 @@ static ULONG WriteOutObjectSetup(FILE *RexxFile,
 
         ulrc++;
 
-        if (pszSetupString)
-            free(pszSetupString);
+        _xwpFreeSetupBuffer(pobj, pszSetupString);
         xstrClear(&strTitle);
 
         // recurse for folders
@@ -2268,8 +2269,6 @@ static ULONG WriteOutObjectSetup(FILE *RexxFile,
             if (fSem)
                 fdrReleaseFolderMutexSem(pobj);
         }
-
-        _xwpFreeSetupBuffer(pobj, pszSetupString);
     }
 
     // return total object count
@@ -3101,7 +3100,6 @@ static MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, M
                          */
 
                         case CN_EXPANDTREE:
-                        {
                             // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
                             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                             if (cmnQuerySetting(sfTreeViewAutoScroll))
@@ -3112,7 +3110,7 @@ static MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, M
                                         1,
                                         100);
                             }
-                        break; }
+                        break;
 
                         /*
                          * CN_BEGINEDIT:
@@ -3136,7 +3134,8 @@ static MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, M
                             strcpy(pWinData->szOldObjectID, pszChanging);
                             pWinData->fEscPressed = FALSE;
                             mrc = (MPARAM)TRUE;
-                        break; }
+                        }
+                        break;
 
                         /*
                          * CN_ENDEDIT:

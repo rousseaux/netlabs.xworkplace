@@ -208,25 +208,22 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanSettingsPage(XWPTrashCan *somSelf,
 {
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
 
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-    PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+    INSERTNOTEBOOKPAGE inbp;
 
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpAddTrashCanSettingsPage");
 
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-    pcnbp->ulDlgID = ID_XTD_SETTINGS;
-    pcnbp->ulPageID = SP_TRASHCAN_SETTINGS;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XTSI_TRASHSETTINGSPAGE);  // pszTrashSettingsPage
-    pcnbp->ulDefaultHelpPanel = ID_XSH_SETTINGS_TRASHCAN + 1;
-
-    pcnbp->pfncbInitPage    = trshTrashCanSettingsInitPage;
-    pcnbp->pfncbItemChanged = trshTrashCanSettingsItemChanged;
-
-    return (ntbInsertPage(pcnbp));
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+    inbp.ulDlgID = ID_XTD_SETTINGS;
+    inbp.ulPageID = SP_TRASHCAN_SETTINGS;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XTSI_TRASHSETTINGSPAGE);  // pszTrashSettingsPage
+    inbp.ulDefaultHelpPanel = ID_XSH_SETTINGS_TRASHCAN + 1;
+    inbp.pfncbInitPage    = trshTrashCanSettingsInitPage;
+    inbp.pfncbItemChanged = trshTrashCanSettingsItemChanged;
+    return (ntbInsertPage(&inbp));
 }
 
 /*
@@ -240,26 +237,23 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanSettingsPage(XWPTrashCan *somSelf,
 SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanDrivesPage(XWPTrashCan *somSelf,
                                                        HWND hwndDlg)
 {
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-    PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+    INSERTNOTEBOOKPAGE inbp;
 
     // XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpAddTrashCanDrivesPage");
 
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-    pcnbp->ulDlgID = ID_XTD_DRIVES;
-    pcnbp->ulPageID = SP_TRASHCAN_DRIVES;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XTSI_TRASHDRIVESPAGE);  // pszTrashDrivesPage
-    pcnbp->ulDefaultHelpPanel = ID_XSH_SETTINGS_TRASHCAN_DRIVES;
-
-    pcnbp->pfncbInitPage    = trshTrashCanDrivesInitPage;
-    pcnbp->pfncbItemChanged = trshTrashCanDrivesItemChanged;
-
-    return (ntbInsertPage(pcnbp));
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+    inbp.ulDlgID = ID_XTD_DRIVES;
+    inbp.ulPageID = SP_TRASHCAN_DRIVES;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XTSI_TRASHDRIVESPAGE);  // pszTrashDrivesPage
+    inbp.ulDefaultHelpPanel = ID_XSH_SETTINGS_TRASHCAN_DRIVES;
+    inbp.pfncbInitPage    = trshTrashCanDrivesInitPage;
+    inbp.pfncbItemChanged = trshTrashCanDrivesItemChanged;
+    return (ntbInsertPage(&inbp));
 }
 
 /*
@@ -272,16 +266,15 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanDrivesPage(XWPTrashCan *somSelf,
 SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanGeneralPage(XWPTrashCan *somSelf,
                                                         HWND hwndDlg)
 {
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-    PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+    INSERTNOTEBOOKPAGE inbp;
 
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpAddTrashCanGeneralPage");
 
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
 
 #ifndef __ALWAYSREPLACEICONPAGE__
     if (    (cmnQuerySetting(sfReplaceIconPage))
@@ -294,30 +287,30 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanGeneralPage(XWPTrashCan *somSelf,
         )
 #endif
     {
-        pcnbp->ulDlgID = ID_XFD_EMPTYDLG;
-        pcnbp->ulPageID = SP_TRASHCAN_ICON;
-        pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->fEnumerate = TRUE;
-        pcnbp->pszName = cmnGetString(ID_XSSI_ICONPAGE);
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_TRASHCAN_ICON;
-        pcnbp->pfncbInitPage    = icoIcon1InitPage;
-        pcnbp->pfncbItemChanged = icoIcon1ItemChanged;
+        inbp.ulDlgID = ID_XFD_EMPTYDLG;
+        inbp.ulPageID = SP_TRASHCAN_ICON;
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.fEnumerate = TRUE;
+        inbp.pcszName = cmnGetString(ID_XSSI_ICONPAGE);
+        inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_TRASHCAN_ICON;
+        inbp.pfncbInitPage    = icoIcon1InitPage;
+        inbp.pfncbItemChanged = icoIcon1ItemChanged;
     }
 #ifndef __ALWAYSREPLACEICONPAGE__
     else
     {
-        pcnbp->ulDlgID = ID_XTD_ICONPAGE;
-        pcnbp->ulPageID = SP_TRASHCAN_ICON;
-        pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = cmnGetString(ID_XSSI_ICONPAGE);  // pszIconPage
-        pcnbp->ulDefaultHelpPanel = ID_XSH_SETTINGS_TRASHCAN_ICON;
+        inbp.ulDlgID = ID_XTD_ICONPAGE;
+        inbp.ulPageID = SP_TRASHCAN_ICON;
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.pcszName = cmnGetString(ID_XSSI_ICONPAGE);  // pszIconPage
+        inbp.ulDefaultHelpPanel = ID_XSH_SETTINGS_TRASHCAN_ICON;
 
-        pcnbp->pfncbInitPage    = trshTrashCanIconInitPage;
-        pcnbp->pfncbItemChanged = trshTrashCanIconItemChanged;
+        inbp.pfncbInitPage    = trshTrashCanIconInitPage;
+        inbp.pfncbItemChanged = trshTrashCanIconItemChanged;
     }
 #endif
 
-    return (ntbInsertPage(pcnbp));
+    return (ntbInsertPage(&inbp));
 }
 
 /*

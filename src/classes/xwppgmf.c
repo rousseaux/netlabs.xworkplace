@@ -25,7 +25,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -145,29 +145,27 @@ SOM_Scope ULONG  SOMLINK xpgf_xwpAddResourcesPage(XWPProgramFile *somSelf,
                                                   HWND hwndNotebook)
 {
     ULONG ulrc = SETTINGS_PAGE_REMOVED;
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-    PCREATENOTEBOOKPAGE pcnbp;
+    INSERTNOTEBOOKPAGE inbp;
 
     // XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
     XWPProgramFileMethodDebug("XWPProgramFile","xpgf_xwpAddResourcesPage");
 
 #ifndef __NOMODULEPAGES__
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndNotebook;
-    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_PGMFILE_RESOURCES);  // pszResourcesPage
-    pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // ID_XSD_PGMFILE_RESOURCES;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_RESOURCES;
-    pcnbp->ulPageID = SP_PROG_RESOURCES;
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndNotebook;
+    inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_PGMFILE_RESOURCES);  // pszResourcesPage
+    inbp.ulDlgID = ID_XFD_CONTAINERPAGE; // ID_XSD_PGMFILE_RESOURCES;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_RESOURCES;
+    inbp.ulPageID = SP_PROG_RESOURCES;
     // V0.9.9 (2001-03-30) [umoeller]: added resize
-    pcnbp->pampControlFlags = G_pampGenericCnrPage;
-    pcnbp->cControlFlags = G_cGenericCnrPage;
-    pcnbp->pfncbInitPage    = progResourcesInitPage;
-    pcnbp->pfncbMessage     = progResourcesMessage;
-    ulrc = ntbInsertPage(pcnbp);
+    inbp.pampControlFlags = G_pampGenericCnrPage;
+    inbp.cControlFlags = G_cGenericCnrPage;
+    inbp.pfncbInitPage    = progResourcesInitPage;
+    inbp.pfncbMessage     = progResourcesMessage;
+    ulrc = ntbInsertPage(&inbp);
 #endif
 
     return ulrc;
@@ -190,61 +188,56 @@ SOM_Scope ULONG  SOMLINK xpgf_xwpAddModulePage(XWPProgramFile *somSelf,
                                                HWND hwndNotebook)
 {
     ULONG ulrc = SETTINGS_PAGE_REMOVED;
-
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-    PCREATENOTEBOOKPAGE pcnbp;
+    INSERTNOTEBOOKPAGE inbp;
 
     // XWPProgramFileData *somThis = XWPProgramFileGetData(somSelf);
     XWPProgramFileMethodDebug("XWPProgramFile","xpgf_xwpAddModulePage");
 
 #ifndef __NOMODULEPAGES__
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndNotebook;
-    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-    pcnbp->usPageStyleFlags = BKA_MINOR;
-    pcnbp->fEnumerate = TRUE;
-    pcnbp->pszName = cmnGetString(ID_XSSI_PGMFILE_MODULE2);  // pszModule2Page
-    pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // ID_XSD_PGMFILE_MODULE2;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_MODULE2;
-    pcnbp->ulPageID = SP_PROG_DETAILS2;
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndNotebook;
+    inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+    inbp.usPageStyleFlags = BKA_MINOR;
+    inbp.fEnumerate = TRUE;
+    inbp.pcszName = cmnGetString(ID_XSSI_PGMFILE_MODULE2);  // pszModule2Page
+    inbp.ulDlgID = ID_XFD_CONTAINERPAGE; // ID_XSD_PGMFILE_MODULE2;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_MODULE2;
+    inbp.ulPageID = SP_PROG_DETAILS2;
     // V0.9.9 (2001-03-30) [umoeller]: added resize
-    pcnbp->pampControlFlags = G_pampGenericCnrPage;
-    pcnbp->cControlFlags = G_cGenericCnrPage;
-    pcnbp->pfncbInitPage    = progFile2InitPage;
-    ntbInsertPage(pcnbp);
+    inbp.pampControlFlags = G_pampGenericCnrPage;
+    inbp.cControlFlags = G_cGenericCnrPage;
+    inbp.pfncbInitPage    = progFile2InitPage;
+    ntbInsertPage(&inbp);
 
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndNotebook;
-    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-    pcnbp->usPageStyleFlags = BKA_MINOR;
-    pcnbp->fEnumerate = TRUE;
-    pcnbp->pszName = cmnGetString(ID_XSSI_PGMFILE_MODULE1);  // pszModule1Page
-    pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // ID_XSD_PGMFILE_MODULE1;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_MODULE1;
-    pcnbp->ulPageID = SP_PROG_DETAILS1;
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndNotebook;
+    inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+    inbp.usPageStyleFlags = BKA_MINOR;
+    inbp.fEnumerate = TRUE;
+    inbp.pcszName = cmnGetString(ID_XSSI_PGMFILE_MODULE1);  // pszModule1Page
+    inbp.ulDlgID = ID_XFD_CONTAINERPAGE; // ID_XSD_PGMFILE_MODULE1;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_MODULE1;
+    inbp.ulPageID = SP_PROG_DETAILS1;
     // V0.9.9 (2001-03-30) [umoeller]: added resize
-    pcnbp->pampControlFlags = G_pampGenericCnrPage;
-    pcnbp->cControlFlags = G_cGenericCnrPage;
-    pcnbp->pfncbInitPage    = progFile1InitPage;
-    ntbInsertPage(pcnbp);
+    inbp.pampControlFlags = G_pampGenericCnrPage;
+    inbp.cControlFlags = G_cGenericCnrPage;
+    inbp.pfncbInitPage    = progFile1InitPage;
+    ntbInsertPage(&inbp);
 
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndNotebook;
-    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->fEnumerate = TRUE;
-    pcnbp->pszName = cmnGetString(ID_XSSI_PGMFILE_MODULE);  // pszModulePage
-    pcnbp->ulDlgID = ID_XSD_PGMFILE_MODULE;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_MODULE;
-    pcnbp->ulPageID = SP_PROG_DETAILS;
-    pcnbp->pfncbInitPage    = progFileInitPage;
-    ulrc = ntbInsertPage(pcnbp);
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndNotebook;
+    inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.fEnumerate = TRUE;
+    inbp.pcszName = cmnGetString(ID_XSSI_PGMFILE_MODULE);  // pszModulePage
+    inbp.ulDlgID = ID_XSD_PGMFILE_MODULE;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_PGMFILE_MODULE;
+    inbp.ulPageID = SP_PROG_DETAILS;
+    inbp.pfncbInitPage    = progFileInitPage;
+    ulrc = ntbInsertPage(&inbp);
 #endif
 
     return ulrc;

@@ -1334,7 +1334,6 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
             switch (pftl->ulOperation)
             {
                 case XFT_MOVE2TRASHCAN:
-                {
                     // move to trash can:
                     // in that case, pTargetFolder is NULL,
                     // so query the target folder first
@@ -1343,7 +1342,7 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
                     #ifdef DEBUG_TRASHCAN
                         _Pmpf(("  target trash can is %s", _wpQueryTitle(pftl->pTargetFolder) ));
                     #endif
-                break; }
+                break;
             }
 
             fu.ulOperation = pftl->ulOperation;

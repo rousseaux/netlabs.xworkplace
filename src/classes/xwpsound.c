@@ -35,7 +35,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -120,28 +120,24 @@
 SOM_Scope ULONG  SOMLINK xsnd_xwpAddXWPSoundPages(XWPSound *somSelf,
                                                   HWND hwndNotebook)
 {
-    PCREATENOTEBOOKPAGE pcnbp;
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    INSERTNOTEBOOKPAGE inbp;
 
     /* XWPSoundData *somThis = XWPSoundGetData(somSelf); */
     XWPSoundMethodDebug("XWPSound","xsnd_xfAddXWPSoundPages");
 
     // add the "XWorkplace Startup" page on top
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndNotebook;
-    pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_SOUNDSPAGE);  // pszSoundsPage
-    pcnbp->ulDlgID = ID_XSD_XWPSOUND;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILETYPES + 2;
-    pcnbp->ulPageID = SP_SOUNDS;
-    pcnbp->pfncbInitPage    = sndSoundsInitPage;
-    pcnbp->pfncbItemChanged = sndSoundsItemChanged;
-    ntbInsertPage(pcnbp);
-
-    return 1;
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndNotebook;
+    inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_SOUNDSPAGE);  // pszSoundsPage
+    inbp.ulDlgID = ID_XSD_XWPSOUND;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILETYPES + 2;
+    inbp.ulPageID = SP_SOUNDS;
+    inbp.pfncbInitPage    = sndSoundsInitPage;
+    inbp.pfncbItemChanged = sndSoundsItemChanged;
+    return ntbInsertPage(&inbp);
 }
 
 /*

@@ -24,7 +24,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -2120,15 +2120,15 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
                 winhDebugBox(szTitle, szMsg);
 
                 brc = TRUE;
-            break; }
+            }
+            break;
 
             case ID_XFMI_SHOWFOLDERDATA:
-            {
                 xthrPostWorkerMsg(WM_SHOWFOLDERDATA,
                                   (MPARAM)somSelf,
                                   MPNULL);
                 brc = TRUE;
-            break; }
+            break;
         #endif
 
         /*  V0.9.16 (2001-12-06) [umoeller]:
@@ -2152,11 +2152,11 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
                 brc = XFldObject_parent_WPObject_wpMenuItemSelected(somSelf,
                                                                     hwndFrame,
                                                                     ulMenuId);
-        break; }
+        }
+        break;
         */
 
         case ID_WPM_LOCKINPLACE:    // V0.9.7 (2000-12-10) [umoeller]
-        {
             // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
             if (cmnQuerySetting(sfFixLockInPlace))
             {
@@ -2170,7 +2170,7 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
                 _wpSetStyle(somSelf, ulStyle);
                 _wpSaveDeferred(somSelf);
             }
-        break; }
+        break;
 
         default:
             fCallDefault = TRUE;
@@ -2215,24 +2215,21 @@ SOM_Scope ULONG  SOMLINK xfobj_wpAddObjectGeneralPage(XFldObject *somSelf,
         )
 #endif
     {
-        PCREATENOTEBOOKPAGE pcnbp;
-
-        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndNotebook;
-        pcnbp->hmod = cmnQueryNLSModuleHandle(FALSE);
-        pcnbp->ulDlgID = ID_XFD_EMPTYDLG;
-        pcnbp->ulPageID = SP_OBJECT_ICONPAGE1;
-        pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->fEnumerate = TRUE;
-        pcnbp->pszName = cmnGetString(ID_XSSI_ICONPAGE);
+        INSERTNOTEBOOKPAGE inbp;
+        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+        inbp.somSelf = somSelf;
+        inbp.hwndNotebook = hwndNotebook;
+        inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+        inbp.ulDlgID = ID_XFD_EMPTYDLG;
+        inbp.ulPageID = SP_OBJECT_ICONPAGE1;
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.fEnumerate = TRUE;
+        inbp.pcszName = cmnGetString(ID_XSSI_ICONPAGE);
                     // no new string needed, was defined for trash can already
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_OBJICONPAGE1;
-        pcnbp->pfncbInitPage    = icoIcon1InitPage;
-        pcnbp->pfncbItemChanged = icoIcon1ItemChanged;
-
-        return (ntbInsertPage(pcnbp));
+        inbp.ulDefaultHelpPanel  = ID_XSH_OBJICONPAGE1;
+        inbp.pfncbInitPage    = icoIcon1InitPage;
+        inbp.pfncbItemChanged = icoIcon1ItemChanged;
+        return (ntbInsertPage(&inbp));
     }
 
 #ifndef __ALWAYSREPLACEICONPAGE__
@@ -2551,7 +2548,7 @@ SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
         // than WPObject gets initialized): notify Speedy thread
         // of class initialization
         if (cmnQuerySetting(sfShowBootupStatus))
-            xthrPostSpeedyMsg(QM_BOOTUPSTATUS,
+            xthrPostBushMsg(QM_BOOTUPSTATUS,
                               (MPARAM)somSelf,       // class object
                               MPNULL);
     }

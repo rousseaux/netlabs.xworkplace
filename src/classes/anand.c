@@ -11,7 +11,7 @@
  */
 
 /*
- *      Copyright (C) 1995-2000 Christian langanke.
+ *      Copyright (C) 1995-2002 Christian langanke.
  *      Copyright (C) 2000 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify

@@ -6,7 +6,7 @@
  *      to the XWorkplace Object window in XFLDR.DLL which will then
  *      do the rest.
  *
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING

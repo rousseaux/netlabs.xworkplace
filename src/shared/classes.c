@@ -22,7 +22,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -859,7 +859,8 @@ MRESULT EXPENTRY fnwpSelectWPSClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
             WinPostMsg(hwndDlg, WM_FILLCNR, MPNULL, MPNULL);
 
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-        break; }
+        }
+        break;
 
         /*
          * WM_FILLCNR:
@@ -880,7 +881,8 @@ MRESULT EXPENTRY fnwpSelectWPSClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
             cnrhScrollToRecord(pscd->hwndCnr, preccSelected,
                                CMA_TEXT, TRUE);
             WinSetPointer(HWND_DESKTOP, hptrOld);
-        break; }
+        }
+        break;
 
         /*
          * WM_DRAWITEM:
@@ -901,7 +903,6 @@ MRESULT EXPENTRY fnwpSelectWPSClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
          */
 
         case WM_CONTROL:
-        {
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
             if (SHORT1FROMMP(mp1) == ID_XLDI_CNR)
             {
@@ -914,14 +915,13 @@ MRESULT EXPENTRY fnwpSelectWPSClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                      */
 
                     case CN_ENTER:
-                    {
                         if (pscd->fSelectionValid)
                         {
                             WinPostMsg(hwndDlg, WM_COMMAND,
                                     (MPARAM)DID_OK,
                                     MPNULL);
                         }
-                    break; }
+                    break;
 
                     /*
                      * CN_EMPHASIS:
@@ -958,10 +958,11 @@ MRESULT EXPENTRY fnwpSelectWPSClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                                     winhEnableDlgItem(hwndDlg, DID_OK, pscd->fSelectionValid);
                                 }
                             }
-                    break; }
+                    }
+                    break;
                 }
             }
-        break; }
+        break;
 
         /*
          * WM_COMMAND:
@@ -970,7 +971,6 @@ MRESULT EXPENTRY fnwpSelectWPSClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
          */
 
         case WM_COMMAND:
-        {
             switch (SHORT1FROMMP(mp1))
             {
                 case DID_OK:
@@ -981,26 +981,22 @@ MRESULT EXPENTRY fnwpSelectWPSClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
             }
             // close dialog
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-        break; }
+        break;
 
         case WM_HELP:
-        {
             if (pscd->ulHelpPanel)
-            {
                 _wpDisplayHelp(cmnQueryActiveDesktop(),
                                pscd->ulHelpPanel,
                                (PSZ)pscd->pszHelpLibrary);
-            }
-        break; }
+        break;
 
         case WM_DESTROY:
-        {
             // cleanup
             clsCleanupWpsClasses(pscd->pwpsc);
             // we do not clean up the SELECTCLASSDATA (QWL_USER),
             // because this is expected to be static
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-        break; }
+        break;
 
         default:
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);

@@ -23,7 +23,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2000 Ulrich M”ller.
+ *      Copyright (C) 1999-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -114,10 +114,8 @@
 SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMovementPage(XWPMouse *somSelf,
                                                      HWND hwndDlg)
 {
-    PCREATENOTEBOOKPAGE pcnbp;
+    INSERTNOTEBOOKPAGE  inbp;
     HMODULE             savehmod = cmnQueryNLSModuleHandle(FALSE);
-    // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
-    // PNLSSTRINGS         pNLSStrings = cmnQueryNLSStrings();
     ULONG               ulrc = 0;
 
     /* XWPMouseData *somThis = XWPMouseGetData(somSelf); */
@@ -130,37 +128,35 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMovementPage(XWPMouse *somSelf,
 
         // second movement page V0.9.14 (2001-08-02) [lafaix]
 #ifndef __NOMOVEMENT2FEATURES__
-        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndDlg;
-        pcnbp->hmod = savehmod;
-        pcnbp->ulDlgID = ID_XSD_MOUSE_MOVEMENT2;
-        pcnbp->usPageStyleFlags = BKA_MINOR;
-        pcnbp->pszName = cmnGetString(ID_XSSI_MOUSEHOOKPAGE);  // pszMouseHookPage
-        pcnbp->fEnumerate = TRUE;
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_MOUSE_MOVEMENT2;
-        pcnbp->ulPageID = SP_MOUSE_MOVEMENT2;
-        pcnbp->pfncbInitPage    = hifMouseMovement2InitPage;
-        pcnbp->pfncbItemChanged = hifMouseMovement2ItemChanged;
-        ulrc = ntbInsertPage(pcnbp);
+        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+        inbp.somSelf = somSelf;
+        inbp.hwndNotebook = hwndDlg;
+        inbp.hmod = savehmod;
+        inbp.ulDlgID = ID_XSD_MOUSE_MOVEMENT2;
+        inbp.usPageStyleFlags = BKA_MINOR;
+        inbp.pcszName = cmnGetString(ID_XSSI_MOUSEHOOKPAGE);  // pszMouseHookPage
+        inbp.fEnumerate = TRUE;
+        inbp.ulDefaultHelpPanel  = ID_XSH_MOUSE_MOVEMENT2;
+        inbp.ulPageID = SP_MOUSE_MOVEMENT2;
+        inbp.pfncbInitPage    = hifMouseMovement2InitPage;
+        inbp.pfncbItemChanged = hifMouseMovement2ItemChanged;
+        ulrc = ntbInsertPage(&inbp);
 #endif
 
-        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndDlg;
-        pcnbp->hmod = savehmod;
-        pcnbp->ulDlgID = ID_XFD_EMPTYDLG; // ID_XSD_MOUSE_MOVEMENT;
-        pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = cmnGetString(ID_XSSI_MOUSEHOOKPAGE);  // pszMouseHookPage
-        // pcnbp->fEnumerate = TRUE;
-        pcnbp->fEnumerate = TRUE; // re-enabled V0.9.14 (2001-08-02) [lafaix]
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_MOUSE_MOVEMENT;
-        pcnbp->ulPageID = SP_MOUSE_MOVEMENT;
-        pcnbp->pfncbInitPage    = hifMouseMovementInitPage;
-        pcnbp->pfncbItemChanged = hifMouseMovementItemChanged;
-        ulrc = ntbInsertPage(pcnbp);
+        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+        inbp.somSelf = somSelf;
+        inbp.hwndNotebook = hwndDlg;
+        inbp.hmod = savehmod;
+        inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_XSD_MOUSE_MOVEMENT;
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.pcszName = cmnGetString(ID_XSSI_MOUSEHOOKPAGE);  // pszMouseHookPage
+        // inbp.fEnumerate = TRUE;
+        inbp.fEnumerate = TRUE; // re-enabled V0.9.14 (2001-08-02) [lafaix]
+        inbp.ulDefaultHelpPanel  = ID_XSH_MOUSE_MOVEMENT;
+        inbp.ulPageID = SP_MOUSE_MOVEMENT;
+        inbp.pfncbInitPage    = hifMouseMovementInitPage;
+        inbp.pfncbItemChanged = hifMouseMovementItemChanged;
+        ulrc = ntbInsertPage(&inbp);
     }
 
     return (ulrc);
@@ -180,10 +176,8 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMovementPage(XWPMouse *somSelf,
 SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMappings2Page(XWPMouse *somSelf,
                                                       HWND hwndDlg)
 {
-    PCREATENOTEBOOKPAGE pcnbp;
+    INSERTNOTEBOOKPAGE  inbp;
     HMODULE             savehmod = cmnQueryNLSModuleHandle(FALSE);
-    // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
-    // PNLSSTRINGS         pNLSStrings = cmnQueryNLSStrings();
     ULONG               ulrc = 0;
 
     /* XWPMouseData *somThis = XWPMouseGetData(somSelf); */
@@ -192,20 +186,19 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMappings2Page(XWPMouse *somSelf,
     // insert "MouseHook" page if the hook has been enabled
     if (hifXWPHookReady())
     {
-        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndDlg;
-        pcnbp->hmod = savehmod;
-        pcnbp->ulDlgID = ID_XSD_MOUSEMAPPINGS2;
-        pcnbp->usPageStyleFlags = BKA_MINOR;
-        pcnbp->fEnumerate = TRUE;
-        pcnbp->pszName = cmnGetString(ID_XSSI_MAPPINGSPAGE);  // pszMappingsPage
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_MOUSEMAPPINGS2;
-        pcnbp->ulPageID = SP_MOUSE_MAPPINGS2;
-        pcnbp->pfncbInitPage    = hifMouseMappings2InitPage;
-        pcnbp->pfncbItemChanged = hifMouseMappings2ItemChanged;
-        ulrc = ntbInsertPage(pcnbp);
+        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+        inbp.somSelf = somSelf;
+        inbp.hwndNotebook = hwndDlg;
+        inbp.hmod = savehmod;
+        inbp.ulDlgID = ID_XSD_MOUSEMAPPINGS2;
+        inbp.usPageStyleFlags = BKA_MINOR;
+        inbp.fEnumerate = TRUE;
+        inbp.pcszName = cmnGetString(ID_XSSI_MAPPINGSPAGE);  // pszMappingsPage
+        inbp.ulDefaultHelpPanel  = ID_XSH_MOUSEMAPPINGS2;
+        inbp.ulPageID = SP_MOUSE_MAPPINGS2;
+        inbp.pfncbInitPage    = hifMouseMappings2InitPage;
+        inbp.pfncbItemChanged = hifMouseMappings2ItemChanged;
+        ulrc = ntbInsertPage(&inbp);
     }
 
     return (ulrc);

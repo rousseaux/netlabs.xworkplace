@@ -26,7 +26,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -112,162 +112,147 @@
 SOM_Scope ULONG  SOMLINK xfsys_xwpAddXFldSystemPages(XFldSystem *somSelf,
                                                      HWND hwndDlg)
 {
-    PCREATENOTEBOOKPAGE pcnbp;
-    PAGEINFO        pi;
+    INSERTNOTEBOOKPAGE inbp;
     HMODULE         savehmod;
-    // CHAR            szXFolderVersion[100];
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-    // PSZ pszHelpLibrary = cmnQueryHelpLibrary();
 
     // XFldSystemData *somThis = XFldSystemGetData(somSelf);
     XFldSystemMethodDebug("XFldSystem","xfsys_xwpAddXFldSystemPages");
 
     savehmod = cmnQueryNLSModuleHandle(FALSE);
-    memset((PCH)&pi, 0, sizeof(PAGEINFO));
 
     // "Errors"
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = savehmod;
-    pcnbp->pfncbInitPage    = cfgConfigInitPage;
-    pcnbp->pfncbItemChanged = cfgConfigItemChanged;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_ERRORS);  // pszErrors
-    pcnbp->ulDlgID = ID_OSD_SETTINGS_ERRORS;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_ERRORS;
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.pfncbInitPage    = cfgConfigInitPage;
+    inbp.pfncbItemChanged = cfgConfigItemChanged;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_ERRORS);  // pszErrors
+    inbp.ulDlgID = ID_OSD_SETTINGS_ERRORS;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_ERRORS;
     // give this page a unique ID, which is
     // passed to the common config.sys callbacks
-    pcnbp->ulPageID = SP_ERRORS;
-    ntbInsertPage(pcnbp);
+    inbp.ulPageID = SP_ERRORS;
+    ntbInsertPage(&inbp);
 
     // "WPS" settings
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = savehmod;
-    pcnbp->pfncbInitPage    = cfgConfigInitPage;
-    pcnbp->pfncbItemChanged = cfgConfigItemChanged;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_WPS);  // pszWPS
-    pcnbp->ulDlgID = ID_OSD_SETTINGS_WPS;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_WPS;
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.pfncbInitPage    = cfgConfigInitPage;
+    inbp.pfncbItemChanged = cfgConfigItemChanged;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_WPS);  // pszWPS
+    inbp.ulDlgID = ID_OSD_SETTINGS_WPS;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_WPS;
     // give this page a unique ID (common.h), which
     // is passed to the common config.sys callbacks
-    pcnbp->ulPageID = SP_WPS;
-    ntbInsertPage(pcnbp);
+    inbp.ulPageID = SP_WPS;
+    ntbInsertPage(&inbp);
 
     // "System paths" page (V0.9.0)
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = savehmod;
-    pcnbp->pfncbInitPage    = cfgConfigInitPage;
-    pcnbp->pfncbItemChanged = cfgConfigItemChanged;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_SYSPATHS);  // pszSysPaths
-    pcnbp->ulDlgID = ID_OSD_SETTINGS_SYSPATHS;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_SYSPATHS;
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.pfncbInitPage    = cfgConfigInitPage;
+    inbp.pfncbItemChanged = cfgConfigItemChanged;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_SYSPATHS);  // pszSysPaths
+    inbp.ulDlgID = ID_OSD_SETTINGS_SYSPATHS;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_SYSPATHS;
     // give this page a unique ID (common.h), which
     // is passed to the common config.sys callbacks
-    pcnbp->ulPageID = SP_SYSPATHS;
-    ntbInsertPage(pcnbp);
+    inbp.ulPageID = SP_SYSPATHS;
+    ntbInsertPage(&inbp);
 
     // insert file-system settings pages
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = savehmod;
-    pcnbp->pfncbInitPage    = cfgConfigInitPage;
-    pcnbp->pfncbItemChanged = cfgConfigItemChanged;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = "~FAT";
-    pcnbp->ulDlgID = ID_OSD_SETTINGS_FAT;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_HPFS; // it's FAT really, just historical...
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.pfncbInitPage    = cfgConfigInitPage;
+    inbp.pfncbItemChanged = cfgConfigItemChanged;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = "~FAT";
+    inbp.ulDlgID = ID_OSD_SETTINGS_FAT;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_HPFS; // it's FAT really, just historical...
     // give this page a unique ID (common.h), which
     // is passed to the common config.sys callbacks
-    pcnbp->ulPageID = SP_FAT;
-    ntbInsertPage(pcnbp);
+    inbp.ulPageID = SP_FAT;
+    ntbInsertPage(&inbp);
 
     // "Drivers"
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = savehmod;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_DRIVERS);  // pszDrivers
-    pcnbp->ulDlgID = ID_OSD_SETTINGS_DRIVERS;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_DRIVERS;
-    pcnbp->ulPageID = SP_DRIVERS;
-    pcnbp->pampControlFlags = G_pampDriversPage;
-    pcnbp->cControlFlags = G_cDriversPage;
-    pcnbp->pfncbInitPage    = cfgDriversInitPage;
-    pcnbp->pfncbItemChanged = cfgDriversItemChanged;
-    ntbInsertPage(pcnbp);
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_DRIVERS);  // pszDrivers
+    inbp.ulDlgID = ID_OSD_SETTINGS_DRIVERS;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_DRIVERS;
+    inbp.ulPageID = SP_DRIVERS;
+    inbp.pampControlFlags = G_pampDriversPage;
+    inbp.cControlFlags = G_cDriversPage;
+    inbp.pfncbInitPage    = cfgDriversInitPage;
+    inbp.pfncbItemChanged = cfgDriversItemChanged;
+    ntbInsertPage(&inbp);
 
     // "Memory"
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = savehmod;
-    pcnbp->pfncbInitPage    = cfgConfigInitPage;
-    pcnbp->pfncbItemChanged = cfgConfigItemChanged;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_MEMORY);  // pszMemory
-    pcnbp->ulDlgID = ID_OSD_SETTINGS_KERNEL2;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_KERNEL2;
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.pfncbInitPage    = cfgConfigInitPage;
+    inbp.pfncbItemChanged = cfgConfigItemChanged;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_MEMORY);  // pszMemory
+    inbp.ulDlgID = ID_OSD_SETTINGS_KERNEL2;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_KERNEL2;
     // give this page a unique ID (common.h), which
     // is passed to the common config.sys callbacks
-    pcnbp->ulPageID = SP_MEMORY;
+    inbp.ulPageID = SP_MEMORY;
     // for this page, start a timer
-    pcnbp->ulTimer = 2000;
-    pcnbp->pfncbTimer = cfgConfigTimer;
-    ntbInsertPage(pcnbp);
+    inbp.ulTimer = 2000;
+    inbp.pfncbTimer = cfgConfigTimer;
+    ntbInsertPage(&inbp);
 
     // "Scheduler"
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = savehmod;
-    pcnbp->pfncbInitPage    = cfgConfigInitPage;
-    pcnbp->pfncbItemChanged = cfgConfigItemChanged;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->pszName = cmnGetString(ID_XSSI_SCHEDULER);  // pszScheduler
-    pcnbp->ulDlgID = ID_OSD_SETTINGS_KERNEL1;
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_KERNEL1;
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.pfncbInitPage    = cfgConfigInitPage;
+    inbp.pfncbItemChanged = cfgConfigItemChanged;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.pcszName = cmnGetString(ID_XSSI_SCHEDULER);  // pszScheduler
+    inbp.ulDlgID = ID_OSD_SETTINGS_KERNEL1;
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_KERNEL1;
     // give this page a unique ID (common.h), which
     // is passed to the common config.sys callbacks
-    pcnbp->ulPageID = SP_SCHEDULER;
+    inbp.ulPageID = SP_SCHEDULER;
     // for this page, start a timer
-    pcnbp->ulTimer = 2000;
-    pcnbp->pfncbTimer = cfgConfigTimer;
-    ntbInsertPage(pcnbp);
+    inbp.ulTimer = 2000;
+    inbp.pfncbTimer = cfgConfigTimer;
+    ntbInsertPage(&inbp);
 
     // "Syslevel"
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = savehmod;
-    pcnbp->pszName = cmnGetString(ID_XSSI_SYSLEVELPAGE);  // pszSyslevelPage
-    pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_SYSLEVEL;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->ulPageID = SP_SYSLEVEL;
-    pcnbp->pampControlFlags = G_pampGenericCnrPage;
-    pcnbp->cControlFlags = G_cGenericCnrPage;
-    pcnbp->pfncbInitPage    = cfgSyslevelInitPage;
-    pcnbp->pfncbItemChanged = cfgSyslevelItemChanged;
-
-    return (ntbInsertPage(pcnbp));
-
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.pcszName = cmnGetString(ID_XSSI_SYSLEVELPAGE);  // pszSyslevelPage
+    inbp.ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_SYSLEVEL;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.ulPageID = SP_SYSLEVEL;
+    inbp.pampControlFlags = G_pampGenericCnrPage;
+    inbp.cControlFlags = G_cGenericCnrPage;
+    inbp.pfncbInitPage    = cfgSyslevelInitPage;
+    inbp.pfncbItemChanged = cfgSyslevelItemChanged;
+    return (ntbInsertPage(&inbp));
 }
 
 /*

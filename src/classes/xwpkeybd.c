@@ -23,7 +23,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2000 Ulrich M”ller.
+ *      Copyright (C) 1999-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -100,10 +100,8 @@ SOM_Scope ULONG  SOMLINK xkb_xwpAddKeyboardHotkeysPage(XWPKeyboard *somSelf,
                                                        HWND hwndDlg)
 {
     ULONG               ulrc = 0;
-    PCREATENOTEBOOKPAGE pcnbp;
+    INSERTNOTEBOOKPAGE  inbp;
     HMODULE             savehmod = cmnQueryNLSModuleHandle(FALSE);
-    // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
-    // PNLSSTRINGS         pNLSStrings = cmnQueryNLSStrings();
 
     /* XWPKeyboardData *somThis = XWPKeyboardGetData(somSelf); */
     XWPKeyboardMethodDebug("XWPKeyboard","xkb_xwpAddKeyboardHotkeysPage");
@@ -115,21 +113,20 @@ SOM_Scope ULONG  SOMLINK xkb_xwpAddKeyboardHotkeysPage(XWPKeyboard *somSelf,
 #endif
        )
     {
-        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndDlg;
-        pcnbp->hmod = savehmod;
-        pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
-        pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = cmnGetString(ID_XSSI_OBJECTHOTKEYSPAGE);  // pszObjectHotkeysPage
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_KEYB_OBJHOTKEYS;
-        pcnbp->ulPageID = SP_KEYB_OBJHOTKEYS;
-        pcnbp->pampControlFlags = G_pampGenericCnrPage;
-        pcnbp->cControlFlags = G_cGenericCnrPage;
-        pcnbp->pfncbInitPage    = hifKeybdHotkeysInitPage;
-        pcnbp->pfncbItemChanged = hifKeybdHotkeysItemChanged;
-        ulrc = ntbInsertPage(pcnbp);
+        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+        inbp.somSelf = somSelf;
+        inbp.hwndNotebook = hwndDlg;
+        inbp.hmod = savehmod;
+        inbp.ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.pcszName = cmnGetString(ID_XSSI_OBJECTHOTKEYSPAGE);  // pszObjectHotkeysPage
+        inbp.ulDefaultHelpPanel  = ID_XSH_KEYB_OBJHOTKEYS;
+        inbp.ulPageID = SP_KEYB_OBJHOTKEYS;
+        inbp.pampControlFlags = G_pampGenericCnrPage;
+        inbp.cControlFlags = G_cGenericCnrPage;
+        inbp.pfncbInitPage    = hifKeybdHotkeysInitPage;
+        inbp.pfncbItemChanged = hifKeybdHotkeysItemChanged;
+        ulrc = ntbInsertPage(&inbp);
     }
 
     return (ulrc);
@@ -147,10 +144,8 @@ SOM_Scope ULONG  SOMLINK xkb_xwpAddKeyboardFunctionKeysPage(XWPKeyboard *somSelf
                                                             HWND hwndDlg)
 {
     ULONG               ulrc = 0;
-    PCREATENOTEBOOKPAGE pcnbp;
+    INSERTNOTEBOOKPAGE  inbp;
     HMODULE             savehmod = cmnQueryNLSModuleHandle(FALSE);
-    // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
-    // PNLSSTRINGS         pNLSStrings = cmnQueryNLSStrings();
 
     /* XWPKeyboardData *somThis = XWPKeyboardGetData(somSelf); */
     XWPKeyboardMethodDebug("XWPKeyboard","xkb_xwpAddKeyboardHotkeysPage");
@@ -159,21 +154,20 @@ SOM_Scope ULONG  SOMLINK xkb_xwpAddKeyboardFunctionKeysPage(XWPKeyboard *somSelf
     if (    (hifXWPHookReady())
        )
     {
-        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndDlg;
-        pcnbp->hmod = savehmod;
-        pcnbp->ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
-        pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = cmnGetString(ID_XSSI_FUNCTIONKEYSPAGE);  // pszFunctionKeysPage
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FUNCTIONKEYS;
-        pcnbp->ulPageID = SP_KEYB_FUNCTIONKEYS;
-        pcnbp->pampControlFlags = G_pampGenericCnrPage;
-        pcnbp->cControlFlags = G_cGenericCnrPage;
-        pcnbp->pfncbInitPage    = hifKeybdFunctionKeysInitPage;
-        pcnbp->pfncbItemChanged = hifKeybdFunctionKeysItemChanged;
-        ulrc = ntbInsertPage(pcnbp);
+        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+        inbp.somSelf = somSelf;
+        inbp.hwndNotebook = hwndDlg;
+        inbp.hmod = savehmod;
+        inbp.ulDlgID = ID_XFD_CONTAINERPAGE; // generic cnr page
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.pcszName = cmnGetString(ID_XSSI_FUNCTIONKEYSPAGE);  // pszFunctionKeysPage
+        inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_FUNCTIONKEYS;
+        inbp.ulPageID = SP_KEYB_FUNCTIONKEYS;
+        inbp.pampControlFlags = G_pampGenericCnrPage;
+        inbp.cControlFlags = G_cGenericCnrPage;
+        inbp.pfncbInitPage    = hifKeybdFunctionKeysInitPage;
+        inbp.pfncbItemChanged = hifKeybdFunctionKeysItemChanged;
+        ulrc = ntbInsertPage(&inbp);
     }
 
     return (ulrc);

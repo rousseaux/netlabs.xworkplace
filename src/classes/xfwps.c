@@ -25,7 +25,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -111,71 +111,67 @@
 SOM_Scope ULONG  SOMLINK xfwps_xwpAddWPSMenuPages(XFldWPS *somSelf,
                                                   HWND hwndDlg)
 {
-    PCREATENOTEBOOKPAGE pcnbp;
+    INSERTNOTEBOOKPAGE inbp;
     HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    /* XFldWPSData *somThis = XFldWPSGetData(somSelf); */
+
     XFldWPSMethodDebug("XFldWPS","xfwps_xwpAddWPSMenuPages");
 
     /*
      * "Menu items" pages
      */
 
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = savehmod;
-    pcnbp->usPageStyleFlags = BKA_MINOR;
-    pcnbp->fEnumerate = TRUE;
-    pcnbp->pszName = cmnGetString(ID_XSSI_2REMOVEITEMS);  // psz2RemoveItems
-    pcnbp->ulDlgID = ID_XSD_SET2REMOVEMENUS;
-    // pcnbp->usFirstControlID = ID_XSDI_FIND;
-    // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_REMOVEMENUS_SUB;        // help panel for "Find"
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_REMOVEMENUS;
-    pcnbp->ulPageID = SP_2REMOVEITEMS;
-    pcnbp->pfncbInitPage    = mnuRemoveMenusInitPage;
-    pcnbp->pfncbItemChanged = mnuRemoveMenusItemChanged;
-    ntbInsertPage(pcnbp);
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MINOR;
+    inbp.fEnumerate = TRUE;
+    inbp.pcszName = cmnGetString(ID_XSSI_2REMOVEITEMS);  // psz2RemoveItems
+    inbp.ulDlgID = ID_XSD_SET2REMOVEMENUS;
+    // inbp.usFirstControlID = ID_XSDI_FIND;
+    // inbp.ulFirstSubpanel = ID_XSH_SETTINGS_REMOVEMENUS_SUB;        // help panel for "Find"
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_REMOVEMENUS;
+    inbp.ulPageID = SP_2REMOVEITEMS;
+    inbp.pfncbInitPage    = mnuRemoveMenusInitPage;
+    inbp.pfncbItemChanged = mnuRemoveMenusItemChanged;
+    ntbInsertPage(&inbp);
 
     // insert "Config folder menu items" page
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = savehmod;
-    pcnbp->usPageStyleFlags = BKA_MINOR;
-    pcnbp->fEnumerate = TRUE;
-    pcnbp->pszName = cmnGetString(ID_XSSI_26CONFIGITEMS);  // psz26ConfigFolderMenus
-    pcnbp->ulDlgID = ID_XSD_SET26CONFIGMENUS;
-    // pcnbp->usFirstControlID = ID_XSDI_CASCADE;
-    // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_CFGM_SUB;       // help panel for "Cascade..."
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_CFGM;
-    pcnbp->ulPageID = SP_26CONFIGITEMS;
-    pcnbp->pfncbInitPage    = mnuConfigFolderMenusInitPage;
-    pcnbp->pfncbItemChanged = mnuConfigFolderMenusItemChanged;
-    ntbInsertPage(pcnbp);
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MINOR;
+    inbp.fEnumerate = TRUE;
+    inbp.pcszName = cmnGetString(ID_XSSI_26CONFIGITEMS);  // psz26ConfigFolderMenus
+    inbp.ulDlgID = ID_XSD_SET26CONFIGMENUS;
+    // inbp.usFirstControlID = ID_XSDI_CASCADE;
+    // inbp.ulFirstSubpanel = ID_XSH_SETTINGS_CFGM_SUB;       // help panel for "Cascade..."
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_CFGM;
+    inbp.ulPageID = SP_26CONFIGITEMS;
+    inbp.pfncbInitPage    = mnuConfigFolderMenusInitPage;
+    inbp.pfncbItemChanged = mnuConfigFolderMenusItemChanged;
+    ntbInsertPage(&inbp);
 
     // insert "Add Menu Items" page
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = savehmod;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->fEnumerate = TRUE;
-    pcnbp->pszName
-    = pcnbp->pszMinorName              // V0.9.16 (2001-10-23) [umoeller]
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.fEnumerate = TRUE;
+    inbp.pcszName
+    = inbp.pcszMinorName              // V0.9.16 (2001-10-23) [umoeller]
     = cmnGetString(ID_XSSI_25ADDITEMS);  // psz25AddItems
-    // pcnbp->ulDlgID = ID_XSD_SET25ADDMENUS;
-    pcnbp->ulDlgID = ID_XFD_EMPTYDLG;           // V0.9.16 (2001-09-29) [umoeller]
-    // pcnbp->usFirstControlID = ID_XSDI_FILEATTRIBS;
-    // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_ADDMENUS_SUB;   // help panel for "Add file attribs"
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_ADDMENUS;
-    pcnbp->ulPageID = SP_25ADDITEMS;
-    pcnbp->pfncbInitPage    = mnuAddMenusInitPage;
-    pcnbp->pfncbItemChanged = mnuAddMenusItemChanged;
-    return (ntbInsertPage(pcnbp));
+    // inbp.ulDlgID = ID_XSD_SET25ADDMENUS;
+    inbp.ulDlgID = ID_XFD_EMPTYDLG;           // V0.9.16 (2001-09-29) [umoeller]
+    // inbp.usFirstControlID = ID_XSDI_FILEATTRIBS;
+    // inbp.ulFirstSubpanel = ID_XSH_SETTINGS_ADDMENUS_SUB;   // help panel for "Add file attribs"
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_ADDMENUS;
+    inbp.ulPageID = SP_25ADDITEMS;
+    inbp.pfncbInitPage    = mnuAddMenusInitPage;
+    inbp.pfncbItemChanged = mnuAddMenusItemChanged;
+    return (ntbInsertPage(&inbp));
 }
 
 /*
@@ -190,7 +186,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddWPSMenuPages(XFldWPS *somSelf,
 SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
                                                  HWND hwndDlg)
 {
-    PCREATENOTEBOOKPAGE pcnbp;
+    INSERTNOTEBOOKPAGE inbp;
     HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // XFldWPSData *somThis = XFldWPSGetData(somSelf);
@@ -202,25 +198,24 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
 #endif
     {
         // extended sorting enabled:
-        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndDlg;
-        pcnbp->hmod = savehmod;
-        pcnbp->ulDlgID = ID_XSD_SETTINGS_FLDRSORT;
-        pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = cmnGetString(ID_XSSI_SORT);  // pszSort
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_SORTPAGE;
+        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+        inbp.somSelf = somSelf;
+        inbp.hwndNotebook = hwndDlg;
+        inbp.hmod = savehmod;
+        inbp.ulDlgID = ID_XSD_SETTINGS_FLDRSORT;
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.pcszName = cmnGetString(ID_XSSI_SORT);  // pszSort
+        inbp.ulDefaultHelpPanel  = ID_XSH_SORTPAGE;
                         // changed V0.9.12 (2001-05-20) [umoeller]
 
         // mark this page as "global", because both
         // the instance settings notebook and the
         // "Workplace Shell" object use the same
         // callbacks
-        pcnbp->ulPageID = SP_FLDRSORT_GLOBAL;
-        pcnbp->pfncbInitPage    = fdrSortInitPage;
-        pcnbp->pfncbItemChanged = fdrSortItemChanged;
-        ntbInsertPage(pcnbp);
+        inbp.ulPageID = SP_FLDRSORT_GLOBAL;
+        inbp.pfncbInitPage    = fdrSortInitPage;
+        inbp.pfncbItemChanged = fdrSortItemChanged;
+        ntbInsertPage(&inbp);
     }
 
     // insert "Hotkeys" page
@@ -228,38 +223,36 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
     if (cmnQuerySetting(sfFolderHotkeys))
 #endif
     {
-        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndDlg;
-        pcnbp->hmod = savehmod;
-        pcnbp->ulDlgID = ID_XSD_SET4ACCELS;
-        pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = cmnGetString(ID_XSSI_4ACCELERATORS);  // psz4Accelerators
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS1+5;
-        pcnbp->ulPageID = SP_4ACCELERATORS;
-        pcnbp->pfncbInitPage    = fdrHotkeysInitPage;
-        pcnbp->pfncbItemChanged = fdrHotkeysItemChanged;
-        ntbInsertPage(pcnbp);
+        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+        inbp.somSelf = somSelf;
+        inbp.hwndNotebook = hwndDlg;
+        inbp.hmod = savehmod;
+        inbp.ulDlgID = ID_XSD_SET4ACCELS;
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.pcszName = cmnGetString(ID_XSSI_4ACCELERATORS);  // psz4Accelerators
+        inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS1+5;
+        inbp.ulPageID = SP_4ACCELERATORS;
+        inbp.pfncbInitPage    = fdrHotkeysInitPage;
+        inbp.pfncbItemChanged = fdrHotkeysItemChanged;
+        ntbInsertPage(&inbp);
     }
 
     // insert "Snap to grid" page
 #ifndef __NOSNAPTOGRID__
     if (cmnQuerySetting(sfSnap2Grid))
     {
-        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndDlg;
-        pcnbp->hmod = savehmod;
-        pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = cmnGetString(ID_XSSI_3SNAPTOGRID);  // psz3SnapToGrid
-        pcnbp->ulDlgID = ID_XSD_SET3SNAPTOGRID;
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS1+4;
-        pcnbp->ulPageID = SP_3SNAPTOGRID;
-        pcnbp->pfncbInitPage    = fdrGridInitPage;
-        pcnbp->pfncbItemChanged = fdrGridItemChanged;
-        ntbInsertPage(pcnbp);
+        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+        inbp.somSelf = somSelf;
+        inbp.hwndNotebook = hwndDlg;
+        inbp.hmod = savehmod;
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.pcszName = cmnGetString(ID_XSSI_3SNAPTOGRID);  // psz3SnapToGrid
+        inbp.ulDlgID = ID_XSD_SET3SNAPTOGRID;
+        inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS1+4;
+        inbp.ulPageID = SP_3SNAPTOGRID;
+        inbp.pfncbInitPage    = fdrGridInitPage;
+        inbp.pfncbItemChanged = fdrGridItemChanged;
+        ntbInsertPage(&inbp);
     }
 #endif
 
@@ -283,60 +276,57 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
     {
 #ifndef __NOCFGSTATUSBARS__
         // insert "Status bar" page 2
-        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndDlg;
-        pcnbp->hmod = savehmod;
-        pcnbp->usPageStyleFlags = BKA_MINOR;
-        pcnbp->fEnumerate = TRUE;
-        // pcnbp->pszName = cmnGetString(ID_XSSI_27STATUSBAR);  // psz27StatusBar
+        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+        inbp.somSelf = somSelf;
+        inbp.hwndNotebook = hwndDlg;
+        inbp.hmod = savehmod;
+        inbp.usPageStyleFlags = BKA_MINOR;
+        inbp.fEnumerate = TRUE;
+        // inbp.pcszName = cmnGetString(ID_XSSI_27STATUSBAR);  // psz27StatusBar
             // this is page 2, don't give it a title (context menu)
             // V0.9.16 (2001-10-23) [umoeller]
-        pcnbp->ulDlgID = ID_XSD_SET28STATUSBARS2;
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_SB2;
-        pcnbp->ulPageID = SP_28STATUSBAR2;
-        pcnbp->pfncbInitPage    = stbStatusBar2InitPage;
-        pcnbp->pfncbItemChanged = stbStatusBar2ItemChanged;
-        ntbInsertPage(pcnbp);
+        inbp.ulDlgID = ID_XSD_SET28STATUSBARS2;
+        inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_SB2;
+        inbp.ulPageID = SP_28STATUSBAR2;
+        inbp.pfncbInitPage    = stbStatusBar2InitPage;
+        inbp.pfncbItemChanged = stbStatusBar2ItemChanged;
+        ntbInsertPage(&inbp);
 #endif
 
         // insert "Status bar" page 1
-        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndDlg;
-        pcnbp->hmod = savehmod;
-        pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->fEnumerate = TRUE;
-        pcnbp->pszName = cmnGetString(ID_XSSI_27STATUSBAR);  // psz27StatusBar
-        pcnbp->ulDlgID = ID_XSD_SET27STATUSBARS;
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS1+3;
-        pcnbp->ulPageID = SP_27STATUSBAR;
-        pcnbp->pfncbInitPage    = stbStatusBar1InitPage;
-        pcnbp->pfncbItemChanged = stbStatusBar1ItemChanged;
-        ntbInsertPage(pcnbp);
+        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+        inbp.somSelf = somSelf;
+        inbp.hwndNotebook = hwndDlg;
+        inbp.hmod = savehmod;
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.fEnumerate = TRUE;
+        inbp.pcszName = cmnGetString(ID_XSSI_27STATUSBAR);  // psz27StatusBar
+        inbp.ulDlgID = ID_XSD_SET27STATUSBARS;
+        inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS1+3;
+        inbp.ulPageID = SP_27STATUSBAR;
+        inbp.pfncbInitPage    = stbStatusBar1InitPage;
+        inbp.pfncbItemChanged = stbStatusBar1ItemChanged;
+        ntbInsertPage(&inbp);
     }
 
     /*
      * "View" page (XFolder)
      */
 
-    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-    pcnbp->somSelf = somSelf;
-    pcnbp->hwndNotebook = hwndDlg;
-    pcnbp->hmod = savehmod;
-    pcnbp->usPageStyleFlags = BKA_MAJOR;
-    pcnbp->fEnumerate = TRUE;
-    pcnbp->pszName = cmnGetString(ID_XSSI_WPSFDRVIEWPAGE);  // V0.9.16(2001-11-04) [umoeller]
-    // pcnbp->ulDlgID = ID_XSD_FOLDERVIEWS;
-    pcnbp->ulDlgID = ID_XFD_EMPTYDLG;           // V0.9.16 (2001-09-29) [umoeller]
-    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS1;
-    pcnbp->ulPageID = SP_1GENERIC;
-    pcnbp->pfncbInitPage    = fdrViewInitPage;
-    pcnbp->pfncbItemChanged = fdrViewItemChanged;
-    ntbInsertPage(pcnbp);
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndDlg;
+    inbp.hmod = savehmod;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.fEnumerate = TRUE;
+    inbp.pcszName = cmnGetString(ID_XSSI_WPSFDRVIEWPAGE);  // V0.9.16(2001-11-04) [umoeller]
+    // inbp.ulDlgID = ID_XSD_FOLDERVIEWS;
+    inbp.ulDlgID = ID_XFD_EMPTYDLG;           // V0.9.16 (2001-09-29) [umoeller]
+    inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS1;
+    inbp.ulPageID = SP_1GENERIC;
+    inbp.pfncbInitPage    = fdrViewInitPage;
+    inbp.pfncbItemChanged = fdrViewItemChanged;
+    ntbInsertPage(&inbp);
 
     // moved menu pages before "View" page
     // V0.9.16(2001-11-04) [umoeller]
@@ -349,21 +339,20 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
 #ifndef __NEVEREXTASSOCS__
     if (cmnQuerySetting(sfExtAssocs))
     {
-        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
-        pcnbp->somSelf = somSelf;
-        pcnbp->hwndNotebook = hwndDlg;
-        pcnbp->hmod = savehmod;
-        pcnbp->usPageStyleFlags = BKA_MAJOR;
-        pcnbp->pszName = cmnGetString(ID_XSSI_FILETYPESPAGE);  // pszFileTypesPage
-        pcnbp->ulDlgID = ID_XSD_FILETYPES;
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILETYPES;
-        pcnbp->ulPageID = SP_FILETYPES;
-        pcnbp->pampControlFlags = G_pampFileTypesPage;
-        pcnbp->cControlFlags = G_cFileTypesPage;
-        pcnbp->pfncbInitPage    = ftypFileTypesInitPage;
-        pcnbp->pfncbItemChanged = ftypFileTypesItemChanged;
-        ntbInsertPage(pcnbp);
+        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+        inbp.somSelf = somSelf;
+        inbp.hwndNotebook = hwndDlg;
+        inbp.hmod = savehmod;
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.pcszName = cmnGetString(ID_XSSI_FILETYPESPAGE);  // pszFileTypesPage
+        inbp.ulDlgID = ID_XSD_FILETYPES;
+        inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_FILETYPES;
+        inbp.ulPageID = SP_FILETYPES;
+        inbp.pampControlFlags = G_pampFileTypesPage;
+        inbp.cControlFlags = G_cFileTypesPage;
+        inbp.pfncbInitPage    = ftypFileTypesInitPage;
+        inbp.pfncbItemChanged = ftypFileTypesItemChanged;
+        ntbInsertPage(&inbp);
     }
 #endif
 

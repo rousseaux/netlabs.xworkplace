@@ -27,7 +27,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2000 Ulrich M”ller.
+ *      Copyright (C) 1999-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -309,30 +309,30 @@ static const DLGHITEM dlgArchives[] =
  *@@changed V0.9.16 (2001-11-22) [umoeller]: now using dlg formatter
  */
 
-VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID arcArchivesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                           ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     PARCHIVINGSETTINGS pArcSettings = arcQuerySettings();
 
     if (flFlags & CBI_INIT)
     {
-        if (pcnbp->pUser == NULL)
+        if (pnbp->pUser == NULL)
         {
             // first call: backup archive settings for "Undo" button;
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
-            pcnbp->pUser = malloc(sizeof(ARCHIVINGSETTINGS));
-            memcpy(pcnbp->pUser, pArcSettings, sizeof(ARCHIVINGSETTINGS));
+            pnbp->pUser = malloc(sizeof(ARCHIVINGSETTINGS));
+            memcpy(pnbp->pUser, pArcSettings, sizeof(ARCHIVINGSETTINGS));
 
             // insert the controls using the dialog formatter
             // V0.9.16 (2001-11-22) [umoeller]
-            ntbFormatPage(pcnbp->hwndDlgPage,
+            ntbFormatPage(pnbp->hwndDlgPage,
                           dlgArchives,
                           ARRAYITEMCOUNT(dlgArchives));
         }
 
-        WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPIN,
+        WinSendDlgItemMsg(pnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPIN,
                           SPBM_SETARRAY,
                           (MPARAM)&G_apcszPercentages,
                           (MPARAM)ARRAYITEMCOUNT(G_apcszPercentages));
@@ -342,13 +342,13 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     {
         ULONG       ul = 0;
 
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ARC_ENABLE,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_ARC_ENABLE,
                               (pArcSettings->ulArcFlags & ARCF_ENABLED) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ARC_ALWAYS,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_ARC_ALWAYS,
                               (pArcSettings->ulArcFlags & ARCF_ALWAYS) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ARC_NEXT,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_ARC_NEXT,
                               (pArcSettings->ulArcFlags & ARCF_NEXT) != 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_ARC_INI,
                               (pArcSettings->ulArcFlags & ARCF_INI) != 0);
 
         // INI files percentage:
@@ -366,7 +366,7 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                                 // prevent rounding errors
             {
                 // yes: set this spin button array item
-                WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPIN,
+                WinSendDlgItemMsg(pnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPIN,
                                   SPBM_SETCURRENTVALUE,
                                   (MPARAM)ul,
                                   (MPARAM)NULL);
@@ -375,20 +375,20 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         }
 
         // every xxx days
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ARC_DAYS,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_ARC_DAYS,
                               (pArcSettings->ulArcFlags & ARCF_DAYS) != 0);
-        winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_XSDI_ARC_DAYS_SPIN,
+        winhSetDlgItemSpinData(pnbp->hwndDlgPage, ID_XSDI_ARC_DAYS_SPIN,
                                1, 50,       // spin button limits
                                pArcSettings->ulEveryDays);
 
         // status
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ARC_SHOWSTATUS,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_ARC_SHOWSTATUS,
                               pArcSettings->fShowStatus);
 
         // no. of archives
         arcSetNumArchives(&pArcSettings->cArchivesCount,
                           FALSE);       // query
-        winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_XSDI_ARC_ARCHIVES_NO_SPIN,
+        winhSetDlgItemSpinData(pnbp->hwndDlgPage, ID_XSDI_ARC_ARCHIVES_NO_SPIN,
                                1, 9,        // spin button limits
                                pArcSettings->cArchivesCount);
     }
@@ -397,26 +397,26 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     {
         BOOL    fEnabled = ((pArcSettings->ulArcFlags & ARCF_ENABLED) != 0),
                 fAlways = ((pArcSettings->ulArcFlags & ARCF_ALWAYS) != 0),
-                fINI = winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI),
-                fDays = winhIsDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ARC_DAYS);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ARC_ALWAYS,
+                fINI = winhIsDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_ARC_INI),
+                fDays = winhIsDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_ARC_DAYS);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_ARC_ALWAYS,
                           fEnabled);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ARC_NEXT,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_ARC_NEXT,
                           fEnabled && !fAlways);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_ARC_INI,
                           fEnabled && !fAlways);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPIN,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPIN,
                           ( (fEnabled) && (fINI) ) && !fAlways);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPINTXT1,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPINTXT1,
                           ( (fEnabled) && (fINI) ) && !fAlways);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ARC_DAYS,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_ARC_DAYS,
                           fEnabled && !fAlways);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ARC_DAYS_SPIN,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_ARC_DAYS_SPIN,
                           ( (fEnabled) && (fDays) ) && !fAlways);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ARC_DAYS_SPINTXT1,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_ARC_DAYS_SPINTXT1,
                           ( (fEnabled) && (fDays) ) && !fAlways);
 
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ARC_SHOWSTATUS,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_ARC_SHOWSTATUS,
                           fEnabled);
     }
 }
@@ -432,7 +432,7 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.9 (2001-04-07) [pr]: fixed Undo/Default
  */
 
-MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT arcArchivesItemChanged(PNOTEBOOKPAGE pnbp,
                                ULONG ulItemID,
                                USHORT usNotifyCode,
                                ULONG ulExtra)      // for checkboxes: contains new state
@@ -460,7 +460,7 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break;
 
         case ID_XSDI_ARC_INI_SPIN:
-            if (    (pcnbp->fPageInitialized)       // skip this during initialization
+            if (    (pnbp->fPageInitialized)       // skip this during initialization
                  && (usNotifyCode == SPBN_CHANGE)
                )
             {
@@ -468,7 +468,7 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 float   flTemp = 0;
                 // query current spin button array
                 // item as a string
-                WinSendDlgItemMsg(pcnbp->hwndDlgPage, ulItemID,
+                WinSendDlgItemMsg(pnbp->hwndDlgPage, ulItemID,
                                   SPBM_QUERYVALUE,
                                   (MPARAM)szTemp,
                                   MPFROM2SHORT(sizeof(szTemp),
@@ -483,7 +483,7 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break;
 
         case ID_XSDI_ARC_DAYS_SPIN:
-            pArcSettings->ulEveryDays = winhAdjustDlgItemSpinData(pcnbp->hwndDlgPage,
+            pArcSettings->ulEveryDays = winhAdjustDlgItemSpinData(pnbp->hwndDlgPage,
                                                                   ulItemID,
                                                                   0,              // no grid
                                                                   usNotifyCode);
@@ -494,7 +494,7 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break;
 
         case ID_XSDI_ARC_ARCHIVES_NO_SPIN:
-            pArcSettings->cArchivesCount = (CHAR)winhAdjustDlgItemSpinData(pcnbp->hwndDlgPage,
+            pArcSettings->cArchivesCount = (CHAR)winhAdjustDlgItemSpinData(pnbp->hwndDlgPage,
                                                                            ulItemID,
                                                                            0,              // no grid
                                                                            usNotifyCode);
@@ -506,7 +506,7 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up archive settings
-            PARCHIVINGSETTINGS pWASBackup = (PARCHIVINGSETTINGS)(pcnbp->pUser);
+            PARCHIVINGSETTINGS pWASBackup = (PARCHIVINGSETTINGS)(pnbp->pUser);
 
             // and restore the settings for this page
             pArcSettings->ulArcFlags = pWASBackup->ulArcFlags;
@@ -518,7 +518,7 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                               TRUE);        // set
 
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         }
         break;
 
@@ -528,7 +528,7 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             arcSetNumArchives(&pArcSettings->cArchivesCount,
                               TRUE);        // set
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         break;
 
         default:
@@ -542,7 +542,7 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         else            // checkbox unchecked
             pArcSettings->ulArcFlags &= ~ulSetFlags;
         // re-enable dlg items by calling the INIT callback
-        pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE);
+        pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE);
     }
 
     if (fSave)

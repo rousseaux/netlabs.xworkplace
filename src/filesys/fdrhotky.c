@@ -24,7 +24,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -906,36 +906,36 @@ static const XWPSETTING G_HotkeysBackup[] =
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  */
 
-VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID fdrHotkeysInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                         ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-    HWND    hwndEditField = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_DESCRIPTION);
-    HWND    hwndListbox = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_LISTBOX);
+    HWND    hwndEditField = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_DESCRIPTION);
+    HWND    hwndListbox = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_LISTBOX);
 
     SHORT i;
 
     if (flFlags & CBI_INIT)
     {
-        HAB     hab = WinQueryAnchorBlock(pcnbp->hwndDlgPage);
+        HAB     hab = WinQueryAnchorBlock(pnbp->hwndDlgPage);
         HMODULE hmod = cmnQueryNLSModuleHandle(FALSE);
         PSUBCLHOTKEYEF pshef;
 
-        if (pcnbp->pUser == NULL)
+        if (pnbp->pUser == NULL)
         {
             // first call: backup Global Settings for "Undo" button;
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
-            /* pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS)); */
-            pcnbp->pUser = cmnBackupSettings(G_HotkeysBackup,
+            /* pnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
+            memcpy(pnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS)); */
+            pnbp->pUser = cmnBackupSettings(G_HotkeysBackup,
                                              ARRAYITEMCOUNT(G_HotkeysBackup));
             // and also backup the Folder Hotkeys array in the
             // second pointer
-            pcnbp->pUser2 = malloc(FLDRHOTKEYSSIZE);
-            memcpy(pcnbp->pUser2,
+            pnbp->pUser2 = malloc(FLDRHOTKEYSSIZE);
+            memcpy(pnbp->pUser2,
                    fdrQueryFldrHotkeys(),
                    FLDRHOTKEYSSIZE);
         }
@@ -961,17 +961,17 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             WinSetWindowPtr(hwndEditField, QWL_USER, pshef);
             pshef->pfnwpOrig = WinSubclassWindow(hwndEditField, fnwpFolderHotkeyEntryField);
 
-            pshef->hwndSet = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_SETACCEL);
-            pshef->hwndClear = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_CLEARACCEL);
+            pshef->hwndSet = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_SETACCEL);
+            pshef->hwndClear = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_CLEARACCEL);
         }
     }
 
     if (flFlags & CBI_SET)
     {
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ACCELERATORS,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_ACCELERATORS,
                               cmnQuerySetting(sfFolderHotkeysDefault));
 
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SHOWINMENUS,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SHOWINMENUS,
                               cmnQuerySetting(sfShowHotkeysInMenus));
 
         WinSendMsg(hwndListbox, LM_DELETEALL, 0, 0);
@@ -994,9 +994,9 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     {
 #ifndef __ALWAYSSUBCLASS__
         BOOL fEnable = !cmnQuerySetting(sfNoSubclassing);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_ACCELERATORS, fEnable);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_LISTBOX, fEnable);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, fEnable);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_ACCELERATORS, fEnable);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_LISTBOX, fEnable);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, fEnable);
 #endif
     }
 }
@@ -1011,7 +1011,7 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.9 (2001-04-04) [umoeller]: added "Set" button
  */
 
-MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT fdrHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
                               ULONG ulItemID,
                               USHORT usNotifyCode,
                               ULONG ulExtra)      // for checkboxes: contains new state
@@ -1038,13 +1038,13 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
                 // update the Edit field with new
                 // key description, but do NOT save settings yet
-                pHotkeyFound = FindHotkeyFromLBSel(pcnbp->hwndDlgPage, NULL);
+                pHotkeyFound = FindHotkeyFromLBSel(pnbp->hwndDlgPage, NULL);
                 if ( (pHotkeyFound) && ((ULONG)pHotkeyFound != -1) )
                 {
                     cmnDescribeKey(szKeyName,
                                    pHotkeyFound->usFlags,
                                    pHotkeyFound->usKeyCode);
-                    winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, TRUE);
+                    winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, TRUE);
                 }
                 else
                 {
@@ -1052,17 +1052,17 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     strcpy(szKeyName,
                            cmnGetString(ID_XSSI_NOTDEFINED));
 
-                    winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, FALSE);
+                    winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, FALSE);
                 }
 
-                winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SETACCEL, FALSE);
+                winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_SETACCEL, FALSE);
 
                 // set edit field to description text
-                WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_DESCRIPTION,
+                WinSetDlgItemText(pnbp->hwndDlgPage, ID_XSDI_DESCRIPTION,
                                   szKeyName);
                 // enable previously disabled items
-                winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DESCRIPTION, TRUE);
-                winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DESCRIPTION_TX1, TRUE);
+                winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_DESCRIPTION, TRUE);
+                winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_DESCRIPTION_TX1, TRUE);
             }
         break;
 
@@ -1079,10 +1079,10 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XSDI_SETACCEL:
         {
-            HWND hwndEdit = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_DESCRIPTION);
+            HWND hwndEdit = WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_DESCRIPTION);
             PXFLDHOTKEY pHotkeyFound = NULL;
             USHORT usCommand;
-            pHotkeyFound = FindHotkeyFromLBSel(pcnbp->hwndDlgPage,
+            pHotkeyFound = FindHotkeyFromLBSel(pnbp->hwndDlgPage,
                                                &usCommand);
 
             if (pHotkeyFound == NULL)
@@ -1129,7 +1129,7 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             USHORT      usCommand;
             PXFLDHOTKEY pHotkeyFound;
 
-            pHotkeyFound = FindHotkeyFromLBSel(pcnbp->hwndDlgPage, &usCommand);
+            pHotkeyFound = FindHotkeyFromLBSel(pnbp->hwndDlgPage, &usCommand);
 
             if ( (pHotkeyFound) && ((ULONG)pHotkeyFound != -1) )
             {
@@ -1145,10 +1145,10 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     pHotkey++;
                 }
 
-                WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_DESCRIPTION,
+                WinSetDlgItemText(pnbp->hwndDlgPage, ID_XSDI_DESCRIPTION,
                                   cmnGetString(ID_XSSI_NOTDEFINED));
-                winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SETACCEL, FALSE);
-                winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, FALSE);
+                winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_SETACCEL, FALSE);
+                winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_CLEARACCEL, FALSE);
                 fdrStoreFldrHotkeys();
             }
         break; }
@@ -1156,15 +1156,15 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case DID_UNDO:
         {
             // "Undo" button: restore the settings for this page
-            cmnRestoreSettings(pcnbp->pUser,
+            cmnRestoreSettings(pnbp->pUser,
                                ARRAYITEMCOUNT(G_HotkeysBackup));
 
             // here, also restore the backed-up FolderHotkeys array
             // second pointer
-            memcpy(fdrQueryFldrHotkeys(), pcnbp->pUser2, FLDRHOTKEYSSIZE);
+            memcpy(fdrQueryFldrHotkeys(), pnbp->pUser2, FLDRHOTKEYSSIZE);
 
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
             fdrStoreFldrHotkeys();
         break; }
 
@@ -1173,10 +1173,10 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
             // Desktop startup)
-            cmnSetDefaultSettings(pcnbp->ulPageID);
+            cmnSetDefaultSettings(pnbp->inbp.ulPageID);
             fdrLoadDefaultFldrHotkeys();
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
             // cmnStoreGlobalSettings();
             fdrStoreFldrHotkeys();
         break; }

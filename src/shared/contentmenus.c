@@ -336,17 +336,17 @@ MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1
                     }
                 }
                 mrc = pfnwpOrig(hwndMenu, msg, mp1, mp2);
-            break; }
+            }
+            break;
 
             #ifdef DEBUG_MENUS
                 case MM_SELECTITEM:
-                {
                     _Pmpf(( "MM_SELECTITEM: mp1 = %lX/%lX, mp2 = %lX",
                         SHORT1FROMMP(mp1),
                         SHORT2FROMMP(mp1),
                         mp2 ));
                     mrc = (MRESULT)(*pfnwpFolderContentMenuOriginal)(hwndMenu, msg, mp1, mp2);
-                break; }
+                break;
             #endif
 
             case WM_BUTTON2DOWN:
@@ -402,7 +402,8 @@ MRESULT EXPENTRY fnwpSubclFolderContentMenu(HWND hwndMenu, ULONG msg, MPARAM mp1
                            WM_COMMAND,
                            (MPARAM)sSelected,
                            MPFROM2SHORT(CMDSRC_MENU, FALSE));
-            break; }
+            }
+            break;
 
             default:
                 mrc = pfnwpOrig(hwndMenu, msg, mp1, mp2);

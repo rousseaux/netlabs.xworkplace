@@ -762,7 +762,8 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                                (MPARAM)-1, -1);
             winhSetSliderArmPosition(hwndThresholdSlider, SMA_INCREMENTVALUE, (ulCrecl / 4) - 1);
 
-        break; }
+        }
+        break;
 
         case WM_CONTROL:
         {
@@ -804,9 +805,11 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                     BOOL fChecked = winhIsDlgItemChecked(hwndDlg, usItemID);
                     winhEnableDlgItem(hwndDlg, ID_OSDI_CACHESIZE, !fChecked);
                     winhEnableDlgItem(hwndDlg, ID_OSDI_CACHESIZE_TXT, !fChecked);
-                break; }
+                }
+                break;
             }
-        break; }
+        }
+        break;
 
         case WM_COMMAND:
             switch ((USHORT)mp1)
@@ -851,7 +854,8 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
 
                     // dismiss
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-                break; }
+                }
+                break;
 
                 case DID_DEFAULT:
                     winhSetDlgItemChecked(hwndDlg, ID_OSDI_CACHESIZE_AUTO, TRUE);
@@ -872,7 +876,8 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                                    "HPFS",
                                    TRUE); // skip removeable drives
                     WinSetDlgItemText(hwndDlg, ID_OSDI_AUTOCHECK, szHPFSDrives);
-                break; }
+                }
+                break;
 
                 default:
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
@@ -989,7 +994,8 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS386(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                                     | OBJSTYLE_NOMOVE);
                 }
             }
-        break; }
+        }
+        break;
 
         case WM_COMMAND:
             switch ((USHORT)mp1)
@@ -1019,7 +1025,8 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS386(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 
                     // dismiss
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-                break; }
+                }
+                break;
 
                 case ID_OSDI_AUTOCHECK_PROPOSE:
                 {
@@ -1030,7 +1037,8 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS386(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                                    "HPFS",
                                    TRUE); // skip removeable drives
                     WinSetDlgItemText(hwndDlg, ID_OSDI_AUTOCHECK, szHPFSDrives);
-                break; }
+                }
+                break;
 
                 default:
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
@@ -2368,8 +2376,8 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
 
             // update dialog
             WinPostMsg(hwndDlg, XM_SETTINGS2DLG, 0, 0);
-
-        break; }
+        }
+        break;
 
         /*
          * XM_SETTINGS2DLG:
@@ -2407,7 +2415,8 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
             WinSetDlgItemText(hwndDlg, ID_OSDI_S506_NEWPARAMS, pszNewParams);
             if (pszNewParams)       // V0.9.6 (2000-11-12) [umoeller]
                 free(pszNewParams);
-        break; }
+        }
+        break;
 
         /*
          * WM_CONTROL:
@@ -2815,7 +2824,8 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                                (MPARAM)0);
                 break;
             }
-        break; }
+        }
+        break;
 
         case WM_COMMAND:
             switch ((USHORT)mp1)
@@ -2832,7 +2842,8 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                         free(pszNewParams);
                     }
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-                break; }
+                }
+                break;
 
                 case DID_DEFAULT:
                 {
@@ -2840,7 +2851,8 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                     PS506ALL        pS506All = (PS506ALL)pddd->pvUser;
                     SetS506Defaults(pS506All);
                     WinPostMsg(hwndDlg, XM_SETTINGS2DLG, 0, 0);
-                break; }
+                }
+                break;
 
                 default:
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
@@ -2859,7 +2871,8 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
             WinDestroyWindow(pS506All->hwndTooltip);
             free(pS506All);
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-        break; }
+        }
+        break;
 
         default:
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);

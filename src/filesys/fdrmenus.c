@@ -60,7 +60,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -432,8 +432,7 @@ static BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLIS
             // it if it's a template
             if (_somIsA(pObject, _WPShadow))
             {
-                pObject2Insert = _wpQueryShadowedObject(pObject, FALSE);
-                if (pObject2Insert)
+                if (pObject2Insert = _wpQueryShadowedObject(pObject, FALSE))
                     if ((_wpQueryStyle(pObject2Insert) & OBJSTYLE_TEMPLATE) == 0)
                         pObject2Insert = pObject;
             }
@@ -2820,27 +2819,27 @@ static const XWPSETTING G_AddMenusBackup[] =
  *@@changed V0.9.16 (2001-09-29) [umoeller]: now using dialog formatter
  */
 
-VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID mnuAddMenusInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                              ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (flFlags & CBI_INIT)
     {
-        if (pcnbp->pUser == NULL)
+        if (pnbp->pUser == NULL)
         {
             // first call: backup Global Settings for "Undo" button;
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
-            /* pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+            /* pnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
+            memcpy(pnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
                */
-            pcnbp->pUser = cmnBackupSettings(G_AddMenusBackup,
+            pnbp->pUser = cmnBackupSettings(G_AddMenusBackup,
                                              ARRAYITEMCOUNT(G_AddMenusBackup));
             // insert the controls using the dialog formatter
             // V0.9.16 (2001-09-29) [umoeller]
-            ntbFormatPage(pcnbp->hwndDlgPage,
+            ntbFormatPage(pnbp->hwndDlgPage,
                           dlgAddMenus,
                           ARRAYITEMCOUNT(dlgAddMenus));
         }
@@ -2848,26 +2847,26 @@ VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FILEATTRIBS,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FILEATTRIBS,
                               cmnQuerySetting(sfFileAttribs));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_COPYFILENAME,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_COPYFILENAME,
                               cmnQuerySetting(sfAddCopyFilenameItem));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FLDRVIEWS,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FLDRVIEWS,
                               cmnQuerySetting(sfExtendFldrViewMenu));
 #ifndef __NOMOVEREFRESHNOW__
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOVE4REFRESH,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_MOVE4REFRESH,
                               cmnQuerySetting(sfMoveRefreshNow));
 #endif
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SELECTSOME,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SELECTSOME,
                               cmnQuerySetting(sfAddSelectSomeItem));
 #ifndef __NOFOLDERCONTENTS__
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FOLDERCONTENT,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FOLDERCONTENT,
                               cmnQuerySetting(sfAddFolderContentItem));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FC_SHOWICONS,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FC_SHOWICONS,
                               cmnQuerySetting(sfFolderContentShowIcons));
 #endif
 
-        /* winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_EXTENDCLOSEMENU,
+        /* winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_EXTENDCLOSEMENU,
                               cmnQuerySetting(sfExtendCloseMenu));
                 // V0.9.12 (2001-05-22) [umoeller]
                 */
@@ -2882,13 +2881,13 @@ VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                  || ( (!G_fIsWarp4) && ((cmnQuerySetting(sflDefaultMenuItems) & CTXT_SELECT) == 0)
                ));
 #ifndef __NOFOLDERCONTENTS__
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FOLDERCONTENT,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_FOLDERCONTENT,
                          !cmnQuerySetting(sfNoSubclassing));
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FC_SHOWICONS,
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_FC_SHOWICONS,
                          !cmnQuerySetting(sfNoSubclassing));
 #endif
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SELECTSOME, fViewVisible);
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FLDRVIEWS, fViewVisible);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_SELECTSOME, fViewVisible);
+        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_FLDRVIEWS, fViewVisible);
     }
 }
 
@@ -2902,7 +2901,7 @@ VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  */
 
-MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT mnuAddMenusItemChanged(PNOTEBOOKPAGE pnbp,
                                ULONG ulItemID,
                                USHORT usNotifyCode,
                                ULONG ulExtra)      // for checkboxes: contains new state
@@ -2953,11 +2952,11 @@ MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case DID_UNDO:
         {
             // "Undo" button: restore the settings for this page
-            cmnRestoreSettings(pcnbp->pUser,
+            cmnRestoreSettings(pnbp->pUser,
                                ARRAYITEMCOUNT(G_AddMenusBackup));
 
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         }
         break;
 
@@ -2966,9 +2965,9 @@ MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
             // Desktop startup)
-            cmnSetDefaultSettings(pcnbp->ulPageID);
+            cmnSetDefaultSettings(pnbp->inbp.ulPageID);
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         }
         break;
 
@@ -3004,45 +3003,45 @@ static const XWPSETTING G_ConfigFolderMenusBackup[] =
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  */
 
-VOID mnuConfigFolderMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID mnuConfigFolderMenusInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                       ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (flFlags & CBI_INIT)
     {
-        if (pcnbp->pUser == NULL)
+        if (pnbp->pUser == NULL)
         {
             // first call: backup Global Settings for "Undo" button;
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
-            pcnbp->pUser = cmnBackupSettings(G_ConfigFolderMenusBackup,
+            pnbp->pUser = cmnBackupSettings(G_ConfigFolderMenusBackup,
                                              ARRAYITEMCOUNT(G_ConfigFolderMenusBackup));
             /*
-            pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+            pnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
+            memcpy(pnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
             */
         }
     }
 
     if (flFlags & CBI_SET)
     {
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_CASCADE,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_CASCADE,
                               cmnQuerySetting(sfMenuCascadeMode));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_REMOVEX,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_REMOVEX,
                               cmnQuerySetting(sfRemoveX));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_APPDPARAM,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_APPDPARAM,
                               cmnQuerySetting(sfAppdParam));
 
         switch (cmnQuerySetting(sulTemplatesOpenSettings))
         {
-            case 0:  winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_TPL_DONOTHING, 1); break;
-            case 1:  winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_TPL_OPENSETTINGS, 1); break;
-            default:  winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_TPL_EDITTITLE, 1); break;
+            case 0:  winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_TPL_DONOTHING, 1); break;
+            case 1:  winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_TPL_OPENSETTINGS, 1); break;
+            default:  winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_TPL_EDITTITLE, 1); break;
         }
 
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_TPL_POSITION,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_TPL_POSITION,
                               cmnQuerySetting(sfTemplatesReposition));
     }
 }
@@ -3057,7 +3056,7 @@ VOID mnuConfigFolderMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  */
 
-MRESULT mnuConfigFolderMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT mnuConfigFolderMenusItemChanged(PNOTEBOOKPAGE pnbp,
                                         ULONG ulItemID,
                                         USHORT usNotifyCode,
                                         ULONG ulExtra)      // for checkboxes: contains new state
@@ -3100,10 +3099,10 @@ MRESULT mnuConfigFolderMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
-            // PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
+            // PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pnbp->pUser);
 
             // and restore the settings for this page
-            cmnRestoreSettings(pcnbp->pUser,
+            cmnRestoreSettings(pnbp->pUser,
                                ARRAYITEMCOUNT(G_ConfigFolderMenusBackup));
             /*
             cmnSetSetting(sfMenuCascadeMode, pGSBackup->MenuCascadeMode);
@@ -3114,7 +3113,7 @@ MRESULT mnuConfigFolderMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                */
 
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         }
         break;
 
@@ -3123,9 +3122,9 @@ MRESULT mnuConfigFolderMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
             // Desktop startup)
-            cmnSetDefaultSettings(pcnbp->ulPageID);
+            cmnSetDefaultSettings(pnbp->inbp.ulPageID);
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         }
         break;
 
@@ -3164,66 +3163,66 @@ static const XWPSETTING G_RemoveMenusBackup[] =
  *@@changed V0.9.7 (2000-12-10) [umoeller]: added "fix lock in place"
  */
 
-VOID mnuRemoveMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+VOID mnuRemoveMenusInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                 ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (flFlags & CBI_INIT)
     {
-        if (pcnbp->pUser == NULL)
+        if (pnbp->pUser == NULL)
         {
             // first call: backup Global Settings for "Undo" button;
             // this memory will be freed automatically by the
             // common notebook window function (notebook.c) when
             // the notebook page is destroyed
             /*
-            pcnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
-            memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
+            pnbp->pUser = malloc(sizeof(GLOBALSETTINGS));
+            memcpy(pnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
             */
-            pcnbp->pUser = cmnBackupSettings(G_RemoveMenusBackup,
+            pnbp->pUser = cmnBackupSettings(G_RemoveMenusBackup,
                                              ARRAYITEMCOUNT(G_RemoveMenusBackup));
         }
     }
 
     if (flFlags & CBI_SET)
     {
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_HELP  ,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_HELP  ,
                               (cmnQuerySetting(sflDefaultMenuItems) & CTXT_HELP) == 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_CRANOTHER,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_CRANOTHER,
                               (cmnQuerySetting(sflDefaultMenuItems) & CTXT_CRANOTHER) == 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_COPY  ,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_COPY  ,
                               (cmnQuerySetting(sflDefaultMenuItems) & CTXT_COPY     ) == 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOVE  ,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_MOVE  ,
                               (cmnQuerySetting(sflDefaultMenuItems) & CTXT_MOVE     ) == 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SHADOW,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SHADOW,
                               (cmnQuerySetting(sflDefaultMenuItems) & CTXT_SHADOW   ) == 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_DELETE,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_DELETE,
                               (cmnQuerySetting(sflDefaultMenuItems) & CTXT_DELETE   ) == 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_PICKUP,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_PICKUP,
                               (cmnQuerySetting(sflDefaultMenuItems) & CTXT_PICKUP   ) == 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FIND  ,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FIND  ,
                               (cmnQuerySetting(sflDefaultMenuItems) & CTXT_FIND     ) == 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SELECT,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SELECT,
                               (cmnQuerySetting(sflDefaultMenuItems) & CTXT_SELECT   ) == 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SORT  ,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SORT  ,
                               (cmnQuerySetting(sflDefaultMenuItems) & CTXT_SORT     ) == 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ARRANGE,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_ARRANGE,
                               (cmnQuerySetting(sflDefaultMenuItems) & CTXT_ARRANGE ) == 0);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_PRINT  ,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_PRINT  ,
                               (cmnQuerySetting(sflDefaultMenuItems) & CTXT_PRINT   ) == 0);
 
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_WARP4DISPLAY,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_WARP4DISPLAY,
                               !cmnQuerySetting(sfRemoveViewMenu));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_INSERT,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_INSERT,
                               !cmnQuerySetting(sfRemovePasteItem));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE,
                               !cmnQuerySetting(sfRemoveLockInPlaceItem));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE_NOSUB,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE_NOSUB,
                               cmnQuerySetting(sfFixLockInPlace));  // V0.9.7 (2000-12-10) [umoeller]
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_CHECKDISK,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_CHECKDISK,
                               !cmnQuerySetting(sfRemoveCheckDiskItem));
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FORMATDISK,
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_FORMATDISK,
                               !cmnQuerySetting(sfRemoveFormatDiskItem));
     }
 
@@ -3232,16 +3231,16 @@ VOID mnuRemoveMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         // disable items for Warp 3/4
         if (doshIsWarp4())
         {
-            winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_SELECT, FALSE);
-            winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE_NOSUB,
+            winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_SELECT, FALSE);
+            winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE_NOSUB,
                              !cmnQuerySetting(sfRemoveLockInPlaceItem));
         }
         else
         {
-            winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE, FALSE);
-            winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE_NOSUB, FALSE);
-            winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_WARP4DISPLAY, FALSE);
-            winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_INSERT, FALSE);
+            winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE, FALSE);
+            winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE_NOSUB, FALSE);
+            winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_WARP4DISPLAY, FALSE);
+            winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_INSERT, FALSE);
         }
     }
 }
@@ -3257,7 +3256,7 @@ VOID mnuRemoveMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.7 (2000-12-10) [umoeller]: added "fix lock in place"
  */
 
-MRESULT mnuRemoveMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT mnuRemoveMenusItemChanged(PNOTEBOOKPAGE pnbp,
                                   ULONG ulItemID,
                                   USHORT usNotifyCode,
                                   ULONG ulExtra)      // for checkboxes: contains new state
@@ -3329,7 +3328,7 @@ MRESULT mnuRemoveMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_LOCKINPLACE:
             cmnSetSetting(sfRemoveLockInPlaceItem, 1-ulExtra);
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE); // V0.9.7 (2000-12-10) [umoeller]
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_ENABLE); // V0.9.7 (2000-12-10) [umoeller]
         break;
 
         case ID_XSDI_LOCKINPLACE_NOSUB:  // V0.9.7 (2000-12-10) [umoeller]
@@ -3347,10 +3346,10 @@ MRESULT mnuRemoveMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
-            // PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
+            // PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pnbp->pUser);
 
             // and restore the settings for this page
-            cmnRestoreSettings(pcnbp->pUser,
+            cmnRestoreSettings(pnbp->pUser,
                                ARRAYITEMCOUNT(G_RemoveMenusBackup));
             /*
             cmnSetSetting(sflDefaultMenuItems, pGSBackup->DefaultMenuItems);
@@ -3362,7 +3361,7 @@ MRESULT mnuRemoveMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             cmnSetSetting(sfRemoveFormatDiskItem, pGSBackup->RemoveFormatDiskItem);
                */
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         }
         break;
 
@@ -3371,9 +3370,9 @@ MRESULT mnuRemoveMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // set the default settings for this settings page
             // (this is in common.c because it's also used at
             // Desktop startup)
-            cmnSetDefaultSettings(pcnbp->ulPageID);
+            cmnSetDefaultSettings(pnbp->inbp.ulPageID);
             // update the display by calling the INIT callback
-            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
         }
         break;
 

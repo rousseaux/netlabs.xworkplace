@@ -436,7 +436,8 @@ static MRESULT EXPENTRY fnwpLogonDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
                                                puiLogon->szPassword))
                             WinDismissDlg(hwnd, DID_OK);
 
-                break; }
+                }
+                break;
             }
 
         break;
@@ -1364,9 +1365,10 @@ APIRET ProcessRing0Event(PSECIOSHARED pSecIOShared)
             arc = scxtCreateSecurityContext(pExecPgmPost->ulNewPID,
                                             hsubjUser,
                                             hsubjGroup);
-        if (arc != NO_ERROR)
-            _Pmpf(("   scxtCreateSecurityContext returned %d.", arc));
-        break; }
+            if (arc != NO_ERROR)
+                _Pmpf(("   scxtCreateSecurityContext returned %d.", arc));
+        }
+        break;
 
         /*
          *@@ SECEVENT_FINDFIRST:
@@ -1793,7 +1795,8 @@ MRESULT EXPENTRY fnwpShellObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
                            XM_LOGON,
                            0, 0);
             }
-        break; }
+        }
+        break;
 
         /*
          * WM_APPTERMINATENOTIFY:
@@ -1849,7 +1852,8 @@ MRESULT EXPENTRY fnwpShellObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
                                0, 0);
                 }
             }
-        break; }
+        }
+        break;
 
         case XM_ERROR:
         {
@@ -1865,7 +1869,8 @@ MRESULT EXPENTRY fnwpShellObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
             winhDebugBox(0,
                      "XWPShell Error",
                      pszError);
-        break; }
+        }
+        break;
 
         case XM_MESSAGE:
             winhDebugBox(0,

@@ -186,7 +186,7 @@ static VOID UnlockNotebooks(VOID)
  *@@added V0.9.1 (99-12-31) [umoeller]
  */
 
-static VOID PageInit(PCREATENOTEBOOKPAGE pcnbp,
+static VOID PageInit(PNOTEBOOKPAGE pnbp,
                      HWND hwndDlg)
 {
     // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
@@ -196,67 +196,69 @@ static VOID PageInit(PCREATENOTEBOOKPAGE pcnbp,
     #endif
 
     // store the dlg hwnd in notebook structure
-    pcnbp->hwndDlgPage = hwndDlg;
+    pnbp->hwndDlgPage = hwndDlg;
 
     // store the WM_INITDLG parameter in the
     // window words; the CREATENOTEBOOKPAGE
     // structure is passed to us by ntbInsertPage
     // as a creation parameter in mp2
-    WinSetWindowULong(pcnbp->hwndDlgPage, QWL_USER, (ULONG)pcnbp);
-    pcnbp->fPageInitialized = FALSE;
+    WinSetWindowULong(hwndDlg, QWL_USER, (ULONG)pnbp);
+    pnbp->fPageInitialized = FALSE;
 
     // make Warp 4 notebook buttons and move controls
-    winhAssertWarp4Notebook(pcnbp->hwndDlgPage,
+    winhAssertWarp4Notebook(hwndDlg,
                             100,         // ID threshold
                             14);
 
     // set controls font to 8.Helv, if global settings
     // want this (paranoia page, V0.9.0)
     if (cmnQuerySetting(sfUse8HelvFont))
-        winhSetControlsFont(pcnbp->hwndDlgPage,
+        winhSetControlsFont(hwndDlg,
                             0,
                             8000,
                             "8.Helv");
 
     // initialize the other fields
-    pcnbp->preccSource = (PRECORDCORE)-1;
-    pcnbp->hwndSourceCnr = NULLHANDLE;
+    pnbp->preccSource = (PRECORDCORE)-1;
+    pnbp->hwndSourceCnr = NULLHANDLE;
 
     // call "initialize" callback
-    if (pcnbp->pfncbInitPage)
-        pcnbp->pfncbInitPage(pcnbp, CBI_INIT | CBI_SET | CBI_ENABLE);
+    if (pnbp->inbp.pfncbInitPage)
+        pnbp->inbp.pfncbInitPage(pnbp, CBI_INIT | CBI_SET | CBI_ENABLE);
 
     // timer desired?
-    if (pcnbp->ulTimer)
+    if (pnbp->inbp.ulTimer)
     {
         WinStartTimer(WinQueryAnchorBlock(hwndDlg),
                       hwndDlg,
                       1,
-                      pcnbp->ulTimer);
+                      pnbp->inbp.ulTimer);
         // call timer callback already now;
         // let's not wait until the first downrun
-        if (pcnbp->pfncbTimer)
-            pcnbp->pfncbTimer(pcnbp, 1);
+        if (pnbp->inbp.pfncbTimer)
+            pnbp->inbp.pfncbTimer(pnbp, 1);
     }
 
     // winhAdjustControls desired?
-    if (    (pcnbp->pampControlFlags)
+    if (    (pnbp->inbp.pampControlFlags)
 #ifndef __ALWAYSRESIZESETTINGSPAGES__
          && (cmnQuerySetting(sfResizeSettingsPages))
 #endif
        )
     {
         // yes: allocate and zero
-        pcnbp->pxac = malloc(sizeof(XADJUSTCTRLS));
-        memset(pcnbp->pxac, 0, sizeof(XADJUSTCTRLS));
-        winhAdjustControls(pcnbp->hwndDlgPage,
-                           pcnbp->pampControlFlags,
-                           pcnbp->cControlFlags,
-                           NULL,    // INIT
-                           pcnbp->pxac);
+        if (pnbp->pxac = NEW(XADJUSTCTRLS))
+        {
+            memset(pnbp->pxac, 0, sizeof(XADJUSTCTRLS));
+            winhAdjustControls(hwndDlg,
+                               pnbp->inbp.pampControlFlags,
+                               pnbp->inbp.cControlFlags,
+                               NULL,    // INIT
+                               pnbp->pxac);
+        }
     }
 
-    pcnbp->fPageInitialized = TRUE;
+    pnbp->fPageInitialized = TRUE;
 }
 
 /*
@@ -268,48 +270,48 @@ static VOID PageInit(PCREATENOTEBOOKPAGE pcnbp,
  *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed mutex problems
  */
 
-static VOID PageDestroy(PCREATENOTEBOOKPAGE pcnbp)
+static VOID PageDestroy(PNOTEBOOKPAGE pnbp)
 {
     #ifdef DEBUG_NOTEBOOKS
         _Pmpf(("fnwpPageCommon: WM_DESTROY"));
     #endif
 
-    if (pcnbp)
+    if (pnbp)
     {
         #ifdef DEBUG_NOTEBOOKS
             _Pmpf(("  found pcnbp"));
         #endif
 
         // stop timer, if started
-        if (pcnbp->ulTimer)
+        if (pnbp->inbp.ulTimer)
         {
             #ifdef DEBUG_NOTEBOOKS
                 _Pmpf(("  stopping timer"));
             #endif
-            WinStopTimer(WinQueryAnchorBlock(pcnbp->hwndDlgPage),
-                         pcnbp->hwndDlgPage,
+            WinStopTimer(WinQueryAnchorBlock(pnbp->hwndDlgPage),
+                         pnbp->hwndDlgPage,
                          1);
         }
 
         // call INIT callback with CBI_DESTROY
-        if (pcnbp->pfncbInitPage)
-            pcnbp->pfncbInitPage(pcnbp, CBI_DESTROY);
+        if (pnbp->inbp.pfncbInitPage)
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_DESTROY);
 
         // tooltip to be destroyed?
-        if (pcnbp->hwndTooltip)
-            WinDestroyWindow(pcnbp->hwndTooltip);
+        if (pnbp->hwndTooltip)
+            WinDestroyWindow(pnbp->hwndTooltip);
 
         // winhAdjustControls prepared?
-        if (pcnbp->pxac)
+        if (pnbp->pxac)
         {
             // yes: clean up
-            winhAdjustControls(pcnbp->hwndDlgPage,
+            winhAdjustControls(pnbp->hwndDlgPage,
                                NULL,    // cleanup
                                0,       // cleanup
                                NULL,    // cleanup
-                               pcnbp->pxac);
-            free(pcnbp->pxac);
-            pcnbp->pxac = NULL;
+                               pnbp->pxac);
+            free(pnbp->pxac);
+            pnbp->pxac = NULL;
         }
 
         // remove the NOTEBOOKPAGELISTITEM from the
@@ -318,9 +320,9 @@ static VOID PageDestroy(PCREATENOTEBOOKPAGE pcnbp)
 
         #ifdef DEBUG_NOTEBOOKS
             _Pmpf(("  trying to remove page ID %d from list",
-                    pcnbp->ulPageID));
+                    inbp.ulPageID));
         #endif
-        if (pcnbp->pnbli)
+        if (pnbp->pnbli)
         {
             BOOL fSemOwned = FALSE;
             TRY_LOUD(excpt1)
@@ -329,7 +331,7 @@ static VOID PageDestroy(PCREATENOTEBOOKPAGE pcnbp)
                     // WinRequestMutexSem works even if the thread has no message queue
                 {
                     if (!lstRemoveItem(G_pllOpenPages,
-                                       pcnbp->pnbli))  // this is auto-free!
+                                       pnbp->pnbli))  // this is auto-free!
                                 // this free's the pnbli
                         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                                "lstRemoveItem returned FALSE.");
@@ -345,11 +347,11 @@ static VOID PageDestroy(PCREATENOTEBOOKPAGE pcnbp)
         }
 
         // free allocated user memory
-        if (pcnbp->pUser)
-            free(pcnbp->pUser);
-        if (pcnbp->pUser2)
-            free(pcnbp->pUser2);
-        free(pcnbp);
+        if (pnbp->pUser)
+            free(pnbp->pUser);
+        if (pnbp->pUser2)
+            free(pnbp->pUser2);
+        _wpFreeMem(pnbp->inbp.somSelf, (PBYTE)pnbp);
     }
 }
 
@@ -358,7 +360,7 @@ static VOID PageDestroy(PCREATENOTEBOOKPAGE pcnbp)
  *      implementation for WM_CONTROL in fnwpPageCommon.
  *
  *      hwndDlg is not passed because this can be retrieved
- *      thru pcnbp->hwndDlgPage.
+ *      thru pnbp->hwndDlgPage.
  *
  *@@added V0.9.1 (99-12-31) [umoeller]
  *@@changed V0.9.4 (2000-07-11) [umoeller]: added CN_HELP and fPassCnrHelp handling
@@ -367,7 +369,7 @@ static VOID PageDestroy(PCREATENOTEBOOKPAGE pcnbp)
  *@@changed V0.9.9 (2001-03-27) [umoeller]: changed ulExtra for CN_RECORDCHECKED
  */
 
-static MRESULT EXPENTRY PageWmControl(PCREATENOTEBOOKPAGE pcnbp,
+static MRESULT EXPENTRY PageWmControl(PNOTEBOOKPAGE pnbp,
                                       ULONG msg,
                                       MPARAM mp1,
                                       MPARAM mp2) // in: as in WM_CONTROL
@@ -391,14 +393,14 @@ static MRESULT EXPENTRY PageWmControl(PCREATENOTEBOOKPAGE pcnbp,
     #endif
 
     // "item changed" callback defined?
-    if (    (pcnbp->pfncbItemChanged)
-         && (pcnbp->hwndControl = WinWindowFromID(pcnbp->hwndDlgPage, ulItemID))
+    if (    (pnbp->inbp.pfncbItemChanged)
+         && (pnbp->hwndControl = WinWindowFromID(pnbp->hwndDlgPage, ulItemID))
             // we identify the control by querying its class.
             // The standard PM classes have those wicked "#xxxx" classnames;
             // when we find a supported control, we filter out messages
             // which are not of interest, and call the
             // callbacks only for these messages by setting fCallItemChanged to TRUE
-         && (WinQueryClassName(pcnbp->hwndControl,
+         && (WinQueryClassName(pnbp->hwndControl,
                                sizeof(szClassName),
                                szClassName))
             // system class?
@@ -418,7 +420,7 @@ static MRESULT EXPENTRY PageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                    )
                 {
                     // code for WC_BUTTON...
-                    ULONG ulStyle = winhQueryWindowStyle(pcnbp->hwndControl);
+                    ULONG ulStyle = winhQueryWindowStyle(pnbp->hwndControl);
 
                     if (ulStyle & BS_PRIMARYSTYLES)
                             // == 0x000F; BS_PUSHBUTTON has 0x0,
@@ -426,7 +428,7 @@ static MRESULT EXPENTRY PageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                     {
                         // for checkboxes and radiobuttons, pass
                         // the new check state to the callback
-                        ulExtra = (ULONG)WinSendMsg(pcnbp->hwndControl,
+                        ulExtra = (ULONG)WinSendMsg(pnbp->hwndControl,
                                                     BM_QUERYCHECK,
                                                     MPNULL,
                                                     MPNULL);
@@ -446,7 +448,7 @@ static MRESULT EXPENTRY PageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                 {
                     // for spinbuttons, pass the new spbn
                     // value in ulExtra
-                    WinSendMsg(pcnbp->hwndControl,
+                    WinSendMsg(pnbp->hwndControl,
                                SPBM_QUERYVALUE,
                                (MPARAM)&ulExtra,
                                MPFROM2SHORT(0, SPBQ_UPDATEIFVALID));
@@ -499,12 +501,12 @@ static MRESULT EXPENTRY PageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                         if (    (pnre = (PNOTIFYRECORDEMPHASIS)mp2)
                              && (pnre->fEmphasisMask & CRA_SELECTED)
                              && (pnre->pRecord)
-                             && (pnre->pRecord != pcnbp->preccLastSelected)
+                             && (pnre->pRecord != pnbp->preccLastSelected)
                            )
                         {
                             fCallItemChanged = TRUE;
                             ulExtra = (ULONG)(pnre->pRecord);
-                            pcnbp->preccLastSelected = pnre->pRecord;
+                            pnbp->preccLastSelected = pnre->pRecord;
                         }
                     }
                     break;
@@ -515,7 +517,7 @@ static MRESULT EXPENTRY PageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                             // record core for context menu
                             // or NULL for cnr whitespace
                         WinQueryPointerPos(HWND_DESKTOP,
-                                           &(pcnbp->ptlMenuMousePos));
+                                           &pnbp->ptlMenuMousePos);
                     break;
 
                     case CN_PICKUP:
@@ -579,15 +581,15 @@ static MRESULT EXPENTRY PageWmControl(PCREATENOTEBOOKPAGE pcnbp,
 
                     case CN_EXPANDTREE:
                         // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-                        mrc = WinDefDlgProc(pcnbp->hwndDlgPage, msg, mp1, mp2);
+                        mrc = WinDefDlgProc(pnbp->hwndDlgPage, msg, mp1, mp2);
                         if (cmnQuerySetting(sfTreeViewAutoScroll))
                         {
                             // store record for WM_TIMER later
-                            pcnbp->preccExpanded = (PRECORDCORE)mp2;
+                            pnbp->preccExpanded = (PRECORDCORE)mp2;
                             // and container also
-                            pcnbp->hwndExpandedCnr = pcnbp->hwndControl;
-                            WinStartTimer(WinQueryAnchorBlock(pcnbp->hwndDlgPage),
-                                          pcnbp->hwndDlgPage,
+                            pnbp->hwndExpandedCnr = pnbp->hwndControl;
+                            WinStartTimer(WinQueryAnchorBlock(pnbp->hwndDlgPage),
+                                          pnbp->hwndDlgPage,
                                           999,      // ID
                                           100);
                         }
@@ -595,15 +597,15 @@ static MRESULT EXPENTRY PageWmControl(PCREATENOTEBOOKPAGE pcnbp,
 
                     case CN_HELP:
                         // does caller want CN_HELP passed?
-                        if (pcnbp->fPassCnrHelp)
+                        if (pnbp->inbp.fPassCnrHelp)
                             // yes:
                             // call "item changed"
                             fCallItemChanged = TRUE;
                         else
                             // no (default), don't pass:
                             // same handling as with WM_HELP
-                            cmnDisplayHelp(pcnbp->somSelf,
-                                           pcnbp->ulDefaultHelpPanel);
+                            cmnDisplayHelp(pnbp->inbp.somSelf,
+                                           pnbp->inbp.ulDefaultHelpPanel);
                                 // V0.9.16 (2001-10-23) [umoeller]
                     break;
 
@@ -662,10 +664,10 @@ static MRESULT EXPENTRY PageWmControl(PCREATENOTEBOOKPAGE pcnbp,
         {
             // "important" message found:
             // call "item changed" callback
-            mrc = pcnbp->pfncbItemChanged(pcnbp,
-                                          ulItemID,
-                                          usNotifyCode,
-                                          ulExtra);
+            mrc = pnbp->inbp.pfncbItemChanged(pnbp,
+                                              ulItemID,
+                                              usNotifyCode,
+                                              ulExtra);
         }
     } // end if (szClassName[0] == '#')
 
@@ -679,7 +681,7 @@ static MRESULT EXPENTRY PageWmControl(PCREATENOTEBOOKPAGE pcnbp,
  *@@added V0.9.7 (2000-12-10) [umoeller]
  */
 
-static VOID PageWindowPosChanged(PCREATENOTEBOOKPAGE pcnbp,
+static VOID PageWindowPosChanged(PNOTEBOOKPAGE pnbp,
                                  MPARAM mp1)
 {
     PSWP pswp = (PSWP)mp1;
@@ -688,36 +690,35 @@ static VOID PageWindowPosChanged(PCREATENOTEBOOKPAGE pcnbp,
         _Pmpf(("fnwpPageCommon: WM_WINDOWPOSCHANGED"));
     #endif
 
-    if (!pcnbp)
+    if (!pnbp)
         return;
 
     if (pswp->fl & SWP_SHOW)
     {
         // notebook page is being shown:
         // call "initialize" callback
-        if (pcnbp->pfncbInitPage)
+        if (pnbp->inbp.pfncbInitPage)
         {
-            WinEnableWindowUpdate(pcnbp->hwndDlgPage, FALSE);
-            pcnbp->fPageVisible = TRUE;
-            pcnbp->pfncbInitPage(pcnbp,
+            WinEnableWindowUpdate(pnbp->hwndDlgPage, FALSE);
+            pnbp->fPageVisible = TRUE;
+            pnbp->inbp.pfncbInitPage(pnbp,
                                  CBI_SHOW | CBI_ENABLE);
                     // we also set the ENABLE flag so
                     // that the callback can re-enable
                     // controls when the page is being
                     // turned to
 
-            WinEnableWindowUpdate(pcnbp->hwndDlgPage, TRUE);
+            WinEnableWindowUpdate(pnbp->hwndDlgPage, TRUE);
         }
     }
     else if (pswp->fl & SWP_HIDE)
     {
         // notebook page is being hidden:
         // call "initialize" callback
-        if (pcnbp->pfncbInitPage)
+        if (pnbp->inbp.pfncbInitPage)
         {
-            pcnbp->fPageVisible = FALSE;
-            pcnbp->pfncbInitPage(pcnbp,
-                                 CBI_HIDE);
+            pnbp->fPageVisible = FALSE;
+            pnbp->inbp.pfncbInitPage(pnbp, CBI_HIDE);
         }
     }
 
@@ -725,14 +726,14 @@ static VOID PageWindowPosChanged(PCREATENOTEBOOKPAGE pcnbp,
     {
         // notebook is being resized:
         // was winhAdjustControls prepared?
-        if (pcnbp->pxac)
+        if (pnbp->pxac)
         {
             // yes:
-            winhAdjustControls(pcnbp->hwndDlgPage,
-                               pcnbp->pampControlFlags,
-                               pcnbp->cControlFlags,
+            winhAdjustControls(pnbp->hwndDlgPage,
+                               pnbp->inbp.pampControlFlags,
+                               pnbp->inbp.cControlFlags,
                                pswp,
-                               pcnbp->pxac);
+                               pnbp->pxac);
         }
     }
 }
@@ -744,7 +745,7 @@ static VOID PageWindowPosChanged(PCREATENOTEBOOKPAGE pcnbp,
  *@@added V0.9.7 (2000-12-10) [umoeller]
  */
 
-static VOID PageTimer(PCREATENOTEBOOKPAGE pcnbp,
+static VOID PageTimer(PNOTEBOOKPAGE pnbp,
                       MPARAM mp1)
 {
     #ifdef DEBUG_NOTEBOOKS
@@ -755,32 +756,32 @@ static VOID PageTimer(PCREATENOTEBOOKPAGE pcnbp,
     {
         case 1:
             // timer for caller: call callback
-            if (pcnbp)
-                if (pcnbp->pfncbTimer)
-                    pcnbp->pfncbTimer(pcnbp, 1);
+            if (pnbp)
+                if (pnbp->inbp.pfncbTimer)
+                    pnbp->inbp.pfncbTimer(pnbp, 1);
         break;
 
         case 999:
             // tree view auto-scroll timer:
             // CN_EXPANDTREE has set up the data we
             // need in pcnbp
-            if (pcnbp->preccExpanded->flRecordAttr & CRA_EXPANDED)
+            if (pnbp->preccExpanded->flRecordAttr & CRA_EXPANDED)
             {
                 PRECORDCORE     preccLastChild;
-                WinStopTimer(WinQueryAnchorBlock(pcnbp->hwndDlgPage),
-                             pcnbp->hwndDlgPage,
+                WinStopTimer(WinQueryAnchorBlock(pnbp->hwndDlgPage),
+                             pnbp->hwndDlgPage,
                              999);
                 // scroll the tree view properly
-                preccLastChild = WinSendMsg(pcnbp->hwndExpandedCnr,
+                preccLastChild = WinSendMsg(pnbp->hwndExpandedCnr,
                                             CM_QUERYRECORD,
-                                            pcnbp->preccExpanded,
+                                            pnbp->preccExpanded,
                                                // expanded PRECORDCORE from CN_EXPANDTREE
                                             MPFROM2SHORT(CMA_LASTCHILD,
                                                          CMA_ITEMORDER));
                 if ((preccLastChild) && (preccLastChild != (PRECORDCORE)-1))
                 {
                     // ULONG ulrc;
-                    cnrhScrollToRecord(pcnbp->hwndExpandedCnr,
+                    cnrhScrollToRecord(pnbp->hwndExpandedCnr,
                                        (PRECORDCORE)preccLastChild,
                                        CMA_TEXT,   // record text rectangle only
                                        TRUE);      // keep parent visible
@@ -808,7 +809,7 @@ static VOID PageTimer(PCREATENOTEBOOKPAGE pcnbp,
  *      excHandlerLoud in except.c. This will automatically write
  *      trap logs if a dialog page window proc traps. Of course,
  *      that doesn't save you from protecting your own mutex
- *      semaphores and stuff yourself; see except.c. for details.
+ *      semaphores and stuff yourself; see except.c for details.
  *
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
  *@@changed V0.9.0 [umoeller]: sped up window class analysis
@@ -842,7 +843,7 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
     // callbacks defined by the implementor
     TRY_LOUD(excpt1)
     {
-        PCREATENOTEBOOKPAGE pcnbp = NULL;
+        PNOTEBOOKPAGE pnbp = NULL;
 
         /*
          * WM_INITDLG:
@@ -851,9 +852,9 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 
         if (msg == WM_INITDLG)
         {
-            pcnbp = (PCREATENOTEBOOKPAGE)mp2;
+            pnbp = (PNOTEBOOKPAGE)mp2;
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-            PageInit(pcnbp, hwndDlg);
+            PageInit(pnbp, hwndDlg);
             fProcessed = TRUE;
         }
         else
@@ -865,9 +866,9 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
 
             // run message callback defined by caller, if any
 
-            if (    (pcnbp = (PCREATENOTEBOOKPAGE)WinQueryWindowPtr(hwndDlg, QWL_USER))
-                 && (pcnbp->pfncbMessage)
-                 && (pcnbp->pfncbMessage(pcnbp, msg, mp1, mp2, &mrc2))
+            if (    (pnbp = (PNOTEBOOKPAGE)WinQueryWindowPtr(hwndDlg, QWL_USER))
+                 && (pnbp->inbp.pfncbMessage)
+                 && (pnbp->inbp.pfncbMessage(pnbp, msg, mp1, mp2, &mrc2))
                )
             {
                 // TRUE returned == msg processed:
@@ -877,7 +878,7 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             }
         }
 
-        if (    (pcnbp)
+        if (    (pnbp)
              && (!fProcessed)
            )
         {
@@ -892,7 +893,7 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                  */
 
                 case WM_CONTROL:
-                    mrc = PageWmControl(pcnbp, msg, mp1, mp2);
+                    mrc = PageWmControl(pnbp, msg, mp1, mp2);
                 break;
 
                 /*
@@ -916,7 +917,7 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                             // container:
                             mrc = cnrhOwnerDrawRecord(mp2,
                                                       // V0.9.16 (2001-09-29) [umoeller]
-                                                      pcnbp->ulCnrOwnerDraw);
+                                                      pnbp->inbp.ulCnrOwnerDraw);
                     }
                     // else: return default FALSE
                 }
@@ -945,17 +946,17 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                         _Pmpf(("fnwpPageCommon: WM_MENUEND"));
                     #endif
 
-                    if (    (pcnbp->preccSource != (PRECORDCORE)-1)
-                         && (pcnbp->hwndSourceCnr)
+                    if (    (pnbp->preccSource != (PRECORDCORE)-1)
+                         && (pnbp->hwndSourceCnr)
                        )
                     {
-                        WinSendMsg(pcnbp->hwndSourceCnr,
+                        WinSendMsg(pnbp->hwndSourceCnr,
                                    CM_SETRECORDEMPHASIS,
-                                   (MPARAM)(pcnbp->preccSource),
+                                   (MPARAM)(pnbp->preccSource),
                                    MPFROM2SHORT(FALSE, CRA_SOURCE));
                         // reset hwndCnr to make sure we won't
                         // do this again
-                        pcnbp->hwndSourceCnr = 0;
+                        pnbp->hwndSourceCnr = 0;
                         // but leave preccSource as it is, because
                         // WM_MENUEND is posted before WM_COMMAND,
                         // and the caller might still need this
@@ -981,12 +982,12 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                     #endif
 
                     // call "item changed" callback
-                    if (pcnbp)
-                        if (pcnbp->pfncbItemChanged)
-                            mrc = pcnbp->pfncbItemChanged(pcnbp,
-                                                          usItemID,
-                                                          0,
-                                                          (ULONG)mp2);
+                    if (pnbp)
+                        if (pnbp->inbp.pfncbItemChanged)
+                            mrc = pnbp->inbp.pfncbItemChanged(pnbp,
+                                                              usItemID,
+                                                              0,
+                                                              (ULONG)mp2);
                 }
                 break;  // WM_COMMAND
 
@@ -1000,8 +1001,8 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                  */
 
                 case WM_HELP:
-                    cmnDisplayHelp(pcnbp->somSelf,
-                                   pcnbp->ulDefaultHelpPanel);
+                    cmnDisplayHelp(pnbp->inbp.somSelf,
+                                   pnbp->inbp.ulDefaultHelpPanel);
                             // V0.9.16 (2001-10-23) [umoeller]
                 break; // WM_HELP
 
@@ -1018,7 +1019,7 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                  */
 
                 case WM_WINDOWPOSCHANGED:
-                    PageWindowPosChanged(pcnbp, mp1);
+                    PageWindowPosChanged(pnbp, mp1);
                     // call default
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                 break;  // WM_WINDOWPOSCHANGED
@@ -1030,8 +1031,8 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                  */
 
                 case WM_MOUSEMOVE:
-                    if (pcnbp)
-                        if (pcnbp->fShowWaitPointer)
+                    if (pnbp)
+                        if (pnbp->fShowWaitPointer)
                         {
                             WinSetPointer(HWND_DESKTOP,
                                           WinQuerySysPointer(HWND_DESKTOP,
@@ -1050,8 +1051,8 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                  */
 
                 case WM_CONTROLPOINTER:
-                    if (pcnbp)
-                        if (pcnbp->fShowWaitPointer)
+                    if (pnbp)
+                        if (pnbp->fShowWaitPointer)
                         {
                             mrc = (MRESULT)WinQuerySysPointer(HWND_DESKTOP,
                                                               SPTR_WAIT,
@@ -1068,7 +1069,7 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                  */
 
                 case WM_TIMER:
-                    PageTimer(pcnbp, mp1);
+                    PageTimer(pnbp, mp1);
                 break;
 
                 /*
@@ -1085,9 +1086,9 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                  */
 
                 case XNTBM_UPDATE:
-                    if (pcnbp)
-                        if (pcnbp->pfncbInitPage)
-                            pcnbp->pfncbInitPage(pcnbp, (ULONG)mp1);
+                    if (pnbp)
+                        if (pnbp->inbp.pfncbInitPage)
+                            pnbp->inbp.pfncbInitPage(pnbp, (ULONG)mp1);
                 break;
 
                 /*
@@ -1096,7 +1097,7 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                  */
 
                 case WM_DESTROY:
-                    PageDestroy(pcnbp);
+                    PageDestroy(pnbp);
                     fProcessed = FALSE;
                     // mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                 break;
@@ -1126,7 +1127,7 @@ static MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
  *@@added V0.9.7 (2000-12-09) [umoeller]
  */
 
-static PNOTEBOOKPAGELISTITEM CreateNBLI(PCREATENOTEBOOKPAGE pcnbp) // in: new struct from ntbInsertPage
+static PNOTEBOOKPAGELISTITEM CreateNBLI(PNOTEBOOKPAGE pnbp) // in: new struct from ntbInsertPage
 {
     BOOL        fSemOwned = FALSE;
 
@@ -1139,17 +1140,17 @@ static PNOTEBOOKPAGELISTITEM CreateNBLI(PCREATENOTEBOOKPAGE pcnbp) // in: new st
         if (fSemOwned = LockNotebooks())
         {
             HWND        hwndDesktop = NULLHANDLE,
-                        hwndCurrent = pcnbp->hwndNotebook;
+                        hwndCurrent = pnbp->inbp.hwndNotebook;
             PLISTNODE   pNode;
             BOOL        fNotebookAlreadySubclassed = FALSE;
 
             pnbliNew = malloc(sizeof(NOTEBOOKPAGELISTITEM));
 
-            pnbliNew->pcnbp = pcnbp;
+            pnbliNew->pnbp = pnbp;
 
             // store new list item in structure, so we can easily
             // find it upon WM_DESTROY
-            pcnbp->pnbli = (PVOID)pnbliNew;
+            pnbp->pnbli = (PVOID)pnbliNew;
 
             // get frame to which this window belongs
             hwndDesktop = WinQueryDesktopWindow(WinQueryAnchorBlock(HWND_DESKTOP),
@@ -1158,12 +1159,12 @@ static PNOTEBOOKPAGELISTITEM CreateNBLI(PCREATENOTEBOOKPAGE pcnbp) // in: new st
             // find frame window handle of "Workplace Shell" window
             while ( (hwndCurrent) && (hwndCurrent != hwndDesktop))
             {
-                pcnbp->hwndFrame = hwndCurrent;
+                pnbp->hwndFrame = hwndCurrent;
                 hwndCurrent = WinQueryWindow(hwndCurrent, QW_PARENT);
             }
 
             if (!hwndCurrent)
-                pcnbp->hwndFrame = NULLHANDLE;
+                pnbp->hwndFrame = NULLHANDLE;
 
             lstAppendItem(G_pllOpenPages,
                           pnbliNew);
@@ -1179,13 +1180,14 @@ static PNOTEBOOKPAGELISTITEM CreateNBLI(PCREATENOTEBOOKPAGE pcnbp) // in: new st
             pNode = lstQueryFirstNode(G_pllSubclNotebooks);
             while (pNode)
             {
-                PSUBCLNOTEBOOKLISTITEM psnbliThis = (PSUBCLNOTEBOOKLISTITEM)pNode->pItemData;
-                if (psnbliThis)
-                    if (psnbliThis->hwndNotebook == pcnbp->hwndNotebook)
-                    {
-                        fNotebookAlreadySubclassed = TRUE;
-                        break;
-                    }
+                PSUBCLNOTEBOOKLISTITEM psnbliThis;
+                if (    (psnbliThis = (PSUBCLNOTEBOOKLISTITEM)pNode->pItemData)
+                     && (psnbliThis->hwndNotebook == pnbp->inbp.hwndNotebook)
+                   )
+                {
+                    fNotebookAlreadySubclassed = TRUE;
+                    break;
+                }
 
                 pNode = pNode->pNext;
             }
@@ -1194,14 +1196,14 @@ static PNOTEBOOKPAGELISTITEM CreateNBLI(PCREATENOTEBOOKPAGE pcnbp) // in: new st
             {
                 // notebook not yet subclassed:
                 // do it now
-                PSUBCLNOTEBOOKLISTITEM pSubclNBLINew = (PSUBCLNOTEBOOKLISTITEM)malloc(sizeof(SUBCLNOTEBOOKLISTITEM));
-                if (pSubclNBLINew)
+                PSUBCLNOTEBOOKLISTITEM pSubclNBLINew;
+                if (pSubclNBLINew = (PSUBCLNOTEBOOKLISTITEM)malloc(sizeof(SUBCLNOTEBOOKLISTITEM)))
                 {
-                    pSubclNBLINew->hwndNotebook = pcnbp->hwndNotebook;
+                    pSubclNBLINew->hwndNotebook = pnbp->inbp.hwndNotebook;
                     lstAppendItem(G_pllSubclNotebooks,
                                   pSubclNBLINew);
                     pSubclNBLINew->pfnwpNotebookOrig
-                        = WinSubclassWindow(pcnbp->hwndNotebook,
+                        = WinSubclassWindow(pnbp->inbp.hwndNotebook,
                                             fnwpSubclNotebook);
                 }
             }
@@ -1241,13 +1243,14 @@ static PSUBCLNOTEBOOKLISTITEM FindNBLI(HWND hwndNotebook)
             PLISTNODE   pNode = lstQueryFirstNode(G_pllSubclNotebooks);
             while (pNode)
             {
-                PSUBCLNOTEBOOKLISTITEM psnbliThis = (PSUBCLNOTEBOOKLISTITEM)pNode->pItemData;
-                if (psnbliThis)
-                    if (psnbliThis->hwndNotebook == hwndNotebook)
-                    {
-                        pSubclNBLI = psnbliThis;
-                        break;
-                    }
+                PSUBCLNOTEBOOKLISTITEM psnbliThis;
+                if (    (psnbliThis = (PSUBCLNOTEBOOKLISTITEM)pNode->pItemData)
+                     && (psnbliThis->hwndNotebook == hwndNotebook)
+                   )
+                {
+                    pSubclNBLI = psnbliThis;
+                    break;
+                }
 
                 pNode = pNode->pNext;
             }
@@ -1266,8 +1269,8 @@ static PSUBCLNOTEBOOKLISTITEM FindNBLI(HWND hwndNotebook)
  *      implementation for WM_DESTROY in fnwpSubclNotebook.
  *
  *      This has been extracted from fnwpSubclNotebook
- *      because it wasn't such a good idea to put the entire
- *      window proc in a mutex block.
+ *      because it wasn't such a terrific idea to put
+ *      the entire window proc in a mutex block.
  *
  *@@added V0.9.7 (2000-12-09) [umoeller]
  *@@changed V0.9.14 (2001-08-23) [umoeller]: fixed bad pointer on list node remove
@@ -1291,20 +1294,21 @@ static VOID DestroyNBLI(HWND hwndNotebook,
             while (pPageNode)
             {
                 PLISTNODE pNext = pPageNode->pNext; // V0.9.14 (2001-08-23) [umoeller]
-                PNOTEBOOKPAGELISTITEM pPageLI = (PNOTEBOOKPAGELISTITEM)pPageNode->pItemData;
-                if (    (pPageLI)
-                     && (pPageLI->pcnbp)
-                     && (pPageLI->pcnbp->hwndNotebook == hwndNotebook) // our page?
-                     && (!pPageLI->pcnbp->fPageInitialized)
+                PNOTEBOOKPAGELISTITEM pPageLI;
+                if (    (pPageLI = (PNOTEBOOKPAGELISTITEM)pPageNode->pItemData)
+                     && (pPageLI->pnbp)
+                     && (pPageLI->pnbp->inbp.hwndNotebook == hwndNotebook) // our page?
+                     && (!pPageLI->pnbp->fPageInitialized)
                             // page has NOT been initialized
                             // (this flag is set by fnwpPageCommon):
                    )
                 {
                     // remove it from list
                     #ifdef DEBUG_NOTEBOOKS
-                        _Pmpf(("  removed page ID %d", pPageLI->pcnbp->ulPageID));
+                        _Pmpf(("  removed page ID %d", pPageLI->inbp.ulPageID));
                     #endif
-                    free(pPageLI->pcnbp);
+                    _wpFreeMem(pPageLI->pnbp->inbp.somSelf,
+                               (PBYTE)pPageLI->pnbp);
                     lstRemoveNode(G_pllOpenPages,
                                   pPageNode);
                 }
@@ -1393,7 +1397,7 @@ static MRESULT EXPENTRY fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM m
  *      using the wpInsertSettingsPage function. However,
  *      this always uses fnwpPageCommon for the notebook's
  *      window procedure, which then calls the callbacks which
- *      you may specify in the CREATENOTEBOOKPAGE structure.
+ *      you may specify in the INSERTNOTEBOOKPAGE structure.
  *
  *      This function returns the return code of wpInsertSettingsPages.
  *
@@ -1403,22 +1407,27 @@ static MRESULT EXPENTRY fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM m
  *
  *      All the notebook functions are thread-safe.
  *
+ *      Note that the usage of this func changed with V0.9.18.
+ *      The caller is no longer required to allocate memory for
+ *      this function; instead, he fills an INSERTNOTEBOOKPAGE
+ *      struct on the stack which is then copied here.
+ *
  *      <B>Example usage</B> from some WPS "add notebook page" method:
  *
- +          PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+ +          INSERTNOTEBOOKPAGE inbp;
  +          // always zero all fields, because we don't use all of them
- +          memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
- +          pcnbp->somSelf = somSelf;
- +          pcnbp->hwndNotebook = hwndNotebook;  // from WPS method header
- +          pcnbp->hmod = ...;          // resource module handle
- +          pcnbp->ulDlgID = ...;       // dialog ID in pcnbp->hmod
- +          pcnbp->fMajorTab = TRUE;
- +          pcnbp->pszName = "~Test page";
- +          pcnbp->ulDefaultHelpPanel  = ...;
- +          pcnbp->ulPageID = ...;      // unique ID
- +          pcnbp->pfncbInitPage    = fncbYourPageInitPage;     // init callback
- +          pcnbp->pfncbItemChanged = fncbYourPageItemChanged;  // item-changed callback
- +          ntbInsertPage(pcnbp);
+ +          memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+ +          inbp.somSelf = somSelf;
+ +          inbp.hwndNotebook = hwndNotebook;  // from WPS method header
+ +          inbp.hmod = cmnQueryNLSModuleHandle(FALSE); // resource module handle
+ +          inbp.ulDlgID = ...;       // dialog ID in inbp.hmod
+ +          inbp.fMajorTab = TRUE;
+ +          inbp.pcszName = "~Test page";
+ +          inbp.ulDefaultHelpPanel  = ...;
+ +          inbp.ulPageID = ...;      // unique ID
+ +          inbp.pfncbInitPage    = fncbYourPageInitPage;     // init callback
+ +          inbp.pfncbItemChanged = fncbYourPageItemChanged;  // item-changed callback
+ +          ntbInsertPage(&inbp);
  *
  *      The <B>ulPageID</B> is not required, but strongly recommended
  *      to tell the different notebook pages apart (esp. when using
@@ -1433,7 +1442,9 @@ static MRESULT EXPENTRY fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM m
  *
  *      The "init" callback receives the following parameters:
  *
- *      --  PCREATENOTEBOOKPAGE pcnbp: notebook info struct
+ *      --  PNOTEBOOKPAGE pnbp:     notebook info struct, which contains
+ *                                  the INSERTNOTEBOOKPAGE which was passed
+ *                                  to this function
  *
  *      --  ULONG flFlags:           CBI_* flags (notebook.h), which determine
  *                                   the context of the call.
@@ -1456,15 +1467,15 @@ static MRESULT EXPENTRY fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM m
  *      It is recommended to have up to six blocks in your "init" callback
  *      (but you probably won't need all of them):
  *
- +      VOID fncbWhateverInitPage(PCREATENOTEBOOKPAGE pcnbp,  // notebook info struct
- +                                ULONG flFlags)              // CBI_* flags (notebook.h)
+ +      VOID fncbWhateverInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+ +                                ULONG flFlags)        // CBI_* flags (notebook.h)
  +      {
  +          if (flFlags & CBI_INIT) // initialize page; this gets called exactly once
  +          {
- +              pcnbp->pUser = malloc(...); // allocate memory for "Undo";
+ +              pnbp->pUser = malloc(...);  // allocate memory for "Undo";
  +                                          // this will be free()'d automatically
  +                                          // on destroy
- +              memcpy((PVOID)pcnbp->pUser, ...)  // backup data for "Undo"
+ +              memcpy((PVOID)pnbp->pUser, ...)  // backup data for "Undo"
  +
  +                   ...        // initialize controls (set styles, subclass controls, etc.)
  +          }
@@ -1507,13 +1518,14 @@ static MRESULT EXPENTRY fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM m
  *
  *      The "item changed" callback receives the following parameters:
  *
- *      --  PCREATENOTEBOOKPAGE pcnbp: notebook info struct
+ *      --  PNOTEBOOKPAGE pnbp:     notebook info struct (as with init
+ *                                  callback)
  *
- *      --  ULONG ulItemId:            ID of the changing item
+ *      --  ULONG ulItemId:         ID of the changing item
  *
- *      --  USHORT usNotifyCode:       as in WM_CONTROL; NULL for WM_COMMAND
+ *      --  USHORT usNotifyCode:    as in WM_CONTROL; NULL for WM_COMMAND
  *
- *      --  ULONG  ulExtra:            additional control data.
+ *      --  ULONG  ulExtra:         additional control data.
  *
  *      <B>ulExtra</B> has the following:
  *
@@ -1576,8 +1588,8 @@ static MRESULT EXPENTRY fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM m
  *
  *      <B>Implementing an "Undo" button</B>
  *
- *      CREATENOTEBOOKPAGE has the pUser and pUser2 fields, which are
- *      PVOIDs to user data. Upon CBI_INIT in the "init" callback, you
+ *      NOTEBOOKPAGE has the pUser and pUser2 fields, which are PVOIDs
+ *      to user data. Upon CBI_INIT in the "init" callback, you
  *      can allocate memory (using malloc()) and copy undo data into
  *      that buffer. In the "item changed" callback, check for the ID
  *      of your "Undo" button, copy that backed-up data back and call
@@ -1594,8 +1606,8 @@ static MRESULT EXPENTRY fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM m
  *
  *      Using timers can be helpful if your page should update itself
  *      periodically. This is extremely easy: just set
- *      CREATENOTEBOOKPAGE.ulTimer to the frequency (in ms) and
- *      install a timer callback in CREATENOTEBOOKPAGE.pfncbTimer,
+ *      INSERTNOTEBOOKPAGE.ulTimer to the frequency (in ms) and
+ *      install a timer callback in INSERTNOTEBOOKPAGE.pfncbTimer,
  *      which then gets called with that frequency. The timer is
  *      automatically started and stopped when the page is destroyed.
  *
@@ -1603,8 +1615,8 @@ static MRESULT EXPENTRY fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM m
  *      with CBI_SET to have your controls updated.
  *
  *      The "timer" callback gets these parameters:
- *      --  PCREATENOTEBOOKPAGE pcnbp: notebook info struct
- *      --  ULONG ulTimer:             timer id (always 1)
+ *      --  PNOTEBOOKPAGE pcnbp:    notebook info struct
+ *      --  ULONG ulTimer:          timer id (always 1)
  *
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
  *@@changed V0.9.1 (99-12-06) [umoeller]: added notebook subclassing
@@ -1612,66 +1624,81 @@ static MRESULT EXPENTRY fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM m
  *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed mutex problems
  *@@changed V0.9.9 (2001-03-27) [umoeller]: changed usItemID to ULONG in "item changed" callback
  *@@changed V0.9.16 (2001-10-23) [umoeller]: finally found out how to set minor tab titles
+ *@@changed V0.9.18 (2002-02-23) [umoeller]: finally adding proper memory management; adjusted prototype for new notebook structs
  */
 
-ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
+ULONG ntbInsertPage(PINSERTNOTEBOOKPAGE pinbp)
 {
-    PAGEINFO        pi;
-    ULONG           ulrc;
+    PNOTEBOOKPAGE   pnbpNew;
+    ULONG           ulrc = 0;
+    ULONG           dummy;
 
-    memset(&pi, 0, sizeof(PAGEINFO));
-
-    pi.cb                  = sizeof(PAGEINFO);
-    pi.hwndPage            = NULLHANDLE;
-    pi.pfnwp               = fnwpPageCommon;
-    pi.resid               = pcnbp->hmod;
-    pi.dlgid               = pcnbp->ulDlgID;
-    pi.pCreateParams       = pcnbp;
-    pi.usPageStyleFlags    = BKA_STATUSTEXTON |
-                                    pcnbp->usPageStyleFlags;
-    pi.usPageInsertFlags   = BKA_FIRST;
-    pi.usSettingsFlags     = ((pcnbp->fEnumerate) ? SETTINGS_PAGE_NUMBERS : 0);
-                                    // enumerate in status line
-    pi.pszName             = pcnbp->pszName;
-
-    pi.pszHelpLibraryName  = (PSZ)cmnQueryHelpLibrary();
-    pi.idDefaultHelpPanel  = pcnbp->ulDefaultHelpPanel;
-
-    // insert page
-    if (ulrc = _wpInsertSettingsPage(pcnbp->somSelf,
-                                     pcnbp->hwndNotebook,
-                                     &pi))
-            // this returns the notebook page ID
+    // added memory management V0.9.18 (2002-02-23) [umoeller]
+    if (pnbpNew = (PNOTEBOOKPAGE)_wpAllocMem(pinbp->somSelf,
+                                             sizeof(NOTEBOOKPAGE),
+                                             &dummy))
     {
-        // successfully inserted:
+        PAGEINFO        pi;
 
-        // if this is a major tab, hack the "page info"
-        // to display the minor tab title in the notebook
-        // context menu V0.9.16 (2001-10-23) [umoeller]
-        if (pcnbp->pszMinorName)
+        ZERO(pnbpNew);
+
+        // copy input data V0.9.18 (2002-02-23) [umoeller]
+        memcpy(&pnbpNew->inbp,
+               pinbp,
+               sizeof(INSERTNOTEBOOKPAGE));
+
+        memset(&pi, 0, sizeof(PAGEINFO));
+
+        pi.cb                  = sizeof(PAGEINFO);
+        pi.pfnwp               = fnwpPageCommon;
+        pi.resid               = pinbp->hmod;
+        pi.dlgid               = pinbp->ulDlgID;
+        // pass new NOTEBOOKPAGE as create param V0.9.18 (2002-02-23) [umoeller]
+        pi.pCreateParams       = pnbpNew;
+        pi.usPageStyleFlags    = BKA_STATUSTEXTON | pinbp->usPageStyleFlags;
+        pi.usPageInsertFlags   = BKA_FIRST;
+        pi.usSettingsFlags     = (pinbp->fEnumerate) ? SETTINGS_PAGE_NUMBERS : 0;
+                                        // enumerate in status line
+        pi.pszName             = (PSZ)pinbp->pcszName;
+
+        pi.pszHelpLibraryName  = (PSZ)cmnQueryHelpLibrary();
+        pi.idDefaultHelpPanel  = pinbp->ulDefaultHelpPanel;
+
+        // insert page
+        if (ulrc = _wpInsertSettingsPage(pinbp->somSelf,
+                                         pinbp->hwndNotebook,
+                                         &pi))
+                // this returns the notebook page ID
         {
-            BOOKPAGEINFO bpi;
-            memset(&bpi, 0, sizeof(&bpi));
-            bpi.cb = sizeof(BOOKPAGEINFO);
-            bpi.fl = BFA_MINORTABTEXT;
-            bpi.pszMinorTab = pcnbp->pszMinorName;
-            bpi.cbMinorTab = strlen(pcnbp->pszMinorName);
-            WinSendMsg(pcnbp->hwndNotebook,
-                       BKM_SETPAGEINFO,
-                       (MPARAM)ulrc,
-                       (MPARAM)&bpi);
+            // successfully inserted:
+
+            // if this is a major tab, hack the "page info"
+            // to display the minor tab title in the notebook
+            // context menu V0.9.16 (2001-10-23) [umoeller]
+            if (pinbp->pcszMinorName)
+            {
+                BOOKPAGEINFO bpi;
+                memset(&bpi, 0, sizeof(&bpi));
+                bpi.cb = sizeof(BOOKPAGEINFO);
+                bpi.fl = BFA_MINORTABTEXT;
+                bpi.pszMinorTab = (PSZ)pinbp->pcszMinorName;
+                bpi.cbMinorTab = strlen(pinbp->pcszMinorName);
+                WinSendMsg(pinbp->hwndNotebook,
+                           BKM_SETPAGEINFO,
+                           (MPARAM)ulrc,
+                           (MPARAM)&bpi);
+            }
+
+            // store PM notebook page ID
+            pnbpNew->ulNotebookPageID = ulrc;
+
+            // create SUBCLNOTEBOOKLISTITEM
+            CreateNBLI(pnbpNew);
         }
-
-        // store PM notebook page ID
-        pcnbp->ulNotebookPageID = ulrc;
-
-        // create SUBCLNOTEBOOKLISTITEM
-        CreateNBLI(pcnbp);
+        else
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "Notebook page could not be inserted (wpInsertSettingsPage failed).");
     }
-    else
-        winhDebugBox(HWND_DESKTOP,
-                     "XWorkplace: Error in ntbInsertPage",
-                     "Notebook page could not be inserted (wpInsertSettingsPage failed).");
 
     return (ulrc);
 }
@@ -1730,7 +1757,7 @@ APIRET ntbFormatPage(HWND hwndDlg,              // in: dialog frame to work on
 
 /*
  *@@ ntbQueryOpenPages:
- *      this function returns the CREATENOTEBOOKPAGE
+ *      this function returns the NOTEBOOKPAGE
  *      structures for currently open notebook pages, which
  *      are maintained by ntbInsertPage and fnwpPageCommon.
  *      This way you can iterate over all open pages and call
@@ -1748,20 +1775,21 @@ APIRET ntbFormatPage(HWND hwndDlg,              // in: dialog frame to work on
  *      Warning: This function returns all pages which have
  *      been inserted using ntbInsertPage. This does not
  *      necessarily mean that the INIT callback has been
- *      invoked on the page yet. You should check pcnbp->fPageVisible
+ *      invoked on the page yet. You should check inbp.fPageVisible
  *      for the current visibility of the page returned by
  *      this function.
  *
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
  *@@changed V0.9.0 [umoeller]: fixed an endless loop problem
  *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed mutex problems
+ *@@changed V0.9.18 (2002-02-23) [umoeller]: adjusted prototype for new notebook structs
  */
 
-PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp)
+PNOTEBOOKPAGE ntbQueryOpenPages(PNOTEBOOKPAGE pnbp)
 {
-    PLISTNODE           pNode = 0;
+    PLISTNODE               pNode = 0;
     PNOTEBOOKPAGELISTITEM   pItemReturn = 0;
-    BOOL                fSemOwned = FALSE;
+    BOOL                    fSemOwned = FALSE;
 
     TRY_QUIET(excpt1)
     {
@@ -1772,7 +1800,7 @@ PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp)
             {
                 pNode = lstQueryFirstNode(G_pllOpenPages);
 
-                if (pcnbp == NULL)
+                if (pnbp == NULL)
                 {
                     // pcnbp == NULL: return first item
                     if (pNode)
@@ -1783,7 +1811,7 @@ PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp)
                     while (pNode)
                     {
                         PNOTEBOOKPAGELISTITEM pItem = (PNOTEBOOKPAGELISTITEM)pNode->pItemData;
-                        if (pItem->pcnbp == pcnbp)
+                        if (pItem->pnbp == pnbp)
                         {
                             // page found: return next
                             pNode = pNode->pNext;
@@ -1809,7 +1837,7 @@ PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp)
     }
 
     if (pItemReturn)
-        return (pItemReturn->pcnbp);
+        return (pItemReturn->pnbp);
     else
         return (NULL);
 }
@@ -1846,21 +1874,21 @@ PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp)
 ULONG ntbUpdateVisiblePage(WPObject *somSelf, ULONG ulPageID)
 {
     ULONG ulrc = 0;
-    PCREATENOTEBOOKPAGE pcnbp = NULL;
+    PNOTEBOOKPAGE pnbp = NULL;
 
-    while (pcnbp = ntbQueryOpenPages(pcnbp))
+    while (pnbp = ntbQueryOpenPages(pnbp))
     {
-        if (pcnbp->fPageVisible)
+        if (pnbp->fPageVisible)
         {
             if (    (   (ulPageID == 0)     // don't care?
-                     || (pcnbp->ulPageID == ulPageID)
+                     || (pnbp->inbp.ulPageID == ulPageID)
                     )
                  && (   (somSelf == NULL)   // don't care?
-                     || (pcnbp->somSelf == somSelf)
+                     || (pnbp->inbp.somSelf == somSelf)
                     )
                )
             {
-                WinSendMsg(pcnbp->hwndDlgPage,
+                WinSendMsg(pnbp->hwndDlgPage,
                            XNTBM_UPDATE,
                            (MPARAM)(CBI_SET | CBI_ENABLE),
                            0);

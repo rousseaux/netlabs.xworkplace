@@ -961,7 +961,8 @@ static VOID CDPresParamChanged(HWND hwnd, MPARAM mp1)
                             pWinData->cx,
                             pWinData->cy,
                             SWP_SIZE);
-        break; }
+        }
+        break;
 
         default:
             fInvalidate = FALSE;
@@ -1052,12 +1053,11 @@ static MRESULT EXPENTRY fnwpCDPlayerClient(HWND hwnd, ULONG msg, MPARAM mp1, MPA
             break;
 
             case WM_BEGINDRAG:
-            {
                 WinSendMsg(WinQueryWindow(hwnd, QW_OWNER),  // the frame
                            WM_TRACKFRAME,
                            (MPARAM)TF_MOVE,
                            0);
-            break; }
+            break;
 
             case WM_CONTEXTMENU:
                 CDContextMenu(hwnd, mp1);
@@ -1106,7 +1106,8 @@ static MRESULT EXPENTRY fnwpCDPlayerClient(HWND hwnd, ULONG msg, MPARAM mp1, MPA
                 WinSetWindowPtr(hwnd, QWL_USER, 0);
 
                 mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
-            break; }
+            }
+            break;
 
             default:
                 mrc = WinDefWindowProc(hwnd, msg, mp1, mp2);
