@@ -8,10 +8,13 @@
 //
 #ifndef wpfsys_idl
 #define wpfsys_idl
-#include "wpobject.idl"
+// #include "wpobject.idl"
+#include "xfobj.idl"                    //# WPObject is replaced with XFldObject
+                                        //# V1.0.1 (2002-12-08) [umoeller]
 #include <somcls.idl>
 interface M_WPFileSystem;
-interface WPFileSystem : WPObject
+interface WPFileSystem : XFldObject     //# WPObject is replaced with XFldObject
+                                        //# V1.0.1 (2002-12-08) [umoeller]
 {
 
 //# methods originally published with Warp 3 Toolkit IDL file
@@ -272,7 +275,7 @@ interface WPFileSystem : WPObject
  };
 #endif /* __SOMIDL__ */
 };
-interface M_WPFileSystem : M_WPObject
+interface M_WPFileSystem : M_XFldObject      // WPObject is replaced with XFldObject
 {
   WPObject wpclsQueryAwakeObject( in PSZ pszInputPath );
   WPObject wpclsFileSysExists( in WPFolder Folder,

@@ -128,8 +128,8 @@
 #include "helpers\stringh.h"            // string helper routines
 
 // SOM headers which don't crash with prec. header files
-#include "xfobj.ih"
-#include "xfldr.ih"
+// #include "xfobj.ih"
+// #include "xfldr.ih"
 #include "xtrash.ih"
 #include "xtrashobj.ih"
 
@@ -314,7 +314,7 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanGeneralPage(XWPTrashCan *somSelf,
     }
 #endif
 
-    return (ntbInsertPage(&inbp));
+    return ntbInsertPage(&inbp);
 }
 
 /*
@@ -428,7 +428,7 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpQueryTrashObjectsCount(XWPTrashCan *somSelf)
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpQueryTrashObjectsCount");
 
-    return (_ulTrashObjectCount);
+    return _ulTrashObjectCount;
 }
 
 /*
@@ -562,10 +562,10 @@ SOM_Scope ULONG SOMLINK xtrc_xwpEmptyTrashCan(XWPTrashCan *somSelf,
     // XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpEmptyTrashCan");
 
-    return (trshEmptyTrashCan(somSelf,
-                              hab,   // no anchor block == asynchronously
-                              hwndConfirmOwner,
-                              pulDeleted));
+    return trshEmptyTrashCan(somSelf,
+                             hab,   // no anchor block == asynchronously
+                             hwndConfirmOwner,
+                             pulDeleted);
 }
 
 /*
@@ -574,16 +574,10 @@ SOM_Scope ULONG SOMLINK xtrc_xwpEmptyTrashCan(XWPTrashCan *somSelf,
  *      for objects in a container. For details refer to
  *      XFolder::xwpProcessViewCommand.
  *
- *      This is really a method override... but since SOM
- *      IDL doesn't know that XWPTrashCan is in fact
- *      derived from XFolder, we have to do it this way.
+ *      Starting with V1.0.1, we can now really override
+ *      this method through our optimized IDL files.
  *
- *      This replaces trash can subclassing now, which was
- *      used before V0.9.7. See trshProcessViewCommand for
- *      the implementation.
- *
- *@@added V0.9.7 (2001-01-13) [umoeller]
- *@@changed V1.0.0 (2002-08-26) [umoeller]: method renamed
+ *@@added V1.0.1 (2002-12-08) [umoeller]
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_xwpProcessViewCommand(XWPTrashCan *somSelf,
@@ -595,11 +589,18 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpProcessViewCommand(XWPTrashCan *somSelf,
     // XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpProcessViewCommand");
 
-    return trshProcessViewCommand(somSelf,
-                                  usCommand,
-                                  hwndCnr,
-                                  pFirstObject,
-                                  ulSelectionFlags);
+    if (trshProcessViewCommand(somSelf,
+                               usCommand,
+                               hwndCnr,
+                               pFirstObject,
+                               ulSelectionFlags))
+        return TRUE;
+
+    return XWPTrashCan_parent_XFolder_xwpProcessViewCommand(somSelf,
+                                                            usCommand,
+                                                            hwndCnr,
+                                                            pFirstObject,
+                                                            ulSelectionFlags);
 }
 
 /*
@@ -671,7 +672,7 @@ SOM_Scope void  SOMLINK xtrc_wpInitData(XWPTrashCan *somSelf)
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpInitData");
 
-    XWPTrashCan_parent_WPFolder_wpInitData(somSelf);
+    XWPTrashCan_parent_XFolder_wpInitData(somSelf);
 
     _fAlreadyPopulated = FALSE;
     _fFilledIconSet = FALSE;
@@ -745,8 +746,8 @@ SOM_Scope void  SOMLINK xtrc_wpObjectReady(XWPTrashCan *somSelf,
     // XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpObjectReady");
 
-    XWPTrashCan_parent_WPFolder_wpObjectReady(somSelf, ulCode,
-                                              refObject);
+    XWPTrashCan_parent_XFolder_wpObjectReady(somSelf, ulCode,
+                                             refObject);
 
     _xwpSetCorrectTrashIcon(somSelf, TRUE);
 
@@ -779,7 +780,7 @@ SOM_Scope void  SOMLINK xtrc_wpUnInitData(XWPTrashCan *somSelf)
     if (G_pDefaultTrashCan == somSelf)
         G_pDefaultTrashCan = NULL;
 
-    XWPTrashCan_parent_WPFolder_wpUnInitData(somSelf);
+    XWPTrashCan_parent_XFolder_wpUnInitData(somSelf);
 }
 
 /*
@@ -819,7 +820,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpSaveState(XWPTrashCan *somSelf)
     // save dirty mappings back to the trash directories
     trshSaveMappings(somSelf);
 
-    return (XWPTrashCan_parent_WPFolder_wpSaveState(somSelf));
+    return XWPTrashCan_parent_XFolder_wpSaveState(somSelf);
 }
 
 /*
@@ -848,8 +849,8 @@ SOM_Scope BOOL  SOMLINK xtrc_wpRestoreState(XWPTrashCan *somSelf,
     else
         _ulTrashObjectCount = 0;
 
-    return (XWPTrashCan_parent_WPFolder_wpRestoreState(somSelf,
-                                                       ulReserved));
+    return XWPTrashCan_parent_XFolder_wpRestoreState(somSelf,
+                                                      ulReserved);
 }
 
 /*
@@ -871,7 +872,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpSetup(XWPTrashCan *somSelf, PSZ pszSetupString)
     // XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpSetup");
 
-    if (brc = XWPTrashCan_parent_WPFolder_wpSetup(somSelf, pszSetupString))
+    if (brc = XWPTrashCan_parent_XFolder_wpSetup(somSelf, pszSetupString))
     {
         CHAR    szTemp[50];
         ULONG   cbTemp;
@@ -914,10 +915,10 @@ SOM_Scope ULONG  SOMLINK xtrc_wpFilterPopupMenu(XWPTrashCan *somSelf,
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpFilterPopupMenu");
 
-    return (XWPTrashCan_parent_WPFolder_wpFilterPopupMenu(somSelf,
-                                                          ulFlags,
-                                                          hwndCnr,
-                                                          fMultiSelect)
+    return (XWPTrashCan_parent_XFolder_wpFilterPopupMenu(somSelf,
+                                                         ulFlags,
+                                                         hwndCnr,
+                                                         fMultiSelect)
                     &~ (CTXT_TREE | CTXT_NEW
                             // do not allow switching to Tree view
                             // V0.9.19 (2002-04-17) [umoeller]
@@ -946,10 +947,10 @@ SOM_Scope BOOL  SOMLINK xtrc_wpModifyPopupMenu(XWPTrashCan *somSelf,
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpModifyPopupMenu");
 
-    brc = XWPTrashCan_parent_WPFolder_wpModifyPopupMenu(somSelf,
-                                                          hwndMenu,
-                                                          hwndCnr,
-                                                          iPosition);
+    brc = XWPTrashCan_parent_XFolder_wpModifyPopupMenu(somSelf,
+                                                       hwndMenu,
+                                                       hwndCnr,
+                                                       iPosition);
 
     if (    (brc)
          && (_ulTrashObjectCount)
@@ -964,8 +965,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpModifyPopupMenu(XWPTrashCan *somSelf,
             // currently populating:
             ulAttr = MIA_DISABLED;
 
-        winhInsertMenuSeparator(hwndMenu, MIT_END,
-                                (ulOfs + ID_XFMI_OFS_SEPARATOR));
+        cmnInsertSeparator(hwndMenu, MIT_END);
 
         // "empty trash can"
         strcpy(szEmptyItem, cmnGetString(ID_XTSI_TRASHEMPTY)) ; // pszTrashEmpty
@@ -1023,9 +1023,9 @@ SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemSelected(XWPTrashCan *somSelf,
         brc = FALSE;
     }
     else
-        brc = XWPTrashCan_parent_WPFolder_wpMenuItemSelected(somSelf,
-                                                             hwndFrame,
-                                                             ulMenuId);
+        brc = XWPTrashCan_parent_XFolder_wpMenuItemSelected(somSelf,
+                                                            hwndFrame,
+                                                            ulMenuId);
 
     return brc;
 }
@@ -1053,9 +1053,9 @@ SOM_Scope BOOL  SOMLINK xtrc_wpMenuItemHelpSelected(XWPTrashCan *somSelf,
                        ID_XSH_SETTINGS_TRASHCAN);
         return TRUE;
     }
-    else
-        return (XWPTrashCan_parent_WPFolder_wpMenuItemHelpSelected(somSelf,
-                                                                   MenuId));
+
+    return XWPTrashCan_parent_XFolder_wpMenuItemHelpSelected(somSelf,
+                                                             MenuId);
 }
 
 /*
@@ -1099,10 +1099,10 @@ SOM_Scope HWND  SOMLINK xtrc_wpOpen(XWPTrashCan *somSelf,
             // prevent wpSetIcon
             _fOpeningSettings = TRUE;
 
-        hwndFrame = XWPTrashCan_parent_WPFolder_wpOpen(somSelf,
-                                                       hwndCnr,
-                                                       ulView,
-                                                       param);
+        hwndFrame = XWPTrashCan_parent_XFolder_wpOpen(somSelf,
+                                                      hwndCnr,
+                                                      ulView,
+                                                      param);
         /* if (    (ulView == OPEN_CONTENTS)
              || (ulView == OPEN_DETAILS)
            )
@@ -1115,7 +1115,7 @@ SOM_Scope HWND  SOMLINK xtrc_wpOpen(XWPTrashCan *somSelf,
         _fOpeningSettings = FALSE;
     }
 
-    return (hwndFrame);
+    return hwndFrame;
 }
 
 /*
@@ -1167,10 +1167,10 @@ SOM_Scope BOOL  SOMLINK xtrc_wpPopulate(XWPTrashCan *somSelf,
         {
             // we must call the parent first;
             // otherwise, we'll get a "Wait" pointer all the time
-            if (XWPTrashCan_parent_WPFolder_wpPopulate(somSelf,
-                                                       ulReserved,
-                                                       pszPath,
-                                                       fFoldersOnly))
+            if (XWPTrashCan_parent_XFolder_wpPopulate(somSelf,
+                                                      ulReserved,
+                                                      pszPath,
+                                                      fFoldersOnly))
             {
                 PMPF_TRASHCAN(("%s -> wpPopulate, fFoldersOnly: %d, Flags: 0x%lX",
                                 _wpQueryTitle(somSelf),
@@ -1247,8 +1247,9 @@ SOM_Scope BOOL  SOMLINK xtrc_wpRefresh(XWPTrashCan *somSelf,
     // XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpRefresh");
 
-    brc = XWPTrashCan_parent_WPFolder_wpRefresh(somSelf, ulView,
-                                                pReserved);
+    brc = XWPTrashCan_parent_XFolder_wpRefresh(somSelf,
+                                               ulView,
+                                               pReserved);
 
     trshRefresh(somSelf);
 
@@ -1273,8 +1274,8 @@ SOM_Scope BOOL  SOMLINK xtrc_wpAddToContent(XWPTrashCan *somSelf,
     BOOL brc = FALSE;
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpAddToContent");
 
-    if (XWPTrashCan_parent_WPFolder_wpAddToContent(somSelf,
-                                                   Object))
+    if (XWPTrashCan_parent_XFolder_wpAddToContent(somSelf,
+                                                  Object))
     {
         brc = TRUE;
         if (_somIsA(Object, _XWPTrashObject))
@@ -1309,8 +1310,8 @@ SOM_Scope BOOL  SOMLINK xtrc_wpDeleteFromContent(XWPTrashCan *somSelf,
     // XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpDeleteFromContent");
 
-    if (XWPTrashCan_parent_WPFolder_wpDeleteFromContent(somSelf,
-                                                        Object))
+    if (XWPTrashCan_parent_XFolder_wpDeleteFromContent(somSelf,
+                                                       Object))
     {
         brc = TRUE;
         if (_somIsA(Object, _XWPTrashObject))
@@ -1369,7 +1370,7 @@ SOM_Scope ULONG  SOMLINK xtrc_wpDeleteContents(XWPTrashCan *somSelf,
     if (fdrNukeContents(somSelf))
         ulrc = OK_DELETE;
 
-    return (ulrc);
+    return ulrc;
 
 }
 
@@ -1394,7 +1395,7 @@ SOM_Scope MRESULT  SOMLINK xtrc_wpDragOver(XWPTrashCan *somSelf,
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpDragOver");
 
-    return (trshDragOver(somSelf, pdrgInfo));
+    return trshDragOver(somSelf, pdrgInfo);
 }
 
 /*
@@ -1446,8 +1447,8 @@ SOM_Scope ULONG  SOMLINK xtrc_wpAddObjectGeneralPage(XWPTrashCan *somSelf,
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpAddObjectGeneralPage");
 
-    return (_xwpAddTrashCanGeneralPage(somSelf,
-                                       hwndNotebook));
+    return _xwpAddTrashCanGeneralPage(somSelf,
+                                      hwndNotebook);
 }
 
 /*
@@ -1538,7 +1539,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpAddSettingsPages(XWPTrashCan *somSelf,
     // XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpAddSettingsPages");
 
-    XWPTrashCan_parent_WPFolder_wpAddSettingsPages(somSelf, hwndNotebook);
+    XWPTrashCan_parent_XFolder_wpAddSettingsPages(somSelf, hwndNotebook);
     _xwpAddTrashCanDrivesPage(somSelf, hwndNotebook);
     _xwpAddTrashCanSettingsPage(somSelf, hwndNotebook);
 
@@ -1572,7 +1573,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpSetIcon(XWPTrashCan *somSelf,
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpSetIcon");
 
     if (!_fOpeningSettings)
-        return XWPTrashCan_parent_WPFolder_wpSetIcon(somSelf, hptrNewIcon);
+        return XWPTrashCan_parent_XFolder_wpSetIcon(somSelf, hptrNewIcon);
 
     return FALSE;
 }
@@ -1606,7 +1607,7 @@ SOM_Scope XWPTrashCan*  SOMLINK xtrcM_xwpclsQueryDefaultTrashCan(M_XWPTrashCan *
         // V0.9.9 (2001-02-06) [umoeller]
         pDefaultTrashCan = cmnQueryObjectFromID(XFOLDER_TRASHCANID);
 
-    return (pDefaultTrashCan);
+    return pDefaultTrashCan;
 }
 
 /*
@@ -1644,7 +1645,7 @@ SOM_Scope BOOL  SOMLINK xtrcM_xwpclsSetDrivesSupport(M_XWPTrashCan *somSelf,
 {
     M_XWPTrashCanMethodDebug("M_XWPTrashCan","xtrcM_xwpclsSetDrivesSupport");
 
-    return (trshSetDrivesSupport(pabSupportedDrives));
+    return trshSetDrivesSupport(pabSupportedDrives);
 }
 
 /*
@@ -1674,7 +1675,7 @@ SOM_Scope BOOL  SOMLINK xtrcM_xwpclsQueryDrivesSupport(M_XWPTrashCan *somSelf,
 {
     M_XWPTrashCanMethodDebug("M_XWPTrashCan","xtrcM_xwpclsQueryDrivesSupport");
 
-    return (trshQueryDrivesSupport(pabSupportedDrives));
+    return trshQueryDrivesSupport(pabSupportedDrives);
 }
 
 /*
@@ -1698,7 +1699,7 @@ SOM_Scope void  SOMLINK xtrcM_wpclsInitData(M_XWPTrashCan *somSelf)
     // M_XWPTrashCanData *somThis = M_XWPTrashCanGetData(somSelf);
     M_XWPTrashCanMethodDebug("M_XWPTrashCan","xtrcM_wpclsInitData");
 
-    M_XWPTrashCan_parent_M_WPFolder_wpclsInitData(somSelf);
+    M_XWPTrashCan_parent_M_XFolder_wpclsInitData(somSelf);
 
     if (krnClassInitialized(G_pcszXWPTrashCan))
     {
@@ -1741,7 +1742,7 @@ SOM_Scope void  SOMLINK xtrcM_wpclsUnInitData(M_XWPTrashCan *somSelf)
 
     _wpclsDecUsage(_XWPTrashObject);
 
-    M_XWPTrashCan_parent_M_WPFolder_wpclsUnInitData(somSelf);
+    M_XWPTrashCan_parent_M_XFolder_wpclsUnInitData(somSelf);
 }
 
 /*
@@ -1781,7 +1782,7 @@ SOM_Scope PSZ  SOMLINK xtrcM_wpclsQueryTitle(M_XWPTrashCan *somSelf)
     /* M_XWPTrashCanData *somThis = M_XWPTrashCanGetData(somSelf); */
     M_XWPTrashCanMethodDebug("M_XWPTrashCan","xtrcM_wpclsQueryTitle");
 
-    return (cmnGetString(ID_XTSI_TRASHCAN)) ; // pszTrashCan
+    return cmnGetString(ID_XTSI_TRASHCAN);
 }
 
 /*
@@ -1869,7 +1870,7 @@ SOM_Scope ULONG  SOMLINK xtrcM_wpclsQueryIconData(M_XWPTrashCan *somSelf,
         pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
-    return (sizeof(ICONINFO));
+    return sizeof(ICONINFO);
 }
 
 /*
@@ -1896,7 +1897,7 @@ SOM_Scope ULONG  SOMLINK xtrcM_wpclsQueryIconDataN(M_XWPTrashCan *somSelf,
         pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
-    return (sizeof(ICONINFO));
+    return sizeof(ICONINFO);
 }
 
 

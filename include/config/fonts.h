@@ -107,6 +107,7 @@
                                     HWND hwndMenu);
 
         BOOL fonMenuItemSelected(XWPFontObject *somSelf,
+                                 HWND hwndFrame,
                                  ULONG ulMenuId);
 
         BOOL fonMenuItemHelpSelected(XWPFontObject *somSelf,

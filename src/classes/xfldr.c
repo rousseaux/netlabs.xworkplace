@@ -129,7 +129,7 @@
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
-#include "xfobj.ih"                     // XFldObject
+// #include "xfobj.ih"                     // XFldObject
 #include "xfldr.ih"
 
 // XWorkplace implementation headers
@@ -175,6 +175,10 @@ extern OBJECTLIST           G_llFavoriteFolders = {0};
 extern OBJECTLIST           G_llQuickOpenFolders = {0};
 #endif
                             // these two are exported in folder.h
+
+ULONG                       G_ulViewForModifyMenu;
+                            // workaround for wpModifyMenu bug
+                            // V1.0.1 (2002-12-08) [umoeller]
 
 /* ******************************************************************
  *
@@ -1216,7 +1220,8 @@ SOM_Scope BOOL  SOMLINK xf_xwpBuildToolBar(XFolder *somSelf,
                                            ULONG ulView)
 {
     HPOINTER    hptr;
-    ULONG       flStyle = _xwpQueryXFolderStyle(somSelf);
+    ULONG       flStyle = _xwpQueryXFolderStyle(somSelf),
+                fl2;
 
     XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_xwpBuildToolBar");
@@ -1256,32 +1261,34 @@ SOM_Scope BOOL  SOMLINK xf_xwpBuildToolBar(XFolder *somSelf,
     _xwpAddToolbarButton(somSelf,
                          hToolBar,
                          cmnGetString(ID_XSDI_MENU_ICONVIEW),
-                         TBBS_RADIO
+                         TBBS_COMMAND | TBBS_RADIO
                             | ((!(flStyle & XFFL_SPLIT_DETAILS))
                                 ? TBBS_CHECKINITIAL
                                 : 0),
-                         0, // WPMENUID_HELP,
+                         WPMENUID_CHANGETOICON,
                          hptr);
 
     cmnGetStandardIcon(STDICON_TB_DETAILS, &hptr, NULL, NULL);
     _xwpAddToolbarButton(somSelf,
                          hToolBar,
                          cmnGetString(ID_XSDI_MENU_DETAILSVIEW),
-                         TBBS_RADIO
+                         TBBS_COMMAND | TBBS_RADIO
                             | ((flStyle & XFFL_SPLIT_DETAILS)
                                 ? TBBS_CHECKINITIAL
                                 : 0),
-                         0, // WPMENUID_HELP,
+                         WPMENUID_CHANGETODETAILS,
                          hptr);
 
     cmnGetStandardIcon(STDICON_TB_SMALLICONS, &hptr, NULL, NULL);
+    fl2 = TBBS_COMMAND | TBBS_CHECK;
+    if (flStyle & XFFL_SPLIT_DETAILS)
+        fl2 |= WS_DISABLED | TBBS_CHECKINITIAL;
+    else if (!(flStyle & XFFL_SPLIT_NOMINI))
+        fl2 |= TBBS_CHECKINITIAL;
     _xwpAddToolbarButton(somSelf,
                          hToolBar,
                          cmnGetString(ID_XFSI_SMALLICONS),
-                         TBBS_CHECK
-                            | ((!(flStyle & XFFL_SPLIT_NOMINI))
-                                ? TBBS_CHECKINITIAL
-                                : 0),
+                         fl2,
                          *G_pulVarMenuOfs + ID_XFMI_OFS_SMALLICONS,
                          hptr);
 
@@ -1350,18 +1357,14 @@ SOM_Scope BOOL  SOMLINK xf_xwpAddToolbarButton(XFolder *somSelf,
         ptc->pcszClass = pcszClass;
         ptc->pcszTitle = pszBuf;
         ptc->flStyle = flStyle
-                    | TBBS_TEXT
-                    // | TBBS_MINIICON |
-                    | TBBS_BIGICON
-                    | TBBS_FLAT
-                    | TBBS_HILITE
+                    | cmnQuerySetting(sflToolBarStyle)
                     | TBBS_DROPMNEMONIC
                     | TBBS_AUTORESIZE
                     | WS_VISIBLE
                     ;
         ptc->id = usID;
         ptc->cx = (pcszTitle) ? 50 : 10;
-        ptc->cy = 50;
+        ptc->cy = 10;
         lstAppendItem(pll, ptc);
         brc = TRUE;
     }
@@ -1473,6 +1476,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpAddXFolderPages(XFolder *somSelf,
  *
  *@@added V0.9.1 (2000-01-17) [umoeller]
  *@@changed V0.9.16 (2001-10-11) [umoeller]: adjusted to new implementation
+ *@@changed V1.0.1 (2002-12-08) [umoeller]: now calling parent methods directly
  */
 
 SOM_Scope BOOL  SOMLINK xf_xwpQuerySetup2(XFolder *somSelf, PVOID pstrSetup)
@@ -1482,12 +1486,8 @@ SOM_Scope BOOL  SOMLINK xf_xwpQuerySetup2(XFolder *somSelf, PVOID pstrSetup)
 
     // call XFolder implementation
     if (fdrQuerySetup(somSelf, pstrSetup))
-    {
-        // manually resolve parent method
-        return wpshParentQuerySetup2(somSelf,
-                                     _somGetParent(_XFolder),
+        return parent_xwpQuerySetup2(somSelf,
                                      pstrSetup);
-    }
 
     return FALSE;
 }
@@ -1806,7 +1806,7 @@ SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
     {
         PVIEWITEM pvi = (PVIEWITEM)(pui + 1);
 
-        if (pvi->view == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW_SHOWING)
+        if (pvi->view == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLIT_SUBFILES)
         {
             // the view item "handle" is the view handle
             // of the split view's hwndFilesFrame
@@ -2396,7 +2396,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
 
     if ((pValue) && (brc))
         PMPF_RESTOREDATA(("Data %s (%s %d) size_in %d -> out %d",
-                wpshIdentifyRestoreID(pszClass, ulKey),
+                cmnIdentifyRestoreID(pszClass, ulKey),
                 pszClass, ulKey,
                 cbOrigValue,    // size in or 0 if size queried
                 *pcbValue));    // size out
@@ -2623,48 +2623,87 @@ SOM_Scope HWND  SOMLINK xf_wpDisplayMenu(XFolder *somSelf,
 }
 
 /*
- *@@ wpFilterPopupMenu:
- *      this WPObject instance method allows the object to
- *      filter out unwanted menu items from the context menu.
- *      This gets called before wpModifyPopupMenu.
+ *@@ wpFilterMenu:
+ *      this WPObject instance method was new with Warp 4
+ *      allows the object to filter out standard menu items
+ *      in a more fine-grained way than wpModifyPopupMenu.
+ *      For one, this gives the object the menu type that
+ *      is being built, and secondly this allows for
+ *      filtering more items than the 32 bits of the filter
+ *      flag in wpFilterPopupMenu have room for.
  *
- *      This removes default menu entries according to the
- *      global menu settings.
+ *      Once again however, the description of this method
+ *      in WPSREF is unusable. As input, this method
+ *      receives an array of ULONGs in pFlags. wpobject.h
+ *      in the 4.5 Toolkit lists the CTXT_* flags together
+ *      with the ULONG array item index where each flag
+ *      applies. pFlags->Flags[0] is equivalent to the flags
+ *      byte of the old wpFilterPopupMenu method.
  *
- *@@changed V0.9.5 (2000-09-20) [pr]: fixed context menu flags
- *@@changed V0.9.19 (2002-04-17) [umoeller]: adjusted for new menu handling
+ *      Note also that the WPS appears to ignore the return
+ *      value of this function.
+ *
+ *      With V1.0.1, we override this instead of
+ *      wpFilterPopupMenu for folders too. Note that the
+ *      WPS correctly passes the split view IDs with ulView
+ *      since apparently it runs thru the VIEWITEMs to
+ *      figure it out.
+ *
+ *@@added V1.0.1 (2002-12-08) [umoeller]
  */
 
-SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
-                                                 ULONG ulFlags,
-                                                 HWND hwndCnr,
-                                                 BOOL fMultiSelect)
+SOM_Scope BOOL  SOMLINK xf_wpFilterMenu(XFolder *somSelf,
+                                        FILTERFLAGS* pFlags,
+                                        HWND hwndCnr,
+                                        BOOL fMultiSelect,
+                                        ULONG ulMenuType,
+                                        ULONG ulView,
+                                        ULONG ulReserved)
 {
-    ULONG       flMenuFilter = 0;
-    XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpFilterPopupMenu");
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpFilterMenu");
 
-    // store the filter in the instance data so we can
-    // respect it in wpModifyPopupMenu V1.0.0 (2002-08-26) [umoeller]
-    flMenuFilter = XFolder_parent_WPFolder_wpFilterPopupMenu(somSelf,
-                                                             ulFlags,
-                                                             hwndCnr,
-                                                             fMultiSelect);
-    PMPF_MENUS(("parent flags:"));
-    PMPF_MENUS(("  CTXT_CRANOTHER %d", flMenuFilter & CTXT_CRANOTHER));
+    PMPF_MENUS(("entering, ulView is 0x%lX (%s)",
+                    ulView,
+                    cmnIdentifyView(ulView)));
+
+    XFolder_parent_WPFolder_wpFilterMenu(somSelf,
+                                         pFlags,
+                                         hwndCnr,
+                                         fMultiSelect,
+                                         ulMenuType,
+                                         ulView,
+                                         ulReserved);
+
+    PMPF_MENUS(("  CTXT_CRANOTHER %d", pFlags->Flags[0] & CTXT_CRANOTHER));
 
     // if object has been deleted already (ie. is in trashcan),
     // remove delete
     if (_xwpQueryDeletion(somSelf, NULL, NULL))
-        flMenuFilter &= ~CTXT_DELETE; // V0.9.5 (2000-09-20) [pr]
+        pFlags->Flags[0] &= ~CTXT_DELETE; // V0.9.5 (2000-09-20) [pr]
 
-    // now suppress default menu items according to
-    // Global Settings;
-    // the DefaultMenuItems field in pGlobalSettings is
-    // ready-made for this function; the "Workplace Shell"
-    // notebook page for removing menu items sets this field with
-    // the proper CTXT_xxx flags
-    return (flMenuFilter & ~(cmnQuerySetting(mnuQueryMenuWPSSetting(somSelf))));
+    pFlags->Flags[0] &= ~(cmnQuerySetting(mnuQueryMenuWPSSetting(somSelf)));
+
+    if (    (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
+         || (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLIT_SUBFILES)
+       )
+    {
+        // the WPS hasn't identified these view types and kicked
+        // the "switch to ..." items out of the view menu: let's
+        // add them back in
+        if (_xwpQueryXFolderStyle(somSelf) & XFFL_SPLIT_DETAILS)
+            // split view is in details mode:
+            pFlags->Flags[0] |= CTXT_CHANGETOICON;
+        else
+            // split view is in icon mode:
+            pFlags->Flags[0] |= CTXT_CHANGETODETAILS;
+    }
+
+    // store ulView in global variable because wpModifyMenu
+    // is highly buggy
+    G_ulViewForModifyMenu = ulView;
+
+    return TRUE;
 }
 
 /*
@@ -2714,6 +2753,10 @@ SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
  *          but not described in WPSREF. I think this is what comes in
  *          if the system menu is being built for an open object view.
  *
+ *      Be warned, the ulView parameter appears to be always 0, which
+ *      is not terribly helpful (as opposed to wpFilterMenu, where this
+ *      works).
+ *
  *@@added V1.0.0 (2002-08-31) [umoeller]
  */
 
@@ -2749,7 +2792,7 @@ SOM_Scope BOOL  SOMLINK xf_wpModifyMenu(XFolder *somSelf,
                 : (ulMenuType == MENU_USER) ? "MENU_USER"
                 : "unknown",
                 ulView,
-                mnuQueryViewName(ulView)
+                cmnIdentifyView(ulView)
                 ));
 
     if (brc = XFolder_parent_WPFolder_wpModifyMenu(somSelf,
@@ -2764,7 +2807,7 @@ SOM_Scope BOOL  SOMLINK xf_wpModifyMenu(XFolder *somSelf,
                                   hwndMenu,
                                   hwndCnr,
                                   ulMenuType,
-                                  ulView);
+                                  G_ulViewForModifyMenu);       // stored in wpFilterMenu
     }
 
     PMPF_MENUS(("returning %d", brc));
@@ -3421,7 +3464,7 @@ SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
                 {
                     PVIEWITEM   pvi = (PVIEWITEM)(pui + 1);
                     HWND        hwndCnr;
-                    if (    (pvi->view == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW_SHOWING)
+                    if (    (pvi->view == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLIT_SUBFILES)
                          // we set the following flag in the split view while we're
                          // populating
                          && (!(pvi->ulViewState & VIEWSTATE_OPENING))
@@ -3687,7 +3730,7 @@ SOM_Scope void  SOMLINK xf_wpRedrawFolderBackground(XFolder *somSelf)
 
     TRY_LOUD(excpt1)
     {
-        PMPF_POPULATESPLITVIEW(("checking viewitems"));
+        PMPF_SPLITVIEW(("checking viewitems"));
         if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
         {
             PUSEITEM pui = NULL;
@@ -3697,7 +3740,7 @@ SOM_Scope void  SOMLINK xf_wpRedrawFolderBackground(XFolder *somSelf)
 
                 if (         // is this folder currently showing in the right half
                              // of a split view?
-                        (    (pvi->view == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW_SHOWING)
+                        (    (pvi->view == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLIT_SUBFILES)
                              // is this folder currently showing as the root of
                              // a split view (i.e. in the left half of a split view)?
                           || ((pvi->view == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW))
@@ -3708,9 +3751,9 @@ SOM_Scope void  SOMLINK xf_wpRedrawFolderBackground(XFolder *somSelf)
                    )
                 {
                     // yes: update
-                    PMPF_POPULATESPLITVIEW(("found hwnd 0x%lX", pvi->handle));
+                    PMPF_SPLITVIEW(("found hwnd 0x%lX", pvi->handle));
                     WinPostMsg(pvi->handle,
-                               FM_SETCNRLAYOUT,
+                               FM_FDRBACKGROUNDCHANGED,     // V1.0.1 (2002-11-30) [umoeller]
                                (MPARAM)somSelf,
                                0);
                 }

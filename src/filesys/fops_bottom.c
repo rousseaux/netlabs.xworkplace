@@ -103,7 +103,7 @@
 #include "helpers\linklist.h"           // linked list helper routines
 
 // SOM headers which don't crash with prec. header files
-#include "xfobj.ih"
+// #include "xfobj.ih"
 #include "xfldr.ih"
 #include "xfont.ih"
 #include "xfontfile.ih"
@@ -1320,7 +1320,7 @@ APIRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                                     // these have all piled up for the sneaky stuff
                                     // above and will cause some internal overflow
                                     // if we don't give the WPS a chance to process them!
-                                    fdrFlushNotifications(pSubObjThis);
+                                    _wpFlushNotifications(pSubObjThis);
                                 } // end if (_somIsA(pSubObjThis, _WPFolder))
 
                                 PMPF_TRASHCAN(("calling _wpFree"));

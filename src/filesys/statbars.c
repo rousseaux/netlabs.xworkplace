@@ -5,10 +5,7 @@
  *
  *      --  status bar window handling (see stbCreate);
  *
- *      -- status bar info translation logic (see stbComposeText)
- *
- *      -- status bar notebook callbacks used from XFldWPS (xfwps.c);
- *         these have been moved here with V0.9.0.
+ *      --  status bar info translation logic (see stbComposeText)
  *
  *      More status bar code can be found with the following:
  *
@@ -37,6 +34,9 @@
  *
  *      With V0.9.19, the status bar window code was moved into
  *      this file as well.
+ *
+ *      Status bar notebook pages were moved to statbar_pages.c
+ *      with V1.0.1 (2002-12-08) [umoeller].
  *
  *@@header "filesys\statbars.h"
  */
@@ -77,16 +77,10 @@
 #define INCL_WINSYS             // needed for presparams
 #define INCL_WININPUT
 #define INCL_WINTIMER
-#define INCL_WINMENUS
-#define INCL_WINPOINTERS
-#define INCL_WINDIALOGS
-#define INCL_WINBUTTONS
 #define INCL_WINSTATICS
-#define INCL_WINENTRYFIELDS
 #define INCL_WINSHELLDATA       // Prf* functions
 #define INCL_WINPROGRAMLIST     // needed for PROGDETAILS, wppgm.h
 
-#define INCL_GPILOGCOLORTABLE
 #define INCL_GPIPRIMITIVES
 #include <os2.h>
 
@@ -100,13 +94,10 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
-#include "helpers\comctl.h"             // common controls (window procs)
-#include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
-#include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\gpih.h"               // GPI helper routines
-#include "helpers\nls.h"                // National Language Support helpers
+#include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
@@ -114,17 +105,15 @@
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
-#include "xfobj.ih"
+// #include "xfobj.ih"
 #include "xfldr.ih"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
-#include "shared\classes.h"             // WPS class list helper functions
 #include "shared\classtest.h"           // some cheap funcs for WPS class checks
 #include "shared\common.h"              // the majestic XWorkplace include file
-#include "shared\helppanels.h"          // all XWorkplace help panel IDs
-#include "shared\notebook.h"            // generic XWorkplace notebook handling
 
+#include "helpers\comctl.h"             // common controls (window procs)
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrsplit.h"           // folder split views
 #include "filesys\fdrsubclass.h"        // folder subclassing engine
@@ -138,7 +127,6 @@
 #include <wpdisk.h>                     // WPDisk
 #include <wppgm.h>                      // WPProgram
 
-// finally, our own header file
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 /* ******************************************************************
@@ -152,14 +140,6 @@ static CHAR    G_szWPProgramStatusBarMnemonics[CCHMAXMNEMONICS] = "";
 static CHAR    G_szWPDiskStatusBarMnemonics[CCHMAXMNEMONICS] = "";
 static CHAR    G_szWPFileSystemStatusBarMnemonics[CCHMAXMNEMONICS] = "";
 static STATIC CHAR    G_szWPUrlStatusBarMnemonics[CCHMAXMNEMONICS] = "";
-
-// WPUrl class object; to preserve compatibility with Warp 3,
-// where this class does not exist, we call the SOM kernel
-// explicitly to get the class object.
-// The initial value of -1 means that we have not queried
-// this class yet. After the first query, this either points
-// to the class object or is NULL if the class does not exist.
-static SOMClass    *G_WPUrl = (SOMClass*)-1;
 
 STATIC MRESULT EXPENTRY fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM mp2);
 
@@ -186,9 +166,11 @@ BOOL stbClassCanHaveStatusBars(WPFolder *somSelf)
     PCSZ    pcszClass;
     return (
                 // no status bar for active Desktop
-                (somSelf != cmnQueryActiveDesktop())
+                // (somSelf != cmnQueryActiveDesktop())
+                        // er, well, views other than the active Desktop window
+                        // can have status bars V1.0.1 (2002-12-08) [umoeller]
                 // rule out object desktop classes V0.9.19 (2002-04-17) [umoeller]
-             && (pcszClass = _somGetClassName(somSelf))
+                (pcszClass = _somGetClassName(somSelf))
              && (strcmp(pcszClass, G_pcszTabLaunchPad))
              && (strcmp(pcszClass, G_pcszControlCenter))
            );
@@ -215,6 +197,47 @@ BOOL stbFolderWantsStatusBars(WPFolder *somSelf)
 }
 
 /*
+ *@@ stbViewCanHaveBars:
+ *
+ *@@added V1.0.1 (2002-12-08) [umoeller]
+ */
+
+BOOL stbViewCanHaveBars(WPFolder *somSelf,
+                        HWND hwndFrame,
+                        ULONG ulView,
+                        XWPSETTING s)           // in: sflSBForViews or sflTBForViews
+{
+    ULONG   flViews;
+
+    return (
+             // 1) rule out desktop and Object Desktop classes
+             // V0.9.19 (2002-04-17) [umoeller]
+                (    (!hwndFrame)
+                  || (hwndFrame != cmnQueryActiveDesktopHWND())
+                )
+             && (stbClassCanHaveStatusBars(somSelf))
+             // 2) status bar only if allowed for the current view type
+             && (flViews = cmnQuerySetting(sflSBForViews))
+             && (
+                    (    (ulView == OPEN_CONTENTS)
+                      && (flViews & SBV_ICON)
+                    )
+                 || (    (ulView == OPEN_TREE)
+                      && (flViews & SBV_TREE)
+                    )
+                 || (    (ulView == OPEN_DETAILS)
+                      && (flViews & SBV_DETAILS)
+                    )
+                 || (    (    (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
+                           || (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLIT_SUBFILES)
+                         )
+                      && (flViews & SBV_SPLIT)
+                    )
+                )
+           );
+}
+
+/*
  *@@ stbViewHasStatusBar:
  *      returns TRUE if the given view for the given
  *      folder should have a status bar.
@@ -233,38 +256,24 @@ BOOL stbFolderWantsStatusBars(WPFolder *somSelf)
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
  *@@changed V1.0.1 (2002-11-30) [umoeller]: added split view support
+ *@@changed V1.0.1 (2002-12-08) [umoeller]: added hwndFrame to allow bars for non-active desktop windows
  */
 
 BOOL stbViewHasStatusBar(WPFolder *somSelf,
-                         ULONG ulView)         // OPEN_CONTENTS, OPEN_TREE, OPEN_DETAILS, or ID_XFMI_OFS_SPLITVIEW
+                         HWND hwndFrame,       // in: folder frame for desktop checks
+                         ULONG ulView)         // in: OPEN_CONTENTS, OPEN_TREE, OPEN_DETAILS, or ID_XFMI_OFS_SPLITVIEW
 {
-    ULONG               flViews;
-
     return (
 #ifndef __NOCFGSTATUSBARS__
                 (cmnQuerySetting(sfStatusBars))
              &&
 #endif
                 stbFolderWantsStatusBars(somSelf)
-             // 2) rule out desktop and Object Desktop classes
-             // V0.9.19 (2002-04-17) [umoeller]
-             && (stbClassCanHaveStatusBars(somSelf))
-             // 4) status bar only if allowed for the current view type
-             && (flViews = cmnQuerySetting(sflSBForViews))
-             && (
-                    (    (ulView == OPEN_CONTENTS)
-                      && (flViews & SBV_ICON)
-                    )
-                 || (    (ulView == OPEN_TREE)
-                      && (flViews & SBV_TREE)
-                    )
-                 || (    (ulView == OPEN_DETAILS)
-                      && (flViews & SBV_DETAILS)
-                    )
-                 || (    (ulView == ID_XFMI_OFS_SPLITVIEW)
-                      && (flViews & SBV_SPLIT)
-                    )
-                )
+             && stbViewCanHaveBars(somSelf,
+                                   hwndFrame,
+                                   ulView,
+                                   sflSBForViews)
+                    // V1.0.1 (2002-12-08) [umoeller]
            );
 }
 
@@ -283,6 +292,7 @@ BOOL stbViewHasStatusBar(WPFolder *somSelf,
  */
 
 BOOL stbViewHasToolBar(WPFolder *somSelf,
+                       HWND hwndFrame,       // in: folder frame for desktop checks
                        ULONG ulView)         // OPEN_CONTENTS, OPEN_TREE, OPEN_DETAILS, or ID_XFMI_OFS_SPLITVIEW
 {
     ULONG               flViews;
@@ -293,25 +303,10 @@ BOOL stbViewHasToolBar(WPFolder *somSelf,
              &&
 #endif
                 stbFolderWantsStatusBars(somSelf)
-             // 2) rule out desktop and Object Desktop classes
-             // V0.9.19 (2002-04-17) [umoeller]
-             && (stbClassCanHaveStatusBars(somSelf))
-             // 4) status bar only if allowed for the current view type
-             && (flViews = cmnQuerySetting(sflSBForViews))
-             && (
-                    (    (ulView == OPEN_CONTENTS)
-                      && (flViews & SBV_ICON)
-                    )
-                 || (    (ulView == OPEN_TREE)
-                      && (flViews & SBV_TREE)
-                    )
-                 || (    (ulView == OPEN_DETAILS)
-                      && (flViews & SBV_DETAILS)
-                    )
-                 || (    (ulView == ID_XFMI_OFS_SPLITVIEW)
-                      && (flViews & SBV_SPLIT)
-                    )
-                )
+             && stbViewCanHaveBars(somSelf,
+                                   hwndFrame,
+                                   ulView,
+                                   sflTBForViews)
            );
 }
 
@@ -433,7 +428,7 @@ HWND stbCreate(PSUBCLFOLDERVIEW psli2)
         {
             PMPF_STATUSBARS(("    status bar already exists, posting STBM_UPDATESTATUSBAR"));
 
-            WinPostMsg(psli2->hwndStatusBar, STBM_UPDATESTATUSBAR, MPNULL, MPNULL);
+            WinPostMsg(psli2->hwndStatusBar, STBM_UPDATESTATUSBAR, 0, 0);
             // and quit
         }
         // else create status bar as a static control
@@ -559,16 +554,16 @@ HWND stbCreate(PSUBCLFOLDERVIEW psli2)
             } // end switch (ulView)
 
             // enforce reformatting / repaint of frame window
-            WinSendMsg(psli2->hwndFrame, WM_UPDATEFRAME, MPNULL, MPNULL);
+            WinSendMsg(psli2->hwndFrame, WM_UPDATEFRAME, 0, 0);
 
             // update status bar contents
-            WinPostMsg(psli2->hwndStatusBar, STBM_UPDATESTATUSBAR, MPNULL, MPNULL);
+            WinPostMsg(psli2->hwndStatusBar, STBM_UPDATESTATUSBAR, 0, 0);
 
             hrc = psli2->hwndStatusBar;
         }
     }
 
-    return (hrc);
+    return hrc;
 }
 
 /*
@@ -598,7 +593,7 @@ VOID stbDestroy(PSUBCLFOLDERVIEW psli2)
                                        psli2->hwndFrame);
 
         psli2->hwndStatusBar = 0;
-        WinSendMsg(psli2->hwndFrame, WM_UPDATEFRAME, (MPARAM)0, MPNULL);
+        WinSendMsg(psli2->hwndFrame, WM_UPDATEFRAME, 0, 0);
         WinDestroyWindow(hwndStatus);
 
         // decrease the size of the frame window by the status bar height,
@@ -701,6 +696,7 @@ BOOL _Optlink stb_UpdateCallback(WPFolder *somSelf,
             // depending on the new settings
             // V0.9.19 (2002-04-17) [umoeller]
             BOOL fNewVisible = stbViewHasStatusBar(somSelf,
+                                                   hwndView,    // V1.0.1 (2002-12-08) [umoeller]
                                                    ulView);
 
 
@@ -756,8 +752,8 @@ BOOL _Optlink stb_PostCallback(WPFolder *somSelf,
            )
             WinPostMsg(psfv->hwndStatusBar,
                        msg,
-                       MPNULL,
-                       MPNULL);
+                       0,
+                       0);
     }
 
     return TRUE;
@@ -1178,9 +1174,9 @@ STATIC VOID StatusPresParamChanged(HWND hwndBar,
         psbd->fDontBroadcast = FALSE;
         // update parent's frame controls (because font size
         // might have changed)
-        WinSendMsg(WinQueryWindow(hwndBar, QW_PARENT), WM_UPDATEFRAME, MPNULL, MPNULL);
+        WinSendMsg(WinQueryWindow(hwndBar, QW_PARENT), WM_UPDATEFRAME, 0, 0);
         // update ourselves
-        WinPostMsg(hwndBar, STBM_UPDATESTATUSBAR, MPNULL, MPNULL);
+        WinPostMsg(hwndBar, STBM_UPDATESTATUSBAR, 0, 0);
         // and quit
         return;
     }
@@ -1209,8 +1205,8 @@ STATIC VOID StatusPresParamChanged(HWND hwndBar,
             // might have changed)
             WinSendMsg(WinQueryWindow(hwndBar, QW_PARENT),
                        WM_UPDATEFRAME,
-                       MPNULL,
-                       MPNULL);
+                       0,
+                       0);
         }
         break;
 
@@ -1232,7 +1228,7 @@ STATIC VOID StatusPresParamChanged(HWND hwndBar,
             else
                 cmnSetSetting(slSBBgndColor, ul);
 
-            WinPostMsg(hwndBar, STBM_UPDATESTATUSBAR, MPNULL, MPNULL);
+            WinPostMsg(hwndBar, STBM_UPDATESTATUSBAR, 0, 0);
         }
         break;
     }
@@ -1241,7 +1237,7 @@ STATIC VOID StatusPresParamChanged(HWND hwndBar,
     // this is handled by the Worker thread
     xthrPostWorkerMsg(WOM_UPDATEALLSTATUSBARS,
                       (MPARAM)2,      // update display
-                      MPNULL);
+                      0);
 }
 
 /*
@@ -1494,7 +1490,7 @@ PSZ stbVar1000Double(PSZ pszTarget,
             }
         }
 
-    return(pszTarget);
+    return pszTarget;
 }
 
 /*
@@ -1532,32 +1528,7 @@ PSZ stbVar1024Double(PSZ pszTarget,
             }
         }
 
-    return(pszTarget);
-}
-
-/*
- *@@ ResolveWPUrl:
- *      if called for the first time, sets G_WPUrl
- *      to either the WPUrl class object or NULL
- *      if the class doesn't exist (Warp 3).
- *
- *@@added V0.9.14 (2001-07-31) [umoeller]
- *@@changed V0.9.16 (2001-10-28) [umoeller]: fixed SOM resource leak
- */
-
-STATIC VOID ResolveWPUrl(VOID)
-{
-    if (G_WPUrl == (SOMClass*)-1)
-    {
-        // WPUrl class object not queried yet: do it now
-        somId    somidWPUrl = somIdFromString("WPUrl");
-        G_WPUrl = _somFindClass(SOMClassMgrObject, somidWPUrl, 0, 0);
-        // _WPUrl now either points to the WPUrl class object
-        // or is NULL if the class is not installed (Warp 3!).
-        // In this case, the object will be treated as a regular
-        // file-system object.
-        SOMFree(somidWPUrl);        // V0.9.16 (2001-10-28) [umoeller]
-    }
+    return pszTarget;
 }
 
 #ifndef __NOCFGSTATUSBARS__
@@ -1579,7 +1550,7 @@ BOOL stbClassAddsNewMnemonics(SOMClass *pClassObject)
              || (pClassObject == _WPProgram)
              || (pClassObject == _WPDisk)
              || (pClassObject == _WPFileSystem)
-             || ( (G_WPUrl != NULL) && (pClassObject == G_WPUrl) )
+             || (pClassObject == ctsResolveWPUrl()) // V1.0.1 (2002-12-08) [umoeller]
            );
 }
 
@@ -1610,11 +1581,10 @@ BOOL stbClassAddsNewMnemonics(SOMClass *pClassObject)
 BOOL stbSetClassMnemonics(SOMClass *pClassObject,
                           PSZ pszText)
 {
-    ResolveWPUrl();
-
-    if (G_WPUrl)
+    SOMClass *pWPUrl;
+    if (pWPUrl = ctsResolveWPUrl())
     {
-        if (_somDescendedFrom(pClassObject, G_WPUrl))
+        if (_somDescendedFrom(pClassObject, pWPUrl))
         {
             // provoke a reload of the settings
             // in stbQueryClassMnemonics
@@ -1624,10 +1594,10 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
             // pszText == NULL, the key will be deleted,
             // and stbQueryClassMnemonics will use
             // the default value
-            return (PrfWriteProfileString(HINI_USERPROFILE,
-                                          (PSZ)INIAPP_XWORKPLACE,
-                                          (PSZ)INIKEY_SBTEXT_WPURL,
-                                          pszText));
+            return PrfWriteProfileString(HINI_USERPROFILE,
+                                         (PSZ)INIAPP_XWORKPLACE,
+                                         (PSZ)INIKEY_SBTEXT_WPURL,
+                                         pszText);
         }
     }
 
@@ -1645,10 +1615,10 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
         // pszText == NULL, the key will be deleted,
         // and stbQueryClassMnemonics will use
         // the default value
-        return (PrfWriteProfileString(HINI_USERPROFILE,
-                                      (PSZ)INIAPP_XWORKPLACE,
-                                      (PSZ)INIKEY_SBTEXT_WPDISK,
-                                      pszText));
+        return PrfWriteProfileString(HINI_USERPROFILE,
+                                     (PSZ)INIAPP_XWORKPLACE,
+                                     (PSZ)INIKEY_SBTEXT_WPDISK,
+                                     pszText);
     }
     else if (_somDescendedFrom(pClassObject, _WPFileSystem))
     {
@@ -1660,10 +1630,10 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
         // pszText == NULL, the key will be deleted,
         // and stbQueryClassMnemonics will use
         // the default value
-        return (PrfWriteProfileString(HINI_USERPROFILE,
-                                      (PSZ)INIAPP_XWORKPLACE,
-                                      (PSZ)INIKEY_SBTEXT_WPFILESYSTEM,
-                                      pszText));
+        return PrfWriteProfileString(HINI_USERPROFILE,
+                                     (PSZ)INIAPP_XWORKPLACE,
+                                     (PSZ)INIKEY_SBTEXT_WPFILESYSTEM,
+                                     pszText);
     }
     else if (_somDescendedFrom(pClassObject, _WPProgram))
     {
@@ -1675,10 +1645,10 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
         // pszText == NULL, the key will be deleted,
         // and stbQueryClassMnemonics will use
         // the default value
-        return (PrfWriteProfileString(HINI_USERPROFILE,
-                                      (PSZ)INIAPP_XWORKPLACE,
-                                      (PSZ)INIKEY_SBTEXT_WPPROGRAM,
-                                      pszText));
+        return PrfWriteProfileString(HINI_USERPROFILE,
+                                     (PSZ)INIAPP_XWORKPLACE,
+                                     (PSZ)INIKEY_SBTEXT_WPPROGRAM,
+                                     pszText);
     }
     else if (_somDescendedFrom(pClassObject, _XFldObject))
     {
@@ -1690,10 +1660,10 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
         // pszText == NULL, the key will be deleted,
         // and stbQueryClassMnemonics will use
         // the default value
-        return (PrfWriteProfileString(HINI_USERPROFILE,
-                                      (PSZ)INIAPP_XWORKPLACE,
-                                      (PSZ)INIKEY_SBTEXT_WPOBJECT,
-                                      pszText));
+        return PrfWriteProfileString(HINI_USERPROFILE,
+                                     (PSZ)INIAPP_XWORKPLACE,
+                                     (PSZ)INIKEY_SBTEXT_WPOBJECT,
+                                     pszText);
     }
 
     return FALSE;
@@ -1725,12 +1695,12 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
 
 PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of selected object
 {
-    PSZ     pszReturn = NULL;
+    PSZ pszReturn = NULL;
 
-    ResolveWPUrl();     // V0.9.16 (2001-10-28) [umoeller]
-
-    if (G_WPUrl)
-        if (_somDescendedFrom(pClassObject, G_WPUrl))
+    SOMClass *pWPUrl;
+    if (pWPUrl = ctsResolveWPUrl())
+    {
+        if (_somDescendedFrom(pClassObject, pWPUrl))
         {
             if (G_szWPUrlStatusBarMnemonics[0] == '\0')
 #ifndef __NOCFGSTATUSBARS__
@@ -1748,8 +1718,9 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
 
             pszReturn = G_szWPUrlStatusBarMnemonics;
             // get out of here
-            return (pszReturn);
+            return pszReturn;
         }
+    }
 
     if (    (_somDescendedFrom(pClassObject, _WPDisk))
             // V0.9.5 (2000-09-20) [pr] WPSharedDir has disk status bar
@@ -1846,7 +1817,7 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
     } else
         pszReturn = "???";     // should not occur
 
-    return (pszReturn);
+    return pszReturn;
 }
 
 /*
@@ -2073,10 +2044,9 @@ ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
     // URL objects also support the $U mnemonic for
     // displaying the URL
 
-    ResolveWPUrl();
-
-    if (    (G_WPUrl)
-         && (_somIsA(pObject, G_WPUrl))
+    SOMClass *pWPUrl;
+    if (    (pWPUrl = ctsResolveWPUrl())
+         && (_somIsA(pObject, pWPUrl))
        )
     {
         // yes, we have a URL object:
@@ -2615,7 +2585,7 @@ ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
         }
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -2921,7 +2891,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
             pobjSelected = objResolveIfShadow(pobjSelected);
 
         if (pobjSelected == NULL)
-            return(strdup(""));
+            return strdup("");
 
         xstrcpy(&strText, stbQueryClassMnemonics(_somGetClass(pobjSelected)), 0);
                                                   // object's class object
@@ -3070,1129 +3040,77 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
 
 /* ******************************************************************
  *
- *   Notebook callbacks (notebook.c) for "Status bars" pages
+ *   Tool bar creation
  *
  ********************************************************************/
 
-#ifndef __NOCFGSTATUSBARS__
-
 /*
- *@@ STATUSBARPAGEDATA:
- *      data for status bar pages while they're open.
+ *@@ stbCreateToolBar:
  *
- *      Finally turned this into a heap structure
- *      with V0.9.14 to get rid of the global variables.
- *
- *@@added V0.9.14 (2001-07-31) [umoeller]
+ *@@added V1.0.1 (2002-12-08) [umoeller]
  */
 
-typedef struct _STATUSBARPAGEDATA
+HWND stbCreateToolBar(WPFolder *pFolder,
+                      HWND hwndFrame,
+                      ULONG ulView,             // in: OPEN_CONTENTS etc.
+                      PLONG plToolBarHeight)    // out: computed height of toolbar control
 {
-    CHAR                    szSBTextNoneSelBackup[CCHMAXMNEMONICS],
-                            szSBText1SelBackup[CCHMAXMNEMONICS],
-                            szSBTextMultiSelBackup[CCHMAXMNEMONICS],
-                            szSBClassSelected[256];
-    SOMClass                *pSBClassObjectSelected;
-    // somId                   somidClassSelected;
+    // create tool bar as child of the frame
+    HWND hwndToolBar = NULLHANDLE;
+    PTOOLBARCONTROL patbc;
+    ULONG       cControls;
+    LINKLIST    ll;
+    PLISTNODE   pNode;
 
-    HWND                    hwndKeysMenu;
-                // if != NULLHANDLE, the menu for the last
-                // "Keys" button pressed
-    ULONG                   ulLastKeysID;
+    PMPF_SPLITVIEW(("Creating toolbar"));
 
-} STATUSBARPAGEDATA, *PSTATUSBARPAGEDATA;
-
-// struct passed to callbacks
-typedef struct _STATUSBARSELECTCLASS
-{
-    HWND            hwndOKButton;
-} STATUSBARSELECTCLASS, *PSTATUSBARSELECTCLASS;
-
-/*
- *@@ fncbWPSStatusBarReturnClassAttr:
- *      this callback function is called for every single
- *      record core which represents a WPS class; we need
- *      to return the record core attributes.
- *
- *      This gets called from the class list functions in
- *      classlst.c.
- *
- *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
- */
-
-STATIC MRESULT EXPENTRY fncbWPSStatusBarReturnClassAttr(HWND hwndCnr,
-                                                        ULONG ulscd,   // SELECTCLASSDATA struct
-                                                        MPARAM mpwps,  // current WPSLISTITEM struct
-                                                        MPARAM mpreccParent) // parent record core
-{
-    USHORT              usAttr = CRA_RECORDREADONLY | CRA_COLLAPSED | CRA_DISABLED;
-    PWPSLISTITEM        pwps = (PWPSLISTITEM)mpwps;
-    PSELECTCLASSDATA    pscd = (PSELECTCLASSDATA)ulscd;
-    PRECORDCORE         preccParent = NULL;
-
-    if (pwps)
+    // create a LINKLIST and pass it as hToolBar to
+    // _xwpBuildToolBar; xwpAddToolbarButton malloc's
+    // TOOLBARCONTROL so we can create this as auto-free
+    lstInit(&ll, TRUE);
+    if (    (_xwpBuildToolBar(pFolder,
+                              (ULONG)&ll,
+                              ulView))
+         && (cControls = lstCountItems(&ll))
+         && (patbc = (PTOOLBARCONTROL)malloc(cControls * sizeof(TOOLBARCONTROL)))
+       )
     {
-
-        if (pwps->pClassObject)
+        PTOOLBARCONTROL pThis = patbc;
+        FOR_ALL_NODES(&ll, pNode)
         {
-            // now check if the class supports new sort mnemonics
-            if (stbClassAddsNewMnemonics(pwps->pClassObject))
-            {
-                // class _does_ support mnemonics: give the
-                // new recc attr the "in use" flag
-                usAttr = CRA_RECORDREADONLY | CRA_COLLAPSED | CRA_INUSE;
+            memcpy(pThis, pNode->pItemData, sizeof(TOOLBARCONTROL));
+            pThis++;
+        }
 
-                // and select it if the settings notebook wants it
-                if (!strcmp(pwps->pszClassName, pscd->szClassSelected))
-                    usAttr |= CRA_SELECTED;
+        PMPF_SPLITVIEW(("  _xwpBuildToolBar returned %d controls", cControls));
 
-                // expand all the parent records of the new record
-                // so that classes with status bar mnemonics are
-                // all initially visible in the container
-                preccParent = (PRECORDCORE)mpreccParent;
-                while (preccParent)
-                {
-                    WinSendMsg(hwndCnr,
-                               CM_EXPANDTREE,
-                               (MPARAM)preccParent,
-                               MPNULL);
+        if (hwndToolBar = ctlCreateToolBar(hwndFrame,
+                                           hwndFrame,
+                                           WS_VISIBLE
+                                               | (cmnQuerySetting(sfTBToolTips)
+                                                      ? TBS_TOOLTIPS
+                                                      : 0)
+                                               | TBS_AUTORESIZE,
+                                           // owner for controls:
+                                           hwndFrame,
+                                           cControls,
+                                           patbc))
+        {
+            SWP swpBar;
+            WinQueryWindowPos(hwndToolBar,
+                              &swpBar);
+            *plToolBarHeight = swpBar.cy;
+        }
 
-                    // get next higher parent
-                    preccParent = WinSendMsg(hwndCnr,
-                                             CM_QUERYRECORD,
-                                             preccParent,
-                                             MPFROM2SHORT(CMA_PARENT,
-                                                          CMA_ITEMORDER));
-                    if (preccParent == (PRECORDCORE)-1)
-                        // none: stop
-                        preccParent = NULL;
-                } // end while (preccParent)
-            }
-        } // end if if (pwps->pClassObject)
-        else
-            // invalid class: hide in cnr
-            usAttr = CRA_FILTERED;
+        PMPF_SPLITVIEW(("  hwndToolBar is 0x%lX, height %d",
+                        hwndToolBar,
+                        *plToolBarHeight));
+
+        free(patbc);
     }
-    return (MPARAM)(usAttr);
+
+    lstClear(&ll);
+
+    return hwndToolBar;
+
 }
-
-/*
- *@@ fncbWPSStatusBarClassSelected:
- *      callback func for class selected;
- *      mphwndInfo has been set to the static control hwnd.
- *      Returns TRUE if the selection is valid; the dlg func
- *      will then enable the OK button.
- *
- *      This gets called from the class list functions in
- *      classlst.c.
- *
- *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
- */
-
-STATIC MRESULT EXPENTRY fncbWPSStatusBarClassSelected(HWND hwndCnr,
-                                                      ULONG ulpsbsc,
-                                                      MPARAM mpwps,
-                                                      MPARAM mphwndInfo)
-{
-    PWPSLISTITEM pwps = (PWPSLISTITEM)mpwps;
-    CHAR szInfo[2000];
-    MRESULT mrc = (MPARAM)FALSE;
-    PSZ pszClassTitle;
-
-    strcpy(szInfo, pwps->pszClassName);
-
-    if (pwps->pClassObject)
-    {
-        if (pszClassTitle = _wpclsQueryTitle(pwps->pClassObject))
-            sprintf(szInfo, "%s (\"%s\")\n",
-                    pwps->pszClassName,
-                    pszClassTitle);
-    }
-
-    if (pwps->pRecord->flRecordAttr & CRA_INUSE)
-    {
-        sprintf(szInfo,
-                "%s\n%s",
-                cmnGetString(ID_XSSI_SB_CLASSMNEMONICS),
-                stbQueryClassMnemonics(pwps->pClassObject));
-        mrc = (MPARAM)TRUE;
-    }
-    else
-        strcpy(szInfo,
-               cmnGetString(ID_XSSI_SB_CLASSNOTSUPPORTED));  // pszSBClassNotSupported
-
-    WinSetWindowText((HWND)mphwndInfo, szInfo);
-
-    return mrc;
-}
-
-#endif
-
-static const CONTROLDEF
-    StatusEnable = LOADDEF_AUTOCHECKBOX(ID_XSDI_ENABLESTATUSBAR),
-    VisibleInGroup = LOADDEF_GROUP(ID_XSDI_VISIBLEIN_GROUP, DEFAULT_TABLE_WIDTH),
-    VisIconCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_SBFORICONVIEWS),
-    VisTreeCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_SBFORTREEVIEWS),
-    VisDetailsCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_SBFORDETAILSVIEWS),
-    VisSplitCB = LOADDEF_AUTOCHECKBOX(ID_XSDI_SBFORSPLITVIEWS),     // V1.0.1 (2002-11-30) [umoeller]
-    StyleGroup = LOADDEF_GROUP(ID_XSDI_STYLE_GROUP, DEFAULT_TABLE_WIDTH),
-    RaisedRadio = LOADDEF_FIRST_AUTORADIO(ID_XSDI_SBSTYLE_3RAISED),
-    SunkenRadio = LOADDEF_NEXT_AUTORADIO(ID_XSDI_SBSTYLE_3SUNKEN),
-    ButtonRadio = LOADDEF_NEXT_AUTORADIO(ID_XSDI_SBSTYLE_4RECT),
-    MenuRadio = LOADDEF_NEXT_AUTORADIO(ID_XSDI_SBSTYLE_4MENU);
-
-static const DLGHITEM G_dlgStatusBar1[] =
-    {
-        START_TABLE,
-            START_ROW(0),
-                CONTROL_DEF(&StatusEnable),
-            START_ROW(0),
-                START_GROUP_TABLE(&VisibleInGroup),
-                    START_ROW(0),
-                        CONTROL_DEF(&VisIconCB),
-                    START_ROW(0),
-                        CONTROL_DEF(&VisTreeCB),
-                    START_ROW(0),
-                        CONTROL_DEF(&VisDetailsCB),
-                    START_ROW(0),
-                        CONTROL_DEF(&VisSplitCB),
-                END_TABLE,
-            START_ROW(0),
-                START_GROUP_TABLE(&StyleGroup),
-                    START_ROW(0),
-                        CONTROL_DEF(&RaisedRadio),
-                    START_ROW(0),
-                        CONTROL_DEF(&SunkenRadio),
-                    START_ROW(0),
-                        CONTROL_DEF(&ButtonRadio),
-                    START_ROW(0),
-                        CONTROL_DEF(&MenuRadio),
-                END_TABLE,
-            START_ROW(0),       // notebook buttons (will be moved)
-                CONTROL_DEF(&G_UndoButton),         // common.c
-                CONTROL_DEF(&G_DefaultButton),      // common.c
-                CONTROL_DEF(&G_HelpButton),         // common.c
-        END_TABLE,
-    };
-
-static const XWPSETTING G_StatusBar1Backup[] =
-    {
-        sfDefaultStatusBarVisibility,
-        sflSBForViews,
-        sulSBStyle
-    };
-
-/*
- *@@ stbStatusBar1InitPage:
- *      notebook callback function (notebook.c) for the
- *      first "Status bars" page in the "Workplace Shell" object.
- *      Sets the controls on the page according to the
- *      Global Settings.
- *
- *@@changed V0.9.0 [umoeller]: adjusted function prototype
- *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
- *@@changed V0.9.19 (2002-04-24) [umoeller]: now using dialog formatter
- *@@changed V1.0.1 (2002-11-30) [umoeller]: added split view setting
- */
-
-VOID stbStatusBar1InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
-                           ULONG flFlags)        // CBI_* flags (notebook.h)
-{
-    if (flFlags & CBI_INIT)
-    {
-        // first call: backup Global Settings for "Undo" button;
-        // this memory will be freed automatically by the
-        // common notebook window function (notebook.c) when
-        // the notebook page is destroyed
-        pnbp->pUser = cmnBackupSettings(G_StatusBar1Backup,
-                                         ARRAYITEMCOUNT(G_StatusBar1Backup));
-
-        // insert the controls using the dialog formatter
-        // V0.9.19 (2002-04-24) [umoeller]
-        ntbFormatPage(pnbp->hwndDlgPage,
-                      G_dlgStatusBar1,
-                      ARRAYITEMCOUNT(G_dlgStatusBar1));
-    }
-
-    if (flFlags & CBI_SET)
-    {
-        ULONG fl;
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_ENABLESTATUSBAR,
-                              cmnQuerySetting(sfDefaultStatusBarVisibility));
-
-        fl = cmnQuerySetting(sflSBForViews);
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SBFORICONVIEWS,
-                              (fl & SBV_ICON) != 0);
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SBFORTREEVIEWS,
-                              (fl & SBV_TREE) != 0);
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SBFORDETAILSVIEWS,
-                              (fl & SBV_DETAILS) != 0);
-        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SBFORSPLITVIEWS,
-                              (fl & SBV_SPLIT) != 0);       // V1.0.1 (2002-11-30) [umoeller]
-
-        fl = cmnQuerySetting(sulSBStyle);
-        switch (fl)
-        {
-            case SBSTYLE_WARP3RAISED:
-                winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3RAISED, TRUE);
-            break;
-
-            case SBSTYLE_WARP3SUNKEN:
-                winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3SUNKEN, TRUE);
-            break;
-
-            case SBSTYLE_WARP4RECT:
-                winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4RECT, TRUE);
-            break;
-
-            default:
-                winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4MENU, TRUE);
-        }
-    }
-}
-
-/*
- *@@ stbStatusBar1ItemChanged:
- *      notebook callback function (notebook.c) for the
- *      second "Status bars" page in the "Workplace Shell" object.
- *      Reacts to changes of any of the dialog controls.
- *
- *@@changed V0.9.0 [umoeller]: adjusted function prototype
- *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
- *@@changed V1.0.1 (2002-11-30) [umoeller]: added split view setting
- */
-
-MRESULT stbStatusBar1ItemChanged(PNOTEBOOKPAGE pnbp,
-                                 ULONG ulItemID,
-                                 USHORT usNotifyCode,
-                                 ULONG ulExtra)      // for checkboxes: contains new state
-{
-    MRESULT mrc = (MRESULT)0;
-    BOOL    fSave = TRUE,
-            fShowStatusBars = FALSE,
-            fRefreshStatusBars = FALSE;
-
-    ULONG   flStyleChanged = 0;
-
-    switch (ulItemID)
-    {
-        case ID_XSDI_ENABLESTATUSBAR:
-            cmnSetSetting(sfDefaultStatusBarVisibility, ulExtra);
-            fShowStatusBars = TRUE;
-        break;
-
-        case ID_XSDI_SBFORICONVIEWS:
-            flStyleChanged = SBV_ICON;
-            fShowStatusBars = TRUE;
-        break;
-
-        case ID_XSDI_SBFORTREEVIEWS:
-            flStyleChanged = SBV_TREE;
-            fShowStatusBars = TRUE;
-        break;
-
-        case ID_XSDI_SBFORDETAILSVIEWS:
-            flStyleChanged = SBV_DETAILS;
-            fShowStatusBars = TRUE;
-        break;
-
-        case ID_XSDI_SBFORSPLITVIEWS:       // V1.0.1 (2002-11-30) [umoeller]
-            flStyleChanged = SBV_SPLIT;
-            fShowStatusBars = TRUE;
-        break;
-
-        case ID_XSDI_SBSTYLE_3RAISED:
-            cmnSetSetting(sulSBStyle, SBSTYLE_WARP3RAISED);
-            fRefreshStatusBars = TRUE;
-        break;
-
-        case ID_XSDI_SBSTYLE_3SUNKEN:
-            cmnSetSetting(sulSBStyle, SBSTYLE_WARP3SUNKEN);
-            fRefreshStatusBars = TRUE;
-        break;
-
-        case ID_XSDI_SBSTYLE_4RECT:
-            cmnSetSetting(sulSBStyle, SBSTYLE_WARP4RECT);
-            fRefreshStatusBars = TRUE;
-        break;
-
-        case ID_XSDI_SBSTYLE_4MENU:
-            cmnSetSetting(sulSBStyle, SBSTYLE_WARP4MENU);
-            fRefreshStatusBars = TRUE;
-        break;
-
-        case DID_UNDO:
-        {
-            // "Undo" button: get pointer to backed-up Global Settings
-            cmnRestoreSettings(pnbp->pUser,
-                               ARRAYITEMCOUNT(G_StatusBar1Backup));
-            // update the display by calling the INIT callback
-            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
-            fRefreshStatusBars = TRUE;
-            fShowStatusBars = TRUE;
-        }
-        break;
-
-        case DID_DEFAULT:
-        {
-            // set the default settings for this settings page
-            // (this is in common.c because it's also used at
-            // Desktop startup)
-            cmnSetDefaultSettings(pnbp->inbp.ulPageID);
-            // update the display by calling the INIT callback
-            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
-            fRefreshStatusBars = TRUE;
-            fShowStatusBars = TRUE;
-        }
-        break;
-
-        default:
-            fSave = FALSE;
-    }
-
-    if (flStyleChanged)
-    {
-        ULONG fl = cmnQuerySetting(sflSBForViews);
-        if (ulExtra)
-            fl |= flStyleChanged;
-        else
-            fl &= ~flStyleChanged;
-        cmnSetSetting(sflSBForViews, fl);
-    }
-
-    // have the Worker thread update the
-    // status bars for all currently open
-    // folders
-    if (fRefreshStatusBars)
-        xthrPostWorkerMsg(WOM_UPDATEALLSTATUSBARS,
-                          (MPARAM)2,
-                          MPNULL);
-
-    if (fShowStatusBars)
-    {
-        xthrPostWorkerMsg(WOM_UPDATEALLSTATUSBARS,
-                          (MPARAM)1,
-                          MPNULL);
-        ntbUpdateVisiblePage(NULL,   // all somSelf's
-                             SP_XFOLDER_FLDR);
-    }
-
-    return mrc;
-}
-
-#ifndef __NOCFGSTATUSBARS__
-
-/*
- *@@ RefreshClassObject:
- *      returns the class object for szSBClassSelected.
- *      Added with V0.9.16 to fix the SOM string resource
- *      leaks finally.
- *
- *@@added V0.9.16 (2001-10-28) [umoeller]
- */
-
-STATIC VOID RefreshClassObject(PSTATUSBARPAGEDATA psbpd)
-{
-    somId somidClassSelected;
-    if (somidClassSelected = somIdFromString(psbpd->szSBClassSelected))
-    {
-        // get pointer to class object (e.g. M_WPObject)
-        psbpd->pSBClassObjectSelected = _somFindClass(SOMClassMgrObject,
-                                                      somidClassSelected,
-                                                      0,
-                                                      0);
-        SOMFree(somidClassSelected);        // V0.9.16 (2001-10-28) [umoeller]
-    }
-}
-
-static const XWPSETTING G_StatusBar2Backup[] =
-    {
-        sflDereferenceShadows
-    };
-
-/*
- *@@ stbStatusBar2InitPage:
- *      notebook callback function (notebook.c) for the
- *      second "Status bars" page in the "Workplace Shell" object.
- *      Sets the controls on the page according to the
- *      Global Settings.
- *
- *@@changed V0.9.0 [umoeller]: adjusted function prototype
- *@@changed V0.9.0 [umoeller]: added "Dereference shadows"
- *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
- *@@changed V0.9.5 (2000-10-07) [umoeller]: added "Dereference shadows" for multiple mode
- *@@changed V0.9.14 (2001-07-31) [umoeller]: added "Keys" buttons support
- */
-
-VOID stbStatusBar2InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
-                               ULONG flFlags)        // CBI_* flags (notebook.h)
-{
-    PSTATUSBARPAGEDATA psbpd = (PSTATUSBARPAGEDATA)pnbp->pUser2;
-
-    if (flFlags & CBI_INIT)
-    {
-        // first call: backup Global Settings for "Undo" button;
-        // this memory will be freed automatically by the
-        // common notebook window function (notebook.c) when
-        // the notebook page is destroyed
-        pnbp->pUser = cmnBackupSettings(G_StatusBar2Backup,
-                                         ARRAYITEMCOUNT(G_StatusBar2Backup));
-
-        pnbp->pUser2
-        = psbpd
-            = NEW(STATUSBARPAGEDATA);
-        ZERO(psbpd);
-
-        strcpy(psbpd->szSBTextNoneSelBackup,
-               cmnQueryStatusBarSetting(SBS_TEXTNONESEL));
-        strcpy(psbpd->szSBTextMultiSelBackup,
-               cmnQueryStatusBarSetting(SBS_TEXTMULTISEL));
-        // status bar settings page: get last selected
-        // class from INIs (for single-object mode)
-        // and query the SOM class object from this string
-        PrfQueryProfileString(HINI_USER,
-                              (PSZ)INIAPP_XWORKPLACE,
-                              (PSZ)INIKEY_SB_LASTCLASS,
-                              (PSZ)G_pcszXFldObject,     // "XFldObject", default
-                              psbpd->szSBClassSelected,
-                              sizeof(psbpd->szSBClassSelected));
-        if (psbpd->pSBClassObjectSelected == NULL)
-            RefreshClassObject(psbpd);
-
-        if (psbpd->pSBClassObjectSelected)
-            strcpy(psbpd->szSBText1SelBackup,
-                   stbQueryClassMnemonics(psbpd->pSBClassObjectSelected));
-
-        ctlMakeMenuButton(WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_SBKEYSNONESEL), 0, 0);
-        ctlMakeMenuButton(WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_SBKEYS1SEL), 0, 0);
-        ctlMakeMenuButton(WinWindowFromID(pnbp->hwndDlgPage, ID_XSDI_SBKEYSMULTISEL), 0, 0);
-
-    }
-
-    if (flFlags & CBI_SET)
-    {
-        // current class
-        WinSetDlgItemText(pnbp->hwndDlgPage,
-                          ID_XSDI_SBCURCLASS,
-                          psbpd->szSBClassSelected);
-
-        // no-object mode
-        WinSendDlgItemMsg(pnbp->hwndDlgPage, ID_XSDI_SBTEXTNONESEL,
-                          EM_SETTEXTLIMIT,
-                          (MPARAM)(CCHMAXMNEMONICS-1),
-                          MPNULL);
-        WinSetDlgItemText(pnbp->hwndDlgPage,
-                          ID_XSDI_SBTEXTNONESEL ,
-                          (PSZ)cmnQueryStatusBarSetting(SBS_TEXTNONESEL));
-
-        // one-object mode
-        WinSendDlgItemMsg(pnbp->hwndDlgPage,
-                          ID_XSDI_SBTEXT1SEL,
-                          EM_SETTEXTLIMIT,
-                          (MPARAM)(CCHMAXMNEMONICS-1),
-                          MPNULL);
-        if (psbpd->pSBClassObjectSelected == NULL)
-            RefreshClassObject(psbpd);
-
-        if (psbpd->pSBClassObjectSelected)
-            WinSetDlgItemText(pnbp->hwndDlgPage,
-                              ID_XSDI_SBTEXT1SEL,
-                              stbQueryClassMnemonics(psbpd->pSBClassObjectSelected));
-
-        // dereference shadows
-        winhSetDlgItemChecked(pnbp->hwndDlgPage,
-                              ID_XSDI_DEREFSHADOWS_SINGLE,
-                              (cmnQuerySetting(sflDereferenceShadows) & STBF_DEREFSHADOWS_SINGLE)
-                                    != 0);
-
-        // multiple-objects mode
-        WinSendDlgItemMsg(pnbp->hwndDlgPage,
-                          ID_XSDI_SBTEXTMULTISEL,
-                          EM_SETTEXTLIMIT,
-                          (MPARAM)(CCHMAXMNEMONICS-1),
-                          MPNULL);
-        WinSetDlgItemText(pnbp->hwndDlgPage,
-                          ID_XSDI_SBTEXTMULTISEL,
-                          (PSZ)cmnQueryStatusBarSetting(SBS_TEXTMULTISEL));
-
-        winhSetDlgItemChecked(pnbp->hwndDlgPage,
-                              ID_XSDI_DEREFSHADOWS_MULTIPLE,
-                              (cmnQuerySetting(sflDereferenceShadows) & STBF_DEREFSHADOWS_MULTIPLE)
-                                    != 0);
-    }
-
-    if (flFlags & CBI_DESTROY)
-    {
-        if (psbpd)
-        {
-            if (psbpd->pSBClassObjectSelected)
-                psbpd->pSBClassObjectSelected = NULL;
-
-            if (psbpd->hwndKeysMenu)
-                WinDestroyWindow(psbpd->hwndKeysMenu),
-
-            free(psbpd);
-
-            pnbp->pUser2 = NULL;
-        }
-    }
-}
-
-/*
- *@@ KEYARRAYITEM:
- *      specifies one status bar mnemonic
- *      to be inserted into a "Keys" menu.
- *
- *      If the first character oc pcszKey is '@',
- *      we insert a submenu with the format
- *      specifiers.
- *
- *@@added V0.9.14 (2001-07-31) [umoeller]
- */
-
-typedef struct _KEYARRAYITEM
-{
-    ULONG       ulItemID;               // menu item ID (hard-coded)
-    const char  *pcszKey;               // actual mnemonic (e.g. "$C")
-    ULONG       ulDescription;          // string ID for description
-} KEYARRAYITEM, *PKEYARRAYITEM;
-
-static const KEYARRAYITEM
-    G_aFormatSubKeys[] =
-    {
-        1, "b", ID_XSSI_SBMNC_1,       // "in bytes"
-        2, "k", ID_XSSI_SBMNC_2,       // "in kBytes"
-        3, "K", ID_XSSI_SBMNC_3,       // "in KBytes"
-        4, "m", ID_XSSI_SBMNC_4,       // "in mBytes"
-        5, "M", ID_XSSI_SBMNC_5,       // "in MBytes"
-        6, "a", ID_XSSI_SBMNC_6,       // "in bytes/kBytes/mBytes/gBytes"
-        7, "A", ID_XSSI_SBMNC_7       // "in bytes/KBytes/MBytes/GBytes"
-    },
-
-    G_aAllModeKeys[] =
-    {
-        31000, "$c", ID_XSSI_SBMNC_000,       // "no. of selected objects"
-        31001, "$C", ID_XSSI_SBMNC_001,       // "total object count"
-
-        31010, "@$f", ID_XSSI_SBMNC_010,       // "free space on drive"
-        31020, "@$z", ID_XSSI_SBMNC_020,       // "total size of drive"
-        31030, "@$s", ID_XSSI_SBMNC_030,       // "size of selected objects in bytes"
-        31040, "@$S", ID_XSSI_SBMNC_040       // "size of folder content in bytes"
-    },
-
-    G_a1ObjectCommonKeys[] =
-    {
-        31100, "$t", ID_XSSI_SBMNC_100,       // "object title"
-        31110, "$w", ID_XSSI_SBMNC_110,       // "WPS class default title"
-        31120, "$W", ID_XSSI_SBMNC_120       // "WPS class name"
-    },
-
-    G_a1ObjectWPDiskKeys[] =
-    {
-        31200, "$F", ID_XSSI_SBMNC_200,       // "file system type (HPFS, FAT, CDFS, ...)"
-
-        31210, "$L", ID_XSSI_SBMNC_210,       // "drive label"
-
-        // skipping "free space on drive in bytes" which is redefined
-
-        31220, "@$z", ID_XSSI_SBMNC_220       // "total space on drive in bytes"
-    },
-
-    G_a1ObjectWPFileSystemKeys[] =
-    {
-        31300, "$r", ID_XSSI_SBMNC_300,       // "object's real name"
-
-        31310, "$y", ID_XSSI_SBMNC_310,       // "object type (.TYPE EA)"
-        31320, "$D", ID_XSSI_SBMNC_320,       // "object creation date"
-        31330, "$T", ID_XSSI_SBMNC_330,       // "object creation time"
-        31340, "$a", ID_XSSI_SBMNC_340,       // "object attributes"
-
-        31350, "$Eb", ID_XSSI_SBMNC_350,       // "EA size in bytes"
-        31360, "$Ek", ID_XSSI_SBMNC_360,       // "EA size in kBytes"
-        31370, "$EK", ID_XSSI_SBMNC_370,       // "EA size in KBytes"
-        31380, "$Ea", ID_XSSI_SBMNC_380,       // "EA size in bytes/kBytes"
-        31390, "$EA", ID_XSSI_SBMNC_390       // "EA size in bytes/KBytes"
-    },
-
-    G_a1ObjectWPUrlKeys[] =
-    {
-        31400, "$U", ID_XSSI_SBMNC_400       // "URL"
-    },
-
-    G_a1ObjectWPProgramKeys[] =
-    {
-        31500, "$p", ID_XSSI_SBMNC_500,       // "executable program file"
-        31510, "$P", ID_XSSI_SBMNC_510,       // "parameter list"
-        31520, "$d", ID_XSSI_SBMNC_520       // "working directory"
-    };
-
-/*
- *@@ InsertKeysIntoMenu:
- *      helper for building the "Keys" menu button menus.
- *
- *@@added V0.9.14 (2001-07-31) [umoeller]
- */
-
-STATIC VOID InsertKeysIntoMenu(HWND hwndMenu,
-                               const KEYARRAYITEM *paKeys,
-                               ULONG cKeys,
-                               BOOL fSeparatorBefore)
-{
-    ULONG ul;
-    XSTRING str;
-    xstrInit(&str, 100);
-
-    if (fSeparatorBefore)
-        winhInsertMenuSeparator(hwndMenu,
-                                MIT_END,
-                                0);
-
-    for (ul = 0;
-         ul < cKeys;
-         ul++)
-    {
-        xstrcpy(&str, cmnGetString(paKeys[ul].ulDescription), 0);
-
-        // if the first char is '@', build a submenu
-        // with the various format characters
-        if (*(paKeys[ul].pcszKey) == '@')
-        {
-            HWND hwndSubmenu = winhInsertSubmenu(hwndMenu,
-                                                 MIT_END,
-                                                 paKeys[ul].ulItemID,
-                                                 str.psz,
-                                                 MIS_TEXT,
-                                                 0, NULL, 0, 0);
-            ULONG ul2;
-            for (ul2 = 0;
-                 ul2 < ARRAYITEMCOUNT(G_aFormatSubKeys);
-                 ul2++)
-            {
-                xstrcpy(&str, cmnGetString(G_aFormatSubKeys[ul2].ulDescription), 0);
-                xstrcatc(&str, '\t');
-                xstrcat(&str, paKeys[ul].pcszKey + 1, 0);
-                xstrcat(&str, G_aFormatSubKeys[ul2].pcszKey, 0);
-
-                winhInsertMenuItem(hwndSubmenu,
-                                   MIT_END,
-                                   G_aFormatSubKeys[ul2].ulItemID
-                                        + paKeys[ul].ulItemID,
-                                   str.psz,
-                                   MIS_TEXT,
-                                   0);
-            }
-        }
-        else
-        {
-            // first character is not '@':
-            // simply insert as such
-            xstrcatc(&str, '\t');
-            xstrcat(&str, paKeys[ul].pcszKey, 0);
-
-            winhInsertMenuItem(hwndMenu,
-                               MIT_END,
-                               paKeys[ul].ulItemID,
-                               str.psz,
-                               MIS_TEXT,
-                               0);
-        }
-    }
-
-    xstrClear(&str);
-}
-
-/*
- *@@ CreateKeysMenu:
- *
- *@@added V0.9.14 (2001-07-31) [umoeller]
- */
-
-STATIC MRESULT CreateKeysMenu(PSTATUSBARPAGEDATA psbpd,
-                              ULONG ulItemID)
-{
-    HPOINTER hptrOld = winhSetWaitPointer();
-
-    if (psbpd->hwndKeysMenu)
-        WinDestroyWindow(psbpd->hwndKeysMenu);
-
-    // different button or first call:
-    // build menu then
-    psbpd->hwndKeysMenu = WinCreateMenu(HWND_DESKTOP, NULL);
-
-    InsertKeysIntoMenu(psbpd->hwndKeysMenu,
-                       G_aAllModeKeys,
-                       ARRAYITEMCOUNT(G_aAllModeKeys),
-                       FALSE);
-    if (ulItemID == ID_XSDI_SBKEYS1SEL)
-    {
-        InsertKeysIntoMenu(psbpd->hwndKeysMenu,
-                           G_a1ObjectCommonKeys,
-                           ARRAYITEMCOUNT(G_a1ObjectCommonKeys),
-                           TRUE);
-
-        if (_somDescendedFrom(psbpd->pSBClassObjectSelected,
-                              _WPFileSystem))
-        {
-            InsertKeysIntoMenu(psbpd->hwndKeysMenu,
-                               G_a1ObjectWPFileSystemKeys,
-                               ARRAYITEMCOUNT(G_a1ObjectWPFileSystemKeys),
-                               TRUE);
-
-            ResolveWPUrl();
-            if (_somDescendedFrom(psbpd->pSBClassObjectSelected,
-                                  G_WPUrl))
-                InsertKeysIntoMenu(psbpd->hwndKeysMenu,
-                                   G_a1ObjectWPUrlKeys,
-                                   ARRAYITEMCOUNT(G_a1ObjectWPUrlKeys),
-                                   TRUE);
-        }
-        else if (_somDescendedFrom(psbpd->pSBClassObjectSelected,
-                                   _WPProgram))
-                InsertKeysIntoMenu(psbpd->hwndKeysMenu,
-                                   G_a1ObjectWPProgramKeys,
-                                   ARRAYITEMCOUNT(G_a1ObjectWPProgramKeys),
-                                   TRUE);
-        else if (_somDescendedFrom(psbpd->pSBClassObjectSelected,
-                                   _WPDisk))
-                InsertKeysIntoMenu(psbpd->hwndKeysMenu,
-                                   G_a1ObjectWPDiskKeys,
-                                   ARRAYITEMCOUNT(G_a1ObjectWPDiskKeys),
-                                   TRUE);
-    }
-
-    // store what we had so we can reuse the menu
-    psbpd->ulLastKeysID = ulItemID;
-
-    WinSetPointer(HWND_DESKTOP, hptrOld);
-
-    return (MRESULT)psbpd->hwndKeysMenu;
-}
-
-/*
- *@@ stbStatusBar2ItemChanged:
- *      notebook callback function (notebook.c) for the
- *      second "Status bars" page in the "Workplace Shell" object.
- *      Reacts to changes of any of the dialog controls.
- *
- *@@changed V0.9.0 [umoeller]: adjusted entry field handling to new notebook.c handling
- *@@changed V0.9.0 [umoeller]: adjusted function prototype
- *@@changed V0.9.0 [umoeller]: added "Dereference shadows"
- *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
- *@@changed V0.9.5 (2000-10-07) [umoeller]: added "Dereference shadows" for multiple mode
- *@@changed V0.9.14 (2001-07-31) [umoeller]: added "Keys" buttons support
- *@@changed V0.9.14 (2001-07-31) [umoeller]: "Undo" didn't undo everything, fixed
- *@@changed V0.9.19 (2002-06-02) [umoeller]: fixed minor memory leak
- */
-
-MRESULT stbStatusBar2ItemChanged(PNOTEBOOKPAGE pnbp,
-                                 ULONG ulItemID,
-                                 USHORT usNotifyCode,
-                                 ULONG ulExtra)      // for checkboxes: contains new state
-{
-    MRESULT     mrc = (MPARAM)0;
-    BOOL        fSave = TRUE,
-                fReadEFs = FALSE;           // read codes from entry fields?
-                                            // V0.9.14 (2001-07-31) [umoeller]
-    CHAR        szDummy[CCHMAXMNEMONICS];
-    PSTATUSBARPAGEDATA psbpd = (PSTATUSBARPAGEDATA)pnbp->pUser2;
-
-    ULONG       flChanged = 0;
-
-    switch (ulItemID)
-    {
-        case ID_XSDI_SBTEXTNONESEL:
-            if (usNotifyCode == EN_KILLFOCUS)   // changed V0.9.0
-                fReadEFs = TRUE;
-            else
-                fSave = FALSE;
-        break;
-
-        case ID_XSDI_SBTEXT1SEL:
-            if (usNotifyCode == EN_KILLFOCUS)   // changed V0.9.0
-                fReadEFs = TRUE;
-            else
-                fSave = FALSE;
-        break;
-
-        case ID_XSDI_DEREFSHADOWS_SINGLE:    // added V0.9.0
-            flChanged = STBF_DEREFSHADOWS_SINGLE;
-        break;
-
-        case ID_XSDI_SBTEXTMULTISEL:
-            if (usNotifyCode == EN_KILLFOCUS)   // changed V0.9.0
-                fReadEFs = TRUE;
-            else
-                fSave = FALSE;
-        break;
-
-        case ID_XSDI_DEREFSHADOWS_MULTIPLE:    // added V0.9.5 (2000-10-07) [umoeller]
-            flChanged = STBF_DEREFSHADOWS_MULTIPLE;
-        break;
-
-        // "Select class" on "Status Bars" page:
-        // set up WPS classes dialog
-        case ID_XSDI_SBSELECTCLASS:
-        {
-            SELECTCLASSDATA         scd;
-            STATUSBARSELECTCLASS    sbsc;
-
-            XSTRING strTitle,
-                    strIntroText;
-            xstrInit(&strTitle, 0);
-            xstrInit(&strIntroText, 0);
-            cmnGetMessage(NULL, 0, &strTitle, 112);
-            cmnGetMessage(NULL, 0, &strIntroText, 113);
-            scd.pszDlgTitle = strTitle.psz;
-            scd.pszIntroText = strIntroText.psz;
-            scd.pcszRootClass = G_pcszWPObject;
-            scd.pcszOrphans = NULL;
-            strcpy(scd.szClassSelected, psbpd->szSBClassSelected);
-
-            // these callback funcs are defined way more below
-            scd.pfnwpReturnAttrForClass = fncbWPSStatusBarReturnClassAttr;
-            scd.pfnwpClassSelected = fncbWPSStatusBarClassSelected;
-            // the folllowing data will be passed to the callbacks
-            // so the callback can display NLS messages
-            scd.ulUserClassSelected = (ULONG)&sbsc;
-
-            scd.pszHelpLibrary = cmnQueryHelpLibrary();
-            scd.ulHelpPanel = ID_XFH_SELECTCLASS;
-
-            // classlst.c
-            if (clsSelectWpsClassDlg(pnbp->hwndFrame, // owner
-                                     cmnQueryNLSModuleHandle(FALSE),
-                                     ID_XLD_SELECTCLASS,
-                                     &scd)
-                          == DID_OK)
-            {
-                strcpy(psbpd->szSBClassSelected, scd.szClassSelected);
-                WinSetDlgItemText(pnbp->hwndDlgPage,
-                                  ID_XSDI_SBCURCLASS,
-                                  psbpd->szSBClassSelected);
-                PrfWriteProfileString(HINI_USER,
-                                      (PSZ)INIAPP_XWORKPLACE,
-                                      (PSZ)INIKEY_SB_LASTCLASS,
-                                      psbpd->szSBClassSelected);
-                if (psbpd->pSBClassObjectSelected)
-                    psbpd->pSBClassObjectSelected = NULL;
-                    // this will provoke the following func to re-read
-                    // the class's status bar mnemonics
-
-                // update the display by calling the INIT callback
-                pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
-
-                // refresh the "Undo" data for this
-                strcpy(psbpd->szSBText1SelBackup,
-                       stbQueryClassMnemonics(psbpd->pSBClassObjectSelected));
-
-            }
-
-            xstrClear(&strTitle);
-            xstrClear(&strIntroText);
-        }
-        break;
-
-        // "Keys" buttons next to entry field
-        // V0.9.14 (2001-07-31) [umoeller]
-        case ID_XSDI_SBKEYSNONESEL:
-        case ID_XSDI_SBKEYS1SEL:
-        case ID_XSDI_SBKEYSMULTISEL:
-            mrc = CreateKeysMenu(psbpd,
-                                 ulItemID);
-        break;
-
-        case DID_UNDO:
-        {
-            // "Undo" button: get pointer to backed-up Global Settings
-            cmnRestoreSettings(pnbp->pUser,
-                               ARRAYITEMCOUNT(G_StatusBar2Backup));
-
-            cmnSetStatusBarSetting(SBS_TEXTNONESEL,
-                                   psbpd->szSBTextNoneSelBackup);
-            cmnSetStatusBarSetting(SBS_TEXTMULTISEL,
-                                   psbpd->szSBTextMultiSelBackup);
-
-            if (!psbpd->pSBClassObjectSelected)
-                RefreshClassObject(psbpd);
-
-            if (psbpd->pSBClassObjectSelected)
-                stbSetClassMnemonics(psbpd->pSBClassObjectSelected,
-                                     psbpd->szSBText1SelBackup);
-
-            // update the display by calling the INIT callback
-            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
-        }
-        break;
-
-        case DID_DEFAULT:
-        {
-            // set the default settings for this settings page
-            // (this is in common.c because it's also used at
-            // Desktop startup)
-            cmnSetStatusBarSetting(SBS_TEXTNONESEL, NULL);  // load default
-            cmnSetStatusBarSetting(SBS_TEXTMULTISEL, NULL); // load default
-
-            cmnSetSetting(sflDereferenceShadows, STBF_DEREFSHADOWS_SINGLE);
-                        // V0.9.14 (2001-07-31) [umoeller]
-
-            if (!psbpd->pSBClassObjectSelected)
-                RefreshClassObject(psbpd);
-
-            if (psbpd->pSBClassObjectSelected)
-                stbSetClassMnemonics(psbpd->pSBClassObjectSelected,
-                                     NULL);  // load default
-
-            // update the display by calling the INIT callback
-            pnbp->inbp.pfncbInitPage(pnbp, CBI_SET | CBI_ENABLE);
-        }
-        break;
-
-        default:
-        {
-            fSave = FALSE;
-
-            if (ulItemID >= 31000)
-            {
-                // one of the menu item IDs from the "Keys" menu:
-                // look up the item in the menu we built then
-                PSZ psz;
-                if (    (psbpd->hwndKeysMenu)
-                     && (psz = winhQueryMenuItemText(psbpd->hwndKeysMenu,
-                                                     ulItemID))
-                   )
-                {
-                    // alright, now we got the menu item text...
-                    // find the tab character, after which is the
-                    // key we need to insert
-                    PCSZ p;
-                    if (p = strchr(psz, '\t'))
-                    {
-                        // p points to the key to insert now...
-                        // find the entry field to insert into,
-                        // this can come in for any of the three
-                        // buttons
-
-                        ULONG ulEFID = 0;
-                        switch (psbpd->ulLastKeysID)
-                        {
-                            case ID_XSDI_SBKEYSNONESEL:
-                                ulEFID = ID_XSDI_SBTEXTNONESEL;
-                            break;
-
-                            case ID_XSDI_SBKEYS1SEL:
-                                ulEFID = ID_XSDI_SBTEXT1SEL;
-                            break;
-
-                            case ID_XSDI_SBKEYSMULTISEL:
-                                ulEFID = ID_XSDI_SBTEXTMULTISEL;
-                            break;
-                        }
-
-                        if (ulEFID)
-                        {
-                            HWND hwndEF = WinWindowFromID(pnbp->hwndDlgPage,
-                                                          ulEFID);
-                            MRESULT mr = WinSendMsg(hwndEF,
-                                                    EM_QUERYSEL,
-                                                    0,
-                                                    0);
-                            SHORT s1 = SHORT1FROMMR(mr),
-                                  s2 = SHORT2FROMMR(mr);
-
-                            PSZ pszOld;
-
-                            if (pszOld = winhQueryWindowText(hwndEF))
-                            {
-                                XSTRING strNew;
-                                ULONG   ulNewLength = strlen(p + 1);
-
-                                xstrInitSet(&strNew, pszOld);
-
-                                xstrrpl(&strNew,
-                                        // first char to replace:
-                                        s1,
-                                        // no. of chars to replace:
-                                        s2 - s1,
-                                        // string to replace chars with:
-                                        p + 1,
-                                        ulNewLength);
-
-                                WinSetWindowText(hwndEF,
-                                                 strNew.psz);
-
-                                WinSendMsg(hwndEF,
-                                           EM_SETSEL,
-                                           MPFROM2SHORT(s1,
-                                                        s1 + ulNewLength),
-                                           0);
-
-                                WinSetFocus(HWND_DESKTOP, hwndEF);
-
-                                xstrClear(&strNew);
-
-                                fSave = TRUE;
-                                fReadEFs = TRUE;
-
-                                free(pszOld);
-                                        // was missing V0.9.19 (2002-06-02) [umoeller]
-                            }
-                        }
-                    }
-
-                    free(psz);
-                }
-            }
-        }
-    }
-
-    if (flChanged)
-    {
-        ULONG fl = cmnQuerySetting(sflDereferenceShadows);
-        if (ulExtra)
-            fl |= flChanged;
-        else
-            fl &= ~flChanged;
-        cmnSetSetting(sflDereferenceShadows, fl);
-    }
-
-    if (fSave)
-    {
-        if (fReadEFs)
-        {
-            // "none selected" codes:
-
-            WinQueryDlgItemText(pnbp->hwndDlgPage,
-                                ID_XSDI_SBTEXTNONESEL,
-                                sizeof(szDummy)-1, szDummy);
-            cmnSetStatusBarSetting(SBS_TEXTNONESEL, szDummy);
-
-            if (!psbpd->pSBClassObjectSelected)
-                RefreshClassObject(psbpd);
-
-            // "one selected" codes:
-            if (psbpd->pSBClassObjectSelected)
-            {
-                WinQueryDlgItemText(pnbp->hwndDlgPage, ID_XSDI_SBTEXT1SEL,
-                                    sizeof(szDummy)-1, szDummy);
-                stbSetClassMnemonics(psbpd->pSBClassObjectSelected,
-                                     szDummy);
-            }
-
-            // "multiple selected" codes:
-            WinQueryDlgItemText(pnbp->hwndDlgPage, ID_XSDI_SBTEXTMULTISEL,
-                                sizeof(szDummy)-1, szDummy);
-            cmnSetStatusBarSetting(SBS_TEXTMULTISEL, szDummy);
-        }
-
-        // have the Worker thread update the
-        // status bars for all currently open
-        // folders
-        xthrPostWorkerMsg(WOM_UPDATEALLSTATUSBARS,
-                          (MPARAM)2, // update display
-                          MPNULL);
-    }
-
-    return mrc;
-}
-
-#endif // XWPLITE

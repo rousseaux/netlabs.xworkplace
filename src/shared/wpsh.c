@@ -93,7 +93,7 @@
 #include "helpers\wphandle.h"           // file-system object handles
 
 // SOM headers which don't crash with prec. header files
-#include "xfobj.ih"
+// #include "xfobj.ih"
 #include "xfldr.ih"
 
 #include "shared\common.h"              // the majestic XWorkplace include file
@@ -1780,203 +1780,22 @@ double wpshQueryDiskSizeFromFolder(WPFolder *somSelf)
 
 /* ******************************************************************
  *
- *   WPS debugging
- *
- ********************************************************************/
-
-#ifdef __DEBUG__
-    /*
-     *@@ wpshIdentifyRestoreID:
-     *      this returns a string to identify the
-     *      "restore ID" used in wpRestoreString,
-     *      wpRestoreData, wpRestoreLong.
-     *
-     *      This is useful for debugging all those
-     *      keys that are undocumented.
-     *
-     *      This returns a static PSZ, so do not
-     *      free it.
-     *
-     *@@added V0.9.1 (2000-01-17) [umoeller]
-     */
-
-    PSZ wpshIdentifyRestoreID(PSZ pszClass,     // in: class name (as in wpRestore*)
-                              ULONG ulKey)      // in: value ID (as in wpRestore*)
-    {
-        if (!strcmp(pszClass, G_pcszWPObject))
-        {
-            switch (ulKey)
-            {
-                case 1:
-                    return ("IDKEY_OBJID");
-                case 2:
-                    return ("IDKEY_OBJHELPPANEL");
-                case 6:
-                    return ("IDKEY_OBJSZID");
-                case 7:
-                    return ("IDKEY_OBJSTYLE");
-                case 8:
-                    return ("IDKEY_OBJMINWIN");
-                case 9:
-                    return ("IDKEY_OBJCONCURRENT");
-                case 10:
-                    return ("IDKEY_OBJVIEWBUTTON");
-                case 11:
-                    return ("IDKEY_OBJLONGS");
-                case 12:
-                    return ("IDKEY_OBJSTRINGS");
-            }
-        }
-        else if (!strcmp(pszClass, "WPFileSystem"))
-        {
-            switch (ulKey)
-            {
-                case 4:
-                    return ("IDKEY_FSYSMENUCOUNT");
-                case 3:
-                    return ("IDKEY_FSYSMENUARRAY");
-            }
-        }
-        else if (!strcmp(pszClass, G_pcszWPFolder))
-        {
-            switch (ulKey)
-            {
-                case IDKEY_FDRCONTENTATTR    : // 2900
-                    return ("IDKEY_FDRCONTENTATTR");
-                case IDKEY_FDRTREEATTR       : // 2901
-                    return ("IDKEY_FDRTREEATTR");
-                case IDKEY_FDRCVLFONT        : // 2902
-                    return ("IDKEY_FDRCVLFONT");
-                case IDKEY_FDRCVNFONT        : // 2903
-                    return ("IDKEY_FDRCVNFONT");
-                case IDKEY_FDRCVIFONT        : // 2904
-                    return ("IDKEY_FDRCVIFONT");
-                case IDKEY_FDRTVLFONT        : // 2905
-                    return ("IDKEY_FDRTVLFONT");
-                case IDKEY_FDRTVNFONT        : // 2906
-                    return ("IDKEY_FDRTVNFONT");
-                case IDKEY_FDRDETAILSATTR    : // 2907
-                    return ("IDKEY_FDRDETAILSATTR");
-                case IDKEY_FDRDVFONT         : // 2908
-                    return ("IDKEY_FDRDVFONT");
-                case IDKEY_FDRDETAILSCLASS   : // 2909
-                    return ("IDKEY_FDRDETAILSCLASS");
-                case IDKEY_FDRICONPOS        : // 2910
-                    return ("IDKEY_FDRICONPOS");
-                case IDKEY_FDRINVISCOLUMNS   : // 2914
-                    return ("IDKEY_FDRINVISCOLUMNS");
-                case IDKEY_FDRINCCLASS       : // 2920
-                    return ("IDKEY_FDRINCCLASS");
-                case IDKEY_FDRINCNAME        : // 2921
-                    return ("IDKEY_FDRINCNAME");
-                case IDKEY_FDRFSYSSEARCHINFO : // 2922
-                    return ("IDKEY_FDRFSYSSEARCHINFO");
-                case IDKEY_FILTERCONTENT     : // 2923
-                    return ("IDKEY_FILTERCONTENT");
-                case IDKEY_CNRBACKGROUND     : // 2924
-                    return ("IDKEY_CNRBACKGROUND");
-                case IDKEY_FDRINCCRITERIA    : // 2925
-                    return ("IDKEY_FDRINCCRITERIA");
-                case IDKEY_FDRICONVIEWPOS    : // 2926
-                    return ("IDKEY_FDRICONVIEWPOS");
-                case IDKEY_FDRSORTCLASS      : // 2927
-                    return ("IDKEY_FDRSORTCLASS");
-                case IDKEY_FDRSORTATTRIBS    : // 2928
-                    return ("IDKEY_FDRSORTATTRIBS");
-                case IDKEY_FDRSORTINFO       : // 2929
-                    return ("IDKEY_FDRSORTINFO");
-                case IDKEY_FDRSNEAKYCOUNT    : // 2930
-                    return ("IDKEY_FDRSNEAKYCOUNT");
-                case IDKEY_FDRLONGARRAY      : // 2931
-                    return ("IDKEY_FDRLONGARRAY");
-                case IDKEY_FDRSTRARRAY       : // 2932
-                    return ("IDKEY_FDRSTRARRAY");
-                case IDKEY_FDRCNRBACKGROUND  : // 2933
-                    return ("IDKEY_FDRCNRBACKGROUND");
-                case IDKEY_FDRBKGNDIMAGEFILE : // 2934
-                    return ("IDKEY_FDRBKGNDIMAGEFILE");
-                case IDKEY_FDRBACKGROUND     : // 2935
-                    return ("IDKEY_FDRBACKGROUND");
-                case IDKEY_FDRSELFCLOSE      : // 2936
-                    return ("IDKEY_FDRSELFCLOSE");
-
-                case 2937:
-                    return ("IDKEY_FDRODMENUBARON");
-                case 2938:
-                    return ("IDKEY_FDRGRIDINFO");
-                case 2939:
-                    return ("IDKEY_FDRTREEVIEWCONTENTS");
-            }
-        }
-
-        return ("unknown");
-    }
-
-    /*
-     *@@ wpshDumpTaskRec:
-     *
-     *@@added V0.9.1 (2000-02-01) [umoeller]
-     */
-
-    VOID wpshDumpTaskRec(WPObject *somSelf,
-                         const char *pcszMethodName,
-                         PTASKREC pTaskRec)
-    {
-        _Pmpf(("%s: dumping task rec 0x%lX for obj 0x%lX (%s)",
-                pcszMethodName,
-                pTaskRec,
-                somSelf,
-                _wpQueryTitle(somSelf) ));
-
-        if (pTaskRec)
-        {
-            ULONG   ul = 0;
-            CHAR    szFolder[CCHMAXPATH] = "null";
-
-            while (pTaskRec)
-            {
-                if (pTaskRec->folder)
-                    _wpQueryFilename(pTaskRec->folder, szFolder, TRUE);
-                else
-                    strcpy(szFolder, "null");
-                _Pmpf(("Index: %d", ul));
-                _Pmpf(("    useCount: %d", pTaskRec->useCount));
-                _Pmpf(("    pStdDlg: 0x%lX", pTaskRec->pStdDlg));
-                _Pmpf(("    folder: 0x%lX (%s)", pTaskRec->folder, szFolder ));
-                _Pmpf(("    xOrigin: %d", pTaskRec->xOrigin));
-                _Pmpf(("    yOrigin: %d", pTaskRec->yOrigin));
-                _Pmpf(("    pszTitle: 0x%lX (%s)",
-                            pTaskRec->pszTitle,
-                            (pTaskRec->pszTitle) ? pTaskRec->pszTitle : "NULL"));
-                _Pmpf(("    posAfterRecord: 0x%lX", pTaskRec->positionAfterRecord));
-                _Pmpf(("    keepAssocs: %d", pTaskRec->fKeepAssociations));
-                _Pmpf(("    pReserved: 0x%lX", pTaskRec->pReserved));
-
-                pTaskRec = pTaskRec->next;
-                ul++;
-            }
-        }
-        else
-            _Pmpf(("    pTaskRec is NULL"));
-    }
-
-#endif
-
-/* ******************************************************************
- *
  *   Method call helpers
  *
  ********************************************************************/
 
 /*
- *@@ wpshParentQuerySetup2:
+ * wpshParentQuerySetup2:
  *      little helper for calling the parent
  *      xwpQuerySetup2 method. Standard code
  *      required for every xwpQuerySetup2
  *      override.
  *
- *@@added V0.9.16 (2001-10-19) [umoeller]
+ *added V0.9.16 (2001-10-19) [umoeller]
+ *removed V1.0.1 (2002-12-08) [umoeller]
  */
+
+/*
 
 BOOL wpshParentQuerySetup2(WPObject *somSelf,       // in: object
                            SOMClass *pClass,        // in: parent class
@@ -1995,4 +1814,4 @@ BOOL wpshParentQuerySetup2(WPObject *somSelf,       // in: object
     return FALSE;
 }
 
-
+*/

@@ -78,7 +78,7 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xcenter.ih"
-#include "xfobj.ih"                     // XFldObject
+// #include "xfobj.ih"                     // XFldObject
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS

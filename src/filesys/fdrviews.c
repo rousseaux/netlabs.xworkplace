@@ -75,10 +75,11 @@
 #include "xfldr.ih"
 #include "xfdisk.ih"
 #include "xfdataf.ih"
-#include "xfobj.ih"
+// #include "xfobj.ih"
 
 // XWorkplace implementation headers
 #include "shared\classtest.h"           // some cheap funcs for WPS class checks
+#include "shared\cnrsort.h"             // container sort comparison functions
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
@@ -547,7 +548,6 @@ MRESULT PaintCnrBackground(HWND hwndCnr,
                 aptl[3].x = pSubCnr->szlBitmap.cx;
                 aptl[3].y = pSubCnr->szlBitmap.cy;
 
-
                 GpiWCBitBlt(pob->hps,
                             pSubCnr->hbm,
                             4L,             // must always be 4
@@ -663,6 +663,10 @@ MRESULT EXPENTRY fnwpSubclCnr(HWND hwndCnr, ULONG msg, MPARAM mp1, MPARAM mp2)
  *      This creates a SUBCLCNR struct and puts it
  *      into the cnr's QWL_USER.
  *
+ *      After this, call fdrvSetCnrLayout to fill
+ *      that struct with meaningful bitmap data
+ *      for a given folder.
+ *
  *@@added V1.0.0 (2002-08-24) [umoeller]
  */
 
@@ -671,24 +675,31 @@ BOOL fdrvMakeCnrPaint(HWND hwndCnr)
     PSUBCLCNR   pSubCnr;
     CNRINFO     CnrInfo;
 
-    if (cnrhQueryCnrInfo(hwndCnr, &CnrInfo))
+    PMPF_SPLITVIEW(("entering, hwndCnr is 0x%lX", hwndCnr));
+
+    if (    (cnrhQueryCnrInfo(hwndCnr, &CnrInfo))
+         && (pSubCnr = NEW(SUBCLCNR))
+       )
     {
-        CnrInfo.flWindowAttr |= CA_OWNERPAINTBACKGROUND;
-        WinSendMsg(hwndCnr,
-                   CM_SETCNRINFO,
-                   (MPARAM)&CnrInfo,
-                   (MPARAM)CMA_FLWINDOWATTR);
+        PMPF_SPLITVIEW(("   got cnrinfo, subclassing"));
 
-        if (pSubCnr = NEW(SUBCLCNR))
+        ZERO(pSubCnr);
+
+        pSubCnr->hwndCnr = hwndCnr;
+        WinSetWindowPtr(hwndCnr, QWL_USER, pSubCnr);
+        if (pSubCnr->pfnwpOrig = WinSubclassWindow(hwndCnr,
+                                                   fnwpSubclCnr))
         {
-            ZERO(pSubCnr);
+            CnrInfo.flWindowAttr |= CA_OWNERPAINTBACKGROUND;
+            WinSendMsg(hwndCnr,
+                       CM_SETCNRINFO,
+                       (MPARAM)&CnrInfo,
+                       (MPARAM)CMA_FLWINDOWATTR);
 
-            pSubCnr->hwndCnr = hwndCnr;
-            WinSetWindowPtr(hwndCnr, QWL_USER, pSubCnr);
-            if (pSubCnr->pfnwpOrig = WinSubclassWindow(hwndCnr,
-                                                       fnwpSubclCnr))
-                return TRUE;
+            return TRUE;
         }
+
+        free(pSubCnr);
     }
 
     return FALSE;
@@ -906,9 +917,11 @@ HBITMAP GetBitmap(PIBMFDRBKGND pBkgnd)
 
             if (pobjImage)
             {
+                PMPF_SPLITVIEW(("   got bitmap [%s]", _wpQueryTitle(pobjImage)));
+
                 // now we have the WPImageFile...
                 // in any case, LOCK it so it won't go dormant
-                // behind our butt
+                // under our butt
                 _wpLockObject(pobjImage);
 
                 // now we need to return a HBITMAP... unfortunately
@@ -980,13 +993,19 @@ HBITMAP GetBitmap(PIBMFDRBKGND pBkgnd)
 }
 
 /*
- *@@ SetCnrLayout:
+ *@@ fdrvSetCnrLayout:
  *      one-shot function for setting the view settings
  *      of the given container according to the instance
  *      settings of the given folder.
  *
  *      This sets the container's background color and
  *      bitmap, if applicable, foreground color and font.
+ *      It does not change the container view itself
+ *      (that is, details, tree, name, etc.).
+ *
+ *      If you want the container to paint folder
+ *      background bitmaps properly, subclass the container
+ *      using fdrvMakeCnrPaint first.
  *
  *@@added V1.0.0 (2002-08-24) [umoeller]
  */
@@ -1001,6 +1020,9 @@ VOID fdrvSetCnrLayout(HWND hwndCnr,         // in: cnr whose colors and fonts ar
         XFolderData     *somThis = XFolderGetData(pFolder);
         PIBMFOLDERDATA  pFdrData;
         PIBMFDRBKGND    pBkgnd;
+
+        PMPF_SPLITVIEW(("entering, hwndCnr is 0x%lX", hwndCnr));
+
         if (    (pFdrData = (PIBMFOLDERDATA)_pvWPFolderData)
              && (pBkgnd = pFdrData->pCurrentBackground)
            )
@@ -1009,11 +1031,9 @@ VOID fdrvSetCnrLayout(HWND hwndCnr,         // in: cnr whose colors and fonts ar
                         lcolFore;
             PSUBCLCNR   pSubCnr;
 
-            // avoid flicker; the cnr repaints on
-            // every presparam change
-            WinEnableWindowUpdate(hwndCnr, FALSE);
-
             // 1) background color and bitmap
+
+            PMPF_SPLITVIEW(("   got fdr bkgnd data for [%s]", _wpQueryTitle(pFolder)));
 
             lcolBack = ResolveColor(pBkgnd->BkgndStore.lcolBackground);
 
@@ -1046,10 +1066,13 @@ VOID fdrvSetCnrLayout(HWND hwndCnr,         // in: cnr whose colors and fonts ar
                 */
             }
             else
+            {
                 // container is not subclassed:
+                PMPF_SPLITVIEW(("   cnr 0x%lX is not subclassed", hwndCnr));
                 winhSetPresColor(hwndCnr,
                                  PP_BACKGROUNDCOLOR,
                                  lcolBack);
+            }
 
             // 2) foreground color
 
@@ -1080,14 +1103,368 @@ VOID fdrvSetCnrLayout(HWND hwndCnr,         // in: cnr whose colors and fonts ar
             // for this view
             winhSetWindowFont(hwndCnr,
                               _wpQueryFldrFont(pFolder, ulView));
-
-            WinShowWindow(hwndCnr, TRUE);
         }
     }
     CATCH(excpt1)
     {
     }
     END_CATCH();
+}
+
+/*
+ *@@ BuildFieldInfos:
+ *
+ *@@added V1.0.1 (2002-11-30) [umoeller]
+ */
+
+STATIC BOOL BuildFieldInfos(HWND hwndCnr,
+                            WPFolder *pFolder,
+                            SOMClass *pDetailsClass)
+{
+    BOOL        brc = TRUE;
+    PCLASSFIELDINFO pcfi = NULL;
+    ULONG       cColumns;
+
+    TRY_LOUD(excpt1)
+    {
+        if (cColumns = _wpclsQueryDetailsInfo(pDetailsClass, &pcfi, NULL))
+        {
+            PFIELDINFO  pfiFirst,
+                        pfiThis;
+
+            // clear out all old fieldinfos
+            cnrhClearFieldInfos(hwndCnr,
+                                FALSE);     // no invalidate just yet
+
+            // allocate one fieldinfo for each column
+            if (pfiFirst = WinSendMsg(hwndCnr,
+                                      CM_ALLOCDETAILFIELDINFO,
+                                      (MPARAM)cColumns,
+                                      0))        // reserved
+            {
+                ULONG   cbOffset = sizeof(MINIRECORDCORE),
+                        ul,
+                        cInvisible = 0;
+                FIELDINFOINSERT fii;
+
+                /*
+                column 0 [Icon], CFA_SEP 0, CFA_INVIS 0
+                column 1 [Title], CFA_SEP 0, CFA_INVIS 0
+                column 2 [Object Title], CFA_SEP 0, CFA_INVIS 0
+                column 3 [Object Style], CFA_SEP 0, CFA_INVIS 0
+                column 4 [Object Class], CFA_SEP 0, CFA_INVIS 0
+                column 5 [Real name], CFA_SEP 0, CFA_INVIS 0
+                column 6 [Size], CFA_SEP 0, CFA_INVIS 0
+                column 7 [Last write date], CFA_SEP 0, CFA_INVIS 0
+                column 8 [Last write time], CFA_SEP 0, CFA_INVIS 0
+                column 9 [Last access date], CFA_SEP 0, CFA_INVIS 0
+                column 10 [Last access time], CFA_SEP 0, CFA_INVIS 0
+                column 11 [Creation date], CFA_SEP 0, CFA_INVIS 0
+                column 12 [Creation time], CFA_SEP 0, CFA_INVIS 0
+                column 13 [Flags], CFA_SEP 0, CFA_INVIS 0
+                column 14 [Read Only Flag], CFA_SEP 0, CFA_INVIS 0
+                column 15 [Hidden Flag], CFA_SEP 0, CFA_INVIS 0
+                column 16 [System Flag], CFA_SEP 0, CFA_INVIS 0
+                column 17 [Directory Flag], CFA_SEP 0, CFA_INVIS 0
+                column 18 [Archived Flag], CFA_SEP 0, CFA_INVIS 0
+                column 19 [Subject], CFA_SEP 0, CFA_INVIS 0
+                column 20 [Comment], CFA_SEP 0, CFA_INVIS 0
+                column 21 [Key phrases], CFA_SEP 0, CFA_INVIS 0
+                column 22 [History], CFA_SEP 0, CFA_INVIS 0
+                column 23 [Extended Attribute Size], CFA_SEP 0, CFA_INVIS 0
+                */
+
+                pfiThis = pfiFirst;
+                for (ul = 0;
+                     ul < cColumns;
+                     ul++)
+                {
+                    PMPF_SPLITVIEW(("column %d [%s], CFA_SEP %d, CFA_INVIS %d",
+                                    ul,
+                                    (!(pfiThis->flTitle & CFA_BITMAPORICON))
+                                        ? pcfi->pTitleData
+                                        : "non-string",
+                                    (pfiThis->flData & CFA_SEPARATOR),
+                                    (pfiThis->flData & CFA_INVISIBLE)
+                                  ));
+
+                    // set up each cnr FIELDINFO according to the
+                    // CLASSFIELDINFO that the details class gave us
+                    pfiThis->cb = sizeof(FIELDINFO);
+
+                    pfiThis->flData = pcfi->flData
+                                         | CFA_HORZSEPARATOR        // separator beneath column headings
+                                         | CFA_OWNER;               // always owner-draw column
+                    // the WPS does not add a separator after "object class",
+                    // which is the last column before the separator bar
+                    if (ul == 4)
+                        pfiThis->flData &= ~CFA_SEPARATOR;
+                    else if (ul > 1)
+                        pfiThis->flData |= CFA_IGNORE;
+                    if (!_wpIsDetailsColumnVisible(pFolder, cInvisible))
+                        pfiThis->flData |= CFA_INVISIBLE;
+
+                    pfiThis->flTitle    = pcfi->flTitle;
+                    pfiThis->pTitleData = pcfi->pTitleData;
+
+                    if (ul > 1)
+                    {
+                        pfiThis->offStruct = cbOffset;
+                        cbOffset += pcfi->ulLenFieldData;
+                    }
+                    else
+                        pfiThis->offStruct = pcfi->offFieldData;
+
+                    // the WPS uses the userdata field for the owner draw proc,
+                    // if this column uses one
+                    pfiThis->pUserData  = (PVOID)pcfi->pfnOwnerDraw;
+                    pfiThis->cxWidth    = pcfi->cxWidth;
+
+                    pcfi = pcfi->pNextFieldInfo;
+                    pfiThis = pfiThis->pNextFieldInfo;
+
+                } // end for
+
+                fii.cb = sizeof(fii);
+                fii.pFieldInfoOrder = (PFIELDINFO)CMA_FIRST;
+                fii.fInvalidateFieldInfo = TRUE;
+                fii.cFieldInfoInsert = cColumns;
+
+                if (WinSendMsg(hwndCnr,
+                               CM_INSERTDETAILFIELDINFO,
+                               (MPARAM)pfiFirst,
+                               (MPARAM)&fii))
+                {
+                    CNRINFO ci;
+                    ci.pFieldInfoLast = pfiFirst->pNextFieldInfo->pNextFieldInfo->pNextFieldInfo->pNextFieldInfo;
+                    ci.xVertSplitbar  = 240;
+                    brc = (BOOL)WinSendMsg(hwndCnr,
+                                           CM_SETCNRINFO,
+                                           (MPARAM)&ci,
+                                           (MPARAM)(CMA_PFIELDINFOLAST | CMA_XVERTSPLITBAR));
+                }
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    return brc;
+}
+
+/*
+ *@@ fdrvSetupView:
+ *
+ *@@added V1.0.1 (2002-11-30) [umoeller]
+ */
+
+BOOL fdrvSetupView(PCNRVIEW pCnrView,
+                   WPFolder *pFolder,   // in: folder that the cnr displays (for querying view settings)
+                   ULONG ulView,        // in: one of OPEN_CONTENTS, OPEN_DETAILS, OPEN_TREE
+                   BOOL fMini)          // in: mini icons? (ignored for OPEN_DETAILS)
+{
+    ULONG       flNewStyle = 0;
+    BOOL        fForceNameSort = FALSE,
+                fSetFdrSort = FALSE,
+                fSetLayout = FALSE,
+                fRefreshDetails = FALSE;
+    SOMClass    *pDetailsClass;
+
+    PMPF_SPLITVIEW(("entering, hwndCnr is 0x%lX", pCnrView->hwndCnr));
+
+    // view change?
+    if (    (ulView)
+         && (ulView != pCnrView->ulView)
+       )
+    {
+        PMPF_SPLITVIEW(("   view changed 0x%lX (%s)",
+                    ulView,
+                    cmnIdentifyView(ulView)));
+
+        switch (ulView)
+        {
+            case OPEN_TREE:
+                flNewStyle = (fMini)
+                                ? CV_TREE | CA_TREELINE | CV_ICON | CV_MINI
+                                : CV_TREE | CA_TREELINE | CV_ICON;
+                fForceNameSort = TRUE;
+            break;
+
+            case OPEN_DETAILS:
+                flNewStyle = CV_DETAIL | CV_MINI | CA_DETAILSVIEWTITLES | CA_DRAWICON | CA_OWNERDRAW;
+                fSetFdrSort = TRUE;
+                fRefreshDetails = TRUE;
+            break;
+
+            default:
+                flNewStyle = (fMini)
+                              ? CV_NAME | CV_FLOW | CV_MINI
+                              : CV_NAME | CV_FLOW;
+                fSetFdrSort = TRUE;
+
+            break;
+        }
+
+        // store the new current view
+        pCnrView->ulView = ulView;
+
+        fSetLayout = TRUE;
+    }
+
+    if (pFolder)
+    {
+        if (pFolder != pCnrView->pFolder)
+        {
+            PMPF_SPLITVIEW(("   folder changed [%s]", _wpQueryTitle(pFolder)));
+
+            // folder changed:
+            if (pCnrView->ulView == OPEN_DETAILS)
+                fRefreshDetails = TRUE;
+
+            fSetFdrSort = TRUE;
+            fSetLayout = TRUE;
+        }
+
+        pCnrView->pFolder = pFolder;
+    }
+
+    if (fRefreshDetails)
+    {
+        if (    (pDetailsClass = _wpQueryFldrDetailsClass(pCnrView->pFolder))
+             && (pDetailsClass != pCnrView->pDetailsClass)
+           )
+        {
+            // fieldinfos changed for this container:
+            pCnrView->pDetailsClass = pDetailsClass;
+        }
+        else
+            fRefreshDetails = FALSE;
+    }
+
+    if (    flNewStyle
+         || fForceNameSort
+         || fSetFdrSort
+         || fSetLayout
+         || fRefreshDetails
+       )
+    {
+        // avoid flicker; the cnr repaints on
+        // every presparam change
+        WinEnableWindowUpdate(pCnrView->hwndCnr, FALSE);
+
+        BEGIN_CNRINFO()
+        {
+            if (flNewStyle)
+            {
+                CNRINFO ci2;
+                cnrhQueryCnrInfo(pCnrView->hwndCnr, &ci2);
+
+                // set only the affected flags, or we'll kill
+                // CA_OWNERPAINTBACKGROUND and the like
+                cnrhSetView(ci2.flWindowAttr
+                            & ~(   CV_TREE | CA_TREELINE | CV_ICON | CV_MINI
+                                 | CV_DETAIL | CA_DETAILSVIEWTITLES | CA_DRAWICON | CA_OWNERDRAW
+                                 | CV_NAME | CV_FLOW
+                               )
+                            | flNewStyle);
+
+                cnrhSetTreeIndent(20);
+            }
+
+            if (fForceNameSort)     // tree view
+            {
+                cnrhSetSortFunc(fnCompareName);
+            }
+            else if (fSetFdrSort)
+                fdrSetFldrCnrSort(pCnrView->pFolder,
+                                  pCnrView->hwndCnr,
+                                  TRUE);        // force
+
+        } END_CNRINFO(pCnrView->hwndCnr);
+
+        if (fSetLayout)
+        {
+            PMPF_SPLITVIEW(("   calling fdrvSetCnrLayout with folder [%s]",
+                                _wpQueryTitle(pCnrView->pFolder)));
+            fdrvSetCnrLayout(pCnrView->hwndCnr,
+                             pCnrView->pFolder,
+                             pCnrView->ulView);
+        }
+
+        if (fRefreshDetails)
+            BuildFieldInfos(pCnrView->hwndCnr,
+                            pCnrView->pFolder,
+                            pCnrView->pDetailsClass);
+
+        WinShowWindow(pCnrView->hwndCnr, TRUE);
+    }
+
+    return TRUE;
+}
+
+/*
+ *@@ fdrvCreateFrameWithCnr:
+ *      creates a new WC_FRAME with a WC_CONTAINER as its
+ *      client window, with hwndParentOwner being the parent
+ *      and owner of the frame.
+ *
+ *      With flCnrStyle, specify the cnr style to use. The
+ *      following may optionally be set:
+ *
+ *      --  CCS_MINIICONS (optionally)
+ *
+ *      --  CCS_EXTENDSEL: allow zero, one, many icons to be
+ *          selected (default WPS style).
+ *
+ *      --  CCS_SINGLESEL: allow only exactly one icon to be
+ *          selected at a time.
+ *
+ *      --  CCS_MULTIPLESEL: allow zero, one, or more icons
+ *          to be selected, and toggle selections (totally
+ *          unusable).
+ *
+ *      WS_VISIBLE, WS_SYNCPAINT, CCS_AUTOPOSITION, and
+ *      CCS_MINIRECORDCORE will always be set.
+ *
+ *      Returns the frame.
+ *
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: moved this here from fdrsplit.c
+ */
+
+HWND fdrvCreateFrameWithCnr(ULONG ulFrameID,
+                            HWND hwndParentOwner,     // in: main client window
+                            ULONG flCnrStyle,         // in: cnr style
+                            HWND *phwndClient)        // out: client window (cnr)
+{
+    HWND    hwndFrame;
+    ULONG   ws =   WS_VISIBLE
+                 | WS_SYNCPAINT
+                 | CCS_AUTOPOSITION
+                 | CCS_MINIRECORDCORE
+                 | flCnrStyle;
+
+    if (hwndFrame = winhCreateStdWindow(hwndParentOwner, // parent
+                                        NULL,          // pswpFrame
+                                        FCF_NOBYTEALIGN,
+                                        WS_VISIBLE,
+                                        "",
+                                        0,             // resources ID
+                                        WC_CONTAINER,  // client
+                                        ws,            // client style
+                                        ulFrameID,
+                                        NULL,
+                                        phwndClient))
+    {
+        // set client as owner
+        WinSetOwner(hwndFrame, hwndParentOwner);
+
+        winhSetWindowFont(*phwndClient,
+                          cmnQueryDefaultFont());
+    }
+
+    return hwndFrame;
 }
 
 /* ******************************************************************
@@ -1330,29 +1707,47 @@ BOOL fdrvIsObjectInCnr(WPObject *pObject,
 }
 
 /*
+ *@@ CLEARCNRDATA:
+ *
+ *@@added V1.0.1 (2002-11-30) [umoeller]
+ */
+
+typedef struct _CLEARCNRDATA
+{
+    BOOL        fUnlock;
+    LINKLIST    llRecords;                 // linked list of PMINIRECORDCORE structs
+} CLEARCNRDATA, *PCLEARCNRDATA;
+
+/*
  *@@ fncbClearCnr:
  *      callback for cnrhForAllRecords, specified
  *      by fdrvClearContainer.
  *
  *@@added V1.0.0 (2002-09-09) [umoeller]
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: changed callback param for linklist (speedup)
  */
 
 STATIC ULONG XWPENTRY fncbClearCnr(HWND hwndCnr,
                                    PRECORDCORE precc,
-                                   ULONG ulUnlock)      // callback parameter
+                                   ULONG ulData)      // callback parameter
 {
-    WPObject *pobj = OBJECT_FROM_PREC(precc);
+    PCLEARCNRDATA pData = (PCLEARCNRDATA)ulData;
 
-    _wpCnrRemoveObject(pobj,
-                       hwndCnr);
-            // @@todo this is _very_ inefficient. Removing 1,000 records
+    // WPObject *pobj = OBJECT_FROM_PREC(precc);
+
+    /* _wpCnrRemoveObject(pobj,
+                       hwndCnr); */
+            // this is _very_ inefficient. Removing 1,000 records
             // can take up to a second this way. Use wpclsRemoveObjects
             // instead.
 
-    if (ulUnlock)
+    // add to list for wpclsRemoveObjects
+    lstAppendItem(&pData->llRecords, precc);    // V1.0.1 (2002-11-30) [umoeller]
+
+    if (pData->fUnlock)
         // this is the "unlock" that corresponds to the "lock"
         // that was issued on every object by wpPopulate
-        _wpUnlockObject(pobj);
+        _wpUnlockObject(OBJECT_FROM_PREC(precc));
 
     return 0;
 }
@@ -1378,6 +1773,7 @@ STATIC ULONG XWPENTRY fncbClearCnr(HWND hwndCnr,
  *
  *@@changed V1.0.0 (2002-09-13) [umoeller]: added flClear
  *@@changed V1.0.0 (2002-11-23) [umoeller]: fixed broken lazy drag in progress @@fixes 225
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: major speedup @@fixes 270
  */
 
 ULONG fdrvClearContainer(HWND hwndCnr,      // in: cnr to clear
@@ -1385,6 +1781,10 @@ ULONG fdrvClearContainer(HWND hwndCnr,      // in: cnr to clear
 {
     ULONG       ulrc;
     PDRAGINFO   pdrgInfo;
+    CLEARCNRDATA data;
+    ULONG       cRecords;
+
+    HPOINTER    hptrOld = winhSetWaitPointer();     // V1.0.1 (2002-11-30) [umoeller]
 
     // disable window updates
     // for the cnr or this takes forever
@@ -1399,6 +1799,12 @@ ULONG fdrvClearContainer(HWND hwndCnr,      // in: cnr to clear
        )
         DrgCancelLazyDrag();
 
+    data.fUnlock = (flClear & CLEARFL_UNLOCKOBJECTS);
+    lstInit(&data.llRecords, FALSE);
+
+    // recurse through all records to build a list of
+    // records to remove and shoot at them all at once
+    // V1.0.1 (2002-11-30) [umoeller]
     ulrc = cnrhForAllRecords(hwndCnr,
                              // recurse only for tree view
                              (flClear & CLEARFL_TREEVIEW)
@@ -1406,7 +1812,35 @@ ULONG fdrvClearContainer(HWND hwndCnr,      // in: cnr to clear
                                 : (PRECORDCORE)-1,
                              fncbClearCnr,
                              // callback parameter:
-                             (flClear & CLEARFL_UNLOCKOBJECTS));
+                             (ULONG)&data);        // V1.0.1 (2002-11-30) [umoeller]
+
+    if (cRecords = lstCountItems(&data.llRecords))
+    {
+        PMINIRECORDCORE *paRecords;
+        if (paRecords = (PMINIRECORDCORE*)malloc(cRecords * sizeof(PMINIRECORDCORE)))
+        {
+            PMINIRECORDCORE *pThis = paRecords;
+            PLISTNODE pNode;
+
+            FOR_ALL_NODES(&data.llRecords, pNode)
+            {
+                *pThis++ = (PMINIRECORDCORE)pNode->pItemData;
+            }
+
+            _wpclsRemoveObjects(_WPObject,
+                                hwndCnr,
+                                (PVOID*)paRecords,
+                                cRecords,
+                                FALSE);
+
+            free(paRecords);
+        }
+    }
+
+
+    lstClear(&data.llRecords);
+
+    WinSetPointer(HWND_DESKTOP, hptrOld);
 
     WinShowWindow(hwndCnr, TRUE);
 

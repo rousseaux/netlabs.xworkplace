@@ -9,6 +9,7 @@
 #ifndef wpfolder_idl
 #define wpfolder_idl
 #include "wpfsys.idl"
+// #include "xwpfsys.idl"          // WPFileSystem is replaced with XWPFileSystem
 #include <somcls.idl>
 interface M_WPFolder;
 interface WPFolder : WPFileSystem
@@ -153,6 +154,23 @@ interface WPFolder : WPFileSystem
      */
 
     VOID wpRedrawFolderBackground();
+
+    /*
+     * wpSetFldrSelfClose:
+     *      sets the self-close value for this folder.
+     *      See the SELFCLOSE_* definitions in folder.h.
+     */
+
+    VOID wpSetFldrSelfClose(in ULONG ulClose);
+
+    /*
+     * wpQueryFldrSelfClose:
+     *      returns the self-close setting for this
+     *      folder.
+     *      See the SELFCLOSE_* definitions in folder.h.
+     */
+
+    ULONG wpQueryFldrSelfClose();
 
 // Warp 4 methods V1.0.1 (2002-11-30) [umoeller]__FILE__, __LINE__, __FUNCTION__,
 
@@ -443,7 +461,26 @@ interface M_WPFolder : M_WPFileSystem
 
 //# new non-public Warp 3 methods hacked in for XWorkplace
 
+    /*
+     * wpclsGetNotifySem:
+     *      requests the global notify mutex.
+     *
+     *      This "notify mutex" is used before the background
+     *      threads in the WPS attempt to update folder contents
+     *      for auto-refreshing folders. By requesting this
+     *      semaphore, any other WPS thread which does file
+     *      operations can therefore keep these background
+     *      threads from interfering.
+     */
+
     BOOL wpclsGetNotifySem(in ULONG ulTimeout);
+
+    /*
+     * wpclsReleaseNotifySem:
+     *      releases the global notify mutex.
+     *
+     *      This is the reverse to wpclsGetNotifySem.
+     */
 
     VOID wpclsReleaseNotifySem();
 

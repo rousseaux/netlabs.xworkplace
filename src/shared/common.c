@@ -177,6 +177,8 @@ static CHAR             G_szMessageFile[CCHMAXPATH] = "";
 // array of ULONGs with values for cmnGetSetting; this
 // is filled on startup
 static ULONG            G_aulSettings[___LAST_SETTING];
+extern ULONG            *G_pulVarMenuOfs = NULL; // V1.0.0 (2002-08-28) [umoeller]
+
 #ifndef __NOTURBOFOLDERS__
 static BOOL             G_fTurboSettingsEnabled = FALSE;
             // set by cmnEnableTurboFolders() V0.9.16 (2002-01-05) [umoeller]
@@ -2918,9 +2920,6 @@ typedef struct _OLDGLOBALSETTINGS
 
 #pragma pack()
 
-extern ULONG    *G_pulVarMenuOfs = NULL;
-            // V1.0.0 (2002-08-28) [umoeller]
-
 /*
  *@@ SETTINGINFO:
  *      gives detailed information about an
@@ -3027,7 +3026,7 @@ static const SETTINGINFO G_aSettingInfos[] =
 
         // V1.0.1 (2002-11-30) [umoeller]
         sfToolBars, -1, 0,
-            SP_SETUP_FEATURES, 0,
+            SP_SETUP_FEATURES, 0,       // @@todo
             "fToolBars",
 
 #ifndef __NOSNAPTOGRID__
@@ -3236,28 +3235,43 @@ static const SETTINGINFO G_aSettingInfos[] =
 
         // status bar settings
         sfDefaultStatusBarVisibility, FIELDOFFSET(OLDGLOBALSETTINGS, fDefaultStatusBarVisibility), 4,
-            SP_27STATUSBAR, 1,
+            SP_STATUSBARS1, 1,
             "fDefaultStatusBarVisibility",
         sulSBStyle, FIELDOFFSET(OLDGLOBALSETTINGS, SBStyle), 4,
-            SP_27STATUSBAR, SBSTYLE_WARP4MENU,
+            SP_STATUSBARS1, SBSTYLE_WARP4MENU,
             // @@todo G_GlobalSettings.SBStyle = (G_fIsWarp4 ? SBSTYLE_WARP4MENU : SBSTYLE_WARP3RAISED);
             "ulSBStyle",
         slSBBgndColor, FIELDOFFSET(OLDGLOBALSETTINGS, lSBBgndColor), 4,
-            SP_27STATUSBAR, RGBCOL_GRAY,
+            SP_STATUSBARS1, RGBCOL_GRAY,
             // @@todo lSBBgndColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_INACTIVEBORDER, 0);
             "lSBBgndColor",
         slSBTextColor, FIELDOFFSET(OLDGLOBALSETTINGS, lSBTextColor), 4,
-            SP_27STATUSBAR, RGBCOL_BLACK,
+            SP_STATUSBARS1, RGBCOL_BLACK,
             // @@todo lSBTextColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_OUTPUTTEXT, 0);
             "lSBTextColor",
         sflSBForViews, FIELDOFFSET(OLDGLOBALSETTINGS, SBForViews), 4,
-            SP_27STATUSBAR, SBV_ICON | SBV_DETAILS,
+            SP_STATUSBARS1, SBV_ICON | SBV_DETAILS | SBV_SPLIT,
+                            // added split V1.0.1 (2002-12-08) [umoeller]
             "flSBForViews",
 #ifndef __NOCFGSTATUSBARS__
         sflDereferenceShadows, FIELDOFFSET(OLDGLOBALSETTINGS, bDereferenceShadows), 1,
-            SP_27STATUSBAR, STBF_DEREFSHADOWS_SINGLE,
+            SP_STATUSBARS1, STBF_DEREFSHADOWS_SINGLE,
             "flDereferenceShadows",
 #endif
+
+        // tool bar settings V1.0.1 (2002-12-08) [umoeller]
+        sfDefaultToolBarVisibility, -1, 0,
+            SP_TOOLBARS1, 1,
+            "fDefaultToolBarVisibility",
+        sflToolBarStyle, -1, 0,
+            SP_TOOLBARS1, TBBS_TEXT | TBBS_BIGICON | TBBS_FLAT | TBBS_HILITE,
+            "sflToolBarStyle",
+        sflTBForViews, -1, 0,
+            SP_TOOLBARS1, SBV_ICON | SBV_DETAILS | SBV_SPLIT,
+            "flTBForViews",
+        sfTBToolTips, -1, 0,
+            SP_TOOLBARS1, TRUE,
+            "fTBToolTips",
 
         // startup settings
         sfShowStartupProgress, FIELDOFFSET(OLDGLOBALSETTINGS, ShowStartupProgress), 4,
@@ -5045,9 +5059,7 @@ BOOL cmnAddProductInfoMenuItem(WPFolder *somSelf,
     {
         // mi.hwndSubMenu now contains "Help" submenu handle,
         // which we add items to now
-        winhInsertMenuSeparator(mi.hwndSubMenu,
-                                MIT_END,
-                                *G_pulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+        cmnInsertSeparator(mi.hwndSubMenu, MIT_END);
         winhInsertMenuItem(mi.hwndSubMenu,
                            MIT_END,
                            *G_pulVarMenuOfs + ID_XFMI_OFS_PRODINFO,
@@ -5606,14 +5618,52 @@ BOOL cmnDescribeKey(PSZ pszBuf,
 VOID cmnAddCloseMenuItem(HWND hwndMenu)
 {
     // add "Close" menu item
-    winhInsertMenuSeparator(hwndMenu,
-                            MIT_END,
-                            *G_pulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+    cmnInsertSeparator(hwndMenu, MIT_END);
     winhInsertMenuItem(hwndMenu,
                        MIT_END,
                        WPMENUID_CLOSE,
                        cmnGetString(ID_XSSI_CLOSE),  // "~Close", // pszClose
                        MIS_TEXT, 0);
+}
+
+/*
+ *@@ cmnInsertSeparator:
+ *      adds a separator item to the given menu.
+ *
+ *@@added V1.0.1 (2002-12-08) [umoeller]
+ */
+
+VOID cmnInsertSeparator(HWND hwndMenu,
+                        SHORT sPosition)       // in: probably MIT_END
+{
+    winhInsertMenuSeparator(hwndMenu,
+                            sPosition,
+                            *G_pulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+}
+
+/*
+ *@@ cmnQueryFCF:
+ *      returns either FCF_HIDEMAX or FCF_MINMAX, depending
+ *      on the object button setting of this object.
+ *
+ *      Useful helper when creating a custom view.
+ *
+ *@@added V1.0.1 (2002-12-08) [umoeller]
+ */
+
+ULONG cmnQueryFCF(WPObject *somSelf)
+{
+    ULONG   ulButton = _wpQueryButtonAppearance(somSelf);
+    if (ulButton == DEFAULTBUTTON)
+        ulButton = PrfQueryProfileInt(HINI_USER,
+                                      "PM_ControlPanel",
+                                      "MinButtonType",
+                                      HIDEBUTTON);
+
+    if (ulButton == HIDEBUTTON)
+        return FCF_HIDEMAX;     // hide and maximize
+
+    return FCF_MINMAX;      // minimize and maximize
 }
 
 /*
@@ -7835,4 +7885,232 @@ BOOL cmnFileDlg(HWND hwndOwner,    // in: owner for file dlg
                        pcszKey,
                        fUseNewFileDlg);
 }
+
+/* ******************************************************************
+ *
+ *   WPS debugging
+ *
+ ********************************************************************/
+
+/*
+ *@@ cmnIdentifyView:
+ *      returns the name of the given view type as
+ *      a string (e.g. "OPEN_CONTENTS"), or a localized
+ *      "unknown" string if not recognized.
+ *
+ *@@added V1.0.0 (2002-08-31) [umoeller]
+ *@@changed V1.0.1 (2002-12-08) [umoeller]: moved this here from fdrmenus.c
+ */
+
+PCSZ cmnIdentifyView(ULONG ulView)
+{
+    switch (ulView)
+    {
+        #define CHECKVIEW(v) case v: return # v
+
+        CHECKVIEW(OPEN_DEFAULT);
+        CHECKVIEW(OPEN_HELP);
+        CHECKVIEW(OPEN_RUNNING);
+        CHECKVIEW(OPEN_PROMPTDLG);
+        CHECKVIEW(OPEN_PALETTE);
+        CHECKVIEW(CLOSED_ICON);
+        CHECKVIEW(OPEN_CONTENTS);
+        CHECKVIEW(OPEN_TREE);
+        CHECKVIEW(OPEN_SETTINGS);
+        CHECKVIEW(OPEN_DETAILS);
+
+        default:
+            switch (ulView - *G_pulVarMenuOfs)
+            {
+                CHECKVIEW(ID_XFMI_OFS_XWPVIEW);
+                CHECKVIEW(ID_XFMI_OFS_SPLITVIEW);
+                CHECKVIEW(ID_XFMI_OFS_SPLIT_SUBTREE);       // V1.0.1 (2002-12-08) [umoeller]
+                CHECKVIEW(ID_XFMI_OFS_SPLIT_SUBFILES);
+            }
+    }
+
+    return cmnGetString(ID_SDDI_APMVERSION); // "unknown"
+}
+
+#ifdef __DEBUG__
+
+    /*
+     *@@ cmnIdentifyRestoreID:
+     *      this returns a string to identify the
+     *      "restore ID" used in wpRestoreString,
+     *      wpRestoreData, wpRestoreLong.
+     *
+     *      This is useful for debugging all those
+     *      keys that are undocumented.
+     *
+     *      This returns a static PSZ, so do not
+     *      free it.
+     *
+     *@@added V0.9.1 (2000-01-17) [umoeller]
+     *@@changed V1.0.1 (2002-12-08) [umoeller]: moved this here from wpsh.c
+     */
+
+    PCSZ cmnIdentifyRestoreID(PSZ pszClass,     // in: class name (as in wpRestore*)
+                              ULONG ulKey)      // in: value ID (as in wpRestore*)
+    {
+        if (!strcmp(pszClass, G_pcszWPObject))
+        {
+            switch (ulKey)
+            {
+                case 1:
+                    return ("IDKEY_OBJID");
+                case 2:
+                    return ("IDKEY_OBJHELPPANEL");
+                case 6:
+                    return ("IDKEY_OBJSZID");
+                case 7:
+                    return ("IDKEY_OBJSTYLE");
+                case 8:
+                    return ("IDKEY_OBJMINWIN");
+                case 9:
+                    return ("IDKEY_OBJCONCURRENT");
+                case 10:
+                    return ("IDKEY_OBJVIEWBUTTON");
+                case 11:
+                    return ("IDKEY_OBJLONGS");
+                case 12:
+                    return ("IDKEY_OBJSTRINGS");
+            }
+        }
+        else if (!strcmp(pszClass, "WPFileSystem"))
+        {
+            switch (ulKey)
+            {
+                case 4:
+                    return ("IDKEY_FSYSMENUCOUNT");
+                case 3:
+                    return ("IDKEY_FSYSMENUARRAY");
+            }
+        }
+        else if (!strcmp(pszClass, G_pcszWPFolder))
+        {
+            switch (ulKey)
+            {
+                case IDKEY_FDRCONTENTATTR    : // 2900
+                    return ("IDKEY_FDRCONTENTATTR");
+                case IDKEY_FDRTREEATTR       : // 2901
+                    return ("IDKEY_FDRTREEATTR");
+                case IDKEY_FDRCVLFONT        : // 2902
+                    return ("IDKEY_FDRCVLFONT");
+                case IDKEY_FDRCVNFONT        : // 2903
+                    return ("IDKEY_FDRCVNFONT");
+                case IDKEY_FDRCVIFONT        : // 2904
+                    return ("IDKEY_FDRCVIFONT");
+                case IDKEY_FDRTVLFONT        : // 2905
+                    return ("IDKEY_FDRTVLFONT");
+                case IDKEY_FDRTVNFONT        : // 2906
+                    return ("IDKEY_FDRTVNFONT");
+                case IDKEY_FDRDETAILSATTR    : // 2907
+                    return ("IDKEY_FDRDETAILSATTR");
+                case IDKEY_FDRDVFONT         : // 2908
+                    return ("IDKEY_FDRDVFONT");
+                case IDKEY_FDRDETAILSCLASS   : // 2909
+                    return ("IDKEY_FDRDETAILSCLASS");
+                case IDKEY_FDRICONPOS        : // 2910
+                    return ("IDKEY_FDRICONPOS");
+                case IDKEY_FDRINVISCOLUMNS   : // 2914
+                    return ("IDKEY_FDRINVISCOLUMNS");
+                case IDKEY_FDRINCCLASS       : // 2920
+                    return ("IDKEY_FDRINCCLASS");
+                case IDKEY_FDRINCNAME        : // 2921
+                    return ("IDKEY_FDRINCNAME");
+                case IDKEY_FDRFSYSSEARCHINFO : // 2922
+                    return ("IDKEY_FDRFSYSSEARCHINFO");
+                case IDKEY_FILTERCONTENT     : // 2923
+                    return ("IDKEY_FILTERCONTENT");
+                case IDKEY_CNRBACKGROUND     : // 2924
+                    return ("IDKEY_CNRBACKGROUND");
+                case IDKEY_FDRINCCRITERIA    : // 2925
+                    return ("IDKEY_FDRINCCRITERIA");
+                case IDKEY_FDRICONVIEWPOS    : // 2926
+                    return ("IDKEY_FDRICONVIEWPOS");
+                case IDKEY_FDRSORTCLASS      : // 2927
+                    return ("IDKEY_FDRSORTCLASS");
+                case IDKEY_FDRSORTATTRIBS    : // 2928
+                    return ("IDKEY_FDRSORTATTRIBS");
+                case IDKEY_FDRSORTINFO       : // 2929
+                    return ("IDKEY_FDRSORTINFO");
+                case IDKEY_FDRSNEAKYCOUNT    : // 2930
+                    return ("IDKEY_FDRSNEAKYCOUNT");
+                case IDKEY_FDRLONGARRAY      : // 2931
+                    return ("IDKEY_FDRLONGARRAY");
+                case IDKEY_FDRSTRARRAY       : // 2932
+                    return ("IDKEY_FDRSTRARRAY");
+                case IDKEY_FDRCNRBACKGROUND  : // 2933
+                    return ("IDKEY_FDRCNRBACKGROUND");
+                case IDKEY_FDRBKGNDIMAGEFILE : // 2934
+                    return ("IDKEY_FDRBKGNDIMAGEFILE");
+                case IDKEY_FDRBACKGROUND     : // 2935
+                    return ("IDKEY_FDRBACKGROUND");
+                case IDKEY_FDRSELFCLOSE      : // 2936
+                    return ("IDKEY_FDRSELFCLOSE");
+
+                case 2937:
+                    return ("IDKEY_FDRODMENUBARON");
+                case 2938:
+                    return ("IDKEY_FDRGRIDINFO");
+                case 2939:
+                    return ("IDKEY_FDRTREEVIEWCONTENTS");
+            }
+        }
+
+        return ("unknown");
+    }
+
+    /*
+     *@@ cmnDumpTaskRec:
+     *
+     *@@added V0.9.1 (2000-02-01) [umoeller]
+     *@@changed V1.0.1 (2002-12-08) [umoeller]: moved this here from wpsh.c
+     */
+
+    VOID cmnDumpTaskRec(WPObject *somSelf,
+                        const char *pcszMethodName,
+                        PTASKREC pTaskRec)
+    {
+        _Pmpf(("%s: dumping task rec 0x%lX for obj 0x%lX (%s)",
+                pcszMethodName,
+                pTaskRec,
+                somSelf,
+                _wpQueryTitle(somSelf) ));
+
+        if (pTaskRec)
+        {
+            ULONG   ul = 0;
+            CHAR    szFolder[CCHMAXPATH] = "null";
+
+            while (pTaskRec)
+            {
+                if (pTaskRec->folder)
+                    _wpQueryFilename(pTaskRec->folder, szFolder, TRUE);
+                else
+                    strcpy(szFolder, "null");
+                _Pmpf(("Index: %d", ul));
+                _Pmpf(("    useCount: %d", pTaskRec->useCount));
+                _Pmpf(("    pStdDlg: 0x%lX", pTaskRec->pStdDlg));
+                _Pmpf(("    folder: 0x%lX (%s)", pTaskRec->folder, szFolder ));
+                _Pmpf(("    xOrigin: %d", pTaskRec->xOrigin));
+                _Pmpf(("    yOrigin: %d", pTaskRec->yOrigin));
+                _Pmpf(("    pszTitle: 0x%lX (%s)",
+                            pTaskRec->pszTitle,
+                            (pTaskRec->pszTitle) ? pTaskRec->pszTitle : "NULL"));
+                _Pmpf(("    posAfterRecord: 0x%lX", pTaskRec->positionAfterRecord));
+                _Pmpf(("    keepAssocs: %d", pTaskRec->fKeepAssociations));
+                _Pmpf(("    pReserved: 0x%lX", pTaskRec->pReserved));
+
+                pTaskRec = pTaskRec->next;
+                ul++;
+            }
+        }
+        else
+            _Pmpf(("    pTaskRec is NULL"));
+    }
+
+#endif
+
 

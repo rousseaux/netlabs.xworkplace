@@ -1735,8 +1735,8 @@ BOOL trshRestoreFromTrashCan(XWPTrashObject *pTrashObject,
                 PMPF_TRASHCAN(("_pRelatedObject: %s",
                             _wpQueryTitle(_pRelatedObject) ));
 
-                wpshDumpTaskRec(pTrashObject, "xwpRestoreFromTrashCan (XWPTrashObject)", pTaskRecSelf);
-                wpshDumpTaskRec(pTrashObject, "xwpRestoreFromTrashCan (related obj)", pTaskRecRelated);
+                cmnDumpTaskRec(pTrashObject, "xwpRestoreFromTrashCan (XWPTrashObject)", pTaskRecSelf);
+                cmnDumpTaskRec(pTrashObject, "xwpRestoreFromTrashCan (related obj)", pTaskRecRelated);
 
                 if (pTargetFolder)
                 {
@@ -2170,7 +2170,7 @@ BOOL trshProcessViewCommand(WPFolder *somSelf,
 {
     BOOL brc = TRUE;        // default: processed
 
-    LONG lMenuID2 = usCommand - cmnQuerySetting(sulVarMenuOfs);
+    LONG lMenuID2 = usCommand - *G_pulVarMenuOfs;
 
     switch (lMenuID2)
     {
@@ -2196,10 +2196,14 @@ BOOL trshProcessViewCommand(WPFolder *somSelf,
         break;
 
         default:
+            brc = FALSE;
+
+        /*
         {
             // other: call parent method to find out
             // whether default processing should occur
 
+            V1.0.1 (2002-12-08) [umoeller]
             // manually resolve parent method
             somTD_XWPTrashCan_xwpProcessViewCommand pxwpProcessViewCommand;
 
@@ -2214,7 +2218,13 @@ BOOL trshProcessViewCommand(WPFolder *somSelf,
                                              hwndCnr,
                                              pFirstObject,
                                              ulSelectionFlags);
-        }
+
+            brc = XWPTrashCan_parent_XFolder_xwpProcessViewCommand(somSelf,
+                                                                   usCommand,
+                                                                   hwndCnr,
+                                                                   pFirstObject,
+                                                                   ulSelectionFlags);
+        } */
     }
 
     return brc;

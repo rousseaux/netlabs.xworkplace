@@ -433,7 +433,6 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
     BOOL fShutdownRunning = xsdQueryShutdownState() != XSD_IDLE;
     ULONG ulShutdownAttr = 0;
 
-    ULONG ulOfs = cmnQuerySetting(sulVarMenuOfs);
     ULONG fl = cmnQuerySetting(mnuQueryMenuXWPSetting(somSelf));  // V1.0.0 (2002-10-11) [pr]
 
     if (fShutdownRunning)
@@ -510,7 +509,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
         // insert "Restart Desktop"
         winhInsertMenuItem(hwndMenuInsert,  // either main menu or "Shutdown" submenu
                            sOrigShutdownPos,  // either MIT_END or position of "Shutdown" item
-                           ulOfs + ID_XFMI_OFS_RESTARTWPS,
+                           *G_pulVarMenuOfs + ID_XFMI_OFS_RESTARTWPS,
                            cmnGetString(ID_SDSI_RESTARTWPS),  // pszRestartWPS
                            MIS_TEXT,
                            // disable if Shutdown is currently running
@@ -521,7 +520,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
             // if XShutdown confirmations have been disabled,
             // remove "..." from "Restart Desktop" entry
             winhMenuRemoveEllipse(hwndMenuInsert,
-                                  ulOfs + ID_XFMI_OFS_RESTARTWPS);
+                                  *G_pulVarMenuOfs + ID_XFMI_OFS_RESTARTWPS);
 #endif
     }
 
@@ -531,7 +530,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
         // insert "logoff"
         winhInsertMenuItem(hwndMenuInsert,  // either main menu or "Shutdown" submenu
                            sOrigShutdownPos,  // either MIT_END or position of "Shutdown" item
-                           ulOfs + ID_XFMI_OFS_LOGOFF,
+                           *G_pulVarMenuOfs + ID_XFMI_OFS_LOGOFF,
                            cmnGetString(ID_XSSI_XSD_LOGOFF),  // pszXSDLogoff
                            MIS_TEXT,
                            // disable if Shutdown is currently running
@@ -542,7 +541,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
             // if XShutdown confirmations have been disabled,
             // remove "..." from "Logoff" entry
             winhMenuRemoveEllipse(hwndMenuInsert,
-                                  ulOfs + ID_XFMI_OFS_LOGOFF);
+                                  *G_pulVarMenuOfs + ID_XFMI_OFS_LOGOFF);
 #endif
     }
 #endif
@@ -564,9 +563,9 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
         // if XWorkplace is compiled with
         // VAC++ debug memory funcs,
         // add a menu item for listing all memory objects
-        winhInsertMenuSeparator(hwndMenu,
-                                MIT_END,
-                                ulOfs + ID_XFMI_OFS_SEPARATOR);
+
+        cmnInsertSeparator(hwndMenu, MIT_END);
+
         winhInsertMenuItem(hwndMenu,
                            MIT_END,
                            DEBUG_MENUID_LISTHEAP,
@@ -582,9 +581,8 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
     #ifdef __DEBUG__
         // if we have a debug compile,
         // add "crash" items
-        winhInsertMenuSeparator(hwndMenu,
-                                MIT_END,
-                                ulOfs + ID_XFMI_OFS_SEPARATOR);
+        cmnInsertSeparator(hwndMenu, MIT_END);
+
         hwndMenuInsert = winhInsertSubmenu(hwndMenu,
                                            MIT_END,
                                            DEBUG_MENUID_CRASH_MENU,
@@ -641,7 +639,7 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
 {
     if (xsdQueryShutdownState() == XSD_IDLE)
     {
-        ULONG ulMenuId2 = (*pulMenuId - (cmnQuerySetting(sulVarMenuOfs)));
+        ULONG ulMenuId2 = (*pulMenuId - *G_pulVarMenuOfs);
 
         if (ulMenuId2 == ID_XFMI_OFS_RESTARTWPS)
         {

@@ -40,6 +40,8 @@
 
     BOOL ctsIsCommandFile(WPObject *somSelf);
 
+    SOMClass* ctsResolveWPUrl(VOID);
+
     BOOL ctsIsRootFolder(WPObject *somSelf);
 
     BOOL ctsIsSharedDir(WPObject *somSelf);

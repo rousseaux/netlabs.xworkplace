@@ -132,7 +132,7 @@
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
-#include "xfobj.ih"                     // XFldObject
+// #include "xfobj.ih"                     // XFldObject
 #include "xwpstring.ih"                 // XWPString
 #include "xfdisk.ih"                    // XFldDisk
 #include "xfldr.ih"                     // XFolder
@@ -175,50 +175,6 @@ static BOOL     G_fConfigCacheValid;                // if FALSE, cache is rebuil
 extern POINTL   G_ptlMouseMenu = {0, 0};    // ptr position when menu was opened
                                             // moved this here from XFolder instance
                                             // data V0.9.16 (2001-10-23) [umoeller]
-
-/* ******************************************************************
- *
- *   Miscellaneous
- *
- ********************************************************************/
-
-/*
- *@@ mnuQueryViewName:
- *      returns the name of the given view type as
- *      a string (e.g. "OPEN_CONTENTS"), or a localized
- *      "unknown" string if not recognized.
- *
- *@@added V1.0.0 (2002-08-31) [umoeller]
- */
-
-PCSZ mnuQueryViewName(ULONG ulView)
-{
-    switch (ulView)
-    {
-        #define CHECKVIEW(v) case v: return # v
-
-        CHECKVIEW(OPEN_DEFAULT);
-        CHECKVIEW(OPEN_HELP);
-        CHECKVIEW(OPEN_RUNNING);
-        CHECKVIEW(OPEN_PROMPTDLG);
-        CHECKVIEW(OPEN_PALETTE);
-        CHECKVIEW(CLOSED_ICON);
-        CHECKVIEW(OPEN_CONTENTS);
-        CHECKVIEW(OPEN_TREE);
-        CHECKVIEW(OPEN_SETTINGS);
-        CHECKVIEW(OPEN_DETAILS);
-
-        default:
-            switch (ulView - *G_pulVarMenuOfs)
-            {
-                CHECKVIEW(ID_XFMI_OFS_XWPVIEW);
-                CHECKVIEW(ID_XFMI_OFS_SPLITVIEW);
-                CHECKVIEW(ID_XFMI_OFS_SPLITVIEW_SHOWING);
-            }
-    }
-
-    return cmnGetString(ID_SDDI_APMVERSION); // "unknown"
-}
 
 /* ******************************************************************
  *
@@ -811,27 +767,49 @@ VOID mnuRemoveMenuItems(WPObject *somSelf,
  *@@changed V0.9.0 [umoeller]: fixed broken "View" item in menu bar
  *@@changed V1.0.0 (2002-08-24) [umoeller]: changed prototype to receive CNRINFO instead of cnr
  *@@changed V1.0.1 (2002-11-30) [umoeller]: removed fInsertNewMenu and other Warp 3 code
+ *@@changed V1.0.1 (2002-12-08) [umoeller]: added hwndFrame for status bar checks
  */
 
 BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context menu
                             HWND hwndViewSubmenu,   // in: submenu to add items to
                             PCNRINFO pCnrInfo,      // in: cnr info
+                            HWND hwndFrame,         // in: parent of cnr
                             ULONG ulView)           // in: OPEN_* flag
 {
     BOOL        brc = FALSE;
     XFolderData *somThis = XFolderGetData(somSelf);
 
     // we have a valid open view:
-    ULONG       ulOfs = cmnQuerySetting(sulVarMenuOfs);
     ULONG       ulAttr = 0;
     USHORT      usIconsAttr;
+    BOOL        fInSplit = FALSE;
 
-    PMPF_MENUS(("entering"));
+    PMPF_MENUS(("entering, ulView is 0x%lX (%s)",
+                ulView,
+                cmnIdentifyView(ulView)));
 
     // add "small icons" item for all view types,
     // but disable for Details view
     if (ulView == OPEN_DETAILS)
         // Details view: disable and check "mini icons"
+        usIconsAttr = MIA_DISABLED | MIA_CHECKED;
+    // handle split view V1.0.1 (2002-12-08) [umoeller]
+    else if (   fInSplit = (    (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
+                             || (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLIT_SUBFILES)
+                           )
+            )
+    {
+        ULONG flSplit = _xwpQueryXFolderStyle(somSelf);
+        if (flSplit & XFFL_SPLIT_DETAILS)
+            // we're in details view:
+            // disable and check "mini icons"
+            usIconsAttr = MIA_DISABLED | MIA_CHECKED;
+        else
+            usIconsAttr = (!(flSplit & XFFL_SPLIT_NOMINI)) ? MIA_CHECKED : 0;
+    }
+    else if (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLIT_SUBTREE)
+        // tree of a split view: we don't support big icons in there
+        // V1.0.1 (2002-12-08) [umoeller]
         usIconsAttr = MIA_DISABLED | MIA_CHECKED;
     else
         // otherwise: set "mini icons" to cnr info data
@@ -841,7 +819,7 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
 
     winhInsertMenuItem(hwndViewSubmenu,
                        MIT_END,
-                       ulOfs + ID_XFMI_OFS_SMALLICONS,
+                       *G_pulVarMenuOfs + ID_XFMI_OFS_SMALLICONS,
                        cmnGetString(ID_XFSI_SMALLICONS),  // pszSmallIcons
                        MIS_TEXT,
                        usIconsAttr);
@@ -851,27 +829,25 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
     if (ulView == OPEN_CONTENTS)
     {
         // icon view:
-        winhInsertMenuSeparator(hwndViewSubmenu, MIT_END,
-                    (ulOfs + ID_XFMI_OFS_SEPARATOR));
-
+        cmnInsertSeparator(hwndViewSubmenu, MIT_END);
 
         // "as placed"
         winhInsertMenuItem(hwndViewSubmenu, MIT_END,
-                           ulOfs + ID_XFMI_OFS_NOGRID,
+                           *G_pulVarMenuOfs + ID_XFMI_OFS_NOGRID,
                            cmnGetString(ID_XFSI_NOGRID),  MIS_TEXT,
                            ((pCnrInfo->flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
                                 ? MIA_CHECKED
                                 : 0);
         // "multiple columns"
         winhInsertMenuItem(hwndViewSubmenu, MIT_END,
-                           ulOfs + ID_XFMI_OFS_FLOWED,
+                           *G_pulVarMenuOfs + ID_XFMI_OFS_FLOWED,
                            cmnGetString(ID_XFSI_FLOWED),  MIS_TEXT, // pszFlowed
                            ((pCnrInfo->flWindowAttr & (CV_NAME | CV_FLOW)) == (CV_NAME | CV_FLOW))
                                 ? MIA_CHECKED
                                 : 0);
         // "single column"
         winhInsertMenuItem(hwndViewSubmenu, MIT_END,
-                           ulOfs + ID_XFMI_OFS_NONFLOWED,
+                           *G_pulVarMenuOfs + ID_XFMI_OFS_NONFLOWED,
                            cmnGetString(ID_XFSI_NONFLOWED),  MIS_TEXT, // pszNonFlowed
                            ((pCnrInfo->flWindowAttr & (CV_NAME | CV_FLOW)) == (CV_NAME))
                                 ? MIA_CHECKED
@@ -883,12 +859,11 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
 #ifndef __NOCFGSTATUSBARS__
     if (cmnQuerySetting(sfStatusBars))  // added V0.9.0
 #endif
-        winhInsertMenuSeparator(hwndViewSubmenu, MIT_END,
-                                ulOfs + ID_XFMI_OFS_SEPARATOR);
+        cmnInsertSeparator(hwndViewSubmenu, MIT_END);
 
     // insert "menu bar" item (V0.9.0)
     winhInsertMenuItem(hwndViewSubmenu, MIT_END,
-                       ulOfs + ID_XFMI_OFS_WARP4MENUBAR,
+                       *G_pulVarMenuOfs + ID_XFMI_OFS_WARP4MENUBAR,
                        cmnGetString(ID_XFSI_WARP4MENUBAR),
                        MIS_TEXT,
                        (_xwpQueryMenuBarVisibility(somSelf))
@@ -901,33 +876,30 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
     if (cmnQuerySetting(sfStatusBars))
 #endif
     {
-        BOOL fDefaultVis = cmnQuerySetting(sfDefaultStatusBarVisibility);
-
-        if (!stbClassCanHaveStatusBars(somSelf)) // V0.9.19 (2002-04-17) [umoeller]
+        if (!stbViewCanHaveBars(somSelf,      // __FILE__, __LINE__, __FUNCTION__,
+                                hwndFrame,
+                                ulView,
+                                sflSBForViews))
             // always disable for Desktop
             ulAttr = MIA_DISABLED;
         else if (ctsIsRootFolder(somSelf))
             // for root folders (WPDisk siblings),
             // check global setting only
             ulAttr = MIA_DISABLED
-                        | ( (fDefaultVis)
+                        | ( (cmnQuerySetting(sfDefaultStatusBarVisibility))
                             ? MIA_CHECKED
                             : 0);
         else
             // for regular folders, check both instance
             // and global status bar setting
-            ulAttr = (    (_bStatusBarInstance == STATUSBAR_ON)
-                       || (    (_bStatusBarInstance == STATUSBAR_DEFAULT)
-                            && (fDefaultVis)
-                          )
-                     )
+            ulAttr = (stbFolderWantsStatusBars(somSelf))        // V1.0.1 (2002-12-08) [umoeller]
                         ? MIA_CHECKED
                         : 0;
 
         // insert status bar item with the above attribute
         winhInsertMenuItem(hwndViewSubmenu,
                            MIT_END,
-                           ulOfs + ID_XFMI_OFS_SHOWSTATUSBAR,
+                           *G_pulVarMenuOfs + ID_XFMI_OFS_SHOWSTATUSBAR,
                            cmnGetString(ID_XFSI_SHOWSTATUSBAR),  // pszShowStatusBar
                            MIS_TEXT,
                            ulAttr);
@@ -1080,12 +1052,12 @@ STATIC BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLIS
  *      with that list and a new menu.
  *
  *@@changed V0.9.0 [umoeller]: renamed from mnuFillMenuWithObjects; prototype changed; now running with lists
+ *@@changed V1.0.1 (2002-12-08) [umoeller]: removed menu ofs from prototype
  */
 
 STATIC LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take items from (var.)
                                   HWND       hMenuThis,      // in: menu to add items to (var.)
-                                  HWND       hwndCnr,        // in: needed for wpInsertPopupMenuItems (const)
-                                  ULONG      ulOfs)          // in: cmnQuerySetting(sulVarMenuOfs)
+                                  HWND       hwndCnr)        // in: needed for wpInsertPopupMenuItems (const)
 {
     LONG       lDefaultItem = 0;
     LONG       rc = 0,
@@ -1123,9 +1095,7 @@ STATIC LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take
             break;
 
             case OC_SEPARATOR:
-                winhInsertMenuSeparator(hMenuThis,
-                                        MIT_END,
-                                        ulOfs + ID_XFMI_OFS_SEPARATOR);
+                cmnInsertSeparator(hMenuThis, MIT_END);
             break;
 
             case OC_FOLDER:
@@ -1138,7 +1108,7 @@ STATIC LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take
                                                   G_sNextMenuId,
                                                   pcli->szTitle,
                                                   MIS_TEXT,
-                                                  ulOfs + ID_XFMI_OFS_BORED,
+                                                  *G_pulVarMenuOfs + ID_XFMI_OFS_BORED,
                                                   cmnGetString(ID_XSSI_BORED), // (cmnQueryNLSStrings())->pszBored,
                                                   MIS_TEXT,
                                                   0);
@@ -1147,8 +1117,8 @@ STATIC LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take
                 // recurse with the new list and the new submenu handle
                 lDefaultItem = InsertObjectsFromList(pcli->pllFolderContent,
                                                      hNewMenu,
-                                                     hwndCnr,
-                                                     ulOfs);
+                                                     hwndCnr);
+                                                     // ulOfs); V1.0.1 (2002-12-08) [umoeller]
                 // now we're back: check if error occured; if so, exit
                 // immediately to stop recursing
                 if (lDefaultItem == -1)
@@ -1160,7 +1130,7 @@ STATIC LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take
                     // remove static "config folder empty" menu item
                     WinSendMsg(hNewMenu,
                                MM_DELETEITEM,
-                               MPFROM2SHORT((ulOfs + ID_XFMI_OFS_BORED),
+                               MPFROM2SHORT(*G_pulVarMenuOfs + ID_XFMI_OFS_BORED,
                                             TRUE),
                                (MPARAM)NULL);
 
@@ -1281,12 +1251,12 @@ VOID mnuInvalidateConfigCache(VOID)
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.9 (2001-04-04) [umoeller]: added mutex protection for cache
  *@@changed V0.9.12 (2001-05-22) [umoeller]: added extended close menu
+ *@@changed V1.0.1 (2002-12-08) [umoeller]: removed ulOfs param
  */
 
 STATIC BOOL InsertConfigFolderItems(XFolder *somSelf,
                                     HWND hwndMenu,
-                                    HWND hwndCnr,
-                                    ULONG ulOfs)
+                                    HWND hwndCnr)
 {
     BOOL brc = FALSE;
 
@@ -1316,8 +1286,7 @@ STATIC BOOL InsertConfigFolderItems(XFolder *somSelf,
             {
                 // yes:
                 // append another separator to the menu first
-                winhInsertMenuSeparator(hwndMenu, MIT_END,
-                                        ulOfs + ID_XFMI_OFS_SEPARATOR);
+                cmnInsertSeparator(hwndMenu, MIT_END);
 
                 // now insert items in pConfigFolder into main context menu (hwndMenu);
                 // this routine will call itself recursively if it finds subfolders.
@@ -1325,8 +1294,8 @@ STATIC BOOL InsertConfigFolderItems(XFolder *somSelf,
                 // this will lead to a message box only.
                 InsertObjectsFromList(&G_llConfigContent,
                                       hwndMenu,
-                                      hwndCnr,
-                                      ulOfs);
+                                      hwndCnr);
+                                      // ulOfs);    V1.0.1 (2002-12-08) [umoeller]
             }
 
             UnlockConfigCache();        // V0.9.9 (2001-04-04) [umoeller]
@@ -1360,7 +1329,7 @@ STATIC VOID InsertCopyFilename(WPObject *somSelf,
 {
     PMINIRECORDCORE pmrcSelf = _wpQueryCoreRecord(somSelf),
                     pmrcSelected = (PMINIRECORDCORE)CMA_FIRST;
-    ULONG           ulVarMenuOfs = cmnQuerySetting(sulVarMenuOfs),
+    ULONG           // ulVarMenuOfs = cmnQuerySetting(sulVarMenuOfs),   V1.0.1 (2002-12-08) [umoeller]
                     cSelected = 0;
     BOOL            fSelfSelected = FALSE,
                     fMultiple = FALSE;
@@ -1389,10 +1358,10 @@ STATIC VOID InsertCopyFilename(WPObject *somSelf,
 
     hwndSubmenu = winhInsertSubmenu(hwndMenu,
                                     sPosition,
-                                    ulVarMenuOfs + ID_XFM_OFS_COPYFILENAME,
+                                    *G_pulVarMenuOfs + ID_XFM_OFS_COPYFILENAME,
                                     cmnGetString(ID_XSSI_COPYFILENAME),
                                     MIS_TEXT,
-                                    ulVarMenuOfs + ID_XFMI_OFS_COPYFILENAME_SHORTSP,
+                                    *G_pulVarMenuOfs + ID_XFMI_OFS_COPYFILENAME_SHORTSP,
                                     cmnGetString(fMultiple
                                                    ? ID_XSSI_COPYFILENAME_SHORTSP
                                                    : ID_XSSI_COPYFILENAME_SHORT1),
@@ -1400,7 +1369,7 @@ STATIC VOID InsertCopyFilename(WPObject *somSelf,
                                     0);
     winhInsertMenuItem(hwndSubmenu,
                        MIT_END,
-                       ulVarMenuOfs + ID_XFMI_OFS_COPYFILENAME_FULLSP,
+                       *G_pulVarMenuOfs + ID_XFMI_OFS_COPYFILENAME_FULLSP,
                        cmnGetString(fMultiple
                                         ? ID_XSSI_COPYFILENAME_FULLSP
                                         : ID_XSSI_COPYFILENAME_FULL1),
@@ -1411,13 +1380,13 @@ STATIC VOID InsertCopyFilename(WPObject *somSelf,
     {
         winhInsertMenuItem(hwndSubmenu,
                            MIT_END,
-                           ulVarMenuOfs + ID_XFMI_OFS_COPYFILENAME_SHORTNL,
+                           *G_pulVarMenuOfs + ID_XFMI_OFS_COPYFILENAME_SHORTNL,
                            cmnGetString(ID_XSSI_COPYFILENAME_SHORTNL),
                            MIS_TEXT,
                            0);
         winhInsertMenuItem(hwndSubmenu,
                            MIT_END,
-                           ulVarMenuOfs + ID_XFMI_OFS_COPYFILENAME_FULLNL,
+                           *G_pulVarMenuOfs + ID_XFMI_OFS_COPYFILENAME_FULLNL,
                            cmnGetString(ID_XSSI_COPYFILENAME_FULLNL),
                            MIS_TEXT,
                            0);
@@ -1426,16 +1395,15 @@ STATIC VOID InsertCopyFilename(WPObject *somSelf,
 
 /*
  *@@ mnuModifyFolderPopupMenu:
- *      this is the general menu modifier routine which gets called
- *      by XFolder::wpModifyPopupMenu and XFldDisk::wpModifyPopupMenu.
- *      Since menu items are mostly the same for these two classes,
- *      the shared code has been moved into this function.
+ *      this is the menu modifier routine which gets called
+ *      from mnuModifyFolderMenu for the MENU_OBJECTPOPUP and
+ *      other popup menu types.
  *
- *      Note that when called from XFldDisk, somSelf points to the "root
- *      folder" of the disk object.
+ *      Note that when called from XFldDisk, somSelf points to the
+ *      "root folder" of the disk object.
  *
  *      First we remove and insert various menu items according to
- *      the Global and instance settings.
+ *      the global and instance settings.
  *
  *      We then insert the submenu stubs for folder content menus
  *      by calling mnuPrepareContentSubmenu for the current folder
@@ -1455,18 +1423,20 @@ STATIC VOID InsertCopyFilename(WPObject *somSelf,
  *@@changed V1.0.0 (2002-08-31) [umoeller]: remove iPosition param which was never used
  *@@changed V1.0.1 (2002-11-30) [umoeller]: removed Warp 3 code
  *@@changed V1.0.1 (2002-11-30) [umoeller]: now removing redundant separator on top of "view" submenu
+ *@@changed V1.0.1 (2002-12-08) [umoeller]: renamed, no longer exported, added ulView param; lots of split view changes
  */
 
-BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
-                              HWND hwndMenu,      // in: main context menu hwnd
-                              HWND hwndCnr)       // in: cnr hwnd
+STATIC BOOL ModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
+                                  HWND hwndMenu,      // in: main context menu hwnd
+                                  HWND hwndCnr,       // in: cnr hwnd
+                                  ULONG ulView2)      // in: OPEN_* flag from wpModifyMenu
 {
     XFolder         *pFavorite;
     BOOL            rc = TRUE;
     MENUITEM        mi,
                     mi2;
 
-    ULONG           ulVarMenuOfs = cmnQuerySetting(sulVarMenuOfs);
+    // ULONG           ulVarMenuOfs = cmnQuerySetting(sulVarMenuOfs); V1.0.1 (2002-12-08) [umoeller]
 
     ULONG           flWPS = cmnQuerySetting(mnuQueryMenuWPSSetting(somSelf)),
                     flXWP = cmnQuerySetting(mnuQueryMenuXWPSetting(somSelf));
@@ -1479,6 +1449,10 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
         XFolderData *somThis = XFolderGetData(somSelf);
         HWND        hwndFrame = NULLHANDLE;
         CNRINFO     CnrInfo;
+
+#if 1   // V1.0.1 (2002-12-08) [umoeller]
+        ULONG       ulCnrView = OPEN_UNKNOWN;
+#else
         ULONG       ulView = OPEN_UNKNOWN,  // receives OPEN_* flag based on cnrinfo
                     ulRealWPSView = OPEN_UNKNOWN;
                                             // receives OPEN_* flag based on wpshQueryView
@@ -1495,6 +1469,8 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                                             #define CLOSED_ICON        122
                                             #define OPEN_USER          0x6500
                                           */
+#endif
+
         BOOL        bSepAdded = FALSE;
         BOOL        fOpen;
 
@@ -1506,12 +1482,15 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
             // split views
             cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
             if (CnrInfo.flWindowAttr & CV_TREE)
-                ulView = OPEN_TREE;
+                ulCnrView = OPEN_TREE;
             else if (CnrInfo.flWindowAttr & CV_DETAIL)
-                ulView = OPEN_DETAILS;
+                ulCnrView = OPEN_DETAILS;
             else if (CnrInfo.flWindowAttr & (CV_ICON | CV_NAME | CV_TEXT))
-                ulView = OPEN_CONTENTS;
+                ulCnrView = OPEN_CONTENTS;
 
+            hwndFrame = WinQueryWindow(hwndCnr, QW_PARENT);
+
+            /*
             if (hwndFrame = WinQueryWindow(hwndCnr, QW_PARENT))
                 // check if this is a registered "real" WPS view;
                 // this rules out split views for the "view" menu
@@ -1519,6 +1498,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                 ulRealWPSView = wpshQueryView(somSelf, hwndFrame);
                         // V1.0.0 (2002-08-26) [umoeller]
                         // returns OPEN_UNKNOWN if not found
+            */
         }
 
         // store mouse pointer position for creating objects from templates
@@ -1527,13 +1507,9 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
 
         PMPF_MENUS(("[%s] hwndCnr: 0x%lX", _wpQueryTitle(somSelf), hwndCnr));
 
-        PMPF_MENUS(("  ulView is 0x%lX (%s)",
-                    ulView,
-                    (ulView == OPEN_CONTENTS) ? "OPEN_CONTENTS"
-                    : (ulView == OPEN_DETAILS) ? "OPEN_DETAILS"
-                    : (ulView == OPEN_TREE) ? "OPEN_TREE"
-                    : (ulView == ulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW) ? "ID_XFMI_OFS_SPLITVIEW"
-                    : "unknown"));
+        PMPF_MENUS(("  ulView2 is 0x%lX (%s)",
+                    ulView2,
+                    cmnIdentifyView(ulView2)));
 
         // in wpFilterPopupMenu, because no codes are provided;
         // we only do this if the Global Settings want it
@@ -1553,7 +1529,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
         {
             winhInsertMenuItem(mi.hwndSubMenu,
                                MIT_END,
-                               ulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW,
+                               *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW,
                                cmnGetString(ID_XFSI_FDR_SPLITVIEW),
                                MIS_TEXT, 0);
         }
@@ -1578,11 +1554,10 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                         cmnGetString(ID_XSSI_FDRDEFAULTDOC),
                         _wpQueryTitle(pDefDoc));
 
-                winhInsertMenuSeparator(mi.hwndSubMenu, MIT_END,
-                                        ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+                cmnInsertSeparator(mi.hwndSubMenu, MIT_END);
 
                 winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                                   ulVarMenuOfs + ID_XFMI_OFS_FDRDEFAULTDOC,
+                                   *G_pulVarMenuOfs + ID_XFMI_OFS_FDRDEFAULTDOC,
                                    szDefDoc,
                                    MIS_TEXT, 0);
             }
@@ -1620,8 +1595,8 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                 // if not in Tree view V0.9.1 (2000-02-01) [umoeller]
                 if (
                         (!(flXWP & (XWPCTXT_SELECTSOME | XWPCTXT_BATCHRENAME)))
-                     && (    (ulView == OPEN_CONTENTS)
-                          || (ulView == OPEN_DETAILS)
+                     && (    (ulCnrView == OPEN_CONTENTS)
+                          || (ulCnrView == OPEN_DETAILS)
                         )
                    )
                 {
@@ -1636,7 +1611,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                     if (!(flXWP & XWPCTXT_SELECTSOME))
                         winhInsertMenuItem(mi.hwndSubMenu,
                                            sPos++,
-                                           ulVarMenuOfs + ID_XFMI_OFS_SELECTSOME,
+                                           *G_pulVarMenuOfs + ID_XFMI_OFS_SELECTSOME,
                                            cmnGetString(ID_XSSI_SELECTSOME),
                                            MIS_TEXT, 0);
 
@@ -1644,14 +1619,12 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                     if (!(flXWP & XWPCTXT_BATCHRENAME))
                         winhInsertMenuItem(mi.hwndSubMenu,
                                            sPos++,
-                                           ulVarMenuOfs + ID_XFMI_OFS_BATCHRENAME,
+                                           *G_pulVarMenuOfs + ID_XFMI_OFS_BATCHRENAME,
                                            cmnGetString(ID_XSDI_MENU_BATCHRENAME),
                                            MIS_TEXT, 0);
 
                     // another separator before "Refresh now"
-                    winhInsertMenuSeparator(mi.hwndSubMenu,
-                                            sPos,
-                                            ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+                    cmnInsertSeparator(mi.hwndSubMenu, sPos);
 
                     // if all the "switch view" items are disabled, we
                     // end up with a leading separator on top... the
@@ -1676,11 +1649,13 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                 {
                     // rule out possible user views
                     // of WPFolder subclasses
-                    // V1.0.0 (2002-08-26) [umoeller]: now using
-                    // ulRealWPSView to rule out split views as well
-                    if (    (ulRealWPSView == OPEN_TREE)
-                         || (ulRealWPSView == OPEN_CONTENTS)
-                         || (ulRealWPSView == OPEN_DETAILS)
+                    if (    (ulView2 == OPEN_TREE)
+                         || (ulView2 == OPEN_CONTENTS)
+                         || (ulView2 == OPEN_DETAILS)
+                         // added split view stuff V1.0.1 (2002-12-08) [umoeller]
+                         || (ulView2 == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLIT_SUBTREE)
+                         || (ulView2 == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW)
+                         || (ulView2 == *G_pulVarMenuOfs + ID_XFMI_OFS_SPLIT_SUBFILES)
                        )
                     {
                         // for Warp 4, use the existing "View" submenu,
@@ -1696,14 +1671,13 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                         if (    XWPCTXT_REFRESH_IN_VIEW
                              != (flXWP & (XWPCTXT_REFRESH_IN_VIEW | XWPCTXT_SELECTSOME))
                            )
-                            winhInsertMenuSeparator(mi.hwndSubMenu,
-                                                    MIT_END,
-                                                    ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+                            cmnInsertSeparator(mi.hwndSubMenu, MIT_END);
 
                         mnuInsertFldrViewItems(somSelf,
                                                mi.hwndSubMenu,
                                                &CnrInfo,
-                                               ulView);
+                                               hwndFrame,
+                                               ulView2);
                     }
                 }
 
@@ -1733,7 +1707,9 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                                MAKE_16BIT_POINTER(&mi2)))
                 {
                     // @@todo doesn't work
-                    PMPF_MENUS(("first 'view' submenu item ID: %d", mi2.id));
+                    PMPF_MENUS(("first 'view' submenu item ID: %d, MIS_SEPARATOR: %d",
+                                mi2.id,
+                                mi2.afStyle & MIS_SEPARATOR));
                     if (mi2.afStyle & MIS_SEPARATOR)
                         winhRemoveMenuItem(mi.hwndSubMenu,
                                            mi2.id);
@@ -1754,8 +1730,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
 
         if (!(flXWP & XWPCTXT_COPYFILENAME))
         {
-            winhInsertMenuSeparator(hwndMenu, MIT_END,
-                                    ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+            cmnInsertSeparator(hwndMenu, MIT_END);
             bSepAdded = TRUE; // V0.9.14
 
             InsertCopyFilename(somSelf, hwndCnr, hwndMenu, MIT_END);
@@ -1766,8 +1741,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
         {
             if (!bSepAdded)
             {
-                winhInsertMenuSeparator(hwndMenu, MIT_END,
-                                        ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+                cmnInsertSeparator(hwndMenu, MIT_END);
 
                 bSepAdded = TRUE;
             }
@@ -1782,12 +1756,11 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
 
         // insert the "Refresh now" and "Snap to grid" items only
         // if the folder is currently open
-        if (ulView != -1)           // fixed V0.9.12 (2001-05-22) [umoeller]
+        if (ulCnrView != OPEN_UNKNOWN) // -1  fixed V0.9.12 (2001-05-22) [umoeller]
         {
             if (!bSepAdded) // V0.9.14
-                winhInsertMenuSeparator(hwndMenu,
-                                        MIT_END,
-                                        ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+                cmnInsertSeparator(hwndMenu, MIT_END);
+
             bSepAdded = TRUE;
 
 #ifndef __NOMOVEREFRESHNOW__
@@ -1795,7 +1768,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
             if (!(flXWP & XWPCTXT_REFRESH_IN_MAIN))
                 winhInsertMenuItem(hwndMenu,
                                    MIT_END,
-                                   ulVarMenuOfs + ID_XFMI_OFS_REFRESH,
+                                   *G_pulVarMenuOfs + ID_XFMI_OFS_REFRESH,
                                    cmnGetString(ID_XSSI_REFRESHNOW),  // pszRefreshNow
                                    MIS_TEXT,
                                    0);
@@ -1813,13 +1786,13 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                  // insert only when sorting is off
                  && (!fdrHasAlwaysSort(somSelf))
                  // and only in icon view
-                 && (ulView == OPEN_CONTENTS)
+                 && (ulCnrView == OPEN_CONTENTS)
                 )
             {
                 // insert "Snap to grid" only for open icon views
                 winhInsertMenuItem(hwndMenu,
                                    MIT_END,
-                                   ulVarMenuOfs + ID_XFMI_OFS_SNAPTOGRID,
+                                   *G_pulVarMenuOfs + ID_XFMI_OFS_SNAPTOGRID,
                                    cmnGetString(ID_XSSI_SNAPTOGRID),  // pszSnapToGrid
                                    MIS_TEXT,
                                    0);
@@ -1846,9 +1819,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                 )
            )
         {
-            winhInsertMenuSeparator(hwndMenu,
-                                    MIT_END,
-                                    ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+            cmnInsertSeparator(hwndMenu, MIT_END);
 
             if (cmnQuerySetting(sfFolderContentShowIcons))
             {
@@ -1901,8 +1872,8 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
 
         InsertConfigFolderItems(somSelf,
                                 hwndMenu,
-                                hwndCnr,
-                                ulVarMenuOfs);
+                                hwndCnr);
+                                // ulVarMenuOfs); V1.0.1 (2002-12-08) [umoeller]
 
         // V0.9.19 (2002-04-17) [umoeller]
         // note that we also override XFolder::wpDisplayMenu
@@ -2057,13 +2028,12 @@ BOOL mnuModifyFolderMenu(WPFolder *somSelf,
 
             cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
             // and now insert the "folder view" items
-            winhInsertMenuSeparator(hwndMenu,
-                                    MIT_END,
-                                    (*G_pulVarMenuOfs
-                                            + ID_XFMI_OFS_SEPARATOR));
+            cmnInsertSeparator(hwndMenu, MIT_END);
+
             mnuInsertFldrViewItems(somSelf,
                                    hwndMenu,
                                    &CnrInfo,
+                                   WinQueryWindow(hwndCnr, QW_PARENT),
                                    ulView);
 
             if (fHotkeysInMenus)
@@ -2080,9 +2050,10 @@ BOOL mnuModifyFolderMenu(WPFolder *somSelf,
         case MENU_TITLEBARPULLDOWN:
         case MENU_SELECTEDPULLDOWN:
             // call legacy menu manipulator
-            mnuModifyFolderPopupMenu(somSelf,
-                                     hwndMenu,
-                                     hwndCnr);
+            ModifyFolderPopupMenu(somSelf,
+                                  hwndMenu,
+                                  hwndCnr,
+                                  ulView);       // V1.0.1 (2002-12-08) [umoeller]
 
             if (fHotkeysInMenus)
                 fdrAddHotkeysToMenu(somSelf,
@@ -2093,9 +2064,7 @@ BOOL mnuModifyFolderMenu(WPFolder *somSelf,
 
         case MENU_HELPPULLDOWN:
 #ifndef __XWPLITE__
-            winhInsertMenuSeparator(hwndMenu,
-                                    MIT_END,
-                                    *G_pulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+            cmnInsertSeparator(hwndMenu, MIT_END);
             winhInsertMenuItem(hwndMenu,
                                MIT_END,
                                *G_pulVarMenuOfs + ID_XFMI_OFS_PRODINFO,
@@ -2172,9 +2141,7 @@ BOOL mnuModifyFolderMenu(WPFolder *somSelf,
                                         // note, MIS_SYSCOMMAND
                                  0);
 
-    winhInsertMenuSeparator(hNewMenu,
-                            MIT_END,
-                            ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+    cmnInsertSeparator(hNewMenu, MIT_END);
 
     winhInsertMenuItem(hNewMenu,
                        MIT_END,
@@ -2243,7 +2210,7 @@ BOOL mnuModifyDataFilePopupMenu(WPObject *somSelf,  // in: data file
                                 HWND hwndMenu,
                                 HWND hwndCnr)
 {
-    ULONG           ulVarMenuOfs = cmnQuerySetting(sulVarMenuOfs);
+    // ULONG           ulVarMenuOfs = cmnQuerySetting(sulVarMenuOfs); V1.0.1 (2002-12-08) [umoeller]
 
     /* if (cmnQuerySetting(sfExtAssocs))
     {
@@ -2313,9 +2280,7 @@ BOOL mnuModifyDataFilePopupMenu(WPObject *somSelf,  // in: data file
          || (cmnQuerySetting(sfFdrDefaultDoc))
 #endif
        )
-        winhInsertMenuSeparator(hwndMenu,
-                                MIT_END,
-                                ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+        cmnInsertSeparator(hwndMenu, MIT_END);
 
     // insert "Attributes" submenu (for data files
     // only, not for folders
@@ -2329,32 +2294,32 @@ BOOL mnuModifyDataFilePopupMenu(WPObject *somSelf,  // in: data file
         // insert submenu
         hwndAttrSubmenu = winhInsertSubmenu(hwndMenu,
                                             MIT_END,
-                                            ulVarMenuOfs + ID_XFM_OFS_ATTRIBUTES,
+                                            *G_pulVarMenuOfs + ID_XFM_OFS_ATTRIBUTES,
                                             cmnGetString(ID_XFSI_ATTRIBUTES),
                                             0, // pszAttributes
         // "archived" item, checked or not according to file-system attributes
-                                            ulVarMenuOfs + ID_XFMI_OFS_ATTR_ARCHIVED,
+                                            *G_pulVarMenuOfs + ID_XFMI_OFS_ATTR_ARCHIVED,
                                             cmnGetString(ID_XFSI_ATTR_ARCHIVE),
                                             MIS_TEXT,
                                             ((ulAttr & FILE_ARCHIVED) ? MIA_CHECKED : 0));
         // "read-only" item, checked or not according to file-system attributes
         winhInsertMenuItem(hwndAttrSubmenu,
                            MIT_END,
-                           ulVarMenuOfs + ID_XFMI_OFS_ATTR_READONLY,
+                           *G_pulVarMenuOfs + ID_XFMI_OFS_ATTR_READONLY,
                            cmnGetString(ID_XFSI_ATTR_READONLY),
                            MIS_TEXT, // pszAttrReadOnly
                            ((ulAttr & FILE_READONLY) ? MIA_CHECKED : 0));
         // "system" item, checked or not according to file-system attributes
         winhInsertMenuItem(hwndAttrSubmenu,
                            MIT_END,
-                           ulVarMenuOfs + ID_XFMI_OFS_ATTR_SYSTEM,
+                           *G_pulVarMenuOfs + ID_XFMI_OFS_ATTR_SYSTEM,
                            cmnGetString(ID_XFSI_ATTR_SYSTEM),
                            MIS_TEXT, // pszAttrSystem
                            ((ulAttr & FILE_SYSTEM) ? MIA_CHECKED : 0));
         // "hidden" item, checked or not according to file-system attributes
         winhInsertMenuItem(hwndAttrSubmenu,
                            MIT_END,
-                           ulVarMenuOfs + ID_XFMI_OFS_ATTR_HIDDEN,
+                           *G_pulVarMenuOfs + ID_XFMI_OFS_ATTR_HIDDEN,
                            cmnGetString(ID_XFSI_ATTR_HIDDEN),
                            MIS_TEXT, // pszAttrHidden
                            ((ulAttr & FILE_HIDDEN) ? MIA_CHECKED : 0));
@@ -2376,7 +2341,7 @@ BOOL mnuModifyDataFilePopupMenu(WPObject *somSelf,  // in: data file
 
         winhInsertMenuItem(hwndMenu,
                            MIT_END,
-                           ulVarMenuOfs + ID_XFMI_OFS_FDRDEFAULTDOC,
+                           *G_pulVarMenuOfs + ID_XFMI_OFS_FDRDEFAULTDOC,
                            cmnGetString(ID_XSSI_DATAFILEDEFAULTDOC), // (pNLSStrings)->pszDataFileDefaultDoc,
                            MIS_TEXT,
                            flAttr);

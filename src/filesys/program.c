@@ -103,7 +103,7 @@
 #include "helpers\apps.h"               // application helpers
 
 // SOM headers which don't crash with prec. header files
-#include "xfobj.ih"
+// #include "xfobj.ih"
 #include "xfdataf.ih"
 #include "xfldr.ih"
 

@@ -311,6 +311,11 @@
     #define VIEW_ANY           0xFFFFFFFF
     */
 
+    // values used by the undocumented wpQuery/SetFldrSelfClose WPFolder methods
+    #define SELFCLOSE_NONE          1
+    #define SELFCLOSE_SUBFOLDERS    2
+    #define SELFCLOSE_ALL           3
+
     #define VIEW_SPLIT         0x00002000
 
     // flags for xfSet/QueryStatusBarVisibility
@@ -548,8 +553,11 @@
          *      See the Warp 4 Toolkit documentation for details.
          */
 
+        /*  removed V1.0.1 (2002-12-08) [umoeller], this is now in
+            our hacked wpfolder.idl file
         typedef BOOL _System xfTP_wpFlushNotifications(WPFolder *somSelf);
         typedef xfTP_wpFlushNotifications *xfTD_wpFlushNotifications;
+        */
 
         /*
          * xfTP_wpclsGetNotifySem:
@@ -563,9 +571,12 @@
          *      threads from interfering.
          */
 
+        /*  removed V1.0.1 (2002-12-08) [umoeller], this is now in
+            our hacked wpfolder.idl file
         typedef BOOL _System xfTP_wpclsGetNotifySem(M_WPFolder *somSelf,
                                                     ULONG ulTimeout);
         typedef xfTP_wpclsGetNotifySem *xfTD_wpclsGetNotifySem;
+        */
 
         /*
          * xfTP_wpclsReleaseNotifySem:
@@ -574,20 +585,21 @@
          *      This is the reverse to xfTP_wpclsGetNotifySem.
          */
 
+        /*  removed V1.0.1 (2002-12-08) [umoeller], this is now in
+            our hacked wpfolder.idl file
         typedef VOID _System xfTP_wpclsReleaseNotifySem(M_WPFolder *somSelf);
         typedef xfTP_wpclsReleaseNotifySem *xfTD_wpclsReleaseNotifySem;
+        */
+
     #endif
-
-    // wrappers
-    ULONG fdrRequestFolderWriteMutexSem(WPFolder *somSelf);
-
-    ULONG fdrReleaseFolderWriteMutexSem(WPFolder *somSelf);
-
-    ULONG fdrFlushNotifications(WPFolder *somSelf);
 
     BOOL fdrGetNotifySem(ULONG ulTimeout);
 
     VOID fdrReleaseNotifySem(VOID);
+
+    ULONG fdrRequestFolderWriteMutexSem(WPFolder *somSelf);
+
+    ULONG fdrReleaseFolderWriteMutexSem(WPFolder *somSelf);
 
     /* ******************************************************************
      *

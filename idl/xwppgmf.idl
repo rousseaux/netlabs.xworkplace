@@ -52,13 +52,13 @@ interface XWPProgramFile : WPProgramFile
     ULONG xwpQueryProgType(in PVOID pvExec,
                            in PSZ pszFullFile);
 
-    BOOL xwpQuerySetup2(in PVOID pstrSetup);
+    //# BOOL xwpQuerySetup2(in PVOID pstrSetup);        V1.0.1 (2002-12-08) [umoeller]
 
 #ifdef __SOMIDL__
   implementation {
 
     releaseorder: xwpQueryProgType,
-                  xwpQuerySetup2,
+                  //# xwpQuerySetup2,       V1.0.1 (2002-12-08) [umoeller]
                   xwpAddResourcesPage,
                   xwpAddModulePage,
                   xwpAddAssociationsPage;
@@ -117,6 +117,8 @@ interface XWPProgramFile : WPProgramFile
 
     wpQueryDefaultView: override;
     wpQueryDefaultHelp: override;
+
+    xwpQuerySetup2: override;            //# V1.0.1 (2002-12-08) [umoeller]
 
     //# 3)  icon methods
 

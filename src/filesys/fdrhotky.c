@@ -443,7 +443,7 @@ BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
                     {
                         // it's one of the "variable" menu items:
                         // add the global variable menu offset
-                        usCommand += cmnQuerySetting(sulVarMenuOfs);
+                        usCommand += *G_pulVarMenuOfs;
                     }
 
                     // post only if this is a "key down" message

@@ -134,11 +134,11 @@ BOOL hifLoadHookConfig(PHOOKCONFIG phc)
     ULONG cb = sizeof(HOOKCONFIG);
     memset(phc, 0, sizeof(HOOKCONFIG));
     // overwrite from INI, if found
-    return (PrfQueryProfileData(HINI_USER,
-                                INIAPP_XWPHOOK,
-                                INIKEY_HOOK_CONFIG,
-                                phc,
-                                &cb));
+    return PrfQueryProfileData(HINI_USER,
+                               INIAPP_XWPHOOK,
+                               INIKEY_HOOK_CONFIG,
+                               phc,
+                               &cb);
 }
 
 #ifndef __ALWAYSHOOK__
@@ -442,7 +442,7 @@ PVOID hifQueryObjectHotkeys(PULONG pcHotkeys)   // out: hotkey count (req.)
         // found: calc no. of items in array
         *pcHotkeys = cbHotkeys / sizeof(GLOBALHOTKEY);
 
-    return (pHotkeys);
+    return pHotkeys;
 }
 
 /*
@@ -526,7 +526,7 @@ PFUNCTIONKEY hifQueryFunctionKeys(PULONG pcFunctionKeys)    // out: function key
         if (pcFunctionKeys)
             *pcFunctionKeys = cbFunctionKeys / sizeof(FUNCTIONKEY);
 
-    return (paFunctionKeys);
+    return paFunctionKeys;
 }
 
 /*
@@ -646,7 +646,7 @@ PFUNCTIONKEY hifFindFunctionKey(PFUNCTIONKEY paFunctionKeys, // in: array of fun
          ul++)
     {
         if (paFunctionKeys[ul].ucScanCode == ucScanCode)
-            return (&paFunctionKeys[ul]);
+            return &paFunctionKeys[ul];
     }
 
     return NULL;

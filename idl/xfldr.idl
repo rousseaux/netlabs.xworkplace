@@ -226,7 +226,7 @@ interface XFolder : WPFolder
 
     ULONG xwpAddXFolderPages(in HWND hwndDlg);
 
-    BOOL xwpQuerySetup2(in PVOID pstrSetup);
+    //# BOOL xwpQuerySetup2(in PVOID pstrSetup);    V1.0.1 (2002-12-08) [umoeller]
 
     VOID xwpSetDisableCnrAdd(in BOOL fDisable);
 
@@ -251,14 +251,14 @@ interface XFolder : WPFolder
         xwpBeginEnumContent,
         xwpEnumNext,
         xwpEndEnumContent,
-        xwpQuerySetup2,
+        //# xwpQuerySetup2,     V1.0.1 (2002-12-08) [umoeller]
         xwpSetDefaultDocument,
         xwpQueryDefaultDocument,
         xwpSetDisableCnrAdd,
         xwpProcessViewCommand,
         xwpQueryXFolderStyle,
         xwpModifyXFolderStyle,
-        xwpQueryToolBarLayout,
+        xwpBuildToolBar,
         xwpAddToolbarButton;
 
     /*
@@ -375,6 +375,7 @@ interface XFolder : WPFolder
     //# 1)  init/uninit methods
 
     wpInitData: override;
+
     wpSetup: override;
     wpObjectReady: override;
 
@@ -393,6 +394,8 @@ interface XFolder : WPFolder
     wpQueryDefaultView: override;
     wpQueryDefaultHelp: override;
 
+    xwpQuerySetup2: override;            //# V1.0.1 (2002-12-08) [umoeller]
+
     //# 3)  icon methods
 
     //# 4)  class-specific query/set methods
@@ -400,7 +403,8 @@ interface XFolder : WPFolder
     //# 5)  menu methods
 
     wpDisplayMenu: override;
-    wpFilterPopupMenu: override;
+    //# wpFilterPopupMenu: override;        removed V1.0.1 (2002-12-08) [umoeller]
+    wpFilterMenu: override;                 //# added V1.0.1 (2002-12-08) [umoeller]
     //# wpModifyPopupMenu: override;        removed V1.0.0 (2002-08-31) [umoeller]
     wpModifyMenu: override;                 //# added V1.0.0 (2002-08-31) [umoeller]
 

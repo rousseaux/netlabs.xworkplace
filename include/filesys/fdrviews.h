@@ -47,6 +47,25 @@
                           WPFolder *pFolder,
                           ULONG ulView);
 
+    typedef struct _CNRVIEW
+    {
+        HWND        hwndCnr;
+        WPFolder    *pFolder;           // current folder that is displaying
+        ULONG       ulView;             // one of OPEN_CONTENTS, OPEN_DETAILS, OPEN_TREE
+        BOOL        fMini;              // in: use mini icons?
+        SOMClass    *pDetailsClass;     // current details class
+    } CNRVIEW, *PCNRVIEW;
+
+    BOOL fdrvSetupView(PCNRVIEW pCnrView,
+                       WPFolder *pFolder,
+                       ULONG ulView,
+                       BOOL fMini);
+
+    HWND fdrvCreateFrameWithCnr(ULONG ulFrameID,
+                                HWND hwndParentOwner,
+                                ULONG flCnrStyle,
+                                HWND *phwndClient);
+
     /* ******************************************************************
      *
      *   View populate management

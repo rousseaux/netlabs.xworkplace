@@ -21,7 +21,10 @@
  *      GNU General Public License for more details.
  */
 
-#include <wpfolder.idl>         // this is SOM for WPFolder
+// #include <wpfolder.idl>         // this is SOM for WPFolder
+
+#include "xfldr.idl"                    //# WPFolder is replaced with XFolder
+                                        //# V1.0.1 (2002-12-08) [umoeller]
 
 /*
    CLASS: XWPTrashCan
@@ -37,7 +40,8 @@
 
 interface M_XWPTrashCan;            // forward reference to metaclass
 
-interface XWPTrashCan : WPFolder
+interface XWPTrashCan : XFolder         //# WPFolder is replaced with XFolder
+                                        //# V1.0.1 (2002-12-08) [umoeller]
 {
 
     /*
@@ -61,12 +65,14 @@ interface XWPTrashCan : WPFolder
                            in PULONG pulDeleted,
                            in HWND hwndConfirmOwner);
 
-    BOOL xwpProcessViewCommand(in USHORT usCommand,
-                               in HWND hwndCnr,
-                               in WPObject pFirstObject,
-                               in ULONG ulSelectionFlags);
-
-    BOOL xwpUpdateStatusBar(in HWND hwndStatusBar, in HWND hwndCnr);
+    //#         V1.0.1 (2002-12-08) [umoeller]
+    //# BOOL xwpProcessViewCommand(in USHORT usCommand,
+    //#                            in HWND hwndCnr,
+    //#                            in WPObject pFirstObject,
+    //#                            in ULONG ulSelectionFlags);
+    //#
+    //# BOOL xwpUpdateStatusBar(in HWND hwndStatusBar, in HWND hwndCnr);
+    //#
 
 #ifdef __SOMIDL__
   implementation {
@@ -80,9 +86,10 @@ interface XWPTrashCan : WPFolder
             xwpAddObjectSize,
             xwpQueryTrashObjectsCount,
             xwpSetCorrectTrashIcon,
-            xwpEmptyTrashCan,
-            xwpUpdateStatusBar,
-            xwpProcessViewCommand;
+            xwpEmptyTrashCan;
+
+            //# xwpUpdateStatusBar,
+            //# xwpProcessViewCommand;
 
     /*
      * Class Modifiers:
@@ -148,6 +155,10 @@ interface XWPTrashCan : WPFolder
     wpPopulate: override;
     wpRefresh: override;
 
+    xwpProcessViewCommand: override;    //# V1.0.1 (2002-12-08) [umoeller]
+
+    xwpUpdateStatusBar: override;       //# V1.0.1 (2002-12-08) [umoeller]
+
     wpAddToContent: override;
     wpDeleteFromContent: override;
 
@@ -180,7 +191,8 @@ interface XWPTrashCan : WPFolder
 //# ---------------------
 //#
 
-interface M_XWPTrashCan : M_WPFolder
+interface M_XWPTrashCan : M_XFolder     // WPFolder is replaced with XFolder
+                                        // V1.0.1 (2002-12-08) [umoeller]
 {
 
     /*

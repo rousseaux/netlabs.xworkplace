@@ -248,6 +248,7 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopShutdownPage(XFldDesktop *so
  *
  *@@added V0.9.1 (2000-01-08) [umoeller]
  *@@changed V0.9.16 (2001-10-11) [umoeller]: adjusted to new implementation
+ *@@changed V1.0.1 (2002-12-08) [umoeller]: now calling parent methods directly
  */
 
 SOM_Scope BOOL  SOMLINK xfdesk_xwpQuerySetup2(XFldDesktop *somSelf,
@@ -258,12 +259,8 @@ SOM_Scope BOOL  SOMLINK xfdesk_xwpQuerySetup2(XFldDesktop *somSelf,
 
     // call XFldDesktop implementation
     if (dtpQuerySetup(somSelf, pstrSetup))
-    {
-        // manually resolve parent method
-        return wpshParentQuerySetup2(somSelf,
-                                     _somGetParent(_XFldDesktop),
+        return parent_xwpQuerySetup2(somSelf,
                                      pstrSetup);
-    }
 
     return FALSE;
 }

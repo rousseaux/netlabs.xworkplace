@@ -249,6 +249,24 @@ SOM_Scope ULONG  SOMLINK xwp_xwpAddWPSFdrStatusBarPages(XFldWPS *somSelf,
      * "Status bar" pages
      */
 
+    if (cmnQuerySetting(sfToolBars))
+    {
+        // insert "Tool bars" V1.0.1 (2002-12-08) [umoeller]
+        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+        inbp.somSelf = somSelf;
+        inbp.hwndNotebook = hwndDlg;
+        inbp.hmod = savehmod;
+        inbp.usPageStyleFlags = BKA_MAJOR;
+        inbp.fEnumerate = TRUE;
+        inbp.pcszName = cmnGetString(ID_XSSI_TOOLBARS);
+        inbp.ulDlgID = ID_XFD_EMPTYDLG;
+        inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_TOOLBARS1;
+        inbp.ulPageID = SP_TOOLBARS1;
+        inbp.pfncbInitPage    = stbToolBar1InitPage;
+        inbp.pfncbItemChanged = stbToolBar1ItemChanged;
+        ntbInsertPage(&inbp);
+    }
+
 #ifndef __NOCFGSTATUSBARS__
     if (cmnQuerySetting(sfStatusBars))
 #endif
@@ -266,7 +284,7 @@ SOM_Scope ULONG  SOMLINK xwp_xwpAddWPSFdrStatusBarPages(XFldWPS *somSelf,
             // V0.9.16 (2001-10-23) [umoeller]
         inbp.ulDlgID = ID_XSD_SET28STATUSBARS2;
         inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS_SB2;
-        inbp.ulPageID = SP_28STATUSBAR2;
+        inbp.ulPageID = SP_STATUSBARS2;     // V1.0.1 (2002-12-08) [umoeller]
         inbp.pfncbInitPage    = stbStatusBar2InitPage;
         inbp.pfncbItemChanged = stbStatusBar2ItemChanged;
         ntbInsertPage(&inbp);
@@ -282,7 +300,7 @@ SOM_Scope ULONG  SOMLINK xwp_xwpAddWPSFdrStatusBarPages(XFldWPS *somSelf,
         inbp.pcszName = cmnGetString(ID_XSSI_27STATUSBAR);  // psz27StatusBar
         inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_XSD_SET27STATUSBARS; V0.9.19 (2002-04-24) [umoeller]
         inbp.ulDefaultHelpPanel  = ID_XSH_SETTINGS1+3;
-        inbp.ulPageID = SP_27STATUSBAR;
+        inbp.ulPageID = SP_STATUSBARS1;     // V1.0.1 (2002-12-08) [umoeller]
         inbp.pfncbInitPage    = stbStatusBar1InitPage;
         inbp.pfncbItemChanged = stbStatusBar1ItemChanged;
         ulrc = ntbInsertPage(&inbp);

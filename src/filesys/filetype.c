@@ -109,7 +109,7 @@
 #include "helpers\xml.h"                // XWPHelpers XML engine
 
 // SOM headers which don't crash with prec. header files
-#include "xfobj.ih"
+// #include "xfobj.ih"
 #include "xfwps.ih"
 #include "xfdataf.ih"
 

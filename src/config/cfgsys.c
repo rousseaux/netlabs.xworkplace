@@ -134,7 +134,8 @@ static PSZ G_apszPathNames[] =
             "SET DPATH=",
             "SET BOOKSHELF=",
             "SET HELP=",
-            "SET CLASSPATH=",   // V0.9.9 (2001-03-06) [pr]
+            // "SET CLASSPATH=",   // V0.9.9 (2001-03-06) [pr]
+                                   // disabled again V1.0.1 (2002-12-08) [pr]
             "SET INCLUDE=",
             "SET LIB=",
             "SET SMINCLUDE="

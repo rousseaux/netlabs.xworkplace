@@ -77,7 +77,7 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xcenter.ih"
-#include "xfobj.ih"                     // XFldObject
+// #include "xfobj.ih"                     // XFldObject
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -561,15 +561,6 @@ BOOL ctrpQuerySetup(XCenter *somSelf,
     {
         brc = FALSE;
     } END_CATCH();
-
-    // if we haven't crashed
-    if (brc)
-    {
-        // manually resolve parent method
-        return (wpshParentQuerySetup2(somSelf,
-                                      _somGetParent(_XCenter),
-                                      pstrSetup));
-    }
 
     return brc;
 }

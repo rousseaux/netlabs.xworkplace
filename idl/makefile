@@ -57,53 +57,54 @@ SOMTEMP = $(TEMP)
 all: \
 # added all the following from wps\ to avoid problems with warp 4 toolkit
 # V0.9.20 (2002-07-31) [umoeller]
-    $(OUTPUTDIR)\wps\wpdataf.h \
-    $(OUTPUTDIR)\wps\wpdesk.h \
-    $(OUTPUTDIR)\wps\wpdisk.h \
-    $(OUTPUTDIR)\wps\wpfolder.h \
-    $(OUTPUTDIR)\wps\wpfsys.h \
-    $(OUTPUTDIR)\wps\wpkeybd.h \
-    $(OUTPUTDIR)\wps\wpmouse.h \
-    $(OUTPUTDIR)\wps\wpobject.h \
-    $(OUTPUTDIR)\wps\wppgm.h \
-    $(OUTPUTDIR)\wps\wppgmf.h \
-    $(OUTPUTDIR)\wps\wpshadow.h \
-    $(OUTPUTDIR)\wps\wpsound.h \
-    $(OUTPUTDIR)\wps\wpsystem.h \
-    $(OUTPUTDIR)\xcenter.h \
-    $(OUTPUTDIR)\xclslist.h \
-    $(OUTPUTDIR)\xdebug.h \
-    $(OUTPUTDIR)\xdebug_folder.h \
-    $(OUTPUTDIR)\xfdataf.h \
-    $(OUTPUTDIR)\xfdesk.h \
-    $(OUTPUTDIR)\xfdisk.h \
-    $(OUTPUTDIR)\xfldr.h \
-    $(OUTPUTDIR)\xfobj.h \
-    $(OUTPUTDIR)\xfont.h \
-    $(OUTPUTDIR)\xfontfile.h \
-    $(OUTPUTDIR)\xfontobj.h \
-    $(OUTPUTDIR)\xwppgmf.h \
-    $(OUTPUTDIR)\xfstart.h \
-    $(OUTPUTDIR)\xfsys.h \
-    $(OUTPUTDIR)\xfwps.h \
-    $(OUTPUTDIR)\xtrash.h \
-    $(OUTPUTDIR)\xtrashobj.h \
-    $(OUTPUTDIR)\xmmcdplay.h \
-    $(OUTPUTDIR)\xmmvolume.h \
-    $(OUTPUTDIR)\xwpadmin.h \
-    $(OUTPUTDIR)\xwpfsys.h \
-    $(OUTPUTDIR)\xwpkeybd.h \
-    $(OUTPUTDIR)\xwpmedia.h \
-    $(OUTPUTDIR)\xwpmouse.h \
-    $(OUTPUTDIR)\xwpnetwork.h \
-    $(OUTPUTDIR)\xwpnetsrv.h \
-    $(OUTPUTDIR)\xwppgm.h \
-    $(OUTPUTDIR)\xwpsetup.h \
-    $(OUTPUTDIR)\xwpscreen.h \
-    $(OUTPUTDIR)\xwpshadow.h \
-    $(OUTPUTDIR)\xwpsound.h \
-    $(OUTPUTDIR)\xwpstring.h \
-    $(OUTPUTDIR)\xwpvcard.h
+$(OUTPUTDIR)\wps\wpabs.h \
+$(OUTPUTDIR)\wps\wpdataf.h \
+$(OUTPUTDIR)\wps\wpdesk.h \
+$(OUTPUTDIR)\wps\wpdisk.h \
+$(OUTPUTDIR)\wps\wpfolder.h \
+$(OUTPUTDIR)\wps\wpfsys.h \
+$(OUTPUTDIR)\wps\wpkeybd.h \
+$(OUTPUTDIR)\wps\wpmouse.h \
+$(OUTPUTDIR)\wps\wpobject.h \
+$(OUTPUTDIR)\wps\wppgm.h \
+$(OUTPUTDIR)\wps\wppgmf.h \
+$(OUTPUTDIR)\wps\wpshadow.h \
+$(OUTPUTDIR)\wps\wpsound.h \
+$(OUTPUTDIR)\wps\wpsystem.h \
+$(OUTPUTDIR)\xcenter.h \
+$(OUTPUTDIR)\xclslist.h \
+$(OUTPUTDIR)\xdebug.h \
+$(OUTPUTDIR)\xdebug_folder.h \
+$(OUTPUTDIR)\xfdataf.h \
+$(OUTPUTDIR)\xfdesk.h \
+$(OUTPUTDIR)\xfdisk.h \
+$(OUTPUTDIR)\xfldr.h \
+$(OUTPUTDIR)\xfobj.h \
+$(OUTPUTDIR)\xfont.h \
+$(OUTPUTDIR)\xfontfile.h \
+$(OUTPUTDIR)\xfontobj.h \
+$(OUTPUTDIR)\xwppgmf.h \
+$(OUTPUTDIR)\xfstart.h \
+$(OUTPUTDIR)\xfsys.h \
+$(OUTPUTDIR)\xfwps.h \
+$(OUTPUTDIR)\xtrash.h \
+$(OUTPUTDIR)\xtrashobj.h \
+$(OUTPUTDIR)\xmmcdplay.h \
+$(OUTPUTDIR)\xmmvolume.h \
+$(OUTPUTDIR)\xwpadmin.h \
+$(OUTPUTDIR)\xwpfsys.h \
+$(OUTPUTDIR)\xwpkeybd.h \
+$(OUTPUTDIR)\xwpmedia.h \
+$(OUTPUTDIR)\xwpmouse.h \
+$(OUTPUTDIR)\xwpnetwork.h \
+$(OUTPUTDIR)\xwpnetsrv.h \
+$(OUTPUTDIR)\xwppgm.h \
+$(OUTPUTDIR)\xwpsetup.h \
+$(OUTPUTDIR)\xwpscreen.h \
+$(OUTPUTDIR)\xwpshadow.h \
+$(OUTPUTDIR)\xwpsound.h \
+$(OUTPUTDIR)\xwpstring.h \
+$(OUTPUTDIR)\xwpvcard.h
     @echo ----- Leaving $(MAKEDIR)
 
 # Now define inference rules for what to do with certain file
@@ -144,6 +145,10 @@ RUNSC = sc -p -v -r -maddstar -mnoint -S128000 -C128000
 # using the SOM inference rule above.
 
 # Special macros used here: $(@B) is the current target w/out ext.
+
+$(OUTPUTDIR)\wps\wpabs.h:        wps\$(@B).idl xfobj.idl
+
+$(OUTPUTDIR)\wps\wpfsys.h:       wps\$(@B).idl xfobj.idl
 
 $(OUTPUTDIR)\xcenter.h:          $(@B).idl
 

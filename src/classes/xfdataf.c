@@ -1077,7 +1077,7 @@ SOM_Scope BOOL  SOMLINK xdf_wpModifyMenu(XFldDataFile *somSelf,
                     : (ulMenuType == MENU_USER) ? "MENU_USER"
                     : "unknown",
                     ulView,
-                    mnuQueryViewName(ulView)
+                    cmnIdentifyView(ulView)
                     ));
 
         // now check which type of menu we have

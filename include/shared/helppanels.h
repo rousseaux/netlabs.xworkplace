@@ -356,5 +356,7 @@
     #define ID_XSH_PASTEDLG                 237
 
     #define ID_XSH_SETTINGS_FDRHOTKEYS_DLG  238     // V1.0.0 (2002-09-12) [umoeller]
+
+    #define ID_XSH_SETTINGS_TOOLBARS1       239     // V1.0.1 (2002-12-08) [umoeller]
 #endif
 

@@ -91,7 +91,7 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xcenter.ih"
-#include "xfobj.ih"
+// #include "xfobj.ih"
 #include "xfldr.ih"
 #include "xfdisk.ih"
 
@@ -1746,12 +1746,6 @@ STATIC MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                                           WPMENUID_PROPERTIES, // 0x70, properties
                                           MIT_END,
                                           COPYFL_STRIPTABS);
-
-                        /*
-                        winhInsertMenuSeparator(pPrivate->hwndObjectPopup,
-                                                MIT_END,
-                                                1234);
-                        */
 
                         // add standard widget menu as submenu
                         // no, copy to main menu V0.9.20 (2002-08-10) [umoeller]

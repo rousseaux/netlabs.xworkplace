@@ -114,6 +114,8 @@
 
 #include "config\hookintf.h"            // daemon/hook interface
 
+#pragma hdrstop
+
 /* ******************************************************************
  *
  *   Object details dialog
@@ -773,7 +775,7 @@ STATIC VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
             PVIEWITEM   pViewItem = (PVIEWITEM)(pUseItem+1);
 
             // V1.0.0 (2002-08-31) [umoeller]
-            PCSZ        pcszViewName = mnuQueryViewName(pViewItem->view);
+            PCSZ        pcszViewName = cmnIdentifyView(pViewItem->view);
 
             if (pViewItem->view != OPEN_RUNNING)
             {

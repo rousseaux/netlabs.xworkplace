@@ -340,7 +340,7 @@ SOM_Scope ULONG  SOMLINK fono_xwpQueryFontFileError(XWPFontObject *somSelf)
     XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_xwpQueryFontFileError");
 
-    return (_arcFontFileError);
+    return _arcFontFileError;
 }
 
 /*
@@ -504,7 +504,7 @@ SOM_Scope ULONG  SOMLINK fono_wpQueryDetailsData(XWPFontObject *somSelf,
         *pcp += sizeof(FNTO_DETAILS);
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -581,12 +581,12 @@ SOM_Scope BOOL  SOMLINK fono_wpMenuItemSelected(XWPFontObject *somSelf,
     // XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_wpMenuItemSelected");
 
-    if (fonMenuItemSelected(somSelf, ulMenuId))
+    if (fonMenuItemSelected(somSelf, hwndFrame, ulMenuId))
         return TRUE;
 
-    return (XWPFontObject_parent_WPTransient_wpMenuItemSelected(somSelf,
-                                                                hwndFrame,
-                                                                ulMenuId));
+    return XWPFontObject_parent_WPTransient_wpMenuItemSelected(somSelf,
+                                                               hwndFrame,
+                                                               ulMenuId);
 }
 
 /*
@@ -605,8 +605,8 @@ SOM_Scope BOOL  SOMLINK fono_wpMenuItemHelpSelected(XWPFontObject *somSelf,
     if (fonMenuItemHelpSelected(somSelf, MenuId))
         return TRUE;
 
-    return (XWPFontObject_parent_WPTransient_wpMenuItemHelpSelected(somSelf,
-                                                                    MenuId));
+    return XWPFontObject_parent_WPTransient_wpMenuItemHelpSelected(somSelf,
+                                                                   MenuId);
 }
 
 /*
@@ -655,9 +655,9 @@ SOM_Scope HWND  SOMLINK fono_wpOpen(XWPFontObject *somSelf, HWND hwndCnr,
 
     // we only support the "Sample" view; suppress all others
     if (ulView == *G_pulVarMenuOfs + ID_XFMI_OFS_XWPVIEW)
-        return (fonCreateFontSampleView(somSelf,
-                                        WinQueryAnchorBlock(hwndCnr),
-                                        ulView));
+        return fonCreateFontSampleView(somSelf,
+                                       WinQueryAnchorBlock(hwndCnr),
+                                       ulView);
 
     return NULLHANDLE;
 }
@@ -688,7 +688,7 @@ SOM_Scope ULONG  SOMLINK fonoM_xwpclsQueryFontSampleHints(M_XWPFontObject *somSe
     /* M_XWPFontObjectData *somThis = M_XWPFontObjectGetData(somSelf); */
     M_XWPFontObjectMethodDebug("M_XWPFontObject","fonoM_xwpclsQueryFontSampleHints");
 
-    return (G_ulFontSampleHints);
+    return G_ulFontSampleHints;
 }
 
 /*
@@ -934,7 +934,7 @@ SOM_Scope PSZ  SOMLINK fonoM_wpclsQueryTitle(M_XWPFontObject *somSelf)
     /* M_XWPFontObjectData *somThis = M_XWPFontObjectGetData(somSelf); */
     M_XWPFontObjectMethodDebug("M_XWPFontObject","fonoM_wpclsQueryTitle");
 
-    return (cmnGetString(ID_XSSI_FONTOBJECT)) ; // pszFontObject
+    return cmnGetString(ID_XSSI_FONTOBJECT);
 }
 
 /*
@@ -1027,6 +1027,6 @@ SOM_Scope ULONG  SOMLINK fonoM_wpclsQueryIconData(M_XWPFontObject *somSelf,
         pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
-    return (sizeof(ICONINFO));
+    return sizeof(ICONINFO);
 }
 

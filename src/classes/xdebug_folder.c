@@ -782,9 +782,9 @@ SOM_Scope BOOL32  SOMLINK dfdr_wpSetTaskRec(DbgFolder *somSelf,
     if (_fDebugThis)
     {
         _Pmpf(("        pTaskRecNew pre:"));
-        wpshDumpTaskRec(somSelf, "ddf_wpSetTaskRec", pNew);
+        cmnDumpTaskRec(somSelf, "ddf_wpSetTaskRec", pNew);
         _Pmpf(("        pTaskRecOld pre:"));
-        wpshDumpTaskRec(somSelf, "ddf_wpSetTaskRec", pOld);
+        cmnDumpTaskRec(somSelf, "ddf_wpSetTaskRec", pOld);
         _Pmpf(("        ++ Now calling parent"));
     }
 
@@ -796,9 +796,9 @@ SOM_Scope BOOL32  SOMLINK dfdr_wpSetTaskRec(DbgFolder *somSelf,
         _Pmpf(("        -- parent is done;"));
 
         _Pmpf(("        pTaskRecNew post:"));
-        wpshDumpTaskRec(somSelf, "ddf_wpSetTaskRec", pNew);
+        cmnDumpTaskRec(somSelf, "ddf_wpSetTaskRec", pNew);
         _Pmpf(("        pTaskRecOld post:"));
-        wpshDumpTaskRec(somSelf, "ddf_wpSetTaskRec", pOld);
+        cmnDumpTaskRec(somSelf, "ddf_wpSetTaskRec", pOld);
     }
 
     EndInstanceMethodDebug();
@@ -816,7 +816,7 @@ SOM_Scope PTASKREC  SOMLINK dfdr_wpFindTaskRec(DbgFolder *somSelf)
     if (_fDebugThis)
     {
         _Pmpf(("        -- wpFindTaskRec parent is done;"));
-        wpshDumpTaskRec(somSelf, "found pTaskRec", rc);
+        cmnDumpTaskRec(somSelf, "found pTaskRec", rc);
     }
 
     EndInstanceMethodDebug();

@@ -78,9 +78,11 @@
 #define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
+#define INCL_WINFRAMEMGR
+#define INCL_WININPUT
 #define INCL_WINPOINTERS
-#define INCL_WINMENUS
 #define INCL_WINDIALOGS
+#define INCL_WINMENUS
 #define INCL_WINSTDCNR
 #define INCL_WINSTDBOOK
 #define INCL_WINPROGRAMLIST
@@ -799,6 +801,179 @@ SOM_Scope BOOL  SOMLINK xo_xwpModifyFlags(XFldObject *somSelf,
 }
 
 /*
+ *@@ xwpOwnerDrawIcon:
+ *      this new instance method gets called from the
+ *      XWorkplace container owner-draw routines if global
+ *      settings are enabled that require XWorkplace to take
+ *      over owner draw for specific objects.
+ *
+ *      It gets called only for objects that have CRA_OWNERDRAW
+ *      set in their MINIRECORDCORE.flRecordAttr. The WPS
+ *      enables that flag for folders and shadows only. If
+ *      that flag is not set, the container itself does the
+ *      painting (using MINIRECORDCORE.hptrIcon), and this
+ *      never gets called.
+ *
+ *      Otherwise, this gets called every time the icon needs
+ *      to be painted for the given object. See the remarks
+ *      below for how to defer icon loading lazily.
+ *
+ *      Parameters:
+ *
+ *      --  pmrc has the MINIRECORDCORE that was given into
+ *          the owner-draw routine. You must check for
+ *          whether hptrIcon is set.
+ *
+ *      --  hps is the presentation space handle that you
+ *          must use for drawing. This has already been
+ *          switched to RGB mode.
+ *
+ *      --  flOwnerDraw has a set of flags:
+ *
+ *          --  If OWDRFL_LAZYICONS is set, this means that
+ *              the lazy icons thread is active and you may
+ *              return TRUE from this method to queue the
+ *              icon for lazy drawing.
+ *
+ *          --  If OWDRFL_SHADOWOVERLAY is set, the "shadow
+ *              overlay" setting is active, that is, shadows
+ *              should be overpainted with an additional
+ *              shadow icon.
+ *
+ *          --  If OWDRFL_INUSE is set, the object currently
+ *              has a view open and the icon will receive in-use
+ *              (hatched) emphasis. Note that the emphasis is
+ *              painted before calling this method, so this
+ *              method is not required to do this; however the
+ *              flag is necessary for folders to correctly
+ *              figure out when to paint the animation icon
+ *              instead of the regular folder icon.
+ *
+ *          --  If OWDRFL_MINI is set, this method must paint
+ *              a mini-icon instead of a regular icon. This
+ *              gets set in two cases: the container has been
+ *              set to use mini-icons (which is always the
+ *              case for Details view), or the icon is to
+ *              be painted for a template. In the latter case,
+ *              the template icon has already been painted
+ *              before calling this method, and pptl->x and y
+ *              have been adjusted.
+ *
+ *      --  pptl contains the coordinates at which to paint
+ *          the icon in this method. Do not add any offsets
+ *          to those coordinates; they have been computed to
+ *          paint the icon at exactly the correct position,
+ *          taking mini-icons, different cnr views and templates
+ *          into account.
+ *
+ *      About lazy icon loading:
+ *
+ *      If this method returns TRUE, the object is queued for
+ *      lazy icon loading. That is, somSelf is passed to the
+ *      XWorkplace lazy icons thread, which will then
+ *      invoke wpQueryIcon on the object later (which should
+ *      retrieve the correct icon for the object). Eventually
+ *      this will cause this method to be called again when
+ *      that new icon needs to be painted, so you must check
+ *      for whether pmrc->hptrIcon is currently set in this
+ *      method's code to tell the two cases apart.
+ *
+ *      So the usual sequence is that the first time this
+ *      method gets called for an object (when a folder has
+ *      just been populated and the icon has not been retrieved
+ *      yet), pmrc->hptrIcon is NULLHANDLE. In that case,
+ *      you may TRUE if flOwnerDraw also has the OWDRFL_LAZYICONS
+ *      flag set. You still need to paint the icon then (e.g.
+ *      the class default icon).
+ *
+ *      When the lazy icon thread then sets the "real" icon for
+ *      the object, it will set hptrIcon in the MINIRECORDCORE
+ *      and invalidate the record so that this method gets
+ *      called again eventually and you can just paint the
+ *      icon that was set.
+ *
+ *@@added V1.0.1 (2002-11-30) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xo_xwpOwnerDrawIcon(XFldObject *somSelf,
+                                            PMINIRECORDCORE pmrc,
+                                            HPS hps,
+                                            ULONG flOwnerDraw,
+                                            PPOINTL pptl)
+{
+    ULONG       flObject = objQueryFlags(somSelf);
+    HPOINTER    hptrPaint;
+    BOOL        fQueueLazy = FALSE;     // return value
+
+    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_xwpOwnerDrawIcon");
+
+    // check if we have an icon already or if this
+    // is the first call for this object... in that
+    // case hptrIcon might be NULLHANDLE still
+    if (!(hptrPaint = pmrc->hptrIcon))
+    {
+        PMPF_ICONREPLACEMENTS(("    CMA_ICON, pmrc->hptrIcon is NULLHANDLE"));
+
+        // this object does not have an icon yet:
+        // lazy icons enabled?
+        if (    (flOwnerDraw & OWDRFL_LAZYICONS)
+             && (flObject & (OBJFL_WPDATAFILE | OBJFL_WPPROGRAM))
+           )
+        {
+            // lazy icon drawing:
+            // use default class icon for now and
+            // queue object for lazy icon processing
+            fQueueLazy = TRUE;
+            hptrPaint = _wpclsQueryIcon(_somGetClass(somSelf));
+        }
+        else
+        {
+            // no data file, or lazy icons disabled:
+            // get the icon synchronously
+            hptrPaint = _wpQueryIcon(somSelf);
+                    // this should set MINIRECORDCORE.hptrIcon
+        }
+    }
+    else
+    {
+        // pmrc->hptrIcon was set: still check if this is
+        // a folder (cannot happen presently because they
+        // are not owner-drawn) or a shadow to a folder;
+        // in that case, we need to draw an animation icon
+        // if the folder has an open view... pmrc->hptrIcon
+        // ALWAYS has the closed icon for folders!
+        WPObject *pobjTest = somSelf;
+
+        if (    (    (flObject & OBJFL_WPFOLDER)
+                  || (    (pobjTest = objResolveIfShadow(somSelf))
+                       && (objIsAFolder(pobjTest))
+                     )
+                )
+             // && (_wpFindViewItem(pobjTest, VIEW_ANY, NULL))
+             // no, no, no! _wpFindViewItem requests the object mutex
+             // if the current thread doesn't have it, which can deadlock
+             // the system if a shadow is just being created!
+             // so use CRA_INUSE instead, which should be correct
+             // V1.0.0 (2002-09-17) [umoeller]
+             && (flOwnerDraw & OWDRFL_INUSE) // poi->fsAttribute & CRA_INUSE)
+           )
+            hptrPaint = _wpQueryIconN(pobjTest, 1);
+        // else: leave hptrPaint with pmrc->hptrIcon
+    }
+
+    WinDrawPointer(hps,
+                   pptl->x,
+                   pptl->y,
+                   hptrPaint,
+                   (flOwnerDraw & OWDRFL_MINI)
+                        ? DP_MINI
+                        : DP_NORMAL);
+
+    return fQueueLazy;
+}
+
+/*
  *@@ xwpAddWidgetNotify:
  *      adds a widget window handle to the object's
  *      internal widget-notify list.
@@ -1035,6 +1210,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpSetObjectHotkey(XFldObject *somSelf,
  *@@added V0.9.1 (2000-01-16) [umoeller]
  *@@changed V0.9.12 (2001-05-19) [umoeller]: added object lock
  *@@changed V0.9.16 (2001-10-11) [umoeller]: changed implementation to using XSTRINGs
+ *@@changed V1.0.1 (2002-12-08) [umoeller]: now calling parent methods directly
  */
 
 SOM_Scope PSZ  SOMLINK xo_xwpQuerySetup(XFldObject *somSelf,
@@ -1052,6 +1228,20 @@ SOM_Scope PSZ  SOMLINK xo_xwpQuerySetup(XFldObject *somSelf,
     {
         if (pobjLock = cmnLockObject(somSelf))
         {
+            if (    (_xwpQuerySetup2(somSelf, &str))
+                 && (str.ulLength)
+               )
+            {
+                pszReturn = str.psz;
+                        // do not free
+                if (pulLength)
+                    *pulLength = str.ulLength;
+            }
+            else
+                xstrClear(&str);
+
+            /* V1.0.1 (2002-12-08) [umoeller]
+
             // obtain "xwpQuerySetup2" method pointer
             somTD_XFldObject_xwpQuerySetup2 pfn_xwpQuerySetup2;
 
@@ -1071,7 +1261,7 @@ SOM_Scope PSZ  SOMLINK xo_xwpQuerySetup(XFldObject *somSelf,
                 }
                 else
                     xstrClear(&str);
-            }
+            } */
         }
     }
     CATCH(excpt1)
@@ -1115,9 +1305,8 @@ SOM_Scope void  SOMLINK xo_xwpFreeSetupBuffer(XFldObject *somSelf,
  *      which gets called by XFldObject::xwpQuerySetup.
  *
  *      This has been placed into a separate method because this
- *      method needs to be called using SOM name-lookup
- *      resolution to support overriding it in subclasses
- *      of XFldObject (WPObject), which xwpQuerySetup does.
+ *      method is designed to be overridden by subclasses,
+ *      while xwpQuerySetup is not.
  *
  *      In other words:
  *
@@ -1128,21 +1317,23 @@ SOM_Scope void  SOMLINK xo_xwpFreeSetupBuffer(XFldObject *somSelf,
  *
  *      Guidelines:
  *
- *      1.  You cannot simply use _parent_xwpQuerySetup2
- *          to call the parent method, because there's no C binding
- *          for this. The SOM header files do not know that WPObject
- *          has been replaced with XFldObject and therefore have no
- *          idea that XFldObject is actually a parent class of all
- *          other WPS classes. You must manually resolve the SOM
- *          method pointer for the parent class of your class;
- *          wpshParentQuerySetup2 has been provided to make this
- *          easier. See the code sample below.
- *
- *      2.  You must call the parent method _after_ your implementation
+ *      1.  You must call the parent method _after_ your implementation
  *          to make sure XFldObject gets called last, because the OBJECTID
  *          setup string must be added at the very last position in the
  *          complete setup string (IBM says), and that string is implemented
- *          by the XFldObject method.
+ *          by the original XFldObject method.
+ *
+ *      2.  There used to be a difficult overhead associated with
+ *          calling the parent method, because previously the
+ *          SOM-generated header files for XWorkplace were not
+ *          aware of our class replacements (that is, you could not
+ *          simply call parent_xwpQuerySetup2 in, say, XFolder method
+ *          code because the SOM headers did not know that XFolder
+ *          had in fact XFldObject in its parent hierarchy).
+ *
+ *          This has changed now. I have hacked the XWorkplace
+ *          include files and the include path to include these
+ *          dependencies as well. Simply use parent_xwpQuerySetup2.
  *
  *      3.  The implementation of this method has been changed with
  *          V0.9.16. The PVOID is a pointer to an XSTRING buffer which
@@ -1158,16 +1349,15 @@ SOM_Scope void  SOMLINK xo_xwpFreeSetupBuffer(XFldObject *somSelf,
  *
  *      5.  While this method is running, XWP has locked the object
  *          using its object mutex. So sending messages and other
- *          stuff is a no-no.
+ *          funky stuff is a no-no.
  *
  *      Use the following code to call the parent method (V0.9.16):
  *
  +          xstrcat(pstrSetup, "MYSETUPSTRING=VALUE;", 0);
  +              // and so on... settings for your class
  +
- +          return (wpshParentQuerySetup2(somSelf,
- +                                        _somGetParent(_XWPMyClass),
- +                                        pstrSetup));
+ +          return parent_xwpQuerySetup2(somSelf,
+ +                                       pstrSetup);
  *
  *      If all methods obey these conventions, this results in a complete
  *      setup string for any object of any class, with the subclass's strings
@@ -1279,6 +1469,68 @@ SOM_Scope HWND  SOMLINK xo_xwpHotkeyOrBorderAction(XFldObject *somSelf,
     }
 
     return hwnd;
+}
+
+/*
+ *@@ xwpHandleSelfClose:
+ *      this new instance method implements auto-closing the
+ *      given view of a folder when somSelf was opened from
+ *      it.
+ *
+ *      Warp 3 added support for the "self close" settings
+ *      (IIRC), but unfortunately there are no exported
+ *      methods to allow new views to behave according to
+ *      these settings. The WPS will auto-close a folder
+ *      if it handles a new from wpMenuItemSelected, but
+ *      if XWorkplace handles such a menu item (such as
+ *      for our new split view), we must do it ourselves.
+ *
+ *      So whenever we intercept a non-standard menu item
+ *      in wpMenuItemSelected to open a new view, we just
+ *      call this method now, which closes hwndFrame if
+ *      necessary.
+ *
+ *@@added V1.0.1 (2002-12-08) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xo_xwpHandleSelfClose(XFldObject *somSelf,
+                                              HWND hwndFrame,
+                                              ULONG ulMenuId)
+{
+    WPFolder *pFolder;
+    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_xwpHandleSelfClose");
+
+    // get the folder of which hwndFrame is a view;
+    // we can't just use wpQueryFolder because
+    // of shadows and tree views... this might
+    // be in a sub-subfolder also
+    if (    (pFolder = WinSendMsg(hwndFrame,
+                                  WM_QUERYOBJECTPTR,
+                                  0,
+                                  0))
+         && (_somIsA(pFolder, _WPFolder))
+         && (!(_wpQueryFldrFlags(pFolder) & FOI_WORKAREA))
+       )
+    {
+        ULONG   ulClose = _wpQueryFldrSelfClose(pFolder);
+
+        _PmpfF(("folder [%s] self-close: 0x%lX",
+                _wpQueryTitle(pFolder),
+                ulClose));
+
+        if (    (ulClose == SELFCLOSE_ALL)
+             || (WinGetKeyState(HWND_DESKTOP, VK_SHIFT) & 0x8000)
+             || (    (ulClose == SELFCLOSE_SUBFOLDERS)
+                  && (_somIsA(somSelf, _WPFolder))
+                )
+           )
+            WinPostMsg(hwndFrame,
+                       WM_SYSCOMMAND,
+                       (MPARAM)SC_CLOSE,
+                       MPFROM2SHORT(CMDSRC_MENU,
+                                    TRUE));
+    }
 }
 
 /*
@@ -2868,7 +3120,14 @@ SOM_Scope ULONG  SOMLINK xo_wpReleaseObjectMutexSem(XFldObject *somSelf)
  *      receives an array of ULONGs in pFlags. wpobject.h
  *      in the 4.5 Toolkit lists the CTXT_* flags together
  *      with the ULONG array item index where each flag
- *      applies.
+ *      applies. pFlags->Flags[0] is equivalent to the flags
+ *      byte of the old wpFilterPopupMenu method.
+ *
+ *      Note also that the WPS appears to ignore the return
+ *      value of this function.
+ *
+ *      With V1.0.1, we override this instead of
+ *      wpFilterPopupMenu for folders too.
  *
  *@@added V1.0.0 (2002-08-31) [umoeller]
  */
@@ -2881,39 +3140,37 @@ SOM_Scope BOOL  SOMLINK xo_wpFilterMenu(XFldObject *somSelf,
                                         ULONG ulView,
                                         ULONG ulReserved)
 {
-    BOOL    brc;
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpFilterMenu");
 
-    if (brc = XFldObject_parent_WPObject_wpFilterMenu(somSelf,
-                                                      pFlags,
-                                                      hwndCnr,
-                                                      fMultiSelect,
-                                                      ulMenuType,
-                                                      ulView,
-                                                      ulReserved))
-    {
-        // if object has been deleted already (ie. is in trashcan),
-        // remove delete... not that I can see how we can get a context
-        // menu for the object then ;-)
-        if (_xwpQueryDeletion(somSelf, NULL, NULL))    // V0.9.20 (2002-07-25) [umoeller]
-            pFlags->Flags[0] &= ~CTXT_DELETE; // V0.9.5 (2000-09-20) [pr]
+    XFldObject_parent_WPObject_wpFilterMenu(somSelf,
+                                            pFlags,
+                                            hwndCnr,
+                                            fMultiSelect,
+                                            ulMenuType,
+                                            ulView,
+                                            ulReserved);
 
-        // now suppress default menu items according to
-        // Global Settings;
-        // the global "WPSSetting" settings are ready-made
-        // for this function; the "Workplace Shell" notebook page
-        // for removing menu items set these fields with the proper
-        // CTXT_xxx flags
-        pFlags->Flags[0] &= ~(cmnQuerySetting(mnuQueryMenuWPSSetting(somSelf)));
+    // if object has been deleted already (ie. is in trashcan),
+    // remove delete... not that I can see how we can get a context
+    // menu for the object then ;-)
+    if (_xwpQueryDeletion(somSelf, NULL, NULL))    // V0.9.20 (2002-07-25) [umoeller]
+        pFlags->Flags[0] &= ~CTXT_DELETE; // V0.9.5 (2000-09-20) [pr]
 
-        if (cmnQuerySetting(mnuQueryMenuXWPSetting(somSelf)) & XWPCTXT_LOCKEDINPLACE)
-            // remove WPObject's "Lock in place" submenu
-            pFlags->Flags[1] &= ~CTXT_LOCKEDINPLACE;
-            // winhDeleteMenuItem(hwndMenu, WPMENUID_LOCKEDINPLACE); // ID_WPM_LOCKINPLACE);
-    }
+    // now suppress default menu items according to
+    // Global Settings;
+    // the global "WPSSetting" settings are ready-made
+    // for this function; the "Workplace Shell" notebook page
+    // for removing menu items set these fields with the proper
+    // CTXT_xxx flags
+    pFlags->Flags[0] &= ~(cmnQuerySetting(mnuQueryMenuWPSSetting(somSelf)));
 
-    return brc;
+    if (cmnQuerySetting(mnuQueryMenuXWPSetting(somSelf)) & XWPCTXT_LOCKEDINPLACE)
+        // remove WPObject's "Lock in place" submenu
+        pFlags->Flags[1] &= ~CTXT_LOCKEDINPLACE;
+        // winhDeleteMenuItem(hwndMenu, WPMENUID_LOCKEDINPLACE); // ID_WPM_LOCKINPLACE);
+
+    return TRUE;
 }
 
 /*
@@ -3006,7 +3263,7 @@ SOM_Scope BOOL  SOMLINK xo_wpModifyMenu(XFldObject *somSelf,
                     : (ulMenuType == MENU_USER) ? "MENU_USER"
                     : "unknown",
                     ulView,
-                    mnuQueryViewName(ulView)
+                    cmnIdentifyView(ulView)
                     ));
 
         if (cmnQuerySetting(sfFixLockInPlace)) // V0.9.7 (2000-12-10) [umoeller]

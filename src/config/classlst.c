@@ -96,6 +96,7 @@
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
+// #include "xfobj.ih"
 #include "xclslist.ih"
 
 // XWorkplace implementation headers
@@ -347,7 +348,7 @@ static MPARAM ampMethodInfoCtls[] =
 
 STATIC MRESULT EXPENTRY fnwpOpenFilter(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
-   return (WinDefFileDlgProc(hwnd, msg, mp1, mp2));
+   return WinDefFileDlgProc(hwnd, msg, mp1, mp2);
 }
 
 /*
@@ -918,7 +919,7 @@ STATIC MRESULT EXPENTRY fncbReturnWPSClassAttr(HWND hwndCnr,
     else
         usAttr |= CRA_COLLAPSED;
 
-    return (MPARAM)(usAttr);
+    return (MPARAM)usAttr;
 }
 
 /*
@@ -990,7 +991,7 @@ STATIC SHORT EXPENTRY fnCompareMethodIndex(PMETHODRECORD precc1,
             src = 1;
         // else equal: return 0
     }
-    return (src);
+    return src;
 }
 
 /*
@@ -1013,7 +1014,7 @@ STATIC SHORT EXPENTRY fnCompareMethodName(PMETHODRECORD precc1,
             src = 1;
         // else equal: return 0
     }
-    return (src);
+    return src;
 }
 
 /*
@@ -1035,7 +1036,7 @@ STATIC SHORT EXPENTRY fnCompareMethodIntro(PMETHODRECORD precc1,
             src = 1;
         // else equal: return 0
     }
-    return (src);
+    return src;
 }
 
 /*
@@ -1059,7 +1060,7 @@ STATIC SHORT EXPENTRY fnCompareMethodOverride(PMETHODRECORD precc1,
             // equal: compare method intro
             src = fnCompareMethodIntro(precc1, precc2, pStorage);
     }
-    return (src);
+    return src;
 }
 
 /*
@@ -1092,7 +1093,7 @@ STATIC PFNCNRSORT QueryMethodsSortFunc(PCLASSLISTCLIENTDATA pClientData)
         break;
     }
 
-    return (pfnCnrSort);
+    return pfnCnrSort;
 }
 
 /* ******************************************************************
@@ -3021,7 +3022,7 @@ MRESULT cllClassListItemChanged(PNOTEBOOKPAGE pnbp,
             RelinkWindows(pClientData, TRUE);
         }
 
-    return ((MPARAM)0);
+    return (MPARAM)0;
 }
 
 /*
@@ -3049,20 +3050,18 @@ BOOL cllModifyPopupMenu(XWPClassList *somSelf,
                           TRUE,
                           &mi))
     {
-        ULONG ulOfs = *G_pulVarMenuOfs;
-
         // mi.hwndSubMenu now contains "Open" submenu handle,
         // which we add items to now
         winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                           ulOfs + ID_XFMI_OFS_XWPVIEW,
+                           *G_pulVarMenuOfs + ID_XFMI_OFS_XWPVIEW,
                            cmnGetString(ID_XFSI_OPENCLASSLIST),  // pszOpenClassList
                            MIS_TEXT, 0);
         // insert "register class" only if this is
         // for an open class list view
         if (_fMenuCnrWhitespace)
         {
-            winhInsertMenuSeparator(hwndMenu, MIT_END,
-                                    ulOfs + ID_XFMI_OFS_SEPARATOR);
+            cmnInsertSeparator(hwndMenu, MIT_END);
+
             winhInsertMenuItem(hwndMenu, MIT_END,
                                ID_XLMI_REGISTER, // is above WPMENUID_USER
                                cmnGetString(ID_XFSI_REGISTERCLASS),  // pszRegisterClass
@@ -3110,6 +3109,7 @@ BOOL cllMenuItemSelected(XWPClassList *somSelf,
                       NULLHANDLE,   // hwndCnr; "WPS-internal use only", IBM says
                       ulMenuId,     // ulView; must be the same as menu item
                       0);           // parameter passed to wpOpen
+        _xwpHandleSelfClose(somSelf, hwndFrame, ulMenuId); // V1.0.1 (2002-12-08) [umoeller]
         brc = TRUE;
     }
     else switch (ulMenuId)
@@ -3329,9 +3329,9 @@ HWND cllCreateClassListView(WPObject *somSelf,
         flCreate = FCF_SYSMENU
                     | FCF_SIZEBORDER
                     | FCF_TITLEBAR
-                    | FCF_MINMAX
-                    // | FCF_TASKLIST
-                    | FCF_NOBYTEALIGN;
+                    // | FCF_MINMAX
+                    | FCF_NOBYTEALIGN
+                    | cmnQueryFCF(somSelf); // V1.0.1 (2002-12-08) [umoeller]
 
         swpFrame.x = 100;
         swpFrame.y = 100;
@@ -3390,6 +3390,6 @@ HWND cllCreateClassListView(WPObject *somSelf,
     }
     CATCH(excpt1) { } END_CATCH();
 
-    return (hwndFrame);
+    return hwndFrame;
 }
 

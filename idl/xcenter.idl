@@ -102,7 +102,7 @@ interface XCenter : WPAbstract
 
     BOOL xwpSetPriority(in LONG lDelta);
 
-    BOOL xwpQuerySetup2(in PVOID pstrSetup);
+    //# BOOL xwpQuerySetup2(in PVOID pstrSetup);
 
     HWND xwpHotkeyOrBorderAction(in ULONG hab, in ULONG ulCorner);
 
@@ -118,7 +118,7 @@ interface XCenter : WPAbstract
                   xwpDeleteWidget,
                   xwpMoveWidget,
                   xwpSetPriority,
-                  xwpQuerySetup2,
+                  //# xwpQuerySetup2,
                   xwpHotkeyOrBorderAction;
 
     /*
@@ -219,6 +219,8 @@ interface XCenter : WPAbstract
 
     wpSetup: override;
     wpSetupOnce: override;
+
+    xwpQuerySetup2: override;            //# V1.0.1 (2002-12-08) [umoeller]
 
     wpSaveState: override;
     wpRestoreState: override;

@@ -76,6 +76,7 @@
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
+// #include "xfobj.ih"
 #include "xfont.ih"
 #include "xfontfile.ih"
 #include "xfontobj.ih"
@@ -317,7 +318,7 @@ XWPFontObject* fonCreateFontObject(XWPFontFolder *pFolder,
         }
     }
 
-    return (pNew);
+    return pNew;
 }
 
 /*
@@ -885,10 +886,20 @@ BOOL fonProcessViewCommand(WPFolder *somSelf,
         break;
 
         default:
+            brc = FALSE;
+
+        /*
         {
             // other: call parent method to find out
             // whether default processing should occur
 
+            brc = XWPFontFolder_parent_XFolder_xwpProcessViewCommand(somSelf,
+                                                                     usCommand,
+                                                                     hwndCnr,
+                                                                     pFirstObject,
+                                                                     ulSelectionFlags);
+
+            V1.0.1 (2002-12-08) [umoeller]
             // manually resolve parent method
             somTD_XWPFontFolder_xwpProcessViewCommand pxwpProcessViewCommand;
 
@@ -904,6 +915,7 @@ BOOL fonProcessViewCommand(WPFolder *somSelf,
                                              pFirstObject,
                                              ulSelectionFlags);
         }
+        */
     }
 
     return brc;
@@ -995,7 +1007,6 @@ VOID fonModifyFontPopupMenu(XWPFontObject *somSelf,
 {
     XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     MENUITEM    mi;
-    ULONG       ulOfs = *G_pulVarMenuOfs;
 
     // get handle to the "Open" submenu in the
     // the popup menu
@@ -1007,27 +1018,25 @@ VOID fonModifyFontPopupMenu(XWPFontObject *somSelf,
         // mi.hwndSubMenu now contains "Open" submenu handle,
         // which we add items to now
         winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                           ulOfs + ID_XFMI_OFS_XWPVIEW,
+                           *G_pulVarMenuOfs + ID_XFMI_OFS_XWPVIEW,
                            cmnGetString(ID_XSSI_FONTSAMPLEVIEW),  // pszFontSampleView
                            MIS_TEXT, 0);
     }
 
     // insert separator
-    winhInsertMenuSeparator(hwndMenu, MIT_END,
-                            ulOfs+ ID_XFMI_OFS_SEPARATOR);
+    cmnInsertSeparator(hwndMenu, MIT_END);
 
     // add "Deinstall..."
     winhInsertMenuItem(hwndMenu, MIT_END,
-                       ulOfs + ID_XFMI_OFS_FONT_DEINSTALL,
+                       *G_pulVarMenuOfs + ID_XFMI_OFS_FONT_DEINSTALL,
                        cmnGetString(ID_XSSI_FONTDEINSTALL),  // pszFontDeinstall
                        MIS_TEXT, 0);
 
     if (_fShowingOpenViewMenu)
     {
         ULONG ul = 0;
-        // insert separator
-        winhInsertMenuSeparator(hwndMenu, MIT_END,
-                                ulOfs + ID_XFMI_OFS_SEPARATOR);
+
+        cmnInsertSeparator(hwndMenu, MIT_END);
 
         // context menu for open view:
         // add view hints submenu
@@ -1053,9 +1062,12 @@ VOID fonModifyFontPopupMenu(XWPFontObject *somSelf,
 /*
  *@@ fonMenuItemSelected:
  *      implementation for XWPFontObject::wpMenuItemSelected.
+ *
+ *@@changed V1.0.1 (2002-12-08) [umoeller]: added hwndFrame for self-close support
  */
 
 BOOL fonMenuItemSelected(XWPFontObject *somSelf,
+                         HWND hwndFrame,
                          ULONG ulMenuId)
 {
     BOOL brc = FALSE;
@@ -1066,6 +1078,7 @@ BOOL fonMenuItemSelected(XWPFontObject *somSelf,
                       NULLHANDLE,
                       ulMenuId,
                       0);
+        _xwpHandleSelfClose(somSelf, hwndFrame, ulMenuId); // V1.0.1 (2002-12-08) [umoeller]
         brc = TRUE;
     }
     else
@@ -1800,10 +1813,11 @@ HWND fonCreateFontSampleView(XWPFontObject *somSelf,
                                          FCF_NOBYTEALIGN
                                             | FCF_TITLEBAR
                                             | FCF_SYSMENU
-                                            | FCF_MINMAX
+                                            // | FCF_MINMAX
                                             | FCF_SIZEBORDER
                                             | FCF_VERTSCROLL
-                                            | FCF_HORZSCROLL,
+                                            | FCF_HORZSCROLL
+                                            | cmnQueryFCF(somSelf), // V1.0.1 (2002-12-08) [umoeller]
                                          WS_ANIMATE,    // frame style
                                          _wpQueryTitle(somSelf),
                                          0,             // resid
@@ -1865,7 +1879,7 @@ HWND fonCreateFontSampleView(XWPFontObject *somSelf,
     CATCH(excpt1) {} END_CATCH();
 
 
-    return (hwndNewView);
+    return hwndNewView;
 }
 
 /*
@@ -1898,6 +1912,6 @@ ULONG fonInvalidateAllOpenSampleViews(VOID)
         krnUnlock();
     }
 
-    return (ulrc);
+    return ulrc;
 }
 

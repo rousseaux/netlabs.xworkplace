@@ -120,6 +120,11 @@ interface XFldObject : WPObject
     BOOL xwpModifyFlags(in ULONG flFlags,
                         in ULONG flMask);
 
+    BOOL xwpOwnerDrawIcon(in PMINIRECORDCORE pmrc,
+                          in HPS hps,
+                          in ULONG flOwnerDraw,
+                          in PPOINTL pptl);
+
     BOOL xwpAddWidgetNotify(in HWND hwnd);
     BOOL xwpRemoveDestroyNotify(in HWND hwnd);
 
@@ -132,6 +137,9 @@ interface XFldObject : WPObject
     BOOL xwpQuerySetup2(in PVOID pstrSetup);
 
     HWND xwpHotkeyOrBorderAction(in ULONG hab, in ULONG ulCorner);
+
+    VOID xwpHandleSelfClose(in HWND hwndFrame,
+                            in ULONG ulMenuId);
 
 #ifdef __SOMIDL__
   implementation {
@@ -154,7 +162,9 @@ interface XFldObject : WPObject
                   xwpHotkeyOrBorderAction,
                   xwpAddReplacementIconPage,
                   xwpQueryHandle,
-                  xwpQueryLocks;
+                  xwpQueryLocks,
+                  xwpOwnerDrawIcon,
+                  xwpHandleSelfClose;
 
     /*
      * Class Modifiers:

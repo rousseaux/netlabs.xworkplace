@@ -232,14 +232,6 @@
 
     /* ******************************************************************
      *
-     *   Miscellaneous
-     *
-     ********************************************************************/
-
-    PCSZ mnuQueryViewName(ULONG ulView);
-
-    /* ******************************************************************
-     *
      *   Global WPS menu settings
      *
      ********************************************************************/
@@ -275,6 +267,7 @@
     BOOL mnuInsertFldrViewItems(WPFolder *somSelf,
                                 HWND hwndViewSubmenu,
                                 PCNRINFO pCnrInfo,
+                                HWND hwndFrame,
                                 ULONG ulView);
 
     VOID mnuInvalidateConfigCache(VOID);

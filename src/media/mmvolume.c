@@ -143,9 +143,10 @@ HWND xmmCreateVolumeView(WPObject *somSelf,
         flCreate = FCF_SYSMENU
                     | FCF_SIZEBORDER
                     | FCF_TITLEBAR
-                    | FCF_MINMAX
+                    // | FCF_MINMAX
                     // | FCF_TASKLIST
-                    | FCF_NOBYTEALIGN;
+                    | FCF_NOBYTEALIGN
+                    | cmnQueryFCF(somSelf); // V1.0.1 (2002-12-08) [umoeller]
 
         swpFrame.x = 100;
         swpFrame.y = 100;

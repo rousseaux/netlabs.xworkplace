@@ -69,7 +69,7 @@
 // SOM headers which don't crash with prec. header files
 #include "xfont.ih"
 #include "xfontobj.ih"
-#include "xfldr.ih"
+// #include "xfldr.ih"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -128,66 +128,6 @@ SOM_Scope ULONG  SOMLINK fon_xwpAddFontsPage(XWPFontFolder *somSelf,
 }
 
 /*
- *@@ xwpProcessViewCommand:
- *      this XFolder method processes WM_COMMAND messages
- *      for objects in a container. For details refer to
- *      XFolder::xwpProcessViewCommand.
- *
- *      This is really a method override... but since SOM
- *      IDL doesn't know that XWPTrashCan is in fact
- *      derived from XFolder, we have to do it this way.
- *
- *@@changed V1.0.0 (2002-08-26) [umoeller]: method renamed
- */
-
-SOM_Scope BOOL  SOMLINK fon_xwpProcessViewCommand(XWPFontFolder *somSelf,
-                                                  USHORT usCommand,
-                                                  HWND hwndCnr,
-                                                  WPObject* pFirstObject,
-                                                  ULONG ulSelectionFlags)
-{
-    // XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
-    XWPFontFolderMethodDebug("XWPFontFolder","fon_xwpProcessViewCommand");
-
-    return fonProcessViewCommand(somSelf,
-                                 usCommand,
-                                 hwndCnr,
-                                 pFirstObject,
-                                 ulSelectionFlags);
-}
-
-/*
- *@@ xwpUpdateStatusBar:
- *      this XFolder instance method gets called when the status
- *      bar needs updating.
- *
- *      This always gets called using name-lookup resolution, so
- *      XFolder does not have to be installed for this to work.
- *      However, if it is, this method will be called. See
- *      XFolder::xwpUpdateStatusBar for more on this.
- */
-
-SOM_Scope BOOL  SOMLINK fon_xwpUpdateStatusBar(XWPFontFolder *somSelf,
-                                               HWND hwndStatusBar,
-                                               HWND hwndCnr)
-{
-    CHAR szText[200];
-    XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
-    XWPFontFolderMethodDebug("XWPFontFolder","fon_xwpUpdateStatusBar");
-
-    if (_ulFontsCurrent < _ulFontsMax)
-    {
-        // populating and not done yet:
-        sprintf(szText, "Collecting fonts... %u out of %d done",
-                _ulFontsCurrent, _ulFontsMax);
-    }
-    else
-        sprintf(szText, "%d fonts installed.", _ulFontsCurrent);
-
-    return (WinSetWindowText(hwndStatusBar, szText));
-}
-
-/*
  *@@ xwpChangeFontsCount:
  *      changes the fonts count and refreshes the status bar.
  *
@@ -243,7 +183,7 @@ SOM_Scope void  SOMLINK fon_wpInitData(XWPFontFolder *somSelf)
     XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
     XWPFontFolderMethodDebug("XWPFontFolder","fon_wpInitData");
 
-    XWPFontFolder_parent_WPFolder_wpInitData(somSelf);
+    XWPFontFolder_parent_XFolder_wpInitData(somSelf);
 
     _fFilledWithFonts = FALSE;      // attribute
 
@@ -255,20 +195,75 @@ SOM_Scope void  SOMLINK fon_wpInitData(XWPFontFolder *somSelf)
 }
 
 /*
- *@@ wpUnInitData:
- *      this WPObject instance method is called when the object
- *      is destroyed as a SOM object, either because it's being
- *      made dormant or being deleted. All allocated resources
- *      should be freed here.
- *      The parent method must always be called last.
+ *@@ xwpProcessViewCommand:
+ *      this XFolder method processes WM_COMMAND messages
+ *      for objects in a container. For details refer to
+ *      XFolder::xwpProcessViewCommand.
+ *
+ *      Starting with V1.0.1, we can now really override
+ *      this method through our optimized IDL files.
+ *
+ *@@added V1.0.1 (2002-12-08) [umoeller]
  */
 
-SOM_Scope void  SOMLINK fon_wpUnInitData(XWPFontFolder *somSelf)
+SOM_Scope BOOL  SOMLINK fon_xwpProcessViewCommand(XWPFontFolder *somSelf,
+                                                  USHORT usCommand,
+                                                  HWND hwndCnr,
+                                                  WPObject* pFirstObject,
+                                                  ULONG ulSelectionFlags)
 {
-    // XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
-    XWPFontFolderMethodDebug("XWPFontFolder","fon_wpUnInitData");
+    XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
+    XWPFontFolderMethodDebug("XWPFontFolder","fon_xwpProcessViewCommand");
 
-    XWPFontFolder_parent_WPFolder_wpUnInitData(somSelf);
+    if (fonProcessViewCommand(somSelf,
+                              usCommand,
+                              hwndCnr,
+                              pFirstObject,
+                              ulSelectionFlags))
+        return TRUE;
+
+    return XWPFontFolder_parent_XFolder_xwpProcessViewCommand(somSelf,
+                                                              usCommand,
+                                                              hwndCnr,
+                                                              pFirstObject,
+                                                              ulSelectionFlags);
+}
+
+/*
+ *@@ xwpUpdateStatusBar:
+ *      this XFolder instance method gets called when the status
+ *      bar needs updating.
+ *
+ *      This always gets called using name-lookup resolution, so
+ *      XFolder does not have to be installed for this to work.
+ *      However, if it is, this method will be called. See
+ *      XFolder::xwpUpdateStatusBar for more on this.
+ */
+
+SOM_Scope BOOL  SOMLINK fon_xwpUpdateStatusBar(XWPFontFolder *somSelf,
+                                               HWND hwndStatusBar,
+                                               HWND hwndCnr)
+{
+    CHAR szText[200];
+    XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
+    XWPFontFolderMethodDebug("XWPFontFolder","fon_xwpUpdateStatusBar");
+
+    if (_ulFontsCurrent < _ulFontsMax)
+    {
+        // populating and not done yet:
+        sprintf(szText, "Collecting fonts... %u out of %d done",
+                _ulFontsCurrent, _ulFontsMax);
+            // @@todo localize
+    }
+    else
+        sprintf(szText, "%d fonts installed.", _ulFontsCurrent);
+
+    return (WinSetWindowText(hwndStatusBar, szText));
+
+    /* return (XWPFontFolder_parent_XFolder_xwpUpdateStatusBar(somSelf,
+                                                            hwndStatusBar,
+                                                            hwndCnr));
+                                                            */
 }
 
 /*
@@ -297,10 +292,10 @@ SOM_Scope BOOL  SOMLINK fon_wpPopulate(XWPFontFolder *somSelf,
         // V0.9.20 (2002-07-12) [umoeller]
         if (fFindLocked = !_wpRequestFindMutexSem(somSelf, SEM_INDEFINITE_WAIT))
         {
-            brc = XWPFontFolder_parent_WPFolder_wpPopulate(somSelf,
-                                                           ulReserved,
-                                                           pszPath,
-                                                           fFoldersOnly);
+            brc = XWPFontFolder_parent_XFolder_wpPopulate(somSelf,
+                                                          ulReserved,
+                                                          pszPath,
+                                                          fFoldersOnly);
 
             if (!_fFilledWithFonts)
             {
@@ -424,8 +419,8 @@ SOM_Scope BOOL  SOMLINK fon_wpAddSettingsPages(XWPFontFolder *somSelf,
     // XWPFontFolderData *somThis = XWPFontFolderGetData(somSelf);
     XWPFontFolderMethodDebug("XWPFontFolder","fon_wpAddSettingsPages");
 
-    brc = XWPFontFolder_parent_WPFolder_wpAddSettingsPages(somSelf,
-                                                           hwndNotebook);
+    brc = XWPFontFolder_parent_XFolder_wpAddSettingsPages(somSelf,
+                                                          hwndNotebook);
     _xwpAddFontsPage(somSelf, hwndNotebook);
 
     return brc;
@@ -470,7 +465,7 @@ SOM_Scope void  SOMLINK fonM_wpclsInitData(M_XWPFontFolder *somSelf)
     /* M_XWPFontFolderData *somThis = M_XWPFontFolderGetData(somSelf); */
     M_XWPFontFolderMethodDebug("M_XWPFontFolder","fonM_wpclsInitData");
 
-    M_XWPFontFolder_parent_M_WPFolder_wpclsInitData(somSelf);
+    M_XWPFontFolder_parent_M_XFolder_wpclsInitData(somSelf);
 
     if (krnClassInitialized(G_pcszXWPFontFolder))
     {
@@ -494,7 +489,7 @@ SOM_Scope void  SOMLINK fonM_wpclsInitData(M_XWPFontFolder *somSelf)
 }
 
 /*
- *@@ wpclsUnInitData:
+ *@@ fonM_wpclsUnInitData:
  *
  */
 
@@ -505,7 +500,7 @@ SOM_Scope void  SOMLINK fonM_wpclsUnInitData(M_XWPFontFolder *somSelf)
 
     _wpclsDecUsage(_XWPFontObject);
 
-    M_XWPFontFolder_parent_M_WPFolder_wpclsUnInitData(somSelf);
+    M_XWPFontFolder_parent_M_XFolder_wpclsUnInitData(somSelf);
 }
 
 /*

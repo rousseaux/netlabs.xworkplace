@@ -1199,7 +1199,6 @@ STATIC MRESULT EXPENTRY fnwpFindFolder(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
         WinPostMsg(G_hwndFindFolder, WM_QUIT, 0, 0);
 
         pLastValidFolder = NULL;
-
     } END_CATCH();
 
     if (fLocked)

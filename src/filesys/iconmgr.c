@@ -72,7 +72,7 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xfldr.ih"
-#include "xwppgmf.ih"
+// #include "xwppgmf.ih"
 #include "xfobj.ih"
 
 // XWorkplace implementation headers
@@ -91,6 +91,7 @@
 // other SOM headers
 
 #pragma hdrstop
+#include <wpdataf.h>
 
 /* ******************************************************************
  *

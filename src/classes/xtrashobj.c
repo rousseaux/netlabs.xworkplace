@@ -674,7 +674,6 @@ SOM_Scope BOOL  SOMLINK xtro_wpModifyPopupMenu(XWPTrashObject *somSelf,
              && (_somIsA(pTrashCan, _XWPTrashCan))
            )
         {
-            ULONG   ulOfs = *G_pulVarMenuOfs;
             CHAR    szDestroyItem[300];
             if (_xwpTrashCanBusy(pTrashCan,
                                  0))     // query busy
@@ -682,12 +681,11 @@ SOM_Scope BOOL  SOMLINK xtro_wpModifyPopupMenu(XWPTrashObject *somSelf,
                 ulAttr = MIA_DISABLED;
 
             // insert separator
-            winhInsertMenuSeparator(hwndMenu, MIT_END,
-                                    (ulOfs + ID_XFMI_OFS_SEPARATOR));
+            cmnInsertSeparator(hwndMenu, MIT_END);
 
             // insert "Restore object"
             winhInsertMenuItem(hwndMenu, MIT_END,
-                               (ulOfs + ID_XFMI_OFS_TRASHRESTORE),
+                               (*G_pulVarMenuOfs + ID_XFMI_OFS_TRASHRESTORE),
                                cmnGetString(ID_XTSI_TRASHRESTORE),  // pszTrashRestore
                                MIS_TEXT,   // style
                                ulAttr);    // attributes, can be "disabled"
@@ -698,7 +696,7 @@ SOM_Scope BOOL  SOMLINK xtro_wpModifyPopupMenu(XWPTrashObject *somSelf,
                 // confirm destroy on:
                 strcat(szDestroyItem, "...");
             winhInsertMenuItem(hwndMenu, MIT_END,
-                               (ulOfs + ID_XFMI_OFS_TRASHDESTROY),
+                               (*G_pulVarMenuOfs + ID_XFMI_OFS_TRASHDESTROY),
                                szDestroyItem,
                                MIS_TEXT,   // style
                                ulAttr);    // attributes, can be "disabled"

@@ -204,7 +204,14 @@ SOM_Scope void  SOMLINK xfdisk_wpInitData(XFldDisk *somSelf)
  *      receives an array of ULONGs in pFlags. wpobject.h
  *      in the 4.5 Toolkit lists the CTXT_* flags together
  *      with the ULONG array item index where each flag
- *      applies.
+ *      applies. pFlags->Flags[0] is equivalent to the flags
+ *      byte of the old wpFilterPopupMenu method.
+ *
+ *      Note also that the WPS appears to ignore the return
+ *      value of this function.
+ *
+ *      With V1.0.1, we override this instead of
+ *      wpFilterPopupMenu for folders too.
  *
  *@@added V1.0.0 (2002-08-31) [umoeller]
  */

@@ -21,7 +21,10 @@
  *      GNU General Public License for more details.
  */
 
-#include <wpfolder.idl>         // this is SOM for WPFolder
+// #include <wpfolder.idl>         // this is SOM for WPFolder
+
+#include "xfldr.idl"                    //# WPFolder is replaced with XFolder
+                                        //# V1.0.1 (2002-12-08) [umoeller]
 
 /*
    CLASS: XWPFontFolder
@@ -37,7 +40,8 @@
 
 interface M_XWPFontFolder;            // forward reference to metaclass
 
-interface XWPFontFolder : WPFolder
+interface XWPFontFolder : XFolder       //# WPFolder is replaced with XFolder
+                                        //# V1.0.1 (2002-12-08) [umoeller]
 {
 
     /*
@@ -47,12 +51,14 @@ interface XWPFontFolder : WPFolder
 
     ULONG xwpAddFontsPage(in HWND hwndDlg);
 
-    BOOL xwpProcessViewCommand(in USHORT usCommand,
-                               in HWND hwndCnr,
-                               in WPObject pFirstObject,
-                               in ULONG ulSelectionFlags);
-
-    BOOL xwpUpdateStatusBar(in HWND hwndStatusBar, in HWND hwndCnr);
+    //#         V1.0.1 (2002-12-08) [umoeller]
+    //# BOOL xwpProcessViewCommand(in USHORT usCommand,
+    //#                            in HWND hwndCnr,
+    //#                            in WPObject pFirstObject,
+    //#                            in ULONG ulSelectionFlags);
+    //#
+    //# BOOL xwpUpdateStatusBar(in HWND hwndStatusBar, in HWND hwndCnr);
+    //#
 
     BOOL xwpChangeFontsCount(in LONG i);
 
@@ -65,10 +71,10 @@ interface XWPFontFolder : WPFolder
 
     releaseorder:
             xwpAddFontsPage,
-            xwpUpdateStatusBar,
+            //# xwpUpdateStatusBar,
             _get_fFilledWithFonts,
             _set_fFilledWithFonts,
-            xwpProcessViewCommand,
+            //# xwpProcessViewCommand,
             xwpChangeFontsCount;
 
     /*
@@ -101,7 +107,11 @@ interface XWPFontFolder : WPFolder
      */
 
     wpInitData: override;
-    wpUnInitData: override;
+    //# wpUnInitData: override;         V1.0.1 (2002-12-08) [umoeller]
+
+    xwpProcessViewCommand: override;    //# V1.0.1 (2002-12-08) [umoeller]
+
+    xwpUpdateStatusBar: override;       //# V1.0.1 (2002-12-08) [umoeller]
 
 //#    wpQueryDefaultHelp: override;   replaced with class method V0.9.20 (2002-07-12) [umoeller]
 
@@ -129,7 +139,8 @@ interface XWPFontFolder : WPFolder
 //# ---------------------
 //#
 
-interface M_XWPFontFolder : M_WPFolder
+interface M_XWPFontFolder : M_XFolder       //# WPFolder is replaced with XFolder
+                                            //# V1.0.1 (2002-12-08) [umoeller]
 {
 
     /*

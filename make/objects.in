@@ -114,6 +114,7 @@ $(OUTPUTDIR)\object_dtl.obj \
 $(OUTPUTDIR)\program.obj \
 $(OUTPUTDIR)\refresh.obj \
 $(OUTPUTDIR)\statbars.obj \
+$(OUTPUTDIR)\statbar_pages.obj \
 $(OUTPUTDIR)\trash.obj \
 $(OUTPUTDIR)\xthreads.obj
 

@@ -148,7 +148,7 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xfldr.ih"
-#include "xfobj.ih"
+// #include "xfobj.ih"
 #include "xfdisk.ih"                    // XFldDisk
 
 // XWorkplace implementation headers
@@ -893,8 +893,7 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
     if (    (pllFolders->ulCount)
          && (pllNonFolders->ulCount)
        )
-       winhInsertMenuSeparator(hwndMenu, MIT_END,
-                               *G_pulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+       cmnInsertSeparator(hwndMenu, MIT_END);
 
     // insert non-folder objects into menu
     pNode = lstQueryFirstNode(pllNonFolders);
@@ -932,8 +931,8 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
         // yes: add a message saying so
         CHAR    szMsgItem[300];
         // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-        winhInsertMenuSeparator(hwndMenu, MIT_END,
-                                *G_pulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+        cmnInsertSeparator(hwndMenu, MIT_END);
+
         sprintf(szMsgItem,
                 cmnGetString(ID_XSSI_DROPPED1),  // "... %d objects dropped,"
                 ulObjectsLeftOut);

@@ -99,10 +99,19 @@
 
     BOOL stbFolderWantsStatusBars(WPFolder *somSelf);
 
+    #ifdef COMMON_HEADER_INCLUDED
+    BOOL stbViewCanHaveBars(WPFolder *somSelf,
+                            HWND hwndFrame,
+                            ULONG ulView,
+                            XWPSETTING s);
+    #endif
+
     BOOL stbViewHasStatusBar(WPFolder *somSelf,
+                             HWND hwndFrame,
                              ULONG ulView);
 
     BOOL stbViewHasToolBar(WPFolder *somSelf,
+                           HWND hwndFrame,
                            ULONG ulView);
 
     #ifdef FDRSUBCLASS_HEADER_INCLUDED
@@ -134,7 +143,7 @@
      *
      ********************************************************************/
 
-    #ifdef SOM_WPFolder_h
+    #ifdef SOM_WPObject_h
 
         #ifndef __NOCFGSTATUSBARS__
             BOOL stbClassAddsNewMnemonics(SOMClass *pClassObject);
@@ -145,10 +154,23 @@
 
         PSZ stbQueryClassMnemonics(SOMClass *pClassObject);
 
-        PSZ stbComposeText(WPFolder* somSelf,
-                           HWND hwndCnr);
 
+        #ifdef SOM_WPFolder_h
+            PSZ stbComposeText(WPFolder* somSelf,
+                               HWND hwndCnr);
+        #endif
     #endif
+
+    /* ******************************************************************
+     *
+     *   Tool bar creation
+     *
+     ********************************************************************/
+
+    HWND stbCreateToolBar(WPFolder *pFolder,
+                          HWND hwndFrame,
+                          ULONG ulView,
+                          PLONG plToolBarHeight);
 
     /* ******************************************************************
      *
@@ -174,5 +196,13 @@
                                          USHORT usNotifyCode,
                                          ULONG ulExtra);
 #endif
+
+        VOID stbToolBar1InitPage(PNOTEBOOKPAGE pnbp,
+                                 ULONG flFlags);
+
+        MRESULT stbToolBar1ItemChanged(PNOTEBOOKPAGE pnbp,
+                                       ULONG ulItemID,
+                                       USHORT usNotifyCode,
+                                       ULONG ulExtra);
     #endif
 #endif

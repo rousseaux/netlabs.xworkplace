@@ -89,7 +89,7 @@
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
-#include "xfobj.ih"
+// #include "xfobj.ih"
 #include "xwpvcard.ih"
 
 // XWorkplace implementation headers
@@ -1031,8 +1031,8 @@ SOM_Scope BOOL  SOMLINK xvcM_wpclsCreateDefaultTemplates(M_XWPVCard *somSelf,
     /* M_XWPVCardData *somThis = M_XWPVCardGetData(somSelf); */
     M_XWPVCardMethodDebug("M_XWPVCard","xvcM_wpclsCreateDefaultTemplates");
 
-    return (M_XWPVCard_parent_M_WPDataFile_wpclsCreateDefaultTemplates(somSelf,
-                                                                       Folder));
+    return M_XWPVCard_parent_M_WPDataFile_wpclsCreateDefaultTemplates(somSelf,
+                                                                      Folder);
 }
 
 /*
@@ -1148,8 +1148,8 @@ SOM_Scope ULONG  SOMLINK xvcM_wpclsQueryIconData(M_XWPVCard *somSelf,
         return sizeof(ICONINFO);
     }
 
-    return (M_XWPVCard_parent_M_WPDataFile_wpclsQueryIconData(somSelf,
-                                                              pIconInfo));
+    return M_XWPVCard_parent_M_WPDataFile_wpclsQueryIconData(somSelf,
+                                                             pIconInfo);
 }
 
 

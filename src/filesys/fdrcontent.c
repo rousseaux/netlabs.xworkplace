@@ -156,7 +156,7 @@
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
-#include "xfobj.ih"
+// #include "xfobj.ih"
 #include "xfdisk.ih"
 #include "xwpfsys.ih"
 #include "xfldr.ih"
@@ -314,14 +314,16 @@ ULONG fdrReleaseFolderWriteMutexSem(WPFolder *somSelf)
 }
 
 /*
- *@@ fdrFlushNotifications:
+ * fdrFlushNotifications:
  *      invokes WPFolder::wpFlushNotifications, which
  *      is only published with the Warp 4 toolkit.
  *
- *@@added V0.9.6 (2000-10-25) [umoeller]
- *@@changed V0.9.16 (2001-10-25) [umoeller]: moved this here from wpsh.c, changed prefix
+ *added V0.9.6 (2000-10-25) [umoeller]
+ *changed V0.9.16 (2001-10-25) [umoeller]: moved this here from wpsh.c, changed prefix
+ *removed V1.0.1 (2002-12-08) [umoeller], we have method code now
  */
 
+/*
 ULONG fdrFlushNotifications(WPFolder *somSelf)
 {
     ULONG ulrc = 0;
@@ -336,6 +338,7 @@ ULONG fdrFlushNotifications(WPFolder *somSelf)
 
     return (ulrc);
 }
+*/
 
 /*
  *@@ fdrGetNotifySem:
@@ -346,24 +349,25 @@ ULONG fdrFlushNotifications(WPFolder *somSelf)
  *
  *@@added V0.9.6 (2000-10-25) [umoeller]
  *@@changed V0.9.16 (2001-10-25) [umoeller]: moved this here from wpsh.c, changed prefix
+ *@@changed V1.0.1 (2002-12-08) [umoeller]: now calling method directly, but we still need the wrapper
  */
 
 BOOL fdrGetNotifySem(ULONG ulTimeout)
 {
-    static xfTD_wpclsGetNotifySem _wpclsGetNotifySem = NULL;
+    // static xfTD_wpclsGetNotifySem _wpclsGetNotifySem = NULL;
 
     M_WPFolder *pWPFolder = _WPFolder;
             // THIS RETURNS NULL UNTIL THE FOLDER CLASS IS INITIALIZED
 
     if (pWPFolder)
     {
-        if (    (_wpclsGetNotifySem)
+        /* if (    (_wpclsGetNotifySem)
                 // first call: resolve...
              || (_wpclsGetNotifySem = (xfTD_wpclsGetNotifySem)wpshResolveFor(
                                                 pWPFolder,
                                                 NULL,
                                                 "wpclsGetNotifySem"))
-           )
+           ) */
             return _wpclsGetNotifySem(pWPFolder, ulTimeout);
     }
 
@@ -371,28 +375,30 @@ BOOL fdrGetNotifySem(ULONG ulTimeout)
 }
 
 /*
- *@@ fdrReleaseNotifySem:
+ *@@fdrReleaseNotifySem:
  *
  *@@added V0.9.6 (2000-10-25) [umoeller]
  *@@changed V0.9.16 (2001-10-25) [umoeller]: moved this here from wpsh.c, changed prefix
+ *@@changed V1.0.1 (2002-12-08) [umoeller]: now calling method directly, but we still need the wrapper
  */
 
 VOID fdrReleaseNotifySem(VOID)
 {
-    static xfTD_wpclsReleaseNotifySem _wpclsReleaseNotifySem = NULL;
+    // static xfTD_wpclsReleaseNotifySem _wpclsReleaseNotifySem = NULL;
+            // V1.0.1 (2002-12-08) [umoeller]
 
     M_WPFolder *pWPFolder = _WPFolder;
             // THIS RETURNS NULL UNTIL THE FOLDER CLASS IS INITIALIZED
 
     if (pWPFolder)
     {
-        if (    (_wpclsReleaseNotifySem)
+        /* if (    (_wpclsReleaseNotifySem)
                 // first call: resolve...
              || (_wpclsReleaseNotifySem = (xfTD_wpclsReleaseNotifySem)wpshResolveFor(
                                                 pWPFolder,
                                                 NULL,
                                                 "wpclsReleaseNotifySem"))
-           )
+           ) */
             _wpclsReleaseNotifySem(pWPFolder);
     }
 }

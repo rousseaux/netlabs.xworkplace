@@ -546,14 +546,18 @@
     #define SP_MENUSETTINGS         2       // added V0.9.19 (2002-04-17) [umoeller]
     #define SP_MENUITEMS            3       // added V0.9.19 (2002-04-17) [umoeller]
     #define SP_26CONFIGITEMS        4
-    #define SP_27STATUSBAR          5
+    // #define SP_27STATUSBAR          5    // replaced with SP_STATUSBARS1 V1.0.1 (2002-12-08) [umoeller]
     #define SP_3SNAPTOGRID          6
     #define SP_4ACCELERATORS        7
     // #define SP_5INTERNALS           8    // removed (V0.9.0)
     // #define SP_DTP2                 10   // removed (V0.9.0)
-    #define SP_28STATUSBAR2         11
+    // #define SP_28STATUSBAR2         11   // replaced with SP_STATUSBARS2 V1.0.1 (2002-12-08) [umoeller]
     // #define SP_FILEOPS              12   // removed (V0.9.0)
     #define SP_FILETYPES            13      // new with V0.9.0 (XFldWPS)
+
+    #define SP_STATUSBARS1          15      // V1.0.1 (2002-12-08) [umoeller]
+    #define SP_STATUSBARS2          16      // V1.0.1 (2002-12-08) [umoeller]
+    #define SP_TOOLBARS1            17      // V1.0.1 (2002-12-08) [umoeller]
 
     // 2) in "OS/2 Kernel"
     #define SP_SCHEDULER            20
@@ -870,8 +874,17 @@
         // to paint icons
         // V0.9.20 (2002-07-25) [umoeller]
         sflOwnerDrawIcons,
-                #define OWDRFL_LAZYICONS            0x0001
-                #define OWDRFL_SHADOWOVERLAY        0x0002
+                #define OWDRFL_LAZYICONS                0x0001
+                        // defer icon loading (lazy icons)
+                #define OWDRFL_SHADOWOVERLAY            0x0002
+                        // overlay shadow icons with special shadow icon
+
+                #define OWDRFL_INUSE                0x40000000
+                        // in-use is never stored here, but only ever passed to
+                        // the owner draw proc if the object has a view open
+                #define OWDRFL_MINI                 0x80000000
+                        // mini is never stored here, but only ever passed to
+                        // the owner draw proc if we must paint a mini icon
 
 #ifndef __NEVERREPLACEDRIVENOTREADY__
         sfReplaceDriveNotReady,
@@ -995,6 +1008,18 @@
             // -- STBF_DEREFSHADOWS_SINGLE        0x01
             // -- STBF_DEREFSHADOWS_MULTIPLE      0x02
 #endif
+
+        // tool bar settings V1.0.1 (2002-12-08) [umoeller]
+        sfDefaultToolBarVisibility,
+        sflToolBarStyle,
+                    // a combination of the following tool bar style flags:
+                    // -- TBBS_TEXT
+                    // -- TBBS_MINIICON or TBBS_BIGICON
+                    // -- TBBS_FLAT
+                    // -- TBBS_HILITE
+        sflTBForViews,
+            // XFldWPS: SBV_xxx flags
+        sfTBToolTips,
 
         // startup settings
         sfShowStartupProgress,
@@ -1531,9 +1556,14 @@
                                  USHORT usFlags,
                                  USHORT usKeyCode);
 
+    VOID cmnInsertSeparator(HWND hwndMenu,
+                            SHORT sPosition);
+
     VOID XWPENTRY cmnAddCloseMenuItem(HWND hwndMenu);
 
     #ifdef SOM_WPObject_h
+        ULONG cmnQueryFCF(WPObject *somSelf);
+
         BOOL XWPENTRY cmnRegisterView(WPObject *somSelf,
                                       PUSEITEM pUseItem,
                                       ULONG ulViewID,
@@ -1678,5 +1708,28 @@
                              HINI hini,
                              PCSZ pcszApplication,
                              PCSZ pcszKey);
+
+    /* ******************************************************************
+     *
+     *   WPS debugging
+     *
+     ********************************************************************/
+
+    PCSZ cmnIdentifyView(ULONG ulView);
+
+    #ifdef __DEBUG__
+        PCSZ cmnIdentifyRestoreID(PSZ pszClass,
+                                  ULONG ulKey);
+
+        #ifdef SOM_WPObject_h
+            VOID cmnDumpTaskRec(WPObject *somSelf,
+                                PCSZ pcszMethodName,
+                                PTASKREC pTaskRec);
+        #endif
+    #else
+        #define cmnIdentifyRestoreID(psz, ul) ""
+        #define cmnDumpTaskRec(somSelf, pszMethodName, pTaskRec)
+    #endif
+
 #endif
 

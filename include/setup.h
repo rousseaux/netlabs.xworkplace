@@ -417,12 +417,12 @@
 
     #ifndef DONTDEBUGATALL
         // this debugs the split view populate thread
-            DBGSET_POPULATESPLITVIEW,
-                #define PMPF_POPULATESPLITVIEW(b) \
-                    if (G_aDebugs[DBGSET_POPULATESPLITVIEW]) \
+            DBGSET_SPLITVIEW,
+                #define PMPF_SPLITVIEW(b) \
+                    if (G_aDebugs[DBGSET_SPLITVIEW]) \
                         PmpfF(b)
     #else
-                #define PMPF_POPULATESPLITVIEW(b)
+                #define PMPF_SPLITVIEW(b)
     #endif
 
     #ifndef DONTDEBUGATALL

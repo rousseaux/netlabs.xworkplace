@@ -68,6 +68,7 @@
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
+// #include "xfobj.ih"
 #include "xmmvolume.ih"
 
 // XWorkplace implementation headers
@@ -176,7 +177,7 @@ SOM_Scope BOOL  SOMLINK vol_wpSaveState(XMMVolume *somSelf)
     /* XMMVolumeData *somThis = XMMVolumeGetData(somSelf); */
     XMMVolumeMethodDebug("XMMVolume","vol_wpSaveState");
 
-    return (XMMVolume_parent_WPAbstract_wpSaveState(somSelf));
+    return XMMVolume_parent_WPAbstract_wpSaveState(somSelf);
 }
 
 /*
@@ -192,8 +193,8 @@ SOM_Scope BOOL  SOMLINK vol_wpRestoreState(XMMVolume *somSelf,
     /* XMMVolumeData *somThis = XMMVolumeGetData(somSelf); */
     XMMVolumeMethodDebug("XMMVolume","vol_wpRestoreState");
 
-    return (XMMVolume_parent_WPAbstract_wpRestoreState(somSelf,
-                                                       ulReserved));
+    return XMMVolume_parent_WPAbstract_wpRestoreState(somSelf,
+                                                      ulReserved);
 }
 
 /*
@@ -211,10 +212,10 @@ SOM_Scope ULONG  SOMLINK vol_wpFilterPopupMenu(XMMVolume *somSelf,
     /* XMMVolumeData *somThis = XMMVolumeGetData(somSelf); */
     XMMVolumeMethodDebug("XMMVolume","vol_wpFilterPopupMenu");
 
-    return (XMMVolume_parent_WPAbstract_wpFilterPopupMenu(somSelf,
-                                                          ulFlags,
-                                                          hwndCnr,
-                                                          fMultiSelect));
+    return XMMVolume_parent_WPAbstract_wpFilterPopupMenu(somSelf,
+                                                         ulFlags,
+                                                         hwndCnr,
+                                                         fMultiSelect);
 }
 
 /*
@@ -286,6 +287,7 @@ SOM_Scope BOOL  SOMLINK vol_wpMenuItemSelected(XMMVolume *somSelf,
                       NULLHANDLE,   // hwndCnr; "WPS-internal use only", IBM says
                       ulMenuId,     // ulView; must be the same as menu item
                       0);           // parameter passed to wpOpen
+        _xwpHandleSelfClose(somSelf, hwndFrame, ulMenuId); // V1.0.1 (2002-12-08) [umoeller]
         brc = TRUE;
     }
     else
@@ -307,8 +309,8 @@ SOM_Scope BOOL  SOMLINK vol_wpMenuItemHelpSelected(XMMVolume *somSelf,
     /* XMMVolumeData *somThis = XMMVolumeGetData(somSelf); */
     XMMVolumeMethodDebug("XMMVolume","vol_wpMenuItemHelpSelected");
 
-    return (XMMVolume_parent_WPAbstract_wpMenuItemHelpSelected(somSelf,
-                                                               MenuId));
+    return XMMVolume_parent_WPAbstract_wpMenuItemHelpSelected(somSelf,
+                                                              MenuId);
 }
 
 /*
@@ -364,7 +366,7 @@ SOM_Scope HWND  SOMLINK vol_wpOpen(XMMVolume *somSelf, HWND hwndCnr,
                                                          hwndCnr,
                                                          ulView,
                                                          param);
-    return (hwndNewView);
+    return hwndNewView;
 }
 
 /*
@@ -460,7 +462,7 @@ SOM_Scope PSZ  SOMLINK volM_wpclsQueryTitle(M_XMMVolume *somSelf)
     /* M_XMMVolumeData *somThis = M_XMMVolumeGetData(somSelf); */
     M_XMMVolumeMethodDebug("M_XMMVolume","volM_wpclsQueryTitle");
 
-    return (cmnGetString(ID_XSSI_VOLUME)) ; // pszVolume
+    return cmnGetString(ID_XSSI_VOLUME);
 }
 
 /*
@@ -485,9 +487,9 @@ SOM_Scope BOOL  SOMLINK volM_wpclsQueryDefaultHelp(M_XMMVolume *somSelf,
     /* M_XMMVolumeData *somThis = M_XMMVolumeGetData(somSelf); */
     M_XMMVolumeMethodDebug("M_XMMVolume","volM_wpclsQueryDefaultHelp");
 
-    return (M_XMMVolume_parent_M_WPAbstract_wpclsQueryDefaultHelp(somSelf,
-                                                                  pHelpPanelId,
-                                                                  pszHelpLibrary));
+    return M_XMMVolume_parent_M_WPAbstract_wpclsQueryDefaultHelp(somSelf,
+                                                                 pHelpPanelId,
+                                                                 pszHelpLibrary);
 }
 
 /*
@@ -528,7 +530,7 @@ SOM_Scope ULONG  SOMLINK volM_wpclsQueryIconData(M_XMMVolume *somSelf,
         pIconInfo->hmod    = cmnQueryMainResModuleHandle();
     }
 
-    return (sizeof(ICONINFO));
+    return sizeof(ICONINFO);
 }
 
 

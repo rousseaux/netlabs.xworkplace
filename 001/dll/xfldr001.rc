@@ -491,6 +491,7 @@ BEGIN
 /*    ID_XSSI_5INTERNALS              "XFolder Internals"   removed V0.9.20 (2002-07-25) [umoeller] */
 /*    ID_XSSI_FILEOPS                 "File ~operations"    removed V0.9.20 (2002-07-25) [umoeller] */
 /*    ID_XSSI_INTERNALS               "~Object"             removed V0.9.20 (2002-07-25) [umoeller] */
+    ID_XSSI_TOOLBARS                "~Tool Bars"            /* added V1.0.1 (2002-12-08) [umoeller] */
     ID_XSSI_SORT                    "~Sort"
     /* the following are new with V0.9.0 */
     ID_XSSI_XWPSTATUS               "~&xwp; Status"
@@ -1212,7 +1213,7 @@ BEGIN
     ID_XSDI_KEEPTITLE                   "~Keep original title"
     ID_XSDI_SNAPTOGRID                  "Add ""Sna~p to grid"""
     ID_XSDI_ACCELERATORS                "React to folder h~otkeys"
-    ID_XSDI_ENABLESTATUSBAR             "Display ~status bar"
+    ID_XSDI_ENABLESTATUSBAR             "Di~splay status bar"
     ID_XSDI_SHOWINMENUS                 "Sho~w hotkeys in menus"
     ID_XSDI_HOTKEYS_GROUP               "Folder hotkeys"
 
@@ -1705,6 +1706,14 @@ BEGIN
 
     /* daemon-specific strings V1.0.0 (2002-09-15) [lafaix] */
     ID_DMSI_STICKYTOGGLE                "Stick~y"
+
+    /* tool bars page 1 V1.0.1 (2002-12-08) [umoeller] */
+    ID_XSDI_ENABLETOOLBAR               "Di~splay folder tool bars"
+    ID_XSDI_TBSTYLE_TEXT                "Show te~xt on buttons"
+    ID_XSDI_TBSTYLE_MINI                "Small ~icons"
+    ID_XSDI_TBSTYLE_FLAT                "~Flat buttons"
+    ID_XSDI_TBSTYLE_HILITE              "H~ilight on mouse over"
+    ID_XSDI_TBSTYLE_TOOLTIPS            "Dis~play tooltips"
 END
 
 /* Treesize definitions; added V0.9.0 */

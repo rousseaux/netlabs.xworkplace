@@ -121,24 +121,6 @@
 
     /* ******************************************************************
      *
-     *   WPS debugging
-     *
-     ********************************************************************/
-
-    #ifdef __DEBUG__
-        PSZ wpshIdentifyRestoreID(PSZ pszClass,
-                                  ULONG ulKey);
-
-        VOID wpshDumpTaskRec(WPObject *somSelf,
-                             PCSZ pcszMethodName,
-                             PTASKREC pTaskRec);
-    #else
-        #define wpshIdentifyRestoreID(psz, ul) ""
-        #define wpshDumpTaskRec(somSelf, pszMethodName, pTaskRec)
-    #endif
-
-    /* ******************************************************************
-     *
      *   Additional WPObject method prototypes
      *
      ********************************************************************/
@@ -184,10 +166,11 @@
      *
      ********************************************************************/
 
-    BOOL wpshParentQuerySetup2(WPObject *somSelf,
+    /* BOOL wpshParentQuerySetup2(WPObject *somSelf,
                                SOMClass *pClass,
                                PVOID pstrSetup);
-
+            removed V1.0.1 (2002-12-08) [umoeller]
+            */
 #if 0
 
     /*

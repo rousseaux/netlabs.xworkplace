@@ -598,6 +598,15 @@
 #define ID_XSDI_HOTKEY_HOTKEY_EF        677
 #define ID_XSDI_HOTKEY_GROUP            678
 
+// tool bars page V1.0.1 (2002-12-08) [umoeller]
+#define ID_XSD_SETTOOLBARS1             680
+#define ID_XSDI_ENABLETOOLBAR           681
+#define ID_XSDI_TBSTYLE_TEXT            682
+#define ID_XSDI_TBSTYLE_MINI            683
+#define ID_XSDI_TBSTYLE_FLAT            684
+#define ID_XSDI_TBSTYLE_HILITE          685
+#define ID_XSDI_TBSTYLE_TOOLTIPS        686
+
 /* ******************************************************************
  *
  *   Instance settings notebooks        >= 700
@@ -1770,6 +1779,7 @@
 #define ID_XSSI_27STATUSBAR             5624
 #define ID_XSSI_3SNAPTOGRID             5625
 #define ID_XSSI_4ACCELERATORS           5626
+#define ID_XSSI_TOOLBARS                5627            // added V1.0.1 (2002-12-08) [umoeller]
 // #define ID_XSSI_5INTERNALS              5627         removed V0.9.20 (2002-07-25) [umoeller]
 // #define ID_XSSI_FILEOPS                 5628         removed V0.9.20 (2002-07-25) [umoeller]
 #define ID_XSSI_SORT                    5629
@@ -2623,7 +2633,7 @@
 // are _variable_ menu ID's: XFolder will add the value
 // on the "XFolder Internals" page ("menu item id offset")
 // to them to avoid ID conflicts. This value is stored
-// internally in the GlobalSettings structure.
+// internally with the other global settings.
 #define ID_XFMI_OFS_SEPARATOR           (WPMENUID_USER+1)
 #define ID_XFMI_OFS_PRODINFO            (WPMENUID_USER+2)
 #define ID_XFMI_OFS_REFRESH             (WPMENUID_USER+3)
@@ -2631,7 +2641,8 @@
 #define ID_XFMI_OFS_OPENPARENT          (WPMENUID_USER+5)
 #define ID_XFMI_OFS_OPENPARENTANDCLOSE  (WPMENUID_USER+6)
 #define ID_XFMI_OFS_CLOSE               (WPMENUID_USER+7)
-#define ID_XFM_OFS_SHUTDOWNMENU         (WPMENUID_USER+9)       // new with V0.9.0
+// #define ID_XFM_OFS_SHUTDOWNMENU         (WPMENUID_USER+9)       // new with V0.9.0
+                                        // removed V1.0.1 (2002-12-08) [umoeller]
 // #define ID_XFMI_OFS_XSHUTDOWN           (WPMENUID_USER+10)      // new with V0.9.0
                                                     // removed V0.9.3 (2000-04-26) [umoeller]
 #define ID_XFMI_OFS_OS2_SHUTDOWN        (WPMENUID_USER+10)      // new with V0.9.3 (2000-04-26) [umoeller]
@@ -2697,18 +2708,24 @@
 
 // folder split view V1.0.0 (2002-08-28) [umoeller]
 #define ID_XFMI_OFS_SPLITVIEW           (WPMENUID_USER+55)
-                // ID_XFMI_OFS_SPLITVIEW is used for the root folder whose
-                // tree is displayed on the left
-#define ID_XFMI_OFS_SPLITVIEW_SHOWING   (WPMENUID_USER+56)
-                // ID_XFMI_OFS_SPLITVIEW_SHOWING is used for the folder
-                // that is currently showing on the right; initially
-                // this is the same as the root folder
+                // ID_XFMI_OFS_SPLITVIEW is used for the main frame of
+                // a split view
+#define ID_XFMI_OFS_SPLIT_SUBTREE       (WPMENUID_USER+56)
+                // ID_XFMI_OFS_SPLIT_SUBTREE is used for the subframe
+                // of ID_XFMI_OFS_SPLITVIEW that has the tree on the left
+                // V1.0.1 (2002-12-08) [umoeller]
+#define ID_XFMI_OFS_SPLIT_SUBFILES      (WPMENUID_USER+57)
+                // ID_XFMI_OFS_SPLIT_SUBFILES is used for the subframe
+                // of ID_XFMI_OFS_SPLITVIEW that has the list on the right
+                // V1.0.1 (2002-12-08) [umoeller]
 
 // batch rename V0.9.19 (2002-06-18) [umoeller]
-#define ID_XFMI_OFS_BATCHRENAME         (WPMENUID_USER+57)
+#define ID_XFMI_OFS_BATCHRENAME         (WPMENUID_USER+58)      // raised V1.0.1 (2002-12-08) [umoeller]
 
-#define ID_XFMI_OFS_COPYFILENAME_SHORTNL (WPMENUID_USER+58)      // short name with newlines, added V1.0.0 (2002-11-09) [umoeller]
-#define ID_XFMI_OFS_COPYFILENAME_FULLNL  (WPMENUID_USER+59)      // full name with newlines, added V1.0.0 (2002-11-09) [umoeller]
+#define ID_XFMI_OFS_COPYFILENAME_SHORTNL (WPMENUID_USER+59)     // short name with newlines, added V1.0.0 (2002-11-09) [umoeller]
+                                                                // raised V1.0.1 (2002-12-08) [umoeller]
+#define ID_XFMI_OFS_COPYFILENAME_FULLNL  (WPMENUID_USER+60)     // full name with newlines, added V1.0.0 (2002-11-09) [umoeller]
+                                                                // raised V1.0.1 (2002-12-08) [umoeller]
 
 // this is the value used for variable menu items, i.e.
 // those inserted according to the config folder and by

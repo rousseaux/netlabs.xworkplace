@@ -336,9 +336,7 @@ SOM_Scope BOOL  SOMLINK xfstup_wpModifyPopupMenu(XFldStartup *somSelf,
                                                       hwndCnr,
                                                       iPosition);
 
-    winhInsertMenuSeparator(hwndMenu,
-                            MIT_END,
-                            ulOfs + ID_XFMI_OFS_SEPARATOR);
+    cmnInsertSeparator(hwndMenu, MIT_END);
 
     winhInsertMenuItem(hwndMenu,
                        MIT_END,

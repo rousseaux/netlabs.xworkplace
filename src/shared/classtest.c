@@ -76,6 +76,26 @@
 #include "shared\classtest.h"           // some cheap funcs for WPS class checks
 #include "filesys\object.h"             // XFldObject implementation
 
+/* ******************************************************************
+ *
+ *   Global variables
+ *
+ ********************************************************************/
+
+// WPUrl class object; to preserve compatibility with Warp 3,
+// where this class does not exist, we call the SOM kernel
+// explicitly to get the class object.
+// The initial value of -1 means that we have not queried
+// this class yet. After the first query, this either points
+// to the class object or is NULL if the class does not exist.
+static SOMClass    *G_WPUrl = (SOMClass*)-1;
+
+/* ******************************************************************
+ *
+ *   Code
+ *
+ ********************************************************************/
+
 /*
  *@@ ctsSetClassFlags:
  *      called from XFldObject::wpObjectReady to set
@@ -185,6 +205,33 @@ BOOL ctsIsPointer(WPObject *somSelf)
 BOOL ctsIsCommandFile(WPObject *somSelf)
 {
     return _somIsA(somSelf, _WPCommandFile);
+}
+
+/*
+ *@@ ctsResolveWPUrl:
+ *      returns the WPUrl class object or NULL
+ *      if it can't be found.
+ *
+ *@@added V0.9.14 (2001-07-31) [umoeller]
+ *@@changed V0.9.16 (2001-10-28) [umoeller]: fixed SOM resource leak
+ *@@changed V1.0.1 (2002-12-08) [umoeller]: moved this here from statbars.c
+ */
+
+SOMClass* ctsResolveWPUrl(VOID)
+{
+    if (G_WPUrl == (SOMClass*)-1)
+    {
+        // WPUrl class object not queried yet: do it now
+        somId    somidWPUrl = somIdFromString("WPUrl");
+        G_WPUrl = _somFindClass(SOMClassMgrObject, somidWPUrl, 0, 0);
+        // _WPUrl now either points to the WPUrl class object
+        // or is NULL if the class is not installed (Warp 3!).
+        // In this case, the object will be treated as a regular
+        // file-system object.
+        SOMFree(somidWPUrl);        // V0.9.16 (2001-10-28) [umoeller]
+    }
+
+    return G_WPUrl;
 }
 
 /*

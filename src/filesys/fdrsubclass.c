@@ -170,6 +170,7 @@
 // SOM headers which don't crash with prec. header files
 #include "xfdataf.ih"
 #include "xfldr.ih"
+// #include "xfobj.ih"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -534,7 +535,9 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
         fdrSetOneFrameWndTitle(somSelf, hwndNewFrame);
 
     // add status bar, if allowed:
-    if (    (stbViewHasStatusBar(somSelf, ulView))      // V0.9.19 (2002-04-17) [umoeller]
+    if (    (stbViewHasStatusBar(somSelf,
+                                 hwndNewFrame,  // V1.0.1 (2002-12-08) [umoeller]
+                                 ulView))      // V0.9.19 (2002-04-17) [umoeller]
          && (psfv)
        )
     {
@@ -1073,7 +1076,7 @@ STATIC BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
                     // shift is down: then check whether this is an "open view"
                     // item and allow changing the object's default view this
                     // way V1.0.0 (2002-08-21) [umoeller]
-                    ULONG   ulMenuId2 = usItem - cmnQuerySetting(sulVarMenuOfs);
+                    ULONG   ulMenuId2 = usItem - *G_pulVarMenuOfs;
 
                     if (    (usItem == OPEN_CONTENTS)
                          || (usItem == OPEN_TREE)
@@ -1458,31 +1461,34 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
                         POWNERITEM poi)             // in: mp2 of WM_DRAWITEM
 {
     PMINIRECORDCORE     pmrc;
-    WPObject            *pobjDraw;
+    WPObject            *somSelf;
+    BOOL                fQueueLazy = FALSE,
+                        brc = FALSE;
 
     // get the object from the record that is to be drawn
     if (    (pmrc = (PMINIRECORDCORE)((PCNRDRAWITEMINFO)poi->hItem)->pRecord)
-         && (pobjDraw = OBJECT_FROM_PREC(pmrc))
+         && (somSelf = OBJECT_FROM_PREC(pmrc))
        )
     {
-        HPOINTER            hptrPaint;
-        ULONG               flDraw = DP_NORMAL;
+        // HPOINTER            hptrPaint;
+        // ULONG               flDraw = DP_NORMAL;
                        // #define DP_NORMAL                  0x0000
                        // #define DP_HALFTONED               0x0001
                        // #define DP_INVERTED                0x0002
                        // #define DP_MINI                    0x0004
-        LONG                x,
-                            y,
+        LONG                // x,
+                            // y,
                             cx,
                             cy;
+        POINTL              ptlPaint,
+                            ptl2;
         BOOL                fSwitched = FALSE;
         RECTL               rclBack;
         LONG                lCursorOffset = 2;
                                 // offset to move outwards from "selected" rectangle
                                 // to dotted "cursored" rectangle; negative moves inwards
                                 // (for Details view)
-
-        ULONG               flObject = objQueryFlags(pobjDraw);
+        HPOINTER            hptr2;
 
         /*
          * 1) calculate coordinates:
@@ -1497,21 +1503,23 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
 
         PMPF_ICONREPLACEMENTS(("    cx = %d, cy = %d", cx, cy));
 
-        if (    (flOwnerDraw & 0x80000000)      // force mini-icon (Details view)?
+        // set the OWDRFL_INUSE flag if applicable
+        if (poi->fsAttribute & CRA_INUSE)
+            flOwnerDraw |= OWDRFL_INUSE;
+
+        if (    (flOwnerDraw & OWDRFL_MINI)      // force mini-icon (Details view)?
              || (cx < G_cxIcon)
            )
         {
-            flDraw |= DP_MINI;
-
-            x =   poi->rclItem.xLeft
-                + (cx - G_cxIcon / 2) / 2;
-            y =   poi->rclItem.yBottom
-                + (cy - G_cyIcon / 2) / 2;
+            ptlPaint.x =   poi->rclItem.xLeft
+                         + (cx - G_cxIcon / 2) / 2;
+            ptlPaint.y =   poi->rclItem.yBottom
+                         + (cy - G_cyIcon / 2) / 2;
 
             // in Details view, the "selected" rectangle is the
             // same size as the poi rectangle, but the cursor
             // is painted INSIDE
-            if (flOwnerDraw & 0x80000000)
+            if (flOwnerDraw & OWDRFL_MINI)
             {
                 memcpy(&rclBack, &poi->rclItem, sizeof(RECTL));
 
@@ -1524,15 +1532,17 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
                 rclBack.xRight = poi->rclItem.xRight - 2;
                 rclBack.yTop = poi->rclItem.yTop - 2;
             }
+
+            flOwnerDraw |= OWDRFL_MINI;
         }
         else
         {
-            x =   poi->rclItem.xLeft
-                + (cx - G_cxIcon) / 2
-                + 1;
-            y =   poi->rclItem.yBottom
-                + (cy - G_cyIcon) / 2
-                + 1;
+            ptlPaint.x =   poi->rclItem.xLeft
+                        + (cx - G_cxIcon) / 2
+                        + 1;
+            ptlPaint.y =   poi->rclItem.yBottom
+                         + (cy - G_cyIcon) / 2
+                         + 1;
 
             rclBack.xLeft = poi->rclItem.xLeft + 2;
             rclBack.yBottom = poi->rclItem.yBottom + 2;
@@ -1551,7 +1561,6 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
         if (poi->fsAttribute & (CRA_INUSE | CRA_SELECTED | CRA_CURSORED))
         {
             LONG    lcolHiliteBgnd;
-            POINTL  ptl;
 
             PMPF_ICONREPLACEMENTS(("[%s] CRA_SELECTED", pmrc->pszIcon));
 
@@ -1601,17 +1610,17 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
                 lOldPattern = GpiQueryPattern(poi->hps);
                 GpiSetPattern(poi->hps, PATSYM_DIAG1);
 
-                ptl.x = rclBack.xLeft;
-                ptl.y = rclBack.yBottom;
-                GpiMove(poi->hps, &ptl);
+                ptl2.x = rclBack.xLeft;
+                ptl2.y = rclBack.yBottom;
+                GpiMove(poi->hps, &ptl2);
                 // yes, the following two SHOULD be inclusive, but the cnr
                 // is buggy too and will draw one pixel too much to the top
                 // and right for in-use as well. This can easily be checked
                 // by selecting an icon with in-use emphasis... I think we
                 // should imitate this.
-                ptl.x  = rclBack.xRight;
-                ptl.y  = rclBack.yTop;
-                GpiBox(poi->hps, DRO_FILL, &ptl, 0L, 0L);
+                ptl2.x  = rclBack.xRight;
+                ptl2.y  = rclBack.yTop;
+                GpiBox(poi->hps, DRO_FILL, &ptl2, 0L, 0L);
 
                 GpiSetPattern(poi->hps, lOldPattern); // PATSYM_DEFAULT);
             }
@@ -1623,12 +1632,12 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
                 GpiSetColor(poi->hps, lcolHiliteBgnd);
                 GpiSetLineType(poi->hps, LINETYPE_ALTERNATE);
 
-                ptl.x = rclBack.xLeft - lCursorOffset;
-                ptl.y = rclBack.yBottom - lCursorOffset;
-                GpiMove(poi->hps, &ptl);
-                ptl.x = rclBack.xRight + lCursorOffset - 1;     // inclusive!
-                ptl.y = rclBack.yTop + lCursorOffset - 1;       // inclusive!
-                GpiBox(poi->hps, DRO_OUTLINE, &ptl, 0, 0);
+                ptl2.x = rclBack.xLeft - lCursorOffset;
+                ptl2.y = rclBack.yBottom - lCursorOffset;
+                GpiMove(poi->hps, &ptl2);
+                ptl2.x = rclBack.xRight + lCursorOffset - 1;     // inclusive!
+                ptl2.y = rclBack.yTop + lCursorOffset - 1;       // inclusive!
+                GpiBox(poi->hps, DRO_OUTLINE, &ptl2, 0, 0);
 
                 GpiSetLineType(poi->hps, lOldLineType);
                             // was missing V1.0.0 (2002-08-21) [umoeller]
@@ -1640,114 +1649,70 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
          *
          */
 
-        // check if we have an icon already or if this
-        // is the first call for this object... in that
-        // case hptrIcon might be NULLHANDLE still
-        if (!(hptrPaint = pmrc->hptrIcon))
-        {
-            PMPF_ICONREPLACEMENTS(("    CMA_ICON, pmrc->hptrIcon is NULLHANDLE"));
-
-            // this object does not have an icon yet:
-            // lazy icons enabled?
-            if (    (flOwnerDraw & OWDRFL_LAZYICONS)
-                 && (flObject & (OBJFL_WPDATAFILE | OBJFL_WPPROGRAM))
-               )
-            {
-                // lazy icon drawing:
-                // use default class icon for now and
-                // queue object for lazy icon processing
-                icomQueueLazyIcon(pobjDraw);
-                hptrPaint = _wpclsQueryIcon(_somGetClass(pobjDraw));
-
-                // we have tested for datafile and program, so
-                // this object can't be a shadow, so skip the
-                // check below
-                flOwnerDraw &= ~OWDRFL_SHADOWOVERLAY;
-            }
-            else
-            {
-                // no data file, or lazy icons disabled:
-                // get the icon synchronously
-                hptrPaint = _wpQueryIcon(pobjDraw);
-                        // this should set MINIRECORDCORE.hptrIcon
-            }
-        }
-        else
-        {
-            // pmrc->hptrIcon was set: still check if this is
-            // a folder (cannot happen presently because they
-            // are not owner-drawn) or a shadow to a folder;
-            // in that case, we need to draw an animation icon
-            // if the folder has an open view... pmrc->hptrIcon
-            // ALWAYS has the closed icon for folders!
-            WPObject *pobjTest = pobjDraw;
-
-            if (    (    (flObject & OBJFL_WPFOLDER)
-                      || (    (pobjTest = objResolveIfShadow(pobjDraw))
-                           && (objIsAFolder(pobjTest))
-                         )
-                    )
-                 // && (_wpFindViewItem(pobjTest, VIEW_ANY, NULL))
-                 // no, no, no! _wpFindViewItem requests the object mutex
-                 // if the current thread doesn't have it, which can deadlock
-                 // the system if a shadow is just being created!
-                 // so use CRA_INUSE instead, which should be correct
-                 // V1.0.0 (2002-09-17) [umoeller]
-                 && (poi->fsAttribute & CRA_INUSE)
-               )
-                hptrPaint = _wpQueryIconN(pobjTest, 1);
-            // else: leave hptrPaint with pmrc->hptrIcon
-        }
-
         // the template icons are always drawn via ownerdraw,
         // so we have to do that too
-        if (!(_wpQueryStyle(pobjDraw) & OBJSTYLE_TEMPLATE))
-            WinDrawPointer(poi->hps,
-                           x,
-                           y,
-                           hptrPaint,
-                           flDraw);
+        if (!(_wpQueryStyle(somSelf) & OBJSTYLE_TEMPLATE))
+            fQueueLazy = _xwpOwnerDrawIcon(somSelf,
+                                           pmrc,
+                                           poi->hps,
+                                           flOwnerDraw,
+                                           &ptlPaint);
         else
         {
             // template:
-            HPOINTER hptrTemplate;
             if (!cmnGetStandardIcon(STDICON_TEMPLATE,
-                                    &hptrTemplate,
+                                    &hptr2,
                                     NULL,
                                     NULL))
             {
                 WinDrawPointer(poi->hps,
-                               x,
-                               y,
-                               hptrTemplate,
-                               flDraw);
+                               ptlPaint.x,
+                               ptlPaint.y,
+                               hptr2,
+                               (flOwnerDraw & OWDRFL_MINI)
+                                   ? DP_MINI
+                                   : DP_NORMAL);
 
                 // we can't do a mini-mini icon over a
                 // mini template icon, so paint the real
                 // icon only if we weren't mini yet
-                if (!(flDraw & DP_MINI))
+                if (!(flOwnerDraw & OWDRFL_MINI))
+                {
+                    ptl2.x = ptlPaint.x + G_cxIcon / 8;
+                    ptl2.y = ptlPaint.y + G_cyIcon * 5 / 16;
+
+                    fQueueLazy = _xwpOwnerDrawIcon(somSelf,
+                                                   pmrc,
+                                                   poi->hps,
+                                                   flOwnerDraw | OWDRFL_MINI,
+                                                   &ptl2);
+                    /*
                     WinDrawPointer(poi->hps,
                                    x + G_cxIcon / 8,
                                    y + G_cyIcon * 5 / 16,
                                    hptrPaint,
                                    flDraw | DP_MINI);
+                    */
+                }
             }
         }
 
         // overpaint with shadow overlay icon, if allowed
         if (    (flOwnerDraw & OWDRFL_SHADOWOVERLAY)
-             && (flObject & OBJFL_WPSHADOW)
+             && (objQueryFlags(somSelf) & OBJFL_WPSHADOW)
              && (!cmnGetStandardIcon(STDICON_SHADOWOVERLAY,
-                                     &hptrPaint,
+                                     &hptr2,
                                      NULL,
                                      NULL))
            )
         {
             WinDrawPointer(poi->hps,
-                           x,
-                           y,
-                           hptrPaint,
-                           flDraw);
+                           ptlPaint.x,
+                           ptlPaint.y,
+                           hptr2,
+                           (flOwnerDraw & OWDRFL_MINI)
+                                   ? DP_MINI
+                                   : DP_NORMAL);
         }
 
         if (fSwitched)
@@ -1757,11 +1722,13 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
                                    0,
                                    0,
                                    0);
-
-        return TRUE;
+        brc = TRUE;
     }
 
-    return FALSE;
+    if (fQueueLazy)
+        icomQueueLazyIcon(somSelf);
+
+    return brc;
 }
 
 /*
@@ -2108,7 +2075,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
 
             case WM_MEASUREITEM:
                 if (   (SHORT)mp1
-                     > cmnQuerySetting(sulVarMenuOfs) + ID_XFMI_OFS_VARIABLE
+                     > *G_pulVarMenuOfs + ID_XFMI_OFS_VARIABLE
                    )
                 {
                     // call the measure-item func in fdrmenus.c
@@ -2163,7 +2130,7 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                         fCallDefault = TRUE;
                 }
                 else if (   (SHORT)mp1
-                          > cmnQuerySetting(sulVarMenuOfs) + ID_XFMI_OFS_VARIABLE
+                          > *G_pulVarMenuOfs + ID_XFMI_OFS_VARIABLE
                         )
                 {
                     // variable menu item: this must be a folder-content

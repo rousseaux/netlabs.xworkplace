@@ -99,7 +99,7 @@
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
-#include "xfobj.ih"
+// #include "xfobj.ih"
 #include "xwpstring.ih"
 
 // XWorkplace implementation headers
@@ -720,6 +720,7 @@ SOM_Scope BOOL  SOMLINK xwstr_xwpInvokeString(XWPString *somSelf,
  *@@added V0.9.12 (2001-05-20) [umoeller]
  *@@changed V0.9.16 (2001-10-11) [umoeller]: fixed memory leak
  *@@changed V0.9.16 (2001-10-11) [umoeller]: adjusted to new implementation
+ *@@changed V1.0.1 (2002-12-08) [umoeller]: now calling parent methods directly
  */
 
 SOM_Scope BOOL  SOMLINK xwstr_xwpQuerySetup2(XWPString *somSelf,
@@ -799,9 +800,7 @@ SOM_Scope BOOL  SOMLINK xwstr_xwpQuerySetup2(XWPString *somSelf,
                         somThis,
                         pstrSetup);
 
-    // manually resolve parent method
-    return wpshParentQuerySetup2(somSelf,
-                                 _somGetParent(_XWPString),
+    return parent_xwpQuerySetup2(somSelf,
                                  pstrSetup);
 }
 

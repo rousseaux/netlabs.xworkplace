@@ -313,7 +313,7 @@
 STATIC VOID CheckDefaultSortItem(HWND hwndSortMenu,
                                  LONG lSort)
 {
-    ULONG ulVarMenuOffset = cmnQuerySetting(sulVarMenuOfs);
+    // ULONG ulVarMenuOffset = cmnQuerySetting(sulVarMenuOfs); V1.0.1 (2002-12-08) [umoeller]
 
     // first run thru the existing menu as composed
     // by the WPS and uncheck the default item.
@@ -336,7 +336,7 @@ STATIC VOID CheckDefaultSortItem(HWND hwndSortMenu,
         // we have "always sort" and "folders first", which
         // we don't want to unset
         // V0.9.13 (2001-06-19) [umoeller]
-        if (sidThis == ulVarMenuOffset + ID_XFMI_OFS_SEPARATOR)
+        if (sidThis == *G_pulVarMenuOfs + ID_XFMI_OFS_SEPARATOR)
             break;
 
         winhSetMenuItemChecked(hwndSortMenu,
@@ -361,11 +361,11 @@ STATIC VOID CheckDefaultSortItem(HWND hwndSortMenu,
         break;
 
         case -3:
-            sDefID = ulVarMenuOffset + ID_XFMI_OFS_SORTBYCLASS;
+            sDefID = *G_pulVarMenuOfs + ID_XFMI_OFS_SORTBYCLASS;
         break;
 
         case -4:
-            sDefID = ulVarMenuOffset + ID_XFMI_OFS_SORTBYEXT;
+            sDefID = *G_pulVarMenuOfs + ID_XFMI_OFS_SORTBYEXT;
         break;
 
         default:
@@ -409,7 +409,7 @@ BOOL fdrModifySortMenu(WPFolder *somSelf,
     if (cmnQuerySetting(sfExtendedSorting))
 #endif
     {
-        ULONG ulVarMenuOffset = cmnQuerySetting(sulVarMenuOfs);
+        // ULONG ulVarMenuOffset = cmnQuerySetting(sulVarMenuOfs); V1.0.1 (2002-12-08) [umoeller]
         MENUITEM mi;
 
         if (winhQueryMenuItem(hwndMenuWithSortSubmenu,
@@ -437,7 +437,7 @@ BOOL fdrModifySortMenu(WPFolder *somSelf,
                 // "sort by class"
                 winhInsertMenuItem(hwndSortMenu,
                                    mi.iPosition + 1,            // behind "sort by type"
-                                   ulVarMenuOffset + ID_XFMI_OFS_SORTBYCLASS,
+                                   *G_pulVarMenuOfs + ID_XFMI_OFS_SORTBYCLASS,
                                    cmnGetString(ID_XSSI_SV_CLASS), // pszSortByClass
                                    MIS_TEXT,
                                    0);
@@ -445,7 +445,7 @@ BOOL fdrModifySortMenu(WPFolder *somSelf,
                 // "sort by extension"
                 winhInsertMenuItem(hwndSortMenu,
                                    mi.iPosition + 2,
-                                   ulVarMenuOffset + ID_XFMI_OFS_SORTBYEXT,
+                                   *G_pulVarMenuOfs + ID_XFMI_OFS_SORTBYEXT,
                                    cmnGetString(ID_XSSI_SV_EXT), // pszSortByExt
                                    MIS_TEXT,
                                    0);
@@ -459,27 +459,26 @@ BOOL fdrModifySortMenu(WPFolder *somSelf,
                                         : _lDefSortCrit);
 
                 // add "folders first"
-                winhInsertMenuSeparator(hwndSortMenu,
-                                        MIT_END,
-                                        ulVarMenuOffset + ID_XFMI_OFS_SEPARATOR);
+                cmnInsertSeparator(hwndSortMenu, MIT_END);
+
                 f = (_lFoldersFirst == SET_DEFAULT)
                         ? cmnQuerySetting(sfFoldersFirst)
                         : _lFoldersFirst;
                 winhInsertMenuItem(hwndSortMenu,
                                    MIT_END,
-                                   ulVarMenuOffset + ID_XFMI_OFS_SORTFOLDERSFIRST,
+                                   *G_pulVarMenuOfs + ID_XFMI_OFS_SORTFOLDERSFIRST,
                                    cmnGetString(ID_XSSI_SV_FOLDERSFIRST),
                                    MIS_TEXT,
                                    (f) ? MIA_CHECKED : 0);
 
                 // add "always sort"
-                winhInsertMenuSeparator(hwndSortMenu, MIT_END,
-                                        ulVarMenuOffset + ID_XFMI_OFS_SEPARATOR);
+                cmnInsertSeparator(hwndSortMenu, MIT_END);
+
                 f = (_lAlwaysSort == SET_DEFAULT)
                         ? cmnQuerySetting(sfAlwaysSort)
                         : _lAlwaysSort;
                 winhInsertMenuItem(hwndSortMenu, MIT_END,
-                                   ulVarMenuOffset + ID_XFMI_OFS_ALWAYSSORT,
+                                   *G_pulVarMenuOfs + ID_XFMI_OFS_ALWAYSSORT,
                                    cmnGetString(ID_XSSI_SV_ALWAYSSORT), // pszAlwaysSort
                                    MIS_TEXT,
                                    (f) ? MIA_CHECKED : 0);
@@ -534,7 +533,7 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
     if (cmnQuerySetting(sfExtendedSorting))
 #endif
     {
-        LONG            lMenuId2 = (LONG)ulMenuId - (LONG)cmnQuerySetting(sulVarMenuOfs);
+        LONG            lMenuId2 = (LONG)ulMenuId - (LONG)*G_pulVarMenuOfs;
         LONG            lAlwaysSort,
                         lFoldersFirst,
                         lDefaultSort;

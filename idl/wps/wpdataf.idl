@@ -9,6 +9,7 @@
 #ifndef wpdataf_idl
 #define wpdataf_idl
 #include "wpfsys.idl"
+// #include "xwpfsys.idl"          // datafile is really derived from XWPFileSystem
 #include <somcls.idl>
 interface M_WPDataFile;
 interface WPDataFile : WPFileSystem

@@ -110,7 +110,7 @@
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
-#include "xfobj.ih"                     // XFldObject
+// #include "xfobj.ih"                     // XFldObject
 #include "xwpstring.ih"                 // XWPString
 #include "xfdisk.ih"                    // XFldDisk
 #include "xfldr.ih"                     // XFolder
@@ -404,7 +404,7 @@ BOOL fcmdSelectingFsysMenuItem(WPObject *somSelf,
                                   // out: if TRUE is returned (ie. the menu item was handled
                                   // here), this determines whether the menu should be dismissed
 {
-    ULONG           ulMenuId2 = usItem - cmnQuerySetting(sulVarMenuOfs);
+    ULONG           ulMenuId2 = usItem - *G_pulVarMenuOfs;
     BOOL            fHandled = TRUE;
     WPObject        *pObject = somSelf;
     WPFileSystem    *pFileSystem = objResolveIfShadow(pObject);
@@ -550,8 +550,7 @@ BOOL fcmdSelectingFdrMenuItem(WPFolder *somSelf,
                               ULONG ulSelection,
                               BOOL *pfDismiss)
 {
-    ULONG       ulVarMenuOffset = cmnQuerySetting(sulVarMenuOfs);
-    ULONG       ulMenuId2 = usItem - ulVarMenuOffset;
+    ULONG       ulMenuId2 = usItem - *G_pulVarMenuOfs;
     BOOL        fHandled;
     HWND        hwndFrame = WinQueryWindow(hwndCnr, QW_PARENT);
 
@@ -633,13 +632,13 @@ BOOL fcmdSelectingFdrMenuItem(WPFolder *somSelf,
                                OPEN_CONTENTS);
 
                 winhSetMenuItemChecked(hwndMenu,
-                                       ulVarMenuOffset + ID_XFMI_OFS_FLOWED,
+                                       *G_pulVarMenuOfs + ID_XFMI_OFS_FLOWED,
                                        (ulMenuId2 == ID_XFMI_OFS_FLOWED));
                 winhSetMenuItemChecked(hwndMenu,
-                                       ulVarMenuOffset + ID_XFMI_OFS_NONFLOWED,
+                                       *G_pulVarMenuOfs + ID_XFMI_OFS_NONFLOWED,
                                        (ulMenuId2 == ID_XFMI_OFS_NONFLOWED));
                 winhSetMenuItemChecked(hwndMenu,
-                                       ulVarMenuOffset + ID_XFMI_OFS_NOGRID,
+                                       *G_pulVarMenuOfs + ID_XFMI_OFS_NOGRID,
                                        (ulMenuId2 == ID_XFMI_OFS_NOGRID));
 
                 // do not dismiss menu
@@ -853,8 +852,7 @@ BOOL fcmdProcessViewCommand(WPFolder *somSelf,
         default:
         {
             // check our own items
-            ULONG       ulVarMenuOffset = cmnQuerySetting(sulVarMenuOfs);
-            ULONG       ulMenuId2 = usCommand - ulVarMenuOffset;
+            ULONG       ulMenuId2 = usCommand - *G_pulVarMenuOfs;
 
             switch (ulMenuId2)
             {
@@ -1142,7 +1140,7 @@ STATIC BOOL CheckForVariableMenuItems(WPFolder *somSelf,  // in: folder or root 
     PVARMENULISTITEM    pItem;
     WPObject            *pObject = NULL;
 
-    ULONG ulFirstVarMenuId = cmnQuerySetting(sulVarMenuOfs) + ID_XFMI_OFS_VARIABLE;
+    ULONG ulFirstVarMenuId = *G_pulVarMenuOfs + ID_XFMI_OFS_VARIABLE;
 
     if (     (ulMenuId >= ulFirstVarMenuId)
           && (ulMenuId <  ulFirstVarMenuId + G_ulVarItemCount)
@@ -1248,7 +1246,7 @@ BOOL fcmdMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
 
     TRY_LOUD(excpt1)
     {
-        ULONG   ulMenuId2 = ulMenuId - cmnQuerySetting(sulVarMenuOfs);
+        ULONG   ulMenuId2 = ulMenuId - *G_pulVarMenuOfs;
 
         BOOL        fDummy;
         WPFolder    *pFolder = NULL;
@@ -1280,7 +1278,10 @@ BOOL fcmdMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
             {
                 WPFileSystem *pDefaultDoc;
                 if (pDefaultDoc = _xwpQueryDefaultDocument(somSelf))
+                {
                     _wpViewObject(pDefaultDoc, NULLHANDLE, OPEN_DEFAULT, 0);
+                    _xwpHandleSelfClose(pDefaultDoc, hwndFrame, ulMenuId);
+                }
             }
             break;
 
@@ -1470,11 +1471,14 @@ BOOL fcmdMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
              */
 
             case ID_XFMI_OFS_SPLITVIEW:
+            {
                 _wpViewObject(somSelf,
                               WinWindowFromID(hwndFrame, FID_CLIENT),
                                             // hwndCnr
                               ulMenuId,     // varmenuofs + ID_XFMI_OFS_SPLITVIEW
                               NULLHANDLE);
+                _xwpHandleSelfClose(somSelf, hwndFrame, ulMenuId); // V1.0.1 (2002-12-08) [umoeller]
+            }
             break;
 
             /*
@@ -1535,8 +1539,7 @@ BOOL fcmdMenuItemHelpSelected(WPObject *somSelf,
 {
     ULONG   ulFirstVarMenuId;
     ULONG   ulPanel = 0;
-    ULONG   ulVarMenuOffset = cmnQuerySetting(sulVarMenuOfs);
-    ULONG   ulMenuId2 = MenuId - ulVarMenuOffset;
+    ULONG   ulMenuId2 = MenuId - *G_pulVarMenuOfs;
 
     // first check for variable menu item IDs
     switch(ulMenuId2)
@@ -1627,7 +1630,7 @@ BOOL fcmdMenuItemHelpSelected(WPObject *somSelf,
                 default:
                     // if F1 was pressed over one of the variable menu items,
                     // open a help panel with generic help on XFolder
-                    ulFirstVarMenuId = (ulVarMenuOffset + ID_XFMI_OFS_VARIABLE);
+                    ulFirstVarMenuId = (*G_pulVarMenuOfs + ID_XFMI_OFS_VARIABLE);
                     if ( (MenuId >= ulFirstVarMenuId)
                             && (MenuId < ulFirstVarMenuId + G_ulVarItemCount)
                          )

@@ -92,7 +92,7 @@
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
-#include "xfobj.ih"
+// #include "xfobj.ih"
 #include "xfdataf.ih"
 #include "xwppgmf.ih"
 
@@ -377,6 +377,7 @@ SOM_Scope ULONG  SOMLINK xpgf_xwpQueryProgType(XWPProgramFile *somSelf,
  *
  *@@added V0.9.4 (2000-08-02) [umoeller]
  *@@changed V0.9.16 (2001-10-11) [umoeller]: adjusted to new implementation
+ *@@changed V1.0.1 (2002-12-08) [umoeller]: now calling parent methods directly
  */
 
 SOM_Scope BOOL  SOMLINK xpgf_xwpQuerySetup2(XWPProgramFile *somSelf,
@@ -387,12 +388,8 @@ SOM_Scope BOOL  SOMLINK xpgf_xwpQuerySetup2(XWPProgramFile *somSelf,
 
     // call implementation
     if (progQuerySetup(somSelf, pstrSetup))
-    {
-        // manually resolve parent method
-        return wpshParentQuerySetup2(somSelf,
-                                     _somGetParent(_XWPProgramFile),
+        return parent_xwpQuerySetup2(somSelf,
                                      pstrSetup);
-    }
 
     return FALSE;
 }

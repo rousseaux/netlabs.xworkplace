@@ -96,7 +96,7 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xcenter.ih"
-#include "xfobj.ih"                     // XFldObject
+// #include "xfobj.ih"                     // XFldObject
 
 // XWorkplace implementation headers
 #include "bldlevel.h"                   // XWorkplace build level definitions
@@ -5590,9 +5590,7 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
             {
                 // context menu for open XCenter client:
 
-                winhInsertMenuSeparator(hwndMenu,
-                                        MIT_END,
-                                        *G_pulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+                cmnInsertSeparator(hwndMenu, MIT_END);
 
                 // add the "Add widget" submenu with all the available widget classes
                 ctrpAddWidgetsMenu(somSelf,

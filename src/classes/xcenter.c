@@ -993,6 +993,7 @@ SOM_Scope BOOL  SOMLINK xctr_xwpSetPriority(XCenter *somSelf,
  *
  *@@added V0.9.7 (2000-12-09) [umoeller]
  *@@changed V0.9.16 (2001-10-11) [umoeller]: adjusted to new implementation
+ *@@changed V1.0.1 (2002-12-08) [umoeller]: now calling parent methods directly
  */
 
 SOM_Scope BOOL  SOMLINK xctr_xwpQuerySetup2(XCenter *somSelf,
@@ -1002,7 +1003,11 @@ SOM_Scope BOOL  SOMLINK xctr_xwpQuerySetup2(XCenter *somSelf,
     XCenterMethodDebug("XCenter","xctr_xwpQuerySetup2");
 
     // call implementation
-    return ctrpQuerySetup(somSelf, pstrSetup);
+    if (ctrpQuerySetup(somSelf, pstrSetup))
+        return parent_xwpQuerySetup2(somSelf,
+                                     pstrSetup);
+
+    return FALSE;
 }
 
 /*

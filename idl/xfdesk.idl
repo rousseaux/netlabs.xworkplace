@@ -52,7 +52,7 @@ interface XFldDesktop : WPDesktop
     ULONG xwpInsertXFldDesktopArchivesPage(in HWND hwndNotebook);
     ULONG xwpInsertXFldDesktopShutdownPage(in HWND hwndNotebook);
 
-    BOOL xwpQuerySetup2(in PVOID pstrSetup);
+    //# BOOL xwpQuerySetup2(in PVOID pstrSetup);    V1.0.1 (2002-12-08) [umoeller]
 
 #ifdef __SOMIDL__
   implementation {
@@ -60,8 +60,8 @@ interface XFldDesktop : WPDesktop
     releaseorder:
             xwpInsertXFldDesktopStartupPage,
             xwpInsertXFldDesktopArchivesPage,
-            xwpInsertXFldDesktopShutdownPage,
-            xwpQuerySetup2;
+            xwpInsertXFldDesktopShutdownPage;
+            //# xwpQuerySetup2;     V1.0.1 (2002-12-08) [umoeller]
 
     /*
      * Class Modifiers:
@@ -93,6 +93,7 @@ interface XFldDesktop : WPDesktop
     //# 1)  init/uninit methods
 
     wpInitData: override;
+
     wpSetup: override;
     wpSetupOnce: override;
 
@@ -101,6 +102,8 @@ interface XFldDesktop : WPDesktop
     wpQueryDefaultHelp: override;
 
     wpSetDefaultView: override;
+
+    xwpQuerySetup2: override;            //# V1.0.1 (2002-12-08) [umoeller]
 
     //# 3)  icon methods
 

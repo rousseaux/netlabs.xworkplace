@@ -11,6 +11,7 @@
  *@@include #include <wpfolder.h>
  *@@include #include "filesys\folder.h"
  *@@include #include "filesys\fdrsubclass.h"
+ *@@include #include "filesys\fdrviews.h"
  *@@include #include "filesys\fdrsplit.h"
  */
 
@@ -52,7 +53,7 @@
     #define FM_POPULATED_FILLFILES  (WM_USER + 4)
     #define FM_UPDATEPOINTER        (WM_USER + 5)
     #define FM_DELETINGFDR          (WM_USER + 6)
-    #define FM_SETCNRLAYOUT         (WM_USER + 7)
+    #define FM_FDRBACKGROUNDCHANGED (WM_USER + 7)       // msg name changed V1.0.1 (2002-11-30) [umoeller]
 
     #define FM2_POPULATE            (WM_USER + 10)
     #define FM2_ADDFIRSTCHILD_BEGIN (WM_USER + 11)
@@ -280,13 +281,20 @@
 
     #ifdef THREADS_HEADER_INCLUDED
     #ifdef FDRSUBCLASS_HEADER_INCLUDED
+    #ifdef FDRVIEWS_HEADER_INCLUDED
 
         /*
-         *@@ FDRSPLITVIEW:
+         *@@ SPLITCONTROLLER:
+         *      data for the split view controller (the client
+         *      of a split view frame, which controls the subframes).
          *
+         *      This is shared between a regular folder split
+         *      view and a file dialog frame.
+         *
+         *@@changed V1.0.1 (2002-11-30) [umoeller]: renamed struct
          */
 
-        typedef struct _FDRSPLITVIEW
+        typedef struct _SPLITCONTROLLER
         {
             USHORT          cbStruct;
 
@@ -305,11 +313,13 @@
             HWND            hwndMainFrame,
                             hwndMainControl;    // child of hwndMainFrame
 
-            HWND            hwndSplitWindow,    // child of hwndMainControl
-                            hwndTreeFrame,      // child of hwndSplitWindow
-                            hwndTreeCnr,        // child of hwndTreeFrame
-                            hwndFilesFrame,     // child of hwndSplitWindow
-                            hwndFilesCnr;       // child of hwndFilesFrame
+            HWND            hwndSplitWindow;    // child of hwndMainControl
+
+            HWND            hwndTreeFrame;      // child of hwndSplitWindow
+            CNRVIEW         cvTree;             // hwndCnr is child of hwndTreeFrame
+
+            HWND            hwndFilesFrame;     // child of hwndSplitWindow
+            CNRVIEW         cvFiles;            // hwndCnr is child of hwndFilesFrame
 
             HWND            hwndStatusBar,      // if present, or NULLHANDLE
                             hwndToolBar;        // if present, or NULLHANDLE
@@ -387,7 +397,7 @@
             volatile TID    tidSplitPopulate;
             HWND            hwndSplitPopulate;
 
-        } FDRSPLITVIEW, *PFDRSPLITVIEW;
+        } SPLITCONTROLLER, *PSPLITCONTROLLER;
 
         #define INSERT_UNLOCKFILTERED       0x10000000
 
@@ -398,35 +408,28 @@
                                HWND hwndAddFirstChild,
                                PCSZ pcszFileMask);
 
-        HPOINTER fdrSplitQueryPointer(PFDRSPLITVIEW psv);
+        HPOINTER fdrSplitQueryPointer(PSPLITCONTROLLER pctl);
 
-        VOID fdrSplitPopulate(PFDRSPLITVIEW psv,
+        VOID fdrSplitPopulate(PSPLITCONTROLLER pctl,
                               PMINIRECORDCORE prec,
                               ULONG fl);
 
-        VOID fdrPostFillFolder(PFDRSPLITVIEW psv,
+        VOID fdrPostFillFolder(PSPLITCONTROLLER pctl,
                                PMINIRECORDCORE prec,
                                ULONG fl);
 
-        HWND fdrCreateFrameWithCnr(ULONG ulFrameID,
-                                   HWND hwndParentOwner,
-                                   ULONG flCnrStyle,
-                                   HWND *phwndClient);
-
-        MPARAM fdrSetupSplitView(HWND hwnd,
-                                 PFDRSPLITVIEW psv);
-
         BOOL fdrSplitCreateFrame(WPObject *pRootObject,
                                  WPFolder *pRootsFolder,
-                                 PFDRSPLITVIEW psv,
+                                 PSPLITCONTROLLER pctl,
                                  ULONG flFrame,
                                  PCSZ pcszTitle,
                                  ULONG flSplit,
                                  PCSZ pcszFileMask,
                                  LONG lSplitBarPos);
 
-        VOID fdrSplitDestroyFrame(PFDRSPLITVIEW psv);
+        VOID fdrSplitDestroyFrame(PSPLITCONTROLLER pctl);
 
+    #endif
     #endif
     #endif
 

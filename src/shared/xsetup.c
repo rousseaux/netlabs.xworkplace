@@ -92,6 +92,7 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "xwpapi.h"                     // public XWorkplace definitions
 
+#include "shared\cnrsort.h"             // container sort comparison functions
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\errors.h"              // private XWorkplace error codes
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
@@ -3861,7 +3862,7 @@ static const struct
         DEBUGSETTING(DBGSET_MENUS),
         DEBUGSETTING(DBGSET_TURBOFOLDERS),
         DEBUGSETTING(DBGSET_CNRBITMAPS),
-        DEBUGSETTING(DBGSET_POPULATESPLITVIEW),
+        DEBUGSETTING(DBGSET_SPLITVIEW),
         DEBUGSETTING(DBGSET_DISK),
         DEBUGSETTING(DBGSET_TITLECLASH),
         DEBUGSETTING(DBGSET_ASSOCS),
@@ -3882,6 +3883,7 @@ static MPARAM G_ampDebugPage[] =
  *@@ setDebugInitPage:
  *
  *@@added V1.0.0 (2002-09-02) [umoeller]
+ *@@changed V1.0.1 (2002-11-30) [umoeller]: now sorting alphabetically
  */
 
 VOID setDebugInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
@@ -3915,6 +3917,12 @@ VOID setDebugInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         {
             cRecords = ARRAYITEMCOUNT(G_aDebugDescrs);
 
+            // sort alphabetically V1.0.1 (2002-11-30) [umoeller]
+            BEGIN_CNRINFO()
+            {
+                cnrhSetSortFunc(fnCompareName);
+            } END_CNRINFO(hwndFeaturesCnr);
+
             pFeatureRecordsList
                 = (PCHECKBOXRECORDCORE)cnrhAllocRecords(hwndFeaturesCnr,
                                                         sizeof(CHECKBOXRECORDCORE),
@@ -3931,7 +3939,9 @@ VOID setDebugInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                 preccThis->ulStyle = WS_VISIBLE | BS_AUTOCHECKBOX;
                 preccThis->ulItemID = 1000 + i;
                 preccThis->usCheckState = G_aDebugs[i];
-                preccThis->recc.pszTree = strdup(G_aDebugDescrs[ul].pcsz);
+                preccThis->recc.pszIcon     // or sort won't work V1.0.1 (2002-12-08) [umoeller]
+                = preccThis->recc.pszTree
+                = strdup(G_aDebugDescrs[ul].pcsz);
 
                 cnrhInsertRecords(hwndFeaturesCnr,
                                   NULL,
@@ -3945,6 +3955,7 @@ VOID setDebugInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                 preccThis = (PCHECKBOXRECORDCORE)preccThis->recc.preccNextRecord;
                 ++ul;
             }
+
         } // end if (ctlMakeCheckboxContainer(inbp.hwndPage,
     }
 

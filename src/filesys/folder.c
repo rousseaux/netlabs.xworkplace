@@ -100,7 +100,7 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xfldr.ih"
-#include "xfobj.ih"
+// #include "xfobj.ih"
 #include "xfdisk.ih"
 #include "xfdataf.ih"
 
@@ -191,9 +191,7 @@ BOOL fdrSetup(WPFolder *somSelf,
         if (!stricmp(szValue, "SPLITVIEW"))
             krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
                                     (MPARAM)somSelf,
-                                    (MPARAM)(   cmnQuerySetting(sulVarMenuOfs)
-                                              + ID_XFMI_OFS_SPLITVIEW
-                                            )
+                                    (MPARAM)(   *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW )
                                    );
     }
 

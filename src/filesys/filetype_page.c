@@ -111,7 +111,7 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xfwps.ih"
-#include "xfobj.ih"
+// #include "xfobj.ih"
 #include "xfdataf.ih"
 
 // XWorkplace implementation headers
@@ -226,7 +226,7 @@ STATIC PFILETYPERECORD AddFileType2Cnr(HWND hwndCnr,           // in: cnr to ins
     pliAssoc->precc = preccNew;
     pliAssoc->fProcessed = TRUE;
 
-    return (preccNew);
+    return preccNew;
 }
 
 /*
@@ -319,7 +319,7 @@ STATIC PFILETYPERECORD AddFileTypeAndAllParents(HWND hwndCnr,          // in: cn
     // return the record core which we created;
     // if this is a recursive call, this will
     // be used as a parent by the parent call
-    return (pftreccReturn);
+    return pftreccReturn;
 }
 
 /*
@@ -631,7 +631,7 @@ STATIC PASSOCRECORD AddAssocObject2Cnr(HWND hwndAssocsCnr,
                               FALSE);   // no invalidate
     }
 
-    return (preccNew);
+    return preccNew;
 }
 
 /*
@@ -832,7 +832,7 @@ STATIC PRECORDCORE AddFilter2Cnr(PFILETYPESPAGEDATA pftpd,
         lstAppendItem(&pftpd->llCleanup, pszNewFilter);
     }
 
-    return (preccNew);
+    return preccNew;
 }
 
 /*
@@ -891,7 +891,7 @@ STATIC ULONG WriteXWPFilters2INI(PFILETYPESPAGEDATA pftpd)
                             cbFilters);
     }
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -3490,7 +3490,7 @@ ULONG ftypInsertAssociationsPage(WPObject *somSelf, // in: WPProgram or WPProgra
     inbp.cControlFlags = G_cDatafileTypesPage;
     inbp.pfncbInitPage    = ftypAssociationsInitPage;
     inbp.pfncbItemChanged    = ftypAssociationsItemChanged;
-    return (ntbInsertPage(&inbp));
+    return ntbInsertPage(&inbp);
 }
 
 /*
