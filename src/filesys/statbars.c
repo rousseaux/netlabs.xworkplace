@@ -514,6 +514,130 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
 }
 
 /*
+ *@@ GetDivisor:
+ *      returns a divisor value for the given character,
+ *      which should be the third character in a typical
+ *      \tX mnemonic. This was added with V0.9.11 to get
+ *      rid of the terrible spaghetti code from the
+ *      XFolder days in the "translate mnemnonic" funcs.
+ *
+ *      Valid format characters will produce the following
+ *      return values:
+ *
+ *      -- 'b': 1, display bytes
+ *
+ *      -- 'k': 1000, display kBytes
+ *
+ *      -- 'K': 1024, display KBytes
+ *
+ *      -- 'm': 1000*1000, display mBytes
+ *
+ *      -- 'M': 1024*1024, display MBytes
+ *
+ *      -- 'a': special, -1, display bytes/kBytes/mBytes/gBytes
+ *
+ *      -- 'A': special, -2 display bytes/KBytes/MBytes/GBytes
+ *
+ *      *pcReplace receives the no. of characters to
+ *      replace in the mnemonic string, which will
+ *      be 3 if "c" was a valid format character.
+ *
+ *      If this returns 0, the "c" character was invalid,
+ *      and *pcReplace is set to 2. Do not divide by zero,
+ *      of course.
+ *
+ *@@added V0.9.11 (2001-04-22) [umoeller]
+ */
+
+ULONG GetDivisor(CHAR c,
+                 PULONG pcReplace)      // out: chars to replace (2 or 3)
+{
+    *pcReplace = 3;
+
+    switch (c)
+    {
+        case 'b':
+            return 1;
+
+        case 'k':
+            return 1000;
+
+        case 'K':
+            return 1024;
+
+        case 'm':
+            return 1000*1000;
+
+        case 'M':
+            return 1024*1024;
+
+        case 'a':
+            return -1;          // special for stbVar1000Double
+
+        case 'A':
+            return -2;          // special for stbVar1024Double
+    }
+
+    // invalid code:
+    *pcReplace = 2;
+
+    return (0);
+}
+
+/*
+ *@@ FormatDoubleValue:
+ *      writes the formatted given "double" value
+ *      to the given string buffer.
+ *
+ *      With ulDivisor, specify the value of GetDivisor().
+ *
+ *      pszBuf will ALWAYS contain something after
+ *      this call.
+ *
+ *@@added V0.9.11 (2001-04-22) [umoeller]
+ */
+
+VOID FormatDoubleValue(PSZ pszBuf,              // out: formatted string
+                       ULONG ulDivisor,         // in: divisor from GetDivisor()
+                       double dbl,              // in: value to format
+                       PCOUNTRYSETTINGS pcs)    // in: country settings for formatting
+{
+    switch (ulDivisor)
+    {
+        case -1:
+            stbVar1000Double(pszBuf,
+                             dbl,
+                             pcs->cThousands);
+        break;
+
+        case -2:
+            stbVar1024Double(pszBuf,
+                             dbl,
+                             pcs->cThousands);
+        break;
+
+        case 1:     // no division needed, avoid the calc below
+            strhThousandsDouble(pszBuf,
+                                dbl,
+                                pcs->cThousands);
+        break;
+
+        case 0:     // GetDivisor() has detected a syntax error,
+                    // avoid division by zero
+            strcpy(pszBuf, "Syntax error.");
+        break;
+
+        default:        // "real" divisor specified:
+        {
+            double dValue = (dbl + (ulDivisor / 2)) / ulDivisor;
+            strhThousandsDouble(pszBuf,
+                                dValue,
+                                pcs->cThousands);
+        break; }
+    }
+}
+
+/*
  *@@ stbTranslateSingleMnemonics:
  *      this method is called on an object by stbComposeText
  *      after the status bar mnemonics have been queried
@@ -543,27 +667,31 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
  *@@changed V0.9.6 (2000-11-12) [umoeller]: removed cThousands param, now using cached country settings
  *@@changed V0.9.6 (2000-11-12) [pr]: new status bar mnemonics
  *@@changed V0.9.9 (2001-03-19) [pr]: fixed drive space problems
+ *@@changed V0.9.11 (2001-04-22) [umoeller]: fixed most of the spaghetti in here
+ *@@changed V0.9.11 (2001-04-22) [umoeller]: replaced excessive string searches with xstrrpl
+ *@@changed V0.9.11 (2001-04-22) [umoeller]: added $zX mnemonics for total disk size
+ *@@changed V0.9.11 (2001-04-22) [umoeller]: added $L mnemonic for disk label
  */
 
-ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
-                                   PXSTRING pstrText)  // in/out: status bar text
+ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
+                                   PXSTRING pstrText,       // in/out: status bar text
+                                   PCOUNTRYSETTINGS pcs)    // in: country settings
 {
     ULONG       ulrc = 0;
     CHAR        szTemp[300];        // must be at least CCHMAXPATH!
     PSZ         p;
-
-    PCOUNTRYSETTINGS pcs = cmnQueryCountrySettings(FALSE);
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    ULONG       ulDivisor,
+                cReplace;
 
     /*
      * WPUrl:
      *
      */
 
-    /* first check if the thing is a URL object;
-       in addition to the normal WPFileSystem mnemonics,
-       URL objects also support the $U mnemonic for
-       displaying the URL */
+    // first check if the thing is a URL object;
+    // in addition to the normal WPFileSystem mnemonics,
+    // URL objects also support the $U mnemonic for
+    // displaying the URL
 
     if (G_WPUrl == (SOMClass*)-1)
     {
@@ -574,33 +702,44 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
         // or is NULL if the class is not installed (Warp 3!).
     }
 
-    if (G_WPUrl)
-        if (_somIsA(pObject, G_WPUrl))
+    if (    G_WPUrl
+         && _somIsA(pObject, G_WPUrl)
+       )
+    {
+        // yes, we have a URL object:
+        if (p = strstr(pstrText->psz, "\tU")) // URL mnemonic
         {
-            // yes, we have a URL object:
-            if (p = strstr(pstrText->psz, "\tU")) // URL mnemonic
-            {
-                CHAR szFilename[CCHMAXPATH];
-                PSZ pszFilename = _wpQueryFilename(pObject, szFilename, TRUE);
+            CHAR szFilename[CCHMAXPATH];
+            PSZ pszFilename = _wpQueryFilename(pObject, szFilename, TRUE);
 
-                // read in the contents of the file, which
-                // contain the URL
-                PSZ pszURL = NULL;
-                ULONG ulOfs = 0;
-                if (pszFilename)
-                    doshLoadTextFile(pszFilename, &pszURL);
-                    if (pszURL)
-                    {
-                        if (strlen(pszURL) > 100)
-                            strcpy(pszURL+97, "...");
-                        xstrFindReplaceC(pstrText, &ulOfs, "\tU", pszURL);
-                        free(pszURL);
-                    }
-                if (!pszURL)
-                    xstrFindReplaceC(pstrText, &ulOfs, "\tU", "?");
-                ulrc++;
-            }
+            // read in the contents of the file, which
+            // contains the URL
+            PSZ pszURL = NULL;
+            // offset where we found this:
+            ULONG   ulFoundOfs = (p - pstrText->psz);
+
+            if (pszFilename)
+                doshLoadTextFile(pszFilename, &pszURL);
+                if (pszURL)
+                {
+                    if (strlen(pszURL) > 100)
+                        strcpy(pszURL+97, "...");
+                    xstrrpl(pstrText,
+                            ulFoundOfs,
+                            2,              // chars to replace
+                            pszURL,
+                            strlen(pszURL));
+                    free(pszURL);
+                }
+            if (!pszURL)
+                xstrrpl(pstrText,
+                        ulFoundOfs,
+                        2,              // chars to replace
+                        "?",
+                        1);
+            ulrc++;
         }
+    }
 
     /*
      * WPDisk:
@@ -612,20 +751,30 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
          || (_somIsA(pObject, _WPSharedDir))
        )
     {
-        ULONG ulLogicalDrive = -1;
+        ULONG   ulLogicalDrive = -1;
 
         /* single-object status bar text mnemonics understood by WPDisk:
 
              $F      file system type (HPFS, FAT, CDFS, ...)
+
+             $L      drive label V0.9.11 (2001-04-22) [umoeller]
 
              $fb     free space on drive in bytes
              $fk     free space on drive in kBytes
              $fK     free space on drive in KBytes
              $fm     free space on drive in mBytes
              $fM     free space on drive in MBytes
-
              $fa     free space on drive in bytes/kBytes/mBytes/gBytes V0.9.6
              $fA     free space on drive in bytes/KBytes/MBytes/GBytes V0.9.6
+
+             added the following: V0.9.11 (2001-04-22) [umoeller]
+             $zb     total space on drive in bytes
+             $zk     total space on drive in kBytes
+             $zK     total space on drive in KBytes
+             $zm     total space on drive in mBytes
+             $zM     total space on drive in MBytes
+             $za     total space on drive in bytes/kBytes/mBytes/gBytes
+             $zA     total space on drive in bytes/KBytes/MBytes/GBytes
 
             NOTE: the $f keys are also handled by stbComposeText, but
                   those only work properly for file-system objects, so we need
@@ -634,11 +783,21 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
          */
 
         // the following are for free space on drive
-        if (p = strstr(pstrText->psz, "\tfb"))
-        {
-            double dbl;
-            ULONG ulOfs = 0;
 
+        // removed spaghetti here V0.9.11 (2001-04-22) [umoeller]
+        p = pstrText->psz;
+        while (p = strstr(p, "\tf"))
+        {
+            double  dbl;
+            // offset where we found this:
+            ULONG   ulFoundOfs = (p - pstrText->psz);
+            // get divisor from third mnemonic char
+            ulDivisor = GetDivisor(*(p + 2),
+                                      // one of 'b', 'k', 'K', 'm', 'M', 'a', or 'A'
+                                      // ulDivisor is 0 if none of these
+                                   &cReplace);  // out: chars to replace
+
+            // get the value and format it
             if (ulLogicalDrive == -1)
             {
                 ulLogicalDrive = _wpQueryLogicalDrive(pObject);
@@ -646,20 +805,52 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     ulLogicalDrive = 0;
             }
 
-            if ((ulLogicalDrive == 0) || doshQueryDiskFree(ulLogicalDrive, &dbl))
-                strcpy(szTemp, "?");
+            if (    (ulLogicalDrive)
+                 && (!doshQueryDiskFree(ulLogicalDrive, &dbl))
+               )
+            {
+                // we got a value: format it
+                FormatDoubleValue(szTemp,
+                                  ulDivisor,
+                                  dbl,                  // value
+                                  pcs);                 // country settings
+                ulrc++;
+            }
             else
-                strhThousandsDouble(szTemp, dbl,
-                                    pcs->cThousands);
-            xstrFindReplaceC(pstrText, &ulOfs, "\tfb", szTemp);
+                strcpy(szTemp, "?");
+
+            // now replace: since we have found the string
+            // already, we can safely use xstrrpl directly
+            xstrrpl(pstrText,
+                    // ofs of first char to replace:
+                    ulFoundOfs,
+                    // chars to replace:
+                    cReplace,
+                    // replacement string:
+                    szTemp,
+                    strlen(szTemp));
+
+            // now adjust search pointer; pstrText might have been
+            // reallocated, so search on in new buffer from here
+            p = pstrText->psz + ulFoundOfs;  // szTemp could have been anything
+
             ulrc++;
         }
 
-        if (p = strstr(pstrText->psz, "\tfk"))
+        // the following are for TOTAL space on drive V0.9.11 (2001-04-22) [umoeller]
+        p = pstrText->psz;
+        while (p = strstr(p, "\tz"))
         {
-            double dbl;
-            ULONG ulOfs = 0;
+            double  dbl;
+            // offset where we found this:
+            ULONG   ulFoundOfs = (p - pstrText->psz);
+            // get divisor from third mnemonic char
+            ulDivisor = GetDivisor(*(p + 2),
+                                      // one of 'b', 'k', 'K', 'm', 'M', 'a', or 'A'
+                                      // ulDivisor is 0 if none of these
+                                   &cReplace);  // out: chars to replace
 
+            // get the value and format it
             if (ulLogicalDrive == -1)
             {
                 ulLogicalDrive = _wpQueryLogicalDrive(pObject);
@@ -667,134 +858,41 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     ulLogicalDrive = 0;
             }
 
-            if ((ulLogicalDrive == 0) || doshQueryDiskFree(ulLogicalDrive, &dbl))
-                strcpy(szTemp, "?");
-            else
-                strhThousandsDouble(szTemp,
-                                    ((dbl + 500) / 1000),
-                                    pcs->cThousands);
-            xstrFindReplaceC(pstrText, &ulOfs, "\tfk", szTemp);
-            ulrc++;
-        }
-
-        if (p = strstr(pstrText->psz, "\tfK"))
-        {
-            double dbl;
-            ULONG ulOfs = 0;
-
-            if (ulLogicalDrive == -1)
+            if (    (ulLogicalDrive)
+                 && (!doshQueryDiskSize(ulLogicalDrive, &dbl))
+               )
             {
-                ulLogicalDrive = _wpQueryLogicalDrive(pObject);
-                if (doshAssertDrive(ulLogicalDrive) != NO_ERROR)
-                    ulLogicalDrive = 0;
+                // we got a value: format it
+                FormatDoubleValue(szTemp,
+                                  ulDivisor,
+                                  dbl,                  // value
+                                  pcs);                 // country settings
+                ulrc++;
             }
-
-            if ((ulLogicalDrive == 0) || doshQueryDiskFree(ulLogicalDrive, &dbl))
-                strcpy(szTemp, "?");
             else
-                strhThousandsDouble(szTemp,
-                                    ((dbl + 512) / 1024),
-                                    pcs->cThousands);
-            xstrFindReplaceC(pstrText, &ulOfs, "\tfK", szTemp);
+                strcpy(szTemp, "?");
+
+            // now replace: since we have found the string
+            // already, we can safely use xstrrpl directly
+            xstrrpl(pstrText,
+                    // ofs of first char to replace:
+                    ulFoundOfs,
+                    // chars to replace:
+                    cReplace,
+                    // replacement string:
+                    szTemp,
+                    strlen(szTemp));
+
+            // now adjust search pointer; pstrText might have been
+            // reallocated, so search on in new buffer from here
+            p = pstrText->psz + ulFoundOfs;  // szTemp could have been anything
+
             ulrc++;
         }
-
-        if (p = strstr(pstrText->psz, "\tfm"))
-        {
-            double dbl;
-            ULONG ulOfs = 0;
-
-            if (ulLogicalDrive == -1)
-            {
-                ulLogicalDrive = _wpQueryLogicalDrive(pObject);
-                if (doshAssertDrive(ulLogicalDrive) != NO_ERROR)
-                    ulLogicalDrive = 0;
-            }
-
-            if ((ulLogicalDrive == 0) || doshQueryDiskFree(ulLogicalDrive, &dbl))
-                strcpy(szTemp, "?");
-            else
-                strhThousandsDouble(szTemp,
-                                    ((dbl +500000) / 1000000),
-                                    pcs->cThousands);
-            xstrFindReplaceC(pstrText, &ulOfs, "\tfm", szTemp);
-            ulrc++;
-        }
-
-        if (p = strstr(pstrText->psz, "\tfM"))
-        {
-            double dbl;
-            ULONG ulOfs = 0;
-
-            if (ulLogicalDrive == -1)
-            {
-                ulLogicalDrive = _wpQueryLogicalDrive(pObject);
-                if (doshAssertDrive(ulLogicalDrive) != NO_ERROR)
-                    ulLogicalDrive = 0;
-            }
-
-            if ((ulLogicalDrive == 0) || doshQueryDiskFree(ulLogicalDrive, &dbl))
-                strcpy(szTemp, "?");
-            else
-               strhThousandsDouble(szTemp,
-                                   ((dbl + (1024*1024/2)) / (1024*1024)),
-                                   pcs->cThousands);
-            xstrFindReplaceC(pstrText, &ulOfs, "\tfM", szTemp);
-            ulrc++;
-        }
-
-        // V0.9.6
-
-        if (p = strstr(pstrText->psz, "\tfa"))
-        {
-            double dbl;
-            ULONG ulOfs = 0;
-
-            if (ulLogicalDrive == -1)
-            {
-                ulLogicalDrive = _wpQueryLogicalDrive(pObject);
-                if (doshAssertDrive(ulLogicalDrive) != NO_ERROR)
-                    ulLogicalDrive = 0;
-            }
-
-            if ((ulLogicalDrive == 0) || doshQueryDiskFree(ulLogicalDrive, &dbl))
-                strcpy(szTemp, "?");
-            else
-                stbVar1000Double(szTemp,
-                                 dbl,
-                                 pcs->cThousands);
-            xstrFindReplaceC(pstrText, &ulOfs, "\tfa", szTemp);
-            ulrc++;
-        }
-
-        if (p = strstr(pstrText->psz, "\tfA"))
-        {
-            double dbl;
-            ULONG ulOfs = 0;
-
-            if (ulLogicalDrive == -1)
-            {
-                ulLogicalDrive = _wpQueryLogicalDrive(pObject);
-                if (doshAssertDrive(ulLogicalDrive) != NO_ERROR)
-                    ulLogicalDrive = 0;
-            }
-
-            if ((ulLogicalDrive == 0) || doshQueryDiskFree(ulLogicalDrive, &dbl))
-                strcpy(szTemp, "?");
-            else
-                stbVar1024Double(szTemp,
-                                 dbl,
-                                 pcs->cThousands);
-            xstrFindReplaceC(pstrText, &ulOfs, "\tfA", szTemp);
-            ulrc++;
-        }
-        // end V0.9.6
+        // end total space V0.9.11 (2001-04-22) [umoeller]
 
         if (p = strstr(pstrText->psz, "\tF"))  // file-system type (HPFS, ...)
         {
-            CHAR szBuffer[200];
-            ULONG ulOfs = 0;
-
             if (ulLogicalDrive == -1)
             {
                 ulLogicalDrive = _wpQueryLogicalDrive(pObject);
@@ -804,12 +902,48 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
 
             if (   (ulLogicalDrive == 0)
                 || doshQueryDiskFSType(ulLogicalDrive,
-                                       szBuffer,
-                                       sizeof(szBuffer))
+                                       szTemp,
+                                       sizeof(szTemp))
                )
-                xstrFindReplaceC(pstrText, &ulOfs, "\tF", "?");
-            else
-                xstrFindReplaceC(pstrText, &ulOfs, "\tF", szBuffer);
+                strcpy(szTemp, "?");
+
+            xstrrpl(pstrText,
+                    // ofs of first char to replace:
+                    (p - pstrText->psz),
+                    // chars to replace:
+                    2,
+                    // replacement string:
+                    szTemp,
+                    strlen(szTemp));
+
+            ulrc++;
+        }
+
+        // drive label V0.9.11 (2001-04-22) [umoeller]
+        if (p = strstr(pstrText->psz, "\tL"))
+        {
+            if (ulLogicalDrive == -1)
+            {
+                ulLogicalDrive = _wpQueryLogicalDrive(pObject);
+                if (doshAssertDrive(ulLogicalDrive) != NO_ERROR)
+                    ulLogicalDrive = 0;
+            }
+
+            if (   (ulLogicalDrive == 0)
+                || doshQueryDiskLabel(ulLogicalDrive,
+                                      szTemp)
+               )
+                strcpy(szTemp, "?");
+
+            xstrrpl(pstrText,
+                    // ofs of first char to replace:
+                    (p - pstrText->psz),
+                    // chars to replace:
+                    2,
+                    // replacement string:
+                    szTemp,
+                    strlen(szTemp));
+
             ulrc++;
         }
     }
@@ -837,108 +971,137 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
              $Eb     EA size in bytes
              $Ek     EA size in kBytes
              $EK     EA size in KBytes
-
              $Ea     EA size in bytes/kBytes (V0.9.6)
              $EA     EA size in bytes/KBytes (V0.9.6)
          */
 
-        if (p = strstr(pstrText->psz, "\ty")) // attribs
+        if (p = strstr(pstrText->psz, "\ty")) // type
         {
-            PSZ p2 = NULL;
-            ULONG ulOfs = 0;
-            p2 = _wpQueryType(pObject);
-            xstrFindReplaceC(pstrText, &ulOfs, "\ty", (p2) ? p2 : "?");
+            // offset where we found this:
+            PSZ p2 = _wpQueryType(pObject);
+            if (!p2)
+                p2 = "?";
+            xstrrpl(pstrText,
+                    // ofs of first char to replace:
+                    (p - pstrText->psz),
+                    // chars to replace:
+                    2,
+                    // replacement string:
+                    p2,
+                    strlen(p2));
             ulrc++;
         }
 
         if (p = strstr(pstrText->psz, "\tD"))  // date
         {
-            ULONG ulOfs = 0;
             strcpy(szTemp, "?");
             _wpQueryDateInfo(pObject, &ffbuf4);
             fBufLoaded = TRUE;
-            strhFileDate(szTemp, &(ffbuf4.fdateLastWrite), pcs->ulDateFormat, pcs->cDateSep);
-            xstrFindReplaceC(pstrText, &ulOfs, "\tD", szTemp);
+            strhFileDate(szTemp,
+                         &(ffbuf4.fdateLastWrite),
+                         pcs->ulDateFormat,
+                         pcs->cDateSep);
+            xstrrpl(pstrText,
+                    // ofs of first char to replace:
+                    (p - pstrText->psz),
+                    // chars to replace:
+                    2,
+                    // replacement string:
+                    szTemp,
+                    strlen(szTemp));
             ulrc++;
         }
 
         if (p = strstr(pstrText->psz, "\tT"))  // time
         {
-            ULONG ulOfs = 0;
             strcpy(szTemp, "?");
             if (!fBufLoaded)
                 _wpQueryDateInfo(pObject, &ffbuf4);
-            strhFileTime(szTemp, &(ffbuf4.ftimeLastWrite), pcs->ulTimeFormat, pcs->cTimeSep);
-            xstrFindReplaceC(pstrText, &ulOfs, "\tT", szTemp);
+            strhFileTime(szTemp,
+                         &(ffbuf4.ftimeLastWrite),
+                         pcs->ulTimeFormat,
+                         pcs->cTimeSep);
+            xstrrpl(pstrText,
+                    // ofs of first char to replace:
+                    (p - pstrText->psz),
+                    // chars to replace:
+                    2,
+                    // replacement string:
+                    szTemp,
+                    strlen(szTemp));
             ulrc++;
         }
 
         if (p = strstr(pstrText->psz, "\ta")) // attribs
         {
             ULONG fAttr = _wpQueryAttr(pObject);
-            ULONG ulOfs = 0;
             szTemp[0] = (fAttr & FILE_ARCHIVED) ? 'A' : 'a';
             szTemp[1] = (fAttr & FILE_HIDDEN  ) ? 'H' : 'h';
             szTemp[2] = (fAttr & FILE_READONLY) ? 'R' : 'r';
             szTemp[3] = (fAttr & FILE_SYSTEM  ) ? 'S' : 's';
             szTemp[4] = '\0';
-            xstrFindReplaceC(pstrText, &ulOfs, "\ta", szTemp);
+            xstrrpl(pstrText,
+                    // ofs of first char to replace:
+                    (p - pstrText->psz),
+                    // chars to replace:
+                    2,
+                    // replacement string:
+                    szTemp,
+                    strlen(szTemp));
             ulrc++;
         }
 
-        if (p = strstr(pstrText->psz, "\tEb")) // easize
+        // removed spaghetti here V0.9.11 (2001-04-22) [umoeller]
+        // note: this makes the $E codes support megabyte format
+        // chars as well, but this would be silly to specify...
+        p = pstrText->psz;
+        while (p = strstr(p, "\tE")) // easize
         {
-            ULONG ulEASize = _wpQueryEASize(pObject);
-            ULONG ulOfs = 0;
-            strhThousandsDouble(szTemp, ulEASize, pcs->cThousands);
-            xstrFindReplaceC(pstrText, &ulOfs, "\tEb", szTemp);
-            ulrc++;
-        }
+            double dEASize = (double)_wpQueryEASize(pObject);
+            // offset where we found this:
+            ULONG   ulFoundOfs = (p - pstrText->psz);
 
-        if (p = strstr(pstrText->psz, "\tEk"))
-        {
-            ULONG ulEASize = _wpQueryEASize(pObject);
-            ULONG ulOfs = 0;
-            strhThousandsDouble(szTemp, ((ulEASize+500)/1000), pcs->cThousands);
-            xstrFindReplaceC(pstrText, &ulOfs, "\tEk", szTemp);
-            ulrc++;
-        }
+            // get divisor from third mnemonic char
+            ulDivisor = GetDivisor(*(p + 2),
+                                      // one of 'b', 'k', 'K', 'm', 'M', 'a', or 'A'
+                                      // ulDivisor is 0 if none of these
+                                   &cReplace);  // out: chars to replace
 
-        if (p = strstr(pstrText->psz, "\tEK"))
-        {
-            ULONG ulEASize = _wpQueryEASize(pObject);
-            ULONG ulOfs = 0;
-            strhThousandsDouble(szTemp, ((ulEASize+512)/1024), pcs->cThousands);
-            xstrFindReplaceC(pstrText, &ulOfs, "\tEK", szTemp);
-            ulrc++;
-        }
+            FormatDoubleValue(szTemp,
+                              ulDivisor,
+                              dEASize,
+                              pcs);
 
-        // V0.9.6
-        if (p = strstr(pstrText->psz, "\tEa")) // easize
-        {
-            ULONG ulEASize = _wpQueryEASize(pObject);
-            ULONG ulOfs = 0;
-            stbVar1000Double(szTemp, ulEASize, pcs->cThousands);
-            xstrFindReplaceC(pstrText, &ulOfs, "\tEa", szTemp);
-            ulrc++;
-        }
+            // now replace: since we have found the string
+            // already, we can safely use xstrrpl directly
+            xstrrpl(pstrText,
+                    // ofs of first char to replace:
+                    ulFoundOfs,
+                    // chars to replace:
+                    cReplace,
+                    // replacement string:
+                    szTemp,
+                    strlen(szTemp));
 
-        if (p = strstr(pstrText->psz, "\tEA")) // easize
-        {
-            ULONG ulEASize = _wpQueryEASize(pObject);
-            ULONG ulOfs = 0;
-            stbVar1024Double(szTemp, ulEASize, pcs->cThousands);
-            xstrFindReplaceC(pstrText, &ulOfs, "\tEA", szTemp);
+            // now adjust search pointer; pstrText might have been
+            // reallocated, so search on in new buffer from here
+            p = pstrText->psz + ulFoundOfs;  // szTemp could have been anything
+
             ulrc++;
         }
-        // end V0.9.6
 
         if (p = strstr(pstrText->psz, "\tr")) // real name
         {
-            ULONG ulOfs = 0;
             strcpy(szTemp, "?");
             _wpQueryFilename(pObject, szTemp, FALSE);
-            xstrFindReplaceC(pstrText, &ulOfs, "\tr", szTemp);
+            xstrrpl(pstrText,
+                    // ofs of first char to replace:
+                    (p - pstrText->psz),
+                    // chars to replace:
+                    2,
+                    // replacement string:
+                    szTemp,
+                    strlen(szTemp));
             ulrc++;
         }
     }
@@ -953,7 +1116,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
         PPROGDETAILS pProgDetails = NULL;
         ULONG       ulSize;
 
-        /* single-object status bar text mnemonics understood by WPFileSystem
+        /* single-object status bar text mnemonics understood by WPProgram
            (in addition to those introduced by XFldObject):
 
             $p      executable program file (as specified in the Settings)
@@ -963,7 +1126,6 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
 
         if (p = strstr(pstrText->psz, "\tp"))  // program executable
         {
-            ULONG ulOfs = 0;
             strcpy(szTemp, "?");
             if (!pProgDetails)
                 if ((_wpQueryProgDetails(pObject, (PPROGDETAILS)NULL, &ulSize)))
@@ -975,13 +1137,19 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     strcpy(szTemp, pProgDetails->pszExecutable);
                 else strcpy(szTemp, "");
 
-            xstrFindReplaceC(pstrText, &ulOfs, "\tp", szTemp);
+            xstrrpl(pstrText,
+                    // ofs of first char to replace:
+                    (p - pstrText->psz),
+                    // chars to replace:
+                    2,
+                    // replacement string:
+                    szTemp,
+                    strlen(szTemp));
             ulrc++;
         }
 
-        if (p = strstr(pstrText->psz, "\tP"))  // program executable
+        if (p = strstr(pstrText->psz, "\tP"))  // program parameters
         {
-            ULONG ulOfs = 0;
             strcpy(szTemp, "?");
             if (!pProgDetails)
                 if ((_wpQueryProgDetails(pObject, (PPROGDETAILS)NULL, &ulSize)))
@@ -993,13 +1161,19 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     strcpy(szTemp, pProgDetails->pszParameters);
                 else strcpy(szTemp, "");
 
-            xstrFindReplaceC(pstrText, &ulOfs, "\tP", szTemp);
+            xstrrpl(pstrText,
+                    // ofs of first char to replace:
+                    (p - pstrText->psz),
+                    // chars to replace:
+                    2,
+                    // replacement string:
+                    szTemp,
+                    strlen(szTemp));
             ulrc++;
         }
 
         if (p = strstr(pstrText->psz, "\td"))  // startup dir
         {
-            ULONG ulOfs = 0;
             strcpy(szTemp, "?");
             if (!pProgDetails)
                 if ((_wpQueryProgDetails(pObject, (PPROGDETAILS)NULL, &ulSize)))
@@ -1011,7 +1185,14 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
                     strcpy(szTemp, pProgDetails->pszStartupDir);
                 else strcpy(szTemp, "");
 
-            xstrFindReplaceC(pstrText, &ulOfs, "\td", szTemp);
+            xstrrpl(pstrText,
+                    // ofs of first char to replace:
+                    (p - pstrText->psz),
+                    // chars to replace:
+                    2,
+                    // replacement string:
+                    szTemp,
+                    strlen(szTemp));
             ulrc++;
         }
 
@@ -1034,30 +1215,54 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
 
         if (p = strstr(pstrText->psz, "\tw"))     // class default title
         {
-            SOMClass *pClassObject = _somGetClass(pObject);
-            ULONG ulOfs = 0;
+            SOMClass    *pClassObject = _somGetClass(pObject);
+            PSZ         pszValue = NULL;
+
             if (pClassObject)
-                xstrFindReplaceC(pstrText, &ulOfs, "\tw", _wpclsQueryTitle(pClassObject));
-            else
-                xstrFindReplaceC(pstrText, &ulOfs, "\tw", "?");
+                pszValue = _wpclsQueryTitle(pClassObject);
+            if (!pszValue)
+                pszValue = "?";
+
+            xstrrpl(pstrText,
+                    // ofs of first char to replace:
+                    (p - pstrText->psz),
+                    // chars to replace:
+                    2,
+                    // replacement string:
+                    pszValue,
+                    strlen(pszValue));
             ulrc++;
         }
 
         if (p = strstr(pstrText->psz, "\tW"))     // class name
         {
-            ULONG ulOfs = 0;
-            strcpy(szTemp, "?");
-            xstrFindReplaceC(pstrText, &ulOfs, "\tW", _somGetClassName(pObject));
+            PSZ pszValue = _somGetClassName(pObject);
+            if (!pszValue)
+                pszValue = "?";
+            xstrrpl(pstrText,
+                    // ofs of first char to replace:
+                    (p - pstrText->psz),
+                    // chars to replace:
+                    2,
+                    // replacement string:
+                    pszValue,
+                    strlen(pszValue));
             ulrc++;
         }
 
         if (p = strstr(pstrText->psz, "\tt"))          // object title
         {
-            ULONG ulOfs = 0;
             strcpy(szTemp, "?");
             strcpy(szTemp, _wpQueryTitle(pObject));
             strhBeautifyTitle(szTemp);
-            xstrFindReplaceC(pstrText, &ulOfs, "\tt", szTemp);
+            xstrrpl(pstrText,
+                    // ofs of first char to replace:
+                    (p - pstrText->psz),
+                    // chars to replace:
+                    2,
+                    // replacement string:
+                    szTemp,
+                    strlen(szTemp));
             ulrc++;
         }
     }
@@ -1103,6 +1308,10 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,  // in: object
  *@@changed V0.9.6 (2000-11-01) [umoeller]: now using all new xstrFindReplace
  *@@changed V0.9.6 (2000-10-30) [pr]: fixed container item counts
  *@@changed V0.9.6 (2000-11-12) [pr]: new status bar mnemonics
+ *@@changed V0.9.11 (2001-04-22) [umoeller]: fixed most of the spaghetti in here
+ *@@changed V0.9.11 (2001-04-22) [umoeller]: replaced excessive string searches with xstrrpl
+ *@@changed V0.9.11 (2001-04-22) [umoeller]: merged three cnr record loops into one (speed)
+ *@@changed V0.9.11 (2001-04-22) [umoeller]: added $zX mnemonics for total disk size
  */
 
 PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
@@ -1121,6 +1330,14 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         $fM     free space on drive in MBytes
         $fa     free space on drive in bytes/kBytes/mBytes/gBytes (V0.9.6)
         $fA     free space on drive in bytes/KBytes/MBytes/GBytes (V0.9.6)
+
+        $zb     total size of drive in bytes V0.9.11 (2001-04-22) [umoeller]
+        $zk     total size of drive in kBytes
+        $zK     total size of drive in KBytes
+        $zm     total size of drive in mBytes
+        $zM     total size of drive in MBytes
+        $za     total size of drive in bytes/kBytes/mBytes/gBytes
+        $zA     total size of drive in bytes/KBytes/MBytes/GBytes
 
         $sb     size of selected objects in bytes
         $sk     size of selected objects in kBytes
@@ -1144,76 +1361,116 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
 
     XSTRING     strText;
 
-    // CNRINFO     CnrInfo;
-    PMINIRECORDCORE pmrcSelected, pmrc2;
-    ULONG       ulSelectedCount = 0,
-                ulSizeSelected = 0,
-                ulSizeTotal = 0,
-                ulCount = 0;
+    ULONG       cVisibleRecords = 0,
+                cSelectedRecords = 0,
+                cbSelected = 0,
+                cbTotal = 0,
+                ulDivisor,
+                cReplace;
     USHORT      cmd;
-    WPObject    *pObject = NULL,
-                *pObject2 = NULL;
+    WPObject    *pobj = NULL,
+                *pobjSelected = NULL;
     PSZ         p;
     CHAR        *p2;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
-    PRECORDCORE pRecCore;
+    PMINIRECORDCORE prec;
 
-    // get thousands separator from "Country" object
-    CHAR        cThousands = cmnQueryThousandsSeparator(),
+    // get country settings from "Country" object
+    PCOUNTRYSETTINGS pcs = cmnQueryCountrySettings(FALSE);
+    CHAR        cThousands = pcs->cThousands,
                 szTemp[300];
+
+    // pre-resolve class pointers for speed V0.9.11 (2001-04-22) [umoeller]
+    SOMClass    *pclsWPShadow = _WPShadow,
+                *pclsWPFileSystem = _WPFileSystem;
 
     xstrInit(&strText, 300);
 
-    // go thru all the selected objects in the container
-    // and sum up the size of the corresponding objects in
-    // ulSizeSelected
-    pmrcSelected = (PMINIRECORDCORE)CMA_FIRST;
-    do {
-        pmrcSelected =
-            (PMINIRECORDCORE)WinSendMsg(hwndCnr,
-                                        CM_QUERYRECORDEMPHASIS,
-                                        (MPARAM)pmrcSelected, // CMA_FIRST at first loop
-                                        (MPARAM)CRA_SELECTED);
-        if ((LONG)pmrcSelected == -1)
-        {
-            // error: V0.9.3 (2000-04-08) [umoeller]
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "Unable to query container records for status bar.");
+    // V0.9.11 (2001-04-22) [umoeller]: now, we used to have
+    // THREE loops here which ran through the objects in the
+    // container, producing a WinSendMsg for each record...
+    // since that code ALWAYS ran through all objects at least
+    // once (Paul's fix for the invisible object count), I
+    // merged the three loops into one now. This can make a
+    // noticeable difference when 1000 objects have been
+    // selected in the container and the user selects a large
+    // number of objects.
+
+    // run-through-all-objects loop...
+    for (prec = NULL, cmd = CMA_FIRST;
+         ;
+         cmd = CMA_NEXT)
+    {
+        prec = (PMINIRECORDCORE)WinSendMsg(hwndCnr,
+                                           CM_QUERYRECORD,
+                                           (MPARAM)prec,
+                                           MPFROM2SHORT(cmd,     // CMA_FIRST or CMA_NEXT
+                                                        CMA_ITEMORDER));
+        if (    prec == NULL
+             || (ULONG)prec == -1
+           )
+            // error, or last:
             break;
-        }
 
-        if (pmrcSelected)
+        // count all visible objects
+        if (!(prec->flRecordAttr & CRA_FILTERED))
         {
-            ulSelectedCount++;
-            // get the object from the record core
-            pObject = OBJECT_FROM_PREC(pmrcSelected);
-            if (pObject)
-                if (wpshCheckObject(pObject))
-                {
-                    WPObject *pDeref = pObject;
-                    if (pGlobalSettings->bDereferenceShadows & STBF_DEREFSHADOWS_MULTIPLE)
-                    {
-                        // deref multiple shadows
-                        while ((pDeref) && (_somIsA(pDeref, _WPShadow)))
-                            pDeref = _wpQueryShadowedObject(pDeref, TRUE);
-                    }
+            BOOL    fThisSelected = ((prec->flRecordAttr & CRA_SELECTED) != 0);
 
-                    if (pDeref && _somIsA(pDeref, _WPFileSystem))
-                        ulSizeSelected += _wpQueryFileSize(pDeref);
+            // count all visible records
+            cVisibleRecords++;
+
+            // now get the object from the MINIRECORDCORE
+            if (    (pobj = OBJECT_FROM_PREC(prec))
+                 && (wpshCheckObject(pobj))
+               )
+            {
+                WPObject    *pDeref = pobj;
+
+                if (fThisSelected)
+                {
+                    // count all selected records
+                    cSelectedRecords++;
+                    pobjSelected = pobj;        // NOT dereferenced if shadow!
                 }
-                else
-                    pObject = NULL;
-        }
-    } while (pmrcSelected);
+
+                if (pGlobalSettings->bDereferenceShadows & STBF_DEREFSHADOWS_MULTIPLE)
+                {
+                    // deref multiple shadows
+                    if (pDeref && _somIsA(pDeref, pclsWPShadow))
+                        pDeref = _wpQueryShadowedObject(pDeref, TRUE);
+                }
+
+                if (pDeref && _somIsA(pDeref, pclsWPFileSystem))
+                {
+                    // OK, we got a WPFileSystem:
+                    ULONG cbThis = _wpQueryFileSize(pDeref);
+
+                    if (fThisSelected)
+                        // count bytes of selected objects
+                        cbSelected += cbThis;
+
+                    cbTotal += cbThis;
+                }
+            }
+            else
+                pobj = NULL;
+
+        } // end if (!(prec->flRecordAttr & CRA_FILTERED))
+    } // end for (prec = NULL, cmd = CMA_FIRST; ...
+
+    // pobjSelected is now NULL for single-object mode
+    // or contains the last selected object we had in the loop;
+    // in one-object mode, it'll be the only object
+    // and might still point to a shadow
 
     // now get the mnemonics which have been set by the
     // user on the "Status bar" page, depending on how many
     // objects are selected
-    if ( (ulSelectedCount == 0) || (pObject == NULL) )
-        // "no object" mode
+    if ( (cSelectedRecords == 0) || (pobjSelected == NULL) )
+        // "no object" mode:
         xstrcpy(&strText, cmnQueryStatusBarSetting(SBS_TEXTNONESEL), 0);
-    else if (ulSelectedCount == 1)
+    else if (cSelectedRecords == 1)
     {
         // "single-object" mode: query the text to translate
         // from the object, because we can implement
@@ -1221,13 +1478,13 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
 
         // dereference shadows (V0.9.0)
         if (pGlobalSettings->bDereferenceShadows & STBF_DEREFSHADOWS_SINGLE)
-            if (_somIsA(pObject, _WPShadow))
-                pObject = _wpQueryShadowedObject(pObject, TRUE);
+            if (_somIsA(pobjSelected, pclsWPShadow))
+                pobjSelected = _wpQueryShadowedObject(pobjSelected, TRUE);
 
-        if (pObject == NULL)
+        if (pobjSelected == NULL)
             return(strdup(""));
 
-        xstrcpy(&strText, stbQueryClassMnemonics(_somGetClass(pObject)), 0);
+        xstrcpy(&strText, stbQueryClassMnemonics(_somGetClass(pobjSelected)), 0);
                                                   // object's class object
     }
     else
@@ -1242,275 +1499,209 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
     // filename contains a '$' character.
     // All the translation logic will then only search for
     // those tab characters.
-    while (p2 = strchr(strText.psz, '$'))
-        *p2 = '\t';
+    // V0.9.11 (2001-04-22) [umoeller]: sped it up a bit
+    /* while (p2 = strchr(strText.psz, '$'))
+        *p2 = '\t'; */
+    p2 = strText.psz;
+    while (p2 = strchr(p2, '$'))
+        *p2++ = '\t';
 
-    if (ulSelectedCount == 1)
+    if (cSelectedRecords == 1)
     {
         // "single-object" mode: translate
         // object-specific mnemonics first
-        stbTranslateSingleMnemonics(pObject,               // the object itself
-                                    &strText);
-        if (_somIsA(pObject, _WPFileSystem))
+        stbTranslateSingleMnemonics(pobjSelected,
+                                    &strText,
+                                    pcs);
+        if (_somIsA(pobjSelected, pclsWPFileSystem))
             // if we have a file-system object, we
             // need to re-query its size, because
             // we might have dereferenced a shadow
             // above (whose size was 0 -- V0.9.0)
-            ulSizeSelected = _wpQueryFileSize(pObject);
+            cbSelected = _wpQueryFileSize(pobjSelected);
     }
 
-    // query total object count (CnrInfo.cRecords)
-    /* WinSendMsg(hwndCnr,
-               CM_QUERYCNRINFO,
-               (MPARAM)(&CnrInfo),
-               (MPARAM)(sizeof(CnrInfo))); */
-     // query total visible object count
-     // V0.9.6 (2000-10-30) [pr]
-     for (pRecCore = NULL, cmd = CMA_FIRST;
-          ;
-          cmd = CMA_NEXT)
-     {
-         pRecCore = WinSendMsg(hwndCnr,
-                               CM_QUERYRECORD,
-                               (MPARAM) pRecCore,
-                               MPFROM2SHORT(cmd, CMA_ITEMORDER));
-         if (pRecCore == NULL || (ULONG) pRecCore == -1)
-             break;
-
-         if (!(pRecCore->flRecordAttr & CRA_FILTERED))
-             ulCount++;
-     }
-
-    // if we have a "total size" query, also sum up the size of
-    // the whole folder into ulSizeTotal, which will be handled
-    // in detail below
-    if (strstr(strText.psz, "\tS"))
-    {
-        #ifdef DEBUG_STATUSBARS
-            _Pmpf(("Calculating total size"));
-        #endif
-        pmrc2 = NULL;
-        do {
-            pmrc2 =
-                (PMINIRECORDCORE)WinSendMsg(hwndCnr,
-                                            CM_QUERYRECORD,
-                                            (MPARAM)pmrc2,
-                                            MPFROM2SHORT((pmrc2)
-                                                            ? CMA_NEXT
-                                                            : CMA_FIRST, // for first loop
-                                                        CMA_ITEMORDER)  // doesn't matter
-                                           );
-            if (pmrc2)
-            {
-                pObject2 = OBJECT_FROM_PREC(pmrc2);
-                if (pObject2)
-                    if (wpshCheckObject(pObject2))
-                        if (_somIsA(pObject2, _WPFileSystem))
-                            ulSizeTotal += _wpQueryFileSize(pObject2);
-            }
-        } while (pmrc2);
-
-        #ifdef DEBUG_STATUSBARS
-            _Pmpf(("  Result: %u", ulSizeTotal));
-        #endif
-    }
+    // NOW GO TRANSLATE COMMON CODES
 
     if (p = strstr(strText.psz, "\tc")) // selected objs count
     {
-        ULONG ulOfs = 0;
-        sprintf(szTemp, "%u", ulSelectedCount);
-        xstrFindReplaceC(&strText, &ulOfs, "\tc", szTemp);
+        sprintf(szTemp, "%u", cSelectedRecords);
+        xstrrpl(&strText,
+                // ofs of first char to replace:
+                (p - strText.psz),
+                // chars to replace:
+                2,
+                // replacement string:
+                szTemp,
+                strlen(szTemp));
     }
 
     if (p = strstr(strText.psz, "\tC")) // total obj count
     {
-        ULONG ulOfs = 0;
-        sprintf(szTemp, "%u", ulCount);
-        xstrFindReplaceC(&strText, &ulOfs, "\tC", szTemp);
+        sprintf(szTemp, "%u", cVisibleRecords);
+        xstrrpl(&strText,
+                // ofs of first char to replace:
+                (p - strText.psz),
+                // chars to replace:
+                2,
+                // replacement string:
+                szTemp,
+                strlen(szTemp));
     }
 
     // the following are for free space on drive
 
-    if (p = strstr(strText.psz, "\tfb"))
+    // removed spaghetti here V0.9.11 (2001-04-22) [umoeller]
+    p = strText.psz;
+    while (p = strstr(p, "\tf"))
     {
-        ULONG ulOfs = 0;
-        strhThousandsDouble(szTemp,
-                            wpshQueryDiskFreeFromFolder(somSelf),
-                            cThousands);
-        xstrFindReplaceC(&strText, &ulOfs, "\tfb", szTemp);
+        // offset where we found this:
+        ULONG   ulFoundOfs = (p - strText.psz);
+        // get divisor from third mnemonic char
+        ulDivisor = GetDivisor(*(p + 2),
+                                  // one of 'b', 'k', 'K', 'm', 'M', 'a', or 'A'
+                                  // ulDivisor is 0 if none of these
+                               &cReplace);  // out: chars to replace
+
+        // get the value and format it
+        FormatDoubleValue(szTemp,
+                          ulDivisor,
+                          wpshQueryDiskFreeFromFolder(somSelf),
+                          pcs);                 // country settings
+
+        // now replace: since we have found the string
+        // already, we can safely use xstrrpl directly
+        xstrrpl(&strText,
+                // ofs of first char to replace:
+                ulFoundOfs,
+                // chars to replace:
+                cReplace,
+                // replacement string:
+                szTemp,
+                strlen(szTemp));
+
+        // now adjust search pointer; pstrText might have been
+        // reallocated, so search on in new buffer from here
+        p = strText.psz + ulFoundOfs;  // szTemp could have been anything
     }
 
-    if (p = strstr(strText.psz, "\tfk"))
+    // total disk size, added V0.9.11 (2001-04-22) [umoeller]
+    p = strText.psz;
+    while (p = strstr(p, "\tz"))
     {
-        ULONG ulOfs = 0;
-        strhThousandsDouble(szTemp,
-                            ((wpshQueryDiskFreeFromFolder(somSelf) + 500) / 1000),
-                            cThousands);
-        xstrFindReplaceC(&strText, &ulOfs, "\tfk", szTemp);
-    }
+        // offset where we found this:
+        ULONG   ulFoundOfs = (p - strText.psz);
+        // get divisor from third mnemonic char
+        ulDivisor = GetDivisor(*(p + 2),
+                                  // one of 'b', 'k', 'K', 'm', 'M', 'a', or 'A'
+                                  // ulDivisor is 0 if none of these
+                               &cReplace);  // out: chars to replace
 
-    if (p = strstr(strText.psz, "\tfK"))
-    {
-        ULONG ulOfs = 0;
-        strhThousandsDouble(szTemp,
-                            ((wpshQueryDiskFreeFromFolder(somSelf) + 512) / 1024),
-                            cThousands);
-        xstrFindReplaceC(&strText, &ulOfs, "\tfK", szTemp);
-    }
+        // get the value and format it
+        FormatDoubleValue(szTemp,
+                          ulDivisor,
+                          wpshQueryDiskSizeFromFolder(somSelf),
+                          pcs);                 // country settings
 
-    if (p = strstr(strText.psz, "\tfm"))
-    {
-        ULONG ulOfs = 0;
-        strhThousandsDouble(szTemp,
-                            ((wpshQueryDiskFreeFromFolder(somSelf) +500000) / 1000000),
-                            cThousands);
-        xstrFindReplaceC(&strText, &ulOfs, "\tfm", szTemp);
-    }
+        // now replace: since we have found the string
+        // already, we can safely use xstrrpl directly
+        xstrrpl(&strText,
+                // ofs of first char to replace:
+                ulFoundOfs,
+                // chars to replace:
+                cReplace,
+                // replacement string:
+                szTemp,
+                strlen(szTemp));
 
-    if (p = strstr(strText.psz, "\tfM"))
-    {
-        ULONG ulOfs = 0;
-        strhThousandsDouble(szTemp,
-                            ((wpshQueryDiskFreeFromFolder(somSelf) + (1024*1024/2)) / (1024*1024)),
-                            cThousands);
-        xstrFindReplaceC(&strText, &ulOfs, "\tfM", szTemp);
+        // now adjust search pointer; pstrText might have been
+        // reallocated, so search on in new buffer from here
+        p = strText.psz + ulFoundOfs;  // szTemp could have been anything
     }
-
-    // V0.9.6
-    if (p = strstr(strText.psz, "\tfa"))
-    {
-        ULONG ulOfs = 0;
-        stbVar1000Double(szTemp,
-                         wpshQueryDiskFreeFromFolder(somSelf),
-                         cThousands);
-        xstrFindReplaceC(&strText, &ulOfs, "\tfa", szTemp);
-    }
-
-    if (p = strstr(strText.psz, "\tfA"))
-    {
-        ULONG ulOfs = 0;
-        stbVar1024Double(szTemp,
-                         wpshQueryDiskFreeFromFolder(somSelf),
-                         cThousands);
-        xstrFindReplaceC(&strText, &ulOfs, "\tfA", szTemp);
-    }
-    // end V0.9.6
 
     // the following are for SELECTED size
-    if (p = strstr(strText.psz, "\tsb"))
-    {
-        ULONG ulOfs = 0;
-        strhThousandsULong(szTemp, ulSizeSelected, cThousands);
-        xstrFindReplaceC(&strText, &ulOfs, "\tsb", szTemp);
-    }
 
-    if (p = strstr(strText.psz, "\tsk"))
+    // removed spaghetti here V0.9.11 (2001-04-22) [umoeller]
+    p = strText.psz;
+    while (p = strstr(p, "\ts"))
     {
-        ULONG ulOfs = 0;
-        strhThousandsULong(szTemp, ((ulSizeSelected+500) / 1000), cThousands);
-        xstrFindReplaceC(&strText, &ulOfs, "\tsk", szTemp);
-    }
+        // offset where we found this:
+        ULONG   ulFoundOfs = (p - strText.psz);
+        // get divisor from third mnemonic char
+        ulDivisor = GetDivisor(*(p + 2),
+                                  // one of 'b', 'k', 'K', 'm', 'M', 'a', or 'A'
+                                  // ulDivisor is 0 if none of these
+                               &cReplace);  // out: chars to replace
 
-    if (p = strstr(strText.psz, "\tsK"))
-    {
-        ULONG ulOfs = 0;
-        strhThousandsULong(szTemp, ((ulSizeSelected+512) / 1024), cThousands);
-        xstrFindReplaceC(&strText, &ulOfs, "\tsK", szTemp);
-    }
+        // get the value and format it
+        FormatDoubleValue(szTemp,
+                          ulDivisor,
+                          (double)cbSelected,
+                          pcs);                 // country settings
 
-    if (p = strstr(strText.psz, "\tsm"))
-    {
-        ULONG ulOfs = 0;
-        strhThousandsULong(szTemp, ((ulSizeSelected+500000) / 1000000), cThousands);
-        xstrFindReplaceC(&strText, &ulOfs, "\tsm", szTemp);
-    }
+        // now replace: since we have found the string
+        // already, we can safely use xstrrpl directly
+        xstrrpl(&strText,
+                // ofs of first char to replace:
+                ulFoundOfs,
+                // chars to replace:
+                cReplace,
+                // replacement string:
+                szTemp,
+                strlen(szTemp));
 
-    if (p = strstr(strText.psz, "\tsM"))
-    {
-        ULONG ulOfs = 0;
-        strhThousandsULong(szTemp, ((ulSizeSelected+(1024*1024/2)) / (1024*1024)), cThousands);
-        xstrFindReplaceC(&strText, &ulOfs, "\tsM", szTemp);
+        // now adjust search pointer; pstrText might have been
+        // reallocated, so search on in new buffer from here
+        p = strText.psz + ulFoundOfs;  // szTemp could have been anything
     }
-
-    // V0.9.6
-    if (p = strstr(strText.psz, "\tsa"))
-    {
-        ULONG ulOfs = 0;
-        stbVar1000Double(szTemp, (double) ulSizeSelected, cThousands);
-        xstrFindReplaceC(&strText, &ulOfs, "\tsa", szTemp);
-    }
-
-    if (p = strstr(strText.psz, "\tsA"))
-    {
-        ULONG ulOfs = 0;
-        stbVar1024Double(szTemp, (double) ulSizeSelected, cThousands);
-        xstrFindReplaceC(&strText, &ulOfs, "\tsA", szTemp);
-    }
-    // end V0.9.6
 
     // the following are for TOTAL folder size
-    if (p = strstr(strText.psz, "\tSb"))
-    {
-        ULONG ulOfs = 0;
-        strhThousandsULong(szTemp, ulSizeTotal, cThousands);
-        xstrFindReplaceC(&strText, &ulOfs, "\tSb", szTemp);
-    }
 
-    if (p = strstr(strText.psz, "\tSk"))
+    // removed spaghetti here V0.9.11 (2001-04-22) [umoeller]
+    p = strText.psz;
+    while (p = strstr(p, "\tS"))
     {
-        ULONG ulOfs = 0;
-        strhThousandsULong(szTemp, ((ulSizeTotal+500) / 1000), cThousands);
-        xstrFindReplaceC(&strText, &ulOfs, "\tSk", szTemp);
-    }
+        // offset where we found this:
+        ULONG   ulFoundOfs = (p - strText.psz);
+        // get divisor from third mnemonic char
+        ulDivisor = GetDivisor(*(p + 2),
+                                  // one of 'b', 'k', 'K', 'm', 'M', 'a', or 'A'
+                                  // ulDivisor is 0 if none of these
+                               &cReplace);  // out: chars to replace
 
-    if (p = strstr(strText.psz, "\tSK"))
-    {
-        ULONG ulOfs = 0;
-        strhThousandsULong(szTemp, ((ulSizeTotal+512) / 1024), cThousands);
-        xstrFindReplaceC(&strText, &ulOfs, "\tSK", szTemp);
-    }
+        // get the value and format it
+        FormatDoubleValue(szTemp,
+                          ulDivisor,
+                          (double)cbTotal,
+                          pcs);                 // country settings
 
-    if (p = strstr(strText.psz, "\tSm"))
-    {
-        ULONG ulOfs = 0;
-        strhThousandsULong(szTemp, ((ulSizeTotal+500000) / 1000000), cThousands);
-        xstrFindReplaceC(&strText, &ulOfs, "\tSm", szTemp);
-    }
+        // now replace: since we have found the string
+        // already, we can safely use xstrrpl directly
+        xstrrpl(&strText,
+                // ofs of first char to replace:
+                ulFoundOfs,
+                // chars to replace:
+                cReplace,
+                // replacement string:
+                szTemp,
+                strlen(szTemp));
 
-    if (p = strstr(strText.psz, "\tSM"))
-    {
-        ULONG ulOfs = 0;
-        strhThousandsULong(szTemp, ((ulSizeTotal+(1024*1024/2)) / (1024*1024)), cThousands);
-        xstrFindReplaceC(&strText, &ulOfs, "\tSM", szTemp);
+        // now adjust search pointer; pstrText might have been
+        // reallocated, so search on in new buffer from here
+        p = strText.psz + ulFoundOfs;  // szTemp could have been anything
     }
-
-    // V0.9.6
-    if (p = strstr(strText.psz, "\tSa"))
-    {
-        ULONG ulOfs = 0;
-        stbVar1000Double(szTemp, (double) ulSizeTotal, cThousands);
-        xstrFindReplaceC(&strText, &ulOfs, "\tSa", szTemp);
-    }
-
-    if (p = strstr(strText.psz, "\tSA"))
-    {
-        ULONG ulOfs = 0;
-        stbVar1024Double(szTemp, (double) ulSizeTotal, cThousands);
-        xstrFindReplaceC(&strText, &ulOfs, "\tSA", szTemp);
-    }
-    // end V0.9.6
 
     if (strText.ulLength)
     {
-        // we have something:
+        // alright, we have something:
 
         // now translate remaining '\t' characters back into
         // '$' characters; this might happen if the user actually
-        // wanted to see a '$' character displayed
+        // wanted to see a '$' character displayed for his bank account
         while (p2 = strchr(strText.psz, '\t'))
             *p2 = '$';
 
-        return (strText.psz);
+        return (strText.psz);       // do not free the string!
     }
 
     // else:

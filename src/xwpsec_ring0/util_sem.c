@@ -39,11 +39,6 @@
 extern CHAR     G_szScratchBuf[1000] = "";
         // generic temporary buffer for composing strings etc.
 
-// two global pointers to GDT and LDT info segs which can be used
-// with DevHlp32_GetInfoSegs to avoid stack thunking.
-extern struct InfoSegGDT *G_pGDT = 0;      // OS/2 global infoseg
-extern struct InfoSegLDT *G_pLDT = 0;      // OS/2 local  infoseg
-
 /*
  *@@ utilSemRequest:
  *      implements a mutex semaphore mechanism, using
@@ -155,9 +150,13 @@ unsigned long utilGetTaskPID(void)
 {
     APIRET              arc = NO_ERROR;
 
-    arc = DevHlp32_GetInfoSegs(&G_pGDT, &G_pLDT);
+    struct InfoSegGDT *pGDT = 0;      // OS/2 global infoseg
+    struct InfoSegLDT *pLDT = 0;      // OS/2 local  infoseg
+
+    arc = DevHlp32_GetInfoSegs(__StackToFlat(&pGDT),
+                               __StackToFlat(&pLDT));
     if (arc == NO_ERROR)
-        return (G_pLDT->LIS_CurProcID);
+        return (pLDT->LIS_CurProcID);
     else
         return (0);
 

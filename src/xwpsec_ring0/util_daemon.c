@@ -113,7 +113,10 @@ int utilDaemonRequest(ULONG ulEventCode)    // in: event code
 {
     int rc = NO_ERROR;
 
-    utilWriteLog("    utilDaemonRequest: Entering, ulEventCode: %d....\r\n", ulEventCode);
+    struct InfoSegGDT *pGDT = 0;      // OS/2 global infoseg
+    struct InfoSegLDT *pLDT = 0;      // OS/2 local  infoseg
+
+    // utilWriteLog("    utilDaemonRequest: Entering, ulEventCode: %d....\r\n", ulEventCode);
 
     // store event code
     ((PSECIOSHARED)G_pSecIOShared)->ulEventCode = ulEventCode;
@@ -121,15 +124,17 @@ int utilDaemonRequest(ULONG ulEventCode)    // in: event code
     // store PID of process and TID of thread
     // (we're running at task time of thread who
     // requested access to resource!)
-    if (    (rc = DevHlp32_GetInfoSegs(&G_pGDT, &G_pLDT))
+
+    if (    (rc = DevHlp32_GetInfoSegs(__StackToFlat(&pGDT),
+                                       __StackToFlat(&pLDT)))
             == NO_ERROR)
     {
         // PID
-        ((PSECIOSHARED)G_pSecIOShared)->ulCallerPID = G_pLDT->LIS_CurProcID;
+        ((PSECIOSHARED)G_pSecIOShared)->ulCallerPID = pLDT->LIS_CurProcID;
         // PPID
-        ((PSECIOSHARED)G_pSecIOShared)->ulParentPID = G_pLDT->LIS_ParProcID;
+        ((PSECIOSHARED)G_pSecIOShared)->ulParentPID = pLDT->LIS_ParProcID;
         // TID
-        ((PSECIOSHARED)G_pSecIOShared)->ulCallerTID = G_pLDT->LIS_CurThrdID;
+        ((PSECIOSHARED)G_pSecIOShared)->ulCallerTID = pLDT->LIS_CurThrdID;
 
         // post HEV that daemon is waiting on
         if (     (rc = DevHlp32_PostEventSem(G_hevCallback))
@@ -150,8 +155,7 @@ int utilDaemonRequest(ULONG ulEventCode)    // in: event code
             // ID, since we are serialized by the
             // G_rsemBuffersLocked mutex in this section.
 
-            utilWriteLog("    Blocking... G_ulBlockCount: %d\r\n",
-                            G_ulBlockCount);
+            // utilWriteLog("    Blocking... G_ulBlockCount: %d\r\n", G_ulBlockCount);
 
             G_ulBlockCount++;
             // The corresponding ProcRun() is in sec32_ioctl.c.
@@ -162,11 +166,9 @@ int utilDaemonRequest(ULONG ulEventCode)    // in: event code
             // _disable();
             _enable();
 
-            if (rc != NO_ERROR)
-                utilWriteLog("    --- Error DevHlp32_ProcBlock returned %d\r\n", rc);
-            else
+            if (rc == NO_ERROR)
             {
-                utilWriteLog("    Unblocked!\r\n", rc);
+                // utilWriteLog("    Unblocked!\r\n", rc);
                 // daemon has returned:
                 // it has then put the result code (NO_ERROR
                 // or ERROR_ACCESS_DENID or whatever) into
@@ -175,12 +177,12 @@ int utilDaemonRequest(ULONG ulEventCode)    // in: event code
                 rc = ((PSECIOSHARED)G_pSecIOShared)->arc;
                     // this is then returned from the API call, e.g. DosOpen
 
-                utilWriteLog("    Daemon returned access rc %d\r\n", rc);
+                // utilWriteLog("    Daemon returned access rc %d\r\n", rc);
             }
         }
     }
 
-    utilWriteLog("    utilDaemonRequest: Leaving, rc = %d\r\n", rc);
+    // utilWriteLog("    utilDaemonRequest: Leaving, rc = %d\r\n", rc);
 
     return (rc);
 }

@@ -1440,6 +1440,7 @@ BOOL wpshPopulateWithShadows(WPFolder *somSelf)
  *
  *@@changed V0.9.4 (2000-08-03) [umoeller]: changed return code
  *@@changed V0.9.6 (2000-10-25) [umoeller]: added fFoldersOnly
+ *@@changed V0.9.11 (2001-04-21) [umoeller]: disabled shadow populate for folders only
  */
 
 BOOL wpshCheckIfPopulated(WPFolder *somSelf,
@@ -1472,10 +1473,14 @@ BOOL wpshCheckIfPopulated(WPFolder *somSelf,
         // by running "find" on the folder. Note that the WPFolder's
         // have been awakened by wpPopulate above.
 
-        if (fFoldersOnly)
+        // V0.9.11 (2001-04-21) [umoeller]
+        // disabled this again, it's not needed for the file dlg anymore
+        // and produces excessive handles
+
+        /* if (fFoldersOnly)
         {
             wpshPopulateWithShadows(somSelf);
-        }
+        } */
     }
     else
         // already populated:
@@ -1504,6 +1509,31 @@ double wpshQueryDiskFreeFromFolder(WPFolder *somSelf)
         ulDrive = (szRealName[0] - 'A' + 1); // = 1 for "A", 2 for "B" etc.
         DosQueryFSInfo(ulDrive, FSIL_ALLOC, &fsa, sizeof(fsa));
         return ((double)fsa.cSectorUnit * fsa.cbSector * fsa.cUnitAvail);
+    }
+    else
+        return (0);
+}
+
+/*
+ *@@ wpshQueryDiskSizeFromFolder:
+ *      returns the total size of the drive where a
+ *      given folder resides (in bytes).
+ *
+ *@@added V0.9.11 (2001-04-22) [umoeller]
+ */
+
+double wpshQueryDiskSizeFromFolder(WPFolder *somSelf)
+{
+    if (somSelf)
+    {
+        CHAR        szRealName[CCHMAXPATH];
+        ULONG       ulDrive;
+        FSALLOCATE  fsa;
+
+        _wpQueryFilename(somSelf, szRealName, TRUE);
+        ulDrive = (szRealName[0] - 'A' + 1); // = 1 for "A", 2 for "B" etc.
+        DosQueryFSInfo(ulDrive, FSIL_ALLOC, &fsa, sizeof(fsa));
+        return ((double)fsa.cSectorUnit * fsa.cbSector * fsa.cUnit);
     }
     else
         return (0);

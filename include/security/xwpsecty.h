@@ -70,31 +70,7 @@ extern "C" {
 
     #define XWPSEC_RING0_NOT_FOUND      (XWPSEC_ERROR_FIRST + 50)
 
-    /* ******************************************************************
-     *
-     *   XWPShell Shared Memory
-     *
-     ********************************************************************/
-
-    #define SHMEM_XWPSHELL        "\\SHAREMEM\\XWORKPLC\\XWPSHELL.DAT"
-            // shared memory name of XWPSHELLSHARED structure
-
-    /*
-     *@@ XWPSHELLSHARED:
-     *      shared memory structure allocated by XWPShell
-     *      when it starts up. This can be requested by
-     *      any process to receive more information.
-     */
-
-    typedef struct _XWPSHELLSHARED
-    {
-        BOOL        fNoLogonButRestart;
-                // when the shell process terminates, it
-                // can set this flag to TRUE to prevent
-                // the logon prompt from appearing; instead,
-                // the shell should be restarted with the
-                // same user
-    } XWPSHELLSHARED, *PXWPSHELLSHARED;
+    #define XWPSEC_QUEUE_INVALID_CMD    (XWPSEC_ERROR_FIRST + 51)
 
     /* ******************************************************************
      *
@@ -356,6 +332,113 @@ extern "C" {
     APIRET slogLogOff(XWPSECID uid);
 
     APIRET slogQueryLocalUser(PXWPLOGGEDON pLoggedOnLocal);
+
+    /* ******************************************************************
+     *
+     *   XWPShell Shared Memory
+     *
+     ********************************************************************/
+
+    #define SHMEM_XWPSHELL        "\\SHAREMEM\\XWORKPLC\\XWPSHELL.DAT"
+            // shared memory name of XWPSHELLSHARED structure
+
+    /*
+     *@@ XWPSHELLSHARED:
+     *      shared memory structure allocated by XWPShell
+     *      when it starts up. This can be requested by
+     *      any process to receive more information.
+     */
+
+    typedef struct _XWPSHELLSHARED
+    {
+        BOOL        fNoLogonButRestart;
+                // when the shell process terminates, it
+                // can set this flag to TRUE to prevent
+                // the logon prompt from appearing; instead,
+                // the shell should be restarted with the
+                // same user
+    } XWPSHELLSHARED, *PXWPSHELLSHARED;
+
+    /* ******************************************************************
+     *
+     *   XWPShell Queue
+     *
+     ********************************************************************/
+
+    #define QUEUE_XWPSHELL        "\\QUEUES\\XWORKPLC\\XWPSHELL.QUE"
+            // queue name of the master XWPSHell queue
+
+    #define QUECMD_LOCALLOGGEDON                1
+    #define QUECMD_PROCESSLOGGEDON              2
+
+    /*
+     *@@ QUEUEUNION:
+     *
+     *@@added V0.9.11 (2001-04-22) [umoeller]
+     */
+
+    typedef union _QUEUEUNION
+    {
+        XWPLOGGEDON     LoggedOn;
+        // used with the following commands:
+        //
+        // -- QUECMD_LOCALLOGGEDON: return data for user that is
+        //    currently logged on locally.
+        //    Possible error codes: see slogQueryLocalUser.
+        //
+        // -- QUECMD_PROCESSLOGGEDON: return data for user on whose
+        //    behalf the caller process is running.
+
+    } QUEUEUNION, *PQUEUEUNION;
+
+    /*
+     *@@ XWPSHELLQUEUEDATA:
+     *      structure used in shared memory to communicate
+     *      with XWPShell.
+     *
+     *      A client process must use the following procedure
+     *      to communicate with XWPShell:
+     *
+     *      1)  Open the public XWPShell queue.
+     *
+     *      2)  Allocate a giveable shared XWPSHELLQUEUEDATA
+     *          and give it to XWPShell as read/write.
+     *
+     *      3)  Create a shared event semaphore in
+     *          XWPSHELLQUEUEDATA.hev.
+     *
+     *      4)  Set XWPSHELLQUEUEDATA.ulCommand to one of the
+     *          QUECMD_*  flags, specifying the data to be queried.
+     *
+     *      5)  Write the XWPSHELLQUEUEDATA pointer to the
+     *          queue.
+     *
+     *      6)  Block on XWPSHELLQUEUEDATA.hevData, which gets
+     *          posted by XWPShell when the data has been filled.
+     *
+     *      7)  Check XWPSHELLQUEUEDATA.arc. If NO_ERROR,
+     *          XWPSHELLQUEUEDATA.Data union has been filled
+     *          with data according to ulCommand.
+     *
+     *      8)  Close the event sem and free the shared memory.
+     *
+     *@@added V0.9.11 (2001-04-22) [umoeller]
+     */
+
+    typedef struct _XWPSHELLQUEUEDATA
+    {
+        ULONG       ulCommand;          // one of the QUECMD_* values
+
+        HEV         hevData;            // event semaphore posted
+                                        // when XWPShell has produced
+                                        // the data
+
+        APIRET      arc;                // error code set by XWPShell;
+                                        // if NO_ERROR, the following is valid
+
+        QUEUEUNION  Data;               // data, format depends on ulCommand
+
+    } XWPSHELLQUEUEDATA, *PXWPSHELLQUEUEDATA;
 
 #endif
 

@@ -128,7 +128,7 @@ int RegisterDaemon(struct reqpkt_ioctl *pRequest)   // flat ptr to request packe
                         != NO_ERROR)
                     // could not thunk reqpkt:
                 {
-                    utilWriteLog("RegisterDaemon: DevHlp32_VirtToLin returned %d.\r\n", rc);
+                    // utilWriteLog("RegisterDaemon: DevHlp32_VirtToLin returned %d.\r\n", rc);
                     rc = ERROR_I24_INVALID_PARAMETER;
                 }
                 else
@@ -150,7 +150,7 @@ int RegisterDaemon(struct reqpkt_ioctl *pRequest)   // flat ptr to request packe
                                                              &G_pSecIOShared))
                                    != NO_ERROR)
                     {
-                        utilWriteLog("RegisterDaemon: DevHlp32_VMProcessToGlobal returned %d.\r\n", rc);
+                        // utilWriteLog("RegisterDaemon: DevHlp32_VMProcessToGlobal returned %d.\r\n", rc);
                         rc = ERROR_I24_INVALID_PARAMETER;
                     }
                     else
@@ -165,7 +165,7 @@ int RegisterDaemon(struct reqpkt_ioctl *pRequest)   // flat ptr to request packe
                            )
                         {
                             // invalid semaphore:
-                            utilWriteLog("RegisterDaemon: DevHlp32_OpenEventSem returned %d.\r\n", rc);
+                            // utilWriteLog("RegisterDaemon: DevHlp32_OpenEventSem returned %d.\r\n", rc);
                             rc = ERROR_I24_INVALID_PARAMETER;
                         }
                         else
@@ -186,7 +186,7 @@ int RegisterDaemon(struct reqpkt_ioctl *pRequest)   // flat ptr to request packe
                             hevCallback2Store = pSecIORegister->hevCallback;
                                 // G_hevCallback is set below...
 
-                            utilWriteLog("RegisterDaemon: Access control enabled.\r\n", rc);
+                            // utilWriteLog("RegisterDaemon: Access control enabled.\r\n", rc);
 
                             // store PID of ring-3 daemon so we can
                             // disable access control for its API calls
@@ -350,10 +350,10 @@ int sec32_ioctl(PTR16 reqpkt)
 
                 case XWPSECIO_REGISTER:
                     // utilWriteLog("sec32_ioctl XWPSECIO_REGISTER:\r\n");
-                    utilWriteLogInfo();
+                    // utilWriteLogInfo();
 
                     status = RegisterDaemon(pRequest);
-                    utilWriteLog("  RegisterDaemon arc: %d\r\n", status);
+                    // utilWriteLog("  RegisterDaemon arc: %d\r\n", status);
                 break;
 
                 /*
@@ -374,7 +374,7 @@ int sec32_ioctl(PTR16 reqpkt)
 
                 case XWPSECIO_DEREGISTER:
                     // utilWriteLog("sec32_ioctl XWPSECIO_DEREGISTER:\r\n");
-                    utilWriteLogInfo();
+                    // utilWriteLogInfo();
 
                     // just in case we started blocking
                     // while the daemon deregistered

@@ -2,7 +2,9 @@
 /*
  *@@sourcefile userdb.c:
  *      implements the user database for XWorkplace Security
- *      (XWPSec).
+ *      (XWPSec), which contains all users and groups which
+ *      have been defined for the system together with their
+ *      passwords and authority flags.
  *
  *      As explained in xwpshell.c, the user database is
  *      a black box. This has the following consequences:
@@ -22,15 +24,20 @@
  *         externally. If password encryption is desired,
  *         it must be implemented here.
  *
- *      However, the following definitions must be met by
- *      this implementation:
+ *         As a result, only the UserDB can authenticate
+ *         users (match login name against a password).
+ *         See sudbAuthenticateUser.
  *
- *      -- A unique user ID must be assigned to each user name.
- *         XWPSec operates on user IDs instead of user names
- *         to identify users. So user IDs must be persistent
- *         between reboots.
+ *      The following definitions must be met by this
+ *      implementation:
  *
- *      -- Same for group names and group IDs.
+ *      -- A unique user ID (uid) must be assigned to each user
+ *         name. For speed, XWPSec operates on user IDs instead
+ *         of user names to identify users. So user IDs must be
+ *         persistent between reboots. It is the responsibility
+ *         of the UserDB to associate user names with user IDs.
+ *
+ *      -- Same for group names and group IDs (gid's).
  *
  *      -- Each user can belong to no group, one group, or
  *         several groups.
@@ -38,13 +45,12 @@
  *      -- User ID 0 (zero) is special and reserved for the
  *         the superuser, who is granted full access. The
  *         user name for the superuser can be freely assigned
- *         (i.e. doesn't have to be "root").
+ *         (i.e. doesn't have to be "root"). XWPSec completely
+ *         disables access control for uid 0.
  *
  *      -- Group ID 0 (zero) is special and reserved for
- *         the administrators group, who have some of the
- *         privileges of the superuser. The group name
- *         can be freely assigned (i.e. doesn't have to
- *         be "admin").
+ *         the super user as well. No other user can be
+ *         a member of this group.
  *
  *      An XWP Security Database (UserDB) must implement the
  *      following functions:
@@ -76,7 +82,7 @@
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2001 Ulrich M”ller.
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -101,6 +107,11 @@
 #include "helpers\dosh.h"
 #include "helpers\linklist.h"
 #include "helpers\stringh.h"
+
+#include "expat\expat.h"                // must come before xml.h
+#include "helpers\tree.h"
+#include "helpers\xstring.h"
+#include "helpers\xml.h"
 
 #include "bldlevel.h"
 
@@ -204,7 +215,7 @@ APIRET UnlockUserDB(VOID)
  *
  */
 
-BOOL GrabString(const char *pcszBuf,        // in: buf to search
+/* BOOL GrabString(const char *pcszBuf,        // in: buf to search
                 const char *pcszTag,        // in: tag to search for
                 PSZ pszResult,              // out: result
                 ULONG cbResult)             // in: sizeof (*pszResult)
@@ -227,6 +238,126 @@ BOOL GrabString(const char *pcszBuf,        // in: buf to search
     }
 
     return (brc);
+} */
+
+/*
+ *@@ CreateGroup:
+ *      creates a new XWPGROUPDBENTRY from the
+ *      specified XML DOM node and appends it to
+ *      the database.
+ *
+ *@@added V0.9.11 (2001-04-22) [umoeller]
+ */
+
+APIRET CreateGroup(PXWPUSERDB pDB,
+                   PDOMNODE pGroupElementThis)
+{
+    APIRET arc = NO_ERROR;
+
+    PXWPGROUPDBENTRY pNewGroup = malloc(sizeof(XWPGROUPDBENTRY));
+    if (!pNewGroup)
+        arc = ERROR_NOT_ENOUGH_MEMORY;
+    else
+    {
+        const XSTRING *pstrGroupID = xmlGetAttribute(pGroupElementThis,
+                                                     "GROUPID");
+        if (!pstrGroupID)
+            arc = XWPSEC_DB_GROUP_SYNTAX;
+        else
+        {
+            PDOMNODE pCDATA;
+
+            pNewGroup->gid = atoi(pstrGroupID->psz);
+
+            // get group name (GROUP element character data)
+            if (!(pCDATA = xmlGetFirstText(pGroupElementThis)))
+                arc = XWPSEC_DB_GROUP_SYNTAX;
+            else
+            {
+                strhncpy0(pNewGroup->szGroupName,
+                          pCDATA->pstrNodeValue->psz,
+                          sizeof(pNewGroup->szGroupName));
+                // add to database
+                lstAppendItem(&pDB->llGroups, pNewGroup);
+            }
+        }
+
+        if (arc)
+            free(pNewGroup);
+    }
+
+    return (arc);
+}
+
+/*
+ *@@ CreateUser:
+ *      creates a new XWPUSERDBENTRY from the
+ *      specified XML DOM node and appends it to
+ *      the database.
+ *
+ *@@added V0.9.11 (2001-04-22) [umoeller]
+ */
+
+APIRET CreateUser(PXWPUSERDB pDB,
+                  PDOMNODE pUserElementThis)
+{
+    APIRET arc = NO_ERROR;
+
+    PXWPUSERDBENTRY pNewUser = malloc(sizeof(XWPUSERDBENTRY));
+    if (!pNewUser)
+        arc = ERROR_NOT_ENOUGH_MEMORY;
+    else
+    {
+        const XSTRING *pstrUserID = xmlGetAttribute(pUserElementThis,
+                                                    "USERID");
+        const XSTRING *pstrGroupID = xmlGetAttribute(pUserElementThis,
+                                                     "GROUPID");
+        const XSTRING *pstrName    = xmlGetAttribute(pUserElementThis,
+                                                     "NAME");
+        const XSTRING *pstrPass    = xmlGetAttribute(pUserElementThis,
+                                                     "PASS");
+        if (    (!pstrGroupID)
+             || (!pstrUserID)
+             || (!pstrName)
+             || (!pstrPass)
+           )
+            arc = XWPSEC_DB_USER_SYNTAX;
+        else
+        {
+            PDOMNODE pCDATA;
+
+            pNewUser->gid = atoi(pstrUserID->psz);
+            pNewUser->gid = atoi(pstrGroupID->psz);
+
+            strhncpy0(pNewUser->szUserName,
+                      pstrName->psz,
+                      sizeof(pNewUser->szUserName));
+
+            strhncpy0(pNewUser->szPassword,
+                      pstrPass->psz,
+                      sizeof(pNewUser->szPassword));
+
+            // get long user name (USER element character data)
+            /* if (!(pCDATA = xmlGetFirstText(pUserElementThis)))
+                arc = XWPSEC_DB_GROUP_SYNTAX;
+            else
+            {
+                strhncpy0(pNewGroup->szGroupName,
+                          pCDATA->pstrNodeValue->psz,
+                          sizeof(pNewGroup->szGroupName));
+                // add to database
+                lstAppendItem(&pDB->llGroups, pNewGroup);
+            } */
+
+            // add to database
+            lstAppendItem(&pDB->llUsers, pNewUser);
+        }
+
+        if (arc)
+            free(pNewUser);
+    }
+
+    return (arc);
 }
 
 /*
@@ -242,9 +373,11 @@ BOOL GrabString(const char *pcszBuf,        // in: buf to search
  *      This implementation parses ?:\os2\xwpusers.xml,
  *      which has a special XML-compliant format.
  *
- *      Preconditions: This function need not be
- *      reentrant. Proper serialization is taken
- *      care of by users.c.
+ *      This function gets called every single time
+ *      something is needed from the user database.
+ *
+ *      Preconditions: Caller must hold the UserDB
+ *      mutex.
  */
 
 APIRET LoadDatabase(PVOID pDatabase)
@@ -258,8 +391,8 @@ APIRET LoadDatabase(PVOID pDatabase)
             pszDBPath = NULL;
     CHAR    szDBPath[CCHMAXPATH];
 
-    lstInit(&pDB->llGroups, FALSE);
-    lstInit(&pDB->llUsers, FALSE);
+    lstInit(&pDB->llGroups, TRUE);      // auto-free
+    lstInit(&pDB->llUsers, TRUE);       // auto-free
 
     pszDBPath = getenv("XWPUSERDB");
     if (!pszDBPath)
@@ -277,142 +410,66 @@ APIRET LoadDatabase(PVOID pDatabase)
     {
         // text file loaded:
 
-        // now go parse groups...
-
-        // current search pointer
-        ULONG   ulSearchOffset = 0,
-                ulGroupBlockOfs = 0,
-                ulGroupAttrOfs = 0;
-        PSZ     pszGroupBlock = 0,
-                pszGroupAttrs = 0;
-        while (0 == strhGetBlock(pszUserDB,
-                                 &ulSearchOffset,
-                                 "GROUP",
-                                 &pszGroupBlock,
-                                 &pszGroupAttrs,
-                                 &ulGroupBlockOfs,
-                                 &ulGroupAttrOfs))
+        // create the DOM
+        PXMLDOM pDom = NULL;
+        if (!(arc = xmlCreateDOM(0,             // no validation
+                                 &pDom)))
         {
-            // another GROUP found:
-
-            if ((!pszGroupAttrs) || (!pszGroupBlock))
-                arc = XWPSEC_DB_GROUP_SYNTAX;
-            else
+            if (!(arc = xmlParse(pDom,
+                                 pszUserDB,
+                                 strlen(pszUserDB),
+                                 TRUE)))    // last chunk (we only have one)
             {
-                PXWPGROUPDBENTRY pNewGroup = malloc(sizeof(XWPGROUPDBENTRY));
-                if (!pNewGroup)
-                    arc = ERROR_NOT_ENOUGH_MEMORY;
-                else
-                {
-                    // get GROUPID attribute and store it
-                    // in new group
-                    if (!strhGetNumAttribValue(pszGroupAttrs,
-                                               "GROUPID",
-                                               (PLONG)&pNewGroup->gid))
-                        arc = XWPSEC_DB_GROUP_SYNTAX;
-                    else
-                    {
-                        // get body between GROUP tags (group name)
-                        strhncpy0(pNewGroup->szGroupName,
-                                  pszGroupBlock,
-                                  sizeof(pNewGroup->szGroupName));
+                // OK, now we got all the data in the DOMNODEs:
 
-                        // add to database
-                        lstAppendItem(&pDB->llGroups, pNewGroup);
+                // 1) get the root element
+                PDOMNODE pRootElement;
+                if (pRootElement = xmlGetRootElement(pDom))
+                {
+                    // 2) get all GROUP elements
+                    PLINKLIST pllGroups = xmlGetElementsByTagName(pRootElement,
+                                                                  "GROUP");
+                    if (pllGroups)
+                    {
+                        // copy all groups to our private data
+                        PLISTNODE pGroupNode;
+                        for (pGroupNode = lstQueryFirstNode(pllGroups);
+                             (pGroupNode) && (!arc);
+                             pGroupNode = pGroupNode->pNext)
+                        {
+                            PDOMNODE pGroupElementThis = (PDOMNODE)pGroupNode->pItemData;
+                            arc = CreateGroup(pDB,
+                                              pGroupElementThis);
+                        }
+
+                        lstFree(pllGroups);
+
+                        if (!arc)
+                        {
+                            // 3) get all USER elements
+                            PLINKLIST pllUsers = xmlGetElementsByTagName(pRootElement,
+                                                                         "USER");
+                            if (pllUsers)
+                            {
+                                // copy all users to our private data
+                                PLISTNODE pUserNode;
+                                for (pUserNode = lstQueryFirstNode(pllGroups);
+                                     (pUserNode) && (!arc);
+                                     pUserNode = pUserNode->pNext)
+                                {
+                                    PDOMNODE pUserElementThis = (PDOMNODE)pUserNode->pItemData;
+                                    arc = CreateUser(pDB,
+                                                     pUserElementThis);
+                                }
+
+                                lstFree(pllUsers);
+                            }
+                        }
                     }
                 }
 
-                if (arc != NO_ERROR)
-                    free(pNewGroup);
+                xmlFreeDOM(pDom);
             }
-
-            if (pszGroupBlock)
-                free(pszGroupBlock);
-            if (pszGroupAttrs)
-                free(pszGroupAttrs);
-
-            if (arc != NO_ERROR)
-                break;
-
-        } // end while
-
-        if (arc == NO_ERROR)
-        {
-            // no error parsing groups:
-
-            // now go parse users...
-
-            ULONG   ulUserBlockOfs = 0,
-                    ulUserAttrOfs = 0;
-            PSZ     pszUserBlock = 0,
-                    pszUserAttrs = 0;
-
-            // reset current search pointer
-            ulSearchOffset = 0;
-
-            while (0 == strhGetBlock(pszUserDB,
-                                     &ulSearchOffset,
-                                     "USER",
-                                     &pszUserBlock,
-                                     &pszUserAttrs,
-                                     &ulUserBlockOfs,
-                                     &ulUserAttrOfs))
-            {
-                // another USER found:
-
-                if ((!pszUserAttrs) || (!pszUserBlock))
-                    arc = XWPSEC_DB_USER_SYNTAX;
-                else
-                {
-                    PXWPUSERDBENTRY pNewUser = malloc(sizeof(XWPUSERDBENTRY));
-                    if (!pNewUser)
-                        arc = ERROR_NOT_ENOUGH_MEMORY;
-                    else
-                    {
-                        // get GROUPID attribute and store it with new user
-                        if (    (!strhGetNumAttribValue(pszUserAttrs,
-                                                        "USERID",
-                                                        (PLONG)&pNewUser->uid))
-                        // get USERID attribute and store it with new user
-                             || (!strhGetNumAttribValue(pszUserAttrs,
-                                                        "GROUPID",
-                                                        (PLONG)&pNewUser->gid))
-                           )
-                            arc = XWPSEC_DB_USER_SYNTAX;
-
-                        if (    (!GrabString(pszUserAttrs,
-                                             "NAME",     // user name
-                                             pNewUser->szUserName,
-                                             sizeof(pNewUser->szUserName)))
-                             || (!GrabString(pszUserAttrs,
-                                             "PASS",     // password
-                                             pNewUser->szPassword,
-                                             sizeof(pNewUser->szPassword)))
-                            )
-                            arc = XWPSEC_DB_USER_SYNTAX;
-
-                        // get body between GROUP tags (user name)
-                        /* strhncpy0(pNewUser->szUserName,
-                                  pszUserBlock,
-                                  sizeof(pNewUser->szUserName)); */
-
-                        if (arc == NO_ERROR)
-                            // add to database
-                            lstAppendItem(&pDB->llUsers, pNewUser);
-                    }
-
-                    if (arc != NO_ERROR)
-                        free(pNewUser);
-                }
-
-                if (pszUserBlock)
-                    free(pszUserBlock);
-                if (pszUserAttrs)
-                    free(pszUserAttrs);
-
-                if (arc != NO_ERROR)
-                    break;
-            } // end while
         }
 
         free(pszUserDB);
@@ -515,8 +572,8 @@ PCXWPGROUPDBENTRY FindGroupFromID(PLINKLIST pllGroups,
  *      and  XWPUSERDBENTRY.szPassword is correct, this
  *      returns NO_ERROR. In that case, the XWPUSERDBENTRY
  *      and XWPGROUPDBENTRY structures are updated to
- *      contain the user and group info, which can then be
- *      used to create the subject handles.
+ *      contain the user and group info, which XWPSec
+ *      will then use to create the subject handles.
  *
  *      Otherwise XWPSEC_NOT_AUTHENTICATED is
  *      returned, and the structures are not updated.

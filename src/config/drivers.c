@@ -219,7 +219,7 @@ void InsertDrivers(HWND hwndCnr,              // in: container
             // search CONFIG.SYS for driver spec's keyword
             BOOL fInsert = FALSE;
             PDRIVERSPEC pDriverSpec2Store = 0;
-            CHAR szRestOfLine[CCHMAXPATH] = "";
+            CHAR szRestOfLine[1000] = "";
 
             PDRIVERSPEC pSpecThis = (PDRIVERSPEC)pSpecNode->pItemData;
 

@@ -59,6 +59,7 @@
 
 #define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
+#define INCL_DOSQUEUES
 #define INCL_DOSMODULEMGR
 #define INCL_DOSERRORS
 #include <os2.h>
@@ -79,9 +80,270 @@
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
+#include "shared\xsetup.h"              // XWPSetup implementation
+
+#include "security\xwpsecty.h"          // XWorkplace Security
 
 // other SOM headers
 #pragma hdrstop
+
+/* ******************************************************************
+ *
+ *   XWPShell security APIs
+ *
+ ********************************************************************/
+
+/*
+ *@@ XWPSHELLCOMMAND:
+ *
+ *@@added V0.9.11 (2001-04-22) [umoeller]
+ */
+
+typedef struct _XWPSHELLCOMMAND
+{
+    PXWPSHELLQUEUEDATA  pShared;
+    PID                 pidXWPShell;
+    HQUEUE              hqXWPShell;
+} XWPSHELLCOMMAND, *PXWPSHELLCOMMAND;
+
+VOID FreeXWPShellCommand(PXWPSHELLCOMMAND pCommand);
+
+/*
+ *@@ CreateXWPShellCommand:
+ *      creates a command for XWPShell to process.
+ *
+ *      See XWPSHELLQUEUEDATA for a description of
+ *      what's going on here.
+ *
+ *      ulCommand must be one of QUECMD_* values.
+ *
+ *      If this returns NO_ERROR, the caller must
+ *      then fill in the shared data according to
+ *      what the command requires and use
+ *      SendXWPShellCommand then.
+ *
+ *      Among others, this can return:
+ *
+ *      --  ERROR_NOT_ENOUGH_MEMORY
+ *
+ *      --  ERROR_QUE_NAME_NOT_EXIST (343): XWPShell queue
+ *          not found, XWPShell is probably not running.
+ *
+ *@@added V0.9.11 (2001-04-22) [umoeller]
+ */
+
+APIRET CreateXWPShellCommand(ULONG ulCommand,               // in: command
+                             PXWPSHELLCOMMAND *ppCommand)   // out: cmd structure if NO_ERROR is returned
+{
+    APIRET      arc = NO_ERROR;
+
+    PXWPSHELLCOMMAND pCommand = (PXWPSHELLCOMMAND)malloc(sizeof(XWPSHELLCOMMAND));
+    if (!pCommand)
+        arc = ERROR_NOT_ENOUGH_MEMORY;
+    else
+    {
+        memset(pCommand, 0, sizeof(*pCommand));
+
+        // check if XWPShell is running; if so the queue must exist
+        if (!(arc = DosOpenQueue(&pCommand->pidXWPShell,
+                                 &pCommand->hqXWPShell,
+                                 QUEUE_XWPSHELL)))
+        {
+            if (!(arc = DosAllocSharedMem((PVOID*)&pCommand->pShared,
+                                          NULL,     // unnamed
+                                          sizeof(XWPSHELLQUEUEDATA),
+                                          PAG_COMMIT | OBJ_GIVEABLE | PAG_READ | PAG_WRITE)))
+            {
+                PXWPSHELLQUEUEDATA pShared = pCommand->pShared;
+
+                if (    (!(arc = DosGiveSharedMem(pShared,
+                                                  pCommand->pidXWPShell,
+                                                  PAG_READ | PAG_WRITE)))
+                     && (!(arc = DosCreateEventSem(NULL,
+                                                   &pShared->hevData,
+                                                   DC_SEM_SHARED,
+                                                   FALSE)))      // reset
+                   )
+                {
+                    pShared->ulCommand = ulCommand;
+                }
+            }
+        }
+
+        if (!arc)
+            *ppCommand = pCommand;
+        else
+            FreeXWPShellCommand(pCommand);
+    }
+
+    return (arc);
+}
+
+/*
+ *@@ SendXWPShellCommand:
+ *      sends a command to XWPShell and waits for
+ *      the command to be processed.
+ *
+ *      This will wait a maximum of five seconds
+ *      and return 640 (ERROR_TIMEOUT) if XWPShell
+ *      didn't manage to respond in that time.
+ *
+ *      In addition to standard OS/2 error codes,
+ *      this may return XWPShell error codes
+ *      depending on the command that was sent.
+ *      See XWPSHELLQUEUEDATA for commands and
+ *      their possible return values.
+ *
+ *      If XWPSEC_QUEUE_INVALID_CMD is returned,
+ *      you have specified an invalid command code.
+ *
+ *      Be warned, this blocks the calling thread.
+ *      Even though XWPShell should be following
+ *      the PM 0.1 seconds rule, you might want
+ *      to start a second thread for this.
+ *
+ *@@added V0.9.11 (2001-04-22) [umoeller]
+ */
+
+APIRET SendXWPShellCommand(PXWPSHELLCOMMAND pCommand)
+{
+    APIRET arc = NO_ERROR;
+
+    if (!pCommand)
+        arc = ERROR_INVALID_PARAMETER;
+    else
+    {
+        if (!(arc = DosWriteQueue(pCommand->hqXWPShell,
+                                  (ULONG)pCommand->pShared,   // request data
+                                  0,
+                                  NULL,
+                                  0)))              // priority
+        {
+            // wait 5 seconds for XWPShell to write the data
+            if (!(arc = DosWaitEventSem(pCommand->pShared->hevData,
+                                        5*1000)))
+            {
+                // check if XWPShell reported error
+                arc = pCommand->pShared->arc;
+            }
+        }
+    }
+
+    return (arc);
+}
+
+/*
+ *@@ FreeXWPShellCommand:
+ *      cleans up.
+ *
+ *@@added V0.9.11 (2001-04-22) [umoeller]
+ */
+
+VOID FreeXWPShellCommand(PXWPSHELLCOMMAND pCommand)
+{
+    if (pCommand)
+    {
+        if (pCommand->pShared)
+        {
+            if (pCommand->pShared->hevData)
+                DosCloseEventSem(pCommand->pShared->hevData);
+
+            DosFreeMem(pCommand->pShared);
+        }
+
+        if (pCommand->hqXWPShell)
+            DosCloseQueue(pCommand->hqXWPShell);
+
+        free(pCommand);
+    }
+}
+
+/*
+ *@@ xsecQueryLocalLoggedOn:
+ *      returns the user who's currently logged
+ *      on locally.
+ *
+ *      Required authority: None.
+ *
+ *      Among others, this can return:
+ *
+ *      --  ERROR_NOT_ENOUGH_MEMORY
+ *
+ *      --  ERROR_QUE_NAME_NOT_EXIST (343): XWPShell queue
+ *          not found, XWPShell is probably not running.
+ *
+ *      --  XWPSEC_NO_LOCAL_USER: no user is currently
+ *          logged on locally (XWPShell is probably
+ *          displaying logon dialog).
+ *
+ *@@added V0.9.11 (2001-04-22) [umoeller]
+ */
+
+APIRET xsecQueryLocalLoggedOn(PXWPLOGGEDON pLoggedOn)
+{
+    APIRET              arc = NO_ERROR;
+    PXWPSHELLCOMMAND    pCommand;
+
+    if (!(arc = CreateXWPShellCommand(QUECMD_LOCALLOGGEDON,
+                                      &pCommand)))
+    {
+        if (!(arc = SendXWPShellCommand(pCommand)))
+        {
+            // alright:
+            // copy output
+            memcpy(pLoggedOn,
+                   &pCommand->pShared->Data.LoggedOn,      // union member
+                   sizeof(XWPLOGGEDON));
+        }
+
+        FreeXWPShellCommand(pCommand);
+    }
+
+    return (arc);
+}
+
+/* ******************************************************************
+ *
+ *   XWPAdmin implementation
+ *
+ ********************************************************************/
+
+VOID admUserInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+                     ULONG flFlags)        // CBI_* flags (notebook.h)
+{
+    if (flFlags & CBI_INIT)
+    {
+        APIRET arc = NO_ERROR;
+        XWPLOGGEDON LoggedOn;
+
+        if (arc = xsecQueryLocalLoggedOn(&LoggedOn))
+        {
+            // error:
+            CHAR szError[100];
+            sprintf(szError, "Error %d", arc);
+            WinSetDlgItemText(pcnbp->hwndDlgPage,
+                              ID_AMDI_USER_USERNAME,
+                              szError);
+        }
+        else
+        {
+            WinSetDlgItemText(pcnbp->hwndDlgPage,
+                              ID_AMDI_USER_USERNAME,
+                              LoggedOn.szUserName);
+            WinSetDlgItemShort(pcnbp->hwndDlgPage,
+                               ID_AMDI_USER_USERID,
+                               LoggedOn.uid,
+                               FALSE);          // unsigned
+            WinSetDlgItemText(pcnbp->hwndDlgPage,
+                              ID_AMDI_USER_GROUPNAME,
+                              LoggedOn.szGroupName);
+            WinSetDlgItemShort(pcnbp->hwndDlgPage,
+                               ID_AMDI_USER_GROUPID,
+                               LoggedOn.gid,
+                               FALSE);          // unsigned
+        }
+    }
+}
 
 /* ******************************************************************
  *
@@ -98,10 +360,50 @@
 SOM_Scope ULONG  SOMLINK adm_xwpAddXWPAdminPages(XWPAdmin *somSelf,
                                                  HWND hwndDlg)
 {
+    ULONG   ulrc;
+    PCREATENOTEBOOKPAGE pcnbp;
+    HMODULE             savehmod = cmnQueryNLSModuleHandle(FALSE);
+    PID                 pidXWPShell;
+    HQUEUE              hqXWPShell;
+
     /* XWPAdminData *somThis = XWPAdminGetData(somSelf); */
     XWPAdminMethodDebug("XWPAdmin","adm_xwpAddXWPAdminPages");
 
-    return 1;
+    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+    pcnbp->somSelf = somSelf;
+    pcnbp->hwndNotebook = hwndDlg;
+    pcnbp->hmod = savehmod;
+
+    // check if XWPShell is running; if so the queue must exist
+    if (DosOpenQueue(&pidXWPShell,
+                     &hqXWPShell,
+                     QUEUE_XWPSHELL))
+    {
+        // error: display XWP page only then
+        pcnbp->usPageStyleFlags = BKA_MAJOR;
+        pcnbp->pszName = "XWorkplace";
+        pcnbp->ulDlgID = ID_XCD_FIRST;
+        pcnbp->ulPageID = SP_SETUP_XWPLOGO;
+        pcnbp->pfncbInitPage    = setLogoInitPage;
+        pcnbp->pfncbMessage = setLogoMessages;
+        ulrc = ntbInsertPage(pcnbp);
+    }
+    else
+    {
+        // XWPShell running:
+        DosCloseQueue(hqXWPShell);
+
+        pcnbp->ulDlgID = ID_AMD_USER;
+        pcnbp->usPageStyleFlags = BKA_MAJOR;
+        pcnbp->pszName = cmnGetString(ID_XSSI_ADMIN_USER);
+        pcnbp->ulDefaultHelpPanel  = ID_XSH_ADMIN_USER;
+        pcnbp->ulPageID = SP_ADMIN_USER;
+        pcnbp->pfncbInitPage    = admUserInitPage;
+        ulrc = ntbInsertPage(pcnbp);
+    }
+
+    return ulrc;
 }
 
 /*

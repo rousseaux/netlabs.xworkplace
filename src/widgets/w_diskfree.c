@@ -30,7 +30,6 @@
 #include <os2.h>
 
 // C library headers
-// #include <ctype.h>              // needed for toupper
 #include <stdio.h>
 #include <setjmp.h>             // needed for except.h
 #include <assert.h>             // needed for except.h
@@ -241,7 +240,7 @@ typedef struct _DISKFREEPRIVATE
     BYTE     bFSIcon;
     long     lCX;
 
-    char     *pchAktDrive;
+    char     chAktDrive;
     char     szAktDriveType[12];
     double   dAktDriveFree;
     double   dAktDriveSize;
@@ -269,6 +268,7 @@ void GetDrive(HWND hwnd,
               PXCENTERWIDGET pWidget,
               BOOL fNext); // if fNext=FALSE, ut returns the prev. drive
 
+CHAR ValidateDrive(CHAR chDrive);
 
 MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,
                                  ULONG msg,
@@ -368,8 +368,7 @@ void WgtScanSetup(const char *pcszSetupString,
                             "VIEW");
     if(p)
     {
-        pSetup->chDrive = *p;
-        pctrFreeSetupValue(p);
+        pSetup->chDrive = ValidateDrive(*p);  // V0.9.11 (2001-04-19) [pr]: Validate drive letter
     }
     else
         pSetup->chDrive = '*';
@@ -438,16 +437,6 @@ void WgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fir
  ********************************************************************/
 
 #define WMXINT_SETUP    WM_USER+1805
-
-/*
- *@@ _toupper:
- *      replacement for toupper which doesn't work
- *      with the subsystem library.
- *
- *@@added V0.9.11 (2001-04-18) [umoeller]
- */
-
-#define _toupper(c)  ((c) & ~32)
 
 /*
  *@@ fnwpSettingsDlg:
@@ -571,7 +560,7 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,
                         // radiobutton 2 is checked -> single-view
                         char sz[2]={0};
                         WinQueryDlgItemText(hwnd, 106, 2, (PSZ)sz);
-                        pSetup->chDrive = _toupper(sz[0]);
+                        pSetup->chDrive = ValidateDrive(sz[0]);  // V0.9.11 (2001-04-19) [pr]: Validate drive letter
                     }
 
                     // 'show-styles'
@@ -724,9 +713,9 @@ MRESULT WgtCreate(HWND hwnd,
     pPrivate->lCX = 10;          // we'll resize ourselves later
 
     if(pPrivate->Setup.chDrive=='*')
-        pPrivate->pchAktDrive=(char *)pPrivate->szDrives;
+        pPrivate->chAktDrive = *pPrivate->szDrives;
     else
-        pPrivate->pchAktDrive=&pPrivate->Setup.chDrive;
+        pPrivate->chAktDrive = pPrivate->Setup.chDrive;
 
     GetDriveInfo(pPrivate);
 
@@ -805,10 +794,9 @@ BOOL WgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         WgtClearSetup(&pPrivate->Setup);
                         WgtScanSetup(pcszNewSetupString, &pPrivate->Setup);
 
-                        if(pPrivate->Setup.chDrive=='*')
-                          pPrivate->pchAktDrive=(char *)pPrivate->szDrives;
-                        else
-                          pPrivate->pchAktDrive=&pPrivate->Setup.chDrive;
+                        // V0.9.11 (2001-04-19) [pr]: Don't change drive when selecting multi-view
+                        if(pPrivate->Setup.chDrive != '*')
+                            pPrivate->chAktDrive=pPrivate->Setup.chDrive;
 
 
                         GetDriveInfo(pPrivate);
@@ -828,8 +816,6 @@ BOOL WgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *@@ WgtPaint:
  *      implementation for WM_PAINT.
  *
- *      This really does nothing, except painting a
- *      3D rectangle and printing a question mark.
  */
 
 void WgtPaint(HWND hwnd,
@@ -898,10 +884,16 @@ void WgtPaint(HWND hwnd,
                                 DP_NORMAL);
                                                            // pPrivate->dAktDriveSize/1024/1024...100%
               // print drive-data                             pPrivate->dAktDriveFree/1024/1024...x%
-              sprintf(szText, "%c: (%s)  %.fMB (%.f%%) free", *pPrivate->pchAktDrive,
-                                                              pPrivate->szAktDriveType,
-                                                              pPrivate->dAktDriveFree/1024/1024,
-                                                              dPercentFree);
+              // V0.9.11 (2001-04-19) [pr]: Fixed show drive type
+              if(pPrivate->Setup.lShow & DISKFREE_SHOW_FS)
+                sprintf(szText, "%c: (%s)  %.fMB (%.f%%) free", pPrivate->chAktDrive,
+                                                                pPrivate->dAktDriveFree/1024/1024,
+                                                                dPercentFree);
+              else
+                sprintf(szText, "%c:  %.fMB (%.f%%) free", pPrivate->chAktDrive,
+                                                           pPrivate->dAktDriveFree/1024/1024,
+                                                           dPercentFree);
+
               bxCorr=30;
              }
             else
@@ -916,12 +908,11 @@ void WgtPaint(HWND hwnd,
                                 DP_NORMAL);
 
               if(pPrivate->Setup.lShow & DISKFREE_SHOW_FS)
-                sprintf(szText, "%c: (%s)  %.fMB", *pPrivate->pchAktDrive,
-                                                   pPrivate->szAktDriveType,
+                sprintf(szText, "%c: (%s)  %.fMB", pPrivate->chAktDrive,
                                                    pPrivate->dAktDriveFree/1024/1024);
               else
-                sprintf(szText, "%c:  %.fMB", *pPrivate->pchAktDrive,
-                                               pPrivate->dAktDriveFree/1024/1024);
+                sprintf(szText, "%c:  %.fMB", pPrivate->chAktDrive,
+                                              pPrivate->dAktDriveFree/1024/1024);
 
               bxCorr=24;
 
@@ -960,8 +951,8 @@ void WgtPaint(HWND hwnd,
                           pPrivate->Setup.lcolBackground,
                           DT_LEFT| DT_VCENTER);
              }
-        WinEndPaint(hps);
-       }
+        }
+        WinEndPaint(hps);  // V0.9.11 (2001-04-19) [pr]: Moved to correct place
     }
 }
 
@@ -1048,31 +1039,39 @@ void WgtPresParamChanged(HWND hwnd,
     } // end if (pPrivate)
 }
 
+/*
+ *@@ GetDriveInfo:
+ *      Returns TRUE if the drive info has changed
+ *      and the display should therefore be updated.
+ *
+ *@@changed V0.9.11 (2001-04-25) [umoeller]: added error checking
+ */
+
 BOOL GetDriveInfo(PDISKFREEPRIVATE pPrivate)
 {
-    double dOldDriveFree=pPrivate->dAktDriveFree;
+    double dOldDriveFree = pPrivate->dAktDriveFree;
 
+    APIRET arc = pdoshQueryDiskFSType(pPrivate->chAktDrive-64,
+                                      (PSZ)pPrivate->szAktDriveType,
+                                      sizeof(pPrivate->szAktDriveType));
+    if (!arc)
+    {
+        if (!strcmp("LAN", pPrivate->szAktDriveType))
+            pPrivate->bFSIcon = 1;
+        else if(!strcmp("CDFS", pPrivate->szAktDriveType))
+            pPrivate->bFSIcon = 2;
+        else
+            pPrivate->bFSIcon = 0;
 
-    pdoshQueryDiskFSType(*pPrivate->pchAktDrive-64,
-                         (PSZ)pPrivate->szAktDriveType,
-                         sizeof(pPrivate->szAktDriveType));
+        if (    (!(arc = pdoshQueryDiskFree(pPrivate->chAktDrive-64,
+                                            &pPrivate->dAktDriveFree)))
+             && (!(arc = pdoshQueryDiskSize(pPrivate->chAktDrive-64,
+                                            &pPrivate->dAktDriveSize)))
+           )
+            return((BOOL)pPrivate->dAktDriveFree != dOldDriveFree);
+    }
 
-    if(0==strcmp("LAN", pPrivate->szAktDriveType))
-        pPrivate->bFSIcon=1;
-    else if(0==strcmp("CDFS", pPrivate->szAktDriveType))
-        pPrivate->bFSIcon=2;
-    else
-        pPrivate->bFSIcon=0;
-
-
-    pdoshQueryDiskFree(*pPrivate->pchAktDrive-64,
-                       &pPrivate->dAktDriveFree);
-
-    pdoshQueryDiskSize(*pPrivate->pchAktDrive-64,
-                       &pPrivate->dAktDriveSize);
-
-
-    return((BOOL)pPrivate->dAktDriveFree!=dOldDriveFree);
+    return (FALSE);
 }
 
 void GetDrive(HWND hwnd,
@@ -1082,20 +1081,29 @@ void GetDrive(HWND hwnd,
     PDISKFREEPRIVATE pPrivate = (PDISKFREEPRIVATE)pWidget->pUser;
     if(pPrivate)
     {
-        if(fNext)
-        {
-            // return the next drive
-            pPrivate->pchAktDrive++;
-            if(*pPrivate->pchAktDrive==0)
-                pPrivate->pchAktDrive=(char *)pPrivate->szDrives;
-        }
-        else
-        {
-            // return the prev drive
-            if(pPrivate->pchAktDrive==(char *)pPrivate->szDrives)
-                pPrivate->pchAktDrive=(char *)pPrivate->szDrives+strlen(pPrivate->szDrives)-1    ;
+         // V0.9.11 (2001-04-19) [pr]: Rewrite to use drive char. rather than pointers
+         CHAR *pCurrent = strchr(pPrivate->szDrives, pPrivate->chAktDrive);
+
+         if (pCurrent == NULL)
+             pPrivate->chAktDrive = *pPrivate->szDrives;
+         else
+         {
+            if(fNext)
+            {
+                // return the next drive
+                if(pCurrent >= pPrivate->szDrives+strlen(pPrivate->szDrives)-1)
+                    pPrivate->chAktDrive = *pPrivate->szDrives;
+                else
+                    pPrivate->chAktDrive = *(pCurrent+1);
+            }
             else
-                pPrivate->pchAktDrive--;
+            {
+                // return the prev drive
+                if(pCurrent == pPrivate->szDrives)
+                    pPrivate->chAktDrive = *(pPrivate->szDrives+strlen(pPrivate->szDrives)-1);
+                else
+                    pPrivate->chAktDrive = *(pCurrent-1);
+            }
         }
 
         GetDriveInfo(pPrivate);
@@ -1106,6 +1114,31 @@ void GetDrive(HWND hwnd,
                           TRUE);
     }
 }
+
+/*
+ *@@ ValidateDrive:
+ *      checks for valid drive letter or *, converts lower to upper case.
+ *
+ *@@added V0.9.11 (2001-04-19) [pr]
+ */
+
+CHAR ValidateDrive(CHAR chDrive)
+{
+    if(   (chDrive >= 'a')
+       && (chDrive <= 'z')
+      )
+        chDrive &= ~0x20;
+
+    if(   (chDrive != '*')
+       && (   (chDrive < 'A')
+           || (chDrive > 'Z')
+          )
+      )
+        chDrive = 'C';
+
+    return(chDrive);
+}
+
 
 /*
  *@@ WgtDestroy:
@@ -1143,7 +1176,7 @@ void WgtDestroy(HWND hwnd,
 
 /*
  *@@ fnwpSampleWidget:
- *      window procedure for the winlist widget class.
+ *      window procedure for the Diskfree widget class.
  *
  *      There are a few rules which widget window procs
  *      must follow. See ctrDefWidgetProc in src\shared\center.c
@@ -1203,25 +1236,21 @@ MRESULT EXPENTRY fnwpSampleWidget(HWND hwnd,
                 PDISKFREEPRIVATE pPrivate = (PDISKFREEPRIVATE)pWidget->pUser;
 
                 if(pPrivate->Setup.chDrive=='*')
-                {
-                    // get private data from that widget data
-                    // PDISKFREEPRIVATE pPrivate = (PDISKFREEPRIVATE)pWidget->pUser;
                     WinSetPointer(HWND_DESKTOP, pPrivate->hptrHand);
-                }
             }
 
             mrc = (MRESULT)TRUE;        // V0.9.11 (2001-04-18) [umoeller]
                                         // you processed the msg, so return TRUE
         break; }
 
-        case WM_BUTTON1CLICK:
+        case WM_BUTTON1DBLCLK:  // V0.9.11 (2001-04-19) [pr]
         {
             if(pWidget)
             {
                 PDISKFREEPRIVATE pPrivate = (PDISKFREEPRIVATE)pWidget->pUser;
                 if(pPrivate->Setup.chDrive=='*')
                 {
-                    if((long)WinGetKeyState(HWND_DESKTOP, VK_CTRL) & 0x8000)
+                    if ((long)WinGetKeyState(HWND_DESKTOP, VK_CTRL) & 0x8000)
                         GetDrive(hwnd, pWidget, FALSE);
                     else
                         GetDrive(hwnd, pWidget, TRUE);
@@ -1243,8 +1272,16 @@ MRESULT EXPENTRY fnwpSampleWidget(HWND hwnd,
             {
                 // get private data from that widget data
                 PDISKFREEPRIVATE pPrivate = (PDISKFREEPRIVATE)pWidget->pUser;
-
-                if(GetDriveInfo(pPrivate)) // if values have changed update, display
+                // V0.9.11 (2001-04-19) [pr]: Update drive list
+                pdoshEnumDrives(pPrivate->szDrives,
+                                NULL,
+                                TRUE);      // skip removeables
+                // V0.9.11 (2001-04-25) [umoeller]: @@todo error checks...
+                // if this fails, e.g. because a CHKDSK is in progress, this
+                // is dangerous, because the user gets the white error box
+                // on each timer tick, making it almost impossible to close the
+                // XCenter. So if this failed for any reason, stop the timer.
+                if (GetDriveInfo(pPrivate)) // if values have changed update, display
                     WinInvalidateRect(hwnd, NULLHANDLE, TRUE);
             }
         break; }

@@ -57,6 +57,7 @@
    -    XC   for XWPSetup object ("XWorkplace Setup", new with V0.9.0),
    -    XL   for XWPClassList object ("WPS Class List", new with V0.9.0)
    -    CR   for XCenter object (V0.9.7 (2000-11-39) [umoeller])
+   -    AM   for XWPAdmin V0.9.11 (2001-04-22) [umoeller],
    -    SD   for XShutdown,
    -    XT   for XWPTrashCan,
    -    FN   for fonts,
@@ -1093,6 +1094,16 @@
 #define ID_FNDI_SAMPLETEXT_MLE          3901
 
 /******************************************
+ * XWPAdmin V0.9.11         >= 4000
+ ******************************************/
+
+#define ID_AMD_USER                     4000
+#define ID_AMDI_USER_USERNAME           4001
+#define ID_AMDI_USER_USERID             4002
+#define ID_AMDI_USER_GROUPNAME          4003
+#define ID_AMDI_USER_GROUPID            4004
+
+/******************************************
  *          Shutdown defs                 *
  ******************************************/
 
@@ -1848,6 +1859,8 @@
 #define ID_XSSI_MB3_PUSHTOBOTTOM        6164           // "Push to bottom"
 
 #define ID_XSSI_SCREENBORDERSPAGE       6165           // "Screen borders"
+
+#define ID_XSSI_ADMIN_USER              6166           // "Current user"
 
 /******************************************
  *          Treesize                      *

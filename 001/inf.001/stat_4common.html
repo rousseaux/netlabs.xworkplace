@@ -7,6 +7,7 @@
 <!-- This file is all new with V0.84 and contains the status bar codes
      previously described in fldr_32statusbars.html. Nothing else has changed. -->
 <!-- Changed with V0.9.0: see notes below -->
+<!-- V0.9.11 (2001-04-22) [umoeller]: largely rewritten. -->
 <BODY>
 <!-- V0.9.0: add the following line -->
 <B>Class: XFolder</B><HR>
@@ -14,36 +15,28 @@ The following codes work <B>in all three modes:</B>
 <BR><DL>
 <DT><CITE>  $c      </CITE><DD>number of currently selected objects
 <DT><CITE>  $C      </CITE><DD>total number of objects in folder
-<BR><DT><CITE>  $sb     </CITE><DD>total size of selected objects in bytes
-<DT><CITE>  $sk     </CITE><DD>total size of selected objects in kBytes, i.e. bytes / 1000
-<DT><CITE>  $sK     </CITE><DD>total size of selected objects in KBytes, i.e. bytes / 1024
-<DT><CITE>  $sm     </CITE><DD>total size of selected objects in mBytes, i.e. bytes / 1000000
-<DT><CITE>  $sM     </CITE><DD>total size of selected objects in MBytes, i.e. bytes / 1048576
-<!-- V0.9.6: added the following two -->
-<DT><CITE>  $sa     </CITE><DD>total size of selected objects in bytes/kBytes/mBytes/gBytes
-(new with V0.9.6); this automatically chooses an optimal scale depending on the number
-<DT><CITE>  $sA     </CITE><DD>total size of selected objects in bytes/KBytes/MBytes/GBytes
-(new with V0.9.6); this automatically chooses an optimal scale depending on the number
-<BR><DT><CITE>  $Sb     </CITE><DD>total size of folder content in bytes
-<DT><CITE>  $Sk     </CITE><DD>total size of folder content in kBytes, i.e. bytes / 1000
-<DT><CITE>  $SK     </CITE><DD>total size of folder content in KBytes, i.e. bytes / 1024
-<DT><CITE>  $Sm     </CITE><DD>total size of folder content in mBytes, i.e. bytes / 1000000
-<DT><CITE>  $SM     </CITE><DD>total size of folder content in MBytes, i.e. bytes / 1048576
-<!-- V0.9.6: added the following two -->
-<DT><CITE>  $Sa     </CITE><DD>total size of folder content in bytes/kBytes/mBytes/gBytes
-(new with V0.9.6); this automatically chooses an optimal scale depending on the number
-<DT><CITE>  $SA     </CITE><DD>total size of folder content in bytes/KBytes/MBytes/GBytes
-(new with V0.9.6); this automatically chooses an optimal scale depending on the number
-<BR><DT><CITE>  $fb     </CITE><DD>free space on drive in bytes
-<DT><CITE>  $fk     </CITE><DD>free space on drive in kBytes, i.e. bytes / 1000
-<DT><CITE>  $fK     </CITE><DD>free space on drive in KBytes, i.e. bytes / 1024
-<DT><CITE>  $fm     </CITE><DD>free space on drive in mBytes, i.e. bytes / 1000000
-<DT><CITE>  $fM     </CITE><DD>free space on drive in MBytes, i.e. bytes / 1048576
-<!-- V0.9.6: added the following two -->
-<DT><CITE>  $fa     </CITE><DD>free space on drive in bytes/kBytes/mBytes/gBytes
-(new with V0.9.6); this automatically chooses an optimal scale depending on the number
-<DT><CITE>  $fA     </CITE><DD>free space on drive in bytes/KBytes/MBytes/GBytes
-(new with V0.9.6); this automatically chooses an optimal scale depending on the number
+
+<BR><DT><CITE>  $sb     </CITE><DD>total size of selected objects
+<DT><CITE>  $Sb     </CITE><DD>total size of folder content
+<!-- V0.9.11: rewrote the following -->
+<DT><CITE>  $fb     </CITE><DD>free space on the folder's drive
+<DT><CITE>  $zb     </CITE><DD>total size of the folder's drive (V0.9.11)
+
+<P>In the above four, <CODE>b</CODE> is a format specifier and can actually be
+one of the following:
+
+<UL><LI><CODE>b    </CODE> display the value in bytes.
+<LI><CODE>k    </CODE> display the value in kBytes, i.e. bytes / 1000.
+<LI><CODE>K    </CODE> display the value in KBytes, i.e. bytes / 1024.
+<LI><CODE>m    </CODE> display the value in mBytes, i.e. bytes / 1,000,000.
+<LI><CODE>M    </CODE> display the value in MBytes, i.e. bytes / 1,048,576.
+<LI><CODE>a    </CODE> display the value in bytes/kBytes/mBytes, depending on the
+size of the value (V0.9.6).
+<LI><CODE>A    </CODE> display the value in bytes/KBytes/MBytes, depending on the
+size of the value (V0.9.6).
+</UL>
+<!-- end V0.9.11: rewrote the following -->
+
 <BR><DT><CITE>  $x(xxx) </CITE><DD>Left-oriented tabulator:
 print the following information at X position "xxx" (relative to the left border of
 the status bar).

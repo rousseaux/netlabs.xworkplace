@@ -204,7 +204,7 @@ $(OUTPUTDIR)\filedlg.obj: \
         $(HLPINC)\threads.h $(HLPINC)\winh.h $(HLPINC)\undoc.h $(HLPINC)\xstring.h \
     $(INC)\classes\xfobj.ih $(INC)\classes\xfdisk.h \
     $(INC)\dlgids.h \
-    $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
+    $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
     $(INC)\filesys\trash.h $(INC)\filesys\folder.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 

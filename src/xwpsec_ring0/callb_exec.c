@@ -62,8 +62,8 @@ ULONG LOADEROPEN(PSZ pszPath,
             PXWPSECEVENTDATA_LOADEROPEN pLoaderOpen
                 = &((PSECIOSHARED)G_pSecIOShared)->EventData.LoaderOpen;
 
-            utilWriteLog("LOADEROPEN for \"%s\"\r\n", pszPath);
-            utilWriteLogInfo();
+            // utilWriteLog("LOADEROPEN for \"%s\"\r\n", pszPath);
+            // utilWriteLogInfo();
 
             // prepare data for daemon notify
             strcpy( pLoaderOpen->szFileName,
@@ -99,7 +99,7 @@ ULONG LOADEROPEN(PSZ pszPath,
         // kernel panic
         // _sprintf("XWPSEC32.SYS: OPEN_PRE returned %d.", rc);
         // DevHlp32_InternalError(G_szScratchBuf, strlen(G_szScratchBuf) + 1);
-        utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
+        // utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
         rc = ERROR_ACCESS_DENIED;
     }
 
@@ -129,8 +129,8 @@ ULONG GETMODULE(PSZ pszPath)
             // daemon buffers locked
             // (we have exclusive access):
 
-            utilWriteLog("GETMODULE for \"%s\"\r\n", pszPath);
-            utilWriteLogInfo();
+            // utilWriteLog("GETMODULE for \"%s\"\r\n", pszPath);
+            // utilWriteLogInfo();
 
             // prepare data for daemon notify
             strcpy( ((PSECIOSHARED)G_pSecIOShared)->EventData.FileOnly.szPath,
@@ -165,7 +165,7 @@ ULONG GETMODULE(PSZ pszPath)
         // kernel panic
         // _sprintf("XWPSEC32.SYS: OPEN_PRE returned %d.", rc);
         // DevHlp32_InternalError(G_szScratchBuf, strlen(G_szScratchBuf) + 1);
-        utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
+        // utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
         rc = ERROR_ACCESS_DENIED;
     }
 
@@ -196,8 +196,8 @@ ULONG EXECPGM(PSZ pszPath,
             // daemon buffers locked
             // (we have exclusive access):
 
-            utilWriteLog("EXECPGM for \"%s\"\r\n", pszPath);
-            utilWriteLogInfo();
+            // utilWriteLog("EXECPGM for \"%s\"\r\n", pszPath);
+            // utilWriteLogInfo();
 
             // prepare data for daemon notify
             strcpy( ((PSECIOSHARED)G_pSecIOShared)->EventData.ExecPgm.szFileName,
@@ -235,7 +235,7 @@ ULONG EXECPGM(PSZ pszPath,
         // kernel panic
         // _sprintf("XWPSEC32.SYS: OPEN_PRE returned %d.", rc);
         // DevHlp32_InternalError(G_szScratchBuf, strlen(G_szScratchBuf) + 1);
-        utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
+        // utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
         rc = ERROR_ACCESS_DENIED;
     }
 
@@ -277,7 +277,7 @@ VOID EXECPGM_POST(PSZ pszPath,
                 = &((PSECIOSHARED)G_pSecIOShared)->EventData.ExecPgmPost;
 
             // utilWriteLog("EXECPGM_POST for \"%s\", new PID: 0x%lX\r\n", pszPath, NewPID);
-            utilWriteLogInfo();
+            // utilWriteLogInfo();
 
             // prepare data for daemon notify
             strcpy( pExecPgmPost->szFileName,
@@ -305,7 +305,7 @@ VOID EXECPGM_POST(PSZ pszPath,
         // kernel panic
         // _sprintf("XWPSEC32.SYS: OPEN_PRE returned %d.", rc);
         // DevHlp32_InternalError(G_szScratchBuf, strlen(G_szScratchBuf) + 1);
-        utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
+        // utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
         rc = ERROR_ACCESS_DENIED;
     }
 

@@ -250,9 +250,9 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddAssociationsPage(XFldProgramFile *somSelf,
  *      type of the program file.
  *      Note that in addition to the PROG_* flags defined in
  *      PROGDETAILS, this may also return the following:
- *               PROG_XF_DLL     for dynamic link libraries
- *               PROG_XF_DRIVER  for virtual or physical device drivers;
- *                               most files ending in .SYS will be
+ *               PROG_XWP_DLL     for dynamic link libraries
+ *               PROG_PDD, PROG_VDD: for virtual or physical device drivers;
+ *                               many files ending in .SYS will be
  *                               recognized as DLL's though.
  *
  *@@changed V0.9.9 (2001-03-07) [umoeller]: extracted winhQueryAppType
@@ -561,24 +561,30 @@ SOM_Scope BOOL  SOMLINK xfpgmf_wpSetIcon(XFldProgramFile *somSelf,
 
 /*
  *@@ wpSetProgIcon:
- *      this instance method sets the visual icon for
- *      this program file to the appropriate custom
- *      or default icon. We override this to change
- *      the default icons for program files using
- *      /ICONS/ICONS.DLL, if the global settings allow
+ *      this WPProgramFile instance method sets the visual icon
+ *      for this executable file to the appropriate custom or
+ *      default icon.
+ *
+ *      We override this to change the default icons for program
+ *      files using /ICONS/ICONS.DLL, if the global settings allow
  *      this.
+ *
  *      The following methods are called by the WPS when
  *      an icon is to be determined for a WPProgramFile:
+ *
  *      -- if the file has its own icon, e.g. from the
  *              .ICON EAs: only wpSetIcon, this method does
  *              _not_ get called then.
+ *
  *      -- otherwise (no .ICON):
  *              1)  wpQueryIcon, which calls
  *              2)  wpSetProgIcon, which per default calls
- *              3)  wpSetIcon
+ *              3)  wpSetIcon.
+ *
  *      We must return an individual icon in this method,
  *      so we load the icons from /ICONS/ICONS.DLL every
  *      time we arrive here.
+ *
  *      If we return a "global" icon handle which could
  *      have been loaded in wpclsInitData, unfortunately
  *      the WPS will destroy that "global" icon, ruining
@@ -802,22 +808,70 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpQueryDefaultView(XFldProgramFile *somSelf)
  *      standard "Associations" page with a new page which
  *      lists the extended file types.
  *
+ *      We need to remove this page for DLLs and drivers,
+ *      since with XWorkplace, these modules are instances
+ *      of XFldProgramFile as well.
+ *
  *@@added V0.9.9 (2001-03-07) [umoeller]
+ *@@changed V0.9.11 (2001-04-25) [umoeller]: removing page for DLLs and drivers now
  */
 
 SOM_Scope ULONG  SOMLINK xfpgmf_wpAddProgramAssociationPage(XFldProgramFile *somSelf,
                                                             HWND hwndNotebook)
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    ULONG ulType = _xwpQueryProgType(somSelf);
 
     // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
     XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_wpAddProgramAssociationPage");
 
+    // don't add this page for drivers and DLLs V0.9.11 (2001-04-25) [umoeller]
+    switch (ulType)
+    {
+        case PROG_XWP_DLL:
+        case PROG_PDD:
+        case PROG_VDD:
+            return (SETTINGS_PAGE_REMOVED);
+    }
+
     if (pGlobalSettings->fExtAssocs)
         return (_xwpAddAssociationsPage(somSelf, hwndNotebook));
-    else
-        return (XFldProgramFile_parent_WPProgramFile_wpAddProgramAssociationPage(somSelf,
-                                                                                 hwndNotebook));
+
+    return (XFldProgramFile_parent_WPProgramFile_wpAddProgramAssociationPage(somSelf,
+                                                                             hwndNotebook));
+}
+
+/*
+ *@@ wpAddProgramPage:
+ *      this WPProgramFile method adds the "Program" page
+ *      to an executable's settings notebook.
+ *
+ *      We need to remove this page for DLLs and drivers,
+ *      since with XWorkplace, these modules are instances
+ *      of XFldProgramFile as well.
+ *
+ *@@added V0.9.11 (2001-04-25) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xfpgmf_wpAddProgramPage(XFldProgramFile *somSelf,
+                                                 HWND hwndNotebook)
+{
+    // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
+    ULONG ulType = _xwpQueryProgType(somSelf);
+
+    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_wpAddProgramPage");
+
+    // don't add this page for drivers and DLLs V0.9.11 (2001-04-25) [umoeller]
+    switch (ulType)
+    {
+        case PROG_XWP_DLL:
+        case PROG_PDD:
+        case PROG_VDD:
+            return (SETTINGS_PAGE_REMOVED);
+    }
+
+    return (XFldProgramFile_parent_WPProgramFile_wpAddProgramPage(somSelf,
+                                                                  hwndNotebook));
 }
 
 /*
@@ -829,14 +883,21 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpAddProgramAssociationPage(XFldProgramFile *som
  *      "Module" page after that page, displaying
  *      additional information from the executable module.
  *
+ *      We need to remove this page for DLLs and drivers,
+ *      since with XWorkplace, these modules are instances
+ *      of XFldProgramFile as well.
+ *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.5 (2000-08-27) [umoeller]: now skipping for WPCommandFiles
+ *@@changed V0.9.11 (2001-04-25) [umoeller]: removing page for DLLs and drivers now
  */
 
 SOM_Scope ULONG  SOMLINK xfpgmf_wpAddProgramSessionPage(XFldProgramFile *somSelf,
                                                         HWND hwndNotebook)
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    ULONG ulType = _xwpQueryProgType(somSelf);
+
     // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
     XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_wpAddProgramSessionPage");
 
@@ -849,6 +910,15 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpAddProgramSessionPage(XFldProgramFile *somSelf
 
             _xwpAddModulePage(somSelf, hwndNotebook);
         }
+    }
+
+    // don't add this page for drivers and DLLs V0.9.11 (2001-04-25) [umoeller]
+    switch (ulType)
+    {
+        case PROG_XWP_DLL:
+        case PROG_PDD:
+        case PROG_VDD:
+            return (SETTINGS_PAGE_REMOVED);
     }
 
     return (XFldProgramFile_parent_WPProgramFile_wpAddProgramSessionPage(somSelf,

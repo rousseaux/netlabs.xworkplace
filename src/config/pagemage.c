@@ -244,10 +244,6 @@ VOID pgmiPageMageGeneralInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info s
     {
         PAGEMAGECONFIG* pPgmgConfig = (PAGEMAGECONFIG*)pcnbp->pUser;
 
-_Pmpf(("CBI_SET: %d %d %d %d", pPgmgConfig->ptlMaxDesktops.x,
-                                   pPgmgConfig->ptlMaxDesktops.y,
-                                   pPgmgConfig->ptlStartDesktop.x,
-                                   pPgmgConfig->ptlStartDesktop.y));
         // sliders
         winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_X_SLIDER),
                                  SMA_INCREMENTVALUE,
@@ -272,7 +268,7 @@ _Pmpf(("CBI_SET: %d %d %d %d", pPgmgConfig->ptlMaxDesktops.x,
                               ((pPgmgConfig->ulKeyShift & KC_ALT) != 0));
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SCDI_PGMG1_WRAPAROUND,
                               ((pPgmgConfig->bWrapAround) ? TRUE : FALSE));
-_Pmpf(("CBI_SET ended"));
+
     }
 
     if (flFlags & CBI_ENABLE)
@@ -865,6 +861,7 @@ VOID pgmiPageMageStickyInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info st
  *      Reacts to changes of any of the dialog controls.
  *
  *@@added V0.9.4 (2000-07-10) [umoeller]
+ *@@changed V0.9.11 (2001-04-25) [umoeller]: no longer listing invisible switchlist entries
  */
 
 MRESULT pgmiPageMageStickyItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -952,10 +949,13 @@ MRESULT pgmiPageMageStickyItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // loop through all the tasklist entries
             for (ul = 0; ul < (pSwBlock->cswentry); ul++)
             {
-                if (strlen(pSwBlock->aswentry[ul].swctl.szSwtitle))
+                PSWCNTRL pCtrl = &pSwBlock->aswentry[ul].swctl;
+                if (    (strlen(pCtrl->szSwtitle))
+                     && ((pCtrl->uchVisibility & SWL_VISIBLE) != 0) // V0.9.11 (2001-04-25) [umoeller]
+                   )
                     WinInsertLboxItem(hwndCombo,
                                       LIT_SORTASCENDING,
-                                      pSwBlock->aswentry[ul].swctl.szSwtitle);
+                                      pCtrl->szSwtitle);
             }
 
             if (WinProcessDlg(hwndDlg) == DID_OK)

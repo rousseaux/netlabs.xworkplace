@@ -767,9 +767,12 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
 
 /*
  *@@ TrackWithinPager:
+ *      implementation for WM_BEGINDRAG in fnwpPageMageClient
+ *      to drag and drop the mini-windows within the pager.
  *
  *@@added V0.9.2 (2000-02-23) [umoeller]
  *@@changed V0.9.6 (2000-11-06) [umoeller]: disabled dragging of WPS desktop
+ *@@changed V0.9.11 (2001-04-25) [umoeller]: added tracking of entire PageMage frame
  */
 
 VOID TrackWithinPager(HWND hwnd,
@@ -790,10 +793,22 @@ VOID TrackWithinPager(HWND hwnd,
 
     hwndTracked = pgmwGetWindowFromClientPoint(lMouseX, lMouseY);
 
-    if (    (hwndTracked != NULLHANDLE)
-         && (hwndTracked != G_pHookData->hwndWPSDesktop) // V0.9.6 (2000-11-06) [umoeller]
+    if (    (hwndTracked == NULLHANDLE)
+         || (hwndTracked == G_pHookData->hwndWPSDesktop) // V0.9.6 (2000-11-06) [umoeller]
        )
     {
+        // user has started dragging on a non-mini window
+        // (PageMage client background): drag the entire
+        // window then V0.9.11 (2001-04-25) [umoeller]
+        WinSendMsg(G_pHookData->hwndPageMageFrame,
+                   WM_TRACKFRAME,
+                   (MPARAM)TF_MOVE,
+                   0);
+    }
+    else
+    {
+        // user has started dragging a mini window: track
+        // that one then
         TRACKINFO       ti;
         float           fScale_X,
                         fScale_Y;
@@ -1319,7 +1334,8 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
              *      move the windows within the pager.
              */
 
-            case WM_BUTTON2MOTIONSTART:
+            // case WM_BUTTON2MOTIONSTART:
+            case WM_BEGINDRAG:
             {
                 if (G_pHookData->PageMageConfig.fFlash)
                     WinStopTimer(G_habDaemon,

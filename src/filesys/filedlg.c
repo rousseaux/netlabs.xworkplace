@@ -98,6 +98,7 @@
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
+#include "shared\cnrsort.h"             // container sort comparison functions
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
@@ -2187,6 +2188,7 @@ MPARAM MainClientCreate(HWND hwnd,
         cnrhSetView(   CV_TREE | CA_TREELINE | CV_ICON
                      | CV_MINI);
         cnrhSetTreeIndent(20);
+        cnrhSetSortFunc(fnCompareName);             // shared/cnrsort.c
     } END_CNRINFO(pWinData->hwndDrivesCnr);
 
     // create static on top of that
@@ -2213,6 +2215,7 @@ MPARAM MainClientCreate(HWND hwnd,
         cnrhSetView(   CV_NAME | CV_FLOW
                      | CV_MINI);
         cnrhSetTreeIndent(30);
+        cnrhSetSortFunc(fnCompareFoldersFirst);     // shared/cnrsort.c
     } END_CNRINFO(pWinData->hwndFilesCnr);
 
     // create static on top of that
@@ -3253,31 +3256,34 @@ MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1,
  */
 
 HWND fdlgFileDlg(HWND hwndOwner,
+                 const char *pcszStartupDir,        // in: current directory or NULL
                  PFILEDLG pfd)
 {
     HWND    hwndReturn = NULLHANDLE;
     static  s_fRegistered = FALSE;
 
+    // static windata used by all components
+    FILEDLGDATA WinData;
+    memset(&WinData, 0, sizeof(WinData));
+
+    WinData.pfd = pfd;
+
+    lstInit(&WinData.llDialogControls, FALSE);
+
+    lstInit(&WinData.llDriveObjectsInserted, FALSE);
+    lstInit(&WinData.llFileObjectsInserted, FALSE);
+    lstInit(&WinData.llDisks, FALSE);
+
+    pfd->lReturn = DID_CANCEL;           // for now
+
     TRY_LOUD(excpt1)
     {
-        // create left frame
-        FILEDLGDATA WinData = {0};
-
         CHAR        szCurDir[CCHMAXPATH] = "";
         ULONG       cbCurDir;
         APIRET      arc;
         PSZ         pszDlgTitle;
 
         ULONG       flInitialParse = 0;
-
-        WinData.pfd = pfd;
-        pfd->lReturn = DID_CANCEL;           // for now
-
-        lstInit(&WinData.llDialogControls, FALSE);
-
-        lstInit(&WinData.llDriveObjectsInserted, FALSE);
-        lstInit(&WinData.llFileObjectsInserted, FALSE);
-        lstInit(&WinData.llDisks, FALSE);
 
         // set wait pointer, since this may take a second
         winhSetWaitPointer();
@@ -3293,7 +3299,12 @@ HWND fdlgFileDlg(HWND hwndOwner,
         // initialized;
         // we then call it a second time with
         // full path string given to us in FILEDLG.
-        doshQueryCurrentDir(szCurDir); // @@todo use caller's process dir!
+        if (pcszStartupDir && *pcszStartupDir)
+            strcpy(szCurDir, pcszStartupDir);
+        else
+            // startup not specified:
+            doshQueryCurrentDir(szCurDir);
+
         if (strlen(szCurDir) > 3)
             strcat(szCurDir, "\\*");
         else
@@ -3565,53 +3576,58 @@ HWND fdlgFileDlg(HWND hwndOwner,
                     }
                 } // if (WinData.psfvDrives->pfnwpOriginal)
 
-                // stop threads
-                WinPostMsg(WinData.hwndAddChildren,
-                           WM_QUIT,
-                           0, 0);
-                WinData.tiAddChildren.fExit = TRUE;
-                WinData.tiInsertContents.fExit = TRUE;
-                DosSleep(0);
-                while (    (WinData.fAddChildrenRunning)
-                        || (WinData.fInsertContentsRunning)
-                      )
-                {
-                    winhSleep(50);
-                }
-
-                /*
-                 *  CLEANUP
-                 *
-                 */
-
-                // prevent dialog updates
-                WinData.fFileDlgReady = FALSE;
-                ClearContainer(WinData.hwndDrivesCnr,
-                               &WinData.llDriveObjectsInserted);
-                ClearContainer(WinData.hwndFilesCnr,
-                               &WinData.llFileObjectsInserted);
-
             } // end else if (    (!WinData.pDrivesFolder)
-
-            if (WinData.pDrivesFolder)
-                _wpUnlockObject(WinData.pDrivesFolder);
-
-            // clean up
-            WinDestroyWindow(WinData.hwndSplitWindow);
-
-            WinDestroyWindow(WinData.hwndDrivesFrame);
-            WinDestroyWindow(WinData.hwndFilesFrame);
-            WinDestroyWindow(WinData.hwndMainFrame);
         }
-
-        lstClear(&WinData.llDisks);
-
-        lstClear(&WinData.llDialogControls);
     }
     CATCH(excpt1)
     {
+        // crash: return error
+        hwndReturn = NULLHANDLE;
     }
     END_CATCH();
+
+    /*
+     *  CLEANUP
+     *
+     */
+
+    // stop threads
+    WinPostMsg(WinData.hwndAddChildren,
+               WM_QUIT,
+               0, 0);
+    WinData.tiAddChildren.fExit = TRUE;
+    WinData.tiInsertContents.fExit = TRUE;
+    DosSleep(0);
+    while (    (WinData.fAddChildrenRunning)
+            || (WinData.fInsertContentsRunning)
+          )
+    {
+        winhSleep(50);
+    }
+
+    // prevent dialog updates
+    WinData.fFileDlgReady = FALSE;
+    ClearContainer(WinData.hwndDrivesCnr,
+                   &WinData.llDriveObjectsInserted);
+    ClearContainer(WinData.hwndFilesCnr,
+                   &WinData.llFileObjectsInserted);
+
+    if (WinData.pDrivesFolder)
+        _wpUnlockObject(WinData.pDrivesFolder);
+
+    // clean up
+    if (WinData.hwndSplitWindow)
+        WinDestroyWindow(WinData.hwndSplitWindow);
+
+    if (WinData.hwndDrivesFrame)
+        WinDestroyWindow(WinData.hwndDrivesFrame);
+    if (WinData.hwndFilesFrame)
+        WinDestroyWindow(WinData.hwndFilesFrame);
+    if (WinData.hwndMainFrame)
+        WinDestroyWindow(WinData.hwndMainFrame);
+
+    lstClear(&WinData.llDisks);
+    lstClear(&WinData.llDialogControls);
 
     _Pmpf((__FUNCTION__ ": exiting, pfd->lReturn is %d", pfd->lReturn));
     _Pmpf(("  pfd->szFullFile is %s", pfd->szFullFile));

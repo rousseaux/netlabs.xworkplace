@@ -1105,6 +1105,8 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryMenuBarVisibility(XFolder *somSelf)
  *      Otherwise the status bar setting will only be changed internally
  *      for the next time the folder is opened. Might lead to errors.
  *      Returns TRUE if successful.
+ *
+ *@@changed V0.9.11 (2001-04-22) [umoeller]: wpSaveDeferred was missing
  */
 
 SOM_Scope BOOL  SOMLINK xf_xwpSetStatusBarVisibility(XFolder *somSelf,
@@ -1120,6 +1122,8 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetStatusBarVisibility(XFolder *somSelf,
             _Pmpf(( "xwpSetStatusBarVisibility: %d", ulVisibility));
         #endif
         _bStatusBarInstance = ulVisibility;
+
+        _wpSaveDeferred(somSelf);       // was missing V0.9.11 (2001-04-22) [umoeller]
 
         if (fUpdate)
         {
@@ -1375,11 +1379,12 @@ SOM_Scope ULONG  SOMLINK xf_xwpQuerySetup2(XFolder *somSelf,
  *      the folder is populated.
  *
  *      After that, the behavior of XFolder::wpAddToContent is
- *      modified.
+ *      modified with a number of ugly hacks to prevent object
+ *      insertion.
  *
  *      NOTE: You must call this method during the processing
  *      of the folder's wpInitData, or otherwise the folder
- *      contents will become garbled.
+ *      contents might become garbled.
  *
  *@@added V0.9.7 (2001-01-13) [umoeller]
  */

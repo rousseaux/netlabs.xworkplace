@@ -356,7 +356,9 @@
 
     #define ID_XSH_SETTINGS_PAGEMAGE_WINDOW 125     // V0.9.9: XWPScreen "PageMage" page V0.9.9 (2001-03-15) [lafaix]
 
-    #define ID_XSH_DATAFILE_TYPES           126     // V0.9.9: XWPScreen "PageMage" page V0.9.9 (2001-03-15) [lafaix]
+    #define ID_XSH_DATAFILE_TYPES           126     // V0.9.9: data file types page
+
+    #define ID_XSH_ADMIN_USER               127     // V0.9.11: XWPAdmin "Users" page
 
     /********************************************************************
      *
@@ -573,6 +575,9 @@
 
     // 19) XWPFontFolder
     #define SP_FONT_SAMPLETEXT      190     // new with V0.9.9 (2001-03-27) [umoeller]
+
+    // 20) XWPAdmin
+    #define SP_ADMIN_USER           200     // new with V0.9.11 (2001-04-22) [umoeller]
 
     /********************************************************************
      *

@@ -181,6 +181,7 @@ PCTRSCANSETUPSTRING pctrScanSetupString = NULL;
 PDOSHMYPID pdoshMyPID = NULL;
 
 PGPIHDRAW3DFRAME pgpihDraw3DFrame = NULL;
+PGPIHMANIPULATERGB pgpihManipulateRGB = NULL;
 PGPIHSWITCHTORGB pgpihSwitchToRGB = NULL;
 
 PLSTAPPENDITEM plstAppendItem = NULL;
@@ -223,6 +224,7 @@ RESOLVEFUNCTION G_aImports[] =
         "ctrScanSetupString", (PFN*)&pctrScanSetupString,
         "doshMyPID", (PFN*)&pdoshMyPID,
         "gpihDraw3DFrame", (PFN*)&pgpihDraw3DFrame,
+        "gpihManipulateRGB", (PFN*)&pgpihManipulateRGB,
         "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
         "lstAppendItem", (PFN*)&plstAppendItem,
         "lstClear", (PFN*)&plstClear,
@@ -1408,20 +1410,6 @@ ULONG CalcButtonCX(PWINLISTPRIVATE pPrivate,
 }
 
 /*
- *@@ HackColor:
- *
- */
-
-VOID HackColor(PBYTE pb, double dFactor)
-{
-    ULONG ul = (ULONG)((double)(*pb) * dFactor);
-    if (ul > 255)
-        *pb = 255;
-    else
-        *pb = (BYTE)ul;
-}
-
-/*
  *@@ DrawOneCtrl:
  *      paints one window button.
  *
@@ -1469,17 +1457,12 @@ VOID DrawOneCtrl(PWINLISTPRIVATE pPrivate,
 
         if ((hwndActive) && (pCtrlThis->hwnd == hwndActive))
         {
-            PBYTE   pb = (PBYTE)(&lButtonColor);
-
             // active window: paint rect lowered
             lLeft = pGlobals->lcol3DDark;
             lRight = pGlobals->lcol3DLight;
 
             // and paint button lighter:
-            // in memory, the bytes are blue, green, red, unused
-            HackColor(pb++, 1.1);           // blue
-            HackColor(pb++, 1.1);           // green
-            HackColor(pb++, 1.1);           // red
+            pgpihManipulateRGB(&lButtonColor, 1.1);
         }
         else
         {
@@ -1584,16 +1567,12 @@ VOID DrawAllCtrls(PWINLISTPRIVATE pPrivate,
     ULONG   ul = 0;
 
     LONG    lcolBackground = pPrivate->Setup.lcolBackground;
-    PBYTE   pb = (PBYTE)&lcolBackground;
 
     // count of entries in switch list:
     ULONG   cEntries = plstCountItems(&pPrivate->llSwitchEntries);
 
     // make background color darker:
-    // in memory, the bytes are blue, green, red, unused
-    HackColor(pb++, 0.91);           // blue
-    HackColor(pb++, 0.91);           // green
-    HackColor(pb++, 0.91);           // red
+    pgpihManipulateRGB(&lcolBackground, 0.91);
 
     if (!cEntries)      // avoid division by zero
     {

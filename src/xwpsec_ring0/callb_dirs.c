@@ -58,8 +58,8 @@ ULONG MAKEDIR(PSZ pszPath)
             // daemon buffers locked
             // (we have exclusive access):
 
-            utilWriteLog("MAKEDIR for \"%s\"\r\n", pszPath);
-            utilWriteLogInfo();
+            // utilWriteLog("MAKEDIR for \"%s\"\r\n", pszPath);
+            // utilWriteLogInfo();
 
             // prepare data for daemon notify
             strcpy( ((PSECIOSHARED)G_pSecIOShared)->EventData.FileOnly.szPath,
@@ -94,7 +94,7 @@ ULONG MAKEDIR(PSZ pszPath)
         // kernel panic
         // _sprintf("XWPSEC32.SYS: OPEN_PRE returned %d.", rc);
         // DevHlp32_InternalError(G_szScratchBuf, strlen(G_szScratchBuf) + 1);
-        utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
+        // utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
         rc = ERROR_ACCESS_DENIED;
     }
 
@@ -124,8 +124,8 @@ ULONG CHANGEDIR(PSZ pszPath)
             // daemon buffers locked
             // (we have exclusive access):
 
-            utilWriteLog("CHANGEDIR for \"%s\"\r\n", pszPath);
-            utilWriteLogInfo();
+            // utilWriteLog("CHANGEDIR for \"%s\"\r\n", pszPath);
+            // utilWriteLogInfo();
 
             // prepare data for daemon notify
             strcpy( ((PSECIOSHARED)G_pSecIOShared)->EventData.FileOnly.szPath,
@@ -160,7 +160,7 @@ ULONG CHANGEDIR(PSZ pszPath)
         // kernel panic
         // _sprintf("XWPSEC32.SYS: OPEN_PRE returned %d.", rc);
         // DevHlp32_InternalError(G_szScratchBuf, strlen(G_szScratchBuf) + 1);
-        utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
+        // utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
         rc = ERROR_ACCESS_DENIED;
     }
 
@@ -194,8 +194,8 @@ ULONG REMOVEDIR(PSZ pszPath)
             // daemon buffers locked
             // (we have exclusive access):
 
-            utilWriteLog("REMOVEDIR for \"%s\"\r\n", pszPath);
-            utilWriteLogInfo();
+            // utilWriteLog("REMOVEDIR for \"%s\"\r\n", pszPath);
+            // utilWriteLogInfo();
 
             // prepare data for daemon notify
             strcpy( ((PSECIOSHARED)G_pSecIOShared)->EventData.FileOnly.szPath,
@@ -230,7 +230,7 @@ ULONG REMOVEDIR(PSZ pszPath)
         // kernel panic
         // _sprintf("XWPSEC32.SYS: OPEN_PRE returned %d.", rc);
         // DevHlp32_InternalError(G_szScratchBuf, strlen(G_szScratchBuf) + 1);
-        utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
+        // utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
         rc = ERROR_ACCESS_DENIED;
     }
 

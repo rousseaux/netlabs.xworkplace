@@ -2928,7 +2928,8 @@ BEGIN
                         WS_DISABLED
         ENTRYFIELD      "", ID_XSDI_DESCRIPTION, 42, 32, 66, 8, ES_MARGIN |
                         WS_DISABLED
-        PUSHBUTTON      "~Set", ID_XSDI_SETACCEL, 114, 30, 30, 12, WS_DISABLED
+        PUSHBUTTON      "~Set", ID_XSDI_SETACCEL, 114, 30, 30, 12,
+                        WS_DISABLED
         PUSHBUTTON      "~Clear", ID_XSDI_CLEARACCEL, 146, 30, 30, 12,
                         WS_DISABLED
         PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12
@@ -2940,20 +2941,35 @@ END
 
 DLGTEMPLATE ID_CRD_DISKFREEWGT_SETTINGS LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    DIALOG  "Diskfree Setup", ID_CRD_DISKFREEWGT_SETTINGS, 12, 6, 100, 64, NOT WS_VISIBLE, FCF_SYSMENU | FCF_TITLEBAR
+    DIALOG  "Diskfree Setup", ID_CRD_DISKFREEWGT_SETTINGS, 12, 6, 100, 64, ,
+            FCF_SYSMENU | FCF_TITLEBAR
     BEGIN
-        AUTORADIOBUTTON   "Multi-view",      101,  3, 53,  45, 11, WS_TABSTOP|WS_GROUP
-        AUTORADIOBUTTON   "Single-view",     102,  3, 43,  47, 11, WS_TABSTOP
-
-        GROUPBOX          "",                104, 12, 26,  79, 19
-
-
-          LTEXT           "Drive",           105, 15, 29,  20,  8  WS_GROUP
-          ENTRYFIELD      "C",               106, 36, 31,  13,  6, ES_MARGIN
-          AUTOCHECKBOX    "Show file system", 107,  3, 13,  82, 10, WS_TABSTOP|WS_GROUP
-
-
-        DEFPUSHBUTTON     "~OK",              110, 64,  2,  30, 10
+        AUTORADIOBUTTON "Multi-view", ID_ICON2, 3, 53, 45, 11, WS_GROUP |
+                        WS_TABSTOP
+        AUTORADIOBUTTON "Single-view", ID_ICONDLG, 3, 43, 47, 11, WS_TABSTOP
+        GROUPBOX        "", ID_STARTICON1, 12, 26, 79, 19
+        LTEXT           "Drive", ID_STARTICON2, 15, 29, 20, 8
+        ENTRYFIELD      "C", ID_SHUTICON1, 36, 31, 13, 6, ES_MARGIN
+        AUTOCHECKBOX    "Show file system", ID_SHUTICON2, 3, 13, 82, 10,
+                        WS_GROUP
+        DEFPUSHBUTTON   "~OK", ID_ICONSDANIM1, 64, 2, 30, 10
     END
 END
 
+DLGTEMPLATE ID_AMD_USER LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_AMD_USER, 0, 0, 194, 134, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        GROUPBOX        "Current local user", -1, 12, 22, 166, 50
+        LTEXT           "User name:", -1, 16, 54, 60, 8
+        LTEXT           "", ID_AMDI_USER_USERNAME, 82, 54, 90, 8
+        LTEXT           "User ID:", -1, 16, 46, 60, 8
+        LTEXT           "", ID_AMDI_USER_USERID, 82, 46, 90, 8
+        LTEXT           "Group name:", -1, 16, 34, 60, 8
+        LTEXT           "", ID_AMDI_USER_GROUPNAME, 82, 34, 90, 8
+        LTEXT           "Group ID:", -1, 16, 26, 60, 8
+        LTEXT           "", ID_AMDI_USER_GROUPID, 82, 26, 90, 8
+        PUSHBUTTON      "~Help", DID_HELP, 124, 6, 55, 12, BS_HELP
+    END
+END

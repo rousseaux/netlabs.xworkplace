@@ -17,8 +17,14 @@ Ulrich M”ller.
 NOT-SO-SERIOUS PROBLEMS
 -----------------------
 
-shutdown:
-    wait for objs in shutdown folder doesn't work.
+--  status bars:
+    If the folder status bar is enabled for the Drives folder (using the default
+    status bar) and the active Object in the folder is the "Drive A" object the
+    WPS hangs after inserting a non-DOS formated Disk.
+
+--  startup/shutdown folders:
+    --  wait for objs in shutdown folder doesn't work.
+    --  startup folders loop forever.
 
 --  In the "keyboard" object, looking at the "hotkeys" page I see an object
     associated with "LeftWin" key. This is one of 3 key mappings I defined
@@ -48,8 +54,6 @@ XCenter:
     -- add option for tooltip shadows.
 
     -- winlist: truncate titles with "..."
-
-    -- winlist: maximized VIO windows/FS sessions
 
     -- make object buttons droppable
 

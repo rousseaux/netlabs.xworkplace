@@ -808,7 +808,7 @@ PSZ cmnGetString(ULONG ulStringID)
         }
         else
             // we must always return a string, never NULL
-            return ("Cannot get strings lock.");
+            pszReturn = "Cannot get strings lock.";
     }
     CATCH(excpt1) {} END_CATCH();
 
@@ -1619,8 +1619,7 @@ BOOL cmnDescribeKey(PSZ pszBuf,
                     USHORT usKeyCode)
 {
     BOOL brc = TRUE;
-
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    ULONG ulID = 0;
 
     *pszBuf = 0;
     if (usFlags & KC_CTRL)
@@ -1634,26 +1633,26 @@ BOOL cmnDescribeKey(PSZ pszBuf,
     {
         switch (usKeyCode)
         {
-            case VK_BACKSPACE: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_BACKSPACE)) ; break; // pszBackspace
-            case VK_TAB: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_TAB)) ; break; // pszTab
-            case VK_BACKTAB: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_BACKTABTAB)) ; break; // pszBacktab
-            case VK_NEWLINE: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_ENTER)) ; break; // pszEnter
-            case VK_ESC: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_ESC)) ; break; // pszEsc
-            case VK_SPACE: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_SPACE)) ; break; // pszSpace
-            case VK_PAGEUP: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_PAGEUP)) ; break; // pszPageup
-            case VK_PAGEDOWN: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_PAGEDOWN)) ; break; // pszPagedown
-            case VK_END: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_END)) ; break; // pszEnd
-            case VK_HOME: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_HOME)) ; break; // pszHome
-            case VK_LEFT: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_LEFT)) ; break; // pszLeft
-            case VK_UP: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_UP)) ; break; // pszUp
-            case VK_RIGHT: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_RIGHT)) ; break; // pszRight
-            case VK_DOWN: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_DOWN)) ; break; // pszDown
-            case VK_PRINTSCRN: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_PRINTSCRN)) ; break; // pszPrintscrn
-            case VK_INSERT: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_INSERT)) ; break; // pszInsert
-            case VK_DELETE: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_DELETE)) ; break; // pszDelete
-            case VK_SCRLLOCK: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_SCRLLOCK)) ; break; // pszScrlLock
-            case VK_NUMLOCK: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_NUMLOCK)) ; break; // pszNumLock
-            case VK_ENTER: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_ENTER)) ; break; // pszEnter
+            case VK_BACKSPACE: ulID = ID_XSSI_KEY_BACKSPACE; break; // pszBackspace
+            case VK_TAB: ulID = ID_XSSI_KEY_TAB; break; // pszTab
+            case VK_BACKTAB: ulID = ID_XSSI_KEY_BACKTABTAB; break; // pszBacktab
+            case VK_NEWLINE: ulID = ID_XSSI_KEY_ENTER; break; // pszEnter
+            case VK_ESC: ulID = ID_XSSI_KEY_ESC; break; // pszEsc
+            case VK_SPACE: ulID = ID_XSSI_KEY_SPACE; break; // pszSpace
+            case VK_PAGEUP: ulID = ID_XSSI_KEY_PAGEUP; break; // pszPageup
+            case VK_PAGEDOWN: ulID = ID_XSSI_KEY_PAGEDOWN; break; // pszPagedown
+            case VK_END: ulID = ID_XSSI_KEY_END; break; // pszEnd
+            case VK_HOME: ulID = ID_XSSI_KEY_HOME; break; // pszHome
+            case VK_LEFT: ulID = ID_XSSI_KEY_LEFT; break; // pszLeft
+            case VK_UP: ulID = ID_XSSI_KEY_UP; break; // pszUp
+            case VK_RIGHT: ulID = ID_XSSI_KEY_RIGHT; break; // pszRight
+            case VK_DOWN: ulID = ID_XSSI_KEY_DOWN; break; // pszDown
+            case VK_PRINTSCRN: ulID = ID_XSSI_KEY_PRINTSCRN; break; // pszPrintscrn
+            case VK_INSERT: ulID = ID_XSSI_KEY_INSERT; break; // pszInsert
+            case VK_DELETE: ulID = ID_XSSI_KEY_DELETE; break; // pszDelete
+            case VK_SCRLLOCK: ulID = ID_XSSI_KEY_SCRLLOCK; break; // pszScrlLock
+            case VK_NUMLOCK: ulID = ID_XSSI_KEY_NUMLOCK; break; // pszNumLock
+            case VK_ENTER: ulID = ID_XSSI_KEY_ENTER; break; // pszEnter
             case VK_F1: strcat(pszBuf, "F1"); break;
             case VK_F2: strcat(pszBuf, "F2"); break;
             case VK_F3: strcat(pszBuf, "F3"); break;
@@ -1685,9 +1684,9 @@ BOOL cmnDescribeKey(PSZ pszBuf,
     {
         switch (usKeyCode)
         {
-            case 0xEC00: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_WINLEFT)) ; break; // pszWinLeft
-            case 0xED00: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_WINRIGHT)) ; break; // pszWinRight
-            case 0xEE00: strcat(pszBuf, cmnGetString(ID_XSSI_KEY_WINMENU)) ; break; // pszWinMenu
+            case 0xEC00: ulID = ID_XSSI_KEY_WINLEFT; break; // pszWinLeft
+            case 0xED00: ulID = ID_XSSI_KEY_WINRIGHT; break; // pszWinRight
+            case 0xEE00: ulID = ID_XSSI_KEY_WINMENU; break; // pszWinMenu
             default:
             {
                 CHAR szTemp[2];
@@ -1700,6 +1699,10 @@ BOOL cmnDescribeKey(PSZ pszBuf,
             }
         }
     }
+
+    if (ulID)
+        strcat(pszBuf, cmnGetString(ulID));
+
 
     #ifdef DEBUG_KEYS
         _Pmpf(("Key: %s, usKeyCode: 0x%lX, usFlags: 0x%lX", pszBuf, usKeyCode, usFlags));
@@ -4604,6 +4607,7 @@ BOOL cmnFileDlg(HWND hwndOwner,    // in: owner for file dlg
     }
 
     if (    fdlgFileDlg(hwndOwner, // owner
+                        NULL,
                         &fd)
         && (fd.lReturn == DID_OK)
        )

@@ -779,11 +779,6 @@ PACLDBENTRYNODE FindACLDBEntry(const char *pcszName)
  *         is 0) because per definition, there are no ACL
  *         entries for root. Root has unrestricted access
  *         to the machine.
- *
- *      -- However, this DOES get called for processes running
- *         on behalf of a non-superuser belonging the "admin"
- *         group, because users of the admin group can be
- *         restricted.
  */
 
 APIRET saclVerifyAccess(PCXWPSECURITYCONTEXT pContext,   // in: security context of process

@@ -55,6 +55,7 @@ EXPORTS
     gpihCreateBitmap
     gpihCreateMemPS
     gpihDraw3DFrame
+    gpihManipulateRGB
     gpihSwitchToRGB
     lstAppendItem
     lstClear

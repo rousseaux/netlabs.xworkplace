@@ -68,7 +68,7 @@ ULONG CallType MOVE_PRE(PSZ pszNewPath,
                 = &((PSECIOSHARED)G_pSecIOShared)->EventData.MovePre;
 
             // utilWriteLog("MOVE_PRE for \"%s\" -> \"%s\"\r\n", pszOldPath, pszNewPath);
-            utilWriteLogInfo();
+            // utilWriteLogInfo();
 
             // prepare data for daemon notify
             strcpy( pMovePre->szNewPath,
@@ -106,7 +106,7 @@ ULONG CallType MOVE_PRE(PSZ pszNewPath,
         // kernel panic
         // _sprintf("XWPSEC32.SYS: OPEN_PRE returned %d.", rc);
         // DevHlp32_InternalError(G_szScratchBuf, strlen(G_szScratchBuf) + 1);
-        utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
+        // utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
         rc = ERROR_ACCESS_DENIED;
     }
 

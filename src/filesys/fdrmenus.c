@@ -2059,10 +2059,7 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                                MPFROM2SHORT(CMDSRC_MENU,
                                             FALSE));     // keyboard
 
-                    /* xthrPostFileMsg(FIM_REFRESH,
-                                    (MPARAM)somSelf,
-                                    (MPARAM)hwndFrame);
-                    brc = TRUE; */
+                    brc = TRUE; // V0.9.11 (2001-04-22) [umoeller]
                 break;
 
                 /*
@@ -2694,11 +2691,6 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
                 else
                     cmnLog(__FILE__, __LINE__, __FUNCTION__,
                         "Unable to resolve wpSetMenuBarVisibility.");
-
-                /* _wpSetup(somSelf,
-                         (fMenuVisible) // reverse the current setting
-                            ? "MENUBAR=ON"
-                            : "MENUBAR=OFF"); */
 
                 WinSendMsg(hwndMenu,
                            MM_SETITEMATTR,

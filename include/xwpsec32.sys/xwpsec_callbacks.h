@@ -14,9 +14,9 @@ void _sprintf(const char *pcszFormat, ...);
 extern int utilWriteLog(const char *pcszFormat, ...);
 extern VOID utilWriteLogInfo(VOID); */
 
-#define utilOpenLog()
+/* #define utilOpenLog()
 #define utilWriteLog(a, b)
-#define utilWriteLogInfo()
+#define utilWriteLogInfo() */
 
 extern unsigned long utilGetTaskPID(void);
 

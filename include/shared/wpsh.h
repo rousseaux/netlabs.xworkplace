@@ -105,6 +105,8 @@
 
         double wpshQueryDiskFreeFromFolder(WPFolder *somSelf);
 
+        double wpshQueryDiskSizeFromFolder(WPFolder *somSelf);
+
         BOOL wpshResidesBelow(WPObject *pChild, WPFolder *pFolder);
 
         WPFileSystem*  wpshContainsFile(WPFolder *pFolder, const char *pcszRealName);

@@ -73,8 +73,8 @@ ULONG FINDFIRST(PFINDPARMS pParms)
             // daemon buffers locked
             // (we have exclusive access):
 
-            utilWriteLog("FINDFIRST for \"%s\"\r\n", pParms->pszPath);
-            utilWriteLogInfo();
+            // utilWriteLog("FINDFIRST for \"%s\"\r\n", pParms->pszPath);
+            // utilWriteLogInfo();
 
             strcpy( ((PSECIOSHARED)G_pSecIOShared)->EventData.FindFirst.szPath,
                     pParms->pszPath);
@@ -116,7 +116,7 @@ ULONG FINDFIRST(PFINDPARMS pParms)
         // kernel panic
         // _sprintf("XWPSEC32.SYS: OPEN_PRE returned %d.", rc);
         // DevHlp32_InternalError(G_szScratchBuf, strlen(G_szScratchBuf) + 1);
-        utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
+        // utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
         rc = ERROR_ACCESS_DENIED;
     }
 

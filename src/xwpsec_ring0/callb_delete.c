@@ -58,8 +58,8 @@ ULONG DELETE_PRE(PSZ pszPath)
             // daemon buffers locked
             // (we have exclusive access):
 
-            utilWriteLog("DELETE_PRE for \"%s\"\r\n", pszPath);
-            utilWriteLogInfo();
+            // utilWriteLog("DELETE_PRE for \"%s\"\r\n", pszPath);
+            // utilWriteLogInfo();
 
             // prepare data for daemon notify
             strcpy( ((PSECIOSHARED)G_pSecIOShared)->EventData.FileOnly.szPath,
@@ -94,7 +94,7 @@ ULONG DELETE_PRE(PSZ pszPath)
         // kernel panic
         // _sprintf("XWPSEC32.SYS: OPEN_PRE returned %d.", rc);
         // DevHlp32_InternalError(G_szScratchBuf, strlen(G_szScratchBuf) + 1);
-        utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
+        // utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
         rc = ERROR_ACCESS_DENIED;
     }
 

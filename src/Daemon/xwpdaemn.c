@@ -195,6 +195,26 @@
 
 /* ******************************************************************
  *
+ *   Private declarations
+ *
+ ********************************************************************/
+
+#define VERT      1
+#define HORZ      2
+#define ALL       3  // VERT | HORZ
+
+#define NORTH     0
+#define NORTHEAST 1
+#define EAST      2
+#define SOUTHEAST 3
+#define SOUTH     4
+#define SOUTHWEST 5
+#define WEST      6
+#define NORTHWEST 7
+#define CENTER    8
+
+/* ******************************************************************
+ *
  *   Global variables
  *
  ********************************************************************/
@@ -252,10 +272,6 @@ SWP             G_swpPgmgFrame = {0};
 
 THREADINFO      G_tiMoveThread = {0};
 
-#define IOCTL_CDROMDISK             0x80
-#define CDROMDISK_DEVICESTATUS      0x60
-#define CDROMDISK_GETUPC            0x79
-
 const char *WNDCLASS_DAEMONOBJECT = "XWPDaemonObject";
 
 // MB3 (auto) scroll data
@@ -274,108 +290,12 @@ HPOINTER        G_hptrOld = NULLHANDLE,
 
 BOOL            G_fScrollOriginLoaded = FALSE;
 
-#define VERT      1
-#define HORZ      2
-#define ALL       3  // VERT | HORZ
-
-#define NORTH     0
-#define NORTHEAST 1
-#define EAST      2
-#define SOUTHEAST 3
-#define SOUTH     4
-#define SOUTHWEST 5
-#define WEST      6
-#define NORTHWEST 7
-#define CENTER    8
-
 SHAPEFRAME      G_sfScrollOrigin = {0};
 POINTL          G_ptlScrollOrigin = {0},
                 G_ptlScrollCurrent = {0};
 LONG            G_lScrollMode = ALL;
 HPOINTER        G_ahptrPointers[9] = {0};
 ULONG           G_ulAutoScrollTick = 0;
-
-
-/* ******************************************************************
- *
- *   Drive monitoring
- *
- ********************************************************************/
-
-int CheckRemoveableDrive(void)
-{
-    APIRET  arc;
-    HFILE   hFile;
-    ULONG   ulTemp;
-
-    arc = DosOpen("X:",   // <--- CD drive
-                  &hFile,
-                  &ulTemp,
-                  0,
-                  FILE_NORMAL,
-                  OPEN_ACTION_FAIL_IF_NEW
-                         | OPEN_ACTION_OPEN_IF_EXISTS,
-                  OPEN_FLAGS_DASD
-                         | OPEN_FLAGS_FAIL_ON_ERROR
-                         | OPEN_ACCESS_READONLY
-                         | OPEN_SHARE_DENYNONE,
-                  NULL);
-    if (arc == NO_ERROR)
-    {
-        UCHAR   achUnit[4] = { 'C', 'D', '0', '1' };
-        struct
-        {
-            UCHAR   uchCtlAdr;
-            UCHAR   achUPC[7];
-            UCHAR   uchReserved;
-            UCHAR   uchFrame;
-        } Result;
-
-        ULONG ulDeviceStatus = 0;
-
-        ulTemp = 0;
-
-        arc = DosDevIOCtl(hFile,
-                          IOCTL_CDROMDISK,
-                          CDROMDISK_GETUPC,
-                          achUnit, sizeof(achUnit), NULL,
-                          &Result, sizeof(Result), &ulTemp );
-        if (arc == NO_ERROR)
-        {
-            CHAR szUPC[100];
-            sprintf(szUPC,
-                    "UPC: %02x%02x%02x%02x%02x%02x%02x",
-                    Result.achUPC[0], Result.achUPC[1], Result.achUPC[2],
-                    Result.achUPC[3], Result.achUPC[4], Result.achUPC[5], Result.achUPC[6]);
-            _Pmpf(("New ADR: 0x%lX", Result.uchCtlAdr));
-            _Pmpf(("New UPC: %s", szUPC));
-        }
-        else
-            _Pmpf(("DosDevIOCtl rc: %d", arc));
-
-        arc = DosDevIOCtl(hFile,
-                          IOCTL_CDROMDISK,
-                          CDROMDISK_DEVICESTATUS,
-                          achUnit, sizeof(achUnit), NULL,
-                          &ulDeviceStatus, sizeof(ulDeviceStatus), &ulTemp);
-        if (arc == NO_ERROR)
-        {
-            _Pmpf(("ulStatus: 0x%lX", ulDeviceStatus));
-            _Pmpf(("  CDDA support:  %s", (ulDeviceStatus & (1<<30)) ? "yes" : "no"));
-            _Pmpf(("  Playing audio: %s", (ulDeviceStatus & (1<<12)) ? "yes" : "no"));
-            _Pmpf(("  Disk present:  %s", (ulDeviceStatus & (1<<11)) ? "yes" : "no"));
-            _Pmpf(("  Door open:     %s", (ulDeviceStatus & (1    )) ? "yes" : "no"));
-        }
-        else
-            _Pmpf(("DosDevIOCtl rc: %d", arc));
-
-        DosClose(hFile);
-    }
-    else
-        _Pmpf(("Open failed !\n"));
-
-    return 0;
-}
 
 /* ******************************************************************
  *                                                                  *
@@ -761,7 +681,7 @@ VOID InstallHook(VOID)
             // install hook
             G_pHookData = hookInit(G_pXwpGlobalShared->hwndDaemonObject);
 
-            // _Pmpf(("XWPDAEMON: hookInit called, pHookData: 0x%lX", G_pHookData));
+            _Pmpf(("XWPDAEMON: hookInit called, pHookData: 0x%lX", G_pHookData));
 
             if (G_pHookData)
                 if (    (G_pHookData->fInputHooked)
@@ -818,6 +738,8 @@ VOID DeinstallHook(VOID)
                      TIMERID_AUTOHIDEMOUSE);
 
         // _Pmpf(("XWPDAEMON: hookKilled called"));
+
+        G_pXwpGlobalShared->fAllHooksInstalled = FALSE;
     }
     G_pHookData = NULL;
 }
@@ -1213,7 +1135,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              */
 
             case XDM_HOOKINSTALL:
-                // _Pmpf(("fnwpDaemonObject: got XDM_HOOKINSTALL (%d)", mp1));
+                _Pmpf((__FUNCTION__ ": got XDM_HOOKINSTALL (%d)", mp1));
                 if (mp1)
                     // install the hook:
                     InstallHook();
@@ -1840,9 +1762,9 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                      *
                      */
 
-                    case TIMERID_MONITORDRIVE:
+                    /* case TIMERID_MONITORDRIVE:
                         CheckRemoveableDrive();
-                    break;
+                    break; */
 
                     /*
                      * TIMERID_AUTOHIDEMOUSE:
@@ -1904,23 +1826,79 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
  ********************************************************************/
 
 /*
- *@@ DaemonExitList:
- *      this is registered with DosExitList() in main,
- *      in case we crash, or the program is killed.
+ *@@ TerminateExcHandler:
+ *      new extra exception handler which intercepts
+ *      all "termination" notifications so that the
+ *      daemon can properly clean up if it gets killed.
  *
- *      We call hookKill then.
+ *      There seems to be a bug in the PM cleanup routines
+ *      for processes which have registered a global PM
+ *      hook. It looks like there is some internal table
+ *      overflowing if such a process gets killed... at
+ *      least such a process cannot be started and killed
+ *      more than about 20-30 times before the entire PM
+ *      hangs itself up with some strange exception.
+ *
+ *      This behavior is not only displayed with the XWP
+ *      daemon... I have tested this with other global
+ *      PM hooks, and they all hang up the system if they
+ *      are started and killed many times.
+ *
+ *      As a result, we register this exception handler
+ *      in main() which will do a longjmp back to main()
+ *      for any process termination exception. main()
+ *      will then deregister the hook and do other
+ *      cleanup in the proper order. It looks like this
+ *      fixes the PM cleanup problem.
+ *
+ *      This replaces the exit list that was present
+ *      previously.
+ *
+ *@@added V0.9.11 (2001-04-25) [umoeller]
  */
 
-VOID APIENTRY DaemonExitList(ULONG ulCode)
+ULONG _System TerminateExcHandler(PEXCEPTIONREPORTRECORD pReportRec,
+                                  PEXCEPTIONREGISTRATIONRECORD2 pRegRec2,
+                                  PCONTEXTRECORD pContextRec,
+                                  PVOID pv)
 {
-    // de-install the hook
-    DeinstallHook();
-    if (G_pXwpGlobalShared)
-        G_pXwpGlobalShared->hwndDaemonObject = NULLHANDLE;
+    if (pReportRec->fHandlerFlags & EH_EXIT_UNWIND)
+       return (XCPT_CONTINUE_SEARCH);
+    if (pReportRec->fHandlerFlags & EH_UNWINDING)
+       return (XCPT_CONTINUE_SEARCH);
+    if (pReportRec->fHandlerFlags & EH_NESTED_CALL)
+       return (XCPT_CONTINUE_SEARCH);
 
-    // and exit (we must not use return here)
-    DosExitList(EXLST_EXIT,
-                DaemonExitList);
+    switch (pReportRec->ExceptionNum)
+    {
+        case XCPT_PROCESS_TERMINATE:
+        case XCPT_ASYNC_PROCESS_TERMINATE:
+            // jump back to the point in main() which will
+            // then clean up and properly exit
+            longjmp(pRegRec2->jmpThread, pReportRec->ExceptionNum);
+        break;
+
+        case XCPT_ACCESS_VIOLATION:
+        case XCPT_INTEGER_DIVIDE_BY_ZERO:
+        case XCPT_ILLEGAL_INSTRUCTION:
+        case XCPT_PRIVILEGED_INSTRUCTION:
+        case XCPT_INVALID_LOCK_SEQUENCE:
+        case XCPT_INTEGER_OVERFLOW:
+        {
+            // "real" exceptions:
+            FILE *file = dmnExceptOpenLogFile();
+            // write error log
+            excExplainException(file,
+                                "excHandlerLoud",
+                                pReportRec,
+                                pContextRec);
+            fclose(file);
+
+            longjmp(pRegRec2->jmpThread, pReportRec->ExceptionNum);
+        break; }
+    }
+
+    return (XCPT_CONTINUE_SEARCH);
 }
 
 /*
@@ -1945,188 +1923,194 @@ VOID APIENTRY DaemonExitList(ULONG ulCode)
  *
  *@@changed V0.9.7 (2001-01-20) [umoeller]: now using higher priority
  *@@changed V0.9.9 (2001-03-18) [lafaix]: loads pointers
+ *@@changed V0.9.11 (2001-04-25) [umoeller]: added termination exception handler for proper hook cleanup
+ *@@changed V0.9.11 (2001-04-25) [umoeller]: reordered all this code for readability
  */
 
 int main(int argc, char *argv[])
 {
-    G_habDaemon = WinInitialize(0);
-    if (G_habDaemon)
+    APIRET arc = NO_ERROR;
+
+    if (    (G_habDaemon = WinInitialize(0))
+         && (G_hmqDaemon = WinCreateMsgQueue(G_habDaemon, 0))
+         // get our process ID
+         && (G_pidDaemon = doshMyPID())
+       )
     {
-        G_hmqDaemon = WinCreateMsgQueue(G_habDaemon, 0);
-        if (G_hmqDaemon)
+        HMTX    hmtx;
+
+        // set up exception handler callbacks
+        excRegisterHooks(dmnExceptOpenLogFile,
+                         dmnExceptExplain,
+                         dmnExceptError,
+                         TRUE);     // beeps
+
+        // check security dummy parameter "-D"
+        if (    (argc != 2)
+             || (strcmp(argv[1], "-D"))
+           )
         {
-            // get our process ID
-            G_pidDaemon = doshMyPID();
-
-            // set up exception handlers
-            excRegisterHooks(dmnExceptOpenLogFile,
-                             dmnExceptExplain,
-                             dmnExceptError,
-                             TRUE);     // beeps
-
-            TRY_LOUD(excpt1)
-            {
-                // check security dummy parameter "-D"
-                if (    (argc == 2)
-                     && (strcmp(argv[1], "-D") == 0)
-                   )
-                {
-                    HMTX    hmtx;
-                    // check the daemon one-instance semaphore, which
-                    // we create just for testing that the daemon is
-                    // started only once
-                    if (DosCreateMutexSem(IDMUTEX_ONEINSTANCE,
+            WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
+                          "Hi there. Thanks for your interest in the XWorkplace Daemon, "
+                          "but this program is not intended to be started manually, "
+                          "but only automatically by XWorkplace when the WPS starts up.",
+                          "XWorkplace Daemon",
+                          0,
+                          MB_MOVEABLE | MB_CANCEL | MB_ICONHAND);
+        }
+        // check the daemon one-instance semaphore, which
+        // we create just for testing that the daemon is
+        // started only once
+        else if ((arc = DosCreateMutexSem(IDMUTEX_ONEINSTANCE,
                                           &hmtx,
                                           DC_SEM_SHARED,
-                                          TRUE)     // owned!!
-                         == NO_ERROR)
-                    {
-                        // semaphore successfully created: this means
-                        // that no other instance of XWPDAEMN.EXE is
-                        // running
-
-                        // access the shared memory allocated by
-                        // XFLDR.DLL; this should always work:
-                        // a) if the daemon has been started during first
-                        //    WPS startup, krnInitializeXWorkplace has
-                        //    allocated the memory before starting the
-                        //    daemon;
-                        // b) at any time later (if the daemon is restarted
-                        //    manually), we have no problem either
-                        APIRET arc = DosGetNamedSharedMem((PVOID*)&G_pXwpGlobalShared,
-                                                          SHMEM_XWPGLOBAL,
-                                                          PAG_READ | PAG_WRITE);
-                        if (arc == NO_ERROR)
-                        {
-                            // OK:
-                            // install exit list
-                            DosExitList(EXLST_ADD,
-                                        DaemonExitList);
-
-                            // give ourselves higher priority...
-                            // otherwise we can't compete with Netscape and Win-OS/2 windows.
-                            /* DosSetPriority(PRTYS_THREAD,
-                                           PRTYC_REGULAR,
-                                           PRTYD_MAXIMUM,
-                                           0);      // current thread
-                              */
-
-                            arc = DosCreateMutexSem(NULL, // IDMUTEX_PGMG_WINLIST,
-                                                    &G_hmtxWindowList,
-                                                    0, // DC_SEM_SHARED, // unnamed, but shared
-                                                    FALSE);
-
-                            lstInit(&G_llWinInfos, TRUE);
-                                    // V0.9.7 (2001-01-21) [umoeller]
-
-                            G_hptrDaemon = WinLoadPointer(HWND_DESKTOP,
-                                                          NULLHANDLE,
-                                                          1);
-
-                            // preload MB3 scroll pointers V0.9.9 (2001-03-18) [lafaix]
-                            G_hptrNESW = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 124);
-                            G_hptrNS   = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 125);
-                            G_hptrEW   = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 121);
-                            G_hptrN    = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 122);
-                            G_hptrNE   = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 123);
-                            G_hptrE    = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 120);
-                            G_hptrSE   = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 128);
-                            G_hptrS    = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 127);
-                            G_hptrSW   = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 129);
-                            G_hptrW    = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 130);
-                            G_hptrNW   = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 126);
-
-                            // create the object window
-                            WinRegisterClass(G_habDaemon,
-                                             (PSZ)WNDCLASS_DAEMONOBJECT,
-                                             (PFNWP)fnwpDaemonObject,
-                                             0,                  // class style
-                                             0);                 // extra window words
-                            G_pXwpGlobalShared->hwndDaemonObject
-                                = WinCreateWindow(HWND_OBJECT,
-                                                  (PSZ)WNDCLASS_DAEMONOBJECT,
-                                                  (PSZ)"",
-                                                  0,
-                                                  0,0,0,0,
-                                                  0,
-                                                  HWND_BOTTOM,
-                                                  0,
-                                                  NULL,
-                                                  NULL);
-
-                            // _Pmpf(("hwndDaemonObject: 0x%lX", G_pXwpGlobalShared->hwndDaemonObject));
-
-                            if (G_pXwpGlobalShared->hwndDaemonObject)
-                            {
-                                QMSG    qmsg;
-
-                                // OK: post msg to XFLDR.DLL thread-1 object window
-                                // that we're ready, which will in turn send
-                                // XDM_HOOKINSTALL
-                                WinPostMsg(G_pXwpGlobalShared->hwndThread1Object,
-                                           T1M_DAEMONREADY,
-                                           0, 0);
-
-                                // standard PM message loop
-
-                                // _Pmpf(("Entering msg queue"));
-
-                                while (WinGetMsg(G_habDaemon, &qmsg, 0, 0, 0))
-                                    WinDispatchMsg(G_habDaemon, &qmsg);
-
-                                // _Pmpf(("Exited msg queue, WM_QUIT found"));
-
-                                // then kill the hook again
-                                DeinstallHook();
-                                // _Pmpf(("main: DeinstallHook() returned"));
-                            }
-
-                            // this was missing V0.9.9 (2001-03-10) [umoeller]
-                            DosExitList(EXLST_REMOVE,
-                                        DaemonExitList);
-
-                            WinDestroyWindow(G_pXwpGlobalShared->hwndDaemonObject);
-                            G_pXwpGlobalShared->hwndDaemonObject = NULLHANDLE;
-                            // _Pmpf(("main: hwndDaemonObject destroyed"));
-                        } // end if DosGetNamedSharedMem
-                        else
-                            WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
-                                          "The XWorkplace Daemon failed to access the data block shared with "
-                                          "the Workplace process. The daemon is terminated.",
-                                          "XWorkplace Daemon",
-                                          0,
-                                          MB_MOVEABLE | MB_CANCEL | MB_ICONHAND);
-                    } // end DosCreateMutexSem...
-                    else
-                    {
-                        // mutex creation failed: another instance of
-                        // XWPDAEMN.EXE is running, so complain
-                        WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
-                                      "Another instance of XWPDAEMN.EXE is already running. "
-                                      "This instance will terminate now.",
-                                      "XWorkplace Daemon",
-                                      0,
-                                      MB_MOVEABLE | MB_CANCEL | MB_ICONHAND);
-                    }
-                } // end if argc...
-                else
-                    WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
-                                  "Hi there. Thanks for your interest in the XWorkplace Daemon, "
-                                  "but this program is not intended to be started manually, "
-                                  "but only automatically by XWorkplace when the WPS starts up.",
-                                  "XWorkplace Daemon",
-                                  0,
-                                  MB_MOVEABLE | MB_CANCEL | MB_ICONHAND);
-
-            }
-            CATCH(excpt1) {} END_CATCH();
-
-            WinDestroyMsgQueue(G_hmqDaemon);
+                                          TRUE)))     // owned!!
+        {
+            // mutex creation failed: another instance of
+            // XWPDAEMN.EXE is running, so complain
+            WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
+                          "Another instance of XWPDAEMN.EXE is already running. "
+                          "This instance will terminate now.",
+                          "XWorkplace Daemon",
+                          0,
+                          MB_MOVEABLE | MB_CANCEL | MB_ICONHAND);
         }
-        WinTerminate(G_habDaemon);
+        else
+        {
+            // semaphore successfully created: this means
+            // that no other instance of XWPDAEMN.EXE is running
 
-        return (0);
+            // access the shared memory allocated by
+            // XFLDR.DLL; this should always work:
+            // a) if the daemon has been started during first
+            //    WPS startup, krnInitializeXWorkplace has
+            //    allocated the memory before starting the
+            //    daemon;
+            // b) at any time later (if the daemon is restarted
+            //    manually), we have no problem either
+            if ((arc = DosGetNamedSharedMem((PVOID*)&G_pXwpGlobalShared,
+                                            SHMEM_XWPGLOBAL,
+                                            PAG_READ | PAG_WRITE)))
+            {
+                WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
+                              "The XWorkplace Daemon failed to access the data block shared with "
+                              "the Workplace process. The daemon will terminate.",
+                              "XWorkplace Daemon",
+                              0,
+                              MB_MOVEABLE | MB_CANCEL | MB_ICONHAND);
+            }
+            else
+            {
+                // OK:
+                G_pXwpGlobalShared->fAllHooksInstalled = FALSE;
+                        // V0.9.11 (2001-04-25) [umoeller]
+
+                arc = DosCreateMutexSem(NULL, // IDMUTEX_PGMG_WINLIST,
+                                        &G_hmtxWindowList,
+                                        0, // DC_SEM_SHARED, // unnamed, but shared
+                                        FALSE);
+
+                lstInit(&G_llWinInfos, TRUE);
+                        // V0.9.7 (2001-01-21) [umoeller]
+
+                G_hptrDaemon = WinLoadPointer(HWND_DESKTOP,
+                                              NULLHANDLE,
+                                              1);
+
+                // preload MB3 scroll pointers V0.9.9 (2001-03-18) [lafaix]
+                G_hptrNESW = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 124);
+                G_hptrNS   = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 125);
+                G_hptrEW   = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 121);
+                G_hptrN    = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 122);
+                G_hptrNE   = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 123);
+                G_hptrE    = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 120);
+                G_hptrSE   = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 128);
+                G_hptrS    = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 127);
+                G_hptrSW   = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 129);
+                G_hptrW    = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 130);
+                G_hptrNW   = WinLoadPointer(HWND_DESKTOP, NULLHANDLE, 126);
+
+                // create the object window
+                WinRegisterClass(G_habDaemon,
+                                 (PSZ)WNDCLASS_DAEMONOBJECT,
+                                 (PFNWP)fnwpDaemonObject,
+                                 0,                  // class style
+                                 0);                 // extra window words
+                G_pXwpGlobalShared->hwndDaemonObject
+                    = WinCreateWindow(HWND_OBJECT,
+                                      (PSZ)WNDCLASS_DAEMONOBJECT,
+                                      (PSZ)"",
+                                      0,
+                                      0,0,0,0,
+                                      0,
+                                      HWND_BOTTOM,
+                                      0,
+                                      NULL,
+                                      NULL);
+
+                if (G_pXwpGlobalShared->hwndDaemonObject)
+                {
+                    EXCEPTSTRUCT    TermExcptStruct = {0};
+                    QMSG    qmsg;
+
+                    // post msg to XFLDR.DLL thread-1 object window
+                    // that we're ready, which will in turn send
+                    // XDM_HOOKINSTALL
+                    WinPostMsg(G_pXwpGlobalShared->hwndThread1Object,
+                               T1M_DAEMONREADY,
+                               0, 0);
+
+                    _Pmpf(("posted T1M_DAEMONREADY to 0x%lX",
+                                G_pXwpGlobalShared->hwndThread1Object));
+                    _Pmpf(("G_pXwpGlobalShared->hwndDaemonObjec is 0x%lX",
+                                G_pXwpGlobalShared->hwndDaemonObject));
+
+                    // register special exception handler just for
+                    // thread termination (see TerminateExcHandler)
+                    // V0.9.11 (2001-04-25) [umoeller]
+                    TermExcptStruct.RegRec2.pfnHandler = (PFN)TerminateExcHandler;
+                    arc = DosSetExceptionHandler((PEXCEPTIONREGISTRATIONRECORD)
+                                                       &(TermExcptStruct.RegRec2));
+                    if (arc)
+                        _Pmpf(("DosSetExceptionHandler returned %d", arc));
+
+                    TermExcptStruct.ulExcpt = setjmp(TermExcptStruct.RegRec2.jmpThread);
+                    if (TermExcptStruct.ulExcpt == 0)
+                    {
+                        // no termination exception:
+
+                        /*
+                         *  standard PM message loop
+                         *  (we stay in here all the time)
+                         */
+
+                        while (WinGetMsg(G_habDaemon, &qmsg, 0, 0, 0))
+                            WinDispatchMsg(G_habDaemon, &qmsg);
+                    }
+                    // else: exception occured
+
+                    DosUnsetExceptionHandler((PEXCEPTIONREGISTRATIONRECORD)
+                                                &(TermExcptStruct.RegRec2));
+
+                    // we get here if
+                    // a) we received WM_QUIT (can't see why this would happen);
+                    // b) the process got killed (setjmp put us to the above sequence)
+                    // c) xwpdaemn trapped somewhere on thread 1
+
+                    // so kill the hook again
+                    // (cleanup must be in proper order to avoid PM hangs)
+                    DeinstallHook();
+
+                    WinDestroyWindow(G_pXwpGlobalShared->hwndDaemonObject);
+                    G_pXwpGlobalShared->hwndDaemonObject = NULLHANDLE;
+                } // end if (G_pXwpGlobalShared->hwndDaemonObject)
+            } // end if DosGetNamedSharedMem
+        } // end DosCreateMutexSem...
+
+        WinDestroyMsgQueue(G_hmqDaemon);
+        WinTerminate(G_habDaemon);
     }
-    return (99);
+
+    return (0);
 }
 

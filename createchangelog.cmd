@@ -10,6 +10,6 @@
 */
 
 'echo on'
-'..\xwphelpers\xdoc -C "-iinclude;..\xwphelpers\include" src\classes\*.c src\config\*.c src\Daemon\*.c src\filesys\*.c src\hook\*.c src\media\*.c src\shared\*.c src\startshut\*.c src\xcenter\*.c ..\xwphelpers\src\helpers\*.c'
+'..\xwphelpers\xdoc -C "-iinclude;..\xwphelpers\include" src\classes\*.c src\config\*.c src\Daemon\*.c src\filesys\*.c src\hook\*.c src\media\*.c src\shared\*.c src\startshut\*.c src\widgets\*.c src\xcenter\*.c ..\xwphelpers\src\helpers\*.c'
 
 

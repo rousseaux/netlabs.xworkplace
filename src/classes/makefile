@@ -355,7 +355,8 @@ $(OUTPUTDIR)\xwpadmin.obj: \
             $(INC)\setup.h \
             \
             $(INC)\dlgids.h \
-            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\xsetup.h \
+            $(INC)\security\xwpsecty.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xwpsetup.obj: \

@@ -106,6 +106,7 @@ interface XFldProgramFile : WPProgramFile
     wpQueryDefaultView: override;
 
     wpAddProgramAssociationPage: override;
+    wpAddProgramPage: override;
     wpAddProgramSessionPage: override;
 
     wpFilterPopupMenu: override;

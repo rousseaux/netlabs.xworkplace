@@ -315,12 +315,14 @@
 #include <string.h>
 #include <io.h>
 #include <ctype.h>
+#include <setjmp.h>
 
 #include "setup.h"
 
 #include "helpers\cnrh.h"
 #include "helpers\dosh.h"
 #include "helpers\eah.h"
+#include "helpers\except.h"
 #include "helpers\prfh.h"
 #include "helpers\procstat.h"
 #include "helpers\stringh.h"
@@ -360,6 +362,9 @@ BOOL        G_fRing3DaemonRunning = FALSE;
 HEV         G_hevCallback = NULLHANDLE;
 
 PXWPSHELLSHARED G_pXWPShellShared = 0;
+
+HQUEUE      G_hqXWPShell = 0;
+THREADINFO  G_tiQueueThread = {0};
 
 /* ******************************************************************
  *                                                                  *
@@ -1657,9 +1662,83 @@ VOID ShutdownDaemon(VOID)
 }
 
 /* ******************************************************************
- *                                                                  *
- *   Object window                                                  *
- *                                                                  *
+ *
+ *   Queue thread
+ *
+ ********************************************************************/
+
+/*
+ *@@ fntQueueThread:
+ *
+ *@@added V0.9.11 (2001-04-22) [umoeller]
+ */
+
+void _Optlink fntQueueThread(PTHREADINFO ptiMyself)
+{
+    while (!ptiMyself->fExit)
+    {
+        APIRET      arc = NO_ERROR;
+        REQUESTDATA rq;
+        ULONG       ulDummySize;
+        PULONG      pulDummyData;
+        BYTE        bPriority;
+
+        if (!(arc = DosReadQueue(G_hqXWPShell,
+                                 &rq,
+                                 &ulDummySize,
+                                 (PVOID*)&pulDummyData,
+                                 0,                     // remove first element
+                                 DCWW_WAIT,
+                                 &bPriority,            // priority
+                                 NULLHANDLE)))           // event semaphore, ignored for DCWW_WAIT
+        {
+            PXWPSHELLQUEUEDATA  pSharedQueueData = (PXWPSHELLQUEUEDATA)(rq.ulData);
+
+            _Pmpf((__FUNCTION__ ": got queue item, pSharedQueueData->ulCommand: %d",
+                        pSharedQueueData->ulCommand));
+
+            TRY_LOUD(excpt1)
+            {
+                HEV hev = pSharedQueueData->hevData;
+
+                if (!DosOpenEventSem(NULL,
+                                     &hev))
+                {
+                    switch (pSharedQueueData->ulCommand)
+                    {
+                        case QUECMD_LOCALLOGGEDON:
+                            pSharedQueueData->arc = slogQueryLocalUser(&pSharedQueueData->Data.LoggedOn);
+                        break;
+
+                        case QUECMD_PROCESSLOGGEDON:
+                        break;
+
+                        default:
+                            // unknown code:
+                            pSharedQueueData->arc = XWPSEC_QUEUE_INVALID_CMD;
+                        break;
+                    }
+
+                    DosPostEventSem(hev);
+                    DosCloseEventSem(hev);
+                }
+
+                // free shared memory for this process... it was
+                // given to us by the client, so we must lower
+                // the resource count (client will still own it)
+                DosFreeMem(pSharedQueueData);
+            }
+            CATCH(excpt1) {} END_CATCH();
+        }
+        else
+            _Pmpf((__FUNCTION__ ": DosReadQueue returned %d", arc));
+    }
+}
+
+/* ******************************************************************
+ *
+ *   Object window
+ *
  ********************************************************************/
 
 VOID DumpEnv(PDOSENVIRONMENT pEnv)
@@ -1837,76 +1916,83 @@ int main(int argc, char *argv[])
         WinCancelShutdown(hmq, TRUE);
 
         // allocate XWPSHELLSHARED
-        arc = DosAllocSharedMem((PVOID*)&G_pXWPShellShared,
+        if ((arc = DosAllocSharedMem((PVOID*)&G_pXWPShellShared,
                                 SHMEM_XWPSHELL,
                                 sizeof(XWPSHELLSHARED),
-                                PAG_COMMIT | PAG_READ | PAG_WRITE);
-        if (arc != NO_ERROR)
+                                PAG_COMMIT | PAG_READ | PAG_WRITE)))
             Error("DosAllocSharedMem returned %d.", arc);
+        // create master queue
+        else if ((arc = DosCreateQueue(&G_hqXWPShell,
+                                       QUE_FIFO | QUE_NOCONVERT_ADDRESS,
+                                       QUEUE_XWPSHELL)))
+            Error("DosCreateQueue returned %d.", arc);
+        // initialize subsystems
+        else if (    (saclInit() != NO_ERROR)
+                  || (scxtInit() != NO_ERROR)
+                  || (subjInit() != NO_ERROR)
+                  || (sudbInit() != NO_ERROR)
+                  || (slogInit() != NO_ERROR)
+                )
+            irc = 1;
+        // create shell object (thread 1)
+        else if (!WinRegisterClass(hab,
+                                   WC_SHELL_OBJECT,
+                                   fnwpShellObject,
+                                   0,
+                                   sizeof(ULONG)))
+            irc = 2;
         else
         {
-            // initialize subsystems
-            if (    (saclInit() != NO_ERROR)
-                 || (scxtInit() != NO_ERROR)
-                 || (subjInit() != NO_ERROR)
-                 || (sudbInit() != NO_ERROR)
-                 || (slogInit() != NO_ERROR)
-               )
-                irc = 1;
+            G_LogFile = fopen("E:\\xwpshell.log", "a");
+
+            G_hwndShellObject = WinCreateWindow(HWND_OBJECT,
+                                                WC_SHELL_OBJECT,
+                                                "XWPShellObject",
+                                                0,             // style
+                                                0, 0, 0, 0,
+                                                NULLHANDLE,    // owner
+                                                HWND_BOTTOM,
+                                                0,             // ID
+                                                NULL,
+                                                NULL);
+            if (!G_hwndShellObject)
+                irc = 3;
             else
             {
-                if (!WinRegisterClass(hab,
-                                      WC_SHELL_OBJECT,
-                                      fnwpShellObject,
-                                      0,
-                                      sizeof(ULONG)))
-                    irc = 2;
+                // OK:
+                QMSG qmsg;
+
+                arc = CreateBaseSecurityContexts();
+                if (arc != NO_ERROR)
+                    irc =3;
                 else
                 {
-                    G_LogFile = fopen("E:\\xwpshell.log", "a");
+                    // InitDaemon();
 
-                    G_hwndShellObject = WinCreateWindow(HWND_OBJECT,
-                                                        WC_SHELL_OBJECT,
-                                                        "XWPShellObject",
-                                                        0,             // style
-                                                        0, 0, 0, 0,
-                                                        NULLHANDLE,    // owner
-                                                        HWND_BOTTOM,
-                                                        0,             // ID
-                                                        NULL,
-                                                        NULL);
-                    if (!G_hwndShellObject)
-                        irc = 3;
-                    else
+                    // create the queue thread
+                    thrCreate(&G_tiQueueThread,
+                              fntQueueThread,
+                              NULL,
+                              "Queue thread",
+                              THRF_WAIT,
+                              0);
+
+                    // do a logon first
+                    WinPostMsg(G_hwndShellObject,
+                               XM_LOGON,
+                               0, 0);
+
+                    // enter standard PM message loop
+                    while (WinGetMsg(hab, &qmsg, NULLHANDLE, 0, 0))
                     {
-                        // OK:
-                        QMSG qmsg;
-
-                        arc = CreateBaseSecurityContexts();
-                        if (arc != NO_ERROR)
-                            irc =3;
-                        else
-                        {
-                            InitDaemon();
-
-                            // do a logon first
-                            WinPostMsg(G_hwndShellObject,
-                                       XM_LOGON,
-                                       0, 0);
-
-                            // enter standard PM message loop
-                            while (WinGetMsg(hab, &qmsg, NULLHANDLE, 0, 0))
-                            {
-                                WinDispatchMsg(hab, &qmsg);
-                            }
-
-                            ShutdownDaemon();
-                        }
+                        WinDispatchMsg(hab, &qmsg);
                     }
 
-                    fclose(G_LogFile);
+                    ShutdownDaemon();
                 }
             }
+
+            fclose(G_LogFile);
         }
     }
 

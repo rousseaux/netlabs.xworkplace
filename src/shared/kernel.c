@@ -2075,6 +2075,7 @@ MRESULT EXPENTRY fnwpAPIObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp
                 // open the (modal) file dialog; this does
                 // not return until the dialog is dismissed
                 pfd->hwndReturn = fdlgFileDlg(pfd->hwndOwner,
+                                              pfd->szCurrentDir,
                                               &pfd->fd);
             }
 

@@ -67,8 +67,8 @@ ULONG CallType OPEN_PRE(PSZ pszPath,        // in: full path of file
             PXWPSECEVENTDATA_OPEN_PRE pOpenPre
                 = &((PSECIOSHARED)G_pSecIOShared)->EventData.OpenPre;
 
-            utilWriteLog("OPEN_PRE for \"%s\"\r\n", pszPath);
-            utilWriteLogInfo();
+            // utilWriteLog("OPEN_PRE for \"%s\"\r\n", pszPath);
+            // utilWriteLogInfo();
 
             // prepare data for daemon notify
             strcpy( pOpenPre->szFileName,
@@ -106,7 +106,7 @@ ULONG CallType OPEN_PRE(PSZ pszPath,        // in: full path of file
         // kernel panic
         // _sprintf("XWPSEC32.SYS: OPEN_PRE returned %d.", rc);
         // DevHlp32_InternalError(G_szScratchBuf, strlen(G_szScratchBuf) + 1);
-        utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
+        // utilWriteLog("      ------ WARNING rc is %d\r\n", rc);
         rc = ERROR_ACCESS_DENIED;
     }
 

@@ -285,10 +285,12 @@ BEGIN
     ID_XSSI_POPULATING              "Collecting objects..."
 
     /* default status bar mnemonics; changed with V0.9.6 (2000-11-23) [umoeller] */
-    ID_XSSI_SBTEXTNONESEL           "$C objects$x(50%)$SA total, $fA free"
+    /* changed the following V0.9.11 (2001-04-22) [umoeller] */
+    ID_XSSI_SBTEXTNONESEL           "$C objects$x(50%)$SA total, $fM of $zM MB free"
     ID_XSSI_SBTEXTMULTISEL          "$c of $C objects selected$x(50%)$sA selected"
     ID_XSSI_SBTEXTWPDATAFILE        """$r"" ($w)$x(55%)$sA $x(70%)$D $T"
-    ID_XSSI_SBTEXTWPDISK            "$t ($fA free)"
+    /* changed the following V0.9.11 (2001-04-22) [umoeller] */
+    ID_XSSI_SBTEXTWPDISK            "$t ($fM of $zM MB free)"
     ID_XSSI_SBTEXTWPPROGRAM         "$t $x(30%)""$p $P"""
     ID_XSSI_SBTEXTWPOBJECT          "$t (Class: $W)"
 
@@ -784,6 +786,9 @@ BEGIN
 
     /* new screen borders page title V0.9.9 (2001-04-04) [lafaix] */
     ID_XSSI_SCREENBORDERSPAGE           "Screen borders"
+
+    /* XWPAdmin "Users" page V0.9.11 (2001-04-22) [umoeller]*/
+    ID_XSSI_ADMIN_USER                  "~Users"
 END
 
 /* Treesize definitions; added V0.9.0 */

@@ -233,10 +233,7 @@ SOM_Scope ULONG  SOMLINK xwset_xwpAddXWPSetupPages(XWPSetup *somSelf,
     pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->pszName = "XWorkplace";
     pcnbp->ulDlgID = ID_XCD_FIRST;
-    // pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_XC_FEATURES;
     pcnbp->ulPageID = SP_SETUP_XWPLOGO;
-    // pcnbp->pampControlFlags = G_ampFeaturesPage;
-    // pcnbp->cControlFlags = sizeof(G_ampFeaturesPage) / sizeof(G_ampFeaturesPage[0]);
     pcnbp->pfncbInitPage    = setLogoInitPage;
     pcnbp->pfncbMessage = setLogoMessages;
 
