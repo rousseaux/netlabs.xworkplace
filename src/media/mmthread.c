@@ -525,7 +525,7 @@ void _Optlink xmm_fntMediaThread(PTHREADINFO pti)
     PSZ                   pszErrMsg = NULL;
     BOOL                  fTrapped = FALSE;
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         if (G_habMediaThread = WinInitialize(0))
         {

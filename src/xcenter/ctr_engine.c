@@ -47,6 +47,7 @@
 #define INCL_DOSMODULEMGR
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSSEMAPHORES
+#define INCL_DOSMISC
 #define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
@@ -72,7 +73,6 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
-#include "helpers\datetime.h"           // date/time helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\linklist.h"           // linked list helper routines
@@ -990,6 +990,8 @@ BOOL FrameCommand(HWND hwnd, USHORT usCmd)
  *
  *      Returns TRUE if the msg was processed. On FALSE,
  *      the parent winproc should be called.
+ *
+ *@@changed V0.9.7 (2000-12-08) [umoeller]: got rid of dtGetULongTime
  */
 
 BOOL FrameTimer(HWND hwnd,
@@ -1012,13 +1014,19 @@ BOOL FrameTimer(HWND hwnd,
             if (pXCenterData->ulStartTime == 0)
             {
                 // first call:
-                pXCenterData->ulStartTime = dtGetULongTime();
+                DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT,
+                                &pXCenterData->ulStartTime,
+                                sizeof(pXCenterData->ulStartTime));
                 cxCurrent = 2* WinQuerySysValue(HWND_DESKTOP, SV_CYDLGFRAME);
             }
             else
             {
-                ULONG ulNowTime = dtGetULongTime();
-                ULONG ulMSPassed = ulNowTime - pXCenterData->ulStartTime;
+                ULONG ulNowTime;
+                ULONG ulMSPassed;
+                DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT,
+                                &ulNowTime,
+                                sizeof(ulNowTime));
+                ulMSPassed = ulNowTime - pXCenterData->ulStartTime;
 
                 // total animation should last two seconds,
                 // so check where we are now compared to
@@ -1149,25 +1157,33 @@ BOOL FrameTimer(HWND hwnd,
             if (pXCenterData->ulStartTime == 0)
             {
                 // first call:
-                pXCenterData->ulStartTime = dtGetULongTime();
+                DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT,
+                                &pXCenterData->ulStartTime,
+                                sizeof(pXCenterData->ulStartTime));
                 // initially, subtract nothing
                 cySubtractCurrent = 0;
             }
             else
             {
                 XCenterData *somThis = XCenterGetData(pXCenterData->somSelf);
-                ULONG ulNowTime = dtGetULongTime();
-                ULONG ulMSPassed = ulNowTime - pXCenterData->ulStartTime;
+                ULONG ulNowTime;
+                ULONG cySubtractMax;
+                // ULONG ulMSPassed;
+                DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT,
+                                &ulNowTime,
+                                sizeof(ulNowTime));
 
                 // cySubtractMax has the width that should be
                 // subtracted from the full frame width to
                 // get only a single dlg frame
-                ULONG cySubtractMax = pXCenterData->cyFrame - WinQuerySysValue(HWND_DESKTOP, SV_CYDLGFRAME);
+                cySubtractMax = pXCenterData->cyFrame - WinQuerySysValue(HWND_DESKTOP, SV_CYDLGFRAME);
 
                 // total animation should last two seconds,
                 // so check where we are now compared to
                 // the time the animation started
-                cySubtractCurrent = cySubtractMax * ulMSPassed / MAX_AUTOHIDE;
+                cySubtractCurrent = cySubtractMax
+                                    * (ulNowTime - pXCenterData->ulStartTime)
+                                    / MAX_AUTOHIDE;
 
                 if (cySubtractCurrent >= cySubtractMax)
                 {
@@ -2416,6 +2432,95 @@ BOOL ctrpRemoveWidget(XCenter *somSelf,
 
             brc = lstRemoveNode(pllWidgetSettings, pSettingsNode);
                         // this list is in auto-free mode
+
+            if (brc)
+                // save instance data (with that linked list)
+                _wpSaveDeferred(somSelf);
+
+            // update the "widgets" notebook page, if open
+            ntbUpdateVisiblePage(somSelf, SP_XCENTER_WIDGETS);
+
+        } // end if (pSettingsNode)
+
+        if (pXCenterData)
+        {
+            // we found the open view above:
+            RecalcMaxClientCY(pXCenterData);
+            ReformatWidgets(pXCenterData,
+                            TRUE);
+            ctrpReformatFrame(pXCenterData);
+        }
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    return (brc);
+}
+
+/*
+ *@@ ctrpMoveWidget:
+ *      implementation for XCenter::xwpMoveWidget.
+ *
+ *@@added V0.9.7 (2000-12-10) [umoeller]
+ */
+
+BOOL ctrpMoveWidget(XCenter *somSelf,
+                    ULONG ulIndex2Move,
+                    ULONG ulBeforeIndex)
+{
+    BOOL brc = FALSE;
+    TRY_LOUD(excpt1)
+    {
+        PLINKLIST pllWidgetSettings = ctrpQuerySettingsList(somSelf);
+        PLISTNODE pSettingsNode = lstNodeFromIndex(pllWidgetSettings, ulIndex2Move);
+        PXCENTERWINDATA pXCenterData = NULL;
+
+        if (pSettingsNode)
+        {
+            // widget exists:
+            XCenterData *somThis = XCenterGetData(somSelf);
+            PXCENTERWIDGETSETTING pSetting = (PXCENTERWIDGETSETTING)pSettingsNode->pItemData,
+                                  pNewSetting = NULL;
+
+            if (_hwndOpenView)
+            {
+                // XCenter view currently open:
+                pXCenterData = WinQueryWindowPtr(_hwndOpenView, QWL_USER);
+                if (pXCenterData)
+                {
+                    PLISTNODE pViewNode = lstNodeFromIndex(&pXCenterData->llWidgetsLeft,
+                                                           ulIndex2Move);
+                    if (pViewNode)
+                    {
+                        // the list is NOT in auto-free mode;
+                        // re-insert the node at the new position
+                        lstInsertItemBefore(&pXCenterData->llWidgetsLeft,
+                                            pViewNode->pItemData,
+                                            ulBeforeIndex);
+                        // remove old node
+                        lstRemoveNode(&pXCenterData->llWidgetsLeft, pViewNode);
+                    }
+                }
+            } // end if (_hwndOpenView)
+
+            // now move the settings
+            /* if (pSetting->pszWidgetClass)
+                free(pSetting->pszWidgetClass);
+            if (pSetting->pszSetupString)
+                free(pSetting->pszSetupString); */
+
+            // the settings list is in auto-free mode,
+            // so we have to create a new one first
+            pNewSetting = (PXCENTERWIDGETSETTING)malloc(sizeof(XCENTERWIDGETSETTING));
+            memcpy(pNewSetting, pSetting, sizeof(*pNewSetting));
+            brc = lstRemoveNode(pllWidgetSettings, pSettingsNode);
+                    // this frees pSetting, but not the member pointers
+            if (brc)
+                lstInsertItemBefore(pllWidgetSettings,
+                                    pNewSetting,
+                                    ulBeforeIndex);
 
             if (brc)
                 // save instance data (with that linked list)

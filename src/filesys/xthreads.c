@@ -57,6 +57,7 @@
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
+#define INCL_DOSMISC
 #define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
@@ -81,7 +82,6 @@
 // headers in /helpers
 #include "helpers\animate.h"            // icon and other animations
 #include "helpers\cnrh.h"               // container helper routines
-#include "helpers\datetime.h"           // date/time helper routines
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\eah.h"                // extended attributes helper routines
 #include "helpers\except.h"             // exception handling
@@ -330,6 +330,7 @@ MRESULT EXPENTRY fnwpGenericStatus(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
  *@@changed V0.9.0 [umoeller]: WOM_ADDAWAKEOBJECT is now storing plain WPObject pointers (no more OBJECTLISTITEM)
  *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
  *@@changed V0.9.7 (2000-12-08) [umoeller]: fixed crash when kernel globals weren't returned
+ *@@changed V0.9.7 (2000-12-08) [umoeller]: got rid of dtGetULongTime
  */
 
 MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -535,7 +536,9 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                                                          MPNULL);
                             }
                         }
-                        pPCI->ulFirstTime = dtGetULongTime();
+                        DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT,
+                                        &pPCI->ulFirstTime,
+                                        sizeof(pPCI->ulFirstTime));
 
                         // wait for next object
                         xthrPostWorkerMsg(WOM_WAITFORPROCESSNEXT,
@@ -588,7 +591,11 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     else
                     {
                         // timing mode
-                        if (dtGetULongTime() > ((pPCI->ulFirstTime) + pPCI->ulTiming))
+                        ULONG ulNowTime;
+                        DosQuerySysInfo(QSV_MS_COUNT, QSV_MS_COUNT,
+                                        &ulNowTime,
+                                        sizeof(ulNowTime));
+                        if (ulNowTime > (pPCI->ulFirstTime + pPCI->ulTiming))
                             OKGetNext = TRUE;
                     }
 

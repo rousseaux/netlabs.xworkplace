@@ -5,7 +5,6 @@
  *
  *      --  XCenter: a WarpCenter replacement.
  *
- *      This class is fairly functional with V0.9.7 now.
  *      See src\shared\center.c for an introduction.
  *
  *      Installation of this class is completely optional.
@@ -257,6 +256,33 @@ SOM_Scope BOOL  SOMLINK xctr_xwpRemoveWidget(XCenter *somSelf,
     XCenterMethodDebug("XCenter","xctr_xwpRemoveWidget");
 
     return (ctrpRemoveWidget(somSelf, ulIndex));
+}
+
+/*
+ *@@ xwpMoveWidget:
+ *      moves a widget to a new position within the
+ *      XCenter.
+ *
+ *      ulIndex2Move specifies the widget to be moved
+ *      (with 0 being the leftmost widget).
+ *
+ *      ulBeforeIndex specifies the position to which
+ *      the widget should be moved. 0 means leftmost,
+ *      1 means before first widget, etc.
+ *      If (ulBeforeIndex == -1), we insert the new
+ *      widget as the last widget.
+ *
+ *@@added V0.9.7 (2000-12-10) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xctr_xwpMoveWidget(XCenter *somSelf,
+                                           ULONG ulIndex2Move,
+                                           ULONG ulBeforeIndex)
+{
+    XCenterData *somThis = XCenterGetData(somSelf);
+    XCenterMethodDebug("XCenter","xctr_xwpMoveWidget");
+
+    return (ctrpMoveWidget(somSelf, ulIndex2Move, ulBeforeIndex));
 }
 
 /*

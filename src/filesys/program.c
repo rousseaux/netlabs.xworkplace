@@ -469,80 +469,287 @@ BOOL progRunningAppDestroyed(WPObject *pObjEmphasis)    // in: destroyed object
  *      those "[prompt]" strings that is found in the
  *      arguments of a program object.
  *
- *      This function must either return FALSE or it MUST
- *      replace the [] thing in the buffer, or the caller
- *      will run in an endless loop.
+ *      On input, pstrPrompt is set to the string in
+ *      between the "[]" characters. For "[prompt]",
+ *      pstrPrompt would thus contain "prompt".
+ *
+ *      This then displays a dialog.
+ *
+ *      If this function returns TRUE, the caller assumes
+ *      that pstrPrompt has been replaced with whatever
+ *      the user entered. This function may clear pstrPrompt
+ *      if the user entered nothing; in that case, the
+ *      "[prompt]" is simply removed from the parameters.
+ *
+ *      If this function returns FALSE, the caller will
+ *      assume the user has pressed "Cancel" and abort
+ *      processing.
  *
  *@@added V0.9.6 (2000-10-16) [umoeller]
  */
 
-BOOL DisplayParamsPrompt(PXSTRING pstrParamsNew,
-                         PSZ pStart,
-                         PSZ pEnd)
+BOOL DisplayParamsPrompt(PXSTRING pstrPrompt)   // in: prompt string,
+                                                // out: what user entered
 {
-    BOOL brc = TRUE;
+    BOOL brc = FALSE;
 
-    // prompt found: p now contains a new buffer
-    // extract complete [] part
-    PSZ     pszBrackets = strhSubstr(pStart, pEnd + 1);
-    if (pszBrackets)
+    HWND hwndDlg = WinLoadDlg(HWND_DESKTOP,     // parent
+                              NULLHANDLE,       // owner
+                              WinDefDlgProc,
+                              cmnQueryNLSModuleHandle(FALSE),
+                              ID_XSD_NEWFILETYPE,   // "New File Type" dlg
+                              NULL);            // pCreateParams
+    if (hwndDlg)
     {
-        PSZ     pszString = strhSubstr(pStart + 1, pEnd);
-        if (pszString)
+        HWND hwndEntryField = WinWindowFromID(hwndDlg, ID_XSDI_FT_ENTRYFIELD);
+        WinSetWindowText(hwndDlg, "XWorkplace");        // ### we can do better
+        WinSetDlgItemText(hwndDlg,
+                          ID_XSDI_FT_TITLE,
+                          pstrPrompt->psz);
+        winhSetEntryFieldLimit(hwndEntryField, 255);
+        if (WinProcessDlg(hwndDlg) == DID_OK)
         {
-            HWND hwndDlg = WinLoadDlg(HWND_DESKTOP,     // parent
-                                      NULLHANDLE,       // owner
-                                      WinDefDlgProc,
-                                      cmnQueryNLSModuleHandle(FALSE),
-                                      ID_XSD_NEWFILETYPE,   // "New File Type" dlg
-                                      NULL);            // pCreateParams
-            if (hwndDlg)
+            CHAR    szNew[300] = "";
+            ULONG   ulOfs = 0;
+            WinQueryWindowText(hwndEntryField,
+                               sizeof(szNew),
+                               szNew);
+            // replace output buffer
+            xstrcpy(pstrPrompt, szNew);
+            // return "OK pressed"
+            brc = TRUE;
+        }
+        // else: user pressed "Cancel":
+
+        WinDestroyWindow(hwndDlg);
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ FixSpacesInFilename:
+ *      checks if psz contains spaces and, if so,
+ *      encloses the string in psz in quotes.
+ *      It is assumes that there is enough room
+ *      in psz to hold two more characters.
+ *
+ *      Otherwise psz is not changed.
+ *
+ *@@added V0.9.7 (2000-12-10) [umoeller]
+ */
+
+VOID FixSpacesInFilename(PSZ psz)
+{
+    if (psz)
+    {
+        if (strchr(psz, ' '))
+        {
+            // we have spaces:
+            // compose temporary
+            XSTRING strTemp;
+            xstrInit(&strTemp,
+                     strlen(psz) + 3);  // preallocate: length of original
+                                        // plus two quotes plus null terminator
+            xstrcpy(&strTemp, "\"");
+            xstrcat(&strTemp, psz);
+            xstrcatc(&strTemp, '"');
+
+            // copy back
+            strcpy(psz, strTemp.psz);
+            xstrClear(&strTemp);
+        }
+    }
+}
+
+/*
+ *@@ HandlePlaceholder:
+ *      checks *p if it is a WPS placeholder for file name
+ *      components. Returns TRUE if *p is a valid placeholder
+ *      or FALSE if it is not.
+ *
+ *      Gets called with *p pointing to the "%" char.
+ *
+ *      If this returns TRUE, it must:
+ *
+ *      -- set pxstr to the replacement string (e.g. a filename).
+ *         pxstr can be set to an empty string if the placeholder
+ *         is to be deleted.
+ *
+ *      -- set pcReplace to the no. of characters that should be
+ *         skipped in the source string. This must be the length
+ *         of the placeholder, excluding any null terminator
+ *         (e.g. 4 for "%**F").
+ *
+ *      -- set *pfAppendDataFilename to FALSE if the caller should
+ *         _not_ append the data file name at the end of the params
+ *         string. Otherwise it should leave this flag alone.
+ *
+ *         From my testing, the WPS always appends the full path
+ *         specification (%*) of the data file to the end of the
+ *         program's arguments list, UNLESS "%*" or one of the
+ *         "%**X" parameters are specified at least once.
+ *
+ *         As a result, this function sets *pfAppendDataFilename
+ *         to FALSE for all "%*" and "%**X" placeholders, but
+ *         not for parameter strings.
+ *
+ *      If this returns FALSE, *p is simply left alone (copied).
+ *      All output parameters are then ignored.
+ *
+ *      Preconditions: pstrTemp has been initialized (xstrInit).
+ *
+ *      Postconditions: pstrTemp is freed by the caller.
+ *
+ *@@added V0.9.7 (2000-12-10) [umoeller]
+ */
+
+BOOL HandlePlaceholder(const char *p,           // in: placeholder (starting with "%")
+                       const char *pcszFilename, // in: data file name;
+                                                 // ptr is always valid, but can point to ""
+                       PXSTRING pstrTemp,       // out: replacement string (e.g. filename)
+                       PULONG pcReplace,        // out: no. of chars to replace (w/o null terminator)
+                       PBOOL pfAppendDataFilename)  // out: if FALSE, do not append full filename
+{
+    BOOL brc = FALSE;
+
+    // p points to "%" char; check next char
+    switch (*(p+1))
+    {
+        case ' ':
+        case '\0':
+            // "%": disable passing full path
+            *pfAppendDataFilename = FALSE;
+            *pcReplace = 1;     // % only
+            brc = TRUE;
+        break;
+
+        case '*':
+        {
+            CHAR szTemp[2*CCHMAXPATH] = "";
+
+            if ( (*(p+2)) == '*' )      // "%**" ?
             {
-                WinSetWindowText(hwndDlg, "");
-                WinSetDlgItemText(hwndDlg,
-                                  ID_XSDI_FT_TITLE,
-                                  pszString);
-                WinSendDlgItemMsg(hwndDlg, ID_XSDI_FT_ENTRYFIELD,
-                                  EM_SETTEXTLIMIT,
-                                  (MPARAM)255,
-                                  0);
-                if (WinProcessDlg(hwndDlg) == DID_OK)
+                // we have a placeholder:
+                // check next char (P, D, N, F, E)
+                switch (*(p+3))
                 {
-                    CHAR    szNew[300];
-                    /* XSTRING strFind,
-                            strReplace; */
-                    ULONG   ulOfs = 0;
-                    // xstrInit(&strFind, 0);
-                    // xstrset(&strFind, pszBrackets);     // must not be freed here!
-                    // xstrInit(&strReplace, 0);
+                    case 'P':
+                    {
+                        // "%**P": drive and path information without the
+                        // last backslash (\)
+                        PSZ pLastBackslash = strrchr(pcszFilename, '\\');
+                        if (pLastBackslash)
+                            strhncpy0(szTemp,
+                                      pcszFilename,
+                                      pLastBackslash - pcszFilename);
+                        FixSpacesInFilename(szTemp); // V0.9.7 (2000-12-10) [umoeller]
 
-                    WinQueryDlgItemText(hwndDlg, ID_XSDI_FT_ENTRYFIELD,
-                                        sizeof(szNew), szNew);
-                    // xstrset(&strReplace, szNew);        // must not be freed here!
-                    xstrcrpl(pstrParamsNew,
-                             &ulOfs,
-                             pszBrackets, // &strFind,
-                             szNew); // &strReplace);
+                        *pfAppendDataFilename = FALSE;
+                        *pcReplace = 4;     // "%**?"
+                        brc = TRUE;
+                    break; }
+
+                    case 'D':
+                    {
+                        //  "%**D": drive with ':' or UNC name
+                        PSZ pFirstBackslash = strchr(pcszFilename + 2, '\\');
+                            // works on "C:\blah" or "\\unc\blah"
+                        if (pFirstBackslash)
+                            strhncpy0(szTemp,
+                                      pcszFilename,
+                                      pFirstBackslash - pcszFilename);
+                        FixSpacesInFilename(szTemp); // V0.9.7 (2000-12-10) [umoeller]
+
+                        *pfAppendDataFilename = FALSE;
+                        *pcReplace = 4;     // "%**?"
+                        brc = TRUE;
+                    break; }
+
+                    case 'N':
+                    {
+                        //  "%**N": file name without extension.
+                        // first find filename
+                        PSZ pLastBackslash = strrchr(pcszFilename + 2, '\\');
+                            // works on "C:\blah" or "\\unc\blah"
+                        if (pLastBackslash)
+                        {
+                            // find last dot in filename
+                            PSZ pLastDot = strrchr(pLastBackslash + 1, '.');
+                            if (pLastDot)
+                            {
+                                // extension found:
+                                // copy from pLastBackslash + 1 to pLastDot
+                                strhncpy0(szTemp,
+                                          pLastBackslash + 1,
+                                          pLastDot - (pLastBackslash + 1));
+                            }
+                            else
+                                // no extension:
+                                // copy entire name
+                                strcpy(szTemp, pLastBackslash + 1);
+                        }
+                        FixSpacesInFilename(szTemp); // V0.9.7 (2000-12-10) [umoeller]
+
+                        *pfAppendDataFilename = FALSE;
+                        *pcReplace = 4;     // "%**?"
+                        brc = TRUE;
+                    break; }
+
+                    case 'F':
+                    {
+                        // "%**F": file name with extension.
+                        // find filename
+                        PSZ pLastBackslash = strrchr(pcszFilename + 2, '\\');
+                            // works on "C:\blah" or "\\unc\blah"
+                        if (pLastBackslash)
+                            strcpy(szTemp, pLastBackslash + 1);
+                        FixSpacesInFilename(szTemp); // V0.9.7 (2000-12-10) [umoeller]
+
+                        *pfAppendDataFilename = FALSE;
+                        *pcReplace = 4;     // "%**?"
+                        brc = TRUE;
+                    break; }
+
+                    case 'E':
+                    {
+                        //  "%**E": extension without leading dot.
+                        // In HPFS, the extension always comes after the last dot.
+                        PSZ pExt = doshGetExtension(pcszFilename);
+                        if (pExt)
+                        {
+                            strcpy(szTemp, pExt);
+                            FixSpacesInFilename(szTemp);
+                                    // improbable, but possible
+                        }
+
+                        *pfAppendDataFilename = FALSE;
+                        *pcReplace = 4;     // "%**?"
+                        brc = TRUE;
+                    break; }
                 }
-                else
-                    // user pressed "Cancel":
-                    brc = FALSE;
-
-                WinDestroyWindow(hwndDlg);
-            }
+            } // end of all those "%**?" cases
             else
-                brc = FALSE;
+            {
+                // third character is not '*':
+                // we then assume it's "%*" only...
 
-            free(pszString);
-        } // end if (pString)
-        else
-            brc = FALSE;
+                // "%*": full path of data file
+                strcpy(szTemp, pcszFilename);
+                FixSpacesInFilename(szTemp); // V0.9.7 (2000-12-10) [umoeller]
 
-        free(pszBrackets);
-    } // end if (pszBrackets)
-    else
-        // error:
-        brc = FALSE;
+                *pfAppendDataFilename = FALSE;
+                *pcReplace = 2;     // "%**?"
+                brc = TRUE;
+            }
+
+            if (szTemp[0])
+                // something was copied to replace:
+                xstrcpy(pstrTemp, szTemp);
+            // else: pstrTemp has been zeroed by caller, leave it
+
+        break; } // case '*': (second character)
+    } // end switch (*(p+1))
 
     return (brc);
 }
@@ -582,11 +789,6 @@ BOOL DisplayParamsPrompt(PXSTRING pstrParamsNew,
  *      The WPS doesn't care for spaces. These placeholders
  *      are even replaced if not surrounded by spaces.
  *
- *      From my testing, the WPS always appends the full path
- *      specification (%*) of the data file to the end of the
- *      program's arguments list, UNLESS "%*" or one of the
- *      "%**X" parameters are specified at least once.
- *
  *      NOTE: Since this program can possibly wait for a prompt
  *      dialog to be filled by the user, this requires a message
  *      queue. Also, this will not return until the dialog has
@@ -599,6 +801,9 @@ BOOL DisplayParamsPrompt(PXSTRING pstrParamsNew,
  *
  *@@added V0.9.6 (2000-10-16) [umoeller]
  *@@changed V0.9.6 (2000-11-04) [umoeller]: fixed null string search
+ *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed spaces-in-filename problem (new implementation)
+ *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed params prompt hangs (new implementation)
+ *@@changed V0.9.7 (2000-12-10) [umoeller]: extracted HandlePlaceholder
  */
 
 BOOL progSetupArgs(const char *pcszParams,
@@ -606,206 +811,149 @@ BOOL progSetupArgs(const char *pcszParams,
                    PSZ *ppszParamsNew)          // out: new params
 {
     BOOL    brc = TRUE;
+
     XSTRING strParamsNew;
     BOOL    fAppendDataFilename = TRUE;
+    CHAR    szDataFilename[2*CCHMAXPATH] = "";
 
-    CHAR    szDataFilename[CCHMAXPATH] = "";
     if (pFile)
+    {
         // we have a data file as argument:
         // get fully q'fied data file name
-        _wpQueryFilename(pFile, szDataFilename, TRUE);
+        _wpQueryFilename(pFile,
+                         szDataFilename,
+                         TRUE);
+    }
     // else no file: szDataFilename is empty
 
-    xstrInit(&strParamsNew, 200);
+    xstrInit(&strParamsNew, 500);
 
-    // copy existing params into new buffer
-    // so we can search and replace;
-    // note that this is frequently ""
-    xstrcpy(&strParamsNew, pcszParams);
-
-    if (strParamsNew.ulLength) // fixed V0.9.6 (2000-11-04) [umoeller]
+    if (pcszParams)
     {
-        // program object has standard parameters:
+        // we have a params string in the program object:
+        // copy it character per character and replace
+        // special keywords
+        const char *p = pcszParams;
 
-        PSZ     p = 0;
-        BOOL    fFirstLoop = FALSE;
-        CHAR    szTemp[CCHMAXPATH];
-
-        //  "%**P": drive and path information without the last backslash (\).
-        fFirstLoop = TRUE;
-        while (p = strstr(strParamsNew.psz, "%**P"))
+        while (    (*p)  // not end of string
+                && (brc == TRUE)        // no error, not cancelled
+              )
         {
-            ULONG ulOfs = 0;
-            if (fFirstLoop)
+            switch (*p)
             {
-                // first time: copy drive and path
-                PSZ p2 = strrchr(szDataFilename, '\\');
-                szTemp[0] = 0;
-                if (p2)
-                    strhncpy0(szTemp, szDataFilename, p2 - szDataFilename);
-                fFirstLoop = FALSE;
-            }
-            xstrcrpl(&strParamsNew, &ulOfs, "%**P", szTemp);
+                /*
+                 *   '%':  handle filename placeholder
+                 *
+                 */
 
-            // disable appending the full path to the end
-            fAppendDataFilename = FALSE;
-        }
-
-        //  "%**D": drive with ':' or UNC name.
-        fFirstLoop = TRUE;
-        while (p = strstr(strParamsNew.psz, "%**D"))
-        {
-            ULONG ulOfs = 0;
-            if (fFirstLoop)
-            {
-                PSZ p2 = strchr(szDataFilename + 2, '\\');
-                    // works on "C:\blah" or "\\unc\blah"
-                szTemp[0] = 0;
-                if (p2)
-                    strhncpy0(szTemp, szDataFilename, p2 - szDataFilename);
-                fFirstLoop = FALSE;
-            }
-            xstrcrpl(&strParamsNew, &ulOfs, "%**D", szTemp);
-
-            // disable appending the full path to the end
-            fAppendDataFilename = FALSE;
-        }
-
-        //  "%**N": file name without extension.
-        fFirstLoop = TRUE;
-        while (p = strstr(strParamsNew.psz, "%**N"))
-        {
-            ULONG ulOfs = 0;
-            if (fFirstLoop)
-            {
-                // first find filename
-                PSZ p2 = strrchr(szDataFilename + 2, '\\');
-                    // works on "C:\blah" or "\\unc\blah"
-                szTemp[0] = 0;
-                if (p2)
+                case '%':
                 {
-                    // find last dot in filename
-                    PSZ p3 = strrchr(p2 + 1, '.');
-                    if (p3)
+                    XSTRING strTemp;
+                    ULONG cReplace = 0;
+                    xstrInit(&strTemp, 0);
+                    // might be a placeholder, so check
+                    if (    (HandlePlaceholder(p,
+                                               szDataFilename,
+                                               &strTemp,
+                                               &cReplace,
+                                               &fAppendDataFilename))
+                         && (cReplace)
+                       )
                     {
-                        // extension found:
-                        // copy from p2+1 to p3
-                        strhncpy0(szTemp, p2+1, p3 - (p2 + 1));
+                        // handled:
+                        // append replacement
+                        xstrcat(&strParamsNew, strTemp.psz);
+                        // skip placeholder (cReplace has been set by HandlePlaceholder)
+                        p += cReplace;
+                        // disable appending the full filename
+                        // at the end
+                        // fAppendDataFilename = FALSE;
                     }
                     else
-                        // no extension:
-                        strcpy(szTemp, p2 + 1);
-                }
-                fFirstLoop = FALSE;
-            }
-            xstrcrpl(&strParamsNew, &ulOfs, "%**N", szTemp);
+                    {
+                        // not handled:
+                        // just append
+                        xstrcatc(&strParamsNew, *p);
+                        p++;
+                    }
+                    xstrClear(&strTemp);
+                break; }
 
-            // disable appending the full path to the end
-            fAppendDataFilename = FALSE;
-        }
+                /*
+                 *   '[': handle prompt placeholder
+                 *
+                 */
 
-        // "%**F": file name with extension.
-        fFirstLoop = TRUE;
-        while (p = strstr(strParamsNew.psz, "%**F"))
-        {
-            ULONG ulOfs = 0;
-            if (fFirstLoop)
-            {
-                // find filename
-                PSZ p2 = strrchr(szDataFilename + 2, '\\');
-                    // works on "C:\blah" or "\\unc\blah"
-                szTemp[0] = 0;
-                if (p2)
-                    strcpy(szTemp, p2 + 1);
-                fFirstLoop = FALSE;
-            }
-            xstrcrpl(&strParamsNew, &ulOfs, "%**F", szTemp);
-
-            // disable appending the full path to the end
-            fAppendDataFilename = FALSE;
-        }
-
-        //  "%**E": extension without leading dot.
-        // In HPFS, the extension always comes after the last dot.
-        fFirstLoop = TRUE;
-        {
-            ULONG ulOfs = 0;
-            PSZ pszExt = "";
-            while (p = strstr(strParamsNew.psz, "%**E"))
-            {
-                if (fFirstLoop)
+                case '[':
                 {
-                    pszExt = doshGetExtension(szDataFilename);
-                    if (!pszExt)
-                        pszExt = "";
-                    fFirstLoop = FALSE;
-                }
-                xstrcrpl(&strParamsNew, &ulOfs, "%**E", pszExt);
+                    const char *pEnd = strchr(p + 1, ']');
+                    if (pEnd)
+                    {
+                        XSTRING strPrompt;
+                        // copy stuff between brackets
+                        PSZ pPrompt = strhSubstr(p + 1, pEnd);
+                        xstrInitSet(&strPrompt, pPrompt);
+                        if (DisplayParamsPrompt(&strPrompt))
+                        {
+                            // user pressed "OK":
+                            xstrcat(&strParamsNew, strPrompt.psz);
+                            // next character to copy is
+                            // character after closing bracket
+                            p = pEnd + 1;
+                        }
+                        else
+                            // user pressed "Cancel":
+                            // get outta here!!
+                            brc = FALSE;
 
-                // disable appending the full path to the end
-                fAppendDataFilename = FALSE;
-            }
-        }
+                        xstrClear(&strPrompt);
+                    }
+                    else
+                        // no closing bracket: just copy
+                        p++;
+                break; }
 
-        // "%*": full path of data file, if pArgDataFile
-        while (p = strstr(strParamsNew.psz, "%*"))
-        {
-            ULONG ulOfs = 0;
-            xstrcrpl(&strParamsNew, &ulOfs, "%*", szDataFilename);
-
-            // disable appending the full path to the end
-            fAppendDataFilename = FALSE;
-        }
-
-        // "%": disable passing full path
-        while (p = strstr(strParamsNew.psz, "%"))
-        {
-            ULONG ulOfs = 0;
-            xstrcrpl(&strParamsNew, &ulOfs, "%", "");
-
-            // disable appending the full path to the end
-            fAppendDataFilename = FALSE;
-        }
-
-        // now go for prompts...
-        while (p = strchr(strParamsNew.psz, '['))
-        {
-            PSZ pStart = p,
-                pEnd;
-            if (pEnd = strchr(pStart, ']'))
-            {
-                brc = DisplayParamsPrompt(&strParamsNew,
-                                          pStart,
-                                          pEnd);
-
-            } // if (pEnd = strchr(pStart, ']'))
-            else
-                break;
-
-            if (!brc)
-                break;
-
-        } // end while (p = strchr(p, '['))
-
+                default:
+                    // any other character: append
+                    xstrcatc(&strParamsNew, *p);
+                    p++;
+            } // end switch (*p)
+        } // end while ( (*p) && (brc == TRUE) )
     } // end if (pcszParams)
 
-    if (fAppendDataFilename)
-    {
-        // none of the above worked:
-        // append filename to the end
-        if (strParamsNew.ulLength)
-            // space as last character?
-            if (    *(strParamsNew.psz + strParamsNew.ulLength - 1)
-                 != ' ')
-                xstrcat(&strParamsNew,
-                        " ");
-
-        xstrcat(&strParamsNew,
-                szDataFilename);
-    }
-
     if (brc)
+    {
+        // no error, not cancelled:
+
+        // we are now either done with copying the existing params string,
+        // or no params string existed in the first place...
+
+        // now check if we should still add the filename
+
+        if (fAppendDataFilename)
+        {
+            // this is still TRUE if none of the "%" placeholders have
+            // been found;
+            // append filename to the end
+
+            // if we have parameters already, append space
+            // if the last char isn't a space yet
+            if (strParamsNew.ulLength)
+                // space as last character?
+                if (    *(strParamsNew.psz + strParamsNew.ulLength - 1)
+                     != ' ')
+                    xstrcat(&strParamsNew,
+                            " ");
+
+            FixSpacesInFilename(szDataFilename); // V0.9.7 (2000-12-10) [umoeller]
+            xstrcat(&strParamsNew,
+                    szDataFilename);
+        }
+
+        // return new params to caller
         *ppszParamsNew = strParamsNew.psz;
+
+    } // end if (brc)
     else
         // cancelled or error:
         xstrClear(&strParamsNew);
@@ -869,7 +1017,13 @@ BOOL progSetupArgs(const char *pcszParams,
  *          so we can properly remove source emphasis later.
  *          krn_fnwpThread1Object then calls progAppTerminateNotify.
  *
+ *      Since this calls progSetupArgs, this might display modal
+ *      dialogs before returning. As a result (and because this
+ *      calls winhStartApp in turn), the calling thread must
+ *      have a message queue.
+ *
  *@@added V0.9.6 (2000-10-16) [umoeller]
+ *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed startup dir with data files
  */
 
 HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFile
@@ -895,7 +1049,7 @@ HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFil
             // OK:
 
             // get program data
-            // (wpQueryProgDetails is supported on both WPprogram and WPProgramFile)
+            // (wpQueryProgDetails is supported on both WPProgram and WPProgramFile)
             ULONG   ulSize = 0;
             if ((_wpQueryProgDetails(pProgObject, (PPROGDETAILS)NULL, &ulSize)))
             {
@@ -927,25 +1081,29 @@ HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFil
                             PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
                             PSZ     pszStartupDir = pProgDetails->pszStartupDir;
-                            CHAR    szDatafileDir[CCHMAXPATH];
+                            CHAR    szDatafileDir[CCHMAXPATH] = "";
                             _Pmpf((__FUNCTION__ ": calling winhStartApp \"%s\" with args \"%s\"",
                                         pProgDetails->pszExecutable,
                                         (pszParams) ? pszParams : "NULL"));
 
-                            // if startup dir is empty, but
-                            // data file is given, use data file's directory
-                            // as startup dir...
+                            // if startup dir is empty, but data file is given,
+                            // use data file's folder as startup dir...
                             if ((!pszStartupDir) || (*pszStartupDir == 0))
                                 if (pArgDataFile)
                                 {
-                                    PSZ p = 0;
-                                    _wpQueryFilename(pArgDataFile, szDatafileDir, TRUE);
-                                    p = strrchr(szDatafileDir, '\\');
+                                    // V0.9.7 (2000-12-10) [umoeller]: better to query folder's dir
+                                    WPFolder *pFilesFolder = _wpQueryFolder(pArgDataFile);
+                                    if (pFilesFolder)
+                                        if (_wpQueryFilename(pFilesFolder, szDatafileDir, TRUE))
+                                            pszStartupDir = szDatafileDir;
+                                    // _wpQueryFilename(pArgDataFile, szDatafileDir, TRUE);
+                                    // get last path separator after root dir
+                                    /* p = strrchr(szDatafileDir + 3, '\\');
                                     if (p)
                                     {
                                         *p = 0;
                                         pszStartupDir = szDatafileDir;
-                                    }
+                                    } */
                                 }
 
                             // start the application...

@@ -1875,7 +1875,10 @@ BOOL wpshLockObject(PWPSHLOCKSTRUCT pLock,
 
 /*
  *@@ wpshUnlockObject:
- *      returns TRUE if the object was unlocked.
+ *      unlocks an object locked with wpshLockObject.
+ *      ALWAYS call this after wpshLockObject.
+ *
+ *      Returns TRUE if the object was unlocked.
  *
  *@@added V0.9.7 (2000-12-08) [umoeller]
  */

@@ -55,6 +55,9 @@ interface XCenter : WPAbstract
 
     BOOL xwpRemoveWidget(in ULONG ulIndex);
 
+    BOOL xwpMoveWidget(in ULONG ulIndex2Move,
+                       in ULONG ulBeforeIndex);
+
     ULONG xwpQuerySetup2(in PSZ pszSetupString,
                          in ULONG cbSetupString);
 
@@ -66,6 +69,7 @@ interface XCenter : WPAbstract
                   xwpFreeWidgetsBuf,
                   xwpInsertWidget,
                   xwpRemoveWidget,
+                  xwpMoveWidget,
                   xwpQuerySetup2;
 
     /*

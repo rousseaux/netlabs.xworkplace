@@ -263,6 +263,7 @@
 #define ID_XSDI_PICKUP                  525
 #define ID_XSDI_LOCKINPLACE             526
 #define ID_XSDI_PRINT                   527
+#define ID_XSDI_LOCKINPLACE_NOSUB       528 // V0.9.7 (2000-12-10) [umoeller]
 
 // new menu items
 #define ID_XSD_SET25ADDMENUS            530

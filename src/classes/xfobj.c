@@ -990,26 +990,26 @@ SOM_Scope ULONG  SOMLINK xfobj_wpFilterPopupMenu(XFldObject *somSelf,
  *
  *      We remove the "Lock in place" item here because there's
  *      no flag for that in wpFilterPopupMenu.
+ *
+ *@@changed V0.9.7 (2000-12-10) [umoeller]: added "fix lock in place"
  */
 
 SOM_Scope BOOL  SOMLINK xfobj_wpModifyPopupMenu(XFldObject *somSelf,
-                                                  HWND hwndMenu,
-                                                  HWND hwndCnr,
-                                                  ULONG iPosition)
+                                                HWND hwndMenu,
+                                                HWND hwndCnr,
+                                                ULONG iPosition)
 {
     BOOL        rc;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_wpModifyPopupMenu");
 
     rc = (XFldObject_parent_WPObject_wpModifyPopupMenu(somSelf,
-                                                         hwndMenu,
-                                                         hwndCnr,
-                                                         iPosition));
-    if (pGlobalSettings->RemoveLockInPlaceItem)
-        // remove WPObject's "Lock in place" submenu
-        winhDeleteMenuItem(hwndMenu, ID_WPM_LOCKINPLACE);
+                                                       hwndMenu,
+                                                       hwndCnr,
+                                                       iPosition));
+    if (rc)
+        objModifyPopupMenu(somSelf, hwndMenu);  // V0.9.7 (2000-12-10) [umoeller]
 
     // now that the menu is completely built, let's add hotkey
     // descriptions, but DONT do this for folders or data files,
@@ -1036,17 +1036,16 @@ SOM_Scope BOOL  SOMLINK xfobj_wpModifyPopupMenu(XFldObject *somSelf,
  *      them, all three objects will receive this method
  *      call. This is true even if FALSE is returned from
  *      this method.
- */
-
-/*
- * wpAddSettingsPages: override;
+ *
+ *@@changed V0.9.7 (2000-12-10) [umoeller]: added "fix lock in place"
  */
 
 SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
                                                  HWND hwndFrame,
                                                  ULONG ulMenuId)
 {
-    BOOL                brc = FALSE;
+    BOOL        brc = FALSE,
+                fCallDefault = FALSE;
 
     // PGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
@@ -1130,12 +1129,31 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
                                                                 ulMenuId);
         break; */
 
+        case ID_WPM_LOCKINPLACE:    // V0.9.7 (2000-12-10) [umoeller]
+        {
+            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+            if (pGlobalSettings->fFixLockInPlace)
+            {
+                // we have replaced the "lock in place" submenu:
+                // we must then intercept this menu item...
+                ULONG ulStyle = _wpQueryStyle(somSelf);
+                if ((ulStyle & OBJSTYLE_LOCKEDINPLACE) == 0)
+                    ulStyle |= OBJSTYLE_LOCKEDINPLACE;
+                else
+                    ulStyle &= ~OBJSTYLE_LOCKEDINPLACE;
+                _wpSetStyle(somSelf, ulStyle);
+                _wpSaveDeferred(somSelf);
+            }
+        break; }
+
         default:
-            brc = XFldObject_parent_WPObject_wpMenuItemSelected(somSelf,
-                                                                hwndFrame,
-                                                                ulMenuId);
+            fCallDefault = TRUE;
     }
 
+    if (fCallDefault)
+        brc = XFldObject_parent_WPObject_wpMenuItemSelected(somSelf,
+                                                            hwndFrame,
+                                                            ulMenuId);
     return (brc);
 }
 

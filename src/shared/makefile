@@ -54,7 +54,7 @@ OBJS = $(OUTPUTDIR)\center.obj \
        $(OUTPUTDIR)\cnrsort.obj \
        $(OUTPUTDIR)\common.obj \
        $(OUTPUTDIR)\contentmenus.obj \
-       $(OUTPUTDIR)\dummyfont.obj \
+#       $(OUTPUTDIR)\dummyfont.obj \
        $(OUTPUTDIR)\notebook.obj \
        $(OUTPUTDIR)\kernel.obj \
        $(OUTPUTDIR)\xsetup.obj \

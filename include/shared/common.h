@@ -869,6 +869,10 @@
                         // -- 1: old method (Prf* APIs)
                         // -- 2: do not save
 
+    /* XWorkplace 0.9.7 */
+        BYTE        fFixLockInPlace;
+                        // "Workplace Shell" menus p3: submenu, checkmark
+
     } GLOBALSETTINGS;
 
     typedef const GLOBALSETTINGS* PCGLOBALSETTINGS;

@@ -83,7 +83,8 @@
             XCENTERGLOBALS      Globals;            // public data; a ptr to this is stored in
                                                     // each created XCENTERWIDGETVIEW
 
-            LINKLIST            llWidgetsLeft;      // linked list of PXCENTERWIDGETVIEW pointers
+            LINKLIST            llWidgetsLeft;      // linked list of PXCENTERWIDGETVIEW pointers;
+                                                    // list is not auto-free (ctrpCreateXCenterView)
 
             PFNWP               pfnwpFrameOrig;     // original frame window proc (subclassed)
 
@@ -147,17 +148,21 @@
         VOID ctrpFreeClasses(VOID);
 
         PXCENTERWIDGETCLASS ctrpFindClass(XCenter *somSelf,
-                                         const char *pcszWidgetClass);
+                                          const char *pcszWidgetClass);
 
         ULONG ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
-                                          HWND hwnd);
+                                           HWND hwnd);
 
         VOID ctrpAddWidget(XCenter *somSelf,
-                          PXCENTERWIDGETSETTING pSetting,
-                          PULONG pulNewItemCount);
+                           PXCENTERWIDGETSETTING pSetting,
+                           PULONG pulNewItemCount);
 
         BOOL ctrpRemoveWidget(XCenter *somSelf,
-                             ULONG ulIndex);
+                              ULONG ulIndex);
+
+        BOOL ctrpMoveWidget(XCenter *somSelf,
+                            ULONG ulIndex2Move,
+                            ULONG ulBeforeIndex);
 
         VOID ctrpFreeWidgets(XCenter *somSelf);
 
@@ -168,12 +173,12 @@
                                 ULONG ulCount);
 
         BOOL ctrpInsertWidget(XCenter *somSelf,
-                             ULONG ulBeforeIndex,
-                             const char *pcszWidgetClass,
-                             const char *pcszSetupString);
+                              ULONG ulBeforeIndex,
+                              const char *pcszWidgetClass,
+                              const char *pcszSetupString);
 
         PSZ ctrpStuffSettings(XCenter *somSelf,
-                             PULONG pcbSettingsArray);
+                              PULONG pcbSettingsArray);
 
         ULONG ctrpUnstuffSettings(XCenter *somSelf);
 

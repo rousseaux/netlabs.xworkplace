@@ -111,14 +111,16 @@
 
 // root of linked list of opened notebook pages
 // (this holds NOTEBOOKPAGELISTITEM's)
-PLINKLIST       G_pllOpenPages = NULL;
+PLINKLIST       G_pllOpenPages = NULL;          // this is auto-free
 
 // root of linked list of subclassed notebooks
 // (this holds
-PLINKLIST       G_pllSubclNotebooks = NULL;
+PLINKLIST       G_pllSubclNotebooks = NULL;     // this is auto-free
 
 // mutex semaphore for both lists
 HMTX            G_hmtxNotebookLists = NULLHANDLE;
+
+MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1, MPARAM mp2);
 
 /* ******************************************************************
  *                                                                  *
@@ -172,7 +174,7 @@ VOID ntbInitPage(PCREATENOTEBOOKPAGE pcnbp,
 
     // call "initialize" callback
     if (pcnbp->pfncbInitPage)
-        (*(pcnbp->pfncbInitPage))(pcnbp, CBI_INIT | CBI_SET | CBI_ENABLE);
+        pcnbp->pfncbInitPage(pcnbp, CBI_INIT | CBI_SET | CBI_ENABLE);
 
     // timer desired?
     if (pcnbp->ulTimer)
@@ -184,7 +186,7 @@ VOID ntbInitPage(PCREATENOTEBOOKPAGE pcnbp,
         // call timer callback already now;
         // let's not wait until the first downrun
         if (pcnbp->pfncbTimer)
-            (*(pcnbp->pfncbTimer))(pcnbp, 1);
+            pcnbp->pfncbTimer(pcnbp, 1);
     }
 
     // winhAdjustControls desired?
@@ -211,10 +213,10 @@ VOID ntbInitPage(PCREATENOTEBOOKPAGE pcnbp,
  *      ntb_fnwpPageCommon.
  *
  *@@added V0.9.1 (99-12-31) [umoeller]
+ *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed mutex problems
  */
 
-VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp,
-                    PBOOL pfSemOwned)
+VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp)
 {
     #ifdef DEBUG_NOTEBOOKS
         _Pmpf(("ntb_fnwpPageCommon: WM_DESTROY"));
@@ -239,7 +241,7 @@ VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp,
 
         // call INIT callback with CBI_DESTROY
         if (pcnbp->pfncbInitPage)
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_DESTROY);
+            pcnbp->pfncbInitPage(pcnbp, CBI_DESTROY);
 
         // tooltip to be destroyed?
         if (pcnbp->hwndTooltip)
@@ -260,28 +262,42 @@ VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp,
 
         // remove the NOTEBOOKPAGELISTITEM from the
         // linked list of open notebook pages
+        // V0.9.7 (2000-12-09) [umoeller]: more mutex protection
+
         #ifdef DEBUG_NOTEBOOKS
             _Pmpf(("  trying to remove page ID %d from list",
                     pcnbp->ulPageID));
         #endif
         if (pcnbp->pnbli)
         {
-            *pfSemOwned = (WinRequestMutexSem(G_hmtxNotebookLists,
-                                              4000)
-                                 == NO_ERROR);
-            if (*pfSemOwned)
+            BOOL fSemOwned = FALSE;
+            ULONG ulNesting;
+            DosEnterMustComplete(&ulNesting);
+            TRY_LOUD(excpt1)
             {
-                if (!lstRemoveItem(G_pllOpenPages,
-                                   pcnbp->pnbli))
+                fSemOwned = (WinRequestMutexSem(G_hmtxNotebookLists,
+                                                4000)
+                                     == NO_ERROR);
+                if (fSemOwned)
+                {
+                    if (!lstRemoveItem(G_pllOpenPages,
+                                       pcnbp->pnbli))  // this is auto-free!
+                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                               "lstRemoveItem returned FALSE.");
+                            // this free's the pnbli
+                }
+                else
                     cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                           "lstRemoveItem returned FALSE.");
-                        // this free's the pnbli
-                DosReleaseMutexSem(G_hmtxNotebookLists);
-                *pfSemOwned = FALSE;
+                           "hmtxNotebookLists request failed.");
             }
-            else
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "hmtxNotebookLists request failed.");
+            CATCH(excpt1) {} END_CATCH();
+            DosExitMustComplete(&ulNesting);
+
+            if (fSemOwned)
+            {
+                DosReleaseMutexSem(G_hmtxNotebookLists);
+                fSemOwned = FALSE;
+            }
         }
 
         // free allocated user memory
@@ -295,7 +311,8 @@ VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp,
 
 /*
  *@@ ntbPageWmControl:
- *      WM_CONTROL handler called from ntb_fnwpPageCommon.
+ *      implementation for WM_CONTROL in ntb_fnwpPageCommon.
+ *
  *      hwndDlg is not passed because this can be retrieved
  *      thru pcnbp->hwndDlgPage.
  *
@@ -579,10 +596,10 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
                     {
                         // "important" message found:
                         // call "item changed" callback
-                        mrc = (*(pcnbp->pfncbItemChanged))(pcnbp,
-                                                           usItemID,
-                                                           usNotifyCode,
-                                                           ulExtra);
+                        mrc = pcnbp->pfncbItemChanged(pcnbp,
+                                                      usItemID,
+                                                      usNotifyCode,
+                                                      ulExtra);
                     }
                 } // end if (ulClassCode)
             } // end if (szClassName[0] == '#')
@@ -590,6 +607,124 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
     } // end if (pcnbp->pfncbItemChanged)
 
     return (mrc);
+}
+
+/*
+ *@@ ntbPageWindowPosChanged:
+ *      implementation for WM_WINDOWPOSCHANGED in ntb_fnwpPageCommon.
+ *
+ *@@added V0.9.7 (2000-12-10) [umoeller]
+ */
+
+VOID ntbPageWindowPosChanged(PCREATENOTEBOOKPAGE pcnbp,
+                             MPARAM mp1)
+{
+    PSWP pswp = (PSWP)mp1;
+
+    #ifdef DEBUG_NOTEBOOKS
+        _Pmpf(("ntb_fnwpPageCommon: WM_WINDOWPOSCHANGED"));
+    #endif
+
+    if (!pcnbp)
+        return;
+
+    if (pswp->fl & SWP_SHOW)
+    {
+        // notebook page is being shown:
+        // call "initialize" callback
+        if (pcnbp->pfncbInitPage)
+        {
+            WinEnableWindowUpdate(pcnbp->hwndDlgPage, FALSE);
+            pcnbp->fPageVisible = TRUE;
+            pcnbp->pfncbInitPage(pcnbp,
+                                 CBI_SHOW | CBI_ENABLE);
+                    // we also set the ENABLE flag so
+                    // that the callback can re-enable
+                    // controls when the page is being
+                    // turned to
+
+            WinEnableWindowUpdate(pcnbp->hwndDlgPage, TRUE);
+        }
+    }
+    else if (pswp->fl & SWP_HIDE)
+    {
+        // notebook page is being hidden:
+        // call "initialize" callback
+        if (pcnbp->pfncbInitPage)
+        {
+            pcnbp->fPageVisible = FALSE;
+            pcnbp->pfncbInitPage(pcnbp,
+                                 CBI_HIDE);
+        }
+    }
+
+    if (pswp->fl & SWP_SIZE)
+    {
+        // notebook is being resized:
+        // was winhAdjustControls prepared?
+        if (pcnbp->pxac)
+        {
+            // yes:
+            winhAdjustControls(pcnbp->hwndDlgPage,
+                               pcnbp->pampControlFlags,
+                               pcnbp->cControlFlags,
+                               pswp,
+                               pcnbp->pxac);
+        }
+    }
+}
+
+/*
+ *@@ ntbPageTimer:
+ *      implementation for WM_TIMER in ntb_fnwpPageCommon.
+ *
+ *@@added V0.9.7 (2000-12-10) [umoeller]
+ */
+
+VOID ntbPageTimer(PCREATENOTEBOOKPAGE pcnbp,
+                  MPARAM mp1)
+{
+    #ifdef DEBUG_NOTEBOOKS
+        _Pmpf(("ntb_fnwpPageCommon: WM_TIMER"));
+    #endif
+
+    switch ((USHORT)mp1)    // timer ID
+    {
+        case 1:
+            // timer for caller: call callback
+            if (pcnbp)
+                if (pcnbp->pfncbTimer)
+                    pcnbp->pfncbTimer(pcnbp, 1);
+        break;
+
+        case 999:
+            // tree view auto-scroll timer:
+            // CN_EXPANDTREE has set up the data we
+            // need in pcnbp
+            if (pcnbp->preccExpanded->flRecordAttr & CRA_EXPANDED)
+            {
+                PRECORDCORE     preccLastChild;
+                WinStopTimer(WinQueryAnchorBlock(pcnbp->hwndDlgPage),
+                             pcnbp->hwndDlgPage,
+                             999);
+                // scroll the tree view properly
+                preccLastChild = WinSendMsg(pcnbp->hwndExpandedCnr,
+                                            CM_QUERYRECORD,
+                                            pcnbp->preccExpanded,
+                                               // expanded PRECORDCORE from CN_EXPANDTREE
+                                            MPFROM2SHORT(CMA_LASTCHILD,
+                                                         CMA_ITEMORDER));
+                if ((preccLastChild) && (preccLastChild != (PRECORDCORE)-1))
+                {
+                    // ULONG ulrc;
+                    cnrhScrollToRecord(pcnbp->hwndExpandedCnr,
+                                       (PRECORDCORE)preccLastChild,
+                                       CMA_TEXT,   // record text rectangle only
+                                       TRUE);      // keep parent visible
+                }
+            }
+        break;
+    }
 }
 
 /*
@@ -607,7 +742,10 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
  *
  *      This function installs exception handling during message
  *      processing, i.e. including your callbacks, using
- *      excHandlerLoud in except.c.
+ *      excHandlerLoud in except.c. This will automatically write
+ *      trap logs if a dialog page window proc traps. Of course,
+ *      that doesn't save you from protecting your own mutex
+ *      semaphores and stuff yourself; see except.c. for details.
  *
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
  *@@changed V0.9.0 [umoeller]: sped up window class analysis
@@ -626,19 +764,21 @@ MRESULT EXPENTRY ntbPageWmControl(PCREATENOTEBOOKPAGE pcnbp,
  *@@changed V0.9.1 (99-12-19) [umoeller]: added EN_HOTKEY support (ctlMakeHotkeyEntryField)
  *@@changed V0.9.1 (99-12-31) [umoeller]: extracted ntbInitPage, ntbDestroyPage, ntbPageWmControl
  *@@changed V0.9.3 (2000-05-01) [umoeller]: added WM_MOUSEMOVE pointer changing
+ *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed mutex problems
+ *@@changed V0.9.7 (2000-12-10) [umoeller]: extracted ntbPageWindowPosChanged, ntbPageTimer
  */
 
 MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT             mrc = NULL;
-    BOOL                fSemOwned = FALSE;
+    // BOOL                fSemOwned = FALSE;
     BOOL                fProcessed = FALSE;
 
     // protect ALL the processing with the
     // loud exception handler; this includes
     // all message processing, including the
     // callbacks defined by the implementor
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         PCREATENOTEBOOKPAGE pcnbp = NULL;
 
@@ -667,7 +807,7 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                     // message callback defined by caller:
                     // call it
                     MRESULT     mrc2 = 0;
-                    if ((*(pcnbp->pfncbMessage))(pcnbp, msg, mp1, mp2, &mrc2))
+                    if (pcnbp->pfncbMessage(pcnbp, msg, mp1, mp2, &mrc2))
                     {
                         // TRUE returned == msg processed:
                         // return return value
@@ -703,28 +843,20 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
 
                     case WM_DRAWITEM:
                     {
-                        CHAR    szClassName[100];
+                        CHAR    szClassName[5];
                         ULONG   ulClassCode = 0;
 
                         HWND hwndControl = WinWindowFromID(hwndDlg,
                                                            (USHORT)mp1); // has the control ID
 
-                        if (!WinQueryClassName(hwndControl,
-                                               sizeof(szClassName), szClassName))
-                            break;
-
-                        if (szClassName[0] != '#')
-                            // not a system class: get outta here
-                            break;
-
-                        // now translate the class name into a ULONG
-                        sscanf(&(szClassName[1]), "%d", &ulClassCode);
-
-                        if (ulClassCode == 37)
-                            // container:
-                            mrc = cnrhOwnerDrawRecord(mp2);
-                        else
-                            mrc = (MPARAM)FALSE;
+                        if (WinQueryClassName(hwndControl,
+                                              sizeof(szClassName), szClassName))
+                        {
+                            if (memcmp(szClassName, "#37", 4) == 0)
+                                // container:
+                                mrc = cnrhOwnerDrawRecord(mp2);
+                        }
+                        // else: return default FALSE
                     break; } // WM_DRAWITEM
 
                     /*
@@ -787,10 +919,10 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                         // call "item changed" callback
                         if (pcnbp)
                             if (pcnbp->pfncbItemChanged)
-                                mrc = (*(pcnbp->pfncbItemChanged))(pcnbp,
-                                                                   usItemID,
-                                                                   0,
-                                                                   (ULONG)mp2);
+                                mrc = pcnbp->pfncbItemChanged(pcnbp,
+                                                              usItemID,
+                                                              0,
+                                                              (ULONG)mp2);
                     break; } // WM_COMMAND
 
                     /*
@@ -803,7 +935,6 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                      */
 
                     case WM_HELP:
-                    {
                         #ifdef DEBUG_NOTEBOOKS
                             _Pmpf(("ntb_fnwpPageCommon: WM_HELP"));
                         #endif
@@ -817,7 +948,7 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                                             pcnbp->usFirstControlID,
                                             pcnbp->ulFirstSubpanel,
                                             pcnbp->ulDefaultHelpPanel);
-                    break; } // WM_HELP
+                    break; // WM_HELP
 
                     /*
                      * WM_WINDOWPOSCHANGED:
@@ -832,64 +963,10 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                      */
 
                     case WM_WINDOWPOSCHANGED:
-                    {
-                        PSWP pswp = (PSWP)mp1;
-
-                        #ifdef DEBUG_NOTEBOOKS
-                            _Pmpf(("ntb_fnwpPageCommon: WM_WINDOWPOSCHANGED"));
-                        #endif
-
-                        if (!pcnbp)
-                            break;
-
-                        if (pswp->fl & SWP_SHOW)
-                        {
-                            // notebook page is being shown:
-                            // call "initialize" callback
-                            if (pcnbp->pfncbInitPage)
-                            {
-                                WinEnableWindowUpdate(hwndDlg, FALSE);
-                                pcnbp->fPageVisible = TRUE;
-                                (*(pcnbp->pfncbInitPage))(pcnbp,
-                                                          CBI_SHOW | CBI_ENABLE);
-                                        // we also set the ENABLE flag so
-                                        // that the callback can re-enable
-                                        // controls when the page is being
-                                        // turned to
-
-                                WinEnableWindowUpdate(hwndDlg, TRUE);
-                            }
-                        }
-                        else if (pswp->fl & SWP_HIDE)
-                        {
-                            // notebook page is being hidden:
-                            // call "initialize" callback
-                            if (pcnbp->pfncbInitPage)
-                            {
-                                pcnbp->fPageVisible = FALSE;
-                                (*(pcnbp->pfncbInitPage))(pcnbp,
-                                                          CBI_HIDE);
-                            }
-                        }
-
-                        if (pswp->fl & SWP_SIZE)
-                        {
-                            // notebook is being resized:
-                            // was winhAdjustControls prepared?
-                            if (pcnbp->pxac)
-                            {
-                                // yes:
-                                winhAdjustControls(pcnbp->hwndDlgPage,
-                                                   pcnbp->pampControlFlags,
-                                                   pcnbp->cControlFlags,
-                                                   pswp,
-                                                   pcnbp->pxac);
-                            }
-                        }
-
+                        ntbPageWindowPosChanged(pcnbp, mp1);
                         // call default
                         mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
-                    break; } // WM_WINDOWPOSCHANGED
+                    break;  // WM_WINDOWPOSCHANGED
 
                     /*
                      * WM_MOUSEMOVE:
@@ -936,49 +1013,8 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                      */
 
                     case WM_TIMER:
-                    {
-                        #ifdef DEBUG_NOTEBOOKS
-                            _Pmpf(("ntb_fnwpPageCommon: WM_TIMER"));
-                        #endif
-
-                        switch ((USHORT)mp1)    // timer ID
-                        {
-                            case 1:
-                                // timer for caller: call callback
-                                if (pcnbp)
-                                    if (pcnbp->pfncbTimer)
-                                        (*(pcnbp->pfncbTimer))(pcnbp, 1);
-                            break;
-
-                            case 999:
-                                // tree view auto-scroll timer:
-                                // CN_EXPANDTREE has set up the data we
-                                // need in pcnbp
-                                if (pcnbp->preccExpanded->flRecordAttr & CRA_EXPANDED)
-                                {
-                                    PRECORDCORE     preccLastChild;
-                                    WinStopTimer(WinQueryAnchorBlock(hwndDlg),
-                                                 hwndDlg,
-                                                 999);
-                                    // scroll the tree view properly
-                                    preccLastChild = WinSendMsg(pcnbp->hwndExpandedCnr,
-                                                                CM_QUERYRECORD,
-                                                                pcnbp->preccExpanded,
-                                                                   // expanded PRECORDCORE from CN_EXPANDTREE
-                                                                MPFROM2SHORT(CMA_LASTCHILD,
-                                                                             CMA_ITEMORDER));
-                                    if ((preccLastChild) && (preccLastChild != (PRECORDCORE)-1))
-                                    {
-                                        // ULONG ulrc;
-                                        cnrhScrollToRecord(pcnbp->hwndExpandedCnr,
-                                                           (PRECORDCORE)preccLastChild,
-                                                           CMA_TEXT,   // record text rectangle only
-                                                           TRUE);      // keep parent visible
-                                    }
-                                }
-                            break;
-                        }
-                    break; }
+                        ntbPageTimer(pcnbp, mp1);
+                    break;
 
                     /*
                      *@@ XNTBM_UPDATE:
@@ -1005,8 +1041,7 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                      */
 
                     case WM_DESTROY:
-                        ntbDestroyPage(pcnbp,
-                                       &fSemOwned);
+                        ntbDestroyPage(pcnbp);
                         mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
                     break;
 
@@ -1017,21 +1052,270 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
             } // end if (!fProcessed)
         } // end if (pcnbp)
     }
-    CATCH(excpt1)
-    {
-        // exception occured:
-        // free semaphores
-        if (fSemOwned)
-        {
-            DosReleaseMutexSem(G_hmtxNotebookLists);
-            fSemOwned = FALSE;
-        }
-    } END_CATCH();
+    CATCH(excpt1) {} END_CATCH();
 
     if (!fProcessed)
         mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
 
     return (mrc);
+}
+
+/*
+ *@@ CreateNBLI:
+ *      creates a new SUBCLNOTEBOOKLISTITEM for hwndNotebook.
+ *
+ *      This has been extracted from ntbInsertPage because it
+ *      wasn't such a good idea to put the entire function in
+ *      a mutex block.
+ *
+ *@@added V0.9.7 (2000-12-09) [umoeller]
+ */
+
+PNOTEBOOKPAGELISTITEM CreateNBLI(PCREATENOTEBOOKPAGE pcnbp) // in: new struct from ntbInsertPage
+{
+    BOOL        fSemOwned = FALSE;
+    ULONG       ulNesting;
+
+    // create NOTEBOOKPAGELISTITEM to be stored in list
+    PNOTEBOOKPAGELISTITEM pnbliNew = NULL;
+
+    // on the very first call: create list of inserted pages
+    if (G_hmtxNotebookLists == NULLHANDLE)
+    {
+        G_pllOpenPages = lstCreate(TRUE); // NOTEBOOKPAGELISTITEMs are freeable
+        G_pllSubclNotebooks = lstCreate(TRUE); // SUBCLNOTEBOOKLISTITEM are freeable
+
+        // and mutex semaphore for those lists
+        DosCreateMutexSem(NULL,         // unnamed
+                          &G_hmtxNotebookLists,
+                          0,            // unshared
+                          FALSE);       // unowned
+        #ifdef DEBUG_NOTEBOOKS
+            _Pmpf(("Created NOTEBOOKPAGELISTITEM list and mutex"));
+        #endif
+    }
+
+    DosEnterMustComplete(&ulNesting);
+    TRY_LOUD(excpt1)
+    {
+        // store new page in linked list
+        fSemOwned = (WinRequestMutexSem(G_hmtxNotebookLists, 4000) == NO_ERROR);
+        if (fSemOwned)
+        {
+            HWND        hwndDesktop = NULLHANDLE,
+                        hwndCurrent = pcnbp->hwndNotebook;
+            PLISTNODE   pNode;
+            BOOL        fNotebookAlreadySubclassed = FALSE;
+
+            pnbliNew = malloc(sizeof(NOTEBOOKPAGELISTITEM));
+
+            pnbliNew->pcnbp = pcnbp;
+
+            // store new list item in structure, so we can easily
+            // find it upon WM_DESTROY
+            pcnbp->pnbli = (PVOID)pnbliNew;
+
+            // get frame to which this window belongs
+            hwndDesktop = WinQueryDesktopWindow(WinQueryAnchorBlock(HWND_DESKTOP),
+                                                NULLHANDLE);
+
+            // find frame window handle of "Workplace Shell" window
+            while ( (hwndCurrent) && (hwndCurrent != hwndDesktop))
+            {
+                pcnbp->hwndFrame = hwndCurrent;
+                hwndCurrent = WinQueryWindow(hwndCurrent, QW_PARENT);
+            }
+
+            if (!hwndCurrent)
+                pcnbp->hwndFrame = NULLHANDLE;
+
+            lstAppendItem(G_pllOpenPages,
+                          pnbliNew);
+            #ifdef DEBUG_NOTEBOOKS
+                _Pmpf(("Appended NOTEBOOKPAGELISTITEM to pages list"));
+            #endif
+
+            // now search the list of notebook list items
+            // for whether a page has already been inserted
+            // into this notebook; if not, subclass the
+            // notebook (otherwise it has already been subclassed
+            // by this func)
+            pNode = lstQueryFirstNode(G_pllSubclNotebooks);
+            while (pNode)
+            {
+                PSUBCLNOTEBOOKLISTITEM psnbliThis = (PSUBCLNOTEBOOKLISTITEM)pNode->pItemData;
+                if (psnbliThis)
+                    if (psnbliThis->hwndNotebook == pcnbp->hwndNotebook)
+                    {
+                        fNotebookAlreadySubclassed = TRUE;
+                        break;
+                    }
+
+                pNode = pNode->pNext;
+            }
+
+            if (!fNotebookAlreadySubclassed)
+            {
+                // notebook not yet subclassed:
+                // do it now
+                PSUBCLNOTEBOOKLISTITEM pSubclNBLINew = (PSUBCLNOTEBOOKLISTITEM)malloc(sizeof(SUBCLNOTEBOOKLISTITEM));
+                if (pSubclNBLINew)
+                {
+                    pSubclNBLINew->hwndNotebook = pcnbp->hwndNotebook;
+                    lstAppendItem(G_pllSubclNotebooks,
+                                  pSubclNBLINew);
+                    pSubclNBLINew->pfnwpNotebookOrig
+                        = WinSubclassWindow(pcnbp->hwndNotebook,
+                                            ntb_fnwpSubclNotebook);
+                }
+            }
+        } // end if (fSemOwned)
+        else
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "hmtxNotebookLists mutex request failed");
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fSemOwned)
+    {
+        DosReleaseMutexSem(G_hmtxNotebookLists);
+        fSemOwned = FALSE;
+    }
+
+    DosExitMustComplete(&ulNesting);
+
+    return (pnbliNew);
+}
+
+/*
+ *@@ FindNBLI:
+ *      finds the SUBCLNOTEBOOKLISTITEM for hwndNotebook.
+ *
+ *      This has been extracted from ntb_fnwpSubclNotebook
+ *      because it wasn't such a good idea to put the entire
+ *      window proc in a mutex block.
+ *
+ *@@added V0.9.7 (2000-12-09) [umoeller]
+ */
+
+PSUBCLNOTEBOOKLISTITEM FindNBLI(HWND hwndNotebook)
+{
+    PSUBCLNOTEBOOKLISTITEM pSubclNBLI = NULL;
+    BOOL fSemOwned = FALSE;
+
+    ULONG ulNesting;
+    DosEnterMustComplete(&ulNesting);
+
+    TRY_LOUD(excpt1)
+    {
+        fSemOwned = (WinRequestMutexSem(G_hmtxNotebookLists, 4000) == NO_ERROR);
+        if (fSemOwned)
+        {
+            PLISTNODE   pNode = lstQueryFirstNode(G_pllSubclNotebooks);
+            while (pNode)
+            {
+                PSUBCLNOTEBOOKLISTITEM psnbliThis = (PSUBCLNOTEBOOKLISTITEM)pNode->pItemData;
+                if (psnbliThis)
+                    if (psnbliThis->hwndNotebook == hwndNotebook)
+                    {
+                        pSubclNBLI = psnbliThis;
+                        break;
+                    }
+
+                pNode = pNode->pNext;
+            }
+        } // end if (fSemOwned)
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fSemOwned)
+    {
+        DosReleaseMutexSem(G_hmtxNotebookLists);
+        fSemOwned = FALSE;
+    }
+
+    DosExitMustComplete(&ulNesting);
+
+    return (pSubclNBLI);
+}
+
+/*
+ *@@ DestroyNBLI:
+ *      implementation for WM_DESTROY in ntb_fnwpSubclNotebook.
+ *
+ *      This has been extracted from ntb_fnwpSubclNotebook
+ *      because it wasn't such a good idea to put the entire
+ *      window proc in a mutex block.
+ *
+ *@@added V0.9.7 (2000-12-09) [umoeller]
+ */
+
+VOID DestroyNBLI(HWND hwndNotebook,
+                 PSUBCLNOTEBOOKLISTITEM pSubclNBLI)
+{
+    BOOL fSemOwned = FALSE;
+
+    ULONG ulNesting;
+    DosEnterMustComplete(&ulNesting);
+
+    TRY_LOUD(excpt1)
+    {
+        fSemOwned = (WinRequestMutexSem(G_hmtxNotebookLists, 4000) == NO_ERROR);
+        if (fSemOwned)
+        {
+            PLISTNODE pPageNode = lstQueryFirstNode(G_pllOpenPages);
+
+            #ifdef DEBUG_NOTEBOOKS
+                _Pmpf(("ntb_fnwpSubclNotebook: WM_DESTROY"));
+            #endif
+
+            while (pPageNode)
+            {
+                PNOTEBOOKPAGELISTITEM pPageLI = (PNOTEBOOKPAGELISTITEM)pPageNode->pItemData;
+                if (pPageLI)
+                    if (pPageLI->pcnbp)
+                    {
+                        if (pPageLI->pcnbp->hwndNotebook == hwndNotebook)
+                            // our page:
+                            if (!pPageLI->pcnbp->fPageInitialized)
+                                // page has NOT been initialized
+                                // (this flag is set by ntb_fnwpPageCommon):
+                                // remove it from list
+                            {
+                                 #ifdef DEBUG_NOTEBOOKS
+                                     _Pmpf(("  removed page ID %d", pPageLI->pcnbp->ulPageID));
+                                 #endif
+                                free(pPageLI->pcnbp);
+                                lstRemoveItem(G_pllOpenPages,
+                                              pPageLI);
+
+                                // restart loop with first item
+                                pPageNode = lstQueryFirstNode(G_pllOpenPages);
+                                continue;
+                            }
+                    }
+
+                pPageNode = pPageNode->pNext;
+            }
+
+            // remove notebook control from list
+            lstRemoveItem(G_pllSubclNotebooks,
+                          pSubclNBLI);      // this frees the pSubclNBLI
+            #ifdef DEBUG_NOTEBOOKS
+                _Pmpf(("  removed pSubclNBLI"));
+            #endif
+        } // end if (fSemOwned)
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fSemOwned)
+    {
+        DosReleaseMutexSem(G_hmtxNotebookLists);
+        fSemOwned = FALSE;
+    }
+
+    DosExitMustComplete(&ulNesting);
+
 }
 
 /*
@@ -1053,112 +1337,43 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
  *      ages. Quite embarassing.
  *
  *@@added V0.9.1 (99-12-06) [umoeller]
+ *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed mutex problems
  */
 
 MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
-    BOOL    fSemOwned = FALSE;
 
-    TRY_LOUD(excpt1, NULL)
+    PSUBCLNOTEBOOKLISTITEM pSubclNBLI = FindNBLI(hwndNotebook);
+
+    if (pSubclNBLI)
     {
-        // store new page in linked list
-        fSemOwned = (WinRequestMutexSem(G_hmtxNotebookLists, 4000) == NO_ERROR);
-        if (fSemOwned)
+        switch (msg)
         {
-            PLISTNODE   pNode = lstQueryFirstNode(G_pllSubclNotebooks);
-            PSUBCLNOTEBOOKLISTITEM pSubclNBLI = NULL;
-            while (pNode)
+            /*
+             * WM_DESTROY:
+             *      notebook is being destroyed.
+             *      Enumerate notebook pages inserted
+             *      by ntbInsertPage and destroy those
+             *      which haven't been initialized yet,
+             *      because those won't get WM_DESTROY
+             *      in ntb_fnwpPageCommon.
+             */
+
+            case WM_DESTROY:
             {
-                PSUBCLNOTEBOOKLISTITEM psnbliThis = (PSUBCLNOTEBOOKLISTITEM)pNode->pItemData;
-                if (psnbliThis)
-                    if (psnbliThis->hwndNotebook == hwndNotebook)
-                    {
-                        pSubclNBLI = psnbliThis;
-                        break;
-                    }
+                PFNWP pfnwpNotebookOrig = pSubclNBLI->pfnwpNotebookOrig;
+                DestroyNBLI(hwndNotebook, pSubclNBLI);
+                            // after this, pSubclNBLI is invalid!!
+                mrc = (pfnwpNotebookOrig)(hwndNotebook, msg, mp1, mp2);
+            break; }
 
-                pNode = pNode->pNext;
-            }
-
-            if (pSubclNBLI)
-                switch (msg)
-                {
-                    /*
-                     * WM_DESTROY:
-                     *      notebook is being destroyed.
-                     *      Enumerate notebook pages inserted
-                     *      by ntbInsertPage and destroy those
-                     *      which haven't been initialized yet,
-                     *      because those won't get WM_DESTROY
-                     *      in ntb_fnwpPageCommon.
-                     */
-
-                    case WM_DESTROY:
-                    {
-                        PFNWP pfnwpNotebookOrig = pSubclNBLI->pfnwpNotebookOrig;
-
-                        PLISTNODE pPageNode = lstQueryFirstNode(G_pllOpenPages);
-
-                        #ifdef DEBUG_NOTEBOOKS
-                            _Pmpf(("ntb_fnwpSubclNotebook: WM_DESTROY"));
-                        #endif
-
-                        while (pPageNode)
-                        {
-                            PNOTEBOOKPAGELISTITEM pPageLI = (PNOTEBOOKPAGELISTITEM)pPageNode->pItemData;
-                            if (pPageLI)
-                                if (pPageLI->pcnbp)
-                                {
-                                    if (pPageLI->pcnbp->hwndNotebook == hwndNotebook)
-                                        // our page:
-                                        if (!pPageLI->pcnbp->fPageInitialized)
-                                            // page has NOT been initialized
-                                            // (this flag is set by ntb_fnwpPageCommon):
-                                            // remove it from list
-                                        {
-                                             #ifdef DEBUG_NOTEBOOKS
-                                                 _Pmpf(("  removed page ID %d", pPageLI->pcnbp->ulPageID));
-                                             #endif
-                                            free(pPageLI->pcnbp);
-                                            lstRemoveItem(G_pllOpenPages,
-                                                          pPageLI);
-
-                                            // restart loop with first item
-                                            pPageNode = lstQueryFirstNode(G_pllOpenPages);
-                                            continue;
-                                        }
-                                }
-
-                            pPageNode = pPageNode->pNext;
-                        }
-
-                        // remove notebook control from list
-                        lstRemoveItem(G_pllSubclNotebooks,
-                                      pSubclNBLI);      // this frees the pSubclNBLI
-                        #ifdef DEBUG_NOTEBOOKS
-                            _Pmpf(("  removed pSubclNBLI"));
-                        #endif
-                        mrc = (pfnwpNotebookOrig)(hwndNotebook, msg, mp1, mp2);
-                    break; }
-
-                    default:
-                        mrc = (pSubclNBLI->pfnwpNotebookOrig)(hwndNotebook, msg, mp1, mp2);
-                }
-            else
-                mrc = WinDefWindowProc(hwndNotebook, msg, mp1, mp2);
+            default:
+                mrc = (pSubclNBLI->pfnwpNotebookOrig)(hwndNotebook, msg, mp1, mp2);
         }
-        else
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "hmtxNotebookLists mutex request failed");
-    }
-    CATCH(excpt1) { } END_CATCH();
-
-    if (fSemOwned)
-    {
-        DosReleaseMutexSem(G_hmtxNotebookLists);
-        fSemOwned = FALSE;
-    }
+    } // end if (pSubclNBLI)
+    else
+        mrc = WinDefWindowProc(hwndNotebook, msg, mp1, mp2);
 
     return (mrc);
 }
@@ -1362,11 +1577,11 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
  *@@changed V0.9.1 (99-12-06) [umoeller]: added notebook subclassing
  *@@changed V0.9.1 (2000-02-14) [umoeller]: reversed order of functions; now subclassing is last
+ *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed mutex problems
  */
 
 ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
 {
-    BOOL            fSemOwned = FALSE;
     PAGEINFO        pi;
     ULONG           ulrc;
 
@@ -1388,124 +1603,26 @@ ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
     pi.pszHelpLibraryName  = (PSZ)cmnQueryHelpLibrary();
     pi.idDefaultHelpPanel  = pcnbp->ulDefaultHelpPanel;
 
-    TRY_LOUD(excpt1, NULL)
+    // insert page
+    ulrc = _wpInsertSettingsPage(pcnbp->somSelf,
+                                 pcnbp->hwndNotebook,
+                                 &pi);
+            // this returns the notebook page ID
+
+    if (ulrc)
     {
-        // insert page
-        ulrc = _wpInsertSettingsPage(pcnbp->somSelf,
-                                     pcnbp->hwndNotebook,
-                                     &pi);
-                // this returns the notebook page ID
+        // successfully inserted:
 
-        if (ulrc)
-        {
-            // successfully inserted:
-            HWND        hwndDesktop = NULLHANDLE,
-                        hwndCurrent = pcnbp->hwndNotebook;
+        // store PM notebook page ID
+        pcnbp->ulNotebookPageID = ulrc;
 
-            // create NOTEBOOKPAGELISTITEM to be stored in list
-            PNOTEBOOKPAGELISTITEM pnbliNew = malloc(sizeof(NOTEBOOKPAGELISTITEM));
-            pnbliNew->pcnbp = pcnbp;
-
-            // store new list item in structure, so we can easily
-            // find it upon WM_DESTROY
-            pcnbp->pnbli = (PVOID)pnbliNew;
-
-            // store PM notebook page ID
-            pcnbp->ulNotebookPageID = ulrc;
-
-            // get frame to which this window belongs
-            hwndDesktop = WinQueryDesktopWindow(WinQueryAnchorBlock(HWND_DESKTOP),
-                                                NULLHANDLE);
-
-            // find frame window handle of "Workplace Shell" window
-            while ( (hwndCurrent) && (hwndCurrent != hwndDesktop))
-            {
-                pcnbp->hwndFrame = hwndCurrent;
-                hwndCurrent = WinQueryWindow(hwndCurrent, QW_PARENT);
-            }
-
-            if (!hwndCurrent)
-                pcnbp->hwndFrame = NULLHANDLE;
-
-            // on the very first call: create list of inserted pages
-            if (G_hmtxNotebookLists == NULLHANDLE)
-            {
-                G_pllOpenPages = lstCreate(TRUE); // NOTEBOOKPAGELISTITEMs are freeable
-                G_pllSubclNotebooks = lstCreate(TRUE); // SUBCLNOTEBOOKLISTITEM are freeable
-
-                // and mutex semaphore for those lists
-                DosCreateMutexSem(NULL,         // unnamed
-                                  &G_hmtxNotebookLists,
-                                  0,            // unshared
-                                  FALSE);       // unowned
-                #ifdef DEBUG_NOTEBOOKS
-                    _Pmpf(("Created NOTEBOOKPAGELISTITEM list and mutex"));
-                #endif
-            }
-
-            // store new page in linked list
-            fSemOwned = (WinRequestMutexSem(G_hmtxNotebookLists, 4000) == NO_ERROR);
-            if (fSemOwned)
-            {
-                PLISTNODE   pNode;
-                BOOL        fNotebookAlreadySubclassed = FALSE;
-
-                lstAppendItem(G_pllOpenPages,
-                              pnbliNew);
-                #ifdef DEBUG_NOTEBOOKS
-                    _Pmpf(("Appended NOTEBOOKPAGELISTITEM to pages list"));
-                #endif
-
-                // now search the list of notebook list items
-                // for whether a page has already been inserted
-                // into this notebook; if not, subclass the
-                // notebook (otherwise it has already been subclassed
-                // by this func)
-                pNode = lstQueryFirstNode(G_pllSubclNotebooks);
-                while (pNode)
-                {
-                    PSUBCLNOTEBOOKLISTITEM psnbliThis = (PSUBCLNOTEBOOKLISTITEM)pNode->pItemData;
-                    if (psnbliThis)
-                        if (psnbliThis->hwndNotebook == pcnbp->hwndNotebook)
-                        {
-                            fNotebookAlreadySubclassed = TRUE;
-                            break;
-                        }
-
-                    pNode = pNode->pNext;
-                }
-
-                if (!fNotebookAlreadySubclassed)
-                {
-                    // notebook not yet subclassed:
-                    // do it now
-                    PSUBCLNOTEBOOKLISTITEM pSubclNBLINew = (PSUBCLNOTEBOOKLISTITEM)malloc(sizeof(SUBCLNOTEBOOKLISTITEM));
-                    if (pSubclNBLINew)
-                    {
-                        pSubclNBLINew->hwndNotebook = pcnbp->hwndNotebook;
-                        lstAppendItem(G_pllSubclNotebooks,
-                                      pSubclNBLINew);
-                        pSubclNBLINew->pfnwpNotebookOrig
-                            = WinSubclassWindow(pcnbp->hwndNotebook,
-                                                ntb_fnwpSubclNotebook);
-                    }
-                }
-            } // end if (fSemOwned)
-            else
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "hmtxNotebookLists mutex request failed");
-        }
-        else
-            winhDebugBox(HWND_DESKTOP,
+        // create SUBCLNOTEBOOKLISTITEM
+        CreateNBLI(pcnbp);
+    }
+    else
+        winhDebugBox(HWND_DESKTOP,
                      "XWorkplace: Error in ntbInsertPage",
                      "Notebook page could not be inserted (wpInsertSettingsPage failed).");
-    }
-    CATCH(excpt1) { } END_CATCH();
-
-    if (fSemOwned) {
-        DosReleaseMutexSem(G_hmtxNotebookLists);
-        fSemOwned = FALSE;
-    }
 
     return (ulrc);
 }
@@ -1536,6 +1653,7 @@ ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
  *
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
  *@@changed V0.9.0 [umoeller]: fixed an endless loop problem
+ *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed mutex problems
  */
 
 PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp)
@@ -1544,7 +1662,10 @@ PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp)
     PNOTEBOOKPAGELISTITEM   pItemReturn = 0;
     BOOL                fSemOwned = FALSE;
 
-    TRY_QUIET(excpt1, NULL)
+    ULONG ulNesting;
+    DosEnterMustComplete(&ulNesting);
+
+    TRY_QUIET(excpt1)
     {
         // list created yet?
         if (G_pllOpenPages)
@@ -1589,6 +1710,8 @@ PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp)
         DosReleaseMutexSem(G_hmtxNotebookLists);
         fSemOwned = FALSE;
     }
+
+    DosExitMustComplete(&ulNesting);
 
     if (pItemReturn)
         return (pItemReturn->pcnbp);
@@ -1646,9 +1769,6 @@ ULONG ntbUpdateVisiblePage(WPObject *somSelf, ULONG ulPageID)
                            XNTBM_UPDATE,
                            (MPARAM)(CBI_SET | CBI_ENABLE),
                            0);
-                /* if (pcnbp->pfncbInitPage)
-                    // enable/disable items on visible page
-                    (*(pcnbp->pfncbInitPage))(pcnbp, ); */
                 ulrc++;
             }
         }

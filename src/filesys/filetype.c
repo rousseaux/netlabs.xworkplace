@@ -1749,6 +1749,7 @@ VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *      drag and drop.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.7 (2000-12-10) [umoeller]: DrgFreeDraginfo was missing
  */
 
 MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1970,6 +1971,9 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                                     // NULL == root: delete key
                                                     : NULL);
                                         // aaarrgh
+
+                            DrgFreeDraginfo(pcdi->pDragInfo);
+                                        // V0.9.7 (2000-12-10) [umoeller]
                         }
 
                         // If CN_DROP was the result of a "real" (modal) d'n'd,
@@ -2011,6 +2015,9 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                    (MPARAM)(pdrgItem->ulItemID),
                                    MPFROM2SHORT(FALSE,
                                            CRA_PICKED));
+
+                        DrgFreeDraginfo(pcldi->pDragInfo);
+                                    // V0.9.7 (2000-12-10) [umoeller]
                     }
 
                     // clean up resources
@@ -2404,7 +2411,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                  *      WPProgramFile objects or if one of the associations
                  *      is dragged _within_ the container.
                  *
-                 *      Note that since we have set CA_ORDEREDTARGETEMPHASIS
+                 *      Note that since we have set CA_ORDEREDTARGETEMPH
                  *      for the "Assocs" cnr, we do not get CN_DRAGOVER,
                  *      but CN_DRAGAFTER only.
                  */
@@ -2563,6 +2570,9 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                 cnrhMoveRecord(pftpd->hwndAssocsCnr,
                                                   preccMove,
                                                   pftpd->preccAfter);
+
+                                DrgFreeDraginfo(pcdi->pDragInfo);
+                                            // V0.9.7 (2000-12-10) [umoeller]
                             }
                         }
                         else

@@ -17,7 +17,34 @@ is no longer anything to take away."
 This page lists the revision history of XWorkplace (since V0.9.0 was released).
 The history of the previous XFolder packages are on a <A HREF="vers_2history2.html">separate page</A>.
 
-<P><B>XWorkplace 0.9.6 (November 25, 2000)</B>
+<P><B>XWorkplace 0.9.7 (November 25, 2000)</B>
+<H6>New features:
+<UL><LI>Added the XCenter, a WarpCenter replacement.
+<P><LI>Added "No submenu" setting for "Lock in place" context menu item
+("Workplace Shell", "Context menus" page 3).
+<P><LI>Added "Ignore XCenter" to sliding focus settings ("Mouse", "Movement").
+<P><LI>Added "Close WarpCenter before Desktop" setting to XShutdown page
+in Desktop's settings notebook. This now allows you to tell XWorkplace to
+leave the WarpCenter alone, if this lead to scroll bars on the desktop. Hope this helps.
+
+</UL>Bugfixes:
+<UL><LI>Reworked mutex semaphore protection all over the place. Maybe the WPS
+is now less prone to hanging when PMSHELL.EXE is killed.
+<P><LI>Reworked NLS initialization. This hung the system when language DLLs failed
+to load.
+<P><LI>Fixed a potentially dangerous situation with mutexes and the shared
+notebook functions. This could have lead to system hangs, and maybe it did somewhere.
+<P><LI>Reworked internal timer functions. These stopped working when the date changed.
+<P><LI>Fixed crashes in Worker thread when kernel globals were locked.
+<P><LI>Added more error checking to internal EA functions.
+<P><LI>Fixed a couple of memory leaks on the "File types" page in "Workplace Shell".
+<P><LI>Extended associations didn't work when a data file had spaces in its full
+path. Fixed.
+<P><LI>Extended associations ignored program object settings for
+"no auto-close after exit" and "minimized". Fixed.
+<P><LI>Fixed a memory leak with every time an application was opened via object hotkeys.
+
+</UL></H6><B>XWorkplace 0.9.6 (November 25, 2000)</B>
 
 <H6>New features:
 <UL><LI>Added QUICKOPEN=IMMEDIATE

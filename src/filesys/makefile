@@ -253,6 +253,7 @@ $(OUTPUTDIR)\object.obj: \
     $(INC)\setup.h \
     $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h \
         $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\wphandle.h $(HLPINC)\xstring.h \
+        $(HLPINC)\undoc.h \
     $(INC)\classes\xfobj.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
@@ -293,7 +294,7 @@ $(OUTPUTDIR)\trash.obj: \
 
 $(OUTPUTDIR)\xthreads.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\animate.h $(HLPINC)\comctl.h $(HLPINC)\datetime.h \
+    $(HLPINC)\animate.h $(HLPINC)\comctl.h \
             $(HLPINC)\dosh.h $(HLPINC)\eah.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
             $(HLPINC)\gpih.h $(HLPINC)\prfh.h $(HLPINC)\shapewin.h $(HLPINC)\stringh.h \
             $(HLPINC)\syssound.h $(HLPINC)\threads.h $(HLPINC)\winh.h \

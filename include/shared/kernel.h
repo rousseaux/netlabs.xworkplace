@@ -54,9 +54,10 @@
 
     ULONG krnQueryLock(VOID);
 
-    #ifdef EXCEPT_HEADER_INCLUDED
-    VOID APIENTRY krnOnKillDuringLock(PEXCEPTIONREGISTRATIONRECORD2 pRegRec2);
-    #endif
+    // #ifdef EXCEPT_HEADER_INCLUDED
+    // VOID APIENTRY krnOnKillDuringLock(PEXCEPTIONREGISTRATIONRECORD2 pRegRec2);
+    // removed V0.9.7 (2000-12-09) [umoeller]
+    // #endif
 
     /********************************************************************
      *                                                                  *

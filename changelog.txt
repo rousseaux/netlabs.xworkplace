@@ -30,6 +30,7 @@ Changes for V0.9.7
     --  ID_XSD_DTP_SHUTDOWN changed.
     --  ID_XSD_AUTOCLOSE changed.
     --  ID_SDD_CLOSEVIO changed.
+    --  ID_XSD_SET2REMOVEMENUS changed.
 
 
 Changes for V0.9.6

@@ -123,7 +123,7 @@ MYOWNINC = $(INC)\xcenter
 
 $(OUTPUTDIR)\ctr_engine.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\cnrh.h $(HLPINC)\datetime.h $(HLPINC)\except.h $(HLPINC)\gpih.h $(HLPINC)\linklist.h \
+    $(HLPINC)\cnrh.h $(HLPINC)\except.h $(HLPINC)\gpih.h $(HLPINC)\linklist.h \
         $(HLPINC)\prfh.h $(HLPINC)\winh.h $(HLPINC)\stringh.h $(HLPINC)\timer.h $(HLPINC)\xstring.h \
     $(INC)\classes\xcenter.ih $(INC)\classes\xfobj.ih \
     $(INC)\dlgids.h \

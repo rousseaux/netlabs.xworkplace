@@ -383,9 +383,12 @@ BOOL cmnQueryXWPBasePath(PSZ pszPath)
 
 const char* cmnQueryLanguageCode(VOID)
 {
+    ULONG ulNesting;
+    DosEnterMustComplete(&ulNesting);
+
     if (krnLock(5000))
     {
-        TRY_LOUD(excpt1, krnOnKillDuringLock)
+        TRY_LOUD(excpt1)
         {
             if (G_szLanguageCode[0] == '\0')
                 PrfQueryProfileString(HINI_USERPROFILE,
@@ -405,7 +408,9 @@ const char* cmnQueryLanguageCode(VOID)
     }
     else
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "krnLock failed.");
+               "krnLock failed.");
+
+    DosExitMustComplete(&ulNesting);
 
     return (G_szLanguageCode);
 }
@@ -423,9 +428,12 @@ BOOL cmnSetLanguageCode(PSZ pszLanguage)
 {
     BOOL brc = FALSE;
 
+    ULONG ulNesting;
+    DosEnterMustComplete(&ulNesting);
+
     if (krnLock(5000))
     {
-        TRY_LOUD(excpt1, krnOnKillDuringLock)
+        TRY_LOUD(excpt1)
         {
             strcpy(G_szLanguageCode, pszLanguage);
             G_szLanguageCode[3] = 0;
@@ -441,6 +449,8 @@ BOOL cmnSetLanguageCode(PSZ pszLanguage)
     else
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "krnLock failed.");
+
+    DosExitMustComplete(&ulNesting);
 
     return (brc);
 }
@@ -461,9 +471,12 @@ const char* cmnQueryHelpLibrary(VOID)
 {
     const char *rc = 0;
 
+    ULONG ulNesting;
+    DosEnterMustComplete(&ulNesting);
+
     if (krnLock(5000))
     {
-        TRY_LOUD(excpt1, krnOnKillDuringLock)
+        TRY_LOUD(excpt1)
         {
             if (cmnQueryXWPBasePath(G_szHelpLibrary))
             {
@@ -484,6 +497,8 @@ const char* cmnQueryHelpLibrary(VOID)
     else
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "krnLock failed.");
+
+    DosExitMustComplete(&ulNesting);
 
     return (rc);
 }
@@ -528,9 +543,13 @@ BOOL cmnDisplayHelp(WPObject *somSelf,
 const char* cmnQueryMessageFile(VOID)
 {
     const char *rc = 0;
+
+    ULONG ulNesting;
+    DosEnterMustComplete(&ulNesting);
+
     if (krnLock(5000))
     {
-        TRY_LOUD(excpt1, krnOnKillDuringLock)
+        TRY_LOUD(excpt1)
         {
             if (cmnQueryXWPBasePath(G_szMessageFile))
             {
@@ -551,6 +570,8 @@ const char* cmnQueryMessageFile(VOID)
     else
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "krnLock failed.");
+
+    DosExitMustComplete(&ulNesting);
 
     return (rc);
 }
@@ -574,9 +595,12 @@ const char* cmnQueryMessageFile(VOID)
 
 HMODULE cmnQueryIconsDLL(VOID)
 {
+    ULONG ulNesting;
+    DosEnterMustComplete(&ulNesting);
+
     if (krnLock(5000))
     {
-        TRY_LOUD(excpt1, krnOnKillDuringLock)
+        TRY_LOUD(excpt1)
         {
             // first query?
             if (G_hmodIconsDLL == NULLHANDLE)
@@ -633,6 +657,8 @@ HMODULE cmnQueryIconsDLL(VOID)
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "krnLock failed.");
 
+    DosExitMustComplete(&ulNesting);
+
     return (G_hmodIconsDLL);
 }
 
@@ -654,9 +680,12 @@ PSZ cmnQueryBootLogoFile(VOID)
 {
     PSZ pszReturn = 0;
 
+    ULONG ulNesting;
+    DosEnterMustComplete(&ulNesting);
+
     if (krnLock(5000))
     {
-        TRY_LOUD(excpt1, krnOnKillDuringLock)
+        TRY_LOUD(excpt1)
         {
             pszReturn = prfhQueryProfileData(HINI_USER,
                                              INIAPP_XWORKPLACE,
@@ -679,6 +708,8 @@ PSZ cmnQueryBootLogoFile(VOID)
     else
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "krnLock failed.");
+
+    DosExitMustComplete(&ulNesting);
 
     return (pszReturn);
 }
@@ -721,6 +752,9 @@ void cmnLoadString(HAB habDesktop,
  *@@ LoadNLSData:
  *      called from cmnQueryNLSModuleHandle when
  *      the NLS data needs to be (re)initialized.
+ *
+ *      Preconditions: This must be called in a
+ *                     krnLock() block.
  *
  *@@added V0.9.2 (2000-02-23) [umoeller]
  */
@@ -1246,6 +1280,7 @@ VOID LoadNLSData(HAB habDesktop,
  *      National Language Support DLL (XFLDRxxx.DLL).
  *
  *      This is called in two situations:
+ *
  *          1) with fEnforceReload == FALSE everytime some part
  *             of XFolder needs the NLS resources (e.g. for dialogs);
  *             this only loads the NLS DLL on the very first call
@@ -1262,134 +1297,182 @@ VOID LoadNLSData(HAB habDesktop,
  *
  *@@changed V0.9.0 [umoeller]: added various NLS strings
  *@@changed V0.9.0 (99-11-14) [umoeller]: made this reentrant, finally
+ *@@changed V0.9.7 (2000-12-09) [umoeller]: restructured to fix mutex hangs with load errors
  */
 
 HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
 {
-    if (krnLock(5000))
+    HMODULE hmodReturn = NULLHANDLE,
+            hmodLoaded = NULLHANDLE;
+
+    // load resource DLL if it's not loaded yet or a reload is enforced
+    if (    (G_hmodNLS == NULLHANDLE)
+         || (fEnforceReload)
+       )
     {
-        TRY_LOUD(excpt1, krnOnKillDuringLock)
+        CHAR    szResourceModuleName[CCHMAXPATH];
+
+        // get the XFolder path first
+        if (!cmnQueryXWPBasePath(szResourceModuleName))
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "cmnQueryXWPBasePath failed.");
+        else
         {
-            CHAR    szResourceModuleName[CCHMAXPATH];
-            // ULONG   ulCopied;
-            HMODULE hmodOldResource = G_hmodNLS;
+            APIRET arc = NO_ERROR;
+            // now compose module name from language code
+            strcat(szResourceModuleName, "\\bin\\xfldr");
+            strcat(szResourceModuleName, cmnQueryLanguageCode());
+            strcat(szResourceModuleName, ".dll");
 
-            // load resource DLL if it's not loaded yet or a reload is enforced
-            if ((G_hmodNLS == NULLHANDLE) || (fEnforceReload))
+            // try to load the module
+            arc = DosLoadModule(NULL,
+                                0,
+                                szResourceModuleName,
+                                (PHMODULE)&hmodLoaded);
+            if (arc != NO_ERROR)
             {
-                NLSSTRINGS *pNLSStrings = (NLSSTRINGS*)cmnQueryNLSStrings();
+                // display an error string; since we don't have NLS,
+                // this must be in English...
+                CHAR szError[1000];
+                sprintf(szError, "XWorkplace was unable to load its National "
+                                 "Language Support DLL \"%s\". DosLoadModule returned "
+                                 "error %d.",
+                        szResourceModuleName,
+                        arc);
+                // log
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       szError);
+                // and display
+                winhDebugBox(HWND_DESKTOP,
+                             "XWorkplace: Error",
+                             szError);
+            }
+            else
+            {
+                // module loaded alright!
+                // hmodLoaded has the new module handle
+                HAB habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
 
-                // get the XFolder path first
-                if (cmnQueryXWPBasePath(szResourceModuleName))
+                if (fEnforceReload)
                 {
-                    // now compose module name from language code
-                    strcat(szResourceModuleName, "\\bin\\xfldr");
-                    strcat(szResourceModuleName, cmnQueryLanguageCode());
-                    strcat(szResourceModuleName, ".dll");
+                    // if fEnforceReload == TRUE, we will load a test string from
+                    // the module to see if it has at least the version level which
+                    // this XFolder version requires. This is done using a #define
+                    // in dlgids.h: XFOLDER_VERSION is compiled as a string resource
+                    // into both the NLS DLL and into the main DLL (this file),
+                    // so we always have the versions in there automatically.
+                    // MINIMUM_NLS_VERSION (dlgids.h too) contains the minimum
+                    // NLS version level that this XFolder version requires.
+                    CHAR   szTest[30] = "";
+                    LONG   lLength;
+                    cmnSetDlgHelpPanel(-1);
+                    lLength = WinLoadString(habDesktop,
+                                            G_hmodNLS,
+                                            ID_XSSI_XFOLDERVERSION,
+                                            sizeof(szTest), szTest);
+                    #ifdef DEBUG_LANGCODES
+                        _Pmpf(("%s version: %s", szResourceModuleName, szTest));
+                    #endif
 
-                    // try to load the module
-                    if (DosLoadModule(NULL,
-                                       0,
-                                       szResourceModuleName,
-                                       (PHMODULE)&G_hmodNLS))
+                    if (lLength == 0)
                     {
+                        // version string not found: complain
                         winhDebugBox(HWND_DESKTOP,
-                                 "XFolder: Couldn't Find Resource DLL",
-                                 szResourceModuleName); // ###
+                                     "XWorkplace",
+                                     "The requested file is not an XWorkplace National Language Support DLL.");
+                    }
+                    else if (memcmp(szTest, MINIMUM_NLS_VERSION, 4) < 0)
+                            // szTest has NLS version (e.g. "0.81 beta"),
+                            // MINIMUM_NLS_VERSION has minimum version required
+                            // (e.g. "0.9.0")
+                    {
+                        // version level not sufficient:
+                        // load dialog from _old_ NLS DLL which says
+                        // that the DLL is too old; if user presses
+                        // "Cancel", we abort loading the DLL
+                        if (WinDlgBox(HWND_DESKTOP,
+                                      HWND_DESKTOP,
+                                      (PFNWP)cmn_fnwpDlgWithHelp,
+                                      G_hmodNLS,        // still the old one
+                                      ID_XFD_WRONGVERSION,
+                                      (PVOID)NULL)
+                                == DID_CANCEL)
+                        {
+                            winhDebugBox(HWND_DESKTOP,
+                                         "XWorkplace",
+                                         "The new National Language Support DLL was not loaded.");
+                        }
+                        else
+                            // user wants outdated module:
+                            hmodReturn = hmodLoaded;
                     }
                     else
                     {
-                        // module loaded alright!
-                        HAB habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
+                        // new module is OK:
+                        hmodReturn = hmodLoaded;
+                    }
+                } // end if (fEnforceReload)
+                else
+                    // no enfore reload: that's OK always
+                    hmodReturn = hmodLoaded;
+            } // end else if (arc != NO_ERROR)
+        } // end if (cmnQueryXWPBasePath(szResourceModuleName))
+    } // end if (    (G_hmodNLS == NULLHANDLE)  || (fEnforceReload) )
+    else
+        // no (re)load neccessary:
+        // use old module (this must be != NULLHANDLE now)
+        hmodReturn = G_hmodNLS;
 
-                        if (habDesktop)
-                        {
-                            if (fEnforceReload)
-                            {
-                                // if fEnforceReload == TRUE, we will load a test string from
-                                // the module to see if it has at least the version level which
-                                // this XFolder version requires. This is done using a #define
-                                // in dlgids.h: XFOLDER_VERSION is compiled as a string resource
-                                // into both the NLS DLL and into the main DLL (this file),
-                                // so we always have the versions in there automatically.
-                                // MINIMUM_NLS_VERSION (dlgids.h too) contains the minimum
-                                // NLS version level that this XFolder version requires.
-                                CHAR   szTest[30] = "";
-                                LONG   lLength;
-                                lLength = WinLoadString(habDesktop,
-                                                        G_hmodNLS,
-                                                        ID_XSSI_XFOLDERVERSION,
-                                                        sizeof(szTest), szTest);
-                                #ifdef DEBUG_LANGCODES
-                                    _Pmpf(("%s version: %s", szResourceModuleName, szTest));
-                                #endif
+    // V0.9.7 (2000-12-09) [umoeller]
+    // alright, now we have:
+    // --  hmodLoaded: != NULLHANDLE if we loaded a new module.
+    // --  hmodReturn: != NULLHANDLE if the new module is OK.
 
-                                if (    (lLength == 0)
-                                    ||  (memcmp(szTest, MINIMUM_NLS_VERSION, 4) < 0)
-                                            // szTest has NLS version (e.g. "0.81 beta"),
-                                            // MINIMUM_NLS_VERSION has minimum version required
-                                            // (e.g. "0.9.0")
-                                   )
-                                {
-                                    cmnSetDlgHelpPanel(-1);
-                                    if (lLength == 0)
-                                    {
-                                        // version string not found: complain
-                                        winhDebugBox(HWND_DESKTOP,
-                                                 "XFolder",
-                                                 "The requested file is not an XFolder National Language Support DLL.");
-                                        DosFreeModule(G_hmodNLS);
-                                        G_hmodNLS = hmodOldResource;
-                                        return NULLHANDLE;
-                                    }
-                                    else
-                                    {
-                                        // version level not sufficient:
-                                        // load dialog from previous NLS DLL which says
-                                        // that the DLL is too old; if user presses
-                                        // "Cancel", we abort loading the DLL
-                                        if (WinDlgBox(HWND_DESKTOP,
-                                                      HWND_DESKTOP,
-                                                      (PFNWP)cmn_fnwpDlgWithHelp,
-                                                      hmodOldResource,
-                                                      ID_XFD_WRONGVERSION,
-                                                      (PVOID)NULL)
-                                                == DID_CANCEL)
-                                        {
-                                            winhDebugBox(HWND_DESKTOP,
-                                                     "XFolder",
-                                                     "The new National Language Support DLL was not loaded.");
-                                            // unload new NLS DLL
-                                            DosFreeModule(G_hmodNLS);
-                                            G_hmodNLS = hmodOldResource;
-                                            return NULLHANDLE;
-                                        }
-                                    }
-                                }
-                            }
+    if (hmodLoaded)                    // new module loaded here?
+    {
+        if (hmodReturn == NULLHANDLE)      // but error?
+            DosFreeModule(hmodLoaded);
+        else
+        {
+            // module loaded, and OK:
+            // replace the global module handle for NLS,
+            // and reload all NLS strings...
+            // do this safely.
+            HMODULE hmodOld = G_hmodNLS;
+            ULONG ulNesting;
+            DosEnterMustComplete(&ulNesting);
+            TRY_LOUD(excpt1)
+            {
+                // success:
+                if (krnLock(5000))
+                {
+                    NLSSTRINGS *pNLSStrings = (NLSSTRINGS*)cmnQueryNLSStrings();
+                                            // this allocates and initializes the array
+                    // set global handle
+                    G_hmodNLS = hmodLoaded;
+                    // load all the new NLS strings
+                    LoadNLSData(WinQueryAnchorBlock(HWND_DESKTOP),
+                                pNLSStrings);
 
-                            LoadNLSData(habDesktop,
-                                        pNLSStrings);
-                        }
-
-                        // after all this, unload the old resource module
-                        DosFreeModule(hmodOldResource);
-
-                    } // end else
-
+                    krnUnlock();
                 }
             }
-        }
-        CATCH(excpt1) { } END_CATCH();
+            CATCH(excpt1) {} END_CATCH();
+            DosExitMustComplete(&ulNesting);
 
-        krnUnlock();
+            if (hmodOld)
+                // after all this, unload the old resource module
+                DosFreeModule(hmodOld);
+        }
     }
-    else
+
+    if (hmodReturn == NULLHANDLE)
+        // error:
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "krnLock failed.");
+               "Returning NULLHANDLE. Some error occured.");
 
     // return (new?) module handle
-    return (G_hmodNLS);
+    return (hmodReturn);
 }
 
 /*
@@ -1403,9 +1486,12 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
 
 PNLSSTRINGS cmnQueryNLSStrings(VOID)
 {
+    ULONG ulNesting;
+    DosEnterMustComplete(&ulNesting);
+
     if (krnLock(5000))
     {
-        TRY_LOUD(excpt1, krnOnKillDuringLock)
+        TRY_LOUD(excpt1)
         {
             if (G_pNLSStringsGlobal == NULL)
             {
@@ -1420,6 +1506,8 @@ PNLSSTRINGS cmnQueryNLSStrings(VOID)
     else
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "krnLock failed.");
+
+    DosExitMustComplete(&ulNesting);
 
     return (G_pNLSStringsGlobal);
 }
@@ -1589,9 +1677,12 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
 {
     const char *rc = 0;
 
+    ULONG ulNesting;
+    DosEnterMustComplete(&ulNesting);
+
     if (krnLock(5000))
     {
-        TRY_LOUD(excpt1, krnOnKillDuringLock)
+        TRY_LOUD(excpt1)
         {
             switch (usSetting)
             {
@@ -1613,6 +1704,8 @@ const char* cmnQueryStatusBarSetting(USHORT usSetting)
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "krnLock failed.");
 
+    DosExitMustComplete(&ulNesting);
+
     return (rc);
 }
 
@@ -1629,9 +1722,12 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
 {
     BOOL    brc = FALSE;
 
+    ULONG ulNesting;
+    DosEnterMustComplete(&ulNesting);
+
     if (krnLock(5000))
     {
-        TRY_LOUD(excpt1, krnOnKillDuringLock)
+        TRY_LOUD(excpt1)
         {
             HAB     habDesktop = WinQueryAnchorBlock(HWND_DESKTOP);
             HMODULE hmodResource = cmnQueryNLSModuleHandle(FALSE);
@@ -1699,6 +1795,8 @@ BOOL cmnSetStatusBarSetting(USHORT usSetting, PSZ pszSetting)
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "krnLock failed.");
 
+    DosExitMustComplete(&ulNesting);
+
     return (brc);
 }
 
@@ -1737,9 +1835,12 @@ ULONG cmnQueryStatusBarHeight(VOID)
 
 PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
 {
+    ULONG ulNesting;
+    DosEnterMustComplete(&ulNesting);
+
     if (krnLock(5000))
     {
-        TRY_LOUD(excpt1, krnOnKillDuringLock)
+        TRY_LOUD(excpt1)
         {
             ULONG       ulCopied1;
 
@@ -1823,6 +1924,8 @@ PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "krnLock failed.");
 
+    DosExitMustComplete(&ulNesting);
+
     return (G_pGlobalSettings);
 }
 
@@ -1846,12 +1949,16 @@ PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
 
 const GLOBALSETTINGS* cmnQueryGlobalSettings(VOID)
 {
+    ULONG ulNesting;
+    DosEnterMustComplete(&ulNesting);
+
     if (krnLock(5000))
     {
-        TRY_LOUD(excpt1, krnOnKillDuringLock)
+        TRY_LOUD(excpt1)
         {
             if (G_pGlobalSettings == NULL)
                 cmnLoadGlobalSettings(FALSE);       // load from INI
+                        // this locks again
         }
         CATCH(excpt1) { } END_CATCH();
 
@@ -1860,6 +1967,9 @@ const GLOBALSETTINGS* cmnQueryGlobalSettings(VOID)
     else
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "krnLock failed.");
+
+    DosExitMustComplete(&ulNesting);
+
     return (G_pGlobalSettings);
 }
 
@@ -1953,6 +2063,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
             G_pGlobalSettings->RemoveFormatDiskItem = 0;
             G_pGlobalSettings->RemoveViewMenu = 0;
             G_pGlobalSettings->RemovePasteItem = 0;
+            G_pGlobalSettings->fFixLockInPlace = 0;     // V0.9.7 (2000-12-10) [umoeller]
         break;
 
         case SP_25ADDITEMS:
@@ -3077,7 +3188,7 @@ ULONG cmnMessageBox(HWND hwndOwner,     // in: owner
     ULONG   ulrc = DID_CANCEL;
 
     // set our extended exception handler
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         ULONG ulAlarmFlag = 0;
         HWND hwndDlg = cmnLoadMessageBoxDlg(hwndOwner,
@@ -3114,7 +3225,7 @@ APIRET cmnGetMessageExt(PCHAR *pTable,     // in: replacement PSZ table or NULL
 {
     APIRET  arc = NO_ERROR;
 
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         const char *pszMessageFile = cmnQueryMessageFile();
         ULONG   ulReturned;

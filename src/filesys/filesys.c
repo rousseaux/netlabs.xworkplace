@@ -352,13 +352,16 @@ typedef struct _FILEPAGEDATA
  *
  *      Notes about the EAs which are parsed here (also see the
  *      "Extended Attributes" section in CPREF):
+ *
  *      --  The "Subject" field on the page corresponds to
  *          the .SUBJECT EA. This is a single-type EAT_ASCII EA.
+ *
  *      --  The "Comments" field corresponds to the .COMMENTS EA.
  *          This is multi-value, multi-type (EAT_MVMT), but all the
  *          subvalues are of EAT_ASCII. All lines in the default
  *          WPS "File" multi-line entry field terminated by CR/LF
  *          are put in one of those subvalues.
+ *
  *      --  The "Keyphrases" field corresponds to .KEYPHRASES.
  *          This is also EAT_MVMT and used like .COMMENTS.
  *

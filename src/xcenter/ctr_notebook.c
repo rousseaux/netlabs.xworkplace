@@ -237,8 +237,9 @@ typedef struct _WIDGETRECORD
 
     ULONG           ulIndex;
 
-    const char      *pcszClass;
+    // const char      *pcszClass;
             // widget's class name; points into instance data, do not free!
+            // we use pszIcon for that
 
     const char      *pcszSetupString;
             // widget's setup string; points into instance data, do not free!
@@ -277,7 +278,7 @@ VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         xfi[i].ulDataType = CFA_ULONG;
         xfi[i++].ulOrientation = CFA_LEFT;
 
-        xfi[i].ulFieldOffset = FIELDOFFSET(WIDGETRECORD, pcszClass);
+        xfi[i].ulFieldOffset = FIELDOFFSET(RECORDCORE, pszIcon);
         xfi[i].pszColumnTitle = "Class";
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
@@ -295,7 +296,8 @@ VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         BEGIN_CNRINFO()
         {
-            cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES);
+            cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES
+                             | CA_ORDEREDTARGETEMPH); // target emphasis between records
             cnrhSetSplitBarAfter(pfi);
             cnrhSetSplitBarPos(100);
         } END_CNRINFO(hwndCnr);
@@ -330,7 +332,7 @@ VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 PXCENTERWIDGETSETTING pSetting = (PXCENTERWIDGETSETTING)pNode->pItemData;
 
                 preccThis->ulIndex = ulIndex++;
-                preccThis->pcszClass = pSetting->pszWidgetClass;
+                preccThis->recc.pszIcon = pSetting->pszWidgetClass;
                 preccThis->pcszSetupString = pSetting->pszSetupString;
 
                 preccThis = (PWIDGETRECORD)preccThis->recc.preccNextRecord;
@@ -356,6 +358,17 @@ VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     }
 }
 
+// define a new rendering mechanism, which only
+// our own container supports (this will make
+// sure that we can only do d'n'd within this
+// one container)
+#define WIDGET_RMF_MECH     "DRM_XWPXCENTERWIDGET"
+#define WIDGET_RMF_FORMAT   "DRF_XWPWIDGETRECORD"
+#define WIDGET_PRIVATE_RMF  "(" WIDGET_RMF_MECH ")x(" WIDGET_RMF_FORMAT ")"
+
+PWIDGETRECORD G_precDragged = NULL,
+              G_precAfter = NULL;
+
 /*
  *@@ ctrpWidgetsItemChanged:
  *      notebook callback function (notebook.c) for the
@@ -371,25 +384,171 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 {
     MRESULT     mrc = 0;
     XCenterData *somThis = XCenterGetData(pcnbp->somSelf);
-    BOOL        fSave = TRUE;
 
     switch (usItemID)
     {
+        case ID_XFDI_CNR_CNR:
+            switch (usNotifyCode)
+            {
+                /*
+                 * CN_INITDRAG:
+                 *      user begins dragging a widget
+                 */
 
-        default:
-            fSave = FALSE;
-    }
+                case CN_INITDRAG:
+                {
+                    PCNRDRAGINIT pcdi = (PCNRDRAGINIT)ulExtra;
+                    if (DrgQueryDragStatus())
+                        // (lazy) drag currently in progress: stop
+                        break;
 
-    if (fSave)
-    {
-        _wpSaveDeferred(pcnbp->somSelf);
+                    if (pcdi)
+                        // filter out whitespace
+                        if (pcdi->pRecord)
+                        {
+                            cnrhInitDrag(pcdi->hwndCnr,
+                                         pcdi->pRecord,
+                                         usNotifyCode,
+                                         WIDGET_PRIVATE_RMF,
+                                         DO_MOVEABLE);
+                        }
+                break; }
 
-        if (_hwndOpenView)
-        {
-            // view is currently open:
-            PXCENTERWINDATA pXCenterData = WinQueryWindowPtr(_hwndOpenView, QWL_USER);
-            ctrpReformatFrame(pXCenterData);
-        }
+                /*
+                 * CN_DRAGAFTER:
+                 *      something's being dragged over the widgets cnr;
+                 *      we allow dropping only for widget records being
+                 *      dragged _within_ the cnr.
+                 *
+                 *      Note that since we have set CA_ORDEREDTARGETEMPH
+                 *      for the "Assocs" cnr, we do not get CN_DRAGOVER,
+                 *      but CN_DRAGAFTER only.
+                 */
+
+                case CN_DRAGAFTER:
+                {
+                    PCNRDRAGINFO pcdi = (PCNRDRAGINFO)ulExtra;
+                    USHORT      usIndicator = DOR_NODROP,
+                                    // cannot be dropped, but send
+                                    // DM_DRAGOVER again
+                                usOp = DO_UNKNOWN;
+                                    // target-defined drop operation:
+                                    // user operation (we don't want
+                                    // the WPS to copy anything)
+
+                    // reset global variable
+                    G_precDragged = NULL;
+
+                    // get access to the drag'n'drop structures
+                    if (DrgAccessDraginfo(pcdi->pDragInfo))
+                    {
+                        if (
+                                // accept no more than one single item at a time;
+                                // we cannot move more than one file type
+                                (pcdi->pDragInfo->cditem != 1)
+                                // make sure that we only accept drops from ourselves,
+                                // not from other windows
+                             || (pcdi->pDragInfo->hwndSource
+                                        != pcnbp->hwndControl)
+                            )
+                        {
+                            usIndicator = DOR_NEVERDROP;
+                        }
+                        else
+                        {
+                            // OK, we have exactly one item:
+                            PDRAGITEM pdrgItem = NULL;
+
+                            if (    (    (pcdi->pDragInfo->usOperation == DO_DEFAULT)
+                                      || (pcdi->pDragInfo->usOperation == DO_MOVE)
+                                    )
+                                    // do not allow drag upon whitespace,
+                                    // but only between records
+                                 && (pcdi->pRecord)
+                                 && (pdrgItem = DrgQueryDragitemPtr(pcdi->pDragInfo, 0))
+                               )
+                            {
+                                PWIDGETRECORD precDragged = (PWIDGETRECORD)pdrgItem->ulItemID;
+
+                                G_precAfter = NULL;
+                                // check target record...
+                                if (   (pcdi->pRecord == (PRECORDCORE)CMA_FIRST)
+                                    || (pcdi->pRecord == (PRECORDCORE)CMA_LAST)
+                                   )
+                                    // store record after which to insert
+                                    G_precAfter = (PWIDGETRECORD)pcdi->pRecord;
+                                // do not allow dropping after
+                                // disabled records
+                                else if ((pcdi->pRecord->flRecordAttr & CRA_DISABLED) == 0)
+                                    // store record after which to insert
+                                    G_precAfter = (PWIDGETRECORD)pcdi->pRecord;
+
+                                if (G_precAfter)
+                                {
+                                    if (    ((PWIDGETRECORD)pcdi->pRecord  // target recc
+                                              != precDragged) // source recc
+                                         && (DrgVerifyRMF(pdrgItem,
+                                                          WIDGET_RMF_MECH,
+                                                          WIDGET_RMF_FORMAT))
+                                       )
+                                    {
+                                        // allow drop:
+                                        // store record being dragged
+                                        G_precDragged = precDragged;
+                                        // G_precAfter already set
+                                        usIndicator = DOR_DROP;
+                                        usOp = DO_MOVE;
+                                    }
+                                }
+                            }
+                        }
+
+                        DrgFreeDraginfo(pcdi->pDragInfo);
+                    }
+
+                    // and return the drop flags
+                    mrc = (MRFROM2SHORT(usIndicator, usOp));
+                break; }
+
+                /*
+                 * CN_DROP:
+                 *      something _has_ now been dropped on the cnr.
+                 */
+
+                case CN_DROP:
+                {
+                    // check the global variable which has been set
+                    // by CN_DRAGAFTER above:
+                    if (G_precDragged)
+                    {
+                        // CN_DRAGOVER above has considered this valid:
+                        if (G_precAfter)
+                        {
+                            ULONG ulIndex = -2;
+
+                            if (G_precAfter == (PWIDGETRECORD)CMA_FIRST)
+                                ulIndex = 0;
+                            else if (G_precAfter == (PWIDGETRECORD)CMA_LAST)
+                                DosBeep(1000, 10);
+                            else
+                                ulIndex = G_precAfter->ulIndex;
+
+                            if (ulIndex != -2)
+                                // OK... move the widgets around:
+                                _xwpMoveWidget(pcnbp->somSelf,
+                                               G_precDragged->ulIndex,  // from
+                                               ulIndex);                // to
+                                    // this saves the instance data
+                                    // and updates the view
+                                    // and also calls the init callback
+                                    // to update the settings page!
+                        }
+                        G_precDragged = NULL;
+                    }
+                break; }
+
+            } // end switch (usNotifyCode)
+        break;
     }
 
     return (mrc);

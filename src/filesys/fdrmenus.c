@@ -2798,7 +2798,7 @@ MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->FCShowIcons = pGSBackup->FCShowIcons;
 
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break; }
 
         case DID_DEFAULT:
@@ -2808,7 +2808,7 @@ MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // WPS startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break; }
 
         default:
@@ -2936,7 +2936,7 @@ MRESULT mnuConfigFolderMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->TemplatesReposition = pGSBackup->TemplatesReposition;
 
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break; }
 
         case DID_DEFAULT:
@@ -2946,7 +2946,7 @@ MRESULT mnuConfigFolderMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // WPS startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break; }
 
         default:
@@ -2970,6 +2970,7 @@ MRESULT mnuConfigFolderMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *      Global Settings.
  *
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
+ *@@changed V0.9.7 (2000-12-10) [umoeller]: added "fix lock in place"
  */
 
 VOID mnuRemoveMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -3023,20 +3024,27 @@ VOID mnuRemoveMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                               !pGlobalSettings->RemovePasteItem);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE,
                               !pGlobalSettings->RemoveLockInPlaceItem);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE_NOSUB,
+                              pGlobalSettings->fFixLockInPlace);  // V0.9.7 (2000-12-10) [umoeller]
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_CHECKDISK,
                               !pGlobalSettings->RemoveCheckDiskItem);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FORMATDISK,
                               !pGlobalSettings->RemoveFormatDiskItem);
     }
 
-    if (flFlags & CBI_INIT)
+    if (flFlags & CBI_ENABLE)
     {
         // disable items for Warp 3/4
         if (doshIsWarp4())
+        {
             WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_SELECT, FALSE);
+            WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE_NOSUB,
+                             !pGlobalSettings->RemoveLockInPlaceItem);
+        }
         else
         {
             WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE, FALSE);
+            WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_LOCKINPLACE_NOSUB, FALSE);
             WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_WARP4DISPLAY, FALSE);
             WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_INSERT, FALSE);
         }
@@ -3051,6 +3059,7 @@ VOID mnuRemoveMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *      Reacts to changes of any of the dialog controls.
  *
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
+ *@@changed V0.9.7 (2000-12-10) [umoeller]: added "fix lock in place"
  */
 
 MRESULT mnuRemoveMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -3160,6 +3169,12 @@ MRESULT mnuRemoveMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XSDI_LOCKINPLACE:
             pGlobalSettings->RemoveLockInPlaceItem = 1-ulExtra;
+            // update the display by calling the INIT callback
+            pcnbp->pfncbInitPage(pcnbp, CBI_ENABLE); // V0.9.7 (2000-12-10) [umoeller]
+        break;
+
+        case ID_XSDI_LOCKINPLACE_NOSUB:  // V0.9.7 (2000-12-10) [umoeller]
+            pGlobalSettings->fFixLockInPlace = ulExtra;
         break;
 
         case ID_XSDI_CHECKDISK:
@@ -3180,11 +3195,12 @@ MRESULT mnuRemoveMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->RemoveViewMenu = pGSBackup->RemoveViewMenu;
             pGlobalSettings->RemovePasteItem = pGSBackup->RemovePasteItem;
             pGlobalSettings->RemoveLockInPlaceItem = pGSBackup->RemoveLockInPlaceItem;
+            pGlobalSettings->fFixLockInPlace = pGSBackup->fFixLockInPlace;
             pGlobalSettings->RemoveCheckDiskItem = pGSBackup->RemoveCheckDiskItem;
             pGlobalSettings->RemoveFormatDiskItem = pGSBackup->RemoveFormatDiskItem;
 
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break; }
 
         case DID_DEFAULT:
@@ -3194,7 +3210,7 @@ MRESULT mnuRemoveMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // WPS startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
             // update the display by calling the INIT callback
-            (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);
+            pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
         break; }
 
         default:

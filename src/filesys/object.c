@@ -99,6 +99,8 @@
 #include <wpshadow.h>                   // WPShadow
 #include "filesys\folder.h"             // XFolder implementation
 
+#include "helpers\undoc.h"              // some undocumented stuff
+
 /* ******************************************************************
  *                                                                  *
  *   Object "Internals" page                                        *
@@ -395,9 +397,6 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
         if (ul & OBJSTYLE_TEMPLATE)
             AddObjectUsage2Cnr(hwndCnr, preccLevel2, "template",
                                CRA_RECORDREADONLY);
-        #ifndef OBJSTYLE_LOCKEDINPLACE
-            #define OBJSTYLE_LOCKEDINPLACE  0x00020000
-        #endif
         if (ul & OBJSTYLE_LOCKEDINPLACE)
             AddObjectUsage2Cnr(hwndCnr, preccLevel2, "locked in place",
                                CRA_RECORDREADONLY);
@@ -1745,6 +1744,53 @@ VOID CheckStyle(PXSTRING pxstr,       // in: string for xstrcat
 }
 
 /*
+ *@@ objModifyPopupMenu:
+ *      implementation for XFldObject::wpModifyPopupMenu.
+ *      This now implements "lock in place" hacks.
+ *
+ *@@added V0.9.7 (2000-12-10) [umoeller]
+ */
+
+VOID objModifyPopupMenu(WPObject* somSelf,
+                        HWND hwndMenu)
+{
+    if (doshIsWarp4())
+    {
+        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        if (pGlobalSettings->RemoveLockInPlaceItem)
+            // remove WPObject's "Lock in place" submenu
+            winhDeleteMenuItem(hwndMenu, ID_WPM_LOCKINPLACE);
+        else if (pGlobalSettings->fFixLockInPlace) // V0.9.7 (2000-12-10) [umoeller]
+        {
+            // get text first... this saves us our own NLS resource
+            PSZ pszLockInPlace = winhQueryMenuItemText(hwndMenu, ID_WPM_LOCKINPLACE);
+            if (pszLockInPlace)
+            {
+                MENUITEM mi;
+                if (WinSendMsg(hwndMenu,
+                               MM_QUERYITEM,
+                               MPFROM2SHORT(ID_WPM_LOCKINPLACE, FALSE),
+                               (MPARAM)&mi))
+                {
+                    // delete old (incl. submenu)
+                    winhDeleteMenuItem(hwndMenu, ID_WPM_LOCKINPLACE);
+                    // insert new
+                    winhInsertMenuItem(hwndMenu,
+                                       mi.iPosition,        // at old position
+                                       ID_WPM_LOCKINPLACE,
+                                       pszLockInPlace,
+                                       MIS_TEXT,
+                                       (_wpQueryStyle(somSelf) & OBJSTYLE_LOCKEDINPLACE)
+                                          ? MIA_CHECKED
+                                          : 0);
+                }
+                free(pszLockInPlace);
+            }
+        }
+    }
+}
+
+/*
  *@@ objQuerySetup:
  *      implementation of XFldObject::xwpQuerySetup.
  *      See remarks there.
@@ -1755,6 +1801,7 @@ VOID CheckStyle(PXSTRING pxstr,       // in: string for xstrcat
  *@@added V0.9.1 (2000-01-16) [umoeller]
  *@@changed V0.9.4 (2000-08-02) [umoeller]: added NOCOPY, NODELETE etc.
  *@@changed V0.9.5 (2000-08-26) [umoeller]: added DEFAULTVIEW=RUNNING; fixed class default view
+ *@@changed V0.9.7 (2000-12-10) [umoeller]: added LOCKEDINPLACE
  */
 
 ULONG objQuerySetup(WPObject *somSelf,
@@ -1873,8 +1920,6 @@ ULONG objQuerySetup(WPObject *somSelf,
 
     // ICONPOS: x, y in percentage of folder coordinates
 
-    // LOCKEDINPLACE: Warp 4 only
-
     // MENUS: Warp 4 only
 
     // MINWIN
@@ -1943,6 +1988,11 @@ ULONG objQuerySetup(WPObject *somSelf,
 
     if (ulStyle & OBJSTYLE_TEMPLATE)
         xstrcat(&strTemp, "TEMPLATE=YES;");
+
+    // LOCKEDINPLACE: Warp 4 only
+    if (doshIsWarp4())
+        if (ulStyle & OBJSTYLE_LOCKEDINPLACE)
+            xstrcat(&strTemp, "LOCKEDINPLACE=YES;");
 
     // TITLE
     /* pszValue = _wpQueryTitle(somSelf);

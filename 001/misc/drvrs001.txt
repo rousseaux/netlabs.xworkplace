@@ -315,14 +315,14 @@ CATEGORY "Installable File Systems"
                  "Toronto Virtual File System (TVFS)",
                  0)
         DRIVER ( "RUN=", "TVCTL.EXE",
-                 "TVFS control process",
+                 "TVFS control program",
                  0)
 
         DRIVER ( "IFS=", "FAT32.IFS",
-                 "FAT32 File System (Henk Kelder)",
+                 "FAT32 file system (Henk Kelder)",
                  0)
         DRIVER ( "CALL=", "CACHEF32.EXE",
-                 "FAT32 Cache daemon (Henk Kelder)",
+                 "FAT32 cache daemon (Henk Kelder)",
                  0)
         DRIVER ( "BASEDEV=", "PARTFILT.FLT",
                  "Partition type filter",
@@ -339,13 +339,6 @@ CATEGORY "Installable File Systems"
                  "Network File System (NFS)",
                  0)
 
-        DRIVER ( "IFS=", "NDFS.IFS",
-                 "Network Drive File System (NDFS)",
-                 0)
-        DRIVER ( "RUN=", "NDCTL.EXE",
-                 "NDFS control program",
-                 0)
-
         DRIVER ( "IFS=", "CDWFS.IFS",
                  "RSJ CD-Writer File System",
                  0)
@@ -354,17 +347,17 @@ CATEGORY "Installable File Systems"
                  0)
 
         DRIVER ( "IFS=", "FTP.IFS",
-                 "File System Driver for FTP-IFS by Vit Timchshin",
+                 "FTP File System (FTP-IFS) by Vit Timchshin",
                  0)
         DRIVER ( "RUN=", "R3COMM.EXE",
-                 "Control Program for FTP-IFS by Vit Timchshin",
+                 "FTP-IFS control program by Vit Timchshin",
                  0)
 
         DRIVER ( "IFS=", "NDFS.IFS",
-                 "File System Driver for Network Drive by Blueprint Software Works",
+                 "Network Drive File System (NDFS) by Blueprint Software Works",
                  0)
         DRIVER ( "RUN=", "NDCTL.EXE",
-                 "Control Program for Network Drive by Blueprint Software Works",
+                 "NDFS control program by Blueprint Software Works",
                  0)
     }
 

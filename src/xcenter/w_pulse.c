@@ -625,7 +625,7 @@ VOID PwgtGetNewLoad(HWND hwnd)
 
 VOID PwgtWindowPosChanged(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
-    TRY_LOUD(excpt1, NULL)
+    TRY_LOUD(excpt1)
     {
         PXCENTERWIDGETVIEW pViewData = (PXCENTERWIDGETVIEW)WinQueryWindowPtr(hwnd, QWL_USER);
         if (pViewData)

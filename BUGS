@@ -73,11 +73,49 @@ NOT-SO-SERIOUS PROBLEMS
 >and voila pop-up appears telling user that there is a name conflict, but the
 >new name is not in that folder!
 
+>OS/2 Kernel object: Set Path -> Browse will not work (Standard file
+>dialog doesn't react when OK is pressed -> nothing happens)
+
+I think there are some problems (not severe) probably with variables
+initialisation somewhere in XWPS. I have "Folder menu bars" as well as
+"Status bars" permanently turned on. When I try to turn them on/off
+from the "View" menu on a folder menu bar, it has no effect. Now when I
+go to the folder properties and disable both features (Menu bars and
+status bars) and then enable them again by :
+"Folder system menu"->"View"->"Menu bars"/"Status bars" these option in
+the "View" menu on the _menu_bar_ start to work as expected.
+When I close and reopen the folder these options in the "View" menu of
+the "Menu bar" do not work again.
+
+extended assocs:
+    --  break SysOpenObject REXX API?
+    >1. drop via context menu doesn't work (Shift right click does). No way
+    >to cancel drop.
+    >2. There should be a possibility to RENAME file types (ALT left click
+    >for consistency) If you have hierachical file types deleting and
+    >recreating a file type to rename it is really cumbersome, if there are
+    >file types 'below'.
+    >3. Files with spaces in the name/path are not opened any longer (needed
+    >extensively with DragText files here)
+    >4. WPS file types(!)/associations should be imported automatically,
+    >somehow. Perhaps for filters without file types new types could be
+    >created just saying 'PNG file', 'XLS file'... Could be renamed
+    >afterwards (see 2)
+    >5. What about files like StarOffice documents? Their first association
+    >(SO5.1a) is not shown in the open submenu, because they use some
+    >special WPS class. This association cannot be managed from XWPS. (same
+    >goes for WordPro, 1-2-3 files I guess).
+    >6. There should be a way to indicate the standard association. (top
+    >most?)
+    >7. multiple associations with the same app (object) should not be shown
+    >in the file-open menu. (if HTML is text/html as well for instance)
+
 file types:
     -- pickup doesn't work right
     -- help menu items don't work
     -- fix environments
     -- spaces in files names don't work
+    -- WPOBJ_HANDLE env var not set
 
 XWPSetup:
     -- "Undo" and "Default" don't affect newer settings (trashcan);
@@ -122,6 +160,10 @@ PageMage:
         all) in the pagemage window
 
 hook:
+    --  sliding menus:
+            -- "conditional cascade sensitivity": always hilite, but just don't select
+            -- no submenu delays for menu bars (immediate open)
+
     --  there is a little bug with the settings notebook of the mouse - movement 2.
         I can drag and drop objects to the open object, but it doesn't work with
         the pickup and drop feature of Warp. Than there is no object given.
