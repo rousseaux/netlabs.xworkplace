@@ -61,7 +61,9 @@
 #include "helpers\cnrh.h"
 #include "helpers\eah.h"
 #include "helpers\dosh.h"
+#include "helpers\standards.h"
 #include "helpers\stringh.h"
+#include "helpers\tree.h"
 #include "helpers\winh.h"
 
 #include "bldlevel.h"
@@ -102,6 +104,9 @@ struct {
     BOOL        LowPriority;
 } Settings;
 
+TREE    *G_LargestFilesTree;
+ULONG   G_cLargestFilesTree = 0;
+
 /********************************************************************
  *                                                                  *
  *   Collect thread                                                 *
@@ -121,6 +126,9 @@ struct {
  *      the record core to be updated with the directory size,
  *      when processing of this directory (and all the subdirs)
  *      is done with.
+ *
+ *@@changed V0.9.14 (2001-07-28) [umoeller]: added largest files collect
+ *@@changed V0.9.14 (2001-07-28) [umoeller]: now using WinPostMsg, which is speedier
  */
 
 VOID CollectDirectory(PDIRINFO pdiThis)
@@ -219,6 +227,23 @@ VOID CollectDirectory(PDIRINFO pdiThis)
             ulFilesThisDir++;
             // add to total size
             dSizeThisDir += ffb3.cbFile;
+
+            if (ffb3.cbFile > 1000)
+            {
+                // create entry for largest files tree
+                PFILEENTRY pFileEntry = NEW(FILEENTRY);
+                if (pFileEntry)
+                {
+                    pFileEntry->Tree.ulKey = ffb3.cbFile;
+                    pFileEntry->pDir = pdiThis;
+                    pFileEntry->pszFilename = strdup(ffb3.achName);
+
+                    treeInsert(&G_LargestFilesTree,
+                               (TREE*)pFileEntry,
+                               treeCompareKeys);
+                    G_cLargestFilesTree++;
+                }
+            }
         }
 
         rc = DosFindNext(hdirFindHandle,
@@ -253,7 +278,7 @@ VOID CollectDirectory(PDIRINFO pdiThis)
         }
 
         // have record core updated with new total size
-        WinSendMsg(hwndMain, TSM_DONEDIRECTORY, (MPARAM)pdiThis, NULL);
+        WinPostMsg(hwndMain, TSM_DONEDIRECTORY, (MPARAM)pdiThis, NULL);
     }
 
     // end of function: if this was a recursive call,
@@ -323,13 +348,13 @@ void _System fntCollect(ULONG ulDummy)
  *      must be NULL.
  */
 
-VOID Cleanup(HWND hwndCnr, PSIZERECORDCORE preccParent)
+VOID Cleanup(HWND hwndCnr, PSIZERECORD preccParent)
 {
-    PSIZERECORDCORE precc2 = preccParent;
+    PSIZERECORD precc2 = preccParent;
 
     do {
         precc2 =
-            (PSIZERECORDCORE)WinSendMsg(hwndCnr,
+            (PSIZERECORD)WinSendMsg(hwndCnr,
                                         CM_QUERYRECORD,
                                         // the following ugly code does the following:
                                         // if this is the "root" call: get first child recc.
@@ -347,7 +372,7 @@ VOID Cleanup(HWND hwndCnr, PSIZERECORDCORE preccParent)
         if ((precc2) && ((ULONG)precc2 != -1))
         {
             Cleanup(hwndCnr, precc2);
-            _Pmpf(("Removing %s", precc2->pdi->szRecordText));
+            // _Pmpf(("Removing %s", precc2->pdi->szRecordText));
             if (precc2->pdi)
                 free(precc2->pdi);
             WinSendMsg(hwndCnr,
@@ -360,9 +385,9 @@ VOID Cleanup(HWND hwndCnr, PSIZERECORDCORE preccParent)
 
     if (preccParent == NULL)
         WinSendMsg(hwndCnr,
-                CM_INVALIDATERECORD,
-                NULL,
-                MPFROM2SHORT(0, CMA_REPOSITION));
+                   CM_INVALIDATERECORD,
+                   NULL,
+                   MPFROM2SHORT(0, CMA_REPOSITION));
 }
 
 /*
@@ -391,15 +416,14 @@ SHORT EXPENTRY fnCompareName(PRECORDCORE pmrc1, PRECORDCORE pmrc2, PVOID pStorag
  *      comparison func for container sort by file size
  */
 
-SHORT EXPENTRY fnCompareSize(PSIZERECORDCORE pmrc1, PSIZERECORDCORE pmrc2, PVOID pStorage)
+SHORT EXPENTRY fnCompareSize(PSIZERECORD pmrc1, PSIZERECORD pmrc2, PVOID pStorage)
 {
     pStorage = pStorage; // to keep the compiler happy
     if ((pmrc1) && (pmrc2))
-        if ((pmrc1->pdi) && (pmrc2->pdi))
-            if (pmrc1->pdi->dTotalSize > pmrc2->pdi->dTotalSize)
-                return (-1);
-            else if (pmrc1->pdi->dTotalSize < pmrc2->pdi->dTotalSize)
-                return (1);
+        if (pmrc1->dTotalSize > pmrc2->dTotalSize)
+            return (-1);
+        else if (pmrc1->dTotalSize < pmrc2->dTotalSize)
+            return (1);
 
     return (0);
 }
@@ -411,7 +435,7 @@ SHORT EXPENTRY fnCompareSize(PSIZERECORDCORE pmrc1, PSIZERECORDCORE pmrc2, PVOID
  *@@added V0.9.1 [umoeller]
  */
 
-SHORT EXPENTRY fnCompareFilesCount(PSIZERECORDCORE pmrc1, PSIZERECORDCORE pmrc2, PVOID pStorage)
+SHORT EXPENTRY fnCompareFilesCount(PSIZERECORD pmrc1, PSIZERECORD pmrc2, PVOID pStorage)
 {
     pStorage = pStorage; // to keep the compiler happy
     if ((pmrc1) && (pmrc2))
@@ -429,7 +453,7 @@ SHORT EXPENTRY fnCompareFilesCount(PSIZERECORDCORE pmrc1, PSIZERECORDCORE pmrc2,
  *      comparison func for container sort by ea size
  */
 
-SHORT EXPENTRY fnCompareEASize(PSIZERECORDCORE pmrc1, PSIZERECORDCORE pmrc2, PVOID pStorage)
+SHORT EXPENTRY fnCompareEASize(PSIZERECORD pmrc1, PSIZERECORD pmrc2, PVOID pStorage)
 {
     pStorage = pStorage; // to keep the compiler happy
     if ((pmrc1) && (pmrc2))
@@ -441,18 +465,6 @@ SHORT EXPENTRY fnCompareEASize(PSIZERECORDCORE pmrc1, PSIZERECORDCORE pmrc2, PVO
 
     return (0);
 }
-
-/*
- * fnwpMain:
- *      dlg func for main window. This does all the
- *      processing after main() has called WinProcessDlg.
- *      This mainly does the following:
- *      --  update the container by reacting to msgs from
- *          the Collect thread
- *      --  handle cnr context menus
- *      --  handle cnr drag'n'drop
- *      --  handle dialog resizing/minimizing etc.
- */
 
 // shortcuts to dlg controls
 HWND        hwndCnr, hwndText, hwndIcon, hwndClose, hwndClear;
@@ -470,6 +482,117 @@ CHAR        szFile[CCHMAXPATH];
 
 // is window minimized?
 BOOL        fMinimized = FALSE;
+
+/*
+ *@@ ComposeFilename:
+ *
+ *@@added V0.9.14 (2001-07-28) [umoeller]
+ */
+
+PSZ ComposeFilename(PSZ pszBuf,
+                    PFILEENTRY pFileEntry)
+{
+    sprintf(pszBuf,
+            "%s\\%s",
+            pFileEntry->pDir->szFullPath,
+            pFileEntry->pszFilename);
+
+    return (pszBuf);
+}
+
+/*
+ *@@ Insert100LargestFiles:
+ *
+ *@@added V0.9.14 (2001-07-28) [umoeller]
+ */
+
+VOID Insert100LargestFiles(VOID)
+{
+    ULONG cFiles;
+    PSIZERECORD precFirst;
+    cFiles = G_cLargestFilesTree;
+    if (cFiles > 100)
+        cFiles = 100;
+    if (precFirst = (PSIZERECORD)cnrhAllocRecords(hwndCnr,
+                                                  sizeof(SIZERECORD),
+                                                  cFiles))
+    {
+        PSIZERECORD precThis = precFirst,
+                    precParent = (PSIZERECORD)cnrhAllocRecords(hwndCnr,
+                                                               sizeof(SIZERECORD),
+                                                               1);
+        PFILEENTRY pEntry = (PFILEENTRY)treeLast(G_LargestFilesTree);
+
+        CHAR szSize[200];
+        CHAR szFilename[400],
+             szTemp[1000];
+
+        sprintf(szSize, "%d largest files", cFiles);
+
+        cnrhInsertRecords(hwndCnr,
+                          NULL,      // parent
+                          (PRECORDCORE)precParent,
+                          TRUE,
+                          strdup(szSize),
+                          CRA_RECORDREADONLY | CRA_COLLAPSED,
+                          1);
+
+        while (pEntry && precThis)
+        {
+            precThis->dTotalSize = pEntry->Tree.ulKey;
+
+            szFilename[0] = '\0';
+
+            sprintf(szTemp,
+                    "%s (%s %s)",
+                    ComposeFilename(szFilename, pEntry),
+                    strhThousandsDouble(szSize,
+                                        (Settings.ulSizeDisplay == SD_BYTES)
+                                                ? precThis->dTotalSize
+                                            : (Settings.ulSizeDisplay == SD_KBYTES)
+                                                ? ((precThis->dTotalSize + 512) / 1024)
+                                            : ((precThis->dTotalSize + (512*1024)) / 1024 / 1024),
+                                        szThousand[0]),
+                    // "bytes" string:
+                    (Settings.ulSizeDisplay == SD_BYTES)
+                            ? "bytes"
+                        : (Settings.ulSizeDisplay == SD_KBYTES)
+                            ? "KBytes"
+                        : "MBytes");
+
+            precThis->pFileEntry = pEntry;
+
+            precThis->recc.pszIcon
+            = precThis->recc.pszName
+            = precThis->recc.pszText
+            = precThis->recc.pszTree
+                = strdup(szTemp);
+
+            precThis = (PSIZERECORD)precThis->recc.preccNextRecord;
+            pEntry = (PFILEENTRY)treePrev((TREE*)pEntry);
+        }
+
+        cnrhInsertRecords(hwndCnr,
+                          (PRECORDCORE)precParent,
+                          (PRECORDCORE)precFirst,
+                          TRUE,
+                          NULL,
+                          CRA_RECORDREADONLY,
+                          cFiles);
+    }
+}
+
+/*
+ * fnwpMain:
+ *      dlg func for main window. This does all the
+ *      processing after main() has called WinProcessDlg.
+ *      This mainly does the following:
+ *      --  update the container by reacting to msgs from
+ *          the Collect thread
+ *      --  handle cnr context menus
+ *      --  handle cnr drag'n'drop
+ *      --  handle dialog resizing/minimizing etc.
+ */
 
 MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
@@ -554,7 +677,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 
             // allocate memory for record core
             pdi->precc = cnrhAllocRecords(hwndCnr,
-                                          sizeof(SIZERECORDCORE),
+                                          sizeof(SIZERECORD),
                                           1);
 
             // recc text
@@ -565,17 +688,18 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 
             if (pdi->precc)
             {
-                PSIZERECORDCORE preccParent = NULL;
+                PSIZERECORD preccParent = NULL;
 
                 // store reverse pointer; DIRINFO points
                 // to the record core, the recc points
                 // to DIRINFO (check treesize.h)
-                ((PSIZERECORDCORE)(pdi->precc))->pdi = pdi;
-                ((PSIZERECORDCORE)(pdi->precc))->fDisplayValid = FALSE;
+                ((PSIZERECORD)(pdi->precc))->pdi = pdi;
+                ((PSIZERECORD)(pdi->precc))->fDisplayValid = FALSE;
+                ((PSIZERECORD)(pdi->precc))->dTotalSize = pdi->dTotalSize;
 
                 // store parent directory
                 if (pdi->pParent)
-                    preccParent = (PSIZERECORDCORE)pdi->pParent->precc;
+                    preccParent = (PSIZERECORD)pdi->pParent->precc;
 
                 // insert recc into container
                 cnrhInsertRecords(hwndCnr,
@@ -711,7 +835,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                                (MPARAM)&(pdiThis->precc),
                                MPFROM2SHORT(1,     // one record only
                                        CMA_TEXTCHANGED));
-                    ((PSIZERECORDCORE)pdiThis->precc)->fDisplayValid = TRUE;
+                    ((PSIZERECORD)pdiThis->precc)->fDisplayValid = TRUE;
                 }
 
                 pdiThis = pdiThis->pParent;
@@ -727,6 +851,9 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
         case TSM_DONEWITHALL:
         {
             WinEnableWindow(hwndClear, TRUE);
+
+            // insert 100 largest files
+            Insert100LargestFiles();
 
             // sort cnr; ulSort is a global var containing
             // either SV_SIZE or SV_EASIZE or SV_NAME or SV_FILESCOUNT
@@ -767,11 +894,23 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                     PNOTIFYRECORDENTER pnre = (PVOID)mp2;
                     if (pnre)
                     {
-                        PSIZERECORDCORE precc = (PVOID)pnre->pRecord;
+                        PSIZERECORD precc = (PVOID)pnre->pRecord;
                         if (precc)
-                            WinOpenObject(WinQueryObject(precc->pdi->szFullPath),
-                                          0,          // == OPEN_DEFAULT
-                                          TRUE);
+                        {
+                            HOBJECT hobj = 0;
+                            if (precc->pdi)
+                                hobj = WinQueryObject(precc->pdi->szFullPath);
+                            else if (precc->pFileEntry)
+                            {
+                                // entry in 100 largest files:
+                                hobj = WinQueryObject(precc->pFileEntry->pDir->szFullPath);
+                            }
+
+                            if (hobj)
+                                WinOpenObject(hobj,
+                                              0,          // == OPEN_DEFAULT
+                                              TRUE);
+                        }
                         // else double click on whitespace, which we'll ignore
                     }
                 break; }
@@ -816,7 +955,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                                                     );
                         fFirstRun = FALSE;
                         if ((precc2) && ((ULONG)precc2 != -1))
-                            if (!((PSIZERECORDCORE)precc2)->fDisplayValid)
+                            if (!((PSIZERECORD)precc2)->fDisplayValid)
                             {
                                 if (!fWindowDisabled)
                                 {
@@ -824,12 +963,12 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                                     fWindowDisabled = TRUE;
                                 }
                                 WinSendMsg(hwndCnr,
-                                        CM_INVALIDATERECORD,
-                                        (MPARAM)&precc2,
-                                        MPFROM2SHORT(1,     // one record only
-                                                CMA_TEXTCHANGED));
+                                           CM_INVALIDATERECORD,
+                                           (MPARAM)&precc2,
+                                           MPFROM2SHORT(1,     // one record only
+                                                   CMA_TEXTCHANGED));
 
-                                ((PSIZERECORDCORE)precc2)->fDisplayValid = TRUE;
+                                ((PSIZERECORD)precc2)->fDisplayValid = TRUE;
                             }
                     } while ((precc2) && ((ULONG)precc2 != -1));
 
@@ -856,10 +995,11 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                     if (pnre)
                         if (    (pnre->fEmphasisMask & CRA_SELECTED)
                              && (pnre->pRecord)
+                             && (((PSIZERECORD)(pnre->pRecord))->pdi)
                            )
                         {
                             WinSetWindowText(hwndText,
-                                             ((PSIZERECORDCORE)(pnre->pRecord))->pdi->szFullPath);
+                                             ((PSIZERECORD)(pnre->pRecord))->pdi->szFullPath);
                         }
                 break; }
 
@@ -877,7 +1017,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 
                     // mp2 contains the recc upon which the context
                     // menu was requested or NULL for cnr whitespace
-                    PSIZERECORDCORE preccSelected = (PSIZERECORDCORE)mp2;
+                    PSIZERECORD preccSelected = (PSIZERECORD)mp2;
 
                     // open context menu only on whitespace
                     // of container
@@ -1118,7 +1258,8 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
          *      timer for tree view auto-scroll
          */
 
-        case WM_TIMER: {
+        case WM_TIMER:
+        {
             WinStopTimer(WinQueryAnchorBlock(hwndDlg),
                     hwndDlg,
                     (ULONG)mp1);
@@ -1278,9 +1419,10 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
          *      button or menu commands.
          */
 
-        case WM_COMMAND: {
-            switch ((ULONG)mp1) {
-
+        case WM_COMMAND:
+        {
+            switch ((ULONG)mp1)
+            {
                 case DID_CLEAR:
                     Cleanup(hwndCnr, NULL);
                 break;
@@ -1532,6 +1674,8 @@ int main(int argc, char *argv[])
 
     if (!(hmq = WinCreateMsgQueue(hab, 0)))
         return FALSE;
+
+    treeInit(&G_LargestFilesTree);
 
     // check command line parameters: in C,
     // the first parameter is always the full

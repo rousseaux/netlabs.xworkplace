@@ -17,9 +17,6 @@ Ulrich M”ller.
 MINOR PROBLEMS
 --------------
 
-message boxes:
-    -- default button does not get focus
-
 archiving:
    --  I have archiving enabled when ini files have changed 5%. Just now I rebooted and a
        dialog came up saying "ini files changed 0.000000%, limit 5.000000%" upon which it

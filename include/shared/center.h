@@ -759,6 +759,10 @@
     typedef VOID APIENTRY CTRDRAWWIDGETEMPHASIS(PXCENTERWIDGET pWidget, BOOL fRemove);
     typedef CTRDRAWWIDGETEMPHASIS *PCTRDRAWWIDGETEMPHASIS;
 
+    VOID APIENTRY ctrPlaceAndPopupMenu(HWND hwndOwner, HWND hwndMenu, BOOL fAbove);
+    typedef VOID APIENTRY CTRPLACEANDPOPUPMENU(HWND hwndOwner, HWND hwndMenu, BOOL fAbove);
+    typedef CTRPLACEANDPOPUPMENU *PCTRPLACEANDPOPUPMENU;
+
     MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
                 // a pointer to this is in XCENTERWIDGET if the widget
                 // is a non-container widget

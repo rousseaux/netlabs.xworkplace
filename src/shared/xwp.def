@@ -43,7 +43,9 @@ EXPORTS
     cmnSetControlsFont
     ctrDisplayHelp
     ctrFreeSetupValue
+    ctrPaintStaticWidgetBorder
     ctrParseColorString
+    ctrPlaceAndPopupMenu
     ctrScanSetupString
     ctrSetSetupString
     dlghCreateDlg

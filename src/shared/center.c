@@ -529,7 +529,7 @@ BOOL ctrDisplayHelp(PXCENTERGLOBALS pGlobals,
  *      This function is generaly called when handling the
  *      WP_PAINT message in the widget's window proc.
  *
- *@@addev V0.9.9 (2001-03-10) [lafaix]
+ *@@added V0.9.14 (2001-07-28) [lafaix]
  */
 
 VOID ctrPaintStaticWidgetBorder(HPS hps,
@@ -568,6 +568,75 @@ VOID ctrPaintStaticWidgetBorder(HPS hps,
                         lDark,
                         lLight);
     }
+}
+
+/*
+ *@@ ctrPlaceAndPopupMenu:
+ *      little helper func which pop up a menu above or below
+ *      the specified location.
+ *
+ *      This is useful if you want to display menus from widgets.
+ *
+ *      (This does not work with current folder content menus as
+ *       they build their content during WM_INITMENU, i.e., during
+ *       the WinPopupMenu call.)
+ *
+ *@@added V0.9.14 (2001-07-24) [lafaix]
+ */
+
+VOID ctrPlaceAndPopupMenu(HWND  hwndOwner,
+                          HWND  hwndMenu,
+                          BOOL  fAbove)
+{
+    SWP   swp;
+    ULONG ulStyle;
+    RECTL rclButton;
+
+    // get the owner size, so that we can position the menu accordingly
+    WinQueryWindowRect(hwndOwner, &rclButton);
+
+    if (!fAbove)
+    {
+        // the menu is to be positionned below the owner; we must
+        // compute the menu height
+
+        // ensure that the menu is a popup menu, not an action bar
+        ulStyle = WinQueryWindowULong(hwndMenu, QWL_STYLE) & ~MS_ACTIONBAR;
+
+        // we _must_ force MS_POPUP style, or else separators will
+        // be considered to have the same height as normal items
+        // (@#!&@)
+
+        #ifndef MS_POPUP
+            #define MS_POPUP 0x00000010L
+        #endif
+
+        ulStyle |= MS_POPUP;
+        WinSetWindowULong(hwndMenu, QWL_STYLE, ulStyle);
+
+        // setting fl to SWP_MOVE | SWP_SIZE tells PM that it needs
+        // to calculate a new size and position for the menu
+        WinQueryWindowPos(hwndMenu, &swp);
+        swp.fl = SWP_MOVE | SWP_SIZE;
+        swp.hwndInsertBehind = HWND_TOP;
+
+        // we need to set the owner here, so that WM_MEASUREITEM messages
+        // are properly handled
+        WinSetOwner(hwndMenu, hwndOwner);
+        WinSendMsg(hwndMenu, WM_ADJUSTWINDOWPOS, (MPARAM)&swp, NULL);
+    }
+
+    WinPopupMenu(hwndOwner,
+                 hwndOwner,
+                 hwndMenu,
+                 0,
+                 (fAbove) ? rclButton.yTop : rclButton.yBottom - swp.cy,
+                 0,
+                 PU_NONE
+                     | PU_MOUSEBUTTON1
+                     | PU_KEYBOARD
+                     | PU_HCONSTRAIN
+                     | PU_VCONSTRAIN);
 }
 
 /*

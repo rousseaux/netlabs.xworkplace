@@ -37,15 +37,31 @@ typedef struct _DIRINFO
     double              dTotalSize;
     double              dTotalEASize;
     ULONG               ulRecursionLevel;       // 1 for root level
-    PRECORDCORE         precc;      // PSIZERECORDCORE actually
+    PRECORDCORE         precc;      // PSIZERECORD actually
 } DIRINFO, *PDIRINFO;
 
+/*
+ *@@ FILEENTRY:
+ *
+ *@@added V0.9.14 (2001-07-28) [umoeller]
+ */
+
+typedef struct _FILEENTRY
+{
+    TREE        Tree;
+    PDIRINFO    pDir;
+    PSZ         pszFilename;
+} FILEENTRY, *PFILEENTRY;
+
 /* extended RECORDCORE structure */
-typedef struct _SIZERECORDCORE {
-    RECORDCORE     recc;
-    PDIRINFO       pdi;
-    BOOL           fDisplayValid;        // TRUE only if display is valid
-} SIZERECORDCORE, *PSIZERECORDCORE;
+typedef struct _SIZERECORD
+{
+    RECORDCORE      recc;
+    PDIRINFO        pdi;                // if in directories tree
+    PFILEENTRY      pFileEntry;         // if in "100 largest files"
+    BOOL            fDisplayValid;      // TRUE only if display is valid
+    double          dTotalSize;
+} SIZERECORD, *PSIZERECORD;
 
 #define TSM_START            (WM_USER)
 #define TSM_BEGINDIRECTORY   (WM_USER+1)

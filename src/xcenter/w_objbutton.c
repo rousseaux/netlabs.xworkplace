@@ -561,6 +561,8 @@ VOID OwgtPaintButton(HWND hwnd)
 /*
  * OwgtButton1Down:
  *      implementation for WM_BUTTON1DOWN.
+ *
+ *@@changed V0.9.14 (2001-07-24) [lafaix]: fixed menu position
  */
 
 VOID OwgtButton1Down(HWND hwnd)
@@ -719,7 +721,7 @@ VOID OwgtButton1Down(HWND hwnd)
 
                 if (pPrivate->hwndMenuMain)
                 {
-                    RECTL rclButton;
+/*                    RECTL rclButton;
                     WinQueryWindowRect(hwnd, &rclButton);
                     // rclButton now has button coordinates;
                     // convert this to screen coordinates:
@@ -729,10 +731,29 @@ VOID OwgtButton1Down(HWND hwnd)
                                        2);          // rectl == 2 points
 
                     if (pWidget->pGlobals->ulPosition == XCENTER_TOP)
-                        cmnuSetPositionBelow((PPOINTL)&rclButton);
+                        cmnuSetPositionBelow((PPOINTL)&rclButton); */
 
-                    ctlDisplayButtonMenu(hwnd,
-                                         pPrivate->hwndMenuMain);
+                    if (pPrivate->ulType == BTF_OBJBUTTON)
+                    {
+                        // object buttons needs special treatment here
+                        // so that the menu is correctly positionned
+
+                        RECTL rclButton;
+                        WinQueryWindowRect(hwnd, &rclButton);
+                        // rclButton now has button coordinates;
+                        // convert this to screen coordinates:
+                        WinMapWindowPoints(hwnd,
+                                           HWND_DESKTOP,
+                                           (PPOINTL)&rclButton,
+                                           2);          // rectl == 2 points
+
+                        if (pWidget->pGlobals->ulPosition == XCENTER_TOP)
+                            cmnuSetPositionBelow((PPOINTL)&rclButton);
+                    }
+
+                    ctrPlaceAndPopupMenu(hwnd,
+                                         pPrivate->hwndMenuMain,
+                                         pWidget->pGlobals->ulPosition == XCENTER_BOTTOM);
                 }
             } // end if (!pPrivate->fButtonSunk)
         }

@@ -137,9 +137,9 @@ typedef WINSETDESKTOPWORKAREA *PWINSETDESKTOPWORKAREA;
  */
 
 BOOL APIENTRY WinQueryDesktopWorkArea(HWND hwndDesktop,
-                                      PWRECT pwrcWorkArea);
+                                      PRECTL pwrcWorkArea);
 typedef BOOL APIENTRY WINQUERYDESKTOPWORKAREA(HWND hwndDesktop,
-                                              PWRECT pwrcWorkArea);
+                                              PRECTL pwrcWorkArea);
 typedef WINQUERYDESKTOPWORKAREA *PWINQUERYDESKTOPWORKAREA;
 
 // some more forward declarations
@@ -387,7 +387,9 @@ APIRET ctrpDesktopWorkareaSupported(VOID)
  *      "reduce workarea" setting enabled.
  *
  *      WinSetDesktopWorkArea only gets called if the
- *      workarea rectangle really has changed.
+ *      workarea rectangle really has changed, and will
+ *      only get called _once_ with the newly calculated
+ *      work area from all active XCenters.
  *
  *      This also gets called with (fForceRemove == TRUE)
  *      when an XCenter is closed to remove that XCenter
