@@ -42,6 +42,26 @@
 
 #include "xpstat.h"
 
+                                /*
+
+                                if (fl & PAG_COMMIT)
+                                    strcat(szInfo, "commit ");
+                                if (fl & PAG_SHARED)
+                                    strcat(szInfo, "shared ");
+                                if (fl & PAG_FREE)
+                                    strcat(szInfo, "free ");
+                                if (fl & PAG_BASE)
+                                    strcat(szInfo, "base ");
+                                if (fl & PAG_READ)
+                                    strcat(szInfo, "read ");
+                                if (fl & PAG_WRITE)
+                                    strcat(szInfo, "write ");
+                                if (fl & PAG_EXECUTE)
+                                    strcat(szInfo, "exec ");
+                                if (fl & PAG_GUARD)
+                                    strcat(szInfo, "guard ");
+*/
+
 /* ******************************************************************
  *                                                                  *
  *   Global variables                                               *
@@ -60,7 +80,7 @@ HWND        G_hwndProcListCnr = NULLHANDLE,
 
 const char  *pcszClientClass = "ProcInfoClient";
 
-ULONG       G_ulCurrentView = ID_XPSMI_PIDLIST;
+ULONG       G_ulCurrentView = ID_XPSMI_PIDTREE;
 
 PQTOPLEVEL32 G_pInfo = NULL;
 
@@ -441,6 +461,47 @@ VOID InsertProcessList(HWND hwndCnr,
 }
 
 /*
+ *@@ FindMsgQueue:
+ *      returns the message queue which matches
+ *      the given process and thread IDs.
+ *
+ *@@added V0.9.2 (2000-03-08) [umoeller]
+ */
+
+HMQ FindMsgQueue(PID pid, TID tid)
+{
+    HWND    hwndThis = 0,
+            rc = 0;
+    HENUM   henum = WinBeginEnumWindows(HWND_OBJECT);
+    while (hwndThis = WinGetNextWindow(henum))
+    {
+        CHAR    szClass[200];
+        if (WinQueryClassName(hwndThis, sizeof(szClass), szClass))
+        {
+            if (strcmp(szClass, "#32767") == 0)
+            {
+                PID pidWin = 0;
+                TID tidWin = 0;
+                // message queue:
+                WinQueryWindowProcess(hwndThis,
+                                      &pidWin,
+                                      &tidWin);
+                if (    (pidWin == pid)
+                     && (tidWin == tid)
+                   )
+                {
+                    rc = WinQueryWindowULong(hwndThis, QWL_HMQ);
+                    break;
+                }
+            }
+        }
+    }
+    WinEndEnumWindows(henum);
+
+    return (rc);
+}
+
+/*
  *@@ ProcessSelected:
  *      gets called when a new process gets selected
  *      to compose the process information string
@@ -459,7 +520,8 @@ VOID ProcessSelected(VOID)
         CHAR        szTemp[2000],
                     szTemp2[200] = "";
         PSZ         pszTemp = szTemp;
-        ULONG       i;
+        ULONG       i,
+                    cMsgQueues = 0;
 
         pszTemp += sprintf(pszTemp, "PID: 0x%04lX\n", pProcess->pid);
         pszTemp += sprintf(pszTemp, "Parent PID: 0x%04lX\n", pProcess->ppid);
@@ -522,9 +584,11 @@ VOID ProcessSelected(VOID)
                                pProcess->ulState,
                                szTemp2);
 
+            // threads
+
             pszTemp += sprintf(pszTemp, "\nThreads: %d\n", pProcess->usThreadCount);
             // header for the following
-            pszTemp += sprintf(pszTemp, "  TID Slot SleepID    Prty   State\n", pProcess->usThreadCount);
+            pszTemp += sprintf(pszTemp, "  TID Slot SleepID    Prty   State HMQ\n");
             strhxcat(&pszCurrentInfo, szTemp);
 
             // dump threads
@@ -533,24 +597,93 @@ VOID ProcessSelected(VOID)
                  i < pProcess->usThreadCount;
                  i++, pThread++)
             {
-                CHAR    szState[30] = "blocked";
+                CHAR    szState[30] = "block";
+                HWND hwndMsgQueue = 0;
 
                 switch(pThread->ucState)
                 {
                     case 1: strcpy(szState, "ready"); break;
-                    case 5: strcpy(szState, "running"); break;
-                    case 9: strcpy(szState, "loaded"); break;
+                    case 5: strcpy(szState, "runng"); break;
+                    case 9: strcpy(szState, "loadd"); break;
                 }
 
                 pszTemp = szTemp;
                 pszTemp += sprintf(pszTemp,
-                                   "   %02d 0x%02lX 0x%08lX 0x%04lX %s\n",
+                                   "  %02d  0x%02lX 0x%08lX 0x%04lX %s ",
                                    pThread->usTID,
                                    pThread->usSlotID,
                                    pThread->ulSleepID,
                                    pThread->ulPriority,
                                    szState);
+                if (hwndMsgQueue = FindMsgQueue(pProcess->pid,
+                                                pThread->usTID))
+                {
+                    pszTemp += sprintf(pszTemp, "0x%lX", hwndMsgQueue);
+                    cMsgQueues++;
+                }
+
+                pszTemp += sprintf(pszTemp, "\n");
                 strhxcat(&pszCurrentInfo, szTemp);
+            }
+
+            // dump message queues
+            if (cMsgQueues)
+            {
+                HENUM   henum = WinBeginEnumWindows(HWND_OBJECT);
+                HWND    hwndThis;
+                pszTemp = szTemp;
+                pszTemp += sprintf(pszTemp, "\nMessage queues: %d\n", cMsgQueues);
+                // header for the following
+                pszTemp += sprintf(pszTemp, "  HMQ        HWND       TID size pNext     TID\n");
+                strhxcat(&pszCurrentInfo, szTemp);
+
+                while (hwndThis = WinGetNextWindow(henum))
+                {
+                    CHAR    szClass[200];
+                    if (WinQueryClassName(hwndThis, sizeof(szClass), szClass))
+                    {
+                        if (strcmp(szClass, "#32767") == 0)
+                        {
+                            // is message queue:
+                            PID pidWin = 0;
+                            TID tidWin = 0;
+                            WinQueryWindowProcess(hwndThis,
+                                                  &pidWin,
+                                                  &tidWin);
+                            if (pidWin == pProcess->pid)
+                            {
+                                // is our process:
+                                // get message queue for this
+                                HMQ     hmq = WinQueryWindowULong(hwndThis, QWL_HMQ);
+                                MQINFO  mqi = {0};
+                                ULONG   cb, fl;
+
+                                WinQueryQueueInfo(hmq, &mqi, sizeof(mqi));
+
+                                pszTemp = szTemp;
+                                pszTemp += sprintf(pszTemp, "  0x%08lX 0x%lX %02d  %d",
+                                                   hmq, hwndThis, tidWin, mqi.cmsgs);
+
+                                DosQueryMem((PVOID)hmq, &cb, &fl);
+                                if (fl & PAG_SHARED)
+                                {
+                                    PMQ pmq = (PMQ)hmq;
+                                    /* PSZ pszDump = strhCreateDump((PVOID)pmq,
+                                                                 sizeof(MQ),
+                                                                 8); */
+
+                                    pszTemp += sprintf(pszTemp, " %02lX",
+                                                       *(PUSHORT)(((PBYTE)pmq) + 0xa4));
+                                    // free(pszDump);
+                                }
+
+                                pszTemp += sprintf(pszTemp, "\n");
+                                strhxcat(&pszCurrentInfo, szTemp);
+                            }
+                        }
+                    }
+                }
+                WinEndEnumWindows(henum);
             }
 
             // dump 32-bit semaphores

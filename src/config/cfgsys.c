@@ -75,6 +75,7 @@
 // C library headers
 #include <stdio.h>              // needed for except.h
 #include <ctype.h>
+#include <direct.h>
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
@@ -82,6 +83,7 @@
 // headers in /helpers
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\dosh.h"               // Control Program helper routines
+#include "helpers\level.h"              // SYSLEVEL helpers
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\procstat.h"           // DosQProcStat handling
 #include "helpers\stringh.h"            // string helper routines
@@ -3074,6 +3076,276 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             }
         break; }
     }
+
+    return (mrc);
+}
+
+/* ******************************************************************
+ *                                                                  *
+ *   OS/2 Kernel "Syslevel" page                                    *
+ *                                                                  *
+ ********************************************************************/
+
+typedef struct _SYSLEVELRECORD
+{
+    RECORDCORE  recc;
+
+    CHAR        szComponent[100],
+                szFile[100],
+                szCSDCurrent[40],
+                szCSDPrevious[40],
+                szVersion[40];
+    PSZ         pszComponent,
+                pszFile,
+                pszCSDCurrent,
+                pszCSDPrevious,
+                pszVersion;
+} SYSLEVELRECORD, *PSYSLEVELRECORD;
+
+/*
+ *@@ AddOneSyslevel2Cnr:
+ *
+ *@@added V0.9.2 (2000-03-08) [umoeller]
+ */
+
+VOID AddOneSyslevel2Cnr(HWND hwndCnr,
+                        HFILE hfSysLevel,
+                        PSZ pszFilename)
+{
+    PSYSLEVELRECORD precc
+        = (PSYSLEVELRECORD)cnrhAllocRecords(hwndCnr,
+                                            sizeof(SYSLEVELRECORD),
+                                            1);
+
+    if (precc)
+    {
+        BYTE    abBuf[100];
+        ULONG   ulWritten = 0;
+
+        strcpy(precc->szFile, pszFilename);
+        precc->pszFile = precc->szFile;
+
+        // component name
+        if (lvlQueryLevelFileData(hfSysLevel,
+                                  QLD_TITLE,
+                                  abBuf,
+                                  sizeof(abBuf),
+                                  &ulWritten)
+            == NO_ERROR)
+        {
+            abBuf[ulWritten] = 0;
+            strcpy(precc->szComponent, abBuf);
+            precc->pszComponent = precc->szComponent;
+        }
+
+        // current CSD
+        if (lvlQueryLevelFileData(hfSysLevel,
+                                  QLD_CURRENTCSD,
+                                  abBuf,
+                                  sizeof(abBuf),
+                                  &ulWritten)
+            == NO_ERROR)
+        {
+            abBuf[ulWritten] = 0;
+            strcpy(precc->szCSDCurrent, abBuf);
+            precc->pszCSDCurrent = precc->szCSDCurrent;
+        }
+
+        // previous CSD
+        if (lvlQueryLevelFileData(hfSysLevel,
+                                  QLD_PREVIOUSCSD,
+                                  abBuf,
+                                  sizeof(abBuf),
+                                  &ulWritten)
+            == NO_ERROR)
+        {
+            abBuf[ulWritten] = 0;
+            strcpy(precc->szCSDPrevious, abBuf);
+            precc->pszCSDPrevious = precc->szCSDPrevious;
+        }
+
+        cnrhInsertRecords(hwndCnr,
+                          NULL,
+                          (PRECORDCORE)precc,
+                          TRUE, // invalidate
+                          NULL,
+                          CRA_RECORDREADONLY,
+                          1);
+    }
+}
+
+/*
+ *@@ AddSyslevelsForDir:
+ *
+ *@@added V0.9.2 (2000-03-08) [umoeller]
+ */
+
+VOID AddSyslevelsForDir(HWND hwndCnr,
+                        PSZ pszDir)     // in: directory to search (with terminating \)
+{
+    HDIR          hdirFindHandle = HDIR_CREATE;
+    FILEFINDBUF3  ffb3     = {0};      /* Returned from FindFirst/Next */
+    ULONG         cbFFB3 = sizeof(FILEFINDBUF3);
+    ULONG         ulFindCount    = 1;        /* Look for 1 file at a time    */
+    APIRET        rc             = NO_ERROR; /* Return code                  */
+
+    HFILE   hfSysLevel = 0;
+    CHAR    szCurDir[400],
+            szSearchMask[400];
+
+    strcpy(szCurDir, pszDir);
+    if (szCurDir[0] == '?')
+        szCurDir[0] = doshQueryBootDrive();
+    sprintf(szSearchMask, "%sSYSLEVEL.*", szCurDir);
+
+    // now go for the first directory entry in our directory (szCurrentDir):
+    rc = DosFindFirst( szSearchMask,
+                       &hdirFindHandle,
+                       // find eeeeverything
+                       FILE_ARCHIVED | FILE_HIDDEN | FILE_SYSTEM | FILE_READONLY,
+                       &ffb3,
+                       cbFFB3,
+                       &ulFindCount,
+                       FIL_STANDARD);
+
+    // and start looping
+    while (rc == NO_ERROR)
+    {
+        CHAR    szFile[CCHMAXPATH];
+        ULONG   ulAction = 0;
+
+        sprintf(szFile, "%s%s", szCurDir, // always has trailing "\"
+                                ffb3.achName);
+
+        // open file
+        if (DosOpen(szFile,
+                    &hfSysLevel,
+                    &ulAction,
+                    0,
+                    FILE_NORMAL,
+                    OPEN_ACTION_FAIL_IF_NEW | OPEN_ACTION_OPEN_IF_EXISTS,
+                    OPEN_FLAGS_FAIL_ON_ERROR | OPEN_FLAGS_RANDOM | OPEN_SHARE_DENYWRITE | OPEN_ACCESS_READONLY,
+                    NULL)
+            == NO_ERROR)
+        {
+            AddOneSyslevel2Cnr(hwndCnr,
+                               hfSysLevel,
+                               szFile);
+            DosClose(hfSysLevel);
+        }
+
+        rc = DosFindNext(hdirFindHandle,
+                         &ffb3,
+                         cbFFB3,
+                         &ulFindCount);
+
+    } /* endwhile */
+
+    DosFindClose(hdirFindHandle);
+}
+
+/*
+ *@@ cfgSyslevelInitPage:
+ *
+ *@@added V0.9.2 (2000-03-08) [umoeller]
+ */
+
+VOID cfgSyslevelInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                         ULONG flFlags)
+{
+    if (flFlags & CBI_INIT)
+    {
+        HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_OSDI_SYSLEVEL_CNR);
+
+        XFIELDINFO      xfi[5];
+        PFIELDINFO      pfi = NULL;
+        int             i = 0;
+
+        // set up cnr details view
+        xfi[i].ulFieldOffset = FIELDOFFSET(SYSLEVELRECORD, pszComponent);
+        xfi[i].pszColumnTitle = "Component"; // ###
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(SYSLEVELRECORD, pszFile);
+        xfi[i].pszColumnTitle = "File"; // ###
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(SYSLEVELRECORD, pszCSDCurrent);
+        xfi[i].pszColumnTitle = "Level"; // ###
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(SYSLEVELRECORD, pszCSDPrevious);
+        xfi[i].pszColumnTitle = "Previous"; // ###
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(SYSLEVELRECORD, pszVersion);
+        xfi[i].pszColumnTitle = "Version";  // ###
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        pfi = cnrhSetFieldInfos(hwndCnr,
+                                xfi,
+                                i,             // array item count
+                                TRUE,          // draw lines
+                                1);            // return second column
+
+        BEGIN_CNRINFO()
+        {
+            cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES);
+            cnrhSetSplitBarAfter(pfi);
+            cnrhSetSplitBarPos(100);
+        } END_CNRINFO(hwndCnr);
+    }
+
+    if (flFlags & CBI_SET)
+    {
+        HWND hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_OSDI_SYSLEVEL_CNR);
+
+        AddSyslevelsForDir(hwndCnr,
+                           "?:\\OS2\\INSTALL\\");
+        AddSyslevelsForDir(hwndCnr,
+                           "?:\\MMOS2\\INSTALL\\");
+        AddSyslevelsForDir(hwndCnr,
+                           "?:\\OS2\\DLL\\");
+        AddSyslevelsForDir(hwndCnr,
+                           "?:\\IBMI18N\\");
+        AddSyslevelsForDir(hwndCnr,
+                           "?:\\IBMCOM\\");
+        AddSyslevelsForDir(hwndCnr,
+                           "?:\\MPTN\\");
+        AddSyslevelsForDir(hwndCnr,
+                           "?:\\TCPIP\\");
+        AddSyslevelsForDir(hwndCnr,
+                           "?:\\IBMINST\\");    // networking installation
+        AddSyslevelsForDir(hwndCnr,
+                           "?:\\DMISL\\");
+        AddSyslevelsForDir(hwndCnr,
+                           "?:\\IBMLAN\\");    // peer
+        AddSyslevelsForDir(hwndCnr,
+                           "?:\\MUGLIB\\");    // peer
+    }
+}
+
+/*
+ *@@ cfgSyslevelItemChanged:
+ *
+ *@@added V0.9.2 (2000-03-08) [umoeller]
+ */
+
+MRESULT cfgSyslevelItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                               USHORT usItemID,
+                               USHORT usNotifyCode,
+                               ULONG ulExtra)
+{
+    MRESULT mrc = (MPARAM)0;
+
+    /* switch (usItemID)
+    {
+    } */
 
     return (mrc);
 }

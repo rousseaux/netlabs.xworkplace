@@ -111,7 +111,7 @@ ANIOBJS =
 # created from the files in HELPERS\. You probably won't have to change this.
 HLPOBJS = bin\animate.obj bin\comctl.obj bin\cnrh.obj bin\datetime.obj \
     bin\debug.obj bin\dosh.obj bin\eah.obj bin\except.obj bin\gpih.obj \
-    bin\linklist.obj bin\memdebug.obj bin\procstat.obj bin\prfh.obj bin\shapewin.obj \
+    bin\level.obj bin\linklist.obj bin\memdebug.obj bin\procstat.obj bin\prfh.obj bin\shapewin.obj \
     bin\stringh.obj bin\syssound.obj bin\threads.obj bin\textview.obj bin\tmsgfile.obj \
     bin\winh.obj bin\wphandle.obj bin\wpsh.obj
 

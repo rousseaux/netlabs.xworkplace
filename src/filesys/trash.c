@@ -1355,7 +1355,8 @@ BOOL trshSubclassTrashCanFrame(HWND hwndFrame,
                         pstfNew->hwndCnr = hwndCnr;
                     }
                     else
-                        DosBeep(100, 500);
+                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                               "hmtxSubclassedTrashCans request failed.");
                 }
             }
         }
@@ -1413,7 +1414,8 @@ PSUBCLASSEDTRASHFRAME trshQueryPSTF(HWND hwndFrame,        // in: folder frame t
                 }
             }
             else
-                DosBeep(100, 500);
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "hmtxSubclassedTrashCans request failed.");
         }
     }
     CATCH(excpt1) {  } END_CATCH();
@@ -1446,7 +1448,8 @@ VOID trshRemovePSTF(PSUBCLASSEDTRASHFRAME pstf)
             lstRemoveItem(&llSubclassedTrashCans,
                           pstf);
         else
-            DosBeep(100, 500);
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "hmtxSubclassedTrashCans request failed.");
     }
     CATCH(excpt1) { } END_CATCH();
 
@@ -1570,7 +1573,8 @@ MRESULT EXPENTRY trsh_fnwpSubclassedTrashCanFrame(HWND hwndFrame,
         {
             // original window procedure not found:
             // that's an error
-            DosBeep(2000, 300);
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "Trash can's pfnwpOriginal not found.");
             mrc = WinDefWindowProc(hwndFrame, msg, mp1, mp2);
         }
     } // end TRY_LOUD

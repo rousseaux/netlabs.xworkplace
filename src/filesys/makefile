@@ -151,7 +151,7 @@ $(OUTPUTDIR)\fdrhotky.obj: \
     $(HLPINC)\linklist.h $(HLPINC)\winh.h $(HLPINC)\undoc.h \
     $(INC)\classes\xfldr.ih \
     $(INC)\dlgids.h \
-    $(INC)\shared\common.h $(INC)\shared\notebook.h \
+    $(INC)\shared\common.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
     $(@B).c $(INC)\filesys\folder.h
 
 $(OUTPUTDIR)\fileops.obj: \

@@ -165,31 +165,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_SET4ACCELS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_SET4ACCELS, 0, 0, 224, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "Folder hotkeys", -1, 5, 25, 175, 135, DT_MNEMONIC |
-                        NOT WS_GROUP
-        AUTOCHECKBOX    "~Enable", ID_XSDI_ACCELERATORS, 10, 140, 118, 10
-        LTEXT           "Configurable ~menu items", -1, 10, 130, 140, 8,
-                        DT_MNEMONIC | NOT WS_GROUP
-        LISTBOX         ID_XSDI_LISTBOX, 10, 49, 165, 78, LS_OWNERDRAW |
-                        LS_NOADJUSTPOS | LS_HORZSCROLL
-        LTEXT           "~Hotkey:", ID_XSDI_DESCRIPTION_TX1, 10, 32, 35, 8,
-                        DT_MNEMONIC | NOT WS_GROUP | WS_DISABLED
-        ENTRYFIELD      "", ID_XSDI_DESCRIPTION, 52, 32, 66, 8, ES_MARGIN |
-                        WS_DISABLED
-        PUSHBUTTON      "~Clear", ID_XSDI_CLEARACCEL, 125, 30, 50, 12,
-                        WS_DISABLED
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12
-        PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
-        PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP |
-                        BS_NOPOINTERFOCUS
-    END
-END
-
 DLGTEMPLATE ID_XFD_NOCONFIG LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "XWorkplace Error: No Config Folder", ID_XFD_NOCONFIG, 10, 18,
@@ -1979,30 +1954,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_OSD_SETTINGS_DRIVERS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_OSD_SETTINGS_DRIVERS, 0, 0, 275, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        CONTAINER       ID_OSDI_DRIVR_CNR, 10, 27, 130, 132, CCS_SINGLESEL |
-                        CCS_VERIFYPOINTERS
-        GROUPBOX        "Device drivers", -1, 5, 21, 255, 150, NOT WS_GROUP
-        LTEXT           "Driver description:", -1, 146, 154, 108, 8
-        CONTROL         "", ID_OSDI_DRIVR_STATICDATA, 146, 110, 108, 44,
-                        WC_MLE, MLS_READONLY | MLS_HSCROLL | MLS_VSCROLL |
-                        WS_GROUP | WS_TABSTOP | WS_VISIBLE
-        LTEXT           "Parameters:", -1, 148, 98, 83, 8
-        MLE             "", ID_OSDI_DRIVR_PARAMS, 146, 58, 108, 38,
-                        MLS_WORDWRAP | MLS_HSCROLL | MLS_VSCROLL |
-                        MLS_IGNORETAB | WS_GROUP
-        PUSHBUTTON      "~Configure...", ID_OSDI_DRIVR_CONFIGURE, 145, 42,
-                        110, 12
-        PUSHBUTTON      "~Apply...", ID_OSDI_DRIVR_APPLYTHIS, 145, 27, 110,
-                        12, WS_GROUP
-        PUSHBUTTON      "~Help", DID_HELP, 175, 6, 85, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_XSD_DTP_ARCHIVES LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_XSD_DTP_ARCHIVES, 0, 0, 275, 180, NOT FS_DLGBORDER |
@@ -2061,24 +2012,6 @@ BEGIN
         PUSHBUTTON      "~Clear", ID_XSDI_DTL_CLEAR, 190, 24, 36, 12
         PUSHBUTTON      "~Refresh", DID_REFRESH, 5, 6, 85, 12, WS_GROUP
         PUSHBUTTON      "~Help", DID_HELP, 148, 6, 85, 12, BS_HELP
-    END
-END
-
-DLGTEMPLATE ID_XSD_FILESPAGE2 LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_FILESPAGE2, 0, 0, 265, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "Extended Attributes", -1, 5, 20, 230, 104
-        LTEXT           "~Attribute:", -1, 10, 106, 60, 8, DT_MNEMONIC
-        LISTBOX         ID_XSDI_FILES_EALIST, 10, 70, 218, 35,
-                        LS_NOADJUSTPOS | LS_HORZSCROLL
-        LTEXT           "~Contents:", ID_XSDI_FILES_EAINFO, 10, 58, 95, 8,
-                        DT_MNEMONIC
-        MLE             "", ID_XSDI_FILES_EACONTENTS, 10, 24, 218, 33,
-                        MLS_WORDWRAP | MLS_VSCROLL | MLS_IGNORETAB |
-                        WS_GROUP
-        PUSHBUTTON      "~Help", DID_HELP, 165, 6, 70, 12, BS_HELP
     END
 END
 
@@ -2519,7 +2452,8 @@ BEGIN
         AUTOCHECKBOX    "~Remove all object hotkeys",
                         ID_XFDI_PANIC_REMOVEHOTKEYS, 6, 48, 210, 8
                         PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
-        AUTOCHECKBOX    "Disable ~PageMage", ID_XFDI_PANIC_NOPAGEMAGE, 6, 40, 210, 8
+        AUTOCHECKBOX    "Disable ~PageMage", ID_XFDI_PANIC_NOPAGEMAGE, 6, 40,
+                        210, 8
                         PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
         DEFPUSHBUTTON   "C~ontinue", DID_OK, 4, 22, 75, 12, WS_GROUP
                         PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
@@ -2531,5 +2465,85 @@ BEGIN
         LTEXT           "This performs a default OS/2 shutdown now.", -1, 84,
                         8, 135, 11, DT_WORDBREAK
                         PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+    END
+END
+
+DLGTEMPLATE ID_XSD_FILESPAGE2 LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_FILESPAGE2, 0, 0, 265, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        GROUPBOX        "Extended Attributes", -1, 5, 20, 230, 104
+        LTEXT           "~Attribute:", -1, 10, 106, 60, 8, DT_MNEMONIC
+        LISTBOX         ID_XSDI_FILES_EALIST, 10, 70, 218, 35,
+                        LS_NOADJUSTPOS | LS_HORZSCROLL
+        LTEXT           "~Contents:", ID_XSDI_FILES_EAINFO, 10, 58, 218, 8,
+                        DT_MNEMONIC
+        MLE             "", ID_XSDI_FILES_EACONTENTS, 10, 24, 218, 33,
+                        MLS_WORDWRAP | MLS_VSCROLL | MLS_IGNORETAB |
+                        WS_GROUP
+        PUSHBUTTON      "~Help", DID_HELP, 165, 6, 70, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XSD_SET4ACCELS LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_SET4ACCELS, 0, 0, 224, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        GROUPBOX        "Folder hotkeys", -1, 5, 25, 175, 135, DT_MNEMONIC |
+                        NOT WS_GROUP
+        AUTOCHECKBOX    "~Enable", ID_XSDI_ACCELERATORS, 10, 144, 118, 8
+        AUTOCHECKBOX    "Show hotkeys in ~menus", ID_XSDI_SHOWINMENUS, 10,
+                        136, 118, 8
+        LTEXT           "Configurable ~menu items", -1, 10, 124, 140, 8,
+                        DT_MNEMONIC | NOT WS_GROUP
+        LISTBOX         ID_XSDI_LISTBOX, 10, 46, 165, 78, LS_OWNERDRAW |
+                        LS_NOADJUSTPOS | LS_HORZSCROLL
+        LTEXT           "~Hotkey:", ID_XSDI_DESCRIPTION_TX1, 10, 32, 35, 8,
+                        DT_MNEMONIC | NOT WS_GROUP | WS_DISABLED
+        ENTRYFIELD      "", ID_XSDI_DESCRIPTION, 52, 32, 66, 8, ES_MARGIN |
+                        WS_DISABLED
+        PUSHBUTTON      "~Clear", ID_XSDI_CLEARACCEL, 125, 30, 50, 12,
+                        WS_DISABLED
+        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12
+        PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
+        PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP |
+                        BS_NOPOINTERFOCUS
+    END
+END
+
+DLGTEMPLATE ID_OSD_SETTINGS_DRIVERS LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_OSD_SETTINGS_DRIVERS, 0, 0, 275, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        CONTAINER       ID_OSDI_DRIVR_CNR, 10, 27, 130, 132, CCS_SINGLESEL |
+                        CCS_VERIFYPOINTERS
+        GROUPBOX        "Device drivers", -1, 5, 21, 255, 150, NOT WS_GROUP
+        LTEXT           "Driver description:", -1, 146, 154, 108, 8
+        CONTROL         "", ID_OSDI_DRIVR_STATICDATA, 146, 110, 108, 44,
+                        WC_MLE, MLS_READONLY | MLS_HSCROLL | MLS_VSCROLL |
+                        WS_GROUP | WS_TABSTOP | WS_VISIBLE
+        LTEXT           "Parameters:", -1, 148, 98, 83, 8
+        MLE             "", ID_OSDI_DRIVR_PARAMS, 146, 58, 108, 38,
+                        MLS_WORDWRAP | MLS_HSCROLL | MLS_VSCROLL |
+                        MLS_IGNORETAB | WS_GROUP
+        PUSHBUTTON      "~Configure...", ID_OSDI_DRIVR_CONFIGURE, 145, 42,
+                        110, 12
+        PUSHBUTTON      "~Apply...", ID_OSDI_DRIVR_APPLYTHIS, 145, 27, 110,
+                        12, WS_GROUP
+        PUSHBUTTON      "~Help", DID_HELP, 175, 6, 85, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_OSD_SETTINGS_SYSLEVEL LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_OSD_SETTINGS_SYSLEVEL, 0, 0, 275, 180, NOT FS_DLGBORDER | WS_VISIBLE
+    BEGIN
+        CONTAINER       ID_OSDI_SYSLEVEL_CNR, 10, 27, 186, 107, CCS_SINGLESEL |
+                        CCS_VERIFYPOINTERS
+        GROUPBOX        "Syslevels", -1, 5, 21, 197, 121, NOT WS_GROUP
+        PUSHBUTTON      "~Help", DID_HELP, 118, 6, 85, 12, BS_HELP
     END
 END

@@ -30,6 +30,7 @@ including subdirectories.
 respected for deleting objects to the trash can.
 <P><LI>XSHUTDWN.EXE has been added again. Seems to work.
 <P><LI>Added "delay" setting for APM power off to "XShutdown" page.
+<P><LI>Added hotkey description display in context menus.
 
 </UL>Miscellaneous changes:
 <UL><LI>"Shutdown" menu item now has the "d" shortcut, which doesn't conflict with
@@ -49,16 +50,9 @@ sense. Removed that.
 Now we'll always show the help for the entire page first.
 
 </UL>Bugfixes:
-<UL><LI>The "Auto-hide mouse pointer" checkbox on the "Mouse movement" page wasn't
-working. Another (static) control on the page had the same dialog item ID. %$õ%!, I hate
-that. Took me half an hour to figure out.
-<P><LI>Mouse-button-3 scrolling didn't work horizontally when vertical scroll bar was disabled in a window. Fixed.
-<P><LI>Fixed some other minor quirks with MB3 scrolling.
-<P><LI>Many hook features were triggered even though the mouse was currently captured by an application
-or the system. This could lead to severe system hangs, especially with "show window list everywhere".
-Fixed.
-<P><LI>"Hot corners" desktop menu sometimes conflicted with "sliding focus" because
-the focus was immediately given back to the window under the mouse. Fixed.
+<UL><LI>Warp 3 detection didn't work, leading to wrong default settings and messy
+dialogs when XWorkplace was run under Warp 3. Fixed.
+<P><LI>Fixed a minor notebook mutex error.
 <P><LI>"Archive" status window was displayed even if this was turned off. Fixed.
 <P><LI>"Subject" field on first "File" page was limited to 36 characters. Changed this
 to 260, even though the IBM docs say this isn't so. Thanks, Mike Reichel, for counting
@@ -82,6 +76,16 @@ in the trash can already.
 <P><LI>Menu buttons (e.g. the "Partitions" button) displayed a menu even if disabled. Fixed.
 <P><LI>The bitmap which was created with the "Details" chart was never freed (baaaad
 PM resource leak). Fixed.
+<P><LI>The "Auto-hide mouse pointer" checkbox on the "Mouse movement" page wasn't
+working. Another (static) control on the page had the same dialog item ID. %$õ%!, I hate
+that. Took me half an hour to figure out.
+<P><LI>Mouse-button-3 scrolling didn't work horizontally when vertical scroll bar was disabled in a window. Fixed.
+<P><LI>Fixed some other minor quirks with MB3 scrolling.
+<P><LI>Many hook features were triggered even though the mouse was currently captured by an application
+or the system. This could lead to severe system hangs, especially with "show window list everywhere".
+Fixed.
+<P><LI>"Hot corners" desktop menu sometimes conflicted with "sliding focus" because
+the focus was immediately given back to the window under the mouse. Fixed.
 
 </UL></H6><P><B>XWorkplace 0.9.1 (February 18, 2000)</B>
 <H6>First XWorkplace public release.

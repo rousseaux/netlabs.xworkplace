@@ -112,14 +112,14 @@
 
 // root of linked list of opened notebook pages
 // (this holds NOTEBOOKPAGELISTITEM's)
-PLINKLIST       pllOpenPages = NULL;
+PLINKLIST       G_pllOpenPages = NULL;
 
 // root of linked list of subclassed notebooks
 // (this holds
-PLINKLIST       pllSubclNotebooks = NULL;
+PLINKLIST       G_pllSubclNotebooks = NULL;
 
 // mutex semaphore for both lists
-HMTX            hmtxNotebookLists = NULLHANDLE;
+HMTX            G_hmtxNotebookLists = NULLHANDLE;
 
 /* ******************************************************************
  *                                                                  *
@@ -239,22 +239,22 @@ VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp,
         #endif
         if (pcnbp->pnbli)
         {
-            *pfSemOwned = (WinRequestMutexSem(hmtxNotebookLists,
-                                            4000)
+            *pfSemOwned = (WinRequestMutexSem(G_hmtxNotebookLists,
+                                              4000)
                                  == NO_ERROR);
             if (*pfSemOwned)
             {
-                if (!lstRemoveItem(pllOpenPages,
+                if (!lstRemoveItem(G_pllOpenPages,
                                    pcnbp->pnbli))
-                    DebugBox(HWND_DESKTOP,
-                             "XWorkplace: Error in ntb_fnwpPageCommon",
-                             "WM_DESTROY: lstRemoveItem returned FALSE.");
+                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                           "lstRemoveItem returned FALSE.");
                         // this free's the pnbli
-                DosReleaseMutexSem(hmtxNotebookLists);
+                DosReleaseMutexSem(G_hmtxNotebookLists);
                 *pfSemOwned = FALSE;
             }
             else
-                DosBeep(100, 500);
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "hmtxNotebookLists request failed.");
         }
 
         // free allocated user memory
@@ -926,7 +926,7 @@ MRESULT EXPENTRY ntb_fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
         // free semaphores
         if (fSemOwned)
         {
-            DosReleaseMutexSem(hmtxNotebookLists);
+            DosReleaseMutexSem(G_hmtxNotebookLists);
             fSemOwned = FALSE;
         }
     } END_CATCH();
@@ -966,10 +966,10 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
     TRY_LOUD(excpt1, NULL)
     {
         // store new page in linked list
-        fSemOwned = (WinRequestMutexSem(hmtxNotebookLists, 4000) == NO_ERROR);
+        fSemOwned = (WinRequestMutexSem(G_hmtxNotebookLists, 4000) == NO_ERROR);
         if (fSemOwned)
         {
-            PLISTNODE   pNode = lstQueryFirstNode(pllSubclNotebooks);
+            PLISTNODE   pNode = lstQueryFirstNode(G_pllSubclNotebooks);
             PSUBCLNOTEBOOKLISTITEM pSubclNBLI = NULL;
             while (pNode)
             {
@@ -1001,7 +1001,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
                     {
                         PFNWP pfnwpNotebookOrig = pSubclNBLI->pfnwpNotebookOrig;
 
-                        PLISTNODE pPageNode = lstQueryFirstNode(pllOpenPages);
+                        PLISTNODE pPageNode = lstQueryFirstNode(G_pllOpenPages);
 
                         #ifdef DEBUG_NOTEBOOKS
                             _Pmpf(("ntb_fnwpSubclNotebook: WM_DESTROY"));
@@ -1024,11 +1024,11 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
                                                  _Pmpf(("  removed page ID %d", pPageLI->pcnbp->ulPageID));
                                              #endif
                                             free(pPageLI->pcnbp);
-                                            lstRemoveItem(pllOpenPages,
+                                            lstRemoveItem(G_pllOpenPages,
                                                           pPageLI);
 
                                             // restart loop with first item
-                                            pPageNode = lstQueryFirstNode(pllOpenPages);
+                                            pPageNode = lstQueryFirstNode(G_pllOpenPages);
                                             continue;
                                         }
                                 }
@@ -1037,7 +1037,7 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
                         }
 
                         // remove notebook control from list
-                        lstRemoveItem(pllSubclNotebooks,
+                        lstRemoveItem(G_pllSubclNotebooks,
                                       pSubclNBLI);      // this frees the pSubclNBLI
                         #ifdef DEBUG_NOTEBOOKS
                             _Pmpf(("  removed pSubclNBLI"));
@@ -1052,13 +1052,14 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
                 mrc = WinDefWindowProc(hwndNotebook, msg, mp1, mp2);
         }
         else
-            DosBeep(100, 500);
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "hmtxNotebookLists mutex request failed");
     }
     CATCH(excpt1) { } END_CATCH();
 
     if (fSemOwned)
     {
-        DosReleaseMutexSem(hmtxNotebookLists);
+        DosReleaseMutexSem(G_hmtxNotebookLists);
         fSemOwned = FALSE;
     }
 
@@ -1305,14 +1306,14 @@ ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
                 pcnbp->hwndFrame = NULLHANDLE;
 
             // on the very first call: create list of inserted pages
-            if (hmtxNotebookLists == NULLHANDLE)
+            if (G_hmtxNotebookLists == NULLHANDLE)
             {
-                pllOpenPages = lstCreate(TRUE); // NOTEBOOKPAGELISTITEMs are freeable
-                pllSubclNotebooks = lstCreate(TRUE); // SUBCLNOTEBOOKLISTITEM are freeable
+                G_pllOpenPages = lstCreate(TRUE); // NOTEBOOKPAGELISTITEMs are freeable
+                G_pllSubclNotebooks = lstCreate(TRUE); // SUBCLNOTEBOOKLISTITEM are freeable
 
                 // and mutex semaphore for those lists
                 DosCreateMutexSem(NULL,         // unnamed
-                                  &hmtxNotebookLists,
+                                  &G_hmtxNotebookLists,
                                   0,            // unshared
                                   FALSE);       // unowned
                 #ifdef DEBUG_NOTEBOOKS
@@ -1321,13 +1322,13 @@ ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
             }
 
             // store new page in linked list
-            fSemOwned = (WinRequestMutexSem(hmtxNotebookLists, 4000) == NO_ERROR);
+            fSemOwned = (WinRequestMutexSem(G_hmtxNotebookLists, 4000) == NO_ERROR);
             if (fSemOwned)
             {
                 PLISTNODE   pNode;
                 BOOL        fNotebookAlreadySubclassed = FALSE;
 
-                lstAppendItem(pllOpenPages,
+                lstAppendItem(G_pllOpenPages,
                               pnbliNew);
                 #ifdef DEBUG_NOTEBOOKS
                     _Pmpf(("Appended NOTEBOOKPAGELISTITEM to pages list"));
@@ -1338,7 +1339,7 @@ ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
                 // into this notebook; if not, subclass the
                 // notebook (otherwise it has already been subclassed
                 // by this func)
-                pNode = lstQueryFirstNode(pllSubclNotebooks);
+                pNode = lstQueryFirstNode(G_pllSubclNotebooks);
                 while (pNode)
                 {
                     PSUBCLNOTEBOOKLISTITEM psnbliThis = (PSUBCLNOTEBOOKLISTITEM)pNode->pItemData;
@@ -1360,7 +1361,7 @@ ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
                     if (pSubclNBLINew)
                     {
                         pSubclNBLINew->hwndNotebook = pcnbp->hwndNotebook;
-                        lstAppendItem(pllSubclNotebooks,
+                        lstAppendItem(G_pllSubclNotebooks,
                                       pSubclNBLINew);
                         pSubclNBLINew->pfnwpNotebookOrig
                             = WinSubclassWindow(pcnbp->hwndNotebook,
@@ -1369,7 +1370,8 @@ ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
                 }
             } // end if (fSemOwned)
             else
-                DosBeep(100, 500);
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "hmtxNotebookLists mutex request failed");
         }
         else
             DebugBox(HWND_DESKTOP,
@@ -1379,7 +1381,7 @@ ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
     CATCH(excpt1) { } END_CATCH();
 
     if (fSemOwned) {
-        DosReleaseMutexSem(hmtxNotebookLists);
+        DosReleaseMutexSem(G_hmtxNotebookLists);
         fSemOwned = FALSE;
     }
 
@@ -1422,12 +1424,13 @@ PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp)
 
     TRY_QUIET(excpt1, NULL)
     {
-        fSemOwned = (WinRequestMutexSem(hmtxNotebookLists, 4000) == NO_ERROR);
-        if (fSemOwned)
+        // list created yet?
+        if (G_pllOpenPages)
         {
-            if (pllOpenPages)
+            fSemOwned = (WinRequestMutexSem(G_hmtxNotebookLists, 4000) == NO_ERROR);
+            if (fSemOwned)
             {
-                pNode = lstQueryFirstNode(pllOpenPages);
+                pNode = lstQueryFirstNode(G_pllOpenPages);
 
                 if (pcnbp == NULL)
                 {
@@ -1451,16 +1454,17 @@ PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp)
 
                         pNode = pNode->pNext;
                     }
-            } // end if (pllOpenPages)
-        } // end if (fSemOwned)
-        else
-            DosBeep(100, 500);
+            } // end if (fSemOwned)
+            else
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "hmtxNotebookLists mutex request failed");
+        } // end if (pllOpenPages)
     }
     CATCH(excpt1) { } END_CATCH();
 
     if (fSemOwned)
     {
-        DosReleaseMutexSem(hmtxNotebookLists);
+        DosReleaseMutexSem(G_hmtxNotebookLists);
         fSemOwned = FALSE;
     }
 

@@ -206,6 +206,8 @@ WPObject* wpshQueryObjectFromID(const PSZ pszObjectID,
  *      NULL is returned.
  *      If you're not interested in the return code,
  *      you may pass parc as NULL.
+ *
+ *@@changed V0.9.2 (2000-03-09) [umoeller]: added another check
  */
 
 WPFolder* wpshQueryRootFolder(WPDisk* somSelf, // in: disk to check
@@ -217,7 +219,14 @@ WPFolder* wpshQueryRootFolder(WPDisk* somSelf, // in: disk to check
     ULONG ulLogicalDrive = _wpQueryLogicalDrive(somSelf);
     arc = doshAssertDrive(ulLogicalDrive);
     if (arc == NO_ERROR)
+    {
+        // drive seems to be ready:
         pReturnFolder = _wpQueryRootFolder(somSelf);
+        if (pReturnFolder == NULL)
+            // still NULL: something bad is going on
+            // V0.9.2 (2000-03-09) [umoeller]
+            arc = ERROR_NOT_DOS_DISK; // 26; cannot access disk
+    }
 
     if (parc)
         *parc = arc;
@@ -736,27 +745,93 @@ HWND wpshQueryFrameFromView(WPFolder *somSelf,  // in: folder to examine
  *      OPEN_DETAILS back.
  *
  *      Returns 0 upon errors.
+ *
+ *@@changed V0.9.2 (2000-03-06) [umoeller]: added object mutex protection
  */
 
 ULONG wpshQueryView(WPObject* somSelf,      // in: object to examine
                     HWND hwndFrame)         // in: frame window of open view of somSelf
 {
-    PUSEITEM    pUseItem = NULL;
-    ULONG       ulView = 0;
+    ULONG   ulView = 0;
+    BOOL    fFolderLocked = 0;
 
-    for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
-         pUseItem;
-         pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
+    TRY_LOUD(excpt1, NULL)
     {
-        PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
-        if (pViewItem->handle == hwndFrame)
+        fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
+        if (fFolderLocked)
         {
-            ulView = pViewItem->view;
-            break;
-        }
+            PUSEITEM    pUseItem = NULL;
+            for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
+                 pUseItem;
+                 pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
+            {
+                PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
+                if (pViewItem->handle == hwndFrame)
+                {
+                    ulView = pViewItem->view;
+                    break;
+                }
+            }
+        } // end if fFolderLocked
     }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fFolderLocked)
+        _wpReleaseObjectMutexSem(somSelf);
 
     return (ulView);
+}
+
+/*
+ *@@ wpshIsViewCnr:
+ *      returns TRUE if hwndCnr belongs to an
+ *      open view of somSelf.
+ *
+ *      Naturally, this can only return TRUE
+ *      if somSelf is a folder. If it is, we
+ *      enumerate the open folder views and
+ *      check if the container is one of them.
+ *
+ *      This can be used in wpModifyPopupMenu
+ *      to check whether a popup menu has been
+ *      requested on the cnr whitespace; in that
+ *      case, TRUE should be returned for the
+ *      hwndCnr passed with wpModifyPopupMenu.
+ *
+ *@@added V0.9.2 (2000-03-08) [umoeller]
+ */
+
+BOOL wpshIsViewCnr(WPObject *somSelf,
+                   HWND hwndCnr)
+{
+    BOOL    brc = FALSE;
+    BOOL    fFolderLocked = 0;
+
+    TRY_LOUD(excpt1, NULL)
+    {
+        fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
+        if (fFolderLocked)
+        {
+            PUSEITEM    pUseItem = NULL;
+            for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
+                 pUseItem;
+                 pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
+            {
+                PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
+                if (wpshQueryCnrFromFrame(pViewItem->handle) == hwndCnr)
+                {
+                    brc = TRUE;
+                    break;
+                }
+            }
+        } // end if fFolderLocked
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fFolderLocked)
+        _wpReleaseObjectMutexSem(somSelf);
+
+    return (brc);
 }
 
 /*

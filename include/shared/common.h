@@ -158,8 +158,11 @@
 
     #define XFOLDER_STARTUPID       "<XWP_STARTUP>"
     #define XFOLDER_SHUTDOWNID      "<XWP_SHUTDOWN>"
+
     #define XFOLDER_WPSID           "<XWP_WPS>"
     #define XFOLDER_KERNELID        "<XWP_KERNEL>"
+    #define XFOLDER_SCREENID        "<XWP_SCREEN>"
+
     #define XFOLDER_CLASSLISTID     "<XWP_CLASSLIST>"
     #define XFOLDER_TRASHCANID      "<XWP_TRASHCAN>"
 
@@ -296,6 +299,7 @@
     #define XFOLDER_CRASHLOG        "xwptrap.log"
     #define XFOLDER_RUNTIMELOG      "xwprterr.log"
     #define XFOLDER_SHUTDOWNLOG     "xshutdwn.log"
+    #define XFOLDER_LOGLOG          "xwplog.log"
 
     // common dlg msgs for settings notebook dlg funcs
     #define XM_SETTINGS2DLG         (WM_USER+200)    // set controls
@@ -382,6 +386,7 @@
     #define SP_WPS                  25
     #define SP_SYSPATHS             26      // new with V0.9.0
     #define SP_DRIVERS              27      // new with V0.9.0
+    #define SP_SYSLEVEL             28      // new with V0.9.2 (2000-03-08) [umoeller]
 
     // 3) in "XWorkplace Setup"
     #define SP_SETUP_INFO           30      // new with V0.9.0
@@ -728,6 +733,10 @@
         BYTE        fPageMageEnabled;
                         // XWPSetup "PageMage virtual desktops"; this will cause
                         // XDM_STARTSTOPPAGEMAGE to be sent to the daemon
+
+        BYTE        fShowHotkeysInMenus;
+                        // on XFldWPS "Hotkeys" page
+
     } GLOBALSETTINGS;
 
     typedef const GLOBALSETTINGS* PCGLOBALSETTINGS;
@@ -1024,7 +1033,19 @@
 
     /* ******************************************************************
      *                                                                  *
-     *   Resource protection (thread safety                             *
+     *   Error logging                                                  *
+     *                                                                  *
+     ********************************************************************/
+
+    VOID cmnLog(const char *pcszSourceFile,
+                ULONG ulLine,
+                const char *pcszFunction,
+                const char *pcszFormat,
+                ...);
+
+    /* ******************************************************************
+     *                                                                  *
+     *   Resource protection (thread safety)                            *
      *                                                                  *
      ********************************************************************/
 

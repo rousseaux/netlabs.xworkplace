@@ -194,6 +194,7 @@ VOID krnUnlockGlobals(VOID)
  *
  *@@changed V0.9.0 [umoeller]: moved this stuff here from except.c
  *@@changed V0.9.0 [umoeller]: renamed function
+ *@@changed V0.9.2 (2000-03-10) [umoeller]: switched date format to ISO
  */
 
 FILE* _System krnExceptOpenLogFile(VOID)
@@ -210,18 +211,18 @@ FILE* _System krnExceptOpenLogFile(VOID)
     if (file)
     {
         DosGetDateTime(&DT);
-        fprintf(file, "\nXFolder trap message -- Date: %02d/%02d/%04d, Time: %02d:%02d:%02d\n",
-            DT.month, DT.day, DT.year,
+        fprintf(file, "\nXFolder trap message -- Date: %04d-%02d-%02d, Time: %02d:%02d:%02d\n",
+            DT.year, DT.month, DT.day,
             DT.hours, DT.minutes, DT.seconds);
         fprintf(file, "--------------------------------------------------------\n"
                       "\nAn internal error occurred within XWorkplace.\n"
                       "Please contact the author so that this error may be removed\n"
                       "in future XWorkplace versions. A contact address may be\n"
                       "obtained from the XWorkplace User Guide. Please supply\n"
-                      "this file (?:\\XFLDTRAP.LOG) with your e-mail and describe as\n"
+                      "this file (?:\\" XFOLDER_CRASHLOG " with your e-mail and describe as\n"
                       "exactly as possible the conditions under which the error\n"
                       "occured.\n"
-                      "\nRunning XWorkplace version: " XFOLDER_VERSION "\n");
+                      "\nRunning XWorkplace version: " XFOLDER_VERSION " built " __DATE__ "\n");
 
     }
     return (file);
@@ -322,6 +323,26 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
     else
         fprintf(file, "Awake-objects semaphore is currently not owned (request count: %d).\n",
                 tid, tid, ulCount);
+}
+
+/*
+ *@@ krnExceptError:
+ *      this is an "exception hook" which is registered with
+ *      the generic exception handlers in src\helpers\except.c.
+ *      This code gets called whenever a TRY_* macro fails to
+ *      install an exception handler.
+ *
+ *@@added V0.9.2 (2000-03-10) [umoeller]
+ */
+
+VOID APIENTRY krnExceptError(const char *pcszFile,
+                             ULONG ulLine,
+                             const char *pcszFunction,
+                             APIRET arc)     // in: DosSetExceptionHandler error code
+{
+    cmnLog(pcszFile, ulLine, pcszFunction,
+           "TRY_* macro failed to install exception handler (APIRET %d)",
+           arc);
 }
 
 /* ******************************************************************
@@ -1597,6 +1618,7 @@ VOID krnInitializeXWorkplace(VOID)
         // register exception hooks for /helpers/except.c
         excRegisterHooks(krnExceptOpenLogFile,
                          krnExceptExplainXFolder,
+                         krnExceptError,
                          !pGlobalSettings->fNoExcptBeeps);
 
         // initialize awake-objects list (which holds

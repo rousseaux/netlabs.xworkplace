@@ -265,6 +265,23 @@ SOM_Scope ULONG  SOMLINK xfsys_xwpAddXFldSystemPages(XFldSystem *somSelf,
     // for this page, start a timer
     pcnbp->ulTimer = 2000;
     pcnbp->pfncbTimer = cfgConfigTimer;
+    ntbInsertPage(pcnbp);
+
+    // "Syslevel"
+    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+    memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+    pcnbp->somSelf = somSelf;
+    pcnbp->hwndNotebook = hwndDlg;
+    pcnbp->hmod = savehmod;
+    pcnbp->pfncbInitPage    = cfgSyslevelInitPage;
+    pcnbp->pfncbItemChanged = cfgSyslevelItemChanged;
+    pcnbp->usPageStyleFlags = BKA_MAJOR;
+    pcnbp->pszName = "Syslevel";        // ###
+    pcnbp->ulDlgID = ID_OSD_SETTINGS_SYSLEVEL;
+    pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_KERNEL1; // ###
+    // give this page a unique ID (common.h), which
+    // is passed to the common config.sys callbacks
+    pcnbp->ulPageID = SP_SYSLEVEL;
     return (ntbInsertPage(pcnbp));
 
 }

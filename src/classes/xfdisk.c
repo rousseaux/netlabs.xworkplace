@@ -331,7 +331,8 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpMenuItemHelpSelected(XFldDisk *somSelf,
  */
 
 SOM_Scope HWND  SOMLINK xfdisk_wpViewObject(XFldDisk *somSelf,
-                                            HWND hwndCnr, ULONG ulView,
+                                            HWND hwndCnr,
+                                            ULONG ulView,
                                             ULONG param)
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
@@ -341,7 +342,9 @@ SOM_Scope HWND  SOMLINK xfdisk_wpViewObject(XFldDisk *somSelf,
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpViewObject");
 
     // "Drive not ready" replacement enabled?
-    if (pGlobalSettings->fReplDriveNotReady)
+    if (    (pGlobalSettings->fReplDriveNotReady)
+         && (ulView != OPEN_SETTINGS)
+       )
     {
         // yes: use the safe way of opening the
         // drive (this prompts the user upon errors)
@@ -371,98 +374,116 @@ SOM_Scope HWND  SOMLINK xfdisk_wpViewObject(XFldDisk *somSelf,
  *@@changed V0.9.2 (2000-03-06) [umoeller]: drives were checked even if replacement dlg was disabled; fixed
  */
 
-SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf, HWND hwndCnr,
-                                       ULONG ulView, ULONG param)
+SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
+                                      HWND hwndCnr,
+                                      ULONG ulView,
+                                      ULONG param)
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     HWND            hwndNewFrame = NULLHANDLE; // default: error occured
-    APIRET          arc = NO_ERROR;
-    XFolder*        pRootFolder = 0;
-    // XFldDiskData *somThis = XFldDiskGetData(somSelf);
-    XFldDiskMethodDebug("XFldDisk","xfdisk_wpOpen");
 
-    // "Drive not ready" replacement enabled?
-    if (pGlobalSettings->fReplDriveNotReady)
+    switch (ulView)
     {
-        // query root folder (WPRootFolder class, which is a descendant
-        // of WPFolder/XFolder); each WPDisk is paired with one of those,
-        // and the actual display is done by this class, so we will pass
-        // pRootFolder instead of somSelf to most following method calls.
-        // We use wpshQueryRootFolder instead of wpQueryRootFolder to
-        // avoid "Drive not ready" popups.
-        pRootFolder = wpshQueryRootFolder(somSelf, &arc);
-        if (pRootFolder)
-            // drive ready: call parent to get frame handle
+        case OPEN_CONTENTS:
+        case OPEN_TREE:
+        case OPEN_DETAILS:
+        {
+            APIRET          arc = NO_ERROR;
+            XFolder*        pRootFolder = 0;
+            // XFldDiskData *somThis = XFldDiskGetData(somSelf);
+            XFldDiskMethodDebug("XFldDisk","xfdisk_wpOpen");
+
+            // "Drive not ready" replacement enabled?
+            if (pGlobalSettings->fReplDriveNotReady)
+            {
+                // query root folder (WPRootFolder class, which is a descendant
+                // of WPFolder/XFolder); each WPDisk is paired with one of those,
+                // and the actual display is done by this class, so we will pass
+                // pRootFolder instead of somSelf to most following method calls.
+                // We use wpshQueryRootFolder instead of wpQueryRootFolder to
+                // avoid "Drive not ready" popups.
+                pRootFolder = wpshQueryRootFolder(somSelf, &arc);
+                if (pRootFolder)
+                    // drive ready: call parent to get frame handle
+                    hwndNewFrame = XFldDisk_parent_WPDisk_wpOpen(somSelf,
+                                                                 hwndCnr,
+                                                                 ulView,
+                                                                 param);
+            }
+            else
+            {
+                hwndNewFrame = XFldDisk_parent_WPDisk_wpOpen(somSelf,
+                                                             hwndCnr,
+                                                             ulView,
+                                                             param);
+                if (hwndNewFrame)
+                    pRootFolder = _wpQueryRootFolder(somSelf);
+            }
+
+            if (pRootFolder)
+            {
+
+                if (hwndNewFrame)
+                {
+                    // open successful:
+                    if (   (ulView == OPEN_CONTENTS)
+                        || (ulView == OPEN_TREE)
+                        || (ulView == OPEN_DETAILS)
+                       )
+                    {
+                        PSUBCLASSEDLISTITEM psli;
+
+                        // subclass frame window; this is the same
+                        // proc which is used for normal folder frames,
+                        // we just use pRootFolder instead.
+                        // However, we pass somSelf as the "real" object
+                        // which will then be stored in *psli.
+                        psli = fdrSubclassFolderFrame(hwndNewFrame, pRootFolder, somSelf, ulView);
+
+                        // add status bar, if allowed: as opposed to
+                        // XFolder's, for XFldDisk's we only check the
+                        // global setting, because there's no instance
+                        // setting for this with XFldDisk's
+                        if (    (pGlobalSettings->fEnableStatusBars)
+                                                        // feature enabled?
+                             && (pGlobalSettings->fDefaultStatusBarVisibility)
+                                                        // bars visible per default?
+                           )
+                            // assert that subclassed list item is valid
+                            if (psli)
+                                // add status bar only if allowed for the current view type
+                                if (    (   (ulView == OPEN_CONTENTS)
+                                         && (pGlobalSettings->SBForViews & SBV_ICON)
+                                        )
+                                     || (   (ulView == OPEN_TREE)
+                                         && (pGlobalSettings->SBForViews & SBV_TREE)
+                                        )
+                                     || (   (ulView == OPEN_DETAILS)
+                                         && (pGlobalSettings->SBForViews & SBV_DETAILS)
+                                        )
+                                    )
+                                    // this reformats the window with the status bar
+                                    fdrCreateStatusBar(pRootFolder, psli, TRUE);
+
+                        // extended sort functions
+                        if (pGlobalSettings->ExtFolderSort)
+                        {
+                            hwndCnr = wpshQueryCnrFromFrame(hwndNewFrame);
+                            if (hwndCnr)
+                                fdrSetFldrCnrSort(pRootFolder, hwndCnr, FALSE);    // xfldr.c
+                        }
+                    }
+                }
+            } // if (pRootFolder)
+        break; }
+
+        default:
+            // e.g. settings view
             hwndNewFrame = XFldDisk_parent_WPDisk_wpOpen(somSelf,
                                                          hwndCnr,
                                                          ulView,
                                                          param);
-    }
-    else
-    {
-        hwndNewFrame = XFldDisk_parent_WPDisk_wpOpen(somSelf,
-                                                     hwndCnr,
-                                                     ulView,
-                                                     param);
-        if (hwndNewFrame)
-            pRootFolder = _wpQueryRootFolder(somSelf);
-    }
-
-    if (pRootFolder)
-    {
-
-        if (hwndNewFrame)
-        {
-            // open successful:
-            if (   (ulView == OPEN_CONTENTS)
-                || (ulView == OPEN_TREE)
-                || (ulView == OPEN_DETAILS)
-               )
-            {
-                PSUBCLASSEDLISTITEM psli;
-
-                // subclass frame window; this is the same
-                // proc which is used for normal folder frames,
-                // we just use pRootFolder instead.
-                // However, we pass somSelf as the "real" object
-                // which will then be stored in *psli.
-                psli = fdrSubclassFolderFrame(hwndNewFrame, pRootFolder, somSelf, ulView);
-
-                // add status bar, if allowed: as opposed to
-                // XFolder's, for XFldDisk's we only check the
-                // global setting, because there's no instance
-                // setting for this with XFldDisk's
-                if (    (pGlobalSettings->fEnableStatusBars)
-                                                // feature enabled?
-                     && (pGlobalSettings->fDefaultStatusBarVisibility)
-                                                // bars visible per default?
-                   )
-                    // assert that subclassed list item is valid
-                    if (psli)
-                        // add status bar only if allowed for the current view type
-                        if (    (   (ulView == OPEN_CONTENTS)
-                                 && (pGlobalSettings->SBForViews & SBV_ICON)
-                                )
-                             || (   (ulView == OPEN_TREE)
-                                 && (pGlobalSettings->SBForViews & SBV_TREE)
-                                )
-                             || (   (ulView == OPEN_DETAILS)
-                                 && (pGlobalSettings->SBForViews & SBV_DETAILS)
-                                )
-                            )
-                            // this reformats the window with the status bar
-                            fdrCreateStatusBar(pRootFolder, psli, TRUE);
-
-                // extended sort functions
-                if (pGlobalSettings->ExtFolderSort)
-                {
-                    hwndCnr = wpshQueryCnrFromFrame(hwndNewFrame);
-                    if (hwndCnr)
-                        fdrSetFldrCnrSort(pRootFolder, hwndCnr, FALSE);    // xfldr.c
-                }
-            }
-        }
-    }
+    } // switch (ulView)
 
     return (hwndNewFrame);
 }

@@ -144,7 +144,7 @@ $(OUTPUTDIR)\xfdataf.obj: \
             $(HLPINC)\linklist.h \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
-            $(INC)\filesys\filesys.h $(INC)\filesys\filetype.h $(INC)\filesys\menus.h \
+            $(INC)\filesys\filesys.h $(INC)\filesys\filetype.h $(INC)\filesys\folder.h $(INC)\filesys\menus.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xfdesk.obj: \
@@ -180,7 +180,7 @@ $(OUTPUTDIR)\xfobj.obj: \
             $(HLPINC)\cnrh.h $(HLPINC)\except.h $(HLPINC)\winh.h $(HLPINC)\undoc.h \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
-            $(INC)\filesys\fileops.h $(INC)\filesys\object.h $(INC)\filesys\xthreads.h \
+            $(INC)\filesys\fileops.h $(INC)\filesys\folder.h $(INC)\filesys\object.h $(INC)\filesys\xthreads.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xfpgmf.obj: \

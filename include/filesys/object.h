@@ -59,6 +59,12 @@
 
     BOOL objRemoveObjectHotkey(HOBJECT hobj);
 
+    /* ******************************************************************
+     *                                                                  *
+     *   Object setup strings                                           *
+     *                                                                  *
+     ********************************************************************/
+
     ULONG objQuerySetup(WPObject *somSelf,
                         PSZ pszSetupString,
                         ULONG cbSetupString);

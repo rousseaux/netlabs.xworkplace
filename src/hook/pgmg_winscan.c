@@ -260,7 +260,6 @@ BOOL pgmwWindowListRescan(VOID)
     BOOL    brc = FALSE;
     USHORT  usIdx = 0;
 
-    DosBeep(1000, 10);
     DosRequestMutexSem(G_hmtxWindowList, SEM_INDEFINITE_WAIT);
             // added V0.9.2 (2000-02-22) [umoeller]
 

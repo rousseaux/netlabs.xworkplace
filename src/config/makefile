@@ -121,7 +121,7 @@ MYOWNINC = $(INC)\config
 
 $(OUTPUTDIR)\cfgsys.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\linklist.h $(HLPINC)\procstat.h \
+    $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\level.h $(HLPINC)\linklist.h $(HLPINC)\procstat.h \
             $(HLPINC)\stringh.h $(HLPINC)\textview.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
     $(INC)\classes\xfsys.ih \
     $(INC)\dlgids.h \

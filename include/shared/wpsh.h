@@ -66,6 +66,9 @@
     ULONG wpshQueryView(WPObject* somSelf,
                         HWND hwndFrame);
 
+    BOOL wpshIsViewCnr(WPObject *somSelf,
+                       HWND hwndCnr);
+
     WPObject* wpshQuerySourceObject(WPFolder *somSelf,
                                     HWND hwndCnr,
                                     BOOL fKeyboardMode,

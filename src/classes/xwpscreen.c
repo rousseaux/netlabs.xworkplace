@@ -233,8 +233,10 @@ SOM_Scope BOOL  SOMLINK xwpscrM_wpclsQuerySettingsPageSize(M_XWPScreen *somSelf,
     /* M_XWPScreenData *somThis = M_XWPScreenGetData(somSelf); */
     M_XWPScreenMethodDebug("M_XWPScreen","xwpscrM_wpclsQuerySettingsPageSize");
 
-    return (M_XWPScreen_parent_M_WPSystem_wpclsQuerySettingsPageSize(somSelf,
-                                                                     pSizl));
+    pSizl->cx = 275;       // size of "Object" page
+    pSizl->cy = 130;       // size of "Object" page
+
+    return (TRUE);
 }
 
 /*
@@ -250,6 +252,11 @@ SOM_Scope PSZ  SOMLINK xwpscrM_wpclsQueryTitle(M_XWPScreen *somSelf)
 
     return (pNLSStrings->pszXWPScreenTitle);
 }
+
+/*
+ *@@ wpclsQueryIconData:
+ *
+ */
 
 SOM_Scope ULONG  SOMLINK xwpscrM_wpclsQueryIconData(M_XWPScreen *somSelf,
                                                     PICONINFO pIconInfo)

@@ -72,6 +72,7 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
+#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\folder.h"
 
@@ -96,7 +97,7 @@
  */
 
 // XFolder folder hotkeys static array
-XFLDHOTKEY     FolderHotkeys[FLDRHOTKEYCOUNT];
+XFLDHOTKEY     G_FolderHotkeys[FLDRHOTKEYCOUNT];
 
 /* ******************************************************************
  *                                                                  *
@@ -115,7 +116,7 @@ XFLDHOTKEY     FolderHotkeys[FLDRHOTKEYCOUNT];
 
 PXFLDHOTKEY fdrQueryFldrHotkeys(VOID)
 {
-    return (&FolderHotkeys[0]);
+    return (G_FolderHotkeys);
 }
 
 /*
@@ -129,82 +130,82 @@ PXFLDHOTKEY fdrQueryFldrHotkeys(VOID)
 void fdrLoadDefaultFldrHotkeys(VOID)
 {
     // Ctrl+A: Select all
-    FolderHotkeys[0].usKeyCode  = (USHORT)'a';
-    FolderHotkeys[0].usFlags    = KC_CTRL;
-    FolderHotkeys[0].usCommand  = WPMENUID_SELALL;
+    G_FolderHotkeys[0].usKeyCode  = (USHORT)'a';
+    G_FolderHotkeys[0].usFlags    = KC_CTRL;
+    G_FolderHotkeys[0].usCommand  = WPMENUID_SELALL;
 
     // F5
-    FolderHotkeys[1].usKeyCode  = VK_F5;
-    FolderHotkeys[1].usFlags    = KC_VIRTUALKEY;
-    FolderHotkeys[1].usCommand  = WPMENUID_REFRESH,
+    G_FolderHotkeys[1].usKeyCode  = VK_F5;
+    G_FolderHotkeys[1].usFlags    = KC_VIRTUALKEY;
+    G_FolderHotkeys[1].usCommand  = WPMENUID_REFRESH,
 
     // Backspace
-    FolderHotkeys[2].usKeyCode  = VK_BACKSPACE;
-    FolderHotkeys[2].usFlags    = KC_VIRTUALKEY;
-    FolderHotkeys[2].usCommand  = ID_XFMI_OFS_OPENPARENT;
+    G_FolderHotkeys[2].usKeyCode  = VK_BACKSPACE;
+    G_FolderHotkeys[2].usFlags    = KC_VIRTUALKEY;
+    G_FolderHotkeys[2].usCommand  = ID_XFMI_OFS_OPENPARENT;
 
     // Ctrl+D: De-select all
-    FolderHotkeys[3].usKeyCode  = (USHORT)'d';
-    FolderHotkeys[3].usFlags    = KC_CTRL;
-    FolderHotkeys[3].usCommand  = WPMENUID_DESELALL;
+    G_FolderHotkeys[3].usKeyCode  = (USHORT)'d';
+    G_FolderHotkeys[3].usFlags    = KC_CTRL;
+    G_FolderHotkeys[3].usCommand  = WPMENUID_DESELALL;
 
     // Ctrl+Shift+D: Details view
-    FolderHotkeys[4].usKeyCode  = (USHORT)'D';
-    FolderHotkeys[4].usFlags    = KC_CTRL+KC_SHIFT;
-    FolderHotkeys[4].usCommand  = WPMENUID_DETAILS;
+    G_FolderHotkeys[4].usKeyCode  = (USHORT)'D';
+    G_FolderHotkeys[4].usFlags    = KC_CTRL+KC_SHIFT;
+    G_FolderHotkeys[4].usCommand  = WPMENUID_DETAILS;
 
     // Ctrl+Shift+I: Icon  view
-    FolderHotkeys[5].usKeyCode  = (USHORT)'I';
-    FolderHotkeys[5].usFlags    = KC_CTRL+KC_SHIFT;
-    FolderHotkeys[5].usCommand  = WPMENUID_ICON;
+    G_FolderHotkeys[5].usKeyCode  = (USHORT)'I';
+    G_FolderHotkeys[5].usFlags    = KC_CTRL+KC_SHIFT;
+    G_FolderHotkeys[5].usCommand  = WPMENUID_ICON;
 
     // Ctrl+Shift+S: Open Settings
-    FolderHotkeys[6].usKeyCode  = (USHORT)'S';
-    FolderHotkeys[6].usFlags    = KC_CTRL+KC_SHIFT;
-    FolderHotkeys[6].usCommand  = WPMENUID_PROPERTIES;
+    G_FolderHotkeys[6].usKeyCode  = (USHORT)'S';
+    G_FolderHotkeys[6].usFlags    = KC_CTRL+KC_SHIFT;
+    G_FolderHotkeys[6].usCommand  = WPMENUID_PROPERTIES;
 
     // Ctrl+N: Sort by name
-    FolderHotkeys[7].usKeyCode  = (USHORT)'n';
-    FolderHotkeys[7].usFlags    = KC_CTRL;
-    FolderHotkeys[7].usCommand  = ID_WPMI_SORTBYNAME;
+    G_FolderHotkeys[7].usKeyCode  = (USHORT)'n';
+    G_FolderHotkeys[7].usFlags    = KC_CTRL;
+    G_FolderHotkeys[7].usCommand  = ID_WPMI_SORTBYNAME;
 
     // Ctrl+Z: Sort by size
-    FolderHotkeys[8].usKeyCode  = (USHORT)'z';
-    FolderHotkeys[8].usFlags    = KC_CTRL;
-    FolderHotkeys[8].usCommand  = ID_WPMI_SORTBYSIZE;
+    G_FolderHotkeys[8].usKeyCode  = (USHORT)'z';
+    G_FolderHotkeys[8].usFlags    = KC_CTRL;
+    G_FolderHotkeys[8].usCommand  = ID_WPMI_SORTBYSIZE;
 
     // Ctrl+E: Sort by extension (NPS)
-    FolderHotkeys[9].usKeyCode  = (USHORT)'e';
-    FolderHotkeys[9].usFlags    = KC_CTRL;
-    FolderHotkeys[9].usCommand  = ID_XFMI_OFS_SORTBYEXT;
+    G_FolderHotkeys[9].usKeyCode  = (USHORT)'e';
+    G_FolderHotkeys[9].usFlags    = KC_CTRL;
+    G_FolderHotkeys[9].usCommand  = ID_XFMI_OFS_SORTBYEXT;
 
     // Ctrl+W: Sort by write date
-    FolderHotkeys[10].usKeyCode  = (USHORT)'w';
-    FolderHotkeys[10].usFlags    = KC_CTRL;
-    FolderHotkeys[10].usCommand  = ID_WPMI_SORTBYWRITEDATE;
+    G_FolderHotkeys[10].usKeyCode  = (USHORT)'w';
+    G_FolderHotkeys[10].usFlags    = KC_CTRL;
+    G_FolderHotkeys[10].usCommand  = ID_WPMI_SORTBYWRITEDATE;
 
     // Ctrl+Y: Sort by type
-    FolderHotkeys[11].usKeyCode  = (USHORT)'y';
-    FolderHotkeys[11].usFlags    = KC_CTRL;
-    FolderHotkeys[11].usCommand  = ID_WPMI_SORTBYTYPE;
+    G_FolderHotkeys[11].usKeyCode  = (USHORT)'y';
+    G_FolderHotkeys[11].usFlags    = KC_CTRL;
+    G_FolderHotkeys[11].usCommand  = ID_WPMI_SORTBYTYPE;
 
     // Shift+Backspace
-    FolderHotkeys[12].usKeyCode  = VK_BACKSPACE;
-    FolderHotkeys[12].usFlags    = KC_VIRTUALKEY+KC_SHIFT;
-    FolderHotkeys[12].usCommand  = ID_XFMI_OFS_OPENPARENTANDCLOSE;
+    G_FolderHotkeys[12].usKeyCode  = VK_BACKSPACE;
+    G_FolderHotkeys[12].usFlags    = KC_VIRTUALKEY+KC_SHIFT;
+    G_FolderHotkeys[12].usCommand  = ID_XFMI_OFS_OPENPARENTANDCLOSE;
 
     // Ctrl+S: Select by name
-    FolderHotkeys[13].usKeyCode  = (USHORT)'s';
-    FolderHotkeys[13].usFlags    = KC_CTRL;
-    FolderHotkeys[13].usCommand  = ID_XFMI_OFS_SELECTSOME;
+    G_FolderHotkeys[13].usKeyCode  = (USHORT)'s';
+    G_FolderHotkeys[13].usFlags    = KC_CTRL;
+    G_FolderHotkeys[13].usCommand  = ID_XFMI_OFS_SELECTSOME;
 
     // Ctrl+insert: copy filename (w/out path)
-    FolderHotkeys[14].usKeyCode  = VK_INSERT;
-    FolderHotkeys[14].usFlags    = KC_VIRTUALKEY+KC_CTRL;
-    FolderHotkeys[14].usCommand  = ID_XFMI_OFS_COPYFILENAME_SHORT;
+    G_FolderHotkeys[14].usKeyCode  = VK_INSERT;
+    G_FolderHotkeys[14].usFlags    = KC_VIRTUALKEY+KC_CTRL;
+    G_FolderHotkeys[14].usCommand  = ID_XFMI_OFS_COPYFILENAME_SHORT;
 
     // list terminator
-    FolderHotkeys[15].usCommand = 0;
+    G_FolderHotkeys[15].usCommand = 0;
 }
 
 /*
@@ -217,9 +218,11 @@ void fdrLoadDefaultFldrHotkeys(VOID)
 
 void fdrLoadFolderHotkeys(VOID)
 {
-    ULONG ulCopied2 = sizeof(FolderHotkeys);
-    if (!PrfQueryProfileData(HINI_USERPROFILE, INIAPP_XWORKPLACE, INIKEY_ACCELERATORS,
-                &FolderHotkeys, &ulCopied2))
+    ULONG ulCopied2 = sizeof(G_FolderHotkeys);
+    if (!PrfQueryProfileData(HINI_USERPROFILE,
+                             INIAPP_XWORKPLACE, INIKEY_ACCELERATORS,
+                             &G_FolderHotkeys,
+                             &ulCopied2))
         fdrLoadDefaultFldrHotkeys();
 }
 
@@ -234,12 +237,53 @@ void fdrStoreFldrHotkeys(VOID)
 {
     SHORT i2 = 0;
 
-    // store only the accels that are actually used
-    while (FolderHotkeys[i2].usCommand)
+    // store only the accels that are actually used,
+    // so count them first
+    while (G_FolderHotkeys[i2].usCommand)
         i2++;
 
-    PrfWriteProfileData(HINI_USERPROFILE, INIAPP_XWORKPLACE, INIKEY_ACCELERATORS,
-        &FolderHotkeys, (i2+1) * sizeof(XFLDHOTKEY));
+    PrfWriteProfileData(HINI_USERPROFILE,
+                        INIAPP_XWORKPLACE, INIKEY_ACCELERATORS,
+                        &G_FolderHotkeys,
+                        (i2+1) * sizeof(XFLDHOTKEY));
+}
+
+/*
+ *@@ fdrFindHotkey:
+ *      searches the hotkeys list for whether
+ *      a hotkey has been defined for the specified
+ *      command (WM_COMMAND msg value).
+ *
+ *      If so, TRUE is returned and the hotkey
+ *      definition is stored in the specified two
+ *      USHORT's.
+ *
+ *      Otherwise, FALSE is returned.
+ *
+ *@@added V0.9.2 (2000-03-08) [umoeller]
+ */
+
+BOOL fdrFindHotkey(USHORT usCommand,
+                   PUSHORT pusFlags,
+                   PUSHORT pusKeyCode)
+{
+    ULONG   i = 0;
+    BOOL    brc = FALSE;
+    // go thru all hotkeys
+    while (G_FolderHotkeys[i].usCommand)
+    {
+        if (G_FolderHotkeys[i].usCommand == usCommand)
+        {
+            // found:
+            *pusFlags = G_FolderHotkeys[i].usFlags;
+            *pusKeyCode = G_FolderHotkeys[i].usKeyCode;
+            brc = TRUE;
+            break;
+        }
+        i++;
+    }
+
+    return (brc);
 }
 
 /*
@@ -300,16 +344,16 @@ BOOL fdrProcessFldrHotkey(HWND hwndFrame,   // in: folder frame
 
         // now go through the global accelerator list and check
         // if the pressed key was assigned an action to
-        while (FolderHotkeys[us].usCommand)
+        while (G_FolderHotkeys[us].usCommand)
         {
             USHORT usCommand;
-            if (      (FolderHotkeys[us].usFlags == usFlags)
-                   && (FolderHotkeys[us].usKeyCode == usKeyCode)
+            if (      (G_FolderHotkeys[us].usFlags == usFlags)
+                   && (G_FolderHotkeys[us].usKeyCode == usKeyCode)
                )
             {   // OK: this is a hotkey; find the corresponding
                 // "command" (= menu ID) and post it to the frame
                 // window, which will execute it
-                usCommand = FolderHotkeys[us].usCommand;
+                usCommand = G_FolderHotkeys[us].usCommand;
 
                 if (    (usCommand >= WPMENUID_USER)
                      && (usCommand < WPMENUID_USER+FIRST_VARIABLE)
@@ -346,130 +390,96 @@ BOOL fdrProcessFldrHotkey(HWND hwndFrame,   // in: folder frame
  ********************************************************************/
 
 /*
- *  Folder hotkeys descriptions arrays:
- *      every item these arrays must match exactly one
- *      item in the ulLBCommands array in common.c.
+ *@@ FLDRHOTKEYDESC:
+ *
+ *@@added V0.9.2 (2000-03-08) [umoeller]
  */
 
-CHAR  szLBEntries[FLDRHOTKEYCOUNT][MAXLBENTRYLENGTH];
+typedef struct _FLDRHOTKEYDESC
+{
+    ULONG       ulStringID;         // string ID for listbox
+    USHORT      usPostCommand,      // command to post / store with hotkey
+                usMenuCommand;      // menu item to append hotkey to
+} FLDRHOTKEYDESC, *PFLDRHOTKEYDESC;
 
-ULONG szLBStringIDs[FLDRHOTKEYCOUNT] =
+/*
+ *@@ G_szLBEntries:
+ *
+ *
+ */
+
+CHAR  G_szLBEntries[FLDRHOTKEYCOUNT][MAXLBENTRYLENGTH];
+
+/*
+ *@@ G_aDescriptions:
+ *      array of FLDRHOTKEYDESC items.
+ *
+ *@@added V0.9.2 (2000-03-08) [umoeller]
+ */
+
+FLDRHOTKEYDESC G_aDescriptions[FLDRHOTKEYCOUNT] =
     {
-         ID_XSSI_LB_REFRESHNOW          ,
-         ID_XSSI_LB_SNAPTOGRID          ,
-         ID_XSSI_LB_SELECTALL           ,
-         ID_XSSI_LB_OPENPARENTFOLDER    ,
+         ID_XSSI_LB_REFRESHNOW, WPMENUID_REFRESH, WPMENUID_REFRESH,
+         ID_XSSI_LB_SNAPTOGRID, ID_XFMI_OFS_SNAPTOGRID, ID_XFMI_OFS_SNAPTOGRID,
+         ID_XSSI_LB_SELECTALL, WPMENUID_SELALL, WPMENUID_SELALL,
+         ID_XSSI_LB_OPENPARENTFOLDER, ID_XFMI_OFS_OPENPARENT, 0x2CA,
 
-         ID_XSSI_LB_OPENSETTINGSNOTEBOOK,
-         ID_XSSI_LB_OPENNEWDETAILSVIEW  ,
-         ID_XSSI_LB_OPENNEWICONVIEW     ,
-         ID_XSSI_LB_DESELECTALL         ,
-         ID_XSSI_LB_OPENNEWTREEVIEW     ,
+         ID_XSSI_LB_OPENSETTINGSNOTEBOOK, WPMENUID_PROPERTIES, WPMENUID_PROPERTIES,
 
-         ID_XSSI_LB_FIND                ,
+         ID_XSSI_LB_OPENNEWDETAILSVIEW, WPMENUID_DETAILS, WPMENUID_DETAILS,
+         ID_XSSI_LB_OPENNEWICONVIEW, WPMENUID_ICON, WPMENUID_ICON,
 
-         ID_XSSI_LB_PICKUP              ,
-         ID_XSSI_LB_PICKUPCANCELDRAG    ,
+         ID_XSSI_LB_DESELECTALL, WPMENUID_DESELALL, WPMENUID_DESELALL,
 
-         ID_XSSI_LB_SORTBYNAME          ,
-         ID_XSSI_LB_SORTBYSIZE          ,
-         ID_XSSI_LB_SORTBYTYPE          ,
-         ID_XSSI_LB_SORTBYREALNAME      ,
-         ID_XSSI_LB_SORTBYWRITEDATE     ,
-         ID_XSSI_LB_SORTBYACCESSDATE    ,
-         ID_XSSI_LB_SORTBYCREATIONDATE  ,
+         ID_XSSI_LB_OPENNEWTREEVIEW, WPMENUID_TREE, WPMENUID_TREE,
 
-         ID_XSSI_LB_SWITCHTOICONVIEW    ,
-         ID_XSSI_LB_SWITCHTODETAILSVIEW ,
-         ID_XSSI_LB_SWITCHTOTREEVIEW    ,
+         ID_XSSI_LB_FIND, WPMENUID_FIND, WPMENUID_FIND,
 
-         ID_XSSI_LB_ARRANGEDEFAULT      ,
-         ID_XSSI_LB_ARRANGEFROMTOP      ,
-         ID_XSSI_LB_ARRANGEFROMLEFT     ,
-         ID_XSSI_LB_ARRANGEFROMRIGHT    ,
-         ID_XSSI_LB_ARRANGEFROMBOTTOM   ,
-         ID_XSSI_LB_ARRANGEPERIMETER    ,
-         ID_XSSI_LB_ARRANGEHORIZONTALLY ,
-         ID_XSSI_LB_ARRANGEVERTICALLY   ,
+         ID_XSSI_LB_PICKUP, WPMENUID_PICKUP, WPMENUID_PICKUP,
+         ID_XSSI_LB_PICKUPCANCELDRAG, WPMENUID_PUTDOWN_CANCEL, WPMENUID_PUTDOWN_CANCEL,
 
-         ID_XSSI_LB_INSERT              ,
+         ID_XSSI_LB_SORTBYNAME, ID_WPMI_SORTBYNAME, ID_WPMI_SORTBYNAME,
+         ID_XSSI_LB_SORTBYSIZE, ID_WPMI_SORTBYSIZE, ID_WPMI_SORTBYSIZE,
+         ID_XSSI_LB_SORTBYTYPE, ID_WPMI_SORTBYTYPE, ID_WPMI_SORTBYTYPE,
+         ID_XSSI_LB_SORTBYREALNAME, ID_WPMI_SORTBYREALNAME, ID_WPMI_SORTBYREALNAME,
+         ID_XSSI_LB_SORTBYWRITEDATE, ID_WPMI_SORTBYWRITEDATE, ID_WPMI_SORTBYWRITEDATE,
+         ID_XSSI_LB_SORTBYACCESSDATE, ID_WPMI_SORTBYACCESSDATE, ID_WPMI_SORTBYACCESSDATE,
+         ID_XSSI_LB_SORTBYCREATIONDATE, ID_WPMI_SORTBYCREATIONDATE, ID_WPMI_SORTBYCREATIONDATE,
 
-         ID_XSSI_LB_SORTBYEXTENSION     ,
-         ID_XSSI_LB_OPENPARENTFOLDERANDCLOSE,
+         ID_XSSI_LB_SWITCHTOICONVIEW, ID_WPMI_SHOWICONVIEW, ID_WPMI_SHOWICONVIEW,
+         ID_XSSI_LB_SWITCHTODETAILSVIEW, ID_WPMI_SHOWDETAILSVIEW, ID_WPMI_SHOWDETAILSVIEW,
+         ID_XSSI_LB_SWITCHTOTREEVIEW, ID_WPMI_SHOWTREEVIEW, ID_WPMI_SHOWTREEVIEW,
 
-         ID_XSSI_LB_CLOSEWINDOW,
-         ID_XSSI_LB_SELECTSOME,
-         ID_XSSI_LB_SORTFOLDERSFIRST,
-         ID_XSSI_LB_SORTBYCLASS,
+         ID_XSSI_LB_ARRANGEDEFAULT, WPMENUID_ARRANGE, WPMENUID_ARRANGE,
+         ID_XSSI_LB_ARRANGEFROMTOP, ID_WPMI_ARRANGEFROMTOP, ID_WPMI_ARRANGEFROMTOP,
+         ID_XSSI_LB_ARRANGEFROMLEFT, ID_WPMI_ARRANGEFROMLEFT, ID_WPMI_ARRANGEFROMLEFT,
+         ID_XSSI_LB_ARRANGEFROMRIGHT, ID_WPMI_ARRANGEFROMRIGHT, ID_WPMI_ARRANGEFROMRIGHT,
+         ID_XSSI_LB_ARRANGEFROMBOTTOM, ID_WPMI_ARRANGEFROMBOTTOM, ID_WPMI_ARRANGEFROMBOTTOM,
+         ID_XSSI_LB_ARRANGEPERIMETER, ID_WPMI_ARRANGEPERIMETER, ID_WPMI_ARRANGEPERIMETER,
+         ID_XSSI_LB_ARRANGEHORIZONTALLY, ID_WPMI_ARRANGEHORIZONTALLY, ID_WPMI_ARRANGEHORIZONTALLY,
+         ID_XSSI_LB_ARRANGEVERTICALLY, ID_WPMI_ARRANGEVERTICALLY, ID_WPMI_ARRANGEVERTICALLY,
 
-         ID_XSSI_LB_CONTEXTMENU,
-         ID_XSSI_LB_TASKLIST,
+         ID_XSSI_LB_INSERT, ID_WPMI_PASTE, ID_WPMI_PASTE,
 
-         ID_XSSI_LB_COPYFILENAME_SHORT,
-         ID_XSSI_LB_COPYFILENAME_FULL
+         ID_XSSI_LB_SORTBYEXTENSION, ID_XFMI_OFS_SORTBYEXT, ID_XFMI_OFS_SORTBYEXT,
+         ID_XSSI_LB_OPENPARENTFOLDERANDCLOSE, ID_XFMI_OFS_OPENPARENTANDCLOSE, ID_XFMI_OFS_OPENPARENTANDCLOSE,
 
-    };
+         ID_XSSI_LB_CLOSEWINDOW, ID_XFMI_OFS_CLOSE, ID_XFMI_OFS_CLOSE,
+         ID_XSSI_LB_SELECTSOME, ID_XFMI_OFS_SELECTSOME, ID_XFMI_OFS_SELECTSOME,
+         ID_XSSI_LB_SORTFOLDERSFIRST, ID_XFMI_OFS_SORTFOLDERSFIRST, ID_XFMI_OFS_SORTFOLDERSFIRST,
+         ID_XSSI_LB_SORTBYCLASS, ID_XFMI_OFS_SORTBYCLASS, ID_XFMI_OFS_SORTBYCLASS,
 
-ULONG ulLBCommands[FLDRHOTKEYCOUNT] =
-    {
-        WPMENUID_REFRESH,
-        ID_XFMI_OFS_SNAPTOGRID,
-        WPMENUID_SELALL,
-        ID_XFMI_OFS_OPENPARENT,
+         ID_XSSI_LB_CONTEXTMENU, ID_XFMI_OFS_CONTEXTMENU, ID_XFMI_OFS_CONTEXTMENU,
+         ID_XSSI_LB_TASKLIST, 0x8011, 0,
 
-        WPMENUID_PROPERTIES,
-        WPMENUID_DETAILS,
-        WPMENUID_ICON,
-        WPMENUID_DESELALL,
-        WPMENUID_TREE,
-
-        WPMENUID_FIND,
-
-        WPMENUID_PICKUP,
-        WPMENUID_PUTDOWN_CANCEL,
-
-        ID_WPMI_SORTBYNAME,
-        ID_WPMI_SORTBYSIZE,
-        ID_WPMI_SORTBYTYPE,
-        ID_WPMI_SORTBYREALNAME,
-        ID_WPMI_SORTBYWRITEDATE,
-        ID_WPMI_SORTBYACCESSDATE,
-        ID_WPMI_SORTBYCREATIONDATE,
-
-        ID_WPMI_SHOWICONVIEW,
-        ID_WPMI_SHOWDETAILSVIEW,
-        ID_WPMI_SHOWTREEVIEW,
-
-        WPMENUID_ARRANGE,
-        ID_WPMI_ARRANGEFROMTOP,
-        ID_WPMI_ARRANGEFROMLEFT,
-        ID_WPMI_ARRANGEFROMRIGHT,
-        ID_WPMI_ARRANGEFROMBOTTOM,
-        ID_WPMI_ARRANGEPERIMETER,
-        ID_WPMI_ARRANGEHORIZONTALLY,
-        ID_WPMI_ARRANGEVERTICALLY,
-
-        ID_WPMI_PASTE,
-
-        ID_XFMI_OFS_SORTBYEXT,
-        ID_XFMI_OFS_OPENPARENTANDCLOSE,
-
-        ID_XFMI_OFS_CLOSE,
-        ID_XFMI_OFS_SELECTSOME,
-        ID_XFMI_OFS_SORTFOLDERSFIRST,
-        ID_XFMI_OFS_SORTBYCLASS,
-
-        ID_XFMI_OFS_CONTEXTMENU,
-        0x8011,                     // show task list (sysmenu)
-
-        ID_XFMI_OFS_COPYFILENAME_SHORT,
-        ID_XFMI_OFS_COPYFILENAME_FULL
+         ID_XSSI_LB_COPYFILENAME_SHORT, ID_XFMI_OFS_COPYFILENAME_SHORT, 0,
+         ID_XSSI_LB_COPYFILENAME_FULL, ID_XFMI_OFS_COPYFILENAME_FULL, 0
     };
 
 /*
  *@@ FindHotkeyFromLBSel:
  *      this subroutine finds an index to the global
- *      FolderHotkeys[] array according to the currently
+ *      G_FolderHotkeys[] array according to the currently
  *      selected list box item. This is used on the
  *      "Folder hotkeys" notebook page.
  *      This returns:
@@ -506,7 +516,7 @@ PXFLDHOTKEY FindHotkeyFromLBSel(HWND hwndDlg,
 
     for (i = 0; i < FLDRHOTKEYCOUNT; i++)
     {
-        if (strcmp(szTemp, szLBEntries[i]) == 0)
+        if (strcmp(szTemp, G_szLBEntries[i]) == 0)
         {
             LBIndex = i;
             break;
@@ -524,7 +534,7 @@ PXFLDHOTKEY FindHotkeyFromLBSel(HWND hwndDlg,
         // loop thru the hotkeys array
         while (pHotkey->usCommand)
         {
-            if (pHotkey->usCommand == ulLBCommands[i])
+            if (pHotkey->usCommand == G_aDescriptions[i].usPostCommand)
             {
                 // hotkey defined for this listbox item already:
                 pHotkeyFound = pHotkey;
@@ -541,12 +551,146 @@ PXFLDHOTKEY FindHotkeyFromLBSel(HWND hwndDlg,
             // hotkey not yet defined: store the command
             // which corresponds to the selected item, so
             // a new hotkey can be added
-            *pusCommand = ulLBCommands[i];
+            *pusCommand = G_aDescriptions[i].usPostCommand;
 
         return (pHotkeyFound);
     }
     else
         return (PXFLDHOTKEY)-1;     // LB entry not found
+}
+
+/*
+ *@@ AddHotkeyToMenuItem:
+ *
+ *@@added V0.9.2 (2000-03-08) [umoeller]
+ */
+
+VOID AddHotkeyToMenuItem(HWND hwndMenu,
+                         USHORT usPostCommand2Find,
+                         USHORT usMenuCommand,
+                         ULONG ulVarMenuOffset) // pGlobalSettings->VarMenuOffset
+{
+    USHORT  usFlags, usKeyCode;
+    CHAR    szDescription[100];
+
+    if (fdrFindHotkey(usPostCommand2Find,
+                      &usFlags,
+                      &usKeyCode))
+    {
+        if (    (usMenuCommand >= WPMENUID_USER)
+             && (usMenuCommand < WPMENUID_USER+FIRST_VARIABLE)
+           )
+            // it's one of the "variable" menu items:
+            // add the global variable menu offset
+            usMenuCommand += ulVarMenuOffset;
+
+        cmnDescribeKey(szDescription,
+                       usFlags,
+                       usKeyCode);
+        _Pmpf(("Found %s", szDescription));
+        winhAppend2MenuItemText(hwndMenu,
+                                usMenuCommand,
+                                szDescription,
+                                TRUE);
+    }
+}
+
+/*
+ *@@ fdrAddHotkeysToMenu:
+ *      gets called by XFldObject::wpModifyPopupMenu to add
+ *      hotkey descriptions to the popup menu.
+ *
+ *      Note that this adds the generic hotkeys for WPObject
+ *      only.
+ *
+ *@@added V0.9.2 (2000-03-06) [umoeller]
+ */
+
+VOID fdrAddHotkeysToMenu(WPObject *somSelf,
+                         HWND hwndCnr,
+                         HWND hwndMenu) // in: menu created by wpDisplayMenu
+{
+    PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+
+    if (pGlobalSettings->fShowHotkeysInMenus)
+    {
+        CHAR        szDescription[100];
+        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        BOOL        fIsFolder = _somIsA(somSelf, _WPFolder),
+                    fCnrWhitespace = wpshIsViewCnr(somSelf, hwndCnr);
+
+        if (!fCnrWhitespace)
+        {
+            // menu opened for object inserted into
+            // container (not for cnr whitespace):
+
+            // delete
+            winhAppend2MenuItemText(hwndMenu,
+                                    WPMENUID_DELETE,
+                                    pNLSStrings->pszDelete,
+                                    TRUE);
+
+            // open settings
+            cmnDescribeKey(szDescription,
+                           KC_ALT | KC_VIRTUALKEY,
+                           VK_ENTER);
+            winhAppend2MenuItemText(hwndMenu,
+                                    WPMENUID_PROPERTIES,
+                                    szDescription,
+                                    TRUE);
+
+            // default help
+            cmnDescribeKey(szDescription,
+                           KC_VIRTUALKEY,
+                           VK_F1);
+            winhAppend2MenuItemText(hwndMenu,
+                                    WPMENUID_EXTENDEDHELP,
+                                    szDescription,
+                                    TRUE);
+
+            // copy filename
+            if (pGlobalSettings->AddCopyFilenameItem)
+            {
+                AddHotkeyToMenuItem(hwndMenu,
+                                    ID_XFMI_OFS_COPYFILENAME_SHORT,
+                                    ID_XFMI_OFS_COPYFILENAME_MENU,
+                                    pGlobalSettings->VarMenuOffset);
+                AddHotkeyToMenuItem(hwndMenu,
+                                    ID_XFMI_OFS_COPYFILENAME_FULL,
+                                    ID_XFMI_OFS_COPYFILENAME_MENU, // same menu item!
+                                    pGlobalSettings->VarMenuOffset);
+            }
+        }
+        else
+        {
+            // menu on cnr whitespace:
+            ULONG       ul;
+
+            for (ul = 0;
+                 ul < (     sizeof(G_aDescriptions)
+                          / sizeof(G_aDescriptions[0])
+                      );
+                 ul++)
+            {
+                // menu modification allowed for this command?
+                if (G_aDescriptions[ul].usMenuCommand)
+                {
+                    AddHotkeyToMenuItem(hwndMenu,
+                                        G_aDescriptions[ul].usPostCommand, // usPostCommand2Find
+                                        G_aDescriptions[ul].usMenuCommand, // usMenuCommand
+                                        pGlobalSettings->VarMenuOffset);
+                }
+            }
+
+            // OK, now we got most menu items;
+            // we need a few more special checks
+            if (pGlobalSettings->MoveRefreshNow)
+                AddHotkeyToMenuItem(hwndMenu,
+                                    WPMENUID_REFRESH,
+                                    ID_XFMI_OFS_REFRESH,
+                                    pGlobalSettings->VarMenuOffset);
+        }
+    } // end if (pGlobalSettings->fShowHotkeysInMenus)
 }
 
 /*
@@ -700,9 +844,9 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         for (i = 0; i < FLDRHOTKEYCOUNT; i++)
         {
             if (WinLoadString(hab, hmod,
-                              szLBStringIDs[i],
-                              sizeof(szLBEntries[i]),
-                              szLBEntries[i])
+                              G_aDescriptions[i].ulStringID,
+                              sizeof(G_szLBEntries[i]),
+                              G_szLBEntries[i])
                      == 0)
             {
                 DebugBox(pcnbp->hwndFrame,
@@ -718,19 +862,23 @@ VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ACCELERATORS, pGlobalSettings->fFolderHotkeysDefault);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ACCELERATORS,
+                              pGlobalSettings->fFolderHotkeysDefault);
+
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_SHOWINMENUS,
+                              pGlobalSettings->fShowHotkeysInMenus);
 
         WinSendMsg(hwndListbox, LM_DELETEALL, 0, 0);
         WinSetWindowText(hwndEditField, "");
 
         for (i = 0; i < FLDRHOTKEYCOUNT; i++)
         {
-            if (szLBEntries[i])
+            if (G_szLBEntries[i])
             {
                 WinSendMsg(hwndListbox,
                            LM_INSERTITEM,
                            (MPARAM)LIT_SORTASCENDING,
-                           (MPARAM)szLBEntries[i]);
+                           (MPARAM)G_szLBEntries[i]);
             }
             else break;
         }
@@ -766,6 +914,11 @@ MRESULT fdrHotkeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     {
         case ID_XSDI_ACCELERATORS:
             pGlobalSettings->fFolderHotkeysDefault = ulExtra;
+            cmnStoreGlobalSettings();
+        break;
+
+        case ID_XSDI_SHOWINMENUS:
+            pGlobalSettings->fShowHotkeysInMenus = ulExtra;
             cmnStoreGlobalSettings();
         break;
 

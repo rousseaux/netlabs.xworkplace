@@ -1749,7 +1749,8 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                                     pGlobalSettings, sizeof(GLOBALSETTINGS));
             }
             else
-                DosBeep(100, 1000);
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Unable to lock GLOBALSETTINGS.");
             cmnUnlockGlobalSettings();
         break; }
 

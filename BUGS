@@ -1,17 +1,14 @@
 
-Mike Reichel:
-It seems, that I can deinstall the  XFldDisk class without the XFolder class,
-but the "installed XWorkplace Classes" page shows, that the class is still active
-(after a WPS reboot of course). But this is not correct.
-(For reinstalling the class I must double click on XFldDisk.)
+trash can:
+    -- close subfolders too
+    -- check if delete works if not yet populated...
+    -- sorting doesn't work
 
 icons:
     -- trash can icons...
     -- program file icons changing when settings notebook is opened
 
 drive objects: network drives don't work
-
-semaphore errors...
 
 check dialog pages on Warp 3
 
@@ -24,4 +21,5 @@ startup folder hangs when "Drive not ready" pops up
 hook:
     -- VIO copy conflicts with WM_CHORD; check window class
     -- WM_CHORD over Netscape/PMMail no work
+    -- sliding focus over MDI frames no work
 

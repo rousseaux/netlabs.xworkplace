@@ -138,12 +138,12 @@ BOOL        G_fDrivesInitialized = FALSE;
 
 typedef struct _XTRO_DETAILS
 {
-   PSZ     pszSourcePath;       // where object was deleted from
-   CDATE   cdateDeleted;        // deletion date
-   CTIME   ctimeDeleted;        // deletion date
+   PSZ     pszFromPath;         // where object was deleted from
    PSZ     pszSize;             // size of related object; this points
                                 // to the _szTotalSize member
    PSZ     pszOriginalClass;    // class of related object
+   CDATE   cdateDeleted;        // deletion date
+   CTIME   ctimeDeleted;        // deletion date
 } XTRO_DETAILS, *PXTRO_DETAILS;
 
 // extra data fields for XWPTrashObject object details;
@@ -1131,8 +1131,12 @@ SOM_Scope ULONG  SOMLINK xtrc_wpAddObjectGeneralPage(XWPTrashCan *somSelf,
 SOM_Scope ULONG  SOMLINK xtrc_wpAddObjectGeneralPage2(XWPTrashCan *somSelf,
                                                       HWND hwndNotebook)
 {
+    PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
     /* XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf); */
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_wpAddObjectGeneralPage2");
+
+    if (pGlobalSettings->AddObjectPage)
+        _xwpAddObjectInternalsPage(somSelf, hwndNotebook);
 
     return (SETTINGS_PAGE_REMOVED);
 }
@@ -1806,7 +1810,7 @@ SOM_Scope ULONG  SOMLINK xtro_wpQueryDetailsData(XWPTrashObject *somSelf,
     if (ppDetailsData)
     {
         PXTRO_DETAILS pDetails = (PXTRO_DETAILS)*ppDetailsData;
-        pDetails->pszSourcePath = _xwpQueryRelatedPath(somSelf);
+        pDetails->pszFromPath = _xwpQueryRelatedPath(somSelf);
         pDetails->pszSize = _szTotalSize;
         if (_pRelatedObject)
         {
@@ -2152,35 +2156,13 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
                 pcfi->pfnCompare   = 0; // (PFNCOMPARE)fnCompareExtensions;
                 pcfi->flData            |= CFA_STRING | CFA_LEFT;
                 pcfi->pTitleData        = pNLSStrings->pszOrigFolder;
-                pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, pszSourcePath));
+                pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, pszFromPath));
                 pcfi->ulLenFieldData    = sizeof(PSZ);
                 pcfi->DefaultComparison = CMP_GREATER;
             break;
 
-            // second item: deletion date
-            case 1:
-                pcfi->flCompare   = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
-                pcfi->pfnCompare   = 0; // (PFNCOMPARE)fnCompareExtensions;
-                pcfi->flData            |= CFA_DATE | CFA_RIGHT;
-                pcfi->pTitleData        = pNLSStrings->pszDelDate;
-                pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, cdateDeleted));
-                pcfi->ulLenFieldData    = sizeof(CDATE);
-                pcfi->DefaultComparison = CMP_GREATER;
-            break;
-
-            // third item: deletion time
-            case 2:
-                pcfi->flCompare   = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
-                pcfi->pfnCompare   = 0; // (PFNCOMPARE)fnCompareExtensions;
-                pcfi->flData            |= CFA_TIME | CFA_RIGHT;
-                pcfi->pTitleData        = pNLSStrings->pszDelTime;
-                pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, ctimeDeleted));
-                pcfi->ulLenFieldData    = sizeof(CTIME);
-                pcfi->DefaultComparison = CMP_GREATER;
-            break;
-
             // fourth item: size of related object
-            case 3:
+            case 1:
                 pcfi->flCompare   = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
                 pcfi->pfnCompare   = 0; // (PFNCOMPARE)fnCompareExtensions;
                 pcfi->flData            |= CFA_STRING | CFA_RIGHT;
@@ -2191,13 +2173,35 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
             break;
 
             // fifth item: class of related object
-            case 4:
+            case 2:
                 pcfi->flCompare   = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
                 pcfi->pfnCompare   = 0; // (PFNCOMPARE)fnCompareExtensions;
                 pcfi->flData            |= CFA_STRING | CFA_LEFT;
                 pcfi->pTitleData        = pNLSStrings->pszOrigClass;
                 pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, pszOriginalClass));
                 pcfi->ulLenFieldData    = sizeof(PSZ);
+                pcfi->DefaultComparison = CMP_GREATER;
+            break;
+
+            // second item: deletion date
+            case 3:
+                pcfi->flCompare   = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
+                pcfi->pfnCompare   = 0; // (PFNCOMPARE)fnCompareExtensions;
+                pcfi->flData            |= CFA_DATE | CFA_RIGHT;
+                pcfi->pTitleData        = pNLSStrings->pszDelDate;
+                pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, cdateDeleted));
+                pcfi->ulLenFieldData    = sizeof(CDATE);
+                pcfi->DefaultComparison = CMP_GREATER;
+            break;
+
+            // third item: deletion time
+            case 4:
+                pcfi->flCompare   = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
+                pcfi->pfnCompare   = 0; // (PFNCOMPARE)fnCompareExtensions;
+                pcfi->flData            |= CFA_TIME | CFA_RIGHT;
+                pcfi->pTitleData        = pNLSStrings->pszDelTime;
+                pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, ctimeDeleted));
+                pcfi->ulLenFieldData    = sizeof(CTIME);
                 pcfi->DefaultComparison = CMP_GREATER;
             break;
         }   // end for

@@ -34,20 +34,28 @@
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
         VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                ULONG flFlags);
+                               ULONG flFlags);
 
         MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                     USHORT usItemID,
+                                     USHORT usNotifyCode,
+                                     ULONG ulExtra);
+
+        VOID cfgConfigTimer(PCREATENOTEBOOKPAGE pcnbp,
+                            ULONG ulTimer);
+
+        VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                ULONG flFlags);
+
+        MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                       USHORT usItemID,
                                       USHORT usNotifyCode,
                                       ULONG ulExtra);
 
-        VOID cfgConfigTimer(PCREATENOTEBOOKPAGE pcnbp,
-                             ULONG ulTimer);
-
-        VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
+        VOID cfgSyslevelInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                  ULONG flFlags);
 
-        MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+        MRESULT cfgSyslevelItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                        USHORT usItemID,
                                        USHORT usNotifyCode,
                                        ULONG ulExtra);

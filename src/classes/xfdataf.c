@@ -95,6 +95,7 @@
 
 #include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\filetype.h"           // extended file types implementation
+#include "filesys\folder.h"             // XFolder implementation
 #include "filesys\menus.h"              // common XFolder context menu logic
 
 // other SOM headers
@@ -342,6 +343,11 @@ SOM_Scope BOOL  SOMLINK xfdataf_wpModifyPopupMenu(XFldDataFile *somSelf,
     if (brc)
         // manipulate the data file menu according to our needs
         brc = mnuModifyDataFilePopupMenu(somSelf, hwndMenu, hwndCnr, iPosition);
+
+    if (brc)
+        fdrAddHotkeysToMenu(somSelf,
+                            hwndCnr,
+                            hwndMenu);
 
     return (brc);
 }

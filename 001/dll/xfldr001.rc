@@ -166,6 +166,7 @@ BEGIN
     MENUITEM "~Workplace Shell settings", 200
     MENUITEM "~OS/2 Kernel settings", 201
     MENUITEM "W~PS Class List", 202
+    MENUITEM "Scr~een", 203
     MENUITEM "", 1, MIS_SEPARATOR
     MENUITEM "~Configuration folder", 210
     MENUITEM "~Startup folder", 211

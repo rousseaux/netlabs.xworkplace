@@ -1355,6 +1355,12 @@ BOOL objRemoveObjectHotkey(HOBJECT hobj)
     return (brc);
 }
 
+/* ******************************************************************
+ *                                                                  *
+ *   Object setup strings                                           *
+ *                                                                  *
+ ********************************************************************/
+
 /*
  *@@ objQuerySetup:
  *      implementation of XFldObject::xwpQuerySetup.

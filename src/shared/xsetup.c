@@ -115,7 +115,7 @@ typedef struct _STANDARDOBJECT
     PSZ     pszSetupString;         // e.g. "DETAILSFONT=..."; if present, _always_
                                     // put a semicolon at the end, because "OBJECTID=xxx"
                                     // will always be added
-    USHORT  usMenuID;               // corresponding menu ID in resources
+    USHORT  usMenuID;               // corresponding menu ID in xfldr001.rc resources
 } STANDARDOBJECT, *PSTANDARDOBJECT;
 
 #define OBJECTSIDFIRST 100      // first object menu ID, inclusive
@@ -149,6 +149,7 @@ STANDARDOBJECT  WPSObjects[] = {
                 XWPObjects[] = {
                                     XFOLDER_WPSID, "XFldWPS", "", 200,
                                     XFOLDER_KERNELID, "XFldSystem", "", 201,
+                                    XFOLDER_SCREENID, "XWPScreen", "", 203,
                                     XFOLDER_CLASSLISTID, "XWPClassList", "", 202,
 
                                     XFOLDER_CONFIGID, "WPFolder",

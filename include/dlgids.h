@@ -275,8 +275,9 @@
 #define ID_XSDI_ACCELERATORS            561
 #define ID_XSDI_LISTBOX                 562
 #define ID_XSDI_DESCRIPTION             563
-#define ID_XSDI_DESCRIPTION_TX1         564    // text
+#define ID_XSDI_DESCRIPTION_TX1         564     // text
 #define ID_XSDI_CLEARACCEL              565
+#define ID_XSDI_SHOWINMENUS             566     // V0.9.2 (2000-03-08) [umoeller]
 
 // "status bars" page 1
 #define ID_XSD_SET27STATUSBARS          570
@@ -633,6 +634,10 @@
 #define ID_OSDI_DANIS506_U_RATE_PIO_TXT     1673
 #define ID_OSDI_DANIS506_U_RATE_PIO_SPIN    1674
 #define ID_OSDI_DANIS506_U_REMOVEABLE       1675
+
+// syslevel page V0.9.2 (2000-03-08) [umoeller]
+#define ID_OSD_SETTINGS_SYSLEVEL            1900
+#define ID_OSDI_SYSLEVEL_CNR                1901
 
 /******************************************
  * XWPClassList (V0.9.0)                   *

@@ -200,6 +200,8 @@ interface M_XFldObject : M_WPObject
     wpclsInitData: override;
     wpclsNew: override;
     wpclsMakeAwake: override;
+
+    wpclsQuerySettingsPageSize: override;
   };
 #endif /* __SOMIDL__ */
 };

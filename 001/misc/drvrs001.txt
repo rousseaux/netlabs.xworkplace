@@ -108,6 +108,9 @@ CATEGORY "CD-ROM"
         DRIVER ( "BASEDEV=", "IBMIDECD.FLT",
                  "CD-ROM filter",
                  DRVF_CMDREF),
+        DRIVER ( "BASEDEV=", "DaniATAPI.FLT",
+                 "Enhanced CD-ROM filter (Daniela Engert)",
+                 0),
 
         DRIVER ( "BASEDEV=", "IBMIDECD.FLT",
                  "CD-ROM filter",
@@ -207,7 +210,7 @@ CATEGORY "Installable File Systems"
         DRIVER ( "RUN=", "EXT2_LW.EXE",
                  "Linux ext2fs cache daemon",
                  0)
-        DRIVER ( "IFS=", "TVFS.EXE",
+        DRIVER ( "IFS=", "TVFS.IFS",
                  "Toronto Virtual File System",
                  0)
         DRIVER ( "RUN=", "TVCTL.EXE",

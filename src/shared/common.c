@@ -213,7 +213,7 @@ unsigned long _System _DLL_InitTerm(unsigned long hModule,
                return (0);  // error
 
             if (rc = DosQueryModuleName(hModule, CCHMAXPATH, G_szDLLFile))
-                    DosBeep(100, 100);
+                DosBeep(100, 100);
         break; }
 
         case 1:
@@ -265,7 +265,59 @@ const char* cmnQueryMainModuleFilename(VOID)
 
 /* ******************************************************************
  *                                                                  *
- *   Resource protection (thread safety                             *
+ *   Error logging                                                  *
+ *                                                                  *
+ ********************************************************************/
+
+/*
+ *@@ cmnLog:
+ *      logs a message to the XWorkplace log file
+ *      in the root directory of the boot drive.
+ *
+ *      You can use the CMN_LOG macro which inserts
+ *      the first three parameters automatically.
+ *
+ *@@added V0.9.2 (2000-03-06) [umoeller]
+ */
+
+VOID cmnLog(const char *pcszSourceFile, // in: source file name
+            ULONG ulLine,               // in: source line
+            const char *pcszFunction,   // in: function name
+            const char *pcszFormat,     // in: format string (like with printf)
+            ...)                        // in: additional stuff (like with printf)
+{
+    va_list     args;
+    CHAR        szLogFileName[100];
+    FILE        *fileLog = 0;
+
+    DosBeep(100, 50);
+
+    sprintf(szLogFileName,
+            "%c:\\%s",
+            doshQueryBootDrive(),
+            XFOLDER_LOGLOG);
+    fileLog = fopen(szLogFileName, "a");  // text file, append
+    if (fileLog)
+    {
+        DosGetDateTime(&DT);
+        fprintf(file, ,
+        fprintf(fileLog,
+                "%04d-%02d-%02d %02d:%02d:%02d "
+                "%s (%s, line %d):\n    ",
+                DT.year, DT.month, DT.day,
+                DT.hours, DT.minutes, DT.seconds);
+                pcszFunction, pcszSourceFile, ulLine);
+        va_start(args, pcszFormat);
+        vfprintf(fileLog, pcszFormat, args);
+        va_end(args);
+        fprintf(fileLog, "\n");
+        fclose (fileLog);
+    }
+}
+
+/* ******************************************************************
+ *                                                                  *
+ *   Resource protection (thread safety)                            *
  *                                                                  *
  ********************************************************************/
 
@@ -310,7 +362,8 @@ BOOL cmnLock(ULONG ulTimeout)
         return TRUE;
     else
     {
-        DosBeep(100, 200);
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "cmnLock mutex request failed");
         return FALSE;
     }
 }
@@ -1175,7 +1228,6 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                                             // (e.g. "0.9.0")
                                    )
                                 {
-                                    DosBeep(1500, 100);
                                     cmnSetDlgHelpPanel(-1);
                                     if (lLength == 0)
                                     {
@@ -1193,7 +1245,6 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                                         // load dialog from previous NLS DLL which says
                                         // that the DLL is too old; if user presses
                                         // "Cancel", we abort loading the DLL
-                                        DosBeep(1700, 100);
                                         if (WinDlgBox(HWND_DESKTOP,
                                                       HWND_DESKTOP,
                                                       (PFNWP)cmn_fnwpDlgWithHelp,
@@ -1777,6 +1828,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
 
         case SP_4ACCELERATORS:
             G_pGlobalSettings->fFolderHotkeysDefault = 1;
+            G_pGlobalSettings->fShowHotkeysInMenus = 1;
         break;
 
         case SP_FLDRSORT_GLOBAL:
@@ -2504,7 +2556,8 @@ ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window.
                         ULONG ulFlags)      // in: as in cmnMessageBox flStyle
 {
     ULONG   mbrc = 0;
-    CHAR    szError[1000];
+    CHAR    szError[1000],
+            szError2[1000];
     ULONG   ulLen = 0;
     APIRET  arc2 = NO_ERROR;
 
@@ -2525,9 +2578,11 @@ ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window.
                 "%s: DosGetMessage returned error %d",
                 __FUNCTION__, arc2);
 
+    sprintf(szError2, "(%d) %s", arc, szError);
+
     mbrc = cmnMessageBox(HWND_DESKTOP,
                          pszTitle,
-                         szError,
+                         szError2,
                          ulFlags);
     return (mbrc);
 }

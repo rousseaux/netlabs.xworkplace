@@ -184,14 +184,17 @@
          *      XFolder uses to hook itself into the WPS.
          *      Most importantly, this structure stores the
          *      original frame window procedure before the
-         *      window was subclassed, but we also use this
-         *      to store various other data for status bars etc.
+         *      folder frame window was subclassed, but we also
+         *      use this to store various other data for status
+         *      bars etc.
          *
          *      We need this additional structure because all
          *      the data in here is _view_-specific, not
-         *      folder-specific.
+         *      folder-specific, so we cannot store this in
+         *      the instance data.
          *
          *@@changed V0.9.1 (2000-01-29) [umoeller]: added pSourceObject and ulSelection fields
+         *@@changed V0.9.2 (2000-03-06) [umoeller]: removed ulView, because this might change
          */
 
         typedef struct _SUBCLASSEDLISTITEM
@@ -208,7 +211,7 @@
                         hwndCnr,            // cnr window (child of hwndFrame)
                         hwndSupplObject;    // supplementary object wnd
                                             // (fdr_fnwpSupplFolderObject)
-            ULONG       ulView;             // OPEN_CONTENTS
+            // ULONG       ulView;             // OPEN_CONTENTS
                                             //   or OPEN_TREE
                                             //   or OPEN_DETAILS
             BOOL        fNeedCnrScroll;     // scroll container after adding status bar?
@@ -393,10 +396,18 @@
 
     void fdrStoreFldrHotkeys(VOID);
 
+    BOOL fdrFindHotkey(USHORT usCommand,
+                       PUSHORT pusFlags,
+                       PUSHORT pusKeyCode);
+
     BOOL fdrProcessFldrHotkey(HWND hwndFrame,
                               USHORT usFlags,
                               USHORT usch,
                               USHORT usvk);
+
+    VOID fdrAddHotkeysToMenu(WPObject *somSelf,
+                             HWND hwndCnr,
+                             HWND hwndMenu);
 
     #ifdef NOTEBOOK_HEADER_INCLUDED
         VOID fdrHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,

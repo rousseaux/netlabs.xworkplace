@@ -197,49 +197,67 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryFldrSort(XFolder *somSelf,
  *
  *      This method returns TRUE if any visible change occured as
  *      a result to the new settings.
+ *
+ *@@changed V0.9.2 (2000-03-08) [umoeller]: added folder locking
  */
 
 SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
                                           USHORT usDefaultSort,
                                           USHORT usAlwaysSort)
 {
-    BOOL Update = FALSE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_xwpSetFldrSort");
+    BOOL        Update = FALSE;
+    BOOL        fFolderLocked = FALSE;
 
-    #ifdef DEBUG_SORT
-        _Pmpf(("xwpSetFldrSort %s", _wpQueryTitle(somSelf)));
-        _Pmpf(("  Old: Default %d, Always %d", _bDefaultSortInstance, _bAlwaysSortInstance));
-        _Pmpf(("  New: Default %d, Always %d", usDefaultSort, usAlwaysSort));
-    #endif
-
-    if (usDefaultSort != _bDefaultSortInstance)
+    TRY_LOUD(excpt1, NULL)
     {
-        _bDefaultSortInstance = usDefaultSort;
-        Update = TRUE;
-    }
+        fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
+        if (fFolderLocked)
+        {
+            PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+            XFolderData *somThis = XFolderGetData(somSelf);
+            XFolderMethodDebug("XFolder","xf_xwpSetFldrSort");
 
-    if (usAlwaysSort != _bAlwaysSortInstance)
-    {
-        _bAlwaysSortInstance = usAlwaysSort;
-        // if _wpRestoreState has found the pointer to the
-        // WPFOlder-internal sort structure, we will update
-        // this one also, because otherwise the WPS keeps
-        // messing with the container attributes
-        if (_pFldrSortInfo)
-            (_pFldrSortInfo)->fAlwaysSort = ALWAYS_SORT;
-        Update = TRUE;
+            #ifdef DEBUG_SORT
+                _Pmpf(("xwpSetFldrSort %s", _wpQueryTitle(somSelf)));
+                _Pmpf(("  Old: Default %d, Always %d", _bDefaultSortInstance, _bAlwaysSortInstance));
+                _Pmpf(("  New: Default %d, Always %d", usDefaultSort, usAlwaysSort));
+            #endif
+
+            if (usDefaultSort != _bDefaultSortInstance)
+            {
+                _bDefaultSortInstance = usDefaultSort;
+                Update = TRUE;
+            }
+
+            if (usAlwaysSort != _bAlwaysSortInstance)
+            {
+                _bAlwaysSortInstance = usAlwaysSort;
+                // if _wpRestoreState has found the pointer to the
+                // WPFOlder-internal sort structure, we will update
+                // this one also, because otherwise the WPS keeps
+                // messing with the container attributes
+                if (_pFldrSortInfo)
+                    (_pFldrSortInfo)->fAlwaysSort = ALWAYS_SORT;
+                Update = TRUE;
+            }
+        } // end if (fFolderLocked)
     }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fFolderLocked)
+        _wpReleaseObjectMutexSem(somSelf);
 
     if (Update)
     {
         // update open views of this folder
-        fdrForEachOpenInstanceView(somSelf, 0, &fdrUpdateFolderSorts);
+        fdrForEachOpenInstanceView(somSelf,
+                                   0,
+                                   &fdrUpdateFolderSorts);
         // save instance data
         _wpSaveDeferred(somSelf);
         // update folder "Sort" notebook page, if open
-        ntbUpdateVisiblePage(somSelf, SP_FLDRSORT_FLDR);
+        // ntbUpdateVisiblePage(somSelf, SP_FLDRSORT_FLDR);
+            // doesn't work, we might be on a different thread!!! ###
     }
 
     return (Update);
@@ -266,43 +284,60 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
  *      --  SV_CREATIONDATE
  *      --  SV_EXT                  (new: sort by extension)
  *      --  SV_FOLDERSFIRST         (new: sort folders first)
+ *
+ *@@changed V0.9.2 (2000-03-08) [umoeller]: added folder locking
  */
 
 SOM_Scope BOOL  SOMLINK xf_xwpSortViewOnce(XFolder *somSelf,
                                            HWND hwndFrame,
                                            USHORT usSort)
 {
-    BOOL rc = FALSE;
-    HWND hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_xfSortByExt");
+    BOOL        rc = FALSE;
+    BOOL        fFolderLocked = FALSE;
 
-    if (hwndCnr)
+    TRY_LOUD(excpt1, NULL)
     {
-        CNRINFO CnrInfo;
-        ULONG   ulStyle = 0;
-
-        cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
-
-        if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
+        fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
+        if (fFolderLocked)
         {
-            // for some reason, icon views need to have "auto arrange" on,
-            // or nothing will happen
-            ulStyle = WinQueryWindowULong(hwndCnr, QWL_STYLE);
-            WinSetWindowULong(hwndCnr, QWL_STYLE, ulStyle | CCS_AUTOPOSITION);
-        }
+            HWND hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
+            // XFolderData *somThis = XFolderGetData(somSelf);
+            XFolderMethodDebug("XFolder","xf_xfSortByExt");
 
-        // send sort msg with proper sort (comparison) func
-        WinSendMsg(hwndCnr, CM_SORTRECORD,
-                   (MPARAM)fdrQuerySortFunc(usSort),
-                   MPNULL);
+            if (hwndCnr)
+            {
+                CNRINFO CnrInfo;
+                ULONG   ulStyle = 0;
 
-        if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
-            // restore old cnr style
-            WinSetWindowULong(hwndCnr, QWL_STYLE, ulStyle);
+                cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
 
-        rc = TRUE;
+                if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
+                {
+                    // for some reason, icon views need to have "auto arrange" on,
+                    // or nothing will happen
+                    ulStyle = WinQueryWindowULong(hwndCnr, QWL_STYLE);
+                    WinSetWindowULong(hwndCnr, QWL_STYLE, ulStyle | CCS_AUTOPOSITION);
+                }
+
+                // send sort msg with proper sort (comparison) func
+                WinSendMsg(hwndCnr,
+                           CM_SORTRECORD,
+                           (MPARAM)fdrQuerySortFunc(usSort),
+                           MPNULL);
+
+                if ((CnrInfo.flWindowAttr & (CV_ICON | CV_TREE)) == CV_ICON)
+                    // restore old cnr style
+                    WinSetWindowULong(hwndCnr, QWL_STYLE, ulStyle);
+
+                rc = TRUE;
+            }
+        } // end if (fFolderLocked)
     }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fFolderLocked)
+        _wpReleaseObjectMutexSem(somSelf);
+
     return (rc);
 }
 
@@ -313,6 +348,8 @@ SOM_Scope BOOL  SOMLINK xf_xwpSortViewOnce(XFolder *somSelf,
  *      the pICONPOS structure first, whose size you need to pass in
  *      ulICONPOSSize; the ICONPOS data will be copied to pipReturn.
  *      The method returns FALSE if something went wrong.
+ *
+ *@@changed V0.9.2 (2000-03-09) [umoeller]: fixed excessive handle queries
  */
 
 SOM_Scope BOOL  SOMLINK xf_xwpGetIconPos(XFolder *somSelf,
@@ -327,7 +364,6 @@ SOM_Scope BOOL  SOMLINK xf_xwpGetIconPos(XFolder *somSelf,
     CHAR     szKey[100],
              szPath[CCHMAXPATH];
 
-    HOBJECT  hObject = _wpQueryHandle(pObject);
     PSZ      pszClass = _somGetClassName(pObject);
 
     // XFolderData *somThis = XFolderGetData(somSelf);
@@ -339,26 +375,30 @@ SOM_Scope BOOL  SOMLINK xf_xwpGetIconPos(XFolder *somSelf,
        .ICONPOS EA starts with a string identifying the object; so
        first, we need to compose this string depending on the type
        of the passed object */
-    if (IsObjectAbstract(hObject))
+    if (!_somIsA(pObject, _WPFileSystem))
+    {
+        // abstract object:
+        HOBJECT  hObject = _wpQueryHandle(pObject);
         sprintf(szKey, "%s:A%lX", pszClass, LOUSHORT(hObject));
+    }
     else
     {   // file system object
-        WPFileSystem    *pobjFile;
-        if (pobjFile = _wpclsQueryObject(_WPObject, hObject))
+        /* WPFileSystem    *pobjFile;
+        if (pobjFile = _wpclsQueryObject(_WPObject, hObject)) */
         {
-            if (_wpQueryFilename(pobjFile, szPath, FALSE))
+            if (_wpQueryFilename(pObject, szPath, FALSE))
             {
                 sprintf(szKey,
                         "%s:%c%s",
                         pszClass,
-                        (_somIsA(pobjFile, _WPFolder) ? 'D' : 'F'),
+                        (_somIsA(pObject, _WPFolder) ? 'D' : 'F'),
                         szPath);
             }
             else
                 return FALSE;
         }
-        else
-            return FALSE;
+        /* else
+            return FALSE; */
 
     }
 
@@ -2250,6 +2290,11 @@ SOM_Scope BOOL  SOMLINK xf_wpModifyPopupMenu(XFolder   *somSelf,
                                   hwndCnr2,
                                   iPosition);
 
+    if (rc)
+        fdrAddHotkeysToMenu(somSelf,
+                            hwndCnr,
+                            hwndMenu);
+
     return (rc);
 }
 
@@ -2319,6 +2364,8 @@ SOM_Scope BOOL  SOMLINK xf_wpMenuItemHelpSelected(XFolder *somSelf,
  *      the folder window) and then subclass the
  *      resulting frame window with the new
  *      fdr_fnwpSubclassedFolderFrame window procedure.
+ *
+ *@@changed V0.9.2 (2000-03-04) [umoeller]: fixed work-area hangs
  */
 
 SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
@@ -2345,6 +2392,8 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
         // with our folder manipulations
         /* fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
         if (fFolderLocked) */
+        // V0.9.2 (2000-03-04) [umoeller]: no, don't do this, this
+        // prevents work areas from re-opening
         {
             // have parent do the window creation
             hwndNewFrame = XFolder_parent_WPFolder_wpOpen(somSelf,

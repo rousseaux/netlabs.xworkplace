@@ -96,6 +96,7 @@
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\fileops.h"            // file operations implementation
+#include "filesys\folder.h"             // XFolder implementation
 #include "filesys\object.h"             // XFldObject implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
@@ -682,6 +683,7 @@ SOM_Scope HWND  SOMLINK xfobj_wpDisplayMenu(XFldObject *somSelf,
                                             ULONG ulMenuType,
                                             ULONG ulReserved)
 {
+    HWND    hwndMenu = NULLHANDLE;
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     // XFldObjectMethodDebug("XFldObject","xfobj_wpDisplayMenu");
 
@@ -690,12 +692,14 @@ SOM_Scope HWND  SOMLINK xfobj_wpDisplayMenu(XFldObject *somSelf,
                 _wpQueryTitle(somSelf), ulMenuType, ulMenuType));
     #endif
 
-    return (XFldObject_parent_WPObject_wpDisplayMenu(somSelf,
-                                                     hwndOwner,
-                                                     hwndClient,
-                                                     ptlPopupPt,
-                                                     ulMenuType,
-                                                     ulReserved));
+    hwndMenu = XFldObject_parent_WPObject_wpDisplayMenu(somSelf,
+                                                        hwndOwner,
+                                                        hwndClient,
+                                                        ptlPopupPt,
+                                                        ulMenuType,
+                                                        ulReserved);
+
+    return (hwndMenu);
 }
 
 /*
@@ -766,6 +770,15 @@ SOM_Scope BOOL  SOMLINK xfobj_wpModifyPopupMenu(XFldObject *somSelf,
     if (pGlobalSettings->RemoveLockInPlaceItem)
         // remove WPObject's "Lock in place" submenu
         winhDeleteMenuItem(hwndMenu, ID_WPM_LOCKINPLACE);
+
+    // now that the menu is completely built, let's add hotkey
+    // descriptions, but DONT do this for folders or data files,
+    // because those menu items will only be added later... for
+    // folders, we call this function in XFolder::wpMenuItemSelected
+    if (!_somIsA(somSelf, _WPFileSystem))
+        fdrAddHotkeysToMenu(somSelf,
+                            hwndCnr,
+                            hwndMenu);
 
     return rc;
 }
@@ -1291,4 +1304,32 @@ SOM_Scope WPObject*  SOMLINK xfobjM_wpclsMakeAwake(M_XFldObject *somSelf,
     return (pObject);
 }
 
+/*
+ *@@ wpclsQuerySettingsPageSize:
+ *      this WPObject class method should return the
+ *      size of the largest settings page in dialog
+ *      units; if a settings notebook is initially
+ *      opened, i.e. no window pos has been stored
+ *      yet, the WPS will use this size, to avoid
+ *      truncated settings pages.
+ *
+ *      Since the "Object" page is pretty large,
+ *      we return this.
+ *
+ *@@added V0.9.2 (2000-03-08) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfobjM_wpclsQuerySettingsPageSize(M_XFldObject *somSelf,
+                                                          PSIZEL pSizl)
+{
+    /* M_XFldObjectData *somThis = M_XFldObjectGetData(somSelf); */
+    M_XFldObjectMethodDebug("M_XFldObject","xfobjM_wpclsQuerySettingsPageSize");
+
+    /* return (M_XFldObject_parent_M_WPObject_wpclsQuerySettingsPageSize(somSelf,
+                                                                      pSizl)); */
+    pSizl->cx = 275;       // size of "Object" page
+    pSizl->cy = 150;       // size of "Object" page
+
+    return (TRUE);
+}
 

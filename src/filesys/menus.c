@@ -967,7 +967,7 @@ VOID mnuFillContentSubmenu(SHORT sMenuId, // in: menu ID of selected folder cont
                                        // which is subclassed here
 {
     PLISTNODE       pNode = lstQueryFirstNode(&G_llContentMenuItems);
-    PCONTENTMENULISTITEM pcmli;
+    PCONTENTMENULISTITEM pcmli = NULL;
 
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
@@ -1020,9 +1020,9 @@ VOID mnuFillContentSubmenu(SHORT sMenuId, // in: menu ID of selected folder cont
                     // folder does contain objects: go!
 
                     // subclass menu window to allow MB2 clicks
-                    *ppfnwpFolderContentOriginal =
-                            WinSubclassWindow(hwndMenu,
-                                              fdr_fnwpSubclFolderContentMenu);
+                    *ppfnwpFolderContentOriginal
+                        = WinSubclassWindow(hwndMenu,
+                                            fdr_fnwpSubclFolderContentMenu);
 
                     // remove "empty" item
                     winhRemoveMenuItem(hwndMenu,
@@ -3114,7 +3114,8 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
                 if (pwpSetMenuBarVisibility)
                     pwpSetMenuBarVisibility(somSelf, !fMenuVisible);
                 else
-                    DosBeep(100, 500);
+                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                           "Unable to resolve wpSetMenuBarVisibility.");
 
                 /* _wpSetup(somSelf,
                          (fMenuVisible) // reverse the current setting
@@ -3357,7 +3358,6 @@ BOOL mnuDrawItem(PCGLOBALSETTINGS pGlobalSettings,   // shortcut to global setti
                 // _Pmpf(("hIcon: 0x%lX", hMenuArrowIcon));
                 if (G_hMenuArrowIcon)
                 {
-                    // DosBeep(10000, 10);
                     WinDrawPointer(poi->hps,
                                    poi->rclItem.xRight - CX_ARROW,
                                    poi->rclItem.yBottom

@@ -157,6 +157,18 @@ typedef struct _CLIENTCTLDATA
     ULONG           ulView;
 } CLIENTCTLDATA, *PCLIENTCTLDATA;
 
+/*
+ *@@ CLASSLISTVIEWITEM:
+ *
+ *@@added V0.9.2 (2000-03-08) [umoeller]
+ */
+
+typedef struct _CLASSLISTVIEWITEM
+{
+    USEITEM             UseItem;            // use item; immediately followed by view item
+    VIEWITEM            ViewItem;           // view item
+} CLASSLISTVIEWITEM, *PCLASSLISTVIEWITEM;
+
 #pragma pack()
 
 /*
@@ -173,8 +185,9 @@ typedef struct _CLASSLISTCLIENTDATA
 {
     XWPClassList        *somSelf;           // pointer to class list instance
     XWPClassListData    *somThis;           // instance data with more settings
-    USEITEM             UseItem;            // use item
-    VIEWITEM            ViewItem;           // view item
+
+    CLASSLISTVIEWITEM   clvi;               // use item and view item (packed)
+
     HWND                hwndClient,
                         hwndSplitMain,      // "split windows" (comctl.c)
                         hwndSplitRight;
@@ -1143,7 +1156,6 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
         case WM_CREATE:
         {
             // frame window successfully created:
-            // RECTL           rcl;
             SPLITBARCDATA   sbcd;
             PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
             PCLIENTCTLDATA  pCData = (PCLIENTCTLDATA)mp1;
@@ -1164,12 +1176,12 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
                                                             NULL);
             memset((PVOID)pClientData, 0, sizeof(CLASSLISTCLIENTDATA));
             pClientData->somSelf         = pCData->somSelf;
-            pClientData->UseItem.type    = USAGE_OPENVIEW;
-            pClientData->ViewItem.view   = pCData->ulView;
-            pClientData->ViewItem.handle = hwndFrame;
+            pClientData->clvi.UseItem.type    = USAGE_OPENVIEW;
+            pClientData->clvi.ViewItem.view   = pCData->ulView;
+            pClientData->clvi.ViewItem.handle = hwndFrame;
 
             // add the use list item to the object's use list
-            _wpAddToObjUseList(pCData->somSelf, &(pClientData->UseItem));
+            _wpAddToObjUseList(pCData->somSelf, &(pClientData->clvi.UseItem));
 
             // initialize list of cnr items to be freed later
             lstInit(&pClientData->llCnrStrings, TRUE);
@@ -1376,7 +1388,7 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
 
                 // remove this window from the object's use list
                 _wpDeleteFromObjUseList(pClientData->somSelf,
-                                        &pClientData->UseItem);
+                                        &pClientData->clvi.UseItem);
                 // free the use list item
                 _wpFreeMem(pClientData->somSelf, (PBYTE)pClientData);
 
@@ -1799,7 +1811,7 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
                                                    &ptl,
                                                    2);
                                 _wpDisplayMenu(pClassTreeCnrData->pClientData->somSelf,
-                                               pClassTreeCnrData->pClientData->ViewItem.handle,
+                                               pClassTreeCnrData->pClientData->clvi.ViewItem.handle,
                                                         // owner: the frame
                                                pscd->hwndCnr,
                                                         // client: the tree cnr

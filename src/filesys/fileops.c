@@ -234,7 +234,8 @@ BOOL fopsEnableTrashCan(HWND hwndOwner,     // for message boxes
         cmnUnlockGlobalSettings();
 
         if (cmnQueryLock())
-            DosBeep(100, 1000);
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "Global lock already requested.");
         else
         {
             // disable:
@@ -1064,7 +1065,8 @@ BOOL fopsMoveObjectConfirmed(WPObject *pObject,
     // (this might call the XFldObject replacement)
     WPObject    *pReplaceThis = NULL;
     CHAR        szNewTitle[CCHMAXPATH] = "";
-    BOOL        fMove = TRUE;
+    BOOL        fDoMove = TRUE,
+                frc = FALSE;
     ULONG       ulAction;
 
     strcpy(szNewTitle, _wpQueryTitle(pObject));
@@ -1080,7 +1082,7 @@ BOOL fopsMoveObjectConfirmed(WPObject *pObject,
     switch (ulAction)
     {
         case NAMECLASH_CANCEL:
-            fMove = FALSE;
+            fDoMove = FALSE;
         break;
 
         case NAMECLASH_RENAME:
@@ -1089,19 +1091,19 @@ BOOL fopsMoveObjectConfirmed(WPObject *pObject,
         break;
 
         case NAMECLASH_REPLACE:
-            _wpReplaceObject(pObject,
-                             pReplaceThis,       // set by wpConfirmObjectTitle
-                             TRUE);              // move and replace
-            fMove = FALSE;
+            fDoMove = FALSE;
+            frc = _wpReplaceObject(pObject,
+                                   pReplaceThis,       // set by wpConfirmObjectTitle
+                                   TRUE);              // move and replace
         break;
 
         // NAMECLASH_NONE: just go on
     }
 
-    if (fMove)
-        fMove = _wpMoveObject(pObject, pTargetFolder);
+    if (fDoMove)
+        frc = _wpMoveObject(pObject, pTargetFolder);
 
-    return (fMove);
+    return (frc);
 }
 
 /********************************************************************
