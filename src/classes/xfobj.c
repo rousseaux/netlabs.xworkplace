@@ -361,7 +361,7 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpSetTrashObject(XFldObject *somSelf,
 SOM_Scope ULONG  SOMLINK xfobj_xwpQueryListNotify(XFldObject *somSelf)
 {
     ULONG   ulrc = 0;
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     XFldObjectMethodDebug("XFldObject","xfobj_xwpQueryListNotify");
 
     TRY_LOUD(excpt1)
@@ -417,6 +417,10 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpQueryListNotify(XFldObject *somSelf)
  *      -- OBJLIST_HANDLESCACHE: object is in handles
  *         cache (see objFindObjFromHandle).
  *
+ *      -- OBJLIST_QUERYAWAKEFSOBJECT: object is in root
+ *         folders list or has been touched by that cache
+ *         (fdrRegisterAwakeRootFolder).
+ *
  *      Note: These flags are NOT persistent across
  *      reboots, i.e. not stored with wpSaveState.
  *      They are also cleared for the copy if the
@@ -429,7 +433,7 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpSetListNotify(XFldObject *somSelf,
                                                ULONG flNotifyFlags)
 {
     BOOL    brc = FALSE;
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     XFldObjectMethodDebug("XFldObject","xfobj_xwpSetListNotify");
 
     TRY_LOUD(excpt1)
@@ -479,7 +483,7 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpModifyListNotify(XFldObject *somSelf,
                                                   ULONG flNotifyMask)
 {
     BOOL    brc = FALSE;
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     XFldObjectMethodDebug("XFldObject","xfobj_xwpModifyListNotify");
 
     TRY_LOUD(excpt1)
@@ -543,7 +547,7 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpAddWidgetNotify(XFldObject *somSelf,
                                                  HWND hwnd)
 {
     BOOL    brc = FALSE;
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     XFldObjectMethodDebug("XFldObject","xfobj_xwpAddWidgetNotify");
 
     TRY_LOUD(excpt1)
@@ -592,7 +596,7 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpRemoveDestroyNotify(XFldObject *somSelf,
                                                      HWND hwnd)
 {
     BOOL    brc = FALSE;
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     XFldObjectMethodDebug("XFldObject","xfobj_xwpRemoveDestroyNotify");
 
     TRY_LOUD(excpt1)
@@ -746,7 +750,7 @@ SOM_Scope PSZ  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
 {
     PSZ pszReturn = NULL;
     XSTRING str;
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
 
     XFldObjectMethodDebug("XFldObject","xfobj_xwpQuerySetup");
 
@@ -938,8 +942,7 @@ SOM_Scope WPObject*  SOMLINK xfobj_xwpQueryNextObj(XFldObject *somSelf)
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_xwpQueryNextObj");
 
-    ppObjNext = wpshGetNextObjPointer(somSelf);
-    if (ppObjNext)
+    if (ppObjNext = wpshGetNextObjPointer(somSelf))
         pobj = *ppObjNext;
 
     return (pobj);
@@ -1144,15 +1147,14 @@ SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
 
     // have object removed from awake-objects list
     xthrPostWorkerMsg(WOM_REMOVEAWAKEOBJECT,
-                     (MPARAM)somSelf,
-                     MPNULL);
+                      (MPARAM)somSelf,
+                      MPNULL);
 
     // destroy trash object, if there's one
     if (_pTrashObject)
         _wpFree(_pTrashObject);
 
     // go thru list notifications
-
     if (_ulListNotify)
     {
         if (_ulListNotify & OBJLIST_RUNNINGSTORED)
@@ -1208,6 +1210,12 @@ SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
             // _ulListNotify &= ~OBJLIST_DIRTYLIST;
             objRemoveFromDirtyList(somSelf);
                     // this unsets the flag
+        }
+
+        if (_ulListNotify & OBJLIST_QUERYAWAKEFSOBJECT)  // V0.9.16 (2001-10-25) [umoeller]
+        {
+            _ulListNotify &= ~OBJLIST_QUERYAWAKEFSOBJECT;
+            fdrRemoveAwakeRootFolder(somSelf);
         }
     }
 
@@ -2089,7 +2097,13 @@ SOM_Scope BOOL  SOMLINK xfobjM_xwpclsRemoveObjectHotkey(M_XFldObject *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      we override this to initialize XWorkplace altogether.
+ *      this WPObject class method gets called when a class
+ *      is loaded by the WPS (probably from within a
+ *      somFindClass call) and allows the class to initialize
+ *      itself.
+ *
+ *      We override this for XFldObject to initialize
+ *      XWorkplace altogether.
  *
  *      This is probably the first WPS method called on the
  *      system (for M_WPObject, that is), so we use this
@@ -2145,16 +2159,21 @@ SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
         {
             CHAR    szClass[200];
             if (WinQueryClassName(hwndThis, sizeof(szClass), szClass))
-                if (strcmp(szClass, "wpFolder window") == 0)
+                if (!strcmp(szClass, "wpFolder window"))
                     // folder window:
                     fOpenFoldersFound = TRUE;
         }
         WinEndEnumWindows(henum);
 
         if (!fOpenFoldersFound)
+        {
+            _Pmpf((__FUNCTION__ ": initializing class %s",
+                   _somGetName(somSelf)));
+
             // only if no open folders are found:
             // initialize the kernel (kernel.c)
             initMain();
+        }
 
         krnClassInitialized(G_pcszXFldObject);
     }
@@ -2168,8 +2187,8 @@ SOM_Scope void  SOMLINK xfobjM_wpclsInitData(M_XFldObject *somSelf)
         // of class initialization
         if (pGlobalSettings->_fShowBootupStatus)
             xthrPostSpeedyMsg(QM_BOOTUPSTATUS,
-                             (MPARAM)somSelf,       // class object
-                             MPNULL);
+                              (MPARAM)somSelf,       // class object
+                              MPNULL);
     }
 #endif
 }

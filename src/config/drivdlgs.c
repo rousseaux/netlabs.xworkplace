@@ -228,6 +228,7 @@ BOOL LockPlugins(VOID)
                                    TRUE));      // request!
 
     return (!WinRequestMutexSem(G_hmxPlugins, SEM_INDEFINITE_WAIT));
+        // WinRequestMutexSem works even if the thread has no message queue
 }
 
 /*
@@ -706,7 +707,7 @@ BOOL EXPENTRY ShowIBM1S506Dlg(HWND hwndOwner,
 
 BOOL EXPENTRY CheckHPFSDriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVERSPEC pSpec, PSZ psz)
 {
-    if (stricmp(pSpec->pszFilename, "HPFS.IFS") == 0)
+    if (!stricmp(pSpec->pszFilename, "HPFS.IFS"))
     {
         pSpec->pfnShowDriverDlg = ShowHPFSDlg;
         return TRUE;
@@ -723,7 +724,7 @@ BOOL EXPENTRY CheckHPFSDriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVER
 
 BOOL EXPENTRY CheckHPFS386DriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVERSPEC pSpec, PSZ psz)
 {
-    if (stricmp(pSpec->pszFilename, "HPFS386.IFS") == 0)
+    if (!stricmp(pSpec->pszFilename, "HPFS386.IFS"))
     {
         pSpec->pfnShowDriverDlg = ShowHPFS386Dlg;
         return TRUE;
@@ -740,8 +741,8 @@ BOOL EXPENTRY CheckHPFS386DriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRI
 
 BOOL EXPENTRY CheckIBM1S506DriverName(HMODULE hmodPlugin, HMODULE hmodXFLDR, PDRIVERSPEC pSpec, PSZ psz)
 {
-    if (    (stricmp(pSpec->pszFilename, "IBM1S506.ADD") == 0)
-         || (stricmp(pSpec->pszFilename, "DANIS506.ADD") == 0)
+    if (    (!stricmp(pSpec->pszFilename, "IBM1S506.ADD"))
+         || (!stricmp(pSpec->pszFilename, "DANIS506.ADD"))
        )
     {
         pSpec->pfnShowDriverDlg = ShowIBM1S506Dlg;
@@ -789,19 +790,18 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
 
             // now parse the parameters
-            pszParamsCopy = strdup(pddd->szParams);
-            if (pszParamsCopy)
+            if (pszParamsCopy = strdup(pddd->szParams))
             {
                 pszToken = strtok(pszParamsCopy, " ");
                 while (pszToken)        // V0.9.12 (2001-05-03) [umoeller]
                 {
-                    if (memicmp(pszToken, "/C:", 3) == 0)
+                    if (!memicmp(pszToken, "/C:", 3))
                         ulCache = strtoul(pszToken+3, NULL, 0);
-                    else if (memicmp(pszToken, "/CACHE:", 7) == 0)
+                    else if (!memicmp(pszToken, "/CACHE:", 7))
                         ulCache = strtoul(pszToken+7, NULL, 0);
-                    else if (memicmp(pszToken, "/AUTOCHECK:", 11) == 0)
+                    else if (!memicmp(pszToken, "/AUTOCHECK:", 11))
                         WinSetDlgItemText(hwndDlg, ID_OSDI_AUTOCHECK, pszToken+11);
-                    else if (memicmp(pszToken, "/CRECL:", 7) == 0)
+                    else if (!memicmp(pszToken, "/CRECL:", 7))
                         ulCrecl = strtoul(pszToken+7, NULL, 0);
 
                     pszToken = strtok(NULL, " ");       // V0.9.12 (2001-05-03) [umoeller]
@@ -1001,13 +1001,12 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS386(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
             } END_CNRINFO(hwndCnr);
 
             // now parse the parameters
-            pszParamsCopy = strdup(pddd->szParams);
-            if (pszParamsCopy)
+            if (pszParamsCopy = strdup(pddd->szParams))
             {
                 pszToken = strtok(pszParamsCopy, " ");
                 while (pszToken)    // V0.9.12 (2001-05-03) [umoeller]
                 {
-                    if (memicmp(pszToken, "/AUTOCHECK:", 11) == 0)
+                    if (!memicmp(pszToken, "/AUTOCHECK:", 11))
                         WinSetDlgItemText(hwndDlg, ID_OSDI_AUTOCHECK, pszToken+11);
                     else if (cParams == 0)
                         // probably HPFS386.INI location then
@@ -1374,8 +1373,7 @@ VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
 
     // now parse the parameters
     // and update the settings
-    pszParamsCopy = strdup(pddd->szParams);
-    if (pszParamsCopy)
+    if (pszParamsCopy = strdup(pddd->szParams))
     {
         LONG            lAdapter = -1,      // current adapter = none
                         lUnit = -1;         // current unit = none
@@ -1391,7 +1389,7 @@ VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
         if (pszToken) do
         {
             // adapter spec?
-            if (memicmp(pszToken, "/A:", 3) == 0)
+            if (!memicmp(pszToken, "/A:", 3))
             {
                 LONG lNew = strtoul(pszToken + 3, 0, 0);
                 if ((lNew < 0) || (lNew > 1))
@@ -1412,7 +1410,7 @@ VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
             }
 
             // unit spec?
-            else if (memicmp(pszToken, "/U:", 3) == 0)
+            else if (!memicmp(pszToken, "/U:", 3))
             {
                 if (lAdapter == -1)
                     pszError = "Unit without previous adapter specified.";
@@ -1440,52 +1438,52 @@ VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
             }
 
             // global settings
-            else if (stricmp(pszToken, "/V") == 0)
+            else if (!stricmp(pszToken, "/V"))
                 pS506All->bInit = 1;
-            else if (stricmp(pszToken, "/!V") == 0)
+            else if (!stricmp(pszToken, "/!V"))
                 pS506All->bInit = 0;
-            else if (stricmp(pszToken, "/W") == 0)
+            else if (!stricmp(pszToken, "/W"))
                 pS506All->bInit = 2;
-            else if (stricmp(pszToken, "/DSG") == 0)
+            else if (!stricmp(pszToken, "/DSG"))
                 pS506All->b3ScatterGather = 1;
-            else if (stricmp(pszToken, "/!DSG") == 0)
+            else if (!stricmp(pszToken, "/!DSG"))
                 pS506All->b3ScatterGather = 0;
-            else if (memicmp(pszToken, "/PCLK:", 6) == 0)
+            else if (!memicmp(pszToken, "/PCLK:", 6))
             {
                 pS506All->fPCIClock = TRUE;
-                if (strcmp(pszToken+6, "25") == 0)
+                if (!strcmp(pszToken+6, "25"))
                     pS506All->ulPCIClock = 0;
-                else if (strcmp(pszToken+6, "33") == 0)
+                else if (!strcmp(pszToken+6, "33"))
                     pS506All->ulPCIClock = 1;
-                else if (strcmp(pszToken+6, "37") == 0)
+                else if (!strcmp(pszToken+6, "37"))
                     pS506All->ulPCIClock = 2;
                 else
                     pS506All->ulPCIClock = 3;
             }
-            else if (stricmp(pszToken, "/GBM") == 0)
+            else if (!stricmp(pszToken, "/GBM"))
                 pS506All->fGBM = TRUE;
-            else if (stricmp(pszToken, "/FORCEGBM") == 0)
+            else if (!stricmp(pszToken, "/FORCEGBM"))
                 pS506All->fForceGBM = TRUE;
-            else if (stricmp(pszToken, "/MGAFIX") == 0)
+            else if (!stricmp(pszToken, "/MGAFIX"))
                 pS506All->fMGAFix = TRUE;
 
             // adapter settings
-            else if (stricmp(pszToken, "/I") == 0)
+            else if (!stricmp(pszToken, "/I"))
                 if (pS506AdapterThis == NULL)
                     pszError = "Parameter out of adapter context.";
                 else
                     pS506AdapterThis->fIgnore = TRUE;
-            else if (memicmp(pszToken, "/R", 2) == 0)
+            else if (!memicmp(pszToken, "/R", 2))
                 if (pS506AdapterThis == NULL)
                     pszError = "Parameter out of adapter context.";
                 else
                     pS506AdapterThis->b3AllowReset = 1;
-            else if (memicmp(pszToken, "/!R", 3) == 0)
+            else if (!memicmp(pszToken, "/!R", 3))
                 if (pS506AdapterThis == NULL)
                     pszError = "Parameter out of adapter context.";
                 else
                     pS506AdapterThis->b3AllowReset = 0;
-            else if (memicmp(pszToken, "/P:", 3) == 0)
+            else if (!memicmp(pszToken, "/P:", 3))
                 if (pS506AdapterThis == NULL)
                     pszError = "Parameter out of adapter context.";
                 else
@@ -1494,7 +1492,7 @@ VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
                     pS506AdapterThis->ulBaseAddress = strtoul(pszToken + 3, 0,
                                                       16); // hex
                 }
-            else if (memicmp(pszToken, "/IRQ:", 5) == 0)
+            else if (!memicmp(pszToken, "/IRQ:", 5))
                 if (pS506AdapterThis == NULL)
                     pszError = "Parameter out of adapter context.";
                 else
@@ -1502,7 +1500,7 @@ VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
                     pS506AdapterThis->fIRQ = TRUE;
                     pS506AdapterThis->ulIRQ = strtoul(pszToken + 5, 0, 0);  // dec
                 }
-            else if (memicmp(pszToken, "/DC:", 4) == 0)
+            else if (!memicmp(pszToken, "/DC:", 4))
                 if (pS506AdapterThis == NULL)
                     pszError = "Parameter out of adapter context.";
                 else
@@ -1510,7 +1508,7 @@ VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
                     pS506AdapterThis->fDMAChannel = TRUE;
                     pS506AdapterThis->ulDMAChannel = strtoul(pszToken + 4, 0, 0);  // dec
                 }
-            else if (memicmp(pszToken, "/DSGP:", 6) == 0)
+            else if (!memicmp(pszToken, "/DSGP:", 6))
                 if (pS506AdapterThis == NULL)
                     pszError = "Parameter out of adapter context.";
                 else
@@ -1519,7 +1517,7 @@ VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
                     pS506AdapterThis->ulDMAScatterGatherAddr = strtoul(pszToken + 6, 0,
                                                                16);  // hex
                 }
-            else if (memicmp(pszToken, "/BM", 3) == 0)
+            else if (!memicmp(pszToken, "/BM", 3))
                 // busmaster: can be specified both
                 // as an adapter and user parameter
                 if (pS506AdapterThis == NULL)
@@ -1531,7 +1529,7 @@ VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
                 else
                     // adapter:
                     pS506AdapterThis->b3BusMaster = 1;
-            else if (memicmp(pszToken, "/!BM", 3) == 0)
+            else if (!memicmp(pszToken, "/!BM", 3))
                 // busmaster: can be specified both
                 // as an adapter and user parameter
                 if (pS506AdapterThis == NULL)
@@ -1545,7 +1543,7 @@ VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
                     pS506AdapterThis->b3BusMaster = 0;
 
             // unit settings
-            else if (memicmp(pszToken, "/T:", 3) == 0)
+            else if (!memicmp(pszToken, "/T:", 3))
                 if (pS506UnitThis == NULL)
                     pszError = "Parameter out of unit context.";
                 else
@@ -1553,7 +1551,7 @@ VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
                     pS506UnitThis->fRecoveryTime = TRUE;
                     pS506UnitThis->ulRecoveryTime = strtoul(pszToken + 3, 0, 0); // dec
                 }
-            else if (memicmp(pszToken, "/GEO:", 5) == 0)
+            else if (!memicmp(pszToken, "/GEO:", 5))
                 if (pS506UnitThis == NULL)
                     pszError = "Parameter out of unit context.";
                 else
@@ -1561,47 +1559,47 @@ VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
                     pS506UnitThis->fGeometry = TRUE;
                     strcpy(pS506UnitThis->szGeometry, pszToken+5);
                 }
-            else if (memicmp(pszToken, "/SMS", 4) == 0)
+            else if (!memicmp(pszToken, "/SMS", 4))
                 if (pS506UnitThis == NULL)
                     pszError = "Parameter out of unit context.";
                 else
                     pS506UnitThis->b3SMS = 1;
-            else if (memicmp(pszToken, "/!SMS", 5) == 0)
+            else if (!memicmp(pszToken, "/!SMS", 5))
                 if (pS506UnitThis == NULL)
                     pszError = "Parameter out of unit context.";
                 else
                     pS506UnitThis->b3SMS = 0;
-            else if (memicmp(pszToken, "/LBA", 4) == 0)
+            else if (!memicmp(pszToken, "/LBA", 4))
                 if (pS506UnitThis == NULL)
                     pszError = "Parameter out of unit context.";
                 else
                     pS506UnitThis->fLBA = TRUE;
-            else if (memicmp(pszToken, "/DM", 3) == 0)
+            else if (!memicmp(pszToken, "/DM", 3))
                 if (pS506UnitThis == NULL)
                     pszError = "Parameter out of unit context.";
                 else
                     pS506UnitThis->b3DASD = 1;
-            else if (memicmp(pszToken, "/!DM", 4) == 0)
+            else if (!memicmp(pszToken, "/!DM", 4))
                 if (pS506UnitThis == NULL)
                     pszError = "Parameter out of unit context.";
                 else
                     pS506UnitThis->b3DASD = 0;
-            else if (memicmp(pszToken, "/F", 2) == 0)
+            else if (!memicmp(pszToken, "/F", 2))
                 if (pS506UnitThis == NULL)
                     pszError = "Parameter out of unit context.";
                 else
                     pS506UnitThis->fForce = TRUE;
-            else if (memicmp(pszToken, "/ATAPI", 6) == 0)
+            else if (!memicmp(pszToken, "/ATAPI", 6))
                 if (pS506UnitThis == NULL)
                     pszError = "Parameter out of unit context.";
                 else
                     pS506UnitThis->b3ATAPI = 1;
-            else if (memicmp(pszToken, "/!ATAPI", 6) == 0)
+            else if (!memicmp(pszToken, "/!ATAPI", 6))
                 if (pS506UnitThis == NULL)
                     pszError = "Parameter out of unit context.";
                 else
                     pS506UnitThis->b3ATAPI = 0;
-            else if (memicmp(pszToken, "/IT:", 4) == 0)
+            else if (!memicmp(pszToken, "/IT:", 4))
                 if (pS506UnitThis == NULL)
                     pszError = "Parameter out of unit context.";
                 else
@@ -1609,7 +1607,7 @@ VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
                     pS506UnitThis->fTimeout = TRUE;
                     pS506UnitThis->ulTimeout = strtoul(pszToken + 4, 0, 0);
                 }
-            else if (memicmp(pszToken, "/MR:", 4) == 0)
+            else if (!memicmp(pszToken, "/MR:", 4))
                 if (pS506UnitThis == NULL)
                     pszError = "Parameter out of unit context.";
                 else
@@ -1619,12 +1617,12 @@ VOID S506ParseParamsString(PDRIVERDLGDATA pddd)
                     pS506UnitThis->bMWDMA = *(pszToken + 5) - '0';
                     pS506UnitThis->bPIO = *(pszToken + 6) - '0';
                 }
-            else if (memicmp(pszToken, "/RMV", 4) == 0)
+            else if (!memicmp(pszToken, "/RMV", 4))
                 if (pS506UnitThis == NULL)
                     pszError = "Parameter out of unit context.";
                 else
                     pS506UnitThis->b3Removeable = 1;
-            else if (memicmp(pszToken, "/!RMV", 4) == 0)
+            else if (!memicmp(pszToken, "/!RMV", 4))
                 if (pS506UnitThis == NULL)
                     pszError = "Parameter out of unit context.";
                 else
@@ -2316,7 +2314,7 @@ MRESULT EXPENTRY drv_fnwpConfigIBM1S506(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
             mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
 
             // initialize dialog data
-            if (stricmp(pddd->pDriverSpec->pszFilename, "DANIS506.ADD") == 0)
+            if (!stricmp(pddd->pDriverSpec->pszFilename, "DANIS506.ADD"))
                 pS506All->ulDriverType = DRVT_DANIS506;
             else
             {

@@ -97,6 +97,7 @@
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
@@ -167,6 +168,31 @@ typedef struct _WPSTYPEASSOCTREENODE
     ULONG       cbObjectHandles;
 } WPSTYPEASSOCTREENODE, *PWPSTYPEASSOCTREENODE;
 
+/*
+ *@@ INSTANCETYPE:
+ *
+ *@@added V0.9.16 (2001-10-28) [umoeller]
+ */
+
+typedef struct _INSTANCETYPE
+{
+    TREE        Tree;               // ulKey has upper-cased type string
+                                    // in newly allocated buffer
+    SOMClass    *pClassObject;
+} INSTANCETYPE, *PINSTANCETYPE;
+
+/*
+ *@@ INSTANCEFILTER:
+ *
+ *@@added V0.9.16 (2001-10-28) [umoeller]
+ */
+
+typedef struct _INSTANCEFILTER
+{
+    PSZ         pszFilter;
+    SOMClass    *pClassObject;
+} INSTANCEFILTER, *PINSTANCEFILTER;
+
 /* ******************************************************************
  *
  *   Global variables
@@ -186,6 +212,334 @@ static BOOL                G_fWPSTypesValid = FALSE;
 static HMTX                G_hmtxAssocsCaches = NULLHANDLE;
                         // mutex protecting all the caches
 
+static HMTX                G_hmtxInstances = NULLHANDLE;
+static TREE                *G_InstanceTypesTreeRoot = NULL;
+static LONG                G_cInstanceTypes;
+static LINKLIST            G_llInstanceFilters;
+
+/* ******************************************************************
+ *
+ *   Class types and filters
+ *
+ ********************************************************************/
+
+/*
+ *@@ ftypLockInstances:
+ *      locks the association caches.
+ *
+ *@@added V0.9.9 (2001-02-06) [umoeller]
+ */
+
+BOOL ftypLockInstances(VOID)
+{
+    if (G_hmtxInstances)
+        return (!WinRequestMutexSem(G_hmtxInstances, SEM_INDEFINITE_WAIT));
+            // WinRequestMutexSem works even if the thread has no message queue
+
+    // first call:
+    if (!DosCreateMutexSem(NULL,
+                           &G_hmtxInstances,
+                           0,
+                           TRUE))     // lock!
+    {
+        treeInit(&G_InstanceTypesTreeRoot,
+                 &G_cInstanceTypes);
+        lstInit(&G_llInstanceFilters,
+                TRUE);         // auto-free
+        return (TRUE);
+    }
+
+    return (FALSE);
+}
+
+/*
+ *@@ ftypUnlockInstances:
+ *      unlocks the association caches.
+ *
+ *@@added V0.9.9 (2001-02-06) [umoeller]
+ */
+
+VOID ftypUnlockInstances(VOID)
+{
+    DosReleaseMutexSem(G_hmtxInstances);
+}
+
+/*
+ *@@ ftypRegisterInstanceTypesAndFilters:
+ *      called by M_XWPFileSystem::wpclsInitData
+ *      to register the instance type and filters
+ *      of the class.
+ *
+ *      Returns the total no. of classes and filters
+ *      found or 0 if none.
+ *
+ *@@added V0.9.16 (2001-10-28) [umoeller]
+ */
+
+ULONG ftypRegisterInstanceTypesAndFilters(M_WPFileSystem *pClassObject)
+{
+    BOOL fLocked = FALSE;
+    ULONG ulrc = 0;
+
+    TRY_LOUD(excpt1)
+    {
+        PSZ pszTypes = NULL,
+            pszFilters = NULL;
+
+        // go for the types
+        if (    (pszTypes = _wpclsQueryInstanceType(pClassObject))
+             && (*pszTypes)     // many classes return ""
+           )
+        {
+            // this is separated by commas
+            PCSZ pStart = pszTypes;
+            BOOL fQuit;
+
+            // _Pmpf(("    types list %s", pszTypes));
+
+            do
+            {
+                PSZ pEnd;
+                ULONG ulLength;
+                PINSTANCETYPE pNew;
+
+                fQuit = TRUE;
+
+                // skip spaces
+                while (    (*pStart)
+                        && (*pStart == ' ')
+                      )
+                    pStart++;
+
+                if (pEnd = strchr(pStart, ','))
+                    ulLength = pEnd - pStart;
+                else
+                    ulLength = strlen(pStart);
+
+                if (    (ulLength)
+                     && (pNew = NEW(INSTANCETYPE))
+                   )
+                {
+                    PSZ pszTypeThis = malloc(ulLength + 1);
+                    memcpy(pszTypeThis, pStart, ulLength);
+                    pszTypeThis[ulLength] = '\0';
+                    nlsUpper(pszTypeThis, ulLength);
+
+                    // _Pmpf(("    got type %s", pszTypeThis));
+
+                    pNew->Tree.ulKey = (ULONG)pszTypeThis;
+                    pNew->pClassObject = pClassObject;
+
+                    if (!fLocked)
+                        fLocked = ftypLockInstances();
+
+                    if (fLocked)
+                    {
+                        if (treeInsert(&G_InstanceTypesTreeRoot,
+                                       &G_cInstanceTypes,
+                                       (TREE*)pNew,
+                                       treeCompareStrings))
+                        {
+                            // already registered:
+                            free(pszTypeThis);
+                            free(pNew);
+                        }
+                        else
+                        {
+                            // got something:
+                            ulrc++;
+                        }
+
+                        if (pEnd)       // points to comma
+                        {
+                            pStart = pEnd + 1;
+                            fQuit = FALSE;
+                        }
+                    }
+                }
+            } while (!fQuit);
+
+        } // end if (    (pszTypes = _wpclsQueryInstanceType(pClassObject))
+
+        // go for the filters
+        if (    (pszFilters = _wpclsQueryInstanceFilter(pClassObject))
+             && (*pszFilters)     // many classes return ""
+           )
+        {
+            // this is separated by commas
+            PCSZ pStart = pszFilters;
+            BOOL fQuit;
+
+            // _Pmpf(("    filters list %s", pszFilters));
+
+            do
+            {
+                PSZ pEnd;
+                ULONG ulLength;
+                PINSTANCEFILTER pNew;
+
+                fQuit = TRUE;
+
+                // skip spaces
+                while (    (*pStart)
+                        && (*pStart == ' ')
+                      )
+                    pStart++;
+
+                if (pEnd = strchr(pStart, ','))
+                    ulLength = pEnd - pStart;
+                else
+                    ulLength = strlen(pStart);
+
+                if (    (ulLength)
+                     && (pNew = NEW(INSTANCEFILTER))
+                   )
+                {
+                    PSZ pszFilterThis = malloc(ulLength + 1);
+                    memcpy(pszFilterThis, pStart, ulLength);
+                    pszFilterThis[ulLength] = '\0';
+                    nlsUpper(pszFilterThis, ulLength);
+
+                    pNew->pszFilter = pszFilterThis;
+                    pNew->pClassObject = pClassObject;
+
+                    // _Pmpf(("    got filter %s", pszFilterThis));
+
+                    if (!fLocked)
+                        fLocked = ftypLockInstances();
+
+                    if (fLocked)
+                    {
+                        if (lstAppendItem(&G_llInstanceFilters,
+                                          pNew))
+                            // got something:
+                            ulrc++;
+
+                        if (pEnd)       // points to comma
+                        {
+                            pStart = pEnd + 1;
+                            fQuit = FALSE;
+                        }
+                    }
+                }
+            } while (!fQuit);
+
+        } // end if (    (pszFilters = _wpclsQueryInstanceFilter(pClassObject))
+    }
+    CATCH(excpt1)
+    {
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "wpclsQueryInstanceType or *Filter failed for %s",
+               _somGetName(pClassObject));
+    } END_CATCH();
+
+    if (fLocked)
+        ftypUnlockInstances();
+
+    return (ulrc);
+}
+
+/*
+ *@@ ftypFindClassFromInstanceType:
+ *      returns the name of the class which claims ownership
+ *      of the specified file type or NULL if there's
+ *      none.
+ *
+ *      This searches without respect to case.
+ *
+ *@@added V0.9.16 (2001-10-28) [umoeller]
+ */
+
+PCSZ ftypFindClassFromInstanceType(PCSZ pcszType)     // in: type string (case ignored)
+{
+    PCSZ pcszClassName = NULL;
+    BOOL fLocked = FALSE;
+    PSZ pszUpperType = NULL;
+
+    TRY_LOUD(excpt1)
+    {
+        ULONG ulTypeLength;
+        if (    (ulTypeLength = strlen(pcszType))
+             && (pszUpperType = malloc(ulTypeLength + 1))
+             && (fLocked = ftypLockInstances())
+           )
+        {
+            PINSTANCETYPE p;
+
+            // upper-case this, or the tree won't work
+            nlsUpper(pszUpperType, ulTypeLength);
+
+            if (p = (PINSTANCETYPE)treeFind(G_InstanceTypesTreeRoot,
+                                            (ULONG)pszUpperType,
+                                            treeCompareStrings))
+                pcszClassName = _somGetName(p->pClassObject);
+        }
+    }
+    CATCH(excpt1)
+    {
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "crash for %s",
+               pcszType);
+        pcszClassName = NULL;
+    } END_CATCH();
+
+    if (pszUpperType)
+        free(pszUpperType);
+
+    if (fLocked)
+        ftypUnlockInstances();
+
+    return (pcszClassName);
+}
+
+/*
+ *@@ ftypFindClassFromInstanceFilter:
+ *      returns the name of the first class whose instance
+ *      filter matches pcszObjectTitle or NULL if there's none.
+ *
+ *@@added V0.9.16 (2001-10-28) [umoeller]
+ */
+
+PCSZ ftypFindClassFromInstanceFilter(PCSZ pcszObjectTitle)
+{
+    PCSZ pcszClassName = NULL;
+    BOOL fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (    (pcszObjectTitle)
+             && (*pcszObjectTitle)
+             && (fLocked = ftypLockInstances())
+           )
+        {
+            PLISTNODE pNode = lstQueryFirstNode(&G_llInstanceFilters);
+            while (pNode)
+            {
+                PINSTANCEFILTER p = (PINSTANCEFILTER)pNode->pItemData;
+                if (strhMatchOS2(p->pszFilter, pcszObjectTitle))
+                {
+                    pcszClassName = _somGetName(p->pClassObject);
+                    // and stop, we're done
+                    break;
+                }
+                pNode = pNode->pNext;
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "crash for %s",
+               pcszObjectTitle);
+        pcszClassName = NULL;
+    } END_CATCH();
+
+    if (fLocked)
+        ftypUnlockInstances();
+
+    return (pcszClassName);
+}
+
 /* ******************************************************************
  *
  *   Associations caches
@@ -201,26 +555,24 @@ static HMTX                G_hmtxAssocsCaches = NULLHANDLE;
 
 BOOL ftypLockCaches(VOID)
 {
-    BOOL    brc = FALSE;
-    if (!G_hmtxAssocsCaches)
-    {
-        // first call:
-        brc = (!DosCreateMutexSem(NULL,
-                                  &G_hmtxAssocsCaches,
-                                  0,
-                                  TRUE));     // lock!
-        if (brc)
-        {
-            lstInit(&G_llTypesWithFilters,
-                    TRUE);         // auto-free
-            treeInit(&G_WPSTypeAssocsTreeRoot,
-                     &G_cWPSTypeAssocsTreeItems);
-        }
-    }
-    else
-        brc = (!WinRequestMutexSem(G_hmtxAssocsCaches, SEM_INDEFINITE_WAIT));
+    if (G_hmtxAssocsCaches)
+        return (!WinRequestMutexSem(G_hmtxAssocsCaches, SEM_INDEFINITE_WAIT));
+            // WinRequestMutexSem works even if the thread has no message queue
 
-    return (brc);
+    // first call:
+    if (!DosCreateMutexSem(NULL,
+                           &G_hmtxAssocsCaches,
+                           0,
+                           TRUE))     // lock!
+    {
+        lstInit(&G_llTypesWithFilters,
+                TRUE);         // auto-free
+        treeInit(&G_WPSTypeAssocsTreeRoot,
+                 &G_cWPSTypeAssocsTreeItems);
+        return (TRUE);
+    }
+
+    return (FALSE);
 }
 
 /*
@@ -434,8 +786,8 @@ VOID BuildWPSTypesCache(VOID)
         PSZ pTypeThis = pszAssocData;
         while (*pTypeThis)
         {
-            PWPSTYPEASSOCTREENODE pNewNode = malloc(sizeof(WPSTYPEASSOCTREENODE));
-            if (pNewNode)
+            PWPSTYPEASSOCTREENODE pNewNode;
+            if (pNewNode = NEW(WPSTYPEASSOCTREENODE))
             {
                 pNewNode->Tree.ulKey = (ULONG)strdup(pTypeThis);
                 pNewNode->pszObjectHandles = prfhQueryProfileData(HINI_USER,
@@ -2195,7 +2547,7 @@ PRECORDCORE AddFilter2Cnr(PFILETYPESPAGEDATA pftpd,
     {
         PSZ pszNewFilter = strdup(pszFilter);
         // always make filters upper-case
-        strupr(pszNewFilter);
+        nlsUpper(pszNewFilter, 0);
 
         // insert the record (helpers/winh.c)
         cnrhInsertRecords(pftpd->hwndFiltersCnr,

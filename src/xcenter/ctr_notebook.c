@@ -48,6 +48,7 @@
 #define INCL_WINMENUS
 #define INCL_WINDIALOGS
 #define INCL_WINBUTTONS
+#define INCL_WINSTATICS
 #define INCL_WINSTDCNR
 #define INCL_WINSTDSLIDER
 #include <os2.h>
@@ -63,6 +64,7 @@
 // headers in /helpers
 #include "helpers\apmh.h"               // Advanced Power Management helpers
 #include "helpers\cnrh.h"               // container helper routines
+#include "helpers\dialog.h"             // dialog helpers
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
@@ -163,7 +165,8 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
         //     key for wpSaveState/wpRestoreState
                4,      // bitfield! only first item!
         //     default, ulExtra,            min, max
-               XCS_FLATBUTTONS | XCS_SUNKBORDERS | XCS_SIZINGBARS, 0, 0, 0,
+               XCS_FLATBUTTONS | XCS_SUNKBORDERS | XCS_SIZINGBARS,
+                        0,                  0,   0,
 
         // type,  setup string,     offset,
         STG_BITFLAG, "FLATBUTTONS",    FIELDOFFSET(XCenterData, flDisplayStyle),
@@ -200,6 +203,15 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
                0,      // bitfield! only first item!
         //     default, ulExtra,            min, max
                XCS_SPACINGLINES, XCS_SPACINGLINES, 0,   0,
+                    // default changed V0.9.16 (2001-10-15) [umoeller]
+
+        // type,  setup string,     offset,
+        // V0.9.16 (2001-10-24) [umoeller]
+        STG_BITFLAG, "NOHATCHOPENOBJ",      FIELDOFFSET(XCenterData, flDisplayStyle),
+        //     key for wpSaveState/wpRestoreState
+               0,      // bitfield! only first item!
+        //     default, ulExtra,            min, max
+               0,       XCS_NOHATCHINUSE,   0,   0,
                     // default changed V0.9.16 (2001-10-15) [umoeller]
 
         /*
@@ -595,7 +607,7 @@ BOOL ctrpSetupOnce(XCenter *somSelf,
 {
     BOOL brc = TRUE;
 
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     TRY_LOUD(excpt1)
     {
         if (LOCK_OBJECT(Lock, somSelf))
@@ -1249,6 +1261,197 @@ MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     return (mrc);
 }
 
+/* ******************************************************************
+ *
+ *   "View 2" ("Style") page notebook callbacks (notebook.c)
+ *
+ ********************************************************************/
+
+SLDCDATA
+        BorderWidthSliderCData =
+             {
+                     sizeof(SLDCDATA),
+            // usScale1Increments:
+                     11,          // scale 1 increments
+                     0,         // scale 1 spacing
+                     1,          // scale 2 increments
+                     0           // scale 2 spacing
+             },
+        BorderSpacingSliderCData =
+             {
+                     sizeof(SLDCDATA),
+            // usScale1Increments:
+                     11,          // scale 1 increments
+                     0,         // scale 1 spacing
+                     1,          // scale 2 increments
+                     0           // scale 2 spacing
+             },
+        WidgetSpacingSliderCData =
+             {
+                     sizeof(SLDCDATA),
+            // usScale1Increments:
+                     10,          // scale 1 increments
+                     0,         // scale 1 spacing
+                     1,          // scale 2 increments
+                     0           // scale 2 spacing
+             };
+
+#define STYLE_SLIDERS_WIDTH        150
+#define STYLE_SLIDERS_HEIGHT        30
+#define STYLE_SLIDERTEXT_WIDTH      30
+
+CONTROLDEF
+    BorderWidthGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING,
+                            ID_CRDI_VIEW2_3DBORDER_GROUP),
+    BorderWidthSlider =
+        {
+                WC_SLIDER,
+                NULL,
+                WS_VISIBLE | WS_TABSTOP | WS_GROUP
+                    | SLS_HORIZONTAL
+                    | SLS_PRIMARYSCALE1
+                    | SLS_BUTTONSRIGHT
+                    | SLS_SNAPTOINCREMENT,
+                ID_CRDI_VIEW2_3DBORDER_SLIDER,
+                CTL_COMMON_FONT,
+                0,
+                { STYLE_SLIDERS_WIDTH, STYLE_SLIDERS_HEIGHT },     // size
+                5,               // spacing
+                &BorderWidthSliderCData
+        },
+    BorderWidthText = CONTROLDEF_TEXT(
+                            "M",           // to be replaced
+                            ID_CRDI_VIEW2_3DBORDER_TEXT,
+                            STYLE_SLIDERTEXT_WIDTH,
+                            -1),
+    DrawAll3DBordersCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_CRDI_VIEW2_ALL3DBORDERS,
+                            -1,
+                            -1),
+    BorderSpacingGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING,
+                            ID_CRDI_VIEW2_BDRSPACE_GROUP),
+    BorderSpacingSlider =
+        {
+                WC_SLIDER,
+                NULL,
+                WS_VISIBLE | WS_TABSTOP | WS_GROUP
+                    | SLS_HORIZONTAL
+                    | SLS_PRIMARYSCALE1
+                    | SLS_BUTTONSRIGHT
+                    | SLS_SNAPTOINCREMENT,
+                ID_CRDI_VIEW2_BDRSPACE_SLIDER,
+                CTL_COMMON_FONT,
+                0,
+                { STYLE_SLIDERS_WIDTH, STYLE_SLIDERS_HEIGHT },     // size
+                5,               // spacing
+                &BorderSpacingSliderCData
+        },
+    BorderSpacingText = CONTROLDEF_TEXT(
+                            "M",           // to be replaced
+                            ID_CRDI_VIEW2_BDRSPACE_TEXT,
+                            STYLE_SLIDERTEXT_WIDTH,
+                            -1),
+    WidgetSpacingGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING,
+                            ID_CRDI_VIEW2_WGTSPACE_GROUP),
+    WidgetSpacingSlider =
+        {
+                WC_SLIDER,
+                NULL,
+                WS_VISIBLE | WS_TABSTOP | WS_GROUP
+                    | SLS_HORIZONTAL
+                    | SLS_PRIMARYSCALE1
+                    | SLS_BUTTONSRIGHT
+                    | SLS_SNAPTOINCREMENT,
+                ID_CRDI_VIEW2_WGTSPACE_SLIDER,
+                CTL_COMMON_FONT,
+                0,
+                { STYLE_SLIDERS_WIDTH, STYLE_SLIDERS_HEIGHT },     // size
+                5,               // spacing
+                &WidgetSpacingSliderCData
+        },
+    WidgetSpacingText = CONTROLDEF_TEXT(
+                            "M",           // to be replaced
+                            ID_CRDI_VIEW2_WGTSPACE_TEXT,
+                            STYLE_SLIDERTEXT_WIDTH,
+                            -1),
+    SizingBarsCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_CRDI_VIEW2_SIZINGBARS,
+                            -1,
+                            -1),
+    SpacingLinesCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_CRDI_VIEW2_SPACINGLINES,
+                            -1,
+                            -1),
+    DefWidgetStylesGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING,
+                            ID_CRDI_VIEW2_DEFSTYLES_GROUP),
+
+    FlatButtonsCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_CRDI_VIEW2_FLATBUTTONS,
+                            -1,
+                            -1),
+    SunkBordersCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_CRDI_VIEW2_SUNKBORDERS,
+                            -1,
+                            -1),
+    HatchInUseCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_CRDI_VIEW2_HATCHINUSE,
+                            -1,
+                            -1);
+
+DLGHITEM dlgXCenterStyle[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(0),
+                START_GROUP_TABLE(&BorderWidthGroup),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&BorderWidthSlider),
+                        CONTROL_DEF(&BorderWidthText),
+                    START_ROW(0),
+                        CONTROL_DEF(&DrawAll3DBordersCB),
+                END_TABLE,
+            // START_ROW(0),
+                START_GROUP_TABLE(&BorderSpacingGroup),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&BorderSpacingSlider),
+                        CONTROL_DEF(&BorderSpacingText),
+                END_TABLE,
+            START_ROW(0),
+                START_GROUP_TABLE(&WidgetSpacingGroup),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&WidgetSpacingSlider),
+                        CONTROL_DEF(&WidgetSpacingText),
+                    START_ROW(0),
+                        CONTROL_DEF(&SizingBarsCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&SpacingLinesCB),
+                END_TABLE,
+            // START_ROW(0),
+                START_GROUP_TABLE(&DefWidgetStylesGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&FlatButtonsCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&SunkBordersCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&HatchInUseCB),
+                END_TABLE,
+            START_ROW(0),       // notebook buttons (will be moved)
+                CONTROL_DEF(&G_UndoButton),         // notebook.c
+                CONTROL_DEF(&G_DefaultButton),      // notebook.c
+                CONTROL_DEF(&G_HelpButton),         // notebook.c
+        END_TABLE
+    };
+
+
 /*
  *@@ ctrpView2InitPage:
  *      notebook callback function (notebook.c) for the
@@ -1259,6 +1462,8 @@ MRESULT ctrpView1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *@@added V0.9.7 (2000-12-05) [umoeller]
  *@@changed V0.9.9 (2001-01-29) [umoeller]: "Undo" data wasn't working
  *@@changed V0.9.13 (2001-06-19) [umoeller]: added spacing lines setting
+ *@@changed V0.9.16 (2001-10-24) [umoeller]: now using dialog formatter
+ *@@changed V0.9.16 (2001-10-24) [umoeller]: added hatch-in-use setting
  */
 
 VOID ctrpView2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -1278,6 +1483,12 @@ VOID ctrpView2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
             // store in noteboot struct
             pcnbp->pUser = pBackup;
+
+            // insert the controls using the dialog formatter
+            // V0.9.16 (2001-10-24) [umoeller]
+            ntbFormatPage(pcnbp->hwndDlgPage,
+                          dlgXCenterStyle,
+                          ARRAYITEMCOUNT(dlgXCenterStyle));
         }
 
         winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
@@ -1341,9 +1552,11 @@ VOID ctrpView2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         // default widget styles
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_FLATBUTTONS,
                             ((_flDisplayStyle & XCS_FLATBUTTONS) != 0));
-
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_SUNKBORDERS,
                             ((_flDisplayStyle & XCS_SUNKBORDERS) != 0));
+        // V0.9.16 (2001-10-24) [umoeller]
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_CRDI_VIEW2_HATCHINUSE,
+                            ((_flDisplayStyle & XCS_NOHATCHINUSE) == 0));
     }
 }
 
@@ -1356,6 +1569,7 @@ VOID ctrpView2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@added V0.9.7 (2000-12-05) [umoeller]
  *@@changed V0.9.9 (2001-01-29) [umoeller]: now using cmnSetup* funcs
  *@@changed V0.9.13 (2001-06-19) [umoeller]: added spacing lines setting
+ *@@changed V0.9.16 (2001-10-24) [umoeller]: added hatch-in-use setting
  */
 
 MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1419,6 +1633,14 @@ MRESULT ctrpView2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_CRDI_VIEW2_SUNKBORDERS:
             ulDisplayFlagChanged = XCS_SUNKBORDERS;
+        break;
+
+        case ID_CRDI_VIEW2_HATCHINUSE:              // V0.9.16 (2001-10-24) [umoeller]
+            // note, this one is reversed
+            if (!ulExtra)
+                _flDisplayStyle |= XCS_NOHATCHINUSE;
+            else
+                _flDisplayStyle &= ~XCS_NOHATCHINUSE;
         break;
 
         case DID_DEFAULT:

@@ -718,7 +718,7 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                                     // fixed V0.9.7 (2001-01-19) [umoeller]...
                                     // for some reason, this returns 0 on success!!
                             {
-                                if (pgmwStickyCheck(hwndActive, swc.szSwtitle))
+                                if (pgmwIsSticky(hwndActive, swc.szSwtitle))
                                     // it's sticky: get outta here
                                     break;
                             }

@@ -88,6 +88,7 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
+#include "shared\init.h"                // XWorkplace initialization
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
@@ -95,7 +96,7 @@
 #include "filesys\desktop.h"            // XFldDesktop implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
-#include "startshut\archives.h"         // WPSArcO declarations
+#include "startshut\archives.h"         // archiving declarations
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
 
 // other SOM headers
@@ -563,7 +564,10 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpAddSettingsPages(XFldDesktop *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      initialize XFldDesktop class data.
+ *      this WPObject class method gets called when a class
+ *      is loaded by the WPS (probably from within a
+ *      somFindClass call) and allows the class to initialize
+ *      itself.
  *
  *@@changed V0.9.0 [umoeller]: added class object to KERNELGLOBALS
  */
@@ -575,7 +579,9 @@ SOM_Scope void  SOMLINK xfdeskM_wpclsInitData(M_XFldDesktop *somSelf)
 
     M_XFldDesktop_parent_M_WPDesktop_wpclsInitData(somSelf);
 
-    krnClassInitialized(G_pcszXFldDesktop);
+    if (krnClassInitialized(G_pcszXFldDesktop))
+        // first call: check if the desktop is valid...
+        initRepairDesktopIfBroken();
 }
 
 /*

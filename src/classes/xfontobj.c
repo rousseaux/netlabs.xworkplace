@@ -132,7 +132,7 @@ SOM_Scope BOOL  SOMLINK fono_xwpSetFontFile(XWPFontObject *somSelf,
                                             PSZ pszFontFile)
 {
     BOOL brc = FALSE;
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
 
     XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_xwpSetFontFile");
@@ -176,7 +176,7 @@ SOM_Scope BOOL  SOMLINK fono_xwpQueryFontFile(XWPFontObject *somSelf,
                                               PSZ pszFontFile)
 {
     BOOL brc = FALSE;
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
 
     XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_xwpQueryFontFile");
@@ -211,7 +211,7 @@ SOM_Scope BOOL  SOMLINK fono_xwpSetFontFamily(XWPFontObject *somSelf,
                                               PSZ pszFontFamily)
 {
     BOOL brc = FALSE;
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
 
     XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_xwpSetFontFamily");
@@ -260,7 +260,7 @@ SOM_Scope BOOL  SOMLINK fono_xwpQueryFontFamily(XWPFontObject *somSelf,
                                                 PSZ pszFontFamily)
 {
     BOOL brc = FALSE;
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
 
     XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_xwpQueryFontFamily");
@@ -296,7 +296,7 @@ SOM_Scope BOOL  SOMLINK fono_xwpSetFontFileError(XWPFontObject *somSelf,
                                                  ULONG arc)
 {
     BOOL brc = FALSE;
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
 
     XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_xwpSetFontFileError");
@@ -783,8 +783,10 @@ SOM_Scope BOOL  SOMLINK fonoM_xwpclsSetFontSampleHints(M_XWPFontObject *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      this class methods allows the class to
- *      initialize itself.
+ *      this WPObject class method gets called when a class
+ *      is loaded by the WPS (probably from within a
+ *      somFindClass call) and allows the class to initialize
+ *      itself.
  */
 
 SOM_Scope void  SOMLINK fonoM_wpclsInitData(M_XWPFontObject *somSelf)

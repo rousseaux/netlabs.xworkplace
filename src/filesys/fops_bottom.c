@@ -103,6 +103,7 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xfobj.ih"
+#include "xfldr.ih"
 #include "xfont.ih"
 #include "xfontfile.ih"
 #include "xfontobj.ih"
@@ -117,12 +118,12 @@
 #include "config\fonts.h"               // font folder implementation
 
 #include "filesys\fileops.h"            // file operations implementation
+#include "filesys\folder.h"             // XFolder implementation
 #include "filesys\trash.h"              // trash can implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
-#include <wpfolder.h>
 
 /*
  *@@ FILETASKLIST:
@@ -277,8 +278,7 @@ HFILETASKLIST fopsCreateFileTaskList(ULONG ulOperation,     // in: XFT_* flag
 
     if (pSourceFolder)
     {
-        fSourceLocked = !wpshRequestFolderMutexSem(pSourceFolder, 5000);
-        if (fSourceLocked)
+        if (fSourceLocked = !fdrRequestFolderMutexSem(pSourceFolder, 5000))
             fProceed = TRUE;
     }
     else
@@ -302,7 +302,7 @@ HFILETASKLIST fopsCreateFileTaskList(ULONG ulOperation,     // in: XFT_* flag
 
     // error
     if (fSourceLocked)
-        wpshReleaseFolderMutexSem(pSourceFolder);
+        fdrReleaseFolderMutexSem(pSourceFolder);
 
     return (NULLHANDLE);
 }
@@ -500,7 +500,7 @@ FOPSRET fopsStartTask(HFILETASKLIST hftl,
     // can start working
     if (pftl->fSourceLocked)
     {
-        wpshReleaseFolderMutexSem(pftl->pSourceFolder);
+        fdrReleaseFolderMutexSem(pftl->pSourceFolder);
         pftl->fSourceLocked = FALSE;
     }
 
@@ -767,8 +767,7 @@ FOPSRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
 
     TRY_LOUD(excpt1)
     {
-        fFolderSemOwned = !wpshRequestFolderMutexSem(pFolder, 5000);
-        if (!fFolderSemOwned)
+        if (!(fFolderSemOwned = !fdrRequestFolderMutexSem(pFolder, 5000)))
             frc = FOPSERR_REQUESTFOLDERMUTEX_FAILED;
         else
         {
@@ -893,7 +892,7 @@ FOPSRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
         DosFindClose(hdirFindHandle);
 
     if (fFolderSemOwned)
-        wpshReleaseFolderMutexSem(pFolder);
+        fdrReleaseFolderMutexSem(pFolder);
 
     return (frc);
 }
@@ -1047,7 +1046,7 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                         // these have all piled up for the sneaky stuff
                         // above and will cause some internal overflow
                         // if we don't give the WPS a chance to process them!
-                        wpshFlushNotifications(pSubObjThis);
+                        fdrFlushNotifications(pSubObjThis);
                     }
 
                     if (frc == NO_ERROR)
@@ -1498,12 +1497,12 @@ BOOL fopsDeleteFileTaskList(HFILETASKLIST hftl)
     {
         if (pftl->fTargetLocked)
         {
-            wpshReleaseFolderMutexSem(pftl->pTargetFolder);
+            fdrReleaseFolderMutexSem(pftl->pTargetFolder);
             pftl->fTargetLocked = FALSE;
         }
         if (pftl->fSourceLocked)
         {
-            wpshReleaseFolderMutexSem(pftl->pSourceFolder);
+            fdrReleaseFolderMutexSem(pftl->pSourceFolder);
             pftl->fSourceLocked = FALSE;
         }
         lstClear(&pftl->llObjects);       // frees items automatically

@@ -1012,7 +1012,7 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
                     WinQueryClassName(hwndTemp,
                                       sizeof(szFocusSaveClass),
                                       szFocusSaveClass);
-                    if (strcmp(szFocusSaveClass, "#1") == 0)
+                    if (!strcmp(szFocusSaveClass, "#1"))
                     {
                         // found another frame in between:
                         hwndMDIFrame = hwndTemp;

@@ -181,6 +181,7 @@ BOOL ctrpLockClasses(VOID)
                                    TRUE));       // request now
 
     return (!WinRequestMutexSem(G_hmtxClasses, SEM_INDEFINITE_WAIT));
+        // WinRequestMutexSem works even if the thread has no message queue
 }
 
 /*
@@ -1186,7 +1187,7 @@ PTRAYSETTING ctrpCreateTray(PPRIVATEWIDGETSETTING ppws, // in: private tray widg
     {
         ZERO(pNewTray);
 
-        pNewTray->pszTrayName = strhdup(pcszTrayName);
+        pNewTray->pszTrayName = strhdup(pcszTrayName, NULL);
 
         lstInit(&pNewTray->llSubwidgetSettings, FALSE);
 
@@ -1308,7 +1309,7 @@ ULONG ctrpQueryWidgetsCount(XCenter *somSelf)
 
 VOID ctrpFreeWidgets(XCenter *somSelf)
 {
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     TRY_LOUD(excpt1)
     {
         if (LOCK_OBJECT(Lock, somSelf))
@@ -1351,7 +1352,7 @@ PVOID ctrpQueryWidgets(XCenter *somSelf,
 {
     PXCENTERWIDGETSETTING paSettings = NULL;
 
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     TRY_LOUD(excpt1)
     {
         if (LOCK_OBJECT(Lock, somSelf))
@@ -1368,8 +1369,8 @@ PVOID ctrpQueryWidgets(XCenter *somSelf,
                      ul++)
                 {
                     PPRIVATEWIDGETSETTING pSource = (PPRIVATEWIDGETSETTING)pNode->pItemData;
-                    paSettings[ul].pszWidgetClass = strhdup(pSource->Public.pszWidgetClass);
-                    paSettings[ul].pszSetupString = strhdup(pSource->Public.pszSetupString);
+                    paSettings[ul].pszWidgetClass = strhdup(pSource->Public.pszWidgetClass, NULL);
+                    paSettings[ul].pszSetupString = strhdup(pSource->Public.pszSetupString, NULL);
 
                     pNode = pNode->pNext;
                 }

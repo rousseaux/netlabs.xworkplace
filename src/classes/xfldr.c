@@ -123,15 +123,17 @@
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\stringh.h"            // string helper routines
+#include "helpers\tree.h"               // red-black binary trees
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\wphandle.h"           // file-system object handles
 
 // SOM headers which don't crash with prec. header files
+#include "xfobj.ih"                     // XFldObject
+#include "xfdisk.ih"                    // XFldDisk
 #include "xfldr.ih"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
-#include "shared\cnrsort.h"             // container sort comparison functions
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
@@ -151,10 +153,6 @@
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 
 #include <wprootf.h>                    // WPRootFolder
-#include <wpshadow.h>                   // WPShadow
-// #include <wpdesk.h>                     // WPDesktop
-#include "xfobj.h"                      // XFldObject
-#include "xfdisk.h"                     // XFldDisk
 
 /* ******************************************************************
  *                                                                  *
@@ -314,7 +312,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
 
     BOOL fLocked = FALSE;
 
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
 
     TRY_LOUD(excpt1)
     {
@@ -398,7 +396,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpSortViewOnce(XFolder *somSelf,
 
     if (pGlobalSettings->ExtFolderSort)
     {
-        WPSHLOCKSTRUCT Lock;
+        WPSHLOCKSTRUCT Lock = {0};
         TRY_LOUD(excpt1)
         {
             if (LOCK_OBJECT(Lock, somSelf))
@@ -562,8 +560,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_xwpBeginEnumContent");
 
-    pec = malloc(sizeof(ENUMCONTENT));
-    if (pec)
+    if (pec = malloc(sizeof(ENUMCONTENT)))
     {
         BOOL                 fItemsFound = FALSE;
         WPObject             *pObj;
@@ -579,8 +576,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
 
         TRY_LOUD(excpt1)
         {
-            fFolderLocked = !wpshRequestFolderMutexSem(somSelf, 5000);
-            if (fFolderLocked)
+            if (fFolderLocked = !fdrRequestFolderMutexSem(somSelf, 5000))
             {
                 // get the folder's content as the WPS delivers it.
                 // This is unsorted. Apparently, the WPS returns items
@@ -591,13 +587,13 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
                 //      placed in this folder.
 
                 // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-                somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                        = SOM_Resolve(somSelf, WPFolder, wpQueryContent);
+                // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                        // = SOM_Resolve(somSelf, WPFolder, wpQueryContent);
 
-                for (pObj = rslv_wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
-                     (pObj);
-                     pObj = rslv_wpQueryContent(somSelf, pObj, (ULONG)QC_NEXT)
-                    )
+                // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+                for (pObj = _wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
+                     pObj;
+                     pObj = *wpshGetNextObjPointer(pObj))
                 {
                     // create new list item
                     PORDEREDLISTITEM poliNew = malloc(sizeof(ORDEREDLISTITEM));
@@ -644,7 +640,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
         CATCH(excpt1) {} END_CATCH();
 
         if (fFolderLocked)
-            wpshReleaseFolderMutexSem(somSelf);
+            fdrReleaseFolderMutexSem(somSelf);
 
         if (!fItemsFound)
         {
@@ -937,7 +933,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryQuickOpen(XFolder *somSelf)
 SOM_Scope BOOL  SOMLINK xf_xwpSetDefaultDocument(XFolder *somSelf,
                                                  WPFileSystem* pDefDoc)
 {
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     BOOL brc = FALSE;
     XFolderMethodDebug("XFolder","xf_xwpSetDefaultDocument");
 
@@ -992,7 +988,7 @@ SOM_Scope WPFileSystem*  SOMLINK xf_xwpQueryDefaultDocument(XFolder *somSelf)
 
     if (!cmnIsADesktop(somSelf))
     {
-        WPSHLOCKSTRUCT Lock;
+        WPSHLOCKSTRUCT Lock = {0};
         TRY_LOUD(excpt1)
         {
             if (LOCK_OBJECT(Lock, somSelf))
@@ -1058,7 +1054,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryMenuBarVisibility(XFolder *somSelf)
                                           "ON",         // V0.9.9 (2001-03-27) [umoeller]
                                           szTemp,
                                           sizeof(szTemp));
-                    if (strcmp(szTemp, "ON") == 0)
+                    if (!strcmp(szTemp, "ON"))
                         brc = TRUE;
                 }
             }
@@ -1113,6 +1109,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetStatusBarVisibility(XFolder *somSelf,
             ntbUpdateVisiblePage(somSelf, SP_XFOLDER_FLDR);
         }
     }
+
     return (TRUE);
 }
 
@@ -1260,9 +1257,8 @@ SOM_Scope BOOL  SOMLINK xf_xwpUpdateStatusBar(XFolder *somSelf,
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_xwpUpdateStatusBar");
 
-    psz = stbComposeText(somSelf,
-                         hwndCnr);
-    if (psz)
+    if (psz = stbComposeText(somSelf,
+                             hwndCnr))
     {
         WinSetWindowText(hwndStatusBar, psz);
         free(psz);
@@ -1418,6 +1414,20 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
     _cNotificationsPending = 0;
 
     _fInwpAddFolderView1Page = FALSE;
+
+    if (_pvFdrContents = malloc(sizeof(FDRCONTENTS)))
+            // V0.9.16 (2001-10-23) [umoeller]
+    {
+        treeInit(&((PFDRCONTENTS)_pvFdrContents)->FileSystemsTreeRoot,
+                 &((PFDRCONTENTS)_pvFdrContents)->cFileSystems);
+        treeInit(&((PFDRCONTENTS)_pvFdrContents)->AbstractsTreeRoot,
+                 &((PFDRCONTENTS)_pvFdrContents)->cAbstracts);
+    }
+
+    _pMonitor = NULL;
+
+    _pfn_wpRequestFolderMutexSem = NULL;
+    _pfn_wpReleaseFolderMutexSem = NULL;
 }
 
 /*
@@ -1435,15 +1445,15 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
 
 SOM_Scope BOOL  SOMLINK xf_wpSetup(XFolder *somSelf, PSZ pszSetupString)
 {
-    BOOL        rc = FALSE;             // processed
-
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpSetup");
 
-    if (rc = XFolder_parent_WPFolder_wpSetup(somSelf, pszSetupString))
-        rc = fdrSetup(somSelf, pszSetupString);
+    if (    (XFolder_parent_WPFolder_wpSetup(somSelf, pszSetupString))
+         && (fdrSetup(somSelf, pszSetupString))
+       )
+        return (TRUE);
 
-    return (rc);
+    return (FALSE);
 }
 
 /*
@@ -1475,7 +1485,7 @@ SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
                                          ULONG ulCode,
                                          WPObject* refObject)
 {
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     // XFolderMethodDebug("XFolder","xf_wpObjectReady");
 
     #if defined(DEBUG_SOMMETHODS) || defined(DEBUG_AWAKEOBJECTS)
@@ -1500,6 +1510,13 @@ SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
 
     TRY_LOUD(excpt1)
     {
+        if (_somIsA(somSelf, _WPRootFolder))
+        {
+            // a root folder has been made awake:
+            fdrRegisterAwakeRootFolder(somSelf);
+            // strange, we never get this for WPSharedDir objs
+        }
+
         if (LOCK_OBJECT(Lock, somSelf))
         {
             XFolderData *somThis = XFolderGetData(somSelf);
@@ -1562,8 +1579,12 @@ SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
         _pszFolderBkgndImageFile = NULL;
     }
 
+    // if this is the folder that was used in the
+    // "find awake fs object" cache, null that
+
+
     // lock out the folder auto-refresh
-    if (wpshGetNotifySem(SEM_INDEFINITE_WAIT))
+    if (fdrGetNotifySem(SEM_INDEFINITE_WAIT))
     {
         // now check if we have any pending file-system
         // notifications from folder auto-refresh
@@ -1573,7 +1594,13 @@ SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
             _cNotificationsPending = 0;
         }
 
-        wpshReleaseNotifySem();
+        fdrReleaseNotifySem();
+    }
+
+    if (_pvFdrContents)      // V0.9.16 (2001-10-23) [umoeller]
+    {
+        free(_pvFdrContents);       // @@todo check if objs are still in there
+        _pvFdrContents = NULL;
     }
 
     XFolder_parent_WPFolder_wpUnInitData(somSelf);
@@ -1831,7 +1858,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreLong(XFolder *somSelf, PSZ pszClass,
     brc = XFolder_parent_WPFolder_wpRestoreLong(somSelf, pszClass,
                                                 ulKey, pulValue);
 
-    if (strcmp(pszClass, "WPFolder") == 0)
+    if (!strcmp(pszClass, G_pcszWPFolder))
     {
         switch (ulKey)
         {
@@ -1896,7 +1923,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreString(XFolder *somSelf,
                                                   pszClass, ulKey,
                                                   pszValue, pcbValue);
 
-    if (strcmp(pszClass, "WPFolder") == 0)
+    if (!strcmp(pszClass, G_pcszWPFolder))
     {
         switch (ulKey)
         {
@@ -1970,7 +1997,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
     // which we might be interested in; we can then store
     // the pointer to WPS-internal data in XFolder instance
     // data
-    if (strcmp(pszClass, "WPFolder") == 0)
+    if (!strcmp(pszClass, G_pcszWPFolder))
     {
         switch (ulKey)
         {
@@ -2197,12 +2224,6 @@ SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
     if (_xwpQueryDeletion(somSelf, NULL, NULL))
         ulMenuFilter &= ~CTXT_DELETE; // V0.9.5 (2000-09-20) [pr]
 
-    // if extended close menu is enabled,
-    // remove "close" because we'll add this manually
-    /* if (pGlobalSettings->fExtendCloseMenu)
-        ulMenuFilter |= CTXT_CLOSE;        // V0.9.12 (2001-05-22) [umoeller]
-       */
-
     // now suppress default menu items according to
     // Global Settings;
     // the DefaultMenuItems field in pGlobalSettings is
@@ -2294,9 +2315,9 @@ SOM_Scope BOOL  SOMLINK xf_wpMenuItemSelected(XFolder *somSelf,
     // menu items was selected
     if (mnuMenuItemSelected(somSelf, hwndFrame, ulMenuId))
         return (TRUE);
-    else
-        // none of our menu items: pass on to parent
-        return (XFolder_parent_WPFolder_wpMenuItemSelected(somSelf, hwndFrame, ulMenuId));
+
+    // none of our menu items: pass on to parent
+    return (XFolder_parent_WPFolder_wpMenuItemSelected(somSelf, hwndFrame, ulMenuId));
 }
 
 /*
@@ -2315,10 +2336,10 @@ SOM_Scope BOOL  SOMLINK xf_wpMenuItemHelpSelected(XFolder *somSelf,
     // of the new menu items
     if (mnuMenuItemHelpSelected(somSelf, MenuId))
         return TRUE;
-    else
-        // else: none of our menu items, call default
-        return (XFolder_parent_WPFolder_wpMenuItemHelpSelected(somSelf,
-                                                               MenuId));
+
+    // else: none of our menu items, call default
+    return (XFolder_parent_WPFolder_wpMenuItemHelpSelected(somSelf,
+                                                           MenuId));
 }
 
 /*
@@ -2336,11 +2357,10 @@ SOM_Scope BOOL  SOMLINK xf_wpMenuItemHelpSelected(XFolder *somSelf,
  *      --  wpModifyMenu (Warp-4-specific).
  *
  *      Normally, we wouldn't need to override this method...
- *      if IBM had been kind enough to respect that we don't
- *      want to see "Close" in the menu, if we tell them to.
- *      But they weren't, so if "extend close menu" is
- *      enabled, we must hack the menu manually after it has
- *      been completely built.
+ *      if there was a way to find out what menu type is
+ *      currently being built. Since there isn't, we store
+ *      the ulMenuType in the instance data so we can check
+ *      in our menu manipulation code.
  *
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
@@ -2639,87 +2659,58 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
 
 /*
  *@@ wpPopulate:
- *      this instance method populates a folder. This normally
- *      runs on the Populate thread, of which I am unsure if it
- *      recreated every time a folder is opened or if there's
- *      only one Populate thread which is shared by all folders.
- *      This may also run on thread 1 if populating occurs
- *      synchronously (as with the XFolder folder content menus).
+ *      this instance method populates a folder.
  *
- *      Interestingly, from my debugging, the Populate thread is
- *      started right after WPFolder::wpOpen is called, even before
- *      the folder window is created. Kinda sick, in my view. I
- *      get the following order:
+ *      In most cases, this method gets called on a separate
+ *      thread which is started right before a folder view
+ *      is opened. However, this can really get called on
+ *      any thread, and XWorkplace calls this too synchronously
+ *      sometimes to make sure the folder contents are up-to-date.
  *
- *      1)  wpPopulate;
- *      2)
+ *      Now, starting with V0.9.16, we have the "turbo folders"
+ *      feature which, among other things, allows us to do a faster
+ *      populate. So if this is enabled, we call fdrPopulate instead
+ *      of the parent method. See remarks there.
+ *
+ *      Note that the WPS appears to ignore the pszPath
+ *      parameter that is passed in.
  */
 
-SOM_Scope BOOL  SOMLINK xf_wpPopulate(XFolder *somSelf, ULONG ulReserved,
-                                      PSZ pszPath, BOOL fFoldersOnly)
+SOM_Scope BOOL  SOMLINK xf_wpPopulate(XFolder *somSelf,
+                                      ULONG ulReserved,
+                                      PSZ pszPath,
+                                      BOOL fFoldersOnly)
 {
-    BOOL brc = FALSE;
+    BOOL    brc = FALSE;
+    CHAR    szFolderFullPath[CCHMAXPATH];
+
     // XFolderData *somThis = XFolderGetData(somSelf);
     // XFolderMethodDebug("XFolder","xf_wpPopulate");
     #ifdef DEBUG_SOMMETHODS
         _Pmpf(("XFolder::wpPopulate for %s", _wpQueryTitle(somSelf) ));
     #endif
 
-    brc = XFolder_parent_WPFolder_wpPopulate(somSelf, ulReserved,
-                                               pszPath, fFoldersOnly);
-
-    /*
-        apparently, wpPopulate calls the following methods
-        (in this order):
-
-        --  wpQueryFldrFlags
-        --  wpSetFldrFlags      0x400 (FOI_POPULATEINPROGRESS)
-        --  wpQueryFldrFlags
-
-        Then we have more calls on thread 1:
-
-        --  wpclsNew, creating an instance of WPFolderCV (whatever that
-                               class is good for);
-
-        --  then we get a WM_CREATE for the folder window;
-
-        --  then we get a wpRegisterView;
-
-        --  wpSetFldrFlags      0x58408
-                                    (0x0010000  FOI_CHANGEICONTEXTCOLOR
-                                     0x0040000  FOI_CHANGESHADOWTEXTCOLOR (Warp 4 only)
-                                     0x0008000  FOI_CHANGEICONBGNDCOLOR
-                                     0x0000400  FOI_POPULATEINPROGRESS
-                                     0x0000008  FOI_CHANGEFONT
-                                    )
-        --  and some more, but always with FOI_POPULATEINPROGRESS set
-
-        --  then wpOpen returns.
-
-        Then we have the Populate thread again
-
-        --  wpclsMakeAwake, for all the objects in the folder,
-            which apparently calls
-            --  WPFolder::wpAddToContent
-            --  WPObject::wpObjectReady (on the Populate thread! Obviously, the object
-                               is created here)
-        --  wpclsInitData, wpQueryStyle, wpRestoreState, ...
-
-        --  In between, we get wpQueryFldrFlags from thread 1 again, querying if
-            the populate is still in progress. I guess this is from my status bar
-            timers.
-
-        --  wpSetFldrFlags      0x402
-                                    (0x00000400  FOI_POPULATEINPROGRESS
-                                     0x00000002  FOI_POPULATEDWITHFOLDERS
-                                    )
-        --  wpSetFldrFlags      0x003
-                                    (0x00000001  FOI_POPULATEDWITHALL
-                                     0x00000002  FOI_POPULATEDWITHFOLDERS
-                                    )
-
-        End of wpPopulate; returning 1
-    */
+    if (    // turbo folders enabled?
+            (cmnIsFeatureEnabled(TurboFolders))
+            // but don't dare turbo populate on desktop yet
+         && (!cmnIsADesktop(somSelf))
+            // and we cannot handle UNC at this point
+         && (_wpQueryFilename(somSelf, szFolderFullPath, TRUE))
+         && (szFolderFullPath[1] == ':')
+       )
+    {
+        BOOL fExit = FALSE;                 // cannot exit right now
+        brc = fdrPopulate(somSelf,
+                          szFolderFullPath,
+                          ulReserved,
+                          fFoldersOnly,
+                          &fExit);
+    }
+    else
+        brc = XFolder_parent_WPFolder_wpPopulate(somSelf,
+                                                 ulReserved,
+                                                 pszPath,
+                                                 fFoldersOnly);
 
     #ifdef DEBUG_SOMMETHODS
         _Pmpf(("End of wpPopulate for %s --> %d",
@@ -2736,8 +2727,8 @@ SOM_Scope BOOL  SOMLINK xf_wpPopulate(XFolder *somSelf, ULONG ulReserved,
  *      window and maybe status bars.
  *
  *      Note that this method normally does _not_
- *      get called on thread 1, but some other thread,
- *      so this better be thread-safe.
+ *      get called on thread 1, but some other
+ *      thread, so this better be thread-safe.
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpRefresh(XFolder *somSelf, ULONG ulView,
@@ -3039,20 +3030,25 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFolderView1Page(XFolder *somSelf,
                                                  HWND hwndNotebook)
 {
     ULONG ul;
+    BOOL fIsRootFdr = _somIsA(somSelf, _WPRootFolder);
     XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpAddFolderView1Page");
 
     // evil hack for wpInsertSettingsPage
-    _fInwpAddFolderView1Page = TRUE;
+    if (!fIsRootFdr)
+        _fInwpAddFolderView1Page = TRUE;
     ul = XFolder_parent_WPFolder_wpAddFolderView1Page(somSelf,
                                                       hwndNotebook);
-    _fInwpAddFolderView1Page = FALSE;
+    if (!fIsRootFdr)
+    {
+        _fInwpAddFolderView1Page = FALSE;
 
-    if (ul)
-        _xwpAddXFolderPages(somSelf, hwndNotebook);
+        if (ul)
+            _xwpAddXFolderPages(somSelf, hwndNotebook);
             // @@todo what if a WPFolder subclass overrides
             // this method to return SETTINGS_PAGE_REMOVED
             // only? We never get called then!
+    }
 
     return (ul);
 }
@@ -3072,7 +3068,7 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFolderView1Page(XFolder *somSelf,
  *      We must replace this method completely to be able
  *      to suppress the automatic adding of objects for
  *      folders. For example, the trash can and the font
- *      folder take a long time on open, and we don't want
+ *      folder take a long time to populate, and we don't want
  *      each object to be added separately. Instead, we want
  *      all objects to be added in one flush.
  *
@@ -3081,15 +3077,16 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFolderView1Page(XFolder *somSelf,
  *      call fdrAddToContent.
  *
  *@@changed V0.9.6 (2000-10-26) [pr]: update status bars
+ *@@changed V0.9.16 (2001-10-25) [umoeller]: moved all the implementation to fdrcontent.c
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
-                                             WPObject* Object)
+                                          WPObject* Object)
 {
-    BOOL brc = FALSE;
-
-    XFolderData *somThis = XFolderGetData(somSelf);
     // XFolderMethodDebug("XFolder","xf_wpAddToContent");
+
+    BOOL    brc,
+            fCallParent = TRUE;
 
     #ifdef DEBUG_SOMMETHODS
          _Pmpf(("wpAddToContent, folder: %s, object: %s",
@@ -3097,17 +3094,13 @@ SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
              _wpQueryTitle(Object)));
     #endif
 
-    if (_fDisableAutoCnrAdd)
-        // do not call the parent!!
-        // call our own implementation instead
-        brc = fdrAddToContent(somSelf, Object);
-    else
+    if (cmnIsFeatureEnabled(TurboFolders))
+        brc = fdrAddToContent(somSelf, Object, &fCallParent);
+
+    if (fCallParent)
         brc = XFolder_parent_WPFolder_wpAddToContent(somSelf, Object);
 
-    if (brc)
-        _cObjects++;
-
-    if (!(_wpQueryFldrFlags(somSelf) & FOI_POPULATEINPROGRESS))
+    if (!(_wpQueryFldrFlags(somSelf) & (FOI_POPULATEINPROGRESS | FOI_REFRESHINPROGRESS)))
         fdrForEachOpenInstanceView(somSelf,
                                    STBM_UPDATESTATUSBAR,
                                    fncbStatusBarPost);
@@ -3130,7 +3123,7 @@ SOM_Scope BOOL  SOMLINK xf_wpDeleteFromContent(XFolder *somSelf,
 {
     BOOL brc = FALSE;
 
-    XFolderData *somThis = XFolderGetData(somSelf);
+    // XFolderData *somThis = XFolderGetData(somSelf);
     // XFolderMethodDebug("XFolder","xf_wpDeleteFromContent");
 
     #ifdef DEBUG_SOMMETHODS
@@ -3139,15 +3132,15 @@ SOM_Scope BOOL  SOMLINK xf_wpDeleteFromContent(XFolder *somSelf,
              _wpQueryTitle(Object)));
     #endif
 
+    if (cmnIsFeatureEnabled(TurboFolders))
+        fdrDeleteFromContent(somSelf, Object);
+
     brc = XFolder_parent_WPFolder_wpDeleteFromContent(somSelf, Object);
 
-    if (!(_wpQueryFldrFlags(somSelf) & FOI_POPULATEINPROGRESS))
+    if (!(_wpQueryFldrFlags(somSelf) & (FOI_POPULATEINPROGRESS | FOI_REFRESHINPROGRESS)))
         fdrForEachOpenInstanceView(somSelf,
                                    STBM_UPDATESTATUSBAR,
                                    fncbStatusBarPost);
-
-    if (brc)
-        _cObjects--;
 
     return (brc);
 }
@@ -3679,9 +3672,10 @@ SOM_Scope BOOL  SOMLINK xfM_xwpclsQueryMenuBarVisibility(M_XFolder *somSelf)
 
 /*
  *@@ wpclsInitData:
- *      this initializes the WPFolder / XFolder class as a whole;
- *      we need to call the parent and then set some XFolder
- *      data.
+ *      this WPObject class method gets called when a class
+ *      is loaded by the WPS (probably from within a
+ *      somFindClass call) and allows the class to initialize
+ *      itself.
  *
  *@@changed V0.9.0 [umoeller]: added class object to KERNELGLOBALS
  */
@@ -3693,38 +3687,47 @@ SOM_Scope void  SOMLINK xfM_wpclsInitData(M_XFolder *somSelf)
 
     M_XFolder_parent_M_WPFolder_wpclsInitData(somSelf);
 
-    if (krnClassInitialized(G_pcszXFolder))
+    if (krnLock(__FILE__, __LINE__, __FUNCTION__))
     {
-        // first call:
+        if (krnClassInitialized(G_pcszXFolder))
+        {
+            // first call:
 
-        // initialize other data
+            // initialize other data
 #ifndef __NOFOLDERCONTENTS__
-        lstInit(&G_llFavoriteFolders.ll, FALSE);    // no auto-free
-        G_llFavoriteFolders.fLoaded = FALSE;
+            lstInit(&G_llFavoriteFolders.ll, FALSE);    // no auto-free
+            G_llFavoriteFolders.fLoaded = FALSE;
 #endif
 #ifndef __NOQUICKOPEN__
-        lstInit(&G_llQuickOpenFolders.ll, FALSE);      // no auto-free
-        G_llQuickOpenFolders.fLoaded = FALSE;
+            lstInit(&G_llQuickOpenFolders.ll, FALSE);      // no auto-free
+            G_llQuickOpenFolders.fLoaded = FALSE;
 #endif
 
-        fdrLoadFolderHotkeys();
+            fdrLoadFolderHotkeys();
 
-        // register class for supplementary object
-        // windows, which are created for each folder view
-        // which is opened
-        WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
-                         (PSZ)WNDCLASS_SUPPLOBJECT,    // class name
-                         (PFNWP)fdr_fnwpSupplFolderObject,    // Window procedure
-                         0,       // class style
-                         4);      // extra window words for SUBCLASSEDFOLDERVIEW
-                                  // pointer (see fdrSubclassFolderView)
+            // register class for supplementary object
+            // windows, which are created for each folder view
+            // which is opened
+            WinRegisterClass(WinQueryAnchorBlock(HWND_DESKTOP),
+                             (PSZ)WNDCLASS_SUPPLOBJECT,    // class name
+                             (PFNWP)fdr_fnwpSupplFolderObject,    // Window procedure
+                             0,       // class style
+                             4);      // extra window words for SUBCLASSEDFOLDERVIEW
+                                      // pointer (see fdrSubclassFolderView)
 
-        // install local hook (fdrsubclass.c)
-        WinSetHook(WinQueryAnchorBlock(HWND_DESKTOP),
-                   HMQ_CURRENT,
-                   HK_SENDMSG,
-                   (PFN)fdr_SendMsgHook,
-                   NULLHANDLE);  // module handle, can be 0 for local hook
+            // install local hook (fdrsubclass.c)
+            WinSetHook(WinQueryAnchorBlock(HWND_DESKTOP),
+                       HMQ_CURRENT,
+                       HK_SENDMSG,
+                       (PFN)fdr_SendMsgHook,
+                       NULLHANDLE);  // module handle, can be 0 for local hook
+
+            // create the standard GEA2LIST for turbo populate
+            // V0.9.16 (2001-10-28) [umoeller]
+            fdrCreateStandardGEAList();     // fdrcontent.c
+        }
+
+        krnUnlock();
     }
 }
 

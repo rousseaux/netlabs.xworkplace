@@ -104,9 +104,9 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 // root of linked list of opened notebook pages
@@ -118,14 +118,64 @@ static PLINKLIST       G_pllOpenPages = NULL;          // this is auto-free
 static PLINKLIST       G_pllSubclNotebooks = NULL;     // this is auto-free
 
 // mutex semaphore for both lists
-static HMTX            G_hmtxNotebookLists = NULLHANDLE;
+static HMTX            G_hmtxNotebooks = NULLHANDLE;
 
 MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1, MPARAM mp2);
 
 /* ******************************************************************
- *                                                                  *
- *   Notebook page dialog function                                  *
- *                                                                  *
+ *
+ *   Notebook helpers
+ *
+ ********************************************************************/
+
+/*
+ *@@ LockNotebooks:
+ *
+ *@@added V0.9.16 (2001-10-25) [umoeller]
+ */
+
+BOOL LockNotebooks(VOID)
+{
+    if (G_hmtxNotebooks)
+        return !WinRequestMutexSem(G_hmtxNotebooks, SEM_INDEFINITE_WAIT);
+            // WinRequestMutexSem works even if the thread has no message queue
+    else
+    {
+        // and mutex semaphore for those lists
+        if (!DosCreateMutexSem(NULL,         // unnamed
+                               &G_hmtxNotebooks,
+                               0,            // unshared
+                               TRUE))        // request!
+        {
+            G_pllOpenPages = lstCreate(TRUE); // NOTEBOOKPAGELISTITEMs are freeable
+            G_pllSubclNotebooks = lstCreate(TRUE); // SUBCLNOTEBOOKLISTITEM are freeable
+
+            #ifdef DEBUG_NOTEBOOKS
+                _Pmpf(("Created NOTEBOOKPAGELISTITEM list and mutex"));
+            #endif
+
+            return (TRUE);
+        }
+    }
+
+    return (FALSE);
+}
+
+/*
+ *@@ UnlockNotebooks:
+ *
+ *@@added V0.9.16 (2001-10-25) [umoeller]
+ */
+
+VOID UnlockNotebooks(VOID)
+{
+    DosReleaseMutexSem(G_hmtxNotebooks);
+}
+
+/* ******************************************************************
+ *
+ *   Notebook page dialog function
+ *
  ********************************************************************/
 
 /*
@@ -275,7 +325,8 @@ VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp)
             BOOL fSemOwned = FALSE;
             TRY_LOUD(excpt1)
             {
-                if (fSemOwned = !WinRequestMutexSem(G_hmtxNotebookLists, 4000))
+                if (fSemOwned = LockNotebooks())
+                    // WinRequestMutexSem works even if the thread has no message queue
                 {
                     if (!lstRemoveItem(G_pllOpenPages,
                                        pcnbp->pnbli))  // this is auto-free!
@@ -290,10 +341,7 @@ VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp)
             CATCH(excpt1) {} END_CATCH();
 
             if (fSemOwned)
-            {
-                DosReleaseMutexSem(G_hmtxNotebookLists);
-                fSemOwned = FALSE;
-            }
+                UnlockNotebooks();
         }
 
         // free allocated user memory
@@ -1078,26 +1126,10 @@ PNOTEBOOKPAGELISTITEM CreateNBLI(PCREATENOTEBOOKPAGE pcnbp) // in: new struct fr
     // create NOTEBOOKPAGELISTITEM to be stored in list
     PNOTEBOOKPAGELISTITEM pnbliNew = NULL;
 
-    // on the very first call: create list of inserted pages
-    if (G_hmtxNotebookLists == NULLHANDLE)
-    {
-        G_pllOpenPages = lstCreate(TRUE); // NOTEBOOKPAGELISTITEMs are freeable
-        G_pllSubclNotebooks = lstCreate(TRUE); // SUBCLNOTEBOOKLISTITEM are freeable
-
-        // and mutex semaphore for those lists
-        DosCreateMutexSem(NULL,         // unnamed
-                          &G_hmtxNotebookLists,
-                          0,            // unshared
-                          FALSE);       // unowned
-        #ifdef DEBUG_NOTEBOOKS
-            _Pmpf(("Created NOTEBOOKPAGELISTITEM list and mutex"));
-        #endif
-    }
-
     TRY_LOUD(excpt1)
     {
         // store new page in linked list
-        if (fSemOwned = !WinRequestMutexSem(G_hmtxNotebookLists, 4000))
+        if (fSemOwned = LockNotebooks())
         {
             HWND        hwndDesktop = NULLHANDLE,
                         hwndCurrent = pcnbp->hwndNotebook;
@@ -1174,10 +1206,7 @@ PNOTEBOOKPAGELISTITEM CreateNBLI(PCREATENOTEBOOKPAGE pcnbp) // in: new struct fr
     CATCH(excpt1) {} END_CATCH();
 
     if (fSemOwned)
-    {
-        DosReleaseMutexSem(G_hmtxNotebookLists);
-        fSemOwned = FALSE;
-    }
+        UnlockNotebooks();
 
     return (pnbliNew);
 }
@@ -1200,7 +1229,7 @@ PSUBCLNOTEBOOKLISTITEM FindNBLI(HWND hwndNotebook)
 
     TRY_LOUD(excpt1)
     {
-        if (fSemOwned = !WinRequestMutexSem(G_hmtxNotebookLists, 4000))
+        if (fSemOwned = LockNotebooks())
         {
             PLISTNODE   pNode = lstQueryFirstNode(G_pllSubclNotebooks);
             while (pNode)
@@ -1220,10 +1249,7 @@ PSUBCLNOTEBOOKLISTITEM FindNBLI(HWND hwndNotebook)
     CATCH(excpt1) {} END_CATCH();
 
     if (fSemOwned)
-    {
-        DosReleaseMutexSem(G_hmtxNotebookLists);
-        fSemOwned = FALSE;
-    }
+        UnlockNotebooks();
 
     return (pSubclNBLI);
 }
@@ -1247,7 +1273,7 @@ VOID DestroyNBLI(HWND hwndNotebook,
 
     TRY_LOUD(excpt1)
     {
-        if (fSemOwned = !WinRequestMutexSem(G_hmtxNotebookLists, 4000))
+        if (fSemOwned = LockNotebooks())
         {
             PLISTNODE pPageNode = lstQueryFirstNode(G_pllOpenPages);
 
@@ -1290,11 +1316,7 @@ VOID DestroyNBLI(HWND hwndNotebook,
     CATCH(excpt1) {} END_CATCH();
 
     if (fSemOwned)
-    {
-        DosReleaseMutexSem(G_hmtxNotebookLists);
-        fSemOwned = FALSE;
-    }
-
+        UnlockNotebooks();
 }
 
 /*
@@ -1738,7 +1760,7 @@ PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp)
         // list created yet?
         if (G_pllOpenPages)
         {
-            if (fSemOwned = !WinRequestMutexSem(G_hmtxNotebookLists, 4000))
+            if (fSemOwned = LockNotebooks())
             {
                 pNode = lstQueryFirstNode(G_pllOpenPages);
 
@@ -1774,7 +1796,7 @@ PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp)
 
     if (fSemOwned)
     {
-        DosReleaseMutexSem(G_hmtxNotebookLists);
+        UnlockNotebooks();
         fSemOwned = FALSE;
     }
 

@@ -418,8 +418,8 @@ SOM_Scope HWND  SOMLINK xwlist_wpOpen(XWPClassList *somSelf,
 {
     HWND    hwndNewView = 0;
     BOOL    fLocked = FALSE;
-    ULONG   ulNesting = 0;
-    DosEnterMustComplete(&ulNesting);
+    // ULONG   ulNesting = 0;
+    // DosEnterMustComplete(&ulNesting);
 
     XWPClassListMethodDebug("XWPClassList","xwlist_wpOpen");
 
@@ -449,7 +449,7 @@ SOM_Scope HWND  SOMLINK xwlist_wpOpen(XWPClassList *somSelf,
     if (fLocked)
         _wpReleaseObjectMutexSem(somSelf);
 
-    DosExitMustComplete(&ulNesting);
+    // DosExitMustComplete(&ulNesting);
 
     return (hwndNewView);
 }
@@ -503,7 +503,10 @@ SOM_Scope BOOL  SOMLINK xwlist_wpAddSettingsPages(XWPClassList *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      initialize XWPClassList class data.
+ *      this WPObject class method gets called when a class
+ *      is loaded by the WPS (probably from within a
+ *      somFindClass call) and allows the class to initialize
+ *      itself.
  */
 
 SOM_Scope void  SOMLINK xwlistM_wpclsInitData(M_XWPClassList *somSelf)

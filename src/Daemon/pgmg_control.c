@@ -181,6 +181,7 @@ BOOL pgmcDisableSwitching(VOID)
         DosCreateMutexSem(NULL, &G_hmtxDisableSwitching, 0, FALSE);
 
     if (!WinRequestMutexSem(G_hmtxDisableSwitching, 4000))
+        // WinRequestMutexSem works even if the thread has no message queue
     {
         // _Pmpf((__FUNCTION__));
         G_pHookData->fDisablePgmgSwitching = TRUE;

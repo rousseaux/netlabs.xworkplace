@@ -440,7 +440,10 @@ SOM_Scope BOOL  SOMLINK vol_wpAddSettingsPages(XMMVolume *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      initialize class data.
+ *      this WPObject class method gets called when a class
+ *      is loaded by the WPS (probably from within a
+ *      somFindClass call) and allows the class to initialize
+ *      itself.
  */
 
 SOM_Scope void  SOMLINK volM_wpclsInitData(M_XMMVolume *somSelf)

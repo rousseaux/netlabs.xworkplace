@@ -420,10 +420,13 @@ SOM_Scope XWPFontFolder*  SOMLINK fonM_xwpclsQueryDefaultFontFolder(M_XWPFontFol
 
 /*
  *@@ wpclsInitData:
- *      this class method allows the class to
- *      initialize itself. We set up some global
- *      folder data and also make sure that
- *      the XWPFontObj class gets initialized.
+ *      this WPObject class method gets called when a class
+ *      is loaded by the WPS (probably from within a
+ *      somFindClass call) and allows the class to initialize
+ *      itself.
+ *
+ *      We set up some global folder data and also make sure
+ *      that the XWPFontObj class gets initialized.
  */
 
 SOM_Scope void  SOMLINK fonM_wpclsInitData(M_XWPFontFolder *somSelf)

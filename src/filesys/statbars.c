@@ -230,6 +230,7 @@ PSZ stbVar1024Double(PSZ pszTarget,
  *      if the class doesn't exist (Warp 3).
  *
  *@@added V0.9.14 (2001-07-31) [umoeller]
+ *@@changed V0.9.16 (2001-10-28) [umoeller]: fixed SOM resource leak
  */
 
 VOID ResolveWPUrl(VOID)
@@ -243,6 +244,7 @@ VOID ResolveWPUrl(VOID)
         // or is NULL if the class is not installed (Warp 3!).
         // In this case, the object will be treated as a regular
         // file-system object.
+        SOMFree(somidWPUrl);        // V0.9.16 (2001-10-28) [umoeller]
     }
 }
 
@@ -413,14 +415,7 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
 {
     PSZ     pszReturn = NULL;
 
-    if (G_WPUrl == (SOMClass*)-1)
-    {
-        // WPUrl class object not queried yet: do it now
-        somId    somidWPUrl = somIdFromString("WPUrl");
-        G_WPUrl = _somFindClass(SOMClassMgrObject, somidWPUrl, 0, 0);
-        // _WPUrl now either points to the WPUrl class object
-        // or is NULL if the class is not installed (Warp 3!).
-    }
+    ResolveWPUrl();     // V0.9.16 (2001-10-28) [umoeller]
 
     if (G_WPUrl)
         if (_somDescendedFrom(pClassObject, G_WPUrl))
@@ -765,15 +760,7 @@ ULONG  stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
     // URL objects also support the $U mnemonic for
     // displaying the URL
 
-    if (G_WPUrl == (SOMClass*)-1)
-    {
-        // WPUrl class object not queried yet: do it now
-        somId    somidWPUrl = somIdFromString("WPUrl");
-        G_WPUrl = _somFindClass(SOMClassMgrObject, somidWPUrl, 0, 0);
-        // _WPUrl now either points to the WPUrl class object
-        // or is NULL if the class is not installed (Warp 3!).
-        SOMFree(somidWPUrl);       // was missing V0.9.13 (2001-06-14) [umoeller]
-    }
+    ResolveWPUrl();
 
     if (    (G_WPUrl)
          && (_somIsA(pObject, G_WPUrl))
@@ -1817,7 +1804,7 @@ typedef struct _STATUSBARPAGEDATA
                             szSBTextMultiSelBackup[CCHMAXMNEMONICS],
                             szSBClassSelected[256];
     SOMClass                *pSBClassObjectSelected;
-    somId                   somidClassSelected;
+    // somId                   somidClassSelected;
 
     HWND                    hwndKeysMenu;
                 // if != NULLHANDLE, the menu for the last
@@ -1869,7 +1856,7 @@ MRESULT EXPENTRY fncbWPSStatusBarReturnClassAttr(HWND hwndCnr,
                 usAttr = CRA_RECORDREADONLY | CRA_COLLAPSED | CRA_INUSE;
 
                 // and select it if the settings notebook wants it
-                if (strcmp(pwps->pszClassName, pscd->szClassSelected) == 0)
+                if (!strcmp(pwps->pszClassName, pscd->szClassSelected))
                     usAttr |= CRA_SELECTED;
 
                 // expand all the parent records of the new record
@@ -2156,6 +2143,29 @@ MRESULT stbStatusBar1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 #ifndef __NOCFGSTATUSBARS__
 
 /*
+ *@@ RefreshClassObject:
+ *      returns the class object for szSBClassSelected.
+ *      Added with V0.9.16 to fix the SOM string resource
+ *      leaks finally.
+ *
+ *@@added V0.9.16 (2001-10-28) [umoeller]
+ */
+
+VOID RefreshClassObject(PSTATUSBARPAGEDATA psbpd)
+{
+    somId somidClassSelected;
+    if (somidClassSelected = somIdFromString(psbpd->szSBClassSelected))
+    {
+        // get pointer to class object (e.g. M_WPObject)
+        psbpd->pSBClassObjectSelected = _somFindClass(SOMClassMgrObject,
+                                                      somidClassSelected,
+                                                      0,
+                                                      0);
+        SOMFree(somidClassSelected);        // V0.9.16 (2001-10-28) [umoeller]
+    }
+}
+
+/*
  *@@ stbStatusBar2InitPage:
  *      notebook callback function (notebook.c) for the
  *      second "Status bars" page in the "Workplace Shell" object.
@@ -2208,15 +2218,8 @@ VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                               psbpd->szSBClassSelected,
                               sizeof(psbpd->szSBClassSelected));
         if (psbpd->pSBClassObjectSelected == NULL)
-        {
-            psbpd->somidClassSelected = somIdFromString(psbpd->szSBClassSelected);
-            if (psbpd->somidClassSelected)
-                // get pointer to class object (e.g. M_WPObject)
-                psbpd->pSBClassObjectSelected = _somFindClass(SOMClassMgrObject,
-                                                              psbpd->somidClassSelected,
-                                                              0,
-                                                              0);
-        }
+            RefreshClassObject(psbpd);
+
         if (psbpd->pSBClassObjectSelected)
             strcpy(psbpd->szSBText1SelBackup,
                    stbQueryClassMnemonics(psbpd->pSBClassObjectSelected));
@@ -2250,15 +2253,8 @@ VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                           (MPARAM)(CCHMAXMNEMONICS-1),
                           MPNULL);
         if (psbpd->pSBClassObjectSelected == NULL)
-        {
-            psbpd->somidClassSelected = somIdFromString(psbpd->szSBClassSelected);
-            if (psbpd->somidClassSelected)
-                // get pointer to class object (e.g. M_WPObject)
-                psbpd->pSBClassObjectSelected = _somFindClass(SOMClassMgrObject,
-                                                              psbpd->somidClassSelected,
-                                                              0,
-                                                              0);
-        }
+            RefreshClassObject(psbpd);
+
         if (psbpd->pSBClassObjectSelected)
             WinSetDlgItemText(pcnbp->hwndDlgPage,
                               ID_XSDI_SBTEXT1SEL,
@@ -2291,10 +2287,7 @@ VOID stbStatusBar2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         if (psbpd)
         {
             if (psbpd->pSBClassObjectSelected)
-            {
-                SOMFree(psbpd->somidClassSelected);
                 psbpd->pSBClassObjectSelected = NULL;
-            }
 
             if (psbpd->hwndKeysMenu)
                 WinDestroyWindow(psbpd->hwndKeysMenu),
@@ -2620,8 +2613,8 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             cmnGetMessage(NULL, 0, &strIntroText, 113);
             scd.pszDlgTitle = strTitle.psz;
             scd.pszIntroText = strIntroText.psz;
-            scd.pszRootClass = "WPObject";
-            scd.pszOrphans = NULL;
+            scd.pcszRootClass = G_pcszWPObject;
+            scd.pcszOrphans = NULL;
             strcpy(scd.szClassSelected, psbpd->szSBClassSelected);
 
             // these callback funcs are defined way more below
@@ -2650,12 +2643,9 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                       (PSZ)INIKEY_SB_LASTCLASS,
                                       psbpd->szSBClassSelected);
                 if (psbpd->pSBClassObjectSelected)
-                {
-                    SOMFree(psbpd->somidClassSelected);
                     psbpd->pSBClassObjectSelected = NULL;
                     // this will provoke the following func to re-read
                     // the class's status bar mnemonics
-                }
 
                 // update the display by calling the INIT callback
                 pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
@@ -2696,15 +2686,7 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                    psbpd->szSBTextMultiSelBackup);
 
             if (!psbpd->pSBClassObjectSelected)
-            {
-                psbpd->somidClassSelected = somIdFromString(psbpd->szSBClassSelected);
-                if (psbpd->somidClassSelected)
-                    // get pointer to class object (e.g. M_WPObject)
-                    psbpd->pSBClassObjectSelected = _somFindClass(SOMClassMgrObject,
-                                                                  psbpd->somidClassSelected,
-                                                                  0,
-                                                                  0);
-            }
+                RefreshClassObject(psbpd);
 
             if (psbpd->pSBClassObjectSelected)
                 stbSetClassMnemonics(psbpd->pSBClassObjectSelected,
@@ -2729,15 +2711,8 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             cmnUnlockGlobalSettings();
 
             if (!psbpd->pSBClassObjectSelected)
-            {
-                psbpd->somidClassSelected = somIdFromString(psbpd->szSBClassSelected);
-                if (psbpd->somidClassSelected)
-                    // get pointer to class object (e.g. M_WPObject)
-                    psbpd->pSBClassObjectSelected = _somFindClass(SOMClassMgrObject,
-                                                                  psbpd->somidClassSelected,
-                                                                  0,
-                                                                  0);
-            }
+                RefreshClassObject(psbpd);
+
             if (psbpd->pSBClassObjectSelected)
                 stbSetClassMnemonics(psbpd->pSBClassObjectSelected,
                                      NULL);  // load default
@@ -2852,20 +2827,10 @@ MRESULT stbStatusBar2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                 sizeof(szDummy)-1, szDummy);
             cmnSetStatusBarSetting(SBS_TEXTNONESEL, szDummy);
 
-            if (psbpd->pSBClassObjectSelected == NULL)
-            {
-                psbpd->somidClassSelected = somIdFromString(psbpd->szSBClassSelected);
-
-                if (psbpd->somidClassSelected)
-                    // get pointer to class object (e.g. M_WPObject)
-                    psbpd->pSBClassObjectSelected = _somFindClass(SOMClassMgrObject,
-                                                                  psbpd->somidClassSelected,
-                                                                  0,
-                                                                  0);
-            }
+            if (!psbpd->pSBClassObjectSelected)
+                RefreshClassObject(psbpd);
 
             // "one selected" codes:
-
             if (psbpd->pSBClassObjectSelected)
             {
                 WinQueryDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_SBTEXT1SEL,

@@ -94,6 +94,7 @@ APIRET pgmwInit(VOID)
 BOOL pgmwLock(VOID)
 {
     return (!WinRequestMutexSem(G_hmtxWinInfos, TIMEOUT_HMTX_WINLIST));
+        // WinRequestMutexSem works even if the thread has no message queue
 }
 
 /*
@@ -293,7 +294,7 @@ BOOL pgmwFillWinInfo(HWND hwnd,              // in: window to test
                                     swctl.szSwtitle,
                                     sizeof(pWinInfo->szSwitchName) - 1);
 
-                        if (pgmwStickyCheck(hwnd, swctl.szSwtitle))
+                        if (pgmwIsSticky(hwnd, swctl.szSwtitle))
                              pWinInfo->bWindowType = WINDOW_STICKY;
                     }
                 }
@@ -564,21 +565,27 @@ BOOL pgmwWindowListRescan(VOID)
 }
 
 /*
- *@@ pgmwStickyCheck:
+ *@@ pgmwIsSticky:
  *      returns TRUE if the window with the specified window
  *      and switch titles is a sticky window. A window is
  *      considered sticky if its switch list title is in
  *      the "sticky windows" list.
  *
  *@@added V0.9.2 (2000-02-21) [umoeller]
+ *@@changed V0.9.16 (2001-10-31) [umoeller]: now making system window list sticky always
  */
 
-BOOL pgmwStickyCheck(HWND hwnd,
-                     const char *pcszSwitchName)
+BOOL pgmwIsSticky(HWND hwnd,
+                  const char *pcszSwitchName)
 {
     HWND hwndClient;
 
-    // shortcuts to global pagemage config
+    // check for system window list
+    if (    (G_pHookData)
+         && (hwnd == G_pHookData->hwndWindowList)
+       )
+        return (TRUE);
+
     if (pcszSwitchName)
     {
         PPAGEMAGECONFIG pPageMageConfig = &G_pHookData->PageMageConfig;

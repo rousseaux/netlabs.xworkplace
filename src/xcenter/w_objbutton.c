@@ -736,7 +736,9 @@ VOID OwgtPaintButton(HWND hwnd)
             // refresh button data
             WinQueryWindowRect(hwnd, &xbd.rcl);      // exclusive
 
-            xbd.cxMiniIcon = pGlobals->cxMiniIcon;
+            xbd.cxIconOrBitmap
+            = xbd.cyIconOrBitmap
+            = pGlobals->cxMiniIcon;
             xbd.lcol3DDark = pGlobals->lcol3DDark;
             xbd.lcol3DLight = pGlobals->lcol3DLight;
             xbd.lMiddle = pGlobals->lcolClientBackground; // WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONMIDDLE, 0);
@@ -757,7 +759,8 @@ VOID OwgtPaintButton(HWND hwnd)
 
                     xbd.hptr = _wpQueryIcon(pPrivate->pobjButton);
 
-                    if (    (pmrc = _wpQueryCoreRecord(pPrivate->pobjButton))
+                    if (    (!(pGlobals->flDisplayStyle & XCS_NOHATCHINUSE))
+                         && (pmrc = _wpQueryCoreRecord(pPrivate->pobjButton))
                          && (pmrc->flRecordAttr & CRA_INUSE)
                        )
                     {

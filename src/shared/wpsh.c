@@ -21,7 +21,7 @@
  *
  *      --  Wrappers to call some important WPS methods
  *          that were not made public by IBM. See
- *          wpshRequestFolderMutexSem and others.
+ *          fdrRequestFolderMutexSem and others.
  *
  *      This file started out with V0.84 as "xwps.c". Most of
  *      these functions used to have the cmn* prefix and were
@@ -109,7 +109,7 @@
 
 /* ******************************************************************
  *
- *   SOM method helpers
+ *   SOM helpers
  *
  ********************************************************************/
 
@@ -590,7 +590,7 @@ ULONG wpshQueryView(WPObject* somSelf,      // in: object to examine
 {
     ULONG   ulView = 0;
 
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     TRY_LOUD(excpt1)
     {
         if (LOCK_OBJECT(Lock, somSelf))
@@ -641,7 +641,7 @@ BOOL wpshIsViewCnr(WPObject *somSelf,
 {
     BOOL    brc = FALSE;
 
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     TRY_LOUD(excpt1)
     {
         if (LOCK_OBJECT(Lock, somSelf))
@@ -1278,11 +1278,10 @@ WPFolder* wpshQueryRootFolder(WPDisk* somSelf, // in: disk to check
         arc = doshAssertDrive(ulLogicalDrive, 0);
     }
 
-    if (arc == NO_ERROR)
+    if (!arc)
     {
         // drive seems to be ready:
-        pReturnFolder = _wpQueryRootFolder(somSelf);
-        if (pReturnFolder == NULL)
+        if (!(pReturnFolder = _wpQueryRootFolder(somSelf)))
             // still NULL: something bad is going on
             // V0.9.2 (2000-03-09) [umoeller]
             arc = ERROR_NOT_DOS_DISK; // 26; cannot access disk
@@ -1308,7 +1307,7 @@ WPFolder* wpshQueryRootFolder(WPDisk* somSelf, // in: disk to check
  *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
  */
 
-BOOL wpshPopulateTree(WPFolder *somSelf)
+/* BOOL wpshPopulateTree(WPFolder *somSelf)
 {
     BOOL brc = FALSE;
     WPObject    *pObject;
@@ -1318,15 +1317,16 @@ BOOL wpshPopulateTree(WPFolder *somSelf)
     if (somSelf)
     {
         // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-        somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+        // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
                 = SOM_Resolve(somSelf, WPFolder, wpQueryContent);
 
         if (wpshCheckIfPopulated(somSelf, FALSE))
             brc = TRUE;
 
-        for (   pObject = rslv_wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
+        // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+        for (   pObject = _wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
                 (pObject);
-                pObject = rslv_wpQueryContent(somSelf, pObject, (ULONG)QC_NEXT)
+                pObject = *wpshGetNextObjPointer(pObject)
             )
         {
             if (_somIsA(pObject, _WPFolder))
@@ -1338,7 +1338,7 @@ BOOL wpshPopulateTree(WPFolder *somSelf)
     _Pmpf(("End of wpshPopulateTree"));
 
     return (brc);
-}
+} */
 
 /*
  *@@ wpshPopulateWithShadows:
@@ -1371,10 +1371,10 @@ BOOL wpshPopulateWithShadows(WPFolder *somSelf)
             TRY_LOUD(excpt1)
             {
                 // request the find mutex... we are awaking objects here
-                fFindSem = !wpshRequestFindMutexSem(somSelf, SEM_INDEFINITE_WAIT);
+                fFindSem = !fdrRequestFindMutexSem(somSelf, SEM_INDEFINITE_WAIT);
                 if (fFindSem)
                 {
-                    fFolderSem = !wpshRequestFolderMutexSem(somSelf, SEM_INDEFINITE_WAIT);
+                    fFolderSem = !fdrRequestFolderMutexSem(somSelf, SEM_INDEFINITE_WAIT);
                     if (fFolderSem)
                     {
                         CLASS       aClasses[2];        // array of classes to look for
@@ -1441,9 +1441,9 @@ BOOL wpshPopulateWithShadows(WPFolder *somSelf)
 
             // release mutexes in reverse order
             if (fFolderSem)
-                wpshReleaseFolderMutexSem(somSelf);
+                fdrReleaseFolderMutexSem(somSelf);
             if (fFindSem)
-                wpshReleaseFindMutexSem(somSelf);
+                fdrReleaseFindMutexSem(somSelf);
 
             // clean up
             _wpclsSetError(pWPObject, 0);
@@ -1479,6 +1479,7 @@ BOOL wpshPopulateWithShadows(WPFolder *somSelf)
  *@@changed V0.9.4 (2000-08-03) [umoeller]: changed return code
  *@@changed V0.9.6 (2000-10-25) [umoeller]: added fFoldersOnly
  *@@changed V0.9.11 (2001-04-21) [umoeller]: disabled shadow populate for folders only
+ *@@changed V0.9.16 (2001-10-25) [umoeller]: added quiet excpt handler around wpPopulate
  */
 
 BOOL wpshCheckIfPopulated(WPFolder *somSelf,
@@ -1495,31 +1496,19 @@ BOOL wpshCheckIfPopulated(WPFolder *somSelf,
          && (_wpQueryFilename(somSelf, szRealName, TRUE))
        )
     {
-        brc = _wpPopulate(somSelf,
-                          0,
-                          szRealName,
-                          fFoldersOnly);
-
-        // OK, here comes the goody stuff... if populate is called
-        // with (fFoldersOnly = TRUE), the WPS will only create
-        // instances of WPFolder, and nothing else. However, at the
-        // same time, it attempts to put folder _shadows_ in tree views
-        // also. But since "folders only" populate never instantiates
-        // shadows, folder shadows rarely appear in tree view. How stupid.
-
-        // So what we do, if "folders only" has been specified, we
-        // also awake all shadows in the folder. This can be done
-        // by running "find" on the folder. Note that the WPFolder's
-        // have been awakened by wpPopulate above.
-
-        // V0.9.11 (2001-04-21) [umoeller]
-        // disabled this again, it's not needed for the file dlg anymore
-        // and produces excessive handles
-
-        /* if (fFoldersOnly)
+        // put this in a quiet exception handler because
+        // this tends to crash with the WPNetwork folder... grrrr...
+        TRY_QUIET(excpt1)
         {
-            wpshPopulateWithShadows(somSelf);
-        } */
+            brc = _wpPopulate(somSelf,
+                              0,
+                              szRealName,
+                              fFoldersOnly);
+        }
+        CATCH(excpt1)
+        {
+            brc = FALSE;
+        } END_CATCH();
     }
     else
         // already populated:
@@ -2066,7 +2055,7 @@ double wpshQueryDiskSizeFromFolder(WPFolder *somSelf)
     PSZ wpshIdentifyRestoreID(PSZ pszClass,     // in: class name (as in wpRestore*)
                               ULONG ulKey)      // in: value ID (as in wpRestore*)
     {
-        if (strcmp(pszClass, "WPObject") == 0)
+        if (!strcmp(pszClass, G_pcszWPObject))
         {
             switch (ulKey)
             {
@@ -2090,7 +2079,7 @@ double wpshQueryDiskSizeFromFolder(WPFolder *somSelf)
                     return ("IDKEY_OBJSTRINGS");
             }
         }
-        else if (strcmp(pszClass, "WPFileSystem") == 0)
+        else if (!strcmp(pszClass, "WPFileSystem"))
         {
             switch (ulKey)
             {
@@ -2100,7 +2089,7 @@ double wpshQueryDiskSizeFromFolder(WPFolder *somSelf)
                     return ("IDKEY_FSYSMENUARRAY");
             }
         }
-        else if (strcmp(pszClass, "WPFolder") == 0)
+        else if (!strcmp(pszClass, G_pcszWPFolder))
         {
             switch (ulKey)
             {
@@ -2264,7 +2253,7 @@ double wpshQueryDiskSizeFromFolder(WPFolder *somSelf)
  *
  *      <B>Usage:</B>
  +
- +          WPSHLOCKSTRUCT Lock;
+ +          WPSHLOCKSTRUCT Lock = {0};
  +          if (wpshLockObject(&Lock, somSelf))
  +          {
  +              // exception handler installed, object locked:
@@ -2421,246 +2410,4 @@ WPObject** wpshGetNextObjPointer(WPObject *somSelf)
     return (ppObjNext);
 }
 
-/* ******************************************************************
- *
- *   Additional WPFolder method prototypes
- *
- ********************************************************************/
-
-/*
- *@@ wpshRequestFolderMutexSem:
- *      calls WPFolder::wpRequestFolderMutexSem, which,
- *      unfortunately, is not published. This is a real
- *      pity because we'll always hang the WPS if we
- *      don't request this properly.
- *
- *      In addition to the regular object mutex, each folder
- *      has associated with it a second mutex to protect the
- *      folder contents. While this semaphore is held, one
- *      can be sure that no objects are removed from or added
- *      to a folder from some other WPS thread.
- *      You should always request this semaphore before using
- *      wpQueryContent and such things.
- *
- *      This semaphore is mentioned in the Warp 4 toolkit docs
- *      for wpRequestObjectMutexSem, but never prototyped.
- *      Wonder who got drunk there.
- *
- *      WARNINGS:
- *
- *      -- As usual, you better not forget to release the
- *         mutex again. Use wpshReleaseFolderMutexSem.
- *
- *      -- In addition, if you also request the _object_
- *         mutex for the folder (WPObject::wpRequestObjectMutexSem),
- *         you must take great care that the two are released in
- *         exactly reverse order, or you can deadlock the system.
- *
- *         Guideline:
- *
- *         1)  Request the folder mutex.
- *
- *         2)  Request the object mutex.
- *
- *         3)  Do processing.
- *
- *         4)  Release object mutex.
- *
- *         5)  Release folder mutex.
- *
- *@@added V0.9.6 (2000-10-25) [umoeller]
- */
-
-ULONG wpshRequestFolderMutexSem(WPFolder *somSelf,
-                                ULONG ulTimeout)
-{
-    ULONG ulrc = -1;
-
-    xfTD_wpRequestFolderMutexSem _wpRequestFolderMutexSem;
-
-    if (_wpRequestFolderMutexSem
-            = (xfTD_wpRequestFolderMutexSem)wpshResolveFor(somSelf,
-                                                           NULL, // use somSelf's class
-                                                           "wpRequestFolderMutexSem"))
-        ulrc = _wpRequestFolderMutexSem(somSelf, ulTimeout);
-
-    return (ulrc);
-}
-
-/*
- *@@ wpshReleaseFolderMutexSem:
- *      calls WPFolder::wpReleaseFolderMutexSem. This is
- *      the reverse to wpshRequestFolderMutexSem.
- *
- *@@added V0.9.6 (2000-10-25) [umoeller]
- */
-
-ULONG wpshReleaseFolderMutexSem(WPFolder *somSelf)
-{
-    ULONG ulrc = -1;
-
-    xfTD_wpReleaseFolderMutexSem _wpReleaseFolderMutexSem;
-
-    if (_wpReleaseFolderMutexSem
-            = (xfTD_wpReleaseFolderMutexSem)wpshResolveFor(somSelf,
-                                                           NULL, // use somSelf's class
-                                                           "wpReleaseFolderMutexSem"))
-        ulrc = _wpReleaseFolderMutexSem(somSelf);
-
-    return (ulrc);
-}
-
-/*
- *@@ wpshRequestFindMutexSem:
- *      mutex requested by the populate thread to prevent
- *      multiple populates, apparently. From my testing,
- *      this semaphore is requested any time an object is
- *      being made awake (created in memory).
- *
- *      As with the folder mutex sem, proper serialization
- *      must be applied to avoid mutexes locking each other
- *      out.
- *
- *      Apparently, the WPS uses the following order when
- *      it requests this mutex:
- *
- *      1)  request find mutex
- *
- *      2)  request folder mutex,
- *          while (wpQueryContent, ...)
- *          release folder mutex
- *
- *      3)  awake/create object
- *
- *      4)  release find mutex
- *
- *      Whatever you do, never request the find AFTER the
- *      folder mutex.
- *
- *@@added V0.9.9 (2001-03-11) [umoeller]
- */
-
-ULONG wpshRequestFindMutexSem(WPFolder *somSelf,
-                              ULONG ulTimeout)
-{
-    ULONG ulrc = -1;
-
-    xfTD_wpRequestFindMutexSem _wpRequestFindMutexSem;
-
-    if (_wpRequestFindMutexSem
-            = (xfTD_wpRequestFindMutexSem)wpshResolveFor(somSelf,
-                                                         NULL, // use somSelf's class
-                                                         "wpRequestFindMutexSem"))
-        ulrc = _wpRequestFindMutexSem(somSelf, ulTimeout);
-
-    return (ulrc);
-}
-
-/*
- *@@ wpshReleaseFindMutexSem:
- *
- *@@added V0.9.9 (2001-03-11) [umoeller]
- */
-
-ULONG wpshReleaseFindMutexSem(WPFolder *somSelf)
-{
-    ULONG ulrc = -1;
-
-    xfTD_wpReleaseFindMutexSem _wpReleaseFindMutexSem;
-
-    if (_wpReleaseFindMutexSem
-            = (xfTD_wpReleaseFindMutexSem)wpshResolveFor(somSelf,
-                                                         NULL, // use somSelf's class
-                                                         "wpReleaseFindMutexSem"))
-        ulrc = _wpReleaseFindMutexSem(somSelf);
-
-    return (ulrc);
-}
-
-/*
- *@@ wpshFlushNotifications:
- *
- *@@added V0.9.6 (2000-10-25) [umoeller]
- */
-
-ULONG wpshFlushNotifications(WPFolder *somSelf)
-{
-    ULONG ulrc = 0;
-
-    xfTD_wpFlushNotifications _wpFlushNotifications;
-
-    if (_wpFlushNotifications
-        = (xfTD_wpFlushNotifications)wpshResolveFor(somSelf,
-                                                    NULL, // use somSelf's class
-                                                    "wpFlushNotifications"))
-        ulrc = _wpFlushNotifications(somSelf);
-
-    return (ulrc);
-}
-
-/*
- *@@ wpshGetNotifySem:
- *      calls M_WPFolder::wpclsGetNotifySem to lock out
- *      the WPS auto-refresh-folder threads.
- *
- *      Note that this requests a system-wide lock.
- *
- *@@added V0.9.6 (2000-10-25) [umoeller]
- */
-
-BOOL wpshGetNotifySem(ULONG ulTimeout)
-{
-    BOOL brc = FALSE;
-
-    static xfTD_wpclsGetNotifySem _wpclsGetNotifySem = NULL;
-
-    M_WPFolder *pWPFolder = _WPFolder;
-            // THIS RETURNS NULL UNTIL THE FOLDER CLASS IS INITIALIZED
-
-    if (pWPFolder)
-    {
-        if (!_wpclsGetNotifySem)
-        {
-            // first call: resolve...
-            _wpclsGetNotifySem = (xfTD_wpclsGetNotifySem)wpshResolveFor(
-                                                pWPFolder,
-                                                NULL,
-                                                "wpclsGetNotifySem");
-        }
-
-        if (_wpclsGetNotifySem)
-            brc = _wpclsGetNotifySem(pWPFolder, ulTimeout);
-    }
-
-    return (brc);
-}
-
-/*
- *@@ wpshReleaseNotifySem:
- *
- *@@added V0.9.6 (2000-10-25) [umoeller]
- */
-
-VOID wpshReleaseNotifySem(VOID)
-{
-    static xfTD_wpclsReleaseNotifySem _wpclsReleaseNotifySem = NULL;
-
-    M_WPFolder *pWPFolder = _WPFolder;
-            // THIS RETURNS NULL UNTIL THE FOLDER CLASS IS INITIALIZED
-
-    if (pWPFolder)
-    {
-        if (!_wpclsReleaseNotifySem)
-        {
-            // first call: resolve...
-            _wpclsReleaseNotifySem = (xfTD_wpclsReleaseNotifySem)wpshResolveFor(
-                                                pWPFolder,
-                                                NULL,
-                                                "wpclsReleaseNotifySem");
-        }
-
-        if (_wpclsReleaseNotifySem)
-            _wpclsReleaseNotifySem(pWPFolder);
-    }
-}
 

@@ -87,9 +87,9 @@
 #pragma hdrstop
 
 /* ******************************************************************
- *                                                                  *
- *   Disk implementation                                            *
- *                                                                  *
+ *
+ *   Disk implementation
+ *
  ********************************************************************/
 
 /*
@@ -250,9 +250,9 @@ BOOL dskQueryInfo(PXDISKINFO paDiskInfos,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XFldDisk notebook callbacks (notebook.c)                       *
- *                                                                  *
+ *
+ *   XFldDisk notebook callbacks (notebook.c)
+ *
  ********************************************************************/
 
 /*

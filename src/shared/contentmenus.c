@@ -155,7 +155,7 @@
 #include "shared\contentmenus.h"        // shared menu logic
 #include "shared\kernel.h"              // XWorkplace Kernel
 
-// #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\folder.h"             // XFolder implementation
 
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
@@ -198,7 +198,7 @@ static LINKLIST         G_llVarMenuItems;     // changed V0.9.0
 
 // original wnd proc for folder content menus,
 // which we must subclass
-static PFNWP            G_pfnwpFolderContentMenuOriginal = NULL;
+extern PFNWP            G_pfnwpFolderContentMenuOriginal = NULL;
 
 static POINTL           G_ptlPositionBelow;         // in screen coords
 static BOOL             G_fPositionBelow = FALSE;
@@ -731,8 +731,8 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
                 // counts items which were left out because
                 // too many are in the folder to be displayed
 
-    ULONG           ulNesting;
-    DosEnterMustComplete(&ulNesting);
+    // ULONG           ulNesting;
+    // DosEnterMustComplete(&ulNesting);
     TRY_LOUD(excpt1)
     {
         WPObject        *pObject, *pObject2;
@@ -749,19 +749,19 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
         // start collecting stuff; lock the folder contents,
         // do this in a protected block (exception handler,
         // must-complete section)
-        fFolderLocked = !wpshRequestFolderMutexSem(pFolder, 5000);
-        if (fFolderLocked)
+        if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, 5000))
         {
             ULONG   ulTotalObjectsAdded = 0;
 
             // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-            somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                    = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
+            // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                    // = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
 
             // now collect all objects in folder
-            for (pObject = rslv_wpQueryContent(pFolder, NULL, QC_FIRST);
+            // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+            for (pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                  pObject;
-                 pObject = rslv_wpQueryContent(pFolder, pObject, QC_Next))
+                 pObject = *wpshGetNextObjPointer(pObject))
             {
                 // dereference shadows, if necessary
                 pObject2 = pObject;
@@ -833,9 +833,9 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
     CATCH(excpt1) { } END_CATCH();
 
     if (fFolderLocked)
-        wpshReleaseFolderMutexSem(pFolder);
+        fdrReleaseFolderMutexSem(pFolder);
 
-    DosExitMustComplete(&ulNesting);
+    // DosExitMustComplete(&ulNesting);
 
     // now sort the lists alphabetically
     lstQuickSort(pllFolders,
@@ -1211,6 +1211,7 @@ VOID cmnuPrepareOwnerDraw(// SHORT sMenuIDMsg, // from WM_INITMENU: SHORT mp1 su
  *
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
  *@@changed V0.9.7 (2001-01-26) [lafaix]: added CharBox and MaxDescender queries
+ *@@changed V0.9.16 (2001-10-31) [umoeller]: now using at least system mini-icon height
  */
 
 MRESULT cmnuMeasureItem(POWNERITEM poi,      // owner-draw info structure
@@ -1261,8 +1262,12 @@ MRESULT cmnuMeasureItem(POWNERITEM poi,      // owner-draw info structure
                                 + 6;     // lafaix
 
         poi->rclItem.yTop = G_rtlMenuItem.yTop - G_rtlMenuItem.yBottom;
-        /* if (poi->rclItem.yTop < G_ulMiniIconSize)
-            poi->rclItem.yTop = G_ulMiniIconSize; */
+
+        // make sure the item has at least the height of
+        // the system mini-icon size
+        // V0.9.16 (2001-10-31) [umoeller]
+        if (poi->rclItem.yTop < G_ulMiniIconSize)
+            poi->rclItem.yTop = G_ulMiniIconSize;
     }
     mrc = MRFROMSHORT(poi->rclItem.yTop); //(MPARAM)poi->rclItem.yTop;
 
@@ -1281,6 +1286,7 @@ MRESULT cmnuMeasureItem(POWNERITEM poi,      // owner-draw info structure
  *@@changed V0.9.0 [umoeller]: adjusted for new linklist functions
  *@@changed V0.9.7 (2001-01-21) [lafaix]: reworked submenu arrow handling
  *@@changed V0.9.7 (2001-01-21) [lafaix]: reworked painting stuff
+ *@@changed V0.9.16 (2001-10-31) [umoeller]: now using at least system mini-icon height
  */
 
 BOOL cmnuDrawItem(PCGLOBALSETTINGS pGlobalSettings,   // shortcut to global settings
@@ -1324,7 +1330,6 @@ BOOL cmnuDrawItem(PCGLOBALSETTINGS pGlobalSettings,   // shortcut to global sett
         }
         else
         {
-
             // get the item's (object's) icon;
             // this call can take a while if the folder
             // was just queried
@@ -1374,9 +1379,23 @@ BOOL cmnuDrawItem(PCGLOBALSETTINGS pGlobalSettings,   // shortcut to global sett
                 GpiLine(poi->hps, &ptl);
             }
 
+            // calculate the base for both the object and the icon text
+            ptl.x =    poi->rclItem.xLeft
+                     + G_ulMiniIconSize
+                     + 10;
+            ptl.y =    poi->rclItem.yBottom
+                     + (    (   poi->rclItem.yTop
+                              - poi->rclItem.yBottom
+                              - G_ulMiniIconSize
+                            ) / 2
+                       )
+                     + G_lMaxDescender
+                     + 2;
+
+            // center this vertically V0.9.16 (2001-10-31) [umoeller]
+            // ptl.y += (cyMenuItem - G_ulMiniIconSize) / 2;
+
             // print the item's text
-            ptl.x = poi->rclItem.xLeft+10+(G_ulMiniIconSize);
-            ptl.y = poi->rclItem.yBottom+G_lMaxDescender+1;
             GpiMove(poi->hps, &ptl);
             GpiSetColor(poi->hps,
                         (poi->fsAttribute & MIA_HILITED)
@@ -1387,9 +1406,15 @@ BOOL cmnuDrawItem(PCGLOBALSETTINGS pGlobalSettings,   // shortcut to global sett
 
             // draw the item's icon
             WinDrawPointer(poi->hps,
-                           poi->rclItem.xLeft+7,
+                           poi->rclItem.xLeft + 6,
+                           // center vertically:
+                           // V0.9.16 (2001-10-31) [umoeller]
                            poi->rclItem.yBottom
-                             +( (G_rtlMenuItem.yTop - G_rtlMenuItem.yBottom - G_ulMiniIconSize) / 2 ),
+                           + (    (   poi->rclItem.yTop
+                                    - poi->rclItem.yBottom
+                                    - G_ulMiniIconSize
+                                  ) / 2
+                             ),
                            hIcon,
                            DP_MINI);
         }

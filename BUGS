@@ -13,6 +13,19 @@ XWorkplace features in the "XWorkplace Setup" object.
 
 Ulrich M”ller.
 
+--  CHANGE "VIEW" PAGE IN "WORKPLACE SHELL" TO "FOLDERS"
+
+--  CHANGE "STATUS BARS 1" PAGE IN "WORKPLACE SHELL" TO NOT HAVE "WARP" STRINGS
+
+--  DEFAULTS: 'Conditional cascade' menus should be turned on.
+
+--  CHANGE DIALOG BORDERS
+
+--  CHANGE XWP DIALOG ICONS (MSG BOX)
+
+--  folder content menus:
+    if folder is already populated, drive changes aren't picked up
+    (crashes with CD-ROMs and drive menus)
 
 --  XShutdown:
     --  messes up desktops with multiple partitions
@@ -23,24 +36,13 @@ Ulrich M”ller.
     --  crashes with DragText
     --  spacing lines are missing on trays
     --  if tray is on top, icons are moved down (xwpbug.jpg)
-    --  make obj button hatching optional
-    --  Folder content menus: data files associated
-        with VIO windows being started by selecting the data file icon
-        (a S3M file, by example) using some folder object on XCenter
-        (like the drive folder object) hang the system
     --  dragging XCenter widget text files can hang WPS (check file types?)
 
 --  rc.exe fails on recreating icons.dll
 
---  add spacing between icons in folder content menus
-
---  PageMage:
-    window list comes up hidden on different screen
-
 --  startup:
     --  boot logo remains on screen forever (check startup sequence for whether
         this might be lost somwhere)
-    --  startup folders run in a loop sometimes
 
 --  drive not ready:
     reports garbage with TVFS drives
@@ -83,8 +85,6 @@ Ulrich M”ller.
     --  fix separator program objects in config folder
 
 --  if trash can doesn't exist, "drive not supported" comes up
-
---  icons.cmd broken
 
 --  ext assocs:
     >Finally, I use a REXX script to unzip *.ZIP files; it is linked to a program object  associated with ZIP files, that has this string as parameter:
@@ -158,10 +158,6 @@ XCenter:
 
     --  "show frame" setting on a per-widget basis
 
-    --  trays: cycle when clicking on whitespace
-
-    --  tray widgets drag'n'drop doesn't work yet
-
     --  winlist widget behavior: make buttons wider (configurable)
 
     --  add "rightmost" setting
@@ -169,6 +165,7 @@ XCenter:
     --  allow icon resize
 
     --  3D border size not respected with "resize desktop"
+    --  exclude frame border from desktop workarea too
 
     --  rework stay on top
 

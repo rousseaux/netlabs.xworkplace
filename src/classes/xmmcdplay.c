@@ -553,7 +553,7 @@ SOM_Scope BOOL  SOMLINK cdp_wpSetup(XMMCDPlayer *somSelf, PSZ pszSetupString)
          *
          */
 
-        if (strcmp(szValue, "PLAY") == 0)
+        if (!strcmp(szValue, "PLAY"))
             brc = _xwpCDPlay(somSelf);
 
         /*
@@ -561,7 +561,7 @@ SOM_Scope BOOL  SOMLINK cdp_wpSetup(XMMCDPlayer *somSelf, PSZ pszSetupString)
          *      stops the CD and closes the device.
          */
 
-        else if (strcmp(szValue, "STOP") == 0)
+        else if (!strcmp(szValue, "STOP"))
             brc = _xwpCDStop(somSelf);
 
         /*
@@ -569,7 +569,7 @@ SOM_Scope BOOL  SOMLINK cdp_wpSetup(XMMCDPlayer *somSelf, PSZ pszSetupString)
          *
          */
 
-        else if (strcmp(szValue, "PAUSE") == 0)
+        else if (!strcmp(szValue, "PAUSE"))
             brc = _xwpCDPause(somSelf);
 
         /*
@@ -578,7 +578,7 @@ SOM_Scope BOOL  SOMLINK cdp_wpSetup(XMMCDPlayer *somSelf, PSZ pszSetupString)
          *      pause if playing.
          */
 
-        else if (strcmp(szValue, "TOGGLEPLAY") == 0)
+        else if (!strcmp(szValue, "TOGGLEPLAY"))
             brc = _xwpCDTogglePlay(somSelf);
 
         /*
@@ -586,7 +586,7 @@ SOM_Scope BOOL  SOMLINK cdp_wpSetup(XMMCDPlayer *somSelf, PSZ pszSetupString)
          *
          */
 
-        else if (strcmp(szValue, "NEXTTRACK") == 0)
+        else if (!strcmp(szValue, "NEXTTRACK"))
             brc = _xwpCDNextTrack(somSelf);
 
         /*
@@ -594,7 +594,7 @@ SOM_Scope BOOL  SOMLINK cdp_wpSetup(XMMCDPlayer *somSelf, PSZ pszSetupString)
          *
          */
 
-        else if (strcmp(szValue, "PREVTRACK") == 0)
+        else if (!strcmp(szValue, "PREVTRACK"))
             brc = _xwpCDPrevTrack(somSelf);
 
         /*
@@ -602,7 +602,7 @@ SOM_Scope BOOL  SOMLINK cdp_wpSetup(XMMCDPlayer *somSelf, PSZ pszSetupString)
          *
          */
 
-        else if (strcmp(szValue, "EJECT") == 0)
+        else if (!strcmp(szValue, "EJECT"))
             brc = _xwpCDEject(somSelf);
 
         else
@@ -876,7 +876,10 @@ SOM_Scope BOOL  SOMLINK cdp_wpAddSettingsPages(XMMCDPlayer *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      initialize class data.
+ *      this WPObject class method gets called when a class
+ *      is loaded by the WPS (probably from within a
+ *      somFindClass call) and allows the class to initialize
+ *      itself.
  */
 
 SOM_Scope void  SOMLINK cdpM_wpclsInitData(M_XMMCDPlayer *somSelf)

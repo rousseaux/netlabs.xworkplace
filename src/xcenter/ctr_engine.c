@@ -251,6 +251,7 @@ BOOL LockWorkAreas(VOID)
                                    TRUE));      // request!
 
     return (!WinRequestMutexSem(G_hmtxWorkAreaViews, SEM_INDEFINITE_WAIT));
+        // WinRequestMutexSem works even if the thread has no message queue
 }
 
 /*
@@ -1286,7 +1287,7 @@ VOID ctrpShowSettingsDlg(XCenter *somSelf,
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
                             // can be NULL if we have no open view
 
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     TRY_LOUD(excpt1)
     {
         if (LOCK_OBJECT(Lock, somSelf))
@@ -2548,6 +2549,7 @@ VOID ctrpDrop(HWND hwndClient,          // in: XCenter client
  *@@changed V0.9.13 (2001-06-09) [pr]: fixed context menu font
  *@@changed V0.9.13 (2001-06-19) [umoeller]: prototype changed for tray support
  *@@changed V0.9.13 (2001-06-21) [umoeller]: fixed tooltips
+ *@@changed V0.9.16 (2001-10-30) [umoeller]: fixed bad ctxt menu font on eCS default install
  */
 
 PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,      // in: instance data
@@ -2664,7 +2666,6 @@ PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,      // 
                                                                   PMINIAPP_SYSTEMFONTS, // "PM_SystemFonts",
                                                                   PMINIKEY_DEFAULTFONT, // "DefaultFont",
                                                                   NULL);
-                                    // @@todo this still doesn't work on eCS
 
                         // store view data in widget's QWL_USER,
                         // in case the widget forgot; but this won't help
@@ -2686,6 +2687,9 @@ PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,      // 
                         pWidget->hwndContextMenu = WinLoadMenu(pWidget->hwndWidget,
                                                                cmnQueryNLSModuleHandle(FALSE),
                                                                ID_CRM_WIDGET);
+                        _Pmpf((__FUNCTION__ ": pszStdMenuFont is %s",
+                                (pszStdMenuFont) ? pszStdMenuFont : "NULL"));
+
                         if (pszStdMenuFont)
                         {
                             // set a font presparam for this menu because
@@ -2695,6 +2699,11 @@ PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,      // 
                                               pszStdMenuFont);
                             free(pszStdMenuFont);
                         }
+                        else
+                            // system font wasn't found: use a default
+                            // V0.9.16 (2001-10-30) [umoeller]
+                            winhSetWindowFont(pWidget->hwndContextMenu,
+                                              cmnQueryDefaultFont());
 
                         // store view
                         if (    (ulIndex == -1)
@@ -3348,6 +3357,7 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
                         // after this pXCenterData is INVALID!
             break;
 
+            /*
             case WM_QUERYFOCUSCHAIN:
             {
                 PCSZ pcsz;
@@ -3381,6 +3391,7 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
                         pcsz,
                         mrc));
             break; }
+            */
 
             /*
              * WM_ADJUSTWINDOWPOS:
@@ -4179,7 +4190,7 @@ BOOL ClientSaveSetup(HWND hwndClient,
                 // we already had a setup string:
                 free(pSetting->Public.pszSetupString);
 
-            pSetting->Public.pszSetupString = strhdup(pcszSetupString);
+            pSetting->Public.pszSetupString = strhdup(pcszSetupString, NULL);
                                 // can be NULL
 
             brc = TRUE;
@@ -4534,7 +4545,7 @@ BOOL ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
 {
     BOOL        fFound = FALSE;
 
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     TRY_LOUD(excpt1)
     {
         if (LOCK_OBJECT(Lock, somSelf))
@@ -4644,7 +4655,7 @@ BOOL ctrpInsertWidget(XCenter *somSelf,
 
     XCenterData *somThis = XCenterGetData(somSelf);
 
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     TRY_LOUD(excpt1)
     {
         if (LOCK_OBJECT(Lock, somSelf))
@@ -4670,8 +4681,8 @@ BOOL ctrpInsertWidget(XCenter *somSelf,
                 {
                     ZERO(pSetting);
 
-                    pSetting->Public.pszWidgetClass = strhdup(pcszWidgetClass);
-                    pSetting->Public.pszSetupString = strhdup(pcszSetupString);
+                    pSetting->Public.pszWidgetClass = strhdup(pcszWidgetClass, NULL);
+                    pSetting->Public.pszSetupString = strhdup(pcszSetupString, NULL);
                                             // can be NULL
 
                     // add new widget setting to internal linked list
@@ -4744,7 +4755,7 @@ BOOL ctrpRemoveWidget(XCenter *somSelf,
                       ULONG ulIndex)
 {
     BOOL brc = FALSE;
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     TRY_LOUD(excpt1)
     {
         if (LOCK_OBJECT(Lock, somSelf))
@@ -4844,7 +4855,7 @@ BOOL ctrpMoveWidget(XCenter *somSelf,
 {
     BOOL brc = FALSE;
 
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     TRY_LOUD(excpt1)
     {
         if (LOCK_OBJECT(Lock, somSelf))
@@ -4940,7 +4951,7 @@ BOOL ctrpSetPriority(XCenter *somSelf,
 {
     BOOL brc = FALSE;
 
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     TRY_LOUD(excpt1)
     {
         if (LOCK_OBJECT(Lock, somSelf))
@@ -4984,7 +4995,7 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
                          HWND hwndMenu)
 {
     BOOL brc = TRUE;
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     TRY_LOUD(excpt1)
     {
         if (LOCK_OBJECT(Lock, somSelf))

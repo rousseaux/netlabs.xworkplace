@@ -517,6 +517,8 @@ SOM_Scope XFldStartup*  SOMLINK xfstupM_xwpclsQueryXStartupFolder(M_XFldStartup 
 
     M_XFldStartupMethodDebug("M_XFldStartup","xfstupM_xwpclsQueryXStartupFolder");
 
+    // _Pmpf((__FUNCTION__ ": getting next, pFolder is %s",
+       //      (pFolder) ? _wpQueryTitle(pFolder) : "NULL"));
     pDesktop = cmnQueryActiveDesktop();
     do
     {
@@ -524,6 +526,10 @@ SOM_Scope XFldStartup*  SOMLINK xfstupM_xwpclsQueryXStartupFolder(M_XFldStartup 
                               pFolder,
                               INIKEY_XSAVEDSTARTUPFOLDERS,
                               0);
+
+        // _Pmpf(("    got %s",
+           //      (pFolder) ? _wpQueryTitle(pFolder) : "NULL"));
+
     } while (    (pFolder)
               && (!wpshResidesBelow(pFolder, pDesktop))
             );
@@ -533,7 +539,10 @@ SOM_Scope XFldStartup*  SOMLINK xfstupM_xwpclsQueryXStartupFolder(M_XFldStartup 
 
 /*
  *@@ wpclsInitData:
- *      initialize XFldStartup class data.
+ *      this WPObject class method gets called when a class
+ *      is loaded by the WPS (probably from within a
+ *      somFindClass call) and allows the class to initialize
+ *      itself.
  *
  *@@changed V0.9.0 [umoeller]: added class object to KERNELGLOBALS
  *@@changed V0.9.9 (2001-03-19) [pr]: multiple startup folder mods.
@@ -710,7 +719,10 @@ SOM_Scope BOOL  SOMLINK xfshut_wpQueryDefaultHelp(XFldShutdown *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      initialize XFldShutdown class data.
+ *      this WPObject class method gets called when a class
+ *      is loaded by the WPS (probably from within a
+ *      somFindClass call) and allows the class to initialize
+ *      itself.
  *
  *@@changed V0.9.0 [umoeller]: added class object to KERNELGLOBALS
  */

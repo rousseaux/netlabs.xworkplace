@@ -182,6 +182,8 @@ static FEATURESITEM G_FeatureItemsList[] =
             ID_XCSI_ENABLEFOLDERHOTKEYS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
             ID_XCSI_EXTFOLDERSORT, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_REPLACEREFRESH, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_TURBOFOLDERS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 
             // mouse/keyboard features
             ID_XCSI_MOUSEKEYBOARDFEATURES, 0, 0, NULL,
@@ -208,12 +210,14 @@ static FEATURESITEM G_FeatureItemsList[] =
             ID_XCSI_REPLFILEEXISTS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_REPLDRIVENOTREADY, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_XWPTRASHCAN, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_REPLACEDELETE, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_REPLACEDELETE, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL
 
 #ifdef __REPLHANDLES__
-            ID_XCSI_REPLHANDLES, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            , ID_XCSI_REPLHANDLES, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL
 #endif
-            ID_XCSI_REPLACEREFRESH, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL
+            // ID_XCSI_REPLACEREFRESH, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL
+                // moved this up to the folders group
+                // V0.9.16 (2001-10-25) [umoeller]
         };
 
 static PCHECKBOXRECORDCORE G_pFeatureRecordsList = NULL;
@@ -527,6 +531,9 @@ static XWPCLASSITEM G_aClasses[] =
         &G_pcszXFldObject, &G_pcszWPObject,
             (REQ)-1, 0,
             1251,
+        &G_pcszXWPFileSystem, &G_pcszWPFileSystem,
+            NULL, 0,
+            1272,
         &G_pcszXFolder, &G_pcszWPFolder,
             NULL, 0,
             1252,
@@ -1640,6 +1647,7 @@ typedef struct _XWPFEATURESDATA
  *@@changed V0.9.9 (2001-01-31) [umoeller]: added "replace folder refresh"
  *@@changed V0.9.9 (2001-04-05) [pr]: fix undo
  *@@changed V0.9.12 (2001-05-12) [umoeller]: removed "Cleanup INIs" for now
+ *@@changed V0.9.16 (2001-10-25) [umoeller]: added "turbo folders"
  */
 
 VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -1824,6 +1832,12 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         // ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_MONITORCDROMS,
            //      pGlobalSettings->MonitorCDRoms);
 
+        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_TURBOFOLDERS,
+                // return the current global setting;
+                // cmnIsFeatureEnabled would return the initial
+                // WPS startup setting
+                pGlobalSettings->__fTurboFolders);
+
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ANIMOUSE,
                 pGlobalSettings->fAniMouse);
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XWPHOOK,
@@ -1870,7 +1884,8 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         BOOL        fXFolder = krnIsClassReady(G_pcszXFolder),
                     fXFldDesktop = krnIsClassReady(G_pcszXFldDesktop),
                     fXFldDataFile = krnIsClassReady(G_pcszXFldDataFile),
-                    fXFldDisk = krnIsClassReady(G_pcszXFldDisk);
+                    fXFldDisk = krnIsClassReady(G_pcszXFldDisk),
+                    fXWPFileSystem = krnIsClassReady(G_pcszXWPFileSystem);
 
 #ifndef __ALWAYSREPLACEFILEPAGE__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_REPLACEFILEPAGE,
@@ -1892,6 +1907,8 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 #endif
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_EXTFOLDERSORT,
                 (fXFolder));
+        ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_TURBOFOLDERS,
+                (fXFolder) && (fXWPFileSystem));
 
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_XWPHOOK,
                 (pXwpGlobalShared->hwndDaemonObject != NULLHANDLE));
@@ -1951,14 +1968,19 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     BOOL fSave = TRUE;
 
     // flags for delayed dialog showing (after unlocking)
-    BOOL fShowHookInstalled = FALSE,
-         fShowHookDeinstalled = FALSE,
+    BOOL // fShowHookInstalled = FALSE,
+         // fShowHookDeinstalled = FALSE,
          fShowClassesSetup = FALSE,
-         fShowWarnXShutdown = FALSE,
-         fUpdateMouseMovementPage = FALSE,
-         fShowRefreshEnabled = FALSE,
-         fShowRefreshDisabled = FALSE,
-         fShowExtAssocsWarning = FALSE;
+         // fShowWarnXShutdown = FALSE,
+         fUpdateMouseMovementPage = FALSE;
+         // fShowRefreshEnabled = FALSE,
+         // fShowRefreshDisabled = FALSE,
+         // fShowExtAssocsWarning = FALSE;
+
+    ULONG       ulNotifyMsg = 0;            // if set, a message is displayed
+                                            // after unlocking
+                                            // V0.9.16 (2001-10-25) [umoeller]
+
     signed char cAskSoundsInstallMsg = -1,  // 1 = installed, 0 = deinstalled
                 cEnableTrashCan = -1;       // 1 = installed, 0 = deinstalled
 
@@ -2000,9 +2022,9 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     pGlobalSettings->fEnableXWPHook = precc->usCheckState;
 
                     if (precc->usCheckState)
-                        fShowHookInstalled = TRUE;
+                        ulNotifyMsg = 157;
                     else
-                        fShowHookDeinstalled = TRUE;
+                        ulNotifyMsg = 158;
 
                     // re-enable controls on this page
                     ulUpdateFlags = CBI_SET | CBI_ENABLE;
@@ -2070,6 +2092,22 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 pGlobalSettings->ExtFolderSort = precc->usCheckState;
             break;
 
+            case ID_XCSI_REPLACEREFRESH:
+                krnEnableReplaceRefresh(precc->usCheckState);
+                if (precc->usCheckState)
+                    ulNotifyMsg = 212;
+                else
+                    ulNotifyMsg = 207;
+            break;
+
+            case ID_XCSI_TURBOFOLDERS:
+                pGlobalSettings->__fTurboFolders = precc->usCheckState;
+                if (precc->usCheckState)
+                    ulNotifyMsg = 223;
+                else
+                    ulNotifyMsg = 224;
+            break;
+
             case ID_XCSI_GLOBALHOTKEYS:
                 hifEnableObjectHotkeys(precc->usCheckState);
 #ifndef __ALWAYSREPLACEICONPAGE__
@@ -2105,9 +2143,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 ntbUpdateVisiblePage(NULL,   // all somSelf's
                                      SP_DTP_MENUITEMS);
                 if (precc->usCheckState)
-                    // show warning at the bottom (outside the
-                    // mutex section)
-                    fShowWarnXShutdown = TRUE;
+                    ulNotifyMsg = 190;
             break;
 
             case ID_XCSI_EXTASSOCS:
@@ -2116,7 +2152,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 ulUpdateFlags = CBI_ENABLE;
 
                 if (precc->usCheckState)
-                    fShowExtAssocsWarning = TRUE;       // V0.9.9 (2001-02-06) [umoeller]
+                    ulNotifyMsg = 208;
             break;
 
             case ID_XCSI_REPLFILEEXISTS:
@@ -2144,14 +2180,6 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 pGlobalSettings->fReplaceHandles = precc->usCheckState;
             break;
     #endif
-
-            case ID_XCSI_REPLACEREFRESH:
-                krnEnableReplaceRefresh(precc->usCheckState);
-                if (precc->usCheckState)
-                    fShowRefreshEnabled = TRUE;
-                else
-                    fShowRefreshDisabled = TRUE;
-            break;
 
             default:            // includes "Classes" button
                 fSave = FALSE;
@@ -2280,19 +2308,30 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         WinProcessDlg(hwndClassesDlg);
         WinDestroyWindow(hwndClassesDlg); */
     }
-    else if (fShowHookInstalled)
+    else if (ulNotifyMsg)
+        // show a notification msg:
+        cmnMessageBoxMsg(pcnbp->hwndFrame,
+                         148,       // "XWorkplace Setup"
+                         ulNotifyMsg,
+                         MB_OK);
+    /* else if (fShowHookInstalled)
         // "hook installed" msg
         cmnMessageBoxMsg(pcnbp->hwndFrame,
-                         148, 157, MB_OK);
+                         148,
+                         157,
+                         MB_OK);
     else if (fShowHookDeinstalled)
         // "hook deinstalled" msg
         cmnMessageBoxMsg(pcnbp->hwndFrame,
-                         148, 158, MB_OK);
+                         148,
+                         158,
+                         MB_OK);
     else if (fShowWarnXShutdown)
         cmnMessageBoxMsg(pcnbp->hwndFrame,
-                         148,       // "XWorkplace Setup"
+                         148,
                          190,
                          MB_OK);
+    */
     else if (cAskSoundsInstallMsg != -1)
     {
         if (cmnMessageBoxMsg(pcnbp->hwndFrame,
@@ -2313,18 +2352,25 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                           cEnableTrashCan);
         ulUpdateFlags = CBI_SET | CBI_ENABLE;
     }
-    else if (fShowRefreshEnabled)
+    /* else if (fShowRefreshEnabled)
         // "enabled, warning, unstable" msg
         cmnMessageBoxMsg(pcnbp->hwndFrame,
-                         148, 212, MB_OK);
+                         148,
+                         212,
+                         MB_OK);
     else if (fShowRefreshDisabled)
         // "must restart wps" msg
         cmnMessageBoxMsg(pcnbp->hwndFrame,
-                         148, 207, MB_OK);
+                         148,
+                         207,
+                         MB_OK);
     else if (fShowExtAssocsWarning)
         // "warning: assocs gone" msg
         cmnMessageBoxMsg(pcnbp->hwndFrame,
-                         148, 208, MB_OK);
+                         148,
+                         208,
+                         MB_OK);
+       */
 
     if (ulUpdateFlags)
         pcnbp->pfncbInitPage(pcnbp, ulUpdateFlags);
@@ -3204,7 +3250,7 @@ VOID DisableObjectMenuItems(HWND hwndMenu,          // in: button menu handle
 
         // on Warp 3, disable WarpCenter also
         if (   (!doshIsWarp4())
-            && (strcmp(*(pso2->ppcszDefaultID), WPOBJID_WARPCENTER) == 0)
+            && (!strcmp(*(pso2->ppcszDefaultID), WPOBJID_WARPCENTER))
            )
             WinEnableMenuItem(hwndMenu, pso2->usMenuID, FALSE);
 

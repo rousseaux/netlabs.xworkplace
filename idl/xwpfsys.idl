@@ -45,6 +45,8 @@ interface XWPFileSystem : WPFileSystem
 
     HOBJECT xwpQueryHandle(in BOOL fCreate);
 
+    PSZ xwpQueryUpperRealName();
+
 #ifdef __SOMIDL__
   implementation {
 
@@ -71,6 +73,8 @@ interface XWPFileSystem : WPFileSystem
 
     ULONG       ulHandle;
 
+    PSZ         pszUpperRealName;
+
     /*
      * The following is forced into the .H file:
      *
@@ -84,6 +88,8 @@ interface XWPFileSystem : WPFileSystem
     wpInitData: override;
     wpUnInitData: override;
     wpObjectReady: override;
+
+    wpSetTitleAndRenameFile: override;
 
 #ifdef __PRIVATE__
 
@@ -130,6 +136,8 @@ interface M_XWPFileSystem : M_WPFileSystem
      */
 
     wpclsInitData: override;
+
+    wpclsQueryAwakeObject: override;
 
   };
 #endif /* __SOMIDL__ */

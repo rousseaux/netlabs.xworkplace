@@ -320,7 +320,7 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpTrashCanBusy(XWPTrashCan *somSelf,
                                              long lBusy)
 {
     BOOL    brc = FALSE;
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpTrashCanBusy");
 
@@ -367,7 +367,7 @@ SOM_Scope void  SOMLINK xtrc_xwpAddObjectSize(XWPTrashCan *somSelf,
                                               ULONG ulNewSize)
 {
     // BOOL    fTrashCanLocked = FALSE;
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpAddObjectSize");
 
@@ -424,7 +424,7 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpSetCorrectTrashIcon(XWPTrashCan *somSelf,
 {
     BOOL    brc = FALSE,
             fSave = FALSE;
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
 
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpSetCorrectTrashIcon");
@@ -1604,10 +1604,13 @@ SOM_Scope BOOL  SOMLINK xtrcM_xwpclsQueryDrivesSupport(M_XWPTrashCan *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      this class method allows the class to
- *      initialize itself. We set up some global
- *      trash can data and also make sure that
- *      the XWPTrashObject class gets initialized.
+ *      this WPObject class method gets called when a class
+ *      is loaded by the WPS (probably from within a
+ *      somFindClass call) and allows the class to initialize
+ *      itself.
+ *
+ *      We set up some global trash can data and also make
+ *      sure that the XWPTrashObject class gets initialized.
  *
  *@@changed V0.9.1 (2000-01-27) [umoeller]: finally fixed those strange crashes in some WPS background thread
  *@@changed V0.9.7 (2001-01-15) [umoeller]: added more error checking

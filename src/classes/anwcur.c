@@ -853,6 +853,10 @@ SOM_Scope PSZ SOMLINK wcurM_wpclsQueryTitle(M_XWPWinCursor * somSelf)
 
 /*
  *@@ wpclsInitData:
+ *      this WPObject class method gets called when a class
+ *      is loaded by the WPS (probably from within a
+ *      somFindClass call) and allows the class to initialize
+ *      itself.
  *
  */
 

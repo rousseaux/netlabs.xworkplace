@@ -94,7 +94,7 @@ ULONG       G_cbHandlesBuffer = 0; */
 
 THREADINFO  G_tiInsertHandles = {0},
             G_tiCheckFiles = {0};
-ULONG       G_tidInsertHandlesRunning = 0,
+volatile TID G_tidInsertHandlesRunning = 0,
             G_tidCheckFilesRunning = 0;
 BOOL        G_fResolvingRefs = FALSE;
 ULONG       G_ulPercentDone = 0;
@@ -2417,14 +2417,14 @@ ULONG RemoveHandles(HWND hwndCnr,
             PBYTE   pbNextItem = 0;
             BOOL    fIsDrive = FALSE;
 
-            if (memcmp(pbItem, "DRIV", 4) == 0)
+            if (!memcmp(pbItem, "DRIV", 4))
             {
                 // it's a DRIVE node:
                 PDRIVE pDrivDelete = (PDRIVE)pbItem;
                 cbDelete = sizeof(DRIVE) + strlen(pDrivDelete->szName);
                 fIsDrive = TRUE;
             }
-            else if (memcmp(pbItem, "NODE", 4) == 0)
+            else if (!memcmp(pbItem, "NODE", 4))
             {
                 // it's a NODE node:
                 PNODE pNodeDelete = (PNODE)pbItem;

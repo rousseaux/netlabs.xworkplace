@@ -143,7 +143,8 @@ BOOL xmmLockDevicesList(VOID)
                 FALSE);     // we have USHORT's on the list, so no free
     }
 
-    return (WinRequestMutexSem(G_hmtxOpenDevices, 5000) == 0);  // APIRET NO_ERROR
+    return (!WinRequestMutexSem(G_hmtxOpenDevices, 5000));  // APIRET NO_ERROR
+        // WinRequestMutexSem works even if the thread has no message queue
 }
 
 /*

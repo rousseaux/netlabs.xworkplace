@@ -300,8 +300,6 @@ interface XFolder : WPFolder
     // LONG            MenuMousePosX,       // removed V0.9.16 (2001-10-23) [umoeller]
        //              MenuMousePosY;       // removed V0.9.16 (2001-10-23) [umoeller]
 
-    //# ULONG           ulDummy;
-
     BOOL            fUnInitCalled;
                             // flag for wpUnInitData, which seems
                             // to get called more than once sometimes
@@ -355,6 +353,8 @@ interface XFolder : WPFolder
     // pointers to original WPFolder object pointers
     WPObject        *ppFirstObj;
     WPObject        *ppLastObj;
+            // note: in IDL, "WPObject" is a WPObject* already, so this
+            // translates into **ppFirstObj etc.
 
     // file-system notifications for replacement auto-refresh
     // V0.9.9 (2001-02-01) [umoeller]
@@ -366,7 +366,7 @@ interface XFolder : WPFolder
                 // with proper serialization... since it would be very
                 // dangerous to request BOTH the WPS notify mutex AND
                 // the folder's object mutex, per definition, we only
-                // use the notify mutex for this (wpshGetNotifySem).
+                // use the notify mutex for this (fdrGetNotifySem).
 
                 // removed this V0.9.12 (2001-05-22) [umoeller]
 
@@ -386,6 +386,25 @@ interface XFolder : WPFolder
                 // TRUE while in wpAddFolderView1Page; allows us
                 // to do an evil hack in wpInsertSettingsPage
                 // V0.9.16 (2001-10-23) [umoeller]
+
+    PVOID       pvFdrContents;
+                // ptr to a FDRCONTENTS struct which is allocated
+                // in XFolder::wpInitData. Yes, this isn't pretty,
+                // but we use the tree* funcs for this, and we can't
+                // share the TREE struct definition between IDL and
+                // the helpers include file easily. The FDRCONTENTS
+                // struct is therefore defined in include\folder.h.
+                // V0.9.16 (2001-10-23) [umoeller]
+
+    SOMObject   pMonitor;
+                // ptr to read-write monitor (see fdrRequestFolderWriteMutexSem)
+                // V0.9.16 (2001-10-25) [umoeller]
+
+    PVOID       pfn_wpRequestFolderMutexSem;
+    PVOID       pfn_wpReleaseFolderMutexSem;
+                // cached method pointers (see fdrRequestFolderMutexSem and
+                // fdrReleaseFolderMutexSem)
+                // V0.9.16 (2001-10-25) [umoeller]
 
     /*
      * WPFolder methods overridden by XFolder:

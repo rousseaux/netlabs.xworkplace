@@ -151,6 +151,8 @@ static HMODULE         G_hmodNLS = NULLHANDLE;
 static GLOBALSETTINGS  G_GlobalSettings = {0};
             // removed the pointer here V0.9.16 (2001-10-02) [umoeller]
 static BOOL            G_fGlobalSettingsLoaded = FALSE;
+extern BOOL            G_fTurboSettingsEnabled = FALSE;
+            // initially set by initMain V0.9.16 (2001-10-25) [umoeller]
 
 static HMODULE         G_hmodIconsDLL = NULLHANDLE;
 static CHAR            G_szLanguageCode[20] = "";
@@ -320,8 +322,8 @@ const char* cmnQueryMainModuleFilename(VOID)
 HMODULE cmnQueryMainResModuleHandle(VOID)
 {
     BOOL fLocked = FALSE;
-    ULONG ulNesting;
-    DosEnterMustComplete(&ulNesting);
+    // ULONG ulNesting;
+    // DosEnterMustComplete(&ulNesting);
 
     TRY_LOUD(excpt1)
     {
@@ -354,7 +356,7 @@ HMODULE cmnQueryMainResModuleHandle(VOID)
     if (fLocked)
         krnUnlock();
 
-    DosExitMustComplete(&ulNesting);
+    // DosExitMustComplete(&ulNesting);
 
     return (G_hmodRes);
 }
@@ -470,6 +472,7 @@ ULONG ReplaceEntities(PXSTRING pstr)
  *@@changed V0.9.0 [umoeller]: "string not found" is now re-allocated using strdup (avoids crashes)
  *@@changed V0.9.0 (99-11-28) [umoeller]: added more meaningful error message
  *@@changed V0.9.2 (2000-02-26) [umoeller]: made temporary buffer larger
+ *@@changed V0.9.16 (2001-09-29) [umoeller]: added entities support
  */
 
 void cmnLoadString(HAB habDesktop,
@@ -489,7 +492,7 @@ void cmnLoadString(HAB habDesktop,
     {
         XSTRING str;
         xstrInitCopy(&str, szBuf, 0);
-        ReplaceEntities(&str);
+        ReplaceEntities(&str);      // V0.9.16
         *ppsz = str.psz;
     }
     else
@@ -857,8 +860,8 @@ BOOL cmnQueryXWPBasePath(PSZ pszPath)
 const char* cmnQueryLanguageCode(VOID)
 {
     BOOL fLocked = FALSE;
-    ULONG ulNesting;
-    DosEnterMustComplete(&ulNesting);
+    // ULONG ulNesting;
+    // DosEnterMustComplete(&ulNesting);
 
     TRY_LOUD(excpt1)
     {
@@ -884,7 +887,7 @@ const char* cmnQueryLanguageCode(VOID)
     if (fLocked)
         krnUnlock();
 
-    DosExitMustComplete(&ulNesting);
+    // DosExitMustComplete(&ulNesting);
 
     return (G_szLanguageCode);
 }
@@ -903,8 +906,8 @@ BOOL cmnSetLanguageCode(PSZ pszLanguage)
     BOOL brc = FALSE;
 
     BOOL fLocked = FALSE;
-    ULONG ulNesting;
-    DosEnterMustComplete(&ulNesting);
+   // ULONG ulNesting;
+   // DosEnterMustComplete(&ulNesting);
 
     TRY_LOUD(excpt1)
     {
@@ -925,7 +928,7 @@ BOOL cmnSetLanguageCode(PSZ pszLanguage)
     if (fLocked)
         krnUnlock();
 
-    DosExitMustComplete(&ulNesting);
+    // DosExitMustComplete(&ulNesting);
 
     return (brc);
 }
@@ -947,8 +950,8 @@ const char* cmnQueryHelpLibrary(VOID)
     const char *rc = 0;
 
     BOOL fLocked = FALSE;
-    ULONG ulNesting;
-    DosEnterMustComplete(&ulNesting);
+    // ULONG ulNesting;
+    // DosEnterMustComplete(&ulNesting);
 
     TRY_LOUD(excpt1)
     {
@@ -973,7 +976,7 @@ const char* cmnQueryHelpLibrary(VOID)
     if (fLocked)
         krnUnlock();
 
-    DosExitMustComplete(&ulNesting);
+    // DosExitMustComplete(&ulNesting);
 
     return (rc);
 }
@@ -1045,8 +1048,8 @@ const char* cmnQueryMessageFile(VOID)
     const char *rc = 0;
 
     BOOL fLocked = FALSE;
-    ULONG ulNesting;
-    DosEnterMustComplete(&ulNesting);
+    // ULONG ulNesting;
+    // DosEnterMustComplete(&ulNesting);
 
     TRY_LOUD(excpt1)
     {
@@ -1071,7 +1074,7 @@ const char* cmnQueryMessageFile(VOID)
     if (fLocked)
         krnUnlock();
 
-    DosExitMustComplete(&ulNesting);
+    // DosExitMustComplete(&ulNesting);
 
     return (rc);
 }
@@ -1096,8 +1099,8 @@ const char* cmnQueryMessageFile(VOID)
 HMODULE cmnQueryIconsDLL(VOID)
 {
     BOOL fLocked = FALSE;
-    ULONG ulNesting;
-    DosEnterMustComplete(&ulNesting);
+    // ULONG ulNesting;
+    // DosEnterMustComplete(&ulNesting);
 
     TRY_LOUD(excpt1)
     {
@@ -1157,7 +1160,7 @@ HMODULE cmnQueryIconsDLL(VOID)
     if (fLocked)
         krnUnlock();
 
-    DosExitMustComplete(&ulNesting);
+    // DosExitMustComplete(&ulNesting);
 
     return (G_hmodIconsDLL);
 }
@@ -1380,8 +1383,8 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
             // do this safely.
             HMODULE hmodOld = G_hmodNLS;
             BOOL fLocked = FALSE;
-            ULONG ulNesting;
-            DosEnterMustComplete(&ulNesting);
+            // ULONG ulNesting;
+            // DosEnterMustComplete(&ulNesting);
 
             TRY_LOUD(excpt1)
             {
@@ -1396,7 +1399,7 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
             if (fLocked)
                 krnUnlock();
 
-            DosExitMustComplete(&ulNesting);
+            // DosExitMustComplete(&ulNesting);
 
             // free all NLS strings we ever used;
             // they will be dynamically re-loaded
@@ -2231,6 +2234,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
             G_GlobalSettings.__fEnableSnap2Grid = 0;
             G_GlobalSettings.__fEnableFolderHotkeys = 0;
             G_GlobalSettings.ExtFolderSort = 0;
+            G_GlobalSettings.__fTurboFolders = 0;     // added V0.9.16 (2001-10-25) [umoeller]
 
             G_GlobalSettings.fAniMouse = 0;
             G_GlobalSettings.fEnableXWPHook = 0;
@@ -2344,6 +2348,10 @@ BOOL cmnIsFeatureEnabled(XWPFEATURE f)
 #ifndef __ALWAYSREPLACEICONPAGE__
         case ReplaceIconPage: return G_GlobalSettings.__fReplaceIconPage;
 #endif
+
+        // for turbo folders, return the setting that was initially
+        // copied by initMain(); we can't change this after the WPS is up
+        case TurboFolders: return G_fTurboSettingsEnabled;
 
         default:
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -3600,7 +3608,7 @@ APIRET GetExeFromControl(HWND hwnd,
                                            usExeLength,
                                            G_apcszExtensions,
                                            ARRAYITEMCOUNT(G_apcszExtensions))))
-                strupr(pszExecutable);
+                nlsUpper(pszExecutable, 0);
 
             _Pmpf((__FUNCTION__ ": doshFindExecutable returned %d", arc));
 
@@ -4053,7 +4061,7 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
                     {
                         pd.progt.fbVisible = SHE_VISIBLE;
                         pd.pszExecutable = szExecutable;
-                        strupr(szExecutable);
+                        nlsUpper(szExecutable, 0);
                         pd.pszParameters = (PSZ)pParams;
                         pd.pszStartupDir = pszStartup;
 

@@ -335,7 +335,10 @@ SOM_Scope MRESULT  SOMLINK xsrv_wpDrop(XWPNetServer *somSelf,
 
 /*
  *@@ wpclsInitData:
- *
+ *      this WPObject class method gets called when a class
+ *      is loaded by the WPS (probably from within a
+ *      somFindClass call) and allows the class to initialize
+ *      itself.
  */
 
 SOM_Scope void  SOMLINK xsrvM_wpclsInitData(M_XWPNetServer *somSelf)

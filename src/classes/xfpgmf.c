@@ -77,6 +77,7 @@
 // headers in /helpers
 #include "helpers\apps.h"               // application helpers
 #include "helpers\dosh.h"               // Control Program helper routines
+#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
@@ -331,8 +332,8 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpQueryProgType(XFldProgramFile *somSelf)
                     if (_wpQueryFilename(somSelf, szProgramFile, FALSE))
                     {
                         PSZ     pLastDot = strrchr(szProgramFile, '.');
-                        strupr(szProgramFile);
-                        if (strcmp(pLastDot, ".DLL") == 0)
+                        nlsUpper(szProgramFile, 0);
+                        if (!strcmp(pLastDot, ".DLL"))
                             // DLL found:
                             _ulAppType = PROG_DLL;
                     }
@@ -1023,7 +1024,10 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpFilterPopupMenu(XFldProgramFile *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      initialize XFldProgramFile class data.
+ *      this WPObject class method gets called when a class
+ *      is loaded by the WPS (probably from within a
+ *      somFindClass call) and allows the class to initialize
+ *      itself.
  *
  *@@changed V0.9.0 [umoeller]: added class object to KERNELGLOBALS
  */

@@ -1290,7 +1290,7 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
         // set wait pointer V0.9.12 (2001-05-18) [umoeller]
         HPOINTER hptrOld = winhSetWaitPointer();
 
-        WPSHLOCKSTRUCT Lock;
+        WPSHLOCKSTRUCT Lock = {0};
         TRY_LOUD(excpt1)
         {
             if (LOCK_OBJECT(Lock, somSelf))

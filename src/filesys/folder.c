@@ -15,7 +15,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2001 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -82,6 +82,7 @@
 #include "helpers\except.h"             // exception handling
 #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\syssound.h"           // system sound helper routines
@@ -171,13 +172,13 @@ BOOL fdrSetup(WPFolder *somSelf,
     {
         rc = TRUE;
         fChanged = TRUE;
-        if (strnicmp(szValue, "NO", 2) == 0)
+        if (!strnicmp(szValue, "NO", 2))
             _bSnapToGridInstance = 0;
-        else if (strnicmp(szValue, "YES", 3) == 0)
+        else if (!strnicmp(szValue, "YES", 3))
             _bSnapToGridInstance = 1;
-        else if (strnicmp(szValue, "DEFAULT", 7) == 0)
+        else if (!strnicmp(szValue, "DEFAULT", 7))
             _bSnapToGridInstance = 2;
-        else if (strnicmp(szValue, "EXEC", 4) == 0)
+        else if (!strnicmp(szValue, "EXEC", 4))
         {
             fdrSnapToGrid(somSelf, FALSE);
             fChanged = FALSE;
@@ -195,11 +196,11 @@ BOOL fdrSetup(WPFolder *somSelf,
     {
         fChanged = TRUE;
         rc = TRUE;
-        if (strnicmp(szValue, "NO", 2) == 0)
+        if (!strnicmp(szValue, "NO", 2))
             _bFullPathInstance = 0;
-        else if (strnicmp(szValue, "YES", 3) == 0)
+        else if (!strnicmp(szValue, "YES", 3))
             _bFullPathInstance = 1;
-        else if (strnicmp(szValue, "DEFAULT", 7) == 0)
+        else if (!strnicmp(szValue, "DEFAULT", 7))
             _bFullPathInstance = 2;
 
         fdrUpdateAllFrameWndTitles(somSelf);
@@ -211,11 +212,11 @@ BOOL fdrSetup(WPFolder *somSelf,
     {
         fChanged = TRUE;
         rc = TRUE;
-        if (strnicmp(szValue, "NO", 2) == 0)
+        if (!strnicmp(szValue, "NO", 2))
             _bFolderHotkeysInstance = 0;
-        else if (strnicmp(szValue, "YES", 3) == 0)
+        else if (!strnicmp(szValue, "YES", 3))
             _bFolderHotkeysInstance = 1;
-        else if (strnicmp(szValue, "DEFAULT", 7) == 0)
+        else if (!strnicmp(szValue, "DEFAULT", 7))
             _bFolderHotkeysInstance = 2;
     }
 
@@ -224,9 +225,9 @@ BOOL fdrSetup(WPFolder *somSelf,
                            "FAVORITEFOLDER", szValue, &cbValue))
     {
         rc = TRUE;
-        if (strnicmp(szValue, "NO", 2) == 0)
+        if (!strnicmp(szValue, "NO", 2))
             _xwpMakeFavoriteFolder(somSelf, FALSE);
-        else if (strnicmp(szValue, "YES", 3) == 0)
+        else if (!strnicmp(szValue, "YES", 3))
             _xwpMakeFavoriteFolder(somSelf, TRUE);
         // fChanged = TRUE;
     }
@@ -236,11 +237,11 @@ BOOL fdrSetup(WPFolder *somSelf,
                            "QUICKOPEN", szValue, &cbValue))
     {
         rc = TRUE;
-        if (strnicmp(szValue, "NO", 2) == 0)
+        if (!strnicmp(szValue, "NO", 2))
             _xwpSetQuickOpen(somSelf, FALSE);
-        else if (strnicmp(szValue, "YES", 3) == 0)
+        else if (!strnicmp(szValue, "YES", 3))
             _xwpSetQuickOpen(somSelf, TRUE);
-        else if (strnicmp(szValue, "IMMEDIATE", 3) == 0)  // V0.9.6 (2000-10-16) [umoeller]
+        else if (!strnicmp(szValue, "IMMEDIATE", 3))  // V0.9.6 (2000-10-16) [umoeller]
             fdrQuickOpen(somSelf,
                          NULL,
                          0);     // no callback
@@ -253,11 +254,11 @@ BOOL fdrSetup(WPFolder *somSelf,
                                "STATUSBAR", szValue, &cbValue))
         {
             rc = TRUE;
-            if (strnicmp(szValue, "NO", 2) == 0)
+            if (!strnicmp(szValue, "NO", 2))
                 _bStatusBarInstance = STATUSBAR_OFF;
-            else if (strnicmp(szValue, "YES", 3) == 0)
+            else if (!strnicmp(szValue, "YES", 3))
                 _bStatusBarInstance = STATUSBAR_ON;
-            else if (strnicmp(szValue, "DEFAULT", 7) == 0)
+            else if (!strnicmp(szValue, "DEFAULT", 7))
                 _bStatusBarInstance = STATUSBAR_DEFAULT;
         }
         xthrPostWorkerMsg(WOM_UPDATEALLSTATUSBARS,
@@ -278,11 +279,11 @@ BOOL fdrSetup(WPFolder *somSelf,
                               &lFoldersFirst,
                               &lAlwaysSort);
 
-            if (strnicmp(szValue, "NO", 2) == 0)
+            if (!strnicmp(szValue, "NO", 2))
                 lAlwaysSort = 0;
-            else if (strnicmp(szValue, "YES", 3) == 0)
+            else if (!strnicmp(szValue, "YES", 3))
                 lAlwaysSort = 1;
-            else if (strnicmp(szValue, "DEFAULT", 7) == 0)
+            else if (!strnicmp(szValue, "DEFAULT", 7))
                 lAlwaysSort = SET_DEFAULT;
             _xwpSetFldrSort(somSelf,
                             lDefaultSort,
@@ -299,11 +300,11 @@ BOOL fdrSetup(WPFolder *somSelf,
                               &lFoldersFirst,
                               &lAlwaysSort);
 
-            if (strnicmp(szValue, "NO", 2) == 0)
+            if (!strnicmp(szValue, "NO", 2))
                 lFoldersFirst = 0;
-            else if (strnicmp(szValue, "YES", 3) == 0)
+            else if (!strnicmp(szValue, "YES", 3))
                 lFoldersFirst = 1;
-            else if (strnicmp(szValue, "DEFAULT", 7) == 0)
+            else if (!strnicmp(szValue, "DEFAULT", 7))
                 lFoldersFirst = SET_DEFAULT;
             _xwpSetFldrSort(somSelf,
                             lDefaultSort,
@@ -335,7 +336,8 @@ BOOL fdrSetup(WPFolder *somSelf,
         }
 
         cbValue = sizeof(szValue);
-        if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
+        if (_wpScanSetupString(somSelf,
+                               (PSZ)pszSetupString,
                                "SORTNOW", szValue, &cbValue))
         {
             USHORT usSort;
@@ -353,6 +355,18 @@ BOOL fdrSetup(WPFolder *somSelf,
                                        usSort,
                                        fdrSortAllViews);
         }
+
+#ifdef __DEBUG__
+        cbValue = sizeof(szValue);
+        if (_wpScanSetupString(somSelf,
+                               (PSZ)pszSetupString,
+                               "ISFSAWAKE",
+                               szValue,
+                               &cbValue))
+        {
+            rc = !!fdrQueryAwakeFSObject(szValue);
+        }
+#endif
     }
 
     if (fChanged)
@@ -475,9 +489,10 @@ BOOL fdrQuerySetup(WPObject *somSelf,
 
                 PBYTE pbRGB = ( (PBYTE)(&(_pFolderBackground->rgbColor)) );
 
-                PSZ pszBitmapFile;
+                PSZ pszBitmapFile = strdup(_pszFolderBkgndImageFile);
                 CHAR cBootDrive = doshQueryBootDrive();
-                pszBitmapFile = strupr(strdup(_pszFolderBkgndImageFile));
+
+                nlsUpper(pszBitmapFile, 0);
                 if (*pszBitmapFile == cBootDrive)
                     // file on boot drive:
                     // replace with '?' to make it portable
@@ -1054,8 +1069,7 @@ BOOL fdrSetOneFrameWndTitle(WPFolder *somSelf,
             pSrchSlash = pFirstSlash+3;
             while (strlen(szTemp) > pGlobalSettings->MaxPathChars)
             {
-                pNextSlash = strchr(pSrchSlash, '\\');
-                if (pNextSlash)
+                if (pNextSlash = strchr(pSrchSlash, '\\'))
                 {
                     strcpy(pFirstSlash+4, pNextSlash);
                     pFirstSlash[1] = '.';
@@ -1063,7 +1077,8 @@ BOOL fdrSetOneFrameWndTitle(WPFolder *somSelf,
                     pFirstSlash[3] = '.';
                     pSrchSlash = pFirstSlash+5;
                 }
-                else break;
+                else
+                    break;
             }
         }
 
@@ -1114,7 +1129,7 @@ BOOL fdrUpdateAllFrameWndTitles(WPFolder *somSelf)
     // HWND        hwndFrame = NULLHANDLE;
     BOOL        brc = FALSE;
 
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     TRY_LOUD(excpt1)
     {
         if (LOCK_OBJECT(Lock, somSelf))
@@ -1141,22 +1156,6 @@ BOOL fdrUpdateAllFrameWndTitles(WPFolder *somSelf)
 
     if (Lock.fLocked)
         _wpReleaseObjectMutexSem(Lock.pObject);
-
-    /* if (hwndFrame = wpshQueryFrameFromView(somSelf, OPEN_CONTENTS))
-    {
-
-        brc = TRUE;
-    }
-    if (hwndFrame = wpshQueryFrameFromView(somSelf, OPEN_DETAILS))
-    {
-        fdrSetOneFrameWndTitle(somSelf, hwndFrame);
-        brc = TRUE;
-    }
-    if (hwndFrame = wpshQueryFrameFromView(somSelf, OPEN_TREE))
-    {
-        fdrSetOneFrameWndTitle(somSelf, hwndFrame);
-        brc = TRUE;
-    } */
 
     ntbUpdateVisiblePage(somSelf, SP_XFOLDER_FLDR);
 
@@ -1193,36 +1192,38 @@ BOOL fdrQuickOpen(WPFolder *pFolder,
                 ulMax = 0;
     BOOL        fFolderLocked = FALSE;
 
-    ULONG       ulNesting = 0;
+    // ULONG       ulNesting = 0;
 
     // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-    somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-            = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
+    // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+            // = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
 
     // populate folder
     wpshCheckIfPopulated(pFolder,
                          FALSE);        // full populate
 
-    DosEnterMustComplete(&ulNesting);
+    // DosEnterMustComplete(&ulNesting);
 
     TRY_LOUD(excpt1)
     {
         // lock folder contents
-        fFolderLocked = !wpshRequestFolderMutexSem(pFolder, 5000);
+        fFolderLocked = !fdrRequestFolderMutexSem(pFolder, 5000);
 
         // count objects
-        for (   pObject = rslv_wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
+        // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+        for (   pObject = _wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
                 (pObject);
-                pObject = rslv_wpQueryContent(pFolder, pObject, (ULONG)QC_NEXT)
+                pObject = *wpshGetNextObjPointer(pObject)
             )
         {
             ulMax++;
         }
 
         // collect icons for all objects
-        for (   pObject = rslv_wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
+        // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+        for (   pObject = _wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
                 (pObject);
-                pObject = rslv_wpQueryContent(pFolder, pObject, (ULONG)QC_NEXT)
+                pObject = *wpshGetNextObjPointer(pObject)
             )
         {
             // get the icon
@@ -1248,9 +1249,9 @@ BOOL fdrQuickOpen(WPFolder *pFolder,
     } END_CATCH();
 
     if (fFolderLocked)
-        wpshReleaseFolderMutexSem(pFolder);
+        fdrReleaseFolderMutexSem(pFolder);
 
-    DosExitMustComplete(&ulNesting);
+    // DosExitMustComplete(&ulNesting);
 
     return (brc);
 }
@@ -1290,15 +1291,11 @@ BOOL fdrSnapToGrid(WPFolder *somSelf,
 
     // first we need the frame handle of a currently open icon view;
     // all others don't make sense
-    hwndFrame = wpshQueryFrameFromView(somSelf, OPEN_CONTENTS);
-
-    if (hwndFrame)
+    if (hwndFrame = wpshQueryFrameFromView(somSelf, OPEN_CONTENTS))
     {
 
         // now get the container handle
-        hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
-
-        if (hwndCnr)
+        if (hwndCnr = wpshQueryCnrFromFrame(hwndFrame))
         {
             // now begin iteration over the folder's objects; we don't
             // use the WPS method (wpQueryContent) because this is too
@@ -1467,7 +1464,7 @@ HWND fdrCreateStatusBar(WPFolder *somSelf,
                         = WinCreateWindow(psli2->hwndFrame,        // parent
                                           WC_STATIC,              // wnd class
                                           cmnGetString(ID_XSSI_POPULATING),
-                                            // (cmnQueryNLSStrings())->pszPopulating, // title
+                                                // "Collecting objects..."
                                           (SS_TEXT | DT_LEFT | DT_VCENTER // wnd style flags
                                               | DT_ERASERECT
                                               | WS_VISIBLE | WS_CLIPSIBLINGS),
@@ -1874,10 +1871,390 @@ VOID fdrUpdateStatusBars(WPFolder *pFolder)
  ********************************************************************/
 
 /*
+ *@@ StatusTimer:
+ *
+ *@@added V0.9.16 (2001-10-28) [umoeller]
+ *@@changed V0.9.16 (2001-10-28) [umoeller]: fixed bad view check for tree views
+ *@@changed V0.9.16 (2001-10-28) [umoeller]: fixed bad excpt handler cleanup
+ */
+
+VOID StatusTimer(HWND hwndBar,
+                 PSTATUSBARDATA psbd)
+{
+    TRY_LOUD(excpt1)
+    {
+        // XFolderData *somThis = XFolderGetData(psbd->somSelf);
+        BOOL fUpdate = TRUE;
+
+        // stop timer (it's just for one shot)
+        WinStopTimer(psbd->habStatusBar, // anchor block,
+                     hwndBar,
+                     1);
+        psbd->idTimer = 0;
+
+        // if we're not fully populated yet, start timer again and quit;
+        // otherwise we would display false information.
+        // We need an extra flag in the status bar data because the
+        // FOI_POPULATEDWITHALL is reset to 0 by the WPS for some reason
+        // when an object is deleted from an open folder, and no further
+        // status bar updates would occur then
+        if (psbd->fFolderPopulated == FALSE)
+        {
+            ULONG   ulFlags = _wpQueryFldrFlags(psbd->somSelf);
+            ULONG   ulView = wpshQueryView(// psbd->psfv->somSelf,
+                                           // V0.9.16 (2001-10-28) [umoeller]: we
+                                           // can't use somSelf because root folders
+                                           // never hold the view information... use
+                                           // the "real object" instead, which, for
+                                           // root folders, holds the disk object
+                                           psbd->psfv->pRealObject,
+                                           psbd->psfv->hwndFrame);
+            #ifdef DEBUG_STATUSBARS
+                PCSZ pcszView;
+                CHAR szView[100];
+                switch (ulView)
+                {
+                    case OPEN_TREE: pcszView = "Tree"; break;
+                    case OPEN_CONTENTS: pcszView = "Contents"; break;
+                    case OPEN_DETAILS: pcszView = "Details"; break;
+                    default:
+                        sprintf(szView, "unknown %d", ulView);
+                        pcszView = szView;
+                }
+                fdrDebugDumpFolderFlags(psbd->somSelf);
+                _Pmpf(( "  View: %s", pcszView));
+            #endif
+
+            // for tree views, check if folder is populated with folders;
+            // otherwise check for populated with all
+            if (    (   (ulView == OPEN_TREE)
+                     && ((ulFlags & FOI_POPULATEDWITHFOLDERS) !=0)
+                    )
+                || ((ulFlags & FOI_POPULATEDWITHALL) != 0)
+               )
+            {
+                psbd->fFolderPopulated = TRUE;
+            }
+            else
+            {
+                // folder not yet populated:
+                // restart timer with a lower frequency
+                // to have this checked again
+                psbd->idTimer = WinStartTimer(psbd->habStatusBar, // anchor block
+                                              hwndBar,
+                                              1,
+                                              300);   // this time, use 300 ms
+                // and stop
+                // break;       // whoa, this didn't deregister the excpt handler
+                                // V0.9.16 (2001-10-28) [umoeller]
+                fUpdate = FALSE;
+            }
+        }
+
+        if (fUpdate)
+            // OK:
+            fdrCallResolvedUpdateStatusBar(psbd->somSelf,
+                                           hwndBar,
+                                           psbd->psfv->hwndCnr);
+    }
+    CATCH(excpt1)
+    {
+        WinSetWindowText(hwndBar, "*** error composing text");
+    } END_CATCH();
+
+}
+
+/*
+ *@@ StatusPaint:
+ *
+ *@@added V0.9.16 (2001-10-28) [umoeller]
+ */
+
+VOID StatusPaint(HWND hwndBar)
+{
+    // preparations:
+    HPS     hps = WinBeginPaint(hwndBar, NULLHANDLE, NULL);
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
+    TRY_LOUD(excpt1)
+    {
+        RECTL   rclBar,
+                rclPaint;
+        POINTL  ptl1;
+        PSZ     pszText;
+        CHAR    szTemp[100] = "0";
+        USHORT  usLength;
+        LONG    lNextX;
+        PSZ     p1, p2, p3;
+        LONG    lHiColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONLIGHT, 0),
+                lLoColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONDARK, 0);
+
+        WinQueryWindowRect(hwndBar,
+                           &rclBar);        // exclusive
+        // switch to RGB mode
+        gpihSwitchToRGB(hps);
+
+        // 1) draw background
+        WinFillRect(hps,
+                    &rclBar,                // exclusive
+                    pGlobalSettings->lSBBgndColor);
+
+        rclPaint.xLeft = rclBar.xLeft;
+        rclPaint.yBottom = rclBar.yBottom;
+        rclPaint.xRight = rclBar.xRight - 1;
+        rclPaint.yTop = rclBar.yTop - 1;
+
+        // 2) draw 3D frame in selected style
+        if (pGlobalSettings->SBStyle == SBSTYLE_WARP3RAISED)
+            // Warp 3 style, raised
+            gpihDraw3DFrame(hps,
+                            &rclPaint,
+                            1,
+                            lHiColor,
+                            lLoColor);
+        else if (pGlobalSettings->SBStyle == SBSTYLE_WARP3SUNKEN)
+            // Warp 3 style, sunken
+            gpihDraw3DFrame(hps,
+                            &rclPaint,
+                            1,
+                            lLoColor,
+                            lHiColor);
+        else if (pGlobalSettings->SBStyle == SBSTYLE_WARP4MENU)
+        {
+            // Warp 4 menu style: draw 3D line at top only
+            rclPaint.yBottom = rclPaint.yTop - 1;
+            gpihDraw3DFrame(hps,
+                            &rclPaint,
+                            1,
+                            lLoColor,
+                            lHiColor);
+        }
+        else
+        {
+            // Warp 4 button style
+            // draw "sunken" outer rect
+            gpihDraw3DFrame(hps,
+                            &rclPaint,
+                            2,
+                            lLoColor,
+                            lHiColor);
+            // draw "raised" inner rect
+            rclPaint.xLeft++;
+            rclPaint.yBottom++;
+            rclPaint.xRight--;
+            rclPaint.yTop--;
+            gpihDraw3DFrame(hps,
+                            &rclPaint,
+                            2,
+                            lHiColor,
+                            lLoColor);
+        }
+
+        // 3) start working on text; we do "simple" GpiCharString
+        //    if no tabulators are defined, but calculate some
+        //    subrectangles otherwise
+        pszText = winhQueryWindowText(hwndBar);
+                // pszText now has the translated status bar text
+                // except for the tabulators ("$x" keys)
+        if (pszText)
+        {
+            p1 = pszText;
+            p2 = NULL;
+            ptl1.x = 7;
+
+            do  // while tabulators are present
+            {
+                // search for tab mnemonic
+                if (p2 = strstr(p1, "$x("))
+                {
+                    // tab found: calculate next x position into lNextX
+                    usLength = (p2-p1);
+                    strcpy(szTemp, "100");
+                    if (p3 = strchr(p2, ')'))
+                    {
+                        PSZ p4 = strchr(p2, '%');
+                        strncpy(szTemp, p2+3, p3-p2-3);
+                        // get the parameter
+                        sscanf(szTemp, "%d", &lNextX);
+
+                        if (lNextX < 0)
+                        {
+                            // if the result is negative, it's probably
+                            // meant to be an offset from the right
+                            // status bar border
+                            lNextX = (rclBar.xRight + lNextX); // lNextX is negative
+                        }
+                        else if ((p4) && (p4 < p3))
+                        {
+                            // if we have a '%' char before the closing
+                            // bracket, consider lNextX a percentage
+                            // parameter and now translate it into an
+                            // absolute x position using the status bar's
+                            // width
+                            lNextX = (rclBar.xRight * lNextX) / 100;
+                        }
+                    }
+                    else
+                        p2 = NULL;
+                }
+                else
+                    usLength = strlen(p1);
+
+                ptl1.y = (pGlobalSettings->SBStyle == SBSTYLE_WARP4MENU) ? 5 : 7;
+                // set the text color to the global value;
+                // this might have changed via color drag'n'drop
+                GpiSetColor(hps, pGlobalSettings->lSBTextColor);
+                    // the font is already preset by the static
+                    // text control (phhhh...)
+
+                if (p2)
+                {
+                    // did we have tabs? if so, print text clipped to rect
+                    RECTL rcl;
+                    rcl.xLeft   = 0;
+                    rcl.yBottom = 0; // ptl1.y;
+                    rcl.xRight  = lNextX-10; // 10 pels space
+                    rcl.yTop    = rclBar.yTop;
+                    GpiCharStringPosAt(hps,
+                                       &ptl1,
+                                       &rcl,
+                                       CHS_CLIP,
+                                       usLength,
+                                       p1,
+                                       NULL);
+                }
+                else
+                {
+                    // no (more) tabs: just print
+                    GpiMove(hps, &ptl1);
+                    GpiCharString(hps, usLength, p1);
+                }
+
+                if (p2)
+                {   // "tabulator" was found: set next x pos
+                    ptl1.x = lNextX;
+                    p1 = p3+1;
+                }
+
+            } while (p2);       // go for next tabulator, if we had one
+
+            free(pszText);
+        } // end if (pszText)
+    }
+    CATCH(excpt1)
+    {
+        PSZ pszErr = "*** error painting status bar";
+        POINTL ptl = {5, 5};
+        GpiMove(hps, &ptl);
+        GpiCharString(hps, strlen(pszErr), pszErr);
+    } END_CATCH();
+
+    WinEndPaint(hps);
+}
+
+/*
+ *@@ StatusPresParamChanged:
+ *
+ *@@added V0.9.16 (2001-10-28) [umoeller]
+ */
+
+VOID StatusPresParamChanged(HWND hwndBar,
+                            PSTATUSBARDATA psbd,
+                            MPARAM mp1)
+{
+    if (psbd->fDontBroadcast)
+    {
+        // this flag has been set if it was not this status
+        // bar whose presparams have changed, but some other
+        // status bar; in this case, update only
+        psbd->fDontBroadcast = FALSE;
+        // update parent's frame controls (because font size
+        // might have changed)
+        WinSendMsg(WinQueryWindow(hwndBar, QW_PARENT), WM_UPDATEFRAME, MPNULL, MPNULL);
+        // update ourselves
+        WinPostMsg(hwndBar, STBM_UPDATESTATUSBAR, MPNULL, MPNULL);
+        // and quit
+        return;
+    }
+
+    // else: it was us that the presparam has been set for
+    #ifdef DEBUG_STATUSBARS
+        _Pmpf(( "WM_PRESPARAMCHANGED: %lX", mp1 ));
+    #endif
+
+    // now check what has changed
+    switch ((ULONG)mp1)
+    {
+        case PP_FONTNAMESIZE:
+        {
+            ULONG attrFound;
+            // CHAR  szDummy[200];
+            CHAR  szNewFont[100];
+            WinQueryPresParam(hwndBar,
+                              PP_FONTNAMESIZE,
+                              0,
+                              &attrFound,
+                              (ULONG)sizeof(szNewFont),
+                              (PVOID)&szNewFont,
+                              0);
+            cmnSetStatusBarSetting(SBS_STATUSBARFONT,
+                                   szNewFont);
+            // update parent's frame controls (because font size
+            // might have changed)
+            WinSendMsg(WinQueryWindow(hwndBar, QW_PARENT),
+                    WM_UPDATEFRAME, MPNULL, MPNULL);
+        break; }
+
+        case PP_FOREGROUNDCOLOR:
+        case PP_BACKGROUNDCOLOR:
+        {
+            GLOBALSETTINGS* pGlobalSettings = NULL;
+            // ULONG ulNesting;
+            // DosEnterMustComplete(&ulNesting);
+            TRY_LOUD(excpt1)
+            {
+                ULONG   ul = 0,
+                        attrFound = 0;
+                pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+
+                WinQueryPresParam(hwndBar,
+                                  (ULONG)mp1,
+                                  0,
+                                  &attrFound,
+                                  (ULONG)sizeof(ul),
+                                  (PVOID)&ul,
+                                  0);
+                if ((ULONG)mp1 == PP_FOREGROUNDCOLOR)
+                    pGlobalSettings->lSBTextColor = ul;
+                else
+                    pGlobalSettings->lSBBgndColor = ul;
+            }
+            CATCH(excpt1) {} END_CATCH();
+
+            if (pGlobalSettings)
+                cmnUnlockGlobalSettings();
+
+            // DosExitMustComplete(&ulNesting);
+
+            cmnStoreGlobalSettings();
+
+            WinPostMsg(hwndBar, STBM_UPDATESTATUSBAR, MPNULL, MPNULL);
+        break; }
+    }
+
+    // finally, broadcast this message to all other status bars;
+    // this is handled by the Worker thread
+    xthrPostWorkerMsg(WOM_UPDATEALLSTATUSBARS,
+                      (MPARAM)2,      // update display
+                      MPNULL);
+}
+
+/*
  *@@ fdr_fnwpStatusBar:
  *      since the status bar is just created as a static frame
  *      control, it is subclassed (by fdrCreateStatusBar),
  *      and this is the wnd proc for this.
+ *
  *      This handles the new STBM_UPDATESTATUSBAR message (which
  *      is posted any time the status bar needs to be updated)
  *      and intercepts WM_TIMER and WM_PAINT.
@@ -1914,13 +2291,11 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
 
             case STBM_UPDATESTATUSBAR:
                 if (psbd->idTimer == 0)
-                {
                     // only if timer is not yet running: start it now
                     psbd->idTimer = WinStartTimer(psbd->habStatusBar, // anchor block
                                                   hwndBar,
                                                   1,
                                                   100); // delay: 100 ms
-                }
             break;
 
             /*
@@ -1931,72 +2306,11 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
              */
 
             case WM_TIMER:
-            {
-                TRY_LOUD(excpt1)
-                {
-                    // XFolderData *somThis = XFolderGetData(psbd->somSelf);
-
-                    // stop timer (it's just for one shot)
-                    WinStopTimer(psbd->habStatusBar, // anchor block,
-                                 hwndBar,
-                                 1);
-                    psbd->idTimer = 0;
-
-                    // if we're not fully populated yet, start timer again and quit;
-                    // otherwise we would display false information.
-                    // We need an extra flag in the status bar data because the
-                    // FOI_POPULATEDWITHALL is reset to 0 by the WPS for some reason
-                    // when an object is deleted from an open folder, and no further
-                    // status bar updates would occur then
-                    if (psbd->fFolderPopulated == FALSE)
-                    {
-                        ULONG   ulFlags = _wpQueryFldrFlags(psbd->somSelf);
-                        ULONG   ulView = wpshQueryView(psbd->psfv->somSelf,
-                                                       psbd->psfv->hwndFrame);
-                        #ifdef DEBUG_STATUSBARS
-                            _Pmpf(( "  Folder flags: %lX", ulFlags ));
-                            _Pmpf(( "  View: %s",
-                                    (psbd->psli->ulView == OPEN_TREE) ? "Tree"
-                                    : (psbd->psli->ulView == OPEN_CONTENTS) ? "Content"
-                                    : (psbd->psli->ulView == OPEN_DETAILS) ? "Details"
-                                    : "unknown"
-                                 ));
-                        #endif
-
-                        // for tree views, check if folder is populated with folders;
-                        // otherwise check for populated with all
-                        if (    (   (ulView == OPEN_TREE)
-                                 && ((ulFlags & FOI_POPULATEDWITHFOLDERS) !=0)
-                                )
-                            || ((ulFlags & FOI_POPULATEDWITHALL) != 0)
-                           )
-                        {
-                            psbd->fFolderPopulated = TRUE;
-                        }
-                        else
-                        {
-                            // folder not yet populated:
-                            // restart timer with a lower frequency
-                            // to have this checked again
-                            psbd->idTimer = WinStartTimer(psbd->habStatusBar, // anchor block
-                                                          hwndBar,
-                                                          1,
-                                                          300);   // this time, use 300 ms
-                            // and stop
-                            break;
-                        }
-                    }
-
-                    // OK:
-                    fdrCallResolvedUpdateStatusBar(psbd->somSelf,
-                                                   hwndBar,
-                                                   psbd->psfv->hwndCnr);
-                }
-                CATCH(excpt1)
-                {
-                    WinSetWindowText(hwndBar, "*** error composing text");
-                } END_CATCH();
-            break; }
+                if ((ULONG)mp1 == 1)
+                    StatusTimer(hwndBar, psbd);
+                else
+                    mrc = pfnwpStatusBarOriginal(hwndBar, msg, mp1, mp2);
+            break;
 
             /*
              * WM_PAINT:
@@ -2010,187 +2324,8 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
              */
 
             case WM_PAINT:
-            {
-                // preparations:
-                HPS     hps = WinBeginPaint(hwndBar, NULLHANDLE, NULL);
-                PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
-                TRY_LOUD(excpt1)
-                {
-                    RECTL   rclBar,
-                            rclPaint;
-                    POINTL  ptl1;
-                    PSZ     pszText;
-                    CHAR    szTemp[100] = "0";
-                    USHORT  usLength;
-                    LONG    lNextX;
-                    PSZ     p1, p2, p3;
-                    LONG    lHiColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONLIGHT, 0),
-                            lLoColor = WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONDARK, 0);
-
-                    WinQueryWindowRect(hwndBar,
-                                       &rclBar);        // exclusive
-                    // switch to RGB mode
-                    gpihSwitchToRGB(hps);
-
-                    // 1) draw background
-                    WinFillRect(hps,
-                                &rclBar,                // exclusive
-                                pGlobalSettings->lSBBgndColor);
-
-                    rclPaint.xLeft = rclBar.xLeft;
-                    rclPaint.yBottom = rclBar.yBottom;
-                    rclPaint.xRight = rclBar.xRight - 1;
-                    rclPaint.yTop = rclBar.yTop - 1;
-
-                    // 2) draw 3D frame in selected style
-                    if (pGlobalSettings->SBStyle == SBSTYLE_WARP3RAISED)
-                        // Warp 3 style, raised
-                        gpihDraw3DFrame(hps,
-                                        &rclPaint,
-                                        1,
-                                        lHiColor,
-                                        lLoColor);
-                    else if (pGlobalSettings->SBStyle == SBSTYLE_WARP3SUNKEN)
-                        // Warp 3 style, sunken
-                        gpihDraw3DFrame(hps,
-                                        &rclPaint,
-                                        1,
-                                        lLoColor,
-                                        lHiColor);
-                    else if (pGlobalSettings->SBStyle == SBSTYLE_WARP4MENU)
-                    {
-                        // Warp 4 menu style: draw 3D line at top only
-                        rclPaint.yBottom = rclPaint.yTop - 1;
-                        gpihDraw3DFrame(hps,
-                                        &rclPaint,
-                                        1,
-                                        lLoColor,
-                                        lHiColor);
-                    }
-                    else
-                    {
-                        // Warp 4 button style
-                        // draw "sunken" outer rect
-                        gpihDraw3DFrame(hps,
-                                        &rclPaint,
-                                        2,
-                                        lLoColor,
-                                        lHiColor);
-                        // draw "raised" inner rect
-                        rclPaint.xLeft++;
-                        rclPaint.yBottom++;
-                        rclPaint.xRight--;
-                        rclPaint.yTop--;
-                        gpihDraw3DFrame(hps,
-                                        &rclPaint,
-                                        2,
-                                        lHiColor,
-                                        lLoColor);
-                    }
-
-                    // 3) start working on text; we do "simple" GpiCharString
-                    //    if no tabulators are defined, but calculate some
-                    //    subrectangles otherwise
-                    pszText = winhQueryWindowText(hwndBar);
-                            // pszText now has the translated status bar text
-                            // except for the tabulators ("$x" keys)
-                    if (pszText)
-                    {
-                        p1 = pszText;
-                        p2 = NULL;
-                        ptl1.x = 7;
-
-                        do  // while tabulators are present
-                        {
-                            // search for tab mnemonic
-                            if (p2 = strstr(p1, "$x("))
-                            {
-                                // tab found: calculate next x position into lNextX
-                                usLength = (p2-p1);
-                                strcpy(szTemp, "100");
-                                if (p3 = strchr(p2, ')'))
-                                {
-                                    PSZ p4 = strchr(p2, '%');
-                                    strncpy(szTemp, p2+3, p3-p2-3);
-                                    // get the parameter
-                                    sscanf(szTemp, "%d", &lNextX);
-
-                                    if (lNextX < 0)
-                                    {
-                                        // if the result is negative, it's probably
-                                        // meant to be an offset from the right
-                                        // status bar border
-                                        lNextX = (rclBar.xRight + lNextX); // lNextX is negative
-                                    }
-                                    else if ((p4) && (p4 < p3))
-                                    {
-                                        // if we have a '%' char before the closing
-                                        // bracket, consider lNextX a percentage
-                                        // parameter and now translate it into an
-                                        // absolute x position using the status bar's
-                                        // width
-                                        lNextX = (rclBar.xRight * lNextX) / 100;
-                                    }
-                                }
-                                else
-                                    p2 = NULL;
-                            }
-                            else
-                                usLength = strlen(p1);
-
-                            ptl1.y = (pGlobalSettings->SBStyle == SBSTYLE_WARP4MENU) ? 5 : 7;
-                            // set the text color to the global value;
-                            // this might have changed via color drag'n'drop
-                            GpiSetColor(hps, pGlobalSettings->lSBTextColor);
-                                // the font is already preset by the static
-                                // text control (phhhh...)
-
-                            if (p2)
-                            {
-                                // did we have tabs? if so, print text clipped to rect
-                                RECTL rcl;
-                                rcl.xLeft   = 0;
-                                rcl.yBottom = 0; // ptl1.y;
-                                rcl.xRight  = lNextX-10; // 10 pels space
-                                rcl.yTop    = rclBar.yTop;
-                                GpiCharStringPosAt(hps,
-                                                   &ptl1,
-                                                   &rcl,
-                                                   CHS_CLIP,
-                                                   usLength,
-                                                   p1,
-                                                   NULL);
-                            }
-                            else
-                            {
-                                // no (more) tabs: just print
-                                GpiMove(hps, &ptl1);
-                                GpiCharString(hps, usLength, p1);
-                            }
-
-                            if (p2)
-                            {   // "tabulator" was found: set next x pos
-                                ptl1.x = lNextX;
-                                p1 = p3+1;
-                            }
-
-                        } while (p2);       // go for next tabulator, if we had one
-
-                        free(pszText);
-                    } // end if (pszText)
-                }
-                CATCH(excpt1)
-                {
-                    PSZ pszErr = "*** error painting status bar";
-                    POINTL ptl = {5, 5};
-                    GpiMove(hps, &ptl);
-                    GpiCharString(hps, strlen(pszErr), pszErr);
-                } END_CATCH();
-
-                WinEndPaint(hps);
-
-            break; }
+                StatusPaint(hwndBar);
+            break;
 
             /*
              * STBM_PROHIBITBROADCASTING:
@@ -2218,9 +2353,8 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
              */
 
             case STBM_PROHIBITBROADCASTING:
-            {
                 psbd->fDontBroadcast = TRUE;
-            break; }
+            break;
 
             /*
              * WM_PRESPARAMCHANGED:
@@ -2236,95 +2370,9 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
              */
 
             case WM_PRESPARAMCHANGED:
-            {
-                mrc = (MRESULT)(*pfnwpStatusBarOriginal)(hwndBar, msg, mp1, mp2);
-
-                if (psbd->fDontBroadcast)
-                {
-                    // this flag has been set if it was not this status
-                    // bar whose presparams have changed, but some other
-                    // status bar; in this case, update only
-                    psbd->fDontBroadcast = FALSE;
-                    // update parent's frame controls (because font size
-                    // might have changed)
-                    WinSendMsg(WinQueryWindow(hwndBar, QW_PARENT), WM_UPDATEFRAME, MPNULL, MPNULL);
-                    // update ourselves
-                    WinPostMsg(hwndBar, STBM_UPDATESTATUSBAR, MPNULL, MPNULL);
-                    // and quit
-                    break;
-                }
-
-                // else: it was us that the presparam has been set for
-                #ifdef DEBUG_STATUSBARS
-                    _Pmpf(( "WM_PRESPARAMCHANGED: %lX", mp1 ));
-                #endif
-
-                // now check what has changed
-                switch ((ULONG)mp1)
-                {
-                    case PP_FONTNAMESIZE:
-                    {
-                        ULONG attrFound;
-                        // CHAR  szDummy[200];
-                        CHAR  szNewFont[100];
-                        WinQueryPresParam(hwndBar,
-                                          PP_FONTNAMESIZE,
-                                          0,
-                                          &attrFound,
-                                          (ULONG)sizeof(szNewFont),
-                                          (PVOID)&szNewFont,
-                                          0);
-                        cmnSetStatusBarSetting(SBS_STATUSBARFONT,
-                                               szNewFont);
-                        // update parent's frame controls (because font size
-                        // might have changed)
-                        WinSendMsg(WinQueryWindow(hwndBar, QW_PARENT),
-                                WM_UPDATEFRAME, MPNULL, MPNULL);
-                    break; }
-
-                    case PP_FOREGROUNDCOLOR:
-                    case PP_BACKGROUNDCOLOR:
-                    {
-                        GLOBALSETTINGS* pGlobalSettings = NULL;
-                        ULONG ulNesting;
-                        DosEnterMustComplete(&ulNesting);
-                        TRY_LOUD(excpt1)
-                        {
-                            ULONG   ul = 0,
-                                    attrFound = 0;
-                            pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-
-                            WinQueryPresParam(hwndBar,
-                                              (ULONG)mp1,
-                                              0,
-                                              &attrFound,
-                                              (ULONG)sizeof(ul),
-                                              (PVOID)&ul,
-                                              0);
-                            if ((ULONG)mp1 == PP_FOREGROUNDCOLOR)
-                                pGlobalSettings->lSBTextColor = ul;
-                            else
-                                pGlobalSettings->lSBBgndColor = ul;
-                        }
-                        CATCH(excpt1) {} END_CATCH();
-
-                        if (pGlobalSettings)
-                            cmnUnlockGlobalSettings();
-
-                        DosExitMustComplete(&ulNesting);
-
-                        cmnStoreGlobalSettings();
-
-                        WinPostMsg(hwndBar, STBM_UPDATESTATUSBAR, MPNULL, MPNULL);
-                    break; }
-                }
-
-                // finally, broadcast this message to all other status bars;
-                // this is handled by the Worker thread
-                xthrPostWorkerMsg(WOM_UPDATEALLSTATUSBARS,
-                                  (MPARAM)2,      // update display
-                                  MPNULL);
-            break; }
+                mrc = pfnwpStatusBarOriginal(hwndBar, msg, mp1, mp2);
+                StatusPresParamChanged(hwndBar, psbd, mp1);
+            break;
 
             /*
              * WM_BUTTON1CLICK:
@@ -2348,13 +2396,12 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
              */
 
             case WM_BUTTON1DBLCLK:
-            {
                 WinPostMsg(psbd->psfv->hwndFrame,
                            WM_COMMAND,
                            (MPARAM)WPMENUID_PROPERTIES,
                            MPFROM2SHORT(CMDSRC_MENU,
                                    FALSE) );     // results from keyboard operation
-            break; }
+            break;
 
             /*
              * WM_CONTEXTMENU:
@@ -2368,7 +2415,6 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
              */
 
             case WM_CONTEXTMENU:
-            {
                 if (psbd->psfv)
                 {
                     POINTL  ptl;
@@ -2381,7 +2427,7 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
                                    MENU_OPENVIEWPOPUP, // was: MENU_OBJECTPOPUP, V0.9.0
                                    0);
                 }
-            break; }
+            break;
 
             /*
              * WM_DESTROY:
@@ -2389,18 +2435,16 @@ MRESULT EXPENTRY fdr_fnwpStatusBar(HWND hwndBar, ULONG msg, MPARAM mp1, MPARAM m
              */
 
             case WM_DESTROY:
-                mrc = (MRESULT)(*pfnwpStatusBarOriginal)(hwndBar, msg, mp1, mp2);
+                mrc = pfnwpStatusBarOriginal(hwndBar, msg, mp1, mp2);
                 WinSetWindowULong(hwndBar, QWL_USER, 0);
                 free(psbd);
             break;
 
             default:
-                mrc = (MRESULT)(*pfnwpStatusBarOriginal)(hwndBar, msg, mp1, mp2);
-            break;
+                mrc = pfnwpStatusBarOriginal(hwndBar, msg, mp1, mp2);
+
         } // end switch
     } // end if (psbd)
-    /* else // error: call default
-        mrc = (MRESULT)(*pfnwpStatusBarOriginal)(hwndBar, msg, mp1, mp2); */
 
     return (mrc);
 }
@@ -2713,7 +2757,7 @@ PICONPOS GetICONPOS(PORDEREDLISTITEM poli,
                 _Pmpf(("      Identities: %s and %s...", p, poli->szIdentity));
             #endif */
 
-            if (stricmp(p, poli->szIdentity) == 0)
+            if (!stricmp(p, poli->szIdentity))
                 // object found: return the ICONPOS address
                 return (pip);
             else
@@ -2757,574 +2801,6 @@ SHORT EXPENTRY fdrSortByICONPOS(PVOID pItem1, PVOID pItem2, PVOID psip)
     }
 
     return (0);
-}
-
-/* ******************************************************************
- *
- *   Folder content management
- *
- ********************************************************************/
-
-/*
- *@@ fdrResolveContentPtrs:
- *      resolves the pointers to WPFolder's "first object"
- *      and "last object" pointers. IBM was nice enough
- *      to declare these instance variables as SOM attributes,
- *      so there are exported attribute methods (_getFirstObj
- *      and _getLastObj) which return exactly the addresses
- *      of these two variables.
- *
- *      In order to avoid having to resolve these functions
- *      for every access, we resolve them once and store
- *      the addresses of the two attributes directly in
- *      the XFolder instance variables (_ppFirstObj and
- *      _ppLastObj). They will never change.
- *
- *      Preconditions:
- *
- *      -- the caller must hold the folder mutex. Yes,
- *         this affects XFolder instance variables, so
- *         the object mutex would be the first to think
- *         of... but we put up this requirement instead.
- *
- *@@added V0.9.7 (2001-01-13) [umoeller]
- */
-
-BOOL fdrResolveContentPtrs(WPFolder *somSelf)
-{
-    BOOL brc = FALSE;
-    XFolderData *somThis = XFolderGetData(somSelf);
-    if ((!_ppFirstObj) || (!_ppLastObj))
-    {
-        // method ptrs
-        xfTD_get_FirstObj __getFirstObj = NULL;
-        xfTD_get_LastObj __getLastObj = NULL;
-
-        // first obj
-        __getFirstObj
-            = (xfTD_get_FirstObj)wpshResolveFor(somSelf,
-                                                _somGetClass(somSelf),
-                                                "_get_FirstObj");
-        if (__getFirstObj)
-            _ppFirstObj = __getFirstObj(somSelf);
-
-        // last obj
-        __getLastObj
-            = (xfTD_get_LastObj)wpshResolveFor(somSelf,
-                                               _somGetClass(somSelf),
-                                               "_get_LastObj");
-        if (__getLastObj)
-            _ppLastObj = __getLastObj(somSelf);
-
-        if ((_ppFirstObj) && (_ppLastObj))
-            // both succeeded:
-            brc = TRUE;
-    }
-    else
-        brc = TRUE;
-
-    return (brc);
-}
-
-/*
- *@@ fdrFindFSFromName:
- *      goes thru the folder contents to find the first
- *      file-system object with the specified name (not
- *      title!).
- *
- *@@added V0.9.9 (2001-02-01) [umoeller]
- */
-
-WPObject* fdrFindFSFromName(WPFolder *pFolder,
-                            const char *pcszShortName)
-{
-    WPObject *pobjReturn = NULL;
-
-    BOOL fFolderLocked = FALSE;
-
-    TRY_LOUD(excpt1)
-    {
-        fFolderLocked = !wpshRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT);
-        if (fFolderLocked)
-        {
-            if (fdrResolveContentPtrs(pFolder))
-            {
-                XFolderData *somThis = XFolderGetData(pFolder);
-
-                WPObject *pobj = *_ppFirstObj;
-
-                while (pobj)
-                {
-                    if (_somIsA(pobj, _WPFileSystem))
-                    {
-                        // check name
-                        CHAR szFilename[CCHMAXPATH];
-                        if (_wpQueryFilename(pobj, szFilename, FALSE))
-                            if (!stricmp(szFilename, pcszShortName))
-                            {
-                                // got it:
-                                pobjReturn = pobj;
-                                break;
-                            }
-                    }
-
-                    pobj = _xwpQueryNextObj(pobj);
-                }
-            }
-        }
-    }
-    CATCH(excpt1)
-    {
-        pobjReturn = NULL;
-    } END_CATCH();
-
-    if (fFolderLocked)
-        wpshReleaseFolderMutexSem(pFolder);
-
-    return (pobjReturn);
-}
-
-/*
- *@@ fdrAddToContent:
- *      implementation for the XFolder::wpAddToContent override.
- *
- *      This is basically a rewrite of what WPFolder::wpAddToContent
- *      does, according to my testing... except that this doesn't
- *      insert the object into any container.
- *
- *      This code ONLY gets called if XFolder::xwpSetDisableCnrAdd
- *      was called.
- *
- *@@changed V0.9.9 (2001-04-02) [umoeller]: fixed mutex release order
- *@@changed V0.9.9 (2001-04-02) [umoeller]: removed object mutex request on folder
- */
-
-BOOL fdrAddToContent(WPFolder *somSelf,
-                     WPObject *pObject)
-{
-    BOOL brc = FALSE;
-
-    if (pObject)
-    {
-        BOOL fFolderLocked = FALSE,
-             fSubObjectLocked = FALSE;
-
-        TRY_LOUD(excpt1)        // V0.9.9 (2001-04-01) [umoeller]
-        {
-            fFolderLocked = !wpshRequestFolderMutexSem(somSelf, SEM_INDEFINITE_WAIT);
-            if (fFolderLocked)
-            {
-                fSubObjectLocked = !_wpRequestObjectMutexSem(pObject, SEM_INDEFINITE_WAIT);
-                if (fSubObjectLocked)
-                {
-                    XFolderData *somThis = XFolderGetData(somSelf);
-
-                    // this strange thing gets called by the original
-                    // wpAddToContent... it's a flag which shows whether
-                    // the object is in any container at all. We want
-                    // to set this to TRUE.
-                    PULONG pulContainerFlag = _wpQueryContainerFlagPtr(pObject);
-                    if (!*pulContainerFlag)
-                       *pulContainerFlag = TRUE;
-
-                    // _Pmpf((__FUNCTION__ ": adding %s to %d",
-                    //         _wpQueryTitle(pObject),
-                    //         _wpQueryTitle(somSelf) ));
-
-                    // set that object's "next object" to NULL
-                    _xwpSetNextObj(pObject, NULL);
-
-                    if (fdrResolveContentPtrs(somSelf))
-                    {
-                        // now check our contents...
-                        if (*_ppFirstObj)
-                        {
-                            // we had objects before:
-                            // store new object as next object for
-                            // previously last object
-                            WPObject **ppObjNext = wpshGetNextObjPointer(*_ppLastObj);
-                            if (ppObjNext)
-                                *ppObjNext = pObject;
-                            // store new object as new last object
-                            *_ppLastObj = pObject;
-                        }
-                        else
-                        {
-                            // no objects yet:
-                            *_ppFirstObj = pObject;
-                            *_ppLastObj = pObject;
-                        }
-
-                        // for each object that was added, lock
-                        // the folder...
-                        _wpLockObject(somSelf);
-
-                        brc = TRUE;
-                    }
-                }
-            }
-        }
-        CATCH(excpt1)
-        {
-            brc = FALSE;
-        } END_CATCH();
-
-        // release the mutexes in reverse order V0.9.9 (2001-04-01) [umoeller]
-        if (fSubObjectLocked)
-            _wpReleaseObjectMutexSem(pObject);
-        if (fFolderLocked)
-            wpshReleaseFolderMutexSem(somSelf);
-    }
-
-    return (brc);
-}
-
-/*
- *@@ fdrQueryContent:
- *      implementation for the XFolder::wpQueryContent override.
- *
- *      NOTE: The caller must lock the folder contents BEFORE
- *      the call. We can't this here because we can't guarantee
- *      that the folder's content list will remain valid after
- *      the call, unless the caller's processing is also protected.
- *
- *      The original implementation (WPFolder::wpQueryContent)
- *      appears to call folder mutex methods. I have not done
- *      this here. So far, it works.
- *
- *      This code ONLY gets called if XFolder::xwpSetDisableCnrAdd
- *      was called.
- */
-
-WPObject* fdrQueryContent(WPFolder *somSelf,
-                          WPObject *pobjFind,
-                          ULONG ulOption)
-{
-    WPObject *pobjReturn = NULL;
-
-    TRY_LOUD(excpt1)
-    {
-        if (fdrResolveContentPtrs(somSelf))
-        {
-            XFolderData *somThis = XFolderGetData(somSelf);
-
-            switch (ulOption)
-            {
-                case QC_FIRST:
-                    // that's easy
-                    pobjReturn = *_ppFirstObj;
-                break;
-
-                case QC_NEXT:
-                    if (pobjFind)
-                    {
-                        WPObject **ppObjNext = wpshGetNextObjPointer(pobjFind);
-                        if (ppObjNext)
-                            pobjReturn = *ppObjNext;
-                    }
-                break;
-
-                case QC_LAST:
-                    pobjReturn = *_ppLastObj;
-                break;
-            }
-        }
-    }
-    CATCH(excpt1)
-    {
-        pobjReturn = NULL;
-    } END_CATCH();
-
-    return (pobjReturn);
-}
-
-/*
- *@@ fdrQueryContentArray:
- *      returns an array of WPObject* pointers representing
- *      the folder contents. This does NOT populate the
- *      folder, but will only return the objects that are
- *      presently awake.
- *
- *      Returns NULL if the folder is empty. Otherwise
- *      *pulItems receives the array item count (NOT the
- *      array size).
- *
- *      If (flFilter & QCAFL_FILTERINSERTED), this checks each
- *      object and returns only those which have not been
- *      inserted into any container yet. Useful for
- *      wpclsInsertMultipleObjects, which will simply fail if
- *      any object has already been inserted.
- *
- *      Use free() to release the memory allocated here.
- *
- *      NOTE: The caller must lock the folder contents BEFORE
- *      the call. We can't this here because we can't guarantee
- *      that the array will remain valid after the call, unless
- *      the caller's processing is also protected.
- *
- *@@added V0.9.7 (2001-01-13) [umoeller]
- *@@changed V0.9.9 (2001-04-02) [umoeller]: added flFilter
- */
-
-WPObject** fdrQueryContentArray(WPFolder *pFolder,
-                                ULONG flFilter,           // in: filter flags
-                                PULONG pulItems)
-{
-    WPObject** paObjects = NULL;
-
-    TRY_LOUD(excpt1)
-    {
-        XFolderData *somThis = XFolderGetData(pFolder);
-        if (_cObjects)
-        {
-            paObjects = (WPObject**)malloc(sizeof(WPObject*) * _cObjects);
-            if (paObjects)
-            {
-                WPObject **ppThis = paObjects;
-                WPObject *pObject;
-
-                ULONG ul = 0;
-                somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                        = (somTD_WPFolder_wpQueryContent)wpshResolveFor(pFolder,
-                                                                        NULL,
-                                                                        "wpQueryContent");
-
-                for (   pObject = rslv_wpQueryContent(pFolder,
-                                                      NULL,
-                                                      QC_FIRST);
-                        pObject;
-                        pObject = rslv_wpQueryContent(pFolder,
-                                                      pObject,
-                                                      QC_NEXT)
-                    )
-                {
-                    // add object if either filter is off,
-                    // or if no RECORDITEM exists yet
-                    if (    (!(flFilter & QCAFL_FILTERINSERTED))
-                         || (!(_wpFindUseItem(pObject, USAGE_RECORD, NULL)))
-                       )
-                    {
-                        // store obj
-                        *ppThis = pObject;
-                        // advance ptr
-                        ppThis++;
-                        // raise count
-                        ul++;
-                    }
-
-                    if (ul >= _cObjects)
-                        // shouldn't happen, but we don't want to
-                        // crash the array
-                        break;
-                }
-
-                *pulItems = ul;
-            }
-        }
-    }
-    CATCH(excpt1)
-    {
-        if (paObjects)
-        {
-            free(paObjects);
-            paObjects = NULL;
-        }
-    } END_CATCH();
-
-    return (paObjects);
-}
-
-/*
- *@@ fdrCnrInsertObject:
- *      inserts an object into all currently open views,
- *      wherever this may be.
- *
- *      As a precondition, the object must already
- *      _reside_ in a folder. It is assumed that the
- *      object only hasn't been inserted yet.
- *
- *      This inserts the object into:
- *
- *      -- icon views;
- *
- *      -- details views;
- *
- *      -- tree views.
- *
- *@@added V0.9.7 (2001-01-13) [umoeller]
- */
-
-BOOL fdrCnrInsertObject(WPObject *pObject)
-{
-    BOOL        brc = FALSE;
-    WPFolder    *pFolder;
-
-    if (    (pObject)
-         && (pFolder = _wpQueryFolder(pObject))
-       )
-    {
-        WPSHLOCKSTRUCT Lock;
-        TRY_LOUD(excpt1)
-        {
-            if (LOCK_OBJECT(Lock, pFolder))
-            {
-                PVIEWITEM   pViewItem;
-                for (pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, NULL);
-                     pViewItem;
-                     pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, pViewItem))
-                {
-                    switch (pViewItem->view)
-                    {
-                        case OPEN_CONTENTS:
-                        case OPEN_TREE:
-                        case OPEN_DETAILS:
-                        {
-                            HWND hwndCnr = wpshQueryCnrFromFrame(pViewItem->handle);
-                            if (hwndCnr)
-                            {
-                                PPOINTL pptlIcon = _wpQueryNextIconPos(pFolder);
-                                if (_wpCnrInsertObject(pObject,
-                                                       hwndCnr,
-                                                       pptlIcon,
-                                                       NULL,     // parent record
-                                                       NULL))     // RECORDINSERT, next pos.
-                                    brc = TRUE;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        CATCH(excpt1) {} END_CATCH();
-
-        if (Lock.fLocked)
-            _wpReleaseObjectMutexSem(Lock.pObject);
-    }
-
-    return (brc);
-}
-
-/*
- *@@ fdrInsertAllContents:
- *      inserts the contents of pFolder into all currently
- *      open views of pFolder.
- *
- *      Preconditions:
- *
- *      --  The caller must hold the folder mutex since we're
- *          going over the folder contents here.
- *
- *@@added V0.9.9 (2001-04-01) [umoeller]
- */
-
-ULONG fdrInsertAllContents(WPFolder *pFolder)
-{
-     ULONG       cObjects = 0;
-     WPObject    **papObjects = fdrQueryContentArray(pFolder,
-                                                     QCAFL_FILTERINSERTED,
-                                                     &cObjects);
-
-     if (papObjects)
-     {
-         PVIEWITEM   pViewItem;
-         for (pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, NULL);
-              pViewItem;
-              pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, pViewItem))
-         {
-             switch (pViewItem->view)
-             {
-                 case OPEN_CONTENTS:
-                 case OPEN_TREE:
-                 case OPEN_DETAILS:
-                 {
-                     HWND hwndCnr = wpshQueryCnrFromFrame(pViewItem->handle);
-                     POINTL ptlIcon = {0, 0};
-                     if (hwndCnr)
-                         _wpclsInsertMultipleObjects(_somGetClass(pFolder),
-                                                     hwndCnr,
-                                                     &ptlIcon,
-                                                     (PVOID*)papObjects,
-                                                     NULL,   // parentrecord
-                                                     cObjects);
-                 }
-             }
-         }
-
-         free(papObjects);
-     }
-
-    return (cObjects);
-}
-
-/*
- *@@ fdrNukeContents:
- *      deletes all the folder contents without any
- *      confirmations by invoking wpFree on each awake
- *      object. This does NOT populate the folder.
- *
- *      Note that this is not a polite way of cleaning
- *      a folder. This is ONLY used by
- *      XWPFontFolder::wpDeleteContents and
- *      XWPTrashCan::wpDeleteContents to nuke all the
- *      transient objects before those special folders
- *      get deleted themselves. This avoids the stupid
- *      "cannot delete object" messages the WPS would
- *      otherwise produce for each transient objects.
- *
- *      DO NOT INVOKE THIS FUNCTION ON REGULAR FOLDERS.
- *      THERE'S NO WAY TO INTERRUPT THIS PROCESSING.
- *      THIS WOULD ALSO DELETE ALL FILES IN THE FOLDER.
- *
- *      Returns FALSE if killing one of the objects
- *      failed.
- *
- *@@added V0.9.9 (2001-02-08) [umoeller]
- *@@changed V0.9.12 (2001-04-29) [umoeller]: removed wpQueryContent calls
- */
-
-BOOL fdrNukeContents(WPFolder *pFolder)
-{
-    BOOL        brc = FALSE,
-                fFolderLocked = FALSE;
-
-    TRY_LOUD(excpt1)
-    {
-        fFolderLocked = !wpshRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT);
-        if (fFolderLocked)
-        {
-            ULONG   cObjects = 0,
-                    ul;
-            // now querying content array... we can't use wpQueryContent
-            // while we're deleting the objects! V0.9.12 (2001-04-29) [umoeller]
-            WPObject** papObjects = fdrQueryContentArray(pFolder,
-                                                         0,     // no filter
-                                                         &cObjects);
-            brc = TRUE;
-
-            for (ul = 0;
-                 ul < cObjects;
-                 ul++)
-            {
-                WPObject *pObject = papObjects[ul];
-                if (!_wpFree(pObject))
-                {
-                    // error:
-                    brc = FALSE;
-                    // and stop
-                    break;
-                }
-            }
-        }
-    }
-    CATCH(excpt1)
-    {
-        brc = FALSE;
-    } END_CATCH();
-
-    if (fFolderLocked)
-        wpshReleaseFolderMutexSem(pFolder);
-
-    return (brc);
 }
 
 /* ******************************************************************
@@ -3534,7 +3010,7 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
                 // this with my own loop here.
                 // V0.9.12 (2001-04-28) [umoeller]
                 BOOL fStillOpen = FALSE;
-                WPSHLOCKSTRUCT Lock;
+                WPSHLOCKSTRUCT Lock = {0};
 
                 TRY_LOUD(excpt1)
                 {

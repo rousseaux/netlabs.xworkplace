@@ -89,6 +89,7 @@
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
+#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\program.h"            // program implementation
@@ -335,6 +336,73 @@ BOOL fsysSetEAKeyphrases(WPFileSystem *somSelf, const char *psz)
     return (brc);
 }
 
+/*
+ *@@ fsysQueryRefreshFlags:
+ *
+ *@@added V0.9.16 (2001-10-28) [umoeller]
+ */
+
+ULONG fsysQueryRefreshFlags(WPFileSystem *somSelf)
+{
+    static xfTD_wpQueryRefreshFlags pwpQueryRefreshFlags = NULL;
+
+    if (!pwpQueryRefreshFlags)
+        pwpQueryRefreshFlags = (xfTD_wpQueryRefreshFlags)wpshResolveFor(
+                                                 somSelf,
+                                                 NULL, // use somSelf's class
+                                                 "wpQueryRefreshFlags");
+    if (pwpQueryRefreshFlags)
+        return (pwpQueryRefreshFlags(somSelf));
+
+    return (0);
+}
+
+/*
+ *@@ fsysSetRefreshFlags:
+ *
+ *@@added V0.9.16 (2001-10-28) [umoeller]
+ */
+
+BOOL fsysSetRefreshFlags(WPFileSystem *somSelf, ULONG ulRefreshFlags)
+{
+    static xfTD_wpSetRefreshFlags pwpSetRefreshFlags = NULL;
+
+    if (!pwpSetRefreshFlags)
+        pwpSetRefreshFlags = (xfTD_wpSetRefreshFlags)wpshResolveFor(
+                                                 somSelf,
+                                                 NULL, // use somSelf's class
+                                                 "wpSetRefreshFlags");
+    if (pwpSetRefreshFlags)
+        return (pwpSetRefreshFlags(somSelf, ulRefreshFlags));
+
+    return (FALSE);
+}
+
+/*
+ *@@ fsysRefreshFSInfo:
+ *
+ *@@added V0.9.16 (2001-10-28) [umoeller]
+ */
+
+BOOL fsysRefreshFSInfo(WPFileSystem *somSelf,
+                       PFILEFINDBUF3 pfb3)      // in: new file info or NULL
+{
+    BOOL brc = FALSE;
+
+    xfTD_wpRefreshFSInfo pwpRefreshFSInfo;
+
+    if (pwpRefreshFSInfo = (xfTD_wpRefreshFSInfo)wpshResolveFor(
+                                                 somSelf,
+                                                 NULL, // use somSelf's class
+                                                 "wpRefreshFSInfo"))
+        brc = pwpRefreshFSInfo(somSelf,
+                               0,
+                               pfb3,
+                               TRUE);
+
+    return (brc);
+}
+
 /* ******************************************************************
  *
  *   "File" pages replacement in WPDataFile/WPFolder
@@ -352,9 +420,6 @@ typedef struct _FILEPAGEDATA
     // file attributes backup
     ULONG       ulAttr;
     // EA backups
-    /* PEABINDING  peabSubject;
-    PEABINDING  peabComments;
-    PEABINDING  peabKeyphrases; */
     PSZ         pszSubject,
                 pszComments,
                 pszKeyphrases;

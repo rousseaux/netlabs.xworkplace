@@ -41,6 +41,7 @@
 #define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSQUEUES
+#define INCL_DOSMISC
 #define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
@@ -108,7 +109,7 @@
 
 #include "security\xwpsecty.h"          // XWorkplace Security
 
-#include "startshut\archives.h"         // WPSArcO declarations
+#include "startshut\archives.h"         // archiving declarations
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
 
 // headers in /hook
@@ -138,6 +139,17 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
 extern KERNELGLOBALS    G_KernelGlobals;            // kernel.c
 
 static THREADINFO       G_tiSentinel = {0};
+
+static ULONG            G_ulDesktopValid = 0;
+static HOBJECT          G_hobjDesktop;
+static CHAR             G_szDesktopPath[CCHMAXPATH];
+
+extern BOOL             G_fTurboSettingsEnabled;
+                                // common.c;
+                                // this is copied from the global settings
+                                // by M_XWPFileSystem::wpclsInitData and
+                                // remains FALSE if that class is not
+                                // installed
 
 /* ******************************************************************
  *
@@ -284,6 +296,16 @@ CONTROLDEF
                             ID_XFDI_PANIC_NOARCHIVING,
                             -1,
                             -1),
+    DisableReplRefreshCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XFDI_PANIC_DISABLEREPLREFRESH,
+                            -1,
+                            -1),
+    DisableTurboFoldersCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XFDI_PANIC_DISABLETURBOFOLDERS,
+                            -1,
+                            -1),
     DisableFeaturesCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING,    // "Permanently ~disable all features",
                             ID_XFDI_PANIC_DISABLEFEATURES,
@@ -368,6 +390,10 @@ DLGHITEM dlgPanic[] =
             START_ROW(0),
                 CONTROL_DEF(&SkipArchivingCB),
             START_ROW(0),
+                CONTROL_DEF(&DisableReplRefreshCB),
+            START_ROW(0),
+                CONTROL_DEF(&DisableTurboFoldersCB),
+            START_ROW(0),
                 CONTROL_DEF(&DisableFeaturesCB ),
 #ifndef __NOICONREPLACEMENTS__
             START_ROW(0),
@@ -395,9 +421,63 @@ DLGHITEM dlgPanic[] =
     };
 
 /*
+ *@@ StartCmdExe:
+ *
+ *@@added V0.9.16 (2001-10-25) [umoeller]
+ */
+
+APIRET StartCmdExe(HWND hwndNotify,
+                   HAPP *phappCmd)
+{
+    PROGDETAILS pd = {0};
+    pd.Length = sizeof(pd);
+    pd.progt.progc = PROG_WINDOWABLEVIO;
+    pd.progt.fbVisible = SHE_VISIBLE;
+    pd.pszExecutable = "*";        // use OS2_SHELL
+    return (appStartApp(hwndNotify,
+                        &pd,
+                        0, // V0.9.14
+                        phappCmd));
+}
+
+/*
+ *@@ RunXFix:
+ *      starts xfix. Returns TRUE if xfix returned
+ *      a non-zero value, i.e. if the handles section
+ *      was changed.
+ *
+ *@@added V0.9.16 (2001-10-25) [umoeller]
+ */
+
+BOOL RunXFix(VOID)
+{
+    CHAR        szXfix[CCHMAXPATH];
+    PROGDETAILS pd = {0};
+    HAPP        happXFix;
+    cmnQueryXWPBasePath(szXfix);
+    strcat(szXfix, "\\bin\\xfix.exe");
+
+    pd.Length = sizeof(pd);
+    pd.progt.progc = PROG_PM;
+    pd.progt.fbVisible = SHE_VISIBLE;
+    pd.pszExecutable = szXfix;
+    if (!appStartApp(G_KernelGlobals.hwndThread1Object,
+                     &pd,
+                     0, // V0.9.14
+                     &happXFix))
+        if (WaitForApp(szXfix,
+                       happXFix)
+            == 1)
+            return (TRUE);
+
+    return (FALSE);
+}
+
+/*
  *@@ ShowPanicDlg:
  *
  *@@added V0.9.16 (2001-10-08) [umoeller]
+ *@@changed V0.9.16 (2001-10-25) [umoeller]: added "disable refresh", "disable turbo fdrs"
  */
 
 VOID ShowPanicDlg(VOID)
@@ -435,18 +515,22 @@ VOID ShowPanicDlg(VOID)
 #ifndef __NOBOOTLOGO__
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_SKIPBOOTLOGO,
 
-                             cmnIsFeatureEnabled(BootLogo));
+                              cmnIsFeatureEnabled(BootLogo));
 #endif
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_NOARCHIVING,
-                             pGlobalSettings->fReplaceArchiving);
+                              pGlobalSettings->fReplaceArchiving);
+            winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEREPLREFRESH,
+                              krnReplaceRefreshEnabled());
+            winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLETURBOFOLDERS,
+                              pGlobalSettings->__fTurboFolders);
 #ifndef __NOICONREPLACEMENTS__
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS,
                               cmnIsFeatureEnabled(IconReplacements));
 #endif
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEPAGEMAGE,
-                             pGlobalSettings->fEnablePageMage);
+                              pGlobalSettings->fEnablePageMage);
             winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA,
-                             (xmmQueryStatus() == MMSTAT_WORKING));
+                              (xmmQueryStatus() == MMSTAT_WORKING));
 
             ulrc = WinProcessDlg(hwndPanic);
 
@@ -454,6 +538,9 @@ VOID ShowPanicDlg(VOID)
             {
                 case ID_XFDI_PANIC_CONTINUE:        // continue
                 {
+                    GLOBALSETTINGS *pGlobalSettings2 = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
+                    BOOL fStore = FALSE;
+
 #ifndef __NOBOOTLOGO__
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_SKIPBOOTLOGO))
                         G_KernelGlobals.ulPanicFlags |= SUF_SKIPBOOTLOGO;
@@ -470,27 +557,26 @@ VOID ShowPanicDlg(VOID)
                         // disable "check archives" flag
                         pArcSettings->ulArcFlags &= ~ARCF_ENABLED;
                     }
+
+                    if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEREPLREFRESH))
+                        krnEnableReplaceRefresh(FALSE);
+                    if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLETURBOFOLDERS))
+                    {
+                        pGlobalSettings2->__fTurboFolders = FALSE;
+                        fStore = TRUE;
+                    }
+
 #ifndef __NOICONREPLACEMENTS__
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS))
                     {
-                        GLOBALSETTINGS *pGlobalSettings2 = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-                        if (pGlobalSettings2)
-                        {
-                            pGlobalSettings2->__fIconReplacements = FALSE;
-                            cmnUnlockGlobalSettings();
-                            cmnStoreGlobalSettings();
-                        }
+                        pGlobalSettings2->__fIconReplacements = FALSE;
+                        fStore = TRUE;
                     }
 #endif
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEPAGEMAGE))
                     {
-                        GLOBALSETTINGS *pGlobalSettings2 = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
-                        if (pGlobalSettings2)
-                        {
-                            pGlobalSettings2->fEnablePageMage = FALSE;  // @@todo
-                            cmnUnlockGlobalSettings();
-                            cmnStoreGlobalSettings();
-                        }
+                        pGlobalSettings2->fEnablePageMage = FALSE;  // @@todo
+                        fStore = TRUE;
                     }
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA))
                     {
@@ -499,42 +585,30 @@ VOID ShowPanicDlg(VOID)
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_DISABLEFEATURES))
                     {
                         cmnLoadGlobalSettings(TRUE);        // reset defaults
-                        cmnStoreGlobalSettings();
+                        fStore = TRUE;
                     }
                     if (winhIsDlgItemChecked(hwndPanic, ID_XFDI_PANIC_REMOVEHOTKEYS))
                         PrfWriteProfileData(HINI_USER,
                                             INIAPP_XWPHOOK,
                                             INIKEY_HOOK_HOTKEYS,
                                             0, 0);      // delete INI key
+
+                    cmnUnlockGlobalSettings();
+                    if (fStore)
+                        cmnStoreGlobalSettings();
                 break; }
 
                 case ID_XFDI_PANIC_XFIX:      // run xfix:
                 {
-                    CHAR        szXfix[CCHMAXPATH];
-                    PROGDETAILS pd = {0};
-                    HAPP        happXFix;
-                    cmnQueryXWPBasePath(szXfix);
-                    strcat(szXfix, "\\bin\\xfix.exe");
-
-                    pd.Length = sizeof(pd);
-                    pd.progt.progc = PROG_PM;
-                    pd.progt.fbVisible = SHE_VISIBLE;
-                    pd.pszExecutable = szXfix;
-                    if (!appStartApp(G_KernelGlobals.hwndThread1Object,
-                                     &pd,
-                                     0, // V0.9.14
-                                     &happXFix))
-                        if (WaitForApp(szXfix,
-                                       happXFix)
-                            == 1)
-                        {
-                            // handle section changed:
-                            cmnMessageBoxMsg(NULLHANDLE,
-                                             121,       // xwp
-                                             205,       // restart wps now.
-                                             MB_OK);
-                            DosExit(EXIT_PROCESS, 0);
-                        }
+                    if (RunXFix())
+                    {
+                        // handle section changed:
+                        cmnMessageBoxMsg(NULLHANDLE,
+                                         121,       // xwp
+                                         205,       // restart wps now.
+                                         MB_OK);
+                        DosExit(EXIT_PROCESS, 0);
+                    }
 
                     fRepeat = TRUE;
                 break; }
@@ -542,14 +616,7 @@ VOID ShowPanicDlg(VOID)
                 case ID_XFDI_PANIC_CMD:         // run cmd.exe
                 {
                     HAPP happCmd;
-                    PROGDETAILS pd = {0};
-                    pd.Length = sizeof(pd);
-                    pd.progt.progc = PROG_WINDOWABLEVIO;
-                    pd.progt.fbVisible = SHE_VISIBLE;
-                    pd.pszExecutable = "*";        // use OS2_SHELL
-                    if (!appStartApp(G_KernelGlobals.hwndThread1Object,
-                                     &pd,
-                                     0, // V0.9.14
+                    if (!StartCmdExe(G_KernelGlobals.hwndThread1Object,
                                      &happCmd))
                         WaitForApp(getenv("OS2_SHELL"),
                                    happCmd);
@@ -794,21 +861,46 @@ VOID ReplaceWheelWatcher(PXFILE pLogFile)
     CATCH(excpt1) {} END_CATCH();
 }
 
+#define DESKTOP_VALID               0
+#define NO_DESKTOP_ID               1
+#define DESKTOP_HANDLE_NOT_FOUND    2
+#define DESKTOP_DIR_DOESNT_EXIST    3
+#define DESKTOP_IS_NO_DIRECTORY     4
+
 /*
- *@@ CheckDesktopValid:
- *      called from InitMain to check if <WP_DESKTOP>
- *      can be found on the system. The dull WPS
- *      "Cannot find desktop" dialog comes up _after_
- *      initMain completes, so we have a chance of
- *      fixing the desktop beforehand.
+ *@@ CheckDesktop:
+ *      checks if <WP_DESKTOP> can be found on the system.
  *
- *@@added V0.9.16 (2001-09-29) [umoeller]
+ *      Returns:
+ *
+ *      --  DESKTOP_VALID
+ *
+ *      --  NO_DESKTOP_ID: <WP_DESKTOP> doesn't exist in OS2.INI.
+ *
+ *      --  DESKTOP_HANDLE_NOT_FOUND: <WP_DESKTOP> exists, but points
+ *          to an invalid handle.
+ *
+ *      --  DESKTOP_DIR_DOESNT_EXIST: The handle pointed to by <WP_DESKTOP>
+ *          points to a directory which doesn't exist.
+ *
+ *      --  DESKTOP_IS_NO_DIRECTORY: The handle pointed to by <WP_DESKTOP>
+ *          points to a file, not a directory.
+ *
+ *      Note that this function gets called twice: first, from
+ *      initMain so we can disable archiving if the desktop
+ *      is broken, secondly from initRepairDesktopIfBroken a
+ *      little bit later.
+ *
+ *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
-VOID CheckDesktopValid(PXFILE pLogFile)
+ULONG CheckDesktop(PXFILE pLogFile)
 {
-    HOBJECT hobjDesktop = 0;
-    ULONG cb = sizeof(hobjDesktop);
+    ULONG   ulResult = DESKTOP_VALID;
+
+    ULONG   cb = sizeof(HOBJECT);
+    G_hobjDesktop = NULLHANDLE;
+    G_szDesktopPath[0] = '\0';
 
     doshWriteLogEntry(pLogFile,
                       "Entering " __FUNCTION__ ":");
@@ -816,47 +908,257 @@ VOID CheckDesktopValid(PXFILE pLogFile)
     if (!PrfQueryProfileData(HINI_USER,
                              (PSZ)WPINIAPP_LOCATION,      // "PM_Workplace:Location"
                              (PSZ)WPOBJID_DESKTOP,        // "<WP_DESKTOP>"
-                             &hobjDesktop,
+                             &G_hobjDesktop,
                              &cb))
+    {
         doshWriteLogEntry(pLogFile,
                           "  ERROR: Cannot find <WP_DESKTOP> in PM_Workplace:Location in OS2.INI");
+        ulResult = NO_DESKTOP_ID;
+    }
     else
-        if (!hobjDesktop)
+        if (!G_hobjDesktop)
+        {
             doshWriteLogEntry(pLogFile,
                               "  ERROR: <WP_DESKTOP> in PM_Workplace:Location in OS2.INI has a null handle");
+            ulResult = NO_DESKTOP_ID;
+        }
         else
         {
             // OK, check if that handle is valid.
-            CHAR szDesktopPath[2*CCHMAXPATH];
             APIRET arc;
             if (arc = wphQueryPathFromHandle(HINI_USER,
                                              HINI_SYSTEM,
-                                             hobjDesktop,
-                                             szDesktopPath,
-                                             sizeof(szDesktopPath)))
+                                             G_hobjDesktop,
+                                             G_szDesktopPath,
+                                             CCHMAXPATH))
+            {
                 doshWriteLogEntry(pLogFile,
                                   "  ERROR %d resolving <WP_DESKTOP> handle 0x%lX",
-                                  hobjDesktop);
+                                  G_hobjDesktop);
+                ulResult = DESKTOP_HANDLE_NOT_FOUND;
+            }
             else
             {
                 ULONG ulAttr;
 
                 doshWriteLogEntry(pLogFile,
                                   "  <WP_DESKTOP> handle 0x%lX points to \"%s\"",
-                                  hobjDesktop,
-                                  szDesktopPath);
-                if (arc = doshQueryPathAttr(szDesktopPath,
+                                  G_hobjDesktop,
+                                  G_szDesktopPath);
+                if (arc = doshQueryPathAttr(G_szDesktopPath,
                                             &ulAttr))
+                {
                     doshWriteLogEntry(pLogFile,
                                       "  ERROR: doshQueryPathAttr returned %d",
                                       arc);
+                    ulResult = DESKTOP_DIR_DOESNT_EXIST;
+                }
                 else
                     if (0 == (ulAttr & FILE_DIRECTORY))
+                    {
                         doshWriteLogEntry(pLogFile,
                                           "  ERROR: Desktop path \"%s\" is not a directory.",
                                           arc);
+                        ulResult = DESKTOP_IS_NO_DIRECTORY;
+                    }
             }
         }
+
+    return (ulResult);
+}
+
+/*
+ *@@ initRepairDesktopIfBroken:
+ *      calls CheckDesktop to find out if the desktop
+ *      is valid. If not, we offer a text entry dialog
+ *      where the user may the full path of the desktop.
+ *
+ *      This does _not_ get called from initMain because
+ *      initMain gets processed in the context of
+ *      M_XFldObject::wpclsInitData, where the file-system
+ *      objects are not yet initialized.
+ *
+ *      Instead, this gets called from
+ *      M_XFldDesktop::wpclsInitData, which gets called
+ *      while the WPS startup code is trying to open the
+ *      default desktop. Essentially, we are changing
+ *      the desktop's object ID behind the WPS's back
+ *      (while it is trying to find the object from it),
+ *      so this might or might not work.
+ *
+ *@@added V0.9.16 (2001-09-29) [umoeller]
+ */
+
+BOOL initRepairDesktopIfBroken(VOID)
+{
+    BOOL        brc = FALSE;
+
+    CHAR        szMsg[1000] = "";
+
+    switch (G_ulDesktopValid)
+    {
+        case DESKTOP_VALID:
+            brc = TRUE;
+        break;
+
+        case NO_DESKTOP_ID:
+            sprintf(szMsg,
+                    "The object ID <WP_DESKTOP> was not found in the user profile.");
+        break;
+
+        case DESKTOP_HANDLE_NOT_FOUND:
+            sprintf(szMsg,
+                    "The object ID <WP_DESKTOP> points to the object handle 0x%lX,"
+                    "but that handle was not found in the system profile.",
+                    G_hobjDesktop);
+        break;
+
+        case DESKTOP_DIR_DOESNT_EXIST:
+            sprintf(szMsg,
+                    "The object ID <WP_DESKTOP> points to \"%s\","
+                    "but that path does not exist on the system.",
+                    G_szDesktopPath);
+        break;
+
+        case DESKTOP_IS_NO_DIRECTORY:
+            sprintf(szMsg,
+                    "The object ID <WP_DESKTOP> points to \"%s\","
+                    "but that path is a file, not a directory.",
+                    G_szDesktopPath);
+        break;
+
+        default:
+            sprintf(szMsg,
+                    "Unknown error %d occured.",
+                    G_ulDesktopValid);
+        break;
+    }
+
+    if (!brc)
+    {
+        BOOL fRepeat = FALSE;
+        HAPP happCmd;
+
+        PCSZ pcszTitle = "Desktop Error";
+        PCSZ pcszOKMsg =
+                    "\nIf you press \"OK\", the object ID <WP_DESKTOP> will be set "
+                    "upon that directory. Please make sure that the path you enter is "
+                    "valid.";
+        PCSZ pcszRetryMsg =
+                    "\nPress \"Retry\" to enter another path.";
+        PCSZ pcszCancelMsg =
+                    "\nPress \"Cancel\" in order not to set a new object ID and open "
+                    "a temporary desktop, which is the default WPS behavior.";
+
+        // start a CMD.EXE for the frightened user
+        StartCmdExe(NULLHANDLE,
+                    &happCmd);
+        do
+        {
+            XSTRING str;
+            PSZ     pszNew;
+            CHAR    szDefault[CCHMAXPATH];
+            PSZ     pszDesktopEnv;
+
+            fRepeat = FALSE;
+
+            xstrInitCopy(&str,
+                         "Your desktop could not be found in the system's INI files. ",
+                         0);
+            xstrcat(&str, szMsg, 0);
+            xstrcat(&str,
+                    "\nA command window has been opened for your convenience. "
+                    "You can now attempt to enter the full path of where your desktop "
+                    "resides.",
+                    0);
+            xstrcat(&str,
+                    pcszOKMsg,
+                    0);
+            xstrcat(&str,
+                    pcszCancelMsg,
+                    0);
+
+            // set a meaningful default for the desktop;
+            // if the user has set the DESKTOP variable, use that
+            if (!DosScanEnv("DESKTOP",
+                            &pszDesktopEnv))
+                strcpy(szDefault, pszDesktopEnv);
+            else
+                // check if we can find the path that was last
+                // saved during XShutdown
+                if (PrfQueryProfileString(HINI_USER,
+                                          (PSZ)INIAPP_XWORKPLACE,
+                                          (PSZ)INIKEY_LASTDESKTOPPATH,
+                                          "",       // default
+                                          szDefault,
+                                          sizeof(szDefault))
+                        < 3)
+                {
+                    // didn't work either:
+                    sprintf(szDefault,
+                            "%c:\\Desktop",
+                            doshQueryBootDrive());
+                }
+
+            if (pszNew = cmnTextEntryBox(NULLHANDLE,
+                                         pcszTitle,
+                                         str.psz,
+                                         szDefault,
+                                         CCHMAXPATH - 1,
+                                         TEBF_SELECTALL))
+            {
+                // check that path
+                APIRET arc;
+                ULONG ulAttr;
+                PCSZ pcszMsg2 = NULL;
+                if (arc = doshQueryPathAttr(pszNew,
+                                            &ulAttr))
+                    pcszMsg2 = "The path you have entered (\"%s\") does not exist.";
+                else
+                    if (0 == (ulAttr & FILE_DIRECTORY))
+                        pcszMsg2 = "The path you have entered (\"%s\") is a file, not a directory.";
+
+                if (!pcszMsg2)
+                {
+                    WPFileSystem *pobj;
+                    if (    (pobj = _wpclsQueryObjectFromPath(_WPFileSystem,
+                                                              pszNew))
+                         && (_wpSetObjectID(pobj,
+                                            (PSZ)WPOBJID_DESKTOP))
+                       )
+                    {
+                        // alright, this worked:
+                        brc = TRUE;
+                    }
+                    else
+                        pcszMsg2 = "Error setting <WP_DESKTOP> on \"%s\".";
+                }
+
+                if (pcszMsg2)
+                {
+                    sprintf(szMsg,
+                            pcszMsg2,
+                            pszNew);
+                    xstrcpy(&str, szMsg, 0);
+                    xstrcat(&str, pcszRetryMsg, 0);
+                    xstrcat(&str, pcszCancelMsg, 0);
+
+                    if (cmnMessageBox(NULLHANDLE,
+                                      pcszTitle,
+                                      str.psz,
+                                      MB_RETRYCANCEL)
+                            == MBID_RETRY)
+                        fRepeat = TRUE;
+                }
+
+                free(pszNew);
+            }
+            xstrClear(&str);
+
+        } while (fRepeat);
+    }
+
+    return (brc);
 }
 
 /*
@@ -940,6 +1242,7 @@ VOID initMain(VOID)
 
     static BOOL fInitialized = FALSE;
 
+    // force loading of the global settings
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     // moved this here from xthrStartThreads
@@ -947,6 +1250,9 @@ VOID initMain(VOID)
     PPIB        ppib;
 
     CHAR        szDumpFile[CCHMAXPATH];
+
+    HOBJECT     hobjDesktop;
+    CHAR        szDesktopPath[CCHMAXPATH];
 
     // check if we're called for the first time,
     // because we better initialize this only once
@@ -1050,7 +1356,12 @@ VOID initMain(VOID)
     // if shift is pressed, show "Panic" dialog
     // V0.9.7 (2001-01-24) [umoeller]: moved this behind creation
     // of thread-1 window... we need this for starting xfix from
-    // the "panic" dlg
+    // the "panic" dlg.
+    // NOTE: This possibly changes global settings, so the wheel
+    // watcher evaluation must come AFTER this! Same for turbo
+    // folders, which is OK because G_fTurboSettingsEnabled is
+    // enabled only in M_XWPFileSystem::wpclsInitData (because
+    // it requires XWPFileSystem to be present)
     ShowStartupDlgs();
 
     // check if "replace folder refresh" is enabled...
@@ -1070,7 +1381,10 @@ VOID initMain(VOID)
         winhSetNumLock(TRUE);
 
     // go check if the desktop is valid
-    CheckDesktopValid(pLogFile);
+    G_ulDesktopValid = CheckDesktop(pLogFile);
+    if (G_ulDesktopValid != DESKTOP_VALID)
+        // no: disable archiving V0.9.16 (2001-10-25) [umoeller]
+        arcForceNoArchiving();
 
     // initialize multimedia V0.9.3 (2000-04-25) [umoeller]
     xmmInit(pLogFile);
@@ -1149,7 +1463,7 @@ VOID initMain(VOID)
                                     PAG_COMMIT | PAG_READ | PAG_WRITE);
 
             doshWriteLogEntry(pLogFile,
-                              "  DosAllocSharedMem returned %d\n",
+                              "  DosAllocSharedMem returned %d",
                               arc);
 
             if (arc == NO_ERROR)
@@ -1201,7 +1515,7 @@ VOID initMain(VOID)
                                                              NULL,
                                                              0);// no SAF_INSTALLEDCMDLINE,
                     doshWriteLogEntry(pLogFile,
-                                      "  WinStartApp for %s returned HAPP 0x%lX\n",
+                                      "  WinStartApp for %s returned HAPP 0x%lX",
                                       pd.pszExecutable,
                                       G_KernelGlobals.happDaemon);
 

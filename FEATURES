@@ -55,6 +55,7 @@ startup:
     -- environment var for X, Y pos of classes initialization dlg
 
 hook:
+    -- auto-roll-down combo boxes if clicked on entry field
     -- delay for screen border objects
     -- move ptr to default button in dialogs (NPSWPS)
     -- Z-order move one/bottommost

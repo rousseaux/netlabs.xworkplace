@@ -102,24 +102,25 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xfobj.ih"
+#include "xfldr.ih"
+#include "xtrash.ih"
+#include "xtrashobj.ih"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
+#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 #include "shared\xsetup.h"              // XWPSetup implementation
 
 #include "filesys\fileops.h"            // file operations implementation
+#include "filesys\folder.h"             // XFolder implementation
+#include "filesys\trash.h"              // trash can implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
-#include <wpfolder.h>
-#include "xtrash.h"
-#include "xtrashobj.h"
-#include "filesys\trash.h"              // trash can implementation
-#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "helpers\undoc.h"              // some undocumented stuff
 
@@ -258,8 +259,8 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
 
     BOOL        fFolderLocked = FALSE;
 
-    ULONG       ulNesting = 0;
-    DosEnterMustComplete(&ulNesting);
+    // ULONG       ulNesting = 0;
+    // DosEnterMustComplete(&ulNesting);
 
     #ifdef DEBUG_TRASHCAN
         _Pmpf(("Object \"%s\" is a folder, creating SFL", _wpQueryTitle(pFolder) ));
@@ -272,14 +273,13 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
         if (wpshCheckIfPopulated(pFolder,
                                  fFoldersOnly))
         {
-            fFolderLocked = !wpshRequestFolderMutexSem(pFolder, 5000);
-            if (fFolderLocked)
+            if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, 5000))
             {
                 WPObject *pObject;
 
                 // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-                somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                        = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
+                // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                        // = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
 
                 // now collect all objects in folder;
                 // -- if we have a full populate, we add all objects
@@ -287,9 +287,10 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
                 // -- if we have a "folders only" populate, we add
                 //    all objects we have (which is at least all the
                 //    folders, but can contain additional objects)
-                for (pObject = rslv_wpQueryContent(pFolder, NULL, QC_FIRST);
+                // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+                for (pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                      pObject;
-                     pObject = rslv_wpQueryContent(pFolder, pObject, QC_Next))
+                     pObject = *wpshGetNextObjPointer(pObject))
                 {
                     PEXPANDEDOBJECT fSOI = NULL;
 
@@ -322,11 +323,11 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
 
     if (fFolderLocked)
     {
-        wpshReleaseFolderMutexSem(pFolder);
+        fdrReleaseFolderMutexSem(pFolder);
         fFolderLocked = FALSE;
     }
 
-    DosExitMustComplete(&ulNesting);
+    // DosExitMustComplete(&lNesting);
 
     *pulSizeContents = ulSizeContents;
 
@@ -549,8 +550,8 @@ FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pl
         // it's a folder:
         // lock it and build a list from its contents
         BOOL    fFolderLocked = FALSE;
-        ULONG   ulNesting = 0;
-        DosEnterMustComplete(&ulNesting);
+        // ULONG   ulNesting = 0;
+        // DosEnterMustComplete(&ulNesting);
 
         TRY_LOUD(excpt1)
         {
@@ -559,14 +560,13 @@ FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pl
                 frc = FOPSERR_POPULATE_FAILED;
             else
             {
-                fFolderLocked = !wpshRequestFolderMutexSem(pObject, 5000);
-                if (fFolderLocked)
+                if (fFolderLocked = !fdrRequestFolderMutexSem(pObject, 5000))
                 {
                     WPObject *pSubObject;
 
                     // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-                    somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                            = SOM_Resolve(pObject, WPFolder, wpQueryContent);
+                    // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                            // = SOM_Resolve(pObject, WPFolder, wpQueryContent);
 
                     // now collect all objects in folder;
                     // -- if we have a full populate, we add all objects
@@ -574,9 +574,10 @@ FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pl
                     // -- if we have a "folders only" populate, we add
                     //    all objects we have (which is at least all the
                     //    folders, but can contain additional objects)
-                    for (pSubObject = rslv_wpQueryContent(pObject, NULL, QC_FIRST);
+                    // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+                    for (pSubObject = _wpQueryContent(pObject, NULL, QC_FIRST);
                          pSubObject;
-                         pSubObject = rslv_wpQueryContent(pObject, pSubObject, QC_Next))
+                         pSubObject = *wpshGetNextObjPointer(pSubObject))
                     {
                         // recurse!
                         // this will add pSubObject to pllObjects
@@ -613,11 +614,11 @@ FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pl
 
         if (fFolderLocked)
         {
-            wpshReleaseFolderMutexSem(pObject);
+            fdrReleaseFolderMutexSem(pObject);
             fFolderLocked = FALSE;
         }
 
-        DosExitMustComplete(&ulNesting);
+        // DosExitMustComplete(&ulNesting);
 
     } // end if (_somIsA(pObject, _WPFolder))
 
@@ -805,16 +806,16 @@ WPFileSystem* fopsFindFSWithSameName(WPFileSystem *somSelf,   // in: FS object t
 
         if (wpshCheckIfPopulated(pFolder, FALSE)) // V0.9.12 (2001-04-29) [umoeller]
         {
-            fFolderLocked = !wpshRequestFolderMutexSem(pFolder, 5000);
-            if (fFolderLocked)
+            if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, 5000))
             {
                 // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-                somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                        = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
+                // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                        // = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
 
-                for (   pobj = rslv_wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
+                // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+                for (   pobj = _wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
                         (pobj);
-                        pobj = rslv_wpQueryContent(pFolder, pobj, (ULONG)QC_NEXT)
+                        pobj = *wpshGetNextObjPointer(pobj)
                     )
                 {
                     if (_somIsA(pobj, _WPFileSystem))
@@ -838,7 +839,7 @@ WPFileSystem* fopsFindFSWithSameName(WPFileSystem *somSelf,   // in: FS object t
     } END_CATCH();
 
     if (fFolderLocked)
-        wpshReleaseFolderMutexSem(pFolder);
+        fdrReleaseFolderMutexSem(pFolder);
 
     return (pFSReturn);
 }
@@ -951,17 +952,17 @@ BOOL fopsProposeNewTitle(const char *pcszTitle,          // in: title to modify
         {
             WPFileSystem    *pExistingFile2 = 0;
 
-            fFolderLocked = !wpshRequestFolderMutexSem(pFolder, 5000);
-            if (fFolderLocked)
+            if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, 5000))
             {
                 // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-                somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                        = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
+                // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                        // = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
 
                 fFileExists = FALSE;
-                for (   pExistingFile2 = rslv_wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
+                // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+                for (   pExistingFile2 = _wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
                         (pExistingFile2);
-                        pExistingFile2 = rslv_wpQueryContent(pFolder, pExistingFile2, (ULONG)QC_NEXT)
+                        pExistingFile2 = *wpshGetNextObjPointer(pExistingFile2)
                     )
                 {
                     fFileExists = (stricmp(_wpQueryTitle(pExistingFile2),
@@ -984,7 +985,7 @@ BOOL fopsProposeNewTitle(const char *pcszTitle,          // in: title to modify
         } END_CATCH();
 
         if (fFolderLocked)
-            wpshReleaseFolderMutexSem(pFolder);
+            fdrReleaseFolderMutexSem(pFolder);
 
         lFileCount++;
 

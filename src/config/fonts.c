@@ -304,7 +304,7 @@ XWPFontObject* fonCreateFontObject(XWPFontFolder *pFolder,
         if (pNew)
         {
             // raise status count... this is for the status bar
-            WPSHLOCKSTRUCT Lock;
+            WPSHLOCKSTRUCT Lock = {0};
             TRY_LOUD(excpt1)
             {
                 if (LOCK_OBJECT(Lock, pFolder))
@@ -562,7 +562,7 @@ VOID fonPopulateFirstTime(XWPFontFolder *pFolder)
         HAB hab = WinQueryAnchorBlock(cmnQueryActiveDesktopHWND());
                             // how can we get the HAB of the populate thread?!?
 
-        fFolderLocked = !wpshRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT);
+        fFolderLocked = !fdrRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT);
         if (fFolderLocked)
         {
             APIRET arc = NO_ERROR;
@@ -651,7 +651,7 @@ VOID fonPopulateFirstTime(XWPFontFolder *pFolder)
     } END_CATCH();
 
     if (fFolderLocked)
-        wpshReleaseFolderMutexSem(pFolder);
+        fdrReleaseFolderMutexSem(pFolder);
 }
 
 /*
@@ -1753,6 +1753,7 @@ MRESULT EXPENTRY fon_fnwpFontSampleClient(HWND hwnd, ULONG msg, MPARAM mp1, MPAR
  *      creates the "Sample" view for the font object.
  *
  *@@changed V0.9.13 (2001-06-17) [umoeller]: fixed default window size
+ *@@changed V0.9.16 (2001-10-30) [umoeller]: now giving the client focus
  */
 
 HWND fonCreateFontSampleView(XWPFontObject *somSelf,
@@ -1789,11 +1790,11 @@ HWND fonCreateFontSampleView(XWPFontObject *somSelf,
 
                 pData->somSelf = somSelf;
 
-                pData->pszSampleText = prfhQueryProfileData(HINI_USER,
+                if (!(pData->pszSampleText = prfhQueryProfileData(HINI_USER,
                                                             INIAPP_XWORKPLACE,
                                                             INIKEY_FONTSAMPLESTRING,
-                                                            NULL);
-                if (!pData->pszSampleText)
+                                                            NULL)))
+                    // no user data given: use a default here
                     pData->pszSampleText = strdup("The Quick Brown Fox Jumps Over The Lazy Dog.");
 
                 swpFrame.x = 10;
@@ -1846,6 +1847,10 @@ HWND fonCreateFontSampleView(XWPFontObject *somSelf,
                                          INIAPP_XWORKPLACE,
                                          INIKEY_FONTSAMPLEWNDPOS,
                                          SWP_SHOW | SWP_ZORDER | SWP_MOVE | SWP_SIZE | SWP_ACTIVATE);
+
+                    // give focus to the client
+                    // V0.9.16 (2001-10-30) [umoeller]
+                    WinSetFocus(HWND_DESKTOP, hwndClient);
 
                     // add to global views list
                     if (krnLock(__FILE__, __LINE__, __FUNCTION__))

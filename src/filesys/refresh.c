@@ -122,6 +122,7 @@
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
+#include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\refresh.h"            // folder auto-refresh
 
@@ -335,12 +336,14 @@ VOID _Optlink fntOverflowRefresh(PTHREADINFO ptiMyself)
  *
  *      Postconditions:
  *
- *      -- This will remove pNotify.
+ *      -- Caller must free pNotify according to the return
+ *         value.
  *
  *@@added V0.9.9 (2001-02-04) [umoeller]
  *@@changed V0.9.12 (2001-05-18) [umoeller]: added full refresh on overflow
  *@@changed V0.9.12 (2001-05-22) [umoeller]: fixed synchronization with folder instance data
  *@@changed V0.9.12 (2001-05-31) [umoeller]: added REMOVE_* return value for caller
+ *@@changed V0.9.16 (2001-10-28) [umoeller]: added support for RCNF_CHANGED
  */
 
 ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
@@ -352,11 +355,21 @@ ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
     {
         case RCNF_FILE_ADDED:
         case RCNF_DIR_ADDED:
-        {
             _wpclsQueryObjectFromPath(_WPFileSystem,
                                       pNotify->CNInfo.szName);
                     // this will wake the object up
                     // if it hasn't been awakened yet
+        break;
+
+        case RCNF_CHANGED:      // V0.9.16 (2001-10-28) [umoeller]
+        {
+            WPFileSystem *pobj;
+            if (pobj = fdrFindFSFromName(pNotify->pFolder,
+                                         pNotify->pShortName))
+            {
+                DosBeep(5000, 30);
+                fsysRefreshFSInfo(pobj, NULL);
+            }
         }
         break;
 
@@ -366,9 +379,9 @@ ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
             // loop thru the folder contents (without refreshing)
             // to check if we have a WPFileSystem with this name
             // already
-            WPFileSystem *pobj = fdrFindFSFromName(pNotify->pFolder,
-                                                   pNotify->pShortName);
-            if (pobj)
+            WPFileSystem *pobj;
+            if (pobj = fdrFindFSFromName(pNotify->pFolder,
+                                         pNotify->pShortName))
             {
                 // yes, we have an FS object of that name:
                 // check if the file still physically exists...
@@ -605,7 +618,7 @@ VOID _Optlink refr_fntPumpThread(PTHREADINFO ptiMyself)
 
         TRY_LOUD(excpt1)
         {
-            fSemOwned = wpshGetNotifySem(SEM_INDEFINITE_WAIT);
+            fSemOwned = fdrGetNotifySem(SEM_INDEFINITE_WAIT);
             if (fSemOwned)
             {
                 // only if we got the mutex, reset the event
@@ -630,7 +643,7 @@ VOID _Optlink refr_fntPumpThread(PTHREADINFO ptiMyself)
 
         if (fSemOwned)
         {
-            wpshReleaseNotifySem();
+            fdrReleaseNotifySem();
             fSemOwned = FALSE;
         }
     }
@@ -677,6 +690,7 @@ VOID _Optlink refr_fntPumpThread(PTHREADINFO ptiMyself)
  *         mutex, so we're safe then.
  *
  *@@added V0.9.9 (2001-01-29) [umoeller]
+ *@@changed V0.9.16 (2001-10-28) [umoeller]: added support for RCNF_CHANGED
  */
 
 BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
@@ -702,14 +716,18 @@ BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
          *
          */
 
-        // for FILE_DELETED, drop if we have a FILE_ADDED (temp file)
-        // for DIR_DELETED, drop if we have a DIR_ADDED
+        // for FILE_DELETED, drop previous FILE_ADDED (temp file)
         if (bActionThis == RCNF_FILE_DELETED)
             bOpposite = RCNF_FILE_ADDED;
+        // for DIR_DELETED, drop previous DIR_ADDED
         else if (bActionThis == RCNF_DIR_DELETED)
             bOpposite = RCNF_DIR_ADDED;
 
-        if (bOpposite)
+        // besides, drop RCNF_CHANGED if we have a
+        // RCNF_FILE_ADDED in the queue already
+        if (    (bOpposite)
+             || (bActionThis == RCNF_CHANGED)
+           )
         {
             // yes, check redundancy:
             PLISTNODE pNode = lstQueryFirstNode(&G_llAllNotifications);
@@ -733,6 +751,22 @@ BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
                         refrRemoveNotification(pNotifyThat,
                                                pNode);
 
+                        break;
+                    }
+                }
+                // V0.9.16 (2001-10-28) [umoeller]
+                else if (    // do not add RCNF_CHANGED if we already have RCNF_CHANGED
+                             (    (bActionThis == RCNF_CHANGED)
+                               && (bActionThat == RCNF_FILE_ADDED)
+                             )
+                             // and do not add any duplicate notifications at all
+                          || (bActionThis == bActionThat)
+                        )
+                {
+                    if (!stricmp(pNotify->pShortName,
+                                 pNotifyThat->pShortName))
+                    {
+                        fAddThis = FALSE;
                         break;
                     }
                 }
@@ -779,6 +813,7 @@ BOOL AddNotifyIfNotRedundant(PXWPNOTIFY pNotify)
  *@@added V0.9.9 (2001-01-31) [umoeller]
  *@@changed V0.9.12 (2001-05-18) [umoeller]: added "rename" support
  *@@changed V0.9.12 (2001-05-18) [umoeller]: added full refresh on overflow
+ *@@changed V0.9.16 (2001-10-28) [umoeller]: added support for RCNF_CHANGED
  */
 
 VOID FindFolderForNotification(PXWPNOTIFY pNotify,
@@ -819,7 +854,6 @@ VOID FindFolderForNotification(PXWPNOTIFY pNotify,
         case RCNF_MOVED_OUT:                ³
         case RCNF_DEVICE_ATTACHED:          ³  filtered out in sentinel already
         case RCNF_DEVICE_DETACHED:          ³
-        case RCNF_CHANGED:                  ³
         break;                             ÄÙ
             */
 
@@ -835,6 +869,11 @@ VOID FindFolderForNotification(PXWPNOTIFY pNotify,
          *  RCNF_DIR_ADDED:
          *  RCNF_DIR_DELETED:
          *      directory added or removed.
+         *
+         * RCNF_CHANGED:
+         *      comes in if a file has changed, i.e.
+         *      it already existed and was worked on
+         *      (e.g. its size changed).
          *
          * RCNF_OLDNAME:
          * RCNF_NEWNAME:
@@ -852,37 +891,36 @@ VOID FindFolderForNotification(PXWPNOTIFY pNotify,
         case RCNF_FILE_DELETED:
         case RCNF_DIR_ADDED:
         case RCNF_DIR_DELETED:
+        case RCNF_CHANGED:              // added V0.9.16 (2001-10-28) [umoeller]
         case RCNF_OLDNAME:
         case RCNF_NEWNAME:
         {
             // for all these, find the folder first
-            PSZ pLastBackslash = strrchr(pNotify->CNInfo.szName, '\\');
-
-            /*  _Pmpf((__FUNCTION__ ": %s \"%s\"",
-                    (pNotify->CNInfo.bAction == RCNF_FILE_ADDED) ? "RCNF_FILE_ADDED"
-                        : (pNotify->CNInfo.bAction == RCNF_FILE_DELETED) ? "RCNF_FILE_DELETED"
-                        : (pNotify->CNInfo.bAction == RCNF_DIR_ADDED) ? "RCNF_DIR_ADDED"
-                        : (pNotify->CNInfo.bAction == RCNF_DIR_DELETED) ? "RCNF_DIR_DELETED"
-                        : (pNotify->CNInfo.bAction == RCNF_CHANGED) ? "RCNF_CHANGED"
-                        : (pNotify->CNInfo.bAction == RCNF_OLDNAME) ? "RCNF_OLDNAME"
-                        : (pNotify->CNInfo.bAction == RCNF_NEWNAME) ? "RCNF_NEWNAME"
-                        : "unknown code",
-                    pNotify->CNInfo.szName)); */
-
-            // first of all, special handling for the rename sequence...
-            // we could use wpSetTitle on the object, but this would
-            // require extra synchronization, so we'll just dump the
-            // old object and re-awake it with the new name. This will
-            // also get the .LONGNAME stuff right then.
-            if (pNotify->CNInfo.bAction == RCNF_OLDNAME)
-                pNotify->CNInfo.bAction = RCNF_FILE_DELETED;
-            else if (pNotify->CNInfo.bAction == RCNF_NEWNAME)
-                pNotify->CNInfo.bAction = RCNF_FILE_ADDED;
-
-            if (pLastBackslash)
+            PSZ pLastBackslash;
+            if (pLastBackslash = strrchr(pNotify->CNInfo.szName, '\\'))
             {
-                // check if the folder object is already awake
                 BOOL    fSemOwned = FALSE;
+
+                _Pmpf((__FUNCTION__ ": %s \"%s\"",
+                        (pNotify->CNInfo.bAction == RCNF_FILE_ADDED) ? "RCNF_FILE_ADDED"
+                            : (pNotify->CNInfo.bAction == RCNF_FILE_DELETED) ? "RCNF_FILE_DELETED"
+                            : (pNotify->CNInfo.bAction == RCNF_DIR_ADDED) ? "RCNF_DIR_ADDED"
+                            : (pNotify->CNInfo.bAction == RCNF_DIR_DELETED) ? "RCNF_DIR_DELETED"
+                            : (pNotify->CNInfo.bAction == RCNF_CHANGED) ? "RCNF_CHANGED"
+                            : (pNotify->CNInfo.bAction == RCNF_OLDNAME) ? "RCNF_OLDNAME"
+                            : (pNotify->CNInfo.bAction == RCNF_NEWNAME) ? "RCNF_NEWNAME"
+                            : "unknown code",
+                        pNotify->CNInfo.szName));
+
+                // first of all, special handling for the rename sequence...
+                // we could use wpSetTitle on the object, but this would
+                // require extra synchronization, so we'll just dump the
+                // old object and re-awake it with the new name. This will
+                // also get the .LONGNAME stuff right then.
+                if (pNotify->CNInfo.bAction == RCNF_OLDNAME)
+                    pNotify->CNInfo.bAction = RCNF_FILE_DELETED;
+                else if (pNotify->CNInfo.bAction == RCNF_NEWNAME)
+                    pNotify->CNInfo.bAction = RCNF_FILE_ADDED;
 
                 // store ptr to short name
                 pNotify->pShortName = pLastBackslash + 1;
@@ -890,7 +928,6 @@ VOID FindFolderForNotification(PXWPNOTIFY pNotify,
                 // terminate path name so we get the folder path
                 *pLastBackslash = '\0';
 
-                // request the WPS notify semaphore
                 TRY_LOUD(excpt2)
                 {
                     BOOL    fRefreshFolderOnOpen = FALSE;
@@ -921,7 +958,7 @@ VOID FindFolderForNotification(PXWPNOTIFY pNotify,
                             // we'll wait ten seconds for this -- if we can't
                             // get the mutex in that time, we'll just drop
                             // the notification
-                            if (fSemOwned = wpshGetNotifySem(10 * 1000))
+                            if (fSemOwned = fdrGetNotifySem(10 * 1000))
                             {
                                 // see if it's populated; we can safely
                                 // drop the notification if the folder
@@ -985,7 +1022,7 @@ VOID FindFolderForNotification(PXWPNOTIFY pNotify,
                 } END_CATCH();
 
                 if (fSemOwned)
-                    wpshReleaseNotifySem();
+                    fdrReleaseNotifySem();
             } // if (pLastBackslash)
         }
         break;
@@ -1044,7 +1081,7 @@ MRESULT EXPENTRY fnwpFindFolder(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             {
                 if (pLastValidFolder)
                 {
-                    if (fSemOwned = wpshGetNotifySem(10 * 1000))
+                    if (fSemOwned = fdrGetNotifySem(10 * 1000))
                     {
                         // create an XWPNOTIFY with the special "full refresh" flag
                         PXWPNOTIFY pNew = (PXWPNOTIFY)malloc(sizeof(XWPNOTIFY));
@@ -1083,7 +1120,7 @@ MRESULT EXPENTRY fnwpFindFolder(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
     } END_CATCH();
 
     if (fSemOwned)
-        wpshReleaseNotifySem();
+        fdrReleaseNotifySem();
 
     return (mrc);
 }
@@ -1159,8 +1196,8 @@ VOID PostXWPNotify(PCNINFO pCNInfo)
     ULONG   cbThis =   sizeof(XWPNOTIFY)
                      + pCNInfo->cbName
                      + 1;
-    PXWPNOTIFY pInfo2 = (PXWPNOTIFY)malloc(cbThis);
-    if (pInfo2)
+    PXWPNOTIFY pInfo2;
+    if (pInfo2 = (PXWPNOTIFY)malloc(cbThis))
     {
         // copy string and make it zero-terminated
         memcpy(&pInfo2->CNInfo,
@@ -1326,8 +1363,13 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
                                         case RCNF_FILE_DELETED:
                                         case RCNF_DIR_ADDED:
                                         case RCNF_DIR_DELETED:
+                                        // RCNF_MOVED_IN
+                                        // RCNF_MOVED_OUT
+                                        case RCNF_CHANGED:      // V0.9.16 (2001-10-28) [umoeller]
                                         case RCNF_OLDNAME:
                                         case RCNF_NEWNAME:
+                                        // RCNF_DEVICE_ATTACHED
+                                        // RCNF_DEVICE_DETACHED
                                             PostXWPNotify(pcniThis);
                                     }
 

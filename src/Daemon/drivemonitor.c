@@ -191,6 +191,7 @@ BOOL LockDrivesList(VOID)
     }
 
     return (!WinRequestMutexSem(G_hmtxDrivesList, SEM_INDEFINITE_WAIT));
+        // WinRequestMutexSem works even if the thread has no message queue
 }
 
 /*

@@ -183,7 +183,7 @@ PCLASSRECORDCORE clsAddClass2Cnr(HWND hwndCnr,                  // in: cnr to in
                           TRUE, // invalidate
                           (pwpsMyself)
                               ? pwpsMyself->pszClassName
-                              : pscd->pszOrphans,     // "Orphans" string
+                              : pscd->pcszOrphans,     // "Orphans" string
                           usAttrs,
                           1);
 
@@ -512,7 +512,7 @@ VOID clsAddClassTree2Cnr(HWND hwndCnr,
  */
 
 PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
-                                  PSZ pszRootClass,  // in: the "root" class of the display,
+                                  PCSZ pcszRootClass,  // in: the "root" class of the display,
                                                      // e.g. "WPObject" -- make sure this
                                                      // class exists, or nothing happens
                                   PSELECTCLASSDATA pscd)          // in: insertion info struct
@@ -549,7 +549,7 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
      *
      */
 
-    if (pscd->pszOrphans)
+    if (pscd->pcszOrphans)
     {
         // "Orphans" tree requested: load all
         // registered WPS classes.
@@ -617,7 +617,7 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
             //      _buffer[_length] has the items
 
     // get class object of root class to process
-    if (somidRoot = somIdFromString(pszRootClass))
+    if (somidRoot = somIdFromString((PSZ)pcszRootClass))
     {
         PLISTNODE pNode;
 
@@ -632,7 +632,7 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
         // object. So if the title is not right, we need to climb
         // up the parents until we find the "real" root.
         while (     (pRootClassObject)
-                 && (strcmp(_somGetName(pRootClassObject), pszRootClass) != 0)
+                 && (strcmp(_somGetName(pRootClassObject), pcszRootClass))
               )
             pRootClassObject = _somGetParent(pRootClassObject);
 
@@ -672,7 +672,7 @@ PWPSCLASSESINFO clsWpsClasses2Cnr(HWND hwndCnr, // in: guess what this is
                 // some classes that are not)
                 while (pObjClass)
                 {
-                    if (strcmp(pwpsNew->pszClassName, pObjClass->pszClassName) == 0)
+                    if (!strcmp(pwpsNew->pszClassName, pObjClass->pszClassName))
                         break;
                     else
                         pObjClass = pObjClass->pNext;
@@ -870,7 +870,8 @@ MRESULT EXPENTRY fnwpSelectWPSClass(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
         {
             PRECORDCORE preccSelected;
             HPOINTER hptrOld = winhSetWaitPointer();
-            pscd->pwpsc = clsWpsClasses2Cnr(pscd->hwndCnr, pscd->pszRootClass,
+            pscd->pwpsc = clsWpsClasses2Cnr(pscd->hwndCnr,
+                                            pscd->pcszRootClass,
                                             pscd);  // also contains callback
             // scroll cnr to the item that is selected
             preccSelected = WinSendMsg(pscd->hwndCnr, CM_QUERYRECORDEMPHASIS,

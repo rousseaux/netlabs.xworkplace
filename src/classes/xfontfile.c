@@ -66,6 +66,7 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\prfh.h"               // INI file helper routines
 
 // SOM headers which don't crash with prec. header files
@@ -160,7 +161,7 @@ SOM_Scope void  SOMLINK fonf_wpObjectReady(XWPFontFile *somSelf,
                          FALSE))        // not qualified... we need the key in "PM_Fonts"
     {
         ULONG cb = 0;
-        strupr(szFilename);
+        nlsUpper(szFilename, 0);
         if (   (PrfQueryProfileSize(HINI_USER,
                                     (PSZ)PMINIAPP_FONTS, // "PM_Fonts",
                                     szFilename,
@@ -203,8 +204,10 @@ SOM_Scope BOOL  SOMLINK fonf_wpQueryDefaultHelp(XWPFontFile *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      this class methods allows the class to
- *      initialize itself.
+ *      this WPObject class method gets called when a class
+ *      is loaded by the WPS (probably from within a
+ *      somFindClass call) and allows the class to initialize
+ *      itself.
  */
 
 SOM_Scope void  SOMLINK fonfM_wpclsInitData(M_XWPFontFile *somSelf)

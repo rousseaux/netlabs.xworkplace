@@ -349,7 +349,7 @@ void InsertDrivers(HWND hwndCnr,              // in: container
                     precc->arc = arc;
 
                 // store driver specs
-                precc->pDriverSpec = pDriverSpec2Store;
+                precc->pDriverSpec = pDriverSpec2Store; // can be NULL
 
                 cnrhInsertRecords(hwndCnr,
                                   (PRECORDCORE)preccHeading, // parent
@@ -491,11 +491,11 @@ PLINKLIST InsertDriverCategories(HWND hwndCnr,
                     if (!pSpec->pszDescription)
                         break;  // do
 
-                    if (stricmp(pSpec->pszKeyword, "BASEDEV=") == 0)
+                    if (!stricmp(pSpec->pszKeyword, "BASEDEV="))
                         pSpec->ulFlags |= DRVF_BASEDEV;
-                    else if (stricmp(pSpec->pszKeyword, "DEVICE=") == 0)
+                    else if (!stricmp(pSpec->pszKeyword, "DEVICE="))
                         pSpec->ulFlags |= DRVF_DEVICE;
-                    else if (stricmp(pSpec->pszKeyword, "IFS=") == 0)
+                    else if (!stricmp(pSpec->pszKeyword, "IFS="))
                         pSpec->ulFlags |= DRVF_IFS;
                     else
                         // RUN=, CALL=, etc.
@@ -1045,16 +1045,16 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                        ddd.szParams);
 
                     // backup parameters
-                    pszParamsBackup = strdup(ddd.szParams);
-
-                    if (precc->pDriverSpec->pfnShowDriverDlg(pcnbp->hwndDlgPage,
-                                                             &ddd))
+                    if (    (pszParamsBackup = strdup(ddd.szParams))
+                         && (precc->pDriverSpec->pfnShowDriverDlg(pcnbp->hwndDlgPage,
+                                                                  &ddd))
+                       )
                     {
                         // "OK" pressed:
                         // the dialog func should have modified
                         // szParams now,
                         // transfer szParams to MLE on page
-                        if (strcmp(pszParamsBackup, ddd.szParams) != 0)
+                        if (strcmp(pszParamsBackup, ddd.szParams))
                         {
                             // something changed:
                             WinSetWindowText(hwndMLE,
@@ -1066,7 +1066,8 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         }
                     }
 
-                    free(pszParamsBackup);
+                    if (pszParamsBackup)
+                        free(pszParamsBackup);
                 }
             }
         break;
@@ -1128,7 +1129,7 @@ MRESULT cfgDriversItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     precc->szDriverNameFound,
                     szNewParams);
 
-            if (strcmp(precc->szConfigSysLine, szNewLine) == 0)
+            if (!strcmp(precc->szConfigSysLine, szNewLine))
             {
                 // no changes made:
                 PSZ  apszTable = precc->szDriverNameOnly;

@@ -672,6 +672,7 @@ BOOL LockConfigCache(VOID)
     }
     else
         brc = !WinRequestMutexSem(G_hmtxConfigContent, SEM_INDEFINITE_WAIT);
+            // WinRequestMutexSem works even if the thread has no message queue
 
     return (brc);
 }
@@ -861,7 +862,8 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
             hwndFrame = WinQueryWindow(hwndCnr, QW_PARENT);
 
         // store mouse pointer position for creating objects from templates
-        WinQueryMsgPos(G_habThread1, &G_ptlMouseMenu);      // V0.9.16 (2001-10-23) [umoeller]
+        WinQueryMsgPos(G_habThread1,
+                       &G_ptlMouseMenu);   // V0.9.16 (2001-10-23) [umoeller]
 
         #ifdef DEBUG_MENUS
             _Pmpf(("mnuModifyFolderPopupMenu, hwndCnr: 0x%lX", hwndCnr));

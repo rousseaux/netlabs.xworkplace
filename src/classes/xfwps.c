@@ -499,7 +499,10 @@ SOM_Scope BOOL  SOMLINK xfwps_wpAddSettingsPages(XFldWPS *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      initialize XFldWPS class data.
+ *      this WPObject class method gets called when a class
+ *      is loaded by the WPS (probably from within a
+ *      somFindClass call) and allows the class to initialize
+ *      itself.
  *
  *@@changed V0.9.0 [umoeller]: added class object to KERNELGLOBALS
  */

@@ -303,7 +303,10 @@ SOM_Scope XWPNetwork*  SOMLINK xnwM_xwpclsQueryNetworkFolder(M_XWPNetwork *somSe
 
 /*
  *@@ wpclsInitData:
- *
+ *      this WPObject class method gets called when a class
+ *      is loaded by the WPS (probably from within a
+ *      somFindClass call) and allows the class to initialize
+ *      itself.
  */
 
 SOM_Scope void  SOMLINK xnwM_wpclsInitData(M_XWPNetwork *somSelf)

@@ -902,8 +902,10 @@ LONG EXPENTRY CompareTrashSize(PULONG pul1,     // ptr to ul1
 
 /*
  *@@ wpclsInitData:
- *      this class methods allows the class to
- *      initialize itself.
+ *      this WPObject class method gets called when a class
+ *      is loaded by the WPS (probably from within a
+ *      somFindClass call) and allows the class to initialize
+ *      itself.
  *
  *@@changed V0.9.4 (2000-08-03) [umoeller]: KERNELGLOBALS flag was wrong, fixed
  *@@changed V0.9.12 (2001-05-18) [umoeller]: fixed sort by size and date

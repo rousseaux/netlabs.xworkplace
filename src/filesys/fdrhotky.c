@@ -569,7 +569,7 @@ PXFLDHOTKEY FindHotkeyFromLBSel(HWND hwndDlg,
 
     for (i = 0; i < FLDRHOTKEYCOUNT; i++)
     {
-        if (strcmp(szTemp, G_szLBEntries[i]) == 0)
+        if (!strcmp(szTemp, G_szLBEntries[i]))
         {
             LBIndex = i;
             break;

@@ -109,15 +109,15 @@
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
-#include "startshut\archives.h"         // WPSArcO declarations
+#include "startshut\archives.h"         // archiving declarations
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
 
 /********************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 static ARCHIVINGSETTINGS   G_ArcSettings;
@@ -131,9 +131,9 @@ static CHAR                G_szArcBaseFilename[CCHMAXPATH] = "";
 #define ARCOFS_MAXARCHIVES              0x000D7
 
 /********************************************************************
- *                                                                  *
- *   "Archives" page replacement in WPDesktop                       *
- *                                                                  *
+ *
+ *   "Archives" page replacement in WPDesktop
+ *
  ********************************************************************/
 
 #define PERCENTAGES_COUNT 11
@@ -404,9 +404,9 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 }
 
 /********************************************************************
- *                                                                  *
- *   WPSArcO settings                                               *
- *                                                                  *
+ *
+ *   Archiving settings
+ *
  ********************************************************************/
 
 /*
@@ -500,44 +500,10 @@ BOOL arcSaveSettings(VOID)
 }
 
 /********************************************************************
- *                                                                  *
- *   Archiving Enabling                                             *
- *                                                                  *
- ********************************************************************/
-
-/*
- * GetMarkerFilename:
  *
- */
-
-/* BOOL GetMarkerFilename(PSZ pszFilename) // should be 2*CCHMAXPATH in size
-{
-    BOOL brc = FALSE;
-
-    ULONG ulHandle;
-    ULONG cbHandle = sizeof(ulHandle);
-    if (PrfQueryProfileData(HINI_USER,
-                            (PSZ)WPINIAPP_LOCATION, // "PM_Workplace:Location",
-                            (PSZ)WPOBJID_DESKTOP, // "<WP_DESKTOP>",
-                            &ulHandle,
-                            &cbHandle))
-    {
-        // ulHandle now has handle of Desktop;
-        // get its path from OS2SYS.INI
-        if (wphQueryPathFromHandle(HINI_SYSTEM,
-                                   ulHandle,
-                                   pszFilename,
-                                   2*CCHMAXPATH))
-        {
-            strcat(pszFilename, "\\");
-            strcat(pszFilename, XWORKPLACE_ARCHIVE_MARKER);
-            _Pmpf(("Marker file: %s", pszFilename));
-            brc = TRUE;
-        }
-    }
-
-    return (brc);
-} */
+ *   Archiving Enabling
+ *
+ ********************************************************************/
 
 /*
  *@@ arcSetArchiveByte:
@@ -619,6 +585,23 @@ APIRET arcQueryArchiveByte(UCHAR *pByte,        // out: read byte
                "Got error %d");
 
     return arc;
+}
+
+/*
+ *@@ arcForceNoArchiving:
+ *      enforces that all archiving is disabled, both in
+ *      XWP and the WPS.
+ *
+ *@@added V0.9.16 (2001-10-25) [umoeller]
+ */
+
+VOID arcForceNoArchiving(VOID)
+{
+    // force loading of settings
+    arcQuerySettings();
+    arcSwitchArchivingOn(FALSE);
+    G_ArcSettings.ulArcFlags &= ~ARCF_ENABLED;
+    arcSaveSettings();
 }
 
 /*
@@ -1016,7 +999,7 @@ BOOL arcCheckINIFiles(double* pdPercent,
 
             // ignore this app?
             if (pszIgnoreApp)
-                if (strcmp(pszIgnoreApp, pApp2) == 0)
+                if (!strcmp(pszIgnoreApp, pApp2))
                     fIgnore = TRUE;
 
             if (!fIgnore)

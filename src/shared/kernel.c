@@ -129,7 +129,7 @@
 
 #include "security\xwpsecty.h"          // XWorkplace Security
 
-#include "startshut\archives.h"         // WPSArcO declarations
+#include "startshut\archives.h"         // archiving declarations
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
 
 // headers in /hook
@@ -265,6 +265,7 @@ BOOL krnLock(const char *pcszSourceFile,        // in: __FILE__
 
     // subsequent calls:
     if (WinRequestMutexSem(G_hmtxCommonLock, 10*1000) == NO_ERROR)
+        // WinRequestMutexSem works even if the thread has no message queue
     {
         // store owner (these are const strings, this is safe)
         G_pcszReqSourceFile = pcszSourceFile;
@@ -710,8 +711,8 @@ BOOL krnReplaceRefreshEnabled(VOID)
 VOID krnSetProcessStartupFolder(BOOL fReuse)
 {
     PKERNELGLOBALS pKernelGlobals = NULL;
-    ULONG ulNesting;
-    DosEnterMustComplete(&ulNesting);
+    // ULONG ulNesting;
+    // DosEnterMustComplete(&ulNesting);
     TRY_LOUD(excpt1)
     {
         pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
@@ -730,7 +731,7 @@ VOID krnSetProcessStartupFolder(BOOL fReuse)
     if (pKernelGlobals)
         krnUnlockGlobals();
 
-    DosExitMustComplete(&ulNesting);
+    // DosExitMustComplete(&ulNesting);
 }
 
 /*
@@ -903,15 +904,27 @@ VOID krn_T1M_DaemonReady(VOID)
  *@@changed V0.9.4 (2000-06-15) [umoeller]: fixed VIO windows in background
  *@@changed V0.9.7 (2000-11-29) [umoeller]: fixed memory leak
  *@@changed V0.9.13 (2001-06-23) [umoeller]: now using winhQuerySwitchList
+ *@@changed V0.9.16 (2001-10-25) [umoeller]: now disallowing object open during startup and shutdown
  */
 
 VOID krn_T1M_OpenObjectFromHandle(HWND hwndObject,
                                   MPARAM mp1,
                                   MPARAM mp2)
 {
-    if (mp1)
+    HOBJECT hobjStart;
+
+    // make sure the desktop is already fully populated
+    // V0.9.16 (2001-10-25) [umoeller]
+    if (!G_KernelGlobals.fDesktopPopulated)
+        return;
+
+    // make sure we're not shutting down
+    // V0.9.16 (2001-10-25) [umoeller]
+    if (xsdIsShutdownRunning())
+        return;
+
+    if (hobjStart = (HOBJECT)mp1)
     {
-        HOBJECT hobjStart = (HOBJECT)mp1;
         if ((ULONG)hobjStart < 0xFFFF0000)
         {
             // normal object handle:

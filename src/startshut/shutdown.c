@@ -2891,8 +2891,8 @@ PSHUTLISTITEM xsdItemFromPID(PLINKLIST pList,
     BOOL            fAccess = FALSE,
                     fSemOwned = FALSE;
 
-    ULONG           ulNesting = 0;
-    DosEnterMustComplete(&ulNesting);
+    // ULONG           ulNesting = 0;
+    // DosEnterMustComplete(&ulNesting);
 
     TRY_QUIET(excpt1)
     {
@@ -2926,7 +2926,7 @@ PSHUTLISTITEM xsdItemFromPID(PLINKLIST pList,
         fSemOwned = FALSE;
     }
 
-    DosExitMustComplete(&ulNesting);
+    // DosExitMustComplete(&ulNesting);
 
     return (pItem);
 }
@@ -2948,8 +2948,8 @@ PSHUTLISTITEM xsdItemFromSID(PLINKLIST pList,
     BOOL          fAccess = FALSE,
                   fSemOwned = FALSE;
 
-    ULONG           ulNesting = 0;
-    DosEnterMustComplete(&ulNesting);
+    // ULONG           ulNesting = 0;
+    // DosEnterMustComplete(&ulNesting);
 
     TRY_QUIET(excpt1)
     {
@@ -2983,7 +2983,7 @@ PSHUTLISTITEM xsdItemFromSID(PLINKLIST pList,
         fSemOwned = FALSE;
     }
 
-    DosExitMustComplete(&ulNesting);
+    // DosExitMustComplete(&ulNesting);
 
     return (pItem);
 }
@@ -3003,8 +3003,8 @@ ULONG xsdCountRemainingItems(PSHUTDOWNDATA pData)
     BOOL    fShutdownSemOwned = FALSE,
             fSkippedSemOwned = FALSE;
 
-    ULONG           ulNesting = 0;
-    DosEnterMustComplete(&ulNesting);
+    // ULONG           ulNesting = 0;
+    // DosEnterMustComplete(&ulNesting);
 
     TRY_QUIET(excpt1)
     {
@@ -3030,7 +3030,7 @@ ULONG xsdCountRemainingItems(PSHUTDOWNDATA pData)
         fSkippedSemOwned = FALSE;
     }
 
-    DosExitMustComplete(&ulNesting);
+    // DosExitMustComplete(&ulNesting);
 
     return (ulrc);
 }
@@ -3093,8 +3093,8 @@ PSHUTLISTITEM xsdQueryCurrentItem(PSHUTDOWNDATA pData)
                     fSkippedSemOwned = FALSE;
     PSHUTLISTITEM   pliShutItem = 0;
 
-    ULONG           ulNesting = 0;
-    DosEnterMustComplete(&ulNesting);
+    // ULONG           ulNesting = 0;
+    // DosEnterMustComplete(&ulNesting);
 
     TRY_QUIET(excpt1)
     {
@@ -3115,7 +3115,7 @@ PSHUTLISTITEM xsdQueryCurrentItem(PSHUTDOWNDATA pData)
                     PSHUTLISTITEM pliSkipItem = pSkipNode->pItemData;
                     xsdLongTitle(szShutItem, pliShutItem);
                     xsdLongTitle(szSkipItem, pliSkipItem);
-                    if (strcmp(szShutItem, szSkipItem) == 0)
+                    if (!strcmp(szShutItem, szSkipItem))
                         /* current shut item is on skip list:
                            break (==> take next shut item */
                         break;
@@ -3148,7 +3148,7 @@ PSHUTLISTITEM xsdQueryCurrentItem(PSHUTDOWNDATA pData)
         fSkippedSemOwned = FALSE;
     }
 
-    DosExitMustComplete(&ulNesting);
+    // DosExitMustComplete(&ulNesting);
 
     return (pliShutItem);
 }
@@ -3313,11 +3313,11 @@ LONG xsdIsClosable(HAB hab,                 // in: caller's anchor block
 #ifdef __DEBUG__
     // if we're in debug mode, skip the PMPRINTF window
     // because we want to see debug output
-    else if (strncmp(szSwUpperTitle, "PMPRINTF", 8) == 0)
+    else if (!strncmp(szSwUpperTitle, "PMPRINTF", 8))
         return (XSD_DEBUGNEED);
     // skip VAC debugger, which is probably debugging
     // PMSHELL.EXE
-    else if (strcmp(szSwUpperTitle, "ICSDEBUG.EXE") == 0)
+    else if (!strcmp(szSwUpperTitle, "ICSDEBUG.EXE"))
         return (XSD_DEBUGNEED);
 #endif
 
@@ -3482,8 +3482,8 @@ void xsdUpdateListBox(PSHUTDOWNDATA pShutdownData,
 
     BOOL            fSemOwned = FALSE;
 
-    ULONG           ulNesting = 0;
-    DosEnterMustComplete(&ulNesting);
+    // ULONG           ulNesting = 0;
+    // DosEnterMustComplete(&ulNesting);
 
     TRY_QUIET(excpt1)
     {
@@ -3518,7 +3518,7 @@ void xsdUpdateListBox(PSHUTDOWNDATA pShutdownData,
         fSemOwned = FALSE;
     }
 
-    DosExitMustComplete(&ulNesting);
+    // DosExitMustComplete(&ulNesting);
 }
 
 /*
@@ -3609,7 +3609,12 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
 
     TRY_QUIET(excpt1)
     {
-        brc = _wpSaveImmediate(pobjThis);
+        if (pobjThis == pShutdownData->SDConsts.pActiveDesktop)
+            // we already saved the desktop, so skip this
+            // V0.9.16 (2001-10-25) [umoeller]
+            brc = TRUE;
+        else
+            brc = _wpSaveImmediate(pobjThis);
     }
     CATCH(excpt1)
     {
@@ -3736,6 +3741,7 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
  *@@changed V0.9.12 (2001-05-29) [umoeller]: StartShutdownThread now uses THRF_PMMSGQUEUE so Wininitialize etc. has been removed here
  *@@changed V0.9.13 (2001-06-17) [umoeller]: no longer broadcasting WM_SAVEAPPLICATION, going back to old code
  *@@changed V0.9.13 (2001-06-19) [umoeller]: now pausing while exception handler is still running somewhere
+ *@@changed V0.9.16 (2001-10-25) [umoeller]: couple of extra hacks for saving desktop
  */
 
 void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
@@ -4118,17 +4124,42 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
             // V0.9.9 (2001-04-04) [umoeller]
             winhSleep(300);
 
-            _wpSaveImmediate(pShutdownData->SDConsts.pActiveDesktop);
-            _wpClose(pShutdownData->SDConsts.pActiveDesktop);
-            _wpWaitForClose(pShutdownData->SDConsts.pActiveDesktop,
-                            NULLHANDLE,     // all views
-                            0xFFFFFFFF,
-                            5*1000,     // timeout value
-                            TRUE);      // force close for new views
-                        // added V0.9.4 (2000-07-11) [umoeller]
+            if (pShutdownData->SDConsts.pActiveDesktop)
+            {
+                CHAR szDesktop[CCHMAXPATH];
+                // set <WP_DESKTOP> ID on desktop; sometimes this gets
+                // lost during shutdown
+                // V0.9.16 (2001-10-25) [umoeller]
+                if (_wpQueryFilename(pShutdownData->SDConsts.pActiveDesktop,
+                                     szDesktop,
+                                     TRUE))
+                {
+                    // save last active desktop in OS2.INI in case
+                    // <WP_DESKTOP> gets broken so we can get the
+                    // path in the new panic dialog; see
+                    // initRepairDesktopIfBroken
+                    // V0.9.16 (2001-10-25) [umoeller]
+                    PrfWriteProfileString(HINI_USER,
+                                          (PSZ)INIAPP_XWORKPLACE,
+                                          (PSZ)INIKEY_LASTDESKTOPPATH,
+                                          szDesktop);
+                }
 
-            // give the desktop time to save icon positions
-            winhSleep(300); // V0.9.12 (2001-04-29) [umoeller]
+                _wpSetObjectID(pShutdownData->SDConsts.pActiveDesktop,
+                               (PSZ)WPOBJID_DESKTOP); // "<WP_DESKTOP>",
+
+                _wpSaveImmediate(pShutdownData->SDConsts.pActiveDesktop);
+                _wpClose(pShutdownData->SDConsts.pActiveDesktop);
+                _wpWaitForClose(pShutdownData->SDConsts.pActiveDesktop,
+                                NULLHANDLE,     // all views
+                                0xFFFFFFFF,
+                                5*1000,     // timeout value
+                                TRUE);      // force close for new views
+                            // added V0.9.4 (2000-07-11) [umoeller]
+
+                // give the desktop time to save icon positions
+                winhSleep(300); // V0.9.12 (2001-04-29) [umoeller]
+            }
 
             // close WarpCenter next (V0.9.5, from V0.9.3)
             if (somIsObj(pShutdownData->SDConsts.pKernelGlobals->pAwakeWarpCenter))
@@ -5944,7 +5975,7 @@ void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
                          && (!G_tiUpdateThread.fExit)
                       )
                 {
-                    ULONG ulNesting = 0;
+                    // ULONG ulNesting = 0;
 
                     // this is the second loop: we stay in here until the
                     // task list has changed; for monitoring this, we create
@@ -5963,7 +5994,7 @@ void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
                     // count items in the list of the Shutdown thread;
                     // here we need a mutex semaphore, because the
                     // Shutdown thread might be working on this too
-                    DosEnterMustComplete(&ulNesting);
+                    // DosEnterMustComplete(&ulNesting);
                     TRY_LOUD(excpt2)
                     {
                         fSemOwned = (WinRequestMutexSem(pShutdownData->hmtxShutdown, 4000) == NO_ERROR);
@@ -5975,7 +6006,7 @@ void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
                         }
                     }
                     CATCH(excpt2) {} END_CATCH();
-                    DosExitMustComplete(&ulNesting);
+                    // DosExitMustComplete(&ulNesting);
 
                     if (!G_tiUpdateThread.fExit)
                         DosSleep(100);

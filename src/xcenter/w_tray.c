@@ -188,6 +188,20 @@
 
 /* ******************************************************************
  *
+ *   Global variables
+ *
+ ********************************************************************/
+
+// moved these two from the private widget data to the
+// globals here; also changed tray _icon_ to bitmap
+// V0.9.16 (2001-10-28) [umoeller]
+static HBITMAP      G_hbmTray = -1;     // tray icon
+static LONG         G_cxTrayBmp = 0,
+                    G_cyTrayBmp = 0;
+static HPOINTER     G_hptrHand = -1;    // hand pointer
+
+/* ******************************************************************
+ *
  *   Private tray widget instance data
  *
  ********************************************************************/
@@ -232,9 +246,6 @@ typedef struct _TRAYWIDGETPRIVATE
 
     TRAYSETUP       Setup;
             // widget settings that correspond to a setup string
-
-    HPOINTER        hptrTray,       // tray icon
-                    hptrHand;       // hand pointer
 
     BOOL            fMouseButton1Down,
                     fButtonSunk,
@@ -341,7 +352,10 @@ VOID ReformatTray(PXCENTERWINDATA pXCenterData,
     PPRIVATEWIDGETVIEW pTrayWidgetView = (PPRIVATEWIDGETVIEW)pPrivate->pWidget;
 
     // leftmost position of subwidgets:
-    LONG xStart = pGlobals->cxMiniIcon + 3;
+    LONG xStart =   // pGlobals->cxMiniIcon
+                    G_cxTrayBmp         // V0.9.16 (2001-10-28) [umoeller]
+                  + 2
+                  + 3;
             // tray button size plus an extra pixel
     if (0 == (pGlobals->flDisplayStyle & XCS_FLATBUTTONS))
         xStart += 4;     // 2*2 for button borders
@@ -743,6 +757,7 @@ PPRIVATEWIDGETSETTING YwgtCreateSubwidget(PTRAYWIDGETPRIVATE pPrivate,
  *@@ YwgtCreate:
  *      implementation for WM_CREATE in fnwpTrayWidget.
  *
+ *@@changed V0.9.16 (2001-10-28) [umoeller]: turned tray icon into bitmap and made it vertical
  */
 
 MRESULT YwgtCreate(HWND hwnd, MPARAM mp1)
@@ -810,13 +825,33 @@ MRESULT YwgtCreate(HWND hwnd, MPARAM mp1)
     pWidget->pcszHelpLibrary = cmnQueryHelpLibrary();
     pWidget->ulHelpPanelID = ID_XSH_WIDGET_TRAY;
 
-    // load tray icons
-    pPrivate->hptrTray = WinLoadPointer(HWND_DESKTOP,
+    // load tray bitmap V0.9.16 (2001-10-28) [umoeller]
+    if (G_hbmTray == -1)
+    {
+        HPS hps = WinGetPS(hwnd);
+        BITMAPINFOHEADER2 bmih2;
+        if (!(G_hbmTray = GpiLoadBitmap(hps,
                                         hmodRes,
-                                        ID_ICON_TRAY);
-    pPrivate->hptrHand  = WinLoadPointer(HWND_DESKTOP,
-                                         hmodRes,
-                                         ID_POINTER_HAND);
+                                        ID_BITMAP_TRAY,
+                                        0,
+                                        0)))
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "Cannot load tray bitmap");
+        else
+        {
+            bmih2.cbFix = sizeof(bmih2);
+            GpiQueryBitmapInfoHeader(G_hbmTray,
+                                     &bmih2);
+            G_cxTrayBmp = bmih2.cx;
+            G_cyTrayBmp = bmih2.cy;
+        }
+        WinReleasePS(hps);
+    }
+    // load tray icon V0.9.16 (2001-10-28) [umoeller]
+    if (G_hptrHand == -1)
+        G_hptrHand = WinLoadPointer(HWND_DESKTOP,
+                                    hmodRes,
+                                    ID_POINTER_HAND);
 
     WinPostMsg(hwnd,
                XCM_SWITCHTOTRAY,
@@ -944,7 +979,7 @@ VOID YwgtPaint(HWND hwnd)
         // CHAR            sz[100];
         const XCENTERGLOBALS *pGlobals = pWidget->pGlobals;
         XBUTTONDATA     xbd;
-        ULONG           fl = 0;
+        ULONG           fl = XBF_BITMAP;        // V0.9.16 (2001-10-28) [umoeller]
 
         HPS hps = WinBeginPaint(hwnd, NULLHANDLE, NULL);
         gpihSwitchToRGB(hps);
@@ -960,8 +995,11 @@ VOID YwgtPaint(HWND hwnd)
         xbd.rcl.xLeft = 0;
         xbd.rcl.yBottom = 0;
         xbd.rcl.yTop = rclWin.yTop;
-        xbd.rcl.xRight = pGlobals->cxMiniIcon + 2;
-        if (0 == (pGlobals->flDisplayStyle & XCS_FLATBUTTONS))
+        xbd.rcl.xRight =   // pGlobals->cxMiniIcon
+                           G_cxTrayBmp      // V0.9.16 (2001-10-28) [umoeller]
+                         + 2
+                         + 2;
+        if (!(pGlobals->flDisplayStyle & XCS_FLATBUTTONS))
             xbd.rcl.xRight += 4;     // 2*2 for button borders
         else
             // flat buttons:
@@ -971,12 +1009,13 @@ VOID YwgtPaint(HWND hwnd)
            )
             fl |= XBF_PRESSED;
 
-        xbd.cxMiniIcon = pGlobals->cxMiniIcon;
+        xbd.cxIconOrBitmap = G_cxTrayBmp;
+        xbd.cyIconOrBitmap = G_cyTrayBmp;           // V0.9.16 (2001-10-28) [umoeller]
         xbd.lcol3DDark = pGlobals->lcol3DDark;
         xbd.lcol3DLight = pGlobals->lcol3DLight;
         xbd.lMiddle = pGlobals->lcolClientBackground; // WinQuerySysColor(HWND_DESKTOP, SYSCLR_BUTTONMIDDLE, 0);
 
-        xbd.hptr = pPrivate->hptrTray;
+        xbd.hptr = G_hbmTray;           // V0.9.16 (2001-10-28) [umoeller]
 
         ctlPaintXButton(hps,
                         fl,         // note, XBD_BACKGROUND is never set
@@ -1560,7 +1599,7 @@ BOOL YwgtSaveSubwidgetSetup(HWND hwnd,
                     // update the setup string
                     if (pSubwidget->Public.pszSetupString)
                         free(pSubwidget->Public.pszSetupString);
-                    pSubwidget->Public.pszSetupString = strhdup(pcszSetupString);
+                    pSubwidget->Public.pszSetupString = strhdup(pcszSetupString, NULL);
 
                     // now recompose our own setup string, which
                     // will include the subwidget's new setup string,
@@ -1711,8 +1750,8 @@ VOID YwgtDestroy(HWND hwnd)
         SwitchToTray(pPrivate,
                      -1);
 
-        WinDestroyPointer(pPrivate->hptrTray);
-        WinDestroyPointer(pPrivate->hptrHand);
+        // WinDestroyPointer(pPrivate->hptrTray);
+        // WinDestroyPointer(pPrivate->hptrHand);
 
         // if we had built a tray menu before,
         // invalidate that
@@ -1802,7 +1841,7 @@ MRESULT EXPENTRY fnwpTrayWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                 SHORT sx = SHORT1FROMMP(mp1);
                 if ((sx > 0) && (sx < pWidget->pGlobals->cxMiniIcon))
                 {
-                    WinSetPointer(HWND_DESKTOP, pPrivate->hptrHand);
+                    WinSetPointer(HWND_DESKTOP, G_hptrHand);
                     break;
                 }
             }

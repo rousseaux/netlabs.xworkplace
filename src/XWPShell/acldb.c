@@ -139,6 +139,7 @@
 
 #include "helpers\dosh.h"
 #include "helpers\linklist.h"
+#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\stringh.h"
 #include "helpers\tree.h"               // red-black binary trees
 
@@ -777,7 +778,7 @@ APIRET saclVerifyAccess(PCXWPSECURITYCONTEXT pContext,   // in: security context
         PACLDBENTRYNODE pACLEntry = NULL;       // default: not found
 
         PSZ pszDir2 = strdup(pcszResource);
-        strupr(pszDir2);
+        nlsUpper(pszDir2);
 
         _Pmpf(("Authorizing %s", pszDir2));
 

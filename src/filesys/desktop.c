@@ -78,6 +78,7 @@
 #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dialog.h"             // dialog helpers
 #include "helpers\gpih.h"               // GPI helper routines
+#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\shapewin.h"           // shaped windows helper functions
 #include "helpers\standards.h"          // some standard macros
@@ -171,7 +172,7 @@ BOOL dtpSetup(WPDesktop *somSelf,
         xsdQueryShutdownSettings(&xsd);
 
         // convert params to upper case
-        strupr(szValue);
+        nlsUpper(szValue, 0);
 
         pszToken = strtok(szValue, ", ");
         if (pszToken)
@@ -982,6 +983,7 @@ DLGHITEM dlgDesktopStartup[] =
  *@@changed V0.9.1 (2000-02-09) [umoeller]: added NumLock support to this page
  *@@changed V0.9.13 (2001-06-14) [umoeller]: fixed Undo for boot logo file
  *@@changed V0.9.14 (2001-08-21) [umoeller]: added "write startuplog" setting
+ *@@changecd V0.9.16 (2001-09-29) [umoeller]: now using dialog formatter
  */
 
 VOID dtpStartupInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct

@@ -634,7 +634,7 @@ BOOL IsSwlistItemAddable(HWND hwndCombo,
             while (pNode)
             {
                 PSZ pszFilterThis = (PSZ)pNode->pItemData;
-                if (strcmp(pszFilterThis, szFilter) == 0)
+                if (!strcmp(pszFilterThis, szFilter))
                 {
                     fEnableComboAdd = FALSE;
                     break;

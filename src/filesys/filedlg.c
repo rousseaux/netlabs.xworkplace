@@ -187,7 +187,7 @@ typedef struct _FILEDLGDATA
 
     // "add children" thread info (keeps running, has object window)
     THREADINFO  tiAddChildren;
-    ULONG       tidAddChildrenRunning;
+    volatile TID tidAddChildrenRunning;
     HWND        hwndAddChildren;        // "add children" object window (fnwpAddChildren)
 
     LINKLIST    llDriveObjectsInserted; // linked list of plain WPObject* pointers
@@ -203,7 +203,7 @@ typedef struct _FILEDLGDATA
 
     // transient "insert contents" thread, restarted on every selection
     THREADINFO  tiInsertContents;
-    ULONG       tidInsertContentsRunning;
+    volatile TID tidInsertContentsRunning;
     LINKLIST    llFileObjectsInserted;
 
     // full file name etc., parsed and set by ParseFileString()
@@ -857,8 +857,8 @@ BOOL ctlComboFromEntryField(HWND hwnd,          // in: entry field to be convert
                                         fnwpComboSubclass);
     if (pfnwpOrig)
     {
-        PCOMBODATA pcd = (PCOMBODATA)malloc(sizeof(*pcd));
-        if (pcd)
+        PCOMBODATA pcd;
+        if (pcd = (PCOMBODATA)malloc(sizeof(*pcd)))
         {
             SWP swp;
             BITMAPINFOHEADER2 bmih2;
@@ -982,7 +982,9 @@ ULONG ParseFileString(PFILEDLGDATA pWinData,
 {
     ULONG ulChanged = 0;
 
-    const char  *p;
+    const char  *p = pcszFullFile;
+    ULONG       ulDriveSpecLen = 0;
+    APIRET      arc2;
 
     if (    !(pcszFullFile)
          || !(*pcszFullFile)
@@ -991,63 +993,32 @@ ULONG ParseFileString(PFILEDLGDATA pWinData,
 
     _Pmpf((__FUNCTION__ ": parsing %s", pcszFullFile));
 
-    if (pcszFullFile[1] == ':')
+    if (!(arc2 = doshGetDriveSpec(pcszFullFile,
+                                  pWinData->szDrive,
+                                  &ulDriveSpecLen,
+                                  &pWinData->fUNCDrive)))
     {
-        // local drive specified:
-        if (    (*pcszFullFile >= 'A')
-             && (*pcszFullFile <= 'Z')
-           )
-        {
-            pWinData->szDrive[0] = *pcszFullFile;
-            pWinData->szDrive[1] = ':';
-            pWinData->szDrive[2] = '\0';
-            pWinData->fUNCDrive = FALSE;
-
-            p = pcszFullFile + 2;
-            ulChanged |= FFL_DRIVE;
-        }
-        else
-            // this is not a valid drive:
-            p = NULL;
+        // drive specified (local or UNC):
+        p += ulDriveSpecLen,
+        ulChanged |= FFL_DRIVE;
     }
-    else if (    (pcszFullFile[0] == '\\')
-              && (pcszFullFile[1] == '\\')
-            )
-    {
-        // UNC drive specified:
-        // this better be a full \\SERVER\RESOURCE string
-        PCSZ pResource;
-        if (pResource = strchr(pcszFullFile + 3, '\\'))
-        {
-            // we got at least \\SERVER\RESOURCE:
-            // check if more stuff is coming
-            if (p = strchr(pResource + 1, '\\'))
-                // yes: copy server and resource excluding that backslash
-                strhncpy0(pWinData->szDrive,
-                          pcszFullFile,
-                          p - pcszFullFile);
-            else
-                // server and resource only:
-                strcpy(pWinData->szDrive,
-                       pcszFullFile);
 
-            pWinData->fUNCDrive = TRUE;
-            ulChanged |= FFL_DRIVE;
-        }
-        else
-            // invalid UNC name:
-            p = NULL;
-    }
-    else
-        // no new drive: start at front
-        p = pcszFullFile;
+    _Pmpf(("  doshGetDriveSpec returned %d, len: %d",
+            arc2, ulDriveSpecLen));
+
+    if (    (arc2)
+            // continue if no drive spec given
+         && (arc2 != ERROR_INVALID_PARAMETER)
+       )
+        // some error was detected:
+        return (0);
 
     // get path from there
     if (p && *p)
     {
         // p2 = last backslash
-        const char *p2 = strrchr(p, '\\');
-        if (p2)
+        const char *p2;
+        if (p2 = strrchr(p, '\\'))
         {
             // path specified:
             // ### handle relative paths here
@@ -1326,21 +1297,19 @@ VOID InsertFirstChild(HWND hwndMainClient,              // in: wnd to send XM_IN
 
         TRY_LOUD(excpt1)
         {
-            fFolderLocked = !wpshRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT);
+            fFolderLocked = !fdrRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT);
             if (fFolderLocked)
             {
                 WPObject    *pObject;
                 // POINTL      ptlIcon = {0, 0};
-                somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                        = (somTD_WPFolder_wpQueryContent)wpshResolveFor(pFolder,
-                                                                        NULL,
-                                                                        "wpQueryContent");
+                // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                        // = (somTD_WPFolder_wpQueryContent)wpshResolveFor(pFolder, NULL, "wpQueryContent");
 
                 // 1) count objects
-                for (   pObject = rslv_wpQueryContent(pFolder, NULL, QC_FIRST);
+                // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+                for (   pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                         (pObject) && (!*pfExit);
-                        pObject = rslv_wpQueryContent(pFolder, pObject, QC_NEXT)
-                    )
+                        pObject = *wpshGetNextObjPointer(pObject))
                 {
                     if (IsInsertable(pObject,
                                      TRUE,      // folders only
@@ -1356,7 +1325,7 @@ VOID InsertFirstChild(HWND hwndMainClient,              // in: wnd to send XM_IN
 
         if (fFolderLocked)
         {
-            wpshReleaseFolderMutexSem(pFolder);
+            fdrReleaseFolderMutexSem(pFolder);
             fFolderLocked = FALSE;
         }
 
@@ -1487,20 +1456,19 @@ ULONG InsertFolderContents(HWND hwndMainClient,         // in: wnd to send XM_IN
 
         TRY_LOUD(excpt1)
         {
-            fFolderLocked = !wpshRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT);
+            fFolderLocked = !fdrRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT);
             if (fFolderLocked)
             {
                 WPObject    *pObject;
                 // POINTL      ptlIcon = {0, 0};
-                somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                        = (somTD_WPFolder_wpQueryContent)wpshResolveFor(pFolder,
-                                                                        NULL,
-                                                                        "wpQueryContent");
+                // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                        // = (somTD_WPFolder_wpQueryContent)wpshResolveFor(pFolder, NULL, "wpQueryContent");
 
                 // 1) count objects
-                for (   pObject = rslv_wpQueryContent(pFolder, NULL, QC_FIRST);
+                // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+                for (   pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                         (pObject) && (!*pfExit);
-                        pObject = rslv_wpQueryContent(pFolder, pObject, QC_NEXT)
+                        pObject = *wpshGetNextObjPointer(pObject)
                     )
                 {
                     if (IsInsertable(pObject,
@@ -1519,9 +1487,10 @@ ULONG InsertFolderContents(HWND hwndMainClient,         // in: wnd to send XM_IN
                     else
                     {
                         WPObject **ppThis = papObjects;
-                        for (   pObject = rslv_wpQueryContent(pFolder, NULL, QC_FIRST);
+                        // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+                        for (   pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                                 (pObject) && (!*pfExit);
-                                pObject = rslv_wpQueryContent(pFolder, pObject, QC_NEXT)
+                                pObject = *wpshGetNextObjPointer(pObject)
                             )
                         {
                             if (IsInsertable(pObject,
@@ -1561,7 +1530,7 @@ ULONG InsertFolderContents(HWND hwndMainClient,         // in: wnd to send XM_IN
         CATCH(excpt1) {} END_CATCH();
 
         if (fFolderLocked)
-            wpshReleaseFolderMutexSem(pFolder);
+            fdrReleaseFolderMutexSem(pFolder);
     }
 
     return (cObjects);
@@ -1877,19 +1846,18 @@ VOID BuildDisksList(WPFolder *pDrivesFolder,
 
         TRY_LOUD(excpt1)
         {
-            fFolderLocked = !wpshRequestFolderMutexSem(pDrivesFolder, SEM_INDEFINITE_WAIT);
+            fFolderLocked = !fdrRequestFolderMutexSem(pDrivesFolder, SEM_INDEFINITE_WAIT);
             if (fFolderLocked)
             {
                 WPObject *pObject;
-                somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                        = (somTD_WPFolder_wpQueryContent)wpshResolveFor(pDrivesFolder,
-                                                                        NULL,
-                                                                        "wpQueryContent");
+                // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                        // = (somTD_WPFolder_wpQueryContent)wpshResolveFor(pDrivesFolder, NULL, "wpQueryContent");
 
                 // 1) count objects
-                for (   pObject = rslv_wpQueryContent(pDrivesFolder, NULL, QC_FIRST);
+                // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+                for (   pObject = _wpQueryContent(pDrivesFolder, NULL, QC_FIRST);
                         (pObject);
-                        pObject = rslv_wpQueryContent(pDrivesFolder, pObject, QC_NEXT)
+                        pObject = *wpshGetNextObjPointer(pObject)
                     )
                 {
                     if (_somIsA(pObject, _WPDisk))
@@ -1900,7 +1868,7 @@ VOID BuildDisksList(WPFolder *pDrivesFolder,
         CATCH(excpt1) {} END_CATCH();
 
         if (fFolderLocked)
-            wpshReleaseFolderMutexSem(pDrivesFolder);
+            fdrReleaseFolderMutexSem(pDrivesFolder);
     }
 }
 
@@ -3581,6 +3549,8 @@ HWND fdlgFileDlg(HWND hwndOwner,
                             // select the current directory;
                             // pllToExpand receives records to
                             // add first children to
+
+                    DosBeep(1000, 100);
 
                     WinData.fFileDlgReady = TRUE;
 

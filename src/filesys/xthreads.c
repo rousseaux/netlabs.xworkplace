@@ -264,6 +264,7 @@ BOOL xthrLockAwakeObjectsList(VOID)
     }
     else
         brc = !WinRequestMutexSem(G_hmtxAwakeObjectsList, SEM_INDEFINITE_WAIT);
+            // WinRequestMutexSem works even if the thread has no message queue
 
     return (brc);
 }
@@ -324,6 +325,7 @@ LONG xthrQueryAwakeObjectsCount(VOID)
  *      in fnwpWorkerObject.
  *
  *@@added V0.9.9 (2001-04-04) [umoeller]
+ *@@changed V0.9.16 (2001-10-25) [umoeller]: fixed memory leak
  */
 
 VOID WorkerAddObject(WPObject *pObj2Store)
@@ -343,7 +345,7 @@ VOID WorkerAddObject(WPObject *pObj2Store)
         TRY_QUIET(excpt2)
         {
             // V0.9.9 (2001-2-17) [pr]: fix object count bug
-            if (strcmp(_somGetClassName(pObj2Store), "SmartCenter") == 0)
+            if (!strcmp(_somGetClassName(pObj2Store), G_pcszSmartCenter))
             {
                 // only for the WarpCenter, lock the globals
                 // V0.9.9 (2001-04-04) [umoeller]
@@ -365,22 +367,21 @@ VOID WorkerAddObject(WPObject *pObj2Store)
                 #endif
 
                 // check if this object is stored already
-                pNode = (TREE*)_umalloc(G_AwakeObjectsHeap,
-                                        sizeof(TREE));
-                if (pNode)
+                if (pNode = (TREE*)_umalloc(G_AwakeObjectsHeap,
+                                            sizeof(TREE)))
                 {
                     pNode->ulKey = (ULONG)pObj2Store;
 
-                    treeInsert(&G_AwakeObjectsTree,
-                               // increment global count
-                               &G_lAwakeObjectsCount,
-                               pNode,
-                               treeCompareKeys);
-
-                    #ifdef DEBUG_AWAKEOBJECTS
-                        else
-                            _Pmpf(("WT: Item is already on list"));
-                    #endif
+                    if (treeInsert(&G_AwakeObjectsTree,
+                                   // increment global count
+                                   &G_lAwakeObjectsCount,
+                                   pNode,
+                                   treeCompareKeys))
+                        // FAILED:
+                        // V0.9.16 (2001-10-25) [umoeller]
+                        (free)(pNode);        // works with user heap
+                            // free must be in brackets so it won't
+                            // get replaced with debug malloc, if enabled
 
                     // note that we now store all objects, no matter
                     // what class they are; we used to have only
@@ -488,19 +489,14 @@ VOID WorkerRemoveObject(WPObject *pObj)
 
 BOOL LockWorkerThreadData(VOID)
 {
-    BOOL brc = FALSE;
+    if (G_hmtxWorkerThreadData)
+        return (!WinRequestMutexSem(G_hmtxWorkerThreadData, SEM_INDEFINITE_WAIT));
+            // WinRequestMutexSem works even if the thread has no message queue
 
-    if (G_hmtxWorkerThreadData == NULLHANDLE)
-    {
-        brc = !DosCreateMutexSem(NULL,
-                                 &G_hmtxWorkerThreadData,
-                                 0,
-                                 TRUE);
-    }
-    else
-        brc = !WinRequestMutexSem(G_hmtxWorkerThreadData, SEM_INDEFINITE_WAIT);
-
-    return (brc);
+    return (!DosCreateMutexSem(NULL,
+                               &G_hmtxWorkerThreadData,
+                               0,
+                               TRUE));      // request
 }
 
 /*
@@ -752,7 +748,8 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                           hwndObject,
                           2,          // id
                           5*60*1000); // every five minutes
-        break; }
+        }
+        break;
 
         /*
          * WM_TIMER:
@@ -787,7 +784,8 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     cmnQueryCountrySettings(TRUE);
                 break;
             }
-        break; }
+        }
+        break;
 
         /*
          * WOM_QUICKOPEN:
@@ -829,7 +827,8 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             }
 
             krnPostThread1ObjectMsg(T1M_NEXTQUICKOPEN, NULL, MPNULL);
-        break; } */
+        }
+        break; */
 
         /*
          * WOM_PROCESSORDEREDCONTENT:
@@ -855,7 +854,8 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             #endif
 
 
-        break; } */
+        }
+        break;  */
 
         /* case WOM_WAITFORPROCESSNEXT:
         {
@@ -865,7 +865,8 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             if (pPCI)
             {
             }
-        break; } */
+        }
+        break;  */
 
         /*
          * WOM_ADDAWAKEOBJECT:
@@ -932,7 +933,8 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                             fdrUpdateAllFrameWndTitles(pFolder);
                     }
             }
-        break; }
+        }
+        break;
 
         /*
          * WOM_UPDATEALLSTATUSBARS:
@@ -957,7 +959,8 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             // (fncbUpdateStatusBars in folder.c)
             fdrForEachOpenGlobalView((ULONG)mp1,
                                      (PFNWP)fncbUpdateStatusBars);
-        break; }
+        }
+        break;
 
         /*
          * WOM_DELETEICONPOSEA:
@@ -983,7 +986,8 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             eab.pszValue = "";
             eab.usValueLength = 0;
             eaPathWriteOne(szPath, &eab);
-        break; }
+        }
+        break;
 
         /*
          * WOM_DELETEFOLDERPOS:
@@ -1031,7 +1035,7 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 // folder; if so, delete it
                 while (*pKey2 != 0)
                 {
-                    if (memcmp(szComp, pKey2, cbComp) == 0)
+                    if (!memcmp(szComp, pKey2, cbComp))
                     {
                         PrfWriteProfileData(HINI_USER,
                                             (PSZ)WPINIAPP_FOLDERPOS, pKey2,
@@ -1046,7 +1050,8 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
                 free(pszFolderPosKeys);
             }
-        break; }
+        }
+        break;
 
         /*
          *@@ WOM_STOREGLOBALSETTINGS:
@@ -1061,8 +1066,8 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
         case WOM_STOREGLOBALSETTINGS:
         {
             GLOBALSETTINGS *pGlobalSettings = NULL;
-            ULONG ulNesting;
-            DosEnterMustComplete(&ulNesting);
+            // ULONG ulNesting;
+            // DosEnterMustComplete(&ulNesting);
             TRY_LOUD(excpt1)
             {
                 // LOCK the global settings while we're writing
@@ -1081,8 +1086,9 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             CATCH(excpt1) {} END_CATCH();
             if (pGlobalSettings)
                 cmnUnlockGlobalSettings();
-            DosExitMustComplete(&ulNesting);
-        break; }
+            // DosExitMustComplete(&ulNesting);
+        }
+        break;
 
         #ifdef __DEBUG__
         case XM_CRASH:          // posted by debugging context menu of XFldDesktop
@@ -1267,7 +1273,8 @@ MRESULT EXPENTRY fnwpQuickOpenDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             ctlProgressBarFromStatic(WinWindowFromID(hwnd, ID_SDDI_PROGRESSBAR),
                                      PBA_ALIGNCENTER | PBA_BUTTONSTYLE);
             mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
-        break; }
+        }
+        break;
 
         case WM_COMMAND:
             switch (SHORT1FROMMP(mp1))
@@ -1278,7 +1285,8 @@ MRESULT EXPENTRY fnwpQuickOpenDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                     pqod->fCancelled = TRUE;
                     // this will cause the callback below to
                     // return FALSE
-                break; }
+                }
+                break;
 
                 default:
                     mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
@@ -1299,17 +1307,18 @@ MRESULT EXPENTRY fnwpQuickOpenDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                         cmnStoreGlobalSettings();
                     }
                     mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
-                break; }
+                }
+                break;
 
                 default:
                     mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
             }
-        break; }
+        }
+        break;
 
         case WM_DESTROY:
-        {
             mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
-        break; }
+        break;
 
         default:
             mrc = WinDefDlgProc(hwnd, msg, mp1, mp2);
@@ -1503,8 +1512,8 @@ void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
             {
                 // pFolder now has the startup folder to be processed
 
-                _Pmpf((__FUNCTION__ ": found startup folder %s",
-                            _wpQueryTitle(pFolder)));
+                // _Pmpf((__FUNCTION__ ": found startup folder %s",
+                   //          _wpQueryTitle(pFolder)));
 
                 // skip folders which should only be started on bootup
                 // except if we have specified that we want to start
@@ -1527,11 +1536,11 @@ void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
                     _xwpStartFolderContents(pFolder,
                                             ulTiming);
                 }
-                else
-                    _Pmpf(("  skipping this one"));
+                // else
+                   //  _Pmpf(("  skipping this one"));
             }
 
-            _Pmpf((__FUNCTION__ ": done with startup folders"));
+            // _Pmpf((__FUNCTION__ ": done with startup folders"));
 
             // done with startup folders:
             krnSetProcessStartupFolder(FALSE); //V0.9.9 (2001-03-19) [pr]
@@ -1746,7 +1755,7 @@ VOID CollectDoubleFiles(MPARAM mp1)
                 while (pNodePrevious)
                 {
                     PFILELISTITEM pfli = (PFILELISTITEM)pNodePrevious->pItemData;
-                    if (stricmp(pfli->szFilename, ffb3.achName) == 0)
+                    if (!stricmp(pfli->szFilename, ffb3.achName))
                     {
                         pfliExisting = pfli;
                         break;
@@ -1878,7 +1887,8 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                        "Cannot create startup thread.");
 
             // moved all the rest to fntStartupThread
-        break; }
+        }
+        break;
 
         /*
          *@@ FIM_RECREATECONFIGFOLDER:
@@ -1886,9 +1896,6 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
          *      folder and/or installation folders.
          *
          *      (ULONG)mp1 must be one of the following:
-         *
-         *      -- RCF_EMPTYCONFIGFOLDERONLY: produce empty
-         *         config folder.
          *
          *      -- RCF_DEFAULTCONFIGFOLDER: produce standard
          *         config folder by executing install\crobjXXX.cmd.
@@ -1899,6 +1906,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
          *         in turn.
          *
          *@@changed V0.9.16 (2001-10-11) [umoeller]: removed RCF_QUERYACTION
+         *@@changed V0.9.16 (2001-10-23) [umoeller]: removed RCF_EMPTYCONFIGFOLDERONLY
          */
 
         case FIM_RECREATECONFIGFOLDER:
@@ -1933,19 +1941,20 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
             // ulReturn is either set from dialog or
             // from initial value, if no prompt
-            if (ulReturn == RCF_EMPTYCONFIGFOLDERONLY)
+            /* if (ulReturn == RCF_EMPTYCONFIGFOLDERONLY)
             {
                 CHAR szObjectID[50];
                 sprintf(szObjectID, "OBJECTID=%s;", XFOLDER_CONFIGID);
-                WinCreateObject("WPFolder",             // now create new config folder w/ proper objID
+                WinCreateObject((PSZ)G_pcszWPFolder,          // now create new config folder w/ proper objID
                                 "XFolder Configuration",
                                 szObjectID,
                                 (PSZ)WPOBJID_DESKTOP, // "<WP_DESKTOP>",                 // on desktop
                                 CO_UPDATEIFEXISTS);
             }
-            else   if (   (ulReturn == RCF_DEFAULTCONFIGFOLDER)
-                       || (ulReturn == RCF_MAININSTALLFOLDER)
-                      )
+            else*/
+            if (   (ulReturn == RCF_DEFAULTCONFIGFOLDER)
+                || (ulReturn == RCF_MAININSTALLFOLDER)
+               )
             {
                 HWND    hwndCreating;
                 CHAR    szPath[CCHMAXPATH], szPath2[CCHMAXPATH];
@@ -1980,7 +1989,8 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                     WinDestroyWindow(hwndCreating);
                 }
             }
-        break; }
+        }
+        break;
 
         /*
          *@@ FIM_PROCESSTASKLIST:
@@ -2328,7 +2338,8 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 } // end if (pGlobalSettings->BootLogo)
 
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
-        break; }
+        }
+        break;
 
         /*
          * QM_DESTROYLOGO:
@@ -2348,7 +2359,8 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     WinDestroyWindow(sb.hwndShapeFrame) ;
                     WinDestroyWindow(sb.hwndShape);
                 }
-        break; }
+        }
+        break;
 #endif
 
 #ifndef __NOBOOTUPSTATUS__
@@ -2408,7 +2420,8 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     // show window for 2 secs
                     WinStartTimer(G_habSpeedyThread, hwndObject, 1, 2000);
                 }
-        break; }
+        }
+        break;
 
         /*
          * WM_TIMER:
@@ -2430,7 +2443,8 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     WinStopTimer(G_habWorkerThread, hwndObject, 1);
                 break;
             }
-        break; }
+        }
+        break;
 #endif
 
         /*
@@ -2494,7 +2508,8 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     }
                 }
             }
-        break; }
+        }
+        break;
 
         default:
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
@@ -2507,14 +2522,13 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
  *@@ fntSpeedyThread:
  *          this is the thread function for the XFolder
  *          "Speedy" thread, which is responsible for
- *          showing that bootup logo and displaying
- *          the notification window when classes get initialized.
  *
- *          Also this plays the new XFolder system sounds by
- *          calling the funcs in sounddll.c (SOUND.DLL), if that
- *          DLL was successfully loaded.
+ *          --  showing the bootup logo
  *
- *          To play system sounds, use xthrPostSpeedyMsg.
+ *          --  displaying the notification window when classes
+ *              get initialized
+ *
+ *          --  tree-view auto-scroll.
  *
  *          As opposed to the "Worker" thread, this thread runs
  *          with high regular priority.

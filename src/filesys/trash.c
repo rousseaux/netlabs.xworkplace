@@ -68,11 +68,12 @@
 
 // headers in /helpers
 #include "helpers\dosh.h"               // Control Program helper routines
-#include "helpers\winh.h"               // PM helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\nls.h"                // National Language Support helpers
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\tree.h"               // red-black binary trees
+#include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
@@ -447,7 +448,7 @@ VOID InitMappings(XWPTrashCan *somSelf,
                   PBOOL pfNeedSave)      // out: set to TRUE if drives are dirty
                                          // and wpSaveDeferred must be called on the trash can
 {
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     TRY_LOUD(excpt1)
     {
         if (LOCK_OBJECT(Lock, somSelf))
@@ -519,7 +520,7 @@ PTRASHMAPPINGTREENODE trshGetMappingFromSource(XWPTrashCan *pTrashCan,
 {
     PTRASHMAPPINGTREENODE pMapping = NULL;
 
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     TRY_LOUD(excpt1)
     {
         if (LOCK_OBJECT(Lock, pTrashCan))
@@ -555,7 +556,7 @@ PTRASHMAPPINGTREENODE trshGetMappingFromTrashDir(XWPTrashCan *pTrashCan,
 {
     PTRASHMAPPINGTREENODE pMapping = NULL;
 
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     TRY_LOUD(excpt1)
     {
         if (LOCK_OBJECT(Lock, pTrashCan))
@@ -599,7 +600,7 @@ VOID trshFreeMapping(XWPTrashCan *pTrashCan,
 {
     // BOOL fDirty = FALSE;
 
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     TRY_LOUD(excpt1)
     {
         if (LOCK_OBJECT(Lock, pTrashCan))
@@ -647,7 +648,7 @@ VOID trshFreeMapping(XWPTrashCan *pTrashCan,
 
 VOID trshSaveMappings(XWPTrashCan *pTrashCan)
 {
-    WPSHLOCKSTRUCT Lock;
+    WPSHLOCKSTRUCT Lock = {0};
     TRY_LOUD(excpt1)
     {
         if (LOCK_OBJECT(Lock, pTrashCan))
@@ -713,7 +714,7 @@ VOID trshSaveMappings(XWPTrashCan *pTrashCan)
                                               NULL,
                                               NULL);
                         else
-                            DosDelete(szMappingsFile);
+                            DosForceDelete(szMappingsFile);
 
                         // clean up
                         xstrClear(&strMappings);
@@ -798,7 +799,7 @@ WPFolder* trshGetOrCreateTrashDir(XWPTrashCan *pTrashCan,
     {
         // no: create a new trash dir...
 
-        WPSHLOCKSTRUCT Lock;
+        WPSHLOCKSTRUCT Lock = {0};
         TRY_LOUD(excpt1)
         {
             if (LOCK_OBJECT(Lock, pTrashCan))
@@ -889,12 +890,13 @@ PLINKLIST trshCreateTrashObjectsList(XWPTrashCan* somSelf,
         XWPTrashObject* pTrashObject = 0;
 
         // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-        somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                = SOM_Resolve(somSelf, WPFolder, wpQueryContent);
+        // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                // = SOM_Resolve(somSelf, WPFolder, wpQueryContent);
 
-        for (   pTrashObject = rslv_wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
+        // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+        for (   pTrashObject = _wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
                 (pTrashObject);
-                pTrashObject = rslv_wpQueryContent(somSelf, pTrashObject, (ULONG)QC_NEXT)
+                pTrashObject = *wpshGetNextObjPointer(pTrashObject)
             )
         {
             // pTrashObject now has the XWPTrashObject to delete
@@ -1230,13 +1232,13 @@ BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // in: _
                                     // because they're empty
     ULONG       ulTrashObjectCountSub = 0;
 
-    ULONG   ulNesting = 0;
+    // ULONG   ulNesting = 0;
 
     if (!pXWPTrashObjectClass)
         // error
         return (0);
 
-    DosEnterMustComplete(&ulNesting);
+    // DosEnterMustComplete(&ulNesting);
 
     #ifdef DEBUG_TRASHCAN
         _Pmpf(("  Entering AddTrashObjectsForTrashDir for %s", _wpQueryTitle(pTrashDir)));
@@ -1254,113 +1256,110 @@ BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // in: _
 
             // request semaphore for that trash dir
             // to protect the contents list
-            fTrashDirSemOwned = !wpshRequestFolderMutexSem(pTrashDir, 4000);
-            if (fTrashDirSemOwned)
+            if (fTrashDirSemOwned = !fdrRequestFolderMutexSem(pTrashDir, 4000))
             {
                 // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-                somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                        = SOM_Resolve(pTrashDir, WPFolder, wpQueryContent);
+                // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
+                        // = SOM_Resolve(pTrashDir, WPFolder, wpQueryContent);
 
-                if (rslv_wpQueryContent)
+                // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+                for (   pObject = _wpQueryContent(pTrashDir, NULL, (ULONG)QC_FIRST);
+                        (pObject);
+                        pObject = *wpshGetNextObjPointer(pObject)
+                    )
                 {
-                    for (   pObject = rslv_wpQueryContent(pTrashDir, NULL, (ULONG)QC_FIRST);
-                            (pObject);
-                            pObject = rslv_wpQueryContent(pTrashDir, pObject, (ULONG)QC_NEXT)
-                        )
+                    BOOL    fAddTrashObject = TRUE;
+                    if (_somIsA(pObject, _WPFileSystem))
                     {
-                        BOOL    fAddTrashObject = TRUE;
-                        if (_somIsA(pObject, _WPFileSystem))
+                        // FS object found:
+                        // get the file name first
+                        CHAR    szFSPath[2*CCHMAXPATH] = "";
+                        ULONG   cbFSPath = sizeof(szFSPath);
+                        ULONG   ulAttrs = 0;
+                        if (_wpQueryRealName(pObject,
+                                             szFSPath,
+                                             &cbFSPath,
+                                             TRUE))     // fully q'fied
                         {
-                            // FS object found:
-                            // get the file name first
-                            CHAR    szFSPath[2*CCHMAXPATH] = "";
-                            ULONG   cbFSPath = sizeof(szFSPath);
-                            ULONG   ulAttrs = 0;
-                            if (_wpQueryRealName(pObject,
-                                                 szFSPath,
-                                                 &cbFSPath,
-                                                 TRUE))     // fully q'fied
+                            BOOL fIsFolder = (_somIsA(pObject, _WPFolder));
+                            if (    (fIsFolder)
+                                 && (doshQueryPathAttr(szFSPath, &ulAttrs)
+                                        == NO_ERROR)
+                               )
                             {
-                                BOOL fIsFolder = (_somIsA(pObject, _WPFolder));
-                                if (    (fIsFolder)
-                                     && (doshQueryPathAttr(szFSPath, &ulAttrs)
-                                            == NO_ERROR)
-                                   )
+                                // it's a folder, and it still exists:
+                                // check if it's hidden... if so, it is
+                                // most probably one of the pseudo-folders
+                                // in the trash can, for which we have added
+                                // a mapping on "delete"
+                                if (ulAttrs & FILE_HIDDEN)
                                 {
-                                    // it's a folder, and it still exists:
-                                    // check if it's hidden... if so, it is
-                                    // most probably one of the pseudo-folders
-                                    // in the trash can, for which we have added
-                                    // a mapping on "delete"
-                                    if (ulAttrs & FILE_HIDDEN)
+                                    // hidden directory: this is a trash directory!
+
+                                    #ifdef DEBUG_TRASHCAN
+                                        _Pmpf(("    Recursing with %s", _wpQueryTitle(pObject)));
+                                    #endif
+
+                                    brc = AddTrashObjectsForTrashDir(pXWPTrashObjectClass,
+                                                                     pTrashCan,
+                                                                     pObject, // new trash dir
+                                                                     pfNeedSave,
+                                                                     &ulTrashObjectCountSub);
+
+                                    #ifdef DEBUG_TRASHCAN
+                                        _Pmpf(("    Recursion returned %d objects", ulTrashObjectCountSub));
+                                    #endif
+
+                                    if (ulTrashObjectCountSub == 0)
                                     {
-                                        // hidden directory: this is a trash directory!
+                                        // no objects found in this trash folder
+                                        // or subfolders (if any):
+                                        // delete this folder, it's useless,
+                                        // but we can only do this outside the wpQueryContent
+                                        // loop, so delay this
+                                        lstAppendItem(&llEmptyDirs,
+                                                      pObject); // the empty WPFolder
 
                                         #ifdef DEBUG_TRASHCAN
-                                            _Pmpf(("    Recursing with %s", _wpQueryTitle(pObject)));
+                                            _Pmpf(("    Adding %s to dirs 2be deleted",
+                                                    _wpQueryTitle(pObject)));
                                         #endif
-
-                                        brc = AddTrashObjectsForTrashDir(pXWPTrashObjectClass,
-                                                                         pTrashCan,
-                                                                         pObject, // new trash dir
-                                                                         pfNeedSave,
-                                                                         &ulTrashObjectCountSub);
-
-                                        #ifdef DEBUG_TRASHCAN
-                                            _Pmpf(("    Recursion returned %d objects", ulTrashObjectCountSub));
-                                        #endif
-
-                                        if (ulTrashObjectCountSub == 0)
-                                        {
-                                            // no objects found in this trash folder
-                                            // or subfolders (if any):
-                                            // delete this folder, it's useless,
-                                            // but we can only do this outside the wpQueryContent
-                                            // loop, so delay this
-                                            lstAppendItem(&llEmptyDirs,
-                                                          pObject); // the empty WPFolder
-
-                                            #ifdef DEBUG_TRASHCAN
-                                                _Pmpf(("    Adding %s to dirs 2be deleted",
-                                                        _wpQueryTitle(pObject)));
-                                            #endif
-                                        }
-
-                                        // don't create a trash object for this directory...
-                                        fAddTrashObject = FALSE;
                                     }
-                                } // end if (    (_somIsA(pObject, _WPFolder)...
-                                else if (!fIsFolder)
-                                {
-                                    // ignore the "@mapping" file that is used
-                                    // in the trash root
-                                    if (!stricmp(&szFSPath[1],
-                                                 ":\\TRASH\\" MAPPINGS_FILE))
-                                        fAddTrashObject = FALSE;
+
+                                    // don't create a trash object for this directory...
+                                    fAddTrashObject = FALSE;
                                 }
-
+                            } // end if (    (_somIsA(pObject, _WPFolder)...
+                            else if (!fIsFolder)
+                            {
+                                // ignore the "@mapping" file that is used
+                                // in the trash root
+                                if (!stricmp(&szFSPath[1],
+                                             ":\\TRASH\\" MAPPINGS_FILE))
+                                    fAddTrashObject = FALSE;
                             }
-                        } // end if (_somIsA(pObject, _WPFileSyste))
 
-                        if (fAddTrashObject)
-                        {
-                            // non-folder or folder which is not hidden:
-                            // add to trashcan!
-                            #ifdef DEBUG_TRASHCAN
-                                _Pmpf(("    Adding %s...",
-                                            _wpQueryTitle(pObject)));
-                            #endif
-
-                            trshCreateTrashObject(pXWPTrashObjectClass,
-                                                  pTrashCan,
-                                                  pObject);  // related object
-                            (*pulObjectCount)++;
-
-                            _Pmpf(("    *pulObjectCount is now %d",
-                                   (*pulObjectCount)));
                         }
-                    } // end for (   pObject = _wpQueryContent(...
-                }
+                    } // end if (_somIsA(pObject, _WPFileSyste))
+
+                    if (fAddTrashObject)
+                    {
+                        // non-folder or folder which is not hidden:
+                        // add to trashcan!
+                        #ifdef DEBUG_TRASHCAN
+                            _Pmpf(("    Adding %s...",
+                                        _wpQueryTitle(pObject)));
+                        #endif
+
+                        trshCreateTrashObject(pXWPTrashObjectClass,
+                                              pTrashCan,
+                                              pObject);  // related object
+                        (*pulObjectCount)++;
+
+                        _Pmpf(("    *pulObjectCount is now %d",
+                               (*pulObjectCount)));
+                    }
+                } // end for (   pObject = _wpQueryContent(...
             } // end if (fTrashDirSemOwned)
             else
                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -1378,11 +1377,11 @@ BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // in: _
 
     if (fTrashDirSemOwned)
     {
-        wpshReleaseFolderMutexSem(pTrashDir);
+        fdrReleaseFolderMutexSem(pTrashDir);
         fTrashDirSemOwned = FALSE;
     }
 
-    DosExitMustComplete(&ulNesting);
+    // DosExitMustComplete(&ulNesting);
 
     *pulObjectCount += ulTrashObjectCountSub;
 
@@ -2297,8 +2296,8 @@ BOOL trshSetDrivesSupport(PBYTE pabSupportedDrives)
     BOOL brc = FALSE;
     BOOL fLocked = FALSE;
 
-    ULONG ulNesting;
-    DosEnterMustComplete(&ulNesting);
+    //ULONG ulNesting;
+    // DosEnterMustComplete(&ulNesting);
 
     TRY_LOUD(excpt1)
     {
@@ -2385,7 +2384,7 @@ BOOL trshSetDrivesSupport(PBYTE pabSupportedDrives)
     if (fLocked)
         krnUnlock();
 
-    DosExitMustComplete(&ulNesting);
+    // DosExitMustComplete(&ulNesting);
 
     return (brc);
 }
@@ -2449,7 +2448,7 @@ BOOL trshIsOnSupportedDrive(WPObject *pObject)
         CHAR szFolderPath[CCHMAXPATH];
         if (_wpQueryFilename(pFolder, szFolderPath, TRUE))
         {
-            strupr(szFolderPath);
+            nlsUpper(szFolderPath, 0);
             if (szFolderPath[0] >= 'C')
             {
                 // is on hard disk:
@@ -2472,7 +2471,7 @@ BOOL trshIsOnSupportedDrive(WPObject *pObject)
 // HMTX        hmtxSubclassedTrashCans = NULLHANDLE;
 
 /*
- *  THIS ENTIRE CODE HAS BEEN DISABLED WITH V0.9.7.
+ *  THIS ENTIRE CODE HAS BEEN REMOVED WITH V0.9.7.
  *
  *  All the processing that used to be in here is now processed
  *  by the subclassed folder frame procedure. We don't really
@@ -2481,296 +2480,6 @@ BOOL trshIsOnSupportedDrive(WPObject *pObject)
  *  Instead, we have now introduced XFolder::xwpProcessObjectCommand,
  *  which is overridden for XWPTrashCan.
  */
-
-
-/*
- * trshSubclassTrashCanFrame:
- *      this subclasses the given trash can folder
- *      frame with trsh_fnwpSubclassedTrashCanFrame.
- *
- *      We need to subclass trash can folder frames
- *      again. We cannot use fdr_fnwpSubclassedFolderFrame
- *      because XFolder might not be installed.
- *
- *added V0.9.1 (2000-01-31) [umoeller]
- *changed V0.9.1 (2000-02-14) [umoeller]: reversed order of functions; now subclassing is last
- */
-
-/* BOOL trshSubclassTrashCanFrame(HWND hwndFrame,
-                               XWPTrashCan *somSelf,
-                               ULONG ulView)
-{
-    BOOL                    brc = FALSE;
-    PSUBCLASSEDTRASHFRAME   pstfNew = NULL;
-    BOOL                    fSemOwned = FALSE;
-
-    ULONG ulNesting;
-    DosEnterMustComplete(&ulNesting);
-
-    TRY_LOUD(excpt1)
-    {
-        // now check if frame wnd has already been subclassed;
-        // just another security check
-        PFNWP pfnwpCurrent = (PFNWP)WinQueryWindowPtr(hwndFrame, QWP_PFNWP);
-        if (pfnwpCurrent != (PFNWP)trsh_fnwpSubclassedTrashCanFrame)
-        {
-            HWND  hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
-            if (hwndCnr)
-            {
-                pstfNew = malloc(sizeof(SUBCLASSEDTRASHFRAME));
-                if (pstfNew)
-                {
-                    if (hmtxSubclassedTrashCans == NULLHANDLE)
-                    {
-                        // not initialized yet:
-                        lstInit(&llSubclassedTrashCans, TRUE);
-                        DosCreateMutexSem(NULL,
-                                          &hmtxSubclassedTrashCans, 0, FALSE);
-                    }
-
-                    // append to global list
-                    fSemOwned = (WinRequestMutexSem(hmtxSubclassedTrashCans,
-                                                    4000) == NO_ERROR);
-                    if (fSemOwned)
-                    {
-                        lstAppendItem(&llSubclassedTrashCans,
-                                      pstfNew);
-
-                        memset(pstfNew, 0, sizeof(SUBCLASSEDTRASHFRAME));
-                        pstfNew->hwndFrame = hwndFrame;
-                        pstfNew->somSelf = somSelf;
-                        pstfNew->ulView = ulView;
-                        pstfNew->pfnwpOrig
-                            = WinSubclassWindow(hwndFrame,
-                                                trsh_fnwpSubclassedTrashCanFrame);
-                        pstfNew->hwndCnr = hwndCnr;
-                    }
-                    else
-                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                               "hmtxSubclassedTrashCans request failed.");
-                }
-            }
-        }
-    }
-    CATCH(excpt1) { } END_CATCH();
-
-    if (fSemOwned)
-    {
-        DosReleaseMutexSem(hmtxSubclassedTrashCans);
-        fSemOwned = FALSE;
-    }
-
-    DosExitMustComplete(&ulNesting);
-
-    return (brc);
-} */
-
-/*
- * trshQueryPSTF:
- *      finds the corresponding PSUBCLASSEDTRASHFRAME
- *      for the given trash can frame window.
- *
- *added V0.9.1 (2000-01-31) [umoeller]
- */
-
-/* PSUBCLASSEDTRASHFRAME trshQueryPSTF(HWND hwndFrame,        // in: folder frame to find
-                                    PULONG pulIndex)       // out: index in linked list if found
-{
-    PLISTNODE           pNode = 0;
-    PSUBCLASSEDTRASHFRAME psliThis = 0,
-                        psliFound = 0;
-    BOOL                fSemOwned = FALSE;
-    ULONG               ulIndex = 0;
-
-    ULONG   ulNesting = 0;
-    DosEnterMustComplete(&ulNesting);
-
-    TRY_QUIET(excpt1)
-    {
-        if (hwndFrame)
-        {
-            fSemOwned = (WinRequestMutexSem(hmtxSubclassedTrashCans, 4000) == NO_ERROR);
-            if (fSemOwned)
-            {
-                pNode = lstQueryFirstNode(&llSubclassedTrashCans);
-                while (pNode)
-                {
-                    psliThis = pNode->pItemData;
-                    if (psliThis->hwndFrame == hwndFrame)
-                    {
-                        // item found:
-                        psliFound = psliThis;
-                        if (pulIndex)
-                            *pulIndex = ulIndex;
-                        break; // while
-                    }
-
-                    pNode = pNode->pNext;
-                    ulIndex++;
-                }
-            }
-            else
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "hmtxSubclassedTrashCans request failed.");
-        }
-    }
-    CATCH(excpt1) {  } END_CATCH();
-
-    if (fSemOwned)
-    {
-        DosReleaseMutexSem(hmtxSubclassedTrashCans);
-        fSemOwned = FALSE;
-    }
-
-    DosExitMustComplete(&ulNesting);
-
-    return (psliFound);
-} */
-
-/*
- * trshRemovePSTF:
- *      removes a PSUBCLASSEDTRASHFRAME from the
- *      internal list of subclassed trash can frames.
- *
- *added V0.9.1 (2000-01-31) [umoeller]
- */
-
-/* VOID trshRemovePSTF(PSUBCLASSEDTRASHFRAME pstf)
-{
-    BOOL fSemOwned = FALSE;
-
-    ULONG   ulNesting = 0;
-    DosEnterMustComplete(&ulNesting);
-
-    TRY_QUIET(excpt1)
-    {
-        fSemOwned = (WinRequestMutexSem(hmtxSubclassedTrashCans, 4000) == NO_ERROR);
-        if (fSemOwned)
-            lstRemoveItem(&llSubclassedTrashCans,
-                          pstf);
-        else
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "hmtxSubclassedTrashCans request failed.");
-    }
-    CATCH(excpt1) { } END_CATCH();
-
-    if (fSemOwned)
-    {
-        DosReleaseMutexSem(hmtxSubclassedTrashCans);
-        fSemOwned = FALSE;
-    }
-
-    DosExitMustComplete(&ulNesting);
-} */
-
-/*
- * trsh_fnwpSubclassedTrashCanFrame:
- *      window procedure for subclassed trash can
- *      frames. We cannot use fdr_fnwpSubclassedFolderFrame
- *      because XFolder might not be installed.
- *
- *      This intercepts WM_INITMENU and WM_COMMAND to
- *      implement trash can file processing properly.
- *
- *added V0.9.1 (2000-01-31) [umoeller]
- *changed V0.9.4 (2000-07-15) [umoeller]: fixed source object confusion in WM_INITMENU
- */
-
-/* MRESULT EXPENTRY trsh_fnwpSubclassedTrashCanFrame(HWND hwndFrame,
-                                                  ULONG msg,
-                                                  MPARAM mp1,
-                                                  MPARAM mp2)
-{
-    PSUBCLASSEDTRASHFRAME pstf = NULL;
-    PFNWP           pfnwpOriginal = NULL;
-    MRESULT         mrc = MRFALSE;
-    BOOL            fCallDefault = FALSE;
-
-    TRY_LOUD(excpt1)
-    {
-        // find the original wnd proc in the
-        // global linked list, so we can pass messages
-        // on to it
-        pstf = trshQueryPSTF(hwndFrame, NULL);
-        if (pstf)
-            pfnwpOriginal = pstf->pfnwpOrig;
-
-        if (pfnwpOriginal)
-        {
-            switch(msg)
-            {
-                case WM_INITMENU:
-                    // call the default, in case someone else
-                    // is subclassing folders (ObjectDesktop?!?);
-                    // from what I've checked, the WPS does NOTHING
-                    // with this message, not even for menu bars...
-                    mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
-
-                    if ((ULONG)mp1 == 0x8020) // main menu ID V0.9.4 (2000-07-15) [umoeller]
-                        // store object with source emphasis for later use;
-                        // this gets lost before WM_COMMAND otherwise
-                        pstf->pSourceObject = wpshQuerySourceObject(pstf->somSelf,
-                                                                    pstf->hwndCnr,
-                                                                    FALSE, // menu mode
-                                                                    &pstf->ulSelection);
-                break;
-
-                case WM_COMMAND:
-                {
-                    USHORT usCommand = SHORT1FROMMP(mp1);
-                break; }
-
-
-                case WM_DESTROY:
-                {
-                    // upon closing the window, undo the subclassing, in case
-                    // some other message still comes in
-                    // (there are usually still two more, even after WM_DESTROY!!)
-                    WinSubclassWindow(hwndFrame, pfnwpOriginal);
-
-                    // remove this window from our subclassing linked list
-                    trshRemovePSTF(pstf);
-
-                    // do the default stuff
-                    fCallDefault = TRUE;
-                break; }
-
-                default:
-                    fCallDefault = TRUE;
-                break;
-            }
-        } // end if (pfnwpOriginal)
-        else
-        {
-            // original window procedure not found:
-            // that's an error
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "Trash can's pfnwpOriginal not found.");
-            mrc = WinDefWindowProc(hwndFrame, msg, mp1, mp2);
-        }
-    } // end TRY_LOUD
-    CATCH(excpt1)
-    {
-        // exception occured:
-        return (0);
-    } END_CATCH();
-
-    if (fCallDefault)
-    {
-        // this has only been set to TRUE for "default" in
-        // the switch statement above; we then call the
-        // default window procedure.
-        // This is either fdr_fnwpSubclassedFolderFrame or
-        // the original WPS folder frame proc.
-        // We do this outside the TRY/CATCH stuff above so that
-        // we don't get blamed for exceptions which we are not
-        // responsible for, which was the case with XFolder < 0.85
-        // (i.e. exceptions in PMWP.DLL or Object Desktop or whatever).
-        mrc = (MRESULT)(*pfnwpOriginal)(hwndFrame, msg, mp1, mp2);
-    }
-
-    return (mrc);
-} */
 
 /* ******************************************************************
  *

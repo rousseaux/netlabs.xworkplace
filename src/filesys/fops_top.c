@@ -191,6 +191,7 @@ BOOL APIENTRY fopsGenericProgressCallback(PFOPSUPDATE pfu,
  *@@changed V0.9.3 (2000-04-25) [umoeller]: reworked error management
  *@@changed V0.9.4 (2000-07-27) [umoeller]: added "yes to all" to some msg boxes
  *@@changed V0.9.12 (2001-05-17) [pr]: beautified object title
+ *@@changed V0.9.16 (2001-10-28) [pr]: prevent trap on null title
  */
 
 FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
@@ -199,15 +200,18 @@ FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
                                           PULONG pulIgnoreSubsequent)
                                                             // out: ignore subsequent errors of the same type
 {
-    // FOPSRET frc = NO_ERROR;
     CHAR    szMsg[1000];
     PSZ     apsz[5] = {0};
     ULONG   cpsz = 0,
             ulMsg = 0,
             flFlags = 0;
     ULONG   ulIgnoreFlag = 0;
-    PSZ     pszTitle = strdup(_wpQueryTitle(pObject));
+    PSZ     pszTitle = _wpQueryTitle(pObject);
 
+    // V0.9.16 (2001-10-28) [pr]: Prevent trap on null title
+    pszTitle = strdup((pszTitle)
+                            ? pszTitle
+                            : "");
     strhBeautifyTitle(pszTitle);
 
     switch (frError)
@@ -317,6 +321,7 @@ FOPSRET APIENTRY fopsGenericErrorCallback(ULONG ulOperation,
  *
  *@@added V0.9.1 (2000-01-30) [umoeller]
  *@@changed V0.9.12 (2001-05-17) [pr]: beautified object title
+ *@@changed V0.9.16 (2001-10-28) [pr]: prevent trap on null title
  */
 
 MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -395,12 +400,19 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
                     {
                         if (pfu->pSourceObject)
                         {
-                            PSZ pszTitle = strdup(_wpQueryTitle(pfu->pSourceObject));
-                            strhBeautifyTitle(pszTitle);
-                            WinSetDlgItemText(hwndProgress,
-                                              ID_XSDI_SOURCEOBJECT,
-                                              pszTitle);
-                            free(pszTitle);
+                            // V0.9.16 (2001-10-28) [pr]: Prevent trap on null title
+                            PSZ pszTitle = _wpQueryTitle(pfu->pSourceObject);
+
+                            if (   pszTitle
+                                && (pszTitle = strdup(pszTitle))
+                               )
+                            {
+                                strhBeautifyTitle(pszTitle);
+                                WinSetDlgItemText(hwndProgress,
+                                                  ID_XSDI_SOURCEOBJECT,
+                                                  pszTitle);
+                                free(pszTitle);
+                            }
                         }
                     }
 
@@ -652,6 +664,7 @@ FOPSRET StartWithGenericProgress(HFILETASKLIST hftl,
  *@@changed V0.9.3 (2000-04-28) [umoeller]: added fRelatedObject
  *@@changed V0.9.4 (2000-08-03) [umoeller]: now checking for "no objects"
  *@@changed V0.9.12 (2001-05-17) [pr]: beautified object title
+ *@@changed V0.9.16 (2001-10-28) [pr]: prevent trap on null title
  */
 
 FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fopsCreateFileTaskList
@@ -748,7 +761,9 @@ FOPSRET fopsStartTaskFromCnr(ULONG ulOperation,       // in: operation; see fops
                 if (cObjects == 1)
                 {
                     // single object:
-                    apsz = strdup(_wpQueryTitle(pSourceObject));
+                    // V0.9.16 (2001-10-28) [pr]: Prevent trap on null title
+                    apsz = _wpQueryTitle(pSourceObject);
+                    apsz = strdup(apsz ? apsz : "");
                     strhBeautifyTitle(apsz);
                     ulMsg = pConfirm->ulMsgSingle;
                 }

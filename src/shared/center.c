@@ -347,7 +347,7 @@ PSZ ctrScanSetupString(const char *pcszSetupString, // in: entire setup string
 
         while (pEquals)
         {
-            if (strnicmp(pKeywordThis, pcszKeyword, ulKeywordLen) == 0)
+            if (!strnicmp(pKeywordThis, pcszKeyword, ulKeywordLen))
             {
                 // keyword found:
                 // get value
@@ -462,7 +462,7 @@ BOOL ctrSetSetupString(LHANDLE hSetting,
             // we already had a setup string:
             free(pSetting->Public.pszSetupString);
 
-        pSetting->Public.pszSetupString = strhdup(pcszNewSetupString);
+        pSetting->Public.pszSetupString = strhdup(pcszNewSetupString, NULL);
                     // can be NULL
 
         brc = TRUE;
@@ -959,7 +959,7 @@ VOID DwgtDestroy(HWND hwnd)
                                                  QWL_USER);
         if (pXCenterData)
         {
-            WPSHLOCKSTRUCT Lock;
+            WPSHLOCKSTRUCT Lock = {0};
             TRY_LOUD(excpt1)
             {
                 if (LOCK_OBJECT(Lock, pXCenterData->somSelf))
@@ -1054,7 +1054,7 @@ BOOL DwgtRender(HWND hwnd,
         if (pXCenterData)
         {
             XCenter        *somSelf = pXCenterData->somSelf;
-            WPSHLOCKSTRUCT Lock;
+            WPSHLOCKSTRUCT Lock = {0};
 
             TRY_LOUD(excpt1)
             {

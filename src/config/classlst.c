@@ -879,9 +879,9 @@ MRESULT EXPENTRY fncbReturnWPSClassAttr(HWND hwndCnr,
         // expand all the parent records of the new record
         // so that these classes are initially visible
         if (    (!strcmp(pwps->pszClassName, "WPAbstract"))
-             || (!strcmp(pwps->pszClassName, "WPDataFile")) // V0.9.0
+             || (!strcmp(pwps->pszClassName, G_pcszWPDataFile)) // V0.9.0
 
-             || (!strcmp(pwps->pszClassName, "WPFolder"))   // V0.9.0
+             || (!strcmp(pwps->pszClassName, G_pcszWPFolder))   // V0.9.0
            )
         {
             cnrhExpandFromRoot(hwndCnr, (PRECORDCORE)mpreccParent);
@@ -1658,6 +1658,7 @@ BOOL fFillingCnr = FALSE;
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.5 (2000-08-26) [umoeller]: fixed WM_SYSCOMMAND handling
  *@@changed V0.9.14 (2001-07-31) [umoeller]: extra confirmation for XWP* classes was missing, fixed
+ *@@changed V0.9.16 (2001-10-23) [umoeller]: another confirmation was missing, fixed
  */
 
 MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1794,13 +1795,13 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
 
                 // class to start with: either WPObject or SOMObject,
                 // depending on instance data
-                pscd->pszRootClass =
+                pscd->pcszRootClass =
                     (pClassTreeCnrData->pClientData->somThis->fShowSOMObject)
                         ? "SOMObject"
-                        : "WPObject";
+                        : G_pcszWPObject;
                 // class to select: the same
                 strcpy(pscd->szClassSelected,
-                       pscd->pszRootClass);
+                       pscd->pcszRootClass);
 
                 pscd->pfnwpReturnAttrForClass = fncbReturnWPSClassAttr;
                     // callback for cnr recc attributes
@@ -1820,11 +1821,11 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
 
                 // add orphans; this is done by setting the title
                 // for the "Orphans" recc tree
-                pscd->pszOrphans = cmnGetString(ID_XSSI_WPSCLASSORPHANS);  // pszWpsClassOrphans
+                pscd->pcszOrphans = cmnGetString(ID_XSSI_WPSCLASSORPHANS);  // pszWpsClassOrphans
 
                 // finally, fill container with WPS data (classlst.c)
                 pscd->pwpsc = clsWpsClasses2Cnr(pscd->hwndCnr,
-                                                pscd->pszRootClass,
+                                                pscd->pcszRootClass,
                                                 pscd);  // also contains callback
 
                 fFillingCnr = FALSE;
@@ -2064,10 +2065,10 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
                                     break;
                                 }
 
-                                if (    (strncmp(pscd->preccSource->pwps->pszClassName,
-                                                 "XFld", 4) == 0)
-                                     || (strncmp(pscd->preccSource->pwps->pszClassName,
-                                                 "XWP", 4) == 0)
+                                if (    (!strncmp(pscd->preccSource->pwps->pszClassName,
+                                                 "XFld", 4))
+                                     || (!strncmp(pscd->preccSource->pwps->pszClassName,
+                                                 "XWP", 4))
                                         // V0.9.14 (2001-07-31) [umoeller]
                                    )
                                 {
@@ -2124,7 +2125,6 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
                         if (pscd->preccSource)
                         {
                             SELECTCLASSDATA         scd;
-                            // STATUSBARSELECTCLASS    sbsc;
                             PSZ                     pszClassName =
                                         pscd->preccSource->pwps->pszClassName;
 
@@ -2142,9 +2142,9 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
                                           &strIntroText, 123);
                             scd.pszDlgTitle = strTitle.psz;
                             scd.pszIntroText = strIntroText.psz;
-                            scd.pszRootClass = pszClassName;
-                            scd.pszOrphans = NULL;
-                            strcpy(scd.szClassSelected, scd.pszRootClass);
+                            scd.pcszRootClass = pszClassName;
+                            scd.pcszOrphans = NULL;
+                            strcpy(scd.szClassSelected, scd.pcszRootClass);
 
                             scd.pfnwpReturnAttrForClass = NULL; // fncbStatusBarReturnClassAttr;
                             scd.pfnwpClassSelected = fncbReplaceClassSelected;
@@ -2199,8 +2199,12 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
                                 pTable[0] = pscd->preccSource->pwps->pszReplacesClass;
                                 pTable[1] = pscd->preccSource->pwps->pszClassName;
 
-                                if (strncmp(pscd->preccSource->pwps->pszClassName,
-                                                "XFld", 4) == 0)
+                                if (    (!strncmp(pscd->preccSource->pwps->pszClassName,
+                                                "XFld", 4))
+                                     || (!strncmp(pscd->preccSource->pwps->pszClassName,
+                                                 "XWP", 4))
+                                            // was missing V0.9.16 (2001-10-23) [umoeller]
+                                   )
                                 {
                                     // some XFolder class
                                     if (cmnMessageBoxMsgExt(hwndDlg,
@@ -2209,7 +2213,8 @@ MRESULT EXPENTRY fnwpClassTreeCnrDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
                                                 MB_YESNO | MB_DEFBUTTON2)
                                             == MBID_YES)
                                         fAllow = TRUE;
-                                } else
+                                }
+                                else
                                     if (cmnMessageBoxMsgExt(hwndDlg,
                                                 116,
                                                 pTable, 2, 126,
@@ -3273,11 +3278,6 @@ HWND cllCreateClassListView(WPObject *somSelf,
 
         if (hwndFrame)
         {
-            // PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
-            // view title: we remove "~" later
-            /* PSZ             pszViewTitle = strdup(cmnGetString(ID_XFSI_OPENCLASSLIST)) , // pszOpenClassList
-                            p = NULL; */
-
             // get client data window pointer; this has been allocated
             // by WM_CREATE in fnwpClassListClient
             PCLASSLISTCLIENTDATA pClientData

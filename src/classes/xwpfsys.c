@@ -6,15 +6,11 @@
  *      --  XWPFileSystem (WPFileSystem replacement)
  *
  *      This class replaces the WPFileSystem class.
- *      This is all new with V0.9.5.
+ *      This is all new with V0.9.5 but was only experimental
+ *      at that point.
  *
- *      Installation of this class is optional. This class
- *      is not very useful at this point and NOT installed
- *      with the default XWorkplace install by WarpIN.
- *
- *      Starting with V0.9.0, the files in classes\ contain only
- *      the SOM interface, i.e. the methods themselves.
- *      The implementation for this class is in in filesys\filesys.c.
+ *      Starting with V0.9.16, installation of this class is
+ *      required for the new folder content hacks to work.
  *
  *@@added V0.9.5 [umoeller]
  *
@@ -23,7 +19,7 @@
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2001 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -62,6 +58,7 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
+#define INCL_DOSSEMAPHORES
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSPROCESS
 #define INCL_DOSERRORS
@@ -77,6 +74,8 @@
 
 // headers in /helpers
 #include "helpers\except.h"             // exception handling
+#include "helpers\nls.h"                // National Language Support helpers
+#include "helpers\stringh.h"            // string helper routines
 
 // SOM headers which don't crash with prec. header files
 #include "xwpfsys.ih"
@@ -84,15 +83,17 @@
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\fhandles.h"           // replacement file-system handles management
 #include "filesys\filesys.h"            // various file-system object implementation code
+#include "filesys\filetype.h"           // extended file types implementation
+#include "filesys\folder.h"             // XFolder implementation
 
 // other SOM headers
 #pragma hdrstop
-#include <wpfolder.h>
 
 /* ******************************************************************
  *                                                                  *
@@ -101,6 +102,13 @@
  ********************************************************************/
 
 static BOOL    G_fReplaceHandles = FALSE;
+
+extern BOOL             G_fTurboSettingsEnabled;
+                                // common.c;
+                                // this is copied from the global settings
+                                // by M_XWPFileSystem::wpclsInitData and
+                                // remains FALSE if that class is not
+                                // installed
 
 /* ******************************************************************
  *                                                                  *
@@ -124,6 +132,44 @@ SOM_Scope HOBJECT  SOMLINK xfs_xwpQueryHandle(XWPFileSystem *somSelf,
 }
 
 /*
+ *@@ xwpQueryUpperRealName:
+ *      returns the current real name of the object in
+ *      upper case, which can then be used for fast
+ *      string comparisons, e.g. in the new folder
+ *      content trees (V0.9.16).
+ *
+ *      Precondition:
+ *
+ *      --  somSelf must be fully initialized.
+ *
+ *      --  The caller must hold the folder mutex sem of
+ *          somSelf's folder while calling this.
+ *
+ *@@added V0.9.16 (2001-10-25) [umoeller]
+ */
+
+SOM_Scope PSZ  SOMLINK xfs_xwpQueryUpperRealName(XWPFileSystem *somSelf)
+{
+    XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
+    XWPFileSystemMethodDebug("XWPFileSystem","xfs_xwpQueryUpperRealName");
+
+    if (!_pszUpperRealName)
+    {
+        // not queried yet:
+        // create a copy
+        CHAR sz[CCHMAXPATH];
+        if (_wpQueryFilename(somSelf, sz, FALSE))
+        {
+            ULONG ulLength;
+            _pszUpperRealName = strhdup(sz, &ulLength);
+            nlsUpper(_pszUpperRealName, ulLength);
+        }
+    }
+
+    return (_pszUpperRealName);
+}
+
+/*
  *@@ wpInitData:
  *      this WPObject instance method gets called when the
  *      object is being initialized (on wake-up or creation).
@@ -139,6 +185,7 @@ SOM_Scope void  SOMLINK xfs_wpInitData(XWPFileSystem *somSelf)
     XWPFileSystem_parent_WPFileSystem_wpInitData(somSelf);
 
     _ulHandle = 0;
+    _pszUpperRealName = NULL;
 }
 
 /*
@@ -152,8 +199,11 @@ SOM_Scope void  SOMLINK xfs_wpInitData(XWPFileSystem *somSelf)
 
 SOM_Scope void  SOMLINK xfs_wpUnInitData(XWPFileSystem *somSelf)
 {
-    // XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
+    XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpUnInitData");
+
+    if (_pszUpperRealName)
+        free(_pszUpperRealName);
 
     XWPFileSystem_parent_WPFileSystem_wpUnInitData(somSelf);
 }
@@ -181,72 +231,71 @@ SOM_Scope void  SOMLINK xfs_wpObjectReady(XWPFileSystem *somSelf,
 }
 
 /*
- *@@ wpDestroyObject:
- *      this undocumented WPObject method is responsible for
- *      destroying the persistent data of an object. This gets
- *      called from WPObject::wpFree, apparently.
+ *@@ wpSetTitleAndRenameFile:
+ *      this WPFileSystem method is responsible for changing
+ *      the real name of a file-system object when its title
+ *      has changed.
  *
- *      See object.c for more details about an object's life
- *      cycle.
+ *      This method always gets called by WPFileSystem::wpSetTitle
+ *      and, apparently, is the only place in the WPS which
+ *      actually renames a file-system object on disk.
  *
- *      This method normally deletes the file or folder.
- *      Unfortunately, the standard WPS version also pops
- *      up a message box if it cannot delete the object,
- *      for whatever reason. Even worse, it pops up the
- *      message box even if that object no longer exists!
- *      This needs to be fixed.
+ *      If "turbo folders" are enabled, we must update the
+ *      content tree of our folder.
  *
- *@@added V0.9.9 (2001-02-01) [umoeller]
+ *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
-BOOL _System xfs_wpDestroyObject(XWPFileSystem *somSelf)
+SOM_Scope BOOL  SOMLINK xfs_wpSetTitleAndRenameFile(XWPFileSystem *somSelf,
+                                                    PSZ pszNewTitle,
+                                                    ULONG fConfirmations)
 {
-    BOOL    brc = FALSE;
+    BOOL        brc;
+    BOOL        fFolderLocked = FALSE;
+    WPFolder    *pMyFolder;
 
-    WPSHLOCKSTRUCT Lock;
-    TRY_LOUD(excpt1)
+    XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpSetTitleAndRenameFile");
+
+    if (cmnIsFeatureEnabled(TurboFolders))
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        TRY_LOUD(excpt1)
         {
-            // get the full path name so we can kill that beast
-            CHAR szFilename[CCHMAXPATH];
-            _Pmpf((__FUNCTION__ ": entering"));
-            if (_wpQueryFilename(somSelf,
-                                 szFilename,
-                                 TRUE))         // fully q'fied
+            // to be on the safe side, lock anyone out of the folder
+            // content functions while we're changing the title,
+            // but only if the object is already initialized
+            if (    (_wpIsObjectInitialized(somSelf))
+                 && (pMyFolder = _wpQueryFolder(somSelf))
+               )
+                fFolderLocked = !fdrRequestFolderWriteMutexSem(pMyFolder);
+
+            if (    (brc = XWPFileSystem_parent_WPFileSystem_wpSetTitleAndRenameFile(somSelf,
+                                                                            pszNewTitle,
+                                                                            fConfirmations))
+                 && (fFolderLocked)     // locked above (obj was init'd):
+               )
             {
-                APIRET arc = NO_ERROR;
-                if (_somIsA(somSelf, _WPFolder))
-                    // folder:
-                    arc = DosDeleteDir(szFilename);
-                else
-                    // file:
-                    arc = DosDelete(szFilename);
-
-                // now, as opposed to the WPS, we are smart enough
-                // to check the return code:
-                switch (arc)
-                {
-                    case NO_ERROR:
-                    case ERROR_FILE_NOT_FOUND:
-                    case ERROR_PATH_NOT_FOUND:
-                        // well, all these are OK -- report success
-                        brc = TRUE;
-
-                    // OTHERWISE DISPLAY NO FREAKING MESSAGE BOX.
-                    // THIS MIGHT BE INVOKED PROGRAMATICALLY IN
-                    // A LOOP SOMEWHERE. WHO CAME UP WITH THIS?!?
-                }
+                // update the folder's contents tree
+                // (this also changes our instance data!)
+                fdrRealNameChanged(pMyFolder,
+                                   somSelf);
             }
         }
-    }
-    CATCH(excpt1) {} END_CATCH();
+        CATCH(excpt1)
+        {
+            brc = FALSE;
+        } END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+        if (fFolderLocked)
+            fdrReleaseFolderWriteMutexSem(pMyFolder);
 
-    return (brc);
+        return (brc);
+    } // end if (cmnIsFeatureEnabled(TurboFolders))
+
+    return (XWPFileSystem_parent_WPFileSystem_wpSetTitleAndRenameFile(somSelf,
+                                                                      pszNewTitle,
+                                                                      fConfirmations));
 }
+
 
 /* ******************************************************************
  *                                                                  *
@@ -256,16 +305,27 @@ BOOL _System xfs_wpDestroyObject(XWPFileSystem *somSelf)
 
 /*
  *@@ wpclsInitData:
- *
+ *      this WPObject class method gets called when a class
+ *      is loaded by the WPS (probably from within a
+ *      somFindClass call) and allows the class to initialize
+ *      itself.
  */
 
 SOM_Scope void  SOMLINK xfsM_wpclsInitData(M_XWPFileSystem *somSelf)
 {
-#ifdef __REPLHANDLES__
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-#endif
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
     /* M_XWPFileSystemData *somThis = M_XWPFileSystemGetData(somSelf); */
     M_XWPFileSystemMethodDebug("M_XWPFileSystem","xfsM_wpclsInitData");
+
+    if (krnClassInitialized(G_pcszXWPFileSystem))
+    {
+        // make a copy of the "turbo folders" setting _now_, which
+        // will then be returned by cmnIsFeatureEnabled for the rest
+        // of this WPS session; doing this here ensures that the
+        // setting is only enabled if XWPFileSystem is installed
+        G_fTurboSettingsEnabled = pGlobalSettings->__fTurboFolders;
+    }
 
 #ifdef __REPLHANDLES__
     // query once at system startup whether handles
@@ -278,6 +338,12 @@ SOM_Scope void  SOMLINK xfsM_wpclsInitData(M_XWPFileSystem *somSelf)
 #endif
 
     M_XWPFileSystem_parent_M_WPFileSystem_wpclsInitData(somSelf);
+
+    // go register instance types and filters
+    if (ftypRegisterInstanceTypesAndFilters(somSelf))
+        // got any:
+        // do not allow this class to be unloaded!!
+        _wpclsIncUsage(somSelf);
 
     /*
      *  Manually patch method tables of this class...
@@ -298,4 +364,34 @@ SOM_Scope void  SOMLINK xfsM_wpclsInitData(M_XWPFileSystem *somSelf)
     } */
 }
 
+/*
+ *@@ wpclsQueryAwakeObject:
+ *      this WPFileSystem class method determines whether a
+ *      a file-system object is already awake.
+ *
+ *      From my testing, this method is never actually
+ *      called in the WPS, but my own code calls it in
+ *      some places. If "turbo folders" are on, we use
+ *      our own high-speed functions instead of calling
+ *      the parent.
+ *
+ *@@added V0.9.16 (2001-10-25) [umoeller]
+ */
+
+SOM_Scope WPObject*  SOMLINK xfsM_wpclsQueryAwakeObject(M_XWPFileSystem *somSelf,
+                                                        PSZ pszInputPath)
+{
+    /* M_XWPFileSystemData *somThis = M_XWPFileSystemGetData(somSelf); */
+    M_XWPFileSystemMethodDebug("M_XWPFileSystem","xfsM_wpclsQueryAwakeObject");
+
+    if (    (cmnIsFeatureEnabled(TurboFolders))
+            // we can't handle UNC yet
+         && (pszInputPath[0] != '\\')
+         && (pszInputPath[1] != '\\')
+       )
+        return (fdrQueryAwakeFSObject(pszInputPath));
+
+    return (M_XWPFileSystem_parent_M_WPFileSystem_wpclsQueryAwakeObject(somSelf,
+                                                                        pszInputPath));
+}
 

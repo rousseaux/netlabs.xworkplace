@@ -353,7 +353,8 @@ BOOL LockRunning(VOID)
             return (FALSE);
     }
 
-    return (!WinRequestMutexSem(G_hmtxRunning, 4000));
+    return (!WinRequestMutexSem(G_hmtxRunning, SEM_INDEFINITE_WAIT));
+        // WinRequestMutexSem works even if the thread has no message queue
 }
 
 /*

@@ -56,6 +56,7 @@ end
 
 rc = SysINI(inifile, "XWorkplace", "XFolderPath", basedir || '00'x);
 
+rc = RegisterClass("XWPFileSystem");
 rc = RegisterClass("XFolder");
 rc = RegisterClass("XFldObject");
 rc = RegisterClass("XFldDataFile");
@@ -68,6 +69,7 @@ rc = RegisterClass("XWPMouse");
 rc = RegisterClass("XWPKeyboard");
 rc = RegisterClass("XWPProgram");           /* V0.9.9 */
 
+rc = ReplaceClass("WPFileSystem", "XWPFileSystem");
 rc = ReplaceClass("WPFolder", "XFolder");
 rc = ReplaceClass("WPObject", "XFldObject");
 rc = ReplaceClass("WPDataFile", "XFldDataFile");

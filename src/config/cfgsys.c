@@ -1029,7 +1029,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                     // optional "LW" parameter (lazy write)
                     if (p2)
                     {
-                        if (strncmp(p2+1, "LW", 2) == 0)
+                        if (!strncmp(p2+1, "LW", 2))
                         {
                             winhSetDlgItemChecked(hwndDlgPage, ID_OSDI_CACHE_LAZYWRITE,
                                         TRUE);
@@ -1045,7 +1045,7 @@ VOID cfgConfigInitPage(PCREATENOTEBOOKPAGE pcnbp,
                     // optional "autocheck" parameter
                     if (p2)
                     {
-                        if (strncmp(p2+1, "AC:", 3) == 0)
+                        if (!strncmp(p2+1, "AC:", 3))
                             strcpy(szAutoCheck, p2+4);
                     }
 
@@ -1653,8 +1653,7 @@ MRESULT cfgConfigItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                               (MPARAM)ulSel,
                               MPNULL);
 
-            pNode = lstNodeFromIndex(G_pSysPathSelected->pllPaths, ulSel);
-            if (pNode)
+            if (pNode = lstNodeFromIndex(G_pSysPathSelected->pllPaths, ulSel))
             {
                 // make a backup of the item
                 PSZ pszPathCopy = strdup(pNode->pItemData);

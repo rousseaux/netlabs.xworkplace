@@ -509,7 +509,7 @@ BOOL WMMouseMove_SlidingMenus(HWND hwndCurrentMenu,  // in: menu wnd under mouse
         CHAR    szClassUnderMouse[100];
         if (WinQueryClassName(hwndUnderMouse, sizeof(szClassUnderMouse), szClassUnderMouse))
         {
-            if (strcmp(szClassUnderMouse, "#4") == 0)
+            if (!strcmp(szClassUnderMouse, "#4"))
             {
                 if (    // timer menu hwnd same as last menu under mouse?
                         (hwndCurrentMenu == G_HookData.hwndMenuUnderMouse)

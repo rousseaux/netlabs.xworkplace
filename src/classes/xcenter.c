@@ -185,7 +185,7 @@ SOM_Scope ULONG  SOMLINK xctr_xwpAddXCenterPages(XCenter *somSelf,
     pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->fEnumerate = TRUE;
     pcnbp->pszName = cmnGetString(ID_XSSI_STYLEPAGE);  // pszStylePage
-    pcnbp->ulDlgID = ID_CRD_SETTINGS_VIEW2;
+    pcnbp->ulDlgID = ID_XFD_EMPTYDLG;           // V0.9.16 (2001-09-29) [umoeller] ID_CRD_SETTINGS_VIEW2;
     pcnbp->ulDefaultHelpPanel  = ID_XSH_XCENTER_VIEW2;
     pcnbp->ulPageID = SP_XCENTER_VIEW2;
     pcnbp->pfncbInitPage    = ctrpView2InitPage;
@@ -279,14 +279,14 @@ SOM_Scope BOOL  SOMLINK xctr_xwpInsertWidget(XCenter *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        _Pmpf((__FUNCTION__ ": calling ctrInsertWidget with %s, %s",
+        /* _Pmpf((__FUNCTION__ ": calling ctrInsertWidget with %s, %s",
                 (pszWidgetClass) ? pszWidgetClass : "NULL",
-                (pszSetupString) ? pszSetupString : "NULL"));
+                (pszSetupString) ? pszSetupString : "NULL")); */
         brc = ctrpInsertWidget(somSelf,
                                ulBeforeIndex,
                                pszWidgetClass,
                                pszSetupString);
-        _Pmpf((__FUNCTION__ ": got %d from ctrInsertWidget", brc));
+        // _Pmpf((__FUNCTION__ ": got %d from ctrInsertWidget", brc));
     }
     CATCH(excpt1)
     {
@@ -862,7 +862,10 @@ SOM_Scope BOOL  SOMLINK xctr_wpAddSettingsPages(XCenter *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      initialize XCenter class data.
+ *      this WPObject class method gets called when a class
+ *      is loaded by the WPS (probably from within a
+ *      somFindClass call) and allows the class to initialize
+ *      itself.
  */
 
 SOM_Scope void  SOMLINK xctrM_wpclsInitData(M_XCenter *somSelf)
@@ -877,7 +880,7 @@ SOM_Scope void  SOMLINK xctrM_wpclsInitData(M_XCenter *somSelf)
 
     // resolve WinSetDesktopWorkArea etc. (ctr_engine.c)
     arc = ctrpDesktopWorkareaSupported();
-    _Pmpf((__FUNCTION__ ": ctrpChangeDesktopSupported returned %d.", arc));
+    // _Pmpf((__FUNCTION__ ": ctrpChangeDesktopSupported returned %d.", arc));
 }
 
 /*

@@ -887,7 +887,10 @@ SOM_Scope void  SOMLINK xfdf_wpSetAssociatedFileIcon(XFldDataFile *somSelf)
 
 /*
  *@@ wpclsInitData:
- *      initialize XFldDataFile class data.
+ *      this WPObject class method gets called when a class
+ *      is loaded by the WPS (probably from within a
+ *      somFindClass call) and allows the class to initialize
+ *      itself.
  *
  *      We also manually patch the class method table to
  *      override some WPDataFile methods that IBM didn't

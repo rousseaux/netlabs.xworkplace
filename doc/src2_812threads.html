@@ -36,7 +36,7 @@ mainly maintenance which is not time-critical.
 <P>For example, the Worker thread maintains the global linked list of
 currently awake Desktop objects. <CODE>XFldObject::wpObjectReady</CODE> post
 <CODE>WOM_ADDAWAKEOBJECT</CODE> to the Worker thread, which then adds the object
-to that list. (This list is needed by &xshutdown; to store all the awake
+to that list. (This list is needed by XShutdown to store all the awake
 Desktop objects; see the <I>XWorkplace User Guide</I> for details).
 <P>The Worker thread runs at &quot;Idle&quot; priority, unless more than 300
 messages have piled up in its message queue. In this case, the

@@ -310,15 +310,12 @@ SOM_Scope BOOL  SOMLINK xms_wpSetup(XWPMouse *somSelf, PSZ pszSetupString)
         XWPMouseData *somThis = XWPMouseGetData(somSelf);
         XWPMouseMethodDebug("XWPMouse", "xms_wpSetup");
 
-        // make a duplicate of the setup string, so that we may modify it
-        pszSetupCopy = strdup(pszSetupString);
-
         if (pszSetupString != NULL)
         {
-            // DEBUGMSG("SOM: setup with data: %s" NEWLINE, pszSetupCopy);
+            // make a duplicate of the setup string, so that we may modify it
+            pszSetupCopy = strdup(pszSetupString);
 
-            // falls Klasse noch nicht initialisiert wurde
-            // Initialisierung verzîgern
+            // delay init until the object was initialized
             if (!IsSettingsInitialized())
             {
                 // numerischen Wert fÅr Animtion Init delay holen
@@ -331,7 +328,7 @@ SOM_Scope BOOL  SOMLINK xms_wpSetup(XWPMouse *somSelf, PSZ pszSetupString)
                 ScanSetupString(_hwndNotebookPage, _pcnrrec, pszSetupCopy, TRUE, FALSE);
 
             fResult = XWPMouse_parent_WPMouse_wpSetup(somSelf,
-                                                                    pszSetupCopy);
+                                                      pszSetupCopy);
             free(pszSetupCopy);
         }
         else
@@ -577,7 +574,10 @@ SOM_Scope ULONG  SOMLINK xms_wpAddMouseMappingsPage(XWPMouse *somSelf,
 
 /*
  *@@ wpclsInitData:
- *      initialize XWPMouse class data.
+ *      this WPObject class method gets called when a class
+ *      is loaded by the WPS (probably from within a
+ *      somFindClass call) and allows the class to initialize
+ *      itself.
  */
 
 SOM_Scope void  SOMLINK xmsM_wpclsInitData(M_XWPMouse *somSelf)
