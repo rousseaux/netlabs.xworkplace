@@ -132,18 +132,18 @@ $(OUTPUTDIR)\$(APPNAME).res: $(@B).rc *.ico
           $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
 
 $(MODULESDIR)\$(APPNAME).exe: $(OBJS) $(@B).def $(OUTPUTDIR)\$(@B).res makefile
-          $(LINK) /out:$(MODULESDIR)\$(@B).exe $(OBJS) $(@B).def
-          $(RC) $(OUTPUTDIR)\$(@B).res $(MODULESDIR)\$(@B).exe
+    $(LINK) /out:$(MODULESDIR)\$(@B).exe $(OBJS) $(@B).def
+    $(RC) $(OUTPUTDIR)\$(@B).res $(MODULESDIR)\$(@B).exe
 !ifdef XWP_OUTPUT_ROOT_DRIVE
-        @$(XWP_OUTPUT_ROOT_DRIVE)
+    @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif
-          cd $(MODULESDIR)
-          mapsym /n $(@B).map > NUL
-          cmd.exe /c copy $(@B).sym $(XWPRUNNING)\bin
+    cd $(MODULESDIR)
+    mapsym /n $(@B).map > NUL
+    cmd.exe /c copy $(@B).sym $(XWPRUNNING)\bin
 !ifdef CVS_WORK_ROOT_DRIVE
-        @$(CVS_WORK_ROOT_DRIVE)
+    @$(CVS_WORK_ROOT_DRIVE)
 !endif
-          cd $(MAKEDIR)
+    cd $(MAKEDIR)
 
 # main target
 $(XWPRUNNING)\bin\$(APPNAME).exe: $(MODULESDIR)\$(@B).exe

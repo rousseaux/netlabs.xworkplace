@@ -1,7 +1,9 @@
 
 /*
  *@@sourcefile xmlview.cpp:
- *
+ *      XML viewer, which displays the elements,
+ *      attributes, and DTD of any XML document
+ *      in a PM container tree view.
  *
  *@@header "xmlview.h"
  *@@added V0.9.5 (2000-08-13) [umoeller]
@@ -37,12 +39,17 @@
 
 #include "expat\expat.h"
 
+#include "encodings\base.h"
+#include "encodings\cp437.h"
+#include "encodings\cp850.h"
+
 #include "helpers\cnrh.h"
 #include "helpers\datetime.h"           // date/time helper routines
 #include "helpers\dialog.h"
 #include "helpers\dosh.h"
 #include "helpers\except.h"
 #include "helpers\linklist.h"
+#include "helpers\standards.h"
 #include "helpers\stringh.h"
 #include "helpers\threads.h"
 #include "helpers\tree.h"
@@ -214,6 +221,85 @@ BOOL SuperFileDlg(HWND hwndOwner,    // in: owner for file dlg
 }
 
 /*
+ *@@ GetCPData:
+ *      DOM callback for filling in codepage data
+ *      for unicode conversion.
+ *
+ *@@added V0.9.14 (2001-08-09) [umoeller]
+ */
+
+int APIENTRY GetCPData(PXMLDOM pDom,
+                       ULONG ulCP,
+                       int *piMap)
+{
+    ULONG ul;
+
+    XWPENCODINGMAP *pMap = NULL;
+    ULONG cEntries = 0;
+
+    switch (ulCP)
+    {
+        case 850:
+            pMap = G_cp850;
+            cEntries = ARRAYITEMCOUNT(G_cp850);
+        break;
+
+        case 437:
+            pMap = G_cp437;
+            cEntries = ARRAYITEMCOUNT(G_cp437);
+        break;
+    }
+
+    if (cEntries)
+    {
+        for (ul = 0;
+             ul < cEntries;
+             ul++)
+        {
+            USHORT usFrom = pMap[ul].usFrom;        // cp value
+            if (usFrom < 256)
+                piMap[usFrom] = (ULONG)pMap[ul].usUni;     // unicode value
+        }
+
+        // success
+        return (1);
+    }
+
+    return (0);
+}
+
+/*
+ *@@ ParseExternal:
+ *
+ *@@added V0.9.14 (2001-08-09) [umoeller]
+ */
+
+APIRET APIENTRY ParseExternal(PXMLDOM pDom,
+                              XML_Parser *pSubParser,
+                              const char *pcszSystemID,
+                              const char *pcszPublicID)
+{
+    APIRET arc = ERROR_FILE_NOT_FOUND;
+
+    if (pcszSystemID)
+    {
+        PSZ pszContents = NULL;
+        if (!(arc = doshLoadTextFile(pcszSystemID, &pszContents)))
+        {
+            if (!XML_Parse(pSubParser,
+                           pszContents,
+                           strlen(pszContents),
+                           TRUE))
+                arc = -1;
+
+            free(pszContents);
+        }
+    }
+
+    return (arc);
+}
+
+/*
  *@@ LoadXMLFile:
  *      loads and parses an XML file into an XMLFILE
  *      structure, which is created.
@@ -250,7 +336,10 @@ APIRET LoadXMLFile(const char *pcszFilename,    // in: file:/K:\...
             xstrConvertLineFormat(&pFile->strContents,
                                   CRLF2LF);
 
-            arc = xmlCreateDOM(DF_PARSEDTD,
+            arc = xmlCreateDOM(DF_PARSEDTD | DF_DROP_WHITESPACE,
+                               GetCPData,
+                               ParseExternal,
+                               NULL,
                                &pFile->pDom);
             if (arc == NO_ERROR)
             {
@@ -332,6 +421,48 @@ typedef struct _INSERTSTACK
 } INSERTSTACK, *PINSERTSTACK;
 
 /*
+ *@@ GetCPCharFromUnicode:
+ *
+ *@@added V0.9.14 (2001-08-09) [umoeller]
+ */
+
+CHAR GetCPCharFromUnicode(ULONG ulUni)
+{
+    XWPENCODINGMAP *pMap = G_cp850;
+    ULONG cEntries = ARRAYITEMCOUNT(G_cp850);
+    ULONG ul;
+
+    for (ul = 0;
+         ul < cEntries;
+         ul++)
+    {
+        if ((ULONG)pMap[ul].usUni == ulUni)
+            return (pMap[ul].usFrom);
+    }
+
+    return '#';
+}
+
+/*
+ *@@ AppendUTF8:
+ *
+ *@@added V0.9.14 (2001-08-09) [umoeller]
+ */
+
+VOID AppendUTF8(PXSTRING pstrTarget,
+                PXSTRING pstrUTF8)
+{
+    const char *p = pstrUTF8->psz;
+    if (p)
+    {
+        ULONG ulChar;
+        while (ulChar = encDecodeUTF8(&p))
+            xstrcatc(pstrTarget,
+                     GetCPCharFromUnicode(ulChar));
+    }
+}
+
+/*
  *@@ InsertAttribDecls:
  *
  *@@added V0.9.9 (2001-02-16) [umoeller]
@@ -359,7 +490,8 @@ VOID XWPENTRY InsertAttribDecls(TREE *t,        // in: PCMATTRIBUTEDECL really
             PNODEBASE pNode = (PNODEBASE)treeFirst(pAttribDecl->ValuesTree);
             while (pNode)
             {
-                xstrcats(&str, &pNode->strNodeName);
+                AppendUTF8(&str, &pNode->strNodeName);
+                // xstrcats(&str, &pNode->strNodeName);
                 xstrcatc(&str, '|');
 
                 pNode = (PNODEBASE)treeNext(&pNode->Tree);
@@ -504,35 +636,6 @@ PNODERECORD InsertEDParticle(PCMELEMENTPARTICLE pParticle,
 VOID XWPENTRY InsertElementDecls(TREE *t,           // in: an CMELEMENTDECLNODE really
                                  PVOID pUser)       // in: PINSERTSTACK user param
 {
-    PCMELEMENTDECLNODE pElementDecl = (PCMELEMENTDECLNODE)t;
-    PINSERTSTACK pInsertStack = (PINSERTSTACK)pUser;
-
-    // insert the element declaration root particle and subparticles
-    // (this recurses)
-    PNODERECORD pElementRec = InsertEDParticle(&pElementDecl->Particle,
-                                               pInsertStack->pParentRecord);
-
-    // now insert attribute decls, if any
-    PCMATTRIBUTEDECLBASE pAttribDeclBase
-        = xmlFindAttribDeclBase(pInsertStack->pDom,
-                                &pElementDecl->Particle.NodeBase.strNodeName);
-    if (pAttribDeclBase)
-    {
-        // traverse the attributes tree as well
-        INSERTSTACK Stack2 = {pElementRec, pInsertStack->pDom};
-
-        TREE *t = treeFirst(pAttribDeclBase->AttribDeclsTree);
-        while (t)
-        {
-            InsertAttribDecls(t,
-                              &Stack2);
-            t = treeNext(t);
-        }
-        /* treeTraverse(pAttribDeclBase->AttribDeclsTree,
-                     InsertAttribDecls,
-                     &Stack2,       // user param
-                     0); */
-    }
 }
 
 /*
@@ -545,13 +648,42 @@ VOID InsertDocType(PXMLDOM pDom,
                    PDOMDOCTYPENODE pDocTypeNode,
                    PNODERECORD pParentRecord)
 {
-    INSERTSTACK InsertStack = {pParentRecord, pDom};
+    // INSERTSTACK InsertStack = {pParentRecord, pDom};
 
     TREE *t = treeFirst(pDocTypeNode->ElementDeclsTree);
     while (t)
     {
-        InsertAttribDecls(t,
-                          &InsertStack);
+        PCMELEMENTDECLNODE pElementDecl = (PCMELEMENTDECLNODE)t;
+
+        // insert the element declaration root particle and subparticles
+        // (this recurses)
+        PNODERECORD pElementRec = InsertEDParticle(&pElementDecl->Particle,
+                                                   pParentRecord);
+
+        // now insert attribute decls, if any
+        PCMATTRIBUTEDECLBASE pAttribDeclBase
+            = xmlFindAttribDeclBase(pDom,
+                                    &pElementDecl->Particle.NodeBase.strNodeName);
+        if (pAttribDeclBase)
+        {
+            // traverse the attributes tree as well
+            INSERTSTACK Stack2 = {pElementRec, pDom};
+
+            TREE *t = treeFirst(pAttribDeclBase->AttribDeclsTree);
+            while (t)
+            {
+                InsertAttribDecls(t,
+                                  &Stack2);
+                t = treeNext(t);
+            }
+            /* treeTraverse(pAttribDeclBase->AttribDeclsTree,
+                         InsertAttribDecls,
+                         &Stack2,       // user param
+                         0); */
+        }
+
+        /* InsertAttribDecls(t,
+                          &InsertStack); */
         t = treeNext(t);
     }
 
@@ -586,26 +718,31 @@ VOID InsertDom(PXMLDOM pDom,
     switch (pDomNode->NodeBase.ulNodeType)
     {
         case DOMNODE_ELEMENT:
-            xstrcpys(&str, &pDomNode->NodeBase.strNodeName);
+            // xstrcpys(&str, &pDomNode->NodeBase.strNodeName);
+            AppendUTF8(&str, &pDomNode->NodeBase.strNodeName);
         break;
 
         case DOMNODE_ATTRIBUTE:
-            xstrcpys(&str, &pDomNode->NodeBase.strNodeName);
+            AppendUTF8(&str, &pDomNode->NodeBase.strNodeName);
+            // xstrcpys(&str, &pDomNode->NodeBase.strNodeName);
             xstrcat(&str, "=\"", 2);
-            xstrcats(&str, pDomNode->pstrNodeValue);
+            // xstrcats(&str, pDomNode->pstrNodeValue);
+            AppendUTF8(&str, pDomNode->pstrNodeValue);
             xstrcatc(&str, '\"');
         break;
 
         case DOMNODE_TEXT:
             xstrcpy(&str, "\"", 1);
-            xstrcats(&str, pDomNode->pstrNodeValue);
+            // xstrcats(&str, pDomNode->pstrNodeValue);
+            AppendUTF8(&str, pDomNode->pstrNodeValue);
             xstrcatc(&str, '\"');
         break;
 
         case DOMNODE_DOCUMENT:
             xstrcpy(&str, "Document", 0);
             xstrcat(&str, " \"", 0);
-            xstrcats(&str, &pDomNode->NodeBase.strNodeName);
+            // xstrcats(&str, &pDomNode->NodeBase.strNodeName);
+            AppendUTF8(&str, &pDomNode->NodeBase.strNodeName);
             xstrcat(&str, "\"", 0);
         break;
 
@@ -613,9 +750,11 @@ VOID InsertDom(PXMLDOM pDom,
         {
             pDocType = (PDOMDOCTYPENODE)pDomNode;
             xstrcpy(&str, "DOCTYPE system: \"", 0);
-            xstrcats(&str, &pDocType->strSystemID);
+            // xstrcats(&str, &pDocType->strSystemID);
+            AppendUTF8(&str, &pDocType->strSystemID);
             xstrcat(&str, "\", public: \"", 0);
-            xstrcats(&str, &pDocType->strPublicID);
+            // xstrcats(&str, &pDocType->strPublicID);
+            AppendUTF8(&str, &pDocType->strPublicID);
             xstrcatc(&str, '\"');
         break; }
 
@@ -698,15 +837,15 @@ VOID LoadAndInsert(const char *pcszFile)
        )
     {
         winhSetVarWindowText(G_hwndStatusBar,
-                          pszError);
+                             pszError);
         free(pszError);
     }
     else if (arc != NO_ERROR)
     {
         winhSetVarWindowText(G_hwndStatusBar,
-                          "Error %d loading \"%s\".",
-                          arc,
-                          pcszFile);
+                             "Error %d loading \"%s\".",
+                             arc,
+                             pcszFile);
     }
     else
     {

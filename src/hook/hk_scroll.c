@@ -96,44 +96,43 @@ HWND GetScrollBar(HWND hwndOwner,
                 break;
             else
             {
+                SWP swp;
+
                 // query class name of found window
-                if (WinQueryClassName(hwndFound, 3, szWinClass))
-                {
-                    // is it a scroll bar window?
-                    if (strcmp(szWinClass, "#8") == 0)
-                    {
-                        SWP swp;
-
+                if (    (WinQueryClassName(hwndFound, 3, szWinClass))
+                        // is it a scroll bar window?
+                     && (!strcmp(szWinClass, "#8"))
                         // is it a non-empty scroll bar?
-                        if (WinQueryWindowPos(hwndFound, &swp) && swp.cx && swp.cy)
-                        {
-                            // query style bits of this scroll bar window
-                            ulWinStyle = WinQueryWindowULong(hwndFound, QWL_STYLE);
+                     && (WinQueryWindowPos(hwndFound, &swp))
+                     && (swp.cx)
+                     && (swp.cy)
+                   )
+                {
+                    // query style bits of this scroll bar window
+                    ulWinStyle = WinQueryWindowULong(hwndFound, QWL_STYLE);
 
-                            // is scroll bar enabled and visible?
-                            if ((ulWinStyle & (WS_DISABLED | WS_VISIBLE)) == WS_VISIBLE)
+                    // is scroll bar enabled and visible?
+                    if ((ulWinStyle & (WS_DISABLED | WS_VISIBLE)) == WS_VISIBLE)
+                    {
+                        // return window handle if it matches fHorizontal
+                        if (fHorizontal)
+                        {
+                            // query horizonal mode:
+                            if ((ulWinStyle & SBS_VERT) == 0)
+                                // we must check it this way
+                                // because SBS_VERT is 1 and SBS_HORZ is 0
                             {
-                                // return window handle if it matches fHorizontal
-                                if (fHorizontal)
-                                {
-                                    // query horizonal mode:
-                                    if ((ulWinStyle & SBS_VERT) == 0)
-                                        // we must check it this way
-                                        // because SBS_VERT is 1 and SBS_HORZ is 0
-                                    {
-                                        hwndReturn = hwndFound;
-                                        break; // while
-                                    }
-                                }
-                                else
-                                    if (ulWinStyle & SBS_VERT)
-                                    {
-                                        hwndReturn = hwndFound;
-                                        break; // while
-                                    }
+                                hwndReturn = hwndFound;
+                                break; // while
                             }
-                        } // end if (WinQueryWindowPos(hwndFound, &swp) && ...)
-                    } // end if (strcmp(szWinClass, "#8") == 0)
+                        }
+                        else
+                            if (ulWinStyle & SBS_VERT)
+                            {
+                                hwndReturn = hwndFound;
+                                break; // while
+                            }
+                    }
                 }
             }
         } // end while ((hwndFound = WinGetNextWindow(henum)) != NULLHANDLE)

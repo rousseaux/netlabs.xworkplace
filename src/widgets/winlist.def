@@ -17,7 +17,7 @@
 ;
 
 LIBRARY WINLIST INITGLOBAL TERMGLOBAL
-Description '@#Ulrich M”ller:0.9.13#@ XCenter window-list plugin DLL'
+Description '@#Ulrich M”ller:0.9.14#@ XCenter window-list plugin DLL'
 PROTMODE
 
 DATA              MULTIPLE READWRITE LOADONCALL NONSHARED

@@ -1169,15 +1169,13 @@ VOID RefreshDiskfreeBitmap(HWND hwnd,
                             // we must use the xpos we saved from a
                             // previous run where we stored them all
                             if (!fPaintAll)
-                            {
                                 ptlNow1.x = pDataThis->lX;
-                                // ptlNow1.y = cy / 2;
-                                // GpiMove(hpsMem, &ptlNow1);
-                            }
                             else
                                 pDataThis->lX = ptlNow1.x;
 
-                            if (pDataThis->fl & (DFFL_FLASH | DFFL_BACKGROUND))
+                            if (    (fPaintAll)
+                                 || (pDataThis->fl & (DFFL_FLASH | DFFL_BACKGROUND))
+                               )
                             {
                                 POINTL      aptlText[TXTBOX_COUNT];
                                 POINTL      ptlRect;
@@ -1235,8 +1233,6 @@ VOID RefreshDiskfreeBitmap(HWND hwnd,
 
                                 /* if (fPaintAll)
                                     pDataThis->lX = ptlRect.x; */
-
-                                // GpiMove(hpsMem, &ptlNow2);
 
                                 GpiSetColor(hpsMem,
                                             pPrivate->Setup.lcolForeground);

@@ -1,120 +1,13 @@
-<?xml version="1.0" encoding="ISO-8859-1"?>
+<?xml version="1.0" encoding="cp850"?>
 
-<!DOCTYPE WARPIN [
-<!ELEMENT WARPIN (REXX* |VARPROMPT* | MSG? | TITLE? | (GROUP | PCK)+ | PAGE+) >
-        <!ATTLIST WARPIN
-            VERSION     CDATA       #IMPLIED
-            OS          CDATA       #IMPLIED
-        >
-    <!ELEMENT GROUP (PCK+)>
-            <!ATTLIST GROUP
-                TITLE       CDATA       #REQUIRED
-                EXPANDED    (YES | NO)  'NO'
-            >
-    <!ELEMENT MSG (#PCDATA)*>
-    <!ELEMENT PAGE (NEXTBUTTON? | README? | TEXT)>
-            <!ATTLIST PAGE
-                INDEX       CDATA       #REQUIRED
-                TYPE        (TEXT | README | CONTAINER | CONFIGURE) #REQUIRED
-            >
-        <!ELEMENT NEXTBUTTON (#PCDATA)*>
-                <!ATTLIST NEXTBUTTON
-                    TARGET      CDATA       #REQUIRED
-                >
-        <!ELEMENT README (#PCDATA)*>
-                <!ATTLIST README
-                    FORMAT      (PLAIN | FLOW | HTML) 'PLAIN'
-                >
-        <!ELEMENT TEXT (#PCDATA)*>
-    <!ELEMENT PCK ( DESCRIPTION
-                   | CLEARPROFILE*
-                   | CONFIGSYS*
-                   | CREATEOBJECT*
-                   | EXECUTE*
-                   | KILLPROCESS*
-                   | REGISTERCLASS*
-                   | REPLACECLASS*
-                   | REQUIRES*
-                   | WRITEPROFILE) >
-            <!ATTLIST PCK
-                INDEX       CDATA           #REQUIRED
-                PACKAGEID   CDATA           #REQUIRED
-                TITLE       CDATA           #REQUIRED
-                SELECT      ( YES | NO | NODESELECT) 'YES'
-                TARGET      CDATA           #REQUIRED
-                BASEPATH    ( YES | NO )    'NO'
-                FIXEDPATH   ( YES | NO )    'NO'
-                EXTERNAL    CDATA           #IMPLIED
-                REQUIRED    ( YES | NO )    'NO'
-            >
-        <!ELEMENT DESCRIPTION (#PCDATA)>
-        <!ELEMENT CLEARPROFILE EMPTY>
-                <!ATTLIST CLEARPROFILE
-                    PROFILE     CDATA       #REQUIRED
-                    APPLICATION CDATA       #IMPLIED
-                    KEY         CDATA       #IMPLIED
-                >
-        <!ELEMENT CONFIGSYS EMPTY>
-                <!ATTLIST CONFIGSYS
-                    STATEMENT   CDATA       #REQUIRED
-                    SEARCHPARAM CDATA       #IMPLIED
-                    MODIFIES    ( NOTHING | REPLACEKEY | REPLACEPARAM | ADDLEFT | ADDRIGHT ) 'NOTHING'
-                    ADDTOFILE   ( BOTTOM | TOP | AFTER | BEFORE ) 'BOTTOM'
-                    REMOVE      ( NOTHING | LINE | PART ) 'NOTHING'
-                >
-        <!ELEMENT CREATEOBJECT EMPTY>
-                <!ATTLIST CREATEOBJECT
-                    CLASSNAME   CDATA       #REQUIRED
-                    TITLE       CDATA       #REQUIRED
-                    LOCATION    CDATA       #REQUIRED
-                    SETUP       CDATA       #IMPLIED
-                    REPLACE     ( YES | NO ) 'NO'
-                >
-        <!ELEMENT EXECUTE EMPTY>
-                <!ATTLIST EXECUTE
-                    EXECFILE    CDATA       #REQUIRED
-                    PARAMETERS  CDATA       #IMPLIED
-                    CONDITION   ( ALWAYS | CONFIGSYS | REGISTERCLASS | CREATEOBJECT ) 'ALWAYS'
-                >
-        <!ELEMENT KILLPROCESS EMPTY>
-                <!ATTLIST KILLPROCESS
-                    EXECFILE    CDATA       #REQUIRED
-                >
-        <!ELEMENT REGISTERCLASS EMPTY>
-                <!ATTLIST REGISTERCLASS
-                    CLASSNAME   CDATA       #REQUIRED
-                    DLLPATH     CDATA       #REQUIRED
-                >
-        <!ELEMENT REPLACECLASS EMPTY>
-                <!ATTLIST REPLACECLASS
-                    OLDCLASSNAME   CDATA       #REQUIRED
-                    NEWCLASSNAME   CDATA       #REQUIRED
-                >
-        <!ELEMENT REQUIRES (#PCDATA)*>
-        <!ELEMENT WRITEPROFILE EMPTY>
-                <!ATTLIST WRITEPROFILE
-                    PROFILE     CDATA       #REQUIRED
-                    APPLICATION CDATA       #REQUIRED
-                    KEY         CDATA       #REQUIRED
-                    DATA        CDATA       #REQUIRED
-                >
-    <!ELEMENT REXX (#PCDATA)>
-            <!ATTLIST REXX
-                NAME        CDATA       #REQUIRED
-            >
-    <!ELEMENT TITLE (#PCDATA)>
-    <!ELEMENT VARPROMPT (#PCDATA)>
-            <!ATTLIST VARPROMPT
-                NAME        CDATA       #REQUIRED
-                TYPE        (YESNO | NUM | ALPHA | PATH | FAIL) #REQUIRED
-                MINVAL      CDATA       #IMPLIED
-                MAXVAL      CDATA       #IMPLIED
-            >
+<!-- <?xml version="1.0" encoding="ISO-8859-1"?>
+ -->
 
-<!ENTITY VersionMajor "0">
-<!ENTITY VersionMinor "9">
-<!ENTITY VersionRevision "5">
-
+<!DOCTYPE WARPIN SYSTEM "warpin.dtd"
+[
+    <!ENTITY VersionMajor "0">
+    <!ENTITY VersionMinor "9">
+    <!ENTITY VersionRevision "5">
 ]>
 
 <!-- XWorkplace installation profile for WarpIN -->
@@ -172,8 +65,6 @@ Select "Cancel" to abort installation.</TEXT>
 
 <README FORMAT="FLOW">
 
-<![CDATA[
-
 XWorkplace 0.9.5 README
 (W) Ulrich M”ller, Feb 7, 2000
 Last updated October 7, 2000
@@ -195,7 +86,7 @@ Last updated October 7, 2000
 1. INTRODUCTION
 ===============
 
-    Welcome to XWorkplace V0.9.5.
+    Welcome to XWorkplace V&VersionMajor;.&VersionMinor;.&VersionRevision;.
 
     XWorkplace is a complex set of replacement classes for the
     OS/2 Workplace Shell to enhance the WPS's behavior in many
@@ -432,8 +323,6 @@ Last updated October 7, 2000
         xworkplace-dev@egroups.com
 
     For details, see "Notices" --> "Contact" in XFLDR001.INF.
-
-]]>
 
 </README>
 </PAGE>

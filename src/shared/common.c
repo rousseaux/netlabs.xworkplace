@@ -3686,7 +3686,7 @@ MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
  *@@changed V0.9.11 (2001-04-18) [umoeller]: fixed entry field lengths
  *@@changed V0.9.12 (2001-05-26) [umoeller]: added return value
  *@@changed V0.9.14 (2001-07-28) [umoeller]: fixed parameter handling which was ignored
- *@@changed V0.9.14 (2001-08-07) [pr]: changed dialog handling, fixed bugs
+ *@@changed V0.9.14 (2001-08-07) [pr]: changed dialog handling, fixed Win-OS/2 full-screen hang
  */
 
 HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLHANDLE for active desktop
@@ -3714,7 +3714,9 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
         return(happ);
     }
 
-    /* V0.9.14 This is a very bad idea as it means the desktop is disabled
+    /* V0.9.14 This is a very bad idea as it means the desktop is disabled;
+    this is one of the things that causes Win-OS/2 full screen to fail
+    V0.9.14 (2001-08-03) [pr]
     if (!hwndOwner)
         hwndOwner = cmnQueryActiveDesktopHWND(); */
 

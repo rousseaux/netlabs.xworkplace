@@ -17,7 +17,7 @@
 ;
 
 LIBRARY DISKFREE INITGLOBAL TERMGLOBAL
-Description '@#Ulrich M”ller:0.9.13#@ XCenter diskfree plugin DLL'
+Description '@#Ulrich M”ller:0.9.14#@ XCenter diskfree plugin DLL'
 PROTMODE
 
 DATA              MULTIPLE READWRITE LOADONCALL NONSHARED
