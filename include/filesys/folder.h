@@ -412,6 +412,11 @@
         BOOL fdrIsObjectInCnr(WPObject *pObject,
                               HWND hwndCnr);
 
+        #define INSERT_ALL              0
+        #define INSERT_FILESYSTEMS      1
+        #define INSERT_FOLDERSONLY      2
+        #define INSERT_FOLDERSANDDISKS  3
+
         VOID fdrInsertContents(WPFolder *pFolder,
                                HWND hwndCnr,
                                PMINIRECORDCORE precParent,
@@ -448,6 +453,8 @@
 
         typedef struct _FDRSPLITVIEW
         {
+            LONG            lSplitBarPos;       // initial split bar position in percent
+
             // window hierarchy
             HWND            hwndMainFrame,
                             hwndMainControl;    // child of hwndMainFrame

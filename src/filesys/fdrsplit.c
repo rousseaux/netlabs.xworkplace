@@ -47,6 +47,7 @@
 #define INCL_WININPUT
 #define INCL_WINSTDCNR
 #define INCL_WINSHELLDATA
+#define INCL_WINSYS
 #include <os2.h>
 
 // C library headers
@@ -98,6 +99,8 @@ PCSZ    WC_SPLITVIEWCLIENT  = "XWPSplitViewClient",
  ********************************************************************/
 
 PFNWP   G_pfnFrameProc = NULL;
+
+static MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2);
 
 /* ******************************************************************
  *
@@ -159,9 +162,19 @@ WPFileSystem* fdrGetFSFromRecord(PMINIRECORDCORE precc,
  *@@ IsInsertable:
  *      checks if pObject can be inserted in a container.
  *
- *      --  If (ulFoldersOnly == 0), this inserts all
- *          WPFileSystem and WPDisk objects plus shadows pointing
- *          to them.
+ *      The return value depends on ulInsert:
+ *
+ *      --  INSERT_ALL: we allow all objects to be inserted,
+ *          even broken shadows.
+ *
+ *          pcszFileMask is ignored in this case.
+ *
+ *      --  INSERT_FILESYSTEMS: this inserts all WPFileSystem and
+ *          WPDisk objects plus shadows pointing to them. This
+ *          is for the file dialog, obviously, because opening
+ *          abstracts with a file dialog is impossible (unless
+ *          an abstract is a shadow pointing to a file-system
+ *          object).
  *
  *          For file-system objects, if (pcszFileMask != NULL), the
  *          object's real name is checked against that file mask also.
@@ -169,12 +182,9 @@ WPFileSystem* fdrGetFSFromRecord(PMINIRECORDCORE precc,
  *          return TRUE only if pObject's real name matches
  *          *.TXT.
  *
- *          We never insert other abstracts or transients
- *          because these cannot be opened with the file dialog.
- *
  *          This is for the right (files) view.
  *
- *      --  If (ulFoldersOnly == 1), only folders are inserted.
+ *      --  INSERT_FOLDERSONLY: only folders are inserted.
  *          We will not even insert disk objects or shadows,
  *          even if they point to shadows.
  *
@@ -188,8 +198,8 @@ WPFileSystem* fdrGetFSFromRecord(PMINIRECORDCORE precc,
  *          cannot be inserted a second time. The WPS shares
  *          records so each object can only be inserted once.
  *
- *      --  If (ulFoldersOnly == 2), in addition to folders
- *          (as with ulFoldersOnly == 1), we allow insertion
+ *      --  INSERT_FOLDERSANDDISKS: in addition to folders
+ *          (as with INSERT_FOLDERSONLY), we allow insertion
  *          of drive objects too.
  *
  *      In any case, FALSE is returned if the object matches
@@ -200,71 +210,78 @@ BOOL fdrIsInsertable(WPObject *pObject,
                      BOOL ulFoldersOnly,
                      PCSZ pcszFileMask)     // in: upper-case file mask or NULL
 {
-    if (ulFoldersOnly)
+    if (!pObject)
+        return FALSE;       // in any case
+
+    if (ulFoldersOnly > 1)      // INSERT_FOLDERSONLY or INSERT_FOLDERSANDDISKS
     {
         // folders only:
-        if (pObject)
-        {
-            // allow disks for mode 2 only
-            if (    (ulFoldersOnly == 2)
-                 && (_somIsA(pObject, _WPDisk))
-               )
-            {
-                // always insert, even if drive not ready
-                return TRUE;
-            }
-            else
-                if (_somIsA(pObject, _WPFolder))
-                {
-                    // filter out folder templates and hidden folders
-                    if (    (!(_wpQueryStyle(pObject) & OBJSTYLE_TEMPLATE))
-                         && (!(_wpQueryAttr(pObject) & FILE_HIDDEN))
-                       )
-                        return TRUE;
-                }
-        }
-    }
-    else
-    {
-        // not folders-only:
 
-        // resolve shadows
-        if (pObject)
-            pObject = objResolveIfShadow(pObject);
-
-        if (!pObject)
-            // broken:
+        if (_wpQueryStyle(pObject) & OBJSTYLE_TEMPLATE)
             return FALSE;
 
-        if (_somIsA(pObject, _WPDisk))
-            return TRUE;
-
-        if (    // filter out non-file systems (shadows pointing to them have been resolved):
-                (_somIsA(pObject, _WPFileSystem))
-                // filter out hidden objects:
-             && (!(_wpQueryAttr(pObject) & FILE_HIDDEN))
+        // allow disks with INSERT_FOLDERSANDDISKS only
+        if (    (ulFoldersOnly == INSERT_FOLDERSANDDISKS)
+             && (_somIsA(pObject, _WPDisk))
            )
         {
-            // OK, non-hidden file-system object:
-            // regardless of filters, always insert folders
-            if (_somIsA(pObject, _WPFolder))
-                return TRUE;          // templates too
+            // always insert, even if drive not ready
+            return TRUE;
+        }
 
-            if ((pcszFileMask) && (*pcszFileMask))
-            {
-                // file mask specified:
-                CHAR szRealName[CCHMAXPATH];
-                if (_wpQueryFilename(pObject,
-                                     szRealName,
-                                     FALSE))       // not q'fied
-                {
-                    return (doshMatch(pcszFileMask, szRealName));
-                }
-            }
-            else
-                // no file mask:
+        if (_somIsA(pObject, _WPFolder))
+        {
+            // filter out folder templates and hidden folders
+            if (    (!(_wpQueryStyle(pObject) & OBJSTYLE_TEMPLATE))
+                 && (!(_wpQueryAttr(pObject) & FILE_HIDDEN))
+               )
                 return TRUE;
         }
+
+        return FALSE;
+    }
+
+    // INSERT_ALL or INSERT_FILESYSTEMS:
+
+    // resolve shadows
+    if (!(pObject = objResolveIfShadow(pObject)))
+        // broken shadow:
+        // disallow with INSERT_FILESYSTEMS
+        return (ulFoldersOnly == INSERT_ALL);
+
+    if (ulFoldersOnly == INSERT_ALL)
+        return TRUE;
+
+    // INSERT_FILESYSTEMS:
+
+    if (_somIsA(pObject, _WPDisk))
+        return TRUE;
+
+    if (    // filter out non-file systems (shadows pointing to them have been resolved):
+            (_somIsA(pObject, _WPFileSystem))
+            // filter out hidden objects:
+         && (!(_wpQueryAttr(pObject) & FILE_HIDDEN))
+       )
+    {
+        // OK, non-hidden file-system object:
+        // regardless of filters, always insert folders
+        if (_somIsA(pObject, _WPFolder))
+            return TRUE;          // templates too
+
+        if ((pcszFileMask) && (*pcszFileMask))
+        {
+            // file mask specified:
+            CHAR szRealName[CCHMAXPATH];
+            if (_wpQueryFilename(pObject,
+                                 szRealName,
+                                 FALSE))       // not q'fied
+            {
+                return doshMatch(pcszFileMask, szRealName);
+            }
+        }
+        else
+            // no file mask:
+            return TRUE;
     }
 
     return FALSE;
@@ -568,15 +585,16 @@ static WPObject* AddFirstChild(WPFolder *pFolder,
             // on the other thread; otherwise we get duplicate objects here
             if (fFindLocked = !_wpRequestFindMutexSem(pFolder, SEM_INDEFINITE_WAIT))
             {
+                WPObject    *pObject;
+
                 if (fFolderLocked = !_wpRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
                 {
-                    WPObject    *pObject;
                     for (   pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                             pObject;
                             pObject = *__get_pobjNext(pObject))
                     {
                         if (fdrIsInsertable(pObject,
-                                            TRUE,      // folders only
+                                            INSERT_FOLDERSONLY,
                                             NULL))
                         {
                             pFirstChildFolder = pObject;
@@ -631,10 +649,17 @@ static WPObject* AddFirstChild(WPFolder *pFolder,
                             CHAR szFolder2[CCHMAXPATH];
                             sprintf(szFolder2, "%s\\%s", szFolder, ffb3.achName);
                             _Pmpf(("      "__FUNCTION__": awaking %s", szFolder2));
-                            pFirstChildFolder = _wpclsQueryFolder(_WPFolder,
-                                                                  szFolder2,
-                                                                  TRUE);
-                            break;
+                            pObject = _wpclsQueryFolder(_WPFolder,
+                                                        szFolder2,
+                                                        TRUE);
+                            // exclude templates
+                            if (fdrIsInsertable(pObject,
+                                                INSERT_FOLDERSONLY,
+                                                NULL))
+                            {
+                                pFirstChildFolder = pObject;
+                                break;
+                            }
                         }
 
                         // search next file
@@ -672,7 +697,7 @@ static WPObject* AddFirstChild(WPFolder *pFolder,
         }
     }
 
-    return (pFirstChildFolder);
+    return pFirstChildFolder;
 }
 
 /*
@@ -718,7 +743,7 @@ static MRESULT EXPENTRY fnwpSplitPopulate(HWND hwnd, ULONG msg, MPARAM mp1, MPAR
          *
          *      --  PMINIRECORDCORE mp1
          *
-         *      --  ULONG mp2: flags, as outlined above.
+         *      --  ULONG mp2: flags, as with FM_FILLFOLDER.
          *
          *@@added V0.9.18 (2002-02-06) [umoeller]
          */
@@ -988,6 +1013,612 @@ HPOINTER fdrSplitQueryPointer(PFDRSPLITVIEW psv)
 
 /* ******************************************************************
  *
+ *   Split view main control (main frame's client)
+ *
+ ********************************************************************/
+
+/*
+ *@@ fdrCreateFrameWithCnr:
+ *      creates a new WC_FRAME with a WC_CONTAINER as its
+ *      client window, with hwndParentOwner being the parent
+ *      and owner of the frame.
+ *
+ *      With flCnrStyle, specify the cnr style to use. The
+ *      following may optionally be set:
+ *
+ *      --  CCS_MINIICONS (optionally)
+ *
+ *      --  CCS_EXTENDSEL: allow zero, one, many icons to be
+ *          selected (default WPS style).
+ *
+ *      --  CCS_SINGLESEL: allow only exactly one icon to be
+ *          selected at a time.
+ *
+ *      --  CCS_MULTIPLESEL: allow zero, one, or more icons
+ *          to be selected, and toggle selections (totally
+ *          unusable).
+ *
+ *      WS_VISIBLE, WS_SYNCPAINT, CCS_AUTOPOSITION, and
+ *      CCS_MINIRECORDCORE will always be set.
+ *
+ *      Returns the frame.
+ *
+ */
+
+HWND fdrCreateFrameWithCnr(ULONG ulFrameID,
+                           HWND hwndParentOwner,     // in: main client window
+                           ULONG flCnrStyle,         // in: cnr style
+                           HWND *phwndClient)        // out: client window (cnr)
+{
+    HWND    hwndFrame;
+    ULONG   ws =   WS_VISIBLE
+                 | WS_SYNCPAINT
+                 | CCS_AUTOPOSITION
+                 | CCS_MINIRECORDCORE
+                 | flCnrStyle;
+
+    if (hwndFrame = winhCreateStdWindow(hwndParentOwner, // parent
+                                        NULL,          // pswpFrame
+                                        FCF_NOBYTEALIGN,
+                                        WS_VISIBLE,
+                                        "",
+                                        0,             // resources ID
+                                        WC_CONTAINER,  // client
+                                        ws,            // client style
+                                        ulFrameID,
+                                        NULL,
+                                        phwndClient))
+    {
+        // set client as owner
+        WinSetOwner(hwndFrame, hwndParentOwner);
+    }
+
+    return hwndFrame;
+}
+
+/*
+ *@@ fdrSetupSplitView:
+ *      creates all the controls for the split view.
+ *
+ *      Returns NULL if no error occured. As a result,
+ *      the return value can be returned from WM_CREATE,
+ *      which stops window creation if != 0 is returned.
+ */
+
+MPARAM fdrSetupSplitView(HWND hwnd,
+                         BOOL fMultipleSel,     // in: allow multiple selections in files cnr?
+                         PFDRSPLITVIEW psv)
+{
+    MPARAM mrc = (MPARAM)FALSE;         // return value of WM_CREATE: 0 == OK
+
+    SPLITBARCDATA sbcd;
+    HAB hab = WinQueryAnchorBlock(hwnd);
+
+    lstInit(&psv->llTreeObjectsInserted, FALSE);
+    lstInit(&psv->llFileObjectsInserted, FALSE);
+
+    // set the window font for the main client...
+    // all controls will inherit this
+    winhSetWindowFont(hwnd,
+                      cmnQueryDefaultFont());
+
+    /*
+     *  split window with two containers
+     *
+     */
+
+    // create two subframes to be linked in split window
+
+    // 1) left: drives tree
+    psv->hwndTreeFrame = fdrCreateFrameWithCnr(ID_TREEFRAME,
+                                               hwnd,    // main client
+                                               CCS_MINIICONS | CCS_SINGLESEL,
+                                               &psv->hwndTreeCnr);
+    BEGIN_CNRINFO()
+    {
+        cnrhSetView(   CV_TREE | CA_TREELINE | CV_ICON
+                     | CV_MINI);
+        cnrhSetTreeIndent(20);
+        cnrhSetSortFunc(fnCompareName);             // shared/cnrsort.c
+    } END_CNRINFO(psv->hwndTreeCnr);
+
+    // 2) right: files
+    psv->hwndFilesFrame = fdrCreateFrameWithCnr(ID_FILESFRAME,
+                                                hwnd,    // main client
+                                                (fMultipleSel)
+                                                   ? CCS_MINIICONS | CCS_EXTENDSEL
+                                                   : CCS_MINIICONS | CCS_SINGLESEL,
+                                                &psv->hwndFilesCnr);
+    BEGIN_CNRINFO()
+    {
+        cnrhSetView(   CV_NAME | CV_FLOW
+                     | CV_MINI);
+        cnrhSetTreeIndent(30);
+        cnrhSetSortFunc(fnCompareNameFoldersFirst);     // shared/cnrsort.c
+    } END_CNRINFO(psv->hwndFilesCnr);
+
+    // 3) fonts
+    winhSetWindowFont(psv->hwndTreeCnr,
+                      cmnQueryDefaultFont());
+    winhSetWindowFont(psv->hwndFilesCnr,
+                      cmnQueryDefaultFont());
+
+    // create split window
+    sbcd.ulSplitWindowID = 1;
+        // split window becomes client of main frame
+    sbcd.ulCreateFlags =   SBCF_VERTICAL
+                         | SBCF_PERCENTAGE
+                         | SBCF_3DSUNK
+                         | SBCF_MOVEABLE;
+    sbcd.lPos = psv->lSplitBarPos;   // in percent
+    sbcd.ulLeftOrBottomLimit = 100;
+    sbcd.ulRightOrTopLimit = 100;
+    sbcd.hwndParentAndOwner = hwnd;         // client
+
+    if (!(psv->hwndSplitWindow = ctlCreateSplitWindow(hab,
+                                                      &sbcd)))
+    {
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                "Cannot create split window.");
+        // stop window creation!
+        mrc = (MPARAM)TRUE;
+    }
+    else
+    {
+        // link left and right container
+        WinSendMsg(psv->hwndSplitWindow,
+                   SPLM_SETLINKS,
+                   (MPARAM)psv->hwndTreeFrame,       // left
+                   (MPARAM)psv->hwndFilesFrame);       // right
+    }
+
+    // create the "populate" thread
+    thrCreate(&psv->tiSplitPopulate,
+              fntSplitPopulate,
+              &psv->tidSplitPopulate,
+              "SplitPopulate",
+              THRF_PMMSGQUEUE | THRF_WAIT_EXPLICIT,
+                        // populate posts event sem when
+                        // it has created its obj wnd
+              (ULONG)psv);
+    // this will wait until the object window has been created
+
+    return mrc;
+}
+
+/*
+ *@@ fdrCleanupSplitView:
+ *
+ *      Does NOT free psv because we can't know how it was
+ *      allocated.
+ *
+ *@@added V0.9.21 (2002-08-21) [umoeller]
+ */
+
+VOID fdrCleanupSplitView(PFDRSPLITVIEW psv)
+{
+    // stop threads; we crash if we exit
+    // before these are stopped
+    WinPostMsg(psv->hwndSplitPopulate,
+               WM_QUIT,
+               0,
+               0);
+
+    psv->tiSplitPopulate.fExit = TRUE;
+    DosSleep(0);
+    while (psv->tidSplitPopulate)
+        winhSleep(50);
+
+    // prevent dialog updates
+    psv->fFileDlgReady = FALSE;
+    fdrClearContainer(psv->hwndTreeCnr,
+                      &psv->llTreeObjectsInserted);
+    fdrClearContainer(psv->hwndFilesCnr,
+                      &psv->llFileObjectsInserted);
+
+    if (psv->pRootFolder)
+        _wpUnlockObject(psv->pRootFolder);
+
+    // clean up
+    if (psv->hwndSplitWindow)
+        WinDestroyWindow(psv->hwndSplitWindow);
+
+    if (psv->hwndTreeFrame)
+        WinDestroyWindow(psv->hwndTreeFrame);
+    if (psv->hwndFilesFrame)
+        WinDestroyWindow(psv->hwndFilesFrame);
+    if (psv->hwndMainFrame)
+        WinDestroyWindow(psv->hwndMainFrame);
+}
+
+/*
+ *@@ fnwpSplitController:
+ *
+ */
+
+MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    switch (msg)
+    {
+        /*
+         * WM_CREATE:
+         *      we get PFDRSPLITVIEW in mp1.
+         */
+
+        case WM_CREATE:
+        {
+            PFDRSPLITVIEW psv = (PFDRSPLITVIEW)mp1;
+            WinSetWindowPtr(hwndClient, QWL_USER, mp1);
+
+            mrc = fdrSetupSplitView(hwndClient,
+                                    TRUE,       // multiple selections
+                                    psv);
+        }
+        break;
+
+        /*
+         * WM_WINDOWPOSCHANGED:
+         *
+         */
+
+        case WM_WINDOWPOSCHANGED:
+        {
+            // this msg is passed two SWP structs:
+            // one for the old, one for the new data
+            // (from PM docs)
+            PSWP pswpNew = PVOIDFROMMP(mp1);
+            // PSWP pswpOld = pswpNew + 1;
+
+            // resizing?
+            if (pswpNew->fl & SWP_SIZE)
+            {
+                PFDRSPLITVIEW  psv;
+                if (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
+                {
+                    // adjust size of "split window",
+                    // which will rearrange all the linked
+                    // windows (comctl.c)
+                    WinSetWindowPos(psv->hwndSplitWindow,
+                                    HWND_TOP,
+                                    0,
+                                    0,
+                                    pswpNew->cx,
+                                    pswpNew->cy,
+                                    SWP_SIZE);
+                }
+            }
+
+            // return default NULL
+        }
+        break;
+
+        /*
+         * WM_MINMAXFRAME:
+         *      when minimizing, we hide the "split window",
+         *      because otherwise the child dialogs will
+         *      display garbage
+         */
+
+        case WM_MINMAXFRAME:
+        {
+            PFDRSPLITVIEW  psv;
+            if (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
+            {
+                PSWP pswp = (PSWP)mp1;
+                if (pswp->fl & SWP_MINIMIZE)
+                    WinShowWindow(psv->hwndSplitWindow, FALSE);
+                else if (pswp->fl & SWP_RESTORE)
+                    WinShowWindow(psv->hwndSplitWindow, TRUE);
+            }
+        }
+        break;
+
+        /*
+         *@@ FM_FILLFOLDER:
+         *      posted to the main control to fill
+         *      the dialog when a new folder has been
+         *      selected in the left drives tree.
+         *
+         *      This automatically offloads populate
+         *      to fntPopulate, which will then post
+         *      a bunch of messages back to us so we
+         *      can update the dialog properly.
+         *
+         *      Parameters:
+         *
+         *      --  PMINIRECORDCODE mp1: record of folder
+         *          (or disk or whatever) to fill with.
+         *
+         *      --  ULONG mp2: dialog flags.
+         *
+         *      mp2 can be any combination of the following:
+         *
+         *      --  If FFL_FOLDERSONLY is set, this operates
+         *          in "folders only" mode. We will then
+         *          populate the folder with subfolders only
+         *          and expand the folder on the left. The
+         *          files list is not changed.
+         *
+         *          If the flag is not set, the folder is
+         *          fully populated and the files list is
+         *          updated as well.
+         *
+         *      --  If FFL_SCROLLTO is set, we will scroll
+         *          the drives tree so that the given record
+         *          becomes visible.
+         *
+         *      --  If FFL_EXPAND is set, we will also expand
+         *          the record in the drives tree after
+         *          populate and run "add first child" for
+         *          each subrecord that was inserted.
+         *
+         *@@added V0.9.18 (2002-02-06) [umoeller]
+         */
+
+        case FM_FILLFOLDER:
+        {
+            PFDRSPLITVIEW  psv;
+            if (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
+            {
+                PMINIRECORDCORE prec = (PMINIRECORDCORE)mp1;
+                BOOL        fFolderChanged = FALSE;
+                WPFolder    *pFolder;
+
+                _PmpfF(("FM_FILLFOLDER %s",
+                            prec->pszIcon));
+                DumpFlags((ULONG)mp2);
+
+                if (0 == ((ULONG)mp2 & FFL_FOLDERSONLY))
+                    // not folders-only: then we need to
+                    // refresh the files list
+                    fdrClearContainer(psv->hwndFilesCnr,
+                                      &psv->llFileObjectsInserted);
+
+                fdrSplitPopulate(psv,
+                                 prec,
+                                 (ULONG)mp2);
+            }
+        }
+        break;
+
+        /*
+         *@@ FM_POPULATED_FILLTREE:
+         *      posted by fntPopulate after populate has been
+         *      done for a folder. This gets posted in any case,
+         *      if the folder was populated in folders-only mode
+         *      or not.
+         *
+         *      Parameters:
+         *
+         *      --  PMINIRECORDCODE mp1: record of folder
+         *          (or disk or whatever) to fill with.
+         *
+         *      --  ULONG mp2: FFL_* flags for whether to
+         *          expand.
+         *
+         *@@added V0.9.18 (2002-02-06) [umoeller]
+         */
+
+        case FM_POPULATED_FILLTREE:
+        {
+            PFDRSPLITVIEW  psv;
+            PMINIRECORDCORE prec;
+
+            _PmpfF(("FM_POPULATED_FILLTREE %s",
+                        mp1
+                            ? ((PMINIRECORDCORE)mp1)->pszIcon
+                            : "NULL"));
+
+            if (    (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
+                 && (prec = (PMINIRECORDCORE)mp1)
+               )
+            {
+                WPFolder    *pFolder = fdrGetFSFromRecord(mp1, TRUE);
+                PLISTNODE   pNode;
+                HWND        hwndAddFirstChild = NULLHANDLE;
+
+                if ((ULONG)mp2 & FFL_EXPAND)
+                {
+                    BOOL        fOld = psv->fFileDlgReady;
+                    // stop control notifications from messing with this
+                    psv->fFileDlgReady = FALSE;
+                    cnrhExpandFromRoot(psv->hwndTreeCnr,
+                                       (PRECORDCORE)prec);
+                    // then fire CM_ADDFIRSTCHILD too
+                    hwndAddFirstChild = psv->hwndSplitPopulate;
+
+                    // re-enable control notifications
+                    psv->fFileDlgReady = fOld;
+                }
+
+                // insert subfolders into tree on the left
+                fdrInsertContents(pFolder,
+                                  psv->hwndTreeCnr,
+                                  (PMINIRECORDCORE)mp1,
+                                  INSERT_FOLDERSANDDISKS,
+                                  hwndAddFirstChild,
+                                  NULL,       // file mask
+                                  &psv->llTreeObjectsInserted);
+            }
+        }
+        break;
+
+        /*
+         *@@ FM_POPULATED_SCROLLTO:
+         *
+         *      Parameters:
+         *
+         *      --  PMINIRECORDCODE mp1: record of folder
+         *          (or disk or whatever) that was populated
+         *          and should now be scrolled to.
+         *
+         *@@added V0.9.18 (2002-02-06) [umoeller]
+         */
+
+        case FM_POPULATED_SCROLLTO:
+        {
+            PFDRSPLITVIEW  psv;
+            if (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
+            {
+                BOOL    fOld = psv->fFileDlgReady;
+                ULONG   ul;
+
+                _PmpfF(("FM_POPULATED_SCROLLTO %s",
+                            mp1
+                                ? ((PMINIRECORDCORE)mp1)->pszIcon
+                                : "NULL"));
+
+                // stop control notifications from messing with this
+                psv->fFileDlgReady = FALSE;
+
+                /* cnrhExpandFromRoot(pWinData->hwndTreeCnr,
+                                   (PRECORDCORE)mp1); */
+                ul = cnrhScrollToRecord(psv->hwndTreeCnr,
+                                        (PRECORDCORE)mp1,
+                                        CMA_ICON | CMA_TEXT | CMA_TREEICON,
+                                        TRUE);       // keep parent
+                cnrhSelectRecord(psv->hwndTreeCnr,
+                                 (PRECORDCORE)mp1,
+                                 TRUE);
+                if (ul && ul != 3)
+                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                            "Error: cnrhScrollToRecord returned %d", ul);
+
+                // re-enable control notifications
+                psv->fFileDlgReady = fOld;
+            }
+        }
+        break;
+
+        /*
+         *@@ FM_POPULATED_FILLFILES:
+         *      posted by fntPopulate after populate has been
+         *      done for the newly selected folder, if this
+         *      was not in folders-only mode. We must then fill
+         *      the right half of the dialog with all the objects.
+         *
+         *      Parameters:
+         *
+         *      --  PMINIRECORDCODE mp1: record of folder
+         *          (or disk or whatever) to fill with.
+         *
+         *      --  WPFolder* mp2: folder that was populated
+         *          for that record.
+         *
+         *@@added V0.9.18 (2002-02-06) [umoeller]
+         */
+
+        case FM_POPULATED_FILLFILES:
+        {
+            PFDRSPLITVIEW  psv;
+            if (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
+            {
+
+                _PmpfF(("FM_POPULATED_FILLFILES %s",
+                            mp1
+                                ? ((PMINIRECORDCORE)mp1)->pszIcon
+                                : "NULL"));
+
+
+                if ((mp1) && (mp2))
+                {
+                    WPFolder    *pFolder = (WPFolder*)mp2;
+                    CHAR        szPathName[2*CCHMAXPATH];
+
+                    // insert all contents into list on the right
+                    fdrInsertContents(pFolder,
+                                      psv->hwndFilesCnr,
+                                      NULL,        // parent
+                                      INSERT_ALL,
+                                      NULLHANDLE,  // no add first child
+                                      NULL,        // no file mask
+                                      &psv->llFileObjectsInserted);
+
+                    // now, if this is for the files cnr, we must make
+                    // sure that the container owner (the parent frame)
+                    // has been subclassed by us... we do this AFTER
+                    // the WPS subclasses the owner, which happens during
+                    // record insertion
+
+                    if (!psv->fFilesFrameSubclassed)
+                    {
+                        // not subclassed yet:
+                        // subclass now
+
+                        psv->psfvFiles
+                            = fdrCreateSFV(psv->hwndFilesFrame,
+                                           psv->hwndFilesCnr,
+                                           QWL_USER,
+                                           pFolder,
+                                           pFolder);
+                        psv->psfvFiles->pfnwpOriginal
+                            = WinSubclassWindow(psv->hwndFilesFrame,
+                                                fnwpSubclassedFilesFrame);
+                        psv->fFilesFrameSubclassed = TRUE;
+                    }
+                    else
+                    {
+                        // already subclassed:
+                        // update the folder pointers in the SFV
+                        psv->psfvFiles->somSelf = pFolder;
+                        psv->psfvFiles->pRealObject = pFolder;
+                    }
+                }
+            }
+        }
+        break;
+
+        /*
+         * CM_UPDATEPOINTER:
+         *      posted when threads exit etc. to update
+         *      the current pointer.
+         */
+
+        case FM_UPDATEPOINTER:
+        {
+            PFDRSPLITVIEW  psv;
+            if (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
+            {
+                WinSetPointer(HWND_DESKTOP,
+                              fdrSplitQueryPointer(psv));
+            }
+        }
+        break;
+
+        /*
+         * WM_CLOSE:
+         *      window list is being closed:
+         *      clean up
+         */
+
+        case WM_CLOSE:
+        {
+            PFDRSPLITVIEW  psv;
+            _PmpfF(("WM_CLOSE"));
+            if (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
+            {
+                // clear all containers, stop populate thread etc.
+                fdrCleanupSplitView(psv);
+
+                // destroy the frame window (which destroys us too)
+                WinDestroyWindow(psv->hwndMainFrame);
+            }
+
+            // return default NULL
+        }
+        break;
+
+        default:
+            mrc = WinDefWindowProc(hwndClient, msg, mp1, mp2);
+    }
+
+    return mrc;
+}
+
+/* ******************************************************************
+ *
  *   Left tree frame and client
  *
  ********************************************************************/
@@ -1192,6 +1823,75 @@ static MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPAR
 
     switch (msg)
     {
+        case WM_CONTROL:
+        {
+            USHORT usID = SHORT1FROMMP(mp1),
+                   usNotifyCode = SHORT2FROMMP(mp1);
+            if (usID == FID_CLIENT)     // that's the container
+            {
+                switch (usNotifyCode)
+                {
+                    case CN_ENTER:
+                    {
+                        PNOTIFYRECORDENTER pnre;
+                        PMINIRECORDCORE prec;
+                        HWND hwndMainControl;
+                        PFDRSPLITVIEW psv;
+                        WPObject *pobj;
+
+                        if (    (pnre = (PNOTIFYRECORDENTER)mp2)
+                             && (prec = (PMINIRECORDCORE)pnre->pRecord)
+                                        // can be null for whitespace!
+                             && (hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER))
+                             && (psv = WinQueryWindowPtr(hwndMainControl, QWL_USER))
+                             && (pobj = fdrGetFSFromRecord(prec,
+                                                           TRUE))       // folders only:
+                           )
+                        {
+                            // dou
+
+                        }
+                        else
+                            fCallDefault = TRUE;
+                    }
+                    break;
+
+                    default:
+                        fCallDefault = TRUE;
+                }
+            }
+            else
+                fCallDefault = TRUE;
+        }
+        break;
+
+        case WM_CHAR:
+            // forward to main client
+            WinPostMsg(WinQueryWindow(hwndFrame, QW_OWNER),
+                       msg,
+                       mp1,
+                       mp2);
+        break;
+
+        case WM_SYSCOMMAND:
+            // forward to main frame
+            WinPostMsg(WinQueryWindow(WinQueryWindow(hwndFrame, QW_OWNER),
+                                      QW_OWNER),
+                       msg,
+                       mp1,
+                       mp2);
+        break;
+
+        case WM_CONTROLPOINTER:
+        {
+            HWND hwndMainControl = WinQueryWindow(hwndFrame, QW_OWNER);
+                                    // the main client
+            PFDRSPLITVIEW psv = WinQueryWindowPtr(hwndMainControl, QWL_USER);
+
+            mrc = (MPARAM)fdrSplitQueryPointer(psv);
+        }
+        break;
+
         default:
             fCallDefault = TRUE;
     }
@@ -1209,615 +1909,26 @@ static MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPAR
 
 /* ******************************************************************
  *
- *   Split view main control (main frame's client)
+ *   Folder split view
  *
  ********************************************************************/
 
 /*
- *@@ fdrCreateFrameWithCnr:
- *      creates a new WC_FRAME with a WC_CONTAINER as its
- *      client window, with hwndParentOwner being the parent
- *      and owner of the frame.
- *
- *      With flCnrStyle, specify the cnr style to use. The
- *      following may optionally be set:
- *
- *      --  CCS_MINIICONS (optionally)
- *
- *      --  CCS_EXTENDSEL: allow one or many icons to be
- *          selected, but never none
- *
- *      --  CCS_SINGLESEL: allow only one icon to be selected
- *
- *      --  CCS_MULTIPLESEL: allow zero, one, or more icons
- *          to be selected.
- *
- *      WS_VISIBLE, WS_SYNCPAINT, CCS_AUTOPOSITION, and
- *      CCS_MINIRECORDCORE will always be set.
- *
- *      Returns the frame.
- *
- */
-
-HWND fdrCreateFrameWithCnr(ULONG ulFrameID,
-                           HWND hwndParentOwner,     // in: main client window
-                           ULONG flCnrStyle,         // in: cnr style
-                           HWND *phwndClient)        // out: client window (cnr)
-{
-    HWND    hwndFrame;
-    ULONG   ws =   WS_VISIBLE
-                 | WS_SYNCPAINT
-                 | CCS_AUTOPOSITION
-                 | CCS_MINIRECORDCORE
-                 | flCnrStyle;
-
-    if (hwndFrame = winhCreateStdWindow(hwndParentOwner, // parent
-                                        NULL,          // pswpFrame
-                                        FCF_NOBYTEALIGN,
-                                        WS_VISIBLE,
-                                        "",
-                                        0,             // resources ID
-                                        WC_CONTAINER,  // client
-                                        ws,            // client style
-                                        ulFrameID,
-                                        NULL,
-                                        phwndClient))
-    {
-        // set client as owner
-        WinSetOwner(hwndFrame, hwndParentOwner);
-    }
-
-    return hwndFrame;
-}
-
-/*
- *@@ fdrSetupSplitView:
- *      creates all the controls for the split view.
- *
- *      Returns NULL if no error occured. As a result,
- *      the return value can be returned from WM_CREATE,
- *      which stops window creation if != 0 is returned.
- */
-
-MPARAM fdrSetupSplitView(HWND hwnd,
-                         BOOL fMultipleSel,     // in: allow multiple selections in files cnr?
-                         PFDRSPLITVIEW psv)
-{
-    MPARAM mrc = (MPARAM)FALSE;         // return value of WM_CREATE: 0 == OK
-
-    SPLITBARCDATA sbcd;
-    HAB hab = WinQueryAnchorBlock(hwnd);
-
-    lstInit(&psv->llTreeObjectsInserted, FALSE);
-    lstInit(&psv->llFileObjectsInserted, FALSE);
-
-    // set the window font for the main client...
-    // all controls will inherit this
-    winhSetWindowFont(hwnd,
-                      cmnQueryDefaultFont());
-
-    /*
-     *  split window with two containers
-     *
-     */
-
-    // create two subframes to be linked in split window
-
-    // 1) left: drives tree
-    psv->hwndTreeFrame = fdrCreateFrameWithCnr(ID_TREEFRAME,
-                                               hwnd,    // main client
-                                               CCS_MINIICONS | CCS_SINGLESEL,
-                                               &psv->hwndTreeCnr);
-    BEGIN_CNRINFO()
-    {
-        cnrhSetView(   CV_TREE | CA_TREELINE | CV_ICON
-                     | CV_MINI);
-        cnrhSetTreeIndent(20);
-        cnrhSetSortFunc(fnCompareName);             // shared/cnrsort.c
-    } END_CNRINFO(psv->hwndTreeCnr);
-
-    // 2) right: files
-    psv->hwndFilesFrame = fdrCreateFrameWithCnr(ID_FILESFRAME,
-                                                hwnd,    // main client
-                                                (fMultipleSel)
-                                                   ? CCS_MINIICONS | CCS_MULTIPLESEL
-                                                   : CCS_MINIICONS | CCS_SINGLESEL,
-                                                &psv->hwndFilesCnr);
-    BEGIN_CNRINFO()
-    {
-        cnrhSetView(   CV_NAME | CV_FLOW
-                     | CV_MINI);
-        cnrhSetTreeIndent(30);
-        cnrhSetSortFunc(fnCompareNameFoldersFirst);     // shared/cnrsort.c
-    } END_CNRINFO(psv->hwndFilesCnr);
-
-    // 3) fonts
-    winhSetWindowFont(psv->hwndTreeCnr,
-                      cmnQueryDefaultFont());
-    winhSetWindowFont(psv->hwndFilesCnr,
-                      cmnQueryDefaultFont());
-
-    // create split window
-    sbcd.ulSplitWindowID = 1;
-        // split window becomes client of main frame
-    sbcd.ulCreateFlags =   SBCF_VERTICAL
-                         | SBCF_PERCENTAGE
-                         | SBCF_3DSUNK
-                         | SBCF_MOVEABLE;
-    sbcd.lPos = 30;     // percent
-    sbcd.ulLeftOrBottomLimit = 100;
-    sbcd.ulRightOrTopLimit = 100;
-    sbcd.hwndParentAndOwner = hwnd;         // client
-
-    if (!(psv->hwndSplitWindow = ctlCreateSplitWindow(hab,
-                                                      &sbcd)))
-    {
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                "Cannot create split window.");
-        // stop window creation!
-        mrc = (MPARAM)TRUE;
-    }
-    else
-    {
-        // link left and right container
-        WinSendMsg(psv->hwndSplitWindow,
-                   SPLM_SETLINKS,
-                   (MPARAM)psv->hwndTreeFrame,       // left
-                   (MPARAM)psv->hwndFilesFrame);       // right
-    }
-
-    // create the "populate" thread
-    thrCreate(&psv->tiSplitPopulate,
-              fntSplitPopulate,
-              &psv->tidSplitPopulate,
-              "SplitPopulate",
-              THRF_PMMSGQUEUE | THRF_WAIT_EXPLICIT,
-                        // populate posts event sem when
-                        // it has created its obj wnd
-              (ULONG)psv);
-    // this will wait until the object window has been created
-
-    return mrc;
-}
-
-/*
- *@@ fdrCleanupSplitView:
- *
- *      Does NOT free psv because we can't know how it was
- *      allocated.
+ *@@ SPLITVIEWPOS:
  *
  *@@added V0.9.21 (2002-08-21) [umoeller]
  */
 
-VOID fdrCleanupSplitView(PFDRSPLITVIEW psv)
+typedef struct _SPLITVIEWPOS
 {
-    // stop threads; we crash if we exit
-    // before these are stopped
-    WinPostMsg(psv->hwndSplitPopulate,
-               WM_QUIT,
-               0,
-               0);
+    LONG        x,
+                y,
+                cx,
+                cy;
 
-    psv->tiSplitPopulate.fExit = TRUE;
-    DosSleep(0);
-    while (psv->tidSplitPopulate)
-        winhSleep(50);
+    LONG        lSplitBarPos;
 
-    // prevent dialog updates
-    psv->fFileDlgReady = FALSE;
-    fdrClearContainer(psv->hwndTreeCnr,
-                      &psv->llTreeObjectsInserted);
-    fdrClearContainer(psv->hwndFilesCnr,
-                      &psv->llFileObjectsInserted);
-
-    if (psv->pRootFolder)
-        _wpUnlockObject(psv->pRootFolder);
-
-    // clean up
-    if (psv->hwndSplitWindow)
-        WinDestroyWindow(psv->hwndSplitWindow);
-
-    if (psv->hwndTreeFrame)
-        WinDestroyWindow(psv->hwndTreeFrame);
-    if (psv->hwndFilesFrame)
-        WinDestroyWindow(psv->hwndFilesFrame);
-    if (psv->hwndMainFrame)
-        WinDestroyWindow(psv->hwndMainFrame);
-}
-
-/*
- *@@ fnwpSplitController:
- *
- */
-
-MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPARAM mp2)
-{
-    MRESULT mrc = 0;
-
-    switch (msg)
-    {
-        /*
-         * WM_CREATE:
-         *      we get the SPLITVIEWDATA pointer in mp1.
-         */
-
-        case WM_CREATE:
-        {
-            PFDRSPLITVIEW psv = (PFDRSPLITVIEW)mp1;
-            WinSetWindowPtr(hwndClient, QWL_USER, mp1);
-
-            mrc = fdrSetupSplitView(hwndClient,
-                                    TRUE,       // multiple selections
-                                    psv);
-        }
-        break;
-
-        /*
-         * WM_WINDOWPOSCHANGED:
-         *
-         */
-
-        case WM_WINDOWPOSCHANGED:
-        {
-            // this msg is passed two SWP structs:
-            // one for the old, one for the new data
-            // (from PM docs)
-            PSWP pswpNew = PVOIDFROMMP(mp1);
-            // PSWP pswpOld = pswpNew + 1;
-
-            // resizing?
-            if (pswpNew->fl & SWP_SIZE)
-            {
-                PFDRSPLITVIEW  psv;
-                if (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
-                {
-                    // adjust size of "split window",
-                    // which will rearrange all the linked
-                    // windows (comctl.c)
-                    WinSetWindowPos(psv->hwndSplitWindow,
-                                    HWND_TOP,
-                                    0,
-                                    0,
-                                    pswpNew->cx,
-                                    pswpNew->cy,
-                                    SWP_SIZE);
-                }
-            }
-
-            // return default NULL
-        }
-        break;
-
-        /*
-         * WM_MINMAXFRAME:
-         *      when minimizing, we hide the "split window",
-         *      because otherwise the child dialogs will
-         *      display garbage
-         */
-
-        case WM_MINMAXFRAME:
-        {
-            PFDRSPLITVIEW  psv;
-            if (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
-            {
-                PSWP pswp = (PSWP)mp1;
-                if (pswp->fl & SWP_MINIMIZE)
-                    WinShowWindow(psv->hwndSplitWindow, FALSE);
-                else if (pswp->fl & SWP_RESTORE)
-                    WinShowWindow(psv->hwndSplitWindow, TRUE);
-            }
-        }
-        break;
-
-        /*
-         *@@ FM_FILLFOLDER:
-         *      posted to the main control to fill
-         *      the dialog when a new folder has been
-         *      selected in the left drives tree.
-         *
-         *      This automatically offloads populate
-         *      to fntPopulate, which will then post
-         *      a bunch of messages back to us so we
-         *      can update the dialog properly.
-         *
-         *      Parameters:
-         *
-         *      --  PMINIRECORDCODE mp1: record of folder
-         *          (or disk or whatever) to fill with.
-         *
-         *      --  ULONG mp2: dialog flags.
-         *
-         *      mp2 can be any combination of the following:
-         *
-         *      --  If FFL_FOLDERSONLY is set, this operates
-         *          in "folders only" mode. We will then
-         *          populate the folder with subfolders only
-         *          and expand the folder on the left. The
-         *          files list is not changed.
-         *
-         *          If the flag is not set, the folder is
-         *          fully populated and the files list is
-         *          updated as well.
-         *
-         *      --  If FFL_SCROLLTO is set, we will scroll
-         *          the drives tree so that the given record
-         *          becomes visible.
-         *
-         *      --  If FFL_EXPAND is set, we will also expand
-         *          the record in the drives tree after
-         *          populate and run "add first child" for
-         *          each subrecord that was inserted.
-         *
-         *@@added V0.9.18 (2002-02-06) [umoeller]
-         */
-
-        case FM_FILLFOLDER:
-        {
-            PFDRSPLITVIEW  psv;
-            if (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
-            {
-                PMINIRECORDCORE prec = (PMINIRECORDCORE)mp1;
-                BOOL        fFolderChanged = FALSE;
-                WPFolder    *pFolder;
-
-                _PmpfF(("FM_FILLFOLDER %s",
-                            prec->pszIcon));
-                DumpFlags((ULONG)mp2);
-
-                if (0 == ((ULONG)mp2 & FFL_FOLDERSONLY))
-                    // not folders-only: then we need to
-                    // refresh the files list
-                    fdrClearContainer(psv->hwndFilesCnr,
-                                      &psv->llFileObjectsInserted);
-
-                fdrSplitPopulate(psv,
-                                 prec,
-                                 (ULONG)mp2);
-            }
-        }
-        break;
-
-        /*
-         *@@ FM_POPULATED_FILLTREE:
-         *      posted by fntPopulate after populate has been
-         *      done for a folder. This gets posted in any case,
-         *      if the folder was populated in folders-only mode
-         *      or not.
-         *
-         *      Parameters:
-         *
-         *      --  PMINIRECORDCODE mp1: record of folder
-         *          (or disk or whatever) to fill with.
-         *
-         *      --  ULONG mp2: FFL_* flags for whether to
-         *          expand.
-         *
-         *@@added V0.9.18 (2002-02-06) [umoeller]
-         */
-
-        case FM_POPULATED_FILLTREE:
-        {
-            PFDRSPLITVIEW  psv;
-            PMINIRECORDCORE prec;
-
-            _PmpfF(("FM_POPULATED_FILLTREE %s",
-                        mp1
-                            ? ((PMINIRECORDCORE)mp1)->pszIcon
-                            : "NULL"));
-
-            if (    (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
-                 && (prec = (PMINIRECORDCORE)mp1)
-               )
-            {
-                WPFolder    *pFolder = fdrGetFSFromRecord(mp1, TRUE);
-                PLISTNODE   pNode;
-                HWND        hwndAddFirstChild = NULLHANDLE;
-
-                if ((ULONG)mp2 & FFL_EXPAND)
-                {
-                    BOOL        fOld = psv->fFileDlgReady;
-                    // stop control notifications from messing with this
-                    psv->fFileDlgReady = FALSE;
-                    cnrhExpandFromRoot(psv->hwndTreeCnr,
-                                       (PRECORDCORE)prec);
-                    // then fire CM_ADDFIRSTCHILD too
-                    hwndAddFirstChild = psv->hwndSplitPopulate;
-
-                    // re-enable control notifications
-                    psv->fFileDlgReady = fOld;
-                }
-
-                // insert subfolders into tree on the left
-                fdrInsertContents(pFolder,
-                                  psv->hwndTreeCnr,
-                                  (PMINIRECORDCORE)mp1,
-                                  2,       // folders only
-                                  hwndAddFirstChild,
-                                  NULL,       // file mask
-                                  &psv->llTreeObjectsInserted);
-            }
-        }
-        break;
-
-        /*
-         *@@ FM_POPULATED_SCROLLTO:
-         *
-         *      Parameters:
-         *
-         *      --  PMINIRECORDCODE mp1: record of folder
-         *          (or disk or whatever) that was populated
-         *          and should now be scrolled to.
-         *
-         *@@added V0.9.18 (2002-02-06) [umoeller]
-         */
-
-        case FM_POPULATED_SCROLLTO:
-        {
-            PFDRSPLITVIEW  psv;
-            if (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
-            {
-                BOOL    fOld = psv->fFileDlgReady;
-                ULONG   ul;
-
-                _PmpfF(("FM_POPULATED_SCROLLTO %s",
-                            mp1
-                                ? ((PMINIRECORDCORE)mp1)->pszIcon
-                                : "NULL"));
-
-                // stop control notifications from messing with this
-                psv->fFileDlgReady = FALSE;
-
-                /* cnrhExpandFromRoot(pWinData->hwndTreeCnr,
-                                   (PRECORDCORE)mp1); */
-                ul = cnrhScrollToRecord(psv->hwndTreeCnr,
-                                        (PRECORDCORE)mp1,
-                                        CMA_ICON | CMA_TEXT | CMA_TREEICON,
-                                        TRUE);       // keep parent
-                cnrhSelectRecord(psv->hwndTreeCnr,
-                                 (PRECORDCORE)mp1,
-                                 TRUE);
-                if (ul && ul != 3)
-                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                            "Error: cnrhScrollToRecord returned %d", ul);
-
-                // re-enable control notifications
-                psv->fFileDlgReady = fOld;
-            }
-        }
-        break;
-
-        /*
-         *@@ FM_POPULATED_FILLFILES:
-         *      posted by fntPopulate after populate has been
-         *      done for the newly selected folder, if this
-         *      was not in folders-only mode. We must then fill
-         *      the right half of the dialog with all the objects.
-         *
-         *      Parameters:
-         *
-         *      --  PMINIRECORDCODE mp1: record of folder
-         *          (or disk or whatever) to fill with.
-         *
-         *      --  WPFolder* mp2: folder that was populated
-         *          for that record.
-         *
-         *@@added V0.9.18 (2002-02-06) [umoeller]
-         */
-
-        case FM_POPULATED_FILLFILES:
-        {
-            PFDRSPLITVIEW  psv;
-            if (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
-            {
-
-                _PmpfF(("FM_POPULATED_FILLFILES %s",
-                            mp1
-                                ? ((PMINIRECORDCORE)mp1)->pszIcon
-                                : "NULL"));
-
-
-                if ((mp1) && (mp2))
-                {
-                    WPFolder    *pFolder = (WPFolder*)mp2;
-                    CHAR        szPathName[2*CCHMAXPATH];
-
-                    // insert all contents into list on the right
-                    fdrInsertContents(pFolder,
-                                      psv->hwndFilesCnr,
-                                      NULL,        // parent
-                                      0,           // folders only
-                                      NULLHANDLE,  // no add first child
-                                      NULL,        // no file mask
-                                      &psv->llFileObjectsInserted);
-
-                    // now, if this is for the files cnr, we must make
-                    // sure that the container owner (the parent frame)
-                    // has been subclassed by us... we do this AFTER
-                    // the WPS subclasses the owner, which happens during
-                    // record insertion
-
-                    if (!psv->fFilesFrameSubclassed)
-                    {
-                        // not subclassed yet:
-                        // subclass now
-
-                        psv->psfvFiles
-                            = fdrCreateSFV(psv->hwndFilesFrame,
-                                           psv->hwndFilesCnr,
-                                           QWL_USER,
-                                           pFolder,
-                                           pFolder);
-                        psv->psfvFiles->pfnwpOriginal
-                            = WinSubclassWindow(psv->hwndFilesFrame,
-                                                fnwpSubclassedFilesFrame);
-                        psv->fFilesFrameSubclassed = TRUE;
-                    }
-                    else
-                    {
-                        // already subclassed:
-                        // update the folder pointers in the SFV
-                        psv->psfvFiles->somSelf = pFolder;
-                        psv->psfvFiles->pRealObject = pFolder;
-                    }
-                }
-            }
-        }
-        break;
-
-        /*
-         * CM_UPDATEPOINTER:
-         *      posted when threads exit etc. to update
-         *      the current pointer.
-         */
-
-        case FM_UPDATEPOINTER:
-        {
-            PFDRSPLITVIEW  psv;
-            if (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
-            {
-                WinSetPointer(HWND_DESKTOP,
-                              fdrSplitQueryPointer(psv));
-            }
-        }
-        break;
-
-        /*
-         * WM_CLOSE:
-         *      window list is being closed:
-         *      clean up
-         */
-
-        case WM_CLOSE:
-        {
-            PFDRSPLITVIEW  psv;
-            if (psv = WinQueryWindowPtr(hwndClient, QWL_USER))
-            {
-                WinSetWindowPtr(hwndClient, QWL_USER, NULL);
-                WinSetWindowPtr(psv->hwndMainFrame, QWL_USER, NULL);
-
-                // clear all containers, stop populate thread etc.
-                fdrCleanupSplitView(psv);
-
-                // destroy the frame window (which destroys us too)
-                WinDestroyWindow(psv->hwndMainFrame);
-            }
-
-            // return default NULL
-        }
-        break;
-
-        default:
-            mrc = WinDefWindowProc(hwndClient, msg, mp1, mp2);
-    }
-
-    return mrc;
-}
-
-/* ******************************************************************
- *
- *   Folder split view
- *
- ********************************************************************/
+} SPLITVIEWPOS, *PSPLITVIEWPOS;
 
 /*
  *@@ SPLITVIEWDATA:
@@ -1830,6 +1941,8 @@ typedef struct _SPLITVIEWDATA
 
     USEITEM         ui;
     VIEWITEM        vi;
+
+    CHAR            szFolderPosKey[10];
 
     FDRSPLITVIEW    sv;         // pRootFolder == somSelf
 
@@ -1847,22 +1960,48 @@ MRESULT EXPENTRY fnwpSplitViewFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARA
 
     switch (msg)
     {
+        case WM_SYSCOMMAND:
+        {
+            PSPLITVIEWDATA psvd;
+            if (    (SHORT1FROMMP(mp1) == SC_CLOSE)
+                 && (psvd = (PSPLITVIEWDATA)WinQueryWindowPtr(hwndFrame,
+                                                              QWL_USER))
+               )
+            {
+                // save window position
+                SWP swp;
+                SPLITVIEWPOS pos;
+                WinQueryWindowPos(hwndFrame,
+                                  &swp);
+                pos.x = swp.x;
+                pos.y = swp.y;
+                pos.cx = swp.cx;
+                pos.cy = swp.cy;
+
+                pos.lSplitBarPos = ctlQuerySplitPos(psvd->sv.hwndSplitWindow);
+
+                PrfWriteProfileData(HINI_USER,
+                                    (PSZ)INIAPP_FDRSPLITVIEWPOS,
+                                    psvd->szFolderPosKey,
+                                    &pos,
+                                    sizeof(pos));
+            }
+
+            mrc = G_pfnFrameProc(hwndFrame, msg, mp1, mp2);
+        }
+        break;
+
         case WM_DESTROY:
         {
             PSPLITVIEWDATA psvd;
+
             if (psvd = (PSPLITVIEWDATA)WinQueryWindowPtr(hwndFrame,
                                                          QWL_USER))
             {
+                _PmpfF(("PSPLITVIEWDATA is 0x%lX", psvd));
+
                 _wpDeleteFromObjUseList(psvd->sv.pRootFolder,  // somSelf
                                         &psvd->ui);
-
-    #if 0
-                // save window position
-                winhSaveWindowPos(hwndFrame,
-                                  HINI_USER,
-                                  INIAPP_XWORKPLACE,
-                                  INIKEY_WNDPOSCLASSINFO);
-    #endif
 
                 _wpFreeMem(psvd->sv.pRootFolder,  // somSelf,
                            (PBYTE)psvd);
@@ -1915,6 +2054,8 @@ HWND fdrCreateSplitView(WPFolder *somSelf,
                                                sizeof(SPLITVIEWDATA),
                                                &rc))
         {
+            SPLITVIEWPOS pos;
+            ULONG   cbPos;
             ULONG   flFrame = FCF_NOBYTEALIGN
                                   | FCF_TITLEBAR
                                   | FCF_SYSMENU
@@ -1939,6 +2080,29 @@ HWND fdrCreateSplitView(WPFolder *somSelf,
 
             psvd->sv.pRootFolder = somSelf;
 
+            // try to restore window position, if present
+            sprintf(psvd->szFolderPosKey,
+                    "%lX",
+                    _wpQueryHandle(somSelf));
+            cbPos = sizeof(pos);
+            if (    (!(PrfQueryProfileData(HINI_USER,
+                                           (PSZ)INIAPP_FDRSPLITVIEWPOS,
+                                           psvd->szFolderPosKey,
+                                           &pos,
+                                           &cbPos)))
+                 || (cbPos != sizeof(SPLITVIEWPOS))
+               )
+            {
+                // no position stored yet:
+                pos.x = (winhQueryScreenCX() - 600) / 2;
+                pos.y = (winhQueryScreenCY() - 400) / 2;
+                pos.cx = 600;
+                pos.cy = 400;
+                psvd->sv.lSplitBarPos = 30;
+            }
+            else
+                psvd->sv.lSplitBarPos = pos.lSplitBarPos;
+
             // create the frame and the client;
             // the client gets psvd in mp1 with WM_CREATE
             // and creates the split window and everything else
@@ -1955,18 +2119,7 @@ HWND fdrCreateSplitView(WPFolder *somSelf,
                                                              &psvd->sv.hwndMainControl))
             {
                 PMINIRECORDCORE pRootRec;
-                POINTL ptlIcon = {0, 0};
-
-                WinSetWindowPtr(psvd->sv.hwndMainFrame, QWL_USER, psvd);
-                G_pfnFrameProc = WinSubclassWindow(psvd->sv.hwndMainFrame,
-                                                   fnwpSplitViewFrame);
-
-                // register the view
-                cmnRegisterView(somSelf,
-                                &psvd->ui,
-                                ulView,
-                                psvd->sv.hwndMainFrame,
-                                cmnGetString(ID_XFSI_FDR_SPLITVIEW));
+                POINTL  ptlIcon = {0, 0};
 
                 // insert somSelf as the root of the tree
                 pRootRec = _wpCnrInsertObject(psvd->sv.pRootFolder,
@@ -1990,19 +2143,40 @@ HWND fdrCreateSplitView(WPFolder *somSelf,
                 // and populate this once we're running
                 fdrPostFillFolder(&psvd->sv,
                                   pRootRec,
-                                  FFL_FOLDERSONLY | FFL_EXPAND);
+                                  /* FFL_FOLDERSONLY | */ FFL_EXPAND);
 
-                // no position stored yet:
+                // view-specific stuff
+
+                _PmpfF(("setting frame's PSPLITVIEWDATA to 0x%lX", psvd));
+
+                WinSetWindowPtr(psvd->sv.hwndMainFrame,
+                                QWL_USER,
+                                psvd);
+                G_pfnFrameProc = WinSubclassWindow(psvd->sv.hwndMainFrame,
+                                                   fnwpSplitViewFrame);
+
+                // register the view
+                cmnRegisterView(somSelf,
+                                &psvd->ui,
+                                ulView,
+                                psvd->sv.hwndMainFrame,
+                                cmnGetString(ID_XFSI_FDR_SPLITVIEW));
+
                 WinSetWindowPos(psvd->sv.hwndMainFrame,
                                 HWND_TOP,
-                                0, 0, 600, 400,
-                                SWP_SIZE);
-                winhCenterWindow(psvd->sv.hwndMainFrame);       // still invisible
+                                pos.x,
+                                pos.y,
+                                pos.cx,
+                                pos.cy,
+                                SWP_MOVE | SWP_SIZE);
 
                 WinSetWindowPos(psvd->sv.hwndMainFrame,
                                 HWND_TOP,
                                 0, 0, 0, 0,
                                 SWP_SHOW | SWP_ACTIVATE | SWP_ZORDER);
+
+                _PmpfF(("frame's PSPLITVIEWDATA is now 0x%lX",
+                        WinQueryWindowPtr(psvd->sv.hwndMainFrame, QWL_USER) ));
 
                 psvd->sv.fFileDlgReady = TRUE;
 

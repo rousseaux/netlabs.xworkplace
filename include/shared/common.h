@@ -207,6 +207,9 @@
     // keyboard macros V0.9.20 (2002-07-03) [umoeller]
     DECLARE_CMN_STRING(INIKEY_KEYBOARD_MACROS, "KeybMacros");
 
+    // split view window positions V0.9.21 (2002-08-21) [umoeller]
+    DECLARE_CMN_STRING(INIAPP_FDRSPLITVIEWPOS, "XWorkplace:SplitViews");
+
     /*
      * file type hierarchies:
      *

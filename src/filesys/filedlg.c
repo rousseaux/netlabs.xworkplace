@@ -910,6 +910,8 @@ static MRESULT MainControlCreate(HWND hwnd,
 {
     MRESULT mrc;
 
+    pWinData->sv.lSplitBarPos = 30;         // percentage of split bar pos
+
     if (!(mrc = fdrSetupSplitView(hwnd,
                                   !!(pWinData->pfd->fl & FDS_MULTIPLESEL),
                                   &pWinData->sv)))
@@ -1275,7 +1277,7 @@ static MRESULT EXPENTRY fnwpMainControl(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM
                 fdrInsertContents(pFolder,
                                   pWinData->sv.hwndTreeCnr,
                                   (PMINIRECORDCORE)mp1,
-                                  2,       // folders only
+                                  INSERT_FOLDERSANDDISKS,
                                   hwndAddFirstChild,
                                   NULL,       // file mask
                                   &pWinData->sv.llTreeObjectsInserted);
@@ -1362,7 +1364,7 @@ static MRESULT EXPENTRY fnwpMainControl(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM
                 fdrInsertContents(pFolder,
                                   pWinData->sv.hwndFilesCnr,
                                   NULL,    // parent
-                                  0,       // folders only
+                                  INSERT_FILESYSTEMS,
                                   NULLHANDLE,      // no add first child
                                   pWinData->szFileMask,
                                   &pWinData->sv.llFileObjectsInserted);
