@@ -60,14 +60,21 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
+#define INCL_DOSEXCEPTIONS
+#define INCL_DOSPROCESS
+#define INCL_DOSERRORS
 #include <os2.h>
 
 // C library headers
+#include <stdio.h>              // needed for except.h
+#include <setjmp.h>             // needed for except.h
+#include <assert.h>             // needed for except.h
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\except.h"             // exception handling
 
 // SOM headers which don't crash with prec. header files
 #include "xwpfsys.ih"
@@ -76,12 +83,14 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
+#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\fhandles.h"           // replacement file-system handles management
 #include "filesys\filesys.h"            // various file-system object implementation code
 
 // other SOM headers
 #pragma hdrstop
+#include <wpfolder.h>
 
 /* ******************************************************************
  *                                                                  *
@@ -169,6 +178,68 @@ SOM_Scope void  SOMLINK xfs_wpObjectReady(XWPFileSystem *somSelf,
                                                     ulCode, refObject);
 }
 
+/*
+ *@@ wpDestroyObject:
+ *      this undocumented WPObject method is responsible for
+ *      destroying the persistent data of an object. This gets
+ *      called from WPObject::wpFree, apparently.
+ *
+ *      See object.c for more details about an object's life
+ *      cycle.
+ *
+ *      This method normally deletes the file or folder.
+ *      Unfortunately, the standard WPS version also pops
+ *      up a message box if it cannot delete the object,
+ *      for whatever reason. Even worse, it pops up the
+ *      message box even if that object no longer exists!
+ *      This needs to be fixed.
+ *
+ *@@added V0.9.9 (2001-02-01) [umoeller]
+ */
+
+BOOL _System xfs_wpDestroyObject(XWPFileSystem *somSelf)
+{
+    BOOL    brc = FALSE;
+
+    WPSHLOCKSTRUCT Lock;
+    if (wpshLockObject(&Lock, somSelf))
+    {
+        // get the full path name so we can kill that beast
+        CHAR szFilename[CCHMAXPATH];
+        _Pmpf((__FUNCTION__ ": entering"));
+        if (_wpQueryFilename(somSelf,
+                             szFilename,
+                             TRUE))         // fully q'fied
+        {
+            APIRET arc = NO_ERROR;
+            if (_somIsA(somSelf, _WPFolder))
+                // folder:
+                arc = DosDeleteDir(szFilename);
+            else
+                // file:
+                arc = DosDelete(szFilename);
+
+            // now, as opposed to the WPS, we are smart enough
+            // to check the return code:
+            switch (arc)
+            {
+                case NO_ERROR:
+                case ERROR_FILE_NOT_FOUND:
+                case ERROR_PATH_NOT_FOUND:
+                    // well, all these are OK -- report success
+                    brc = TRUE;
+
+                // OTHERWISE DISPLAY NO FREAKING MESSAGE BOX.
+                // THIS MIGHT BE INVOKED PROGRAMATICALLY IN
+                // A LOOP SOMEWHERE. WHO CAME UP WITH THIS?!?
+            }
+        }
+    }
+    wpshUnlockObject(&Lock);
+
+    return (brc);
+}
+
 /* ******************************************************************
  *                                                                  *
  *  M_XWPFileSystem class methods                                   *
@@ -197,6 +268,24 @@ SOM_Scope void  SOMLINK xfsM_wpclsInitData(M_XWPFileSystem *somSelf)
 #endif
 
     M_XWPFileSystem_parent_M_WPFileSystem_wpclsInitData(somSelf);
+
+    /*
+     *  Manually patch method tables of this class...
+     *
+     */
+
+    // this gets called for subclasses too, so patch
+    // this only for the parent class... descendant
+    // classes will inherit this anyway
+    /* _Pmpf((__FUNCTION__ ": attempting to override wpDestroyObject"));
+    if (somSelf == _XWPFileSystem)
+    {
+        // override the undocumented wpDestroyObject method
+        _Pmpf((__FUNCTION__ ": overriding"));
+        wpshOverrideStaticMethod(somSelf,
+                                 "wpDestroyObject",
+                                 (somMethodPtr)xfs_wpDestroyObject);
+    } */
 }
 
 

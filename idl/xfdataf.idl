@@ -44,8 +44,12 @@ interface XFldDataFile : WPDataFile
      *
      */
 
+    BOOL xwpNukePhysical();
+
 #ifdef __SOMIDL__
   implementation {
+
+    releaseorder: xwpNukePhysical;
 
     /*
      * Class Modifiers:

@@ -676,6 +676,8 @@ BEGIN
     ID_XCSI_XWPTRASHCAN                 "XWorkplace trash can"
 /* the following has been added V0.9.3 (2000-04-26) [umoeller] */
     ID_XCSI_REPLACEDELETE               "Replace true delete"
+/* the following has been added V0.9.9 (2001-01-31) [umoeller] */
+    ID_XCSI_REPLACEREFRESH              "Replace folder auto-refresh"
 END
 
 /* Treesize definitions; added V0.9.0 */

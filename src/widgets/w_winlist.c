@@ -175,7 +175,6 @@ PCTRDISPLAYHELP pctrDisplayHelp = NULL;
 PCTRFREESETUPVALUE pctrFreeSetupValue = NULL;
 PCTRPARSECOLORSTRING pctrParseColorString = NULL;
 PCTRSCANSETUPSTRING pctrScanSetupString = NULL;
-PCTRSETSETUPSTRING pctrSetSetupString = NULL;
 
 PGPIHDRAW3DFRAME pgpihDraw3DFrame = NULL;
 PGPIHSWITCHTORGB pgpihSwitchToRGB = NULL;
@@ -215,7 +214,6 @@ RESOLVEFUNCTION G_aImports[] =
         "ctrFreeSetupValue", (PFN*)&pctrFreeSetupValue,
         "ctrParseColorString", (PFN*)&pctrParseColorString,
         "ctrScanSetupString", (PFN*)&pctrScanSetupString,
-        "ctrSetSetupString", (PFN*)&pctrSetSetupString,
         "gpihDraw3DFrame", (PFN*)&pgpihDraw3DFrame,
         "gpihSwitchToRGB", (PFN*)&pgpihSwitchToRGB,
         "lstAppendItem", (PFN*)&plstAppendItem,
@@ -808,8 +806,8 @@ MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                             XSTRING strSetup;
                             WwgtSaveSetup(&strSetup,
                                           pSetup);
-                            pctrSetSetupString(pData->hSettings,
-                                               strSetup.psz);
+                            pData->pctrSetSetupString(pData->hSettings,
+                                                      strSetup.psz);
                             pxstrClear(&strSetup);
                             WinDismissDlg(hwnd, DID_OK);
                         break; }

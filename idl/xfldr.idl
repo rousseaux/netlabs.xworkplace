@@ -190,6 +190,8 @@ interface XFolder : WPFolder
      *
      */
 
+    BOOL xwpNukePhysical();
+
     BOOL xwpQueryFldrSort(in PUSHORT pusDefaultSort, in PUSHORT pusAlwaysSort);
     BOOL xwpSetFldrSort(in USHORT usDefaultSort, in USHORT usAlwaysSort);
     BOOL xwpSortViewOnce(in HWND hwndFrame, in USHORT usSort);
@@ -262,7 +264,8 @@ interface XFolder : WPFolder
         xwpSetDefaultDocument,
         xwpQueryDefaultDocument,
         xwpSetDisableCnrAdd,
-        xwpProcessObjectCommand;
+        xwpProcessObjectCommand,
+        xwpNukePhysical;
 
     /*
      * Class Modifiers:
@@ -361,6 +364,18 @@ interface XFolder : WPFolder
     // pointers to original WPFolder object pointers
     WPObject        *ppFirstObj;
     WPObject        *ppLastObj;
+
+    // file-system notifications for replacement auto-refresh
+    // V0.9.9 (2001-02-01) [umoeller]
+    PVOID           pvllNotifications;
+                // WARNINGS: This is a PLINKLIST to XWPNOTIFY structures
+                // really. This list is maintained by the functions in
+                // src\refresh.c directly. There are NO XFolder method
+                // interfaces for this. This list must only be modified
+                // with proper serialization... since it would be very
+                // dangerous to request BOTH the WPS notify mutex AND
+                // the folder's object mutex, per definition, we only
+                // use the notify mutex for this (wpshGetNotifySem).
 
     /*
      * WPFolder methods overridden by XFolder:

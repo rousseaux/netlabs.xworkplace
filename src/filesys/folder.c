@@ -2773,6 +2773,13 @@ SHORT EXPENTRY fdrSortByICONPOS(PVOID pItem1, PVOID pItem2, PVOID psip)
  *      the XFolder instance variables (_ppFirstObj and
  *      _ppLastObj). They will never change.
  *
+ *      Preconditions:
+ *
+ *      -- the caller must hold the folder mutex. Yes,
+ *         this affects XFolder instance variables, so
+ *         the object mutex would be the first to think
+ *         of... but we put up this requirement instead.
+ *
  *@@added V0.9.7 (2001-01-13) [umoeller]
  */
 
@@ -2810,6 +2817,61 @@ BOOL fdrResolveContentPtrs(WPFolder *somSelf)
         brc = TRUE;
 
     return (brc);
+}
+
+/*
+ *@@ fdrFindFSFromName:
+ *      goes thru the folder contents to find the first
+ *      file-system object with the specified name (not
+ *      title!).
+ *
+ *@@added V0.9.9 (2001-02-01) [umoeller]
+ */
+
+WPObject* fdrFindFSFromName(WPFolder *pFolder,
+                            const char *pcszShortName)
+{
+    WPObject *pobjReturn = NULL;
+
+    BOOL fFolderLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        fFolderLocked = !wpshRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT);
+        if (fFolderLocked)
+        {
+            if (fdrResolveContentPtrs(pFolder))
+            {
+                XFolderData *somThis = XFolderGetData(pFolder);
+
+                WPObject *pobj = *_ppFirstObj;
+
+                while (pobj)
+                {
+                    if (_somIsA(pobj, _WPFileSystem))
+                    {
+                        // check name
+                        CHAR szFilename[CCHMAXPATH];
+                        if (_wpQueryFilename(pobj, szFilename, FALSE))
+                            if (!stricmp(szFilename, pcszShortName))
+                            {
+                                // got it:
+                                pobjReturn = pobj;
+                                break;
+                            }
+                    }
+
+                    pobj = _xwpQueryNextObj(pobj);
+                }
+            }
+        }
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fFolderLocked)
+        wpshReleaseFolderMutexSem(pFolder);
+
+    return (pobjReturn);
 }
 
 /*

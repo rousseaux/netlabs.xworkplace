@@ -200,7 +200,7 @@ $(OUTPUTDIR)\xdebug_folder.obj: \
 
 $(OUTPUTDIR)\xfdataf.obj: \
             $(INC)\setup.h \
-            $(HLPINC)\dosh.h $(HLPINC)\linklist.h \
+            $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
             $(INC)\filesys\filesys.h $(INC)\filesys\filetype.h $(INC)\filesys\folder.h \
@@ -233,7 +233,7 @@ $(OUTPUTDIR)\xfldr.obj: \
             $(INC)\dlgids.h \
             $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
             $(INC)\filesys\filesys.h $(INC)\filesys\folder.h $(INC)\filesys\fdrmenus.h \
-                $(INC)\filesys\object.h $(INC)\filesys\statbars.h $(INC)\filesys\xthreads.h \
+                $(INC)\filesys\object.h $(INC)\filesys\refresh.h $(INC)\filesys\statbars.h $(INC)\filesys\xthreads.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h \
 
 $(OUTPUTDIR)\xfobj.obj: \
@@ -343,9 +343,9 @@ $(OUTPUTDIR)\xmmvolume.obj: \
 
 $(OUTPUTDIR)\xwpfsys.obj: \
             $(INC)\setup.h \
-            $(HLPINC)\winh.h \
+            $(HLPINC)\except.h \
             $(INC)\dlgids.h \
-            $(INC)\shared\common.h $(INC)\shared\notebook.h \
+            $(INC)\shared\common.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
             $(INC)\filesys\fhandles.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 

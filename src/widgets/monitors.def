@@ -1,6 +1,6 @@
 
 ;
-; winlist.def:
+; monitors.def:
 ;       module definition file for MONITORS.DLL, an XCenter
 ;       plug-in widget DLL.
 ;
@@ -17,7 +17,7 @@
 ;
 
 LIBRARY MONITORS INITGLOBAL TERMGLOBAL
-Description '@#Ulrich M”ller:0.9.8#@ XCenter monitors plugin DLL'
+Description '@#Ulrich M”ller:0.9.9#@ XCenter monitors plugin DLL'
 PROTMODE
 
 DATA              SINGLE READWRITE LOADONCALL SHARED

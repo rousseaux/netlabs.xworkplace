@@ -118,6 +118,46 @@
  ********************************************************************/
 
 /*
+ *@@ xwpNukePhysical:
+ *      override of XFldObject::xwpNukePhysical. See remarks there.
+ *
+ *      This actually deletes the data file using DosDelete.
+ *
+ *      As opposed to the WPS, we are smart enough NOT to
+ *      display a message box here if deletion failed. In
+ *      addition, if the file is already gone, we return
+ *      TRUE, since the file was obviously already deleted.
+ *
+ *@@added V0.9.9 (2001-02-04) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfdf_xwpNukePhysical(XFldDataFile *somSelf)
+{
+    BOOL    brc = FALSE;
+    CHAR    szFilename[CCHMAXPATH];
+    /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
+    XFldDataFileMethodDebug("XFldDataFile","xfdf_xwpNukePhysical");
+
+    if (_wpQueryFilename(somSelf, szFilename, TRUE))
+    {
+        APIRET arc = DosDelete(szFilename);
+
+        _Pmpf((__FUNCTION__ ": DosDelete returned %d", arc));
+
+        switch (arc)
+        {
+            case NO_ERROR:
+            case ERROR_FILE_NOT_FOUND:
+            case ERROR_PATH_NOT_FOUND:
+                brc = TRUE;
+            break;
+        }
+    }
+
+    return (brc);
+}
+
+/*
  *@@ wpDisplayMenu:
  *      this WPObject instance method creates and displays
  *      an object's popup menu, which is returned.

@@ -100,11 +100,13 @@ OBJS = \
     $(XWP_OUTPUT_ROOT)\cfgsys.obj $(XWP_OUTPUT_ROOT)\classlst.obj $(XWP_OUTPUT_ROOT)\drivdlgs.obj $(XWP_OUTPUT_ROOT)\drivers.obj $(XWP_OUTPUT_ROOT)\fonts.obj \
     $(XWP_OUTPUT_ROOT)\hookintf.obj $(XWP_OUTPUT_ROOT)\pagemage.obj $(XWP_OUTPUT_ROOT)\partitions.obj $(XWP_OUTPUT_ROOT)\sound.obj \
 # code from filesys\
-    $(XWP_OUTPUT_ROOT)\disk.obj $(XWP_OUTPUT_ROOT)\fdrhotky.obj $(XWP_OUTPUT_ROOT)\fdrnotebooks.obj $(XWP_OUTPUT_ROOT)\fdrsubclass.obj $(XWP_OUTPUT_ROOT)\fdrmenus.obj \
-    $(XWP_OUTPUT_ROOT)\fhandles.obj $(XWP_OUTPUT_ROOT)\fileops.obj $(XWP_OUTPUT_ROOT)\filesys.obj $(XWP_OUTPUT_ROOT)\fops_bottom.obj $(XWP_OUTPUT_ROOT)\fops_top.obj \
-    $(XWP_OUTPUT_ROOT)\filetype.obj \
-    $(XWP_OUTPUT_ROOT)\folder.obj $(XWP_OUTPUT_ROOT)\object.obj $(XWP_OUTPUT_ROOT)\desktop.obj \
-    $(XWP_OUTPUT_ROOT)\program.obj $(XWP_OUTPUT_ROOT)\statbars.obj $(XWP_OUTPUT_ROOT)\trash.obj $(XWP_OUTPUT_ROOT)\xthreads.obj \
+    $(XWP_OUTPUT_ROOT)\disk.obj $(XWP_OUTPUT_ROOT)\fdrhotky.obj $(XWP_OUTPUT_ROOT)\fdrnotebooks.obj \
+    $(XWP_OUTPUT_ROOT)\fdrsubclass.obj $(XWP_OUTPUT_ROOT)\fdrmenus.obj $(XWP_OUTPUT_ROOT)\fhandles.obj \
+    $(XWP_OUTPUT_ROOT)\fileops.obj $(XWP_OUTPUT_ROOT)\filesys.obj $(XWP_OUTPUT_ROOT)\fops_bottom.obj \
+    $(XWP_OUTPUT_ROOT)\fops_top.obj $(XWP_OUTPUT_ROOT)\filetype.obj $(XWP_OUTPUT_ROOT)\folder.obj \
+    $(XWP_OUTPUT_ROOT)\object.obj $(XWP_OUTPUT_ROOT)\desktop.obj $(XWP_OUTPUT_ROOT)\program.obj \
+    $(XWP_OUTPUT_ROOT)\refresh.obj $(XWP_OUTPUT_ROOT)\statbars.obj $(XWP_OUTPUT_ROOT)\trash.obj \
+    $(XWP_OUTPUT_ROOT)\xthreads.obj \
 # code from media\
     $(XWP_OUTPUT_ROOT)\mmcdplay.obj $(XWP_OUTPUT_ROOT)\mmhelp.obj $(XWP_OUTPUT_ROOT)\mmthread.obj $(XWP_OUTPUT_ROOT)\mmvolume.obj \
 # code from startshut\
@@ -139,6 +141,7 @@ PMPRINTF_LIB =
 # The following macros contains the .OBJ files for the XCenter plugins.
 WINLISTOBJS = $(XWP_OUTPUT_ROOT)\widgets\w_winlist.obj $(PMPRINTF_LIB)
 MONITOROBJS = $(XWP_OUTPUT_ROOT)\widgets\w_monitors.obj $(PMPRINTF_LIB)
+HEALTHOBJS = $(XWP_OUTPUT_ROOT)\widgets\xwHealth.obj $(PMPRINTF_LIB)
 SAMPLEOBJS = $(XWP_OUTPUT_ROOT)\widgets\____sample.obj $(PMPRINTF_LIB)
 
 PGMGDMNOBJS = $(XWP_OUTPUT_ROOT)\exe_mt\pgmg_control.obj $(XWP_OUTPUT_ROOT)\exe_mt\pgmg_move.obj $(XWP_OUTPUT_ROOT)\exe_mt\pgmg_settings.obj \
@@ -358,6 +361,7 @@ link: $(XWPRUNNING)\bin\xfldr.dll \
       $(XWPRUNNING)\bin\xwpres.dll \
       $(XWPRUNNING)\plugins\xcenter\monitors.dll \
       $(XWPRUNNING)\plugins\xcenter\winlist.dll \
+      $(XWPRUNNING)\plugins\xcenter\xwHealth.dll \
       $(XWPRUNNING)\plugins\xcenter\sample.dll \
       $(XWPRUNNING)\bin\xwphook.dll \
       $(XWPRUNNING)\bin\xwpdaemn.exe
@@ -483,6 +487,35 @@ $(MODULESDIR)\monitors.dll: $(MONITOROBJS) src\widgets\$(@B).def
         @echo $(MAKEDIR)\makefile: Linking $@
         $(LINK) /OUT:$@ src\widgets\$(@B).def @<<link.tmp
 $(MONITOROBJS)
+<<
+!ifdef XWP_OUTPUT_ROOT_DRIVE
+        @$(XWP_OUTPUT_ROOT_DRIVE)
+!endif
+        @cd $(MODULESDIR)
+        mapsym /n $(@B).map > NUL
+!ifdef CVS_WORK_ROOT_DRIVE
+        @$(CVS_WORK_ROOT_DRIVE)
+!endif
+        @cd $(CURRENT_DIR)
+
+#
+# Linking xwHealth.DLL
+#
+$(XWPRUNNING)\plugins\xcenter\xwHealth.dll: $(MODULESDIR)\$(@B).dll
+!ifdef XWP_UNLOCK_MODULES
+        unlock $@
+!endif
+        cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\plugins\xcenter
+        cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\plugins\xcenter
+
+# update DEF file if buildlevel has changed
+src\widgets\xwHealth.def: include\bldlevel.h
+        cmd.exe /c BuildLevel.cmd $@ include\bldlevel.h "XCenter xwHealth plugin DLL"
+
+$(MODULESDIR)\xwHealth.dll: $(HEALTHOBJS) src\widgets\$(@B).def
+        @echo $(MAKEDIR)\makefile: Linking $@
+        $(LINK) /OUT:$@ src\widgets\$(@B).def @<<link.tmp
+$(HEALTHOBJS)
 <<
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
@@ -758,6 +791,14 @@ release: really_all
     $(COPY) $(MODULESDIR)\monitors.sym $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\winlist.dll $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\winlist.sym $(XWPRELEASE_MAIN)\plugins\xcenter
+    $(COPY) $(MODULESDIR)\xwHealth.dll $(XWPRELEASE_MAIN)\plugins\xcenter
+    $(COPY) $(MODULESDIR)\xwHealth.sym $(XWPRELEASE_MAIN)\plugins\xcenter
     @echo $(MAKEDIR)\makefile: Done copying files.
-
+# 9) toolkit
+!if [@md $(XWPRELEASE_MAIN)\toolkit 2> NUL]
+!endif
+!if [@md $(XWPRELEASE_MAIN)\toolkit\shared 2> NUL]
+!endif
+    $(COPY) src\widgets\miniwdgt.c $(XWPRELEASE_MAIN)\toolkit
+    $(COPY) include\shared\center.h $(XWPRELEASE_MAIN)\toolkit\shared
 

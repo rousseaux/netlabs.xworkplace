@@ -10,19 +10,12 @@ You can write independent plug-in DLLs for the XCenter to implement XCenter widg
 classes. This saves you from dealing with all the WPS programming details and even
 from having to compile the rest of XWorkplace.
 
-<P>The XCenter checks for plugin DLLs in the <CODE>plugins\xcenter</CODE> subdirectory
-of its installation directory. Any DLL in that directory is considered an XCenter
-widget plugin DLL.
+<P>Detailed documentation for writing plug-in DLLs has been added to the
+<I>XWorkplace User Guide</I> with V0.9.9. Please see that documentation for
+details.
 
-<P>Writing such a DLL basically boils down to writing a PM window class (with a few
-extra rules to follow to communicate with the XCenter) and exporting a couple of
-functions from the DLL so that the XCenter can know about your widget class.
-
-<P>Again, this requires no knowledge about WPS programming. You don't even have to
-compile the rest of XWorkplace to write such a DLL. If you know PM programming,
-you can write a widget plugin DLL.
-
-<P>If you are interested, I strongly suggest that you create the XWorkplace
+<P>Still, since you have obviously downloaded the XWorkplace source code,
+if you are interested, I strongly suggest that you create the XWorkplace
 <A HREF="src1_4docs.html">code documentation</A>. Then, in the HTML files which
 are generated, look for the documentation for <CODE>src\shared\center.c</CODE>
 documentation which gives you plenty of introductory information.

@@ -185,12 +185,13 @@ $(OUTPUTDIR)\notebook.obj: \
 $(OUTPUTDIR)\kernel.obj: \
      $(INC)\setup.h \
      $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
-        $(HLPINC)\memdebug.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
+        $(HLPINC)\memdebug.h $(HLPINC)\prfh.h $(HLPINC)\procstat.h $(HLPINC)\stringh.h \
+        $(HLPINC)\winh.h $(HLPINC)\xstring.h \
      $(INC)\classes\xfldr.h \
      $(INC)\dlgids.h \
      $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
      $(INC)\hook\xwphook.h \
-     $(INC)\filesys\program.h $(INC)\filesys\xthreads.h \
+     $(INC)\filesys\refresh.h $(INC)\filesys\program.h $(INC)\filesys\xthreads.h \
      $(INC)\media\media.h \
      $(INC)\security\xwpsecty.h \
      $(INC)\startshut\archives.h $(INC)\startshut\shutdown.h \

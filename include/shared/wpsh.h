@@ -250,6 +250,36 @@
     typedef xfTP_wpMakeDormant *xfTD_wpMakeDormant;
 
     /*
+     *@@ xfTP_wpDestroyObject:
+     *      prototype for WPObject::wpDestroyObject.
+     *
+     *      wpDestroyObject gets called in turn by wpFree
+     *      to destroy the physical representation of an
+     *      object, before the SOM object itself is
+     *      destroyed by calling wpMakeDormant.
+     *
+     *      For WPFileSystem objects, this deletes the
+     *      file/folder. For abstract objects, this
+     *      removes the INI data.
+     *
+     *@@added V0.9.9 (2001-02-01) [umoeller]
+     */
+
+    typedef BOOL _System xfTP_wpDestroyObject(WPObject *somSelf);
+    typedef xfTP_wpDestroyObject *xfTD_wpDestroyObject;
+
+    /*
+     *@@ wpDeleteWindowPosKeys:
+     *      some undocumented WPObject method which gets called during
+     *      object destruction. I'm unsure what this does exactly.
+     *
+     *@@added V0.9.9 (2001-02-04) [umoeller]
+     */
+
+    typedef BOOL _System xfTP_wpDeleteWindowPosKeys(WPObject *somSelf);
+    typedef xfTP_wpDeleteWindowPosKeys *xfTD_wpDeleteWindowPosKeys;
+
+    /*
      * xfTP_wpModifyMenu:
      *      prototype for WPObject::wpModifyMenu.
      *
@@ -386,6 +416,25 @@
     ULONG wpshRequestFolderMutexSem(WPFolder *somSelf,
                                     ULONG ulTimeout);
     ULONG wpshReleaseFolderMutexSem(WPFolder *somSelf);
+
+    /*
+     *@@ xfTP_wpFSNotifyFolder:
+     *      prototype for WPFolder::wpFSNotifyFolder.
+     *
+     *      This undocumented method normally gets
+     *      called when auto-refresh notifications are
+     *      processed. This method apparently stores
+     *      a new notification for the folder and
+     *      auto-ages it. This is probably where
+     *      the "Ager thread" comes in that is briefly
+     *      described in the WPS programming reference.
+     *
+     *@@added V0.9.9 (2001-01-31) [umoeller]
+     */
+
+    typedef VOID _System xfTP_wpFSNotifyFolder(WPFolder *somSelf,
+                                               PVOID pvInfo);
+    typedef xfTP_wpFSNotifyFolder *xfTD_wpFSNotifyFolder;
 
     /*
      * xfTP_wpFlushNotifications:

@@ -60,6 +60,7 @@
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
+#define INCL_DOSQUEUES
 #define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
@@ -91,8 +92,8 @@
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
-// #include "helpers\memdebug.h"           // memory debugging
 #include "helpers\prfh.h"               // INI file helper routines
+#include "helpers\procstat.h"           // DosQProcStat handling
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
@@ -108,6 +109,7 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
+#include "filesys\refresh.h"            // folder auto-refresh
 #include "filesys\program.h"            // program implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
@@ -385,20 +387,18 @@ FILE* _System krnExceptOpenLogFile(VOID)
 {
     CHAR        szFileName[CCHMAXPATH];
     FILE        *file;
-    DATETIME    DT;
-
-    // ULONG ulCopied;
 
     sprintf(szFileName, "%c:\\%s", doshQueryBootDrive(), XFOLDER_CRASHLOG);
     file = fopen(szFileName, "a");
 
     if (file)
     {
-        DosGetDateTime(&DT);
-        fprintf(file, "\nXFolder trap message -- Date: %04d-%02d-%02d, Time: %02d:%02d:%02d\n",
-            DT.year, DT.month, DT.day,
-            DT.hours, DT.minutes, DT.seconds);
-        fprintf(file, "--------------------------------------------------------\n"
+        DATETIME    dt;
+        DosGetDateTime(&dt);
+        fprintf(file, "\nXWorkplace trap message -- Date: %04d-%02d-%02d, Time: %02d:%02d:%02d\n",
+                dt.year, dt.month, dt.day,
+                dt.hours, dt.minutes, dt.seconds);
+        fprintf(file, "----------------------------------------------------------\n"
                       "\nAn internal error occurred within XWorkplace.\n"
                       "Please contact the author so that this error may be removed\n"
                       "in future XWorkplace versions. A contact address may be\n"
@@ -677,7 +677,7 @@ VOID krn_T1M_DaemonReady(VOID)
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-    _Pmpf(("krn_T1M_DaemonReady"));
+    // _Pmpf(("krn_T1M_DaemonReady"));
 
     if (G_KernelGlobals.pDaemonShared)
     {
@@ -697,14 +697,14 @@ VOID krn_T1M_DaemonReady(VOID)
                 // this is still NULLHANDLE if we're
                 // currently starting the WPS
                 HWND hwndActiveDesktop = cmnQueryActiveDesktopHWND();
-                _Pmpf(("  Posting XDM_DESKTOPREADY (0x%lX)",
-                        hwndActiveDesktop));
+                // _Pmpf(("  Posting XDM_DESKTOPREADY (0x%lX)",
+                //         hwndActiveDesktop));
                 krnPostDaemonMsg(XDM_DESKTOPREADY,
                                  (MPARAM)hwndActiveDesktop,
                                  (MPARAM)0);
 
-                _Pmpf(("    pGlobalSettings->fPageMageEnabled: %d",
-                        pGlobalSettings->fEnablePageMage));
+                // _Pmpf(("    pGlobalSettings->fPageMageEnabled: %d",
+                //        pGlobalSettings->fEnablePageMage));
 
 // #ifdef __PAGEMAGE__
                 if (pGlobalSettings->fEnablePageMage)
@@ -1467,8 +1467,6 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
 
             case T1M_PAGEMAGECLOSED:
             {
-                _Pmpf(("T1M_PAGEMAGECLOSED %d", mp1));
-
                 if (mp1)
                 {
                     GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
@@ -1476,7 +1474,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                     {
                         pGlobalSettings->fEnablePageMage = FALSE;
                         cmnUnlockGlobalSettings();
-                        _Pmpf(("  pGlobalSettings->fEnablePageMage = FALSE;"));
+                        // _Pmpf(("  pGlobalSettings->fEnablePageMage = FALSE;"));
                     }
                 }
 
@@ -2100,8 +2098,168 @@ VOID krnShowStartupDlgs(VOID)
         {
             pGlobalSettings2->fNoSubclassing = TRUE;
             cmnUnlockGlobalSettings();
-            _Pmpf(("krnShowStartupDlgs: disabled subclassing"));
+            // _Pmpf(("krnShowStartupDlgs: disabled subclassing"));
         }
+    }
+}
+
+/*
+ *@@ krnReplaceRefreshEnabled:
+ *      returns TRUE if "replace folder refresh" has been
+ *      enabled.
+ *
+ *      This setting is not in the GLOBALSETTINGS because
+ *      it has a separate entry in OS2.INI.
+ *
+ *      Note that this returns the current value of the
+ *      setting. If the user has just changed the setting
+ *      without restarting the WPS, this does not mean
+ *      that "replace refresh" is actually currently working.
+ *      Use KERNELGLOBALS.fAutoRefreshReplaced instead.
+ *
+ *@@added V0.9.9 (2001-01-31) [umoeller]
+ */
+
+BOOL krnReplaceRefreshEnabled(VOID)
+{
+    BOOL        fReplaceFolderRefresh = FALSE;
+    ULONG       cb = sizeof(fReplaceFolderRefresh);
+
+    PrfQueryProfileData(HINI_USER,
+                        (PSZ)INIAPP_XWORKPLACE,
+                        (PSZ)INIAPP_REPLACEFOLDERREFRESH,
+                        &fReplaceFolderRefresh,
+                        &cb);
+
+    return (fReplaceFolderRefresh);
+}
+
+/*
+ *@@ krnEnableReplaceRefresh:
+ *      enables or disables "replace auto-refresh folders".
+ *      The setting does not take effect until after a
+ *      WPS restart.
+ *
+ *@@added V0.9.9 (2001-01-31) [umoeller]
+ */
+
+VOID krnEnableReplaceRefresh(BOOL fEnable)
+{
+    PrfWriteProfileData(HINI_USER,
+                        (PSZ)INIAPP_XWORKPLACE,
+                        (PSZ)INIAPP_REPLACEFOLDERREFRESH,
+                        &fEnable,
+                        sizeof(fEnable));
+}
+
+/*
+ *@@ krnReplaceWheelWatcher:
+ *      blocks out the standard WPS "WheelWatcher" thread
+ *      (which usually does the DosFindNotify* stuff)
+ *      and creates a new thread in XWP instead.
+ *
+ *      Gets called _after_ the panic dialog, but _before_
+ *      the additional XWP threads are started.
+ *
+ *@@added V0.9.9 (2001-01-31) [umoeller]
+ */
+
+VOID krnReplaceWheelWatcher(FILE *DumpFile)
+{
+    APIRET      arc = NO_ERROR;
+    HQUEUE      hqWheelWatcher = NULLHANDLE;
+
+    if (DumpFile)
+    {
+        PQPROCSTAT16    pInfo = prc16GetInfo(&arc);
+
+        fprintf(DumpFile,
+                "\nEntering " __FUNCTION__":\n");
+
+        if (pInfo && arc == NO_ERROR)
+        {
+            // find WPS entry in process info
+            PQPROCESS16 pProcess = prc16FindProcessFromPID(pInfo,
+                                                           G_KernelGlobals.pidWPS);
+            if (pProcess)
+            {
+                // we now have the process info for the second PMSHELL.EXE...
+                ULONG       ul;
+                PQTHREAD16  pThread;
+
+                fprintf(DumpFile,
+                        "  Running WPS threads at this point:\n");
+
+                for (ul = 0, pThread = (PQTHREAD16)PTR(pProcess->ulThreadList, 0);
+                     ul < pProcess->usThreads;
+                     ul++, pThread++ )
+                {
+                    CHAR    sz[100];
+                    HENUM   henum;
+                    HWND    hwndThis;
+                    fprintf(DumpFile,
+                            "    Thread %02d has priority 0x%04lX\n",
+                            pThread->usTID,
+                            pThread->ulPriority);
+
+                    henum = WinBeginEnumWindows(HWND_OBJECT);
+                    while (hwndThis = WinGetNextWindow(henum))
+                    {
+                        PID pid;
+                        TID tid;
+                        if (WinQueryWindowProcess(hwndThis, &pid, &tid))
+                            if (    (pid == G_KernelGlobals.pidWPS)
+                                 && (tid == pThread->usTID)
+                               )
+                            {
+                                CHAR szClass[100];
+                                WinQueryClassName(hwndThis, sizeof(szClass), szClass);
+                                fprintf(DumpFile,
+                                        "        object wnd 0x%lX (%s)\n",
+                                        hwndThis,
+                                        szClass);
+                            }
+                    }
+                    WinEndEnumWindows(henum);
+                } // end for (ul = 0, pThread =...
+            }
+
+            free(pInfo);
+        }
+    }
+
+    // now lock out the WheelWatcher thread...
+    // that thread is started AFTER us, and it attempts to
+    // create a CP queue of the below name. If it cannot do
+    // that, it will simply exit. So... by creating a queue
+    // of the same name, the WheelWatcher will get an error
+    // later, and exit.
+    arc = DosCreateQueue(&hqWheelWatcher,
+                         QUE_FIFO,
+                         "\\QUEUES\\FILESYS\\NOTIFY");
+    if (DumpFile)
+        fprintf(DumpFile,
+                "  Created HQUEUE 0x%lX (DosCreateQueue returned %d)\n",
+                hqWheelWatcher,
+                arc);
+
+    if (arc == NO_ERROR)
+    {
+        // we got the queue: then our assumption was valid
+        // that we are indeed running _before_ WheelWatcher here...
+        // create our own thread instead
+        thrCreate(&G_KernelGlobals.tiSentinel,
+                  refr_fntSentinel,
+                  NULL,
+                  THRF_WAIT,
+                  0);           // no data here
+
+        if (DumpFile)
+            fprintf(DumpFile,
+                    "  Started XWP Sentinel thread, TID: %d\n",
+                    G_KernelGlobals.tiSentinel.tid);
+
+        G_KernelGlobals.fAutoRefreshReplaced = TRUE;
     }
 }
 
@@ -2174,6 +2332,8 @@ VOID krnShowStartupDlgs(VOID)
 
 VOID krnInitializeXWorkplace(VOID)
 {
+    FILE        *DumpFile = NULL;
+
     static BOOL fInitialized = FALSE;
 
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
@@ -2182,21 +2342,60 @@ VOID krnInitializeXWorkplace(VOID)
     // because we better initialize this only once
     if (!fInitialized)
     {
+        // moved this here from xthrStartThreads
+        PTIB        ptib;
+        PPIB        ppib;
+
+        CHAR        szDumpFile[CCHMAXPATH];
+
         fInitialized = TRUE;
+
+        if (TRUE)           // ###
+        {
+            sprintf(szDumpFile, "%c:\\xwpstart.log", doshQueryBootDrive());
+            DumpFile = fopen(szDumpFile, "a");
+
+            if (DumpFile)
+            {
+                DATETIME dt;
+                DosGetDateTime(&dt);
+                fprintf(DumpFile,
+                        "\nXWorkplace startup log -- Date: %04d-%02d-%02d, Time: %02d:%02d:%02d\n",
+                        dt.year, dt.month, dt.day,
+                        dt.hours, dt.minutes, dt.seconds);
+                fprintf(DumpFile,
+                        "----------------------------------------------------------\n");
+
+                fprintf(DumpFile,
+                        "\nEntering " __FUNCTION__":\n");
+            }
+        }
+
+        // zero KERNELGLOBALS
+        memset(&G_KernelGlobals, 0, sizeof(KERNELGLOBALS));
+
+        // moved this here from xthrStartThreads V0.9.9 (2001-01-31) [umoeller]
+        if (DosGetInfoBlocks(&ptib, &ppib) == NO_ERROR)
+        {
+            if (ppib)
+                G_KernelGlobals.pidWPS = ppib->pib_ulpid;
+            if (ptib && ptib->tib_ptib2)
+                G_KernelGlobals.tidWorkplaceThread = ptib->tib_ptib2->tib2_ultid;
+
+            if (DumpFile)
+                fprintf(DumpFile,
+                        "\n" __FUNCTION__ ": PID 0x%lX, TID 0x%lX\n",
+                        G_KernelGlobals.pidWPS,
+                        G_KernelGlobals.tidWorkplaceThread);
+        }
 
         #ifdef __XWPMEMDEBUG__
             // set global memory error callback
             G_pMemdLogFunc = krnMemoryError;
         #endif
 
-        // zero KERNELGLOBALS
-        memset(&G_KernelGlobals, 0, sizeof(KERNELGLOBALS));
-
         // store WPS startup time
         DosGetDateTime(&G_KernelGlobals.StartupDateTime);
-
-        // initialize multimedia V0.9.3 (2000-04-25) [umoeller]
-        xmmInit();
 
         // get PM system error windows V0.9.3 (2000-04-28) [umoeller]
         winhFindPMErrorWindows(&G_KernelGlobals.hwndHardError,
@@ -2225,15 +2424,24 @@ VOID krnInitializeXWorkplace(VOID)
             = winhCreateObjectWindow(WNDCLASS_THREAD1OBJECT, // class name
                                      NULL);        // create params
 
-        if (G_KernelGlobals.hwndThread1Object == NULLHANDLE)
-            winhDebugBox(HWND_DESKTOP, "XFolder: Error",
-                     "XFolder failed to create the XFolder Workplace object window.");
+        if (DumpFile)
+            fprintf(DumpFile,
+                    "XWorkplace thread-1 object window created, HWND 0x%lX\n",
+                    G_KernelGlobals.hwndThread1Object);
 
         // if shift is pressed, show "Panic" dialog
         // V0.9.7 (2001-01-24) [umoeller]: moved this behind creation
         // of thread-1 window... we need this for starting xfix from
         // the "panic" dlg
         krnShowStartupDlgs();
+
+        // check if "replace folder refresh" is enabled...
+        if (krnReplaceRefreshEnabled())
+        {
+            // yes: kick out WPS wheel watcher thread,
+            // start our own one instead
+            krnReplaceWheelWatcher(DumpFile);
+        }
     }
 
     // set up config.sys path
@@ -2249,12 +2457,16 @@ VOID krnInitializeXWorkplace(VOID)
     if (pGlobalSettings->fNumLockStartup)
         winhSetNumLock(TRUE);
 
+    // initialize multimedia V0.9.3 (2000-04-25) [umoeller]
+    xmmInit(DumpFile);
+            // moved this down V0.9.9 (2001-01-31) [umoeller]
+
     /*
      *  initialize threads
      *
      */
 
-    xthrStartThreads();
+    xthrStartThreads(DumpFile);
 
     /*
      *  check WPS archiving (V0.9.0)
@@ -2281,24 +2493,29 @@ VOID krnInitializeXWorkplace(VOID)
         // request access to a block of shared memory.
         // The DAEMONSHARED struct is allocated here
         // (just below) and requested by the daemon.
+        //
         // -- If requesting the shared memory works at this point,
         //    this means that the daemon is still running!
         //    This happens after a WPS restart. We'll then
         //    skip the rest.
+        //
         // -- If requesting the shared memory fails, this means
         //    that the daemon is _not_ running (the WPS is started
         //    for the first time). We then allocate the shared
         //    memory and start the daemon, which in turn requests
-        //    this shared memory block.
+        //    this shared memory block. Note that this also happens
+        //    if the daemon stopped for some reason (crash, kill)
+        //    and the user then restarts the WPS.
 
         PDAEMONSHARED pDaemonShared = 0;
         APIRET arc = DosGetNamedSharedMem((PVOID*)&pDaemonShared,
                                           SHMEM_DAEMON,
                                           PAG_READ | PAG_WRITE);
 
-        #ifdef DEBUG_STARTUP
-            _Pmpf(("xwpinit: DosGetSharedMem arc = %d", arc));
-        #endif
+        if (DumpFile)
+            fprintf(DumpFile,
+                    "\nAttempted to access " SHMEM_DAEMON ", DosGetNamedSharedMem returned %d\n",
+                    arc);
 
         if (arc != NO_ERROR)
         {
@@ -2308,19 +2525,19 @@ VOID krnInitializeXWorkplace(VOID)
             // --> daemon not running; probably first WPS
             // startup, so we allocate the shared mem now and
             // start the XWorkplace daemon
+
+            if (DumpFile)
+                fprintf(DumpFile, "--> XWPDAEMN not running, starting now.\n");
+
             arc = DosAllocSharedMem((PVOID*)&pDaemonShared,
                                     SHMEM_DAEMON,
                                     sizeof(DAEMONSHARED), // rounded up to 4KB
                                     PAG_COMMIT | PAG_READ | PAG_WRITE);
 
-            #ifdef DEBUG_STARTUP
-                _Pmpf(("xwpinit: DosAllocSharedMem arc = %d", arc));
-            #endif
+            if (DumpFile)
+                fprintf(DumpFile, "  DosAllocSharedMem returned %d\n", arc);
 
-            if (arc != NO_ERROR)
-                winhDebugBox(HWND_DESKTOP, "XWorkplace",
-                         "Error allocating shared memory for daemon.");
-            else
+            if (arc == NO_ERROR)
             {
                 CHAR    szDir[CCHMAXPATH],
                         szExe[CCHMAXPATH];
@@ -2366,22 +2583,27 @@ VOID krnInitializeXWorkplace(VOID)
                                                                    // displays a msg box
                                                              NULL,
                                                              0);// no SAF_INSTALLEDCMDLINE,
+                    if (DumpFile)
+                        fprintf(DumpFile,
+                                "  WinStartApp for %s returned HAPP 0x%lX\n",
+                                pd.pszExecutable,
+                                G_KernelGlobals.happDaemon);
+
                     if (G_KernelGlobals.happDaemon)
                         // success:
                         fDaemonStarted = TRUE;
                 }
             } // end if DosAllocSharedMem
 
-            if (!fDaemonStarted)
-                // error:
-                winhDebugBox(HWND_DESKTOP, "XWorkplace",
-                         "The XWorkplace daemon (XWPDAEMON.EXE) could not be started.");
         } // end if DosGetNamedSharedMem
         else
         {
             // shared memory block already exists:
             // this means the daemon is already running
             // and we have a WPS restart
+
+            if (DumpFile)
+                fprintf(DumpFile, "--> XWPDAEMN already running, refreshing.\n");
 
             // store new thread-1 object wnd
             pDaemonShared->hwndThread1Object = G_KernelGlobals.hwndThread1Object;
@@ -2417,6 +2639,11 @@ VOID krnInitializeXWorkplace(VOID)
         APIRET arc = DosGetNamedSharedMem((PVOID*)&pXWPShellShared,
                                           SHMEM_XWPSHELL,
                                           PAG_READ | PAG_WRITE);
+        if (DumpFile)
+            fprintf(DumpFile,
+                    "\nAttempted to access " SHMEM_XWPSHELL ", DosGetNamedSharedMem returned %d\n",
+                    arc);
+
         if (arc == NO_ERROR)
         {
             // shared memory exists:
@@ -2426,12 +2653,24 @@ VOID krnInitializeXWorkplace(VOID)
 
             // set flag that WPS termination will not provoke
             // logon; this is in case WPS crashes or user
-            // restarts WPS. "Logoff" desktop menu item will
-            // change that flag.
+            // restarts WPS. Only "Logoff" desktop menu item
+            // will clear that flag.
             pXWPShellShared->fNoLogonButRestart = TRUE;
+
+            if (DumpFile)
+                fprintf(DumpFile, "--> XWPSHELL running, refreshed.\n");
         }
+        else
+            if (DumpFile)
+                fprintf(DumpFile, "--> XWPSHELL not running.\n");
     }
 
+    if (DumpFile)
+    {
+        fprintf(DumpFile,
+                        "\nLeaving " __FUNCTION__", closing log.\n");
+        fclose(DumpFile);
+    }
 }
 
 

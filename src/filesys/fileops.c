@@ -174,8 +174,7 @@ FOPSRET fopsLoopSneaky(WPFolder *pFolder,       // in: folder
         ULONG           cbFFB3 = sizeof(FILEFINDBUF3);
         ULONG           ulFindCount = 1;  // look for 1 file at a time
 
-        _Pmpf((__FUNCTION__ ": doing DosFindFirst for %s",
-                    szFolderPath));
+        // _Pmpf((__FUNCTION__ ": doing DosFindFirst for %s", szFolderPath));
 
         // now go find...
         sprintf(szSearchMask, "%s\\*", szFolderPath);
@@ -591,13 +590,12 @@ FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pl
                         if (fFoldersOnly)
                         {
                             ULONG ulSizeContents = 0;       // not used
-                            _Pmpf((__FUNCTION__ ": calling fopsLoopSneaky; count pre: %d",
-                                                 *pulDormantFilesCount));
+                            // _Pmpf((__FUNCTION__ ": calling fopsLoopSneaky; count pre: %d",
+                               //                   *pulDormantFilesCount));
                             frc = fopsLoopSneaky(pObject,
                                                  pulDormantFilesCount,
                                                  &ulSizeContents);
-                            _Pmpf(("    count post: %d",
-                                                 *pulDormantFilesCount));
+                            // _Pmpf(("    count post: %d", *pulDormantFilesCount));
                         }
                 }
                 else
@@ -621,13 +619,12 @@ FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pl
     // contents come before the folder in the list
     if (frc == NO_ERROR)
     {
-        _Pmpf((__FUNCTION__ ": appending %s", _wpQueryTitle(pObject) ));
+        // _Pmpf((__FUNCTION__ ": appending %s", _wpQueryTitle(pObject) ));
         lstAppendItem(pllObjects, pObject);
         if (pulObjectCount)
             (*pulObjectCount)++;
     }
-    else
-        _Pmpf((__FUNCTION__ ": error %d for %s", _wpQueryTitle(pObject) ));
+        // _Pmpf((__FUNCTION__ ": error %d for %s", _wpQueryTitle(pObject) ));
 
     return (frc);
 }

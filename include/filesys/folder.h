@@ -324,6 +324,9 @@
      ********************************************************************/
 
     #ifdef SOM_WPFolder_h
+        WPObject* fdrFindFSFromName(WPFolder *pFolder,
+                                    const char *pcszShortName);
+
         BOOL fdrAddToContent(WPFolder *somSelf,
                              WPObject *pObject);
 

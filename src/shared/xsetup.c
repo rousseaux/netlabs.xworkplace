@@ -184,13 +184,15 @@ static FEATURESITEM G_FeatureItemsList[] =
             ID_XCSI_FILEOPERATIONS, 0, 0, NULL,
             ID_XCSI_EXTASSOCS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_CLEANUPINIS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-#ifdef __REPLHANDLES__
-            ID_XCSI_REPLHANDLES, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-#endif
             ID_XCSI_REPLFILEEXISTS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_REPLDRIVENOTREADY, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_XWPTRASHCAN, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_REPLACEDELETE, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL
+            ID_XCSI_REPLACEDELETE, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+
+#ifdef __REPLHANDLES__
+            ID_XCSI_REPLHANDLES, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
+            ID_XCSI_REPLACEREFRESH, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL
         };
 
 static PCHECKBOXRECORDCORE G_pFeatureRecordsList = NULL;
@@ -1367,6 +1369,7 @@ BOOL setLogoMessages(PCREATENOTEBOOKPAGE pcnbp,
  *      Global Settings.
  *
  *@@changed V0.9.1 (2000-02-01) [umoeller]: added global hotkeys flag
+ *@@changed V0.9.9 (2001-01-31) [umoeller]: added "replace folder refresh"
  */
 
 VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -1564,6 +1567,9 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 (cmnTrashCanReady() && pGlobalSettings->fTrashDelete));
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEDELETE,
                 pGlobalSettings->fReplaceTrueDelete);
+
+        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEREFRESH,
+                krnReplaceRefreshEnabled());
     }
 
     if (flFlags & CBI_ENABLE)
@@ -1622,6 +1628,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.6 (2000-11-11) [umoeller]: removed extassocs warning
  *@@changed V0.9.7 (2001-01-18) [umoeller]: removed pagemage warning
  *@@changed V0.9.7 (2001-01-22) [umoeller]: now enabling "object" page with hotkeys automatically
+ *@@changed V0.9.9 (2001-01-31) [umoeller]: added "replace folder refresh"
  */
 
 MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1639,10 +1646,10 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     BOOL fShowHookInstalled = FALSE,
          fShowHookDeinstalled = FALSE,
          fShowClassesSetup = FALSE,
-         // fShowWarnExtAssocs = FALSE,
-         // fShowWarnPageMage = FALSE,
          fShowWarnXShutdown = FALSE,
-         fUpdateMouseMovementPage = FALSE;
+         fUpdateMouseMovementPage = FALSE,
+         fShowMustRestartWPS = FALSE,
+         fShowExtAssocsWarning = FALSE;
     signed char cAskSoundsInstallMsg = -1,      // 1 = installed, 0 = deinstalled
                 cEnableTrashCan = -1;       // 1 = installed, 0 = deinstalled
 
@@ -1776,6 +1783,9 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->fExtAssocs = ulExtra;
             // re-enable controls on this page
             ulUpdateFlags = CBI_ENABLE;
+
+            if (ulExtra)
+                fShowExtAssocsWarning = TRUE;       // V0.9.9 (2001-02-06) [umoeller]
         break;
 
         /* case ID_XCDI_IGNOREFILTERS:
@@ -1794,12 +1804,6 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->CleanupINIs = ulExtra;
         break;
 
-#ifdef __REPLHANDLES__
-        case ID_XCSI_REPLHANDLES:
-            pGlobalSettings->fReplaceHandles = ulExtra;
-        break;
-#endif
-
         case ID_XCSI_XWPTRASHCAN:
             // pGlobalSettings->fTrashDelete = ulExtra;
             cEnableTrashCan = ulExtra;
@@ -1807,6 +1811,17 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XCSI_REPLACEDELETE:
             pGlobalSettings->fReplaceTrueDelete = ulExtra;
+        break;
+
+#ifdef __REPLHANDLES__
+        case ID_XCSI_REPLHANDLES:
+            pGlobalSettings->fReplaceHandles = ulExtra;
+        break;
+#endif
+
+        case ID_XCSI_REPLACEREFRESH:
+            krnEnableReplaceRefresh(ulExtra);
+            fShowMustRestartWPS = TRUE;
         break;
 
         /*
@@ -1903,11 +1918,6 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         // "hook deinstalled" msg
         cmnMessageBoxMsg(pcnbp->hwndFrame,
                          148, 158, MB_OK);
-    /* else if (fShowWarnPageMage)
-        cmnMessageBox(pcnbp->hwndFrame,
-                      "XWorkplace",
-                      "Warning: PageMage is still extremely unstable.",
-                      MB_OK); */
     else if (fShowWarnXShutdown)
         cmnMessageBoxMsg(pcnbp->hwndFrame,
                          148,       // "XWorkplace Setup"
@@ -1933,6 +1943,16 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                            ulExtra);
         pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
     }
+    else if (fShowMustRestartWPS)
+    {
+        // "must restart wps" msg
+        cmnMessageBoxMsg(pcnbp->hwndFrame,
+                         148, 207, MB_OK);
+    }
+    else if (fShowExtAssocsWarning)
+        // "warning: assocs gone" msg
+        cmnMessageBoxMsg(pcnbp->hwndFrame,
+                         148, 208, MB_OK);
 
     if (ulUpdateFlags)
         pcnbp->pfncbInitPage(pcnbp, ulUpdateFlags);

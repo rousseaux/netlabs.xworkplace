@@ -373,7 +373,7 @@ BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
 
                     PLISTNODE pNodeFound = NULL;
 
-                    _Pmpf((__FUNCTION__ ":_fReduceDesktopWorkarea enabled."));
+                    // _Pmpf((__FUNCTION__ ":_fReduceDesktopWorkarea enabled."));
 
                     while (pNode)
                     {
@@ -389,7 +389,7 @@ BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
 
                     if (!pNodeFound)
                     {
-                        _Pmpf((__FUNCTION__ ": not on list, appending."));
+                        // _Pmpf((__FUNCTION__ ": not on list, appending."));
                         // not on list yet:
                         lstAppendItem(&G_llWorkAreaViews,
                                       pXCenterData);
@@ -648,7 +648,7 @@ ULONG ReformatWidgets(PXCENTERWINDATA pXCenterData,
     if (fShow)
         fl |= SWP_SHOW;
 
-    _Pmpf((__FUNCTION__ ": entering"));
+    // _Pmpf((__FUNCTION__ ": entering"));
 
     // pass 1:
     // calculate max cx of all static widgets
@@ -711,8 +711,8 @@ ULONG ReformatWidgets(PXCENTERWINDATA pXCenterData,
         pWidgetThis->szlCurrent.cx = cx;
         pWidgetThis->szlCurrent.cy = pGlobals->cyTallestWidget;
 
-        _Pmpf(("  Setting widget %d, %d, %d, %d",
-                    x, 0, cx, pGlobals->cyTallestWidget));
+        // _Pmpf(("  Setting widget %d, %d, %d, %d",
+          //           x, 0, cx, pGlobals->cyTallestWidget));
 
         WinSetWindowPos(pWidgetThis->Widget.hwndWidget,
                         NULLHANDLE,
@@ -745,7 +745,7 @@ ULONG ReformatWidgets(PXCENTERWINDATA pXCenterData,
         ulrc++;
     }
 
-    _Pmpf((__FUNCTION__ ": leaving"));
+    // _Pmpf((__FUNCTION__ ": leaving"));
 
     WinInvalidateRect(pGlobals->hwndClient, NULL, FALSE);
 
@@ -798,7 +798,8 @@ VOID ctrpShowSettingsDlg(PXCENTERWINDATA pXCenterData,
                             (LHANDLE)&Temp,     // ugly hack
                             pGlobals,
                             pViewData,
-                            0           // pUser
+                            0,           // pUser
+                            ctrSetSetupString      // func pointer V0.9.9 (2001-02-06) [umoeller]
                           };
                     // disable auto-hide while we're showing the dlg
                     pXCenterData->fShowingSettingsDlg = TRUE;
@@ -1239,8 +1240,8 @@ PWIDGETVIEWSTATE CreateOneWidget(PXCENTERWINDATA pXCenterData,
                 pWidget->pcszSetupString = pSetting->pszSetupString;
                             // can be NULL
 
-                _Pmpf(("  pNewView->pcszSetupString is %s",
-                        (pWidget->pcszSetupString) ? pWidget->pcszSetupString : "NULL"));
+                // _Pmpf(("  pNewView->pcszSetupString is %s",
+                  //       (pWidget->pcszSetupString) ? pWidget->pcszSetupString : "NULL"));
 
                 pWidget->hwndWidget = WinCreateWindow(pGlobals->hwndClient,  // parent
                                                       (PSZ)pWidgetClass->pcszPMClass,
@@ -1314,15 +1315,6 @@ PWIDGETVIEWSTATE CreateOneWidget(PXCENTERWINDATA pXCenterData,
 
             if (!pWidget->hwndWidget)
             {
-                // error creating window:
-                PSZ     apsz[2];
-                apsz[0] = (PSZ)pSetting->pszWidgetClass;
-                cmnMessageBoxMsgExt(NULLHANDLE,
-                                    194,        // XCenter Error
-                                    apsz,
-                                    1,
-                                    195,
-                                    MB_OK);
                 free(pNewView);
                 pNewView = NULL;
             }
@@ -1352,6 +1344,8 @@ PWIDGETVIEWSTATE CreateOneWidget(PXCENTERWINDATA pXCenterData,
  *         the frame already.
  *
  *      -- The caller must have requested the XCenter mutex.
+ *
+ *@@changed V0.9.9 (2001-02-01) [umoeller]: added "remove setting" on errors
  */
 
 ULONG CreateWidgets(PXCENTERWINDATA pXCenterData)
@@ -1374,12 +1368,31 @@ ULONG CreateWidgets(PXCENTERWINDATA pXCenterData)
     while (pNode)
     {
         PXCENTERWIDGETSETTING pSetting = (PXCENTERWIDGETSETTING)pNode->pItemData;
+        PLISTNODE pNodeSaved = pNode;
+        pNode = pNode->pNext;
+
         if (CreateOneWidget(pXCenterData,
                             pSetting,
                             -1))        // at the end
             ulrc++;
-
-        pNode = pNode->pNext;
+        else
+        {
+            // error creating window: V0.9.9 (2001-02-01) [umoeller]
+            PSZ     apsz[2];
+            apsz[0] = (PSZ)pSetting->pszWidgetClass;
+            if (cmnMessageBoxMsgExt(NULLHANDLE,
+                                    194,        // XCenter Error
+                                    apsz,
+                                    1,
+                                    195,
+                                    MB_YESNO)
+                == MBID_YES)
+            {
+                // remove:
+                lstRemoveNode(pllWidgetSettings, pNodeSaved);
+                _wpSaveDeferred(pXCenterData->somSelf);
+            }
+        }
     } // end for widgets
 
     // this is the first "reformat frame" when the XCenter
@@ -1646,7 +1659,7 @@ BOOL FrameTimer(HWND hwnd,
                 CHAR szWinClass[100];
                 if (WinQueryClassName(hwndFocus, sizeof(szWinClass), szWinClass))
                 {
-                    _Pmpf((__FUNCTION__ ": win class %s", szWinClass));
+                    // _Pmpf((__FUNCTION__ ": win class %s", szWinClass));
                     if (strcmp(szWinClass, "#4") == 0)
                     {
                         // it's a menu:
@@ -2595,7 +2608,7 @@ MRESULT ClientControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
     USHORT  usID = SHORT1FROMMP(mp1),
             usNotifyCode = SHORT2FROMMP(mp1);
 
-    _Pmpf((__FUNCTION__ ": id 0x%lX, notify 0x%lX", usID, usNotifyCode));
+    // _Pmpf((__FUNCTION__ ": id 0x%lX, notify 0x%lX", usID, usNotifyCode));
 
     if (    (usID == ID_XCENTER_TOOLTIP)
          && (usNotifyCode == TTN_NEEDTEXT)
@@ -2964,7 +2977,7 @@ APIRET ctrFreeModule(HMODULE hmod)
 
 VOID ctrpLoadClasses(VOID)
 {
-    _Pmpf((__FUNCTION__ ": G_ulWidgetClassesRefCount is %d", G_ulWidgetClassesRefCount));
+    // _Pmpf((__FUNCTION__ ": G_ulWidgetClassesRefCount is %d", G_ulWidgetClassesRefCount));
 
     if (!G_fModulesInitialized)
     {
@@ -3016,7 +3029,7 @@ VOID ctrpLoadClasses(VOID)
 
         sprintf(szSearchMask, "%s\\%s", szPluginsDir, "*.dll");
 
-        _Pmpf((__FUNCTION__ ": searching for '%s'", szSearchMask));
+        // _Pmpf((__FUNCTION__ ": searching for '%s'", szSearchMask));
 
         arc = DosFindFirst(szSearchMask,
                            &hdirFindHandle,
@@ -3037,14 +3050,15 @@ VOID ctrpLoadClasses(VOID)
 
             sprintf(szDLL, "%s\\%s", szPluginsDir, ffb3.achName);
 
-            _Pmpf(("   found %s", szDLL));
+            // _Pmpf(("   found %s", szDLL));
 
             arc2 = DosLoadModule(szError,
                                  sizeof(szError),
                                  szDLL,
                                  &hmod);
-            _Pmpf(("   DosLoadModule returned %d for '%s', szError: '%s'",
-                    arc2, szDLL, szError));
+
+            // _Pmpf(("   DosLoadModule returned %d for '%s', szError: '%s'", arc2, szDLL, szError));
+
             if (arc2 == NO_ERROR)
             {
                 CHAR    szErrorMsg[500] = "nothing.";
@@ -3054,7 +3068,7 @@ VOID ctrpLoadClasses(VOID)
                                         1,      // ordinal
                                         NULL,
                                         (PFN*)(&pfnWgtInitModule));
-                _Pmpf(("   DosQueryProcAddr returned %d", arc2));
+                // _Pmpf(("   DosQueryProcAddr returned %d", arc2));
                 if ((arc2 == NO_ERROR) && (pfnWgtInitModule))
                 {
                     // yo, we got the function:
@@ -3069,9 +3083,7 @@ VOID ctrpLoadClasses(VOID)
                                                               &paClasses,
                                                               szErrorMsg);
 
-                        _Pmpf(("  pfnQueryWidgetClasses returned %d for %s",
-                                cClassesThis,
-                                szDLL));
+                        // _Pmpf(("  pfnQueryWidgetClasses returned %d for %s", cClassesThis, szDLL));
 
                         if (cClassesThis)
                         {
@@ -3197,7 +3209,7 @@ VOID ctrpFreeClasses(VOID)
             while (pNode)
             {
                 HMODULE hmod = (HMODULE)pNode->pItemData;
-                _Pmpf((__FUNCTION__ ": Unloading hmod %lX", hmod));
+                // _Pmpf((__FUNCTION__ ": Unloading hmod %lX", hmod));
                 ctrFreeModule(hmod);
 
                 pNode = pNode->pNext;
@@ -3207,7 +3219,7 @@ VOID ctrpFreeClasses(VOID)
         }
     }
 
-    _Pmpf((__FUNCTION__ ": leaving, G_ulWidgetClassesRefCount is %d", G_ulWidgetClassesRefCount));
+    // _Pmpf((__FUNCTION__ ": leaving, G_ulWidgetClassesRefCount is %d", G_ulWidgetClassesRefCount));
 }
 
 /*
@@ -3250,12 +3262,12 @@ PXCENTERWIDGETCLASS ctrpFindClass(const char *pcszWidgetClass)
     {
         if (paClasses[ul].pcszWidgetClass == NULL)
         {
-            _Pmpf((__FUNCTION__ ": paClasses[ul].pcszWidgetClass is NULL!"));
+            // _Pmpf((__FUNCTION__ ": paClasses[ul].pcszWidgetClass is NULL!"));
             break;
         }
         else if (pcszWidgetClass == NULL)
         {
-            _Pmpf((__FUNCTION__ ": pcszWidgetClass is NULL!"));
+            // _Pmpf((__FUNCTION__ ": pcszWidgetClass is NULL!"));
             break;
         }
         else if (strcmp(paClasses[ul].pcszWidgetClass,
@@ -3382,7 +3394,7 @@ VOID ctrpFreeWidgets(XCenter *somSelf)
     if (wpshLockObject(&Lock, somSelf))
     {
         XCenterData *somThis = XCenterGetData(somSelf);
-        _Pmpf((__FUNCTION__ ": entering, _pllWidgetSettings is %lX", _pllWidgetSettings));
+        // _Pmpf((__FUNCTION__ ": entering, _pllWidgetSettings is %lX", _pllWidgetSettings));
         if (_pllWidgetSettings)
         {
             lstFree(_pllWidgetSettings);
@@ -3489,9 +3501,9 @@ BOOL ctrpInsertWidget(XCenter *somSelf,
     {
         XCenterData *somThis = XCenterGetData(somSelf);
 
-        _Pmpf((__FUNCTION__ ": entering with %s, %s",
-                (pcszWidgetClass) ? pcszWidgetClass : "NULL",
-                (pcszSetupString) ? pcszSetupString : "NULL"));
+        // _Pmpf((__FUNCTION__ ": entering with %s, %s",
+        //         (pcszWidgetClass) ? pcszWidgetClass : "NULL",
+           //      (pcszSetupString) ? pcszSetupString : "NULL"));
 
         if (pcszWidgetClass)
         {
@@ -3515,7 +3527,7 @@ BOOL ctrpInsertWidget(XCenter *somSelf,
                                  &ulNewItemCount,
                                  &ulWidgetIndex);
 
-                _Pmpf(("  widget added, new item count: %d", ulNewItemCount));
+                // _Pmpf(("  widget added, new item count: %d", ulNewItemCount));
 
                 if (_pvOpenView)
                 {
@@ -3779,7 +3791,7 @@ PSZ ctrpStuffSettings(XCenter *somSelf,
     ULONG   cb = 0;
     XCenterData *somThis = XCenterGetData(somSelf);
 
-    _Pmpf((__FUNCTION__ ": entering, _pszPackedWidgetSettings is %lX", _pszPackedWidgetSettings));
+    // _Pmpf((__FUNCTION__ ": entering, _pszPackedWidgetSettings is %lX", _pszPackedWidgetSettings));
 
     if (_pllWidgetSettings)
     {
@@ -3830,7 +3842,7 @@ ULONG ctrpUnstuffSettings(XCenter *somSelf)
     ULONG ulrc = 0;
     XCenterData *somThis = XCenterGetData(somSelf);
 
-    _Pmpf((__FUNCTION__": entering, _pszPackedWidgetSettings is %lX", _pszPackedWidgetSettings));
+    // _Pmpf((__FUNCTION__": entering, _pszPackedWidgetSettings is %lX", _pszPackedWidgetSettings));
 
     if (_pszPackedWidgetSettings)
     {
@@ -3901,7 +3913,7 @@ PLINKLIST ctrpQuerySettingsList(XCenter *somSelf)
 {
     XCenterData *somThis = XCenterGetData(somSelf);
 
-    _Pmpf((__FUNCTION__ ": entering, G_ulWidgetClassesRefCount is %d", G_ulWidgetClassesRefCount));
+    // _Pmpf((__FUNCTION__ ": entering, G_ulWidgetClassesRefCount is %d", G_ulWidgetClassesRefCount));
 
     if (!_pllWidgetSettings)
     {
@@ -4194,7 +4206,7 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                 WinQueryWindowPos(pGlobals->hwndClient, &swpClient);
                 pGlobals->cyTallestWidget = swpClient.cy;
 
-                _Pmpf((__FUNCTION__": swpClient.cx: %d, swpClient.cy: %d", swpClient.cx, swpClient.cy));
+                // _Pmpf((__FUNCTION__": swpClient.cx: %d, swpClient.cy: %d", swpClient.cx, swpClient.cy));
 
                 // add the use list item to the object's use list;
                 // this struct has been zeroed above

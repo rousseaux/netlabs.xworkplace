@@ -128,7 +128,9 @@
  *          place (e.g. because it's an undocumented WPS
  *          method).
  *
- *          In that case, specify pClass to NULL.
+ *          In that case, specify pClass to NULL. This
+ *          will have this function find the class object
+ *          for somSelf's class itself.
  *
  *      --  You must explicitly resolve a method pointer
  *          for a parent class because you have introduced
@@ -164,6 +166,14 @@
  *          class implements such a method. Make sure you
  *          spell the method name right.
  *
+ *      4.  This works for instance and class methods. To
+ *          resolve a class method, specify the class object
+ *          with somSelf and set pClass to NULL. This will
+ *          then find the class object for the class object...
+ *          yes, such a thing exists. The metaclass of a
+ *          metaclass is SOMClass (grin). What infinite wisdom
+ *          in SOM there.
+ *
  *      Example: Assume this class hierarchy:
  *
  +      WPObject
@@ -175,7 +185,7 @@
  *
  *      Let's say that both XFldObject and DemoFolder introduce
  *      the "wpDemo" method. From DemoFolder, you want to call
- *      the parent implementation (which will lead to XFldObject#s
+ *      the parent implementation (which will lead to XFldObject's
  *      implementation). So do this:
  *
  +          DEMO_TYPEDEF pDemo = wpshResolveFor(somSelf,
@@ -212,7 +222,7 @@ PVOID wpshResolveFor(SOMObject *somSelf,  // in: instance
                        "Cannot get method token for %s.", pcszMethodName);
             else
             {
-                // finally, resolve method for parent
+                // finally, resolve method
                 pvrc = (PVOID)somResolve(somSelf,
                                          tok);
                 if (!pvrc)
@@ -2135,7 +2145,11 @@ BOOL wpshUnlockObject(PWPSHLOCKSTRUCT pLock)
 WPObject** wpshGetNextObjPointer(WPObject *somSelf)
 {
     WPObject** ppObjNext = NULL;
-    xfTD_get_pobjNext __get_pobjNext
+    static xfTD_get_pobjNext __get_pobjNext = NULL;
+
+    if (!__get_pobjNext)
+        // first call:
+        __get_pobjNext
             = (xfTD_get_pobjNext)wpshResolveFor(somSelf,
                                                 NULL,        // use somSelf's class
                                                 "_get_pobjNext");
@@ -2161,6 +2175,32 @@ WPObject** wpshGetNextObjPointer(WPObject *somSelf)
 
 /*
  *@@ wpshRequestFolderMutexSem:
+ *      calls WPFolder::wpRequestFolderMutexSem, which,
+ *      unfortunately, is not published. This is a pity
+ *      because we'll always hang the WPS if we don't
+ *      request this properly.
+ *
+ *      WARNINGS:
+ *
+ *      -- As usual, you better not forget to release the
+ *         mutex again.
+ *
+ *      -- In addition, if you also request the _object_
+ *         mutex for the folder (WPObject::wpRequestObjectMutexSem),
+ *         you must take great care that the two are released in
+ *         exactly reverse order, or you can deadlock the system.
+ *
+ *         Guideline:
+ *
+ *         1)  Request the object mutex.
+ *
+ *         2)  Request the folder mutex.
+ *
+ *         3)  Do processing.
+ *
+ *         4)  Release folder mutex.
+ *
+ *         5)  Release object mutex.
  *
  *@@added V0.9.6 (2000-10-25) [umoeller]
  */
@@ -2224,7 +2264,7 @@ ULONG wpshFlushNotifications(WPFolder *somSelf)
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                "Unable to resolve method.");
     else
-        _wpFlushNotifications(somSelf);
+        ulrc = _wpFlushNotifications(somSelf);
 
     return (ulrc);
 }
@@ -2242,17 +2282,29 @@ ULONG wpshFlushNotifications(WPFolder *somSelf)
 BOOL wpshGetNotifySem(ULONG ulTimeout)
 {
     BOOL brc = FALSE;
-    M_WPFolder *pWPFolder = _WPFolder;
 
-    xfTD_wpclsGetNotifySem _wpclsGetNotifySem
-            = (xfTD_wpclsGetNotifySem)wpshResolveFor(pWPFolder,
-                                                     NULL, // use somSelf's class
-                                                     "wpclsGetNotifySem");
-    if (!_wpclsGetNotifySem)
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Unable to resolve method pointer.");
-    else
-        brc = _wpclsGetNotifySem(pWPFolder, ulTimeout);
+    static xfTD_wpclsGetNotifySem _wpclsGetNotifySem = NULL;
+
+    M_WPFolder *pWPFolder = _WPFolder;
+            // THIS RETURNS NULL UNTIL THE FOLDER CLASS IS INITIALIZED
+
+    if (pWPFolder)
+    {
+        if (!_wpclsGetNotifySem)
+        {
+            // first call: resolve...
+            _wpclsGetNotifySem = (xfTD_wpclsGetNotifySem)wpshResolveFor(
+                                                pWPFolder,
+                                                NULL,
+                                                "wpclsGetNotifySem");
+        }
+
+        if (!_wpclsGetNotifySem)
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "Unable to resolve method pointer.");
+        else
+            brc = _wpclsGetNotifySem(pWPFolder, ulTimeout);
+    }
 
     return (brc);
 }
@@ -2265,16 +2317,27 @@ BOOL wpshGetNotifySem(ULONG ulTimeout)
 
 VOID wpshReleaseNotifySem(VOID)
 {
-    M_WPFolder *pWPFolder = _WPFolder;
+    static xfTD_wpclsReleaseNotifySem _wpclsReleaseNotifySem = NULL;
 
-    xfTD_wpclsReleaseNotifySem _wpclsReleaseNotifySem
-            = (xfTD_wpclsReleaseNotifySem)wpshResolveFor(pWPFolder,
-                                                         NULL, // use somSelf's class
-                                                         "wpclsReleaseNotifySem");
-    if (!_wpclsReleaseNotifySem)
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Unable to resolve method pointer.");
-    else
-        _wpclsReleaseNotifySem(pWPFolder);
+    M_WPFolder *pWPFolder = _WPFolder;
+            // THIS RETURNS NULL UNTIL THE FOLDER CLASS IS INITIALIZED
+
+    if (pWPFolder)
+    {
+        if (!_wpclsReleaseNotifySem)
+        {
+            // first call: resolve...
+            _wpclsReleaseNotifySem = (xfTD_wpclsReleaseNotifySem)wpshResolveFor(
+                                                pWPFolder,
+                                                NULL,
+                                                "wpclsReleaseNotifySem");
+        }
+
+        if (!_wpclsReleaseNotifySem)
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "Unable to resolve method pointer.");
+        else
+            _wpclsReleaseNotifySem(pWPFolder);
+    }
 }
 

@@ -196,7 +196,7 @@ BOOL pgmcCreateMainControlWnd(VOID)
 {
     BOOL    brc = TRUE;
 
-    _Pmpf(("Entering pgmcCreateMainControlWnd"));
+    // _Pmpf(("Entering pgmcCreateMainControlWnd"));
 
     if (G_pHookData->hwndPageMageFrame == NULLHANDLE)
     {
@@ -205,7 +205,7 @@ BOOL pgmcCreateMainControlWnd(VOID)
                                   FCF_HIDEBUTTON |
                                   FCF_NOBYTEALIGN |
                                   FCF_SIZEBORDER;
-        _Pmpf(("Creating pagemage"));
+        // _Pmpf(("Creating pagemage"));
 
         WinRegisterClass(G_habDaemon,
                          WNDCLASS_PAGEMAGECLIENT,
@@ -227,9 +227,7 @@ BOOL pgmcCreateMainControlWnd(VOID)
                                  1000,    // ID...
                                  &G_pHookData->hwndPageMageClient);
 
-        if (!G_pHookData->hwndPageMageFrame)
-            _Pmpf(("PageMage window creation failed...."));
-        else
+        if (G_pHookData->hwndPageMageFrame)
         {
             // SWP     swpPager;
 
@@ -244,7 +242,7 @@ BOOL pgmcCreateMainControlWnd(VOID)
                        NULL);
 
             // subclass frame
-            _Pmpf(("subclassing pagemage 0x%lX", G_pHookData->hwndPageMageFrame));
+            // _Pmpf(("subclassing pagemage 0x%lX", G_pHookData->hwndPageMageFrame));
 
             G_pfnOldFrameWndProc = WinSubclassWindow(G_pHookData->hwndPageMageFrame,
                                                      fnwpSubclPageMageFrame);
@@ -537,7 +535,7 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
 
             // PHWND           pahwndPaint[MAX_WINDOWS] =
 
-            _Pmpf(("Got %d wininfos.", cWinInfos));
+            // _Pmpf(("Got %d wininfos.", cWinInfos));
 
             if (cWinInfos)
             {
@@ -677,13 +675,13 @@ VOID UpdateClientBitmap(PPAGEMAGECLIENTDATA pClientData)
                         // start with the last one
                         LONG lIdx = cMiniWindowsUsed - 1;
 
-                        _Pmpf(("Got %d mini windows.", cMiniWindowsUsed));
+                        // _Pmpf(("Got %d mini windows.", cMiniWindowsUsed));
 
                         while (lIdx >= 0)
                         {
                             PMINIWINDOW pMiniWindowThis = &paMiniWindows[lIdx];
 
-                            _Pmpf(("Painting miniwin %d", lIdx));
+                            // _Pmpf(("Painting miniwin %d", lIdx));
 
                             if (pMiniWindowThis->hwnd == hwndLocalActive)
                                 // this is the active window:
@@ -960,7 +958,7 @@ VOID ClientPresParamChanged(HWND hwnd,
         WinQueryPresParam(hwnd, PP_FONTNAMESIZE, 0, NULL,
                           sizeof(szLocFacename), &szLocFacename,
                           0);
-        _Pmpf(("New facename: %s", szLocFacename));
+        // _Pmpf(("New facename: %s", szLocFacename));
         if (strcmp(pClientData->szFaceName, szLocFacename))
         {
             G_bConfigChanged = TRUE;
@@ -1338,7 +1336,7 @@ MRESULT EXPENTRY fnwpPageMageClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
              */
 
             case WM_CLOSE:
-                _Pmpf(("fnwpPageMageClient: WM_CLOSE, notifying Kernel"));
+                // _Pmpf(("fnwpPageMageClient: WM_CLOSE, notifying Kernel"));
                 dmnKillPageMage(TRUE);  // notify XFLDR.DLL
                 bHandled = TRUE;        // no default processing
             break;

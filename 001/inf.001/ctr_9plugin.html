@@ -10,54 +10,17 @@ The XCenter was designed to support plug-in DLLs. This allows programmers to add
 new widget types (called "widget classes") to the XCenter without having to
 actually modify XWorkplace itself.
 
-<P>The existing <A HREF="ctr_3stdwgt.html">standard widget classes</A> are partly
-built into <CODE>XFLDR.DLL</CODE> itself (if they make extensive use of WPS features,
-such as with the object button widget), but some of them are already implemented as
-plug-in DLLs. This was done for two reasons: first, to test that the plug-in
-DLL interface actually works, and second, to give potential developers the chance
-to look at how this can be done.
-
 <P>As an example, let's say you are the developer of an e-mail program. You could write
 a plug-in that periodically checks the user's mail server for new mail. If any is
 found, that widget could start flashing, and if the user clicks on it, the e-mail
 client would be started to retrieve the new mail.
 
-<P>To implement plug-in DLLs, you need to download the
-<A HREF="notices_40source.html">XWorkplace source code</A>.
+<P>An XCenter widget is basically a PM window class, so anybody who has written a
+PM program before should be able to write an XCenter plug-in DLL.
+You do <I>not</I> need to know WPS and/or SOM programming.
 
-<P>But don't get scared...
-you do <I>not</I> need to compile XWorkplace or even understand WPS programming
-to write a plug-in DLLs. If you know how to program in C and know a bit about
-Presentation Manager (PM) programming, you can write a plug-in DLL.
-
-<P>You can use any C compiler you want. Even EMX/GCC should do. You only need the
-XWorkplace sources to be able to include the public XCenter headers for definitions
-of how to communicate with the XCenter. In addition, in the XWorkplace sources, you
-will find the source code for the standard plug-in DLLs which come with XWorkplace
-(the window list and the clock and memory monitors), which show you how it's done.
-
-<P>Basically, writing an XCenter plug-in DLL requires the following:
-
-<OL><LI>You need to write a <B>PM window class.</B> In other words, write a PM
-window procedure which responds to standard PM messages and register it when your
-DLL gets loaded.
-
-<P>Since widgets are really plain PM windows, your widget can do anything you want.
-It has its own rectangle on the
-XCenter bar and can display any data or graphics or whatever. Your widget runs in
-the WPS process and can therefore even access all WPS interfaces, if you know SOM
-programming (but again, this knowledge is not required -- unless you really want
-to interface the WPS itself).
-
-<P><LI>In addition to writing that PM window class, you will have to
-<B>export two functions</B>
-from your DLL so that the XCenter can query your DLL about the plug-ins which are
-contained in it.
-
-</OL>You will find detailed information about this in the XWorkplace source code.
-For an introduction, look at the <CODE>PROGREF.INF</CODE> file in the sources'
-main directory.
-
+<P>For details, please refer to the <A HREF="095plugins.html">Writing XCenter plugins</A>
+section.
 <BR>
 </BODY>
 </HTML>

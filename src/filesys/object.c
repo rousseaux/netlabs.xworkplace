@@ -5,6 +5,110 @@
  *
  *      This file is ALL new with V0.9.0.
  *
+ *      This looks like a good place for general explanations
+ *      about how the WPS maintains WPS objects as SOM objects
+ *      in memory.
+ *
+ *      Basically, there are two situations where objects are
+ *      created and destroyed.
+ *
+ *      1)  Scenario 1 involves creating and destroying objects
+ *          in memory ONLY without affecting the physical
+ *          storage of the object. For abstract objects,
+ *          this is the OS2.INI file; for FS objects, the file
+ *          system. WPTransient has no physical storage at all.
+ *
+ *          The WPS calls this "make awake" and "make dormant".
+ *          Objects are most frequently made awake when a folder
+ *          is populated (mostly on folder open). Of course this
+ *          does not physically create objects... they are only
+ *          instantiated in memory then.
+ *
+ *          There are many ways to awake objects. To awake a
+ *          single object, call M_WPObject::wpclsMakeAwake.
+ *          This is a bit difficult to manage, so
+ *          WPFileSystem::wpclsQueryObjectFromPath is easier
+ *          for FS objects.
+ *
+ *          WPFolder::wpPopulate calls these in turn somehow.
+ *
+ *          Even though this isn't documented anywhere, the
+ *          WPS also supports the reverse concept of making
+ *          the object dormant again. This will destroy the
+ *          SOM object, but not the physical representation.
+ *          I suspect this was not documented because you can
+ *          never know whether some code still needs the
+ *          SOM pointer to the object somehow. Anyway, the
+ *          WPS does make objects dormant again e.g. when
+ *          their folders are closed and they are not referenced
+ *          anywhere else. You can prevent the WPS from doing
+ *          this by calling WPObject::wpLock.
+ *
+ *          The interesting thing is that there is an undocumented
+ *          method for destroying the SOM object.
+ *          WPObject::wpMakeDormant does exactly this.
+ *          It removes the object from all views and frees
+ *          all associated memory.
+ *
+ *      2)  Scenario 2 means that an object is physically created
+ *          and destroyed through the WPS. That is, you create
+ *          a new folder through "create another" and delete it
+ *          with the "delete" context menu item.
+ *
+ *          Creating a new object is done through the
+ *          M_WPObject::wpclsNew method. This is the "object
+ *          factory" of the WPS. Depending on which class the
+ *          method is invoked on, the new object will be of
+ *          that class.
+ *
+ *          Depending on the object's class, wpclsNew will create
+ *          a physical representation (e.g. file, folder) of the
+ *          object AND a SOM object.
+ *
+ *          Deleting an object can really be done in two ways:
+ *
+ *          --  WPObject::wpDelete looks like the most natural
+ *              way. However this really only displays a
+ *              confirmation and then invokes WPObject::wpFree.
+ *
+ *          --  WPObject::wpFree is the most direct way to
+ *              delete an object. This does not display any
+ *              more confirmations, but deletes the object
+ *              right away.
+ *
+ *              Interestingly, wpFree in turn calls another
+ *              undocumented method -- WPObject::wpDestroyObject.
+ *              From my testing this is responsible for destroying
+ *              the physical representation (file, folder, INI data).
+ *
+ *              After that, wpFree also calls wpMakeDormant
+ *              to free the SOM object.
+ *
+ *      wpDestroyObject is a bit obscure. I believe it is this
+ *      method which was supposed to do the object cleanup.
+ *      It is introduced by WPObject and overridden by the
+ *      following classes:
+ *
+ *      --  WPFileSystem: apparently, this then does DosDelete.
+ *          Unfortunately, this one has a real nasty bug... it
+ *          displays a message box if deleting the object fails.
+ *          This is really annoying when calling wpFree in a loop
+ *          on a bunch of objects.
+ *
+ *      --  WPAbstract: this probably removes the INI entries
+ *          associated with the abstract object.
+ *
+ *      --  WPProgram.
+ *
+ *      --  WPProgramFile.
+ *
+ *      --  WPTransient.
+ *
+ *      If folder auto-refresh is replaced by XWP, we must override
+ *      wpFree in order to suppress calling this method. The message
+ *      box bug is not acceptable for file-system objects, so we have
+ *      introduced XFldObject::xwpNukePhysical instead.
+ *
  *      Function prefix for this file:
  *      --  obj*
  *
@@ -116,7 +220,121 @@ HMTX                G_hmtxObjectsLists = NULLHANDLE;
 
 /* ******************************************************************
  *
- *   Folder linked lists
+ *   Object creation/destruction
+ *
+ ********************************************************************/
+
+/*
+ *@@ objFree:
+ *      implementation for XFldObject::wpFree.
+ *
+ *      If folder auto-refresh has been replaced by XWP, we override
+ *      the entire WPObject::wpFree method without calling the parent.
+ *      This is necessary for a number of reasons:
+ *
+ *      --  wpFree in turn calls the undocumented wpDestroyObject
+ *          method, which has a number of bugs but cannot be overridden
+ *          (because it's not exported in the IDL file).
+ *          So in order to fix those bugs, wpFree had to be rewritten,
+ *          which now calls the new XFldObject::xwpNukePhysical method
+ *          (which is our reimplementation of wpDestroyObject).
+ *
+ *      --  wpFree is not very good at cleaning up object data in the
+ *          INI files. This needs to be fixed finally.
+ *
+ *      In other words, when wpFree is now invoked on an object,
+ *      the following happens:
+ *
+ *      1) XFldObject::wpFree calls this implementation (objFree).
+ *
+ *      2) objFree cleans up some object data and then calls
+ *         the xwpNukePhysical method, using SOM name-lookup
+ *         resolution. This allows subclasses (such as XFolder
+ *         and XFldDataFile) to override the method, even though
+ *         SOM doesn't know that XFldObject is actually a parent
+ *         class of those subclasses (since the IDL files do not
+ *         reflect that WPObject has been replaced with XFldObject).
+ *
+ *      3) XFldObject::xwpNukeObject is the standard implementation,
+ *         which invokes the standard undocumented wpDestroyObject
+ *         method.
+ *
+ *         So for classes which have not overridden xwpNukeObject,
+ *         the behavior is EXACTLY as with the standard WPObject::wpFree.
+ *
+ *         HOWEVER, this way we can override xwpNukeObject in
+ *         XFldDataFile and XFolder to fix the annoying message box
+ *         bugs.
+ *
+ *@@added V0.9.9 (2001-02-04) [umoeller]
+ */
+
+BOOL objFree(WPObject *somSelf)
+{
+    BOOL    brc = FALSE;
+
+    ULONG   ulStyle = _wpQueryStyle(somSelf);
+    PSZ     pszID = _wpQueryObjectID(somSelf);
+    somTD_XFldObject_xwpNukePhysical pxwpNukePhysical = NULL;
+    xfTD_wpDeleteWindowPosKeys _wpDeleteWindowPosKeys = NULL;
+    xfTD_wpMakeDormant _wpMakeDormant = NULL;
+
+    // if the object has an object ID assigned, remove this...
+    // this should clean the INI entry
+    if (pszID && strlen(pszID))
+        _wpSetObjectID(somSelf, NULL);
+
+    // if the object is a template, unset that bit...
+    // this should clean the INI entry as well
+    if (ulStyle & OBJSTYLE_TEMPLATE)
+        _wpModifyStyle(somSelf, OBJSTYLE_TEMPLATE, 0);
+
+    // OK, here comes the fun stuff.
+    // The WPS normally calls the "wpDestroyObject" method,
+    // which is responsible for killing the physical representation
+    // of the object. Unfortunately, we cannot override that method
+    // because IBM wasn't kind enough to make it public. Our way
+    // around this (without breaking compatibility) is to introduce
+    // a new method in XFldObject, which calls wpDestroyObject per
+    // default.
+    // resolve method by name
+    pxwpNukePhysical
+        = (somTD_XFldObject_xwpNukePhysical)somResolveByName(
+                              somSelf,
+                              "xwpNukePhysical");
+    if (pxwpNukePhysical)
+        pxwpNukePhysical(somSelf);
+
+    // the WPS then calls wpSaveImmediate just in case the object
+    // has called wpSaveDeferred. I'm not sure this is a good idea...
+    // this will add another entry to the INI file. This should be
+    // moved up.
+    _wpSaveImmediate(somSelf);
+
+    // then there's another undocumented method call... i'm unsure
+    // what this does, but what the heck. We need to resolve this
+    // manually.
+    _wpDeleteWindowPosKeys = (xfTD_wpDeleteWindowPosKeys)wpshResolveFor(
+                                            somSelf,
+                                            NULL,
+                                            "wpDeleteWindowPosKeys");
+    if (_wpDeleteWindowPosKeys)
+        _wpDeleteWindowPosKeys(somSelf);
+
+    // finally, this calls wpMakeDormant, which destroys the SOM object
+    _wpMakeDormant = (xfTD_wpMakeDormant)wpshResolveFor(
+                                            somSelf,
+                                            NULL,
+                                            "wpMakeDormant");
+    if (_wpMakeDormant)
+        brc = _wpMakeDormant(somSelf, 0);
+
+    return (brc);
+}
+
+/* ******************************************************************
+ *
+ *   Object linked lists
  *
  ********************************************************************/
 
@@ -297,6 +515,7 @@ BOOL WriteObjectsList(PLINKLIST pll,
  *@@added V0.9.0 (99-11-16) [umoeller]
  *@@changed V0.9.7 (2001-01-18) [umoeller]: made this generic for all objs... renamed from fdr*
  *@@changed V0.9.7 (2001-01-18) [umoeller]: removed mallocs(), this wasn't needed
+ *@@changed V0.9.9 (2001-01-29) [lafaix]: wrong object set, fixed
  */
 
 BOOL objAddToList(WPObject *somSelf,
@@ -346,7 +565,7 @@ BOOL objAddToList(WPObject *somSelf,
 
                     if (ulListFlag)
                         // set list notify flag
-                        _xwpModifyListNotify(pobj,
+                        _xwpModifyListNotify(somSelf, // V0.9.9 (2001-01-29) [lafaix]
                                              ulListFlag,        // set
                                              ulListFlag);       // mask
 

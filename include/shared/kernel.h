@@ -99,14 +99,19 @@
 
         typedef struct _KERNELGLOBALS
         {
+            // WPS process ID V0.9.9 (2001-01-31) [umoeller]
+            PID                 pidWPS;
+            // Workplace thread ID (PMSHELL.EXE); should be 1
+            TID                 tidWorkplaceThread;
+
             // WPS startup date and time (krnInitializeXWorkplace)
-            DATETIME        StartupDateTime;
+            DATETIME            StartupDateTime;
 
             // PM error windows queried by krnInitializeXWorkplace
-            HWND            hwndHardError,
-                            hwndSysError;
+            HWND                hwndHardError,
+                                hwndSysError;
 
-            ULONG           ulPanicFlags;
+            ULONG               ulPanicFlags;
                     // flags set by the "panic" dialog if "Shift"
                     // was pressed during startup.
                     // Per default, this field is set to zero,
@@ -180,9 +185,6 @@
              *      This is always created.
              */
 
-            // Workplace thread ID (PMSHELL.EXE); should be 1
-            TID                 tidWorkplaceThread;
-
             // XFolder Workplace object window handle
             HWND                hwndThread1Object;
 
@@ -235,6 +237,21 @@
 
             THREADINFO          tiFileThread;
             HWND                hwndFileObject;
+
+            /*
+             * Sentinel thread:
+             *      replacement thread for WPS "WheelWatcher".
+             *      This does not have a PM message queue.
+             */
+
+            THREADINFO          tiSentinel;
+
+            BOOL                fAutoRefreshReplaced;
+                                    // this is set to TRUE if, on WPS startup,
+                                    // the WPS WheelWatcher was successfully
+                                    // stopped and the sentinel was started.
+                                    // Always use this setting instead of
+                                    // calling krnReplaceRefreshEnabled.
 
             /*
              * Shutdown threads:
@@ -346,6 +363,10 @@
      *   XWorkplace initialization                                      *
      *                                                                  *
      ********************************************************************/
+
+    BOOL krnReplaceRefreshEnabled(VOID);
+
+    VOID krnEnableReplaceRefresh(BOOL fEnable);
 
     VOID krnInitializeXWorkplace(VOID);
 

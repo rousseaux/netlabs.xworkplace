@@ -66,6 +66,7 @@ OBJS = $(OUTPUTDIR)\desktop.obj \
        $(OUTPUTDIR)\fops_top.obj \
        $(OUTPUTDIR)\object.obj \
        $(OUTPUTDIR)\program.obj \
+       $(OUTPUTDIR)\refresh.obj \
        $(OUTPUTDIR)\statbars.obj \
        $(OUTPUTDIR)\trash.obj \
        $(OUTPUTDIR)\xthreads.obj
@@ -275,6 +276,14 @@ $(OUTPUTDIR)\program.obj: \
     $(INC)\shared\common.h $(INC)\shared\kernel.h \
     $(INC)\filesys\object.h $(INC)\filesys\program.h \
     $(@B).c $(MYOWNINC)\$(@B).h
+
+$(OUTPUTDIR)\refresh.obj: \
+     $(INC)\setup.h \
+     $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h $(HLPINC)\threads.h \
+     $(INC)\classes\xfldr.ih \
+     $(INC)\shared\common.h $(INC)\shared\wpsh.h \
+     $(INC)\filesys\folder.h \
+     $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\statbars.obj: \
      $(INC)\setup.h \

@@ -479,10 +479,14 @@ void _Optlink xmm_fntMediaThread(PTHREADINFO pti)
  *@@added V0.9.3 (2000-04-25) [umoeller]
  */
 
-BOOL xmmInit(VOID)
+BOOL xmmInit(FILE* DumpFile)
 {
     HMODULE hmodMDM = NULLHANDLE,
             hmodMMIO = NULLHANDLE;
+
+    if (DumpFile)
+        fprintf(DumpFile,
+                "\nEntering " __FUNCTION__":\n");
 
     G_ulMMPM2Working = MMSTAT_WORKING;
 
@@ -500,12 +504,23 @@ BOOL xmmInit(VOID)
                 != NO_ERROR)
             G_ulMMPM2Working = MMSTAT_IMPORTSFAILED;
 
+    if (DumpFile)
+        fprintf(DumpFile,
+                "  Resolved MMPM/2 imports, new XWP media status: %d\n",
+                G_ulMMPM2Working);
+
     if (G_ulMMPM2Working == MMSTAT_WORKING)
+    {
         thrCreate(&G_tiMediaThread,
                   xmm_fntMediaThread,
                   NULL, // running flag
                   0,    // no msgq
                   0);
+        if (DumpFile)
+            fprintf(DumpFile,
+                    "  Started XWP Media thread, TID: %d\n",
+                    G_tiMediaThread.tid);
+    }
 
     return (G_ulMMPM2Working == MMSTAT_WORKING);
 }

@@ -441,28 +441,25 @@ BOOL OwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                 if (usID == ID_XCENTER_TOOLTIP)
                 {
                     _Pmpf((__FUNCTION__ ": ID_XCENTER_TOOLTIP"));
-                    switch (usNotifyCode)
+                    if (usNotifyCode == TTN_NEEDTEXT)
                     {
-                        case TTN_NEEDTEXT:
+                        PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
+                        _Pmpf((__FUNCTION__ ": TTN_NEEDTEXT"));
+                        if (pPrivate->ulType == BTF_XBUTTON)
+                            pttt->pszText = "X Button";
+                        else
                         {
-                            PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
-                            _Pmpf((__FUNCTION__ ": TTN_NEEDTEXT"));
-                            if (pPrivate->ulType == BTF_XBUTTON)
-                                pttt->pszText = "X Button";
+                            if (!pPrivate->pobjButton)
+                                // object not queried yet:
+                                pPrivate->pobjButton = FindObject(pPrivate);
+
+                            if (pPrivate->pobjButton)
+                                pttt->pszText = _wpQueryTitle(pPrivate->pobjButton);
                             else
-                            {
-                                if (!pPrivate->pobjButton)
-                                    // object not queried yet:
-                                    pPrivate->pobjButton = FindObject(pPrivate);
+                                pttt->pszText = "Invalid object...";
+                        }
 
-                                if (pPrivate->pobjButton)
-                                    pttt->pszText = _wpQueryTitle(pPrivate->pobjButton);
-                                else
-                                    pttt->pszText = "Invalid object...";
-                            }
-
-                            pttt->ulFormat = TTFMT_PSZ;
-                        break; }
+                        pttt->ulFormat = TTFMT_PSZ;
                     }
                 }
             }

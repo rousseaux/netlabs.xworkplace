@@ -58,8 +58,10 @@ OUTPUTDIR = $(BASE_OUTPUTDIR)\widgets
 # These will be put into BIN\.
 # If you add a new source, add the corresponding .OBJ file here.
 OBJS = \
+    $(OUTPUTDIR)\miniwdgt.obj \
     $(OUTPUTDIR)\w_monitors.obj \
     $(OUTPUTDIR)\w_winlist.obj \
+    $(OUTPUTDIR)\xwHealth.obj \
     $(OUTPUTDIR)\____sample.obj
 
 # The main target:
@@ -126,9 +128,13 @@ HLPINC = $(HELPERS_BASE)\include\helpers
 # XWorkplace "library" .OBJ files used by several classes.
 # Source code is here in SRC\MAIN.
 
+$(OUTPUTDIR)\miniwdgt.obj: \
+    $(INC)\shared\center.h \
+    $(@B).c
+
 $(OUTPUTDIR)\w_monitors.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\dosh.h $(HLPINC)\gpih.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h \
+    $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\gpih.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h \
         $(HLPINC)\timer.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
     $(INC)\shared\center.h $(INC)\shared\common.h \
     $(@B).c
@@ -137,6 +143,13 @@ $(OUTPUTDIR)\w_winlist.obj: \
     $(INC)\setup.h \
     $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\gpih.h $(HLPINC)\linklist.h \
         $(HLPINC)\prfh.h $(HLPINC)\timer.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
+    $(INC)\shared\center.h $(INC)\shared\common.h \
+    $(@B).c
+
+$(OUTPUTDIR)\xwHealth.obj: \
+    $(INC)\setup.h \
+    $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\gpih.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h \
+        $(HLPINC)\timer.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
     $(INC)\shared\center.h $(INC)\shared\common.h \
     $(@B).c
 

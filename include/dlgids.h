@@ -1680,6 +1680,7 @@
 #define ID_XCSI_XWPTRASHCAN             6045
 #define ID_XCSI_REPLACEDELETE           6046
 #define ID_XCSI_REPLHANDLES             6047
+#define ID_XCSI_REPLACEREFRESH          6048
 
 #define ID_XCSI_MOUSEKEYBOARDFEATURES   6050
 #define ID_XCSI_XWPHOOK                 6051

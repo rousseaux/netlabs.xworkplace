@@ -144,6 +144,7 @@
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\object.h"             // XFldObject implementation
+#include "filesys\refresh.h"            // folder auto-refresh
 #include "filesys\statbars.h"           // status bar translation logic
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
@@ -178,6 +179,46 @@ PLINKLIST           G_pllFavoriteFolders = NULL,
  *   here come the XFolder instance methods                         *
  *                                                                  *
  ********************************************************************/
+
+/*
+ *@@ xwpNukePhysical:
+ *      override of XFldObject::xwpNukePhysical. See remarks there.
+ *
+ *      This actually deletes the folder using DosDeleteDir.
+ *
+ *      As opposed to the WPS, we are smart enough NOT to
+ *      display a message box here if deletion failed. In
+ *      addition, if the object is already gone, we return
+ *      TRUE, since the folder was obviously already deleted.
+ *
+ *@@added V0.9.9 (2001-02-04) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xf_xwpNukePhysical(XFolder *somSelf)
+{
+    BOOL    brc = FALSE;
+    CHAR    szFilename[CCHMAXPATH];
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_xwpNukePhysical");
+
+    if (_wpQueryFilename(somSelf, szFilename, TRUE))
+    {
+        APIRET arc = DosDeleteDir(szFilename);
+
+        _Pmpf((__FUNCTION__ ": DosDelete returned %d", arc));
+
+        switch (arc)
+        {
+            case NO_ERROR:
+            case ERROR_FILE_NOT_FOUND:
+            case ERROR_PATH_NOT_FOUND:
+                brc = TRUE;
+            break;
+        }
+    }
+
+    return (brc);
+}
 
 /*
  *@@ xwpQueryFldrSort:
@@ -1408,6 +1449,8 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
 
     _ppFirstObj = NULL;
     _ppLastObj = NULL;
+
+    _pvllNotifications = NULL;
 }
 
 /*
@@ -1688,6 +1731,8 @@ SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
  *      made dormant or being deleted. All allocated resources
  *      should be freed here.
  *      The parent method must always be called last.
+ *
+ *@@changed V0.9.9 (2001-02-01) [umoeller]: added notify cleanup, semaphores
  */
 
 SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
@@ -1701,7 +1746,24 @@ SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
         _fUnInitCalled = TRUE;
 
     if (_pszFolderBkgndImageFile)
+    {
         free(_pszFolderBkgndImageFile);
+        _pszFolderBkgndImageFile = NULL;
+    }
+
+    // lock out the folder auto-refresh
+    if (wpshGetNotifySem(SEM_INDEFINITE_WAIT))
+    {
+        // now check if we have any pending file-system
+        // notifications from folder auto-refresh
+        if (_pvllNotifications)
+        {
+            refrClearFolderNotifications(somSelf);
+            lstFree((PLINKLIST)_pvllNotifications);
+        }
+
+        wpshReleaseNotifySem();
+    }
 
     XFolder_parent_WPFolder_wpUnInitData(somSelf);
         // fixed this (V0.9.0)
@@ -1711,6 +1773,7 @@ SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
  *@@ wpFree:
  *      this WPObject method destroys the persistent form of the object
  *      and then frees the memory that represented that object.
+ *      See object.c for a detailed description of an object's lifecycle.
  *
  *      For WPFolders, this is called when a folder is actually to be
  *      deleted. We will call the parent method and then also remove

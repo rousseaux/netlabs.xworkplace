@@ -9,11 +9,16 @@
  *      WARNING: The XCenter is still work in progress. The
  *      definitions in this file are still subject to change.
  *
+ *      If you are looking at this file from the "toolkit\shared"
+ *      directory of a binary XWorkplace release, this is an
+ *      exact copy of the file in "include\shared" from the
+ *      XWorkplace sources.
+ *
  *@@include #include "shared\center.h"
  */
 
 /*
- *      Copyright (C) 2000 Ulrich M”ller.
+ *      Copyright (C) 2000-2001 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -41,11 +46,11 @@
     #define BTF_OBJBUTTON       1
     #define BTF_XBUTTON         2
 
-    // position flags
+    // position flags (XCENTERGLOBALS.ulPosition)
     #define XCENTER_BOTTOM          0
     #define XCENTER_TOP             1
 
-    // display style
+    // display style (XCENTERGLOBALS.flDisplayStyle)
     #define XCS_FLATBUTTONS         0x0001
     #define XCS_SUNKBORDERS         0x0002
     #define XCS_SIZINGBARS          0x0004
@@ -128,6 +133,11 @@
     // forward declaration
     typedef struct _XCENTERWIDGET *PXCENTERWIDGET;
 
+    BOOL APIENTRY ctrSetSetupString(LHANDLE hSetting, const char *pcszNewSetupString);
+    typedef BOOL APIENTRY CTRSETSETUPSTRING(LHANDLE hSetting, const char *pcszNewSetupString);
+    typedef CTRSETSETUPSTRING *PCTRSETSETUPSTRING;
+
+
     /*
      *@@ WIDGETSETTINGSDLGDATA:
      *      a bunch of data passed to a "show settings
@@ -163,6 +173,7 @@
      *      it must specify this in its XCENTERWIDGETCLASS.
      *
      *@@added V0.9.7 (2000-12-07) [umoeller]
+     *@@changed V0.9.9 (2001-02-06) [umoeller]: added pctrSetSetupString
      */
 
     typedef struct _WIDGETSETTINGSDLGDATA
@@ -192,6 +203,15 @@
         PVOID                   pUser;
                     // some room for additional data the
                     // settings dialog might want
+
+        PCTRSETSETUPSTRING      pctrSetSetupString;
+                    // ptr to ctrSetSetupString function in
+                    // src\shared\center.c; this must be
+                    // called by the settings dialog to
+                    // change the widget's setup string.
+                    // This pointer has been added with V0.9.9
+                    // to allow using settings dialog without
+                    // having to import this from XFLDR.DLL.
 
     } WIDGETSETTINGSDLGDATA, *PWIDGETSETTINGSDLGDATA;
 
@@ -426,8 +446,6 @@
      *
      ********************************************************************/
 
-    // #define SETUP_SEPARATOR     "øøø"
-
     PSZ APIENTRY ctrScanSetupString(const char *pcszSetupString,
                                     const char *pcszKeyword);
     typedef PSZ APIENTRY CTRSCANSETUPSTRING(const char *pcszSetupString,
@@ -442,19 +460,15 @@
     typedef VOID APIENTRY CTRFREESETUPVALUE(PSZ p);
     typedef CTRFREESETUPVALUE *PCTRFREESETUPVALUE;
 
-    BOOL APIENTRY ctrSetSetupString(LHANDLE hSetting, const char *pcszNewSetupString);
-    typedef BOOL APIENTRY CTRSETSETUPSTRING(LHANDLE hSetting, const char *pcszNewSetupString);
-    typedef CTRSETSETUPSTRING *PCTRSETSETUPSTRING;
+    // ctrSetSetupString has been defined above
 
-    #ifdef PRFH_HEADER_INCLUDED
-        BOOL ctrDisplayHelp(PXCENTERGLOBALS pGlobals,
-                            const char *pcszHelpFile,
-                            ULONG ulHelpPanelID);
-        typedef BOOL CTRDISPLAYHELP(PXCENTERGLOBALS pGlobals,
-                            const char *pcszHelpFile,
-                            ULONG ulHelpPanelID);
-        typedef CTRDISPLAYHELP *PCTRDISPLAYHELP;
-    #endif
+    BOOL ctrDisplayHelp(PXCENTERGLOBALS pGlobals,
+                        const char *pcszHelpFile,
+                        ULONG ulHelpPanelID);
+    typedef BOOL CTRDISPLAYHELP(PXCENTERGLOBALS pGlobals,
+                        const char *pcszHelpFile,
+                        ULONG ulHelpPanelID);
+    typedef CTRDISPLAYHELP *PCTRDISPLAYHELP;
 
     MRESULT EXPENTRY ctrDefWidgetProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
                 // a pointer to this is in XCENTERWIDGET
@@ -673,12 +687,14 @@
      *
      ********************************************************************/
 
+    // init-module export (ordinal 1)
     typedef ULONG EXPENTRY FNWGTINITMODULE(HAB hab,
                                            HMODULE hmodXFLDR,
                                            PXCENTERWIDGETCLASS *ppaClasses,
                                            PSZ pszErrorMsg);
     typedef FNWGTINITMODULE *PFNWGTINITMODULE;
 
+    // un-init-module export (ordinal 2)
     typedef VOID EXPENTRY FNWGTUNINITMODULE(VOID);
     typedef FNWGTUNINITMODULE *PFNWGTUNINITMODULE;
 #endif

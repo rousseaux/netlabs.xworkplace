@@ -647,7 +647,7 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
                 hwndActive = WinQueryActiveWindow(HWND_DESKTOP);
 
-                _Pmpf((__FUNCTION__ ": PGOM_FOCUSCHANGE, hwndActive: 0x%lX", hwndActive));
+                // _Pmpf((__FUNCTION__ ": PGOM_FOCUSCHANGE, hwndActive: 0x%lX", hwndActive));
 
                 if (hwndActive)
                 {
@@ -656,7 +656,7 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                     // V0.9.7 (2000-12-04) [umoeller]
                     HSWITCH hsw = WinQuerySwitchHandle(hwndActive, 0);
 
-                    _Pmpf(("  hSwitch: 0x%lX", hsw));
+                    // _Pmpf(("  hSwitch: 0x%lX", hsw));
                     if (hsw)
                     {
                         SWCNTRL swc;
@@ -666,15 +666,15 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                                 // for some reason, this returns 0 on success!!
                         {
                             BOOL fSticky = pgmwStickyCheck(swc.szSwtitle);
-                            _Pmpf(("  switch entry: %s --> sticky: %d",
-                                    swc.szSwtitle, fSticky));
+                            // _Pmpf(("  switch entry: %s --> sticky: %d",
+                               //      swc.szSwtitle, fSticky));
                             if (fSticky)
                                 // it's sticky: get outta here
                                 break;
                         }
                         else
                         {
-                            _Pmpf(("  switch entry failed, exiting"));
+                            // _Pmpf(("  switch entry failed, exiting"));
                             break; // V0.9.7 (2001-01-19) [umoeller]
                         }
                     }
@@ -773,7 +773,7 @@ MRESULT EXPENTRY fnwpMoveThread(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 
 VOID _Optlink fntMoveThread(PTHREADINFO pti)
 {
-    _Pmpf(("Move thread running..."));
+    // _Pmpf(("Move thread running..."));
 
     // give ourselves higher priority...
     // otherwise we can't compete with Netscape and Win-OS/2 windows.
@@ -799,7 +799,7 @@ VOID _Optlink fntMoveThread(PTHREADINFO pti)
                               NULL,
                               NULL);
 
-    _Pmpf(("Move thread object window is 0x%lX", G_pHookData->hwndPageMageMoveThread));
+    // _Pmpf(("Move thread object window is 0x%lX", G_pHookData->hwndPageMageMoveThread));
 
     if (G_pHookData->hwndPageMageMoveThread)
     {
@@ -809,7 +809,7 @@ VOID _Optlink fntMoveThread(PTHREADINFO pti)
             WinDispatchMsg(pti->hab, &qmsg);
     }
 
-    _Pmpf(("Exiting Move thread."));
+    // _Pmpf(("Exiting Move thread."));
 }
 
 /*

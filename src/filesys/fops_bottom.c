@@ -198,6 +198,8 @@ typedef struct _FILETASKLIST
  *
  *      This is usually called on the thread of the folder view
  *      from which the file operation was started (mostly thread 1).
+ *      There are several easy-to-use frontends to this in the
+ *      top layer (fops_top.c).
  *
  *      The following are supported for ulOperation:
  *
@@ -248,6 +250,10 @@ typedef struct _FILETASKLIST
  *          pTargetFolder is ignored.
  *          This expects font _objects_ (instances of XWPFontObject)
  *          on the list.
+ *
+ *      Move, copy, and create shadows are still missing... we can't
+ *      do those until I have rewritten the ugly file handles
+ *      management in the WPS.
  *
  *@@added V0.9.1 (2000-01-27) [umoeller]
  *@@changed V0.9.2 (2000-03-04) [umoeller]: added error callback
@@ -678,7 +684,7 @@ FOPSRET fopsFileThreadFixNonDeletable(PFILETASKLIST pftl,
             // user has chosen to ignore subsequent:
             // this will call wpSetAttr below
             frc = NO_ERROR;
-            _Pmpf(("      frc = %d", frc));
+            // _Pmpf(("      frc = %d", frc));
     }
     else
         frc = FOPSERR_DELETE_NOT_DELETABLE; // fatal
@@ -689,7 +695,7 @@ FOPSRET fopsFileThreadFixNonDeletable(PFILETASKLIST pftl,
             // prompt user:
             // this can recover, but should have
             // changed the problem (read-only)
-            _Pmpf(("      calling error callback"));
+            // _Pmpf(("      calling error callback"));
             frc = pftl->pfnErrorCallback(pftl->ulOperation,
                                          pSubObjThis,
                                          frc,
@@ -779,8 +785,8 @@ FOPSRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
                 ULONG           cbFFB3 = sizeof(FILEFINDBUF3);
                 ULONG           ulFindCount = 1;  // look for 1 file at a time
 
-                _Pmpf((__FUNCTION__ ": doing DosFindFirst for %s",
-                            szFolderPath));
+                // _Pmpf((__FUNCTION__ ": doing DosFindFirst for %s",
+                   //          szFolderPath));
 
                 // now go find...
                 sprintf(szSearchMask, "%s\\*", szFolderPath);
@@ -799,7 +805,7 @@ FOPSRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
                     CHAR    szFullPath[2*CCHMAXPATH];
                     sprintf(szFullPath, "%s\\%s", szFolderPath, ffb3.achName);
 
-                    _Pmpf(("    got file %s", szFullPath));
+                    // _Pmpf(("    got file %s", szFullPath));
 
                     // call callback for subobject;
                     // as the path, get the full path name of the file
@@ -830,12 +836,12 @@ FOPSRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
                             // 1) awake object
                             WPFileSystem *pFSObj = _wpclsQueryObjectFromPath(_WPFileSystem,
                                                                              szFullPath);
-                            _Pmpf(("        is readonly"));
+                            // _Pmpf(("        is readonly"));
                             if (!pFSObj)
                                 frc = FOPSERR_INVALID_OBJECT;
                             else
                             {
-                                _Pmpf(("        calling fopsFileThreadFixNonDeletable"));
+                                // _Pmpf(("        calling fopsFileThreadFixNonDeletable"));
                                 frc = fopsFileThreadFixNonDeletable(pftl,
                                                                     pFSObj,
                                                                     pulIgnoreSubsequent);
@@ -855,7 +861,7 @@ FOPSRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
                         {
                             // sneaky delete!!
                             frc = DosDelete(szFullPath);
-                            _Pmpf(("    deleted file %s --> %d", szFullPath, frc));
+                            // _Pmpf(("    deleted file %s --> %d", szFullPath, frc));
                         }
                     }
 
@@ -912,6 +918,7 @@ FOPSRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
  *@@changed V0.9.3 (2000-04-30) [umoeller]: reworked progress reports
  *@@changed V0.9.4 (2000-07-27) [umoeller]: added ulIgnoreSubsequent to ignore further errors
  *@@changed V0.9.6 (2000-10-25) [umoeller]: largely rewritten to support sneaky delete (much faster)
+ *@@changed V0.9.9 (2001-02-01) [umoeller]: added FOI_DELETEINPROGRESS
  */
 
 FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
@@ -967,12 +974,10 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
             //    popups for read-only files) and then delete
             //    the folder object.
 
-            if (frc != NO_ERROR)
-                _Pmpf((__FUNCTION__ ": fopsExpandObjectFlat returned %d", frc));
-            else
+            if (frc == NO_ERROR)
             {
-                _Pmpf((__FUNCTION__ ": fopsExpandObjectFlat got %d + %d objects",
-                            cSubObjectsTemp, cSubDormantFilesTemp));
+                // _Pmpf((__FUNCTION__ ": fopsExpandObjectFlat got %d + %d objects",
+                   //          cSubObjectsTemp, cSubDormantFilesTemp));
 
                 // say "done collecting objects"
                 frc = fopsCallProgressCallback(pftl,
@@ -1010,7 +1015,16 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                         // because these came before the folder on the
                         // subobjects list)
                         WPObject *pobj2 = pSubObjThis;
-                        _Pmpf(("Sneaky delete folder %s", _wpQueryTitle(pSubObjThis) ));
+                        // _Pmpf(("Sneaky delete folder %s", _wpQueryTitle(pSubObjThis) ));
+
+                        // before we do anything, set the "delete in progress"
+                        // flag. This greatly reduces the pressure on the WPS
+                        // folder auto-refresh because the WPS can then drop
+                        // all notifications, I guess.
+                        // V0.9.9 (2001-02-01) [umoeller]
+                        _wpModifyFldrFlags(pSubObjThis,
+                                           FOI_DELETEINPROGRESS,
+                                           FOI_DELETEINPROGRESS);
                         frc = fopsFileThreadSneakyDeleteFolderContents(pftl,
                                                                        pfu,
                                                                        &pobj2,
@@ -1021,6 +1035,10 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                                                                        ulProgressScalarFirst,
                                                                        cSubObjects,
                                                                        &ulSubObjectThis);
+                         _wpModifyFldrFlags(pSubObjThis,
+                                            0,
+                                            FOI_DELETEINPROGRESS);
+
                         if (frc != NO_ERROR)
                             *ppObject = pobj2;
 
@@ -1034,7 +1052,7 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
 
                     if (frc == NO_ERROR)
                     {
-                        _Pmpf(("Real-delete object %s", _wpQueryTitle(pSubObjThis) ));
+                        // _Pmpf(("Real-delete object %s", _wpQueryTitle(pSubObjThis) ));
 
                         // delete the object: we get here for any instantiated
                         // WPS object which must be deleted, that is
@@ -1062,6 +1080,7 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                             break;
                         }
 
+                        _Pmpf((__FUNCTION__ ": calling _wpIsDeleteable"));
                         if (!_wpIsDeleteable(pSubObjThis))
                             // not deletable: prompt user about
                             // what to do with this
@@ -1072,6 +1091,7 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                         if (frc == NO_ERROR)
                         {
                             // either no problem or problem fixed:
+                            _Pmpf((__FUNCTION__ ": calling _wpFree"));
                             if (!_wpFree(pSubObjThis))
                             {
                                 frc = FOPSERR_WPFREE_FAILED;

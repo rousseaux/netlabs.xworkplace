@@ -51,7 +51,7 @@
  *  6)  dlgids.h, headers in shared\ (as needed)
  *  7)  headers in implementation dirs (e.g. filesys\, as needed)
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
-ew */
+ */
 
 #define INCL_DOSPROCESS
 #define INCL_DOSMODULEMGR
@@ -86,6 +86,7 @@ ew */
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\prfh.h"               // INI file helper routines;
@@ -109,9 +110,10 @@ ew */
  *
  ********************************************************************/
 
-#define MWGT_CLOCK              1
+#define MWGT_DATE               1
 #define MWGT_SWAPPER            2
 #define MWGT_MEMORY             3
+#define MWGT_TIME               4
 
 APIRET16 APIENTRY16 Dos16MemAvail(PULONG pulAvailMem);
 
@@ -133,10 +135,18 @@ static XCENTERWIDGETCLASS G_WidgetClasses[] =
             {
                 {
                     WNDCLASS_WIDGET_MONITORS,
-                    MWGT_CLOCK,
-                    "Clock",
-                    "Clock",
-                    WGTF_UNIQUEPERXCENTER,
+                    MWGT_DATE,
+                    "Date",
+                    "Date",
+                    WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP,
+                    NULL        // no settings dlg
+                },
+                {
+                    WNDCLASS_WIDGET_MONITORS,
+                    MWGT_TIME,
+                    "Time",
+                    "Time",
+                    WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP,
                     NULL        // no settings dlg
                 },
                 {
@@ -144,9 +154,9 @@ static XCENTERWIDGETCLASS G_WidgetClasses[] =
                     MWGT_MEMORY,
                     "PhysMemory",
                     "Free physical memory",
-                    WGTF_UNIQUEPERXCENTER,
+                    WGTF_UNIQUEPERXCENTER | WGTF_TOOLTIP,
                     NULL        // no settings dlg
-                },
+                }
                 /* {
                     WNDCLASS_WIDGET_MONITORS,
                     MWGT_SWAPPER,
@@ -272,7 +282,8 @@ typedef struct _MONITORPRIVATE
 
     ULONG           ulType;
                 // one of the following:
-                // -- MWGT_CLOCK: clock widget
+                // -- MWGT_DATE: date widget
+                // -- MWGT_TIME: time widget
                 // -- MWGT_SWAPPER: swap monitor widget
                 // -- MWGT_MEMORY: memory monitor widget;
                 // this is copied from the widget class on WM_CREATE
@@ -464,7 +475,8 @@ MRESULT MwgtCreate(HWND hwnd,
     pWidget->pcszHelpLibrary = pcmnQueryHelpLibrary();
     switch (pPrivate->ulType)
     {
-        case MWGT_CLOCK:
+        case MWGT_DATE:
+        case MWGT_TIME:
             pWidget->ulHelpPanelID = ID_XSH_WIDGET_CLOCK_MAIN;
         break;
 
@@ -490,13 +502,14 @@ MRESULT MwgtCreate(HWND hwnd,
  *      implementation for WM_CONTROL.
  *
  *@@added V0.9.7 (2000-12-14) [umoeller]
+ *@@changed V0.9.9 (2001-02-01) [umoeller]: added tooltips
  */
 
 BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
 {
     BOOL brc = FALSE;
-
     PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+
     if (pWidget)
     {
         PMONITORPRIVATE pPrivate = (PMONITORPRIVATE)pWidget->pUser;
@@ -521,6 +534,33 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         pszl->cy = pPrivate->cyCurrent;
                         brc = TRUE;
                     break; }
+                }
+            }
+            else if (usID == ID_XCENTER_TOOLTIP)
+            {
+                if (usNotifyCode == TTN_NEEDTEXT)
+                {
+                    PTOOLTIPTEXT pttt = (PTOOLTIPTEXT)mp2;
+                    switch (pPrivate->ulType)
+                    {
+                        case MWGT_DATE:
+                            pttt->pszText = "Date";
+                        break;
+
+                        case MWGT_TIME:
+                            pttt->pszText = "Time";
+                        break;
+
+                        case MWGT_SWAPPER:
+                            pttt->pszText = "Current swapper size";
+                        break;
+
+                        case MWGT_MEMORY:
+                            pttt->pszText = "Currently free memory";
+                        break;
+                    }
+
+                    pttt->ulFormat = TTFMT_PSZ;
                 }
             }
         } // end if (pPrivate)
@@ -587,22 +627,19 @@ VOID MwgtPaint(HWND hwnd,
 
     switch (pPrivate->ulType)
     {
-        case MWGT_CLOCK:
+        case MWGT_DATE:
+        case MWGT_TIME:
         {
-            CHAR        szDate[200] = "",
-                        szTime[200] = "";
             DATETIME    DateTime;
 
             DosGetDateTime(&DateTime);
-            pstrhDateTime(szDate,
-                          szTime,
+            pstrhDateTime((pPrivate->ulType == MWGT_DATE) ? szPaint : NULL,
+                          (pPrivate->ulType == MWGT_TIME) ? szPaint : NULL,
                           &DateTime,
                           pCountrySettings->ulDateFormat,
                           pCountrySettings->cDateSep,
                           pCountrySettings->ulTimeFormat,
                           pCountrySettings->cTimeSep);
-            sprintf(szPaint, "%s %s", szDate, szTime);
-
         break; }
 
         case MWGT_SWAPPER:
@@ -741,7 +778,8 @@ VOID MwgtButton1DblClick(HWND hwnd,
 
         switch (pPrivate->ulType)
         {
-            case MWGT_CLOCK:
+            case MWGT_DATE:
+            case MWGT_TIME:
                 pcszID = "<WP_CLOCK>";
             break;
 

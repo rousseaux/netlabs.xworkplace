@@ -56,6 +56,7 @@
 
     extern const char *INIAPP_XWORKPLACE;
     extern const char *INIAPP_OLDXFOLDER;
+
     extern const char *INIKEY_GLOBALSETTINGS;
     extern const char *INIKEY_ACCELERATORS;
     extern const char *INIKEY_LANGUAGECODE;
@@ -109,6 +110,8 @@
 
     extern const char *INIAPP_XWPFILETYPES;   // added V0.9.0
     extern const char *INIAPP_XWPFILEFILTERS; // added V0.9.0
+
+    extern const char *INIAPP_REPLACEFOLDERREFRESH; // added V0.9.9 (2001-01-31) [umoeller]
 
     extern const char *WPINIAPP_LOCATION;
     extern const char *WPINIAPP_FOLDERPOS;

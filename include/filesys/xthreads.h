@@ -184,6 +184,6 @@
 
     BOOL xthrPostSpeedyMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
 
-    BOOL xthrStartThreads(VOID);
+    BOOL xthrStartThreads(FILE *DumpFile);
 
 #endif

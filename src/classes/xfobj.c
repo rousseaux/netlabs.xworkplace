@@ -135,6 +135,44 @@ static BOOL        G_fXWorkplaceInitialized = FALSE;
  ********************************************************************/
 
 /*
+ *@@ xwpNukePhysical:
+ *      new XFldObject method to destroy the physical
+ *      representation of an object.
+ *
+ *      See object.c for details about an object's lifecycle.
+ *
+ *      If folder auto-refresh has been enabled, we have to
+ *      override wpFree in order to suppress the nasty message
+ *      boxes which are apparently displayed by
+ *      WPFileSystem::wpDestroyObject. Since we cannot override
+ *      wpDestroyObject, we override wpFree which in turn calls
+ *      this method (see XFldObject::wpFree, which calls objFree).
+ *      In this method, we can then do the cleanup ourselves.
+ *
+ *@@added V0.9.9 (2001-02-04) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfobj_xwpNukePhysical(XFldObject *somSelf)
+{
+    BOOL    brc = FALSE;
+    xfTD_wpDestroyObject _wpDestroyObject = NULL;
+    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xfobj_xwpNukePhysical");
+
+    _wpDestroyObject = (xfTD_wpDestroyObject)wpshResolveFor(
+                                            somSelf,
+                                            NULL,
+                                            "wpDestroyObject");
+    if (_wpDestroyObject)
+    {
+        brc = _wpDestroyObject(somSelf);
+        _Pmpf((__FUNCTION__ ": _wpDestroyObject returned %d", brc));
+    }
+
+    return (brc);
+}
+
+/*
  *@@ xwpAddObjectInternalsPage:
  *      this actually adds the "Internals" pages into all object notebooks,
  *      if the Global Settings allow it
@@ -910,6 +948,36 @@ SOM_Scope void  SOMLINK xfobj_wpObjectReady(XFldObject *somSelf,
         xthrPostWorkerMsg(WOM_ADDAWAKEOBJECT,
                          (MPARAM)somSelf,
                          MPNULL);
+}
+
+/*
+ *@@ wpFree:
+ *      this WPObject method destroys the persistent form of the object
+ *      and then frees the memory that represented that object.
+ *      See object.c for a detailed description of an object's lifecycle.
+ *
+ *      If the folder auto-refresh replacement is enabled, we override
+ *      this method and use a complete replacement of this without
+ *      calling the parent. See objFree for the implementation.
+ *
+ *@@added V0.9.9 (2001-02-04) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfobj_wpFree(XFldObject *somSelf)
+{
+    BOOL                brc = FALSE;
+    PCKERNELGLOBALS     pKernelGlobals = krnQueryGlobals();
+    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xfobj_wpFree");
+
+    // if (pKernelGlobals->fAutoRefreshReplaced)
+    {
+        brc = objFree(somSelf);
+    }
+    /* else
+        brc = XFldObject_parent_WPObject_wpFree(somSelf); */
+
+    return (brc);
 }
 
 /*

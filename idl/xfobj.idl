@@ -65,6 +65,8 @@ interface XFldObject : WPObject
      *
      */
 
+    BOOL xwpNukePhysical();
+
     ULONG xwpAddObjectInternalsPage(in HWND hwndNotebook);
 
     BOOL xwpQueryDeletion(in CDATE* pcdateDeleted, in CTIME* pctimeDeleted);
@@ -113,9 +115,14 @@ interface XFldObject : WPObject
                   xwpAddDestroyNotify,
                   xwpRemoveDestroyNotify,
                   xwpSetNextObj,
-                  xwpQueryNextObj;
+                  xwpQueryNextObj,
+                  xwpNukePhysical;
 
-    //# Class Modifiers
+    /*
+     * Class Modifiers:
+     *
+     */
+
     externalprefix = xfobj_;
     externalstem = xfobj;
     majorversion = 1;
@@ -162,6 +169,7 @@ interface XFldObject : WPObject
     wpCopyObject: override;
     wpObjectReady: override;
 
+    wpFree: override;
     wpUnInitData: override;
 
     wpSaveState: override;

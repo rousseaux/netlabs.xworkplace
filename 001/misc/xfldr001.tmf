@@ -327,6 +327,8 @@ Are you sure you want to do this?
 
 Check if maybe the xwplog.log file in the root directory of your boot drive contains additional information.
 
+Do you wish to remove this widget from the XCenter's widget list?
+
 <--XFL0196-->: Error creating file type "%1". Maybe the file type already exists.
 
 <--XFL0197-->: XCenter
@@ -365,7 +367,17 @@ The following path was attempted:
 
 %1
 
+<--XFL0207-->: You must restart the Workplace Shell for this change to take effect.
 
+;
+; the following items are new with V0.9.9
+;
+
+<--XFL0208-->: XWorkplace's extended file associations are now enabled.
+
+Note: If you have not configured the XWorkplace file types yet, all your present associations are currently disabled. Go to the "Workplace Shell" object, where you will find a new "File types" page, to set up file types for your existing associations.
+
+You can always disable the extended file associations again to get the old WPS mechanism back.
 
 ; ---------------------------------------------------------------------------------
 ;
@@ -697,6 +709,14 @@ If the trash can has been enabled above, this applies to destroying trash object
 If the trash can has not been enabled above, this applies to all delete operations.
 Compared to the WPS's default delete operations, this will allow you to cancel a delete operation in progress if a folder has lots of subfolders.
 This was added with XWorkplace 0.9.3.
+
+;
+; the following was added with V0.9.9
+;
+<--FEATURES_6048-->: If "Replace folder auto-refresh" is enabled, XWorkplace will disable the internal WPS threads which monitor file-system activity to automatically refresh folders. Instead, it will start its own threads for this job.
+XWorkplace's implementation has the advantage that it does not create excessive file-system handles.
+Enabling or disabling this replacement requires a WPS restart. However, once the XWorkplace replacement is enabled, you can dynamically enable or disable folder auto-refresh.
+This was added with XWorkplace 0.9.9.
 
 ; ---------------------------------------------------------------------------------
 ;

@@ -235,7 +235,7 @@
      *
      ********************************************************************/
 
-    BOOL xmmInit(VOID);
+    BOOL xmmInit(FILE *DumpFile);
 
     VOID xmmDisable(VOID);
 

@@ -19,7 +19,7 @@
  */
 
 #define BLDLEVEL_VENDOR         "Ulrich M”ller"
-#define BLDLEVEL_VERSION        "0.9.8"
+#define BLDLEVEL_VERSION        "0.9.9"
 #define BLDLEVEL_INFO           "to be overridden"
 
 

@@ -31,17 +31,20 @@ This is my private bug list for FP13/14:
    is about. This doesn't happen with FP11, and it happens
    with my Desktop even if I disable XWP.
 
-   UPDATE: I was told at Warpstock Europe that this has been
-   fixed with kernel build level 14.050.
+   This has been fixed with FP 15.
 
 -- IBM has ruined the DosQProcStat and DosQuerySysState APIs.
    These still return garbage with FP14 sometimes.
+
+   Apparently, this has been fixed with FP 15 too.
 
 -- Please don't complain about misaligned text in Details
    views, which is no longer vertically centered. It's not
    XWorkplace's fault, but another bug introduced with FP13
    or 14, I don't know. I only noticed it now after installing
    FP14.
+
+   This is still showing with FP15.
 
 
 CHECK ON A CLEAN SYSTEM
@@ -52,6 +55,17 @@ CHECK ON A CLEAN SYSTEM
 
 NOT-SO-SERIOUS PROBLEMS
 -----------------------
+
+--  install:
+
+    >1. The un-installer fails to remove the font folder and the Xworkplace
+    >Installation folder.
+    >2. The un-installer fails to remove several templates.  Checkini will
+    >find and remove these.
+    >3. The un-installer fails to remove Xtrashcan entries in OS2.INI.
+    >4. The installer does not default to install the font folder.  It will
+    >fail to populate the font folder if it already exists.
+
 
 --  xcenter:
     stays visible with lockup screen and stay-on-top.
@@ -86,13 +100,19 @@ XCenter:
        >right next to the rightmost icon, then it goes on the right where you
        >would expect it.
 
+    -- move widgets doesn't work right.
+
     -- put menus on object buttons on top of the bar, not on top of the button.
 
     -- add option for tooltip shadows.
 
     -- winlist: truncate titles with "..."
 
+    -- winlist: maximized VIO windows/FS sessions
+
     -- make object buttons droppable
+
+    -- object buttons: given them WPS context menu
 
 extended assocs:
 
@@ -173,7 +193,8 @@ hook:
     -- MB3 scroll:
        -- VIEW.EXE TOC not fully shown
 
-    -- VIO copy conflicts with WM_CHORD; check window class
+    -- VIO copy conflicts with WM_CHORD; check window class. Doesn't work on
+       Win-OS/2 either?
 
     --  I did some more experimenting, and I have discovered what is wrong
         with the "Ignore desktop" option in "Sliding focus".

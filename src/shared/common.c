@@ -277,6 +277,9 @@ const char      *INIKEY_FONTSAMPLEHINTS  = "FontSampleHints";
 const char      *INIAPP_XWPFILETYPES     = "XWorkplace:FileTypes";   // added V0.9.0
 const char      *INIAPP_XWPFILEFILTERS   = "XWorkplace:FileFilters"; // added V0.9.0
 
+const char      *INIAPP_REPLACEFOLDERREFRESH = "ReplaceFolderRefresh";
+                                    // V0.9.9 (2001-01-31) [umoeller]
+
 /*
  * some default WPS INI keys:
  *

@@ -2431,27 +2431,26 @@ void _Optlink fntSpeedyThread(PTHREADINFO pti)
  *@@changed V0.9.3 (2000-04-25) [umoeller]: moved all multimedia stuff to media\mmthread.c
  */
 
-BOOL xthrStartThreads(VOID)
+BOOL xthrStartThreads(FILE *DumpFile)
 {
     BOOL brc = FALSE;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     PKERNELGLOBALS pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
 
+    if (DumpFile)
+        fprintf(DumpFile,
+                "\nEntering " __FUNCTION__":\n");
+
     if (pKernelGlobals)
     {
         if (thrQueryID(&pKernelGlobals->tiWorkerThread) == NULLHANDLE)
         {
-            PTIB        ptib;
-            PPIB        ppib;
             APIRET      arc;
             CHAR szSoundDLL[CCHMAXPATH] = "";
 
             // store the thread ID of the calling thread;
             // this should always be 1
-            if (DosGetInfoBlocks(&ptib, &ppib) == NO_ERROR)
-                if (ptib)
-                    if (ptib->tib_ptib2)
-                        pKernelGlobals->tidWorkplaceThread = ptib->tib_ptib2->tib2_ultid;
+            // ... moved this to krnInitializeXWorkplace
 
             /*
              *  start threads
@@ -2465,21 +2464,36 @@ BOOL xthrStartThreads(VOID)
                 thrCreate(&pKernelGlobals->tiWorkerThread,
                           fntWorkerThread,
                           NULL, // running flag
-                          0,    // no msgq
+                          THRF_WAIT,    // no msgq, but wait V0.9.9 (2001-01-31) [umoeller]
                           0);
+
+                if (DumpFile)
+                    fprintf(DumpFile,
+                            "  Started XWP Worker thread, TID: %d\n",
+                            pKernelGlobals->tiWorkerThread.tid);
 
                 thrCreate(&pKernelGlobals->tiSpeedyThread,
                           fntSpeedyThread,
                           NULL, // running flag
-                          0,    // no msgq
+                          THRF_WAIT,    // no msgq, but wait V0.9.9 (2001-01-31) [umoeller]
                           0);
+
+                if (DumpFile)
+                    fprintf(DumpFile,
+                            "  Started XWP Speedy thread, TID: %d\n",
+                            pKernelGlobals->tiSpeedyThread.tid);
             }
 
             thrCreate(&pKernelGlobals->tiFileThread,
                       fntFileThread,
                       NULL, // running flag
-                      0,    // no msgq
+                      THRF_WAIT,    // no msgq, but wait V0.9.9 (2001-01-31) [umoeller]
                       0);
+
+            if (DumpFile)
+                fprintf(DumpFile,
+                        "  Started XWP File thread, TID: %d\n",
+                        pKernelGlobals->tiFileThread.tid);
         }
 
         krnUnlockGlobals();
