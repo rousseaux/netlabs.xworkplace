@@ -44,6 +44,7 @@
 
 #include "helpers\cnrh.h"
 #include "helpers\datetime.h"           // date/time helper routines
+#include "helpers\dosh.h"
 #include "helpers\dialog.h"
 #include "helpers\except.h"
 #include "helpers\linklist.h"
@@ -2944,10 +2945,8 @@ MRESULT EXPENTRY fnwpSelectByName(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp
                         while (prec)
                         {
                             // does this match the file mask?
-                            if (strhMatchExt(pszMask,
-                                             prec->szShortNameCopy,
-                                             // prec->szLongName,
-                                             FNM_OS2 | FNM_IGNORECASE))
+                            if (doshMatch(pszMask,
+                                          prec->szShortNameCopy))
                             {
                                 // yes:
                                 if (usCommand == IDDI_SELECT)

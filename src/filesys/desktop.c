@@ -407,8 +407,10 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
         // disable all those menu items if XShutdown is currently running
         ulShutdownAttr = MIA_DISABLED;
 
-    if (    (pGlobalSettings->fXShutdown)    // XShutdown enabled?
-         && (!pGlobalSettings->NoWorkerThread)  // Worker thread enabled?
+#ifndef __NOXSHUTDOWN__
+    if (    (cmnIsFeatureEnabled(XShutdown))    // XShutdown enabled?
+         // && (!pGlobalSettings->NoWorkerThread)  // Worker thread enabled?
+            // removed this setting V0.9.16 (2002-01-04) [umoeller]
        )
     {
         CHAR szShutdown[50];
@@ -424,7 +426,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
             winhRemoveMenuItem(hwndMenu, WPMENUID_SHUTDOWN);
 
             strcpy(szShutdown, cmnGetString(ID_XSSI_XSHUTDOWN));
-            if (pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM)
+            if (pGlobalSettings->__flXShutdown & XSD_CONFIRM)
                 strcat(szShutdown, "...");
 
             // create "Shutdown" submenu and use this for
@@ -471,7 +473,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
 
     } // end if (pGlobalSettings->XShutdown) ...
 
-    if (pGlobalSettings->fRestartWPS)
+    if (cmnIsFeatureEnabled(RestartDesktop))
     {
         // insert "Restart Desktop"
         winhInsertMenuItem(hwndMenuInsert,  // either main menu or "Shutdown" submenu
@@ -482,13 +484,14 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                            // disable if Shutdown is currently running
                            ulShutdownAttr);
 
-        if ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) == 0)
+        if ((pGlobalSettings->__flXShutdown & XSD_CONFIRM) == 0)
             // if XShutdown confirmations have been disabled,
             // remove "..." from "Restart Desktop" entry
             winhMenuRemoveEllipse(hwndMenuInsert,
                                   pGlobalSettings->VarMenuOffset
                                         + ID_XFMI_OFS_RESTARTWPS);
     }
+#endif
 
     if (pKernelGlobals->pXWPShellShared)
     {
@@ -502,7 +505,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
                            // disable if Shutdown is currently running
                            ulShutdownAttr);
 
-        if ((pGlobalSettings->ulXShutdownFlags & ID_XFMI_OFS_LOGOFF) == 0)
+        if ((pGlobalSettings->__flXShutdown & ID_XFMI_OFS_LOGOFF) == 0)
             // if XShutdown confirmations have been disabled,
             // remove "..." from "Logoff" entry
             winhMenuRemoveEllipse(hwndMenuInsert,
@@ -618,8 +621,10 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
             xsdInitiateRestartWPS(TRUE);    // logoff
             return (TRUE);
         }
-        else if (    (pGlobalSettings->fXShutdown)
-                 &&  (pGlobalSettings->NoWorkerThread == 0)
+#ifndef __NOXSHUTDOWN__
+        else if (    (cmnIsFeatureEnabled(XShutdown))
+                 // &&  (pGlobalSettings->NoWorkerThread == 0)
+                    // removed this setting V0.9.16 (2002-01-04) [umoeller]
                 )
         {
             // shutdown enabled:
@@ -637,6 +642,7 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
                 return (FALSE);
             }
         }
+#endif
     }
 
 #ifdef __XWPLITE__
@@ -749,11 +755,14 @@ VOID dtpMenuItemsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_ENABLE)
     {
+#ifndef __NOXSHUTDOWN__
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_DTP_SHUTDOWNMENU,
-                         (     (pGlobalSettings->fXShutdown)
+                         (     (cmnIsFeatureEnabled(XShutdown))
                            // &&  (pGlobalSettings->fDTMShutdown)
-                           &&  (!pGlobalSettings->NoWorkerThread)
+                           // &&  (!pGlobalSettings->NoWorkerThread)
+                            // removed this setting V0.9.16 (2002-01-04) [umoeller]
                          ));
+#endif
     }
 }
 

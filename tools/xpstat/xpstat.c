@@ -338,7 +338,7 @@ VOID AppendModuleInfo(PXSTRING ppszCurrentInfo,
     xstrcat(ppszCurrentInfo, szTemp, 0);
 
     if (pExec)
-        doshExecClose(pExec);
+        doshExecClose(&pExec);
 }
 
 /* ******************************************************************

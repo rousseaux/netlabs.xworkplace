@@ -50,6 +50,8 @@ interface XWPProgram : WPProgram
 
     BOOL xwpNukePhysical();
 
+    BOOL xwpQueryExecutable(in PSZ pszBuffer);
+
 #ifdef __SOMIDL__
   implementation {
 
@@ -62,8 +64,8 @@ interface XWPProgram : WPProgram
      *
      */
 
-    externalprefix = xpgm_;
-    externalstem = xpgm;
+    externalprefix = xpg_;
+    externalstem = xpg;
     majorversion = 1;
     minorversion = 1;
     filestem = xwppgm;           //# specifies the filestem for sc-generated files
@@ -76,33 +78,28 @@ interface XWPProgram : WPProgram
      *
      */
 
+    BOOL        fNeedsSetProgIcon;      // flag for WPProgram::wpSetProgIcon
+
+    // pointers into WPProgramFile instance data
     PVOID       pvpszEnvironment;       // pointer to a PSZ containing a
                                         // string array with the program's
                                         // environment (last string is terminated
-                                        // with two null bytes);
-                                        // this is a ptr into the WPProgram instance data
+                                        // with two null bytes)
 
-    PVOID       pSWPInitial;            // pointer to SWP struct;
-                                        // this is a ptr into the WPProgram instance data
+    PVOID       pSWPInitial;            // pointer to SWP struct
 
-    PVOID       pvProgramLongs;         // pointer to an array of LONG values
-                                        // containing the program's data.
-                                        // Known ULONGS:
-                                        // --  index 0: fshandle of the executable.
-                                        //     0xFFFF marks a "*" executable (cmdline).
-                                        // --  index 1: fshandle of the startup dir.
+    PULONG      pulExecutableHandle;    // 16-bit file-system handle for executable;
+                                        //     0xFFFF marks a "*" executable (cmdline)
+    PULONG      pulStartupDirHandle;    // 16-bit file-system handle for startup dir
+    PPROGTYPE   pProgType;              // prog type and visibility flag; two ULONGs!
 
-    ULONG       cbStringArray;          // count of bytes allocated in pvStringArray
-    PVOID       pvStringArray;          // WPProgram string array restored in wpRestoreData.
-                                        // The first USHORT is a string index always,
-                                        // the last string has a USHORT of 0xFFFF.
-                                        // Known string indices:
-                                        // --  0: executable string. This is only used
-                                        //        if the user did not specify a fully
-                                        //        qualified executable, but something on
-                                        //        the PATH which wasn't resolved to an
-                                        //        fshandle (see above).
-                                        // --  1: parameters string.
+    // copies of string data intercepted in wpRestoreData
+    PSZ         pszExecutable;          // only used if the user did not specify a
+                                        // executable that could be resolved to
+                                        // the executable fshandle above (e.g. an
+                                        // executable on the PATH)
+
+    PSZ         pszParameters;          // parameters string
 
     /*
      * WPProgram methods overridden by XWPProgram:
@@ -119,6 +116,8 @@ interface XWPProgram : WPProgram
 
     wpRestoreData: override;
 
+    wpObjectReady: override;
+
     wpOpen: override;
 
     wpQueryIcon: override;
@@ -130,6 +129,9 @@ interface XWPProgram : WPProgram
 
     wpMoveObject: override;
     wpCopyObject: override;
+
+    wpQueryProgDetails: override;
+    wpSetProgDetails: override;
 
     //# wpDestroyObject: override;
     //# can't override this, add xwpNukeObject instead
@@ -168,9 +170,9 @@ interface M_XWPProgram : M_WPProgram
      *
      */
 
-    externalprefix = xpgmM_;
-    externalstem = xpgmM;
-    functionprefix = xpgmM_;
+    externalprefix = xpgM_;
+    externalstem = xpgM;
+    functionprefix = xpgM_;
     majorversion = 1;
     minorversion = 1;
     filestem = xwppgm;           //# specifies the filestem for sc-generated files

@@ -276,7 +276,8 @@ SOM_Scope HWND  SOMLINK xfdisk_wpViewObject(XFldDisk *somSelf,
     _Pmpf((__FUNCTION__ ": entering"));
 
     // "Drive not ready" replacement enabled?
-    if (    (pGlobalSettings->fReplDriveNotReady)
+#ifndef __NEVERREPLACEDRIVENOTREADY__
+    if (    (cmnIsFeatureEnabled(ReplaceDriveNotReady))
          // && (ulView != OPEN_SETTINGS)
                 // V0.9.16 (2001-10-23) [umoeller]
                 // do this for settings too,
@@ -293,6 +294,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpViewObject(XFldDisk *somSelf,
             // error: do _not_ call default
             somSelf = NULL;
     }
+#endif
 
     if (somSelf)
         // drive checking disabled, or disk is ready:
@@ -352,8 +354,9 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
             // XFldDiskData *somThis = XFldDiskGetData(somSelf);
             XFldDiskMethodDebug("XFldDisk","xfdisk_wpOpen");
 
+#ifndef __NEVERREPLACEDRIVENOTREADY__
             // "Drive not ready" replacement enabled?
-            if (pGlobalSettings->fReplDriveNotReady)
+            if (cmnIsFeatureEnabled(ReplaceDriveNotReady))
             {
                 // query root folder (WPRootFolder class, which is a descendant
                 // of WPFolder/XFolder); each WPDisk is paired with one of those,
@@ -374,6 +377,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
                 // else: hwndNewFrame is still NULLHANDLE
             }
             else
+#endif
             {
                 // "drive not ready" replacement disabled:
                 if (hwndNewFrame = XFldDisk_parent_WPDisk_wpOpen(somSelf,
@@ -433,7 +437,9 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
                             fdrCreateStatusBar(pRootFolder, psfv, TRUE);
 
                 // extended sort functions
-                if (pGlobalSettings->ExtFolderSort)
+#ifndef __ALWAYSEXTSORT__
+                if (cmnIsFeatureEnabled(ExtendedSorting))
+#endif
                     if (hwndCnr)
                         fdrSetFldrCnrSort(pRootFolder,
                                           hwndCnr,
@@ -475,12 +481,14 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpAddSettingsPages(XFldDisk *somSelf,
     /* XFldDiskData *somThis = XFldDiskGetData(somSelf); */
     XFldDiskMethodDebug("XFldDisk","xfdisk_wpAddSettingsPages");
 
-    if (pGlobalSettings->fReplDriveNotReady)
+#ifndef __NEVERREPLACEDRIVENOTREADY__
+    if (cmnIsFeatureEnabled(ReplaceDriveNotReady))
     {
         WPFolder *pRoot;
         if (!(pRoot = wpshQueryRootFolder(somSelf, FALSE, NULL)))
             return FALSE;
     }
+#endif
 
     return (XFldDisk_parent_WPDisk_wpAddSettingsPages(somSelf,
                                                       hwndNotebook));

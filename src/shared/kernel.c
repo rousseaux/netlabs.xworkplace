@@ -123,6 +123,8 @@
 // headers in /hook
 #include "hook\xwphook.h"
 
+#include "bldlevel.h"
+
 // other SOM headers
 #pragma hdrstop
 
@@ -155,6 +157,11 @@ TREE                    *G_ClassNamesTree;
 // anchor block of WPS thread 1 (queried in initMain);
 // this is exported thru kernel.h and never changed again
 HAB                     G_habThread1 = NULLHANDLE;
+
+// hiwords for abstract and file-system object handles;
+// initialized in initMain, exported thru kernel.h
+USHORT                  G_usHiwordAbstract = 0;
+USHORT                  G_usHiwordFileSystem = 0;
 
 // V0.9.11 (2001-04-25) [umoeller]
 static HWND             G_hwndPageMageContextMenu = NULLHANDLE;
@@ -468,24 +475,22 @@ FILE* _System krnExceptOpenLogFile(VOID)
     FILE        *file;
 
     sprintf(szFileName, "%c:\\%s", doshQueryBootDrive(), XFOLDER_CRASHLOG);
-    file = fopen(szFileName, "a");
-
-    if (file)
+    if (file = fopen(szFileName, "a"))
     {
         DATETIME    dt;
         DosGetDateTime(&dt);
         fprintf(file, "\nXWorkplace trap message -- Date: %04d-%02d-%02d, Time: %02d:%02d:%02d\n",
                 dt.year, dt.month, dt.day,
                 dt.hours, dt.minutes, dt.seconds);
+#define LOGFILENAME XFOLDER_CRASHLOG
         fprintf(file, "-----------------------------------------------------------\n"
-                      "\nXWorkplace encountered an internal error.\n"
-                      "Please contact the author so that this error may be removed\n"
-                      "in future XWorkplace versions. A contact address may be\n"
-                      "obtained from the XWorkplace User Guide. Please supply\n"
-                      "this file (?:\\" XFOLDER_CRASHLOG " with your e-mail and describe as\n"
-                      "exactly as possible the conditions under which the error\n"
-                      "occured.\n"
-                      "\nRunning XWorkplace version: " XFOLDER_VERSION " built " __DATE__ "\n");
+                      "\nAn internal error occurred in XWorkplace (XFLDR.DLL).\n"
+                      "Please send a bug report to " CONTACT_ADDRESS "\n"
+                      "so that this error may be fixed for future XWorkplace versions.\n"
+                      "Please supply this file (?:\\" LOGFILENAME ") with your e-mail\n"
+                      "and describe as exactly as possible the conditions under which\n"
+                      "the error occured.\n"
+                      "\nRunning XWorkplace version: " BLDLEVEL_VERSION " built " __DATE__ "\n");
 
     }
     return (file);
@@ -840,8 +845,12 @@ VOID krn_T1M_DaemonReady(VOID)
     {
         // cast PVOID
         PXWPGLOBALSHARED pXwpGlobalShared = G_KernelGlobals.pXwpGlobalShared;
-        if (    (pGlobalSettings->fEnableXWPHook)
-             && (pXwpGlobalShared->hwndDaemonObject)
+        if (
+#ifndef __ALWAYSHOOK__
+                (cmnIsFeatureEnabled(XWPHook))
+             &&
+#endif
+                (pXwpGlobalShared->hwndDaemonObject)
            )
         {
             if (WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
@@ -1647,7 +1656,14 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
                     break;
 
                     case ID_CRMI_SHUTDOWN:
-                        xsdInitiateShutdown();
+                        /* if (cmnIsFeatureEnabled(XShutdown))
+                            xsdInitiateShutdown();
+                        else */
+                        WinPostMsg(cmnQueryActiveDesktopHWND(),
+                                   WM_COMMAND,
+                                   MPFROMSHORT(WPMENUID_SHUTDOWN),
+                                   MPFROM2SHORT(CMDSRC_MENU,
+                                                FALSE));
                     break;
                 }
             break;

@@ -399,6 +399,13 @@ BOOL fdrProcessFldrHotkey(WPFolder *somSelf,
                         case ID_WPMI_ARRANGEVERTICALLY:
                             if (!pGlobalSettings->fDTMArrange)
                                 fPost = FALSE;
+                        break;
+
+                        // disallow close shortcut on desktop too
+                        // because that would now open the shutdown
+                        // window V0.9.16 (2002-01-04) [umoeller]
+                        case ID_XFMI_OFS_CLOSE:
+                            fPost = FALSE;
                     }
                 }
 

@@ -355,7 +355,9 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
     if (Update)
     {
         // update open views of this folder
-        if (pGlobalSettings->ExtFolderSort)
+#ifndef __ALWAYSEXTSORT__
+        if (cmnIsFeatureEnabled(ExtendedSorting))
+#endif
         {
             fdrForEachOpenInstanceView(somSelf,
                                        TRUE,            // force
@@ -395,7 +397,9 @@ SOM_Scope BOOL  SOMLINK xf_xwpSortViewOnce(XFolder *somSelf,
     BOOL        rc = FALSE;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-    if (pGlobalSettings->ExtFolderSort)
+#ifndef __ALWAYSEXTSORT__
+    if (cmnIsFeatureEnabled(ExtendedSorting))
+#endif
     {
         WPSHLOCKSTRUCT Lock = {0};
         TRY_LOUD(excpt1)
@@ -569,8 +573,8 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
 
         memset(pec, 0, sizeof(ENUMCONTENT));
 
-        wpshCheckIfPopulated(somSelf,
-                             FALSE);        // full populate
+        fdrCheckIfPopulated(somSelf,
+                            FALSE);        // full populate
 
         // build new list for ORDEREDLISTITEMs:
         pec->pllOrderedContent = lstCreate(TRUE);       // auto-free list items
@@ -1737,13 +1741,30 @@ SOM_Scope BOOL  SOMLINK xf_wpSaveState(XFolder *somSelf)
  *      initialization (after wpInitData) to restore the data
  *      which was stored with wpSaveState.
  *
+ *      We restore XFolder isntance data such as the sort
+ *      settings.
+ *
+ *      In addition, we speed up icon loading for folders. While
+ *      the WPS at least tries to speed up icon loading for
+ *      data files in this method (see XFldDataFile::wpRestoreState),
+ *      it doesn't do so for folders even though the data is
+ *      very much present in the FILEFINDBUF3 passed in ulReserved.
+ *      So what we do for folders is parse the icon buffer here;
+ *      if we find any data, we set the icon here.
+ *
+ *      In addition, we override XWPFileSystem::wpQueryIcon to
+ *      avoid going to the file system again which can
+ *      significantly speed up folder icons on CD-ROM drives,
+ *      for example.
+ *
  *@@changed V0.9.4 (2000-06-09) [umoeller]: added default document
  *@@changed V0.9.4 (2000-08-02) [umoeller]: added "keep title" instance setting
  *@@changed V0.9.12 (2001-05-18) [umoeller]: reworked for new folder sorting
+ *@@changed V0.9.16 (2002-01-04) [umoeller]: added icon handling
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
-                                             ULONG ulReserved)
+                                          ULONG ulReserved)
 {
     ULONG   ul;
     BOOL    brc;
@@ -1756,6 +1777,31 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
     #if defined DEBUG_RESTOREDATA || defined DEBUG_SOMMETHODS
         _Pmpf(("XFolder::wpRestoreState for %s", _wpQueryTitle(somSelf) ));
     #endif
+
+    // new icon handling code follows
+    // V0.9.16 (2002-01-04) [umoeller]
+    if (cmnIsFeatureEnabled(TurboFolders))
+    {
+        PMAKEAWAKEFS pFSData = (PMAKEAWAKEFS)ulReserved;
+        PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
+        APIRET arc;
+        HPOINTER hptrNew;
+
+        if (    (!prec->hptrIcon)
+             && (pFSData)
+             && (pFSData->pFea2List)
+             && (!(arc = icoBuildPtrFromFEA2List(pFSData->pFea2List,
+                                                 &hptrNew,
+                                                 NULL,
+                                                 NULL)))
+           )
+        {
+            _wpSetIcon(somSelf, hptrNew);
+            _wpModifyStyle(somSelf,
+                           OBJSTYLE_NOTDEFAULTICON,
+                           OBJSTYLE_NOTDEFAULTICON);
+        }
+    }
 
     // we will now restore all the different XFolder settings
     // into the instance data; note that if _wpRestoreLong
@@ -2991,7 +3037,9 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFolderSortPage(XFolder *somSelf,
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpAddFolderSortPage");
 
-    if (pGlobalSettings->ExtFolderSort)
+#ifndef __ALWAYSEXTSORT__
+    if (cmnIsFeatureEnabled(ExtendedSorting))
+#endif
     {
         // extended sorting enabled:
         PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
@@ -3016,8 +3064,10 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFolderSortPage(XFolder *somSelf,
         return (ntbInsertPage(pcnbp));
     }
 
+#ifndef __ALWAYSEXTSORT__
     return (XFolder_parent_WPFolder_wpAddFolderSortPage(somSelf,
                                                         hwndNotebook));
+#endif
 }
 
 /*
@@ -3524,7 +3574,9 @@ SOM_Scope BOOL  SOMLINK xf_wpSetFldrSort(XFolder *somSelf,
     {
         PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
 
-        if (pGlobalSettings->ExtFolderSort)
+#ifndef __ALWAYSEXTSORT__
+        if (cmnIsFeatureEnabled(ExtendedSorting))
+#endif
         {
             HWND hwndFrame = wpshQueryFrameFromView(somSelf, ulView);
             if (hwndFrame)

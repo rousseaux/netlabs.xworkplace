@@ -66,6 +66,7 @@
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
+
 #define INCL_WINWINDOWMGR
 #define INCL_WINMENUS
 #define INCL_WINDIALOGS
@@ -86,6 +87,7 @@
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
@@ -120,9 +122,9 @@
 #include "helpers\undoc.h"              // some undocumented stuff
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 // global variable whether XWorkplace is initialized yet
@@ -132,9 +134,9 @@ extern WPFolder     *G_pConfigFolder;
                             // xfldr.c
 
 /* ******************************************************************
- *                                                                  *
- *   here come the XFldObject instance methods                      *
- *                                                                  *
+ *
+ *   here come the XFldObject instance methods
+ *
  ********************************************************************/
 
 /*
@@ -330,6 +332,7 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpQueryDeletion(XFldObject *somSelf,
                                                CTIME* pctimeDeleted)
 {
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
+
     BOOL    brc = (_cdateDeleted.year != 0);     // V0.9.16 (2001-12-06) [umoeller]
 
     XFldObjectMethodDebug("XFldObject","xfobj_xwpQueryDeletion");
@@ -854,6 +857,14 @@ SOM_Scope PSZ  SOMLINK xfobj_xwpQuerySetup(XFldObject *somSelf,
     return (pszReturn);
 }
 
+/*
+ *@@ xwpFreeSetupBuffer:
+ *      this new XFldObject instance method frees the string
+ *      buffer returned by XFldObject::xwpQuerySetup.
+ *
+ *@@added V0.9.16 (2001-10-11) [umoeller]
+ */
+
 SOM_Scope void  SOMLINK xfobj_xwpFreeSetupBuffer(XFldObject *somSelf,
                                                  PSZ pszSetupBuffer)
 {
@@ -980,8 +991,7 @@ SOM_Scope ULONG  SOMLINK xfobj_xwpSetNextObj(XFldObject *somSelf,
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_xwpSetNextObj");
 
-    ppObjNext = wpshGetNextObjPointer(somSelf);
-    if (ppObjNext)
+    if (ppObjNext = wpshGetNextObjPointer(somSelf))
         *ppObjNext = pobjNext;
 
     return (ulrc);
@@ -1151,9 +1161,7 @@ SOM_Scope BOOL  SOMLINK xfobj_wpSetup(XFldObject *somSelf, PSZ pszSetupString)
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_wpSetup");
 
-    brc = XFldObject_parent_WPObject_wpSetup(somSelf, pszSetupString);
-
-    if (brc)
+    if (brc = XFldObject_parent_WPObject_wpSetup(somSelf, pszSetupString))
         brc = objSetup(somSelf,
                        pszSetupString);
 
@@ -1234,10 +1242,13 @@ SOM_Scope BOOL  SOMLINK xfobj_wpFree(XFldObject *somSelf)
  *@@changed V0.9.3 (2000-04-11) [umoeller]: now destroying related trash object too
  *@@changed V0.9.6 (2000-10-23) [umoeller]: added support for progOpenProgram
  *@@changed V0.9.7 (2001-01-18) [umoeller]: added support for favorite and quick-open folders
+ *@@changed V0.9.16 (2001-12-31) [umoeller]: added fixes for replacement icons
  */
 
 SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
 {
+    PMINIRECORDCORE pmrc = _wpQueryCoreRecord(somSelf);
+
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xfobj_wpUnInitData");
 
@@ -1245,6 +1256,36 @@ SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
     xthrPostWorkerMsg(WOM_REMOVEAWAKEOBJECT,
                       (MPARAM)somSelf,
                       MPNULL);
+
+    // kill the title string we allocated in our wpSetTitle replacement
+    // V0.9.16 (2002-01-04) [umoeller]
+    if (pmrc->pszIcon)
+    {
+        _wpFreeMem(somSelf, pmrc->pszIcon);
+        // we must set the ptr to NULL or the WPS will crash
+        // in the parent method call
+        pmrc->pszIcon = NULL;
+    }
+
+    // we have a problem with our replacement icons in that
+    // the WPS frees the pointer handle in WPObject::wpUnInitData
+    // if the object has the OBJSTYLE_NOTDEFAULTICON or OBJSTYLE_TEMPLATE
+    // flags set... so in these cases, check if the object has one
+    // of our standard icons WHICH MUST NOT BE FREED under any circumstances,
+    // or the shared icon would disappear globally
+    // V0.9.16 (2001-12-31) [umoeller]
+    if (_wpQueryStyle(somSelf) & (OBJSTYLE_NOTDEFAULTICON | OBJSTYLE_TEMPLATE))
+    {
+        if (    (pmrc)
+             && (cmnIsStandardIcon(pmrc->hptrIcon))
+           )
+        {
+            // alright, the WPS is about to nuke this icon:
+            // set the HPOINTER in the record to NULLHANDLE
+            // to prevent the WPS from freeing it
+            pmrc->hptrIcon = NULLHANDLE;
+        }
+    }
 
     // free the object ID backup if there's one
     // V0.9.16 (2001-12-06) [umoeller]
@@ -1254,7 +1295,7 @@ SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
     if (_pTrashObject)
         _wpFree(_pTrashObject);
 
-    // go thru list notifications
+    // go thru list notifications, if we have any
     if (_ulListNotify)
     {
         if (_ulListNotify & OBJLIST_RUNNINGSTORED)
@@ -1339,6 +1380,133 @@ SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
     }
 
     XFldObject_parent_WPObject_wpUnInitData(somSelf);
+}
+
+/*
+ *@@ wpSetTitle:
+ *      this WPObject instance method sets a new title
+ *      for the object. This gets called during object
+ *      instantiation and later if the object title is
+ *      changed, e.g. from the settings notebook or
+ *      via direct editing in a folder container.
+ *
+ *      Since this stupid method also resorts the folder
+ *      after title changes, I have rewritten this.
+ *
+ *      From my testing, this is the ONLY place in the
+ *      WPS which actually allocates memory for the
+ *      title string and stores that in MINIRECORDCORE.pszIcon.
+ *      So we can safely override this and allocate the
+ *      string memory for our own heap (as long as we free
+ *      the memory properly in wpUnInitData).
+ *
+ *@@added V0.9.16 (2002-01-04) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfobj_wpSetTitle(XFldObject *somSelf,
+                                         PSZ pszNewTitle)
+{
+    BOOL    brc = FALSE,
+            fLocked = FALSE;
+
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xfobj_wpSetTitle");
+
+    // return (XFldObject_parent_WPObject_wpSetTitle(somSelf, pszNewTitle));
+
+    TRY_LOUD(excpt1)
+    {
+        if (pszNewTitle)
+        {
+            PMINIRECORDCORE pRecord = _wpQueryCoreRecord(somSelf);
+            ULONG ulNewTitleLen = strlen(pszNewTitle);
+
+            PSZ pszNewTitleCopy;
+            ULONG ulError;
+
+            // use the WPS heap in order not to clutter up
+            // our own heap with all the string data
+            if (pszNewTitleCopy = _wpAllocMem(somSelf,
+                                              ulNewTitleLen + 1,
+                                              &ulError))
+            {
+                PSZ p;
+
+                memcpy(pszNewTitleCopy, pszNewTitle, ulNewTitleLen + 1);
+
+                // replace all '^' with '\n'
+                p = pszNewTitleCopy;
+                while (p = strchr(p, '^'))
+                    *p = '\n';
+
+                if (    (!pRecord->pszIcon)
+                     || (strcmp(pRecord->pszIcon, pszNewTitleCopy))
+                   )
+                {
+                    // new title is different:
+                    ULONG           ulStyle = _wpQueryStyle(somSelf);
+                    BOOL            fIsInitialized = _wpIsObjectInitialized(somSelf);
+
+                    if (    (ulStyle & OBJSTYLE_TEMPLATE)
+                         && (fIsInitialized)
+                       )
+                    {
+                        // renaming a template: template entries in
+                        // OS2.INI are based on names, so unset
+                        // the template flag; this will nuke the
+                        // template entry from OS2.INI, we'll add
+                        // a new one below
+                        _wpModifyStyle(somSelf,
+                                       OBJSTYLE_TEMPLATE,
+                                       0);
+                    }
+
+                    // now go set the new string which we allocated above
+                    if (pRecord->pszIcon)
+                        _wpFreeMem(somSelf, pRecord->pszIcon);
+                    pRecord->pszIcon = pszNewTitleCopy;
+
+                    brc = TRUE;
+
+                    // now go refresh all the views...
+                    // no need to do that if the object isn't even
+                    // initialized yet because then we can neither
+                    // have shadows pointing to it nor can it be
+                    // inserted into a container yet
+                    if (    (fIsInitialized)
+                         && (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+                       )
+                    {
+                        objRefreshUseItems(somSelf, pszNewTitleCopy);
+                    }
+
+                    if (    (ulStyle & OBJSTYLE_TEMPLATE)
+                         && (fIsInitialized)
+                       )
+                    {
+                        // re-enter the template entry we killed above
+                        _wpModifyStyle(somSelf,
+                                       OBJSTYLE_TEMPLATE,
+                                       OBJSTYLE_TEMPLATE);
+                    }
+                }
+                else
+                    // title hasn't changed:
+                    _wpFreeMem(somSelf, pszNewTitleCopy);
+
+            } // end if (pszNewTitleCopy = strdup(pszNewTitle))
+        } // end if (pszNewTitle)
+        // else: do nothing, return FALSE
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    if (fLocked)
+        _wpReleaseObjectMutexSem(somSelf);
+
+    return (brc);
 }
 
 /*
@@ -2062,9 +2230,10 @@ SOM_Scope ULONG  SOMLINK xfobj_wpConfirmObjectTitle(XFldObject *somSelf,
 
     // first of all, check whether the confirmation
     // dialogs have been replaced in the global settings;
-#ifndef __NOREPLACEFILEEXISTS__
+#ifndef __ALWAYSREPLACEFILEEXISTS__
     if (cmnIsFeatureEnabled(ReplaceFileExists))
     {
+#endif
         // yes: use our replacement (fileops.c)
         ulrc = fopsConfirmObjectTitle(somSelf,
                                       Folder,
@@ -2072,9 +2241,9 @@ SOM_Scope ULONG  SOMLINK xfobj_wpConfirmObjectTitle(XFldObject *somSelf,
                                       pszTitle,
                                       cbTitle,
                                       menuID);
+#ifndef __ALWAYSREPLACEFILEEXISTS__
     }
     else
-#endif
     {
         // global settings do not allow dialog
         // replacement: call default
@@ -2088,6 +2257,7 @@ SOM_Scope ULONG  SOMLINK xfobj_wpConfirmObjectTitle(XFldObject *somSelf,
                                                                cbTitle,
                                                                menuID);
     }
+#endif
 
     #ifdef DEBUG_TITLECLASH
     {
@@ -2113,133 +2283,6 @@ SOM_Scope ULONG  SOMLINK xfobj_wpConfirmObjectTitle(XFldObject *somSelf,
 
     return (ulrc);
 }
-
-/*
- *@@ wpDelete:
- *      this WPObject method deletes an object and
- *      prompts for confirmations, if necessary.
- *
- *      Normally, this method displays confirmations,
- *      if desired, by calling wpConfirmDelete, and
- *      then calls wpFree.
- *
- *      This must return:
- *
- *      --  NO_DELETE: Error occurred.
- *      --  CANCEL_DELETE: User canceled the operation.
- *      --  OK_DELETE: Object was deleted.
- *
- *@@added V0.9.4 (2000-08-03) [umoeller]
- */
-
-SOM_Scope ULONG  SOMLINK xfobj_wpDelete(XFldObject *somSelf,
-                                        ULONG fConfirmations)
-{
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpDelete");
-
-    // we can't override this... apparently, when a folder
-    // is deleted in the WPS, the WPS goes thru all subobjects
-    // first and calls this method for every subobject... yuck!
-
-    /* if (pGlobalSettings->fTrashDelete)
-    {
-        if (    cmnDeleteIntoDefTrashCan(somSelf))
-            return (OK_DELETE);
-        else
-            return (NO_DELETE);
-    } */
-
-    return (XFldObject_parent_WPObject_wpDelete(somSelf, fConfirmations));
-}
-
-/*
- *@@ wpAddToObjUseList:
- *
- *      We override this method to be able to intercept the
- *      CRA_INUSE emphasis in case the object is currently
- *      used in an XCenter object button widget, which then
- *      needs to be repainted.
- *
- *@@added V0.9.13 (2001-06-27) [umoeller]
- */
-
-/* SOM_Scope BOOL  SOMLINK xfobj_wpAddToObjUseList(XFldObject *somSelf,
-                                                PUSEITEM pUseItem)
-{
-    XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpAddToObjUseList");
-
-    if (    (pUseItem)
-         && (    (pUseItem->type == USAGE_OPENVIEW)
-              || (pUseItem->type == USAGE_OPENFILE)
-            )
-         && (_pvllWidgetNotifies)
-       )
-    {
-        // we have windows that requested notifications:
-        // go thru list
-        PLISTNODE pNode = lstQueryFirstNode(_pvllWidgetNotifies);
-        while (pNode)
-        {
-            HWND hwnd = (HWND)pNode->pItemData;
-            WinPostMsg(hwnd,
-                       WM_CONTROL,
-                       MPFROM2SHORT(ID_XCENTER_CLIENT,
-                                    XN_INUSECHANGED),
-                       (MPARAM)somSelf);
-            pNode = pNode->pNext;
-        }
-    }
-
-    return (XFldObject_parent_WPObject_wpAddToObjUseList(somSelf,
-                                                         pUseItem));
-} */
-
-/*
- *@@ wpDeleteFromObjUseList:
- *
- *      We override this method to be able to intercept the
- *      CRA_INUSE emphasis in case the object is currently
- *      used in an XCenter object button widget, which then
- *      needs to be repainted.
- *
- *@@added V0.9.13 (2001-06-27) [umoeller]
- */
-
-/* SOM_Scope BOOL  SOMLINK xfobj_wpDeleteFromObjUseList(XFldObject *somSelf,
-                                                     PUSEITEM pUseItem)
-{
-    XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xfobj_wpDeleteFromObjUseList");
-
-    if (    (pUseItem)
-         && (    (pUseItem->type == USAGE_OPENVIEW)
-              || (pUseItem->type == USAGE_OPENFILE)
-            )
-         && (_pvllWidgetNotifies)
-       )
-    {
-        // we have windows that requested notifications:
-        // go thru list
-        PLISTNODE pNode = lstQueryFirstNode(_pvllWidgetNotifies);
-        while (pNode)
-        {
-            HWND hwnd = (HWND)pNode->pItemData;
-            WinPostMsg(hwnd,
-                       WM_CONTROL,
-                       MPFROM2SHORT(ID_XCENTER_CLIENT,
-                                    XN_INUSECHANGED),
-                       (MPARAM)somSelf);
-            pNode = pNode->pNext;
-        }
-    }
-
-    return (XFldObject_parent_WPObject_wpDeleteFromObjUseList(somSelf,
-                                                              pUseItem));
-} */
-
 
 /*
  *@@ wpCnrSetEmphasis:
@@ -2292,22 +2335,22 @@ SOM_Scope BOOL  SOMLINK xfobj_wpCnrSetEmphasis(XFldObject *somSelf,
 
 
 /* ******************************************************************
- *                                                                  *
- *   here come the XFldObject class methods                         *
- *                                                                  *
+ *
+ *   here come the XFldObject class methods
+ *
  ********************************************************************/
 
 /*
  * @@ xwpclsRemoveObjectHotkey:
- *            this removes the object hotkey for the
- *            given object. This extra function is
- *            necessary because if an object handle
- *            for an object with a hotkey gets lost
- *            (e.g. because the object was deleted),
- *            there's no way to invoke XFldObject::xwpSetObjectHotkey
- *            on it.
+ *      this removes the object hotkey for the
+ *      given object. This extra function is
+ *      necessary because if an object handle
+ *      for an object with a hotkey gets lost
+ *      e.g. because the object was deleted),
+ *      there's no way to invoke XFldObject::xwpSetObjectHotkey
+ *      on it.
  *
- *            @@added V0.9.0 (99-11-12) [umoeller]
+ *@@added V0.9.0 (99-11-12) [umoeller]
  */
 
 SOM_Scope BOOL  SOMLINK xfobjM_xwpclsRemoveObjectHotkey(M_XFldObject *somSelf,

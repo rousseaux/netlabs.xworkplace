@@ -821,7 +821,12 @@ VOID cmnLoadDialogStrings(PDLGHITEM paDlgItems,      // in: definition array
 typedef struct _ICONTREENODE
 {
     TREE        Tree;           // ulkey has the STDICON_* id
-    HPOINTER    hptr;
+
+    HPOINTER    hptr;           // HPOINTER that was built
+
+    PCSZ        pcszIconFile;   // if icon was loaded from file
+    HMODULE     hmod;           // if icon was loaded from module
+    ULONG       ulResID;        // if icon was loaded from module
 } ICONTREENODE, *PICONTREENODE;
 
 HMTX        G_hmtxIconsCache = NULLHANDLE;
@@ -867,11 +872,15 @@ VOID UnlockIcons(VOID)
     DosReleaseMutexSem(G_hmtxIconsCache);
 }
 
+#define XWP_MODULE_BIT 0x80000000
+
 typedef struct _STDICON
 {
     ULONG       ulStdIcon;          // STDICON_* id
+
     ULONG       ulIconsDLL,         // ptr ID in icons.dll
-                ulPMWP;             // ptr ID in pmwp.dll
+                ulPMWP;             // ptr ID in pmwp.dll; if the XWP_MODULE_BIT is
+                                    // set, use xwpres.dll instead
 } STDICON, *PSTDICON;
 
 STDICON aStdIcons[] =
@@ -932,20 +941,41 @@ STDICON aStdIcons[] =
             0,
             24,                     // standard datafile icon in pmwp.dll
         },
+        {
+            STDICON_TRASH_EMPTY,
+            112,
+            XWP_MODULE_BIT | ID_ICONXWPTRASHEMPTY
+        },
+        {
+            STDICON_TRASH_FULL,
+            113,
+            XWP_MODULE_BIT | ID_ICONXWPTRASHFILLED
+        }
     };
 
 /*
  *@@ LoadNewIcon:
+ *      called from cmnGetStandardIcon if the given
+ *      standard icon ID was used for the first time,
+ *      in which case we need to load a new icon.
+ *
+ *      Returns the ICONTREENODE that was created,
+ *      in which hptr has received the HPOINTER that
+ *      was created here.
  *
  *      Caller must hold the icons mutex.
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
-HPOINTER LoadNewIcon(ULONG ulStdIcon)
+PICONTREENODE LoadNewIcon(ULONG ulStdIcon)
 {
     HPOINTER hptrReturn = NULLHANDLE;
     PICONTREENODE pNode;
+
+    PCSZ        pcszIconFile = NULL;        // if icon was loaded from file
+    HMODULE     hmod = NULLHANDLE;          // if icon was loaded from module
+    ULONG       ulResID = NULLHANDLE;       // if icon was loaded from module
 
     // look up the STDICON_* id in the array
     ULONG ul;
@@ -974,9 +1004,14 @@ HPOINTER LoadNewIcon(ULONG ulStdIcon)
         {
             HMODULE hmodIcons;
             if (hmodIcons = cmnQueryIconsDLL())     // loads on first call
+            {
+                hmod = hmodIcons;
+                ulResID = pStdIcon->ulIconsDLL;
                 hptrReturn = WinLoadPointer(HWND_DESKTOP,
-                                            hmodIcons,
-                                            pStdIcon->ulIconsDLL);
+                                            hmod,
+                                            ulResID);
+                        // might fail, then we retry with standard icon
+            }
         }
 #endif
 
@@ -984,12 +1019,20 @@ HPOINTER LoadNewIcon(ULONG ulStdIcon)
         {
             // icon replacements disabled, or not found,
             // or icons.dll id was null in the first place:
-            // load from PMWP
-            HMODULE hmod;
-            DosQueryModuleHandle("PMWP", &hmod);
+
+            // load a default icon from either PMWP or XWPRES
+            if (pStdIcon->ulPMWP & XWP_MODULE_BIT)
+                // load from XWPRES.DLL
+                hmod = cmnQueryMainResModuleHandle();
+            else
+                // load from PMWP.DLL
+                DosQueryModuleHandle("PMWP", &hmod);
+
+            ulResID = pStdIcon->ulPMWP & ~XWP_MODULE_BIT;
+
             hptrReturn = WinLoadPointer(HWND_DESKTOP,
                                         hmod,
-                                        pStdIcon->ulPMWP);
+                                        ulResID);
         }
     } // end if (pStdIcon)
 
@@ -1000,15 +1043,60 @@ HPOINTER LoadNewIcon(ULONG ulStdIcon)
     {
         ZERO(pNode);
         pNode->Tree.ulKey = ulStdIcon;
+
         pNode->hptr = hptrReturn;
 
-        // _Pmpf((__FUNCTION__ ": loaded new ptr %lX", hptrReturn));
+        // set source fields so cmnGetStandardIcon can build
+        // an ICONINFO too
+        pNode->pcszIconFile = pcszIconFile;
+        pNode->hmod = hmod;
+        pNode->ulResID = ulResID;
 
         treeInsert(&G_IconsCache,
                    &G_cIconsInCache,
                    (TREE*)pNode,
                    treeCompareKeys);
     }
+
+    return (pNode);
+}
+
+/*
+ *@@ cmnIsStandardIcon:
+ *      returns TRUE if hptrIcon is a standard icon
+ *      that was loaded through cmnGetStandardIcon
+ *      and must therefore not be freed.
+ *
+ *@@added V0.9.16 (2001-12-18) [umoeller]
+ */
+
+BOOL cmnIsStandardIcon(HPOINTER hptrIcon)
+{
+    BOOL        fLocked = FALSE,
+                brc = FALSE;
+    HPOINTER    hptrReturn = NULLHANDLE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (fLocked = LockIcons())
+        {
+            TREE *t = treeFirst(G_IconsCache);
+            while (t)
+            {
+                if (((PICONTREENODE)t)->hptr == hptrIcon)
+                {
+                    brc = TRUE;
+                    break;
+                }
+
+                t = treeNext(t);
+            }
+        }
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fLocked)
+        UnlockIcons();
 
     return (hptrReturn);
 }
@@ -1022,7 +1110,18 @@ HPOINTER LoadNewIcon(ULONG ulStdIcon)
  *      or if no such icon exists for that id, an
  *      icon from PMWP.DLL is returned instead.
  *
- *      Returns NULLHANDLE on errors.
+ *      The output depends on the pointers that are
+ *      passed in:
+ *
+ *      --  If (phptr != NULL), *phptr receives the
+ *          HPOINTER for the given icon ID.
+ *
+ *      --  If (pIconInfo != NULL), pIconInfo is fully
+ *          filled with data for wpQueryIconInfo.
+ *          fFormat is set to either ICON_FILE or
+ *          ICON_RESOURCE, depending on where the internal
+ *          standard icon was retrieved from, and the
+ *          other fields are either zeroed or set accordingly.
  *
  *      Note that if this gets called several times for
  *      the same STDICON_* id, this will reuse the same
@@ -1030,21 +1129,30 @@ HPOINTER LoadNewIcon(ULONG ulStdIcon)
  *      the WPS which loads even default icons several
  *      times.
  *
- *      As a result, NEVER FREE the icon that is returned,
- *      or you will nuke a global icon that is used by
- *      several objects. If you set the icon on an object
- *      via _wpSetIcon, make sure you unset the
- *      OBJSTYLE_NOTDEFAULTICON style flag afterwards, or
- *      the icon will be nuked when the object goes
- *      dormant.
+ *      As a result, NEVER FREE the icon that is returned.
+ *      If you set the icon on an object via _wpSetIcon,
+ *      make sure you unset the OBJSTYLE_NOTDEFAULTICON
+ *      style flag afterwards, or the icon will be nuked
+ *      when the object goes dormant... taking the other
+ *      objects' icons with it.
+ *
+ *      This function is now the central agency for all
+ *      the XWorkplace icons. This will eventually allow
+ *      us to change the way replacement icons are loaded
+ *      to support themes and the like. The only places
+ *      where this function cannot be used are the
+ *      various wpclsQueryIconData methods because those
+ *      only work properly with the ICON_RESOURCE format.
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
-HPOINTER cmnGetStandardIcon(ULONG ulStdIcon)
+APIRET cmnGetStandardIcon(ULONG ulStdIcon,
+                          HPOINTER *phptr,      // out: if != NULL, icon handle
+                          PICONINFO pIconInfo)  // out: if != NULL, icon info
 {
     BOOL        fLocked = FALSE;
-    HPOINTER    hptrReturn = NULLHANDLE;
+    APIRET      arc = NO_ERROR;
 
     TRY_LOUD(excpt1)
     {
@@ -1052,25 +1160,50 @@ HPOINTER cmnGetStandardIcon(ULONG ulStdIcon)
         {
             // icon loaded yet?
             PICONTREENODE pNode;
-            if (pNode = (PICONTREENODE)treeFind(G_IconsCache,
-                                                ulStdIcon,
-                                                treeCompareKeys))
+            if (!(pNode = (PICONTREENODE)treeFind(G_IconsCache,
+                                                  ulStdIcon,
+                                                  treeCompareKeys)))
+                // no: create a new node
+                if (!(pNode = LoadNewIcon(ulStdIcon)))
+                    arc = ERROR_NOT_ENOUGH_MEMORY;
+
+            if (pNode)
             {
-                hptrReturn = pNode->hptr;
-                // _Pmpf((__FUNCTION__ ": returning cached ptr %lX", hptrReturn));
-            }
-            else
-            {
-                hptrReturn = LoadNewIcon(ulStdIcon);
+                // output data, depending on what
+                // the caller wants
+                if (phptr)
+                    *phptr = pNode->hptr;
+
+                if (pIconInfo)
+                {
+                    ZERO(pIconInfo);
+                    pIconInfo->cb = sizeof(ICONINFO);
+                    if (pNode->pcszIconFile)
+                    {
+                        // loaded from file:
+                        pIconInfo->fFormat = ICON_FILE;
+                        pIconInfo->pszFileName = (PSZ)pNode->pcszIconFile;
+                    }
+                    else
+                    {
+                        // loaded from resource:
+                        pIconInfo->fFormat = ICON_RESOURCE;
+                        pIconInfo->hmod = pNode->hmod;
+                        pIconInfo->resid = pNode->ulResID;
+                    }
+                }
             }
         }
     }
-    CATCH(excpt1) {} END_CATCH();
+    CATCH(excpt1)
+    {
+        arc = ERROR_PROTECTION_VIOLATION;
+    } END_CATCH();
 
     if (fLocked)
         UnlockIcons();
 
-    return (hptrReturn);
+    return (arc);
 }
 
 /* ******************************************************************
@@ -1738,7 +1871,7 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
 }
 
 /*
- *@@ cmnQueryThousandsSeparator:
+ *@@ cmnQueryCountrySettings:
  *      returns the global COUNTRYSETTINGS (see helpers\prfh.c)
  *      as set in the "Country" object, which are cached for speed.
  *
@@ -1829,7 +1962,9 @@ BOOL cmnDescribeKey(PSZ pszBuf,
                     USHORT usKeyCode)
 {
     BOOL brc = TRUE;
+
     ULONG ulID = 0;
+    PCSZ pcszCopy = NULL;
 
     *pszBuf = 0;
     if (usFlags & KC_CTRL)
@@ -1863,30 +1998,30 @@ BOOL cmnDescribeKey(PSZ pszBuf,
             case VK_SCRLLOCK: ulID = ID_XSSI_KEY_SCRLLOCK; break; // pszScrlLock
             case VK_NUMLOCK: ulID = ID_XSSI_KEY_NUMLOCK; break; // pszNumLock
             case VK_ENTER: ulID = ID_XSSI_KEY_ENTER; break; // pszEnter
-            case VK_F1: strcat(pszBuf, "F1"); break;
-            case VK_F2: strcat(pszBuf, "F2"); break;
-            case VK_F3: strcat(pszBuf, "F3"); break;
-            case VK_F4: strcat(pszBuf, "F4"); break;
-            case VK_F5: strcat(pszBuf, "F5"); break;
-            case VK_F6: strcat(pszBuf, "F6"); break;
-            case VK_F7: strcat(pszBuf, "F7"); break;
-            case VK_F8: strcat(pszBuf, "F8"); break;
-            case VK_F9: strcat(pszBuf, "F9"); break;
-            case VK_F10: strcat(pszBuf, "F10"); break;
-            case VK_F11: strcat(pszBuf, "F11"); break;
-            case VK_F12: strcat(pszBuf, "F12"); break;
-            case VK_F13: strcat(pszBuf, "F13"); break;
-            case VK_F14: strcat(pszBuf, "F14"); break;
-            case VK_F15: strcat(pszBuf, "F15"); break;
-            case VK_F16: strcat(pszBuf, "F16"); break;
-            case VK_F17: strcat(pszBuf, "F17"); break;
-            case VK_F18: strcat(pszBuf, "F18"); break;
-            case VK_F19: strcat(pszBuf, "F19"); break;
-            case VK_F20: strcat(pszBuf, "F20"); break;
-            case VK_F21: strcat(pszBuf, "F21"); break;
-            case VK_F22: strcat(pszBuf, "F22"); break;
-            case VK_F23: strcat(pszBuf, "F23"); break;
-            case VK_F24: strcat(pszBuf, "F24"); break;
+            case VK_F1: pcszCopy = "F1"; break;
+            case VK_F2: pcszCopy = "F2"; break;
+            case VK_F3: pcszCopy = "F3"; break;
+            case VK_F4: pcszCopy = "F4"; break;
+            case VK_F5: pcszCopy = "F5"; break;
+            case VK_F6: pcszCopy = "F6"; break;
+            case VK_F7: pcszCopy = "F7"; break;
+            case VK_F8: pcszCopy = "F8"; break;
+            case VK_F9: pcszCopy = "F9"; break;
+            case VK_F10: pcszCopy = "F10"; break;
+            case VK_F11: pcszCopy = "F11"; break;
+            case VK_F12: pcszCopy = "F12"; break;
+            case VK_F13: pcszCopy = "F13"; break;
+            case VK_F14: pcszCopy = "F14"; break;
+            case VK_F15: pcszCopy = "F15"; break;
+            case VK_F16: pcszCopy = "F16"; break;
+            case VK_F17: pcszCopy = "F17"; break;
+            case VK_F18: pcszCopy = "F18"; break;
+            case VK_F19: pcszCopy = "F19"; break;
+            case VK_F20: pcszCopy = "F20"; break;
+            case VK_F21: pcszCopy = "F21"; break;
+            case VK_F22: pcszCopy = "F22"; break;
+            case VK_F23: pcszCopy = "F23"; break;
+            case VK_F24: pcszCopy = "F24"; break;
             default: brc = FALSE; break;
         }
     } // end if (usFlags & KC_VIRTUALKEY)
@@ -1911,8 +2046,10 @@ BOOL cmnDescribeKey(PSZ pszBuf,
     }
 
     if (ulID)
-        strcat(pszBuf, cmnGetString(ulID));
+        pcszCopy = cmnGetString(ulID);
 
+    if (pcszCopy)
+        strcat(pszBuf, pcszCopy);
 
     #ifdef DEBUG_KEYS
         _Pmpf(("Key: %s, usKeyCode: 0x%lX, usFlags: 0x%lX", pszBuf, usKeyCode, usFlags));
@@ -2491,7 +2628,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
         break;
 
         case SP_DTP_SHUTDOWN:
-            G_GlobalSettings.ulXShutdownFlags = // changed V0.9.0
+            G_GlobalSettings.__flXShutdown = // changed V0.9.0
                 XSD_WPS_CLOSEWINDOWS | XSD_CONFIRM | XSD_REBOOT | XSD_ANIMATE_SHUTDOWN;
             G_GlobalSettings._bSaveINIS = 0; // new method, V0.9.5 (2000-08-16) [umoeller]
         break;
@@ -2511,33 +2648,43 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
             G_GlobalSettings.__fEnableStatusBars = 0;
             G_GlobalSettings.__fEnableSnap2Grid = 0;
             G_GlobalSettings.__fEnableFolderHotkeys = 0;
-            G_GlobalSettings.ExtFolderSort = 0;
+#ifndef __ALWAYSEXTSORT__
+            G_GlobalSettings.__fExtFolderSort = 0;
+#endif
             G_GlobalSettings.__fTurboFolders = 0;     // added V0.9.16 (2001-10-25) [umoeller]
 
             G_GlobalSettings.fAniMouse = 0;
-            G_GlobalSettings.fEnableXWPHook = 0;
+#ifndef __ALWAYSHOOK__
+            G_GlobalSettings.__fEnableXWPHook = 0;
+#endif
             G_GlobalSettings.fEnablePageMage = 0;
 
             G_GlobalSettings.__fReplaceArchiving = 0;
-            G_GlobalSettings.fRestartWPS = 0;
-            G_GlobalSettings.fXShutdown = 0;
-
+#ifndef __NOXSHUTDOWN__
+            G_GlobalSettings.__fRestartWPS = 0;
+            G_GlobalSettings.__fXShutdown = 0;
+#endif
             // G_GlobalSettings.fMonitorCDRoms = 0;
 
-            G_GlobalSettings.fExtAssocs = 0;
+#ifndef __NEVEREXTASSOCS__
+            G_GlobalSettings.__fExtAssocs = 0;
+#endif
             // G_GlobalSettings.CleanupINIs = 0;
                     // removed for now V0.9.12 (2001-05-12) [umoeller]
 
 #ifdef __REPLHANDLES__
             G_GlobalSettings.fReplaceHandles = 0; // added V0.9.5 (2000-08-14) [umoeller]
 #endif
-#ifdef __NOREPLACEFILEEXISTS__
+#ifndef __ALWAYSREPLACEFILEEXISTS__
             G_GlobalSettings.__fReplFileExists = 0;
 #endif
-            G_GlobalSettings.fReplDriveNotReady = 0;
-            G_GlobalSettings.fTrashDelete = 0;
-            G_GlobalSettings.fReplaceTrueDelete = 0; // added V0.9.3 (2000-04-26) [umoeller]
-
+#ifndef __NEVERREPLACEDRIVENOTREADY__
+            G_GlobalSettings.__fReplDriveNotReady = 0;
+#endif
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
+            G_GlobalSettings.__fTrashDelete = 0;
+            G_GlobalSettings.__fReplaceTrueDelete = 0; // added V0.9.3 (2000-04-26) [umoeller]
+#endif
             G_GlobalSettings.__fNewFileDlg = 0;
         break;
 
@@ -2545,7 +2692,8 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
             G_GlobalSettings.VarMenuOffset   = 700;     // raised (V0.9.0)
             G_GlobalSettings.fNoFreakyMenus   = 0;
             G_GlobalSettings.__fNoSubclassing   = 0;
-            G_GlobalSettings.NoWorkerThread  = 0;
+            // G_GlobalSettings.NoWorkerThread  = 0;
+                    // removed this setting V0.9.16 (2002-01-04) [umoeller]
             G_GlobalSettings.fUse8HelvFont   = (!doshIsWarp4());
             G_GlobalSettings.fNoExcptBeeps    = 0;
             G_GlobalSettings.bDefaultWorkerThreadPriority = 1;  // idle +31
@@ -2631,7 +2779,7 @@ BOOL cmnIsFeatureEnabled(XWPFEATURE f)
         case ReplaceIconPage: return G_GlobalSettings.__fReplaceIconPage;
 #endif
 
-#ifndef __NOREPLACEFILEEXISTS__
+#ifndef __ALWAYSREPLACEFILEEXISTS__
         case ReplaceFileExists: return G_GlobalSettings.__fReplFileExists;
 #endif
 
@@ -2643,13 +2791,35 @@ BOOL cmnIsFeatureEnabled(XWPFEATURE f)
         case ReplaceArchiving: return G_GlobalSettings.__fReplaceArchiving;
 #endif
 
-        // for turbo folders, return the setting that was initially
-        // copied by initMain(); we can't change this after the WPS is up
-        case TurboFolders: return G_fTurboSettingsEnabled;
-
 #ifndef __NEVERNEWFILEDLG__
         case NewFileDlg: return G_GlobalSettings.__fNewFileDlg;
 #endif
+
+#ifndef __NOXSHUTDOWN__
+        case XShutdown: return G_GlobalSettings.__fXShutdown;
+        case RestartDesktop: return G_GlobalSettings.__fRestartWPS;
+#endif
+
+#ifndef __ALWAYSEXTSORT__
+        case ExtendedSorting: return G_GlobalSettings.__fExtFolderSort;
+#endif
+#ifndef __ALWAYSHOOK__
+        case XWPHook: return G_GlobalSettings.__fEnableXWPHook;
+#endif
+#ifndef __NEVEREXTASSOCS__
+        case ExtAssocs: return G_GlobalSettings.__fExtAssocs;
+#endif
+#ifndef __NEVERREPLACEDRIVENOTREADY__
+        case ReplaceDriveNotReady: return G_GlobalSettings.__fReplDriveNotReady;
+#endif
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
+        case TrashDelete: return G_GlobalSettings.__fTrashDelete;
+        case ReplaceTrueDelete: return G_GlobalSettings.__fReplaceTrueDelete;
+#endif
+
+        // for turbo folders, return the setting that was initially
+        // copied by initMain(); we can't change this after the WPS is up
+        case TurboFolders: return G_fTurboSettingsEnabled;
 
         default:
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -3405,25 +3575,29 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
             else
                 brc = TRUE;
 
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
             if (brc)
             {
                 GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
                 if (pGlobalSettings)
                 {
-                    pGlobalSettings->fTrashDelete = TRUE;
+                    pGlobalSettings->__fTrashDelete = TRUE;
                     cmnUnlockGlobalSettings();
                 }
             }
+#endif
         }
     } // end if (fEnable)
     else
     {
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
         GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(__FILE__, __LINE__, __FUNCTION__);
         if (pGlobalSettings)
         {
-            pGlobalSettings->fTrashDelete = FALSE;
+            pGlobalSettings->__fTrashDelete = FALSE;
             cmnUnlockGlobalSettings();
         }
+#endif
 
         if (krnQueryLock())
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -4589,7 +4763,9 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
                         arc = appStartApp(NULLHANDLE,        // no notify
                                           &pd,
                                           ulFlags, //V0.9.14
-                                          &happ);
+                                          &happ,
+                                          0,
+                                          NULL);
                     }
                 }
             }
@@ -4934,7 +5110,7 @@ ULONG cmnMessageBoxMsgExt(HWND hwndOwner,   // in: owner window
  */
 
 ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window
-                        CHAR cDrive,        // in: drive letter
+                        PSZ pszReplString,  // in: string for %1 message or NULL
                         PCSZ pcszTitle,     // in: msgbox title
                         PCSZ pcszPrefix,    // in: string before error or NULL
                         APIRET arc,         // in: DOS error code to get msg for
@@ -4949,9 +5125,7 @@ ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window
     APIRET  arc2 = NO_ERROR;
 
     // get error message for APIRET
-    CHAR    szDrive[3] = "?:";
-    PSZ     pszTable = szDrive;
-    szDrive[0] = cDrive;
+    PSZ     pszTable = (pszReplString) ? pszReplString : "?";
 
     xstrInit(&strError, 0);
 
@@ -5022,6 +5196,7 @@ ULONG cmnDosErrorMsgBox(HWND hwndOwner,     // in: owner window
 
 ULONG cmnProgramErrorMsgBox(HWND hwndOwner,
                             WPObject *pProgram,
+                            PSZ pszFailingName,     // in: failing module from progOpenProgram or NULL
                             APIRET arc)
 {
     XSTRING strTitle,
@@ -5039,7 +5214,7 @@ ULONG cmnProgramErrorMsgBox(HWND hwndOwner,
     cmnGetMessage(NULL, 0, &strSuffix, 229);     // open settings?
 
     ulrc = cmnDosErrorMsgBox(hwndOwner,
-                             '?',
+                             pszFailingName,
                              strTitle.psz,
                              strPrefix.psz,
                              arc,

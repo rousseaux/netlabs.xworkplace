@@ -183,7 +183,9 @@ static FEATURESITEM G_FeatureItemsList[] =
 #ifndef __ALWAYSFDRHOTKEYS__
             ID_XCSI_ENABLEFOLDERHOTKEYS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
+#ifndef __ALWAYSEXTSORT__
             ID_XCSI_EXTFOLDERSORT, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
             ID_XCSI_REPLACEREFRESH, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_TURBOFOLDERS, ID_XCSI_FOLDERFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 
@@ -192,7 +194,9 @@ static FEATURESITEM G_FeatureItemsList[] =
 #ifdef __ANIMATED_MOUSE_POINTERS__
             ID_XCSI_ANIMOUSE, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
+#ifndef __ALWAYSHOOK__
             ID_XCSI_XWPHOOK, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
 #ifndef __ALWAYSOBJHOTKEYS__
             ID_XCSI_GLOBALHOTKEYS, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
@@ -205,20 +209,28 @@ static FEATURESITEM G_FeatureItemsList[] =
 #ifndef __ALWAYSREPLACEARCHIVING__
             ID_XCSI_ARCHIVING, ID_XCSI_STARTSHUTFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
+#ifndef __NOXSHUTDOWN__
             ID_XCSI_RESTARTWPS, ID_XCSI_STARTSHUTFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_XSHUTDOWN, ID_XCSI_STARTSHUTFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
 
             // file operations
             ID_XCSI_FILEOPERATIONS, 0, 0, NULL,
+#ifndef __NEVEREXTASSOCS__
             ID_XCSI_EXTASSOCS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
             // ID_XCSI_CLEANUPINIS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
                     // removed for now V0.9.12 (2001-05-15) [umoeller]
-#ifndef __NOREPLACEFILEEXISTS__
+#ifndef __ALWAYSREPLACEFILEEXISTS__
             ID_XCSI_REPLFILEEXISTS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
+#ifndef __NEVERREPLACEDRIVENOTREADY__
             ID_XCSI_REPLDRIVENOTREADY, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
             ID_XCSI_XWPTRASHCAN, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_REPLACEDELETE, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL
+#endif
 
 #ifdef __REPLHANDLES__
             , ID_XCSI_REPLHANDLES, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL
@@ -1852,8 +1864,10 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ENABLEFOLDERHOTKEYS,
                 cmnIsFeatureEnabled(FolderHotkeys));
 #endif
+#ifndef __ALWAYSEXTSORT__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_EXTFOLDERSORT,
-                pGlobalSettings->ExtFolderSort);
+                cmnIsFeatureEnabled(ExtendedSorting));
+#endif
         // ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_MONITORCDROMS,
            //      pGlobalSettings->MonitorCDRoms);
 
@@ -1865,8 +1879,10 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ANIMOUSE,
                 pGlobalSettings->fAniMouse);
+#ifndef __ALWAYSHOOK__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XWPHOOK,
-                pGlobalSettings->fEnableXWPHook);
+                pGlobalSettings->__fEnableXWPHook);
+#endif
 #ifndef __ALWAYSOBJHOTKEYS__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_GLOBALHOTKEYS,
                 hifObjectHotkeysEnabled());
@@ -1880,13 +1896,17 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ARCHIVING,
                 cmnIsFeatureEnabled(ReplaceArchiving));
 #endif
+#ifndef __NOXSHUTDOWN__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_RESTARTWPS,
-                pGlobalSettings->fRestartWPS);
+                cmnIsFeatureEnabled(RestartDesktop));
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XSHUTDOWN,
-                pGlobalSettings->fXShutdown);
+                cmnIsFeatureEnabled(XShutdown));
+#endif
 
+#ifndef __NEVEREXTASSOCS__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_EXTASSOCS,
-                pGlobalSettings->fExtAssocs);
+                pGlobalSettings->__fExtAssocs);
+#endif
         // ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_CLEANUPINIS,
            //      pGlobalSettings->CleanupINIs);
                 // removed for now V0.9.12 (2001-05-15) [umoeller]
@@ -1895,16 +1915,20 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLHANDLES,
                 pGlobalSettings->fReplaceHandles);
 #endif
-#ifndef __NOREPLACEFILEEXISTS__
+#ifndef __ALWAYSREPLACEFILEEXISTS__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLFILEEXISTS,
                 pGlobalSettings->__fReplFileExists);
 #endif
+#ifndef __NEVERREPLACEDRIVENOTREADY__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLDRIVENOTREADY,
-                pGlobalSettings->fReplDriveNotReady);
+                pGlobalSettings->__fReplDriveNotReady);
+#endif
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XWPTRASHCAN,
-                (cmnTrashCanReady() && pGlobalSettings->fTrashDelete));
+                (cmnTrashCanReady() && pGlobalSettings->__fTrashDelete));
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEDELETE,
-                pGlobalSettings->fReplaceTrueDelete);
+                pGlobalSettings->__fReplaceTrueDelete);
+#endif
 
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEREFRESH,
                 krnReplaceRefreshEnabled());
@@ -1944,16 +1968,20 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_ENABLEFOLDERHOTKEYS,
                 (fXFolder));
 #endif
+#ifndef __ALWAYSEXTSORT__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_EXTFOLDERSORT,
                 (fXFolder));
+#endif
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_TURBOFOLDERS,
                 (    fXFolder
                   && fXWPFileSystem
                   && fXWPProgramFile            // V0.9.16 (2001-12-08) [umoeller]
                 ));
 
+#ifndef __ALWAYSHOOK__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_XWPHOOK,
                 (pXwpGlobalShared->hwndDaemonObject != NULLHANDLE));
+#endif
 #ifndef __ALWAYSOBJHOTKEYS__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_GLOBALHOTKEYS,
                 hifXWPHookReady());
@@ -1967,19 +1995,24 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 (   (fXFolder)
                  || (fXFldDesktop)
                 ));
+#ifndef __NOXSHUTDOWN__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_RESTARTWPS,
                 (fXFldDesktop));
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_XSHUTDOWN,
                 (fXFldDesktop));
+#endif
 
+#ifndef __NEVEREXTASSOCS__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_EXTASSOCS,
                 (fXFldDataFile));
-        ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_CLEANUPINIS,
-                !(pGlobalSettings->NoWorkerThread));
+#endif
+        /* ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_CLEANUPINIS,
+                !(pGlobalSettings->NoWorkerThread)); */
 
+#ifndef __NEVERREPLACEDRIVENOTREADY__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_REPLDRIVENOTREADY,
                 (fXFldDisk));
-
+#endif
     }
 }
 
@@ -2060,12 +2093,13 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             break;
 #endif
 
+#ifndef __ALWAYSHOOK__
             case ID_XCSI_XWPHOOK:
             {
                 if (hifEnableHook(precc->usCheckState) == precc->usCheckState)
                 {
                     // success:
-                    pGlobalSettings->fEnableXWPHook = precc->usCheckState;
+                    pGlobalSettings->__fEnableXWPHook = precc->usCheckState;
 
                     if (precc->usCheckState)
                         ulNotifyMsg = 157;
@@ -2077,6 +2111,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 }
             }
             break;
+#endif
 
 #ifndef __ALWAYSREPLACEFILEPAGE__
             case ID_XCSI_REPLACEFILEPAGE:
@@ -2136,9 +2171,11 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             break;
 #endif
 
+#ifndef __ALWAYSEXTSORT__
             case ID_XCSI_EXTFOLDERSORT:
-                pGlobalSettings->ExtFolderSort = precc->usCheckState;
+                pGlobalSettings->__fExtFolderSort = precc->usCheckState;
             break;
+#endif
 
             case ID_XCSI_REPLACEREFRESH:
                 krnEnableReplaceRefresh(precc->usCheckState);
@@ -2187,48 +2224,55 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             break;
 #endif
 
+#ifndef __NOXSHUTDOWN__
             case ID_XCSI_RESTARTWPS:
-                pGlobalSettings->fRestartWPS = precc->usCheckState;
+                pGlobalSettings->__fRestartWPS = precc->usCheckState;
             break;
 
             case ID_XCSI_XSHUTDOWN:
-                pGlobalSettings->fXShutdown = precc->usCheckState;
+                pGlobalSettings->__fXShutdown = precc->usCheckState;
                 // update "Desktop" menu page
                 ntbUpdateVisiblePage(NULL,   // all somSelf's
                                      SP_DTP_MENUITEMS);
                 if (precc->usCheckState)
                     ulNotifyMsg = 190;
             break;
+#endif
 
+#ifndef __NEVEREXTASSOCS__
             case ID_XCSI_EXTASSOCS:
-                pGlobalSettings->fExtAssocs = precc->usCheckState;
+                pGlobalSettings->__fExtAssocs = precc->usCheckState;
                 // re-enable controls on this page
                 ulUpdateFlags = CBI_ENABLE;
 
                 if (precc->usCheckState)
                     ulNotifyMsg = 208;
             break;
+#endif
 
-#ifndef __NOREPLACEFILEEXISTS__
+#ifndef __ALWAYSREPLACEFILEEXISTS__
             case ID_XCSI_REPLFILEEXISTS:
                 pGlobalSettings->__fReplFileExists = precc->usCheckState;
             break;
 #endif
+#ifndef __NEVERREPLACEDRIVENOTREADY__
             case ID_XCSI_REPLDRIVENOTREADY:
-                pGlobalSettings->fReplDriveNotReady = precc->usCheckState;
+                pGlobalSettings->__fReplDriveNotReady = precc->usCheckState;
             break;
-
+#endif
             /* case ID_XCSI_CLEANUPINIS:
                 pGlobalSettings->CleanupINIs = precc->usCheckState;
             break; */       // removed for now V0.9.12 (2001-05-15) [umoeller]
 
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
             case ID_XCSI_XWPTRASHCAN:
                 cEnableTrashCan = precc->usCheckState;
             break;
 
             case ID_XCSI_REPLACEDELETE:
-                pGlobalSettings->fReplaceTrueDelete = precc->usCheckState;
+                pGlobalSettings->__fReplaceTrueDelete = precc->usCheckState;
             break;
+#endif
 
     #ifdef __REPLHANDLES__
             case ID_XCSI_REPLHANDLES:
@@ -2247,7 +2291,7 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         }
     } // end if (ulItemID == ID_XCDI_CONTAINER)
 
-    switch(ulItemID)
+    switch (ulItemID)
     {
         /*
          * ID_XCDI_SETUP:
@@ -2285,13 +2329,17 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 #endif
             pGlobalSettings->__fEnableSnap2Grid = pGSBackup->__fEnableSnap2Grid;
             pGlobalSettings->__fEnableFolderHotkeys = pGSBackup->__fEnableFolderHotkeys;
-            pGlobalSettings->ExtFolderSort = pGSBackup->ExtFolderSort;
+#ifndef __ALWAYSEXTSORT__
+            pGlobalSettings->__fExtFolderSort = pGSBackup->__fExtFolderSort;
+#endif
             // pGlobalSettings->fMonitorCDRoms = pGSBackup->fMonitorCDRoms;
 
             pGlobalSettings->fAniMouse = pGSBackup->fAniMouse;
 
-            if (hifEnableHook(pGSBackup->fEnableXWPHook) == pGSBackup->fEnableXWPHook)
-                pGlobalSettings->fEnableXWPHook = pGSBackup->fEnableXWPHook;
+#ifndef __ALWAYSHOOK__
+            if (hifEnableHook(pGSBackup->__fEnableXWPHook) == pGSBackup->__fEnableXWPHook)
+                pGlobalSettings->__fEnableXWPHook = pGSBackup->__fEnableXWPHook;
+#endif
 
 #ifndef __ALWAYSOBJHOTKEYS__
             hifEnableObjectHotkeys(pFeaturesData->bObjectHotkeys);
@@ -2313,21 +2361,29 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 #ifndef __ALWAYSREPLACEARCHIVING__
             pGlobalSettings->__fReplaceArchiving = pGSBackup->__fReplaceArchiving;
 #endif
-            pGlobalSettings->fRestartWPS = pGSBackup->fRestartWPS;
-            pGlobalSettings->fXShutdown = pGSBackup->fXShutdown;
+#ifndef __NOXSHUTDOWN__
+            pGlobalSettings->__fRestartWPS = pGSBackup->__fRestartWPS;
+            pGlobalSettings->__fXShutdown = pGSBackup->__fXShutdown;
+#endif
 
-            pGlobalSettings->fExtAssocs = pGSBackup->fExtAssocs;
+#ifndef __NEVEREXTASSOCS__
+            pGlobalSettings->__fExtAssocs = pGSBackup->__fExtAssocs;
+#endif
             // pGlobalSettings->CleanupINIs = pGSBackup->CleanupINIs;
                     // removed for now V0.9.12 (2001-05-15) [umoeller]
     #ifdef __REPLHANDLES__
             pGlobalSettings->fReplaceHandles = pGSBackup->fReplaceHandles;
     #endif
-#ifndef __NOREPLACEFILEEXISTS__
+#ifndef __ALWAYSREPLACEFILEEXISTS__
             pGlobalSettings->__fReplFileExists = pGSBackup->__fReplFileExists;
 #endif
-            pGlobalSettings->fReplDriveNotReady = pGSBackup->fReplDriveNotReady;
-            cEnableTrashCan = pGSBackup->fTrashDelete;
-            pGlobalSettings->fReplaceTrueDelete = pGSBackup->fReplaceTrueDelete;
+#ifndef __NEVERREPLACEDRIVENOTREADY__
+            pGlobalSettings->__fReplDriveNotReady = pGSBackup->__fReplDriveNotReady;
+#endif
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
+            cEnableTrashCan = pGSBackup->__fTrashDelete;
+            pGlobalSettings->__fReplaceTrueDelete = pGSBackup->__fReplaceTrueDelete;
+#endif
             krnEnableReplaceRefresh(pFeaturesData->bReplaceRefresh);
             // update the display by calling the INIT callback
             ulUpdateFlags = CBI_SET | CBI_ENABLE;
@@ -2339,7 +2395,9 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // set the default settings for this settings page
             // (this is in common.c because it's also used at Desktop startup)
             cmnSetDefaultSettings(pcnbp->ulPageID);
-            hifEnableHook(pGlobalSettings->fEnableXWPHook);
+#ifndef __ALWAYSHOOK__
+            hifEnableHook(pGlobalSettings->__fEnableXWPHook);
+#endif
 #ifndef __ALWAYSOBJHOTKEYS__
             hifEnableObjectHotkeys(0);
 #endif
@@ -2351,7 +2409,10 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             }
 #endif
 
-            cEnableTrashCan = pGlobalSettings->fTrashDelete;
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
+            cEnableTrashCan = pGlobalSettings->__fTrashDelete;
+#endif
+
             krnEnableReplaceRefresh(0);
             // update the display by calling the INIT callback
             ulUpdateFlags = CBI_SET | CBI_ENABLE;
@@ -3457,8 +3518,8 @@ VOID setParanoiaInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_NOSUBCLASSING,
                                                pGlobalSettings->__fNoSubclassing);
 #endif
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_NOWORKERTHREAD,
-                                               pGlobalSettings->NoWorkerThread);
+        // winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_NOWORKERTHREAD,
+           //                                     pGlobalSettings->NoWorkerThread);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_USE8HELVFONT,
                                                pGlobalSettings->fUse8HelvFont);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XCDI_NOEXCPTBEEPS,
@@ -3471,6 +3532,7 @@ VOID setParanoiaInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                                  pGlobalSettings->bDefaultWorkerThreadPriority);
     }
 
+    /*
     if (flFlags & CBI_ENABLE)
     {
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_TEXT1,
@@ -3482,6 +3544,7 @@ VOID setParanoiaInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_BEEP,
                         !(pGlobalSettings->NoWorkerThread));
     }
+    */
 }
 
 /*
@@ -3520,6 +3583,7 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         break;
 #endif
 
+        /*
         case ID_XCDI_NOWORKERTHREAD:
             pGlobalSettings->NoWorkerThread  = ulExtra;
             // update the display by calling the INIT callback
@@ -3527,6 +3591,7 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // set flag to iterate over other notebook pages
             fUpdateOtherPages = TRUE;
         break;
+        */
 
         case ID_XCDI_USE8HELVFONT:
             pGlobalSettings->fUse8HelvFont  = ulExtra;
@@ -3580,7 +3645,7 @@ MRESULT setParanoiaItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 #ifndef __ALWAYSSUBCLASS__
             pGlobalSettings->__fNoSubclassing   = pGSBackup->__fNoSubclassing;
 #endif
-            pGlobalSettings->NoWorkerThread  = pGSBackup->NoWorkerThread;
+            // pGlobalSettings->NoWorkerThread  = pGSBackup->NoWorkerThread;
             pGlobalSettings->fUse8HelvFont   = pGSBackup->fUse8HelvFont;
             pGlobalSettings->fNoExcptBeeps    = pGSBackup->fNoExcptBeeps;
             pGlobalSettings->bDefaultWorkerThreadPriority

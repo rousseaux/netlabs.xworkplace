@@ -24,7 +24,8 @@
  *
  *          MINIRECORDCORE.hptrIcon is returned by wpQueryIcon,
  *          if it is != NULLHANDLE. Otherwise wpQueryIcon does
- *          a lot of magic things (see below).
+ *          a lot of magic things depending on the object's
+ *          class (see below).
  *
  *      2)  Whether the icon handle is set or created during object
  *          instantion, usually during wpRestoreState, depends
@@ -83,6 +84,72 @@
  *          If all of this fails, or for other classes, the WPS
  *          gets the class's default icon from wpclsQueryIcon.
  *
+ *      4)  WPObject::wpSetIcon sets the MINIRECORDCORE.hptrIcon
+ *          field. This can be called at any time and will also
+ *          update the object's display in all containers where
+ *          it is currently inserted.
+ *
+ *          wpSetIcon does _not_ store the icon persistently.
+ *          It only changes the current icon and gets called
+ *          from the various wpQueryIcon implementations when
+ *          the icon is first built for an object. (I guess this
+ *          makes it clear that the method naming is quite silly
+ *          here -- a "query" method always calls a "set" method?!?)
+ *
+ *          Note that if the object had an icon previously (i.e.
+ *          hptrIcon was != NULLHANDLE), the old icon is freed if
+ *          the object has the OBJSTYLE_NOTDEFAULTICON flag set.
+ *
+ *          This flag is not changed by the method however. As
+ *          a result, _after_ calling wpSetIcon, you should always
+ *          call wpModifyStyle to clear or set the flag, depending
+ *          on whether the icon should be freed if the object
+ *          goes dormant (or will be changed again later).
+ *
+ *      5)  WPObject::wpQueryIconData does not return an icon,
+ *          nor does it always return icon data. (Another misnamed
+ *          method). It only returns _information_ about where
+ *          to find the icon; only if the object has a non-default
+ *          icon, the actual icon data is returned.
+ *
+ *          I believe this method only gets called in some very
+ *          special situations, such as on the "Icon" page and
+ *          during drag'n'drop. Also I haven't exactly figured
+ *          out how the memory management is supposed to work
+ *          here.
+ *
+ *      6)  WPObject::wpSetIconData is supposed to change the icon
+ *          permanently. Depending on the object's class, this
+ *          will store the icon data in the .ICON EA or in OS2.INI.
+ *
+ *      Now for the replacements. There are several problems with
+ *      the WPS implementation:
+ *
+ *      1)  We want to replace the default icons. Unfortunately
+ *          this requires us to replace the icon management
+ *          altogether because for example for executables, the
+ *          only public interface is WinLoadFileIcon, which
+ *          _always_ builds an icon even if it's a default one.
+ *
+ *      2)  WinLoadFileIcon takes ages on PE executables.
+ *
+ *      3)  The WPS is not very good at optimizing memory usage.
+ *          Basically each object has its own icon handle unless
+ *          it is really the class default icon, which is quite
+ *          expensive. I am now trying to at least share icons
+ *          that are reused, such as our program default icons.
+ *          This has turned out to be quite a mess too because
+ *          the WPS sometimes frees icons where it shouldn't.
+ *
+ *      4)  We have to rewrite the entire icon page too, but
+ *          this is a good idea in the first place because we
+ *          wanted to get rid of the extra "Object" page for
+ *          object hotkeys and such.
+ *
+ *      So we have to replace the entire executable resource
+ *      management, which is in this file (icons.c).
+ *      Presently NE and LX icons are supported; see icoLoadExeIcon.
+ *
  *      Function prefix for this file:
  *      --  ico*
  *
@@ -91,7 +158,7 @@
  */
 
 /*
- *      Copyright (C) 2001 Ulrich M”ller.
+ *      Copyright (C) 2001-2002 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -211,8 +278,18 @@ typedef WINBUILDPTRHANDLE *PWINBUILDPTRHANDLE;
  *@@ icoBuildPtrHandle:
  *      calls the undocumented WinBuildPtrHandle API which
  *      buils a new HPOINTER from an icon data buffer.
+ *      This is faster and more convenient than
+ *      WinCreatePointerIndirect where we'd have to build
+ *      all the bitmaps ourselves first.
  *
  *      The API is resolved from PMMERGE.DLL on the first call.
+ *
+ *      An "icon data buffer" is simply the bunch of bitmap
+ *      headers, color tables and bitmap data as described
+ *      in PMREF; I believe it has the same format as an .ICO
+ *      file and the .ICON EA. It appears that the WPS also
+ *      uses this format when it stores icons in OS2.INI for
+ *      abstract objects.
  *
  *      Returns:
  *
@@ -311,8 +388,29 @@ APIRET icoBuildPtrHandle(PBYTE pbData,
 
 /*
  *@@ icoLoadICOFile:
- *      attempts to load the specified .ICO file
- *      and turn it into a new HPOINTER.
+ *      attempts to load the specified .ICO file.
+ *
+ *      To support both "query icon" and "query
+ *      icon data" interfaces, this supports three
+ *      output formats:
+ *
+ *      --  If (phptr != NULL), the icon data
+ *          is loaded and turned into a new
+ *          HPOINTER by calling icoBuildPtrHandle.
+ *
+ *      --  If (pcbIconData != NULL), *pcbIconData
+ *          is set to the size that is required for
+ *          holding the icon data. This allows for
+ *          calling the method twice to allocate
+ *          a sufficient buffer dynamically.
+ *
+ *      --  If (pbIconData != NULL), the icon
+ *          data is copied into that buffer. The
+ *          caller is responsible for allocating
+ *          and freeing that buffer.
+ *
+ *          In that case, *pcbIconData must also
+ *          contain the size of the buffer on input.
  *
  *      If NO_ERROR is returned, *hptr receives
  *      a newly allocated pointer handle.
@@ -323,52 +421,72 @@ APIRET icoBuildPtrHandle(PBYTE pbData,
  *      --  ERROR_PATH_NOT_FOUND
  *      --  ERROR_NOT_ENOUGH_MEMORY
  *
+ *      --  ERROR_INVALID_PARAMETER: pcszFilename is
+ *          invalid, or pcbIconData was NULL while
+ *          pbIconData was != NULL.
+ *
+ *      --  ERROR_BUFFER_OVERFLOW: *pcbIconData is too
+ *          small a size of pbIconData.
+ *
  *      plus the error codes of icoBuildPtrHandle.
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
 APIRET icoLoadICOFile(PCSZ pcszFilename,
-                      HPOINTER *phptr)
+                      HPOINTER *phptr,          // out: if != NULL, newly built HPOINTER
+                      PULONG pcbIconData,       // in/out: if != NULL, size of buffer required
+                      PBYTE pbIconData)         // out: if != NULL, icon data that was loaded
 {
     APIRET  arc = NO_ERROR;
     PXFILE  pxf = NULL;
-    ULONG   cbFile = 0;
 
     PBYTE   pbData = NULL;
+    ULONG   cbData = 0;
 
     TRY_LOUD(excpt1)
     {
         if (!(arc = doshOpen(pcszFilename,
                              XOPEN_READ_EXISTING | XOPEN_BINARY,
-                             &cbFile,
+                             &cbData,
                              &pxf)))
         {
-            if (!cbFile)
+            if (!cbData)
                 arc = ERROR_NO_DATA;
             else
             {
-                if (!(pbData = malloc(cbFile)))
+                if (!(pbData = malloc(cbData)))
                     arc = ERROR_NOT_ENOUGH_MEMORY;
                 else
                 {
                     ULONG ulDummy;
-                    if (!(arc = DosRead(pxf->hf,
-                                        pbData,
-                                        cbFile,
-                                        &ulDummy)))
-                    {
-                        // use this undocumented PM API to build the pointer
-                        // from the icon data directly, which is the
-                        // BITMAPARRAYHEADER normally
-                        if (!(arc = icoBuildPtrHandle(pbData,
-                                                      phptr)))
-                            /* _Pmpf((__FUNCTION__ ": built hptr %lX from %s",
-                                   *phptr,
-                                   pcszFilename))*/ ;
-                    }
+                    arc = DosRead(pxf->hf,
+                                  pbData,
+                                  cbData,
+                                  &ulDummy);
                 }
             }
+        }
+
+        // output data
+        if (!arc)
+        {
+            if (phptr)
+                arc = icoBuildPtrHandle(pbData,
+                                        phptr);
+
+            if (pbIconData)
+                if (!pcbIconData)
+                    arc = ERROR_INVALID_PARAMETER;
+                else if (*pcbIconData < cbData)
+                    arc = ERROR_BUFFER_OVERFLOW;
+                else
+                    memcpy(pbIconData,
+                           pbData,
+                           cbData);
+
+            if (pcbIconData)
+                *pcbIconData = cbData;
         }
     }
     CATCH(excpt1)
@@ -381,11 +499,6 @@ APIRET icoLoadICOFile(PCSZ pcszFilename,
 
     doshClose(&pxf);
 
-    /* if (arc)
-        _Pmpf((__FUNCTION__ ": returning %d for %s",
-               arc,
-               pcszFilename));
-       */
     return (arc);
 }
 
@@ -394,19 +507,32 @@ APIRET icoLoadICOFile(PCSZ pcszFilename,
  *      builds a pointer from the .ICON data in
  *      the given FEA2LIST, if there's some.
  *
+ *      See icoLoadICOFile for the meaning of
+ *      the phptr, pcbIconData, and pbIconData
+ *      parameters.
+ *
  *      Returns:
  *
  *      --  NO_ERROR: ptr was built.
  *
  *      --  ERROR_NO_DATA: no .ICON EA found.
  *
+ *      --  ERROR_INVALID_PARAMETER: pcszFilename is
+ *          invalid, or pcbIconData was NULL while
+ *          pbIconData was != NULL.
+ *
+ *      --  ERROR_BUFFER_OVERFLOW: *pcbIconData is too
+ *          small a size of pbIconData.
+ *
  *      plus the error codes of icoBuildPtrHandle.
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
-APIRET icoBuildPtrFromFEA2List(PFEA2LIST pFEA2List,
-                               HPOINTER *phptr)
+APIRET icoBuildPtrFromFEA2List(PFEA2LIST pFEA2List,     // in: FEA2LIST to check for .ICON EA
+                               HPOINTER *phptr,         // out: if != NULL, newly built HPOINTER
+                               PULONG pcbIconData,      // in/out: if != NULL, size of buffer required
+                               PBYTE pbIconData)        // out: if != NULL, icon data that was loaded
 {
     APIRET arc = ERROR_NO_DATA;
 
@@ -421,11 +547,28 @@ APIRET icoBuildPtrFromFEA2List(PFEA2LIST pFEA2List,
         {
             // next ushort has data length
             PUSHORT pcbValue = pusType + 1;
-            if (*pcbValue)
+            USHORT cbData;
+            if (cbData = *pcbValue)
             {
-                PBYTE pbIconData = (PBYTE)(pcbValue + 1);
-                arc = icoBuildPtrHandle(pbIconData,
-                                        phptr);
+                PBYTE pbData = (PBYTE)(pcbValue + 1);
+
+                // output data
+                if (phptr)
+                    arc = icoBuildPtrHandle(pbData,
+                                            phptr);
+
+                if (pbIconData)
+                    if (!pcbIconData)
+                        arc = ERROR_INVALID_PARAMETER;
+                    else if (*pcbIconData < cbData)
+                        arc = ERROR_BUFFER_OVERFLOW;
+                    else
+                        memcpy(pbIconData,
+                               pbData,
+                               cbData);
+
+                if (pcbIconData)
+                    *pcbIconData = cbData;
             }
         }
     }
@@ -743,7 +886,7 @@ int ExpandIterdata2(char *pachPage,
                 {
                     int cch1 = cSrc >> 2 & 0x000f;
                     int cch2 = *(PUSHORT)pachSrcPage >> 6 & 0x003f;
-                    int off  = *(PUSHORT)(pachSrcPage+1) >> 4;
+                    int off  = *(PUSHORT)(pachSrcPage + 1) >> 4;
                     pachSrcPage += 3, cchSrcPage -= 3;
                     if (    (cchSrcPage >= cch1)
                          && (cchPage >= cch1 + cch2)
@@ -765,7 +908,6 @@ int ExpandIterdata2(char *pachPage,
 
 endloop:;
 
-
     /*
      * Zero the rest of the page.
      */
@@ -781,20 +923,19 @@ endloop:;
  *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
-APIRET GetOfsFromPageTableIndex(PEXECUTABLE pExec,     // in: executable from doshExecOpen
+APIRET GetOfsFromPageTableIndex(PLXHEADER pLXHeader,            // in: from EXECUTABLE
+                                OBJECTPAGETABLEENTRY *pObjPageTbl,  // in: from EXECUTABLE
                                 ULONG ulObjPageTblIndexThis,
-                                PULONG pulFlags,
-                                PULONG pulSize,
+                                PULONG pulFlags,        // out: page flags
+                                PULONG pulSize,         // out: page size
                                 PULONG pulPageOfs)      // out: page ofs (add pLXHeader->ulDataPagesOfs to this)
 {
     OBJECTPAGETABLEENTRY *pObjPageTblEntry;
 
-    PLXHEADER       pLXHeader = pExec->pLXHeader;
-
     if (ulObjPageTblIndexThis - 1 >= pLXHeader->ulPageCount)
         return ICONERR_INVALID_OFFSET;
 
-    pObjPageTblEntry = &pExec->pObjPageTbl[ulObjPageTblIndexThis - 1];
+    pObjPageTblEntry = &pObjPageTbl[ulObjPageTblIndexThis - 1];
 
     // page offset: shift left by what was specified in LX header
     *pulPageOfs     =    pObjPageTblEntry->o32_pagedataoffset
@@ -805,22 +946,23 @@ APIRET GetOfsFromPageTableIndex(PEXECUTABLE pExec,     // in: executable from do
     return NO_ERROR;
 }
 
-
 /*
  *@@ LoadCompressedResourcePages:
+ *      handler for LoadLXResource if the page data is
+ *      compressed, either in old or new ITERDATA
+ *      format.
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
-APIRET LoadCompressedResourcePages(PEXECUTABLE pExec,     // in: executable from doshExecOpen
+APIRET LoadCompressedResourcePages(PEXECUTABLE pExec,   // in: executable from doshExecOpen
                                    RESOURCETABLEENTRY *pRsEntry,  // in: resource table entry for this res
-                                   ULONG ulType,          // in: page type of first page
-                                   PBYTE *ppbResData)    // out: icon data (use DosFreeMem)
+                                   ULONG ulType,        // in: page type of first page
+                                   PBYTE *ppbResData,   // out: resource data (to be free()'d)
+                                   PULONG pcbResData)   // out: size of resource data (ptr can be NULL)
 {
     APIRET  arc = NO_ERROR;
     PBYTE   pabCompressed = NULL;
-
-    #define PAGESHIFT  12
 
     TRY_LOUD(excpt1)
     {
@@ -835,10 +977,11 @@ APIRET LoadCompressedResourcePages(PEXECUTABLE pExec,     // in: executable from
                     cPages,
                     cbAlloc;
 
+            PXFILE  pFile = pExec->pFile;
             OBJECTTABLEENTRY *pObjTblEntry = &pExec->pObjTbl[pRsEntry->obj - 1];
 
             ULONG   ulObjPageTblIndex =   pObjTblEntry->o32_pagemap
-                                        + (pRsEntry->offset >> PAGESHIFT);
+                                        + (pRsEntry->offset >> 12);
 
             cPages =   (pRsEntry->cb + pLXHeader->ulPageSize - 1)
                      / pLXHeader->ulPageSize;
@@ -863,7 +1006,8 @@ APIRET LoadCompressedResourcePages(PEXECUTABLE pExec,     // in: executable from
                             ulSize,         // size of this page (and bytes read)
                             ulOffset;       // offset of this page in exe
 
-                    if (!(arc = GetOfsFromPageTableIndex(pExec,
+                    if (!(arc = GetOfsFromPageTableIndex(pLXHeader,
+                                                         pExec->pObjPageTbl,
                                                          ulObjPageTblIndex + ul,
                                                          &ulFlags2,
                                                          &ulSize,
@@ -873,16 +1017,13 @@ APIRET LoadCompressedResourcePages(PEXECUTABLE pExec,     // in: executable from
                         ulOffset += pLXHeader->ulDataPagesOfs;
 
                         // now go read this compressed page
-                        if (!(arc = doshReadAt(pExec->hfExe,
+                        if (!(arc = doshReadAt(pFile,
                                                ulOffset,
-                                               FILE_BEGIN,
                                                &ulSize,
                                                pabCompressed)))
                         {
                             // terminate the buf for decompress
-                            memset(pabCompressed + ulSize,
-                                   0,
-                                   4);
+                            *(PULONG)(pabCompressed + ulSize) = 0;
 
                             if (ulType == ITERDATA)
                                 // OS/2 2.x:
@@ -897,10 +1038,10 @@ APIRET LoadCompressedResourcePages(PEXECUTABLE pExec,     // in: executable from
                                                       pabCompressed,
                                                       ulSize);            // this page's size
 
-                            if (!arc)
-                                pbCurrent += pLXHeader->ulPageSize;
-                            else
+                            if (arc)
                                 break;
+
+                            pbCurrent += pLXHeader->ulPageSize;
                         }
                         else
                             break;
@@ -912,6 +1053,8 @@ APIRET LoadCompressedResourcePages(PEXECUTABLE pExec,     // in: executable from
 
                 if (arc)
                     free(*ppbResData);
+                else if (pcbResData)
+                    *pcbResData = cbAlloc;
 
             } // end if (!(*ppbResData = malloc(...
         }
@@ -954,7 +1097,8 @@ APIRET LoadCompressedResourcePages(PEXECUTABLE pExec,     // in: executable from
 APIRET LoadLXResource(PEXECUTABLE pExec,     // in: executable from doshExecOpen
                       ULONG ulType,          // in: RT_* type (e.g. RT_POINTER)
                       ULONG idResource,      // in: resource ID or 0 for first
-                      PBYTE *ppbResData)     // out: icon data (to be free()'d)
+                      PBYTE *ppbResData,     // out: resource data (to be free()'d)
+                      PULONG pcbResData)     // out: size of resource data (ptr can be NULL)
 {
     APIRET          arc = NO_ERROR;
     ULONG           cResources = 0;
@@ -982,6 +1126,7 @@ APIRET LoadLXResource(PEXECUTABLE pExec,     // in: executable from doshExecOpen
         // alright, we're in:
 
         // run thru the resources
+        PXFILE  pFile = pExec->pFile;
         BOOL fPtrFound = FALSE;
 
         ULONG i;
@@ -1015,7 +1160,8 @@ APIRET LoadLXResource(PEXECUTABLE pExec,     // in: executable from doshExecOpen
                           ulSize,
                           ulOffset;
 
-                    if (!(arc = GetOfsFromPageTableIndex(pExec,
+                    if (!(arc = GetOfsFromPageTableIndex(pLXHeader,
+                                                         pExec->pObjPageTbl,
                                                          ulObjPageTblIndex,
                                                          &ulFlags,
                                                          &ulSize,
@@ -1039,7 +1185,8 @@ APIRET LoadLXResource(PEXECUTABLE pExec,     // in: executable from doshExecOpen
                                 if (!(arc = LoadCompressedResourcePages(pExec,
                                                                         pRsEntry,
                                                                         ulFlags,
-                                                                        ppbResData)))
+                                                                        ppbResData,
+                                                                        pcbResData)))
                                     fPtrFound = TRUE;
                             break;
 
@@ -1052,12 +1199,15 @@ APIRET LoadLXResource(PEXECUTABLE pExec,     // in: executable from doshExecOpen
                                     arc = ERROR_NOT_ENOUGH_MEMORY;
                                 else
                                 {
-                                    if (!(arc = doshReadAt(pExec->hfExe,
+                                    if (!(arc = doshReadAt(pFile,
                                                            ulOffset,
-                                                           FILE_BEGIN,
                                                            &cb,
                                                            *ppbResData)))
+                                    {
+                                        if (pcbResData)
+                                            *pcbResData = cb;
                                         fPtrFound = TRUE;
+                                    }
                                     else
                                         // error reading:
                                         free(*ppbResData);
@@ -1112,7 +1262,8 @@ APIRET LoadLXResource(PEXECUTABLE pExec,     // in: executable from doshExecOpen
 APIRET LoadOS2NEResource(PEXECUTABLE pExec,     // in: executable from doshExecOpen
                          ULONG ulType,          // in: RT_* type (e.g. RT_POINTER)
                          ULONG idResource,      // in: resource ID or 0 for first
-                         PBYTE *ppbResData)     // out: icon data (to be free()'d)
+                         PBYTE *ppbResData,     // out: resource data (to be free()'d)
+                         PULONG pcbResData)     // out: size of resource  data (ptr can be NULL)
 {
     APIRET          arc = NO_ERROR;
     ULONG           cResources = 0;
@@ -1140,6 +1291,7 @@ APIRET LoadOS2NEResource(PEXECUTABLE pExec,     // in: executable from doshExecO
     if (!arc)
     {
         // alright, we're in:
+        PXFILE  pFile = pExec->pFile;
 
         // run thru the resources
         BOOL fPtrFound = FALSE;
@@ -1172,12 +1324,15 @@ APIRET LoadOS2NEResource(PEXECUTABLE pExec,     // in: executable from doshExecO
                     arc = ERROR_NOT_ENOUGH_MEMORY;
                 else
                 {
-                    if (!(arc = doshReadAt(pExec->hfExe,
+                    if (!(arc = doshReadAt(pFile,
                                            ulOffset,
-                                           FILE_BEGIN,
                                            &cb,
                                            *ppbResData)))
+                    {
+                        if (pcbResData)
+                            *pcbResData = cb;
                         fPtrFound = TRUE;
+                    }
                     else
                         // error reading:
                         free(*ppbResData);
@@ -1201,23 +1356,84 @@ APIRET LoadOS2NEResource(PEXECUTABLE pExec,     // in: executable from doshExecO
 #pragma pack(1)
 typedef struct _WIN16DIBINFO
 {
-   ULONG    cbFix;
-   ULONG    cx;
-   ULONG    cy;
-   USHORT   cPlanes;
-   USHORT   cBitCount;
-   ULONG    cCompression;           // unused in icons
-   ULONG    ulImageSize;
-   ULONG    ulXPelsPerMeter;        // unused in icons
-   ULONG    ulYPelsPerMeter;        // unused in icons
-   ULONG    cColorsUsed;            // unused in icons
-   ULONG    cColorsImportant;       // unused in icons
+    ULONG       cbFix;
+    ULONG       cx;
+    ULONG       cy;
+    USHORT      cPlanes;
+    USHORT      cBitCount;
+    ULONG       cCompression;           // unused in icons
+    ULONG       ulImageSize;
+    ULONG       ulXPelsPerMeter;        // unused in icons
+    ULONG       ulYPelsPerMeter;        // unused in icons
+    ULONG       cColorsUsed;            // unused in icons
+    ULONG       cColorsImportant;       // unused in icons
 } WIN16DIBINFO, *PWIN16DIBINFO;
 #pragma pack()
 
 /*
+ *@@ G_DefaultIconHeader:
+ *      sick structure for building an icon
+ *      data buffer so we can use memcpy
+ *      for most fields instead of having
+ *      to set everything explicitly.
+ *
+ *@@added V0.9.16 (2001-12-18) [umoeller]
+ */
+
+static struct _DefaultIconHeader
+{
+        // bitmap array file header;
+        // includes first BITMAPFILEHEADER for AND and XOR masks
+        BITMAPARRAYFILEHEADER ah;
+        // first RGB color table for monochrome bitmap
+        RGB MonochromeTable[2];
+        // second BITMAPFILEHEADER for color pointer
+        BITMAPFILEHEADER fh2;
+} G_DefaultIconHeader =
+    {
+        {
+            // bitmap array file header
+            /*pah->usType*/ BFT_BITMAPARRAY, //
+            /*pah->cbSize*/ 40, //
+            /*pah->offNext*/ 0, //       // no next array header
+            /*pah->cxDisplay*/ 0, //
+            /*pah->cyDisplay*/ 0, //
+
+            // first BITMAPFILEHEADER for AND and XOR masks
+            /*pah->bfh.usType*/ BFT_COLORICON, //
+            /*pah->bfh.cbSize*/ 0x1A, //    // size of file header
+            /*pah->bfh.xHotspot*/ 0, //         // tbr
+            /*pah->bfh.yHotspot*/ 0, //     // tbr
+            /* pah->bfh.offBits = */ 0, // tbr
+            /*pah->bfh.bmp.cbFix*/ sizeof(BITMAPINFOHEADER), //
+            /*pah->bfh.bmp.cx*/ 0, //          // tbr
+            /*pah->bfh.bmp.cy*/ 0, //          // tbr
+            /*pah->bfh.bmp.cPlanes*/ 1, //
+            /*pah->bfh.bmp.cBitCount*/ 1, //          // monochrome
+        },
+        // first RGB color table for monochrome bitmap;
+        // set first entry to black, second to white
+        {
+            0, 0, 0, 0xFF, 0xFF, 0xFF
+        },
+        // second BITMAPFILEHEADER for color pointer
+        {
+            /*pfh->usType*/ BFT_COLORICON, //
+            /*pfh->cbSize*/ 0x1A, //    // size of file header
+            /*pfh->xHotspot*/ 0, // tbr
+            /*pfh->yHotspot*/ 0, // tbr
+            /*pfh->offBits*/  0, // tbr
+            /*pfh->bmp.cbFix*/ sizeof(BITMAPINFOHEADER), //
+            /*pfh->bmp.cx*/ 0, // tbr
+            /*pfh->bmp.cy*/ 0, // tbr
+            /*pfh->bmp.cPlanes*/ 1, //
+            /*pfh->bmp.cBitCount*/ 0, // tbr
+        }
+    };
+
+/*
  *@@ ConvertWinIcon:
- *      converts a Windows icon to an OS/2 icon buffer
+ *      converts a Windows icon to an OS/2 icon buffer.
  *
  *      At this point, we handle only 32x32 Windows icons
  *      with 16 colors.
@@ -1229,15 +1445,22 @@ typedef struct _WIN16DIBINFO
  *      because of the weird bit offsets that have to
  *      be handled.
  *
- *      Be warned, this code has some room for optimizations
- *      left.
+ *      Returns:
+ *
+ *      --  NO_ERROR: icon data was successfully converted,
+ *          and *ppbResData has received the OS/2-format
+ *          icon data.
+ *
+ *      --  ERROR_BAD_FORMAT: icon format not recognized.
+ *          Currently we handle only 32x32 in 16 colors.
  *
  *@@added V0.9.16 (2001-12-18) [umoeller]
  */
 
 APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
                       ULONG cbBuffer,       // in: size of *pbBuffer
-                      PBYTE *ppbResData)     // out: converted icon data (to be free()'d)
+                      PBYTE *ppbResData,     // out: converted icon data (to be free()'d)
+                      PULONG pcbResdata)   // out: size of converted data (ptr can be NULL)
 {
     PWIN16DIBINFO pInfo = (PWIN16DIBINFO)pbBuffer;
     APIRET arc = ERROR_BAD_FORMAT;
@@ -1257,6 +1480,11 @@ APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
     _Pmpf(("    cPlanes %d", pInfo->cPlanes));
     _Pmpf(("    cBitCount %d, cColors %d", pInfo->cBitCount, cColors));
     _Pmpf(("    cColorsUsed %d", pInfo->cColorsUsed));
+
+    /*
+     * check source format:
+     *
+     */
 
     if (    (pInfo->cx == 32)
          && (cyRealSrc == 32)
@@ -1292,22 +1520,32 @@ APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
             arc = ERROR_BAD_FORMAT;
         else
         {
-            // go create an OS/2 format icon buffer for
-            // WinBuildPtrHandle
+            /*
+             * create OS/2 target buffer:
+             *
+             */
 
+            // target icon size == system icon size (32 or 40)
             ULONG cxDest = WinQuerySysValue(HWND_DESKTOP, SV_CXICON);
             ULONG cyRealDest = cxDest;
 
-            ULONG cbScanLineDest  = ((cxDest + 1) / 2);    // two pixels per byte
+            // size of one color scan line: with 16 colors,
+            // that's two pixels per byte
+            ULONG cbScanLineDest  = ((cxDest + 1) / 2);
+            // total size of target bitmap
             ULONG cbBitmapDest    = (   cbScanLineDest
                                       * cyRealDest
                                     );         // should be 512
 
+            // size of one monochrome scan line:
+            // that's eight pixels per byte
             ULONG cbMaskLineDest2  = ((cxDest + 7) / 8);
             // note, with OS/2, this must be dword-aligned:
             ULONG cbMaskLineDest =  cbMaskLineDest2 + 3 - ((cbMaskLineDest2 + 3) & 0x03);
+            // total size of a monochrome bitmap
             ULONG cbEachMaskDest  = cbMaskLineDest * cyRealDest;        // should be 128
 
+            // total size of the OS/2 icon buffer that's needed:
             ULONG cbDataDest =   sizeof(BITMAPARRAYFILEHEADER)   // includes one BITMAPFILEHEADER
                                + 2 * sizeof(RGB)
                                + sizeof(BITMAPFILEHEADER)
@@ -1315,10 +1553,17 @@ APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
                                + 2 * cbEachMaskDest          // one XOR, one AND mask
                                + cbBitmapDest;
 
+            // go create that buffer
             if (!(*ppbResData = malloc(cbDataDest)))
                 arc = ERROR_NOT_ENOUGH_MEMORY;
             else
             {
+
+                /*
+                 * fill OS/2 target buffer:
+                 *
+                 */
+
                 ULONG   ul;
 
                 PBYTE   pbDest,
@@ -1326,69 +1571,55 @@ APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
                         pbXorMaskDest,
                         pbBitmapDest;
 
-                PBITMAPARRAYFILEHEADER pah;
-                PBITMAPFILEHEADER pfh;
+                struct _DefaultIconHeader *pHeaderDest;
 
                 arc = NO_ERROR;
+                if (pcbResdata)
+                    *pcbResdata = cbDataDest;
 
                 // start at front of buffer
                 pbDest = *ppbResData;
 
-                // bitmap array file header
-                pah = (PBITMAPARRAYFILEHEADER)pbDest;
-                pah->usType = BFT_BITMAPARRAY;
-                pah->cbSize = 40;
-                pah->offNext = 0;      // no next array header
-                pah->cxDisplay = 0;
-                pah->cyDisplay = 0;
+                pHeaderDest = (PVOID)pbDest;
 
-                // first BITMAPFILEHEADER for AND and XOR masks
-                pah->bfh.usType = BFT_COLORICON;
-                pah->bfh.cbSize = 0x1A;   // size of file header
-                pah->bfh.xHotspot = cxDest / 2;
-                pah->bfh.yHotspot = cyRealDest / 2;
-                pah->bfh.offBits =
+                // copy default header for icon from static memory
+                memcpy(pHeaderDest,
+                       &G_DefaultIconHeader,
+                       sizeof(G_DefaultIconHeader));
+
+                // fix the variable fields
+                pHeaderDest->ah.bfh.xHotspot
+                    = pHeaderDest->fh2.xHotspot
+                    = cxDest / 2;
+                pHeaderDest->ah.bfh.yHotspot
+                    = pHeaderDest->fh2.yHotspot
+                    = cyRealDest / 2;
+                pHeaderDest->ah.bfh.offBits =
                               sizeof(BITMAPARRAYFILEHEADER)
                             + sizeof(RGB) * 2
                             + sizeof(BITMAPFILEHEADER)
                             + sizeof(RGB) * cColors;
-                pah->bfh.bmp.cbFix = sizeof(BITMAPINFOHEADER);
-                pah->bfh.bmp.cx = cxDest;
-                pah->bfh.bmp.cy = 2 * cyRealDest;         // AND and XOR masks in one bitmap
-                pah->bfh.bmp.cPlanes = 1;
-                pah->bfh.bmp.cBitCount = 1;         // monochrome
+                pHeaderDest->ah.bfh.bmp.cx
+                    = pHeaderDest->fh2.bmp.cx
+                    = cxDest;
+                pHeaderDest->ah.bfh.bmp.cy = 2 * cyRealDest;         // AND and XOR masks in one bitmap
 
-                pbDest += sizeof(BITMAPARRAYFILEHEADER);
-
-                // first RGB color table for monochrome bitmap;
-                // set first entry to black, second to white
-                memset((RGB*)pbDest, 0x00, 3);
-                pbDest += 3;
-                memset((RGB*)pbDest, 0xFF, 3);
-                pbDest += 3;
-
-                // second BITMAPFILEHEADER for color pointer
-                pfh = (PBITMAPFILEHEADER)pbDest;
-                pfh->usType = BFT_COLORICON;
-                pfh->cbSize = 0x1A;   // size of file header
-                pfh->xHotspot = cxDest / 2;
-                pfh->yHotspot = cyRealDest / 2;
-                pfh->offBits =  // 0x178;
-                              sizeof(BITMAPARRAYFILEHEADER)
-                            + sizeof(RGB) * 2
-                            + sizeof(BITMAPFILEHEADER)
-                            + sizeof(RGB) * cColors
+                pHeaderDest->fh2.offBits =
+                              pHeaderDest->ah.bfh.offBits
                             + 2 * cbEachMaskDest;
-                pfh->bmp.cbFix = sizeof(BITMAPINFOHEADER);
-                pfh->bmp.cx = cxDest;
-                pfh->bmp.cy = cyRealDest;               // single size this time
-                pfh->bmp.cPlanes = 1;
-                pfh->bmp.cBitCount = pInfo->cBitCount;      // same as in source
+                pHeaderDest->fh2.bmp.cy = cyRealDest;               // single size this time
+                pHeaderDest->fh2.bmp.cBitCount = pInfo->cBitCount;      // same as in source
 
-                pbDest += sizeof(BITMAPFILEHEADER);
+                // alright, now we have
+                // -- the BITMAPARRAYFILEHEADER,
+                // -- which includes the first BITMAPFILEHEADER,
+                // -- the monochrome color table,
+                // -- the second BITMAPFILEHEADER
+                pbDest += sizeof(G_DefaultIconHeader);
 
-                // second RGB color table: copy from
-                // win icon, but use only three bytes
+                // after this comes second color table:
+                // this is for the color pointer, so copy
+                // from win icon, but use only three bytes
                 // (Win uses four)
                 for (ul = 0; ul < cColors; ul++)
                 {
@@ -1396,11 +1627,18 @@ APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
                     pbDest += 3;
                 }
 
+                /*
+                 * convert bitmap data:
+                 *
+                 */
+
                 // new monochrome AND mask;
                 // this we fill below... if a bit
                 // is cleared here, it will be transparent
                 pbAndMaskDest = pbDest;
-                // clear all AND masks first
+                // clear all AND masks first; the source icon
+                // might be smaller than the target icon,
+                // and we want the extra space to be transparent
                 memset(pbAndMaskDest, 0x00, cbEachMaskDest);
                 pbDest += cbEachMaskDest;
 
@@ -1422,11 +1660,24 @@ APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
                     arc = ERROR_BAD_FORMAT;
                 else
                 {
-                    // line offset to convert from 32x32 to 40x40
+                    // line offset to convert from 32x32 to 40x40;
+                    // this centers the icon vertically
                     ULONG   ulLineOfs = (cyRealDest - cyRealSrc) / 2;
 
+                        // note that presently the below code cannot
+                        // center horizontally yet because the AND
+                        // and XOR masks are monochrome; with 32
+                        // pixels, the AND and XOR masks take
+                        // four bytes, while with 40 pixels they
+                        // take five, so we'd have to distribute
+                        // the four bytes onto five, which I didn't
+                        // quite feel the urge for yet. ;-)
+
                     // set up the bunch of pointers which point
-                    // to data that is needed for this scan line
+                    // to data that is needed for this scan line;
+                    // all these pointers are incremented by the
+                    // respective scan line size with each line
+                    // loop below
                     PBYTE   pbBitmapSrcThis  =   pbWinXorBitmap;
                     PBYTE   pbBitmapDestThis =   pbBitmapDest
                                                + ulLineOfs * cbScanLineDest;
@@ -1437,17 +1688,24 @@ APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
                     PBYTE   pbXorMaskDestThis =  pbXorMaskDest
                                                + ulLineOfs * cbMaskLineDest;
 
-                    ULONG   ulLine;
+                    ULONG   x, y;
 
-                    for (ulLine = 0;
-                         ulLine < cyRealSrc;
-                         ulLine++)
+                    // run thru the source lines and set up
+                    // the target lines according to the
+                    // source bitmap data
+                    for (y = 0;
+                         y < cyRealSrc;
+                         y++)
                     {
-                        PBYTE   pbBmpTest = pbBitmapSrcThis,
+                        PBYTE   // pbBmpTest = pbBitmapSrcThis,
                                 pbAndTest = pbAndMaskSrcThis,
                                 pbAndSet = pbAndMaskDestThis;
-                        ULONG   x;
-                        UCHAR   ucWeight = 0x80;     // shifted right
+
+                        // bit to check for AND and XOR masks;
+                        // this is shifted right with every X
+                        // in the loop below
+                        UCHAR   ucAndMask = 0x80;     // shifted right
+                        UCHAR   ucBmpMask = 0xF0;     // toggles between 0xF0 and 0x0F
 
                         // copy color bitmap for this line
                         memcpy(pbBitmapDestThis,
@@ -1463,62 +1721,59 @@ APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
                              x < pInfo->cx;
                              x++)
                         {
-                            BOOL fOdd;
-                            if (!(fOdd = (x & 0x01)))
+                            // now with windoze, a pixel is drawn if its
+                            // AND bit (now in the xor mask) is originally
+                            // set and the pixel color is != 0; in that case,
+                            // the OS/2 AND bit must be set to 1 to make
+                            // it visible (non-transparent)
+                            if (
+                                    // check windoze AND bit; ucAndMask
+                                    // is initially 0x80 and shifted right
+                                    // with every X loop
+                                    ((*pbAndTest) & ucAndMask)
+                                    // check windoze color nibble; ucBmp
+                                    // mask is initially 0xF0 and toggled
+                                    // between 0x0F and 0xF0 with every
+                                    // X loop
+                                 && ((pbBitmapSrcThis[x / 2]) & ucBmpMask)
+                               )
                             {
-                                // now with windoze, a pixel is drawn if its
-                                // AND bit (now in the xor mask) is originally
-                                // set and the pixel color is != 0; in that case,
-                                // the OS/2 AND bit must be set to 1 to make
-                                // it visible (non-transparent)
-                                if (    ((*pbAndTest) & ucWeight)
-                                     && ((*pbBmpTest) & 0xf0)
-                                   )
-                                {
-                                    // set the OS/2 AND bit too
-                                    *pbAndSet |= ucWeight;
-                                }
+                                // alright, windoze pixel is visible:
+                                // set the OS/2 AND bit too
+                                *pbAndSet |= ucAndMask;
                             }
-                            else
-                                if (    ((*pbAndTest) & ucWeight)
-                                     && ((*pbBmpTest) & 0x0f)
-                                   )
-                                {
-                                    // set the OS/2 AND bit too
-                                    *pbAndSet |= ucWeight;
-                                }
 
-                            ucWeight >>= 1;
+                            // toggle between 0xF0 and 0x0F
+                            ucBmpMask ^= 0xFF;
 
-                            // every two x's, add bitmap byte
-                            if (fOdd)
+                            // shift right the AND mask bit
+                            if (!(ucAndMask >>= 1))
                             {
-                                pbBmpTest++;
+                                // every eight X's, reset the
+                                // AND mask
+                                ucAndMask = 0x80;
 
-                                if ((x & 0x07) == 0x07)
-                                {
-                                    pbAndTest++;
-                                    pbAndSet++;
-                                    ucWeight = 0x80;
-                                }
+                                // and go for next monochrome byte
+                                pbAndTest++;
+                                pbAndSet++;
                             }
-                        } // end for
+                        } // end for (x = 0...
 
                         pbBitmapSrcThis += cbScanLineSrc;
                         pbBitmapDestThis += cbScanLineDest;
                         pbAndMaskSrcThis += cbMaskLineSrc;
                         pbAndMaskDestThis += cbMaskLineDest;
                         pbXorMaskDestThis += cbMaskLineDest;
-                    }
-                }
+                    } // end for (y = 0;
+                } // end else if (pbDest + cbBitmapDest > *ppbResData + cbDataDest)
 
                 if (arc)
                 {
                     FREE(*ppbResData);
                 }
-            }
-        }
-    }
+            } // end else if (!(*ppbResData = malloc(cbDataDest)))
+        } // end else if (pbWinAndMask + cbEachMaskSrc > pbBuffer + cbBuffer)
+    } // end if if (cbBitmapSrc)
 
     return (arc);
 }
@@ -1529,12 +1784,20 @@ APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
  *      with the specified type and id from a Win16
  *      NE executable.
  *
+ *      Note that Windows uses different resource
+ *      type flags than OS/2; use the WINRT_* flags
+ *      from dosh.h instead of the OS/2 RT_* flags.
+ *
  *      If idResource == 0, the first resource of
  *      the specified type is loaded.
  *
  *      If NO_ERROR is returned, *ppbResData receives
- *      a new buffer with the icon data. The caller
+ *      a new buffer with the resource data. The caller
  *      must free() that buffer.
+ *
+ *      If the resource type is WINRT_ICON, the icon
+ *      data is converted to the OS/2 format, if
+ *      possible. See ConvertWinIcon().
  *
  *      Otherwise this returns:
  *
@@ -1548,7 +1811,8 @@ APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
 APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from doshExecOpen
                          ULONG ulType,          // in: RT_* type (e.g. RT_POINTER)
                          ULONG idResource,      // in: resource ID or 0 for first
-                         PBYTE *ppbResData)     // out: converted resource data (to be free()'d)
+                         PBYTE *ppbResData,     // out: converted resource data (to be free()'d)
+                         PULONG pcbResData)     // out: size of converted data (ptr can be NULL)
 {
     APIRET          arc = NO_ERROR;
     ULONG           cb;
@@ -1558,6 +1822,7 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from doshExecO
     PNEHEADER       pNEHeader;
 
     USHORT          usAlignShift;
+    PXFILE          pFile;
 
     if (!(pNEHeader = pExec->pNEHeader))
         return (ERROR_INVALID_EXE_SIGNATURE);
@@ -1567,12 +1832,12 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from doshExecO
         ulNewHeaderOfs = pExec->pDosExeHeader->ulNewHeaderOfs;
 
     // 1) res tbl starts with align leftshift
+    pFile = pExec->pFile;
     cb = sizeof(usAlignShift);
-    if (!(arc = doshReadAt(pExec->hfExe,
+    if (!(arc = doshReadAt(pFile,
                            // start of res table
                            pNEHeader->usResTblOfs
                              + ulNewHeaderOfs,
-                           FILE_BEGIN,
                            &cb,
                            (PBYTE)&usAlignShift)))
     {
@@ -1604,7 +1869,7 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from doshExecO
             //              id (int if 0x8000 set), otherwise offset to string
             //              reserved
             //              reserved
-            if (!(arc = DosRead(pExec->hfExe,
+            if (!(arc = DosRead(pFile->hf,
                                 &typeinfo,
                                 sizeof(typeinfo),
                                 &cbRead)))
@@ -1649,7 +1914,7 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from doshExecO
                                       ulTypeThis,
                                       fsysGetWinResourceTypeName(ulTypeThis),
                                       typeinfo.rt_nres));
-                        arc = DosSetFilePtr(pExec->hfExe,
+                        arc = DosSetFilePtr(pFile->hf,
                                             typeinfo.rt_nres * sizeof(nameinfo),
                                             FILE_CURRENT,
                                             &cbRead);
@@ -1669,7 +1934,7 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from doshExecO
                                                         sizeof(nameinfo),
                                                         (PBYTE*)&paNameInfos,
                                                         &cbNameInfos)))
-                             && (!(arc = DosRead(pExec->hfExe,
+                             && (!(arc = DosRead(pFile->hf,
                                                  paNameInfos,
                                                  cbNameInfos,
                                                  &cbRead)))
@@ -1706,25 +1971,44 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from doshExecO
                                             arc = ERROR_NOT_ENOUGH_MEMORY;
                                         else
                                         {
-                                            if (!(arc = doshReadAt(pExec->hfExe,
+                                            if (!(arc = doshReadAt(pFile,
                                                                    ulOffset,
-                                                                   FILE_BEGIN,
                                                                    &cbThis,
                                                                    pb)))
-                                                if (!ConvertWinIcon(pb,
-                                                                    cbThis,
-                                                                    ppbResData))
+                                            {
+                                                if (ulType == WINRT_ICON)
                                                 {
-                                                    fPtrFound = TRUE;
+                                                    ULONG cbConverted = 0;
+                                                    if (!ConvertWinIcon(pb,
+                                                                        cbThis,
+                                                                        ppbResData,
+                                                                        &cbConverted))
+                                                    {
+                                                        if (pcbResData)
+                                                            *pcbResData = cbConverted;
+                                                        fPtrFound = TRUE;
+                                                        break;
+                                                    }
+                                                    else
+                                                        // unknown format: keep looking
+                                                        free(pb);
                                                 }
-
-                                            free(pb);
-
-                                            if (arc)
-                                                break;      // for
-
-                                            if (fPtrFound)
-                                                break;      // for
+                                                else
+                                                {
+                                                    // not icon: just return this
+                                                    *ppbResData = pb;
+                                                    if (pcbResData)
+                                                        *pcbResData = cbThis;
+                                                    fPtrFound = TRUE;
+                                                    break;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                free(pb);
+                                                // stop reading, we have a problem
+                                                break;
+                                            }
                                         }
                                     }
                                 } // end for
@@ -1737,10 +2021,13 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from doshExecO
                         if (paNameInfos)
                             free(paNameInfos);
 
+                        // since this was the type we were looking
+                        // for, stop in any case
                         break;  // while
+
                     } // end if our type
                 }
-            }
+            } // end if (!(arc = DosRead(pExec->hfExe,
         } // end while (!arc)
 
         if ((!fPtrFound) && (!arc))
@@ -1753,7 +2040,9 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from doshExecO
 /*
  *@@ icoLoadExeIcon:
  *      smarter replacement for WinLoadFileIcon, which
- *      takes ages on PE executables.
+ *      takes ages on PE executables. This takes an
+ *      EXECUTABLE as returned from doshExecOpen as
+ *      input.
  *
  *      Note that as opposed to WinLoadFileIcon, this
  *      is intended for executables _only_. This does
@@ -1775,6 +2064,10 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from doshExecO
  *
  *      2)  Win16 NE, but only 32x32 icons in 16 colors.
  *
+ *      See icoLoadICOFile for the meaning of
+ *      the phptr, pcbIconData, and pbIconData
+ *      parameters.
+ *
  *      This returns:
  *
  *      --  NO_ERROR: a new pointer was built in *phptr.
@@ -1788,20 +2081,29 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from doshExecO
  *
  *      --  ERROR_NOT_ENOUGH_MEMORY
  *
+ *      --  ERROR_INVALID_PARAMETER: pExec is
+ *          invalid, or pcbIconData was NULL while
+ *          pbIconData was != NULL.
+ *
+ *      --  ERROR_BUFFER_OVERFLOW: *pcbIconData is too
+ *          small a size of pbIconData.
+ *
  *      plus the error codes of doshExecOpen.
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
-APIRET icoLoadExeIcon(PEXECUTABLE pExec,
-                      HPOINTER *phptr)
+APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from doshExecOpen
+                      HPOINTER *phptr,          // out: if != NULL, newly built HPOINTER
+                      PULONG pcbIconData,       // in/out: if != NULL, size of buffer required
+                      PBYTE pbIconData)         // out: if != NULL, icon data that was loaded
 {
-    APIRET arc;
+    APIRET  arc;
+    PBYTE   pbData = NULL;
+    ULONG   cbData = 0;
 
     TRY_LOUD(excpt1)
     {
-        PBYTE pbIconData = NULL;
-
         if (!pExec)
             return ERROR_INVALID_PARAMETER;
 
@@ -1813,7 +2115,8 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,
                 arc = LoadLXResource(pExec,
                                      RT_POINTER,
                                      0,         // first one found
-                                     &pbIconData);
+                                     &pbData,
+                                     &cbData);
             break;
 
             case EXEFORMAT_NE:
@@ -1823,7 +2126,8 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,
                         arc = LoadOS2NEResource(pExec,
                                                 RT_POINTER,
                                                 0,         // first one found
-                                                &pbIconData);
+                                                &pbData,
+                                                &cbData);
                         if (arc)
                             _Pmpf((__FUNCTION__ ": LoadOS2NEResource returned %d", arc));
                     break;
@@ -1833,7 +2137,8 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,
                         arc = LoadWinNEResource(pExec,
                                                 WINRT_ICON,
                                                 0,         // first one found
-                                                &pbIconData);
+                                                &pbData,
+                                                &cbData);
                         if (arc)
                             _Pmpf((__FUNCTION__ ": LoadWinNEResource returned %d", arc));
                     break;
@@ -1845,29 +2150,44 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,
 
             case EXEFORMAT_PE:          // @@todo later
 
-            case EXEFORMAT_OLDDOS:
-            case EXEFORMAT_TEXT_BATCH:
-            case EXEFORMAT_TEXT_REXX:
-
-            default:
+            default:        // includes COM, BAT, CMD
                 arc = ERROR_INVALID_EXE_SIGNATURE;
             break;
         }
 
-        if (!arc && pbIconData)
+        // output data
+        if (!arc)
         {
-            if (!(arc = icoBuildPtrHandle(pbIconData,
-                                          phptr)))
-                _Pmpf(("Built hptr %lX", *phptr));
+            if (pbData && cbData)
+            {
+                if (phptr)
+                    arc = icoBuildPtrHandle(pbData,
+                                            phptr);
+
+                if (pbIconData)
+                    if (!pcbIconData)
+                        arc = ERROR_INVALID_PARAMETER;
+                    else if (*pcbIconData < cbData)
+                        arc = ERROR_BUFFER_OVERFLOW;
+                    else
+                        memcpy(pbIconData,
+                               pbData,
+                               cbData);
+
+                if (pcbIconData)
+                    *pcbIconData = cbData;
+            }
             else
-                _Pmpf(("icoBuildPtrHandle returned %d", arc));
-            free(pbIconData);
+                arc = ERROR_NO_DATA;
         }
     }
     CATCH(excpt1)
     {
         arc = ERROR_PROTECTION_VIOLATION;
     } END_CATCH();
+
+    if (pbData)
+        free(pbData);
 
     if (arc)
         _Pmpf((__FUNCTION__ ": returning %d", arc));
@@ -2771,7 +3091,7 @@ VOID ReportError(PCREATENOTEBOOKPAGE pcnbp,
 {
     if (arc)
         cmnDosErrorMsgBox(pcnbp->hwndDlgPage,
-                          '?',
+                          NULL,
                           _wpQueryTitle(pcnbp->somSelf),
                           NULL,
                           arc,
@@ -2820,8 +3140,8 @@ VOID EditIcon(POBJICONPAGEDATA pData)
                                           &pFile)))
                 {
                     arc = doshWrite(pFile,
-                                    pIconInfo->pIconData,
-                                    pIconInfo->cbIconData);
+                                    pIconInfo->cbIconData,
+                                    pIconInfo->pIconData);
                     doshClose(&pFile);
                 }
 

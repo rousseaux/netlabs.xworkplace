@@ -307,6 +307,25 @@ VOID _Optlink fntOverflowRefresh(PTHREADINFO ptiMyself)
  *
  ********************************************************************/
 
+/*
+ *@@ Refresh:
+ *
+ *@@added V0.9.16 (2002-01-04) [umoeller]
+ */
+
+VOID Refresh(WPObject *pobj)
+{
+    if (_somIsA(pobj, _WPFolder))
+        // is folder: do not call _wpRefresh, this
+        // goes into the subfolders
+        fsysRefreshFSInfo(pobj, NULL);
+    else
+        // regular fs object: call wpRefresh directly,
+        // which we might have replaced if icon replacements
+        // are on
+        _wpRefresh(pobj, NULLHANDLE, NULL);
+}
+
 #define REMOVE_NOTHING  0
 #define REMOVE_NODE     1
 #define REMOVE_FOLDER   2
@@ -364,16 +383,14 @@ ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
         case RCNF_CHANGED:      // V0.9.16 (2001-10-28) [umoeller]
         {
             WPFileSystem *pobj;
-            if (pobj = fdrFindFSFromName(pNotify->pFolder,
-                                         pNotify->pShortName))
+            if (pobj = _wpclsFileSysExists(_WPFileSystem,
+                                           pNotify->pFolder,
+                                           pNotify->pShortName,
+                                           // attFile: this is probably no
+                                           // directory, or is it?
+                                           0))
             {
-                if (_somIsA(pobj, _WPFolder))
-                    fsysRefreshFSInfo(pobj, NULL);
-                else
-                    // regular fs object: call wpRefresh directly,
-                    // which we might have replaced if icon replacements
-                    // are on
-                    _wpRefresh(pobj, NULLHANDLE, NULL);
+                Refresh(pobj);
             }
         }
         break;
@@ -385,8 +402,13 @@ ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
             // to check if we have a WPFileSystem with this name
             // already
             WPFileSystem *pobj;
-            if (pobj = fdrFindFSFromName(pNotify->pFolder,
-                                         pNotify->pShortName))
+            if (pobj = _wpclsFileSysExists(_WPFileSystem,
+                                           pNotify->pFolder,
+                                           pNotify->pShortName,
+                                           // attrFile: either directory or file
+                                           (pNotify->CNInfo.bAction == RCNF_DIR_DELETED)
+                                                ? FILE_DIRECTORY
+                                                : 0))
             {
                 // yes, we have an FS object of that name:
                 // check if the file still physically exists...
@@ -429,7 +451,7 @@ ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
                         // valid file; instead, we refresh the
                         // FS object
                         // V0.9.16 (2001-12-06) [umoeller]
-                        fsysRefreshFSInfo(pobj, NULL);
+                        Refresh(pobj);
                 }
             }
             // else object not in folder: no problem there

@@ -2664,7 +2664,8 @@ BOOL xthrStartThreads(PVOID pLogFile)
              *
              */
 
-            if (pGlobalSettings->NoWorkerThread == 0)
+            // if (pGlobalSettings->NoWorkerThread == 0)
+                // removed this setting V0.9.16 (2002-01-04) [umoeller]
             {
                 // threads not disabled:
                 G_ulWorkerMsgCount = 0;

@@ -117,8 +117,9 @@ interface XWPTrashCan : WPFolder
 
     ULONG   ulBusyCount;            // raised or lowered with every xwpTrashCanBusy call
 
-    HPOINTER    hptrEmpty;          // icon for empty trash can
-    HPOINTER    hptrFull;           // icon for full trash can
+    // HPOINTER    hptrEmpty;          // icon for empty trash can
+    // HPOINTER    hptrFull;           // icon for full trash can
+            // removed those V0.9.16 (2002-01-01) [umoeller]
 
     BOOL    fOpeningSettings;       // TRUE while in wpOpen for settings view
 

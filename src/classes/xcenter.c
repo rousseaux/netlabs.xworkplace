@@ -58,6 +58,7 @@
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
 
+#define INCL_WINFRAMEMGR
 #define INCL_WINWINDOWMGR
 #define INCL_WINMESSAGEMGR
 #define INCL_WINMENUS           // for menu helpers
@@ -730,6 +731,7 @@ SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,
  *      frame.
  *
  *@@added V0.9.7 (2000-12-04) [umoeller]
+ *@@changed V0.9.16 (2001-12-31) [umoeller]: this never worked; now sending message to client properly
  */
 
 SOM_Scope BOOL  SOMLINK xctr_wpSwitchTo(XCenter *somSelf, ULONG View)
@@ -748,19 +750,28 @@ SOM_Scope BOOL  SOMLINK xctr_wpSwitchTo(XCenter *somSelf, ULONG View)
              pUseItem;
              pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
         {
-            PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
+            PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem + 1);
             if (pViewItem->view == View)
             {
+                HWND hwndClient;
                 // yes, it's an XCenter view:
                 // instead of activating the view (which is what
                 // the WPS normally does), show the frame on top
                 // and restart the update timer
                 // DO NOT GIVE FOCUS, DO NOT ACTIVATE
-                WinPostMsg(pViewItem->handle,
-                           XCM_REFORMAT,
-                           (MPARAM)XFMF_RESURFACE,
-                           0);
-                brc = TRUE;
+
+                    // duh, this must be posted to the client, not the
+                    // frame... V0.9.16 (2001-12-31) [umoeller]
+                if (hwndClient = WinWindowFromID(pViewItem->handle, FID_CLIENT))
+                {
+                    _Pmpf((__FUNCTION__ ": posting XFMF_RESURFACE to %lX", hwndClient));
+                    WinPostMsg(hwndClient,
+                               XCM_REFORMAT,
+                               (MPARAM)XFMF_RESURFACE,
+                               0);
+                    brc = TRUE;
+                }
+
                 break;
             }
         }

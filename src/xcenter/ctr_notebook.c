@@ -1715,13 +1715,16 @@ typedef struct _WIDGETRECORD
     RECORDCORE      recc;
             // pszIcon contains the widget's class name
 
-    ULONG           ulRootIndex;
+    // ULONG           ulRootIndex;
             // index of widget if it's a root widget;
             // otherwise (subwidget in some tray), this is -1
 
-    ULONG           ulParentIndex,
+    /* ULONG           ulParentIndex,
                     ulTrayIndex,
                     ulSubwidgetIndex;
+       */
+
+    WIDGETPOSITION  Position;           // V0.9.16 (2001-12-31) [umoeller]
 
     PSZ             pszIndex;           // points to szIndex
     CHAR            szIndex[40];
@@ -1828,33 +1831,36 @@ DosBeep(100, 100);
 
 PWIDGETRECORD InsertWidgetSetting(HWND hwndCnr,
                                   PPRIVATEWIDGETSETTING pSetting,
+                                  const WIDGETPOSITION *pPosition)
+                                  /*
                                   ULONG ulRootIndex,    // in: if -1, this is a subwidget;
                                                         // otherwise the widget index
                                   ULONG ulParentIndex,
                                   ULONG ulTrayIndex,
-                                  ULONG ulSubwidgetIndex)
+                                  ULONG ulSubwidgetIndex) */
 {
     PWIDGETRECORD preccThis = (PWIDGETRECORD)cnrhAllocRecords(hwndCnr,
                                                               sizeof(WIDGETRECORD),
                                                               1);
-    preccThis->ulRootIndex = ulRootIndex;
+    memcpy(&preccThis->Position, pPosition, sizeof(WIDGETPOSITION));
+    /* preccThis->ulRootIndex = ulRootIndex;
     preccThis->ulParentIndex = ulParentIndex;
     preccThis->ulTrayIndex = ulTrayIndex;
-    preccThis->ulSubwidgetIndex = ulSubwidgetIndex;
-    if (ulRootIndex == -1)
+    preccThis->ulSubwidgetIndex = ulSubwidgetIndex; */
+    if (pPosition->ulTrayWidgetIndex != -1)
     {
         // subwidget:
         sprintf(preccThis->szIndex,
                 "  %d.%d.%d",
-                ulParentIndex,
-                ulTrayIndex,
-                ulSubwidgetIndex);
+                pPosition->ulTrayWidgetIndex,
+                pPosition->ulTrayIndex,
+                pPosition->ulWidgetIndex);
     }
     else
     {
         sprintf(preccThis->szIndex,
                 "%d",
-                ulRootIndex);
+                pPosition->ulWidgetIndex);
     }
     preccThis->pszIndex = preccThis->szIndex;
     preccThis->recc.pszIcon = pSetting->Public.pszWidgetClass;
@@ -1958,39 +1964,50 @@ VOID ctrpWidgetsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         while (pNode)
         {
             PPRIVATEWIDGETSETTING pSetting = (PPRIVATEWIDGETSETTING)pNode->pItemData;
+            WIDGETPOSITION Pos;
+            Pos.ulTrayWidgetIndex = -1;
+            Pos.ulTrayIndex = -1;
+            Pos.ulWidgetIndex = ulIndex;
             InsertWidgetSetting(hwndCnr,
                                 pSetting,
-                                ulIndex,
-                                0,
-                                0,
-                                0);
+                                &Pos);
 
             if (pSetting->pllTraySettings)
             {
                 PLISTNODE pTrayNode = lstQueryFirstNode(pSetting->pllTraySettings);
-                ULONG ulTray = 0;
+                // ULONG ulTray = 0;
+
+                Pos.ulTrayWidgetIndex = ulIndex;
+                Pos.ulTrayIndex = 0;
+
                 while (pTrayNode)
                 {
                     PTRAYSETTING pTray = (PTRAYSETTING)pTrayNode->pItemData;
-                    ULONG ulSubwidget = 0;
+                    // ULONG ulSubwidget = 0;
                     PLISTNODE pSubwidgetNode = lstQueryFirstNode(&pTray->llSubwidgetSettings);
+
+                    Pos.ulWidgetIndex = 0;
+
                     while (pSubwidgetNode)
                     {
                         PPRIVATEWIDGETSETTING pSubwidget = (PPRIVATEWIDGETSETTING)pSubwidgetNode->pItemData;
 
                         InsertWidgetSetting(hwndCnr,
                                             pSubwidget,
-                                            -1,     // non-root
+                                            &Pos);
+                                            /* -1,     // non-root
                                             ulIndex,
                                             ulTray,
-                                            ulSubwidget);
+                                            ulSubwidget); */
 
-                        ulSubwidget++;
+                        // ulSubwidget++;
+                        (Pos.ulWidgetIndex)++;
                         pSubwidgetNode = pSubwidgetNode->pNext;
                     }
 
                     pTrayNode = pTrayNode->pNext;
-                    ulTray++;
+                    // ulTray++;
+                    (Pos.ulTrayIndex)++;
                 }
             }
 
@@ -2068,7 +2085,7 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         {
                             // for now, allow only dragging of root widgets
                             // @@todo
-                            if (((PWIDGETRECORD)pcdi->pRecord)->ulRootIndex != -1)
+                            if (((PWIDGETRECORD)pcdi->pRecord)->Position.ulTrayWidgetIndex == -1)
                                 cnrhInitDrag(pcdi->hwndCnr,
                                              pcdi->pRecord,
                                              usNotifyCode,
@@ -2245,12 +2262,12 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                 // (CN_DRAGAFTER), but xwpMoveWidget wants
                                 // the index of the widget _before_ which the
                                 // widget should be inserted:
-                                ulIndex = G_precAfter->ulRootIndex + 1;
+                                ulIndex = G_precAfter->Position.ulWidgetIndex + 1; // ulRootIndex + 1;
                             }
                             if (ulIndex != -2)
                                 // OK... move the widgets around:
                                 _xwpMoveWidget(pcnbp->somSelf,
-                                               G_precDragged->ulRootIndex,  // from
+                                               G_precDragged->Position.ulWidgetIndex, // ulRootIndex,  // from
                                                ulIndex);                // to
                                     // this saves the instance data
                                     // and updates the view
@@ -2325,7 +2342,7 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                                 // (CN_DRAGAFTER), but xwpMoveWidget wants
                                                 // the index of the widget _before_ which the
                                                 // widget should be inserted:
-                                                ulIndex = G_precAfter->ulRootIndex + 1;
+                                                ulIndex = G_precAfter->Position.ulWidgetIndex + 1; // ulRootIndex + 1;
                                             }
                                             if (ulIndex != -2)
                                             {
@@ -2428,7 +2445,11 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                )
             {
                 PWIDGETRECORD prec = (PWIDGETRECORD)pcnbp->preccSource;
-                if (prec->ulRootIndex != -1)
+                ctrpShowSettingsDlg(pcnbp->somSelf,
+                                    pcnbp->hwndDlgPage, // owner
+                                    &prec->Position);
+
+                /* if (prec->ulRootIndex != -1)
                     // root widget:
                     ctrpShowSettingsDlg(pcnbp->somSelf,
                                         pcnbp->hwndDlgPage, // owner
@@ -2441,6 +2462,7 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                         prec->ulParentIndex,
                                         prec->ulTrayIndex,
                                         prec->ulSubwidgetIndex);
+                */
             }
         break; }
 
@@ -2452,9 +2474,9 @@ MRESULT ctrpWidgetsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_CRMI_REMOVEWGT:
         {
             PWIDGETRECORD prec = (PWIDGETRECORD)pcnbp->preccSource;
-            if (prec->ulRootIndex != -1)        // @@todo
+            if (prec->Position.ulTrayWidgetIndex == -1) // ulRootIndex != -1)        // @@todo
                 _xwpRemoveWidget(pcnbp->somSelf,
-                                 prec->ulRootIndex);
+                                 prec->Position.ulWidgetIndex); // ulRootIndex);
                       // this saves the instance data
                       // and updates the view
                       // and also calls the init callback

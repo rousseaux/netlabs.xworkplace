@@ -432,7 +432,9 @@ BOOL fdrModifySortMenu(WPFolder *somSelf,
     BOOL brc = FALSE;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-    if (pGlobalSettings->ExtFolderSort)
+#ifndef __ALWAYSEXTSORT__
+    if (cmnIsFeatureEnabled(ExtendedSorting))
+#endif
     {
         MENUITEM mi;
 
@@ -556,7 +558,9 @@ BOOL fdrSortMenuItemSelected(WPFolder *somSelf,
     BOOL            brc = FALSE;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
-    if (pGlobalSettings->ExtFolderSort)
+#ifndef __ALWAYSEXTSORT__
+    if (cmnIsFeatureEnabled(ExtendedSorting))
+#endif
     {
         LONG            lMenuId2 = (LONG)ulMenuId - (LONG)pGlobalSettings->VarMenuOffset;
         LONG            lAlwaysSort,
@@ -1199,15 +1203,19 @@ BOOL fdrHasAlwaysSort(WPFolder *somSelf)
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XFolderData *somThis = XFolderGetData(somSelf);
 
-    if (pGlobalSettings->ExtFolderSort)
+#ifndef __ALWAYSEXTSORT__
+    if (cmnIsFeatureEnabled(ExtendedSorting))
+#endif
         return (_lAlwaysSort == SET_DEFAULT)
                    ? pGlobalSettings->AlwaysSort
                    : _lAlwaysSort;
 
+#ifndef __ALWAYSEXTSORT__
     if (_pFolderSortInfo)
         return (((PWPSSORTINFO)_pFolderSortInfo)->fAlwaysSort);
 
     return (FALSE);
+#endif
 }
 
 /*

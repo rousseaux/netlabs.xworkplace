@@ -50,6 +50,7 @@
 #define INCL_DOSRESOURCES
 #define INCL_DOSERRORS
 
+#define INCL_WINMESSAGEMGR
 #define INCL_WINDIALOGS
 #define INCL_WINBUTTONS
 #define INCL_WINENTRYFIELDS
@@ -93,12 +94,15 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
-#include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\icons.h"              // icons handling
-// #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
+#include "filesys\filesys.h"            // various file-system object implementation code
+#include "filesys\filetype.h"           // extended file types implementation
+#include "filesys\folder.h"             // XFolder implementation
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
+#include <wpicon.h>
+#include <wpptr.h>
 
 /* ******************************************************************
  *
@@ -124,7 +128,6 @@ static ULONG        G_cbStandardGEA2List = 0;
  *      Returns NULL on errors or if the EA doesn't exist.
  *
  *      The .SUBJECT extended attribute is a plain PSZ
-
  *      without line breaks.
  *
  *@@added V0.9.7 (2000-11-30) [umoeller]
@@ -416,6 +419,33 @@ BOOL fsysRefreshFSInfo(WPFileSystem *somSelf,
 
 /* ******************************************************************
  *
+ *   Drive data
+ *
+ ********************************************************************/
+
+/*
+ *@@ fsysQueryDriveData:
+ *
+ *@@added V0.9.16 (2002-01-01) [umoeller]
+ */
+
+PWPSDRIVEDATA fsysQueryDriveData(WPFileSystem *somSelf)
+{
+    PWPSDRIVEDATA pData = NULL;
+
+    xfTD_wpQueryDriveData pwpQueryDriveData;
+
+    if (pwpQueryDriveData = (xfTD_wpQueryDriveData)wpshResolveFor(
+                                                 somSelf,
+                                                 NULL, // use somSelf's class
+                                                 "wpQueryDriveData"))
+        pData = pwpQueryDriveData(somSelf);
+
+    return (pData);
+}
+
+/* ******************************************************************
+ *
  *   Populate / refresh
  *
  ********************************************************************/
@@ -437,21 +467,22 @@ BOOL fsysRefreshFSInfo(WPFileSystem *somSelf,
 
 VOID fsysCreateStandardGEAList(VOID)
 {
-    /* Entries in the GEA2 list
-    must be aligned on a doubleword boundary. Each oNextEntryOffset
-    field must contain the number of bytes from the beginning of the
-    current entry to the beginning of the next entry. */
+    /*
+        Entries in the GEA2 list
+        must be aligned on a doubleword boundary. Each oNextEntryOffset
+        field must contain the number of bytes from the beginning of the
+        current entry to the beginning of the next entry.
 
-    /* typedef struct _GEA2LIST {
-        ULONG     cbList;   // Total bytes of structure including full list.
-        GEA2      list[1];  // Variable-length GEA2 structures.
-    } GEA2LIST;
+        typedef struct _GEA2LIST {
+            ULONG     cbList;   // Total bytes of structure including full list.
+            GEA2      list[1];  // Variable-length GEA2 structures.
+        } GEA2LIST;
 
-    /* typedef struct _GEA2 {
-        ULONG     oNextEntryOffset;  // Offset to next entry.
-        BYTE      cbName;            // Name length not including NULL.
-        CHAR      szName[1];         // Attribute name.
-      } GEA2;
+        typedef struct _GEA2 {
+            ULONG     oNextEntryOffset;  // Offset to next entry.
+            BYTE      cbName;            // Name length not including NULL.
+            CHAR      szName[1];         // Attribute name.
+        } GEA2;
     */
 
     if (!G_StandardGEA2List)
@@ -505,6 +536,7 @@ VOID fsysCreateStandardGEAList(VOID)
                                           + pThis->cbName
                                           + 1;
 
+                // add padding, each entry must be dword-aligned
                 pThis->oNextEntryOffset += 3 - ((pThis->oNextEntryOffset + 3) & 0x03);
                             // 1:   1 + 3 = 4  = 0      should be 3
                             // 2:   2 + 3 = 5  = 1      should be 2
@@ -537,7 +569,7 @@ VOID fsysCreateStandardGEAList(VOID)
 PGEA2LIST GetGEA2List(VOID)
 {
     PGEA2LIST pList;
-    if (pList = malloc(G_cbStandardGEA2List))
+    if (pList = (PGEA2LIST)malloc(G_cbStandardGEA2List))
         memcpy(pList, G_StandardGEA2List, G_cbStandardGEA2List);
 
     return (pList);
@@ -548,6 +580,8 @@ PGEA2LIST GetGEA2List(VOID)
  *      called from PopulateWithFileSystems to
  *      allocate and set up a buffer for DosFindFirst/Next
  *      or DosQueryPathInfo.
+ *
+ *      Use fsysFreeFindBuffer to free the buf again.
  *
  *@@added V0.9.16 (2001-10-28) [umoeller]
  */
@@ -575,7 +609,7 @@ APIRET fsysCreateFindBuffer(PEAOP2 *pp)
 
         // since we try the same EAs for the objects, we
         // create a GEA2LIST only once and reuse that forever:
-        peaop2->fpGEA2List = GetGEA2List();     // freed on exit
+        peaop2->fpGEA2List = GetGEA2List();     // freed by fsysFreeFindBuffer
 
         // set up FEA2LIST output buffer: right after the leading EAOP2
         peaop2->fpFEA2List          = (PFEA2LIST)(peaop2 + 1);
@@ -585,6 +619,26 @@ APIRET fsysCreateFindBuffer(PEAOP2 *pp)
     }
 
     return (arc);
+}
+
+/*
+ *@@ fsysFreeFindBuffer:
+ *
+ *@@added V0.9.16 (2002-01-01) [umoeller]
+ */
+
+VOID fsysFreeFindBuffer(PEAOP2 *pp)
+{
+    PEAOP2 peaop;
+    if (    (pp)
+         && (peaop = *pp)
+       )
+    {
+        FREE(peaop->fpGEA2List);
+        DosFreeMem(peaop);
+
+        *pp = NULL;
+    }
 }
 
 /*
@@ -695,6 +749,924 @@ PBYTE fsysFindEAValue(PFEA2LIST pFEA2List2,      // in: file EA list
     return (NULL);
 }
 
+// find this many files at a time
+#define FIND_COUNT              300
+            // doesn't make a whole lot of difference whether
+            // I set this to 1 or 300 on my system, but maybe
+            // on SMP systems this helps?!?
+
+/*
+ *@@ DecodeLongname:
+ *
+ *@@added V0.9.16 (2001-10-25) [umoeller]
+ */
+
+BOOL DecodeLongname(PFEA2LIST pFEA2List2,
+                    PSZ pszLongname)          // out: .LONGNAME if TRUE is returned
+{
+    PBYTE pbValue;
+
+    if (pbValue = fsysFindEAValue(pFEA2List2,
+                                  ".LONGNAME",
+                                  NULL))
+    {
+        PUSHORT pusType = (PUSHORT)pbValue;
+        if (*pusType == EAT_ASCII)
+        {
+            // CPREF: first word after EAT_ASCII specifies length
+            PUSHORT pusStringLength = pusType + 1;      // pbValue + 2
+            if (*pusStringLength)
+            {
+                ULONG cb = _min(*pusStringLength, CCHMAXPATH - 1);
+                memcpy(pszLongname,
+                       pbValue + 4,
+                       cb);
+                pszLongname[cb] = '\0';
+                return (TRUE);
+            }
+        }
+    }
+
+    return (FALSE);
+}
+
+/*
+ *@@ CLASSINFO:
+ *
+ *@@added V0.9.16 (2001-10-28) [umoeller]
+ */
+
+typedef struct _FSCLASSINFO
+{
+    ULONG   whatever;
+    ULONG   cbObjData;          // if != 0, length of object data after szClassName
+    CHAR    szClassName[1];
+} FSCLASSINFO, *PFSCLASSINFO;
+
+/*
+ *@@ DecodeClassInfo:
+ *      decodes the .CLASSINFO EA, if present.
+ *      If so, it returns the name of the class
+ *      to be used for the folder or file.
+ *      Otherwise NULL is returned.
+ *
+ *      Note that this also sets the given POBJDATA
+ *      pointer to the OBJDATA structure found in
+ *      the classinfo. This ptr will always be set,
+ *      either to NULL or the OBJDATA structure.
+ *
+ *      If this returns NULL, the caller is responsible
+ *      for finding out the real folder or data file
+ *      class to be used.
+ *
+ *@@added V0.9.16 (2001-10-28) [umoeller]
+ */
+
+PCSZ DecodeClassInfo(PFEA2LIST pFEA2List2,
+                     PULONG pulClassNameLen,    // out: strlen of the return value
+                     POBJDATA *ppObjData)       // out: OBJDATA for _wpclsMakeAwake
+{
+    PCSZ        pcszClassName = NULL;
+    ULONG       ulClassNameLen = 0;
+
+    PBYTE pbValue;
+
+    *ppObjData = NULL;
+
+    if (pbValue = fsysFindEAValue(pFEA2List2,
+                                  ".CLASSINFO",
+                                  NULL))
+    {
+        PUSHORT pusType = (PUSHORT)pbValue;
+        if (*pusType == EAT_BINARY)
+        {
+            // CPREF: first word after EAT_BINARY specifies length
+            PUSHORT pusDataLength = pusType + 1;      // pbValue + 2
+
+            PFSCLASSINFO pInfo = (PFSCLASSINFO)(pusDataLength + 1); // pbValue + 4
+
+            if (ulClassNameLen = strlen(pInfo->szClassName))
+            {
+                if (pInfo->cbObjData)
+                {
+                    // we have OBJDATA after szClassName:
+                    *ppObjData = (POBJDATA)(   pInfo->szClassName
+                                             + ulClassNameLen
+                                             + 1);              // null terminator
+                }
+
+                pcszClassName = pInfo->szClassName;
+            }
+        }
+    }
+
+    *pulClassNameLen = ulClassNameLen;
+
+    return (pcszClassName);
+}
+
+/*
+ *@@ FindBestDataFileClass:
+ *      gets called for all instances of WPDataFile
+ *      to find the real data file class to be used
+ *      for instantiating the object.
+ *
+ *      Returns either the name of WPDataFile subclass,
+ *      if wpclsQueryInstanceType/Filter of a class
+ *      requested ownership of this object, or NULL
+ *      for the default "WPDataFile".
+ *
+ *@@added V0.9.16 (2001-10-28) [umoeller]
+ */
+
+PCSZ FindBestDataFileClass(PFEA2LIST pFEA2List2,
+                           PCSZ pcszObjectTitle)
+{
+    PCSZ pcszClassName = NULL;
+
+    PBYTE pbValue;
+
+    if (pbValue = fsysFindEAValue(pFEA2List2,
+                                  ".TYPE",
+                                  NULL))
+    {
+        // file has .TYPE EA:
+        PUSHORT pusType = (PUSHORT)pbValue;
+        if (*pusType == EAT_MVMT)
+        {
+            // layout of EAT_MVMT:
+            // 0    WORD     EAT_MVMT        (pusType)
+            // 2    WORD     usCodepage      (pusType + 1, pbValue + 2)
+            //               if 0, system default codepage
+            // 4    WORD     cEntries        (pusType + 2, pbValue + 4)
+            // 6    type 0   WORD    EAT_ASCII
+            //               WORD    length
+            //               CHAR[]  achType   (not null-terminated)
+            //      type 1   WORD    EAT_ASCII
+            //               WORD    length
+            //               CHAR[]  achType   (not null-terminated)
+
+            PUSHORT pusCodepage = pusType + 1;      // pbValue + 2
+            PUSHORT pcEntries = pusCodepage + 1;    // pbValue + 4
+
+            PBYTE   pbEAThis = (PBYTE)(pcEntries + 1);  // pbValue + 6
+
+            ULONG ul;
+            for (ul = 0;
+                 ul < *pcEntries;
+                 ul++)
+            {
+                PUSHORT pusTypeThis = (PUSHORT)pbEAThis;
+                if (*pusTypeThis == EAT_ASCII)
+                {
+                    PUSHORT pusLengthThis = pusTypeThis + 1;
+                    // next sub-EA:
+                    PSZ pszType  =   pbEAThis
+                                   + sizeof(USHORT)      // EAT_ASCII
+                                   + sizeof(USHORT);     // usLength
+                    PBYTE pbNext =   pszType
+                                   + (*pusLengthThis);   // skip string
+
+                    // null-terminate the type string
+                    CHAR c = *pbNext;
+                    *pbNext = '\0';
+                    // pszType now has the null-terminated type string:
+                    // try to find the class
+                    if (pcszClassName = ftypFindClassFromInstanceType(pszType))
+                        // we can stop here
+                        break;
+
+                    *pbNext = c;
+                    pbEAThis = pbNext;
+                }
+                else
+                    // non-ASCII: we cannot handle this!
+                    break;
+            }
+        }
+    }
+
+    if (!pcszClassName)
+        // instance types didn't help: then go for the
+        // instance filters
+        pcszClassName = ftypFindClassFromInstanceFilter(pcszObjectTitle);
+
+    return (pcszClassName);     // can be NULL
+}
+
+/*
+ *@@ RefreshOrAwake:
+ *      called by PopulateWithFileSystems for each file
+ *      or directory returned by DosFindFirst/Next.
+ *
+ *      On input, we get the sick FILEFINDBUF3 returned
+ *      from DosFindFirst/Next, which contains both
+ *      the EAs for the object and its real name.
+ *
+ *@@added V0.9.16 (2001-10-25) [umoeller]
+ */
+
+WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
+                             PFILEFINDBUF3 pfb3)
+{
+    WPFileSystem *pAwake = NULL;
+
+    // Alright, the caller has given us a pointer
+    // into the return buffer from DosFindFirst;
+    // we have declared this to be a FILEFINDBUF3
+    // here, but according to CPREF, the struct is
+    // _without_ the cchName and achName fields...
+
+    // My lord, who came up with this garbage?!?
+
+    // the FEA2LIST with the EAs comes after the
+    // truncated FILEFINDBUF3, that is, at the
+    // address where FILEFINDBUF3.cchName would
+    // normally be
+    PFEA2LIST pFEA2List2 = (PFEA2LIST)(   ((PBYTE)pfb3)
+                                        + FIELDOFFSET(FILEFINDBUF3,
+                                                      cchName));
+
+    // next comes a UCHAR with the name length
+    PUCHAR puchNameLen = (PUCHAR)(((PBYTE)pFEA2List2) + pFEA2List2->cbList);
+
+    // finally, the (real) name of the object
+    PSZ pszRealName = ((PBYTE)puchNameLen) + sizeof(UCHAR);
+
+    static ULONG s_ulWPDataFileLen = 0;
+
+    // _Pmpf((__FUNCTION__ ": processing %s", pszRealName));
+
+    // now, ignore "." and ".." which we don't want to see
+    // in the folder, of course
+    if (    (pszRealName[0] == '.')
+         && (    (*puchNameLen == 1)
+              || (    (*puchNameLen == 2)
+                   && (pszRealName[1] == '.')
+                 )
+            )
+       )
+        return (NULL);
+
+    if (!s_ulWPDataFileLen)
+        // on first call, cache length of "WPDataFile" string
+        s_ulWPDataFileLen = strlen(G_pcszWPDataFile);
+
+    // alright, apparently we got something:
+    // check if it is already awake (using the
+    // fast content tree functions)
+    if (pAwake = fdrFindFSFromName(pFolder,
+                                   pszRealName))
+    {
+        FILEFINDBUF4        ffb4;
+
+        _wpLockObject(pAwake);
+
+        // now set the refresh flags... since wpPopulate gets in turn
+        // called by wpRefresh, we are responsible for setting the
+        // "dirty" and "found" bits here, or the object will disappear
+        // from the folder on refresh.
+        // For about how this works, the Warp 4 WPSREF says:
+
+        //    1. Loop through all of the objects in the folder and turn on the DIRTYBIT
+        //       and turn off the FOUNDBIT for all of your objects.
+        //    2. Loop through the database. For every entry in the database, find the
+        //       corresponding object.
+        //         a. If the object exists, turn on the FOUNDBIT for the object.
+        //         b. If the object does not exist, create a new object with the
+        //            FOUNDBIT turned on and the DIRTYBIT turned off.
+        //    3. Loop through the objects in the folder again. For any object that has
+        //       the FOUNDBIT turned off, delete the object (since there is no longer a
+        //       corresponding entry in the database). For any object that has the
+        //       DIRTYBIT turned on, update the view with the current contents of the
+        //       object and turn its DIRTYBIT off.
+
+        // Now, since the objects disappear on refresh, I assume
+        // we need to set the FOUNDBIT to on; since we are refreshing
+        // here already, we can set DIRTYBIT to off as well.
+        fsysSetRefreshFlags(pAwake,
+                            (fsysQueryRefreshFlags(pAwake)
+                                & ~DIRTYBIT)
+                                | FOUNDBIT);
+
+        /* _wpQueryLastWrite(pAwake, &fdateLastWrite, &ftimeLastWrite);
+        _wpQueryLastAccess(pAwake, &fdateLastAccess, &ftimeLastAccess);
+        if (    (memcmp(&fdateLastWrite, &pfb3->fdateLastWrite, sizeof(FDATE)))
+             || (memcmp(&ftimeLastWrite, &pfb3->ftimeLastWrite, sizeof(FTIME)))
+             || (memcmp(&fdateLastAccess, &pfb3->fdateLastAccess, sizeof(FDATE)))
+             || (memcmp(&ftimeLastAccess, &pfb3->ftimeLastAccess, sizeof(FTIME)))
+           )
+        */
+
+        // this is way faster, I believe V0.9.16 (2001-12-18) [umoeller]
+        _wpQueryDateInfo(pAwake, &ffb4);
+
+        // in both ffb3 and ffb4, fdateCreation is the first date/time field;
+        // FDATE and FTIME are a USHORT each, and the decl in the toolkit
+        // has #pragma pack(2), so this should work
+        if (memcmp(&pfb3->fdateCreation,
+                   &ffb4.fdateCreation,
+                   3 * (sizeof(FDATE) + sizeof(FTIME))))
+        {
+            // object changed: go refresh it
+            if (_somIsA(pAwake, _WPFolder))
+                fsysRefreshFSInfo(pAwake, pfb3);
+            else
+                // regular fs object: call wpRefresh directly,
+                // which we might have replaced if icon replacements
+                // are on
+                _wpRefresh(pAwake, NULLHANDLE, pfb3);
+        }
+    }
+    else
+    {
+        // no: wake it up then... this is terribly complicated:
+        POBJDATA        pObjData = NULL;
+
+        CHAR            szLongname[CCHMAXPATH];
+        PSZ             pszTitle;
+
+        PCSZ            pcszClassName = NULL;
+        ULONG           ulClassNameLen;
+        somId           somidClassName;
+        SOMClass        *pClassObject;
+
+        // for the title of the new object, use the real
+        // name, unless we also find a .LONGNAME attribute,
+        // so decode the EA buffer
+        if (DecodeLongname(pFEA2List2, szLongname))
+            // got .LONGNAME:
+            pszTitle = szLongname;
+        else
+            // no .LONGNAME:
+            pszTitle = pszRealName;
+
+        // NOTE about the class management:
+        // At this point, we operate on class _names_
+        // only and do not mess with class objects yet. This
+        // is because we must take class replacements into
+        // account; that is, if the object says "i wanna be
+        // WPDataFile", it should really be XFldDataFile
+        // or whatever other class replacements are installed.
+        // While the _WPDataFile macro will not always correctly
+        // resolve (since apparently this code gets called
+        // too early to properly initialize the static variables
+        // hidden in the macro code), somFindClass _will_
+        // return the proper replacement classes.
+
+        // _Pmpf((__FUNCTION__ ": checking %s", pszTitle));
+
+        // decode the .CLASSINFO EA, which may give us a
+        // class name and the OBJDATA buffer
+        if (!(pcszClassName = DecodeClassInfo(pFEA2List2,
+                                              &ulClassNameLen,
+                                              &pObjData)))
+        {
+            // no .CLASSINFO:
+            // if this is a directory, use _WPFolder
+            if (pfb3->attrFile & FILE_DIRECTORY)
+                pcszClassName = G_pcszWPFolder;
+            // else for WPDataFile, keep NULL so we
+            // can determine the proper class name below
+        }
+        else
+        {
+            // we found a class name:
+            // if this is "WPDataFile", return NULL instead so we
+            // can still check for the default data file subclasses
+
+            // _Pmpf(("  got .CLASSINFO %s", pcszClassName));
+
+            if (    (s_ulWPDataFileLen == ulClassNameLen)
+                 && (!memcmp(G_pcszWPDataFile, pcszClassName, s_ulWPDataFileLen))
+               )
+                pcszClassName = NULL;
+        }
+
+        if (!pcszClassName)
+        {
+            // still NULL: this means we have no .CLASSINFO,
+            // or the .CLASSINFO specified "WPDataFile"
+            // (folders were ruled out before, so we do have
+            // a data file now)...
+            // for WPDataFile, we must run through the
+            // wpclsQueryInstanceType/Filter methods to
+            // find if any WPDataFile subclass wants this
+            // object to be its own (for example, .EXE files
+            // should be WPProgramFile instead)
+            pcszClassName = FindBestDataFileClass(pFEA2List2,
+                                                  // title (.LONGNAME or realname)
+                                                  pszTitle);
+                    // this returns either NULL or the
+                    // class object of a subclass
+
+            // _Pmpf(("  FindBestDataFileClass = %s", pcszClassName));
+        }
+
+        if (!pcszClassName)
+            // still nothing:
+            pcszClassName = G_pcszWPDataFile;
+
+        // now go load the class
+        if (somidClassName = somIdFromString((PSZ)pcszClassName))
+        {
+            if (!(pClassObject = _somFindClass(SOMClassMgrObject,
+                                               somidClassName,
+                                               0,
+                                               0)))
+            {
+                // this class is not installed:
+                // this can easily happen with multiple OS/2
+                // installations accessing the same partitions...
+                // to be on the safe side, use either
+                // WPDataFile or WPFolder then
+                if (pfb3->attrFile & FILE_DIRECTORY)
+                    pcszClassName = G_pcszWPFolder;
+                else
+                    pcszClassName = G_pcszWPDataFile;
+
+                SOMFree(somidClassName);
+                if (somidClassName = somIdFromString((PSZ)pcszClassName))
+                    pClassObject = _somFindClass(SOMClassMgrObject,
+                                                 somidClassName,
+                                                 0,
+                                                 0);
+            }
+        }
+
+        if (pClassObject)
+        {
+            MAKEAWAKEFS   awfs;
+
+            // alright, now go make the thing AWAKE
+            awfs.pszRealName        = pszRealName;
+
+            memcpy(&awfs.Creation, &pfb3->fdateCreation, sizeof(FDATETIME));
+            memcpy(&awfs.LastAccess, &pfb3->fdateLastAccess, sizeof(FDATETIME));
+            memcpy(&awfs.LastWrite, &pfb3->fdateLastWrite, sizeof(FDATETIME));
+
+            awfs.attrFile           = pfb3->attrFile;
+            awfs.cbFile             = pfb3->cbFile;
+            awfs.cbList             = pFEA2List2->cbList;
+            awfs.pFea2List          = pFEA2List2;
+
+            pAwake = _wpclsMakeAwake(pClassObject,
+                                     pszTitle,
+                                     0,                 // style
+                                     NULLHANDLE,        // icon
+                                     pObjData,          // null if no .CLASSINFO found
+                                     pFolder,           // folder
+                                     (ULONG)&awfs);
+        }
+
+        if (somidClassName)
+            SOMFree(somidClassName);
+    }
+
+    return (pAwake);
+}
+
+/*
+ *@@ SYNCHPOPULATETHREADS:
+ *      structure for communication between
+ *      PopulateWithFileSystems and fntFindFiles.
+ *
+ *@@added V0.9.16 (2001-10-28) [umoeller]
+ */
+
+typedef struct _SYNCHPOPULATETHREADS
+{
+    // input parameters copied from PopulateWithFileSystems
+    // so fntFindFiles knows what to look for
+    PCSZ            pcszFolderFullPath;     // wpQueryFilename(somSelf, TRUE)
+    PCSZ            pcszFileMask;           // NULL or file mask to look for
+    BOOL            fFoldersOnly;           // TRUE if folders only
+
+    // two 64K buffers allocated by PopulateWithFileSystems
+    // for use with DosFindFirst/Next;
+    // after DosFindFirst has found something in fntFindFiles,
+    // PopulateWithFileSystems() can process that buffer,
+    // while fntFindFiles can already run DosFindNext on the
+    // second buffer.
+    PEAOP2          pBuf1,      // fpGEA2List has GetGEA2List buffer to be freed
+                    pBuf2;
+
+    // current buffer to work on for PopulateWithFileSystems;
+    // set by fntFindFiles after each DosFindFirst/Next.
+    // This points into either pBuf1 or pBuf2 (after the
+    // EAOP2 structure).
+    // This must only be read or set by the owner of hmtxBuffer.
+    // As a special rule, if fntFindFiles sets this to NULL,
+    // it is done with DosFindFirst/Next.
+    PFILEFINDBUF3   pfb3;
+    ULONG           ulFindCount;        // find count from DosFindFirst/Next
+
+    // synchronization semaphores:
+    // 1) current owner of the buffer
+    //    RULE: only the owner of this mutex may post or
+    //    reset any of the event semaphores
+    HMTX            hmtxBuffer;
+    // 2) "buffer taken" event sem; posted by PopulateWithFileSystems
+    //    after it has copied the pfb3 pointer (before it starts
+    //    processing the buffer); fntFindFiles blocks on this before
+    //    switching the buffer again
+    HEV             hevBufTaken;
+    // 3) "buffer changed" event sem; posted by fntFindFiles
+    //    after it has switched the buffer so that
+    //    PopulateWithFileSystems knows new data is available
+    //    (or DosFindFirst/Next is done);
+    //    PopulateWithFileSystems blocks on this before processing
+    //    the buffer
+    HEV             hevBufPtrChanged;
+
+    // return code from fntFindFiles, valid only after exit
+    APIRET          arcReturn;
+
+} SYNCHPOPULATETHREADS, *PSYNCHPOPULATETHREADS;
+
+/*
+ *@@ fntFindFiles:
+ *      find-files thread started by PopulateWithFileSystems.
+ *      This actually does the DosFindFirst/Next loop and
+ *      fills a result buffer for PopulateWithFileSystems
+ *      to create objects from.
+ *
+ *      This allows us to get better CPU utilization since
+ *      DosFindFirst/Next produce a lot of idle time (waiting
+ *      for a disk transaction to complete), especially with
+ *      JFS. We can use this idle time to do all the
+ *      CPU-intensive object creation instead of doing
+ *      "find file" and "create object" synchronously.
+ *
+ *      Note that this requires a lot of evil synchronization
+ *      between the two threads. A SYNCHPOPULATETHREADS structure
+ *      is created on   PopulateWithFileSystems's stack to organize
+ *      this. See remarks there for details.
+ *
+ *      This thread does _not_ have a message queue.
+ *
+ *@@added V0.9.16 (2001-10-28) [umoeller]
+ */
+
+void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
+{
+    PSYNCHPOPULATETHREADS pspt = (PSYNCHPOPULATETHREADS)ptiMyself->ulData;
+    HDIR            hdirFindHandle = HDIR_CREATE;
+
+    BOOL            fSemBuffer = FALSE;
+    APIRET          arc;
+
+    TRY_LOUD(excpt1)
+    {
+        if (    (!(arc = DosCreateEventSem(NULL,    // unnamed
+                                           &pspt->hevBufTaken,
+                                           0,       // unshared
+                                           FALSE))) // not posted
+             && (!(arc = DosCreateEventSem(NULL,    // unnamed
+                                           &pspt->hevBufPtrChanged,
+                                           0,       // unshared
+                                           FALSE))) // not posted
+             && (!(arc = DosCreateMutexSem(NULL,
+                                           &pspt->hmtxBuffer,
+                                           0,
+                                           TRUE)))      // request! this blocks out the
+                                                        // second thread
+             && (fSemBuffer = TRUE)
+           )
+        {
+            CHAR            szFullMask[2*CCHMAXPATH];
+            ULONG           attrFind;
+            LONG            cb;
+
+            ULONG           ulFindCount;
+
+            PBYTE           pbCurrentBuffer;
+
+            PCSZ            pcszFileMask = pspt->pcszFileMask;
+
+            // crank up the priority of this thread so
+            // that we get the CPU as soon as there's new
+            // data from DosFindFirst/Next; since we are
+            // blocked most of the time, this ensures
+            // that the CPU is used most optimally
+            DosSetPriority(PRTYS_THREAD,
+                           PRTYC_TIMECRITICAL,
+                           2,
+                           0);      // current thread
+
+            // post thread semaphore so that thrCreate returns
+            DosPostEventSem(ptiMyself->hevRunning);
+
+            if (!pcszFileMask)
+                pcszFileMask = "*";
+
+            sprintf(szFullMask,
+                    "%s\\%s",
+                    pspt->pcszFolderFullPath,
+                    pcszFileMask);
+
+            if (pspt->fFoldersOnly)
+                attrFind =   MUST_HAVE_DIRECTORY
+                           | FILE_ARCHIVED | FILE_HIDDEN | FILE_SYSTEM | FILE_READONLY;
+            else
+                attrFind =   FILE_DIRECTORY
+                           | FILE_ARCHIVED | FILE_HIDDEN | FILE_SYSTEM | FILE_READONLY;
+
+            // on the first call, use buffer 1
+            pbCurrentBuffer = (PBYTE)pspt->pBuf1;
+
+            ulFindCount = FIND_COUNT;
+            arc = DosFindFirst(szFullMask,
+                               &hdirFindHandle,
+                               attrFind,
+                               pbCurrentBuffer,     // buffer
+                               FINDBUFSIZE,
+                               &ulFindCount,
+                               FIL_QUERYEASFROMLIST);
+
+            // start looping...
+            while (    (arc == NO_ERROR)
+                    || (arc == ERROR_BUFFER_OVERFLOW)
+                  )
+            {
+                // go process this file or directory
+                ULONG ulPosted;
+
+                // On output from DosFindFirst/Next, the buffer
+                // has the EAOP2 struct first, which we no
+                // longer care about... after that comes
+                // a truncated FILEFINDBUF3 with all the
+                // data we need, so give this to the populate
+                // thread, which calls RefreshOrAwake.
+
+                // Note that at this point, we _always_ own
+                // hmtxBuffer; on the first loop because it
+                // was initially requested, and later on
+                // because of the explicit request below.
+
+                // 1) set buffer pointer for populate thread
+                pspt->pfb3 = (PFILEFINDBUF3)(pbCurrentBuffer + sizeof(EAOP2));
+                pspt->ulFindCount = ulFindCount;        // items found
+                // 2) unset "buffer taken" event sem
+                DosResetEventSem(pspt->hevBufTaken, &ulPosted);
+                // 3) tell second thread we're going for DosFindNext
+                // now, which will block on this
+                // _Pmpf((__FUNCTION__ ": posting hevBufPtrChanged"));
+                DosPostEventSem(pspt->hevBufPtrChanged);
+
+                if (!ptiMyself->fExit)
+                {
+                    // 4) release buffer mutex; the second thread
+                    //    is blocked on this and will then run off
+                    // _Pmpf((__FUNCTION__ ": releasing hmtxBuffer"));
+                    DosReleaseMutexSem(pspt->hmtxBuffer);
+                    fSemBuffer = FALSE;
+
+                    // _Pmpf((__FUNCTION__ ": blocking on hevBufTaken"));
+                    if (    (!ptiMyself->fExit)
+                         && (!(arc = DosWaitEventSem(pspt->hevBufTaken,
+                                                     SEM_INDEFINITE_WAIT)))
+                            // check again, second thread might be exiting now
+                         && (!ptiMyself->fExit)
+                       )
+                    {
+                        // alright, we got something else:
+                        // request the buffer mutex again
+                        // and re-loop; above, we will block
+                        // again until the second thread has
+                        // taken the new buffer
+                        // _Pmpf((__FUNCTION__ ": blocking on hmtxBuffer"));
+                        if (    (!(arc = DosRequestMutexSem(pspt->hmtxBuffer,
+                                                            SEM_INDEFINITE_WAIT)))
+                           )
+                        {
+                            fSemBuffer = TRUE;
+                            // switch the buffer so we can load next file
+                            // while second thread is working on the
+                            // previous one
+                            if (pbCurrentBuffer == (PBYTE)pspt->pBuf1)
+                                pbCurrentBuffer = (PBYTE)pspt->pBuf2;
+                            else
+                                pbCurrentBuffer = (PBYTE)pspt->pBuf1;
+
+                            // find next:
+                            // _Pmpf((__FUNCTION__ ": DosFindNext"));
+                            ulFindCount = FIND_COUNT;
+                            arc = DosFindNext(hdirFindHandle,
+                                              pbCurrentBuffer,
+                                              FINDBUFSIZE,
+                                              &ulFindCount);
+                        }
+                    } // end if !DosWaitEventSem(pspt->hevBufTaken)
+
+                } // if (!ptiMyself->fExit)
+
+                if (ptiMyself->fExit)
+                    // we must exit for some reason:
+                    break;
+
+            } // while (arc == NO_ERROR)
+
+            if (arc == ERROR_NO_MORE_FILES)
+            {
+                // nothing found is not an error
+                arc = NO_ERROR;
+            }
+        }
+    }
+    CATCH(excpt1)
+    {
+        arc = ERROR_PROTECTION_VIOLATION;
+    } END_CATCH();
+
+    // post thread semaphore so that thrCreate returns,
+    // in case we haven't even gotten to the above call
+    DosPostEventSem(ptiMyself->hevRunning);
+
+    // cleanup:
+
+    DosFindClose(hdirFindHandle);
+
+    if (!fSemBuffer)
+        if (!DosRequestMutexSem(pspt->hmtxBuffer,
+                                SEM_INDEFINITE_WAIT))
+            fSemBuffer = TRUE;
+
+    // tell populate thread we're done
+    if (fSemBuffer)
+    {
+        // buffer == NULL means no more data
+        pspt->pfb3 = NULL;
+
+        // post "buf changed" because populate
+        // blocks on this
+        DosPostEventSem(pspt->hevBufPtrChanged);
+        DosReleaseMutexSem(pspt->hmtxBuffer);
+    }
+
+    // return what we have
+    pspt->arcReturn = arc;
+
+    // _Pmpf((__FUNCTION__ ": exiting"));
+}
+
+/*
+ *@@ fsysPopulateWithFSObjects:
+ *      called from fdrPopulate to get the file-system
+ *      objects.
+ *
+ *      This starts off a second thread which does
+ *      the DosFindFirst/Next loop. See fntFindFiles.
+ *
+ *      I do not think this can be sped up much more
+ *      since the populate code spends most of its
+ *      time blocked in DosFindFirst/Next, and the
+ *      idle time is already used to process the
+ *      SOM object creation. The bottleneck is
+ *      definitely DosFindFirst/Next here.
+ *
+ *@@added V0.9.16 (2001-10-25) [umoeller]
+ */
+
+BOOL fsysPopulateWithFSObjects(WPFolder *somSelf,
+                               PCSZ pcszFolderFullPath,  // in: wpQueryFilename(somSelf, TRUE)
+                               BOOL fFoldersOnly,
+                               PCSZ pcszFileMask,     // in: file mask or NULL for "*" (ignored if fFoldersOnly)
+                               PBOOL pfExit)          // in: exit flag
+{
+    APIRET      arc;
+
+    THREADINFO  tiFindFiles;
+    volatile TID tidFindFiles = 0;
+    SYNCHPOPULATETHREADS spt;
+
+    BOOL        fBufSem = FALSE;
+
+    memset(&spt, 0, sizeof(spt));
+    spt.pcszFileMask = pcszFileMask;
+    spt.pcszFolderFullPath = pcszFolderFullPath;
+    spt.fFoldersOnly = fFoldersOnly;
+
+            // allocate two 64K buffers
+    if (    (!(arc = fsysCreateFindBuffer(&spt.pBuf1)))
+         && (!(arc = fsysCreateFindBuffer(&spt.pBuf2)))
+            // create the find-files thread
+         && (thrCreate(&tiFindFiles,
+                       fntFindFiles,
+                       &tidFindFiles,
+                       "FindFiles",
+                       THRF_WAIT_EXPLICIT,      // no PM msg queue!
+                       (ULONG)&spt))
+       )
+    {
+        TRY_LOUD(excpt1)
+        {
+            while (!arc)
+            {
+                // go block until find-files has set the buf ptr
+                // _Pmpf((__FUNCTION__ ": blocking on hevBufPtrChanged"));
+                if (!(arc = WinWaitEventSem(spt.hevBufPtrChanged,
+                                            SEM_INDEFINITE_WAIT)))
+                {
+                    // _Pmpf((__FUNCTION__ ": blocking on hmtxBuffer"));
+                    if (!(arc = WinRequestMutexSem(spt.hmtxBuffer,
+                                                   SEM_INDEFINITE_WAIT)))
+                    {
+                        // OK, find-files released that sem:
+                        // we either have data now or we're done
+                        PFILEFINDBUF3   pfb3;
+                        ULONG           ulFindCount;
+                        ULONG           ulPosted;
+
+                        fBufSem = TRUE;
+
+                        DosResetEventSem(spt.hevBufPtrChanged, &ulPosted);
+
+                        // take the buffer pointer and the find count
+                        pfb3 = spt.pfb3;
+                        ulFindCount = spt.ulFindCount;
+
+                        // tell find-files we've taken that buffer
+                        DosPostEventSem(spt.hevBufTaken);
+                        // release buffer mutex, on which
+                        // find-files may have blocked
+                        DosReleaseMutexSem(spt.hmtxBuffer);
+                        fBufSem = FALSE;
+
+                        if (pfb3)
+                        {
+                            // we have more data:
+                            // run thru the buffer array
+                            ULONG ul;
+                            for (ul = 0;
+                                 ul < ulFindCount;
+                                 ul++)
+                            {
+                                // process this item
+                                RefreshOrAwake(somSelf,     // folder
+                                               pfb3);       // file
+                                // _Pmpf((__FUNCTION__ ": done with RefreshOrAwake"));
+
+                                // next item in buffer
+                                if (pfb3->oNextEntryOffset)
+                                    pfb3 = (PFILEFINDBUF3)(   (PBYTE)pfb3
+                                                            + pfb3->oNextEntryOffset
+                                                          );
+                            }
+                        }
+                        else
+                            // no more data, exit now!
+                            break;
+                    }
+                }
+
+                if (*pfExit)
+                    arc = -1;
+
+            } // end while (!arc)
+        }
+        CATCH(excpt1)
+        {
+            arc = ERROR_PROTECTION_VIOLATION;
+        } END_CATCH();
+
+        // tell find-files to exit too
+        tiFindFiles.fExit = TRUE;
+
+        // in case find-files is still blocked on this
+        DosPostEventSem(spt.hevBufTaken);
+
+        if (fBufSem)
+            DosReleaseMutexSem(spt.hmtxBuffer);
+
+        // wait for thread to terminate
+        // before freeing the buffers!!
+        while (tidFindFiles)
+        {
+            // _Pmpf((__FUNCTION__ ": tidFindFiles %lX is %d",
+               //  &tidFindFiles,
+                // tidFindFiles));
+            DosSleep(0);
+        }
+    }
+
+    fsysFreeFindBuffer(&spt.pBuf1);
+    fsysFreeFindBuffer(&spt.pBuf2);
+
+    if (spt.hevBufTaken)
+        DosCloseEventSem(spt.hevBufTaken);
+    if (spt.hevBufPtrChanged)
+        DosCloseEventSem(spt.hevBufPtrChanged);
+    if (spt.hmtxBuffer)
+        DosCloseMutexSem(spt.hmtxBuffer);
+
+    if (!arc)
+        arc = spt.arcReturn;
+
+    // return TRUE if no error
+    return (!arc);
+}
+
 /*
  *@@ fsysRefresh:
  *      implementation for our replacement XWPFileSystem::wpRefresh.
@@ -794,20 +1766,23 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
                                    pFEA2List2->cbList);       // EA size
                         // this calls _wpCnrRefreshDetails
 
-                // if we had an icon previously (WPS defers this
-                // if the record hasn't been made visible yet),
-                // check if we need to refresh this
+                // refresh the icon... if prec->hptrIcon is still
+                // NULLHANDLE, the WPS hasn't loaded the icon yet,
+                // so there's no need to refresh
                 if (prec->hptrIcon)
                 {
+                    // alright, we had an icon previously:
+                    ULONG flNewStyle = 0;
+
                     // check if we have an .ICON EA... in that case,
                     // always set the icon data
                     if (!(arc = icoBuildPtrFromFEA2List(pFEA2List2,
-                                                        &hptrNew)))
+                                                        &hptrNew,
+                                                        NULL,
+                                                        NULL)))
                     {
                         _wpSetIcon(somSelf, hptrNew);
-                        _wpModifyStyle(somSelf,
-                                       OBJSTYLE_NOTDEFAULTICON,
-                                       OBJSTYLE_NOTDEFAULTICON);
+                        flNewStyle = OBJSTYLE_NOTDEFAULTICON;
                         (_ulCnrRefresh)++;
                     }
 
@@ -819,11 +1794,29 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
                             // in case somebody just ran the resource
                             // compiler or something
                             _wpSetProgIcon(somSelf, NULL);
+                        else if (    (_somIsA(somSelf, _WPIcon))
+                                  || (_somIsA(somSelf, _WPPointer))
+                                )
+                        {
+                            _wpQueryFilename(somSelf, szFilename, TRUE);
+                            if (!icoLoadICOFile(szFilename,
+                                                &hptrNew,
+                                                NULL,
+                                                NULL))
+                            {
+                                _wpSetIcon(somSelf, hptrNew);
+                                flNewStyle = OBJSTYLE_NOTDEFAULTICON;
+                            }
+                        }
                         else if (_somIsA(somSelf, _WPDataFile))
                             // data file other than program file:
                             // set the association icon
                             _wpSetAssociatedFileIcon(somSelf);
                     }
+
+                    _wpModifyStyle(somSelf,
+                                   OBJSTYLE_NOTDEFAULTICON,
+                                   flNewStyle);
                 }
 
                 if (_ulCnrRefresh)
@@ -845,11 +1838,7 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
             _wpReleaseObjectMutexSem(Lock.pObject);
     }
 
-    if (peaop)
-    {
-        FREE(peaop->fpGEA2List);
-        DosFreeMem(peaop);
-    }
+    fsysFreeFindBuffer(&peaop);
 
     return (arc);
 }

@@ -955,15 +955,15 @@ XCRET ctrpCreateWidgetSetting(XCenter *somSelf,
  *
  *      Note that the index parameters work in two modes:
  *
- *      --  If (ulTrayWidgetIndex == -1), this finds a "root"
- *          widget, whose index must be specified
+ *      --  If (WIDGETPOSITION.ulTrayWidgetIndex == -1), this
+ *          finds a "root" widget, whose index must be specified
  *          in ulWidgetIndex. ulTrayIndex is ignored.
  *
- *      --  If (ulTrayWidgetIndex != -1), it is assumed to
- *          contain the index of a "root" tray widget. In that
- *          case ulTrayIndex specifies the tray in that tray
- *          widget and ulWidgetIndex the subwidget index in
- *          that tray.
+ *      --  If (WIDGETPOSITION.ulTrayWidgetIndex != -1), it is
+ *          assumed to contain the index of a "root" tray widget.
+ *          In that case, WIDGETPOSITION.ulTrayIndex specifies the
+ *          tray in that tray widget and WIDGETPOSITION.ulWidgetIndex
+ *          the subwidget index in that tray.
  *
  *      *ppViewData receives a pointer to the currently open
  *      widget view, if any. This will be set to NULL if
@@ -993,12 +993,11 @@ XCRET ctrpCreateWidgetSetting(XCenter *somSelf,
  *
  *@@added V0.9.14 (2001-08-01) [umoeller]
  *@@changed V0.9.16 (2001-10-18) [umoeller]: mostly rewritten
+ *@@changed V0.9.16 (2001-12-31) [umoeller]: now using WIDGETPOSITION struct
  */
 
 XCRET ctrpFindWidgetSetting(XCenter *somSelf,
-                            ULONG ulTrayWidgetIndex,   // in: tray widget index or -1
-                            ULONG ulTrayIndex,     // in: tray index in tray widget
-                            ULONG ulWidgetIndex,    // in: subwidget index in tray or root widget index
+                            PWIDGETPOSITION pPosition,  // in: widget position
                             PPRIVATEWIDGETSETTING *ppSetting, // out: widget setting
                             PXCENTERWIDGET *ppViewData) // out: view data or NULL; ptr can be NULL
 {
@@ -1014,11 +1013,11 @@ XCRET ctrpFindWidgetSetting(XCenter *somSelf,
     if (ppViewData)
         *ppViewData = NULL;
 
-    if (ulTrayWidgetIndex == -1)
+    if (pPosition->ulTrayWidgetIndex == -1)
     {
         // root widget:
         if (!(*ppSetting = lstItemFromIndex(pllWidgets,
-                                            ulWidgetIndex)))
+                                            pPosition->ulWidgetIndex)))
             arc = XCERR_INVALID_ROOT_WIDGET_INDEX;
         else
         {
@@ -1027,7 +1026,7 @@ XCRET ctrpFindWidgetSetting(XCenter *somSelf,
                )
             {
                 *ppViewData = (PXCENTERWIDGET)lstItemFromIndex(&pXCenterData->llWidgets,
-                                                               ulWidgetIndex);
+                                                               pPosition->ulWidgetIndex);
             }
         }
     }
@@ -1036,17 +1035,17 @@ XCRET ctrpFindWidgetSetting(XCenter *somSelf,
         PPRIVATEWIDGETSETTING pTrayWidgetSetting;
         PTRAYSETTING pTraySetting;
         if (!(pTrayWidgetSetting = lstItemFromIndex(pllWidgets,
-                                                    ulTrayWidgetIndex)))
+                                                    pPosition->ulTrayWidgetIndex)))
             // this doesn't exist at all:
             arc = XCERR_INVALID_ROOT_WIDGET_INDEX;
         else if (!(pTrayWidgetSetting->pllTraySettings))
             // this is no tray widget:
             arc = XCERR_ROOT_WIDGET_INDEX_IS_NO_TRAY;
         else if (!(pTraySetting = lstItemFromIndex(pTrayWidgetSetting->pllTraySettings,
-                                                   ulTrayIndex)))
+                                                   pPosition->ulTrayIndex)))
             arc = XCERR_INVALID_TRAY_INDEX;
         else if (!(*ppSetting = lstItemFromIndex(&pTraySetting->llSubwidgetSettings,
-                                                 ulWidgetIndex)))
+                                                 pPosition->ulWidgetIndex)))
             arc = XCERR_INVALID_SUBWIDGET_INDEX;
         else
             // all OK:
@@ -1056,14 +1055,14 @@ XCRET ctrpFindWidgetSetting(XCenter *somSelf,
             {
                 PPRIVATEWIDGETVIEW pTrayWidgetView;
                 if (    (pTrayWidgetView = lstItemFromIndex(&pXCenterData->llWidgets,
-                                                            ulTrayWidgetIndex))
+                                                            pPosition->ulTrayWidgetIndex))
                         // is the desired tray active?
-                     && (pTrayWidgetSetting->ulCurrentTray == ulTrayIndex)
+                     && (pTrayWidgetSetting->ulCurrentTray == pPosition->ulTrayIndex)
                      && (pTrayWidgetView->pllSubwidgetViews)
                    )
                 {
                     *ppViewData = (PXCENTERWIDGET)lstItemFromIndex(pTrayWidgetView->pllSubwidgetViews,
-                                                                   ulWidgetIndex);
+                                                                   pPosition->ulWidgetIndex);
                 }
             }
 

@@ -241,6 +241,9 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopArchivesPage(XFldDesktop *so
 SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopShutdownPage(XFldDesktop *somSelf,
                                                                 HWND hwndNotebook)
 {
+    ULONG ulrc = 0;
+
+#ifndef __NOXSHUTDOWN__
     PCREATENOTEBOOKPAGE pcnbp;
     HMODULE         savehmod = cmnQueryNLSModuleHandle(FALSE);
     // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
@@ -265,7 +268,10 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopShutdownPage(XFldDesktop *so
     pcnbp->ulPageID = SP_DTP_SHUTDOWN;
     pcnbp->pfncbInitPage    = xsdShutdownInitPage;
     pcnbp->pfncbItemChanged = xsdShutdownItemChanged;
-    return (ntbInsertPage(pcnbp));
+    ulrc = ntbInsertPage(pcnbp);
+#endif
+
+    return (ulrc);
 }
 
 /*
@@ -548,8 +554,11 @@ SOM_Scope BOOL  SOMLINK xfdesk_wpAddSettingsPages(XFldDesktop *somSelf,
         // insert "Menu" page
         _xwpInsertXFldDesktopMenuItemsPage(somSelf, hwndNotebook);
 
-        if (pGlobalSettings->fXShutdown)
+
+#ifndef __NOXSHUTDOWN__
+        if (cmnIsFeatureEnabled(XShutdown))
             _xwpInsertXFldDesktopShutdownPage(somSelf, hwndNotebook);
+#endif
 
 #ifndef __ALWAYSREPLACEARCHIVING__
         if (cmnIsFeatureEnabled(ReplaceArchiving))

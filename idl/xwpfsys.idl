@@ -95,6 +95,8 @@ interface XWPFileSystem : WPFileSystem
 
     wpSetTitleAndRenameFile: override;
 
+    wpQueryIcon: override;
+
     wpRefresh: override;
 
     wpCnrRefreshDetails: override;

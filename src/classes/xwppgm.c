@@ -11,8 +11,8 @@
  *      Installation of this class is optional.
  *
  *@@added V0.9.9 (2001-04-02) [umoeller]
- *@@somclass XWPProgram xpgm_
- *@@somclass M_XWPProgram xpgmM_
+ *@@somclass XWPProgram xpg_
+ *@@somclass M_XWPProgram xpgM_
  */
 
 /*
@@ -54,8 +54,10 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
-#define INCL_DOSSESMGR          // DosQueryAppType
+#define INCL_DOSPROCESS
+#define INCL_DOSEXCEPTIONS
 #define INCL_DOSSEMAPHORES
+#define INCL_DOSSESMGR          // DosQueryAppType
 #define INCL_DOSERRORS
 
 #define INCL_WINPOINTERS
@@ -64,18 +66,23 @@
 
 // C library headers
 #include <stdio.h>
+#include <setjmp.h>             // needed for except.h
+#include <assert.h>             // needed for except.h
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
+#include "helpers\apps.h"               // application helpers
 #include "helpers\dosh.h"
+#include "helpers\except.h"             // exception handling
 #include "helpers\standards.h"          // some standard macros
+#include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"
 
 // SOM headers which don't crash with prec. header files
 #include "xfobj.ih"
-// #include "xfdataf.ih"
+#include "xfdataf.ih"
 #include "xwppgm.ih"
 
 // XWorkplace implementation headers
@@ -86,6 +93,7 @@
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\filetype.h"           // extended file types implementation
+#include "filesys\icons.h"              // icons handling
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
@@ -112,14 +120,18 @@
  *      if extended associations are enabled.
  */
 
-SOM_Scope ULONG  SOMLINK xpgm_xwpAddAssociationsPage(XWPProgram *somSelf,
+SOM_Scope ULONG  SOMLINK xpg_xwpAddAssociationsPage(XWPProgram *somSelf,
                                                      HWND hwndNotebook)
 {
+    ULONG ulrc = 0;
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
     XWPProgramMethodDebug("XWPProgram","xwppgm_xwpAddAssociationsPage");
 
-    return (ftypInsertAssociationsPage(somSelf,
-                                       hwndNotebook));
+#ifndef __NEVEREXTASSOCS__
+    ulrc = ftypInsertAssociationsPage(somSelf,
+                                      hwndNotebook);
+#endif
+    return (ulrc);
 }
 
 /*
@@ -135,7 +147,7 @@ SOM_Scope ULONG  SOMLINK xpgm_xwpAddAssociationsPage(XWPProgram *somSelf,
  *@@changed V0.9.16 (2001-10-11) [umoeller]: adjusted to new implementation
  */
 
-SOM_Scope BOOL  SOMLINK xpgm_xwpQuerySetup2(XWPProgram *somSelf,
+SOM_Scope BOOL  SOMLINK xpg_xwpQuerySetup2(XWPProgram *somSelf,
                                             PVOID pstrSetup)
 {
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
@@ -173,13 +185,13 @@ SOM_Scope BOOL  SOMLINK xpgm_xwpQuerySetup2(XWPProgram *somSelf,
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xpgm_xwpNukePhysical(XWPProgram *somSelf)
+SOM_Scope BOOL  SOMLINK xpg_xwpNukePhysical(XWPProgram *somSelf)
 {
     static xfTD_wpDestroyObject pWPAbstract_wpDestroyObject = NULL;
 
     BOOL brc = FALSE;
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
-    XWPProgramMethodDebug("XWPProgram","xpgm_xwpNukePhysical");
+    XWPProgramMethodDebug("XWPProgram","xpg_xwpNukePhysical");
 
     if (!pWPAbstract_wpDestroyObject)
     {
@@ -213,6 +225,58 @@ SOM_Scope BOOL  SOMLINK xpgm_xwpNukePhysical(XWPProgram *somSelf)
 }
 
 /*
+ *@@ xwpQueryExecutable:
+ *      this new XWPProgram instance method writes the
+ *      executable that this program represents into
+ *      the specified buffer, which must be CCHMAXPATH
+ *      in size.
+ *
+ *      This method is handy if you only need the program's
+ *      executable and do not want to go thru the overhead
+ *      of calling wpQueryProgDetails.
+ *
+ *      Returns FALSE if the internal executable data is
+ *      empty or invalid.
+ *
+ *@@added V0.9.16 (2002-01-04) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xpg_xwpQueryExecutable(XWPProgram *somSelf,
+                                               PSZ pszBuffer)
+{
+    HOBJECT     hobj;
+    WPObject    *pobj;
+
+    XWPProgramData *somThis = XWPProgramGetData(somSelf);
+    XWPProgramMethodDebug("XWPProgram","xpg_xwpQueryExecutable");
+
+    if (_pulExecutableHandle)
+    {
+        if (*_pulExecutableHandle == 0xFFFF)
+        {
+            // command line
+            strcpy(pszBuffer, "*");
+            return (TRUE);
+        }
+        else if (_pszExecutable)
+        {
+            // executable string present: use that instead
+            strhncpy0(pszBuffer, _pszExecutable, CCHMAXPATH);
+            return (TRUE);
+        }
+        else if (   (hobj = *_pulExecutableHandle)
+                 && (pobj = _wpclsQueryObject(_WPObject,
+                                              hobj | (G_usHiwordFileSystem << 16)))
+                 && (_somIsA(pobj, _WPFileSystem))
+                 && (_wpQueryFilename(pobj, pszBuffer, TRUE))
+                )
+            return (TRUE);
+    }
+
+    return (FALSE);
+}
+
+/*
  *@@ wpInitData:
  *      this WPObject instance method gets called when the
  *      object is being initialized (on wake-up or creation).
@@ -222,15 +286,21 @@ SOM_Scope BOOL  SOMLINK xpgm_xwpNukePhysical(XWPProgram *somSelf)
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
 
-SOM_Scope void  SOMLINK xpgm_wpInitData(XWPProgram *somSelf)
+SOM_Scope void  SOMLINK xpg_wpInitData(XWPProgram *somSelf)
 {
     XWPProgramData *somThis = XWPProgramGetData(somSelf);
-    XWPProgramMethodDebug("XWPProgram","xpgm_wpInitData");
+    XWPProgramMethodDebug("XWPProgram","xpg_wpInitData");
 
     XWPProgram_parent_WPProgram_wpInitData(somSelf);
 
-    // clear all the pointers
-    memset(somThis, 0, sizeof(*somThis));
+    _fNeedsSetProgIcon = FALSE;
+    _pvpszEnvironment = NULL;
+    _pSWPInitial = NULL;
+    _pulExecutableHandle = NULL;
+    _pulStartupDirHandle = NULL;
+    _pProgType = NULL;
+    _pszExecutable = NULL;
+    _pszParameters = NULL;
 }
 
 /*
@@ -244,16 +314,13 @@ SOM_Scope void  SOMLINK xpgm_wpInitData(XWPProgram *somSelf)
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
 
-SOM_Scope void  SOMLINK xpgm_wpUnInitData(XWPProgram *somSelf)
+SOM_Scope void  SOMLINK xpg_wpUnInitData(XWPProgram *somSelf)
 {
     XWPProgramData *somThis = XWPProgramGetData(somSelf);
-    XWPProgramMethodDebug("XWPProgram","xpgm_wpUnInitData");
+    XWPProgramMethodDebug("XWPProgram","xpg_wpUnInitData");
 
-    if (_pvStringArray)
-    {
-        free(_pvStringArray);
-        _pvStringArray = NULL;
-    }
+    FREE(_pszExecutable);
+    FREE(_pszParameters);
 
     XWPProgram_parent_WPProgram_wpUnInitData(somSelf);
 }
@@ -269,11 +336,11 @@ SOM_Scope void  SOMLINK xpgm_wpUnInitData(XWPProgram *somSelf)
  *@@added V0.9.12 (2001-05-26) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xpgm_wpSaveState(XWPProgram *somSelf)
+SOM_Scope BOOL  SOMLINK xpg_wpSaveState(XWPProgram *somSelf)
 {
     BOOL brc;
     // XWPProgramData *somThis = XWPProgramGetData(somSelf);
-    XWPProgramMethodDebug("XWPProgram","xpgm_wpSaveState");
+    XWPProgramMethodDebug("XWPProgram","xpg_wpSaveState");
 
     brc = XWPProgram_parent_WPProgram_wpSaveState(somSelf);
 
@@ -289,12 +356,12 @@ SOM_Scope BOOL  SOMLINK xpgm_wpSaveState(XWPProgram *somSelf)
  *@@added V0.9.12 (2001-05-26) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xpgm_wpRestoreState(XWPProgram *somSelf,
+SOM_Scope BOOL  SOMLINK xpg_wpRestoreState(XWPProgram *somSelf,
                                             ULONG ulReserved)
 {
     BOOL brc;
     // XWPProgramData *somThis = XWPProgramGetData(somSelf);
-    XWPProgramMethodDebug("XWPProgram","xpgm_wpRestoreState");
+    XWPProgramMethodDebug("XWPProgram","xpg_wpRestoreState");
 
     brc = XWPProgram_parent_WPProgram_wpRestoreState(somSelf,
                                                      ulReserved);
@@ -322,7 +389,7 @@ SOM_Scope BOOL  SOMLINK xpgm_wpRestoreState(XWPProgram *somSelf,
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xpgm_wpRestoreData(XWPProgram *somSelf,
+SOM_Scope BOOL  SOMLINK xpg_wpRestoreData(XWPProgram *somSelf,
                                            PSZ pszClass,
                                            ULONG ulKey,
                                            PBYTE pValue,
@@ -331,7 +398,7 @@ SOM_Scope BOOL  SOMLINK xpgm_wpRestoreData(XWPProgram *somSelf,
     BOOL brc,
          fMakeCopy = FALSE;
     XWPProgramData *somThis = XWPProgramGetData(somSelf);
-    XWPProgramMethodDebug("XWPProgram","xpgm_wpRestoreData");
+    XWPProgramMethodDebug("XWPProgram","xpg_wpRestoreData");
 
     // intercept pointer to internal WPProgram data
     if (!strcmp(pszClass, "WPProgramRef"))
@@ -353,18 +420,24 @@ SOM_Scope BOOL  SOMLINK xpgm_wpRestoreData(XWPProgram *somSelf,
             case 10:        // internal WPProgram key for array of strings
                 // this is tricky, because in this case we won't have
                 // a pointer to WPProgram data... seems like a temporary
-                // stack pointer. Restore the chunk and make a copy
-                // of the entire data in our own instance data instead.
+                // stack pointer. Call the parent first to get the data
+                // and then parse the buffer below.
                 fMakeCopy = TRUE;
             break;
 
             case 11:        // internal WPProgram key for array of LONG values
-                _pvProgramLongs = pValue;
+                // apparently, this points to several LONG values then:
+                // 1) executable fsh; even though this is 16-bit, it's a ULONG
+                // 2) startup dir fsh; even though this is 16-bit, it's a ULONG
+                // 3) next one is unknown to me
+                // 4) PROGTYPE structure, which has two ULONGS
+                // the following are unknown to me
 
-                // apparently, this points to SIX LONG values then:
-                // 1) executable fsh
-                // 2) startup dir fsh
-                // 3) the other four are unknown to me
+                _pulExecutableHandle = (PULONG)pValue;
+                _pulStartupDirHandle = _pulExecutableHandle + 1;
+                // third item unknown
+                _pProgType = (PPROGTYPE)(_pulStartupDirHandle + 2);
+                                // two ULONGs!
             break;
        }
     }
@@ -377,14 +450,84 @@ SOM_Scope BOOL  SOMLINK xpgm_wpRestoreData(XWPProgram *somSelf,
 
     if ((brc) && (fMakeCopy) && (pcbValue) && (*pcbValue))
     {
-        if (_pvStringArray)
-            free(_pvStringArray);
-        _cbStringArray = *pcbValue;
-        _pvStringArray = malloc(_cbStringArray);
-        memcpy(_pvStringArray, pValue, _cbStringArray);
+        TRY_LOUD(excpt1)
+        {
+            PSZ pThis = (PSZ)pValue;
+            // each string array entry has a USHORT index
+            // first; if that is 0xFFFF, this was the last
+            // entry
+            while (TRUE)
+            {
+                USHORT usIndex = *(PUSHORT)pThis;
+                if (usIndex == 0xFFFF)
+                    break;
+
+                // string data comes after the USHORT
+                pThis += sizeof(USHORT);
+                switch (usIndex)
+                {
+                    case 0:
+                        strhStore(&_pszExecutable,
+                                  pThis,
+                                  NULL);
+                    break;
+
+                    case 1:
+                        strhStore(&_pszParameters,
+                                  pThis,
+                                  NULL);
+                    break;
+                }
+
+                pThis += strlen(pThis) + 1;
+            }
+        }
+        CATCH(excpt1)
+        {
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "program object %s crashed",
+                   _wpQueryTitle(somSelf));
+        } END_CATCH();
     }
 
     return (brc);
+}
+
+/*
+ *@@ wpObjectReady:
+ *      this WPObject notification method gets called by the
+ *      WPS when object instantiation is complete, for any reason.
+ *      ulCode and refObject signify why and where from the
+ *      object was created.
+ *      The parent method must be called first.
+ *
+ *      See XFldObject::wpObjectReady for remarks about using
+ *      this method as a copy constructor.
+ *
+ *      In here, we check for whether a non-default icon
+ *      was loaded for the object from the INI file. If not,
+ *      we call XWPProgram::wpSetProgIcon. See remarks there
+ *      for details.
+ *
+ *@@added V0.9.16 (2002-01-04) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xpg_wpObjectReady(XWPProgram *somSelf,
+                                          ULONG ulCode, WPObject* refObject)
+{
+    XWPProgramData *somThis = XWPProgramGetData(somSelf);
+    XWPProgramMethodDebug("XWPProgram","xpg_wpObjectReady");
+
+    XWPProgram_parent_WPProgram_wpObjectReady(somSelf, ulCode,
+                                              refObject);
+
+    if (    (_fNeedsSetProgIcon)        // set by first wpSetProgIcon
+         && (!(_wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON))
+       )
+    {
+        _fNeedsSetProgIcon = FALSE;
+        _wpSetProgIcon(somSelf, NULL);
+    }
 }
 
 /*
@@ -404,68 +547,99 @@ SOM_Scope BOOL  SOMLINK xpgm_wpRestoreData(XWPProgram *somSelf,
  *      or an OPEN setup string, this will not be on thread 1.
  *
  *@@added V0.9.12 (2001-05-22) [umoeller]
+ *@@changed V0.9.16 (2002-01-04) [umoeller]: if ext assocs are enabled, xwp now handles program open too
  */
 
-SOM_Scope HWND  SOMLINK xpgm_wpOpen(XWPProgram *somSelf, HWND hwndCnr,
+SOM_Scope HWND  SOMLINK xpg_wpOpen(XWPProgram *somSelf, HWND hwndCnr,
                                     ULONG ulView, ULONG param)
 {
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     XWPProgramData *somThis = XWPProgramGetData(somSelf);
-    XWPProgramMethodDebug("XWPProgram","xpgm_wpOpen");
+    XWPProgramMethodDebug("XWPProgram","xpg_wpOpen");
 
-/*
-    _Pmpf((__FUNCTION__ ": _pvProgramLongs is 0x%lX", _pvProgramLongs));
-    if (_pvProgramLongs)
+#ifndef __NEVEREXTASSOCS__
+    if (cmnIsFeatureEnabled(ExtAssocs))
     {
-        CHAR sz[CCHMAXPATH] = "unknown";
-        HOBJECT hobj = *(PULONG)_pvProgramLongs;
-        if (hobj)
+        /* _Pmpf((__FUNCTION__ ": _pvProgramLongs is 0x%lX", _pvProgramLongs));
+        if (_pvProgramLongs)
         {
-            WPObject *pobj = _wpclsQueryObject(_WPObject,
-                                               hobj | 0x30000);
-            if (pobj)
-                _wpQueryFilename(pobj, sz, TRUE);
+            CHAR sz[CCHMAXPATH] = "unknown";
+            HOBJECT hobj = *(PULONG)_pvProgramLongs;
+            if (hobj)
+            {
+                WPObject *pobj;
+                if (    (pobj = _wpclsQueryObject(_WPObject,
+                                                  hobj | (G_usHiwordFileSystem << 16)))
+                     && (_somIsA(pobj, _WPFileSystem))
+                   )
+                    _wpQueryFilename(pobj, sz, TRUE);
+            }
+            _Pmpf(("  executable: hobj = 0x%lX, \"%s\"", hobj, sz));
         }
-        _Pmpf(("  executable: hobj = 0x%lX, \"%s\"", hobj, sz));
-    }
 
-    _Pmpf((__FUNCTION__ ": _pvStringArray is 0x%lX, cb %d",
-                        _pvStringArray, _cbStringArray));
-    if (_pvStringArray && _cbStringArray)
-    {
-        // WPS uses a very strange format for the string array:
-        // each string starts with a USHORT string _index_,
-        // followed by the null-terminated string; the last
-        // string is marked with a USHORT 0xFFFF index
-        PBYTE pThis = _pvStringArray;
-        USHORT usIndexThis;
-
-        while (0xFFFF != (usIndexThis = *(PUSHORT)pThis))
+        _Pmpf((__FUNCTION__ ": _pvStringArray is 0x%lX, cb %d",
+                            _pvStringArray, _cbStringArray));
+        if (_pvStringArray && _cbStringArray)
         {
-            pThis += sizeof(USHORT);
+            // WPS uses a very strange format for the string array:
+            // each string starts with a USHORT string _index_,
+            // followed by the null-terminated string; the last
+            // string is marked with a USHORT 0xFFFF index
+            PBYTE pThis = _pvStringArray;
+            USHORT usIndexThis;
 
-            _Pmpf(("  string %d: \"%s\"", usIndexThis, pThis));
+            while (0xFFFF != (usIndexThis = *(PUSHORT)pThis))
+            {
+                pThis += sizeof(USHORT);
 
-            pThis += strlen(pThis) + 1;
+                _Pmpf(("  string %d: \"%s\"", usIndexThis, pThis));
+
+                pThis += strlen(pThis) + 1;
+            }
         }
-    }
 
-    _Pmpf((__FUNCTION__ ": _pvpszEnvironment is 0x%lX",
-                        _pvpszEnvironment));
-    if (_pvpszEnvironment)
-    {
-        PSZ pszThis = _pvpszEnvironment;
-        while (*pszThis != 0)
+        _Pmpf((__FUNCTION__ ": _pvpszEnvironment is 0x%lX",
+                            _pvpszEnvironment));
+        if (_pvpszEnvironment)
         {
-            _Pmpf(("  \"%s\"", pszThis));
-            pszThis += strlen(pszThis) + 1;
+            PSZ pszThis = _pvpszEnvironment;
+            while (*pszThis != 0)
+            {
+                _Pmpf(("  \"%s\"", pszThis));
+                pszThis += strlen(pszThis) + 1;
+            }
         }
-    }
+        */
 
-    if (ulView == OPEN_RUNNING)
-        return (progOpenProgram(somSelf,
-                                NULL,           // no data file argument
-                                0));            // no menu ID
-*/
+        if (ulView == OPEN_RUNNING)
+        {
+            HWND hwnd = NULLHANDLE;
+            APIRET arc;
+            CHAR szFailing[CCHMAXPATH];
+
+            if (arc = progOpenProgram(somSelf,
+                                      NULL,      // no assoc data file
+                                      ulView,
+                                      &hwnd,
+                                      sizeof(szFailing),
+                                      szFailing))
+            {
+                // error opening program: ask user if he wants
+                // to change the settings
+                if (cmnProgramErrorMsgBox(NULLHANDLE,
+                                          somSelf,
+                                          szFailing,
+                                          arc)
+                            == MBID_YES)
+                    krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
+                                            (MPARAM)somSelf,
+                                            (MPARAM)OPEN_SETTINGS);
+            }
+
+            return (hwnd);
+        }
+    } // end if (pGlobalSettings->fExtAssocs)
+#endif
 
     return (XWPProgram_parent_WPProgram_wpOpen(somSelf, hwndCnr,
                                                ulView, param));
@@ -474,33 +648,218 @@ SOM_Scope HWND  SOMLINK xpgm_wpOpen(XWPProgram *somSelf, HWND hwndCnr,
 /*
  *@@ wpQueryIcon:
  *      this WPObject instance method returns the HPOINTER
- *      with the current icon of the object.
+ *      with the current icon of the object. For some WPS
+ *      classes, icon loading is deferred until the first
+ *      call to this method.
+ *      See icons.c for an introduction.
  *
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
 
-SOM_Scope HPOINTER  SOMLINK xpgm_wpQueryIcon(XWPProgram *somSelf)
+SOM_Scope HPOINTER  SOMLINK xpg_wpQueryIcon(XWPProgram *somSelf)
 {
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
-    XWPProgramMethodDebug("XWPProgram","xpgm_wpQueryIcon");
+    XWPProgramMethodDebug("XWPProgram","xpg_wpQueryIcon");
 
     return (XWPProgram_parent_WPProgram_wpQueryIcon(somSelf));
+
+    // if (!(_wpQueryStyle(somSelf) & OBJSTYLE_NOTDEFAULTICON))
+
 }
 
 /*
  *@@ wpSetProgIcon:
+ *      this instance method exists for both WPProgram and
+ *      WPProgramFile and is supposed to set the visual icon
+ *      for this executable file to the appropriate custom or
+ *      default icon.
+ *
+ *      There are several reasons why we must replace this
+ *      if icon replacements are on. Basically, icon management
+ *      for abstracts apparently sucks even worse than that of
+ *      data files.
+ *
+ *      The execution flow during object initialization is:
+ *
+ *      1)  WPProgram::wpRestoreState calls this even
+ *          before calling the parent WPAbstract::wpRestoreState.
+ *
+ *      2)  Only WPAbstract::wpRestoreState looks in
+ *          the INI file if the abstract has a non-default
+ *          icon.
+ *
+ *      After long, long debugging sessions I have identified
+ *      this method to be responsible for nuking my standard
+ *      icons. In the worst case (which isn't all that rare),
+ *      the following happens:
+ *
+ *      1)  WPProgram::wpRestoreState calls this method and
+ *          we set a default executable icon, e.g. for a
+ *          VIO window.
+ *
+ *      2)  WPProgram::wpRestoreState calls its parent,
+ *          WPAbstract::wpRestoreState.
+ *
+ *      3)  WPAbstract::wpRestoreState calls WPObject::wpRestoreState
+ *          and restores the object style. Even if we set
+ *          OBJSTYLE_NOTDEFAULTICON a thousand times here,
+ *          that style will be overwritten there.
+ *
+ *      4)  WPProgram::wpRestoreState then restores the icon
+ *          data from OS2.INI if OBJSTYLE_NOTDEFAULTICON was
+ *          set in the restored style. In the call to
+ *          WPObject::wpSetIcon that follows, the WPS then
+ *          nukes our default icon that was set during (1).
+ *
+ *      Sigh. Yes, the WPS apparently first goes thru the
+ *      effort of finding an icon in the entire executable
+ *      just to throw it away again right afterwards. In
+ *      addition, it kills default icons.
+ *
+ *      Sooo... if icon replacements are enabled, what we
+ *      MUST do is check for whether the object is
+ *      initialized; if not, we simply return TRUE. In
+ *      our XWPProgram::wpObjectReady override, we then
+ *      call this method again if the OBJSTYLE_NOTDEFAULTICON
+ *      flag wasn't set during wpRestoreState. This is not
+ *      only _way_ faster but doesn't consume as many system
+ *      resources.
+ *
+ *      If the object is initialized, we perform pretty much
+ *      the same processing as with XWPProgramFile, i.e. we
+ *      either load an icon from the executable or set a
+ *      default icon. This method can be called several times
+ *      (and will be called, e.g. if the user changes the
+ *      executable).
  *
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xpgm_wpSetProgIcon(XWPProgram *somSelf,
+SOM_Scope BOOL  SOMLINK xpg_wpSetProgIcon(XWPProgram *somSelf,
                                            PFEA2LIST pfeal)
 {
-    /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
-    XWPProgramMethodDebug("XWPProgram","xpgm_wpSetProgIcon");
+    BOOL            brc = FALSE;
+    CHAR            szExecutable[CCHMAXPATH];
+    HPOINTER        hptr = NULLHANDLE;
+    BOOL        fNotDefaultIcon = FALSE;
+    APIRET      arc;
+    BOOL        fRunReplacement;
 
-    return (XWPProgram_parent_WPProgram_wpSetProgIcon(somSelf,
-                                                      pfeal));
+    XWPProgramData *somThis = XWPProgramGetData(somSelf);
+    XWPProgramMethodDebug("XWPProgram","xpg_wpSetProgIcon");
+
+    // turbo folders enabled?
+    fRunReplacement = cmnIsFeatureEnabled(TurboFolders);
+
+#ifndef __NOICONREPLACEMENTS__
+    if (!fRunReplacement)
+        if (cmnIsFeatureEnabled(IconReplacements))
+            fRunReplacement = TRUE;
+#endif
+
+    if (fRunReplacement)
+    {
+        // here's the important check that prevents our
+        // standard icon from being nuked:
+        if (!_wpIsObjectInitialized(somSelf))
+        {
+            // set flag for wpObjectReady so it can call
+            // us again after the object has been fully
+            // restored
+            _fNeedsSetProgIcon = TRUE;
+            // AND DO NOTHING YET, we will be called again,
+            // but only if wpRestoreState hasn't found
+            // an icon in os2.ini
+            return TRUE;
+        }
+
+        if (    (_xwpQueryExecutable(somSelf, szExecutable))
+             && (_pProgType)
+           )
+        {
+            CHAR    szFQExecutable[CCHMAXPATH];
+            PSZ     pszExec = NULL;
+
+            if (    (szExecutable[1] != ':')
+                 || (!strchr(szExecutable, '\\'))
+               )
+            {
+                // prog is not fully qualified: find it on path
+                if (!doshSearchPath("PATH",
+                                    szExecutable,
+                                    szFQExecutable,
+                                    sizeof(szFQExecutable)))
+                    // alright, found it:
+                    pszExec = szFQExecutable;
+            }
+            else
+                pszExec = szExecutable;
+
+            if (pszExec)
+            {
+                // first: check if an .ICO file of the same filestem
+                // exists in the folder. If so, _always_ use that icon.
+                PCSZ pExt;
+                if (pExt = doshGetExtension(pszExec))
+                {
+                    CHAR szIconFile[CCHMAXPATH];
+                    memcpy(szIconFile, pszExec, (pExt - pszExec));
+                    strcpy(szIconFile + (pExt - pszExec), "ico");
+                    // use the new icoLoadICOFile, this is way faster
+                    // V0.9.16 (2001-12-08) [umoeller]
+                    if (!(arc = icoLoadICOFile(szIconFile,
+                                               &hptr,
+                                               NULL,
+                                               NULL)))
+                        fNotDefaultIcon = TRUE;
+                    // else: .ICO file doesn't exist, or bad format, so go on
+                }
+
+                if (!hptr)
+                {
+                    PEXECUTABLE pExec = NULL;
+
+                    if (!(arc = doshExecOpen(pszExec, &pExec)))
+                    {
+                        ULONG ulProgType;
+                        ULONG ulStdIcon = 0;
+
+                        _Pmpf((__FUNCTION__ ": %s, calling _xwpQueryProgType",
+                                    pszExec));
+
+                        if (_pProgType->progc)
+                            ulProgType = _pProgType->progc;
+                        else
+                            ulProgType = progQueryProgType(pszExec,
+                                                           pExec);
+
+                        progFindIcon(pExec,
+                                     ulProgType,
+                                     &hptr,
+                                     NULL,
+                                     &fNotDefaultIcon);
+
+                        doshExecClose(&pExec);
+
+                    } // end if (!(arc = doshExecOpen(pszExec, &pExec)))
+                }
+            }
+        }
+
+        if (!hptr)
+            cmnGetStandardIcon(STDICON_PROG_UNKNOWN,
+                               &hptr,
+                               NULL);
+
+        _wpSetIcon(somSelf, hptr);
+        _wpModifyStyle(somSelf,
+                       OBJSTYLE_NOTDEFAULTICON,
+                       (fNotDefaultIcon) ? OBJSTYLE_NOTDEFAULTICON : 0);
+
+        return (TRUE);
+    }
+
+    return (XWPProgram_parent_WPProgram_wpSetProgIcon(somSelf, pfeal));
 }
 
 /*
@@ -509,11 +868,11 @@ SOM_Scope BOOL  SOMLINK xpgm_wpSetProgIcon(XWPProgram *somSelf,
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
 
-SOM_Scope ULONG  SOMLINK xpgm_wpQueryIconData(XWPProgram *somSelf,
+SOM_Scope ULONG  SOMLINK xpg_wpQueryIconData(XWPProgram *somSelf,
                                               PICONINFO pIconInfo)
 {
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
-    XWPProgramMethodDebug("XWPProgram","xpgm_wpQueryIconData");
+    XWPProgramMethodDebug("XWPProgram","xpg_wpQueryIconData");
 
     return (XWPProgram_parent_WPProgram_wpQueryIconData(somSelf,
                                                         pIconInfo));
@@ -525,11 +884,11 @@ SOM_Scope ULONG  SOMLINK xpgm_wpQueryIconData(XWPProgram *somSelf,
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xpgm_wpSetIconData(XWPProgram *somSelf,
+SOM_Scope BOOL  SOMLINK xpg_wpSetIconData(XWPProgram *somSelf,
                                            PICONINFO pIconInfo)
 {
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
-    XWPProgramMethodDebug("XWPProgram","xpgm_wpSetIconData");
+    XWPProgramMethodDebug("XWPProgram","xpg_wpSetIconData");
 
     return (XWPProgram_parent_WPProgram_wpSetIconData(somSelf,
                                                       pIconInfo));
@@ -546,18 +905,20 @@ SOM_Scope BOOL  SOMLINK xpgm_wpSetIconData(XWPProgram *somSelf,
  *@@added V0.9.9 (2001-04-02) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xpgm_wpSetAssociationType(XWPProgram *somSelf,
+SOM_Scope BOOL  SOMLINK xpg_wpSetAssociationType(XWPProgram *somSelf,
                                                   PSZ pszType)
 {
     BOOL brc = FALSE;
 
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
-    XWPProgramMethodDebug("XWPProgram","xpgm_wpSetAssociationType");
+    XWPProgramMethodDebug("XWPProgram","xpg_wpSetAssociationType");
 
     brc = XWPProgram_parent_WPProgram_wpSetAssociationType(somSelf,
                                                            pszType);
 
+#ifndef __NEVEREXTASSOCS__
     ftypInvalidateCaches();
+#endif
 
     return (brc);
 }
@@ -568,11 +929,11 @@ SOM_Scope BOOL  SOMLINK xpgm_wpSetAssociationType(XWPProgram *somSelf,
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
 
-SOM_Scope BOOL  SOMLINK xpgm_wpMoveObject(XWPProgram *somSelf,
+SOM_Scope BOOL  SOMLINK xpg_wpMoveObject(XWPProgram *somSelf,
                                           WPFolder* Folder)
 {
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
-    XWPProgramMethodDebug("XWPProgram","xpgm_wpMoveObject");
+    XWPProgramMethodDebug("XWPProgram","xpg_wpMoveObject");
 
     return (XWPProgram_parent_WPProgram_wpMoveObject(somSelf,
                                                      Folder));
@@ -584,16 +945,104 @@ SOM_Scope BOOL  SOMLINK xpgm_wpMoveObject(XWPProgram *somSelf,
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
 
-SOM_Scope WPObject*  SOMLINK xpgm_wpCopyObject(XWPProgram *somSelf,
+SOM_Scope WPObject*  SOMLINK xpg_wpCopyObject(XWPProgram *somSelf,
                                                WPFolder* Folder,
                                                BOOL fLock)
 {
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
-    XWPProgramMethodDebug("XWPProgram","xpgm_wpCopyObject");
+    XWPProgramMethodDebug("XWPProgram","xpg_wpCopyObject");
 
     return (XWPProgram_parent_WPProgram_wpCopyObject(somSelf,
                                                      Folder,
                                                      fLock));
+}
+
+/*
+ *@@ wpQueryProgDetails:
+ *      this instance method exists for both WPProgram
+ *      and WPProgramFile and returns information about
+ *      the executable program file in the given buffer.
+ *      If pProgDetails is NULL, *pulSize receives the
+ *      required size of the buffer; otherwise *pulSize
+ *      is expected to specify the size of the buffer
+ *      on input, which better be large enough.
+ *
+ *      This is a complete rewrite. We no longer call
+ *      the parent because it's so damn slow and messes
+ *      with too many things. The shared implementation
+ *      for WPProgram and WPProgramFile is in
+ *      progFillProgDetails; see remarks there.
+ *
+ *@@added V0.9.16 (2002-01-04) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xpg_wpQueryProgDetails(XWPProgram *somSelf,
+                                               PPROGDETAILS pProgDetails,
+                                               PULONG pulSize)
+{
+    CHAR        szExecutable[CCHMAXPATH];
+    PSZ         pszTitle;
+    XWPProgramData *somThis = XWPProgramGetData(somSelf);
+    XWPProgramMethodDebug("XWPProgram","xpg_wpQueryProgDetails");
+
+    if (    (_xwpQueryExecutable(somSelf, szExecutable))
+         && (_pProgType)
+         && (pszTitle = _wpQueryTitle(somSelf))
+         && (pulSize)
+       )
+    {
+#ifdef _PMPRINTF_
+        _Pmpf((__FUNCTION__ " for \"%s\": progc is %s",
+                pszTitle,
+                appDescribeAppType(_pProgType->progc)));
+        _Pmpf(("   pcszExecutable: \"%s\"", szExecutable));
+        _Pmpf(("   startupdir %lX", *_pulStartupDirHandle));
+        _Pmpf(("   params \"%s\"", (_pszParameters) ? _pszParameters : "NULL"));
+
+        _Pmpf(("   _pvpszEnvironment is 0x%lX",
+                            _pvpszEnvironment));
+        if (_pvpszEnvironment)
+        {
+            PSZ pszThis = _pvpszEnvironment;
+            while (*pszThis != 0)
+            {
+                _Pmpf(("  \"%s\"", pszThis));
+                pszThis += strlen(pszThis) + 1;
+            }
+        }
+#endif
+
+        return (progFillProgDetails(pProgDetails,     // can be NULL
+                                    _pProgType->progc,
+                                    _pProgType->fbVisible,
+                                    _pSWPInitial,
+                                    pszTitle,
+                                    szExecutable,
+                                    *_pulStartupDirHandle,
+                                    _pszParameters,
+                                    _pvpszEnvironment,
+                                    pulSize));
+    }
+
+    return (XWPProgram_parent_WPProgram_wpQueryProgDetails(somSelf,
+                                                           pProgDetails,
+                                                           pulSize));
+}
+
+/*
+ *@@ wpSetProgDetails:
+ *
+ *@@added V0.9.16 (2002-01-04) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xpg_wpSetProgDetails(XWPProgram *somSelf,
+                                             PPROGDETAILS pProgDetails)
+{
+    XWPProgramData *somThis = XWPProgramGetData(somSelf);
+    XWPProgramMethodDebug("XWPProgram","xpg_wpSetProgDetails");
+
+    return (XWPProgram_parent_WPProgram_wpSetProgDetails(somSelf,
+                                                         pProgDetails));
 }
 
 /*
@@ -602,11 +1051,11 @@ SOM_Scope WPObject*  SOMLINK xpgm_wpCopyObject(XWPProgram *somSelf,
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
 
-SOM_Scope ULONG  SOMLINK xpgm_wpAddProgramPage(XWPProgram *somSelf,
+SOM_Scope ULONG  SOMLINK xpg_wpAddProgramPage(XWPProgram *somSelf,
                                                HWND hwndNotebook)
 {
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
-    XWPProgramMethodDebug("XWPProgram","xpgm_wpAddProgramPage");
+    XWPProgramMethodDebug("XWPProgram","xpg_wpAddProgramPage");
 
     return (XWPProgram_parent_WPProgram_wpAddProgramPage(somSelf,
                                                          hwndNotebook));
@@ -618,11 +1067,11 @@ SOM_Scope ULONG  SOMLINK xpgm_wpAddProgramPage(XWPProgram *somSelf,
  *@@added V0.9.12 (2001-05-22) [umoeller]
  */
 
-SOM_Scope ULONG  SOMLINK xpgm_wpAddProgramSessionPage(XWPProgram *somSelf,
+SOM_Scope ULONG  SOMLINK xpg_wpAddProgramSessionPage(XWPProgram *somSelf,
                                                       HWND hwndNotebook)
 {
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
-    XWPProgramMethodDebug("XWPProgram","xpgm_wpAddProgramSessionPage");
+    XWPProgramMethodDebug("XWPProgram","xpg_wpAddProgramSessionPage");
 
     return (XWPProgram_parent_WPProgram_wpAddProgramSessionPage(somSelf,
                                                                 hwndNotebook));
@@ -638,7 +1087,7 @@ SOM_Scope ULONG  SOMLINK xpgm_wpAddProgramSessionPage(XWPProgram *somSelf,
  *      lists the extended file types.
  */
 
-SOM_Scope ULONG  SOMLINK xpgm_wpAddProgramAssociationPage(XWPProgram *somSelf,
+SOM_Scope ULONG  SOMLINK xpg_wpAddProgramAssociationPage(XWPProgram *somSelf,
                                                           HWND hwndNotebook)
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
@@ -646,9 +1095,11 @@ SOM_Scope ULONG  SOMLINK xpgm_wpAddProgramAssociationPage(XWPProgram *somSelf,
     /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
     XWPProgramMethodDebug("XWPProgram","xwppgm_wpAddProgramAssociationPage");
 
-    if (pGlobalSettings->fExtAssocs)
+#ifndef __NEVEREXTASSOCS__
+    if (cmnIsFeatureEnabled(ExtAssocs))
         return (_xwpAddAssociationsPage(somSelf, hwndNotebook));
     else
+#endif
         return (XWPProgram_parent_WPProgram_wpAddProgramAssociationPage(somSelf,
                                                                         hwndNotebook));
 }
@@ -667,7 +1118,7 @@ SOM_Scope ULONG  SOMLINK xpgm_wpAddProgramAssociationPage(XWPProgram *somSelf,
  *      itself.
  */
 
-SOM_Scope void  SOMLINK xpgmM_wpclsInitData(M_XWPProgram *somSelf)
+SOM_Scope void  SOMLINK xpgM_wpclsInitData(M_XWPProgram *somSelf)
 {
     /* M_XWPProgramData *somThis = M_XWPProgramGetData(somSelf); */
     M_XWPProgramMethodDebug("M_XWPProgram","xwppgmM_wpclsInitData");

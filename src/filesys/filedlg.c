@@ -87,6 +87,7 @@
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
@@ -276,672 +277,6 @@ BOOL StartInsertContents(PFILEDLGDATA pWinData,
 
 /* ******************************************************************
  *
- *   Super Combination Box control
- *
- ********************************************************************/
-
-#define COMBO_BUTTON_WIDTH      20
-
-#define ID_COMBO_BUTTON         1001
-#define ID_COMBO_LISTBOX        1002
-
-/*
- *@@ COMBODATA:
- *
- *@@added V0.9.9 (2001-03-17) [umoeller]
- */
-
-typedef struct _COMBODATA
-{
-    PFNWP       pfnwpOrigEntryField,
-                pfnwpOrigButton;
-    ULONG       flStyle;
-
-    // position of entire combo
-    LONG        x,
-                y,
-                cx,
-                cy;
-
-    HWND        hwndButton,
-                hwndListbox;
-
-    HBITMAP     hbmButton;
-    SIZEL       szlButton;          // bitmap dimensions
-
-} COMBODATA, *PCOMBODATA;
-
-/*
- *@@ PaintButtonBitmap:
- *
- *@@added V0.9.9 (2001-03-17) [umoeller]
- */
-
-VOID PaintButtonBitmap(HWND hwnd,
-                       PCOMBODATA pcd)
-{
-    HPS hps;
-    RECTL rcl;
-    POINTL ptlDest;
-
-    hps = WinGetPS(hwnd);
-    WinQueryWindowRect(hwnd, &rcl);
-
-    ptlDest.x = (rcl.xRight - pcd->szlButton.cx) / 2;
-    ptlDest.y = (rcl.yTop - pcd->szlButton.cy) / 2;
-    WinDrawBitmap(hps,
-                  pcd->hbmButton,
-                  NULL,
-                  &ptlDest,
-                  0, 0,
-                  DBM_NORMAL);
-
-    WinReleasePS(hps);
-}
-
-/*
- *@@ fnwpSubclassedComboButton:
- *      window proc the combobox's button is subclassed with.
- *      This is only for WM_PAINT because BN_PAINT is really
- *      not that great for painting a button that looks like
- *      a standard button.
- *
- *@@added V0.9.9 (2001-03-17) [umoeller]
- */
-
-MRESULT EXPENTRY fnwpSubclassedComboButton(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
-{
-    MRESULT mrc = 0;
-
-    switch (msg)
-    {
-        case WM_PAINT:
-        {
-            PCOMBODATA pcd = (PCOMBODATA)WinQueryWindowPtr(hwnd, QWL_USER);
-            if (pcd)
-            {
-                mrc = pcd->pfnwpOrigButton(hwnd, msg, mp1, mp2);
-
-                PaintButtonBitmap(hwnd, pcd);
-            }
-        break; }
-
-        /*
-         * default:
-         *
-         */
-
-        default:
-        {
-            PCOMBODATA pcd = (PCOMBODATA)WinQueryWindowPtr(hwnd, QWL_USER);
-            if (pcd)
-                mrc = pcd->pfnwpOrigButton(hwnd, msg, mp1, mp2);
-        break; }
-    }
-
-    return (mrc);
-}
-
-/*
- *@@ ShowListbox:
- *
- *@@added V0.9.9 (2001-03-17) [umoeller]
- */
-
-VOID ShowListbox(HWND hwnd,      // in: subclassed entry field
-                 PCOMBODATA pcd,
-                 BOOL fShow)    // in: TRUE == show, FALSE == hide
-{
-    BOOL fHilite = FALSE;
-
-    if (fShow)
-    {
-        // list box is invisible:
-        SWP swp;
-        POINTL ptl;
-        WinQueryWindowPos(hwnd, &swp);
-
-        _Pmpf(("showing lb"));
-
-        // convert to desktop
-        ptl.x = swp.x;
-        ptl.y = swp.y;
-        WinMapWindowPoints(WinQueryWindow(hwnd, QW_PARENT), // from
-                           HWND_DESKTOP,    // to
-                           &ptl,
-                                // SWP.y comes before SWP.x
-                           1);
-
-        WinSetWindowPos(pcd->hwndListbox,
-                        HWND_TOP,
-                        ptl.x + COMBO_BUTTON_WIDTH,
-                        ptl.y - 100,
-                        swp.cx,
-                        100,
-                        SWP_MOVE | SWP_SIZE | SWP_ZORDER | SWP_NOREDRAW);
-        WinSetParent(pcd->hwndListbox,
-                     HWND_DESKTOP,
-                     TRUE);        // redraw
-
-        // set focus to subclassed entry field in any case;
-        // we never let the listbox get the focus
-        WinSetFocus(HWND_DESKTOP, hwnd);
-
-        fHilite = TRUE;
-    }
-    else
-    {
-        // list box is showing:
-        HWND hwndFocus = WinQueryFocus(HWND_DESKTOP);
-        _Pmpf(("hiding listbox"));
-
-        WinSetParent(pcd->hwndListbox,
-                     HWND_OBJECT,
-                     TRUE);         // redraw now
-        // give focus back to entry field
-        if (hwndFocus == pcd->hwndListbox)
-            WinSetFocus(HWND_DESKTOP, hwnd);
-    }
-
-    WinSendMsg(pcd->hwndButton,
-               BM_SETHILITE,
-               (MPARAM)fHilite,
-               0);
-    PaintButtonBitmap(pcd->hwndButton, pcd);
-}
-
-/*
- *@@ fnwpComboSubclass:
- *
- *@@added V0.9.9 (2001-03-17) [umoeller]
- */
-
-MRESULT EXPENTRY fnwpComboSubclass(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
-{
-    MRESULT mrc = 0;
-
-    switch (msg)
-    {
-        /*
-         * WM_ADJUSTWINDOWPOS:
-         *
-         */
-
-        case WM_ADJUSTWINDOWPOS:
-        {
-            PCOMBODATA pcd = (PCOMBODATA)WinQueryWindowPtr(hwnd, QWL_USER);
-            if (pcd)
-            {
-                PSWP pswp = (PSWP)mp1;
-
-                if (pswp->fl & SWP_SIZE)
-                    // if we're being sized, make us smaller so that
-                    // there's room for the button
-                    pswp->cx -= COMBO_BUTTON_WIDTH;
-
-                mrc = pcd->pfnwpOrigEntryField(hwnd, msg, mp1, mp2);
-            }
-        break; }
-
-        /*
-         * WM_WINDOWPOSCHANGED:
-         *
-         */
-
-        case WM_WINDOWPOSCHANGED:
-        {
-            PCOMBODATA pcd = (PCOMBODATA)WinQueryWindowPtr(hwnd, QWL_USER);
-            if (pcd)
-            {
-                PSWP pswpNew = (PSWP)mp1;
-
-                if (pswpNew->fl & (SWP_SIZE | SWP_MOVE))
-                {
-                    // moved or sized:
-                    SWP swp;
-                    WinQueryWindowPos(hwnd, &swp);
-                    WinSetWindowPos(pcd->hwndButton,
-                                    0,
-                                    pswpNew->x + pswpNew->cx, // has already been truncated!
-                                    pswpNew->y,
-                                    COMBO_BUTTON_WIDTH,
-                                    pswpNew->cy,
-                                    SWP_MOVE | SWP_SIZE);
-                }
-
-                mrc = pcd->pfnwpOrigEntryField(hwnd, msg, mp1, mp2);
-            }
-        break; }
-
-        /*
-         * WM_SETFOCUS:
-         *      hide listbox if focus is going away from us
-         */
-
-        case WM_SETFOCUS:
-        {
-            PCOMBODATA pcd = (PCOMBODATA)WinQueryWindowPtr(hwnd, QWL_USER);
-            if (pcd)
-            {
-                if (!mp2)
-                    // we're losing focus:
-                    // is listbox currently showing?
-                    ShowListbox(hwnd,
-                                pcd,
-                                FALSE);
-
-                mrc = pcd->pfnwpOrigEntryField(hwnd, msg, mp1, mp2);
-            }
-        break; }
-
-        /*
-         * WM_COMMAND:
-         *      show/hide listbox if the button gets pressed.
-         */
-
-        case WM_COMMAND:
-        {
-            PCOMBODATA pcd = (PCOMBODATA)WinQueryWindowPtr(hwnd, QWL_USER);
-            if (pcd)
-            {
-                if ((SHORT)mp1 == ID_COMBO_BUTTON)
-                {
-                    // button clicked:
-                    ShowListbox(hwnd,
-                                pcd,
-                                // check state of list box
-                                (WinQueryWindow(pcd->hwndListbox, QW_PARENT)
-                                 == WinQueryObjectWindow(HWND_DESKTOP)));
-
-                    // do not call parent
-                    break;
-
-                } // end if ((SHORT)mp1 == ID_COMBO_BUTTON)
-
-                mrc = pcd->pfnwpOrigEntryField(hwnd, msg, mp1, mp2);
-            }
-        break; }
-
-        /*
-         * WM_CONTROL:
-         *      handle notifications from listbox.
-         */
-
-        case WM_CONTROL:
-        {
-            PCOMBODATA pcd = (PCOMBODATA)WinQueryWindowPtr(hwnd, QWL_USER);
-            if (pcd)
-            {
-                USHORT usid = SHORT1FROMMP(mp1),
-                       uscode = SHORT2FROMMP(mp1);
-                if (usid == ID_COMBO_LISTBOX)
-                {
-                    switch (uscode)
-                    {
-                        case LN_ENTER:
-                        break;
-
-                        case LN_SELECT:
-                        {
-                            SHORT sSelected = winhQueryLboxSelectedItem(pcd->hwndListbox,
-                                                                        LIT_FIRST);
-                            PSZ psz = NULL;
-                            if (sSelected != LIT_NONE)
-                            {
-                                psz = winhQueryLboxItemText(pcd->hwndListbox,
-                                                            sSelected);
-                            }
-                            WinSetWindowText(hwnd, psz);
-                            if (psz)
-                            {
-                                WinPostMsg(hwnd,
-                                           EM_SETSEL,
-                                           MPFROM2SHORT(0, strlen(psz)),
-                                           0);
-                                free(psz);
-                            }
-                        break; }
-
-                        case LN_SETFOCUS:
-                            // when the list box gets the focus, always
-                            // set focus to ourselves
-                            WinSetFocus(HWND_DESKTOP, hwnd);
-                        break;
-                    }
-
-                    // forward list box notifications to
-                    // our own owner, but replace the id
-                    // with the combo box id
-                    WinPostMsg(WinQueryWindow(hwnd, QW_OWNER),
-                               WM_CONTROL,
-                               MPFROM2SHORT(WinQueryWindowUShort(hwnd, QWS_ID),
-                                            uscode),
-                               mp2);
-
-                    // do not call parent
-                    break;
-
-                } // end if (usid == ID_COMBO_LISTBOX)
-
-                mrc = pcd->pfnwpOrigEntryField(hwnd, msg, mp1, mp2);
-            }
-        break; }
-
-        /*
-         * WM_CHAR:
-         *
-         */
-
-        case WM_CHAR:
-        {
-            PCOMBODATA pcd = (PCOMBODATA)WinQueryWindowPtr(hwnd, QWL_USER);
-            if (pcd)
-            {
-                USHORT usFlags    = SHORT1FROMMP(mp1);
-                // USHORT usch       = SHORT1FROMMP(mp2);
-                USHORT usvk       = SHORT2FROMMP(mp2);
-
-                if ((usFlags & KC_KEYUP) == 0)
-                {
-                    if (usFlags & KC_VIRTUALKEY)
-                    {
-                        switch (usvk)
-                        {
-                            case VK_DOWN:
-                            case VK_UP:
-                                // if alt is pressed with these, show/hide listbox
-                                if (usFlags & KC_ALT)
-                                    WinPostMsg(hwnd,
-                                               CBM_SHOWLIST,
-                                               (MPARAM)(WinQueryWindow(pcd->hwndListbox, QW_PARENT)
-                                                        == WinQueryObjectWindow(HWND_DESKTOP)),
-                                               0);
-                                else
-                                {
-                                    // just up or down, no alt:
-                                    // select next or previous item in list box
-                                    SHORT sSelected = winhQueryLboxSelectedItem(pcd->hwndListbox,
-                                                                                LIT_FIRST),
-                                          sNew = 0;
-
-                                    if (usvk == VK_DOWN)
-                                    {
-                                        if (sSelected != LIT_NONE)
-                                        {
-                                            if (sSelected < WinQueryLboxCount(pcd->hwndListbox))
-                                                sNew = sSelected + 1;
-                                        }
-                                        // else: sNew still 0
-                                    }
-                                    else
-                                    {
-                                        // up:
-                                        if (    (sSelected != LIT_NONE)
-                                             && (sSelected > 0)
-                                           )
-                                            sNew = sSelected - 1;
-                                    }
-
-                                    winhSetLboxSelectedItem(pcd->hwndListbox,
-                                                            sNew,
-                                                            TRUE);
-                                }
-                            break;
-                        }
-                    }
-                }
-
-                // call parent only if this is not a drop-down list
-                if ((pcd->flStyle & CBS_DROPDOWNLIST) == 0)
-                    mrc = pcd->pfnwpOrigEntryField(hwnd, msg, mp1, mp2);
-                else
-                    // forward to owner
-                    WinSendMsg(WinQueryWindow(hwnd, QW_OWNER),
-                               msg,
-                               mp1,
-                               mp2);
-            }
-        break; }
-
-        /*
-         * CBM_ISLISTSHOWING:
-         *      implementation of the original combobox msg.
-         */
-
-        case CBM_ISLISTSHOWING:
-        {
-            PCOMBODATA pcd = (PCOMBODATA)WinQueryWindowPtr(hwnd, QWL_USER);
-            if (pcd)
-            {
-                mrc = (MPARAM)(WinQueryWindow(pcd->hwndListbox, QW_PARENT)
-                                     == WinQueryObjectWindow(HWND_DESKTOP));
-            }
-        break; }
-
-        /*
-         * CBM_SHOWLIST:
-         *      implementation of the original combobox msg.
-         */
-
-        case CBM_SHOWLIST:
-        {
-            PCOMBODATA pcd = (PCOMBODATA)WinQueryWindowPtr(hwnd, QWL_USER);
-            if (pcd)
-            {
-                ShowListbox(hwnd,
-                            pcd,
-                            (BOOL)mp1);
-            }
-        break; }
-
-        /*
-         * list box messages:
-         *      forward all these to the listbox and
-         *      return the listbox return value.
-         */
-
-        case LM_INSERTITEM:
-        case LM_SETTOPINDEX:
-        case LM_QUERYTOPINDEX:
-        case LM_DELETEITEM:
-        case LM_SELECTITEM:
-        case LM_QUERYSELECTION:
-        case LM_SETITEMTEXT:
-        case LM_QUERYITEMTEXT:
-        case LM_SEARCHSTRING:
-        case LM_DELETEALL:
-        {
-            PCOMBODATA pcd = (PCOMBODATA)WinQueryWindowPtr(hwnd, QWL_USER);
-            if (pcd)
-            {
-                mrc = WinSendMsg(pcd->hwndListbox, msg, mp1, mp2);
-            }
-        break; }
-
-        /*
-         * WM_DESTROY:
-         *
-         */
-
-        case WM_DESTROY:
-        {
-            PCOMBODATA pcd = (PCOMBODATA)WinQueryWindowPtr(hwnd, QWL_USER);
-            if (pcd)
-            {
-                WinDestroyWindow(pcd->hwndButton);
-                WinDestroyWindow(pcd->hwndListbox);
-
-                mrc = pcd->pfnwpOrigEntryField(hwnd, msg, mp1, mp2);
-
-                free(pcd);
-            }
-        break; }
-
-        /*
-         * default:
-         *
-         */
-
-        default:
-        {
-            PCOMBODATA pcd = (PCOMBODATA)WinQueryWindowPtr(hwnd, QWL_USER);
-            if (pcd)
-                mrc = pcd->pfnwpOrigEntryField(hwnd, msg, mp1, mp2);
-        break; }
-    }
-
-    return (mrc);
-}
-
-/*
- *@@ ctlComboFromEntryField:
- *      turns a standard entry field control into an
- *      XComboBox.
- *
- *      The XComboBox is intended to work like a standard
- *      combobox, but it doesn't have the silly limitation
- *      that the size of the combobox is assumed to be
- *      the size of the dropped-down combobox. This limitation
- *      makes it impossible to use standard comboboxes in
- *      windows which have the WS_CLIPCHILDREN style because
- *      the entire combo area will always be clipped out.
- *
- *      This is not a full reimplementation. Only drop-down
- *      and drop-down list comboboxes are supported. Besides,
- *      the XComboBox is essentially a subclassed entryfield,
- *      so there might be limitations.
- *
- *      On input to this function, with flStyle, specify
- *      either CBS_DROPDOWN or CBS_DROPDOWNLIST. CBS_SIMPLE
- *      is not supported.
- *
- *      Supported messages to the XComboBox after this funcion
- *      has been called:
- *
- *      -- CBM_ISLISTSHOWING
- *
- *      -- CBM_SHOWLIST
- *
- *      -- LM_QUERYITEMCOUNT
- *
- *      -- LM_INSERTITEM
- *
- *      -- LM_SETTOPINDEX
- *
- *      -- LM_QUERYTOPINDEX
- *
- *      -- LM_DELETEITEM
- *
- *      -- LM_SELECTITEM
- *
- *      -- LM_QUERYSELECTION
- *
- *      -- LM_SETITEMTEXT
- *
- *      -- LM_QUERYITEMTEXT
- *
- *      -- LM_SEARCHSTRING
- *
- *      -- LM_DELETEALL
- *
- *      NOTE: This occupies QWL_USER of the entryfield.
- *
- *@@added V0.9.9 (2001-03-17) [umoeller]
- */
-
-BOOL ctlComboFromEntryField(HWND hwnd,          // in: entry field to be converted
-                            ULONG flStyle)      // in: combo box styles
-{
-    BOOL brc = FALSE;
-    PFNWP pfnwpOrig = WinSubclassWindow(hwnd,
-                                        fnwpComboSubclass);
-    if (pfnwpOrig)
-    {
-        PCOMBODATA pcd;
-        if (pcd = (PCOMBODATA)malloc(sizeof(*pcd)))
-        {
-            SWP swp;
-            BITMAPINFOHEADER2 bmih2;
-
-            memset(pcd, 0, sizeof(*pcd));
-            pcd->pfnwpOrigEntryField = pfnwpOrig;
-            pcd->flStyle = flStyle;
-
-            WinSetWindowPtr(hwnd, QWL_USER, pcd);
-
-            WinQueryWindowPos(hwnd, &swp);
-            pcd->x = swp.x;
-            pcd->y = swp.y;
-            pcd->cx = swp.cx;
-            pcd->cy = swp.cy;
-
-            swp.cx -= COMBO_BUTTON_WIDTH;
-            WinSetWindowPos(hwnd,
-                            0,
-                            0, 0,
-                            swp.cx, swp.cy,
-                            SWP_SIZE | SWP_NOADJUST);       // circumvent subclassing
-
-            pcd->hbmButton = WinGetSysBitmap(HWND_DESKTOP,
-                                             SBMP_COMBODOWN);
-            bmih2.cbFix = sizeof(bmih2);
-            GpiQueryBitmapInfoHeader(pcd->hbmButton,
-                                     &bmih2);
-            pcd->szlButton.cx = bmih2.cx;
-            pcd->szlButton.cy = bmih2.cy;
-
-            pcd->hwndButton = WinCreateWindow(WinQueryWindow(hwnd, QW_PARENT),
-                                              WC_BUTTON,
-                                              "",
-                                              WS_VISIBLE
-                                                | BS_PUSHBUTTON | BS_NOPOINTERFOCUS,
-                                              swp.x + swp.cx - COMBO_BUTTON_WIDTH,
-                                              swp.y,
-                                              COMBO_BUTTON_WIDTH,
-                                              swp.cy,
-                                              hwnd,     // owner == entry field!
-                                              hwnd,     // insert behind entry field
-                                              ID_COMBO_BUTTON,
-                                              NULL,
-                                              NULL);
-            WinSetWindowPtr(pcd->hwndButton, QWL_USER, pcd);
-            pcd->pfnwpOrigButton = WinSubclassWindow(pcd->hwndButton,
-                                                     fnwpSubclassedComboButton);
-
-            pcd->hwndListbox = WinCreateWindow(HWND_OBJECT,      // parent, for now
-                                               WC_LISTBOX,
-                                               "?",
-                                               WS_VISIBLE | WS_SAVEBITS | WS_CLIPSIBLINGS
-                                                 | LS_NOADJUSTPOS,
-                                               0,
-                                               0,
-                                               0,
-                                               0,
-                                               hwnd,     // owner == entry field!
-                                               HWND_TOP,     // insert behind entry field
-                                               ID_COMBO_LISTBOX,
-                                               NULL,
-                                               NULL);
-
-            // finally, set style of entry field... we force
-            // these flags no matter what the original style
-            // was
-            /* WinSetWindowBits(hwnd,
-                             QWL_STYLE,
-                             // bits to set:
-                            (flStyle & CBS_DROPDOWNLIST)
-                                ? ES_READONLY
-                                : 0,
-                             // mask:
-                             ES_READONLY); */
-        }
-    }
-
-    return (brc);
-}
-
-/* ******************************************************************
- *
  *   Helper funcs
  *
  ********************************************************************/
@@ -1021,7 +356,7 @@ ULONG ParseFileString(PFILEDLGDATA pWinData,
         if (p2 = strrchr(p, '\\'))
         {
             // path specified:
-            // ### handle relative paths here
+            // @@todo handle relative paths here
             strhncpy0(pWinData->szDir,
                       p,        // start: either first char or after drive
                       (p2 - p));
@@ -1097,6 +432,8 @@ ULONG ParseFileString(PFILEDLGDATA pWinData,
  *@@ GetFSFromRecord:
  *      returns the WPFileSystem* which is represented
  *      by the specified record.
+ *      This resolves shadows and returns root folders
+ *      for WPDisk objects cleanly.
  *
  *      Returns NULL
  *
@@ -1104,12 +441,10 @@ ULONG ParseFileString(PFILEDLGDATA pWinData,
  *         a folder;
  *
  *      -- if (!fFoldersOnly) and precc does not represent
- *         a file-system object.
+ *         a file-system object;
  *
- *      This resolves shadows and returns root folders
- *      for WPDisk objects cleanly. Returns NULL
- *      if either pobj is not valid or does not
- *      represent a folder.
+ *      -- if the WPDisk or WPShadow cannot be resolved.
+ *
  *
  *@@added V0.9.9 (2001-03-11) [umoeller]
  */
@@ -1120,8 +455,7 @@ WPFileSystem* GetFSFromRecord(PMINIRECORDCORE precc,
     WPObject *pobj = NULL;
     if (precc)
     {
-        pobj = OBJECT_FROM_PREC(precc);
-        if (pobj)
+        if (pobj = OBJECT_FROM_PREC(precc))
         {
             if (_somIsA(pobj, _WPShadow))
                 pobj = _wpQueryShadowedObject(pobj, TRUE);
@@ -1254,7 +588,7 @@ BOOL IsInsertable(WPObject *pObject,
                 if (_wpQueryFilename(pObject,
                                      szRealName,
                                      FALSE))       // not q'fied
-                    return (strhMatchOS2(pcszFileMask, szRealName));
+                    return (doshMatch(pcszFileMask, szRealName));
             }
             else
                 // no file mask:
@@ -1297,8 +631,7 @@ VOID InsertFirstChild(HWND hwndMainClient,              // in: wnd to send XM_IN
 
         TRY_LOUD(excpt1)
         {
-            fFolderLocked = !fdrRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT);
-            if (fFolderLocked)
+            if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
             {
                 WPObject    *pObject;
                 // POINTL      ptlIcon = {0, 0};
@@ -1449,23 +782,17 @@ ULONG InsertFolderContents(HWND hwndMainClient,         // in: wnd to send XM_IN
 {
     ULONG       cObjects = 0;
 
-    if (wpshCheckIfPopulated(pFolder,
-                             (ulFoldersOnly != 0)))     // folders only?
+    if (fdrCheckIfPopulated(pFolder,
+                            (ulFoldersOnly != 0)))     // folders only?
     {
         BOOL fFolderLocked = FALSE;
 
         TRY_LOUD(excpt1)
         {
-            fFolderLocked = !fdrRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT);
-            if (fFolderLocked)
+            if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
             {
                 WPObject    *pObject;
-                // POINTL      ptlIcon = {0, 0};
-                // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                        // = (somTD_WPFolder_wpQueryContent)wpshResolveFor(pFolder, NULL, "wpQueryContent");
-
                 // 1) count objects
-                // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
                 for (   pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                         (pObject) && (!*pfExit);
                         pObject = *wpshGetNextObjPointer(pObject)
@@ -1715,9 +1042,10 @@ VOID UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
                 _Pmpf(("    checking component %s", szComponent));
 
                 // find this component in pFdrThis
-                pobj = fdrFindFSFromName(pFdrThis,
-                                         szComponent);
-                if (pobj && _somIsA(pobj, _WPFolder))
+                if (    (pobj = fdrFindFSFromName(pFdrThis,
+                                                  szComponent))
+                     && (_somIsA(pobj, _WPFolder))
+                   )
                 {
                     // got that folder:
                     POINTL ptlIcon = {0, 0};
@@ -1839,15 +1167,14 @@ VOID ParseAndUpdate(PFILEDLGDATA pWinData,
 VOID BuildDisksList(WPFolder *pDrivesFolder,
                     PLINKLIST pllDisks)
 {
-    if (wpshCheckIfPopulated(pDrivesFolder,
-                             FALSE))     // folders only?
+    if (fdrCheckIfPopulated(pDrivesFolder,
+                            FALSE))     // folders only?
     {
         BOOL fFolderLocked = FALSE;
 
         TRY_LOUD(excpt1)
         {
-            fFolderLocked = !fdrRequestFolderMutexSem(pDrivesFolder, SEM_INDEFINITE_WAIT);
-            if (fFolderLocked)
+            if (fFolderLocked = !fdrRequestFolderMutexSem(pDrivesFolder, SEM_INDEFINITE_WAIT))
             {
                 WPObject *pObject;
                 // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
@@ -1912,9 +1239,9 @@ MRESULT EXPENTRY fnwpAddChildren(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         {
             PFILEDLGDATA pWinData = WinQueryWindowPtr(hwnd, QWL_USER);
             PMINIRECORDCORE prec = (PMINIRECORDCORE)mp1;
-            WPFolder *pFolder = GetFSFromRecord(prec,
-                                                TRUE);      // folders only
-            if (pFolder)
+            WPFolder *pFolder;
+            if (pFolder = GetFSFromRecord(prec,
+                                          TRUE))      // folders only
             {
                 LINKLIST llInsertedRecords;
                 PLISTNODE pNode;
@@ -2043,61 +1370,55 @@ VOID _Optlink fntInsertContents(PTHREADINFO ptiMyself)
 {
     TRY_LOUD(excpt1)
     {
-        PINSERTTHREADSDATA pThreadData
-            = (PINSERTTHREADSDATA)ptiMyself->ulData;
-        if (pThreadData)
+        PINSERTTHREADSDATA pThreadData;
+        PFILEDLGDATA pWinData;
+        if (    (pThreadData = (PINSERTTHREADSDATA)ptiMyself->ulData)
+             && (pWinData = pThreadData->pWinData)
+           )
         {
-            PFILEDLGDATA pWinData = pThreadData->pWinData;
+            // set wait pointer
+            (pWinData->cThreadsRunning)++;
+            WinPostMsg(pWinData->hwndMainClient,
+                       XM_UPDATEPOINTER,
+                       0, 0);
 
-            if (pWinData)
+            if (pThreadData->pll)
             {
-                // set wait pointer
-                (pWinData->cThreadsRunning)++;
-                WinPostMsg(pWinData->hwndMainClient,
-                           XM_UPDATEPOINTER,
-                           0, 0);
-
-                if (pThreadData->pll)
+                PLISTNODE pNode = lstQueryFirstNode(pThreadData->pll);
+                while (pNode)
                 {
-                    PLISTNODE pNode = lstQueryFirstNode(pThreadData->pll);
-                    while (pNode)
+                    PMINIRECORDCORE prec = (PMINIRECORDCORE)pNode->pItemData;
+                    WPFolder *pFolder;
+                    if (pFolder = GetFSFromRecord(prec, TRUE))
                     {
-                        PMINIRECORDCORE prec = (PMINIRECORDCORE)pNode->pItemData;
-                        WPFolder *pFolder = GetFSFromRecord(prec, TRUE);
-                        if (pFolder)
-                        {
-                            ClearContainer(pWinData->hwndFilesCnr,
-                                           &pWinData->llFileObjectsInserted);
+                        ClearContainer(pWinData->hwndFilesCnr,
+                                       &pWinData->llFileObjectsInserted);
 
-                            if (pFolder)
-                            {
-                                InsertFolderContents(pWinData->hwndMainClient,
-                                                     pWinData->hwndFilesCnr,
-                                                     pFolder,
-                                                     NULL,      // no parent
-                                                     FALSE,         // all records
-                                                     pWinData->szFileMask, // file mask
-                                                     &pWinData->llFileObjectsInserted,
-                                                     NULL,
-                                                     &ptiMyself->fExit);
-                            }
-                        }
-
-                        pNode = pNode->pNext;
+                        InsertFolderContents(pWinData->hwndMainClient,
+                                             pWinData->hwndFilesCnr,
+                                             pFolder,
+                                             NULL,      // no parent
+                                             FALSE,         // all records
+                                             pWinData->szFileMask, // file mask
+                                             &pWinData->llFileObjectsInserted,
+                                             NULL,
+                                             &ptiMyself->fExit);
                     }
 
-                    lstFree(&pThreadData->pll);
+                    pNode = pNode->pNext;
                 }
 
-                // clear wait pointer
-                (pWinData->cThreadsRunning)--;
-                WinPostMsg(pWinData->hwndMainClient,
-                           XM_UPDATEPOINTER,
-                           0, 0);
+                lstFree(&pThreadData->pll);
             }
 
-            free(pThreadData);
+            // clear wait pointer
+            (pWinData->cThreadsRunning)--;
+            WinPostMsg(pWinData->hwndMainClient,
+                       XM_UPDATEPOINTER,
+                       0, 0);
         }
+
+        FREE(pThreadData);
     }
     CATCH(excpt1)
     {
@@ -2121,8 +1442,8 @@ BOOL StartInsertContents(PFILEDLGDATA pWinData,
         return (FALSE);
     else
     {
-        PINSERTTHREADSDATA pData = malloc(sizeof(INSERTTHREADSDATA));
-        if (pData)
+        PINSERTTHREADSDATA pData;
+        if (pData = malloc(sizeof(INSERTTHREADSDATA)))
         {
             pData->pWinData = pWinData;
             pData->pll = lstCreate(FALSE);
@@ -2156,7 +1477,7 @@ BOOL StartInsertContents(PFILEDLGDATA pWinData,
 HWND CreateFrameWithCnr(ULONG ulFrameID,
                         HWND hwndMainClient,        // in: main client window
                         BOOL fMultipleSelection,
-                        HWND *phwndClient)          // out: client window
+                        HWND *phwndClient)          // out: client window (cnr)
 {
     HWND hwndFrame;
     ULONG ws;
@@ -2235,7 +1556,7 @@ MPARAM MainClientCreate(HWND hwnd,
     pWinData->hwndDrivesCnrTxt
         = winhCreateControl(hwnd,           // parent
                             WC_STATIC,
-                            "~Drives:",       // @@todo localize
+                            cmnGetString(ID_XFSI_FDLG_DRIVES),
                             WS_VISIBLE | SS_TEXT | DT_LEFT | DT_VCENTER | DT_MNEMONIC,
                             IDDI_TYPESTXT);
     lstAppendItem(&pWinData->llDialogControls, (PVOID)pWinData->hwndDrivesCnrTxt);
@@ -2262,7 +1583,7 @@ MPARAM MainClientCreate(HWND hwnd,
     pWinData->hwndFilesCnrTxt
         = winhCreateControl(hwnd,           // parent
                             WC_STATIC,
-                            "Files ~list:",       // @@todo localize
+                            cmnGetString(ID_XFSI_FDLG_FILESLIST),
                             WS_VISIBLE | SS_TEXT | DT_RIGHT | DT_VCENTER | DT_MNEMONIC,
                             IDDI_TYPESTXT);
     lstAppendItem(&pWinData->llDialogControls, (PVOID)pWinData->hwndFilesCnrTxt);
@@ -2288,9 +1609,8 @@ MPARAM MainClientCreate(HWND hwnd,
     sbcd.ulRightOrTopLimit = 100;
     sbcd.hwndParentAndOwner = hwnd;         // client
 
-    pWinData->hwndSplitWindow = ctlCreateSplitWindow(hab,
-                                                     &sbcd);
-    if (!pWinData->hwndSplitWindow)
+    if (!(pWinData->hwndSplitWindow = ctlCreateSplitWindow(hab,
+                                                           &sbcd)))
     {
         cmnLog(__FILE__, __LINE__, __FUNCTION__,
                 "Cannot create split window.");
@@ -2313,7 +1633,7 @@ MPARAM MainClientCreate(HWND hwnd,
         pWinData->hwndTypesTxt
             = winhCreateControl(hwnd,           // parent
                                 WC_STATIC,
-                                "Types:",       // @@todo localize
+                                cmnGetString(ID_XFSI_FDLG_TYPES),
                                 WS_VISIBLE | SS_TEXT | DT_LEFT | DT_VCENTER | DT_MNEMONIC,
                                 IDDI_TYPESTXT);
         lstAppendItem(&pWinData->llDialogControls, (PVOID)pWinData->hwndTypesTxt);
@@ -2331,21 +1651,21 @@ MPARAM MainClientCreate(HWND hwnd,
         pWinData->hwndDirTxt
             = winhCreateControl(hwnd,           // parent
                                 WC_STATIC,
-                                "Directory:",   // @@todo localize
+                                cmnGetString(ID_XFSI_FDLG_DIRECTORY),
                                 WS_VISIBLE | SS_TEXT | DT_LEFT | DT_VCENTER | DT_MNEMONIC,
                                 IDDI_DIRTXT);
 
         pWinData->hwndDirValue
             = winhCreateControl(hwnd,           // parent
                                 WC_STATIC,
-                                "Working...",       // @@todo localize
+                                cmnGetString(ID_XFSI_FDLG_WORKING),
                                 WS_VISIBLE | SS_TEXT | DT_LEFT | DT_VCENTER,
                                 IDDI_DIRVALUE);
 
         pWinData->hwndFileTxt
             = winhCreateControl(hwnd,           // parent
                                 WC_STATIC,
-                                "~File:",   // @@todo localize
+                                cmnGetString(ID_XFSI_FDLG_FILE),
                                 WS_VISIBLE | SS_TEXT | DT_LEFT | DT_VCENTER | DT_MNEMONIC,
                                 IDDI_FILETXT);
         lstAppendItem(&pWinData->llDialogControls, (PVOID)pWinData->hwndFileTxt);
@@ -2364,7 +1684,7 @@ MPARAM MainClientCreate(HWND hwnd,
                                 WC_BUTTON,
                                 (pWinData->pfd->pszOKButton)
                                   ? pWinData->pfd->pszOKButton
-                                  : "~OK",          // @@todo localize
+                                  : cmnGetString(ID_XSSI_DLG_OK),
                                 WS_VISIBLE | BS_PUSHBUTTON | BS_DEFAULT,
                                 DID_OK);
         lstAppendItem(&pWinData->llDialogControls, (PVOID)pWinData->hwndOK);
@@ -2372,7 +1692,7 @@ MPARAM MainClientCreate(HWND hwnd,
         pWinData->hwndCancel
             = winhCreateControl(hwnd,           // parent
                                 WC_BUTTON,
-                                "~Cancel",          // @@todo localize
+                                cmnGetString(ID_XSSI_DLG_CANCEL),
                                 WS_VISIBLE | BS_PUSHBUTTON,
                                 DID_CANCEL);
         lstAppendItem(&pWinData->llDialogControls, (PVOID)pWinData->hwndCancel);
@@ -2382,7 +1702,7 @@ MPARAM MainClientCreate(HWND hwnd,
             pWinData->hwndHelp
                 = winhCreateControl(hwnd,           // parent
                                     WC_BUTTON,
-                                    "~Help",        // @@todo localize
+                                    cmnGetString(ID_XSSI_DLG_HELP),
                                     WS_VISIBLE | BS_PUSHBUTTON | BS_HELP,
                                     DID_HELP);
             lstAppendItem(&pWinData->llDialogControls, (PVOID)pWinData->hwndHelp);
@@ -3377,9 +2697,9 @@ HWND fdlgFileDlg(HWND hwndOwner,
         if (!pszDlgTitle)
             // no user title specified:
             if (pfd->fl & FDS_SAVEAS_DIALOG)
-                pszDlgTitle = "Save File As...";        // @@todo localize
+                pszDlgTitle = cmnGetString(ID_XFSI_FDLG_SAVEFILEAS);
             else
-                pszDlgTitle = "Open File...";
+                pszDlgTitle = cmnGetString(ID_XFSI_FDLG_OPENFILE);
 
         // create main frame and client;
         // client's WM_CREATE creates all the controls in turn
@@ -3427,7 +2747,7 @@ HWND fdlgFileDlg(HWND hwndOwner,
 
             WinInsertLboxItem(WinData.hwndTypesCombo,
                               0,                // first item always
-                              "<All types>");       // @@todo localize
+                              cmnGetString(ID_XFSI_FDLG_ALLTYPES));
 
             winhSetLboxSelectedItem(WinData.hwndTypesCombo,
                                     0,

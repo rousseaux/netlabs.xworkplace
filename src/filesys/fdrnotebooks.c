@@ -304,12 +304,13 @@ VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_ENABLE)
     {
-        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_TREEVIEWAUTOSCROLL,
-                (    (pGlobalSettings->NoWorkerThread == FALSE)
 #ifndef __ALWAYSSUBCLASS__
-                  && (!cmnIsFeatureEnabled(NoSubclassing))
-#endif
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_TREEVIEWAUTOSCROLL,
+                (    // (pGlobalSettings->NoWorkerThread == FALSE)
+                        // // removed this setting V0.9.16 (2002-01-04) [umoeller]
+                   (!cmnIsFeatureEnabled(NoSubclassing))
                 ));
+#endif
 #ifndef __NOFDRDEFAULTDOCS__
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_FDRDEFAULTDOCVIEW,
                          pGlobalSettings->_fFdrDefaultDoc);

@@ -268,7 +268,9 @@ VOID ftypUnlockInstances(VOID)
  *@@ ftypRegisterInstanceTypesAndFilters:
  *      called by M_XWPFileSystem::wpclsInitData
  *      to register the instance type and filters
- *      of the class.
+ *      of a file-system class. These are then
+ *      later used by turbo populate to make files
+ *      instances of those classes.
  *
  *      Returns the total no. of classes and filters
  *      found or 0 if none.
@@ -514,7 +516,7 @@ PCSZ ftypFindClassFromInstanceFilter(PCSZ pcszObjectTitle)
             while (pNode)
             {
                 PINSTANCEFILTER p = (PINSTANCEFILTER)pNode->pItemData;
-                if (strhMatchOS2(p->pszFilter, pcszObjectTitle))
+                if (doshMatch(p->pszFilter, pcszObjectTitle))
                 {
                     pcszClassName = _somGetName(p->pClassObject);
                     // and stop, we're done
@@ -1033,7 +1035,7 @@ ULONG AppendTypesForFile(const char *pcszObjectTitle,
                 while (*pFilterThis != 0)
                 {
                     // check if this matches the data file name
-                    if (strhMatchOS2(pFilterThis, pcszObjectTitle))
+                    if (doshMatch(pFilterThis, pcszObjectTitle))
                     {
                         #ifdef DEBUG_ASSOCS
                             _Pmpf(("  found type %s", pTypeWithFilters->pszType));
@@ -1085,6 +1087,7 @@ ULONG AppendTypesForFile(const char *pcszObjectTitle,
  *@@added V0.9.0 (99-11-27) [umoeller]
  *@@changed V0.9.9 (2001-03-27) [umoeller]: now avoiding duplicate assocs
  *@@changed V0.9.9 (2001-04-02) [umoeller]: now using objFindObjFromHandle, DRAMATICALLY faster
+ *@@changed V0.9.16 (2002-01-01) [umoeller]: loop stopped after an invalid handle, fixed
  */
 
 ULONG ftypListAssocsForType(PSZ pszType0,         // in: file type (e.g. "C Code")
@@ -1095,8 +1098,6 @@ ULONG ftypListAssocsForType(PSZ pszType0,         // in: file type (e.g. "C Code
 
     if (ftypLockCaches())
     {
-        // ULONG   cbAssocData = 0;
-
         PSZ     pszType2 = pszType0,
                 pszParentForType = 0;
 
@@ -1116,29 +1117,33 @@ ULONG ftypListAssocsForType(PSZ pszType0,         // in: file type (e.g. "C Code
             {
                 // pWPSType->pszObjectHandles now has the handles of the associated
                 // objects (as decimal strings, which we'll decode now)
-                PSZ     pAssoc = pWPSType->pszObjectHandles;
-                if (pAssoc)
+                PSZ     pAssoc;
+                if (pAssoc = pWPSType->pszObjectHandles)
                 {
-                    HOBJECT hobjAssoc;
-                    WPObject *pobjAssoc;
-
                     // now parse the handles string
                     while (*pAssoc)
                     {
-                        hobjAssoc = atoi(pAssoc);
-                        if (pobjAssoc = objFindObjFromHandle(hobjAssoc))
-                                    // V0.9.9 (2001-04-02) [umoeller]
+                        HOBJECT hobjAssoc;
+                        WPObject *pobjAssoc;
+
+                        if (hobjAssoc = atoi(pAssoc))
                         {
-                            // look if the object has already been added;
-                            // this might happen if the same object has
-                            // been defined for several types (inheritance!)
-                            // V0.9.9 (2001-03-27) [umoeller]
-                            if (lstNodeFromItem(pllAssocs, pobjAssoc) == NULL)
+                            if (pobjAssoc = objFindObjFromHandle(hobjAssoc))
                             {
-                                // no:
-                                lstAppendItem(pllAssocs, pobjAssoc);
-                                ulrc++;
+                                // look if the object has already been added;
+                                // this might happen if the same object has
+                                // been defined for several types (inheritance!)
+                                // V0.9.9 (2001-03-27) [umoeller]
+                                if (!lstNodeFromItem(pllAssocs, pobjAssoc))
+                                {
+                                    // no:
+                                    lstAppendItem(pllAssocs, pobjAssoc);
+                                    ulrc++;
+                                }
                             }
+
+                            // V0.9.16 (2002-01-01) [umoeller]: moved this down...
+                            // we should continue if we find an invalid handle only
 
                             // go for next object handle (after the 0 byte)
                             pAssoc += strlen(pAssoc) + 1;
@@ -1146,7 +1151,8 @@ ULONG ftypListAssocsForType(PSZ pszType0,         // in: file type (e.g. "C Code
                                 break; // while (*pAssoc)
                         }
                         else
-                            break; // while (*pAssoc)
+                            break;
+
                     } // end while (*pAssoc)
                 }
 
@@ -1485,8 +1491,7 @@ ULONG ftypAssocObjectDeleted(HOBJECT hobj)
  *          assigned.
  *
  *      The list (which is of type PLINKLIST, containing
- *      plain WPObject* pointers) is returned and should
- *      be freed later using lstFree.
+ *      plain WPObject* pointers) is returned.
  *
  *      This returns NULL if an error occured or no
  *      associations were added.
@@ -2211,6 +2216,8 @@ VOID ClearAvailableTypes(HWND hwndCnr,              // in: cnr, can be NULLHANDL
  *   XFldWPS notebook callbacks (notebook.c) for "File Types" page
  *
  ********************************************************************/
+
+#ifndef __NEVEREXTASSOCS__
 
 /*
  * ASSOCRECORD:
@@ -6073,4 +6080,4 @@ APIRET ftypExportTypes(const char *pcszFilename)        // in: XML file name
     return (arc);
 }
 
-
+#endif

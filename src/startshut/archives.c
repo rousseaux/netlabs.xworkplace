@@ -669,20 +669,19 @@ APIRET arcSetArchiveByte(UCHAR byte,        // in: byte to write
                                 FILE_ARCHIVED)))
     {
         // open the file for write access then
-        HFILE hfArc;
-        if (!(arc = doshOpenExisting(G_szArcBaseFilename,
-                                     OPEN_SHARE_DENYREADWRITE | OPEN_ACCESS_READWRITE
-                                        | OPEN_FLAGS_FAIL_ON_ERROR | OPEN_FLAGS_RANDOM
-                                        | OPEN_FLAGS_NOINHERIT,
-                                     &hfArc)))
+        PXFILE pFile = NULL;
+        ULONG cb = 0;
+        if (!(arc = doshOpen(G_szArcBaseFilename,
+                             XOPEN_READWRITE_EXISTING,
+                             &cb,
+                             &pFile)))
         {
-            arc = doshWriteAt(hfArc,
+            arc = doshWriteAt(pFile,
                               offset,
-                              FILE_BEGIN,
                               1,
                               &byte);
 
-            DosClose(hfArc);
+            doshClose(&pFile);
         }
 
         doshSetPathAttr(G_szArcBaseFilename,
@@ -710,21 +709,20 @@ APIRET arcQueryArchiveByte(UCHAR *pByte,        // out: read byte
     APIRET arc = NO_ERROR;
 
     // open the file then
-    HFILE hfArc;
-    if (!(arc = doshOpenExisting(G_szArcBaseFilename,
-                                 OPEN_SHARE_DENYNONE | OPEN_ACCESS_READONLY
-                                    | OPEN_FLAGS_FAIL_ON_ERROR | OPEN_FLAGS_RANDOM
-                                    | OPEN_FLAGS_NOINHERIT,
-                                 &hfArc)))
+    PXFILE pFile;
+    ULONG cbFile = 0;
+    if (!(arc = doshOpen(G_szArcBaseFilename,
+                         XOPEN_READ_EXISTING,
+                         &cbFile,
+                         &pFile)))
     {
         ULONG cb = 1;
-        arc = doshReadAt(hfArc,
+        arc = doshReadAt(pFile,
                          offset,
-                         FILE_BEGIN,
                          &cb,
                          pByte);
 
-        DosClose(hfArc);
+        doshClose(&pFile);
     }
 
     if (arc)

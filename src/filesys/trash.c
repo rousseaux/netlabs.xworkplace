@@ -1249,8 +1249,8 @@ BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // in: _
     TRY_LOUD(excpt1)
     {
         // populate
-        if (wpshCheckIfPopulated(pTrashDir,
-                                 FALSE))        // full populate
+        if (fdrCheckIfPopulated(pTrashDir,
+                                FALSE))        // full populate
         {
             // populated:
 
@@ -1364,7 +1364,7 @@ BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // in: _
             else
                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "Couldn't request mutex semaphore for \\trash subdir.");
-        } // end if (wpshCheckIfPopulated(pTrashDir))
+        } // end if (fdrCheckIfPopulated(pTrashDir))
         else
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "wpPopulate failed for \\trash subdir.");

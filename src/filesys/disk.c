@@ -139,7 +139,8 @@ WPFolder* dskCheckDriveReady(WPDisk *somSelf)
         if (pRootFolder == NULL)
         {
             // drive not ready:
-            CHAR szTitle2[300];
+            CHAR    szTitle2[300],
+                    szDrive[3];
             XSTRING strTitle;
             xstrInit(&strTitle, 0);
 
@@ -158,8 +159,11 @@ WPFolder* dskCheckDriveReady(WPDisk *somSelf)
                     // for now, later we can do full audio cd support...
                     // V0.9.13 (2001-06-14) [umoeller]
 
+            szDrive[0] = _wpQueryLogicalDrive(somSelf) + 'A' - 1;
+            szDrive[1] = ':';
+            szDrive[2] = '\0';
             mbrc = cmnDosErrorMsgBox(HWND_DESKTOP,
-                                     _wpQueryLogicalDrive(somSelf) + 'A' - 1,
+                                     szDrive,
                                      strTitle.psz,
                                      NULL,
                                      arc,
@@ -183,7 +187,7 @@ WPFolder* dskCheckDriveReady(WPDisk *somSelf)
  *
  *      This operates in two modes:
  *
- *      --  If ulLogicalDrive specifies a valud
+ *      --  If ulLogicalDrive specifies a valid
  *          logical drive no. (1 == a, 2 == B etc.),
  *          paDiskInfos is expected to point to a
  *          single DISKINFO structure which receives
@@ -196,7 +200,9 @@ WPFolder* dskCheckDriveReady(WPDisk *somSelf)
  *          system.
  *
  *      This requires the existance of a message
- *      queue on the calling thread.
+ *      queue on the calling thread. The actual disk
+ *      query is performed on the Daemon process to
+ *      avoid the "drive not ready" popups.
  *
  *      Returns TRUE if the call succeeded.
  *

@@ -197,7 +197,9 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
     XFldWPSMethodDebug("XFldWPS","xfwps_xwpAddXFldWPSPages");
 
     // insert "Sort" page
-    if (pGlobalSettings->ExtFolderSort)
+#ifndef __ALWAYSEXTSORT__
+    if (cmnIsFeatureEnabled(ExtendedSorting))
+#endif
     {
         // extended sorting enabled:
         pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
@@ -344,7 +346,8 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
      * "File types" page (new with V0.9.0)
      */
 
-    if (pGlobalSettings->fExtAssocs)
+#ifndef __NEVEREXTASSOCS__
+    if (cmnIsFeatureEnabled(ExtAssocs))
     {
         pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
         memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
@@ -362,6 +365,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
         pcnbp->pfncbItemChanged = ftypFileTypesItemChanged;
         ntbInsertPage(pcnbp);
     }
+#endif
 
     return (TRUE);
 }
@@ -491,7 +495,7 @@ SOM_Scope BOOL  SOMLINK xfwps_wpAddSettingsPages(XFldWPS *somSelf,
     XFldWPSMethodDebug("XFldWPS","xfwps_wpAddSettingsPages");
 
     XFldWPS_parent_WPSystem_wpAddSettingsPages(somSelf,
-                                                       hwndNotebook);
+                                               hwndNotebook);
 
     // add XFolder pages on top
     _xwpAddXFldWPSPages(somSelf, hwndNotebook);

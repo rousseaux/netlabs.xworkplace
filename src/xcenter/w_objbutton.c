@@ -101,6 +101,7 @@
 
 #include "shared\center.h"              // public XCenter interfaces
 
+#include "filesys\folder.h"             // XFolder implementation
 #include "filesys\object.h"             // XFldObject implementation
 
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
@@ -824,15 +825,18 @@ VOID BuildXButtonMenu(HWND hwnd,
         winhRemoveMenuItem(hMenu, ID_CRMI_SEP2);
     }
 
-    if ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) == 0)
-    {
-        // if XShutdown confirmations have been disabled,
-        // remove "..." from the shutdown menu entries
-        winhMenuRemoveEllipse(hMenu,
-                              ID_CRMI_RESTARTWPS);
-        winhMenuRemoveEllipse(hMenu,
-                              ID_CRMI_SHUTDOWN);
-    }
+#ifndef __NOXSHUTDOWN__
+    if (cmnIsFeatureEnabled(XShutdown))
+        if ((pGlobalSettings->__flXShutdown & XSD_CONFIRM) == 0)
+        {
+            // if XShutdown confirmations have been disabled,
+            // remove "..." from the shutdown menu entries
+            winhMenuRemoveEllipse(hMenu,
+                                  ID_CRMI_RESTARTWPS);
+            winhMenuRemoveEllipse(hMenu,
+                                  ID_CRMI_SHUTDOWN);
+        }
+#endif
 
     if (pPrivate->Setup.flMenuItems & MENUFL_NOSHUTDOWN)
         winhRemoveMenuItem(hMenu, ID_CRMI_SHUTDOWN);
@@ -858,7 +862,7 @@ VOID BuildXButtonMenu(HWND hwnd,
     }
     else
     {
-        if ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) == 0)
+        if ((pGlobalSettings->__flXShutdown & XSD_CONFIRM) == 0)
             // if XShutdown confirmations have been disabled,
             // remove "..." from menu entry
             winhMenuRemoveEllipse(hMenu,
@@ -1138,8 +1142,8 @@ VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                     HPOINTER    hptrOld = winhSetWaitPointer();
 
                     // populate
-                    wpshCheckIfPopulated(pPrivate->pobjButton,
-                                         FALSE);    // full populate
+                    fdrCheckIfPopulated(pPrivate->pobjButton,
+                                        FALSE);    // full populate
 
                     WinSetPointer(HWND_DESKTOP, hptrOld);
 

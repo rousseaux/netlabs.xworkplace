@@ -289,12 +289,15 @@ SOM_Scope HWND  SOMLINK xfs_wpOpen(XWPFileSystem *somSelf, HWND hwndCnr,
 
 /*
  *@@ wpSetTitleAndRenameFile:
- *      this WPFileSystem method is responsible for changing
- *      the real name of a file-system object when its title
- *      has changed.
+ *      this WPFileSystem method is responsible for setting
+ *      the real name _and_ the title of a file-system object.
  *
- *      This method always gets called by WPFileSystem::wpSetTitle
- *      and, apparently, is the only place in the WPS which
+ *      WPFileSystem::wpSetTitle only calls this method and
+ *      does nothing else. In other words, this method is
+ *      the implementation for WPFileSystem::wpSetTitle;
+ *      fConfirmations is then set to what _wpQueryConfirmations
+ *      returns.
+ *      Apparently, is the only place in the WPS which
  *      actually renames a file-system object on disk.
  *
  *      If "turbo folders" are enabled, we must update the
@@ -310,25 +313,27 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetTitleAndRenameFile(XWPFileSystem *somSelf,
     BOOL        brc;
     BOOL        fFolderLocked = FALSE;
     WPFolder    *pMyFolder;
+    CHAR        szFolder[CCHMAXPATH];
 
     XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpSetTitleAndRenameFile");
 
-    if (cmnIsFeatureEnabled(TurboFolders))
+    if (    (cmnIsFeatureEnabled(TurboFolders))
+            // we only need to handle the case where the object's name
+            // is being changed, so skip if we aren't even initialized yet
+         && (_wpIsObjectInitialized(somSelf))
+            // we can't handle UNC yet
+         && (pMyFolder = _wpQueryFolder(somSelf))
+         && (_wpQueryFilename(pMyFolder, szFolder, TRUE))
+         && (szFolder[0] != '\\')
+         && (szFolder[1] != '\\')
+       )
     {
         TRY_LOUD(excpt1)
         {
-            // to be on the safe side, lock anyone out of the folder
-            // content functions while we're changing the title,
-            // but only if the object is already initialized
-            if (    (_wpIsObjectInitialized(somSelf))
-                 && (pMyFolder = _wpQueryFolder(somSelf))
-               )
-                fFolderLocked = !fdrRequestFolderWriteMutexSem(pMyFolder);
-
             if (    (brc = XWPFileSystem_parent_WPFileSystem_wpSetTitleAndRenameFile(somSelf,
-                                                                            pszNewTitle,
-                                                                            fConfirmations))
-                 && (fFolderLocked)     // locked above (obj was init'd):
+                                                                                     pszNewTitle,
+                                                                                     fConfirmations))
+                 && (fFolderLocked = !fdrRequestFolderWriteMutexSem(pMyFolder))
                )
             {
                 // update the folder's contents tree
@@ -353,6 +358,69 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetTitleAndRenameFile(XWPFileSystem *somSelf,
                                                                       fConfirmations));
 }
 
+/*
+ *@@ wpQueryIcon:
+ *      this WPObject instance method returns the HPOINTER
+ *      with the current icon of the object. For some WPS
+ *      classes, icon loading is deferred until the first
+ *      call to this method.
+ *      See icons.c for an introduction.
+ *
+ *      WPDataFile overrides this method to defer icon loading
+ *      for data files until the icon is first needed.
+ *      See XFldDataFile::wpQueryIcon for more about that.
+ *
+ *      However, WPFolder does _not_ override this method, so
+ *      for folders, the WPFileSystem implementation gets called.
+ *      Unfortunately, that implementation of this method is
+ *      very expensive. Even though (as with all file-system
+ *      objects) the icon data from the .ICON EA is passed
+ *      to WPFolder::wpRestoreState, the WPS apparently
+ *      doesn't even check the buffer but checks the icon
+ *      EAs _again_ in this method, which isn't exactly
+ *      speedy. What we can do here safely is check if
+ *      an icon was set in our XFolder::wpRestoreState override
+ *      (which does parse the FEA2LIST) and if not, load
+ *      a default icon here.
+ *
+ *      I'd love to have shared this implementation with
+ *      XFldDataFile, but since WPDataFile overrides this
+ *      method, we have to override that override again
+ *      for XFldDataFile.
+ *
+ *@@added V0.9.16 (2002-01-04) [umoeller]
+ */
+
+SOM_Scope HPOINTER  SOMLINK xfs_wpQueryIcon(XWPFileSystem *somSelf)
+{
+    HPOINTER hptrReturn = NULLHANDLE;
+    // XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
+    XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpQueryIcon");
+
+    if (cmnIsFeatureEnabled(TurboFolders))
+    {
+        PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
+        if (!(hptrReturn = prec->hptrIcon))
+        {
+            // first call, and icon wasn't set in wpRestoreState:
+            // use class default icon
+            // (again, note that we override this for XFldDataFile
+            // so this really only affects folders)
+            if (hptrReturn = _wpclsQueryIcon(_somGetClass(somSelf)))
+            {
+                _wpSetIcon(somSelf, hptrReturn);
+                _wpModifyStyle(somSelf,
+                               OBJSTYLE_NOTDEFAULTICON,
+                               0);
+            }
+        }
+    }
+
+    if (!hptrReturn)
+        hptrReturn = XWPFileSystem_parent_WPFileSystem_wpQueryIcon(somSelf);
+
+    return (hptrReturn);
+}
 
 /*
  *@@ wpRefresh:
@@ -383,7 +451,6 @@ SOM_Scope BOOL  SOMLINK xfs_wpRefresh(XWPFileSystem *somSelf,
                                                         ulView,
                                                         pReserved));
 }
-
 
 /*
  *@@ wpCnrRefreshDetails:
@@ -518,8 +585,14 @@ SOM_Scope WPObject*  SOMLINK xfsM_wpclsQueryAwakeObject(M_XWPFileSystem *somSelf
 
 /*
  *@@ wpclsFileSysExists:
+ *      tests "Folder" whether a file-system object with
+ *      the real name pszFilename is already awake in the
+ *      folder. If so, it is returned.
  *
- *@@added V0.9.16 (2001-12-08) [umoeller]
+ *      We replace this method also if "turbo folders"
+ *      are on.
+ *
+ *@@added V0.9.16 (2002-01-04) [umoeller]
  */
 
 SOM_Scope WPObject*  SOMLINK xfsM_wpclsFileSysExists(M_XWPFileSystem *somSelf,
@@ -527,21 +600,39 @@ SOM_Scope WPObject*  SOMLINK xfsM_wpclsFileSysExists(M_XWPFileSystem *somSelf,
                                                      PSZ pszFilename,
                                                      ULONG attrFile)
 {
+    WPObject *pAwake;
+    CHAR    szFolder[CCHMAXPATH];
     /* M_XWPFileSystemData *somThis = M_XWPFileSystemGetData(somSelf); */
     M_XWPFileSystemMethodDebug("M_XWPFileSystem","xfsM_wpclsFileSysExists");
 
-    /* if (    (cmnIsFeatureEnabled(TurboFolders))
+    if (    (cmnIsFeatureEnabled(TurboFolders))
             // we can't handle UNC yet
-         && (pszInputPath[0] != '\\')
-         && (pszInputPath[1] != '\\')
+         && (_wpQueryFilename(Folder, szFolder, TRUE))
+         && (szFolder[0] != '\\')
+         && (szFolder[1] != '\\')
        )
-    */
+    {
+        // alright, apparently we got something:
+        // check if it is already awake (using the
+        // fast content tree functions)
+        if (pAwake = fdrFindFSFromName(Folder,
+                                       pszFilename))
+        {
+            if ((_wpQueryAttr(pAwake) & FILE_DIRECTORY) == (attrFile & FILE_DIRECTORY))
+                fsysSetRefreshFlags(pAwake,
+                                    (fsysQueryRefreshFlags(pAwake)
+                                        & ~DIRTYBIT)
+                                        | FOUNDBIT);
+            else
+                pAwake = NULL;
+        }
+    }
+    else
+        pAwake = M_XWPFileSystem_parent_M_WPFileSystem_wpclsFileSysExists(somSelf,
+                                                                          Folder,
+                                                                          pszFilename,
+                                                                          attrFile);
 
-    // @@todo!!
-
-    return (M_XWPFileSystem_parent_M_WPFileSystem_wpclsFileSysExists(somSelf,
-                                                                     Folder,
-                                                                     pszFilename,
-                                                                     attrFile));
+    return (pAwake);
 }
 

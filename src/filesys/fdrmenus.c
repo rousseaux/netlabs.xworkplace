@@ -2124,7 +2124,7 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                     WinPostMsg(hwndFrame,
                                WM_SYSCOMMAND,
                                (MPARAM)SC_CLOSE,
-                               MPFROM2SHORT(CMDSRC_OTHER,
+                               MPFROM2SHORT(CMDSRC_MENU,
                                             FALSE));        // keyboard
                     brc = TRUE;
                 break;
@@ -2241,12 +2241,19 @@ BOOL mnuMenuItemHelpSelected(WPObject *somSelf, ULONG MenuId)
 
         default:
             // none of the variable item ids:
+#ifndef __NOXSHUTDOWN__
             if (    (MenuId == WPMENUID_SHUTDOWN)
-                 && (pGlobalSettings->fXShutdown)
+                 && (cmnIsFeatureEnabled(XShutdown))
                )
                 ulPanel = ID_XMH_XSHUTDOWN;
-            else if (   (pGlobalSettings->ExtFolderSort)
-                     && (   (MenuId == ID_WPMI_SORTBYNAME)
+            else
+#endif
+                 if (
+#ifndef __ALWAYSEXTSORT__
+                        (cmnIsFeatureEnabled(ExtendedSorting))
+                     &&
+#endif
+                        (   (MenuId == ID_WPMI_SORTBYNAME)
                          || (MenuId == ID_WPMI_SORTBYREALNAME)
                          // or one of the details columns:
                          || (    (MenuId >= 6002)

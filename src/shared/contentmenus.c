@@ -1079,8 +1079,8 @@ VOID cmnuFillContentSubmenu(SHORT sMenuId, // in: menu ID of selected folder con
             if (pFolder)
             {
                 // populate
-                wpshCheckIfPopulated(pFolder,
-                                     FALSE);    // full populate
+                fdrCheckIfPopulated(pFolder,
+                                    FALSE);    // full populate
 
                 if (_wpQueryContent(pFolder, NULL, QC_FIRST))
                 {

@@ -183,6 +183,7 @@
 
 #define INCL_WININPUT
 #define INCL_WINWINDOWMGR
+#define INCL_WINFRAMEMGR
 #define INCL_WINMESSAGEMGR
 #define INCL_WINPOINTERS
 #define INCL_WINSYS
@@ -196,6 +197,7 @@
 #define INCL_WINSTDCNR
 #define INCL_WINSTDBOOK
 #define INCL_WINPROGRAMLIST     // needed for wppgm.h
+#define INCL_WINSWITCHLIST
 #define INCL_WINSHELLDATA
 #include <os2.h>
 
@@ -209,12 +211,10 @@
 
 // headers in /helpers
 #include "helpers\apps.h"               // application helpers
-// #include "helpers\comctl.h"             // common controls (window procs)
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
-// #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\standards.h"          // some standard macros
@@ -250,6 +250,7 @@
 #pragma hdrstop
 #include <wptrans.h>                    // WPTransient
 #include <wpclsmgr.h>                   // WPClassMgr
+#include <wpshadow.h>
 
 #include "helpers\undoc.h"              // some undocumented stuff
 
@@ -406,6 +407,97 @@ BOOL objFree(WPObject *somSelf)
         brc = _wpMakeDormant(somSelf, 0);
 
     return (brc);
+}
+
+/*
+ *@@ objRefreshUseItems:
+ *      refresh all views of the object with a new
+ *      title. Part of the implementation for
+ *      XFldObject::wpSetTitle.
+ *
+ *      Preconditions:
+ *
+ *      --  Caller must hold the object semaphore.
+ *
+ *@@added V0.9.16 (2002-01-04) [umoeller]
+ */
+
+VOID objRefreshUseItems(WPObject *somSelf,
+                        PSZ pszNewTitleCopy)
+{
+    PUSEITEM    pUseItem = NULL;
+    for (pUseItem = _wpFindUseItem(somSelf, USAGE_RECORD, NULL);
+         pUseItem;
+         pUseItem = _wpFindUseItem(somSelf, USAGE_RECORD, pUseItem))
+    {
+        // USAGE_RECORD specifies where this object is
+        // currently inserted
+        PRECORDITEM pRecordItem = (PRECORDITEM)(pUseItem + 1);
+
+        // refresh the record in the useitem;
+        // the WPS shares records between containers
+        WinSendMsg(pRecordItem->hwndCnr,
+                   CM_QUERYRECORDINFO,
+                   (MPARAM)&pRecordItem->pRecord,
+                   (MPARAM)1);
+
+        // and refresh the view
+        WinSendMsg(pRecordItem->hwndCnr,    /* Invalidate record */
+                   CM_INVALIDATERECORD,
+                   (MPARAM)&pRecordItem->pRecord,
+                   MPFROM2SHORT(1,
+                                CMA_TEXTCHANGED));
+
+        // @@todo resort the folder
+    }
+
+    // refresh open views of this object
+    for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
+         pUseItem;
+         pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
+    {
+        PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem + 1);
+        HWND hwndTitleBar;
+        // this can also be a HAPP, so check if this really
+        // is a window; if so, change its title bar
+        if (    (WinIsWindow(0, // G_habThread1,
+                             pViewItem->handle))
+             && (hwndTitleBar = WinWindowFromID(pViewItem->handle,
+                                                FID_TITLEBAR))
+           )
+        {
+            HSWITCH hsw;
+            WinSetWindowText(hwndTitleBar,
+                             pszNewTitleCopy);
+
+            if (hsw = WinQuerySwitchHandle(pViewItem->handle, 0))
+            {
+                SWCNTRL swc;
+                WinQuerySwitchEntry(hsw, &swc);
+                strhncpy0(swc.szSwtitle,
+                          pszNewTitleCopy,
+                          sizeof(swc.szSwtitle));
+                WinChangeSwitchEntry(hsw, &swc);
+            }
+        }
+    }
+
+    // refresh awake shadows pointing to us
+    for (pUseItem = _wpFindUseItem(somSelf, USAGE_LINK, NULL);
+         pUseItem;
+         pUseItem = _wpFindUseItem(somSelf, USAGE_LINK, pUseItem))
+    {
+        PLINKITEM pLinkItem = (PLINKITEM)(pUseItem + 1);
+        _wpSetShadowTitle(pLinkItem->LinkObj,
+                          pszNewTitleCopy);
+    }
+
+    // now, changing a file-system object's title
+    // will need to rename a file, but this is
+    // handled by WPFileSystem; however, the new
+    // abstract's title must be stored to OS2.INI
+    if (_somIsA(somSelf, _WPAbstract))
+        _wpSaveDeferred(somSelf);
 }
 
 /* ******************************************************************
@@ -2258,7 +2350,7 @@ ULONG WriteOutObjectSetup(FILE *RexxFile,
                      && strcmp(pszTrueClassName, "WPNetgrp")
                    )
                 {
-                    if (wpshCheckIfPopulated(pobj, FALSE))
+                    if (fdrCheckIfPopulated(pobj, FALSE))
                     {
                         if (fSem = !fdrRequestFolderMutexSem(pobj, 5000))
                         {

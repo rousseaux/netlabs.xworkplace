@@ -90,7 +90,7 @@ interface XWPProgramFile : WPProgramFile
 
     // pointers into WPProgramFile instance data
     PULONG      pulStartupDirHandle;        // 16-bit file-system handle for startup dir
-    PPROGTYPE   pProgType;
+    PPROGTYPE   pProgType;                  // prog type and visibility flag; two ULONGs!
     PSZ         *ppszStartupDir;
     PSZ         *ppszEnvironment;
     PSWP        pswpInitial;
@@ -111,7 +111,9 @@ interface XWPProgramFile : WPProgramFile
     wpSetAssociationType: override;
 
     wpQueryDefaultView: override;
+
     wpQueryProgDetails: override;
+    wpSetProgDetails: override;
 
     wpAddProgramAssociationPage: override;
     wpAddProgramPage: override;

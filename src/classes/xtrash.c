@@ -445,6 +445,7 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpQueryTrashObjectsCount(XWPTrashCan *somSelf)
  *@@changed V0.9.4 (2000-08-02) [umoeller]: now pre-loading icons; added ICONS.DLL support
  *@@changed V0.9.4 (2000-08-03) [umoeller]: added object mutex
  *@@changed V0.9.7 (2000-12-19) [umoeller]: new state wasn't always saved, fixed
+ *@@changed V0.9.16 (2002-01-01) [umoeller]: now using cmnGetStandardIcon
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_xwpSetCorrectTrashIcon(XWPTrashCan *somSelf,
@@ -472,14 +473,18 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpSetCorrectTrashIcon(XWPTrashCan *somSelf,
                )
             {
                 // icon changed:
-                HPOINTER hptr = NULLHANDLE;
+                HPOINTER hptr;
+                ULONG ulID;
 
                 if (fTrashFilled)
-                    hptr = _hptrFull;
+                    ulID = STDICON_TRASH_FULL;
                 else
-                    hptr = _hptrEmpty;
+                    ulID = STDICON_TRASH_EMPTY;
 
-                if (hptr)
+                if (!cmnGetStandardIcon(ulID,
+                                        &hptr,
+                                        NULL))
+                                // V0.9.16 (2002-01-01) [umoeller]
                 {
                     brc = _wpSetIcon(somSelf, hptr);
 
@@ -561,7 +566,7 @@ SOM_Scope ULONG SOMLINK xtrc_xwpEmptyTrashCan(XWPTrashCan *somSelf,
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpEmptyTrashCan");
 
     return (trshEmptyTrashCan(somSelf,
-                              hab,   // no anchor block, asynchronously
+                              hab,   // no anchor block == asynchronously
                               hwndConfirmOwner,
                               pulDeleted));
 }
@@ -680,10 +685,11 @@ SOM_Scope void  SOMLINK xtrc_wpInitData(XWPTrashCan *somSelf)
 
     _ulBusyCount = 0;
 
+    _fOpeningSettings = FALSE;
+
+/*
     _hptrEmpty = NULLHANDLE;
     _hptrFull = NULLHANDLE;
-
-    _fOpeningSettings = FALSE;
 
 #ifndef __NOICONREPLACEMENTS__
     if (cmnIsFeatureEnabled(IconReplacements))
@@ -709,6 +715,10 @@ SOM_Scope void  SOMLINK xtrc_wpInitData(XWPTrashCan *somSelf)
         _hptrEmpty = WinLoadPointer(HWND_DESKTOP,
                                     cmnQueryMainResModuleHandle(),
                                     ID_ICONXWPTRASHEMPTY);
+*/
+
+    // disabled the above
+    // V0.9.16 (2002-01-01) [umoeller]
 
     if (G_pDefaultTrashCan == NULL)
         // this is the first trash can to be initialized:
@@ -771,11 +781,6 @@ SOM_Scope void  SOMLINK xtrc_wpUnInitData(XWPTrashCan *somSelf)
 
     if (G_pDefaultTrashCan == somSelf)
         G_pDefaultTrashCan = NULL;
-
-    if (_hptrFull)
-        WinDestroyPointer(_hptrFull);
-    if (_hptrEmpty)
-        WinDestroyPointer(_hptrEmpty);
 
     XWPTrashCan_parent_WPFolder_wpUnInitData(somSelf);
 }

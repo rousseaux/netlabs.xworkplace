@@ -437,7 +437,11 @@ SOM_Scope void SOMLINK wani_wpObjectReady(XWPWinAni * somSelf,
 
 /*
  *@@ wpQueryIcon:
- *
+ *      this WPObject instance method returns the HPOINTER
+ *      with the current icon of the object. For some WPS
+ *      classes, icon loading is deferred until the first
+ *      call to this method.
+ *      See icons.c for an introduction.
  */
 
 SOM_Scope HPOINTER SOMLINK wani_wpQueryIcon(XWPWinAni * somSelf)

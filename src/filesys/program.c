@@ -91,6 +91,7 @@
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
@@ -98,6 +99,7 @@
 // SOM headers which don't crash with prec. header files
 #include "xfobj.ih"
 #include "xfdataf.ih"
+#include "xfldr.ih"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -105,6 +107,7 @@
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
+#include "filesys\icons.h"              // icons handling
 #include "filesys\object.h"             // XFldObject implementation
 
 // other SOM headers
@@ -243,15 +246,13 @@ BOOL progQuerySetup(WPObject *somSelf, // in: WPProgram or WPProgramFile
     } // end if _wpQueryProgDetails
 
     // ASSOCFILTER
+    if ((pszValue = _wpQueryAssociationFilter(somSelf)))
+            // wpQueryAssociationFilter:
+            // supported by both WPProgram and WPProgramFile
     {
-        if ((pszValue = _wpQueryAssociationFilter(somSelf)))
-                // wpQueryAssociationFilter:
-                // supported by both WPProgram and WPProgramFile
-        {
-            xstrcat(pstrSetup, "ASSOCFILTER=", 0);
-            xstrcat(pstrSetup, pszValue, 0);
-            xstrcatc(pstrSetup, ';');
-        }
+        xstrcat(pstrSetup, "ASSOCFILTER=", 0);
+        xstrcat(pstrSetup, pszValue, 0);
+        xstrcatc(pstrSetup, ';');
     }
 
     // ASSOCTYPE
@@ -330,6 +331,483 @@ PPROGDETAILS progQueryDetails(WPObject *pProgObject)    // in: either WPProgram 
     }
 
     return (NULL);
+}
+
+/*
+ *@@ progFillProgDetails:
+ *      fills a PROGDETAILS structure with the
+ *      given data. This is the implementation
+ *      for XWPProgramFile::wpQueryProgDetails
+ *      and XWPProgram::wpQueryProgDetails.
+ *
+ *      If (pProgDetails == NULL), this sets
+ *      *pulSize to the required size only.
+ *      Otherwise pProgDetails is expected
+ *      to point to a sufficiently large buffer,
+ *      and *pulSize must have the size of that
+ *      buffer on input too.
+ *
+ *      Returns FALSE if pcszExecutable is NULL
+ *      or pProgDetails was specified, but the
+ *      buffer size is too small.
+ *
+ *@@added V0.9.16 (2002-01-04) [umoeller]
+ */
+
+BOOL progFillProgDetails(PPROGDETAILS pProgDetails,     // can be NULL
+                         ULONG ulProgType,              // in: prog type
+                         ULONG fbVisible,               // in: visibility flag
+                         PSWP pswpInitial,
+                         PCSZ pcszTitle,                // in: object title (can be NULL)
+                         PCSZ pcszExecutable,           // in: executable name (req.)
+                         USHORT usStartupDirHandle,      // in: 16-bit object handle for startup dir or NULLHANDLE
+                         PCSZ pcszParameters,           // in: parameters or NULL
+                         PCSZ pcszEnvironment,          // in: environment string in WinStartApp format or NULL
+                         PULONG pulSize)                // in/out: buffer size
+{
+    BOOL        brc = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        if (pcszExecutable)
+        {
+            CHAR        szStartupDir[CCHMAXPATH];
+
+            ULONG       cbTitle = 0,
+                        cbExecutable,
+                        cbStartupDir = 0,
+                        cbParameters = 0,
+                        cbEnvironment = 0,
+                        ulSize;
+
+            // 1) title
+            if (pcszTitle)
+                cbTitle = strlen(pcszTitle) + 1;
+
+            // 2) executable
+            cbExecutable = strlen(pcszExecutable) + 1;
+
+            // 3) startup dir
+            if (usStartupDirHandle)
+            {
+                // we have a startup dir: get the full path from
+                // the handle
+                WPFolder *pStartup;
+                if (    (pStartup = _wpclsQueryObject(_WPFileSystem,
+                                                      usStartupDirHandle | (G_usHiwordFileSystem << 16)))
+                     && (_somIsA(pStartup, _WPFolder))
+                     && (_wpQueryFilename(pStartup, szStartupDir, TRUE))
+                   )
+                    cbStartupDir = strlen(szStartupDir) + 1;
+            }
+
+            // 4) parameters
+            if (pcszParameters)
+                cbParameters = strlen(pcszParameters) + 1;
+
+            // 5) environment
+            if (pcszEnvironment)
+            {
+                PCSZ    pVarThis = pcszEnvironment;
+                // go thru the environment strings; last one has two null bytes
+                while (*pVarThis)
+                {
+                    ULONG ulLenThis = strlen(pVarThis) + 1;
+                    cbEnvironment += ulLenThis;
+                    pVarThis += ulLenThis;
+                }
+            }
+
+            ulSize =   sizeof(PROGDETAILS)
+                     + cbTitle
+                     + cbExecutable
+                     + cbStartupDir
+                     + cbParameters
+                     + cbEnvironment;
+
+            if (!pProgDetails)
+                // caller wants size only:
+                brc = TRUE;
+            else if (ulSize <= *pulSize)
+            {
+                // caller has supplied sufficient buffer:
+                PBYTE   pbCurrent;
+
+                ZERO(pProgDetails);
+                pProgDetails->Length = sizeof(PROGDETAILS);
+
+                pProgDetails->progt.progc = ulProgType;
+                pProgDetails->progt.fbVisible = fbVisible;
+                if (pswpInitial)
+                    memcpy(&pProgDetails->swpInitial, pswpInitial, sizeof(SWP));
+
+                // go copy after PROGDETAILS
+                pbCurrent = (PBYTE)(pProgDetails + 1);
+
+                // 1) title
+                if (cbTitle)
+                {
+                    pProgDetails->pszTitle = pbCurrent;
+                    memcpy(pbCurrent, pcszTitle, cbTitle);       // includes 0
+                    pbCurrent += cbTitle;
+                }
+
+                // 2) executable
+                pProgDetails->pszExecutable = pbCurrent;
+                memcpy(pbCurrent, pcszExecutable, cbExecutable);  // includes 0
+                pbCurrent += cbExecutable;
+
+                // 3) startup dir
+                if (cbStartupDir)
+                {
+                    pProgDetails->pszStartupDir = pbCurrent;
+                    memcpy(pbCurrent, szStartupDir, cbStartupDir);  // includes 0
+                    pbCurrent += cbStartupDir;
+                }
+
+                // 4) parameters
+                if (cbParameters)
+                {
+                    pProgDetails->pszParameters = pbCurrent;
+                    memcpy(pbCurrent, pcszParameters, cbParameters);  // includes 0
+                    pbCurrent += cbParameters;
+                }
+
+                // 5) environment
+                if (cbEnvironment)
+                {
+                    pProgDetails->pszEnvironment = pbCurrent;
+                    memcpy(pbCurrent, pcszEnvironment, cbEnvironment);  // includes all the nulls
+                    pbCurrent += cbEnvironment;
+                }
+
+                brc = TRUE;
+            }
+
+            *pulSize = ulSize;
+        }
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    return (brc);
+}
+
+/*
+ *@@ progQueryProgType:
+ *
+ *@@added V0.9.16 (2002-01-01) [umoeller]
+ */
+
+ULONG progQueryProgType(PCSZ pszFullFile,
+                        PVOID pvExec)
+{
+    ULONG           ulAppType = PROG_DEFAULT;
+
+    PEXECUTABLE     pExec = NULL;
+    BOOL            fClose = FALSE;
+    ULONG           ulDosAppType = 0;
+    BOOL            fCallQueryAppType = FALSE;
+
+    #ifdef DEBUG_ASSOCS
+        _Pmpf((__FUNCTION__ ": %s, before: 0x%lX (%s)",
+            pszFullFile, ulAppType, appDescribeAppType(ulAppType)));
+    #endif
+
+    TRY_LOUD(excpt1)
+    {
+        APIRET arc = NO_ERROR;
+
+        ulAppType = PROG_DEFAULT;
+
+        if (pvExec)
+            // caller gave us PEXECUTABLE:
+            pExec = (PEXECUTABLE)pvExec;
+        else
+        {
+            if (!(arc = doshExecOpen(pszFullFile, &pExec)))
+                // close this again on exit
+                fClose = TRUE;
+        }
+
+        if (arc)
+            // cannot handle this executable:
+            fCallQueryAppType = TRUE;
+        else
+        {
+            // now we have the PEXECUTABLE:
+            // check what we found
+            switch (pExec->ulOS)
+            {
+                case EXEOS_DOS3:
+                case EXEOS_DOS4:
+                    ulAppType = PROG_WINDOWEDVDM;
+                break;
+
+                case EXEOS_OS2:
+                    if (pExec->fLibrary)
+                        ulAppType = PROG_DLL;
+                    else
+                    switch (pExec->ulExeFormat)
+                    {
+                        case EXEFORMAT_LX:
+
+    #define E32NOTP          0x8000L        // Library Module - used as NENOTP
+    #define E32NOLOAD        0x2000L        // Module not Loadable
+    #define E32PMAPI         0x0300L        // Uses PM Windowing API
+    #define E32PMW           0x0200L        // Compatible with PM Windowing
+    #define E32NOPMW         0x0100L        // Incompatible with PM Windowing
+    #define E32NOEXTFIX      0x0020L        // NO External Fixups in .EXE
+    #define E32NOINTFIX      0x0010L        // NO Internal Fixups in .EXE
+    #define E32SYSDLL        0x0008L        // System DLL, Internal Fixups discarded
+    #define E32LIBINIT       0x0004L        // Per-Process Library Initialization
+    #define E32LIBTERM       0x40000000L    // Per-Process Library Termination
+    #define E32APPMASK       0x0300L        // Application Type Mask
+
+                            switch (pExec->pLXHeader->ulFlags & E32APPMASK)
+                            {
+                                case E32PMAPI:
+                                    _Pmpf(("  LX OS2 PM"));
+                                    ulAppType = PROG_PM;
+                                break;
+
+                                case E32PMW:
+                                    _Pmpf(("  LX OS2 VIO"));
+                                    ulAppType = PROG_WINDOWABLEVIO;
+                                break;
+
+                                case E32NOPMW:
+                                default:
+                                    _Pmpf(("  LX OS2 FULLSCREEN"));
+                                    ulAppType = PROG_FULLSCREEN;
+                                break;
+                            }
+                        break;
+
+                        case EXEFORMAT_NE:
+
+    #define NENOTP          0x8000          // Not a process
+    #define NENOTMPSAFE     0x4000          // Process is not multi-processor safe
+    #define NEIERR          0x2000          // Errors in image
+    #define NEBOUND         0x0800          // Bound Family/API
+    #define NEAPPTYP        0x0700          // Application type mask
+    #define NENOTWINCOMPAT  0x0100          // Not compatible with P.M. Windowing
+    #define NEWINCOMPAT     0x0200          // Compatible with P.M. Windowing
+    #define NEWINAPI        0x0300          // Uses P.M. Windowing API
+    #define NEFLTP          0x0080          // Floating-point instructions
+    #define NEI386          0x0040          // 386 instructions
+    #define NEI286          0x0020          // 286 instructions
+    #define NEI086          0x0010          // 8086 instructions
+    #define NEPROT          0x0008          // Runs in protected mode only
+    #define NEPPLI          0x0004          // Per-Process Library Initialization
+    #define NEINST          0x0002          // Instance data
+    #define NESOLO          0x0001          // Solo data
+
+                            switch (pExec->pNEHeader->usFlags & NEAPPTYP)
+                            {
+                                case NEWINCOMPAT:
+                                    _Pmpf(("  NE OS2 VIO"));
+                                    ulAppType = PROG_WINDOWABLEVIO;
+                                break;
+
+                                case NEWINAPI:
+                                    _Pmpf(("  NE OS2 PM"));
+                                    ulAppType = PROG_PM;
+                                break;
+
+                                case NENOTWINCOMPAT:
+                                default:
+                                    _Pmpf(("  NE OS2 FULLSCREEN"));
+                                    ulAppType = PROG_FULLSCREEN;
+                                break;
+                            }
+                        break;
+
+                        case EXEFORMAT_COM:
+                            ulAppType = PROG_WINDOWABLEVIO;
+                        break;
+
+                        default:
+                            // something else: let
+                            // OS/2 handle this
+                            fCallQueryAppType = TRUE;
+                    }
+                break;
+
+                case EXEOS_WIN16:
+                case EXEOS_WIN386:
+                    _Pmpf(("  WIN16"));
+                    ulAppType = PROG_31_ENHSEAMLESSCOMMON;
+                break;
+
+                case EXEOS_WIN32:
+                    _Pmpf(("  WIN32"));
+                    ulAppType = PROG_WIN32;
+                break;
+            }
+
+            // and we modify a few of these assumptions
+            switch (ulAppType)
+            {
+                // Windows:
+                case PROG_WINDOW_REAL         :
+                case PROG_30_STD              :
+                case PROG_WINDOW_AUTO         :
+                case PROG_30_STDSEAMLESSVDM   :
+                case PROG_30_STDSEAMLESSCOMMON:
+                case PROG_31_STDSEAMLESSVDM   :
+                case PROG_31_STDSEAMLESSCOMMON:
+                case PROG_31_ENHSEAMLESSVDM   :
+                case PROG_31_ENHSEAMLESSCOMMON:
+                case PROG_31_ENH              :
+                case PROG_31_STD              :
+
+                case PROG_WIN32:       // added V0.9.16 (2001-12-08) [umoeller]
+                {
+                    // for all the Windows app types, we check
+                    // for whether the extension of the file is
+                    // DLL or 386; if so, we change the type to
+                    // DLL. Otherwise,  all Windows DLL's get
+                    // some default windoze icon.
+                    PCSZ pcszExt;
+                    if (    (pcszExt = doshGetExtension(pszFullFile))
+                         && (!stricmp(pcszExt, "DLL"))
+                       )
+                        // DLL found:
+                        ulAppType = PROG_DLL;
+                }
+                break;
+
+                // the other values are OK, leave them as is
+
+            } // end switch (ulAppType)
+        }
+    }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
+
+    if (    (fCallQueryAppType)
+         && (pszFullFile)
+       )
+    {
+        // we were helpless above: call
+        // DosQueryAppType and translate
+        // those flags
+        appQueryAppType(pszFullFile,
+                        &ulDosAppType,
+                        &ulAppType);
+    }
+
+    if (fClose)
+        // we opened the executable: free that again
+        doshExecClose(&pExec);
+
+    return (ulAppType);
+}
+
+/*
+ *@@ progFindIcon:
+ *      attempts to return an icon for the given executable
+ *      and application type.
+ *
+ *      This is shared code between XWPProgram and XWPProgramFile.
+ *
+ *@@added V0.9.16 (2002-01-01) [umoeller]
+ */
+
+APIRET progFindIcon(PEXECUTABLE pExec,
+                    ULONG ulAppType,
+                    HPOINTER *phptr,            // out: if != NULL, icon handle
+                    PICONINFO pIconInfo,        // out: if != NULL, icon info
+                    PBOOL pfNotDefaultIcon)     // out: set to TRUE if non-default icon
+{
+    APIRET      arc = NO_ERROR;
+    ULONG       ulStdIcon = 0;
+
+    *pfNotDefaultIcon = FALSE;
+
+    // examine the application type we have
+    switch (ulAppType)
+    {
+        // PM:
+        case PROG_PM                  :
+        // Windows:
+        case PROG_WINDOW_REAL         :
+        case PROG_30_STD              :
+        case PROG_WINDOW_AUTO         :
+        case PROG_30_STDSEAMLESSVDM   :
+        case PROG_30_STDSEAMLESSCOMMON:
+        case PROG_31_STDSEAMLESSVDM   :
+        case PROG_31_STDSEAMLESSCOMMON:
+        case PROG_31_ENHSEAMLESSVDM   :
+        case PROG_31_ENHSEAMLESSCOMMON:     // we get this for PE execs!!
+        case PROG_31_ENH              :
+        case PROG_31_STD              :
+
+        case PROG_WIN32:
+            // try icon resource
+            if (!icoLoadExeIcon(pExec,
+                                phptr,
+                                NULL,
+                                NULL))
+            {
+                *pfNotDefaultIcon = TRUE;
+            }
+            else
+                if (ulAppType == PROG_PM)
+                    ulStdIcon = STDICON_PM; // default PM prog icon
+                else if (ulAppType == PROG_WIN32)
+                    ulStdIcon = STDICON_WIN32;
+                else
+                    ulStdIcon = STDICON_WIN16; // default windoze
+        break;
+
+        case PROG_WINDOWABLEVIO:
+            // "window compatible":
+            // OS/2 window icon
+            ulStdIcon = STDICON_OS2WIN;
+        break;
+
+        case PROG_FULLSCREEN:
+            // "not window compatible":
+            // OS/2 fullscreen icon
+            ulStdIcon = STDICON_OS2FULLSCREEN;
+        break;
+
+        case PROG_WINDOWEDVDM:
+            // DOS window
+            ulStdIcon = STDICON_DOSWIN;
+        break;
+
+        case PROG_VDM: // == PROG_REAL
+            // DOS fullscreen
+            ulStdIcon = STDICON_DOSFULLSCREEN;
+        break;
+
+        case PROG_DLL:
+            // DLL flag set: load DLL icon
+            ulStdIcon = STDICON_DLL;
+        break;
+
+        case PROG_PDD:
+        case PROG_VDD:
+            ulStdIcon = STDICON_DRIVER;
+        break;
+
+        default:
+            // unknown:
+            ulStdIcon = STDICON_PROG_UNKNOWN;
+    }
+
+    if (ulStdIcon)
+        cmnGetStandardIcon(ulStdIcon,
+                           phptr,
+                           NULL);
+
+    return (arc);
 }
 
 /* ******************************************************************
@@ -1270,6 +1748,8 @@ typedef struct _PROGOPENDATA
     WPFileSystem    *pArgDataFile;  // in: data file as arg or NULL
     ULONG           ulMenuID;       // in: with data files, menu ID that was used
     HAPP            *phapp;         // out: HAPP
+    ULONG           cbFailingName;
+    PSZ             pszFailingName;
 
     HWND            hwndNotify;
 } PROGOPENDATA, *PPROGOPENDATA;
@@ -1369,7 +1849,9 @@ APIRET progOpenProgramThread1(PVOID pvData)
                 if (!(arc = appStartApp(pKernelGlobals->hwndThread1Object, // notify window: t1 obj wnd
                                         pProgDetails,
                                         0,              // APP_RUN_* flags V0.9.14
-                                        phapp)))
+                                        phapp,
+                                        pData->cbFailingName,
+                                        pData->pszFailingName)))
                             // V0.9.16 (2001-12-02) [umoeller]
                 {
                     // app started OK:
@@ -1439,7 +1921,7 @@ APIRET progOpenProgramThread1(PVOID pvData)
  *
  *      1)  This handles special executable flags as with
  *          WPProgram (e.g. "*" for a command line). See
- *          winhStartApp for details, which gets called from
+ *          appStartApp for details, which gets called from
  *          here to call WinStartApp in turn.
  *
  *      2)  If pArgDataFile is != NULL, this function handles
@@ -1481,10 +1963,12 @@ APIRET progOpenProgramThread1(PVOID pvData)
  *@@changed V0.9.16 (2001-12-02) [umoeller]: moved all code to progOpenProgramThread1; added thread-1 sync
  */
 
-APIRET progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFile
+APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgramFile
                        WPFileSystem *pArgDataFile,  // in: data file as arg or NULL
-                       ULONG ulMenuID,            // in: with data files, menu ID that was used
-                       HAPP *phapp)             // out: HAPP
+                       ULONG ulMenuID,              // in: with data files, menu ID that was used
+                       HAPP *phapp,                 // out: HAPP
+                       ULONG cbFailingName,
+                       PSZ pszFailingName)
 {
     APIRET          arc = FOPSERR_NOT_HANDLED_ABORT;
     PROGOPENDATA    Data;
@@ -1495,6 +1979,8 @@ APIRET progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramF
     Data.ulMenuID = ulMenuID;
     Data.phapp = phapp;
     Data.hwndNotify = NULLHANDLE;
+    Data.cbFailingName = cbFailingName;
+    Data.pszFailingName = pszFailingName;
 
     _Pmpf((__FUNCTION__ ": entering"));
 

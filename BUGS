@@ -14,30 +14,17 @@ XWorkplace features in the "XWorkplace Setup" object.
 Ulrich M”ller.
 
 
-
---  XCenter and window list: neither switch to nor close work
-
+--  pronews.exe not handled correctly in program object
 
 --  TMF file ends with strange char
 
-> * Duplicate filenames.  I have auto-rename set, but whenever I delete
->   a file whose name already occurs in Trash, it insists on asking me to
->   rename the newly-deleted object.  This is a real problem because I tend
->   to delete identically-named files in considerable numbers.  (Like when
->   I'm testing and recompiling programs or DLLs.)
-
 --  install: subdir plugins\drvdlgs not created?!
-
---  folder content menus:
-    if folder is already populated, drive changes aren't picked up
-    (crashes with CD-ROMs and drive menus)
 
 --  XShutdown:
     --  reboot hangs on "releasing filesystems" on some systems
 
 --  XCenter:
     --  double-click on tray empty space produces click on icon too
-    --  crashes with DragText
     --  spacing lines are missing on trays
     --  if tray is on top, icons are moved down (xwpbug.jpg)
     --  dragging XCenter widget text files can hang WPS (check file types?)
@@ -56,22 +43,6 @@ Ulrich M”ller.
     TIMESI.FON (file not found errors), fails with error 30024.
     b9) Fontfolder: Tms Rmn (TIMES.FON) doesn't show itself correctly
     (i.e. non-sized)
-
---  file exists dlg:
-
-    The problem is when you try to copy a file (click copy on the
-    contex menu) a Dialog opens where you want to copy it.
-
-    Also you can give it another name by typing it in the edit
-    field.
-
-    When you now have enabled "replace file exist dialog" in the
-    Xcenter Setup the problem appears as following:
-
-    By copying the file 123.exe for example from D:\ to E:\ the
-    file exists dialog from XWorkplace pops up and tells me that
-    on the target drive (E:\) a file named 123.EXE already
-    exists. (wich does not exists)
 
 --  folder content functions ignore INCLUDe settings
 
@@ -128,8 +99,6 @@ prog start:
     --  cmd files not started minimized?
 
 XCenter:
-    --  dragging locale object over XCenter crashes WPS
-
     --  "show frame" setting on a per-widget basis
 
     --  winlist widget behavior: make buttons wider (configurable)
@@ -166,17 +135,6 @@ XCenter:
         and x and y was the maximized position (whatever
         that would be for a maximized window, should be 0
         and 0 ?)
-
---  folder refresh:
-    causes all DLL icons to be reset.
-
-    2001-05-10: cannot easily be fixed without rewriting the entire folder
-    refresh mechanism.
-
---  status bars:
-    If the folder status bar is enabled for the Drives folder (using the default
-    status bar) and the active Object in the folder is the "Drive A" object the
-    WPS hangs after inserting a non-DOS formated Disk.
 
 --  In the "keyboard" object, looking at the "hotkeys" page I see an object
     associated with "LeftWin" key. This is one of 3 key mappings I defined

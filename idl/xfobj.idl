@@ -219,8 +219,8 @@ interface XFldObject : WPObject
     wpFree: override;
     wpUnInitData: override;
 
+    wpSetTitle: override;
     wpSetDefaultView: override;
-
     wpSetObjectID: override;
 
     wpSaveDeferred: override;
@@ -237,7 +237,6 @@ interface XFldObject : WPObject
     wpAddObjectGeneralPage: override;
 
     wpConfirmObjectTitle: override;
-    wpDelete: override;
 
     wpCnrSetEmphasis: override;
 

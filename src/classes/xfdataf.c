@@ -183,7 +183,7 @@ SOM_Scope BOOL  SOMLINK xfdf_xwpNukePhysical(XFldDataFile *somSelf)
  *      The interesting thing is that the ulReserved parameter
  *      points to a MAKEAWAKEFS structure (filesys.h) which
  *      was passed to wpclsMakeAwake by wpPopulate. As a result,
- *      we can use to build an icon from the EAs that were
+ *      we can use it to build an icon from the EAs that were
  *      loaded during populate.
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
@@ -198,8 +198,7 @@ SOM_Scope BOOL  SOMLINK xfdf_wpRestoreState(XFldDataFile *somSelf,
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpRestoreState");
 
-#ifndef __NOICONREPLACEMENTS__
-    if (cmnIsFeatureEnabled(IconReplacements))
+    if (cmnIsFeatureEnabled(TurboFolders))
     {
         PMAKEAWAKEFS pFSData = (PMAKEAWAKEFS)ulReserved;
 
@@ -219,7 +218,9 @@ SOM_Scope BOOL  SOMLINK xfdf_wpRestoreState(XFldDataFile *somSelf,
                  && (pFSData)
                  && (pFSData->pFea2List)
                  && (!(arc = icoBuildPtrFromFEA2List(pFSData->pFea2List,
-                                                     &hptrNew)))
+                                                     &hptrNew,
+                                                     NULL,
+                                                     NULL)))
                )
             {
                 _wpSetIcon(somSelf, hptrNew);
@@ -233,7 +234,6 @@ SOM_Scope BOOL  SOMLINK xfdf_wpRestoreState(XFldDataFile *somSelf,
     }
 
     if (!pwpRestoreState)
-#endif
         brc = XFldDataFile_parent_WPDataFile_wpRestoreState(somSelf,
                                                             ulReserved);
 
@@ -304,10 +304,11 @@ SOM_Scope HWND  SOMLINK xfdf_wpDisplayMenu(XFldDataFile *somSelf,
                                                                 ulMenuType,
                                                                 ulReserved);
 
+#ifndef __NEVEREXTASSOCS__
         if (!doshIsWarp4())
         {
             // on Warp 3, manipulate the "Open" submenu...
-            if (pGlobalSettings->fExtAssocs)
+            if (cmnIsFeatureEnabled(ExtAssocs))
             {
                 MENUITEM        mi;
                 // find "Open" submenu
@@ -323,6 +324,7 @@ SOM_Scope HWND  SOMLINK xfdf_wpDisplayMenu(XFldDataFile *somSelf,
                 }
             }
         }
+#endif
     }
     CATCH(excpt1)
     {
@@ -373,6 +375,8 @@ SOM_Scope ULONG  SOMLINK xfdf_wpFilterPopupMenu(XFldDataFile *somSelf,
     return (ulMenuFilter);
 }
 
+#ifndef __NEVEREXTASSOCS__
+
 /*
  *@@ wpModifyMenu:
  *      this WPObject method is Warp-4 specific and
@@ -413,7 +417,7 @@ BOOL _System xfdf_wpModifyMenu(XFldDataFile *somSelf,
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpModifyMenu");
 
-    fExtAssocs = pGlobalSettings->fExtAssocs;
+    fExtAssocs = cmnIsFeatureEnabled(ExtAssocs);
 
     // resolve parent method.... this is especially sick:
 
@@ -503,6 +507,8 @@ BOOL _System xfdf_wpModifyMenu(XFldDataFile *somSelf,
 
     return (brc);
 }
+
+#endif
 
 /*
  *@@ wpModifyPopupMenu:
@@ -630,7 +636,8 @@ SOM_Scope HWND  SOMLINK xfdf_wpOpen(XFldDataFile *somSelf,
     _Pmpf(("xfdf_wpOpen, ulView: 0x%lX", ulView));
     #endif
 
-    if (pGlobalSettings->fExtAssocs)
+#ifndef __NEVEREXTASSOCS__
+    if (cmnIsFeatureEnabled(ExtAssocs))
     {
         // "extended associations" allowed:
         if (    ((ulView >= 0x1000) && (ulView < 0x1100))
@@ -657,15 +664,19 @@ SOM_Scope HWND  SOMLINK xfdf_wpOpen(XFldDataFile *somSelf,
 
         if (pAssocObject)
         {
-            APIRET arc = progOpenProgram(pAssocObject,
-                                         somSelf,
-                                         ulView2,
-                                         &hwnd);
+            CHAR szFailing[CCHMAXPATH];
+            APIRET arc;
 
-            if (arc)
+            if (arc = progOpenProgram(pAssocObject,
+                                      somSelf,
+                                      ulView2,
+                                      &hwnd,
+                                      sizeof(szFailing),
+                                      szFailing))
             {
                 if (cmnProgramErrorMsgBox(NULLHANDLE,
                                           pAssocObject,
+                                          szFailing,
                                           arc)
                             == MBID_YES)
                     krnPostThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
@@ -678,6 +689,7 @@ SOM_Scope HWND  SOMLINK xfdf_wpOpen(XFldDataFile *somSelf,
         }
     }
     else
+#endif
         hwnd = XFldDataFile_parent_WPDataFile_wpOpen(somSelf,
                                                      hwndCnr,
                                                      ulView,
@@ -804,7 +816,8 @@ SOM_Scope ULONG  SOMLINK xfdf_wpAddFileTypePage(XFldDataFile *somSelf,
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpAddFileTypePage");
 
-    if (pGlobalSettings->fExtAssocs)
+#ifndef __NEVEREXTASSOCS__
+    if (cmnIsFeatureEnabled(ExtAssocs))
     {
         // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
 
@@ -826,6 +839,7 @@ SOM_Scope ULONG  SOMLINK xfdf_wpAddFileTypePage(XFldDataFile *somSelf,
         return (ntbInsertPage(pcnbp));
     }
     else
+#endif
         return (XFldDataFile_parent_WPDataFile_wpAddFileTypePage(somSelf,
                                                                  hwndNotebook));
 }
@@ -904,7 +918,8 @@ SOM_Scope WPObject*  SOMLINK xfdf_wpQueryAssociatedProgram(XFldDataFile *somSelf
                ));
     #endif
 
-    if (pGlobalSettings->fExtAssocs)
+#ifndef __NEVEREXTASSOCS__
+    if (cmnIsFeatureEnabled(ExtAssocs))
     {
         // "extended associations" allowed:
         // use our replacement mechanism...
@@ -918,6 +933,7 @@ SOM_Scope WPObject*  SOMLINK xfdf_wpQueryAssociatedProgram(XFldDataFile *somSelf
                         // locks the object
     }
     else
+#endif
         pobj = XFldDataFile_parent_WPDataFile_wpQueryAssociatedProgram(somSelf,
                                                                        ulView,
                                                                        pulHowMatched,
@@ -935,7 +951,10 @@ SOM_Scope WPObject*  SOMLINK xfdf_wpQueryAssociatedProgram(XFldDataFile *somSelf
 /*
  *@@ wpQueryIcon:
  *      this WPObject instance method returns the HPOINTER
- *      with the current icon of the object.
+ *      with the current icon of the object. For some WPS
+ *      classes, icon loading is deferred until the first
+ *      call to this method.
+ *      See icons.c for an introduction.
  *
  *      With data files and all subclasses, this turns out
  *      to be a major mess. When being made awake, all
@@ -952,20 +971,28 @@ SOM_Scope WPObject*  SOMLINK xfdf_wpQueryAssociatedProgram(XFldDataFile *somSelf
  *      in here, which is not a good idea with our replacement
  *      associations.
  *
+ *      Note also that WPProgramFile (and XWPProgramFile)
+ *      do not override this method; but this calls
+ *      _wpQueryAssociatedFileIcon in turn, which is overridden
+ *      by WPProgramFile to call WPProgramFile::wpSetProgIcon,
+ *      which we override to change the executable icons
+ *      (see XWPProgramFile::wpSetProgIcon).
+ *
+ *      What a mess.
+ *
  *@@added V0.9.16 (2001-12-08) [umoeller]
  */
 
 SOM_Scope HPOINTER  SOMLINK xfdf_wpQueryIcon(XFldDataFile *somSelf)
 {
-    PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
     HPOINTER hptrReturn = NULLHANDLE;
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xfdf_wpQueryIcon");
 
-#ifndef __NOICONREPLACEMENTS__
-    if (cmnIsFeatureEnabled(IconReplacements))
+    if (cmnIsFeatureEnabled(TurboFolders))
     {
-        if (!prec->hptrIcon)
+        PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
+        if (!(hptrReturn = prec->hptrIcon))
         {
             ULONG flNewStyle = 0;
             // first call, and icon wasn't set in wpRestoreState:
@@ -973,39 +1000,38 @@ SOM_Scope HPOINTER  SOMLINK xfdf_wpQueryIcon(XFldDataFile *somSelf)
 
             // 1) if we're an icon or pointer file, load the
             // icon
-            HPOINTER hptr2 = NULLHANDLE;
-
             if (    (_somIsA(somSelf, _WPIcon))
                  || (_somIsA(somSelf, _WPPointer))
                )
             {
                 CHAR szFilename[CCHMAXPATH];
                 _wpQueryFilename(somSelf, szFilename, TRUE);
-                if (!icoLoadICOFile(szFilename, &hptr2))
+                if (!icoLoadICOFile(szFilename,
+                                    &hptrReturn,
+                                    NULL,
+                                    NULL))
                     flNewStyle = OBJSTYLE_NOTDEFAULTICON;
-
-                    // @@todo this disappears on refresh
             }
+
             // 2) try if we find an association
-            else
-                hptr2 = _wpQueryAssociatedFileIcon(somSelf);
+            if (!hptrReturn)
+                hptrReturn = _wpQueryAssociatedFileIcon(somSelf);
 
-            if (!hptr2)
+            if (!hptrReturn)
                 // 3) use class icon then
-                hptr2 = _wpclsQueryIcon(_somGetClass(somSelf));
+                hptrReturn = _wpclsQueryIcon(_somGetClass(somSelf));
 
-            _wpSetIcon(somSelf, hptr2);
-            _wpModifyStyle(somSelf,
-                           OBJSTYLE_NOTDEFAULTICON,
-                           flNewStyle);
+            if (hptrReturn)
+            {
+                _wpSetIcon(somSelf, hptrReturn);
+                _wpModifyStyle(somSelf,
+                               OBJSTYLE_NOTDEFAULTICON,
+                               flNewStyle);
+            }
         }
-        else
-            // we have an icon already: use that
-            hptrReturn = prec->hptrIcon;
     }
 
     if (!hptrReturn)
-#endif
         hptrReturn = XFldDataFile_parent_WPDataFile_wpQueryIcon(somSelf);
 
     return (hptrReturn);
@@ -1070,6 +1096,7 @@ SOM_Scope void  SOMLINK xfdfM_wpclsInitData(M_XFldDataFile *somSelf)
      *
      */
 
+#ifndef __NEVEREXTASSOCS__
     // this gets called for subclasses too, so patch
     // this only for the parent class... descendant
     // classes will inherit this anyway
@@ -1083,6 +1110,7 @@ SOM_Scope void  SOMLINK xfdfM_wpclsInitData(M_XFldDataFile *somSelf)
                                      (somMethodPtr)xfdf_wpModifyMenu);
         }
     }
+#endif
 }
 
 /*
@@ -1190,7 +1218,7 @@ SOM_Scope ULONG  SOMLINK xfdfM_wpclsQueryIconData(M_XFldDataFile *somSelf,
 #endif
         // icon replacements not allowed: call default
         ulrc = M_XFldDataFile_parent_M_WPDataFile_wpclsQueryIconData(somSelf,
-                                                                  pIconInfo);
+                                                                     pIconInfo);
 
     return (ulrc);
 }

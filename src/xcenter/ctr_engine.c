@@ -1410,13 +1410,12 @@ VOID ctrpReformat(PXCENTERWINDATA pXCenterData,
  *@@changed V0.9.12 (2001-05-20) [umoeller]: moved show dlg outside locks
  *@@changed V0.9.14 (2001-07-14) [lafaix]: fixed possible null dereference
  *@@changed V0.9.14 (2001-08-01) [umoeller]: this never worked for tray subwidgets, fixed (major rework)
+ *@@changed V0.9.16 (2001-12-31) [umoeller]: now using WIDGETPOSITION struct
  */
 
 VOID ctrpShowSettingsDlg(XCenter *somSelf,
                          HWND hwndOwner,    // proposed owner of settings dlg
-                         ULONG ulTrayWidgetIndex,   // in: tray widget index or -1
-                         ULONG ulTrayIndex,     // in: tray index in tray widget
-                         ULONG ulWidgetIndex)    // in: subwidget index in tray or root widget index
+                         PWIDGETPOSITION pPosition) // in: widget to show settings dlg for
 {
     // these two structures get filled by the sick code below
     WGTSETTINGSTEMP Temp = {0};
@@ -1438,17 +1437,15 @@ VOID ctrpShowSettingsDlg(XCenter *somSelf,
             PXCENTERWIDGET pViewData;
 
             if (arc = ctrpFindWidgetSetting(somSelf,
-                                            ulTrayWidgetIndex,
-                                            ulTrayIndex,
-                                            ulWidgetIndex,
+                                            pPosition,
                                             &pSetting,
                                             &pViewData))
                 cmnLog(__FILE__, __LINE__, __FUNCTION__,
                        "Error %d finding widget index %d.%d.%d",
                        arc,
-                       ulTrayWidgetIndex,
-                       ulTrayIndex,
-                       ulWidgetIndex);
+                       pPosition->ulTrayWidgetIndex,
+                       pPosition->ulTrayIndex,
+                       pPosition->ulWidgetIndex);
             else
             {
                 PXCENTERWIDGETCLASS pClass;
@@ -1745,7 +1742,7 @@ HWND ctrpDragWidget(HWND hwnd,
         {
             SWP swpWidget;
             RECTL rclWidget;
-            HBITMAP hbmWidget;
+            PXBITMAP pbmWidget;
 
             HWND hwndParent = WinQueryWindow(hwnd, QW_PARENT);  // XCenter client or tray
 
@@ -1759,13 +1756,13 @@ HWND ctrpDragWidget(HWND hwnd,
                                HWND_DESKTOP,
                                (PPOINTL)&rclWidget,
                                2);
-            hbmWidget = gpihCreateBmpFromPS(WinQueryAnchorBlock(hwnd),
+            pbmWidget = gpihCreateBmpFromPS(WinQueryAnchorBlock(hwnd),
                                             hpsScreen,
                                             &rclWidget);
 
             WinReleasePS(hpsScreen);
 
-            if (hbmWidget)
+            if (pbmWidget)
             {
                 PDRAGINFO pdrgInfo = DrgAllocDraginfo(1);
                 if (pdrgInfo)
@@ -1798,7 +1795,7 @@ HWND ctrpDragWidget(HWND hwnd,
                         DRAGIMAGE drgImage;             // DRAGIMAGE structure
                         drgImage.cb = sizeof(DRAGIMAGE);
                         drgImage.cptl = 0;
-                        drgImage.hImage = hbmWidget;
+                        drgImage.hImage = pbmWidget->hbm;
                         drgImage.fl = DRG_BITMAP;
                         drgImage.cxOffset = 0;           // Offset of the origin of
                         drgImage.cyOffset = 0;           // the image from the pointer
@@ -1821,7 +1818,7 @@ HWND ctrpDragWidget(HWND hwnd,
                     DrgFreeDraginfo(pdrgInfo);
                 }
 
-                GpiDeleteBitmap(hbmWidget);
+                gpihDestroyXBitmap(&pbmWidget);
             }
         }
     }
@@ -2201,6 +2198,7 @@ BOOL CheckIfPresent(XCenter *somSelf,
  *@@changed V0.9.9 (2001-03-10) [umoeller]: made target emphasis clearer
  *@@changed V0.9.13 (2001-06-21) [umoeller]: renamed from ClientDragOver, added tray support
  *@@changed V0.9.14 (2001-08-05) [lafaix]: drop acceptance part rewritten
+ *@@changed V0.9.16 (2002-01-01) [umoeller]: fixed crashes with cross-process dragovers
  */
 
 MRESULT ctrpDragOver(HWND hwndClient,
@@ -2221,6 +2219,8 @@ MRESULT ctrpDragOver(HWND hwndClient,
                         // the WPS to copy anything)
 
     HWND hwndOver;
+    POINTL ptlDrop;
+
     if (hwndTrayWidget)
         hwndOver = hwndTrayWidget;
     else
@@ -2301,20 +2301,24 @@ MRESULT ctrpDragOver(HWND hwndClient,
             }
         }
 
+        // V0.9.16 (2002-01-01) [umoeller]
+        // moved the following two lines up from below, we
+        // can't access the draginfo after freeing it...
+        // this caused crashes with cross-process dragovers
+        ptlDrop.x = pdrgInfo->xDrop;
+        ptlDrop.y = pdrgInfo->yDrop;     // dtp coords
+
         DrgFreeDraginfo(pdrgInfo);
     }
 
     if (fDrawTargetEmph)
     {
-        HPS hps = DrgGetPS(pGlobals->hwndClient);       // V0.9.9 (2001-03-09) [umoeller]
-        if (hps)
+        HPS hps;
+        if (hps = DrgGetPS(pGlobals->hwndClient))
         {
             PPRIVATEWIDGETVIEW pViewOver = NULL;
 
             // convert coordinates to client
-            POINTL ptlDrop;
-            ptlDrop.x = pdrgInfo->xDrop;
-            ptlDrop.y = pdrgInfo->yDrop;     // dtp coords
             WinMapWindowPoints(HWND_DESKTOP,
                                hwndOver,            // to client or tray widget
                                &ptlDrop,
@@ -2433,9 +2437,7 @@ VOID ctrpDrop(HWND hwndClient,          // in: XCenter client
             // to its new location, and remove it from its
             // initial position if a move operation is going on.
             // V0.9.14 (2001-08-05) [lafaix]
-            ULONG ulTrayWidgetIndex = 0,
-                  ulTrayIndex = 0,
-                  ulWidgetIndex = 0;
+            WIDGETPOSITION Pos;
 
             if (    (hwndTrayWidget == NULLHANDLE)
                  && (pdrgInfo->usOperation == DO_MOVE)
@@ -2447,11 +2449,9 @@ VOID ctrpDrop(HWND hwndClient,          // in: XCenter client
                 // handle it just fine, but calling xwpMoveWidget is faster)
                 if (ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
                                                  G_pWidgetBeingDragged->Widget.hwndWidget,
-                                                 &ulTrayWidgetIndex,
-                                                 &ulTrayIndex,
-                                                 &ulWidgetIndex))
+                                                 &Pos))
                     _xwpMoveWidget(pXCenterData->somSelf,
-                                   ulWidgetIndex,
+                                   Pos.ulWidgetIndex,
                                    ulIndex);
             }
             else
@@ -2463,16 +2463,12 @@ VOID ctrpDrop(HWND hwndClient,          // in: XCenter client
 
                 if (ctrpQueryWidgetIndexFromHWND(pSourceXCenterData->somSelf,
                                                  G_pWidgetBeingDragged->Widget.hwndWidget,
-                                                 &ulTrayWidgetIndex,
-                                                 &ulTrayIndex,
-                                                 &ulWidgetIndex))
+                                                 &Pos))
                 {
                     PPRIVATEWIDGETSETTING pSetting;
 
                     if (!ctrpFindWidgetSetting(pSourceXCenterData->somSelf,
-                                               ulTrayWidgetIndex,
-                                               ulTrayIndex,
-                                               ulWidgetIndex,
+                                               &Pos,
                                                &pSetting,
                                                NULL))
                     {
@@ -3420,7 +3416,7 @@ VOID FrameDestroy(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *
  *      See fnwpXCenterMainClient for an overview.
  *
- *      Before V0.9.16, we were using an actual WC_FRAME
+ *      Before V0.9.16, we were using a "real" WC_FRAME
  *      window which was then subclassed with this. This
  *      has changed with V0.9.16: we now register our
  *      own private class, and this is its window procedure.
@@ -3517,41 +3513,69 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
             break;
 
             /*
+             * WM_QUERYFOCUSCHAIN:
+             *      this obscure message is posted by PM
+             *      "to request the handle of a window in
+             *      the focus chain". I am still not
+             *      entirely sure how this works, but if
+             *      we don't return our own frame handle
+             *      here, the XCenter won't react to the
+             *      task list commands any more since we
+             *      are no longer a WC_FRAME.
+             *
+             * V0.9.16 (2001-12-18) [umoeller]
+             */
+
             case WM_QUERYFOCUSCHAIN:
-            {
-                PCSZ pcsz;
-                switch (SHORT1FROMMP(mp1))
+                // check the fsCmd value in mp1
+                switch ((ULONG)mp1)
                 {
-                    case QFC_NEXTINCHAIN: pcsz = "QFC_NEXTINCHAIN"; break;
+                    case QFC_ACTIVE:
+                           // return the handle of the frame window that would be
+                           // activated or deactivated, if this window gains or
+                           // loses the focus
+                    case QFC_FRAME:
+                           // return the handle of the first frame window associated
+                           // with this window
+/* #define QFC_SWITCHTSKLST 0x0006
+                    case QFC_SWITCHTSKLST: */
+                        mrc = (MRESULT)hwnd;
+                    break;
 
-                    case QFC_ACTIVE: pcsz = "QFC_ACTIVE"; break;
-
-                    case QFC_FRAME: pcsz = "QFC_FRAME"; break;
-
-                    case QFC_SELECTACTIVE: pcsz = "QFC_SELECTACTIVE"; break;
-
-                    case QFC_PARTOFCHAIN: pcsz = "QFC_PARTOFCHAIN"; break;
-
-                    default:
-                        pcsz = "unknown mp1";
+                    case QFC_PARTOFCHAIN:
+                            // return TRUE if the handle of the window identified by
+                            // the hwndParent parameter is in the focus chain,
+                            // otherwise return FALSE.
+                            // Because this message is passed along the focus chain,
+                            // this is equivalent to returning TRUE, if the handle of
+                            // the window receiving this message is hwndParent or to
+                            // returning FALSE, if it is not.
+                        if ((ULONG)mp2 == hwnd)
+                            mrc = (MRESULT)TRUE;
                 }
-
-                if (SHORT1FROMMP(mp1) == QFC_ACTIVE)
-                    mrc = 0;            // not supported
-                else
-                {
-                    PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER);
-                    mrc = pXCenterData->pfnwpFrameOrig(hwnd, msg, mp1, mp2);
-                }
-
-                _Pmpf((__FUNCTION__ ": WM_QUERYFOCUSCHAIN 0x%lX", hwnd));
-                _Pmpf(("   %d (%s) --> 0x%lX",
-                        mp1,
-                        pcsz,
-                        mrc));
-            }
             break;
-            */
+
+            /*
+             * WM_ADJUSTWINDOWPOS:
+             *      bring ourselves to the top if we're
+             *      supposed to become active, but do not
+             *      really activate.
+             *
+             *      If we don't handle this explicitly,
+             *      we can't activate the XCenter (neither
+             *      from switch list nor from screen borders).
+             *
+             *  V0.9.16 (2001-12-18) [umoeller]
+             */
+
+            case WM_ADJUSTWINDOWPOS:
+                if (((PSWP)mp1)->fl & SWP_ACTIVATE)
+                {
+                    ctrpReformat((PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER),
+                                 XFMF_RESURFACE);
+                    mrc = (MRESULT)AWP_ACTIVATE;
+                }
+            break;
 
             /*
              * WM_ADJUSTWINDOWPOS:
@@ -4375,20 +4399,13 @@ BOOL ClientSaveSetup(HWND hwndClient,
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient, QWL_USER);
     BOOL brc = FALSE;
 
-    ULONG ulTrayWidgetIndex = 0,
-          ulTrayIndex = 0,
-          ulWidgetIndex = 0;
+    WIDGETPOSITION Pos;
     if (ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
                                      hwndWidget,
-                                     &ulTrayWidgetIndex,
-                                     &ulTrayIndex,
-                                     &ulWidgetIndex))
-        /* cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "Cannot find widget index for hwnd 0x%lX", hwndWidget);
-    else */
+                                     &Pos))
     {
         PLINKLIST pllWidgetSettings = ctrpQuerySettingsList(pXCenterData->somSelf);
-        PLISTNODE pSettingsNode = lstNodeFromIndex(pllWidgetSettings, ulWidgetIndex);
+        PLISTNODE pSettingsNode = lstNodeFromIndex(pllWidgetSettings, Pos.ulWidgetIndex);
         if (pSettingsNode)
         {
             // got the settings:
@@ -4717,20 +4734,20 @@ MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
  *      If the specified hwnd is a subwidget which resides
  *      in a tray,
  *
- *      --  *pulTrayWidgetIndex receives the "root"
+ *      --  WIDGETPOSITION.ulTrayWidgetIndex receives the "root"
  *          index of the tray widget;
  *
- *      --  *pulTrayIndex receives the index of the tray that the
+ *      --  WIDGETPOSITION.ulTrayIndex receives the index of the tray that the
  *          widget resides in (which will always be the
  *          current tray, because per definition, the
  *          subwidget wouldn't exist as a view otherwise);
  *
- *      --  *pulWidgetIndex receives the index of the subwidget
+ *      --  WIDGETPOSITION.ulWidgetIndex receives the index of the subwidget
  *          within that tray.
  *
  *      Otherwise, if hwndWidget is a "root" widget,
- *      *pulTrayWidgetIndex and *pulTrayIndex are set to -1,
- *      and *pulWidgetIndex receives the index of the widget.
+ *      WIDGETPOSITION.ulTrayWidgetIndex and WIDGETPOSITION.ulTrayIndex are set to -1,
+ *      and WIDGETPOSITION.ulWidgetIndex receives the index of the widget.
  *
  *      This only works if an XCenter view is currently
  *      open, of course.
@@ -4744,13 +4761,12 @@ MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
  *@@added V0.9.7 (2000-12-04) [umoeller]
  *@@changed V0.9.13 (2001-06-19) [umoeller]: added tray support
  *@@changed V0.9.14 (2001-08-01) [umoeller]: this never worked, fixed prototype for proper indices
+ *@@changed V0.9.16 (2001-12-31) [umoeller]: now using WIDGETPOSITION struct
  */
 
 BOOL ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
                                   HWND hwndWidget,
-                                  PULONG pulTrayWidgetIndex,
-                                  PULONG pulTrayIndex,
-                                  PULONG pulWidgetIndex)
+                                  PWIDGETPOSITION pPosition)    // out: widget position
 {
     BOOL        fFound = FALSE;
 
@@ -4777,9 +4793,9 @@ BOOL ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
                     if (pView->Widget.hwndWidget == hwndWidget)
                     {
                         // root widget found:
-                        *pulTrayWidgetIndex = -1;
-                        *pulTrayIndex = -1;
-                        *pulWidgetIndex = ulRootThis;
+                        pPosition->ulTrayWidgetIndex = -1;
+                        pPosition->ulTrayIndex = -1;
+                        pPosition->ulWidgetIndex = ulRootThis;
                         fFound = TRUE;
                         break;
                     }
@@ -4809,9 +4825,9 @@ BOOL ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
                                                                              ulRootThis))
                                        )
                                     {
-                                        *pulTrayWidgetIndex = ulRootThis;
-                                        *pulTrayIndex = pTraySetting->ulCurrentTray;
-                                        *pulWidgetIndex = ulSubThis;
+                                        pPosition->ulTrayWidgetIndex = ulRootThis;
+                                        pPosition->ulTrayIndex = pTraySetting->ulCurrentTray;
+                                        pPosition->ulWidgetIndex = ulSubThis;
                                         fFound = TRUE;
                                         break;
                                     }

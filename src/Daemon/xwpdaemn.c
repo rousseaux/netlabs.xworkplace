@@ -42,7 +42,7 @@
  *
  *          b) When the WPS is started for the first time (after
  *             a reboot), initMain (XFLDR.DLL)
- *             checks for whether a XWPGLOBALSHARED structure (xwphook.h)
+ *             checks for whether an XWPGLOBALSHARED structure (xwphook.h)
  *             has already been allocated as a block of shared memory.
  *
  *             At system startup, this is not the case. As a result,
@@ -336,23 +336,21 @@ FILE* _System dmnExceptOpenLogFile(VOID)
     DATETIME    DT;
 
     sprintf(szFileName, "%c:\\%s", doshQueryBootDrive(), XFOLDER_DMNCRASHLOG);
-    file = fopen(szFileName, "a");
-
-    if (file)
+    if (file = fopen(szFileName, "a"))
     {
         DosGetDateTime(&DT);
         fprintf(file, "\nXWorkplace Daemon trap message -- Date: %04d-%02d-%02d, Time: %02d:%02d:%02d\n",
             DT.year, DT.month, DT.day,
             DT.hours, DT.minutes, DT.seconds);
+#define LOGFILENAME XFOLDER_DMNCRASHLOG
         fprintf(file, "------------------------------------------------------------------\n"
                       "\nAn internal error occurred in the XWorkplace Daemon (XWPDAEMN.EXE).\n"
-                      "Please contact the author so that this error may be removed\n"
-                      "in future XWorkplace versions. A contact address may be\n"
-                      "obtained from the XWorkplace User Guide. Please supply\n"
-                      "this file (?:\\" XFOLDER_DMNCRASHLOG " with your e-mail and describe as\n"
-                      "exactly as possible the conditions under which the error\n"
-                      "occured.\n"
-                      "\nRunning XWorkplace version: V" BLDLEVEL_VERSION " built " __DATE__ "\n");
+                      "Please send a bug report to " CONTACT_ADDRESS "\n"
+                      "so that this error may be fixed for future XWorkplace versions.\n"
+                      "Please supply this file (?:\\" LOGFILENAME ") with your e-mail\n"
+                      "and describe as exactly as possible the conditions under which\n"
+                      "the error occured.\n"
+                      "\nRunning XWorkplace version: " BLDLEVEL_VERSION " built " __DATE__ "\n");
 
     }
     return (file);

@@ -439,6 +439,11 @@ SOM_Scope void SOMLINK and_wpObjectReady(XWPAnimouse * somSelf,
 
 /*
  *@@ wpQueryIcon:
+ *      this WPObject instance method returns the HPOINTER
+ *      with the current icon of the object. For some WPS
+ *      classes, icon loading is deferred until the first
+ *      call to this method.
+ *      See icons.c for an introduction.
  *
  */
 

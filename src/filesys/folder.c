@@ -267,7 +267,9 @@ BOOL fdrSetup(WPFolder *somSelf,
         fChanged = TRUE;
     }
 
-    if (pGlobalSettings->ExtFolderSort)     // V0.9.12 (2001-05-20) [umoeller]
+#ifndef __ALWAYSEXTSORT__
+    if (cmnIsFeatureEnabled(ExtendedSorting))
+#endif
     {
         cbValue = sizeof(szValue);
         if (_wpScanSetupString(somSelf, (PSZ)pszSetupString,
@@ -443,7 +445,9 @@ BOOL fdrQuerySetup(WPObject *somSelf,
 
         // SORTBYATTR... don't think we need this
 
-        if (pGlobalSettings->ExtFolderSort)     // V0.9.12 (2001-05-20) [umoeller]
+#ifndef __ALWAYSEXTSORT__
+        if (cmnIsFeatureEnabled(ExtendedSorting))
+#endif
         {
             if (_lAlwaysSort != SET_DEFAULT)
             {
@@ -1199,8 +1203,8 @@ BOOL fdrQuickOpen(WPFolder *pFolder,
             // = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
 
     // populate folder
-    wpshCheckIfPopulated(pFolder,
-                         FALSE);        // full populate
+    fdrCheckIfPopulated(pFolder,
+                        FALSE);        // full populate
 
     // DosEnterMustComplete(&ulNesting);
 
@@ -2565,7 +2569,7 @@ MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                                                                     );
                                     if (pmrc)
                                     {
-                                        if (strhMatchOS2(szMask, pmrc->pszIcon))
+                                        if (doshMatch(szMask, pmrc->pszIcon))
                                         {
                                             WinSendMsg(hwndCnr,
                                                        CM_SETRECORDEMPHASIS,
@@ -2920,8 +2924,8 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
         {
             // first iteration: initialize structure
             ppf->cTotalObjects = 0;
-            wpshCheckIfPopulated(pFolder,
-                                 FALSE);        // full populate
+            fdrCheckIfPopulated(pFolder,
+                                FALSE);        // full populate
             // now count objects
             for (   ppf->pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                     (ppf->pObject);

@@ -1454,8 +1454,8 @@ VOID fopsFileThreadProcessing(HAB hab,              // in: file thread's anchor 
                      */
 
                     case XFT_POPULATE:
-                        if (!wpshCheckIfPopulated(pObjectThis,
-                                                  FALSE))   // full populate
+                        if (!fdrCheckIfPopulated(pObjectThis,
+                                                 FALSE))   // full populate
                             frc = FOPSERR_POPULATE_FAILED;
                     break;
 

@@ -1,13 +1,13 @@
 
 #
 # makefile:
-#       makefile for main directory.
+#       This is XWorkplace's main makefile.
 #       For use with IBM NMAKE, which comes with the IBM compilers,
 #       the Developer's Toolkit, and the DDK.
 #
 #       All the makefiles have been restructured with V0.9.0.
 #
-#       Called from:    nowhere, maybe MAKE.CMD. Main makefile.
+#       Called from:    nowhere, this is the main makefile.
 #                       This recurses into the subdirectories.
 #
 #       Input:          specify the target(s) to be made, which can be:
@@ -16,8 +16,8 @@
 #                           Run this first before the regular "all"
 #                           target.
 #
-#                       --  "all" (default): build XFLDR.DLL,
-#                           XWPHOOK.DLL, XWPDAEMN.EXE.
+#                       --  "all" (default): build XFLDR.DLL, XWPHOOK.DLL,
+#                           XWPDAEMN.EXE, plus the default plugin DLLs.
 #
 #                       --  "really_all": "all" plus external EXEs
 #                           (Treesize, Netscape DDE, et al) plus NLS
@@ -70,12 +70,14 @@
 # VARIABLES
 # ---------
 
+# objects.in defines the .OBJ files to be compiled.
 !include objects.in
 
 OUTPUTDIR = $(XWP_OUTPUT_ROOT)
 
 # The OBJS macro contains all the .OBJ files which have been
-# created from the files in MAIN\.
+# created from the files in MAIN\. The definitions below are
+# from the objects.in include file.
 OBJS = \
 $(XFLDR_OBJS_CLASSES) \
 $(XFLDR_OBJS_SHARED) \

@@ -538,7 +538,9 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
         }
 
         // replace sort stuff
-        if (pGlobalSettings->ExtFolderSort)
+#ifndef __ALWAYSEXTSORT__
+        if (cmnIsFeatureEnabled(ExtendedSorting))
+#endif
             if (hwndCnr)
             {
                 #ifdef DEBUG_SORT
@@ -1138,7 +1140,9 @@ BOOL fdrProcessObjectCommand(WPFolder *somSelf,
         BOOL fCallXWPFops = FALSE;
         BOOL fTrueDelete = FALSE;
 
-        if (pGlobalSettings->fTrashDelete)
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
+        if (cmnIsFeatureEnabled(TrashDelete))
+#endif
         {
             // delete to trash can enabled:
             if (doshQueryShiftState())
@@ -1148,15 +1152,19 @@ BOOL fdrProcessObjectCommand(WPFolder *somSelf,
                 // delete to trash can:
                 fCallXWPFops = TRUE;
         }
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
         else
             // no delete to trash can:
             // do a real delete
             fTrueDelete = TRUE;
+#endif
 
         if (fTrueDelete)
             // real delete:
             // is real delete also replaced?
-            if (pGlobalSettings->fReplaceTrueDelete)
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
+            if (cmnIsFeatureEnabled(ReplaceTrueDelete))
+#endif
                 fCallXWPFops = TRUE;
 
         if (fCallXWPFops)
@@ -1550,6 +1558,33 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
             break; }
 
             /*
+             * WM_SYSCOMMAND:
+             *      intercept "close" for the desktop so we can
+             *      invoke shutdown on Alt+F4.
+             *
+             * V0.9.16 (2002-01-04) [umoeller]
+             */
+
+            case WM_SYSCOMMAND:
+                fCallDefault = TRUE;
+                if (    (SHORT1FROMMP(mp1) == SC_CLOSE)
+                     && (hwndFrame == cmnQueryActiveDesktopHWND())
+                   )
+                {
+                    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+                    if (pGlobalSettings->__flXShutdown & XSD_CANDESKTOPALTF4)
+                    {
+                        WinPostMsg(hwndFrame,
+                                   WM_COMMAND,
+                                   MPFROMSHORT(WPMENUID_SHUTDOWN),
+                                   MPFROM2SHORT(CMDSRC_MENU,
+                                                FALSE));
+                        fCallDefault = FALSE;
+                    }
+                }
+            break;
+
+            /*
              * WM_CHAR:
              *      this is intercepted to provide folder hotkeys
              *      and "Del" key support if "delete into trashcan"
@@ -1570,7 +1605,10 @@ MRESULT fdrProcessFolderMsgs(HWND hwndFrame,
                     USHORT usvk       = SHORT2FROMMP(mp2);
 
                     // check whether "delete to trash can" is on
-                    if (pGlobalSettings->fTrashDelete)
+#ifndef __ALWAYSTRASHANDTRUEDELETE__
+                    if (    (cmnIsFeatureEnabled(TrashDelete))
+                       )
+#endif
                     {
                         // yes: intercept "Del" key
                         if (usFlags & KC_VIRTUALKEY)

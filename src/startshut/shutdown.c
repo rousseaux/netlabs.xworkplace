@@ -74,6 +74,7 @@
 #define INCL_WINPROGRAMLIST
 #define INCL_WINSWITCHLIST
 #define INCL_WINCOUNTRY
+#define INCL_WINSYS
 #define INCL_WINMENUS
 #define INCL_WINSTATICS
 #define INCL_WINENTRYFIELDS
@@ -96,6 +97,7 @@
 #include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
+#include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\procstat.h"           // DosQProcStat handling
@@ -252,6 +254,110 @@ MRESULT EXPENTRY fnwpConfirm(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
     return (mrc);
 }
 
+PFNWP G_pfnwpFrameOrig = NULL;
+PXBITMAP G_pbmDim = NULLHANDLE;
+
+/*
+ *@@ fnwpDimScreen:
+ *
+ *@@added V0.9.16 (2002-01-04) [umoeller]
+ */
+
+MRESULT EXPENTRY fnwpDimScreen(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    switch (msg)
+    {
+        case WM_PAINT:
+        {
+            HPS hps = WinBeginPaint(hwndFrame, NULLHANDLE, NULL);
+            POINTL ptl = {0,0};
+            if (G_pbmDim)
+                WinDrawBitmap(hps,
+                              G_pbmDim->hbm,
+                              NULL,
+                              &ptl,
+                              0,
+                              0,
+                              DBM_NORMAL); // DBM_HALFTONE);
+            WinEndPaint(hps);
+        }
+        break;
+
+        case WM_DESTROY:
+            gpihDestroyXBitmap(&G_pbmDim);
+            mrc = G_pfnwpFrameOrig(hwndFrame, msg, mp1, mp2);
+        break;
+
+        default:
+            mrc = G_pfnwpFrameOrig(hwndFrame, msg, mp1, mp2);
+    }
+
+    return (mrc);
+}
+
+/*
+ *@@ CreateDimScreenWindow:
+ *
+ *@@added V0.9.16 (2002-01-04) [umoeller]
+ */
+
+HWND CreateDimScreenWindow(VOID)
+{
+    HWND hwnd;
+
+    FRAMECDATA  fcdata;
+
+    HPS hpsScreen = WinGetScreenPS(HWND_DESKTOP);
+    RECTL rcl;
+    rcl.xLeft = 0;
+    rcl.yBottom = 0;
+    rcl.xRight = winhQueryScreenCX();
+    rcl.yTop = winhQueryScreenCY();
+    if (G_pbmDim = gpihCreateBmpFromPS(winhMyAnchorBlock(),
+                                       hpsScreen,
+                                       &rcl))
+    {
+        POINTL  ptl = {0, 0};
+        GpiMove(G_pbmDim->hpsMem, &ptl);  // still 0, 0
+        ptl.x = rcl.xRight - 1;
+        ptl.y = rcl.yTop - 1;
+        GpiSetColor(G_pbmDim->hpsMem, RGBCOL_BLACK);
+        GpiSetPattern(G_pbmDim->hpsMem, PATSYM_HALFTONE);
+        GpiBox(G_pbmDim->hpsMem,
+               DRO_FILL, // interior only
+               &ptl,
+               0, 0);    // no corner rounding
+    }
+    WinReleasePS(hpsScreen);
+
+    fcdata.cb            = sizeof(FRAMECDATA);
+    fcdata.flCreateFlags = FCF_NOBYTEALIGN;
+    fcdata.hmodResources = NULLHANDLE;
+    fcdata.idResources   = 0;
+
+    hwnd = WinCreateWindow(HWND_DESKTOP,
+                           WC_FRAME,
+                           "",
+                           0,       // flags
+                           0,
+                           0,
+                           winhQueryScreenCX(),
+                           winhQueryScreenCY(),
+                           NULLHANDLE,
+                           HWND_TOP,
+                           0,
+                           &fcdata,
+                           NULL);
+
+    G_pfnwpFrameOrig = WinSubclassWindow(hwnd, fnwpDimScreen);
+
+    WinShowWindow(hwnd, TRUE);
+
+    return (hwnd);
+}
+
 /*
  *@@ xsdConfirmShutdown:
  *      this displays the eXtended Shutdown (not Restart Desktop)
@@ -268,7 +374,8 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
 {
     ULONG       ulReturn = MBID_NO;
     BOOL        fStore = FALSE;
-    HWND        hwndConfirm = NULLHANDLE;
+    HWND        hwndConfirm = NULLHANDLE,
+                hwndDim;
     BOOL        fSettingsLocked = FALSE; // V0.9.7 (2000-12-13) [umoeller]
 
     TRY_LOUD(excpt1)
@@ -283,10 +390,13 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
         HPOINTER    hptrShutdown = WinLoadPointer(HWND_DESKTOP, hmodResource,
                                                   ID_SDICON);
 
+        hwndDim = CreateDimScreenWindow();
+
         G_fConfirmWindowExtended = TRUE;
         G_fConfirmDialogReady = FALSE;
         G_ulConfirmHelpPanel = ID_XSH_XSHUTDOWN_CONFIRM;
-        hwndConfirm = WinLoadDlg(HWND_DESKTOP, NULLHANDLE,
+        hwndConfirm = WinLoadDlg(HWND_DESKTOP,
+                                 hwndDim,
                                  fnwpConfirm,
                                  hmodResource,
                                  ID_SDD_CONFIRM,
@@ -343,11 +453,11 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
             }
 
             // select reboot item from last time
-            if (pGlobalSettings->usLastRebootExt != 0xFFFF)
+            if (pGlobalSettings->__usLastRebootExt != 0xFFFF)
             {
                 if (WinSendDlgItemMsg(hwndConfirm, ID_SDDI_BOOTMGR,
                                       LM_SELECTITEM,
-                                      (MPARAM)pGlobalSettings->usLastRebootExt, // item index
+                                      (MPARAM)pGlobalSettings->__usLastRebootExt, // item index
                                       (MPARAM)TRUE) // select (not deselect)
                             == (MRESULT)FALSE)
                     // error:
@@ -398,7 +508,7 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
                 fSettingsLocked = TRUE;
                 // check "show this msg again"
                 if (!(winhIsDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN)))
-                    pGlobalSettings->ulXShutdownFlags &= ~XSD_CONFIRM;
+                    pGlobalSettings->__flXShutdown &= ~XSD_CONFIRM;
 
                 // check empty trash
                 psdParms->optEmptyTrashCan
@@ -427,20 +537,20 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
                     p += (strlen(p)+1);
                     strcpy(psdParms->szRebootCommand, p);
 
-                    pGlobalSettings->ulXShutdownFlags |= XSD_REBOOT;
-                    pGlobalSettings->usLastRebootExt = usSelected;
+                    pGlobalSettings->__flXShutdown |= XSD_REBOOT;
+                    pGlobalSettings->__usLastRebootExt = usSelected;
                 }
                 else if (winhIsDlgItemChecked(hwndConfirm, ID_SDDI_STANDARDREBOOT))
                 {
                     psdParms->optReboot = TRUE;
                     // szRebootCommand is a zero-byte only, which will lead to
                     // the standard reboot in the Shutdown thread
-                    pGlobalSettings->ulXShutdownFlags |= XSD_REBOOT;
-                    pGlobalSettings->usLastRebootExt = 0xFFFF;
+                    pGlobalSettings->__flXShutdown |= XSD_REBOOT;
+                    pGlobalSettings->__usLastRebootExt = 0xFFFF;
                 }
                 else
                     // standard shutdown:
-                    pGlobalSettings->ulXShutdownFlags &= ~XSD_REBOOT;
+                    pGlobalSettings->__flXShutdown &= ~XSD_REBOOT;
 
                 fStore = TRUE;
             } // if (pGlobalSettings)
@@ -461,6 +571,8 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
 
     if (hwndConfirm)
         WinDestroyWindow(hwndConfirm);
+    WinDestroyWindow(hwndDim);
+
 
     return (ulReturn);
 }
@@ -482,8 +594,11 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
     HPOINTER hptrShutdown = WinLoadPointer(HWND_DESKTOP, hmodResource,
                                       ID_SDICON);
 
+    HWND        hwndDim = CreateDimScreenWindow();
+
     G_ulConfirmHelpPanel = ID_XMH_RESTARTWPS;
-    hwndConfirm = WinLoadDlg(HWND_DESKTOP, NULLHANDLE,
+    hwndConfirm = WinLoadDlg(HWND_DESKTOP,
+                             hwndDim,
                              fnwpConfirm,
                              hmodResource,
                              ID_SDD_CONFIRMWPS,
@@ -539,20 +654,21 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
             // regular restart Desktop:
             // save close windows/startup folder settings
             if (psdParms->optWPSCloseWindows)
-                pGlobalSettings->ulXShutdownFlags |= XSD_WPS_CLOSEWINDOWS;
+                pGlobalSettings->__flXShutdown |= XSD_WPS_CLOSEWINDOWS;
             else
-                pGlobalSettings->ulXShutdownFlags &= ~XSD_WPS_CLOSEWINDOWS;
+                pGlobalSettings->__flXShutdown &= ~XSD_WPS_CLOSEWINDOWS;
             psdParms->optWPSReuseStartupFolder = winhIsDlgItemChecked(hwndConfirm,
                                                                       ID_SDDI_WPS_STARTUPFOLDER);
         }
         if (!(winhIsDlgItemChecked(hwndConfirm,
                                    ID_SDDI_MESSAGEAGAIN)))
-            pGlobalSettings->ulXShutdownFlags &= ~XSD_CONFIRM;
+            pGlobalSettings->__flXShutdown &= ~XSD_CONFIRM;
         cmnUnlockGlobalSettings();
         cmnStoreGlobalSettings();
     }
 
     WinDestroyWindow(hwndConfirm);
+    WinDestroyWindow(hwndDim);
 
     return (ulReturn);
 }
@@ -1669,33 +1785,33 @@ VOID xsdQueryShutdownSettings(PSHUTDOWNPARAMS psdp)
     PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
 
     memset(psdp, 0, sizeof(SHUTDOWNPARAMS));
-    psdp->optReboot = ((pGlobalSettings->ulXShutdownFlags & XSD_REBOOT) != 0);
-    psdp->optConfirm = ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) != 0);
+    psdp->optReboot = ((pGlobalSettings->__flXShutdown & XSD_REBOOT) != 0);
+    psdp->optConfirm = ((pGlobalSettings->__flXShutdown & XSD_CONFIRM) != 0);
     psdp->optDebug = FALSE;
 
     psdp->ulRestartWPS = 0;         // no, do shutdown
 
     psdp->optWPSCloseWindows = TRUE;
-    psdp->optAutoCloseVIO = ((pGlobalSettings->ulXShutdownFlags & XSD_AUTOCLOSEVIO) != 0);
-    psdp->optLog = ((pGlobalSettings->ulXShutdownFlags & XSD_LOG) != 0);
+    psdp->optAutoCloseVIO = ((pGlobalSettings->__flXShutdown & XSD_AUTOCLOSEVIO) != 0);
+    psdp->optLog = ((pGlobalSettings->__flXShutdown & XSD_LOG) != 0);
 
     /* if (psdp->optReboot)
         // animate on reboot? V0.9.3 (2000-05-22) [umoeller]
-        psdp->optAnimate = ((pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_REBOOT) != 0);
+        psdp->optAnimate = ((pGlobalSettings->__flXShutdown & XSD_ANIMATE_REBOOT) != 0);
     else
-        psdp->optAnimate = ((pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_SHUTDOWN) != 0);
+        psdp->optAnimate = ((pGlobalSettings->__flXShutdown & XSD_ANIMATE_SHUTDOWN) != 0);
        */
 
-    psdp->optAPMPowerOff = (  ((pGlobalSettings->ulXShutdownFlags & XSD_APMPOWEROFF) != 0)
+    psdp->optAPMPowerOff = (  ((pGlobalSettings->__flXShutdown & XSD_APMPOWEROFF) != 0)
                       && (apmPowerOffSupported())
                      );
-    psdp->optAPMDelay = ((pGlobalSettings->ulXShutdownFlags & XSD_APM_DELAY) != 0);
+    psdp->optAPMDelay = ((pGlobalSettings->__flXShutdown & XSD_APM_DELAY) != 0);
 
     psdp->optWPSReuseStartupFolder = psdp->optWPSCloseWindows;
 
-    psdp->optEmptyTrashCan = ((pGlobalSettings->ulXShutdownFlags & XSD_EMPTY_TRASH) != 0);
+    psdp->optEmptyTrashCan = ((pGlobalSettings->__flXShutdown & XSD_EMPTY_TRASH) != 0);
 
-    psdp->optWarpCenterFirst = ((pGlobalSettings->ulXShutdownFlags & XSD_WARPCENTERFIRST) != 0);
+    psdp->optWarpCenterFirst = ((pGlobalSettings->__flXShutdown & XSD_WARPCENTERFIRST) != 0);
 
     psdp->szRebootCommand[0] = 0;
 }
@@ -1759,7 +1875,7 @@ VOID StartShutdownThread(BOOL fStartShutdown,
 
 /*
  *@@ xsdInitiateShutdown:
- *      common shutdown entry point; checks GLOBALSETTINGS.ulXShutdownFlags
+ *      common shutdown entry point; checks GLOBALSETTINGS.__flXShutdown
  *      for all the XSD_* flags (shutdown options).
  *      If compiled with XFLDR_DEBUG defined (in common.h),
  *      debug mode will also be turned on if the SHIFT key is
@@ -1804,32 +1920,32 @@ BOOL xsdInitiateShutdown(VOID)
     if (fStartShutdown)
     {
         memset(psdp, 0, sizeof(SHUTDOWNPARAMS));
-        psdp->optReboot = ((pGlobalSettings->ulXShutdownFlags & XSD_REBOOT) != 0);
+        psdp->optReboot = ((pGlobalSettings->__flXShutdown & XSD_REBOOT) != 0);
         psdp->ulRestartWPS = 0;
         psdp->optWPSCloseWindows = TRUE;
         psdp->optWPSReuseStartupFolder = psdp->optWPSCloseWindows;
-        psdp->optConfirm = ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) != 0);
-        psdp->optAutoCloseVIO = ((pGlobalSettings->ulXShutdownFlags & XSD_AUTOCLOSEVIO) != 0);
-        psdp->optWarpCenterFirst = ((pGlobalSettings->ulXShutdownFlags & XSD_WARPCENTERFIRST) != 0);
-        psdp->optLog = ((pGlobalSettings->ulXShutdownFlags & XSD_LOG) != 0);
+        psdp->optConfirm = ((pGlobalSettings->__flXShutdown & XSD_CONFIRM) != 0);
+        psdp->optAutoCloseVIO = ((pGlobalSettings->__flXShutdown & XSD_AUTOCLOSEVIO) != 0);
+        psdp->optWarpCenterFirst = ((pGlobalSettings->__flXShutdown & XSD_WARPCENTERFIRST) != 0);
+        psdp->optLog = ((pGlobalSettings->__flXShutdown & XSD_LOG) != 0);
         /* if (psdp->optReboot)
             // animate on reboot? V0.9.3 (2000-05-22) [umoeller]
-            psdp->optAnimate = ((pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_REBOOT) != 0);
+            psdp->optAnimate = ((pGlobalSettings->__flXShutdown & XSD_ANIMATE_REBOOT) != 0);
         else
-            psdp->optAnimate = ((pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_SHUTDOWN) != 0);
+            psdp->optAnimate = ((pGlobalSettings->__flXShutdown & XSD_ANIMATE_SHUTDOWN) != 0);
            */
 
-        psdp->optAPMPowerOff = (  ((pGlobalSettings->ulXShutdownFlags & XSD_APMPOWEROFF) != 0)
+        psdp->optAPMPowerOff = (  ((pGlobalSettings->__flXShutdown & XSD_APMPOWEROFF) != 0)
                           && (apmPowerOffSupported())
                          );
-        psdp->optAPMDelay = ((pGlobalSettings->ulXShutdownFlags & XSD_APM_DELAY) != 0);
+        psdp->optAPMDelay = ((pGlobalSettings->__flXShutdown & XSD_APM_DELAY) != 0);
         #ifdef DEBUG_SHUTDOWN
             psdp->optDebug = doshQueryShiftState();
         #else
             psdp->optDebug = FALSE;
         #endif
 
-        psdp->optEmptyTrashCan = ((pGlobalSettings->ulXShutdownFlags & XSD_EMPTY_TRASH) != 0);
+        psdp->optEmptyTrashCan = ((pGlobalSettings->__flXShutdown & XSD_EMPTY_TRASH) != 0);
 
         psdp->szRebootCommand[0] = 0;
 
@@ -1909,12 +2025,12 @@ BOOL xsdInitiateRestartWPS(BOOL fLogoff)        // in: if TRUE, perform logoff a
         memset(psdp, 0, sizeof(SHUTDOWNPARAMS));
         psdp->optReboot =  FALSE;
         psdp->ulRestartWPS = (fLogoff) ? 2 : 1; // V0.9.5 (2000-08-10) [umoeller]
-        psdp->optWPSCloseWindows = ((pGlobalSettings->ulXShutdownFlags & XSD_WPS_CLOSEWINDOWS) != 0);
+        psdp->optWPSCloseWindows = ((pGlobalSettings->__flXShutdown & XSD_WPS_CLOSEWINDOWS) != 0);
         psdp->optWPSReuseStartupFolder = psdp->optWPSCloseWindows;
-        psdp->optConfirm = ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) != 0);
-        psdp->optAutoCloseVIO = ((pGlobalSettings->ulXShutdownFlags & XSD_AUTOCLOSEVIO) != 0);
-        psdp->optWarpCenterFirst = ((pGlobalSettings->ulXShutdownFlags & XSD_WARPCENTERFIRST) != 0);
-        psdp->optLog =  ((pGlobalSettings->ulXShutdownFlags & XSD_LOG) != 0);
+        psdp->optConfirm = ((pGlobalSettings->__flXShutdown & XSD_CONFIRM) != 0);
+        psdp->optAutoCloseVIO = ((pGlobalSettings->__flXShutdown & XSD_AUTOCLOSEVIO) != 0);
+        psdp->optWarpCenterFirst = ((pGlobalSettings->__flXShutdown & XSD_WARPCENTERFIRST) != 0);
+        psdp->optLog =  ((pGlobalSettings->__flXShutdown & XSD_LOG) != 0);
         #ifdef DEBUG_SHUTDOWN
             psdp->optDebug = doshQueryShiftState();
         #else
@@ -2006,6 +2122,8 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
  *
  ********************************************************************/
 
+#ifndef __NOXSHUTDOWN__
+
 CONTROLDEF
     ShutdownGroup = CONTROLDEF_GROUP(
                             LOAD_STRING, // "File menus",
@@ -2020,6 +2138,11 @@ CONTROLDEF
                             ID_SDDI_REBOOTEXT,
                             200,
                             30),
+    CanDesktopAltF4 = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_SDDI_CANDESKTOPALTF4,
+                            -1,
+                            -1),
     AnimationBeforeShutdownCB = CONTROLDEF_AUTOCHECKBOX(
                             LOAD_STRING, // "An~imation before shutdown"
                             ID_SDDI_ANIMATE_SHUTDOWN,
@@ -2139,6 +2262,8 @@ DLGHITEM dlgShutdown[] =
             START_ROW(0),       // shutdown only group
                 // create group on top
                 START_GROUP_TABLE(&ShutdownGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&CanDesktopAltF4),
                     START_ROW(ROW_VALIGN_CENTER),
                         CONTROL_DEF(&RebootAfterwardsCB),
                         CONTROL_DEF(&RebootActionsButton),
@@ -2189,12 +2314,14 @@ DLGHITEM dlgShutdown[] =
  *@@changed V0.9.4 (2000-08-03) [umoeller]: added "empty trash can"
  *@@changed V0.9.9 (2001-04-07) [pr]: added missing Undo and Default processing
  *@@changed V0.9.16 (2001-10-08) [umoeller]: now using dialog formatter
+ *@@changed V0.9.16 (2002-01-04) [umoeller]: added "alt+f4 on desktop starts shutdown"
  */
 
 VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                          ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    ULONG fl = pGlobalSettings->__flXShutdown;
 
     if (flFlags & CBI_INIT)
     {
@@ -2270,31 +2397,31 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        /* winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_ENABLED,
-            (pGlobalSettings->ulXShutdownFlags & XSD_ENABLED) != 0); */
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_REBOOT,
-            (pGlobalSettings->ulXShutdownFlags & XSD_REBOOT) != 0);
+            (fl & XSD_REBOOT) != 0);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_CANDESKTOPALTF4,
+            (fl & XSD_CANDESKTOPALTF4) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_ANIMATE_SHUTDOWN,
-            (pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_SHUTDOWN) != 0);
+            (fl & XSD_ANIMATE_SHUTDOWN) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_ANIMATE_REBOOT,
-            (pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_REBOOT) != 0);
+            (fl & XSD_ANIMATE_REBOOT) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_APMPOWEROFF,
             (apmPowerOffSupported())
-                ? ((pGlobalSettings->ulXShutdownFlags & XSD_APMPOWEROFF) != 0)
+                ? ((fl & XSD_APMPOWEROFF) != 0)
                 : FALSE
             );
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_DELAY,
-                (pGlobalSettings->ulXShutdownFlags & XSD_APM_DELAY) != 0);
+                (fl & XSD_APM_DELAY) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_EMPTYTRASHCAN,
-            (pGlobalSettings->ulXShutdownFlags & XSD_EMPTY_TRASH) != 0);
+            (fl & XSD_EMPTY_TRASH) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_CONFIRM,
-            (pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) != 0);
+            (fl & XSD_CONFIRM) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_AUTOCLOSEVIO,
-            (pGlobalSettings->ulXShutdownFlags & XSD_AUTOCLOSEVIO) != 0);
+            (fl & XSD_AUTOCLOSEVIO) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_WARPCENTERFIRST,
-            (pGlobalSettings->ulXShutdownFlags & XSD_WARPCENTERFIRST) != 0);
+            (fl & XSD_WARPCENTERFIRST) != 0);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_SDDI_LOG,
-            (pGlobalSettings->ulXShutdownFlags & XSD_LOG) != 0);
+            (fl & XSD_LOG) != 0);
 
 #ifndef __EASYSHUTDOWN__
         WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_SDDI_SAVEINIS_LIST,
@@ -2307,19 +2434,21 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     if (flFlags & CBI_ENABLE)
     {
         PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-        BOOL fXShutdownValid = (pGlobalSettings->NoWorkerThread == 0);
+        BOOL fXShutdownValid = TRUE; // (pGlobalSettings->NoWorkerThread == 0);
         BOOL fXShutdownEnabled =
                 (   (fXShutdownValid)
-                 && (pGlobalSettings->fXShutdown)
+                 && (cmnIsFeatureEnabled(XShutdown))
                 );
         BOOL fXShutdownOrWPSValid =
-                (   (   (pGlobalSettings->fXShutdown)
-                     || (pGlobalSettings->fRestartWPS)
+                (   (   (cmnIsFeatureEnabled(XShutdown))
+                     || (cmnIsFeatureEnabled(RestartDesktop))
                     )
-                 && (pGlobalSettings->NoWorkerThread == 0)
+                 // && (pGlobalSettings->NoWorkerThread == 0)
                 );
 
         // winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_ENABLED, fXShutdownValid);
+        winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_CANDESKTOPALTF4, fXShutdownEnabled);
+
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_REBOOT,  fXShutdownEnabled);
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_REBOOTEXT, fXShutdownEnabled);
 
@@ -2332,7 +2461,7 @@ VOID xsdShutdownInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_SDDI_DELAY,
                     (      fXShutdownEnabled
                         && (apmPowerOffSupported())
-                        && ((pGlobalSettings->ulXShutdownFlags & XSD_APMPOWEROFF) != 0)
+                        && ((fl & XSD_APMPOWEROFF) != 0)
                     )
                 );
 
@@ -2394,6 +2523,10 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     {
         case ID_SDDI_REBOOT:
             ulFlag = XSD_REBOOT;
+        break;
+
+        case ID_SDDI_CANDESKTOPALTF4:
+            ulFlag = XSD_CANDESKTOPALTF4;
         break;
 
         case ID_SDDI_ANIMATE_SHUTDOWN:
@@ -2496,7 +2629,7 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             if (pGlobalSettings)
             {
                 // and restore the settings for this page
-                pGlobalSettings->ulXShutdownFlags = pGSBackup->ulXShutdownFlags;
+                pGlobalSettings->__flXShutdown = pGSBackup->__flXShutdown;
 #ifndef __EASYSHUTDOWN__
                 pGlobalSettings->_bSaveINIS = pGSBackup->_bSaveINIS;
 #endif
@@ -2536,9 +2669,9 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         {
             if (ulFlag != -1)
                 if (ulExtra)
-                    pGlobalSettings->ulXShutdownFlags |= ulFlag;
+                    pGlobalSettings->__flXShutdown |= ulFlag;
                 else
-                    pGlobalSettings->ulXShutdownFlags &= ~ulFlag;
+                    pGlobalSettings->__flXShutdown &= ~ulFlag;
 
 #ifndef __EASYSHUTDOWN__
             if (ulSaveINIS != -1)
@@ -2558,6 +2691,8 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
     return ((MPARAM)0);
 }
+
+#endif
 
 /* ******************************************************************
  *
@@ -5569,7 +5704,7 @@ VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData)
         pShutdownData->ShutdownLogFile = NULL;
     }
 
-    if (pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_SHUTDOWN)
+    if (pGlobalSettings->__flXShutdown & XSD_ANIMATE_SHUTDOWN)
         // cute power-off animation
         PowerOffAnim(hpsScreen);
     else
@@ -5643,7 +5778,7 @@ VOID xsdFinishStandardReboot(PSHUTDOWNDATA pShutdownData)
         pShutdownData->ShutdownLogFile = NULL;
     }
 
-    if (pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_REBOOT)  // V0.9.3 (2000-05-22) [umoeller]
+    if (pGlobalSettings->__flXShutdown & XSD_ANIMATE_REBOOT)  // V0.9.3 (2000-05-22) [umoeller]
     {
         // cute power-off animation
         PowerOffAnim(hpsScreen);
@@ -5694,7 +5829,7 @@ VOID xsdFinishUserReboot(PSHUTDOWNDATA pShutdownData)
     PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     HPS hpsScreen = WinGetScreenPS(HWND_DESKTOP);
 
-    if (pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_REBOOT)        // V0.9.3 (2000-05-22) [umoeller]
+    if (pGlobalSettings->__flXShutdown & XSD_ANIMATE_REBOOT)        // V0.9.3 (2000-05-22) [umoeller]
         // cute power-off animation
         PowerOffAnim(hpsScreen);
     else
@@ -5822,7 +5957,7 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData)
         pShutdownData->ShutdownLogFile = NULL;
     }
 
-    if (pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_SHUTDOWN)
+    if (pGlobalSettings->__flXShutdown & XSD_ANIMATE_SHUTDOWN)
         // cute power-off animation
         PowerOffAnim(hpsScreen);
     else

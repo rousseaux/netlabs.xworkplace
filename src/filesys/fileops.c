@@ -125,9 +125,9 @@
 #include "helpers\undoc.h"              // some undocumented stuff
 
 /* ******************************************************************
- *                                                                  *
- *   Expanded object lists                                          *
- *                                                                  *
+ *
+ *   Expanded object lists
+ *
  ********************************************************************/
 
 /*
@@ -270,8 +270,8 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
     TRY_LOUD(excpt1)
     {
         // populate (either fully or with folders only)
-        if (wpshCheckIfPopulated(pFolder,
-                                 fFoldersOnly))
+        if (fdrCheckIfPopulated(pFolder,
+                                fFoldersOnly))
         {
             if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, 5000))
             {
@@ -555,7 +555,7 @@ FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pl
 
         TRY_LOUD(excpt1)
         {
-            if (!wpshCheckIfPopulated(pObject,
+            if (!fdrCheckIfPopulated(pObject,
                                      fFoldersOnly))
                 frc = FOPSERR_POPULATE_FAILED;
             else
@@ -638,9 +638,9 @@ FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pl
 }
 
 /********************************************************************
- *                                                                  *
- *   "File exists" (title clash) dialog                             *
- *                                                                  *
+ *
+ *   "File exists" (title clash) dialog
+ *
  ********************************************************************/
 
 /*
@@ -755,79 +755,64 @@ MRESULT EXPENTRY fnwpTitleClashDlg(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM m
 }
 
 /*
- *@@ fopsFindFSWithSameName:
- *      checks pFolder's contents for a
- *      WPFileSystem object with the same
- *      real name (or, if fCheckTitle == TRUE,
- *      the same title) as somSelf.
+ *@@ fopsFindObjectWithSameTitle:
+ *      checks pFolder's contents for an object with the
+ *      specified title.
  *
- *      If such a thing is found, it is
- *      returned and the real name is written
- *      into pszName2Check.
+ *      If such a thing is found, it is returned and the
+ *      real name is written into pszName2Check.
+ *
+ *      If pIgnore != NULL, that object is ignored during
+ *      the check, which is useful for "rename".
  *
  *      Used by fopsConfirmObjectTitle.
  *
- *@@added V0.9.1 (2000-01-30) [umoeller]
- *@@changed V0.9.9 (2001-03-27) [umoeller]: rewritten to no longer use wpshContainsFile, which caused find mutex deadlocks
- *@@changed V0.9.12 (2001-04-29) [umoeller]: forgot to populate folder first, fixed
+ *@@added V0.9.16 (2001-12-31) [umoeller]
  */
 
-WPFileSystem* fopsFindFSWithSameName(WPFileSystem *somSelf,   // in: FS object to check for
-                                     WPFolder *pFolder,       // in: folder to check
-                                     const char *pcszFullFolder,  // in: full path spec of pFolder
-                                     BOOL fCheckTitle,
-                                     PSZ pszRealNameFound)    // out: new real name
+WPFileSystem* fopsFindObjectWithSameTitle(WPFolder *pFolder,    // in: folder to check
+                                          PSZ pszFind,          // in: title to check for
+                                          WPObject *pIgnore)    // in: object to ignore or NULL
 {
     WPFileSystem *pFSReturn = NULL;
     BOOL    fFolderLocked = FALSE;
 
-    CHAR    szTitleOrName[CCHMAXPATH],
-            szCompare[CCHMAXPATH];
-    if (fCheckTitle)
-    {
-        strcpy(szTitleOrName, _wpQueryTitle(somSelf));
-        // (V0.84) this now does work for FAT to FAT;
-        // HPFS to FAT needs to be checked
-        // this should mimic the default WPS behavior close enough
-    }
-    else
-        // check real name:
-        _wpQueryFilename(somSelf, szTitleOrName, FALSE);
+    if (!pszFind)
+        return NULL;
 
-    // 2)   if the file is on FAT, make this 8+3
-    doshMakeRealName(szCompare,         // target buffer
-                     szTitleOrName,     // source
-                     '!',               // replace-with char
-                     doshIsFileOnFAT(pcszFullFolder));
+    _Pmpf((__FUNCTION__ ": checking %s for %s",
+            _wpQueryTitle(pFolder),
+            pszFind));
 
     TRY_LOUD(excpt1)
     {
         WPObject    *pobj = 0;
 
-        if (wpshCheckIfPopulated(pFolder, FALSE)) // V0.9.12 (2001-04-29) [umoeller]
+        if (fdrCheckIfPopulated(pFolder, FALSE)) // V0.9.12 (2001-04-29) [umoeller]
         {
             if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, 5000))
             {
-                // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-                // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                        // = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
-
-                // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
                 for (   pobj = _wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
                         (pobj);
                         pobj = *wpshGetNextObjPointer(pobj)
                     )
                 {
-                    if (_somIsA(pobj, _WPFileSystem))
+                    PSZ pszThis;
+                    if (    (pIgnore)
+                         && (pobj == pIgnore)
+                       )
                     {
-                        CHAR    szThisName[CCHMAXPATH];
-                        if (_wpQueryFilename(pobj, szThisName, FALSE))
-                            if (!stricmp(szThisName, szCompare))
-                            {
-                                pFSReturn = pobj;
-                                strcpy(pszRealNameFound, szThisName);
-                                break;
-                            }
+                        _Pmpf(("    found, but is self, so continue"));
+                        continue;
+                    }
+
+                    if (    (pszThis = _wpQueryTitle(pobj))
+                         && (!stricmp(pszThis, pszFind))
+                       )
+                    {
+                        _Pmpf(("    returning 0x%lX", pobj));
+                        pFSReturn = pobj;
+                        break;
                     }
                 }
             }
@@ -869,6 +854,7 @@ WPFileSystem* fopsFindFSWithSameName(WPFileSystem *somSelf,   // in: FS object t
  *@@changed V0.9.1 (2000-01-08) [umoeller]: added mutex protection for folder queries
  *@@changed V0.9.3 (2000-04-28) [umoeller]: now pre-resolving wpQueryContent for speed
  *@@changed V0.9.9 (2001-03-27) [umoeller]: fixed hangs with .hidden filenames
+ *@@changed V0.9.16 (2001-12-31) [umoeller]: removed duplicate code
  */
 
 BOOL fopsProposeNewTitle(const char *pcszTitle,          // in: title to modify
@@ -890,16 +876,14 @@ BOOL fopsProposeNewTitle(const char *pcszTitle,          // in: title to modify
     // increasing "num" until no file with that
     // real name exists (as the WPS does it too)
     strcpy(szFilenameWithoutCount, pcszTitle);
+
     // check if title contains a ':num' already
-    p2 = strchr(szFilenameWithoutCount, ':');
-    if (p2)
+    if (p2 = strchr(szFilenameWithoutCount, ':'))
     {
-        lFileCount = atoi(p2+1);
-        if (lFileCount)
+        if (lFileCount = atoi(p2 + 1))
         {
             // if we have a valid number following ":", remove it
-            p = strchr(p2, '.');
-            if (p)
+            if (p = strchr(p2, '.'))
                 strcpy(p2, p);
             else
                 *p2 = '\0';
@@ -944,48 +928,12 @@ BOOL fopsProposeNewTitle(const char *pcszTitle,          // in: title to modify
             strcat(pszProposeTitle, szFileCount);
         }
 
-        // now go through the folder content and
-        // check whether we already have a file
-        // with the proposed title (not real name!)
-        // (V0.84)
-        TRY_LOUD(excpt1)
-        {
-            WPFileSystem    *pExistingFile2 = 0;
-
-            if (fFolderLocked = !fdrRequestFolderMutexSem(pFolder, 5000))
-            {
-                // pre-resolve _wpQueryContent for speed V0.9.3 (2000-04-28) [umoeller]
-                // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
-                        // = SOM_Resolve(pFolder, WPFolder, wpQueryContent);
-
-                fFileExists = FALSE;
-                // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
-                for (   pExistingFile2 = _wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
-                        (pExistingFile2);
-                        pExistingFile2 = *wpshGetNextObjPointer(pExistingFile2)
-                    )
-                {
-                    fFileExists = (stricmp(_wpQueryTitle(pExistingFile2),
-                                           pszProposeTitle) == 0);
-                    if (fFileExists)
-                        break; // for wpQueryContent
-                }
-            }
-            else
-            {
-                // error requesting mutex:
-                fExit = TRUE;
-                brc = FALSE;
-            }
-        }
-        CATCH(excpt1)
-        {
-            fExit = TRUE;
-            brc = FALSE;
-        } END_CATCH();
-
-        if (fFolderLocked)
-            fdrReleaseFolderMutexSem(pFolder);
+        // check if the file exists using this routine
+        // V0.9.16 (2001-12-31) [umoeller]
+        fFileExists = (fopsFindObjectWithSameTitle(pFolder,
+                                                   pszProposeTitle,
+                                                   NULL)
+                        != NULL);
 
         lFileCount++;
 
@@ -1005,178 +953,350 @@ BOOL fopsProposeNewTitle(const char *pcszTitle,          // in: title to modify
  *      prepares the "file exists" dialog by setting
  *      up all the controls.
  *
+ *      Note that with V0.9.16, we now pass in flOptions
+ *      which _must_ have the NO_NAMECLASH_* flags already
+ *      set to disable controls properly.
+ *
  *@@added V0.9.3 (2000-05-03) [umoeller]
+ *@@changed V0.9.16 (2001-12-31) [umoeller]: largely rewritten
  */
 
 HWND PrepareFileExistsDlg(WPObject *somSelf,
-                          ULONG menuID,
-                          WPFolder *Folder,    // in: from fopsConfirmObjectTitle
-                          PSZ pszFolder,
-                          WPFileSystem *pFSExisting,
-                          PSZ pszRealNameFound,
-                          PSZ pszTitle)    // in/out: from fopsConfirmObjectTitle
+                          WPFolder *Folder,
+                          WPObject *pExisting,
+                          PSZ pszTitle,
+                          ULONG flOptions)
 {
-    CHAR    szProposeTitle[CCHMAXPATH] = "????",
-            szExistingFilename[CCHMAXPATH],
-            szTemp[500];
-    ULONG   // ulDlgReturn = 0,
-            ulLastFocusID = 0,
-            ulLastDot = 0;
     HWND    hwndConfirm;
-    PSZ     pszTemp = 0;
 
-    // prepare file date/time etc. for
-    // display in window
-    FILESTATUS3         fs3;
-    PCOUNTRYSETTINGS    pcs = cmnQueryCountrySettings(FALSE);
-    ULONG               ulOfs = 0;
-    // *** load confirmation dialog
-    hwndConfirm = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
-                             fnwpTitleClashDlg,
-                             cmnQueryNLSModuleHandle(FALSE),
-                             ID_XFD_TITLECLASH,
-                             NULL);
-
-    // disable window updates for the following changes
-    WinEnableWindowUpdate(hwndConfirm, FALSE);
-
-    // replace placeholders in introductory strings
-    pszTemp = winhQueryWindowText(WinWindowFromID(hwndConfirm,
-                                                  ID_XFDI_CLASH_TXT1));
-    strhFindReplace(&pszTemp, &ulOfs, "%1", pszRealNameFound);
-    ulOfs = 0;
-    strhFindReplace(&pszTemp, &ulOfs, "%2", pszFolder);
-    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TXT1,
-                      pszTemp);
-    free(pszTemp);
-
-    // set object information fields
-    _wpQueryFilename(pFSExisting, szExistingFilename, TRUE);
-    DosQueryPathInfo(szExistingFilename,
-                     FIL_STANDARD,
-                     &fs3, sizeof(fs3));
-    nlsFileDate(szTemp, &(fs3.fdateLastWrite),
-                 pcs->ulDateFormat, pcs->cDateSep);
-    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATEOLD, szTemp);
-    nlsFileTime(szTemp, &(fs3.ftimeLastWrite),
-                 pcs->ulTimeFormat, pcs->cTimeSep);
-    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMEOLD, szTemp);
-
-    nlsThousandsULong(szTemp, fs3.cbFile, // )+512) / 1024 ,
-                       pcs->cThousands);
-    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZEOLD, szTemp);
-
-    if (pFSExisting != somSelf)
+    // load confirmation dialog
+    if (hwndConfirm = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
+                                 fnwpTitleClashDlg,
+                                 cmnQueryNLSModuleHandle(FALSE),
+                                 ID_XFD_TITLECLASH,
+                                 NULL))
     {
+        CHAR    szProposeTitle[CCHMAXPATH] = "????",
+                szExistingFilename[CCHMAXPATH],
+                szTemp[CCHMAXPATH];
+        ULONG   ulLastFocusID = 0,
+                ulLastDot = 0;
+        PSZ     pszTemp = 0;
+
+        // prepare file date/time etc. for
+        // display in window
+        FILESTATUS3         fs3;
+        PCOUNTRYSETTINGS    pcs = cmnQueryCountrySettings(FALSE);
+        ULONG               ulOfs;
+
+        // disable window updates for the following changes
+        WinEnableWindowUpdate(hwndConfirm, FALSE);
+
+        // replace placeholders in introductory strings
+        pszTemp = winhQueryWindowText(WinWindowFromID(hwndConfirm,
+                                                      ID_XFDI_CLASH_TXT1));
+        ulOfs = 0;
+        strhFindReplace(&pszTemp, &ulOfs, "%1", _wpQueryTitle(pExisting));
+        _wpQueryFilename(Folder, szTemp, TRUE);
+        ulOfs = 0;
+        strhFindReplace(&pszTemp, &ulOfs, "%2", szTemp);
+        WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TXT1,
+                          pszTemp);
+        free(pszTemp);
+
+        // set object information fields
+        if (_somIsA(pExisting, _WPFileSystem))
+        {
+            _wpQueryFilename(pExisting, szExistingFilename, TRUE);
+            DosQueryPathInfo(szExistingFilename,
+                             FIL_STANDARD,
+                             &fs3, sizeof(fs3));
+            nlsFileDate(szTemp, &(fs3.fdateLastWrite),
+                         pcs->ulDateFormat, pcs->cDateSep);
+            WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATEOLD, szTemp);
+            nlsFileTime(szTemp, &(fs3.ftimeLastWrite),
+                         pcs->ulTimeFormat, pcs->cTimeSep);
+            WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMEOLD, szTemp);
+
+            nlsThousandsULong(szTemp, fs3.cbFile, // )+512) / 1024 ,
+                               pcs->cThousands);
+            WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZEOLD, szTemp);
+        }
+        else
+        {
+            WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATEOLD, "");
+            WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMEOLD, "");
+            WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZEOLD, "0");
+        }
+
         // if we're not copying within the same folder,
         // i.e. if the two objects are different,
         // give info on ourselves too
-        CHAR szSelfFilename[CCHMAXPATH];
-        _wpQueryFilename(somSelf, szSelfFilename, TRUE);
-        DosQueryPathInfo(szSelfFilename,
-                         FIL_STANDARD,
-                         &fs3, sizeof(fs3));
-        nlsFileDate(szTemp, &(fs3.fdateLastWrite),
-                     pcs->ulDateFormat, pcs->cDateSep);
-        WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATENEW, szTemp);
-        nlsFileTime(szTemp, &(fs3.ftimeLastWrite),
-                     pcs->ulTimeFormat, pcs->cTimeSep);
-        WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMENEW, szTemp);
-        nlsThousandsULong(szTemp, fs3.cbFile, // )+512) / 1024,
-                           pcs->cThousands);
-        WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZENEW, szTemp);
-    }
-    else
-    {
-        // if we're copying within the same folder,
-        // set the "new object" fields empty
-        WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATENEW, "");
-        WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMENEW, "");
-        WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZENEW, "");
-    }
-
-    // get new title which doesn't exist in the folder yet
-    fopsProposeNewTitle(pszTitle,
-                        Folder,
-                        szProposeTitle);
-
-    // OK, we've found a new filename: set dlg items
-    WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMENEWTXT,
-                      EM_SETTEXTLIMIT,
-                      (MPARAM)(250), MPNULL);
-    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_RENAMENEWTXT,
-                      szProposeTitle);
-    WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT,
-                      EM_SETTEXTLIMIT,
-                      (MPARAM)(250), MPNULL);
-    WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT,
-                      szProposeTitle);
-
-    // select the first characters up to the extension
-    // in the edit field
-    pszTemp = strrchr(szProposeTitle, '.');       // last dot == extension
-    if (pszTemp)
-        ulLastDot = (pszTemp - szProposeTitle);
-    else
-        ulLastDot = 300;                    // too large == select all
-
-    WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMENEWTXT,
-                      EM_SETSEL,
-                      MPFROM2SHORT(0, ulLastDot),
-                      MPNULL);
-    WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT,
-                      EM_SETSEL,
-                      MPFROM2SHORT(0, ulLastDot),
-                      MPNULL);
-
-    // find the selection the user has made last time;
-    // this INI key item is maintained by fnwpTitleClashDlg above
-    ulLastFocusID = PrfQueryProfileInt(HINI_USER,
-                                       (PSZ)INIAPP_XWORKPLACE,
-                                       (PSZ)INIKEY_NAMECLASHFOCUS,
-                                       ID_XFDI_CLASH_RENAMENEWTXT);
-                                            // default value if not set
-
-    // disable "Replace" and "Rename old"
-    // if we're copying within the same folder
-    // or if we're copying a folder to its parent
-    if (    (pFSExisting == somSelf)
-         || (pFSExisting == _wpQueryFolder(somSelf))
-       )
-    {
-        winhEnableDlgItem(hwndConfirm, ID_XFDI_CLASH_REPLACE, FALSE);
-        winhEnableDlgItem(hwndConfirm, ID_XFDI_CLASH_RENAMEOLD, FALSE);
-        winhEnableDlgItem(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT, FALSE);
-        // if the last focus is one of the disabled items,
-        // change it
-        if (   (ulLastFocusID == ID_XFDI_CLASH_REPLACE)
-            || (ulLastFocusID == ID_XFDI_CLASH_RENAMEOLDTXT)
+        if (    (pExisting != somSelf)
+             && (_somIsA(somSelf, _WPFileSystem))
            )
-            ulLastFocusID = ID_XFDI_CLASH_RENAMENEWTXT;
-    }
-    else if (menuID == 0x006E)
-    {
-        // disable "Replace" for "Rename" mode; this is
-        // not allowed
-        winhEnableDlgItem(hwndConfirm, ID_XFDI_CLASH_REPLACE, FALSE);
-        // if the last focus is one of the disabled items,
-        // change it
-        if (ulLastFocusID == ID_XFDI_CLASH_REPLACE)
-            ulLastFocusID = ID_XFDI_CLASH_RENAMENEWTXT;
+        {
+            CHAR szSelfFilename[CCHMAXPATH];
+            _wpQueryFilename(somSelf, szSelfFilename, TRUE);
+            DosQueryPathInfo(szSelfFilename,
+                             FIL_STANDARD,
+                             &fs3, sizeof(fs3));
+            nlsFileDate(szTemp, &(fs3.fdateLastWrite),
+                         pcs->ulDateFormat, pcs->cDateSep);
+            WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATENEW, szTemp);
+            nlsFileTime(szTemp, &(fs3.ftimeLastWrite),
+                         pcs->ulTimeFormat, pcs->cTimeSep);
+            WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMENEW, szTemp);
+            nlsThousandsULong(szTemp, fs3.cbFile, // )+512) / 1024,
+                               pcs->cThousands);
+            WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZENEW, szTemp);
+        }
+        else
+        {
+            // if we're copying within the same folder,
+            // set the "new object" fields empty
+            WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_DATENEW, "");
+            WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_TIMENEW, "");
+            WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_SIZENEW, "");
+        }
+
+        // get new title which doesn't exist in the folder yet
+        fopsProposeNewTitle(pszTitle,
+                            Folder,
+                            szProposeTitle);
+
+        // OK, we've found a new filename: set dlg items
+        WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMENEWTXT,
+                          EM_SETTEXTLIMIT,
+                          (MPARAM)(250), MPNULL);
+        WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_RENAMENEWTXT,
+                          szProposeTitle);
+        WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT,
+                          EM_SETTEXTLIMIT,
+                          (MPARAM)(250), MPNULL);
+        WinSetDlgItemText(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT,
+                          szProposeTitle);
+
+        // select the first characters up to the extension
+        // in the edit field
+        if (pszTemp = strrchr(szProposeTitle, '.'))       // last dot == extension
+            ulLastDot = (pszTemp - szProposeTitle);
+        else
+            ulLastDot = 300;                    // too large == select all
+
+        WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMENEWTXT,
+                          EM_SETSEL,
+                          MPFROM2SHORT(0, ulLastDot),
+                          MPNULL);
+        WinSendDlgItemMsg(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT,
+                          EM_SETSEL,
+                          MPFROM2SHORT(0, ulLastDot),
+                          MPNULL);
+
+        // find the selection the user has made last time;
+        // this INI key item is maintained by fnwpTitleClashDlg above
+        ulLastFocusID = PrfQueryProfileInt(HINI_USER,
+                                           (PSZ)INIAPP_XWORKPLACE,
+                                           (PSZ)INIKEY_NAMECLASHFOCUS,
+                                           ID_XFDI_CLASH_RENAMENEWTXT);
+                                                // default value if not set
+
+        if (flOptions & NO_NAMECLASH_RENAMEOLD)
+        {
+            winhEnableDlgItem(hwndConfirm, ID_XFDI_CLASH_RENAMEOLD, FALSE);
+            winhEnableDlgItem(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT, FALSE);
+            // if the last focus is one of the disabled items,
+            // change it
+            if (ulLastFocusID == ID_XFDI_CLASH_RENAMEOLDTXT)
+                ulLastFocusID = ID_XFDI_CLASH_RENAMENEWTXT;
+        }
+
+        if (flOptions & NO_NAMECLASH_REPLACE)
+        {
+            // disable "Replace" for "Rename" mode; this is
+            // not allowed
+            winhEnableDlgItem(hwndConfirm, ID_XFDI_CLASH_REPLACE, FALSE);
+            // if the last focus is one of the disabled items,
+            // change it
+            if (ulLastFocusID == ID_XFDI_CLASH_REPLACE)
+                ulLastFocusID = ID_XFDI_CLASH_RENAMENEWTXT;
+        }
+
+        // set focus to that item
+        winhSetDlgItemFocus(hwndConfirm, ulLastFocusID);
+            // this will automatically select the corresponding
+            // radio button, see fnwpTitleClashDlg above
+
+        // *** go!
+        winhRestoreWindowPos(hwndConfirm,
+                             HINI_USER,
+                             INIAPP_XWORKPLACE, INIKEY_WNDPOSNAMECLASH,
+                             SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
+                                    // move only, no resize
     }
 
-    // set focus to that item
-    winhSetDlgItemFocus(hwndConfirm, ulLastFocusID);
-        // this will automatically select the corresponding
-        // radio button, see fnwpTitleClashDlg above
-
-    // *** go!
-    winhRestoreWindowPos(hwndConfirm,
-                         HINI_USER,
-                         INIAPP_XWORKPLACE, INIKEY_WNDPOSNAMECLASH,
-                         SWP_MOVE | SWP_SHOW | SWP_ACTIVATE);
-                                // move only, no resize
     return (hwndConfirm);
+}
+
+/*
+ *@@ ConfirmObjectTitle:
+ *      worker for fopsConfirmObjectTitle.
+ *
+ *      This is mostly a rewrite of fopsConfirmObjectTitle
+ *      for V0.9.16 which fixes most of the problems we
+ *      used to have with "create another", "create from
+ *      template" and the like. Besides we used to handle
+ *      only file-system objects, which wasn't entirely
+ *      correct, and we had lots of special-casing for
+ *      FAT drives from the old XFolder code, which wasn't
+ *      needed either and caused hangs at times.
+ *
+ *      There's a few special situations to be considered:
+ *
+ *      --  When an object is copied within the same folder,
+ *          we must perform additional checks in order not
+ *          to allow "rename old" and "replace".
+ *
+ *      --  When an object is renamed, pszTitle has the title
+ *          of the current object, and flOptions has been set
+ *          explicitly by fopsConfirmObjectTitle so that we
+ *          won't get a confirmation for *ppExistingObject, but
+ *          only for another object with the same title.
+ *
+ *      --  For "Create from template", pszTitle has the template
+ *          title, and flOptions has NO_NAMECLASH_DIALOG set.
+ *
+ *      --  For "Create another", pszTitle has the template
+ *          title.
+ *
+ *@@added V0.9.16 (2001-12-31) [umoeller]
+ *@@changed V0.9.16 (2002-01-01) [umoeller]: added auto-rename for trash can
+ */
+
+ULONG ConfirmObjectTitle(WPFolder *Folder,          // in: target folder to check
+                         WPObject **ppExistingObject, // in: current object,
+                                                      // out: object to append to or to replace
+                         PSZ pszTitle,              // in: title to check for,
+                                                    // out: new proposed title for object
+                         ULONG cbTitle,
+                         ULONG flOptions)
+{
+    ULONG           ulrc = NAMECLASH_NONE;
+
+    WPFileSystem    *pFSExisting = NULL;
+    CHAR            szTemp[CCHMAXPATH];
+
+    _wpQueryFilename(Folder, szTemp, TRUE);
+    _Pmpf((__FUNCTION__ ": entering for folder %s, pszTitle %s",
+                szTemp, pszTitle));
+
+    // check if an object with the same title
+    // exists in the folder; note, pszTitle depends
+    // on the context... for copy it it will be the
+    // source title, but for "create another" et al,
+    // it will be the template's title
+    if (pFSExisting = fopsFindObjectWithSameTitle(Folder,
+                                                  pszTitle,
+                                                  // object to ignore:
+                                                  (flOptions & NAMECLASH_RENAMING)
+                                                        ? *ppExistingObject
+                                                        : NULL))
+    {
+        // another object with the same title exists:
+        // then we probably need to display the dialog...
+
+        // if the existing object has "deletion" set, then it is
+        // somewhere in the hidden \trash directories, so do an
+        // auto-rename in that case
+        if (_xwpQueryDeletion(pFSExisting, NULL, NULL))
+            flOptions |= NO_NAMECLASH_DIALOG;
+
+        // disable "Replace" and "Rename old"
+        // if we're copying within the same folder
+        // or if we're copying a folder to its parent
+        if (    (pFSExisting == *ppExistingObject)
+             || (pFSExisting == _wpQueryFolder(*ppExistingObject))
+           )
+        {
+            flOptions |= NO_NAMECLASH_REPLACE | NO_NAMECLASH_RENAMEOLD;
+        }
+
+        _Pmpf(("  options: %s%s%s%s%s",
+                    (flOptions & NO_NAMECLASH_RENAME) ? "NO_NAMECLASH_RENAME " : "",
+                    (flOptions & NO_NAMECLASH_RENAMEOLD) ? "NO_NAMECLASH_RENAMEOLD " : "",
+                    (flOptions & NO_NAMECLASH_APPEND) ? "NO_NAMECLASH_APPEND " : "",
+                    (flOptions & NO_NAMECLASH_REPLACE) ? "NO_NAMECLASH_REPLACE " : "",
+                    (flOptions & NO_NAMECLASH_DIALOG) ? "NO_NAMECLASH_DIALOG " : "" ));
+
+        // now, the caller may specify NO_NAMECLASH_DIALOG (the WPS
+        // sometimes does this), so check if we may rename still;
+        // if so, do an auto rename
+        if ((flOptions & (NO_NAMECLASH_DIALOG | NO_NAMECLASH_RENAME))
+               == NO_NAMECLASH_DIALOG)
+        {
+            // caller does _not_ want the dialog to be displayed:
+            // then perform an auto-rename
+            fopsProposeNewTitle(pszTitle,
+                                Folder,
+                                szTemp);
+            strhncpy0(pszTitle,
+                      szTemp,
+                      cbTitle);
+            _Pmpf(("  performed auto-rename to %s", pszTitle));
+            ulrc = NAMECLASH_RENAME;
+        }
+        else
+        {
+            // NO_NAMECLASH_DIALOG _not_ set: then go display
+            // the dialog...
+            // note, we display the dialog too if NO_NAMECLASH_DIALOG
+            // _and_ NO_NAMECLASH_RENAME is set, because I can't think
+            // of anything else to do here!
+            HWND hwndConfirm = PrepareFileExistsDlg(*ppExistingObject,
+                                                    Folder,
+                                                    pFSExisting,
+                                                    pszTitle,
+                                                    flOptions);
+
+            // go!
+            ULONG ulDlgReturn = WinProcessDlg(hwndConfirm);
+
+            // check return value
+            switch (ulDlgReturn)
+            {
+                case ID_XFDI_CLASH_RENAMENEW:
+                    // rename new: copy user's entry to buffer
+                    // provided by the method
+                    WinQueryDlgItemText(hwndConfirm, ID_XFDI_CLASH_RENAMENEWTXT,
+                                        cbTitle-1,
+                                        pszTitle);
+                    ulrc = NAMECLASH_RENAME;
+                break;
+
+                case ID_XFDI_CLASH_RENAMEOLD:
+                    // rename old: use wpSetTitle on existing object
+                    WinQueryDlgItemText(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT,
+                                        sizeof(szTemp)-1, szTemp);
+                    _wpSetTitleAndRenameFile(pFSExisting, szTemp, 0);
+
+                    ulrc = NAMECLASH_NONE;
+                break;
+
+                case ID_XFDI_CLASH_REPLACE:
+                    *ppExistingObject = pFSExisting;
+                    ulrc = NAMECLASH_REPLACE;
+                break;
+
+                case DID_CANCEL:
+                    ulrc = NAMECLASH_CANCEL;
+                break;
+            }
+
+            WinDestroyWindow(hwndConfirm);
+        }
+    }
+
+    return (ulrc);
 }
 
 /*
@@ -1193,6 +1313,7 @@ HWND PrepareFileExistsDlg(WPObject *somSelf,
  *@@changed V0.9.3 (2000-04-08) [umoeller]: fixed "Create another" problem
  *@@changed V0.9.3 (2000-05-03) [umoeller]: extracted ProcessFileExistsDlg
  *@@changed V0.9.4 (2000-07-15) [umoeller]: fixed "Create another" problem for good
+ *@@changed V0.9.16 (2001-12-31) [umoeller]: largely rewritten to finally fix the various special-case problems
  */
 
 ULONG fopsConfirmObjectTitle(WPObject *somSelf,
@@ -1202,19 +1323,88 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
                              ULONG cbTitle,
                              ULONG menuID)
 {
-    ULONG ulrc = NAMECLASH_NONE;
+    ULONG   ulrc = NAMECLASH_NONE;
+    ULONG   flOptions = 0;
 
-    _Pmpf(("fopsConfirmObjectTitle: menuID is 0x%lX", menuID));
+    TRY_LOUD(excpt1)
+    {
 
-    #ifndef NO_NAMECLASH_DIALOG
-        #define NO_NAMECLASH_DIALOG           0x80
-    #endif
+        _Pmpf((__FUNCTION__ ": menuID is 0x%lX", menuID));
 
+        if (    (!Folder)
+             || (!_somIsA(Folder, _WPFolder))
+             || (!pszTitle)
+             || (!strlen(pszTitle))
+             || (!cbTitle)
+           )
+        {
+            _Pmpf(("   error, returning NAMECLASH_CANCEL"));
+            ulrc = NAMECLASH_CANCEL;
+        }
+        else switch (menuID)
+        {
+            case WPMENUID_CREATESHADOW:
+                _Pmpf(("   WPMENUID_CREATESHADOW"));
+                // return NAMECLASH_NONE always
+            break;
+
+            case 110:           // comes in when objects are renamed
+                _Pmpf(("   rename"));
+                flOptions =    NAMECLASH_RENAMING
+                             | NO_NAMECLASH_REPLACE
+                             | NO_NAMECLASH_APPEND;
+            break;
+
+            case 183:           // comes in for "create from template"
+                _Pmpf(("   create from template"));
+                flOptions = NO_NAMECLASH_DIALOG;
+            break;
+
+            default:
+                _Pmpf(("   calling _wpQueryNameClashOptions"));
+                flOptions = _wpQueryNameClashOptions(somSelf, menuID);
+            break;
+        }
+
+        // these flags are returned by WPShadow::wpQueryNameClashOptions;
+        // for shadows we thus do nothing at all
+        #define NOTHING_TO_DO (NO_NAMECLASH_RENAME | NO_NAMECLASH_APPEND | NO_NAMECLASH_REPLACE)
+        if ((flOptions & NOTHING_TO_DO) != NOTHING_TO_DO)
+        {
+            // first set the duplicate
+            *ppDuplicate = somSelf;
+
+            // then go do some work
+            ulrc = ConfirmObjectTitle(Folder,
+                                      ppDuplicate,
+                                      pszTitle,
+                                      cbTitle,
+                                      flOptions);
+
+            _Pmpf(("   ConfirmObjectTitle returned %s",
+                        (ulrc == NAMECLASH_CANCEL) ? "NAMECLASH_CANCEL"
+                        : (ulrc == NAMECLASH_NONE) ? "NAMECLASH_NONE"
+                        : (ulrc == NAMECLASH_RENAME) ? "NAMECLASH_RENAME"
+                        : (ulrc == 0x04) ? "NAMECLASH_APPEND"
+                        : (ulrc == NAMECLASH_REPLACE) ? "NAMECLASH_REPLACE"
+                        : (ulrc == 0x20) ? "NAMECLASH_RENAME_KEEPASSOCS"
+                        : (ulrc == 0x30) ? "NAMECLASH_NONE_KEEPASSOCS"
+                        : "unknown"));
+
+        }
+    }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
+
+    return ulrc;
+
+    /*
     // nameclashs are only a problem for file-system objects,
     // and only if we're not creating shadows
     if (    (_somIsA(somSelf, _WPFileSystem))
-         && (menuID != 0x13C) // "create shadow" code
-         && (menuID != 0x065) // various "create another" codes; V0.9.4 (2000-07-15) [umoeller]
+         && (menuID != WPMENUID_CREATESHADOW) // 0x13C) // "create shadow" code
+         && (menuID != WPMENUID_CREATEANOTHER) // 0x065) // various "create another" codes; V0.9.4 (2000-07-15) [umoeller]
          && (menuID != 0x066)
          && (menuID < 0x7D0)
          // && (0 == (_wpQueryNameClashOptions(somSelf, menuID) & NO_NAMECLASH_DIALOG))
@@ -1232,7 +1422,7 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
            )
             return (NAMECLASH_CANCEL);
 
-        pFSExisting = fopsFindFSWithSameName(somSelf,
+        pFSExisting = fopsFindObjectWithSameTitle(somSelf,
                                              Folder,
                                              szFolder,
                                              // fCheckTitle:
@@ -1331,6 +1521,8 @@ ULONG fopsConfirmObjectTitle(WPObject *somSelf,
     } // end if (_somIsA(somSelf, _WPFileSystem))
 
     return (ulrc);
+
+    */
 }
 
 /*

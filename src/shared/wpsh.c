@@ -1317,7 +1317,7 @@ WPFolder* wpshQueryRootFolder(WPDisk* somSelf, // in: disk to check
         // somTD_WPFolder_wpQueryContent rslv_wpQueryContent
                 = SOM_Resolve(somSelf, WPFolder, wpQueryContent);
 
-        if (wpshCheckIfPopulated(somSelf, FALSE))
+        if (fdrCheckIfPopulated(somSelf, FALSE))
             brc = TRUE;
 
         // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
@@ -1454,62 +1454,6 @@ BOOL wpshPopulateWithShadows(WPFolder *somSelf)
                                0);
         }
     }
-
-    return (brc);
-}
-
-/*
- *@@ wpshCheckIfPopulated:
- *      this populates a folder if it's not populated yet.
- *      Saves you from querying the full path and all that.
- *
- *      If (fFoldersOnly == FALSE), this populates the folder
- *      with subfolders only if this hasn't been done yet.
- *
- *      If (fFoldersOnly == TRUE), this fully populates the
- *      folder if this hasn't been done yet.
- *
- *      Returns TRUE if the folder was successfully populated
- *      or if the folder was already fully populated.
- *      Returns FALSE if wpPopulate failed.
- *
- *@@changed V0.9.4 (2000-08-03) [umoeller]: changed return code
- *@@changed V0.9.6 (2000-10-25) [umoeller]: added fFoldersOnly
- *@@changed V0.9.11 (2001-04-21) [umoeller]: disabled shadow populate for folders only
- *@@changed V0.9.16 (2001-10-25) [umoeller]: added quiet excpt handler around wpPopulate
- */
-
-BOOL wpshCheckIfPopulated(WPFolder *somSelf,
-                          BOOL fFoldersOnly)
-{
-    BOOL        brc = FALSE;
-    CHAR        szRealName[2*CCHMAXPATH];       // V0.9.16 (2001-10-15) [umoeller]
-
-    ULONG       ulPopulateFlag = (fFoldersOnly)
-                                    ? FOI_POPULATEDWITHFOLDERS
-                                    : FOI_POPULATEDWITHALL;
-
-    if (    ((_wpQueryFldrFlags(somSelf) & ulPopulateFlag) != ulPopulateFlag)
-         && (_wpQueryFilename(somSelf, szRealName, TRUE))
-       )
-    {
-        // put this in a quiet exception handler because
-        // this tends to crash with the WPNetwork folder... grrrr...
-        TRY_QUIET(excpt1)
-        {
-            brc = _wpPopulate(somSelf,
-                              0,
-                              szRealName,
-                              fFoldersOnly);
-        }
-        CATCH(excpt1)
-        {
-            brc = FALSE;
-        } END_CATCH();
-    }
-    else
-        // already populated:
-        brc = TRUE;
 
     return (brc);
 }
@@ -1766,10 +1710,9 @@ WPObject* wpshCreateFromTemplate(HAB hab,
                         POINTL ptlIcon = {0, 0};
 
                         // populate the folder (synchronously)
-                        wpshCheckIfPopulated(pParentFolder,
-                                             // folders only:
-                                             FALSE);
-                                             // !fdrHasShowAllInTreeView(pParentFolder));
+                        fdrCheckIfPopulated(pParentFolder,
+                                            // folders only:
+                                            FALSE);
 
                         _wpCnrInsertObject(pNewObject,
                                            hwndCnr,

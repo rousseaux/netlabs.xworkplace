@@ -140,6 +140,8 @@ BOOL hifLoadHookConfig(PHOOKCONFIG phc)
                                 &cb));
 }
 
+#ifndef __ALWAYSHOOK__
+
 /*
  *@@ hifEnableHook:
  *      installs or deinstalls the hook.
@@ -195,6 +197,8 @@ BOOL hifEnableHook(BOOL fEnable)
     return (brc);
 }
 
+#endif
+
 /*
  *@@ hifXWPHookReady:
  *      this returns TRUE only if all of the following apply:
@@ -217,10 +221,12 @@ BOOL hifXWPHookReady(VOID)
     BOOL brc = FALSE;
     PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
     PXWPGLOBALSHARED pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     if (pXwpGlobalShared)
         if (pXwpGlobalShared->fAllHooksInstalled)
-            if (pGlobalSettings->fEnableXWPHook)
+#ifndef __ALWAYSHOOK__
+            if (cmnIsFeatureEnabled(XWPHook))
+#endif
                 brc = TRUE;
     return (brc);
 }

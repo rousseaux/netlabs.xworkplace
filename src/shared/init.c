@@ -75,12 +75,15 @@
 #include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\except.h"             // exception handling
+#include "helpers\linklist.h"           // linked list helper routines
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\procstat.h"           // DosQProcStat handling
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\threads.h"            // thread helpers
+#include "helpers\tree.h"               // red-black binary trees
 #include "helpers\winh.h"               // PM helper routines
+#define INCLUDE_WPHANDLE_PRIVATE
 #include "helpers\wphandle.h"           // file-system object handles
 #include "helpers\xstring.h"            // extended string helpers
 
@@ -136,7 +139,14 @@ extern KERNELGLOBALS    G_KernelGlobals;            // kernel.c
 
 static THREADINFO       G_tiSentinel = {0};
 
-static ULONG            G_ulDesktopValid = 0;
+#define DESKTOP_VALID               0
+#define NO_DESKTOP_ID               1
+#define DESKTOP_HANDLE_NOT_FOUND    2
+#define DESKTOP_DIR_DOESNT_EXIST    3
+#define DESKTOP_IS_NO_DIRECTORY     4
+
+static ULONG            G_ulDesktopValid = -1;      // unknown at this point
+
 static HOBJECT          G_hobjDesktop;
 static CHAR             G_szDesktopPath[CCHMAXPATH];
 
@@ -433,7 +443,9 @@ APIRET StartCmdExe(HWND hwndNotify,
     return (appStartApp(hwndNotify,
                         &pd,
                         0, // V0.9.14
-                        phappCmd));
+                        phappCmd,
+                        0,
+                        NULL));
 }
 
 /*
@@ -460,7 +472,9 @@ BOOL RunXFix(VOID)
     if (!appStartApp(G_KernelGlobals.hwndThread1Object,
                      &pd,
                      0, // V0.9.14
-                     &happXFix))
+                     &happXFix,
+                     0,
+                     NULL))
         if (WaitForApp(szXfix,
                        happXFix)
             == 1)
@@ -594,10 +608,10 @@ VOID ShowPanicDlg(VOID)
                     cmnUnlockGlobalSettings();
                     if (fStore)
                         cmnStoreGlobalSettings();
-                break; }
+                }
+                break;
 
                 case ID_XFDI_PANIC_XFIX:      // run xfix:
-                {
                     if (RunXFix())
                     {
                         // handle section changed:
@@ -609,7 +623,7 @@ VOID ShowPanicDlg(VOID)
                     }
 
                     fRepeat = TRUE;
-                break; }
+                break;
 
                 case ID_XFDI_PANIC_CMD:         // run cmd.exe
                 {
@@ -618,7 +632,8 @@ VOID ShowPanicDlg(VOID)
                                      &happCmd))
                         WaitForApp(getenv("OS2_SHELL"),
                                    happCmd);
-                break; }
+                }
+                break;
 
                 case ID_XFDI_PANIC_SHUTDOWN:        // shutdown
                     // "Shutdown" pressed:
@@ -859,12 +874,6 @@ VOID ReplaceWheelWatcher(PXFILE pLogFile)
     CATCH(excpt1) {} END_CATCH();
 }
 
-#define DESKTOP_VALID               0
-#define NO_DESKTOP_ID               1
-#define DESKTOP_HANDLE_NOT_FOUND    2
-#define DESKTOP_DIR_DOESNT_EXIST    3
-#define DESKTOP_IS_NO_DIRECTORY     4
-
 /*
  *@@ CheckDesktop:
  *      checks if <WP_DESKTOP> can be found on the system.
@@ -892,7 +901,8 @@ VOID ReplaceWheelWatcher(PXFILE pLogFile)
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
-ULONG CheckDesktop(PXFILE pLogFile)
+ULONG CheckDesktop(PXFILE pLogFile,
+                   HHANDLES hHandles)       // in: handles buffer from wphLoadHandles
 {
     ULONG   ulResult = DESKTOP_VALID;
 
@@ -924,41 +934,56 @@ ULONG CheckDesktop(PXFILE pLogFile)
         {
             // OK, check if that handle is valid.
             APIRET arc;
-            if (arc = wphQueryPathFromHandle(HINI_USER,
-                                             HINI_SYSTEM,
-                                             G_hobjDesktop,
-                                             G_szDesktopPath,
-                                             CCHMAXPATH))
+            // is this really a file-system object?
+            if (HIUSHORT(G_hobjDesktop) == G_usHiwordFileSystem)
             {
-                doshWriteLogEntry(pLogFile,
-                                  "  ERROR %d resolving <WP_DESKTOP> handle 0x%lX",
-                                  G_hobjDesktop);
-                ulResult = DESKTOP_HANDLE_NOT_FOUND;
+                // use loword only
+                USHORT      usObjID = LOUSHORT(G_hobjDesktop);
+
+                memset(G_szDesktopPath, 0, sizeof(G_szDesktopPath));
+                if (arc = wphComposePath(hHandles,
+                                         usObjID,
+                                         G_szDesktopPath,
+                                         sizeof(G_szDesktopPath),
+                                         NULL))
+                {
+                    doshWriteLogEntry(pLogFile,
+                                      "  ERROR %d resolving <WP_DESKTOP> handle 0x%lX",
+                                      G_hobjDesktop);
+                    ulResult = DESKTOP_HANDLE_NOT_FOUND;
+                }
+                else
+                {
+                    ULONG ulAttr;
+
+                    doshWriteLogEntry(pLogFile,
+                                      "  <WP_DESKTOP> handle 0x%lX points to \"%s\"",
+                                      G_hobjDesktop,
+                                      G_szDesktopPath);
+                    if (arc = doshQueryPathAttr(G_szDesktopPath,
+                                                &ulAttr))
+                    {
+                        doshWriteLogEntry(pLogFile,
+                                          "  ERROR: doshQueryPathAttr returned %d",
+                                          arc);
+                        ulResult = DESKTOP_DIR_DOESNT_EXIST;
+                    }
+                    else
+                        if (0 == (ulAttr & FILE_DIRECTORY))
+                        {
+                            doshWriteLogEntry(pLogFile,
+                                              "  ERROR: Desktop path \"%s\" is not a directory.",
+                                              arc);
+                            ulResult = DESKTOP_IS_NO_DIRECTORY;
+                        }
+                }
             }
             else
             {
-                ULONG ulAttr;
-
                 doshWriteLogEntry(pLogFile,
-                                  "  <WP_DESKTOP> handle 0x%lX points to \"%s\"",
-                                  G_hobjDesktop,
-                                  G_szDesktopPath);
-                if (arc = doshQueryPathAttr(G_szDesktopPath,
-                                            &ulAttr))
-                {
-                    doshWriteLogEntry(pLogFile,
-                                      "  ERROR: doshQueryPathAttr returned %d",
-                                      arc);
-                    ulResult = DESKTOP_DIR_DOESNT_EXIST;
-                }
-                else
-                    if (0 == (ulAttr & FILE_DIRECTORY))
-                    {
-                        doshWriteLogEntry(pLogFile,
-                                          "  ERROR: Desktop path \"%s\" is not a directory.",
-                                          arc);
-                        ulResult = DESKTOP_IS_NO_DIRECTORY;
-                    }
+                                  "  ERROR: <WP_DESKTOP> handle %d is not a file-system handle (wrong hiword)",
+                                  G_hobjDesktop);
+                ulResult = DESKTOP_HANDLE_NOT_FOUND;
             }
         }
 
@@ -1285,11 +1310,11 @@ VOID initMain(VOID)
                              &pLogFile)))
         {
             doshWrite(pLogFile,
-                      "\n\nStartup log opened, entering " __FUNCTION__ "\n",
-                      0);
+                      0,
+                      "\n\nStartup log opened, entering " __FUNCTION__ "\n");
             doshWrite(pLogFile,
-                      "------------------------------------------------------\n\n",
-                      0);
+                      0,
+                      "------------------------------------------------------\n\n");
 
             doshWriteLogEntry(pLogFile,
                               __FUNCTION__ ": PID 0x%lX, TID 0x%lX",
@@ -1368,10 +1393,48 @@ VOID initMain(VOID)
     if (pGlobalSettings->fNumLockStartup)
         winhSetNumLock(TRUE);
 
-    // go check if the desktop is valid
-    G_ulDesktopValid = CheckDesktop(pLogFile);
+    TRY_LOUD(excpt1)
+    {
+        APIRET arc;
+        PSZ pszActiveHandles;
+        if (arc = wphQueryActiveHandles(HINI_SYSTEM, &pszActiveHandles))
+             doshWriteLogEntry(pLogFile,
+                               "WARNING: wphQueryActiveHandles returned %d", arc);
+        else
+        {
+            HHANDLES hHandles;
+            if (arc = wphLoadHandles(HINI_USER,
+                                     HINI_SYSTEM,
+                                     pszActiveHandles,
+                                     &hHandles))
+                doshWriteLogEntry(pLogFile,
+                                  "WARNING: wphLoadHandles returned %d", arc);
+            else
+            {
+                // get the abstract and file-system handle hiwords for
+                // future use
+                G_usHiwordAbstract = ((PHANDLESBUF)hHandles)->usHiwordAbstract;
+                G_usHiwordFileSystem = ((PHANDLESBUF)hHandles)->usHiwordFileSystem;
+
+                // go check if the desktop is valid
+                G_ulDesktopValid = CheckDesktop(pLogFile,
+                                                hHandles);
+
+                wphFreeHandles(&hHandles);
+            }
+
+            free(pszActiveHandles);
+        }
+    }
+    CATCH(excpt1)
+    {
+        doshWriteLogEntry(pLogFile,
+                          "WARNING: Crash while checking file-system handles!");
+    } END_CATCH();
+
     if (G_ulDesktopValid != DESKTOP_VALID)
-        // no: disable archiving V0.9.16 (2001-10-25) [umoeller]
+        // if we couldn't find the desktop, disable archiving
+        // V0.9.16 (2001-10-25) [umoeller]
         arcForceNoArchiving();
 
     // initialize multimedia V0.9.3 (2000-04-25) [umoeller]

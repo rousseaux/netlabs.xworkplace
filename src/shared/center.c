@@ -828,28 +828,16 @@ VOID DwgtCommand(HWND hwnd,
             {
                 // widget has a settings dialog:
                 // PPRIVATEWIDGETVIEW pOwningTray = ((PPRIVATEWIDGETVIEW)pWidget)->pOwningTray;
-                ULONG ulTrayWidgetIndex = 0,
-                      ulTrayIndex = 0,
-                      ulWidgetIndex = 0;
+                WIDGETPOSITION Pos;
                 if (ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
                                                  pWidget->hwndWidget,
-                                                 &ulTrayWidgetIndex,
-                                                 &ulTrayIndex,
-                                                 &ulWidgetIndex))
-                /* if (pOwningTray)
-                {
-                    // this is a subwidget in a tray:
-
-                }
-                else */
+                                                 &Pos))
                 {
                     // have the widget show it with the XCenter frame
                     // as its owner
                     ctrpShowSettingsDlg(pXCenterData->somSelf,
                                         pXCenterData->Globals.hwndFrame,
-                                        ulTrayWidgetIndex,
-                                        ulTrayIndex,
-                                        ulWidgetIndex);
+                                        &Pos);
                             // adjusted V0.9.11 (2001-04-25) [umoeller]
                             // V0.9.14 (2001-08-01) [umoeller]
                 }
@@ -898,16 +886,12 @@ VOID DwgtCommand(HWND hwnd,
                 }
                 else
                 {
-                    ULONG ulTrayWidgetIndex = 0,
-                          ulTrayIndex = 0,
-                          ulWidgetIndex = 0;
+                    WIDGETPOSITION Pos;
                     if (ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
                                                      hwnd,
-                                                     &ulTrayWidgetIndex,
-                                                     &ulTrayIndex,
-                                                     &ulWidgetIndex))
+                                                     &Pos))
                         _xwpRemoveWidget(pXCenterData->somSelf,
-                                         ulWidgetIndex);
+                                         Pos.ulWidgetIndex);
                 }
             break; }
         }
@@ -954,10 +938,10 @@ VOID DwgtDestroy(HWND hwnd)
     if (pWidget)
     {
         HWND hwndClient = pWidget->pGlobals->hwndClient;
-        PXCENTERWINDATA pXCenterData
-            = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient,
-                                                 QWL_USER);
-        if (pXCenterData)
+        PXCENTERWINDATA pXCenterData;
+
+        if (pXCenterData = (PXCENTERWINDATA)WinQueryWindowPtr(hwndClient,
+                                                              QWL_USER))
         {
             WPSHLOCKSTRUCT Lock = {0};
             TRY_LOUD(excpt1)
@@ -1073,15 +1057,12 @@ BOOL DwgtRender(HWND hwnd,
                           ulTrayIndex = 0,
                           ulWidgetIndex = 0;
                     PPRIVATEWIDGETSETTING pSetting;
+                    WIDGETPOSITION Pos;
                     if (    (ctrpQueryWidgetIndexFromHWND(pXCenterData->somSelf,
                                                           pWidget->hwndWidget,
-                                                          &ulTrayWidgetIndex,
-                                                          &ulTrayIndex,
-                                                          &ulWidgetIndex))
+                                                          &Pos))
                          && (!ctrpFindWidgetSetting(pXCenterData->somSelf,
-                                                    ulTrayWidgetIndex,
-                                                    ulTrayIndex,
-                                                    ulWidgetIndex,
+                                                    &Pos,
                                                     &pSetting,
                                                     NULL))
                        )
