@@ -21,6 +21,11 @@ install:
     --  if lockup on start is enabled, first xwp msg box hangs the system
         after install.
 
+    --  refreshing objects on existing install causes "cannot delete" msgs
+        for XCenter, fonts folder etc.
+
+    --  config folder is always replaced.
+
 trash can:
     --  When deleting a folder wich has an other folder inside wich has the
         attribut "read only", destroying of this folder in trashcan will fail,
@@ -133,8 +138,10 @@ XWPSetup:
        PageMage isn't affected
 
 folders:
-    -- dragging stuff to folders crashes WPS if folder is being populated
+    --  dragging stuff to folders crashes WPS if folder is being populated
             (probably a WPS bug)
+
+    --  status bars keep accessing wrong drives for LAN objects
 
 file exists dlg:
     --  Right click on a file object (program object does not cause this bug)
