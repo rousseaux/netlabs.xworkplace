@@ -305,10 +305,10 @@ XWPFontObject* fonCreateFontObject(XWPFontFolder *pFolder,
         if (pNew)
         {
             // raise status count... this is for the status bar
-            WPSHLOCKSTRUCT Lock = {0};
+            WPObject *pobjLock = NULL;
             TRY_LOUD(excpt1)
             {
-                if (LOCK_OBJECT(Lock, pFolder))
+                if (pobjLock = (!_wpRequestObjectMutexSem(pFolder, SEM_INDEFINITE_WAIT)) ? pFolder : NULL)
                 {
                     XWPFontFolderData *somThis = XWPFontFolderGetData(pFolder);
 
@@ -321,8 +321,8 @@ XWPFontObject* fonCreateFontObject(XWPFontFolder *pFolder,
             }
             CATCH(excpt1) {} END_CATCH();
 
-            if (Lock.fLocked)
-                _wpReleaseObjectMutexSem(Lock.pObject);
+            if (pobjLock)
+                _wpReleaseObjectMutexSem(pobjLock);
         }
     }
 

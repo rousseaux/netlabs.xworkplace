@@ -129,7 +129,6 @@
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
-// #include <wpshadow.h>                   // WPShadow
 
 /* ******************************************************************
  *

@@ -55,6 +55,7 @@ $(OUTPUTDIR)\xwpvcard.obj
 XFLDR_OBJS_SHARED = \
 $(OUTPUTDIR)\center.obj \
 $(OUTPUTDIR)\classes.obj \
+$(OUTPUTDIR)\classtest.obj \
 $(OUTPUTDIR)\cnrsort.obj \
 $(OUTPUTDIR)\common.obj \
 $(OUTPUTDIR)\contentmenus.obj \

@@ -29,6 +29,7 @@
 
 #define INCL_WINWINDOWMGR
 #define INCL_WINMESSAGEMGR
+#define INCL_WINSTDCNR
 #include <os2.h>
 
 #include <stdio.h>
@@ -191,8 +192,7 @@ BOOL LockDrivesList(VOID)
                                    TRUE));      // request!
     }
 
-    return (!WinRequestMutexSem(G_hmtxDrivesList, SEM_INDEFINITE_WAIT));
-        // WinRequestMutexSem works even if the thread has no message queue
+    return (!DosRequestMutexSem(G_hmtxDrivesList, SEM_INDEFINITE_WAIT));
 }
 
 /*

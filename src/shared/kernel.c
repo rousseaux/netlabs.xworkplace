@@ -114,7 +114,6 @@
 #include "shared\init.h"                // XWorkplace initialization
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
-#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\filedlg.h"            // replacement file dialog implementation
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
@@ -1107,7 +1106,7 @@ static VOID T1M_OpenObjectFromHandle(HWND hwndObject,
                              && (hwndFrame = cmnQueryActiveDesktopHWND())
                            )
                         {
-                            HWND hwndClient = wpshQueryCnrFromFrame(hwndFrame);
+                            HWND hwndClient = WinWindowFromID(hwndFrame, FID_CLIENT);
                             POINTL ptlPopup = { 0, 0 }; // default: lower left
                             WinQueryPointerPos(HWND_DESKTOP, &ptlPopup);
                             /* switch ((ULONG)mp2)

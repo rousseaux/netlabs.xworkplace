@@ -426,7 +426,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
             CHAR szShutdown[50];
 
             // remove original shutdown item
-            winhRemoveMenuItem(hwndMenu, WPMENUID_SHUTDOWN);
+            winhDeleteMenuItem(hwndMenu, WPMENUID_SHUTDOWN);
 
             strcpy(szShutdown, cmnGetString(ID_XSSI_XSHUTDOWN));
             if (!(cmnQuerySetting(sflXShutdown) & XSD_NOCONFIRM))

@@ -121,7 +121,6 @@
 // XWorkplace implementation headers
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
-#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\filesys.h"            // various file-system object implementation code
 #include "filesys\folder.h"             // XFolder implementation

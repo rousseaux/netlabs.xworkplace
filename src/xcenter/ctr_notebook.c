@@ -1124,10 +1124,10 @@ BOOL ctrpSetupOnce(XCenter *somSelf,
 {
     BOOL brc = TRUE;
 
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             PLINKLIST pllSettings = ctrpQuerySettingsList(somSelf);
             if (!lstCountItems(pllSettings))
@@ -1199,8 +1199,8 @@ BOOL ctrpSetupOnce(XCenter *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
     return brc;
 }
@@ -3065,7 +3065,14 @@ MRESULT ctrpWidgetsItemChanged(PNOTEBOOKPAGE pnbp,
                                                        cmnQueryNLSModuleHandle(FALSE),
                                                        ID_CRM_WIDGET);
 
-                        hPopupMenu = (HWND)pnbp->pUser;
+                        if (hPopupMenu = (HWND)pnbp->pUser)
+                        {
+                            // kill the new menu items for XCenter
+                            // properties and close which make no sense here
+                            // V0.9.19 (2002-06-15) [umoeller]
+                            winhDeleteMenuItem(hPopupMenu, ID_CRMI_SEP3);
+                            winhDeleteMenuItem(hPopupMenu, ID_CRM_XCSUB);
+                        }
 
                         // remove the "Help" menu item... we can't display
                         // help without the widget view from here

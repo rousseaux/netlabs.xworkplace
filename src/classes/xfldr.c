@@ -132,6 +132,7 @@
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
+#include "shared\classtest.h"           // some cheap funcs for WPS class checks
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
@@ -149,8 +150,6 @@
 
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
-
-#include <wprootf.h>                    // WPRootFolder
 
 /* ******************************************************************
  *
@@ -304,7 +303,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
     BOOL fLocked = FALSE,
          fUpdate = FALSE;
 
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
 
     #ifdef DEBUG_SORT
         _PmpfF(("[%s]{%s}",_wpQueryTitle(somSelf),
@@ -314,7 +313,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             XFolderMethodDebug("XFolder","xf_xwpSetFldrSort");
 
@@ -350,8 +349,8 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
     if (fUpdate)
     {
@@ -551,10 +550,10 @@ SOM_Scope ULONG  SOMLINK xf_xwpBeginEnumContent(XFolder *somSelf)
                 // b)   then all abstract objects in the order they were
                 //      placed in this folder.
 
-                // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+                // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
                 for (pObj = _wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
                      pObj;
-                     pObj = *wpshGetNextObjPointer(pObj))
+                     pObj = *objGetNextObjPointer(pObj))
                 {
                     // create new list item
                     PORDEREDLISTITEM poliNew = malloc(sizeof(ORDEREDLISTITEM));
@@ -906,13 +905,13 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryQuickOpen(XFolder *somSelf)
 SOM_Scope BOOL  SOMLINK xf_xwpSetDefaultDocument(XFolder *somSelf,
                                                  WPFileSystem* pDefDoc)
 {
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
     BOOL brc = FALSE;
     XFolderMethodDebug("XFolder","xf_xwpSetDefaultDocument");
 
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             XFolderData *somThis = XFolderGetData(somSelf);
 
@@ -938,8 +937,8 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetDefaultDocument(XFolder *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
     return brc;
 }
@@ -961,10 +960,10 @@ SOM_Scope WPFileSystem*  SOMLINK xf_xwpQueryDefaultDocument(XFolder *somSelf)
 
     if (!cmnIsADesktop(somSelf))
     {
-        WPSHLOCKSTRUCT Lock = {0};
+        WPObject *pobjLock = NULL;
         TRY_LOUD(excpt1)
         {
-            if (LOCK_OBJECT(Lock, somSelf))
+            if (pobjLock = cmnLockObject(somSelf))
             {
                 XFolderData *somThis = XFolderGetData(somSelf);
 
@@ -978,8 +977,8 @@ SOM_Scope WPFileSystem*  SOMLINK xf_xwpQueryDefaultDocument(XFolder *somSelf)
         }
         CATCH(excpt1) {} END_CATCH();
 
-        if (Lock.fLocked)
-            _wpReleaseObjectMutexSem(Lock.pObject);
+        if (pobjLock)
+            _wpReleaseObjectMutexSem(pobjLock);
     }
 
     return (rc);
@@ -1452,7 +1451,7 @@ SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
                                          ULONG ulCode,
                                          WPObject* refObject)
 {
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
     // XFolderMethodDebug("XFolder","xf_wpObjectReady");
 
     #if defined(DEBUG_SOMMETHODS) || defined(DEBUG_AWAKEOBJECTS)
@@ -1482,14 +1481,14 @@ SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        if (_somIsA(somSelf, _WPRootFolder))
+        if (ctsIsRootFolder(somSelf))
         {
             // a root folder has been made awake:
             fdrRegisterAwakeRootFolder(somSelf);
             // strange, we never get this for WPSharedDir objs
         }
 
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             XFolderData *somThis = XFolderGetData(somSelf);
 
@@ -1517,8 +1516,8 @@ SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 }
 
 /*
@@ -2810,6 +2809,7 @@ SOM_Scope ULONG  SOMLINK xf_wpInsertSettingsPage(XFolder *somSelf,
  *
  *@@added V0.9.2 (2000-02-27) [umoeller]
  *@@changed V0.9.16 (2001-10-15) [umoeller]: now replacing animation icon page too
+ *@@changed V0.9.19 (2002-06-15) [umoeller]: now using XFldObject::xwpAddReplacementIconPage
  */
 
 SOM_Scope ULONG  SOMLINK xf_wpAddObjectGeneralPage2(XFolder *somSelf,
@@ -2822,7 +2822,13 @@ SOM_Scope ULONG  SOMLINK xf_wpAddObjectGeneralPage2(XFolder *somSelf,
     if (cmnQuerySetting(sfReplaceIconPage))
 #endif
     {
-        INSERTNOTEBOOKPAGE inbp;
+        // call the new method V0.9.19 (2002-06-15) [umoeller]
+        return _xwpAddReplacementIconPage(somSelf,
+                                          hwndNotebook,
+                                          SP_OBJECT_ICONPAGE2,
+                                          ID_XSH_OBJICONPAGE2);
+
+        /* INSERTNOTEBOOKPAGE inbp;
         memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
         inbp.somSelf = somSelf;
         inbp.hwndNotebook = hwndNotebook;
@@ -2837,7 +2843,7 @@ SOM_Scope ULONG  SOMLINK xf_wpAddObjectGeneralPage2(XFolder *somSelf,
         inbp.pfncbInitPage    = icoIcon1InitPage;
         inbp.pfncbItemChanged = icoIcon1ItemChanged;
 
-        return (ntbInsertPage(&inbp));
+        return (ntbInsertPage(&inbp)); */
     }
 
 #ifndef __ALWAYSREPLACEICONPAGE__
@@ -3030,7 +3036,7 @@ SOM_Scope ULONG  SOMLINK xf_wpAddFolderView1Page(XFolder *somSelf,
                                                  HWND hwndNotebook)
 {
     ULONG ul;
-    BOOL fIsRootFdr = _somIsA(somSelf, _WPRootFolder);
+    BOOL fIsRootFdr = ctsIsRootFolder(somSelf);
     XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpAddFolderView1Page");
 
@@ -3556,17 +3562,15 @@ SOM_Scope BOOL  SOMLINK xf_wpSetFldrSort(XFolder *somSelf,
         if (cmnQuerySetting(sfExtendedSorting))
 #endif
         {
-            HWND hwndFrame = wpshQueryFrameFromView(somSelf, ulView);
-            if (hwndFrame)
+            HWND hwndFrame, hwndCnr;
+            if (    (hwndFrame = wpshQueryFrameFromView(somSelf, ulView))
+                 && (hwndCnr = WinWindowFromID(hwndFrame, FID_CLIENT))
+               )
             {
-                HWND hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
-                if (hwndCnr)
-                {
-                    fdrSetFldrCnrSort(somSelf,
-                                      hwndCnr,
-                                      TRUE);  // enfore cnr sort
-                    return TRUE;
-                }
+                fdrSetFldrCnrSort(somSelf,
+                                  hwndCnr,
+                                  TRUE);  // enfore cnr sort
+                return TRUE;
             }
         }
     }

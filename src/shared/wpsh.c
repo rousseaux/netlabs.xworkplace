@@ -70,6 +70,7 @@
 #define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
+#define INCL_WINFRAMEMGR
 #define INCL_WINPOINTERS
 #define INCL_WINSHELLDATA
 #define INCL_WINSTDCNR
@@ -104,8 +105,8 @@
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
-#include <wpdisk.h>
-#include <wpshadow.h>
+// #include <wpdisk.h>
+// #include <wpshadow.h>
 
 /* ******************************************************************
  *
@@ -627,10 +628,10 @@ ULONG wpshQueryView(WPObject* somSelf,      // in: object to examine
 {
     ULONG   ulView = 0;
 
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             PUSEITEM    pUseItem = NULL;
             for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
@@ -648,8 +649,8 @@ ULONG wpshQueryView(WPObject* somSelf,      // in: object to examine
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
     return ulView;
 }
@@ -678,10 +679,10 @@ BOOL wpshIsViewCnr(WPObject *somSelf,
 {
     BOOL    brc = FALSE;
 
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             PUSEITEM    pUseItem = NULL;
             for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
@@ -689,7 +690,7 @@ BOOL wpshIsViewCnr(WPObject *somSelf,
                  pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, pUseItem))
             {
                 PVIEWITEM pViewItem = (PVIEWITEM)(pUseItem+1);
-                if (wpshQueryCnrFromFrame(pViewItem->handle) == hwndCnr)
+                if (WinWindowFromID(pViewItem->handle, FID_CLIENT) == hwndCnr)
                 {
                     brc = TRUE;
                     break;
@@ -699,8 +700,8 @@ BOOL wpshIsViewCnr(WPObject *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
     return brc;
 }
@@ -1138,54 +1139,7 @@ MRESULT wpshQueryDraggedObjectCnr(PCNRDRAGINFO pcdi,
  *
  ********************************************************************/
 
-/*
- *@@ wpshQueryRootFolder:
- *      just like wpQueryRootFolder, but this one
- *      avoids "Drive not ready" popups if the drive
- *      isn't ready. In this case, *parc contains
- *      the error code from doshAssertDrive, and
- *      NULL is returned.
- *
- *      If you're not interested in the return code,
- *      you may pass parc as NULL.
- *
- *@@changed V0.9.2 (2000-03-09) [umoeller]: added another check
- *@@changed V0.9.6 (2000-11-24) [pr]: added logical drive mapping for floppies
- */
-
-WPFolder* wpshQueryRootFolder(WPDisk* somSelf, // in: disk to check
-                              BOOL bForceMap,  // in: force mapping change
-                              APIRET *parc)    // out: DOS error code (ptr may be NULL)
-{
-    WPFolder *pReturnFolder = NULL;
-    APIRET   arc = NO_ERROR;
-
-    ULONG ulLogicalDrive = _wpQueryLogicalDrive(somSelf);
-    arc = doshAssertDrive(ulLogicalDrive, 0);
-
-    if (    (arc == ERROR_DISK_CHANGE)
-         && (bForceMap)
-         && ((ulLogicalDrive == 1) || (ulLogicalDrive == 2))
-         && (doshSetLogicalMap(ulLogicalDrive) == NO_ERROR)
-       )
-    {
-        arc = doshAssertDrive(ulLogicalDrive, 0);
-    }
-
-    if (!arc)
-    {
-        // drive seems to be ready:
-        if (!(pReturnFolder = _wpQueryRootFolder(somSelf)))
-            // still NULL: something bad is going on
-            // V0.9.2 (2000-03-09) [umoeller]
-            arc = ERROR_NOT_DOS_DISK; // 26; cannot access disk
-    }
-
-    if (parc)
-        *parc = arc;
-
-    return pReturnFolder;
-}
+#if 0       // disabled V0.9.19 (2002-06-15) [umoeller]
 
 /*
  *@@ wpshPopulateWithShadows:
@@ -1304,6 +1258,8 @@ BOOL wpshPopulateWithShadows(WPFolder *somSelf)
 
     return brc;
 }
+
+#endif
 
 /*
  *@@ wpshResidesBelow:
@@ -1433,11 +1389,10 @@ WPObject* wpshCreateFromTemplate(HAB hab,
 
         if ((pFolder) && (pTemplate) && (hwndFrame))
         {
-            HWND            hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
+            HWND            hwndCnr;
             CNRINFO         CnrInfo;
-            // CHAR            szTitle[CCHMAXPATH];
 
-            if (hwndCnr)
+            if (hwndCnr = WinWindowFromID(hwndFrame, FID_CLIENT))
                 cnrhQueryCnrInfo(hwndCnr, &CnrInfo);
 
             // position newly created object in window?
@@ -2034,37 +1989,6 @@ BOOL wpshParentQuerySetup2(WPObject *somSelf,       // in: object
     }
 
     return FALSE;
-}
-
-/*
- *@@ wpshGetNextObjPointer:
- *      returns the pointer of the "next object" attribute
- *      in somSelf's instance data.
- *
- *      See xfTP_get_pobjNext for explanations.
- *
- *@@added V0.9.7 (2001-01-13) [umoeller]
- */
-
-WPObject** wpshGetNextObjPointer(WPObject *somSelf)
-{
-    WPObject** ppObjNext = NULL;
-    static xfTD_get_pobjNext __get_pobjNext = NULL;
-
-    if (!__get_pobjNext)
-        // first call:
-        __get_pobjNext
-            = (xfTD_get_pobjNext)wpshResolveFor(somSelf,
-                                                NULL,        // use somSelf's class
-                                                "_get_pobjNext");
-    if (__get_pobjNext)
-    {
-        if (!(ppObjNext = __get_pobjNext(somSelf)))
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "__get_pobjNext returned NULL.");
-    }
-
-    return (ppObjNext);
 }
 
 

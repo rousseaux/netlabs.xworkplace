@@ -72,7 +72,6 @@
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
-#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\disk.h"               // XFldDisk implementation
 #include "filesys\folder.h"             // XFolder implementation
@@ -119,7 +118,7 @@ WPFolder* dskCheckDriveReady(WPDisk *somSelf)
     // of WPFolder/XFolder); each WPDisk is paired with one of those,
     // and the actual display is done by this class, so we will pass
     // pRootFolder instead of somSelf to most following method calls.
-    // We use wpshQueryRootFolder instead of wpQueryRootFolder to
+    // We use xwpSafeQueryRootFolder instead of wpQueryRootFolder to
     // avoid the "Drive not ready" popups which the WPS/OS/2 normally
     // displays in this method.
     do
@@ -129,9 +128,9 @@ WPFolder* dskCheckDriveReady(WPDisk *somSelf)
 
         mbrc = MBID_OK;
 
-        pRootFolder = wpshQueryRootFolder(somSelf,
-                                          bForceMap,
-                                          &arc);    // out: DOS error code
+        pRootFolder = _xwpSafeQueryRootFolder(somSelf,
+                                              bForceMap,
+                                              &arc);    // out: DOS error code
 
         // reset mouse pointer
         WinSetPointer(HWND_DESKTOP, hptrOld);

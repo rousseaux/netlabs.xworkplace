@@ -100,6 +100,7 @@
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
+#include "shared\classtest.h"           // some cheap funcs for WPS class checks
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
@@ -115,8 +116,6 @@
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
-#include <wpicon.h>
-#include <wpptr.h>
 
 /* ******************************************************************
  *
@@ -188,6 +187,10 @@ SOM_Scope void  SOMLINK xdf_wpInitData(XFldDataFile *somSelf)
     XFldDataFile_parent_WPDataFile_wpInitData(somSelf);
 
     _fHasIconEA = FALSE;
+
+    // cache this V0.9.19 (2002-06-15) [umoeller]
+    _fIsIconOrPointer =    (ctsIsIcon(somSelf))
+                        || (ctsIsPointer(somSelf));
 }
 
 /*
@@ -1173,9 +1176,9 @@ SOM_Scope void  SOMLINK xdf_wpSetAssociatedFileIcon(XFldDataFile *somSelf)
     {
         if (!_fHasIconEA)
         {
-            if (    (!_somIsA(somSelf, _WPIcon))
-                 && (!_somIsA(somSelf, _WPPointer))
-               )
+            // for WPIcon and WPPointer, we want no association icons
+            // (_wpQueryIcon loads the icon then)
+            if (!_fIsIconOrPointer)
             {
                 HPOINTER hptr;
 
@@ -1271,14 +1274,13 @@ SOM_Scope HPOINTER  SOMLINK xdf_wpQueryIcon(XFldDataFile *somSelf)
             if (!(hptrReturn = prec->hptrIcon))
             {
                 ULONG flNewStyle = 0;
+                XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
                 // first call, and icon wasn't set in wpRestoreState:
                 // be smart now...
 
                 // 1) if we're an icon or pointer file, load
                 //    the icon from there
-                if (    (_somIsA(somSelf, _WPIcon))
-                     || (_somIsA(somSelf, _WPPointer))
-                   )
+                if (_fIsIconOrPointer)
                 {
                     CHAR szFilename[CCHMAXPATH];
                     _wpQueryFilename(somSelf, szFilename, TRUE);
@@ -1363,12 +1365,11 @@ SOM_Scope ULONG  SOMLINK xdf_wpQueryIconData(XFldDataFile *somSelf,
             if (!fFound)
             {
                 // .ICON EA not found, or bad data:
+                XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
 
                 // if we're an icon or pointer file, support
                 // ICON_DATA format for compatibility
-                if (    (_somIsA(somSelf, _WPIcon))
-                     || (_somIsA(somSelf, _WPPointer))
-                   )
+                if (_fIsIconOrPointer)
                 {
                     PBYTE pbData = NULL;
                     ULONG cbData;

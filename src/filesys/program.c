@@ -118,7 +118,6 @@
 #include "shared\errors.h"              // private XWorkplace error codes
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
-#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\icons.h"              // icons handling
 #include "filesys\object.h"             // XFldObject implementation

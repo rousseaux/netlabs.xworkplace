@@ -99,6 +99,7 @@
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
+#include "shared\classtest.h"           // some cheap funcs for WPS class checks
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\errors.h"              // private XWorkplace error codes
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
@@ -119,8 +120,6 @@
 
 // other SOM headers
 #pragma hdrstop
-#include <wptrans.h>                    // WPTransient
-#include <wpshadow.h>                   // WPShadow
 
 #include "helpers\undoc.h"              // some undocumented stuff
 
@@ -177,6 +176,60 @@ SOM_Scope BOOL  SOMLINK xo_xwpDestroyStorage(XFldObject *somSelf)
 }
 
 /*
+ *@@ xwpAddReplacementIconPage:
+ *      calls ntbInsertPage for a replacement "Icon" page with
+ *      the given page ID and default help panel.
+ *
+ *      icoIcon1InitPage reacts to the page ID and formats
+ *      the page accordingly. Valid page IDs are:
+ *
+ *      --  SP_OBJECT_ICONPAGE1: standard "Icon" page.
+ *          Called from XFldObject::wpAddObjectGeneralPage.
+ *
+ *      --  SP_OBJECT_ICONPAGE2: animation "Icon" page 2.
+ *          Called from XFldObject::wpAddObjectGeneralPage.
+ *
+ *      --  SP_TRASHCAN_ICON: special trash can "Icon" page.
+ *
+ *      --  SP_OBJECT_ICONPAGE1_X: special "Icon" page if
+ *          some dumb WPS class is trying to trick us into
+ *          removing the object "Icon" page, such as with
+ *          WPSharedDir.
+ *
+ *      Note: This does not check the global setting for the
+ *      icon page replacement. Call this only if the setting
+ *      is enabled.
+ *
+ *@@added V0.9.19 (2002-06-15) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xo_xwpAddReplacementIconPage(XFldObject *somSelf,
+                                                      HWND hwndNotebook,
+                                                      ULONG ulPageID,
+                                                      ULONG ulDefaultHelpPanel)
+{
+    INSERTNOTEBOOKPAGE inbp;
+
+    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_xwpAddReplacementIconPage");
+
+    memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
+    inbp.somSelf = somSelf;
+    inbp.hwndNotebook = hwndNotebook;
+    inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
+    inbp.ulDlgID = ID_XFD_EMPTYDLG;
+    inbp.ulPageID = ulPageID; // SP_OBJECT_ICONPAGE1;
+    inbp.usPageStyleFlags = BKA_MAJOR;
+    inbp.fEnumerate = TRUE;
+    inbp.pcszName = cmnGetString(ID_XSSI_ICONPAGE);
+                // no new string needed, was defined for trash can already
+    inbp.ulDefaultHelpPanel  = ulDefaultHelpPanel; // ID_XSH_OBJICONPAGE1;
+    inbp.pfncbInitPage    = icoIcon1InitPage;
+    inbp.pfncbItemChanged = icoIcon1ItemChanged;
+    return ntbInsertPage(&inbp);
+}
+
+/*
  *@@ xwpQueryRealDefaultView:
  *      this new method returns the "real default view" of
  *      the object.
@@ -215,7 +268,7 @@ SOM_Scope ULONG  SOMLINK xo_xwpQueryRealDefaultView(XFldObject *somSelf)
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_xwpQueryRealDefaultView");
 
-    return (_ulDefaultView);
+    return _ulDefaultView;
             // V0.9.16 (2001-11-25) [umoeller]
 }
 
@@ -358,7 +411,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpSetDeletion(XFldObject *somSelf,
     else
         _cdateDeleted.year = 0; // fDeleted = FALSE;    V0.9.16 (2001-12-06) [umoeller]
 
-    return (_wpSaveDeferred(somSelf));
+    return _wpSaveDeferred(somSelf);
 }
 
 /*
@@ -393,12 +446,12 @@ SOM_Scope BOOL  SOMLINK xo_xwpSetTrashObject(XFldObject *somSelf,
 SOM_Scope ULONG  SOMLINK xo_xwpQueryListNotify(XFldObject *somSelf)
 {
     ULONG   ulrc = 0;
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
     XFldObjectMethodDebug("XFldObject","xo_xwpQueryListNotify");
 
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             XFldObjectData *somThis = XFldObjectGetData(somSelf);
             ulrc = _ulListNotify;
@@ -406,10 +459,10 @@ SOM_Scope ULONG  SOMLINK xo_xwpQueryListNotify(XFldObject *somSelf)
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -465,12 +518,12 @@ SOM_Scope BOOL  SOMLINK xo_xwpSetListNotify(XFldObject *somSelf,
                                             ULONG flNotifyFlags)
 {
     BOOL    brc = FALSE;
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
     XFldObjectMethodDebug("XFldObject","xo_xwpSetListNotify");
 
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             XFldObjectData *somThis = XFldObjectGetData(somSelf);
             _ulListNotify = flNotifyFlags;
@@ -479,8 +532,8 @@ SOM_Scope BOOL  SOMLINK xo_xwpSetListNotify(XFldObject *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
     return brc;
 }
@@ -515,12 +568,12 @@ SOM_Scope BOOL  SOMLINK xo_xwpModifyListNotify(XFldObject *somSelf,
                                                ULONG flNotifyMask)
 {
     BOOL    brc = FALSE;
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
     XFldObjectMethodDebug("XFldObject","xo_xwpModifyListNotify");
 
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             XFldObjectData *somThis = XFldObjectGetData(somSelf);
 
@@ -535,8 +588,8 @@ SOM_Scope BOOL  SOMLINK xo_xwpModifyListNotify(XFldObject *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
     return brc;
 }
@@ -579,12 +632,12 @@ SOM_Scope BOOL  SOMLINK xo_xwpAddWidgetNotify(XFldObject *somSelf,
                                               HWND hwnd)
 {
     BOOL    brc = FALSE;
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
     XFldObjectMethodDebug("XFldObject","xo_xwpAddWidgetNotify");
 
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             XFldObjectData *somThis = XFldObjectGetData(somSelf);
             if (_pvllWidgetNotifies == NULL)
@@ -611,8 +664,8 @@ SOM_Scope BOOL  SOMLINK xo_xwpAddWidgetNotify(XFldObject *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
     return brc;
 }
@@ -628,12 +681,12 @@ SOM_Scope BOOL  SOMLINK xo_xwpRemoveDestroyNotify(XFldObject *somSelf,
                                                   HWND hwnd)
 {
     BOOL    brc = FALSE;
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
     XFldObjectMethodDebug("XFldObject","xo_xwpRemoveDestroyNotify");
 
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             XFldObjectData *somThis = XFldObjectGetData(somSelf);
             if (_pvllWidgetNotifies)
@@ -647,8 +700,8 @@ SOM_Scope BOOL  SOMLINK xo_xwpRemoveDestroyNotify(XFldObject *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
     return brc;
 }
@@ -697,7 +750,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpQueryObjectHotkey(XFldObject *somSelf,
 {
     XFldObjectMethodDebug("XFldObject","xo_xwpQueryObjectHotkey");
 
-    return (objQueryObjectHotkey(somSelf, pHotkey));
+    return objQueryObjectHotkey(somSelf, pHotkey);
 }
 
 /*
@@ -732,7 +785,7 @@ SOM_Scope BOOL  SOMLINK xo_xwpSetObjectHotkey(XFldObject *somSelf,
 {
     XFldObjectMethodDebug("XFldObject","xo_xwpSetObjectHotkey");
 
-    return (objSetObjectHotkey(somSelf, pHotkey));
+    return objSetObjectHotkey(somSelf, pHotkey);
 }
 
 /*
@@ -782,7 +835,7 @@ SOM_Scope PSZ  SOMLINK xo_xwpQuerySetup(XFldObject *somSelf,
 {
     PSZ pszReturn = NULL;
     XSTRING str;
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
 
     XFldObjectMethodDebug("XFldObject","xo_xwpQuerySetup");
 
@@ -790,7 +843,7 @@ SOM_Scope PSZ  SOMLINK xo_xwpQuerySetup(XFldObject *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             // obtain "xwpQuerySetup2" method pointer
             somTD_XFldObject_xwpQuerySetup2 pfn_xwpQuerySetup2;
@@ -821,10 +874,10 @@ SOM_Scope PSZ  SOMLINK xo_xwpQuerySetup(XFldObject *somSelf,
         pszReturn = NULL;
     } END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
-    return (pszReturn);
+    return pszReturn;
 }
 
 /*
@@ -926,8 +979,8 @@ SOM_Scope BOOL  SOMLINK xo_xwpQuerySetup2(XFldObject *somSelf,
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_xwpQuerySetup2");
 
-    return (objQuerySetup(somSelf,
-                          pstrSetup));
+    return objQuerySetup(somSelf,
+                         pstrSetup);
 }
 
 /*
@@ -961,10 +1014,10 @@ SOM_Scope ULONG  SOMLINK xo_xwpSetNextObj(XFldObject *somSelf,
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_xwpSetNextObj");
 
-    if (ppObjNext = wpshGetNextObjPointer(somSelf))
+    if (ppObjNext = objGetNextObjPointer(somSelf))
         *ppObjNext = pobjNext;
 
-    return (ulrc);
+    return ulrc;
 }
 
 /*
@@ -977,14 +1030,14 @@ SOM_Scope ULONG  SOMLINK xo_xwpSetNextObj(XFldObject *somSelf,
 SOM_Scope WPObject*  SOMLINK xo_xwpQueryNextObj(XFldObject *somSelf)
 {
     WPObject *pobj = NULL;
-    WPObject **ppObjNext = NULL;
+    WPObject **ppObjNext;
     // XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_xwpQueryNextObj");
 
-    if (ppObjNext = wpshGetNextObjPointer(somSelf))
+    if (ppObjNext = objGetNextObjPointer(somSelf))
         pobj = *ppObjNext;
 
-    return (pobj);
+    return pobj;
 }
 
 /*
@@ -1077,7 +1130,7 @@ SOM_Scope HWND  SOMLINK xo_xwpHotkeyOrBorderAction(XFldObject *somSelf,
         }
     }
 
-    return (hwnd);
+    return hwnd;
 }
 
 /*
@@ -1147,10 +1200,10 @@ SOM_Scope void  SOMLINK xo_wpInitData(XFldObject *somSelf)
             _flFlags |= OBJFL_WPFOLDER;
         }
     }
-    else if (_somIsA(somSelf, _WPAbstract))
+    else if (ctsIsAbstract(somSelf))
     {
         _flFlags = OBJFL_WPABSTRACT;
-        if (_somIsA(somSelf, _WPShadow))
+        if (ctsIsShadow(somSelf))
             _flFlags |= OBJFL_WPSHADOW;
     }
 
@@ -1282,7 +1335,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetupOnce(XFldObject *somSelf,
         if (wpshResidesBelow(somSelf, G_pConfigFolder))
             mnuInvalidateConfigCache();
 
-    return (XFldObject_parent_WPObject_wpSetupOnce(somSelf, pszSetupString));
+    return XFldObject_parent_WPObject_wpSetupOnce(somSelf, pszSetupString);
 }
 
 /*
@@ -1757,8 +1810,8 @@ SOM_Scope BOOL  SOMLINK xo_wpSetObjectID(XFldObject *somSelf,
     if (_flFlags & OBJFL_INITIALIZED) // _wpIsObjectInitialized(somSelf))
         wpshStore(somSelf, &_pWszOriginalObjectID, NULL, NULL);
 
-    return (XFldObject_parent_WPObject_wpSetObjectID(somSelf,
-                                                     pszObjectID));
+    return XFldObject_parent_WPObject_wpSetObjectID(somSelf,
+                                                    pszObjectID);
 }
 
 /*
@@ -2337,8 +2390,83 @@ SOM_Scope BOOL  SOMLINK xo_wpMenuItemHelpSelected(XFldObject *somSelf,
         return TRUE;
     }
 
-    return (XFldObject_parent_WPObject_wpMenuItemHelpSelected(somSelf,
-                                                              MenuId));
+    return XFldObject_parent_WPObject_wpMenuItemHelpSelected(somSelf,
+                                                             MenuId);
+}
+
+/*
+ *@@ wpAddSettingsPages:
+ *      this WPObject instance method gets called by the WPS
+ *      when the Settings view is opened to have all the
+ *      settings page inserted into hwndNotebook.
+ *
+ *      We replace the base WPObject implementation without
+ *      calling the parent if the "Icon" page replacement
+ *      is enabled. The reason for this is that some of the
+ *      WPS network classes return SETTINGS_PAGE_REMOVED
+ *      for the "General" ("Icon") page, and we _still_
+ *      want the Icon page then, just without the icon and
+ *      title fields.
+ *
+ *@@added V0.9.19 (2002-06-15) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xo_wpAddSettingsPages(XFldObject *somSelf,
+                                              HWND hwndNotebook)
+{
+    BOOL brc = FALSE;
+
+    XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_wpAddSettingsPages");
+
+    /* return (XFldObject_parent_WPObject_wpAddSettingsPages(somSelf,
+                                                          hwndNotebook)); */
+
+    TRY_LOUD(excpt1)
+    {
+        // add the "Window" page
+        if (_wpAddObjectWindowPage(somSelf, hwndNotebook))
+        {
+            ULONG ul;
+            // add the "Icon" page 2 on top if we have animation icons
+            if (icoClsQueryMaxAnimationIcons(_somGetClass(somSelf)))
+                _wpAddObjectGeneralPage2(somSelf, hwndNotebook);
+
+            // add the "Icon" page on top
+            ul = _wpAddObjectGeneralPage(somSelf, hwndNotebook);
+
+            // now, if some wannabe funny WPS class (WPSharedDir)
+            // is trying to get rid of the icon page, ignore that:
+            // V0.9.19 (2002-06-15) [umoeller]
+            if (    (    (ul == SETTINGS_PAGE_REMOVED)
+                      || (ul == TRUE)
+                        // WPSharedDir returns TRUE, violating the specs...
+                    )
+                 && (cmnQuerySetting(sfReplaceIconPage))
+                 // but do this trick only for certain classes, we
+                 // better make sure we don't mess with user classes
+                 && (ctsIsSharedDir(somSelf))
+               )
+            {
+                _PmpfF(("[%s]{%s} got SETTINGS_PAGE_REMOVED",
+                        _wpQueryTitle(somSelf),
+                        _somGetClassName(somSelf)));
+                ul = _xwpAddReplacementIconPage(somSelf,
+                                                hwndNotebook,
+                                                // mini icon page
+                                                SP_OBJECT_ICONPAGE1_X,
+                                                ID_XSH_OBJICONPAGE1_X);
+            }
+
+            brc = !!ul;
+        }
+    }
+    CATCH(excpt1)
+    {
+        brc = FALSE;
+    } END_CATCH();
+
+    return brc;
 }
 
 /*
@@ -2350,6 +2478,11 @@ SOM_Scope BOOL  SOMLINK xo_wpMenuItemHelpSelected(XFldObject *somSelf,
  *      the "Icon" page to add support for object
  *      hotkeys and object details. The "Object"
  *      page is gone.
+ *
+ *      Note that some WPS classes such as WPSharedDir
+ *      override this method to return SETTINGS_PAGE_REMOVED.
+ *      We handle this reprehensible attitude in
+ *      XFldObject::wpAddSettingsPages.
  *
  *@@added V0.9.1 (2000-02-17) [umoeller]
  */
@@ -2372,26 +2505,15 @@ SOM_Scope ULONG  SOMLINK xo_wpAddObjectGeneralPage(XFldObject *somSelf,
         )
 #endif
     {
-        INSERTNOTEBOOKPAGE inbp;
-        memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
-        inbp.somSelf = somSelf;
-        inbp.hwndNotebook = hwndNotebook;
-        inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
-        inbp.ulDlgID = ID_XFD_EMPTYDLG;
-        inbp.ulPageID = SP_OBJECT_ICONPAGE1;
-        inbp.usPageStyleFlags = BKA_MAJOR;
-        inbp.fEnumerate = TRUE;
-        inbp.pcszName = cmnGetString(ID_XSSI_ICONPAGE);
-                    // no new string needed, was defined for trash can already
-        inbp.ulDefaultHelpPanel  = ID_XSH_OBJICONPAGE1;
-        inbp.pfncbInitPage    = icoIcon1InitPage;
-        inbp.pfncbItemChanged = icoIcon1ItemChanged;
-        return (ntbInsertPage(&inbp));
+        return _xwpAddReplacementIconPage(somSelf,
+                                          hwndNotebook,
+                                          SP_OBJECT_ICONPAGE1,
+                                          ID_XSH_OBJICONPAGE1);
     }
 
 #ifndef __ALWAYSREPLACEICONPAGE__
-    return (XFldObject_parent_WPObject_wpAddObjectGeneralPage(somSelf,
-                                                              hwndNotebook));
+    return XFldObject_parent_WPObject_wpAddObjectGeneralPage(somSelf,
+                                                             hwndNotebook);
 #endif
 }
 

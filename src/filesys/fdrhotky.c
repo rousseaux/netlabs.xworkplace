@@ -906,6 +906,7 @@ static MRESULT EXPENTRY fnwpFolderHotkeyEntryField(HWND hwndEdit, ULONG msg, MPA
         default:
             mrc = OldEditProc(hwndEdit, msg, mp1, mp2);
     }
+
     return mrc;
 }
 

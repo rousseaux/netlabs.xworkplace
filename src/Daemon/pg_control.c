@@ -82,6 +82,7 @@
 #define INCL_WINTRACKRECT
 #define INCL_WINSWITCHLIST
 #define INCL_WINPOINTERS
+#define INCL_WINSTDCNR
 
 #define INCL_GPICONTROL
 #define INCL_GPIPRIMITIVES
@@ -198,8 +199,7 @@ BOOL pgrLockHook(PCSZ pcszFile, ULONG ulLine, PCSZ pcszFunction)
         DosCreateMutexSem(NULL, &G_hmtxSuppressNotify, 0, FALSE);
     }
 
-    if (!WinRequestMutexSem(G_hmtxSuppressNotify, 4000))
-        // WinRequestMutexSem works even if the thread has no message queue
+    if (!DosRequestMutexSem(G_hmtxSuppressNotify, 4000))
     {
         ++(G_pHookData->cSuppressWinlistNotify);
                 // V0.9.19 (2002-05-07) [umoeller]
@@ -545,7 +545,7 @@ VOID DrawPointer(HPS hpsMem,
     POINTERINFO pi;
     HPOINTER hptr;
 
-    if (    (hptr = pMiniThis->pWinInfo->hptr)
+    if (    (hptr = pMiniThis->pWinInfo->hptrFrame)
          && (WinQueryPointerInfo(hptr, &pi))
        )
     {

@@ -365,7 +365,10 @@ typedef struct _MONITORSETUP
      *
      */
 
-    PSZ             pszDisks;       // array of plain drive letters to monitor
+    PSZ             pszDiskList;    // array of plain drive letters to monitor;
+                                    // warning, this can be NULL if all drives
+                                    // are deselected!
+                                    // V0.9.19 (2002-06-15) [umoeller]
 
 } MONITORSETUP, *PMONITORSETUP;
 
@@ -506,10 +509,10 @@ VOID MwgtFreeSetup(PMONITORSETUP pSetup)
             pSetup->pszFont = NULL;
         }
 
-        if (pSetup->pszDisks)
+        if (pSetup->pszDiskList)
         {
-            free(pSetup->pszDisks);
-            pSetup->pszDisks = NULL;
+            free(pSetup->pszDiskList);
+            pSetup->pszDiskList = NULL;
         }
     }
 }
@@ -567,7 +570,7 @@ VOID MwgtScanSetup(PCSZ pcszSetupString,
         if (p = pctrScanSetupString(pcszSetupString,
                                     "DISKS"))
         {
-            pSetup->pszDisks = strdup(p);
+            pSetup->pszDiskList = strdup(p);
             pctrFreeSetupValue(p);
         }
         else
@@ -578,7 +581,7 @@ VOID MwgtScanSetup(PCSZ pcszSetupString,
                             &ulBootDrive,
                             sizeof(ulBootDrive));
             ch[0] = ulBootDrive + 'A' - 1;
-            pSetup->pszDisks = strdup(ch);
+            pSetup->pszDiskList = strdup(ch);
         }
 
         // width
@@ -629,12 +632,15 @@ VOID MwgtSaveSetup(PXSTRING pstrSetup,       // out: setup string (is cleared fi
     if (fIsDiskfree)
     {
         pdrv_sprintf(szTemp, "WIDTH=%d;",
-                pSetup->cxCurrent);
+                     pSetup->cxCurrent);
         pxstrcat(pstrSetup, szTemp, 0);
 
-        pdrv_sprintf(szTemp, "DISKS=%s",
-                pSetup->pszDisks);
-        pxstrcat(pstrSetup, szTemp, 0);
+        if (pSetup->pszDiskList)        // V0.9.19 (2002-06-15) [umoeller]
+        {
+            pdrv_sprintf(szTemp, "DISKS=%s",
+                         pSetup->pszDiskList);
+            pxstrcat(pstrSetup, szTemp, 0);
+        }
     }
 }
 
@@ -693,7 +699,8 @@ BOOL UpdateDiskMonitors(HWND hwnd,
 
     ULONG   cDisks;
 
-    if (    (cDisks = strlen(pPrivate->Setup.pszDisks))
+    if (    (pPrivate->Setup.pszDiskList)
+         && (cDisks = strlen(pPrivate->Setup.pszDiskList))
          && (hwndDaemon = pkrnQueryDaemonObject())
          && (WinQueryWindowProcess(hwndDaemon,
                                    &pidDaemon,
@@ -729,7 +736,8 @@ BOOL UpdateDiskMonitors(HWND hwnd,
                  ul < cDisks;
                  ul++)
             {
-                pAddDiskWatch->ulLogicalDrive = pPrivate->Setup.pszDisks[ul] - 'A' + 1;
+                pAddDiskWatch->ulLogicalDrive
+                    = pPrivate->Setup.pszDiskList[ul] - 'A' + 1;
                 WinSendMsg(hwndDaemon,
                            XDM_ADDDISKWATCH,
                            (MPARAM)pAddDiskWatch,
@@ -1174,9 +1182,9 @@ VOID RefreshDiskfreeBitmap(HWND hwnd,
                          &rcl);
             }
 
-            if (pPrivate->Setup.pszDisks)
+            if (pPrivate->Setup.pszDiskList)
             {
-                ULONG   cDisks = strlen(pPrivate->Setup.pszDisks),
+                ULONG   cDisks = strlen(pPrivate->Setup.pszDiskList),
                         ul;
                 CHAR    szTemp2[50];
                 LONG    lcolHatchNow = -1;     // calc on first need
@@ -1203,7 +1211,7 @@ VOID RefreshDiskfreeBitmap(HWND hwnd,
                      ul++)
                 {
                     // drive letter
-                    CHAR c = pPrivate->Setup.pszDisks[ul];
+                    CHAR c = pPrivate->Setup.pszDiskList[ul];
                     if ((c > 'A') && (c <= 'Z'))
                     {
                         // get the offset into paDiskDatas array
@@ -1906,8 +1914,8 @@ CHAR FindDriveFromWidgetX(PMONITORPRIVATE pPrivate,
                           SHORT x)
 {
     ULONG   cDisks;
-    if (    (pPrivate->Setup.pszDisks)
-         && (cDisks = strlen(pPrivate->Setup.pszDisks))
+    if (    (pPrivate->Setup.pszDiskList)
+         && (cDisks = strlen(pPrivate->Setup.pszDiskList))
        )
     {
         ULONG   ul;
@@ -1916,7 +1924,7 @@ CHAR FindDriveFromWidgetX(PMONITORPRIVATE pPrivate,
              ul++)
         {
             // drive letter
-            CHAR c = pPrivate->Setup.pszDisks[ul];
+            CHAR c = pPrivate->Setup.pszDiskList[ul];
             if ((c > 'A') && (c <= 'Z'))
             {
                 ULONG ulLogicalDrive = c - 'A' + 1;
@@ -2067,8 +2075,8 @@ VOID HackContextMenu(PMONITORPRIVATE pPrivate)
                  ul++)
             {
                 PXDISKINFO pThis = &aDiskInfos[ul];
-                BOOL fIsDisplaying = (    (pPrivate->Setup.pszDisks)
-                                       && (strchr(pPrivate->Setup.pszDisks,
+                BOOL fIsDisplaying = (    (pPrivate->Setup.pszDiskList)
+                                       && (strchr(pPrivate->Setup.pszDiskList,
                                                   pThis->cDriveLetter))
                                      );
 
@@ -2179,13 +2187,13 @@ MRESULT MwgtMenuSelect(HWND hwnd, MPARAM mp1, MPARAM mp2)
 
                 memset(szNew, 0, sizeof(szNew));
 
-                if (pPrivate->Setup.pszDisks)
+                if (pPrivate->Setup.pszDiskList)
                 {
                     for (ul = 1;
                          ul < 27;
                          ul++)
                     {
-                        if (strchr(pPrivate->Setup.pszDisks,
+                        if (strchr(pPrivate->Setup.pszDiskList,
                                    ul + 'A' - 1))
                         {
                             if (ul == ulLogicalDrive)
@@ -2196,8 +2204,8 @@ MRESULT MwgtMenuSelect(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         }
                     }
 
-                    free(pPrivate->Setup.pszDisks);
-                    pPrivate->Setup.pszDisks = NULL;
+                    free(pPrivate->Setup.pszDiskList);
+                    pPrivate->Setup.pszDiskList = NULL;
                 }
 
                 if (!fInList)
@@ -2213,7 +2221,7 @@ MRESULT MwgtMenuSelect(HWND hwnd, MPARAM mp1, MPARAM mp2)
                 *pTarget = '\0';
 
                 if (szNew2[0])
-                    pPrivate->Setup.pszDisks = strdup(szNew2);
+                    pPrivate->Setup.pszDiskList = strdup(szNew2);
 
                 WinCheckMenuItem((HWND)mp2,
                                  usItem,

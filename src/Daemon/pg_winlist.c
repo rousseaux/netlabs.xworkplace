@@ -28,6 +28,8 @@
 #define INCL_WINFRAMEMGR
 #define INCL_WINMESSAGEMGR
 #define INCL_WINSWITCHLIST
+#define INCL_WINSYS
+#define INCL_WINSTDCNR
 
 #define INCL_GPIBITMAPS                 // needed for helpers\shapewin.h
 #include <os2.h>
@@ -73,6 +75,216 @@ extern USHORT   G_pidDaemon;
 
 /* ******************************************************************
  *
+ *   Debug window list frame
+ *
+ ********************************************************************/
+
+#ifdef DEBUG_WINDOWLIST
+HWND            G_hwndDebugFrame = NULLHANDLE,
+                G_hwndDebugCnr = NULLHANDLE;
+
+VOID cnrhSetFieldInfo(PFIELDINFO *ppFieldInfo2,  // in/out: double ptr to FIELDINFO
+                      ULONG ulFieldOffset,       // in: FIELDOFFSET(YOURRECORDCORE, yourField)
+                      PSZ pszColumnTitle,        // in: column title; this must be a static string!!
+                      ULONG ulDataType,          // in: column data type (CFA_* flags)
+                      ULONG ulOrientation,       // in: vertical and horizontal orientation (CFA_* flags)
+                      BOOL fDrawLines)           // in: if TRUE, we'll draw lines around the columns
+{
+    PFIELDINFO pInfo;
+    if (    (ppFieldInfo2)
+         && (pInfo = *ppFieldInfo2)
+       )
+    {
+        ULONG flData = ulDataType | ulOrientation;
+        if (fDrawLines)
+            flData |= CFA_HORZSEPARATOR | CFA_SEPARATOR;
+
+        pInfo->cb = sizeof(FIELDINFO);
+        pInfo->flData = flData;
+        pInfo->flTitle = CFA_FITITLEREADONLY | ulOrientation;
+        pInfo->offStruct = ulFieldOffset;
+        pInfo->pTitleData = pszColumnTitle;   // strdup removed, V0.9.1 (99-12-18) [umoeller]
+        pInfo->pUserData   = NULL;
+        pInfo->cxWidth = 0;
+        *ppFieldInfo2 = pInfo->pNextFieldInfo;
+    }
+}
+
+ULONG cnrhInsertFieldInfos(HWND hwndCnr,                // in: cnr for Details view
+                           PFIELDINFO pFieldInfoFirst,  // in: first field info as returned
+                                                        // by cnrhAllocFieldInfos
+                           ULONG ulFieldCount)          // in: no. of field infos
+{
+    FIELDINFOINSERT fii;
+    fii.cb = sizeof(FIELDINFOINSERT);
+    fii.pFieldInfoOrder = (PFIELDINFO)CMA_END;
+    fii.fInvalidateFieldInfo = TRUE;
+    fii.cFieldInfoInsert = ulFieldCount;
+
+    return ((ULONG)WinSendMsg(hwndCnr,
+                              CM_INSERTDETAILFIELDINFO,
+                              (MPARAM)pFieldInfoFirst,
+                              (MPARAM)&fii));
+}
+
+    #undef FIELDOFFSET
+    #define FIELDOFFSET(type, field)    ((ULONG)&(((type *)0)->field))
+
+    ULONG cnrhClearFieldInfos(HWND hwndCnr,
+                              BOOL fInvalidate);
+
+    #define cnrhAllocFieldInfos(hwndCnr, sColumnCount)              \
+        (PFIELDINFO)WinSendMsg(hwndCnr,                             \
+                               CM_ALLOCDETAILFIELDINFO,             \
+                               MPFROMSHORT(sColumnCount),           \
+                               NULL)
+
+    typedef struct _XFIELDINFO
+    {
+        ULONG   ulFieldOffset;
+        PCSZ    pszColumnTitle;
+        ULONG   ulDataType;
+        ULONG   ulOrientation;
+    } XFIELDINFO, *PXFIELDINFO;
+
+PFIELDINFO cnrhSetFieldInfos(HWND hwndCnr,            // in: container hwnd
+                             PXFIELDINFO paxfi,       // in: pointer to an array of ulFieldCount XFIELDINFO structures
+                             ULONG ulFieldCount,      // in: no. of items in paxfi array (> 0)
+                             BOOL fDrawLines,         // in: if TRUE, we'll draw lines around the columns
+                             ULONG ulFieldReturn)     // in: the column index to return as PFIELDINFO
+{
+    PFIELDINFO  pFieldInfoFirst,
+                pFieldInfo2,
+                pFieldInfoReturn = NULL;
+
+    if ((pFieldInfoFirst = cnrhAllocFieldInfos(hwndCnr, ulFieldCount)))
+    {
+        ULONG ul = 0;
+        PXFIELDINFO pxfi = NULL;
+
+        pFieldInfo2 = pFieldInfoFirst;
+        pxfi = paxfi;
+        for (ul = 0; ul < ulFieldCount; ul++)
+        {
+            if (ul == ulFieldReturn)
+                // set return value
+                pFieldInfoReturn = pFieldInfo2;
+
+            // set current field info;
+            // this will modify pFieldInfo to point to the next
+            cnrhSetFieldInfo(&pFieldInfo2,
+                             pxfi->ulFieldOffset,
+                             (PSZ)pxfi->pszColumnTitle,
+                             pxfi->ulDataType,
+                             pxfi->ulOrientation,
+                             fDrawLines);
+            pxfi++;
+        }
+
+        // insert field infos
+        if (cnrhInsertFieldInfos(hwndCnr,
+                                 pFieldInfoFirst,
+                                 ulFieldCount) == 0)
+            pFieldInfoReturn = NULL;
+    }
+
+    return (pFieldInfoReturn);
+}
+
+    #define BEGIN_CNRINFO()                                         \
+        {                                                           \
+            CNRINFO     CnrInfo_ = {0};                             \
+            ULONG       ulSendFlags_ = 0;                           \
+            CnrInfo_.cb = sizeof(CnrInfo_);
+
+    #define END_CNRINFO(hwndCnr)                                    \
+            WinSendMsg((hwndCnr), CM_SETCNRINFO, (MPARAM)&CnrInfo_, \
+                (MPARAM)ulSendFlags_);                              \
+        }
+
+    #define cnrhSetSplitBarAfter(pFieldInfo)                        \
+        CnrInfo_.pFieldInfoLast = (pFieldInfo);                     \
+        ulSendFlags_ |= CMA_PFIELDINFOLAST;
+
+    #define cnrhSetSplitBarPos(xPos)                                \
+        CnrInfo_.xVertSplitbar = (xPos);                            \
+        ulSendFlags_ |= CMA_XVERTSPLITBAR;
+
+    #define cnrhSetView(flNewAttr)                                  \
+        CnrInfo_.flWindowAttr = (flNewAttr);                        \
+        ulSendFlags_ |= CMA_FLWINDOWATTR;
+
+PFNWP G_pfnwpFrameOrig = NULL;
+
+MRESULT EXPENTRY fnwpSubclDebugFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    switch (msg)
+    {
+        case WM_CONTROL:
+            if (SHORT1FROMMP(mp1) == FID_CLIENT)
+            {
+                switch (SHORT2FROMMP(mp1))
+                {
+                    case CN_ENTER:
+                    {
+                        PWINLISTRECORD prec;
+                        if (!(prec = (PWINLISTRECORD)((PNOTIFYRECORDENTER)mp2)->pRecord))
+                            DosBeep(1000, 10);
+                        else
+                            WinSetActiveWindow(HWND_DESKTOP,
+                                               ((PPAGERWININFO)prec->pWinInfo)->swctl.hwnd);
+                    }
+                    break;
+                }
+            }
+            else
+                mrc = G_pfnwpFrameOrig(hwnd, msg, mp1, mp2);
+        break;
+
+
+        default:
+            mrc = G_pfnwpFrameOrig(hwnd, msg, mp1, mp2);
+    }
+
+    return mrc;
+}
+
+static VOID FillRec(PPAGERWININFO pWinInfo)
+{
+    ULONG pid, tid;
+    if (!pWinInfo->prec)
+        return;
+
+    pWinInfo->prec->recc.flRecordAttr = CRA_OWNERFREE | CRA_RECORDREADONLY;
+    pWinInfo->prec->recc.hptrIcon = pWinInfo->hptrFrame;
+
+    pWinInfo->prec->pszSwtitle = pWinInfo->swctl.szSwtitle;
+
+    switch (pWinInfo->bWindowType)
+    {
+        #define PRINTTYPE(t) case t: pWinInfo->prec->pszWindowType = # t; break
+        PRINTTYPE(WINDOW_NORMAL);
+        PRINTTYPE(WINDOW_MAXIMIZE);
+        PRINTTYPE(WINDOW_MINIMIZE);
+        PRINTTYPE(WINDOW_XWPDAEMON);
+        PRINTTYPE(WINDOW_WPSDESKTOP);
+        PRINTTYPE(WINDOW_STICKY);
+        PRINTTYPE(WINDOW_NIL);
+    }
+
+    WinQueryWindowProcess(pWinInfo->swctl.hwnd, &pid, &tid);
+    sprintf(pWinInfo->prec->szPID, "%04lX", pid);
+    pWinInfo->prec->pszPID = pWinInfo->prec->szPID;
+
+    pWinInfo->prec->pWinInfo = pWinInfo;
+}
+
+#endif
+
+/* ******************************************************************
+ *
  *   PAGERWININFO list maintenance
  *
  ********************************************************************/
@@ -90,9 +302,85 @@ APIRET pgrInit(VOID)
                                    &G_hmtxWinInfos,
                                    0,
                                    FALSE);
+    ULONG   fl;
 
     lstInit(&G_llWinInfos, TRUE);
             // V0.9.7 (2001-01-21) [umoeller]
+
+    #ifdef DEBUG_WINDOWLIST
+    fl = FCF_SYSMENU | FCF_TITLEBAR | FCF_MINBUTTON | FCF_SIZEBORDER | FCF_NOBYTEALIGN | FCF_TASKLIST;
+    if (!(G_hwndDebugFrame = WinCreateStdWindow(HWND_DESKTOP,
+                                                0,
+                                                &fl,
+                                                WC_CONTAINER,
+                                                "Debug Window List",
+                                                WS_VISIBLE | CCS_MINIICONS,
+                                                0,
+                                                0,
+                                                &G_hwndDebugCnr)))
+        _PmpfF(("Cannot create debug frame"));
+    else
+    {
+        G_pfnwpFrameOrig = WinSubclassWindow(G_hwndDebugFrame, fnwpSubclDebugFrame);
+
+        #define DEBUGWIDTH      500
+        #define DEBUGHEIGHT     700
+        _PmpfF(("got debug frame 0x%lX", G_hwndDebugFrame));
+        WinSetWindowPos(G_hwndDebugFrame,
+                        HWND_TOP,
+                        WinQuerySysValue(HWND_DESKTOP, SV_CXSCREEN) - DEBUGWIDTH - 30,
+                        30,
+                        DEBUGWIDTH,
+                        DEBUGHEIGHT,
+                        SWP_SHOW | SWP_ZORDER | SWP_MOVE | SWP_SIZE);
+
+        {
+            XFIELDINFO      xfi[8];
+            PFIELDINFO      pfi = NULL;
+            int             i = 0;
+
+            CHAR            szFont[] = "9.WarpSans";
+            WinSetPresParam(G_hwndDebugCnr,
+                            PP_FONTNAMESIZE,
+                            sizeof(szFont),
+                            szFont);
+
+            // set up cnr details view
+            xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, recc.hptrIcon);
+            xfi[i].pszColumnTitle = "Icon";
+            xfi[i].ulDataType = CFA_BITMAPORICON;
+            xfi[i++].ulOrientation = CFA_LEFT | CFA_TOP;
+
+            xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, pszSwtitle);
+            xfi[i].pszColumnTitle = "szSwtitle";
+            xfi[i].ulDataType = CFA_STRING;
+            xfi[i++].ulOrientation = CFA_LEFT | CFA_TOP;
+
+            xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, pszWindowType);
+            xfi[i].pszColumnTitle = "type";
+            xfi[i].ulDataType = CFA_STRING;
+            xfi[i++].ulOrientation = CFA_LEFT | CFA_TOP;
+
+            xfi[i].ulFieldOffset = FIELDOFFSET(WINLISTRECORD, pszPID);
+            xfi[i].pszColumnTitle = "PID";
+            xfi[i].ulDataType = CFA_STRING;
+            xfi[i++].ulOrientation = CFA_LEFT | CFA_TOP;
+
+            pfi = cnrhSetFieldInfos(G_hwndDebugCnr,
+                                    xfi,
+                                    i,             // array item count
+                                    TRUE,          // draw lines
+                                    1);            // return second column
+
+            BEGIN_CNRINFO()
+            {
+                cnrhSetView(CV_DETAIL | CA_DETAILSVIEWTITLES | CV_MINI);
+                cnrhSetSplitBarAfter(pfi);
+                cnrhSetSplitBarPos(DEBUGWIDTH / 2);
+            } END_CNRINFO(G_hwndDebugCnr);
+        }
+    }
+    #endif
 
     return arc;
 }
@@ -106,8 +394,7 @@ APIRET pgrInit(VOID)
 
 BOOL pgrLockWinlist(VOID)
 {
-    return !WinRequestMutexSem(G_hmtxWinInfos, TIMEOUT_HMTX_WINLIST);
-        // WinRequestMutexSem works even if the thread has no message queue
+    return !DosRequestMutexSem(G_hmtxWinInfos, TIMEOUT_HMTX_WINLIST);
 }
 
 /*
@@ -230,6 +517,73 @@ static VOID DumpAllWindows(VOID)
 
 /* ******************************************************************
  *
+ *   List management
+ *
+ ********************************************************************/
+
+/*
+ *@@ AddInfo:
+ *      adds the given wininfo to the global list.
+ *
+ *      Preconditions:
+ *
+ *      --  Caller must hold the winlist mutex.
+ *
+ *@@added V0.9.19 (2002-06-15) [umoeller]
+ */
+
+static VOID AddInfo(PPAGERWININFO pWinInfo)
+{
+    lstAppendItem(&G_llWinInfos, pWinInfo);
+
+    #ifdef DEBUG_WINDOWLIST
+    {
+        RECORDINSERT    ri;
+        if (pWinInfo->prec = (PWINLISTRECORD)WinSendMsg(G_hwndDebugCnr,
+                                                        CM_ALLOCRECORD,
+                                                        (MPARAM)(sizeof(WINLISTRECORD) - sizeof(RECORDCORE)),
+                                                        (MPARAM)1))
+        {
+            FillRec(pWinInfo);
+            ri.cb = sizeof(RECORDINSERT);
+            ri.pRecordOrder = (PRECORDCORE)CMA_END;
+            ri.pRecordParent = NULL;
+            ri.zOrder = CMA_TOP;
+            ri.fInvalidateRecord = TRUE;
+            ri.cRecordsInsert = 1;
+            WinSendMsg(G_hwndDebugCnr,
+                       CM_INSERTRECORD,
+                       (PRECORDCORE)pWinInfo->prec,
+                       (MPARAM)&ri);
+        }
+    }
+    #endif
+}
+
+/*
+ *@@ RemoveInfo:
+ *
+ *@@added V0.9.19 (2002-06-15) [umoeller]
+ */
+
+static VOID RemoveInfo(PLISTNODE pNode)
+{
+    #ifdef DEBUG_WINDOWLIST
+    {
+        PPAGERWININFO pWinInfo = (PPAGERWININFO)pNode->pItemData;
+        WinSendMsg(G_hwndDebugCnr,
+                   CM_REMOVERECORD,
+                   (MPARAM)&pWinInfo->prec,
+                   MPFROM2SHORT(1,
+                                CMA_INVALIDATE | CMA_FREE));
+        pWinInfo->prec = NULL;
+    }
+    #endif
+    lstRemoveNode(&G_llWinInfos, pNode);
+}
+
+/* ******************************************************************
+ *
  *   Window analysis, exported interfaces
  *
  ********************************************************************/
@@ -285,6 +639,8 @@ BOOL pgrGetWinInfo(PPAGERWININFO pWinInfo)  // in/out: window info
 
     HWND    hwnd = pWinInfo->swctl.hwnd;
     ULONG   pid, tid;
+
+    PWINLISTRECORD prec = pWinInfo->prec;
 
     memset(pWinInfo, 0, sizeof(PAGERWININFO));
 
@@ -396,6 +752,8 @@ BOOL pgrGetWinInfo(PPAGERWININFO pWinInfo)  // in/out: window info
         }
     }
 
+    pWinInfo->prec = prec;
+
     return brc;
 }
 
@@ -431,13 +789,25 @@ BOOL pgrCreateWinInfo(HWND hwnd)
             {
                 // not yet in list: create a new one
                 pWinInfo = NEW(PAGERWININFO);
-                ZERO(pWinInfo);
+                memcpy(pWinInfo, &WinInfoTemp, sizeof(PAGERWININFO));
                 pWinInfo->swctl.hwnd = hwnd;
-                lstAppendItem(&G_llWinInfos, pWinInfo);
+                AddInfo(pWinInfo);
             }
-            // else already present: refresh that one then
-
-            memcpy(pWinInfo, &WinInfoTemp, sizeof(PAGERWININFO));
+            else
+            {
+                // already present: refresh that one then
+                PWINLISTRECORD pOld = pWinInfo->prec;
+                memcpy(pWinInfo, &WinInfoTemp, sizeof(PAGERWININFO));
+                pWinInfo->prec = pOld;
+                #ifdef DEBUG_WINDOWLIST
+                    FillRec(pWinInfo);
+                    WinSendMsg(G_hwndDebugCnr,
+                               CM_INVALIDATERECORD,
+                               (MPARAM)&pWinInfo->prec,
+                               MPFROM2SHORT(1,
+                                            CMA_TEXTCHANGED));
+                #endif
+            }
 
             brc = TRUE;
 
@@ -485,7 +855,7 @@ VOID pgrBuildWinlist(VOID)
                 if (pNew = NEW(PAGERWININFO))
                 {
                     memcpy(pNew, &WinInfoTemp, sizeof(PAGERWININFO));
-                    lstAppendItem(&G_llWinInfos, pNew);
+                    AddInfo(pNew);
                 }
             }
         }
@@ -520,13 +890,17 @@ VOID pgrFreeWinInfo(HWND hwnd)
         PLISTNODE       pNodeFound = NULL;
         PPAGERWININFO    pWinInfo;
 
+        _PmpfF(("freeing wininfor for %lX", hwnd));
+
         if (    (pWinInfo = pgrFindWinInfo(hwnd,
                                             (PVOID*)&pNodeFound))
              && (pNodeFound)
            )
             // we have an item for this window:
             // remove from list, which will also free pWinInfo
-            lstRemoveNode(&G_llWinInfos, pNodeFound);
+            RemoveInfo(pNodeFound);
+        else
+            DosBeep(100, 100);
 
         pgrUnlockWinlist();
     }
@@ -553,6 +927,17 @@ BOOL pgrRefresh(HWND hwnd)
         {
             // we have an entry:
             pgrGetWinInfo(pWinInfo);
+            #ifdef DEBUG_WINDOWLIST
+            {
+                FillRec(pWinInfo);
+                WinSendMsg(G_hwndDebugCnr,
+                           CM_INVALIDATERECORD,
+                           (MPARAM)&pWinInfo->prec,
+                           MPFROM2SHORT(1,
+                                        CMA_TEXTCHANGED));
+            }
+            #endif
+
             brc = TRUE;
         }
 
@@ -716,8 +1101,6 @@ BOOL pgrIconChange(HWND hwnd,
             PLISTNODE pNode = lstQueryFirstNode(&G_llWinInfos);
             while (pNode)
             {
-                // get next node NOW because we can delete pNode here
-                // V0.9.12 (2001-05-31) [umoeller]
                 PPAGERWININFO pWinInfo = (PPAGERWININFO)pNode->pItemData;
 
                 if (pWinInfo->swctl.hwnd == hwnd)
@@ -731,10 +1114,25 @@ BOOL pgrIconChange(HWND hwnd,
                     // because it suppresses entries without
                     // SWL_VISIBLE
                     if (    (pWinInfo->swctl.uchVisibility & SWL_VISIBLE)
-                         && (pWinInfo->hptr != hptr)
+                         && (pWinInfo->hptrFrame != hptr)
                        )
                     {
-                        pWinInfo->hptr = hptr;
+                        pWinInfo->hptrFrame = hptr;
+
+                        #ifdef DEBUG_WINDOWLIST
+                        {
+                            if (pWinInfo->prec)
+                            {
+                                 pWinInfo->prec->recc.hptrIcon = hptr;
+                                 WinSendMsg(G_hwndDebugCnr,
+                                            CM_INVALIDATERECORD,
+                                            (MPARAM)&pWinInfo->prec,
+                                            MPFROM2SHORT(1,
+                                                         CMA_TEXTCHANGED));
+                            }
+                        }
+                        #endif
+
                         brc = TRUE;
                     }
                     break;
@@ -802,7 +1200,7 @@ PSWBLOCK pgrQueryWinList(ULONG pid)
 
                     // override hwndIcon with the frame icon if we
                     // queried one in the background thread
-                    pSwblock->aswentry[ul].swctl.hwndIcon = pWinInfo->hptr;
+                    pSwblock->aswentry[ul].swctl.hwndIcon = pWinInfo->hptrFrame;
 
                     pNode = pNode->pNext;
                     ++ul;
@@ -902,7 +1300,7 @@ VOID CheckWindow(HAB hab,
                     if (strcmp(pCtrlThis->szSwtitle, pInfo->swctl.szSwtitle))
                     {
                         // session title changed:
-                        #ifdef DEBUG_WINDOWLIST
+                        /* #ifdef DEBUG_WINDOWLIST
                         _PmpfF(("title changed hwnd 0x%lX (old %s, new %s)",
                             pCtrlThis->hwnd,
                             pInfo->swctl.szSwtitle,
@@ -910,9 +1308,11 @@ VOID CheckWindow(HAB hab,
                             ));
                         #endif
 
+                        // this memcpy is not necessary because
+                        // XDM_WINDOWCHANGE ends up in pgrRefresh eventually
                         memcpy(pInfo->swctl.szSwtitle,
                                pCtrlThis->szSwtitle,
-                               sizeof(pCtrlThis->szSwtitle));
+                               sizeof(pCtrlThis->szSwtitle)); */
                         WinPostMsg(G_pHookData->hwndDaemonObject,
                                    XDM_WINDOWCHANGE,
                                    (MPARAM)pCtrlThis->hwnd,
@@ -920,7 +1320,7 @@ VOID CheckWindow(HAB hab,
                     }
 
                     hwnd = pCtrlThis->hwnd;
-                    hptrOld = pInfo->hptr;
+                    hptrOld = pInfo->hptrFrame;
 
                     // WinSendMsg below can block so unlock the list now
                     pgrUnlockWinlist();

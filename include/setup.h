@@ -65,6 +65,7 @@
     // common.c
     #pragma alloc_text(FREQ_CODE1, cmnQuerySetting)
     #pragma alloc_text(FREQ_CODE1, cmnGetString)
+    #pragma alloc_text(FREQ_CODE1, cmnLockObject)
 
     /*
      *  functions used with wpQueryIcon and
@@ -357,7 +358,7 @@
 /* daemon and hook */
 
         // debug window list
-            // #define DEBUG_WINDOWLIST
+            #define DEBUG_WINDOWLIST
 
 /* misc */
 

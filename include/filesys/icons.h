@@ -67,6 +67,8 @@
 
     BOOL icoRunReplacement(VOID);
 
+    ULONG icoClsQueryMaxAnimationIcons(M_WPObject *somSelf);
+
     /* ******************************************************************
      *
      *   Notebook callbacks (notebook.c) for new XFldObject "Icon" page
@@ -92,6 +94,30 @@
                                              ULONG ulItemID, USHORT usNotifyCode,
                                              ULONG ulExtra);
     #endif
+
+    /* ******************************************************************
+     *
+     *   Additional WPObject method prototypes
+     *
+     ********************************************************************/
+
+    /*
+     *@@ xfTP_wpclsQueryMaxAnimationIcons:
+     *      prototype for M_WPObject::wpclsQueryMaxAnimationIcons.
+     *
+     *      That class method is undocumented and simply returns
+     *      the no. of animation icons supported by objects of
+     *      this class. From my testing, this returns 0 unless
+     *      somSelf is a folder class object, but who knows. We
+     *      should rather use that method instead of just checking
+     *      for whether an object is a folder to determine whether
+     *      animation icons are supported.
+     *
+     *@@added V0.9.19 (2002-06-15) [umoeller]
+     */
+
+    typedef ULONG _System xfTP_wpclsQueryMaxAnimationIcons(M_WPObject*);
+    typedef xfTP_wpclsQueryMaxAnimationIcons *xfTD_wpclsQueryMaxAnimationIcons;
 
     /* ******************************************************************
      *

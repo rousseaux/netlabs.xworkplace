@@ -183,9 +183,6 @@
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 
-// #include <wpdesk.h>                     // WPDesktop
-// #include <wpshadow.h>                   // WPShadow
-
 /* ******************************************************************
  *
  *   Global variables
@@ -490,7 +487,7 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
 {
     PSUBCLFOLDERVIEW    psfv = 0;
     XFolderData         *somThis = XFolderGetData(somSelf);
-    HWND                hwndCnr = wpshQueryCnrFromFrame(hwndNewFrame);
+    HWND                hwndCnr = WinWindowFromID(hwndNewFrame, FID_CLIENT);
 
 #ifndef __ALWAYSSUBCLASS__
     if (!cmnQuerySetting(sfNoSubclassing)) // V0.9.3 (2000-04-26) [umoeller]
@@ -1021,7 +1018,7 @@ static BOOL MenuSelect(PSUBCLFOLDERVIEW psfv,   // in: frame information
            )
        )
     {
-        HWND hwndCnr = wpshQueryCnrFromFrame(psfv->hwndFrame);
+        HWND hwndCnr = WinWindowFromID(psfv->hwndFrame, FID_CLIENT);
 
 #ifndef __NOXSYSTEMSOUNDS__
         // play system sound

@@ -4234,6 +4234,28 @@ ULONG cmnSetupRestoreBackup(PULONG paulOffsets,
 
 /* ******************************************************************
  *
+ *   Object locks
+ *
+ ********************************************************************/
+
+/*
+ *@@ cmnLockObject:
+ *      calls _wpRequestObjectMutexSem on somSelf
+ *      and returns somSelf if successful, NULL
+ *      otherwise.
+ *
+ *@@added V0.9.19 (2002-06-15) [umoeller]
+ */
+
+WPObject* cmnLockObject(WPObject *somSelf)
+{
+    return ( (!_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
+                ? somSelf
+                : NULL);
+}
+
+/* ******************************************************************
+ *
  *   Trash can setup
  *
  ********************************************************************/

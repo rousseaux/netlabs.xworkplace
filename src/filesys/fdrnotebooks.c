@@ -96,8 +96,6 @@
 // other SOM headers
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
-// #include <wpdesk.h>
-
 /* ******************************************************************
  *
  *   Notebook callbacks (notebook.c) for XFldWPS  "View" page

@@ -91,7 +91,6 @@
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
-#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 #include "shared\xsetup.h"              // XWPSetup implementation
 
 #include "filesys\xthreads.h"           // extra XWorkplace threads
@@ -104,7 +103,6 @@
 
 // other SOM headers
 #pragma hdrstop
-#include <wpfsys.h>             // WPFileSystem
 
 /* ******************************************************************
  *

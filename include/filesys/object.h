@@ -41,7 +41,7 @@
 
     /* ******************************************************************
      *
-     *   Object setup
+     *   Object internals
      *
      ********************************************************************/
 
@@ -82,7 +82,7 @@
                                 // next object in folder content chain;
                                 // this is a SOM attribute, so we can safely
                                 // get this using the som _get_pobjNext method
-                                // (see wpshGetNextObjPointer)
+                                // (see objGetNextObjPointer)
         PMINIRECORDCORE     pRecord;
                                 // pointer to the object record; size is variable
                                 // depending on object data
@@ -149,6 +149,27 @@
     BOOL objIsAFolder(WPObject *somSelf);
 
     BOOL objIsObjectInitialized(WPObject *somSelf);
+
+    /*
+     *@@ xfTP_get_LastObj:
+     *      prototype for WPFolder::_get_LastObj (note the
+     *      extra underscore).
+     *
+     *      See xfTP_get_pobjNext for explanations.
+     *
+     *@@added V0.9.7 (2001-01-13) [umoeller]
+     */
+
+    typedef WPObject** _System xfTP_get_LastObj(WPFolder*);
+    typedef xfTP_get_LastObj *xfTD_get_LastObj;
+
+    WPObject** objGetNextObjPointer(WPObject *somSelf);
+
+    /* ******************************************************************
+     *
+     *   Object setup
+     *
+     ********************************************************************/
 
     BOOL objSetup(WPObject *somSelf,
                   PSZ pszSetupString);

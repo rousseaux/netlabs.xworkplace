@@ -62,6 +62,23 @@
     // in the daemon process
     #define LCID_PAGER_FONT  ((ULONG)1)
 
+    #ifdef DEBUG_WINDOWLIST
+        typedef struct WINLISTRECORD
+        {
+            RECORDCORE      recc;
+
+            PSZ             pszSwtitle;
+
+            PSZ             pszWindowType;
+
+            PSZ             pszPID;
+            CHAR            szPID[20];
+
+            PVOID           pWinInfo;       // reverse linkage
+
+        } WINLISTRECORD, *PWINLISTRECORD;
+    #endif
+
     #pragma pack(1)
 
     /*
@@ -94,7 +111,7 @@
                         // CHAR szSwTitle[MAXNAMEL+4]
                         // ULONG bProgType
 
-        HPOINTER    hptr;
+        HPOINTER    hptrFrame;          // frame icon (WM_QUERYICON)
 
         BYTE        bWindowType;
             // the following types are treated as "normal"
@@ -115,6 +132,10 @@
         ULONG       tid;
 
         SWP         swp;                // last known window pos
+
+        #ifdef DEBUG_WINDOWLIST
+            PWINLISTRECORD prec;
+        #endif
 
     } PAGERWININFO, *PPAGERWININFO;
 

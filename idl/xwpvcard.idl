@@ -83,6 +83,8 @@ interface XWPVCard : WPDataFile
     wpInitData: override;
     wpUnInitData: override;
 
+    wpFilterPopupMenu: override;
+
     wpAddSettingsPages: override;
 
     wpQueryDefaultHelp: override;

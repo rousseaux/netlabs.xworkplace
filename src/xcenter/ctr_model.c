@@ -1596,10 +1596,10 @@ ULONG ctrpQueryWidgetsCount(XCenter *somSelf)
 
 VOID ctrpFreeWidgets(XCenter *somSelf)
 {
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             XCenterData *somThis = XCenterGetData(somSelf);
             // _PmpfF(("entering, _pllWidgetSettings is %lX", _pllWidgetSettings));
@@ -1623,8 +1623,8 @@ VOID ctrpFreeWidgets(XCenter *somSelf)
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 }
 
 /* ******************************************************************

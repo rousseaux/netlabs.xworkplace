@@ -90,6 +90,7 @@
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
+#include "shared\classtest.h"           // some cheap funcs for WPS class checks
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
@@ -102,8 +103,6 @@
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
-#include <wpicon.h>
-#include <wpptr.h>
 
 /* ******************************************************************
  *
@@ -1851,11 +1850,11 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
         // alright, we got valid information, either from the
         // caller, or we got it ourselves:
 
-        WPSHLOCKSTRUCT Lock = {0};
+        WPObject *pobjLock = NULL;
 
         TRY_LOUD(excpt1)
         {
-            if (LOCK_OBJECT(Lock, somSelf))
+            if (pobjLock = cmnLockObject(somSelf))
             {
                 XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
 
@@ -1927,8 +1926,8 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
                             // in case somebody just ran the resource
                             // compiler or something
                             _wpSetProgIcon(somSelf, NULL);
-                        else if (    (_somIsA(somSelf, _WPIcon))
-                                  || (_somIsA(somSelf, _WPPointer))
+                        else if (    (ctsIsIcon(somSelf))
+                                  || (ctsIsPointer(somSelf))
                                 )
                         {
                             _wpQueryFilename(somSelf, szFilename, TRUE);
@@ -1967,8 +1966,8 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
             arc = ERROR_PROTECTION_VIOLATION;
         } END_CATCH();
 
-        if (Lock.fLocked)
-            _wpReleaseObjectMutexSem(Lock.pObject);
+        if (pobjLock)
+            _wpReleaseObjectMutexSem(pobjLock);
     }
 
     fsysFreeFindBuffer(&peaop);

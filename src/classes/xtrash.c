@@ -343,13 +343,13 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpTrashCanBusy(XWPTrashCan *somSelf,
                                              long lBusy)
 {
     BOOL    brc = FALSE;
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpTrashCanBusy");
 
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             if (lBusy > 0)
                 // raise busy count:
@@ -370,8 +370,8 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpTrashCanBusy(XWPTrashCan *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
     return brc;
 }
@@ -390,13 +390,13 @@ SOM_Scope void  SOMLINK xtrc_xwpAddObjectSize(XWPTrashCan *somSelf,
                                               ULONG ulNewSize)
 {
     // BOOL    fTrashCanLocked = FALSE;
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpAddObjectSize");
 
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             _dSizeOfAllObjects += ulNewSize;
             // update all visible status bars
@@ -405,8 +405,8 @@ SOM_Scope void  SOMLINK xtrc_xwpAddObjectSize(XWPTrashCan *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 }
 
 /*
@@ -448,14 +448,14 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpSetCorrectTrashIcon(XWPTrashCan *somSelf,
 {
     BOOL    brc = FALSE,
             fSave = FALSE;
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
 
     XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpSetCorrectTrashIcon");
 
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             // ULONG    ulIconID = 0;
             BOOL     fTrashFilled = FALSE;
@@ -499,8 +499,8 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpSetCorrectTrashIcon(XWPTrashCan *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
     // save trash can state so that the correct icon
     // is displayed after a Desktop restart

@@ -105,8 +105,7 @@
 #include "config\hookintf.h"            // daemon/hook interface
 
 #pragma hdrstop
-#include <wpfolder.h>                   // WPFolder
-// #include <wpshadow.h>                   // WPShadow
+#include <wpfsys.h>                     // WPFileSystem, we need wpQueryFilename
 
 /* ******************************************************************
  *

@@ -121,16 +121,6 @@
 
     #endif
 
-    /*
-     * wpshQueryCnrFromFrame:
-     *      this returns the window handle of the container in
-     *      a given folder frame. Since this container _always_
-     *      has the ID 0x8008, we can safely define this macro.
-     */
-
-    #define wpshQueryCnrFromFrame(hwndFrame) \
-                WinWindowFromID(hwndFrame, 0x8008)
-
     ULONG wpshQueryLogicalDisk(WPObject *somSelf);
 
     /* ******************************************************************
@@ -149,41 +139,6 @@
     #else
         #define wpshIdentifyRestoreID(psz, ul) ""
         #define wpshDumpTaskRec(somSelf, pszMethodName, pTaskRec)
-    #endif
-
-    /* ******************************************************************
-     *
-     *   Object locks
-     *
-     ********************************************************************/
-
-    #ifdef EXCEPT_HEADER_INCLUDED
-
-        /*
-         * WPSHLOCKSTRUCT:
-         *      structure used with wpshLockObject. This
-         *      must be on the function's stack. See
-         *      wpshLockObject for usage.
-         *
-         *@@added V0.9.7 (2000-12-08) [umoeller]
-         */
-
-        typedef struct _WPSHLOCKSTRUCT
-        {
-            // EXCEPTSTRUCT    ExceptStruct;       // exception struct from helpers\except.h
-            WPObject        *pObject;
-            BOOL            fLocked;            // TRUE if object was locked
-            // ULONG           ulNesting;          // for DosEnter/ExitMustComplete
-        } WPSHLOCKSTRUCT, *PWPSHLOCKSTRUCT;
-
-        /* BOOL wpshLockObject(PWPSHLOCKSTRUCT pLock,
-                            WPObject *somSelf);
-
-        BOOL wpshUnlockObject(PWPSHLOCKSTRUCT pLock); */
-
-        #define LOCK_OBJECT(Lock, pobj) \
-        ((Lock.pObject = pobj) && (Lock.fLocked = !_wpRequestObjectMutexSem(pobj, SEM_INDEFINITE_WAIT)))
-
     #endif
 
     /* ******************************************************************
@@ -365,20 +320,5 @@
 
     typedef WPObject** _System xfTP_get_FirstObj(WPFolder*);
     typedef xfTP_get_FirstObj *xfTD_get_FirstObj;
-
-    /*
-     *@@ xfTP_get_LastObj:
-     *      prototype for WPFolder::_get_LastObj (note the
-     *      extra underscore).
-     *
-     *      See xfTP_get_pobjNext for explanations.
-     *
-     *@@added V0.9.7 (2001-01-13) [umoeller]
-     */
-
-    typedef WPObject** _System xfTP_get_LastObj(WPFolder*);
-    typedef xfTP_get_LastObj *xfTD_get_LastObj;
-
-    WPObject** wpshGetNextObjPointer(WPObject *somSelf);
 
 #endif

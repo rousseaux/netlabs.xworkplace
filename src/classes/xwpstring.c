@@ -111,7 +111,7 @@
 
 // other SOM headers
 #pragma hdrstop
-#include <wpfsys.h>
+#include <wpfsys.h>                     // WPFileSystem, we need wpQueryFilename
 
 /* ******************************************************************
  *
@@ -722,8 +722,8 @@ SOM_Scope BOOL  SOMLINK xwstr_xwpQuerySetup2(XWPString *somSelf,
 
     if (_hobjStatic)
     {
-        WPObject *pobj = _wpclsQueryObject(_WPObject, _hobjStatic);
-        if (pobj)
+        WPObject *pobj;
+        if (pobj = _wpclsQueryObject(_WPObject, _hobjStatic))
         {
             PSZ psz;
             if (psz = _wpQueryObjectID(pobj))

@@ -163,6 +163,7 @@
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
+#include "shared\classtest.h"           // some cheap funcs for WPS class checks
 #include "shared\cnrsort.h"             // container sort comparison functions
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\errors.h"              // private XWorkplace error codes
@@ -181,11 +182,6 @@
 
 // other SOM headers
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
-
-#include <wpclsmgr.h>                   // this includes SOMClassMgr
-// #include <wpshadow.h>               // WPShadow
-#include <wprootf.h>
-#include <wpdataf.h>
 
 #include "helpers\undoc.h"              // some undocumented stuff
 
@@ -867,7 +863,7 @@ static BOOL HackContentPointers(WPFolder *somSelf,
                         // we had objects before:
                         // store new object as next object for
                         // previously last object
-                        WPObject **ppObjNext = wpshGetNextObjPointer(*_ppLastObj);
+                        WPObject **ppObjNext = objGetNextObjPointer(*_ppLastObj);
                         if (ppObjNext)
                             *ppObjNext = pObject;
                         // store new object as new last object
@@ -1293,7 +1289,7 @@ WPObject* fdrQueryContent(WPFolder *somSelf,
                     if (pobjFind)
                     {
                         WPObject **ppObjNext;
-                        if (ppObjNext = wpshGetNextObjPointer(pobjFind))
+                        if (ppObjNext = objGetNextObjPointer(pobjFind))
                             pobjReturn = *ppObjNext;
                     }
                 break;
@@ -1357,10 +1353,10 @@ WPObject** fdrQueryContentArray(WPFolder *pFolder,
                 WPObject *pObject;
 
                 ULONG ul = 0;
-                // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+                // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
                 for (   pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                         pObject;
-                        pObject = *wpshGetNextObjPointer(pObject))
+                        pObject = *objGetNextObjPointer(pObject))
                 {
                     // add object if either filter is off,
                     // or if no RECORDITEM exists yet
@@ -2381,16 +2377,16 @@ BOOL fdrCnrInsertObject(WPObject *pObject)
          && (pFolder = _wpQueryFolder(pObject))
        )
     {
-        WPSHLOCKSTRUCT Lock = {0};
+        WPObject *pobjLock = NULL;
         TRY_LOUD(excpt1)
         {
             // if pFolder is a root folder, we should really
             // insert the object below the corresponding disk object
-            if (_somIsA(pFolder, _WPRootFolder))
+            if (ctsIsRootFolder(pFolder))
                 pFolder = _wpQueryDisk(pFolder);
 
             if (    (pFolder)
-                 && (LOCK_OBJECT(Lock, pFolder))
+                 && (pobjLock = (!_wpRequestObjectMutexSem(pFolder, SEM_INDEFINITE_WAIT)) ? pFolder : NULL)
                )
             {
                 PVIEWITEM   pViewItem;
@@ -2405,7 +2401,7 @@ BOOL fdrCnrInsertObject(WPObject *pObject)
                         case OPEN_DETAILS:
                         {
                             HWND hwndCnr;
-                            if (hwndCnr = wpshQueryCnrFromFrame(pViewItem->handle))
+                            if (hwndCnr = WinWindowFromID(pViewItem->handle, FID_CLIENT))
                             {
                                 PPOINTL pptlIcon = _wpQueryNextIconPos(pFolder);
                                 if (_wpCnrInsertObject(pObject,
@@ -2422,8 +2418,8 @@ BOOL fdrCnrInsertObject(WPObject *pObject)
         }
         CATCH(excpt1) {} END_CATCH();
 
-        if (Lock.fLocked)
-            _wpReleaseObjectMutexSem(Lock.pObject);
+        if (pobjLock)
+            _wpReleaseObjectMutexSem(pobjLock);
     }
 
     return brc;
@@ -2464,7 +2460,7 @@ ULONG fdrInsertAllContents(WPFolder *pFolder)
                  case OPEN_TREE:
                  case OPEN_DETAILS:
                  {
-                     HWND hwndCnr = wpshQueryCnrFromFrame(pViewItem->handle);
+                     HWND hwndCnr = WinWindowFromID(pViewItem->handle, FID_CLIENT);
                      POINTL ptlIcon = {0, 0};
                      if (hwndCnr)
                          _wpclsInsertMultipleObjects(_somGetClass(pFolder),

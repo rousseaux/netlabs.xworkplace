@@ -44,10 +44,13 @@ interface XFldDisk : WPDisk
      *
      */
 
+    WPRootFolder xwpSafeQueryRootFolder(in BOOL fForceMap,
+                                        in PULONG pulErrorCode);
+
 #ifdef __SOMIDL__
   implementation {
 
-    //# releaseorder:
+    releaseorder:   xwpSafeQueryRootFolder;
 
     /*
      * Class Modifiers:

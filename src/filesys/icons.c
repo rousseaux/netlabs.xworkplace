@@ -312,7 +312,6 @@
 // other SOM headers
 #include "helpers\undoc.h"              // some undocumented stuff
 #pragma hdrstop
-// #include <wpshadow.h>                   // WPShadow
 
 /* ******************************************************************
  *
@@ -2175,6 +2174,31 @@ BOOL icoRunReplacement(VOID)
 }
 
 /*
+ *@@ icoClsQueryMaxAnimationIcons:
+ *      evil helper for calling wpclsQueryMaxAnimationIcons,
+ *      which is undocumented.
+ *
+ *      See xfTP_wpclsQueryMaxAnimationIcons.
+ *
+ *      Note that this calls a class method, so pass in a
+ *      class object.
+ *
+ *@@added V0.9.19 (2002-06-15) [umoeller]
+ */
+
+ULONG icoClsQueryMaxAnimationIcons(M_WPObject *somSelf)
+{
+    xfTD_wpclsQueryMaxAnimationIcons _wpclsQueryMaxAnimationIcons;
+    if (_wpclsQueryMaxAnimationIcons = (xfTD_wpclsQueryMaxAnimationIcons)
+                              wpshResolveFor(somSelf,
+                                             NULL,
+                                             "wpclsQueryMaxAnimationIcons"))
+        return _wpclsQueryMaxAnimationIcons(somSelf);
+
+    return 0;
+}
+
+/*
  *@@ icoQueryIconN:
  *      evil helper for calling wpQueryIcon
  *      or wpQueryIconN, which is undocumented.
@@ -2993,8 +3017,6 @@ typedef struct _OBJICONPAGEDATA
     ULONG           flIconPageFlags;            // flags for icoFormatIconPage so we
                                             // know which fields are available
 
-    BOOL            fIsFolder;                  // TRUE if this is for a folder page
-
     HWND            hwndIconStatic,
                     hwndHotkeyEF;
 
@@ -3356,7 +3378,20 @@ static MRESULT EXPENTRY fnwpSubclassedIconStatic(HWND hwndStatic, ULONG msg, MPA
  *      Sets the controls on the page according to the
  *      object's instance settings.
  *
+ *      This is a shared callback for the various types of
+ *      icon pages that we replace on the system. See
+ *      XFldObject::xwpAddReplacementIconPage for the
+ *      situations where this is used.
+ *
+ *      The smart thing is that we evaluate
+ *      INSERTNOTEBOOKPAGE.ulPageID here and format the
+ *      page's dialog according to what appears to be
+ *      supported by setting OBJICONPAGEDATA.flIconPageFlags
+ *      to a bit field with various flags. All control checks
+ *      must take that field into account.
+ *
  *@@added V0.9.16 (2001-10-15) [umoeller]
+ *@@changed V0.9.19 (2002-06-15) [umoeller]: added support for SP_OBJECT_ICONPAGE1_X
  */
 
 VOID XWPENTRY icoIcon1InitPage(PNOTEBOOKPAGE pnbp,
@@ -3376,13 +3411,15 @@ VOID XWPENTRY icoIcon1InitPage(PNOTEBOOKPAGE pnbp,
 
             ZERO(pData);
 
-            pData->fIsFolder = _somIsA(pnbp->inbp.somSelf, _WPFolder);
-
             pData->pnbp = pnbp;
 
             // store this in notebook page data
             pnbp->pUser = pData;
 
+            // now set up the flIconPageFlags according to
+            // the page ID; this is only a first step, we
+            // rule out specific flags based on the object
+            // style below
             switch (pnbp->inbp.ulPageID)
             {
                 case SP_OBJECT_ICONPAGE2:
@@ -3398,8 +3435,28 @@ VOID XWPENTRY icoIcon1InitPage(PNOTEBOOKPAGE pnbp,
                 case SP_TRASHCAN_ICON:
                     // trash can icon page:
                     pData->flIconPageFlags =    ICONFL_TITLE
+                                              // | ICONFL_ICON
                                               | ICONFL_HOTKEY
                                               | ICONFL_DETAILS
+                                              // | ICONFL_TEMPLATE
+                                              | ICONFL_LOCKEDINPLACE;
+                break;
+
+                case SP_OBJECT_ICONPAGE1_X:
+                    // added V0.9.19 (2002-06-15) [umoeller]:
+                    // reduced icon page for classes which have
+                    // removed the icon page
+                    // (see XFldObject::wpAddSettingsPages):
+                    // do not add the titles field because we
+                    // shouldn't rename something like \\server\resource.
+                    // Unfortunately WPSharedDir does not set
+                    // OBJSTYLE_NORENAME, so the below check won't
+                    // work.
+                    pData->flIconPageFlags =    // ICONFL_TITLE
+                                              // | ICONFL_ICON
+                                              ICONFL_HOTKEY
+                                              | ICONFL_DETAILS
+                                              // | ICONFL_TEMPLATE
                                               | ICONFL_LOCKEDINPLACE;
                 break;
 
@@ -3448,10 +3505,13 @@ VOID XWPENTRY icoIcon1InitPage(PNOTEBOOKPAGE pnbp,
                 // the MLE read-only
                 if (pData->fNoRename = !!(_wpQueryStyle(pnbp->inbp.somSelf)
                                                 & OBJSTYLE_NORENAME))
+                {
+                    _PmpfF(("no rename"));
                     WinSendMsg(hwndMLE,
                                MLM_SETREADONLY,
                                (MPARAM)TRUE,
                                0);
+                }
             }
 
             if (flIconPageFlags & ICONFL_ICON)
@@ -3783,6 +3843,7 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
                 if (    (usNotifyCode == MLN_KILLFOCUS)
                      // title controls available?
                      && (flIconPageFlags & ICONFL_TITLE)
+                     // object must not have OBJSTYLE_NORENAME:
                      && (!pData->fNoRename)
                      // page already initialized? V0.9.19 (2002-05-23) [umoeller]
                      && (pnbp->flPage & NBFL_PAGE_INITED)

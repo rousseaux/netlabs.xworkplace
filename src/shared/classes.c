@@ -98,7 +98,6 @@
 
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 #include <wpclsmgr.h>               // this includes SOMClassMgr
-// #include <wpdesk.h>                 // WPDesktop
 
 /* ******************************************************************
  *
@@ -1081,8 +1080,8 @@ PMETHODINFO clsQueryMethodInfo(SOMClass *pClassObject,  // in: class to query me
                                BOOL fClassMethods,      // in: class or instance methods?
                                PBOOL pfAbort)           // in: when this is set to TRUE, this function aborts
 {
-    PMETHODINFO pmi = (PMETHODINFO)malloc(sizeof(METHODINFO));
-    if (pmi)
+    PMETHODINFO pmi;
+    if (pmi = (PMETHODINFO)malloc(sizeof(METHODINFO)))
     {
         ULONG ul = 0;
 
@@ -1148,8 +1147,8 @@ PMETHODINFO clsQueryMethodInfo(SOMClass *pClassObject,  // in: class to query me
                                                     // while we climb up the parents tree
 
                 // allocate structure for returning method information
-                PSOMMETHOD      psm = (PSOMMETHOD)malloc(sizeof(SOMMETHOD));
-                if (!psm)
+                PSOMMETHOD psm;
+                if (!(psm = (PSOMMETHOD)malloc(sizeof(SOMMETHOD))))
                     break;
                 memset(psm, 0, sizeof(SOMMETHOD));
 

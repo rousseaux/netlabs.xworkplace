@@ -70,7 +70,10 @@ interface XFldDataFile : WPDataFile
      *
      */
 
-    BOOL        fHasIconEA;            // set to TRUE in wpRestoreState if so
+    BOOL        fHasIconEA;             // set to TRUE in wpRestoreState if so
+
+    BOOL        fIsIconOrPointer;       // set in wpInitData if WPIcon or WPPointer
+                                        // V0.9.19 (2002-06-15) [umoeller]
 
     /*
      * The following is forced into the .H file:

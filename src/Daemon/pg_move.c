@@ -31,6 +31,7 @@
 #define INCL_WININPUT
 #define INCL_WINPOINTERS
 #define INCL_WINSYS
+#define INCL_WINSTDCNR
 #define INCL_WINERRORS
 #include <os2.h>
 

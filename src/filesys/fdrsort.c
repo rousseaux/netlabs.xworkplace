@@ -246,6 +246,7 @@
 
 #define INCL_WINCOUNTRY
 #define INCL_WINWINDOWMGR
+#define INCL_WINFRAMEMGR
 #define INCL_WINMENUS
 #define INCL_WINBUTTONS
 #define INCL_WINLISTBOXES
@@ -277,13 +278,11 @@
 #include "shared\cnrsort.h"             // container sort comparison functions
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
-#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\object.h"             // XFldObject implementation
 
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
-// #include <wpshadow.h>      // WPShadow
 
 /* ******************************************************************
  *
@@ -1288,10 +1287,10 @@ BOOL fdrSortViewOnce(WPFolder *somSelf,
     if (cmnQuerySetting(sfExtendedSorting))
 #endif
     {
-        WPSHLOCKSTRUCT Lock = {0};
+        WPObject *pobjLock = NULL;
         TRY_LOUD(excpt1)
         {
-            if (LOCK_OBJECT(Lock, somSelf))
+            if (pobjLock = cmnLockObject(somSelf))
             {
                 HWND hwndCnr;
 
@@ -1300,7 +1299,7 @@ BOOL fdrSortViewOnce(WPFolder *somSelf,
                             _somGetClassName(somSelf),
                             hwndFrame, lSort));
 
-                if (!(hwndCnr = wpshQueryCnrFromFrame(hwndFrame)))
+                if (!(hwndCnr = WinWindowFromID(hwndFrame, FID_CLIENT)))
                     cmnLog(__FILE__, __LINE__, __FUNCTION__,
                            "hwndCnr is NULLHANDLE, cannot sort");
                 else
@@ -1335,8 +1334,8 @@ BOOL fdrSortViewOnce(WPFolder *somSelf,
         }
         CATCH(excpt1) {} END_CATCH();
 
-        if (Lock.fLocked)
-            _wpReleaseObjectMutexSem(Lock.pObject);
+        if (pobjLock)
+            _wpReleaseObjectMutexSem(pobjLock);
     }
 
     return (rc);
@@ -1392,10 +1391,10 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
         // set wait pointer V0.9.12 (2001-05-18) [umoeller]
         HPOINTER hptrOld = winhSetWaitPointer();
 
-        WPSHLOCKSTRUCT Lock = {0};
+        WPObject *pobjLock = NULL;
         TRY_LOUD(excpt1)
         {
-            if (LOCK_OBJECT(Lock, somSelf))
+            if (pobjLock = cmnLockObject(somSelf))
             {
                 // this is TRUE if "Always sort" is on either locally or globally
                 BOOL            AlwaysSort = (_lAlwaysSort == SET_DEFAULT)
@@ -1507,8 +1506,8 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
         }
         CATCH(excpt1) {} END_CATCH();
 
-        if (Lock.fLocked)
-            _wpReleaseObjectMutexSem(Lock.pObject);
+        if (pobjLock)
+            _wpReleaseObjectMutexSem(pobjLock);
 
         WinSetPointer(HWND_DESKTOP, hptrOld);
 
@@ -1542,7 +1541,7 @@ MRESULT EXPENTRY fdrUpdateFolderSorts(HWND hwndView,   // frame wnd handle
         || ((ULONG)mpView == OPEN_DETAILS)
        )
     {
-        HWND hwndCnr = wpshQueryCnrFromFrame(hwndView);
+        HWND hwndCnr = WinWindowFromID(hwndView, FID_CLIENT);
 
         #ifdef DEBUG_SORT
             _Pmpf(("  hwndView 0x%lX, hwndCnr 0x%lX", hwndView, hwndCnr));

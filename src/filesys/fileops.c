@@ -117,6 +117,7 @@
 
 #include "filesys\fileops.h"            // file operations implementation
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\object.h"             // XFldObject implementation
 #include "filesys\trash.h"              // trash can implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
@@ -280,10 +281,10 @@ PLINKLIST fopsFolder2ExpandedList(WPFolder *pFolder,
                 // -- if we have a "folders only" populate, we add
                 //    all objects we have (which is at least all the
                 //    folders, but can contain additional objects)
-                // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+                // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
                 for (pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                      pObject;
-                     pObject = *wpshGetNextObjPointer(pObject))
+                     pObject = *objGetNextObjPointer(pObject))
                 {
                     PEXPANDEDOBJECT fSOI = NULL;
 
@@ -557,10 +558,10 @@ FOPSRET fopsExpandObjectFlat(PLINKLIST pllObjects,  // in: list to append to (pl
                     // -- if we have a "folders only" populate, we add
                     //    all objects we have (which is at least all the
                     //    folders, but can contain additional objects)
-                    // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+                    // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
                     for (pSubObject = _wpQueryContent(pObject, NULL, QC_FIRST);
                          pSubObject;
-                         pSubObject = *wpshGetNextObjPointer(pSubObject))
+                         pSubObject = *objGetNextObjPointer(pSubObject))
                     {
                         // recurse!
                         // this will add pSubObject to pllObjects
@@ -773,7 +774,7 @@ WPFileSystem* fopsFindObjectWithSameTitle(WPFolder *pFolder,    // in: folder to
             {
                 for (   pobj = _wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
                         (pobj);
-                        pobj = *wpshGetNextObjPointer(pobj)
+                        pobj = *objGetNextObjPointer(pobj)
                     )
                 {
                     PSZ pszThis;

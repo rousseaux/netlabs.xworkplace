@@ -177,6 +177,7 @@
 #define INCL_WINSYS
 #define INCL_WINWORKPLACE
 #define INCL_WINSWITCHLIST
+#define INCL_WINSTDCNR
 #define INCL_WINERRORS
 #define INCL_SHLERRORS
 
@@ -2163,19 +2164,18 @@ static VOID ProcessNotifies(ULONG ulMsgOffset,
                        pNotify->ulMessage + ulMsgOffset,
                        mp1,
                        mp2);
-// we should not do that, it breaks the winlist watcher thread stuff;
-// if an invalid entry has not been removed, it's harmless anyway.
-// removed V0.9.19 (2002-06-15) [lafaix]
-// I beg to differ, Martin: only XWPDAEMON thread one accesses
-// G_llWinlistWatches through the XDM_ADDWINLISTWATCH message,
-// and this func only gets called on thread 1 also. So there
-// can't possibly be any synchronization problems as far as I can see.
-// V0.9.19 (2002-06-15) [umoeller]
         else
             // window is no longer valid:
-            ProcessRemoveNotify(pNotify->hwndNotify,
+            /* ProcessRemoveNotify(pNotify->hwndNotify,
                                 &G_llWinlistWatches,
-                                &G_pHookData->cWinlistWatches);
+                                &G_pHookData->cWinlistWatches); */
+            // hwndDaemonObject does list maintenance and
+            // stops the winlist thread, so post instead
+            // V0.9.19 (2002-06-15) [umoeller]
+            WinPostMsg(G_pHookData->hwndDaemonObject,
+                       XDM_REMOVEWINLISTWATCH,
+                       (MPARAM)pNotify->hwndNotify,
+                       NULL);
 
         pNode = pNext;
     }

@@ -344,10 +344,11 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\errors.h"              // private XWorkplace error codes
-#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "shared\center.h"              // public XCenter interfaces
 #include "xcenter\centerp.h"            // private XCenter implementation
+
+#include "filesys\object.h"             // XFldObject implementation
 
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
@@ -1013,10 +1014,10 @@ static VOID DwgtDestroy(HWND hwnd)
                                                                QWL_USER))
        )
     {
-        WPSHLOCKSTRUCT Lock = {0};
+        WPObject *pobjLock = NULL;
         TRY_LOUD(excpt1)
         {
-            if (LOCK_OBJECT(Lock, pXCenterData->somSelf))
+            if (pobjLock = cmnLockObject(pXCenterData->somSelf))
             {
                 // stop all running timers
                 // tmrStopAllTimers(hwnd);
@@ -1069,8 +1070,8 @@ static VOID DwgtDestroy(HWND hwnd)
         }
         CATCH(excpt1) {} END_CATCH();
 
-        if (Lock.fLocked)
-            _wpReleaseObjectMutexSem(Lock.pObject);
+        if (pobjLock)
+            _wpReleaseObjectMutexSem(pobjLock);
     }
 }
 
@@ -1107,11 +1108,11 @@ static BOOL DwgtRender(HWND hwnd,
        )
     {
         XCenter        *somSelf = pXCenterData->somSelf;
-        WPSHLOCKSTRUCT Lock = {0};
+        WPObject *pobjLock = NULL;
 
         TRY_LOUD(excpt1)
         {
-            if (LOCK_OBJECT(Lock, somSelf))
+            if (pobjLock = cmnLockObject(somSelf))
             {
                 ULONG ulTrayWidgetIndex = 0,
                       ulTrayIndex = 0,
@@ -1145,8 +1146,8 @@ static BOOL DwgtRender(HWND hwnd,
             brc = FALSE;
         } END_CATCH();
 
-        if (Lock.fLocked)
-            _wpReleaseObjectMutexSem(Lock.pObject);
+        if (pobjLock)
+            _wpReleaseObjectMutexSem(pobjLock);
 
     } // end if (pXCenterData)
 

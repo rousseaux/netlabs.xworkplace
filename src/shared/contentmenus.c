@@ -161,14 +161,6 @@
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 
-#include <wppgm.h>                      // WPProgram
-// #include <wpshadow.h>                   // WPShadow
-#include <wpdesk.h>                     // WPDesktop
-#include <wpdataf.h>                    // WPDataFile
-#include <wprootf.h>                    // WPRootFolder
-
-#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
-
 /* ******************************************************************
  *
  *   Definitions
@@ -758,7 +750,7 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
                                 fnwpSubclFolderContentMenu);
 
         // remove "empty" item (if it exists)
-        winhRemoveMenuItem(hwndMenu,
+        winhDeleteMenuItem(hwndMenu,
                            (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_DUMMY));
 
         // start collecting stuff; lock the folder contents,
@@ -768,10 +760,10 @@ VOID cmnuInsertObjectsIntoMenu(WPFolder *pFolder,   // in: folder whose contents
         {
             ULONG   ulTotalObjectsAdded = 0;
             // now collect all objects in folder
-            // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+            // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
             for (pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                  pObject;
-                 pObject = *wpshGetNextObjPointer(pObject))
+                 pObject = *objGetNextObjPointer(pObject))
             {
                 // apply folder's "include" criteria
                 // V0.9.16 (2002-01-05) [umoeller]
@@ -1075,7 +1067,7 @@ VOID cmnuFillContentSubmenu(SHORT sMenuId, // in: menu ID of selected folder con
 
             // if pFolder is a disk object: get root folder
             if (_somIsA(pFolder, _WPDisk))
-                pFolder = wpshQueryRootFolder(pFolder, FALSE, NULL);
+                pFolder = _xwpSafeQueryRootFolder(pFolder, FALSE, NULL);
 
             if (pFolder)
             {

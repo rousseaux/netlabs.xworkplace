@@ -103,7 +103,6 @@
 #include "shared\cnrsort.h"             // container sort comparison functions
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
-#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\filedlg.h"            // replacement file dialog implementation
 #include "filesys\folder.h"             // XFolder implementation
@@ -111,7 +110,6 @@
 
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
-// #include <wpshadow.h>
 
 /* ******************************************************************
  *
@@ -286,6 +284,7 @@ MRESULT EXPENTRY fnwpSubclassedFilesFrame(HWND hwndFrame, ULONG msg, MPARAM mp1,
  *         This never comes with FFL_FILEMASK.
  *
  *@@changed V0.9.18 (2002-02-06) [umoeller]: fixed a bunch of bugs
+ *@@changed V0.9.19 (2002-06-15) [umoeller]: fixed broken file detection (double-clicks)
  */
 
 static ULONG ParseFileString(PFILEDLGDATA pWinData,
@@ -338,10 +337,13 @@ static ULONG ParseFileString(PFILEDLGDATA pWinData,
             // @@todo handle relative paths here
             ULONG cb = p3 - p;
 
+            _Pmpf(("  checking if path \"%s\" is dir", p));
+
             // check if the last character is a '\';
             // the spec _must_ be a directory then
-            if (p3[cb] == '\0')
+            if (p[cb] == '\0')      // fixed V0.9.19 (2002-06-15) [umoeller]
             {
+                _Pmpf(("  ends in \\, must be dir"));
                 fMustBeDir = TRUE;
                 // p2++;           // points to null char now --> no file spec
             }
@@ -356,6 +358,8 @@ static ULONG ParseFileString(PFILEDLGDATA pWinData,
         else
             // no path specified:
             pStartOfFile = p;
+
+        _Pmpf(("  pStartOfFile is \"%s\"", pStartOfFile));
 
         // check if the following is a file mask
         // or a real file name
@@ -422,7 +426,7 @@ static ULONG ParseFileString(PFILEDLGDATA pWinData,
                 // this is not a directory:
                 if (fMustBeDir)
                     // but it must be (because user termianted string with "\"):
-                    ;
+                    _Pmpf(("  not dir, but must be!"));
                 else
                 {
                     // this doesn't exist, or it is a file:
@@ -466,29 +470,26 @@ static WPFileSystem* GetFSFromRecord(PMINIRECORDCORE precc,
                                      BOOL fFoldersOnly)
 {
     WPObject *pobj = NULL;
-    if (precc)
+    if (    (precc)
+         && (pobj = OBJECT_FROM_PREC(precc))
+         && (pobj = objResolveIfShadow(pobj))
+       )
     {
-        if (pobj = OBJECT_FROM_PREC(precc))
-        {
-            if (pobj = objResolveIfShadow(pobj))
-            {
-                if (_somIsA(pobj, _WPDisk))
-                    pobj = wpshQueryRootFolder(pobj,
-                                               FALSE,   // no change map
-                                               NULL);
+        if (_somIsA(pobj, _WPDisk))
+            pobj = _xwpSafeQueryRootFolder(pobj,
+                                           FALSE,   // no change map
+                                           NULL);
 
-                if (pobj)
-                {
-                    if (fFoldersOnly)
-                    {
-                        if (!_somIsA(pobj, _WPFolder))
-                            pobj = NULL;
-                    }
-                    else
-                        if (!_somIsA(pobj, _WPFileSystem))
-                            pobj = NULL;
-                }
+        if (pobj)
+        {
+            if (fFoldersOnly)
+            {
+                if (!_somIsA(pobj, _WPFolder))
+                    pobj = NULL;
             }
+            else
+                if (!_somIsA(pobj, _WPFileSystem))
+                    pobj = NULL;
         }
     }
 
@@ -800,7 +801,7 @@ static BOOL UpdateDlgWithFullFile(PFILEDLGDATA pWinData)
             if (_wpQueryLogicalDrive(pDisk) == pWinData->szDrive[0] - 'A' + 1)
             {
                 precDiskSelect = _wpQueryCoreRecord(pDisk);
-                pRootFolder = wpshQueryRootFolder(pDisk, FALSE, NULL);
+                pRootFolder = _xwpSafeQueryRootFolder(pDisk, FALSE, NULL);
                 break;
             }
 
@@ -1014,10 +1015,10 @@ static VOID BuildDisksList(WPFolder *pDrivesFolder,
             {
                 WPObject *pObject;
                 // 1) count objects
-                // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+                // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
                 for (   pObject = _wpQueryContent(pDrivesFolder, NULL, QC_FIRST);
                         (pObject);
-                        pObject = *wpshGetNextObjPointer(pObject)
+                        pObject = *objGetNextObjPointer(pObject)
                     )
                 {
                     if (_somIsA(pObject, _WPDisk))
@@ -1086,7 +1087,7 @@ static WPObject* AddFirstChild(WPFolder *pFolder,
                     WPObject    *pObject;
                     for (   pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                             pObject;
-                            pObject = *wpshGetNextObjPointer(pObject))
+                            pObject = *objGetNextObjPointer(pObject))
                     {
                         if (IsInsertable(pObject,
                                          TRUE,      // folders only
@@ -1951,7 +1952,7 @@ static VOID InsertContents(WPFolder *pFolder,              // in: populated fold
             ULONG       cObjects = 0;
             for (   pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                     pObject;
-                    pObject = *wpshGetNextObjPointer(pObject)
+                    pObject = *objGetNextObjPointer(pObject)
                 )
             {
                 if (IsInsertable(pObject,
@@ -1978,7 +1979,7 @@ static VOID InsertContents(WPFolder *pFolder,              // in: populated fold
 
                     for (   pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
                             pObject;
-                            pObject = *wpshGetNextObjPointer(pObject)
+                            pObject = *objGetNextObjPointer(pObject)
                         )
                     {
                         if (IsInsertable(pObject,

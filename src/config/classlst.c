@@ -109,8 +109,6 @@
 #include "config\classlst.h"            // SOM logic for "WPS Classes" page
 
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
-// #include <wpclsmgr.h>               // this includes SOMClassMgr
-// #include <wpdesk.h>                 // WPDesktop
 
 /* ******************************************************************
  *

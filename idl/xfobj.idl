@@ -101,7 +101,9 @@ interface XFldObject : WPObject
 
     BOOL xwpDestroyStorage();
 
-    //# ULONG xwpAddObjectInternalsPage(in HWND hwndNotebook);
+    ULONG xwpAddReplacementIconPage(in HWND hwndNotebook,
+                                    in ULONG ulPageID,
+                                    in ULONG ulDefaultHelpPanel);
 
     ULONG xwpQueryRealDefaultView();
     PSZ xwpQueryOriginalObjectID();
@@ -153,7 +155,8 @@ interface XFldObject : WPObject
                   xwpQueryRealDefaultView,
                   xwpFreeSetupBuffer,
                   xwpQueryOriginalObjectID,
-                  xwpHotkeyOrBorderAction;
+                  xwpHotkeyOrBorderAction,
+                  xwpAddReplacementIconPage;
 
     /*
      * Class Modifiers:
@@ -247,6 +250,7 @@ interface XFldObject : WPObject
     wpMenuItemSelected: override;
     wpMenuItemHelpSelected: override;
 
+    wpAddSettingsPages: override;
     wpAddObjectGeneralPage: override;
 
     wpConfirmObjectTitle: override;

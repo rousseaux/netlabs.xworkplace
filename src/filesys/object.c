@@ -250,6 +250,7 @@
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
+#include "shared\classtest.h"           // some cheap funcs for WPS class checks
 #include "shared\cnrsort.h"             // container sort comparison functions
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
@@ -270,7 +271,7 @@
 
 // other SOM headers
 #pragma hdrstop
-#include <wptrans.h>                    // WPTransient
+// #include <wptrans.h>                    // WPTransient
 #include <wpclsmgr.h>                   // WPClassMgr
 #include <wpshadow.h>
 
@@ -319,7 +320,7 @@ static LONG        G_lDirtyListItemsCount = 0;
 
 /* ******************************************************************
  *
- *   Object setup
+ *   Object internals
  *
  ********************************************************************/
 
@@ -399,6 +400,44 @@ BOOL objIsObjectInitialized(WPObject *somSelf)
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     return (0 != (_flFlags & OBJFL_INITIALIZED));
 }
+
+/*
+ *@@ objGetNextObjPointer:
+ *      returns the pointer of the "next object" attribute
+ *      in somSelf's instance data.
+ *
+ *      See xfTP_get_pobjNext for explanations.
+ *
+ *@@added V0.9.7 (2001-01-13) [umoeller]
+ *@@changed V0.9.19 (2002-06-15) [umoeller]: moved here from wpsh.c
+ */
+
+WPObject** objGetNextObjPointer(WPObject *somSelf)
+{
+    WPObject** ppObjNext = NULL;
+    static xfTD_get_pobjNext __get_pobjNext = NULL;
+
+    if (!__get_pobjNext)
+        // first call:
+        __get_pobjNext
+            = (xfTD_get_pobjNext)wpshResolveFor(somSelf,
+                                                NULL,        // use somSelf's class
+                                                "_get_pobjNext");
+    if (__get_pobjNext)
+    {
+        if (!(ppObjNext = __get_pobjNext(somSelf)))
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "__get_pobjNext returned NULL.");
+    }
+
+    return (ppObjNext);
+}
+
+/* ******************************************************************
+ *
+ *   Object setup
+ *
+ ********************************************************************/
 
 /*
  *@@ objSetup:
@@ -794,10 +833,10 @@ static ULONG WriteOutObjectSetup(FILE *RexxFile,
                         if (fSem = !fdrRequestFolderMutexSem(pobj, 5000))
                         {
                             WPObject *pSubObj = 0;
-                            // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+                            // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
                             for (   pSubObj = _wpQueryContent(pobj, NULL, QC_FIRST);
                                     pSubObj;
-                                    pSubObj = *wpshGetNextObjPointer(pSubObj)
+                                    pSubObj = *objGetNextObjPointer(pSubObj)
                                 )
                             {
                                 ulrc += WriteOutObjectSetup(RexxFile,
@@ -2431,8 +2470,7 @@ BOOL objAddToList(WPObject *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        fSemOwned = LockObjectsList();
-        if (fSemOwned)
+        if (fSemOwned = LockObjectsList())
         {
             PLISTNODE   pNode = 0,
                         pNodeFound = 0;
@@ -2551,8 +2589,7 @@ BOOL objIsOnList(WPObject *somSelf,
 
     TRY_LOUD(excpt1)
     {
-        fSemOwned = LockObjectsList();
-        if (fSemOwned)
+        if (fSemOwned = LockObjectsList())
         {
             PLISTNODE pNode = lstQueryFirstNode(&pll->ll);
             while (pNode)
@@ -2976,7 +3013,7 @@ BOOL objAddToDirtyList(WPObject *pobj)
 
     TRY_LOUD(excpt1)
     {
-        if (!_somIsA(pobj, _WPTransient))
+        if (!ctsIsTransient(pobj))
         {
             if (fLocked = LockDirtyList())
             {
@@ -2984,16 +3021,15 @@ BOOL objAddToDirtyList(WPObject *pobj)
                 // we can use a plain TREE node (no special struct
                 // definition needed) and just use the "id" field
                 // for the pointer
-                TREE *pNode = NEW(TREE);
-                if (pNode)
+                TREE *pNode;
+                if (pNode = NEW(TREE))
                 {
                     pNode->ulKey = (ULONG)pobj;
 
-                    brc = (!treeInsert(&G_DirtyList,
-                                       &G_lDirtyListItemsCount,
-                                       pNode,
-                                       treeCompareKeys));        // no duplicates
-                    if (brc)
+                    if (brc = (!treeInsert(&G_DirtyList,
+                                           &G_lDirtyListItemsCount,
+                                           pNode,
+                                           treeCompareKeys)))
                     {
                         /*
                         _PmpfF(("added obj 0x%lX (%s, class %s)",
@@ -3069,10 +3105,10 @@ BOOL objRemoveFromDirtyList(WPObject *pobj)
     {
         if (fLocked = LockDirtyList())
         {
-            TREE *pNode = treeFind(G_DirtyList,
-                                   (ULONG)pobj,
-                                   treeCompareKeys);
-            if (pNode)
+            TREE *pNode;
+            if (pNode = treeFind(G_DirtyList,
+                                 (ULONG)pobj,
+                                 treeCompareKeys))
             {
                 // was on list:
                 treeDelete(&G_DirtyList,
@@ -3186,9 +3222,9 @@ ULONG objForAllDirtyObjects(FNFORALLDIRTIESCALLBACK *pCallback,  // in: callback
             // build an array instead and run the callback on the array.
 
             LONG        cObjects = G_lDirtyListItemsCount;
-            TREE        **papNodes = treeBuildArray(G_DirtyList, // V0.9.9 (2001-04-05) [umoeller]
-                                                    &cObjects);
-            if (papNodes)
+            TREE        **papNodes;
+            if (papNodes = treeBuildArray(G_DirtyList, // V0.9.9 (2001-04-05) [umoeller]
+                                          &cObjects))
             {
                 if (cObjects == G_lDirtyListItemsCount)
                 {

@@ -632,6 +632,10 @@
     #define SP_OBJECT_ICONPAGE1     220     // new with V0.9.16 (2001-10-15) [umoeller]
     #define SP_OBJECT_ICONPAGE2     221     // new with V0.9.16 (2001-10-15) [umoeller]
                 // this is really a WPFolder page...
+    #define SP_OBJECT_ICONPAGE1_X   222
+                // icon page where wpAddObjectGeneralPage returned
+                // SETTINGS_PAGE_REMOVED (WPSharedDir)
+                // new with V0.9.19 (2002-06-15) [umoeller]
 
     // 22) XWPVCard V0.9.16 (2002-02-02) [umoeller]
     #define SP_VCARD_SUMMARY        230
@@ -1379,6 +1383,16 @@
                                          ULONG cOffsets,
                                          PVOID somThis,
                                          PVOID pBackup);
+
+    /* ******************************************************************
+     *
+     *   Object locks
+     *
+     ********************************************************************/
+
+    #ifdef SOM_WPObject_h
+        WPObject* cmnLockObject(WPObject *somSelf);
+    #endif
 
     /* ******************************************************************
      *

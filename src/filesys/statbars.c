@@ -120,6 +120,7 @@
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\classes.h"             // WPS class list helper functions
+#include "shared\classtest.h"           // some cheap funcs for WPS class checks
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
@@ -134,8 +135,6 @@
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 #include <wpdisk.h>                     // WPDisk
 #include <wppgm.h>                      // WPProgram
-// #include <wpshadow.h>                   // WPShadow
-#include <wpshdir.h>                    // WPSharedDir // V0.9.5 (2000-09-20) [pr]
 
 // finally, our own header file
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
@@ -767,7 +766,7 @@ VOID stbUpdate(WPFolder *pFolder)
                     HWND hwndStatusBar;
                     HWND hwndCnr;
                     if (    (hwndStatusBar = WinWindowFromID(pViewItem->handle, ID_STATUSBAR))
-                         && (hwndCnr = wpshQueryCnrFromFrame(pViewItem->handle))
+                         && (hwndCnr = WinWindowFromID(pViewItem->handle, FID_CLIENT))
                        )
                         CallResolvedUpdateStatusBar(pFolder,
                                                     hwndStatusBar,
@@ -1536,7 +1535,7 @@ BOOL stbSetClassMnemonics(SOMClass *pClassObject,
     // no WPUrl or WPUrl not installed: continue
     if (   (_somDescendedFrom(pClassObject, _WPDisk))
            // V0.9.5 (2000-09-20) [pr] WPSharedDir has disk status bar
-        || (_somDescendedFrom(pClassObject, _WPSharedDir))
+        || (ctsDescendedFromSharedDir(pClassObject))
        )
     {
         // provoke a reload of the settings
@@ -1655,7 +1654,7 @@ PSZ stbQueryClassMnemonics(SOMClass *pClassObject)    // in: class object of sel
 
     if (    (_somDescendedFrom(pClassObject, _WPDisk))
             // V0.9.5 (2000-09-20) [pr] WPSharedDir has disk status bar
-         || (_somDescendedFrom(pClassObject, _WPSharedDir))
+         || (ctsDescendedFromSharedDir(pClassObject))
        )
     {
         if (G_szWPDiskStatusBarMnemonics[0] == '\0')
@@ -1903,7 +1902,7 @@ static BOOL CheckLogicalDrive(PULONG pulLogicalDrive,
         // and therefore used to provoke a click in drive A:
         // all the time... (how much stupidity can there be?!?)
         // V0.9.16 (2001-10-04) [umoeller]
-        if (_somIsA(pDisk, _WPSharedDir))
+        if (ctsIsSharedDir(pDisk))
             *pulLogicalDrive = 0;
         else
         {
@@ -2026,7 +2025,7 @@ ULONG stbTranslateSingleMnemonics(SOMClass *pObject,       // in: object
 
     if (    (_somIsA(pObject, _WPDisk))
             // V0.9.5 (2000-09-20) [pr] WPSharedDir has disk status bar
-         || (_somIsA(pObject, _WPSharedDir))
+         || (ctsIsSharedDir(pObject))
        )
     {
         ULONG   ulLogicalDrive = -1;
@@ -2914,7 +2913,7 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
                          cbTotal,
                          pcs);
 
-    // dump icon position in debug mode
+    // prepend icon position in debug mode
     #ifdef DEBUG_STATUSBARS
     if (    (cSelectedRecords == 1)
          && (pobjSelected)
@@ -2931,6 +2930,23 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         xstrcpys(&strText, &strNew);
         xstrClear(&strNew);
     }
+    #endif
+
+    // prepend class name in debug mode
+    // V0.9.19 (2002-06-15) [umoeller]
+    #ifdef __DEBUG__
+        if (cSelectedRecords == 1)
+        {
+            XSTRING strNew;
+            CHAR sz[300];
+            sprintf(sz, "{%s} ", _somGetClassName(pobjSelected));
+            xstrInitCopy(&strNew,
+                         sz,
+                         0);
+            xstrcats(&strNew, &strText);
+            xstrcpys(&strText, &strNew);
+            xstrClear(&strNew);
+        }
     #endif
 
     if (strText.ulLength)

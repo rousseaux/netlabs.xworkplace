@@ -81,7 +81,6 @@
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
-#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "config\fonts.h"               // font folder implementation
 
@@ -133,14 +132,14 @@ SOM_Scope BOOL  SOMLINK fono_xwpSetFontFile(XWPFontObject *somSelf,
                                             PSZ pszFontFile)
 {
     BOOL brc = FALSE;
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
 
     XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_xwpSetFontFile");
 
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             strhStore(&_pszFontFile, pszFontFile, NULL);
             brc = TRUE;
@@ -148,8 +147,8 @@ SOM_Scope BOOL  SOMLINK fono_xwpSetFontFile(XWPFontObject *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
     return brc;
 }
@@ -168,14 +167,14 @@ SOM_Scope BOOL  SOMLINK fono_xwpQueryFontFile(XWPFontObject *somSelf,
                                               PSZ pszFontFile)
 {
     BOOL brc = FALSE;
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
 
     XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_xwpQueryFontFile");
 
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             if (_pszFontFile)
             {
@@ -186,8 +185,8 @@ SOM_Scope BOOL  SOMLINK fono_xwpQueryFontFile(XWPFontObject *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
     return brc;
 }
@@ -203,14 +202,14 @@ SOM_Scope BOOL  SOMLINK fono_xwpSetFontFamily(XWPFontObject *somSelf,
                                               PSZ pszFontFamily)
 {
     BOOL brc = FALSE;
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
 
     XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_xwpSetFontFamily");
 
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             strhStore(&_pszFontFamily, pszFontFamily, NULL);
             brc = TRUE;
@@ -218,8 +217,8 @@ SOM_Scope BOOL  SOMLINK fono_xwpSetFontFamily(XWPFontObject *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
     return brc;
 }
@@ -243,14 +242,14 @@ SOM_Scope BOOL  SOMLINK fono_xwpQueryFontFamily(XWPFontObject *somSelf,
                                                 PSZ pszFontFamily)
 {
     BOOL brc = FALSE;
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
 
     XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_xwpQueryFontFamily");
 
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             if (_pszFontFamily)
             {
@@ -261,8 +260,8 @@ SOM_Scope BOOL  SOMLINK fono_xwpQueryFontFamily(XWPFontObject *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
     return brc;
 }
@@ -279,14 +278,14 @@ SOM_Scope BOOL  SOMLINK fono_xwpSetFontFileError(XWPFontObject *somSelf,
                                                  ULONG arc)
 {
     BOOL brc = FALSE;
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
 
     XWPFontObjectData *somThis = XWPFontObjectGetData(somSelf);
     XWPFontObjectMethodDebug("XWPFontObject","fono_xwpSetFontFileError");
 
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             CHAR szError2[200];
             PSZ  pszError = NULL;
@@ -324,8 +323,8 @@ SOM_Scope BOOL  SOMLINK fono_xwpSetFontFileError(XWPFontObject *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
     return brc;
 }

@@ -93,6 +93,7 @@
 #include "xcenter.ih"
 #include "xfobj.ih"
 #include "xfldr.ih"
+#include "xfdisk.ih"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -111,7 +112,6 @@
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
 
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
-#include <wpdisk.h>
 #include <wppower.h>
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
@@ -750,7 +750,7 @@ static WPObject* FindObject(POBJBUTTONPRIVATE pPrivate)
         {
             // now, if pObj is a disk object: get root folder
             if (_somIsA(pobj, _WPDisk))
-                pobj = wpshQueryRootFolder(pobj, FALSE, NULL);
+                pobj = _xwpSafeQueryRootFolder(pobj, FALSE, NULL);
 
             if ((pobj) && (pPrivate->pobjNotify != pobj))
             {
@@ -1064,8 +1064,8 @@ static VOID BuildXButtonMenu(HWND hwnd,
     // nuke run if the menu item has been disabled V0.9.14 (2001-08-21) [umoeller]
     if (pPrivate->Setup.flMenuItems & MENUFL_NORUNDLG)
     {
-        winhRemoveMenuItem(hMenu, ID_CRMI_RUN);
-        winhRemoveMenuItem(hMenu, ID_CRMI_SEP2);
+        winhDeleteMenuItem(hMenu, ID_CRMI_RUN);
+        winhDeleteMenuItem(hMenu, ID_CRMI_SEP2);
     }
 
 #ifndef __NOXSHUTDOWN__
@@ -1083,15 +1083,15 @@ static VOID BuildXButtonMenu(HWND hwnd,
 
     if (pPrivate->Setup.flMenuItems & MENUFL_NOSHUTDOWN)
     {
-        winhRemoveMenuItem(hMenu, ID_CRMI_SHUTDOWN);
-        winhRemoveMenuItem(hMenu, ID_CRMI_SEP4);
+        winhDeleteMenuItem(hMenu, ID_CRMI_SHUTDOWN);
+        winhDeleteMenuItem(hMenu, ID_CRMI_SEP4);
     }
     else
         WinEnableMenuItem(hMenu,
                           ID_CRMI_SHUTDOWN,
                           !fShutdownRunning);
     if (pPrivate->Setup.flMenuItems & MENUFL_NORESTARTWPS)
-        winhRemoveMenuItem(hMenu, ID_CRMI_RESTARTWPS);
+        winhDeleteMenuItem(hMenu, ID_CRMI_RESTARTWPS);
     else
         WinEnableMenuItem(hMenu,
                           ID_CRMI_RESTARTWPS,
@@ -1104,8 +1104,8 @@ static VOID BuildXButtonMenu(HWND hwnd,
     {
         // XWPShell not running:
         // remove "logoff"
-        winhRemoveMenuItem(hMenu, ID_CRMI_LOGOFF);
-        winhRemoveMenuItem(hMenu, ID_CRMI_SEP3);
+        winhDeleteMenuItem(hMenu, ID_CRMI_LOGOFF);
+        winhDeleteMenuItem(hMenu, ID_CRMI_SEP3);
     }
     else
     {
@@ -1124,7 +1124,7 @@ static VOID BuildXButtonMenu(HWND hwnd,
 
     // nuke lockup if the menu item has been disabled V0.9.14 (2001-08-21) [umoeller]
     if (pPrivate->Setup.flMenuItems & MENUFL_NOLOCKUP)
-        winhRemoveMenuItem(hMenu, ID_CRMI_LOCKUPNOW);
+        winhDeleteMenuItem(hMenu, ID_CRMI_LOCKUPNOW);
 
     if (pPrivate->Setup.flMenuItems & MENUFL_NOSUSPEND)
         // power has been disabled:
@@ -1145,7 +1145,7 @@ static VOID BuildXButtonMenu(HWND hwnd,
         }
 
     if (!pPrivate->pPower)
-        winhRemoveMenuItem(hMenu, ID_CRMI_SUSPEND);
+        winhDeleteMenuItem(hMenu, ID_CRMI_SUSPEND);
     else
         // power exists:
         if (!_wpQueryPowerConfirmation(pPrivate->pPower))
@@ -1158,7 +1158,7 @@ static VOID BuildXButtonMenu(HWND hwnd,
     if ((pPrivate->Setup.flMenuItems & ALLFLAGS) == ALLFLAGS)
         // if all the top three items are removed,
         // this separator needs to go too
-        winhRemoveMenuItem(hMenu, ID_CRMI_SEP1);
+        winhDeleteMenuItem(hMenu, ID_CRMI_SEP1);
 
     // prepare folder content submenu for Desktop
     cmnuPrepareContentSubmenu(pActiveDesktop,
@@ -1391,7 +1391,7 @@ static VOID OwgtInitMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
             cmnuPrepareOwnerDraw(hwndMenuMsg);
 
             // remove dummy item
-            winhRemoveMenuItem(pPrivate->hwndMenuMain,
+            winhDeleteMenuItem(pPrivate->hwndMenuMain,
                                cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_DUMMY);
 
             if (!pPrivate->pobjButton)

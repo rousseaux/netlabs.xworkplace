@@ -63,6 +63,7 @@
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
 
+#define INCL_WINFRAMEMGR
 #define INCL_WINMENUS
 #include  <os2.h>
 
@@ -87,7 +88,6 @@
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
-#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\disk.h"               // XFldDisk implementation
 #include "filesys\folder.h"             // XFolder implementation
@@ -110,6 +110,62 @@
  *   here come the XFldDisk instance methods
  *
  ********************************************************************/
+
+/*
+ *@@ xwpSafeQueryRootFolder:
+ *      safe version of WPDisk::wpQueryRootFolder which
+ *      attempts not to provoke the terrible white
+ *      hard-error box if the disk is not ready.
+ *
+ *      This used to be wpshQueryRootFolder, but has
+ *      been made an instance method with V0.9.19.
+ *
+ *      On errors, NULL is returned, and *pulErrorCode
+ *      receives the APIRET from doshAssertDrive.
+ *
+ *      If you're not interested in the return code,
+ *      you may pass pulErrorCode as NULL.
+ *
+ *@@added V0.9.19 (2002-06-15) [umoeller]
+ */
+
+SOM_Scope WPRootFolder*  SOMLINK xfdisk_xwpSafeQueryRootFolder(XFldDisk *somSelf,
+                                                               BOOL fForceMap,
+                                                               PULONG pulErrorCode)
+{
+    WPFolder    *pReturnFolder = NULL;
+    APIRET      arc = NO_ERROR;
+    ULONG       ulLogicalDrive;
+
+    /* XFldDiskData *somThis = XFldDiskGetData(somSelf); */
+    XFldDiskMethodDebug("XFldDisk","xfdisk_xwpSafeQueryRootFolder");
+
+    ulLogicalDrive = _wpQueryLogicalDrive(somSelf);
+    arc = doshAssertDrive(ulLogicalDrive, 0);
+
+    if (    (arc == ERROR_DISK_CHANGE)
+         && (fForceMap)
+         && ((ulLogicalDrive == 1) || (ulLogicalDrive == 2))
+         && (doshSetLogicalMap(ulLogicalDrive) == NO_ERROR)
+       )
+    {
+        arc = doshAssertDrive(ulLogicalDrive, 0);
+    }
+
+    if (!arc)
+    {
+        // drive seems to be ready:
+        if (!(pReturnFolder = _wpQueryRootFolder(somSelf)))
+            // still NULL: something bad is going on
+            // V0.9.2 (2000-03-09) [umoeller]
+            arc = ERROR_NOT_DOS_DISK; // 26; cannot access disk
+    }
+
+    if (pulErrorCode)
+        *pulErrorCode = arc;
+
+    return pReturnFolder;
+}
 
 /*
  *@@ wpFilterPopupMenu:
@@ -370,12 +426,12 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
                 // of WPFolder/XFolder); each WPDisk is paired with one of those,
                 // and the actual display is done by this class, so we will pass
                 // pRootFolder instead of somSelf to most following method calls.
-                // We use wpshQueryRootFolder instead of wpQueryRootFolder to
+                // We use xwpSafeQueryRootFolder instead of wpQueryRootFolder to
                 // avoid "Drive not ready" popups.
                 if (pRootFolder = dskCheckDriveReady(somSelf))
                                 // V0.9.16 (2001-10-23) [umoeller]
                                 // now using dskCheckDriveReady instead of
-                                // wpshQueryRootFolder because wpViewObject
+                                // xwpSafeQueryRootFolder because wpViewObject
                                 // never gets called for OPEN_SETTINGS
                     // drive ready: call parent to get frame handle
                     hwndNewFrame = XFldDisk_parent_WPDisk_wpOpen(somSelf,
@@ -389,9 +445,9 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
             {
                 // "drive not ready" replacement disabled:
                 if (hwndNewFrame = XFldDisk_parent_WPDisk_wpOpen(somSelf,
-                                                             hwndCnr,
-                                                             ulView,
-                                                             param))
+                                                                 hwndCnr,
+                                                                 ulView,
+                                                                 param))
                     // no error:
                     pRootFolder = _wpQueryRootFolder(somSelf);
             }
@@ -403,7 +459,7 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf,
             {
                 PSUBCLFOLDERVIEW psfv = NULL;
 
-                hwndCnr = wpshQueryCnrFromFrame(hwndNewFrame);
+                hwndCnr = WinWindowFromID(hwndNewFrame, FID_CLIENT);
 
                 // subclass frame window; this is the same
                 // proc which is used for normal folder frames,
@@ -495,7 +551,7 @@ SOM_Scope BOOL  SOMLINK xfdisk_wpAddSettingsPages(XFldDisk *somSelf,
     if (cmnQuerySetting(sfReplaceDriveNotReady))
     {
         WPFolder *pRoot;
-        if (!(pRoot = wpshQueryRootFolder(somSelf, FALSE, NULL)))
+        if (!(pRoot = _xwpSafeQueryRootFolder(somSelf, FALSE, NULL)))
             return FALSE;
     }
 #endif

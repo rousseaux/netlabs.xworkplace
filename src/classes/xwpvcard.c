@@ -315,6 +315,7 @@ static VOID vcfSummaryInitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
         }
     }
 }
+
 /* ******************************************************************
  *
  *   "Name" page
@@ -464,7 +465,7 @@ static const CONTROLDEF
     PhoneLB = CONTROLDEF_LISTBOX(
                             ID_XSDI_VCARD_PHONE_LISTBOX,
                             30,
-                            200),
+                            100),
     PhoneGroup = CONTROLDEF_GROUP(
                             "Current phone number settings",
                             ID_XSDI_VCARD_PHONE_GROUP,
@@ -861,6 +862,35 @@ SOM_Scope void  SOMLINK xvc_wpUnInitData(XWPVCard *somSelf)
         vcfFree((PVCARD*)&_pvCard);
 
     XWPVCard_parent_WPDataFile_wpUnInitData(somSelf);
+}
+
+/*
+ *@@ wpFilterPopupMenu:
+ *      this WPObject instance method allows the object to
+ *      filter out unwanted menu items from the context menu.
+ *      This gets called before wpModifyPopupMenu.
+ *
+ *      We call the parent (data file) method, which filters
+ *      out the standard items according to the "Workplace
+ *      Shell" settings, and then also remove print, which
+ *      we do not support yet. @@todo
+ *
+ *@@added V0.9.19 (2002-06-15) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xvc_wpFilterPopupMenu(XWPVCard *somSelf,
+                                               ULONG ulFlags,
+                                               HWND hwndCnr,
+                                               BOOL fMultiSelect)
+{
+    XWPVCardData *somThis = XWPVCardGetData(somSelf);
+    XWPVCardMethodDebug("XWPVCard","xvc_wpFilterPopupMenu");
+
+    return XWPVCard_parent_WPDataFile_wpFilterPopupMenu(somSelf,
+                                                        ulFlags,
+                                                        hwndCnr,
+                                                        fMultiSelect)
+            & ~CTXT_PRINT;
 }
 
 /*

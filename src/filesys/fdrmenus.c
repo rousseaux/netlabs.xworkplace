@@ -152,11 +152,13 @@
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
+#include "shared\classtest.h"           // some cheap funcs for WPS class checks
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\contentmenus.h"        // shared menu logic
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
+#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\fdrmenus.h"           // shared folder menu logic
@@ -169,10 +171,8 @@
 
 // other SOM headers
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
-#include <wppgm.h>                      // WPProgram
-#include <wprootf.h>                    // WPRootFolder
+#include <wppgm.h>                      // WPProgram, needed for program hacks
 
-#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 #include "helpers\undoc.h"              // some undocumented stuff
 
 /* ******************************************************************
@@ -751,7 +751,7 @@ VOID mnuRemoveMenuItems(WPObject *somSelf,
                             G_MenuItemsWithIDs[ul2].idMenu));
 
                     // regular ID:
-                    winhRemoveMenuItem(hwndMenu, G_MenuItemsWithIDs[ul2].idMenu);
+                    winhDeleteMenuItem(hwndMenu, G_MenuItemsWithIDs[ul2].idMenu);
                 }
             }
         }
@@ -913,7 +913,7 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
             if (!stbClassCanHaveStatusBars(somSelf)) // V0.9.19 (2002-04-17) [umoeller]
                 // always disable for Desktop
                 ulAttr = MIA_DISABLED;
-            else if (_somIsA(somSelf, _WPRootFolder))
+            else if (ctsIsRootFolder(somSelf))
                 // for root folders (WPDisk siblings),
                 // check global setting only
                 ulAttr = MIA_DISABLED
@@ -1871,7 +1871,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
 
     // for some reason, WPS is no longer using
     // WPMENUID_CLOSE but SC_CLOSE directly (0x8004)
-    winhRemoveMenuItem(hwndMenu,
+    winhDeleteMenuItem(hwndMenu,
                        SC_CLOSE);
 
     hNewMenu = winhInsertSubmenu(hwndMenu,
@@ -2541,9 +2541,9 @@ static BOOL ProgramObjectSelected(WPObject *pFolder,        // in: folder or dis
 
         // dereference disk objects
         if (_somIsA(pFolder, _WPDisk))
-            pFolder = wpshQueryRootFolder(pFolder,      // disk
-                                          FALSE,
-                                          NULL);
+            pFolder = _xwpSafeQueryRootFolder(pFolder,      // disk
+                                              FALSE,
+                                              NULL);
 
         if (pFolder)
             ValidRealName = (_wpQueryFilename(pFolder, szRealName, TRUE) != NULL);
@@ -2975,7 +2975,7 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                     // the first selected object, which will handle
                     // the rest
                     HWND hwndCnr;
-                    if (hwndCnr = wpshQueryCnrFromFrame(hwndFrame))
+                    if (hwndCnr = WinWindowFromID(hwndFrame, FID_CLIENT))
                     {
                         PMINIRECORDCORE pmrc = WinSendMsg(hwndCnr,
                                                           CM_QUERYRECORDEMPHASIS,
@@ -3041,7 +3041,7 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
 
                 case ID_XFMI_OFS_CONTEXTMENU:
                 {
-                    HWND hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
+                    HWND hwndCnr = WinWindowFromID(hwndFrame, FID_CLIENT);
                     POINTS pts = {0, 0};
                     WinPostMsg(hwndCnr, WM_CONTEXTMENU,
                                (MPARAM)&pts,

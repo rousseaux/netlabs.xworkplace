@@ -118,7 +118,6 @@
 #include "config\hookintf.h"            // daemon/hook interface
 
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
-// #include <wpshadow.h>
 
 /* ******************************************************************
  *
@@ -1511,10 +1510,10 @@ VOID ctrpShowSettingsDlg(XCenter *somSelf,
     PXCENTERWINDATA pXCenterData = (PXCENTERWINDATA)_pvOpenView;
                             // can be NULL if we have no open view
 
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             APIRET arc;
             PPRIVATEWIDGETSETTING pSetting;
@@ -1569,8 +1568,8 @@ VOID ctrpShowSettingsDlg(XCenter *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
     if (pShowSettingsDlg)
     {
@@ -5237,10 +5236,10 @@ APIRET ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
 {
     APIRET  arc = NO_ERROR;
 
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             XCenterData *somThis = XCenterGetData(somSelf);
             PXCENTERWINDATA pXCenterData;
@@ -5327,8 +5326,8 @@ APIRET ctrpQueryWidgetIndexFromHWND(XCenter *somSelf,
         arc = ERROR_PROTECTION_VIOLATION;
     } END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
     return arc;
 }
@@ -5347,10 +5346,10 @@ BOOL ctrpMoveWidget(XCenter *somSelf,
 {
     BOOL brc = FALSE;
 
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             PLINKLIST pllWidgetSettings = ctrpQuerySettingsList(somSelf);
             PLISTNODE pSettingsNode = lstNodeFromIndex(pllWidgetSettings, ulIndex2Move);
@@ -5425,8 +5424,8 @@ BOOL ctrpMoveWidget(XCenter *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
     return brc;
 }
@@ -5446,10 +5445,10 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
                          HWND hwndMenu)
 {
     BOOL brc = TRUE;
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             XCenterData *somThis = XCenterGetData(somSelf);
             MENUITEM mi;
@@ -5492,8 +5491,8 @@ BOOL ctrpModifyPopupMenu(XCenter *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
     return brc;
 }

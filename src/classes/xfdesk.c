@@ -97,6 +97,7 @@
 
 #include "filesys\desktop.h"            // XFldDesktop implementation
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\object.h"             // XFldObject implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 #include "startshut\archives.h"         // archiving declarations
@@ -476,7 +477,7 @@ SOM_Scope HWND  SOMLINK xfdesk_wpOpen(XFldDesktop *somSelf, HWND hwndCnr,
                                 FALSE);     // not folders only
             for (pobj = _wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
                  pobj;
-                 pobj = *wpshGetNextObjPointer(pobj))
+                 pobj = *objGetNextObjPointer(pobj))
             {
                 _wpQueryIcon(pobj);
             }

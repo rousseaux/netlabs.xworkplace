@@ -102,6 +102,7 @@
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
+#include "shared\classtest.h"           // some cheap funcs for WPS class checks
 #include "shared\cnrsort.h"             // container sort comparison functions
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\errors.h"              // private XWorkplace error codes
@@ -119,10 +120,6 @@
 
 // other SOM headers
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
-
-// #include <wpdesk.h>
-// #include <wpshadow.h>           // WPShadow
-#include <wprootf.h>
 
 #include "helpers\undoc.h"              // some undocumented stuff
 
@@ -964,7 +961,7 @@ BOOL fdrForEachOpenInstanceView(WPFolder *somSelf,
     // XFolderData *somThis = XFolderGetData(somSelf);
     // XFolderMethodDebug("XFolder","xf_xwpForEachOpenView");
 
-    if (_somIsA(somSelf, _WPRootFolder))
+    if (ctsIsRootFolder(somSelf))
         // for disk/root folder views: root folders have no
         // open view, instead the disk object is registered
         // to have the open view. Duh. So we need to find
@@ -1147,10 +1144,10 @@ BOOL fdrUpdateAllFrameWndTitles(WPFolder *somSelf)
     // HWND        hwndFrame = NULLHANDLE;
     BOOL        brc = FALSE;
 
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             PUSEITEM    pUseItem = NULL;
             for (pUseItem = _wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL);
@@ -1172,8 +1169,8 @@ BOOL fdrUpdateAllFrameWndTitles(WPFolder *somSelf)
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
     ntbUpdateVisiblePage(somSelf, SP_XFOLDER_FLDR);
 
@@ -1220,20 +1217,20 @@ BOOL fdrQuickOpen(WPFolder *pFolder,
         fFolderLocked = !fdrRequestFolderMutexSem(pFolder, 5000);
 
         // count objects
-        // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+        // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
         for (   pObject = _wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
                 (pObject);
-                pObject = *wpshGetNextObjPointer(pObject)
+                pObject = *objGetNextObjPointer(pObject)
             )
         {
             ulMax++;
         }
 
         // collect icons for all objects
-        // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+        // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
         for (   pObject = _wpQueryContent(pFolder, NULL, (ULONG)QC_FIRST);
                 (pObject);
-                pObject = *wpshGetNextObjPointer(pObject)
+                pObject = *objGetNextObjPointer(pObject)
             )
         {
             // get the icon
@@ -1303,7 +1300,7 @@ BOOL fdrSnapToGrid(WPFolder *somSelf,
     {
 
         // now get the container handle
-        if (hwndCnr = wpshQueryCnrFromFrame(hwndFrame))
+        if (hwndCnr = WinWindowFromID(hwndFrame, FID_CLIENT))
         {
             // now begin iteration over the folder's objects; we don't
             // use the WPS method (wpQueryContent) because this is too
@@ -1412,7 +1409,7 @@ static VOID DoSelect(HWND hwndDlg,
     HWND    hwndCnr;
 
     if (    (hwndFrame = WinQueryWindowULong(hwndDlg, QWL_USER))
-         && (hwndCnr = wpshQueryCnrFromFrame(hwndFrame))
+         && (hwndCnr = WinWindowFromID(hwndFrame, FID_CLIENT))
        )
     {
         HWND  hwndDropDown = WinWindowFromID(hwndDlg, ID_XFDI_SOME_ENTRYFIELD);
@@ -1611,7 +1608,7 @@ static MRESULT EXPENTRY fdr_fnwpSelectSome(HWND hwndDlg, ULONG msg, MPARAM mp1, 
                 {
                     HWND hwndFrame, hwndCnr;
                     if (    (hwndFrame = WinQueryWindowULong(hwndDlg, QWL_USER))
-                         && (hwndCnr = wpshQueryCnrFromFrame(hwndFrame))
+                         && (hwndCnr = WinWindowFromID(hwndFrame, FID_CLIENT))
                        )
                     {
                         PMINIRECORDCORE pmrc = NULL;
@@ -1815,7 +1812,7 @@ VOID fdrShowSelectSome(HWND hwndFrame)
                            cmnQueryDefaultFont()))
         {
             winhPlaceBesides(hwndSelectSome,
-                             wpshQueryCnrFromFrame(hwndFrame),
+                             WinWindowFromID(hwndFrame, FID_CLIENT),
                              PLF_SMART);
             WinShowWindow(hwndSelectSome, TRUE);
         }
@@ -2112,11 +2109,11 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
                 // this with my own loop here.
                 // V0.9.12 (2001-04-28) [umoeller]
                 BOOL fStillOpen = FALSE;
-                WPSHLOCKSTRUCT Lock = {0};
+                WPObject *pobjLock = NULL;
 
                 TRY_LOUD(excpt1)
                 {
-                    if (LOCK_OBJECT(Lock, ppf->pObject))
+                    if (pobjLock = cmnLockObject(ppf->pObject))
                     {
                         PUSEITEM    pUseItem = NULL;
 
@@ -2147,8 +2144,8 @@ void _Optlink fntProcessStartupFolder(PTHREADINFO ptiMyself)
                 }
                 CATCH(excpt1) {} END_CATCH();
 
-                if (Lock.fLocked)
-                    _wpReleaseObjectMutexSem(Lock.pObject);
+                if (pobjLock)
+                    _wpReleaseObjectMutexSem(pobjLock);
 
                 fOKGetNext = !fStillOpen;
             } // end if (ppf->ulTiming == 0)

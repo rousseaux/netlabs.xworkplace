@@ -100,6 +100,7 @@
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
+#include "shared\classtest.h"           // some cheap funcs for WPS class checks
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\helppanels.h"          // all XWorkplace help panel IDs
 #include "shared\kernel.h"              // XWorkplace Kernel
@@ -112,8 +113,6 @@
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
-#include <wpcmdf.h>                     // WPCommandFile
-#include <wpfolder.h>
 
 /* ******************************************************************
  *
@@ -1411,7 +1410,7 @@ SOM_Scope ULONG  SOMLINK xpgf_wpAddProgramSessionPage(XWPProgramFile *somSelf,
 
     // insert "Module" settings page, but not for command files
 #ifndef __NOMODULEPAGES__
-    if (!_somIsA(somSelf, _WPCommandFile))
+    if (!ctsIsCommandFile(somSelf))
     {
         if (cmnQuerySetting(sfReplaceFilePage))
         {

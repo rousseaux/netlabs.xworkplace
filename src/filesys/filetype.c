@@ -123,9 +123,8 @@
 
 // other SOM headers
 #pragma hdrstop                 // VAC++ keeps crashing otherwise
-#include <wppgm.h>              // WPProgram
-#include <wppgmf.h>             // WPProgramFile
-// #include <wpshadow.h>           // WPShadow
+#include <wppgm.h>                      // WPProgram
+#include <wppgmf.h>                     // WPProgramFile
 #include "filesys\program.h"            // program implementation; WARNING: this redefines macros
 
 // #define DEBUG_ASSOCS

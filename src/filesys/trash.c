@@ -93,6 +93,7 @@
 
 #include "filesys\fileops.h"            // file operations implementation
 #include "filesys\folder.h"             // XFolder implementation
+#include "filesys\object.h"             // XFldObject implementation
 #include "filesys\trash.h"              // trash can implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
@@ -453,10 +454,10 @@ static VOID InitMappings(XWPTrashCan *somSelf,
                          PBOOL pfNeedSave)      // out: set to TRUE if drives are dirty
                                          // and wpSaveDeferred must be called on the trash can
 {
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, somSelf))
+        if (pobjLock = cmnLockObject(somSelf))
         {
             if (!G_fMappingsTreeInitialized)
             {
@@ -505,8 +506,8 @@ static VOID InitMappings(XWPTrashCan *somSelf,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 }
 
 /*
@@ -525,10 +526,10 @@ static PTRASHMAPPINGTREENODE trshGetMappingFromSource(XWPTrashCan *pTrashCan,
 {
     PTRASHMAPPINGTREENODE pMapping = NULL;
 
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, pTrashCan))
+        if (pobjLock = cmnLockObject(pTrashCan))
         {
             pMapping = (PTRASHMAPPINGTREENODE)treeFind(G_MappingsTreeRoot,
                                                        (ULONG)pcszSourceFolder,
@@ -537,8 +538,8 @@ static PTRASHMAPPINGTREENODE trshGetMappingFromSource(XWPTrashCan *pTrashCan,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
     return (pMapping);
 }
@@ -561,10 +562,10 @@ static PTRASHMAPPINGTREENODE trshGetMappingFromTrashDir(XWPTrashCan *pTrashCan,
 {
     PTRASHMAPPINGTREENODE pMapping = NULL;
 
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, pTrashCan))
+        if (pobjLock = cmnLockObject(pTrashCan))
         {
             PTRASHMAPPINGTREENODE pNode = (PTRASHMAPPINGTREENODE)treeFirst(G_MappingsTreeRoot);
             while (pNode)
@@ -581,8 +582,8 @@ static PTRASHMAPPINGTREENODE trshGetMappingFromTrashDir(XWPTrashCan *pTrashCan,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 
     return (pMapping);
 }
@@ -605,10 +606,10 @@ VOID trshFreeMapping(XWPTrashCan *pTrashCan,
 {
     // BOOL fDirty = FALSE;
 
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, pTrashCan))
+        if (pobjLock = cmnLockObject(pTrashCan))
         {
             treeDelete(&G_MappingsTreeRoot,
                        NULL,
@@ -636,8 +637,8 @@ VOID trshFreeMapping(XWPTrashCan *pTrashCan,
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 }
 
 /*
@@ -655,10 +656,10 @@ VOID trshFreeMapping(XWPTrashCan *pTrashCan,
 
 VOID trshSaveMappings(XWPTrashCan *pTrashCan)
 {
-    WPSHLOCKSTRUCT Lock = {0};
+    WPObject *pobjLock = NULL;
     TRY_LOUD(excpt1)
     {
-        if (LOCK_OBJECT(Lock, pTrashCan))
+        if (pobjLock = cmnLockObject(pTrashCan))
         {
             #ifdef DEBUG_TRASHCAN
             _PmpfF(("Entering"));
@@ -739,8 +740,8 @@ VOID trshSaveMappings(XWPTrashCan *pTrashCan)
     }
     CATCH(excpt1) {} END_CATCH();
 
-    if (Lock.fLocked)
-        _wpReleaseObjectMutexSem(Lock.pObject);
+    if (pobjLock)
+        _wpReleaseObjectMutexSem(pobjLock);
 }
 
 /*
@@ -810,10 +811,10 @@ WPFolder* trshGetOrCreateTrashDir(XWPTrashCan *pTrashCan,
     {
         // no: create a new trash dir...
 
-        WPSHLOCKSTRUCT Lock = {0};
+        WPObject *pobjLock = NULL;
         TRY_LOUD(excpt1)
         {
-            if (LOCK_OBJECT(Lock, pTrashCan))
+            if (pobjLock = cmnLockObject(pTrashCan))
             {
                 // 1) we need a unique decimal as the name
                 //    of the trash dir; we used to be using
@@ -854,8 +855,8 @@ WPFolder* trshGetOrCreateTrashDir(XWPTrashCan *pTrashCan,
         }
         CATCH(excpt1) {} END_CATCH();
 
-        if (Lock.fLocked)
-            _wpReleaseObjectMutexSem(Lock.pObject);
+        if (pobjLock)
+            _wpReleaseObjectMutexSem(pobjLock);
     }
 
     return (pFolderInTrash);
@@ -899,10 +900,10 @@ PLINKLIST trshCreateTrashObjectsList(XWPTrashCan* somSelf,
     if (pllTrashObjects)
     {
         XWPTrashObject* pTrashObject = 0;
-        // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+        // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
         for (   pTrashObject = _wpQueryContent(somSelf, NULL, (ULONG)QC_FIRST);
                 (pTrashObject);
-                pTrashObject = *wpshGetNextObjPointer(pTrashObject)
+                pTrashObject = *objGetNextObjPointer(pTrashObject)
             )
         {
             // pTrashObject now has the XWPTrashObject to delete
@@ -1260,10 +1261,10 @@ static BOOL AddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, /
             // to protect the contents list
             if (fTrashDirSemOwned = !fdrRequestFolderMutexSem(pTrashDir, 4000))
             {
-                // V0.9.16 (2001-11-01) [umoeller]: now using wpshGetNextObjPointer
+                // V0.9.16 (2001-11-01) [umoeller]: now using objGetNextObjPointer
                 for (   pObject = _wpQueryContent(pTrashDir, NULL, (ULONG)QC_FIRST);
                         (pObject);
-                        pObject = *wpshGetNextObjPointer(pObject)
+                        pObject = *objGetNextObjPointer(pObject)
                     )
                 {
                     BOOL    fAddTrashObject = TRUE;
