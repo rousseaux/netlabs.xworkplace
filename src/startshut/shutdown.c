@@ -4614,7 +4614,7 @@ BOOL _Optlink xsd_fnSaveINIsProgress(ULONG ulUser,
  *      Runs on the Shutdown thread.
  *
  *@@changed V0.9.3 (2000-05-22) [umoeller]: added reboot animation
- *@@changed V0.9.5 (2000-08-13) [umoeller]: now using new save-INI routines
+ *@@changed V0.9.5 (2000-08-13) [umoeller]: now using new save-INI routines (xprfSaveINIs)
  */
 
 VOID xsdFinishShutdown(HAB hab)

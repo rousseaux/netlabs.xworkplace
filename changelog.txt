@@ -24,10 +24,23 @@ utility handy to be able to search for strings like "V0.9.0".
 Changes for V0.9.4
 ==================
 
-    --  ID_XSD_FOLDERVIEWS changed.
-    --  ID_XSD_MOUSEMAPPINGS2 changed.
-    --  ID_XSD_MOUSE_CORNERS changed.
-    --  ID_XFD_CONTAINERPAGE changed.
+    --  ID_OSD_SETTINGS_DRIVERS modified.
+    --  ID_SCD_PAGEMAGE_GENERAL added.
+    --  ID_SCD_PAGEMAGE_NEWSTICKY added.
+    --  ID_SCD_PAGEMAGE_STICKY added.
+    --  ID_SDD_CONFIRM modified.
+    --  ID_XCD_FEATURES modified.
+    --  ID_XCD_XWPINSTALLEDCLASSES modified.
+    --  ID_XFD_CONTAINERPAGE modified.
+    --  ID_XSD_DTP_SHUTDOWN modified.
+    --  ID_XSD_FOLDERVIEWS modified.
+    --  ID_XSD_MOUSEMAPPINGS2 modified.
+    --  ID_XSD_MOUSE_CORNERS modified.
+    --  ID_XSD_STARTUPFOLDER modified.
+    --  ID_XSD_SETTINGS_FLDR1 modified.
+    --  ID_XTD_ICONPAGE added.
+    --  ID_XTD_SETTINGS modified.
+    --  ID_OSD_SETTINGS_HPFS removed.
 
 Changes between V0.9.0 and V0.9.3
 =================================
@@ -35,7 +48,7 @@ Changes between V0.9.0 and V0.9.3
     Sorry, I have lost track about the changes in the dialog
     resources. I guess more than 70% of the dialogs have
     changed since XFolder 0.85, so it really doesn't make
-    much sense tracking the changes here any more.
+    much sense tracking the changes here for XWorkplace.
 
 
 Changes for V0.9.0

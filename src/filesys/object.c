@@ -682,7 +682,8 @@ VOID ReportSetupString(WPObject *somSelf, HWND hwndDlg)
 BOOL cmnIsValidHotkey(USHORT usFlags,
                       USHORT usKeyCode)
 {
-    return (
+    BOOL brc
+        = (
                 // must be a virtual key
                 (  (  ((usFlags & KC_VIRTUALKEY) != 0)
                 // or Ctrl or Alt must be pressed
@@ -708,6 +709,7 @@ BOOL cmnIsValidHotkey(USHORT usFlags,
                    )
                 )
            );
+    return (brc);
 }
 
 /*
