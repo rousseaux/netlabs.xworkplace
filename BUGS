@@ -121,7 +121,6 @@ OLDER, MINOR PROBLEMS
 --  XCenter:
     --  spacing lines are missing on trays
     --  if tray is on top, icons are moved down (xwpbug.jpg)
-    --  dragging XCenter widget text files can hang WPS (check file types?)
 
     --  "show frame" setting on a per-widget basis
 

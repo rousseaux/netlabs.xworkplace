@@ -783,6 +783,7 @@ static const CONTROLDEF
     DelayTxt2 = LOADDEF_TEXT(ID_SCDI_PGR1_FLASH_TXT2),
     MiniWindowsCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_SHOWWINDOWS),
     ShowWinTitlesCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_SHOWWINTITLES),
+    ShowWinIconsCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_SHOWWINICONS),
     Click2ActivateCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_CLICK2ACTIVATE),
     ShowSecondaryCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_SHOWSECONDARY),
     ShowStickyCB = LOADDEF_AUTOCHECKBOX(ID_SCDI_PGR1_SHOWSTICKY);
@@ -808,6 +809,9 @@ static const DLGHITEM G_dlgPagerWindow[] =
                     START_ROW(0),
                         CONTROL_DEF(&G_Spacing),
                         CONTROL_DEF(&ShowWinTitlesCB),
+                    START_ROW(0),
+                        CONTROL_DEF(&G_Spacing),
+                        CONTROL_DEF(&ShowWinIconsCB),
                     START_ROW(0),
                         CONTROL_DEF(&G_Spacing),
                         CONTROL_DEF(&Click2ActivateCB),
@@ -882,6 +886,8 @@ static VOID PagerWindowInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                               !!(flPager & PGRFL_MINIWINDOWS));
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGR1_SHOWWINTITLES,
                               !!(flPager & PGRFL_MINIWIN_TITLES));
+        winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGR1_SHOWWINICONS,
+                              !!(flPager & PGRFL_MINIWIN_ICONS));
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGR1_CLICK2ACTIVATE,
                               !!(flPager & PGRFL_MINIWIN_MOUSE));
         winhSetDlgItemChecked(pnbp->hwndDlgPage, ID_SCDI_PGR1_SHOWSECONDARY,
@@ -911,6 +917,7 @@ static VOID PagerWindowInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         aulIDsMiniWindows[] =
             {
                 ID_SCDI_PGR1_SHOWWINTITLES,
+                ID_SCDI_PGR1_SHOWWINICONS,
                 ID_SCDI_PGR1_CLICK2ACTIVATE,
                 ID_SCDI_PGR1_SHOWSECONDARY,
                 ID_SCDI_PGR1_SHOWSTICKY,
@@ -997,6 +1004,11 @@ static MRESULT PagerWindowItemChanged(PNOTEBOOKPAGE pnbp,
 
         case ID_SCDI_PGR1_SHOWWINTITLES:
             flPagerChanged = PGRFL_MINIWIN_TITLES;
+            ulPgmgChangedFlags = PGRCFG_REPAINT;
+        break;
+
+        case ID_SCDI_PGR1_SHOWWINICONS:
+            flPagerChanged = PGRFL_MINIWIN_ICONS;
             ulPgmgChangedFlags = PGRCFG_REPAINT;
         break;
 

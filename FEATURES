@@ -5,8 +5,6 @@ this file. Thank you.
 
 italian: http://www.quasarbbs.net/xwp/
 
-alt-f4 on desktop shuts down
-
 add zip folders
 
 There's a INI file entry for the font size for VIO windows It's possible to change that
@@ -25,8 +23,6 @@ all windows filters (pagemage etc.):
 prog objects: NLS settings, codepages
 
 XCenter:
-    -- X button: give it any icon
-    -- XCenter run command: history log
     --  more options for winlist... button size, minimize behavior.
     --  winlist: edit filter entries (instead of remove and add).
     --  freely positionable

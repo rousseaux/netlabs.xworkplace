@@ -81,6 +81,7 @@
 #define INCL_WINTIMER
 #define INCL_WINTRACKRECT
 #define INCL_WINSWITCHLIST
+#define INCL_WINPOINTERS
 
 #define INCL_GPICONTROL
 #define INCL_GPIPRIMITIVES
@@ -731,7 +732,10 @@ static VOID RefreshPagerBitmap(HWND hwnd,
                     // paint the mini windows in reverse order then
                     // (bottom to top)
 
-                    HWND hwndActive = WinQueryActiveWindow(HWND_DESKTOP);
+                    HWND    hwndActive = WinQueryActiveWindow(HWND_DESKTOP);
+                    LONG    cxIcon = WinQuerySysValue(HWND_DESKTOP, SV_CXICON),
+                            cyIcon = WinQuerySysValue(HWND_DESKTOP, SV_CYICON);
+
                     // start with the last one
                     LONG l;
                     for (l = cMiniWindowsUsed - 1;
@@ -743,6 +747,7 @@ static VOID RefreshPagerBitmap(HWND hwnd,
                                 lcolText;
                         PCSZ    pcszSwtitle;
                         ULONG   ulSwtitleLen;
+                        POINTERINFO pi;
 
                         // draw center
                         if (pMiniThis->hwnd == hwndActive)
@@ -775,7 +780,113 @@ static VOID RefreshPagerBitmap(HWND hwnd,
                                0,
                                0);
 
-                        // draw window text too?
+                        // draw window icon too?
+                        // V0.9.19 (2002-06-13) [umoeller]
+                        if (    (flPager & PGRFL_MINIWIN_ICONS)
+                             && (pMiniThis->pWinInfo->hptr)
+                             && (WinQueryPointerInfo(pMiniThis->pWinInfo->hptr, &pi))
+                           )
+                        {
+                            // we can't use WinDrawPointer for many reasons,
+                            // one of them being that it won't get the
+                            // clipping right except with a major overhead
+                            // and messing with the clip rectangle, so
+                            // paint the icon manually (see gpihIcon2Bitmap
+                            // on whose code this is based)
+                            POINTL  aptl[4];
+                            LONG    cxTarget = cxIcon / 2,
+                                    cyTarget = cyIcon / 2,
+                                    cxSource,
+                                    cySource,
+                                    cySourceReal,
+                                    lDelta;
+                            HBITMAP hbmAnd,
+                                    hbmCol;
+
+                            if (    (hbmAnd = pi.hbmMiniPointer)
+                                 && (hbmCol = pi.hbmMiniColor)
+                               )
+                            {
+                                // if we have a mini icon, use that
+                                cxSource = cxIcon / 2;
+                                cySource = cyIcon / 2;
+                            }
+                            else
+                            {
+                                // scale down the normal icon
+                                hbmAnd = pi.hbmPointer;
+                                hbmCol = pi.hbmColor;
+                                cxSource = cxIcon;
+                                cySource = cyIcon;
+                            }
+
+                            cySourceReal = cySource;
+
+                            // we need to clip the icon if it would be
+                            // larger than the inner part of the mini
+                            // window
+                            lDelta = cxTarget - (pMiniThis->ptlTopRight.x - pMiniThis->ptlLowerLeft.x - 2);
+                            if (lDelta > 0)
+                            {
+                                cxTarget -= lDelta;
+                                cxSource -= lDelta;
+                            }
+
+                            lDelta = cyTarget - (pMiniThis->ptlTopRight.y - pMiniThis->ptlLowerLeft.y - 2);
+                            if (lDelta > 0)
+                            {
+                                cyTarget -= lDelta;
+                                cySource -= lDelta;
+                            }
+
+                            // aptl[0]: target bottom-left
+                            aptl[0].x = pMiniThis->ptlLowerLeft.x + 1;
+                            aptl[0].y = pMiniThis->ptlLowerLeft.y + 1;
+
+                            // aptl[1]: target top-right (inclusive!)
+                            aptl[1].x = aptl[0].x + cxTarget;
+                            aptl[1].y = aptl[0].y + cyTarget;
+
+                            // aptl[2]: source bottom-left
+                            aptl[2].x = 0;
+                            aptl[2].y = 0;
+
+                            // aptl[3]: source top-right (exclusive!)
+                            aptl[3].x = cxSource;
+                            aptl[3].y = cySource;
+
+                            GpiSetColor(hpsMem, RGBCOL_WHITE);
+                            GpiSetBackColor(hpsMem, RGBCOL_BLACK);
+
+                            // work on the AND image
+                            GpiWCBitBlt(hpsMem,     // target
+                                        hbmAnd,  // src bmp
+                                        4L,         // must always be 4
+                                        &aptl[0],   // point array
+                                        ROP_SRCAND,   // source AND target
+                                        BBO_OR);
+
+                            // paint the real image
+                            if (hbmCol)
+                                GpiWCBitBlt(hpsMem,
+                                            hbmCol,
+                                            4L,         // must always be 4
+                                            &aptl[0],   // point array
+                                            ROP_SRCPAINT,    // source OR target
+                                            BBO_OR);
+
+                            GpiSetColor(hpsMem, lcolCenter);
+                            // work on the XOR image
+                            aptl[2].y = cySourceReal;           // exclusive
+                            aptl[3].y = aptl[2].y + cySourceReal; // exclusive
+                            GpiWCBitBlt(hpsMem,
+                                        hbmAnd,
+                                        4L,         // must always be 4
+                                        &aptl[0],   // point array
+                                        ROP_SRCINVERT,
+                                        BBO_OR);
+                        } // end if (flPager & PGRFL_MINIWIN_ICONS)
+
                         if (    (flPager & PGRFL_MINIWIN_TITLES)
                              && (pcszSwtitle = pMiniThis->pWinInfo->swctl.szSwtitle)
                              && (ulSwtitleLen = strlen(pcszSwtitle))
@@ -796,7 +907,7 @@ static VOID RefreshPagerBitmap(HWND hwnd,
                                         0,
                                         DT_LEFT | DT_TOP);
 
-                        } // end if (    (G_pHookData->PagerConfig.fShowWindowText) ...
+                        } // end if (    (flPager & PGRFL_MINIWIN_TITLES)
                     }
                 } // end if (cMiniWindowsUsed)
             } // if (cWinInfos)
@@ -1476,15 +1587,26 @@ static VOID PagerActiveChanged(HWND hwnd)
                         // even if follow focus is disabled we should still bring
                         // the pager window back to top in flash mode
                         // V0.9.19 (2002-06-02) [umoeller]
-                        WinSetWindowPos(G_pHookData->hwndPagerFrame,
-                                        HWND_TOP,
-                                        0, 0, 0, 0,
-                                        SWP_SHOW | SWP_ZORDER);
-                        CheckFlashTimer();
+                        // but only if in flash mode
+                        // V0.9.19 (2002-06-13) [lafaix]
+                        if (G_pHookData->PagerConfig.flPager & PGRFL_FLASHTOTOP)
+                        {
+                            WinSetWindowPos(G_pHookData->hwndPagerFrame,
+                                            HWND_TOP,
+                                            0, 0, 0, 0,
+                                            SWP_SHOW | SWP_ZORDER);
+                            CheckFlashTimer();
+                        }
                     }
                 }
             }
         } // end if (hwndActive)
+
+        // refresh client
+        WinPostMsg(hwnd,
+                   PGRM_REFRESHCLIENT,
+                   (MPARAM)FALSE,
+                   0);
 
     } // end if (!G_pHookData->fProcessingWraparound)
 }

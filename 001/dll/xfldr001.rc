@@ -1366,6 +1366,7 @@ BEGIN
     ID_SCDI_PGR1_SHOWSECONDARY         "Show ~secondary windows"
     ID_SCDI_PGR1_SHOWSTICKY            "Show stic~ky windows"
     ID_SCDI_PGR1_FOLLOWFOCUS           "Desktop follows active ~window"
+    ID_SCDI_PGR1_SHOWWINICONS          "Show window ~icons"
 
     /* strings formerly in ID_SCD_PAGER_COLORS */
     ID_SCDI_PGR2_COLORS_GROUP          "&pgr; colors"

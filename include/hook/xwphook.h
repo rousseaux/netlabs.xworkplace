@@ -103,10 +103,14 @@
                 #define PGRFL_MINIWINDOWS           0x0080
                     // show mini windows in XPager?
                 #define PGRFL_MINIWIN_TITLES        0x0100
+                    // show mini window titles?
                 #define PGRFL_MINIWIN_MOUSE         0x0200
                     // allow activate/lower by mouse clicks?
                 #define PGRFL_INCLUDESECONDARY      0x0400
                 #define PGRFL_INCLUDESTICKY         0x0800
+                #define PGRFL_MINIWIN_ICONS         0x1000
+                    // show mini window icons?
+                            // V0.9.19 (2002-06-13) [umoeller]
 
                 #define PGRMASK_PAGE2 (   PGRFL_PRESERVEPROPS       \
                                         | PGRFL_STAYONTOP           \
@@ -115,7 +119,8 @@
                                         | PGRFL_MINIWIN_TITLES      \
                                         | PGRFL_MINIWIN_MOUSE       \
                                         | PGRFL_INCLUDESECONDARY    \
-                                        | PGRFL_INCLUDESTICKY )
+                                        | PGRFL_INCLUDESTICKY       \
+                                        | PGRFL_MINIWIN_ICONS )
                 #define PGRFL_PAGE2_DEFAULTS (   PGRFL_PRESERVEPROPS  \
                                                | PGRFL_MINIWINDOWS    \
                                                | PGRFL_MINIWIN_TITLES \

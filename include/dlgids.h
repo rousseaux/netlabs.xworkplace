@@ -1525,7 +1525,7 @@
     #define ID_SCDI_PGR1_FLASH_TXT2        4610
     #define ID_SCDI_PGR1_SHOWSECONDARY     4611    // added V0.9.19 (2002-04-11) [lafaix]
     #define ID_SCDI_PGR1_SHOWSTICKY        4612    // added V0.9.19 (2002-04-11) [lafaix]
-
+    #define ID_SCDI_PGR1_SHOWWINICONS      4613     // added V0.9.19 (2002-06-13) [umoeller]
 #endif
 
 /* ******************************************************************

@@ -1172,6 +1172,10 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
         // V0.9.19 (2002-04-04) [lafaix]
         if (    (G_HookData.HookConfig.__ulAutoMoveFlags & AMF_ALWAYSMOVE)
              && (WinQueryWindowUShort(psmh->hwnd, QWS_FLAGS) & FF_DIALOGBOX)
+             // ignore dialogs not direct children of desktop (fixes
+             // netscape odd hierarchy)
+             // V0.9.19 (2002-06-13) [lafaix]
+             && (WinQueryWindow(psmh->hwnd, QW_PARENT) == HWND_DESKTOP)
            )
         {
             WinPostMsg(G_HookData.hwndDaemonObject,

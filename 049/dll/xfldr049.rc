@@ -1356,6 +1356,7 @@ BEGIN
     ID_SCDI_PGR1_SHOWSECONDARY         "Show ~secondary windows"
     ID_SCDI_PGR1_SHOWSTICKY            "Ha~ftfenster anzeigen"
     ID_SCDI_PGR1_FOLLOWFOCUS           "A~rbeitsoberfl„che folgt aktivem Fenster"
+    ID_SCDI_PGR1_SHOWWINICONS          "Fensters~ymbole zeigen"
 
     /* strings formerly in ID_SCD_PAGER_COLORS */
     ID_SCDI_PGR2_COLORS_GROUP          "&pgr;-Farben"
