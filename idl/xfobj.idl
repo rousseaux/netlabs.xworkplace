@@ -194,18 +194,20 @@ interface XFldObject : WPObject
 
     // pointer to WPObject instance data
     // V0.9.18 (2002-03-23) [umoeller]
-    PVOID       pvWPObjectData;
+    PVOID       pvWPObjectData;         // IBMOBJECTDATA struct, include\filesys\object.h
 
     // the following two have been added with V0.9.2
-    PWPOBJECTLONGS pObjectLongs;      // ptr to array of LONGs in instance data
-    ULONG       cbObjectLongs;
+    // and removed again because we can now use pvWPObjectData
+    // V0.9.19 (2002-07-01) [umoeller]
+    //# PWPOBJECTLONGS pObjectLongs;      // ptr to array of LONGs in instance data
+    //# ULONG       cbObjectLongs;
 
     PSZ         pWszOriginalObjectID;   // copy of object ID as found with wpRestoreState
                                         // WARNING: allocated using wpAllocMem
                                         // V0.9.16 (2001-12-06) [umoeller]
 
     // the following has been added with V0.9.16 (2001-12-06) [umoeller]
-    PWPOBJECTSTRINGS pObjectStrings;  // ptr to array of strings in instance data
+    //# PWPOBJECTSTRINGS pObjectStrings;  // ptr to array of strings in instance data
 
     WPObject    pTrashObject;   // if the object has been deleted, this is the
                                 // corresponding trash object; this is set when
@@ -216,9 +218,10 @@ interface XFldObject : WPObject
 
     PVOID       pvllWidgetNotifies; // really a PLINKLIST for xwpSetWidgetNotify
 
-    ULONG       ulDefaultView;
+    // ULONG       ulDefaultView;
                             // for xwpQueryRealDefaultView
                             // V0.9.16 (2001-11-25) [umoeller]
+                            // no longer needed V0.9.19 (2002-07-01) [umoeller]
 
     /*
      * WPObject methods overridden by XFldObject:
@@ -235,7 +238,7 @@ interface XFldObject : WPObject
     wpUnInitData: override;
 
     wpSetTitle: override;
-    wpSetDefaultView: override;
+    //# wpSetDefaultView: override; removed V0.9.19 (2002-07-01) [umoeller]
     wpSetObjectID: override;
 
     wpSaveDeferred: override;

@@ -261,6 +261,8 @@ RUN_UNLOCK = $(CVS_WORK_ROOT)\$(XWPDIR)\tools\unlock.exe
 
 RUN_STRRPL = $(HELPERS_BASE)\strrpl.exe
 
+RUN_DCD = $(CVS_WORK_ROOT)\$(XWPDIR)\tools\dcd.cmd
+
 !ifndef ENTITYDEFS
 !ifdef XWPLITE
 ENTITYDEFS = entities_lite.h

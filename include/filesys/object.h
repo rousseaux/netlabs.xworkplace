@@ -65,7 +65,7 @@
      *      capable of changing this structure any
      *      more in the first place).
      *
-     *      The size of this structure (sizeof(IBMOBJECTDATA)
+     *      The size of this structure (sizeof(IBMOBJECTDATA))
      *      is 144 bytes, and _somGetInstanceSize(_WPObject)
      *      returns
      *
@@ -99,7 +99,7 @@
                                 // object's default view, if explicitly set
                                 // by user on the "Menu" page; if 0 (OPEN_DEFAULT),
                                 // wpclsQueryDefaultView is used instead
-        ULONG               ulHelpPanelId;
+        ULONG               ulHelpPanelID;
                                 // object's help panel ID, as returned by
                                 // wpQueryDefaultHelp; if 0, wpclsQueryDefaultHelp
                                 // is used instead, apparently
@@ -111,14 +111,15 @@
         ULONG               ulMinWindow;
                                 // minimized window behavior, as returned by
                                 // wpQueryMinWindow
+                                // MINWIN_DEFAULT=0, MINWIN_HIDDEN=1, MINWIN_VIEWER=2, MINWIN_DESKTOP=3
         ULONG               ulConcurrentView;
                                 // concurrent views behavior, as returned by
                                 // wpQueryConcurrentView; one of
-                                // CCVIEW_DEFAULT (0), CCVIEW_ON (1), CCVIEW_OFF (2)
+                                // CCVIEW_DEFAULT=0, CCVIEW_ON=1, CCVIEW_OFF=2
         ULONG               ulButtonAppearance;
                                 // button appearance, as returned by
                                 // wpQueryButtonAppearance; one of
-                                // HIDEBUTTON (1), MINBUTTON (2), DEFAULTBUTTON (3)
+                                // HIDEBUTTON=1, MINBUTTON=2, DEFAULTBUTTON=3
         ULONG               ulMenuStyle;
                                 // menu style, as returned by wpQueryMenuStyle (Warp 4 only)
         PSZ                 pszHelpLibrary;

@@ -152,10 +152,6 @@ static SHUTDOWNANIM     G_sdAnim;
 static THREADINFO       G_tiShutdownThread = {0},
                         G_tiUpdateThread = {0};
 
-// static ULONG            G_fShutdownRunning = FALSE;
-            // moved this here from KERNELGLOBALS
-            // V0.9.16 (2001-11-22) [umoeller]
-
 static ULONG            G_ulShutdownState = XSD_IDLE;
                 // V0.9.19 (2002-04-24) [umoeller]
                 // -- XSD_* flag signalling status
@@ -2353,6 +2349,7 @@ static const CONTROLDEF
                             COLUMN_WIDTH,
                             STD_BUTTON_HEIGHT),
     CanDesktopAltF4 = LOADDEF_AUTOCHECKBOX(ID_SDDI_CANDESKTOPALTF4),
+    AnimationTxt = LOADDEF_TEXT(ID_SDDI_ANIMATE_TXT),
     AnimationBeforeShutdownCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_ANIMATE_SHUTDOWN),
     AnimationBeforeRebootCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_ANIMATE_REBOOT),
     PowerOffCB = CONTROLDEF_AUTOCHECKBOX(
@@ -2436,8 +2433,8 @@ static const DLGHITEM dlgShutdown[] =
                         CONTROL_DEF(&RebootAfterwardsCB),
                         CONTROL_DEF(&RebootActionsButton),
                     START_ROW(0),
+                        CONTROL_DEF(&AnimationTxt),
                         CONTROL_DEF(&AnimationBeforeShutdownCB),
-                    START_ROW(0),
                         CONTROL_DEF(&AnimationBeforeRebootCB),
                     START_ROW(0),
                         START_TABLE,
@@ -3955,7 +3952,7 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
  *      to begin.
  *
  *      Parameters: this thread must be created using thrCreate
- *      (/helpers/threads.c), so it is passed a pointer
+ *      (src/helpers/threads.c), so it is passed a pointer
  *      to a THREADINFO structure. In that structure you
  *      must set ulData to point to a SHUTDOWNPARAMS structure.
  *
@@ -4058,6 +4055,9 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
  *@@changed V0.9.13 (2001-06-17) [umoeller]: no longer broadcasting WM_SAVEAPPLICATION, going back to old code
  *@@changed V0.9.13 (2001-06-19) [umoeller]: now pausing while exception handler is still running somewhere
  *@@changed V0.9.16 (2001-10-25) [umoeller]: couple of extra hacks for saving desktop
+ *@@changed V0.9.19 (2002-04-24) [umoeller]: adjustments for new global G_ulShutdownState flag
+ *@@changed V0.9.19 (2002-06-18) [umoeller]: misc optimizations
+ *@@changed V0.9.19 (2002-06-18) [umoeller]: no longer recovering windows to current desktop for restart wps
  */
 
 static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
@@ -4183,19 +4183,16 @@ static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         lstInit(&pShutdownData->llSkipped, TRUE);       // auto-free items
         lstInit(&pShutdownData->llAutoClose, TRUE);     // auto-free items
 
+        // check for auto-close items in OS2.INI
+        // and build llAutoClose list accordingly
         doshWriteLogEntry(LogFile,
                __FUNCTION__ ": Getting auto-close items from OS2.INI...");
 
-        // check for auto-close items in OS2.INI
-        // and build pliAutoClose list accordingly
         ulAutoCloseItemsFound = xsdLoadAutoCloseItems(&pShutdownData->llAutoClose,
                                                       NULLHANDLE); // no list box
 
         doshWriteLogEntry(LogFile,
                "  Found %d auto-close items.", ulAutoCloseItemsFound);
-
-        doshWriteLogEntry(LogFile,
-               "  Creating shutdown windows...");
 
         /*************************************************
          *
@@ -4203,8 +4200,11 @@ static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
          *
          *************************************************/
 
+        doshWriteLogEntry(LogFile,
+               "  Creating shutdown windows...");
+
         // setup main (debug) window; this is hidden
-        // if we're not in debug mode
+        // unless we're in debug mode
         pShutdownData->SDConsts.hwndMain
                 = cmnLoadDlg(NULLHANDLE,
                              fnwpShutdownThread,
@@ -4287,7 +4287,7 @@ static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         ctlPrepareAnimation(WinWindowFromID(pShutdownData->SDConsts.hwndShutdownStatus,
                                             ID_SDDI_ICON),
                             XSD_ANIM_COUNT,
-                            &(G_sdAnim.ahptr[0]),
+                            G_sdAnim.ahptr,
                             150,    // delay
                             TRUE);  // start now
 
@@ -4324,19 +4324,26 @@ static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
 
         // tell XPager to recover all windows to the current screen
         // V0.9.12 (2001-05-15) [umoeller]
-        if (pShutdownData->SDConsts.pKernelGlobals)
+        // but only if we're doing shutdown, not on restart wps
+        // V0.9.19 (2002-06-18) [umoeller]
+        if (    (pShutdownData->SDConsts.pKernelGlobals)
+             && (pShutdownData->sdParams.ulCloseMode == SHUT_SHUTDOWN)
+                                // not Desktop (1), not logoff (2)
+           )
         {
-            PXWPGLOBALSHARED pXwpGlobalShared = pShutdownData->SDConsts.pKernelGlobals->pXwpGlobalShared;
+            PXWPGLOBALSHARED pXwpGlobalShared;
 
-            if (pXwpGlobalShared)
+            if (    (pXwpGlobalShared = pShutdownData->SDConsts.pKernelGlobals->pXwpGlobalShared)
+                 && (pXwpGlobalShared->hwndDaemonObject)
+               )
             {
                 doshWriteLogEntry(LogFile,
                        __FUNCTION__ ": Recovering all XPager windows...");
 
-                if (pXwpGlobalShared->hwndDaemonObject)
-                    WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
-                               XDM_RECOVERWINDOWS,
-                               0, 0);
+                WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
+                           XDM_RECOVERWINDOWS,
+                           0,
+                           0);
             }
         }
 
@@ -4416,10 +4423,11 @@ static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         // or if we should proceed (XSD_ALLCLOSED_SAVING)
         if (G_ulShutdownState == XSD_ALLCLOSED_SAVING)
         {
-            ULONG   cObjectsToSave = 0,
-                    cObjectsSaved = 0;
-            CHAR    szTitle[400];
-            PSWBLOCK psw;
+            ULONG       cObjectsToSave = 0,
+                        cObjectsSaved = 0;
+            CHAR        szTitle[400];
+            PSWBLOCK    psw;
+            WPObject    *pWarpCenter;
 
             /*************************************************
              *
@@ -4456,18 +4464,18 @@ static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
 
             // disable buttons in status window... we can't stop now!
             WinEnableControl(pShutdownData->SDConsts.hwndShutdownStatus,
-                              ID_SDDI_CANCELSHUTDOWN,
-                              FALSE);
+                             ID_SDDI_CANCELSHUTDOWN,
+                             FALSE);
             WinEnableControl(pShutdownData->SDConsts.hwndShutdownStatus,
-                              ID_SDDI_SKIPAPP,
-                              FALSE);
+                             ID_SDDI_SKIPAPP,
+                             FALSE);
 
             // close Desktop window (which we excluded from
             // the regular SHUTLISTITEM list)
+            doshWriteLogEntry(LogFile,
+                              __FUNCTION__ ": Closing Desktop window");
             xsdUpdateClosingStatus(pShutdownData->SDConsts.hwndShutdownStatus,
                                    _wpQueryTitle(pShutdownData->SDConsts.pActiveDesktop));
-            doshWriteLogEntry(LogFile,
-                   __FUNCTION__ ": Closing Desktop window");
 
             // sleep a little while... XCenter might have resized
             // the desktop, and this will hang otherwise
@@ -4512,22 +4520,21 @@ static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
             }
 
             // close WarpCenter next (V0.9.5, from V0.9.3)
-            if (somIsObj(pShutdownData->SDConsts.pKernelGlobals->pAwakeWarpCenter))
+            if (    (pWarpCenter = pShutdownData->SDConsts.pKernelGlobals->pAwakeWarpCenter)
+                 && (somIsObj(pWarpCenter))
+               )
             {
                 // WarpCenter still open?
-                if (_wpFindUseItem(pShutdownData->SDConsts.pKernelGlobals->pAwakeWarpCenter,
-                                   USAGE_OPENVIEW,
-                                   NULL)       // get first useitem
-                    )
+                if (_wpFindUseItem(pWarpCenter, USAGE_OPENVIEW, NULL))
                 {
                     // if open: close it
                     xsdUpdateClosingStatus(pShutdownData->SDConsts.hwndShutdownStatus,
-                                           _wpQueryTitle(pShutdownData->SDConsts.pKernelGlobals->pAwakeWarpCenter));
+                                           _wpQueryTitle(pWarpCenter));
                     doshWriteLogEntry(LogFile,
                            __FUNCTION__ ": Found open WarpCenter USEITEM, closing...");
 
-                    _wpSaveImmediate(pShutdownData->SDConsts.pKernelGlobals->pAwakeWarpCenter);
-                    // _wpClose(pShutdownData->SDConsts.pKernelGlobals->pAwakeWarpCenter);
+                    _wpSaveImmediate(pWarpCenter);
+                    // _wpClose(pWarpCenter);
                     WinPostMsg(pShutdownData->SDConsts.hwndOpenWarpCenter,
                                WM_COMMAND,
                                MPFROMSHORT(0x66F7),
@@ -4536,7 +4543,7 @@ static void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
                                MPFROM2SHORT(CMDSRC_OTHER,
                                             FALSE));     // keyboard?!?
 
-                    _wpWaitForClose(pShutdownData->SDConsts.pKernelGlobals->pAwakeWarpCenter,
+                    _wpWaitForClose(pWarpCenter,
                                     pShutdownData->SDConsts.hwndOpenWarpCenter,
                                     VIEW_ANY,
                                     SEM_INDEFINITE_WAIT,
@@ -5222,6 +5229,7 @@ static VOID CloseOneItem(PSHUTDOWNDATA pShutdownData,
  *@@changed V0.9.12 (2001-04-29) [umoeller]: now starting update thread after shutdown folder processing
  *@@changed V0.9.12 (2001-04-29) [umoeller]: now using new shutdown folder implementation
  *@@changed V0.9.16 (2001-10-22) [pr]: fixed bug trying to close the first switch list item twice
+ *@@changed V0.9.19 (2002-06-18) [umoeller]: now running shutdown folder only for shutdown, not restart wps
  */
 
 static MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -5235,14 +5243,15 @@ static MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1
 
         case WM_COMMAND:
         {
-            PSHUTDOWNDATA   pShutdownData = (PSHUTDOWNDATA)WinQueryWindowPtr(hwndFrame,
-                                                                             QWL_USER);
-                                    // V0.9.9 (2001-03-07) [umoeller]
-            HWND            hwndListbox = WinWindowFromID(pShutdownData->SDConsts.hwndMain,
-                                                          ID_SDDI_LISTBOX);
+            PSHUTDOWNDATA   pShutdownData;
+            HWND            hwndListbox;
 
-            if (!pShutdownData)
+            if (!(pShutdownData = (PSHUTDOWNDATA)WinQueryWindowPtr(hwndFrame,
+                                                                   QWL_USER)))
                 break;
+
+            hwndListbox = WinWindowFromID(pShutdownData->SDConsts.hwndMain,
+                                          ID_SDDI_LISTBOX);
 
             switch (SHORT1FROMMP(mp1))
             {
@@ -5297,17 +5306,26 @@ static MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1
                                                  189, // "empty failed"
                                                  MB_YESNO)
                                     != MBID_YES)
+                            {
                                 // stop:
                                 WinPostMsg(pShutdownData->SDConsts.hwndMain, WM_COMMAND,
                                            MPFROM2SHORT(ID_SDDI_CANCELSHUTDOWN, 0),
                                            MPNULL);
+
+                                break;      // was missing V0.9.19 (2002-06-18) [umoeller]
+                            }
                         }
                     }
 
-                    // now look for a Shutdown folder
-                    if (pShutdownFolder = _wpclsQueryFolder(_WPFolder,
-                                                            (PSZ)XFOLDER_SHUTDOWNID,
-                                                            TRUE))
+                    // now run items in Shutdown folder
+                    // but only if we're shutting down, not on restart wps
+                    // V0.9.19 (2002-06-18) [umoeller]
+                    if (    (pShutdownData->sdParams.ulCloseMode == SHUT_SHUTDOWN)
+                                // not restart Desktop (1), not logoff (2)
+                         && (pShutdownFolder = _wpclsQueryFolder(_WPFolder,
+                                                                 (PSZ)XFOLDER_SHUTDOWNID,
+                                                                 TRUE))
+                       )
                     {
                         doshWriteLogEntry(pShutdownData->ShutdownLogFile, "    Processing shutdown folder...");
 
@@ -6350,8 +6368,6 @@ static void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
                      && (!G_tiUpdateThread.fExit)
                   )
             {
-                // ULONG ulNesting = 0;
-
                 // this is the second loop: we stay in here until the
                 // task list has changed; for monitoring this, we create
                 // a second task item list similar to the pliShutdownFirst
@@ -6373,8 +6389,7 @@ static void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
                 // Shutdown thread might be working on this too
                 TRY_LOUD(excpt2)
                 {
-                    fSemOwned = (WinRequestMutexSem(pShutdownData->hmtxShutdown, 4000) == NO_ERROR);
-                    if (fSemOwned)
+                    if (fSemOwned = !WinRequestMutexSem(pShutdownData->hmtxShutdown, 4000))
                     {
                         ulShutItemCount = lstCountItems(&pShutdownData->llShutdown);
                         DosReleaseMutexSem(pShutdownData->hmtxShutdown);

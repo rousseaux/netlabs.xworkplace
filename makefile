@@ -885,10 +885,10 @@ $(XWPRELEASE_HEALTH)\plugins\xcenter\*.dll
 
 warpin: release
     @echo $(MAKEDIR)\makefile [$@]: Building WPI from $(XWPRELEASE).
-    cd $(XWPRELEASE)
+    $(RUN_DCD) $(XWPRELEASE)
     cd ..
     warpin_001.cmd
-    cd $(CURRENT_DIR)
+    $(RUN_DCD) $(CURRENT_DIR)
 
 #
 # Special target "transfer": this is not called by "all",
@@ -898,10 +898,10 @@ warpin: release
 
 transfer: warpin
     @echo $(MAKEDIR)\makefile [$@]: Transferring WPI from $(XWPRELEASE).
-    cd $(XWPRELEASE)
+    $(RUN_DCD) $(XWPRELEASE)
     cd ..
     sendfile laptop xwp-temp.wpi D:\install\xwp-transferred.wpi
-    cd $(CURRENT_DIR)
+    $(RUN_DCD) $(CURRENT_DIR)
 
 daily: release
     @echo $(MAKEDIR)\makefile [$@]: Building WPI from $(XWPRELEASE).

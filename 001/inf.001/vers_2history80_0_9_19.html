@@ -9,7 +9,7 @@
      about changes to this file.
      Simply use the English original instead. -->
 <BODY>
-<B>&xwp; 0.9.19 (March 26, 2002)</B>
+<B>&xwp; 0.9.19 (July 2, 2002)</B>
 
 <P>New features:
 
@@ -98,6 +98,9 @@ most importantly though, the window list no longer blocks the PM SIQ if a
 window doesn't care to respond to WM_QUERYICON. Added
 half-toned display for minimized and hidden windows as well.
 
+<P><LI>&xsd;: We no longer recover Windows to the current desktop and run the
+shutdown folder for "restart Desktop", but only for actual system shutdown.
+
 <P><LI>&pgr;: The remaining parts of PageMage were rewritten. There is now no
 legacy PageMage code left in &pgr;. Optimized window list scanning to use an
 additional background thread and to allow sharing the window list with the
@@ -170,6 +173,9 @@ disabled. Fixed.
 
 <P><LI>File operations: Trash can crashed when deleting several objects with the
 same title. Fixed.
+
+<P><LI>File dialog replacement: Double-clicking on object in right container didn't
+work. Fixed.
 
 <P><LI>Fonts folder: Installing fonts via drag and drop crashed the WPS internally.
 I'm not sure if the bug was in 0.9.18 or if I introduced it later, but it's

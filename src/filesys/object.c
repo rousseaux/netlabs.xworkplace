@@ -494,6 +494,7 @@ BOOL objSetup(WPObject *somSelf,
  *@@changed V0.9.7 (2000-12-10) [umoeller]: added LOCKEDINPLACE
  *@@todo some strings missing
  *@@changed V0.9.18 (2002-03-23) [umoeller]: optimized
+ *@@changed V0.9.19 (2002-07-01) [umoeller]: adapted to use IBMOBJECTDATA
  */
 
 BOOL objQuerySetup(WPObject *somSelf,
@@ -525,17 +526,19 @@ BOOL objQuerySetup(WPObject *somSelf,
     }
 
     // DEFAULTVIEW
-    if (_pObjectLongs)
+    // modified to use IBMOBJECTDATA V0.9.19 (2002-07-01) [umoeller]
+    if (_pvWPObjectData)
     {
         ULONG ulClassDefaultView = _wpclsQueryDefaultView(pMyClass);
+        ULONG ulDefaultView = ((PIBMOBJECTDATA)_pvWPObjectData)->ulDefaultView;
 
-        if (    (_pObjectLongs->lDefaultView != 0x67)      // default view for folders
-             && (_pObjectLongs->lDefaultView != 0x1000)    // default view for data files
-             && (_pObjectLongs->lDefaultView != -1)        // OPEN_DEFAULT
-             && (_pObjectLongs->lDefaultView != ulClassDefaultView) // OPEN_DEFAULT
+        if (    (ulDefaultView != 0x67)      // default view for folders
+             && (ulDefaultView != 0x1000)    // default view for data files
+             && (ulDefaultView != -1)        // OPEN_DEFAULT
+             && (ulDefaultView != ulClassDefaultView) // OPEN_DEFAULT
            )
         {
-            switch (_pObjectLongs->lDefaultView)
+            switch (ulDefaultView)
             {
                 case OPEN_SETTINGS:
                     APPEND("DEFAULTVIEW=SETTINGS;");
@@ -565,7 +568,7 @@ BOOL objQuerySetup(WPObject *somSelf,
                 {
                     // any other: that's user defined, add decimal ID
                     CHAR szTemp[30];
-                    sprintf(szTemp, "DEFAULTVIEW=%d;", _pObjectLongs->lDefaultView);
+                    sprintf(szTemp, "DEFAULTVIEW=%d;", ulDefaultView);
                     xstrcat(pstrSetup, szTemp, 0);
                 }
                 break;
@@ -576,11 +579,12 @@ BOOL objQuerySetup(WPObject *somSelf,
     // HELPLIBRARY  @@todo
 
     // HELPPANEL
-    if (_pObjectLongs)
-        if (_pObjectLongs->ulHelpPanel)
+    // modified to use IBMOBJECTDATA V0.9.19 (2002-07-01) [umoeller]
+    if (_pvWPObjectData)
+        if (((PIBMOBJECTDATA)_pvWPObjectData)->ulHelpPanelID)
         {
             CHAR szTemp[40];
-            sprintf(szTemp, "HELPPANEL=%d;", _pObjectLongs->ulHelpPanel);
+            sprintf(szTemp, "HELPPANEL=%d;", ((PIBMOBJECTDATA)_pvWPObjectData)->ulHelpPanelID);
             xstrcat(pstrSetup, szTemp, 0);
         }
 

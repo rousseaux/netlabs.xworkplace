@@ -270,6 +270,7 @@ SOM_Scope ULONG  SOMLINK xo_xwpAddReplacementIconPage(XFldObject *somSelf,
  *
  *@@added V0.9.12 (2001-05-01) [umoeller]
  *@@changed V0.9.16 (2001-11-25) [umoeller]: now using new instance var to pick up changes
+ *@@changed V0.9.19 (2002-07-01) [umoeller]: rewritten to use IBMOBJECTDATA now
  */
 
 SOM_Scope ULONG  SOMLINK xo_xwpQueryRealDefaultView(XFldObject *somSelf)
@@ -277,8 +278,10 @@ SOM_Scope ULONG  SOMLINK xo_xwpQueryRealDefaultView(XFldObject *somSelf)
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_xwpQueryRealDefaultView");
 
-    return _ulDefaultView;
-            // V0.9.16 (2001-11-25) [umoeller]
+    if (_pvWPObjectData)
+        return ((PIBMOBJECTDATA)_pvWPObjectData)->ulDefaultView;
+
+    return OPEN_DEFAULT;
 }
 
 /*
@@ -1205,9 +1208,7 @@ SOM_Scope void  SOMLINK xo_wpInitData(XFldObject *somSelf)
     {
         _flFlags = OBJFL_WPFILESYSTEM;
         if (_somIsA(somSelf, _WPFolder))
-        {
             _flFlags |= OBJFL_WPFOLDER;
-        }
     }
     else if (ctsIsAbstract(somSelf))
     {
@@ -1219,10 +1220,10 @@ SOM_Scope void  SOMLINK xo_wpInitData(XFldObject *somSelf)
     // _fDeleted = FALSE;
     _cdateDeleted.year = 0;     // V0.9.16 (2001-12-06) [umoeller]
 
-    _pObjectLongs = NULL;
-    _cbObjectLongs = 0;
+    // _pObjectLongs = NULL;        // removed V0.9.19 (2002-07-01) [umoeller]
+    // _cbObjectLongs = 0;          // removed V0.9.19 (2002-07-01) [umoeller]
 
-    _pObjectStrings = NULL;
+    // _pObjectStrings = NULL;      // removed V0.9.19 (2002-07-01) [umoeller]
 
     _pWszOriginalObjectID = NULL;
 
@@ -1232,7 +1233,7 @@ SOM_Scope void  SOMLINK xo_wpInitData(XFldObject *somSelf)
 
     _pvllWidgetNotifies = NULL;
 
-    _ulDefaultView = 0;             // OPEN_DEFAULT
+    // _ulDefaultView = 0;             // OPEN_DEFAULT
 }
 
 /*
@@ -1774,29 +1775,6 @@ SOM_Scope BOOL  SOMLINK xo_wpSetTitle(XFldObject *somSelf,
 }
 
 /*
- *@@ wpSetDefaultView:
- *      overridden to catch a notification if the default
- *      view of the folder is to be changed (via the "Menu"
- *      page, probably).
- *
- *      Otherwise our change isn't picked up, for some reason.
- *
- *@@added V0.9.16 (2001-11-25) [umoeller]
- */
-
-SOM_Scope BOOL  SOMLINK xo_wpSetDefaultView(XFldObject *somSelf,
-                                            ULONG ulView)
-{
-    XFldObjectData *somThis = XFldObjectGetData(somSelf);
-    XFldObjectMethodDebug("XFldObject","xo_wpSetDefaultView");
-
-    _ulDefaultView = ulView;
-
-    return (XFldObject_parent_WPObject_wpSetDefaultView(somSelf,
-                                                        ulView));
-}
-
-/*
  *@@ wpSetObjectID:
  *      this WPObject method sets a new object ID for the
  *      object. We must then invalidate our backup object
@@ -1813,7 +1791,7 @@ SOM_Scope BOOL  SOMLINK xo_wpSetObjectID(XFldObject *somSelf,
     XFldObjectData *somThis = XFldObjectGetData(somSelf);
     XFldObjectMethodDebug("XFldObject","xo_wpSetObjectID");
 
-    // now this is a true override of the object ID,
+    // now this is a true overwrite of the object ID,
     // so nuke the one we backed up, but only if the
     // object has been initialized
     if (_flFlags & OBJFL_INITIALIZED) // _wpIsObjectInitialized(somSelf))
@@ -1951,6 +1929,29 @@ SOM_Scope BOOL  SOMLINK xo_wpSaveState(XFldObject *somSelf)
     // the object's ID was set from another Desktop...
     // see XFldObject::xwpQueryOriginalObjectID for the scenario.
 
+    // replaced this section to use the new IBMOBJECTDATA instead
+    if (    // we have a pointer to the object strings:
+            (_pvWPObjectData)
+            // and object ID in instance data is NULL:
+         && (!((PIBMOBJECTDATA)_pvWPObjectData)->pszObjectID)
+            // but there was one originally:
+         && (_pWszOriginalObjectID)
+       )
+    {
+        // restore the old object ID for save!!
+        _PmpfF(("restoring old object ID \"%s\" for save", _pWszOriginalObjectID));
+
+        ((PIBMOBJECTDATA)_pvWPObjectData)->pszObjectID = _pWszOriginalObjectID;
+        fHacked = TRUE;
+    }
+
+    brc = XFldObject_parent_WPObject_wpSaveState(somSelf);
+
+    if (fHacked)
+        // restore old NULL pointer
+        ((PIBMOBJECTDATA)_pvWPObjectData)->pszObjectID = NULL;
+
+    /* old code V0.9.19 (2002-07-01) [umoeller]
     if (    // we have a pointer to the object strings:
             (_pObjectStrings)
             // and object ID in instance data is NULL:
@@ -1971,10 +1972,11 @@ SOM_Scope BOOL  SOMLINK xo_wpSaveState(XFldObject *somSelf)
     if (fHacked)
         // restore old NULL pointer
         _pObjectStrings->pszObjectID = NULL;
+    */
 
+    // save deletion data if we are currently in the trash can
     if (_cdateDeleted.year != 0)        // V0.9.16 (2001-12-06) [umoeller]
     {
-        // save deletion data:
         _wpSaveData(somSelf, (PSZ)G_pcszXFldObject, 1,
                     (PBYTE)&_cdateDeleted, sizeof(CDATE));
         _wpSaveData(somSelf, (PSZ)G_pcszXFldObject, 2,
@@ -2028,13 +2030,13 @@ SOM_Scope BOOL  SOMLINK xo_wpRestoreState(XFldObject *somSelf,
     // this because _wpQueryObjectID sometimes resets
     // this to NULL
     // V0.9.16 (2001-12-06) [umoeller]
-    if (    (_pObjectStrings)
-         && (_pObjectStrings->pszObjectID)
-         && (*(_pObjectStrings->pszObjectID))
+    if (    (_pvWPObjectData)
+         && (((PIBMOBJECTDATA)_pvWPObjectData)->pszObjectID)
+         && (*(((PIBMOBJECTDATA)_pvWPObjectData)->pszObjectID))
        )
         wpshStore(somSelf,
                   &_pWszOriginalObjectID,
-                  _pObjectStrings->pszObjectID,
+                  ((PIBMOBJECTDATA)_pvWPObjectData)->pszObjectID,
                   NULL);
 
     // restore trash can deletion
@@ -2087,6 +2089,7 @@ SOM_Scope BOOL  SOMLINK xo_wpRestoreData(XFldObject *somSelf,
                                                    ulKey, pValue,
                                                    pcbValue);
 
+    /* disabled this code V0.9.19 (2002-07-01) [umoeller]
     if ( (brc) && (pValue) )
     {
         switch (ulKey)
@@ -2105,7 +2108,7 @@ SOM_Scope BOOL  SOMLINK xo_wpRestoreData(XFldObject *somSelf,
                                                     );
             break;
         }
-    }
+    } */
 
     return brc;
 }

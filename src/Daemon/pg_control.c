@@ -1679,11 +1679,16 @@ static MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 
             case WM_WINDOWPOSCHANGED:
             {
-                PPAGERWINDATA pWinData;
+                PPAGERWINDATA  pWinData;
+
                 if (    (((PSWP)mp1)->fl & SWP_SIZE)
                      && (pWinData = (PPAGERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER))
-                     && (pWinData->szlClient.cx != ((PSWP)mp1)->cx)
-                     && (pWinData->szlClient.cy != ((PSWP)mp1)->cy)
+                     // fixed the following, we had a AND here which caused
+                     // the repaint to fail when the desktop dimensions were
+                     // changed only V0.9.19 (2002-07-01) [umoeller]
+                     && (    (pWinData->szlClient.cx != ((PSWP)mp1)->cx)
+                          || (pWinData->szlClient.cy != ((PSWP)mp1)->cy)
+                        )
                    )
                 {
                     // size changed:

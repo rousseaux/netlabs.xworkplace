@@ -1,9 +1,9 @@
 
-XWorkplace 0.9.18 README
+XWorkplace 0.9.19 README
 
 (W) Ulrich M”ller, Feb 7, 2000
 
-Last updated March 26, 2002
+Last updated July 2, 2002
 
 
 0. CONTENTS OF THIS FILE
@@ -11,25 +11,27 @@ Last updated March 26, 2002
 
     1. INTRODUCTION
 
-    2. INSTALLATION
+    2. REQUIREMENTS
 
-    3. UPGRADING
+    3. INSTALLATION
 
-    4. NATIONAL LANGUAGE SUPPORT
+    4. UPGRADING
 
-    5. GETTING STARTED
+    5. NATIONAL LANGUAGE SUPPORT
 
-    6. KNOWN LIMITATIONS
+    6. GETTING STARTED
 
-    7. LICENSE, COPYRIGHT, DISCLAIMER
+    7. KNOWN LIMITATIONS
 
-    8. CONTACT
+    8. LICENSE, COPYRIGHT, DISCLAIMER
+
+    9. CONTACT
 
 
 1. INTRODUCTION
 ===============
 
-    Welcome to XWorkplace V0.9.18.
+    Welcome to XWorkplace V0.9.19.
 
     XWorkplace is a complex set of replacement classes for the
     OS/2 Workplace Shell to enhance the WPS's behavior in many
@@ -46,19 +48,47 @@ Last updated March 26, 2002
     About this release
     ------------------
 
-    V0.9.18 again fixes a bunch of bugs that were introduced
-    with the major update V0.9.16. Most importantly, I hope
-    to have fixed the program object problems with settings
-    not being remembered and such. Also there are more fixes
-    to the Pulse widget and the XWorkplace pager (formerly
-    PageMage).
+    It's been about three months since V0.9.18, so lots of
+    things have happened. This release has many bugfixes,
+    complete rewrites of some components such as the XPager,
+    plus some new features as well. I hope that, as opposed
+    to some of the previous releases, this works better for
+    most people.
 
     For details, refer to the "Version Notices" in the
     "XWorkplace User Guide". To extract the documentation
     only, see "2. INSTALLATION" below.
 
 
-2. INSTALLATION
+2. REQUIREMENTS
+===============
+
+    XWorkplace is developed and tested only under eComStation
+    1.0, which is equivalent -- as far as the OS/2 code base
+    is concerned -- to the Merlin Convenience Package 1 (MCP1).
+
+    Since I can no longer get my Warp 3 partition to boot and
+    do not particularly care for spending more time on that,
+    XWORKPLACE IS NO LONGER BEING TESTED ON WARP 3. It might
+    work, but it might not. Use it at your own risk.
+
+    Starting with V0.9.19, XWorkplace makes a few assumptions
+    about some internal WPS structures, which might be
+    different on Warp 3. Again, I don't know.
+
+    The following should be safe, since they are based on
+    the same IBM code:
+
+    --  Warp 4 FP 15
+
+    --  WarpServer for e-Business
+
+    --  Merlin/Aurora Convenience Packages
+
+    --  eComStation 1.0
+
+
+3. INSTALLATION
 ===============
 
     XWorkplace must be installed using WarpIN. After all files
@@ -81,7 +111,7 @@ Last updated March 26, 2002
     .WPI archive again.
 
 
-3. UPGRADING
+4. UPGRADING
 ============
 
     Upgrading from XWorkplace
@@ -90,8 +120,8 @@ Last updated March 26, 2002
     IMPORTANT: If you are installing while the WPS is running
     (which is most probably the case), WarpIN will show you
     confirmation dialogs about various files that are currently
-    in use, most importantly, XFLDR.DLL. This is natural because
-    those modules are locked while the WPS (and thus XWorkplace)
+    in use, most importantly, XFLDR.DLL. This is normal because
+    those modules are loaded while the WPS (and thus XWorkplace)
     is running.
 
     In those dialogs, you MUST select "Unlock (DosReplaceModule)",
@@ -144,17 +174,18 @@ Last updated March 26, 2002
     settings remain untouched by XWorkplace.
 
 
-4. NATIONAL LANGUAGE SUPPORT
+5. NATIONAL LANGUAGE SUPPORT
 ============================
 
     This archive contains XWorkplace National Language Support
-    (NLS) for English only. Even though XWorkplace is prepared
-    for supporting additional languages, there are no other
-    NLS packages available yet. These will be added to a later
-    release.
+    (NLS) for English only. XWorkplace is prepared for supporting
+    additional languages via additional NLS packages, which are
+    maintained and released by people other than me. You might
+    find information about NLS packages on the mailing lists
+    (see CONTACT below).
 
 
-5. GETTING STARTED
+6. GETTING STARTED
 ==================
 
     In any case, after installation, open the new "XWorkplace Setup"
@@ -163,14 +194,14 @@ Last updated March 26, 2002
     button there to get more information.
 
 
-6. KNOWN LIMITATIONS
+7. KNOWN LIMITATIONS
 ====================
 
     Please check the BUGS and FEATURES files in this package also
     before reporting bugs or suggesting features. Thank you.
 
 
-7. LICENSE, COPYRIGHT, DISCLAIMER
+8. LICENSE, COPYRIGHT, DISCLAIMER
 =================================
 
     Copyright (C) 1997-2002 Ulrich M”ller,
@@ -191,7 +222,7 @@ Last updated March 26, 2002
     For details, refer to the "Notices" section in XFLDR001.INF.
 
 
-8. CONTACT
+9. CONTACT
 ==========
 
     We have created two mailing lists at yahoogroups.com for contact.

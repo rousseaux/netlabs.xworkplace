@@ -130,6 +130,14 @@ static BOOL LoadPagerConfig(PAGERCONFIG* pPagerCfg)
 
 /*
  *@@ SavePagerConfig:
+ *      writes the given pager configuration struct
+ *      back to OS2.INI and notifies the pager of
+ *      the change, passing it the given PGRCFG_*
+ *      flags to optimize repaint.
+ *
+ *      Here we post T1M_PAGERCONFIGDELAYED to
+ *      the kernel thread-1 object, which will again
+ *      send XDM_PAGERCONFIG to the daemon.
  *
  *@@added V0.9.3 (2000-04-09) [umoeller]
  */
@@ -756,7 +764,7 @@ static MRESULT PagerGeneralItemChanged(PNOTEBOOKPAGE pnbp,
        )
     {
         SavePagerConfig(pPagerCfg,
-                           ulPgmgChangedFlags);
+                        ulPgmgChangedFlags);
     }
 
     return mrc;

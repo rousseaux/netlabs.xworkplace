@@ -1,7 +1,7 @@
 
 XWorkplace Source README
 (W) Ulrich M”ller, July 2, 1999
-Last updated February 4, 2002, Ulrich M”ller
+Last updated July 2, 2002, Ulrich M”ller
 
 
 0. CONTENTS OF THIS FILE
@@ -41,7 +41,7 @@ Last updated February 4, 2002, Ulrich M”ller
     want to read the "XWorkplace Internals" section in the XWorkplace
     User Guide, which comes with the binary distribution already.
 
-    The README that came with the latest binary release is in the
+    The README that is used for the latest _binary_ release is in the
     "001\readme" file.
 
 
@@ -63,7 +63,9 @@ Last updated February 4, 2002, Ulrich M”ller
     2)  run "nmake dep" once to create .depend files in the
         subdirectories;
 
-    3)  run the regular "nmake" or "nmake really_all".
+    3)  run "nmake really_all" to build the whole system. As
+        opposed to plain "nmake", this builds the NLS and a
+        few extra programs too.
 
 
     Working With Netlabs CVS

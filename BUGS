@@ -14,68 +14,26 @@ XWorkplace features in the "XWorkplace Setup" object.
 Ulrich M”ller.
 
 
-FIXED SINCE 0.9.18
-------------------
-
---  Object details dialog has no keyboard support for direct text
-    editing on object ID field.
-
---  If true delete was on but trash can was disabled, "Del" key
-    did not perform the XWP replacement but called the WPS code.
-
---  "Pre-populate desktop" stopped pagemage from getting the
-    correct desktop window handle.
-
---  put strings in fnwpDoubleFilesDlg (cfgsys.c) into NLS resources
-
---  switching languages breaks strings for dialog formatter (global variables,
-    ntbFormatPage)
-
---  folders not refreshed after alt-click rename
-
---  NLS: if NLS DLL cannot be found, revert to 001 automatically
-    instead of hanging the system
-
---  fixed a bunch of problems when objects where auto-renamed due
-    to "title clash" dialog
-
---  XCenter:
-
-    --  Double clicking clock object doesn't bring-up the clock
-        properties in eCS.
-
-    --  XCenter doesn't save its height when scaling.
-
-    --  hatching doesn't disappear for program objects
-
-    --  dragging widgets to folders to create widget
-        files leaks memory.
-
---  lost icons for FTP-PM, Lotus Approach
-
-
 CURRENT PROBLEMS
 ----------------
 
---  file dlg: double click on files list doesn't work, single
-    click and press OK instead
-
---  SHADOWS: apparently when WPShadow makes objects awake,
-    it bypasses our initialization code, which at least does
-    NOT work in the case that a file-system object contains
-    several dots in the filename (because our list isn't
-    checked) --> wrong datafile class (possibly broken icons
-    too)
+--  SHADOWS: with turbofolders/ext assocs, apparently when
+    WPShadow makes objects awake, it bypasses my initialization
+    code, which at least does NOT work in the case that a
+    file-system object contains several dots in the filename
+    (because our list isn't checked) --> wrong datafile class
+    (possibly broken icons too).
 
 --  XFldProgramFile: Parameter and Working dir settings
     specified in a settings notebook are presently ignored.
 
---  WPProgramFile objects have a menu item called "Create Program
-    Object". This disappears in XWPProgramFile and is replaced with
-    "Create Another". I think the functionality is the same, but it
-    is a very confusing menu item as it doesn't "Create Another"
-    instance of the same class, but rather an instance of WPProgram
-    or XWPProgram.
+--  WPProgramFile objects normally have a menu item called "Create
+    Program Object". This disappears in XWPProgramFile and is
+    replaced with "Create Another".
+
+--  Selecting "Original" -> "Delete" from a shadow context menu
+    sometimes deletes the wrong object if replacement delete
+    is enabled.
 
 --  shutdown: waits forever on exceptions to finish
 

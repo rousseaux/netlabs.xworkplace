@@ -1132,6 +1132,7 @@
 
 // XFldDesktop "Shutdown" page (V0.9.0)
 // all IDs raised V0.9.16 (2002-01-04) [umoeller]
+#define ID_SDDI_ANIMATE_TXT             2199    // V0.9.19 (2002-06-18) [umoeller]
 #define ID_SDDI_REBOOT                  2200
 #define ID_SDDI_ANIMATE_SHUTDOWN        2201
 #define ID_SDDI_ANIMATE_REBOOT          2202

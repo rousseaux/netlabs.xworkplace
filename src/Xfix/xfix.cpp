@@ -3832,6 +3832,7 @@ BOOL ParseArgs(int argc, char* argv[])
  *@@ main:
  *
  *@@added V0.9.16 (2001-09-29) [umoeller]
+ *@@changed V0.9.19 (2002-07-01) [umoeller]: added error msgs
  */
 
 int main(int argc, char* argv[])
@@ -3887,10 +3888,10 @@ int main(int argc, char* argv[])
                   NULL
         };
 
-    G_hwndMain = winhCreateExtStdWindow(&xfd,
-                                        &hwndCnr);
-
-    if ((G_hwndMain) && (hwndCnr))
+    if (    (G_hwndMain = winhCreateExtStdWindow(&xfd,
+                                                 &hwndCnr))
+         && (hwndCnr)
+       )
     {
         // subclass cnr (it's our client)
         G_pfnwpCnrOrig = WinSubclassWindow(hwndCnr, fnwpSubclassedMainCnr);
@@ -3920,13 +3921,12 @@ int main(int argc, char* argv[])
         DosGetInfoBlocks(&ptib, &ppib);
         DosQueryModuleName(ppib->pib_hmte, sizeof(szHelpName), szHelpName);
                 // now we have: "J:\Tools\WPS\XWorkplace\bin\xfix.exe"
-        PSZ pszLastBackslash = strrchr(szHelpName, '\\');
-        if (pszLastBackslash)
+        PSZ pszLastBackslash;
+        if (pszLastBackslash = strrchr(szHelpName, '\\'))
         {
             *pszLastBackslash = 0;
             // again to get rid of "bin"
-            pszLastBackslash = strrchr(szHelpName, '\\');
-            if (pszLastBackslash)
+            if (pszLastBackslash = strrchr(szHelpName, '\\'))
             {
                 *pszLastBackslash = 0;
                 // now we have: "J:\Tools\WPS\XWorkplace"
@@ -3967,22 +3967,42 @@ int main(int argc, char* argv[])
                        "Cannot get the active handles from OS2SYS.INI.");
         else
         {
+            PCSZ pcszError;
+
+            // added error messages here V0.9.19 (2002-07-01) [umoeller]
+
             if (arc = wphLoadHandles(G_hiniUser,
                                      G_hiniSystem,
                                      pszActiveHandles,
                                      (HHANDLES*)&G_pHandlesBuf))
+            {
+                // if we fail here, then the handles data is totally
+                // broken, and we have no chance to recover
+                // V0.9.19 (2002-07-01) [umoeller]
+
+                if (!(pcszError = wphDescribeError(arc)))
+                    pcszError = "not available";
+
                 MessageBox(NULLHANDLE,
                            MB_CANCEL,
-                           "Error %d occured loading the handles from the INI files.",
-                           arc);
+                           "Fatal error %d occured loading the handles from the INI files. Description: %s",
+                           arc,
+                           pcszError);
+            }
             else
             {
                 if (arc = wphRebuildNodeHashTable((HHANDLES)G_pHandlesBuf,
                                                   FALSE))
+                {
+                    if (!(pcszError = wphDescribeError(arc)))
+                        pcszError = "not available";
+
                     MessageBox(NULLHANDLE,
                                MB_CANCEL,
-                               "Warning: Error %d building handles cache.",
-                               arc);
+                               "Warning: Error %d building handles cache. Description: %s",
+                               arc,
+                               pcszError);
+                }
 
                 StartInsertHandles(hwndCnr);
 

@@ -2507,7 +2507,10 @@ static MRESULT EXPENTRY fnwpBatchRename(HWND hwndDlg, ULONG msg, MPARAM mp1, MPA
                 case ID_XFDI_BATCH_SOURCEEF:
                 case ID_XFDI_BATCH_TARGETEF:
                     if (SHORT2FROMMP(mp1) == EN_CHANGE)
+                    {
+                        DosBeep(1000, 10);
                         WinPostMsg(hwndDlg, XM_ENABLEITEMS, 0, 0);
+                    }
                 break;
 
                 default:
