@@ -2905,7 +2905,8 @@ STATIC VOID CloseOneItem(PSHUTDOWNDATA pShutdownData,
 
             WinPostMsg(pItem->swctl.hwnd,
                        WM_QUIT,
-                       MPNULL, MPNULL);
+                       MPNULL,);
+                       (MPARAM) pItem->swctl.hwnd); // V1.0.3 (2004-5-9) [pr]:Required for WarpCenter
         }
     }
     else
@@ -3286,7 +3287,8 @@ STATIC MRESULT EXPENTRY fnwpShutdownThread(HWND hwndFrame, ULONG msg, MPARAM mp1
                         G_ulShutdownState = XSD_CANCELLED;
 
                         doshWriteLogEntry(pShutdownData->ShutdownLogFile,
-                                "  DID_CANCEL/ID_SDDI_CANCELSHUTDOWN, hwnd: 0x%lX");
+                                "  DID_CANCEL/ID_SDDI_CANCELSHUTDOWN, hwnd: 0x%lX",
+                                hwndFrame);
 
                         /* if (pShutdownData->hPOC)
                             ((PPROCESSCONTENTINFO)pShutdownData->hPOC)->fCancelled = TRUE; */
