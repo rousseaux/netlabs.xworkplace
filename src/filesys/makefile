@@ -176,7 +176,7 @@ $(OUTPUTDIR)\fdrnotebooks.obj: \
     $(HLPINC)\winh.h \
     $(INC)\classes\xfldr.ih \
     $(INC)\dlgids.h \
-    $(INC)\shared\common.h $(INC)\shared\notebook.h \
+    $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
     $(INC)\filesys\xthreads.h \
     $(@B).c $(INC)\filesys\folder.h
 
@@ -218,7 +218,7 @@ $(OUTPUTDIR)\filesys.obj: \
 $(OUTPUTDIR)\filetype.obj: \
     $(INC)\setup.h \
     $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h \
-            $(HLPINC)\stringh.h $(HLPINC)\winh.h \
+            $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\tree.h \
     $(INC)\classes\xfdataf.ih $(INC)\classes\xfwps.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\cnrsort.h $(INC)\shared\common.h $(INC)\shared\notebook.h \
@@ -298,7 +298,7 @@ $(OUTPUTDIR)\statbars.obj: \
 $(OUTPUTDIR)\trash.obj: \
      $(INC)\setup.h \
      $(HLPINC)\dosh.h $(HLPINC)\linklist.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
-            $(HLPINC)\undoc.h \
+            $(HLPINC)\stringh.h $(HLPINC)\tree.h $(HLPINC)\undoc.h $(HLPINC)\xstring.h \
      $(INC)\classes\xtrash.ih $(INC)\classes\xtrashobj.ih $(INC)\classes\xfobj.h \
      $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(INC)\shared\wpsh.h \

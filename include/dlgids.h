@@ -256,6 +256,7 @@
 #define ID_XSDI_TREEVIEWAUTOSCROLL      507
 #define ID_XSDI_FDRDEFAULTDOC           508
 #define ID_XSDI_FDRDEFAULTDOCVIEW       509
+#define ID_XSDI_FDRAUTOREFRESH          501     // added V0.9.9 (2000-02-06) [umoeller]
 
 // "Remove menu items" page
 #define ID_XSD_SET2REMOVEMENUS          510
@@ -362,6 +363,7 @@
 #define ID_XSDI_FT_NEW                  613
 #define ID_XSDI_FT_SELALL               614
 #define ID_XSDI_FT_DESELALL             615
+#define ID_XSDI_FT_UNKNOWNONLY          616
 
 // "New file type" dialog (V0.9.0)
 #define ID_XSD_NEWFILETYPE              620     // "New File type" dlg (V0.9.0)

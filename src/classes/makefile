@@ -319,7 +319,7 @@ $(OUTPUTDIR)\xtrash.obj: \
 
 $(OUTPUTDIR)\xtrashobj.obj: \
             $(INC)\setup.h \
-            $(HLPINC)\except.h $(HLPINC)\winh.h $(HLPINC)\stringh.h \
+            $(HLPINC)\except.h $(HLPINC)\winh.h $(HLPINC)\stringh.h $(HLPINC)\tree.h \
             $(INC)\classes\xfobj.h \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \

@@ -1407,7 +1407,7 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
 
             if (pGlobalSettings->fTrashDelete)
             {
-                cmnMove2DefTrashCan(somSelf);
+                cmnDeleteIntoDefTrashCan(somSelf);
                 brc = TRUE;     // processed
             }
             else
@@ -1649,7 +1649,7 @@ SOM_Scope ULONG  SOMLINK xfobj_wpDelete(XFldObject *somSelf,
 
     /* if (pGlobalSettings->fTrashDelete)
     {
-        if (    cmnMove2DefTrashCan(somSelf))
+        if (    cmnDeleteIntoDefTrashCan(somSelf))
             return (OK_DELETE);
         else
             return (NO_DELETE);

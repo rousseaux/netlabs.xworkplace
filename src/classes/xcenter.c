@@ -387,6 +387,7 @@ SOM_Scope void  SOMLINK xctr_wpInitData(XCenter *somSelf)
     ctrpInitData(somSelf);
 
     _pvOpenView = NULL;
+    _tid = 0;
 
     _fShowingOpenViewMenu = FALSE;
 
@@ -625,6 +626,8 @@ SOM_Scope ULONG  SOMLINK xctr_wpQueryDefaultView(XCenter *somSelf)
  *      or an OPEN setup string, this will not be on thread 1.
  *
  *      We open an XCenter view here by calling ctrpCreateXCenterView.
+ *
+ *@@changed V0.9.9 (2000-02-06) [umoeller]: now redirecting settings to thread-1
  */
 
 SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,
@@ -670,11 +673,33 @@ SOM_Scope HWND  SOMLINK xctr_wpOpen(XCenter *somSelf,
         }
     }
     else
+    {
         // other view (probably settings):
-        hwndNewView = XCenter_parent_WPAbstract_wpOpen(somSelf,
-                                                       hwndCnr,
-                                                       ulView,
-                                                       param);
+        BOOL fRedirect = FALSE;
+
+        // make sure we don't open the other views on the XCenter
+        // view thread... this causes problems in various situations
+        if (_tid)
+        {
+            // XCenter is running:
+            PTIB ptib;
+            DosGetInfoBlocks(&ptib, NULL);
+            if (ptib->tib_ptib2->tib2_ultid == _tid)
+                // we're on the XCenter thread here:
+                fRedirect = TRUE;
+        }
+
+        if (fRedirect)
+            hwndNewView = (HWND)krnSendThread1ObjectMsg(T1M_OPENOBJECTFROMPTR,
+                                                        (MPARAM)somSelf,
+                                                        (MPARAM)ulView);
+        else
+            hwndNewView = XCenter_parent_WPAbstract_wpOpen(somSelf,
+                                                           hwndCnr,
+                                                           ulView,
+                                                           param);
+    }
+
     return (hwndNewView);
 }
 

@@ -56,9 +56,11 @@
  */
 
 #define INCL_DOSSEMAPHORES
+#define INCL_DOSERRORS
 
 #define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR
+#define INCL_WINMESSAGEMGR
 #define INCL_WINDIALOGS
 #define INCL_WININPUT           // WM_CHAR
 #define INCL_WINPOINTERS
@@ -85,6 +87,7 @@
 #include "helpers\prfh.h"               // INI file helper routines
 #include "helpers\stringh.h"            // string helper routines
 #include "helpers\winh.h"               // PM helper routines
+#include "helpers\tree.h"               // red-black binary trees
 
 // SOM headers which don't crash with prec. header files
 #include "xfwps.ih"
@@ -105,9 +108,392 @@
 #include <wpshadow.h>           // WPShadow
 
 /* ******************************************************************
- *                                                                  *
- *   Extended associations helper funcs                             *
- *                                                                  *
+ *
+ *   Additional declarations
+ *
+ ********************************************************************/
+
+/*
+ *@@ XWPTYPEWITHFILTERS:
+ *      structure representing one entry in "XWorkplace:FileFilters"
+ *      from OS2.INI. These are now cached for speed.
+ *
+ *      A linked list of these exists in G_llTypesWithFilters,
+ *      which is built on the first call to
+ *      ftypGetCachedTypesWithFilters.
+ *
+ *@@added V0.9.9 (2000-02-06) [umoeller]
+ */
+
+typedef struct _XWPTYPEWITHFILTERS
+{
+    PSZ         pszType;        // e.g. "C Code" (malloc copy)
+    PSZ         pszFilters;     // e.g. "*.c\0*.h\0\0" (malloc copy)
+} XWPTYPEWITHFILTERS, *PXWPTYPEWITHFILTERS;
+
+/*
+ *@@ WPSTYPEASSOCTREENODE:
+ *
+ *@@added V0.9.9 (2000-02-06) [umoeller]
+ */
+
+typedef struct _WPSTYPEASSOCTREENODE
+{
+    TREE        Tree;
+    PSZ         pszType;
+    PSZ         pszObjectHandles;
+    ULONG       cbObjectHandles;
+} WPSTYPEASSOCTREENODE, *PWPSTYPEASSOCTREENODE;
+
+/* ******************************************************************
+ *
+ *   Global variables
+ *
+ ********************************************************************/
+
+LINKLIST            G_llTypesWithFilters;
+                        // contains PXWPTYPEWITHFILTERS ptrs;
+                        // list is auto-free
+BOOL                G_fTypesWithFiltersValid = FALSE;
+                        // set to TRUE if G_llTypesWithFilters has been filled
+
+TREE                *G_WPSTypeAssocsTreeRoot = NULL;
+BOOL                G_fWPSTypesValid = FALSE;
+
+HMTX                G_hmtxAssocsCaches = NULLHANDLE;
+                        // mutex protecting all the caches
+
+/* ******************************************************************
+ *
+ *   Associations cache
+ *
+ ********************************************************************/
+
+/*
+ *@@ ftypLockCaches:
+ *      locks the association caches.
+ *
+ *@@added V0.9.9 (2000-02-06) [umoeller]
+ */
+
+BOOL ftypLockCaches(VOID)
+{
+    BOOL    brc = FALSE;
+    if (G_hmtxAssocsCaches == NULLHANDLE)
+    {
+        // first call:
+        brc = (DosCreateMutexSem(NULL,
+                                 &G_hmtxAssocsCaches,
+                                 0,
+                                 TRUE)     // lock!
+                     == NO_ERROR);
+        if (brc)
+        {
+            lstInit(&G_llTypesWithFilters,
+                    TRUE);         // auto-free
+            treeInit(&G_WPSTypeAssocsTreeRoot);
+        }
+    }
+    else
+        brc = (!WinRequestMutexSem(G_hmtxAssocsCaches, SEM_INDEFINITE_WAIT));
+
+    return (brc);
+}
+
+/*
+ *@@ ftypUnlockCaches:
+ *      unlocks the association caches.
+ *
+ *@@added V0.9.9 (2000-02-06) [umoeller]
+ */
+
+VOID ftypUnlockCaches(VOID)
+{
+    DosReleaseMutexSem(G_hmtxAssocsCaches);
+}
+
+/*
+ *@@ TraverseWPSTypes:
+ *      traversal function for treeTraverse (tree.c)
+ *      to add all tree nodes to a linked list so
+ *      we can delete all tree nodes quickly.
+ *
+ *@@added V0.9.9 (2000-02-06) [umoeller]
+ */
+
+void TraverseWPSTypes(TREE *t,          // in: PWPSTYPEASSOCTREENODE
+                      void *pUser)      // in: PLINKLIST to add to
+{
+    lstAppendItem((PLINKLIST)pUser,
+                  t);
+}
+
+/*
+ *@@ ftypInvalidateCaches:
+ *      invalidates all the global association caches
+ *      and frees all allocated memory.
+ *
+ *      This must ALWAYS be called when any of the data
+ *      in OS2.INI related to associations (WPS or XWP)
+ *      is changed. Otherwise XWP can't pick up the changes.
+ *
+ *      After the caches have been invalidated, the next
+ *      call to ftypGetCachedTypesWithFilters or ftypFindWPSType
+ *      will reinitialize the caches automatically.
+ *
+ *@@added V0.9.9 (2000-02-06) [umoeller]
+ */
+
+VOID ftypInvalidateCaches(VOID)
+{
+    if (ftypLockCaches())
+    {
+        LINKLIST llDelete;
+
+        // 1) clear the XWP types with filters
+        PLISTNODE pNode = lstQueryFirstNode(&G_llTypesWithFilters);
+        while (pNode)
+        {
+            PXWPTYPEWITHFILTERS pThis = (PXWPTYPEWITHFILTERS)pNode->pItemData;
+            if (pThis->pszType)
+            {
+                free(pThis->pszType);
+                pThis->pszType = NULL;
+            }
+            if (pThis->pszFilters)
+            {
+                free(pThis->pszFilters);
+                pThis->pszFilters = NULL;
+            }
+
+            pNode = pNode->pNext;
+        }
+
+        lstClear(&G_llTypesWithFilters);
+                    // this frees the XWPTYPEWITHFILTERS structs themselves
+
+        G_fTypesWithFiltersValid = FALSE;
+
+        // 2) clear the WPS types... this is a bit strange,
+        // we traverse the tree and thus add all tree nodes
+        // to a temporary linked list, which we can then
+        // delete. This way however we avoid rebalancing the
+        // tree for each node getting deleted.
+        lstInit(&llDelete, TRUE);
+        treeTraverse(G_WPSTypeAssocsTreeRoot,
+                     TraverseWPSTypes,
+                     &llDelete,
+                     1);
+
+        // now llDelete has all the PWPSTYPEASSOCTREENODE pointers
+        pNode = lstQueryFirstNode(&llDelete);
+        while (pNode)
+        {
+            PWPSTYPEASSOCTREENODE pWPSType = (PWPSTYPEASSOCTREENODE)pNode->pItemData;
+            if (pWPSType->pszType)
+            {
+                free(pWPSType->pszType);
+                pWPSType->pszType = NULL;
+            }
+            if (pWPSType->pszObjectHandles)
+            {
+                free(pWPSType->pszObjectHandles);
+                pWPSType->pszObjectHandles = NULL;
+            }
+            pNode = pNode->pNext;
+        }
+        // clear the list now.. this frees the PWPSTYPEASSOCTREENODE ptrs also
+        lstClear(&llDelete);
+
+        // reset the tree root
+        treeInit(&G_WPSTypeAssocsTreeRoot);
+        G_fWPSTypesValid = FALSE;
+
+        ftypUnlockCaches();
+    }
+}
+
+/*
+ *@@ ftypGetCachedTypesWithFilters:
+ *      returns the LINKLIST containing XWPTYPEWITHFILTERS pointers,
+ *      which is built internally if this hasn't been done yet.
+ *
+ *      This is new with V0.9.9 to speed up getting the filters
+ *      for the XWP file types so we don't have to retrieve these
+ *      from OS2.INI all the time (for each single data file which
+ *      is awoken during folder population).
+ *
+ *      Preconditions:
+ *
+ *      -- The caller must lock the caches before calling.
+ *
+ *@@added V0.9.9 (2000-02-06) [umoeller]
+ */
+
+PLINKLIST ftypGetCachedTypesWithFilters(VOID)
+{
+    if (!G_fTypesWithFiltersValid)
+    {
+        // caches have been cleared, or first call:
+        // build the list in the global variable from OS2.INI...
+
+        PSZ     pszTypesWithFiltersList = prfhQueryKeysForApp(HINI_USER,
+                                                              INIAPP_XWPFILEFILTERS);
+                                                                // "XWorkplace:FileFilters"
+        if (pszTypesWithFiltersList)
+        {
+            PSZ pTypeWithFilterThis = pszTypesWithFiltersList;
+
+            while (*pTypeWithFilterThis != 0)
+            {
+                // pFilterThis has the current type now
+                // (e.g. "C Code");
+                // get filters for that (e.g. "*.c");
+                //  this is another list of null-terminated strings
+                ULONG cbFiltersForTypeList = 0;
+                PSZ pszFiltersForTypeList = prfhQueryProfileData(HINI_USER,
+                                                                 INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
+                                                                 pTypeWithFilterThis,
+                                                                 &cbFiltersForTypeList);
+                        // this would be e.g. "*.c" now
+                if (pszFiltersForTypeList)
+                {
+                    PXWPTYPEWITHFILTERS pNew = malloc(sizeof(XWPTYPEWITHFILTERS));
+                    if (pNew)
+                    {
+                        pNew->pszType = strdup(pTypeWithFilterThis);
+                        pNew->pszFilters = pszFiltersForTypeList;
+                                        // no copy, we have malloc() already
+
+                        lstAppendItem(&G_llTypesWithFilters, pNew);
+                    }
+                    else
+                        // malloc failed:
+                        break;
+                }
+
+                pTypeWithFilterThis += strlen(pTypeWithFilterThis) + 1;   // next type/filter
+            } // end while (*pTypeWithFilterThis != 0)
+
+            free(pszTypesWithFiltersList);
+                        // we created copies of each string here
+
+            G_fTypesWithFiltersValid = TRUE;
+        }
+    }
+
+    return (&G_llTypesWithFilters);
+}
+
+/*
+ *@@ CompareWPSTypes:
+ *      tree node comparison func (helpers\tree.c).
+ *
+ *@@added V0.9.9 (2000-02-06) [umoeller]
+ */
+
+int CompareWPSTypes(TREE *t1, TREE *t2)
+{
+    int i = strcmp(((PWPSTYPEASSOCTREENODE)t1)->pszType,
+                   ((PWPSTYPEASSOCTREENODE)t2)->pszType);
+    if (i < 0) return -1;
+    if (i > 0) return +1;
+    return (0);
+}
+
+/*
+ *@@ CompareWPSTypeData:
+ *      tree node comparison func (helpers\tree.c).
+ *
+ *@@added V0.9.9 (2000-02-06) [umoeller]
+ */
+
+int CompareWPSTypeData(TREE *t1, void *pData)
+{
+    int i = strcmp(((PWPSTYPEASSOCTREENODE)t1)->pszType,
+                   (const char*)pData);
+    if (i < 0) return -1;
+    if (i > 0) return +1;
+    return (0);
+}
+
+/*
+ *@@ ftypFindWPSType:
+ *      returns the PWPSTYPEASSOCTREENODE containing the
+ *      WPS association objects for the specified type.
+ *
+ *      This is retrieved from the internal cache, which
+ *      is built if necessary.
+ *
+ *      Preconditions:
+ *
+ *      -- The caller must lock the caches before calling.
+ *
+ *@@added V0.9.9 (2000-02-06) [umoeller]
+ */
+
+PWPSTYPEASSOCTREENODE ftypFindWPSType(const char *pcszType)
+{
+    PWPSTYPEASSOCTREENODE pWPSType = NULL;
+
+    if (!G_fWPSTypesValid)
+    {
+        // create a copy of the data from OS2.INI... this
+        // is much faster than using the Prf* functions all
+        // the time
+        PSZ     pszAssocData = prfhQueryKeysForApp(HINI_USER,
+                                                   WPINIAPP_ASSOCTYPE); // "PMWP_ASSOC_TYPE"
+        if (pszAssocData)
+        {
+            PSZ pTypeThis = pszAssocData;
+            while (*pTypeThis)
+            {
+                PWPSTYPEASSOCTREENODE pNewNode = malloc(sizeof(WPSTYPEASSOCTREENODE));
+                if (pNewNode)
+                {
+                    pNewNode->pszType = strdup(pTypeThis);
+                    pNewNode->pszObjectHandles = prfhQueryProfileData(HINI_USER,
+                                                                      WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                                                                      pTypeThis,
+                                                                      &pNewNode->cbObjectHandles);
+
+                    _Pmpf((__FUNCTION__ ": inserting type %s, %d bytes data",
+                                pTypeThis, pNewNode->cbObjectHandles));
+
+                    // insert into binary tree
+                    treeInsertNode(&G_WPSTypeAssocsTreeRoot,
+                                   (TREE*)pNewNode,
+                                   CompareWPSTypes,
+                                   FALSE);
+                }
+                else
+                    break;
+
+                pTypeThis += strlen(pTypeThis) + 1;   // next type
+            }
+
+            free(pszAssocData);
+
+            G_fWPSTypesValid = TRUE;
+        }
+    }
+
+    if (G_fWPSTypesValid)
+    {
+        _Pmpf((__FUNCTION__ ": looking for %s now...", pcszType));
+        pWPSType = treeFindEQData(&G_WPSTypeAssocsTreeRoot,
+                                  (PVOID)pcszType,
+                                  CompareWPSTypeData);
+        _Pmpf(("    got 0x%lX", pWPSType));
+    }
+
+    return (pWPSType);
+}
+
+/* ******************************************************************
+ *
+ *   Extended associations helper funcs
+ *
  ********************************************************************/
 
 /*
@@ -254,35 +640,22 @@ ULONG AppendTypesForFile(const char *pcszObjectTitle,
     // loop thru all extended file types which have
     // filters assigned to them to check whether the
     // filter matches the object title
-    PSZ     pszTypesWithFiltersList = prfhQueryKeysForApp(HINI_USER,
-                                                          INIAPP_XWPFILEFILTERS);
-                                                            // "XWorkplace:FileFilters"
-    if (pszTypesWithFiltersList)
-    {
-        PSZ pTypeWithFilterThis = pszTypesWithFiltersList;
 
-        while (*pTypeWithFilterThis != 0)
+    if (ftypLockCaches())
+    {
+        PLINKLIST pllTypesWithFilters = ftypGetCachedTypesWithFilters();
+
+        if (pllTypesWithFilters)
         {
-            // pFilterThis has the current type now
-            // (e.g. "C Code");
-            // get filters for that (e.g. "*.c");
-            //  this is another list of null-terminated strings
-            ULONG cbFiltersForTypeList = 0;
-            PSZ pszFiltersForTypeList = prfhQueryProfileData(HINI_USER,
-                                                             INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
-                                                             pTypeWithFilterThis,
-                                                             &cbFiltersForTypeList);
-                    // this would be e.g. "*.c" now
-            if (pszFiltersForTypeList)
+            PLISTNODE pNode = lstQueryFirstNode(pllTypesWithFilters);
+            while (pNode)
             {
+                PXWPTYPEWITHFILTERS pTypeWithFilters = (PXWPTYPEWITHFILTERS)pNode->pItemData;
+
                 // second loop: thru all filters for this file type
-                PSZ pFilterThis = pszFiltersForTypeList;
+                PSZ pFilterThis = pTypeWithFilters->pszFilters;
                 while (*pFilterThis != 0)
                 {
-
-                    // _Pmpf(("  AppendTypesForFile: %s against %s",
-                       //      pFilterThis, pszObjectTitle));
-
                     // check if this matches the data file name
                     if (strhMatchOS2(pFilterThis, pcszObjectTitle))
                     {
@@ -292,12 +665,7 @@ ULONG AppendTypesForFile(const char *pcszObjectTitle,
                         // --  pTypeFilterThis e.g. "C Code"
                         // store the type (not the filter) in the output list
                         AppendSingleTypeUnique(pllTypes,
-                                               strdup(pTypeWithFilterThis));
-
-                        #ifdef DEBUG_ASSOCS
-                            _Pmpf(("  AppendTypesForFile: found %s for %s",
-                                pTypeWithFilterThis, pszObjectTitle));
-                        #endif
+                                               strdup(pTypeWithFilters->pszType));
 
                         ulrc++;     // found something
 
@@ -305,19 +673,14 @@ ULONG AppendTypesForFile(const char *pcszObjectTitle,
                     }
 
                     pFilterThis += strlen(pFilterThis) + 1;   // next type/filter
-                    if (pFilterThis >= pszFiltersForTypeList + cbFiltersForTypeList)
-                        break;      // no more filters left
                 } // end while (*pFilterThis)
 
-                free (pszFiltersForTypeList);
+                pNode = pNode->pNext;
             }
+        }
 
-            pTypeWithFilterThis += strlen(pTypeWithFilterThis) + 1;   // next type/filter
-        } // end while (*pTypeWithFilterThis != 0)
-
-        free(pszTypesWithFiltersList);
+        ftypUnlockCaches();
     }
-
     return (ulrc);
 }
 
@@ -347,88 +710,199 @@ ULONG ftypListAssocsForType(PSZ pszType0,         // in: file type (e.g. "C Code
                                                 // objects to append to
 {
     ULONG   ulrc = 0;
-    ULONG   cbAssocData = 0;
 
-    PSZ     pszType2 = pszType0,
-            pszParentForType = 0;
-
-    // outer loop for climbing up the file type parents
-    do
+    if (ftypLockCaches())
     {
-        // get associations from WPS INI data
-        PSZ     pszAssocData = prfhQueryProfileData(HINI_USER,
-                                                    WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
-                                                    pszType2,
-                                                    &cbAssocData);
+        ULONG   cbAssocData = 0;
 
-        #ifdef DEBUG_ASSOCS
-            _Pmpf(("      ftypListAssocsForType: got %s for type %s", pszAssocData, pszType2));
-        #endif
+        PSZ     pszType2 = pszType0,
+                pszParentForType = 0;
 
-        if (pszAssocData)
+        // outer loop for climbing up the file type parents
+        do
         {
-            // pszAssocData now has the handles of the associated
-            // objects (as decimal strings, which we'll decode now)
-            PSZ     pAssoc = pszAssocData;
-            if (pAssoc)
+            // get associations from WPS INI data
+            PWPSTYPEASSOCTREENODE pWPSType = ftypFindWPSType(pszType2);
+
+            _Pmpf((__FUNCTION__ ": got %d bytes for type %s",
+                    (pWPSType) ? pWPSType->cbObjectHandles : 0,
+                    pszType2));
+
+            if (pWPSType)
             {
-                HOBJECT hobjAssoc;
-                WPObject *pobjAssoc;
-
-                // now parse the handles string
-                while (*pAssoc)
+                // pWPSType->pszObjectHandles now has the handles of the associated
+                // objects (as decimal strings, which we'll decode now)
+                PSZ     pAssoc = pWPSType->pszObjectHandles;
+                if (pAssoc)
                 {
-                    sscanf(pAssoc, "%d", &hobjAssoc);
-                    pobjAssoc = _wpclsQueryObject(_WPObject, hobjAssoc);
-                    if (pobjAssoc)
-                    {
-                        lstAppendItem(pllAssocs, pobjAssoc);
-                        ulrc++;
+                    HOBJECT hobjAssoc;
+                    WPObject *pobjAssoc;
 
-                        // go for next object handle (after the 0 byte)
-                        pAssoc += strlen(pAssoc) + 1;
-                        if (pAssoc >= pszAssocData + cbAssocData)
+                    // now parse the handles string
+                    while (*pAssoc)
+                    {
+                        hobjAssoc = atoi(pAssoc);
+                        pobjAssoc = _wpclsQueryObject(_WPObject, hobjAssoc);
+                        if (pobjAssoc)
+                        {
+                            lstAppendItem(pllAssocs, pobjAssoc);
+                            ulrc++;
+
+                            // go for next object handle (after the 0 byte)
+                            pAssoc += strlen(pAssoc) + 1;
+                            if (pAssoc >= pWPSType->pszObjectHandles + pWPSType->cbObjectHandles)
+                                break; // while (*pAssoc)
+                        }
+                        else
                             break; // while (*pAssoc)
-                    }
-                    else
-                        break; // while (*pAssoc)
-                } // end while (*pAssoc)
+                    } // end while (*pAssoc)
+                }
+
+                // free(pszAssocData);
             }
 
-            free(pszAssocData);
-        }
+            // get parent type
+            {
+                PSZ     psz2Free = 0;
+                if (pszParentForType)
+                    psz2Free = pszParentForType;
+                pszParentForType = prfhQueryProfileData(HINI_USER,
+                                                        INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
+                                                        pszType2,
+                                                        NULL);
+                #ifdef DEBUG_ASSOCS
+                    _Pmpf(("        Got %s as parent for %s", pszParentForType, pszType2));
+                #endif
 
-        // get parent type
-        {
-            PSZ     psz2Free = 0;
-            if (pszParentForType)
-                psz2Free = pszParentForType;
-            pszParentForType = prfhQueryProfileData(HINI_USER,
-                                                    INIAPP_XWPFILETYPES,
-                                                    pszType2,
-                                                    NULL);
-            #ifdef DEBUG_ASSOCS
-                _Pmpf(("        Got %s as parent for %s", pszParentForType, pszType2));
-            #endif
+                if (psz2Free)
+                    free(psz2Free);     // from last loop
+                if (pszParentForType)
+                    // parent found: use that one
+                    pszType2 = pszParentForType;
+                else
+                    break;
+            }
 
-            if (psz2Free)
-                free(psz2Free);     // from last loop
-            if (pszParentForType)
-                // parent found: use that one
-                pszType2 = pszParentForType;
-            else
-                break;
-        }
+        } while (TRUE);
 
-    } while (TRUE);
+        ftypUnlockCaches();
+    }
 
     return (ulrc);
 }
 
+/*
+ *@@ ftypRenameFileType:
+ *      renames a file type and updates all associated
+ *      INI entries.
+ *
+ *      This returns:
+ *
+ *      -- ERROR_FILE_NOT_FOUND: pcszOld is not a valid file type.
+ *
+ *      -- ERROR_FILE_EXISTS: pcszNew is already occupied.
+ *
+ *@@added V0.9.9 (2000-02-06) [umoeller]
+ */
+
+APIRET ftypRenameFileType(const char *pcszOld,      // in: existing file type
+                          const char *pcszNew)      // in: new name for pcszOld
+{
+    APIRET arc = FALSE;
+
+    // check WPS file types... this better exist, or we'll stop
+    // right away
+    PWPSTYPEASSOCTREENODE pWPSType = ftypFindWPSType(pcszOld);
+    if (!pWPSType)
+        arc = ERROR_FILE_NOT_FOUND;
+    else
+    {
+        // pcszNew must not be used yet.
+        if (ftypFindWPSType(pcszNew))
+            arc = ERROR_FILE_EXISTS;
+        else
+        {
+            // OK... first of all, we must write a new entry
+            // into "PMWP_ASSOC_TYPE" with the old handles.
+            // There's no such thing as a "rename INI entry",
+            // so we can only write a new one and delete the old
+            // one.
+
+            if (!PrfWriteProfileData(HINI_USER,
+                                     (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                                     (PSZ)pcszNew,
+                                     pWPSType->pszObjectHandles,
+                                     pWPSType->cbObjectHandles))
+                arc = ERROR_INVALID_DATA;
+            else
+            {
+                PSZ pszXWPParentTypes;
+                // OK so far: delete the old entry
+                PrfWriteProfileData(HINI_USER,
+                                    (PSZ)WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                                    (PSZ)pcszOld,
+                                    NULL,
+                                    0);
+
+                // now update the the XWP entries, if any exist
+
+                // 1) associations linked to this file type:
+                prfhRenameKey(HINI_USER,
+                              INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
+                              pcszOld,
+                              NULL,         // same app
+                              pcszNew);
+                // 2) parent types for this:
+                prfhRenameKey(HINI_USER,
+                              INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
+                              pcszOld,
+                              NULL,         // same app
+                              pcszNew);
+
+                // 3) now... go thru ALL of "XWorkplace:FileTypes"
+                // and check if any of the types in there has specified
+                // pcszOld as its parent type. If so, update that entry.
+                pszXWPParentTypes = prfhQueryKeysForApp(HINI_USER,
+                                                     INIAPP_XWPFILETYPES); // "XWorkplace:FileTypes"
+                if (pszXWPParentTypes)
+                {
+                    PSZ pParentThis = pszXWPParentTypes;
+                    while (*pParentThis)
+                    {
+                        PSZ pszThisParent = prfhQueryProfileData(HINI_USER,
+                                                                 INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
+                                                                 pParentThis,
+                                                                 NULL);
+                        if (pszThisParent)
+                        {
+                            if (!strcmp(pszThisParent, pcszOld))
+                                // replace this entry
+                                PrfWriteProfileString(HINI_USER,
+                                                      (PSZ)INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
+                                                      pParentThis,
+                                                      (PSZ)pcszNew);
+
+                            free(pszThisParent);
+                        }
+                        pParentThis += strlen(pParentThis) + 1;
+                    }
+
+                    free(pszXWPParentTypes);
+                }
+            }
+
+        }
+
+        ftypInvalidateCaches();
+    }
+
+    return (arc);
+}
+
 /* ******************************************************************
- *                                                                  *
- *   XFldDataFile extended associations                             *
- *                                                                  *
+ *
+ *   XFldDataFile extended associations
+ *
  ********************************************************************/
 
 /*
@@ -478,8 +952,6 @@ PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
                               BOOL fUsePlainTextAsDefault)
 {
     PLINKLIST   pllAssocs = NULL;
-    // ULONG       cAssocObjects = 0;
-    // XFldDataFileData *somThis = XFldDataFileGetData(somSelf);
 
     // create list of type strings (to be freed)
     PLINKLIST   pllTypes = lstCreate(TRUE);       // free items
@@ -491,9 +963,6 @@ PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
         // assigned explicitly
         PSZ pszTypes = _wpQueryType(somSelf);
 
-        #ifdef DEBUG_ASSOCS
-            _Pmpf(("  Entering ftypQueryAssociatedProgram, type: %s", pszTypes));
-        #endif
         if (pszTypes)
         {
             // yes, explicit type(s):
@@ -506,10 +975,6 @@ PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
         // object file name
         cTypes += AppendTypesForFile(_wpQueryTitle(somSelf),
                                      pllTypes);
-
-        #ifdef DEBUG_ASSOCS
-            _Pmpf(("    ftypQueryAssociatedProgram: got %d matching types", cTypes));
-        #endif
 
         if ((cTypes == 0) && (fUsePlainTextAsDefault))
         {
@@ -800,15 +1265,18 @@ BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf, // in: data file in ques
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XFldWPS notebook callbacks (notebook.c) for "File Types" page  *
- *                                                                  *
+ *
+ *   XFldWPS notebook callbacks (notebook.c) for "File Types" page
+ *
  ********************************************************************/
 
 /*
  *  See ftypFileTypesInitPage for an introduction
  *  how all this crap works. This is complex.
  */
+
+// forward decl here
+typedef struct _FILETYPELISTITEM *PFILETYPELISTITEM;
 
 /*
  * FILETYPERECORD:
@@ -818,7 +1286,8 @@ BOOL ftypModifyDataFileOpenSubmenu(WPDataFile *somSelf, // in: data file in ques
 
 typedef struct _FILETYPERECORD
 {
-    RECORDCORE     recc;
+    RECORDCORE          recc;
+    PFILETYPELISTITEM   pliFileType;        // added V0.9.9 (2000-02-06) [umoeller]
 } FILETYPERECORD, *PFILETYPERECORD;
 
 /*
@@ -833,7 +1302,7 @@ typedef struct _FILETYPELISTITEM
     PSZ                 pszFileType;        // copy of file type in INI (malloc)
     BOOL                fProcessed;
     BOOL                fCircular;          // security; prevent circular references
-} FILETYPELISTITEM, *PFILETYPELISTITEM;
+} FILETYPELISTITEM;
 
 /*
  * ASSOCRECORD:
@@ -904,6 +1373,9 @@ typedef struct _FILETYPESPAGEDATA
     // record core after which item is to be inserted
     PRECORDCORE preccAfter;
 
+    // rename of file types:
+    PSZ     pszFileTypeOld;         // NULL until a file type was actually renamed
+
 } FILETYPESPAGEDATA, *PFILETYPESPAGEDATA;
 
 // define a new rendering mechanism, which only
@@ -932,17 +1404,21 @@ PFILETYPERECORD AddFileType2Cnr(HWND hwndCnr,           // in: cnr to insert int
         = (PFILETYPERECORD)cnrhAllocRecords(hwndCnr, sizeof(FILETYPERECORD), 1);
     // recc attributes
     ULONG           usAttrs = CRA_COLLAPSED
-                               | CRA_RECORDREADONLY
+                               // | CRA_RECORDREADONLY V0.9.9 (2000-02-06) [umoeller]
                                | CRA_DROPONABLE;      // records can be dropped
 
     if (preccNew)
     {
-        // insert the record (helpers/winh.c)
+        // store reverse linkage V0.9.9 (2000-02-06) [umoeller]
+        preccNew->pliFileType = pliAssoc;
+        // insert the record
         cnrhInsertRecords(hwndCnr,
-                        (PRECORDCORE)preccParent,
-                        (PRECORDCORE)preccNew,
-                        TRUE, // invalidate
-                        pliAssoc->pszFileType, usAttrs, 1);
+                          (PRECORDCORE)preccParent,
+                          (PRECORDCORE)preccNew,
+                          TRUE, // invalidate
+                          pliAssoc->pszFileType,
+                          usAttrs,
+                          1);
     }
 
     pliAssoc->precc = preccNew;
@@ -968,9 +1444,6 @@ PFILETYPERECORD AddFileTypeAndAllParents(PFILETYPESPAGEDATA pftpd,
                                                INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
                                                pszKey,
                                                NULL);
-
-    /* if (winhYesNoBox(pszKey, "Continue?") != MBID_YES)
-        return (NULL); */
 
     if (pszParentForKey)
     {
@@ -998,12 +1471,12 @@ PFILETYPERECORD AddFileTypeAndAllParents(PFILETYPESPAGEDATA pftpd,
             if (pliAssoc->fProcessed == FALSE)
             {
                 if (!pliAssoc->fCircular)
-                // add record core, which will be stored in
-                // pliAssoc->pftrecc
-                pftreccReturn = AddFileType2Cnr(pftpd->hwndTypesCnr,
-                                                pftreccParent,
-                                                    // parent record; this might be NULL
-                                                pliAssoc);
+                    // add record core, which will be stored in
+                    // pliAssoc->pftrecc
+                    pftreccReturn = AddFileType2Cnr(pftpd->hwndTypesCnr,
+                                                    pftreccParent,
+                                                        // parent record; this might be NULL
+                                                    pliAssoc);
                 pliAssoc->fCircular = TRUE;
             }
             else
@@ -1019,6 +1492,7 @@ PFILETYPERECORD AddFileTypeAndAllParents(PFILETYPESPAGEDATA pftpd,
     }
 
     if (pAssocNode == NULL)
+    {
         // no file type found which corresponds
         // to the hierarchy INI item: delete it,
         // since it has no further meaning
@@ -1026,27 +1500,13 @@ PFILETYPERECORD AddFileTypeAndAllParents(PFILETYPESPAGEDATA pftpd,
                               (PSZ)INIAPP_XWPFILETYPES,    // "XWorkplace:FileTypes"
                               pszKey,
                               NULL);  // delete key
+        ftypInvalidateCaches();
+    }
 
     // return the record core which we created;
     // if this is a recursive call, this will
     // be used as a parent by the parent call
     return (pftreccReturn);
-
-    /*
-        if ((preccMove == NULL) || (preccNewParent == NULL))
-            // pszKey has no corresponding file type:
-            // delete this key, since it has no meaning
-        else
-            cnrhMoveTree(hwndCnr,
-                            // record to move
-                            preccMove,
-                            // new parent
-                            preccNewParent,
-                            // sort function (cnrsort.c)
-                            (PFNCNRSORT)fnCompareName);
-
-
-    } */
 }
 
 /*
@@ -1181,6 +1641,7 @@ BOOL WriteAssocs2INI(PSZ  pszProfileKey, // in: either "PMWP_ASSOC_TYPE" or "PMW
                                       pszFileType,        // from cnr
                                       szAssocs,
                                       cbAssocs);
+            ftypInvalidateCaches();
         }
     }
 
@@ -1325,7 +1786,7 @@ ULONG WriteXWPFilters2INI(PFILETYPESPAGEDATA pftpd)
 
     if (pftpd->pftreccSelected)
     {
-        PSZ pszFileType = pftpd->pftreccSelected->recc.pszIcon;
+        PSZ     pszFileType = pftpd->pftreccSelected->recc.pszIcon;
         CHAR    szFilters[2000] = "";   // should suffice
         ULONG   cbFilters = 0;
         PRECORDCORE preccFilter = NULL;
@@ -1360,7 +1821,7 @@ ULONG WriteXWPFilters2INI(PFILETYPESPAGEDATA pftpd)
                                 ? szFilters
                                 : NULL,     // no items found: delete key
                             cbFilters);
-
+        ftypInvalidateCaches();
     }
 
     return (ulrc);
@@ -1387,9 +1848,6 @@ VOID UpdateFiltersCnr(PFILETYPESPAGEDATA pftpd)
     // get text of selected record core
     PSZ pszFileType = pftpd->pftreccSelected->recc.pszIcon;
     // pszFileType now has the selected file type
-
-    // BOOL fEnableRecords = TRUE;
-        // this will be set to FALSE for subsequent loops
 
     // get the XWorkplace-defined filters for this file type
     ULONG cbFiltersData;
@@ -1432,6 +1890,7 @@ VOID UpdateFiltersCnr(PFILETYPESPAGEDATA pftpd)
 
 /*
  *@@ CreateFileType:
+ *      creates a new file type.
  *
  *      Returns FALSE if an error occured, e.g. if
  *      the file type already existed.
@@ -1493,6 +1952,8 @@ BOOL CreateFileType(PFILETYPESPAGEDATA pftpd,
                 brc = (lstAppendItem(pftpd->pllFileTypes, pliAssoc) != NULL);
             }
         }
+
+        ftypInvalidateCaches();
     }
 
     return (brc);
@@ -1668,10 +2129,6 @@ VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         if (pcnbp->pUser == NULL)
         {
             PFILETYPESPAGEDATA pftpd;
-            /* SWP     swpAssocListBox,
-                    swpUpButton; */
-            // PPRESPARAMS pPresParams;
-            // LONG    lColor;
 
             // first call: create FILETYPESPAGEDATA
             // structure;
@@ -1696,7 +2153,7 @@ VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             pftpd->hwndFiltersCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_FT_FILTERSCNR);
             pftpd->hwndAssocsCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_FT_ASSOCSCNR);
 
-            // setup file types container
+            // set up file types container
             BEGIN_CNRINFO()
             {
                 cnrhSetView(CV_TREE | CA_TREELINE | CV_TEXT);
@@ -1704,14 +2161,14 @@ VOID ftypFileTypesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 cnrhSetSortFunc(fnCompareName);
             } END_CNRINFO(hwndCnr);
 
-            // setup filters container
+            // set up filters container
             BEGIN_CNRINFO()
             {
                 cnrhSetView(CV_TEXT | CV_FLOW);
                 cnrhSetSortFunc(fnCompareName);
             } END_CNRINFO(pftpd->hwndFiltersCnr);
 
-            // setup assocs container
+            // set up assocs container
             BEGIN_CNRINFO()
             {
                 cnrhSetView(CV_TEXT
@@ -2128,6 +2585,8 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                                               // NULL == root: delete key
                                                               : NULL);
                                             // aaarrgh
+
+                                    ftypInvalidateCaches();
                                 }
                             }
                             else
@@ -2259,8 +2718,105 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                         pcnbp->hwndDlgPage);    // owner
                 break; }
 
-            } // end switch (usNotifyCode)
+                case CN_REALLOCPSZ:
+                {
+                    // rename of file type has ended V0.9.9 (2000-02-06) [umoeller]:
+                    PCNREDITDATA pced = (PCNREDITDATA)ulExtra;
+                    if (pced->pRecord)
+                    {
+                        // this was for a record (should always be the case):
+                        // we must now allocate sufficient memory for the
+                        // new file type...
+                        // PCNREDITDATA->cbText has the memory that the cnr
+                        // needs to copy the string now.
+                        PFILETYPERECORD pRecord = (PFILETYPERECORD)pced->pRecord;
+                        if (    (pced->cbText)
+                             && (*(pced->ppszText))
+                             && (strlen(*(pced->ppszText)))
+                           )
+                        {
+                            pftpd->pszFileTypeOld = *(pced->ppszText);
+                                        // this was allocated using malloc()
+                            *(pced->ppszText) = malloc(pced->cbText);
 
+                            mrc = (MPARAM)TRUE;
+                        }
+                    }
+                break; }
+
+                case CN_ENDEDIT:
+                {
+                    PCNREDITDATA pced = (PCNREDITDATA)ulExtra;
+                    if (    (pced->pRecord)
+                         && (pftpd->pszFileTypeOld)
+                                // this is only != NULL if CN_REALLOCPSZ came in
+                                // before, i.e. direct edit was not cancelled
+                       )
+                    {
+                        PFILETYPERECORD pRecord = (PFILETYPERECORD)pced->pRecord;
+                        PSZ     pszSet;
+                        ULONG   ulMsg = 0;
+                        PSZ     pszMsg;
+                        APIRET arc = ftypRenameFileType(pftpd->pszFileTypeOld,
+                                                        *(pced->ppszText));
+
+                        switch (arc)
+                        {
+                            case ERROR_FILE_NOT_FOUND:
+                                pszMsg = pftpd->pszFileTypeOld;
+                                ulMsg = 209;
+                            break;
+
+                            case ERROR_FILE_EXISTS:
+                                pszMsg = *(pced->ppszText);
+                                ulMsg = 210;
+                            break;
+                        }
+
+                        if (ulMsg)
+                        {
+                            cmnMessageBoxMsgExt(pcnbp->hwndDlgPage,
+                                                104,        // error
+                                                &pszMsg,
+                                                1,
+                                                ulMsg,
+                                                MB_CANCEL);
+                            pszSet = pftpd->pszFileTypeOld;
+                        }
+                        else
+                            pszSet = *(pced->ppszText);
+
+                        // now take care of memory management here...
+                        // we must reset the text pointers in the FILETYPERECORD
+                        pRecord->recc.pszIcon =
+                        pRecord->recc.pszText =
+                        pRecord->recc.pszName =
+                        pRecord->recc.pszTree = pszSet;
+
+                        // also point the list item to the new text
+                        pRecord->pliFileType->pszFileType = pszSet;
+
+                        if (ulMsg)
+                        {
+                            // error:
+                            // invalidate the record
+                            WinSendMsg(pftpd->hwndTypesCnr,
+                                       CM_INVALIDATERECORD,
+                                       (MPARAM)&pRecord,
+                                       MPFROM2SHORT(1,
+                                                    CMA_ERASE | CMA_TEXTCHANGED));
+                            // and free new
+                            free(*(pced->ppszText));
+                        }
+                        else
+                            // no error: free old
+                            free(pftpd->pszFileTypeOld);
+
+                        pftpd->pszFileTypeOld = NULL;
+                    }
+                break; }
+
+            } // end switch (usNotifyCode)
 
         break; } // case ID_XSDI_FT_CONTAINER
 
@@ -2287,6 +2843,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                            (MPARAM)&pftrecc,
                            MPFROM2SHORT(1,  // only one record
                                     CMA_FREE | CMA_INVALIDATE));
+                ftypInvalidateCaches();
             }
         break; }
 
@@ -2856,6 +3413,106 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 }
 
 /*
+ *@@ FillListboxWithWPSFilters:
+ *      fills the "filters" listbox in the "import" dlg
+ *      with the wps filters.
+ *
+ *@@added V0.9.9 (2000-02-06) [umoeller]
+ */
+
+VOID FillListboxWithWPSFilters(HWND hwndDlg)
+{
+    HPOINTER hptrOld = winhSetWaitPointer();
+
+    if (ftypLockCaches())
+    {
+        HWND        hwndListBox = WinWindowFromID(hwndDlg,
+                                                  ID_XSDI_FT_FILTERLIST);
+
+        PSZ         pszAssocsList = prfhQueryKeysForApp(HINI_USER,
+                                                      WPINIAPP_ASSOCFILTER);
+                                                            // "PMWP_ASSOC_FILTER"
+
+        BOOL        fUnknownOnly = winhIsDlgItemChecked(hwndDlg,
+                                                        ID_XSDI_FT_UNKNOWNONLY);
+
+        PLINKLIST   pllXWPTypesWithFilters = ftypGetCachedTypesWithFilters();
+
+        WinSendMsg(hwndListBox,
+                   LM_DELETEALL,
+                   0, 0);
+
+        if (pszAssocsList)
+        {
+            PSZ         pAssocThis = pszAssocsList;
+            // add each WPS filter to the list box
+            while (*pAssocThis != 0)
+            {
+                BOOL    fInsert = TRUE;
+                ULONG   ulSize = 0;
+                // insert the list box item only if
+                // a) associations have been defined _and_
+                // b) the filter has not been assigned to a
+                //    file type yet
+
+                // a) check WPS filters
+                if (!PrfQueryProfileSize(HINI_USER,
+                                         (PSZ)WPINIAPP_ASSOCFILTER,  // "PMWP_ASSOC_FILTER"
+                                         pAssocThis,
+                                         &ulSize))
+                    fInsert = FALSE;
+                else if (ulSize < 2)
+                    // a length of 1 is the NULL byte == no assocs
+                    fInsert = FALSE;
+
+                if ((fInsert) && (fUnknownOnly))
+                {
+                    // b) now check XWorkplace filters
+                    // V0.9.9 (2000-02-06) [umoeller]
+                    PLISTNODE pNode = lstQueryFirstNode(pllXWPTypesWithFilters);
+                    while (pNode)
+                    {
+                        PXWPTYPEWITHFILTERS pTypeWithFilters
+                            = (PXWPTYPEWITHFILTERS)pNode->pItemData;
+
+                        // second loop: thru all filters for this file type
+                        PSZ pFilterThis = pTypeWithFilters->pszFilters;
+                        while (*pFilterThis != 0)
+                        {
+                            // check if this matches the data file name
+                            if (!strcmp(pFilterThis, pAssocThis))
+                            {
+                                fInsert = FALSE;
+                                break;
+                            }
+
+                            pFilterThis += strlen(pFilterThis) + 1;   // next type/filter
+                        } // end while (*pFilterThis)
+
+                        pNode = pNode->pNext;
+                    }
+                }
+
+                if (fInsert)
+                    WinInsertLboxItem(hwndListBox,
+                                      LIT_SORTASCENDING,
+                                      pAssocThis);
+
+                // go for next key
+                pAssocThis += strlen(pAssocThis)+1;
+            }
+
+            free(pszAssocsList);
+
+        } // end if (pszAssocsList)
+
+        ftypUnlockCaches();
+    }
+
+    WinSetPointer(HWND_DESKTOP, hptrOld);
+}
+
+/*
  * fnwpImportWPSFilters:
  *      dialog procedure for the "Import WPS Filters" dialog,
  *      which gets loaded upon ID_XSMI_FILEFILTER_IMPORTWPS from
@@ -2867,6 +3524,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.6 (2000-11-08) [umoeller]: fixed "Close" behavior
+ *@@changed V0.9.9 (2000-02-06) [umoeller]: setting proper fonts now
  */
 
 MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -2885,8 +3543,6 @@ MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
 
         case WM_INITDLG:
         {
-            HPOINTER hptrOld = winhSetWaitPointer();
-
             pftpd = (PFILETYPESPAGEDATA)mp2;
             WinSetWindowPtr(hwndDlg, QWL_USER, pftpd);
 
@@ -2896,10 +3552,12 @@ MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
             } END_CNRINFO(WinWindowFromID(hwndDlg,
                                           ID_XSDI_FT_ASSOCSCNR));
 
+            cmnSetControlsFont(hwndDlg,
+                               1,
+                               3000);
+
             if (pftpd)
             {
-                PSZ pszKeysList;
-
                 // 1) set the "Merge with" text to
                 //    the selected record core
 
@@ -2907,104 +3565,13 @@ MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                                   ID_XSDI_FT_TYPE,
                                   pftpd->pftreccSelected->recc.pszIcon);
 
-                /*
-                PSZ pszKeysList = prfhQueryKeysForApp(
-                                            HINI_USER,
-                                            WPINIAPP_ASSOCTYPE); // "PMWP_ASSOC_TYPE"
-
-                if (pszKeysList)
-                {
-                    PSZ         pKey = pszKeysList;
-                    HWND        hwndDropDown = WinWindowFromID(hwndDlg,
-                                                              ID_XSDI_FT_TYPE);
-                    // add each WPS file type to the drop-down box
-                    while (*pKey != 0)
-                    {
-                        WinInsertLboxItem(hwndDropDown,
-                                          LIT_SORTASCENDING,
-                                          pKey);
-
-                        // go for next key
-                        pKey += strlen(pKey)+1;
-                    }
-
-                    free(pszKeysList);
-
-                    // select the item in the drop-down box
-                    // which corresponds to the selected record
-                    // core on the notebook page
-                    if (pftpd->pftreccSelected)
-                    {
-                        SHORT sItem = (SHORT)WinSendMsg(hwndDropDown,
-                                                LM_SEARCHSTRING,
-                                                MPFROM2SHORT(LSS_CASESENSITIVE,
-                                                             LIT_FIRST),
-                                                // search string:
-                                                pftpd->pftreccSelected->recc.pszIcon);
-                        WinSendMsg(hwndDropDown,
-                                   LM_SELECTITEM,
-                                   (MPARAM)sItem,
-                                   (MPARAM)TRUE);    // select
-                    }
-
-                } // end if (pszKeysList)
-                */
-
                 // 2) fill the left list box with the
                 //    WPS-defined filters
-                pszKeysList = prfhQueryKeysForApp(HINI_USER,
-                                                  WPINIAPP_ASSOCFILTER);
-                                                        // "PMWP_ASSOC_FILTER"
-                if (pszKeysList)
-                {
-                    PSZ         pKey = pszKeysList;
-                    HWND        hwndListBox = WinWindowFromID(hwndDlg,
-                                                              ID_XSDI_FT_FILTERLIST);
-                    // add each WPS filter to the list box
-                    while (*pKey != 0)
-                    {
-                        BOOL    fInsert = TRUE;
-                        ULONG   ulSize = 0;
-                        // insert the list box item only if
-                        // a) associations have been defined _and_
-                        // b) the filter has not been assigned to a
-                        //    file type yet
-
-                        // a) check WPS filters
-                        if (!PrfQueryProfileSize(HINI_USER,
-                                            (PSZ)WPINIAPP_ASSOCFILTER,  // "PMWP_ASSOC_FILTER"
-                                            pKey,
-                                            &ulSize))
-                            fInsert = FALSE;
-                        else if (ulSize < 2)
-                            // a length of 1 is the NULL byte == no assocs
-                            fInsert = FALSE;
-                        else
-                            // b) now check XWorkplace filters
-                            if (PrfQueryProfileSize(HINI_USER,
-                                            (PSZ)INIAPP_XWPFILEFILTERS,  // "XWorkplace:FileFilters"
-                                            pKey,
-                                            &ulSize))
-                                if (ulSize > 1)
-                                    fInsert = FALSE;
-
-                        if (fInsert)
-                            WinInsertLboxItem(hwndListBox,
-                                              LIT_SORTASCENDING,
-                                              pKey);
-
-                        // go for next key
-                        pKey += strlen(pKey)+1;
-                    }
-
-                    free(pszKeysList);
-
-                } // end if (pszKeysList)
+                FillListboxWithWPSFilters(hwndDlg);
 
             } // end if (pftpd)
-            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
 
-            WinSetPointer(HWND_DESKTOP, hptrOld);
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
         break; }
 
         /*
@@ -3083,6 +3650,14 @@ MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                         WinSetPointer(HWND_DESKTOP, hptrOld);
                     }
                 break; }
+
+                case ID_XSDI_FT_UNKNOWNONLY:
+                    if (    (usNotifyCode == BN_CLICKED)
+                         || (usNotifyCode == BN_DBLCLICKED) // added V0.9.0
+                       )
+                        // refresh the filters listbox
+                        FillListboxWithWPSFilters(hwndDlg);
+                break;
             } // end switch (usItemID)
 
         break; } // case case WM_CONTROL

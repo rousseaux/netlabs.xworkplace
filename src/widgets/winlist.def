@@ -27,5 +27,5 @@ CODE              LOADONCALL
 EXPORTS
     WwgtInitModule      @1
     WwgtUnInitModule    @2
-
+    WwgtQueryVersion    @3
 

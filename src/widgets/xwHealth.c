@@ -70,21 +70,21 @@
 #include "setup.h"                      // code generation and debugging options
 
 // headers in /helpers
-#include "helpers\comctl.h"             // common controls (window procs)
-#include "helpers\dosh.h"               // Control Program helper routines
-#include "helpers\gpih.h"               // GPI helper routines
-#include "helpers\prfh.h"               // INI file helper routines;
+#include <helpers\comctl.h>             // common controls (window procs)
+#include <helpers\dosh.h>               // Control Program helper routines
+#include <helpers\gpih.h>               // GPI helper routines
+#include <helpers\prfh.h>               // INI file helper routines;
                                         // this include is required for some
                                         // of the structures in shared\center.h
-#include "helpers\stringh.h"            // string helper routines
-#include "helpers\timer.h"              // replacement PM timers
-#include "helpers\winh.h"               // PM helper routines
-#include "helpers\xstring.h"            // extended string helpers
+#include <helpers\stringh.h>            // string helper routines
+#include <helpers\timer.h>              // replacement PM timers
+#include <helpers\winh.h>               // PM helper routines
+#include <helpers\xstring.h>            // extended string helpers
 
 // XWorkplace implementation headers
-#include "dlgids.h"                     // all the IDs that are shared with NLS
-#include "shared\center.h"              // public XCenter interfaces
-#include "shared\common.h"              // the majestic XWorkplace include file
+#include <dlgids.h>                     // all the IDs that are shared with NLS
+#include <shared\center.h>              // public XCenter interfaces
+#include <shared\common.h>              // the majestic XWorkplace include file
 
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
@@ -94,9 +94,7 @@
  *
  ********************************************************************/
 
-#define MWGT_TEMPERATURES       1
-#define MWGT_FANSPEEDS          2
-#define MWGT_VOLTAGES           3
+#define MWGT_HEALTHMONITOR       1
 
 /* ******************************************************************
  *
@@ -116,25 +114,9 @@ static XCENTERWIDGETCLASS G_WidgetClasses[] =
 {
     {
         WNDCLASS_WIDGET_XWHEALTH,
-        MWGT_TEMPERATURES,
-        "Temperatures",
-        "Temperatures",
-        WGTF_UNIQUEPERXCENTER,
-        NULL
-    },
-    {
-        WNDCLASS_WIDGET_XWHEALTH,
-        MWGT_FANSPEEDS,
-        "Fan Speeds",
-        "Fan Speeds",
-        WGTF_UNIQUEPERXCENTER,
-        NULL
-    },
-    {
-        WNDCLASS_WIDGET_XWHEALTH,
-        MWGT_VOLTAGES,
-        "Voltages",
-        "Voltages",
+        MWGT_HEALTHMONITOR,
+        "Health Monitor",
+        "Health Monitor",
         WGTF_UNIQUEPERXCENTER,
         NULL
     },
@@ -233,8 +215,12 @@ RESOLVEFUNCTION G_StHealthImports[] =
 HMODULE hmStHealth = 0;
 
 /*
- * Load StHealth library and query function pointers
+ *@@loadStHealth:
+ *      load StHealth library and query function pointers.
+ *
+ *@@added V0.9.9 (2001-02-06) [smilcke]
  */
+
 ULONG loadStHealth(void)
 {
     ULONG rc = 0;
@@ -246,23 +232,44 @@ ULONG loadStHealth(void)
 
         rc = DosLoadModule(failMod, 500, "StHealth", &hmStHealth);
         if (rc == NO_ERROR)
-            for (ul = 0; ul < sizeof(G_StHealthImports) / sizeof(G_StHealthImports[0]); ul++)
+            for (ul = 0;
+                 ul < sizeof(G_StHealthImports) / sizeof(G_StHealthImports[0]);
+                 ul++)
+            {
                 if (DosQueryProcAddr(hmStHealth, 0, (PSZ) G_StHealthImports[ul].pcszFunctionName
                             ,G_StHealthImports[ul].ppFuncAddress) != NO_ERROR)
                 {
                     rc = 1;
                 }
+            }
+    }
+
+    if (rc != NO_ERROR)
+    {
+        if(hmStHealth)
+        {
+            DosFreeModule(hmStHealth);
+            hmStHealth=0;
+        }
     }
     return rc;
 }
 
 /*
- * Unload StHealth library
+ *@@unloadStHealth:
+ *      unload StHealth library.
+ *
+ *@@added V0.9.9 (2001-02-06) [smilcke]
  */
+
 ULONG unloadStHealth(void)
 {
     ULONG rc = 0;
-
+    if(hmStHealth)
+    {
+        rc = DosFreeModule(hmStHealth);
+        rc = 0;
+    }
     return rc;
 }
 
@@ -291,6 +298,7 @@ typedef struct _MONITORSETUP
     PSZ         pszFont;
             // if != NULL, non-default font (in "8.Helv" format);
             // this has been allocated using local malloc()!
+    PSZ         pszViewString;
 } MONITORSETUP, *PMONITORSETUP;
 
 /*
@@ -309,11 +317,6 @@ typedef struct _MONITORPRIVATE
             // the stack with each function call
 
     ULONG           ulType;
-                // one of the following:
-                // -- MWGT_DATE: date widget
-                // -- MWGT_TIME: time widget
-                // -- MWGT_SWAPPER: swap monitor widget
-                // -- MWGT_MEMORY: memory monitor widget;
                 // this is copied from the widget class on WM_CREATE
 
     ULONG           cxCurrent,
@@ -367,6 +370,8 @@ VOID MwgtFreeSetup(PMONITORSETUP pSetup)
  *
  *      NOTE: It is assumed that pSetup is zeroed
  *      out. We do not clean up previous data here.
+ *
+ *@@changed V0.9.9 (2001-02-06) [smilcke]: Added setup strings for health monitoring
  */
 
 VOID MwgtScanSetup(const char *pcszSetupString,
@@ -407,6 +412,19 @@ VOID MwgtScanSetup(const char *pcszSetupString,
         pctrFreeSetupValue(p);
     }
     // else: leave this field null
+
+    // Health view string
+    p = pctrScanSetupString(pcszSetupString,
+                            "HEALTHVSTR");
+    if (p)
+    {
+        pSetup->pszViewString = strdup(p);
+        pctrFreeSetupValue(p);
+    }
+    else
+    {
+        pSetup->pszViewString = "Temp:%T0/%T1/%T2 øC - Fan:%F0/%F1/%F2 RPM - Volt:%V0/%V1/%V2/%V3/%V4/%V5/%V6";
+    }
 }
 
 /*
@@ -416,15 +434,16 @@ VOID MwgtScanSetup(const char *pcszSetupString,
  *      string after use.
  *
  *@@added V0.9.7 (2000-12-04) [umoeller]
+ *@@changed V0.9.9 (2001-02-06) [smilcke]: Added setup strings for health monitoring
  */
 
 VOID MwgtSaveSetup(PXSTRING pstrSetup,  // out: setup string (is cleared first)
-                    PMONITORSETUP pSetup)
+                   PMONITORSETUP pSetup)
 {
-    CHAR szTemp[100];
+    CHAR szTemp[400];
     PSZ psz = 0;
 
-    pxstrInit(pstrSetup, 100);
+    pxstrInit(pstrSetup, 400);
     sprintf(szTemp, "BGNDCOL=%06lX;", pSetup->lcolBackground);
     pxstrcat(pstrSetup, szTemp, 0);
     sprintf(szTemp, "TEXTCOL=%06lX;", pSetup->lcolForeground);
@@ -434,6 +453,99 @@ VOID MwgtSaveSetup(PXSTRING pstrSetup,  // out: setup string (is cleared first)
         // non-default font:
         sprintf(szTemp, "FONT=%s;", pSetup->pszFont);
         pxstrcat(pstrSetup, szTemp, 0);
+    }
+
+    if(pSetup->pszViewString)
+    {
+        sprintf(szTemp,"HEALTHVSTR=Hallo;", pSetup->pszViewString);
+        pxstrcat(pstrSetup, szTemp, 0);
+    }
+}
+
+/*
+ *@@ buildHealthString:
+ *      composes a new string with health values.
+ *
+ *@@added V0.9.9 (2001-02-06) [smilcke]:
+ */
+
+void buildHealthString(PSZ szPaint,PSZ szViewString)
+{
+    if(szPaint && szViewString)
+    {
+        CHAR identifier;
+        CHAR stringValue[500];
+        unsigned int number;
+        double t[10];
+        int f[10];
+        double v[10];
+        int i,j;
+        szPaint[0]=(char)0;
+        for(i=0;i<10;i++)
+        {
+            t[i]=sthTemp(i,FALSE);
+            f[i]=sthFan(i,FALSE);
+            v[i]=sthVoltage(i,FALSE);
+        }
+
+        j=0;
+
+        for(i = 0;
+            i < strlen(szViewString);
+            i++)
+        {
+            if(szViewString[i]=='%')
+            {
+                if(strlen(szViewString) >= i+2)
+                {
+                    identifier=szViewString[i+1];
+                    number=szViewString[i+2]-'0';
+                    if (number > 9)
+                        number=9;
+                    switch(identifier)
+                    {
+                        case 'T':
+                            if(t[number]==STHEALTH_NOT_PRESENT_ERROR)
+                                strcat(szPaint,"[ERR]");
+                            else
+                            {
+                                sprintf(stringValue,"%.2f",t[number]);
+                                strcat(szPaint,stringValue);
+                            }
+                            i+=2;
+                        break;
+
+                        case 'V':
+                            if(v[number]==STHEALTH_NOT_PRESENT_ERROR)
+                                strcat(szPaint,"[ERR]");
+                            else
+                            {
+                                sprintf(stringValue,"%.2f",v[number]);
+                                strcat(szPaint,stringValue);
+                            }
+                            i+=2;
+                        break;
+
+                        case 'F':
+                            if(f[number]==STHEALTH_NOT_PRESENT_ERROR)
+                                strcat(szPaint,"[ERR]");
+                            else
+                            {
+                                sprintf(stringValue,"%d",f[number]);
+                                strcat(szPaint,stringValue);
+                            }
+                            i+=2;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                stringValue[0]=szViewString[i];
+                stringValue[1]=(char)0;
+                strcat(szPaint,stringValue);
+            }
+        }
     }
 }
 
@@ -492,14 +604,8 @@ MRESULT MwgtCreate(HWND hwnd,
     pWidget->pcszHelpLibrary = pcmnQueryHelpLibrary();
     switch (pPrivate->ulType)
     {
-        case MWGT_TEMPERATURES:
+        case MWGT_HEALTHMONITOR:
             pWidget->ulHelpPanelID = ID_XSH_WIDGET_CLOCK_MAIN;
-            break;
-        case MWGT_FANSPEEDS:
-            pWidget->ulHelpPanelID = ID_XSH_WIDGET_SWAP_MAIN;
-            break;
-        case MWGT_VOLTAGES:
-            pWidget->ulHelpPanelID = ID_XSH_WIDGET_MEMORY_MAIN;
             break;
     }
     // start update timer
@@ -532,25 +638,25 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
             {
                 switch (usNotifyCode)
                 {
-                        /*
-                         * XN_QUERYSIZE:
-                         *      XCenter wants to know our size.
-                         */
-                    case XN_QUERYSIZE:
-                        {
-                            PSIZEL pszl = (PSIZEL) mp2;
+                    /*
+                     * XN_QUERYSIZE:
+                     *      XCenter wants to know our size.
+                     */
 
-                            pszl->cx = pPrivate->cxCurrent;
-                            pszl->cy = pPrivate->cyCurrent;
-                            brc = TRUE;
-                            break;
-                        }
-                }               // switch
+                    case XN_QUERYSIZE:
+                    {
+                        PSIZEL pszl = (PSIZEL) mp2;
+
+                        pszl->cx = pPrivate->cxCurrent;
+                        pszl->cy = pPrivate->cyCurrent;
+                        brc = TRUE;
+                        break;
+                    }
+                }
 
             }
-        }                       // end if (pPrivate)
-
-    }                           // end if (pWidget)
+        }
+    } // end if (pWidget)
 
     return (brc);
 }
@@ -567,7 +673,7 @@ VOID MwgtPaint(HWND hwnd, PMONITORPRIVATE pPrivate, HPS hps, BOOL fDrawFrame)
 {
     RECTL rclWin;
     ULONG ulBorder = 1;
-    CHAR szPaint[400] = "";
+    CHAR szPaint[900] = "";
     CHAR szValue[200];
     ULONG ulPaintLen = 0;
     POINTL aptlText[TXTBOX_COUNT];
@@ -579,7 +685,7 @@ VOID MwgtPaint(HWND hwnd, PMONITORPRIVATE pPrivate, HPS hps, BOOL fDrawFrame)
     // country settings from XCenter globals
     // (what a pointer)
     PCOUNTRYSETTINGS pCountrySettings
-    = (PCOUNTRYSETTINGS) pPrivate->pWidget->pGlobals->pCountrySettings;
+        = (PCOUNTRYSETTINGS) pPrivate->pWidget->pGlobals->pCountrySettings;
 
     // now paint button frame
     WinQueryWindowRect(hwnd, &rclWin);
@@ -605,7 +711,9 @@ VOID MwgtPaint(HWND hwnd, PMONITORPRIVATE pPrivate, HPS hps, BOOL fDrawFrame)
         rclWin.xRight -= ulBorder;
         rclWin.yTop -= ulBorder;
     }
-// if(fDrawFrame)
+    // Because frame color can change frequently (wether there is an
+    // active event or not) we have to paint the background every time
+    // if(fDrawFrame)
     {
         // Get color from setup
         // Check, if there is an event for this source active
@@ -616,9 +724,25 @@ VOID MwgtPaint(HWND hwnd, PMONITORPRIVATE pPrivate, HPS hps, BOOL fDrawFrame)
             ULONG numEvents = 0;
 
             fltr.cbLen = sizeof(STHEALTH_EVT_FILTER_102);
-            fltr.source = pPrivate->ulType;
+            fltr.source = 1;
             fltr.sourceNumber = i;
             fltr.actionState = STHEALTH_EVT_STATE_ISACTIVE;
+            sthFilterEvents(hEvt, 10, &numEvents, STHEALTH_EVT_FILTER_LEVEL_102, &fltr);
+            if (numEvents)
+            {
+                // Active event found. Set color to red
+                lcol = 0x00ff0000;
+                break;
+            }
+            fltr.source = 2;
+            sthFilterEvents(hEvt, 10, &numEvents, STHEALTH_EVT_FILTER_LEVEL_102, &fltr);
+            if (numEvents)
+            {
+                // Active event found. Set color to red
+                lcol = 0x00ff0000;
+                break;
+            }
+            fltr.source = 3;
             sthFilterEvents(hEvt, 10, &numEvents, STHEALTH_EVT_FILTER_LEVEL_102, &fltr);
             if (numEvents)
             {
@@ -631,56 +755,8 @@ VOID MwgtPaint(HWND hwnd, PMONITORPRIVATE pPrivate, HPS hps, BOOL fDrawFrame)
     }
     switch (pPrivate->ulType)
     {
-        case MWGT_TEMPERATURES:
-            {
-                strcpy(szPaint, "T:");
-                for (i = 0; i < 10; i++)
-                {
-                    dvalue = sthTemp(i, FALSE);
-                    if (dvalue != STHEALTH_NOT_PRESENT_ERROR)
-                    {
-                        sprintf(szValue, "%.2f", dvalue);
-                        strcat(szPaint, szValue);
-                        strcat(szPaint, "/");
-                    }
-                }
-                szPaint[strlen(szPaint) - 1] = (char)0;
-                strcat(szPaint, " øC");
-            }
-            break;
-        case MWGT_FANSPEEDS:
-            {
-                strcpy(szPaint, "F:");
-                for (i = 0; i < 10; i++)
-                {
-                    ivalue = sthFan(i, FALSE);
-                    if (ivalue != STHEALTH_NOT_PRESENT_ERROR)
-                    {
-                        sprintf(szValue, "%d", ivalue);
-                        strcat(szPaint, szValue);
-                        strcat(szPaint, "/");
-                    }
-                }
-                szPaint[strlen(szPaint) - 1] = (char)0;
-                strcat(szPaint, " RPM");
-            }
-            break;
-        case MWGT_VOLTAGES:
-            {
-                strcpy(szPaint, "U:");
-                for (i = 0; i < 10; i++)
-                {
-                    dvalue = sthVoltage(i, FALSE);
-                    if (dvalue != STHEALTH_NOT_PRESENT_ERROR)
-                    {
-                        sprintf(szValue, "%.2f", dvalue);
-                        strcat(szPaint, szValue);
-                        strcat(szPaint, "/");
-                    }
-                }
-                szPaint[strlen(szPaint) - 1] = (char)0;
-                strcat(szPaint, " V");
-            }
+        case MWGT_HEALTHMONITOR:
+            buildHealthString(szPaint,pPrivate->Setup.pszViewString);
             break;
     }
     ulPaintLen = strlen(szPaint);
@@ -789,9 +865,7 @@ VOID MwgtButton1DblClick(HWND hwnd, PXCENTERWIDGET pWidget)
 
         switch (pPrivate->ulType)
         {
-            case MWGT_TEMPERATURES:
-            case MWGT_FANSPEEDS:
-            case MWGT_VOLTAGES:
+            case MWGT_HEALTHMONITOR:
                 break;
         }
         if (pcszID)
@@ -1018,10 +1092,11 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
  */
 
 ULONG EXPENTRY MwgtInitModule(HAB hab,  // XCenter's anchor block
-                               HMODULE hmodXFLDR,   // XFLDR.DLL module handle
-                               PXCENTERWIDGETCLASS * ppaClasses,
+                              HMODULE hmodPlugin, // module handle of the widget DLL
+                              HMODULE hmodXFLDR,   // XFLDR.DLL module handle
+                              PXCENTERWIDGETCLASS *ppaClasses,
                               PSZ pszErrorMsg)  // if 0 is returned, 500 bytes of error msg
- {
+{
     ULONG ulrc = 0;
     ULONG ul = 0;
     BOOL fImportsFailed = FALSE;
@@ -1031,22 +1106,24 @@ ULONG EXPENTRY MwgtInitModule(HAB hab,  // XCenter's anchor block
     // use that before resolving...)
     for (ul = 0; ul < sizeof(G_aImports) / sizeof(G_aImports[0]); ul++)
     {
-        if (DosQueryProcAddr(hmodXFLDR
-                             ,0 // ordinal, ignored
-                             ,(PSZ) G_aImports[ul].pcszFunctionName
-                             ,G_aImports[ul].ppFuncAddress) != NO_ERROR)
+        if (DosQueryProcAddr(hmodXFLDR,
+                             0, // ordinal, ignored
+                             (PSZ)G_aImports[ul].pcszFunctionName,
+                             G_aImports[ul].ppFuncAddress)
+            != NO_ERROR)
         {
             sprintf(pszErrorMsg, "Import %s failed.", G_aImports[ul].pcszFunctionName);
             fImportsFailed = TRUE;
             break;
         }
     }
-    if (!loadStHealth())
+
+    if (!fImportsFailed)
     {
-        sthRegisterDaemon(FALSE);
-        if (!sthDetectChip())
+        if (!loadStHealth())
         {
-            if (!fImportsFailed)
+            sthRegisterDaemon(FALSE);
+            if (!sthDetectChip())
             {
                 if (!WinRegisterClass(hab
                                       ,WNDCLASS_WIDGET_XWHEALTH
@@ -1063,16 +1140,13 @@ ULONG EXPENTRY MwgtInitModule(HAB hab,  // XCenter's anchor block
                     ulrc = sizeof(G_WidgetClasses) / sizeof(G_WidgetClasses[0]);
                 }
             }
+            else
+                strcpy(pszErrorMsg, "No compatible chip detected.");
         }
         else
-        {
-            strcpy(pszErrorMsg, "No compatible chip detected.");
-        }
+            strcpy(pszErrorMsg, "Unable to load StHealth.DLL.");
     }
-    else
-    {
-        strcpy(pszErrorMsg, "Unable to load StHealth.DLL.");
-    }
+
     return (ulrc);
 }
 
@@ -1096,3 +1170,31 @@ VOID EXPENTRY MwgtUnInitModule(VOID)
         sthUnregisterDaemon();
     unloadStHealth();
 }
+
+/*
+ *@@ MwgtQueryVersion:
+ *      this new export with ordinal 3 can return the
+ *      XWorkplace version number which is required
+ *      for this widget to run. For example, if this
+ *      returns 0.9.10, this widget will not run on
+ *      earlier XWorkplace versions.
+ *
+ *      NOTE: This export was mainly added because the
+ *      prototype for the "Init" export was changed
+ *      with V0.9.9. If this returns 0.9.9, it is
+ *      assumed that the INIT export understands
+ *      the new FNWGTINITMODULE_099 format (see center.h).
+ *
+ *@@added V0.9.9 (2000-02-06) [umoeller]
+ */
+
+VOID EXPENTRY MwgtQueryVersion(PULONG pulMajor,
+                               PULONG pulMinor,
+                               PULONG pulRevision)
+{
+    // report 0.9.9
+    *pulMajor = 0;
+    *pulMinor = 9;
+    *pulRevision = 9;
+}
+

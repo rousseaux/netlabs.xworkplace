@@ -890,6 +890,12 @@
                         // "Workplace Shell" menus p3: submenu, checkmark
         BYTE        fDTMLogoffNetwork;
                         // "Logoff network now" desktop menu item (XFldDesktop)
+
+    /* XWorkplace 0.9.9 */
+        BYTE        fFdrAutoRefreshDisabled;
+                        // "Folder auto-refresh" on "Workplace Shell" "View" page;
+                        // this only has an effect if folder auto-refresh has
+                        // been replaced in XWPSetup in the first place
     } GLOBALSETTINGS;
 
     typedef const GLOBALSETTINGS* PCGLOBALSETTINGS;
@@ -1572,7 +1578,7 @@
                            BOOL fEnable);
 
     #ifdef SOM_WPObject_h
-        BOOL cmnMove2DefTrashCan(WPObject *pObject);
+        BOOL cmnDeleteIntoDefTrashCan(WPObject *pObject);
     #endif
 
     BOOL cmnEmptyDefTrashCan(HAB hab,

@@ -1019,6 +1019,7 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
  */
 
 ULONG EXPENTRY MwgtInitModule(HAB hab,         // XCenter's anchor block
+                              HMODULE hmodPlugin, // module handle of the widget DLL
                               HMODULE hmodXFLDR,    // XFLDR.DLL module handle
                               PXCENTERWIDGETCLASS *ppaClasses,
                               PSZ pszErrorMsg)  // if 0 is returned, 500 bytes of error msg
@@ -1088,3 +1089,31 @@ ULONG EXPENTRY MwgtInitModule(HAB hab,         // XCenter's anchor block
 VOID EXPENTRY MwgtUnInitModule(VOID)
 {
 }
+
+/*
+ *@@ MwgtQueryVersion:
+ *      this new export with ordinal 3 can return the
+ *      XWorkplace version number which is required
+ *      for this widget to run. For example, if this
+ *      returns 0.9.10, this widget will not run on
+ *      earlier XWorkplace versions.
+ *
+ *      NOTE: This export was mainly added because the
+ *      prototype for the "Init" export was changed
+ *      with V0.9.9. If this returns 0.9.9, it is
+ *      assumed that the INIT export understands
+ *      the new FNWGTINITMODULE_099 format (see center.h).
+ *
+ *@@added V0.9.9 (2000-02-06) [umoeller]
+ */
+
+VOID EXPENTRY MwgtQueryVersion(PULONG pulMajor,
+                               PULONG pulMinor,
+                               PULONG pulRevision)
+{
+    // report 0.9.9
+    *pulMajor = 0;
+    *pulMinor = 9;
+    *pulRevision = 9;
+}
+

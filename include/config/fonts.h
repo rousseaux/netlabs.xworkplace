@@ -70,7 +70,7 @@
      ********************************************************************/
 
     #ifdef SOM_XWPFontFolder_h
-        BOOL fonFillWithFontObjects(XWPFontFolder *pFontFolder);
+        VOID fonPopulateFirstTime(XWPFontFolder *pFolder);
 
         MRESULT fonDragOver(XWPFontFolder *pFontFolder,
                             PDRAGINFO pdrgInfo);

@@ -79,6 +79,7 @@
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
 #include "filesys\folder.h"             // XFolder implementation
@@ -105,11 +106,13 @@
  *@@changed V0.9.0 [umoeller]: adjusted function prototype, renamed function
  *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
  *@@changed V0.9.4 (2000-06-09) [umoeller]: added default documents
+ *@@changed V0.9.9 (2000-02-06) [umoeller]: added folder auto-refresh
  */
 
 VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                      ULONG flFlags)        // CBI_* flags (notebook.h)
 {
+    PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (flFlags & CBI_INIT)
@@ -127,10 +130,6 @@ VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        /* winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_ADDINTERNALS,
-                pGlobalSettings->ShowInternals); */
-        /* winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_REPLICONS,
-                pGlobalSettings->ReplIcons); */
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FULLPATH,
                               pGlobalSettings->FullPath);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_KEEPTITLE,
@@ -147,6 +146,9 @@ VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FDRDEFAULTDOCVIEW,
                               pGlobalSettings->fFdrDefaultDocView);
 
+        if (pKernelGlobals->fAutoRefreshReplaced)
+            winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FDRAUTOREFRESH,
+                                  !pGlobalSettings->fFdrAutoRefreshDisabled);
     }
 
     if (flFlags & CBI_ENABLE)
@@ -157,6 +159,9 @@ VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 ));
         WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_FDRDEFAULTDOCVIEW,
                          pGlobalSettings->fFdrDefaultDoc);
+
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_FDRAUTOREFRESH,
+                         pKernelGlobals->fAutoRefreshReplaced);
     }
 }
 
@@ -169,6 +174,7 @@ VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
  *@@changed V0.9.4 (2000-06-09) [umoeller]: added default documents
+ *@@changed V0.9.9 (2000-02-06) [umoeller]: added folder auto-refresh
  */
 
 MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -184,10 +190,6 @@ MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
     switch (usItemID)
     {
-        /* case ID_XSDI_ADDINTERNALS:
-            pGlobalSettings->ShowInternals = ulExtra;
-        break; */
-
         case ID_XSDI_FULLPATH:
             pGlobalSettings->FullPath  = ulExtra;
             fUpdate = TRUE;
@@ -217,14 +219,16 @@ MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->fFdrDefaultDocView = ulExtra;
         break;
 
+        case ID_XSDI_FDRAUTOREFRESH:
+            pGlobalSettings->fFdrAutoRefreshDisabled = (ulExtra == 0);
+        break;
+
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
             PCGLOBALSETTINGS pGSBackup = (PCGLOBALSETTINGS)(pcnbp->pUser);
 
             // and restore the settings for this page
-            // pGlobalSettings->ShowInternals = pGSBackup->ShowInternals;
-            // pGlobalSettings->ReplIcons = pGSBackup->ReplIcons;
             pGlobalSettings->FullPath  = pGSBackup->FullPath ;
             pGlobalSettings->KeepTitle = pGSBackup->KeepTitle;
             pGlobalSettings->TreeViewAutoScroll = pGSBackup->TreeViewAutoScroll;
@@ -232,6 +236,8 @@ MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             pGlobalSettings->fFdrDefaultDoc = pGSBackup->fFdrDefaultDoc;
             pGlobalSettings->fFdrDefaultDocView = pGSBackup->fFdrDefaultDocView;
+
+            pGlobalSettings->fFdrAutoRefreshDisabled = pGSBackup->fFdrAutoRefreshDisabled;
 
             // update the display by calling the INIT callback
             (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);

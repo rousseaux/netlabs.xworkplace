@@ -21,6 +21,13 @@ utility handy to be able to search for strings like "V0.9.0".
 \OS2\APPS\PMSEEK.EXE should do also.
 
 
+Changes for V0.9.9
+==================
+
+    -- ID_XSD_IMPORTWPS changed.
+    -- ID_XSD_FOLDERVIEWS changed.
+
+
 Changes for V0.9.7
 ==================
 

@@ -3576,7 +3576,7 @@ SOM_Scope ULONG  SOMLINK xf_wpDelete(XFolder *somSelf, ULONG fConfirmations)
 
     /* if (pGlobalSettings->fTrashDelete)
     {
-        if (cmnMove2DefTrashCan(somSelf))
+        if (cmnDeleteIntoDefTrashCan(somSelf))
             return (OK_DELETE);
         else
             return (NO_DELETE);

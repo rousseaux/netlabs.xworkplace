@@ -23,8 +23,27 @@ for this);
 
 </UL>At the very least, a plug-in DLL must do the following:
 
-<OL><LI>It must contain a <B>PM window procedure</B> for the widget class.
-In the mini widget sample, this is the
+<OL><LI>It must <B>export three procedures</B> by ordinal.
+
+<P>The <B>"init"</B> export (ordinal 1) gets called once only by the XCenter
+when your DLL gets loaded. The DLL can get loaded in situations other than
+widget creation, so do not expect this to always be the case. On init, the
+DLL should register the widget's PM window class (by calling
+<CODE>WinRegisterClass</CODE>). In addition, it can import functions from
+<CODE>XFLDR.DLL</CODE>, whose module handle is given to it (this is optional).
+However, it must always return a pointer to the array of <CODE>XCENTERWIDGETCLASS</CODE>
+structures in the DLL so that the XCenter knows about the classes in the DLL.
+
+<P>See <CODE>toolkit\miniwdgt.c</CODE> for how this is done.
+
+<P>The <B>"uninit"</B> export (ordinal 2) gets called when the DLL is unloaded
+by the XCenter. This can do cleanup, if necessary.
+
+<P>The <B>"query version"</B> export (ordinal 3) gets called even before the
+"init" export to check the XWorkplace version number that this widget requires.
+
+<P><LI>The plug-in DLL must then contain a <B>PM window procedure</B> for the widget
+class. In the mini widget sample, this is the
 <CODE>fnwpSampleWidget</CODE> procedure.
 
 <P>This is the usual switch/case stuff that is used with every PM
@@ -58,22 +77,6 @@ widget procedure is responsible for cleaning up resources.
 must <I>always, always</I> pass <CODE>WM_DESTROY</CODE> on to
 <CODE>pfnwpDefWidgetProc</CODE>. Otherwise the XCenter cannot clean up your
 widget's resources properly.
-
-<P><LI>Your widget plug-in DLL must <B>export two procedures</B> by ordinal.
-
-<P>The <B>"init"</B> export (ordinal 1) gets called once only by the XCenter
-when your DLL gets loaded. The DLL can get loaded in situations other than
-widget creation, so do not expect this to always be the case. On init, the
-DLL should register the widget's PM window class (by calling
-<CODE>WinRegisterClass</CODE>). In addition, it can import functions from
-<CODE>XFLDR.DLL</CODE>, whose module handle is given to it (this is optional).
-However, it must always return a pointer to the array of <CODE>XCENTERWIDGETCLASS</CODE>
-structures in the DLL so that the XCenter knows about the classes in the DLL.
-
-<P>See <CODE>toolkit\miniwdgt.c</CODE> for how this is done.
-
-<P>The <B>"uninit"</B> export (ordinal 2) gets called when the DLL is unloaded
-by the XCenter. This can do cleanup, if necessary.
 
 </OL>
 </BODY>

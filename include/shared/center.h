@@ -137,7 +137,6 @@
     typedef BOOL APIENTRY CTRSETSETUPSTRING(LHANDLE hSetting, const char *pcszNewSetupString);
     typedef CTRSETSETUPSTRING *PCTRSETSETUPSTRING;
 
-
     /*
      *@@ WIDGETSETTINGSDLGDATA:
      *      a bunch of data passed to a "show settings
@@ -168,6 +167,10 @@
      *          handle that was given to it in the
      *          WIDGETSETTINGSDLGDATA structure. This will give
      *          the widget the new settings.
+     *
+     *          The address of the ctrSetSetupString helper is
+     *          given to you in this structure so that you
+     *          won't have to import it from XFLDR.DLL.
      *
      *      If a widget class supports settings dialogs,
      *      it must specify this in its XCENTERWIDGETCLASS.
@@ -688,14 +691,28 @@
      ********************************************************************/
 
     // init-module export (ordinal 1)
-    typedef ULONG EXPENTRY FNWGTINITMODULE(HAB hab,
-                                           HMODULE hmodXFLDR,
-                                           PXCENTERWIDGETCLASS *ppaClasses,
-                                           PSZ pszErrorMsg);
-    typedef FNWGTINITMODULE *PFNWGTINITMODULE;
+    // WARNING: THIS PROTOTYPE HAS CHANGED WITH V0.9.9
+    typedef ULONG EXPENTRY FNWGTINITMODULE_OLD(HAB hab,
+                                               HMODULE hmodXFLDR,
+                                               PXCENTERWIDGETCLASS *ppaClasses,
+                                               PSZ pszErrorMsg);
+    typedef FNWGTINITMODULE_OLD *PFNWGTINITMODULE_OLD;
+
+    typedef ULONG EXPENTRY FNWGTINITMODULE_099(HAB hab,
+                                               HMODULE hmodPlugin,
+                                               HMODULE hmodXFLDR,
+                                               PXCENTERWIDGETCLASS *ppaClasses,
+                                               PSZ pszErrorMsg);
+    typedef FNWGTINITMODULE_099 *PFNWGTINITMODULE_099;
 
     // un-init-module export (ordinal 2)
     typedef VOID EXPENTRY FNWGTUNINITMODULE(VOID);
     typedef FNWGTUNINITMODULE *PFNWGTUNINITMODULE;
+
+    // query version
+    typedef VOID EXPENTRY FNWGTQUERYVERSION(PULONG pulMajor,
+                                            PULONG pulMinor,
+                                            PULONG pulRevision);
+    typedef FNWGTQUERYVERSION *PFNWGTQUERYVERSION;
 #endif
 

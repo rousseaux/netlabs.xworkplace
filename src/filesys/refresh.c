@@ -4,10 +4,10 @@
  *      new code for folder auto-refresh support, if the
  *      XWP replacement is enabled.
  *
- *      If the user has replaced folder auto-refresh, on
- *      WPS startup, krnReplaceWheelWatcher stops the WPS
- *      "wheel watcher" thread, which usually processes
- *      the Dos*ChangeNotify notifications.
+ *      If the user has replaced folder auto-refresh in
+ *      XWPSetup, on WPS startup, krnReplaceWheelWatcher
+ *      prevents the WPS "wheel watcher" thread from starting,
+ *      which usually processes the Dos*ChangeNotify notifications.
  *
  *      Since these APIs can only be used once on the
  *      entire system, we can't compete with that thread.
@@ -43,6 +43,15 @@
  *          This thread sorts out notifications that cancel
  *          each other out or need not be processed at all.
  *          This is what the WPS "Ager" thread normally does.
+ *
+ *      Note that all these three threads are started on WPS
+ *      startup if folder auto-refresh has been replaced in
+ *      XWPSetup. By contrast, the "Folder auto-refresh" setting
+ *      in "Workplace shell" (which is in GLOBALSETTINGS) is only
+ *      respected by the Sentinel thread. Disabling that setting
+ *      does not stop the threads from running... it will only
+ *      disable posting messages from the Sentinel to the "Notify
+ *      worker".
  *
  *      This file is ALL new with V0.9.9 (2001-01-29) [umoeller]
  *
@@ -974,6 +983,18 @@ VOID _Optlink refr_fntNotifyWorker(PTHREADINFO ptiMyself)
  *
  *      This thread does NOT have a PM message queue.
  *
+ *      If folder auto-refresh has been replaced in
+ *      XWPSetup, this thread gets created from
+ *      krnReplaceWheelWatcher and starts the other
+ *      two threads (refr_fntNotifyWorker, refr_fntPumpThread)
+ *      in turn.
+ *
+ *      These three threads get created even if folder
+ *      auto-refresh has been disabled on the "View" page
+ *      in "Workplace shell". That setting will only disable
+ *      posting messages from the Sentinel to the notify
+ *      worker.
+ *
  *@@added V0.9.9 (2001-01-31) [umoeller]
  */
 
@@ -1021,6 +1042,8 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
         // whatever reason, it resets G_hwndNotifyWorker to NULLHANDLE.
         while (G_hwndNotifyWorker)
         {
+            PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+
             // allocate a block of tiled memory...
             // apparently this is a 16-bit API and
             // needs this.
@@ -1066,7 +1089,9 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
                             // and have the "notify worker" thread do the
                             // work of finding the folder etc.
 
-                            if (pCNInfo->cbName)
+                            if (    (pCNInfo->cbName)
+                                 && (!pGlobalSettings->fFdrAutoRefreshDisabled)
+                               )
                             {
                                 // create an XWPNOTIFY struct which has
                                 // a CNINFO in it... the find-notify worker
@@ -1119,7 +1144,9 @@ VOID _Optlink refr_fntSentinel(PTHREADINFO ptiMyself)
                 // when there's too many notifications flooding in,
                 // e.g. when hundreds of files are unzipped into a
                 // folder
-                if (arc == ERROR_BUFFER_OVERFLOW)
+                if (    (arc == ERROR_BUFFER_OVERFLOW)
+                     && (!pGlobalSettings->fFdrAutoRefreshDisabled)
+                   )
                     // tell the notify worker to refresh the
                     // entire folder then... we have no valid
                     // data now, so we'll use the previous notification

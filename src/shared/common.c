@@ -2370,6 +2370,8 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
 
             G_pGlobalSettings->fFdrDefaultDoc = 0;
             G_pGlobalSettings->fFdrDefaultDocView = 0;
+
+            G_pGlobalSettings->fFdrAutoRefreshDisabled = 0;
         break;
 
         case SP_2REMOVEITEMS:
@@ -3181,13 +3183,14 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
 }
 
 /*
- *@@ cmnMove2DefTrashCan:
+ *@@ cmnDeleteIntoDefTrashCan:
  *      moves a single object to the default trash can.
  *
  *@@added V0.9.4 (2000-08-03) [umoeller]
+ *@@changed V0.9.9 (2000-02-06) [umoeller]: renamed from cmnMove2DefTrashCan
  */
 
-BOOL cmnMove2DefTrashCan(WPObject *pObject)
+BOOL cmnDeleteIntoDefTrashCan(WPObject *pObject)
 {
     BOOL brc = FALSE;
     XWPTrashCan *pDefaultTrashCan = _xwpclsQueryDefaultTrashCan(_XWPTrashCan);

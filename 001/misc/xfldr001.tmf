@@ -379,6 +379,10 @@ Note: If you have not configured the XWorkplace file types yet, all your present
 
 You can always disable the extended file associations again to get the old WPS mechanism back.
 
+<--XFL0209-->: The file type %1 was not found in the OS2.INI file.
+
+<--XFL0210-->: The file type %1 already exists and cannot be used for renaming.
+
 ; ---------------------------------------------------------------------------------
 ;
 ; V0.9.0:
@@ -715,7 +719,8 @@ This was added with XWorkplace 0.9.3.
 ;
 <--FEATURES_6048-->: If "Replace folder auto-refresh" is enabled, XWorkplace will disable the internal WPS threads which monitor file-system activity to automatically refresh folders. Instead, it will start its own threads for this job.
 XWorkplace's implementation has the advantage that it does not create excessive file-system handles.
-Enabling or disabling this replacement requires a WPS restart. However, once the XWorkplace replacement is enabled, you can dynamically enable or disable folder auto-refresh.
+Enabling or disabling this replacement requires a WPS restart. However, once the XWorkplace replacement is enabled, you can dynamically enable or disable folder auto-refresh on the "View" page in the "Workplace Shell" object.
+Please see the XWorkplace User Guide for an introduction of this feature.
 This was added with XWorkplace 0.9.9.
 
 ; ---------------------------------------------------------------------------------

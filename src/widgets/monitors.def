@@ -27,5 +27,6 @@ CODE              LOADONCALL
 EXPORTS
     MwgtInitModule          @1
     MwgtUnInitModule        @2
+    MwgtQueryVersion        @3
 
 

@@ -151,7 +151,9 @@ typedef struct _OBJBUTTONPRIVATE
     BOOL        fMouseCaptured; // if TRUE, mouse is currently captured
 
     HWND        hwndMenuMain;           // if != NULLHANDLE, this has the currently
-                                        // open WPS context menu
+                                        // open WPS context menu (X-button only)
+    HWND        hwndObjectPopup;        // if != NULLHANDLE, this has the currently
+                                        // open object WPS context menu (obj button only)
 
     WPObject    *pobjButton;            // object for this button
     WPObject    *pobjNotify;            // != NULL if xwpAddDestroyNotify has been
@@ -634,8 +636,8 @@ VOID OwgtButton1Down(HWND hwnd)
                         PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
 
                         pPrivate->hwndMenuMain = WinLoadMenu(hwnd,
-                                                                cmnQueryNLSModuleHandle(FALSE),
-                                                                ID_CRM_XCENTERBUTTON);
+                                                             cmnQueryNLSModuleHandle(FALSE),
+                                                             ID_CRM_XCENTERBUTTON);
 
                         if ((pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM) == 0)
                         {
@@ -951,6 +953,11 @@ VOID OwgtMenuEnd(HWND hwnd, MPARAM mp2)
                 WinDestroyWindow(pPrivate->hwndMenuMain);
                 pPrivate->hwndMenuMain = NULLHANDLE;
             }
+
+            if ((HWND)mp2 == pPrivate->hwndObjectPopup)
+            {
+                pPrivate->hwndObjectPopup = NULLHANDLE;
+            }
         } // end if (pPrivate)
     } // end if (pWidget)
 }
@@ -1050,6 +1057,54 @@ BOOL OwgtCommand(HWND hwnd, MPARAM mp1)
 
     return (fProcessed);
 }
+
+/*
+ *@@ OwgtContextMenu:
+ *      implementation for WM_CONTEXTMENU.
+ *
+ *@@added V0.9.9 (2000-02-06) [umoeller]
+ */
+
+/* MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    PXCENTERWIDGET pWidget = (PXCENTERWIDGET)WinQueryWindowPtr(hwnd, QWL_USER);
+    if (pWidget)
+    {
+        POBJBUTTONPRIVATE pPrivate = (POBJBUTTONPRIVATE)pWidget->pUser;
+        if (pPrivate)
+        {
+            if (pPrivate->ulType == BTF_OBJBUTTON)
+            {
+                // for object buttons, show the WPS context menu
+                if (!pPrivate->pobjButton)
+                    // object not queried yet:
+                    pPrivate->pobjButton = FindObject(pPrivate);
+
+                if (pPrivate->pobjButton)
+                {
+                    POINTL ptl;
+                    ptl.x = SHORT1FROMMP(mp1);
+                    ptl.y = SHORT2FROMMP(mp1);
+                    pPrivate->hwndObjectPopup = _wpDisplayMenu(pPrivate->pobjButton,
+                                                               hwnd,            // owner
+                                                               NULLHANDLE,
+                                                               &ptl,
+                                                               MENU_OBJECTPOPUP,
+                                                               0);
+                }
+
+                mrc = (MPARAM)TRUE;
+            }
+            else
+                // for x-button show default widget menu
+                mrc = ctrDefWidgetProc(hwnd, WM_CONTEXTMENU, mp1, mp2);
+        }
+    }
+
+    return (mrc);
+} */
 
 /*
  *@@ fnwpObjButtonWidget:
@@ -1154,16 +1209,6 @@ MRESULT EXPENTRY fnwpObjButtonWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
             OwgtInitMenu(hwnd, mp1, mp2);
         break;
 
-        case WM_MENUSELECT:
-            _Pmpf((__FUNCTION__ ": WM_MENUSELECT"));
-            mrc = (MPARAM)TRUE;
-        break;
-
-        case WM_NEXTMENU:
-            _Pmpf((__FUNCTION__ ": WM_NEXTMENU"));
-            mrc = (MPARAM)TRUE;
-        break;
-
         /*
          * WM_MEASUREITEM:
          *      this msg is sent only once per owner-draw item when
@@ -1224,6 +1269,10 @@ MRESULT EXPENTRY fnwpObjButtonWidget(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
                 // not processed:
                 mrc = ctrDefWidgetProc(hwnd, msg, mp1, mp2);
         break;
+
+        /* case WM_CONTEXTMENU:
+            mrc = OwgtContextMenu(hwnd, mp1, mp2);
+        break; */
 
         /*
          * WM_DESTROY:

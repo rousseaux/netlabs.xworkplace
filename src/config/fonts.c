@@ -532,161 +532,172 @@ APIRET fonDeInstallFont(HAB hab,
  ********************************************************************/
 
 /*
+ *@@ fonPopulateFirstTime:
+ *      implementation for XWPFontFolder::wpPopulate, which
+ *      only gets called on the first populate though.
+ *
+ *      This was moved back to the populate thread with V0.9.9.
+ *
+ *@@added V0.9.9 (2000-02-06) [umoeller]
+ */
+
+VOID fonPopulateFirstTime(XWPFontFolder *pFolder)
+{
+    BOOL fFolderLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        XWPFontFolderData *somThis = XWPFontFolderGetData(pFolder);
+        ULONG ulIndex = 0;
+        PSZ pszFontKeys = NULL;
+
+        HAB hab = WinQueryAnchorBlock(cmnQueryActiveDesktopHWND());
+                            // how can we get the HAB of the populate thread?!?
+
+        fFolderLocked = !wpshRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT);
+        if (fFolderLocked)
+        {
+            // reset counts
+            _ulFontsMax = 0;
+            _ulFontsCurrent = 0;
+
+            pszFontKeys = prfhQueryKeysForApp(HINI_USER,
+                                              G_pcszFontsApp); // "PM_Fonts"
+            if (pszFontKeys)
+            {
+                PSZ     pKey2 = pszFontKeys;
+
+                // prevent the WPS from interfering here...
+                _wpModifyFldrFlags(pFolder,
+                                   FOI_POPULATEINPROGRESS | FOI_REFRESHINPROGRESS,
+                                   FOI_POPULATEINPROGRESS | FOI_REFRESHINPROGRESS);
+
+                // first count all the keys... we need this for the status bar
+                while (*pKey2 != 0)
+                {
+                    _ulFontsMax++;
+                    pKey2 += strlen(pKey2)+1;
+                }
+
+                // start over
+                pKey2 = pszFontKeys;
+                while (*pKey2 != 0)
+                {
+                    PSZ pszFilename = prfhQueryProfileData(HINI_USER,
+                                                           G_pcszFontsApp, // "PM_Fonts",
+                                                           pKey2,
+                                                           NULL);
+                    if (pszFilename)
+                    {
+                        // always retrieve first font only...
+                        CHAR    szFamily[100] = "unknown";
+                        CHAR    szTitle[200] = "unknown";
+                        CHAR    szStatus[100] = "";       // font is OK
+
+                        APIRET arc = fonGetFontDescription(hab,
+                                                           pszFilename,
+                                                           szFamily,
+                                                           szTitle);    // face
+
+                        if (arc != NO_ERROR)
+                            // file doesn't exist:
+                            // pass APIRET to object creation
+                            sprintf(szStatus, "FONTFILEERROR=%d;", arc);
+
+                        fonCreateFontObject(pFolder,
+                                            szFamily,       // family
+                                            szTitle,        // face
+                                            pszFilename,     // file
+                                            szStatus,      // extra setup string
+                                            FALSE);        // no insert yet
+
+                        free(pszFilename);
+                    } // end if (pszFilename)
+
+                    // next font
+                    pKey2 += strlen(pKey2)+1;
+                } // while (*pKey2 != 0)
+
+                // done:
+                _ulFontsMax = _ulFontsCurrent;
+
+                free(pszFontKeys);
+
+                // now insert all objects in one flush...
+                if (_ulFontsCurrent)
+                {
+                    ULONG       cObjects = 0;
+                    WPObject    **papObjects = fdrQueryContentArray(pFolder,
+                                                                    &cObjects);
+
+                    if (papObjects)
+                    {
+                        PVIEWITEM   pViewItem;
+                        for (pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, NULL);
+                             pViewItem;
+                             pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, pViewItem))
+                        {
+                            switch (pViewItem->view)
+                            {
+                                case OPEN_CONTENTS:
+                                case OPEN_TREE:
+                                case OPEN_DETAILS:
+                                {
+                                    HWND hwndCnr = wpshQueryCnrFromFrame(pViewItem->handle);
+                                    POINTL ptlIcon = {0, 0};
+                                    if (hwndCnr)
+                                        _wpclsInsertMultipleObjects(_somGetClass(pFolder),
+                                                                    hwndCnr,
+                                                                    &ptlIcon,
+                                                                    (PVOID*)papObjects,
+                                                                    NULL,   // parentrecord
+                                                                    cObjects);
+                                }
+                            }
+                        }
+
+                        free(papObjects);
+                    }
+                }
+
+                _wpModifyFldrFlags(pFolder,
+                                   FOI_POPULATEINPROGRESS | FOI_REFRESHINPROGRESS,
+                                   0);
+            }
+        } // end if (fFolderLocked)
+    }
+    CATCH(excpt1)
+    {
+    } END_CATCH();
+
+    if (fFolderLocked)
+        wpshReleaseFolderMutexSem(pFolder);
+}
+
+/*
  *@@ FONTTHREADDATA:
  *
  */
 
-typedef struct _FONTTHREADDATA
+/* typedef struct _FONTTHREADDATA
 {
     XWPFontFolder       *pFontFolder;
-} FONTTHREADDATA, *PFONTTHREADDATA;
+} FONTTHREADDATA, *PFONTTHREADDATA; */
 
 /*
  *@@ fnt_fonCreateFontObjects:
  *
  */
 
-VOID fnt_fonCreateFontObjects(PTHREADINFO ptiMyself)
+/* VOID fnt_fonCreateFontObjects(PTHREADINFO ptiMyself)
 {
     PFONTTHREADDATA pFontThreadData = (PFONTTHREADDATA)ptiMyself->ulData;
-    BOOL fFolderLocked = FALSE;
-
     if (pFontThreadData)
     {
-        TRY_LOUD(excpt1)
-        {
-            XWPFontFolder *pFolder = pFontThreadData->pFontFolder;
-            XWPFontFolderData *somThis = XWPFontFolderGetData(pFolder);
-            ULONG ulIndex = 0;
-            PSZ pszFontKeys = NULL;
-
-            fFolderLocked = !wpshRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT);
-            if (fFolderLocked)
-            {
-                // reset counts
-                _ulFontsMax = 0;
-                _ulFontsCurrent = 0;
-
-                // wait while folder is still populating
-                while (_wpQueryFldrFlags(pFolder)
-                            & (FOI_POPULATEINPROGRESS | FOI_REFRESHINPROGRESS))
-                    DosSleep(100);
-
-                pszFontKeys = prfhQueryKeysForApp(HINI_USER,
-                                                  G_pcszFontsApp); // "PM_Fonts"
-                if (pszFontKeys)
-                {
-                    PSZ     pKey2 = pszFontKeys;
-
-                    // prevent the WPS from interfering here...
-                    _wpModifyFldrFlags(pFolder,
-                                       FOI_POPULATEINPROGRESS | FOI_REFRESHINPROGRESS,
-                                       FOI_POPULATEINPROGRESS | FOI_REFRESHINPROGRESS);
-
-                    // first count all the keys... we need this for the status bar
-                    while (*pKey2 != 0)
-                    {
-                        _ulFontsMax++;
-                        pKey2 += strlen(pKey2)+1;
-                    }
-
-                    // start over
-                    pKey2 = pszFontKeys;
-                    while (*pKey2 != 0)
-                    {
-                        PSZ pszFilename = prfhQueryProfileData(HINI_USER,
-                                                               G_pcszFontsApp, // "PM_Fonts",
-                                                               pKey2,
-                                                               NULL);
-                        if (pszFilename)
-                        {
-                            // always retrieve first font only...
-                            CHAR    szFamily[100] = "unknown";
-                            CHAR    szTitle[200] = "unknown";
-                            CHAR    szStatus[100] = "";       // font is OK
-
-                            APIRET arc = fonGetFontDescription(ptiMyself->hab,
-                                                               pszFilename,
-                                                               szFamily,
-                                                               szTitle);    // face
-
-                            if (arc != NO_ERROR)
-                                // file doesn't exist:
-                                // pass APIRET to object creation
-                                sprintf(szStatus, "FONTFILEERROR=%d;", arc);
-
-                            fonCreateFontObject(pFolder,
-                                                szFamily,       // family
-                                                szTitle,        // face
-                                                pszFilename,     // file
-                                                szStatus,      // extra setup string
-                                                FALSE);        // no insert yet
-
-                            free(pszFilename);
-                        } // end if (pszFilename)
-
-                        // next font
-                        pKey2 += strlen(pKey2)+1;
-                    } // while (*pKey2 != 0)
-
-                    // done:
-                    _ulFontsMax = _ulFontsCurrent;
-
-                    free(pszFontKeys);
-
-                    _wpModifyFldrFlags(pFolder,
-                                       FOI_POPULATEINPROGRESS | FOI_REFRESHINPROGRESS,
-                                       0);
-
-                    // now insert all objects in one flush...
-                    if (_ulFontsCurrent)
-                    {
-                        ULONG       cObjects = 0;
-                        WPObject    **papObjects = fdrQueryContentArray(pFolder,
-                                                                        &cObjects);
-
-                        if (papObjects)
-                        {
-                            PVIEWITEM   pViewItem;
-                            for (pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, NULL);
-                                 pViewItem;
-                                 pViewItem = _wpFindViewItem(pFolder, VIEW_ANY, pViewItem))
-                            {
-                                switch (pViewItem->view)
-                                {
-                                    case OPEN_CONTENTS:
-                                    case OPEN_TREE:
-                                    case OPEN_DETAILS:
-                                    {
-                                        HWND hwndCnr = wpshQueryCnrFromFrame(pViewItem->handle);
-                                        POINTL ptlIcon = {0, 0};
-                                        if (hwndCnr)
-                                            _wpclsInsertMultipleObjects(_somGetClass(pFolder),
-                                                                        hwndCnr,
-                                                                        &ptlIcon,
-                                                                        (PVOID*)papObjects,
-                                                                        NULL,   // parentrecord
-                                                                        cObjects);
-                                    }
-                                }
-                            }
-
-                            free(papObjects);
-                        }
-                    }
-                }
-            } // end if (fFolderLocked)
-        }
-        CATCH(excpt1)
-        {
-        } END_CATCH();
-
-        if (fFolderLocked)
-            wpshReleaseFolderMutexSem(pFontThreadData->pFontFolder);
 
         free(pFontThreadData);
     } // end if (pFontThreadData)
-}
+} */
 
 /*
  *@@ fonFillWithFontObjects:
@@ -701,7 +712,7 @@ VOID fnt_fonCreateFontObjects(PTHREADINFO ptiMyself)
  *      application in OS2.INI and call fonGetFontDescription
  */
 
-BOOL fonFillWithFontObjects(XWPFontFolder *pFontFolder)
+/* BOOL fonFillWithFontObjects(XWPFontFolder *pFontFolder)
 {
     BOOL brc = FALSE;
 
@@ -716,7 +727,7 @@ BOOL fonFillWithFontObjects(XWPFontFolder *pFontFolder)
                   (ULONG)pFontThreadData);
 
     return (brc);
-}
+} */
 
 /*
  *@@ fonDragOver:

@@ -123,6 +123,8 @@ interface XCenter : WPAbstract
                                     // and this has a PXCENTERWINDATA pointer
                                     // which contains all the view data...
 
+    ULONG tid;                      // thread ID of running XCenter thread or null
+
     BOOL fShowingOpenViewMenu;      // TRUE if context menu on XCenter client
 
     PSZ pszPackedWidgetSettings;    // packed widget settings restored in wpRestoreState

@@ -42,7 +42,7 @@
  */
 
 /*
- *      Copyright (C) 1999-2000 Ulrich M”ller.
+ *      Copyright (C) 1999-2001 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -98,6 +98,7 @@
 #include "helpers\except.h"             // exception handling
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\stringh.h"            // string helper routines
+#include "helpers\tree.h"               // red-black binary trees
 
 // SOM headers which don't crash with prec. header files
 #include "xtrash.ih"
@@ -131,7 +132,7 @@
 
 typedef struct _XTRO_DETAILS
 {
-   PSZ     pszFromPath;         // where object was deleted from
+   PSZ     pszDeletedFrom;      // where object was deleted from
    PSZ     pszSize;             // size of related object; this points
                                 // to the _szTotalSize member
    PSZ     pszOriginalClass;    // class of related object
@@ -241,6 +242,7 @@ SOM_Scope PSZ SOMLINK xtro_xwpQueryRelatedPath(XWPTrashObject *somSelf)
     #endif
 
     if (_pszSourcePath == NULL)
+    {
         // source path not queried yet:
         // do it now
         #ifdef DEBUG_TRASHCAN_
@@ -257,25 +259,50 @@ SOM_Scope PSZ SOMLINK xtro_xwpQueryRelatedPath(XWPTrashObject *somSelf)
 
             if (pTrashDir)
             {
-                CHAR szPathInTrash[CCHMAXPATH];
-                if (_wpQueryFilename(pTrashDir, szPathInTrash, TRUE))
+                // get trash can (must be folder of trash object)
+                BOOL        fNeedRefresh = FALSE;
+                XWPTrashCan *pTrashCan = _wpQueryFolder(somSelf);
+
+                // find the mapping for this
+                PTRASHMAPPINGTREENODE pMapping = NULL;
+                trshInitMappings(pTrashCan,
+                                 &fNeedRefresh);
+
+                pMapping = trshGetMapping(pTrashCan,
+                                          pTrashDir);
+                if (pMapping)
                 {
-                    CHAR szSourcePath[CCHMAXPATH];
-
-                    #ifdef DEBUG_TRASHCAN
-                        _Pmpf(("    szPathInTrash: %s", szPathInTrash));
-                    #endif
-
-                    // copy drive letter
-                    szSourcePath[0] = szPathInTrash[0];
-                    // copy ':'
-                    szSourcePath[1] = ':';
-                    // copy stuff after "?:\Trash"
-                    strcpy(&(szSourcePath[2]), &(szPathInTrash[8]));
-                    _pszSourcePath = strdup(szSourcePath);
+                    // we have a mapping: use that
+                    _pszSourcePath = strdup(pMapping->pszRealName);
                 }
-            }
+                else
+                {
+                    // we have no mapping: use the folder's name
+                    CHAR szPathInTrash[CCHMAXPATH];
+                    if (_wpQueryFilename(pTrashDir, szPathInTrash, TRUE))
+                    {
+                        CHAR szSourcePath[CCHMAXPATH];
+
+                        #ifdef DEBUG_TRASHCAN
+                            _Pmpf(("    szPathInTrash: %s", szPathInTrash));
+                        #endif
+
+                        // copy drive letter
+                        szSourcePath[0] = szPathInTrash[0];
+                        // copy ':'
+                        szSourcePath[1] = ':';
+                        // copy stuff after "?:\Trash"
+                        strcpy(&(szSourcePath[2]), &(szPathInTrash[8]));
+                        _pszSourcePath = strdup(szSourcePath);
+                    }
+                }
+
+                if (fNeedRefresh)
+                    _wpSaveDeferred(pTrashCan);
+
+            } // end if (pTrashDir)
         }
+    }
 
     return (_pszSourcePath);
 }
@@ -537,7 +564,7 @@ SOM_Scope ULONG  SOMLINK xtro_wpQueryDetailsData(XWPTrashObject *somSelf,
     if (ppDetailsData)
     {
         PXTRO_DETAILS pDetails = (PXTRO_DETAILS)*ppDetailsData;
-        pDetails->pszFromPath = _xwpQueryRelatedPath(somSelf);
+        pDetails->pszDeletedFrom = _xwpQueryRelatedPath(somSelf);
         pDetails->pszSize = _szTotalSize;
         if (_pRelatedObject)
         {
@@ -933,7 +960,7 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
                 pcfi->pfnCompare   = 0; // (PFNCOMPARE)fnCompareExtensions;
                 pcfi->flData            |= CFA_STRING | CFA_LEFT;
                 pcfi->pTitleData        = pNLSStrings->pszOrigFolder;
-                pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, pszFromPath));
+                pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, pszDeletedFrom));
                 pcfi->ulLenFieldData    = sizeof(PSZ);
                 pcfi->DefaultComparison = CMP_GREATER;
             break;

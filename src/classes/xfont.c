@@ -259,26 +259,6 @@ SOM_Scope HWND  SOMLINK fon_wpOpen(XWPFontFolder *somSelf, HWND hwndCnr,
 
     hwndNew = XWPFontFolder_parent_WPFolder_wpOpen(somSelf, hwndCnr,
                                                    ulView, param);
-    if (hwndNew)
-    {
-        switch (ulView)
-        {
-            case OPEN_CONTENTS:
-            case OPEN_TREE:
-            case OPEN_DETAILS:
-                if (!_fFilledWithFonts)
-                {
-                    // very first call:
-                    _ulFontsCurrent = 0;
-                    _ulFontsMax = 0;
-
-                    // now create font objects...
-                    fonFillWithFontObjects(somSelf);
-                    _fFilledWithFonts = TRUE;
-                }
-            }
-    }
-
     return (hwndNew);
 }
 
@@ -297,9 +277,20 @@ SOM_Scope BOOL  SOMLINK fon_wpPopulate(XWPFontFolder *somSelf,
     XWPFontFolderMethodDebug("XWPFontFolder","fon_wpPopulate");
 
     brc = XWPFontFolder_parent_WPFolder_wpPopulate(somSelf,
-                                                 ulReserved,
-                                                 pszPath,
-                                                 fFoldersOnly);
+                                                   ulReserved,
+                                                   pszPath,
+                                                   fFoldersOnly);
+
+    if (!_fFilledWithFonts)
+    {
+        // very first call:
+        _ulFontsCurrent = 0;
+        _ulFontsMax = 0;
+
+        // now create font objects...
+        fonPopulateFirstTime(somSelf);
+        _fFilledWithFonts = TRUE;
+    }
 
     return (brc);
 }

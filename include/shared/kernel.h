@@ -352,6 +352,8 @@
 
     #define T1M_WELCOME                 (WM_USER+286)
 
+    #define T1M_OPENOBJECTFROMPTR       (WM_USER+287)    // added V0.9.9 (2000-02-06) [umoeller]
+
     MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
 
     BOOL krnPostThread1ObjectMsg(ULONG msg, MPARAM mp1, MPARAM mp2);

@@ -26,13 +26,24 @@
  *      Installation of these two classes is completely optional, but
  *      you cannot install only one them, since one requires the other.
  *
- *      There are two ways to delete an object using the trash can:
+ *      There are three ways to delete an object using the trash can:
+ *
  *      1)  selecting "Delete" from an object's context menu;
- *          this behavior is implemented by the XFldObject class and the
- *          XFolder subclassed folder frame procedure;
+ *
+ *      2)  pressing the "Delete" key in a folder;
+ *          both situations are implemented by the XFldObject class and the
+ *          XFolder subclassed folder frame procedure,
  *          if this feature has been enabled by the user;
+ *
  *      2)  dropping an object onto the trash can object or into
  *          an open trash can view (using XWPTrashCan::wpDrop).
+ *
+ *      After going through the labyrinth of the XWorkplace file
+ *      operations engine (fops_bottom.c), this will eventually
+ *      call XWPTrashCan::xwpDeleteIntoTrashCan, which does the
+ *      actual work of moving the object(s) into the hidden "\trash"
+ *      directories on each drive and creating an instance of
+ *      XWPTrashObject in the trash can itself.
  *
  *      When a trash object is then created (trshCreateTrashObject),
  *      XFldObject::xwpSetTrashObject will get called automatically
@@ -47,14 +58,14 @@
  *      This is how the "empty trash can" and "destroy object" menu
  *      items work as well, BTW, and this has been changed with
  *      V0.9.3. This allows us to use the file operations engine
- *      (filesys\fileops.c) more easily.
+ *      more easily.
  *
  *@@somclass XWPTrashCan xtrc_
  *@@somclass M_XWPTrashCan xtrcM_
  */
 
 /*
- *      Copyright (C) 1999-2000 Ulrich M”ller.
+ *      Copyright (C) 1999-2001 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -170,7 +181,7 @@ static BOOL        G_fDrivesInitialized = FALSE;
  *      implementation.
  *
  *      To quickly delete an object into the trash can, use
- *      cmnDeleteIntoTrashCan, which automatically determines
+ *      cmnDeleteIntoDefTrashCan, which automatically determines
  *      the default trash can on the system.
  */
 
@@ -676,6 +687,8 @@ SOM_Scope void  SOMLINK xtrc_wpInitData(XWPTrashCan *somSelf)
  *
  *      For trash cans, we need to call
  *      XWPTrashCan::xwpSetCorrectTrashIcon.
+ *
+ *@@changed V0.9.9 (2001-02-06) [umoeller]: now repairing object ID automatically
  */
 
 SOM_Scope void  SOMLINK xtrc_wpObjectReady(XWPTrashCan *somSelf,
@@ -688,6 +701,17 @@ SOM_Scope void  SOMLINK xtrc_wpObjectReady(XWPTrashCan *somSelf,
                                               refObject);
 
     _xwpSetCorrectTrashIcon(somSelf, TRUE);
+
+    // repair trash can ID if this has been broken
+    // V0.9.9 (2001-02-06) [umoeller]
+    if (somSelf == G_pDefaultTrashCan)
+    {
+        PSZ pszObjectID = _wpQueryObjectID(somSelf);
+        if (    (!pszObjectID)
+             || (strcmp(pszObjectID, XFOLDER_TRASHCANID))
+           )
+            _wpSetObjectID(somSelf, (PSZ)XFOLDER_TRASHCANID);
+    }
 }
 
 /*
@@ -726,6 +750,16 @@ SOM_Scope void  SOMLINK xtrc_wpUnInitData(XWPTrashCan *somSelf)
  *      We store the trash can item count here so we don't have to
  *      populate the trash can at WPS startup already to set the
  *      correct trash icon.
+ *
+ *      In addition, we now call wpSaveDeferred every time the
+ *      trash dir mappings have changed. See trshInitMappings
+ *      for an introduction to that concept.
+ *
+ *      With a couple of seconds of delay, wpSaveDeferred calls
+ *      this function internally, and this then calls trshSaveMappings
+ *      in turn.
+ *
+ *@@changed V0.9.9 (2000-02-06) [umoeller]: added mappings save
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_wpSaveState(XWPTrashCan *somSelf)
@@ -737,6 +771,9 @@ SOM_Scope BOOL  SOMLINK xtrc_wpSaveState(XWPTrashCan *somSelf)
         _wpSaveLong(somSelf,
                     "XWPTrashCan", 1,
                     (ULONG)_ulTrashObjectCount);
+
+    // save dirty mappings back to the trash directories
+    trshSaveMappings(somSelf);
 
     return (XWPTrashCan_parent_WPFolder_wpSaveState(somSelf));
 }
@@ -1400,6 +1437,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpSetIcon(XWPTrashCan *somSelf,
  *      &lt;XWORKPLACE_TRASHCAN&gt;).
  *
  *@@addded V0.9.1 (2000-01-31) [umoeller]
+ *@@changed V0.9.9 (2001-02-06) [umoeller]: fixed dormant trash can
  */
 
 SOM_Scope XWPTrashCan*  SOMLINK xtrcM_xwpclsQueryDefaultTrashCan(M_XWPTrashCan *somSelf)
@@ -1408,7 +1446,13 @@ SOM_Scope XWPTrashCan*  SOMLINK xtrcM_xwpclsQueryDefaultTrashCan(M_XWPTrashCan *
     // M_XWPTrashCanData *somThis = M_XWPTrashCanGetData(somSelf);
     M_XWPTrashCanMethodDebug("M_XWPTrashCan","xtrcM_xwpclsQueryDefaultTrashCan");
 
-    pDefaultTrashCan = G_pDefaultTrashCan; // wpshQueryObjectFromID(XFOLDER_TRASHCANID, NULL);
+    if (G_pDefaultTrashCan)
+        pDefaultTrashCan = G_pDefaultTrashCan;
+    else
+        // not awake yet: try object ID
+        // V0.9.9 (2001-02-06) [umoeller]
+        pDefaultTrashCan = wpshQueryObjectFromID(XFOLDER_TRASHCANID, NULL);
+
     return (pDefaultTrashCan);
 }
 

@@ -100,7 +100,7 @@ BOOL pgmmMoveIt(LONG lXDelta,
                 LONG lYDelta,
                 BOOL bAllowUpdate)
 {
-    BOOL    fAnythingMoved = FALSE;
+    BOOL    fAnythingMoved = TRUE; //[dk] allow desktop switching if no windows to move
 
     PSWP    paswpNew = NULL;
     ULONG   cSwpNewUsed = 0;

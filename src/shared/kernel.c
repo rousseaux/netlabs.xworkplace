@@ -1431,6 +1431,41 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
             break;
 
             /*
+             *@@ T1M_OPENOBJECTFROMPTR:
+             *      this can be posted or sent to the thread-1
+             *      object window from anywhere to have an object
+             *      opened in a specific view and have the HWND
+             *      returned (on send only, of course).
+             *
+             *      This is useful if you must make sure that
+             *      an object view is running on thread 1 and
+             *      nowhere else.
+             *
+             *      Parameters:
+             *
+             *      -- WPObject *mp1: SOM object pointer on which
+             *         wpViewObject is to be invoked.
+             *
+             *      -- ULONG mp2: ulView to open (OPEN_DEFAULT,
+             *         OPEN_SETTINGS, ...)
+             *
+             *      wpViewObject will be invoked with hwndCnr
+             *      and param == NULL.
+             *
+             *      Returns the return value of wpViewObject,
+             *      which is either a HWND or a HAPP.
+             *
+             *@@added V0.9.9 (2000-02-06) [umoeller]
+             */
+
+            case T1M_OPENOBJECTFROMPTR:
+                mrc = (MPARAM)_wpViewObject((WPObject*)mp1,
+                                            NULLHANDLE,     // hwndCnr
+                                            (ULONG)mp2,
+                                            0);             // param
+            break;
+
+            /*
              *@@ T1M_DAEMONREADY:
              *      posted by the XWorkplace daemon after it has
              *      successfully created its object window.

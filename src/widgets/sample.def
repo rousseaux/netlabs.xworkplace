@@ -29,5 +29,6 @@ CODE              LOADONCALL
 EXPORTS
     WgtInitModule      @1
     WgtUnInitModule    @2
+    WgtQueryVersion    @3
 
 

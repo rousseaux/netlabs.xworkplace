@@ -90,6 +90,7 @@
 #include "xfobj.ih"                     // XFldObject
 
 // XWorkplace implementation headers
+#include "bldlevel.h"                   // XWorkplace build level definitions
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
@@ -1812,6 +1813,7 @@ BOOL FrameTimer(HWND hwnd,
  *      in turn resides in the frame's QWL_USER.
  *
  *@@changed V0.9.7 (2001-01-19) [umoeller]: fixed active window bugs
+ *@@changed V0.9.9 (2000-02-06) [umoeller]: fixed WM_CLOSE problems on wpClose
  */
 
 MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1837,30 +1839,34 @@ MRESULT EXPENTRY fnwpXCenterMainFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM m
              *      separate thread, the tasklist posts WM_QUIT
              *      directly into the queue. Anyway, this msg
              *      does NOT come in for the tasklist close.
+             *
+             *
              */
 
             case WM_SYSCOMMAND:
                 switch ((USHORT)mp1)
                 {
                     case SC_CLOSE:
-                        // update desktop workarea
-                        UpdateDesktopWorkarea((PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER),
-                                              TRUE);            // force remove
-
-                        WinDestroyWindow(hwnd);
+                        WinPostMsg(hwnd, WM_CLOSE, 0, 0);
+                                // changed V0.9.9 (2000-02-06) [umoeller]
                     break;
                 }
             break;
 
-            /* case WM_QUERYFOCUSCHAIN:
-                // do NOTHING!
-            break;
+            /*
+             * WM_CLOSE:
+             *      we now do the "close" processing in WM_CLOSE
+             *      instead of WM_SYSCOMMAND with SC_CLOSE because
+             *      apparently wpClose posts WM_CLOSE messages directly,
+             *      which didn't quite clean up previously.
+             */
 
-            case WM_QUERYFRAMEINFO:
-                // this msg never comes in... sigh
-                mrc = (MRESULT)(FI_FRAME | FI_NOMOVEWITHOWNER);
-                        // but not FI_ACTIVATEOK
-            break; */
+            case WM_CLOSE:
+                // update desktop workarea
+                UpdateDesktopWorkarea((PXCENTERWINDATA)WinQueryWindowPtr(hwnd, QWL_USER),
+                                      TRUE);            // force remove
+                WinDestroyWindow(hwnd);
+            break;
 
             /*
              * WM_ADJUSTWINDOWPOS:
@@ -2936,24 +2942,29 @@ MRESULT EXPENTRY fnwpXCenterMainClient(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM 
  *      May run on any thread.
  *
  *@@added V0.9.7 (2000-12-07) [umoeller]
+ *@@changed V0.9.9 (2000-02-06) [umoeller]: added fCallUnInit
  */
 
-APIRET ctrFreeModule(HMODULE hmod)
+APIRET ctrpFreeModule(HMODULE hmod,
+                      BOOL fCallUnInit)     // in: if TRUE, "uninit" export gets called
 {
-    // the following might crash
-    TRY_QUIET(excpt2)
+    if (fCallUnInit)
     {
-        PFNWGTUNINITMODULE pfnWgtUnInitModule = NULL;
-        APIRET arc2 = DosQueryProcAddr(hmod,
-                                       2,      // ordinal
-                                       NULL,
-                                       (PFN*)(&pfnWgtUnInitModule));
-        if ((arc2 == NO_ERROR) && (pfnWgtUnInitModule))
+        // the following might crash
+        TRY_QUIET(excpt2)
         {
-            pfnWgtUnInitModule();
+            PFNWGTUNINITMODULE pfnWgtUnInitModule = NULL;
+            APIRET arc2 = DosQueryProcAddr(hmod,
+                                           2,      // ordinal
+                                           NULL,
+                                           (PFN*)(&pfnWgtUnInitModule));
+            if ((arc2 == NO_ERROR) && (pfnWgtUnInitModule))
+            {
+                pfnWgtUnInitModule();
+            }
         }
+        CATCH(excpt2) {} END_CATCH();
     }
-    CATCH(excpt2) {} END_CATCH();
 
     return (DosFreeModule(hmod));
 }
@@ -2973,6 +2984,8 @@ APIRET ctrFreeModule(HMODULE hmod)
  *      function may be nested.
  *
  *      May run on any thread.
+ *
+ *@@changed V0.9.9 (2000-02-06) [umoeller]: added version management
  */
 
 VOID ctrpLoadClasses(VOID)
@@ -3063,27 +3076,97 @@ VOID ctrpLoadClasses(VOID)
             {
                 CHAR    szErrorMsg[500] = "nothing.";
                         // room for error msg by DLL
-                PFNWGTINITMODULE pfnWgtInitModule = NULL;
+
+                // OK, since we've changed the prototype for the init module,
+                // it's time to do version management.
+                // V0.9.9 (2000-02-06) [umoeller]
+
+                // Check if the widget has the "query version" export.
+                PFNWGTQUERYVERSION pfnWgtQueryVersion = NULL;
+                // standard version if this fails: 0.9.8
+                ULONG       ulMajor = 0,
+                            ulMinor = 9,
+                            ulRevision = 8;
                 arc2 = DosQueryProcAddr(hmod,
-                                        1,      // ordinal
+                                        3,      // ordinal
                                         NULL,
-                                        (PFN*)(&pfnWgtInitModule));
-                // _Pmpf(("   DosQueryProcAddr returned %d", arc2));
-                if ((arc2 == NO_ERROR) && (pfnWgtInitModule))
+                                        (PFN*)(&pfnWgtQueryVersion));
+
+                // (protect this with an exception handler, because
+                // this might crash)
+                TRY_QUIET(excpt2)
                 {
-                    // yo, we got the function:
-                    // call it to get widgets info
-                    // (protect this with an exception handler, because
-                    // this might crash)
-                    TRY_QUIET(excpt2)
+                    BOOL    fSufficientVersion = TRUE;
+
+                    if ((arc2 == NO_ERROR) && (pfnWgtQueryVersion))
+                    {
+                        ULONG   ulXCenterMajor,
+                                ulXCenterMinor,
+                                ulXCenterRevision;
+                        // we got the export:
+                        pfnWgtQueryVersion(&ulMajor,
+                                           &ulMinor,
+                                           &ulRevision);
+
+                        // check if this widget can live with this
+                        // XCenter build level
+                        sscanf(BLDLEVEL_VERSION,
+                               "%d.%d.%d",
+                               &ulXCenterMajor,
+                               &ulXCenterMinor,
+                               &ulXCenterRevision);
+
+                        if (    (ulMajor > ulXCenterMajor)
+                             || (    (ulMajor == ulXCenterMajor)
+                                  && (    (ulMinor > ulXCenterMinor)
+                                       || (    (ulMinor == ulXCenterMinor)
+                                            && (ulRevision > ulXCenterRevision)
+                                          )
+                                     )
+                                )
+                           )
+                            fSufficientVersion = FALSE;
+                    }
+
+                    if (fSufficientVersion)
                     {
                         PXCENTERWIDGETCLASS paClasses = NULL;
-                        ULONG cClassesThis = pfnWgtInitModule(hab,
-                                                              hmodXFLDR,
-                                                              &paClasses,
-                                                              szErrorMsg);
+                        ULONG   cClassesThis = 0;
 
-                        // _Pmpf(("  pfnQueryWidgetClasses returned %d for %s", cClassesThis, szDLL));
+                        // now check which INIT we can call
+                        if (    (ulMajor > 0)
+                             || (ulMinor > 9)
+                             || (ulRevision > 8)
+                           )
+                        {
+                            // new widget:
+                            // we can then afford the new prototype
+                            PFNWGTINITMODULE_099 pfnWgtInitModule = NULL;
+                            arc2 = DosQueryProcAddr(hmod,
+                                                    1,      // ordinal
+                                                    NULL,
+                                                    (PFN*)(&pfnWgtInitModule));
+                            if ((arc2 == NO_ERROR) && (pfnWgtInitModule))
+                                cClassesThis = pfnWgtInitModule(hab,
+                                                                hmod,       // new!
+                                                                hmodXFLDR,
+                                                                &paClasses,
+                                                                szErrorMsg);
+                        }
+                        else
+                        {
+                            // use the old prototype:
+                            PFNWGTINITMODULE_OLD pfnWgtInitModule = NULL;
+                            arc2 = DosQueryProcAddr(hmod,
+                                                    1,      // ordinal
+                                                    NULL,
+                                                    (PFN*)(&pfnWgtInitModule));
+                            if ((arc2 == NO_ERROR) && (pfnWgtInitModule))
+                                cClassesThis = pfnWgtInitModule(hab,
+                                                                hmodXFLDR,
+                                                                &paClasses,
+                                                                szErrorMsg);
+                        }
 
                         if (cClassesThis)
                         {
@@ -3102,27 +3185,30 @@ VOID ctrpLoadClasses(VOID)
                             // loaded modules
                             lstAppendItem(&G_llModules,
                                           (PVOID)hmod);
-                        }
+                        } // end if (cClassesThis)
                         else
                             // no classes in module or error:
-                            arc2 = ERROR_INVALID_ORDINAL;
+                            arc2 = ERROR_INVALID_DATA;
                     }
-                    CATCH(excpt2)
-                    {
-                        arc2 = ERROR_INVALID_ORDINAL;
-                    } END_CATCH();
-                } // end if DosQueryProcAddr
+                }
+                CATCH(excpt2)
+                {
+                    arc2 = ERROR_INVALID_ORDINAL;
+                } END_CATCH();
 
                 if (arc2)
                 {
                     // error occured (or crash):
                     // unload the module again
-                    ctrFreeModule(hmod);
-                    cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                           "InitModule call (export @1) failed for plugin DLL \"%s\"."
-                              "\n    DLL returned error msg: %s",
-                           szDLL,
-                           szErrorMsg);
+                    ctrpFreeModule(hmod,
+                                   FALSE);
+
+                    if (arc2 == ERROR_INVALID_DATA)
+                        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                               "InitModule call (export @1) failed for plugin DLL \"%s\"."
+                                  "\n    DLL returned error msg: %s",
+                               szDLL,
+                               szErrorMsg);
                 }
             } // end if DosLoadModule
 
@@ -3210,7 +3296,8 @@ VOID ctrpFreeClasses(VOID)
             {
                 HMODULE hmod = (HMODULE)pNode->pItemData;
                 // _Pmpf((__FUNCTION__ ": Unloading hmod %lX", hmod));
-                ctrFreeModule(hmod);
+                ctrpFreeModule(hmod,
+                               TRUE);
 
                 pNode = pNode->pNext;
             }
@@ -4376,6 +4463,8 @@ void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
                 CATCH(excpt1) {} END_CATCH();
             }
 
+            _tid = NULLHANDLE;
+
         } // end if (fCreated)
     } // if (pXCenterData)
 
@@ -4444,11 +4533,11 @@ HWND ctrpCreateXCenterView(XCenter *somSelf,
                                   &pXCenterData->hevRunning,
                                   0,        // unshared
                                   FALSE);   // not posted
-                if (thrCreate(NULL,
-                              ctrp_fntXCenter,
-                              &fRunning,
-                              THRF_TRANSIENT | THRF_PMMSGQUEUE | THRF_WAIT,
-                              (ULONG)pXCenterData))
+                if (_tid = thrCreate(NULL,
+                                     ctrp_fntXCenter,
+                                     &fRunning,
+                                     THRF_TRANSIENT | THRF_PMMSGQUEUE | THRF_WAIT,
+                                     (ULONG)pXCenterData))
                 {
                     // thread created:
                     // wait until it's created the XCenter frame

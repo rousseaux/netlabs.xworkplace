@@ -236,7 +236,7 @@
 #include "helpers\dosh.h"
 #include "helpers\linklist.h"
 #include "helpers\stringh.h"
-#include "helpers\tree.h"
+#include "helpers\tree.h"               // red-black binary trees
 
 #include "bldlevel.h"
 

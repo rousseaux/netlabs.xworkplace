@@ -8,6 +8,7 @@
  *@@include #include <os2.h>
  *@@include #include <wpobject.h>
  *@@include #include "helpers\linklist.h"
+ *@@include #include "helpers\tree.h"       // for mappings
  *@@include #include "shared\notebook.h"
  *@@include #include "classes\xtrash.h"
  *@@include #include "classes\xtrashobj.h"
@@ -42,6 +43,79 @@
 
     /* ******************************************************************
      *
+     *   Trash dir mappings
+     *
+     ********************************************************************/
+
+    #ifdef SFLTREE_INCLUDED
+
+        /*
+         *@@ TRASHMAPPINGTREENODE:
+         *      entry for the linked list in G_allTranslationTables.
+         *
+         *      Assuming that C:\Documents\Important\myfile.txt
+         *      gets moved into the trash can. This would result
+         *      in the following:
+         *
+         *      1) Creation of the hidden C:\TRASH directory,
+         *         if that doesn't exist yet.
+         *
+         *      2) Now, instead of creating "C:\TRASH\Documents\Important"
+         *         as we used to do, we create a new dir with a random
+         *         name (e.g. "C:\TRASH\01234567") and move myfile.txt
+         *         there.
+         *
+         *      3) We then create a TRASHMAPPINGTREENODE for "C:\TRASH\01234567"
+         *         and store "C:\TRASH\Documents\Important" with pcszRealTitle.
+         *
+         *      If "C:\Documents\Important\myfile2.txt" gets deleted, we
+         *      use that same mapping.
+         *
+         *      By contrast, if the entire folder "C:\Documents\Important"
+         *      gets deleted, we do this:
+         *
+         *      1) Again, creation of the hidden C:\TRASH directory,
+         *         if that doesn't exist yet.
+         *
+         *      2) Create a new dir with a random name (e.g. "C:\TRASH\01234568")
+         *         and move "C:\Documents\Important" there.
+         *
+         *      3) We then create a TRASHMAPPINGTREENODE for "C:\TRASH\01234568"
+         *         and store "C:\TRASH\Documents" with pcszRealTitle.
+         *
+         *      This allows us to keep deleted files and folders separate.
+         *
+         *@@added V0.9.9 (2001-02-06) [umoeller]
+         */
+
+        typedef struct _TRASHMAPPINGTREENODE
+        {
+            TREE            Tree;
+
+            WPFolder        *pFolderInTrash;
+                        // folder in \trash; this is a DIRECT subdirectory
+                        // of \trash on each drive and contains the related
+                        // objects which were put here. This is ALWAYS HIDDEN.
+
+            PSZ             pszRealName;
+                        // full path of where that folder originally was;
+                        // for example, if pFolderInTrash is "C:\TRASH\01234567",
+                        // this could be "C:\Documents\Important".
+                        // This PSZ is allocated using malloc().
+
+        } TRASHMAPPINGTREENODE, *PTRASHMAPPINGTREENODE;
+
+        VOID trshInitMappings(XWPTrashCan *somSelf,
+                              PBOOL pfNeedSave);
+
+        PTRASHMAPPINGTREENODE trshGetMapping(XWPTrashCan *pTrashCan,
+                                             WPFolder *pFolder);
+    #endif
+
+    VOID trshSaveMappings(XWPTrashCan *pTrashCan);
+
+    /* ******************************************************************
+     *
      *   Trash can populating
      *
      ********************************************************************/
@@ -52,11 +126,6 @@
 
     BOOL trshSetupOnce(XWPTrashObject *somSelf,
                        PSZ pszSetupString);
-
-    BOOL trshAddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass,
-                                        XWPTrashCan *pTrashCan,
-                                        WPFolder *pTrashDir,
-                                        PULONG pulObjectCount);
 
     VOID trshCalcTrashObjectSize(XWPTrashObject *pTrashObject,
                                  XWPTrashCan *pTrashCan);

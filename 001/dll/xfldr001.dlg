@@ -672,42 +672,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_IMPORTWPS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "Import WPS Filters", ID_XSD_IMPORTWPS, 12, 6, 213, 156,
-            WS_VISIBLE, FCF_SYSMENU | FCF_TITLEBAR
-    BEGIN
-        LTEXT           "Merge with:", -1, 5, 141, 65, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        LTEXT           "[xxx]", ID_XSDI_FT_TYPE, 70, 141, 135, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        GROUPBOX        "~Filters to add", -1, 5, 18, 80, 121, DT_MNEMONIC
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        LISTBOX         ID_XSDI_FT_FILTERLIST, 10, 21, 70, 108,
-                        LS_MULTIPLESEL | LS_NOADJUSTPOS | LS_HORZSCROLL |
-                        LS_EXTENDEDSEL
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        CONTAINER       ID_XSDI_FT_ASSOCSCNR, 95, 36, 105, 94, CCS_EXTENDSEL |
-                        WS_GROUP
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        GROUPBOX        "~Associations to add", -1, 90, 18, 115, 121,
-                        DT_MNEMONIC | NOT WS_GROUP
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~Select all", ID_XSDI_FT_SELALL, 95, 21, 50, 12
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~Deselect all", ID_XSDI_FT_DESELALL, 150, 21, 50,
-                        12
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        DEFPUSHBUTTON   "~Merge", DID_OK, 5, 3, 60, 12, WS_GROUP
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~Close", DID_CANCEL, 75, 3, 60, 12
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~Help", ID_XSD_NEWSOUNDSCHEME, 145, 3, 60, 12,
-                        BS_HELP | BS_NOPOINTERFOCUS
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-    END
-END
-
 DLGTEMPLATE ID_TSD_MAIN LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "Treesize", ID_TSD_MAIN, 30, 21, 325, 148, NOT FS_DLGBORDER |
@@ -1846,36 +1810,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XSD_FOLDERVIEWS LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_XSD_FOLDERVIEWS, 0, 0, 224, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "Folder view settings", -1, 4, 20, 215, 72,
-                        DT_MNEMONIC | NOT WS_GROUP
-        AUTOCHECKBOX    "Show full path in folder ~title", ID_XSDI_FULLPATH,
-                        10, 76, 160, 8
-        AUTOCHECKBOX    "Kee~p original title", ID_XSDI_KEEPTITLE, 20, 66,
-                        155, 8
-        LTEXT           "~Limit path to", ID_XSDI_MAXPATHCHARS_TX1, 20, 54,
-                        55, 8, DT_MNEMONIC | NOT WS_GROUP
-        SPINBUTTON      ID_XSDI_MAXPATHCHARS, 74, 54, 35, 12,
-                        SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT |
-                        SPBS_FASTSPIN | WS_GROUP
-        LTEXT           "characters", ID_XSDI_MAXPATHCHARS_TX2, 114, 54, 75,
-                        8, NOT WS_GROUP
-        AUTOCHECKBOX    "Auto-scroll Tree vie~ws",
-                        ID_XSDI_TREEVIEWAUTOSCROLL, 10, 44, 190, 8
-        AUTOCHECKBOX    "~Enable default documents in folders",
-                        ID_XSDI_FDRDEFAULTDOC, 10, 34, 190, 8
-        AUTOCHECKBOX    "De~fault document = default folder view",
-                        ID_XSDI_FDRDEFAULTDOCVIEW, 20, 24, 190, 8
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 65, 12
-        PUSHBUTTON      "~Default", DID_DEFAULT, 80, 6, 65, 12
-        PUSHBUTTON      "~Help", DID_HELP, 155, 6, 65, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_XSD_MOUSEMAPPINGS2 LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_XSD_MOUSEMAPPINGS2, 0, 0, 224, 180, NOT FS_DLGBORDER |
@@ -2839,5 +2773,63 @@ BEGIN
         LTEXT           "This performs a default OS/2 shutdown now.", -1, 84,
                         6, 135, 11, DT_WORDBREAK
                         PRESPARAMS PP_FONTNAMESIZE, "8.Helv"
+    END
+END
+
+DLGTEMPLATE ID_XSD_FOLDERVIEWS LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "", ID_XSD_FOLDERVIEWS, 0, 0, 224, 180, NOT FS_DLGBORDER |
+            WS_VISIBLE
+    BEGIN
+        GROUPBOX        "Folder view settings", -1, 6, 18, 213, 84,
+                        DT_MNEMONIC | NOT WS_GROUP
+        AUTOCHECKBOX    "Show full path in folder ~title", ID_XSDI_FULLPATH,
+                        12, 84, 160, 8
+        AUTOCHECKBOX    "Kee~p original title", ID_XSDI_KEEPTITLE, 22, 74,
+                        155, 8
+        LTEXT           "~Limit path to", ID_XSDI_MAXPATHCHARS_TX1, 22, 62,
+                        55, 8, DT_MNEMONIC | NOT WS_GROUP
+        SPINBUTTON      ID_XSDI_MAXPATHCHARS, 76, 62, 35, 12,
+                        SPBS_NUMERICONLY | SPBS_MASTER | SPBS_JUSTRIGHT |
+                        SPBS_FASTSPIN | WS_GROUP
+        LTEXT           "characters", ID_XSDI_MAXPATHCHARS_TX2, 116, 62, 75,
+                        8, NOT WS_GROUP
+        AUTOCHECKBOX    "Auto-scroll Tree vie~ws",
+                        ID_XSDI_TREEVIEWAUTOSCROLL, 12, 52, 190, 8
+        AUTOCHECKBOX    "~Enable default documents in folders",
+                        ID_XSDI_FDRDEFAULTDOC, 12, 42, 190, 8
+        AUTOCHECKBOX    "De~fault document = default folder view",
+                        ID_XSDI_FDRDEFAULTDOCVIEW, 22, 32, 190, 8
+        AUTOCHECKBOX    "Enable folder ~auto-refresh",
+                        ID_XSDI_FDRAUTOREFRESH, 12, 22, 190, 8
+        PUSHBUTTON      "~Undo", DID_UNDO, 5, 4, 65, 12
+        PUSHBUTTON      "~Default", DID_DEFAULT, 80, 4, 65, 12
+        PUSHBUTTON      "~Help", DID_HELP, 155, 4, 65, 12, BS_HELP
+    END
+END
+
+DLGTEMPLATE ID_XSD_IMPORTWPS LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "Import WPS Filters", ID_XSD_IMPORTWPS, 12, 6, 242, 172,
+            WS_VISIBLE, FCF_SYSMENU | FCF_TITLEBAR
+    BEGIN
+        LTEXT           "Merge with:", -1, 6, 160, 65, 8
+        LTEXT           "[xxx]", ID_XSDI_FT_TYPE, 72, 160, 162, 8
+        GROUPBOX        "~Filters to add", -1, 6, 18, 80, 140, DT_MNEMONIC
+        LISTBOX         ID_XSDI_FT_FILTERLIST, 10, 32, 70, 116,
+                        LS_MULTIPLESEL | LS_NOADJUSTPOS | LS_HORZSCROLL |
+                        LS_EXTENDEDSEL
+        AUTOCHECKBOX    "~Unknown only", ID_XSDI_FT_UNKNOWNONLY, 10, 20, 70, 10
+        CONTAINER       ID_XSDI_FT_ASSOCSCNR, 95, 36, 133, 112,
+                        CCS_EXTENDSEL | WS_GROUP
+        GROUPBOX        "~Associations to add", -1, 90, 18, 144, 140,
+                        DT_MNEMONIC | NOT WS_GROUP
+        PUSHBUTTON      "~Select all", ID_XSDI_FT_SELALL, 94, 22, 64, 12
+        PUSHBUTTON      "~Deselect all", ID_XSDI_FT_DESELALL, 164, 22, 64,
+                        12
+        DEFPUSHBUTTON   "~Merge", DID_OK, 6, 3, 70, 12, WS_GROUP
+        PUSHBUTTON      "~Close", DID_CANCEL, 86, 3, 70, 12
+        PUSHBUTTON      "~Help", ID_XSD_NEWSOUNDSCHEME, 164, 3, 70, 12,
+                        BS_HELP | BS_NOPOINTERFOCUS
     END
 END

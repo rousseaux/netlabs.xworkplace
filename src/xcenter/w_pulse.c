@@ -898,6 +898,8 @@ VOID PwgtPresParamChanged(HWND hwnd,
 /*
  *@@ PwgtDestroy:
  *      implementation for WM_DESTROY.
+ *
+ *@@changed V0.9.9 (2000-02-06) [umoeller]: fixed call to doshPerfClose
  */
 
 VOID PwgtDestroy(HWND hwnd)

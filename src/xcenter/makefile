@@ -128,7 +128,7 @@ $(OUTPUTDIR)\ctr_engine.obj: \
         $(HLPINC)\prfh.h $(HLPINC)\winh.h $(HLPINC)\stringh.h $(HLPINC)\threads.h \
         $(HLPINC)\timer.h $(HLPINC)\xstring.h \
     $(INC)\classes\xcenter.ih $(INC)\classes\xfobj.ih \
-    $(INC)\dlgids.h \
+    $(INC)\bldlevel.h $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
     $(INC)\shared\center.h $(INC)\xcenter\centerp.h \
     $(@B).c

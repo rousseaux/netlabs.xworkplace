@@ -45,6 +45,7 @@ different from the global sort criterion.
 <P><DT><CODE><B>FAVORITEFOLDER</B>={YES|NO}</CODE>
 <DD>Sets for an individual folder whether its contents can be viewed from
 all context menus on your system.
+This setting corresponds to the one on the "XFolder" notebook settings page.
 Default is NO. There is no global value for this setting.
 See <A HREF="menu_6favorite.html">"Folder content functions"</A> for details.
 
@@ -54,6 +55,18 @@ This setting corresponds to the one on the "XFolder" notebook settings page.
 YES or NO will set this setting for this folder no matter what was specified in the
 global settings, while DEFAULT will set this setting to the Global Settings value.
 See <A HREF="fldr_2fullpath.html">"Full path in window titles"</A> for details.
+
+<!-- V0.9.9: added QUICKOPEN -->
+<P><DT><CODE><B>QUICKOPEN</B>={YES|NO|IMMEDIATE}</CODE>
+<DD>Sets for an individual folder whether it will be pre-populated on WPS startup.
+This setting corresponds to the one on the "XFolder" notebook settings page.
+YES or NO will set this setting for this folder.
+Default is NO. There is no global value for this setting.
+See <A HREF="fldr_5quickopen.html">"Quick-open folders"</A> for details.
+<P>As a special command, <CODE>QUICKOPEN=IMMEDIATE</CODE> will populate the folder
+immediately. This can be used in a REXX script to force population of a folder without
+having to open it. As a result, <CODE>QUICKOPEN=IMMEDIATE</CODE> is no setting, but
+rather a command to be performed on a folder.
 
 <P><DT><CODE><B>SNAPTOGRID</B>={YES|NO|DEFAULT|EXEC}</CODE>
 <DD>Sets for an individual folder whether the "Snap to grid" item will appear
