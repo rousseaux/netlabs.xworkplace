@@ -1407,6 +1407,7 @@ static LONG CalcButtonCX(PWINLISTPRIVATE pPrivate,
  *
  *@@changed V0.9.9 (2001-02-08) [umoeller]: now centering icons on button vertically
  *@@changed V0.9.19 (2002-05-28) [umoeller]: added halftoning
+ *@@changed V0.9.19 (2002-06-18) [umoeller]: fixed bad indices by always re-numbering here
  */
 
 static VOID DrawOneCtrl(PWINLISTPRIVATE pPrivate,
@@ -1658,6 +1659,32 @@ static PWINLISTENTRY FindCtrlFromPoint(PWINLISTPRIVATE pPrivate,
     }
 
     return (pCtrl);
+}
+
+/*
+ *@@ IsMenuItemEnabled:
+ *
+ */
+
+static BOOL IsMenuItemEnabled(HWND hwndMenu, USHORT usItem)
+{
+    BOOL brc = FALSE;
+    if ((SHORT)WinSendMsg(hwndMenu,
+                          MM_ITEMPOSITIONFROMID,
+                          MPFROM2SHORT(usItem, TRUE),
+                          0)
+            != MIT_NONE)
+    {
+        // item exists:
+        if ((USHORT)WinSendMsg(hwndMenu,
+                               MM_QUERYITEMATTR,
+                               MPFROM2SHORT(usItem, TRUE),
+                               (MPARAM)MIA_DISABLED)
+                    == 0)
+            brc = TRUE;
+    }
+
+    return brc;
 }
 
 /*
@@ -1929,6 +1956,7 @@ static VOID WwgtPaint(HWND hwnd)
  *      for us now.
  *
  *@@added V0.9.19 (2002-05-28) [umoeller]
+ *@@changed V0.9.19 (2002-06-18) [umoeller]: fixed bad button indices
  */
 
 static VOID WwgtWindowChange(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1947,18 +1975,18 @@ static VOID WwgtWindowChange(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
         {
             switch ((ULONG)mp2)
             {
-#pragma info(none)
+#pragma info(none)      // we fall through here
                 case WM_CREATE: // (HWND)mp1 was created.
                     #ifdef DEBUG_WINDOWLIST
-                    _PmpfF(("WLM_WINDOWCHANGE %lX, WM_CREATE", mp1));
+                        _PmpfF(("WLM_WINDOWCHANGE %lX, WM_CREATE", mp1));
                     #endif
                 case WM_SETWINDOWPARAMS:
                     #ifdef DEBUG_WINDOWLIST
-                    _PmpfF(("WLM_WINDOWCHANGE %lX, WM_SETWINDOWPARAMS", mp1));
+                        _PmpfF(("WLM_WINDOWCHANGE %lX, WM_SETWINDOWPARAMS", mp1));
                     #endif
                 case WM_WINDOWPOSCHANGED:
                     #ifdef DEBUG_WINDOWLIST
-                    _PmpfF(("WLM_WINDOWCHANGE %lX, WM_WINDOWPOSCHANGED", mp1));
+                        _PmpfF(("WLM_WINDOWCHANGE %lX, WM_WINDOWPOSCHANGED", mp1));
                     #endif
 #pragma info(restore)
                     hwndRefresh = (HWND)mp1;
@@ -1969,16 +1997,13 @@ static VOID WwgtWindowChange(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                     PLISTNODE pNode = plstQueryFirstNode(&pPrivate->llWinList);
                     ULONG ulIndexThis = 0;
                     #ifdef DEBUG_WINDOWLIST
-                    _PmpfF(("WLM_WINDOWCHANGE %lX, WM_DESTROY", mp1));
+                        _PmpfF(("WLM_WINDOWCHANGE %lX, WM_DESTROY", mp1));
                     #endif
                     while (pNode)
                     {
                         // run thru the list, remove the item
                         // corresponding to mp1
-                        PLISTNODE pNext = pNode->pNext;
-                        pCtrlRedraw = (PWINLISTENTRY)pNode->pItemData;
-
-                        if (pCtrlRedraw->swctl.hwnd == (HWND)mp1)
+                        if (((PWINLISTENTRY)pNode->pItemData)->swctl.hwnd == (HWND)mp1)
                         {
                             plstRemoveNode(&pPrivate->llWinList,
                                            pNode);           // auto-free
@@ -1986,7 +2011,7 @@ static VOID WwgtWindowChange(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                             break;
                         }
 
-                        pNode = pNext;
+                        pNode = pNode->pNext;
                     }
 
                     pCtrlRedraw = NULL;     // we've set fRedrawAll
@@ -2072,6 +2097,7 @@ static VOID WwgtWindowChange(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
  *
  *@@changed V0.9.11 (2001-04-18) [umoeller]: fixed minimized to maximized, which never worked
  *@@changed V0.9.12 (2001-05-12) [umoeller]: fixed showing hidden windows
+ *@@changed V0.9.19 (2002-06-18) [umoeller]: added hide if window does not support minimize
  */
 
 static VOID WwgtButton1Down(HWND hwnd, MPARAM mp1)
@@ -2151,9 +2177,25 @@ static VOID WwgtButton1Down(HWND hwnd, MPARAM mp1)
                         // if the window actually supports that (usually
                         // the PM frame class ignores this if the window
                         // doesn't have the minimize button).
+
+                        // V0.9.19 (2002-06-18) [umoeller]
+                        // minimize or hide; the following mess will
+                        // always try minimize, _unless_ we _know_
+                        // that minimize is disabled and hide is
+                        // enabled
+                        HWND    hwndSysMenu;
+                        USHORT  usSysCommand = SC_MINIMIZE;
+                        if (    (hwndSysMenu = WinWindowFromID(pCtrlClicked->swctl.hwnd,
+                                                               FID_SYSMENU))
+                             && (!(IsMenuItemEnabled(hwndSysMenu, SC_MINIMIZE)))
+                             && (IsMenuItemEnabled(hwndSysMenu, SC_HIDE))
+                             && (!(swp.fl & SWP_HIDE))
+                           )
+                           usSysCommand = SC_HIDE;
+
                         if (WinPostMsg(pCtrlClicked->swctl.hwnd,
                                        WM_SYSCOMMAND,
-                                       (MPARAM)SC_MINIMIZE,
+                                       (MPARAM)usSysCommand,
                                        MPFROM2SHORT(CMDSRC_OTHER, TRUE)))
                             fRedrawActive = TRUE;
                     }
@@ -2196,32 +2238,6 @@ static VOID WwgtButton1Down(HWND hwnd, MPARAM mp1)
             }
         }
     }
-}
-
-/*
- *@@ IsEnabled:
- *
- */
-
-static BOOL IsEnabled(HWND hwndMenu, USHORT usItem)
-{
-    BOOL brc = FALSE;
-    if ((SHORT)WinSendMsg(hwndMenu,
-                          MM_ITEMPOSITIONFROMID,
-                          MPFROM2SHORT(usItem, TRUE),
-                          0)
-            != MIT_NONE)
-    {
-        // item exists:
-        if ((USHORT)WinSendMsg(hwndMenu,
-                               MM_QUERYITEMATTR,
-                               MPFROM2SHORT(usItem, TRUE),
-                               (MPARAM)MIA_DISABLED)
-                    == 0)
-            brc = TRUE;
-    }
-
-    return brc;
 }
 
 /*
@@ -2391,15 +2407,15 @@ static MRESULT WwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                        )
                         fEnableRestore = TRUE;
 
-                    fEnableMove     = IsEnabled(hwndSysMenu, SC_MOVE    );
-                    fEnableSize     = IsEnabled(hwndSysMenu, SC_SIZE    );
+                    fEnableMove     = IsMenuItemEnabled(hwndSysMenu, SC_MOVE);
+                    fEnableSize     = IsMenuItemEnabled(hwndSysMenu, SC_SIZE);
 
                     if ((ulStyle & WS_MINIMIZED) == 0)
-                        fEnableMinimize = IsEnabled(hwndSysMenu, SC_MINIMIZE);
+                        fEnableMinimize = IsMenuItemEnabled(hwndSysMenu, SC_MINIMIZE);
                     if ((ulStyle & WS_MAXIMIZED) == 0)
-                        fEnableMaximize = IsEnabled(hwndSysMenu, SC_MAXIMIZE);
+                        fEnableMaximize = IsMenuItemEnabled(hwndSysMenu, SC_MAXIMIZE);
                     if ((ulStyle & WS_VISIBLE))
-                        fEnableHide     = IsEnabled(hwndSysMenu, SC_HIDE);
+                        fEnableHide     = IsMenuItemEnabled(hwndSysMenu, SC_HIDE);
                 }
 
                 WinEnableMenuItem(pPrivate->hwndContextMenuHacked,

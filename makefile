@@ -903,3 +903,11 @@ transfer: warpin
     sendfile laptop xwp-temp.wpi D:\install\xwp-transferred.wpi
     cd $(CURRENT_DIR)
 
+daily: release
+    @echo $(MAKEDIR)\makefile [$@]: Building WPI from $(XWPRELEASE).
+    K:
+    cd $(XWPRELEASE)
+    cd ..
+    cmd.exe /c create_xwp_exe_daily.cmd
+    cd $(CURRENT_DIR)
+

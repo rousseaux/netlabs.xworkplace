@@ -358,7 +358,7 @@
 /* daemon and hook */
 
         // debug window list (adds debug container to daemon)
-            #define DEBUG_WINDOWLIST
+            // #define DEBUG_WINDOWLIST
 
 /* misc */
 

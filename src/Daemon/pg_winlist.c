@@ -1353,9 +1353,9 @@ PSWBLOCK pgrQueryWinList(ULONG pid)
  *      to block the system since we might send msgs
  *      from here.
  *
- *      This fires XDM_WINDOWCHANGE to the daemon object
- *      window if the window changed compared to our
- *      list.
+ *      This fires XDM_WINDOWCHANGE or XDM_ICONCHANGE
+ *      to the daemon object window if the window changed
+ *      compared to our list.
  *
  *@@added V0.9.19 (2002-05-28) [umoeller]
  *@@changed V0.9.19 (2002-06-18) [umoeller]: added visible/jumpable checks
