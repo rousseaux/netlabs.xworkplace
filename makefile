@@ -124,6 +124,23 @@ SUBMAKE_PASS_STRING = "PROJECT_BASE_DIR=$(PROJECT_BASE_DIR)" "PROJECT_INCLUDE=$(
 # store current directory so we can change back later
 CURRENT_DIR = $(MAKEDIR)
 
+# setup running directories
+!if [@md $(XWPRUNNING) 2> NUL]
+!endif
+!if [@md $(XWPRUNNING)\bin 2> NUL]
+!endif
+!if [@md $(XWPRUNNING)\plugins 2> NUL]
+!endif
+!if [@md $(XWPRUNNING)\plugins\xcenter 2> NUL]
+!endif
+!if [@md $(XWPRUNNING)\plugins\drvdlgs 2> NUL]
+!endif
+!if [@md $(XWPRUNNING)\help 2> NUL]
+!endif
+!if [@md $(XWPRUNNING)\install 2> NUL]
+!endif
+
+
 # REGULAR MAIN TARGETS
 # --------------------
 
@@ -160,6 +177,53 @@ dep:
     @cd $(CURRENT_DIR)
     @echo ----- Leaving $(MAKEDIR)
     @echo Yo, done!
+
+# "running": update running directories
+running:
+    $(COPY) BUGS $(XWPRUNNING)
+    $(COPY) cvs.txt $(XWPRUNNING)
+    $(COPY) FEATURES $(XWPRUNNING)
+!ifndef XWPLITE
+    $(COPY) $(XWP_LANG_CODE)\readme $(XWPRUNNING)
+    $(COPY) release\* $(XWPRUNNING)
+    $(COPY) release\bin\* $(XWPRUNNING)\bin
+!endif
+!if [@md $(XWPRUNNING)\bootlogo 2> NUL]
+!endif
+    $(COPY) release\bootlogo\* $(XWPRUNNING)\bootlogo
+!if [@md $(XWPRUNNING)\cdplay 2> NUL]
+!endif
+    $(COPY) release\cdplay\* $(XWPRUNNING)\cdplay
+!if [@md $(XWPRUNNING)\icons 2> NUL]
+!endif
+    $(COPY) release\icons\* $(XWPRUNNING)\icons
+    $(COPY) release\install\* $(XWPRUNNING)\install
+!if [@md $(XWPRUNNING)\themes 2> NUL]
+!endif
+!if [@md $(XWPRUNNING)\themes\warp3 2> NUL]
+!endif
+    $(COPY) release\themes\warp3\* $(XWPRUNNING)\themes\warp3
+!if [@md $(XWPRUNNING)\themes\warp4 2> NUL]
+!endif
+    $(COPY) release\themes\warp4\* $(XWPRUNNING)\themes\warp4
+!if [@md $(XWPRUNNING)\themes\xwp 2> NUL]
+!endif
+    $(COPY) release\themes\xwp\* $(XWPRUNNING)\themes\xwp
+!if [@md $(XWPRUNNING)\toolkit 2> NUL]
+!endif
+    $(COPY) src\widgets\miniwdgt.c $(XWPRUNNING)\toolkit
+!if [@md $(XWPRUNNING)\toolkit\shared 2> NUL]
+!endif
+    $(COPY) include\shared\center.h $(XWPRUNNING)\toolkit\shared
+    $(COPY) include\shared\helppanels.h $(XWPRUNNING)\toolkit\shared\helpids.h
+!ifndef XWPLITE
+!if [@md $(XWPRUNNING)\toolkit\config 2> NUL]
+!endif
+    $(COPY) include\config\drivdlgs.h $(XWPRUNNING)\toolkit\config
+!endif
+!if [@md $(XWPRUNNING)\wav 2> NUL]
+!endif
+    $(COPY) release\wav\* $(XWPRUNNING)\wav
 
 # "COMPILE" PSEUDOTARGETS
 # -----------------------
@@ -325,7 +389,7 @@ $(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(MODDEFFILE) make\objects.in
         @echo $(MAKEDIR)\makefile [$@]: Linking $@
         $(LINK) @<<$(TEMP)\XFLDR.LNK
 /OUT:$@ $(MODDEFFILE) $(OBJS) $(HLPOBJS) $(LIBS)
-<<KEEP
+<<
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif
@@ -737,7 +801,7 @@ release: really_all
 !endif
 #    $(COPY) release\bin\icons.dll
 !ifndef XWPLITE
-    $(COPY) release\bin\files.txt
+#    $(COPY) release\bin\files.txt
 !endif
     $(COPY) $(MODULESDIR)\xfldr.dll $(XWPRELEASE_MAIN)\bin
     $(COPY) $(MODULESDIR)\xfldr.sym $(XWPRELEASE_MAIN)\bin
@@ -895,8 +959,8 @@ release: really_all
     $(COPY) $(MODULESDIR)\ipmon.sym $(XWPRELEASE_MAIN)\plugins\xcenter
     $(COPY) $(MODULESDIR)\d_cdfs.dll $(XWPRELEASE_MAIN)\plugins\drvdlgs
     $(COPY) $(MODULESDIR)\d_cdfs.sym $(XWPRELEASE_MAIN)\plugins\drvdlgs
-    $(COPY) $(MODULESDIR)\xwHealth.dll $(XWPRELEASE_HEALTH)\plugins\xcenter
-    $(COPY) $(MODULESDIR)\xwHealth.sym $(XWPRELEASE_HEALTH)\plugins\xcenter
+#    $(COPY) $(MODULESDIR)\xwHealth.dll $(XWPRELEASE_HEALTH)\plugins\xcenter
+#    $(COPY) $(MODULESDIR)\xwHealth.sym $(XWPRELEASE_HEALTH)\plugins\xcenter
 !endif
 # 9) toolkit
 !if [@md $(XWPRELEASE_MAIN)\toolkit 2> NUL]
@@ -935,15 +999,15 @@ $(XWPRELEASE_HEALTH)\plugins\xcenter\*.dll
 #
 # Special target "warpin": this is not called by "all",
 # but must be set on the NMAKE command line.
-# Will work only on my private system.
 #
 
 warpin: release
     @echo $(MAKEDIR)\makefile [$@]: Building WPI from $(XWPRELEASE).
-    $(RUN_DCD) $(XWPRELEASE)
-    cd ..
-    warpin_001.cmd
-    $(RUN_DCD) $(CURRENT_DIR)
+    makewpi.cmd $(XWPRELEASE)
+
+#
+# Will work only on my private system.
+#
 
 daily: release
     @echo $(MAKEDIR)\makefile [$@]: Building WPI from $(XWPRELEASE).
