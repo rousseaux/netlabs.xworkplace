@@ -108,6 +108,7 @@
 #include "helpers\xml.h"                // XWPHelpers XML engine
 
 // SOM headers which don't crash with prec. header files
+#include "xfobj.ih"
 #include "xfwps.ih"
 #include "xfdataf.ih"
 
@@ -643,26 +644,31 @@ ULONG ftypAssocObjectDeleted(WPObject *somSelf)
 
     TRY_LOUD(excpt1)
     {
-        HOBJECT hobj = _wpQueryHandle(somSelf);
+        HOBJECT hobj;
 
-        CHAR szHandle[20];
+        if (hobj = _xwpQueryHandle(somSelf,
+                                   FALSE))      // do not create handle if there's none
+                                                // V0.9.20 (2002-08-04) [umoeller]
+        {
+            CHAR szHandle[20];
 
-        // run through OS2.INI assocs...
-        // NOTE: we run through both the WPS types and
-        // WPS filters sections here, even though XWP
-        // extended assocs don't use the WPS filters.
-        // But the object got deleted, so we shouldn't
-        // leave the old entries in there.
-        sprintf(szHandle, "%d", hobj);
+            // run through OS2.INI assocs...
+            // NOTE: we run through both the WPS types and
+            // WPS filters sections here, even though XWP
+            // extended assocs don't use the WPS filters.
+            // But the object got deleted, so we shouldn't
+            // leave the old entries in there.
+            sprintf(szHandle, "%d", hobj);
 
-        #ifdef DEBUG_ASSOCS
-            _PmpfF(("running with %s", szHandle));
-        #endif
+            #ifdef DEBUG_ASSOCS
+                _PmpfF(("running with %s", szHandle));
+            #endif
 
-        ulrc += RemoveAssocReferences(szHandle,
-                                      WPINIAPP_ASSOCTYPE); // "PMWP_ASSOC_TYPE"
-        ulrc += RemoveAssocReferences(szHandle,
-                                      WPINIAPP_ASSOCFILTER); // "PMWP_ASSOC_FILTER"
+            ulrc += RemoveAssocReferences(szHandle,
+                                          WPINIAPP_ASSOCTYPE); // "PMWP_ASSOC_TYPE"
+            ulrc += RemoveAssocReferences(szHandle,
+                                          WPINIAPP_ASSOCFILTER); // "PMWP_ASSOC_FILTER"
+        }
     }
     CATCH(excpt1) {} END_CATCH();
 

@@ -114,21 +114,6 @@ static BOOL     G_fReplaceHandles = FALSE;
  ********************************************************************/
 
 /*
- *@@ xwpQueryHandle:
- *
- */
-
-SOM_Scope HOBJECT  SOMLINK xfs_xwpQueryHandle(XWPFileSystem *somSelf,
-                                              BOOL fCreate)
-{
-    // XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
-    XWPFileSystemMethodDebug("XWPFileSystem","xfs_xwpQueryHandle");
-
-    /* Return statement to be customized: */
-    return 0;
-}
-
-/*
  *@@ xwpQueryUpperRealName:
  *      returns the current real name of the object in
  *      upper case, which can then be used for fast
@@ -436,7 +421,11 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetRealName(XWPFileSystem *somSelf,
     if (    (cmnQuerySetting(sfTurboFolders))
             // we only need to handle the case where the object's name
             // is being changed, so skip if we aren't even initialized yet
-         && (objIsObjectInitialized(somSelf))
+            // V0.9.20 (2002-08-08) [umoeller]
+            // not quite true, this method gets called when objects are
+            // moved and renamed because of a title clash, so then we
+            // need to set or real name too
+         // && (objIsObjectInitialized(somSelf))
             // we can't handle UNC yet
          && (pMyFolder = _wpQueryFolder(somSelf))
          && (_wpQueryFilename(pMyFolder, szFolder, TRUE))
@@ -481,6 +470,30 @@ SOM_Scope BOOL  SOMLINK xfs_wpSetRealName(XWPFileSystem *somSelf,
     #endif
 
     return brc;
+}
+
+/*
+ *@@ wpQueryHandle:
+ *      overridden for debugging.
+ *
+ *@@added V0.9.20 (2002-08-04) [umoeller]
+ */
+
+SOM_Scope HOBJECT  SOMLINK xfs_wpQueryHandle(XWPFileSystem *somSelf)
+{
+#ifdef __DEBUG__
+    CHAR    szFilename[CCHMAXPATH];
+#endif
+
+    // XWPFileSystemData *somThis = XWPFileSystemGetData(somSelf);
+    XWPFileSystemMethodDebug("XWPFileSystem","xfs_wpQueryHandle");
+
+#ifdef __DEBUG__
+    if (_wpQueryFilename(somSelf, szFilename, TRUE))
+        _PmpfF(("[%s]", szFilename));
+#endif
+
+    return XWPFileSystem_parent_WPFileSystem_wpQueryHandle(somSelf);
 }
 
 /*

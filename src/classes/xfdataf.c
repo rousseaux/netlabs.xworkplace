@@ -765,9 +765,7 @@ SOM_Scope HWND  SOMLINK xdf_wpOpen(XFldDataFile *somSelf,
     /* XFldDataFileData *somThis = XFldDataFileGetData(somSelf); */
     XFldDataFileMethodDebug("XFldDataFile","xdf_wpOpen");
 
-    #ifdef DEBUG_ASSOCS
-        _Pmpf(("xdf_wpOpen, ulView: 0x%lX", ulView));
-    #endif
+    _PmpfF(("[%s] entering, ulView: 0x%lX", _wpQueryTitle(somSelf), ulView));
 
 #ifndef __NEVEREXTASSOCS__
     if (cmnQuerySetting(sfExtAssocs))
@@ -828,7 +826,7 @@ SOM_Scope HWND  SOMLINK xdf_wpOpen(XFldDataFile *somSelf,
                                                      ulView,
                                                      param);
 
-    // _Pmpf(("End of xdf_wpOpen, returning hwnd 0x%lX", hwnd));
+    _PmpfF(("[%s] returning hwnd 0x%lX", _wpQueryTitle(somSelf), hwnd));
 
     return (hwnd);
 

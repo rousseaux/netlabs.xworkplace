@@ -1625,6 +1625,10 @@ VOID fdrDebugDumpFolderFlags(WPFolder *somSelf)
  *      This still needs to be rewritten. For now we
  *      use the slow wpclsFind* methods.
  *
+ *      Preconditions:
+ *
+ *      --  Caller must hold the find mutex.
+ *
  *@@added V0.9.16 (2001-10-28) [umoeller]
  */
 

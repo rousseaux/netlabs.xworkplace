@@ -113,6 +113,11 @@ BEGIN
     MENUITEM "~Move abstracts to desktop", IDMI_MOVEABSTRACTS
     MENUITEM "Remove ~folder positions", IDMI_NUKEFOLDERPOS
     MENUITEM "Remove object ~IDs", IDMI_NUKEOBJID
+/*
+    MENUITEM "", -1, MIS_SEPARATOR
+    MENUITEM "~Cut", IDMI_CUT
+    MENUITEM "~Paste...", IDMI_PASTE
+*/
     MENUITEM "", -1, MIS_SEPARATOR
     MENUITEM "~Delete...", IDMI_DELETE
 END

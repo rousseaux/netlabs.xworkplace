@@ -1581,6 +1581,14 @@ BEGIN
     ID_XSDI_FT_ASSOCS_TXT               "Associations"
     ID_XSDI_FT_CREATEDATAFILEHANDLE     "~Pass data file object handle in environment"
 
+    /* strings formerly in ID_XFD_TITLECLASH V0.9.20 (2002-08-08) [umoeller] */
+    ID_XFD_TITLECLASH                   "Title Clash"
+    ID_XFDI_CLASH_TXT1                  "An object with the name ""%1"" already exists in the folder ""%2""."
+    ID_XFDI_CLASH_OLDOBJECT             "Existing object:"
+    ID_XFDI_CLASH_NEWOBJECT             "New object:"
+    ID_XFDI_CLASH_REPLACE               "~Replace existing object"
+    ID_XFDI_CLASH_RENAMENEW             "Rename ~new object to:"
+    ID_XFDI_CLASH_RENAMEOLD             "Rename e~xisting object to:"
 END
 
 /* Treesize definitions; added V0.9.0 */

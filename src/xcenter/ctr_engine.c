@@ -5555,7 +5555,7 @@ static void _Optlink ctrp_fntXCenter(PTHREADINFO ptiMyself)
         {
             // set priority to what user wants
             DosSetPriority(PRTYS_THREAD,
-                           _ulPriorityClass,
+                           PRTYC_REGULAR,       // V0.9.20 (2002-08-08) [umoeller]
                            _lPriorityDelta,
                            0);      // current thread
 

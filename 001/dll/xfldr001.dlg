@@ -906,59 +906,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_XFD_TITLECLASH PRELOAD MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "File Conflict", ID_XFD_TITLECLASH, 12, 9, 248, 99,
-            FS_NOMOVEWITHOWNER, FCF_SYSMENU | FCF_TITLEBAR | FCF_NOBYTEALIGN
-    BEGIN
-        LTEXT           "An object with the name ""%1"" already exists in th"
-                        "e folder ""%2"".", ID_XFDI_CLASH_TXT1, 5, 78, 235,
-                        18, DT_WORDBREAK
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        LTEXT           "Existing object:", -1, 5, 66, 70, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        LTEXT           "0/0/1998", ID_XFDI_CLASH_DATEOLD, 75, 66, 45, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        LTEXT           "00:00:00", ID_XFDI_CLASH_TIMEOLD, 125, 66, 40, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        RTEXT           "0", ID_XFDI_CLASH_SIZEOLD, 160, 66, 55, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        LTEXT           "bytes", -1, 220, 66, 25, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        LTEXT           "New object:", -1, 5, 57, 70, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        LTEXT           "0/0/1998", ID_XFDI_CLASH_DATENEW, 75, 57, 45, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        LTEXT           "00:00:00", ID_XFDI_CLASH_TIMENEW, 125, 57, 40, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        RTEXT           "0", ID_XFDI_CLASH_SIZENEW, 160, 57, 55, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        LTEXT           "bytes", -1, 220, 57, 25, 8
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        AUTORADIOBUTTON "~Replace existing object", ID_XFDI_CLASH_REPLACE, 5,
-                        45, 180, 10, WS_GROUP | WS_TABSTOP
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        AUTORADIOBUTTON "Rename ~new object to:", ID_XFDI_CLASH_RENAMENEW, 5,
-                        33, 125, 10, WS_TABSTOP
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        ENTRYFIELD      "", ID_XFDI_CLASH_RENAMENEWTXT, 132, 35, 106, 8,
-                        ES_MARGIN
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        AUTORADIOBUTTON "Rename e~xisting object to:",
-                        ID_XFDI_CLASH_RENAMEOLD, 5, 21, 125, 10, WS_TABSTOP
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        ENTRYFIELD      "", ID_XFDI_CLASH_RENAMEOLDTXT, 132, 23, 106, 8,
-                        ES_MARGIN
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        DEFPUSHBUTTON   "~OK", DID_OK, 5, 3, 65, 12
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~Cancel", DID_CANCEL, 80, 3, 65, 12
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-        PUSHBUTTON      "~Help", DID_HELP, 165, 3, 75, 12, BS_HELP
-                        PRESPARAMS PP_FONTNAMESIZE, "9.WarpSans"
-    END
-END
-
 DLGTEMPLATE ID_XLD_CLASSLIST LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "", ID_XLD_CLASSLIST, 5, 12, 145, 108, NOT FS_DLGBORDER |

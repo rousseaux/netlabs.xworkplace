@@ -67,7 +67,8 @@
 #define IDMI_NUKEOBJID          803
 #define IDMI_DELETE             804
 #define IDMI_MOVEABSTRACTS      805
-
+#define IDMI_CUT                806
+#define IDMI_PASTE              807
 
 
 

@@ -282,6 +282,8 @@
 #define ID_XFDI_CLASH_DATENEW           241
 #define ID_XFDI_CLASH_TIMENEW           242
 #define ID_XFDI_CLASH_SIZENEW           243
+#define ID_XFDI_CLASH_OLDOBJECT         244
+#define ID_XFDI_CLASH_NEWOBJECT         245
 
 // bootup status
 #define ID_XFD_BOOTUPSTATUS             250

@@ -1792,15 +1792,19 @@ static MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1
          *
          *      Parameters:
          *
-         *      --  PXWPNOTIFY mp1: notification containing
-         *          the full path of the new object.
+         *      --  PSZ mp1: full path of the new object.
+         *          To be free()'d here.
          *
          *@@added V0.9.20 (2002-07-25) [umoeller]
          */
 
         case T1M_NOTIFYWAKEUP:
-            _wpclsQueryObjectFromPath(_WPFileSystem,
-                                      ((PXWPNOTIFY)mp1)->CNInfo.szName);
+            if (mp1)
+            {
+                _wpclsQueryObjectFromPath(_WPFileSystem,
+                                          (PSZ)mp1);
+                free(mp1);
+            }
         break;
 
 #ifdef __DEBUG__

@@ -938,15 +938,18 @@ SOM_Scope BOOL  SOMLINK xctr_xwpMoveWidget(XCenter *somSelf,
 /*
  *@@ xwpSetPriority:
  *      sets a new priority for the XCenter view.
- *      ulClass and lDelta are used as with DosSetPriority.
+ *      lDelta is used as with DosSetPriority and
+ *      specifies the priority within the "regular"
+ *      class.
+ *
  *      An open XCenter thread is updated.
  *
  *@@added V0.9.7 (2001-01-03) [umoeller]
  *@@changed V0.9.19 (2002-05-04) [umoeller]: moved impl. back here, fixed missing save
+ *@@changed V0.9.20 (2002-08-08) [umoeller]: removed class parameter
  */
 
 SOM_Scope BOOL  SOMLINK xctr_xwpSetPriority(XCenter *somSelf,
-                                            ULONG ulClass,
                                             long lDelta)
 {
     BOOL    brc = FALSE;
@@ -960,13 +963,12 @@ SOM_Scope BOOL  SOMLINK xctr_xwpSetPriority(XCenter *somSelf,
         if (fLocked = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT))
         {
             XCenterData *somThis = XCenterGetData(somSelf);
-            _ulPriorityClass = ulClass;
             _lPriorityDelta = lDelta;
 
             if (_pvOpenView)
             {
                 DosSetPriority(PRTYS_THREAD,
-                               ulClass,
+                               PRTYC_REGULAR,
                                lDelta,
                                _tidRunning);   // tid of XCenter GUI thread
             }

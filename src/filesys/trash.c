@@ -256,8 +256,8 @@ static PTRASHMAPPINGTREENODE CreateMapping(ULONG ulMappingIndex,      // in: dec
                                            PBOOL pfNeedSave)   // out: set to TRUE if drives are dirty
                                                 // and wpSaveDeferred must be called on the trash can
 {
-    PTRASHMAPPINGTREENODE pMapping = malloc(sizeof(TRASHMAPPINGTREENODE));
-    if (pMapping)
+    PTRASHMAPPINGTREENODE pMapping;
+    if (pMapping = malloc(sizeof(TRASHMAPPINGTREENODE)))
     {
         ULONG   ulDriveOfs = 0;
         pMapping->ulIndex = ulMappingIndex;
@@ -319,8 +319,8 @@ static ULONG LoadMappingsForDrive(M_WPFolder *pFolderClass,
         PCSZ pThis = pszDriveMappings;
         while (*pThis)
         {
-            PSZ pSpace = strchr(pThis, ' ');
-            if (pSpace)
+            PSZ pSpace;
+            if (pSpace = strchr(pThis, ' '))
             {
                 PSZ pEOL = strhFindEOL(pSpace + 1, NULL);
                 if (pEOL > pSpace)
@@ -338,10 +338,9 @@ static ULONG LoadMappingsForDrive(M_WPFolder *pFolderClass,
                         // C:\TRASH\123
 
                     // awake the folder
-                    pFolderInTrash  = _wpclsQueryFolder(pFolderClass,
-                                                        szMappedDir,
-                                                        TRUE);    // lock
-                    if (!pFolderInTrash)
+                    if (!(pFolderInTrash  = _wpclsQueryFolder(pFolderClass,
+                                                              szMappedDir,
+                                                              TRUE)))   // lock
                     {
                         ULONG ulDriveOfs = 0;
                         // can't get the folder: this probably no longer
@@ -1028,12 +1027,15 @@ BOOL trshSetupOnce(XWPTrashObject *somSelf,
                            &cbRelatedAddress))
     {
         // found:
-        WPObject *pRelatedObject = NULL;
-        XWPTrashCan *pTrashCan = _wpQueryFolder(somSelf);
+        WPObject *pRelatedObject;
+        XWPTrashCan *pTrashCan;
 
-        sscanf(szRelatedAddress, "%lX", &pRelatedObject);
+        // sscanf(szRelatedAddress, "%lX", &pRelatedObject);
+                // optimized V0.9.20 (2002-08-04) [umoeller]
 
-        if ((pRelatedObject) && (pTrashCan))
+        if (    (pRelatedObject = (WPObject *)strtoul(szRelatedAddress, NULL, 16))
+             && (pTrashCan = _wpQueryFolder(somSelf))
+           )
         {
             // store related object in trash object
             _xwpSetRelatedObject(somSelf, pRelatedObject);
@@ -1062,6 +1064,7 @@ BOOL trshSetupOnce(XWPTrashObject *somSelf,
                 // set size synchronously
                 trshCalcTrashObjectSize(somSelf,
                                         pTrashCan);
+
             return TRUE;
         }
     }

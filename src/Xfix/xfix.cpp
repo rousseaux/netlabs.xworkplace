@@ -609,13 +609,11 @@ VOID StandardCommands(HWND hwndFrame, USHORT usCmd)
         break;
 
         case IDMI_HELP_PRODINFO:
-        {
             MessageBox(hwndFrame,
                        MB_OK | MB_MOVEABLE,
                        "xfix V" BLDLEVEL_VERSION " built " __DATE__ "\n"
                        "(C) 2000-2002 Ulrich M”ller\n\n"
                        XWORKPLACE_STRING " File Handles Fixer.");
-        }
         break;
     }
 }
@@ -3198,7 +3196,7 @@ VOID SelectByName(HWND hwndCnr)
 }
 
 /*
- *@@ &ouml;FrameCommand:
+ *@@ FrameCommand:
  *
  *@@added V0.9.7 (2001-01-21) [umoeller]
  */
@@ -3475,6 +3473,12 @@ VOID FrameCommand(HWND hwndFrame,
             }
             break;
 
+            case IDMI_CUT:
+            break;
+
+            case IDMI_PASTE:
+            break;
+
             default:
                 StandardCommands(G_hwndMain, usCmd);
         }
@@ -3509,10 +3513,10 @@ MRESULT FrameWMControl(HWND hwndFrame,
             if (G_preccSource = (PRECORDCORE)mp2)
             {
                 ULONG       cRecs = 0;
-                PLINKLIST   pll = GetSelectedRecords(hwndCnr,
-                                                     G_preccSource,
-                                                     &cRecs);
-                if (pll)
+                PLINKLIST   pll;
+                if (pll = GetSelectedRecords(hwndCnr,
+                                             G_preccSource,
+                                             &cRecs))
                 {
                     HWND hwndMenu = G_hwndContextMenuSingle;
                     if (cRecs > 1)

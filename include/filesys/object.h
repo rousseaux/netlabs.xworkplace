@@ -110,11 +110,18 @@
         ULONG               ulUnknown2;
         WPObject            *pFolder;
                                 // object's folder
-        ULONG               aulUnknown1[13];
+        WPObject            *apObjectsUnknown[4];
+        ULONG               ulUnknown2a;
+        PUSEITEM            pUseItemFirst;
+                                // first item of object's useitem linklist
+        ULONG               aulUnknown1[7];
         ULONG               cLocks;
                                 // current object lock count (wpLockObject,
                                 // wpUnlockObject); 0 if not locked
-        ULONG               aulUnknown2[4];
+        ULONG               aulUnknown2[3];
+        HEV                 hevViewItems;
+                                // event semaphore created in wpAddToObjUseList,
+                                // I have no idea what this is for
         ULONG               ulDefaultView;
                                 // object's default view, if explicitly set
                                 // by user on the "Menu" page; if 0 (OPEN_DEFAULT),

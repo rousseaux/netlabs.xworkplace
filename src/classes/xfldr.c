@@ -3447,83 +3447,6 @@ SOM_Scope BOOL  SOMLINK xf_wpStoreIconPosData(XFolder *somSelf,
 } */
 
 /*
- *@@ wpMoveObject:
- *      this is called when the folder is moved to a
- *      different location; we then need to update
- *      the titles of this folder AND of possibly open
- *      subfolders with the full path; we pass this
- *      job to the Worker thread.
- */
-
-SOM_Scope BOOL  SOMLINK xf_wpMoveObject(XFolder *somSelf,
-                                        WPFolder* Folder)
-{
-    BOOL rc;
-    XFolder *pCfg = _xwpclsQueryConfigFolder(_XFolder);
-
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpMoveObject");
-
-    if (    (pCfg)
-         && (wpshResidesBelow(somSelf, pCfg))
-       )
-        // this was in the config folder hierarchy:
-        mnuInvalidateConfigCache();
-
-    // call the parent method first, which will actually move the folder
-    rc = XFolder_parent_WPFolder_wpMoveObject(somSelf, Folder);
-
-    xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, 0);
-
-    return rc;
-}
-
-/*
- *@@ wpDelete:
- *      this WPObject method deletes an object and
- *      prompts for confirmations, if necessary.
- *
- *      Normally, this method displays confirmations,
- *      if desired, by calling wpConfirmDelete, and
- *      then calls wpFree.
- *
- *      For folders, this apparently calls wpDelete
- *      on every contained object.
- *
- *      This implementation is not desirable if the
- *      trash can has been enabled because we just
- *      want the folder to be moved into the trash
- *      can altogether. So in addition to XFldObject::wpDelete,
- *      we must override this method for XFolder also.
- *
- *      See XFldObject::wpDelete for more remarks.
- *
- *      This must return:
- *
- *      --  NO_DELETE: Error occurred.
- *      --  CANCEL_DELETE: User canceled the operation.
- *      --  OK_DELETE: Object was deleted.
- *
- *@@added V0.9.4 (2000-08-03) [umoeller]
- */
-
-SOM_Scope ULONG  SOMLINK xf_wpDelete(XFolder *somSelf, ULONG fConfirmations)
-{
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpDelete");
-
-    /* if (cmnQuerySetting(sfTrashDelete))
-    {
-        if (cmnDeleteIntoDefTrashCan(somSelf))
-            return (OK_DELETE);
-        else
-            return (NO_DELETE);
-    } */
-
-    return (XFolder_parent_WPFolder_wpDelete(somSelf, fConfirmations));
-}
-
-/*
  *@@ wpSetTitle:
  *      this is called when the folder is renamed.
  *      We then need to update the titles of this
@@ -3555,6 +3478,38 @@ SOM_Scope BOOL  SOMLINK xf_wpSetTitle(XFolder *somSelf, PSZ pszNewTitle)
         xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, 0);
 
     return (rc);
+}
+
+/*
+ *@@ wpMoveObject:
+ *      this is called when the folder is moved to a
+ *      different location; we then need to update
+ *      the titles of this folder AND of possibly open
+ *      subfolders with the full path; we pass this
+ *      job to the Worker thread.
+ */
+
+SOM_Scope BOOL  SOMLINK xf_wpMoveObject(XFolder *somSelf,
+                                        WPFolder* Folder)
+{
+    BOOL rc;
+    XFolder *pCfg = _xwpclsQueryConfigFolder(_XFolder);
+
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpMoveObject");
+
+    if (    (pCfg)
+         && (wpshResidesBelow(somSelf, pCfg))
+       )
+        // this was in the config folder hierarchy:
+        mnuInvalidateConfigCache();
+
+    // call the parent method first, which will actually move the folder
+    rc = XFolder_parent_WPFolder_wpMoveObject(somSelf, Folder);
+
+    xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, 0);
+
+    return rc;
 }
 
 /*

@@ -100,8 +100,7 @@ interface XCenter : WPAbstract
     BOOL xwpMoveWidget(in ULONG ulIndex2Move,
                        in ULONG ulBeforeIndex);
 
-    BOOL xwpSetPriority(in ULONG ulClass,
-                        in LONG lDelta);
+    BOOL xwpSetPriority(in LONG lDelta);
 
     BOOL xwpQuerySetup2(in PVOID pstrSetup);
 
@@ -166,7 +165,7 @@ interface XCenter : WPAbstract
     ULONG ulBorderSpacing;          // spacing between 3D border and widgets (0-10)
     ULONG ulWidgetSpacing;          // spacing between widgets
 
-    ULONG ulPriorityClass;          // XCenter priority class
+    //# ULONG ulPriorityClass;          // XCenter priority class removed V0.9.20 (2002-08-08) [umoeller]
     LONG lPriorityDelta;            // XCenter priority delta
 
     BOOL fHelpDisplayed;            // TRUE after the first open of the XCenter,

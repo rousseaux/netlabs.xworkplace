@@ -395,6 +395,7 @@ static ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
     {
         case RCNF_FILE_ADDED:
         case RCNF_DIR_ADDED:
+        {
             // _wpclsQueryObjectFromPath(_WPFileSystem,
             //                           pNotify->CNInfo.szName);
                     // this will wake the object up
@@ -419,11 +420,16 @@ static ULONG PumpAgedNotification(PXWPNOTIFY pNotify)
             // on thread 1 in the HOPE that the folder view that causes
             // the _wpQueryIcon is also on thread 1.
 
-            if (krnPostThread1ObjectMsg(T1M_NOTIFYWAKEUP,
-                                        (MPARAM)pNotify,
-                                        0))
-                // kernel.c then frees this notification
-                ulrc = REMOVE_NOTHING;
+            PSZ pszCopy;
+            if (pszCopy = strdup(pNotify->CNInfo.szName))
+            {
+                if (!krnPostThread1ObjectMsg(T1M_NOTIFYWAKEUP,
+                                             (MPARAM)pszCopy,
+                                             0))
+                    // posting failed (queue full?)
+                    free(pszCopy);
+            }
+        }
         break;
 
         case RCNF_CHANGED:      // V0.9.16 (2001-10-28) [umoeller]

@@ -99,6 +99,8 @@ interface XFldObject : WPObject
      *
      */
 
+    HOBJECT xwpQueryHandle(in BOOL fCreate);
+
     ULONG xwpAddReplacementIconPage(in HWND hwndNotebook,
                                     in ULONG ulPageID,
                                     in ULONG ulDefaultHelpPanel);
@@ -146,7 +148,8 @@ interface XFldObject : WPObject
                   xwpFreeSetupBuffer,
                   xwpQueryOriginalObjectID,
                   xwpHotkeyOrBorderAction,
-                  xwpAddReplacementIconPage;
+                  xwpAddReplacementIconPage,
+                  xwpQueryHandle;
 
     /*
      * Class Modifiers:
@@ -270,12 +273,19 @@ interface XFldObject : WPObject
     wpQueryDefaultHelp: override;
     wpDisplayHelp: override;
 
+    wpViewObject: override;
+
     wpAddSettingsPages: override;
     wpAddObjectGeneralPage: override;
 
     wpConfirmObjectTitle: override;
 
+    wpAddToObjUseList: override;
     wpCnrSetEmphasis: override;
+
+    wpRequestObjectMutexSem: override;
+    wpAssertObjectMutexSem: override;
+    wpReleaseObjectMutexSem: override;
 
 //#    wpAddToObjUseList: override;
 //#    wpDeleteFromObjUseList: override;

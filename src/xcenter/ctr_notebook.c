@@ -245,6 +245,7 @@ static const XWPSETUPENTRY    G_XCenterSetupSet[] =
                FALSE,   0,                  0,   1,
 
         // type,  setup string,     offset,
+        /*      removed V0.9.20 (2002-08-08) [umoeller]
         STG_LONG_DEC, "PRIORITYCLASS",    FIELDOFFSET(XCenterData, ulPriorityClass),
         //     key for wpSaveState/wpRestoreState
                6,
@@ -252,6 +253,7 @@ static const XWPSETUPENTRY    G_XCenterSetupSet[] =
                PRTYC_REGULAR, 0,            1,   4,
                                             // PRTYC_IDLETIME == 1
                                             // PRTYC_FOREGROUNDSERVER = 4
+        */
 
         // type,  setup string,     offset,
         STG_LONG_DEC, "PRIORITYDELTA",    FIELDOFFSET(XCenterData, lPriorityDelta),
@@ -1953,7 +1955,6 @@ MRESULT ctrpView1ItemChanged(PNOTEBOOKPAGE pnbp,
                                FALSE);      // unsigned
             // _lPriorityDelta = lSliderIndex;
             _xwpSetPriority(pnbp->inbp.somSelf,
-                            _ulPriorityClass,        // unchanged
                             lSliderIndex);
             ulUpdateFlags = 0;
         }

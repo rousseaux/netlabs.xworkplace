@@ -39,7 +39,7 @@ SOMTEMP = $(TEMP)
 #     [set SMINCLUDE=$(SMINCLUDE);$(TKBASE)\idl;$(TKBASE)\h;$(TKBASE)\SOM\include;.]
 #   hacked up SMINCLUDE to make sure idl\wps is before toolkit idl\
 #   V0.9.20 (2002-07-25) [umoeller]
-    [set SMINCLUDE=$(PROJECT_BASE_DIR)\idl\wps;$(TKBASE)\idl;$(TKBASE)\SOM\include;.]
+    [set SMINCLUDE=$(PROJECT_BASE_DIR)\idl\wps;$(SMINCLUDE);$(TKBASE)\idl;$(TKBASE)\SOM\include;.]
 !endif
 
 !if [@echo    SMINCLUDE is $(SMINCLUDE)]

@@ -1027,6 +1027,7 @@ APIRET fopsFileThreadSneakyDeleteFolderContents(PFILETASKLIST pftl,
  *@@changed V0.9.19 (2002-04-17) [umoeller]: fixed duplicate updates in progress dlg and other overhead
  *@@changed V0.9.20 (2002-07-12) [umoeller]: optimizations and adjustments for fopsUseForceDelete
  *@@changed V0.9.20 (2002-07-16) [umoeller]: fixed deleting FTP folders
+ *@@changed V0.9.20 (2002-08-04) [umoeller]: no longer unsetting FOI_DELETEINPROGRESS before wpFree'ing a folder
  */
 
 APIRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
@@ -1261,11 +1262,16 @@ APIRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                                                                                    &ulSubObjectThis);
                                     /* _wpModifyFldrFlags(pSubObjThis,
                                                        0,
-                                                       FOI_DELETEINPROGRESS); */
+                                                       FOI_DELETEINPROGRESS);
                                     // wrong V0.9.19 (2002-04-17) [umoeller]
                                     _wpModifyFldrFlags(pSubObjThis,
                                                        FOI_DELETEINPROGRESS,
                                                        0);
+                                        keep the flag set all the while through wpFree,
+                                        I think this plugs another hole of a large
+                                        number of handles being created
+                                        V0.9.20 (2002-08-04) [umoeller]
+                                    */
 
                                     if (frc != NO_ERROR)
                                         *ppObjectFailed = pobj2;
@@ -1286,6 +1292,14 @@ APIRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                                 {
                                     frc = FOPSERR_WPFREE_FAILED;
                                     *ppObjectFailed = pSubObjThis;
+
+                                    // only if freeing the folder failed, unset
+                                    // FOI_DELETEINPROGRESS
+                                    if (fSubIsFolder)
+                                        _wpModifyFldrFlags(pSubObjThis,
+                                                           FOI_DELETEINPROGRESS,
+                                                           0);
+
                                     break;
                                 }
                             }

@@ -460,9 +460,9 @@ interface XFolder : WPFolder
 
     wpStoreIconPosData: override;
 
-    wpMoveObject: override;
-    wpDelete: override;
     wpSetTitle: override;
+
+    wpMoveObject: override;
 
     wpSetFldrSort: override;
 

@@ -568,6 +568,7 @@ SOM_Scope ULONG  SOMLINK xwstr_xwpAddXWPStringPages(XWPString *somSelf,
  *      failed.
  *
  *@@added V0.9.6 (2000-11-23) [umoeller]
+ *@@changed V0.9.20 (2002-08-08) [umoeller]: fixed trap if member object handle was broken
  */
 
 SOM_Scope BOOL  SOMLINK xwstr_xwpInvokeString(XWPString *somSelf,
@@ -591,8 +592,10 @@ SOM_Scope BOOL  SOMLINK xwstr_xwpInvokeString(XWPString *somSelf,
             {
                 // first call: allocate memory
                 _Pmpf(("  allocating new THREADINFO"));
-                pti = malloc(sizeof(THREADINFO));
-                _pvtiSetupThread = pti;
+
+                _pvtiSetupThread
+                    = pti
+                    = malloc(sizeof(THREADINFO));
             }
 
             if (    (pti)
@@ -600,10 +603,10 @@ SOM_Scope BOOL  SOMLINK xwstr_xwpInvokeString(XWPString *somSelf,
                )
             {
                 // create struct to pass to "invoke" thread
-                PINVOKESETUPSTRING pInvoke
-                    = (PINVOKESETUPSTRING)malloc(sizeof(INVOKESETUPSTRING)
-                                                 + (cObjects * sizeof(WPObject*)));
-                if (pInvoke)
+                PINVOKESETUPSTRING pInvoke;
+                if (pInvoke = (PINVOKESETUPSTRING)malloc(  sizeof(INVOKESETUPSTRING)
+                                                         + (cObjects * sizeof(WPObject*))
+                                                        ))
                 {
                     BOOL fThreadStarted = FALSE;
                     memset(pInvoke, 0, sizeof(*pInvoke));
@@ -622,9 +625,11 @@ SOM_Scope BOOL  SOMLINK xwstr_xwpInvokeString(XWPString *somSelf,
                         // no object given: use member object
                         if (_hobjStatic)
                         {
-                            pInvoke->cTargetObjects = 1;
-                            pInvoke->apTargetObjects[0]
-                                = _wpclsQueryObject(_WPObject, _hobjStatic);
+                            // fixed V0.9.20 (2002-08-08) [umoeller]:
+                            // check if the member object still exists,
+                            // otherwise we'll trap
+                            if (pInvoke->apTargetObjects[0] = _wpclsQueryObject(_WPObject, _hobjStatic))
+                                pInvoke->cTargetObjects = 1;
                         }
 
                     if (pInvoke->cTargetObjects)

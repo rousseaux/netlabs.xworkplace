@@ -1021,6 +1021,8 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
 
                     pobjLocked = pobjEmph;
 
+                    _PmpfF(("[%s] allocating USAGE_OPENVIEW viewitem", _wpQueryTitle(pobjEmph)));
+
                     // in any case, add "in-use" emphasis to the object
                     if (pUseItemView = (PUSEITEM)_wpAllocMem(pobjEmph,
                                                              sizeof(USEITEM) + sizeof(VIEWITEM),
@@ -1034,12 +1036,19 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
                         pViewItem->view = OPEN_RUNNING;
                         pViewItem->handle = happ;
 
+                        _PmpfF(("[%s] adding USAGE_OPENVIEW viewitem", _wpQueryTitle(pobjEmph)));
+
+                        // yo this call creates a handle!
+                        // V0.9.20 (2002-08-04) [umoeller]
                         if (brc = _wpAddToObjUseList(pobjEmph,
                                                      pUseItemView))
                         {
                             // success:
                             // for data file associations, add VIEWFILE
                             // structure as well
+
+                            _PmpfF(("[%s] allocating USAGE_OPENFILE viewitem", _wpQueryTitle(pobjEmph)));
+
                             if (pUseItemFile =  (PUSEITEM)_wpAllocMem(pobjEmph,
                                                                       sizeof(USEITEM) + sizeof(VIEWFILE),
                                                                       &ulDummy))
@@ -1051,6 +1060,8 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
                                 pUseItemFile->type = USAGE_OPENFILE;
                                 pViewFile->ulMenuId = ulMenuID;
                                 pViewFile->handle  = happ;
+
+                                _PmpfF(("[%s] adding USAGE_OPENFILE viewitem", _wpQueryTitle(pobjEmph)));
 
                                 brc = _wpAddToObjUseList(pobjEmph,
                                                          pUseItemFile);
@@ -1081,8 +1092,8 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
                         // progRunningAppDestroyed if
                         // the object is destroyed
                         _xwpModifyFlags(pobjEmph,
-                                             OBJLIST_RUNNINGSTORED,
-                                             OBJLIST_RUNNINGSTORED);
+                                        OBJLIST_RUNNINGSTORED,
+                                        OBJLIST_RUNNINGSTORED);
                     }
                 } // end if (pobjEmph)
 
@@ -2132,10 +2143,6 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
                     DosFreeMem(pDetails);
                 } // end if (ProgDetails.pszExecutable)
 
-                #ifdef DEBUG_PROGRAMSTART
-                    _PmpfF(("returning %d", arc));
-                #endif
-
                 if (!arc)
                     // app started OK:
                     // set in-use emphasis on either
@@ -2144,6 +2151,10 @@ APIRET progOpenProgram(WPObject *pProgObject,       // in: WPProgram or WPProgra
                                         pArgDataFile,
                                         *phapp,
                                         ulMenuID);
+
+                #ifdef DEBUG_PROGRAMSTART
+                    _PmpfF(("returning %d", arc));
+                #endif
             }
         }
     }

@@ -90,19 +90,22 @@
      */
 
     #ifndef NAMECLASH_CANCEL
-        #define NAMECLASH_CANCEL    0
+        #define NAMECLASH_CANCEL            0x00
     #endif
     #ifndef NAMECLASH_NONE
-        #define NAMECLASH_NONE      1
+        #define NAMECLASH_NONE              0x01
     #endif
     #ifndef NAMECLASH_RENAME
-        #define NAMECLASH_RENAME    2
+        #define NAMECLASH_RENAME            0x02
     #endif
     #ifndef NAMECLASH_APPEND
-        #define NAMECLASH_APPEND    4
+        #define NAMECLASH_APPEND            0x04
     #endif
     #ifndef NAMECLASH_REPLACE
-        #define NAMECLASH_REPLACE   8
+        #define NAMECLASH_REPLACE           0x08
+    #endif
+    #ifndef NAMECLASH_PROMPT
+        #define NAMECLASH_PROMPT            0x10
     #endif
 
     #ifndef NO_NAMECLASH_RENAME
@@ -118,7 +121,7 @@
         #define NO_NAMECLASH_DIALOG         0x80
     #endif
 
-    #define NAMECLASH_RENAMING            0x100
+    #define NAMECLASH_RENAMING              0x100
 
     #define NO_NAMECLASH_RENAMEOLD          0x100000
 
