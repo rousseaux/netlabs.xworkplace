@@ -108,11 +108,82 @@ static LINKLIST    G_llRunning;
  *
  ********************************************************************/
 
+/*
+ *@@ progQueryDetails:
+ *      returns the PROGDETAILS of the specified
+ *      object or NULL on errors.
+ *
+ *      Caller must free() the returned buffer.
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+PPROGDETAILS progQueryDetails(WPObject *pProgObject)    // in: either WPProgram or WPProgramFile
+{
+    ULONG   ulSize = 0;
+    PPROGDETAILS    pProgDetails = 0;
+    // make sure we really have a program
+    if (    (_somIsA(pProgObject, _WPProgram))
+         || (_somIsA(pProgObject, _WPProgramFile))
+       )
+    {
+        if ((_wpQueryProgDetails(pProgObject, (PPROGDETAILS)NULL, &ulSize)))
+            if ((pProgDetails = (PPROGDETAILS)malloc(ulSize)) != NULL)
+            {
+                if ((_wpQueryProgDetails(pProgObject, pProgDetails, &ulSize)))
+                    return (pProgDetails);
+
+                free(pProgDetails);
+            }
+    }
+
+    return (NULL);
+}
+
 /* ******************************************************************
  *
  *   Running programs database
  *
  ********************************************************************/
+
+/*
+ *@@ LockRunning:
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+BOOL LockRunning(VOID)
+{
+    if (!G_hmtxRunning)
+    {
+        // first call:
+        if (!DosCreateMutexSem(NULL,     // unnamed
+                               &G_hmtxRunning,
+                               0,        // unshared
+                               TRUE))    // initially owned!
+        {
+            lstInit(&G_llRunning,
+                    TRUE);      // auto-free
+
+            return (TRUE);
+        }
+        else
+            return (FALSE);
+    }
+
+    return (!WinRequestMutexSem(G_hmtxRunning, 4000));
+}
+
+/*
+ *@@ UnlockRunning:
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+VOID UnlockRunning(VOID)
+{
+    DosReleaseMutexSem(G_hmtxRunning);
+}
 
 /*
  *@@ RUNNINGPROGRAM:
@@ -161,30 +232,9 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
     BOOL    brc = FALSE;
     BOOL    fSemOwned = FALSE;
 
-    ULONG   ulNesting = 0;
-    DosEnterMustComplete(&ulNesting);
-
     TRY_LOUD(excpt1)
     {
-        if (!G_hmtxRunning)
-        {
-            // first call:
-            APIRET arc = DosCreateMutexSem(NULL,     // unnamed
-                                           &G_hmtxRunning,
-                                           0,        // unshared
-                                           TRUE);    // initially owned!
-            if (arc == NO_ERROR)
-            {
-                fSemOwned = TRUE;
-                lstInit(&G_llRunning,
-                        TRUE);      // auto-free
-            }
-        }
-
-        if (!fSemOwned)
-            fSemOwned = (WinRequestMutexSem(G_hmtxRunning, 4000) == NO_ERROR);
-
-        if (fSemOwned)
+        if (fSemOwned = LockRunning())
         {
             if (    (happ)
                  && ((pProgram != NULL) || (pDataFile != NULL))
@@ -263,7 +313,7 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
 
                             // set list-notify flag on the object
                             // so that XFldObject will call
-                            // progAppTerminateNotifyObj when
+                            // progRunningAppDestroyed if
                             // the object is destroyed
                             _xwpModifyListNotify(pObjEmph,
                                                  OBJLIST_RUNNINGSTORED,
@@ -284,12 +334,7 @@ BOOL progStoreRunningApp(WPObject *pProgram,        // in: started program
     } END_CATCH();
 
     if (fSemOwned)
-    {
-        DosReleaseMutexSem(G_hmtxRunning);
-        fSemOwned = FALSE;
-    }
-
-    DosExitMustComplete(&ulNesting);
+        UnlockRunning();
 
     return (brc);
 }
@@ -315,14 +360,9 @@ BOOL progAppTerminateNotify(HAPP happ)        // in: application handle
     BOOL    brc = FALSE;
     BOOL    fSemOwned = FALSE;
 
-    ULONG   ulNesting = 0;
-    DosEnterMustComplete(&ulNesting);
-
     TRY_LOUD(excpt1)
     {
-        fSemOwned = (WinRequestMutexSem(G_hmtxRunning, 4000) == NO_ERROR);
-
-        if (fSemOwned)
+        if (fSemOwned = LockRunning())
         {
             // go thru list
             PLISTNODE pNode = lstQueryFirstNode(&G_llRunning);
@@ -376,12 +416,7 @@ BOOL progAppTerminateNotify(HAPP happ)        // in: application handle
     } END_CATCH();
 
     if (fSemOwned)
-    {
-        DosReleaseMutexSem(G_hmtxRunning);
-        fSemOwned = FALSE;
-    }
-
-    DosExitMustComplete(&ulNesting);
+        UnlockRunning();
 
     return (brc);
 }
@@ -402,6 +437,7 @@ BOOL progAppTerminateNotify(HAPP happ)        // in: application handle
  *      this is not necessary anyway.
  *
  *@@added V0.9.6 (2000-10-23) [umoeller]
+ *@@changed V0.9.12 (2001-05-22) [umoeller]: fixed list search error
  */
 
 BOOL progRunningAppDestroyed(WPObject *pObjEmphasis)    // in: destroyed object
@@ -409,20 +445,16 @@ BOOL progRunningAppDestroyed(WPObject *pObjEmphasis)    // in: destroyed object
     BOOL    brc = FALSE;
     BOOL    fSemOwned = FALSE;
 
-    ULONG   ulNesting = 0;
-    DosEnterMustComplete(&ulNesting);
-
     TRY_LOUD(excpt1)
     {
-        fSemOwned = (WinRequestMutexSem(G_hmtxRunning, 4000) == NO_ERROR);
-
-        if (fSemOwned)
+        if (fSemOwned = LockRunning())
         {
             // go thru list
             PLISTNODE pNode = lstQueryFirstNode(&G_llRunning);
             while (pNode)
             {
                 PRUNNINGPROGRAM pRunning = (PRUNNINGPROGRAM)pNode->pItemData;
+                PLISTNODE pNext = pNode->pNext;         // V0.9.12 (2001-05-22) [umoeller]
                 if (pRunning->pObjEmphasis == pObjEmphasis)
                 {
                     // found:
@@ -434,12 +466,10 @@ BOOL progRunningAppDestroyed(WPObject *pObjEmphasis)    // in: destroyed object
 
                     brc = TRUE;
 
-                    // stop searching
-                            // break;
-                    // no, continue, because we can have more than one item
+                    // continue searching, because we can have more than one item
                 }
 
-                pNode = pNode->pNext;
+                pNode = pNext;
             }
         }
     }
@@ -449,12 +479,7 @@ BOOL progRunningAppDestroyed(WPObject *pObjEmphasis)    // in: destroyed object
     } END_CATCH();
 
     if (fSemOwned)
-    {
-        DosReleaseMutexSem(G_hmtxRunning);
-        fSemOwned = FALSE;
-    }
-
-    DosExitMustComplete(&ulNesting);
+        UnlockRunning();
 
     return (brc);
 }
@@ -969,6 +994,7 @@ BOOL progSetupArgs(const char *pcszParams,
  *      The caller must free the PSZ which is returned.
  *
  *@@added V0.9.7 (2000-12-17) [umoeller]
+ *@@changed V0.9.12 (2001-05-22) [umoeller]: fixed invalid pointer return
  */
 
 PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
@@ -1041,7 +1067,10 @@ PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
                                          NULL);
             if (arc != NO_ERROR)
                 if (pszNewEnv)
+                {
                     free(pszNewEnv);
+                    pszNewEnv = NULL;       // was missing V0.9.12 (2001-05-22) [umoeller]
+                }
         }
 
         doshFreeEnvironment(&Env);
@@ -1063,9 +1092,10 @@ PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
  *      This is a complete implementation of running
  *      programs in the WPS. Since IBM was not kind
  *      enough to export a method interface for doing
- *      this, and since there is no way of starting a
- *      program object with a data file as a parameter,
- *      I had to rewrite all this.
+ *      this, and since there is _no way_ of starting a
+ *      program object with a data file as a parameter
+ *      using the standard WPS methods, I had to rewrite
+ *      all this.
  *
  *      Presently, this gets called from:
  *
@@ -1114,118 +1144,88 @@ PSZ progSetupEnv(WPObject *pProgObject,        // in: WPProgram or WPProgramFile
  *@@added V0.9.6 (2000-10-16) [umoeller]
  *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed startup dir with data files
  *@@changed V0.9.7 (2000-12-17) [umoeller]: now building environment correctly
+ *@@changed V0.9.12 (2001-05-22) [umoeller]: extracted progQueryDetails
+ *@@changed V0.9.12 (2001-05-22) [umoeller]: fixed crash cleanup
  */
 
 HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFile
                      WPFileSystem *pArgDataFile,  // in: data file as arg or NULL
                      ULONG ulMenuID)            // in: with data files, menu ID that was used
 {
-    HAPP happ = 0;
-
-    ULONG   ulNesting = 0;
-    DosEnterMustComplete(&ulNesting);
+    HAPP            happ = 0;
+    PSZ             pszParams = NULL;
+    PPROGDETAILS    pProgDetails = NULL;
 
     TRY_LOUD(excpt1)
     {
-        PSZ     pszProgTitle = _wpQueryTitle(pProgObject);
-
-        // _Pmpf((__FUNCTION__ ": Entering with \"%s\"", pszProgTitle));
-
-        // make sure we really have a program
-        if (    (_somIsA(pProgObject, _WPProgram))
-             || (_somIsA(pProgObject, _WPProgramFile))
-           )
+        // get program data
+        // (progQueryDetails checks for whether this is a valid object)
+        if (pProgDetails = progQueryDetails(pProgObject))
         {
-            // OK:
+            // OK, now we got the program object data....
+            /*
+            typedef struct _PROGDETAILS {
+              ULONG        Length;          //  Length of structure.
+              PROGTYPE     progt;           //  Program type.
+              PSZ          pszTitle;        //  Title.
+              PSZ          pszExecutable;   //  Executable file name (program name).
+              PSZ          pszParameters;   //  Parameter string.
+              PSZ          pszStartupDir;   //  Start-up directory.
+              PSZ          pszIcon;         //  Icon-file name.
+              PSZ          pszEnvironment;  //  Environment string.
+              SWP          swpInitial;      //  Initial window position and size.
+            } PROGDETAILS; */
 
-            // get program data
-            // (wpQueryProgDetails is supported on both WPProgram and WPProgramFile)
-            ULONG   ulSize = 0;
-            if ((_wpQueryProgDetails(pProgObject, (PPROGDETAILS)NULL, &ulSize)))
+            // fix parameters (placeholders etc.)
+            if (    (progSetupArgs(pProgDetails->pszParameters,
+                                   pArgDataFile,
+                                   &pszParams))
+               )
             {
-                PPROGDETAILS    pProgDetails = 0;
-                if ((pProgDetails = (PPROGDETAILS)malloc(ulSize)) != NULL)
-                {
-                    if ((_wpQueryProgDetails(pProgObject, pProgDetails, &ulSize)))
+                PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
+
+                PSZ     pszStartupDir = pProgDetails->pszStartupDir;
+                CHAR    szDatafileDir[CCHMAXPATH] = "";
+
+                // if startup dir is empty, but data file is given,
+                // use data file's folder as startup dir...
+                if ((!pszStartupDir) || (*pszStartupDir == 0))
+                    if (pArgDataFile)
                     {
-                        // OK, now we got the program object data....
-                        /*
-                        typedef struct _PROGDETAILS {
-                          ULONG        Length;          //  Length of structure.
-                          PROGTYPE     progt;           //  Program type.
-                          PSZ          pszTitle;        //  Title.
-                          PSZ          pszExecutable;   //  Executable file name (program name).
-                          PSZ          pszParameters;   //  Parameter string.
-                          PSZ          pszStartupDir;   //  Start-up directory.
-                          PSZ          pszIcon;         //  Icon-file name.
-                          PSZ          pszEnvironment;  //  Environment string.
-                          SWP          swpInitial;      //  Initial window position and size.
-                        } PROGDETAILS; */
-
-                        // fix parameters (placeholders etc.)
-                        PSZ             pszParams = 0;
-
-                        if (    (progSetupArgs(pProgDetails->pszParameters,
-                                               pArgDataFile,
-                                               &pszParams))
-                           )
-                        {
-                            PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-
-                            PSZ     pszStartupDir = pProgDetails->pszStartupDir;
-                            CHAR    szDatafileDir[CCHMAXPATH] = "";
-
-                            // if startup dir is empty, but data file is given,
-                            // use data file's folder as startup dir...
-                            if ((!pszStartupDir) || (*pszStartupDir == 0))
-                                if (pArgDataFile)
-                                {
-                                    // V0.9.7 (2000-12-10) [umoeller]: better to query folder's dir
-                                    WPFolder *pFilesFolder = _wpQueryFolder(pArgDataFile);
-                                    if (pFilesFolder)
-                                        if (_wpQueryFilename(pFilesFolder, szDatafileDir, TRUE))
-                                            pszStartupDir = szDatafileDir;
-                                }
-
-                            // set the new params and startup dir
-                            pProgDetails->pszParameters = pszParams;
-                            pProgDetails->pszStartupDir = pszStartupDir;
-
-                            // build the new environment V0.9.7 (2000-12-17) [umoeller]
-                            pProgDetails->pszEnvironment
-                                = progSetupEnv(pProgObject,
-                                               pProgDetails->pszEnvironment,
-                                               pArgDataFile);
-
-                            // start the app (more hacks in winhStartApp,
-                            // which calls WinStartApp in turn)
-                            happ = winhStartApp(pKernelGlobals->hwndThread1Object,
-                                                pProgDetails);
-
-                            if (happ)
-                            {
-                                // app started OK:
-                                // set in-use emphasis on either
-                                // the data file or the program object
-                                progStoreRunningApp(pProgObject,
-                                                    pArgDataFile,
-                                                    happ,
-                                                    ulMenuID);
-
-                            }
-
-                            if (pProgDetails->pszEnvironment)
-                                free(pProgDetails->pszEnvironment);
-
-                        } // end if progSetupArgs
-
-                        if (pszParams)
-                            free(pszParams);
+                        // V0.9.7 (2000-12-10) [umoeller]: better to query folder's dir
+                        WPFolder *pFilesFolder = _wpQueryFolder(pArgDataFile);
+                        if (pFilesFolder)
+                            if (_wpQueryFilename(pFilesFolder, szDatafileDir, TRUE))
+                                pszStartupDir = szDatafileDir;
                     }
 
-                    free(pProgDetails);
+                // set the new params and startup dir
+                pProgDetails->pszParameters = pszParams;
+                pProgDetails->pszStartupDir = pszStartupDir;
+
+                // build the new environment V0.9.7 (2000-12-17) [umoeller]
+                pProgDetails->pszEnvironment
+                    = progSetupEnv(pProgObject,
+                                   pProgDetails->pszEnvironment,
+                                   pArgDataFile);
+
+                // start the app (more hacks in winhStartApp,
+                // which calls WinStartApp in turn)
+                happ = winhStartApp(pKernelGlobals->hwndThread1Object,
+                                    pProgDetails);
+
+                if (happ)
+                {
+                    // app started OK:
+                    // set in-use emphasis on either
+                    // the data file or the program object
+                    progStoreRunningApp(pProgObject,
+                                        pArgDataFile,
+                                        happ,
+                                        ulMenuID);
+
                 }
-            }
+            } // end if progSetupArgs
         }
     }
     CATCH(excpt1)
@@ -1233,7 +1233,15 @@ HAPP progOpenProgram(WPObject *pProgObject,     // in: WPProgram or WPProgramFil
         happ = 0;
     } END_CATCH();
 
-    DosExitMustComplete(&ulNesting);
+    if (pszParams)
+        free(pszParams);
+
+    if (pProgDetails)
+    {
+        if (pProgDetails->pszEnvironment)
+            free(pProgDetails->pszEnvironment);
+        free(pProgDetails);
+    }
 
     return (happ);
 }

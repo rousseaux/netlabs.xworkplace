@@ -596,17 +596,9 @@ LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take items 
 
                     if ((pGlobalSettings->MenuCascadeMode) && (lDefaultItem != 1))
                     {
-                        // make the XFolder submenu cascading;
-                        // stolen from the Warp Toolkit WPS Guide
-                        ULONG ulStyle = WinQueryWindowULong(hNewMenu, QWL_STYLE);
-                        ulStyle |= MS_CONDITIONALCASCADE;
-                        WinSetWindowULong(hNewMenu, QWL_STYLE, ulStyle);
-
-                        // make the first item in the subfolder
-                        // the default of cascading submenu */
-                        WinSendMsg(hNewMenu,
-                                   MM_SETDEFAULTITEMID,
-                                   (MPARAM)(lDefaultItem), 0L);
+                        // make the XFolder submenu cascading
+                        winhSetMenuCondCascade(hNewMenu,
+                                               lDefaultItem);
                     }
                 }
 
@@ -715,6 +707,7 @@ VOID mnuInvalidateConfigCache(VOID)
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.9 (2001-04-04) [umoeller]: added mutex protection for cache
+ *@@changed V0.9.12 (2001-05-22) [umoeller]: added extended close menu
  */
 
 BOOL InsertConfigFolderItems(XFolder *somSelf,
@@ -808,6 +801,7 @@ BOOL InsertConfigFolderItems(XFolder *somSelf,
  *@@changed V0.9.0 [umoeller]: introduced config folder menu items cache
  *@@changed V0.9.1 (2000-02-01) [umoeller]: "select some" was added for Tree view also; fixed
  *@@changed V0.9.3 (2000-04-10) [umoeller]: snap2grid feature setting was ignored; fixed
+ *@@changed V0.9.12 (2001-05-22) [umoeller]: "refresh now" was added even for non-open-view menus
  */
 
 BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
@@ -815,12 +809,13 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                               HWND hwndCnr,       // in: cnr hwnd
                               ULONG iPosition)    // in: dunno
 {
-    XFolder             *pFavorite;
-    BOOL                rc = TRUE;
-    MENUITEM            mi;
+    XFolder         *pFavorite;
+    BOOL            rc = TRUE;
+    MENUITEM        mi;
 
     // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    ULONG           ulVarMenuOfs = pGlobalSettings->VarMenuOffset;
 
     // set the global variable for whether Warp 4 is running
     G_fIsWarp4 = doshIsWarp4();
@@ -828,355 +823,356 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
     // protect the following with the quiet exception handler (except.c)
     TRY_QUIET(excpt1)
     {
-        if (somSelf)
-        {
-            // some preparations
-            XFolderData *somThis = XFolderGetData(somSelf);
-            HWND        hwndFrame = WinQueryWindow(hwndCnr, QW_PARENT);
-            ULONG       ulView = -1;
-            POINTL      ptlMouse;
+        // some preparations
+        XFolderData *somThis = XFolderGetData(somSelf);
+        HWND        hwndFrame = NULLHANDLE;
+        ULONG       ulView = -1;
+        POINTL      ptlMouse;
 
-            // store mouse pointer position for creating objects from templates
-            WinQueryMsgPos(WinQueryAnchorBlock(hwndCnr), &ptlMouse);
-            _MenuMousePosX = ptlMouse.x;
-            _MenuMousePosY = ptlMouse.y;
+        if (hwndCnr)
+            hwndFrame = WinQueryWindow(hwndCnr, QW_PARENT);
 
-            #ifdef DEBUG_MENUS
-                _Pmpf(("mnuModifyFolderPopupMenu, hwndCnr: 0x%lX", hwndCnr));
-            #endif
+        // store mouse pointer position for creating objects from templates
+        WinQueryMsgPos(G_habThread1, &ptlMouse);
+        _MenuMousePosX = ptlMouse.x;
+        _MenuMousePosY = ptlMouse.y;
 
-            // get view (OPEN_CONTENTS etc.)
+        #ifdef DEBUG_MENUS
+            _Pmpf(("mnuModifyFolderPopupMenu, hwndCnr: 0x%lX", hwndCnr));
+        #endif
+
+        // get view (OPEN_CONTENTS etc.)
+        if (hwndFrame)
             ulView = wpshQueryView(somSelf, hwndFrame);
 
-            // in wpFilterPopupMenu, because no codes are provided;
-            // we only do this if the Global Settings want it
+        // in wpFilterPopupMenu, because no codes are provided;
+        // we only do this if the Global Settings want it
 
-            /*
-             * WPDrives "Open" submenu:
-             *
-             */
+        /*
+         * WPDrives "Open" submenu:
+         *
+         */
 
-            /* if (_somIsA(somSelf, _WPDrives))
+        /* if (_somIsA(somSelf, _WPDrives))
+        {
+            // get handle to the WPObject's "Help" submenu in the
+            // the folder's popup menu
+            if (WinSendMsg(hwndMenu,
+                           MM_QUERYITEM,
+                           MPFROM2SHORT(WPMENUID_OPEN, TRUE),
+                           (MPARAM)&mi))
             {
-                // get handle to the WPObject's "Help" submenu in the
-                // the folder's popup menu
-                if (WinSendMsg(hwndMenu,
-                               MM_QUERYITEM,
-                               MPFROM2SHORT(WPMENUID_OPEN, TRUE),
-                               (MPARAM)&mi))
-                {
-                    // mi.hwndSubMenu now contains "Open" submenu handle,
-                    // which we add items to now
-                    winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                                       (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_XWPVIEW),
-                                       cmnGetString(ID_XSSI_OPENPARTITIONS),  // pszOpenPartitions
-                                       MIS_TEXT, 0);
-                }
-            } */
-
-            /*
-             * Default document in "Open" submenu:
-             *
-             */
-
-            if (pGlobalSettings->fFdrDefaultDoc)
-            {
-                WPFileSystem *pDefDoc = _xwpQueryDefaultDocument(somSelf);
-                if (pDefDoc)
-                    // we have a default document for this folder:
-                    if (winhQueryMenuItem(hwndMenu,
-                                          WPMENUID_OPEN,
-                                          TRUE,
-                                          &mi))
-                    {
-                        // mi.hwndSubMenu now contains "Open" submenu handle;
-
-                        CHAR szDefDoc[2*CCHMAXPATH];
-                        sprintf(szDefDoc,
-                                "%s \"%s\"",
-                                cmnGetString(ID_XSSI_FDRDEFAULTDOC),  // pszFdrDefaultDoc
-                                _wpQueryTitle(pDefDoc));
-                        winhInsertMenuSeparator(mi.hwndSubMenu, MIT_END,
-                                                (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
-                        // add "Default document"
-                        winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                                           (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_FDRDEFAULTDOC),
-                                           szDefDoc,
-                                           MIS_TEXT, 0);
-                    }
+                // mi.hwndSubMenu now contains "Open" submenu handle,
+                // which we add items to now
+                winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
+                                   ulVarMenuOfs + ID_XFMI_OFS_XWPVIEW,
+                                   cmnGetString(ID_XSSI_OPENPARTITIONS),  // pszOpenPartitions
+                                   MIS_TEXT, 0);
             }
+        } */
 
-            /*
-             * "View" submenu:
-             *
-             */
+        /*
+         * Default document in "Open" submenu:
+         *
+         */
 
-            if (G_fIsWarp4)
-            {
-                if (pGlobalSettings->RemoveViewMenu)
-                {
-                    #ifdef DEBUG_MENUS
-                        _Pmpf(("  Removing 'View' submenu"));
-                    #endif
-                    winhRemoveMenuItem(hwndMenu, ID_WPM_VIEW);
-                }
-
-                if (pGlobalSettings->RemovePasteItem)
-                {
-                    #ifdef DEBUG_MENUS
-                        _Pmpf(("  Removing 'Paste' menu item"));
-                    #endif
-                    winhRemoveMenuItem(hwndMenu, ID_WPMI_PASTE);
-                }
-            }
-
-            /*
-             * product info:
-             *
-             */
-
-            cmnAddProductInfoMenuItem(hwndMenu);
-
-            // work on the "View" submenu; do the following only
-            // if the "View" menu has not been removed (Warp 4)
-            // or the "Select" menu has not been removed (Warp 3)
-            if (
-                    (   (G_fIsWarp4)
-                     && (pGlobalSettings->RemoveViewMenu == 0)
-                    )
-                 || (   (!G_fIsWarp4)
-                     && ((pGlobalSettings->DefaultMenuItems & CTXT_SELECT) == 0)
-                    )
-               )
-            {
-
-                SHORT sPos = MIT_END;
-
+        if (pGlobalSettings->fFdrDefaultDoc)
+        {
+            WPFileSystem *pDefDoc = _xwpQueryDefaultDocument(somSelf);
+            if (pDefDoc)
+                // we have a default document for this folder:
                 if (winhQueryMenuItem(hwndMenu,
-                                      (G_fIsWarp4)
-                                      // in Warp 4, these items are in the "View" submenu;
-                                      // in Warp 3, "Select" is  a separate submenu
-                                           ? ID_WPM_VIEW           // 0x68
-                                           : 0x04,      // WPMENUID_SELECT
+                                      WPMENUID_OPEN,
                                       TRUE,
                                       &mi))
                 {
-                    // mi.hwndSubMenu now contains "Select"/"View" submenu handle,
-                    // which we can add items to now
+                    // mi.hwndSubMenu now contains "Open" submenu handle;
+
+                    CHAR szDefDoc[2*CCHMAXPATH];
+                    sprintf(szDefDoc,
+                            "%s \"%s\"",
+                            cmnGetString(ID_XSSI_FDRDEFAULTDOC),  // pszFdrDefaultDoc
+                            _wpQueryTitle(pDefDoc));
+                    winhInsertMenuSeparator(mi.hwndSubMenu, MIT_END,
+                                            ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+                    // add "Default document"
+                    winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
+                                       ulVarMenuOfs + ID_XFMI_OFS_FDRDEFAULTDOC,
+                                       szDefDoc,
+                                       MIS_TEXT, 0);
+                }
+        }
+
+        /*
+         * "View" submenu:
+         *
+         */
+
+        if (G_fIsWarp4)
+        {
+            if (pGlobalSettings->RemoveViewMenu)
+            {
+                #ifdef DEBUG_MENUS
+                    _Pmpf(("  Removing 'View' submenu"));
+                #endif
+                winhRemoveMenuItem(hwndMenu, ID_WPM_VIEW);
+            }
+
+            if (pGlobalSettings->RemovePasteItem)
+            {
+                #ifdef DEBUG_MENUS
+                    _Pmpf(("  Removing 'Paste' menu item"));
+                #endif
+                winhRemoveMenuItem(hwndMenu, ID_WPMI_PASTE);
+            }
+        }
+
+        /*
+         * product info:
+         *
+         */
+
+        cmnAddProductInfoMenuItem(hwndMenu);
+
+        // work on the "View" submenu; do the following only
+        // if the "View" menu has not been removed (Warp 4)
+        // or the "Select" menu has not been removed (Warp 3)
+        if (
+                (   (G_fIsWarp4)
+                 && (pGlobalSettings->RemoveViewMenu == 0)
+                )
+             || (   (!G_fIsWarp4)
+                 && ((pGlobalSettings->DefaultMenuItems & CTXT_SELECT) == 0)
+                )
+           )
+        {
+
+            SHORT sPos = MIT_END;
+
+            if (winhQueryMenuItem(hwndMenu,
+                                  (G_fIsWarp4)
+                                  // in Warp 4, these items are in the "View" submenu;
+                                  // in Warp 3, "Select" is  a separate submenu
+                                       ? ID_WPM_VIEW           // 0x68
+                                       : 0x04,      // WPMENUID_SELECT
+                                  TRUE,
+                                  &mi))
+            {
+                // mi.hwndSubMenu now contains "Select"/"View" submenu handle,
+                // which we can add items to now
+
+                #ifdef DEBUG_MENUS
+                    _Pmpf(("  'View'/'Select' hwnd:0x%X", mi.hwndSubMenu));
+                #endif
+
+                // add "Select by name" only if not in Tree view V0.9.1 (2000-02-01) [umoeller]
+                if (    (pGlobalSettings->AddSelectSomeItem)
+                     && (   (ulView == OPEN_CONTENTS)
+                         || (ulView == OPEN_DETAILS)
+                        )
+                   )
+                {
+
+                    if (G_fIsWarp4)
+                        // get position of "Refresh now";
+                        // we'll add behind that item
+                        sPos = (SHORT)WinSendMsg(mi.hwndSubMenu,
+                                                 MM_ITEMPOSITIONFROMID,
+                                                 MPFROM2SHORT(WPMENUID_REFRESH,
+                                                              FALSE),
+                                                 MPNULL);
+                    // else: using MIT_END (above)
 
                     #ifdef DEBUG_MENUS
-                        _Pmpf(("  'View'/'Select' hwnd:0x%X", mi.hwndSubMenu));
+                        _Pmpf(("  Adding 'Select some' @ ofs %d, hwndSubmenu: 0x%lX",
+                                    sPos, mi.hwndSubMenu));
                     #endif
+                    winhInsertMenuItem(mi.hwndSubMenu,
+                                       sPos,
+                                       ulVarMenuOfs + ID_XFMI_OFS_SELECTSOME,
+                                       cmnGetString(ID_XSSI_SELECTSOME),  // pszSelectSome
+                                       MIS_TEXT, 0);
+                    if (G_fIsWarp4)
+                        winhInsertMenuSeparator(mi.hwndSubMenu,
+                                                sPos + 1,
+                                                ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+                }
 
-                    // add "Select by name" only if not in Tree view V0.9.1 (2000-02-01) [umoeller]
-                    if (    (pGlobalSettings->AddSelectSomeItem)
-                         && (   (ulView == OPEN_CONTENTS)
-                             || (ulView == OPEN_DETAILS)
-                            )
+                // additional "view" items (icon size etc.)
+                if (pGlobalSettings->ExtendFldrViewMenu)
+                {
+                    // rule out possible user views
+                    // of WPFolder subclasses
+                    if (    (ulView == OPEN_TREE)
+                         || (ulView == OPEN_CONTENTS)
+                         || (ulView == OPEN_DETAILS)
                        )
                     {
-
                         if (G_fIsWarp4)
-                            // get position of "Refresh now";
-                            // we'll add behind that item
-                            sPos = (SHORT)WinSendMsg(mi.hwndSubMenu,
-                                                     MM_ITEMPOSITIONFROMID,
-                                                     MPFROM2SHORT(WPMENUID_REFRESH,
-                                                                  FALSE),
-                                                     MPNULL);
-                        // else: using MIT_END (above)
-
-                        #ifdef DEBUG_MENUS
-                            _Pmpf(("  Adding 'Select some' @ ofs %d, hwndSubmenu: 0x%lX",
-                                        sPos, mi.hwndSubMenu));
-                        #endif
-                        winhInsertMenuItem(mi.hwndSubMenu,
-                                           sPos,
-                                           (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SELECTSOME),
-                                           cmnGetString(ID_XSSI_SELECTSOME),  // pszSelectSome
-                                           MIS_TEXT, 0);
-                        if (G_fIsWarp4)
-                            winhInsertMenuSeparator(mi.hwndSubMenu,
-                                                    sPos + 1,
-                                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
-                    }
-
-                    // additional "view" items (icon size etc.)
-                    if (pGlobalSettings->ExtendFldrViewMenu)
-                    {
-                        // rule out possible user views
-                        // of WPFolder subclasses
-                        if (    (ulView == OPEN_TREE)
-                             || (ulView == OPEN_CONTENTS)
-                             || (ulView == OPEN_DETAILS)
-                           )
                         {
-                            if (G_fIsWarp4)
-                            {
-                                // for Warp 4, use the existing "View" submenu,
-                                // but add an additional separator after
-                                // the exiting "View"/"Refresh now" item
-                                winhInsertMenuSeparator(mi.hwndSubMenu, MIT_END,
-                                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                            // for Warp 4, use the existing "View" submenu,
+                            // but add an additional separator after
+                            // the exiting "View"/"Refresh now" item
+                            winhInsertMenuSeparator(mi.hwndSubMenu, MIT_END,
+                                    ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
 
-                                mnuInsertFldrViewItems(somSelf,
-                                                       mi.hwndSubMenu,
-                                                       FALSE,       // no submenu
-                                                       hwndCnr,
-                                                       ulView);
-                            } else
-                                // Warp 3:
-                                mnuInsertFldrViewItems(somSelf,
-                                                       hwndMenu,
-                                                       TRUE, // on Warp 3, insert new submenu
-                                                       hwndCnr,
-                                                       ulView);
-                        }
+                            mnuInsertFldrViewItems(somSelf,
+                                                   mi.hwndSubMenu,
+                                                   FALSE,       // no submenu
+                                                   hwndCnr,
+                                                   ulView);
+                        } else
+                            // Warp 3:
+                            mnuInsertFldrViewItems(somSelf,
+                                                   hwndMenu,
+                                                   TRUE, // on Warp 3, insert new submenu
+                                                   hwndCnr,
+                                                   ulView);
                     }
-                } // end if MM_QUERYITEM;
-                // else: "View" menu not found; but this can
-                // happen with Warp 4 menu bars, which have
-                // a "View" menu separate from the "Folder" menu...
-            }
-
-            // work on "Sort" menu; we have put this
-            // into a subroutine, because this is also
-            // needed for folder menu _bars_
-
-            fdrModifySortMenu(somSelf,
-                              hwndMenu);
-
-            if (pGlobalSettings->AddCopyFilenameItem)
-            {
-                winhInsertMenuSeparator(hwndMenu, MIT_END,
-                                        (pGlobalSettings->VarMenuOffset
-                                                + ID_XFMI_OFS_SEPARATOR));
-
-                winhInsertMenuItem(hwndMenu, MIT_END,
-                                   (pGlobalSettings->VarMenuOffset
-                                            + ID_XFMI_OFS_COPYFILENAME_MENU),
-                                   cmnGetString(ID_XSSI_COPYFILENAME), // (pNLSStrings)->pszCopyFilename,
-                                   0, 0);
-            }
-
-            // insert the "Refresh now" and "Snap to grid" items only
-            // if the folder is currently open
-            if (_wpFindUseItem(somSelf, USAGE_OPENVIEW, NULL))
-            {
-                if (!pGlobalSettings->AddCopyFilenameItem)
-                    winhInsertMenuSeparator(hwndMenu, MIT_END,
-                                (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
-
-                // "Refresh now"
-                if (pGlobalSettings->MoveRefreshNow)
-                    winhInsertMenuItem(hwndMenu, MIT_END,
-                            (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_REFRESH),
-                            cmnGetString(ID_XSSI_REFRESHNOW),  // pszRefreshNow
-                            MIS_TEXT, 0);
-
-                // "Snap to grid" feature enabled? V0.9.3 (2000-04-10) [umoeller]
-                if (    (pGlobalSettings->fEnableSnap2Grid)
-                     // "Snap to grid" enabled locally or globally?
-                     && (    (_bSnapToGridInstance == 1)
-                          || (   (_bSnapToGridInstance == 2)
-                              && (pGlobalSettings->fAddSnapToGridDefault)
-                             )
-                        )
-                     // insert only when sorting is off
-                     && (!fdrHasAlwaysSort(somSelf))
-                     // and only in icon view
-                     && (ulView == OPEN_CONTENTS)
-                    )
-                {
-                    // insert "Snap to grid" only for open icon views
-                    winhInsertMenuItem(hwndMenu,
-                                       MIT_END,
-                                       (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SNAPTOGRID),
-                                       cmnGetString(ID_XSSI_SNAPTOGRID),  // pszSnapToGrid
-                                       MIS_TEXT,
-                                       0);
                 }
+            } // end if MM_QUERYITEM;
+            // else: "View" menu not found; but this can
+            // happen with Warp 4 menu bars, which have
+            // a "View" menu separate from the "Folder" menu...
+        }
 
-            } // end if view open
+        // work on "Sort" menu; we have put this
+        // into a subroutine, because this is also
+        // needed for folder menu _bars_
 
-            // now do necessary preparations for all variable menu items
-            // (i.e. folder content and config folder items)
-            cmnuInitItemCache(pGlobalSettings);
+        fdrModifySortMenu(somSelf,
+                          hwndMenu);
 
-            /*
-             * folder content / favorite folders:
-             *
-             */
+        if (pGlobalSettings->AddCopyFilenameItem)
+        {
+            winhInsertMenuSeparator(hwndMenu, MIT_END,
+                                    ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
 
-            // get first favorite folder; we will only work on
-            // this if either folder content for every folder is
-            // enabled or at least one favorite folder exists
-            pFavorite = _xwpclsQueryFavoriteFolder(_XFolder, NULL);
-            if (    (pGlobalSettings->fNoSubclassing == 0)
-                 && (   (pGlobalSettings->AddFolderContentItem)
-                     || (pFavorite)
-                    )
-               )
-            {
+            winhInsertMenuItem(hwndMenu, MIT_END,
+                               ulVarMenuOfs + ID_XFMI_OFS_COPYFILENAME_MENU,
+                               cmnGetString(ID_XSSI_COPYFILENAME), // (pNLSStrings)->pszCopyFilename,
+                               0, 0);
+        }
+
+        // insert the "Refresh now" and "Snap to grid" items only
+        // if the folder is currently open
+        if (ulView != -1)           // fixed V0.9.12 (2001-05-22) [umoeller]
+        {
+            if (!pGlobalSettings->AddCopyFilenameItem)
                 winhInsertMenuSeparator(hwndMenu,
                                         MIT_END,
-                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                                        ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
 
-                if (pGlobalSettings->FCShowIcons)
-                {
-                    // before actually inserting the content submenus, we need a real
-                    // awful cheat, because otherwise the owner draw items won't work
-                    // right (I don't know why the hell they are not being sent
-                    // WM_MEASUREITEM msgs if we don't do this); so we insert a
-                    // content submenu and remove it again right away
-                    WinSendMsg(hwndMenu,
-                               MM_REMOVEITEM,
-                               MPFROM2SHORT(cmnuPrepareContentSubmenu(somSelf, hwndMenu,
-                                                                      cmnGetString(ID_XSSI_FLDRCONTENT),  // pszFldrContent
-                                                                      MIT_END,
-                                                                      FALSE), // no owner draw
-                                            FALSE),
-                               MPNULL);
-                }
+            // "Refresh now"
+            if (pGlobalSettings->MoveRefreshNow)
+                winhInsertMenuItem(hwndMenu,
+                                   MIT_END,
+                                   ulVarMenuOfs + ID_XFMI_OFS_REFRESH,
+                                   cmnGetString(ID_XSSI_REFRESHNOW),  // pszRefreshNow
+                                   MIS_TEXT,
+                                   0);
 
-                if (pGlobalSettings->AddFolderContentItem)
-                {
-                    // add "Folder content" only if somSelf is not a favorite folder,
-                    // because then we will insert the folder content anyway
-                    if (!_xwpIsFavoriteFolder(somSelf))
-                        // somself is not in favorites list: add "Folder content"
-                        cmnuPrepareContentSubmenu(somSelf,
-                                                  hwndMenu,
-                                                  cmnGetString(ID_XSSI_FLDRCONTENT),
-                                                  MIT_END,
-                                                  FALSE); // no owner draw in main context menu
-                }
+            // "Snap to grid" feature enabled? V0.9.3 (2000-04-10) [umoeller]
+            if (    (pGlobalSettings->fEnableSnap2Grid)
+                 // "Snap to grid" enabled locally or globally?
+                 && (    (_bSnapToGridInstance == 1)
+                      || (   (_bSnapToGridInstance == 2)
+                          && (pGlobalSettings->fAddSnapToGridDefault)
+                         )
+                    )
+                 // insert only when sorting is off
+                 && (!fdrHasAlwaysSort(somSelf))
+                 // and only in icon view
+                 && (ulView == OPEN_CONTENTS)
+                )
+            {
+                // insert "Snap to grid" only for open icon views
+                winhInsertMenuItem(hwndMenu,
+                                   MIT_END,
+                                   ulVarMenuOfs + ID_XFMI_OFS_SNAPTOGRID,
+                                   cmnGetString(ID_XSSI_SNAPTOGRID),  // pszSnapToGrid
+                                   MIS_TEXT,
+                                   0);
+            }
 
-                // now add favorite folders
-                pFavorite = NULL;
-                while (pFavorite = _xwpclsQueryFavoriteFolder(_XFolder,
-                                                              pFavorite))
-                {
-                    cmnuPrepareContentSubmenu(pFavorite,
+        } // end if view open
+
+        // now do necessary preparations for all variable menu items
+        // (i.e. folder content and config folder items)
+        cmnuInitItemCache(pGlobalSettings);
+
+        /*
+         * folder content / favorite folders:
+         *
+         */
+
+        // get first favorite folder; we will only work on
+        // this if either folder content for every folder is
+        // enabled or at least one favorite folder exists
+        pFavorite = _xwpclsQueryFavoriteFolder(_XFolder, NULL);
+        if (    (pGlobalSettings->fNoSubclassing == 0)
+             && (   (pGlobalSettings->AddFolderContentItem)
+                 || (pFavorite)
+                )
+           )
+        {
+            winhInsertMenuSeparator(hwndMenu,
+                                    MIT_END,
+                                    ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+
+            if (pGlobalSettings->FCShowIcons)
+            {
+                // before actually inserting the content submenus, we need a real
+                // awful cheat, because otherwise the owner draw items won't work
+                // right (I don't know why the hell they are not being sent
+                // WM_MEASUREITEM msgs if we don't do this); so we insert a
+                // content submenu and remove it again right away
+                WinSendMsg(hwndMenu,
+                           MM_REMOVEITEM,
+                           MPFROM2SHORT(cmnuPrepareContentSubmenu(somSelf, hwndMenu,
+                                                                  cmnGetString(ID_XSSI_FLDRCONTENT),  // pszFldrContent
+                                                                  MIT_END,
+                                                                  FALSE), // no owner draw
+                                        FALSE),
+                           MPNULL);
+            }
+
+            if (pGlobalSettings->AddFolderContentItem)
+            {
+                // add "Folder content" only if somSelf is not a favorite folder,
+                // because then we will insert the folder content anyway
+                if (!_xwpIsFavoriteFolder(somSelf))
+                    // somself is not in favorites list: add "Folder content"
+                    cmnuPrepareContentSubmenu(somSelf,
                                               hwndMenu,
-                                              _wpQueryTitle(pFavorite),
+                                              cmnGetString(ID_XSSI_FLDRCONTENT),
                                               MIT_END,
                                               FALSE); // no owner draw in main context menu
-                }
-            } // end folder contents
+            }
 
-            /*
-             * config folders:
-             *
-             */
+            // now add favorite folders
+            pFavorite = NULL;
+            while (pFavorite = _xwpclsQueryFavoriteFolder(_XFolder,
+                                                          pFavorite))
+            {
+                cmnuPrepareContentSubmenu(pFavorite,
+                                          hwndMenu,
+                                          _wpQueryTitle(pFavorite),
+                                          MIT_END,
+                                          FALSE); // no owner draw in main context menu
+            }
+        } // end folder contents
 
-            InsertConfigFolderItems(somSelf,
-                                    hwndMenu,
-                                    hwndCnr,
-                                    pGlobalSettings);
+        /*
+         * config folders:
+         *
+         */
 
-        } // end if (somSelf)
-        else rc = FALSE;
+        InsertConfigFolderItems(somSelf,
+                                hwndMenu,
+                                hwndCnr,
+                                pGlobalSettings);
+
     }
     CATCH(excpt1)
     {
@@ -1202,6 +1198,105 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
 }
 
 /*
+ *@@ mnuHackFolderClose:
+ *      this gets closed from XFolder::wpDisplayMenu
+ *      only if "extend close menu" is enabled.
+ *
+ *      We kick out the standard "close" menu item
+ *      and replace it with a submenu. See
+ *      XFolder::wpDisplayMenu for remarks why we
+ *      can't do it in mnuModifyFolderPopupMenu.
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+/* nah, this doesn't work. Try again later. */
+
+/* BOOL mnuHackFolderClose(WPFolder *somSelf,      // in: folder
+                        HWND hwndOwner,         // in: from wpDisplayMenu
+                        HWND hwndClient,        // in: from wpDisplayMenu
+                        PPOINTL pptlPopupPt,    // in: from wpDisplayMenu
+                        ULONG ulMenuType,       // in: from wpDisplayMenu
+                        HWND hwndMenu)          // in: main context menu created by parent_wpDisplayMenu
+{
+    BOOL brc = FALSE;
+
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    ULONG           ulVarMenuOfs = pGlobalSettings->VarMenuOffset;
+
+    HWND hNewMenu;
+
+    // for some reason, WPS is no longer using
+    // WPMENUID_CLOSE but SC_CLOSE directly (0x8004)
+    winhRemoveMenuItem(hwndMenu,
+                       SC_CLOSE);
+
+    hNewMenu = winhInsertSubmenu(hwndMenu,
+                                 MIT_END,
+                                 ulVarMenuOfs + ID_XFMI_OFS_CLOSESUBMENU,
+                                 cmnGetString(ID_XSSI_CLOSE),   // "close"
+                                 MIS_TEXT,
+                                 SC_CLOSE,
+                                 cmnGetString(ID_XSSI_CLOSETHISVIEW), // "close this view
+                                 MIS_SYSCOMMAND | MIS_TEXT,
+                                        // note, MIS_SYSCOMMAND
+                                 0);
+
+    winhInsertMenuSeparator(hNewMenu,
+                            MIT_END,
+                            ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
+
+    winhInsertMenuItem(hNewMenu,
+                       MIT_END,
+                       ulVarMenuOfs + ID_XFMI_OFS_CLOSEALLTHISFDR,
+                       cmnGetString(ID_XSSI_CLOSEALLTHISFDR), // "close all of this fdr"
+                       0,
+                       0);
+    winhInsertMenuItem(hNewMenu,
+                       MIT_END,
+                       ulVarMenuOfs + ID_XFMI_OFS_CLOSEALLSUBFDRS,
+                       cmnGetString(ID_XSSI_CLOSEALLSUBFDRS), // "close all subfdrs"
+                       0,
+                       0);
+
+    // set default menu item
+    winhSetMenuCondCascade(hNewMenu,
+                           SC_CLOSE);
+
+
+    if (0 == (ulMenuType & MENU_NODISPLAY))
+    {
+        // we were supposed to show the menu:
+        // show it then
+        POINTL ptl;
+        HWND hwndConvertSource;
+        memcpy(&ptl, pptlPopupPt, sizeof(POINTL));
+        if (hwndClient)
+            hwndConvertSource = hwndClient;
+        else
+            hwndConvertSource = hwndOwner;
+
+        WinMapWindowPoints(hwndConvertSource,
+                           HWND_DESKTOP,
+                           &ptl,
+                           1);
+        WinSetFocus(HWND_DESKTOP, hwndConvertSource);
+
+        // alright, display the menu
+        WinPopupMenu(HWND_DESKTOP,
+                     hwndConvertSource,
+                     hwndMenu,
+                     ptl.x,
+                     ptl.y,
+                     0,
+                     PU_HCONSTRAIN | PU_VCONSTRAIN | PU_MOUSEBUTTON1
+                        | PU_MOUSEBUTTON2 | PU_KEYBOARD);
+    }
+
+    return (TRUE);
+} */
+
+/*
  *@@ mnuModifyDataFilePopupMenu:
  *      implementation for XFldDataFile::wpModifyPopupMenu.
  *
@@ -1219,7 +1314,7 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
                                 ULONG iPosition)
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    ULONG           ulVarMenuOfs = pGlobalSettings->VarMenuOffset;
 
     /* if (pGlobalSettings->fExtAssocs)
     {
@@ -1282,8 +1377,9 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
          || (pGlobalSettings->AddCopyFilenameItem)
          || (pGlobalSettings->fFdrDefaultDoc)
        )
-        winhInsertMenuSeparator(hwndMenu, MIT_END,
-                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+        winhInsertMenuSeparator(hwndMenu,
+                                MIT_END,
+                                ulVarMenuOfs + ID_XFMI_OFS_SEPARATOR);
 
     // insert "Attributes" submenu (for data files
     // only, not for folders
@@ -1295,37 +1391,48 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
         // get this file's file-system attributes
         ulAttr = _wpQueryAttr(somSelf);
         // insert submenu
-        hwndAttrSubmenu = winhInsertSubmenu(hwndMenu, MIT_END,
-                    (pGlobalSettings->VarMenuOffset + ID_XFM_OFS_ATTRIBUTES),
-                            cmnGetString(ID_XFSI_ATTRIBUTES),  0, // pszAttributes
+        hwndAttrSubmenu = winhInsertSubmenu(hwndMenu,
+                                            MIT_END,
+                                            ulVarMenuOfs + ID_XFM_OFS_ATTRIBUTES,
+                                            cmnGetString(ID_XFSI_ATTRIBUTES),
+                                            0, // pszAttributes
         // "archived" item, checked or not according to file-system attributes
-                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_ATTR_ARCHIVED),
-                            cmnGetString(ID_XFSI_ATTR_ARCHIVE),  MIS_TEXT, // pszAttrArchive
-                                ((ulAttr & FILE_ARCHIVED) ? MIA_CHECKED : 0));
+                                            ulVarMenuOfs + ID_XFMI_OFS_ATTR_ARCHIVED,
+                                            cmnGetString(ID_XFSI_ATTR_ARCHIVE),
+                                            MIS_TEXT,
+                                            ((ulAttr & FILE_ARCHIVED) ? MIA_CHECKED : 0));
         // "read-only" item, checked or not according to file-system attributes
-        winhInsertMenuItem(hwndAttrSubmenu, MIT_END,
-                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_ATTR_READONLY),
-                            cmnGetString(ID_XFSI_ATTR_READONLY),  MIS_TEXT, // pszAttrReadOnly
-                                ((ulAttr & FILE_READONLY) ? MIA_CHECKED : 0));
+        winhInsertMenuItem(hwndAttrSubmenu,
+                           MIT_END,
+                           ulVarMenuOfs + ID_XFMI_OFS_ATTR_READONLY,
+                           cmnGetString(ID_XFSI_ATTR_READONLY),
+                           MIS_TEXT, // pszAttrReadOnly
+                           ((ulAttr & FILE_READONLY) ? MIA_CHECKED : 0));
         // "system" item, checked or not according to file-system attributes
-        winhInsertMenuItem(hwndAttrSubmenu, MIT_END,
-                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_ATTR_SYSTEM),
-                            cmnGetString(ID_XFSI_ATTR_SYSTEM),  MIS_TEXT, // pszAttrSystem
-                                ((ulAttr & FILE_SYSTEM) ? MIA_CHECKED : 0));
+        winhInsertMenuItem(hwndAttrSubmenu,
+                           MIT_END,
+                           ulVarMenuOfs + ID_XFMI_OFS_ATTR_SYSTEM,
+                           cmnGetString(ID_XFSI_ATTR_SYSTEM),
+                           MIS_TEXT, // pszAttrSystem
+                           ((ulAttr & FILE_SYSTEM) ? MIA_CHECKED : 0));
         // "hidden" item, checked or not according to file-system attributes
-        winhInsertMenuItem(hwndAttrSubmenu, MIT_END,
-                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_ATTR_HIDDEN),
-                            cmnGetString(ID_XFSI_ATTR_HIDDEN),  MIS_TEXT, // pszAttrHidden
-                                ((ulAttr & FILE_HIDDEN) ? MIA_CHECKED : 0));
+        winhInsertMenuItem(hwndAttrSubmenu,
+                           MIT_END,
+                           ulVarMenuOfs + ID_XFMI_OFS_ATTR_HIDDEN,
+                           cmnGetString(ID_XFSI_ATTR_HIDDEN),
+                           MIS_TEXT, // pszAttrHidden
+                           ((ulAttr & FILE_HIDDEN) ? MIA_CHECKED : 0));
     }
 
     // insert "Copy filename" for data files
     // (the XFolder class does this also)
     if (pGlobalSettings->AddCopyFilenameItem)
-        winhInsertMenuItem(hwndMenu, MIT_END,
-                           (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_COPYFILENAME_MENU),
+        winhInsertMenuItem(hwndMenu,
+                           MIT_END,
+                           ulVarMenuOfs + ID_XFMI_OFS_COPYFILENAME_MENU,
                            cmnGetString(ID_XSSI_COPYFILENAME), // (pNLSStrings)->pszCopyFilename,
-                           0, 0);
+                           0,
+                           0);
 
     // insert "Default document" if enabled
     if (pGlobalSettings->fFdrDefaultDoc)
@@ -1335,8 +1442,9 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
             // somSelf is default document of its folder:
             flAttr = MIA_CHECKED;
 
-        winhInsertMenuItem(hwndMenu, MIT_END,
-                           (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_FDRDEFAULTDOC),
+        winhInsertMenuItem(hwndMenu,
+                           MIT_END,
+                           ulVarMenuOfs + ID_XFMI_OFS_FDRDEFAULTDOC,
                            cmnGetString(ID_XSSI_DATAFILEDEFAULTDOC), // (pNLSStrings)->pszDataFileDefaultDoc,
                            MIS_TEXT,
                            flAttr);
@@ -2473,6 +2581,7 @@ BOOL mnuFolderSelectingMenuItem(WPFolder *somSelf,
  *      Global Settings.
  *
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
+ *@@changed V0.9.12 (2001-05-22) [umoeller]: added "extend close"
  */
 
 VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -2509,6 +2618,11 @@ VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                               pGlobalSettings->AddFolderContentItem);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FC_SHOWICONS,
                               pGlobalSettings->FCShowIcons);
+
+        /* winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_EXTENDCLOSEMENU,
+                              pGlobalSettings->fExtendCloseMenu);
+                // V0.9.12 (2001-05-22) [umoeller]
+                */
     }
 
     if (flFlags & CBI_ENABLE)
@@ -2536,6 +2650,7 @@ VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *      Reacts to changes of any of the dialog controls.
  *
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
+ *@@changed V0.9.12 (2001-05-22) [umoeller]: added "extend close"
  */
 
 MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -2582,6 +2697,11 @@ MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                  MB_OK); */
         break;
 
+        /* case ID_XSDI_EXTENDCLOSEMENU:
+            pGlobalSettings->fExtendCloseMenu = ulExtra;
+                // V0.9.12 (2001-05-22) [umoeller]
+        break; */
+
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
@@ -2595,6 +2715,8 @@ MRESULT mnuAddMenusItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->AddSelectSomeItem = pGSBackup->AddSelectSomeItem;
             pGlobalSettings->AddFolderContentItem = pGSBackup->AddFolderContentItem;
             pGlobalSettings->FCShowIcons = pGSBackup->FCShowIcons;
+
+            // pGlobalSettings->fExtendCloseMenu = pGSBackup->fExtendCloseMenu;
 
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);

@@ -395,6 +395,7 @@ SOM_Scope BOOL  SOMLINK xfstup_wpModifyPopupMenu(XFldStartup *somSelf,
  *      inserted for the startup folder.
  *
  *@@changed V0.9.9 (2001-03-19) [pr]: changed message sent to thread 1
+ *@@changed V0.9.12 (2001-05-22) [umoeller]: re-enabled "start this" menu item
  */
 
 SOM_Scope BOOL  SOMLINK xfstup_wpMenuItemSelected(XFldStartup *somSelf,
@@ -415,8 +416,15 @@ SOM_Scope BOOL  SOMLINK xfstup_wpMenuItemSelected(XFldStartup *somSelf,
                              MB_YESNO | MB_DEFBUTTON2)
                 == MBID_YES)
         {
-            // krnPostThread1ObjectMsg(T1M_STARTCONTENT, (MPARAM)somSelf, MPFROMSHORT(FALSE));
-                // @@todo
+            // re-enabled this: V0.9.12 (2001-05-22) [umoeller]
+
+            // start the folder contents synchronously;
+            // this func now displays the progress dialog
+            // and does not return until the folder was
+            // fully processed (this calls another thrRunSync
+            // internally, so the SIQ is not blocked)
+            _xwpStartFolderContents(somSelf,
+                                    _xwpQueryXStartupObjectDelay(somSelf));
         }
         return (TRUE);
     }

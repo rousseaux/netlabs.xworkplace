@@ -157,6 +157,193 @@ SOM_Scope ULONG  SOMLINK xpgm_xwpQuerySetup2(XWPProgram *somSelf,
 }
 
 /*
+ *@@ xwpNukePhysical:
+ *      override of XFldObject::xwpNukePhysical, which must
+ *      remove the physical representation of an object
+ *      when it gets physically deleted.
+ *
+ *      xwpNukePhysical gets called by name from
+ *      XFldObject::wpFree. The default XFldObject::xwpNukePhysical
+ *      calls WPObject::wpDestroyObject.
+ *
+ *      We override this in order to prevent the original
+ *      WPProgram::wpDestroyObject to be called, which messes
+ *      wrongly with our association data. Instead,
+ *      we destroy any association data in the OS2.INI
+ *      file ourselves and them jump directly to
+ *      WPAbstract::wpDestroyObject.
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xpgm_xwpNukePhysical(XWPProgram *somSelf)
+{
+    static xfTD_wpDestroyObject pWPAbstract_wpDestroyObject = NULL;
+
+    BOOL brc = FALSE;
+    /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
+    XWPProgramMethodDebug("XWPProgram","xpgm_xwpNukePhysical");
+
+    if (!pWPAbstract_wpDestroyObject)
+    {
+        // first call:
+        // resolve WPAbstract::wpDestroyObject
+        // (skip WPProgram parent call!)
+        pWPAbstract_wpDestroyObject
+            = (xfTD_wpDestroyObject)wpshResolveFor(somSelf,
+                                                   _WPAbstract,
+                                                   "wpDestroyObject");
+    }
+
+    if (pWPAbstract_wpDestroyObject)
+    {
+        // clean up program resources in INI file;
+        // there's no way to avoid running through
+        // the entire handles cache, unfortunately...
+        // _wpQueryHandle is safe, since each WPProgram
+        // must have one per definition
+        ftypAssocObjectDeleted(_wpQueryHandle(somSelf));
+
+        // call WPAbstract::wpDestroyObject explicitly,
+        // skipping WPProgram
+        brc = pWPAbstract_wpDestroyObject(somSelf);
+    }
+    else
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Cannot resolve WPAbstract::wpDestroyObject.");
+
+    return (brc);
+}
+
+/*
+ *@@ wpInitData:
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xpgm_wpInitData(XWPProgram *somSelf)
+{
+    /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
+    XWPProgramMethodDebug("XWPProgram","xpgm_wpInitData");
+
+    XWPProgram_parent_WPProgram_wpInitData(somSelf);
+}
+
+/*
+ *@@ wpUnInitData:
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xpgm_wpUnInitData(XWPProgram *somSelf)
+{
+    /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
+    XWPProgramMethodDebug("XWPProgram","xpgm_wpUnInitData");
+
+    XWPProgram_parent_WPProgram_wpUnInitData(somSelf);
+
+    ftypInvalidateCaches();     // added V0.9.12 (2001-05-22) [umoeller]
+}
+
+/*
+ *@@ wpRestoreData:
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xpgm_wpRestoreData(XWPProgram *somSelf,
+                                           PSZ pszClass, ULONG ulKey,
+                                           PBYTE pValue, PULONG pcbValue)
+{
+    /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
+    XWPProgramMethodDebug("XWPProgram","xpgm_wpRestoreData");
+
+    return (XWPProgram_parent_WPProgram_wpRestoreData(somSelf,
+                                                      pszClass,
+                                                      ulKey,
+                                                      pValue,
+                                                      pcbValue));
+}
+
+/*
+ *@@ wpOpen:
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+SOM_Scope HWND  SOMLINK xpgm_wpOpen(XWPProgram *somSelf, HWND hwndCnr,
+                                    ULONG ulView, ULONG param)
+{
+    /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
+    XWPProgramMethodDebug("XWPProgram","xpgm_wpOpen");
+
+    return (XWPProgram_parent_WPProgram_wpOpen(somSelf, hwndCnr,
+                                               ulView, param));
+}
+
+/*
+ *@@ wpQueryIcon:
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+SOM_Scope HPOINTER  SOMLINK xpgm_wpQueryIcon(XWPProgram *somSelf)
+{
+    /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
+    XWPProgramMethodDebug("XWPProgram","xpgm_wpQueryIcon");
+
+    return (XWPProgram_parent_WPProgram_wpQueryIcon(somSelf));
+}
+
+/*
+ *@@ wpSetProgIcon:
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xpgm_wpSetProgIcon(XWPProgram *somSelf,
+                                           PFEA2LIST pfeal)
+{
+    /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
+    XWPProgramMethodDebug("XWPProgram","xpgm_wpSetProgIcon");
+
+    return (XWPProgram_parent_WPProgram_wpSetProgIcon(somSelf,
+                                                      pfeal));
+}
+
+/*
+ *@@ wpQueryIconData:
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xpgm_wpQueryIconData(XWPProgram *somSelf,
+                                              PICONINFO pIconInfo)
+{
+    /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
+    XWPProgramMethodDebug("XWPProgram","xpgm_wpQueryIconData");
+
+    return (XWPProgram_parent_WPProgram_wpQueryIconData(somSelf,
+                                                        pIconInfo));
+}
+
+/*
+ *@@ wpSetIconData:
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xpgm_wpSetIconData(XWPProgram *somSelf,
+                                           PICONINFO pIconInfo)
+{
+    /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
+    XWPProgramMethodDebug("XWPProgram","xpgm_wpSetIconData");
+
+    return (XWPProgram_parent_WPProgram_wpSetIconData(somSelf,
+                                                      pIconInfo));
+}
+
+/*
  *@@ wpSetAssociationType:
  *      this WPProgram(File) method sets the types
  *      this object is associated with.
@@ -181,6 +368,72 @@ SOM_Scope BOOL  SOMLINK xpgm_wpSetAssociationType(XWPProgram *somSelf,
     ftypInvalidateCaches();
 
     return (brc);
+}
+
+/*
+ *@@ wpMoveObject:
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xpgm_wpMoveObject(XWPProgram *somSelf,
+                                          WPFolder* Folder)
+{
+    /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
+    XWPProgramMethodDebug("XWPProgram","xpgm_wpMoveObject");
+
+    return (XWPProgram_parent_WPProgram_wpMoveObject(somSelf,
+                                                     Folder));
+}
+
+/*
+ *@@ wpCopyObject:
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+SOM_Scope WPObject*  SOMLINK xpgm_wpCopyObject(XWPProgram *somSelf,
+                                               WPFolder* Folder,
+                                               BOOL fLock)
+{
+    /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
+    XWPProgramMethodDebug("XWPProgram","xpgm_wpCopyObject");
+
+    return (XWPProgram_parent_WPProgram_wpCopyObject(somSelf,
+                                                     Folder,
+                                                     fLock));
+}
+
+/*
+ *@@ wpAddProgramPage:
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xpgm_wpAddProgramPage(XWPProgram *somSelf,
+                                               HWND hwndNotebook)
+{
+    /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
+    XWPProgramMethodDebug("XWPProgram","xpgm_wpAddProgramPage");
+
+    return (XWPProgram_parent_WPProgram_wpAddProgramPage(somSelf,
+                                                         hwndNotebook));
+}
+
+/*
+ *@@ wpAddProgramSessionPage:
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xpgm_wpAddProgramSessionPage(XWPProgram *somSelf,
+                                                      HWND hwndNotebook)
+{
+    /* XWPProgramData *somThis = XWPProgramGetData(somSelf); */
+    XWPProgramMethodDebug("XWPProgram","xpgm_wpAddProgramSessionPage");
+
+    return (XWPProgram_parent_WPProgram_wpAddProgramSessionPage(somSelf,
+                                                                hwndNotebook));
 }
 
 /*

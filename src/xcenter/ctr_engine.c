@@ -122,9 +122,9 @@
  */
 
 BOOL APIENTRY WinSetDesktopWorkArea(HWND hwndDesktop,
-                                    PWRECT pwrcWorkArea);
+                                    PRECTL pwrcWorkArea);
 typedef BOOL APIENTRY WINSETDESKTOPWORKAREA(HWND hwndDesktop,
-                                            PWRECT pwrcWorkArea);
+                                            PRECTL pwrcWorkArea);
 typedef WINSETDESKTOPWORKAREA *PWINSETDESKTOPWORKAREA;
 
 /*

@@ -662,7 +662,7 @@ SOM_Scope BOOL  SOMLINK xtro_wpModifyPopupMenu(XWPTrashObject *somSelf,
  *      because XWPTrashCan::xwpProcessObjectCommand already
  *      handles those commands.
  *
- *@@todo TRASHDESTROY
+ *@@changed V0.9.12 (2001-05-22) [umoeller]: added destroy
  */
 
 SOM_Scope BOOL  SOMLINK xtro_wpMenuItemSelected(XWPTrashObject *somSelf,
@@ -671,9 +671,12 @@ SOM_Scope BOOL  SOMLINK xtro_wpMenuItemSelected(XWPTrashObject *somSelf,
 {
     BOOL brc = FALSE;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    /* XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf); */
+    XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpMenuItemSelected");
 
+    // Note, these menu items should never be called really...
+    // the subclassed folder frame window proc already intercepts
+    // these.
     if (ulMenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHRESTORE))
     {
         // "Restore object":
@@ -683,8 +686,10 @@ SOM_Scope BOOL  SOMLINK xtro_wpMenuItemSelected(XWPTrashObject *somSelf,
     else if (ulMenuId == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_TRASHDESTROY))
     {
         // "Destroy object":
-        // brc = _xwpDestroyTrashObject(somSelf);   *@@todo
-                // needs to be converted to freeing related object
+        // free related object
+        if (_pRelatedObject)
+            _wpFree(_pRelatedObject);
+                    // this kills somSelf in turn thru XFldObject
     }
     // none of our menu items: call default
     else

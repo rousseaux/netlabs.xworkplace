@@ -192,13 +192,14 @@
  *      implementation). So do this:
  *
  +          DEMO_TYPEDEF pDemo = wpshResolveFor(somSelf,
- +                                              _somGetParent(_DemoFolder),
+ +                                              _XFldObject,
  +                                              "wpDemo");
  +
  +          if (pDemo)      // points to XFldObject::pDemo now
  +              pDemo(somSelf, ...);
  *
  *@@added V0.9.4 (2000-08-02) [umoeller]
+ *@@changed V0.9.12 (2001-05-22) [umoeller]: this didn't work for parent classes, fixed
  */
 
 PVOID wpshResolveFor(SOMObject *somSelf,  // in: instance
@@ -213,27 +214,29 @@ PVOID wpshResolveFor(SOMObject *somSelf,  // in: instance
     if (pClass)
     {
         somId somidMethod = somIdFromString((PSZ)pcszMethodName);
-        if (!somidMethod)
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "Cannot get somId for %s.", pcszMethodName);
-        else
+        if (somidMethod)
         {
             somMToken tok = _somGetMethodToken(pClass,
                                                somidMethod);
-            if (!tok)
-                cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                       "Cannot get method token for %s.", pcszMethodName);
-            else
+            if (tok)
             {
                 // finally, resolve method
-                pvrc = (PVOID)somResolve(somSelf,
-                                         tok);
+                // now using somClassResolve V0.9.12 (2001-05-22) [umoeller]
+                pvrc = (PVOID)somClassResolve(pClass,
+                                              tok);
                 if (!pvrc)
                     cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                           "somResolve failed for %s.", pcszMethodName);
+                           "somClassResolved failed for %s", pcszMethodName);
             }
+            else
+                cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                       "Cannot get method token for %s.", pcszMethodName);
+
             SOMFree(somidMethod);
         }
+        else
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "Cannot get somId for %s.", pcszMethodName);
     }
 
     return (pvrc);
@@ -244,10 +247,19 @@ PVOID wpshResolveFor(SOMObject *somSelf,  // in: instance
  *      similar to wpshParentResolve, but this uses
  *      somParentNumResolve, which should be faster.
  *
+ *      With pClass, specify any class object which supports
+ *      the specified method.
+ *
+ *      For example, to resolve WPObject::wpMenuItemSelected,
+ *      specify:
+ *
+ +          wpshParentNumResolve(_WPObject
+ *
+ *
  *@@added V0.9.6 (2000-10-16) [umoeller]
  */
 
-PVOID wpshParentNumResolve(SOMClass *pClass,    // in: class whose parent we should resolve for
+PVOID wpshParentNumResolve(SOMClass *pClass,    // in: any class object which supports the method
                            somMethodTabs parentMTab, // in: parent method table
                                                      // (e.g. XFldDataFileCClassData.parentMtab)
                            const char *pcszMethodName) // in: method name (e.g. "wpQueryTitle")
@@ -258,23 +270,29 @@ PVOID wpshParentNumResolve(SOMClass *pClass,    // in: class whose parent we sho
     if (somidMethod)
     {
         // get method token for parent class
-        SOMClass *pParentClass = _somGetParent(pClass);
+        /* SOMClass *pParentClass = _somGetParent(pClass);
                     // we must manually get the parent, because
                     // e.g. _WPDataFile would return _XFldDataFile
-        if (pParentClass)
-        {
-            somMToken tok = _somGetMethodToken(pParentClass,
-                                               somidMethod);
-            if (tok)
-            {
-                // somMethodTabs pmt = _somGetPClsMtabs(pParentClass);
-                // finally, resolve method for parent
-                pvrc = (PVOID)somParentNumResolve(parentMTab,
-                                                  1,      // first parent
-                                                  tok);
 
-            }
+        if (pParentClass)
+        { */
+
+            // this is not needed, the method token is
+            // always the same for parent classes and
+            // subclasses V0.9.12 (2001-05-22) [umoeller]
+
+        somMToken tok = _somGetMethodToken(pClass,
+                                           somidMethod);
+        if (tok)
+        {
+            // somMethodTabs pmt = _somGetPClsMtabs(pParentClass);
+            // finally, resolve method for parent
+            pvrc = (PVOID)somParentNumResolve(parentMTab,
+                                              1,      // first parent
+                                              tok);
+
         }
+
         SOMFree(somidMethod);
     }
 

@@ -969,6 +969,9 @@
         BYTE        fFixClassTitles;
                         // XWPSetup: override wpclsQueryTitle?
 
+        BYTE        fExtendCloseMenu;
+                        // XFldWPS "View" page
+
     } GLOBALSETTINGS;
 
     typedef const GLOBALSETTINGS* PCGLOBALSETTINGS;

@@ -3600,7 +3600,6 @@ ULONG fdrStartFolderContents(WPFolder *pFolder,
     ULONG ulrc = 0;
 
     PROCESSFOLDER       pf;
-    HAB                 hab = winhMyAnchorBlock();
     PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
 
     memset(&pf, 0, sizeof(pf));
@@ -3627,7 +3626,7 @@ ULONG fdrStartFolderContents(WPFolder *pFolder,
 
     pf.pFolder = pFolder;
 
-    ulrc = thrRunSync(hab,
+    ulrc = thrRunSync(WinQueryAnchorBlock(pf.hwndStatus),
                       fntProcessStartupFolder,
                       "ProcessStartupFolder",
                       (ULONG)&pf);

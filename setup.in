@@ -197,16 +197,16 @@ PRECH = $(TEMP)
 
 INCLUDE_TEMP=
 
-!ifdef DDKPATH
-INCLUDE_TEMP1=$(DDKPATH)\h;
+!ifdef DDKBASE
+INCLUDE_TEMP1=$(DDKBASE)\h;
 !endif
 
-!ifdef SES_MAIN_DIR
+!ifdef SESBASE
 # SES defined:
-INCLUDE_TEMP2=$(SES_MAIN_DIR)\h;
+INCLUDE_TEMP2=$(SESBASE)\h;
 !endif
 
-PROJECT_INCLUDE = $(TKBASE)\h;$(TKBASE)\som\include;$(VACBASE)\include;$(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classes;$(HELPERS_BASE)\include;$(INCLUDE_TEMP2)
+PROJECT_INCLUDE = $(TKBASE)\h;$(TKBASE)\som\include;$(VACBASE)\include;$(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classes;$(HELPERS_BASE)\include;$(INCLUDE_TEMP1)$(INCLUDE_TEMP2)
 
 
 # TOOLS SETUP

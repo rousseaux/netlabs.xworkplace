@@ -1,47 +1,38 @@
 #
-# $Header$
+# Makefile for xwpsec32.sys.
+#
+# For use with IBM NMAKE, which is part of IBM C-Set/2 and VisualAge C++.
+# This file will probably not work with other MAKE utilities, such as
+# GNU make or DMAKE.
+#
+#       Copyright (C) 1998-2001 Ulrich M”ller.
+#       This file is part of the XWorkplace source package.
+#       XWorkplace is free software; you can redistribute it and/or modify
+#       it under the terms of the GNU General Public License as published
+#       by the Free Software Foundation, in version 2 as it comes in the
+#       "COPYING" file of the XWorkplace main distribution.
+#       This program is distributed in the hope that it will be useful,
+#       but WITHOUT ANY WARRANTY; without even the implied warranty of
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#       GNU General Public License for more details.
 #
 
-# 32 bits OS/2 device driver and IFS support. Provides 32 bits kernel
-# services (DevHelp) and utility functions to 32 bits OS/2 ring 0 code
-# (device drivers and installable file system drivers).
-# Copyright (C) 1995, 1996, 1997  Matthieu WILLM (willm@ibm.net)
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+# Say hello to yourself.
+!if [@echo +++++ Entering $(MAKEDIR)]
+!endif
 
-#
-# Path definitions
-#
-
+# include setup (compiler options etc.)
 !include ..\..\setup.in
 
-CC        = icc -q
-CFLAGS    = -Ge- -Gs- -Gr+ -Rn -Ss+ -O -G5
-
-LD        = icc
-
-AS        = alp
-ASFLAGS   = -Mb -Li
-
-!ifndef DDKPATH
-!error DDKPATH is not defined.
+!ifndef DDKBASE
+!error DDKBASE is not defined.
 !endif
 
-!ifndef SES_MAIN_DIR
-!error SES_MAIN_DIR is not defined.
+!ifndef SESBASE
+!error SESBASE is not defined.
 !endif
+
+MYDIR = $(MAKEDIR)
 
 # OUTPUTDIR specifies the directory where all the output .OBJ
 # files will be created in. $(XWP_OUTPUT_ROOT) is set by
@@ -64,44 +55,32 @@ MODULESDIR=$(MAIN_OUTPUTDIR)\modules
 !if [@md $(MODULESDIR) 2> NUL]
 !endif
 
+# FIXED MACROS
+# ------------
+
 MYDIR = $(MAKEDIR)
 
 INC = ..\..\include
 
 MYINC = $(INC)\xwpsec32.sys
 
+CC        = icc -q
+CFLAGS    = -Ge- -Gs- -Gr+ -Rn -Ss+ -O -G5
+
+LD        = icc
+
+AS        = alp
+ASFLAGS   = -Mb -Li
+
 CDEFINES   =
 # -DDYNAMIC_DEVHELP -DMWDD32_VER=$(MWDD32_VERSION)
 ADEFINES   =
 #-D:DYNAMIC_DEVHELP
-CINCLUDES  = -I$(INCLUDE);$(PROJECT_INCLUDE);$(DDKPATH)\h;$(SES_MAIN_DIR)\h;
+CINCLUDES  = /I$(PROJECT_INCLUDE)
 
 DRIVERNAME=xwpsec32
 
-#    -I$(DDKPATH)\h \
-#    -I$(DDKPATH)/src/dev/dasd/diskh \
-#    -I/os2/security/dev/h \
-#    -I/os2/security/dev/ssskpi \
-#    -I. -I../../include -I../../include/os2
-
-AINCLUDES  = -Fdi:$(DDKPATH)/inc -Fdi:../../include/xwpsec32.sys
-
-.c{$(OUTPUTDIR)}.obj:
-        @echo $<
-        @echo CINCLUDES: $(CINCLUDES)
-        @$(CC) -c $(CFLAGS) $(CDEFINES) -Fa$(@:.obj=.s) -Fo$@ $(CINCLUDES) $<
-
-.asm{$(OUTPUTDIR)}.obj:
-        @echo $<
-        @$(AS) $(ASFLAGS) $(ADEFINES) $(AINCLUDES) $< -Fo:$@ -Fl:$(@:.obj=.lst)
-
-all: $(MODULESDIR)\$(DRIVERNAME).sys
-
-# The "dep" target: run fastdep on the sources.
-# "nmake dep" gets called from src\makefile if nmake dep
-# is running on the main makefile.
-dep:
-    $(RUN_FASTDEP) *.c
+AINCLUDES  = -Fdi:$(DDKBASE)/inc -Fdi:../../include/xwpsec32.sys
 
 AOBJS = \
     $(OUTPUTDIR)\sec32_pre_init_base.obj $(OUTPUTDIR)\sec32_devhlp32.obj
@@ -131,87 +110,26 @@ COBJS =   \
     $(OUTPUTDIR)\util_misc.obj                               \
     $(OUTPUTDIR)\util_sem.obj
 
-SHRHDR = $(MYINC)\devhlp32.h $(MYINC)\reqpkt32.h $(MYINC)\r0thunk.inc
+# TARGETS
+# -------
 
-$(OUTPUTDIR)\audit.obj: $(@B).c $(SHRHDR) \
-        $(MYINC)\xwpsec_types.h $(MYINC)\xwpsec_callbacks.h
+all: $(MODULESDIR)\$(DRIVERNAME).sys
+    @echo ----- Leaving $(MAKEDIR)
 
-$(OUTPUTDIR)\callb_close.obj: $(@B).c $(SHRHDR) \
-        $(MYINC)\xwpsec_types.h $(MYINC)\xwpsec_callbacks.h \
-        $(INC)\security\ring0api.h
+# The "dep" target: run fastdep on the sources.
+# "nmake dep" gets called from src\makefile if nmake dep
+# is running on the main makefile.
+dep:
+    $(RUN_FASTDEP) *.c
 
-$(OUTPUTDIR)\callb_delete.obj: $(@B).c $(SHRHDR) \
-        $(MYINC)\xwpsec_types.h $(MYINC)\xwpsec_callbacks.h \
-        $(INC)\security\ring0api.h
+.c{$(OUTPUTDIR)}.obj:
+        @echo $<
+        @echo CINCLUDES: $(CINCLUDES)
+        @$(CC) -c $(CFLAGS) $(CDEFINES) -Fa$(@:.obj=.s) -Fo$@ $(CINCLUDES) $<
 
-$(OUTPUTDIR)\callb_dirs.obj: $(@B).c $(SHRHDR) \
-        $(MYINC)\xwpsec_types.h $(MYINC)\xwpsec_callbacks.h \
-        $(INC)\security\ring0api.h
-
-$(OUTPUTDIR)\callb_exec.obj: $(@B).c $(SHRHDR) \
-        $(MYINC)\xwpsec_types.h $(MYINC)\xwpsec_callbacks.h \
-        $(INC)\security\ring0api.h
-
-$(OUTPUTDIR)\callb_find.obj: $(@B).c $(SHRHDR) \
-        $(MYINC)\xwpsec_types.h $(MYINC)\xwpsec_callbacks.h \
-        $(INC)\security\ring0api.h
-
-$(OUTPUTDIR)\callb_move.obj: $(@B).c $(SHRHDR) \
-        $(MYINC)\xwpsec_types.h $(MYINC)\xwpsec_callbacks.h \
-        $(INC)\security\ring0api.h
-
-$(OUTPUTDIR)\callb_open.obj: $(@B).c $(SHRHDR) \
-        $(MYINC)\xwpsec_types.h $(MYINC)\xwpsec_callbacks.h \
-        $(INC)\security\ring0api.h
-
-$(OUTPUTDIR)\sec32_data.obj: $(@B).c $(SHRHDR) \
-        $(MYINC)\xwpsec_types.h
-
-$(OUTPUTDIR)\sec32_devhlp32c.obj: $(@B).c $(SHRHDR)
-
-$(OUTPUTDIR)\sec32_idc.obj: $(@B).c $(SHRHDR) \
-        $(MYINC)\xwpsec_types.h
-
-$(OUTPUTDIR)\sec32_strategy.obj: $(@B).c $(SHRHDR) \
-        $(MYINC)\xwpsec_types.h $(MYINC)\xwpsec_callbacks.h
-
-$(OUTPUTDIR)\sec32_callbacks.obj: $(@B).c $(SHRHDR) \
-        $(MYINC)\xwpsec_types.h $(MYINC)\xwpsec_callbacks.h
-
-$(OUTPUTDIR)\strat_init_base.obj: $(@B).c $(SHRHDR) \
-        $(MYINC)\xwpsec_types.h $(MYINC)\xwpsec_callbacks.h
-
-$(OUTPUTDIR)\strat_init_complete.obj: $(@B).c $(SHRHDR) \
-        $(MYINC)\xwpsec_callbacks.h
-
-$(OUTPUTDIR)\strat_ioctl.obj: $(@B).c $(SHRHDR) \
-        $(MYINC)\xwpsec_types.h $(MYINC)\xwpsec_callbacks.h \
-        $(INC)\security\ring0api.h
-
-$(OUTPUTDIR)\strat_open.obj: $(@B).c $(SHRHDR) \
-        $(MYINC)\xwpsec_types.h $(MYINC)\xwpsec_callbacks.h
-
-$(OUTPUTDIR)\strat_close.obj: $(@B).c $(SHRHDR) \
-        $(MYINC)\xwpsec_callbacks.h
-
-$(OUTPUTDIR)\strat_invalid.obj: $(@B).c $(SHRHDR) \
-        $(MYINC)\xwpsec_callbacks.h
-
-$(OUTPUTDIR)\strat_shutdown.obj: $(@B).c $(SHRHDR) \
-        $(MYINC)\xwpsec_callbacks.h
-
-$(OUTPUTDIR)\util_daemon.obj: $(@B).c $(SHRHDR) \
-        $(MYINC)\xwpsec_types.h $(MYINC)\xwpsec_callbacks.h \
-        $(INC)\security\ring0api.h
-
-$(OUTPUTDIR)\util_log.obj: $(@B).c $(SHRHDR) \
-        $(MYINC)\xwpsec_types.h $(MYINC)\xwpsec_callbacks.h
-
-$(OUTPUTDIR)\util_misc.obj: $(@B).c $(SHRHDR) \
-        $(MYINC)\xwpsec_types.h $(MYINC)\xwpsec_callbacks.h
-
-$(OUTPUTDIR)\util_sem.obj: $(@B).c $(SHRHDR) \
-        $(MYINC)\xwpsec_types.h $(MYINC)\xwpsec_callbacks.h
+.asm{$(OUTPUTDIR)}.obj:
+        @echo $<
+        @$(AS) $(ASFLAGS) $(ADEFINES) $(AINCLUDES) $< -Fo:$@ -Fl:$(@:.obj=.lst)
 
 # linking
 
@@ -233,7 +151,7 @@ $(OUTPUTDIR)\sec32_start.obj
 $(AOBJS)
 $(COBJS)
 $(OUTPUTDIR)\sec32_end.obj
-$(DDKPATH)\lib\os2386p.lib
+$(DDKBASE)\lib\os2386p.lib
 $(DRIVERNAME).def
 <<
 !ifdef XWP_OUTPUT_ROOT_DRIVE
@@ -251,6 +169,10 @@ $(DRIVERNAME).def
         -copy $(@:.sys=.sym) F:\os2\boot
 
 
+# The .OBJ-from-sources dependencies are now automatically
+# created by "nmake dep" into the .depend include file.
+# V0.9.12 (2001-05-22) [umoeller]
 
-#-Fe$@
+!include .depend
+
 

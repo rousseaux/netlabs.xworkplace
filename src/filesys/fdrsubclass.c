@@ -536,7 +536,9 @@ VOID fdrManipulateNewView(WPFolder *somSelf,        // in: folder with new view
         if (pGlobalSettings->ExtFolderSort)
             if (hwndCnr)
             {
-                _Pmpf((__FUNCTION__ ": setting folder sort"));
+                #ifdef DEBUG_SORT
+                    _Pmpf((__FUNCTION__ ": setting folder sort"));
+                #endif
                 fdrSetFldrCnrSort(somSelf,
                                   hwndCnr,
                                   TRUE);        // force

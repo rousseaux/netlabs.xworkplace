@@ -407,6 +407,66 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpQuerySetup2(XFldProgramFile *somSelf,
 }
 
 /*
+ *@@ xwpNukePhysical:
+ *      override of XFldObject::xwpNukePhysical, which must
+ *      remove the physical representation of an object
+ *      when it gets physically deleted.
+ *
+ *      xwpNukePhysical gets called by name from
+ *      XFldObject::wpFree. The default XFldObject::xwpNukePhysical
+ *      calls WPObject::wpDestroyObject.
+ *
+ *      We override this in order to prevent the original
+ *      WPProgramFile::wpDestroyObject to be called, which
+ *      messes wrongly with our association data. Instead,
+ *      we destroy any association data in the OS2.INI
+ *      file ourselves and them jump directly to
+ *      WPDataFile::wpDestroyObject.
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfpgmf_xwpNukePhysical(XFldProgramFile *somSelf)
+{
+    static xfTD_wpDestroyObject pWPDataFile_wpDestroyObject = NULL;
+
+    BOOL brc = FALSE;
+    // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
+    XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_xwpNukePhysical");
+
+    if (!pWPDataFile_wpDestroyObject)
+    {
+        // first call:
+        // resolve WPDataFile::wpDestroyObject
+        // (skip WPProgramFile parent call!)
+        pWPDataFile_wpDestroyObject
+            = (xfTD_wpDestroyObject)wpshResolveFor(somSelf,
+                                                   _WPDataFile,     // _XFldDataFile actually
+                                                   "wpDestroyObject");
+    }
+
+    if (pWPDataFile_wpDestroyObject)
+    {
+        // clean up program resources in INI file;
+        // there's no way to avoid running through
+        // the entire handles cache, unfortunately...
+        // @@todo once we get the file handles engine
+        // running, make sure we won't call wpQueryHandle
+        // here!!
+        ftypAssocObjectDeleted(_wpQueryHandle(somSelf));
+
+        // call WPAbstract::wpDestroyObject explicitly,
+        // skipping WPProgram
+        brc = pWPDataFile_wpDestroyObject(somSelf);
+    }
+    else
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Cannot resolve WPDataFile::wpDestroyObject.");
+
+    return (brc);
+}
+
+/*
  *@@ wpInitData:
  *      this WPObject instance method gets called when the
  *      object is being initialized (on wake-up or creation).

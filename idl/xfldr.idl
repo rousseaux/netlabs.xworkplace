@@ -399,6 +399,7 @@ interface XFolder : WPFolder
     wpModifyPopupMenu: override;
     wpMenuItemSelected: override;
     wpMenuItemHelpSelected: override;
+    wpDisplayMenu: override;
 
     wpQueryDefaultView: override;
     wpQueryDefaultHelp: override;

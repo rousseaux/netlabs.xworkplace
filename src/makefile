@@ -14,10 +14,13 @@
 # store current directory so we can change back later
 CURRENT_DIR = $(MAKEDIR)
 
-!ifdef REALLYALL
-SUBDIRS = classes config filesys media shared startshut widgets xcenter Daemon hook treesize NetscapeDDE xfix
-!else
 SUBDIRS = classes config filesys media shared startshut widgets xcenter Daemon hook
+
+!ifdef REALLYALL
+SUBDIRS = $(SUBDIRS) treesize NetscapeDDE xfix
+!ifdef XWPSECURITY
+SUBDIRS = $(SUBDIRS) xwpsec_ring0 XWPShell
+!endif
 !endif
 
 # "all" gets called from ..\makefile when either
@@ -112,4 +115,17 @@ xfix:
     @cd $@
     @$(MAKE) -nologo $(SUBTARGET) "MAINMAKERUNNING=YES"
     @cd $(CURRENT_DIR)
+
+xwpsec_ring0:
+    @echo $(MAKEDIR)\makefile: Going for subdir src\$@
+    @cd $@
+    @$(MAKE) -nologo $(SUBTARGET) "MAINMAKERUNNING=YES"
+    @cd $(CURRENT_DIR)
+
+XWPShell:
+    @echo $(MAKEDIR)\makefile: Going for subdir src\$@
+    @cd $@
+    @$(MAKE) -nologo $(SUBTARGET) "MAINMAKERUNNING=YES"
+    @cd $(CURRENT_DIR)
+
 

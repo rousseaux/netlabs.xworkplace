@@ -403,7 +403,7 @@ VOID dtpModifyPopupMenu(WPDesktop *somSelf,
             // remove original shutdown item
             winhRemoveMenuItem(hwndMenu, WPMENUID_SHUTDOWN);
 
-            strcpy(szShutdown, "~XShutdown");  //@@todo NLS
+            strcpy(szShutdown, cmnGetString(ID_XSSI_XSHUTDOWN));
             if (pGlobalSettings->ulXShutdownFlags & XSD_CONFIRM)
                 strcat(szShutdown, "...");
 

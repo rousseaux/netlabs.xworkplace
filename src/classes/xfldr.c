@@ -179,7 +179,15 @@ OBJECTLIST          G_llFavoriteFolders = {0},
 
 /*
  *@@ xwpNukePhysical:
- *      override of XFldObject::xwpNukePhysical. See remarks there.
+ *      override of XFldObject::xwpNukePhysical, which must
+ *      remove the physical representation of an object
+ *      when it gets physically deleted.
+ *
+ *      xwpNukePhysical gets called by name from
+ *      XFldObject::wpFree. The default XFldObject::xwpNukePhysical
+ *      calls WPObject::wpDestroyObject, which we must override
+ *      for this class in order to suppress the stupid error
+ *      message boxes if the file no longer exists.
  *
  *      This actually deletes the folder using DosDeleteDir.
  *
@@ -2141,6 +2149,12 @@ SOM_Scope ULONG  SOMLINK xf_wpFilterPopupMenu(XFolder *somSelf,
     if (_xwpQueryDeletion(somSelf, NULL, NULL))
         ulMenuFilter &= ~CTXT_DELETE; // V0.9.5 (2000-09-20) [pr]
 
+    // if extended close menu is enabled,
+    // remove "close" because we'll add this manually
+    /* if (pGlobalSettings->fExtendCloseMenu)
+        ulMenuFilter |= CTXT_CLOSE;        // V0.9.12 (2001-05-22) [umoeller]
+       */
+
     // now suppress default menu items according to
     // Global Settings;
     // the DefaultMenuItems field in pGlobalSettings is
@@ -2257,6 +2271,77 @@ SOM_Scope BOOL  SOMLINK xf_wpMenuItemHelpSelected(XFolder *somSelf,
         // else: none of our menu items, call default
         return (XFolder_parent_WPFolder_wpMenuItemHelpSelected(somSelf,
                                                                MenuId));
+}
+
+/*
+ *@@ wpDisplayMenu:
+ *      this WPObject instance method creates and displays
+ *      an object's popup menu, which is returned.
+ *
+ *      From my testing (after overriding menu methods),
+ *      I found out that wpDisplayMenu calls the following
+ *      methods in this order:
+ *
+ *      --  wpFilterMenu (Warp-4-specific);
+ *      --  wpFilterPopupMenu;
+ *      --  wpModifyPopupMenu;
+ *      --  wpModifyMenu (Warp-4-specific).
+ *
+ *      Normally, we wouldn't need to override this method...
+ *      if IBM had been kind enough to respect that we don't
+ *      want to see "Close" in the menu, if we tell them to.
+ *      But they weren't, so if "extend close menu" is
+ *      enabled, we must hack the menu manually after it has
+ *      been completely built.
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+SOM_Scope HWND  SOMLINK xf_wpDisplayMenu(XFolder *somSelf,
+                                         HWND hwndOwner,
+                                         HWND hwndClient,
+                                         POINTL* ptlPopupPt,
+                                         ULONG ulMenuType,
+                                         ULONG ulReserved)
+{
+    HWND hwndMenu;
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpDisplayMenu");
+
+    // OK, here's the trick. If "extend close" is enabled
+    // and a menu is requested for the cnr whitespace
+    // (open view popup), build the menu, but DO NOT
+    // DISPLAY it yet (because otherwise the items would
+    // be modified while the menu is already showing,
+    // causing flicker and display errors).
+    /* if (    (pGlobalSettings->fExtendCloseMenu)
+         && (ulMenuType == MENU_OPENVIEWPOPUP)
+       )
+    {
+        hwndMenu = XFolder_parent_WPFolder_wpDisplayMenu(somSelf,
+                                                         hwndOwner,
+                                                         hwndClient,
+                                                         ptlPopupPt,
+                                                         // add MENU_NODISPLAY!
+                                                         ulMenuType | MENU_NODISPLAY,
+                                                         ulReserved);
+        mnuHackFolderClose(somSelf,
+                           hwndOwner,
+                           hwndClient,
+                           ptlPopupPt,
+                           ulMenuType,
+                           hwndMenu);
+    }
+    else */
+        hwndMenu = XFolder_parent_WPFolder_wpDisplayMenu(somSelf,
+                                                         hwndOwner,
+                                                         hwndClient,
+                                                         ptlPopupPt,
+                                                         ulMenuType,
+                                                         ulReserved);
+    return (hwndMenu);
 }
 
 /*

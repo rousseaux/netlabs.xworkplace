@@ -116,7 +116,15 @@
 
 /*
  *@@ xwpNukePhysical:
- *      override of XFldObject::xwpNukePhysical. See remarks there.
+ *      override of XFldObject::xwpNukePhysical, which must
+ *      remove the physical representation of an object
+ *      when it gets physically deleted.
+ *
+ *      xwpNukePhysical gets called by name from
+ *      XFldObject::wpFree. The default XFldObject::xwpNukePhysical
+ *      calls WPObject::wpDestroyObject, which we must override
+ *      for this class in order to suppress the stupid error
+ *      message boxes if the file no longer exists.
  *
  *      This actually deletes the data file using DosDelete.
  *
@@ -159,9 +167,9 @@ SOM_Scope BOOL  SOMLINK xfdf_xwpNukePhysical(XFldDataFile *somSelf)
  *      this WPObject instance method creates and displays
  *      an object's popup menu, which is returned.
  *
- *      From my testing (after overriding _all_ WPDataFile methods...),
- *      I found out that wpDisplayMenu calls the following methods
- *      in this order:
+ *      From my testing (after overriding menu methods),
+ *      I found out that wpDisplayMenu calls the following
+ *      methods in this order:
  *
  *      --  wpFilterMenu (Warp-4-specific);
  *      --  wpFilterPopupMenu;

@@ -78,46 +78,6 @@ all: $(XWPRUNNING)\bin\xwpshell.exe
 dep:
     $(RUN_FASTDEP) *.c
 
-$(OUTPUTDIR)\acldb.obj: \
-    $(HLPINC)\tree.h \
-    $(INC)\security\xwpsecty.h \
-    ..\..\include\bldlevel.h \
-    $(@B).c $(HEADERS)
-          $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
-
-$(OUTPUTDIR)\contexts.obj: \
-    $(HLPINC)\tree.h \
-    $(INC)\security\xwpsecty.h \
-    ..\..\include\bldlevel.h \
-    $(@B).c $(HEADERS)
-          $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
-
-$(OUTPUTDIR)\loggedon.obj: \
-    $(INC)\security\xwpsecty.h \
-    ..\..\include\bldlevel.h \
-    $(@B).c $(HEADERS)
-          $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
-
-$(OUTPUTDIR)\userdb.obj: \
-    $(INC)\security\xwpsecty.h \
-    ..\..\include\bldlevel.h \
-    $(@B).c $(HEADERS)
-          $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
-
-$(OUTPUTDIR)\subjects.obj: \
-    $(HLPINC)\tree.h \
-    $(INC)\security\xwpsecty.h \
-    ..\..\include\bldlevel.h \
-    $(@B).c $(HEADERS)
-          $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
-
-$(OUTPUTDIR)\xwpshell.obj: \
-    $(HLPINC)\procstat.h \
-    $(INC)\security\ring0api.h $(INC)\security\xwpsecty.h xwpshell.h \
-    ..\..\include\bldlevel.h \
-    $(@B).c $(HEADERS)
-          $(CC_EXE_MT) /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
-
 # build targets
 xwpshell.def: ..\..\include\bldlevel.h
           $(RUN_BLDLEVEL) $*.def ..\..\include\bldlevel.h "XWorkplace Security shell starter"
@@ -145,4 +105,8 @@ $(XWPRUNNING)\bin\xwpshell.exe: $(MODULESDIR)\$(@B).exe
           cmd.exe /c copy $(MODULESDIR)\$(@B).sym $(XWPRUNNING)\bin
           cmd.exe /c copy $(MODULESDIR)\$(@B).exe E:\os2
 
+# The .OBJ-from-sources dependencies are now automatically
+# created by "nmake dep" into the .depend include file.
+# V0.9.12 (2001-05-22) [umoeller]
 
+!include .depend

@@ -638,7 +638,7 @@ VOID trshSaveMappings(XWPTrashCan *pTrashCan)
     WPSHLOCKSTRUCT Lock;
     if (wpshLockObject(&Lock, pTrashCan))
     {
-        _Pmpf((__FUNCTION__ ": Entering"));
+        // _Pmpf((__FUNCTION__ ": Entering"));
 
         if (G_fMappingsTreeInitialized)
         {
@@ -688,9 +688,9 @@ VOID trshSaveMappings(XWPTrashCan *pTrashCan)
                             "%c:\\trash\\" MAPPINGS_FILE,
                             cDrive);
 
-                    _Pmpf((__FUNCTION__ ": got %d entries: \n%s",
+                    /* _Pmpf((__FUNCTION__ ": got %d entries: \n%s",
                                 cEntries,
-                                strMappings.psz));
+                                strMappings.psz)); */
 
                     if (cEntries)
                         doshWriteTextFile(szMappingsFile,

@@ -54,6 +54,8 @@ interface XFldProgramFile : WPProgramFile
     ULONG xwpQuerySetup2(in PSZ pszSetupString,
                          in ULONG cbSetupString);
 
+    BOOL xwpNukePhysical();
+
 #ifdef __SOMIDL__
   implementation {
 

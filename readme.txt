@@ -59,8 +59,9 @@ Last updated May 22, 2001, Ulrich M”ller
         match your system (this replaces the environment
         variables which were necessary previously);
 
-    2)  run "nmake dep" before the regular "nmake" or
-        "nmake really_all".
+    2)  run "nmake dep" once;
+
+    3)  run the regular "nmake" or "nmake really_all".
 
 
     Working With Netlabs CVS

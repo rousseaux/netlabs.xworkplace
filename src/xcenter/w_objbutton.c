@@ -1250,7 +1250,7 @@ MRESULT OwgtContextMenu(HWND hwnd, MPARAM mp1, MPARAM mp2)
                             hwndWidgetSubmenu
                                 = winhMergeIntoSubMenu(pPrivate->hwndObjectPopup,
                                                        MIT_END,
-                                                       "Object button widget", // @@todo NLS
+                                                       cmnGetString(ID_XSSI_XC_OBJBUTTONWIDGET),
                                                        2000,    // submenu ID
                                                        pPrivate->pWidget->hwndContextMenu);
                             if (hwndWidgetSubmenu)

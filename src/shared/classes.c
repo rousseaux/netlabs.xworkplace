@@ -990,7 +990,9 @@ PMETHODINFO clsQueryMethodInfo(SOMClass *pClassObject,  // in: class to query me
                     // a)   whether it supports the method -> method introduction
                     // b)   whether method pointers differ from the original
                     //                                     -> method overrides
-                    if (_somFindMethod(pClassObjectThis, md.id, &pMethodThis))
+                    if (_somFindMethod(pClassObjectThis,
+                                       md.id,
+                                       &pMethodThis))
                     {
                         // this class object does support the method:
                         if (pMethodLast)

@@ -2204,6 +2204,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
             G_pGlobalSettings->AddSelectSomeItem = 1;
             G_pGlobalSettings->AddFolderContentItem = 1;
             G_pGlobalSettings->FCShowIcons = 0;
+            // G_pGlobalSettings->fExtendCloseMenu = 0;
         break;
 
         case SP_26CONFIGITEMS:

@@ -81,6 +81,13 @@
                                   HWND hwndCnr,
                                   ULONG iPosition);
 
+    /* BOOL mnuHackFolderClose(WPFolder *somSelf,
+                            HWND hwndOwner,
+                            HWND hwndClient,
+                            PPOINTL pptlPopupPt,
+                            ULONG ulMenuType,
+                            HWND hwndMenu); */
+
     #ifdef SOM_WPDataFile_h
         BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
                                         HWND hwndMenu,

@@ -174,6 +174,7 @@ static BOOL                G_fTypesWithFiltersValid = FALSE;
                         // set to TRUE if G_llTypesWithFilters has been filled
 
 static TREE                *G_WPSTypeAssocsTreeRoot = NULL;
+static ULONG               G_cWPSTypeAssocsTreeItems = 0;       // added V0.9.12 (2001-05-22) [umoeller]
 static BOOL                G_fWPSTypesValid = FALSE;
 
 static HMTX                G_hmtxAssocsCaches = NULLHANDLE;
@@ -181,7 +182,7 @@ static HMTX                G_hmtxAssocsCaches = NULLHANDLE;
 
 /* ******************************************************************
  *
- *   Associations cache
+ *   Associations caches
  *
  ********************************************************************/
 
@@ -264,66 +265,70 @@ VOID ftypInvalidateCaches(VOID)
 {
     if (ftypLockCaches())
     {
-        LINKLIST llDelete;
-
-        // 1) clear the XWP types with filters
-        PLISTNODE pNode = lstQueryFirstNode(&G_llTypesWithFilters);
-        while (pNode)
+        if (G_fTypesWithFiltersValid)
         {
-            PXWPTYPEWITHFILTERS pThis = (PXWPTYPEWITHFILTERS)pNode->pItemData;
-            if (pThis->pszType)
+            // 1) clear the XWP types with filters
+            PLISTNODE pNode = lstQueryFirstNode(&G_llTypesWithFilters);
+            while (pNode)
             {
-                free(pThis->pszType);
-                pThis->pszType = NULL;
-            }
-            if (pThis->pszFilters)
-            {
-                free(pThis->pszFilters);
-                pThis->pszFilters = NULL;
+                PXWPTYPEWITHFILTERS pThis = (PXWPTYPEWITHFILTERS)pNode->pItemData;
+                if (pThis->pszType)
+                {
+                    free(pThis->pszType);
+                    pThis->pszType = NULL;
+                }
+                if (pThis->pszFilters)
+                {
+                    free(pThis->pszFilters);
+                    pThis->pszFilters = NULL;
+                }
+
+                pNode = pNode->pNext;
             }
 
-            pNode = pNode->pNext;
+            lstClear(&G_llTypesWithFilters);
+                        // this frees the XWPTYPEWITHFILTERS structs themselves
+
+            G_fTypesWithFiltersValid = FALSE;
         }
 
-        lstClear(&G_llTypesWithFilters);
-                    // this frees the XWPTYPEWITHFILTERS structs themselves
-
-        G_fTypesWithFiltersValid = FALSE;
-
-        // 2) clear the WPS types... this is a bit strange,
-        // we traverse the tree and thus add all tree nodes
-        // to a temporary linked list, which we can then
-        // delete. This way however we avoid rebalancing the
-        // tree for each node getting deleted.
-        lstInit(&llDelete, TRUE);
-        treeTraverse(G_WPSTypeAssocsTreeRoot,
-                     TraverseWPSTypes,
-                     &llDelete,
-                     1);
-
-        // now llDelete has all the PWPSTYPEASSOCTREENODE pointers
-        pNode = lstQueryFirstNode(&llDelete);
-        while (pNode)
+        if (G_fWPSTypesValid)
         {
-            PWPSTYPEASSOCTREENODE pWPSType = (PWPSTYPEASSOCTREENODE)pNode->pItemData;
-            if (pWPSType->pszType)
-            {
-                free(pWPSType->pszType);
-                pWPSType->pszType = NULL;
-            }
-            if (pWPSType->pszObjectHandles)
-            {
-                free(pWPSType->pszObjectHandles);
-                pWPSType->pszObjectHandles = NULL;
-            }
-            pNode = pNode->pNext;
-        }
-        // clear the list now.. this frees the PWPSTYPEASSOCTREENODE ptrs also
-        lstClear(&llDelete);
+            // 2) clear the WPS types... we build an
+            // array from the tree first to avoid
+            // rebalancing the tree on every node
+            // delete
+            ULONG cItems = G_cWPSTypeAssocsTreeItems;
+            TREE **papNodes = treeBuildArray(G_WPSTypeAssocsTreeRoot,
+                                             &cItems);
 
-        // reset the tree root
-        treeInit(&G_WPSTypeAssocsTreeRoot);
-        G_fWPSTypesValid = FALSE;
+            if (papNodes)
+            {
+                ULONG ul;
+                for (ul = 0; ul < cItems; ul++)
+                {
+                    PWPSTYPEASSOCTREENODE pWPSType = (PWPSTYPEASSOCTREENODE)papNodes[ul];
+                    if (pWPSType->pszType)
+                    {
+                        free(pWPSType->pszType);
+                        pWPSType->pszType = NULL;
+                    }
+                    if (pWPSType->pszObjectHandles)
+                    {
+                        free(pWPSType->pszObjectHandles);
+                        pWPSType->pszObjectHandles = NULL;
+                    }
+                    free(pWPSType);
+                }
+
+                free(papNodes);
+            }
+
+            // reset the tree root
+            treeInit(&G_WPSTypeAssocsTreeRoot);
+            G_cWPSTypeAssocsTreeItems = 0;
+            G_fWPSTypesValid = FALSE;
+        }
 
         ftypUnlockCaches();
     }
@@ -367,7 +372,7 @@ PLINKLIST ftypGetCachedTypesWithFilters(VOID)
                 // pFilterThis has the current type now
                 // (e.g. "C Code");
                 // get filters for that (e.g. "*.c");
-                //  this is another list of null-terminated strings
+                // this is another list of null-terminated strings
                 ULONG cbFiltersForTypeList = 0;
                 PSZ pszFiltersForTypeList = prfhQueryProfileData(HINI_USER,
                                                                  INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
@@ -436,6 +441,60 @@ int TREEENTRY CompareWPSTypeData(TREE *t1, void *pData)
 }
 
 /*
+ *@@ BuildWPSTypesCache:
+ *      rebuilds the WPS types cache.
+ *
+ *      Preconditions:
+ *
+ *      -- Caller must hold the cache mutex.
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+VOID BuildWPSTypesCache(VOID)
+{
+    APIRET  arc;
+    PSZ     pszAssocData = NULL;
+    if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                                    WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                                    &pszAssocData)))
+    {
+        PSZ pTypeThis = pszAssocData;
+        while (*pTypeThis)
+        {
+            PWPSTYPEASSOCTREENODE pNewNode = malloc(sizeof(WPSTYPEASSOCTREENODE));
+            if (pNewNode)
+            {
+                pNewNode->pszType = strdup(pTypeThis);
+                pNewNode->pszObjectHandles = prfhQueryProfileData(HINI_USER,
+                                                                  WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                                                                  pTypeThis,
+                                                                  &pNewNode->cbObjectHandles);
+
+                #ifdef DEBUG_ASSOCS
+                    _Pmpf((__FUNCTION__ ": inserting type %s, %d bytes data", pTypeThis, pNewNode->cbObjectHandles));
+                #endif
+
+                // insert into binary tree
+                treeInsertNode(&G_WPSTypeAssocsTreeRoot,
+                               (TREE*)pNewNode,
+                               CompareWPSTypes,
+                               FALSE);
+                G_cWPSTypeAssocsTreeItems++; // V0.9.12 (2001-05-22) [umoeller]
+            }
+            else
+                break;
+
+            pTypeThis += strlen(pTypeThis) + 1;   // next type
+        }
+
+        free(pszAssocData);
+
+        G_fWPSTypesValid = TRUE;
+    }
+}
+
+/*
  *@@ ftypFindWPSType:
  *      returns the PWPSTYPEASSOCTREENODE containing the
  *      WPS association objects for the specified type.
@@ -459,44 +518,7 @@ PWPSTYPEASSOCTREENODE ftypFindWPSType(const char *pcszType)
         // create a copy of the data from OS2.INI... this
         // is much faster than using the Prf* functions all
         // the time
-        APIRET  arc;
-        PSZ     pszAssocData = NULL;
-        if (!(arc = prfhQueryKeysForApp(HINI_USER,
-                                        WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
-                                        &pszAssocData)))
-        {
-            PSZ pTypeThis = pszAssocData;
-            while (*pTypeThis)
-            {
-                PWPSTYPEASSOCTREENODE pNewNode = malloc(sizeof(WPSTYPEASSOCTREENODE));
-                if (pNewNode)
-                {
-                    pNewNode->pszType = strdup(pTypeThis);
-                    pNewNode->pszObjectHandles = prfhQueryProfileData(HINI_USER,
-                                                                      WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
-                                                                      pTypeThis,
-                                                                      &pNewNode->cbObjectHandles);
-
-                    #ifdef DEBUG_ASSOCS
-                        _Pmpf((__FUNCTION__ ": inserting type %s, %d bytes data", pTypeThis, pNewNode->cbObjectHandles));
-                    #endif
-
-                    // insert into binary tree
-                    treeInsertNode(&G_WPSTypeAssocsTreeRoot,
-                                   (TREE*)pNewNode,
-                                   CompareWPSTypes,
-                                   FALSE);
-                }
-                else
-                    break;
-
-                pTypeThis += strlen(pTypeThis) + 1;   // next type
-            }
-
-            free(pszAssocData);
-
-            G_fWPSTypesValid = TRUE;
-        }
+        BuildWPSTypesCache();
     }
 
     if (G_fWPSTypesValid)
@@ -943,6 +965,159 @@ APIRET ftypRenameFileType(const char *pcszOld,      // in: existing file type
     }
 
     return (arc);
+}
+
+/*
+ *@@ RemoveAssocReferences:
+ *      called twice from ftypAssocObjectDeleted,
+ *      with the PMWP_ASSOC_TYPES and PMWP_ASSOC_FILTERS
+ *      strings, respectively.
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+ULONG RemoveAssocReferences(const char *pcszHandle,     // in: decimal object handle
+                            const char *pcszIniApp)     // in: OS2.INI app to search
+{
+    APIRET arc;
+    ULONG ulrc = 0;
+    PSZ pszKeys = NULL;
+
+    // loop 1: go thru all types/filters
+    if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                                    pcszIniApp,
+                                    &pszKeys)))
+    {
+        const char *pKey = pszKeys;
+        while (*pKey != 0)
+        {
+            // loop 2: go thru all assocs for this type/filter
+            ULONG cbAssocData;
+            PSZ pszAssocData = prfhQueryProfileData(HINI_USER,
+                                                    pcszIniApp, // "PMWP_ASSOC_TYPE" or "PMWP_ASSOC_FILTER"
+                                                    pKey,       // current type or filter
+                                                    &cbAssocData);
+            if (pszAssocData)
+            {
+                PSZ     pAssoc = pszAssocData;
+                ULONG   ulOfsAssoc = 0;
+                LONG    cbCopy = cbAssocData;
+                while (*pAssoc)
+                {
+                    // pAssoc now has the decimal handle of
+                    // the associated object
+                    ULONG cbAssocThis = strlen(pAssoc) + 1; // include null byte
+                    cbCopy -= cbAssocThis;
+
+                    // check if this assoc is to be removed
+                    if (!strcmp(pAssoc, pcszHandle))
+                    {
+                        _Pmpf((__FUNCTION__ ": removing handle %s from %s",
+                                    pcszHandle,
+                                    pKey));
+
+                        // yes: well then...
+                        // is this the last entry?
+                        if (cbCopy > 0)
+                        {
+                            // no: move other entries up front
+                            memmove(pAssoc,
+                                    pAssoc + cbAssocThis,
+                                    // remaining bytes:
+                                    cbCopy);
+                        }
+                        // else: just truncate the chunk
+
+                        cbAssocData -= cbAssocThis;
+
+                        // now rewrite the assocs list...
+                        // note, we do not remove the key,
+                        // this is the types list of the WPS.
+                        // If no assocs are left, we write a
+                        // single null byte.
+                        PrfWriteProfileData(HINI_USER,
+                                            (PSZ)pcszIniApp,
+                                            (PSZ)pKey,
+                                            (cbAssocData)
+                                                ? pszAssocData
+                                                : "\0",
+                                            (cbAssocData)
+                                                ? cbAssocData
+                                                : 1);           // null byte only
+                        ulrc++;
+                        break;
+                    }
+
+                    // go for next object handle (after the 0 byte)
+                    pAssoc += cbAssocThis;
+                    ulOfsAssoc += cbAssocThis;
+                    if (pAssoc >= pszAssocData + cbAssocData)
+                        break; // while (*pAssoc)
+                } // end while (*pAssoc)
+
+                free(pszAssocData);
+            }
+
+            // go for next key
+            pKey += strlen(pKey)+1;
+        }
+
+        free(pszKeys);
+    }
+
+    return (ulrc);
+}
+
+/*
+ *@@ ftypAssocObjectDeleted:
+ *      runs through all association entries and
+ *      removes somSelf from all associations, if
+ *      present.
+ *
+ *      Gets called from XWPProgram::xwpNukePhysical,
+ *      i.e. when a WPProgram is physically destroyed.
+ *
+ *      Returns the no. of associations removed.
+ *
+ *@@added V0.9.12 (2001-05-22) [umoeller]
+ */
+
+ULONG ftypAssocObjectDeleted(HOBJECT hobj)
+{
+    ULONG ulrc = 0;
+    BOOL fLocked = FALSE;
+
+    TRY_LOUD(excpt1)
+    {
+        // lock out everyone else from messing with the types here
+        if (fLocked = ftypLockCaches())
+        {
+            CHAR szHandle[20];
+
+            ftypInvalidateCaches();
+
+            // run through OS2.INI assocs...
+            // NOTE: we run through both the WPS types and
+            // WPS filters sections here, even though XWP
+            // extended assocs don't use the WPS filters.
+            // But the object got deleted, so we shouldn't
+            // leave the old entries in there.
+            sprintf(szHandle, "%d", hobj);
+
+            _Pmpf((__FUNCTION__ ": running with %s", szHandle));
+
+            ulrc += RemoveAssocReferences(szHandle,
+                                          WPINIAPP_ASSOCTYPE); // "PMWP_ASSOC_TYPE"
+            ulrc += RemoveAssocReferences(szHandle,
+                                          WPINIAPP_ASSOCFILTER); // "PMWP_ASSOC_FILTER"
+        }
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fLocked)
+        ftypUnlockCaches();
+
+    return (ulrc);
 }
 
 /* ******************************************************************
@@ -3628,12 +3803,17 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 WinSetPointer(HWND_DESKTOP, hptrOld);
 
                 if (!arc)
+                {
+                    // call "init" callback to reinitialize the page
+                    pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+
                     cmnMessageBoxMsgExt(pcnbp->hwndDlgPage,
                                         121,            // xwp
                                         apsz,
                                         1,
                                         215,            // successfully imported from %1
                                         MB_OK);
+                }
                 else
                 {
                     sprintf(szError, "%u", arc);
@@ -4313,29 +4493,7 @@ VOID HandleRecordChecked(ULONG ulExtra,         // from "item changed" callback
             if (strchr(pstrTypes->psz, *pcszSeparator))
             {
                 // we have more than one type:
-
-                /* ULONG   ulOfs = 0;
-                CHAR    szFind[3];
-                // remove this type
-                xstrFindReplaceC(pstrTypes,
-                                 &ulOfs,
-                                 precc->pliFileType->pszFileType,
-                                 "");
-                // since the types are separated with \n if there
-                // are several, we now might have a duplicate \n\n
-                // if there was more than one type
-                ulOfs = 0;
-                szFind[0] = *pcszSeparator;
-                szFind[1] = *pcszSeparator;
-                szFind[2] = '\0';
-                xstrFindReplaceC(pstrTypes,
-                                 &ulOfs,
-                                 szFind,        // duplicate
-                                 pcszSeparator);   // single
-                */ // this didn't work, we ended up with leading
-                   // separators here V0.9.12 (2001-05-12) [umoeller]
-
-                // instead, build a linked list of the types now
+                // build a linked list of the types now
                 PLINKLIST   pllExplicitTypes = lstCreate(TRUE);
                 PLISTNODE   pNode;
                 XSTRING     strNew;
@@ -4645,7 +4803,7 @@ MRESULT ftypAssociationsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                            // : NULL);         // remove
                                            : "");         // fixed V0.9.12 (2001-05-12) [umoeller]
 
-                        // @@todo ^^^ this method is buggy, it never reacts
+                    // ^^^ @@todo, this never works with the null string
 
                 xstrClear(&str);
             }

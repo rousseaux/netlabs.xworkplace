@@ -36,6 +36,8 @@
 
     VOID ftypInvalidateCaches(VOID);
 
+    ULONG ftypAssocObjectDeleted(HOBJECT hobj);
+
     #ifdef SOM_XFldDataFile_h
         PLINKLIST ftypBuildAssocsList(WPDataFile *somSelf,
                                       BOOL fUsePlainTextAsDefault);

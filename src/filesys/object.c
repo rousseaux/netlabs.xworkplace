@@ -23,7 +23,8 @@
  *          Objects are most frequently made awake when a folder
  *          is populated (mostly on folder open). Of course this
  *          does not physically create objects... they are only
- *          instantiated in memory then.
+ *          instantiated in memory then from their physical
+ *          storage.
  *
  *          There are many ways to awake objects. To awake a
  *          single object, call M_WPObject::wpclsMakeAwake.
@@ -36,13 +37,14 @@
  *          Even though this isn't documented anywhere, the
  *          WPS also supports the reverse concept of making
  *          the object dormant again. This will destroy the
- *          SOM object, but not the physical representation.
+ *          SOM object in memory, but not the physical representation.
+ *
  *          I suspect this was not documented because you can
  *          never know whether some code still needs the
  *          SOM pointer to the object somehow. Anyway, the
  *          WPS _does_ make objects dormant again, e.g. when
  *          their folders are closed and they are not referenced
- *          anywhere else. You can prevent the WPS from doing
+ *          from anywhere else. You can prevent the WPS from doing
  *          this by calling WPObject::wpLock.
  *
  *          The interesting thing is that there is an undocumented
@@ -65,15 +67,13 @@
  *              should clean up the object.
  *
  *      2)  Scenario 2 means that an object is physically created
- *          and destroyed through the WPS. That is, you create
- *          a new folder through "create another" and delete it
- *          with the "delete" context menu item.
+ *          or destroyed through the WPS.
  *
- *          Creating a new object is done through the
- *          M_WPObject::wpclsNew method. This is the "object
- *          factory" of the WPS. Depending on which class the
- *          method is invoked on, the new object will be of
- *          that class.
+ *          An object is created through either M_WPObject::wpclsNew
+ *          or WPObject::wpCopyObject or WPObject::wpCreateAnother.
+ *          These are the "object factories" of the WPS. Depending
+ *          on which class the method is invoked on, the new object
+ *          will be of that class.
  *
  *          Depending on the object's class, wpclsNew will create
  *          a physical representation (e.g. file, folder) of the
@@ -87,8 +87,8 @@
  *
  *          --  WPObject::wpFree is the most direct way to
  *              delete an object. This does not display any
- *              more confirmations, but deletes the object
- *              right away.
+ *              more confirmations (in theory), but deletes
+ *              the object right away.
  *
  *              Interestingly, wpFree in turn calls another
  *              undocumented method -- WPObject::wpDestroyObject.
@@ -126,13 +126,13 @@
  *
  *      The destruction call sequence thus is:
  *
- +          wpDelete
+ +          wpDelete (display confirmation, if applicable)
  +             |
- +             +-- wpFree
+ +             +-- wpFree (really delete the object now)
  +                   |
- +                   +-- wpDestroyObject
+ +                   +-- wpDestroyObject (delete physical storage)
  +                   |
- +                   +-- wpMakeDormant
+ +                   +-- wpMakeDormant (delete SOM object in memory)
  +                         |
  +                         +-- (lots of cleanup: wpClose, etc.)
  +                         |
@@ -305,6 +305,7 @@ static ULONG       G_ulDirtyListItemsCount = 0;
  *      --  wpFree in turn calls the undocumented wpDestroyObject
  *          method, which has a number of bugs but cannot be overridden
  *          (because it's not exported in the IDL file).
+ *
  *          So in order to fix those bugs, wpFree had to be rewritten,
  *          which now calls the new XFldObject::xwpNukePhysical method
  *          (which is our reimplementation of wpDestroyObject).
@@ -329,12 +330,12 @@ static ULONG       G_ulDirtyListItemsCount = 0;
  *         which invokes the standard undocumented wpDestroyObject
  *         method.
  *
- *         So for classes which have not overridden xwpNukeObject,
- *         the behavior is EXACTLY as with the standard WPObject::wpFree.
+ *      In summary, for classes which have not overridden xwpNukeObject,
+ *      the behavior is EXACTLY as with the standard WPObject::wpFree.
  *
- *         HOWEVER, this way we can override xwpNukeObject in
- *         XFldDataFile and XFolder to fix the annoying message box
- *         bugs.
+ *      HOWEVER, this way we can override xwpNukeObject in
+ *      XFldDataFile and XFolder to fix the annoying message box
+ *      bugs.
  *
  *@@added V0.9.9 (2001-02-04) [umoeller]
  */
@@ -367,7 +368,10 @@ BOOL objFree(WPObject *somSelf)
     // around this (without breaking compatibility) is to introduce
     // a new method in XFldObject, which calls wpDestroyObject per
     // default.
-    // resolve method by name
+
+    // We resolve the method by name because it is overridden
+    // in some XWorkplace classes. If it is not overridden,
+    // XFldObject::xwpNukePhysical calls wpDestroyObject.
     pxwpNukePhysical
         = (somTD_XFldObject_xwpNukePhysical)somResolveByName(
                               somSelf,

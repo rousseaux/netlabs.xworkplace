@@ -768,7 +768,7 @@ VOID hifCollectHotkeys(MPARAM mp1,  // in: HWND hwndCnr
                             preccThis->pszFolderPath = preccThis->szFolderPath;
                 }
                 else
-                    preccThis->recc.pszIcon = "Invalid object"; //@@todo NLS
+                    preccThis->recc.pszIcon = cmnGetString(ID_XSSI_INVALID_OBJECT);
 
                 preccThis = (PHOTKEYRECORD)(preccThis->recc.preccNextRecord);
                 ulCount++;

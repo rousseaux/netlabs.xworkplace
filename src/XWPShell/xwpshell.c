@@ -1632,7 +1632,7 @@ VOID ShutdownDaemon(VOID)
     APIRET arc = NO_ERROR;
 
     // stop callback thread
-    if (G_fRing3DaemonRunning)
+    if (G_tidRing3DaemonRunning)
     {
         G_tiRing3Daemon.fExit = TRUE;
         // post event semaphore so that thread

@@ -49,6 +49,8 @@ interface XWPProgram : WPProgram
     ULONG xwpQuerySetup2(in PSZ pszSetupString,
                          in ULONG cbSetupString);
 
+    BOOL xwpNukePhysical();
+
 #ifdef __SOMIDL__
   implementation {
 
@@ -79,8 +81,30 @@ interface XWPProgram : WPProgram
      *
      */
 
+    wpInitData: override;
+    wpUnInitData: override;
+
+    //# wpSetup: override;                  not needed, this properly calls the methods
+
+    wpRestoreData: override;
+
+    wpOpen: override;
+
+    wpQueryIcon: override;
+    wpSetProgIcon: override;
+    wpQueryIconData: override;
+    wpSetIconData: override;
+
     wpSetAssociationType: override;
 
+    wpMoveObject: override;
+    wpCopyObject: override;
+
+    //# wpDestroyObject: override;
+    //# can't override this, add xwpNukeObject instead
+
+    wpAddProgramPage: override;
+    wpAddProgramSessionPage: override;
     wpAddProgramAssociationPage: override;
 
 #ifdef __PRIVATE__

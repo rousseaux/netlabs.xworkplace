@@ -18,3 +18,4 @@
 POINTER 1 LOADONCALL MOVEABLE DISCARDABLE xwpshell.ico
 
 rcinclude "xwpshell.dlg"
+

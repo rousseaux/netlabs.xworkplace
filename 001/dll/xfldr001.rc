@@ -805,6 +805,18 @@ BEGIN
     ID_XSSI_CLASSTITLE_FOLDER           "Folder"
     ID_XSSI_CLASSTITLE_DISK             "Disk"
     ID_XSSI_CLASSTITLE_DATAFILE         "Data file"
+
+    /* extended "close" menu V0.9.12 (2001-05-22) [umoeller] */
+    ID_XSSI_CLOSETHISVIEW               "This ~view"
+    ID_XSSI_CLOSEALLTHISFDR             "All views of this ~folder"
+    ID_XSSI_CLOSEALLSUBFDRS             "All views of this folder and ~subfolders"
+
+    /* miscellaneous new strings V0.9.12 (2001-05-22) [umoeller] */
+    ID_XSSI_INVALID_OBJECT              "Invalid object"
+    ID_XSSI_XSHUTDOWN                   "~XShutdown"
+    ID_XSSI_XC_CLASSTITLE               "Class title"
+    ID_XSSI_XC_VERSION                  "Version"
+    ID_XSSI_XC_OBJBUTTONWIDGET          "Object button widget"
 END
 
 /* Treesize definitions; added V0.9.0 */

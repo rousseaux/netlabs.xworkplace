@@ -14,6 +14,12 @@
 #
 #       For details on these variables, see PROGREF.INF.
 #
+#       Note: You can still comment out everything in
+#       this file and define all these variables
+#       externally before calling nmake, since nmake
+#       converts the entire environment to macros on
+#       startup.
+#
 
 # CVS_WORK_ROOT: the root of your CVS tree
 # (the parent dir of "xworkplace" and "xwphelpers")
@@ -24,14 +30,21 @@ CVS_WORK_ROOT = K:\projects\cvs
 # want to build XWorkplace Security.
 # DDKBASE = K:\libs\DDK\base
 
-# TKBASE: the main Toolkit directory. This must
-# be the parent of the "h" directory with the
-# include files.
+# SESBASE: your SES "base" directory.
+# Not used by the regular makefiles, unless you
+# want to build XWorkplace Security.
+# SESBASE = K:\libs\security
+
+# TKBASE: the main Toolkit directory.
+# This must be the parent of the "h" and "lib"
+# directories with the include files and libraries.
 TKBASE = K:\libs\Toolkit45
 
 # VACBASE: the main directory of your IBM
 # VisualAge C++ installation. Only 3.0.8 has
 # been tested so far.
+# This must be the parent of the "include" and "lib"
+# directories with the include files and libraries.
 VACBASE = K:\libs\IBMVAC
 
 # XWPRUNNING: directory where your XWorkplace
@@ -43,11 +56,11 @@ XWPRUNNING = J:\Tools\WPS\XWorkplace
 # set to nothing if not.
 # WARNING: Enabling debug code has side effects.
 # See PROGREF.INF for details.
-XWP_DEBUG = YES
+# XWP_DEBUG = YES
 
 # XWP_UNLOCK_MODULES: should be set to YES to
-# automatically unlock files. Set to nothing
-# to disable this.
+# automatically unlock files.
+# Set this to nothing to disable unlocking.
 XWP_UNLOCK_MODULES = YES
 
 # XWP_LANG_CODE: language code of NLS resources

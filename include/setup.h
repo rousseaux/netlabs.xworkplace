@@ -128,7 +128,7 @@
             // #define DEBUG_CNRCONTENT
 
         // the following will printf lots of sort info
-            #define DEBUG_SORT
+            // #define DEBUG_SORT
 
         // the following will printf language code queries and
         // NLS DLL evaluation

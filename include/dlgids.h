@@ -310,6 +310,7 @@
 #define ID_XSDI_FLDRVIEWS               535
 #define ID_XSDI_FOLDERCONTENT           536
 #define ID_XSDI_FC_SHOWICONS            537
+#define ID_XSDI_EXTENDCLOSEMENU         538 // V0.9.12 (2001-05-22) [umoeller]
 
 // "XFolder Internals": removed with V0.9.0
 
@@ -1335,6 +1336,12 @@
 // "Logoff" menu item in XFldDesktop V0.9.5 (2000-08-10) [umoeller]
 #define ID_XFMI_OFS_LOGOFF              (WPMENUID_USER+50)
 
+// extended "close" menu V0.9.12 (2001-05-22) [umoeller]
+#define ID_XFMI_OFS_CLOSESUBMENU        (WPMENUID_USER+51)      // submenu
+// "this view" has regular WPMENUID_CLOSE id
+#define ID_XFMI_OFS_CLOSEALLTHISFDR     (WPMENUID_USER+52)      // "close all of this fdr"
+#define ID_XFMI_OFS_CLOSEALLSUBFDRS     (WPMENUID_USER+53)      // "close all subfdrs"
+
 // this is the value used for variable menu items, i.e.
 // those inserted according to the config folder and by
 // the "folder content" functions; XFolder will use this
@@ -1885,6 +1892,16 @@
 #define ID_XSSI_CLASSTITLE_FOLDER       6167
 #define ID_XSSI_CLASSTITLE_DISK         6168
 #define ID_XSSI_CLASSTITLE_DATAFILE     6169
+
+#define ID_XSSI_CLOSETHISVIEW           6170           // "close this view
+#define ID_XSSI_CLOSEALLTHISFDR         6171           // "close all of this fdr"
+#define ID_XSSI_CLOSEALLSUBFDRS         6172           // "close all subfdrs"
+
+#define ID_XSSI_INVALID_OBJECT          6173           // "invalid object"
+#define ID_XSSI_XSHUTDOWN               6174           // "~XShutdown"
+#define ID_XSSI_XC_CLASSTITLE           6175           // class title
+#define ID_XSSI_XC_VERSION              6176           // version
+#define ID_XSSI_XC_OBJBUTTONWIDGET      6177           // obj button widget
 
 /******************************************
  *          Treesize                      *
