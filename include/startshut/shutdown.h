@@ -58,7 +58,7 @@
         BOOL        optWPSCloseWindows,
                     optAutoCloseVIO,
                     optLog,
-                    optAnimate,
+                    // optAnimate,          // removed V0.9.12 (2001-05-12) [umoeller]
                     optAPMPowerOff,
                     optAPMDelay,
                     optWPSReuseStartupFolder,

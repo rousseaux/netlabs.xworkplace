@@ -2298,7 +2298,9 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
             // G_pGlobalSettings->fMonitorCDRoms = 0;
 
             G_pGlobalSettings->fExtAssocs = 0;
-            G_pGlobalSettings->CleanupINIs = 0;
+            // G_pGlobalSettings->CleanupINIs = 0;
+                    // removed for now V0.9.12 (2001-05-12) [umoeller]
+
 #ifdef __REPLHANDLES__
             G_pGlobalSettings->fReplaceHandles = 0; // added V0.9.5 (2000-08-14) [umoeller]
 #endif

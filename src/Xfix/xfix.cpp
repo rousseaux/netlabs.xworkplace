@@ -608,290 +608,297 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                                                     cReccsTotal);
 
                 // load folderpos entries from OS2.INI
-                PSZ pszFolderPoses = prfhQueryKeysForApp(HINI_USER,
-                                                         "PM_Workplace:FolderPos");
-                TREE    *FolderPosTree;
-                treeInit(&FolderPosTree);
-
-                // build tree from folderpos entries V0.9.9 (2001-04-07) [umoeller]
-                const char *pcszFolderPosThis = pszFolderPoses;
-                while (*pcszFolderPosThis)
+                APIRET arc;
+                PSZ pszFolderPoses = NULL;
+                if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                                                "PM_Workplace:FolderPos",
+                                                &pszFolderPoses)))
                 {
-                    TREE    *pNewNode = NEW(TREE);
-                    pNewNode->id = (ULONG)pcszFolderPosThis;
-                    treeInsertNode(&FolderPosTree,
-                                   pNewNode,
-                                   CompareFolderPosNodes,
-                                   FALSE);       // no duplicates
-                            // @@ free the tree nodes
-                    pcszFolderPosThis += strlen(pcszFolderPosThis) + 1;   // next type/filter
-                }
+                    TREE    *FolderPosTree;
+                    treeInit(&FolderPosTree);
 
-                if ((G_preccVeryFirst) && (pszFolderPoses))
-                {
-                    PNODERECORD preccThis = G_preccVeryFirst;
-
-                    // restart at beginning of buffer
-                    pCur = G_pHandlesBuffer + 4;
-                    // now set up records
-                    ULONG   ulIndexThis = 0;
-                    while (pCur < pEnd)
+                    // build tree from folderpos entries V0.9.9 (2001-04-07) [umoeller]
+                    const char *pcszFolderPosThis = pszFolderPoses;
+                    while (*pcszFolderPosThis)
                     {
-                        // copy ptr to next record as given to
-                        // us by the container;
-                        // I'm not sure this will always remain valid
-                        preccThis->pNextRecord = (PNODERECORD)(preccThis->recc.preccNextRecord);
+                        TREE    *pNewNode = NEW(TREE);
+                        pNewNode->id = (ULONG)pcszFolderPosThis;
+                        treeInsertNode(&FolderPosTree,
+                                       pNewNode,
+                                       CompareFolderPosNodes,
+                                       FALSE);       // no duplicates
+                                // @@ free the tree nodes
+                        pcszFolderPosThis += strlen(pcszFolderPosThis) + 1;   // next type/filter
+                    }
 
-                        preccThis->ulIndex = ulIndexThis++;
-                        preccThis->ulOfs = (pCur - G_pHandlesBuffer);
-
-                        preccThis->ulStatus = NODESTAT_OK;
-
-                        preccThis->ulIsFolder = -1;     // unknown now
-
-                        if (!memicmp(pCur, "DRIV", 4))
-                        {
-                            // pCur points to a DRIVE node:
-                            // we don't care about these, because the root
-                            // directory has a real NODE too, so we just
-                            // skip this
-                            PDRIV pDriv = (PDRIV)pCur;
-                            preccThis->pszType = "DRIV";
-                            strcpy(preccThis->szShortNameCopy,
-                                   pDriv->szName);
-                            preccThis->pszShortNameCopy = preccThis->szShortNameCopy;
-
-                            sprintf(preccThis->szLongName,
-                                    "  [%s]",
-                                    preccThis->szShortNameCopy);
-                            preccThis->pszLongName = preccThis->szLongName;
-
-                            // store this in global drives array
-                            // there are nodes like "\\SERVER" for UNC drive names,
-                            // so watch this V0.9.9 (2001-04-07) [umoeller]
-                            if (    (pDriv->szName[0] >= 'A')
-                                 && (pDriv->szName[0] <= 'Z')
-                               )
-                            {
-                                ULONG ulLogicalDrive =   pDriv->szName[0] // drive letter
-                                                       - 'A'
-                                                       + 1;
-
-                                if (G_aDriveNodes[ulLogicalDrive] == 0)
-                                    // drive not occupied yet:
-                                    G_aDriveNodes[ulLogicalDrive] = pDriv;
-                                else
-                                {
-                                    // that's a duplicate DRIV node!!!
-                                    preccThis->ulStatus |= NODESTAT_DUPLICATEDRIV;
-                                    G_cDuplicatesFound++;
-                                }
-                            }
-
-                            pCur += sizeof(DRIV) + strlen(pDriv->szName);
-                        }
-                        else if (!memicmp(pCur, "NODE", 4))
-                        {
-                            // pCur points to a regular NODE: offset pointer first
-                            PNODE pNode = (PNODE)pCur;
-                            preccThis->pszType = "NODE";
-
-                            preccThis->ulHandle = pNode->usHandle;
-                            sprintf(preccThis->szHexHandle, "%04lX", pNode->usHandle);
-                            preccThis->pszHexHandle = preccThis->szHexHandle;
-
-                            preccThis->ulParentHandle = pNode->usParentHandle;
-                            sprintf(preccThis->szHexParentHandle, "%04lX", pNode->usParentHandle);
-                            preccThis->pszHexParentHandle = preccThis->szHexParentHandle;
-
-                            strcpy(preccThis->szShortNameCopy, pNode->szName);
-                            preccThis->pszShortNameCopy = preccThis->szShortNameCopy;
-
-                            ComposeFullName(preccThis, pNode);
-
-                            if (    (preccThis->szLongName[0] >= 'A')
-                                 && (preccThis->szLongName[0] <= 'Z')
-                                 && (strlen(preccThis->szLongName) == 2)
-                               )
-                            {
-                                // this is a root node:
-                                // store this in global drives array
-                                ULONG ulLogicalDrive =   preccThis->szLongName[0]
-                                                                // drive letter
-                                                       - 'A'
-                                                       + 1;
-
-                                if (ulLogicalDrive <= 27)
-                                {
-                                    if (G_aRootNodes[ulLogicalDrive] == 0)
-                                        // root not occupied yet:
-                                        G_aRootNodes[ulLogicalDrive] = pNode;
-                                }
-                                else
-                                    preccThis->ulStatus |= NODESTAT_INVALIDDRIVE;
-                            }
-
-                            // store record in hash table
-                            if (!G_RecordHashTable[pNode->usHandle])
-                                G_RecordHashTable[pNode->usHandle] = preccThis;
-                            else
-                            {
-                                // wow, record already exists for this handle:
-                                // this means it's a duplicate...
-                                PNODERECORD precExisting = G_RecordHashTable[pNode->usHandle],
-                                            prec2 = precExisting;
-
-                                // store in duplicates linked list
-                                while (prec2->pNextDuplicate)
-                                    prec2 = prec2->pNextDuplicate;
-                                prec2->pNextDuplicate = preccThis;
-
-                                // update duplicates count of existing
-                                precExisting->cDuplicates++;
-
-                                // set error status of THIS record
-                                preccThis->ulStatus |= NODESTAT_ISDUPLICATE;
-
-                                G_cDuplicatesFound++;
-                            }
-
-                            // check abstracts in OS2.INI
-                            CHAR    szHandleShort[10];
-                            sprintf(szHandleShort, "%lX", pNode->usHandle);
-                                            // yes, WPS uses "AB" if less than
-                                            // four digits...
-                            ULONG cbFolderContent = 0;
-                            if (    (PrfQueryProfileSize(HINI_USER,
-                                                         "PM_Abstract:FldrContent",
-                                                         szHandleShort,
-                                                         &cbFolderContent))
-                                 && (cbFolderContent)
-                               )
-                            {
-                                // this is a folder, and it has abstract objects:
-                                // store the abstracts count...
-                                // this INI entry is an array of ULONGs
-                                preccThis->cAbstracts = cbFolderContent / sizeof(ULONG);
-                            }
-
-                            // check folderpos entries in OS2.INI...
-                            // for some reason, these are decimal,
-                            // followed by "@" and some other key...
-                            // XWP adds keys to this too.
-                            CHAR szDecimalHandle[30];
-                            sprintf(szDecimalHandle,
-                                    "%d@",
-                                    // compose full handle (hiword)
-                                    (ULONG)(pNode->usHandle)
-                                          | (G_ulHiwordFileSystem << 16L));
-
-                            preccThis->fFolderPos = HasFolderPos(&FolderPosTree,
-                                                                 szDecimalHandle);
-
-                            pCur += sizeof (NODE) + pNode->usNameSize;
-                        }
-
-                        if (ptiMyself->fExit)
-                        {
-                            // cancel:
-                            cReccsTotal = 0;
-                            // cReccs2Insert = 0;
-                            break;
-                        }
-
-                        preccThis = preccThis->pNextRecord;
-
-                        // report progress to thread 1
-                        ULONG ulMax = (pEnd - G_pHandlesBuffer);
-                        ULONG ulNow = (pCur - G_pHandlesBuffer);
-                        G_ulPercentDone = ulNow * 100 / ulMax;
-                    } // end while (pCur < pEnd)
-
-                    // done!!
-
-                    // now resolve references
-                    if (cReccsTotal)
+                    if ((G_preccVeryFirst) && (pszFolderPoses))
                     {
-                        G_fResolvingRefs = TRUE;
-                        G_ulPercentDone = 0;
-
                         PNODERECORD preccThis = G_preccVeryFirst;
-                        ULONG cReccs2 = 0;
-                        while (preccThis)
+
+                        // restart at beginning of buffer
+                        pCur = G_pHandlesBuffer + 4;
+                        // now set up records
+                        ULONG   ulIndexThis = 0;
+                        while (pCur < pEnd)
                         {
-                            // is this a NODE? (DRIV handle is 0)
-                            if (preccThis->ulHandle)
+                            // copy ptr to next record as given to
+                            // us by the container;
+                            // I'm not sure this will always remain valid
+                            preccThis->pNextRecord = (PNODERECORD)(preccThis->recc.preccNextRecord);
+
+                            preccThis->ulIndex = ulIndexThis++;
+                            preccThis->ulOfs = (pCur - G_pHandlesBuffer);
+
+                            preccThis->ulStatus = NODESTAT_OK;
+
+                            preccThis->ulIsFolder = -1;     // unknown now
+
+                            if (!memicmp(pCur, "DRIV", 4))
                             {
-                                // for each NODE record, climb up the
-                                // parents tree
+                                // pCur points to a DRIVE node:
+                                // we don't care about these, because the root
+                                // directory has a real NODE too, so we just
+                                // skip this
+                                PDRIV pDriv = (PDRIV)pCur;
+                                preccThis->pszType = "DRIV";
+                                strcpy(preccThis->szShortNameCopy,
+                                       pDriv->szName);
+                                preccThis->pszShortNameCopy = preccThis->szShortNameCopy;
 
-                                // get the NODE from the record hash table
-                                PNODE pNodeStart = G_NodeHashTable[preccThis->ulHandle],
-                                      pNodeThis = pNodeStart;
+                                sprintf(preccThis->szLongName,
+                                        "  [%s]",
+                                        preccThis->szShortNameCopy);
+                                preccThis->pszLongName = preccThis->szLongName;
 
-                                PNODERECORD pPrevParent = NULL;
-
-                                do
+                                // store this in global drives array
+                                // there are nodes like "\\SERVER" for UNC drive names,
+                                // so watch this V0.9.9 (2001-04-07) [umoeller]
+                                if (    (pDriv->szName[0] >= 'A')
+                                     && (pDriv->szName[0] <= 'Z')
+                                   )
                                 {
-                                    PNODERECORD pParentRec = NULL;
+                                    ULONG ulLogicalDrive =   pDriv->szName[0] // drive letter
+                                                           - 'A'
+                                                           + 1;
 
-                                    if (pNodeThis->usParentHandle)
+                                    if (G_aDriveNodes[ulLogicalDrive] == 0)
+                                        // drive not occupied yet:
+                                        G_aDriveNodes[ulLogicalDrive] = pDriv;
+                                    else
                                     {
-                                        // we have a parent:
-                                        pParentRec
-                                            = G_RecordHashTable[pNodeThis->usParentHandle];
+                                        // that's a duplicate DRIV node!!!
+                                        preccThis->ulStatus |= NODESTAT_DUPLICATEDRIV;
+                                        G_cDuplicatesFound++;
+                                    }
+                                }
 
-                                        if (pParentRec)
-                                        {
-                                            // parent found:
-                                            // raise its usage count
-                                            pParentRec->cChildren++;
+                                pCur += sizeof(DRIV) + strlen(pDriv->szName);
+                            }
+                            else if (!memicmp(pCur, "NODE", 4))
+                            {
+                                // pCur points to a regular NODE: offset pointer first
+                                PNODE pNode = (PNODE)pCur;
+                                preccThis->pszType = "NODE";
 
-                                            // go for next higher parent
-                                            pNodeThis = G_NodeHashTable[pParentRec->ulHandle];
+                                preccThis->ulHandle = pNode->usHandle;
+                                sprintf(preccThis->szHexHandle, "%04lX", pNode->usHandle);
+                                preccThis->pszHexHandle = preccThis->szHexHandle;
 
-                                        }
-                                        else
-                                        {
-                                            // we have a parent handle, but no
-                                            // parent record:
-                                            // whoa, that's a problem
-                                            preccThis->ulStatus |= NODESTAT_INVALID_PARENT;
-                                            MarkAllOrphans(preccThis,
-                                                           preccThis->ulHandle);
-                                            break;
-                                        }
+                                preccThis->ulParentHandle = pNode->usParentHandle;
+                                sprintf(preccThis->szHexParentHandle, "%04lX", pNode->usParentHandle);
+                                preccThis->pszHexParentHandle = preccThis->szHexParentHandle;
+
+                                strcpy(preccThis->szShortNameCopy, pNode->szName);
+                                preccThis->pszShortNameCopy = preccThis->szShortNameCopy;
+
+                                ComposeFullName(preccThis, pNode);
+
+                                if (    (preccThis->szLongName[0] >= 'A')
+                                     && (preccThis->szLongName[0] <= 'Z')
+                                     && (strlen(preccThis->szLongName) == 2)
+                                   )
+                                {
+                                    // this is a root node:
+                                    // store this in global drives array
+                                    ULONG ulLogicalDrive =   preccThis->szLongName[0]
+                                                                    // drive letter
+                                                           - 'A'
+                                                           + 1;
+
+                                    if (ulLogicalDrive <= 27)
+                                    {
+                                        if (G_aRootNodes[ulLogicalDrive] == 0)
+                                            // root not occupied yet:
+                                            G_aRootNodes[ulLogicalDrive] = pNode;
                                     }
                                     else
-                                        // reached the top:
-                                        break;
-                                } while (TRUE);
+                                        preccThis->ulStatus |= NODESTAT_INVALIDDRIVE;
+                                }
 
-                            } // end if (preccThis->ulHandle)
+                                // store record in hash table
+                                if (!G_RecordHashTable[pNode->usHandle])
+                                    G_RecordHashTable[pNode->usHandle] = preccThis;
+                                else
+                                {
+                                    // wow, record already exists for this handle:
+                                    // this means it's a duplicate...
+                                    PNODERECORD precExisting = G_RecordHashTable[pNode->usHandle],
+                                                prec2 = precExisting;
 
-                            // update descriptions
-                            UpdateStatusDescr(preccThis);
+                                    // store in duplicates linked list
+                                    while (prec2->pNextDuplicate)
+                                        prec2 = prec2->pNextDuplicate;
+                                    prec2->pNextDuplicate = preccThis;
 
-                            // next record
+                                    // update duplicates count of existing
+                                    precExisting->cDuplicates++;
+
+                                    // set error status of THIS record
+                                    preccThis->ulStatus |= NODESTAT_ISDUPLICATE;
+
+                                    G_cDuplicatesFound++;
+                                }
+
+                                // check abstracts in OS2.INI
+                                CHAR    szHandleShort[10];
+                                sprintf(szHandleShort, "%lX", pNode->usHandle);
+                                                // yes, WPS uses "AB" if less than
+                                                // four digits...
+                                ULONG cbFolderContent = 0;
+                                if (    (PrfQueryProfileSize(HINI_USER,
+                                                             "PM_Abstract:FldrContent",
+                                                             szHandleShort,
+                                                             &cbFolderContent))
+                                     && (cbFolderContent)
+                                   )
+                                {
+                                    // this is a folder, and it has abstract objects:
+                                    // store the abstracts count...
+                                    // this INI entry is an array of ULONGs
+                                    preccThis->cAbstracts = cbFolderContent / sizeof(ULONG);
+                                }
+
+                                // check folderpos entries in OS2.INI...
+                                // for some reason, these are decimal,
+                                // followed by "@" and some other key...
+                                // XWP adds keys to this too.
+                                CHAR szDecimalHandle[30];
+                                sprintf(szDecimalHandle,
+                                        "%d@",
+                                        // compose full handle (hiword)
+                                        (ULONG)(pNode->usHandle)
+                                              | (G_ulHiwordFileSystem << 16L));
+
+                                preccThis->fFolderPos = HasFolderPos(&FolderPosTree,
+                                                                     szDecimalHandle);
+
+                                pCur += sizeof (NODE) + pNode->usNameSize;
+                            }
+
+                            if (ptiMyself->fExit)
+                            {
+                                // cancel:
+                                cReccsTotal = 0;
+                                // cReccs2Insert = 0;
+                                break;
+                            }
+
                             preccThis = preccThis->pNextRecord;
-                            cReccs2++;
 
-                            G_ulPercentDone = cReccs2 * 100 / cReccsTotal;
-                        } // end while (preccThis)
+                            // report progress to thread 1
+                            ULONG ulMax = (pEnd - G_pHandlesBuffer);
+                            ULONG ulNow = (pCur - G_pHandlesBuffer);
+                            G_ulPercentDone = ulNow * 100 / ulMax;
+                        } // end while (pCur < pEnd)
 
-                        // finally, insert records
-                        cnrhInsertRecords(hwndCnr,
-                                          NULL, // parent
-                                          (PRECORDCORE)G_preccVeryFirst,
-                                          TRUE, // invalidate
-                                          NULL,
-                                          CRA_RECORDREADONLY,
-                                          cReccsTotal);
+                        // done!!
 
-                    } // if (cReccsTotal)
+                        // now resolve references
+                        if (cReccsTotal)
+                        {
+                            G_fResolvingRefs = TRUE;
+                            G_ulPercentDone = 0;
+
+                            PNODERECORD preccThis = G_preccVeryFirst;
+                            ULONG cReccs2 = 0;
+                            while (preccThis)
+                            {
+                                // is this a NODE? (DRIV handle is 0)
+                                if (preccThis->ulHandle)
+                                {
+                                    // for each NODE record, climb up the
+                                    // parents tree
+
+                                    // get the NODE from the record hash table
+                                    PNODE pNodeStart = G_NodeHashTable[preccThis->ulHandle],
+                                          pNodeThis = pNodeStart;
+
+                                    PNODERECORD pPrevParent = NULL;
+
+                                    do
+                                    {
+                                        PNODERECORD pParentRec = NULL;
+
+                                        if (pNodeThis->usParentHandle)
+                                        {
+                                            // we have a parent:
+                                            pParentRec
+                                                = G_RecordHashTable[pNodeThis->usParentHandle];
+
+                                            if (pParentRec)
+                                            {
+                                                // parent found:
+                                                // raise its usage count
+                                                pParentRec->cChildren++;
+
+                                                // go for next higher parent
+                                                pNodeThis = G_NodeHashTable[pParentRec->ulHandle];
+
+                                            }
+                                            else
+                                            {
+                                                // we have a parent handle, but no
+                                                // parent record:
+                                                // whoa, that's a problem
+                                                preccThis->ulStatus |= NODESTAT_INVALID_PARENT;
+                                                MarkAllOrphans(preccThis,
+                                                               preccThis->ulHandle);
+                                                break;
+                                            }
+                                        }
+                                        else
+                                            // reached the top:
+                                            break;
+                                    } while (TRUE);
+
+                                } // end if (preccThis->ulHandle)
+
+                                // update descriptions
+                                UpdateStatusDescr(preccThis);
+
+                                // next record
+                                preccThis = preccThis->pNextRecord;
+                                cReccs2++;
+
+                                G_ulPercentDone = cReccs2 * 100 / cReccsTotal;
+                            } // end while (preccThis)
+
+                            // finally, insert records
+                            cnrhInsertRecords(hwndCnr,
+                                              NULL, // parent
+                                              (PRECORDCORE)G_preccVeryFirst,
+                                              TRUE, // invalidate
+                                              NULL,
+                                              CRA_RECORDREADONLY,
+                                              cReccsTotal);
+
+                        } // if (cReccsTotal)
+                    } // end if ((G_preccVeryFirst) && (pszFolderPoses))
 
                     free(pszFolderPoses);
-                } // end if (preccVeryFirst)
+
+                } // end  if (!(arc = prfhQueryKeysForApp(HINI_USER, "PM_Workplace:FolderPos", &pszFolderPoses)))
+
             } // end if (cReccs)
         }
     }
@@ -1693,17 +1700,18 @@ VOID MarkAllOrphans(PNODERECORD prec,         // in: rec to start with (advanced
 ULONG RemoveHandles(HWND hwndCnr,
                     PLINKLIST pllRecords)       // in: linked list of records to work on
 {
-    ULONG       ulrc = 0;
+    APIRET      arc = NO_ERROR;
     PLISTNODE   pNode;
 
     ULONG       cAbstractsNuked = 0,
                 cFolderPosesNuked = 0;
 
     // load folderpos entries from OS2.INI
-    PSZ pszFolderPoses = prfhQueryKeysForApp(HINI_USER,
-                                             "PM_Workplace:FolderPos");
+    PSZ pszFolderPoses = NULL;
 
-    if (pszFolderPoses)
+    if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                                    "PM_Workplace:FolderPos",
+                                    &pszFolderPoses)))
     {
         // for each record, remove the corresponding NODE in the global NODE data
         pNode = lstQueryFirstNode(pllRecords);
@@ -1738,7 +1746,7 @@ ULONG RemoveHandles(HWND hwndCnr,
             }
             else
             {
-                ulrc = 1;
+                arc = ERROR_BAD_FORMAT;
                 break;
             }
 
@@ -1858,7 +1866,7 @@ ULONG RemoveHandles(HWND hwndCnr,
             cNewRecords++;
         }
 
-        if (ulrc == 0)
+        if (!arc)
         {
             // now update the container:
             // build an array of PRECORDCORE's to be removed
@@ -1891,8 +1899,6 @@ ULONG RemoveHandles(HWND hwndCnr,
             // we must invalidate all because many record
             // offsets and emphasis will have changed
             cnrhInvalidateAll(hwndCnr);
-
-            free(pszFolderPoses);
 
             XSTRING str;
             CHAR    sz[500] = "";
@@ -1938,9 +1944,12 @@ ULONG RemoveHandles(HWND hwndCnr,
 
             xstrClear(&str);
         }
+
+        free(pszFolderPoses);
+
     } // if (pszFolderPoses)
 
-    return (ulrc);
+    return (arc);
 }
 
 /*
@@ -2327,10 +2336,12 @@ VOID FrameCommand(HWND hwndFrame,
                                                      &cRecs);
                 if (pll && cRecs)
                 {
-                    PSZ pszFolderPoses = prfhQueryKeysForApp(HINI_USER,
-                                                             "PM_Workplace:FolderPos");
+                    APIRET arc;
+                    PSZ pszFolderPoses = NULL;
 
-                    if (pszFolderPoses)
+                    if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                                                    "PM_Workplace:FolderPos",
+                                                    &pszFolderPoses)))
                     {
                         PLISTNODE pNode = lstQueryFirstNode(pll);
                         ULONG cTotalNuked = 0;
@@ -2356,8 +2367,6 @@ VOID FrameCommand(HWND hwndFrame,
                             pNode = pNode->pNext;
                         }
 
-                        free(pszFolderPoses);
-
                         if (cTotalNuked)
                             cnrhInvalidateAll(hwndCnr);
 
@@ -2367,6 +2376,8 @@ VOID FrameCommand(HWND hwndFrame,
                         winhDebugBox(G_hwndMain,
                                      "xfix",
                                      sz);
+
+                        free(pszFolderPoses);
                     }
 
                     lstFree(pll);

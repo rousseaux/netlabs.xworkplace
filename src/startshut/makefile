@@ -141,7 +141,8 @@ $(OUTPUTDIR)\shutdown.obj: \
     $(HLPINC)\animate.h $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
            $(HLPINC)\prfh.h $(HLPINC)\procstat.h $(HLPINC)\threads.h $(HLPINC)\winh.h $(HLPINC)\xprf.h \
     $(INC)\classes\xfldr.ih \
-    $(INC)\dlgids.h \
+    $(INC)\dlgids.h $(INC)\xwpapi.h \
+    $(INC)\hook\xwphook.h \
     $(INC)\filesys\fdrmenus.h $(INC)\filesys\object.h $(INC)\filesys\xthreads.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
     $(INC)\media\media.h \

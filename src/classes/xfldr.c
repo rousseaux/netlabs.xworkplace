@@ -1527,6 +1527,7 @@ SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
  *      we also invalidate the config folder caches in fdrmenus.c.
  *
  *@@changed V0.9.0 [umoeller]: adjusted to new config folder handling
+ *@@changed V0.9.12 (2001-05-12) [umoeller]: removed wpQueryHandle for now
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpFree(XFolder *somSelf)
@@ -1547,21 +1548,24 @@ SOM_Scope BOOL  SOMLINK xf_wpFree(XFolder *somSelf)
         mnuInvalidateConfigCache();
     } */ // now handled by XFldObject::wpUninitData
 
-    if (pGlobalSettings->CleanupINIs)
+    /* if (pGlobalSettings->CleanupINIs)
     {
         // "clean up INI files": get object handle for
         // folderpos deletion later. This doesn't hurt
         // because every folder has a handle once it has
         // been opened
         hObj = _wpQueryHandle(somSelf);
-    }
+    } */
+
+    // @@ todo replace this!! we don't want to create
+    // a handle for every folder
 
     // according to WPS docs, the parent method should be called
     // AFTER additional processing; probably somSelf becomes invalid
     // after this
     brc = XFolder_parent_WPFolder_wpFree(somSelf);
 
-    if (brc)
+    /* if (brc)
         // successfully deleted:
         if (hObj)
             // have FOLDERPOS entries
@@ -1570,6 +1574,7 @@ SOM_Scope BOOL  SOMLINK xf_wpFree(XFolder *somSelf)
             // is no longer valid after having called the parent
             xthrPostWorkerMsg(WOM_DELETEFOLDERPOS,
                               (MPARAM)hObj, NULL);
+       */
 
     return (brc);
 }

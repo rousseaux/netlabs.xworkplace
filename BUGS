@@ -17,11 +17,17 @@ Ulrich M”ller.
 NOT-SO-SERIOUS PROBLEMS
 -----------------------
 
+--  object hotkeys:
+    remove "modifier" checkbox
+
 --  sliding menus:
     new method won't work with system menus
 
 --  folder refresh:
     causes all DLL icons to be reset.
+
+    2001-05-10: cannot easily be fixed without rewriting the entire folder
+    refresh mechanism.
 
 --  status bars:
     If the folder status bar is enabled for the Drives folder (using the default
@@ -38,6 +44,10 @@ tooltips:
     -- rewrite auto-pop
 
 XCenter:
+    --  rework stay on top
+
+    -- template object buttons...
+
     -- check wpClose again... this hangs the system somewhere
 
     -- put menus on object buttons on top of the bar, not on top of the button.
@@ -83,15 +93,18 @@ OS/2 Kernel:
        OK is pressed -> nothing happens.
 
 hotkeys:
-    > > >There's one more problem - my batchfiles should start in
-    > > minimized state,
-    > > >but from time to time they appear on desktop. Can you check this?
-    > > Not XWP's fault. XWP opens the object in its default view,
-    > > which, for batch files, is handled by the internal WPS
-    > > code.
-    --> check VIO hacks?
+       if batchfiles should start in minimized state, from time to time
+       they appear on desktop.
+        --> check VIO hacks?
+
+PageMage:
+    --  causes PM lockups at times (Ctrl+Esc unlocks)
+    --  stops switching at times
 
 hook:
+    --  screen borders page:
+        object setting won't stick sometimes.
+
     --  sliding menus:
             -- no submenu delays for menu bars (immediate open)
 

@@ -416,6 +416,9 @@
     #define XDM_SETPOINTER          (WM_USER + 414)
     #define XDM_ENDSCROLL           (WM_USER + 415)
 
+    // added V0.9.12 (2001-05-12) [umoeller]
+    #define XDM_RECOVERWINDOWS      (WM_USER + 416)
+
 #endif
 
 

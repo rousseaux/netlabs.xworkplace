@@ -34,8 +34,8 @@ Last updated March 29, 2001 by Ulrich M”ller
     has to be some coordination of all the changes going on and
     checks whether the changes conflict with each other.
 
-    CVS does exactly that, except that it can handle large directories
-    with many files of any type.
+    CVS does exactly that, except that it can handle large directory
+    trees with many files of any type -- text or binary.
 
     The concept of a client/server CVS setup is that the server
     maintains a "repository" with the entire source code, including

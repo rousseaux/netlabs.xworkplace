@@ -230,10 +230,10 @@ BOOL dtpSetup(WPDesktop *somSelf,
                     xsd.optLog = FALSE;
                 else if (!strcmp(pszToken, "LOG"))
                     xsd.optLog = TRUE;
-                else if (!strcmp(pszToken, "NOANIMATE"))
+                /* else if (!strcmp(pszToken, "NOANIMATE"))
                     xsd.optAnimate = FALSE;
                 else if (!strcmp(pszToken, "ANIMATE"))
-                    xsd.optAnimate = TRUE;
+                    xsd.optAnimate = TRUE; */
                 else if (!strcmp(pszToken, "NOCONFIRM"))
                     xsd.optConfirm = FALSE;
                 else if (!strcmp(pszToken, "CONFIRM"))

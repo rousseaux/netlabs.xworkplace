@@ -471,6 +471,7 @@ VOID dmnKillPageMage(BOOL fNotifyKernel)    // in: if TRUE, we post T1M_PAGEMAGE
 {
     if (   G_pHookData
         && G_pHookData->hwndPageMageFrame
+        && G_pHookData->hwndPageMageMoveThread
        )
     {
         // PageMage running:
@@ -480,9 +481,6 @@ VOID dmnKillPageMage(BOOL fNotifyKernel)    // in: if TRUE, we post T1M_PAGEMAGE
 
         // stop move thread
         WinPostMsg(G_pHookData->hwndPageMageMoveThread, WM_QUIT, 0, 0);
-        /* ulRequest = PGMGQENCODE(PGMGQ_QUIT, 0, 0);
-        DosWriteQueue(G_hqPageMage, ulRequest, 0, NULL, 0);
-        thrFree(&G_ptiMoveThread); */
 
         if (G_pHookData->PageMageConfig.fRecoverOnShutdown)
             pgmmRecoverAllWindows();
@@ -1221,6 +1219,21 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
                 if (G_pHookData)
                     mrc = (MRESULT)(G_pHookData->hwndPageMageFrame != NULLHANDLE);
+            break;
+
+            /*
+             *@@ XDM_RECOVERWINDOWS:
+             *      recovers all windows to the screen.
+             *
+             *      Posted during XShutdown to make sure that
+             *      window positions are not saved off screen.
+             *
+             *@@added V0.9.12 (2001-05-15) [umoeller]
+             */
+
+            case XDM_RECOVERWINDOWS:
+                if (G_pHookData->PageMageConfig.fRecoverOnShutdown)
+                    pgmmRecoverAllWindows();
             break;
 
             /*

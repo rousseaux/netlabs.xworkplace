@@ -346,6 +346,7 @@ APIRET ctrpDesktopWorkareaSupported(VOID)
  *      May run on any thread.
  *
  *@@added V0.9.7 (2001-01-18) [umoeller]
+ *@@changed V0.9.12 (2001-05-06) [umoeller]: fixed potential endless loop
  */
 
 BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
@@ -474,8 +475,12 @@ BOOL UpdateDesktopWorkarea(PXCENTERWINDATA pXCenterData,
                                 if (pDataThat->cyFrame > ulCutTop)
                                     ulCutTop = pDataThat->cyFrame;
 
-                            pNode = pNode->pNext;
+                            // pNode = pNode->pNext;
                         }
+
+                        pNode = pNode->pNext;
+                                // moved this V0.9.12 (2001-05-06) [umoeller]
+                                // this might have caused endless loops
                     }
 
                     rclNew.yBottom += ulCutBottom;
@@ -543,7 +548,7 @@ BOOL APIENTRY tmrStopTimer(HWND hwnd,
 
 /*
  *@@ RegisterBuiltInWidgets:
- *      registers the build-in widget PM window classes.
+ *      registers the built-in widget PM window classes.
  *      Gets called from ctrpCreateXCenterView on its
  *      first invocation only.
  */
@@ -1360,7 +1365,7 @@ VOID StartAutoHide(PXCENTERWINDATA pXCenterData)
  *      If the frame is currently auto-hidden (i.e. moved
  *      mostly off the screen), calling this function will
  *      re-show it and restart the auto-hide timer, even
- *      if ulFlags is 0.,
+ *      if ulFlags is 0.
  *
  *      This function also takes care of desktop resizing
  *      if this XCenter has the "Reduce desktop workarea"
@@ -4052,6 +4057,7 @@ VOID ctrpFreeClasses(VOID)
  *@@added V0.9.7 (2000-12-02) [umoeller]
  *@@changed V0.9.9 (2001-03-09) [umoeller]: added PRIVATEWIDGETCLASS wrapping
  *@@changed V0.9.9 (2001-03-09) [umoeller]: converted global array to linked list
+ *@@changed V0.9.12 (2001-05-12) [umoeller]: added extra non-null check
  */
 
 PXCENTERWIDGETCLASS ctrpFindClass(const char *pcszWidgetClass)
@@ -4066,8 +4072,10 @@ PXCENTERWIDGETCLASS ctrpFindClass(const char *pcszWidgetClass)
         PPRIVATEWIDGETCLASS pClass
             = (PPRIVATEWIDGETCLASS)pNode->pItemData;
 
-        if (strcmp(pClass->Public.pcszWidgetClass,
-                   pcszWidgetClass) == 0)
+        if (    (pClass)        // V0.9.12 (2001-05-12) [umoeller]
+             && (!strcmp(pClass->Public.pcszWidgetClass,
+                         pcszWidgetClass))
+           )
         {
             // found:
             pReturn = &pClass->Public;

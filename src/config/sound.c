@@ -294,12 +294,15 @@ BOOL sndInstallAddtlSounds(HAB hab,
 
 VOID FillDropDownWithSchemes(HWND hwndDropDown)
 {
-    PSZ pszSchemes = prfhQueryKeysForApp(HINI_SYSTEM,
-                                     MMINIKEY_SOUNDSCHEMES); // "PM_SOUND_SCHEMES_LIST"
+    APIRET arc = NO_ERROR;
+    PSZ pszSchemes = NULL;
+
     // first empty listbox (this might get called later again)
     WinSendMsg(hwndDropDown, LM_DELETEALL, MPNULL, MPNULL);
 
-    if (pszSchemes)
+    if (!(arc = prfhQueryKeysForApp(HINI_SYSTEM,
+                                    MMINIKEY_SOUNDSCHEMES, // "PM_SOUND_SCHEMES_LIST"
+                                    &pszSchemes)))
     {
         PSZ     pKey2 = pszSchemes;
 
@@ -884,6 +887,7 @@ VOID sndSoundsInitPage(PCREATENOTEBOOKPAGE pcnbp,           // notebook info str
         {
             CHAR szData[100];
             PSZ pszSysSounds;
+            APIRET arc = NO_ERROR;
 
             // "enabled" in MMPM.INI
             PrfQueryProfileString(hiniMMPM,
@@ -910,15 +914,15 @@ VOID sndSoundsInitPage(PCREATENOTEBOOKPAGE pcnbp,           // notebook info str
                                   szData, sizeof(szData));
             sscanf(szData, "%d", &(pspd->ulCommonVolume));
 
-            // fill "Events" listbox
-            pszSysSounds = prfhQueryKeysForApp(hiniMMPM,
-                                               MMINIKEY_SYSSOUNDS); // "MMPM2_AlarmSounds"
             // first empty listbox (this might get called later again)
             WinSendMsg(pspd->hwndEventsListbox, LM_DELETEALL, MPNULL, MPNULL);
 
-            // go thru system sounds
-            if (pszSysSounds)
+            // fill "Events" listbox
+            if (!(arc = prfhQueryKeysForApp(hiniMMPM,
+                                            MMINIKEY_SYSSOUNDS, // "MMPM2_AlarmSounds"
+                                            &pszSysSounds)))
             {
+                // go thru system sounds
                 PSZ     pKey2 = pszSysSounds;
 
                 while (*pKey2 != 0)

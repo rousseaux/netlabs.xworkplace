@@ -551,21 +551,22 @@ VOID fonPopulateFirstTime(XWPFontFolder *pFolder)
     {
         XWPFontFolderData *somThis = XWPFontFolderGetData(pFolder);
         ULONG ulIndex = 0;
-        PSZ pszFontKeys = NULL;
-
         HAB hab = WinQueryAnchorBlock(cmnQueryActiveDesktopHWND());
                             // how can we get the HAB of the populate thread?!?
 
         fFolderLocked = !wpshRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT);
         if (fFolderLocked)
         {
+            APIRET arc = NO_ERROR;
+            PSZ pszFontKeys = NULL;
+
             // reset counts
             _ulFontsMax = 0;
             _ulFontsCurrent = 0;
 
-            pszFontKeys = prfhQueryKeysForApp(HINI_USER,
-                                              G_pcszFontsApp); // "PM_Fonts"
-            if (pszFontKeys)
+            if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                                            G_pcszFontsApp, // "PM_Fonts"
+                                            &pszFontKeys)))
             {
                 PSZ     pKey2 = pszFontKeys;
 
@@ -596,10 +597,10 @@ VOID fonPopulateFirstTime(XWPFontFolder *pFolder)
                         CHAR    szTitle[200] = "unknown";
                         CHAR    szStatus[100] = "";       // font is OK
 
-                        APIRET arc = fonGetFontDescription(hab,
-                                                           pszFilename,
-                                                           szFamily,
-                                                           szTitle);    // face
+                        arc = fonGetFontDescription(hab,
+                                                    pszFilename,
+                                                    szFamily,
+                                                    szTitle);    // face
 
                         if (arc != NO_ERROR)
                             // file doesn't exist:

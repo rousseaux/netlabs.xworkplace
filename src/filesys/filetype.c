@@ -343,10 +343,12 @@ PLINKLIST ftypGetCachedTypesWithFilters(VOID)
         // caches have been cleared, or first call:
         // build the list in the global variable from OS2.INI...
 
-        PSZ     pszTypesWithFiltersList = prfhQueryKeysForApp(HINI_USER,
-                                                              INIAPP_XWPFILEFILTERS);
-                                                                // "XWorkplace:FileFilters"
-        if (pszTypesWithFiltersList)
+        APIRET arc;
+        PSZ     pszTypesWithFiltersList = NULL;
+
+        if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                                        INIAPP_XWPFILEFILTERS, // "XWorkplace:FileFilters"
+                                        &pszTypesWithFiltersList)))
         {
             PSZ pTypeWithFilterThis = pszTypesWithFiltersList;
 
@@ -447,9 +449,11 @@ PWPSTYPEASSOCTREENODE ftypFindWPSType(const char *pcszType)
         // create a copy of the data from OS2.INI... this
         // is much faster than using the Prf* functions all
         // the time
-        PSZ     pszAssocData = prfhQueryKeysForApp(HINI_USER,
-                                                   WPINIAPP_ASSOCTYPE); // "PMWP_ASSOC_TYPE"
-        if (pszAssocData)
+        APIRET  arc;
+        PSZ     pszAssocData = NULL;
+        if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                                        WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                                        &pszAssocData)))
         {
             PSZ pTypeThis = pszAssocData;
             while (*pTypeThis)
@@ -894,9 +898,9 @@ APIRET ftypRenameFileType(const char *pcszOld,      // in: existing file type
                 // 3) now... go thru ALL of "XWorkplace:FileTypes"
                 // and check if any of the types in there has specified
                 // pcszOld as its parent type. If so, update that entry.
-                pszXWPParentTypes = prfhQueryKeysForApp(HINI_USER,
-                                                     INIAPP_XWPFILETYPES); // "XWorkplace:FileTypes"
-                if (pszXWPParentTypes)
+                if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                                                INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
+                                                &pszXWPParentTypes)))
                 {
                     PSZ pParentThis = pszXWPParentTypes;
                     while (*pParentThis)
@@ -1551,6 +1555,7 @@ PFILETYPERECORD AddFileTypeAndAllParents(HWND hwndCnr,          // in: cnr to in
  *      check and/or disable the CHECKBOXRECORDCORE's.
  *
  *@@added V0.9.9 (2001-03-27) [umoeller]
+ *@@changed V0.9.12 (2001-05-12) [umoeller]: fixed small memory leak
  */
 
 VOID FillCnrWithAvailableTypes(HWND hwndCnr,
@@ -1558,16 +1563,15 @@ VOID FillCnrWithAvailableTypes(HWND hwndCnr,
                                PLINKLIST pllCheck,      // in: list of types for checking records
                                PLINKLIST pllDisable)    // in: list of types for disabling records
 {
-
-    PSZ pszAssocTypeList;
+    APIRET  arc;
+    PSZ     pszAssocTypeList = NULL;
 
     HPOINTER hptrOld = winhSetWaitPointer();
 
     // step 1: load WPS file types list
-    pszAssocTypeList = prfhQueryKeysForApp(HINI_USER,
-                                           WPINIAPP_ASSOCTYPE);
-                                                // "PMWP_ASSOC_TYPE"
-    if (pszAssocTypeList)
+    if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                                    WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE"
+                                    &pszAssocTypeList)))
     {
         PSZ         pKey = pszAssocTypeList;
         PSZ         pszFileTypeHierarchyList;
@@ -1594,21 +1598,18 @@ VOID FillCnrWithAvailableTypes(HWND hwndCnr,
             pKey += strlen(pKey)+1;
         }
 
-        free(pszAssocTypeList);
-
         // step 2: load XWorkplace file types hierarchy
         WinEnableWindowUpdate(hwndCnr, FALSE);
 
-        pszFileTypeHierarchyList = prfhQueryKeysForApp(HINI_USER,
-                                                       INIAPP_XWPFILETYPES);
-                                                        // "XWorkplace:FileTypes"
-
-        // step 3: go thru the file type hierarchy
-        // and add parents;
-        // AddFileTypeAndAllParents will mark the
-        // inserted items as processed (for step 4)
-        if (pszFileTypeHierarchyList)
+        if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                                        INIAPP_XWPFILETYPES, // "XWorkplace:FileTypes"
+                                        &pszFileTypeHierarchyList)))
         {
+            // step 3: go thru the file type hierarchy
+            // and add parents;
+            // AddFileTypeAndAllParents will mark the
+            // inserted items as processed (for step 4)
+
             pKey = pszFileTypeHierarchyList;
             while (*pKey != 0)
             {
@@ -1622,6 +1623,8 @@ VOID FillCnrWithAvailableTypes(HWND hwndCnr,
                 // go for next key
                 pKey += strlen(pKey)+1;
             }
+
+            free(pszFileTypeHierarchyList); // was missing V0.9.12 (2001-05-12) [umoeller]
         }
 
         // step 4: add all remaining file types
@@ -1642,6 +1645,8 @@ VOID FillCnrWithAvailableTypes(HWND hwndCnr,
         }
 
         WinShowWindow(hwndCnr, TRUE);
+
+        free(pszAssocTypeList);
     }
 
     WinSetPointer(HWND_DESKTOP, hptrOld);
@@ -3607,20 +3612,22 @@ VOID FillListboxWithWPSFilters(HWND hwndDlg)
         HWND        hwndListBox = WinWindowFromID(hwndDlg,
                                                   ID_XSDI_FT_FILTERLIST);
 
-        PSZ         pszAssocsList = prfhQueryKeysForApp(HINI_USER,
-                                                      WPINIAPP_ASSOCFILTER);
-                                                            // "PMWP_ASSOC_FILTER"
-
         BOOL        fUnknownOnly = winhIsDlgItemChecked(hwndDlg,
                                                         ID_XSDI_FT_UNKNOWNONLY);
 
         PLINKLIST   pllXWPTypesWithFilters = ftypGetCachedTypesWithFilters();
 
+        APIRET      arc;
+
+        PSZ         pszAssocsList = NULL;
+
         WinSendMsg(hwndListBox,
                    LM_DELETEALL,
                    0, 0);
 
-        if (pszAssocsList)
+        if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                                        WPINIAPP_ASSOCFILTER, // "PMWP_ASSOC_FILTER"
+                                        &pszAssocsList)))
         {
             PSZ         pAssocThis = pszAssocsList;
             // add each WPS filter to the list box
@@ -4141,6 +4148,7 @@ VOID DestroyInstanceFileTypesPage(PCREATENOTEBOOKPAGE pcnbp)
  *@@ HandleRecordChecked:
  *
  *@@added V0.9.9 (2001-04-02) [umoeller]
+ *@@changed V0.9.12 (2001-05-12) [umoeller]: fixed buggy type removal
  */
 
 VOID HandleRecordChecked(ULONG ulExtra,         // from "item changed" callback
@@ -4190,7 +4198,8 @@ VOID HandleRecordChecked(ULONG ulExtra,         // from "item changed" callback
             if (strchr(pstrTypes->psz, *pcszSeparator))
             {
                 // we have more than one type:
-                ULONG   ulOfs = 0;
+
+                /* ULONG   ulOfs = 0;
                 CHAR    szFind[3];
                 // remove this type
                 xstrFindReplaceC(pstrTypes,
@@ -4208,6 +4217,46 @@ VOID HandleRecordChecked(ULONG ulExtra,         // from "item changed" callback
                                  &ulOfs,
                                  szFind,        // duplicate
                                  pcszSeparator);   // single
+                */ // this didn't work, we ended up with leading
+                   // separators here V0.9.12 (2001-05-12) [umoeller]
+
+                // instead, build a linked list of the types now
+                PLINKLIST   pllExplicitTypes = lstCreate(TRUE);
+                PLISTNODE   pNode;
+                XSTRING     strNew;
+                AppendTypesFromString(pstrTypes->psz,
+                                      *pcszSeparator,
+                                      pllExplicitTypes);
+                for (pNode = lstQueryFirstNode(pllExplicitTypes);
+                     pNode;
+                     pNode = pNode->pNext)
+                {
+                    PSZ pszTypeThis = (PSZ)pNode->pItemData;
+                    if (!strcmp(pszTypeThis, precc->pliFileType->pszFileType))
+                    {
+                        // alright, remove this one
+                        lstRemoveNode(pllExplicitTypes, pNode);
+                        break;
+                    }
+                }
+
+                // construct a new types string from the types list
+                xstrInit(&strNew, pstrTypes->ulLength);
+                for (pNode = lstQueryFirstNode(pllExplicitTypes);
+                     pNode;
+                     pNode = pNode->pNext)
+                {
+                   if (strNew.ulLength)
+                        // not first one:
+                        xstrcatc(&strNew, *pcszSeparator);
+                    xstrcat(&strNew, (PSZ)pNode->pItemData, 0);
+                }
+
+                // replace original string
+                xstrcpys(pstrTypes, &strNew);
+                xstrClear(&strNew);
+
+                lstFree(pllExplicitTypes);
             }
             else
                 // we had only one type:
@@ -4461,16 +4510,28 @@ MRESULT ftypAssociationsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 XSTRING str;
                 xstrInitCopy(&str, pszTypes, 0);
 
+                _Pmpf((__FUNCTION__ ": pre: str.psz is %s (ulLength: %u)",
+                            (str.psz) ? str.psz : "NULL",
+                            str.ulLength));
+
                 // modify the types according to record click
                 HandleRecordChecked(ulExtra,         // from "item changed" callback
                                     &str,
                                     ",");      // types separator
 
+                _Pmpf((__FUNCTION__ ": post: str.psz is %s (ulLength: %u)",
+                            (str.psz) ? str.psz : "NULL",
+                            str.ulLength));
+
                 // set new types
                 _wpSetAssociationType(pcnbp->somSelf,
                                       (str.ulLength)
                                            ? str.psz
-                                           : NULL);         // remove
+                                           // : NULL);         // remove
+                                           : "");         // fixed V0.9.12 (2001-05-12) [umoeller]
+
+                        // @@todo ^^^ this method is buggy, it never reacts
+
                 xstrClear(&str);
             }
         break;

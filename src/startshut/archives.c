@@ -931,14 +931,16 @@ BOOL arcCheckINIFiles(double* pdPercent,
     double          dMaxDifferencePercent = 0;
 
     // 1) Applications loop
-    PSZ pszAppsList = prfhQueryKeysForApp(HINI_PROFILE, // both OS2.INI and OS2SYS.INI
-                                          NULL);        // return applications
+    APIRET          arc;
+    PSZ pszAppsList = NULL;
 
     #ifdef DEBUG_STARTUP
         _Pmpf(("Checking INI files"));
     #endif
 
-    if (pszAppsList)
+    if (!(arc = prfhQueryKeysForApp(HINI_PROFILE, // both OS2.INI and OS2SYS.INI
+                                    NULL,        // return applications
+                                    &pszAppsList)))
     {
         PSZ pApp2 = pszAppsList;
 
@@ -955,9 +957,10 @@ BOOL arcCheckINIFiles(double* pdPercent,
             if (!fIgnore)
             {
                 // 2) keys loop for this app
-                PSZ pszKeysList = prfhQueryKeysForApp(HINI_PROFILE, // both OS2.INI and OS2SYS.INI
-                                                      pApp2);       // return keys
-                if (pszKeysList)
+                PSZ pszKeysList = NULL;
+                if (!(arc = prfhQueryKeysForApp(HINI_PROFILE, // both OS2.INI and OS2SYS.INI
+                                                pApp2,        // return keys
+                                                &pszKeysList)))
                 {
                     PSZ pKey2 = pszKeysList;
 
@@ -992,9 +995,6 @@ BOOL arcCheckINIFiles(double* pdPercent,
 
                     free(pszKeysList);
                 } // end if (pszKeysList)
-
-                /* sprintf(szTemp, "data sum: %f", dDataSum);
-                _Pmpf(("%s", szTemp)); */
             } // end if (!fIgnore)
 
             pApp2 += strlen(pApp2)+1; // next app
@@ -1002,6 +1002,7 @@ BOOL arcCheckINIFiles(double* pdPercent,
 
         // add size of apps list to total size
         dTotalAppsSize += (pApp2 - pszAppsList);
+
         free(pszAppsList);
     } // end if (pszAppsList)
 

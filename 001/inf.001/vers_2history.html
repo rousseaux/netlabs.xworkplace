@@ -17,7 +17,54 @@ is no longer anything to take away."
 This page lists the revision history of XWorkplace (since V0.9.0 was released).
 The history of the previous XFolder packages are on a <A HREF="vers_2history2.html">separate page</A>.
 
-<P><B>XWorkplace 0.9.11 (April 26, 2001)</B>
+<P><B>XWorkplace 0.9.12 (April 26, 2001)</B>
+
+<H6>New features:
+
+<UL><LI>XFldProgramFile: "Module" pages support NOSTUB executables now (e.g. JFS.IFS).
+<P><LI>XFolder: Added default folder view override to "View" page in "Workplace Shell"
+to prevent inheriting the default view from the parent folder.
+<P><LI>XCenter: Added "lockup" to X-button menu.
+
+</UL>Miscellaneous changes:
+<UL><LI>Reworked trap logs a bit for more lucid output. Added seg:ofs translation of
+trapping CS:EIP for each stack frame.
+<P><LI>Removed "Partitions" view from WPDrives, which never worked right.
+<P><LI>Completely rewrote the entire startup processing to use a separate thread
+now. This should fix some of the problems on startup, like endlessly looping
+startup folders, I hope. At least it makes the code much more readable.
+<P><LI>XCenter: Winlist widget filters now match the first characters only.
+
+</UL>Bugfixes:
+
+<UL><LI>General: Added mutex protection to tooltips, which should fix some strange
+problems. Also fixed some other minor problems.
+<P><LI>General: Chart control (used on XFldDisk "Details" page)
+caused huge PM resource leaks which could lead to system hangs. Fixed.
+<P><LI>XFolder: Disabled "Cleanup INI files" for now. Did more harm than good.
+<P><LI>XFolder: Replacement "File exists" dialog never populated the target folder,
+which could lead to duplicate objects and even system hangs. Fixed.
+<P><LI>XFldDisk: "Details" page always displayed 512 bytes for the sector size.
+Fixed, this now _really_ displays the sector size.
+<P><LI>Extended file types: Removing an association or type on program/file settings
+notebook pages caused a trap. Fixed. Also fixed a small memory leak.
+<P><LI>OS/2 Kernel: "Drivers" page frequently displayed garbage for the driver
+info. Fixed.
+<P><LI>OS/2 Kernel: HPFS and HPFS386 dialogs crashed if no parameters existed
+in CONFIG.SYS. Fixed, thanks Lars Erdmann.
+<P><LI>XCenter: Added mutex protection to the internal timers to prevent some
+race conditions.
+<P><LI>XCenter: Winlist widget now shows hidden windows on click.
+<P><LI>XCenter: Winlist widget filter changes weren't picked up any longer since
+the changes in 0.9.11. Fixed.
+<P><LI>XCenter: Hopefully fixed hang on XShutdown.
+<P><LI>XCenter: X-Button now starts shutdown/restart WPS etc. on thread 1.
+<P><LI>XShutdown: Animations frequently didn't show. Fixed.
+<P><LI>XShutdown: Now recovering all windows from other desktops to screen before
+closing windows.
+<P><LI>XShutdown: Fixed shutdown folder which never waited for objects to close.
+
+</UL></H6><B>XWorkplace 0.9.11 (April 26, 2001)</B>
 
 <H6>New features:
 <UL><LI>The PageMage window can now be dragged itself if the drag starts on an

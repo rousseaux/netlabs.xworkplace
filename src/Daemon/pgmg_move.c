@@ -880,6 +880,10 @@ VOID _Optlink fntMoveThread(PTHREADINFO pti)
     }
 
     // _Pmpf(("Exiting Move thread."));
+
+    // destroy the object window V0.9.12 (2001-05-12) [umoeller]
+    WinDestroyWindow(G_pHookData->hwndPageMageMoveThread);
+    G_pHookData->hwndPageMageMoveThread = NULLHANDLE;
 }
 
 /*

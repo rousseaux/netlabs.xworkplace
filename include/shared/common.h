@@ -777,8 +777,8 @@
                         // default "always sort" flag (BOOL)
                     DefaultSort,
                         // default sort criterion
-                    CleanupINIs,
-                        // XWPSetup "File operations" page
+                    __disabled1, // CleanupINIs,
+                        // disabled for now V0.9.12 (2001-05-15) [umoeller]
 
     /* XFolder 0.80  */
                     ShowBootupStatus,

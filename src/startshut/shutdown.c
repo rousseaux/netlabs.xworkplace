@@ -106,6 +106,10 @@
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
+#include "xwpapi.h"                     // public XWorkplace definitions
+
+// headers in /hook
+#include "hook\xwphook.h"
 
 #include "filesys\fdrmenus.h"           // shared folder menu logic
 #include "filesys\object.h"             // XFldObject implementation
@@ -184,11 +188,12 @@ VOID xsdQueryShutdownSettings(PSHUTDOWNPARAMS psdp)
     psdp->optAutoCloseVIO = ((pGlobalSettings->ulXShutdownFlags & XSD_AUTOCLOSEVIO) != 0);
     psdp->optLog = ((pGlobalSettings->ulXShutdownFlags & XSD_LOG) != 0);
 
-    if (psdp->optReboot)
+    /* if (psdp->optReboot)
         // animate on reboot? V0.9.3 (2000-05-22) [umoeller]
         psdp->optAnimate = ((pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_REBOOT) != 0);
     else
         psdp->optAnimate = ((pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_SHUTDOWN) != 0);
+       */
 
     psdp->optAPMPowerOff = (  ((pGlobalSettings->ulXShutdownFlags & XSD_APMPOWEROFF) != 0)
                       && (apmPowerOffSupported())
@@ -319,11 +324,12 @@ BOOL xsdInitiateShutdown(VOID)
         psdp->optAutoCloseVIO = ((pGlobalSettings->ulXShutdownFlags & XSD_AUTOCLOSEVIO) != 0);
         psdp->optWarpCenterFirst = ((pGlobalSettings->ulXShutdownFlags & XSD_WARPCENTERFIRST) != 0);
         psdp->optLog = ((pGlobalSettings->ulXShutdownFlags & XSD_LOG) != 0);
-        if (psdp->optReboot)
+        /* if (psdp->optReboot)
             // animate on reboot? V0.9.3 (2000-05-22) [umoeller]
             psdp->optAnimate = ((pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_REBOOT) != 0);
         else
             psdp->optAnimate = ((pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_SHUTDOWN) != 0);
+           */
 
         psdp->optAPMPowerOff = (  ((pGlobalSettings->ulXShutdownFlags & XSD_APMPOWEROFF) != 0)
                           && (apmPowerOffSupported())
@@ -2612,10 +2618,10 @@ typedef struct _SHUTDOWNDATA
 } SHUTDOWNDATA, *PSHUTDOWNDATA;
 
 VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData);
-VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData, HPS hpsScreen);
-VOID xsdFinishStandardReboot(PSHUTDOWNDATA pShutdownData, HPS hpsScreen);
-VOID xsdFinishUserReboot(PSHUTDOWNDATA pShutdownData, HPS hpsScreen);
-VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData, HPS hpsScreen);
+VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData);
+VOID xsdFinishStandardReboot(PSHUTDOWNDATA pShutdownData);
+VOID xsdFinishUserReboot(PSHUTDOWNDATA pShutdownData);
+VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData);
 
 /* ******************************************************************
  *
@@ -3486,6 +3492,8 @@ BOOL _Optlink fncbSaveImmediate(WPObject *pobjThis,
  *@@changed V0.9.9 (2001-04-04) [umoeller]: moved all post-close stuff from xsd_fnwpShutdown here
  *@@changed V0.9.9 (2001-04-04) [umoeller]: rewrote "save WPS objects" to use dirty list from object.c
  *@@changed V0.9.11 (2001-04-18) [umoeller]: fixed logoff
+ *@@changed V0.9.12 (2001-04-29) [umoeller]: deferred update thread startup to fnwpShutdown; this fixes shutdown folder
+ *@@changed V0.9.12 (2001-05-15) [umoeller]: now telling PageMage to recover windows first
  */
 
 void _Optlink fntShutdownThread(PTHREADINFO pti)
@@ -3730,6 +3738,24 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
             xsdLog(pShutdownData->ShutdownLogFile,
                    __FUNCTION__ ": Now entering shutdown message loop...\n");
 
+            // tell PageMage to recover all windows to the current screen
+            // V0.9.12 (2001-05-15) [umoeller]
+            if (pShutdownData->SDConsts.pKernelGlobals)
+            {
+                PXWPGLOBALSHARED pXwpGlobalShared = pShutdownData->SDConsts.pKernelGlobals->pXwpGlobalShared;
+
+                if (pXwpGlobalShared)
+                {
+                    xsdLog(pShutdownData->ShutdownLogFile,
+                           __FUNCTION__ ": Recovering all PageMage windows...\n");
+
+                    if (pXwpGlobalShared->hwndDaemonObject)
+                        WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
+                                   XDM_RECOVERWINDOWS,
+                                   0, 0);
+                }
+            }
+
             if (!pShutdownData->sdParams.optDebug)
             {
                 // if we're not in debug mode, begin shutdown
@@ -3761,6 +3787,12 @@ void _Optlink fntShutdownThread(PTHREADINFO pti)
 
             xsdLog(pShutdownData->ShutdownLogFile,
                    __FUNCTION__ ": Done with message loop.\n");
+
+            /*************************************************
+             *
+             *      done closing windows:
+             *
+             *************************************************/
 
 // all the following has been moved here from fnwpShutdown
 // with V0.9.9 (2001-04-04) [umoeller]
@@ -5078,6 +5110,7 @@ BOOL _Optlink xsd_fnSaveINIsProgress(ULONG ulUser,
  *
  *@@changed V0.9.3 (2000-05-22) [umoeller]: added reboot animation
  *@@changed V0.9.5 (2000-08-13) [umoeller]: now using new save-INI routines (xprfSaveINIs)
+ *@@changed V0.9.12 (2001-05-12) [umoeller]: animations frequently didn't show up, fixed
  */
 
 VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
@@ -5085,13 +5118,8 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
     // change the mouse pointer to wait state
     HPOINTER    hptrOld = winhSetWaitPointer();
     ULONG       ulShutdownFunc2 = 0;
-    HPS         hpsScreen = NULLHANDLE;
     APIRET      arc = NO_ERROR;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
-    if (pShutdownData->sdParams.optAnimate)
-        // hps for animation later
-        hpsScreen = WinGetScreenPS(HWND_DESKTOP);
 
     // enforce saving of INIs
     WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus, ID_SDDI_STATUS,
@@ -5132,7 +5160,10 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
         xsdLog(pShutdownData->ShutdownLogFile, "--- Error %d was reported!\n", arc);
 
         // error occured: ask whether to restart the WPS
-        if (cmnMessageBoxMsg(pShutdownData->SDConsts.hwndShutdownStatus, 110, 111, MB_YESNO)
+        if (cmnMessageBoxMsg(pShutdownData->SDConsts.hwndShutdownStatus,
+                             110,
+                             111,
+                             MB_YESNO)
                     == MBID_YES)
         {
             xsdLog(pShutdownData->ShutdownLogFile, "User requested to restart WPS.\n");
@@ -5146,7 +5177,8 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
 
     // always say "releasing filesystems"
     WinShowPointer(HWND_DESKTOP, FALSE);
-    WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus, ID_SDDI_STATUS,
+    WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus,
+                      ID_SDDI_STATUS,
                       cmnGetString(ID_SDSI_FLUSHING)) ; // pszSDFlushing
 
     // here comes the settings-dependent part:
@@ -5162,15 +5194,20 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
     // systems with XFolder < V0.84. So we better put
     // all the code together which will be used together.
 
+    /* if (pShutdownData->sdParams.optAnimate)
+        // hps for animation later
+        // moved this here V0.9.12 (2001-05-12) [umoeller]
+        hpsScreen = WinGetScreenPS(HWND_DESKTOP); */
+
     if (pShutdownData->sdParams.optReboot)
     {
         // reboot:
         if (strlen(pShutdownData->sdParams.szRebootCommand) == 0)
             // no user reboot action:
-            xsdFinishStandardReboot(pShutdownData, hpsScreen);
+            xsdFinishStandardReboot(pShutdownData);
         else
             // user reboot action:
-            xsdFinishUserReboot(pShutdownData, hpsScreen);
+            xsdFinishUserReboot(pShutdownData);
     }
     else if (pShutdownData->sdParams.optDebug)
     {
@@ -5180,11 +5217,11 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
     else if (pShutdownData->sdParams.optAPMPowerOff)
     {
         // no reboot, but APM power off?
-        xsdFinishAPMPowerOff(pShutdownData, hpsScreen);
+        xsdFinishAPMPowerOff(pShutdownData);
     }
     else
         // normal shutdown: show message
-        xsdFinishStandardMessage(pShutdownData, hpsScreen);
+        xsdFinishStandardMessage(pShutdownData);
 
     // the xsdFinish* functions never return;
     // so we only get here in debug mode and
@@ -5199,9 +5236,9 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
  *@@added V0.9.7 (2000-12-13) [umoeller]
  */
 
-VOID PowerOffAnim(HPS hps)
+VOID PowerOffAnim(HPS hpsScreen)
 {
-    anmPowerOff(hps,
+    anmPowerOff(hpsScreen,
                 500, 800, 200, 300);
 }
 
@@ -5212,11 +5249,15 @@ VOID PowerOffAnim(HPS hps)
  *      window and halting the system.
  *
  *      Runs on the Shutdown thread.
+ *
+ *@@changed V0.9.12 (2001-05-12) [umoeller]: animations frequently didn't show up, fixed
  */
 
-VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData,
-                              HPS hpsScreen)
+VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData)
 {
+    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+    HPS hpsScreen = WinGetScreenPS(HWND_DESKTOP);
+
     // setup Ctrl+Alt+Del message window; this needs to be done
     // before DosShutdown, because we won't be able to reach the
     // resource files after that
@@ -5234,7 +5275,7 @@ VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData,
         pShutdownData->ShutdownLogFile = NULL;
     }
 
-    if (pShutdownData->sdParams.optAnimate)
+    if (pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_SHUTDOWN)
         // cute power-off animation
         PowerOffAnim(hpsScreen);
     else
@@ -5242,7 +5283,6 @@ VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData,
         // animation is off, because otherwise
         // PM will repaint part of the animation
         WinShowWindow(pShutdownData->SDConsts.hwndShutdownStatus, FALSE);
-
 
     DosShutdown(0);
 
@@ -5276,13 +5316,16 @@ VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData,
  *      Runs on the Shutdown thread.
  *
  *@@changed V0.9.3 (2000-05-22) [umoeller]: added reboot animation
+ *@@changed V0.9.12 (2001-05-12) [umoeller]: animations frequently didn't show up, fixed
  */
 
-VOID xsdFinishStandardReboot(PSHUTDOWNDATA pShutdownData,
-                             HPS hpsScreen)
+VOID xsdFinishStandardReboot(PSHUTDOWNDATA pShutdownData)
 {
     HFILE       hIOCTL;
     ULONG       ulAction;
+    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+    BOOL        fShowRebooting = TRUE;
+    HPS hpsScreen = WinGetScreenPS(HWND_DESKTOP);
 
     // if (optReboot), open DOS.SYS; this
     // needs to be done before DosShutdown() also
@@ -5306,14 +5349,17 @@ VOID xsdFinishStandardReboot(PSHUTDOWNDATA pShutdownData,
         pShutdownData->ShutdownLogFile = NULL;
     }
 
-    if (pShutdownData->sdParams.optAnimate)        // V0.9.3 (2000-05-22) [umoeller]
+    if (pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_REBOOT)  // V0.9.3 (2000-05-22) [umoeller]
+    {
         // cute power-off animation
         PowerOffAnim(hpsScreen);
+        fShowRebooting = FALSE;
+    }
 
     DosShutdown(0);
 
-    // say "Rebooting..."
-    if (!pShutdownData->sdParams.optAnimate)        // V0.9.3 (2000-05-22) [umoeller]
+    // say "Rebooting..." if we had no animation
+    if (fShowRebooting)
     {
         WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus, ID_SDDI_STATUS,
                           cmnGetString(ID_SDSI_REBOOTING)) ; // pszSDRebooting
@@ -5340,10 +5386,10 @@ VOID xsdFinishStandardReboot(PSHUTDOWNDATA pShutdownData,
  *      Runs on the Shutdown thread.
  *
  *@@changed V0.9.3 (2000-05-22) [umoeller]: added reboot animation
+ *@@changed V0.9.12 (2001-05-12) [umoeller]: animations frequently didn't show up, fixed
  */
 
-VOID xsdFinishUserReboot(PSHUTDOWNDATA pShutdownData,
-                         HPS hpsScreen)
+VOID xsdFinishUserReboot(PSHUTDOWNDATA pShutdownData)
 {
     // user reboot item: in this case, we don't call
     // DosShutdown(), which is supposed to be done by
@@ -5351,8 +5397,10 @@ VOID xsdFinishUserReboot(PSHUTDOWNDATA pShutdownData,
     CHAR    szTemp[CCHMAXPATH];
     PID     pid;
     ULONG   sid;
+    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+    HPS hpsScreen = WinGetScreenPS(HWND_DESKTOP);
 
-    if (pShutdownData->sdParams.optAnimate)        // V0.9.3 (2000-05-22) [umoeller]
+    if (pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_REBOOT)        // V0.9.3 (2000-05-22) [umoeller]
         // cute power-off animation
         PowerOffAnim(hpsScreen);
     else
@@ -5401,13 +5449,16 @@ VOID xsdFinishUserReboot(PSHUTDOWNDATA pShutdownData,
  *      using the functions in apm.c.
  *
  *      Runs on the Shutdown thread.
+ *
+ *@@changed V0.9.12 (2001-05-12) [umoeller]: animations frequently didn't show up, fixed
  */
 
-VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData,
-                          HPS hpsScreen)
+VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData)
 {
     CHAR        szAPMError[500];
     ULONG       ulrcAPM = 0;
+    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
+    HPS hpsScreen = WinGetScreenPS(HWND_DESKTOP);
 
     // prepare APM power off
     ulrcAPM = apmPreparePowerOff(szAPMError);
@@ -5421,7 +5472,7 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData,
         xsdLog(pShutdownData->ShutdownLogFile, "APM_IGNORE, continuing with normal shutdown\n",
                ulrcAPM);
 
-        xsdFinishStandardMessage(pShutdownData, hpsScreen);
+        xsdFinishStandardMessage(pShutdownData);
         // this does not return
     }
     else if (ulrcAPM & APM_CANCEL)
@@ -5454,7 +5505,7 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData,
     } */
     // if apmPreparePowerOff requested this,
     // do DosShutdown(1)
-    else if (ulrcAPM & APM_DOSSHUTDOWN_1)
+    if (ulrcAPM & APM_DOSSHUTDOWN_1)
     {
         if (pShutdownData->ShutdownLogFile)
         {
@@ -5467,13 +5518,14 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData,
     }
     // or if apmPreparePowerOff requested this,
     // do no DosShutdown()
+
     if (pShutdownData->ShutdownLogFile)
     {
         fclose(pShutdownData->ShutdownLogFile);
         pShutdownData->ShutdownLogFile = NULL;
     }
 
-    if (pShutdownData->sdParams.optAnimate)
+    if (pGlobalSettings->ulXShutdownFlags & XSD_ANIMATE_SHUTDOWN)
         // cute power-off animation
         PowerOffAnim(hpsScreen);
     else

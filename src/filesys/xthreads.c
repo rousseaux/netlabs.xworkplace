@@ -997,10 +997,12 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             // various folder views. Since I don't know the codes,
             // I'm getting the keys list for PM_Workplace:FolderPos.
 
-            PSZ pszFolderPosKeys = prfhQueryKeysForApp(HINI_USER,
-                                                       WPINIAPP_FOLDERPOS);
+            APIRET arc;
+            PSZ pszFolderPosKeys = NULL;
 
-            if (pszFolderPosKeys)
+            if (!(arc = prfhQueryKeysForApp(HINI_USER,
+                                            WPINIAPP_FOLDERPOS,
+                                            &pszFolderPosKeys)))
             {
                 PSZ     pKey2 = pszFolderPosKeys;
                 CHAR    szComp[20];
@@ -1029,6 +1031,7 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
                     pKey2 += strlen(pKey2)+1;
                 }
+
                 free(pszFolderPosKeys);
             }
         break; }

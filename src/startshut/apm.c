@@ -250,7 +250,7 @@ ULONG apmPreparePowerOff(PSZ pszError)      // in: error message
         return (APM_CANCEL);
     }
 
-    return (APM_OK | APM_DOSSHUTDOWN_1); // APM_DOSSHUTDOWN_1 never works, hangs the system
+    return (APM_OK | APM_DOSSHUTDOWN_1);
 }
 
 /*

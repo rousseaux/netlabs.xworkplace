@@ -1993,6 +1993,7 @@ VOID WwgtTimer(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      implementation for WM_BUTTON1DOWN.
  *
  *@@changed V0.9.11 (2001-04-18) [umoeller]: fixed minimized to maximized, which never worked
+ *@@changed V0.9.12 (2001-05-12) [umoeller]: fixed showing hidden windows
  */
 
 VOID WwgtButton1Down(HWND hwnd,
@@ -2038,6 +2039,14 @@ VOID WwgtButton1Down(HWND hwnd,
                         HSWITCH hsw = WinQuerySwitchHandle(pCtrlClicked->hwnd,
                                                            pCtrlClicked->idProcess);
                         if (hsw)
+                        {
+                            // first check if the thing is hidden V0.9.12 (2001-05-12) [umoeller]
+                            if (swp.fl & SWP_HIDE)
+                                // yes: show V0.9.12 (2001-05-12) [umoeller]
+                                WinSetWindowPos(pCtrlClicked->hwnd,
+                                                0, 0, 0, 0, 0,
+                                                SWP_SHOW);
+
                             if (!WinSwitchToProgram(hsw))   // this returns 0 on success... sigh
                             {
                                 // OK, now we have the program active, but it's
@@ -2048,6 +2057,7 @@ VOID WwgtButton1Down(HWND hwnd,
                                                 SWP_SHOW | SWP_ACTIVATE | SWP_ZORDER);
                                 fRedrawActive = TRUE;
                             }
+                        }
                     }
                     else
                     {

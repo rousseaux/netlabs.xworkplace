@@ -467,6 +467,12 @@ XWPProgram 1 This is the XWorkplace replacement class for WPProgram for addition
 CBFolder 1 (ZipStream) ZipStream WPS interface. Adds a ZipStream menu entry on every file system object.
 BDView 1 (OS/2 V4.5) Language viewer class.
 
-
+// Items added with V0.9.12
+CWCreatorSettings 1 This class is for the object CD-Creator Settings of the program Audio/DataCDCreator.
+PMMailWP 1 This class belongs to the e-mail client PMMail/2.
+AdvTcpDialer 1 This class belongs to the IBM Global Network TCP/IP Dialer. If you're using a different Internet Access Provider, you may remove this class.
+DDIcon 1 A replacement class by Jens Borch Christiansen for WPIcon, which makes it possible to change the icon of one or more objects by dropping them on an icon object.
+MKeyWPS 1 Part of MKey by Roger Sennert. Application dependent titlebar buttons, hotkey manager, mouse pointer animations and more.
+mshred 1 Enhanced shredder by M. Kimes (FM/2), a shredder that deletes almost anything.
 
 

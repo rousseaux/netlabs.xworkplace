@@ -183,7 +183,8 @@ static FEATURESITEM G_FeatureItemsList[] =
             // file operations
             ID_XCSI_FILEOPERATIONS, 0, 0, NULL,
             ID_XCSI_EXTASSOCS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-            ID_XCSI_CLEANUPINIS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            // ID_XCSI_CLEANUPINIS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+                    // removed for now V0.9.12 (2001-05-15) [umoeller]
             ID_XCSI_REPLFILEEXISTS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_REPLDRIVENOTREADY, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_XWPTRASHCAN, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
@@ -1439,6 +1440,7 @@ typedef struct _XWPFEATURESDATA
  *@@changed V0.9.1 (2000-02-01) [umoeller]: added global hotkeys flag
  *@@changed V0.9.9 (2001-01-31) [umoeller]: added "replace folder refresh"
  *@@changed V0.9.9 (2001-04-05) [pr]: fix undo
+ *@@changed V0.9.12 (2001-05-12) [umoeller]: removed "Cleanup INIs" for now
  */
 
 VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -1625,8 +1627,10 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_EXTASSOCS,
                 pGlobalSettings->fExtAssocs);
-        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_CLEANUPINIS,
-                pGlobalSettings->CleanupINIs);
+        // ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_CLEANUPINIS,
+           //      pGlobalSettings->CleanupINIs);
+                // removed for now V0.9.12 (2001-05-15) [umoeller]
+
 #ifdef __REPLHANDLES__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLHANDLES,
                 pGlobalSettings->fReplaceHandles);
@@ -1703,6 +1707,7 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *@@changed V0.9.9 (2001-01-31) [umoeller]: added "replace folder refresh"
  *@@changed V0.9.9 (2001-03-27) [umoeller]: adjusted for notebook.c change with CHECKBOXRECORDCORE notifications
  *@@changed V0.9.9 (2001-04-05) [pr]: fixed very broken Undo, Default, Setup Classes
+ *@@changed V0.9.12 (2001-05-12) [umoeller]: removed "Cleanup INIs" for now
  */
 
 MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1872,9 +1877,9 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                 pGlobalSettings->fReplDriveNotReady = precc->usCheckState;
             break;
 
-            case ID_XCSI_CLEANUPINIS:
+            /* case ID_XCSI_CLEANUPINIS:
                 pGlobalSettings->CleanupINIs = precc->usCheckState;
-            break;
+            break; */       // removed for now V0.9.12 (2001-05-15) [umoeller]
 
             case ID_XCSI_XWPTRASHCAN:
                 cEnableTrashCan = precc->usCheckState;
@@ -1955,7 +1960,8 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->fXShutdown = pGSBackup->fXShutdown;
 
             pGlobalSettings->fExtAssocs = pGSBackup->fExtAssocs;
-            pGlobalSettings->CleanupINIs = pGSBackup->CleanupINIs;
+            // pGlobalSettings->CleanupINIs = pGSBackup->CleanupINIs;
+                    // removed for now V0.9.12 (2001-05-15) [umoeller]
     #ifdef __REPLHANDLES__
             pGlobalSettings->fReplaceHandles = pGSBackup->fReplaceHandles;
     #endif
