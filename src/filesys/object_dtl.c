@@ -1033,6 +1033,7 @@ typedef struct _XFOBJWINDATA
  *@@added V0.9.16 (2001-10-15) [umoeller]
  *@@changed V0.9.16 (2001-12-06) [umoeller]: fixed crash if "No" was selected on object ID change confirmation
  *@@changed V0.9.19 (2002-04-02) [umoeller]: now handling WM_TEXTEDIT for keyboard support
+ *@@changed V1.0.3 (2004-06-19) [pr]: allow null object ID @@fixes 580
  */
 
 STATIC MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -1152,17 +1153,17 @@ STATIC MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, M
                                 // has the object ID changed?
                                 if (strhcmp(pWinData->strOldObjectID.psz, pszNew) != 0)
                                 {
+                                    USHORT usLength = strlen(pszNew);
                                     // is this a valid object ID?
-                                    if (    (pszNew[0] != '<')
-                                         || (*(pszNew + strlen(pszNew)-1) != '>')
+                                    // V1.0.3 (2004-06-19) [pr]: @@fixes 580
+                                    if (   (usLength == 0)
+                                        || (
+                                               (usLength > 2)
+                                            && (pszNew[0] == '<')
+                                            && (pszNew[usLength-1] == '>')
+                                           )
                                        )
-                                        cmnMessageBoxExt(hwndDlg,
-                                                         104,
-                                                         NULL, 0,
-                                                         108,
-                                                         MB_OK);
-                                            // fixed (V0.85)
-                                    else
+                                    {
                                         // valid: confirm change
                                         if (cmnMessageBoxExt(hwndDlg,
                                                              107,
@@ -1171,9 +1172,30 @@ STATIC MRESULT EXPENTRY fnwpObjectDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, M
                                                              MB_YESNO)
                                                       == MBID_YES)
                                             fChange = TRUE;
+                                    }
+                                    else
+                                        cmnMessageBoxExt(hwndDlg,
+                                                         104,
+                                                         NULL, 0,
+                                                         108,
+                                                         MB_OK);
+                                            // fixed (V0.85)
 
                                     if (fChange)
-                                        _wpSetObjectID(pWinData->somSelf, pszNew);
+                                    {
+                                        _wpSetObjectID(pWinData->somSelf,
+                                                       usLength ? pszNew : NULL);
+                                        if (usLength == 0)
+                                        {
+                                            strcpy(((POBJECTUSAGERECORD)(pced->pRecord))->szText,
+                                                   cmnGetString(ID_XSSI_OBJDET_NONESET));
+                                            WinSendMsg(pWinData->hwndCnr,
+                                                       CM_INVALIDATERECORD,
+                                                       (MPARAM)&pced->pRecord,
+                                                       MPFROM2SHORT(1,
+                                                                    CMA_TEXTCHANGED));
+                                        }
+                                    }
                                     else
                                     {
                                         // change aborted: restore old recc text
