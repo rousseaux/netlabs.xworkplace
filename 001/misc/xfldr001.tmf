@@ -280,6 +280,14 @@ Contact xworkplace-dev@egroups.com if you are familiar with the XWorkplace sourc
 XWorkplace is free software under the GNU General Public Licence (GPL), which is contained in the COPYING file in the XWorkplace installation directory. The full source code is available from http://xworkplace.netlabs.org in a separate package. You are welcome to redistribute and/or modify XWorkplace under the conditions of the GPL.
 XWorkplace comes with absolutely NO WARRANTY. For details, refer to the "Notices" section of the XWorkplace User Guide and the GPL itself.
 
+; new with V0.9.4
+
+<--XFL0187-->: The trash can must have a name. The old name has been restored.
+
+<--XFL0188-->: You have just restored a WPS archive. XWorkplace's automatic archiving has been disabled in order to prevent archive overwrites. You can turn archiving back on in the Desktop's settings notebook.
+
+<--XFL0189-->: Emptying the trash can failed. Do you wish to continue shutdown?
+
 ; ---------------------------------------------------------------------------------
 ;
 ; V0.9.0:
@@ -510,6 +518,12 @@ This was added with XWorkplace 0.9.0.
 You'll get additional sounds for context menus, object selections, and more.
 You can set up those new sounds in the regular "Sound" object, as usual.
 This was new with XFolder 0.70.
+
+; FEATURES_6001 added with V0.9.4
+
+<--FEATURES_6001-->: If "Adjust settings pages..." is checked, XWorkplace can adjust the size of certain settings pages if the entire notebook is resized. This can come in handy for some of the more complex XWorkplace pages to be able to view more data at once.
+Note that this will only affect some of the new XWorkplace pages, but not the default WPS pages.
+This was added with XWorkplace 0.9.4.
 
 <--FEATURES_6011-->: If "Enable status bars" is checked, you may configure folders to show status bars with detailed information for the selected objects in a folder.
 If this is enabled, you'll get two additional settings pages in XWorkplace's "Workplace Shell" object, which allow you to configure status bars in detail.

@@ -47,7 +47,7 @@ dir = pdir||"bin\";
 OnlineReferenceFile = "xfldr"LanguageCode".inf";
 XFolderIntroFile    = "xfldr"LanguageCode".sgs";
 
-rc = SysCreateObject("WPFolder", XFolderMain, "<WP_DESKTOP>", "DEFAULTVIEW=ICON;SHOWALLINTREEVIEW=YES;ALWAYSSORT=NO;ICONFILE="pdir||"\install\xwp.ico;ICONNFILE=1,"pdir||"\install\xwp_o.ico;OBJECTID=<XWP_MAINFLDR>", "R");
+rc = SysCreateObject("WPFolder", XFolderMain, "<WP_DESKTOP>", "DEFAULTVIEW=ICON;SHOWALLINTREEVIEW=YES;ALWAYSSORT=NO;ICONFILE="pdir||"\install\xwp.ico;ICONNFILE=1,"pdir||"\install\xwp_o.ico;HELPLIBRARY="pdir||"\help\xfldr"LanguageCode".hlp;HELPPANEL=84;OBJECTID=<XWP_MAINFLDR>", "R");
 if (SysSearchPath("PATH", "sguide.exe") \= "") then
     rc = SysCreateObject("WPProgram", XFolderIntro, "<XWP_MAINFLDR>", "EXENAME=sguide.exe;PARAMETERS="XFolderIntroFile";STARTUPDIR="dir";ICONFILE="idir"xfolder.ico;OBJECTID=<XWP_INTRO>", "R");
 /* "Readme" shadow (added V0.9.2) */

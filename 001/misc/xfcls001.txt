@@ -375,5 +375,14 @@ WPCDocument 1 (Lotus SmartSuite for Warp 4) Lotus document class.
 // Other classes (V0.9.4)
 LanStart 1 Startup folder class, that waits for a network login and opens the objects in the folder afterwards.
 NewPrinter 1 Enhanced WPPrinter class that has job suspend/release in main menu
+WPSoundPalette 1 This class is part of Graham Utilities v2.1 and above by Chris Graham and is used for system sound management.
+GUDisk 1 This class is part of Graham Utilities v2.1 and above by Chris Graham and is used as replacement for WPDisk class to add disk tools to popup menus of disk objects.
+TN3270 5 (OS/2 V3 BonusPak or V4) This class implements Telnet 3270 access.
+FpwDBData 5 (OS/2 V3 or V4 BonusPak) This class is part of IBMWorks (originally FootPrint Works) and is used for database file objects.
+FpwWPData 5 (OS/2 V3 or V4 BonusPak) This class is part of IBMWorks (originally FootPrint Works) and is used for wordprocessing (text) file objects.
+FpwCHData 5 (OS/2 V3 or V4 BonusPak) This class is part of IBMWorks (originally FootPrint Works) and is used for chart file objects.
+FpwGRData 5 (OS/2 V3 or V4 BonusPak) This class is part of IBMWorks (originally FootPrint Works).
+FpwRWData 5 (OS/2 V3 or V4 BonusPak) This class is part of IBMWorks (originally FootPrint Works).
+FpwSSData 5 (OS/2 V3 or V4 BonusPak) This class is part of IBMWorks (originally FootPrint Works) and is used for spreadsheet file objects.
 
 

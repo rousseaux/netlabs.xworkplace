@@ -50,6 +50,10 @@ LANGUAGE = 001
 
 OUTPUTDIR = ..\..\bin
 
+# create output directory
+!if [@md $(OUTPUTDIR) 2> NUL]
+!endif
+
 OBJS = $(OUTPUTDIR)\xfldr$(LANGUAGE).obj
 
 XFLDHELP = $(XWPRUNNING)\help

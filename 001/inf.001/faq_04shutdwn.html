@@ -72,6 +72,19 @@ again.
 </UL>Maybe this helps until I've found another way of dealing with these problems.
 For now, I'm helpless myself.
 
+<!-- the following Q&A added with V0.9.4 -->
+<P><LI><B>After using Xhutdown, at the next reboot, the screen is reset to VGA, and
+I get a dialog saying that the Desktop could not be found. What is this?</B>
+
+<P>This is the same problem as described in the previous question. Obviously, your INI
+files have not been properly saved. As a result, OS/2 reverts to default values for
+the screen and cannot find your desktop.
+
+<P>If this happens, you will find a backup copy of both OS2.INI and OS2SYS.INI in your
+\OS2 directory, renamed to .BAK. Before XShutdown saves the INI files, it renames the
+old ones. Boot to a command line (using Alt-F1 during startup) and rename these two
+backups back to *.INI.
+
 <!-- the following is unchanged -->
 <P><LI><B>Why is APM power-off is not working on my system?</B>
 <P>I don't know. My computer does not support APM power-off, so I cannot test this myself.

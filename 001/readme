@@ -1,7 +1,7 @@
 
-XWorkplace 0.9.3 README
+XWorkplace 0.9.4 README
 (W) Ulrich M”ller, Feb 7, 2000
-Last updated June 5, 2000
+Last updated August 9, 2000
 
 
 0. CONTENTS OF THIS FILE
@@ -20,17 +20,18 @@ Last updated June 5, 2000
 1. INTRODUCTION
 ===============
 
-    Welcome to XWorkplace V0.9.3.
+    Welcome to XWorkplace V0.9.4.
 
     XWorkplace is a complex set of replacement classes for the
     OS/2 Workplace Shell. Consider this the WPS upgrade IBM
     should have released with OS/2 Warp 4. XWorkplace is the
-    successor to XFolder V0.85 and contains all of it, except the
-    bugs.
+    successor to XFolder V0.85 and contains all of it, except
+    the bugs.
 
     XWorkplace can add features to pretty much all parts of the
     system, such as generic object features, folder enhancements,
-    replacement icons, CONFIG.SYS settings, and much, much more.
+    replacement icons, CONFIG.SYS settings, keyboard and mouse
+    operation, and much, much more.
 
     All parts of XWorkplace are fully configurable and can be
     selectively enabled in case something is going wrong.
@@ -46,11 +47,9 @@ Last updated June 5, 2000
     About this release
     ------------------
 
-    This version is a major release compared to V0.9.2. Many
-    bugs have been fixed, including the infamous "folder
-    no-close" bug and a number of hook problems. Also, even
-    more features have been added, such as new file operations
-    enhancements.
+    This version is mainly another bugfix release compared
+    to previous versions. This version should work much better
+    than V0.9.3. Dozens of bugs have been fixed.
 
     For details, refer to the "XWorkplace User Guide" after
     unpacking the files. To extract the documentation only,
@@ -157,7 +156,8 @@ Last updated June 5, 2000
 6. KNOWN LIMITATIONS
 ====================
 
-    This version has known bugs.
+    This version has known bugs, even though I have fixed dozens
+    with this release.
 
     Please check the BUGS and FEATURES files in this package also
     before reporting bugs or suggesting features. Thank you.
@@ -167,9 +167,15 @@ Last updated June 5, 2000
 
     1)  Christian Langanke's Animated Mouse Pointers for OS/2 are
         not yet included. This is still in the works and will be
-        added to a later release. If you have Christian's old
-        package installed, you can keep it running, it causes no
-        problems.
+        added to a later release.
+
+        If you have Christian's old package installed, you can keep
+        it running, it causes no problems.
+
+        The AMPTR sources are now on the Netlabs CVS server in the
+        XWorkplace archives and compile with the rest of XWorkplace,
+        but there's still some work left. If anybody finds the time
+        to do the remaining integration work, any help is welcome.
 
     2)  If "Extended associations" is enabled in XWPSetup, the new
         "File types" page in "Workplace Shell" is working, but
@@ -178,22 +184,17 @@ Last updated June 5, 2000
         submenu, but clicking on them will not open the proper
         association.
 
-    4)  Trash can auto-delete on startup and shutdown don't work yet.
+    3)  Even though I've fixed many PageMage bugs with this release,
+        there might still be a number of problems left. At least
+        PageMage doesn't hang the system all the time any more.
+        Besides, sticky windows work now.
 
-    5)  Trash can icons are somewhat shaky. Do not attempt to change
-        them using the "Icon" page.
+    4)  I had some problems with WPS restarts and XWorkplace 0.9.3
+        under Warp 4, FP 13. I have now installed FP14, and it seems
+        to be working mostly OK with V0.9.4. See the "BUGS" file for
+        more.
 
-    6)  PageMage is completely experimental at this point. We have
-        problems during WPS startup and the configuration is quite
-        unstable. Using PageMage can lead to system hangs, so be
-        warned. Also, the "Sticky windows" feature doesn't work yet.
-
-    7)  I had some problems with WPS restarts since I have installed
-        FP13. The WPS crashes on exit and/or becomes terminally slow
-        after the restart. After reverting to FP11, those problems
-        were gone, so I suspect it's not XWorkplace's fault.
-
-    8)  From time to time, creating folders from templates (using the
+    5)  From time to time, creating folders from templates (using the
         context menu items) can solidly crash the system with a black
         screen. Some people never get this, but I do from time to time.
         I think I have found the problem, but solving it requires some
@@ -214,9 +215,7 @@ Last updated June 5, 2000
 7. LICENSE, COPYRIGHT, DISCLAIMER
 =================================
 
-    Copyright (C) 1997-2000 Ulrich M”ller,
-                            Christian Langanke,
-                            and others.
+    Copyright (C) 1997-2000 Ulrich M”ller, Christian Langanke, and others.
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as contained in

@@ -7,7 +7,8 @@
 <B>Classes: XWPScreen</B>
 <HR>
 PageMage needs <B>no special hardware</B> to implement these virtual desktops.
-As opposed to the X windowing system, which can actually use additional memory
+While the various implementations of the Unix X Window system (one of
+which is XFree/2, which runs under OS/2) can actually use additional memory
 on your video card to have room for several desktops, PageMage simply moves
 windows around your screen.
 
@@ -24,7 +25,7 @@ computer can handle moving windows, it can use PageMage.
 windows look as if they were part of a huge virtual screen, but your physical screen
 really doesn't change -- it's the windows that are moved.
 
-<P>PageMage also needs to XWorkplace PM hook to be able to track window movement --
+<P>PageMage also needs the XWorkplace PM hook to be able to track window movement --
 for one, to reflect window changes in the PageMage window, secondly to be informed
 when windows are created or destroyed for any reason. It can then, for example,
 automatically switch desktops (that is, move all windows) if the focus is given
