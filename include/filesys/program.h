@@ -153,7 +153,8 @@
      *
      ********************************************************************/
 
-    PCSZ progGetWinResourceTypeName(ULONG ulTypeThis);
+    PSZ progGetWinResourceTypeName(PSZ pszBuf,
+                                   ULONG ulTypeThis);
 
     PCSZ progGetOS2ResourceTypeName(ULONG ulResourceType);
 

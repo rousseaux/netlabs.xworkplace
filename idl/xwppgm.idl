@@ -81,7 +81,7 @@ interface XWPProgram : WPProgram
     BOOL        fNeedsSetProgIcon;      // flag for WPProgram::wpSetProgIcon
 
     // pointers into WPProgramFile instance data
-    PVOID       pvpszEnvironment;       // pointer to a PSZ containing a
+    /* PVOID       pvpszEnvironment;       // pointer to a PSZ containing a
                                         // string array with the program's
                                         // environment (last string is terminated
                                         // with two null bytes)
@@ -92,14 +92,23 @@ interface XWPProgram : WPProgram
                                         //     0xFFFF marks a "*" executable (cmdline)
     PULONG      pulStartupDirHandle;    // 16-bit file-system handle for startup dir
     PPROGTYPE   pProgType;              // prog type and visibility flag; two ULONGs!
+       */
 
-    // copies of string data intercepted in wpRestoreData
+    // program data
+    PROGTYPE    ProgType;
+
+    USHORT      usExecutableHandle;
     PSZ         pszExecutable;          // only used if the user did not specify a
                                         // executable that could be resolved to
                                         // the executable fshandle above (e.g. an
                                         // executable on the PATH)
 
     PSZ         pszParameters;          // parameters string
+
+    USHORT      usStartupDirHandle;
+
+    PSZ         pszEnvironment;
+    SWP         swpInitial;
 
     /*
      * WPProgram methods overridden by XWPProgram:

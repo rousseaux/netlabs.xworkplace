@@ -111,6 +111,7 @@ interface XWPTrashObject : WPTransient
 
     wpSetupOnce: override;
 
+    wpQueryIcon: override;
     wpQueryDetailsData: override;
 
     wpFilterPopupMenu: override;
