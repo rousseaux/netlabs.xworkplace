@@ -1014,6 +1014,7 @@ VOID cmnLog(PCSZ pcszSourceFile, // in: source file name
             PCSZ pcszFormat,     // in: format string (like with printf)
             ...)                        // in: additional stuff (like with printf)
 {
+#ifndef __EWORKPLACE__
     va_list     args;
     CHAR        szLogFileName[100];
     FILE        *fileLog = 0;
@@ -1043,6 +1044,7 @@ VOID cmnLog(PCSZ pcszSourceFile, // in: source file name
         fprintf(fileLog, "\n");
         fclose (fileLog);
     }
+#endif
 }
 
 /* ******************************************************************
@@ -5253,13 +5255,13 @@ static MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPA
                         WinSetWindowBits(hwndCancel, QWL_STYLE, 0, WS_GROUP | BS_DEFAULT);
                         WinInvalidateRect(hwndOK, NULL, FALSE);
                         WinInvalidateRect(hwndCancel, NULL, FALSE);
-                        winhEnableDlgItem(hwnd,
+                        WinEnableControl(hwnd,
                                           ID_XFD_RUN_WINOS2_GROUP,
                                           bIsWinProg);
-                        winhEnableDlgItem(hwnd,
+                        WinEnableControl(hwnd,
                                           ID_XFD_RUN_ENHANCED,
                                           bIsWinProg);
-                        winhEnableDlgItem(hwnd,
+                        WinEnableControl(hwnd,
                                           ID_XFD_RUN_SEPARATE,
                                           (   (bIsWinProg)
                                            && (!winhIsDlgItemChecked(hwnd,
@@ -5284,7 +5286,7 @@ static MRESULT EXPENTRY fnwpRunCommandLine(HWND hwnd, ULONG msg, MPARAM mp1, MPA
                                                                  &ulWinAppType))
                                             && (ulWinAppType == PROG_31_ENHSEAMLESSCOMMON)
                                           );
-                        winhEnableDlgItem(hwnd,
+                        WinEnableControl(hwnd,
                                           ID_XFD_RUN_SEPARATE,
                                           (    (bIsWinProg)
                                             && (!winhIsDlgItemChecked(hwnd, usid))));

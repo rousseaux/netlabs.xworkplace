@@ -749,7 +749,7 @@ BEGIN
     ID_XCSI_ANIMOUSE                    "Animated Mouse Pointers"
     ID_XCSI_XWPHOOK                     "Enable &xwp; Hook"
     ID_XCSI_GLOBALHOTKEYS               "Enable global object hotkeys"
-    ID_XCSI_PAGER                       "&pgr;: virtual desktops"
+/*     ID_XCSI_PAGER                       "&pgr;: virtual desktops" removed V0.9.19 (2002-05-28) [umoeller] */
 
     ID_XCSI_STARTSHUTFEATURES           "Startup/shutdown features"
     ID_XCSI_ARCHIVING                   "Replace Desktop archiving"
@@ -1337,28 +1337,28 @@ BEGIN
     ID_XFDI_SOME_REGEXP_CP              "~Regular expression"
 
     /* strings formerly in ID_SCD_PAGER_WINDOW */
-    ID_SCDI_PGMG1_WINDOW_GROUP          "&pgr; control window"
-    ID_SCDI_PGMG1_PRESERVEPROPS         "F~orce screen proportions"
-    ID_SCDI_PGMG1_STAYONTOP             "Stay on to~p"
-    ID_SCDI_PGMG1_FLASHTOTOP            "~Flash to top"
-    ID_SCDI_PGMG1_FLASH_TXT1            "Delay:"
-    ID_SCDI_PGMG1_FLASH_TXT2            "s"
-    ID_SCDI_PGMG1_SHOWWINDOWS           "~Mini-windows"
-    ID_SCDI_PGMG1_SHOWWINTITLES         "Show window ~titles"
-    ID_SCDI_PGMG1_CLICK2ACTIVATE        "~Mini-window mouse actions"
-    ID_SCDI_PGMG1_SHOWSECONDARY         "Show ~secondary windows"
-    ID_SCDI_PGMG1_SHOWSTICKY            "Show stic~ky windows"
+    ID_SCDI_PGR1_WINDOW_GROUP          "&pgr; control window"
+    ID_SCDI_PGR1_PRESERVEPROPS         "F~orce screen proportions"
+    ID_SCDI_PGR1_STAYONTOP             "Stay on to~p"
+    ID_SCDI_PGR1_FLASHTOTOP            "~Flash to top"
+    ID_SCDI_PGR1_FLASH_TXT1            "Delay:"
+    ID_SCDI_PGR1_FLASH_TXT2            "s"
+    ID_SCDI_PGR1_SHOWWINDOWS           "~Mini-windows"
+    ID_SCDI_PGR1_SHOWWINTITLES         "Show window ~titles"
+    ID_SCDI_PGR1_CLICK2ACTIVATE        "~Mini-window mouse actions"
+    ID_SCDI_PGR1_SHOWSECONDARY         "Show ~secondary windows"
+    ID_SCDI_PGR1_SHOWSTICKY            "Show stic~ky windows"
 
     /* strings formerly in ID_SCD_PAGER_COLORS */
-    ID_SCDI_PGMG2_COLORS_GROUP          "&pgr; colors"
-    ID_SCDI_PGMG2_COLORS_INFO           "Drop any color from the color palettes onto the rectangles below. To change the font for the &pgr; window titles, drop a font on the &pgr; window."
-    ID_SCDI_PGMG2_COLORS_INACTIVE_1     "Inactive 1"
-    ID_SCDI_PGMG2_COLORS_INACTIVE_2     "Inactive 2"
-    ID_SCDI_PGMG2_COLORS_ACTIVE         "Active"
-    ID_SCDI_PGMG2_COLORS_BORDERS        "Borders"
-    ID_SCDI_PGMG2_COLORS_BACKGROUND     "Background:"
-    ID_SCDI_PGMG2_COLORS_MINIWINDOW     "Mini-window:"
-    ID_SCDI_PGMG2_COLORS_TITLE          "Title:"
+    ID_SCDI_PGR2_COLORS_GROUP          "&pgr; colors"
+    ID_SCDI_PGR2_COLORS_INFO           "Drop any color from the color palettes onto the rectangles below. To change the font for the &pgr; window titles, drop a font on the &pgr; window."
+    ID_SCDI_PGR2_COLORS_INACTIVE_1     "Inactive 1"
+    ID_SCDI_PGR2_COLORS_INACTIVE_2     "Inactive 2"
+    ID_SCDI_PGR2_COLORS_ACTIVE         "Active"
+    ID_SCDI_PGR2_COLORS_BORDERS        "Borders"
+    ID_SCDI_PGR2_COLORS_BACKGROUND     "Background:"
+    ID_SCDI_PGR2_COLORS_MINIWINDOW     "Mini-window:"
+    ID_SCDI_PGR2_COLORS_TITLE          "Title:"
 
     /* strings formerly in ID_XCD_PARANOIA */
     ID_XCDI_PARANOIA_GROUP              "Disable XWorkplace Features"
@@ -1503,6 +1503,16 @@ BEGIN
     ID_SCDI_STICKY_MATCHINGGROUP        "Matching criteria"
     ID_SCDI_STICKY_RADIO_INCLUDE        "I - Include matching windows"
     ID_SCDI_STICKY_RADIO_EXCLUDE        "E - Exclude matching windows"
+
+    /* strings formerly in ID_SCD_PAGER_GENERAL */
+    ID_SCDI_PGR1_GROUP                  "Virtual desktops"
+    ID_SCDI_PGR1_ENABLE                 "~Enable"
+    ID_SCDI_PGR1_ARROWHOTKEYS           "~Arrow hotkeys switch desktops"
+    ID_SCDI_PGR1_HOTKEYS_CTRL           "Ct~rl"
+    ID_SCDI_PGR1_HOTKEYS_SHIFT          "~Shift"
+    ID_SCDI_PGR1_HOTKEYS_ALT            "A~lt"
+    ID_SCDI_PGR1_WRAPAROUND             "Wrap at borders"
+    ID_SCDI_PGR2_DISABLED_INFO          "Virtual desktops are currently disabled. Enable them on the first &pgr; settings page to access these settings."
 
     /* strings formerly in ID_XSD_AUTOCLOSE */
     ID_XSD_AUTOCLOSE                    "Auto-Close Non-PM Sessions"

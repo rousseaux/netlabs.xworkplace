@@ -956,14 +956,14 @@ VOID dtpStartupInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         BOOL    fBootLogoFileExists = (access(pszBootLogoFile, 0) == 0);
         free(pszBootLogoFile);
 
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_DTP_LOGOBITMAP,
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_DTP_LOGOBITMAP,
                          cmnQuerySetting(sfBootLogo));
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_DTP_TESTLOGO, fBootLogoFileExists);
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_DTP_TESTLOGO, fBootLogoFileExists);
 #endif
 
 #ifndef __NOXWPSTARTUP__
         if (WinQueryObject((PSZ)XFOLDER_STARTUPID))
-            winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_DTP_CREATESTARTUPFLDR, FALSE);
+            WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_DTP_CREATESTARTUPFLDR, FALSE);
 #endif
     }
 }
@@ -982,7 +982,7 @@ static VOID SetBootLogoFile(PNOTEBOOKPAGE pnbp,
                             PCSZ pcszNewBootLogoFile,
                             BOOL fWrite)                   // in: if TRUE, write back to OS2.INI
 {
-    winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_DTP_TESTLOGO,
+    WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_DTP_TESTLOGO,
                      (access(pcszNewBootLogoFile, 0) == 0));
 
     if (fWrite)
@@ -1277,7 +1277,7 @@ MRESULT dtpStartupItemChanged(PNOTEBOOKPAGE pnbp,
                                            szSetup,
                                            (PSZ)WPOBJID_DESKTOP, // "<WP_DESKTOP>",
                                            CO_UPDATEIFEXISTS))
-                    winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_DTP_CREATESTARTUPFLDR, FALSE);
+                    WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_DTP_CREATESTARTUPFLDR, FALSE);
                 else
                     cmnMessageBoxExt(pnbp->hwndFrame,
                                      104,

@@ -3297,15 +3297,15 @@ VOID stbStatusBar1InitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
     {
 #ifndef __ALWAYSSUBCLASS__
         BOOL fEnable = !cmnQuerySetting(sfNoSubclassing);
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_ENABLESTATUSBAR, fEnable);
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3RAISED, fEnable);
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3SUNKEN, fEnable);
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4MENU,   fEnable);
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4RECT,   fEnable);
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_ENABLESTATUSBAR, fEnable);
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3RAISED, fEnable);
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_3SUNKEN, fEnable);
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4MENU,   fEnable);
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_SBSTYLE_4RECT,   fEnable);
 
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_SBFORICONVIEWS,   fEnable);
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_SBFORTREEVIEWS,   fEnable);
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_SBFORDETAILSVIEWS,   fEnable);
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_SBFORICONVIEWS,   fEnable);
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_SBFORTREEVIEWS,   fEnable);
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_SBFORDETAILSVIEWS,   fEnable);
 #endif
     }
 }

@@ -933,7 +933,7 @@ MRESULT cfgDriversItemChanged(PNOTEBOOKPAGE pnbp,
                         }
 
                         // disable "Apply" button
-                        winhEnableDlgItem(pnbp->hwndDlgPage,
+                        WinEnableControl(pnbp->hwndDlgPage,
                                           ID_OSDI_DRIVR_APPLYTHIS,
                                           FALSE);
                     }
@@ -954,10 +954,10 @@ MRESULT cfgDriversItemChanged(PNOTEBOOKPAGE pnbp,
                     WinSetDlgItemText(pnbp->hwndDlgPage,
                                       ID_OSDI_DRIVR_PARAMS,
                                       pszParams);
-                    winhEnableDlgItem(pnbp->hwndDlgPage,
+                    WinEnableControl(pnbp->hwndDlgPage,
                                       ID_OSDI_DRIVR_PARAMS,
                                       fAcceptsParams);
-                    winhEnableDlgItem(pnbp->hwndDlgPage,
+                    WinEnableControl(pnbp->hwndDlgPage,
                                       ID_OSDI_DRIVR_CONFIGURE,
                                       fEnable);
                 }
@@ -1072,7 +1072,7 @@ MRESULT cfgDriversItemChanged(PNOTEBOOKPAGE pnbp,
                             WinSetWindowText(hwndMLE,
                                              ddd.szParams);
                             // re-enable the "Apply" button also
-                            winhEnableDlgItem(pnbp->hwndDlgPage,
+                            WinEnableControl(pnbp->hwndDlgPage,
                                               ID_OSDI_DRIVR_APPLYTHIS,
                                               TRUE);
                         }
@@ -1092,7 +1092,7 @@ MRESULT cfgDriversItemChanged(PNOTEBOOKPAGE pnbp,
         case ID_OSDI_DRIVR_PARAMS:
             if (usNotifyCode == MLN_CHANGE)
                 // enable "Apply" button
-                winhEnableDlgItem(pnbp->hwndDlgPage,
+                WinEnableControl(pnbp->hwndDlgPage,
                                   ID_OSDI_DRIVR_APPLYTHIS,
                                   TRUE);
         break;

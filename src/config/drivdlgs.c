@@ -800,8 +800,8 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                 case ID_OSDI_CACHESIZE_AUTO:
                 {
                     BOOL fChecked = winhIsDlgItemChecked(hwndDlg, usItemID);
-                    winhEnableDlgItem(hwndDlg, ID_OSDI_CACHESIZE, !fChecked);
-                    winhEnableDlgItem(hwndDlg, ID_OSDI_CACHESIZE_TXT, !fChecked);
+                    WinEnableControl(hwndDlg, ID_OSDI_CACHESIZE, !fChecked);
+                    WinEnableControl(hwndDlg, ID_OSDI_CACHESIZE_TXT, !fChecked);
                 }
                 break;
             }
@@ -859,8 +859,8 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                     winhSetSliderArmPosition(WinWindowFromID(hwndDlg,
                                                              ID_OSDI_CACHE_THRESHOLD),
                                              SMA_INCREMENTVALUE, 0);
-                    winhEnableDlgItem(hwndDlg, ID_OSDI_CACHESIZE, FALSE);
-                    winhEnableDlgItem(hwndDlg, ID_OSDI_CACHESIZE_TXT, FALSE);
+                    WinEnableControl(hwndDlg, ID_OSDI_CACHESIZE, FALSE);
+                    WinEnableControl(hwndDlg, ID_OSDI_CACHESIZE_TXT, FALSE);
                     WinSetDlgItemText(hwndDlg, ID_OSDI_AUTOCHECK, "");
                 break;
 
@@ -2075,9 +2075,9 @@ static VOID S506EnableItems(HWND hwndDlg,
     BOOL            fUnitDisabled = FALSE;
 
     // global items
-    winhEnableDlgItem(hwndDlg, ID_OSDI_DANIS506_CLOCK_SLIDER,
+    WinEnableControl(hwndDlg, ID_OSDI_DANIS506_CLOCK_SLIDER,
                       pS506All->fPCIClock);
-    winhEnableDlgItem(hwndDlg, ID_OSDI_DANIS506_CLOCK_TXT,
+    WinEnableControl(hwndDlg, ID_OSDI_DANIS506_CLOCK_TXT,
                       pS506All->fPCIClock);
 
     // adapter items:
@@ -2089,26 +2089,26 @@ static VOID S506EnableItems(HWND hwndDlg,
 
     if (!pS506AdapterThis->fIgnore)
     {
-        winhEnableDlgItem(hwndDlg, ID_OSDI_S506_A_BASEADDR_ENTRY,
+        WinEnableControl(hwndDlg, ID_OSDI_S506_A_BASEADDR_ENTRY,
                           pS506AdapterThis->fBaseAddress);
-        winhEnableDlgItem(hwndDlg, ID_OSDI_S506_A_IRQ_SLIDER,
+        WinEnableControl(hwndDlg, ID_OSDI_S506_A_IRQ_SLIDER,
                           pS506AdapterThis->fIRQ);
-        winhEnableDlgItem(hwndDlg, ID_OSDI_S506_A_IRQ_TXT,
+        WinEnableControl(hwndDlg, ID_OSDI_S506_A_IRQ_TXT,
                           pS506AdapterThis->fIRQ);
-        winhEnableDlgItem(hwndDlg, ID_OSDI_S506_A_DMA_SPIN,
+        WinEnableControl(hwndDlg, ID_OSDI_S506_A_DMA_SPIN,
                           pS506AdapterThis->fDMAChannel);
-        winhEnableDlgItem(hwndDlg, ID_OSDI_S506_A_DSGADDR_ENTRY,
+        WinEnableControl(hwndDlg, ID_OSDI_S506_A_DSGADDR_ENTRY,
                           pS506AdapterThis->fDMAScatterGatherAddr);
     }
 
     // unit radio buttons
-    winhEnableDlgItem(hwndDlg, ID_OSDI_S506_UNIT0,
+    WinEnableControl(hwndDlg, ID_OSDI_S506_UNIT0,
                       !pS506All->Adapters[0].fIgnore);
-    winhEnableDlgItem(hwndDlg, ID_OSDI_S506_UNIT1,
+    WinEnableControl(hwndDlg, ID_OSDI_S506_UNIT1,
                       !pS506All->Adapters[0].fIgnore);
-    winhEnableDlgItem(hwndDlg, ID_OSDI_S506_UNIT2,
+    WinEnableControl(hwndDlg, ID_OSDI_S506_UNIT2,
                       !pS506All->Adapters[1].fIgnore);
-    winhEnableDlgItem(hwndDlg, ID_OSDI_S506_UNIT3,
+    WinEnableControl(hwndDlg, ID_OSDI_S506_UNIT3,
                       !pS506All->Adapters[1].fIgnore);
 
     // unit items:
@@ -2130,26 +2130,26 @@ static VOID S506EnableItems(HWND hwndDlg,
                        !fUnitDisabled);
     if (!fUnitDisabled)
     {
-        winhEnableDlgItem(hwndDlg, ID_OSDI_S506_U_RECOVERY_SLIDER,
+        WinEnableControl(hwndDlg, ID_OSDI_S506_U_RECOVERY_SLIDER,
                           pS506UnitThis->fRecoveryTime);
-        winhEnableDlgItem(hwndDlg, ID_OSDI_S506_U_RECOVERY_TXT,
+        WinEnableControl(hwndDlg, ID_OSDI_S506_U_RECOVERY_TXT,
                           pS506UnitThis->fRecoveryTime);
-        winhEnableDlgItem(hwndDlg, ID_OSDI_S506_U_GEO_ENTRY,
+        WinEnableControl(hwndDlg, ID_OSDI_S506_U_GEO_ENTRY,
                           pS506UnitThis->fGeometry);
-        winhEnableDlgItem(hwndDlg, ID_OSDI_DANIS506_U_TIMEOUT_SPIN,
+        WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_TIMEOUT_SPIN,
                           pS506UnitThis->fTimeout);
 
-        winhEnableDlgItem(hwndDlg, ID_OSDI_DANIS506_U_RATE_UDMA_TXT,
+        WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_UDMA_TXT,
                           pS506UnitThis->fLimitRate);
-        winhEnableDlgItem(hwndDlg, ID_OSDI_DANIS506_U_RATE_UDMA_SPIN,
+        WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_UDMA_SPIN,
                           pS506UnitThis->fLimitRate);
-        winhEnableDlgItem(hwndDlg, ID_OSDI_DANIS506_U_RATE_MWDMA_TXT,
+        WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_MWDMA_TXT,
                           pS506UnitThis->fLimitRate);
-        winhEnableDlgItem(hwndDlg, ID_OSDI_DANIS506_U_RATE_MWDMA_SPIN,
+        WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_MWDMA_SPIN,
                           pS506UnitThis->fLimitRate);
-        winhEnableDlgItem(hwndDlg, ID_OSDI_DANIS506_U_RATE_PIO_TXT,
+        WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_PIO_TXT,
                           pS506UnitThis->fLimitRate);
-        winhEnableDlgItem(hwndDlg, ID_OSDI_DANIS506_U_RATE_PIO_SPIN,
+        WinEnableControl(hwndDlg, ID_OSDI_DANIS506_U_RATE_PIO_SPIN,
                           pS506UnitThis->fLimitRate);
     }
 
@@ -2161,7 +2161,7 @@ static VOID S506EnableItems(HWND hwndDlg,
              ul < sizeof(ausNotSupportedByIBM) / sizeof(ausNotSupportedByIBM[0]);
              ul++)
         {
-            winhEnableDlgItem(hwndDlg,
+            WinEnableControl(hwndDlg,
                              ausNotSupportedByIBM[ul],
                              FALSE);
         }
@@ -2174,7 +2174,7 @@ static VOID S506EnableItems(HWND hwndDlg,
                  ul < sizeof(ausNotSupportedByOldIBM) / sizeof(ausNotSupportedByOldIBM[0]);
                  ul++)
             {
-                winhEnableDlgItem(hwndDlg,
+                WinEnableControl(hwndDlg,
                                  ausNotSupportedByOldIBM[ul],
                                  FALSE);
             }

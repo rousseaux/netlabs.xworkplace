@@ -1441,38 +1441,41 @@
    running out of IDs in the old range.  */
 
 #ifndef __NOPAGER__
-    #define ID_SCD_PAGER_GENERAL            4500
-    #define ID_SCDI_PGMG1_X_SLIDER          4501
-    #define ID_SCDI_PGMG1_X_TEXT2           4502
-    #define ID_SCDI_PGMG1_Y_SLIDER          4503
-    #define ID_SCDI_PGMG1_Y_TEXT2           4504
+    // #define ID_SCD_PAGER_GENERAL            4500     removed V0.9.19 (2002-05-23) [umoeller]
+    #define ID_SCDI_PGR1_GROUP             4500
+    #define ID_SCDI_PGR1_X_SLIDER          4501
+    #define ID_SCDI_PGR1_X_TEXT2           4502
+    #define ID_SCDI_PGR1_Y_SLIDER          4503
+    #define ID_SCDI_PGR1_Y_TEXT2           4504
+    #define ID_SCDI_PGR1_ENABLE            4505
     // 1405 to 1414 moved to ID_SCD_PAGER_WINDOW
-    #define ID_SCDI_PGMG1_ARROWHOTKEYS      4515
-    #define ID_SCDI_PGMG1_HOTKEYS_CTRL      4516
-    #define ID_SCDI_PGMG1_HOTKEYS_SHIFT     4517
-    #define ID_SCDI_PGMG1_HOTKEYS_ALT       4518
-    #define ID_SCDI_PGMG1_WRAPAROUND        4519
-    #define ID_SCDI_PGMG1_VALUESET          4520
+    #define ID_SCDI_PGR1_ARROWHOTKEYS      4515
+    #define ID_SCDI_PGR1_HOTKEYS_CTRL      4516
+    #define ID_SCDI_PGR1_HOTKEYS_SHIFT     4517
+    #define ID_SCDI_PGR1_HOTKEYS_ALT       4518
+    #define ID_SCDI_PGR1_WRAPAROUND        4519
+    #define ID_SCDI_PGR1_VALUESET          4520
 
     // #define ID_SCD_PAGER_COLORS             4530     // removed V0.9.19 (2002-05-07) [umoeller]
-    #define ID_SCDI_PGMG2_DTP_INACTIVE_1    4530
-    #define ID_SCDI_PGMG2_DTP_INACTIVE_2    4531
-    #define ID_SCDI_PGMG2_DTP_ACTIVE        4532
-    #define ID_SCDI_PGMG2_DTP_GRID          4533
-    #define ID_SCDI_PGMG2_WIN_INACTIVE      4534
-    #define ID_SCDI_PGMG2_WIN_ACTIVE        4535
-    #define ID_SCDI_PGMG2_WIN_BORDER        4536
-    #define ID_SCDI_PGMG2_TXT_INACTIVE      4537
-    #define ID_SCDI_PGMG2_TXT_ACTIVE        4538
-    #define ID_SCDI_PGMG2_COLORS_GROUP      4540
-    #define ID_SCDI_PGMG2_COLORS_INFO       4541
-    #define ID_SCDI_PGMG2_COLORS_INACTIVE_1 4542
-    #define ID_SCDI_PGMG2_COLORS_INACTIVE_2 4543
-    #define ID_SCDI_PGMG2_COLORS_ACTIVE     4544
-    #define ID_SCDI_PGMG2_COLORS_BORDERS    4545
-    #define ID_SCDI_PGMG2_COLORS_BACKGROUND 4546
-    #define ID_SCDI_PGMG2_COLORS_MINIWINDOW 4547
-    #define ID_SCDI_PGMG2_COLORS_TITLE      4548
+    #define ID_SCDI_PGR2_DISABLED_INFO     4529     // added V0.9.19 (2002-05-28) [umoeller]
+    #define ID_SCDI_PGR2_DTP_INACTIVE_1    4530
+    #define ID_SCDI_PGR2_DTP_INACTIVE_2    4531
+    #define ID_SCDI_PGR2_DTP_ACTIVE        4532
+    #define ID_SCDI_PGR2_DTP_GRID          4533
+    #define ID_SCDI_PGR2_WIN_INACTIVE      4534
+    #define ID_SCDI_PGR2_WIN_ACTIVE        4535
+    #define ID_SCDI_PGR2_WIN_BORDER        4536
+    #define ID_SCDI_PGR2_TXT_INACTIVE      4537
+    #define ID_SCDI_PGR2_TXT_ACTIVE        4538
+    #define ID_SCDI_PGR2_COLORS_GROUP      4540
+    #define ID_SCDI_PGR2_COLORS_INFO       4541
+    #define ID_SCDI_PGR2_COLORS_INACTIVE_1 4542
+    #define ID_SCDI_PGR2_COLORS_INACTIVE_2 4543
+    #define ID_SCDI_PGR2_COLORS_ACTIVE     4544
+    #define ID_SCDI_PGR2_COLORS_BORDERS    4545
+    #define ID_SCDI_PGR2_COLORS_BACKGROUND 4546
+    #define ID_SCDI_PGR2_COLORS_MINIWINDOW 4547
+    #define ID_SCDI_PGR2_COLORS_TITLE      4548
 
     // added V0.9.19 (2002-04-17) [umoeller]
     #define ID_SCDI_STICKY_GROUP            4550
@@ -1506,19 +1509,19 @@
     //#define ID_SCD_PAGER_COMBO_STICKIES  1461
 
     // #define ID_SCD_PAGER_WINDOW             4600 removed V0.9.19 (2002-04-17) [umoeller]
-    #define ID_SCDI_PGMG1_WINDOW_GROUP      4600
-    #define ID_SCDI_PGMG1_SHOWWINDOWS       4601
-    #define ID_SCDI_PGMG1_SHOWWINTITLES     4602
-    #define ID_SCDI_PGMG1_CLICK2ACTIVATE    4603
-    // #define ID_SCDI_PGMG1_TITLEBAR          4604     removed V0.9.19 (2002-05-07) [umoeller]
-    #define ID_SCDI_PGMG1_PRESERVEPROPS     4605
-    #define ID_SCDI_PGMG1_STAYONTOP         4606
-    #define ID_SCDI_PGMG1_FLASHTOTOP        4607
-    #define ID_SCDI_PGMG1_FLASH_TXT1        4608
-    #define ID_SCDI_PGMG1_FLASH_SPIN        4609
-    #define ID_SCDI_PGMG1_FLASH_TXT2        4610
-    #define ID_SCDI_PGMG1_SHOWSECONDARY     4611    // added V0.9.19 (2002-04-11) [lafaix]
-    #define ID_SCDI_PGMG1_SHOWSTICKY        4612    // added V0.9.19 (2002-04-11) [lafaix]
+    #define ID_SCDI_PGR1_WINDOW_GROUP      4600
+    #define ID_SCDI_PGR1_SHOWWINDOWS       4601
+    #define ID_SCDI_PGR1_SHOWWINTITLES     4602
+    #define ID_SCDI_PGR1_CLICK2ACTIVATE    4603
+    // #define ID_SCDI_PGR1_TITLEBAR          4604     removed V0.9.19 (2002-05-07) [umoeller]
+    #define ID_SCDI_PGR1_PRESERVEPROPS     4605
+    #define ID_SCDI_PGR1_STAYONTOP         4606
+    #define ID_SCDI_PGR1_FLASHTOTOP        4607
+    #define ID_SCDI_PGR1_FLASH_TXT1        4608
+    #define ID_SCDI_PGR1_FLASH_SPIN        4609
+    #define ID_SCDI_PGR1_FLASH_TXT2        4610
+    #define ID_SCDI_PGR1_SHOWSECONDARY     4611    // added V0.9.19 (2002-04-11) [lafaix]
+    #define ID_SCDI_PGR1_SHOWSTICKY        4612    // added V0.9.19 (2002-04-11) [lafaix]
 
 #endif
 
@@ -2038,7 +2041,7 @@
 #define ID_XCSI_GLOBALHOTKEYS           6053
 #endif
 #ifndef __NOPAGER__
-#define ID_XCSI_PAGER                6054
+// #define ID_XCSI_PAGER                6054        removed V0.9.19 (2002-05-28) [umoeller]
 #endif
 
 /* ******************************************************************

@@ -2700,14 +2700,14 @@ VOID trshTrashCanDrivesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
     {
         // enable "Add" button if items are selected
         // in the "Unsupported" listbox
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XTDI_ADD_SUPPORTED,
+        WinEnableControl(pnbp->hwndDlgPage, ID_XTDI_ADD_SUPPORTED,
                          (winhQueryLboxSelectedItem(WinWindowFromID(pnbp->hwndDlgPage,
                                                                     ID_XTDI_UNSUPPORTED_LB),
                                                      LIT_FIRST)
                                 != LIT_NONE));
         // enable "Remove" button if items are selected
         // in the "Supported" listbox
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XTDI_REMOVE_SUPPORTED,
+        WinEnableControl(pnbp->hwndDlgPage, ID_XTDI_REMOVE_SUPPORTED,
                          (winhQueryLboxSelectedItem(WinWindowFromID(pnbp->hwndDlgPage,
                                                                     ID_XTDI_SUPPORTED_LB),
                                                      LIT_FIRST)

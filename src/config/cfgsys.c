@@ -202,7 +202,7 @@ static MRESULT EXPENTRY fnwpNewSystemPathDlg(HWND hwndDlg,
     switch (msg)
     {
         case WM_INITDLG:
-            winhEnableDlgItem(hwndDlg, DID_OK, FALSE);
+            WinEnableControl(hwndDlg, DID_OK, FALSE);
             WinSendDlgItemMsg(hwndDlg, ID_XSDI_FT_ENTRYFIELD,
                               EM_SETTEXTLIMIT,
                               (MPARAM)250,
@@ -234,7 +234,7 @@ static MRESULT EXPENTRY fnwpNewSystemPathDlg(HWND hwndDlg,
                         WinQueryDlgItemText(hwndDlg,
                                             ID_XSDI_FT_ENTRYFIELD,
                                             sizeof(szNewSysPath)-1, szNewSysPath);
-                        winhEnableDlgItem(hwndDlg,
+                        WinEnableControl(hwndDlg,
                                           DID_OK,
                                           doshQueryDirExist(szNewSysPath));
                     }
@@ -609,7 +609,7 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
 
     if (flFlags & CBI_INIT)
     {
-        winhEnableDlgItem(hwndDlgPage, DID_APPLY, TRUE);
+        WinEnableControl(hwndDlgPage, DID_APPLY, TRUE);
 
         // on the "HPFS" page:
         // if the system has any HPFS drives,
@@ -621,7 +621,7 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
                            "HPFS",
                            TRUE); // skip removeable drives
             if (strlen(szHPFSDrives) > 0)
-                winhEnableDlgItem(hwndDlgPage, ID_OSDI_FSINSTALLED, FALSE);
+                WinEnableControl(hwndDlgPage, ID_OSDI_FSINSTALLED, FALSE);
         }
         else */
         switch (pnbp->inbp.ulPageID)
@@ -1178,11 +1178,11 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
         {
             BOOL fLazyWrite = winhIsDlgItemChecked(hwndDlgPage,
                                                    ID_OSDI_CACHE_LAZYWRITE);
-            winhEnableDlgItem(hwndDlgPage,
+            WinEnableControl(hwndDlgPage,
                              ID_OSDI_CACHE_MAXAGE, fLazyWrite);
-            winhEnableDlgItem(hwndDlgPage,
+            WinEnableControl(hwndDlgPage,
                              ID_OSDI_CACHE_BUFFERIDLE, fLazyWrite);
-            winhEnableDlgItem(hwndDlgPage,
+            WinEnableControl(hwndDlgPage,
                              ID_OSDI_CACHE_DISKIDLE, fLazyWrite);
         } */
 
@@ -1190,18 +1190,18 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
             || */  (pnbp->inbp.ulPageID == SP_FAT)
            )
         {
-            winhEnableDlgItem(hwndDlgPage, ID_OSDI_CACHESIZE,
+            WinEnableControl(hwndDlgPage, ID_OSDI_CACHESIZE,
                              !winhIsDlgItemChecked(hwndDlgPage,
                                                    ID_OSDI_CACHESIZE_AUTO));
         }
         else if (pnbp->inbp.ulPageID == SP_WPS)
         {
-            winhEnableDlgItem(hwndDlgPage, ID_OSDI_AUTO_WARPCENTER, !!G_fIsWarp4);
-            winhEnableDlgItem(hwndDlgPage, ID_OSDI_AUTOREFRESHFOLDERS, !!G_fIsWarp4);
+            WinEnableControl(hwndDlgPage, ID_OSDI_AUTO_WARPCENTER, !!G_fIsWarp4);
+            WinEnableControl(hwndDlgPage, ID_OSDI_AUTOREFRESHFOLDERS, !!G_fIsWarp4);
         }
         else if (pnbp->inbp.ulPageID == SP_ERRORS)
         {
-            winhEnableDlgItem(hwndDlgPage, ID_OSDI_SUPRESSP_DRIVE,
+            WinEnableControl(hwndDlgPage, ID_OSDI_SUPRESSP_DRIVE,
                              winhIsDlgItemChecked(hwndDlgPage,
                                                   ID_OSDI_SUPRESSPOPUPS));
         }
@@ -1231,31 +1231,31 @@ VOID cfgConfigInitPage(PNOTEBOOKPAGE pnbp,
             {
                 case 0:
                     // no items selected:
-                    winhEnableDlgItem(hwndDlgPage, ID_OSDI_PATHEDIT, FALSE);
+                    WinEnableControl(hwndDlgPage, ID_OSDI_PATHEDIT, FALSE);
                             // V0.9.9 (2001-02-28) [pr]
-                    winhEnableDlgItem(hwndDlgPage, ID_OSDI_PATHDELETE, FALSE);
-                    winhEnableDlgItem(hwndDlgPage, ID_OSDI_PATHUP, FALSE);
-                    winhEnableDlgItem(hwndDlgPage, ID_OSDI_PATHDOWN, FALSE);
+                    WinEnableControl(hwndDlgPage, ID_OSDI_PATHDELETE, FALSE);
+                    WinEnableControl(hwndDlgPage, ID_OSDI_PATHUP, FALSE);
+                    WinEnableControl(hwndDlgPage, ID_OSDI_PATHDOWN, FALSE);
                 break;
 
                 case 1:
                     // exactly one item selected:
-                    winhEnableDlgItem(hwndDlgPage, ID_OSDI_PATHEDIT, TRUE);
+                    WinEnableControl(hwndDlgPage, ID_OSDI_PATHEDIT, TRUE);
                             // V0.9.9 (2001-02-28) [pr]
-                    winhEnableDlgItem(hwndDlgPage, ID_OSDI_PATHDELETE, TRUE);
-                    winhEnableDlgItem(hwndDlgPage, ID_OSDI_PATHUP,
+                    WinEnableControl(hwndDlgPage, ID_OSDI_PATHDELETE, TRUE);
+                    WinEnableControl(hwndDlgPage, ID_OSDI_PATHUP,
                             (ulLastSel > 0));
-                    winhEnableDlgItem(hwndDlgPage, ID_OSDI_PATHDOWN,
+                    WinEnableControl(hwndDlgPage, ID_OSDI_PATHDOWN,
                             (ulLastSel < lstCountItems(G_pSysPathSelected->pllPaths)-1));
                 break;
 
                 default:
                     // more than one item selected:
-                    winhEnableDlgItem(hwndDlgPage, ID_OSDI_PATHEDIT, TRUE);
+                    WinEnableControl(hwndDlgPage, ID_OSDI_PATHEDIT, TRUE);
                             // V0.9.9 (2001-02-28) [pr]
-                    winhEnableDlgItem(hwndDlgPage, ID_OSDI_PATHDELETE, TRUE);
-                    winhEnableDlgItem(hwndDlgPage, ID_OSDI_PATHUP, FALSE);
-                    winhEnableDlgItem(hwndDlgPage, ID_OSDI_PATHDOWN, FALSE);
+                    WinEnableControl(hwndDlgPage, ID_OSDI_PATHDELETE, TRUE);
+                    WinEnableControl(hwndDlgPage, ID_OSDI_PATHUP, FALSE);
+                    WinEnableControl(hwndDlgPage, ID_OSDI_PATHDOWN, FALSE);
                 break;
             }
         }

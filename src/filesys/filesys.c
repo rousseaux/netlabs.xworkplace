@@ -2344,7 +2344,7 @@ VOID fsysFile1InitPage(PNOTEBOOKPAGE pnbp,    // notebook info struct
         else if (cmnIsADesktop(pnbp->inbp.somSelf))
             // for the Desktop, disable work area;
             // this must not be changed
-            winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_FILES_WORKAREA,
+            WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_FILES_WORKAREA,
                               FALSE);
 
         // Even though CPREF says that the .SUBJECT EA was limited to

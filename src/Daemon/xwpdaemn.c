@@ -440,7 +440,9 @@ BOOL dmnStartXPager(VOID)
            )
         {
             brc = pgrCreatePager();
-               // this sets the global window handles in HOOKDATA;
+               // this checks for whether the pager already
+               // exists; otherwise it sets the global window
+               // handles in HOOKDATA;
                // the hook sees this and will start processing
                // XPager messages
         }
@@ -2247,6 +2249,9 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *
              *      If (mp1 == TRUE), dmnStartXPager is called.
              *      If (mp1 == FALSE), dmnKillXPager is called.
+             *
+             *      Returns the new state of the pager as a
+             *      BOOL.
              *
              *@@added V0.9.2 (2000-02-21) [umoeller]
              */

@@ -105,6 +105,7 @@
  *@@changed V0.9.9 (2001-03-15) [lafaix]: added a new 'pager window' page
  *@@changed V0.9.9 (2001-03-27) [umoeller]: moved "Corners" from XWPMouse to XWPScreen
  *@@changed V0.9.9 (2001-04-04) [lafaix]: renamed to "Screen borders" page
+ *@@changed V0.9.19 (2002-05-28) [umoeller]: adjusted for pager rework
  */
 
 SOM_Scope ULONG  SOMLINK xwpscr_xwpAddXWPScreenPages(XWPScreen *somSelf,
@@ -137,7 +138,8 @@ SOM_Scope ULONG  SOMLINK xwpscr_xwpAddXWPScreenPages(XWPScreen *somSelf,
         ulrc = ntbInsertPage(&inbp);
 
 #ifndef __NOPAGER__
-        if (cmnQuerySetting(sfEnableXPager))
+        // if (cmnQuerySetting(sfEnableXPager)) always insert, even if
+                // pager is disabled V0.9.19 (2002-05-28) [umoeller]
         {
             // moved all this to pager.c
             ulrc = pgmiInsertPagerPages(somSelf, hwndDlg, savehmod);

@@ -201,7 +201,8 @@ static const char  *G_pcszReqFunction = NULL;
  *      semaphore to finally make the kernel functions
  *      thread-safe. While this semaphore is held,
  *      all other threads are kept from accessing
- *      XWP kernel data.
+ *      XWP kernel data. Consider this XWP's "big kernel
+ *      lock".
  *
  *      Returns TRUE if the semaphore could be accessed
  *      within the specified timeout.
@@ -215,9 +216,7 @@ static const char  *G_pcszReqFunction = NULL;
  *      The string pointers must be static const strings.
  *      Use "__FILE__, __LINE__, __FUNCTION__" always.
  *
- *      Note: This requires the existence of a message
- *      queue since we use WinRequestMutexSem. Also
- *      make sure that your code is properly protected
+ *      Note: Make sure that your code is properly protected
  *      with exception handlers (see helpers\except.c
  *      for remarks about that).
  *
@@ -586,8 +585,7 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
         free(paThreadInfos);
     }
 
-    tid = krnQueryLock();
-    if (tid)
+    if (tid = krnQueryLock())
         fprintf(file, "\nGlobal lock semaphore is currently owned by thread 0x%lX (%u).\n", tid, tid);
     else
         fprintf(file, "\nGlobal lock semaphore is currently not owned.\n", tid, tid);

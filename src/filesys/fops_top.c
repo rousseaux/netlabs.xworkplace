@@ -364,7 +364,7 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
                 case DID_CANCEL:
                 {
                     PGENERICPROGRESSWINDATA ppwd = WinQueryWindowPtr(hwndProgress, QWL_USER);
-                    winhEnableDlgItem(hwndProgress, DID_CANCEL, FALSE);
+                    WinEnableControl(hwndProgress, DID_CANCEL, FALSE);
                     ppwd->fCancelPressed = TRUE;
                 }
                 break;
@@ -498,7 +498,7 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
                         }
                         else
                         {
-                            winhEnableDlgItem(hwndProgress, DID_CANCEL, TRUE);
+                            WinEnableControl(hwndProgress, DID_CANCEL, TRUE);
                             ppwd->fCancelPressed = FALSE;
                         }
 
@@ -511,7 +511,7 @@ MRESULT EXPENTRY fops_fnwpGenericProgress(HWND hwndProgress, ULONG msg, MPARAM m
                 {
                     // FOPSPROG_LASTCALL_DONE set:
                     // disable "Cancel"
-                    winhEnableDlgItem(hwndProgress, DID_CANCEL, FALSE);
+                    WinEnableControl(hwndProgress, DID_CANCEL, FALSE);
                     if (!ppwd->fCancelPressed)
                         // set progress to 100%
                         WinSendMsg(ppwd->hwndProgressBar,

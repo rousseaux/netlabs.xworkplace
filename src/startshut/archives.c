@@ -351,24 +351,24 @@ VOID arcArchivesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                 fAlways = ((pArcSettings->ulArcFlags & ARCF_ALWAYS) != 0),
                 fINI = winhIsDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_ARC_INI),
                 fDays = winhIsDlgItemChecked(pnbp->hwndDlgPage, ID_XSDI_ARC_DAYS);
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_ARC_ALWAYS,
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_ARC_ALWAYS,
                           fEnabled);
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_ARC_NEXT,
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_ARC_NEXT,
                           fEnabled && !fAlways);
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_ARC_INI,
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_ARC_INI,
                           fEnabled && !fAlways);
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPIN,
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPIN,
                           ( (fEnabled) && (fINI) ) && !fAlways);
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPINTXT1,
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPINTXT1,
                           ( (fEnabled) && (fINI) ) && !fAlways);
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_ARC_DAYS,
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_ARC_DAYS,
                           fEnabled && !fAlways);
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_ARC_DAYS_SPIN,
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_ARC_DAYS_SPIN,
                           ( (fEnabled) && (fDays) ) && !fAlways);
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_ARC_DAYS_SPINTXT1,
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_ARC_DAYS_SPINTXT1,
                           ( (fEnabled) && (fDays) ) && !fAlways);
 
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_ARC_SHOWSTATUS,
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_ARC_SHOWSTATUS,
                           fEnabled);
     }
 }

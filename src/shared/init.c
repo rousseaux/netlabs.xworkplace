@@ -564,33 +564,33 @@ static VOID ShowPanicDlg(BOOL fForceShow)      // V0.9.17 (2002-02-05) [umoeller
 
                 // disable items which are irrelevant
 #ifndef __NOBOOTLOGO__
-                winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_SKIPBOOTLOGO,
+                WinEnableControl(hwndPanic, ID_XFDI_PANIC_SKIPBOOTLOGO,
 
                                   cmnQuerySetting(sfBootLogo));
 #endif
 #ifndef __ALWAYSREPLACEARCHIVING__
-                winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_NOARCHIVING,
+                WinEnableControl(hwndPanic, ID_XFDI_PANIC_NOARCHIVING,
                                   cmnQuerySetting(sfReplaceArchiving));
 #endif
 #ifndef __NEVERCHECKDESKTOP__
-                winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLECHECKDESKTOP,
+                WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLECHECKDESKTOP,
                                   cmnQuerySetting(sfCheckDesktop));
 #endif
-                winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEREPLREFRESH,
+                WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLEREPLREFRESH,
                                   krnReplaceRefreshEnabled());
 #ifndef __NOTURBOFOLDERS__
-                winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLETURBOFOLDERS,
+                WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLETURBOFOLDERS,
                                   cmnTurboFoldersEnabled());
 #endif
 #ifndef __NOICONREPLACEMENTS__
-                winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS,
+                WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLEREPLICONS,
                                   cmnQuerySetting(sfIconReplacements));
 #endif
 #ifndef __NOPAGER__
-                winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEPAGER,
+                WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLEPAGER,
                                   cmnQuerySetting(sfEnableXPager));
 #endif
-                winhEnableDlgItem(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA,
+                WinEnableControl(hwndPanic, ID_XFDI_PANIC_DISABLEMULTIMEDIA,
                                   (xmmQueryStatus() == MMSTAT_WORKING));
 
                 ulrc = WinProcessDlg(hwndPanic);

@@ -196,9 +196,6 @@ prog start:
     that it shows only "LeftWin", while the exact hotkey should be
     CTRL+ALT+LeftWin. BTW, it works as expected. Did this even with 0.9.8.
 
-tooltips:
-    -- rewrite auto-pop
-
 XWPSetup:
     -- "Undo" and "Default" don't affect newer settings (trashcan);
        PageMage isn't affected
@@ -232,10 +229,6 @@ hotkeys:
 
 PageMage:
     --  bring window to current screen before making it sticky
-    --  causes PM lockups at times (Ctrl+Esc unlocks)
-    --  make window larger than desktop, set pagemage 1x4 and move big window
-        so it will be in 1 and 2 desktop - switching desktops and moving this
-        window causes PM lockup.
 
 hook:
     --  screen borders page:

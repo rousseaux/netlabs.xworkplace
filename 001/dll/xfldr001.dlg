@@ -609,41 +609,6 @@ BEGIN
     END
 END
 
-DLGTEMPLATE ID_SCD_PAGER_GENERAL LOADONCALL MOVEABLE DISCARDABLE
-BEGIN
-    DIALOG  "", ID_SCD_PAGER_GENERAL, 0, 0, 224, 180, NOT FS_DLGBORDER |
-            WS_VISIBLE
-    BEGIN
-        GROUPBOX        "XPager virtual desktops", -1, 4, 19, 206, 126
-        CTEXT           "~X:", -1, 40, 122, 12, 14, DT_VCENTER | DT_MNEMONIC
-        SLIDER          ID_SCDI_PGMG1_X_SLIDER, 54, 122, 127, 14,
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSTOP
-                        CTLDATA 12, 0, 10, 0, 1, 0
-        LTEXT           "1", ID_SCDI_PGMG1_X_TEXT2, 189, 122, 14, 14,
-                        DT_VCENTER | DT_MNEMONIC | NOT WS_GROUP
-        CTEXT           "~Y:", -1, 16, 122, 14, 14, DT_VCENTER | DT_MNEMONIC
-        SLIDER          ID_SCDI_PGMG1_Y_SLIDER, 16, 48, 14, 74, SLS_VERTICAL |
-                        SLS_SNAPTOINCREMENT | SLS_BUTTONSLEFT | SLS_HOMETOP
-                        CTLDATA 12, 0, 10, 0, 1, 0
-        CTEXT           "1", ID_SCDI_PGMG1_Y_TEXT2, 16, 34, 14, 10,
-                        DT_VCENTER | DT_MNEMONIC | NOT WS_GROUP
-        VALUESET        ID_SCDI_PGMG1_VALUESET, 55, 56, 125, 64, VS_RGB |
-                        VS_BORDER | WS_GROUP
-                        CTLDATA 8, 0, 10, 10
-        AUTOCHECKBOX    "~Arrow hotkeys switch desktops",
-                        ID_SCDI_PGMG1_ARROWHOTKEYS, 55, 44, 150, 8
-        AUTOCHECKBOX    "Ct~rl", ID_SCDI_PGMG1_HOTKEYS_CTRL, 66, 34, 32, 8
-        AUTOCHECKBOX    "~Shift", ID_SCDI_PGMG1_HOTKEYS_SHIFT, 104, 34, 32,
-                        8
-        AUTOCHECKBOX    "A~lt", ID_SCDI_PGMG1_HOTKEYS_ALT, 144, 34, 32, 8
-        AUTOCHECKBOX    "Wrap at borders", ID_SCDI_PGMG1_WRAPAROUND, 55, 24,
-                        81, 10
-        PUSHBUTTON      "~Undo", DID_UNDO, 5, 6, 55, 12, WS_GROUP
-        PUSHBUTTON      "~Default", DID_DEFAULT, 65, 6, 55, 12
-        PUSHBUTTON      "~Help", DID_HELP, 125, 6, 55, 12, BS_HELP
-    END
-END
-
 DLGTEMPLATE ID_SDD_CAD LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
     DIALOG  "Dialog Title", ID_SDD_CAD, 10, 50, 220, 40,

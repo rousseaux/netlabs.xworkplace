@@ -1473,8 +1473,6 @@ static VOID PagerDrag(HWND hwnd, MPARAM mp1)
                    (MPARAM)FALSE,
                    0);
     }
-
-    CheckFlashTimer();
 }
 
 /*
@@ -1714,7 +1712,10 @@ static MRESULT EXPENTRY fnwpPager(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                                (MPARAM)1,       // semaphore bits
                                0);
                     if (mp1)
+                    {
                         DestroyBitmaps(pWinData);
+                        CheckFlashTimer();
+                    }
                 }
             }
             break;
@@ -2115,6 +2116,7 @@ BOOL pgrCreatePager(VOID)
     BOOL    brc = TRUE;
 
     if (G_pHookData->hwndPagerFrame)
+        // pager is already running:
         return TRUE;
 
     WinRegisterClass(G_habDaemon,

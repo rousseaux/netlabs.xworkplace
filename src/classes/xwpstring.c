@@ -290,7 +290,7 @@ static VOID xwstrStringInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
     if (flFlags & CBI_ENABLE)
     {
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSD_XWPSTRING_OBJ_CLEAR,
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSD_XWPSTRING_OBJ_CLEAR,
                          (_hobjStatic != NULLHANDLE));
     }
 

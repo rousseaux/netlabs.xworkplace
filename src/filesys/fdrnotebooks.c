@@ -265,18 +265,18 @@ VOID fdrViewInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
     if (flFlags & CBI_ENABLE)
     {
 #ifndef __ALWAYSSUBCLASS__
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_TREEVIEWAUTOSCROLL,
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_TREEVIEWAUTOSCROLL,
                 (    // (cmnQuerySetting(sNoWorkerThread) == FALSE)
                         // // removed this setting V0.9.16 (2002-01-04) [umoeller]
                    (!cmnQuerySetting(sfNoSubclassing))
                 ));
 #endif
 #ifndef __NOFDRDEFAULTDOCS__
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_FDRDEFAULTDOCVIEW,
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_FDRDEFAULTDOCVIEW,
                          cmnQuerySetting(sfFdrDefaultDoc));
 #endif
 
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XSDI_FDRAUTOREFRESH,
+        WinEnableControl(pnbp->hwndDlgPage, ID_XSDI_FDRAUTOREFRESH,
                          pKernelGlobals->fAutoRefreshReplaced);
     }
 }
@@ -655,9 +655,7 @@ VOID fdrXFolderInitPage(PNOTEBOOKPAGE pnbp,  // notebook info struct
     if (flFlags & CBI_ENABLE)
     {
         // disable items
-        winhEnableDlgItem(pnbp->hwndDlgPage,
-                         ID_XSDI_ACCELERATORS,
-                         (
+        BOOL fEnable = (
                               1
 #ifndef __ALWAYSSUBCLASS__
                            &&
@@ -667,23 +665,25 @@ VOID fdrXFolderInitPage(PNOTEBOOKPAGE pnbp,  // notebook info struct
 #ifndef __ALWAYSFDRHOTKEYS__
                               (cmnQuerySetting(sfFolderHotkeys))
 #endif
-                         ));
+                         );
 
-        winhEnableDlgItem(pnbp->hwndDlgPage,
+        WinEnableControl(pnbp->hwndDlgPage,
+                         ID_XSDI_ACCELERATORS,
+                         fEnable);
+
+        WinEnableControl(pnbp->hwndDlgPage,
                          ID_XSDI_KEEPTITLE,
                          ( (_bFullPathInstance == 2)
                              ? cmnQuerySetting(sfFullPath)
                              : _bFullPathInstance ));
 
 #ifndef __NOSNAPTOGRID__
-        winhEnableDlgItem(pnbp->hwndDlgPage,
+        WinEnableControl(pnbp->hwndDlgPage,
                          ID_XSDI_SNAPTOGRID,  // added V0.9.1 (99-12-28) [umoeller]
                          cmnQuerySetting(sfSnap2Grid));
 #endif
-        winhEnableDlgItem(pnbp->hwndDlgPage,
-                         ID_XSDI_ENABLESTATUSBAR,
                          // always disable for Desktop
-                         (   (stbClassCanHaveStatusBars(pnbp->inbp.somSelf))
+        fEnable =        (   (stbClassCanHaveStatusBars(pnbp->inbp.somSelf))
                                         // V0.9.19 (2002-04-17) [umoeller]
 #ifndef __ALWAYSSUBCLASS__
                           && (!cmnQuerySetting(sfNoSubclassing))
@@ -691,7 +691,10 @@ VOID fdrXFolderInitPage(PNOTEBOOKPAGE pnbp,  // notebook info struct
 #ifndef __NOCFGSTATUSBARS__
                           && (cmnQuerySetting(sfStatusBars))
 #endif
-                         ));
+                         );
+        WinEnableControl(pnbp->hwndDlgPage,
+                         ID_XSDI_ENABLESTATUSBAR,
+                         fEnable);
     }
 }
 

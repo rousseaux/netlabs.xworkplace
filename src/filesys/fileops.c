@@ -1081,8 +1081,8 @@ static HWND PrepareFileExistsDlg(WPObject *somSelf,
 
         if (flOptions & NO_NAMECLASH_RENAMEOLD)
         {
-            winhEnableDlgItem(hwndConfirm, ID_XFDI_CLASH_RENAMEOLD, FALSE);
-            winhEnableDlgItem(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT, FALSE);
+            WinEnableControl(hwndConfirm, ID_XFDI_CLASH_RENAMEOLD, FALSE);
+            WinEnableControl(hwndConfirm, ID_XFDI_CLASH_RENAMEOLDTXT, FALSE);
             // if the last focus is one of the disabled items,
             // change it
             if (ulLastFocusID == ID_XFDI_CLASH_RENAMEOLDTXT)
@@ -1093,7 +1093,7 @@ static HWND PrepareFileExistsDlg(WPObject *somSelf,
         {
             // disable "Replace" for "Rename" mode; this is
             // not allowed
-            winhEnableDlgItem(hwndConfirm, ID_XFDI_CLASH_REPLACE, FALSE);
+            WinEnableControl(hwndConfirm, ID_XFDI_CLASH_REPLACE, FALSE);
             // if the last focus is one of the disabled items,
             // change it
             if (ulLastFocusID == ID_XFDI_CLASH_REPLACE)

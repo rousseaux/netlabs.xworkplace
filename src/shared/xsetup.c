@@ -210,10 +210,11 @@ static FEATURESITEM G_FeatureItemsList[] =
 #ifndef __ALWAYSOBJHOTKEYS__
             ID_XCSI_GLOBALHOTKEYS, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 #endif
+/*
 #ifndef __NOPAGER__
             ID_XCSI_PAGER, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-#endif
-
+#endif      removed V0.9.19 (2002-05-28) [umoeller]
+*/
             // startup/shutdown features
             ID_XCSI_STARTSHUTFEATURES, 0, 0, NULL,
 #ifndef __ALWAYSREPLACEARCHIVING__
@@ -2008,10 +2009,12 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_GLOBALHOTKEYS,
                 hifObjectHotkeysEnabled());
 #endif
+/*  removed V0.9.19 (2002-05-28) [umoeller]
 #ifndef __NOPAGER__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_PAGER,
                 cmnQuerySetting(sfEnableXPager));
 #endif
+*/
 
 #ifndef __ALWAYSREPLACEARCHIVING__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ARCHIVING,
@@ -2115,11 +2118,12 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_GLOBALHOTKEYS,
                 hifXWPHookReady());
 #endif
+/*
 #ifndef __NOPAGER__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_PAGER,
                 hifXWPHookReady());
-#endif
-
+#endif      removed V0.9.19 (2002-05-28) [umoeller]
+*/
 #ifndef __NOXSYSTEMSOUNDS__
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_XSYSTEMSOUNDS,
                 (   (fXFolder)
@@ -2334,6 +2338,7 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
             break;
 #endif
 
+/*
 #ifndef __NOPAGER__
             case ID_XCSI_PAGER:
                 if (hifEnableXPager(precc->usCheckState) == precc->usCheckState)
@@ -2346,6 +2351,7 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
                 ulUpdateFlags = CBI_SET | CBI_ENABLE;
             break;
 #endif
+*/
 
 #ifndef __ALWAYSREPLACEARCHIVING__
             case ID_XCSI_ARCHIVING:
@@ -3725,13 +3731,13 @@ VOID setParanoiaInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
     /*
     if (flFlags & CBI_ENABLE)
     {
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_TEXT1,
+        WinEnableControl(pnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_TEXT1,
                         !(cmnQuerySetting(sNoWorkerThread)));
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_SLIDER,
+        WinEnableControl(pnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_SLIDER,
                         !(cmnQuerySetting(sNoWorkerThread)));
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_TEXT2,
+        WinEnableControl(pnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_TEXT2,
                         !(cmnQuerySetting(sNoWorkerThread)));
-        winhEnableDlgItem(pnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_BEEP,
+        WinEnableControl(pnbp->hwndDlgPage, ID_XCDI_WORKERPRTY_BEEP,
                         !(cmnQuerySetting(sNoWorkerThread)));
     }
     */

@@ -397,7 +397,7 @@ static MRESULT EXPENTRY fnwpRegisterClass(HWND hwndDlg, ULONG msg, MPARAM mp1, M
                     if (strlen(prcd->szClassName))
                         fEnable = TRUE;
                 }
-                winhEnableDlgItem(hwndDlg, DID_OK, fEnable);
+                WinEnableControl(hwndDlg, DID_OK, fEnable);
             }
         break;
 
