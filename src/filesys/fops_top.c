@@ -920,6 +920,7 @@ FOPSRET fopsStartTaskFromList(ULONG ulOperation,
  *@@changed V0.9.3 (2000-04-25) [umoeller]: reworked error management
  *@@changed V0.9.3 (2000-04-30) [umoeller]: removed pSourceFolder parameter
  *@@changed V0.9.5 (2000-08-11) [umoeller]: confirmations use cnr's frame as owner now
+ *@@changed V0.9.9 (2001-02-18) [pr]: fix trap when pSourceObject is NULL
  */
 
 FOPSRET fopsStartDeleteFromCnr(HAB hab,                 // in: as with fopsStartTask
@@ -928,41 +929,12 @@ FOPSRET fopsStartDeleteFromCnr(HAB hab,                 // in: as with fopsStart
                                HWND hwndCnr,            // in: container to collect objects from
                                BOOL fTrueDelete)        // in: if TRUE, perform true delete; if FALSE, move to trash can
 {
-    FOPSRET frc;
+    FOPSRET     frc = NO_ERROR;
 
     ULONG       ulOperation = XFT_MOVE2TRASHCAN;
     FOPSCONFIRM Confirm = {0};
-    ULONG       ulConfirmations = _wpQueryConfirmations(pSourceObject);
+    ULONG       ulConfirmations = 0;
     BOOL        fConfirm = FALSE;
-
-    #ifdef DEBUG_TRASHCAN
-        _Pmpf(("fopsStartDeleteFromCnr: first obj is %s", _wpQueryTitle(pSourceObject)));
-        _Pmpf(("ulConfirmations: 0x%lX", ulConfirmations));
-    #endif
-
-    // specify owner for confirmations in any case...
-    // we might need this below!
-    Confirm.hwndOwner = WinQueryWindow(hwndCnr, QW_PARENT);
-
-    if (ulConfirmations & CONFIRM_DELETE)
-        fConfirm = TRUE;
-
-    if (fTrueDelete)
-    {
-        ulOperation = XFT_TRUEDELETE;
-        if (fConfirm)
-        {
-            Confirm.ulMsgSingle = 177;
-            Confirm.ulMsgMultiple = 178;
-        }
-    }
-    else
-        // move to trash can:
-        if (fConfirm)
-        {
-            Confirm.ulMsgSingle = 182;
-            Confirm.ulMsgMultiple = 183;
-        }
 
     if (!pSourceObject)
         frc = FOPSERR_INVALID_OBJECT;
@@ -973,6 +945,36 @@ FOPSRET fopsStartDeleteFromCnr(HAB hab,                 // in: as with fopsStart
             frc = FOPSERR_INVALID_OBJECT;
         else
         {
+            ulConfirmations = _wpQueryConfirmations(pSourceObject);
+            #ifdef DEBUG_TRASHCAN
+                _Pmpf(("fopsStartDeleteFromCnr: first obj is %s", _wpQueryTitle(pSourceObject)));
+                _Pmpf(("ulConfirmations: 0x%lX", ulConfirmations));
+            #endif
+
+            // specify owner for confirmations in any case...
+            // we might need this below!
+            Confirm.hwndOwner = WinQueryWindow(hwndCnr, QW_PARENT);
+
+            if (ulConfirmations & CONFIRM_DELETE)
+                fConfirm = TRUE;
+
+            if (fTrueDelete)
+            {
+                ulOperation = XFT_TRUEDELETE;
+                if (fConfirm)
+                {
+                    Confirm.ulMsgSingle = 177;
+                    Confirm.ulMsgMultiple = 178;
+                }
+            }
+            else
+                // move to trash can:
+                if (fConfirm)
+                {
+                    Confirm.ulMsgSingle = 182;
+                    Confirm.ulMsgMultiple = 183;
+                }
+
             frc = fopsStartTaskFromCnr(ulOperation,
                                        hab,
                                        pSourceFolder,

@@ -12,7 +12,6 @@ if yn = 'Y' then do
   call deletefiles 'bin\exe_mt\*.obj'
   call deletefiles 'bin\exe_mt\*.res'
   call deletefiles 'bin\exe_st\*.obj'
-  call deletefiles 'bin\exe_st\*.res'
   call deletefiles 'bin\modules\*.exe'
   call deletefiles 'bin\modules\*.dll'
   call deletefiles 'bin\modules\*.map'
@@ -32,9 +31,8 @@ end
 call charout , 'Do you wish to delete the INF/HLP files [Y/N] ? '
 parse upper linein yn .
 if yn = 'Y' then do
-  call deletefiles '001\inf.001\xfldr001.inf'
-  call deletefiles '001\xwphelp\xfldr001.hlp'
-  call deletefiles '049_de\inf.049\xfldr049.inf'
+  call deletefiles 'bin\modules\*.inf'
+  call deletefiles 'bin\modules\*.hlp'
 end
 
 /* IPF source files */

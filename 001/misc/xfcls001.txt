@@ -257,7 +257,7 @@ IWFRouter 1 Some class for the IBM Workframe/2 (as it comes with Visual Age C++ 
 
 // Items changed with V0.9.1
 
-UnknownClass 0 No information available for this class. If you know what this class is about, please post a description to xworkplace-user@egroups.com so a class description can be added.
+UnknownClass 0 No information available for this class. If you know what this class is about, please post a description to xworkplace-user@yahoogroups.com so a class description can be added.
 
 LSPeerUser 1 Undocumented LAN Server class. This is included with the networking functionality of Warp 4 and appears to be related to network logon and resource management.
 LSPeerWorkstation 1 Undocumented LAN Server class. This is included with the networking functionality of Warp 4 and appears to be related to network logon and resource management.
@@ -458,5 +458,7 @@ XWPFontFile 1 This represents physical font files on the system. All data files 
 
 // Items added with V0.9.9
 VPCForm 1 (Vispro C) "C Form" class.
+VPCPForm 1 (Vispro C++ 3.0) "C++ Form" class.
+VPForm 1 (Vispro Rexx 3.01) Forms class.
 
 

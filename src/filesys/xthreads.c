@@ -707,33 +707,34 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     // we'll trap
                     TRY_QUIET(excpt2)
                     {
-                        // only save awake abstract and folder objects;
-                        // if we included all WPFileSystem objects, all
-                        // of these will be saved at XShutdown, that is,
-                        // they'll all get .CLASSINFO EAs, which we don't
-                        // want
-                        if (    (_somIsA(pObj2Store, _WPAbstract))
-                             // || (_somIsA(pObj2Store, _WPFolder))
-                           )
+                        // V0.9.9 (2001-2-17) [pr]: fix object count bug
+                        if (strcmp(_somGetClassName(pObj2Store), "SmartCenter") == 0)
+                            pKernelGlobals->pAwakeWarpCenter = pObj2Store;
+
+                        // get the mutex semaphore
+                        fWorkerAwakeObjectsSemOwned
+                              = (WinRequestMutexSem(pKernelGlobals->hmtxAwakeObjects, 4000)
+                                 == NO_ERROR);
+
+                        if (fWorkerAwakeObjectsSemOwned)
                         {
-                            if (strcmp(_somGetClassName(pObj2Store), "SmartCenter") == 0)
-                                pKernelGlobals->pAwakeWarpCenter = pObj2Store;
+                            PLINKLIST pllAwakeObjects = (PLINKLIST)(pKernelGlobals->pllAwakeObjects);
 
-                            // get the mutex semaphore
-                            fWorkerAwakeObjectsSemOwned
-                                  = (WinRequestMutexSem(pKernelGlobals->hmtxAwakeObjects, 4000)
-                                     == NO_ERROR);
+                            #ifdef DEBUG_AWAKEOBJECTS
+                                _Pmpf(("WT: Storing 0x%lX (%s)", pObj2Store, _wpQueryTitle(pObj2Store)));
+                            #endif
 
-                            if (fWorkerAwakeObjectsSemOwned)
+                            // check if this object is stored already
+                            if (lstNodeFromItem(pllAwakeObjects, pObj2Store) == NULL)
                             {
-                                PLINKLIST pllAwakeObjects = (PLINKLIST)(pKernelGlobals->pllAwakeObjects);
-
-                                #ifdef DEBUG_AWAKEOBJECTS
-                                    _Pmpf(("WT: Storing 0x%lX (%s)", pObj2Store, _wpQueryTitle(pObj2Store)));
-                                #endif
-
-                                // check if this object is stored already
-                                if (lstNodeFromItem(pllAwakeObjects, pObj2Store) == NULL)
+                                // only save awake abstract and folder objects;
+                                // if we included all WPFileSystem objects, all
+                                // of these will be saved at XShutdown, that is,
+                                // they'll all get .CLASSINFO EAs, which we don't
+                                // want
+                                if (    (_somIsA(pObj2Store, _WPAbstract))
+                                     // || (_somIsA(pObj2Store, _WPFolder))
+                                   )
                                 {
                                     // object not stored yet: do it now
                                     #ifdef DEBUG_AWAKEOBJECTS
@@ -744,16 +745,15 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                                         lstAppendItem(pllAwakeObjects,
                                                       pObj2Store);
                                     #endif
-
-                                    // increment global count
-                                    pKernelGlobals->lAwakeObjectsCount++;
-
                                 }
-                                #ifdef DEBUG_AWAKEOBJECTS
-                                    else
-                                        _Pmpf(("WT: Item is already on list"));
-                                #endif
+
+                                // increment global count
+                                pKernelGlobals->lAwakeObjectsCount++;
                             }
+                            #ifdef DEBUG_AWAKEOBJECTS
+                                else
+                                    _Pmpf(("WT: Item is already on list"));
+                            #endif
                         }
                     }
                     CATCH(excpt2)

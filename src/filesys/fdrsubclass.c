@@ -1006,6 +1006,7 @@ VOID WMChar_Delete(PSUBCLASSEDFOLDERVIEW psfv)
  *      to implement their own processing.
  *
  *@@added V0.9.7 (2001-01-13) [umoeller]
+ *@@changed V0.9.9 (2001-02-18) [pr]: fix delete folder from menu bar
  */
 
 BOOL fdrProcessObjectCommand(WPFolder *somSelf,
@@ -1045,6 +1046,7 @@ BOOL fdrProcessObjectCommand(WPFolder *somSelf,
 
         if (fCallXWPFops)
         {
+            FOPSRET frc;
             // this is TRUE if
             // -- delete to trash can is enabled and "regular" delete
             //    has been selected -> move to trash can
@@ -1053,15 +1055,23 @@ BOOL fdrProcessObjectCommand(WPFolder *somSelf,
             // -- delete to trash can has been disabled, but regular delete
             //    is replaced --> "true" delete
 
+            // need this to handle deleting folder from menu bar as
+            // there is no source emphasis
+            if (!pFirstObject && !ulSelectionFlags)
+            {
+                pFirstObject = somSelf;
+                ulSelectionFlags = SEL_WHITESPACE;
+            }
+
             // collect objects from container and start deleting
-            FOPSRET frc = fopsStartDeleteFromCnr(NULLHANDLE,
-                                                    // no anchor block,
-                                                    // ansynchronously
-                                                 pFirstObject,
-                                                    // first source object
-                                                 ulSelectionFlags,
-                                                 hwndCnr,
-                                                 fTrueDelete);
+            frc = fopsStartDeleteFromCnr(NULLHANDLE,
+                                            // no anchor block,
+                                            // ansynchronously
+                                         pFirstObject,
+                                            // first source object
+                                         ulSelectionFlags,
+                                         hwndCnr,
+                                         fTrueDelete);
             #ifdef DEBUG_TRASHCAN
                 _Pmpf(("WM_COMMAND WPMENUID_DELETE: got FOPSRET %d", frc));
             #endif

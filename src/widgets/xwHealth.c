@@ -45,6 +45,8 @@
 
 #define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR
+#define INCL_WINMESSAGEMGR
+#define INCL_WINDIALOGS
 #define INCL_WININPUT
 #define INCL_WINPOINTERS
 #define INCL_WINPROGRAMLIST
@@ -53,6 +55,7 @@
 #define INCL_WINTIMER
 #define INCL_WINMENUS
 #define INCL_WINWORKPLACE
+#define INCL_WINENTRYFIELDS
 
 #define INCL_GPIPRIMITIVES
 #define INCL_GPILOGCOLORTABLE
@@ -85,6 +88,7 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\center.h"              // public XCenter interfaces
 #include "shared\common.h"              // the majestic XWorkplace include file
+#include "xwHealth.h"
 
 #pragma hdrstop                     // VAC++ keeps crashing otherwise
 
@@ -95,6 +99,9 @@
  ********************************************************************/
 
 #define MWGT_HEALTHMONITOR       1
+
+VOID EXPENTRY xwhShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData);
+MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,ULONG msg,MPARAM mp1,MPARAM mp2);
 
 /* ******************************************************************
  *
@@ -118,7 +125,7 @@ static XCENTERWIDGETCLASS G_WidgetClasses[] =
         "Health Monitor",
         "Health Monitor",
         WGTF_UNIQUEPERXCENTER,
-        NULL
+        xwhShowSettingsDlg
     },
 };
 
@@ -148,6 +155,7 @@ static XCENTERWIDGETCLASS G_WidgetClasses[] =
 // resolved function pointers from XFLDR.DLL
 PCMNQUERYDEFAULTFONT pcmnQueryDefaultFont = NULL;
 PCMNQUERYHELPLIBRARY pcmnQueryHelpLibrary = NULL;
+PCMNSETCONTROLSFONT pcmnSetControlsFont = NULL;
 
 PCTRFREESETUPVALUE pctrFreeSetupValue = NULL;
 PCTRPARSECOLORSTRING pctrParseColorString = NULL;
@@ -162,6 +170,7 @@ PSTRHTHOUSANDSULONG pstrhThousandsULong = NULL;
 PTMRSTARTTIMER ptmrStartTimer = NULL;
 PTMRSTOPTIMER ptmrStopTimer = NULL;
 
+PWINHCENTERWINDOW pwinhCenterWindow = NULL;
 PWINHFREE pwinhFree = NULL;
 PWINHQUERYPRESCOLOR pwinhQueryPresColor = NULL;
 PWINHQUERYWINDOWFONT pwinhQueryWindowFont = NULL;
@@ -175,6 +184,7 @@ RESOLVEFUNCTION G_aImports[] =
 {
     "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
     "cmnQueryHelpLibrary", (PFN*)&pcmnQueryHelpLibrary,
+    "cmnSetControlsFont", (PFN*)&pcmnSetControlsFont,
     "ctrFreeSetupValue", (PFN*)&pctrFreeSetupValue,
     "ctrParseColorString", (PFN*)&pctrParseColorString,
     "ctrScanSetupString", (PFN*)&pctrScanSetupString,
@@ -185,6 +195,7 @@ RESOLVEFUNCTION G_aImports[] =
     "tmrStartTimer", (PFN*)&ptmrStartTimer,
     "tmrStopTimer", (PFN*)&ptmrStopTimer,
     "winhFree", (PFN*)&pwinhFree,
+    "winhCenterWindow", (PFN*)&pwinhCenterWindow,
     "winhQueryPresColor", (PFN*)&pwinhQueryPresColor,
     "winhQueryWindowFont", (PFN*)&pwinhQueryWindowFont,
     "winhSetWindowFont", (PFN*)&pwinhSetWindowFont,
@@ -213,65 +224,7 @@ RESOLVEFUNCTION G_StHealthImports[] =
 };
 
 HMODULE hmStHealth = 0;
-
-/*
- *@@loadStHealth:
- *      load StHealth library and query function pointers.
- *
- *@@added V0.9.9 (2001-02-06) [smilcke]
- */
-
-ULONG loadStHealth(void)
-{
-    ULONG rc = 0;
-
-    if (!hmStHealth)
-    {
-        char failMod[500];
-        ULONG ul = 0;
-
-        rc = DosLoadModule(failMod, 500, "StHealth", &hmStHealth);
-        if (rc == NO_ERROR)
-            for (ul = 0;
-                 ul < sizeof(G_StHealthImports) / sizeof(G_StHealthImports[0]);
-                 ul++)
-            {
-                if (DosQueryProcAddr(hmStHealth, 0, (PSZ) G_StHealthImports[ul].pcszFunctionName
-                            ,G_StHealthImports[ul].ppFuncAddress) != NO_ERROR)
-                {
-                    rc = 1;
-                }
-            }
-    }
-
-    if (rc != NO_ERROR)
-    {
-        if(hmStHealth)
-        {
-            DosFreeModule(hmStHealth);
-            hmStHealth=0;
-        }
-    }
-    return rc;
-}
-
-/*
- *@@unloadStHealth:
- *      unload StHealth library.
- *
- *@@added V0.9.9 (2001-02-06) [smilcke]
- */
-
-ULONG unloadStHealth(void)
-{
-    ULONG rc = 0;
-    if(hmStHealth)
-    {
-        rc = DosFreeModule(hmStHealth);
-        rc = 0;
-    }
-    return rc;
-}
+HMODULE hmXwHealth = 0;
 
 /* ******************************************************************
  *
@@ -457,7 +410,7 @@ VOID MwgtSaveSetup(PXSTRING pstrSetup,  // out: setup string (is cleared first)
 
     if(pSetup->pszViewString)
     {
-        sprintf(szTemp,"HEALTHVSTR=Hallo;", pSetup->pszViewString);
+        sprintf(szTemp,"HEALTHVSTR=%s;", pSetup->pszViewString);
         pxstrcat(pstrSetup, szTemp, 0);
     }
 }
@@ -555,7 +508,93 @@ void buildHealthString(PSZ szPaint,PSZ szViewString)
  *
  ********************************************************************/
 
-// None currently.
+
+VOID EXPENTRY xwhShowSettingsDlg(PWIDGETSETTINGSDLGDATA pData)
+{
+ HWND hwnd=WinLoadDlg(HWND_DESKTOP
+                      ,pData->hwndOwner
+                      ,fnwpSettingsDlg
+                      ,hmXwHealth
+                      ,ID_CRD_HEALTHWGT_SETTINGS
+                      ,(PVOID)pData);
+ if(hwnd)
+ {
+  ULONG reply=0;
+  pcmnSetControlsFont(hwnd,1,10000);
+  pwinhCenterWindow(hwnd);
+  reply=WinProcessDlg(hwnd);
+  WinDestroyWindow(hwnd);
+  if(reply==DID_OK)
+  {
+   // Reread setup string
+   // resize control
+  }
+ }
+}
+
+MRESULT EXPENTRY fnwpSettingsDlg(HWND hwnd,ULONG msg,MPARAM mp1,MPARAM mp2)
+{
+ MRESULT mrc=0;
+ switch(msg)
+ {
+  case WM_INITDLG:
+   {
+    PWIDGETSETTINGSDLGDATA pData=(PWIDGETSETTINGSDLGDATA)mp2;
+    PMONITORSETUP pSetup=malloc(sizeof(MONITORSETUP));
+    WinSetWindowPtr(hwnd, QWL_USER, pData);
+    if(pSetup)
+    {
+     HWND hwndEf=WinWindowFromID(hwnd,ID_CRDI_SETUP_STRING);
+     memset(pSetup,0,sizeof(*pSetup));
+     pData->pUser=pSetup;
+     MwgtScanSetup(pData->pcszSetupString,pSetup);
+     winhSetEntryFieldLimit(hwndEf,550);
+     WinSetWindowText(hwndEf,pSetup->pszViewString);
+    }
+   }
+   mrc=WinDefDlgProc(hwnd,msg,mp1,mp2);
+   break;
+  case WM_COMMAND:
+   {
+    PWIDGETSETTINGSDLGDATA pData=(PWIDGETSETTINGSDLGDATA)WinQueryWindowPtr(hwnd,QWL_USER);
+    if(pData)
+    {
+     PMONITORSETUP pSetup=(PMONITORSETUP)pData->pUser;
+     if(pSetup)
+     {
+      switch((SHORT)mp1)
+      {
+       case DID_OK:
+        {
+         XSTRING strSetup;
+         PSZ p=pSetup->pszViewString;
+         CHAR sz[600];
+         HWND hwndEf=WinWindowFromID(hwnd,ID_CRDI_SETUP_STRING);
+         WinQueryWindowText(hwndEf,600,sz);
+         pSetup->pszViewString=sz;
+         pctrFreeSetupValue(p);
+         MwgtSaveSetup(&strSetup,pSetup);
+         pData->pctrSetSetupString(pData->hSettings,strSetup.psz);
+         pxstrClear(&strSetup);
+         WinDismissDlg(hwnd,DID_OK);
+        }
+        break;
+       case DID_CANCEL:
+        WinDismissDlg(hwnd,DID_CANCEL);
+        break;
+       case DID_HELP:
+        break;
+      }
+     }
+    }
+   }
+   break;
+  default:
+   mrc=WinDefDlgProc(hwnd,msg,mp1,mp2);
+   break;
+ }
+ return (mrc);
+}
 
 /* ******************************************************************
  *
@@ -651,6 +690,14 @@ BOOL MwgtControl(HWND hwnd, MPARAM mp1, MPARAM mp2)
                         pszl->cy = pPrivate->cyCurrent;
                         brc = TRUE;
                         break;
+                    }
+                    case XN_SETUPCHANGED:
+                    {
+                     const char *pcszNewSetupString=(const char*)mp2;
+                     // reinitialize the setup data
+                     MwgtFreeSetup(&pPrivate->Setup);
+                     MwgtScanSetup(pcszNewSetupString,&pPrivate->Setup);
+                     WinInvalidateRect(pWidget->hwndWidget,NULL,FALSE);
                     }
                 }
 
@@ -850,36 +897,6 @@ VOID MwgtPresParamChanged(HWND hwnd,
 }
 
 /*
- *@@ MwgtButton1DblClick:
- *      implementation for WM_BUTTON1DBLCLK.
- */
-
-VOID MwgtButton1DblClick(HWND hwnd, PXCENTERWIDGET pWidget)
-{
-    PMONITORPRIVATE pPrivate = (PMONITORPRIVATE) pWidget->pUser;
-
-    if (pPrivate)
-    {
-        const char *pcszID = NULL;
-        HOBJECT hobj = NULLHANDLE;
-
-        switch (pPrivate->ulType)
-        {
-            case MWGT_HEALTHMONITOR:
-                break;
-        }
-        if (pcszID)
-            hobj = WinQueryObject((PSZ) pcszID);
-        if (hobj)
-        {
-            WinOpenObject(hobj, 2,  // OPEN_SETTINGS,
-                           TRUE);
-        }
-    }                           // end if (pPrivate)
-
-}
-
-/*
  *@@ fnwpMonitorWidgets:
  *      window procedure for the various "Monitor" widget classes.
  *
@@ -987,17 +1004,6 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
         break; }
 
         /*
-         *@@ WM_BUTTON1DBLCLK:
-         *      on double-click on clock, open
-         *      system clock settings.
-         */
-
-        case WM_BUTTON1DBLCLK:
-            MwgtButton1DblClick(hwnd, pWidget);
-            mrc = (MPARAM)TRUE;     // message processed
-        break;
-
-        /*
          * WM_PRESPARAMCHANGED:
          *
          */
@@ -1035,6 +1041,63 @@ MRESULT EXPENTRY fnwpMonitorWidgets(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2
     } // end switch(msg)
 
     return (mrc);
+}
+
+/*
+ *@@loadStHealth:
+ *      load StHealth library and query function pointers.
+ *
+ *@@added V0.9.9 (2001-02-06) [smilcke]
+ */
+ULONG loadStHealth(void)
+{
+    ULONG rc = 0;
+
+    if (!hmStHealth)
+    {
+        char failMod[500];
+        ULONG ul = 0;
+
+        rc = DosLoadModule(failMod, 500, "StHealth", &hmStHealth);
+        if (rc == NO_ERROR)
+            for (ul = 0;
+                 ul < sizeof(G_StHealthImports) / sizeof(G_StHealthImports[0]);
+                 ul++)
+            {
+                if (DosQueryProcAddr(hmStHealth, 0, (PSZ) G_StHealthImports[ul].pcszFunctionName
+                            ,G_StHealthImports[ul].ppFuncAddress) != NO_ERROR)
+                {
+                    rc = 1;
+                }
+            }
+    }
+
+    if (rc != NO_ERROR)
+    {
+        if(hmStHealth)
+        {
+            DosFreeModule(hmStHealth);
+            hmStHealth=0;
+        }
+    }
+    return rc;
+}
+
+/*
+ *@@unloadStHealth:
+ *      unload StHealth library.
+ *
+ *@@added V0.9.9 (2001-02-06) [smilcke]
+ */
+ULONG unloadStHealth(void)
+{
+    ULONG rc = 0;
+    if(hmStHealth)
+    {
+        rc = DosFreeModule(hmStHealth);
+        rc = 0;
+    }
+    return rc;
 }
 
 /* ******************************************************************
@@ -1100,6 +1163,9 @@ ULONG EXPENTRY MwgtInitModule(HAB hab,  // XCenter's anchor block
     ULONG ulrc = 0;
     ULONG ul = 0;
     BOOL fImportsFailed = FALSE;
+
+    // Store plugin module for later use
+    hmXwHealth=hmodPlugin;
 
     // resolve imports from XFLDR.DLL (this is basically
     // a copy of the doshResolveImports code, but we can't
@@ -1185,7 +1251,7 @@ VOID EXPENTRY MwgtUnInitModule(VOID)
  *      assumed that the INIT export understands
  *      the new FNWGTINITMODULE_099 format (see center.h).
  *
- *@@added V0.9.9 (2001-02-06) [umoeller]
+ *@@added V0.9.9 (2000-02-06) [umoeller]
  */
 
 VOID EXPENTRY MwgtQueryVersion(PULONG pulMajor,

@@ -88,8 +88,8 @@ Last updated January 26, 2001, Ulrich M”ller
 6. CONTRIBUTORS
 ===============
 
-    Newer contributions are marked in xdoc style. The following
-    author acronyms are used in the code:
+    Newer contributions (since about V0.9.1) are marked in xdoc
+    style. The following author acronyms are used in the code:
 
         umoeller            Ulrich M”ller (ulrich.moeller@rz.hu-berlin.de)
 
