@@ -34,4 +34,16 @@
     APIRET xsecQueryProcessOwner(ULONG ulPID,
                                  XWPSECID *puid);
 
+    APIRET xsecCreateUser(PCSZ pcszUserName,
+                          PCSZ pcszFullName,
+                          PCSZ pcszPassword,
+                          XWPSECID gid,
+                          XWPSECID *puid);
+
+    APIRET xsecSetUserData(XWPSECID uid,
+                           PCSZ pcszUserName,
+                           PCSZ pcszFullName);
+
+    APIRET xsecDeleteUser(XWPSECID uid);
+
 #endif

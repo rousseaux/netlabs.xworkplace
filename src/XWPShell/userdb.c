@@ -161,14 +161,10 @@ XWPUSERDB   G_Database;
  *      Always call UnlockUserDB() when you're done.
  */
 
-APIRET LockUserDB(VOID)
+BOOL LockUserDB(VOID)
 {
-    APIRET arc = NO_ERROR;
-
-    arc = DosRequestMutexSem(G_hmtxUserDB,
-                             SEM_INDEFINITE_WAIT);
-
-    return arc;
+    return !DosRequestMutexSem(G_hmtxUserDB,
+                               SEM_INDEFINITE_WAIT);
 }
 
 /*
@@ -176,9 +172,38 @@ APIRET LockUserDB(VOID)
  *      unlocks the global security data.
  */
 
-APIRET UnlockUserDB(VOID)
+VOID UnlockUserDB(VOID)
 {
-    return (DosReleaseMutexSem(G_hmtxUserDB));
+    DosReleaseMutexSem(G_hmtxUserDB);
+}
+
+/*
+ *@@ FindUserFromID:
+ *
+ *
+ *      Private function.
+ *
+ *      Preconditions:
+ *
+ *      --  Caller must hold the db mutex.
+ *
+ *@@added V1.0.1 (2003-01-05) [umoeller]
+ */
+
+const XWPUSERDBENTRY* FindUserFromID(PLINKLIST pllUsers,
+                                     XWPSECID uid)
+{
+    PLISTNODE pNode = lstQueryFirstNode(pllUsers);
+    while (pNode)
+    {
+        const XWPUSERDBENTRY *pUserThis = (const XWPUSERDBENTRY *)pNode->pItemData;
+        if (pUserThis->User.uid == uid)
+            return pUserThis;
+
+        pNode = pNode->pNext;
+    }
+
+    return NULL;
 }
 
 /*
@@ -187,30 +212,25 @@ APIRET UnlockUserDB(VOID)
  *
  *      Private function.
  *
- *      You must load the users first using secLoadUsers.
- *      You must also call LockUserDB() yourself.
+ *      Preconditions:
+ *
+ *      --  Caller must hold the db mutex.
  */
 
-PCXWPUSERDBENTRY FindUserFromName(PLINKLIST pllUsers,
-                                  const char *pcszUserName)
+const XWPUSERDBENTRY* FindUserFromName(PLINKLIST pllUsers,
+                                       PCSZ pcszUserName)
 {
-    PCXWPUSERDBENTRY p = 0;
-
     PLISTNODE pNode = lstQueryFirstNode(pllUsers);
     while (pNode)
     {
-        PCXWPUSERDBENTRY pUserThis = (PCXWPUSERDBENTRY)pNode->pItemData;
-        if (strcmp(pUserThis->szUserName, pcszUserName) == 0)
-        {
-            // found:
-            p = pUserThis;
-            break;
-        }
+        const XWPUSERDBENTRY *pUserThis = (const XWPUSERDBENTRY *)pNode->pItemData;
+        if (!strcmp(pUserThis->User.szUserName, pcszUserName))
+            return pUserThis;
 
         pNode = pNode->pNext;
     }
 
-    return (p);
+    return NULL;
 }
 
 /*
@@ -219,29 +239,26 @@ PCXWPUSERDBENTRY FindUserFromName(PLINKLIST pllUsers,
  *
  *      Private function.
  *
- *      You must call LockUserDB() yourself.
+ *      Preconditions:
+ *
+ *      --  Caller must hold the db mutex.
  */
 
-PCXWPGROUPDBENTRY FindGroupFromID(PLINKLIST pllGroups,
-                                  XWPSECID gid)
+const XWPGROUPDBENTRY* FindGroupFromID(PLINKLIST pllGroups,
+                                       XWPSECID gid)
 {
-    PCXWPGROUPDBENTRY p = 0;
-
     PLISTNODE pNode = lstQueryFirstNode(pllGroups);
     while (pNode)
     {
-        PCXWPGROUPDBENTRY pGroupThis = (PCXWPGROUPDBENTRY)pNode->pItemData;
+        const XWPGROUPDBENTRY *pGroupThis = (const XWPGROUPDBENTRY *)pNode->pItemData;
         if (pGroupThis->gid == gid)
-        {
             // found:
-            p = pGroupThis;
-            break;
-        }
+            return pGroupThis;
 
         pNode = pNode->pNext;
     }
 
-    return (p);
+    return NULL;
 }
 
 /*
@@ -271,14 +288,14 @@ APIRET CreateGroup(PXWPUSERDB pDB,
 {
     APIRET arc = NO_ERROR;
 
-    PXWPGROUPDBENTRY pNewGroup = malloc(sizeof(XWPGROUPDBENTRY));
-    if (!pNewGroup)
+    PXWPGROUPDBENTRY pNewGroup;
+    if (!(pNewGroup = malloc(sizeof(XWPGROUPDBENTRY))))
         arc = ERROR_NOT_ENOUGH_MEMORY;
     else
     {
-        const XSTRING *pstrGroupID = xmlGetAttribute(pGroupElementThis,
-                                                     "GROUPID");
-        if (!pstrGroupID)
+        const XSTRING *pstrGroupID;
+        if (!(pstrGroupID = xmlGetAttribute(pGroupElementThis,
+                                            "GROUPID")))
             arc = XWPSEC_DB_GROUP_SYNTAX;
         else
         {
@@ -343,73 +360,101 @@ APIRET CreateUser(PXWPUSERDB pDB,
 {
     APIRET arc = NO_ERROR;
 
-    PXWPUSERDBENTRY pNewUser;
-    if (!(pNewUser = malloc(sizeof(XWPUSERDBENTRY))))
-        arc = ERROR_NOT_ENOUGH_MEMORY;
+    const XSTRING   *pstrUserID,
+                    *pstrGroupID,
+                    *pstrName,
+                    *pstrPass;
+    PDOMNODE        pCDATA;
+
+    if (    (!(pstrGroupID = xmlGetAttribute(pUserElementThis,
+                                             "GROUPID")))
+         || (!(pstrUserID  = xmlGetAttribute(pUserElementThis,
+                                             "USERID")))
+         || (!(pstrName    = xmlGetAttribute(pUserElementThis,
+                                             "NAME")))
+         || (!(pstrPass    = xmlGetAttribute(pUserElementThis,
+                                             "PASS")))
+            // get long user name (USER element character data)
+         || (!(pCDATA = xmlGetFirstText(pUserElementThis)))
+       )
+        arc = XWPSEC_DB_USER_SYNTAX;
     else
     {
-        const XSTRING *pstrUserID  = xmlGetAttribute(pUserElementThis,
-                                                     "USERID");
-        const XSTRING *pstrGroupID = xmlGetAttribute(pUserElementThis,
-                                                     "GROUPID");
-        const XSTRING *pstrName    = xmlGetAttribute(pUserElementThis,
-                                                     "NAME");
-        const XSTRING *pstrPass    = xmlGetAttribute(pUserElementThis,
-                                                     "PASS");
-        if (    (!pstrGroupID)
-             || (!pstrUserID)
-             || (!pstrName)
-             || (!pstrPass)
-           )
-            arc = XWPSEC_DB_USER_SYNTAX;
-        else
+        // parse the groups strings first so we know how much
+        // to allocate for the user db entry
+        LINKLIST llGroups;
+        PSZ     pszGroups = strdup(pstrGroupID->psz);
+        PSZ     pszToken = strtok(pszGroups, ",");
+        lstInit(&llGroups, FALSE);
+        while (pszToken)
         {
-            PDOMNODE pCDATA;
-            PCXWPGROUPDBENTRY pGroupEntry;
-
-            pNewUser->uid = atoi(pstrUserID->psz);
-            pNewUser->gid = atoi(pstrGroupID->psz);
-
-            strhncpy0(pNewUser->szUserName,
-                      pstrName->psz,
-                      sizeof(pNewUser->szUserName));
-
-            strhncpy0(pNewUser->szPassword,
-                      pstrPass->psz,
-                      sizeof(pNewUser->szPassword));
-
+            // append group ID
+            const XWPGROUPDBENTRY *pGroupEntry;
+            XWPSECID gid = atoi(pszToken);
             if (!(pGroupEntry = FindGroupFromID(&pDB->llGroups,
-                                                pNewUser->gid)))
+                                                gid)))
+            {
                 // cannot find group for this user:
                 arc = XWPSEC_INVALID_GROUPID;
+                break;
+            }
+
+            lstAppendItem(&llGroups, (PVOID)gid);
+            pszToken = strtok(NULL, ",");
+        };
+
+        if (!arc)
+        {
+            ULONG   cGroups,
+                    cbStruct;
+            PXWPUSERDBENTRY pNewUser;
+
+            cGroups = lstCountItems(&llGroups);
+            cbStruct =   sizeof(XWPUSERDBENTRY)     // has room for one group already
+                       + ((cGroups)
+                            ? (cGroups - 1) * sizeof(XWPSECID)
+                            : 0);
+
+            if (!(pNewUser = malloc(cbStruct)))
+                arc = ERROR_NOT_ENOUGH_MEMORY;
             else
             {
-                // copy group name
-                memcpy(pNewUser->szGroupName,
-                       pGroupEntry->szGroupName,
-                       sizeof(pNewUser->szGroupName));
+                PLISTNODE pNode;
 
-                // get long user name (USER element character data)
-                if (!(pCDATA = xmlGetFirstText(pUserElementThis)))
-                    arc = XWPSEC_DB_GROUP_SYNTAX;
-                else
+                pNewUser->cbStruct = cbStruct;
+
+                // store user
+                pNewUser->User.uid = atoi(pstrUserID->psz);
+
+                strhncpy0(pNewUser->User.szUserName,
+                          pstrName->psz,
+                          sizeof(pNewUser->User.szUserName));
+                strhncpy0(pNewUser->User.szFullName,
+                          pCDATA->pstrNodeValue->psz,
+                          sizeof(pNewUser->User.szFullName));
+                strhncpy0(pNewUser->szPassword,
+                          pstrPass->psz,
+                          sizeof(pNewUser->szPassword));
+
+                // store group IDs
+                pNewUser->Membership.cGroups = 0;
+                for (pNode = lstQueryFirstNode(&llGroups);
+                     pNode;
+                     pNode = pNode->pNext)
                 {
-                    strhncpy0(pNewUser->szFullName,
-                              pCDATA->pstrNodeValue->psz,
-                              sizeof(pNewUser->szFullName));
-
-                    _PmpfF(("created user \"%s\", pass \"%s\"",
-                                pNewUser->szUserName,
-                                pNewUser->szPassword));
-
-                    // add to database
-                    lstAppendItem(&pDB->llUsers, pNewUser);
+                    pNewUser->Membership.aGIDs[pNewUser->Membership.cGroups++]
+                            = (XWPSECID)pNode->pItemData;
                 }
+
+
+                _PmpfF(("created user \"%s\", pass \"%s\"",
+                            pNewUser->User.szUserName,
+                            pNewUser->szPassword));
+
+                // add to database
+                lstAppendItem(&pDB->llUsers, pNewUser);
             }
         }
-
-        if (arc)
-            free(pNewUser);
     }
 
     _PmpfF(("returning %d", arc));
@@ -418,7 +463,7 @@ APIRET CreateUser(PXWPUSERDB pDB,
 }
 
 /*
- *@@ LoadDatabase:
+ *@@ LoadDB:
  *      this function must load the XWorkplace users
  *      database.
  *
@@ -558,9 +603,9 @@ APIRET LoadDB(VOID)
                 }
                 else
                     arc = XWPSEC_DB_USER_SYNTAX;
-
-                xmlFreeDOM(pDom);
             }
+
+            xmlFreeDOM(pDom);
         }
 
         free(pszUserDB);
@@ -639,49 +684,35 @@ APIRET sudbInit(VOID)
  *          ID is invalid.
  */
 
-APIRET sudbAuthenticateUser(PXWPUSERDBENTRY pUserInfo,   // in/out: user info
-                            PXWPGROUPDBENTRY pGroupInfo) // out: group info
+APIRET sudbAuthenticateUser(PXWPUSERINFO pUserInfo,     // in/out: user info
+                            PCSZ pcszPassword)          // in: password
 {
     APIRET arc = NO_ERROR;
-
-    BOOL fLocked = (LockUserDB() == NO_ERROR);
+    BOOL fLocked;
 
     _PmpfF(("entering"));
 
-    if (!fLocked)
+    if (!(fLocked = LockUserDB()))
         arc = XWPSEC_CANNOT_GET_MUTEX;
     else
     {
-        PCXWPUSERDBENTRY pUserFound;
+        const XWPUSERDBENTRY *pUserFound;
         if (!(pUserFound = FindUserFromName(&G_Database.llUsers,
                                             pUserInfo->szUserName)))
             arc = XWPSEC_NOT_AUTHENTICATED;
         else
         {
             // user exists:
-            if (strcmp(pUserInfo->szPassword,
-                       pUserFound->szPassword)
-                    != 0)
+            if (strcmp(pcszPassword,
+                       pUserFound->szPassword))
                 arc = XWPSEC_NOT_AUTHENTICATED;
             else
             {
                 // password correct also:
-
-                // find group
-                PCXWPGROUPDBENTRY pGroupFound;
-                if (!(pGroupFound = FindGroupFromID(&G_Database.llGroups,
-                                                    pUserFound->gid)))
-                    arc = XWPSEC_DB_INVALID_GROUPID;
-                else
-                {
-                    // store user's uid, gid, group name
-                    memcpy(pUserInfo,
-                           pUserFound,
-                           sizeof(XWPUSERDBENTRY));
-                    memcpy(pGroupInfo,
-                           pGroupFound,
-                           sizeof(XWPGROUPDBENTRY));
-                }
+                // store user's uid
+                memcpy(pUserInfo,
+                       &pUserFound->User,
+                       sizeof(XWPUSERINFO));
             }
         }
     }
@@ -707,21 +738,28 @@ APIRET sudbAuthenticateUser(PXWPUSERDBENTRY pUserInfo,   // in/out: user info
  *
  *      Required authority: Process must be running
  *      on behalf of a user of "admin" group (1).
+ *
+ *      Returns:
+ *
+ *      --  XWPSEC_CANNOT_GET_MUTEX
+ *
+ *      --  XWPSEC_USER_EXISTS: a user with the given
+ *          (short) user name already exists.
  */
 
 APIRET sudbCreateUser(PXWPUSERDBENTRY pUserInfo)
 {
     APIRET arc = NO_ERROR;
 
-    BOOL fLocked = (LockUserDB() == NO_ERROR);
-    if (!fLocked)
+    BOOL fLocked;
+    if (!(fLocked = LockUserDB()))
         arc = XWPSEC_CANNOT_GET_MUTEX;
     else
     {
-        PCXWPUSERDBENTRY pUserFound = FindUserFromName(&G_Database.llUsers,
-                                                       pUserInfo->szUserName);
-        if (pUserFound)
-            // user exists: fail
+        const XWPUSERDBENTRY *pUserFound;
+        if (pUserFound = FindUserFromName(&G_Database.llUsers,
+                                          pUserInfo->User.szUserName))
+            // user exists already: fail
             arc = XWPSEC_USER_EXISTS;
         else
         {
@@ -738,6 +776,14 @@ APIRET sudbCreateUser(PXWPUSERDBENTRY pUserInfo)
 
 /*
  *@@ sudbQueryUsers:
+ *      returns a shared memory block containing all user
+ *      definitions, including group memberships. This
+ *      consists of XWPUSERDBENTRY structures, but is not
+ *      strictly an array as every item can be variable in
+ *      size.
+ *
+ *      The memory is allocated as shared giveable to be
+ *      useful for the queue APIs. Call DosFreeMem to free it.
  *
  *      Returns:
  *
@@ -749,7 +795,7 @@ APIRET sudbCreateUser(PXWPUSERDBENTRY pUserInfo)
  *
  *      --  ERROR_NOT_ENOUGH_MEMORY
  *
- *      plus the many error codes from LoadDatabase.
+ *      plus the many error codes from LoadDB.
  *
  *@@added V0.9.19 (2002-04-02) [umoeller]
  */
@@ -763,11 +809,9 @@ APIRET sudbQueryUsers(PULONG pcUsers,               // out: user count
     if (!pcUsers || !ppaUsers)
         return ERROR_INVALID_PARAMETER;
 
-    fLocked = (LockUserDB() == NO_ERROR);
-
     _PmpfF(("entering"));
 
-    if (!fLocked)
+    if (!(fLocked = LockUserDB()))
         arc = XWPSEC_CANNOT_GET_MUTEX;
     else
     {
@@ -775,37 +819,37 @@ APIRET sudbQueryUsers(PULONG pcUsers,               // out: user count
             arc = XWPSEC_NO_USERS;
         else
         {
+            // run through the array and count how much mem we need
+            PLISTNODE   pNode;
+            ULONG       cbTotal = 0;
             PXWPUSERDBENTRY paUsers;
+            FOR_ALL_NODES(&G_Database.llUsers, pNode)
+            {
+                const XWPUSERDBENTRY *pUserThis = (const XWPUSERDBENTRY *)pNode->pItemData;
+                cbTotal += pUserThis->cbStruct;
+            }
+
             if (!(arc = DosAllocSharedMem((PVOID*)&paUsers,
                                           NULL,
-                                          sizeof(XWPUSERDBENTRY) * *pcUsers,
+                                          cbTotal,
                                           PAG_COMMIT | OBJ_GIVEABLE | PAG_READ | PAG_WRITE)))
             {
-                PLISTNODE pNode = lstQueryFirstNode(&G_Database.llUsers);
-                PXWPUSERDBENTRY pTargetThis = paUsers;
+                PBYTE pbTarget = (PBYTE)paUsers;
+                pNode = lstQueryFirstNode(&G_Database.llUsers);
                 while (pNode)
                 {
-                    PCXWPUSERDBENTRY pSourceThis = (PCXWPUSERDBENTRY)pNode->pItemData;
+                    const XWPUSERDBENTRY *pSourceThis = (const XWPUSERDBENTRY *)pNode->pItemData;
 
-                    pTargetThis->uid = pSourceThis->uid;
-                    memcpy(pTargetThis->szUserName,
-                           pSourceThis->szUserName,
-                           sizeof(pTargetThis->szUserName));
-                    memcpy(pTargetThis->szFullName,
-                           pSourceThis->szFullName,
-                           sizeof(pTargetThis->szFullName));
+                    memcpy(pbTarget,
+                           pSourceThis,
+                           pSourceThis->cbStruct);
                     // never give out the passwords
-                    memset(pTargetThis->szPassword,
+                    memset(((PXWPUSERDBENTRY)pbTarget)->szPassword,
                            0,
-                           sizeof(pTargetThis->szPassword));
-
-                    pTargetThis->gid = pSourceThis->gid;
-                    memcpy(pTargetThis->szGroupName,
-                           pSourceThis->szGroupName,
-                           sizeof(pTargetThis->szGroupName));
+                           sizeof((PXWPUSERDBENTRY)pbTarget)->szPassword);
 
                     pNode = pNode->pNext;
-                    pTargetThis++;
+                    pbTarget += pSourceThis->cbStruct;
                 }
 
                 *ppaUsers = paUsers;
@@ -823,6 +867,11 @@ APIRET sudbQueryUsers(PULONG pcUsers,               // out: user count
 
 /*
  *@@ sudbQueryGroups:
+ *      returns a shared memory block containing all group
+ *      definitions as an array of XWPGROUPDBENTRY structs.
+ *
+ *      The memory is allocated as shared giveable to be
+ *      useful for the queue APIs. Call DosFreeMem to free it.
  *
  *      Returns:
  *
@@ -834,7 +883,7 @@ APIRET sudbQueryUsers(PULONG pcUsers,               // out: user count
  *
  *      --  ERROR_NOT_ENOUGH_MEMORY
  *
- *      plus the many error codes from LoadDatabase.
+ *      plus the many error codes from LoadDB.
  *
  *@@added V0.9.19 (2002-04-02) [umoeller]
  */
@@ -848,11 +897,9 @@ APIRET sudbQueryGroups(PULONG pcGroups,               // out: user count
     if (!pcGroups || !ppaGroups)
         return ERROR_INVALID_PARAMETER;
 
-    fLocked = (LockUserDB() == NO_ERROR);
-
     _PmpfF(("entering"));
 
-    if (!fLocked)
+    if (!(fLocked = LockUserDB()))
         arc = XWPSEC_CANNOT_GET_MUTEX;
     else
     {
@@ -870,7 +917,7 @@ APIRET sudbQueryGroups(PULONG pcGroups,               // out: user count
                 PXWPGROUPDBENTRY pTargetThis = paGroups;
                 while (pNode)
                 {
-                    PCXWPGROUPDBENTRY pSourceThis = (PCXWPGROUPDBENTRY)pNode->pItemData;
+                    const XWPGROUPDBENTRY *pSourceThis = (const XWPGROUPDBENTRY *)pNode->pItemData;
 
                     pTargetThis->gid = pSourceThis->gid;
                     memcpy(pTargetThis->szGroupName,
@@ -882,6 +929,79 @@ APIRET sudbQueryGroups(PULONG pcGroups,               // out: user count
                 }
 
                 *ppaGroups = paGroups;
+            }
+        }
+    }
+
+    if (fLocked)
+        UnlockUserDB();
+
+    _PmpfF(("leaving"));
+
+    return arc;
+}
+
+/*
+ *@@ sudbQueryUser:
+ *      returns a single XWPUSERDBENTRY struct listing
+ *      user info including the groups that the given user
+ *      is a member of.
+ *
+ *      The memory is allocated as shared giveable to be
+ *      useful for the queue APIs. Call DosFreeMem to free it.
+ *
+ *      Returns:
+ *
+ *      --  XWPSEC_CANNOT_GET_MUTEX
+ *
+ *      --  XWPSEC_INVALID_USERID
+ *
+ *      --  ERROR_INVALID_PARAMETER
+ *
+ *      --  ERROR_NOT_ENOUGH_MEMORY
+ *
+ *      plus the many error codes from LoadDB.
+ *
+ *@@added V1.0.1 (2003-01-05) [umoeller]
+ */
+
+APIRET sudbQueryUser(XWPSECID uid,
+                     PXWPUSERDBENTRY *ppUser)
+{
+    APIRET arc = NO_ERROR;
+    BOOL fLocked;
+
+    if (!ppUser)
+        return ERROR_INVALID_PARAMETER;
+
+    _PmpfF(("entering"));
+
+    if (!(fLocked = LockUserDB()))
+        arc = XWPSEC_CANNOT_GET_MUTEX;
+    else
+    {
+        const XWPUSERDBENTRY* pUserFound;
+        if (!(pUserFound = FindUserFromID(&G_Database.llUsers,
+                                          uid)))
+            arc = XWPSEC_INVALID_USERID;
+        else
+        {
+            PXWPUSERDBENTRY pUserReturn;
+            if (!(arc = DosAllocSharedMem((PVOID*)&pUserReturn,
+                                          NULL,
+                                          pUserFound->cbStruct,
+                                          PAG_COMMIT | OBJ_GIVEABLE | PAG_READ | PAG_WRITE)))
+            {
+                memcpy(pUserReturn,
+                       pUserFound,
+                       pUserFound->cbStruct);
+
+                // do not give out password
+                memset(pUserReturn->szPassword,
+                       0,
+                       sizeof(pUserReturn->szPassword));
+
+                *ppUser = pUserReturn;
             }
         }
     }

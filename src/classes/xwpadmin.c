@@ -58,8 +58,11 @@
 #define INCL_DOSMODULEMGR
 #define INCL_DOSERRORS
 
+#define INCL_WINWINDOWMGR
 #define INCL_WINSTATICS
+#define INCL_WINDIALOGS
 #define INCL_WINBUTTONS
+#define INCL_WINENTRYFIELDS
 #define INCL_WINSTDCNR
 #include <os2.h>
 
@@ -74,6 +77,7 @@
 #include "helpers\dialog.h"             // dialog helpers
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
+#include "helpers\winh.h"               // PM helper routines
 #include "helpers\xstring.h"            // extended string helpers
 
 // SOM headers which don't crash with prec. header files
@@ -196,12 +200,12 @@ static const DLGHITEM dlgLocalUser[] =
     };
 
 /*
- *@@ admLocalUserInitPage:
+ *@@ LocalUserInitPage:
  *
  */
 
-VOID admLocalUserInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
-                          ULONG flFlags)        // CBI_* flags (notebook.h)
+VOID LocalUserInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+                       ULONG flFlags)        // CBI_* flags (notebook.h)
 {
     if (flFlags & CBI_INIT)
     {
@@ -234,13 +238,6 @@ VOID admLocalUserInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                                ID_AMDI_USER_USERID_DATA,
                                LoggedOn.uid,
                                FALSE);          // unsigned
-            WinSetDlgItemText(pnbp->hwndDlgPage,
-                              ID_AMDI_USER_GROUPNAME_DATA,
-                              LoggedOn.szGroupName);
-            WinSetDlgItemShort(pnbp->hwndDlgPage,
-                               ID_AMDI_USER_GROUPID_DATA,
-                               LoggedOn.gid,
-                               FALSE);          // unsigned
         }
     }
 }
@@ -251,62 +248,104 @@ VOID admLocalUserInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
  *
  ********************************************************************/
 
+/*
+ *@@ USERRECORD:
+ *
+ */
+
 typedef struct _USERRECORD
 {
     RECORDCORE      recc;
 
     PSZ             pszFullName;
-    PSZ             pszGroupName;
 
-    XWPUSERDBENTRY  Entry;
+    XWPUSERINFO     Entry;
 
 } USERRECORD, *PUSERRECORD;
 
+static const CONTROLDEF
+    AllUsersGroup = LOADDEF_GROUP(ID_XSSI_ADMIN_ALL_USERS, SZL_AUTOSIZE),
+    AllUsersCnr = CONTROLDEF_CONTAINER(
+                            ID_XFDI_CNR_CNR,
+                            200,        // for now, will be resized
+                            100);       // for now, will be resized
+
+static const DLGHITEM G_dlgAllUsers[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(0),
+                START_GROUP_TABLE(&AllUsersGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&AllUsersCnr),
+                    START_ROW(0),
+                        CONTROL_DEF(&G_AddButton),
+                        CONTROL_DEF(&G_EditButton),
+                        CONTROL_DEF(&G_RemoveButton),
+                END_TABLE,
+            START_ROW(0),       // notebook buttons (will be moved)
+                CONTROL_DEF(&G_HelpButton),         // common.c
+        END_TABLE
+    };
+
+MPARAM G_ampAllUsers[] =
+    {
+        MPFROM2SHORT(ID_XFDI_CNR_CNR, XAC_SIZEX | XAC_SIZEY),
+        MPFROM2SHORT(ID_XSSI_ADMIN_ALL_USERS, XAC_SIZEX | XAC_SIZEY),
+    };
+
 /*
- *@@ admAllUsersInitPage:
+ *@@ AllUsersInitPage:
  *
  */
 
-VOID admAllUsersInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
-                         ULONG flFlags)        // CBI_* flags (notebook.h)
+STATIC VOID AllUsersInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+                             ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
-
     if (flFlags & CBI_INIT)
     {
-        XFIELDINFO xfi[5];
-        PFIELDINFO pfi = NULL;
-        int        i = 0;
+        HWND            hwndCnr,
+                        hwndRemove;
+        XFIELDINFO      xfi[5];
+        PFIELDINFO      pfi = NULL;
+        int             i = 0;
 
-        WinSetDlgItemText(pnbp->hwndDlgPage,
-                          ID_XFDI_CNR_GROUPTITLE,
-                          (PSZ)cmnGetString(ID_XSSI_ADMIN_ALL_USERS));
+        // insert the controls using the dialog formatter
+        // V1.0.1 (2003-01-05) [umoeller]
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      G_dlgAllUsers,
+                      ARRAYITEMCOUNT(G_dlgAllUsers));
+
+        winhAppendDlgItemEllipseText(pnbp->hwndDlgPage, DID_REMOVE);
+
+        hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(USERRECORD, Entry.uid);
-        xfi[i].pszColumnTitle = "User ID";
+        xfi[i].pszColumnTitle = "User ID";      // @@todo localize
         xfi[i].ulDataType = CFA_ULONG;
         xfi[i++].ulOrientation = CFA_RIGHT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(RECORDCORE, pszIcon);
-        xfi[i].pszColumnTitle = "User name";
+        xfi[i].pszColumnTitle = "User name";    // @@todo localize
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(USERRECORD, pszFullName);
-        xfi[i].pszColumnTitle = "Full name";
+        xfi[i].pszColumnTitle = "Full name";    // @@todo localize
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
+        /*
         xfi[i].ulFieldOffset = FIELDOFFSET(USERRECORD, Entry.gid);
-        xfi[i].pszColumnTitle = "Group ID";
+        xfi[i].pszColumnTitle = "Group IDs";     // @@todo localize
         xfi[i].ulDataType = CFA_ULONG;
         xfi[i++].ulOrientation = CFA_RIGHT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(USERRECORD, pszGroupName);
-        xfi[i].pszColumnTitle = "Group name";
+        xfi[i].pszColumnTitle = "Group names";  // @@todo localize
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
+        */
 
         pfi = cnrhSetFieldInfos(hwndCnr,
                                 xfi,
@@ -324,35 +363,36 @@ VOID admAllUsersInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        APIRET arc;
-        ULONG cUsers;
+        APIRET  arc;
+        ULONG   cUsers;
         PXWPUSERDBENTRY paUsers;
-
         if (!(arc = xsecQueryUsers(&cUsers,
                                    &paUsers)))
         {
-            PUSERRECORD preccFirst
-                = (PUSERRECORD)cnrhAllocRecords(hwndCnr,
-                                                sizeof(USERRECORD),
-                                                cUsers);
-            if (preccFirst)
+            HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+
+            PUSERRECORD preccFirst;
+            if (preccFirst = (PUSERRECORD)cnrhAllocRecords(hwndCnr,
+                                                           sizeof(USERRECORD),
+                                                           cUsers))
             {
-                PXWPUSERDBENTRY pUserThis = paUsers;
+                PBYTE pbUserThis = (PBYTE)paUsers;
                 PUSERRECORD preccThis = preccFirst;
                 ULONG ul;
                 for (ul = 0;
                      ul < cUsers;
                      ++ul)
                 {
+                    PXWPUSERDBENTRY pUserThis = (PXWPUSERDBENTRY)pbUserThis;
                     memcpy(&preccThis->Entry,
-                           pUserThis,
-                           sizeof(XWPUSERDBENTRY));
+                           &pUserThis->User,
+                           sizeof(preccThis->Entry));
 
                     preccThis->recc.pszIcon = preccThis->Entry.szUserName;
                     preccThis->pszFullName = preccThis->Entry.szFullName;
-                    preccThis->pszGroupName = preccThis->Entry.szGroupName;
+                    // preccThis->pszGroupName = preccThis->Entry.szGroupName;
 
-                    ++pUserThis;
+                    pbUserThis += pUserThis->cbStruct;
                     preccThis = (PUSERRECORD)preccThis->recc.preccNextRecord;
                 }
 
@@ -372,11 +412,331 @@ VOID admAllUsersInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
     }
 }
 
+/*
+ *@@ fnwpAddUser:
+ *
+ *@@added V1.0.1 (2003-01-05) [umoeller]
+ */
+
+MRESULT EXPENTRY fnwpAddUser(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+{
+    MRESULT mrc = 0;
+
+    switch (msg)
+    {
+        case WM_INITDLG:
+            WinSetWindowPtr(hwndDlg, QWL_USER, mp2);
+                    // PUSERRECORD to edit or NULL for add mode
+            winhSetDlgItemFocus(hwndDlg,
+                                ID_XSSI_USERNAME_EF);
+            mrc = (MRESULT)TRUE;
+        break;
+
+        case WM_CONTROL:
+            switch (SHORT1FROMMP(mp1))
+            {
+                case ID_XSSI_USERID_EF:
+                case ID_XSSI_USERNAME_EF:
+                case ID_XSSI_USERFULLNAME_EF:
+                case ID_XSSI_USERPASS_EF:
+                case ID_XSSI_USERCONFIRMPASS_EF:
+                    if (SHORT2FROMMP(mp1) == EN_CHANGE)
+                        WinPostMsg(hwndDlg, XM_ENABLEITEMS, 0, 0);
+                break;
+            }
+        break;
+
+        case XM_ENABLEITEMS:
+        {
+            BOOL    fEnable = FALSE;
+            PSZ     pszUser;
+            if (pszUser = winhQueryDlgItemText(hwndDlg, ID_XSSI_USERNAME_EF))
+            {
+                BOOL    fOK = TRUE;
+                PCSZ    p = pszUser;
+                CHAR    c;
+                while (c = *p++)
+                {
+                    if (    (c < '!')
+                         || (c > 'z')
+                       )
+                    {
+                        fOK = FALSE;
+                        break;
+                    }
+                }
+
+                if (    (fOK)
+                     && WinQueryDlgItemTextLength(hwndDlg, ID_XSSI_USERFULLNAME_EF)
+                   )
+                {
+                    if (WinQueryWindowPtr(hwndDlg, QWL_USER))
+                        // edit mode:
+                        fEnable = TRUE;
+                    else
+                    {
+                        // add mode: then we need to check pwds
+                        PSZ pszPassword = winhQueryDlgItemText(hwndDlg, ID_XSSI_USERPASS_EF),
+                            pszConfirmPassword = winhQueryDlgItemText(hwndDlg, ID_XSSI_USERCONFIRMPASS_EF);
+                        if (!strhcmp(pszPassword, pszConfirmPassword))
+                            fEnable = TRUE;
+
+                        FREE(pszPassword);
+                        FREE(pszConfirmPassword);
+                    }
+                }
+
+                free(pszUser);
+            }
+
+            WinEnableControl(hwndDlg, DID_OK, fEnable);
+        }
+        break;
+
+        default:
+            mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);
+    }
+
+    return mrc;
+}
+
+#define EF_WIDTH        80
+
+static const CONTROLDEF
+    UserNameTxt = LOADDEF_TEXT(ID_XSSI_USERNAME),
+    UserNameEF = CONTROLDEF_ENTRYFIELD(
+                            NULL,
+                            ID_XSSI_USERNAME_EF,
+                            EF_WIDTH,
+                            SZL_AUTOSIZE),
+    UserFullTxt = LOADDEF_TEXT(ID_XSSI_USERFULLNAME),
+    UserFullEF = CONTROLDEF_ENTRYFIELD(
+                            NULL,
+                            ID_XSSI_USERFULLNAME_EF,
+                            EF_WIDTH,
+                            SZL_AUTOSIZE),
+    UserPassTxt = LOADDEF_TEXT(ID_XSSI_USERPASS),
+    UserPassEF = CONTROLDEF_ENTRYFIELD_PASSWD(
+                            NULL,
+                            ID_XSSI_USERPASS_EF,
+                            EF_WIDTH,
+                            SZL_AUTOSIZE),
+    UserConfirmPassTxt = LOADDEF_TEXT(ID_XSSI_USERCONFIRMPASS),
+    UserConfirmPassEF = CONTROLDEF_ENTRYFIELD_PASSWD(
+                            NULL,
+                            ID_XSSI_USERCONFIRMPASS_EF,
+                            EF_WIDTH,
+                            SZL_AUTOSIZE);
+
+static const DLGHITEM dlgEditUserFront[] =
+    {
+        START_TABLE,
+            START_ROW(ROW_VALIGN_CENTER),
+                START_TABLE_ALIGN,
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&UserNameTxt),
+                        CONTROL_DEF(&UserNameEF),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&UserFullTxt),
+                        CONTROL_DEF(&UserFullEF),
+    };
+
+static const DLGHITEM dlgEditUserOnly[] =
+    {
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&UserPassTxt),
+                        CONTROL_DEF(&UserPassEF),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&UserConfirmPassTxt),
+                        CONTROL_DEF(&UserConfirmPassEF),
+    };
+
+static const DLGHITEM dlgEditUserTail[] =
+    {
+            END_TABLE,
+            START_ROW(ROW_VALIGN_CENTER),
+                CONTROL_DEF(&G_OKButton),
+                CONTROL_DEF(&G_CancelButton),
+        END_TABLE
+    };
+
+/*
+ *@@ AddUser:
+ *      implementation for the "add" and "edit user" commands.
+ *
+ *@@added V1.0.1 (2003-01-05) [umoeller]
+ */
+
+STATIC APIRET AddOrEditUser(HWND hwndOwner,
+                            PUSERRECORD preccEdit)  // in: user to edit or NULL for "add" mode
+{
+    APIRET arc;
+    PDLGARRAY pArray = NULL;
+
+    if (!(arc = dlghCreateArray(   ARRAYITEMCOUNT(dlgEditUserFront)
+                                 + ARRAYITEMCOUNT(dlgEditUserOnly)
+                                 + ARRAYITEMCOUNT(dlgEditUserTail),
+                                &pArray)))
+    {
+        HWND hwndDlg;
+
+        dlghAppendToArray(pArray,
+                          dlgEditUserFront,
+                          ARRAYITEMCOUNT(dlgEditUserFront));
+        if (!preccEdit)
+            dlghAppendToArray(pArray,
+                              dlgEditUserOnly,
+                              ARRAYITEMCOUNT(dlgEditUserOnly));
+        dlghAppendToArray(pArray,
+                          dlgEditUserTail,
+                          ARRAYITEMCOUNT(dlgEditUserTail));
+
+        if (!(arc = dlghCreateDlg(&hwndDlg,
+                                  hwndOwner,
+                                  FCF_FIXED_DLG,
+                                  fnwpAddUser,
+                                  (preccEdit)
+                                        ? "Edit User"
+                                        : "Add User",       // @@todo localize
+                                  pArray->paDlgItems,
+                                  pArray->cDlgItemsNow,
+                                  preccEdit,
+                                  cmnQueryDefaultFont())))
+        {
+            XWPSECID uid;
+
+            if (preccEdit)
+            {
+                winhSetDlgItemText(hwndDlg,
+                                   ID_XSSI_USERNAME_EF,
+                                   preccEdit->Entry.szUserName);
+                winhSetDlgItemText(hwndDlg,
+                                   ID_XSSI_USERFULLNAME_EF,
+                                   preccEdit->Entry.szFullName);
+            }
+
+            winhCenterWindow(hwndDlg);
+            WinEnableControl(hwndDlg, DID_OK, FALSE);
+            if (DID_OK == WinProcessDlg(hwndDlg))
+            {
+                PSZ pszUser,
+                    pszFullUser;
+
+                if (!(pszUser = winhQueryDlgItemText(hwndDlg, ID_XSSI_USERNAME_EF)))
+                    arc = ERROR_INVALID_PARAMETER;
+                else
+                {
+                    if (!(pszFullUser = winhQueryDlgItemText(hwndDlg, ID_XSSI_USERFULLNAME_EF)))
+                        arc = ERROR_INVALID_PARAMETER;
+                    else
+                    {
+                        if (preccEdit)
+                            // edit mode:
+                            arc = xsecSetUserData(preccEdit->Entry.uid,
+                                                  pszUser,
+                                                  pszFullUser);
+                        else
+                        {
+                            // add mode:
+                            PSZ pszPassword = winhQueryDlgItemText(hwndDlg, ID_XSSI_USERPASS_EF),
+                                pszConfirmPassword = winhQueryDlgItemText(hwndDlg, ID_XSSI_USERCONFIRMPASS_EF);
+
+                            if (strhcmp(pszPassword, pszConfirmPassword))
+                                arc = ERROR_INVALID_PARAMETER;
+                            else
+                                arc = xsecCreateUser(pszUser,
+                                                     pszFullUser,
+                                                     pszPassword,
+                                                     1,
+                                                     &uid);
+
+                            FREE(pszPassword);
+                            FREE(pszConfirmPassword);
+                        }
+
+                        free(pszFullUser);
+                    }
+
+                    free(pszUser);
+                }
+            }
+
+            WinDestroyWindow(hwndDlg);
+        }
+
+        dlghFreeArray(&pArray);
+    }
+
+    return arc;
+}
+
+/*
+ *@@ AllUsersItemChanged:
+ *
+ *@@added V1.0.1 (2003-01-05) [umoeller]
+ */
+
+STATIC MRESULT AllUsersItemChanged(PNOTEBOOKPAGE pnbp,
+                                   ULONG ulItemID, USHORT usNotifyCode,
+                                   ULONG ulExtra)      // for checkboxes: contains new state
+{
+    MRESULT     mrc = 0;
+    APIRET      arc = NO_ERROR;
+
+    switch (ulItemID)
+    {
+        case DID_ADD:
+        case DID_EDIT:
+            arc = AddOrEditUser(pnbp->hwndDlgPage,
+                                (ulItemID == DID_EDIT)
+                                    ? (PUSERRECORD)pnbp->preccSource
+                                    : NULL);      // add mode
+        break;
+
+        case DID_REMOVE:
+            if (pnbp->preccSource)
+            {
+                CHAR szUID[30];
+                XWPSECID uid = ((PUSERRECORD)pnbp->preccSource)->Entry.uid;
+                PCSZ apcsz[2] =
+                    {
+                        szUID,
+                        ((PUSERRECORD)pnbp->preccSource)->Entry.szUserName
+                    };
+                sprintf(szUID, "%d", uid);
+                if (MBID_YES == cmnMessageBoxExt(pnbp->hwndDlgPage,
+                                                 262,    // Remove User Account
+                                                 apcsz,
+                                                 2,
+                                                 263,    // You have selected to remove the account for user ID %1 ("%2"). Are you sure you want to do this?
+                                                 MB_YESNO))
+                {
+                    arc = xsecDeleteUser(uid);
+                }
+            }
+        break;
+    }
+
+    if (arc)
+        cmnErrorMsgBox(pnbp->hwndDlgPage,
+                       arc,
+                       261, // Operation failed. XWorkplace security reported the following error: %1
+                       MB_CANCEL,
+                       TRUE);
+
+    return mrc;
+}
+
 /* ******************************************************************
  *
  *   All Groups page
  *
  ********************************************************************/
+
+/*
+ *@@ GROUPRECORD:
+ *
+ */
 
 typedef struct _GROUPRECORD
 {
@@ -385,37 +745,95 @@ typedef struct _GROUPRECORD
     XWPSECID        gid;
     PSZ             pszGroupName;
     CHAR            szGroupName[XWPSEC_NAMELEN];    // group name
+    PSZ             pszMembers;
 
 } GROUPRECORD, *PGROUPRECORD;
 
+static const CONTROLDEF
+    AllGroupsGroup = LOADDEF_GROUP(ID_XSSI_ADMIN_ALL_GROUPS, SZL_AUTOSIZE),
+    AllGroupsCnr = CONTROLDEF_CONTAINER(
+                            ID_XFDI_CNR_CNR,
+                            200,        // for now, will be resized
+                            100);       // for now, will be resized
+
+static const DLGHITEM G_dlgAllGroups[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(0),
+                START_GROUP_TABLE(&AllGroupsGroup),
+                    START_ROW(0),
+                        CONTROL_DEF(&AllGroupsCnr),
+                    START_ROW(0),
+                        CONTROL_DEF(&G_AddButton),
+                        CONTROL_DEF(&G_EditButton),
+                        CONTROL_DEF(&G_RemoveButton),
+                END_TABLE,
+            START_ROW(0),       // notebook buttons (will be moved)
+                CONTROL_DEF(&G_HelpButton),         // common.c
+        END_TABLE
+    };
+
+MPARAM G_ampAllGroups[] =
+    {
+        MPFROM2SHORT(ID_XFDI_CNR_CNR, XAC_SIZEX | XAC_SIZEY),
+        MPFROM2SHORT(ID_XSSI_ADMIN_ALL_GROUPS, XAC_SIZEX | XAC_SIZEY),
+    };
+
 /*
- *@@ admAllGroupsInitPage:
+ *@@ fncbCleanupMembers:
+ *      cleanup proc for CBI_DESTROY in AllGroupsInitPage.
+ *
+ *@@added V1.0.1 (2003-01-05) [umoeller]
+ */
+
+ULONG XWPENTRY fncbCleanupMembers(HWND hwndCnr,
+                                  PRECORDCORE precc,
+                                  ULONG ulUser)
+{
+    if (((PGROUPRECORD)precc)->pszMembers)
+        free(((PGROUPRECORD)precc)->pszMembers);
+    return 0;
+}
+
+/*
+ *@@ AllGroupsInitPage:
  *
  */
 
-VOID admAllGroupsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
-                         ULONG flFlags)        // CBI_* flags (notebook.h)
+STATIC VOID AllGroupsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
+                              ULONG flFlags)        // CBI_* flags (notebook.h)
 {
-    HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
-
     if (flFlags & CBI_INIT)
     {
-        XFIELDINFO xfi[3];
-        PFIELDINFO pfi = NULL;
-        int        i = 0;
+        HWND            hwndCnr,
+                        hwndRemove;
+        XFIELDINFO      xfi[4];
+        PFIELDINFO      pfi = NULL;
+        int             i = 0;
 
-        WinSetDlgItemText(pnbp->hwndDlgPage,
-                          ID_XFDI_CNR_GROUPTITLE,
-                          (PSZ)cmnGetString(ID_XSSI_ADMIN_ALL_GROUPS));
+        // insert the controls using the dialog formatter
+        // V1.0.1 (2003-01-05) [umoeller]
+        ntbFormatPage(pnbp->hwndDlgPage,
+                      G_dlgAllGroups,
+                      ARRAYITEMCOUNT(G_dlgAllGroups));
+
+        winhAppendDlgItemEllipseText(pnbp->hwndDlgPage, DID_REMOVE);
+
+        hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
 
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(GROUPRECORD, gid);
-        xfi[i].pszColumnTitle = "Group ID";
+        xfi[i].pszColumnTitle = "Group ID";     // @@todo localize
         xfi[i].ulDataType = CFA_ULONG;
         xfi[i++].ulOrientation = CFA_RIGHT;
 
         xfi[i].ulFieldOffset = FIELDOFFSET(GROUPRECORD, pszGroupName);
-        xfi[i].pszColumnTitle = "Group name";
+        xfi[i].pszColumnTitle = "Group name";   // @@todo localize
+        xfi[i].ulDataType = CFA_STRING;
+        xfi[i++].ulOrientation = CFA_LEFT;
+
+        xfi[i].ulFieldOffset = FIELDOFFSET(GROUPRECORD, pszMembers);
+        xfi[i].pszColumnTitle = "Members";   // @@todo localize
         xfi[i].ulDataType = CFA_STRING;
         xfi[i++].ulOrientation = CFA_LEFT;
 
@@ -433,44 +851,87 @@ VOID admAllGroupsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
 
     if (flFlags & CBI_SET)
     {
-        APIRET arc;
-        ULONG cGroups;
+        APIRET  arc;
+        ULONG   cGroups;
         PXWPGROUPDBENTRY paGroups;
 
         if (!(arc = xsecQueryGroups(&cGroups,
-                                   &paGroups)))
+                                    &paGroups)))
         {
-            PGROUPRECORD preccFirst
-                = (PGROUPRECORD)cnrhAllocRecords(hwndCnr,
-                                                sizeof(GROUPRECORD),
-                                                cGroups);
-            if (preccFirst)
+            ULONG   cUsers;
+            PXWPUSERDBENTRY paUsers;
+            if (!(arc = xsecQueryUsers(&cUsers,
+                                       &paUsers)))
             {
-                PXWPGROUPDBENTRY pGroupThis = paGroups;
-                PGROUPRECORD preccThis = preccFirst;
-                ULONG ul;
-                for (ul = 0;
-                     ul < cGroups;
-                     ++ul)
+                HWND hwndCnr = WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
+
+                PGROUPRECORD preccFirst;
+                if (preccFirst = (PGROUPRECORD)cnrhAllocRecords(hwndCnr,
+                                                                sizeof(GROUPRECORD),
+                                                                cGroups))
                 {
-                    preccThis->gid = pGroupThis->gid;
+                    PXWPGROUPDBENTRY pGroupThis = paGroups;
+                    PGROUPRECORD preccThis = preccFirst;
+                    ULONG   ul,
+                            ulUser;
+                    XSTRING str;
+                    xstrInit(&str, 0);
+                    for (ul = 0;
+                         ul < cGroups;
+                         ++ul)
+                    {
+                        PBYTE pbUserThis;
+                        preccThis->gid = pGroupThis->gid;
 
-                    memcpy(preccThis->szGroupName,
-                           pGroupThis->szGroupName,
-                           sizeof(preccThis->szGroupName));
-                    preccThis->pszGroupName = preccThis->szGroupName;
+                        memcpy(preccThis->szGroupName,
+                               pGroupThis->szGroupName,
+                               sizeof(preccThis->szGroupName));
+                        preccThis->pszGroupName = preccThis->szGroupName;
 
-                    ++pGroupThis;
-                    preccThis = (PGROUPRECORD)preccThis->recc.preccNextRecord;
+                        // now loop through all users and add those to the
+                        // "members" string which are a member of this group
+                        xstrcpy(&str, NULL, 0);
+                        pbUserThis = (PBYTE)paUsers;
+                        for (ulUser = 0;
+                             ulUser < cUsers;
+                             ++ulUser)
+                        {
+                            PXWPUSERDBENTRY pUserThis = (PXWPUSERDBENTRY)pbUserThis;
+                            ULONG ulGroup;
+                            for (ulGroup = 0;
+                                 ulGroup < pUserThis->Membership.cGroups;
+                                 ++ulGroup)
+                            {
+                                if (pUserThis->Membership.aGIDs[ulGroup] == pGroupThis->gid)
+                                {
+                                    if (str.ulLength)
+                                        xstrcatc(&str, '\n');
+                                    xstrcat(&str, pUserThis->User.szUserName, 0);
+                                }
+                            }
+
+                            pbUserThis += pUserThis->cbStruct;
+                        }
+
+                        if (str.ulLength)
+                            preccThis->pszMembers = strdup(str.psz);
+
+                        ++pGroupThis;
+                        preccThis = (PGROUPRECORD)preccThis->recc.preccNextRecord;
+                    }
+
+                    xstrClear(&str);
+
+                    cnrhInsertRecords(hwndCnr,
+                                      NULL,
+                                      (PRECORDCORE)preccFirst,
+                                      TRUE, // invalidate
+                                      NULL,
+                                      CRA_RECORDREADONLY,
+                                      cGroups);
                 }
 
-                cnrhInsertRecords(hwndCnr,
-                                  NULL,
-                                  (PRECORDCORE)preccFirst,
-                                  TRUE, // invalidate
-                                  NULL,
-                                  CRA_RECORDREADONLY,
-                                  cGroups);
+                free(paUsers);
             }
 
             free(paGroups);
@@ -478,6 +939,49 @@ VOID admAllGroupsInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
         else
             Error(pnbp->inbp.somSelf, pnbp->hwndDlgPage, arc);
     }
+
+    if (flFlags & CBI_DESTROY)
+        cnrhForAllRecords(WinWindowFromID(pnbp->hwndDlgPage, ID_XFDI_CNR_CNR),
+                          (PRECORDCORE)-1,
+                          fncbCleanupMembers,
+                          0);
+
+}
+
+/*
+ *@@ AllGroupsItemChanged:
+ *
+ *@@added V1.0.1 (2003-01-05) [umoeller]
+ */
+
+STATIC MRESULT AllGroupsItemChanged(PNOTEBOOKPAGE pnbp,
+                                    ULONG ulItemID, USHORT usNotifyCode,
+                                    ULONG ulExtra)      // for checkboxes: contains new state
+{
+    MRESULT mrc = 0;
+
+    switch (ulItemID)
+    {
+        case DID_ADD:
+            winhDebugBox(pnbp->hwndDlgPage,
+                         "Debug",
+                         "Add pressed");
+        break;
+
+        case DID_EDIT:
+            winhDebugBox(pnbp->hwndDlgPage,
+                         "Debug",
+                         "Edit pressed");
+        break;
+
+        case DID_REMOVE:
+            winhDebugBox(pnbp->hwndDlgPage,
+                         "Debug",
+                         "Remove pressed");
+        break;
+    }
+
+    return mrc;
 }
 
 /* ******************************************************************
@@ -497,7 +1001,6 @@ SOM_Scope ULONG  SOMLINK adm_xwpAddXWPAdminPages(XWPAdmin *somSelf,
 {
     ULONG   ulrc;
     INSERTNOTEBOOKPAGE  inbp;
-    HMODULE             savehmod = cmnQueryNLSModuleHandle(FALSE);
     PID                 pidXWPShell;
     HQUEUE              hqXWPShell;
 
@@ -507,7 +1010,7 @@ SOM_Scope ULONG  SOMLINK adm_xwpAddXWPAdminPages(XWPAdmin *somSelf,
     memset(&inbp, 0, sizeof(INSERTNOTEBOOKPAGE));
     inbp.somSelf = somSelf;
     inbp.hwndNotebook = hwndDlg;
-    inbp.hmod = savehmod;
+    inbp.hmod = cmnQueryNLSModuleHandle(FALSE);
 
     // check if XWPShell is running; if so the queue must exist
     if (DosOpenQueue(&pidXWPShell,
@@ -529,25 +1032,31 @@ SOM_Scope ULONG  SOMLINK adm_xwpAddXWPAdminPages(XWPAdmin *somSelf,
         DosCloseQueue(hqXWPShell);
 
         // all groups
+        inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_XFD_CONTAINERPAGE;
         inbp.usPageStyleFlags = BKA_MAJOR;
         inbp.pcszName = cmnGetString(ID_XSSI_ADMIN_ALL_GROUPS);
-        inbp.ulDlgID = ID_XFD_CONTAINERPAGE;
         inbp.ulDefaultHelpPanel  = ID_XSH_ADMIN_ALL_GROUPS;
         inbp.ulPageID = SP_ADMIN_ALL_GROUPS;
-        inbp.pampControlFlags = G_pampGenericCnrPage;
-        inbp.cControlFlags = G_cGenericCnrPage;
-        inbp.pfncbInitPage    = admAllGroupsInitPage;
+        inbp.pampControlFlags = G_ampAllGroups;
+        inbp.cControlFlags = ARRAYITEMCOUNT(G_ampAllGroups);
+        // enable the new add/edit/remove support:
+        inbp.ulEditCnrID = ID_XFDI_CNR_CNR;
+        inbp.pfncbInitPage    = AllGroupsInitPage;
+        inbp.pfncbItemChanged = AllGroupsItemChanged;
         ntbInsertPage(&inbp);
 
         // all users
+        inbp.ulDlgID = ID_XFD_EMPTYDLG; // ID_XFD_CONTAINERPAGE;
         inbp.usPageStyleFlags = BKA_MAJOR;
         inbp.pcszName = cmnGetString(ID_XSSI_ADMIN_ALL_USERS);
-        inbp.ulDlgID = ID_XFD_CONTAINERPAGE;
         inbp.ulDefaultHelpPanel  = ID_XSH_ADMIN_ALL_USERS;
         inbp.ulPageID = SP_ADMIN_ALL_USERS;
-        inbp.pampControlFlags = G_pampGenericCnrPage;
-        inbp.cControlFlags = G_cGenericCnrPage;
-        inbp.pfncbInitPage    = admAllUsersInitPage;
+        inbp.pampControlFlags = G_ampAllUsers;
+        inbp.cControlFlags = ARRAYITEMCOUNT(G_ampAllUsers);
+        // enable the new add/edit/remove support:
+        inbp.ulEditCnrID = ID_XFDI_CNR_CNR;
+        inbp.pfncbInitPage    = AllUsersInitPage;
+        inbp.pfncbItemChanged = AllUsersItemChanged;
         ntbInsertPage(&inbp);
 
         // current local user
@@ -558,7 +1067,8 @@ SOM_Scope ULONG  SOMLINK adm_xwpAddXWPAdminPages(XWPAdmin *somSelf,
         inbp.ulPageID = SP_ADMIN_LOCAL_USER;
         inbp.pampControlFlags = NULL;
         inbp.cControlFlags = 0;
-        inbp.pfncbInitPage    = admLocalUserInitPage;
+        inbp.pfncbInitPage    = LocalUserInitPage;
+        inbp.pfncbItemChanged = NULL;
         ulrc = ntbInsertPage(&inbp);
 
     }
@@ -659,26 +1169,9 @@ SOM_Scope BOOL  SOMLINK adm_wpAddSettingsPages(XWPAdmin *somSelf,
  ********************************************************************/
 
 /*
- *@@ wpclsInitData:
- *      this WPObject class method gets called when a class
- *      is loaded by the WPS (probably from within a
- *      somFindClass call) and allows the class to initialize
- *      itself.
- */
-
-SOM_Scope void  SOMLINK admM_wpclsInitData(M_XWPAdmin *somSelf)
-{
-    /* M_XWPAdminData *somThis = M_XWPAdminGetData(somSelf); */
-    M_XWPAdminMethodDebug("M_XWPAdmin","admM_wpclsInitData");
-
-    M_XWPAdmin_parent_M_WPAbstract_wpclsInitData(somSelf);
-}
-
-/*
  * wpclsQueryStyle:
  *      prevent copy, delete, print.
  *
- *@@changed V0.9.16 (2001-11-25) [umoeller]: added nevertemplate
  */
 
 SOM_Scope ULONG  SOMLINK admM_wpclsQueryStyle(M_XWPAdmin *somSelf)
@@ -687,7 +1180,7 @@ SOM_Scope ULONG  SOMLINK admM_wpclsQueryStyle(M_XWPAdmin *somSelf)
     M_XWPAdminMethodDebug("M_XWPAdmin","admM_wpclsQueryStyle");
 
     return (M_XWPAdmin_parent_M_WPAbstract_wpclsQueryStyle(somSelf)
-                | CLSSTYLE_NEVERTEMPLATE        // V0.9.16 (2001-11-25) [umoeller]
+                | CLSSTYLE_NEVERTEMPLATE
                 | CLSSTYLE_NEVERPRINT
                 | CLSSTYLE_NEVERCOPY
                 | CLSSTYLE_NEVERDELETE);
@@ -732,9 +1225,9 @@ SOM_Scope BOOL  SOMLINK admM_wpclsQueryDefaultHelp(M_XWPAdmin *somSelf,
     /* M_XWPAdminData *somThis = M_XWPAdminGetData(somSelf); */
     M_XWPAdminMethodDebug("M_XWPAdmin","admM_wpclsQueryDefaultHelp");
 
-    return (M_XWPAdmin_parent_M_WPAbstract_wpclsQueryDefaultHelp(somSelf,
-                                                                 pHelpPanelId,
-                                                                 pszHelpLibrary));
+    return M_XWPAdmin_parent_M_WPAbstract_wpclsQueryDefaultHelp(somSelf,
+                                                                pHelpPanelId,
+                                                                pszHelpLibrary);
 }
 
 /*
@@ -778,23 +1271,4 @@ SOM_Scope ULONG  SOMLINK admM_wpclsQueryIconData(M_XWPAdmin *somSelf,
     return sizeof(ICONINFO);
 }
 
-/*
- *@@ wpclsQuerySettingsPageSize:
- *      this WPObject class method should return the
- *      size of the largest settings page in dialog
- *      units; if a settings notebook is initially
- *      opened, i.e. no window pos has been stored
- *      yet, the WPS will use this size, to avoid
- *      truncated settings pages.
- */
-
-SOM_Scope BOOL  SOMLINK admM_wpclsQuerySettingsPageSize(M_XWPAdmin *somSelf,
-                                                        PSIZEL pSizl)
-{
-    /* M_XWPAdminData *somThis = M_XWPAdminGetData(somSelf); */
-    M_XWPAdminMethodDebug("M_XWPAdmin","admM_wpclsQuerySettingsPageSize");
-
-    return (M_XWPAdmin_parent_M_WPAbstract_wpclsQuerySettingsPageSize(somSelf,
-                                                                      pSizl));
-}
 

@@ -11,14 +11,6 @@
  *
  *      Reversely, the user is logged off via slogLogOff.
  *
- *      Note: The APIs in this file do not differentiate
- *      between local and remote users. It is the responsibility
- *      of the caller to manage that information. With the
- *      current implementation, this is taken care of by
- *      XWPShell, which handles only one local user.
- *
- *      Neither does this function restart the user shell.
- *
  *      These functions can get called by:
  *
  *      -- XWPShell (or any other shell wrapper) to log
@@ -101,12 +93,11 @@ APIRET slogInit(VOID)
     if (G_hmtxLoggedOn == NULLHANDLE)
     {
         // first call:
-        arc = DosCreateMutexSem(NULL,       // unnamed
-                                &G_hmtxLoggedOn,
-                                0,          // unshared
-                                FALSE);     // unowned
-        if (arc == NO_ERROR)
-            lstInit(&G_llLoggedOn, TRUE);
+        if (!(arc = DosCreateMutexSem(NULL,       // unnamed
+                                      &G_hmtxLoggedOn,
+                                      0,          // unshared
+                                      FALSE)))    // unowned
+            lstInit(&G_llLoggedOn, FALSE);
     }
     else
         arc = XWPSEC_INSUFFICIENT_AUTHORITY;
@@ -128,14 +119,10 @@ APIRET slogInit(VOID)
  *      Always call UnlockLoggedOn() when you're done.
  */
 
-APIRET LockLoggedOn(VOID)
+BOOL LockLoggedOn(VOID)
 {
-    APIRET arc = NO_ERROR;
-
-    arc = DosRequestMutexSem(G_hmtxLoggedOn,
-                             SEM_INDEFINITE_WAIT);
-
-    return arc;
+    return !DosRequestMutexSem(G_hmtxLoggedOn,
+                               SEM_INDEFINITE_WAIT);
 }
 
 /*
@@ -143,9 +130,9 @@ APIRET LockLoggedOn(VOID)
  *      unlocks the global security data.
  */
 
-APIRET UnlockLoggedOn(VOID)
+VOID UnlockLoggedOn(VOID)
 {
-    return (DosReleaseMutexSem(G_hmtxLoggedOn));
+    DosReleaseMutexSem(G_hmtxLoggedOn);
 }
 
 /*
@@ -161,25 +148,20 @@ APIRET UnlockLoggedOn(VOID)
  *      You must call LockLoggedOn() first.
  */
 
-PCXWPLOGGEDON FindLoggedOnFromID(XWPSECID uid)
+const XWPLOGGEDON* FindLoggedOnFromID(XWPSECID uid)
 {
-    PCXWPLOGGEDON p = NULL;
-
     PLISTNODE pNode = lstQueryFirstNode(&G_llLoggedOn);
     while (pNode)
     {
-        PCXWPLOGGEDON plo = (PCXWPLOGGEDON)pNode->pItemData;
+        const XWPLOGGEDON *plo = (const XWPLOGGEDON *)pNode->pItemData;
 
         if (plo->uid == uid)
-        {
-            p = plo;
-            break;
-        }
+            return plo;
 
         pNode = pNode->pNext;
     }
 
-    return (p);
+    return NULL;
 }
 
 /*
@@ -191,6 +173,10 @@ PCXWPLOGGEDON FindLoggedOnFromID(XWPSECID uid)
  *      must have been created before calling this
  *      function.
  *
+ *      It is assumed that the struct has been malloc'd
+ *      by the caller. No copy is made, and the caller
+ *      must not free the struct if NO_ERROR is returned.
+ *
  *      Returns:
  *
  *      -- NO_ERROR: user was stored.
@@ -199,33 +185,26 @@ PCXWPLOGGEDON FindLoggedOnFromID(XWPSECID uid)
  *         was already stored in the list.
  */
 
-APIRET RegisterLoggedOn(PCXWPLOGGEDON pcNewUser,
+APIRET RegisterLoggedOn(PXWPLOGGEDON pNewUser,
                         BOOL fLocal)            // in: if TRUE, mark user as local
 {
-    APIRET arc = NO_ERROR;
+    APIRET  arc = NO_ERROR;
+    BOOL    fLocked;
 
-    BOOL fLocked = (LockLoggedOn() == NO_ERROR);
-    if (!fLocked)
+    if (!(fLocked = LockLoggedOn()))
         arc = XWPSEC_CANNOT_GET_MUTEX;
     else
     {
-        if (FindLoggedOnFromID(pcNewUser->uid))
+        if (FindLoggedOnFromID(pNewUser->uid))
             // error:
             arc = XWPSEC_USER_EXISTS;
         else
         {
-            PXWPLOGGEDON pNew = malloc(sizeof(XWPLOGGEDON));
-            if (!pNew)
-                arc = ERROR_NOT_ENOUGH_MEMORY;
+            if (!lstAppendItem(&G_llLoggedOn, pNewUser))
+                arc = XWPSEC_INTEGRITY;
             else
-            {
-                memcpy(pNew, pcNewUser, sizeof(XWPLOGGEDON));
-                if (!lstAppendItem(&G_llLoggedOn, pNew))
-                    arc = XWPSEC_INTEGRITY;
-                else
-                    if (fLocal)
-                        G_pLoggedOnLocal = pNew;
-            }
+                if (fLocal)
+                    G_pLoggedOnLocal = pNewUser;
         }
     }
 
@@ -240,44 +219,46 @@ APIRET RegisterLoggedOn(PCXWPLOGGEDON pcNewUser,
  *      removes the user with the specified user ID
  *      from the list of currently logged on users.
  *
- *      On input, specify the user's ID (uid) in
- *      pUser.
+ *      On input, specify the user's ID with uid.
  *
  *      If NO_ERROR is returned, the user has been
- *      removed. In that case, the user's subject
- *      handles (for user and group ID's) are stored
- *      in pUser.
+ *      unlinked. The pointer to the logon struct
+ *      that was removed from the list is returned
+ *      with *ppLogon and must be freed by the caller.
  *
  *      This does not delete subject handles. These
  *      must be deleted after calling this function.
  */
 
-APIRET DeregisterLoggedOn(PXWPLOGGEDON pUser)
+APIRET DeregisterLoggedOn(XWPSECID uid,
+                          PXWPLOGGEDON *ppLogon)        // out: logon struct (to be freed by caller)
 {
-    APIRET arc = NO_ERROR;
+    APIRET  arc = NO_ERROR;
+    BOOL    fLocked;
 
-    BOOL fLocked = (LockLoggedOn() == NO_ERROR);
-    if (!fLocked)
+    if (!(fLocked = LockLoggedOn()))
         arc = XWPSEC_CANNOT_GET_MUTEX;
     else
     {
-        PCXWPLOGGEDON pFound = FindLoggedOnFromID(pUser->uid);
-        if (!pFound)
+        PXWPLOGGEDON pFound;
+        if (!(pFound = (PXWPLOGGEDON)FindLoggedOnFromID(uid)))
             // error:
             arc = XWPSEC_INVALID_USERID;
         else
         {
-            // copy handles etc. for output
-            memcpy(pUser, pFound, sizeof(XWPLOGGEDON));
             // remove from list
-            if (!lstRemoveItem(&G_llLoggedOn,
+            if (!lstRemoveItem(&G_llLoggedOn,       // no auto-free
                                (PVOID)pFound))
                 arc = XWPSEC_INTEGRITY;
             else
-                // warning: pFound has been freed
+            {
+                // return logon we found
+                *ppLogon = pFound;
+
                 if (pFound == G_pLoggedOnLocal)
                     // this was the local user:
                     G_pLoggedOnLocal = NULL;
+            }
         }
     }
 
@@ -311,9 +292,8 @@ APIRET DeregisterLoggedOn(PXWPLOGGEDON pUser)
  *      3) Registers the user as logged on
  *         in our internal list.
  *
- *      4) Changes the security context of the
- *         calling process to the new user
- *         and group subject handles.
+ *      This does not change the security context of
+ *      processes or manage the user shell.
  *
  *      On output, XWPLOGGEDON is filled with the
  *      remaining user information (user/group names,
@@ -339,81 +319,108 @@ APIRET DeregisterLoggedOn(PXWPLOGGEDON pUser)
  *      --  XWPSEC_USER_EXISTS: user is already logged on.
  */
 
-APIRET slogLogOn(PXWPLOGGEDON pNewUser,     // in/out: user info
-                 const char *pcszPassword,  // in: password
-                 BOOL fLocal)
+APIRET slogLogOn(PCSZ pcszUserName,         // in: user name
+                 PCSZ pcszPassword,  // in: password
+                 BOOL fLocal,
+                 XWPSECID *puid)           // out: user ID if NO_ERROR
 {
     APIRET arc = NO_ERROR;
 
-    XWPUSERDBENTRY  uiLogon;
-    XWPGROUPDBENTRY giLogon;
+    XWPUSERINFO uiLogon;
 
     _PmpfF(("entering, user \"%s\", pwd \"%s\"",
-                pNewUser->szUserName,
-                pcszPassword));
+            pcszUserName,
+            pcszPassword));
 
     strhncpy0(uiLogon.szUserName,
-              pNewUser->szUserName,
+              pcszUserName,
               sizeof(uiLogon.szUserName));
-    strhncpy0(uiLogon.szPassword,
-              pcszPassword,
-              sizeof(uiLogon.szPassword));
 
-    arc = sudbAuthenticateUser(&uiLogon,
-                               &giLogon);
-
-    if (arc != NO_ERROR)
-    {
+    if (arc = sudbAuthenticateUser(&uiLogon,
+                                   pcszPassword))
         DosSleep(3000);
-    }
     else
     {
-        // create subject handles:
-        XWPSUBJECTINFO  siUser;
-
-        // create user subject (always)
-        siUser.hSubject = 0;
-        siUser.id = uiLogon.uid;   // returned by sudbAuthenticateUser
-        siUser.bType = SUBJ_USER;
-
-        _Pmpf(("  sudbAuthenticateUser returned uid %d, gid %d", uiLogon.uid, uiLogon.gid));
-
-        if (!(arc = subjCreateSubject(&siUser)))
+        // get all the groups that this user is a member of
+        PXWPUSERDBENTRY  pUserDBEntry;
+        if (!(arc = sudbQueryUser(uiLogon.uid,
+                                  &pUserDBEntry)))
         {
-            // OK:
-            XWPSUBJECTINFO siGroup;
-
-            // copy user subject and id
-            pNewUser->hsubjUser = siUser.hSubject;
-            pNewUser->uid = siUser.id;
-            // user name has been set from input
-
-            // create group subject (if it doesn't exist yet)
-            siGroup.hSubject = 0;
-            siGroup.id = uiLogon.gid;     // returned by sudbAuthenticateUser
-            siGroup.bType = SUBJ_GROUP;
-
-            if (!(arc = subjCreateSubject(&siGroup)))
+            // allocate XWPLOGGEDON struct
+            PXWPLOGGEDON    pLogon;
+            ULONG           cbStruct =   sizeof(XWPLOGGEDON)    // has one subject for user already
+                                       + pUserDBEntry->Membership.cGroups * sizeof(HXSUBJECT);
+            if (!(pLogon = (PXWPLOGGEDON)malloc(cbStruct)))
+                arc = ERROR_NOT_ENOUGH_MEMORY;
+            else
             {
-                // copy group subject and id
-                pNewUser->hsubjGroup = siGroup.hSubject;
-                pNewUser->gid = siGroup.id;
-                strcpy(pNewUser->szGroupName, giLogon.szGroupName);
+                XWPSUBJECTINFO  siUser;
+                ULONG           ul;
 
-                // and register this user
-                if (arc = RegisterLoggedOn(pNewUser,
-                                           fLocal))
+                pLogon->cbStruct = cbStruct;
+                memcpy(pLogon->szUserName,
+                       pUserDBEntry->User.szUserName,
+                       sizeof(pLogon->szUserName));
+                pLogon->uid = uiLogon.uid;
+                pLogon->cSubjects = 0;      // for now
+
+                // create user subject (always)
+                siUser.hSubject = 0;
+                siUser.id = uiLogon.uid;   // returned by sudbAuthenticateUser
+                siUser.bType = SUBJ_USER;
+
+                _Pmpf(("  sudbAuthenticateUser returned uid %d", uiLogon.uid));
+
+                if (!(arc = subjCreateSubject(&siUser)))
                 {
-                    // error: clean up
-                    subjDeleteSubject(siGroup.hSubject);
+                    // got user subject:
+                    pLogon->aSubjects[0] = siUser.hSubject;
+                    ++pLogon->cSubjects;
+
+                    // create subjects for all the groups,
+                    // unless this is root
+                    if (uiLogon.uid)
+                    {
+                        // not root:
+                        for (ul = 0;
+                             ul < pUserDBEntry->Membership.cGroups;
+                             ++ul)
+                        {
+                            XWPSUBJECTINFO siGroup;
+                            // create group subject (if it doesn't exist yet)
+                            siGroup.hSubject = 0;
+                            siGroup.id = pUserDBEntry->Membership.aGIDs[ul];
+                            siGroup.bType = SUBJ_GROUP;
+
+                            if (arc = subjCreateSubject(&siGroup))
+                                break;
+
+                            pLogon->aSubjects[pLogon->cSubjects++] = siGroup.hSubject;
+                        }
+
+                        if (!arc)
+                        {
+                            // register this user as logged on
+                            if (!(arc = RegisterLoggedOn(pLogon,
+                                                         fLocal)))
+                                // pass out user ID
+                                *puid = uiLogon.uid;
+                        }
+                    }
+                    else
+                        if (arc)
+                            // error: kill the subjects we created
+                            for (ul = 0;
+                                 ul < pLogon->cSubjects;
+                                 ++ul)
+                                subjDeleteSubject(pLogon->aSubjects[ul]);
                 }
+
+                if (arc)
+                    free(pLogon);
             }
 
-            if (!arc)
-                _Pmpf(("Logged on uid %d, gid %d", pNewUser->uid, pNewUser->gid));
-            else
-                // clean up
-                subjDeleteSubject(siUser.hSubject);
+            DosFreeMem(pUserDBEntry);
         }
     }
 
@@ -448,13 +455,20 @@ APIRET slogLogOff(XWPSECID uid)
 {
     APIRET arc = NO_ERROR;
 
-    XWPLOGGEDON LogOff;
-    LogOff.uid = uid;
+    PXWPLOGGEDON pLogoff;
 
-    if (!(arc = DeregisterLoggedOn(&LogOff)))
+    if (!(arc = DeregisterLoggedOn(uid,
+                                   &pLogoff)))
     {
-        if (!(arc = subjDeleteSubject(LogOff.hsubjUser)))
-            arc = subjDeleteSubject(LogOff.hsubjGroup);
+        ULONG   ul;
+        for (ul = 0;
+             ul < pLogoff->cSubjects;
+             ++ul)
+        {
+            subjDeleteSubject(pLogoff->aSubjects[ul]);
+        }
+
+        free(pLogoff);
     }
 
     return arc;
@@ -473,10 +487,10 @@ APIRET slogLogOff(XWPSECID uid)
 
 APIRET slogQueryLocalUser(PXWPLOGGEDON pLoggedOnLocal)
 {
-    APIRET arc = NO_ERROR;
+    APIRET  arc = NO_ERROR;
+    BOOL    fLocked;
 
-    BOOL fLocked = (LockLoggedOn() == NO_ERROR);
-    if (!fLocked)
+    if (!(fLocked = LockLoggedOn()))
         arc = XWPSEC_CANNOT_GET_MUTEX;
     else
     {

@@ -1372,6 +1372,7 @@ LONG xsdIsClosable(HAB hab,                 // in: caller's anchor block
  *@@changed V0.9.0 [umoeller]: PSHUTDOWNPARAMS added to prototype
  *@@changed V0.9.4 (2000-07-15) [umoeller]: PSHUTDOWNCONSTS added to prototype
  *@@changed V0.9.4 (2000-07-15) [umoeller]: extracted xsdIsClosable; fixed WarpCenter detection
+ *@@changed V1.0.1 (2003-01-05) [umoeller]: now respecting "close all windows" with logoff too
  */
 
 void xsdBuildShutList(HAB hab,
@@ -1408,7 +1409,13 @@ void xsdBuildShutList(HAB hab,
                 // Close this with shutdown and logoff, but
                 // with "Restart WPS", close it only if the
                 // user wants to have all sessions closed.
-                if (    (pShutdownData->sdParams.ulCloseMode == SHUT_RESTARTWPS)
+
+                // Hmm, changed that. Added "close all windows" checkbox
+                // back to logoff confirmation window, so we should rather
+                // respect that setting. V1.0.1 (2003-01-05) [umoeller]
+                if (    (    (pShutdownData->sdParams.ulCloseMode == SHUT_RESTARTWPS)
+                          || (pShutdownData->sdParams.ulCloseMode == SHUT_LOGOFF)
+                        )
                      && (!pShutdownData->sdParams.optWPSCloseWindows)
                    )
                     fSkip = TRUE;

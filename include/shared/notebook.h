@@ -103,6 +103,7 @@
      *@@changed V0.9.0 [umoeller]: typedef was missing, thanks RÅdiger Ihle
      *@@changed V0.9.4 (2000-07-11) [umoeller]: added fPassCnrHelp
      *@@changed V0.9.18 (2002-02-23) [umoeller]: renamed from CREATENOTEBOOKPAGE, removed non-input data
+     *@@changed V1.0.1 (2003-01-05) [umoeller]: added ulEditCnrID
      */
 
     typedef struct _INSERTNOTEBOOKPAGE
@@ -155,6 +156,25 @@
                                     // flags; see cnrhOwnerDrawRecord for valid
                                     // values.
                                     // V0.9.16 (2001-09-29) [umoeller]
+
+        USHORT      ulEditCnrID;    // ID of cnr window for which to add context
+                                    // menu support. This is for those pages
+                                    // which have the typical add/edit/remove
+                                    // buttons, such as the pager sticky windows
+                                    // page. It is still the responsibility of
+                                    // the caller to supply and create the controls,
+                                    // but the notebook proc will automatically
+                                    // load a context menu then and post DID_ADD,
+                                    // DID_EDIT, and DID_REMOVE commands to the
+                                    // "item changed" callback, where preccSource
+                                    // will be set to the correctly selected
+                                    // record in the container or NULL if the
+                                    // click was on whitespace. It will also
+                                    // automatically enable and disable the
+                                    // buttons with those three IDs correctly.
+                                    // To enable this functionality, set this
+                                    // member to the ID of the container.
+                                    // added V1.0.1 (2003-01-05) [umoeller]
 
         // 3)  Here follow the callback functions. If any of these is NULL,
         //     it will not be called. As a result, you may selectively install
@@ -252,12 +272,15 @@
                                       // automatically when the notebook page is destroyed.
                                       // Useful with tooltip controls, which are not destroyed
                                       // automatically otherwise.
+
         // 5) Internal use only, do not mess with these.
         PVOID       pnbli;
         PRECORDCORE preccLastSelected;
         PRECORDCORE preccExpanded;      // for tree-view auto scroll
         HWND        hwndExpandedCnr;    // for tree-view auto scroll
         PVOID       pxac;               // ptr to XADJUSTCTRLS if (pampControlFlags != NULL)
+        HWND        hmenuSel,
+                    hmenuWhitespace;    // cnr context menus
 
     } NOTEBOOKPAGE;
 

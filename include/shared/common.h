@@ -1187,6 +1187,10 @@
     typedef HWND XWPENTRY CMNLOADDLG(HWND hwndOwner, PFNWP pfnwp, ULONG idResource, PVOID pvCreateParam);
     typedef CMNLOADDLG *PCMNLOADDLG;
 
+    HWND XWPENTRY cmnLoadMenu(HWND hwndOwner,
+                              HMODULE hmod,
+                              ULONG id);
+
     /* ******************************************************************
      *
      *   Error logging

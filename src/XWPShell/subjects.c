@@ -155,11 +155,10 @@ APIRET subjInit(VOID)
     if (G_hmtxSubjects == NULLHANDLE)
     {
         // first call:
-        arc = DosCreateMutexSem(NULL,       // unnamed
-                                &G_hmtxSubjects,
-                                0,          // unshared
-                                FALSE);     // unowned
-        if (arc == NO_ERROR)
+        if (!(arc = DosCreateMutexSem(NULL,       // unnamed
+                                      &G_hmtxSubjects,
+                                      0,          // unshared
+                                      FALSE)))    // unowned
             treeInit(&G_treeSubjects, &G_cSubjects);
     }
     else
@@ -182,14 +181,10 @@ APIRET subjInit(VOID)
  *      Always call UnlockSubjects() when you're done.
  */
 
-APIRET LockSubjects(VOID)
+BOOL LockSubjects(VOID)
 {
-    APIRET arc = NO_ERROR;
-
-    arc = DosRequestMutexSem(G_hmtxSubjects,
-                             SEM_INDEFINITE_WAIT);
-
-    return arc;
+    return !DosRequestMutexSem(G_hmtxSubjects,
+                               SEM_INDEFINITE_WAIT);
 }
 
 /*
@@ -197,9 +192,9 @@ APIRET LockSubjects(VOID)
  *      unlocks the global security data.
  */
 
-APIRET UnlockSubjects(VOID)
+VOID UnlockSubjects(VOID)
 {
-    return (DosReleaseMutexSem(G_hmtxSubjects));
+    DosReleaseMutexSem(G_hmtxSubjects);
 }
 
 /* ******************************************************************
@@ -254,23 +249,18 @@ PSUBJECTTREENODE FindSubjectInfoFromHandle(HXSUBJECT hSubject)
 PSUBJECTTREENODE FindSubjectInfoFromID(BYTE bType,       // in: SUBJ_USER, SUBJ_GROUP, or SUBJ_PROCESS
                                        XWPSECID id)      // in: ID to search for
 {
-    PSUBJECTTREENODE p = NULL;
-
     PSUBJECTTREENODE pNode = (PSUBJECTTREENODE)treeFirst(G_treeSubjects);
     while (pNode)
     {
         PXWPSUBJECTINFO psi = &pNode->SubjectInfo;
 
         if ((psi->id == id) && (psi->bType == bType))
-        {
-            p = pNode;
-            break;
-        }
+            return pNode;
 
         pNode = (PSUBJECTTREENODE)treeNext((TREE*)pNode);
     }
 
-    return (p);
+    return NULL;
 }
 
 /* ******************************************************************
@@ -283,6 +273,8 @@ PSUBJECTTREENODE FindSubjectInfoFromID(BYTE bType,       // in: SUBJ_USER, SUBJ_
  *@@ subjCreateSubject:
  *      creates a new subject handle, either for
  *      a user or a group.
+ *
+ *      See XWPSUBJECTINFO for the definition of a subject.
  *
  *      Required input in XWPSUBJECINFO:
  *
@@ -297,23 +289,11 @@ PSUBJECTTREENODE FindSubjectInfoFromID(BYTE bType,       // in: SUBJ_USER, SUBJ_
  *      -- hSubject: new or existing subject handle.
  *      -- cUsage: usage count.
  *
- *      Note: This checks for whether a subject handle
- *      exists already for the specified ID. However,
- *      if a subject handle already exists, the behavior
- *      depends on the type:
- *
- *      -- For user subjects (SUBJ_USER specified with bType),
- *         if a subject handle exists for that ID,
- *         XWPSEC_HSUBJECT_EXISTS is returned, and no
- *         subject handle is created.
- *
- *      -- For group subjects (SUBJ_GROUP specified with bType),
- *         if a subject handle exists for that ID,
- *         NO_ERROR is returned, and the existing subject's
- *         usage count is incremented. pSubjectInfo then
- *         receives the existing HXSUBJECT and usage count.
- *
- *      See XWPSUBJECTINFO for the definition of a subject.
+ *      This checks for whether a subject handle exists
+ *      already for the specified ID. If so, NO_ERROR is
+ *      returned, and the existing subject's usage count
+ *      is incremented. pSubjectInfo then receives the
+ *      existing HXSUBJECT and usage count.
  *
  *      Returns:
  *
@@ -329,8 +309,8 @@ APIRET subjCreateSubject(PXWPSUBJECTINFO pSubjectInfo) // in/out: subject info
 {
     APIRET arc = NO_ERROR;
 
-    BOOL fLocked = (LockSubjects() == NO_ERROR);
-    if (!fLocked)
+    BOOL fLocked;
+    if (!(fLocked = LockSubjects()))
         arc = XWPSEC_CANNOT_GET_MUTEX;
     else
     {
@@ -339,25 +319,18 @@ APIRET subjCreateSubject(PXWPSUBJECTINFO pSubjectInfo) // in/out: subject info
                                               pSubjectInfo->id))
         {
             // subject exists:
-            if (pSubjectInfo->bType == SUBJ_USER)
-                // user: this must be unique, so return error
-                arc = XWPSEC_HSUBJECT_EXISTS;
-            else if (pSubjectInfo->bType == SUBJ_GROUP)
-            {
-                // group: increase usage count
-                pExisting->SubjectInfo.cUsage++;
-                // output to caller
-                pSubjectInfo->hSubject = pExisting->SubjectInfo.hSubject;
-                pSubjectInfo->cUsage = pExisting->SubjectInfo.cUsage;
-            }
+            // increase usage count
+            pExisting->SubjectInfo.cUsage++;
+            // output to caller
+            pSubjectInfo->hSubject = pExisting->SubjectInfo.hSubject;
+            pSubjectInfo->cUsage = pExisting->SubjectInfo.cUsage;
         }
         else
         {
             // not created yet:
             // allocate new subject info
-            PSUBJECTTREENODE pNewSubject
-                = (PSUBJECTTREENODE)malloc(sizeof(SUBJECTTREENODE));
-            if (!pNewSubject)
+            PSUBJECTTREENODE pNewSubject;
+            if (!(pNewSubject = (PSUBJECTTREENODE)malloc(sizeof(SUBJECTTREENODE))))
                 arc = ERROR_NOT_ENOUGH_MEMORY;
             else
             {
@@ -425,8 +398,8 @@ APIRET subjDeleteSubject(LHANDLE hSubject)
 {
     APIRET arc = NO_ERROR;
 
-    BOOL fLocked = (LockSubjects() == NO_ERROR);
-    if (!fLocked)
+    BOOL fLocked;
+    if (!(fLocked = LockSubjects()))
         arc = XWPSEC_CANNOT_GET_MUTEX;
     else
     {
@@ -435,13 +408,22 @@ APIRET subjDeleteSubject(LHANDLE hSubject)
             // not found:
             arc = XWPSEC_INVALID_HSUBJECT;
         else
-            if (treeDelete(&G_treeSubjects,
-                           &G_cSubjects,
-                           (TREE*)psi))
+            // decrease usage count
+            if (!(psi->SubjectInfo.cUsage))
                 arc = XWPSEC_INTEGRITY;
             else
             {
-                free(psi);
+                psi->SubjectInfo.cUsage--;
+                if (!(psi->SubjectInfo.cUsage))
+                {
+                    // usage count reached zero:
+                    if (treeDelete(&G_treeSubjects,
+                                   &G_cSubjects,
+                                   (TREE*)psi))
+                        arc = XWPSEC_INTEGRITY;
+                    else
+                        free(psi);
+                }
             }
     }
 
@@ -470,8 +452,8 @@ APIRET subjQuerySubjectInfo(PXWPSUBJECTINFO pSubjectInfo)   // in/out: subject i
 {
     APIRET arc = XWPSEC_INVALID_HSUBJECT;
 
-    BOOL fLocked = (LockSubjects() == NO_ERROR);
-    if (fLocked)
+    BOOL fLocked;
+    if (!(fLocked = LockSubjects()))
     {
         PSUBJECTTREENODE p;
         LHANDLE hsubj = pSubjectInfo->hSubject;
@@ -482,7 +464,9 @@ APIRET subjQuerySubjectInfo(PXWPSUBJECTINFO pSubjectInfo)   // in/out: subject i
 
         if (p = FindSubjectInfoFromHandle(hsubj))
         {
-            memcpy(pSubjectInfo, &p->SubjectInfo, sizeof(XWPSUBJECTINFO));
+            memcpy(pSubjectInfo,
+                   &p->SubjectInfo,
+                   sizeof(XWPSUBJECTINFO));
             arc = NO_ERROR;
         }
     }

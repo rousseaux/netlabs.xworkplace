@@ -108,36 +108,36 @@ APIRET CreateXWPShellCommand(ULONG ulCommand,               // in: command
 {
     APIRET      arc = NO_ERROR;
 
-    PXWPSHELLCOMMAND pCommand = (PXWPSHELLCOMMAND)malloc(sizeof(XWPSHELLCOMMAND));
-    if (!pCommand)
+    PXWPSHELLCOMMAND pCommand;
+    if (!(pCommand = NEW(XWPSHELLCOMMAND)))
         arc = ERROR_NOT_ENOUGH_MEMORY;
     else
     {
-        memset(pCommand, 0, sizeof(*pCommand));
+        ZERO(pCommand);
 
         // check if XWPShell is running; if so the queue must exist
-        if (!(arc = DosOpenQueue(&pCommand->pidXWPShell,
-                                 &pCommand->hqXWPShell,
-                                 QUEUE_XWPSHELL)))
+        if (    (!(arc = DosOpenQueue(&pCommand->pidXWPShell,
+                                      &pCommand->hqXWPShell,
+                                      QUEUE_XWPSHELL)))
+             && (!(arc = DosAllocSharedMem((PVOID*)&pCommand->pShared,
+                                           NULL,     // unnamed
+                                           sizeof(XWPSHELLQUEUEDATA),
+                                           PAG_COMMIT | OBJ_GIVEABLE | PAG_READ | PAG_WRITE)))
+           )
         {
-            if (!(arc = DosAllocSharedMem((PVOID*)&pCommand->pShared,
-                                          NULL,     // unnamed
-                                          sizeof(XWPSHELLQUEUEDATA),
-                                          PAG_COMMIT | OBJ_GIVEABLE | PAG_READ | PAG_WRITE)))
-            {
-                PXWPSHELLQUEUEDATA pShared = pCommand->pShared;
+            PXWPSHELLQUEUEDATA pShared = pCommand->pShared;
 
-                if (    (!(arc = DosGiveSharedMem(pShared,
-                                                  pCommand->pidXWPShell,
-                                                  PAG_READ | PAG_WRITE)))
-                     && (!(arc = DosCreateEventSem(NULL,
-                                                   &pShared->hevData,
-                                                   DC_SEM_SHARED,
-                                                   FALSE)))      // reset
-                   )
-                {
-                    pShared->ulCommand = ulCommand;
-                }
+            if (    (!(arc = DosGiveSharedMem(pShared,
+                                              pCommand->pidXWPShell,
+                                              PAG_READ | PAG_WRITE)))
+                 && (!(arc = DosCreateEventSem(NULL,
+                                               &pShared->hevData,
+                                               DC_SEM_SHARED,
+                                               FALSE)))      // reset
+               )
+            {
+                pShared->ulCommand = ulCommand;
+                pShared->cbStruct = sizeof(XWPSHELLQUEUEDATA);
             }
         }
 
@@ -184,19 +184,18 @@ APIRET SendXWPShellCommand(PXWPSHELLCOMMAND pCommand)
         arc = ERROR_INVALID_PARAMETER;
     else
     {
-        if (!(arc = DosWriteQueue(pCommand->hqXWPShell,
-                                  (ULONG)pCommand->pShared,   // request data
-                                  0,
-                                  NULL,
-                                  0)))              // priority
+        if (    (!(arc = DosWriteQueue(pCommand->hqXWPShell,
+                                       (ULONG)pCommand->pShared,   // request data
+                                       0,
+                                       NULL,
+                                       0)))              // priority
+                // wait 5 seconds for XWPShell to write the data
+             && (!(arc = DosWaitEventSem(pCommand->pShared->hevData,
+                                         5*1000)))
+           )
         {
-            // wait 5 seconds for XWPShell to write the data
-            if (!(arc = DosWaitEventSem(pCommand->pShared->hevData,
-                                        5*1000)))
-            {
-                // check if XWPShell reported error
-                arc = pCommand->pShared->arc;
-            }
+            // return what XWPShell returns
+            arc = pCommand->pShared->arc;
         }
     }
 
@@ -284,6 +283,11 @@ APIRET xsecQueryLocalLoggedOn(PXWPLOGGEDON pLoggedOn)       // out: currently lo
  *      returns an array of XWPUSERDBENTRY structs
  *      with all the users currently in the userdb.
  *
+ *      Warning: The array items are variable in
+ *      size depending on group memberships, so
+ *      always use the cbStruct member of each
+ *      array item to climb to the next.
+ *
  *      Returns:
  *
  *      --  NO_ERROR
@@ -311,17 +315,27 @@ APIRET xsecQueryUsers(PULONG pcUsers,               // ou: array item count
         if (!(arc = SendXWPShellCommand(pCommand)))
         {
             // alright:
+            // the array items are variable in size, so check
+            ULONG   ul,
+                    cbTotal = 0;
+            PBYTE   pbUserThis = (PBYTE)pCommand->pShared->Data.QueryUsers.paUsers;
             PXWPUSERDBENTRY paUsers;
-            ULONG cb =   pCommand->pShared->Data.QueryUsers.cUsers
-                       * sizeof(XWPUSERDBENTRY);
+            for (ul = 0;
+                 ul < pCommand->pShared->Data.QueryUsers.cUsers;
+                 ++ul)
+            {
+                ULONG cbThis = ((PXWPUSERDBENTRY)pbUserThis)->cbStruct;
+                cbTotal += cbThis;
+                pbUserThis += cbThis;
+            }
 
-            if (!(paUsers = malloc(cb)))
+            if (!(paUsers = malloc(cbTotal)))
                 arc = ERROR_NOT_ENOUGH_MEMORY;
             else
             {
                 memcpy(paUsers,
                        pCommand->pShared->Data.QueryUsers.paUsers,
-                       cb);
+                       cbTotal);
                 *pcUsers = pCommand->pShared->Data.QueryUsers.cUsers;
                 *ppaUsers = paUsers;
             }
@@ -395,6 +409,20 @@ APIRET xsecQueryGroups(PULONG pcGroups,
 
 /*
  *@@ xsecQueryProcessOwner:
+ *      returns the UID on whose behalf the given
+ *      process is running.
+ *
+ *      Returns:
+ *
+ *      --  NO_ERROR
+ *
+ *      --  ERROR_NOT_ENOUGH_MEMORY
+ *
+ *      --  XWPSEC_INSUFFICIENT_AUTHORITY: process
+ *          owner does not have sufficient authority
+ *          for this query.
+ *
+ *      plus the error codes from subjQuerySubjectInfo.
  *
  *@@added V0.9.19 (2002-04-02) [umoeller]
  */
@@ -420,3 +448,179 @@ APIRET xsecQueryProcessOwner(ULONG ulPID,           // in: process ID
     return arc;
 }
 
+/*
+ *@@ CopyString:
+ *
+ *@@added V1.0.1 (2003-01-05) [umoeller]
+ */
+
+STATIC APIRET CopyString(PSZ pszTarget,
+                         PCSZ pcszSource,
+                         ULONG cbTarget)
+{
+    ULONG cb;
+    if (!pcszSource || !*pcszSource)
+        return ERROR_INVALID_PARAMETER;
+    cb = strlen(pcszSource) + 1;
+    if (cb > cbTarget)
+        return XWPSEC_NAME_TOO_LONG;
+
+    memcpy(pszTarget,
+           pcszSource,
+           cb);
+    return NO_ERROR;
+}
+
+/*
+ *@@ xsecCreateUser:
+ *      returns the UID on whose behalf the given
+ *      process is running.
+ *
+ *      Returns:
+ *
+ *      --  NO_ERROR
+ *
+ *      --  ERROR_NOT_ENOUGH_MEMORY
+ *
+ *      --  XWPSEC_NAME_TOO_LONG: one of the given
+ *          strings is too long.
+ *
+ *      --  XWPSEC_INSUFFICIENT_AUTHORITY: process
+ *          owner does not have sufficient authority
+ *          for this query.
+ *
+ *      plus the error codes from sudbCreateUser.
+ *
+ *@@added V0.9.19 (2002-04-02) [umoeller]
+ */
+
+APIRET xsecCreateUser(PCSZ pcszUserName,        // in: user name
+                      PCSZ pcszFullName,        // in: user's descriptive name
+                      PCSZ pcszPassword,        // in: user's password
+                      XWPSECID gid,             // in: group of the new user
+                      XWPSECID *puid)           // out: user ID that was created
+{
+    APIRET              arc = NO_ERROR;
+    PXWPSHELLCOMMAND    pCommand;
+
+    if (!(arc = CreateXWPShellCommand(QUECMD_CREATEUSER,
+                                      &pCommand)))
+    {
+        PQUEUEUNION pUnion = &pCommand->pShared->Data;
+
+        if (    (!(arc = CopyString(pUnion->CreateUser.szUserName,
+                                    pcszUserName,
+                                    sizeof(pUnion->CreateUser.szUserName))))
+             && (!(arc = CopyString(pUnion->CreateUser.szFullName,
+                                    pcszFullName,
+                                    sizeof(pUnion->CreateUser.szFullName))))
+             && (!(arc = CopyString(pUnion->CreateUser.szPassword,
+                                    pcszPassword,
+                                    sizeof(pUnion->CreateUser.szPassword))))
+             && (!(arc = SendXWPShellCommand(pCommand)))
+           )
+        {
+            // alright:
+            *puid = pUnion->CreateUser.uidCreated;
+        }
+
+        FreeXWPShellCommand(pCommand);
+    }
+
+    return arc;
+}
+
+/*
+ *@@ xsecSetUserData:
+ *      updates the user data for the given UID.
+ *
+ *      Returns:
+ *
+ *      --  NO_ERROR
+ *
+ *      --  ERROR_NOT_ENOUGH_MEMORY
+ *
+ *      --  XWPSEC_NAME_TOO_LONG: one of the given
+ *          strings is too long.
+ *
+ *      --  XWPSEC_INSUFFICIENT_AUTHORITY: process
+ *          owner does not have sufficient authority
+ *          for this query.
+ *
+ *      plus the error codes from sudbCreateUser.
+ *
+ *@@added V1.0.1 (2003-01-05) [umoeller]
+ */
+
+APIRET xsecSetUserData(XWPSECID uid,
+                       PCSZ pcszUserName,
+                       PCSZ pcszFullName)
+{
+    APIRET              arc = NO_ERROR;
+    PXWPSHELLCOMMAND    pCommand;
+
+    if (!(arc = CreateXWPShellCommand(QUECMD_SETUSERDATA,
+                                      &pCommand)))
+    {
+        PQUEUEUNION pUnion = &pCommand->pShared->Data;
+
+        pUnion->SetUserData.uid = uid;
+
+        if (    (!(arc = CopyString(pUnion->SetUserData.szUserName,
+                                    pcszUserName,
+                                    sizeof(pUnion->SetUserData.szUserName))))
+             && (!(arc = CopyString(pUnion->SetUserData.szFullName,
+                                    pcszFullName,
+                                    sizeof(pUnion->SetUserData.szFullName))))
+             && (!(arc = SendXWPShellCommand(pCommand)))
+           )
+        {
+        }
+
+        FreeXWPShellCommand(pCommand);
+    }
+
+    return arc;
+}
+
+/*
+ *@@ xsecDeleteUser:
+ *      deletes the user account for the given UID.
+ *
+ *      Returns:
+ *
+ *      --  NO_ERROR
+ *
+ *      --  ERROR_NOT_ENOUGH_MEMORY
+ *
+ *      --  XWPSEC_NAME_TOO_LONG: one of the given
+ *          strings is too long.
+ *
+ *      --  XWPSEC_INSUFFICIENT_AUTHORITY: process
+ *          owner does not have sufficient authority
+ *          for this query.
+ *
+ *      plus the error codes from sudbCreateUser.
+ *
+ *@@added V1.0.1 (2003-01-05) [umoeller]
+ */
+
+APIRET xsecDeleteUser(XWPSECID uid)
+{
+    APIRET              arc = NO_ERROR;
+    PXWPSHELLCOMMAND    pCommand;
+
+    if (!(arc = CreateXWPShellCommand(QUECMD_DELETEUSER,
+                                      &pCommand)))
+    {
+        PQUEUEUNION pUnion = &pCommand->pShared->Data;
+
+        pUnion->uidDelete = uid;
+
+        arc = SendXWPShellCommand(pCommand);
+
+        FreeXWPShellCommand(pCommand);
+    }
+
+    return arc;
+}

@@ -67,7 +67,7 @@ CFLAGS    = -Ge- -Gs- -Gr+ -Rn -Ss+ -O -G5 -w2 /tn+
 LD        = icc
 
 AS        = alp
-ASFLAGS   = -Mb -Li
+ASFLAGS   = -Mb -Li +Sv:M510
 
 CDEFINES   =
 # -DDYNAMIC_DEVHELP -DMWDD32_VER=$(MWDD32_VERSION)
@@ -124,11 +124,11 @@ dep:
 .c{$(OUTPUTDIR)}.obj:
         @echo $<
         @echo CINCLUDES: $(CINCLUDES)
-        @$(CC) -c $(CFLAGS) $(CDEFINES) -Fa$(@:.obj=.s) -Fo$@ $(CINCLUDES) $<
+        $(CC) -c $(CFLAGS) $(CDEFINES) -Fa$(@:.obj=.s) -Fo$@ $(CINCLUDES) $<
 
 .asm{$(OUTPUTDIR)}.obj:
-        @echo $<
-        @$(AS) $(ASFLAGS) $(ADEFINES) $(AINCLUDES) $< -Fo:$@ -Fl:$(@:.obj=.lst)
+        @echo Assembling $<
+        $(AS) $(ASFLAGS) $(ADEFINES) $(AINCLUDES) $< -Fo:$@ -Fl:$(@:.obj=.lst)
 
 # linking
 

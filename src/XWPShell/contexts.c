@@ -66,13 +66,6 @@ typedef struct _CONTEXTTREENODE
  *
  ********************************************************************/
 
-// subject infos
-TREE        *G_treeContexts;
-    // balanced binary tree of current security contexts
-LONG        G_cContexts = 0;
-HMTX        G_hmtxContexts = NULLHANDLE;
-    // mutex semaphore protecting global data
-
 /* ******************************************************************
  *
  *   Initialization
@@ -86,79 +79,7 @@ HMTX        G_hmtxContexts = NULLHANDLE;
 
 APIRET scxtInit(VOID)
 {
-    APIRET arc = NO_ERROR;
-
-    if (G_hmtxContexts == NULLHANDLE)
-    {
-        // first call:
-        arc = DosCreateMutexSem(NULL,       // unnamed
-                                &G_hmtxContexts,
-                                0,          // unshared
-                                FALSE);     // unowned
-        if (arc == NO_ERROR)
-            treeInit(&G_treeContexts, &G_cContexts);
-    }
-    else
-        arc = XWPSEC_INSUFFICIENT_AUTHORITY;
-
-    return arc;
-}
-
-/* ******************************************************************
- *
- *   Private Helpers
- *
- ********************************************************************/
-
-/*
- *@@ LockContexts:
- *      locks the global security data by requesting
- *      its mutex.
- *
- *      Always call UnlockContexts() when you're done.
- */
-
-APIRET LockContexts(VOID)
-{
-    APIRET arc = NO_ERROR;
-
-    arc = DosRequestMutexSem(G_hmtxContexts,
-                             SEM_INDEFINITE_WAIT);
-
-    return arc;
-}
-
-/*
- *@@ UnlockContexts:
- *      unlocks the global security data.
- */
-
-APIRET UnlockContexts(VOID)
-{
-    return (DosReleaseMutexSem(G_hmtxContexts));
-}
-
-/*
- *@@ FindContextFromPID:
- *      searches the list of security contexts for the
- *      specified process ID.
- *
- *      Returns the XWPSECURITYCONTEXT from the list
- *      or NULL if not found.
- *
- *      Private function.
- *
- *      You must call LockContexts() first.
- */
-
-PCONTEXTTREENODE FindContextFromPID(ULONG ulPID)
-{
-    PCONTEXTTREENODE pTreeItem = (PCONTEXTTREENODE)treeFind(G_treeContexts,
-                                                            ulPID,
-                                                            treeCompareKeys);
-
-
-    return (pTreeItem);
+    return NO_ERROR;
 }
 
 /* ******************************************************************
@@ -174,58 +95,12 @@ PCONTEXTTREENODE FindContextFromPID(ULONG ulPID)
  */
 
 APIRET scxtCreateSecurityContext(ULONG ulPID,
-                                 HXSUBJECT hsubjUser,
-                                 HXSUBJECT hsubjGroup)
+                                 ULONG cSubjects,           // in: no. of subjects in array
+                                 HXSUBJECT *paSubjects)     // in: subjects array
 {
-    APIRET arc = NO_ERROR;
+    // @@todo call the driver
 
-    BOOL fLocked = (LockContexts() == NO_ERROR);
-    if (!fLocked)
-        arc = XWPSEC_CANNOT_GET_MUTEX;
-    else
-    {
-        // first check if a tree item for that PID
-        // exists already... this might happen
-        PCONTEXTTREENODE pContextItem;
-        if (pContextItem = FindContextFromPID(ulPID))
-        {
-            // exists:
-            // replace with new values
-            pContextItem->Context.hsubjUser = hsubjUser;
-            pContextItem->Context.hsubjGroup = hsubjGroup;
-        }
-        else
-        {
-            // new item needed:
-            if (!(pContextItem = (PCONTEXTTREENODE)malloc(sizeof(CONTEXTTREENODE))))
-                arc = ERROR_NOT_ENOUGH_MEMORY;
-            else
-            {
-                int i = 0;
-
-                pContextItem->Tree.ulKey = ulPID;
-
-                pContextItem->Context.ulPID = ulPID;
-                pContextItem->Context.hsubjUser = hsubjUser;
-                pContextItem->Context.hsubjGroup = hsubjGroup;
-
-                if (treeInsert(&G_treeContexts,
-                               &G_cContexts,
-                               (TREE*)pContextItem,
-                               treeCompareKeys))
-                    // shouldn't happen
-                    arc = XWPSEC_INTEGRITY;
-            }
-        }
-
-        /* _Pmpf(("scxtCreateSecurityContext: pid 0x%lX (%d), arc: %d",
-                ulPID, ulPID, arc)); */
-    }
-
-    if (fLocked)
-        UnlockContexts();
-
-    return arc;
+    return NO_ERROR;
 }
 
 /*
@@ -241,33 +116,9 @@ APIRET scxtCreateSecurityContext(ULONG ulPID,
 
 APIRET scxtDeleteSecurityContext(ULONG ulPID)
 {
-    APIRET arc = NO_ERROR;
-    BOOL fLocked = (LockContexts() == NO_ERROR);
-    if (!fLocked)
-        arc = XWPSEC_CANNOT_GET_MUTEX;
-    else
-    {
-        PCONTEXTTREENODE pContextItem;
-        if (!(pContextItem = FindContextFromPID(ulPID)))
-            arc = XWPSEC_INVALID_PID;
-        else
-        {
-            if (treeDelete(&G_treeContexts,
-                           &G_cContexts,
-                           (TREE*)pContextItem))
-                // shouldn't happen
-                arc = XWPSEC_INTEGRITY;
-            else
-            {
-                free(pContextItem);
-            }
-        }
-    }
+    // @@todo call the driver
 
-    if (fLocked)
-        UnlockContexts();
-
-    return arc;
+    return NO_ERROR;
 }
 
 /*
@@ -287,28 +138,9 @@ APIRET scxtDeleteSecurityContext(ULONG ulPID)
 
 APIRET scxtFindSecurityContext(PXWPSECURITYCONTEXT pContext)
 {
-    APIRET arc = NO_ERROR;
+    // @@todo call the driver
 
-    BOOL fLocked = (LockContexts() == NO_ERROR);
-    if (!fLocked)
-        arc = XWPSEC_CANNOT_GET_MUTEX;
-    else
-    {
-        PCONTEXTTREENODE pContextItem;
-        if (!(pContextItem = FindContextFromPID(pContext->ulPID)))
-            arc = XWPSEC_INVALID_PID;
-        else
-        {
-            memcpy(pContext,
-                   &pContextItem->Context,
-                   sizeof(XWPSECURITYCONTEXT));
-        }
-    }
-
-    if (fLocked)
-        UnlockContexts();
-
-    return arc;
+    return NO_ERROR;
 }
 
 /*
@@ -337,58 +169,9 @@ APIRET scxtEnumSecurityContexts(HXSUBJECT hsubjUser,
                                 PXWPSECURITYCONTEXT *ppaContexts,
                                 PULONG pulCount)
 {
-    APIRET arc = NO_ERROR;
+    // @@todo call the driver
 
-    BOOL fLocked = (LockContexts() == NO_ERROR);
-    if (!fLocked)
-        arc = XWPSEC_CANNOT_GET_MUTEX;
-    else
-    {
-        if (G_cContexts == 0)
-            arc = XWPSEC_NO_CONTEXTS;
-        else
-        {
-            PXWPSECURITYCONTEXT paContexts
-                = (PXWPSECURITYCONTEXT)malloc(sizeof(XWPSECURITYCONTEXT) * G_cContexts);
-            if (!paContexts)
-                arc = ERROR_NOT_ENOUGH_MEMORY;
-            else
-            {
-                ULONG   cCount = 0;
-                PXWPSECURITYCONTEXT pContextThis = paContexts;
-
-                TREE *t = treeFirst(G_treeContexts);
-                while (t && !arc)
-                {
-                    if (    (hsubjUser == 0)     // enumerate all?
-                         || (hsubjUser == ((PCONTEXTTREENODE)t)->Context.hsubjUser)
-                       )
-                    {
-                        // security check:
-                        if (cCount++ < G_cContexts)
-                        {
-                            memcpy(pContextThis,
-                                   &(((PCONTEXTTREENODE)t)->Context),
-                                   sizeof(XWPSECURITYCONTEXT));
-                            pContextThis++;
-                        }
-                        else
-                            arc = XWPSEC_INTEGRITY;
-                    }
-
-                    t = treeNext(t);
-                }
-
-                *ppaContexts = paContexts;
-                *pulCount = cCount;
-            }
-        }
-    }
-
-    if (fLocked)
-        UnlockContexts();
-
-    return arc;
+    return NO_ERROR;
 }
 
 /*
@@ -421,11 +204,7 @@ APIRET scxtVerifyAuthority(PXWPSECURITYCONTEXT pContext,
     if (!pContext || !flActions)
         return ERROR_INVALID_PARAMETER;
 
-    // presently, we only allow root to do anything
-    if (    (pContext->hsubjUser == 0)
-         || (pContext->hsubjGroup == 0)
-       )
-        return NO_ERROR;
+    // @@todo call the driver
 
-    return XWPSEC_INSUFFICIENT_AUTHORITY;
+    return NO_ERROR;
 }

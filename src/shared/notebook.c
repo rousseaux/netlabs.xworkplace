@@ -303,6 +303,10 @@ STATIC VOID PageDestroy(PNOTEBOOKPAGE pnbp)
         // tooltip to be destroyed?
         winhDestroyWindow(&pnbp->hwndTooltip);
 
+        // destroy context menus V1.0.1 (2003-01-05) [umoeller]
+        winhDestroyWindow(&pnbp->hmenuSel);
+        winhDestroyWindow(&pnbp->hmenuWhitespace);
+
         // winhAdjustControls prepared?
         if (pnbp->pxac)
         {
@@ -362,6 +366,7 @@ STATIC VOID PageDestroy(PNOTEBOOKPAGE pnbp)
  *@@changed V0.9.9 (2001-03-27) [umoeller]: changed ulExtra for CN_RECORDCHECKED
  *@@changed V0.9.19 (2002-04-15) [lafaix]: added support for CN_ENTER
  *@@changed V0.9.19 (2002-06-02) [umoeller]: optimizations
+ *@@changed V1.0.1 (2003-01-05) [umoeller]: added automatic cnr context menu support for add/edit/remove
  */
 
 STATIC MRESULT EXPENTRY PageWmControl(PNOTEBOOKPAGE pnbp,
@@ -505,12 +510,54 @@ STATIC MRESULT EXPENTRY PageWmControl(PNOTEBOOKPAGE pnbp,
                     break;
 
                     case CN_CONTEXTMENU:
-                        fCallItemChanged = TRUE;
-                        ulExtra = (ULONG)mp2;
-                            // record core for context menu
-                            // or NULL for cnr whitespace
                         WinQueryPointerPos(HWND_DESKTOP,
                                            &pnbp->ptlMenuMousePos);
+
+                        // add/edit/remove support V1.0.1 (2003-01-05) [umoeller]
+                        if (    (pnbp->inbp.ulEditCnrID)
+                             && (ulItemID == pnbp->inbp.ulEditCnrID)
+                           )
+                        {
+                            HWND hMenu;
+                            pnbp->hwndSourceCnr = pnbp->hwndControl;
+                            if (pnbp->preccSource = (PRECORDCORE)mp2)
+                            {
+                                // popup menu on container recc:
+                                if (!(hMenu = pnbp->hmenuSel))
+                                {
+                                    hMenu
+                                    = pnbp->hmenuSel
+                                    = cmnLoadMenu(pnbp->hwndDlgPage,
+                                                  cmnQueryNLSModuleHandle(FALSE),
+                                                  ID_XFM_CNRITEM_SEL);
+                                }
+                            }
+                            else
+                            {
+                                // popup menu on cnr whitespace:
+                                if (!(hMenu = pnbp->hmenuWhitespace))
+                                {
+                                    hMenu
+                                    = pnbp->hmenuWhitespace
+                                    = cmnLoadMenu(pnbp->hwndDlgPage,
+                                                  cmnQueryNLSModuleHandle(FALSE),
+                                                  ID_XFM_CNRITEM_NOSEL);
+                                }
+                            }
+
+                            if (hMenu)
+                                cnrhShowContextMenu(pnbp->hwndControl,  // cnr
+                                                    (PRECORDCORE)mp2,
+                                                    hMenu,
+                                                    pnbp->hwndDlgPage);    // owner
+                        }
+                        else
+                        {
+                            fCallItemChanged = TRUE;
+                            ulExtra = (ULONG)mp2;
+                                // record core for context menu
+                                // or NULL for cnr whitespace
+                        }
                     break;
 
                     case CN_ENTER:
@@ -518,8 +565,23 @@ STATIC MRESULT EXPENTRY PageWmControl(PNOTEBOOKPAGE pnbp,
                         PNOTIFYRECORDENTER pnre;
                         if (pnre = (PNOTIFYRECORDENTER)mp2)
                         {
-                            fCallItemChanged = TRUE;
-                            ulExtra = (ULONG)pnre->pRecord;
+                            // add/edit/remove support V1.0.1 (2003-01-05) [umoeller]
+                            if (    (pnbp->inbp.ulEditCnrID)
+                                 && (ulItemID == pnbp->inbp.ulEditCnrID)
+                               )
+                            {
+                                pnbp->preccSource = pnre->pRecord;
+                                // simulate "edit"
+                                WinPostMsg(pnbp->hwndDlgPage,
+                                           WM_COMMAND,
+                                           (MPARAM)DID_EDIT,
+                                           0);
+                            }
+                            else
+                            {
+                                fCallItemChanged = TRUE;
+                                ulExtra = (ULONG)pnre->pRecord;
+                            }
                         }
                     }
                     break;
@@ -677,6 +739,74 @@ STATIC MRESULT EXPENTRY PageWmControl(PNOTEBOOKPAGE pnbp,
 }
 
 /*
+ *@@ PageWmCommand:
+ *      implementation for WM_COMMAND in fnwpPageCommon.
+ *
+ *      hwndDlg is not passed because this can be retrieved
+ *      thru pnbp->hwndDlgPage.
+ *
+ *@@added V1.0.1 (2003-01-05) [umoeller]
+ */
+
+STATIC MRESULT EXPENTRY PageWmCommand(PNOTEBOOKPAGE pnbp,
+                                      ULONG msg,
+                                      MPARAM mp1,
+                                      MPARAM mp2) // in: as in WM_CONTROL
+{
+    MRESULT mrc = 0;
+
+    PMPF_NOTEBOOKS(("WM_COMMAND"));
+
+    // call "item changed" callback
+    if (    (pnbp)
+         && (pnbp->inbp.pfncbItemChanged)
+       )
+    {
+        USHORT  cmd = SHORT1FROMMP(mp1);
+
+        // add/edit/remove support V1.0.1 (2003-01-05) [umoeller]
+        if (pnbp->inbp.ulEditCnrID)
+        {
+            // translate menu items
+            switch (cmd)
+            {
+                case ID_XFMI_CNRITEM_NEW:
+                    cmd = DID_ADD;
+                break;
+
+                case ID_XFMI_CNRITEM_EDIT:
+                    cmd = DID_EDIT;
+                break;
+
+                case ID_XFMI_CNRITEM_DELETE:
+                    cmd = DID_REMOVE;
+                break;
+
+                case DID_EDIT:
+                case DID_REMOVE:
+                    if (    (!(pnbp->preccSource = (PRECORDCORE)WinSendMsg(WinWindowFromID(pnbp->hwndDlgPage,
+                                                                                           pnbp->inbp.ulEditCnrID),
+                                                                           CM_QUERYRECORDEMPHASIS,
+                                                                           (MPARAM)CMA_FIRST,
+                                                                           (MPARAM)CRA_SELECTED)))
+                         || ((LONG)pnbp->preccSource == -1L)
+                       )
+                    cmd = 0;
+                break;
+            }
+        }
+
+        if (cmd)
+            mrc = pnbp->inbp.pfncbItemChanged(pnbp,
+                                              cmd,
+                                              0,
+                                              (ULONG)mp2);
+    }
+
+    return mrc;
+}
+
+/*
  *@@ PageWindowPosChanged:
  *      implementation for WM_WINDOWPOSCHANGED in fnwpPageCommon.
  *
@@ -825,6 +955,7 @@ STATIC VOID PageTimer(PNOTEBOOKPAGE pnbp,
  *@@changed V0.9.3 (2000-05-01) [umoeller]: added WM_MOUSEMOVE pointer changing
  *@@changed V0.9.7 (2000-12-10) [umoeller]: fixed mutex problems
  *@@changed V0.9.7 (2000-12-10) [umoeller]: extracted PageWindowPosChanged, PageTimer
+ *@@changed V1.0.1 (2003-01-05) [umoeller]: added automatic cnr context menu support for add/edit/remove
  */
 
 STATIC MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -965,16 +1096,7 @@ STATIC MRESULT EXPENTRY fnwpPageCommon(HWND hwndDlg, ULONG msg, MPARAM mp1, MPAR
                  */
 
                 case WM_COMMAND:
-                    PMPF_NOTEBOOKS(("WM_COMMAND"));
-
-                    // call "item changed" callback
-                    if (    (pnbp)
-                         && (pnbp->inbp.pfncbItemChanged)
-                       )
-                        mrc = pnbp->inbp.pfncbItemChanged(pnbp,
-                                                          SHORT1FROMMP(mp1),
-                                                          0,
-                                                          (ULONG)mp2);
+                    mrc = PageWmCommand(pnbp, msg, mp1, mp2);
                 break;  // WM_COMMAND
 
                 /*

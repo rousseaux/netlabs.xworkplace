@@ -569,4 +569,12 @@ Do you wish to ignore this error and continue uninstalling fonts?
 
 Do you wish to ignore this error and continue uninstalling fonts?
 
+<--XFL0261-->: Operation failed. XWorkplace Security reported the following error:
+
+%1
+
+<--XFL0262-->: Remove User Account
+
+<--XFL0263-->: You have selected to remove the account for user ID %1 ("%2"). Are you sure you want to do this?
+
 

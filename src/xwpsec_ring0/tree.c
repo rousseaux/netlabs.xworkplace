@@ -120,7 +120,7 @@ int TREEENTRY treeCompareStrings(unsigned long  ul1, unsigned long ul2)
  *      private function during rebalancing.
  */
 
-STATIC void rotateLeft(TREE **root,
+static void rotateLeft(TREE **root,
                        TREE *x)
 {
    /**************************
@@ -158,7 +158,7 @@ STATIC void rotateLeft(TREE **root,
  *      private function during rebalancing.
  */
 
-STATIC void rotateRight(TREE **root,
+static void rotateRight(TREE **root,
                         TREE *x)
 {
 
@@ -197,7 +197,7 @@ STATIC void rotateRight(TREE **root,
  *      private function during rebalancing.
  */
 
-STATIC void insertFixup(TREE **root,
+static void insertFixup(TREE **root,
                         TREE *x)
 {
    /*************************************
@@ -356,7 +356,7 @@ int treeInsert(TREE **root,                     // in: root of the tree
  *
  */
 
-STATIC void deleteFixup(TREE **root,
+static void deleteFixup(TREE **root,
                         TREE *tree)
 {
     TREE    *s;

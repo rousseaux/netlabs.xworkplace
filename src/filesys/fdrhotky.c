@@ -1578,50 +1578,30 @@ MRESULT fdrHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
                     {
                         // popup menu on container recc:
                         // disabling "add" item if hotkey array full
-                        if (hPopupMenu = WinLoadMenu(pnbp->hwndDlgPage, // owner
+                        if (hPopupMenu = cmnLoadMenu(pnbp->hwndDlgPage, // V1.0.1 (2003-01-05) [umoeller]
                                                      cmnQueryNLSModuleHandle(FALSE),
-                                                     ID_XSM_STICKY_SEL))
+                                                     ID_XFM_CNRITEM_SEL))
                             WinEnableMenuItem(hPopupMenu,
-                                              ID_XSMI_STICKY_NEW,
+                                              ID_XFMI_CNRITEM_NEW,
                                               TRUE); // @todo
                     }
                     else
                     {
                         // popup menu on cnr whitespace
                         // disabling "add" item if hotkey array full
-                        if (hPopupMenu = WinLoadMenu(pnbp->hwndDlgPage, // owner
+                        if (hPopupMenu = cmnLoadMenu(pnbp->hwndDlgPage, // V1.0.1 (2003-01-05) [umoeller]
                                                      cmnQueryNLSModuleHandle(FALSE),
-                                                     ID_XSM_STICKY_NOSEL))
+                                                     ID_XFM_CNRITEM_NOSEL))
                             WinEnableMenuItem(hPopupMenu,
-                                              ID_XSMI_STICKY_NEW,
+                                              ID_XFMI_CNRITEM_NEW,
                                               TRUE); // @todo
                     }
 
                     if (hPopupMenu)
-                    {
-                        // font stuff snarfed from ctr_engine.c
-                        PSZ pszStdMenuFont;
-                        if (!(pszStdMenuFont = prfhQueryProfileData(HINI_USER,
-                                                                    PMINIAPP_SYSTEMFONTS, // "PM_SystemFonts",
-                                                                    PMINIKEY_MENUSFONT, // "Menus",
-                                                                    NULL)))
-                            pszStdMenuFont = prfhQueryProfileData(HINI_USER,
-                                                                  PMINIAPP_SYSTEMFONTS, // "PM_SystemFonts",
-                                                                  PMINIKEY_DEFAULTFONT, // "DefaultFont",
-                                                                  NULL);
-
-                        if (pszStdMenuFont)
-                        {
-                            winhSetWindowFont(hPopupMenu,
-                                              pszStdMenuFont);
-                            free(pszStdMenuFont);
-                        }
-
                         cnrhShowContextMenu(pnbp->hwndControl,  // cnr
                                             (PRECORDCORE)pnbp->preccSource,
                                             hPopupMenu,
                                             pnbp->hwndDlgPage);    // owner
-                    }
                 }
                 break;
 
@@ -1651,7 +1631,7 @@ MRESULT fdrHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
         break;
 
         case DID_ADD:
-        case ID_XSMI_STICKY_NEW:
+        case ID_XFMI_CNRITEM_NEW:
         {
             HOTKEYRECORD rec;
             memset(&rec, 0, sizeof(rec));
@@ -1664,13 +1644,13 @@ MRESULT fdrHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
         break;
 
         /*
-         * ID_XSMI_STICKY_EDIT:
+         * ID_XFMI_CNRITEM_EDIT:
          *      show "Edit sticky window entry" dialog and edit
          *      the entry from that dialog
          *      (menu item command).
          */
 
-        case ID_XSMI_STICKY_EDIT:
+        case ID_XFMI_CNRITEM_EDIT:
             EditHotkeyRecord((PHOTKEYRECORD)pnbp->preccSource,
                              pnbp,
                              hwndCnr,
@@ -1702,12 +1682,12 @@ MRESULT fdrHotkeysItemChanged(PNOTEBOOKPAGE pnbp,
         break;
 
         /*
-         * ID_XSMI_STICKY_DELETE:
+         * ID_XFMI_CNRITEM_DELETE:
          *      remove sticky window record
          *      (menu item command).
          */
 
-        case ID_XSMI_STICKY_DELETE:
+        case ID_XFMI_CNRITEM_DELETE:
             WinSendMsg(hwndCnr,
                        CM_REMOVERECORD,
                        &(pnbp->preccSource), // double pointer...

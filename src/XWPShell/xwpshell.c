@@ -19,8 +19,6 @@
  *
  *         -- USER is set to the user name;
  *         -- USERID is set to the user ID (uid);
- *         -- GROUP is set to the group name;
- *         -- GROUPID is set to the user's group ID (gid);
  *         -- HOME is set to the user's home directory;
  *         -- OS2_INI is set to the user's OS2.INI file. This
  *              does not affect the profile (which has been
@@ -432,8 +430,8 @@ STATIC MRESULT EXPENTRY fnwpLogonDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
                     HWND hwndUserID = WinWindowFromID(hwnd, IDDI_USERENTRY);
                     HWND hwndPassword = WinWindowFromID(hwnd, IDDI_PASSWORDENTRY);
                     if (WinQueryWindowText(hwndUserID,
-                                           sizeof(puiLogon->szUserName),
-                                           puiLogon->szUserName))
+                                           sizeof(puiLogon->User.szUserName),
+                                           puiLogon->User.szUserName))
                         if (WinQueryWindowText(hwndPassword,
                                                sizeof(puiLogon->szPassword),
                                                puiLogon->szPassword))
@@ -477,9 +475,10 @@ STATIC MRESULT EXPENTRY fnwpLogonDlg(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp
  *@@changed V0.9.19 (2002-04-02) [umoeller]: changed prototype to return APIRET
  */
 
-APIRET SetNewUserProfile(HAB hab,                   // in: XWPSHELL anchor block
-                         PCXWPLOGGEDON pNewUser,    // in: new user to set profile for
-                         PSZ *ppszEnvironment)      // out: new environment
+APIRET SetNewUserProfile(HAB hab,                       // in: XWPSHELL anchor block
+                         ULONG uid,
+                         PCSZ pcszUserName,
+                         PSZ *ppszEnvironment)          // out: new environment
 {
     APIRET arc = NO_ERROR;
     PSZ pEnv2 = NULL;
@@ -500,7 +499,7 @@ APIRET SetNewUserProfile(HAB hab,                   // in: XWPSHELL anchor block
             pszHomeBase = szHomeBase;
         }
 
-        if (strcmp(pNewUser->szUserName, "root") == 0)
+        if (!uid)
             // root gets default profile
             strcpy(szNewProfile,
                    getenv("USER_INI"));
@@ -509,7 +508,7 @@ APIRET SetNewUserProfile(HAB hab,                   // in: XWPSHELL anchor block
             sprintf(szNewProfile,
                     "%s\\%s\\os2.ini",
                     pszHomeBase,
-                    pNewUser->szUserName);
+                    pcszUserName);
 
         if (access(szNewProfile, 0) != 0)
             // OS2.INI doesn't exist:
@@ -524,41 +523,18 @@ APIRET SetNewUserProfile(HAB hab,                   // in: XWPSHELL anchor block
                 if (arc = appSetEnvironmentVar(&Env, szNewVar, FALSE))
                     break;
 
-                // set HOME var to home directory,
-                // with Unix slashes
-                sprintf(szNewVar, "HOME=%s/%s", pszHomeBase, pNewUser->szUserName);
-                while (p = strchr(szNewVar, '\\'))
-                    *p = '/';
+                // set HOME var to home directory
+                sprintf(szNewVar, "HOME=%s\\%s", pszHomeBase, pcszUserName);
                 if (arc = appSetEnvironmentVar(&Env, szNewVar, FALSE))
                     break;
 
                 // set USER var to user name
-                sprintf(szNewVar, "USER=%s", pNewUser->szUserName);
+                sprintf(szNewVar, "USER=%s", pcszUserName);
                 if (arc = appSetEnvironmentVar(&Env, szNewVar, FALSE))
                     break;
 
                 // set USERID var to user name
-                sprintf(szNewVar, "USERID=%d", pNewUser->uid);
-                if (arc = appSetEnvironmentVar(&Env, szNewVar, FALSE))
-                    break;
-
-                // set USERSUBJECT var to user subject handle
-                sprintf(szNewVar, "USERSUBJECT=%d", pNewUser->hsubjUser);
-                if (arc = appSetEnvironmentVar(&Env, szNewVar, FALSE))
-                    break;
-
-                // set GROUP var to group name
-                sprintf(szNewVar, "GROUP=%s", pNewUser->szGroupName);
-                if (arc = appSetEnvironmentVar(&Env, szNewVar, FALSE))
-                    break;
-
-                // set GROUPID var to user name
-                sprintf(szNewVar, "GROUPID=%d", pNewUser->gid);
-                if (arc = appSetEnvironmentVar(&Env, szNewVar, FALSE))
-                    break;
-
-                // set GROUPSUBJECT var to group subject handle
-                sprintf(szNewVar, "GROUPSUBJECT=%d", pNewUser->hsubjGroup);
+                sprintf(szNewVar, "USERID=%d", uid);
                 if (arc = appSetEnvironmentVar(&Env, szNewVar, FALSE))
                     break;
 
@@ -648,8 +624,8 @@ APIRET StartUserShell(VOID)
                 if (!WinQuerySwitchEntry(hsw, &swc))
                 {
                     arc = scxtCreateSecurityContext(swc.idProcess,
-                                                    loLocal.hsubjUser,
-                                                    loLocal.hsubjGroup);
+                                                    loLocal.cSubjects,
+                                                    loLocal.aSubjects);
                     _PmpfF(("scxtCreateSecurityContext returned %d", arc));
                 }
                 else
@@ -699,7 +675,7 @@ APIRET LocalLogon(VOID)
     {
 #ifdef __DEBUG__
         // in debug builds, allow exit
-        if (strcmp(uiLogon.szUserName, "exit") == 0)
+        if (!strcmp(uiLogon.User.szUserName, "exit"))
             // exit:
             WinPostMsg(G_hwndShellObject, WM_QUIT, 0, 0);
         else
@@ -707,11 +683,16 @@ APIRET LocalLogon(VOID)
         {
             HPOINTER hptrOld = winhSetWaitPointer();
 
-            strcpy(LoggedOnUser.szUserName, uiLogon.szUserName);
-            arc = slogLogOn(&LoggedOnUser,
+            arc = slogLogOn(uiLogon.User.szUserName,
                             uiLogon.szPassword,
-                            TRUE);       // mark as local user
+                            TRUE,                // mark as local user
+                            &uiLogon.User.uid);      // store uid
                 // creates subject handles
+
+            // nuke the password buffer
+            memset(uiLogon.szPassword,
+                   0,
+                   sizeof(uiLogon.szPassword));
 
             if (arc == XWPSEC_NOT_AUTHENTICATED)
             {
@@ -734,7 +715,8 @@ APIRET LocalLogon(VOID)
                 G_pszEnvironment = NULL;
 
                 if (arc = SetNewUserProfile(WinQueryAnchorBlock(G_hwndShellObject),
-                                            &LoggedOnUser,
+                                            uiLogon.User.uid,
+                                            uiLogon.User.szUserName,
                                             &G_pszEnvironment))
                 {
                     Error("SetNewUserProfile returned %d.", arc);
@@ -764,949 +746,6 @@ APIRET LocalLogon(VOID)
 
 /* ******************************************************************
  *
- *   Security Contexts
- *
- ********************************************************************/
-
-/*
- *@@ DumpSecurityContexts:
- *
- */
-
-void DumpSecurityContexts(VOID)
-{
-    PXWPSECURITYCONTEXT paContexts = NULL;
-    ULONG               cContexts = 0;
-    APIRET arc = scxtEnumSecurityContexts(0,
-                                          &paContexts,
-                                          &cContexts);
-    if (arc != NO_ERROR)
-        _Pmpf(("scxtEnumSecurityContexts returned %d.", arc));
-    else
-    {
-        ULONG   ul;
-        PXWPSECURITYCONTEXT pContextThis = paContexts;
-
-        _Pmpf(("Dumping %d security contexts...", cContexts));
-
-        for (ul = 0;
-             ul < cContexts;
-             ul++)
-        {
-            _Pmpf(("   %03d: pid = 0x%lX (%d), hsubjUser = %d, hsubjGroup = %d",
-                   ul,
-                   pContextThis->ulPID,
-                   pContextThis->ulPID,
-                   pContextThis->hsubjUser,
-                   pContextThis->hsubjGroup));
-            pContextThis++;
-        }
-
-        scxtFreeSecurityContexts(paContexts);
-    }
-}
-
-/*
- *@@ CreateBaseSecurityContexts:
- *      called when XWPShell starts up to
- *      create security contexts for all
- *      processes which are running initially.
- */
-
-APIRET CreateBaseSecurityContexts(VOID)
-{
-    APIRET arc = NO_ERROR;
-    PQPROCSTAT16 p16Info;
-
-    if (!(arc = prc16GetInfo(&p16Info)))
-    {
-        PQPROCESS16 pProcess;
-        for ( pProcess = (PQPROCESS16)PTR(p16Info->ulProcesses, 0);
-              pProcess->ulType != 3;
-              pProcess = (PQPROCESS16)PTR(pProcess->ulThreadList,
-                                          pProcess->usThreads * sizeof(QTHREAD16))
-            )
-        {
-            if (pProcess->usPID)
-                arc = scxtCreateSecurityContext(pProcess->usPID,
-                                                -1,      // pre-running
-                                                -1);     // pre-running
-            if (arc != NO_ERROR)
-                break;
-        }
-
-        prc16FreeInfo(p16Info);
-    }
-
-    return arc;
-}
-
-/*
- *@@ CleanupSecurityContexts:
- *      since we have no ring-0 hook for "exit process",
- *      we need this function to check which processes
- *      are still running.
- *
- *      This calls scxtEnumSecurityContexts and then
- *      scxtDeleteSecurityContext for each PID which
- *      isn't valid any more.
- */
-
-APIRET CleanupSecurityContexts(VOID)
-{
-    PXWPSECURITYCONTEXT paContexts = NULL;
-    ULONG               cContexts = 0;
-    APIRET              arc = NO_ERROR;
-    PQPROCSTAT16        p16Info;
-
-    if (!(arc = prc16GetInfo(&p16Info)))
-    {
-        arc = scxtEnumSecurityContexts(0,
-                                       &paContexts,
-                                       &cContexts);
-        if (arc != NO_ERROR)
-            _Pmpf(("scxtEnumSecurityContexts returned %d.", arc));
-        else
-        {
-            ULONG   ul;
-            PXWPSECURITYCONTEXT pContextThis = paContexts;
-
-            for (ul = 0;
-                 ul < cContexts;
-                 ul++)
-            {
-                if (!prc16FindProcessFromPID(p16Info,
-                                             pContextThis->ulPID))
-                    // not found:
-                    // delete security context
-                    arc = scxtDeleteSecurityContext(pContextThis->ulPID);
-
-                pContextThis++;
-
-                if (arc != NO_ERROR)
-                    break;
-            }
-
-            scxtFreeSecurityContexts(paContexts);
-        }
-
-        prc16FreeInfo(p16Info);
-    }
-
-    return arc;
-}
-
-/* ******************************************************************
- *
- *   Ring-3 daemon thread
- *
- ********************************************************************/
-
-#define SecIOCtl(hfDriver, ulFunctionCode, pvData, cbDataMax, pcbData) \
-    DosDevIOCtl((hfDriver), IOCTL_XWPSEC, (ulFunctionCode), \
-                NULL, 0, NULL, \
-                (pvData), (cbDataMax), (pcbData))
-
-typedef APIRET (FNAUTHORIZE) (PXWPSECURITYCONTEXT pContext,
-                              PSECIOSHARED pSecIOShared,
-                              ULONG ulAuthorizeData);
-typedef FNAUTHORIZE *PFNAUTHORIZE;
-
-/*
- *@@ AuthorizeSimpleFilname:
- *      authorizes an event which only has a filename
- *      as the parameter.
- *
- *      See XWPSECEVENTDATA_FILEONLY for details.
- *
- *      This must write NO_ERROR or ERROR_ACCESS_DENIED
- *      into pSecIOShared->arc.
- *
- *      Also, if this returns something != NO_ERROR,
- *      the ring-3 daemon is stopped with a security violation.
- */
-
-APIRET AuthorizeFileOnly(PXWPSECURITYCONTEXT pContext,
-                         PSECIOSHARED pSecIOShared,
-                         ULONG ulAccessRequired)       // in: required XWPACCESS_* flags
-{
-    APIRET arc = NO_ERROR;          // return code (NOT access permission!)
-    PXWPSECEVENTDATA_FILEONLY pFileOnly
-        = &pSecIOShared->EventData.FileOnly;
-
-    APIRET  arcAuthorized = NO_ERROR;
-
-    // skip devices (we get calls for "\DEV\MOUSE$" and such too)
-    if (    (pFileOnly->szPath[0] != '\\')
-         && (pFileOnly->szPath[1] == ':')
-       )
-    {
-        arcAuthorized = saclVerifyAccess(pContext,
-                                         pFileOnly->szPath,
-                                         ulAccessRequired);
-    }
-
-    pSecIOShared->arc = arcAuthorized;
-
-    return arc;
-}
-
-/*
- *@@ AuthorizeLoaderOpen:
- *      authorizes a "loader open" event.
- *
- *      See XWPSECEVENTDATA_LOADEROPEN for details.
- *
- *      This must write NO_ERROR or ERROR_ACCESS_DENIED
- *      into pSecIOShared->arc.
- *
- *      Also, if this returns something != NO_ERROR,
- *      the ring-3 daemon is stopped with a security violation.
- */
-
-APIRET AuthorizeLoaderOpen(PXWPSECURITYCONTEXT pContext,
-                           PSECIOSHARED pSecIOShared,
-                           ULONG ulDummy)
-{
-    APIRET arc = NO_ERROR;          // return code (NOT access permission!)
-    PXWPSECEVENTDATA_LOADEROPEN pLoaderOpen
-        = &pSecIOShared->EventData.LoaderOpen;
-
-    APIRET  arcAuthorized = NO_ERROR;
-
-    // skip devices (we get calls for "\DEV\MOUSE$" and such too)
-    if (    (pLoaderOpen->szFileName[0] != '\\')
-         && (pLoaderOpen->szFileName[1] == ':')
-       )
-    {
-        arcAuthorized = saclVerifyAccess(pContext,
-                                         pLoaderOpen->szFileName,
-                                         XWPACCESS_EXEC);
-    }
-
-    pSecIOShared->arc = arcAuthorized;
-
-    return arc;
-}
-
-/*
- *@@ AuthorizeExecPgm:
- *      authorizes a DosExecPgm event.
- *
- *      See XWPSECEVENTDATA_EXECPGM for details.
- *
- *      This must write NO_ERROR or ERROR_ACCESS_DENIED
- *      into pSecIOShared->arc.
- *
- *      Also, if this returns something != NO_ERROR,
- *      the ring-3 daemon is stopped with a security violation.
- */
-
-APIRET AuthorizeExecPgm(PXWPSECURITYCONTEXT pContext,
-                        PSECIOSHARED pSecIOShared,
-                        ULONG ulDummy)
-{
-    APIRET arc = NO_ERROR;          // return code (NOT access permission!)
-    PXWPSECEVENTDATA_EXECPGM pExecPgm
-        = &pSecIOShared->EventData.ExecPgm;
-
-    APIRET  arcAuthorized = NO_ERROR;
-
-    // skip devices (we get calls for "\DEV\MOUSE$" and such too)
-    if (    (pExecPgm->szFileName[0] != '\\')
-         && (pExecPgm->szFileName[1] == ':')
-       )
-    {
-        arcAuthorized = saclVerifyAccess(pContext,
-                                         pExecPgm->szFileName,
-                                         XWPACCESS_EXEC);
-    }
-
-    pSecIOShared->arc = arcAuthorized;
-
-    return arc;
-}
-
-/*
- *@@ AuthorizeOpenPre:
- *      authorizes an OPEN_PRE callback (DosOpen call).
- *
- *      See XWPSECEVENTDATA_OPEN_PRE for details how
- *      this processes stuff.
- *
- *      This must write NO_ERROR or ERROR_ACCESS_DENIED
- *      into pSecIOShared->arc.
- *
- *      Also, if this returns something != NO_ERROR,
- *      the ring-3 daemon is stopped with a security violation.
- */
-
-APIRET AuthorizeOpenPre(PXWPSECURITYCONTEXT pContext,
-                        PSECIOSHARED pSecIOShared,
-                        ULONG ulAuthorizeData)
-{
-    APIRET arc = NO_ERROR;          // return code (NOT access permission!)
-    PXWPSECEVENTDATA_OPEN_PRE pOpenPre
-        = &pSecIOShared->EventData.OpenPre;
-
-    APIRET  arcAuthorized = NO_ERROR;
-
-    _Pmpf(("SECEVENT_OPEN_PRE %s",
-            pOpenPre->szFileName));
-
-    // skip devices (we get calls for "\DEV\MOUSE$" and such too)
-    if (    (pOpenPre->szFileName[0] != '\\')
-         && (pOpenPre->szFileName[1] == ':')
-       )
-    {
-        if (    (pOpenPre->szFileName[0] == 'N')
-             && (pOpenPre->szFileName[1] == ':')
-           )
-            arcAuthorized = ERROR_ACCESS_DENIED;
-
-        /* ULONG ulRequiredForDrive = 0,
-              ulRequiredForDir = 0,
-              ulRequiredForFile = 0;
-
-                         CHAR    szTemp[1000] = "";
-
-                         if (pOpenPre->fsOpenFlags & OPEN_ACTION_FAIL_IF_NEW)
-                             strcat(szTemp, "OPEN_ACTION_FAIL_IF_NEW ");
-                         if (pOpenPre->fsOpenFlags & OPEN_ACTION_CREATE_IF_NEW)
-                             strcat(szTemp, "OPEN_ACTION_CREATE_IF_NEW ");
-                         if (pOpenPre->fsOpenFlags & OPEN_ACTION_FAIL_IF_EXISTS)
-                             strcat(szTemp, "OPEN_ACTION_FAIL_IF_EXISTS ");
-                         if (pOpenPre->fsOpenFlags & OPEN_ACTION_OPEN_IF_EXISTS)
-                             strcat(szTemp, "OPEN_ACTION_OPEN_IF_EXISTS ");
-                         _Pmpf(("    fsOpenFlags: %s", szTemp));
-
-                         szTemp[0] = 0;
-                         if (pOpenPre->fsOpenMode & OPEN_FLAGS_DASD)
-                             strcat(szTemp, "OPEN_FLAGS_DASD ");
-                         switch (pOpenPre->fsOpenMode & 0x03)
-                         {
-                             case OPEN_ACCESS_READONLY:                      // 0x00
-                                 strcat(szTemp, "OPEN_ACCESS_READONLY ");
-                             break;
-
-                             case OPEN_ACCESS_WRITEONLY:                     // 0x01
-                                 strcat(szTemp, "OPEN_ACCESS_WRITEONLY ");
-                             break;
-
-                             case OPEN_ACCESS_READWRITE:                     // 0x02
-                                 strcat(szTemp, "OPEN_ACCESS_READWRITE ");
-                             break;
-                         }
-                         _Pmpf(("    fsOpenMode: %s", szTemp));
-
-        // "open" for file name:
-        if (pOpenPre->fsOpenFlags & OPEN_ACTION_CREATE_IF_NEW) // 0x0010
-            ulRequiredForDir |= XWPACCESS_CREATE;
-        if (pOpenPre->fsOpenFlags & OPEN_ACTION_OPEN_IF_EXISTS) // 0x0001
-            ulRequiredForFile |= XWPACCESS_READ;
-        if (pOpenPre->fsOpenFlags & OPEN_ACTION_REPLACE_IF_EXISTS) // 0x0002
-        {
-            ulRequiredForFile |= XWPACCESS_WRITE;
-            ulRequiredForDir |= XWPACCESS_CREATE;
-        }
-        if (pOpenPre->fsOpenMode & OPEN_FLAGS_DASD) // (open drive) 0x8000
-            ulRequiredForDir |= (XWPACCESS_WRITE | XWPACCESS_DELETE | XWPACCESS_CREATE);
-
-        // bits 0-2 (mask: 0x3) specify access-mode flags
-        switch (pOpenPre->fsOpenMode & 0x03)
-        {
-            case OPEN_ACCESS_READONLY:                      // 0x00
-                ulRequiredForFile |= XWPACCESS_READ;
-                ulRequiredForDir |= XWPACCESS_READ;
-            break;
-
-            case OPEN_ACCESS_WRITEONLY:                     // 0x01
-                ulRequiredForFile |= XWPACCESS_WRITE;
-                ulRequiredForDir |= XWPACCESS_WRITE;
-            break;
-
-            case OPEN_ACCESS_READWRITE:                     // 0x02
-                ulRequiredForFile |= (XWPACCESS_READ | XWPACCESS_WRITE);
-                ulRequiredForDir |= (XWPACCESS_READ | XWPACCESS_WRITE);
-            break;
-        }
-
-        if (ulRequiredForDrive)
-        {
-            // authorization for drive needed:
-            CHAR    szDrive[] = "?:\\";
-            szDrive[0] = pOpenPre->szFileName[0];
-            arcAuthorized = saclVerifyAccess(pContext,
-                                             szDrive,
-                                             ulRequiredForDrive);
-        }
-
-        if (arcAuthorized == NO_ERROR)
-        {
-            // authorized so far:
-            if (ulRequiredForDir)
-            {
-                // authorization for file's directory needed:
-                // create directory name from full path
-                CHAR szDir[2*CCHMAXPATH];
-                PSZ p ;
-                strcpy(szDir, pOpenPre->szFileName);
-                p = strrchr(szDir, '\\');
-                if (p)
-                {
-                    *p = 0;
-                    arcAuthorized = saclVerifyAccess(pContext,
-                                                     szDir,
-                                                     ulRequiredForDir);
-                }
-                // else no path: this can happen
-                // for DASD open on drive ("G:")
-            }
-
-            if (arcAuthorized == NO_ERROR)
-            {
-                // authorized so far:
-                if (ulRequiredForFile)
-                {
-                    // authorization for file itself needed:
-                    arcAuthorized = saclVerifyAccess(pContext,
-                                                     pOpenPre->szFileName,
-                                                     ulRequiredForFile);
-                }
-            }
-        } */
-    }
-
-    pSecIOShared->arc = arcAuthorized;
-
-    return arc;
-}
-
-/*
- *@@ AuthorizeMovePre:
- *      authorizes a DosMove event.
- *
- *      See XWPSECEVENTDATA_MOVE_PRE for details.
- *
- *      This must write NO_ERROR or ERROR_ACCESS_DENIED
- *      into pSecIOShared->arc.
- *
- *      Also, if this returns something != NO_ERROR,
- *      the ring-3 daemon is stopped with a security violation.
- */
-
-APIRET AuthorizeMovePre(PXWPSECURITYCONTEXT pContext,
-                        PSECIOSHARED pSecIOShared,
-                        ULONG ulDummy)
-{
-    APIRET arc = NO_ERROR;          // return code (NOT access permission!)
-    PXWPSECEVENTDATA_MOVE_PRE pMovePre
-        = &pSecIOShared->EventData.MovePre;
-
-    APIRET  arcAuthorized = NO_ERROR;
-
-    ULONG ulRequiredForOldDir = 0;
-
-    // create directory name from file mask (e.g. "F:\test\*.txt")
-    PSZ pDirOld = strdup(pMovePre->szOldPath);
-    PSZ pOld = strrchr(pDirOld, '\\');
-    PSZ pDirNew = strdup(pMovePre->szNewPath);
-    PSZ pNew = strrchr(pDirNew, '\\');
-
-    if (pOld)
-    {
-        *pOld = 0;
-
-        if (pNew)
-        {
-            *pNew = 0;
-
-            if (stricmp(pDirOld, pDirNew) != 0)
-                // directories differ: that's a move...
-                // check old dir also
-                arcAuthorized = saclVerifyAccess(pContext,
-                                                 pDirOld,
-                                                 XWPACCESS_DELETE);
-
-            if (arcAuthorized == NO_ERROR)
-                arcAuthorized = saclVerifyAccess(pContext,
-                                                 pDirNew,
-                                                 XWPACCESS_WRITE);
-            if (arcAuthorized == NO_ERROR)
-                // now check file
-                arcAuthorized = saclVerifyAccess(pContext,
-                                                 pMovePre->szNewPath,
-                                                 XWPACCESS_WRITE);
-        }
-        free(pDirNew);
-    }
-    free(pDirOld);
-
-    pSecIOShared->arc = arcAuthorized;
-
-    return arc;
-}
-
-/*
- *@@ AuthorizeFindFirst:
- *      authorizes a DosFindFirst event.
- *
- *      See XWPSECEVENTDATA_FINDFIRST for details.
- *
- *      This must write NO_ERROR or ERROR_ACCESS_DENIED
- *      into pSecIOShared->arc.
- *
- *      Also, if this returns something != NO_ERROR,
- *      the ring-3 daemon is stopped with a security violation.
- */
-
-APIRET AuthorizeFindFirst(PXWPSECURITYCONTEXT pContext,
-                          PSECIOSHARED pSecIOShared,
-                          ULONG ulDummy)
-{
-    APIRET arc = NO_ERROR;          // return code (NOT access permission!)
-    PXWPSECEVENTDATA_FINDFIRST pFindFirst
-        = &pSecIOShared->EventData.FindFirst;
-
-    APIRET  arcAuthorized = NO_ERROR;
-
-    // create directory name from file mask (e.g. "F:\test\*.txt")
-    PSZ pDup = strdup(pFindFirst->szPath);
-    PSZ p = strrchr(pDup, '\\');
-    if (p)
-    {
-        *p = 0;
-        arcAuthorized = saclVerifyAccess(pContext,
-                                         pDup,
-                                         XWPACCESS_READ);
-
-    }
-    free(pDup);
-
-    pSecIOShared->arc = arcAuthorized;
-
-    return arc;
-}
-
-/*
- *@@ ProcessRing0Event:
- *      gets called from fntRing3Daemon for each
- *      event that the ring-0 driver (XWPSEC32.SYS)
- *      sends to us.
- *
- *      This receives a SECIOSHARED structure and
- *      must authorize access to the resource
- *      specified by SECIOSHARED.ulEventCode and
- *      SECIOSHARED.EventData. The event data is
- *      a XWPSECEVENTDATA union. Choose the member
- *      of that union based on the event code.
- *
- *      This MUST put the result of the authorization
- *      into SECIOSHARED.arc. Put NO_ERROR if access
- *      has been authorized, or ERROR_ACCESS_DENIED.
- *      The driver will then return this value to the
- *      application thread which requested access to
- *      the resource (and unblock that thread).
- *
- *      If this returns NO_ERROR, fntRing3Daemon continues
- *      looping, otherwise it stops.
- *
- *      Restrictions:
- *
- *      This thread MUST NOT START ANY OTHER PROCESSES
- *      because the EXEC_PGM callouts are NOT checked for
- *      whether they are called by the daemon. The system
- *      can deadlock or trap (haven't tested this) if this
- *      thread starts another process because ring 0 will
- *      recurse then.
- */
-
-APIRET ProcessRing0Event(PSECIOSHARED pSecIOShared)
-{
-    APIRET  arc = NO_ERROR;
-
-    PFNAUTHORIZE    pfnAuthorize = NULL;
-    ULONG           ulAuthorizeData = 0;
-
-    pSecIOShared->arc = NO_ERROR;
-
-    switch (pSecIOShared->ulEventCode)
-    {
-        case SECEVENT_CLOSE:
-        case SECEVENT_DELETE_POST:
-        case SECEVENT_MOVE_POST:
-        case SECEVENT_OPEN_POST:
-        break;
-
-        /*
-         * SECEVENT_DELETE_PRE:
-         *      DosDelete.
-         */
-
-        case SECEVENT_DELETE_PRE:
-                         _Pmpf(("SECEVENT_DELETE_PRE %s",
-                                 pSecIOShared->EventData.FileOnly.szPath));
-            pfnAuthorize = AuthorizeFileOnly;
-            ulAuthorizeData = XWPACCESS_DELETE; // req. access flags
-        break;
-
-        /*
-         * SECEVENT_MAKEDIR:
-         *
-         */
-
-        case SECEVENT_MAKEDIR:
-                         _Pmpf(("SECEVENT_MAKEDIR %s",
-                                 pSecIOShared->EventData.FileOnly.szPath));
-            pfnAuthorize = AuthorizeFileOnly;
-            ulAuthorizeData = XWPACCESS_CREATE; // req. access flags
-        break;
-
-        /*
-         * SECEVENT_CHANGEDIR:
-         *
-         */
-
-        case SECEVENT_CHANGEDIR:
-                         _Pmpf(("SECEVENT_CHANGEDIR %s",
-                                 pSecIOShared->EventData.FileOnly.szPath));
-            pfnAuthorize = AuthorizeFileOnly;
-            ulAuthorizeData = XWPACCESS_EXEC; // req. access flags
-        break;
-
-        /*
-         * SECEVENT_REMOVEDIR:
-         *
-         */
-
-        case SECEVENT_REMOVEDIR:
-                         _Pmpf(("SECEVENT_REMOVEDIR %s",
-                                 pSecIOShared->EventData.FileOnly.szPath));
-            pfnAuthorize = AuthorizeFileOnly;
-            ulAuthorizeData = XWPACCESS_DELETE; // req. access flags
-        break;
-
-        /*
-         * SECEVENT_LOADEROPEN:
-         *
-         */
-
-        case SECEVENT_LOADEROPEN:
-                         _Pmpf(("SECEVENT_LOADEROPEN %s",
-                                 pSecIOShared->EventData.LoaderOpen.szFileName));
-            pfnAuthorize = AuthorizeLoaderOpen;
-        break;
-
-        /*
-         * SECEVENT_GETMODULE:
-         *
-         */
-
-        case SECEVENT_GETMODULE:
-                         _Pmpf(("SECEVENT_GETMODULE %s",
-                                 pSecIOShared->EventData.FileOnly.szPath));
-            pfnAuthorize = AuthorizeFileOnly;
-            ulAuthorizeData = XWPACCESS_EXEC; // req. access flags
-        break;
-
-        /*
-         * SECEVENT_EXECPGM:
-         *
-         */
-
-        case SECEVENT_EXECPGM:
-                         _Pmpf(("SECEVENT_EXECPGM %s",
-                                 pSecIOShared->EventData.ExecPgm.szFileName));
-            pfnAuthorize = AuthorizeExecPgm;
-        break;
-
-        /*
-         * SECEVENT_EXECPGM_POST:
-         *      create security context for process.
-         */
-
-        case SECEVENT_EXECPGM_POST:
-        {
-            PXWPSECEVENTDATA_EXECPGM_POST pExecPgmPost
-                = &pSecIOShared->EventData.ExecPgmPost;
-
-            HXSUBJECT   hsubjUser = 0,      // unauthorized
-                        hsubjGroup = 0;     // unauthorized
-
-            XWPLOGGEDON LoggedOnLocal;
-
-            if (NO_ERROR == slogQueryLocalUser(&LoggedOnLocal))
-            {
-                // local user logged on already:
-                // @@todo temporary version;
-                // really we should query which uid the
-                // parent process is running on and check
-                // for agent (privileged) processes here...
-                hsubjUser = LoggedOnLocal.hsubjUser;
-                hsubjGroup = LoggedOnLocal.hsubjGroup;
-            }
-            arc = scxtCreateSecurityContext(pExecPgmPost->ulNewPID,
-                                            hsubjUser,
-                                            hsubjGroup);
-            if (arc != NO_ERROR)
-                _Pmpf(("   scxtCreateSecurityContext returned %d.", arc));
-        }
-        break;
-
-        /*
-         *@@ SECEVENT_FINDFIRST:
-         *
-         */
-
-        case SECEVENT_FINDFIRST:
-                         _Pmpf(("SECEVENT_FINDFIRST %s",
-                                 pSecIOShared->EventData.FindFirst.szPath));
-            pfnAuthorize = AuthorizeFindFirst;
-        break;
-
-        /*
-         * SECEVENT_MOVE_PRE:
-         *
-         */
-
-        case SECEVENT_MOVE_PRE:
-                         _Pmpf(("SECEVENT_MOVE_PRE %s -> %s",
-                                 pSecIOShared->EventData.MovePre.szOldPath,
-                                 pSecIOShared->EventData.MovePre.szNewPath));
-            pfnAuthorize = AuthorizeMovePre;
-        break;
-
-        /*
-         * SECEVENT_OPEN_PRE:
-         *      DosOpen.
-         */
-
-        case SECEVENT_OPEN_PRE:
-            pfnAuthorize = AuthorizeOpenPre;
-        break;
-    }
-
-    if (pfnAuthorize)
-    {
-        // call needs authorization:
-
-        // first check if process is running
-        // on behalf of root... in that case,
-        // we are authorized!
-
-        XWPSECURITYCONTEXT Context;
-        Context.ulPID = pSecIOShared->ulCallerPID;
-        arc = scxtFindSecurityContext(&Context);
-
-        _Pmpf(("   scxtFindSecurityContext returned %d.", arc));
-
-        if (!arc)
-        {
-            if (Context.hsubjUser != 0)
-            {
-                // non-root:
-                arc = pfnAuthorize(&Context,
-                                   pSecIOShared,
-                                   ulAuthorizeData);
-                if (arc != NO_ERROR)
-                    Error("pfnAuthorize returned %d", arc);
-            }
-            // else root: pSecIOShared->arc is still NO_ERROR;
-        }
-    }
-
-    return arc;
-}
-
-/*
- *@@ fntRing3Daemon:
- *      ring-3 daemon thread for serving the ring-0
- *      kernel hooks in XWPSEC32.SYS.
- *
- *      This gets started from InitDaemon() and calls
- *      XWPSEC32.SYS with the XWPSECIO_REGISTER IOCtl.
- *      After this, access control is ENABLED and the
- *      daemon receives messages in a block of shared
- *      memory every time access needs to be authorized.
- *
- *      This thread does not have a PM message queue.
- *
- *      Restrictions:
- *
- *      This thread MUST NOT START ANY OTHER PROCESSES
- *      because the EXEC_PGM callouts are NOT checked for
- *      whether they are called by the daemon. The system
- *      can deadlock or trap (haven't tested this) if this
- *      thread starts another process because ring 0 will
- *      recurse then.
- */
-
-void _Optlink fntRing3Daemon(PTHREADINFO ptiMyself)
-{
-    APIRET  arc = NO_ERROR;
-
-    // allocate memory for communication with ring-0 driver;
-    // we use a buffer of SECIOSHARED, which we pass down
-    // to the driver in the SECIOREGISTER struct with IoCtl
-
-    PSECIOSHARED pSecIOShared = 0;
-
-    DosSetPriority(PRTYS_THREAD,
-                   4,
-                   +31,
-                   0);          // current thread
-
-    // THIS MEMORY MUST BE ON A PAGE BOUNDARY, SO USE DOSALLOCMEM
-    arc = DosAllocMem((PVOID*)&pSecIOShared,
-                      sizeof(SECIOSHARED),
-                      PAG_COMMIT | PAG_READ | PAG_WRITE);
-    if (arc != NO_ERROR)
-        Error(__FUNCTION__ ": DosAllocMem returned %d.", arc);
-    else
-    {
-        // register this daemon with ring-0 driver (XWPSEC32.SYS);
-        ULONG cbDataLen = sizeof(SECIOSHARED);
-
-        // pass SECIOSHARED;
-        // this call blocks until we have something to do!
-        if (!(arc = SecIOCtl(G_hfSec32DD,
-                             XWPSECIO_REGISTER,
-                             pSecIOShared,          // in      address of command data
-                             sizeof(SECIOSHARED),   // in      maximum size of command data
-                             &cbDataLen)))          // in out  size of command data returned
-        {
-            // this returned: then the buffer is already
-            // filled with an authorization request
-            while ((!ptiMyself->fExit) && (!arc))
-            {
-                // process request
-                // at this point, all requests in XWPSEC32.SYS are BLOCKED
-                // until we return a return code!
-
-                pSecIOShared->arc = NO_ERROR;
-
-                if (arc = ProcessRing0Event(pSecIOShared))
-                    // error:
-                    break;
-
-                // ProcessRing0Event has put the access control
-                // result into SECIOSHARED.arc;
-                // notify ring-0 driver that access has been
-                // checked... this will unblock the application
-                // thread that was waiting
-
-                cbDataLen = sizeof(SECIOSHARED);
-                arc = SecIOCtl(G_hfSec32DD,
-                               XWPSECIO_AUTHORIZED_NEXT,
-                               pSecIOShared,
-                               sizeof(SECIOSHARED),
-                               &cbDataLen);
-            }
-
-            // done: deregister daemon...
-            SecIOCtl(G_hfSec32DD,
-                     XWPSECIO_DEREGISTER,
-                     NULL,
-                     0,
-                     NULL);
-
-            _PmpfF(("access control disabled."));
-
-            if (arc != NO_ERROR)
-                Error("fntRing3Daemon: Error %d occured.", arc);
-        }
-    }
-}
-
-/*
- *@@ InitDaemon:
- *      this gets called from main() to initialize the ring-3
- *      daemon thread.
- *
- *      This first attempts to open XWPSEC32.SYS. If the driver
- *      is not installed, ERROR_FILE_NOT_FOUND is returned.
- *
- *      Otherwise, the G_hevCallback semaphore is created (for
- *      ring-0 communication), and the daemon thread is started.
- *
- *      IF THIS RETURNS "NO_ERROR", ACCESS CONTROL IS ENABLED
- *      FOR THE ENTIRE SYSTEM!
- */
-
-APIRET InitDaemon(VOID)
-{
-    // open driver
-    ULONG   ulActionTaken = 0;
-
-    APIRET arc = DosOpen("XWPSEC$",
-                         &G_hfSec32DD,
-                         &ulActionTaken,
-                         0,    // file size
-                         FILE_NORMAL,    // file attribute
-                         OPEN_ACTION_OPEN_IF_EXISTS,   // do not create
-                         OPEN_SHARE_DENYNONE | OPEN_ACCESS_READWRITE | OPEN_FLAGS_FAIL_ON_ERROR,
-                         NULL);    // EAs
-    if (arc == NO_ERROR)
-    {
-        // driver opened:
-
-        // start ring-3 daemon thread, which
-        // interfaces ring-0 driver...
-        if (!thrCreate(&G_tiRing3Daemon,
-                       fntRing3Daemon,
-                       &G_tidRing3DaemonRunning,
-                       "Ring3Daemon",
-                       THRF_WAIT,
-                       G_hfSec32DD))      // driver file handle
-        {
-            Error("Cannot create ring-3 daemon thread.");
-            arc = XWPSEC_CANNOT_START_DAEMON;
-        }
-
-        if (arc != NO_ERROR)
-        {
-            // some error, but driver was opened:
-            DosClose(G_hfSec32DD);
-            G_hfSec32DD = NULLHANDLE;
-        }
-    }
-
-    return arc;
-}
-
-/*
- *@@ ShutdownDaemon:
- *      -- stops daemon thread
- *      -- closes G_hevCallback
- *      -- closes XWPSEC32.SYS
- */
-
-VOID ShutdownDaemon(VOID)
-{
-    APIRET arc = NO_ERROR;
-
-    // stop callback thread
-    if (G_tidRing3DaemonRunning)
-    {
-        G_tiRing3Daemon.fExit = TRUE;
-
-        SecIOCtl(G_hfSec32DD,
-                 XWPSECIO_DEREGISTER,
-                 NULL,
-                 0,
-                 NULL);
-        thrWait(&G_tiRing3Daemon);
-    }
-
-    if (G_hfSec32DD)
-    {
-        DosClose(G_hfSec32DD);
-        G_hfSec32DD = NULLHANDLE;
-    }
-}
-
-/* ******************************************************************
- *
  *   Queue thread
  *
  ********************************************************************/
@@ -1715,96 +754,110 @@ VOID ShutdownDaemon(VOID)
  *@@ ProcessQueueCommand:
  *
  *@@added V0.9.11 (2001-04-22) [umoeller]
+ *@@changed V1.0.1 (2003-01-05) [umoeller]: added create user
  */
 
 APIRET ProcessQueueCommand(PXWPSHELLQUEUEDATA pSharedQueueData,
                            ULONG pid)
 {
-    APIRET arc = NO_ERROR;
+    APIRET  arc = NO_ERROR;
 
-    // prepare security context so we can check if the
-    // calling process has sufficient authority for
-    // processing this request
-    XWPSECURITYCONTEXT sc;
-    sc.ulPID = pid;
+    // check size of struct; when we add fields, this can change,
+    // and we don't want to blow up because of this V1.0.1 (2003-01-05) [umoeller]
+    if (pSharedQueueData->cbStruct != sizeof(XWPSHELLQUEUEDATA))
+        return XWPSEC_STRUCT_MISMATCH;
 
-    switch (pSharedQueueData->ulCommand)
+    TRY_QUIET(excpt1)
     {
-        case QUECMD_QUERYLOCALLOGGEDON:
-            // no authority needed for this
-            arc = slogQueryLocalUser(&pSharedQueueData->Data.QueryLocalLoggedOn);
-        break;
-
-        case QUECMD_QUERYUSERS:
-            if (    (!(arc = scxtFindSecurityContext(&sc)))
-                 && (!(arc = scxtVerifyAuthority(
-                                    &sc,
-                                    ACTION_QUERYUSERSGROUPS)))
-                 && (!(arc = sudbQueryUsers(
-                                    &pSharedQueueData->Data.QueryUsers.cUsers,
-                                    &pSharedQueueData->Data.QueryUsers.paUsers)))
-               )
+        // prepare security context so we can check if the
+        // calling process has sufficient authority for
+        // processing this request
+        XWPSECURITYCONTEXT sc;
+        sc.ulPID = pid;
+        if (!(arc = scxtFindSecurityContext(&sc)))
+        {
+            switch (pSharedQueueData->ulCommand)
             {
-                // this has allocated a chunk of shared memory, so give
-                // this to the caller
-                arc = DosGiveSharedMem(
-                                    (PBYTE)pSharedQueueData->Data.QueryUsers.paUsers,
-                                    pid, // caller's PID
-                                    PAG_READ | PAG_WRITE);
+                case QUECMD_QUERYLOCALLOGGEDON:
+                    // no authority needed for this
+                    arc = slogQueryLocalUser(&pSharedQueueData->Data.QueryLocalLoggedOn);
+                break;
 
-                // free this for us; usage count is 2 presently,
-                // so the chunk will be freed after the caller
-                // as issued DosFreeMem also
-                DosFreeMem((PBYTE)pSharedQueueData->Data.QueryUsers.paUsers);
+                case QUECMD_QUERYUSERS:
+                    if (    (!(arc = scxtVerifyAuthority(&sc,
+                                                         XWPPERM_QUERYUSERINFO)))
+                         && (!(arc = sudbQueryUsers(
+                                            &pSharedQueueData->Data.QueryUsers.cUsers,
+                                            &pSharedQueueData->Data.QueryUsers.paUsers)))
+                       )
+                    {
+                        // this has allocated a chunk of shared memory, so give
+                        // this to the caller
+                        arc = DosGiveSharedMem(
+                                            (PBYTE)pSharedQueueData->Data.QueryUsers.paUsers,
+                                            pid, // caller's PID
+                                            PAG_READ | PAG_WRITE);
+
+                        // free this for us; usage count is 2 presently,
+                        // so the chunk will be freed after the caller
+                        // has issued DosFreeMem also
+                        DosFreeMem((PBYTE)pSharedQueueData->Data.QueryUsers.paUsers);
+                    }
+                break;
+
+                case QUECMD_QUERYGROUPS:
+                    if (    (!(arc = scxtVerifyAuthority(
+                                            &sc,
+                                            XWPPERM_QUERYUSERINFO)))
+                         && (!(arc = sudbQueryGroups(
+                                            &pSharedQueueData->Data.QueryGroups.cGroups,
+                                            &pSharedQueueData->Data.QueryGroups.paGroups)))
+                       )
+                    {
+                        // this has allocated a chunk of shared memory, so give
+                        // this to the caller
+                        arc = DosGiveSharedMem(
+                                            (PBYTE)pSharedQueueData->Data.QueryGroups.paGroups,
+                                            pid, // caller's PID
+                                            PAG_READ | PAG_WRITE);
+
+                        // free this for us; usage count is 2 presently,
+                        // so the chunk will be freed after the caller
+                        // as issued DosFreeMem also
+                        DosFreeMem((PBYTE)pSharedQueueData->Data.QueryGroups.paGroups);
+                    }
+                break;
+
+                case QUECMD_QUERYPROCESSOWNER:
+                    // @@todo
+                    arc = XWPSEC_QUEUE_INVALID_CMD;
+                break;
+
+                case QUECMD_CREATEUSER:
+                    if (!(arc = scxtVerifyAuthority(&sc,
+                                                    XWPPERM_CREATEUSER)))
+                    {
+                        XWPUSERDBENTRY ue;
+                        #define COPYITEM(a) memcpy(ue.User.a, pSharedQueueData->Data.CreateUser.a, sizeof(ue.User.a))
+                        COPYITEM(szUserName);
+                        COPYITEM(szFullName);
+                        memcpy(ue.szPassword, pSharedQueueData->Data.CreateUser.szPassword, sizeof(ue.szPassword));
+                        if (!(arc = sudbCreateUser(&ue)))
+                            pSharedQueueData->Data.CreateUser.uidCreated = ue.User.uid;
+                    }
+                break;
+
+                default:
+                    // unknown code:
+                    arc = XWPSEC_QUEUE_INVALID_CMD;
+                break;
             }
-        break;
-
-        case QUECMD_QUERYGROUPS:
-            if (    (!(arc = scxtFindSecurityContext(&sc)))
-                 && (!(arc = scxtVerifyAuthority(
-                                    &sc,
-                                    ACTION_QUERYUSERSGROUPS)))
-                 && (!(arc = sudbQueryGroups(
-                                    &pSharedQueueData->Data.QueryGroups.cGroups,
-                                    &pSharedQueueData->Data.QueryGroups.paGroups)))
-               )
-            {
-                // this has allocated a chunk of shared memory, so give
-                // this to the caller
-                arc = DosGiveSharedMem(
-                                    (PBYTE)pSharedQueueData->Data.QueryGroups.paGroups,
-                                    pid, // caller's PID
-                                    PAG_READ | PAG_WRITE);
-
-                // free this for us; usage count is 2 presently,
-                // so the chunk will be freed after the caller
-                // as issued DosFreeMem also
-                DosFreeMem((PBYTE)pSharedQueueData->Data.QueryGroups.paGroups);
-            }
-        break;
-
-        case QUECMD_QUERYPROCESSOWNER:
-            // no authority needed for this
-            sc.ulPID = pSharedQueueData->Data.QueryProcessOwner.ulPID;
-            if (!(arc = scxtFindSecurityContext(&sc)))
-            {
-                if (sc.hsubjUser == -1)
-                    pSharedQueueData->Data.QueryProcessOwner.uid = -1;
-                else
-                {
-                    XWPSUBJECTINFO si;
-                    si.hSubject = sc.hsubjUser;
-                    if (!(arc = subjQuerySubjectInfo(&si)))
-                        pSharedQueueData->Data.QueryProcessOwner.uid = si.id;
-                }
-            }
-        break;
-
-        default:
-            // unknown code:
-            arc = XWPSEC_QUEUE_INVALID_CMD;
-        break;
+        }
     }
+    CATCH(excpt1)
+    {
+        arc = ERROR_PROTECTION_VIOLATION;
+    } END_CATCH();
 
     return arc;
 }
@@ -1965,16 +1018,10 @@ MRESULT EXPENTRY fnwpShellObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM 
                 else
                 {
                     XWPLOGGEDON LoggedOnLocal;
-                    arc = slogQueryLocalUser(&LoggedOnLocal);
-                    if (arc != NO_ERROR)
+                    if (arc = slogQueryLocalUser(&LoggedOnLocal))
                         Error("slogQueryLocalUser returned %d", arc);
                     else
                     {
-                        arc = CleanupSecurityContexts();
-                        if (arc != NO_ERROR)
-                            Error("CleanupSecurityContexts returned %d", arc);
-                        // DumpSecurityContexts();
-
                         // log off the local user
                         // (this deletes the subject handles)
                         arc = slogLogOff(LoggedOnLocal.uid);
@@ -2067,61 +1114,57 @@ int main(int argc, char *argv[])
     }
     else
     {
-        // since this program will never stop running, make
-        // sure we survive even shutdown
-        WinCancelShutdown(hmq, TRUE);
-
-        // allocate XWPSHELLSHARED
-        if ((arc = DosAllocSharedMem((PVOID*)&G_pXWPShellShared,
-                                SHMEM_XWPSHELL,
-                                sizeof(XWPSHELLSHARED),
-                                PAG_COMMIT | PAG_READ | PAG_WRITE)))
-            Error("DosAllocSharedMem returned %d.", arc);
-        // create master queue
-        else if ((arc = DosCreateQueue(&G_hqXWPShell,
-                                       QUE_FIFO | QUE_NOCONVERT_ADDRESS,
-                                       QUEUE_XWPSHELL)))
-            Error("DosCreateQueue returned %d.", arc);
-        // initialize subsystems
-        else if (    (saclInit() != NO_ERROR)
-                  || (scxtInit() != NO_ERROR)
-                  || (subjInit() != NO_ERROR)
-                  || (sudbInit() != NO_ERROR)
-                  || (slogInit() != NO_ERROR)
-                )
-            irc = 1;
-        // create shell object (thread 1)
-        else if (!WinRegisterClass(hab,
-                                   WC_SHELL_OBJECT,
-                                   fnwpShellObject,
-                                   0,
-                                   sizeof(ULONG)))
-            irc = 2;
-        else
+        TRY_LOUD(excpt1)
         {
-            if (!(G_hwndShellObject = WinCreateWindow(HWND_OBJECT,
-                                                WC_SHELL_OBJECT,
-                                                "XWPShellObject",
-                                                0,             // style
-                                                0, 0, 0, 0,
-                                                NULLHANDLE,    // owner
-                                                HWND_BOTTOM,
-                                                0,             // ID
-                                                NULL,
-                                                NULL)))
+            // since this program will never stop running, make
+            // sure we survive even shutdown
+            WinCancelShutdown(hmq, TRUE);
+
+            // allocate XWPSHELLSHARED
+            if (arc = DosAllocSharedMem((PVOID*)&G_pXWPShellShared,
+                                        SHMEM_XWPSHELL,
+                                        sizeof(XWPSHELLSHARED),
+                                        PAG_COMMIT | PAG_READ | PAG_WRITE))
+                Error("DosAllocSharedMem returned %d.", arc);
+            // create master queue
+            else if ((arc = DosCreateQueue(&G_hqXWPShell,
+                                           QUE_FIFO | QUE_NOCONVERT_ADDRESS,
+                                           QUEUE_XWPSHELL)))
+                Error("DosCreateQueue returned %d.", arc);
+            // initialize subsystems
+            else if (    (saclInit() != NO_ERROR)
+                      || (scxtInit() != NO_ERROR)
+                      || (subjInit() != NO_ERROR)
+                      || (sudbInit() != NO_ERROR)
+                      || (slogInit() != NO_ERROR)
+                    )
+                irc = 1;
+            // create shell object (thread 1)
+            else if (!WinRegisterClass(hab,
+                                       WC_SHELL_OBJECT,
+                                       fnwpShellObject,
+                                       0,
+                                       sizeof(ULONG)))
+                irc = 2;
+            else if (!(G_hwndShellObject = WinCreateWindow(HWND_OBJECT,
+                                                           WC_SHELL_OBJECT,
+                                                           "XWPShellObject",
+                                                           0,             // style
+                                                           0, 0, 0, 0,
+                                                           NULLHANDLE,    // owner
+                                                           HWND_BOTTOM,
+                                                           0,             // ID
+                                                           NULL,
+                                                           NULL)))
                 irc = 3;
             else
             {
                 // OK:
                 QMSG qmsg;
 
-                if (arc = CreateBaseSecurityContexts())
-                    irc = 4;
-                else
-                {
-                    InitDaemon();
-                            // might fail, but who cares
+                // @@todo initialize driver (see .h file)
 
+                {
                     // create the queue thread
                     thrCreate(&G_tiQueueThread,
                               fntQueueThread,
@@ -2139,10 +1182,13 @@ int main(int argc, char *argv[])
                     while (WinGetMsg(hab, &qmsg, NULLHANDLE, 0, 0))
                         WinDispatchMsg(hab, &qmsg);
 
-                    ShutdownDaemon();
+                    // @@todo close driver
                 }
             }
         }
+        CATCH(excpt1)
+        {
+        } END_CATCH();
     }
 
     // clean up on the way out

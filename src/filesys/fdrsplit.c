@@ -1559,6 +1559,7 @@ MRESULT EXPENTRY fnwpSplitController(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
  *      Returns TRUE if the msg was processed.
  *
  *@@added V1.0.0 (2002-11-23) [umoeller]
+ *@@changed V1.0.1 (2003-01-05) [umoeller]: improved backspace (proper scrolling, shift support)
  */
 
 STATIC BOOL HandleWMChar(HWND hwndFrame,
@@ -1595,6 +1596,20 @@ STATIC BOOL HandleWMChar(HWND hwndFrame,
                                                          CMA_ITEMORDER)))
                     {
                         // not at root already:
+
+                        // if shift is pressed also, collapse the current record
+                        // V1.0.1 (2003-01-05) [umoeller]
+                        if (usFlags & KC_SHIFT)
+                            WinSendMsg(pctl->cvTree.hwndCnr,
+                                       CM_COLLAPSETREE,
+                                       (MPARAM)pctl->precTreeSelected,
+                                       0);
+
+                        // scroll to record first V1.0.1 (2003-01-05) [umoeller]
+                        cnrhScrollToRecord(pctl->cvTree.hwndCnr,
+                                           (PRECORDCORE)precParent,
+                                           CMA_ICON | CMA_TEXT | CMA_TREEICON,
+                                           TRUE);       // keep parent
                         cnrhSelectRecord(pctl->cvTree.hwndCnr,
                                          precParent,
                                          TRUE);

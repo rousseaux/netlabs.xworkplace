@@ -1054,6 +1054,43 @@ HWND cmnLoadDlg(HWND hwndOwner,
     return hwnd;
 }
 
+/*
+ *@@ cmnLoadMenu:
+ *      wrapper around WinLoadMenu which sets the menu's
+ *      font correctly to the system menu font.
+ *
+ *@@added V1.0.1 (2003-01-05) [umoeller]
+ */
+
+HWND cmnLoadMenu(HWND hwndOwner,
+                 HMODULE hmod,
+                 ULONG id)
+{
+    HWND hwndMenu;
+    if (hwndMenu = WinLoadMenu(hwndOwner,
+                               hmod,
+                               id))
+    {
+        PSZ pszFont;
+        if (pszFont = winhQueryMenuSysFont())
+        {
+            winhSetWindowFont(hwndMenu,
+                              pszFont);
+            free(pszFont);
+        }
+        else
+            winhSetWindowFont(hwndMenu,
+                              cmnQueryDefaultFont());
+    }
+    else
+        cmnLog(__FILE__, __LINE__, __FUNCTION__,
+               "Error loading menu ID 0x%lX from module 0x%lX",
+               id,
+               hmod);
+
+    return hwndMenu;
+}
+
 /* ******************************************************************
  *
  *   Error logging

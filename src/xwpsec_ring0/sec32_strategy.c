@@ -40,7 +40,7 @@
  *      strategy command handlers.
  */
 
-STATIC int (*driver_routing_table[32])() =
+static int (*driver_routing_table[32])() =
 {
     sec32_invalid_command,  // 0 = Init
     sec32_invalid_command,  // 1 = Media Check

@@ -501,6 +501,8 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
                            NULL,
                            cmnQueryDefaultFont()))
         {
+            HWND hwndAni;
+
             WinPostMsg(hwndConfirm,
                        WM_SETICON,
                        (MPARAM)hptrShutdown,
@@ -595,7 +597,8 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
             winhCenterWindow(hwndConfirm);      // still hidden
 
             xsdLoadAnimation(&G_sdAnim);
-            ctlPrepareAnimation(WinWindowFromID(hwndConfirm, ID_SDDI_ICON),
+            hwndAni = WinWindowFromID(hwndConfirm, ID_SDDI_ICON);
+            ctlPrepareAnimation(hwndAni,
                                 XSD_ANIM_COUNT,
                                 &(G_sdAnim.ahptr[0]),
                                 150,    // delay
@@ -604,7 +607,7 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
             // go!!
             ulReturn = WinProcessDlg(hwndConfirm);
 
-            ctlStopAnimation(WinWindowFromID(hwndConfirm, ID_SDDI_ICON));
+            ctlStopAnimation(hwndAni);
             xsdFreeAnimation(&G_sdAnim);
 
             if (ulReturn == DID_OK)
@@ -683,7 +686,6 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
     winhDestroyWindow(&hwndConfirm);
     winhDestroyWindow(&hwndDim);
 
-
     return ulReturn;
 }
 
@@ -691,22 +693,27 @@ static CONTROLDEF
     ConfirmWPSText = CONTROLDEF_TEXT_WORDBREAK(
                             LOAD_STRING,
                             ID_SDDI_CONFIRMWPS_TEXT,
-                            100),
+                            SZL_REMAINDER),         // changed V1.0.1 (2003-01-05) [umoeller]
+    ConfirmLogoffText = CONTROLDEF_TEXT_WORDBREAK(
+                            LOAD_STRING,
+                            ID_XSSI_XSD_CONFIRMLOGOFFMSG,
+                            SZL_REMAINDER),         // changed V1.0.1 (2003-01-05) [umoeller]
     CloseAllSessionsCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_WPS_CLOSEWINDOWS),
 #ifndef __NOXWPSTARTUP__
     StartupFoldersCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_WPS_STARTUPFOLDER),
 #endif
     ArchiveOnceCB = LOADDEF_AUTOCHECKBOX(ID_SDDI_ARCHIVEONCE);
 
-static const DLGHITEM dlgConfirmRestartDesktop[] =
+static const DLGHITEM dlgConfirmRestartDesktopHead[] =
     {
         START_TABLE,            // root table, required
-            START_ROW(0),
-                START_TABLE,            // root table, required
-                    START_ROW(ROW_VALIGN_CENTER),       // shared settings group
-                        CONTROL_DEF(&TrafficLightIcon),
-                        CONTROL_DEF(&ConfirmWPSText),
-                END_TABLE,
+            START_ROW(ROW_VALIGN_CENTER),       // shared settings group
+                CONTROL_DEF(&TrafficLightIcon),
+    };
+
+static const DLGHITEM dlgConfirmRestartDesktopOnly[] =
+    {
+                CONTROL_DEF(&ConfirmWPSText),
             START_ROW(0),
                 CONTROL_DEF(&CloseAllSessionsCB),
 #ifndef __NOXWPSTARTUP__
@@ -715,6 +722,17 @@ static const DLGHITEM dlgConfirmRestartDesktop[] =
 #endif
             START_ROW(0),
                 CONTROL_DEF(&ArchiveOnceCB),
+    };
+
+static const DLGHITEM dlgConfirmLogoffOnly[] =
+    {
+                CONTROL_DEF(&ConfirmLogoffText),
+            START_ROW(0),
+                CONTROL_DEF(&CloseAllSessionsCB),
+    };
+
+static const DLGHITEM dlgConfirmRestartDesktopTail[] =
+    {
 #ifndef __EASYSHUTDOWN__
             START_ROW(0),
                 CONTROL_DEF(&MessageAgainCB),
@@ -735,6 +753,7 @@ static const DLGHITEM dlgConfirmRestartDesktop[] =
  *@@changed V0.9.16 (2002-01-13) [umoeller]: rewritten to use dialog formatter
  *@@changed V0.9.19 (2002-04-18) [umoeller]: added "archive once" feature
  *@@changed V0.9.19 (2002-04-18) [umoeller]: added a decent help panel, finally
+ *@@changed V1.0.1 (2003-01-05) [umoeller]: some prettypretty for logoff
  */
 
 ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
@@ -748,6 +767,7 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
                                               ID_SDICON);
 
     HWND        hwndDim = CreateDimScreenWindow();
+    PDLGARRAY   pArray = NULL;
 
     G_ulConfirmHelpPanel = ID_XSH_RESTARTWPS_CONFIRM; // ID_XMH_RESTARTWPS;
                                     // changed V0.9.19 (2002-04-18) [umoeller]
@@ -755,103 +775,129 @@ ULONG xsdConfirmRestartWPS(PSHUTDOWNPARAMS psdParms)
     OKButton.pcszText = cmnGetString(DID_OK);
     CancelButton.pcszText = cmnGetString(DID_CANCEL);
 
-    if (!dlghCreateDlg(&hwndConfirm,
-                       hwndDim,
-                       FCF_FIXED_DLG,
-                       fnwpConfirm,
-                       cmnGetString(ID_SDDI_CONFIRMWPS_TITLE),
-                       dlgConfirmRestartDesktop,
-                       ARRAYITEMCOUNT(dlgConfirmRestartDesktop),
-                       NULL,
-                       cmnQueryDefaultFont()))
+    // format logoff differently from restart desktop V1.0.1 (2003-01-05) [umoeller]
+    if (!dlghCreateArray(   ARRAYITEMCOUNT(dlgConfirmRestartDesktopHead)
+                          + ARRAYITEMCOUNT(dlgConfirmRestartDesktopOnly)
+                          + ARRAYITEMCOUNT(dlgConfirmLogoffOnly)
+                          + ARRAYITEMCOUNT(dlgConfirmRestartDesktopTail),
+                         &pArray))
     {
-        WinSendMsg(hwndConfirm,
-                   WM_SETICON,
-                   (MPARAM)hptrShutdown,
-                   NULL);
-
-        // if (psdParms->ulRestartWPS == 2)
+        dlghAppendToArray(pArray,
+                          dlgConfirmRestartDesktopHead,
+                          ARRAYITEMCOUNT(dlgConfirmRestartDesktopHead));
         if (psdParms->ulCloseMode == SHUT_LOGOFF)
+            dlghAppendToArray(pArray,
+                              dlgConfirmLogoffOnly,
+                              ARRAYITEMCOUNT(dlgConfirmLogoffOnly));
+        else
+            dlghAppendToArray(pArray,
+                              dlgConfirmRestartDesktopOnly,
+                              ARRAYITEMCOUNT(dlgConfirmRestartDesktopOnly));
+        dlghAppendToArray(pArray,
+                          dlgConfirmRestartDesktopTail,
+                          ARRAYITEMCOUNT(dlgConfirmRestartDesktopTail));
+
+        if (!dlghCreateDlg(&hwndConfirm,
+                           hwndDim,
+                           FCF_FIXED_DLG,
+                           fnwpConfirm,
+                           cmnGetString((psdParms->ulCloseMode == SHUT_LOGOFF)
+                                            ? ID_XSSI_XSD_CONFIRMLOGOFFTITLE
+                                            : ID_SDDI_CONFIRMWPS_TITLE),
+                           pArray->paDlgItems,
+                           pArray->cDlgItemsNow,
+                           NULL,
+                           cmnQueryDefaultFont()))
         {
-            // logoff:
-            psdParms->optWPSCloseWindows = TRUE;
-            psdParms->optWPSReuseStartupFolder = TRUE;
-            WinEnableControl(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, FALSE);
-#ifndef __NOXWPSTARTUP__
-            WinEnableControl(hwndConfirm, ID_SDDI_WPS_STARTUPFOLDER, FALSE);
-#endif
-            // replace confirmation text
-            WinSetDlgItemText(hwndConfirm, ID_SDDI_CONFIRMWPS_TEXT,
-                              cmnGetString(ID_XSSI_XSD_CONFIRMLOGOFFMSG)) ; // pszXSDConfirmLogoffMsg
-        }
+            HWND    hwndAni;
 
-        winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, psdParms->optWPSCloseWindows);
-#ifndef __NOXWPSTARTUP__
-        winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_STARTUPFOLDER, psdParms->optWPSCloseWindows);
-#endif
-#ifndef __EASYSHUTDOWN__
-        winhSetDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN, psdParms->optConfirm);
-#endif
+            WinSendMsg(hwndConfirm,
+                       WM_SETICON,
+                       (MPARAM)hptrShutdown,
+                       NULL);
 
-        xsdLoadAnimation(&G_sdAnim);
-        ctlPrepareAnimation(WinWindowFromID(hwndConfirm, ID_SDDI_ICON),
-                            XSD_ANIM_COUNT,
-                            G_sdAnim.ahptr,
-                            150,    // delay
-                            TRUE);  // start now
-
-        winhCenterWindow(hwndConfirm);      // still hidden
-        WinShowWindow(hwndConfirm, TRUE);
-
-        // *** go!
-        ulReturn = WinProcessDlg(hwndConfirm);
-
-        ctlStopAnimation(WinWindowFromID(hwndConfirm, ID_SDDI_ICON));
-        xsdFreeAnimation(&G_sdAnim);
-
-        if (ulReturn == DID_OK)
-        {
-#ifndef __NOXSHUTDOWN__
-            ULONG fl = cmnQuerySetting(sflXShutdown);
-#endif
-
-            psdParms->optWPSCloseWindows = winhIsDlgItemChecked(hwndConfirm,
-                                                                ID_SDDI_WPS_CLOSEWINDOWS);
-            // if (psdParms->ulRestartWPS != 2)
-            if (psdParms->ulCloseMode != SHUT_LOGOFF)
+            if (psdParms->ulCloseMode == SHUT_LOGOFF)
             {
-                // regular restart Desktop:
-                // save close windows/startup folder settings
-#ifndef __NOXSHUTDOWN__
-                if (psdParms->optWPSCloseWindows)
-                    fl |= XSD_WPS_CLOSEWINDOWS;
-                else
-                    fl &= ~XSD_WPS_CLOSEWINDOWS;
-#endif
+                // logoff:
+                psdParms->optWPSCloseWindows = TRUE;
+                psdParms->optWPSReuseStartupFolder = TRUE;
+                winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, TRUE);
+            }
+            else
+            {
+                winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_CLOSEWINDOWS, psdParms->optWPSCloseWindows);
 #ifndef __NOXWPSTARTUP__
-                psdParms->optWPSReuseStartupFolder = winhIsDlgItemChecked(hwndConfirm,
-                                                                          ID_SDDI_WPS_STARTUPFOLDER);
+                winhSetDlgItemChecked(hwndConfirm, ID_SDDI_WPS_STARTUPFOLDER, psdParms->optWPSCloseWindows);
 #endif
             }
-#ifndef __EASYSHUTDOWN__
-            if (!(winhIsDlgItemChecked(hwndConfirm,
-                                       ID_SDDI_MESSAGEAGAIN)))
-                fl |= XSD_NOCONFIRM;
 
-            cmnSetSetting(sflXShutdown, fl);
+#ifndef __EASYSHUTDOWN__
+            winhSetDlgItemChecked(hwndConfirm, ID_SDDI_MESSAGEAGAIN, psdParms->optConfirm);
 #endif
 
-            // V0.9.19 (2002-04-17) [umoeller]
-            if (winhIsDlgItemChecked(hwndConfirm,
-                                     ID_SDDI_ARCHIVEONCE))
+            xsdLoadAnimation(&G_sdAnim);
+            hwndAni = WinWindowFromID(hwndConfirm, ID_SDDI_ICON);
+            ctlPrepareAnimation(hwndAni,
+                                XSD_ANIM_COUNT,
+                                G_sdAnim.ahptr,
+                                150,    // delay
+                                TRUE);  // start now
+
+            winhCenterWindow(hwndConfirm);      // still hidden
+            WinShowWindow(hwndConfirm, TRUE);
+
+            // *** go!
+            ulReturn = WinProcessDlg(hwndConfirm);
+
+            ctlStopAnimation(hwndAni);
+            xsdFreeAnimation(&G_sdAnim);
+
+            if (ulReturn == DID_OK)
             {
-                PARCHIVINGSETTINGS pArcSettings = arcQuerySettings();
-                pArcSettings->ulArcFlags |= ARCF_NEXT;
-                arcSaveSettings();
+#ifndef __NOXSHUTDOWN__
+                ULONG fl = cmnQuerySetting(sflXShutdown);
+#endif
+                psdParms->optWPSCloseWindows = winhIsDlgItemChecked(hwndConfirm,
+                                                                    ID_SDDI_WPS_CLOSEWINDOWS);
+
+                if (psdParms->ulCloseMode != SHUT_LOGOFF)
+                {
+                    // regular restart Desktop:
+                    // save close windows/startup folder settings
+#ifndef __NOXSHUTDOWN__
+                    if (psdParms->optWPSCloseWindows)
+                        fl |= XSD_WPS_CLOSEWINDOWS;
+                    else
+                        fl &= ~XSD_WPS_CLOSEWINDOWS;
+#endif
+#ifndef __NOXWPSTARTUP__
+                    psdParms->optWPSReuseStartupFolder = winhIsDlgItemChecked(hwndConfirm,
+                                                                              ID_SDDI_WPS_STARTUPFOLDER);
+#endif
+
+                    // V0.9.19 (2002-04-17) [umoeller]
+                    if (winhIsDlgItemChecked(hwndConfirm,
+                                             ID_SDDI_ARCHIVEONCE))
+                    {
+                        PARCHIVINGSETTINGS pArcSettings = arcQuerySettings();
+                        pArcSettings->ulArcFlags |= ARCF_NEXT;
+                        arcSaveSettings();
+                    }
+                }
+
+#ifndef __EASYSHUTDOWN__
+                if (!(winhIsDlgItemChecked(hwndConfirm,
+                                           ID_SDDI_MESSAGEAGAIN)))
+                    fl |= XSD_NOCONFIRM;
+
+                cmnSetSetting(sflXShutdown, fl);
+#endif
             }
+
+            winhDestroyWindow(&hwndConfirm);
         }
 
-        winhDestroyWindow(&hwndConfirm);
+        dlghFreeArray(&pArray);
     }
 
     winhDestroyWindow(&hwndDim);

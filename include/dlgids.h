@@ -2039,17 +2039,18 @@
 
 // logoff V0.9.5 (2000-09-28) [umoeller]
 #define ID_XSSI_XSD_LOGOFF              5977
-#define ID_XSSI_XSD_CONFIRMLOGOFFMSG    5978
+#define ID_XSSI_XSD_CONFIRMLOGOFFTITLE  5978        // V1.0.1 (2003-01-05) [umoeller] below IDs raised
+#define ID_XSSI_XSD_CONFIRMLOGOFFMSG    5979
 
 // "bytes" strings for status bars V0.9.6 (2000-11-23) [umoeller]
-#define ID_XSSI_BYTE                    5979
-#define ID_XSSI_BYTES                   5980
+#define ID_XSSI_BYTE                    5980
+#define ID_XSSI_BYTES                   5981
 
 // title of "Resources" page V0.9.7 (2000-12-20) [umoeller]
-#define ID_XSSI_PGMFILE_RESOURCES       5981
+#define ID_XSSI_PGMFILE_RESOURCES       5982
 
 // title of program(file) "Associations" page V0.9.9 (2001-03-07) [umoeller]
-#define ID_XSSI_PGM_ASSOCIATIONS        5982
+#define ID_XSSI_PGM_ASSOCIATIONS        5983
 
 // sigh... more new strings below, after the features page...
 // not enough room here
@@ -2406,6 +2407,22 @@
 
 #define ID_XSSI_DEINSTALLINGFONTS       6302        // V1.0.1 (2002-12-15) [pr]
 
+// the following added V1.0.1 (2003-01-05) [umoeller]
+#define ID_XSSI_USERID                  6303
+#define ID_XSSI_USERID_EF               6304
+#define ID_XSSI_USERNAME                6305
+#define ID_XSSI_USERNAME_EF             6306
+#define ID_XSSI_USERFULLNAME            6307
+#define ID_XSSI_USERFULLNAME_EF         6308
+#define ID_XSSI_USERPASS                6309
+#define ID_XSSI_USERPASS_EF             6310
+#define ID_XSSI_USERCONFIRMPASS         6311
+#define ID_XSSI_USERCONFIRMPASS_EF      6312
+#define ID_XSSI_GROUPID                 6313
+#define ID_XSSI_GROUPID_EF              6314
+#define ID_XSSI_GROUPNAME               6315
+#define ID_XSSI_GROUPNAME_EF            6316
+
 /* ******************************************************************
  *
  *   String IDs for status bar mnemonics        >= 7000
@@ -2588,11 +2605,13 @@
 
 // "Sticky windows" context menus on XWPScreen "XPager Sticky" page
 // V0.9.4 (2000-07-10) [umoeller]
-#define ID_XSM_STICKY_NOSEL             (WPMENUID_USER+1140)
-#define ID_XSMI_STICKY_NEW              (WPMENUID_USER+1141)
-
-#define ID_XSM_STICKY_SEL               (WPMENUID_USER+1142)
-#define ID_XSMI_STICKY_DELETE           (WPMENUID_USER+1143)
+// ids and identifiers changed V1.0.1 (2003-01-05) [umoeller]
+#define ID_XFM_CNRITEM_NOSEL            (WPMENUID_USER+1135)
+#define ID_XFMI_CNRITEM_NEW             (WPMENUID_USER+1136)
+#define ID_XFM_CNRITEM_SEL              (WPMENUID_USER+1137)
+#define ID_XFMI_CNRITEM_DELETE          (WPMENUID_USER+1138)
+#define ID_XFMI_CNRITEM_EDIT            (WPMENUID_USER+1139) // added V0.9.19 (2002-04-15) [lafaix]
+#define ID_XFMI_CNRITEM_DELETEALL       (WPMENUID_USER+1140)
 
 /* XCenter main button menu V0.9.7 (2000-11-30) [umoeller] */
 /* changed all IDs to above WPMENUID_USER (0x6500) because
@@ -2633,9 +2652,6 @@
 #define ID_CRMI_HELP_XCENTER            0x7f11      // added V0.9.20 (2002-08-10) [umoeller]
 
 #define ID_FNM_SAMPLE                   (WPMENUID_USER+1145)
-
-#define ID_XSMI_STICKY_EDIT             (WPMENUID_USER+1146) // added V0.9.19 (2002-04-15) [lafaix]
-#define ID_XSMI_STICKY_DELETEALL        (WPMENUID_USER+1147)
 
 /* split view menu bar V1.0.0 (2002-08-28) [umoeller] */
 #define ID_XFM_SPLITVIEWBAR             (WPMENUID_USER+1150)

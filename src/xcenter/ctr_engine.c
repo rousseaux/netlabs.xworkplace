@@ -3076,6 +3076,7 @@ APIRET ctrpDrop(HWND hwndClient,          // in: XCenter client
  *          set.
  *
  *@@added V1.0.0 (2002-08-12) [umoeller]
+ *@@changed V1.0.1 (2003-01-05) [umoeller]: now setting font presparam here
  */
 
 HWND ctrpLoadWidgetPopupMenu(HWND hwndOwner,
@@ -3083,14 +3084,15 @@ HWND ctrpLoadWidgetPopupMenu(HWND hwndOwner,
                              ULONG fl)
 {
     HWND hMenu;
-    if (hMenu = WinLoadMenu(hwndOwner,
+    // now using cmnLoadMenu V1.0.1 (2003-01-05) [umoeller]
+    if (hMenu = cmnLoadMenu(hwndOwner,
                             cmnQueryNLSModuleHandle(FALSE),
                             ID_CRM_WIDGET))
     {
         HWND hwndHelp;
 
         // remove properties if class has no show-settings proc
-        // (we used to just disabled, but that's against CUA)
+        // (we used to just disable, but that's against CUA)
         // V0.9.20 (2002-08-08) [umoeller]
         if (!pWidgetClass->pShowSettingsDlg)
         {
@@ -3321,19 +3323,7 @@ PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,      // 
 
                 if (pWidget->hwndWidget)
                 {
-                    // V0.9.13 (2001-06-09) [pr]
-                    PSZ pszStdMenuFont;
                     ULONG fl;
-
-                    if (!(pszStdMenuFont = prfhQueryProfileData(HINI_USER,
-                                                                PMINIAPP_SYSTEMFONTS, // "PM_SystemFonts",
-                                                                PMINIKEY_MENUSFONT, // "Menus",
-                                                                NULL)))
-                        pszStdMenuFont = prfhQueryProfileData(HINI_USER,
-                                                              PMINIAPP_SYSTEMFONTS, // "PM_SystemFonts",
-                                                              PMINIKEY_DEFAULTFONT, // "DefaultFont",
-                                                              NULL);
-
                     // store view data in widget's QWL_USER,
                     // in case the widget forgot; but this won't help
                     // much since the widget gets messages before WinCreateWindow
@@ -3364,21 +3354,6 @@ PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,      // 
                                                                        pWidgetClass,
                                                                        fl);
                             // extracted this code V1.0.0 (2002-08-12) [umoeller]
-
-                    if (pszStdMenuFont)
-                    {
-                        // set a font presparam for this menu because
-                        // otherwise it will inherit the widget's font
-                        // presparam (duh)
-                        winhSetWindowFont(pWidget->hwndContextMenu,
-                                          pszStdMenuFont);
-                        free(pszStdMenuFont);
-                    }
-                    else
-                        // system font wasn't found: use a default
-                        // V0.9.16 (2001-10-30) [umoeller]
-                        winhSetWindowFont(pWidget->hwndContextMenu,
-                                          cmnQueryDefaultFont());
 
                     // store view
                     if (    (ulIndex == -1)

@@ -122,15 +122,11 @@ interface M_XWPAdmin : M_WPAbstract
      *
      */
 
-    wpclsInitData: override;
-
     wpclsQueryStyle: override;
     wpclsQueryTitle: override;
     wpclsQueryDefaultHelp: override;
 
     wpclsQueryIconData: override;
-
-    wpclsQuerySettingsPageSize: override;
   };
 #endif /* __SOMIDL__ */
 };

@@ -245,21 +245,23 @@ BEGIN
 END
 
 /*  "Sticky windows" context menus on XWPScreen "XPager Sticky" page
-    new with V0.9.4 (2000-07-10) [umoeller]*/
+    new with V0.9.4 (2000-07-10) [umoeller]
+    menu ids changed V1.0.1 (2003-01-05) [umoeller]
+*/
 
-MENU ID_XSM_STICKY_NOSEL LOADONCALL MOVEABLE DISCARDABLE
+MENU ID_XFM_CNRITEM_NOSEL LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    MENUITEM "~Add...", ID_XSMI_STICKY_NEW
+    MENUITEM "~Add...", ID_XFMI_CNRITEM_NEW
     MENUITEM SEPARATOR
-    MENUITEM "~Remove all", ID_XSMI_STICKY_DELETEALL
+    MENUITEM "~Remove all", ID_XFMI_CNRITEM_DELETEALL
 END
 
 /* changed V0.9.19 (2002-04-17) [umoeller] */
-MENU ID_XSM_STICKY_SEL LOADONCALL MOVEABLE DISCARDABLE
+MENU ID_XFM_CNRITEM_SEL LOADONCALL MOVEABLE DISCARDABLE
 BEGIN
-    MENUITEM "~Edit...", ID_XSMI_STICKY_EDIT
+    MENUITEM "~Edit...", ID_XFMI_CNRITEM_EDIT
     MENUITEM SEPARATOR
-    MENUITEM "~Remove", ID_XSMI_STICKY_DELETE
+    MENUITEM "~Remove", ID_XFMI_CNRITEM_DELETE
 END
 
 /* XCenter main button menu V0.9.7 (2000-11-30) [umoeller] */
@@ -745,6 +747,8 @@ BEGIN
 
     /* logoff V0.9.5 (2000-09-28) [umoeller] */
     ID_XSSI_XSD_LOGOFF                  "Lo~g off..."
+    ID_XSSI_XSD_CONFIRMLOGOFFTITLE      "&xwp;: Log Off"
+            /* ID_XSSI_XSD_CONFIRMLOGOFFTITLE added V1.0.1 (2003-01-05) [umoeller] */
     ID_XSSI_XSD_CONFIRMLOGOFFMSG        "Are you sure you want to log off?"
 
     /* "bytes" strings for status bars V0.9.6 (2000-11-23) [umoeller] */
@@ -1720,6 +1724,14 @@ BEGIN
     ID_XSDI_TBSTYLE_FLAT                "~Flat buttons"
     ID_XSDI_TBSTYLE_HILITE              "H~ilight on mouse over"
     ID_XSDI_TBSTYLE_TOOLTIPS            "Dis~play tooltips"
+
+    ID_XSSI_USERID                      "User ID:"
+    ID_XSSI_USERNAME                    "User name:"
+    ID_XSSI_USERFULLNAME                "Descriptive name:"
+    ID_XSSI_USERPASS                    "Password:"
+    ID_XSSI_USERCONFIRMPASS             "Confirm password:"
+    ID_XSSI_GROUPID                     "Group ID:"
+    ID_XSSI_GROUPNAME                   "Group name:"
 END
 
 /* Treesize definitions; added V0.9.0 */
