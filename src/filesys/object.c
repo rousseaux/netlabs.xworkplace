@@ -1165,10 +1165,10 @@ WPObject* objFindObjFromHandle(HOBJECT hobj)
     // lock the cache
     if (LockHandlesCache())
     {
-        POBJTREENODE pNode = (POBJTREENODE)treeFind(G_HandlesCache,
-                                                    hobj,
-                                                    treeCompareKeys);
-        if (pNode)
+        POBJTREENODE pNode;
+        if (pNode = (POBJTREENODE)treeFind(G_HandlesCache,
+                                           hobj,
+                                           treeCompareKeys))
         {
             // was in cache:
             pobjReturn = pNode->pObject;
@@ -1470,7 +1470,7 @@ ULONG objQueryDirtyObjectsCount(VOID)
 }
 
 /*
- *@@ objSaveAllDirtyObjects:
+ *@@ objForAllDirtyObjects:
  *      invokes the specified callback on all objects on
  *      the "dirty" list. Starting with V0.9.9, this is
  *      used during XShutdown to save all dirty objects.
@@ -2258,8 +2258,9 @@ ULONG WriteOutObjectSetup(FILE *RexxFile,
                 ul;
 
     PSZ         pszSetupString;
+    ULONG       ulSetupStringLen = 0;
 
-    if (pszSetupString = _xwpQuerySetup(pobj, NULL))
+    if (pszSetupString = _xwpQuerySetup(pobj, &ulSetupStringLen))
     {
         PSZ         pszTrueClassName = _wpGetTrueClassName(SOMClassMgrObject, pobj);
 
@@ -2302,7 +2303,7 @@ ULONG WriteOutObjectSetup(FILE *RexxFile,
             fprintf(RexxFile, "/* ");
 
         // write out object
-        if (pszSetupString && strlen(pszSetupString))
+        if (ulSetupStringLen)
             // we got setup:
             fprintf(RexxFile,
                     "rc = SysCreateObject(\"%s\", %c%s%c, \"%s\", \"%s\");",

@@ -616,6 +616,10 @@ typedef struct _WIN16DIBINFO
  *      for most fields instead of having
  *      to set everything explicitly.
  *
+ *      Note that we use the old-style
+ *      bitmap headers (i.e. BITMAPINFOHEADER
+ *      instead of BITMAPINFOHEADER2, etc.).
+ *
  *@@added V0.9.16 (2001-12-18) [umoeller]
  */
 
@@ -790,6 +794,7 @@ APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
             ULONG cbDataDest =   sizeof(BITMAPARRAYFILEHEADER)   // includes one BITMAPFILEHEADER
                                + 2 * sizeof(RGB)
                                + sizeof(BITMAPFILEHEADER)
+                                    // the above is in G_DefaultIconHeader
                                + cColors * sizeof(RGB)   // 3
                                + 2 * cbEachMaskDest          // one XOR, one AND mask
                                + cbBitmapDest;
@@ -866,7 +871,8 @@ APIRET ConvertWinIcon(PBYTE pbBuffer,       // in: windows icon data
                 // (Win uses four)
                 for (ul = 0; ul < cColors; ul++)
                 {
-                    memcpy(pbDest, &paColors[ul], 3);
+                    // memcpy(pbDest, &paColors[ul], 3);
+                    *(PULONG)pbDest = *(PULONG)&paColors[ul];
                     pbDest += 3;
                 }
 
@@ -1090,7 +1096,8 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
                            pNEHeader->usResTblOfs
                              + ulNewHeaderOfs,
                            &cbRead,
-                           (PBYTE)&usAlignShift)))
+                           (PBYTE)&usAlignShift,
+                           DRFL_FAILIFLESS)))
     {
         // run thru the resources
         BOOL fPtrFound = FALSE;
@@ -1128,7 +1135,8 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
             if (!(arc = doshReadAt(pFile,
                                    ulCurrentOfs,
                                    &cbRead,
-                                   (PBYTE)&typeinfo)))
+                                   (PBYTE)&typeinfo,
+                                   0)))
             {
                 // advance our private file pointer
                 ulCurrentOfs += cbRead;
@@ -1171,14 +1179,13 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
                     {
                         // this is not our type, so we can simply
                         // skip the entire table for speed
+#ifdef _PMPRINTF_
+                        CHAR szBuf[100];
                         _Pmpf((__FUNCTION__ ": skipping type %d (%s), %d entries",
                                       ulTypeThis,
-                                      progGetWinResourceTypeName(ulTypeThis),
+                                      progGetWinResourceTypeName(szBuf, ulTypeThis),
                                       typeinfo.rt_nres));
-                        /* arc = DosSetFilePtr(pFile->hf,
-                                            typeinfo.rt_nres * sizeof(nameinfo),
-                                            FILE_CURRENT,
-                                            &cbRead); */
+#endif
                         ulCurrentOfs += typeinfo.rt_nres * sizeof(nameinfo);
                     }
                     else
@@ -1187,10 +1194,13 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
                         nameinfo *paNameInfos = NULL;
                         ULONG cbNameInfos;
 
+#ifdef _PMPRINTF_
+                        CHAR szBuf[100];
                         _Pmpf((__FUNCTION__ ": entering type %d (%s), %d entries",
                                       ulTypeThis,
-                                      progGetWinResourceTypeName(ulTypeThis),
+                                      progGetWinResourceTypeName(szBuf, ulTypeThis),
                                       typeinfo.rt_nres));
+#endif
 
                         if (    (!(arc = doshAllocArray(typeinfo.rt_nres,
                                                         sizeof(nameinfo),
@@ -1200,7 +1210,8 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
                              && (!(arc = doshReadAt(pFile,
                                                     ulCurrentOfs,
                                                     &cbRead,
-                                                    (PBYTE)paNameInfos)))
+                                                    (PBYTE)paNameInfos,
+                                                    DRFL_FAILIFLESS)))
                            )
                         {
                             ULONG ul;
@@ -1208,80 +1219,76 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
 
                             ulCurrentOfs += cbRead;
 
-                            if (cbRead < cbNameInfos)
-                                arc = ERROR_BAD_FORMAT;
-                            else
+                            for (ul = 0;
+                                 ul < typeinfo.rt_nres;
+                                 ul++, pThis++)
                             {
-                                for (ul = 0;
-                                     ul < typeinfo.rt_nres;
-                                     ul++, pThis++)
+                                ULONG ulIDThis = pThis->rn_id;
+                                ULONG ulOffset = pThis->rn_offset << usAlignShift;
+                                ULONG cbThis =   pThis->rn_length << usAlignShift;
+                                _Pmpf(("   found res type %d, id %d, length %d",
+                                            ulTypeThis,
+                                            ulIDThis & ~0x8000,
+                                            cbThis));
+
+                                if (    (!idResource)
+                                     || (    (ulIDThis & 0x8000)
+                                          && ((ulIDThis & ~0x8000) == idResource)
+                                        )
+                                   )
                                 {
-                                    ULONG ulIDThis = pThis->rn_id;
-                                    ULONG ulOffset = pThis->rn_offset << usAlignShift;
-                                    ULONG cbThis =   pThis->rn_length << usAlignShift;
-                                    _Pmpf(("   found res type %d, id %d, length %d",
-                                                ulTypeThis,
-                                                ulIDThis & ~0x8000,
-                                                cbThis));
-
-                                    if (    (!idResource)
-                                         || (    (ulIDThis & 0x8000)
-                                              && ((ulIDThis & ~0x8000) == idResource)
-                                            )
-                                       )
+                                    // found:
+                                    PBYTE pb;
+                                    if (!(pb = malloc(cbThis)))
+                                        arc = ERROR_NOT_ENOUGH_MEMORY;
+                                    else
                                     {
-                                        // found:
-                                        PBYTE pb;
-                                        if (!(pb = malloc(cbThis)))
-                                            arc = ERROR_NOT_ENOUGH_MEMORY;
-                                        else
+                                        if (!(arc = doshReadAt(pFile,
+                                                               ulOffset,
+                                                               &cbThis,
+                                                               pb,
+                                                               DRFL_FAILIFLESS)))
                                         {
-                                            if (!(arc = doshReadAt(pFile,
-                                                                   ulOffset,
-                                                                   &cbThis,
-                                                                   pb)))
+                                            if (ulType == WINRT_ICON)
                                             {
-                                                if (ulType == WINRT_ICON)
+                                                ULONG cbConverted = 0;
+                                                if (!ConvertWinIcon(pb,
+                                                                    cbThis,
+                                                                    ppbResData,
+                                                                    &cbConverted))
                                                 {
-                                                    ULONG cbConverted = 0;
-                                                    if (!ConvertWinIcon(pb,
-                                                                        cbThis,
-                                                                        ppbResData,
-                                                                        &cbConverted))
-                                                    {
-                                                        if (pcbResData)
-                                                            *pcbResData = cbConverted;
-                                                        fPtrFound = TRUE;
-                                                    }
-                                                    // else unknown format: keep looking
-
-                                                    // but always free the buffer,
-                                                    // since ConvertWinIcon has created one
-                                                    free(pb);
-                                                }
-                                                else
-                                                {
-                                                    // not icon: just return this
-                                                    *ppbResData = pb;
                                                     if (pcbResData)
-                                                        *pcbResData = cbThis;
+                                                        *pcbResData = cbConverted;
                                                     fPtrFound = TRUE;
                                                 }
+                                                // else unknown format: keep looking
+
+                                                // but always free the buffer,
+                                                // since ConvertWinIcon has created one
+                                                free(pb);
                                             }
                                             else
                                             {
-                                                free(pb);
-                                                // stop reading, we have a problem
-                                                break;
+                                                // not icon: just return this
+                                                *ppbResData = pb;
+                                                if (pcbResData)
+                                                    *pcbResData = cbThis;
+                                                fPtrFound = TRUE;
                                             }
                                         }
+                                        else
+                                        {
+                                            free(pb);
+                                            // stop reading, we have a problem
+                                            break;
+                                        }
                                     }
+                                }
 
-                                    if (fPtrFound)
-                                        break;
+                                if (fPtrFound)
+                                    break;
 
-                                } // end for
-                            }
+                            } // end for
 
                             if (arc)
                                 break;
@@ -1306,14 +1313,483 @@ APIRET LoadWinNEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
     return (arc);
 }
 
+typedef unsigned short  WORD;
+typedef unsigned long   DWORD;
+
+typedef CHAR           *LPSTR;
+typedef const CHAR     *LPCSTR;
+
+// typedef unsigned short  WCHAR;
+typedef WCHAR          *LPWSTR;
+typedef WCHAR          *PWSTR;
+typedef const WCHAR    *LPCWSTR;
+typedef const WCHAR    *PCWSTR;
+
+// #define LOBYTE(w)              ((BYTE)(WORD)(w))
+// #define HIBYTE(w)              ((BYTE)((WORD)(w) >> 8))
+
+#define LOWORD(l)              ((WORD)(DWORD)(l))
+#define HIWORD(l)              ((WORD)((DWORD)(l) >> 16))
+
+#define SLOWORD(l)             ((INT16)(LONG)(l))
+#define SHIWORD(l)             ((INT16)((LONG)(l) >> 16))
+
+// #define MAKEWORD(low,high)     ((WORD)(((BYTE)(low)) | ((WORD)((BYTE)(high))) << 8))
+// #define MAKELONG(low,high)     ((LONG)(((WORD)(low)) | (((DWORD)((WORD)(high))) << 16)))
+// #define MAKELPARAM(low,high)   ((LPARAM)MAKELONG(low,high))
+// #define MAKEWPARAM(low,high)   ((WPARAM)MAKELONG(low,high))
+// #define MAKELRESULT(low,high)  ((LRESULT)MAKELONG(low,high))
+// #define MAKEINTATOM(atom)      ((LPCSTR)MAKELONG((atom),0))
+
+/*
+ *@@ GetResDirEntryW:
+ *      helper function, goes down one level of PE resource
+ *      tree.
+ *
+ *@@added V0.9.16 (2002-01-09) [umoeller]
+ */
+
+PIMAGE_RESOURCE_DIRECTORY GetResDirEntryW(PIMAGE_RESOURCE_DIRECTORY resdirptr,
+                                          LPCWSTR name,
+                                          ULONG root,
+                                          BOOL allowdefault)
+{
+    int entrynum;
+    PIMAGE_RESOURCE_DIRECTORY_ENTRY entryTable;
+    int namelen;
+
+    if (HIWORD(name))
+    {
+        // to make this work we'd have to copy the entire
+        // Odin codepage management which I do _not_ want
+        /*
+        if (name[0] == '#')
+        {
+            char    buf[10];
+
+            lstrcpynWtoA(buf,
+                         name + 1,
+                         10);
+            return GetResDirEntryW(resdirptr,
+                                   (LPCWSTR)atoi(buf),
+                                   root,
+                                   allowdefault);
+        }
+        entryTable = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(   (BYTE*)resdirptr
+                                                        + sizeof(IMAGE_RESOURCE_DIRECTORY));
+        namelen = lstrlenW(name);
+        for (entrynum = 0;
+             entrynum < resdirptr->NumberOfNamedEntries;
+             entrynum++)
+        {
+            PIMAGE_RESOURCE_DIR_STRING_U str
+                = (PIMAGE_RESOURCE_DIR_STRING_U)(   root
+                                                  + entryTable[entrynum].u1.s.NameOffset);
+            if (namelen != str->Length)
+                continue;
+            if (lstrncmpiW(name,
+                           str->NameString,
+                           str->Length)==0)
+                    return (PIMAGE_RESOURCE_DIRECTORY)(   root
+                                                        + entryTable[entrynum].u2.s.OffsetToDirectory);
+        }
+        */
+    }
+    else
+    {
+        entryTable
+            = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)
+                    (
+                        (BYTE*)resdirptr
+                      + sizeof(IMAGE_RESOURCE_DIRECTORY)
+                      +   resdirptr->NumberOfNamedEntries
+                        * sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY)
+                    );
+        for (entrynum = 0;
+             entrynum < resdirptr->NumberOfIdEntries;
+             entrynum++)
+        {
+            if ((DWORD)entryTable[entrynum].u1.Name == (DWORD)name)
+                return (PIMAGE_RESOURCE_DIRECTORY)(   root
+                                                    + entryTable[entrynum].u2.s.OffsetToDirectory);
+        }
+        // just use first entry if no default can be found
+        if (allowdefault && !name && resdirptr->NumberOfIdEntries)
+            return (PIMAGE_RESOURCE_DIRECTORY)(   root
+                                                + entryTable[0].u2.s.OffsetToDirectory);
+    }
+
+    return NULL;
+}
+
+/*
+ *@@ LoadRootResDirectory:
+ *
+ *@@added V0.9.16 (2002-01-09) [umoeller]
+ */
+
+APIRET LoadRootResDirectory(PEXECUTABLE pExec,
+                            PIMAGE_SECTION_HEADER paSections,
+                            PIMAGE_RESOURCE_DIRECTORY *ppResDir,    // out: new directory
+                            PULONG pcbResDir)           // out: size
+{
+    APIRET arc = ERROR_NO_DATA;     // unless found
+
+    PPEHEADER pPEHeader = pExec->pPEHeader;
+
+    // address to find is address specified in resource data directory
+    ULONG ulAddressFind = pPEHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress;
+
+    int i;
+
+    _Pmpf((__FUNCTION__ ": entering, %d sections, looking for 0x%lX",
+                pPEHeader->FileHeader.usNumberOfSections,
+                ulAddressFind));
+
+    for (i = 0;
+         i < pPEHeader->FileHeader.usNumberOfSections;
+         i++)
+    {
+        PIMAGE_SECTION_HEADER pThis = &paSections[i];
+
+        _Pmpf(("    %d (%s): virtual address 0x%lX",
+                i,
+                pThis->Name,
+                pThis->VirtualAddress));
+
+        if (pThis->flCharacteristics & IMAGE_SCN_CNT_UNINITIALIZED_DATA)
+            continue;
+
+        // FIXME: doesn't work when the resources are not in a seperate section
+        if (pThis->VirtualAddress == ulAddressFind)
+        {
+            // rootresdir = (PIMAGE_RESOURCE_DIRECTORY)(   (char*)pExec->pDosExeHeader
+               //                                        + pThis->ulPointerToRawData);
+
+            ULONG cb = pThis->ulSizeOfRawData; // sizeof(IMAGE_RESOURCE_DIRECTORY);
+            PIMAGE_RESOURCE_DIRECTORY pResDir;
+
+            _Pmpf((__FUNCTION__ ": raw data size %d, ptr %d",
+                    pThis->ulSizeOfRawData,
+                    pThis->ulPointerToRawData,
+                    sizeof(IMAGE_RESOURCE_DIRECTORY)));
+
+            if (!(pResDir = malloc(cb)))
+                arc = ERROR_NOT_ENOUGH_MEMORY;
+            else
+            {
+                // load that
+                if (!(arc = doshReadAt(pExec->pFile,
+                                       // offset:
+                                       pThis->ulPointerToRawData,
+                                       &cb,
+                                       (PBYTE)pResDir,
+                                       DRFL_FAILIFLESS)))
+                {
+                    *ppResDir = pResDir;
+                    *pcbResDir = cb;
+                }
+                else
+                    free(pResDir);
+            }
+
+            break;
+        }
+    }
+
+    _Pmpf((__FUNCTION__": returning %d", arc));
+
+    return (arc);
+}
+
+#define MAKEINTRESOURCEW(i) (LPWSTR)((DWORD)((WORD)(i)))
+#define RT_ICONW            MAKEINTRESOURCEW(3)
+#define RT_GROUP_ICONW      MAKEINTRESOURCEW(14)
+
+/*
+ *@@ LoadResData:
+ *
+ *@@added V0.9.16 (2002-01-09) [umoeller]
+ */
+
+APIRET LoadResData(PPEHEADER pPEHeader,
+                   PIMAGE_SECTION_HEADER paSections,
+                   PIMAGE_RESOURCE_DIRECTORY pRootResDir,
+                   PIMAGE_RESOURCE_DIRECTORY icongroupresdir,
+                   int iInIconDir,               // current index
+                   int iconDirCount,
+                   int idResource)
+{
+    APIRET          arc = NO_ERROR;
+
+    /* PBYTE           idata,
+                    igdata; */
+
+    return (arc);
+}
+
+/*
+ *@@ LoadWinPEResource:
+ *
+ *@@added V0.9.16 (2002-01-09) [umoeller]
+ */
+
+APIRET LoadWinPEResource(PEXECUTABLE pExec,     // in: executable from exehOpen
+                         ULONG ulType,          // in: RT_* type (e.g. RT_POINTER)
+                         int idResource,      // in: resource ID or 0 for first
+                         PBYTE *ppbResData,     // out: converted resource data (to be free()'d)
+                         PULONG pcbResData)     // out: size of converted data (ptr can be NULL)
+{
+    APIRET          arc = NO_ERROR;
+    ULONG           cbRead;
+
+    ULONG           ulNewHeaderOfs = 0; // V0.9.12 (2001-05-03) [umoeller]
+
+    PPEHEADER       pPEHeader;
+
+    PXFILE          pFile;
+
+    PIMAGE_SECTION_HEADER
+                    paSections = NULL;
+    ULONG           cbSections;
+
+    PIMAGE_RESOURCE_DIRECTORY
+                    pRootResDir = NULL;
+    ULONG           cbRootResDir;
+    PIMAGE_RESOURCE_DIRECTORY
+                    icongroupresdir = NULL;
+
+    if (!(pPEHeader = pExec->pPEHeader))
+        return (ERROR_INVALID_EXE_SIGNATURE);
+    if (    (pExec->ulOS != EXEOS_WIN32_GUI)
+         && (pExec->ulOS != EXEOS_WIN32_CLI)
+       )
+        return (ERROR_INVALID_EXE_SIGNATURE);
+
+    if (pExec->pDosExeHeader)
+        // executable has DOS stub: V0.9.12 (2001-05-03) [umoeller]
+        ulNewHeaderOfs = pExec->pDosExeHeader->ulNewHeaderOfs;
+
+    pFile = pExec->pFile;
+
+    // read in section headers right after PE header
+    if (    (!(arc = doshAllocArray(pPEHeader->FileHeader.usNumberOfSections,
+                                    sizeof(IMAGE_SECTION_HEADER),
+                                    (PBYTE*)&paSections,
+                                    &cbSections)))
+         && (!(arc = doshReadAt(pFile,
+                                // right after PE header
+                                ulNewHeaderOfs + sizeof(PEHEADER), // pExec->cbPEHeader,
+                                &cbSections,
+                                (PBYTE)paSections,
+                                DRFL_FAILIFLESS)))
+        // paSections = (PIMAGE_SECTION_HEADER)(   ((char*)pPEHeader)
+           //                             + sizeof(*pPEHeader));
+                              // probably makes problems with short PE headers...
+         && (!(arc = LoadRootResDirectory(pExec,
+                                          paSections,
+                                          &pRootResDir,
+                                          &cbRootResDir)))
+       )
+    {
+        // search the group icon dir
+        if (!(icongroupresdir = GetResDirEntryW(pRootResDir,
+                                                RT_GROUP_ICONW,
+                                                (ULONG)pRootResDir,
+                                                FALSE)))
+            arc = ERROR_NO_DATA; // WARN("No Icongroupresourcedirectory!\n");
+        else
+        {
+            // alright, found the icon group dir:
+            ULONG iconDirCount =   icongroupresdir->NumberOfNamedEntries
+                                 + icongroupresdir->NumberOfIdEntries;
+
+            int     ulIconGroup = 0;        // n
+
+            // res dir for icon groups follows
+            PIMAGE_RESOURCE_DIRECTORY_ENTRY
+                    pResDirEntryThis = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(icongroupresdir + 1);
+
+            BOOL fPtrFound = FALSE;
+
+            _Pmpf(("  found RT_GROUP_ICONW, %d names, %d ids",
+                    icongroupresdir->NumberOfNamedEntries,
+                    icongroupresdir->NumberOfIdEntries));
+
+            // go thru icon group
+            for (ulIconGroup = 0;
+                 ((ulIconGroup < iconDirCount) && (pResDirEntryThis)) && (!arc);
+                 ulIconGroup++, pResDirEntryThis++)
+            {
+                _Pmpf(("  %d: idThis: %d, ofs to data 0x%lX",
+                        ulIconGroup,
+                        pResDirEntryThis->u1.Id,
+                        pResDirEntryThis->u2.OffsetToData));
+
+                if (    (idResource == 0)       // first one found
+                     || (pResDirEntryThis->u1.Id == idResource)
+                   )
+                {
+                    if (ulIconGroup >= iconDirCount) // idResource %d is larger than iconDirCount %d\n",idResource,iconDirCount);
+                        arc = ERROR_NO_DATA;
+                    else
+                    {
+                        // found icon:
+                        PIMAGE_RESOURCE_DATA_ENTRY
+                                        idataent,
+                                        igdataent;
+                        PIMAGE_RESOURCE_DIRECTORY_ENTRY
+                                        pXResDirEntry;
+                        int             i,
+                                        j;
+
+                        pXResDirEntry = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(icongroupresdir + 1);
+
+                        if (ulIconGroup <= iconDirCount - idResource)   // assure we don't get too much ...
+                        {
+                            pXResDirEntry = pXResDirEntry + idResource;     // starting from specified index ...
+
+                            _Pmpf(("    found icondir for id %d", pResDirEntryThis->u1.Id));
+
+                            for (i = 0;
+                                 i < ulIconGroup;
+                                 i++, pXResDirEntry++)
+                            {
+                                PIMAGE_RESOURCE_DIRECTORY   resdir;
+
+                                // go down this resource entry, name
+                                resdir = (PIMAGE_RESOURCE_DIRECTORY)(  (ULONG)pRootResDir
+                                                                      +(pXResDirEntry->u2.s.OffsetToDirectory));
+
+                                // default language (0)
+                                resdir = GetResDirEntryW(resdir,
+                                                         0,
+                                                         (ULONG)pRootResDir,
+                                                         TRUE);
+                                igdataent = (PIMAGE_RESOURCE_DATA_ENTRY)resdir;
+
+                                // lookup address in mapped image for virtual address
+                                // igdata = NULL;
+
+                                for (j = 0;
+                                     j < pPEHeader->FileHeader.usNumberOfSections;
+                                     j++)
+                                {
+                                    ULONG ulOfs;
+                                    PIMAGE_RESOURCE_DIRECTORY iconresdir = NULL;
+
+                                    if (igdataent->OffsetToData < paSections[j].VirtualAddress)
+                                        continue;
+                                    if (   igdataent->OffsetToData + igdataent->Size
+                                         >   paSections[j].VirtualAddress
+                                           + paSections[j].ulSizeOfRawData)
+                                        continue;
+
+                                    ulOfs = //  (PBYTE)pExec->pDosExeHeader +
+                                            (   igdataent->OffsetToData
+                                              - paSections[j].VirtualAddress
+                                              + paSections[j].ulPointerToRawData
+                                            );
+
+                                    _Pmpf(("    data of this icon group is at 0x%lX", ulOfs));
+
+                                    /* RetPtr[i] = (HICON)pLookupIconIdFromDirectoryEx(igdata,
+                                                                                    TRUE,
+                                                                                    cxDesired,
+                                                                                    cyDesired,
+                                                                                    LR_DEFAULTCOLOR);
+                                    */
+
+                                    /*
+                                    if (iconresdir = GetResDirEntryW(pRootResDir,
+                                                                     RT_ICONW,
+                                                                     (ULONG)pRootResDir,
+                                                                     FALSE))
+                                    {
+                                        for (i2 = 0;
+                                             (i2 < ulIconGroup) && (!arc);
+                                             i2++)
+                                        {
+                                            PIMAGE_RESOURCE_DIRECTORY   xresdir;
+                                            xresdir = GetResDirEntryW(iconresdir,
+                                                                      (LPWSTR)(ULONG)RetPtr[i2],
+                                                                      (ULONG)pRootResDir,
+                                                                      FALSE);
+                                            xresdir = GetResDirEntryW(xresdir,
+                                                                      (LPWSTR)0,
+                                                                      (ULONG)pRootResDir,
+                                                                      TRUE);
+                                            idataent = (PIMAGE_RESOURCE_DATA_ENTRY)xresdir;
+
+                                            // map virtual to address in image
+                                            for (j2 = 0;
+                                                 j2 < pPEHeader->FileHeader.usNumberOfSections;
+                                                 j2++)
+                                            {
+                                                ULONG ulDataOfs;
+                                                if (idataent->OffsetToData < paSections[j].VirtualAddress)
+                                                    continue;
+                                                if (idataent->OffsetToData+idataent->Size > paSections[j].VirtualAddress+paSections[j].SizeOfRawData)
+                                                    continue;
+                                                ulDataOfs =
+                                                          (   idataent->OffsetToData
+                                                            - paSections[j].VirtualAddress
+                                                            + paSections[j].ulPointerToRawData
+                                                          );
+                                                RetPtr[i] = (HICON)pCreateIconFromResourceEx(idata,
+                                                                                             idataent->Size,
+                                                                                             TRUE,
+                                                                                             0x00030000,
+                                                                                             cxDesired,
+                                                                                             cyDesired,
+                                                                                             LR_DEFAULTCOLOR);
+                                            }
+                                        } // for i = 0
+                                    }
+
+                                    hRet = RetPtr[0]; // return first icon
+                                    break;
+                                    */
+
+                                    break;
+                                }
+                            }
+                        }
+                    } // else if (n >= iconDirCount)
+
+                    if (fPtrFound)
+                        break;
+
+                } // if idResource
+
+            } // while
+        }
+
+        if (paSections)
+            free(paSections);
+        if (pRootResDir)
+            free(pRootResDir);
+    }
+
+    arc = ERROR_NO_DATA;
+
+    return (arc);
+}
+
 /*
  *@@ icoLoadExeIcon:
  *      smarter replacement for WinLoadFileIcon.
  *      In conjunction with the exeh* functions,
  *      this is a full rewrite, including all the
- *      resource loading.
+ *      executable parsing.
  *
- *      Differences:
+ *      Essentially, this function allows you to
+ *      get an icon resource from an executable
+ *      file without having to run DosLoadModule.
+ *      This is used in XWorkplace for getting the
+ *      icons for executable files.
+ *
+ *      Differences to WinLoadFileIcon:
  *
  *      --  WinLoadFileIcon can take ages on PE files.
  *
@@ -1379,6 +1855,11 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
     PBYTE   pbData = NULL;
     ULONG   cbData = 0;
 
+    static  s_fCrashed = FALSE;
+
+    if (s_fCrashed)
+        return ERROR_PROTECTION_VIOLATION;
+
     TRY_LOUD(excpt1)
     {
         if (!pExec)
@@ -1425,7 +1906,14 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
                 }
             break;
 
-            case EXEFORMAT_PE:          // @@todo later
+            case EXEFORMAT_PE:
+                arc = LoadWinPEResource(pExec,
+                                        WINRT_ICON,
+                                        idResource,
+                                        &pbData,
+                                        &cbData);
+                _Pmpf((__FUNCTION__ ": LoadWinPEResource returned %d", arc));
+            break;
 
             default:        // includes COM, BAT, CMD
                 arc = ERROR_INVALID_EXE_SIGNATURE;
@@ -1460,6 +1948,7 @@ APIRET icoLoadExeIcon(PEXECUTABLE pExec,        // in: EXECUTABLE from exehOpen
     }
     CATCH(excpt1)
     {
+        s_fCrashed = TRUE;      // never let this code do anything again
         arc = ERROR_PROTECTION_VIOLATION;
     } END_CATCH();
 

@@ -1210,6 +1210,8 @@ ULONG ConfirmObjectTitle(WPFolder *Folder,          // in: target folder to chec
         // auto-rename in that case
         if (_xwpQueryDeletion(pFSExisting, NULL, NULL))
             flOptions |= NO_NAMECLASH_DIALOG;
+        else
+            _Pmpf(("_xwpQueryDeletion(pFSExisting) returned FALSE"));
 
         // disable "Replace" and "Rename old"
         // if we're copying within the same folder

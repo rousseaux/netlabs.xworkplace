@@ -584,10 +584,6 @@ VOID ShowPanicDlg(VOID)
                                             INIAPP_XWPHOOK,
                                             INIKEY_HOOK_HOTKEYS,
                                             0, 0);      // delete INI key
-
-                    // cmnUnlockGlobalSettings();
-                    /* if (fStore)
-                        cmnStoreGlobalSettings(); */
                 }
                 break;
 

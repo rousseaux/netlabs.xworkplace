@@ -337,6 +337,8 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpQueryDeletion(XFldObject *somSelf,
 
     XFldObjectMethodDebug("XFldObject","xfobj_xwpQueryDeletion");
 
+    _Pmpf((__FUNCTION__ ": _cdateDeleted.year %d, returning %d", _cdateDeleted.year, brc));
+
     if (brc)
     {
         if (pcdateDeleted)

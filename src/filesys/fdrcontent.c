@@ -1970,8 +1970,9 @@ BOOL PopulateWithAbstracts(WPFolder *somSelf,
 
 /*
  *@@ fdrPopulate:
- *      implementation for WPFolder::wpPopulate if
- *      "turbo folders" are enabled.
+ *      implementation for XFolder::wpPopulate if
+ *      "turbo folders" are enabled. This is a
+ *      100% replacement of WPFolder::wpPopulate.
  *
  *      This presently does _not_ get called
  *
@@ -1983,15 +1984,20 @@ BOOL PopulateWithAbstracts(WPFolder *somSelf,
  *
  *      This is a lot faster than WPFolder::wpPopulate:
  *
- *      --  Since we can use our fast folder content
- *          trees (see fdrFindFSFromName), this
- *          is a _lot_ faster for folders with many
- *          file system objects.
- *
  *      --  For file-system objects,
  *          PopulateWithFileSystems() starts a second
  *          thread which does the actual DosFindFirst/Next
- *          processing (see fntFindFiles).
+ *          processing (see fntFindFiles). This allows
+ *          us to use the idle time produced by
+ *          DosFindFirst/Next for the SOM processing
+ *          which is quite expensive.
+ *
+ *      --  Since we can use our fast folder content
+ *          trees (see fdrFindFSFromName), this
+ *          is a _lot_ faster for folders with many
+ *          file system objects because we can check
+ *          much more quickly if an object is already
+ *          awake.
  *
  *      Two bottlenecks remain for folder populating...
  *      one is DosFindFirst/Next, which is terminally
@@ -2016,10 +2022,10 @@ BOOL PopulateWithAbstracts(WPFolder *somSelf,
  +      |   10.000 files     |             |             |             |
  +      +--------------------+-------------+-------------+-------------+
  *
- *      The time that the default WPS populate takes increases
- *      exponentially with the no. of objects in the folder.
- *      As a result, the fuller a folder is, the better
- *      this replacement becomes in comparison.
+ *      Obivously, the time that the default WPS populate
+ *      takes increases exponentially with the no. of objects
+ *      in the folder. As a result, the fuller a folder is,
+ *      the better this replacement becomes in comparison.
  *
  *      In addition, this supports an exit flag which, when
  *      set to TRUE, will cancel populate. This
@@ -2030,6 +2036,30 @@ BOOL PopulateWithAbstracts(WPFolder *somSelf,
  *      If you call this with the address of a
  *      THREADINFO.fExit, you can even use the
  *      thread functions to cancel (see thrClose).
+ *
+ *      A word about object locking:
+ *
+ *      For each object that was found, we check if the object
+ *      is already awake.
+ *
+ *      --  If so, for file-system objects, we check if the
+ *          object needs a refresh. Abstracts are never refreshed.
+ *          In any case though, if the object is awake already,
+ *          it is locked once.
+ *
+ *      --  If the object is not awake, it is made awake through
+ *          wpclsMakeAwake. This locks the object too.
+ *
+ *      In other words, all objects are locked. This applies
+ *      only to the objects which were actually touched by
+ *      this function though; so if (fFoldersOnly == TRUE)
+ *      or (pcszFilemask != NULL), not all objects will have
+ *      been locked.
+ *
+ *      For standard folder views, the WPS appears to unlock
+ *      every object when the view is closed again. However,
+ *      for our own views or if we populate for some other
+ *      reason, the caller is responsible for unlocking.
  *
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */

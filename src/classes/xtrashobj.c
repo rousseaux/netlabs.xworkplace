@@ -210,7 +210,11 @@ SOM_Scope BOOL  SOMLINK xtro_xwpSetRelatedObject(XWPTrashObject *somSelf,
         // adjust our own title
         _wpSetTitle(somSelf, _wpQueryTitle(pObject));
         // and icon
-        _wpSetIcon(somSelf, _wpQueryIcon(pObject));
+        // _wpSetIcon(somSelf, _wpQueryIcon(pObject));
+
+        _wpModifyStyle(somSelf,
+                       OBJSTYLE_NOTDEFAULTICON,
+                       0);
 
         // _wpModifyStyle(somSelf, OBJSTYLE_NOTDEFAULTICON, 0);
         /* _wpSetStyle(somSelf,
@@ -503,6 +507,41 @@ SOM_Scope BOOL  SOMLINK xtro_wpSetupOnce(XWPTrashObject *somSelf,
     }
 
     return (FALSE);
+}
+
+/*
+ *@@ wpQueryIcon:
+ *      this WPObject instance method returns the HPOINTER
+ *      with the current icon of the object. For some WPS
+ *      classes, icon loading is deferred until the first
+ *      call to this method.
+ *      See icons.c for an introduction.
+ *
+ *      Before V0.9.16, we used to set our icon directly
+ *      in xwpSetRelatedObject when the trash object was
+ *      created. That was quite slow; we now defer this
+ *      until the icon is really needed.
+ *
+ *@@added V0.9.16 (2002-01-09) [umoeller]
+ */
+
+SOM_Scope HPOINTER  SOMLINK xtro_wpQueryIcon(XWPTrashObject *somSelf)
+{
+    PMINIRECORDCORE pmrc = _wpQueryCoreRecord(somSelf);
+    XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
+    XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpQueryIcon");
+
+    if (_pRelatedObject)
+    {
+        // on the first call, copy icon from related object
+        if (!pmrc->hptrIcon)
+            _wpSetIcon(somSelf,
+                       _wpQueryIcon(_pRelatedObject));
+        return pmrc->hptrIcon;
+    }
+
+    return (XWPTrashObject_parent_WPTransient_wpQueryIcon(somSelf));
+                // dull red default icon
 }
 
 /*

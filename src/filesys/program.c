@@ -416,16 +416,7 @@ BOOL progFillProgDetails(PPROGDETAILS pProgDetails,     // can be NULL
 
             // 5) environment
             if (pcszEnvironment)
-            {
-                PCSZ    pVarThis = pcszEnvironment;
-                // go thru the environment strings; last one has two null bytes
-                while (*pVarThis)
-                {
-                    ULONG ulLenThis = strlen(pVarThis) + 1;
-                    cbEnvironment += ulLenThis;
-                    pVarThis += ulLenThis;
-                }
-            }
+                cbEnvironment = appQueryEnvironmentLen(pcszEnvironment);
 
             ulSize =   sizeof(PROGDETAILS)
                      + cbTitle
@@ -506,6 +497,32 @@ BOOL progFillProgDetails(PPROGDETAILS pProgDetails,     // can be NULL
 
 /*
  *@@ progQueryProgType:
+ *      returns the PROG_* flag for the given file.
+ *
+ *      If pvExec is specified, this is assumed to
+ *      be an EXECUTABLE struct for the given file.
+ *      If pvExec is NULL, we run exehOpen ourselves.
+ *
+ *      The PROG_* type returned is entirely our
+ *      own assumption based on the executable image.
+ *      This returns one of:
+ *
+ *      --  PROG_DEFAULT (0): error.
+ *
+ *      --  PROG_PM
+ *
+ *      --  PROG_WINDOWEDVDM (DOS session)
+ *
+ *      --  PROG_WINDOWABLEVIO (OS/2 session)
+ *
+ *      --  PROG_FULLSCREEN (OS/2 session where exe said it
+ *          must be fullscreen)
+ *
+ *      --  PROG_31_ENHSEAMLESSCOMMON for all Win16 apps (NE)
+ *
+ *      --  PROG_WIN32 for all Win32 apps (PE)
+ *
+ *      --  PROG_DLL for all NE, LX, PE libraries
  *
  *@@added V0.9.16 (2002-01-01) [umoeller]
  */
@@ -513,7 +530,7 @@ BOOL progFillProgDetails(PPROGDETAILS pProgDetails,     // can be NULL
 ULONG progQueryProgType(PCSZ pszFullFile,
                         PVOID pvExec)
 {
-    ULONG           ulAppType = PROG_DEFAULT;
+    ULONG           ulAppType = PROG_DEFAULT; // 0
 
     PEXECUTABLE     pExec = NULL;
     BOOL            fClose = FALSE;
@@ -550,7 +567,9 @@ ULONG progQueryProgType(PCSZ pszFullFile,
         {
             // now we have the PEXECUTABLE:
             // check what we found
-            switch (pExec->ulOS)
+            if (pExec->fLibrary)
+                ulAppType = PROG_DLL;
+            else switch (pExec->ulOS)
             {
                 case EXEOS_DOS3:
                 case EXEOS_DOS4:
@@ -558,25 +577,9 @@ ULONG progQueryProgType(PCSZ pszFullFile,
                 break;
 
                 case EXEOS_OS2:
-                    if (pExec->fLibrary)
-                        ulAppType = PROG_DLL;
-                    else
                     switch (pExec->ulExeFormat)
                     {
                         case EXEFORMAT_LX:
-
-    #define E32NOTP          0x8000L        // Library Module - used as NENOTP
-    #define E32NOLOAD        0x2000L        // Module not Loadable
-    #define E32PMAPI         0x0300L        // Uses PM Windowing API
-    #define E32PMW           0x0200L        // Compatible with PM Windowing
-    #define E32NOPMW         0x0100L        // Incompatible with PM Windowing
-    #define E32NOEXTFIX      0x0020L        // NO External Fixups in .EXE
-    #define E32NOINTFIX      0x0010L        // NO Internal Fixups in .EXE
-    #define E32SYSDLL        0x0008L        // System DLL, Internal Fixups discarded
-    #define E32LIBINIT       0x0004L        // Per-Process Library Initialization
-    #define E32LIBTERM       0x40000000L    // Per-Process Library Termination
-    #define E32APPMASK       0x0300L        // Application Type Mask
-
                             switch (pExec->pLXHeader->ulFlags & E32APPMASK)
                             {
                                 case E32PMAPI:
@@ -598,24 +601,6 @@ ULONG progQueryProgType(PCSZ pszFullFile,
                         break;
 
                         case EXEFORMAT_NE:
-
-    #define NENOTP          0x8000          // Not a process
-    #define NENOTMPSAFE     0x4000          // Process is not multi-processor safe
-    #define NEIERR          0x2000          // Errors in image
-    #define NEBOUND         0x0800          // Bound Family/API
-    #define NEAPPTYP        0x0700          // Application type mask
-    #define NENOTWINCOMPAT  0x0100          // Not compatible with P.M. Windowing
-    #define NEWINCOMPAT     0x0200          // Compatible with P.M. Windowing
-    #define NEWINAPI        0x0300          // Uses P.M. Windowing API
-    #define NEFLTP          0x0080          // Floating-point instructions
-    #define NEI386          0x0040          // 386 instructions
-    #define NEI286          0x0020          // 286 instructions
-    #define NEI086          0x0010          // 8086 instructions
-    #define NEPROT          0x0008          // Runs in protected mode only
-    #define NEPPLI          0x0004          // Per-Process Library Initialization
-    #define NEINST          0x0002          // Instance data
-    #define NESOLO          0x0001          // Solo data
-
                             switch (pExec->pNEHeader->usFlags & NEAPPTYP)
                             {
                                 case NEWINCOMPAT:
@@ -653,51 +638,18 @@ ULONG progQueryProgType(PCSZ pszFullFile,
                     ulAppType = PROG_31_ENHSEAMLESSCOMMON;
                 break;
 
-                case EXEOS_WIN32:
+                case EXEOS_WIN32_GUI:
+                case EXEOS_WIN32_CLI:
                     _Pmpf(("  WIN32"));
                     ulAppType = PROG_WIN32;
                 break;
             }
-
-            // and we modify a few of these assumptions
-            switch (ulAppType)
-            {
-                // Windows:
-                case PROG_WINDOW_REAL         :
-                case PROG_30_STD              :
-                case PROG_WINDOW_AUTO         :
-                case PROG_30_STDSEAMLESSVDM   :
-                case PROG_30_STDSEAMLESSCOMMON:
-                case PROG_31_STDSEAMLESSVDM   :
-                case PROG_31_STDSEAMLESSCOMMON:
-                case PROG_31_ENHSEAMLESSVDM   :
-                case PROG_31_ENHSEAMLESSCOMMON:
-                case PROG_31_ENH              :
-                case PROG_31_STD              :
-
-                case PROG_WIN32:       // added V0.9.16 (2001-12-08) [umoeller]
-                {
-                    // for all the Windows app types, we check
-                    // for whether the extension of the file is
-                    // DLL or 386; if so, we change the type to
-                    // DLL. Otherwise,  all Windows DLL's get
-                    // some default windoze icon.
-                    PCSZ pcszExt;
-                    if (    (pcszExt = doshGetExtension(pszFullFile))
-                         && (!stricmp(pcszExt, "DLL"))
-                       )
-                        // DLL found:
-                        ulAppType = PROG_DLL;
-                }
-                break;
-
-                // the other values are OK, leave them as is
-
-            } // end switch (ulAppType)
         }
     }
     CATCH(excpt1)
     {
+        ulAppType = PROG_DEFAULT; // 0
+        fCallQueryAppType = FALSE;
     } END_CATCH();
 
     if (    (fCallQueryAppType)
@@ -724,6 +676,16 @@ ULONG progQueryProgType(PCSZ pszFullFile,
  *      attempts to return an icon for the given executable
  *      and application type.
  *
+ *      If icoLoadExeIcon found a suitable icon in the
+ *      executable, we use that and set *pfNotDefaultIcon
+ *      to TRUE. The caller should then set OBJSTYLE_NOTDEFAULTICON
+ *      on the object on which the icon will be set.
+ *
+ *      If no custom icon was found, *pfNotDefaultIcon is set
+ *      to FALSE, and a shared standard icon is returned.
+ *      In that case the OBJSTYLE_NOTDEFAULTICON flag must be
+ *      clear.
+ *
  *      This is shared code between XWPProgram and XWPProgramFile.
  *
  *@@added V0.9.16 (2002-01-01) [umoeller]
@@ -740,84 +702,96 @@ APIRET progFindIcon(PEXECUTABLE pExec,
 
     *pfNotDefaultIcon = FALSE;
 
-    // examine the application type we have
-    switch (ulAppType)
+    TRY_LOUD(excpt1)
     {
-        // PM:
-        case PROG_PM                  :
-        // Windows:
-        case PROG_WINDOW_REAL         :
-        case PROG_30_STD              :
-        case PROG_WINDOW_AUTO         :
-        case PROG_30_STDSEAMLESSVDM   :
-        case PROG_30_STDSEAMLESSCOMMON:
-        case PROG_31_STDSEAMLESSVDM   :
-        case PROG_31_STDSEAMLESSCOMMON:
-        case PROG_31_ENHSEAMLESSVDM   :
-        case PROG_31_ENHSEAMLESSCOMMON:     // we get this for PE execs!!
-        case PROG_31_ENH              :
-        case PROG_31_STD              :
+        _Pmpf((__FUNCTION__ " %s: progtype %d (%s)",
+                (pExec && pExec->pFile) ? pExec->pFile->pszFilename : "NULL",
+                ulAppType,
+                appDescribeAppType(ulAppType)));
 
-        case PROG_WIN32:
-            // try icon resource
-            if (!icoLoadExeIcon(pExec,
-                                0,          // first icon found
-                                phptr,
-                                NULL,
-                                NULL))
-            {
-                *pfNotDefaultIcon = TRUE;
-            }
-            else
-                if (ulAppType == PROG_PM)
-                    ulStdIcon = STDICON_PM; // default PM prog icon
-                else if (ulAppType == PROG_WIN32)
-                    ulStdIcon = STDICON_WIN32;
+        // examine the application type we have
+        switch (ulAppType)
+        {
+            // PM:
+            case PROG_PM:
+            // Windows:
+            case PROG_WINDOW_REAL:
+            case PROG_30_STD:
+            case PROG_WINDOW_AUTO:
+            case PROG_30_STDSEAMLESSVDM:
+            case PROG_30_STDSEAMLESSCOMMON:
+            case PROG_31_STDSEAMLESSVDM:
+            case PROG_31_STDSEAMLESSCOMMON:
+            case PROG_31_ENHSEAMLESSVDM:
+            case PROG_31_ENHSEAMLESSCOMMON:
+            case PROG_31_ENH:
+            case PROG_31_STD:
+
+            case PROG_WIN32:                    // we get this for non-DLL PE!
+                // try icon resource
+                if (!icoLoadExeIcon(pExec,
+                                    0,          // first icon found
+                                    phptr,
+                                    NULL,
+                                    NULL))
+                {
+                    *pfNotDefaultIcon = TRUE;
+                }
                 else
-                    ulStdIcon = STDICON_WIN16; // default windoze
-        break;
+                    if (ulAppType == PROG_PM)
+                        ulStdIcon = STDICON_PM; // default PM prog icon
+                    else if (ulAppType == PROG_WIN32)
+                        ulStdIcon = STDICON_WIN32;
+                    else
+                        ulStdIcon = STDICON_WIN16; // default windoze
+            break;
 
-        case PROG_WINDOWABLEVIO:
-            // "window compatible":
-            // OS/2 window icon
-            ulStdIcon = STDICON_OS2WIN;
-        break;
+            case PROG_WINDOWABLEVIO:
+                // "window compatible":
+                // OS/2 window icon
+                ulStdIcon = STDICON_OS2WIN;
+            break;
 
-        case PROG_FULLSCREEN:
-            // "not window compatible":
-            // OS/2 fullscreen icon
-            ulStdIcon = STDICON_OS2FULLSCREEN;
-        break;
+            case PROG_FULLSCREEN:
+                // "not window compatible":
+                // OS/2 fullscreen icon
+                ulStdIcon = STDICON_OS2FULLSCREEN;
+            break;
 
-        case PROG_WINDOWEDVDM:
-            // DOS window
-            ulStdIcon = STDICON_DOSWIN;
-        break;
+            case PROG_WINDOWEDVDM:
+                // DOS window
+                ulStdIcon = STDICON_DOSWIN;
+            break;
 
-        case PROG_VDM: // == PROG_REAL
-            // DOS fullscreen
-            ulStdIcon = STDICON_DOSFULLSCREEN;
-        break;
+            case PROG_VDM: // == PROG_REAL
+                // DOS fullscreen
+                ulStdIcon = STDICON_DOSFULLSCREEN;
+            break;
 
-        case PROG_DLL:
-            // DLL flag set: load DLL icon
-            ulStdIcon = STDICON_DLL;
-        break;
+            case PROG_DLL:                  // can be NE, LX, PE
+                // DLL flag set: load DLL icon
+                ulStdIcon = STDICON_DLL;
+            break;
 
-        case PROG_PDD:
-        case PROG_VDD:
-            ulStdIcon = STDICON_DRIVER;
-        break;
+            case PROG_PDD:
+            case PROG_VDD:
+                ulStdIcon = STDICON_DRIVER;
+            break;
 
-        default:
-            // unknown:
-            ulStdIcon = STDICON_PROG_UNKNOWN;
+            default:
+                // unknown:
+                ulStdIcon = STDICON_PROG_UNKNOWN;
+        }
+
+        if (ulStdIcon)
+            cmnGetStandardIcon(ulStdIcon,
+                               phptr,
+                               NULL);
     }
-
-    if (ulStdIcon)
-        cmnGetStandardIcon(ulStdIcon,
-                           phptr,
-                           NULL);
+    CATCH(excpt1)
+    {
+        arc = ERROR_PROTECTION_VIOLATION;
+    } END_CATCH();
 
     return (arc);
 }
@@ -2151,6 +2125,10 @@ VOID progFileInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                     case EXEFORMAT_LX:
                         pszExeFormat = "Linear Executable (LX)";
                     break;
+
+                    case EXEFORMAT_COM:         // V0.9.16 (2002-01-09) [umoeller]
+                        pszExeFormat = "COM";
+                    break;
                 }
 
                 if (pszExeFormat)
@@ -2180,8 +2158,12 @@ VOID progFileInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                         pszOS = "Win386";
                     break;
 
-                    case EXEOS_WIN32:
-                        pszOS = "Win32";
+                    case EXEOS_WIN32_GUI:
+                        pszOS = "Win32 GUI";
+                    break;
+
+                    case EXEOS_WIN32_CLI:
+                        pszOS = "Win32 CLI";
                     break;
                 }
 
@@ -2721,6 +2703,8 @@ typedef struct _RESOURCERECORD
 {
     RECORDCORE  recc;
 
+    CHAR szBuf[100];
+
     ULONG       ulResourceID; // !!! Could be a string with Windows or Open32 execs
     const char  *pcszResourceType;
     ULONG       ulResourceSize;
@@ -2770,23 +2754,30 @@ const char* fsysGetResourceFlagName(ULONG ulResourceFlag)
  *@@added V0.9.16 (2001-12-18) [umoeller]
  */
 
-PCSZ progGetWinResourceTypeName(ULONG ulTypeThis)
+PSZ progGetWinResourceTypeName(PSZ pszBuf,
+                               ULONG ulTypeThis)
 {
+    PCSZ pcsz = "unknown";
     switch (ulTypeThis)
     {
-        case WINRT_ACCELERATOR: return "WINRT_ACCELERATOR";
-        case WINRT_BITMAP: return "WINRT_BITMAP";
-        case WINRT_CURSOR: return "WINRT_CURSOR";
-        case WINRT_DIALOG: return "WINRT_DIALOG";
-        case WINRT_FONT: return "WINRT_FONT";
-        case WINRT_FONTDIR: return "WINRT_FONTDIR";
-        case WINRT_ICON: return "WINRT_ICON";
-        case WINRT_MENU: return "WINRT_MENU";
-        case WINRT_RCDATA: return "WINRT_RCDATA";
-        case WINRT_STRING: return "WINRT_STRING";
+        case WINRT_ACCELERATOR: pcsz = "WINRT_ACCELERATOR"; break;
+        case WINRT_BITMAP: pcsz =  "WINRT_BITMAP"; break;
+        case WINRT_CURSOR: pcsz =  "WINRT_CURSOR"; break;
+        case WINRT_DIALOG: pcsz =  "WINRT_DIALOG"; break;
+        case WINRT_FONT: pcsz =  "WINRT_FONT"; break;
+        case WINRT_FONTDIR: pcsz =  "WINRT_FONTDIR"; break;
+        case WINRT_ICON: pcsz =  "WINRT_ICON"; break;
+        case WINRT_MENU: pcsz =  "WINRT_MENU"; break;
+        case WINRT_RCDATA: pcsz =  "WINRT_RCDATA"; break;
+        case WINRT_STRING: pcsz =  "WINRT_STRING"; break;
+        case WINRT_MESSAGELIST: pcsz = "WINRT_MESSAGELIST"; break;
+        case WINRT_GROUP_CURSOR: pcsz = "WINRT_GROUP_CURSOR"; break;
+        case WINRT_GROUP_ICON: pcsz = "WINRT_GROUP_ICON"; break;
     }
 
-    return ("unknown");
+    sprintf(pszBuf, "%d (%s)", ulTypeThis, pcsz);
+
+    return (pszBuf);
 }
 
 /*
@@ -2935,12 +2926,11 @@ void _Optlink fntInsertResources(PTHREADINFO pti)
                         preccThis->ulResourceID = paResources[ul].ulID;
                         preccThis->ulResourceSize = paResources[ul].ulSize;
 
-
-
                         // fixed bad resource naming for Windows resources
                         if (pExec->ulOS == EXEOS_WIN16)
                         {
-                            preccThis->pcszResourceType = progGetWinResourceTypeName(ulType);
+                            preccThis->pcszResourceType = progGetWinResourceTypeName(preccThis->szBuf,
+                                                                                     ulType);
                             if (ulType == WINRT_ICON)
                                 fLoad = TRUE;
                         }

@@ -3383,7 +3383,7 @@ PSETTINGSBACKUP cmnBackupSettings(XWPSETTING *paSettings,
         p++;
     }
 
-    return (p);
+    return (p1);
 }
 
 /*

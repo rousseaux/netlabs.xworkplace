@@ -205,7 +205,10 @@ static BOOL             G_fPositionBelow = FALSE;
 
 // #define CX_ARROW 21
 
-// global data for owner draw
+// global data for owner draw; we cache this for speed
+static BOOL             G_bInitNeeded;          // if TRUE, data is refreshed
+
+static ULONG            G_ulVarMenuOfs;     // V0.9.16 (2002-01-09) [umoeller]
 static ULONG            G_ulMiniIconSize = 0;
 static RECTL            G_rtlMenuItem;
 static LONG             G_lHiliteBackground,
@@ -214,10 +217,8 @@ static LONG             G_lHiliteBackground,
                         G_lBorderLight,     // [lafaix]
                         G_lBorderDark,      // [lafaix]
                         G_lText;
-
 static SIZEF            G_szfCharBox;       // [lafaix]
 static LONG             G_lMaxDescender;    // [lafaix]
-static BOOL             G_bInitNeeded;
 
 /* ******************************************************************
  *
@@ -1209,12 +1210,7 @@ MRESULT cmnuMeasureItem(POWNERITEM poi)     // owner-draw info structure
 {
     MRESULT mrc = (MRESULT)FALSE;
 
-    // get the item from the linked list of variable menu items
-    // which corresponds to the menu item whose size is being queried
-    PVARMENULISTITEM pItem
-        = (PVARMENULISTITEM)lstItemFromIndex(&G_llVarMenuItems,
-                                             (poi->idItem
-                                                - (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_VARIABLE)));
+    PVARMENULISTITEM pItem;
 
     if (G_ulMiniIconSize == 0)
         // not queried yet?
@@ -1233,10 +1229,18 @@ MRESULT cmnuMeasureItem(POWNERITEM poi)     // owner-draw info structure
         // correctly in its rectangle
         GpiQueryFontMetrics(poi->hps, sizeof(FONTMETRICS), &fm);
         G_lMaxDescender = fm.lMaxDescender;
+
+        G_ulVarMenuOfs = cmnQuerySetting(sulVarMenuOffset);
+
         G_bInitNeeded = FALSE;
     }
 
-    if (pItem)
+    // get the item from the linked list of variable menu items
+    // which corresponds to the menu item whose size is being queried
+    if (pItem = (PVARMENULISTITEM)lstItemFromIndex(&G_llVarMenuItems,
+                                                   (   poi->idItem
+                                                     - (  G_ulVarMenuOfs
+                                                        + ID_XFMI_OFS_VARIABLE))))
     {
         // find out the space required for drawing this item with
         // the current font and fill the owner draw structure (mp2)
@@ -1256,9 +1260,10 @@ MRESULT cmnuMeasureItem(POWNERITEM poi)     // owner-draw info structure
         // make sure the item has at least the height of
         // the system mini-icon size
         // V0.9.16 (2001-10-31) [umoeller]
-        if (poi->rclItem.yTop < G_ulMiniIconSize)
-            poi->rclItem.yTop = G_ulMiniIconSize;
+        if (poi->rclItem.yTop < G_ulMiniIconSize + 2)
+            poi->rclItem.yTop = G_ulMiniIconSize + 2;
     }
+
     mrc = MRFROMSHORT(poi->rclItem.yTop); //(MPARAM)poi->rclItem.yTop;
 
     return (mrc);
@@ -1292,13 +1297,13 @@ BOOL cmnuDrawItem(MPARAM mp1,     // from WM_DRAWITEM: USHORT menu item id
 
     // get the item from the linked list of variable menu items
     // which corresponds to the menu item being drawn
-    PVARMENULISTITEM pItem
-        = (PVARMENULISTITEM)lstItemFromIndex(&G_llVarMenuItems,
-                                             (poi->idItem
-                                                - (cmnQuerySetting(sulVarMenuOffset) + ID_XFMI_OFS_VARIABLE)));
+    PVARMENULISTITEM pItem;
     HPOINTER hIcon;
 
-    if (pItem)
+    if (pItem = (PVARMENULISTITEM)lstItemFromIndex(&G_llVarMenuItems,
+                                                   (poi->idItem
+                                                      - (   G_ulVarMenuOfs
+                                                          + ID_XFMI_OFS_VARIABLE))))
     {
         if (    (poi->fsAttribute != poi->fsAttributeOld)
              && (pItem->ulObjType == OC_CONTENTFOLDER)

@@ -720,7 +720,8 @@ APIRET arcQueryArchiveByte(UCHAR *pByte,        // out: read byte
         arc = doshReadAt(pFile,
                          offset,
                          &cb,
-                         pByte);
+                         pByte,
+                         0);
 
         doshClose(&pFile);
     }
