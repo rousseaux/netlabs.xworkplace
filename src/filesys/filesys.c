@@ -170,12 +170,12 @@ VOID fsysFile1InitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                                   FALSE);
         }
 
-        // .SUBJECT EA is limited to 40 chars altogether (CPREF);
-        // limit entry field to 36, because we need an extra 4 bytes
-        // for the EA type
+        // Even though CPREF says that the .SUBJECT EA was limited to
+        // 40 chars altogether, this is wrong apparently, as many users
+        // have said after V0.9.1; so limit the entry field to 260 chars
         WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_XSDI_FILES_SUBJECT,
                           EM_SETTEXTLIMIT,
-                          (MPARAM)(36), MPNULL);
+                          (MPARAM)(260), MPNULL);
     }
 
     if (flFlags & CBI_SET)
@@ -394,16 +394,18 @@ MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
         case ID_XSDI_FILES_SUBJECT:
             if (usNotifyCode == EN_KILLFOCUS)
             {
-                CHAR        szSubject[40] = "";
+                PSZ         pszSubject = NULL;
                 PEABINDING  peab;
                 CHAR        szFilename[CCHMAXPATH];
-                WinQueryDlgItemText(pcnbp->hwndDlgPage, ID_XSDI_FILES_SUBJECT,
-                                    sizeof(szSubject), szSubject);
-                _wpQueryFilename(pcnbp->somSelf, szFilename, TRUE);
-                if (peab = eaCreateBindingFromPSZ(".SUBJECT", szSubject))
+                pszSubject = winhQueryWindowText(WinWindowFromID(pcnbp->hwndDlgPage,
+                                                                 ID_XSDI_FILES_SUBJECT));
+                if (peab = eaCreateBindingFromPSZ(".SUBJECT", pszSubject))
                 {
+                    _wpQueryFilename(pcnbp->somSelf, szFilename, TRUE);
                     eaPathWriteOne(szFilename, peab);
                     eaFreeBinding(peab);
+                    if (pszSubject)
+                        free(pszSubject);
                 }
             }
         break;

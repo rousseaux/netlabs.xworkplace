@@ -127,6 +127,29 @@ SOM_Scope ULONG  SOMLINK xkb_xwpAddKeyboardHotkeysPage(XWPKeyboard *somSelf,
 }
 
 /*
+ *@@ wpFilterPopupMenu:
+ *      remove "Create another" menu item.
+ *
+ *@@added V0.9.2 (2000-02-26) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xkb_wpFilterPopupMenu(XWPKeyboard *somSelf,
+                                               ULONG ulFlags,
+                                               HWND hwndCnr,
+                                               BOOL fMultiSelect)
+{
+    /* XWPKeyboardData *somThis = XWPKeyboardGetData(somSelf); */
+    XWPKeyboardMethodDebug("XWPKeyboard","xkb_wpFilterPopupMenu");
+
+    return (XWPKeyboard_parent_WPKeyboard_wpFilterPopupMenu(somSelf,
+                                                            ulFlags,
+                                                            hwndCnr,
+                                                            fMultiSelect)
+            & ~CTXT_NEW
+           );
+}
+
+/*
  *@@ wpAddKeyboardSpecialNeedsPage:
  *      this WPKeyboard instance method inserts the "Special
  *      Needs" page into the keyboard object's settings notebook.

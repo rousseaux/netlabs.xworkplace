@@ -84,16 +84,16 @@
  *  8)  #pragma hdrstop and then more SOM headers which crash with precompiled headers
  */
 
-#define INCL_DOS
+#define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
-#define INCL_WIN
+#define INCL_WINPOINTERS
+#define INCL_WINMENUS
 #include <os2.h>
 
 // C library headers
 #include <stdio.h>              // needed for except.h
 #include <setjmp.h>             // needed for except.h
 #include <assert.h>             // needed for except.h
-#include <io.h>
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
@@ -110,15 +110,12 @@
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
-#include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\trash.h"              // trash can implementation
 
 // other SOM headers
 #pragma hdrstop
 #include "xfobj.h"
-#include <wprootf.h>
-// #include "helpers\undoc.h"              // some undocumented stuff
 
 /* ******************************************************************
  *                                                                  *
@@ -129,7 +126,7 @@
 // default trash can
 XWPTrashCan *G_pDefaultTrashCan = NULL;
 
-BOOL fDrivesInitialized = FALSE;
+BOOL        G_fDrivesInitialized = FALSE;
 
 /*
  *@@ XTRO_DETAILS:
@@ -144,9 +141,8 @@ typedef struct _XTRO_DETAILS
    PSZ     pszSourcePath;       // where object was deleted from
    CDATE   cdateDeleted;        // deletion date
    CTIME   ctimeDeleted;        // deletion date
-   ULONG   ulSize;              // size of related object; we won't use a double here,
-                                // because this would require us to do container owner
-                                // draw
+   PSZ     pszSize;             // size of related object; this points
+                                // to the _szTotalSize member
    PSZ     pszOriginalClass;    // class of related object
 } XTRO_DETAILS, *PXTRO_DETAILS;
 
@@ -154,7 +150,7 @@ typedef struct _XTRO_DETAILS
 // we add one field, which is the "Original path"
 // where the object was deleted from.
 #define XTRO_EXTRAFIELDS 5
-CLASSFIELDINFO acfiTrashObject[XTRO_EXTRAFIELDS];
+CLASSFIELDINFO G_acfiTrashObject[XTRO_EXTRAFIELDS];
         // we add three fields
 // See XWPTrashObject::wpclsQueryDetailsInfo for details.
 
@@ -292,6 +288,26 @@ SOM_Scope ULONG  SOMLINK xtrc_xwpAddTrashCanGeneralPage(XWPTrashCan *somSelf,
 }
 
 /*
+ *@@ xwpAddObjectSize:
+ *      adds the specified size to the total size of all
+ *      objects in the trash can and updates the status bar.
+ *      Gets called by XWPTrashObject::xwpSetExpandedObjectData.
+ *
+ *@@added V0.9.2 (2000-02-28) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xtrc_xwpAddObjectSize(XWPTrashCan *somSelf,
+                                              ULONG ulNewSize)
+{
+    XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
+    XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpAddObjectSize");
+
+    _dSizeOfAllObjects += ulNewSize;
+    // update all visible status bars
+    trshUpdateStatusBars(somSelf);
+}
+
+/*
  *@@ xwpQueryTrashObjectsCount:
  *      this will return the no. of trash objects in the
  *      trash can.
@@ -426,7 +442,7 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpEmptyTrashCan(XWPTrashCan *somSelf,
  *      is set to the drive letter currently being populated.
  *
  *      If (_cCurrentDrivePopulating == 0), we're not currently
- *      populating.
+ *      populating and display the correct total size instead.
  *
  *@@changed V0.9.1 (2000-02-04) [umoeller]: added "populating..." support
  */
@@ -453,7 +469,7 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpUpdateStatusBar(XWPTrashCan *somSelf,
         sprintf(szText,
                 pNLSStrings->pszStbObjCount, // "Total size of all objects: %s bytes",
                 strhThousandsDouble(szNum1, _ulTrashObjectCount, '.'),
-                strhThousandsDouble(szNum2, _dTotalSize, '.'));
+                strhThousandsDouble(szNum2, _dSizeOfAllObjects, '.'));
     }
 
     WinSetWindowText(hwndStatusBar, szText);
@@ -478,7 +494,7 @@ SOM_Scope void  SOMLINK xtrc_wpInitData(XWPTrashCan *somSelf)
     _fAlreadyPopulated = FALSE;
     _fFilledIconSet = FALSE;
     _ulTrashObjectCount = 0;
-    _dTotalSize = 0;
+    _dSizeOfAllObjects = 0;
 
     _cCurrentDrivePopulating = 0;
 
@@ -851,7 +867,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpPopulate(XWPTrashCan *somSelf,
             {
                 // very first call:
                 _ulTrashObjectCount = 0;
-                _dTotalSize = 0;
+                _dSizeOfAllObjects = 0;
 
                 trshPopulateFirstTime(somSelf, ulFldrFlags);
 
@@ -931,7 +947,9 @@ SOM_Scope BOOL  SOMLINK xtrc_wpAddToContent(XWPTrashCan *somSelf,
             XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
             // successfully created:
             _ulTrashObjectCount++;
-            _dTotalSize += _xwpQueryRelatedSize(Object);
+            // _dTotalSize += _xwpQueryRelatedSize(Object);
+                    // doesn't work here yet, because related
+                    // size is always zero at this point
             _xwpSetCorrectTrashIcon(somSelf, FALSE);
         }
     }
@@ -965,7 +983,7 @@ SOM_Scope BOOL  SOMLINK xtrc_wpDeleteFromContent(XWPTrashCan *somSelf,
             // successfully created:
             XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
             _ulTrashObjectCount--;
-            _dTotalSize -= _xwpQueryRelatedSize(Object);
+            _dSizeOfAllObjects -= _xwpQueryRelatedSize(Object);
             _xwpSetCorrectTrashIcon(somSelf, FALSE);
         }
     }
@@ -1309,10 +1327,10 @@ SOM_Scope void  SOMLINK xtrcM_wpclsInitData(M_XWPTrashCan *somSelf)
     }
 
     // initialize supported drives
-    if (!fDrivesInitialized)
+    if (!G_fDrivesInitialized)
     {
         trshLoadDrivesSupport(somSelf);
-        fDrivesInitialized = TRUE;
+        G_fDrivesInitialized = TRUE;
     }
 }
 
@@ -1447,12 +1465,11 @@ SOM_Scope BOOL  SOMLINK xtro_xwpSetRelatedObject(XWPTrashObject *somSelf,
         // and make sure this icon is not destroyed
         _wpSetStyle(somSelf,
                     _wpQueryStyle(somSelf) & ~OBJSTYLE_CUSTOMICON);
-        // set size of related object
-        if (_somIsA(pObject, _WPFileSystem))
-            _ulSize = _wpQueryFileSize(pObject);
-        else
-            // abstract object:
-            _ulSize = 0;
+        // set size of related object to 0 initially;
+        // this is properly calculated on the File thread
+        // later
+        _ulTotalSize = 0;
+
         brc = TRUE;
     }
     return (brc);
@@ -1540,6 +1557,43 @@ SOM_Scope PSZ SOMLINK xtro_xwpQueryRelatedPath(XWPTrashObject *somSelf)
 }
 
 /*
+ *@@ xwpSetExpandedObjectData:
+ *      this gets called on the File thread when
+ *      the total size of an object has been
+ *      calculated (possibly including subfolders).
+ *      We need to update the instance variables,
+ *      refresh the object's details and update
+ *      the trash can's data by calling
+ *      XWPTrashCan::xwpAddObjectSize.
+ *
+ *      pvData is really an EXPANDEDOBJECT structure.
+ *
+ *@@added V0.9.2 (2000-02-28) [umoeller]
+ */
+
+SOM_Scope void  SOMLINK xtro_xwpSetExpandedObjectData(XWPTrashObject *somSelf,
+                                                      PVOID pvData,
+                                                      ULONG ulNewSize,
+                                                      XWPTrashCan* pTrashCan)
+{
+    XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
+    XWPTrashObjectMethodDebug("XWPTrashObject","xtro_xwpSetExpandedObjectData");
+
+    _pvExpandedObject = pvData;
+    _ulTotalSize = ulNewSize;
+
+    // update string for details view, which has been
+    // "calculating..." so far
+    strhThousandsULong(_szTotalSize, _ulTotalSize, '.');
+
+    // refresh all details views this object is
+    // inserted into (most probably only the trash can)
+    _wpCnrRefreshDetails(somSelf);
+
+    _xwpAddObjectSize(pTrashCan, ulNewSize);
+}
+
+/*
  * @@ xwpQueryRelatedSize:
  *      returns the size of the related object. This
  *      is 0 if the related object is not a file-system
@@ -1551,7 +1605,7 @@ SOM_Scope ULONG  SOMLINK xtro_xwpQueryRelatedSize(XWPTrashObject *somSelf)
     XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_xwpQueryRelatedSize");
 
-    return (_ulSize);
+    return (_ulTotalSize);
 }
 
 /*
@@ -1571,39 +1625,10 @@ SOM_Scope APIRET  SOMLINK xtro_xwpValidateTrashObject(XWPTrashObject *somSelf)
 {
     APIRET  arc = NO_ERROR;
 
-    XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
+    // XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_xwpValidateTrashObject");
 
-    if (_pRelatedObject == 0)
-        // not set yet:
-        arc = ERROR_INVALID_HANDLE;
-    else
-        if (!wpshCheckObject(_pRelatedObject))
-            // pointer invalid:
-            arc = ERROR_FILE_NOT_FOUND;
-        else
-        {
-            // object seems to be valid:
-            // check if it's a file-system object and
-            // if the actual file still exists
-            if (_somIsA(_pRelatedObject, _WPFileSystem))
-            {
-                // yes:
-                CHAR szFilename[2*CCHMAXPATH];
-                if (_wpQueryFilename(_pRelatedObject, szFilename, TRUE))
-                    if (access(szFilename, 0) != 0)
-                    {
-                        // file doesn't exist any more:
-                        arc = ERROR_FILE_NOT_FOUND;
-                    }
-            }
-        }
-
-    if (arc != NO_ERROR)
-        // any error found:
-        // destroy the object
-        _wpFree(somSelf);
-
+    arc = trshValidateTrashObject(somSelf);
     return (arc);
 }
 
@@ -1630,81 +1655,10 @@ SOM_Scope APIRET  SOMLINK xtro_xwpValidateTrashObject(XWPTrashObject *somSelf)
 SOM_Scope BOOL  SOMLINK xtro_xwpDestroyTrashObject(XWPTrashObject *somSelf)
 {
     BOOL brc = FALSE;
-    XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
+    // XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_xwpDestroyTrashObject");
 
-    // first check whether the object is valid
-    if (_xwpValidateTrashObject(somSelf) != NO_ERROR)
-        // error occured: means that somSelf has been destructed already
-        brc = TRUE;
-    else
-    {
-        if (_pRelatedObject)
-        {
-            // get \trash directory of related object
-            WPFolder* pTrashDir = _wpQueryFolder(_pRelatedObject);
-
-            if (pTrashDir)
-            {
-                // unset "no delete" style flag
-                ULONG ulStyle = _wpQueryStyle(_pRelatedObject);
-
-                /* if (_somIsA(_pRelatedObject, _WPFileSystem)) ###
-                {
-                    // unset system, readonly, hidden attributes
-                    CHAR    szFilename[CCHMAXPATH] = "";
-                    ULONG   ulAttrs = 0;
-                    _wpQueryFilename(_pRelatedObject,
-                                     szFilename,
-                                     TRUE);    // qualified
-                    if (doshQueryPathAttr(szFilename,
-                                          &ulAttrs)
-                                == NO_ERROR)
-                        if (ulAttrs & (FILE_READONLY | FILE_SYSTEM | FILE_HIDDEN))
-                            _wpSetAttr(_pRelatedObject,
-                                       ulAttrs & ~(FILE_READONLY | FILE_SYSTEM | FILE_HIDDEN));
-                } */
-
-                // unset "no delete" flag
-                if (ulStyle & OBJSTYLE_NODELETE)
-                    _wpSetStyle(_pRelatedObject, ulStyle & ~OBJSTYLE_NODELETE);
-
-                // destroy related object
-                if (_wpFree(_pRelatedObject))
-                {
-                    // successfully deleted:
-                    // update the trashcan (folder of trash object)
-                    // by killing ourselves
-                    brc = _wpFree(somSelf);
-
-                    // check if other objects still exist in
-                    // the subdirectory of "\Trash" where the
-                    // related object was ###
-                    /* while (pTrashDir)
-                    {
-                        WPFolder* pParent = _wpQueryFolder(pTrashDir);
-                        if (!_somIsA(pTrashDir, _WPRootFolder))
-                        {
-                            // no root folder:
-                            // check contents
-                            if (_wpQueryContent(pTrashDir, NULL, QC_FIRST) == NULL)
-                            {
-                                // no other items in there:
-                                // get rid of it
-                                _wpFree(pTrashDir);
-                            }
-                        }
-                        else
-                            // root folder: stop
-                            break;
-
-                        // and climb up the folder tree
-                        pTrashDir = pParent;
-                    } */
-                }
-            }
-        }
-    }
+    brc = trshDestroyTrashObject(somSelf);
 
     return (brc);
 }
@@ -1751,11 +1705,14 @@ SOM_Scope void  SOMLINK xtro_wpInitData(XWPTrashObject *somSelf)
     XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpInitData");
 
-    XWPTrashObject_parent_WPTransient_wpInitData(somSelf);
-
+    // initialize this first, because wpInitData calls
+    // wpSetup, which apparently sets up the Details data...
     _pRelatedObject = NULL;
     _pszSourcePath = NULL;
-    _ulSize = 0;
+    strcpy(_szTotalSize, "calculating...");
+    _pvExpandedObject = 0;
+
+    XWPTrashObject_parent_WPTransient_wpInitData(somSelf);
 }
 
 /*
@@ -1782,7 +1739,7 @@ SOM_Scope void  SOMLINK xtro_wpInitData(XWPTrashObject *somSelf)
  *      related object.
  */
 
-SOM_Scope BOOL  SOMLINK xtro_wpSetup(XWPTrashObject *somSelf,
+/* SOM_Scope BOOL  SOMLINK xtro_wpSetup(XWPTrashObject *somSelf,
                                      PSZ pszSetupString)
 {
     CHAR    szHObject[100];
@@ -1805,6 +1762,7 @@ SOM_Scope BOOL  SOMLINK xtro_wpSetup(XWPTrashObject *somSelf,
     return (XWPTrashObject_parent_WPTransient_wpSetup(somSelf,
                                                       pszSetupString));
 }
+*/
 
 /*
  *@@ wpUnInitData:
@@ -1816,8 +1774,9 @@ SOM_Scope BOOL  SOMLINK xtro_wpSetup(XWPTrashObject *somSelf,
 
 SOM_Scope void  SOMLINK xtro_wpUnInitData(XWPTrashObject *somSelf)
 {
-    // XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
     XWPTrashObjectMethodDebug("XWPTrashObject","xtro_wpUnInitData");
+
+    trshUninitTrashObject(somSelf);
 
     XWPTrashObject_parent_WPTransient_wpUnInitData(somSelf);
 }
@@ -1859,7 +1818,7 @@ SOM_Scope ULONG  SOMLINK xtro_wpQueryDetailsData(XWPTrashObject *somSelf,
             _xwpQueryDeletion(_pRelatedObject,
                               &pDetails->cdateDeleted,
                               &pDetails->ctimeDeleted);
-            pDetails->ulSize = _ulSize;
+            pDetails->pszSize = _szTotalSize;
             pDetails->pszOriginalClass = _somGetName(_somGetClass(_pRelatedObject));
         }
         // move the pointer past our details structure
@@ -2154,7 +2113,7 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
 
     // initialize the extra data file details
     // in the global variable at the top of this file
-    for (i = 0, pcfi = acfiTrashObject;
+    for (i = 0, pcfi = G_acfiTrashObject;
          i < XTRO_EXTRAFIELDS;
          i++, pcfi++)
     {
@@ -2217,9 +2176,9 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
             case 3:
                 pcfi->flCompare   = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
                 pcfi->pfnCompare   = 0; // (PFNCOMPARE)fnCompareExtensions;
-                pcfi->flData            |= CFA_ULONG | CFA_RIGHT;
+                pcfi->flData            |= CFA_STRING | CFA_RIGHT;
                 pcfi->pTitleData        = pNLSStrings->pszSize;
-                pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, ulSize));
+                pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, pszSize));
                 pcfi->ulLenFieldData    = sizeof(ULONG);
                 pcfi->DefaultComparison = CMP_GREATER;
             break;
@@ -2228,7 +2187,7 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
             case 4:
                 pcfi->flCompare   = COMPARE_SUPPORTED | SORTBY_SUPPORTED;
                 pcfi->pfnCompare   = 0; // (PFNCOMPARE)fnCompareExtensions;
-                pcfi->flData            |= CFA_STRING | CFA_RIGHT;
+                pcfi->flData            |= CFA_STRING | CFA_LEFT;
                 pcfi->pTitleData        = pNLSStrings->pszOrigClass;
                 pcfi->offFieldData      = (ULONG)(FIELDOFFSET(XTRO_DETAILS, pszOriginalClass));
                 pcfi->ulLenFieldData    = sizeof(PSZ);
@@ -2238,7 +2197,7 @@ SOM_Scope void  SOMLINK xtroM_wpclsInitData(M_XWPTrashObject *somSelf)
     } // end for
 
     // finally, terminate the linked list
-    acfiTrashObject[XTRO_EXTRAFIELDS-1].pNextFieldInfo = NULL;
+    G_acfiTrashObject[XTRO_EXTRAFIELDS-1].pNextFieldInfo = NULL;
 }
 
 /*
@@ -2325,12 +2284,12 @@ SOM_Scope ULONG  SOMLINK xtroM_wpclsQueryDetailsInfo(M_XWPTrashObject *somSelf,
 
             // append our new field info to the list;
             // this data has been initialized in wpclsInitData
-            pcfi->pNextFieldInfo = acfiTrashObject;
+            pcfi->pNextFieldInfo = G_acfiTrashObject;
         }
         else
             // no fields defined yet (very improbable):
             // make ours the first
-            *ppClassFieldInfo = acfiTrashObject;
+            *ppClassFieldInfo = G_acfiTrashObject;
     }
 
     return (ulParentColumns + XTRO_EXTRAFIELDS);

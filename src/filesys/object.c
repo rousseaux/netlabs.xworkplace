@@ -433,11 +433,6 @@ VOID FillCnrWithObjectUsage(HWND hwndCnr,       // in: cnr to insert into
             #ifdef DEBUG_MEMORY
                 if (pObject == _wpclsQueryActiveDesktop(_WPDesktop))
                 {
-                    /* PTIB             ptib;
-                    PPIB             ppib; */
-                    /* TID              tidWorkerThread = 0,
-                                     tidQuickThread = 0; */
-
                     preccLevel2 = AddObjectUsage2Cnr(hwndCnr, preccRoot,
                                                      "Workplace Shell status",
                                                      CRA_RECORDREADONLY);

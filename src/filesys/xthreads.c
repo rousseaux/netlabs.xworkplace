@@ -109,6 +109,8 @@
 // other SOM headers
 #include <wpshadow.h>                   // WPShadow
 #include <wpdesk.h>                     // WPDesktop
+#include "classes\xtrash.h"             // XWPTrashCan
+#include "filesys\trash.h"              // trash can implementation
 
 /* ******************************************************************
  *                                                                  *
@@ -118,27 +120,30 @@
 
 // currently waiting messages for Worker thread;
 // if this gets too large, its priority will be raised
-HAB                 habWorkerThread = NULLHANDLE;
-HMQ                 hmqWorkerThread = NULLHANDLE;
+HAB                 G_habWorkerThread = NULLHANDLE;
+HMQ                 G_hmqWorkerThread = NULLHANDLE;
 // flags for whether the Worker thread owns semaphores
-BOOL                fWorkerAwakeObjectsSemOwned = FALSE;
+BOOL                G_fWorkerAwakeObjectsSemOwned = FALSE;
 
 // Speedy thread
-HAB                 habSpeedyThread = NULLHANDLE;
-HMQ                 hmqSpeedyThread = NULLHANDLE;
-CHAR                szBootupStatus[256];
-HWND                hwndBootupStatus = NULLHANDLE;
+HAB                 G_habSpeedyThread = NULLHANDLE;
+HMQ                 G_hmqSpeedyThread = NULLHANDLE;
+CHAR                G_szBootupStatus[256];
+HWND                G_hwndBootupStatus = NULLHANDLE;
 
 // SOUND.DLL module handle
-HMODULE             hmodSoundDLL;
+HMODULE             G_hmodSoundDLL;
 // imported functions (see sounddll.h)
-PFN_SNDOPENSOUND    psndOpenSound;
-PFN_SNDPLAYSOUND    psndPlaySound;
-PFN_SNDSTOPSOUND    psndStopSound;
+PFN_SNDOPENSOUND    G_psndOpenSound;
+PFN_SNDPLAYSOUND    G_psndPlaySound;
+PFN_SNDSTOPSOUND    G_psndStopSound;
 
 // File thread
-HAB                 habFileThread = NULLHANDLE;
-HMQ                 hmqFileThread = NULLHANDLE;
+HAB                 G_habFileThread = NULLHANDLE;
+HMQ                 G_hmqFileThread = NULLHANDLE;
+ULONG               G_CurFileThreadMsg = 0;
+            // current message that File thread is processing,
+            // or null if none
 
 /* ******************************************************************
  *                                                                  *
@@ -321,7 +326,7 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
         case WM_CREATE:
         {
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
-            WinStartTimer(habWorkerThread,
+            WinStartTimer(G_habWorkerThread,
                           hwndObject,
                           2,          // id
                           5*60*1000); // every five minutes
@@ -367,7 +372,7 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             {
                 // on Warp 4, open the SmartGuide window
                 // which was created by the install script
-                HOBJECT hobjIntro = WinQueryObject("<XFOLDER_INTRO>");
+                HOBJECT hobjIntro = WinQueryObject(XFOLDER_INTROID);
                 if (hobjIntro)
                 {
                     WinOpenObject(hobjIntro, OPEN_DEFAULT, TRUE);
@@ -684,11 +689,11 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
                     // get the mutex semaphore
                     // pKernelGlobals->ulWorkerFunc2 = 6030;
-                    fWorkerAwakeObjectsSemOwned
+                    G_fWorkerAwakeObjectsSemOwned
                           = (WinRequestMutexSem(pKernelGlobals->hmtxAwakeObjects, 4000)
                              == NO_ERROR);
 
-                    if (fWorkerAwakeObjectsSemOwned)
+                    if (G_fWorkerAwakeObjectsSemOwned)
                     {
                         PLINKLIST pllAwakeObjects = (PLINKLIST)(pKernelGlobals->pllAwakeObjects);
 
@@ -727,10 +732,10 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 #endif
             } END_CATCH();
 
-            if (fWorkerAwakeObjectsSemOwned)
+            if (G_fWorkerAwakeObjectsSemOwned)
             {
                 DosReleaseMutexSem(pKernelGlobals->hmtxAwakeObjects);
-                fWorkerAwakeObjectsSemOwned = FALSE;
+                G_fWorkerAwakeObjectsSemOwned = FALSE;
             }
 
             krnUnlockGlobals();
@@ -764,10 +769,10 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
             // get the mutex semaphore
             // pKernelGlobals->ulWorkerFunc2 = 7000;
-            fWorkerAwakeObjectsSemOwned =
+            G_fWorkerAwakeObjectsSemOwned =
                     (WinRequestMutexSem(pKernelGlobals->hmtxAwakeObjects, 4000)
                     == NO_ERROR);
-            if (fWorkerAwakeObjectsSemOwned)
+            if (G_fWorkerAwakeObjectsSemOwned)
             {
                 // remove the object from the list
                 if (pObj)
@@ -790,7 +795,7 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 }
 
                 DosReleaseMutexSem(pKernelGlobals->hmtxAwakeObjects);
-                fWorkerAwakeObjectsSemOwned = FALSE;
+                G_fWorkerAwakeObjectsSemOwned = FALSE;
             }
 
             krnUnlockGlobals();
@@ -974,11 +979,11 @@ MRESULT EXPENTRY fnwpWorkerObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
 VOID APIENTRY xthrOnKillWorkerThread(VOID)
 {
-    if (fWorkerAwakeObjectsSemOwned)
+    if (G_fWorkerAwakeObjectsSemOwned)
     {
         PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
         DosReleaseMutexSem(pKernelGlobals->hmtxAwakeObjects);
-        fWorkerAwakeObjectsSemOwned = FALSE;
+        G_fWorkerAwakeObjectsSemOwned = FALSE;
     }
     krnUnlockGlobals(); // just to make sure
 }
@@ -1016,9 +1021,9 @@ void _Optlink fntWorkerThread(PVOID ptiMyself)
 
     fTrapped = FALSE;
 
-    if (habWorkerThread = WinInitialize(0))
+    if (G_habWorkerThread = WinInitialize(0))
     {
-        if (hmqWorkerThread = WinCreateMsgQueue(habWorkerThread, 4000))
+        if (G_hmqWorkerThread = WinCreateMsgQueue(G_habWorkerThread, 4000))
         {
             BOOL fExit = FALSE;
 
@@ -1026,9 +1031,9 @@ void _Optlink fntWorkerThread(PVOID ptiMyself)
             {
                 HWND hwndWorkerObjectTemp = NULLHANDLE;
 
-                WinCancelShutdown(hmqWorkerThread, TRUE);
+                WinCancelShutdown(G_hmqWorkerThread, TRUE);
 
-                WinRegisterClass(habWorkerThread,
+                WinRegisterClass(G_habWorkerThread,
                                  WNDCLASS_WORKEROBJECT,    // class name
                                  (PFNWP)fnwpWorkerObject,    // Window procedure
                                  0,                  // class style
@@ -1071,7 +1076,7 @@ void _Optlink fntWorkerThread(PVOID ptiMyself)
                 TRY_LOUD(excpt1, xthrOnKillWorkerThread)
                 {
                     // now enter the message loop
-                    while (WinGetMsg(habWorkerThread, &qmsg, NULLHANDLE, 0, 0))
+                    while (WinGetMsg(G_habWorkerThread, &qmsg, NULLHANDLE, 0, 0))
                     {
                         {
                             PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
@@ -1084,7 +1089,7 @@ void _Optlink fntWorkerThread(PVOID ptiMyself)
                         }
 
                         // dispatch the queue msg
-                        WinDispatchMsg(habWorkerThread, &qmsg);
+                        WinDispatchMsg(G_habWorkerThread, &qmsg);
                     } // loop until WM_QUIT
 
                     // WM_QUIT:
@@ -1097,12 +1102,12 @@ void _Optlink fntWorkerThread(PVOID ptiMyself)
                     fTrapped = TRUE;
                 } END_CATCH();
 
-                if (fWorkerAwakeObjectsSemOwned)
+                if (G_fWorkerAwakeObjectsSemOwned)
                 {
                     PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
                     // in any case, release mutex semaphores owned by the Worker thread
                     DosReleaseMutexSem(pKernelGlobals->hmtxAwakeObjects);
-                    fWorkerAwakeObjectsSemOwned = FALSE;
+                    G_fWorkerAwakeObjectsSemOwned = FALSE;
                     krnUnlockGlobals();
                 }
 
@@ -1134,11 +1139,11 @@ void _Optlink fntWorkerThread(PVOID ptiMyself)
         PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
         WinDestroyWindow(pKernelGlobals->hwndWorkerObject);
         pKernelGlobals->hwndWorkerObject = NULLHANDLE;
-        WinDestroyMsgQueue(hmqWorkerThread);
-        hmqWorkerThread = NULLHANDLE;
+        WinDestroyMsgQueue(G_hmqWorkerThread);
+        G_hmqWorkerThread = NULLHANDLE;
 
-        WinTerminate(habWorkerThread);
-        habWorkerThread = NULLHANDLE;
+        WinTerminate(G_habWorkerThread);
+        G_habWorkerThread = NULLHANDLE;
         krnUnlockGlobals();
     }
 
@@ -1177,6 +1182,232 @@ BOOL xthrPostFileMsg(ULONG msg, MPARAM mp1, MPARAM mp2)
 }
 
 /*
+ *@@ xthrIsFileThreadBusy:
+ *      this can be called to check whether the
+ *      File thread is currently working.
+ *      If this returns 0, the File thread is idle.
+ *
+ *      Otherwise this returns the FIM_* message
+ *      number which the file thread is currently
+ *      working on.
+ *
+ *@@added V0.9.2 (2000-02-28) [umoeller]
+ */
+
+ULONG xthrIsFileThreadBusy(VOID)
+{
+    return (G_CurFileThreadMsg);
+}
+
+/*
+ *@@ CollectDoubleFiles:
+ *      implementation for FIM_DOUBLEFILES.
+ *
+ *@@added V0.9.2 (2000-02-21) [umoeller]
+ */
+
+VOID CollectDoubleFiles(MPARAM mp1)
+{
+    PDOUBLEFILES pdf = (PDOUBLEFILES)mp1;
+
+    // get first entry (node item is a PSZ with the directory)
+    PLISTNODE pNodePath = lstQueryFirstNode(pdf->pllDirectories);
+
+    PLINKLIST pllFilesTemp = lstCreate(TRUE);   // free items
+
+    pdf->pllDoubleFiles = lstCreate(TRUE);   // free items
+
+    while (pNodePath)
+    {
+        PSZ             pszDirThis = (PSZ)pNodePath->pItemData;
+        // collect files of that directory
+
+        HDIR          hdirFindHandle = HDIR_SYSTEM;
+        FILEFINDBUF3  ffb3           = {0};      // returned from FindFirst/Next
+        ULONG         ulResultBufLen = sizeof(FILEFINDBUF3);
+        ULONG         ulFindCount    = 1;        // look for 1 file at a time
+        APIRET        arc;
+
+        // skip "." path entries
+        if (strcmp(pszDirThis, ".") != 0)
+        {
+            CHAR    szSearchMask[CCHMAXPATH];
+            sprintf(szSearchMask, "%s\\*", pszDirThis);
+
+            arc = DosFindFirst(szSearchMask,         // file pattern
+                               &hdirFindHandle,      // directory search handle
+                               FILE_NORMAL,          // search attribute
+                               &ffb3,                // result buffer
+                               ulResultBufLen,       // result buffer length
+                               &ulFindCount,         // number of entries to find
+                               FIL_STANDARD);        // return level 1 file info
+
+            // keep finding the next file until there are no more files
+            while (arc == NO_ERROR)
+            {
+                // file found:
+                PFILELISTITEM pfliNew = malloc(sizeof(FILELISTITEM)),
+                              pfliExisting = NULL;
+                // search all files we've found so far
+                // if we have doubles
+                PLISTNODE pNodePrevious = lstQueryFirstNode(pllFilesTemp);
+                while (pNodePrevious)
+                {
+                    PFILELISTITEM pfli = (PFILELISTITEM)pNodePrevious->pItemData;
+                    if (stricmp(pfli->szFilename, ffb3.achName) == 0)
+                    {
+                        pfliExisting = pfli;
+                        break;
+                    }
+                    pNodePrevious = pNodePrevious->pNext;
+                }
+
+                // append file to temporary list
+                strcpy(pfliNew->szFilename, ffb3.achName);
+                pfliNew->pszDirectory = pszDirThis;
+                pfliNew->fDate = ffb3.fdateLastWrite;
+                pfliNew->fTime = ffb3.ftimeLastWrite;
+                pfliNew->ulSize = ffb3.cbFile;
+                pfliNew->fProcessed = FALSE;
+                lstAppendItem(pllFilesTemp, pfliNew);
+
+                if (pfliExisting)
+                {
+                    // double item: append copies to doubles list
+                    // the copies will not be destroyed
+
+                    PFILELISTITEM pfli2;
+
+                    if (!pfliExisting->fProcessed)
+                    {
+                        // make copy of existing item for doubles list
+                        pfli2 = malloc(sizeof(FILELISTITEM));
+                        memcpy(pfli2, pfliExisting, sizeof(FILELISTITEM));
+                        lstAppendItem(pdf->pllDoubleFiles, pfli2);
+                        pfliExisting->fProcessed = TRUE;
+                    }
+
+                    // make copy of new item for doubles list
+                    pfli2 = malloc(sizeof(FILELISTITEM));
+                    memcpy(pfli2, pfliNew, sizeof(FILELISTITEM));
+                    lstAppendItem(pdf->pllDoubleFiles, pfli2);
+                }
+
+                ulFindCount = 1;                    // reset find count
+                arc = DosFindNext(hdirFindHandle,
+                                 &ffb3,             // result buffer
+                                 ulResultBufLen,
+                                 &ulFindCount);     // number of entries to find
+
+            } // endwhile
+        }
+
+        // next dir
+        pNodePath = pNodePath->pNext;
+    }
+
+    // destroy the temprary list, including all files
+    lstFree(pllFilesTemp);
+
+    WinPostMsg(pdf->hwndNotify,
+               pdf->ulNotifyMsg,
+               (MPARAM)pdf,
+               (MPARAM)0);
+}
+
+/*
+ *@@ CollectHotkeys:
+ *      implementation for FIM_INSERTHOTKEYS.
+ *
+ *@@added V0.9.2 (2000-02-21) [umoeller]
+ */
+
+VOID CollectHotkeys(MPARAM mp1, MPARAM mp2)
+{
+    HWND            hwndCnr = (HWND)mp1;
+    PBOOL           pfBusy = (PBOOL)mp2;
+    ULONG           cHotkeys;       // set below
+    PGLOBALHOTKEY   pHotkeys;
+
+    if ((hwndCnr) && (pfBusy))
+    {
+        *pfBusy = TRUE;
+        pHotkeys = hifQueryObjectHotkeys(&cHotkeys);
+
+        #ifdef DEBUG_KEYS
+            _Pmpf(("hifKeybdHotkeysInitPage: got %d hotkeys", cHotkeys));
+        #endif
+
+        cnrhRemoveAll(hwndCnr);
+
+        if (pHotkeys)
+        {
+            ULONG       ulCount = 0;
+            PHOTKEYRECORD preccFirst
+                        = (PHOTKEYRECORD)cnrhAllocRecords(hwndCnr,
+                                                          sizeof(HOTKEYRECORD),
+                                                          cHotkeys);
+            PHOTKEYRECORD preccThis = preccFirst;
+            PGLOBALHOTKEY pHotkeyThis = pHotkeys;
+
+            while (ulCount < cHotkeys)
+            {
+                #ifdef DEBUG_KEYS
+                    _Pmpf(("  %d: Getting hotkey for 0x%lX", ulCount, pHotkeyThis->ulHandle));
+                #endif
+
+                preccThis->ulIndex = ulCount;
+
+                // copy struct
+                memcpy(&preccThis->Hotkey, pHotkeyThis, sizeof(GLOBALHOTKEY));
+
+                // object handle
+                sprintf(preccThis->szHandle, "0x%lX", pHotkeyThis->ulHandle);
+                preccThis->pszHandle = preccThis->szHandle;
+
+                // describe hotkey
+                cmnDescribeKey(preccThis->szHotkey,
+                               pHotkeyThis->usFlags,
+                               pHotkeyThis->usKeyCode);
+                preccThis->pszHotkey = preccThis->szHotkey;
+
+                // get object for hotkey
+                preccThis->pObject = _wpclsQueryObject(_WPObject,
+                                                       pHotkeyThis->ulHandle);
+                if (preccThis->pObject)
+                {
+                    WPFolder *pFolder = _wpQueryFolder(preccThis->pObject);
+
+                    preccThis->recc.pszIcon = _wpQueryTitle(preccThis->pObject);
+                    preccThis->recc.hptrMiniIcon = _wpQueryIcon(preccThis->pObject);
+                    if (pFolder)
+                        if (_wpQueryFilename(pFolder, preccThis->szFolderPath, TRUE))
+                            preccThis->pszFolderPath = preccThis->szFolderPath;
+                }
+                else
+                    preccThis->recc.pszIcon = "Invalid object";
+
+                preccThis = (PHOTKEYRECORD)(preccThis->recc.preccNextRecord);
+                ulCount++;
+                pHotkeyThis++;
+            }
+
+            cnrhInsertRecords(hwndCnr,
+                              NULL,         // parent
+                              (PRECORDCORE)preccFirst,
+                              TRUE, // invalidate
+                              NULL,         // text
+                              CRA_RECORDREADONLY,
+                              cHotkeys);
+
+            hifFreeObjectHotkeys(pHotkeys);
+
+            *pfBusy = FALSE;
+        }
+    }
+}
+
+/*
  *@@ fnwpFileObject:
  *      wnd proc for File thread object window
  *      (see fntFileThread below).
@@ -1188,6 +1419,8 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
 {
     MRESULT mrc = NULL;
     // PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
+
+    G_CurFileThreadMsg = msg;
 
     switch (msg)
     {
@@ -1202,19 +1435,30 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
          */
 
         case FIM_DESKTOPPOPULATED:
-            // sleep a little while
+        {
+            HWND    hwndActiveDesktop;
+
+            // sleep a little while more
             DosSleep(1000);
 
-            // notify daemon of WPS desktop handle
+            hwndActiveDesktop = _wpclsQueryActiveDesktopHWND(_WPDesktop);
+
+            {
+                PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
+                pKernelGlobals->hwndActiveDesktop = hwndActiveDesktop;
+                krnUnlockGlobals();
+            }
+
+            // notify daemon of WPS desktop window handle
             krnPostDaemonMsg(XDM_DESKTOPREADY,
-                             (MPARAM)_wpclsQueryActiveDesktopHWND(_WPDesktop),
+                             (MPARAM)hwndActiveDesktop,
                              (MPARAM)0);
 
             // go for startup folder
             xthrPostFileMsg(FIM_STARTUP,
-                           (MPARAM)1,  // startup action indicator: first post
-                           0); // ignored
-        break;
+                            (MPARAM)1,  // startup action indicator: first post
+                            0); // ignored
+        break; }
 
         /*
          *@@ FIM_STARTUP:
@@ -1258,9 +1502,9 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                         // even if the installation folder exists, create a
                         // a new one
                         // if (!_wpclsQueryFolder(_WPFolder, XFOLDER_MAINID, TRUE))
-                            xthrPostFileMsg(FIM_RECREATECONFIGFOLDER,
+                            /* xthrPostFileMsg(FIM_RECREATECONFIGFOLDER,
                                             (MPARAM)RCF_MAININSTALLFOLDER,
-                                            MPNULL);
+                                            MPNULL); */
 
                         xthrPostWorkerMsg(WOM_WELCOME, MPNULL, MPNULL);
                     }
@@ -1368,7 +1612,7 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
             if (ulReturn == RCF_EMPTYCONFIGFOLDERONLY)
                 WinCreateObject("WPFolder",             // now create new config folder w/ proper objID
                                 "XFolder Configuration",
-                                "OBJECTID=<XFOLDER_CONFIG>",
+                                "OBJECTID=" XFOLDER_CONFIGID,
                                 "<WP_DESKTOP>",                 // on desktop
                                 CO_UPDATEIFEXISTS);
             else if (   (ulReturn == RCF_DEFAULTCONFIGFOLDER)
@@ -1403,14 +1647,6 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
                                           TRUE,  // wait
                                           &sid, &pid);
 
-                    if (WinQueryObject(XFOLDER_CONFIGID) == NULLHANDLE)
-                    {
-                        CHAR    szMsg[1000];
-                        sprintf(szMsg, "Oooooops! XFolder could not find %s, which should have recreated "
-                                       "your config folder. Please re-install XFolder.",
-                                       szPath3);
-                        DebugBox(HWND_DESKTOP, "XFolder", szMsg);
-                    }
                     WinDestroyWindow(hwndCreating);
                 }
             }
@@ -1482,6 +1718,10 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
          *      This message only makes sure that processing
          *      runs on the File thread.
          *
+         *      Note: Do not _send_ this msg, since
+         *      fopsFileThreadProcessing possibly takes a
+         *      long time.
+         *
          *      Parameters:
          *      -- mp1: HFILETASKLIST to process.
          *
@@ -1552,113 +1792,8 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
          */
 
         case FIM_DOUBLEFILES:
-        {
-            PDOUBLEFILES pdf = (PDOUBLEFILES)mp1;
-
-            // get first entry (node item is a PSZ with the directory)
-            PLISTNODE pNodePath = lstQueryFirstNode(pdf->pllDirectories);
-
-            PLINKLIST pllFilesTemp = lstCreate(TRUE);   // free items
-
-            pdf->pllDoubleFiles = lstCreate(TRUE);   // free items
-
-            while (pNodePath)
-            {
-                PSZ             pszDirThis = (PSZ)pNodePath->pItemData;
-                // collect files of that directory
-
-                HDIR          hdirFindHandle = HDIR_SYSTEM;
-                FILEFINDBUF3  ffb3           = {0};      // returned from FindFirst/Next
-                ULONG         ulResultBufLen = sizeof(FILEFINDBUF3);
-                ULONG         ulFindCount    = 1;        // look for 1 file at a time
-                APIRET        arc;
-
-                // skip "." path entries
-                if (strcmp(pszDirThis, ".") != 0)
-                {
-                    CHAR    szSearchMask[CCHMAXPATH];
-                    sprintf(szSearchMask, "%s\\*", pszDirThis);
-
-                    arc = DosFindFirst(szSearchMask,         // file pattern
-                                       &hdirFindHandle,      // directory search handle
-                                       FILE_NORMAL,          // search attribute
-                                       &ffb3,                // result buffer
-                                       ulResultBufLen,       // result buffer length
-                                       &ulFindCount,         // number of entries to find
-                                       FIL_STANDARD);        // return level 1 file info
-
-                    // keep finding the next file until there are no more files
-                    while (arc == NO_ERROR)
-                    {
-                        // file found:
-                        PFILELISTITEM pfliNew = malloc(sizeof(FILELISTITEM)),
-                                      pfliExisting = NULL;
-                        // search all files we've found so far
-                        // if we have doubles
-                        PLISTNODE pNodePrevious = lstQueryFirstNode(pllFilesTemp);
-                        while (pNodePrevious)
-                        {
-                            PFILELISTITEM pfli = (PFILELISTITEM)pNodePrevious->pItemData;
-                            if (stricmp(pfli->szFilename, ffb3.achName) == 0)
-                            {
-                                pfliExisting = pfli;
-                                break;
-                            }
-                            pNodePrevious = pNodePrevious->pNext;
-                        }
-
-                        // append file to temporary list
-                        strcpy(pfliNew->szFilename, ffb3.achName);
-                        pfliNew->pszDirectory = pszDirThis;
-                        pfliNew->fDate = ffb3.fdateLastWrite;
-                        pfliNew->fTime = ffb3.ftimeLastWrite;
-                        pfliNew->ulSize = ffb3.cbFile;
-                        pfliNew->fProcessed = FALSE;
-                        lstAppendItem(pllFilesTemp, pfliNew);
-
-                        if (pfliExisting)
-                        {
-                            // double item: append copies to doubles list
-                            // the copies will not be destroyed
-
-                            PFILELISTITEM pfli2;
-
-                            if (!pfliExisting->fProcessed)
-                            {
-                                // make copy of existing item for doubles list
-                                pfli2 = malloc(sizeof(FILELISTITEM));
-                                memcpy(pfli2, pfliExisting, sizeof(FILELISTITEM));
-                                lstAppendItem(pdf->pllDoubleFiles, pfli2);
-                                pfliExisting->fProcessed = TRUE;
-                            }
-
-                            // make copy of new item for doubles list
-                            pfli2 = malloc(sizeof(FILELISTITEM));
-                            memcpy(pfli2, pfliNew, sizeof(FILELISTITEM));
-                            lstAppendItem(pdf->pllDoubleFiles, pfli2);
-                        }
-
-                        ulFindCount = 1;                    // reset find count
-                        arc = DosFindNext(hdirFindHandle,
-                                         &ffb3,             // result buffer
-                                         ulResultBufLen,
-                                         &ulFindCount);     // number of entries to find
-
-                    } // endwhile
-                }
-
-                // next dir
-                pNodePath = pNodePath->pNext;
-            }
-
-            // destroy the temprary list, including all files
-            lstFree(pllFilesTemp);
-
-            WinPostMsg(pdf->hwndNotify,
-                       pdf->ulNotifyMsg,
-                       (MPARAM)pdf,
-                       (MPARAM)0);
-        break; }
+            CollectDoubleFiles(mp1);
+        break;
 
         /*
          *@@ FIM_INSERTHOTKEYS:
@@ -1678,89 +1813,26 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
          */
 
         case FIM_INSERTHOTKEYS:
-        {
-            HWND            hwndCnr = (HWND)mp1;
-            PBOOL           pfBusy = (PBOOL)mp2;
-            ULONG           cHotkeys;       // set below
-            PGLOBALHOTKEY   pHotkeys;
+            CollectHotkeys(mp1, mp2);
+        break;
 
-            if ((hwndCnr) && (pfBusy))
-            {
-                *pfBusy = TRUE;
-                pHotkeys = hifQueryObjectHotkeys(&cHotkeys);
+        /*
+         *@@ FIM_CALCTRASHOBJECTSIZE:
+         *      calls trshCalcTrashObjectSize. This
+         *      message has only been implemented to
+         *      offload this task to the File thread.
+         *
+         *      Parameters:
+         *      -- XWPTrashObject* mp1: trash object.
+         *      -- XWPTrashCan* mp2: trash can to which mp1 has been added.
+         *
+         *@@added V0.9.2 (2000-02-28) [umoeller]
+         */
 
-                #ifdef DEBUG_KEYS
-                    _Pmpf(("hifKeybdHotkeysInitPage: got %d hotkeys", cHotkeys));
-                #endif
-
-                cnrhRemoveAll(hwndCnr);
-
-                if (pHotkeys)
-                {
-                    ULONG       ulCount = 0;
-                    PHOTKEYRECORD preccFirst
-                                = (PHOTKEYRECORD)cnrhAllocRecords(hwndCnr,
-                                                                  sizeof(HOTKEYRECORD),
-                                                                  cHotkeys);
-                    PHOTKEYRECORD preccThis = preccFirst;
-                    PGLOBALHOTKEY pHotkeyThis = pHotkeys;
-
-                    while (ulCount < cHotkeys)
-                    {
-                        #ifdef DEBUG_KEYS
-                            _Pmpf(("  %d: Getting hotkey for 0x%lX", ulCount, pHotkeyThis->ulHandle));
-                        #endif
-
-                        preccThis->ulIndex = ulCount;
-
-                        // copy struct
-                        memcpy(&preccThis->Hotkey, pHotkeyThis, sizeof(GLOBALHOTKEY));
-
-                        // object handle
-                        sprintf(preccThis->szHandle, "0x%lX", pHotkeyThis->ulHandle);
-                        preccThis->pszHandle = preccThis->szHandle;
-
-                        // describe hotkey
-                        cmnDescribeKey(preccThis->szHotkey,
-                                       pHotkeyThis->usFlags,
-                                       pHotkeyThis->usKeyCode);
-                        preccThis->pszHotkey = preccThis->szHotkey;
-
-                        // get object for hotkey
-                        preccThis->pObject = _wpclsQueryObject(_WPObject,
-                                                               pHotkeyThis->ulHandle);
-                        if (preccThis->pObject)
-                        {
-                            WPFolder *pFolder = _wpQueryFolder(preccThis->pObject);
-
-                            preccThis->recc.pszIcon = _wpQueryTitle(preccThis->pObject);
-                            preccThis->recc.hptrMiniIcon = _wpQueryIcon(preccThis->pObject);
-                            if (pFolder)
-                                if (_wpQueryFilename(pFolder, preccThis->szFolderPath, TRUE))
-                                    preccThis->pszFolderPath = preccThis->szFolderPath;
-                        }
-                        else
-                            preccThis->recc.pszIcon = "Invalid object";
-
-                        preccThis = (PHOTKEYRECORD)(preccThis->recc.preccNextRecord);
-                        ulCount++;
-                        pHotkeyThis++;
-                    }
-
-                    cnrhInsertRecords(hwndCnr,
-                                      NULL,         // parent
-                                      (PRECORDCORE)preccFirst,
-                                      TRUE, // invalidate
-                                      NULL,         // text
-                                      CRA_RECORDREADONLY,
-                                      cHotkeys);
-
-                    hifFreeObjectHotkeys(pHotkeys);
-
-                    *pfBusy = FALSE;
-                }
-            }
-        break; }
+        case FIM_CALCTRASHOBJECTSIZE:
+            trshCalcTrashObjectSize((XWPTrashObject*)mp1,
+                                    (XWPTrashCan*)mp2);
+        break;
 
         #ifdef __DEBUG__
         case XM_CRASH:          // posted by debugging context menu of XFldDesktop
@@ -1769,8 +1841,11 @@ MRESULT EXPENTRY fnwpFileObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM m
         #endif
 
         default:
+            G_CurFileThreadMsg = 0;
             mrc = WinDefWindowProc(hwndObject, msg, mp1, mp2);
     }
+
+    G_CurFileThreadMsg = 0;
 
     return (mrc);
 }
@@ -1827,15 +1902,15 @@ void _Optlink fntFileThread(PVOID ptiMyself)
 
     TRY_LOUD(excpt1, xthrOnKillFileThread)
     {
-        if (habFileThread = WinInitialize(0))
+        if (G_habFileThread = WinInitialize(0))
         {
-            if (hmqFileThread = WinCreateMsgQueue(habFileThread, 3000))
+            if (G_hmqFileThread = WinCreateMsgQueue(G_habFileThread, 3000))
             {
                 {
                     PKERNELGLOBALS        pKernelGlobals = krnLockGlobals(5000);
-                    WinCancelShutdown(hmqFileThread, TRUE);
+                    WinCancelShutdown(G_hmqFileThread, TRUE);
 
-                    WinRegisterClass(habFileThread,
+                    WinRegisterClass(G_habFileThread,
                                      WNDCLASS_FILEOBJECT,    // class name
                                      (PFNWP)fnwpFileObject,    // Window procedure
                                      0,                  // class style
@@ -1869,9 +1944,9 @@ void _Optlink fntFileThread(PVOID ptiMyself)
                 }
 
                 // now enter the message loop
-                while (WinGetMsg(habFileThread, &qmsg, NULLHANDLE, 0, 0))
+                while (WinGetMsg(G_habFileThread, &qmsg, NULLHANDLE, 0, 0))
                     // loop until WM_QUIT
-                    WinDispatchMsg(habFileThread, &qmsg);
+                    WinDispatchMsg(G_habFileThread, &qmsg);
             }
         }
     }
@@ -1898,10 +1973,10 @@ void _Optlink fntFileThread(PVOID ptiMyself)
         PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
         WinDestroyWindow(pKernelGlobals->hwndFileObject);
         pKernelGlobals->hwndFileObject = NULLHANDLE;
-        WinDestroyMsgQueue(hmqFileThread);
-        hmqFileThread = NULLHANDLE;
-        WinTerminate(habFileThread);
-        habFileThread = NULLHANDLE;
+        WinDestroyMsgQueue(G_hmqFileThread);
+        G_hmqFileThread = NULLHANDLE;
+        WinTerminate(G_habFileThread);
+        G_habFileThread = NULLHANDLE;
         krnUnlockGlobals();
     }
 
@@ -2016,7 +2091,7 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                         // blow-up mode:
                         HDC         hdcMem;
                         HPS         hpsMem;
-                        if (gpihCreateMemPS(habSpeedyThread,
+                        if (gpihCreateMemPS(G_habSpeedyThread,
                                             &hdcMem,
                                             &hpsMem))
                         {
@@ -2042,7 +2117,7 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     else
                     {
                         // transparent mode:
-                        if (shpLoadBitmap(habSpeedyThread,
+                        if (shpLoadBitmap(G_habSpeedyThread,
                                           pszBootLogoFile, // from file,
                                           0, 0,     // not from resources
                                           &sb))
@@ -2090,17 +2165,17 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
         case QM_BOOTUPSTATUS:
         {
-            if (hwndBootupStatus == NULLHANDLE)
+            if (G_hwndBootupStatus == NULLHANDLE)
             {
                 // window currently not visible:
                 // create it
-                strcpy(szBootupStatus, "Loaded %s");
-                hwndBootupStatus = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
+                strcpy(G_szBootupStatus, "Loaded %s");
+                G_hwndBootupStatus = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
                                               fnwpGenericStatus,
                                               cmnQueryNLSModuleHandle(FALSE),
                                               ID_XFD_BOOTUPSTATUS,
                                               NULL);
-                WinSetWindowPos(hwndBootupStatus,
+                WinSetWindowPos(G_hwndBootupStatus,
                                 HWND_TOP,
                                 0, 0, 0, 0,
                                 SWP_SHOW); // show only, do not activate;
@@ -2109,10 +2184,10 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                                     // open menus and such
             }
 
-            if (hwndBootupStatus)
+            if (G_hwndBootupStatus)
                 // window still visible or created anew:
                 if (mp1 == NULL)
-                    WinDestroyWindow(hwndBootupStatus);
+                    WinDestroyWindow(G_hwndBootupStatus);
                 else
                 {
                     CHAR szTemp[2000];
@@ -2121,15 +2196,15 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                     // get class title (e.g. "WPObject")
                     PSZ pszClassTitle = _somGetName(pObj);
                     if (pszClassTitle)
-                        sprintf(szTemp, szBootupStatus, pszClassTitle);
-                    else sprintf(szTemp, szBootupStatus, "???");
+                        sprintf(szTemp, G_szBootupStatus, pszClassTitle);
+                    else sprintf(szTemp, G_szBootupStatus, "???");
 
-                    WinSetDlgItemText(hwndBootupStatus,
+                    WinSetDlgItemText(G_hwndBootupStatus,
                                       ID_XFDI_BOOTUPSTATUSTEXT,
                                       szTemp);
 
                     // show window for 2 secs
-                    WinStartTimer(habSpeedyThread, hwndObject, 1, 2000);
+                    WinStartTimer(G_habSpeedyThread, hwndObject, 1, 2000);
                 }
         break; }
 
@@ -2145,12 +2220,12 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
                 // timer 1: bootup status wnd
                 case 1:
-                    if (hwndBootupStatus)
+                    if (G_hwndBootupStatus)
                     {
-                        WinDestroyWindow(hwndBootupStatus);
-                        hwndBootupStatus = NULLHANDLE;
+                        WinDestroyWindow(G_hwndBootupStatus);
+                        G_hwndBootupStatus = NULLHANDLE;
                     }
-                    WinStopTimer(habWorkerThread, hwndObject, 1);
+                    WinStopTimer(G_habWorkerThread, hwndObject, 1);
                 break;
             }
         break; }
@@ -2232,10 +2307,10 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             if (mp1)
             {
                 PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
-                if (psndOpenSound) // func ptr into SOUND.DLL
+                if (G_psndOpenSound) // func ptr into SOUND.DLL
                     // check for whether that sound file really exists
                     if (access(mp1, 0) == 0)
-                        (*psndOpenSound)(hwndObject,
+                        (*G_psndOpenSound)(hwndObject,
                                          &pKernelGlobals->usDeviceID,
                                          (PSZ)mp1);
                                 // this will post MM_MCIPASSDEVICE
@@ -2290,15 +2365,15 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
             if (fGainingUse)
             {
                 // we're gaining the device (1): play sound
-                if (psndPlaySound)  // func ptr into SOUND.DLL
-                    (*psndPlaySound)(hwndObject,
+                if (G_psndPlaySound)  // func ptr into SOUND.DLL
+                    (*G_psndPlaySound)(hwndObject,
                                      &pKernelGlobals->usDeviceID,
                                      ulVolumeTemp);
             }
             else
                 // we're losing the device (2): stop sound
-                if (psndStopSound)  // func ptr into SOUND.DLL
-                    (*psndStopSound)(&pKernelGlobals->usDeviceID);
+                if (G_psndStopSound)  // func ptr into SOUND.DLL
+                    (*G_psndStopSound)(&pKernelGlobals->usDeviceID);
             krnUnlockGlobals();
         break; }
 
@@ -2320,8 +2395,8 @@ MRESULT EXPENTRY fnwpSpeedyObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                  && (SHORT1FROMMP(mp1) == MCI_NOTIFY_SUCCESSFUL)
                )
             {
-                if (psndStopSound)  // func ptr into SOUND.DLL
-                    (*psndStopSound)(&pKernelGlobals->usDeviceID);
+                if (G_psndStopSound)  // func ptr into SOUND.DLL
+                    (*G_psndStopSound)(&pKernelGlobals->usDeviceID);
             }
             krnUnlockGlobals();
         break; }
@@ -2390,16 +2465,16 @@ void _Optlink fntSpeedyThread(PVOID ptiMyself)
 
     TRY_LOUD(excpt1, xthrOnKillSpeedyThread)
     {
-        if (habSpeedyThread = WinInitialize(0))
+        if (G_habSpeedyThread = WinInitialize(0))
         {
-            if (hmqSpeedyThread = WinCreateMsgQueue(habSpeedyThread, 3000))
+            if (G_hmqSpeedyThread = WinCreateMsgQueue(G_habSpeedyThread, 3000))
             {
                 {
                     PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
 
-                    WinCancelShutdown(hmqSpeedyThread, TRUE);
+                    WinCancelShutdown(G_hmqSpeedyThread, TRUE);
 
-                    WinRegisterClass(habSpeedyThread,
+                    WinRegisterClass(G_habSpeedyThread,
                                      WNDCLASS_QUICKOBJECT,    // class name
                                      (PFNWP)fnwpSpeedyObject,    // Window procedure
                                      0,                  // class style
@@ -2433,8 +2508,8 @@ void _Optlink fntSpeedyThread(PVOID ptiMyself)
                 }
 
                 // now enter the message loop
-                while (WinGetMsg(habSpeedyThread, &qmsg, NULLHANDLE, 0, 0))
-                    WinDispatchMsg(habSpeedyThread, &qmsg);
+                while (WinGetMsg(G_habSpeedyThread, &qmsg, NULLHANDLE, 0, 0))
+                    WinDispatchMsg(G_habSpeedyThread, &qmsg);
                                 // loop until WM_QUIT
             }
         }
@@ -2470,10 +2545,10 @@ void _Optlink fntSpeedyThread(PVOID ptiMyself)
         PKERNELGLOBALS pKernelGlobals = krnLockGlobals(5000);
         WinDestroyWindow(pKernelGlobals->hwndSpeedyObject);
         pKernelGlobals->hwndSpeedyObject = NULLHANDLE;
-        WinDestroyMsgQueue(hmqSpeedyThread);
-        hmqSpeedyThread = NULLHANDLE;
-        WinTerminate(habSpeedyThread);
-        habSpeedyThread = NULLHANDLE;
+        WinDestroyMsgQueue(G_hmqSpeedyThread);
+        G_hmqSpeedyThread = NULLHANDLE;
+        WinTerminate(G_habSpeedyThread);
+        G_habSpeedyThread = NULLHANDLE;
 
         if (fTrapped)
             pKernelGlobals->ulMMPM2Working = MMSTAT_CRASHED;
@@ -2529,7 +2604,7 @@ BOOL xthrStartThreads(VOID)
 
                 arc = DosLoadModule(szError, sizeof(szError),
                                     szSoundDLL,
-                                    &hmodSoundDLL);
+                                    &G_hmodSoundDLL);
                 #ifdef DEBUG_SOUNDS
                     _Pmpf(("  arc: %d", arc));
                 #endif
@@ -2554,45 +2629,45 @@ BOOL xthrStartThreads(VOID)
                     // will fail if MMPM/2 is not installed,
                     // and if we do static imports, loading
                     // of XFLDR.DLL would fail also.
-                    arc = DosQueryProcAddr(hmodSoundDLL,
+                    arc = DosQueryProcAddr(G_hmodSoundDLL,
                                            0,
                                            "sndOpenSound",
-                                           (PFN*)&psndOpenSound);
+                                           (PFN*)&G_psndOpenSound);
                     #ifdef DEBUG_SOUNDS
                         _Pmpf(("  psndOpenSound: arc %d, 0x%X",
                                 arc, psndOpenSound));
                     #endif
                     if (arc != NO_ERROR)
                     {
-                        psndOpenSound = NULL;
+                        G_psndOpenSound = NULL;
                         pKernelGlobals->ulMMPM2Working = MMSTAT_SOUNDLLFUNCERROR;
                     }
 
-                    arc = DosQueryProcAddr(hmodSoundDLL,
+                    arc = DosQueryProcAddr(G_hmodSoundDLL,
                                            0,
                                            "sndPlaySound",
-                                           (PFN*)&psndPlaySound);
+                                           (PFN*)&G_psndPlaySound);
                     #ifdef DEBUG_SOUNDS
                         _Pmpf(("  psndPlaySound: arc %d, 0x%X",
                                 arc, psndPlaySound));
                     #endif
                     if (arc != NO_ERROR)
                     {
-                        psndPlaySound = NULL;
+                        G_psndPlaySound = NULL;
                         pKernelGlobals->ulMMPM2Working = MMSTAT_SOUNDLLFUNCERROR;
                     }
 
-                    arc = DosQueryProcAddr(hmodSoundDLL,
+                    arc = DosQueryProcAddr(G_hmodSoundDLL,
                                            0,
                                            "sndStopSound",
-                                           (PFN*)&psndStopSound);
+                                           (PFN*)&G_psndStopSound);
                     #ifdef DEBUG_SOUNDS
                         _Pmpf(("  psndStopSound: arc %d, 0x%X",
                                 arc, psndStopSound));
                     #endif
                     if (arc != NO_ERROR)
                     {
-                        psndStopSound = NULL;
+                        G_psndStopSound = NULL;
                         pKernelGlobals->ulMMPM2Working = MMSTAT_SOUNDLLFUNCERROR;
                     }
                 }

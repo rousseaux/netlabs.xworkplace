@@ -254,9 +254,7 @@ VOID ntbDestroyPage(PCREATENOTEBOOKPAGE pcnbp,
                 *pfSemOwned = FALSE;
             }
             else
-                DebugBox(HWND_DESKTOP,
-                         "XWorkplace: Error in ntb_fnwpPageCommon",
-                         "WM_DESTROY: Error requesting mutex.");
+                DosBeep(100, 500);
         }
 
         // free allocated user memory
@@ -1053,6 +1051,8 @@ MRESULT EXPENTRY ntb_fnwpSubclNotebook(HWND hwndNotebook, ULONG msg, MPARAM mp1,
             else
                 mrc = WinDefWindowProc(hwndNotebook, msg, mp1, mp2);
         }
+        else
+            DosBeep(100, 500);
     }
     CATCH(excpt1) { } END_CATCH();
 
@@ -1369,9 +1369,7 @@ ULONG ntbInsertPage(PCREATENOTEBOOKPAGE pcnbp)
                 }
             } // end if (fSemOwned)
             else
-                DebugBox(HWND_DESKTOP,
-                         "XWorkplace: Error in ntbInsertPage",
-                         "Error requesting mutex.");
+                DosBeep(100, 500);
         }
         else
             DebugBox(HWND_DESKTOP,
@@ -1455,6 +1453,8 @@ PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp)
                     }
             } // end if (pllOpenPages)
         } // end if (fSemOwned)
+        else
+            DosBeep(100, 500);
     }
     CATCH(excpt1) { } END_CATCH();
 

@@ -124,6 +124,7 @@
                                 fXWPSetup,
                                 fXFldSystem,
                                 fXFldWPS,
+                                fXWPScreen,
                                 fXFldStartup,
                                 fXFldShutdown,
                                 fXWPClassList,
@@ -135,7 +136,14 @@
              */
 
             HAPP                happDaemon;
-            PVOID               pDaemonShared;  // ptr to DAEMONSHARED structure
+                    // != NULLHANDLE if daemon was started
+
+            PVOID               pDaemonShared;
+                    // ptr to DAEMONSHARED structure
+
+            HWND                hwndActiveDesktop;
+                    // currently active Desktop HWND; this is != NULLHANDLE
+                    // after the Desktop has been populated
 
             /*
              * Thread-1 object window:
@@ -171,9 +179,9 @@
             // WPObject* pointers and is created in krnInitializeXWorkplace
             // with lstCreate(FALSE)
             PVOID               pllAwakeObjects;
-                // this has changed with V0.90; this is actually a PLINKLIST,
-                // but since not all source files have #include'd linklist.h,
-                // we declare this as PVOID to avoid compilation errors.
+                    // this has changed with V0.90; this is actually a PLINKLIST,
+                    // but since not all source files have #include'd linklist.h,
+                    // we declare this as PVOID to avoid compilation errors.
 
             // mutex semaphore for access to this list
             HMTX                hmtxAwakeObjects;
@@ -265,8 +273,6 @@
 
     #define T1M_EXCEPTIONCAUGHT         (WM_USER+1105)
 
-    #define T1M_QUERYXFOLDERVERSION     (WM_USER+1106)
-
     #define T1M_EXTERNALSHUTDOWN        (WM_USER+1107)
 
     #define T1M_DESTROYARCHIVESTATUS    (WM_USER+1108)    // added V0.9.0
@@ -274,6 +280,12 @@
     #define T1M_OPENOBJECTFROMHANDLE    (WM_USER+1110)    // added V0.9.0
 
     #define T1M_DAEMONREADY             (WM_USER+1111)    // added V0.9.0
+
+    #define T1M_PAGEMAGECLOSED          (WM_USER+1112)    // added V0.9.2 (2000-02-23) [umoeller]
+
+    #define T1M_QUERYXFOLDERVERSION     (WM_USER+1113)
+                // V0.9.2 (2000-02-26) [umoeller]:
+                // msg value changed to break compatibility with V0.8x
 
     MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
 

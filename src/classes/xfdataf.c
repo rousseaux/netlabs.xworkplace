@@ -72,11 +72,7 @@
 
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
-#define INCL_WINDIALOGS
-#define INCL_WINBUTTONS
-#define INCL_WINENTRYFIELDS
 #define INCL_WINMENUS
-#define INCL_WINMLE
 #include <os2.h>
 
 // C library headers
@@ -623,7 +619,7 @@ SOM_Scope BOOL  SOMLINK xfdatafM_wpclsCreateDefaultTemplates(M_XFldDataFile *som
     M_XFldDataFileMethodDebug("M_XFldDataFile","xfdatafM_wpclsCreateDefaultTemplates");
 
     // we only override this class method if it is
-    // being called for the XFolder class object itself.
+    // being called for the _XFldDataFile class object itself.
     // If this is being called for a subclass, we use
     // the parent method, because we do not want to
     // break the default behavior for subclasses.

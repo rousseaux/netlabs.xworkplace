@@ -120,6 +120,9 @@
     // window pos of file operations status window V0.9.1 (2000-01-30) [umoeller]
     #define INIKEY_FILEOPSPOS       "WndPosFileOpsStatus"
 
+    // window pos of "Partitions" view V0.9.2 (2000-02-29) [umoeller]
+    #define INIKEY_WNDPOSPARTITIONS "WndPosPartitions"
+
     /*
      * file type hierarchies:
      *
@@ -147,16 +150,21 @@
      *                                                                  *
      ********************************************************************/
 
-    #define XFOLDER_CONFIGID        "<XFOLDER_CONFIG>"
-    #define XFOLDER_STARTUPID       "<XFOLDER_STARTUP2>"
-                // this has a "2" because it was redone with some V0.8x version
-    #define XFOLDER_SHUTDOWNID      "<XFOLDER_SHUTDOWN2>"
-                // this has a "2" because it was redone with some V0.8x version
-    #define XFOLDER_MAINID          "<XFOLDER_MAIN>"
-    #define XFOLDER_WPSID           "<XFOLDER_WPS>"
-    #define XFOLDER_KERNELID        "<XFOLDER_KERNEL>"
+    // all of these have been redone with V0.9.2
+
+    // folders
+    #define XFOLDER_MAINID          "<XWP_MAINFLDR>"
+    #define XFOLDER_CONFIGID        "<XWP_CONFIG>"
+
+    #define XFOLDER_STARTUPID       "<XWP_STARTUP>"
+    #define XFOLDER_SHUTDOWNID      "<XWP_SHUTDOWN>"
+    #define XFOLDER_WPSID           "<XWP_WPS>"
+    #define XFOLDER_KERNELID        "<XWP_KERNEL>"
     #define XFOLDER_CLASSLISTID     "<XWP_CLASSLIST>"
     #define XFOLDER_TRASHCANID      "<XWP_TRASHCAN>"
+
+    #define XFOLDER_INTROID         "<XWP_INTRO>"
+    #define XFOLDER_USERGUIDE       "<XWP_REF>"
 
     /********************************************************************
      *                                                                  *
@@ -240,9 +248,10 @@
     #define ID_XSH_DRIVER_CDFS               54     // V0.9.0: XFldSystem "Drivers" page
     #define ID_XSH_DRIVER_S506               55     // V0.9.0: XFldSystem "Drivers" page
     #define ID_XSH_KEYB_OBJHOTKEYS           56     // V0.9.0: XWPKeyboard "Object hotkeys" page
-    #define ID_XSH_MOUSEHOOK                 57     // V0.9.0: XWPMouse "Mouse hook" page
+    #define ID_XSH_MOUSE_MOVEMENT            57     // V0.9.0: XWPMouse "Movement" page 1
     #define ID_XSH_MOUSEMAPPINGS2            58     // V0.9.1: XWPMouse "Mappings" page 2
-    #define ID_XSH_KEYB_EXTMAPPINGS          59     // V0.9.1: XWPMouse "Mappings" page 2
+    #define ID_XSH_XWPSCREEN                 59     // V0.9.2: default help for XWPScreen
+    #define ID_XSH_MOUSE_CORNERS             60     // V0.9.2: XWPMouse "Movement" page 2
 
     // "subpanels" for pages with context-sensitive help
     #define ID_XSH_SETTINGS_REMOVEMENUS_SUB  81+19  // "Find" item on "Remove menus" page
@@ -284,12 +293,9 @@
     #define LANGUAGECODELENGTH      30
 
     // log file names
-    #define XFOLDER_CRASHLOG        "xfldtrap.log"
+    #define XFOLDER_CRASHLOG        "xwptrap.log"
+    #define XFOLDER_RUNTIMELOG      "xwprterr.log"
     #define XFOLDER_SHUTDOWNLOG     "xshutdwn.log"
-
-    // Supplementary object window msgs (for each
-    // subclassed folder frame, xfldr.c)
-    #define SOM_ACTIVATESTATUSBAR       (WM_USER+1200)
 
     // common dlg msgs for settings notebook dlg funcs
     #define XM_SETTINGS2DLG         (WM_USER+200)    // set controls
@@ -423,8 +429,9 @@
     #define SP_KEYB_EXTMAPPINGS     121     // new with V0.9.1 (99-12-19) [umoeller]
 
     // 13) XWPMOUSE
-    #define SP_MOUSEHOOK            130     // new with V0.9.0
-    #define SP_MOUSEMAPPINGS2       131     // new with V0.9.1
+    #define SP_MOUSE_MOVEMENT       130     // new with V0.9.2 (2000-02-26) [umoeller]
+    #define SP_MOUSE_CORNERS        131     // new with V0.9.2 (2000-02-26) [umoeller]
+    #define SP_MOUSE_MAPPINGS2      132     // new with V0.9.1
 
     /********************************************************************
      *                                                                  *
@@ -544,7 +551,10 @@
                         // default setting for enabling folder hotkeys;
                         // can be overridden in XFolder instance settings
                     TemplatesOpenSettings;
-                        // open settings after creating from template
+                        // open settings after creating from template;
+                        // 0: do nothing after creation
+                        // 1: open settings notebook
+                        // 2: make title editable
     /* XFolder 0.52 */
         ULONG       RemoveLockInPlaceItem,
                         // XFldObject, Warp 4 only
@@ -713,6 +723,10 @@
 
         BYTE        fNumLockStartup;
                         // XFldDesktop "Startup": set NumLock to ON on WPS startup
+
+        BYTE        fPageMageEnabled;
+                        // XWPSetup "PageMage virtual desktops"; this will cause
+                        // XDM_STARTSTOPPAGEMAGE to be sent to the daemon
     } GLOBALSETTINGS;
 
     typedef const GLOBALSETTINGS* PCGLOBALSETTINGS;
@@ -919,7 +933,13 @@
 
                 // "Special functions" on XWPMouse "Movement" page
                 pszSpecialWindowList,
-                pszSpecialDesktopPopup;
+                pszSpecialDesktopPopup,
+
+                // default title of XWPScreen class V0.9.2 (2000-02-23) [umoeller]
+                pszXWPScreenTitle,
+
+                // "Partitions" item in WPDrives "open" menu V0.9.2 (2000-02-29) [umoeller]
+                pszOpenPartitions;
     } NLSSTRINGS;
 
     typedef const NLSSTRINGS* PNLSSTRINGS;
@@ -1073,6 +1093,8 @@
     BOOL cmnStoreGlobalSettings(VOID);
 
     BOOL cmnSetDefaultSettings(USHORT usSettingsPage);
+
+    VOID cmnEnablePageMage(BOOL fEnable);
 
     /********************************************************************
      *                                                                  *

@@ -117,7 +117,10 @@
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
+#include "filesys\filesys.h"            // extended file types implementation
+#include "filesys\folder.h"             // XFolder implementation
 #include "filesys\menus.h"              // common XFolder context menu logic
+#include "filesys\statbars.h"           // status bar translation logic
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 // other SOM headers
@@ -125,14 +128,9 @@
 
 #include <wprootf.h>                    // WPRootFolder
 #include <wpshadow.h>                   // WPShadow
-#include <wpdesk.h>
-#include "xfobj.h"
-#include "xfdisk.h"
-
-// implementation includes which require other filesys\ headers
-#include "filesys\filesys.h"           // extended file types implementation
-#include "filesys\folder.h"            // XFolder implementation
-#include "filesys\statbars.h"          // status bar translation logic
+#include <wpdesk.h>                     // WPDesktop
+#include "xfobj.h"                      // XFldObject
+#include "xfdisk.h"                     // XFldDisk
 
 /* ******************************************************************
  *                                                                  *
@@ -140,17 +138,15 @@
  *                                                                  *
  ********************************************************************/
 
-CHAR                szXFolderVersion[100];
-
-XFolder             *pConfigFolder = NULL;
+XFolder             *G_pConfigFolder = NULL;
 
 // "XFolder" key for wpRestoreData etc.
-const char* pcszXFolder = "XFolder";
+const char*         G_pcszXFolder = "XFolder";
 
 // roots of linked lists for favorite/quick-open folders
 // these hold CONTENTMENULISTITEM's
-PLINKLIST           pllFavoriteFolders = NULL,
-                    pllQuickOpenFolders = NULL;
+PLINKLIST           G_pllFavoriteFolders = NULL,
+                    G_pllQuickOpenFolders = NULL;
 
 /* ******************************************************************
  *                                                                  *
@@ -767,7 +763,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpMakeFavoriteFolder(XFolder *somSelf,
     XFolderMethodDebug("XFolder","xf_xwpMakeFavoriteFolder");
 
     return (fdrAddToList(somSelf,
-                         pllFavoriteFolders,
+                         G_pllFavoriteFolders,
                          fInsert,
                          INIKEY_FAVORITEFOLDERS));
 }
@@ -786,7 +782,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpIsFavoriteFolder(XFolder *somSelf)
     XFolderMethodDebug("XFolder","xf_xwpIsFavoriteFolder");
 
     return (fdrIsOnList(somSelf,
-                        pllFavoriteFolders));
+                        G_pllFavoriteFolders));
 }
 
 /*
@@ -805,7 +801,7 @@ SOM_Scope ULONG  SOMLINK xf_xwpSetQuickOpen(XFolder *somSelf,
     XFolderMethodDebug("XFolder","xf_xwpSetQuickOpen");
 
     return (fdrAddToList(somSelf,
-                         pllQuickOpenFolders,
+                         G_pllQuickOpenFolders,
                          fQuickOpen,
                          INIKEY_QUICKOPENFOLDERS));
 }
@@ -824,7 +820,7 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryQuickOpen(XFolder *somSelf)
     XFolderMethodDebug("XFolder","xf_xwpSetQuickOpen");
 
     return (fdrIsOnList(somSelf,
-                        pllQuickOpenFolders));
+                        G_pllQuickOpenFolders));
 }
 
 /*
@@ -1477,19 +1473,19 @@ SOM_Scope BOOL  SOMLINK xf_wpSaveState(XFolder *somSelf)
     // (i.e. Global) setting
 
     if (_bSnapToGridInstance != 2)
-        _wpSaveLong(somSelf, (PSZ)pcszXFolder, 1, (ULONG)_bSnapToGridInstance);
+        _wpSaveLong(somSelf, (PSZ)G_pcszXFolder, 1, (ULONG)_bSnapToGridInstance);
     if (_bFullPathInstance != 2)
-        _wpSaveLong(somSelf, (PSZ)pcszXFolder, 2, (ULONG)_bFullPathInstance);
+        _wpSaveLong(somSelf, (PSZ)G_pcszXFolder, 2, (ULONG)_bFullPathInstance);
     if (_bFolderHotkeysInstance != 2)
-        _wpSaveLong(somSelf, (PSZ)pcszXFolder, 3, (ULONG)_bFolderHotkeysInstance);
+        _wpSaveLong(somSelf, (PSZ)G_pcszXFolder, 3, (ULONG)_bFolderHotkeysInstance);
     if (_bStatusBarInstance != STATUSBAR_DEFAULT)
-        _wpSaveLong(somSelf, (PSZ)pcszXFolder, 4, (ULONG)_bStatusBarInstance);
+        _wpSaveLong(somSelf, (PSZ)G_pcszXFolder, 4, (ULONG)_bStatusBarInstance);
     /* if (_ulSBInflatedFrame)
         _wpSaveLong(somSelf, (PSZ)pcszXFolder, 5, (ULONG)_ulSBInflatedFrame); */
     if (_bAlwaysSortInstance != SET_DEFAULT)
-        _wpSaveLong(somSelf, (PSZ)pcszXFolder, 6, (ULONG)_bAlwaysSortInstance);
+        _wpSaveLong(somSelf, (PSZ)G_pcszXFolder, 6, (ULONG)_bAlwaysSortInstance);
     if (_bDefaultSortInstance != SET_DEFAULT)
-        _wpSaveLong(somSelf, (PSZ)pcszXFolder, 7, (ULONG)_bDefaultSortInstance);
+        _wpSaveLong(somSelf, (PSZ)G_pcszXFolder, 7, (ULONG)_bDefaultSortInstance);
 
     brc = XFolder_parent_WPFolder_wpSaveState(somSelf);
 
@@ -1525,19 +1521,19 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
     // the "transparent" value which makes this folder use
     // the corresponding Global Setting
 
-    if (_wpRestoreLong(somSelf, (PSZ)pcszXFolder, 1, &ul))
+    if (_wpRestoreLong(somSelf, (PSZ)G_pcszXFolder, 1, &ul))
         _bSnapToGridInstance = (BYTE)ul;
     else _bSnapToGridInstance = 2;
 
-    if (_wpRestoreLong(somSelf, (PSZ)pcszXFolder, 2, &ul))
+    if (_wpRestoreLong(somSelf, (PSZ)G_pcszXFolder, 2, &ul))
         _bFullPathInstance = (BYTE)ul;
     else _bFullPathInstance = 2;
 
-    if (_wpRestoreLong(somSelf, (PSZ)pcszXFolder, 3, &ul))
+    if (_wpRestoreLong(somSelf, (PSZ)G_pcszXFolder, 3, &ul))
         _bFolderHotkeysInstance = (BYTE)ul;
     else _bFolderHotkeysInstance = 2;
 
-    if (_wpRestoreLong(somSelf, (PSZ)pcszXFolder, 4, &ul))
+    if (_wpRestoreLong(somSelf, (PSZ)G_pcszXFolder, 4, &ul))
         _bStatusBarInstance = (BYTE)ul;
     else _bStatusBarInstance = STATUSBAR_DEFAULT;
 
@@ -1545,10 +1541,10 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
         _ulSBInflatedFrame = (BYTE)ul;
     else _ulSBInflatedFrame = 0; */
 
-    if (_wpRestoreLong(somSelf, (PSZ)pcszXFolder, 6, &ul))
+    if (_wpRestoreLong(somSelf, (PSZ)G_pcszXFolder, 6, &ul))
         _bAlwaysSortInstance = (USHORT)ul;
 
-    if (_wpRestoreLong(somSelf, (PSZ)pcszXFolder, 7, &ul))
+    if (_wpRestoreLong(somSelf, (PSZ)G_pcszXFolder, 7, &ul))
         _bDefaultSortInstance = (USHORT)ul;
 
     brc = (XFolder_parent_WPFolder_wpRestoreState(somSelf, ulReserved));
@@ -1906,6 +1902,34 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
     #endif
 
     return (brc);
+}
+
+/*
+ *@@ wpAddObjectGeneralPage2:
+ *      this WPObject instance method adds the "Animation icon"
+ *      page to an object's settings notebook.
+ *      For folders, we'll insert the object's "Internals" page
+ *      here (now called "Object" page).
+ *
+ *      For folders, this is not done by XFldObject::wpAddObjectGeneralPage
+ *      because otherwise the "Object" page would be between
+ *      the two icon pages.
+ *
+ *@@added V0.9.2 (2000-02-27) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xf_wpAddObjectGeneralPage2(XFolder *somSelf,
+                                                    HWND hwndNotebook)
+{
+    PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpAddObjectGeneralPage2");
+
+    if (pGlobalSettings->AddObjectPage)
+        _xwpAddObjectInternalsPage(somSelf, hwndNotebook);
+
+    return (XFolder_parent_WPFolder_wpAddObjectGeneralPage2(somSelf,
+                                                            hwndNotebook));
 }
 
 /*
@@ -2290,7 +2314,7 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
                                   ULONG param)
 {
     HWND        hwndNewFrame; // return HWND
-    BOOL        fFolderLocked = FALSE;
+    // BOOL        fFolderLocked = FALSE;
     // XFolderMethodDebug("XFolder","xf_wpOpen");
 
     #ifdef DEBUG_SOMMETHODS
@@ -2306,8 +2330,8 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
         // parent_wpOpen starts the Populate thread, and we
         // don't want that one to start until we are done
         // with our folder manipulations
-        fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
-        if (fFolderLocked)
+        /* fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
+        if (fFolderLocked) */
         {
             // have parent do the window creation
             hwndNewFrame = XFolder_parent_WPFolder_wpOpen(somSelf,
@@ -2328,8 +2352,8 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
     }
     CATCH(excpt1) { } END_CATCH();
 
-    if (fFolderLocked)
-        _wpReleaseObjectMutexSem(somSelf);
+    /* if (fFolderLocked)
+        _wpReleaseObjectMutexSem(somSelf); */
                 // this will unblock the Populate thread
 
     #ifdef DEBUG_SOMMETHODS
@@ -2604,7 +2628,7 @@ SOM_Scope BOOL  SOMLINK xf_wpAddToContent(XFolder *somSelf,
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpDeleteFromContent(XFolder *somSelf,
-                                                  WPObject* Object)
+                                               WPObject* Object)
 {
     // XFolderData *somThis = XFolderGetData(somSelf);
     // XFolderMethodDebug("XFolder","xf_wpDeleteFromContent");
@@ -2635,8 +2659,8 @@ SOM_Scope BOOL  SOMLINK xf_wpDeleteFromContent(XFolder *somSelf,
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpStoreIconPosData(XFolder *somSelf,
-                                                 PICONPOS pIconPos,
-                                                 ULONG cbSize)
+                                              PICONPOS pIconPos,
+                                              ULONG cbSize)
 {
     BOOL rc;
     XFolder *pCfg = _xwpclsQueryConfigFolder(_XFolder);
@@ -2653,8 +2677,8 @@ SOM_Scope BOOL  SOMLINK xf_wpStoreIconPosData(XFolder *somSelf,
     }
 
     rc =  (XFolder_parent_WPFolder_wpStoreIconPosData(somSelf,
-                                                       pIconPos,
-                                                       cbSize));
+                                                      pIconPos,
+                                                      cbSize));
 
     return (rc);
 }
@@ -2798,15 +2822,21 @@ SOM_Scope BOOL  SOMLINK xf_wpStoreIconPosData(XFolder *somSelf,
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpMoveObject(XFolder *somSelf,
-                                           WPFolder* Folder)
+                                        WPFolder* Folder)
 {
     BOOL rc;
+    XFolder *pCfg = _xwpclsQueryConfigFolder(_XFolder);
 
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpMoveObject");
 
-    /* call the parent method first, which will actually move the
-       folder */
+    if (    (pCfg)
+         && (wpshResidesBelow(somSelf, pCfg))
+       )
+        // this was in the config folder hierarchy:
+        mnuInvalidateConfigCache();
+
+    // call the parent method first, which will actually move the folder
     rc = XFolder_parent_WPFolder_wpMoveObject(somSelf, Folder);
 
     xthrPostWorkerMsg(WOM_REFRESHFOLDERVIEWS, (MPARAM)somSelf, MPNULL);
@@ -2918,8 +2948,8 @@ SOM_Scope BOOL  SOMLINK xf_wpSetFldrSort(XFolder *somSelf,
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpQueryDefaultHelp(XFolder *somSelf,
-                                                 PULONG pHelpPanelId,
-                                                 PSZ HelpLibrary)
+                                              PULONG pHelpPanelId,
+                                              PSZ HelpLibrary)
 {
     BOOL        rc;
     XFolder *pCfg = _xwpclsQueryConfigFolder(_XFolder);
@@ -2927,7 +2957,9 @@ SOM_Scope BOOL  SOMLINK xf_wpQueryDefaultHelp(XFolder *somSelf,
     // XFolderData *somThis = XFolderGetData(somSelf);
     XFolderMethodDebug("XFolder","xf_wpQueryDefaultHelp");
 
-    if (wpshResidesBelow(somSelf, pCfg))
+    if (    (pCfg)
+         && (wpshResidesBelow(somSelf, pCfg))
+       )
     {
         // somSelf is in the config folder hierarchy:
         // display help for config folders
@@ -2956,6 +2988,7 @@ SOM_Scope BOOL  SOMLINK xf_wpQueryDefaultHelp(XFolder *somSelf,
  *      if it doesn't exist.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.2 (2000-02-26) [umoeller]: object is now always checked for integrity
  */
 
 SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryConfigFolder(M_XFolder *somSelf)
@@ -2963,20 +2996,18 @@ SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryConfigFolder(M_XFolder *somSelf)
     // M_XFolderData *somThis = M_XFolderGetData(somSelf);
     M_XFolderMethodDebug("M_XFolder","xfM_xwpclsQueryConfigFolder");
 
-    if (pConfigFolder == NULL)
+    if (G_pConfigFolder == NULL)
         // config folder not queried yet:
         // do it now
-        pConfigFolder = // _wpclsQueryObjectFromPath(_WPFolder, XFOLDER_CONFIGID);
-                        wpshQueryObjectFromID(XFOLDER_CONFIGID, NULL);
+        G_pConfigFolder = wpshQueryObjectFromID(XFOLDER_CONFIGID, NULL);
                     // changed V0.9.0: the class method doesn't seem to
                     // be working on the new Warp Server
-    else
-        // config folder queried previously:
-        // check that object
-        if (!wpshCheckObject(pConfigFolder))
-            pConfigFolder = NULL;
 
-    return (pConfigFolder);
+    // in any case, check that object
+    if (!wpshCheckObject(G_pConfigFolder))
+        G_pConfigFolder = NULL;
+
+    return (G_pConfigFolder);
 }
 
 /*
@@ -2995,7 +3026,7 @@ SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryFavoriteFolder(M_XFolder *somSelf,
 
     M_XFolderMethodDebug("M_XFolder","xfM_xwpclsQueryFavoriteFolder");
 
-    return (fdrEnumList(pllFavoriteFolders,
+    return (fdrEnumList(G_pllFavoriteFolders,
                         pFolder,
                         INIKEY_FAVORITEFOLDERS));
 }
@@ -3017,7 +3048,7 @@ SOM_Scope XFolder*  SOMLINK xfM_xwpclsQueryQuickOpenFolder(M_XFolder *somSelf,
     M_XFolderMethodDebug("M_XFolder","xfM_xwpclsQueryQuickOpenFolder");
 
 
-    return (fdrEnumList(pllQuickOpenFolders,
+    return (fdrEnumList(G_pllQuickOpenFolders,
                         pFolder,
                         INIKEY_QUICKOPENFOLDERS));
 }
@@ -3083,8 +3114,8 @@ SOM_Scope void  SOMLINK xfM_wpclsInitData(M_XFolder *somSelf)
             fdrInitPSLI();
 
             // initialize other data
-            pllFavoriteFolders = lstCreate(TRUE);       // items are freeable
-            pllQuickOpenFolders = lstCreate(TRUE);      // items are freeable
+            G_pllFavoriteFolders = lstCreate(TRUE);       // items are freeable
+            G_pllQuickOpenFolders = lstCreate(TRUE);      // items are freeable
 
             fdrLoadFolderHotkeys();
 

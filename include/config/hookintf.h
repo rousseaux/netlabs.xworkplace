@@ -71,7 +71,11 @@
      *                                                                  *
      ********************************************************************/
 
+    BOOL hifEnableHook(BOOL fEnable);
+
     BOOL hifXWPHookReady(VOID);
+
+    BOOL hifEnablePageMage(BOOL fEnable);
 
     BOOL hifObjectHotkeysEnabled(VOID);
 
@@ -113,13 +117,19 @@
                                              USHORT usItemID, USHORT usNotifyCode,
                                              ULONG ulExtra);
 
+        VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                      ULONG flFlags);
+
+        MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                            USHORT usItemID, USHORT usNotifyCode,
+                                            ULONG ulExtra);
+
         VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,
                                       ULONG flFlags);
 
         MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                             USHORT usItemID, USHORT usNotifyCode,
                                             ULONG ulExtra);
-
     #endif
 
 #endif

@@ -27,9 +27,12 @@ PROJECT_BASE_DIR = $(MAKEDIR)\..\..
 !include ..\..\setup.in
 
 OUTPUTDIR = ..\..\bin\exes
+MODULESDIR = ..\..\bin\modules
 
 # create output directory
 !if [@md $(OUTPUTDIR) 2> NUL]
+!endif
+!if [@md $(MODULESDIR) 2> NUL]
 !endif
 
 
@@ -54,18 +57,18 @@ $(OUTPUTDIR)\netscdde.obj: netscdde.c $(HEADERS)
           $(CC_EXE_ST) /Fo$(OUTPUTDIR)\$(@B).obj netscdde.c
 
 # build targets
-$(OUTPUTDIR)\netscdde.def: ..\..\include\bldlevel.h
+netscdde.def: ..\..\include\bldlevel.h
           cmd.exe /c BuildLevel.cmd $*.def ..\..\include\bldlevel.h "XWorkplace Netscape DDE Interface"
 
 $(OUTPUTDIR)\netscdde.res: netscdde.rc netscdde.h netscdde.dlg
           $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
 
-$(OUTPUTDIR)\netscdde.exe: $(ALL_OBJ1) $(@B).def $(OUTPUTDIR)\$(@B).res
-          $(LINK) /out:$(OUTPUTDIR)\$(@B).exe $(ALL_OBJ1) $(HELPERS_BASE)\src\helpers\pmprintf.lib $(@B).def
-          $(RC) $(OUTPUTDIR)\$(@B).res $(OUTPUTDIR)\$(@B).exe
+$(MODULESDIR)\netscdde.exe: $(ALL_OBJ1) $(@B).def $(OUTPUTDIR)\$(@B).res
+          $(LINK) /out:$(MODULESDIR)\$(@B).exe $(ALL_OBJ1) $(HELPERS_BASE)\src\helpers\pmprintf.lib $(@B).def
+          $(RC) $(OUTPUTDIR)\$(@B).res $(MODULESDIR)\$(@B).exe
 
 # main target
-$(XWPRUNNING)\bin\netscdde.exe: $(OUTPUTDIR)\$(@B).exe
-          cmd.exe /c copy $(OUTPUTDIR)\$(@B).exe $(XWPRUNNING)\bin
+$(XWPRUNNING)\bin\netscdde.exe: $(MODULESDIR)\$(@B).exe
+          cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
 
 

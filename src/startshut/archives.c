@@ -516,19 +516,26 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
         CHAR    szTemp[100];
         PSZ     pszMsg = NULL;
 
-        hwndStatus = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
-                                WinDefDlgProc,
-                                cmnQueryNLSModuleHandle(FALSE),
-                                ID_XFD_ARCHIVINGSTATUS,
-                                NULL);
-        cmnSetControlsFont(hwndStatus, 1, 10000);
+        if (ArcSettings.fShowStatus)
+        {
+            hwndStatus = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
+                                    WinDefDlgProc,
+                                    cmnQueryNLSModuleHandle(FALSE),
+                                    ID_XFD_ARCHIVINGSTATUS,
+                                    NULL);
+            cmnSetControlsFont(hwndStatus, 1, 10000);
+        }
 
         if (ArcSettings.ulArcFlags & ARCF_ALWAYS)
         {
             fBackup = TRUE;
-            WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT,
-                              "WPS archiving enabled\n");
-            WinShowWindow(hwndStatus, TRUE);
+
+            if (ArcSettings.fShowStatus)
+            {
+                WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT,
+                                  "WPS archiving enabled\n");
+                WinShowWindow(hwndStatus, TRUE);
+            }
         }
         else
         {
@@ -536,9 +543,12 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
 
             if (ArcSettings.ulArcFlags & ARCF_NEXT)
             {
-                WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT,
-                                  "WPS archiving enabled once\n");
-                WinShowWindow(hwndStatus, TRUE);
+                if (ArcSettings.fShowStatus)
+                {
+                    WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT,
+                                      "WPS archiving enabled once\n");
+                    WinShowWindow(hwndStatus, TRUE);
+                }
 
                 fBackup = TRUE;
                 fCheckINIs = FALSE;     // not necessary
@@ -570,12 +580,15 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                     fCheckINIs = FALSE;     // not necessary
                 }
 
-                sprintf(szTemp, "%d", lDaysPassed);
-                strhxcpy(&pszMsg, szTemp);
-                strhxcat(&pszMsg, " days passed since last backup\nLimit: ");
-                sprintf(szTemp, "%d", ArcSettings.ulEveryDays);
-                strhxcat(&pszMsg, szTemp);
-                strhxcat(&pszMsg, " days\n");
+                if (ArcSettings.fShowStatus)
+                {
+                    sprintf(szTemp, "%d", lDaysPassed);
+                    strhxcpy(&pszMsg, szTemp);
+                    strhxcat(&pszMsg, " days passed since last backup\nLimit: ");
+                    sprintf(szTemp, "%d", ArcSettings.ulEveryDays);
+                    strhxcat(&pszMsg, szTemp);
+                    strhxcat(&pszMsg, " days\n");
+                }
             }
 
             if (fCheckINIs)
@@ -583,9 +596,12 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                 // INI-based:
                 double  dMaxDifferencePercent = 0;
 
-                WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT,
-                                  "Checking INI files for changes\n");
-                WinShowWindow(hwndStatus, TRUE);
+                if (ArcSettings.fShowStatus)
+                {
+                    WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT,
+                                      "Checking INI files for changes\n");
+                    WinShowWindow(hwndStatus, TRUE);
+                }
 
                 fBackup = arcCheckINIFiles(&ArcSettings.dIniFilesPercent,
                                            WPSARCO_INIAPP,  // ignore this
@@ -594,36 +610,44 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                                            &ArcSettings.dDataSumLast,
                                            &dMaxDifferencePercent);
 
-                sprintf(szTemp, "%f", dMaxDifferencePercent);
-                strhxcpy(&pszMsg, "INI files checked\nChanged: ");
-                strhxcat(&pszMsg, szTemp);
-                strhxcat(&pszMsg, " %\nLimit: ");
-                sprintf(szTemp, "%f", ArcSettings.dIniFilesPercent);
-                strhxcat(&pszMsg, szTemp);
-                strhxcat(&pszMsg, " %\n");
+                if (ArcSettings.fShowStatus)
+                {
+                    sprintf(szTemp, "%f", dMaxDifferencePercent);
+                    strhxcpy(&pszMsg, "INI files checked\nChanged: ");
+                    strhxcat(&pszMsg, szTemp);
+                    strhxcat(&pszMsg, " %\nLimit: ");
+                    sprintf(szTemp, "%f", ArcSettings.dIniFilesPercent);
+                    strhxcat(&pszMsg, szTemp);
+                    strhxcat(&pszMsg, " %\n");
+                }
             }
         }
 
         if (pszMsg)
         {
-            if (fBackup)
+            if (ArcSettings.fShowStatus)
             {
-                // archiving to be turned on:
-                // save "last app" etc. data so we won't get this twice
-                arcSaveSettings();
-                strhxcat(&pszMsg, "WPS archiving enabled");
-            }
-            else
-                strhxcat(&pszMsg, "WPS archiving not necessary");
+                if (fBackup)
+                {
+                    // archiving to be turned on:
+                    // save "last app" etc. data so we won't get this twice
+                    arcSaveSettings();
+                    strhxcat(&pszMsg, "WPS archiving enabled");
+                }
+                else
+                    strhxcat(&pszMsg, "WPS archiving not necessary");
 
-            WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT, pszMsg);
-            WinShowWindow(hwndStatus, TRUE);
+                WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT, pszMsg);
+                WinShowWindow(hwndStatus, TRUE);
+            }
+
             free(pszMsg);
         }
 
         arcSwitchArchivingOn(fBackup);
 
-        WinPostMsg(hwndNotify, ulMsg, (MPARAM)hwndStatus, (MPARAM)NULL);
+        if (ArcSettings.fShowStatus)
+            WinPostMsg(hwndNotify, ulMsg, (MPARAM)hwndStatus, (MPARAM)NULL);
     }
 
     return (fBackup);

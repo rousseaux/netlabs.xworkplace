@@ -8,7 +8,7 @@
  *@@include #include <os2.h>
  *@@include #include <wpobject.h>
  *@@include #include "filesys\fileops.h"
- *@@include #include "helpers\linklist.h" // only for fopsStartFromListCommon
+ *@@include #include "helpers\linklist.h" // only for some funcs
  */
 
 /*
@@ -41,6 +41,48 @@
 
     BOOL fopsEnableTrashCan(HWND hwndOwner,
                             BOOL fEnable);
+
+    /* ******************************************************************
+     *                                                                  *
+     *   Expanded object lists                                          *
+     *                                                                  *
+     ********************************************************************/
+
+    #ifdef LINKLIST_HEADER_INCLUDED
+
+        /*
+         *@@ EXPANDEDOBJECT:
+         *
+         *@@added V0.9.2 (2000-02-28) [umoeller]
+         */
+
+        typedef struct _EXPANDEDOBJECT
+        {
+            WPObject    *pObject;
+                    // object; this can be of any class
+            PLINKLIST   pllContentsSFL;
+                    // if the object is a WPFolder, this
+                    // is != NULL and contains a list of
+                    // more EXPANDEDOBJECT's;
+                    // if the object is not a folder, this
+                    // item is always NULL
+            ULONG       ulSizeThis;
+                    // size of pObject; if pObject is a folder,
+                    // this has the size of all direct objects
+                    // on pllContentsSFL
+            ULONG       ulSizeOfAllContents;
+        } EXPANDEDOBJECT, *PEXPANDEDOBJECT;
+
+        PLINKLIST fopsFolder2SFL(WPFolder *pFolder,
+                                 PULONG pulSizeContents);
+
+        PEXPANDEDOBJECT fopsObject2SOI(WPObject *pObject);
+
+        VOID fopsFreeSFL(PLINKLIST pllSFL);
+
+        VOID fopsFreeSOI(PEXPANDEDOBJECT pSOI);
+
+    #endif
 
     /********************************************************************
      *                                                                  *

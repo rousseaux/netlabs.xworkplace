@@ -101,9 +101,10 @@
 #define ID_ICONXWPCONFG        117
 #define ID_ICONXWPLIST         118
 #define ID_ICONXWPSOUND        119
+#define ID_ICONXWPSCREEN       120
 
-#define ID_ICONXWPTRASHEMPTY   120
-#define ID_ICONXWPTRASHFILLED  121
+#define ID_ICONXWPTRASHEMPTY   121
+#define ID_ICONXWPTRASHFILLED  122
 
 #define ID_XFLDRBITMAP         130
 
@@ -789,27 +790,35 @@
  * XWPMouse    (V0.9.0)          >= 3400   *
  ******************************************/
 
-#define ID_XSD_MOUSEHOOK                3400
+#define ID_XSD_MOUSE_MOVEMENT           3400
 #define ID_XSDI_MOUSE_SLIDINGFOCUS      3401
-#define ID_XSDI_MOUSE_BRING2TOP         3402
-#define ID_XSDI_MOUSE_IGNORESEAMLESS    3403
-#define ID_XSDI_MOUSE_IGNOREDESKTOP     3404
-#define ID_XSDI_MOUSE_FOCUSDELAY_TXT1   3405
-#define ID_XSDI_MOUSE_FOCUSDELAY_SLIDER 3406
-#define ID_XSDI_MOUSE_FOCUSDELAY_TXT2   3407
-#define ID_XSDI_MOUSE_RADIO_TOPLEFT     3408
-#define ID_XSDI_MOUSE_RADIO_TOPRIGHT    3409
-#define ID_XSDI_MOUSE_RADIO_BOTTOMLEFT  3410
-#define ID_XSDI_MOUSE_RADIO_BOTTOMRIGHT 3411
-#define ID_XSDI_MOUSE_INACTIVEOBJ       3412
-#define ID_XSDI_MOUSE_SPECIAL_CHECK     3413
-#define ID_XSDI_MOUSE_SPECIAL_DROP      3414
-#define ID_XSDI_MOUSE_OPEN_CHECK        3415
-#define ID_XSDI_MOUSE_OPEN_CNR          3416
-#define ID_XSDI_MOUSE_AUTOHIDE          3417
-#define ID_XSDI_MOUSE_AUTOHIDE_TXT1     3418
-#define ID_XSDI_MOUSE_AUTOHIDE_SLIDER   3419
-#define ID_XSDI_MOUSE_AUTOHIDE_TXT2     3420
+#define ID_XSDI_MOUSE_FOCUSDELAY_TXT1   3402
+#define ID_XSDI_MOUSE_FOCUSDELAY_SLIDER 3403
+#define ID_XSDI_MOUSE_FOCUSDELAY_TXT2   3404
+#define ID_XSDI_MOUSE_BRING2TOP         3405
+#define ID_XSDI_MOUSE_IGNORESEAMLESS    3406
+#define ID_XSDI_MOUSE_IGNOREDESKTOP     3407
+#define ID_XSDI_MOUSE_IGNOREPAGEMAGE    3408
+#define ID_XSDI_MOUSE_AUTOHIDE_CHECK    3409
+#define ID_XSDI_MOUSE_AUTOHIDE_TXT1     3410
+#define ID_XSDI_MOUSE_AUTOHIDE_SLIDER   3411
+#define ID_XSDI_MOUSE_AUTOHIDE_TXT2     3412
+#define ID_XSDI_MOUSE_SLIDINGMENU       3413
+#define ID_XSDI_MOUSE_MENUDELAY_TXT1    3414
+#define ID_XSDI_MOUSE_MENUDELAY_SLIDER  3415
+#define ID_XSDI_MOUSE_MENUDELAY_TXT2    3416
+#define ID_XSDI_MOUSE_MENUHILITE        3417
+
+#define ID_XSD_MOUSE_CORNERS            3430
+#define ID_XSDI_MOUSE_RADIO_TOPLEFT     3431
+#define ID_XSDI_MOUSE_RADIO_TOPRIGHT    3432
+#define ID_XSDI_MOUSE_RADIO_BOTTOMLEFT  3433
+#define ID_XSDI_MOUSE_RADIO_BOTTOMRIGHT 3434
+#define ID_XSDI_MOUSE_INACTIVEOBJ       3435
+#define ID_XSDI_MOUSE_SPECIAL_CHECK     3436
+#define ID_XSDI_MOUSE_SPECIAL_DROP      3437
+#define ID_XSDI_MOUSE_OPEN_CHECK        3438
+#define ID_XSDI_MOUSE_OPEN_CNR          3439
 
 #define ID_XSD_MOUSEMAPPINGS2           3450
 #define ID_XSDI_MOUSE_CHORDWINLIST      3451
@@ -984,6 +993,9 @@
 #define ID_XFMI_OFS_TRASHEMPTY          (WPMENUID_USER+44)
 #define ID_XFMI_OFS_TRASHRESTORE        (WPMENUID_USER+45)
 #define ID_XFMI_OFS_TRASHDESTROY        (WPMENUID_USER+46)
+
+// "Partitions" item in WPDrives "open" menu V0.9.2 (2000-02-29) [umoeller]
+#define ID_XFMI_OFS_OPENPARTITIONS      (WPMENUID_USER+47)
 
 // this is the value used for variable menu items, i.e.
 // those inserted according to the config folder and by
@@ -1284,6 +1296,12 @@
 #define ID_XSSI_SPECIAL_WINDOWLIST      5863
 #define ID_XSSI_SPECIAL_DESKTOPPOPUP    5864
 
+// default title of XWPScreen class V0.9.2 (2000-02-23) [umoeller]
+#define ID_XSSI_XWPSCREENTITLE          5865
+
+// "Partitions" item in WPDrives "open" menu V0.9.2 (2000-02-29) [umoeller]
+#define ID_XSSI_OPENPARTITIONS          5866
+
 /******************************************
  *  Features on XWPSetup "Features" page  *
  ******************************************/
@@ -1321,6 +1339,7 @@
 #define ID_XCSI_XWPHOOK                 6051
 #define ID_XCSI_ANIMOUSE                6052
 #define ID_XCSI_GLOBALHOTKEYS           6053
+#define ID_XCSI_PAGEMAGE                6054
 
 /******************************************
  *          Treesize                      *

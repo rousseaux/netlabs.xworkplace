@@ -199,6 +199,7 @@ $(OUTPUTDIR)\menus.obj: \
     $(INC)\dlgids.h \
     $(INC)\classes\xfldr.ih $(INC)\classes\xfdisk.h \
     $(INC)\shared\common.h $(INC)\shared\notebook.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
+    $(INC)\config\partitions.h \
     $(INC)\filesys\folder.h $(INC)\filesys\xthreads.h \
     $(INC)\startshut\shutdown.h \
     $(@B).c $(MYOWNINC)\$(@B).h
@@ -230,7 +231,7 @@ $(OUTPUTDIR)\trash.obj: \
      $(INC)\classes\xtrash.ih $(INC)\classes\xfobj.h \
      $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(INC)\shared\wpsh.h \
-     $(INC)\filesys\fileops.h  \
+     $(INC)\filesys\fileops.h $(INC)\filesys\xthreads.h   \
      $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xthreads.obj: \
@@ -239,12 +240,12 @@ $(OUTPUTDIR)\xthreads.obj: \
             $(HLPINC)\dosh.h $(HLPINC)\eah.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
             $(HLPINC)\gpih.h $(HLPINC)\prfh.h $(HLPINC)\shapewin.h $(HLPINC)\stringh.h \
             $(HLPINC)\syssound.h $(HLPINC)\winh.h \
-    $(INC)\classes\xfldr.h \
+    $(INC)\classes\xfldr.h $(INC)\classes\xtrash.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
     $(INC)\dlgids.h \
     $(INC)\hook\xwphook.h \
     $(INC)\filesys\fileops.h $(INC)\filesys\folder.h \
-        $(INC)\filesys\sounddll.h $(INC)\filesys\xthreads.h \
+        $(INC)\filesys\sounddll.h $(INC)\filesys\xthreads.h $(INC)\filesys\trash.h \
     $(INC)\config\hookintf.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 

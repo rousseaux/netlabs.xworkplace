@@ -115,8 +115,6 @@
 
     #define FIM_STARTUPFOLDERDONE       (WM_USER+133)
 
-    // #define FIM_EMPTYTRASH              WM_USER+200
-
     #define FIM_PROCESSTASKLIST         (WM_USER+201)
 
     #define FIM_STOREGLOBALSETTINGS     (WM_USER+202)
@@ -159,6 +157,8 @@
 
     #define FIM_INSERTHOTKEYS           (WM_USER+206)
 
+    #define FIM_CALCTRASHOBJECTSIZE     (WM_USER+207)
+
     /********************************************************************
      *                                                                  *
      *   Prototypes                                                     *
@@ -170,6 +170,8 @@
     BOOL xthrPostWorkerMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
 
     BOOL xthrPostFileMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
+
+    ULONG xthrIsFileThreadBusy(VOID);
 
     BOOL xthrPostSpeedyMsg(ULONG msg, MPARAM mp1, MPARAM mp2);
 

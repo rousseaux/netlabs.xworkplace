@@ -25,11 +25,13 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "..\helpers\winh.h"
-#include "..\shared\common.h"
-#include "..\startshut\xshutdwn.h"
+#include "helpers\winh.h"
+#include "shared\common.h"
+#include "shared\kernel.h"
+#include "startshut\shutdown.h"
 
-void Explain(void) {
+void Explain(void)
+{
     DosBeep(100, 500);
 }
 
@@ -61,7 +63,8 @@ int main(int argc, char *argv[])
         strcpy(psdp->szRebootCommand, "");
 
         // evaluate command line
-        if (argc > 1) {
+        if (argc > 1)
+        {
             SHORT i = 0;
             while (i++ < argc-1)
             {
@@ -70,18 +73,22 @@ int main(int argc, char *argv[])
                     SHORT i2;
                     for (i2 = 1; i2 < strlen(argv[i]); i2++)
                     {
-                        switch (argv[i][i2]) {
+                        switch (argv[i][i2])
+                        {
                             case 'r':
                                 psdp->optReboot = TRUE;
                             break;
 
                             case 'R':
                                 psdp->optReboot = TRUE;
-                                if (i < argc-1) {
+                                if (i < argc-1)
+                                {
                                     strcpy(psdp->szRebootCommand, argv[i+1]);
                                     i++;
                                     i2 = 1000;
-                                } else {
+                                }
+                                else
+                                {
                                     Explain();
                                     fProceed = FALSE;
                                 }
@@ -124,7 +131,8 @@ int main(int argc, char *argv[])
                         }
                     }
                 }
-                else {
+                else
+                {
                     // no option ("-"): explain
                     Explain();
                 }
@@ -140,38 +148,55 @@ int main(int argc, char *argv[])
                 return FALSE;
 
             // find the XWorkplace object window
-            hwndXWorkplaceObject = WinWindowFromID(HWND_OBJECT, ID_XFOLDEROBJECT);
+            hwndXWorkplaceObject = WinWindowFromID(HWND_OBJECT, ID_THREAD1OBJECT);
 
             // check if this window understands the
             // "query version" message
             if (hwndXWorkplaceObject)
-                mrVersion = WinSendMsg(hwndXWorkplaceObject, XOM_QUERYXFOLDERVERSION,
-                                (MPARAM)NULL, (MPARAM)NULL);
-
-            // error:
-            if ( (ULONG)mrVersion < (ULONG)(MRFROM2SHORT(0, 80)) )
-                DebugBox("XShutdown: Error", "The external XShutdown interface could not be "
-                            "accessed. Either XWorkplace is not properly installed, "
-                            "or the WPS is not currently running, "
-                            "or the installed XWorkplace version is too old to support "
-                            "calling XShutdown from the command line.");
-            else
             {
-                // XWorkplace version supports command line: go on
-                if (!WinSendMsg(hwndXWorkplaceObject, XOM_EXTERNALSHUTDOWN, (MPARAM)psdp, (MPARAM)NULL))
-                    DebugBox("XShutdown: Error",
-                            "XWorkplace reported an error processing the "
-                            "external shutdown request. "
-                            "XShutdown was not initiated. Please shut down using the Desktop's "
-                            "context menu.");
+                SHORT   sMajor,
+                        sMinor;
+                mrVersion = WinSendMsg(hwndXWorkplaceObject,
+                                       T1M_QUERYXFOLDERVERSION,
+                                       0, 0);
+                sMajor = SHORT1FROMMR(mrVersion);
+                sMinor = SHORT2FROMMR(mrVersion);
+                // error:
+                if (    (    (sMajor == 0)
+                          && (sMinor < 9)
+                        )
+                   )
+                    DebugBox(0,
+                             "XShutdown: Error",
+                             "The external XShutdown interface could not be "
+                             "accessed. Either XWorkplace is not properly installed, "
+                             "or the WPS is not currently running, "
+                             "or the installed XWorkplace version is too old to support "
+                             "calling XShutdown from the command line.");
+                else
+                {
+                    // XWorkplace version supports command line: go on
+                    if (!WinSendMsg(hwndXWorkplaceObject,
+                                    T1M_EXTERNALSHUTDOWN,
+                                    (MPARAM)psdp,
+                                    (MPARAM)0))
+                        DebugBox(0,
+                                 "XShutdown: Error",
+                                 "XWorkplace reported an error processing the "
+                                 "external shutdown request. "
+                                 "XShutdown was not initiated. Please shut down using the Desktop's "
+                                 "context menu.");
+                }
             }
 
             WinDestroyMsgQueue(hmq);
             WinTerminate(hab);
         }
-    } else
-            DebugBox("XShutdown: Error",
-                    "XShutdown failed allocating shared memory.");
+    }
+    else
+            DebugBox(0,
+                     "XShutdown: Error",
+                     "XShutdown failed allocating shared memory.");
 
     return TRUE;
 }

@@ -52,6 +52,7 @@ OBJS = $(OUTPUTDIR)\cfgsys.obj \
        $(OUTPUTDIR)\classlst.obj \
        $(OUTPUTDIR)\drivdlgs.obj \
        $(OUTPUTDIR)\hookintf.obj \
+       $(OUTPUTDIR)\partitions.obj \
        $(OUTPUTDIR)\sound.obj
 
 # The main target:
@@ -154,6 +155,14 @@ $(OUTPUTDIR)\hookintf.obj: \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
     $(INC)\hook\xwphook.h \
     $(INC)\filesys\xthreads.h \
+    $(@B).c $(MYOWNINC)\$(@B).h
+
+$(OUTPUTDIR)\partitions.obj: \
+    $(INC)\setup.h \
+    $(HLPINC)\comctl.h $(HLPINC)\dosh.h $(HLPINC)\except.h \
+            $(HLPINC)\linklist.h $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\threads.h \
+    $(INC)\dlgids.h \
+    $(INC)\shared\common.h $(INC)\shared\notebook.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\sound.obj: \

@@ -59,11 +59,12 @@ OBJS = $(OUTPUTDIR)\xdebug.obj \
        $(OUTPUTDIR)\xfstart.obj \
        $(OUTPUTDIR)\xfsys.obj \
        $(OUTPUTDIR)\xfwps.obj \
-       $(OUTPUTDIR)\xwpsound.obj \
        $(OUTPUTDIR)\xtrash.obj \
        $(OUTPUTDIR)\xwpkeybd.obj \
        $(OUTPUTDIR)\xwpmouse.obj \
-       $(OUTPUTDIR)\xwpsetup.obj
+       $(OUTPUTDIR)\xwpscreen.obj \
+       $(OUTPUTDIR)\xwpsetup.obj \
+       $(OUTPUTDIR)\xwpsound.obj
 
 # The main target:
 # If we're called from the main makefile, MAINMAKERUNNING is defined,
@@ -202,7 +203,6 @@ $(OUTPUTDIR)\xfstart.obj: \
 $(OUTPUTDIR)\xfsys.obj: \
             $(INC)\setup.h \
             $(HLPINC)\dosh.h \
-#            $(INC)\classes\xfobj.h \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(INC)\config\cfgsys.h \
@@ -222,7 +222,7 @@ $(OUTPUTDIR)\xtrash.obj: \
             $(HLPINC)\winh.h $(HLPINC)\stringh.h \
             $(INC)\classes\xfobj.h \
             $(INC)\dlgids.h \
-            $(INC)\shared\common.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(INC)\filesys\trash.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
@@ -238,6 +238,13 @@ $(OUTPUTDIR)\xwpmouse.obj: \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\notebook.h \
             $(INC)\config\hookintf.h \
+            $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
+
+$(OUTPUTDIR)\xwpscreen.obj: \
+            $(INC)\setup.h \
+            $(HLPINC)\dosh.h \
+            $(INC)\dlgids.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xwpsetup.obj: \

@@ -2,8 +2,8 @@
 /*
  * xwphook.h:
  *      header for both xwphook.c and xwpdaemon.c. This is also
- *      included from a number of sources from filesys\ which need
- *      to interface the daemon.
+ *      included from a number of sources for XFLDR.DLL which need
+ *      to interface (configure) the daemon.
  */
 
 /*
@@ -29,14 +29,6 @@
 
     #define IDSHMEM_DAEMON          "\\SHAREMEM\\XWORKPLC\\DAEMON.DAT"
             // DAEMONSHARED structure
-    #define IDSHMEM_HOTKEYS         "\\SHAREMEM\\XWORKPLC\\HOTKEYS.DAT"
-    #define IDMUTEX_ONEINSTANCE     "\\SEM32\\XWORKPLC\\ONEINST.SEM"
-    #define SEM_TIMEOUT             4000
-
-    // timer IDs for fnwpDaemonObject
-    #define TIMERID_SLIDINGFOCUS        1
-    #define TIMERID_MONITORDRIVE        2
-    #define TIMERID_AUTOHIDEMOUSE       3
 
     /* ******************************************************************
      *                                                                  *
@@ -47,6 +39,7 @@
     #define INIAPP_XWPHOOK          "XWorkplace:Hook"   // added V0.9.0
     #define INIKEY_HOOK_HOTKEYS     "Hotkeys"           // added V0.9.0
     #define INIKEY_HOOK_CONFIG      "Config"            // added V0.9.0
+    #define INIKEY_HOOK_PGMGCONFIG  "PageMageConfig"    // V0.9.2 (2000-02-25) [umoeller]
 
     /* ******************************************************************
      *                                                                  *
@@ -54,9 +47,87 @@
      *                                                                  *
      ********************************************************************/
 
+    #define MAX_STICKYS         64
+    #define MAX_WINDOWS         256
+    #define TEXTLEN             30
+
     // flags for HOOKCONFIG.usScrollMode
     #define SM_LINEWISE         0
     #define SM_AMPLIFIED        1
+
+    /*
+     *@@ PAGEMAGECONFIG:
+     *      PageMage configuration data.
+     *      This is stored in a global variable
+     *      in xwpdaemn.c and only visible to
+     *      the daemon (and thus to the PageMage
+     *      code), but not to the hook.
+     *
+     *@@added V0.9.2 (2000-02-25) [umoeller]
+     */
+
+    typedef struct _PAGEMAGECONFIG
+    {
+        /* Misc 1 */
+        POINTL       ptlMaxDesktops;
+        POINTL       ptlStartDesktop;
+        INT          iEdgeBoundary;
+        ULONG        ulSleepTime;
+        BOOL         bRepositionMouse;
+        BOOL         bClickActivate;
+
+        /* Misc 2 */
+        BOOL         _bHoldWPS;          // make WPS Desktop sticky
+        // CHAR         szWPSName[TEXTLEN];
+        LONG         lPriority;
+        LONG         lPriorityZero;
+        BOOL         bRecoverOnShutdown;
+        BOOL         bSwitchToFocus;
+
+        /* Display */
+        BOOL         bShowTitlebar;
+        BOOL         bStartMin;
+        BOOL         bFlash;
+        ULONG        ulFlashDelay;
+        BOOL         bFloatToTop;
+        BOOL         bShowWindows;
+        BOOL         bShowWindowText;
+        BOOL         fPreserveProportions;
+
+        /* Sticky */
+        CHAR         aszSticky[MAX_STICKYS][TEXTLEN];
+        SHORT        usStickyTextNum;
+        HWND         hwndSticky2[MAX_STICKYS];
+        SHORT        usSticky2Num;
+
+        /*  Colors 1 */
+        LONG         lcNormal;
+        LONG         lcCurrent;
+        LONG         lcDivider;
+        CHAR         szNormal[20];
+        CHAR         szCurrent[20];
+        CHAR         szDivider[20];
+
+        /* Colors 2 */
+        LONG         lcNormalApp;
+        LONG         lcCurrentApp;
+        LONG         lcAppBorder;
+        CHAR         szNormalApp[20];
+        CHAR         szCurrentApp[20];
+        CHAR         szAppBorder[20];
+
+        /* Panning */
+        BOOL         bPanAtTop;
+        BOOL         bPanAtBottom;
+        BOOL         bPanAtLeft;
+        BOOL         bPanAtRight;
+        BOOL         bWrapAround;
+
+        /* Keyboard */
+        ULONG        ulKeyShift;
+        BOOL         bReturnKeystrokes;
+        BOOL         bHotkeyGrabFocus;
+    } PAGEMAGECONFIG, *PPAGEMAGECONFIG;
 
     /*
      *@@ HOOKCONFIG:
@@ -66,9 +137,15 @@
      *      (statically in the hook DLL) so that both
      *      the daemon and the hook have access to this.
      *
-     *      A mirror of this structure is put into OS2.INI.
-     *      This gets (re)loaded by the daemon when
-     *      XDM_HOOKCONFIG is received by fnwpDaemonObject.
+     *      A mirror of this structure is put into OS2.INI
+     *      which gets loaded by the XWorkplace settings
+     *      objects in XFLDR.DLL to configure the hook.
+     *      This gets (re)loaded by the daemon when XFLDR.DLL
+     *      posts XDM_HOOKCONFIG to fnwpDaemonObject.
+     *
+     *      So this is seen by the hook and the daemon;
+     *      XFLDR.DLL only writes this back to OS2.INI and
+     *      notifies the daemon to reload this.
      *
      *      For every item, the safe default value is null
      *      so the structure can be zeroed to disable
@@ -89,11 +166,11 @@
         ULONG           ulSlidingFocusDelay;
                 // delay in ms; 0 = off
 
-        BOOL            fBring2Top;
+        BOOL            fSlidingBring2Top;
                 // bring windows to top or preserve Z-order
-        BOOL            fIgnoreDesktop;
+        BOOL            fSlidingIgnoreDesktop;
                 // ignore Desktop windows
-        BOOL            fIgnoreSeamless;
+        BOOL            fSlidingIgnoreSeamless;
                 // TRUE: ignore seamless Win-OS/2 windows
                 // FALSE: always bring them to top
 
@@ -158,9 +235,22 @@
         ULONG           ulAutoHideDelay;
                 // delay in seconds; 0 means 1 second, 2 means 3, ...
 
-        // Global object hotkeys:
+        // Global object hotkeys enabled:
+        // this can be disabled even if any hotkeys are defined
+        // because the hotkeys themselves are stored separately
+        // in shared memory
         BOOL            fGlobalHotkeys;
 
+        // PageMage configuration
+        BOOL            fFloat,
+                        fSlidingIgnorePageMage;        // on sliding focus
+
+        // Sliding menus
+        BOOL            fSlidingMenus;
+                // enabled?
+        ULONG           ulSubmenuDelay;
+                // delay in ms; 0 = off
+        BOOL            fMenuImmediateHilite;
     } HOOKCONFIG, *PHOOKCONFIG;
 
     /*
@@ -182,20 +272,21 @@
      *      anywhere. This structure must only be modified
      *      when either the daemon or the WPS is started.
      *      For hook configuration, HOOKCONFIG is used
-     *      instead.
+     *      instead, since the hook does NOT see this
+     *      structure.
      */
 
     typedef struct _DAEMONSHARED
     {
         HWND        hwndDaemonObject;
-                // daemon object window (fnwpDaemonObject, hook\xwphook.c);
+                // daemon object window (fnwpDaemonObject, xwpdaemn.c);
                 // this is set by the daemon after it has created the object window,
                 // so if this is != NULLHANDLE, the daemon is running
         HWND        hwndThread1Object;
                 // XFLDR.DLL thread-1 object window (krn_fnwpThread1Object, shared\kernel.c);
                 // this is set by krnInitializeXWorkplace before starting the daemon
                 // and after the WPS re-initializes
-        BOOL        fHookInstalled;
+        BOOL        fAllHooksInstalled;
                 // TRUE if hook is currently installed;
                 // dynamically changed by the daemon upon XDM_HOOKINSTALL
         ULONG       ulWPSStartupCount;
@@ -205,98 +296,6 @@
                 // TRUE if startup folder should be processed;
                 // set by krnInitializeXWorkplace and XShutdown (upon WPS restart)
     } DAEMONSHARED, *PDAEMONSHARED;
-
-    /*
-     *@@ HOOKDATA:
-     *      global hook data structure. Only one instance
-     *      of this is in the shared data segment of
-     *      XWPHOOK.DLL, and a pointer to that structure
-     *      is returned to the daemon which initially loads
-     *      that DLL by hookInit and then stored by the
-     *      daemon. As a result, this structure is shared
-     *      between the hook and the daemon, and both can
-     *      access it at any time.
-     *
-     *      This is statically initialized to 0 when the hook
-     *      DLL is loaded. hookInit will then set up most
-     *      fields in here.
-     *
-     *      This contains setup data (the state of the
-     *      hook), some data which needs to be cached,
-     *      as well as the HOOKCONFIG structure which
-     *      is used to configure the hook and the daemon.
-     *      That sub-structure gets (re)loaded from OS2.INI
-     *      upon daemon startup and when XDM_HOOKCONFIG is
-     *      received by fnwpDaemonObject.
-     */
-
-    typedef struct _HOOKDATA
-    {
-        BOOL        fInputHooked,       // input hook installed?
-                    fPreAccelHooked;    // pre-accelerator table hook installed?
-
-        HWND        hwndDaemonObject;   // wnd used for notification of events
-                                        // as passed to hookInit; this is the
-                                        // object window of the daemon
-                                        // (fnwpDaemonObject)
-        HAB         habDaemonObject;    // anchor block of hwndNotify
-
-        HMODULE     hmodDLL;            // XWPHOOK.DLL module handle
-
-        HWND        hwndPMDesktop,
-                // desktop window handle (WinQueryDesktopWindow)
-                    hwndWPSDesktop,
-                // WPS desktop frame window (this only gets set by the daemon later!!)
-                    hwndWindowList;
-                // window list handle
-
-        // screen dimensions
-        ULONG       ulCXScreen,
-                    ulCYScreen;
-
-        // damon/hook configuration data shared by daemon and the hook;
-        // this gets loaded from OS2.INI
-        HOOKCONFIG  HookConfig;
-
-        HWND        hwndActivatedByUs;
-                // this gets set to a window which was activated by the
-                // daemon with sliding focus
-
-        // MB3 scrolling data; added V0.9.1 (99-12-03)
-        BOOL        fMB3Scrolling;
-                // this is TRUE only while MB3 is down dragging;
-                // we will scroll the window contents then
-
-        HWND        hwndScrollBarsOwner;
-
-        HWND        hwndVertScrollBar;
-        SHORT       usVertScrollBarID;
-                // vertical scroll bar of hwndScrollBarsOwner or NULLHANDLE if none
-
-        HWND        hwndHorzScrollBar;
-        SHORT       usHorzScrollBarID;
-                // horizontal scroll bar of hwndScrollBarsOwner or NULLHANDLE if none
-
-        // cached data used while MB3 is down; V0.9.1 (99-12-03)
-        SHORT       sMB3InitialMouseXPos,
-                    sMB3InitialMouseYPos;
-        SHORT       sMB3InitialXThumbPos,
-                    sMB3InitialYThumbPos;
-        SHORT       sCurrentThumbXPos,
-                    sCurrentThumbYPos;
-
-        BOOL        fPostVertSBEndScroll,
-                    fPostHorzSBEndScroll;
-                // these are TRUE if MB3 has been depressed and moved and
-                // scroller messages have been posted; this requests
-                // a SB_ENDSCROLL upon WM_BUTTON3UP
-
-        // auto-hide mouse pointer; added V0.9.1 (99-12-03)
-        ULONG       idAutoHideTimer;
-                // if != NULL, auto-hide timer is running
-        BOOL        fMousePointerHidden;
-                // TRUE if mouse pointer has been hidden
-    } HOOKDATA, *PHOOKDATA;
 
     /*
      *@@ GLOBALHOTKEY:
@@ -346,31 +345,23 @@
 
     #define XDM_HOOKCONFIG          (WM_USER)
 
-    #define XDM_HOOKINSTALL         (WM_USER + 1)
+    #define XDM_PAGEMAGECONFIG      (WM_USER + 1)
 
-    #define XDM_DESKTOPREADY        (WM_USER + 2)
+    #define XDM_HOOKINSTALL         (WM_USER + 2)
 
-    #define XDM_HOTKEYPRESSED       (WM_USER + 3)
+    #define XDM_STARTSTOPPAGEMAGE   (WM_USER + 3)
 
-    #define XDM_HOTKEYSCHANGED      (WM_USER + 4)
+    #define XDM_DESKTOPREADY        (WM_USER + 4)
 
-    #define XDM_SLIDINGFOCUS        (WM_USER + 5)
+    #define XDM_HOTKEYPRESSED       (WM_USER + 5)
 
-    #define XDM_HOTCORNER           (WM_USER + 6)
+    #define XDM_HOTKEYSCHANGED      (WM_USER + 6)
 
-    /* ******************************************************************
-     *                                                                  *
-     *   Prototypes                                                     *
-     *                                                                  *
-     ********************************************************************/
+    #define XDM_SLIDINGFOCUS        (WM_USER + 7)
 
-    PHOOKDATA EXPENTRY hookInit(HWND hwndDaemonObject,
-                                HMQ hmq);
+    #define XDM_SLIDINGMENU         (WM_USER + 8)
 
-    BOOL EXPENTRY hookKill(VOID);
-
-    APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys,
-                                         ULONG cNewHotkeys);
+    #define XDM_HOTCORNER           (WM_USER + 9)
 
 #endif
 

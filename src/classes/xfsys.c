@@ -270,6 +270,29 @@ SOM_Scope ULONG  SOMLINK xfsys_xwpAddXFldSystemPages(XFldSystem *somSelf,
 }
 
 /*
+ *@@ wpFilterPopupMenu:
+ *      remove "Create another" menu item.
+ *
+ *@@added V0.9.2 (2000-02-26) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xfsys_wpFilterPopupMenu(XFldSystem *somSelf,
+                                                 ULONG ulFlags,
+                                                 HWND hwndCnr,
+                                                 BOOL fMultiSelect)
+{
+    /* XFldSystemData *somThis = XFldSystemGetData(somSelf); */
+    XFldSystemMethodDebug("XFldSystem","xfsys_wpFilterPopupMenu");
+
+    return (XFldSystem_parent_WPSystem_wpFilterPopupMenu(somSelf,
+                                                         ulFlags,
+                                                         hwndCnr,
+                                                         fMultiSelect)
+            & ~CTXT_NEW
+           );
+}
+
+/*
  *@@ wpQueryDefaultHelp:
  *      this instance method specifies the default
  *      help panel for this instance; we will display
@@ -293,7 +316,7 @@ SOM_Scope BOOL  SOMLINK xfsys_wpQueryDefaultHelp(XFldSystem *somSelf,
 /*
  *@@ wpAddSettingsPages:
  *      this instance method is overridden in order
- *      to add the new XWorkplace page to the settings
+ *      to add the new XWorkplace pages to the settings
  *      notebook.
  *      In order to to this, unlike the procedure used in
  *      the "Workplace Shell" object, we will explicitly
@@ -305,6 +328,7 @@ SOM_Scope BOOL  SOMLINK xfsys_wpQueryDefaultHelp(XFldSystem *somSelf,
  *      this thing does not.
  *
  *@@changed V0.9.1 (2000-02-17) [umoeller]: cut adding "Internals" page
+ *@@changed V0.9.2 (2000-02-23) [umoeller]: removed "Screen" pages; these are now in XWPScreen
  */
 
 SOM_Scope BOOL  SOMLINK xfsys_wpAddSettingsPages(XFldSystem *somSelf,
@@ -322,13 +346,6 @@ SOM_Scope BOOL  SOMLINK xfsys_wpAddSettingsPages(XFldSystem *somSelf,
     // "Symbol" page next
     _wpAddObjectGeneralPage(somSelf, hwndNotebook);
         // this inserts the "Internals"/"Object" page now
-
-    // "Screen" page 2 next; this page may exist on some systems
-    // depending on the video driver, and we want this in "OS/2 Kernel"
-    // also
-    _wpAddDMQSDisplayTypePage(somSelf, hwndNotebook);
-    // "Screen" page 1 next
-    _wpAddSystemScreenPage(somSelf, hwndNotebook);
 
     // XFolder CONFIG.SYS pages on top
     _xwpAddXFldSystemPages(somSelf, hwndNotebook);
@@ -422,10 +439,11 @@ SOM_Scope ULONG  SOMLINK xfsysM_wpclsQueryIconData(M_XFldSystem *somSelf,
     // M_XFldSystemData *somThis = M_XFldSystemGetData(somSelf);
     M_XFldSystemMethodDebug("M_XFldSystem","xfsysM_wpclsQueryIconData");
 
-    if (pIconInfo) {
-       pIconInfo->fFormat = ICON_RESOURCE;
-       pIconInfo->resid   = ID_ICONSYS;
-       pIconInfo->hmod    = cmnQueryMainModuleHandle();
+    if (pIconInfo)
+    {
+        pIconInfo->fFormat = ICON_RESOURCE;
+        pIconInfo->resid   = ID_ICONSYS;
+        pIconInfo->hmod    = cmnQueryMainModuleHandle();
     }
 
     return (sizeof(ICONINFO));

@@ -45,14 +45,16 @@
 
     #pragma pack(1)
 
-    typedef struct {
+    typedef struct
+    {
         USHORT  usSubID;
         USHORT  usReserved;
         USHORT  usData1;
         USHORT  usData2;
     } SENDPOWEREVENT;
 
-    typedef struct {
+    typedef struct
+    {
         USHORT  usParmLength;
         USHORT  usBIOSFlags;
         USHORT  usBIOSVersion;
@@ -65,7 +67,7 @@
     #define APM_OK                  0x01
     #define APM_IGNORE              0x02
     #define APM_CANCEL              0x04
-    #define APM_DOSSHUTDOWN_0       0x08
+    // #define APM_DOSSHUTDOWN_0       0x08 removed V0.9.2 (2000-02-29) [umoeller]
     #define APM_DOSSHUTDOWN_1       0x10
 
     PSZ apmQueryVersion(VOID);

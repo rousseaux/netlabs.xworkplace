@@ -27,9 +27,12 @@ PROJECT_BASE_DIR = $(MAKEDIR)\..\..
 !include ..\..\setup.in
 
 OUTPUTDIR = ..\..\bin\exes
+MODULESDIR = ..\..\bin\modules
 
 # create output directory
 !if [@md $(OUTPUTDIR) 2> NUL]
+!endif
+!if [@md $(MODULESDIR) 2> NUL]
 !endif
 
 
@@ -74,18 +77,18 @@ $(OUTPUTDIR)\winh.obj: $(HELPERS_BASE)\src\helpers\$(@B).c $(HEADERS)
           $(CC_EXE) /Fo$(OUTPUTDIR)\$(@B).obj $(HELPERS_BASE)\src\helpers\$(@B).c
 
 # build targets
-$(OUTPUTDIR)\treesize.def: ..\..\include\bldlevel.h
+treesize.def: ..\..\include\bldlevel.h
           cmd.exe /c BuildLevel.cmd $*.def ..\..\include\bldlevel.h "XWorkplace Treesize Utility"
 
 $(OUTPUTDIR)\treesize.res: $(@B).rc *.ico
           $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
 
-$(OUTPUTDIR)\treesize.exe: $(ALL_OBJ1) $(@B).def $(OUTPUTDIR)\$(@B).res
-          $(LINK) /out:$(OUTPUTDIR)\$(@B).exe $(ALL_OBJ1) $(HELPERS_BASE)\src\helpers\pmprintf.lib $(@B).def
-          $(RC) $(OUTPUTDIR)\$(@B).res $(OUTPUTDIR)\$(@B).exe
+$(MODULESDIR)\treesize.exe: $(ALL_OBJ1) $(@B).def $(OUTPUTDIR)\$(@B).res
+          $(LINK) /out:$(MODULESDIR)\$(@B).exe $(ALL_OBJ1) $(HELPERS_BASE)\src\helpers\pmprintf.lib $(@B).def
+          $(RC) $(OUTPUTDIR)\$(@B).res $(MODULESDIR)\$(@B).exe
 
 # main target
-$(XWPRUNNING)\bin\treesize.exe: $(OUTPUTDIR)\$(@B).exe
-          cmd.exe /c copy $(OUTPUTDIR)\$(@B).exe $(XWPRUNNING)\bin
+$(XWPRUNNING)\bin\treesize.exe: $(MODULESDIR)\$(@B).exe
+          cmd.exe /c copy $(MODULESDIR)\$(@B).exe $(XWPRUNNING)\bin
 
 

@@ -334,6 +334,29 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
 }
 
 /*
+ *@@ wpFilterPopupMenu:
+ *      remove "Create another" menu item.
+ *
+ *@@added V0.9.2 (2000-02-26) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xfwps_wpFilterPopupMenu(XFldWPS *somSelf,
+                                                 ULONG ulFlags,
+                                                 HWND hwndCnr,
+                                                 BOOL fMultiSelect)
+{
+    /* XFldWPSData *somThis = XFldWPSGetData(somSelf); */
+    XFldWPSMethodDebug("XFldWPS","xfwps_wpFilterPopupMenu");
+
+    return (XFldWPS_parent_WPSystem_wpFilterPopupMenu(somSelf,
+                                                      ulFlags,
+                                                      hwndCnr,
+                                                      fMultiSelect)
+            & ~CTXT_NEW
+           );
+}
+
+/*
  *@@ wpQueryDefaultHelp:
  *      this instance method specifies the default
  *      help panel for this instance; we will display
@@ -358,8 +381,8 @@ SOM_Scope BOOL  SOMLINK xfwps_wpQueryDefaultHelp(XFldWPS *somSelf,
  *@@ wpAddSystemScreenPage:
  *      this WPSystem instance method is overridden in order
  *      to suppress the "Screen" page in the "Workplace Shell"
- *      object, because we want that page in "OS/2 Kernel"
- *      only.
+ *      object, because we want that page in the new "Screen"
+ *      object instead.
  */
 
 SOM_Scope ULONG  SOMLINK xfwps_wpAddSystemScreenPage(XFldWPS *somSelf,
@@ -378,7 +401,7 @@ SOM_Scope ULONG  SOMLINK xfwps_wpAddSystemScreenPage(XFldWPS *somSelf,
  *      Shell" object. Depending on the installed video driver,
  *      this page may or may not be displayed in the "System"
  *      notebook, but we never want this in "Workplace Shell",
- *      but in "OS/2 Kernel" instead.
+ *      but in "Screen" instead.
  */
 
 SOM_Scope ULONG  SOMLINK xfwps_wpAddDMQSDisplayTypePage(XFldWPS *somSelf,
@@ -386,6 +409,25 @@ SOM_Scope ULONG  SOMLINK xfwps_wpAddDMQSDisplayTypePage(XFldWPS *somSelf,
 {
     /* XFldWPSData *somThis = XFldWPSGetData(somSelf); */
     XFldWPSMethodDebug("XFldWPS","xfwps_wpAddDMQSDisplayTypePage");
+
+    return (SETTINGS_PAGE_REMOVED);
+}
+
+/*
+ *@@ wpAddSystemPrintScreenPage:
+ *      this WPSystem instance method is overridden in order
+ *      to suppress the "Print screen" page in the "Workplace
+ *      Shell" object. We want this page in the new "Screen"
+ *      object instead.
+ *
+ *@@added V0.9.2 (2000-02-23) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xfwps_wpAddSystemPrintScreenPage(XFldWPS *somSelf,
+                                                          HWND hwndNotebook)
+{
+    /* XFldWPSData *somThis = XFldWPSGetData(somSelf); */
+    XFldWPSMethodDebug("XFldWPS","xfwps_wpAddSystemPrintScreenPage");
 
     return (SETTINGS_PAGE_REMOVED);
 }

@@ -2,9 +2,11 @@
 ;
 ; xwp.def:
 ;       XWorkplace module definition file.
-;       Created manually from all the other .def files
-;       because the SOM compiler fails to do so if
-;       several IDL files result in a single DLL.
+;       Created manually from all the single .def files
+;       which the SOM compiler put into the \idl directory
+;       because the SOM compiler is too dumb for creating
+;       ONE .def file when several classes are put into
+;       one DLL.
 ;
 ;       Copyright (C) 1997-2000 Ulrich M”ller.
 ;       This file is part of the XWorkplace source package.
@@ -146,4 +148,11 @@ EXPORTS
    M_XWPKeyboardCClassData
    M_XWPKeyboardClassData
    M_XWPKeyboardNewClass
+
+   XWPScreenCClassData
+   XWPScreenClassData
+   XWPScreenNewClass
+   M_XWPScreenCClassData
+   M_XWPScreenClassData
+   M_XWPScreenNewClass
 

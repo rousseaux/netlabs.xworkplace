@@ -236,7 +236,7 @@ unsigned long _System _DLL_InitTerm(unsigned long hModule,
  *      this may be used to retrieve the module handle
  *      of XFLDR.DLL, which was stored by _DLL_InitTerm.
  *
- *      Note that this returns the main module handle.
+ *      Note that this returns the _main_ module handle.
  *      Use this if you need NLS-independent resources,
  *      e.g. the icons stored in XFLDR.DLL. To get the
  *      NLS module handle, use cmnQueryNLSModuleHandle.
@@ -717,6 +717,7 @@ PSZ cmnQueryBootLogoFile(VOID)
  *
  *@@changed V0.9.0 [umoeller]: "string not found" is now re-allocated using strdup (avoids crashes)
  *@@changed V0.9.0 (99-11-28) [umoeller]: added more meaningful error message
+ *@@changed V0.9.2 (2000-02-26) [umoeller]: made temporary buffer larger
  */
 
 void cmnLoadString(HAB habDesktop,
@@ -724,18 +725,363 @@ void cmnLoadString(HAB habDesktop,
                    ULONG ulID,
                    PSZ *ppsz)
 {
-    CHAR    szBuf[200];
+    CHAR    szBuf[500] = "";
     if (*ppsz)
         free(*ppsz);
     if (WinLoadString(habDesktop, hmodResource, ulID , sizeof(szBuf), szBuf))
-        *ppsz = strcpy(malloc(strlen(szBuf)+1), szBuf);
+        *ppsz = strdup(szBuf);
     else
     {
-        CHAR    szMsg[1000];
-        sprintf(szMsg, "cmnLoadString error: string resource %d not found in module 0x%lX",
+        sprintf(szBuf, "cmnLoadString error: string resource %d not found in module 0x%lX",
                        ulID, hmodResource);
-        *ppsz = strdup(szMsg); // V0.9.0
+        *ppsz = strdup(szBuf); // V0.9.0
     }
+}
+
+/*
+ *@@ LoadNLSData:
+ *      called from cmnQueryNLSModuleHandle when
+ *      the NLS data needs to be (re)initialized.
+ *
+ *@@added V0.9.2 (2000-02-23) [umoeller]
+ */
+
+VOID LoadNLSData(HAB habDesktop,
+                 NLSSTRINGS *pNLSStrings)
+{
+    // now let's load strings
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_NOTDEFINED,
+            &(pNLSStrings->pszNotDefined));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_PRODUCTINFO,
+            &(pNLSStrings->pszProductInfo));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_REFRESHNOW,
+            &(pNLSStrings->pszRefreshNow));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SNAPTOGRID,
+            &(pNLSStrings->pszSnapToGrid));
+
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_FLDRCONTENT,
+            &(pNLSStrings->pszFldrContent));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_COPYFILENAME,
+            &(pNLSStrings->pszCopyFilename));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_BORED,
+            &(pNLSStrings->pszBored));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_FLDREMPTY,
+            &(pNLSStrings->pszFldrEmpty));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SELECTSOME,
+            &(pNLSStrings->pszSelectSome));
+
+    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_QUICKSTATUS,
+            &(pNLSStrings->pszQuickStatus));
+
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_NAME,
+            &(pNLSStrings->pszSortByName));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_TYPE,
+            &(pNLSStrings->pszSortByType));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_CLASS,
+            &(pNLSStrings->pszSortByClass));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_REALNAME,
+            &(pNLSStrings->pszSortByRealName));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_SIZE,
+            &(pNLSStrings->pszSortBySize));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_WRITEDATE,
+            &(pNLSStrings->pszSortByWriteDate));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_ACCESSDATE,
+            &(pNLSStrings->pszSortByAccessDate));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_CREATIONDATE,
+            &(pNLSStrings->pszSortByCreationDate));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_EXT,
+            &(pNLSStrings->pszSortByExt));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_FOLDERSFIRST,
+            &(pNLSStrings->pszSortFoldersFirst));
+
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_CTRL,
+            &(pNLSStrings->pszCtrl));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_Alt,
+            &(pNLSStrings->pszAlt));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_SHIFT,
+            &(pNLSStrings->pszShift));
+
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_BACKSPACE,
+            &(pNLSStrings->pszBackspace));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_TAB,
+            &(pNLSStrings->pszTab));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_BACKTABTAB,
+            &(pNLSStrings->pszBacktab));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_ENTER,
+            &(pNLSStrings->pszEnter));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_ESC,
+            &(pNLSStrings->pszEsc));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_SPACE,
+            &(pNLSStrings->pszSpace));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_PAGEUP,
+            &(pNLSStrings->pszPageup));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_PAGEDOWN,
+            &(pNLSStrings->pszPagedown));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_END,
+            &(pNLSStrings->pszEnd));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_HOME,
+            &(pNLSStrings->pszHome));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_LEFT,
+            &(pNLSStrings->pszLeft));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_UP,
+            &(pNLSStrings->pszUp));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_RIGHT,
+            &(pNLSStrings->pszRight));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_DOWN,
+            &(pNLSStrings->pszDown));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_PRINTSCRN,
+            &(pNLSStrings->pszPrintscrn));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_INSERT,
+            &(pNLSStrings->pszInsert));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_DELETE,
+            &(pNLSStrings->pszDelete));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_SCRLLOCK,
+            &(pNLSStrings->pszScrlLock));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_NUMLOCK,
+            &(pNLSStrings->pszNumLock));
+
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_WINLEFT,
+            &(pNLSStrings->pszWinLeft));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_WINRIGHT,
+            &(pNLSStrings->pszWinRight));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_WINMENU,
+            &(pNLSStrings->pszWinMenu));
+
+    cmnLoadString(habDesktop, hmodNLS, ID_SDSI_FLUSHING,
+            &(pNLSStrings->pszSDFlushing));
+    cmnLoadString(habDesktop, hmodNLS, ID_SDSI_CAD,
+            &(pNLSStrings->pszSDCAD));
+    cmnLoadString(habDesktop, hmodNLS, ID_SDSI_REBOOTING,
+            &(pNLSStrings->pszSDRebooting));
+    cmnLoadString(habDesktop, hmodNLS, ID_SDSI_CLOSING,
+            &(pNLSStrings->pszSDClosing));
+    cmnLoadString(habDesktop, hmodNLS, ID_SDSI_SHUTDOWN,
+            &(pNLSStrings->pszShutdown));
+    cmnLoadString(habDesktop, hmodNLS, ID_SDSI_RESTARTWPS,
+            &(pNLSStrings->pszRestartWPS));
+    cmnLoadString(habDesktop, hmodNLS, ID_SDSI_RESTARTINGWPS,
+            &(pNLSStrings->pszSDRestartingWPS));
+    cmnLoadString(habDesktop, hmodNLS, ID_SDSI_SAVINGDESKTOP,
+            &(pNLSStrings->pszSDSavingDesktop));
+    cmnLoadString(habDesktop, hmodNLS, ID_SDSI_SAVINGPROFILES,
+            &(pNLSStrings->pszSDSavingProfiles));
+
+    cmnLoadString(habDesktop, hmodNLS, ID_SDSI_STARTING,
+            &(pNLSStrings->pszStarting));
+
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_POPULATING,
+            &(pNLSStrings->pszPopulating));
+
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_1GENERIC,
+            &(pNLSStrings->psz1Generic));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_2REMOVEITEMS,
+            &(pNLSStrings->psz2RemoveItems));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_25ADDITEMS,
+            &(pNLSStrings->psz25AddItems));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_26CONFIGITEMS,
+            &(pNLSStrings->psz26ConfigFolderMenus));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_27STATUSBAR,
+            &(pNLSStrings->psz27StatusBar));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_3SNAPTOGRID,
+            &(pNLSStrings->psz3SnapToGrid));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_4ACCELERATORS,
+            &(pNLSStrings->psz4Accelerators));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_5INTERNALS,
+            &(pNLSStrings->psz5Internals));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_FILEOPS,
+            &(pNLSStrings->pszFileOps));
+
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SORT,
+            &(pNLSStrings->pszSort));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_ALWAYSSORT,
+            &(pNLSStrings->pszAlwaysSort));
+
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_INTERNALS,
+            &(pNLSStrings->pszInternals));
+
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_XWPSTATUS,
+            &(pNLSStrings->pszXWPStatus));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_FEATURES,
+            &(pNLSStrings->pszFeatures));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_PARANOIA,
+            &(pNLSStrings->pszParanoia));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_OBJECTS,
+            &(pNLSStrings->pszObjects));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_FILEPAGE,
+            &(pNLSStrings->pszFilePage));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_DETAILSPAGE,
+            &(pNLSStrings->pszDetailsPage));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_XSHUTDOWNPAGE,
+            &(pNLSStrings->pszXShutdownPage));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_STARTUPPAGE,
+            &(pNLSStrings->pszStartupPage));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_DTPMENUPAGE,
+            &(pNLSStrings->pszDtpMenuPage));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_FILETYPESPAGE,
+            &(pNLSStrings->pszFileTypesPage));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SOUNDSPAGE,
+            &(pNLSStrings->pszSoundsPage));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_VIEWPAGE,
+            &(pNLSStrings->pszViewPage));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_ARCHIVESPAGE,
+            &(pNLSStrings->pszArchivesPage));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_PGMFILE_MODULE,
+            &(pNLSStrings->pszModulePage));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_OBJECTHOTKEYSPAGE,
+            &(pNLSStrings->pszObjectHotkeysPage));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_MOUSEHOOKPAGE,
+            &(pNLSStrings->pszMouseHookPage));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_MAPPINGSPAGE,
+            &(pNLSStrings->pszMappingsPage));
+
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SB_CLASSMNEMONICS,
+            &(pNLSStrings->pszSBClassMnemonics));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SB_CLASSNOTSUPPORTED,
+            &(pNLSStrings->pszSBClassNotSupported));
+
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_WPSCLASSES,
+            &(pNLSStrings->pszWpsClasses));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_WPSCLASSLOADED,
+            &(pNLSStrings->pszWpsClassLoaded));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_WPSCLASSLOADINGFAILED,
+            &(pNLSStrings->pszWpsClassLoadingFailed));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_WPSCLASSREPLACEDBY,
+            &(pNLSStrings->pszWpsClassReplacedBy));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_WPSCLASSORPHANS,
+            &(pNLSStrings->pszWpsClassOrphans));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_WPSCLASSORPHANSINFO,
+            &(pNLSStrings->pszWpsClassOrphansInfo));
+
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SCHEDULER,
+            &(pNLSStrings->pszScheduler));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_MEMORY,
+            &(pNLSStrings->pszMemory));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_ERRORS,
+            &(pNLSStrings->pszErrors));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_WPS,
+            &(pNLSStrings->pszWPS));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SYSPATHS,
+            &(pNLSStrings->pszSysPaths));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_DRIVERS,
+            &(pNLSStrings->pszDrivers));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_DRIVERCATEGORIES,
+            &(pNLSStrings->pszDriverCategories));
+
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_PROCESSCONTENT,
+            &(pNLSStrings->pszProcessContent));
+
+    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_SETTINGS,
+            &(pNLSStrings->pszSettings));
+    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_SETTINGSNOTEBOOK,
+            &(pNLSStrings->pszSettingsNotebook));
+    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_ATTRIBUTES,
+            &(pNLSStrings->pszAttributes));
+    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_ATTR_ARCHIVED,
+            &(pNLSStrings->pszAttrArchived));
+    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_ATTR_SYSTEM,
+            &(pNLSStrings->pszAttrSystem));
+    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_ATTR_HIDDEN,
+            &(pNLSStrings->pszAttrHidden));
+    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_ATTR_READONLY,
+            &(pNLSStrings->pszAttrReadOnly));
+
+    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_FLDRSETTINGS,
+            &(pNLSStrings->pszWarp3FldrView));
+    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_SMALLICONS,
+            &(pNLSStrings->pszSmallIcons  ));
+    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_FLOWED,
+            &(pNLSStrings->pszFlowed));
+    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_NONFLOWED,
+            &(pNLSStrings->pszNonFlowed));
+    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_NOGRID,
+            &(pNLSStrings->pszNoGrid));
+
+    // the following are new with V0.9.0
+    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_WARP4MENUBAR,
+            &(pNLSStrings->pszWarp4MenuBar));
+    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_SHOWSTATUSBAR,
+            &(pNLSStrings->pszShowStatusBar));
+
+    // "WPS Class List" (XWPClassList, new with V0.9.0)
+    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_OPENCLASSLIST,
+            &(pNLSStrings->pszOpenClassList));
+    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_XWPCLASSLIST,
+            &(pNLSStrings->pszXWPClassList));
+    cmnLoadString(habDesktop, hmodNLS, ID_XFSI_REGISTERCLASS,
+            &(pNLSStrings->pszRegisterClass));
+
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SOUNDSCHEMENONE,
+            &(pNLSStrings->pszSoundSchemeNone));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_ITEMSSELECTED,
+            &(pNLSStrings->pszItemsSelected));
+
+    // Trash can (XWPTrashCan, XWPTrashObject, new with V0.9.0)
+    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHEMPTY,
+            &(pNLSStrings->pszTrashEmpty));
+    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHRESTORE,
+            &(pNLSStrings->pszTrashRestore));
+    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHDESTROY,
+            &(pNLSStrings->pszTrashDestroy));
+    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHCAN,
+            &(pNLSStrings->pszTrashCan));
+    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHOBJECT,
+            &(pNLSStrings->pszTrashObject));
+    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHSETTINGSPAGE,
+            &(pNLSStrings->pszTrashSettingsPage));
+    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHDRIVESPAGE,
+            &(pNLSStrings->pszTrashDrivesPage));
+    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_ORIGFOLDER,
+            &(pNLSStrings->pszOrigFolder));
+    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_DELDATE,
+            &(pNLSStrings->pszDelDate));
+    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_DELTIME,
+            &(pNLSStrings->pszDelTime));
+    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_SIZE,
+            &(pNLSStrings->pszSize));
+    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_ORIGCLASS,
+            &(pNLSStrings->pszOrigClass));
+
+    // trash can status bar strings; V0.9.1 (2000-02-04) [umoeller]
+    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_STB_POPULATING,
+            &(pNLSStrings->pszStbPopulating));
+    cmnLoadString(habDesktop, hmodNLS, ID_XTSI_STB_OBJCOUNT,
+            &(pNLSStrings->pszStbObjCount));
+
+    // Details view columns on XWPKeyboard "Hotkeys" page; V0.9.1 (99-12-03)
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_HOTKEY_TITLE,
+            &(pNLSStrings->pszHotkeyTitle));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_HOTKEY_FOLDER,
+            &(pNLSStrings->pszHotkeyFolder));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_HOTKEY_HANDLE,
+            &(pNLSStrings->pszHotkeyHandle));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_HOTKEY_HOTKEY,
+            &(pNLSStrings->pszHotkeyHotkey));
+
+    // Method info columns for XWPClassList; V0.9.1 (99-12-03)
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_CLSLIST_INDEX,
+            &(pNLSStrings->pszClsListIndex));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_CLSLIST_METHOD,
+            &(pNLSStrings->pszClsListMethod));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_CLSLIST_ADDRESS,
+            &(pNLSStrings->pszClsListAddress));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_CLSLIST_CLASS,
+            &(pNLSStrings->pszClsListClass));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_CLSLIST_OVERRIDDENBY,
+            &(pNLSStrings->pszClsListOverriddenBy));
+
+                // "Special functions" on XWPMouse "Movement" page
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SPECIAL_WINDOWLIST,
+            &(pNLSStrings->pszSpecialWindowList));
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SPECIAL_DESKTOPPOPUP,
+            &(pNLSStrings->pszSpecialDesktopPopup));
+
+    // default title of XWPScreen class V0.9.2 (2000-02-23) [umoeller]
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_XWPSCREENTITLE,
+            &(pNLSStrings->pszXWPScreenTitle));
+
+    // "Partitions" item in WPDrives "open" menu V0.9.2 (2000-02-29) [umoeller]
+    cmnLoadString(habDesktop, hmodNLS, ID_XSSI_OPENPARTITIONS,
+            &(pNLSStrings->pszOpenPartitions));
 }
 
 /*
@@ -868,330 +1214,8 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
                                 }
                             }
 
-                            // now let's load strings
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_NOTDEFINED,
-                                    &(pNLSStrings->pszNotDefined));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_PRODUCTINFO,
-                                    &(pNLSStrings->pszProductInfo));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_REFRESHNOW,
-                                    &(pNLSStrings->pszRefreshNow));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SNAPTOGRID,
-                                    &(pNLSStrings->pszSnapToGrid));
-
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_FLDRCONTENT,
-                                    &(pNLSStrings->pszFldrContent));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_COPYFILENAME,
-                                    &(pNLSStrings->pszCopyFilename));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_BORED,
-                                    &(pNLSStrings->pszBored));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_FLDREMPTY,
-                                    &(pNLSStrings->pszFldrEmpty));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SELECTSOME,
-                                    &(pNLSStrings->pszSelectSome));
-
-                            cmnLoadString(habDesktop, hmodNLS, ID_XFSI_QUICKSTATUS,
-                                    &(pNLSStrings->pszQuickStatus));
-
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_NAME,
-                                    &(pNLSStrings->pszSortByName));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_TYPE,
-                                    &(pNLSStrings->pszSortByType));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_CLASS,
-                                    &(pNLSStrings->pszSortByClass));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_REALNAME,
-                                    &(pNLSStrings->pszSortByRealName));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_SIZE,
-                                    &(pNLSStrings->pszSortBySize));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_WRITEDATE,
-                                    &(pNLSStrings->pszSortByWriteDate));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_ACCESSDATE,
-                                    &(pNLSStrings->pszSortByAccessDate));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_CREATIONDATE,
-                                    &(pNLSStrings->pszSortByCreationDate));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_EXT,
-                                    &(pNLSStrings->pszSortByExt));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_FOLDERSFIRST,
-                                    &(pNLSStrings->pszSortFoldersFirst));
-
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_CTRL,
-                                    &(pNLSStrings->pszCtrl));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_Alt,
-                                    &(pNLSStrings->pszAlt));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_SHIFT,
-                                    &(pNLSStrings->pszShift));
-
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_BACKSPACE,
-                                    &(pNLSStrings->pszBackspace));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_TAB,
-                                    &(pNLSStrings->pszTab));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_BACKTABTAB,
-                                    &(pNLSStrings->pszBacktab));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_ENTER,
-                                    &(pNLSStrings->pszEnter));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_ESC,
-                                    &(pNLSStrings->pszEsc));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_SPACE,
-                                    &(pNLSStrings->pszSpace));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_PAGEUP,
-                                    &(pNLSStrings->pszPageup));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_PAGEDOWN,
-                                    &(pNLSStrings->pszPagedown));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_END,
-                                    &(pNLSStrings->pszEnd));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_HOME,
-                                    &(pNLSStrings->pszHome));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_LEFT,
-                                    &(pNLSStrings->pszLeft));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_UP,
-                                    &(pNLSStrings->pszUp));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_RIGHT,
-                                    &(pNLSStrings->pszRight));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_DOWN,
-                                    &(pNLSStrings->pszDown));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_PRINTSCRN,
-                                    &(pNLSStrings->pszPrintscrn));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_INSERT,
-                                    &(pNLSStrings->pszInsert));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_DELETE,
-                                    &(pNLSStrings->pszDelete));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_SCRLLOCK,
-                                    &(pNLSStrings->pszScrlLock));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_NUMLOCK,
-                                    &(pNLSStrings->pszNumLock));
-
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_WINLEFT,
-                                    &(pNLSStrings->pszWinLeft));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_WINRIGHT,
-                                    &(pNLSStrings->pszWinRight));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_KEY_WINMENU,
-                                    &(pNLSStrings->pszWinMenu));
-
-                            cmnLoadString(habDesktop, hmodNLS, ID_SDSI_FLUSHING,
-                                    &(pNLSStrings->pszSDFlushing));
-                            cmnLoadString(habDesktop, hmodNLS, ID_SDSI_CAD,
-                                    &(pNLSStrings->pszSDCAD));
-                            cmnLoadString(habDesktop, hmodNLS, ID_SDSI_REBOOTING,
-                                    &(pNLSStrings->pszSDRebooting));
-                            cmnLoadString(habDesktop, hmodNLS, ID_SDSI_CLOSING,
-                                    &(pNLSStrings->pszSDClosing));
-                            cmnLoadString(habDesktop, hmodNLS, ID_SDSI_SHUTDOWN,
-                                    &(pNLSStrings->pszShutdown));
-                            cmnLoadString(habDesktop, hmodNLS, ID_SDSI_RESTARTWPS,
-                                    &(pNLSStrings->pszRestartWPS));
-                            cmnLoadString(habDesktop, hmodNLS, ID_SDSI_RESTARTINGWPS,
-                                    &(pNLSStrings->pszSDRestartingWPS));
-                            cmnLoadString(habDesktop, hmodNLS, ID_SDSI_SAVINGDESKTOP,
-                                    &(pNLSStrings->pszSDSavingDesktop));
-                            cmnLoadString(habDesktop, hmodNLS, ID_SDSI_SAVINGPROFILES,
-                                    &(pNLSStrings->pszSDSavingProfiles));
-
-                            cmnLoadString(habDesktop, hmodNLS, ID_SDSI_STARTING,
-                                    &(pNLSStrings->pszStarting));
-
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_POPULATING,
-                                    &(pNLSStrings->pszPopulating));
-
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_1GENERIC,
-                                    &(pNLSStrings->psz1Generic));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_2REMOVEITEMS,
-                                    &(pNLSStrings->psz2RemoveItems));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_25ADDITEMS,
-                                    &(pNLSStrings->psz25AddItems));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_26CONFIGITEMS,
-                                    &(pNLSStrings->psz26ConfigFolderMenus));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_27STATUSBAR,
-                                    &(pNLSStrings->psz27StatusBar));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_3SNAPTOGRID,
-                                    &(pNLSStrings->psz3SnapToGrid));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_4ACCELERATORS,
-                                    &(pNLSStrings->psz4Accelerators));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_5INTERNALS,
-                                    &(pNLSStrings->psz5Internals));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_FILEOPS,
-                                    &(pNLSStrings->pszFileOps));
-
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SORT,
-                                    &(pNLSStrings->pszSort));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SV_ALWAYSSORT,
-                                    &(pNLSStrings->pszAlwaysSort));
-
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_INTERNALS,
-                                    &(pNLSStrings->pszInternals));
-
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_XWPSTATUS,
-                                    &(pNLSStrings->pszXWPStatus));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_FEATURES,
-                                    &(pNLSStrings->pszFeatures));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_PARANOIA,
-                                    &(pNLSStrings->pszParanoia));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_OBJECTS,
-                                    &(pNLSStrings->pszObjects));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_FILEPAGE,
-                                    &(pNLSStrings->pszFilePage));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_DETAILSPAGE,
-                                    &(pNLSStrings->pszDetailsPage));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_XSHUTDOWNPAGE,
-                                    &(pNLSStrings->pszXShutdownPage));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_STARTUPPAGE,
-                                    &(pNLSStrings->pszStartupPage));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_DTPMENUPAGE,
-                                    &(pNLSStrings->pszDtpMenuPage));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_FILETYPESPAGE,
-                                    &(pNLSStrings->pszFileTypesPage));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SOUNDSPAGE,
-                                    &(pNLSStrings->pszSoundsPage));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_VIEWPAGE,
-                                    &(pNLSStrings->pszViewPage));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_ARCHIVESPAGE,
-                                    &(pNLSStrings->pszArchivesPage));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_PGMFILE_MODULE,
-                                    &(pNLSStrings->pszModulePage));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_OBJECTHOTKEYSPAGE,
-                                    &(pNLSStrings->pszObjectHotkeysPage));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_MOUSEHOOKPAGE,
-                                    &(pNLSStrings->pszMouseHookPage));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_MAPPINGSPAGE,
-                                    &(pNLSStrings->pszMappingsPage));
-
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SB_CLASSMNEMONICS,
-                                    &(pNLSStrings->pszSBClassMnemonics));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SB_CLASSNOTSUPPORTED,
-                                    &(pNLSStrings->pszSBClassNotSupported));
-
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_WPSCLASSES,
-                                    &(pNLSStrings->pszWpsClasses));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_WPSCLASSLOADED,
-                                    &(pNLSStrings->pszWpsClassLoaded));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_WPSCLASSLOADINGFAILED,
-                                    &(pNLSStrings->pszWpsClassLoadingFailed));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_WPSCLASSREPLACEDBY,
-                                    &(pNLSStrings->pszWpsClassReplacedBy));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_WPSCLASSORPHANS,
-                                    &(pNLSStrings->pszWpsClassOrphans));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_WPSCLASSORPHANSINFO,
-                                    &(pNLSStrings->pszWpsClassOrphansInfo));
-
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SCHEDULER,
-                                    &(pNLSStrings->pszScheduler));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_MEMORY,
-                                    &(pNLSStrings->pszMemory));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_ERRORS,
-                                    &(pNLSStrings->pszErrors));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_WPS,
-                                    &(pNLSStrings->pszWPS));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SYSPATHS,
-                                    &(pNLSStrings->pszSysPaths));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_DRIVERS,
-                                    &(pNLSStrings->pszDrivers));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_DRIVERCATEGORIES,
-                                    &(pNLSStrings->pszDriverCategories));
-
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_PROCESSCONTENT,
-                                    &(pNLSStrings->pszProcessContent));
-
-                            cmnLoadString(habDesktop, hmodNLS, ID_XFSI_SETTINGS,
-                                    &(pNLSStrings->pszSettings));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XFSI_SETTINGSNOTEBOOK,
-                                    &(pNLSStrings->pszSettingsNotebook));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XFSI_ATTRIBUTES,
-                                    &(pNLSStrings->pszAttributes));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XFSI_ATTR_ARCHIVED,
-                                    &(pNLSStrings->pszAttrArchived));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XFSI_ATTR_SYSTEM,
-                                    &(pNLSStrings->pszAttrSystem));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XFSI_ATTR_HIDDEN,
-                                    &(pNLSStrings->pszAttrHidden));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XFSI_ATTR_READONLY,
-                                    &(pNLSStrings->pszAttrReadOnly));
-
-                            cmnLoadString(habDesktop, hmodNLS, ID_XFSI_FLDRSETTINGS,
-                                    &(pNLSStrings->pszWarp3FldrView));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XFSI_SMALLICONS,
-                                    &(pNLSStrings->pszSmallIcons  ));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XFSI_FLOWED,
-                                    &(pNLSStrings->pszFlowed));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XFSI_NONFLOWED,
-                                    &(pNLSStrings->pszNonFlowed));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XFSI_NOGRID,
-                                    &(pNLSStrings->pszNoGrid));
-
-                            // the following are new with V0.9.0
-                            cmnLoadString(habDesktop, hmodNLS, ID_XFSI_WARP4MENUBAR,
-                                    &(pNLSStrings->pszWarp4MenuBar));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XFSI_SHOWSTATUSBAR,
-                                    &(pNLSStrings->pszShowStatusBar));
-
-                            // "WPS Class List" (XWPClassList, new with V0.9.0)
-                            cmnLoadString(habDesktop, hmodNLS, ID_XFSI_OPENCLASSLIST,
-                                    &(pNLSStrings->pszOpenClassList));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XFSI_XWPCLASSLIST,
-                                    &(pNLSStrings->pszXWPClassList));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XFSI_REGISTERCLASS,
-                                    &(pNLSStrings->pszRegisterClass));
-
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SOUNDSCHEMENONE,
-                                    &(pNLSStrings->pszSoundSchemeNone));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_ITEMSSELECTED,
-                                    &(pNLSStrings->pszItemsSelected));
-
-                            // Trash can (XWPTrashCan, XWPTrashObject, new with V0.9.0)
-                            cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHEMPTY,
-                                    &(pNLSStrings->pszTrashEmpty));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHRESTORE,
-                                    &(pNLSStrings->pszTrashRestore));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHDESTROY,
-                                    &(pNLSStrings->pszTrashDestroy));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHCAN,
-                                    &(pNLSStrings->pszTrashCan));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHOBJECT,
-                                    &(pNLSStrings->pszTrashObject));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHSETTINGSPAGE,
-                                    &(pNLSStrings->pszTrashSettingsPage));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XTSI_TRASHDRIVESPAGE,
-                                    &(pNLSStrings->pszTrashDrivesPage));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XTSI_ORIGFOLDER,
-                                    &(pNLSStrings->pszOrigFolder));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XTSI_DELDATE,
-                                    &(pNLSStrings->pszDelDate));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XTSI_DELTIME,
-                                    &(pNLSStrings->pszDelTime));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XTSI_SIZE,
-                                    &(pNLSStrings->pszSize));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XTSI_ORIGCLASS,
-                                    &(pNLSStrings->pszOrigClass));
-
-                            // trash can status bar strings; V0.9.1 (2000-02-04) [umoeller]
-                            cmnLoadString(habDesktop, hmodNLS, ID_XTSI_STB_POPULATING,
-                                    &(pNLSStrings->pszStbPopulating));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XTSI_STB_OBJCOUNT,
-                                    &(pNLSStrings->pszStbObjCount));
-
-                            // Details view columns on XWPKeyboard "Hotkeys" page; V0.9.1 (99-12-03)
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_HOTKEY_TITLE,
-                                    &(pNLSStrings->pszHotkeyTitle));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_HOTKEY_FOLDER,
-                                    &(pNLSStrings->pszHotkeyFolder));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_HOTKEY_HANDLE,
-                                    &(pNLSStrings->pszHotkeyHandle));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_HOTKEY_HOTKEY,
-                                    &(pNLSStrings->pszHotkeyHotkey));
-
-                            // Method info columns for XWPClassList; V0.9.1 (99-12-03)
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_CLSLIST_INDEX,
-                                    &(pNLSStrings->pszClsListIndex));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_CLSLIST_METHOD,
-                                    &(pNLSStrings->pszClsListMethod));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_CLSLIST_ADDRESS,
-                                    &(pNLSStrings->pszClsListAddress));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_CLSLIST_CLASS,
-                                    &(pNLSStrings->pszClsListClass));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_CLSLIST_OVERRIDDENBY,
-                                    &(pNLSStrings->pszClsListOverriddenBy));
-
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SPECIAL_WINDOWLIST,
-                                    &(pNLSStrings->pszSpecialWindowList));
-                            cmnLoadString(habDesktop, hmodNLS, ID_XSSI_SPECIAL_DESKTOPPOPUP,
-                                    &(pNLSStrings->pszSpecialDesktopPopup));
+                            LoadNLSData(habDesktop,
+                                        pNLSStrings);
                         }
 
                         // after all this, unload the old resource module
@@ -1547,7 +1571,8 @@ PCGLOBALSETTINGS cmnLoadGlobalSettings(BOOL fResetDefaults)
 
             cmnSetDefaultSettings(SP_TRASHCAN_SETTINGS);
 
-            cmnSetDefaultSettings(SP_MOUSEHOOK);
+            // cmnSetDefaultSettings(SP_MOUSE_MOVEMENT); does nothing
+            // cmnSetDefaultSettings(SP_MOUSE_CORNERS);  does nothing
 
             // reset help panels
             pGlobalSettings->ulIntroHelpShown = 0;
@@ -1624,6 +1649,8 @@ const GLOBALSETTINGS* cmnQueryGlobalSettings(VOID)
  *      cmnUnlockGlobalSettings afterwards, as quickly
  *      as possible, because other threads cannot
  *      access the global settings after this call.
+ *
+ *      Always install an exception handler ... ###
  *
  *@@added V0.9.0 (99-11-14) [umoeller]
  */
@@ -1756,6 +1783,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
             pGlobalSettings->ShowBootupStatus = 0;
             pGlobalSettings->BootLogo = 0;
             pGlobalSettings->bBootLogoStyle = 0;
+            pGlobalSettings->fNumLockStartup = 0;
         break;
 
         case SP_DTP_SHUTDOWN:
@@ -1780,7 +1808,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
 
             pGlobalSettings->fAniMouse = 0;
             pGlobalSettings->fEnableXWPHook = 0;
-            pGlobalSettings->fNumLockStartup = 0;
+            pGlobalSettings->fPageMageEnabled = 0;
 
             pGlobalSettings->fMonitorCDRoms = 0;
             pGlobalSettings->fRestartWPS = 0;
@@ -2094,8 +2122,10 @@ MRESULT EXPENTRY fnwpAutoSizeStatic(HWND hwndStatic, ULONG msg, MPARAM mp1, MPAR
         {
             PSZ pszText = (PSZ)WinQueryWindowULong(hwndStatic, QWL_USER);
             free(pszText);
+            WinSubclassWindow(hwndStatic, pfnwpOrigStatic);
             mrc = (*pfnwpOrigStatic)(hwndStatic, msg, mp1, mp2);
         break; }
+
         default:
             mrc = (*pfnwpOrigStatic)(hwndStatic, msg, mp1, mp2);
     }
@@ -2118,12 +2148,6 @@ MRESULT EXPENTRY fnwpMessageBox(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
             // CHAR szFont[CCHMAXPATH];
             HWND hwndStatic = WinWindowFromID(hwndDlg,
                                               ID_XFDI_GENERICDLGTEXT);
-
-            /* PrfQueryProfileString(HINI_USER, INIAPP_XWORKPLACE, INIKEY_DLGFONT,
-                    "9.WarpSans", szFont, sizeof(szFont)-1);
-            WinSetPresParam(hwndStatic, PP_FONTNAMESIZE,
-                 (ULONG)strlen(szFont)+1, (PVOID)szFont); */
-
             // set string to 0
             WinSetWindowULong(hwndStatic, QWL_USER, (ULONG)NULL);
             pfnwpOrigStatic = WinSubclassWindow(hwndStatic,
@@ -2539,7 +2563,7 @@ MRESULT EXPENTRY fnwpDlgGeneric(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
                 /* ulCurHelpPanel is set by instance methods before creating a
                    dialog box in order to link help topics to the displayed
                    dialog box. Possible values are:
-                        0: open online reference ("<XFOLDER_REF>", INF book)
+                        0: open online reference ("<XWP_REF>", INF book)
                       > 0: open help topic in xfldr.hlp
                        -1: ignore WM_HELP */
                 if (pHelpSomSelf)
@@ -2559,7 +2583,7 @@ MRESULT EXPENTRY fnwpDlgGeneric(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
             {
                 // open online reference
                 ulCurHelpPanel = -1; // ignore further WM_HELP messages: this one suffices
-                hobjRef = WinQueryObject("<XFOLDER_REF>");
+                hobjRef = WinQueryObject(XFOLDER_USERGUIDE);
                 if (hobjRef)
                     WinOpenObject(hobjRef, OPEN_DEFAULT, TRUE);
                 else

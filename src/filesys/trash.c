@@ -59,6 +59,7 @@
 #include <stdio.h>              // needed for except.h
 #include <setjmp.h>             // needed for except.h
 #include <assert.h>             // needed for except.h
+#include <io.h>
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
@@ -81,6 +82,7 @@
 
 #include "filesys\fileops.h"            // file operations implementation
 #include "filesys\trash.h"              // trash can implementation
+#include "filesys\xthreads.h"           // extra XWorkplace threads
 
 // other SOM headers
 #pragma hdrstop
@@ -112,17 +114,50 @@ BYTE G_abSupportedDrives[CB_SUPPORTED_DRIVES] = "";
  ********************************************************************/
 
 /*
+ *@@ trshUpdateStatusBars:
+ *      updates the status bars of all currently
+ *      open trash can views.
+ *
+ *@@added V0.9.1 (2000-02-09) [umoeller]
+ */
+
+VOID trshUpdateStatusBars(XWPTrashCan *somSelf)
+{
+    HWND        ahwndStatusBars[2] = { 0, 0 },
+                ahwndCnrs[2] = { 0, 0 },
+                hwndFrameThis;
+    ULONG       ulStatusBar = 0;
+
+    if (hwndFrameThis = wpshQueryFrameFromView(somSelf,
+                                               OPEN_CONTENTS))
+    {
+        _xwpUpdateStatusBar(somSelf,
+                            WinWindowFromID(hwndFrameThis, 0x9001),
+                            wpshQueryCnrFromFrame(hwndFrameThis));
+    }
+
+    if (hwndFrameThis = wpshQueryFrameFromView(somSelf,
+                                               OPEN_DETAILS))
+    {
+        _xwpUpdateStatusBar(somSelf,
+                            WinWindowFromID(hwndFrameThis, 0x9001),
+                            wpshQueryCnrFromFrame(hwndFrameThis));
+    }
+}
+
+/*
  *@@ trshCreateTrashObjectsList:
  *      this creates a new linked list (PLINKLIST, linklist.c,
  *      which is returned) containing all the trash objects in
  *      the specified trash can.
  *
  *      The list's item data pointers point to the XWPTrashObject*
- *      instances directly.
+ *      instances directly. Note that each item's related object
+ *      on the list can possibly be a folder containing many more
+ *      objects.
  *
- *      Note that the list is created in any case, even if the
- *      trash can is empty. lstFree must therefore always be
- *      used to free this list.
+ *      The list is created in any case, even if the trash can is
+ *      empty. lstFree must therefore always be used to free this list.
  */
 
 PLINKLIST trshCreateTrashObjectsList(XWPTrashCan* somSelf)
@@ -187,7 +222,6 @@ XWPTrashObject* trshCreateTrashObject(M_XWPTrashObject *somSelf,
          && (pRelatedObject)
        )
     {
-        CHAR        szSetupString[100];
         // PLINKLIST   pllTrashObjects;
         // PLISTNODE   pNode = 0;
         /* BOOL        fRelatedExistsAlready = FALSE,
@@ -252,20 +286,50 @@ XWPTrashObject* trshCreateTrashObject(M_XWPTrashObject *somSelf,
                         _wpQueryTitle(pTrashCan)));
             #endif
 
-            // we must pass the related object as a setup string,
-            // because otherwise the Details data (which is initialized
-            // at object creation only) will not know about this (duh)
-            sprintf(szSetupString, "RELATEDOBJECT=%lX",
-                    _wpQueryHandle(pRelatedObject));
+            // create trash object
             pTrashObject = _wpclsNew(somSelf,   // class object
-                                     _wpQueryTitle(pRelatedObject), // same title as related object
-                                     szSetupString, // setup string
-                                     pTrashCan,     // where to create the object
+                                     _wpQueryTitle(pRelatedObject),
+                                            // same title as related object
+                                     "", // setup string
+                                     pTrashCan, // where to create the object
                                      TRUE);  // lock
+            if (pTrashObject)
+            {
+                _xwpSetRelatedObject(pTrashObject, pRelatedObject);
+
+                // have size of trash object calculated on File thread;
+                // this will update the details later
+                xthrPostFileMsg(FIM_CALCTRASHOBJECTSIZE,
+                                (MPARAM)pTrashObject,
+                                (MPARAM)pTrashCan);
+            }
         }
     }
 
     return (pTrashObject);
+}
+
+/*
+ *@@ trshCalcTrashObjectSize:
+ *
+ *@@added V0.9.2 (2000-02-28) [umoeller]
+ */
+
+VOID trshCalcTrashObjectSize(XWPTrashObject *pTrashObject,
+                             XWPTrashCan *pTrashCan)
+{
+    if (pTrashObject)
+    {
+        WPObject *pRelatedObject = _xwpQueryRelatedObject(pTrashObject);
+        // create structured file list for this object;
+        // if this is a folder, this can possibly take a
+        // long time
+        PEXPANDEDOBJECT pSOI = fopsObject2SOI(pRelatedObject);
+        _xwpSetExpandedObjectData(pTrashObject,
+                                  pSOI,
+                                  pSOI->ulSizeThis,
+                                  pTrashCan);
+    }
 }
 
 /*
@@ -394,38 +458,6 @@ ULONG trshAddTrashObjectsForTrashDir(M_XWPTrashObject *pXWPTrashObjectClass, // 
     #endif
 
     return (ulObjectCount);
-}
-
-/*
- *@@ trshUpdateStatusBars:
- *      updates the status bars of all currently
- *      open trash can views.
- *
- *@@added V0.9.1 (2000-02-09) [umoeller]
- */
-
-VOID trshUpdateStatusBars(XWPTrashCan *somSelf)
-{
-    HWND        ahwndStatusBars[2] = { 0, 0 },
-                ahwndCnrs[2] = { 0, 0 },
-                hwndFrameThis;
-    ULONG       ulStatusBar = 0;
-
-    if (hwndFrameThis = wpshQueryFrameFromView(somSelf,
-                                               OPEN_CONTENTS))
-    {
-        _xwpUpdateStatusBar(somSelf,
-                            WinWindowFromID(hwndFrameThis, 0x9001),
-                            wpshQueryCnrFromFrame(hwndFrameThis));
-    }
-
-    if (hwndFrameThis = wpshQueryFrameFromView(somSelf,
-                                               OPEN_DETAILS))
-    {
-        _xwpUpdateStatusBar(somSelf,
-                            WinWindowFromID(hwndFrameThis, 0x9001),
-                            wpshQueryCnrFromFrame(hwndFrameThis));
-    }
 }
 
 /*
@@ -1005,6 +1037,161 @@ BOOL trshEmptyTrashCan(XWPTrashCan *somSelf,
     return (brc);
 }
 
+/*
+ *@@ trshValidateTrashObject:
+ *      implementation for XWPTrashObject::xwpValidateTrashObject.
+ *      See remarks there.
+ *
+ *@@added V0.9.2 (2000-02-28) [umoeller]
+ */
+
+APIRET trshValidateTrashObject(XWPTrashObject *somSelf)
+{
+    APIRET arc = NO_ERROR;
+    XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
+
+    if (_pRelatedObject == 0)
+        // not set yet:
+        arc = ERROR_INVALID_HANDLE;
+    else
+        if (!wpshCheckObject(_pRelatedObject))
+            // pointer invalid:
+            arc = ERROR_FILE_NOT_FOUND;
+        else
+        {
+            // object seems to be valid:
+            // check if it's a file-system object and
+            // if the actual file still exists
+            if (_somIsA(_pRelatedObject, _WPFileSystem))
+            {
+                // yes:
+                CHAR szFilename[2*CCHMAXPATH];
+                if (_wpQueryFilename(_pRelatedObject, szFilename, TRUE))
+                    if (access(szFilename, 0) != 0)
+                    {
+                        // file doesn't exist any more:
+                        arc = ERROR_FILE_NOT_FOUND;
+                    }
+            }
+        }
+
+    if (arc != NO_ERROR)
+        // any error found:
+        // destroy the object
+        _wpFree(somSelf);
+
+    return (arc);
+}
+
+/*
+ *@@ trshDestroyTrashObject:
+ *      implementation for XWPTrashObject::xwpDestroyTrashObject.
+ *      See remarks there.
+ *
+ *@@added V0.9.2 (2000-02-28) [umoeller]
+ */
+
+BOOL trshDestroyTrashObject(XWPTrashObject *somSelf)
+{
+    BOOL brc = FALSE;
+
+    // first check whether the object is valid
+    if (trshValidateTrashObject(somSelf) != NO_ERROR)
+        // error occured (object wasn't valid anyway):
+        // means that somSelf has been destructed already
+        brc = TRUE;
+    else
+    {
+        // object still exists:
+        XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
+
+        if (_pRelatedObject)
+        {
+            // get \trash directory of related object
+            WPFolder* pTrashDir = _wpQueryFolder(_pRelatedObject);
+
+            if (pTrashDir)
+            {
+                // unset "no delete" style flag
+                ULONG ulStyle = _wpQueryStyle(_pRelatedObject);
+
+                if (_somIsA(_pRelatedObject, _WPFileSystem))
+                {
+                    // unset system, readonly, hidden attributes
+                    CHAR    szFilename[CCHMAXPATH] = "";
+                    ULONG   ulAttrs = 0;
+                    _wpQueryFilename(_pRelatedObject,
+                                     szFilename,
+                                     TRUE);    // qualified
+                    if (doshQueryPathAttr(szFilename,
+                                          &ulAttrs)
+                                == NO_ERROR)
+                        if (ulAttrs & (FILE_READONLY | FILE_SYSTEM | FILE_HIDDEN))
+                            _wpSetAttr(_pRelatedObject,
+                                       ulAttrs & ~(FILE_READONLY | FILE_SYSTEM | FILE_HIDDEN));
+                }
+
+                // unset "no delete" flag
+                if (ulStyle & OBJSTYLE_NODELETE)
+                    _wpSetStyle(_pRelatedObject, ulStyle & ~OBJSTYLE_NODELETE);
+
+                // destroy related object
+                if (_wpFree(_pRelatedObject))
+                {
+                    // successfully deleted:
+                    // update the trashcan (folder of trash object)
+                    // by killing ourselves
+                    brc = _wpFree(somSelf);
+
+                    // check if other objects still exist in
+                    // the subdirectory of "\Trash" where the
+                    // related object was ###
+                    /* while (pTrashDir)
+                    {
+                        WPFolder* pParent = _wpQueryFolder(pTrashDir);
+                        if (!_somIsA(pTrashDir, _WPRootFolder))
+                        {
+                            // no root folder:
+                            // check contents
+                            if (_wpQueryContent(pTrashDir, NULL, QC_FIRST) == NULL)
+                            {
+                                // no other items in there:
+                                // get rid of it
+                                _wpFree(pTrashDir);
+                            }
+                        }
+                        else
+                            // root folder: stop
+                            break;
+
+                        // and climb up the folder tree
+                        pTrashDir = pParent;
+                    } */
+                }
+            }
+        }
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ trshUninitTrashObject:
+ *      implementation for XWPTrashObject::wpUninitData.
+ *
+ *@@added V0.9.2 (2000-02-28) [umoeller]
+ */
+
+VOID trshUninitTrashObject(XWPTrashObject *somSelf)
+{
+    XWPTrashObjectData *somThis = XWPTrashObjectGetData(somSelf);
+    if (_pvExpandedObject)
+    {
+        fopsFreeSOI((PEXPANDEDOBJECT)_pvExpandedObject);
+        _pvExpandedObject = 0;
+    }
+}
+
 /* ******************************************************************
  *                                                                  *
  *   Trash can drives support                                       *
@@ -1190,6 +1377,8 @@ BOOL trshSubclassTrashCanFrame(HWND hwndFrame,
                                                 trsh_fnwpSubclassedTrashCanFrame);
                         pstfNew->hwndCnr = hwndCnr;
                     }
+                    else
+                        DosBeep(100, 500);
                 }
             }
         }
@@ -1246,6 +1435,8 @@ PSUBCLASSEDTRASHFRAME trshQueryPSTF(HWND hwndFrame,        // in: folder frame t
                     ulIndex++;
                 }
             }
+            else
+                DosBeep(100, 500);
         }
     }
     CATCH(excpt1) {  } END_CATCH();
@@ -1277,6 +1468,8 @@ VOID trshRemovePSTF(PSUBCLASSEDTRASHFRAME pstf)
         if (fSemOwned)
             lstRemoveItem(&llSubclassedTrashCans,
                           pstf);
+        else
+            DosBeep(100, 500);
     }
     CATCH(excpt1) { } END_CATCH();
 
@@ -1379,6 +1572,11 @@ MRESULT EXPENTRY trsh_fnwpSubclassedTrashCanFrame(HWND hwndFrame,
 
                 case WM_DESTROY:
                 {
+                    // upon closing the window, undo the subclassing, in case
+                    // some other message still comes in
+                    // (there are usually still two more, even after WM_DESTROY!!)
+                    WinSubclassWindow(hwndFrame, pfnwpOriginal);
+
                     // remove this window from our subclassing linked list
                     trshRemovePSTF(pstf);
 
@@ -1395,7 +1593,7 @@ MRESULT EXPENTRY trsh_fnwpSubclassedTrashCanFrame(HWND hwndFrame,
         {
             // original window procedure not found:
             // that's an error
-            DosBeep(10000, 10);
+            DosBeep(2000, 300);
             mrc = WinDefWindowProc(hwndFrame, msg, mp1, mp2);
         }
     } // end TRY_LOUD

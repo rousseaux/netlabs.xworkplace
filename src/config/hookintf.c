@@ -103,6 +103,46 @@
  ********************************************************************/
 
 /*
+ *@@ hifEnableHook:
+ *      installs or deinstalls the hook.
+ *
+ *      Returns the new hook install status.
+ *      If this is the same as fEnable, the
+ *      operation was successfull.
+ *
+ *@@added V0.9.2 (2000-02-22) [umoeller]
+ */
+
+BOOL hifEnableHook(BOOL fEnable)
+{
+    BOOL    brc = FALSE;
+    PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
+    PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
+    // (de)install the hook by notifying the daemon
+    if (pDaemonShared)
+    {
+        if (pDaemonShared->hwndDaemonObject)
+        {
+            if (WinSendMsg(pDaemonShared->hwndDaemonObject,
+                           XDM_HOOKINSTALL,
+                           (MPARAM)(fEnable),
+                           0))
+            {
+                // hook installed:
+                brc = TRUE;
+                // tell the daemon about the Desktop window
+                krnPostDaemonMsg(XDM_DESKTOPREADY,
+                                 (MPARAM)pKernelGlobals->hwndActiveDesktop,
+                                 (MPARAM)0);
+            }
+            // else: hook not installed
+        }
+    }
+
+    return (brc);
+}
+
+/*
  *@@ hifXWPHookReady:
  *      this returns TRUE only if all of the following apply:
  *
@@ -126,9 +166,42 @@ BOOL hifXWPHookReady(VOID)
     PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     if (pDaemonShared)
-        if (pDaemonShared->fHookInstalled)
+        if (pDaemonShared->fAllHooksInstalled)
             if (pGlobalSettings->fEnableXWPHook)
                 brc = TRUE;
+    return (brc);
+}
+
+/*
+ *@@ hifEnablePageMage:
+ *      enables or disables PageMage by sending
+ *      XDM_STARTSTOPPAGEMAGE to the daemon.
+ *      This does not modify the GLOBALSETTINGS;
+ *      use cmnEnablePageMage for that.
+ *
+ *@@added V0.9.2 (2000-02-22) [umoeller]
+ */
+
+BOOL hifEnablePageMage(BOOL fEnable)
+{
+    BOOL    brc = FALSE;
+    PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
+    PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
+    // (de)install the hook by notifying the daemon
+    if (pDaemonShared)
+    {
+        if (pDaemonShared->hwndDaemonObject)
+        {
+            if (WinSendMsg(pDaemonShared->hwndDaemonObject,
+                           XDM_STARTSTOPPAGEMAGE,
+                           (MPARAM)(fEnable),
+                           0))
+                // hook installed:
+                brc = TRUE;
+            // else: hook not installed
+        }
+    }
+
     return (brc);
 }
 
@@ -866,6 +939,14 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
                            MPFROM2SHORT(0, 10),
                            6);
         winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
+                                           ID_XSDI_MOUSE_MENUDELAY_SLIDER),
+                           MPFROM2SHORT(5, 10),
+                           3);
+        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
+                                           ID_XSDI_MOUSE_MENUDELAY_SLIDER),
+                           MPFROM2SHORT(0, 10),
+                           6);
+        winhSetSliderTicks(WinWindowFromID(pcnbp->hwndDlgPage,
                                            ID_XSDI_MOUSE_AUTOHIDE_SLIDER),
                            MPFROM2SHORT(4, 10),
                            3);
@@ -873,6 +954,263 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
                                            ID_XSDI_MOUSE_AUTOHIDE_SLIDER),
                            MPFROM2SHORT(9, 10),
                            6);
+
+    }
+
+    if (flFlags & CBI_SET)
+    {
+        PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
+
+        // sliding focus
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_SLIDINGFOCUS,
+                              pdc->fSlidingFocus);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_BRING2TOP,
+                              pdc->fSlidingBring2Top);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNORESEAMLESS,
+                              pdc->fSlidingIgnoreSeamless);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREDESKTOP,
+                              pdc->fSlidingIgnoreDesktop);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREPAGEMAGE,
+                              pdc->fSlidingIgnorePageMage);
+
+        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage,
+                                                 ID_XSDI_MOUSE_FOCUSDELAY_SLIDER),
+                                 SMA_INCREMENTVALUE,
+                                 // slider uses .1 seconds ticks
+                                 pdc->ulSlidingFocusDelay / 100);
+
+        // sliding menus
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_SLIDINGMENU,
+                              pdc->fSlidingMenus);
+        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage,
+                                                 ID_XSDI_MOUSE_MENUDELAY_SLIDER),
+                                 SMA_INCREMENTVALUE,
+                                 // slider uses .1 seconds ticks
+                                 pdc->ulSubmenuDelay / 100);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MENUHILITE,
+                              pdc->fMenuImmediateHilite);
+
+        // auto-hide mouse pointer
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_CHECK,
+                              pdc->fAutoHideMouse);
+        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage,
+                                                 ID_XSDI_MOUSE_AUTOHIDE_SLIDER),
+                                 SMA_INCREMENTVALUE,
+                                 pdc->ulAutoHideDelay);
+    }
+
+    if (flFlags & CBI_ENABLE)
+    {
+        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+        PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
+
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_BRING2TOP,
+                          pdc->fSlidingFocus);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNORESEAMLESS,
+                          pdc->fSlidingFocus);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREDESKTOP,
+                          pdc->fSlidingFocus);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREPAGEMAGE,
+                          (pdc->fSlidingFocus)
+                          && (pGlobalSettings->fPageMageEnabled)
+                         );
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_FOCUSDELAY_TXT1,
+                          pdc->fSlidingFocus);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_FOCUSDELAY_SLIDER,
+                          pdc->fSlidingFocus);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_FOCUSDELAY_TXT2,
+                          pdc->fSlidingFocus);
+
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MENUDELAY_TXT1,
+                          pdc->fSlidingMenus);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MENUDELAY_SLIDER,
+                          pdc->fSlidingMenus);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MENUDELAY_TXT2,
+                          pdc->fSlidingMenus);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MENUHILITE,
+                          (pdc->fSlidingMenus) && (pdc->ulSubmenuDelay > 0));
+
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_TXT1,
+                         pdc->fAutoHideMouse);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_SLIDER,
+                         pdc->fAutoHideMouse);
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_TXT2,
+                         pdc->fAutoHideMouse);
+    }
+}
+
+/*
+ *@@ hifMouseMovementItemChanged:
+ *      notebook callback function (notebook.c) for the
+ *      "Mouse hook" page in the "Mouse" settings object.
+ *      Reacts to changes of any of the dialog controls.
+ */
+
+MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                    USHORT usItemID, USHORT usNotifyCode,
+                                    ULONG ulExtra)      // for checkboxes: contains new state
+{
+    MRESULT mrc = 0;
+    PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
+    BOOL    fSave = TRUE;
+
+    _Pmpf(("hifMouseMovementItemChanged: usItemID: %d ulExtra: %d", usItemID, ulExtra));
+
+    switch (usItemID)
+    {
+        /*
+         * ID_XSDI_MOUSE_SLIDINGFOCUS:
+         *      "sliding focus"
+         */
+
+        case ID_XSDI_MOUSE_SLIDINGFOCUS:
+            pdc->fSlidingFocus = ulExtra;
+            (pcnbp->pfncbInitPage)(pcnbp, CBI_ENABLE);
+        break;
+
+        case ID_XSDI_MOUSE_BRING2TOP:
+            pdc->fSlidingBring2Top = ulExtra;
+        break;
+
+        case ID_XSDI_MOUSE_IGNORESEAMLESS:
+            pdc->fSlidingIgnoreSeamless = ulExtra;
+        break;
+
+        case ID_XSDI_MOUSE_IGNOREDESKTOP:
+            pdc->fSlidingIgnoreDesktop = ulExtra;
+        break;
+
+        case ID_XSDI_MOUSE_IGNOREPAGEMAGE:
+            pdc->fSlidingIgnorePageMage = ulExtra;
+        break;
+
+        case ID_XSDI_MOUSE_FOCUSDELAY_SLIDER:
+        {
+            CHAR szTemp[30];
+            // get .1 seconds offset
+            LONG lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
+                                                           SMA_INCREMENTVALUE);
+            // convert to ms
+            pdc->ulSlidingFocusDelay = lSliderIndex * 100;
+            sprintf(szTemp, "%d ms", pdc->ulSlidingFocusDelay);
+            WinSetDlgItemText(pcnbp->hwndDlgPage,
+                              ID_XSDI_MOUSE_FOCUSDELAY_TXT2,
+                              szTemp);
+        break; }
+
+        case ID_XSDI_MOUSE_SLIDINGMENU:
+            pdc->fSlidingMenus = ulExtra;
+            (pcnbp->pfncbInitPage)(pcnbp, CBI_ENABLE);
+        break;
+
+        case ID_XSDI_MOUSE_MENUDELAY_SLIDER:
+        {
+            CHAR szTemp[30];
+            // get .1 seconds offset
+            LONG lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
+                                                           SMA_INCREMENTVALUE);
+            // convert to ms
+            pdc->ulSubmenuDelay = lSliderIndex * 100;
+            sprintf(szTemp, "%d ms", pdc->ulSubmenuDelay);
+            WinSetDlgItemText(pcnbp->hwndDlgPage,
+                              ID_XSDI_MOUSE_MENUDELAY_TXT2,
+                              szTemp);
+            (pcnbp->pfncbInitPage)(pcnbp, CBI_ENABLE);
+        break; }
+
+        case ID_XSDI_MOUSE_MENUHILITE:
+            pdc->fMenuImmediateHilite = ulExtra;
+        break;
+
+        case ID_XSDI_MOUSE_AUTOHIDE_CHECK:
+            pdc->fAutoHideMouse = ulExtra;
+            (pcnbp->pfncbInitPage)(pcnbp, CBI_ENABLE);
+        break;
+
+        case ID_XSDI_MOUSE_AUTOHIDE_SLIDER:
+        {
+            CHAR szTemp[30];
+            // get delay
+            LONG lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
+                                                           SMA_INCREMENTVALUE);
+            // convert to seconds
+            pdc->ulAutoHideDelay = lSliderIndex;
+            sprintf(szTemp, "%d s", pdc->ulAutoHideDelay + 1);
+            WinSetDlgItemText(pcnbp->hwndDlgPage,
+                              ID_XSDI_MOUSE_AUTOHIDE_TXT2,
+                              szTemp);
+        break; }
+
+        /*
+         * DID_DEFAULT:
+         *
+         */
+
+        case DID_DEFAULT:
+            memset(pdc, 0, sizeof(HOOKCONFIG));
+            (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
+        break;
+
+        /*
+         * DID_UNDO:
+         *
+         */
+
+        case DID_UNDO:
+            // restore data which was backed up in INIT callback
+            if (pcnbp->pUser2)
+                memcpy(pdc, pcnbp->pUser2, sizeof(HOOKCONFIG));
+            (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
+        break;
+
+        default:
+            fSave = FALSE;
+    }
+
+    if (fSave)
+        hifHookConfigChanged(pdc);
+
+    return (mrc);
+}
+
+/*
+ *@@ hifMouseCornersInitPage:
+ *      notebook callback function (notebook.c) for the
+ *      "Mouse hook" page in the "Mouse" settings object.
+ *      Sets the controls on the page according to the
+ *      Global Settings.
+ */
+
+VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
+                              ULONG flFlags)        // CBI_* flags (notebook.h)
+{
+    if (flFlags & CBI_INIT)
+    {
+        if (pcnbp->pUser == 0)
+        {
+            // first call: create HOOKCONFIG
+            // structure;
+            // this memory will be freed automatically by the
+            // common notebook window function (notebook.c) when
+            // the notebook page is destroyed
+            pcnbp->pUser = malloc(sizeof(HOOKCONFIG));
+            if (pcnbp->pUser)
+            {
+                ULONG cb = sizeof(HOOKCONFIG);
+                memset(pcnbp->pUser, 0, sizeof(HOOKCONFIG));
+                // overwrite from INI, if found
+                PrfQueryProfileData(HINI_USER,
+                                    INIAPP_XWPHOOK,
+                                    INIKEY_HOOK_CONFIG,
+                                    pcnbp->pUser,
+                                    &cb);
+            }
+
+            // make backup for "undo"
+            pcnbp->pUser2 = malloc(sizeof(HOOKCONFIG));
+            if (pcnbp->pUser2)
+                memcpy(pcnbp->pUser2, pcnbp->pUser, sizeof(HOOKCONFIG));
+        }
 
         // check top left screen corner
         ulScreenCornerSelectedID = ID_XSDI_MOUSE_RADIO_TOPLEFT;
@@ -904,30 +1242,6 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
         PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
         HWND    hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_OPEN_CNR);
         HWND    hwndDrop = WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_SPECIAL_DROP);
-
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_SLIDINGFOCUS,
-                              pdc->fSlidingFocus);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_BRING2TOP,
-                              pdc->fBring2Top);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNORESEAMLESS,
-                              pdc->fIgnoreSeamless);
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREDESKTOP,
-                              pdc->fIgnoreDesktop);
-
-        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage,
-                                                 ID_XSDI_MOUSE_FOCUSDELAY_SLIDER),
-                                 SMA_INCREMENTVALUE,
-                                 // slider uses .1 seconds ticks
-                                 pdc->ulSlidingFocusDelay / 100);
-
-        // auto-hide mouse pointer
-
-        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE,
-                              (pdc->fAutoHideMouse != 0));
-        winhSetSliderArmPosition(WinWindowFromID(pcnbp->hwndDlgPage,
-                                                 ID_XSDI_MOUSE_AUTOHIDE_SLIDER),
-                                 SMA_INCREMENTVALUE,
-                                 pdc->ulAutoHideDelay);
 
         // screen corners objects
 
@@ -986,26 +1300,8 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
 
     if (flFlags & CBI_ENABLE)
     {
+        PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
         PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_BRING2TOP,
-                          pdc->fSlidingFocus);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNORESEAMLESS,
-                          pdc->fSlidingFocus);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_IGNOREDESKTOP,
-                          pdc->fSlidingFocus);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_FOCUSDELAY_TXT1,
-                          pdc->fSlidingFocus);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_FOCUSDELAY_SLIDER,
-                          pdc->fSlidingFocus);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_FOCUSDELAY_TXT2,
-                          pdc->fSlidingFocus);
-
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_TXT1,
-                          pdc->fAutoHideMouse);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_SLIDER,
-                          pdc->fAutoHideMouse);
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_AUTOHIDE_TXT2,
-                          pdc->fAutoHideMouse);
 
         WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_SPECIAL_DROP,
                           winhIsDlgItemChecked(pcnbp->hwndDlgPage,
@@ -1017,13 +1313,13 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
 }
 
 /*
- *@@ hifMouseMovementItemChanged:
+ *@@ hifMouseCornersItemChanged:
  *      notebook callback function (notebook.c) for the
  *      "Mouse hook" page in the "Mouse" settings object.
  *      Reacts to changes of any of the dialog controls.
  */
 
-MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                     USHORT usItemID, USHORT usNotifyCode,
                                     ULONG ulExtra)      // for checkboxes: contains new state
 {
@@ -1031,63 +1327,10 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
     BOOL    fSave = TRUE;
 
+    _Pmpf(("hifMouseCornersItemChanged: usItemID: %d ulExtra: %d", usItemID, ulExtra));
+
     switch (usItemID)
     {
-        /*
-         * ID_XSDI_MOUSE_SLIDINGFOCUS:
-         *      "sliding focus"
-         */
-
-        case ID_XSDI_MOUSE_SLIDINGFOCUS:
-            pdc->fSlidingFocus = ulExtra;
-            (pcnbp->pfncbInitPage)(pcnbp, CBI_ENABLE);
-        break;
-
-        case ID_XSDI_MOUSE_BRING2TOP:
-            pdc->fBring2Top = ulExtra;
-        break;
-
-        case ID_XSDI_MOUSE_IGNORESEAMLESS:
-            pdc->fIgnoreSeamless = ulExtra;
-        break;
-
-        case ID_XSDI_MOUSE_IGNOREDESKTOP:
-            pdc->fIgnoreDesktop = ulExtra;
-        break;
-
-        case ID_XSDI_MOUSE_FOCUSDELAY_SLIDER:
-        {
-            CHAR szTemp[30];
-            // get .1 seconds offset
-            LONG lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
-                                                           SMA_INCREMENTVALUE);
-            // convert to ms
-            pdc->ulSlidingFocusDelay = lSliderIndex * 100;
-            sprintf(szTemp, "%d ms", pdc->ulSlidingFocusDelay);
-            WinSetDlgItemText(pcnbp->hwndDlgPage,
-                              ID_XSDI_MOUSE_FOCUSDELAY_TXT2,
-                              szTemp);
-        break; }
-
-        case ID_XSDI_MOUSE_AUTOHIDE:
-            pdc->fAutoHideMouse = ulExtra;
-            (pcnbp->pfncbInitPage)(pcnbp, CBI_ENABLE);
-        break;
-
-        case ID_XSDI_MOUSE_AUTOHIDE_SLIDER:
-        {
-            CHAR szTemp[30];
-            // get delay
-            LONG lSliderIndex = winhQuerySliderArmPosition(pcnbp->hwndControl,
-                                                           SMA_INCREMENTVALUE);
-            // convert to seconds
-            pdc->ulAutoHideDelay = lSliderIndex;
-            sprintf(szTemp, "%d s", pdc->ulAutoHideDelay + 1);
-            WinSetDlgItemText(pcnbp->hwndDlgPage,
-                              ID_XSDI_MOUSE_AUTOHIDE_TXT2,
-                              szTemp);
-        break; }
-
         /*
          * ID_XSDI_MOUSE_RADIO_TOPLEFT:
          *      new screen corner selected
@@ -1220,7 +1463,7 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                         pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex]
                                 = hobjBeingDragged;
                         hobjBeingDragged = NULLHANDLE;
-                        hifMouseMovementInitPage(pcnbp, CBI_SET | CBI_ENABLE);
+                        hifMouseCornersInitPage(pcnbp, CBI_SET | CBI_ENABLE);
                     }
                 break;
             }

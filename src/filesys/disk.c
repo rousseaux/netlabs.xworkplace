@@ -174,7 +174,9 @@ VOID dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
         ctlChartFromStatic(hwndChart);
         cs.ulStyle = CHS_3D_DARKEN | CHS_DESCRIPTIONS_3D;
         cs.ulThickness = 20;
-        WinSendMsg(hwndChart, WM_SETCHARTSTYLE, &cs, NULL);
+        cs.dPieSize = 1;            // all of window
+        cs.dDescriptions = .66;     // 2/3 of window
+        WinSendMsg(hwndChart, CHTM_SETCHARTSTYLE, &cs, NULL);
 
         // set entry-field limit (drive labels can only have 11 chars)
         winhSetEntryFieldLimit(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_DISK_LABEL),
@@ -301,7 +303,7 @@ VOID dskDetailsInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
                 pcd.papszDescriptions = &apszDescriptions[0];
 
                 WinSendMsg(WinWindowFromID(pcnbp->hwndDlgPage, ID_XSDI_DISK_CHART),
-                           WM_SETCHARTDATA,
+                           CHTM_SETCHARTDATA,
                            &pcd,
                            NULL);
             }

@@ -913,6 +913,10 @@ SOM_Scope BOOL  SOMLINK xfobj_wpMenuItemSelected(XFldObject *somSelf,
  *      instead of wpAddSettingsPages, because e.g.
  *      the spooler doesn't call WPObject::wpAddSettingsPages.
  *
+ *      Starting with V0.9.2, we add the page for all
+ *      objects except folders, where XFolder::wpAddObjectGeneralPage2
+ *      will do the job.
+ *
  *@@added V0.9.1 (2000-02-17) [umoeller]
  */
 
@@ -924,7 +928,12 @@ SOM_Scope ULONG  SOMLINK xfobj_wpAddObjectGeneralPage(XFldObject *somSelf,
     XFldObjectMethodDebug("XFldObject","xfobj_wpAddObjectGeneralPage");
 
     if (pGlobalSettings->AddObjectPage)
-        _xwpAddObjectInternalsPage(somSelf, hwndNotebook);
+        // check if this is a folder;
+        // if so, XFolder will insert the page
+        // because otherwise this would be between
+        // the two "Icon" pages...
+        if (!_somIsA(somSelf, _WPFolder))
+            _xwpAddObjectInternalsPage(somSelf, hwndNotebook);
 
     return (XFldObject_parent_WPObject_wpAddObjectGeneralPage(somSelf,
                                                               hwndNotebook));

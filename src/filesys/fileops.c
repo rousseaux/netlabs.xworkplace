@@ -164,9 +164,15 @@ BOOL fopsEnableTrashCan(HWND hwndOwner,     // for message boxes
     {
         // enable:
         M_XWPTrashCan       *pXWPTrashCanClass = _XWPTrashCan;
+        M_XWPTrashObject    *pXWPTrashObjectClass = _XWPTrashObject;
 
-        if (!pXWPTrashCanClass)
+        BOOL    fCreateObject = FALSE;
+
+        if (    (!winhIsClassRegistered("XWPTrashCan"))
+             || (!winhIsClassRegistered("XWPTrashObject"))
+           )
         {
+            // classes not registered yet:
             if (cmnMessageBoxMsg(hwndOwner,
                                  148,       // XWPSetup
                                  170,       // "register trash can?"
@@ -182,7 +188,7 @@ BOOL fopsEnableTrashCan(HWND hwndOwner,     // for message boxes
                     if (WinRegisterObjectClass("XWPTrashObject",
                                                (PSZ)cmnQueryMainModuleFilename()))
                     {
-                        pXWPTrashCanClass = _XWPTrashCan;  // create object
+                        fCreateObject = TRUE;
                         brc = TRUE;
                     }
 
@@ -196,18 +202,18 @@ BOOL fopsEnableTrashCan(HWND hwndOwner,     // for message boxes
                                      MB_CANCEL);
             }
         }
+        else
+            fCreateObject = TRUE;
 
-        if (pXWPTrashCanClass)
+        if (fCreateObject)
         {
             XWPTrashCan *pDefaultTrashCan = NULL;
 
-            pDefaultTrashCan = _xwpclsQueryDefaultTrashCan(pXWPTrashCanClass);
-
-            if (!pDefaultTrashCan)
+            if (!wpshQueryObjectFromID(XFOLDER_TRASHCANID, NULL))
             {
                 brc = setCreateStandardObject(hwndOwner,
                                               213,        // XWPTrashCan
-                                              TRUE);      // XWP object
+                                              FALSE);     // XWP object
             }
             else
                 brc = TRUE;
@@ -242,6 +248,11 @@ BOOL fopsEnableTrashCan(HWND hwndOwner,     // for message boxes
                     _wpFree(pDefaultTrashCan);
                 WinDeregisterObjectClass("XWPTrashCan");
                 WinDeregisterObjectClass("XWPTrashObject");
+
+                cmnMessageBoxMsg(hwndOwner,
+                                 148,       // XWPSetup
+                                 173,       // "done, restart WPS"
+                                 MB_OK);
             }
         }
     }
@@ -249,6 +260,162 @@ BOOL fopsEnableTrashCan(HWND hwndOwner,     // for message boxes
     cmnStoreGlobalSettings();
 
     return (brc);
+}
+
+/* ******************************************************************
+ *                                                                  *
+ *   Expanded object lists                                          *
+ *                                                                  *
+ ********************************************************************/
+
+/*
+ *@@ fopsFolder2SFL:
+ *      creates a LINKLIST of EXPANDEDOBJECT
+ *      for the given folder's contents.
+ *
+ *@@added V0.9.2 (2000-02-28) [umoeller]
+ */
+
+PLINKLIST fopsFolder2SFL(WPFolder *pFolder,
+                         PULONG pulSizeContents) // out: size of all objects on list
+{
+    PLINKLIST   pll = lstCreate(FALSE);       // do not free the items
+    ULONG       ulSizeContents = 0;
+
+    BOOL fFolderLocked = FALSE;
+
+    _Pmpf(("Object \"%s\" is a folder, creating SFL", _wpQueryTitle(pFolder) ));
+
+    // lock folder for querying content
+    fFolderLocked = !_wpRequestObjectMutexSem(pFolder, 5000);
+    if (fFolderLocked)
+    {
+        WPObject *pObject;
+
+        wpshCheckIfPopulated(pFolder);
+
+        // now collect all objects in folder
+        for (pObject = _wpQueryContent(pFolder, NULL, QC_FIRST);
+             pObject;
+             pObject = _wpQueryContent(pFolder, pObject, QC_Next))
+        {
+            PEXPANDEDOBJECT fSOI = NULL;
+
+            _Pmpf(("creating SOI for \"%s\" in folder \"%d\"",
+                    _wpQueryTitle(pObject),
+                    _wpQueryTitle(pFolder) ));
+            // create a list item for this object;
+            // if pObject is a folder, that function will
+            // call ourselves again...
+            fSOI = fopsObject2SOI(pObject);
+            ulSizeContents += fSOI->ulSizeThis;
+            lstAppendItem(pll, fSOI);
+        }
+    }
+
+    if (fFolderLocked)
+    {
+        _wpReleaseObjectMutexSem(pFolder);
+        fFolderLocked = FALSE;
+    }
+
+    *pulSizeContents = ulSizeContents;
+
+    return (pll);
+}
+
+/*
+ *@@ fopsObject2SFL:
+ *      creates a EXPANDEDOBJECT for the given
+ *      object. If the object is a folder, the
+ *      member list is automatically filled with
+ *      the folder's contents (recursively, if
+ *      the folder contains subfolders), by calling
+ *      fopsFolder2SFL.
+ *
+ *@@added V0.9.2 (2000-02-28) [umoeller]
+ */
+
+PEXPANDEDOBJECT fopsObject2SOI(WPObject *pObject)
+{
+    // create object item
+    PEXPANDEDOBJECT pSOI = (PEXPANDEDOBJECT)malloc(sizeof(EXPANDEDOBJECT));
+    if (pSOI)
+    {
+        _Pmpf(("SOI for object %s", _wpQueryTitle(pObject) ));
+        pSOI->pObject = pObject;
+        if (_somIsA(pObject, _WPFolder))
+        {
+            // object is a folder:
+            // fill list
+            pSOI->pllContentsSFL = fopsFolder2SFL(pObject,
+                                                  &pSOI->ulSizeThis);
+                                                    // out: size of files on list
+        }
+        else
+        {
+            // non-folder:
+            pSOI->pllContentsSFL = NULL;
+            if (_somIsA(pObject, _WPFileSystem))
+                // is a file system object:
+                pSOI->ulSizeThis = _wpQueryFileSize(pObject);
+            else
+                // abstract object:
+                pSOI->ulSizeThis = 0;
+        }
+        _Pmpf(("End of SOI for object %s", _wpQueryTitle(pObject) ));
+    }
+
+    return (pSOI);
+}
+
+/*
+ *@@ fopsFreeSFL:
+ *      This recurses.
+ *
+ *@@added V0.9.2 (2000-02-28) [umoeller]
+ */
+
+VOID fopsFreeSFL(PLINKLIST pllSFL)
+{
+    if (pllSFL)
+    {
+        PLISTNODE pNode = lstQueryFirstNode(pllSFL);
+        while (pNode)
+        {
+            PEXPANDEDOBJECT pSOI = (PEXPANDEDOBJECT)pNode->pItemData;
+            fopsFreeSOI(pSOI);
+                // after this, pSOI->pllContentsSFL is NULL
+
+            pNode = pNode->pNext;
+        }
+        lstFree(pllSFL);
+    }
+}
+
+/*
+ *@@ fopsFreeSOI:
+ *      this frees a EXPANDEDOBJECT previously
+ *      created by fopsObject2SOI. This calls
+ *      fopsFreeSFL, possibly recursively, if
+ *      the object contains a list.
+ *
+ *      *ppSOI is set to NULL after this.
+ *
+ *@@added V0.9.2 (2000-02-28) [umoeller]
+ */
+
+VOID fopsFreeSOI(PEXPANDEDOBJECT pSOI)
+{
+    if (pSOI)
+    {
+        if (pSOI->pllContentsSFL)
+            // object has a list:
+            fopsFreeSFL(pSOI->pllContentsSFL);
+                // this sets pllContentsSFL to NULL
+
+        free(pSOI);
+    }
 }
 
 /********************************************************************
@@ -1125,21 +1292,6 @@ VOID fopsFileThreadProcessing(HFILETASKLIST hftl)
                 // so query the target folder first
                 pftl->pTargetFolder = _xwpclsQueryDefaultTrashCan(_XWPTrashCan);
             }
-
-            // lock source and target
-            /* if (pftl->pSourceFolder)
-                pftl->fSourceLocked = !_wpRequestObjectMutexSem(pftl->pSourceFolder, 5000);
-
-            if (    !(pftl->pSourceFolder)
-                || (pftl->fSourceLocked)
-               )
-            {
-                if (pftl->pTargetFolder)
-                    pftl->fTargetLocked = !_wpRequestObjectMutexSem(pftl->pTargetFolder, 5000);
-
-                if (    !(pftl->pTargetFolder)
-                    || (pftl->fTargetLocked)
-                   ) */
 
             fu.ulOperation = pftl->ulOperation;
             fu.pSourceFolder = pftl->pSourceFolder;

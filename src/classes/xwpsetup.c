@@ -217,6 +217,29 @@ SOM_Scope ULONG  SOMLINK xwset_wpQueryDefaultView(XWPSetup *somSelf)
 }
 
 /*
+ *@@ wpFilterPopupMenu:
+ *      remove "Create another" menu item.
+ *
+ *@@added V0.9.2 (2000-02-26) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xwset_wpFilterPopupMenu(XWPSetup *somSelf,
+                                                 ULONG ulFlags,
+                                                 HWND hwndCnr,
+                                                 BOOL fMultiSelect)
+{
+    /* XWPSetupData *somThis = XWPSetupGetData(somSelf); */
+    XWPSetupMethodDebug("XWPSetup","xwset_wpFilterPopupMenu");
+
+    return (XWPSetup_parent_WPAbstract_wpFilterPopupMenu(somSelf,
+                                                         ulFlags,
+                                                         hwndCnr,
+                                                         fMultiSelect)
+            & ~CTXT_NEW
+           );
+}
+
+/*
  *@@ wpQueryDefaultHelp:
  *      this instance method specifies the default
  *      help panel for this instance; we will display

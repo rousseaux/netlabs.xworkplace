@@ -146,6 +146,29 @@ SOM_Scope ULONG  SOMLINK xsnd_xwpAddXWPSoundPages(XWPSound *somSelf,
 }
 
 /*
+ *@@ wpFilterPopupMenu:
+ *      remove "Create another" menu item.
+ *
+ *@@added V0.9.2 (2000-02-26) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xsnd_wpFilterPopupMenu(XWPSound *somSelf,
+                                                ULONG ulFlags,
+                                                HWND hwndCnr,
+                                                BOOL fMultiSelect)
+{
+    /* XWPSoundData *somThis = XWPSoundGetData(somSelf); */
+    XWPSoundMethodDebug("XWPSound","xsnd_wpFilterPopupMenu");
+
+    return (XWPSound_parent_WPSound_wpFilterPopupMenu(somSelf,
+                                                      ulFlags,
+                                                      hwndCnr,
+                                                      fMultiSelect)
+            & ~CTXT_NEW
+           );
+}
+
+/*
  *@@ wpAddSettingsPages:
  *      this instance method is overridden in order to
  *      manipulate the settings pages which are inserted

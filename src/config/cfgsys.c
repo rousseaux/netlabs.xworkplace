@@ -2628,7 +2628,8 @@ VOID cfgDriversInitPage(PCREATENOTEBOOKPAGE pcnbp,
         hwndTextView = txvReplaceWithTextView(pcnbp->hwndDlgPage,
                                               ID_OSDI_DRIVR_STATICDATA,
                                               WS_VISIBLE | WS_TABSTOP,
-                                              XTXF_VSCROLL | XTXF_HSCROLL,
+                                              XTXF_VSCROLL | XTXF_AUTOVHIDE
+                                                | XTXF_HSCROLL | XTXF_AUTOHHIDE,
                                               2);
         winhSetWindowFont(hwndTextView, (PSZ)cmnQueryDefaultFont());
     }

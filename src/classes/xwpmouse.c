@@ -109,11 +109,27 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMovementPage(XWPMouse *somSelf,
         pcnbp->somSelf = somSelf;
         pcnbp->hwndNotebook = hwndDlg;
         pcnbp->hmod = savehmod;
-        pcnbp->ulDlgID = ID_XSD_MOUSEHOOK;
+        pcnbp->ulDlgID = ID_XSD_MOUSE_CORNERS;
+        pcnbp->usPageStyleFlags = BKA_MINOR;
+        pcnbp->pszName = pNLSStrings->pszMouseHookPage;
+        pcnbp->fEnumerate = TRUE;
+        pcnbp->ulDefaultHelpPanel  = ID_XSH_MOUSE_CORNERS;
+        pcnbp->ulPageID = SP_MOUSE_CORNERS;
+        pcnbp->pfncbInitPage    = hifMouseCornersInitPage;
+        pcnbp->pfncbItemChanged = hifMouseCornersItemChanged;
+        ulrc = ntbInsertPage(pcnbp);
+
+        pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
+        memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
+        pcnbp->somSelf = somSelf;
+        pcnbp->hwndNotebook = hwndDlg;
+        pcnbp->hmod = savehmod;
+        pcnbp->ulDlgID = ID_XSD_MOUSE_MOVEMENT;
         pcnbp->usPageStyleFlags = BKA_MAJOR;
         pcnbp->pszName = pNLSStrings->pszMouseHookPage;
-        pcnbp->ulDefaultHelpPanel  = ID_XSH_MOUSEHOOK;
-        pcnbp->ulPageID = SP_MOUSEHOOK;
+        pcnbp->fEnumerate = TRUE;
+        pcnbp->ulDefaultHelpPanel  = ID_XSH_MOUSE_MOVEMENT;
+        pcnbp->ulPageID = SP_MOUSE_MOVEMENT;
         pcnbp->pfncbInitPage    = hifMouseMovementInitPage;
         pcnbp->pfncbItemChanged = hifMouseMovementItemChanged;
         ulrc = ntbInsertPage(pcnbp);
@@ -156,7 +172,7 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddMouseMappings2Page(XWPMouse *somSelf,
         pcnbp->usPageStyleFlags = BKA_MINOR;
         pcnbp->pszName = pNLSStrings->pszMappingsPage;
         pcnbp->ulDefaultHelpPanel  = ID_XSH_MOUSEMAPPINGS2;
-        pcnbp->ulPageID = SP_MOUSEMAPPINGS2;
+        pcnbp->ulPageID = SP_MOUSE_MAPPINGS2;
         pcnbp->pfncbInitPage    = hifMouseMappings2InitPage;
         pcnbp->pfncbItemChanged = hifMouseMappings2ItemChanged;
         ulrc = ntbInsertPage(pcnbp);
@@ -252,6 +268,29 @@ SOM_Scope BOOL  SOMLINK xms_wpRestoreState(XWPMouse *somSelf,
     XWPMouseMethodDebug("XWPMouse","xms_wpRestoreState");
 
     return (XWPMouse_parent_WPMouse_wpRestoreState(somSelf, ulReserved));
+}
+
+/*
+ *@@ wpFilterPopupMenu:
+ *      remove "Create another" menu item.
+ *
+ *@@added V0.9.2 (2000-02-26) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xms_wpFilterPopupMenu(XWPMouse *somSelf,
+                                               ULONG ulFlags,
+                                               HWND hwndCnr,
+                                               BOOL fMultiSelect)
+{
+    /* XWPMouseData *somThis = XWPMouseGetData(somSelf); */
+    XWPMouseMethodDebug("XWPMouse","xms_wpFilterPopupMenu");
+
+    return (XWPMouse_parent_WPMouse_wpFilterPopupMenu(somSelf,
+                                                      ulFlags,
+                                                      hwndCnr,
+                                                      fMultiSelect)
+            & ~CTXT_NEW
+           );
 }
 
 /*

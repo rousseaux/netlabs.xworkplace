@@ -162,8 +162,6 @@
                                         USHORT usItemID,
                                         USHORT usNotifyCode,
                                         ULONG ulExtra);
-    #else
-        #error "shared\notebook.h needs to be included before including shutdown.h".
     #endif
 
     /* ******************************************************************

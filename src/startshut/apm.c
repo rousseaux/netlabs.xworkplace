@@ -13,8 +13,8 @@
  */
 
 /*
- *      This file Copyright (C) 1997-2000 Ulrich M”ller,
- *                                        ARAKAWA Atsushi.
+ *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1998 ARAKAWA Atsushi.
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
  *      the Free Software Foundation, in version 2 as it comes in the COPYING
@@ -218,7 +218,11 @@ ULONG apmPreparePowerOff(PSZ pszError)      // in: error message
 
     // open APM.SYS
     ulAction = 0;
-    arc = DosOpen("\\DEV\\APM$", &hfAPMSys, &ulAction, 0, FILE_NORMAL,
+    arc = DosOpen("\\DEV\\APM$",
+                  &hfAPMSys,
+                  &ulAction,
+                  0,
+                  FILE_NORMAL,
                   OPEN_ACTION_OPEN_IF_EXISTS,
                   OPEN_FLAGS_FAIL_ON_ERROR | OPEN_SHARE_DENYNONE | OPEN_ACCESS_READWRITE,
                   NULL);
@@ -233,7 +237,9 @@ ULONG apmPreparePowerOff(PSZ pszError)      // in: error message
     sendpowerevent.usSubID = POWER_SUBID_ENABLE_APM;
     ulPacketSize = sizeof(sendpowerevent);
     ulDataSize = sizeof(ulAPMRc);
-    arc = DosDevIOCtl(hfAPMSys, IOCTL_POWER, POWER_SENDPOWEREVENT,
+    arc = DosDevIOCtl(hfAPMSys,
+                      IOCTL_POWER,
+                      POWER_SENDPOWEREVENT,
                       &sendpowerevent, ulPacketSize, &ulPacketSize,
                       &ulAPMRc, ulDataSize, &ulDataSize);
     if (    (arc != NO_ERROR)
@@ -244,7 +250,7 @@ ULONG apmPreparePowerOff(PSZ pszError)      // in: error message
         return (APM_CANCEL);
     }
 
-    return (APM_OK | APM_DOSSHUTDOWN_1);
+    return (APM_OK | APM_DOSSHUTDOWN_1); // APM_DOSSHUTDOWN_1 never works, hangs the system
 }
 
 /*
@@ -276,6 +282,7 @@ VOID apmDoPowerOff(VOID)
     USHORT          usAPMRc;
     ULONG           ulPacketSize;
     ULONG           ulDataSize;
+    ULONG           ul;
 
     memset(&sendpowerevent, 0, sizeof(sendpowerevent));
     usAPMRc = 0;
@@ -284,6 +291,16 @@ VOID apmDoPowerOff(VOID)
     sendpowerevent.usData2 = POWER_STATE_OFF;
     ulPacketSize = sizeof(sendpowerevent);
     ulDataSize = sizeof(usAPMRc);
+
+    // try another pause of 4 seconds; maybe DosShutdown is
+    // still running V0.9.2 (2000-02-29) [umoeller]
+    for (ul = 0;
+         ul < 3;
+         ul++)
+    {
+        DosBeep(4000, 10);
+        DosSleep(1000);
+    }
 
     // this initiates the APM power-off
     arc = DosDevIOCtl(hfAPMSys,
@@ -304,7 +321,5 @@ VOID apmDoPowerOff(VOID)
     // which would keep power-off from working.
     while (TRUE)
         DosSleep(10000);
-
-    // return; // keep compiler happy
 }
 

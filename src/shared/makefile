@@ -141,7 +141,7 @@ $(OUTPUTDIR)\common.obj: \
             $(HLPINC)\textview.h $(HLPINC)\undoc.h $(HLPINC)\winh.h \
      $(INC)\classes\xfldr.h \
      $(INC)\dlgids.h \
-     $(INC)\shared\kernel.h \
+     $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
      $(INC)\hook\xwphook.h \
      $(INC)\filesys\statbars.h $(INC)\filesys\xthreads.h \
      $(INC)\startshut\shutdown.h \
@@ -162,14 +162,14 @@ $(OUTPUTDIR)\kernel.obj: \
      $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
      $(INC)\hook\xwphook.h \
      $(INC)\filesys\xthreads.h \
-     $(INC)\startshut\archives.h \
+     $(INC)\startshut\archives.h $(INC)\startshut\shutdown.h \
      $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xsetup.obj: \
      $(INC)\setup.h \
      $(HLPINC)\cnrh.h $(HLPINC)\comctl.h $(HLPINC)\except.h $(HLPINC)\procstat.h \
         $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\tmsgfile.h \
-     $(INC)\classes\xwpsetup.ih \
+     $(INC)\classes\xwpsetup.ih $(INC)\classes\xtrash.h \
      $(INC)\dlgids.h \
      $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h $(INC)\shared\wpsh.h \
      $(INC)\config\hookintf.h $(INC)\config\sound.h \

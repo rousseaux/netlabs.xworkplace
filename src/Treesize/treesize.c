@@ -569,6 +569,7 @@ MRESULT EXPENTRY fnwpMain(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
                                       // NULL for root level
                                   (PRECORDCORE)pdi->precc,
                                       // recc to insert
+                                  TRUE,
                                   pdi->szRecordText,
                                   // recc attributes:
                                   // don't make editable

@@ -76,6 +76,8 @@
 #include <setjmp.h>             // needed for except.h
 #include <assert.h>             // needed for except.h
 #include <io.h>                 // access etc.
+#include <fcntl.h>
+#include <sys\stat.h>
 
 // generic headers
 #include "setup.h"                      // code generation and debugging options
@@ -97,11 +99,13 @@
 #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\kernel.h"              // XWorkplace Kernel
+#include "shared\notebook.h"            // generic XWorkplace notebook handling
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 #include "startshut\archives.h"         // WPSArcO declarations
+#include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
 
 // headers in /hook
 #include "hook\xwphook.h"
@@ -797,7 +801,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
         {
             ULONG   ulMajor = 0,
                     ulMinor = 0;
-            sscanf(XFOLDER_VERSION, // this is defined in dlgids.h
+            sscanf(XFOLDER_VERSION, // e.g. 0.9.2, this is defined in dlgids.h
                     "%d.%d", &ulMajor, &ulMinor);   // V0.9.0
 
             mrc = MPFROM2SHORT(ulMajor, ulMinor);
@@ -812,30 +816,49 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
          *      a SHUTDOWNPARAMS structure.
          */
 
-        case T1M_EXTERNALSHUTDOWN: // ###
-        {
-/*             PSHUTDOWNPARAMS psdp = (PSHUTDOWNPARAMS)mp1;
-            if ((ULONG)mp2 != 1234)
+        case T1M_EXTERNALSHUTDOWN:
+            TRY_LOUD(excpt1, NULL)
             {
-                APIRET arc = DosGetSharedMem(psdp, PAG_READ | PAG_WRITE);
-                if (arc == NO_ERROR)
+                PSHUTDOWNPARAMS psdpShared = (PSHUTDOWNPARAMS)mp1;
+
+                if ((ULONG)mp2 != 1234)
                 {
-                    WinPostMsg(hwndObject, T1M_EXTERNALSHUTDOWN, mp1, (MPARAM)1234);
-                    mrc = (MPARAM)TRUE;
+                    // not special code:
+                    // that's the send-msg from XSHUTDWN.EXE;
+                    // copy the memory to local memory and
+                    // return, otherwise XSHUTDWN.EXE hangs
+                    APIRET arc = DosGetSharedMem(psdpShared, PAG_READ | PAG_WRITE);
+                    if (arc == NO_ERROR)
+                    {
+                        // shared memory successfully accessed:
+                        // the block has now two references (XSHUTDWN.EXE and
+                        // PMSHELL.EXE);
+                        // repost msg with that ptr to ourselves
+                        WinPostMsg(hwndObject, T1M_EXTERNALSHUTDOWN, mp1, (MPARAM)1234);
+                        // return TRUE to XSHUTDWN.EXE, which will then terminate
+                        mrc = (MPARAM)TRUE;
+                        // after XSHUTDWN.EXE terminates, the shared mem
+                        // is not freed yet, because we still own it;
+                        // we process that in the second msg (below)
+                    }
+                    else
+                    {
+                        DebugBox(0,
+                                 "External XShutdown call",
+                                 "Error calling DosGetSharedMem.");
+                        mrc = (MPARAM)FALSE;
+                    }
                 }
                 else
                 {
-                    DebugBox("External XShutdown call", "Error calling DosGetSharedMem.");
-                    mrc = (MPARAM)FALSE;
+                    // mp2 == 1234: second call
+                    xsdInitiateShutdownExt(psdpShared);
+                    // finally free shared mem
+                    DosFreeMem(psdpShared);
                 }
             }
-            else
-            {
-                // second call
-                xsdInitiateShutdownExt(psdp);
-                DosFreeMem(psdp);
-            } */
-        break; }
+            CATCH(excpt1) {} END_CATCH();
+        break;
 
         /*
          *@@ T1M_DESTROYARCHIVESTATUS:
@@ -964,8 +987,15 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
         /*
          *@@ T1M_DAEMONREADY:
          *      posted by the XWorkplace daemon after it has
-         *      successfully created its object window. The
-         *      thread-1 object window will then send XDM_HOOKINSTALL
+         *      successfully created its object window.
+         *      This can happen in two situations:
+         *
+         *      -- during WPS startup, after krnInitializeXWorkplace
+         *         has started the daemon;
+         *      -- any time later, if the daemon has been restarted
+         *         (shouldn't happen).
+         *
+         *      The thread-1 object window will then send XDM_HOOKINSTALL
          *      back to the daemon if the global settings have the
          *      hook enabled.
          */
@@ -980,11 +1010,47 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
                 if (    (pGlobalSettings->fEnableXWPHook)
                      && (pDaemonShared->hwndDaemonObject)
                    )
-                    WinPostMsg(pDaemonShared->hwndDaemonObject,
-                               XDM_HOOKINSTALL,
-                               (MPARAM)TRUE,
-                               0);
+                {
+                    if (WinSendMsg(pDaemonShared->hwndDaemonObject,
+                                   XDM_HOOKINSTALL,
+                                   (MPARAM)TRUE,
+                                   0))
+                    {
+                        // success:
+                        // notify daemon of Desktop window;
+                        // this is still NULLHANDLE if we're
+                        // currently starting the WPS
+                        krnPostDaemonMsg(XDM_DESKTOPREADY,
+                                         (MPARAM)KernelGlobals.hwndActiveDesktop,
+                                         (MPARAM)0);
+
+                        if (pGlobalSettings->fPageMageEnabled)
+                            // PageMage is enabled too:
+                            WinSendMsg(pDaemonShared->hwndDaemonObject,
+                                       XDM_STARTSTOPPAGEMAGE,
+                                       (MPARAM)TRUE,
+                                       0);
+                    }
+                }
             }
+        break; }
+
+        /*
+         *@@ T1M_PAGEMAGECLOSED:
+         *      this gets posted by dmnKillPageMage when
+         *      the user has closed the PageMage window.
+         *      We then disable PageMage in the GLOBALSETTINGS.
+         *
+         *@@added V0.9.2 (2000-02-23) [umoeller]
+         */
+
+        case T1M_PAGEMAGECLOSED:
+        {
+            GLOBALSETTINGS *pGlobalSettings = cmnLockGlobalSettings(4000);
+            pGlobalSettings->fPageMageEnabled = FALSE;
+            // update "Features" page, if open
+            ntbUpdateVisiblePage(NULL, SP_SETUP_FEATURES);
+            cmnUnlockGlobalSettings();
         break; }
 
         #ifdef __DEBUG__
@@ -1250,10 +1316,37 @@ MRESULT EXPENTRY fncbQuickOpen(HWND hwndFolder,
  *                                                                  *
  ********************************************************************/
 
+PSZ     apszXFolderKeys[]
+        = {
+                INIKEY_GLOBALSETTINGS  , // "GlobalSettings"
+                INIKEY_ACCELERATORS    , // "Accelerators"
+                INIKEY_FAVORITEFOLDERS , // "FavoriteFolders"
+                INIKEY_QUICKOPENFOLDERS, // "QuickOpenFolders"
+                INIKEY_WNDPOSSTARTUP   , // "WndPosStartup"
+                INIKEY_WNDPOSNAMECLASH , // "WndPosNameClash"
+                INIKEY_NAMECLASHFOCUS  , // "NameClashLastFocus"
+                INIKEY_STATUSBARFONT   , // "SB_Font"
+                INIKEY_SBTEXTNONESEL   , // "SB_NoneSelected"
+                INIKEY_SBTEXT_WPOBJECT , // "SB_WPObject"
+                INIKEY_SBTEXT_WPPROGRAM, // "SB_WPProgram"
+                INIKEY_SBTEXT_WPFILESYSTEM, // "SB_WPDataFile"
+                INIKEY_SBTEXT_WPURL       , // "SB_WPUrl"
+                INIKEY_SBTEXT_WPDISK   , // "SB_WPDisk"
+                INIKEY_SBTEXT_WPFOLDER , // "SB_WPFolder"
+                INIKEY_SBTEXTMULTISEL  , // "SB_MultiSelected"
+                INIKEY_SB_LASTCLASS    , // "SB_LastClass"
+                INIKEY_DLGFONT         , // "DialogFont"
+                INIKEY_BOOTMGR         , // "RebootTo"
+                INIKEY_AUTOCLOSE        // "AutoClose"
+          };
 /*
  *@@ krnShowStartupDlgs:
  *      this gets called from krnInitializeXWorkplace
  *      to show dialogs while the WPS is starting up.
+ *
+ *      If XWorkplace was just installed, we'll show
+ *      an introductory page and offer to convert
+ *      XFolder settings, if found.
  *
  *      If XWorkplace has just been installed, we show
  *      an introductory message that "Shift" will show
@@ -1304,12 +1397,19 @@ VOID krnShowStartupDlgs(VOID)
                     == MBID_YES)
             {
                 // yes, convert:
-                // copy application from "XFolder" to "XWorkplace"
-                prfhCopyApp(HINI_USER,
-                            INIAPP_OLDXFOLDER,      // source
-                            HINI_USER,
-                            INIAPP_XWORKPLACE,
-                            NULL);
+                // copy keys from "XFolder" to "XWorkplace"
+                ULONG   ul;
+                for (ul = 0;
+                     ul < sizeof(apszXFolderKeys) / sizeof(PSZ);
+                     ul++)
+                {
+                    prfhCopyKey(HINI_USER,
+                                INIAPP_OLDXFOLDER,      // source
+                                apszXFolderKeys[ul],
+                                HINI_USER,
+                                INIAPP_XWORKPLACE);
+                }
+
                 // reload
                 cmnLoadGlobalSettings(FALSE);
             }
@@ -1451,18 +1551,39 @@ VOID krnShowStartupDlgs(VOID)
 
 VOID krnInitializeXWorkplace(VOID)
 {
+    static BOOL fInitialized = FALSE;
+
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     // check if we're called for the first time,
     // because we better initialize this only once
-    if (KernelGlobals.hwndThread1Object == NULLHANDLE)
+    if (!fInitialized)
     {
+        fInitialized = TRUE;
 
         // zero KERNELGLOBALS
         memset(&KernelGlobals, 0, sizeof(KERNELGLOBALS));
 
         // store WPS startup time
         DosGetDateTime(&KernelGlobals.StartupDateTime);
+
+        #ifdef __DEBUG_ALLOC__
+        {
+            int   fh;
+            char  *p = NULL;
+            CHAR    szErrFile[CCHMAXPATH];
+
+            // change file handle where runtime messages are sent
+            sprintf(szErrFile, "%c:\\%s", doshQueryBootDrive(), XFOLDER_RUNTIMELOG);
+            fh = open(szErrFile,
+                      O_CREAT | O_RDWR | O_APPEND,
+                      S_IREAD | S_IWRITE);
+            if (fh == -1)
+                DosBeep(200, 1000);
+            else
+                _set_crt_msg_handle(fh);
+        }
+        #endif
 
         // register exception hooks for /helpers/except.c
         excRegisterHooks(krnExceptOpenLogFile,

@@ -94,6 +94,7 @@
 // other SOM headers
 #pragma hdrstop
 #include <wpfsys.h>             // WPFileSystem
+#include "xtrash.h"
 
 /* ******************************************************************
  *                                                                  *
@@ -149,9 +150,15 @@ STANDARDOBJECT  WPSObjects[] = {
                                     XFOLDER_KERNELID, "XFldSystem", "", 201,
                                     XFOLDER_CLASSLISTID, "XWPClassList", "", 202,
 
-                                    XFOLDER_CONFIGID, "WPFolder", "", 210,
-                                    XFOLDER_STARTUPID, "XFldStartup", "", 211,
-                                    XFOLDER_SHUTDOWNID, "XFldShutdown", "", 212,
+                                    XFOLDER_CONFIGID, "WPFolder",
+                                            "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
+                                            210,
+                                    XFOLDER_STARTUPID, "XFldStartup",
+                                            "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
+                                            211,
+                                    XFOLDER_SHUTDOWNID, "XFldShutdown",
+                                            "ICONVIEW=NONFLOWED,MINI;ALWAYSSORT=NO;",
+                                            212,
 
                                     XFOLDER_TRASHCANID, "XWPTrashCan",
                                             "DETAILSCLASS=XWPTrashObject;"
@@ -171,8 +178,8 @@ STANDARDOBJECT  WPSObjects[] = {
 
 BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
                              USHORT usMenuID,        // in: selected menu item
-                             BOOL fXWPObject)        // in: if TRUE, XWorkplace object;
-                                                     // if FALSE, standard WPS object
+                             BOOL fStandardObj)      // in: if FALSE, XWorkplace object;
+                                                     // if TRUE, standard WPS object
 {
     BOOL    brc = FALSE;
     ULONG   ul = 0;
@@ -180,7 +187,7 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
     PSTANDARDOBJECT pso2;
     ULONG ulMax;
 
-    if (fXWPObject)
+    if (fStandardObj)
     {
         pso2 = WPSObjects;
         ulMax = sizeof(WPSObjects) / sizeof(STANDARDOBJECT);
@@ -216,7 +223,7 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
 
             if (apsz[0] == NULL)
                 // title not found: use class name then
-                apsz[0] = strdup(pso2->pszObjectClass);
+                apsz[0] = pso2->pszObjectClass;
 
             if (cmnMessageBoxMsgExt(hwndOwner,
                                     148, // "XWorkplace Setup",
@@ -247,7 +254,6 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
             }
 
             SOMFree(somidThis);
-            free(apsz[0]);
             break;
         }
         // not found: try next item
@@ -1185,6 +1191,7 @@ FEATURESITEM FeatureItemsList[] =
             ID_XCSI_ANIMOUSE, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_XWPHOOK, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_GLOBALHOTKEYS, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+            ID_XCSI_PAGEMAGE, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
 
             ID_XCSI_STARTSHUTFEATURES, 0, 0, NULL,
             ID_XCSI_ARCHIVING, ID_XCSI_STARTSHUTFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
@@ -1371,6 +1378,8 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 pGlobalSettings->fEnableXWPHook);
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_GLOBALHOTKEYS,
                 hifObjectHotkeysEnabled());
+        ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_PAGEMAGE,
+                pGlobalSettings->fPageMageEnabled);
 
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_ARCHIVING,
                 pGlobalSettings->fReplaceArchiving);
@@ -1408,9 +1417,13 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_EXTFOLDERSORT,
                 (pKernelGlobals->fXFolder));
 
+        ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_ANIMOUSE,
+                FALSE);     // ### not implemented yet
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_XWPHOOK,
                 (pDaemonShared->hwndDaemonObject != NULLHANDLE));
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_GLOBALHOTKEYS,
+                hifXWPHookReady());
+        ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_PAGEMAGE,
                 hifXWPHookReady());
 
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_XSYSTEMSOUNDS,
@@ -1430,15 +1443,6 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_REPLDRIVENOTREADY,
                 (pKernelGlobals->fXFldDisk));
 
-/*         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_XWPTRASHCAN,
-                    // trash can exists:
-                (   (wpshQueryObjectFromID(XFOLDER_TRASHCANID, NULL) != NULL)
-                    // subclassing is not disabled:
-                 && (!(pGlobalSettings->NoSubclassing))
-                    // XFolder installed:
-                 && (pKernelGlobals->fXFolder)
-                )
-                ); */
     }
 }
 
@@ -1467,7 +1471,8 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     BOOL fShowHookInstalled = FALSE,
          fShowHookDeinstalled = FALSE,
          fShowClassesSetup = FALSE,
-         fShowWarnExtAssocs = FALSE;
+         fShowWarnExtAssocs = FALSE,
+         fUpdateMouseMovementPage = FALSE;
     signed char cAskSoundsInstallMsg = -1,      // 1 = installed, 0 = deinstalled
                 cEnableTrashCan = -1;       // 1 = installed, 0 = deinstalled
     ULONG ulUpdateFlags = 0;
@@ -1484,26 +1489,19 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XCSI_XWPHOOK:
         {
-            PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
-            PDAEMONSHARED pDaemonShared = pKernelGlobals->pDaemonShared;
-            pGlobalSettings->fEnableXWPHook = ulExtra;
-            // (de)install the hook by notifying the daemon
-            if (pDaemonShared)
+            if (hifEnableHook(ulExtra) == ulExtra)
             {
-                if (pDaemonShared->hwndDaemonObject)
-                {
-                    if (WinSendMsg(pDaemonShared->hwndDaemonObject,
-                                   XDM_HOOKINSTALL,
-                                   (MPARAM)(pGlobalSettings->fEnableXWPHook),
-                                   0))
-                        fShowHookInstalled = TRUE;
-                    else
-                        fShowHookDeinstalled = TRUE;
-                }
-            }
+                // success:
+                pGlobalSettings->fEnableXWPHook = ulExtra;
 
-            // re-enable controls on this page
-            ulUpdateFlags = CBI_ENABLE;
+                if (ulExtra)
+                    fShowHookInstalled = TRUE;
+                else
+                    fShowHookDeinstalled = TRUE;
+
+                // re-enable controls on this page
+                ulUpdateFlags = CBI_SET | CBI_ENABLE;
+            }
         break; }
 
         case ID_XCSI_REPLACEFILEPAGE:
@@ -1555,7 +1553,16 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case ID_XCSI_GLOBALHOTKEYS:
             hifEnableObjectHotkeys(ulExtra);
-            // winhSetNumLock(ulExtra);
+        break;
+
+        case ID_XCSI_PAGEMAGE:
+            if (hifEnablePageMage(ulExtra) == ulExtra)
+            {
+                pGlobalSettings->fPageMageEnabled = ulExtra;
+                ulUpdateFlags = CBI_SET | CBI_ENABLE;
+                // update "Mouse movement" page
+                fUpdateMouseMovementPage = TRUE;
+            }
         break;
 
         /* case ID_XCSI_MONITORCDROMS:
@@ -1719,6 +1726,11 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     if (ulUpdateFlags)
         (*(pcnbp->pfncbInitPage))(pcnbp, ulUpdateFlags);
 
+    if (fUpdateMouseMovementPage)
+        // update "Mouse movement" page
+        ntbUpdateVisiblePage(NULL,
+                             SP_MOUSE_MOVEMENT);
+
     return ((MPARAM)-1);
 }
 
@@ -1790,7 +1802,7 @@ BOOL setFeaturesMessages(PCREATENOTEBOOKPAGE pcnbp,
                                                        szHelpString,           // pbBuffer
                                                        sizeof(szHelpString),   // cbBuffer
                                                        szMessageID,            // pszMessageName
-                                                       (PSZ)pszMessageFile,         // pszFile
+                                                       (PSZ)pszMessageFile,    // pszFile
                                                        &ulWritten);
 
                                 if (arc != NO_ERROR)
@@ -1916,21 +1928,21 @@ VOID setStatusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
 
         // sound status
         strcpy(szSearchMask,
-                        (pKernelGlobals->ulMMPM2Working == MMSTAT_UNKNOWN)
-                                ? "not initialized"
-                        : (pKernelGlobals->ulMMPM2Working == MMSTAT_WORKING)
-                                ? "OK"
-                        : (pKernelGlobals->ulMMPM2Working == MMSTAT_MMDIRNOTFOUND)
-                                ? "MMPM/2 directory not found"
-                        : (pKernelGlobals->ulMMPM2Working == MMSTAT_SOUNDLLNOTFOUND)
-                                ? "SOUND.DLL not found"
-                        : (pKernelGlobals->ulMMPM2Working == MMSTAT_SOUNDLLNOTLOADED)
-                                ? "SOUND.DLL could not be loaded"
-                        : (pKernelGlobals->ulMMPM2Working == MMSTAT_SOUNDLLFUNCERROR)
-                                ? "SOUND.DLL functions could not be imported"
-                        : (pKernelGlobals->ulMMPM2Working == MMSTAT_CRASHED)
-                                ? "Quick thread crashed"
-                        : "unknown"
+               (pKernelGlobals->ulMMPM2Working == MMSTAT_UNKNOWN)
+                       ? "not initialized"
+               : (pKernelGlobals->ulMMPM2Working == MMSTAT_WORKING)
+                       ? "OK"
+               : (pKernelGlobals->ulMMPM2Working == MMSTAT_MMDIRNOTFOUND)
+                       ? "MMPM/2 directory not found"
+               : (pKernelGlobals->ulMMPM2Working == MMSTAT_SOUNDLLNOTFOUND)
+                       ? "SOUND.DLL not found"
+               : (pKernelGlobals->ulMMPM2Working == MMSTAT_SOUNDLLNOTLOADED)
+                       ? "SOUND.DLL could not be loaded"
+               : (pKernelGlobals->ulMMPM2Working == MMSTAT_SOUNDLLFUNCERROR)
+                       ? "SOUND.DLL functions could not be imported"
+               : (pKernelGlobals->ulMMPM2Working == MMSTAT_CRASHED)
+                       ? "Speedy thread crashed"
+               : "unknown"
                );
         WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XCDI_INFO_SOUNDSTATUS,
                           szSearchMask);
@@ -2154,13 +2166,17 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 prc16QueryThreadPriority(ppib->pib_ulpid, tid),
                 pKernelGlobals->ulWorkerMsgCount);
         WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XCDI_INFO_WORKERSTATUS,
-                        szTemp);
+                          szTemp);
 
         // File thread status
         tid = thrQueryID(pKernelGlobals->ptiFileThread);
         sprintf(szTemp, "TID 0x%lX, prty 0x%04lX",
                 tid,
                 prc16QueryThreadPriority(ppib->pib_ulpid, tid));
+        if (xthrIsFileThreadBusy())
+            strcat(szTemp, ", busy");
+        else
+            strcat(szTemp, ", idle");
         WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XCDI_INFO_FILESTATUS,
                         szTemp);
 
@@ -2184,7 +2200,7 @@ VOID setStatusTimer(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                                pDaemonShared->ulWPSStartupCount,
                                FALSE);  // unsigned
 
-            if (pDaemonShared->fHookInstalled)
+            if (pDaemonShared->fAllHooksInstalled)
                 psz = "Loaded, OK";
             else
                 psz = "Not loaded";
@@ -2324,6 +2340,11 @@ MRESULT setObjectsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             mrc = (MRESULT)hwndMenu;
             WinSetPointer(HWND_DESKTOP, hptrOld);
         break; }
+
+        /*
+         * ID_XCD_OBJECTS_CONFIGFOLDER:
+         *      recreate config folder
+         */
 
         case ID_XCD_OBJECTS_CONFIGFOLDER:
             if (cmnMessageBoxMsg(pcnbp->hwndFrame,

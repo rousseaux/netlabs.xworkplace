@@ -240,6 +240,11 @@
 
         MRESULT EXPENTRY fdr_fnwpSubclassedFolderFrame(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
 
+        // Supplementary object window msgs (for each
+        // subclassed folder frame, xfldr.c)
+        #define SOM_ACTIVATESTATUSBAR       (WM_USER+1200)
+        #define SOM_CREATEFROMTEMPLATE      (WM_USER+1201)
+
         MRESULT EXPENTRY fdr_fnwpSupplFolderObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM mp2);
 
         /* ******************************************************************

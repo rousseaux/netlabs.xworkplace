@@ -44,6 +44,8 @@
      *                                                                  *
      ********************************************************************/
 
+    VOID trshUpdateStatusBars(XWPTrashCan *somSelf);
+
     XWPTrashObject* trshCreateTrashObject(M_XWPTrashObject *somSelf,
                                           XWPTrashCan* pTrashCan,
                                           WPObject* pRelatedObject);
@@ -52,7 +54,8 @@
                                          XWPTrashCan *pTrashCan,
                                          WPFolder *pTrashDir);
 
-    /* PLINKLIST trshCreateTrashObjectsList(XWPTrashCan* somSelf); */
+    VOID trshCalcTrashObjectSize(XWPTrashObject *pTrashObject,
+                                 XWPTrashCan *pTrashCan);
 
     BOOL trshPopulateFirstTime(XWPTrashCan *somSelf,
                                ULONG ulFldrFlags);
@@ -79,6 +82,12 @@
 
     BOOL trshEmptyTrashCan(XWPTrashCan *somSelf,
                            BOOL fConfirm);
+
+    APIRET trshValidateTrashObject(XWPTrashObject *somSelf);
+
+    BOOL trshDestroyTrashObject(XWPTrashObject *somSelf);
+
+    VOID trshUninitTrashObject(XWPTrashObject *somSelf);
 
     /* ******************************************************************
      *                                                                  *
@@ -137,19 +146,21 @@
      *                                                                  *
      ********************************************************************/
 
-    VOID trshTrashCanSettingsInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                      ULONG flFlags);
+    #ifdef NOTEBOOK_HEADER_INCLUDED
+        VOID trshTrashCanSettingsInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                          ULONG flFlags);
 
-    MRESULT trshTrashCanSettingsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                            USHORT usItemID, USHORT usNotifyCode,
-                                            ULONG ulExtra);
+        MRESULT trshTrashCanSettingsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                                USHORT usItemID, USHORT usNotifyCode,
+                                                ULONG ulExtra);
 
-    VOID trshTrashCanDrivesInitPage(PCREATENOTEBOOKPAGE pcnbp,
-                                    ULONG flFlags);
+        VOID trshTrashCanDrivesInitPage(PCREATENOTEBOOKPAGE pcnbp,
+                                        ULONG flFlags);
 
-    MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
-                                          USHORT usItemID, USHORT usNotifyCode,
-                                          ULONG ulExtra);
+        MRESULT trshTrashCanDrivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
+                                              USHORT usItemID, USHORT usNotifyCode,
+                                              ULONG ulExtra);
+    #endif
 
 #endif
 

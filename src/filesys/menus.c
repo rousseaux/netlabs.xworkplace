@@ -109,6 +109,8 @@
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
+#include "config\partitions.h"          // WPDrives "Partitions" view
+
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\menus.h"              // shared context menu logic
 #include "filesys\xthreads.h"           // extra XWorkplace threads
@@ -116,19 +118,29 @@
 #include "startshut\shutdown.h"         // XWorkplace eXtended Shutdown
 
 // other SOM headers
-#pragma hdrstop                 // VAC++ keeps crashing otherwise
-#include "xfdisk.h"
+#pragma hdrstop                         // VAC++ keeps crashing otherwise
+#include "xfdisk.h"                     // XFldDisk
 
-#include <wppgm.h>              // WPProgram
-#include <wpshadow.h>           // WPShadow
-#include <wpdesk.h>             // WPDesktop
-#include <wpdataf.h>            // WPDataFile
-#include <wprootf.h>            // WPRootFolder
+#include <wppgm.h>                      // WPProgram
+#include <wpshadow.h>                   // WPShadow
+#include <wpdesk.h>                     // WPDesktop
+#include <wpdataf.h>                    // WPDataFile
+#include <wprootf.h>                    // WPRootFolder
+#include <wpdrives.h>                   // WPDrives (Drives folder)
 
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 #include "helpers\undoc.h"              // some undocumented stuff
 
-BOOL    fIsWarp4 = FALSE;
+/* ******************************************************************
+ *                                                                  *
+ *   Global variables                                               *
+ *                                                                  *
+ ********************************************************************/
+
+BOOL    G_fIsWarp4 = FALSE;
+
+HWND    G_hwndTemplateFrame = NULLHANDLE;
+POINTL  G_ptlTemplateMousePos = {0};
 
 /* ******************************************************************
  *                                                                  *
@@ -161,23 +173,23 @@ typedef struct _CONTENTLISTITEM
 
 // linked list for config folder content:
 // this holds
-PLINKLIST           pllConfigContent = NULL;
+PLINKLIST           G_pllConfigContent = NULL;
 
 // linked lists / counts for variable context menu items
 // llVarMenuItems contains ALL variable items ever inserted
 // (i.e. config folder items AND folder content items)
-LINKLIST            llVarMenuItems;     // changed V0.9.0
+LINKLIST            G_llVarMenuItems;     // changed V0.9.0
 
 // counts for providing unique menu id's
-ULONG               ulVarItemCount = 0;    // number of inserted menu items
-SHORT               sNextMenuId = 0;      // next menu item ID to use
+ULONG               G_ulVarItemCount = 0;    // number of inserted menu items
+SHORT               G_sNextMenuId = 0;      // next menu item ID to use
 
 // llContentMenuItems contains ONLY folder content menus
-LINKLIST            llContentMenuItems; // changed V0.9.0
+LINKLIST            G_llContentMenuItems; // changed V0.9.0
 
 // icon for drawing the little triangle in
 // folder content menus (subfolders)
-HPOINTER            hMenuArrowIcon = NULLHANDLE;
+HPOINTER            G_hMenuArrowIcon = NULLHANDLE;
 
 /* ******************************************************************
  *                                                                  *
@@ -331,7 +343,7 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
     BOOL        brc = FALSE;
     XFolderData *somThis = XFolderGetData(somSelf);
 
-    fIsWarp4 = doshIsWarp4();
+    G_fIsWarp4 = doshIsWarp4();
 
     #ifdef DEBUG_MENUS
         _Pmpf(("mnuInsertFldrViewItems, hwndCnr: 0x%X", hwndCnr));
@@ -427,14 +439,14 @@ BOOL mnuInsertFldrViewItems(WPFolder *somSelf,      // in: folder w/ context men
 
         // for all views: add separator before menu and status bar items
         // if one of these is enabled
-        if (    (fIsWarp4)
+        if (    (G_fIsWarp4)
              || (pGlobalSettings->fEnableStatusBars)  // added V0.9.0
            )
             winhInsertMenuSeparator(hwndViewSubmenu, MIT_END,
                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
 
         // on Warp 4, insert "menu bar" item (V0.9.0)
-        if (fIsWarp4)
+        if (G_fIsWarp4)
         {
             winhInsertMenuItem(hwndViewSubmenu, MIT_END,
                                (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_WARP4MENUBAR),
@@ -510,12 +522,12 @@ BOOL mnuAppendMi2List(WPObject *pObject,
     strhBeautifyTitle(pNewItem->szTitle);
 
     pNewItem->usObjType = usObjType;
-    lstAppendItem(&llVarMenuItems, pNewItem);
+    lstAppendItem(&G_llVarMenuItems, pNewItem);
 
-    if (sNextMenuId < 0x7800)       // lowered V0.9.0
+    if (G_sNextMenuId < 0x7800)       // lowered V0.9.0
     {
-        sNextMenuId++;
-        ulVarItemCount++;
+        G_sNextMenuId++;
+        G_ulVarItemCount++;
         return (TRUE);
     }
     else
@@ -541,7 +553,7 @@ VOID mnuAppendFldr2ContentList(WPFolder *pFolder,
     PCONTENTMENULISTITEM pNewItem = (PCONTENTMENULISTITEM)malloc(sizeof(CONTENTMENULISTITEM));
     pNewItem->pFolder = pFolder;
     pNewItem->sMenuId = sMenuId;
-    lstAppendItem(&llContentMenuItems, pNewItem);
+    lstAppendItem(&G_llContentMenuItems, pNewItem);
 }
 
 /*
@@ -559,11 +571,11 @@ ULONG mnuInsertOneObjectMenuItem(HWND       hAddToMenu,   // hwnd of menu to add
                                  WPObject   *pObject,                  // pointer to corresponding object
                                  ULONG      usObjType)
 {
-    ULONG               rc = sNextMenuId;
+    ULONG               rc = G_sNextMenuId;
 
     winhInsertMenuItem(hAddToMenu,
                        iPosition,
-                       sNextMenuId,
+                       G_sNextMenuId,
                        pszNewItemString,
                        afStyle,
                        0);
@@ -602,7 +614,7 @@ SHORT mnuPrepareContentSubmenu(WPFolder *somSelf, // in: folder whose content is
                                BOOL fOwnerDraw)  // in: owner-draw style flag for submenu (ie. display icons)
 {
     HWND    hwndNewMenu;
-    SHORT   sId = sNextMenuId;
+    SHORT   sId = G_sNextMenuId;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     if (hwndNewMenu = winhInsertSubmenu(hwndMenu,
@@ -954,7 +966,7 @@ VOID mnuFillContentSubmenu(SHORT sMenuId, // in: menu ID of selected folder cont
                                        // out: original window proc of menu control,
                                        // which is subclassed here
 {
-    PLISTNODE       pNode = lstQueryFirstNode(&llContentMenuItems);
+    PLISTNODE       pNode = lstQueryFirstNode(&G_llContentMenuItems);
     PCONTENTMENULISTITEM pcmli;
 
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
@@ -1212,7 +1224,7 @@ LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take items 
                 //  objects are found in the respective config folder
                 HWND hNewMenu = winhInsertSubmenu(hMenuThis,
                                                   MIT_END,
-                                                  sNextMenuId,
+                                                  G_sNextMenuId,
                                                   pcli->szTitle,
                                                   MIS_TEXT,
                                                   (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_BORED),
@@ -1283,10 +1295,10 @@ LONG InsertObjectsFromList(PLINKLIST  pllContentThis, // in: list to take items 
 
 VOID mnuInvalidateConfigCache(VOID)
 {
-    if (pllConfigContent != NULL)
+    if (G_pllConfigContent != NULL)
     {
-        lstFree(pllConfigContent);
-        pllConfigContent = NULL;
+        lstFree(G_pllConfigContent);
+        G_pllConfigContent = NULL;
             // this will enfore a rebuild in InsertConfigFolderItems
     }
 }
@@ -1330,26 +1342,28 @@ BOOL InsertConfigFolderItems(XFolder *somSelf,
     {
         // config folder found:
         // have we build a list of objects yet?
-        if (pllConfigContent == NULL)
+        if (G_pllConfigContent == NULL)
         {
-            pllConfigContent = lstCreate(TRUE);     // auto-free items
+            // no: create one
+            G_pllConfigContent = lstCreate(TRUE);     // auto-free items
             // fill list; this will recurse
-            BuildConfigItemsList(pllConfigContent,
+            BuildConfigItemsList(G_pllConfigContent,
                                  pConfigFolder);
         }
 
-        if (lstCountItems(pllConfigContent) > 0)
+        // do we have any objects?
+        if (lstCountItems(G_pllConfigContent) > 0)
         {
-            // append another separator first
-            // if it contains any objects
+            // yes:
+            // append another separator to the menu first
             winhInsertMenuSeparator(hwndMenu, MIT_END,
-                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
 
             // now insert items in pConfigFolder into main context menu (hwndMenu);
             // this routine will call itself recursively if it finds subfolders.
             // Since we have registered an exception handler, if errors occur,
             // this will lead to a message box only.
-            InsertObjectsFromList(pllConfigContent,
+            InsertObjectsFromList(G_pllConfigContent,
                                   hwndMenu,
                                   hwndCnr,
                                   pGlobalSettings);
@@ -1407,7 +1421,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     // set the global variable for whether Warp 4 is running
-    fIsWarp4 = doshIsWarp4();
+    G_fIsWarp4 = doshIsWarp4();
 
     // protect the following with the quiet exception handler (except.c)
     TRY_QUIET(excpt1, NULL)
@@ -1419,9 +1433,6 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
             HWND        hwndFrame = WinQueryWindow(hwndCnr, QW_PARENT);
             ULONG       ulView = -1;
             POINTL      ptlMouse;
-
-            /* _Pmpf(("mnuModifyFolderPopupMenu cbFldrLongArray: %d", _cbFldrLongArray));
-            _Pmpf(("  somThis for %s: 0x%lX", _wpQueryTitle(somSelf), somThis)); */
 
             // store mouse pointer position for creating objects from templates
             WinQueryMsgPos(WinQueryAnchorBlock(hwndCnr), &ptlMouse);
@@ -1438,8 +1449,35 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
             // in wpFilterPopupMenu, because no codes are provided;
             // we only do this if the Global Settings want it
 
-            // "View" submenu
-            if (fIsWarp4)
+            /*
+             * WPDrives "Open" submenu:
+             *
+             */
+
+            if (_somIsA(somSelf, _WPDrives))
+            {
+                // get handle to the WPObject's "Help" submenu in the
+                // the folder's popup menu
+                if (WinSendMsg(hwndMenu,
+                               MM_QUERYITEM,
+                               MPFROM2SHORT(WPMENUID_OPEN, TRUE),
+                               (MPARAM)&mi))
+                {
+                    // mi.hwndSubMenu now contains "Open" submenu handle,
+                    // which we add items to now
+                    winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
+                                       (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_OPENPARTITIONS),
+                                       pNLSStrings->pszOpenPartitions,
+                                       MIS_TEXT, 0);
+                }
+            }
+
+            /*
+             * "View" submenu:
+             *
+             */
+
+            if (G_fIsWarp4)
             {
                 if (pGlobalSettings->RemoveViewMenu)
                 {
@@ -1457,6 +1495,11 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                     winhRemoveMenuItem(hwndMenu, ID_WPMI_PASTE);
                 }
             }
+
+            /*
+             * product info:
+             *
+             */
 
             // add product info item to the help menu, if the "Help"
             // menu has not been removed
@@ -1476,9 +1519,9 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                     // which we add items to now
                     winhInsertMenuSeparator(mi.hwndSubMenu, MIT_END, (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
                     winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
-                            (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_PRODINFO),
-                            pNLSStrings->pszProductInfo,
-                            MIS_TEXT, 0);
+                                       (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_PRODINFO),
+                                       pNLSStrings->pszProductInfo,
+                                       MIS_TEXT, 0);
                 }
                 // else: "Help" menu not found, but this can
                 // happen in Warp 4 folder menu bars
@@ -1488,10 +1531,10 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
             // if the "View" menu has not been removed (Warp 4)
             // or the "Select" menu has not been removed (Warp 3)
             if (
-                    (   (fIsWarp4)
+                    (   (G_fIsWarp4)
                      && (pGlobalSettings->RemoveViewMenu == 0)
                     )
-                 || (   (!fIsWarp4)
+                 || (   (!G_fIsWarp4)
                      && ((pGlobalSettings->DefaultMenuItems & CTXT_SELECT) == 0)
                     )
                )
@@ -1501,7 +1544,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
 
                 if (WinSendMsg(hwndMenu,
                                MM_QUERYITEM,
-                               MPFROM2SHORT( ((fIsWarp4)
+                               MPFROM2SHORT( ((G_fIsWarp4)
                                      // in Warp 4, these items are in the "View" submenu;
                                      // in Warp 3, "Select" is  a separate submenu
                                            ? ID_WPM_VIEW           // 0x68
@@ -1524,7 +1567,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                        )
                     {
 
-                        if (fIsWarp4)
+                        if (G_fIsWarp4)
                             // get position of "Refresh now";
                             // we'll add behind that item
                             sPos = (SHORT)WinSendMsg(mi.hwndSubMenu,
@@ -1543,7 +1586,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                                            (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SELECTSOME),
                                            pNLSStrings->pszSelectSome,
                                            MIS_TEXT, 0);
-                        if (fIsWarp4)
+                        if (G_fIsWarp4)
                             winhInsertMenuSeparator(mi.hwndSubMenu, sPos+1,
                                 (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
                     }
@@ -1558,7 +1601,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                              || (ulView == OPEN_DETAILS)
                            )
                         {
-                            if (fIsWarp4)
+                            if (G_fIsWarp4)
                             {
                                 // for Warp 4, use the existing "View" submenu,
                                 // but add an additional separator after
@@ -1646,21 +1689,21 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
 
             // now do necessary preparations for all variable menu items
             // (i.e. folder content and config folder items)
-            sNextMenuId = (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE);
-            ulVarItemCount = 0;         // reset the number of variable items to 0
+            G_sNextMenuId = (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE);
+            G_ulVarItemCount = 0;         // reset the number of variable items to 0
 
-            if (llContentMenuItems.ulMagic != LINKLISTMAGIC)
+            if (G_llContentMenuItems.ulMagic != LINKLISTMAGIC)
             {
                 // first call: initialize lists
-                lstInit(&llContentMenuItems, TRUE);
-                lstInit(&llVarMenuItems, TRUE);
+                lstInit(&G_llContentMenuItems, TRUE);
+                lstInit(&G_llVarMenuItems, TRUE);
             } else
             {
                 // subsequent calls: clear lists
                 // (this might take a while)
                 HPOINTER    hptrOld = winhSetWaitPointer();
-                lstClear(&llContentMenuItems);
-                lstClear(&llVarMenuItems);
+                lstClear(&G_llContentMenuItems);
+                lstClear(&G_llVarMenuItems);
                 WinSetPointer(HWND_DESKTOP, hptrOld);
             }
 
@@ -1751,6 +1794,7 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
                     "of its subfolders once. Make sure that all the folders are either "
                     "in Icon or Details view per default.");
             krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT, (MPARAM)pszErrMsg, MPNULL);
+            mnuInvalidateConfigCache();
         }
     } END_CATCH();
 
@@ -1945,10 +1989,12 @@ BOOL mnuProgramObjectSelected(WPObject *somSelf, WPProgram *pProgram)
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
 
     // get program object data
-    if ((_wpQueryProgDetails(pProgram, (PPROGDETAILS)NULL, &ulSize))) {
-        if ((pProgDetails = (PPROGDETAILS)_wpAllocMem(somSelf, ulSize, NULL)) != NULL) {
-            if ((_wpQueryProgDetails(pProgram, pProgDetails, &ulSize))) {
-
+    if ((_wpQueryProgDetails(pProgram, (PPROGDETAILS)NULL, &ulSize)))
+    {
+        if ((pProgDetails = (PPROGDETAILS)_wpAllocMem(somSelf, ulSize, NULL)) != NULL)
+        {
+            if ((_wpQueryProgDetails(pProgram, pProgDetails, &ulSize)))
+            {
                 pFolder = somSelf;
 
                 // dereference folder/disk shadows
@@ -1974,21 +2020,25 @@ BOOL mnuProgramObjectSelected(WPObject *somSelf, WPProgram *pProgram)
                 // temporarily; this will start the
                 // program object in the directory
                 // of the folder whose context menu was selected */
-                if (ValidRealName && (pProgDetails->pszStartupDir == NULL)) {
+                if (ValidRealName && (pProgDetails->pszStartupDir == NULL))
+                {
                     StartupChanged = TRUE;
                     pProgDetails->pszStartupDir = szRealName;
                 }
 
                 // start playing with the object's parameter list,
                 // if the global settings allow it */
-                if (pGlobalSettings->AppdParam) {
+                if (pGlobalSettings->AppdParam)
+                {
                     // if the folder's real name contains spaces,
                     // we need to enclose it in quotes */
-                    if (strchr(szRealName, ' ')) {
+                    if (strchr(szRealName, ' '))
+                    {
                         strcpy(szPassRealName, "\"");
                         strcat(szPassRealName, szRealName);
                         strcat(szPassRealName, "\"");
-                    } else
+                    }
+                    else
                         strcpy(szPassRealName, szRealName);
 
                     // backup prog data for later restore
@@ -2035,7 +2085,8 @@ BOOL mnuProgramObjectSelected(WPObject *somSelf, WPProgram *pProgram)
 
                                     ParamsChanged = TRUE;
                                 }
-                                else { // no text data in clipboard
+                                else
+                                {   // no text data in clipboard
                                     WinCloseClipbrd(hab);
                                     cmnSetHelpPanel(ID_XFH_NOTEXTCLIP);
                                     if (WinDlgBox(HWND_DESKTOP,         // parent is desktop
@@ -2070,9 +2121,11 @@ BOOL mnuProgramObjectSelected(WPObject *somSelf, WPProgram *pProgram)
 
                 // now remove "~" from title, if allowed
                 pszOldTitle = pProgDetails->pszTitle;
-                if ((pszOldTitle) && (pGlobalSettings->RemoveX)) {
+                if ((pszOldTitle) && (pGlobalSettings->RemoveX))
+                {
                     PSZ pszPos = strchr(pszOldTitle, '~');
-                    if (pszPos)  {
+                    if (pszPos)
+                    {
                         TitleChanged = TRUE;
                         strncpy(szNewTitle, pszOldTitle, (pszPos-pszOldTitle));
                         strcat(szNewTitle, pszPos+1);
@@ -2147,7 +2200,8 @@ BOOL mnuIsSortMenuItemSelected(XFolder* somSelf,
     ULONG       ulMenuId2 = ulMenuId - pGlobalSettings->VarMenuOffset;
     USHORT      usAlwaysSort, usDefaultSort;
 
-    switch (ulMenuId2) {
+    switch (ulMenuId2)
+    {
         // new sort items
         case ID_XFMI_OFS_SORTBYCLASS:
         case ID_XFMI_OFS_SORTBYEXT:
@@ -2170,10 +2224,11 @@ BOOL mnuIsSortMenuItemSelected(XFolder* somSelf,
                 mnuCheckDefaultSortItem(pGlobalSettings,
                                         hwndMenu,
                                         usSort);
-            } else
+            }
+            else
                 _xwpSortViewOnce(somSelf,
-                        hwndFrame,
-                        usSort);
+                                 hwndFrame,
+                                 usSort);
 
             // do not dismiss menu when shift was pressed
             if (pbDismiss)
@@ -2202,8 +2257,9 @@ BOOL mnuIsSortMenuItemSelected(XFolder* somSelf,
         break; }
 
         default:
-            switch (ulMenuId) { // check original menu id
-
+            // check original menu id
+            switch (ulMenuId)
+            {
                 // one of the original WPS "sort" menu items:
                 case ID_WPMI_SORTBYNAME:
                 case ID_WPMI_SORTBYTYPE:
@@ -2259,6 +2315,31 @@ BOOL mnuIsSortMenuItemSelected(XFolder* somSelf,
 }
 
 /*
+ *@@ mnuCreateFromTemplate:
+ *      creates a new object in the specified folder.
+ *      Gets called from fdr_fnwpSupplFolderObject
+ *      upon SOM_CREATEFROMTEMPLATE. We use a few
+ *      global variables for temporary storage.
+ *
+ *@@added V0.9.2 (2000-02-26) [umoeller]
+ */
+
+VOID mnuCreateFromTemplate(WPObject *pTemplate,
+                           WPFolder *pFolder)
+{
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    wpshCreateFromTemplate(pTemplate,  // template
+                           pFolder,    // folder
+                           G_hwndTemplateFrame, // view frame
+                           pGlobalSettings->TemplatesOpenSettings,
+                                    // 0: do nothing after creation
+                                    // 1: open settings notebook
+                                    // 2: make title editable
+                           pGlobalSettings->TemplatesReposition,
+                           &G_ptlTemplateMousePos);
+}
+
+/*
  *@@ mnuMenuItemSelected:
  *      this gets called by XFolder::wpMenuItemSelected and
  *      XFldDisk::wpMenuItemSelected. Since both classes have
@@ -2311,9 +2392,22 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                                           pGlobalSettings, &fDummy))
                 brc = TRUE;
 
-            // else: no sort menu item
+            // no sort menu item:
+            // check other variable IDs
             else switch (ulMenuId2)
             {
+                /*
+                 * ID_XFMI_OFS_OPENPARTITIONS:
+                 *      open WPDrives "Partitions" view
+                 *
+                 *  V0.9.2 (2000-02-29) [umoeller]
+                 */
+
+                case ID_XFMI_OFS_OPENPARTITIONS:
+                    partCreatePartitionsView(somSelf,
+                                             ulMenuId);
+                break;
+
                 /*
                  * ID_XFMI_OFS_PRODINFO:
                  *      "Product Information"
@@ -2493,13 +2587,13 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                     // anything else: check if it's one of our variable menu items
                     ulFirstVarMenuId = pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE;
                     if (     (ulMenuId >= ulFirstVarMenuId)
-                          && (ulMenuId <  ulFirstVarMenuId + ulVarItemCount)
+                          && (ulMenuId <  ulFirstVarMenuId + G_ulVarItemCount)
                        )
                     {
                         // yes, variable menu item selected:
                         // get corresponding menu list item from the list that
                         // was created by mnuModifyFolderPopupMenu
-                        pItem = (PVARMENULISTITEM)lstItemFromIndex(&llVarMenuItems,
+                        pItem = (PVARMENULISTITEM)lstItemFromIndex(&G_llVarMenuItems,
                                                                    (ulMenuId
                                                                         - ulFirstVarMenuId));
 
@@ -2517,22 +2611,22 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
 
                                 case OC_TEMPLATE:
                                 {
-                                    // if the object is a template, we create a new object from it
-                                    // WPObject        *pNewObject;
-                                    // ULONG           ulCreateFlags = 0;
-                                    XFolderData     *somThis = XFolderGetData(somSelf);
-                                    POINTL          ptlMouse;
-
-                                    ptlMouse.x = _MenuMousePosX;
-                                    ptlMouse.y = _MenuMousePosY;
-
-                                    wpshCreateFromTemplate(pObject,  // template
-                                            somSelf,                // folder
-                                            hwndFrame,
-                                            pGlobalSettings->TemplatesOpenSettings,
-                                            pGlobalSettings->TemplatesReposition,
-                                            &ptlMouse);
-
+                                    // if the object is a template, we create a new
+                                    // object from it; do this in the supplementary
+                                    // object window V0.9.2 (2000-02-26) [umoeller]
+                                    PSUBCLASSEDLISTITEM psli = fdrQueryPSLI(hwndFrame,
+                                                                            NULL);
+                                    if (psli)
+                                    {
+                                        XFolderData     *somThis = XFolderGetData(somSelf);
+                                        G_hwndTemplateFrame = hwndFrame;
+                                        G_ptlTemplateMousePos.x = _MenuMousePosX;
+                                        G_ptlTemplateMousePos.y = _MenuMousePosY;
+                                        WinPostMsg(psli->hwndSupplObject,
+                                                   SOM_CREATEFROMTEMPLATE,
+                                                   (MPARAM)pObject, // template
+                                                   (MPARAM)somSelf); // folder
+                                    }
                                 break; } // end OC_TEMPLATE
 
                                 case OC_PROGRAM:
@@ -2622,11 +2716,11 @@ BOOL mnuMenuItemHelpSelected(WPObject *somSelf, ULONG MenuId)
         // open a help panel with generic help on XFolder */
         ulFirstVarMenuId = (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE);
         if ( (MenuId >= ulFirstVarMenuId)
-                && (MenuId < ulFirstVarMenuId + ulVarItemCount)
+                && (MenuId < ulFirstVarMenuId + G_ulVarItemCount)
              )
         {
             PVARMENULISTITEM pItem = (PVARMENULISTITEM)lstItemFromIndex(
-                        &llVarMenuItems,
+                        &G_llVarMenuItems,
                         (MenuId - ulFirstVarMenuId));
 
             if (pItem)
@@ -3133,7 +3227,7 @@ MRESULT mnuMeasureItem(POWNERITEM poi,      // owner-draw info structure
     // get the item from the linked list of variable menu items
     // which corresponds to the menu item whose size is being queried
     PVARMENULISTITEM pItem
-        = (PVARMENULISTITEM)lstItemFromIndex(&llVarMenuItems,
+        = (PVARMENULISTITEM)lstItemFromIndex(&G_llVarMenuItems,
                                              (poi->idItem
                                                 - (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE)));
 
@@ -3193,7 +3287,7 @@ BOOL mnuDrawItem(PCGLOBALSETTINGS pGlobalSettings,   // shortcut to global setti
     // get the item from the linked list of variable menu items
     // which corresponds to the menu item being drawn
     PVARMENULISTITEM pItem
-        = (PVARMENULISTITEM)lstItemFromIndex(&llVarMenuItems,
+        = (PVARMENULISTITEM)lstItemFromIndex(&G_llVarMenuItems,
                                              (poi->idItem
                                                 - (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_VARIABLE)));
     HPOINTER hIcon;
@@ -3250,18 +3344,18 @@ BOOL mnuDrawItem(PCGLOBALSETTINGS pGlobalSettings,   // shortcut to global setti
             // defined for the little Warp 4 triangle.
             if (pItem->usObjType == OC_CONTENTFOLDER)
             {
-                if (hMenuArrowIcon == NULLHANDLE)
+                if (G_hMenuArrowIcon == NULLHANDLE)
                 {
-                    hMenuArrowIcon = WinLoadPointer(HWND_DESKTOP,
-                                                    cmnQueryMainModuleHandle(),
-                                                    (fIsWarp4)
-                                                        // on Warp 4, load the triangle
-                                                      ? ID_ICONMENUARROW4
-                                                        // on Warp 3, load the arrow
-                                                      : ID_ICONMENUARROW3);
+                    G_hMenuArrowIcon = WinLoadPointer(HWND_DESKTOP,
+                                                      cmnQueryMainModuleHandle(),
+                                                      (G_fIsWarp4)
+                                                          // on Warp 4, load the triangle
+                                                        ? ID_ICONMENUARROW4
+                                                          // on Warp 3, load the arrow
+                                                        : ID_ICONMENUARROW3);
                 }
                 // _Pmpf(("hIcon: 0x%lX", hMenuArrowIcon));
-                if (hMenuArrowIcon)
+                if (G_hMenuArrowIcon)
                 {
                     // DosBeep(10000, 10);
                     WinDrawPointer(poi->hps,
@@ -3270,7 +3364,7 @@ BOOL mnuDrawItem(PCGLOBALSETTINGS pGlobalSettings,   // shortcut to global setti
                                    +(
                                        (rtlMenuItem.yTop-rtlMenuItem.yBottom-ulMiniIconSize) / 2
                                    ),
-                                   hMenuArrowIcon,
+                                   G_hMenuArrowIcon,
                                    DP_MINI);
                 }
             }
@@ -3346,10 +3440,10 @@ VOID mnuAddMenusInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
     if (flFlags & CBI_ENABLE)
     {
         BOOL fViewVisible =
-        fIsWarp4 = doshIsWarp4();
+        G_fIsWarp4 = doshIsWarp4();
         fViewVisible =
-               (    ( (fIsWarp4)  && (pGlobalSettings->RemoveViewMenu == 0) )
-                 || ( (!fIsWarp4) && ((pGlobalSettings->DefaultMenuItems & CTXT_SELECT) == 0)
+               (    ( (G_fIsWarp4)  && (pGlobalSettings->RemoveViewMenu == 0) )
+                 || ( (!G_fIsWarp4) && ((pGlobalSettings->DefaultMenuItems & CTXT_SELECT) == 0)
                ));
         WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_FOLDERCONTENT,
                          !(pGlobalSettings->NoSubclassing));

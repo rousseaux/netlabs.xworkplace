@@ -143,6 +143,30 @@ SOM_Scope ULONG  SOMLINK xfstup_xwpAddXFldStartupPage(XFldStartup *somSelf,
 }
 
 /*
+ *
+ *@@ wpFilterPopupMenu:
+ *      remove "Create another" menu item.
+ *
+ *@@added V0.9.2 (2000-02-26) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xfstup_wpFilterPopupMenu(XFldStartup *somSelf,
+                                                  ULONG ulFlags,
+                                                  HWND hwndCnr,
+                                                  BOOL fMultiSelect)
+{
+    /* XFldStartupData *somThis = XFldStartupGetData(somSelf); */
+    XFldStartupMethodDebug("XFldStartup","xfstup_wpFilterPopupMenu");
+
+    return (XFldStartup_parent_XFolder_wpFilterPopupMenu(somSelf,
+                                                         ulFlags,
+                                                         hwndCnr,
+                                                         fMultiSelect)
+            & ~CTXT_NEW
+           );
+}
+
+/*
  *@@ wpModifyPopupMenu:
  *      add a "Process content" menu item to this
  *      popup menu; the other menu items are inherited

@@ -99,7 +99,7 @@
 #include "helpers\undoc.h"              // some undocumented stuff
 
 // global array of all awake Disk objects
-XFldDisk* apDrives[27];
+// XFldDisk* apDrives[27];
 
 /* ******************************************************************
  *                                                                  *
@@ -147,8 +147,8 @@ SOM_Scope void  SOMLINK xfdisk_wpObjectReady(XFldDisk *somSelf,
 
     XFldDisk_parent_WPDisk_wpObjectReady(somSelf, ulCode, refObject);
 
-    ulDisk = _wpQueryLogicalDrive(somSelf);
-    apDrives[ulDisk] = somSelf;
+    // ulDisk = _wpQueryLogicalDrive(somSelf);
+    // apDrives[ulDisk] = somSelf;
 }
 
 /*
@@ -477,16 +477,16 @@ SOM_Scope HWND  SOMLINK xfdisk_wpOpen(XFldDisk *somSelf, HWND hwndCnr,
  *      after the Desktop is up.
  */
 
-SOM_Scope XFldDisk*  SOMLINK xfdiskM_xwpclsQueryDiskObject(M_XFldDisk *somSelf,
+/* SOM_Scope XFldDisk*  SOMLINK xfdiskM_xwpclsQueryDiskObject(M_XFldDisk *somSelf,
                                                           WPObject* pObject)
 {
     ULONG ulLogicalDrive = wpshQueryLogicalDriveNumber(pObject);
-    /* M_XFldDiskData *somThis = M_XFldDiskGetData(somSelf); */
+    // M_XFldDiskData *somThis = M_XFldDiskGetData(somSelf);
     M_XFldDiskMethodDebug("M_XFldDisk","xfdiskM_xwpclsQueryDiskObject");
 
     // _Pmpf(("xwpclsQueryDiskObject: ulDrive = %d", ulLogicalDrive));
     return (apDrives[ulLogicalDrive]);
-}
+} */
 
 /*
  *@@ wpclsInitData:
@@ -510,7 +510,7 @@ SOM_Scope void  SOMLINK xfdiskM_wpclsInitData(M_XFldDisk *somSelf)
         krnUnlockGlobals();
     }
 
-    memset(&apDrives, 0, sizeof(apDrives));
+    // memset(&apDrives, 0, sizeof(apDrives));
 }
 
 

@@ -104,8 +104,10 @@ BOOL                fAllWindowsClosed = FALSE,
                     fClosingApps = FALSE,
                     fShutdownBegun = FALSE;
 
-PID                 pidWPS, pidPM;
-ULONG               sidWPS, sidPM;
+PID                 pidWPS,
+                    pidPM;
+ULONG               sidWPS,
+                    sidPM;
 
 ULONG               ulMaxItemCount,
                     ulLastItemCount;
@@ -193,12 +195,15 @@ BOOL xsdInitiateShutdown(VOID)
 
     {
         PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(5000);
+        if (    (pKernelGlobals->fShutdownRunning)
+             || (thrQueryID(pKernelGlobals->ptiShutdownThread))
+           )
+            // shutdown thread already running: return!
+            fStartShutdown = FALSE;
+
         // lock shutdown menu items
         pKernelGlobals->fShutdownRunning = TRUE;
 
-        if (thrQueryID(pKernelGlobals->ptiShutdownThread))
-            // shutdown thread already running: return!
-            fStartShutdown = FALSE;
         krnUnlockGlobals();
     }
 
@@ -294,12 +299,15 @@ BOOL xsdInitiateRestartWPS(VOID)
 
     {
         PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(5000);
+        if (    (pKernelGlobals->fShutdownRunning)
+             || (thrQueryID(pKernelGlobals->ptiShutdownThread))
+           )
+            // shutdown thread already running: return!
+            fStartShutdown = FALSE;
+
         // lock shutdown menu items
         pKernelGlobals->fShutdownRunning = TRUE;
 
-        if (thrQueryID(pKernelGlobals->ptiShutdownThread))
-            // shutdown thread already running: return!
-            fStartShutdown = FALSE;
         krnUnlockGlobals();
     }
 
@@ -353,70 +361,83 @@ BOOL xsdInitiateRestartWPS(VOID)
  *      allows setting all the shutdown parameters by
  *      using the SHUTDOWNPARAMS structure. This is used
  *      for calling XShutdown externally, which is done
- *      by sending T1M_EXTERNALSHUTDOWN to the XFolder
- *      object window (see xfobj.c).
+ *      by sending T1M_EXTERNALSHUTDOWN to the thread-1
+ *      object window (see kernel.c).
  *
  *      NOTE: The memory block pointed to by psdp is
  *      not released by this function.
+ *
+ *@@changed V0.9.2 (2000-02-28) [umoeller]: fixed KERNELGLOBALS locks
  */
 
 BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
 {
-    PKERNELGLOBALS      pKernelGlobals = krnLockGlobals(5000);
+    BOOL                fStartShutdown = TRUE;
+    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     PSHUTDOWNPARAMS     psdpNew = (PSHUTDOWNPARAMS)malloc(sizeof(SHUTDOWNPARAMS));
 
-    if (thrQueryID(pKernelGlobals->ptiShutdownThread))
     {
-        // shutdown thread already running: return!
+        PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(5000);
+        if (    (pKernelGlobals->fShutdownRunning)
+             || (thrQueryID(pKernelGlobals->ptiShutdownThread))
+           )
+            // shutdown thread already running: return!
+            fStartShutdown = FALSE;
+
+        // lock shutdown menu items
+        pKernelGlobals->fShutdownRunning = TRUE;
+
         krnUnlockGlobals();
-        return FALSE;
     }
 
     if (psdpShared == NULL)
+        fStartShutdown = FALSE;
+
+    if (fStartShutdown)
     {
-        krnUnlockGlobals();
-        return FALSE;
-    }
+        psdpNew->optReboot = psdpShared->optReboot;
+        psdpNew->optRestartWPS = psdpShared->optRestartWPS;
+        psdpNew->optWPSCloseWindows = psdpShared->optWPSCloseWindows;
+        psdpNew->optConfirm = psdpShared->optConfirm;
+        psdpNew->optAutoCloseVIO = psdpShared->optAutoCloseVIO;
+        psdpNew->optLog = psdpShared->optLog;
+        psdpNew->optAnimate = psdpShared->optAnimate;
 
-    pKernelGlobals->fShutdownRunning = TRUE;
+        psdpNew->optDebug = psdpShared->optDebug;
 
-    psdpNew->optReboot = psdpShared->optReboot;
-    psdpNew->optRestartWPS = psdpShared->optRestartWPS;
-    psdpNew->optWPSCloseWindows = psdpShared->optWPSCloseWindows;
-    psdpNew->optConfirm = psdpShared->optConfirm;
-    psdpNew->optAutoCloseVIO = psdpShared->optAutoCloseVIO;
-    psdpNew->optLog = psdpShared->optLog;
-    psdpNew->optAnimate = psdpShared->optAnimate;
+        strcpy(psdpNew->szRebootCommand, psdpShared->szRebootCommand);
 
-    psdpNew->optDebug = psdpShared->optDebug;
-
-    strcpy(psdpNew->szRebootCommand, psdpShared->szRebootCommand);
-
-    if (psdpNew->optConfirm)
-    {
-        ULONG ulReturn;
-        if (psdpNew->optRestartWPS)
-            ulReturn = xsdConfirmRestartWPS(psdpNew);
-        else
-            ulReturn = xsdConfirmShutdown(psdpNew);
-
-        if (ulReturn != DID_OK)
+        if (psdpNew->optConfirm)
         {
-            pKernelGlobals->fShutdownRunning = FALSE;
-            krnUnlockGlobals();
-            return (FALSE);
+            ULONG ulReturn;
+            if (psdpNew->optRestartWPS)
+                ulReturn = xsdConfirmRestartWPS(psdpNew);
+            else
+                ulReturn = xsdConfirmShutdown(psdpNew);
+
+            if (ulReturn != DID_OK)
+                fStartShutdown = FALSE;
         }
     }
 
-    // everything OK: create shutdown thread,
-    // which will handle the rest
-    thrCreate(&(pKernelGlobals->ptiShutdownThread),
-                fntShutdownThread,
-                (ULONG)psdpNew);
+    {
+        PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(5000);
+        if (fStartShutdown)
+        {
+            // everything OK: create shutdown thread,
+            // which will handle the rest
+            thrCreate(&(pKernelGlobals->ptiShutdownThread),
+                        fntShutdownThread,
+                        (ULONG)psdpNew);           // pass SHUTDOWNPARAMS to thread
+            xthrPlaySystemSound(MMSOUND_XFLD_SHUTDOWN);
+        }
+        else
+            free(psdpNew);     // fixed V0.9.1 (99-12-12)
 
-    krnUnlockGlobals();
+        pKernelGlobals->fShutdownRunning = fStartShutdown;
+        krnUnlockGlobals();
+    }
 
-    xthrPlaySystemSound(MMSOUND_XFLD_SHUTDOWN);
     return (TRUE);
 }
 
@@ -2210,7 +2231,8 @@ PSHUTLISTITEM xsdItemFromPID(PLINKLIST pList,
         {
             fSemOwned = (WinRequestMutexSem(hmtx, ulTimeout) == NO_ERROR);
             fAccess = fSemOwned;
-        } else
+        }
+        else
             fAccess = TRUE;
 
         if (fAccess)
@@ -2229,7 +2251,8 @@ PSHUTLISTITEM xsdItemFromPID(PLINKLIST pList,
     }
     CATCH(excpt1) { } END_CATCH();
 
-    if (fSemOwned) {
+    if (fSemOwned)
+    {
         DosReleaseMutexSem(hmtx);
         fSemOwned = FALSE;
     }
@@ -2549,7 +2572,8 @@ void xsdBuildShutList(PSHUTDOWNPARAMS psdp,   // in: shutdown parameters
         strcpy(szSwUpperTitle, pSwBlock->aswentry[ul].swctl.szSwtitle);
         WinUpper(habDesktop, 0, 0, szSwUpperTitle);
 
-        if (pSwBlock->aswentry[ul].swctl.bProgType == PROG_DEFAULT) {
+        if (pSwBlock->aswentry[ul].swctl.bProgType == PROG_DEFAULT)
+        {
             // in this case, we need to find out what
             // type the program has ourselves
             // ULONG ulType = 0;
@@ -2592,19 +2616,19 @@ void xsdBuildShutList(PSHUTDOWNPARAMS psdp,   // in: shutdown parameters
                 // DOS/Win-OS/2 window: get real PID/SID, because
                 // the tasklist contains false data
                 WinQueryWindowProcess(pSwBlock->aswentry[ul].swctl.hwnd,
-                    &(pSwBlock->aswentry[ul].swctl.idProcess),
-                    &(pSwBlock->aswentry[ul].swctl.idSession));
+                                      &(pSwBlock->aswentry[ul].swctl.idProcess),
+                                      &(pSwBlock->aswentry[ul].swctl.idSession));
             else if (pSwBlock->aswentry[ul].swctl.idProcess == pidWPS)
             {
                 PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
                 // PID == Workplace Shell PID: get SOM pointer from hwnd
                 pObj = _wpclsQueryObjectFromFrame(_WPDesktop,
-                            pSwBlock->aswentry[ul].swctl.hwnd);
-                if (!pObj) {
-                    if (pSwBlock->aswentry[ul].swctl.hwnd == hwndActiveDesktop) {
+                                                  pSwBlock->aswentry[ul].swctl.hwnd);
+                if (!pObj)
+                {
+                    if (pSwBlock->aswentry[ul].swctl.hwnd == hwndActiveDesktop)
                         pObj = pActiveDesktop;
-                    }
                     else
                         Append = FALSE;
                 }
@@ -4606,7 +4630,7 @@ VOID xsdFinishAPMPowerOff(VOID)
     }
     // else: APM_OK means preparing went alright
 
-    if (ulrcAPM & APM_DOSSHUTDOWN_0)
+    /* if (ulrcAPM & APM_DOSSHUTDOWN_0)
     {
         // shutdown request by apm.c:
         if (fileShutdownLog)
@@ -4617,7 +4641,7 @@ VOID xsdFinishAPMPowerOff(VOID)
         }
 
         DosShutdown(0);
-    }
+    } */
     // if apmPreparePowerOff requested this,
     // do DosShutdown(1)
     else if (ulrcAPM & APM_DOSSHUTDOWN_1)

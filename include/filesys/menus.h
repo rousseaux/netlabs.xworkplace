@@ -137,6 +137,9 @@
                                    PCGLOBALSETTINGS pGlobalSettings,
                                    PBOOL pbDismiss);
 
+    VOID mnuCreateFromTemplate(WPObject *pTemplate,
+                               WPFolder *pFolder);
+
     BOOL mnuMenuItemSelected(WPFolder *somSelf, HWND hwndFrame, ULONG ulMenuId);
 
     BOOL mnuMenuItemHelpSelected(WPObject *somSelf, ULONG MenuId);

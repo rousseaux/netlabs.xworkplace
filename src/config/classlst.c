@@ -119,8 +119,6 @@
 #define ID_SPLITMAIN            3001
 #define ID_SPLITRIGHT           3002
 
-PSZ pszClassInfo = NULL;
-
 /*
  *@@ METHODRECORD:
  *      extended record structure for
@@ -247,6 +245,14 @@ typedef struct _CLASSLISTMETHODDATA
     PMETHODRECORD       pMethodReccSource;  // current source record for context menu or NULL
     XADJUSTCTRLS        xacMethodInfo;      // for winhAdjustControls
 } CLASSLISTMETHODDATA, *PCLASSLISTMETHODDATA;
+
+/* ******************************************************************
+ *                                                                  *
+ *   Global variables                                               *
+ *                                                                  *
+ ********************************************************************/
+
+PSZ pszClassInfo = NULL;
 
 /*
  *@@ ampClassCnrCtls:
@@ -1302,6 +1308,9 @@ MRESULT EXPENTRY fnwpClassListClient(HWND hwndClient, ULONG msg, MPARAM mp1, MPA
             if (pswpNew->fl & SWP_SIZE)
             {
                 if (pClientData)
+                    // adjust size of "split window",
+                    // which will rearrange all the linked
+                    // windows (comctl.c)
                     WinSetWindowPos(pClientData->hwndSplitMain, HWND_TOP,
                                     0, 0,
                                     pswpNew->cx, pswpNew->cy, // sCXNew, sCYNew,
@@ -3008,7 +3017,6 @@ HWND cllCreateClassListView(WPObject *somSelf,
                             HWND hwndCnr,
                             ULONG ulView)
 {
-    // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     HWND            hwndFrame = 0;
 
     TRY_LOUD(excpt1, NULL)
