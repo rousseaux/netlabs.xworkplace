@@ -188,13 +188,6 @@ ULONG           G_cFunctionKeys = 0;
 HMTX            G_hmtxGlobalHotkeys = NULLHANDLE;
     // mutex for protecting the keys arrays
 
-#define XM_HACKSWITCHLIST       (WM_USER + 1736)
-#define MP1_HACKSWITCHLIST      ((MPARAM)0xfa34c628)
-#define MP2_HACKSWITCH_ENABLE   ((MPARAM)0x1976c7af)
-#define MP2_HACKSWITCH_DISABLE  ((MPARAM)0xf7a12dd7)
-
-PFNWP G_pfnwpSwitchListOrig = NULL;
-
 /******************************************************************
  *
  *  System-wide global variables for input hook
@@ -374,12 +367,13 @@ VOID InitializeGlobalsForHooks(VOID)
                         }
                     }
                 }
+
                 WinEndEnumWindows(henumFrame);
             }
         }
     }
-    WinEndEnumWindows(henum);
 
+    WinEndEnumWindows(henum);
 }
 
 /******************************************************************
@@ -463,8 +457,6 @@ PHOOKDATA EXPENTRY hookInit(HWND hwndDaemonObject)  // in: daemon object window 
 {
     APIRET arc = NO_ERROR;
 
-    _Pmpf(("Entering hookInit"));
-
     if (G_hmtxGlobalHotkeys == NULLHANDLE)
         arc = DosCreateMutexSem(NULL,        // unnamed
                                 &G_hmtxGlobalHotkeys,
@@ -473,20 +465,11 @@ PHOOKDATA EXPENTRY hookInit(HWND hwndDaemonObject)  // in: daemon object window 
 
     if (arc == NO_ERROR)
     {
-        _Pmpf(("Storing data"));
         G_HookData.hwndDaemonObject = hwndDaemonObject;
         G_HookData.habDaemonObject = WinQueryAnchorBlock(hwndDaemonObject);
 
-        // G_HookData.hmtxXPager = hmtxXPager;
-
-        _Pmpf(("  Done storing data"));
-
         if (G_HookData.hmodDLL)       // initialized by _DLL_InitTerm
         {
-            // BOOL fSuccess = FALSE;
-
-            _Pmpf(("hookInit: hwndCaller = 0x%lX", hwndDaemonObject));
-
             // initialize globals needed by the hook
             InitializeGlobalsForHooks();
 
@@ -520,13 +503,14 @@ PHOOKDATA EXPENTRY hookInit(HWND hwndDaemonObject)  // in: daemon object window 
                                                         G_HookData.hmodDLL);
 
 
-            // subclass the system window list
-            /* hookLog(__FILE__, __LINE__, __FUNCTION__,
-                    "Sending XM_HACKSWITCHLIST MP2_HACKSWITCH_ENABLE");
-            WinSendMsg(G_HookData.hwndSwitchList,
-                       XM_HACKSWITCHLIST,
-                       MP1_HACKSWITCHLIST,
-                       MP2_HACKSWITCH_ENABLE); */
+            #ifdef HACKSWITCHLIST
+                hookLog(__FILE__, __LINE__, __FUNCTION__,
+                        "hacking switch list");
+                WinPostMsg(G_HookData.hwndSwitchListCnr,
+                           WM_HACKSWITCHLIST,
+                           MP1_HACKSWITCHLIST,
+                           MP2_SUBCLASS);
+            #endif
         }
 
         _Pmpf(("Leaving hookInit"));
@@ -555,14 +539,12 @@ BOOL EXPENTRY hookKill(void)
 
     _Pmpf(("hookKill"));
 
-    /* if (G_pfnwpSwitchListOrig)
-    {
-        // un-subclass the system window list
-        WinSendMsg(G_HookData.hwndSwitchList,
-                   XM_HACKSWITCHLIST,
+    #ifdef HACKSWITCHLIST
+        WinSendMsg(G_HookData.hwndSwitchListCnr,
+                   WM_HACKSWITCHLIST,
                    MP1_HACKSWITCHLIST,
-                   MP2_HACKSWITCH_DISABLE);
-    } */
+                   MP2_UNSUBCLASS);
+    #endif
 
     if (G_HookData.fInputHooked)
     {
@@ -742,201 +724,6 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
 
 /******************************************************************
  *
- *  Subclassed switch list
- *
- ******************************************************************/
-
-#if 0
-
-    /*
-     *@@ fnwpSubclassedSwitchlist:
-     *      window procedure for the subclassed PM window list.
-     *
-     *      See HackSwitchList() for how this is done.
-     *
-     *      This is for the window list's frame. This in turn has
-     *      a special client which has the container as its child.
-     *      See InitializeGlobalsForHooks().
-     *
-     *@@added V0.9.16 (2002-01-13) [umoeller]
-     */
-
-    MRESULT EXPENTRY fnwpSubclassedSwitchlist(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
-    {
-        MRESULT mrc = 0;
-        DosBeep(1000, 10);
-        switch (msg)
-        {
-            default:
-                mrc = G_pfnwpSwitchListOrig(hwnd, msg, mp1, mp2);
-        }
-
-        return mrc;
-    }
-
-    #pragma pack(1)
-
-    /*
-     *@@ MQ:
-     *      first fields of the PM message queue structure,
-     *      as far as I was able to decode that.
-     *
-     *      The "HMQ" returned by WinQueryWindowPtr(QWL_HMQ)
-     *      is really a pointer into PM's shared memory.
-     *      Yeah, this is really safe. If someone writes
-     *      into that area, PM is doomed, but that's what
-     *      we need to do.
-     *
-     *      There are many more fields following, but we
-     *      need only the PID, so I didn't bother.
-     *
-     *@@added V0.9.16 (2002-01-13) [umoeller]
-     */
-
-    typedef struct _MQ
-    {
-        struct _MQ      *pNext;         // next MQ
-        ULONG           cbStruct;       // size of structure
-        ULONG           cMessages;      // current message count
-        ULONG           cMaxMessages;   // MQ size
-        ULONG           ulUnknown1;
-        ULONG           ulUnknown2;
-        PID             pid;            // process ID of queue
-        TID             tid;            // thread ID of queue
-    } MQ, *PMQ;
-
-    #pragma pack()
-
-    /*
-     *@@ SubclassSwitchList:
-     *      very evil hack for doing a WinSubclassWindow on the
-     *      PM switch list window that actually works.
-     *
-     *      Parameters are as with WinSubclassWindow, i.e.
-     *      running this with the old window proc will undo
-     *      subclassing. Returns the old window proc that
-     *      was replaced.
-     *
-     *      May run on the Shell process only.
-     *
-     *@@added V0.9.16 (2002-01-13) [umoeller]
-     */
-
-    PFNWP SubclassSwitchList(PFNWP pfnwpNew)
-    {
-        PFNWP   pfnwpOld = NULL;
-        PMQ pmq;
-
-        // to make WinSetWindowPtr(QWP_PFNWP) work, the processes
-        // of the caller and the window must match; actually they
-        // do since we're running on the Shell process here, but
-        // the message queue of the Shell process has a PID of 0
-        // so we must manually hack that!
-
-        DosEnterCritSec();
-
-        // 1) HMQ is really pointer into PM's shared memory
-        if (pmq = WinQueryWindowPtr(G_HookData.hwndSwitchListCnr,
-                                    QWL_HMQ))
-        {
-            // 2) remember old PID from MQ (should be 0, but to be safe)
-            ULONG   pidOld = pmq->pid;
-
-            // 3) get real Shell PID
-            PTIB    ptib;
-            PPIB    ppib;
-            DosGetInfoBlocks(&ptib, &ppib);
-
-            // 4) hack MQ with real Shell PID
-            pmq->pid = ppib->pib_ulpid;
-
-            // 5) subclass (WinSubclassWindow doesn't work here)
-            pfnwpOld = (PFNWP)WinQueryWindowPtr(G_HookData.hwndSwitchListCnr, QWP_PFNWP);
-            WinSetWindowPtr(G_HookData.hwndSwitchListCnr, QWP_PFNWP, (PVOID)pfnwpNew);
-
-            // 6) restore old PID
-            pmq->pid = pidOld;
-        }
-
-        DosExitCritSec();
-
-        return pfnwpOld;
-    }
-
-    /*
-     *@@ HackSwitchList:
-     *      subclasses the PM window list, or undoes subclassing.
-     *
-     *      This is a truly evil hack. Simply running WinSubclassWindow
-     *      on the switch list doesn't work for two reasons:
-     *
-     *      1)  The caller must be on the same process as the window.
-     *          This is hard to do with the switch list because it
-     *          is created by the Shell process (first PMSHELL).
-     *
-     *          This is why initHook now sends a very strange user
-     *          message to the switch list so that hookSendMsgHook
-     *          can detect that (hopefully it is really unique) and
-     *          run this code in the Shell process.
-     *
-     *      2)  Instead of WinSubclassWindow, we simply run
-     *          WinSetWindowPtr(QWP_PFNWP) on the switch list. From
-     *          my testing, that function doesn't perform as many
-     *          checks which is why it works on the switch list too.
-     *
-     *          Still, for QWP_PFNWP, WinSetWindowPtr appears to
-     *          check if the processes of the caller and the window's
-     *          queue match. Since, for some reason, the shell's
-     *          queue has a PID of 0, we need to actually modify
-     *          the queue's memory for a second. Yes, very evil.
-     *
-     *      May run on the Shell process only.
-     *
-     *@@added V0.9.16 (2002-01-13) [umoeller]
-     */
-
-    VOID HackSwitchList(PSMHSTRUCT psmh,
-                        BOOL fInstall)
-    {
-        hookLog(__FILE__, __LINE__, __FUNCTION__,
-                "fInstall == %d", fInstall);
-
-        if (fInstall && !G_pfnwpSwitchListOrig)
-        {
-            // "install" mode:
-
-            // subclass the switch list
-            if (G_pfnwpSwitchListOrig = SubclassSwitchList(fnwpSubclassedSwitchlist))
-            {
-                CNRINFO CnrInfo;
-
-                hookLog(__FILE__, __LINE__, __FUNCTION__,
-                        "SubclassSwitchList returned 0x%lX", G_pfnwpSwitchListOrig);
-
-                /* CnrInfo.cb = sizeof(CnrInfo);
-                CnrInfo.flWindowAttr = CV_NAME | CA_DRAWICON | CA_OWNERDRAW;
-                WinSendMsg(G_HookData.hwndSwitchListCnr,
-                           CM_SETCNRINFO,
-                           (MPARAM)&CnrInfo,
-                           (MPARAM)CMA_FLWINDOWATTR); */
-            }
-        }
-        else
-        {
-            // "deinstall" mode:
-            // un-subclass the switch list
-            if (G_pfnwpSwitchListOrig)
-            {
-                hookLog(__FILE__, __LINE__, __FUNCTION__,
-                        "Un-subclassing");
-                SubclassSwitchList(G_pfnwpSwitchListOrig);
-            }
-        }
-    }
-#endif
-
-/******************************************************************
- *
  *  Send-Message Hook
  *
  ******************************************************************/
@@ -1029,7 +816,9 @@ VOID ProcessMsgsForWinlist(HWND hwnd,
  *      The send-message hook runs on the thread which called
  *      WinSendMsg, before the message is delivered to the
  *      target window (which might be on a different thread
- *      or even in a different process).
+ *      or even in a different process). In other words, as
+ *      opposed to the input hook, this runs on the _sender's_
+ *      thread.
  *
  *      We must not do any complex processing in here, especially
  *      calling WinSendMsg(). Instead, we post msgs to other places,
@@ -1331,25 +1120,6 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
         // (system is being unlocked):
         G_HookData.hwndLockupFrame = NULLHANDLE;
     }
-
-    /* if (    (psmh->hwnd == G_HookData.hwndSwitchList)
-         && (psmh->msg == XM_HACKSWITCHLIST)
-         && (psmh->mp1 == MP1_HACKSWITCHLIST)
-       )
-    {
-        if (psmh->mp2 == MP2_HACKSWITCH_ENABLE)
-        {
-            hookLog(__FILE__, __LINE__, __FUNCTION__,
-                    "MP2_HACKSWITCH_ENABLE");
-            HackSwitchList(psmh, TRUE);       // install
-        }
-        else if (psmh->mp2 == MP2_HACKSWITCH_DISABLE)
-        {
-            hookLog(__FILE__, __LINE__, __FUNCTION__,
-                    "MP2_HACKSWITCH_DISABLE");
-            HackSwitchList(psmh, FALSE);      // de-install
-        }
-    } */
 }
 
 /******************************************************************
@@ -1407,8 +1177,8 @@ HWND GetFrameWindow(HWND hwndTemp)
  *
  *      This hook gets called just before the system returns
  *      from a WinGetMsg or WinPeekMsg call. As a result, this
- *      does _not_ get called on the thread that called
- *      WinPostMsg, but on the thread that retrieves the msg.
+ *      does _not_ get called on the poster's thread (who called
+ *      WinPostMsg), but on the receiver's thread.
  *
  *      However, only _posted_ messages go thru this hook. _Sent_
  *      messages never get here; there is a separate hook type
@@ -1712,6 +1482,41 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                            (MPARAM)pqmsg->msg,
                            pqmsg->mp1);             // POINTS pointer pos
         }
+
+    #ifdef HACKSWITCHLIST
+        if (    (pqmsg->hwnd == G_HookData.hwndSwitchListCnr)
+             && (pqmsg->msg == WM_HACKSWITCHLIST)
+             && (pqmsg->mp1 == MP1_HACKSWITCHLIST)
+             && (pqmsg->mp2 == MP2_SUBCLASS)
+           )
+        {
+            HackSwitchList(TRUE);
+
+            // swallow
+            brc = TRUE;
+        }
+    #endif
+
+    #if 0
+        if (    (pqmsg->hwnd == G_HookData.hwndSwitchList)
+             && (pqmsg->msg == XM_HACKSWITCHLIST)
+             && (pqmsg->mp1 == MP1_HACKSWITCHLIST)
+           )
+        {
+            if (pqmsg->mp2 == MP2_HACKSWITCH_ENABLE)
+            {
+                hookLog(__FILE__, __LINE__, __FUNCTION__,
+                        "MP2_HACKSWITCH_ENABLE");
+                HackSwitchList(TRUE);       // install
+            }
+            else if (pqmsg->mp2 == MP2_HACKSWITCH_DISABLE)
+            {
+                hookLog(__FILE__, __LINE__, __FUNCTION__,
+                        "MP2_HACKSWITCH_DISABLE");
+                HackSwitchList(FALSE);      // de-install
+            }
+        }
+    #endif
 
     return brc;                           // msg not processed if FALSE
 }

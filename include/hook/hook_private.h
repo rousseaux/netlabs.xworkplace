@@ -24,6 +24,17 @@
 #ifndef HOOK_PRIVATE_HEADER_INCLUDED
     #define HOOK_PRIVATE_HEADER_INCLUDED
 
+    #ifdef __DEBUG__
+        // #define HACKSWITCHLIST
+    #endif
+
+    #ifdef HACKSWITCHLIST
+        #define WM_HACKSWITCHLIST           (WM_USER + 0x1324)
+        #define MP1_HACKSWITCHLIST          ((MPARAM)0xf4134442)
+        #define MP2_SUBCLASS                ((MPARAM)0xf8678c22)
+        #define MP2_UNSUBCLASS              ((MPARAM)0xf22781fe)
+    #endif
+
     /* ******************************************************************
      *
      *   Declarations
@@ -47,8 +58,8 @@
      *
      ********************************************************************/
 
-    #define SHMEM_HOTKEYS         "\\SHAREMEM\\XWORKPLC\\HOTKEYS.DAT"
-    #define SHMEM_FUNCTIONKEYS    "\\SHAREMEM\\XWORKPLC\\FUNCKEYS.DAT"
+    #define SHMEM_HOTKEYS           "\\SHAREMEM\\XWORKPLC\\HOTKEYS.DAT"
+    #define SHMEM_FUNCTIONKEYS      "\\SHAREMEM\\XWORKPLC\\FUNCKEYS.DAT"
                 // added V0.9.3 (2000-04-20) [umoeller]
 
     #define IDMUTEX_ONEINSTANCE     "\\SEM32\\XWORKPLC\\ONEINST.MTX"
@@ -330,6 +341,14 @@
      *   Internal prototypes
      *
      ********************************************************************/
+
+    VOID _Optlink hookLog(PCSZ pcszSourceFile,
+                          ULONG ulLine,
+                          PCSZ pcszFunction,
+                          PCSZ pcszFormat,
+                          ...);
+
+    VOID _Optlink HackSwitchList(BOOL fInstall);
 
     VOID _Optlink StopMB3Scrolling(BOOL fSuccessPostMsgs);
 

@@ -64,7 +64,8 @@ $(OUTPUTDIR)\xwphook.obj \
 $(OUTPUTDIR)\hk_msmove.obj \
 $(OUTPUTDIR)\hk_char.obj \
 $(OUTPUTDIR)\hk_misc.obj \
-$(OUTPUTDIR)\hk_scroll.obj
+$(OUTPUTDIR)\hk_scroll.obj \
+$(OUTPUTDIR)\hk_switch.obj
 
 # The main target:
 # If we're called from the main makefile, MAINMAKERUNNING is defined,
