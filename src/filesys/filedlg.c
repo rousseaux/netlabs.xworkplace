@@ -180,7 +180,8 @@ typedef struct _FILEDLGDATA
     CHAR        szDrive[CCHMAXPATH];        // e.g. "C:" if local drive,
                                             // or "\\SERVER\RESOURCE" if UNC
     BOOL        fUNCDrive;                  // TRUE if szDrive specifies something UNC
-    CHAR        szDir[CCHMAXPATH],          // e.g. "\whatever\subdir"
+    CHAR        szDir[CCHMAXPATH],          // e.g. "\whatever\subdir"; a null string
+                                            // if we're in the root directory
                 szFileMask[CCHMAXPATH],     // e.g. "*.TXT"
                 szFileName[CCHMAXPATH];     // e.g. "test.txt"
 
@@ -267,8 +268,21 @@ STATIC ULONG ParseFileString(PFILEDLGDATA pWinData,
         return 0;
 
     // get path from there
-    if (p && *p)
+    if (!*p)
     {
+        // nothing after the drive spec (that is, something like "K:"
+        // was specified: make that a root directory
+        // V0.9.21 (2002-09-13) [umoeller]
+        pWinData->szDir[0] = '\0';
+        flChanged |= FFL_PATH;
+
+        PMPF_POPULATESPLITVIEW(("  szDrive \"%s\", szDir \"%s\"",
+                                    pWinData->szDrive,
+                                    pWinData->szDir));
+    }
+    else
+    {
+        // something else after the drive spec:
         BOOL    fMustBeDir = FALSE; // V0.9.18 (2002-02-06) [umoeller]
 
         // p3 = last backslash
@@ -349,8 +363,8 @@ STATIC ULONG ParseFileString(PFILEDLGDATA pWinData,
                     fIsDir = TRUE;
             }
 
-            PMPF_POPULATESPLITVIEW(("   DosQueryPathInfo returned %d, fIsDir is %d",
-                        arc2, fIsDir));
+            PMPF_POPULATESPLITVIEW(("   DosQueryPathInfo rc = %d, fIsDir %d, fMustBeDir %d",
+                        arc2, fIsDir, fMustBeDir));
 
             if (fIsDir)
             {
@@ -368,8 +382,10 @@ STATIC ULONG ParseFileString(PFILEDLGDATA pWinData,
             {
                 // this is not a directory:
                 if (fMustBeDir)
-                    // but it must be (because user termianted string with "\"):
+                {
+                    // but it must be (because user terminated string with "\"):
                     PMPF_POPULATESPLITVIEW(("  not dir, but must be!"));
+                }
                 else
                 {
                     // this doesn't exist, or it is a file:
@@ -386,7 +402,12 @@ STATIC ULONG ParseFileString(PFILEDLGDATA pWinData,
         }
     }
 
-    PMPF_POPULATESPLITVIEW(("leaving, returning 0x%lX", flChanged));
+    PMPF_POPULATESPLITVIEW(("leaving, returning %s %s %s %s",
+                            (flChanged & FFL_DRIVE) ? "FFL_DRIVE" : "",
+                            (flChanged & FFL_PATH) ? "FFL_PATH" : "",
+                            (flChanged & FFL_FILEMASK) ? "FFL_FILEMASK" : "",
+                            (flChanged & FFL_FILENAME) ? "FFL_FILENAME" : ""
+                          ));
 
     return flChanged;
 }
@@ -663,6 +684,40 @@ STATIC VOID BuildDisksList(WPFolder *pRootFolder,
     }
 }
 
+/* ******************************************************************
+ *
+ *   File dialog frame
+ *
+ ********************************************************************/
+
+static PFNWP    G_pfnwpFiledlgFrameOrig = NULL;
+
+/*
+ *@@ CreateControlFont:
+ *
+ *@@added V0.9.21 (2002-09-13) [umoeller]
+ */
+
+HWND CreateControlFont(HWND hwndParent,
+                       HWND hwndOwner,
+                       PCSZ pcszClass,
+                       PCSZ pcszTitle,
+                       ULONG flStyle,
+                       ULONG ulID)
+{
+    HWND hwnd;
+    if (hwnd = winhCreateControl(hwndParent,
+                                 hwndOwner,
+                                 pcszClass,
+                                 pcszTitle,
+                                 flStyle,
+                                 ulID))
+        winhSetWindowFont(hwnd,
+                          cmnQueryDefaultFont());
+
+    return hwnd;
+}
+
 /*
  *@@ MainControlCreate:
  *
@@ -673,7 +728,7 @@ STATIC VOID MainControlCreate(PFILEDLGDATA pWinData)
 {
     // create static on top of left tree view
     pWinData->hwndTreeCnrTxt
-        = winhCreateControl(pWinData->sv.hwndMainControl,           // parent
+        = CreateControlFont(pWinData->sv.hwndMainControl,           // parent
                             pWinData->sv.hwndMainFrame,
                             WC_STATIC,
                             cmnGetString(ID_XFSI_FDLG_DRIVES),
@@ -686,7 +741,7 @@ STATIC VOID MainControlCreate(PFILEDLGDATA pWinData)
 
     // create static on top of right files cnr
     pWinData->hwndFilesCnrTxt
-        = winhCreateControl(pWinData->sv.hwndMainControl,           // parent
+        = CreateControlFont(pWinData->sv.hwndMainControl,           // parent
                             pWinData->sv.hwndMainFrame,
                             WC_STATIC,
                             cmnGetString(ID_XFSI_FDLG_FILESLIST),
@@ -703,7 +758,7 @@ STATIC VOID MainControlCreate(PFILEDLGDATA pWinData)
      */
 
     pWinData->hwndTypesTxt
-        = winhCreateControl(pWinData->sv.hwndMainControl,           // parent
+        = CreateControlFont(pWinData->sv.hwndMainControl,           // parent
                             pWinData->sv.hwndMainFrame,
                             WC_STATIC,
                             cmnGetString(ID_XFSI_FDLG_TYPES),
@@ -712,7 +767,7 @@ STATIC VOID MainControlCreate(PFILEDLGDATA pWinData)
     lstAppendItem(&pWinData->llDialogControls, (PVOID)pWinData->hwndTypesTxt);
 
     pWinData->hwndTypesCombo
-        = winhCreateControl(pWinData->sv.hwndMainControl,           // parent
+        = CreateControlFont(pWinData->sv.hwndMainControl,           // parent
                             pWinData->sv.hwndMainFrame,
                             WC_ENTRYFIELD,
                             "",
@@ -723,7 +778,7 @@ STATIC VOID MainControlCreate(PFILEDLGDATA pWinData)
     lstAppendItem(&pWinData->llDialogControls, (PVOID)pWinData->hwndTypesCombo);
 
     pWinData->hwndDirTxt
-        = winhCreateControl(pWinData->sv.hwndMainControl,           // parent
+        = CreateControlFont(pWinData->sv.hwndMainControl,           // parent
                             pWinData->sv.hwndMainFrame,
                             WC_STATIC,
                             cmnGetString(ID_XFSI_FDLG_DIRECTORY),
@@ -731,7 +786,7 @@ STATIC VOID MainControlCreate(PFILEDLGDATA pWinData)
                             IDDI_DIRTXT);
 
     pWinData->hwndDirValue
-        = winhCreateControl(pWinData->sv.hwndMainControl,           // parent
+        = CreateControlFont(pWinData->sv.hwndMainControl,           // parent
                             pWinData->sv.hwndMainFrame,
                             WC_STATIC,
                             cmnGetString(ID_XFSI_FDLG_WORKING),
@@ -739,7 +794,7 @@ STATIC VOID MainControlCreate(PFILEDLGDATA pWinData)
                             IDDI_DIRVALUE);
 
     pWinData->hwndFileTxt
-        = winhCreateControl(pWinData->sv.hwndMainControl,           // parent
+        = CreateControlFont(pWinData->sv.hwndMainControl,           // parent
                             pWinData->sv.hwndMainFrame,
                             WC_STATIC,
                             cmnGetString(ID_XFSI_FDLG_FILE),
@@ -748,7 +803,7 @@ STATIC VOID MainControlCreate(PFILEDLGDATA pWinData)
     lstAppendItem(&pWinData->llDialogControls, (PVOID)pWinData->hwndFileTxt);
 
     pWinData->hwndFileEntry
-        = winhCreateControl(pWinData->sv.hwndMainControl,           // parent
+        = CreateControlFont(pWinData->sv.hwndMainControl,           // parent
                             pWinData->sv.hwndMainFrame,
                             WC_ENTRYFIELD,
                             "",             // initial text... we set this later
@@ -758,7 +813,7 @@ STATIC VOID MainControlCreate(PFILEDLGDATA pWinData)
     lstAppendItem(&pWinData->llDialogControls, (PVOID)pWinData->hwndFileEntry);
 
     pWinData->hwndOK
-        = winhCreateControl(pWinData->sv.hwndMainControl,           // parent
+        = CreateControlFont(pWinData->sv.hwndMainControl,           // parent
                             pWinData->sv.hwndMainFrame,
                             WC_BUTTON,
                             (pWinData->pfd->pszOKButton)
@@ -769,7 +824,7 @@ STATIC VOID MainControlCreate(PFILEDLGDATA pWinData)
     lstAppendItem(&pWinData->llDialogControls, (PVOID)pWinData->hwndOK);
 
     pWinData->hwndCancel
-        = winhCreateControl(pWinData->sv.hwndMainControl,           // parent
+        = CreateControlFont(pWinData->sv.hwndMainControl,           // parent
                             pWinData->sv.hwndMainFrame,
                             WC_BUTTON,
                             cmnGetString(DID_CANCEL),
@@ -780,7 +835,7 @@ STATIC VOID MainControlCreate(PFILEDLGDATA pWinData)
     if (pWinData->pfd->fl & FDS_HELPBUTTON)
     {
         pWinData->hwndHelp
-            = winhCreateControl(pWinData->sv.hwndMainControl,           // parent
+            = CreateControlFont(pWinData->sv.hwndMainControl,           // parent
                                 pWinData->sv.hwndMainFrame,
                                 WC_BUTTON,
                                 cmnGetString(DID_HELP),
@@ -871,7 +926,7 @@ STATIC MRESULT MainControlChar(HWND hwnd, MPARAM mp1, MPARAM mp2)
 }
 
 /*
- *@@ MainControlRepositionControls:
+ *@@ FrameRepositionControls:
  *      part of the implementation of WM_SIZE in
  *      fnwpMainControl. This resizes all subwindows
  *      of the main client -- the split window and
@@ -881,7 +936,7 @@ STATIC MRESULT MainControlChar(HWND hwnd, MPARAM mp1, MPARAM mp2)
  *      cause the two container frames to be adjusted.
  */
 
-STATIC VOID MainControlRepositionControls(PFILEDLGDATA pWinData)
+STATIC VOID FrameRepositionControls(PFILEDLGDATA pWinData)
 {
     #define OUTER_SPACING       5
 
@@ -903,10 +958,13 @@ STATIC VOID MainControlRepositionControls(PFILEDLGDATA pWinData)
     SWP     swpMainControl;
     SHORT   cx, cy;
 
+    PMPF_POPULATESPLITVIEW(("entering"));
+
     memset(aswp, 0, sizeof(aswp));
 
     WinQueryWindowPos(pWinData->sv.hwndMainControl,
                       &swpMainControl);
+
     cx = swpMainControl.cx;
     cy = swpMainControl.cy;
 
@@ -1028,18 +1086,13 @@ STATIC VOID MainControlRepositionControls(PFILEDLGDATA pWinData)
         aswp[i++].hwnd = pWinData->hwndHelp;
     }
 
-    WinSetMultWindowPos(pWinData->sv.habGUI,
-                        aswp,
-                        i);
+    if (!WinSetMultWindowPos(pWinData->sv.habGUI,
+                             aswp,
+                             i))
+        PMPF_POPULATESPLITVIEW(("WinSetMultWindowPos failed!!"));
+
+    PMPF_POPULATESPLITVIEW(("leaving"));
 }
-
-/* ******************************************************************
- *
- *   File dialog frame
- *
- ********************************************************************/
-
-static PFNWP    G_pfnwpFiledlgFrameOrig = NULL;
 
 /*
  *@@ fnwpFileDlgFrame:
@@ -1057,6 +1110,12 @@ MRESULT EXPENTRY fnwpFileDlgFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
 
     switch (msg)
     {
+        /*
+         * WM_WINDOWPOSCHANGED:
+         *      since we have set SPLIT_NOAUTOPOSITION, we
+         *      must manually position everything.
+         */
+
         case WM_WINDOWPOSCHANGED:
             mrc = G_pfnwpFiledlgFrameOrig(hwndFrame, msg, mp1, mp2);
 
@@ -1064,7 +1123,82 @@ MRESULT EXPENTRY fnwpFileDlgFrame(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                  && (pWinData = WinQueryWindowPtr(hwndFrame, QWL_USER))
                )
             {
-                MainControlRepositionControls(pWinData);
+                FrameRepositionControls(pWinData);
+            }
+        break;
+
+        /*
+         * WM_CONTROL:
+         *      controller wants to tell us something.
+         */
+
+        case WM_CONTROL:
+            if (    (SHORT1FROMMP(mp1) == FID_CLIENT)
+                 && (pWinData = WinQueryWindowPtr(hwndFrame, QWL_USER))
+               )
+            {
+                CHAR szTemp[CCHMAXPATH];
+
+                switch (SHORT2FROMMP(mp1))
+                {
+                    case SN_FOLDERCHANGING:
+                        // say "populating"
+                        PMPF_POPULATESPLITVIEW(("SN_FOLDERCHANGING"));
+                        WinSetWindowText(pWinData->hwndDirValue,
+                                         cmnGetString(ID_XFSI_FDLG_WORKING));
+
+                        // update our file path etc.
+                        if (_wpQueryFilename((WPFolder*)mp2,
+                                             szTemp,
+                                             TRUE))
+                        {
+                            ParseFileString(pWinData,
+                                            szTemp);
+                        }
+                    break;
+
+                    case SN_FOLDERCHANGED:
+                    {
+                        PMPF_POPULATESPLITVIEW(("SN_FOLDERCHANGED"));
+                        sprintf(szTemp,
+                                "%s%s\\%s",
+                                pWinData->szDrive,
+                                pWinData->szDir,
+                                pWinData->szFileMask);
+
+                        WinSetWindowText(pWinData->hwndDirValue,
+                                         szTemp);
+                    }
+                    break;
+
+                    case SN_OBJECTSELECTED:
+                    {
+                        WPFileSystem *pobjFS;
+
+                        if (pobjFS = fdrvGetFSFromRecord((PMINIRECORDCORE)mp2,
+                                                         FALSE))
+                        {
+                            _wpQueryFilename(pobjFS,
+                                             szTemp,
+                                             FALSE);
+                            WinSetWindowText(pWinData->hwndFileEntry,
+                                             szTemp);
+                        }
+                    }
+                    break;
+
+                    case SN_OBJECTENTER:
+                    {
+                        WinPostMsg(hwndFrame,
+                                   WM_COMMAND,
+                                   (MPARAM)DID_OK,
+                                   NULL);
+
+                        // prevent the split view from opening the object
+                        mrc = (MRESULT)TRUE;
+                    }
+                    break;
+                }
             }
         break;
 
@@ -1236,10 +1370,10 @@ HWND fdlgFileDlg(HWND hwndOwner,
             else
                 pszDlgTitle = cmnGetString(ID_XFSI_FDLG_OPENFILE);
 
+        flSplit = SPLIT_NOAUTOPOSITION | SPLIT_NOAUTOPOPOPULATE;
+
         if (pfd->fl & FDS_MULTIPLESEL)
-            flSplit = SPLIT_MULTIPLESEL;
-        else
-            flSplit = SPLIT_MULTIPLESEL;
+            flSplit |= SPLIT_MULTIPLESEL;
 
         PMPF_POPULATESPLITVIEW(("getting drives folder"));
 
@@ -1277,6 +1411,16 @@ HWND fdlgFileDlg(HWND hwndOwner,
             {
                 BOOL    fExit = FALSE;
                 QMSG    qmsg;
+
+                // populate the drives tree once we're running;
+                // this is our replacement for what fdrSplitCreateFrame
+                // would do if we hadn't specified SPLIT_NOAUTOPOPOPULATE,
+                // because we want the tree only to be populated
+                fdrPostFillFolder(&WinData.sv,
+                                  _wpQueryCoreRecord(pDrivesFolder),
+                                  FFL_FOLDERSONLY | FFL_EXPAND);
+
+                MainControlCreate(&WinData);
 
                 PMPF_POPULATESPLITVIEW(("subclassing hwndMainFrame"));
 

@@ -44,6 +44,7 @@
         #define FFL_SCROLLTO                0x0002
         #define FFL_EXPAND                  0x0004
         #define FFL_SETBACKGROUND           0x0008
+        #define FFL_UNLOCKOBJECTS           0x1000
 
     #define FM_POPULATED_FILLTREE   (WM_USER + 2)
     #define FM_POPULATED_SCROLLTO   (WM_USER + 3)
@@ -61,6 +62,42 @@
     #define SPLIT_MULTIPLESEL       0x0004
     #define SPLIT_STATUSBAR         0x0008
     #define SPLIT_MENUBAR           0x0010
+    #define SPLIT_NOAUTOPOSITION    0x0020
+    #define SPLIT_NOAUTOPOPOPULATE  0x0040
+
+    // WM_CONTROL notifications sent by the controller
+    // to its owner; SHORT1FROMMP(mp1) is always FID_CLIENT
+
+    #define SN_FOLDERCHANGING       0x1000
+                // sent when a new folder is populated and the
+                // files cnr is to be filled (that is, FFL_FOLDERSONLY
+                // is _not_ set);
+                // mp2 is WPFolder that is now populating. If a
+                // disk is being populated, this is the root folder.
+                // Return code is ignored.
+
+    #define SN_FOLDERCHANGED        0x1001
+                // after SN_FOLDERCHANGING, sent when populate is done;
+                // mp2 is the same folder as with the previous
+                // SN_FOLDERCHANGING.
+                // Return code is ignored.
+
+    #define SN_OBJECTSELECTED       0x1002
+                // object was selected in the files cnr. This only
+                // comes in if the user explicitly clicks on an
+                // object, not if an object gets selected by the
+                // container automatically.
+                // mp2 is the record of the object, which might
+                // be a shadow.
+
+    #define SN_OBJECTENTER          0x1003
+                // object was double-clicked upon in the files cnr.
+                // mp2 is the record of the object, which might
+                // be a shadow.
+                // If this returns FALSE (or is not handled), the
+                // split view performs a default action. If a
+                // non-zero value is returned, the split view does
+                // nothing.
 
     #ifdef THREADS_HEADER_INCLUDED
     #ifdef FDRSUBCLASS_HEADER_INCLUDED
@@ -145,6 +182,14 @@
                     // populate the files cnr with file system objects
                     // only that match this file mask (even if it is "*").
                     // If it is NULL, this uses the folder filter.
+
+            BOOL            fUnlockOnClear;
+                    // set to TRUE by FM_POPULATED_FILLFILES when we
+                    // received notification that we did a full populate
+                    // and objects therefore should be unlocked when
+                    // clearing out the container
+                    // V0.9.21 (2002-09-13) [umoeller]
+
             BOOL            fSplitViewReady;
                     // while this is FALSE (during the initial setup),
                     // the split view refuses to react any changes in
@@ -170,10 +215,12 @@
 
         } FDRSPLITVIEW, *PFDRSPLITVIEW;
 
+        #define INSERT_UNLOCKFILTERED       0x10000000
+
         VOID fdrInsertContents(WPFolder *pFolder,
                                HWND hwndCnr,
                                PMINIRECORDCORE precParent,
-                               ULONG ulFoldersOnly,
+                               ULONG flInsert,
                                HWND hwndAddFirstChild,
                                PCSZ pcszFileMask);
 

@@ -68,7 +68,10 @@
     BOOL fdrvIsObjectInCnr(WPObject *pObject,
                            HWND hwndCnr);
 
+    #define CLEARFL_TREEVIEW        0x0001
+    #define CLEARFL_UNLOCKOBJECTS   0x0002
+
     ULONG fdrvClearContainer(HWND hwndCnr,
-                             BOOL fTreeView);
+                             ULONG flClear);
 
 #endif

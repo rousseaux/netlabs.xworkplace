@@ -201,11 +201,11 @@
 
 // flag for whether we have manipulated the "wpFolder window"
 // PM window class already; this is done in fdr_SendMsgHook
-static BOOL                G_WPFolderWinClassExtended = FALSE;
+static BOOL         G_WPFolderWinClassExtended = FALSE;
 
-static CLASSINFO           G_WPFolderWinClassInfo;
+static CLASSINFO    G_WPFolderWinClassInfo;
 
-static ULONG               G_SFVOffset = 0;
+static ULONG        G_SFVOffset = 0;
 
 STATIC MRESULT EXPENTRY fnwpSubclWPFolderWindow(HWND hwndFrame,
                                                   ULONG msg,
@@ -372,10 +372,14 @@ PSUBCLFOLDERVIEW fdrCreateSFV(HWND hwndFrame,           // in: folder frame
         psliNew->somSelf = somSelf;
         psliNew->pRealObject = pRealObject;
         psliNew->hwndCnr = hwndCnr;
-        psliNew->fRemoveSourceEmphasis = FALSE;
+
+        // psliNew->fRemoveSourceEmphasis = FALSE;
+                // taken care of by memset above V0.9.21 (2002-09-13) [umoeller]
+
         // set status bar hwnd to zero at this point;
         // this will be created elsewhere
-        psliNew->hwndStatusBar = NULLHANDLE;
+        // psliNew->hwndStatusBar = NULLHANDLE;
+                // taken care of by memset above V0.9.21 (2002-09-13) [umoeller]
 
         // create a supplementary object window
         // for this folder frame (see

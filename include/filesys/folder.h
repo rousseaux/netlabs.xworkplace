@@ -661,8 +661,8 @@
                      BOOL fFoldersOnly,
                      PBOOL pfExit);
 
-    BOOL fdrCheckIfPopulated(WPFolder *somSelf,
-                             BOOL fFoldersOnly);
+    ULONG fdrCheckIfPopulated(WPFolder *somSelf,
+                              BOOL fFoldersOnly);
 
     /* ******************************************************************
      *

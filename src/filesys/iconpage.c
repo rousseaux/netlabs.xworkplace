@@ -667,6 +667,44 @@ STATIC VOID EditIcon(POBJICONPAGEDATA pData)
 }
 
 /*
+ *@@ BrowseIcon:
+ *
+ *@@added V0.9.21 (2002-09-13) [umoeller]
+ */
+
+STATIC VOID BrowseIcon(POBJICONPAGEDATA pData)
+{
+    PNOTEBOOKPAGE pnbp = pData->pnbp;
+    CHAR szFilemask[CCHMAXPATH] = "*.ico";
+
+    if (cmnFileDlg(pnbp->hwndDlgPage,
+                   szFilemask,
+                   WINH_FOD_INILOADDIR | WINH_FOD_INISAVEDIR,
+                   HINI_USER,
+                   INIAPP_XWORKPLACE,
+                   INIKEY_ICONPAGE_LASTDIR))
+    {
+        WPFileSystem *pfs;
+        APIRET arc = NO_ERROR;
+
+        if (!(pfs = _wpclsQueryObjectFromPath(_WPFileSystem,
+                                              szFilemask)))
+            arc = ERROR_FILE_NOT_FOUND;
+        else
+        {
+            arc = icomCopyIconFromObject(pnbp->inbp.somSelf,
+                                         pfs,
+                                         pData->ulAnimationIndex);
+
+            // repaint the icon static
+            WinInvalidateRect(pData->hwndIconStatic, NULL, FALSE);
+        }
+
+        ReportError(pnbp, arc, NULL);
+    }
+}
+
+/*
  *@@ fnwpSubclassedIconStatic:
  *
  *@@added V0.9.16 (2001-10-15) [umoeller]
@@ -1326,30 +1364,10 @@ MRESULT XWPENTRY icoIcon1ItemChanged(PNOTEBOOKPAGE pnbp,
             break;
 
             case DID_BROWSE:
-            {
-                CHAR szFilemask[CCHMAXPATH] = "*.ico";
-                if (cmnFileDlg(pnbp->hwndDlgPage,
-                               szFilemask,
-                               WINH_FOD_INILOADDIR | WINH_FOD_INISAVEDIR,
-                               HINI_USER,
-                               INIAPP_XWORKPLACE,
-                               INIKEY_ICONPAGE_LASTDIR))
-                {
-                    WPFileSystem *pfs;
-                    if (!(pfs = _wpclsQueryObjectFromPath(_WPFileSystem,
-                                                          szFilemask)))
-                        arc = ERROR_FILE_NOT_FOUND;
-                    else
-                    {
-                        arc = icomCopyIconFromObject(pnbp->inbp.somSelf,
-                                                     pfs,
-                                                     pData->ulAnimationIndex);
-                        WinInvalidateRect(pData->hwndIconStatic, NULL, FALSE);
-                    }
-
-                    ReportError(pnbp, arc, NULL);
-                }
-            }
+                BrowseIcon(pData);
+                // refresh the page because the "reset icon"
+                // button needs an update probably V0.9.21 (2002-09-13) [umoeller]
+                fRefreshPage = TRUE;
             break;
 
             case ID_XSDI_ICON_RESET_BUTTON:

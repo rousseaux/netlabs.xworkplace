@@ -1978,9 +1978,14 @@ BOOL fdrPopulate(WPFolder *somSelf,
  *      If (fFoldersOnly == TRUE), this fully populates the
  *      folder if this hasn't been done yet.
  *
- *      Returns TRUE if the folder was successfully populated
- *      or if the folder was already fully populated.
- *      Returns FALSE if wpPopulate failed.
+ *      Returns:
+ *
+ *      --  FALSE if wpPopulate failed
+ *
+ *      --  1 (TRUE) if the folder was indeed populated
+ *
+ *      --  2 if the folder was already populated and we
+ *          determined we did not need a refresh.
  *
  *@@changed V0.9.4 (2000-08-03) [umoeller]: changed return code
  *@@changed V0.9.6 (2000-10-25) [umoeller]: added fFoldersOnly
@@ -1988,12 +1993,13 @@ BOOL fdrPopulate(WPFolder *somSelf,
  *@@changed V0.9.16 (2001-10-25) [umoeller]: added quiet excpt handler around wpPopulate
  *@@changed V0.9.16 (2002-01-01) [umoeller]: added checks if a refresh is in order
  *@@changed V0.9.16 (2002-01-01) [umoeller]: renamed from wpshCheckIfPopulated, moved here from wpsh.c
+ *@@changed V0.9.21 (2002-09-13) [umoeller]: returning 2 now if we didn't really populate
  */
 
-BOOL fdrCheckIfPopulated(WPFolder *somSelf,
-                         BOOL fFoldersOnly)
+ULONG fdrCheckIfPopulated(WPFolder *somSelf,
+                          BOOL fFoldersOnly)
 {
-    BOOL        brc = FALSE;
+    ULONG       ulrc = FALSE;       // failed (0)
 
     ULONG       ulPopulateFlag = (fFoldersOnly)
                                     ? FOI_POPULATEDWITHFOLDERS
@@ -2005,7 +2011,7 @@ BOOL fdrCheckIfPopulated(WPFolder *somSelf,
     if (    // (re)populate if the POPULATED_* flag is not set
             ((ulFlags & ulPopulateFlag) != ulPopulateFlag)
 // V0.9.16 (2002-01-01) [umoeller]: added all the below checks
-            // for if the folder has the refresh bit set
+            // or if the folder has the refresh bit set
          || (ulFlags & FOI_ASYNCREFRESHONOPEN)
             // or if we can't get the drive data
          || (!(pDriveData = _wpQueryDriveData(somSelf)))
@@ -2027,21 +2033,21 @@ BOOL fdrCheckIfPopulated(WPFolder *somSelf,
         {
             CHAR    szRealName[2*CCHMAXPATH];
             if (_wpQueryFilename(somSelf, szRealName, TRUE))
-                brc = _wpPopulate(somSelf,
-                                  0,
-                                  szRealName,
-                                  fFoldersOnly);
+                ulrc = _wpPopulate(somSelf,
+                                   0,
+                                   szRealName,
+                                   fFoldersOnly);
         }
         CATCH(excpt1)
         {
-            brc = FALSE;
+            ulrc = FALSE;
         } END_CATCH();
     }
     else
         // already populated:
-        brc = TRUE;
+        ulrc = 2;       // V0.9.21 (2002-09-13) [umoeller]
 
-    return brc;
+    return ulrc;
 }
 
 /* ******************************************************************

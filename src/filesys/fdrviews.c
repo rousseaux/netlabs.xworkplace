@@ -1154,13 +1154,13 @@ WPFileSystem* fdrvGetFSFromRecord(PMINIRECORDCORE precc,
  *
  *      The return value depends on ulInsert:
  *
- *      --  INSERT_ALL: we allow all objects to be inserted,
+ *      --  INSERT_ALL (0): we allow all objects to be inserted,
  *          even broken shadows. This is used by the split
  *          view for the files container.
  *
  *          pcszFileMask is ignored in this case.
  *
- *      --  INSERT_FILESYSTEMS: this inserts all WPFileSystem and
+ *      --  INSERT_FILESYSTEMS (1): this inserts all WPFileSystem and
  *          WPDisk objects plus shadows pointing to them. This
  *          is for the files container in the file dialog,
  *          obviously, because opening abstracts with a file
@@ -1175,7 +1175,7 @@ WPFileSystem* fdrvGetFSFromRecord(PMINIRECORDCORE precc,
  *
  *          This is for the right (files) view.
  *
- *      --  INSERT_FOLDERSONLY: only folders are inserted.
+ *      --  INSERT_FOLDERSONLY (2): only real folders are inserted.
  *          We will not even insert disk objects or shadows,
  *          even if they point to shadows. We will also
  *          not insert folder templates.
@@ -1190,7 +1190,7 @@ WPFileSystem* fdrvGetFSFromRecord(PMINIRECORDCORE precc,
  *          cannot be inserted a second time. The WPS shares
  *          records so each object can only be inserted once.
  *
- *      --  INSERT_FOLDERSANDDISKS: in addition to folders
+ *      --  INSERT_FOLDERSANDDISKS (3): in addition to folders
  *          (as with INSERT_FOLDERSONLY), we allow insertion
  *          of drive objects too.
  *
@@ -1338,16 +1338,17 @@ BOOL fdrvIsObjectInCnr(WPObject *pObject,
 
 STATIC ULONG XWPENTRY fncbClearCnr(HWND hwndCnr,
                                    PRECORDCORE precc,
-                                   ULONG ulUser)
+                                   ULONG ulUnlock)      // callback parameter
 {
     WPObject *pobj = OBJECT_FROM_PREC(precc);
 
     _wpCnrRemoveObject(pobj,
                        hwndCnr);
 
-    // this is the "unlock" that corresponds to the "lock"
-    // that was issued on every object by wpPopulate
-    _wpUnlockObject(pobj);
+    if (ulUnlock)
+        // this is the "unlock" that corresponds to the "lock"
+        // that was issued on every object by wpPopulate
+        _wpUnlockObject(pobj);
 
     return 0;
 }
@@ -1358,14 +1359,24 @@ STATIC ULONG XWPENTRY fncbClearCnr(HWND hwndCnr,
  *      specified container and updates the USEITEM's
  *      correctly.
  *
- *      It is assumed that all the objects in the container
- *      were initially locked once by populate.
- *
  *      Returns the no. of records that were removed.
+ *
+ *      flClear can be set to any combination of the
+ *      following:
+ *
+ *      --  Only if CLEARFL_TREEVIEW is set, we will
+ *          recurse into subrecords and remove these
+ *          also. This makes cleanup a lot faster for
+ *          non-tree views.
+ *
+ *      --  If CLEARFL_UNLOCKOBJECTS is set, we will
+ *          unlock every object that we remove once.
+ *
+ *@@changed V0.9.21 (2002-09-13) [umoeller]: added flClear
  */
 
 ULONG fdrvClearContainer(HWND hwndCnr,      // in: cnr to clear
-                         BOOL fTreeView)    // in: if TRUE, we recurse into child records
+                         ULONG flClear)     // in: CLEARFL_* flags
 {
     ULONG ulrc;
 
@@ -1374,12 +1385,13 @@ ULONG fdrvClearContainer(HWND hwndCnr,      // in: cnr to clear
     WinEnableWindowUpdate(hwndCnr, FALSE);
 
     ulrc = cnrhForAllRecords(hwndCnr,
-                             // do not recurse if not tree view
-                             (fTreeView)
+                             // recurse only for tree view
+                             (flClear & CLEARFL_TREEVIEW)
                                 ? NULL
                                 : (PRECORDCORE)-1,
                              fncbClearCnr,
-                             0);
+                             // callback parameter:
+                             (flClear & CLEARFL_UNLOCKOBJECTS));
 
     WinShowWindow(hwndCnr, TRUE);
 

@@ -1063,7 +1063,7 @@ BOOL CheckOneClassOrder(PCSZ pcszOriginal,
     PSZ     pszList;
     ULONG   cbList;
 
-    _PmpfF(("%s", pcszOriginal));
+    PMPF_STARTUP(("%s", pcszOriginal));
 
     if (pszList = prfhQueryProfileData(HINI_USER,
                                        WPINIAPP_REPLACEMENTS, // "PM_Workplace:ReplaceList",
@@ -1106,7 +1106,8 @@ BOOL CheckOneClassOrder(PCSZ pcszOriginal,
 
             if (fBroken)
             {
-                _Pmpf(("    format for %s is broken", pcszOriginal));
+                PMPF_STARTUP(("    format for %s is broken", pcszOriginal));
+
                 // rewrite with two nulls
                 if (cReplacements)
                 {
@@ -1123,7 +1124,7 @@ BOOL CheckOneClassOrder(PCSZ pcszOriginal,
                 break;
             }
 
-            _Pmpf(("  found replacement class \"%s\"", pReplThis));
+            PMPF_STARTUP(("  found replacement class \"%s\"", pReplThis));
 
             pNode = lstAppendItem(&llReplacements, pReplThis);
 
@@ -1813,11 +1814,11 @@ BOOL initRepairDesktopIfBroken(VOID)
     {
         PIBMDRIVEDATA   pDriveDataBoot;
 
-        _PmpfF(("pBootRootFolder is 0x%lX", pBootRootFolder));
+        PMPF_STARTUP(("pBootRootFolder is 0x%lX", pBootRootFolder));
 
         if (pDriveDataBoot = _wpQueryDriveData(pBootRootFolder))
         {
-            _PmpfF(("pDriveDataBoot is 0x%lX", pDriveDataBoot));
+            PMPF_STARTUP(("pDriveDataBoot is 0x%lX", pDriveDataBoot));
 
             // this is the pointer to the n'th item in the
             // global drive data array; the first index in
@@ -2310,8 +2311,8 @@ STATIC void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
             {
                 // pFolder now has the startup folder to be processed
 
-                // _PmpfF(("found startup folder %s",
-                   //          _wpQueryTitle(pFolder)));
+                PMPF_STARTUP(("found startup folder %s",
+                              _wpQueryTitle(pFolder)));
 
                 // skip folders which should only be started on bootup
                 // except if we have specified that we want to start
@@ -2343,7 +2344,7 @@ STATIC void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
                              _wpQueryTitle(pFolder));
             }
 
-            // _PmpfF(("done with startup folders"));
+            PMPF_STARTUP(("done with startup folders"));
 
             initLog("  done with startup folders");
 
