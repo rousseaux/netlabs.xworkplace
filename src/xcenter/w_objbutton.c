@@ -121,7 +121,7 @@
  ********************************************************************/
 
 #ifndef __XWPLITE__
-static PCSZ G_pcszXButton =     "X Button";
+static PCSZ G_pcszXButton =     "X-Button";
 #else
 static PCSZ G_pcszXButton =     "eButton";
 #endif

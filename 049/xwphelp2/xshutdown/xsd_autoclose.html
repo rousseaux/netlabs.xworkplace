@@ -10,7 +10,7 @@ Im diesem Dialog kînnen Sie festlegen, welche
 <!-- V0.9.20: added link -->
 Nicht-PM-<A HREF="glossary/gls_sessions.html">Sitzungen</A> wÑhrend eines
 Neustarts der ArbeitsoberflÑche oder eines erweiterten Systemabschlusses
-automatisch geschlossen werden sollen, und welche Methode benutzt werden soll,
+automatisch geschlossen werden sollen und welche Methode benutzt werden soll,
 um sie zu schlie·en.
 
 <P>Beachten Sie, da· die Angaben nur auf Nicht-PM-Sitzungen angewendet
@@ -18,7 +18,8 @@ werden. PM-Fenster werden niemals mit diesen Methoden geschlossen, die Sie hier
 festlegen.
 
 <P>"Nicht-PM-Sitzungen" ist der Begriff, der fÅr alle Programme benutzt wird,
-die nicht vom Presentation Manager kontrolliert werden, also &os2;- und DOS-Sitzungen
+die nicht vom Presentation Manager (PM) kontrolliert werden, also
+&os2;- und DOS-Sitzungen
 im Textmodus in einem VIO-Fenster oder im Vollbildmodus sowie &winos2;-Sitzungen.
 <!-- V0.9.20: added this -->
 FÅr weitere Informationen siehe <A HREF="glossary/gls_sessions.html">Sitzungsarten</A>.
@@ -62,11 +63,12 @@ minimierten Symbol auf der ArbeitsoberflÑche reprÑsentiert wird. Das kann
 allerdings ein zusÑtzliches (normales &os2;-)BestÑtigungsfenster zur Folge
 haben, das nachfragt, ob Sie die Sitzung wirklich schlie·en wollen.
 
-<BR><LI><B>"Strg+C simulieren"</B> simuliert die BetÑtigung der Tastenkombination
-Strg+C innerhalb des Fensters dieser Sitzung.
+<!-- V0.9.21: removed the ctrl+c stuff -->
 
 <BR><LI><B>"Sitzung killen"</B> schlie·t die Sitzung ohne weitere Diskussion. Dies
-wendet das <CODE>DosKillProcess</CODE>-API auf den Proze· der Sitzung an.
+wendet das API
+<A HREF="cpref.inf#DosKillProcess"><CODE>DosKillProcess</CODE></A>
+auf den Proze· der Sitzung an.<A HREF="_toolkitlink.html">*</A>
 
 </UL>Beachten Sie, da· keine dieser Methoden die Daten dieser Sitzung sichert.
 Wenn Sie die Daten einer bestimmten Sitzung sichern mîchten, sollten Sie deren

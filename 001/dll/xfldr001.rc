@@ -1445,7 +1445,7 @@ BEGIN
     ID_SCDI_PGR1_FOLLOWFOCUS           "Desktop follows active ~window"
     ID_SCDI_PGR1_SHOWWINICONS          "Show window ~icons"
     /* daemon-specific strings V0.9.21 (2002-09-15) [lafaix] */
-    ID_SCDI_PGR1_STICKIESTOGGLE        "Include sticky ~toggle in system menus"
+    ID_SCDI_PGR1_STICKIESTOGGLE        """Haftfenster"" zu Sys~temmenÅs hinzufÅgen"
 
     /* strings formerly in ID_SCD_PAGER_COLORS */
     ID_SCDI_PGR2_COLORS_GROUP          "&pgr; colors"
@@ -1683,7 +1683,7 @@ BEGIN
     ID_XSDI_HOTKEY_GROUP                "Definition"
 
     /* daemon-specific strings V0.9.21 (2002-09-15) [lafaix] */
-    ID_DMSI_STICKYTOGGLE                "Sticky"
+    ID_DMSI_STICKYTOGGLE                "Stick~y"
 END
 
 /* Treesize definitions; added V0.9.0 */

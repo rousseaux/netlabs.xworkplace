@@ -540,7 +540,7 @@ static SLDCDATA
                      0           // scale 2 spacing
              };
 
-#define STYLE_SLIDERS_WIDTH         SLIDER_WIDTH        // from above
+#define STYLE_SLIDERS_WIDTH         100
 #define STYLE_SLIDERS_HEIGHT        15
 #define STYLE_SLIDERTEXT_WIDTH      DESCRTXT_WIDTH      // from above
 

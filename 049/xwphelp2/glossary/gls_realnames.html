@@ -17,7 +17,11 @@ Dateisystemobjekte (d.h.
 auch einen sogenannten <b>"echten Dateinamen".</b>
 Dies ist der Name der Datei auf dem Speichermedium, welche
 durch das Dateisystemobjekt repr„sentiert wird, und welcher
-von dem Kommando <CODE>DIR</CODE> an einer Befehlszeile angezeigt wird.
+von dem Kommando
+<a href="cmdref.inf#dir"><CODE>DIR</CODE></a>
+an einer
+<a href="glossary/gls_cmd.html">Befehlszeile</a>
+angezeigt wird.
 
 <P>In vielen F„llen ist der echte Dateiname mit dem Objekt-Titel
 (der auf der "Symbol"-Seite angezeigt wird) identisch. Jedoch
@@ -28,7 +32,7 @@ l„nger als 256 Zeichen sein drfen, und der Schr„gstrich rckw„rts
 (<CODE>\</CODE>) ist nicht erlaubt.
 
 <P>Die Beschr„nkungen fr <b>echte Dateinamen</b> h„ngen hingegen von
-dem <A HREF="glossary/gls_fs.html">Dateinamen</A> des Objekts ab:
+dem <A HREF="glossary/gls_fs.html">Dateisystem</A> des Objekts ab:
 
 <UL><LI>Mit dem FAT-Dateisystem sind Dateinamen auf acht Zeichen
 beschr„nkt, plus 3 Zeichen fr die Dateinamenerweiterung. Zus„tzlich
@@ -45,8 +49,8 @@ Zeichen in Dateinamen nicht erlaubt:
 
 <P><CODE>&lt; &gt; | : " / </CODE>
 
-</UL>Der Schr„gstrich rckw„rts (<CODE>\</CODE>) ist darberhinaus
-mit allen Dateisystemen nicht erlaubt, da er von &os2; als
+</UL>Der Schr„gstrich rckw„rts (<CODE>\</CODE>) ist darber hinaus
+mit keinem Dateisystemen erlaubt, da er von &os2; als
 <A HREF="glossary/gls_path.html">Pfad</A>-Begrenzer benutzt wird.
 
 <P>Wenn der echte Dateinamen nun die obigen Beschr„nkungen nicht verletzt,
@@ -66,7 +70,7 @@ einem WPS-Ordner erscheint.
 
 <OL><LI>Ein Ordnertitel sei <CITE>LangerOrdnerTitel</CITE>, aber
 der Ordner liegt auf einem FAT-Laufwerk. Dann wird der Dateiname
-vermutlich auf auf <CITE>C:\LONGFOLD</CITE> gekrzt.
+vermutlich auf auf <CITE>C:\LANGEROR</CITE> gekrzt.
 
 <P><LI>Ein Ordnertitel auf einem HPFS- oder JFS-Laufwerk sei
 <CITE>Buchfhrung/Steuern</CITE>. Dann wird der echte Name
