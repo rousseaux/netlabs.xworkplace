@@ -208,8 +208,7 @@ BOOL mnuQueryDefaultMenuBarVisibility(VOID)
  *@@ mnuSetDefaultMenuBarVisibility:
  *      reversely to mnuQueryDefaultMenuBarVisibility,
  *      sets the default setting for folder menu bars.
- *      Returns FALSE if an error occured, most importantly,
- *      if we're running on Warp 3.
+ *      Returns FALSE if an error occured.
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
  *@@changed V1.0.1 (2002-11-30) [umoeller]: removed Warp 3 check
@@ -227,8 +226,6 @@ BOOL mnuSetDefaultMenuBarVisibility(BOOL fVisible)
  *@@ mnuQueryShortMenuStyle:
  *      returns TRUE iff short menus are
  *      presently enabled for the system (globally).
- *      On Warp 3, returns FALSE always.
- *
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
  *@@changed V1.0.1 (2002-11-30) [umoeller]: removed Warp 3 check
@@ -250,8 +247,7 @@ BOOL mnuQueryShortMenuStyle(VOID)
  *@@ mnuSetShortMenuStyle:
  *      reversely to mnuQueryShortMenuStyle,
  *      sets the default setting for short menus.
- *      Returns FALSE if an error occured, most
- *      importantly, if we're running on Warp 3.
+ *      Returns FALSE if an error occured.
  *
  *@@added V0.9.19 (2002-04-17) [umoeller]
  *@@changed V1.0.1 (2002-11-30) [umoeller]: removed Warp 3 check
@@ -1024,8 +1020,8 @@ STATIC BOOL BuildConfigItemsList(PLINKLIST pllContentThis,     // in: CONTENTLIS
 
                 // mark this object as being in the config folder
                 _xwpModifyFlags(pObject2Insert,
-                                     OBJLIST_CONFIGFOLDER,
-                                     OBJLIST_CONFIGFOLDER);
+                                OBJLIST_CONFIGFOLDER,
+                                OBJLIST_CONFIGFOLDER);
             } // end if (pObject2Insert)
         } // end while
 
@@ -1993,13 +1989,11 @@ BOOL mnuModifyFolderMenu(WPFolder *somSelf,
                 // fixed V0.9.19 (2002-06-18) [umoeller]:
                 // only if menu item is enabled
                 if (!(flXWP & XWPCTXT_SELECTSOME))
-                {
                     winhInsertMenuItem(hwndMenu,
                                        ++sPos,
                                        *G_pulVarMenuOfs + ID_XFMI_OFS_SELECTSOME,
                                        cmnGetString(ID_XSSI_SELECTSOME),
                                        MIS_TEXT, 0);
-                }
 
                 // insert "Batch rename" V0.9.19 (2002-06-18) [umoeller]
                 if (!(flXWP & XWPCTXT_BATCHRENAME))
@@ -3224,3 +3218,4 @@ ULONG mnuAddWPSMenuPages(WPObject *somSelf,     // in: XFldWPS* object
 
     return ulrc;
 }
+

@@ -26,13 +26,15 @@
  *          ugly WPS implementation and bad documentation.
  *
  *          As soon as an object is made awake, it is added to
- *          the folder's _content_. When it is made dormant,
- *          it is removed again. For this, WPFolder has the
- *          wpAddToContent and wpDeleteFromContent methods,
- *          which _always_ get called on the folder of the
- *          object that is being made awake or dormant.
- *          The standard WPFolder implementation of these
- *          two methods maintain the folder content lists.
+ *          the folder's _content_, which is essentially a
+ *          linked list in folder and object instance data.
+ *          When the object is made dormant, it is removed again.
+ *          For this, WPFolder has the wpAddToContent and
+ *          wpDeleteFromContent methods, which _always_ get
+ *          called on the folder of the object that is being
+ *          made awake or dormant. The standard WPFolder
+ *          implementations of these two methods maintain the
+ *          folder content lists.
  *
  *      2)  Awaking an object does not necessarily mean that the
  *          object is also inserted into open views of the folder.
@@ -345,7 +347,17 @@ ULONG fdrFlushNotifications(WPFolder *somSelf)
  *      calls M_WPFolder::wpclsGetNotifySem to lock out
  *      the WPS auto-refresh-folder threads.
  *
+ *      Even though we have method code to call this
+ *      directly now, this mostly gets called in
+ *      the refresh code, which starts going before
+ *      the _WPFolder global works, so this wrapper
+ *      is still useful (V1.0.1 (2002-12-08) [umoeller]).
+ *
  *      Note that this requests a system-wide lock.
+ *
+ *      Be warned also that -- as opposed to all other
+ *      "request" functions -- wpclsGetNotifySem
+ *      returns a BOOL, not an APIRET.
  *
  *@@added V0.9.6 (2000-10-25) [umoeller]
  *@@changed V0.9.16 (2001-10-25) [umoeller]: moved this here from wpsh.c, changed prefix
@@ -376,6 +388,12 @@ BOOL fdrGetNotifySem(ULONG ulTimeout)
 
 /*
  *@@fdrReleaseNotifySem:
+ *
+ *      Even though we have method code to call this
+ *      directly now, this mostly gets called in
+ *      the refresh code, which starts going before
+ *      the _WPFolder global works, so this wrapper
+ *      is still useful (V1.0.1 (2002-12-08) [umoeller]).
  *
  *@@added V0.9.6 (2000-10-25) [umoeller]
  *@@changed V0.9.16 (2001-10-25) [umoeller]: moved this here from wpsh.c, changed prefix
@@ -1254,8 +1272,8 @@ BOOL fdrRegisterAwakeRootFolder(WPFolder *somSelf)
                           somSelf);
 
             _xwpModifyFlags(somSelf,
-                                 OBJLIST_QUERYAWAKEFSOBJECT,
-                                 OBJLIST_QUERYAWAKEFSOBJECT);
+                            OBJLIST_QUERYAWAKEFSOBJECT,
+                            OBJLIST_QUERYAWAKEFSOBJECT);
 
             brc = TRUE;
         }

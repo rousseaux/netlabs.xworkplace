@@ -169,7 +169,7 @@ LINKLIST    G_llImages;     // linked list of IMAGECACHEENTRY structs, auto-free
 
 /*
  *@@ LockImages:
- *
+ *      locks the background image cache.
  */
 
 STATIC BOOL LockImages(VOID)
@@ -192,7 +192,7 @@ STATIC BOOL LockImages(VOID)
 
 /*
  *@@ UnlockImages:
- *
+ *      unlocks the background image cache.
  */
 
 STATIC VOID UnlockImages(VOID)
@@ -1113,6 +1113,9 @@ VOID fdrvSetCnrLayout(HWND hwndCnr,         // in: cnr whose colors and fonts ar
 
 /*
  *@@ BuildFieldInfos:
+ *      sets the FIELDINFO structs on the given
+ *      container based on the folder's details
+ *      information.
  *
  *@@added V1.0.1 (2002-11-30) [umoeller]
  */
@@ -1146,6 +1149,7 @@ STATIC BOOL BuildFieldInfos(HWND hwndCnr,
                         ul,
                         cInvisible = 0;
                 FIELDINFOINSERT fii;
+                CNRINFO ci;
 
                 /*
                 column 0 [Icon], CFA_SEP 0, CFA_INVIS 0
@@ -1198,7 +1202,11 @@ STATIC BOOL BuildFieldInfos(HWND hwndCnr,
                     // the WPS does not add a separator after "object class",
                     // which is the last column before the separator bar
                     if (ul == 4)
+                    {
                         pfiThis->flData &= ~CFA_SEPARATOR;
+                        // put separator after this
+                        ci.pFieldInfoLast = pfiThis;
+                    }
                     else if (ul > 1)
                         pfiThis->flData |= CFA_IGNORE;
                     if (!_wpIsDetailsColumnVisible(pFolder, cInvisible))
@@ -1235,8 +1243,6 @@ STATIC BOOL BuildFieldInfos(HWND hwndCnr,
                                (MPARAM)pfiFirst,
                                (MPARAM)&fii))
                 {
-                    CNRINFO ci;
-                    ci.pFieldInfoLast = pfiFirst->pNextFieldInfo->pNextFieldInfo->pNextFieldInfo->pNextFieldInfo;
                     ci.xVertSplitbar  = 240;
                     brc = (BOOL)WinSendMsg(hwndCnr,
                                            CM_SETCNRINFO,

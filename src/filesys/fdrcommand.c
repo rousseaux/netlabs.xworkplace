@@ -10,8 +10,8 @@
  *      were posted in reaction to folder hotkeys.
  *
  *      fcmdMenuItemSelected, which gets called from
- *      XFolder::wpMenuItemSelected and XFldDisk::wpMenuItemSelected;
- *      this reacts to folder and disk context menu items.
+ *      XFolder::wpMenuItemSelected and XFldDisk::wpMenuItemSelected,
+ *      reacts to folder and disk context menu items.
  *
  *      In addition, we hack the folder sort and folder view submenus
  *      to allow the context menu to stay open when a menu
@@ -885,7 +885,7 @@ BOOL fcmdProcessViewCommand(WPFolder *somSelf,
 }
 
 /*
- *@@  ProgramObjectSelected:
+ *@@ ProgramObjectSelected:
  *      this subroutine is called by fcmdMenuItemSelected whenever a
  *      program object from the config folders is to be handled;
  *      it does all the necessary fuddling with the program object's

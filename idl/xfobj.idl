@@ -110,6 +110,8 @@ interface XFldObject : WPObject
     ULONG xwpQueryRealDefaultView();
     PSZ xwpQueryOriginalObjectID();
 
+    BOOL xwpSetTitleOnly(in PSZ pszNewTitle);
+
     BOOL xwpQueryDeletion(in CDATE* pcdateDeleted, in CTIME* pctimeDeleted);
     BOOL xwpSetDeletion(in BOOL fSet);
     ULONG xwpTrashObjectID();

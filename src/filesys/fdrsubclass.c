@@ -838,7 +838,7 @@ VOID fdrManipulatePulldown(PSUBCLFOLDERVIEW psfv,     // in: frame information
 }
 
 /*
- * InitMenu:
+ *@@ fdrInitMenu:
  *      implementation for WM_INITMENU in fnwpSubclWPFolderWindow.
  *      Note that the parent winproc was called first.
  *
@@ -1454,6 +1454,7 @@ STATIC BOOL WMChar(HWND hwndFrame,
  *@@added V0.9.20 (2002-08-04) [umoeller]
  *@@changed V1.0.0 (2002-08-21) [umoeller]: fixed painting problems for folder shadows
  *@@changed V1.0.0 (2002-09-17) [umoeller]: fixed another deadlock for folder shadows
+ *@@changed V1.0.1 (2002-12-08) [umoeller]: exported chunks to new _xwpOwnerDrawIcon method
  */
 
 STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we can't use poi->hwnd)
@@ -1657,6 +1658,7 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
                                            poi->hps,
                                            flOwnerDraw,
                                            &ptlPaint);
+                // V1.0.1 (2002-12-08) [umoeller]
         else
         {
             // template:
@@ -1686,6 +1688,7 @@ STATIC BOOL CnrDrawIcon(HWND hwndCnr,               // in: container HWND (we ca
                                                    poi->hps,
                                                    flOwnerDraw | OWDRFL_MINI,
                                                    &ptl2);
+                        // V1.0.1 (2002-12-08) [umoeller]
                     /*
                     WinDrawPointer(poi->hps,
                                    x + G_cxIcon / 8,

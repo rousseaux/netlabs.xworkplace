@@ -309,7 +309,7 @@ interface WPFolder : WPFileSystem
                   wpSetMenuBarVisibility,
                   wpQueryMenuBarVisibility,
                   wpFolderPrivate43,
-                  wpFolderPrivate44,
+                  _get_LastObj,
                   wpFolderPrivate45,
                   wpFlushNotifications,
                   wpSetShadowTextColor,

@@ -3594,7 +3594,8 @@ int main(int argc, char *argv[])
                     // XDM_HOOKINSTALL
                     WinPostMsg(G_pXwpGlobalShared->hwndThread1Object,
                                T1M_DAEMONREADY,
-                               0, 0);
+                               0,
+                               0);
 
                     // register special exception handler just for
                     // thread termination (see TerminateExcHandler)

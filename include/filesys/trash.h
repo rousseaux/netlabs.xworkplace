@@ -103,12 +103,6 @@
 
     APIRET trshValidateTrashObject(XWPTrashObject *somSelf);
 
-    BOOL trshProcessViewCommand(WPFolder *somSelf,
-                                USHORT usCommand,
-                                HWND hwndCnr,
-                                WPObject* pFirstObject,
-                                ULONG ulSelectionFlags);
-
     /* ******************************************************************
      *
      *   Trash can drives support

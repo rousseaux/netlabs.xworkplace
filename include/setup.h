@@ -75,6 +75,7 @@
     #pragma alloc_text(FREQ_CODE1, PerformMatch)
     #pragma alloc_text(FREQ_CODE1, doshMatchCaseNoPath)
     #pragma alloc_text(FREQ_CODE1, doshQuerySysUptime)
+    #pragma alloc_text(FREQ_CODE1, doshFindEAValue)
 
     #pragma alloc_text(FREQ_CODE1, nlsDBCS)
     #pragma alloc_text(FREQ_CODE1, nlschr)

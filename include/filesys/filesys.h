@@ -117,10 +117,6 @@
 
     VOID fsysFreeFindBuffer(PEAOP2 *pp);
 
-    PBYTE fsysFindEAValue(PFEA2LIST pFEA2List2,
-                          PCSZ pcszEAName,
-                          PUSHORT pcbValue);
-
     #ifdef SOM_WPFolder_h
         BOOL fsysPopulateWithFSObjects(WPFolder *somSelf,
                                        HWND hwndReserved,

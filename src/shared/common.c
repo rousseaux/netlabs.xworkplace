@@ -954,11 +954,20 @@ HMODULE cmnQueryNLSModuleHandle(BOOL fEnforceReload)
 
                 // after all this, unload the old resource module
                 DosFreeModule(hmodOld);
+
+                // V1.0.1 (2002-12-08) [umoeller]
+                cmnLoadDaemonNLSStrings();
             }
 
             // fill the shared buffer with the daemon-specific
             // resources V1.0.0 (2002-09-15) [lafaix]
-            cmnLoadDaemonNLSStrings();
+
+            // moved this up so we only call this in the "language changed"
+            // case; otherwise this produces a log entry with
+            // "pXwpGlobalShared->hwndDaemonObject is NULLHANDLE"
+            // from krnSendDaemonMsg on every WPS startup
+            // V1.0.1 (2002-12-08) [umoeller]
+            // cmnLoadDaemonNLSStrings();
         }
     }
 
@@ -1972,32 +1981,32 @@ static const STDICON aStdIcons[] =
         {
             STDICON_TB_REFRESH,
             "t_refr.ico",
-            6
+            XWP_MODULE_BIT | ID_TB_RERESH
         },
         {
             STDICON_TB_FIND,
             "t_find.ico",
-            6
+            XWP_MODULE_BIT | ID_TB_FIND
         },
         {
             STDICON_TB_HELP,
             "t_help.ico",
-            6
+            XWP_MODULE_BIT | ID_TB_HELP
         },
         {
             STDICON_TB_MULTIPLECOLUMNS,
             "t_mulcol.ico",
-            6
+            XWP_MODULE_BIT | ID_TB_MULTIPLECOLUMNS
         },
         {
             STDICON_TB_DETAILS,
             "t_detail.ico",
-            6
+            XWP_MODULE_BIT | ID_TB_DETAILS
         },
         {
             STDICON_TB_SMALLICONS,
             "t_smlico.ico",
-            6
+            XWP_MODULE_BIT | ID_TB_SMALLICONS
         }
     };
 

@@ -140,7 +140,7 @@
 #include "shared\kernel.h"              // XWorkplace Kernel
 #include "shared\notebook.h"            // generic XWorkplace notebook handling
 
-// #include "filesys\fdrmenus.h"           // shared folder menu logic
+#include "filesys\fileops.h"            // file operations implementation
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\icons.h"              // icons handling
 #include "filesys\trash.h"              // trash can implementation
@@ -577,7 +577,13 @@ SOM_Scope ULONG SOMLINK xtrc_xwpEmptyTrashCan(XWPTrashCan *somSelf,
  *      Starting with V1.0.1, we can now really override
  *      this method through our optimized IDL files.
  *
- *@@added V1.0.1 (2002-12-08) [umoeller]
+ *      This replaces trash can subclassing now, which
+ *      was used before V0.9.7. Here we intercept the
+ *      "restore" and "destroy" commands for trash objects
+ *      and process them all at once.
+ *
+ *@@added V0.9.7 (2001-01-13) [umoeller]
+ *@@changed V1.0.1 (2002-12-08) [umoeller]: made this a regular method override, handling moved here from trash.c
  */
 
 SOM_Scope BOOL  SOMLINK xtrc_xwpProcessViewCommand(XWPTrashCan *somSelf,
@@ -586,21 +592,44 @@ SOM_Scope BOOL  SOMLINK xtrc_xwpProcessViewCommand(XWPTrashCan *somSelf,
                                                    WPObject* pFirstObject,
                                                    ULONG ulSelectionFlags)
 {
+    BOOL brc = TRUE;        // default: processed
+    LONG lMenuID2 = usCommand - *G_pulVarMenuOfs;
+
     // XWPTrashCanData *somThis = XWPTrashCanGetData(somSelf);
     XWPTrashCanMethodDebug("XWPTrashCan","xtrc_xwpProcessViewCommand");
 
-    if (trshProcessViewCommand(somSelf,
-                               usCommand,
-                               hwndCnr,
-                               pFirstObject,
-                               ulSelectionFlags))
-        return TRUE;
+    switch (lMenuID2)
+    {
+        case ID_XFMI_OFS_TRASHRESTORE:
+            fopsStartTrashRestoreFromCnr(NULLHANDLE,  // no anchor block, asynchronously
+                                         somSelf,  // source: trash can
+                                         NULL,           // target folder
+                                         pFirstObject, // first source object
+                                         ulSelectionFlags,
+                                         hwndCnr);
+        break;
 
-    return XWPTrashCan_parent_XFolder_xwpProcessViewCommand(somSelf,
-                                                            usCommand,
-                                                            hwndCnr,
-                                                            pFirstObject,
-                                                            ulSelectionFlags);
+        case ID_XFMI_OFS_TRASHDESTROY:
+            fopsStartTrashDestroyFromCnr(NULLHANDLE,  // no anchor block, asynchronously
+                                         somSelf, // source: trash can
+                                         pFirstObject,
+                                         ulSelectionFlags,
+                                         hwndCnr,
+                                         // confirm:
+                                         (cmnQuerySetting(sflTrashConfirmEmpty)
+                                                & TRSHCONF_DESTROYOBJ)
+                                           != 0);
+        break;
+
+        default:
+            brc = XWPTrashCan_parent_XFolder_xwpProcessViewCommand(somSelf,
+                                                                   usCommand,
+                                                                   hwndCnr,
+                                                                   pFirstObject,
+                                                                   ulSelectionFlags);
+    }
+
+    return brc;
 }
 
 /*

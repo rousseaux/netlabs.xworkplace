@@ -3007,7 +3007,8 @@ PSZ stbComposeText(WPFolder* somSelf,      // in:  open folder with status bar
         XSTRING strNew;
         CHAR sz[300];
         sprintf(sz,
-                "%d {%s} ",
+                "0x%lX %d {%s} ",
+                pobjSelected,           // obj pointer V1.0.1 (2002-12-08) [umoeller]
                 _xwpQueryLocks(pobjSelected),
                 _somGetClassName(pobjSelected));
         xstrInitCopy(&strNew,

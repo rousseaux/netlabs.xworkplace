@@ -1611,6 +1611,8 @@ STATIC BOOL HandleWMChar(HWND hwndFrame,
 
 /*
  *@@ RefreshToolbarButtons:
+ *      enables/sets tool bar buttons when view settings
+ *      change.
  *
  *@@added V1.0.1 (2002-12-08) [umoeller]
  */
@@ -2582,12 +2584,10 @@ BOOL fdrSplitCreateFrame(WPObject *pRootObject,
                                                pctl->cvTree.hwndCnr);
 
         if (flSplit & SPLIT_TOOLBAR)  // V1.0.1 (2002-11-30) [umoeller]
-        {
             pctl->hwndToolBar = stbCreateToolBar(pRootsFolder,
                                                  pctl->hwndMainFrame,
                                                  *G_pulVarMenuOfs + ID_XFMI_OFS_SPLITVIEW,
                                                  &pctl->lToolBarHeight);
-        }
 
         // insert somSelf as the root of the tree
         pRootRec = _wpCnrInsertObject(pRootObject,
@@ -2775,6 +2775,7 @@ typedef struct _SPLITVIEWDATA
 
 /*
  *@@ LockSplitViewList:
+ *      locks the global linklist of open split views.
  *
  *@@added V1.0.1 (2002-11-30) [umoeller]
  */
@@ -2794,6 +2795,7 @@ STATIC BOOL LockSplitViewList(VOID)
 
 /*
  *@@ UnlockSplitViewList:
+ *      unlocks the global linklist of open split views.
  *
  *@@added V1.0.1 (2002-11-30) [umoeller]
  */
@@ -2805,6 +2807,7 @@ STATIC VOID UnlockSplitViewList(VOID)
 
 /*
  *@@ SplitFrameInitMenu:
+ *      implementation of WM_INITMENU in fnwpSplitViewFrame.
  *
  *@@added V1.0.1 (2002-11-30) [umoeller]
  */
@@ -2925,6 +2928,7 @@ STATIC MRESULT SplitFrameInitMenu(HWND hwndFrame,
 
 /*
  *@@ SplitFrameControl:
+ *      implementation of WM_CONTROL in fnwpSplitViewFrame.
  *
  *@@added V1.0.1 (2002-11-30) [umoeller]
  */
@@ -3613,3 +3617,4 @@ HWND fdrCreateSplitView(WPObject *pRootObject,      // in: folder or disk
 
     return hwndReturn;
 }
+

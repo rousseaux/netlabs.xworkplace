@@ -183,6 +183,14 @@
 // #define ID_ICON_TRAY           180
 #define ID_BITMAP_TRAY         180          // replaced V0.9.16 (2001-10-28) [umoeller]
 
+// default toolbar icons V1.0.1 (2002-12-08) [umoeller]
+#define ID_TB_DETAILS          190
+#define ID_TB_FIND             191
+#define ID_TB_HELP             192
+#define ID_TB_MULTIPLECOLUMNS  193
+#define ID_TB_RERESH           194
+#define ID_TB_SMALLICONS       195
+
 /* ******************************************************************
  *
  *   Generic dialog IDs < 100

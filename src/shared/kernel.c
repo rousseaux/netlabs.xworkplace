@@ -992,18 +992,15 @@ VOID krnCreateObjectWindows(VOID)
 STATIC VOID T1M_DaemonReady(VOID)
 {
     // _Pmpf(("T1M_DaemonReady"));
+    PXWPGLOBALSHARED pXwpGlobalShared;
 
-    if (G_KernelGlobals.pXwpGlobalShared)
+    if (    (pXwpGlobalShared = G_KernelGlobals.pXwpGlobalShared)
+         && (pXwpGlobalShared->hwndDaemonObject)
+       )
     {
-        // cast PVOID
-        PXWPGLOBALSHARED pXwpGlobalShared = G_KernelGlobals.pXwpGlobalShared;
-        if (
 #ifndef __ALWAYSHOOK__
-                (cmnQuerySetting(sfXWPHook))
-             &&
+        if (cmnQuerySetting(sfXWPHook))
 #endif
-                (pXwpGlobalShared->hwndDaemonObject)
-           )
         {
             if (WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
                            XDM_HOOKINSTALL,
@@ -1034,6 +1031,9 @@ STATIC VOID T1M_DaemonReady(VOID)
 #endif
             }
         }
+
+        // added this call here V1.0.1 (2002-12-08) [umoeller]
+        cmnLoadDaemonNLSStrings();
     }
 }
 

@@ -2150,86 +2150,6 @@ APIRET trshValidateTrashObject(XWPTrashObject *somSelf)
     return arc;
 }
 
-/*
- *@@ trshProcessViewCommand:
- *      implementation for XWPTrashCan::xwpProcessViewCommand.
- *
- *      This replaces trash can subclassing now, which
- *      was used before V0.9.7. Here we intercept the
- *      "restore" and "destroy" commands for trash objects
- *      and process them all at once.
- *
- *@@added V0.9.7 (2001-01-13) [umoeller]
- */
-
-BOOL trshProcessViewCommand(WPFolder *somSelf,
-                            USHORT usCommand,
-                            HWND hwndCnr,
-                            WPObject* pFirstObject,
-                            ULONG ulSelectionFlags)
-{
-    BOOL brc = TRUE;        // default: processed
-
-    LONG lMenuID2 = usCommand - *G_pulVarMenuOfs;
-
-    switch (lMenuID2)
-    {
-        case ID_XFMI_OFS_TRASHRESTORE:
-            fopsStartTrashRestoreFromCnr(NULLHANDLE,  // no anchor block, asynchronously
-                                         somSelf,  // source: trash can
-                                         NULL,           // target folder
-                                         pFirstObject, // first source object
-                                         ulSelectionFlags,
-                                         hwndCnr);
-        break;
-
-        case ID_XFMI_OFS_TRASHDESTROY:
-            fopsStartTrashDestroyFromCnr(NULLHANDLE,  // no anchor block, asynchronously
-                                         somSelf, // source: trash can
-                                         pFirstObject,
-                                         ulSelectionFlags,
-                                         hwndCnr,
-                                         // confirm:
-                                         (cmnQuerySetting(sflTrashConfirmEmpty)
-                                                & TRSHCONF_DESTROYOBJ)
-                                           != 0);
-        break;
-
-        default:
-            brc = FALSE;
-
-        /*
-        {
-            // other: call parent method to find out
-            // whether default processing should occur
-
-            V1.0.1 (2002-12-08) [umoeller]
-            // manually resolve parent method
-            somTD_XWPTrashCan_xwpProcessViewCommand pxwpProcessViewCommand;
-
-            if (pxwpProcessViewCommand
-                = (somTD_XWPTrashCan_xwpProcessViewCommand)wpshResolveFor(
-                                                       somSelf,
-                                                       _somGetParent(_XWPTrashCan),
-                                                       "xwpProcessViewCommand"))
-                // let parent method return TRUE or FALSE
-                brc = pxwpProcessViewCommand(somSelf,
-                                             usCommand,
-                                             hwndCnr,
-                                             pFirstObject,
-                                             ulSelectionFlags);
-
-            brc = XWPTrashCan_parent_XFolder_xwpProcessViewCommand(somSelf,
-                                                                   usCommand,
-                                                                   hwndCnr,
-                                                                   pFirstObject,
-                                                                   ulSelectionFlags);
-        } */
-    }
-
-    return brc;
-}
-
 /* ******************************************************************
  *
  *   Trash can drives support
@@ -2251,9 +2171,7 @@ BOOL trshSetDrivesSupport(PBYTE pabSupportedDrives)
 
     TRY_LOUD(excpt1)
     {
-        fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__);
-
-        if (fLocked)
+        if (fLocked = krnLock(__FILE__, __LINE__, __FUNCTION__))
         {
             if (pabSupportedDrives)
             {

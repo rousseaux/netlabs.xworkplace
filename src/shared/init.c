@@ -1698,6 +1698,7 @@ VOID initMain(VOID)
 
                 // now start the daemon;
                 krnStartDaemon();
+
             } // end if DosAllocSharedMem
 
         } // end if DosGetNamedSharedMem
@@ -1754,7 +1755,10 @@ VOID initMain(VOID)
 
         // in either case, load the strings for daemon NLS
         // support V1.0.0 (2002-09-17) [umoeller]
-        cmnLoadDaemonNLSStrings();
+
+        // no, don't; moved this call to T1M_DAEMONREADY
+        // V1.0.1 (2002-12-08) [umoeller]
+        // cmnLoadDaemonNLSStrings();
     }
 
     /*

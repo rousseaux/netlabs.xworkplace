@@ -2,8 +2,8 @@
 /*
  *@@sourcefile desktop.c:
  *      XFldDesktop implementation code. Note that more
- *      Desktop-related code resides in filesys\archives.c
- *      and filesys\shutdown.c.
+ *      Desktop-related code resides in config\archives.c
+ *      and startshut\shutdown.c.
  *
  *      This file is ALL new with V0.9.0.
  *

@@ -584,149 +584,11 @@ VOID fsysFreeFindBuffer(PEAOP2 *pp)
     }
 }
 
-/*
- *@@ FindEAValue:
- *      returns the pointer to the EA value
- *      if the EA with the given name exists
- *      in the given FEA2LIST.
- *
- *      Within the FEA structure
- *
- +          typedef struct _FEA2 {
- +              ULONG      oNextEntryOffset;  // Offset to next entry.
- +              BYTE       fEA;               // Extended attributes flag.
- +              BYTE       cbName;            // Length of szName, not including NULL.
- +              USHORT     cbValue;           // Value length.
- +              CHAR       szName[1];         // Extended attribute name.
- +          } FEA2;
- *
- *      the EA value starts right after szName (plus its null
- *      terminator). The first USHORT of the value should
- *      normally signify the type of the EA, e.g. EAT_ASCII.
- *      This returns a pointer to that type USHORT.
- *
- *@@added V0.9.16 (2001-10-25) [umoeller]
- */
-
-PBYTE fsysFindEAValue(PFEA2LIST pFEA2List2,      // in: file EA list
-                      PCSZ pcszEAName,           // in: EA name to search for (e.g. ".LONGNAME")
-                      PUSHORT pcbValue)          // out: length of value (ptr can be NULL)
-{
-    ULONG ulEANameLen;
-
-    /*
-    typedef struct _FEA2LIST {
-        ULONG     cbList;   // Total bytes of structure including full list.
-                            // Apparently, if EAs aren't supported, this
-                            // is == sizeof(ULONG).
-        FEA2      list[1];  // Variable-length FEA2 structures.
-    } FEA2LIST;
-
-    typedef struct _FEA2 {
-        ULONG      oNextEntryOffset;  // Offset to next entry.
-        BYTE       fEA;               // Extended attributes flag.
-        BYTE       cbName;            // Length of szName, not including NULL.
-        USHORT     cbValue;           // Value length.
-        CHAR       szName[1];         // Extended attribute name.
-    } FEA2;
-    */
-
-    if (!pFEA2List2)
-        return NULL;
-
-    if (    (pFEA2List2->cbList > sizeof(ULONG))
-                    // FAT32 and CDFS return 4 for anything here, so
-                    // we better not mess with anything else; I assume
-                    // any FS which doesn't support EAs will do so then
-         && (pcszEAName)
-         && (ulEANameLen = strlen(pcszEAName))
-       )
-    {
-        PFEA2 pThis = &pFEA2List2->list[0];
-        // maintain a current offset so we will never
-        // go beyond the end of the buffer accidentally...
-        // who knows what these stupid EA routines return!
-        ULONG ulOfsThis = sizeof(ULONG),
-              ul = 0;
-
-        while (ulOfsThis < pFEA2List2->cbList)
-        {
-            if (    (ulEANameLen == pThis->cbName)
-                 && (!memcmp(pThis->szName,
-                             pcszEAName,
-                             ulEANameLen))
-               )
-            {
-                if (pThis->cbValue)
-                {
-                    PBYTE pbValue =   (PBYTE)pThis
-                                    + sizeof(FEA2)
-                                    + pThis->cbName;
-                    if (pcbValue)
-                        *pcbValue = pThis->cbValue;
-                    return pbValue;
-                }
-                else
-                    // no value:
-                    return NULL;
-            }
-
-            if (!pThis->oNextEntryOffset)
-                // this was the last entry:
-                return NULL;
-
-            ulOfsThis += pThis->oNextEntryOffset;
-
-            pThis = (PFEA2)(((PBYTE)pThis) + pThis->oNextEntryOffset);
-            ul++;
-        } // end while
-    } // end if (    (pFEA2List2->cbList > sizeof(ULONG)) ...
-
-    return NULL;
-}
-
 // find this many files at a time
 #define FIND_COUNT              300
             // doesn't make a whole lot of difference whether
             // I set this to 1 or 300 on my system, but maybe
             // on SMP systems this helps?!?
-
-/*
- *@@ DecodeLongname:
- *
- *@@added V0.9.16 (2001-10-25) [umoeller]
- */
-
-STATIC BOOL DecodeLongname(PFEA2LIST pFEA2List2,
-                           PSZ pszLongname,          // out: .LONGNAME if TRUE is returned
-                           PULONG pulNameLen)        // out: length of .LONGNAME string
-{
-    PBYTE pbValue;
-
-    if (pbValue = fsysFindEAValue(pFEA2List2,
-                                  ".LONGNAME",
-                                  NULL))
-    {
-        PUSHORT pusType = (PUSHORT)pbValue;
-        if (*pusType == EAT_ASCII)
-        {
-            // CPREF: first word after EAT_ASCII specifies length
-            PUSHORT pusStringLength = pusType + 1;      // pbValue + 2
-            if (*pusStringLength)
-            {
-                ULONG cb = _min(*pusStringLength, CCHMAXPATH - 1);
-                memcpy(pszLongname,
-                       pbValue + 4,
-                       cb);
-                pszLongname[cb] = '\0';
-                *pulNameLen = cb;
-                return TRUE;
-            }
-        }
-    }
-
-    return FALSE;
-}
 
 /*
  *@@ CLASSINFO:
@@ -771,7 +633,7 @@ STATIC PCSZ DecodeClassInfo(PFEA2LIST pFEA2List2,
 
     *ppObjData = NULL;
 
-    if (pbValue = fsysFindEAValue(pFEA2List2,
+    if (pbValue = doshFindEAValue(pFEA2List2,
                                   ".CLASSINFO",
                                   NULL))
     {
@@ -825,7 +687,7 @@ STATIC PCSZ FindBestDataFileClass(PFEA2LIST pFEA2List2,
 
     PBYTE pbValue;
 
-    if (pbValue = fsysFindEAValue(pFEA2List2,
+    if (pbValue = doshFindEAValue(pFEA2List2,
                                   ".TYPE",
                                   NULL))
     {
@@ -916,6 +778,7 @@ STATIC PCSZ FindBestDataFileClass(PFEA2LIST pFEA2List2,
  *@@added V0.9.16 (2001-10-25) [umoeller]
  *@@changed V0.9.18 (2002-02-06) [umoeller]: fixed duplicate awakes and "treeInsert failed"
  *@@changed V0.9.19 (2002-04-14) [umoeller]: fixed missing FOUNDBIT after awake
+ *@@changed V1.0.1 (2002-12-08) [umoeller]: added detection of .LONGNAME-changed case @@fixes 238
  */
 
 STATIC WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
@@ -973,6 +836,29 @@ STATIC WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
         // V0.9.18 (2002-02-06) [umoeller]
         if (fFolderLocked = !_wpRequestFolderMutexSem(pFolder, SEM_INDEFINITE_WAIT))
         {
+            CHAR            szLongname[CCHMAXPATH];
+            ULONG           ulTitleLen;
+            PSZ             pszTitle;
+
+            // for the title of the new object, use the real
+            // name, unless we also find a .LONGNAME attribute,
+            // so decode the EA buffer
+
+            // moved this up: we need to check the title for
+            // refreshing awake objects too (bug 238)
+            // V1.0.1 (2002-12-08) [umoeller]
+            if (doshQueryLongname(pFEA2List2,
+                                  szLongname,
+                                  &ulTitleLen))
+                // got .LONGNAME:
+                pszTitle = szLongname;
+            else
+            {
+                // no .LONGNAME:
+                pszTitle = pszRealName;
+                ulTitleLen = *puchNameLen;
+            }
+
             // alright, apparently we got something:
             // check if it is already awake (using the
             // fast content tree functions)
@@ -1030,9 +916,12 @@ STATIC WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
                 // in both ffb3 and ffb4, fdateCreation is the first date/time field;
                 // FDATE and FTIME are a USHORT each, and the decl in the toolkit
                 // has #pragma pack(2), so this should work
-                if (memcmp(&pfb3->fdateCreation,
-                           &ffb4.fdateCreation,
-                           3 * (sizeof(FDATE) + sizeof(FTIME))))
+                if (    (memcmp(&pfb3->fdateCreation,
+                                &ffb4.fdateCreation,
+                                3 * (sizeof(FDATE) + sizeof(FTIME)) ))
+                     // refresh also if .LONGNAME changed V1.0.1 (2002-12-08) [umoeller]
+                     || (strcmp(pszTitle, _wpQueryTitle(pAwake)))
+                   )
                 {
                     // object changed: go refresh it
                     _wpRefreshFSInfo(pAwake, NULLHANDLE, pfb3, TRUE);
@@ -1045,27 +934,10 @@ STATIC WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
                 // no: wake it up then... this is terribly complicated:
                 POBJDATA        pObjData = NULL;
 
-                CHAR            szLongname[CCHMAXPATH];
-                PSZ             pszTitle;
-                ULONG           ulTitleLen;
-
                 PCSZ            pcszClassName = NULL;
                 ULONG           ulClassNameLen;
                 somId           somidClassName;
                 SOMClass        *pClassObject;
-
-                // for the title of the new object, use the real
-                // name, unless we also find a .LONGNAME attribute,
-                // so decode the EA buffer
-                if (DecodeLongname(pFEA2List2, szLongname, &ulTitleLen))
-                    // got .LONGNAME:
-                    pszTitle = szLongname;
-                else
-                {
-                    // no .LONGNAME:
-                    pszTitle = pszRealName;
-                    ulTitleLen = *puchNameLen;
-                }
 
                 // NOTE about the class management:
                 // At this point, we operate on class _names_
@@ -1715,23 +1587,20 @@ BOOL fsysPopulateWithFSObjects(WPFolder *somSelf,
  *      implementation for our replacement XWPFileSystem::wpRefresh.
  *
  *@@added V0.9.16 (2001-12-08) [umoeller]
+ *@@changed V1.0.1 (2002-12-08) [umoeller]: added detection of .LONGNAME-changed case @@fixes 238
  */
 
 APIRET fsysRefresh(WPFileSystem *somSelf,
-                   PVOID pvReserved)
+                   PVOID pvReserved)            // in: ptr to FILEFINDBUF3 or NULL
 {
     APIRET          arc = NO_ERROR;
 
-    PFILEFINDBUF3   pfb3 = NULL;
+    PFILEFINDBUF3   pfb3;
     PEAOP2          peaop = NULL;
 
     CHAR            szFilename[CCHMAXPATH];
 
-    if (pvReserved)
-        // caller gave us data (probably from wpPopulate):
-        // use that
-        pfb3 = (PFILEFINDBUF3)pvReserved;
-    else
+    if (!(pfb3 = (PFILEFINDBUF3)pvReserved))
     {
         // no info given: get it then
         if (!_wpQueryFilename(somSelf, szFilename, TRUE))
@@ -1759,14 +1628,35 @@ APIRET fsysRefresh(WPFileSystem *somSelf,
                                                     + FIELDOFFSET(FILEFINDBUF3,
                                                                   cchName));
 
-                // next comes a UCHAR with the name length
-                PUCHAR puchNameLen = (PUCHAR)(((PBYTE)pFEA2List2) + pFEA2List2->cbList);
-
-                // finally, the (real) name of the object
-                PSZ pszRealName = ((PBYTE)puchNameLen) + sizeof(UCHAR);
-
                 PMINIRECORDCORE prec = _wpQueryCoreRecord(somSelf);
                 HPOINTER hptrNew = NULLHANDLE;
+
+                CHAR            szLongname[CCHMAXPATH];
+                ULONG           ulTitleLen;
+                PSZ             pszTitle;
+
+                // check if the title has changed (.LONGNAME might
+                // have been deleted or something)
+                // V1.0.1 (2002-12-08) [umoeller]
+                // for the title of the new object, use the real
+                // name, unless we also find a .LONGNAME attribute,
+                // so decode the EA buffer
+                if (doshQueryLongname(pFEA2List2,
+                                      szLongname,
+                                      &ulTitleLen))
+                    // got .LONGNAME:
+                    pszTitle = szLongname;
+                else
+                {
+                    // no .LONGNAME:
+                    PUCHAR puchNameLen = (PUCHAR)(((PBYTE)pFEA2List2) + pFEA2List2->cbList);
+                    pszTitle = ((PBYTE)puchNameLen) + sizeof(UCHAR);
+                    ulTitleLen = *puchNameLen;
+                }
+
+                if (strcmp(pszTitle, _wpQueryTitle(somSelf)))
+                    // whoa, .LONGNAME changed:
+                    _xwpSetTitleOnly(somSelf, pszTitle);
 
                 if (flRefresh & 0x20000000)
                     _wpSetRefreshFlags(somSelf, flRefresh & ~0x20000000);

@@ -74,12 +74,14 @@
 
     VOID icomUnlockIconShares(VOID);
 
-    HPOINTER icomShareIcon(WPObject *somSelf,
-                           WPObject *pobjClient,
-                           BOOL fMakeGlobal);
+    #ifdef SOM_WPObject_h
+        HPOINTER icomShareIcon(WPObject *somSelf,
+                               WPObject *pobjClient,
+                               BOOL fMakeGlobal);
 
-    VOID icomUnShareIcon(WPObject *pobjServer,
-                         WPObject *pobjClient);
+        VOID icomUnShareIcon(WPObject *pobjServer,
+                             WPObject *pobjClient);
+    #endif
 
     /* ******************************************************************
      *
@@ -99,26 +101,28 @@
 
     BOOL icomRunReplacement(VOID);
 
-    HPOINTER icomQueryIconN(WPObject *pobj,
-                            ULONG ulIndex);
+    #ifdef SOM_WPObject_h
+        HPOINTER icomQueryIconN(WPObject *pobj,
+                                ULONG ulIndex);
 
-    BOOL icomSetIconDataN(WPObject *pobj,
-                          ULONG ulIndex,
-                          PICONINFO pData);
+        BOOL icomSetIconDataN(WPObject *pobj,
+                              ULONG ulIndex,
+                              PICONINFO pData);
 
-    APIRET icomLoadIconData(WPObject *pobj,
-                            ULONG ulIndex,
-                            PICONINFO *ppIconInfo);
+        APIRET icomLoadIconData(WPObject *pobj,
+                                ULONG ulIndex,
+                                PICONINFO *ppIconInfo);
 
-    APIRET icomCopyIconFromObject(WPObject *somSelf,
-                                  WPObject *pobjSource,
-                                  ULONG ulIndex);
+        APIRET icomCopyIconFromObject(WPObject *somSelf,
+                                      WPObject *pobjSource,
+                                      ULONG ulIndex);
 
-    VOID icomResetIcon(WPObject *somSelf,
-                       ULONG ulIndex);
+        VOID icomResetIcon(WPObject *somSelf,
+                           ULONG ulIndex);
 
-    BOOL icomIsUsingDefaultIcon(WPObject *pobj,
-                                ULONG ulAnimationIndex);
+        BOOL icomIsUsingDefaultIcon(WPObject *pobj,
+                                    ULONG ulAnimationIndex);
+    #endif
 
     /* ******************************************************************
      *

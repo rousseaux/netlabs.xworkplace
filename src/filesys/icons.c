@@ -258,10 +258,10 @@
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
-#include "xfldr.ih"
+// #include "xfldr.ih"
 
 // XWorkplace implementation headers
-#include "dlgids.h"                     // all the IDs that are shared with NLS
+// #include "dlgids.h"                     // all the IDs that are shared with NLS
 #include "shared\common.h"              // the majestic XWorkplace include file
 #include "shared\errors.h"              // private XWorkplace error codes
 #include "shared\kernel.h"              // XWorkplace Kernel
@@ -546,7 +546,7 @@ APIRET icoBuildPtrFromFEA2List(PFEA2LIST pFEA2List,     // in: FEA2LIST to check
     else
     {
         PBYTE pbValue;
-        if (pbValue = fsysFindEAValue(pFEA2List,
+        if (pbValue = doshFindEAValue(pFEA2List,
                                       ".ICON",
                                       NULL))
         {

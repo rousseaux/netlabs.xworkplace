@@ -99,15 +99,8 @@
  *      As a result, XWP has to do _all_ the sorting now.
  *
  *      To be able to still get the IBMSORTINFO which sits somewhere
- *      in the WPFolder instance data, we added XFolder::wpRestoreData,
- *      which gets called when an object is awakened. Since the caller
- *      always passes a block of memory to which wpRestoreData should
- *      write if the data was found, we can intercept that pointer
- *      and store it in XWorkplace's instance data. We can therefore
- *      manipulate the "Always sort" flag in there also.
- *
- *      This was already added with the old XFolder. So,
- *      what's new with 0.9.12?
+ *      in the WPFolder instance data, we have to hack the WPFolder
+ *      instance data directly.
  *
  *      The old folder sort code (back from XFolder, used
  *      before 0.9.12) simply assumed that all items in
@@ -741,16 +734,16 @@ STATIC LONG EXPENTRY CompareStrings(PSZ *ppsz1,     // ptr to PSZ 1
                                      0);
         switch (ul)
         {
-            case WCS_LT: return (CMP_LESS);
-            case WCS_GT: return (CMP_GREATER);
+            case WCS_LT: return CMP_LESS;
+            case WCS_GT: return CMP_GREATER;
         }
     }
     else if (p1)
         // but p2 is NULL: p1 greater than p2 then
-        return (CMP_GREATER);
+        return CMP_GREATER;
     else if (p2)
         // but p1 is NULL: p1 less than p2 then
-        return (CMP_LESS);
+        return CMP_LESS;
 
     // return 0 if strcmp returned 0 above or both strings are NULL
     return 0;
@@ -771,10 +764,10 @@ STATIC LONG EXPENTRY CompareULongs(PULONG pul1,     // ptr to ul1
                                    PULONG pul2)     // ptr to ul2
 {
     if (*pul1 > *pul2)
-        return (CMP_GREATER);
+        return CMP_GREATER;
     if (*pul1 < *pul2)
-        return (CMP_LESS);
-    return (CMP_EQUAL);
+        return CMP_LESS;
+    return CMP_EQUAL;
 }
 
 /*
@@ -926,10 +919,10 @@ SHORT EXPENTRY fnCompareDetailsColumn(PMINIRECORDCORE pmrc1,
 
             if (fIsFldr1)
                 // 1 is folder, but 2 is not:
-                return (-1);
+                return -1;
 
             // well, then 2 is folder, but 1 is not:
-            return (1);
+            return 1;
         }
 
         // else: both are folders, or both are non-folders:
@@ -967,19 +960,19 @@ SHORT EXPENTRY fnCompareDetailsColumn(PMINIRECORDCORE pmrc1,
         // -- CMP_LESS         2
         if (lResult == CMP_LESS)
             // convert to cnr comparison value
-            return (-1);
+            return -1;
 
-        return (lResult);
+        return lResult;
     }
     // else: at least one object doesn't support the criterion...
 
     if (!f1IsOfSortClass)
         // but object 2 is:
-        return (1);
+        return 1;
 
     if (!f2IsOfSortClass)
         // but object 1 is:
-        return (-1);
+        return -1;
 
     // neither is:
     return 0;
@@ -1025,48 +1018,48 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
             if (fFoldersFirst)
             {
                 // _Pmpf(("  returning compareType, folders first"));
-                return ((PFN)fnCompareTypeFoldersFirst);
+                return (PFN)fnCompareTypeFoldersFirst;
             }
             else
             {
                 // _Pmpf(("  returning compareType, NO folders first"));
-                return ((PFN)fnCompareType);
+                return (PFN)fnCompareType;
             }
 
         case -2:
             if (fFoldersFirst)
             {
                 // _Pmpf(("  returning compare name, folders first"));
-                return ((PFN)fnCompareNameFoldersFirst);
+                return (PFN)fnCompareNameFoldersFirst;
             }
             else
             {
                 // _Pmpf(("  returning compare name, NO folders first"));
-                return ((PFN)fnCompareName);
+                return (PFN)fnCompareName;
             }
 
         case -3:
             if (fFoldersFirst)
             {
                 // _Pmpf(("  returning compare class, folders first"));
-                return ((PFN)fnCompareClassFoldersFirst);
+                return (PFN)fnCompareClassFoldersFirst;
             }
             else
             {
                 // _Pmpf(("  returning compare class, NO folders first"));
-                return ((PFN)fnCompareClass);
+                return (PFN)fnCompareClass;
             }
 
         case -4:
             if (fFoldersFirst)
             {
                 // _Pmpf(("  returning compare extension, folders first"));
-                return ((PFN)fnCompareExtFoldersFirst);
+                return (PFN)fnCompareExtFoldersFirst;
             }
             else
             {
                 // _Pmpf(("  returning compare class, NO folders first"));
-                return ((PFN)fnCompareExt);
+                return (PFN)fnCompareExt;
             }
 
         default:
@@ -1152,7 +1145,7 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
                     // 4) return the details column _cnr_ comparison func,
                     //    which will use the WPS comparison func
                     //    in turn
-                    return ((PFN)fnCompareDetailsColumn);
+                    return (PFN)fnCompareDetailsColumn;
                 }
             }
 
@@ -1163,7 +1156,7 @@ PFN fdrQuerySortFunc(WPFolder *somSelf,
            "Invalid sort criterion %d", lSort);
 
     // invalid lSort specified:
-    return ((PFN)fnCompareName);
+    return (PFN)fnCompareName;
 }
 
 /* ******************************************************************
@@ -1303,7 +1296,7 @@ BOOL fdrSortViewOnce(WPFolder *somSelf,
             _wpReleaseObjectMutexSem(pobjLock);
     }
 
-    return (rc);
+    return rc;
 }
 
 /*

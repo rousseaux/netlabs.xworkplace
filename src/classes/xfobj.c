@@ -429,6 +429,37 @@ SOM_Scope PSZ  SOMLINK xo_xwpQueryOriginalObjectID(XFldObject *somSelf)
 }
 
 /*
+ *@@ xwpSetTitleOnly:
+ *      wrapper around XFldObject::wpSetTitle which allows
+ *      us to call that method code directly without calling
+ *      the additional code that WPFileSystem and others
+ *      add on top of that.
+ *
+ *      This is for the case where refresh detects that the
+ *      title of an object has changed (e.g. because a
+ *      .LONGNAME was added or deleted) and the object's
+ *      title needs to be refreshed. However, if we called
+ *      WPFileSystem::wpSetTitle, the file's real name
+ *      would also be changed.
+ *
+ *      We can't use WPFileSystem::wpSetTitleNoRenameFile
+ *      either because that writes a new .LONGNAME EA.
+ *      Hence this additional method.
+ *
+ *@@added V1.0.1 (2002-12-08) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xo_xwpSetTitleOnly(XFldObject *somSelf,
+                                           PSZ pszNewTitle)
+{
+    // XFldObjectData *somThis = XFldObjectGetData(somSelf);
+    XFldObjectMethodDebug("XFldObject","xo_xwpSetTitleOnly");
+
+    // note, direct function, no method call
+    return xo_wpSetTitle(somSelf, pszNewTitle);
+}
+
+/*
  *@@ xwpQueryDeletion:
  *      this method may be called at any time to determine if and
  *      when an object has been deleted into the trash can.
