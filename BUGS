@@ -13,16 +13,6 @@ XWorkplace features in the "XWorkplace Setup" object.
 
 Ulrich M”ller.
 
---  CHANGE "VIEW" PAGE IN "WORKPLACE SHELL" TO "FOLDERS"
-
---  CHANGE "STATUS BARS 1" PAGE IN "WORKPLACE SHELL" TO NOT HAVE "WARP" STRINGS
-
---  DEFAULTS: 'Conditional cascade' menus should be turned on.
-
---  CHANGE DIALOG BORDERS
-
---  CHANGE XWP DIALOG ICONS (MSG BOX)
-
 --  folder content menus:
     if folder is already populated, drive changes aren't picked up
     (crashes with CD-ROMs and drive menus)
@@ -32,6 +22,7 @@ Ulrich M”ller.
     --  reboot hangs on "releasing filesystems" on some systems
 
 --  XCenter:
+    --  DISKFREE: DRIVE CANNOT BE REMOVEDS
     --  double-click on tray empty space produces click on icon too
     --  crashes with DragText
     --  spacing lines are missing on trays

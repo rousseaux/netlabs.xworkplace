@@ -165,7 +165,7 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
         //     key for wpSaveState/wpRestoreState
                4,      // bitfield! only first item!
         //     default, ulExtra,            min, max
-               XCS_FLATBUTTONS | XCS_SUNKBORDERS | XCS_SIZINGBARS,
+               XCS_FLATBUTTONS | XCS_SUNKBORDERS | XCS_SIZINGBARS | XCS_SPACINGLINES,
                         0,                  0,   0,
 
         // type,  setup string,     offset,
@@ -268,7 +268,7 @@ static XWPSETUPENTRY    G_XCenterSetupSet[] =
         //     key for wpSaveState/wpRestoreState
                10,
         //     default, ulExtra,            min, max
-               1,       0,                  0,   10,
+               2,       0,                  0,   10,
 
         // type,  setup string,     offset,
         STG_LONG, "WIDGETSPACING",    FIELDOFFSET(XCenterData, ulWidgetSpacing),
@@ -623,7 +623,8 @@ BOOL ctrpSetupOnce(XCenter *somSelf,
                              "WIDGETS=XButton,"
                              "Pulse,"
                              "Tray(WIDTH%3D141%3BCURRENTTRAY%3D0%3B),"
-                             "WindowList",
+                             "WindowList,"
+                             "Time",
                              0);
                 // on laptops, add battery widget too
                 if (apmhHasBattery())

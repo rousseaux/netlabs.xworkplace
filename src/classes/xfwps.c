@@ -316,8 +316,6 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
         ntbInsertPage(pcnbp);
     }
 
-    _xwpAddWPSMenuPages(somSelf, hwndDlg);
-
     /*
      * "View" page (XFolder)
      */
@@ -329,7 +327,7 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
     pcnbp->hmod = savehmod;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->fEnumerate = TRUE;
-    pcnbp->pszName = cmnGetString(ID_XSSI_VIEWPAGE);  // pszViewPage
+    pcnbp->pszName = cmnGetString(ID_XSSI_WPSFDRVIEWPAGE);  // V0.9.16(2001-11-04) [umoeller]
     // pcnbp->ulDlgID = ID_XSD_FOLDERVIEWS;
     pcnbp->ulDlgID = ID_XFD_EMPTYDLG;           // V0.9.16 (2001-09-29) [umoeller]
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS1;
@@ -337,6 +335,10 @@ SOM_Scope ULONG  SOMLINK xfwps_xwpAddXFldWPSPages(XFldWPS *somSelf,
     pcnbp->pfncbInitPage    = fdrViewInitPage;
     pcnbp->pfncbItemChanged = fdrViewItemChanged;
     ntbInsertPage(pcnbp);
+
+    // moved menu pages before "View" page
+    // V0.9.16(2001-11-04) [umoeller]
+    _xwpAddWPSMenuPages(somSelf, hwndDlg);
 
     /*
      * "File types" page (new with V0.9.0)

@@ -136,7 +136,7 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddResourcesPage(XFldProgramFile *somSelf,
     // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
     XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_xwpAddResourcesPage");
 
-#ifndef __NOMODULES__
+#ifndef __NOMODULEPAGES__
     pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
     memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
     pcnbp->somSelf = somSelf;
@@ -181,7 +181,7 @@ SOM_Scope ULONG  SOMLINK xfpgmf_xwpAddModulePage(XFldProgramFile *somSelf,
     // XFldProgramFileData *somThis = XFldProgramFileGetData(somSelf);
     XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_xwpAddModulePage");
 
-#ifndef __NOMODULES__
+#ifndef __NOMODULEPAGES__
     pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
     memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
     pcnbp->somSelf = somSelf;
@@ -956,7 +956,7 @@ SOM_Scope ULONG  SOMLINK xfpgmf_wpAddProgramSessionPage(XFldProgramFile *somSelf
     XFldProgramFileMethodDebug("XFldProgramFile","xfpgmf_wpAddProgramSessionPage");
 
     // insert "Module" settings page, but not for command files
-#ifndef __NOMODULES__
+#ifndef __NOMODULEPAGES__
     if (!_somIsA(somSelf, _WPCommandFile))
     {
         if (cmnIsFeatureEnabled(ReplaceFilePage))

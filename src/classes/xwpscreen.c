@@ -139,6 +139,7 @@ SOM_Scope ULONG  SOMLINK xwpscr_xwpAddXWPScreenPages(XWPScreen *somSelf,
         pcnbp->pfncbItemChanged = hifMouseCornersItemChanged;
         ulrc = ntbInsertPage(pcnbp);
 
+#ifndef __NOPAGEMAGE__
         if (pGlobalSettings->fEnablePageMage)
         {
             // "PageMage" colors
@@ -213,6 +214,7 @@ SOM_Scope ULONG  SOMLINK xwpscr_xwpAddXWPScreenPages(XWPScreen *somSelf,
             pcnbp->ulPageID = SP_PAGEMAGE_MAIN;
             ulrc = ntbInsertPage(pcnbp);
         }
+#endif
     }
 
     return (ulrc);

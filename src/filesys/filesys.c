@@ -784,6 +784,8 @@ MRESULT fsysFile1ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
     return ((MPARAM)-1);
 }
 
+#ifndef __NOFILEPAGE2__
+
 /*
  *@@ fsysFile2InitPage:
  *      second "File" page notebook callback function (notebook.c).
@@ -966,6 +968,8 @@ MRESULT fsysFile2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
     return (0);
 }
 
+#endif
+
 /*
  *@@ fsysInsertFilePages:
  *      shared code between XFldDataFile and XFolder
@@ -979,10 +983,11 @@ MRESULT fsysFile2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,    // notebook info stru
 ULONG fsysInsertFilePages(WPObject *somSelf,    // in: must be a WPFileSystem, really
                           HWND hwndNotebook)    // in: from wpAddFile1Page
 {
-    // page 2
-    PCREATENOTEBOOKPAGE pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
-    // PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+    PCREATENOTEBOOKPAGE pcnbp;
 
+#ifndef __NOFILEPAGE2__
+    // page 2
+    pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
     memset(pcnbp, 0, sizeof(CREATENOTEBOOKPAGE));
     pcnbp->somSelf = somSelf;
     pcnbp->hwndNotebook = hwndNotebook;
@@ -997,6 +1002,7 @@ ULONG fsysInsertFilePages(WPObject *somSelf,    // in: must be a WPFileSystem, r
     pcnbp->pfncbItemChanged = (PFNCBITEMCHANGED)fsysFile2ItemChanged;
 
     ntbInsertPage(pcnbp);
+#endif
 
     // page 1
     pcnbp = malloc(sizeof(CREATENOTEBOOKPAGE));
@@ -1023,7 +1029,7 @@ ULONG fsysInsertFilePages(WPObject *somSelf,    // in: must be a WPFileSystem, r
  *
  ********************************************************************/
 
-#ifndef __NOMODULES__
+#ifndef __NOMODULEPAGES__
 
 /*
  *@@ fsysProgramInitPage:
@@ -1981,7 +1987,7 @@ VOID fsysResourcesInitPage(PCREATENOTEBOOKPAGE pcnbp,    // notebook info struct
     }
 }
 
-#endif // __NOMODULES__
+#endif // __NOMODULEPAGES__
 
 
 

@@ -550,7 +550,10 @@ VOID _System krnExceptExplainXFolder(FILE *file,      // in: logfile from fopen(
             if (thrFindThread(&ti, tid))
                 fprintf(file, " (%s)", ti.pcszThreadName);
             else
-                fprintf(file, " (unknown thread)");
+                if (tid == pKernelGlobals->tidWorkplaceThread)  // V0.9.16 (2001-11-02) [pr]: Added thread 1 identification
+                    fprintf(file, " (Workplace thread)");
+                else
+                    fprintf(file, " (unknown thread)");
 
             fprintf(file,
                     "\n    Thread priority: 0x%lX, ordinal: 0x%lX\n",
@@ -868,14 +871,14 @@ VOID krn_T1M_DaemonReady(VOID)
                 // _Pmpf(("    pGlobalSettings->fPageMageEnabled: %d",
                 //        pGlobalSettings->fEnablePageMage));
 
-// #ifdef __PAGEMAGE__
+#ifndef __NOPAGEMAGE__
                 if (pGlobalSettings->fEnablePageMage)
                     // PageMage is enabled too:
                     WinSendMsg(pXwpGlobalShared->hwndDaemonObject,
                                XDM_STARTSTOPPAGEMAGE,
                                (MPARAM)TRUE,
                                0);
-// #endif
+#endif
             }
         }
     }
@@ -904,7 +907,7 @@ VOID krn_T1M_DaemonReady(VOID)
  *@@changed V0.9.4 (2000-06-15) [umoeller]: fixed VIO windows in background
  *@@changed V0.9.7 (2000-11-29) [umoeller]: fixed memory leak
  *@@changed V0.9.13 (2001-06-23) [umoeller]: now using winhQuerySwitchList
- *@@changed V0.9.16 (2001-10-25) [umoeller]: now disallowing object open during startup and shutdown
+ *@@changed V0.9.16 (2001-11-22) [umoeller]: now disallowing object open during startup and shutdown
  */
 
 VOID krn_T1M_OpenObjectFromHandle(HWND hwndObject,
@@ -918,9 +921,11 @@ VOID krn_T1M_OpenObjectFromHandle(HWND hwndObject,
     if (!G_KernelGlobals.fDesktopPopulated)
         return;
 
-    // make sure we're not shutting down
-    // V0.9.16 (2001-10-25) [umoeller]
-    if (xsdIsShutdownRunning())
+    // make sure we're not shutting down,
+    // but allow object hotkeys while confirmation
+    // dialogs are open
+    // V0.9.16 (2001-11-22) [umoeller]
+    if (xsdIsShutdownRunning() > 1)
         return;
 
     if (hobjStart = (HOBJECT)mp1)
@@ -1141,6 +1146,7 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
                         WinDestroyWindow(hwndArchiveStatus);
                     break;
 
+#ifndef __NOPAGEMAGE__
                     case 2: // started from T1M_PAGEMAGECONFIGDELAYED
                     {
                         PXWPGLOBALSHARED   pXwpGlobalShared = G_KernelGlobals.pXwpGlobalShared;
@@ -1159,7 +1165,7 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
                                 G_PageMageConfigFlags = 0;
                             }
                     break; }
-
+#endif
                 }
 
                 // stop timer; this was missing!! V0.9.3 (2000-04-09) [umoeller]
@@ -1452,7 +1458,7 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
                 krn_T1M_DaemonReady();
             break;
 
-// #ifdef __PAGEMAGE__
+#ifndef __NOPAGEMAGE__
             /*
              *@@ T1M_PAGEMAGECLOSED:
              *      this gets posted by dmnKillPageMage when
@@ -1483,9 +1489,7 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
                 // update "Features" page, if open
                 ntbUpdateVisiblePage(NULL, SP_SETUP_FEATURES);
             break; }
-// #endif
 
-// #ifdef __PAGEMAGE__
             /*
              *@@ T1M_PAGEMAGECONFIGDELAYED:
              *      posted by XWPScreen when any PageMage configuration
@@ -1512,7 +1516,7 @@ MRESULT EXPENTRY fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, MPARA
                               2,
                               500);     // half a second delay
             break; }
-// #endif
+#endif
 
             /*
              *@@ T1M_WELCOME:

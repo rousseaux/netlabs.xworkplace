@@ -962,7 +962,9 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
          *
          */
 
+#ifndef __XWPLITE__
         cmnAddProductInfoMenuItem(hwndMenu);
+#endif
 
         // work on the "View" submenu; do the following only
         // if the "View" menu has not been removed (Warp 4)
@@ -1948,12 +1950,11 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                 {
                     WPFileSystem *pDefaultDoc = _xwpQueryDefaultDocument(somSelf);
                     if (pDefaultDoc)
-                    {
                         _wpViewObject(pDefaultDoc, NULLHANDLE, OPEN_DEFAULT, 0);
-                    }
                 }
                 break;
 
+#ifndef __XWPLITE__
                 /*
                  * ID_XFMI_OFS_PRODINFO:
                  *      "Product Information"
@@ -1964,6 +1965,7 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                                        MMSOUND_SYSTEMSTARTUP);
                     brc = TRUE;
                 break;
+#endif
 
                 /*
                  * ID_XFMI_OFS_SELECTSOME:

@@ -199,6 +199,8 @@
 
 #include "shared\kernel.h"              // XWorkplace Kernel
 
+#pragma hdrstop
+
 /* ******************************************************************
  *
  *   Private declarations
@@ -433,7 +435,7 @@ BOOL dmnStartPageMage(VOID)
 {
     BOOL brc = FALSE;
 
-// #ifdef __PAGEMAGE__
+#ifndef __NOPAGEMAGE__
 
     if (G_pHookData)
         if (    (G_pHookData->fInputHooked)
@@ -459,10 +461,12 @@ BOOL dmnStartPageMage(VOID)
                       0);
                 // this creates the PageMage object window
         }
-// #endif
+#endif
 
     return (brc);
 }
+
+#ifndef __NOPAGEMAGE__
 
 /*
  *@@ dmnKillPageMage:
@@ -519,6 +523,8 @@ VOID dmnKillPageMage(BOOL fNotifyKernel)    // in: if TRUE, we post T1M_PAGEMAGE
                    0);
     }
 }
+
+#endif
 
 /* ******************************************************************
  *                                                                  *
@@ -648,7 +654,7 @@ BOOL LoadHookConfig(BOOL fHook,         // in: reload hook settings
                                       &cb);
         }
 
-// #ifdef __PAGEMAGE__
+#ifndef __NOPAGEMAGE__
         if (fPageMage)
         {
             // safe defaults
@@ -659,7 +665,7 @@ BOOL LoadHookConfig(BOOL fHook,         // in: reload hook settings
             // otherwise XWPScreen doesn't work right
             pgmsSaveSettings();
         }
-// #endif
+#endif
     }
 
     return (brc);
@@ -737,7 +743,10 @@ VOID DeinstallHook(VOID)
             if (G_pHookData->fMousePointerHidden)
                 WinShowPointer(HWND_DESKTOP, TRUE);
 
+#ifndef __NOPAGEMAGE__
         dmnKillPageMage(FALSE);
+#endif
+
         hookKill();
         G_pXwpGlobalShared->fAllHooksInstalled = FALSE;
 
@@ -882,11 +891,12 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween, // in: != NULLHANDLE if hook h
             // target is WPS desktop:
             return;
 
+#ifndef __NOPAGEMAGE__
     // rule out PageMage, if "ignore PageMage" is on
     if (G_pHookData->HookConfig.fSlidingIgnorePageMage)
         if (hwnd2Activate == G_pHookData->hwndPageMageFrame)
-            // target is PM desktop:
             return;
+#endif
 
     // V0.9.7 (2000-12-08) [umoeller]:
     // rule out XCenter, if "ignore XCenter" is on
@@ -1120,18 +1130,17 @@ VOID ProcessHotCorner(MPARAM mp1)
             switch (hobjIndex)
             {
                 // PageMage?
+#ifndef __NOPAGEMAGE__
                 case 0xFFFF0002:
                     // yes: bring up PageMage window
                     WinSetWindowPos(G_pHookData->hwndPageMageFrame,
                                     HWND_TOP,
                                     0, 0, 0, 0,
                                     SWP_ZORDER | SWP_SHOW | SWP_RESTORE);
-// #ifdef __PAGEMAGE__
                     // start or restart timer for flashing
                     // fixed V0.9.4 (2000-07-10) [umoeller]
                     if (G_pHookData->PageMageConfig.fFlash)
                         pgmgcStartFlashTimer();
-// #endif
                 break;
 
                 // PageMage screen change?
@@ -1150,6 +1159,7 @@ VOID ProcessHotCorner(MPARAM mp1)
                 case 0xFFFF0006:
                     ucScanCode = 0x63;
                 break;
+#endif
 
                 default:
                     // real object or some other special code:
@@ -1162,6 +1172,7 @@ VOID ProcessHotCorner(MPARAM mp1)
                                (MPARAM)(lIndex + 1));
             } // end switch
 
+#ifndef __NOPAGEMAGE__
             if (ucScanCode)
             {
                 POINTL ptlCurrScreen;
@@ -1193,6 +1204,7 @@ VOID ProcessHotCorner(MPARAM mp1)
                                      G_pHookData->lCYScreen / 2);
                 }
             }
+#endif
         }
     }
 }
@@ -1529,11 +1541,11 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 if (G_pHookData)
                 {
                     G_pHookData->hwndWPSDesktop = (HWND)mp1;
-// #ifdef __PAGEMAGE__
+#ifndef __NOPAGEMAGE__
                     // give PageMage a chance to recognize the Desktop
                     // V0.9.4 (2000-08-08) [umoeller]
                     pgmwAppendNewWinInfo(G_pHookData->hwndWPSDesktop);
-// #endif
+#endif
                 }
             break;
 
@@ -1558,7 +1570,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
 
             break;
 
-// #ifdef __PAGEMAGE__
+#ifndef __NOPAGEMAGE__
             /*
              *@@ XDM_STARTSTOPPAGEMAGE:
              *      starts or stops PageMage.
@@ -1625,7 +1637,7 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
                 // load config from OS2.INI
                 mrc = (MRESULT)pgmsLoadSettings((ULONG)mp1);
             break;
-// #endif
+#endif
 
             /*
              *@@ XDM_HOTKEYPRESSED:
@@ -2493,7 +2505,9 @@ int main(int argc, char *argv[])
                 G_pXwpGlobalShared->fAllHooksInstalled = FALSE;
                         // V0.9.11 (2001-04-25) [umoeller]
 
+#ifndef __NOPAGEMAGE__
                 pgmwInit();
+#endif
 
                 G_hptrDaemon = WinLoadPointer(HWND_DESKTOP,
                                               NULLHANDLE,

@@ -105,7 +105,6 @@
 /*
  *      Copyright (C) 1999-2001 Ulrich M”ller.
  *      Copyright (C) 1993-1999 Roman Stangl.
- *      Copyright (C) 1995-1999 Carlos Ugarte.
  *
  *      This program is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published by
@@ -134,21 +133,20 @@
 
 #include <stdio.h>
 
-// #include "setup.h"
+// PMPRINTF in hooks is a tricky issue;
+// avoid this unless this is really needed.
+// If enabled, NEVER give the PMPRINTF window
+// the focus, or your system will hang solidly...
+#define DONTDEBUGATALL
+#define DONT_REPLACE_MALLOC         // in case mem debug is enabled
+#include "setup.h"
 
 #include "helpers\undoc.h"
 
 #include "hook\xwphook.h"
 #include "hook\hook_private.h"          // private hook and daemon definitions
 
-// PMPRINTF in hooks is a tricky issue;
-// avoid this unless this is really needed.
-// If enabled, NEVER give the PMPRINTF window
-// the focus, or your system will hang solidly...
-
-#define DONTDEBUGATALL
-#define DONT_REPLACE_MALLOC         // in case mem debug is enabled
-#include "setup.h"
+#pragma hdrstop
 
 /******************************************************************
  *                                                                *
@@ -294,29 +292,6 @@ VOID InitializeGlobalsForHooks(VOID)
 
 }
 
-/*
- *@@ GetFrameWindow:
- *      this finds the desktop window (child of
- *      HWND_DESKTOP) to which the specified window
- *      belongs.
- */
-
-HWND GetFrameWindow(HWND hwndTemp)
-{
-    // CHAR    szClass[100];
-    HWND    hwndPrevious = NULLHANDLE;
-    // climb up the parents tree until we get a frame
-    while (    (hwndTemp)
-            && (hwndTemp != G_HookData.hwndPMDesktop)
-          )
-    {
-        hwndPrevious = hwndTemp;
-        hwndTemp = WinQueryWindow(hwndTemp, QW_PARENT);
-    }
-
-    return (hwndPrevious);
-}
-
 /******************************************************************
  *
  *  Hook interface
@@ -351,7 +326,6 @@ unsigned long _System _DLL_InitTerm(unsigned long hModule,
     switch (ulFlag)
     {
         case 0:
-        {
             // store the DLL handle in the global variable
             G_HookData.hmodDLL = hModule;
 
@@ -359,8 +333,7 @@ unsigned long _System _DLL_InitTerm(unsigned long hModule,
             // call any runtime functions
             if (_CRT_init() == -1)
                return (0);  // error
-
-        break; }
+        break;
 
         case 1:
             // DLL being freed: cleanup runtime
@@ -668,6 +641,8 @@ APIRET EXPENTRY hookSetGlobalHotkeys(PGLOBALHOTKEY pNewHotkeys, // in: new hotke
  *
  ******************************************************************/
 
+#ifndef __NOPAGEMAGE__
+
 /*
  *@@ ProcessMsgsForPageMage:
  *      message processing which is needed for both
@@ -702,7 +677,7 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
                     // V0.9.7 (2001-01-23) [umoeller]
            )
         {
-            CHAR    szClass[200];
+            CHAR    szClass[30];
 
             if (WinQueryClassName(hwnd, sizeof(szClass), szClass))
             {
@@ -753,25 +728,9 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
             } // end if (WinQueryClassName(hwnd, sizeof(szClass), szClass))
         } // end if (WinQueryWindow(hwnd, QW_PARENT) == HookData.hwndPMDesktop)
     }
-
-    if (    (msg == WM_DESTROY)
-         && (hwnd == G_HookData.hwndLockupFrame)
-       )
-    {
-        // DosBeep(1000, 100);
-            // tested, works V0.9.16 (2001-01-27) [umoeller]
-
-        // current lockup frame being destroyed
-        // (system is being unlocked):
-        G_HookData.hwndLockupFrame = NULLHANDLE;
-        /* WinPostMsg(G_HookData.hwndPageMageClient,
-                   PGMG_LOCKUP,
-                   MPFROMLONG(FALSE),
-                   MPVOID); */
-            // removed V0.9.7 (2001-01-18) [umoeller], PageMage doesn't
-            // need this
-    }
 }
+
+#endif
 
 /*
  *@@ hookSendMsgHook:
@@ -800,12 +759,16 @@ VOID ProcessMsgsForPageMage(HWND hwnd,
  *@@changed V0.9.9 (2001-03-10) [umoeller]: fixed errant sliding menu behavior
  *@@changed V0.9.14 (2001-08-01) [lafaix]: added menu mode check for auto hide
  *@@changed V0.9.14 (2001-08-02) [lafaix]: added auto move to default button
+ *@@changed V0.9.16 (2001-11-22) [umoeller]: hotkeys stopped working after lockup if PageMage wasn't running; fixed
  */
 
 VOID EXPENTRY hookSendMsgHook(HAB hab,
                               PSMHSTRUCT psmh,
                               BOOL fInterTask)
 {
+
+#ifndef __NOPAGEMAGE__
+
     if (    // PageMage running?
             (G_HookData.hwndPageMageFrame)
             // switching not disabled?
@@ -855,6 +818,7 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
             G_HookData.fDisablePgmgSwitching = fOld;
         }
     }
+#endif
 
     // special case check... if a menu control has been hidden
     // and it is the menu for which we have a sliding menu
@@ -936,6 +900,26 @@ VOID EXPENTRY hookSendMsgHook(HAB hab,
         }
     }
 
+    // moved this here from ProcessMsgsForPageMage;
+    // otherwise this is not picked up if PageMage
+    // isn't running V0.9.16 (2001-11-22) [umoeller]
+    if (    (psmh->msg == WM_DESTROY)
+         && (psmh->hwnd == G_HookData.hwndLockupFrame)
+       )
+    {
+        // DosBeep(1000, 100);
+            // tested, works V0.9.16 (2001-11-22) [umoeller]
+
+        // current lockup frame being destroyed
+        // (system is being unlocked):
+        G_HookData.hwndLockupFrame = NULLHANDLE;
+        /* WinPostMsg(G_HookData.hwndPageMageClient,
+                   PGMG_LOCKUP,
+                   MPFROMLONG(FALSE),
+                   MPVOID); */
+            // removed V0.9.7 (2001-01-18) [umoeller], PageMage doesn't
+            // need this
+    }
 }
 
 /******************************************************************
@@ -982,6 +966,28 @@ VOID EXPENTRY hookLockupHook(HAB hab,
  ******************************************************************/
 
 /*
+ *@@ GetFrameWindow:
+ *      this finds the desktop window (child of
+ *      HWND_DESKTOP) to which the specified window
+ *      belongs.
+ */
+
+HWND GetFrameWindow(HWND hwndTemp)
+{
+    HWND    hwndPrevious = NULLHANDLE;
+    // climb up the parents tree until we get a frame
+    while (    (hwndTemp)
+            && (hwndTemp != G_HookData.hwndPMDesktop)
+          )
+    {
+        hwndPrevious = hwndTemp;
+        hwndTemp = WinQueryWindow(hwndTemp, QW_PARENT);
+    }
+
+    return (hwndPrevious);
+}
+
+/*
  *@@ hookInputHook:
  *      Input queue hook. According to PMREF, this hook gets
  *      called just before the system returns from a WinGetMsg
@@ -990,7 +996,7 @@ VOID EXPENTRY hookLockupHook(HAB hab,
  *
  *      However, only _posted_ messages go thru this hook. _Sent_
  *      messages never get here; there is a separate hook type
- *      for that.
+ *      for that (see hookSendMsgHook).
  *
  *      This implements the XWorkplace mouse features such as
  *      hot corners, sliding focus, mouse-button-3 scrolling etc.
@@ -1041,20 +1047,10 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
     BOOL        fRestartAutoHide = FALSE;
                             // set to TRUE if auto-hide mouse should be handles
 
-    BOOL        bAutoScroll = FALSE;
-                            // set to TRUE if autoscroll requested
-    HWND        hwnd;
-    ULONG       msg;
-    MPARAM      mp1, mp2;
-
     if (pqmsg == NULL)
         return (FALSE);
 
-    hwnd = pqmsg->hwnd;
-    msg = pqmsg->msg;
-    mp1 = pqmsg->mp1;
-    mp2 = pqmsg->mp2;
-
+#ifndef __NOPAGEMAGE__
     if (    // PageMage running?
             (G_HookData.hwndPageMageFrame)
             // switching not disabled?
@@ -1065,10 +1061,11 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
        )
     {
         // OK, go ahead:
-        ProcessMsgsForPageMage(hwnd, msg, mp1, mp2);
+        ProcessMsgsForPageMage(pqmsg->hwnd, pqmsg->msg, pqmsg->mp1, pqmsg->mp2);
     }
+#endif
 
-    switch(msg)
+    switch(pqmsg->msg)
     {
         /*****************************************************************
          *                                                               *
@@ -1109,7 +1106,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                 {
                     // make sure that the mouse is not currently captured
                     if (WinQueryCapture(HWND_DESKTOP) == NULLHANDLE)
-                        WinSetWindowPos(GetFrameWindow(hwnd),
+                        WinSetWindowPos(GetFrameWindow(pqmsg->hwnd),
                                         HWND_TOP,
                                         0,
                                         0,
@@ -1140,7 +1137,6 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
          */
 
         case WM_BUTTON2DOWN:
-        {
             if (    (G_HookData.bAutoScroll)
                  && (G_HookData.hwndCurrentlyScrolling)
                )
@@ -1152,7 +1148,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
             }
             else
                 if (    (G_HookData.HookConfig.fSysMenuMB2TitleBar)
-                     && (SHORT2FROMMP(mp2) == KC_NONE)
+                     && (SHORT2FROMMP(pqmsg->mp2) == KC_NONE)
                    )
                 {
                     // make sure that the mouse is not currently captured
@@ -1160,14 +1156,14 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                     {
                         CHAR szWindowClass[3];
                         // get class name of window being created
-                        WinQueryClassName(hwnd,
+                        WinQueryClassName(pqmsg->hwnd,
                                           sizeof(szWindowClass),
                                           szWindowClass);
                         // mouse button 2 was pressed over a title bar control
                         if (!strcmp(szWindowClass, "#9"))
                         {
                             // copy system menu and display it as context menu
-                            WMButton_SystemMenuContext(hwnd);
+                            WMButton_SystemMenuContext(pqmsg->hwnd);
                             brc = TRUE; // swallow message
                         }
                     }
@@ -1175,7 +1171,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
 
             // un-hide mouse if auto-hidden
             fRestartAutoHide = TRUE;
-        break; }
+        break;
 
         /*****************************************************************
          *                                                               *
@@ -1183,246 +1179,17 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
          *                                                               *
          *****************************************************************/
 
-        /*
-         * WM_BUTTON3MOTIONSTART:
-         *      start MB3 scrolling. This prepares the hook
-         *      data for tracking mouse movements in WM_MOUSEMOVE
-         *      so that the window under the mouse will be scrolled.
-         *
-         *      Changed this from WM_BUTTON3DOWN with V0.9.4 to avoid
-         *      the Netscape and PMMail hangs. However, this message
-         *      is never received in VIO windows, so for those, we'll
-         *      still have to use WM_BUTTON3DOWN.
-         *
-         *      Based on ideas from WarpEnhancer by Achim Hasenmller.
-         */
-
-        case WM_BUTTON3MOTIONSTART: // mouse button 3 was pressed down
-            // MB3-scroll enabled?
-            if (    (G_HookData.HookConfig.fMB3Scroll)
-                 && (SHORT2FROMMP(mp2) == KC_NONE)
-               )
-                // yes:
-                // make sure that the mouse is not currently captured
-                if (WinQueryCapture(HWND_DESKTOP) == NULLHANDLE)
-                    // OK:
-                    goto BEGIN_MB3_SCROLL;
-        break;
-
-        /*
-         * WM_BUTTON3DOWN:
-         *      start MB3-scrolling.
-         */
-
+        case WM_BUTTON3MOTIONSTART:
         case WM_BUTTON3DOWN:
-        {
-            CHAR szClassName[200];
-
-            if (    (G_HookData.bAutoScroll)
-                 && (G_HookData.hwndCurrentlyScrolling)
-               )
-            {
-                StopMB3Scrolling(TRUE);
-
-                // swallow msg
-                brc = TRUE;
-            }
-            else
-            // MB3 scrolling enabled?
-            if (    (G_HookData.HookConfig.fMB3Scroll)
-                 && (SHORT2FROMMP(mp2) == KC_NONE)
-                 && (WinQueryClassName(hwnd, sizeof(szClassName), szClassName))
-               )
-            {
-                // VIO, EPM, or UMAIL EPM client window?
-                if (    (!strcmp(szClassName, "Shield"))
-                     || (!strcmp(szClassName, "NewEditWndClass"))
-                     || (!strcmp(szClassName, "UMAILEPM"))
-                   )
-                {
-                    // yes:
-
-                    // if EPM client window, swallow
-                    if (szClassName[0] != 'S')
-                        brc = TRUE;
-
-                    // prepare MB3 scrolling for WM_MOUSEMOVE later:
-                    BEGIN_MB3_SCROLL:
-
-                    // set window that we're currently scrolling
-                    // (this enables scroll processing during WM_MOUSEMOVE)
-                    G_HookData.hwndCurrentlyScrolling = hwnd;
-                    // indicate that initial mouse positions have to be recalculated
-                    // (checked by first call to WMMouseMove_MB3OneScrollbar)
-                    G_HookData.SDXHorz.sMB3InitialScreenMousePos = -1;
-                    G_HookData.SDYVert.sMB3InitialScreenMousePos = -1; // V0.9.2 (2000-02-25) [umoeller]
-                    // reset flags for WM_BUTTON3UP below; these
-                    // will be set to TRUE by WMMouseMove_MB3OneScrollbar
-                    G_HookData.SDYVert.fPostSBEndScroll = FALSE;
-                    G_HookData.SDXHorz.fPostSBEndScroll = FALSE;
-                    // specify what scrolling is about to happen
-                    G_HookData.bAutoScroll = bAutoScroll;
-
-                    // capture messages for window under mouse until
-                    // MB3 is released again; this makes sure that scrolling
-                    // works even if the mouse pointer is moved out of the
-                    // window while MB3 is depressed.
-                    // Also, if we don't do this, we cannot communicate
-                    // with the window under the mouse with some messages
-                    // (thumb size) which need to pass memory buffers, because
-                    // then WM_MOUSEMOVE (and thus the hook) runs in a different
-                    // process...
-                    WinSetCapture(HWND_DESKTOP, hwnd);
-
-                    // disabling auto-hide mouse pointer
-                    G_HookData.fOldAutoHideMouse = G_HookData.HookConfig.fAutoHideMouse;
-                    G_HookData.HookConfig.fAutoHideMouse = FALSE;
-
-                    // if AutoScroll, don't wait for a WM_MOUSESCROLL
-                    // to update pointers and display, so that the user
-                    // is aware of the mode change
-                    if (bAutoScroll)
-                    {
-                        G_ptlMousePosDesktop.x = pqmsg->ptl.x;
-                        G_ptlMousePosDesktop.y = pqmsg->ptl.y;
-                        WMMouseMove_MB3Scroll(hwnd);
-                    }
-                }
-
-                // swallow msg
-                // brc = TRUE;
-            }
-
-            // un-hide mouse if auto-hidden
-            fRestartAutoHide = TRUE;
-        break; }
-
-        /*
-         * WM_BUTTON3MOTIONEND:
-         *      stop MB3 scrolling.
-         *
-         *      Also needed for MB3 double-clicks on minimized windows.
-         *
-         *      Based on ideas from WarpEnhancer by Achim Hasenmller.
-         *      Contributed for V0.9.4 by Lars Erdmann.
-         */
-
-        case WM_BUTTON3UP: // mouse button 3 has been released
-        {
-            if (    (G_HookData.HookConfig.fMB3Scroll)
-                 && (G_HookData.hwndCurrentlyScrolling)
-               )
-            {
-                StopMB3Scrolling(TRUE);     // success, post msgs
-
-                // if the mouse has not moved, and if BUTTON3DOWN
-                // was swallowed, then fake a BUTTON3CLICK.
-                if (    (G_HookData.SDXHorz.sMB3InitialScreenMousePos == -1)
-                     && (G_HookData.SDYVert.sMB3InitialScreenMousePos == -1)
-                   )
-                {
-                    CHAR szClassName[200];
-
-                    if (WinQueryClassName(hwnd, sizeof(szClassName), szClassName))
-                    {
-                        if (    (!strcmp(szClassName, "NewEditWndClass"))
-                             || (!strcmp(szClassName, "UMAILEPM"))
-                           )
-                            WinPostMsg(hwnd, WM_BUTTON3CLICK, mp1, mp2);
-                    }
-                }
-
-                // swallow msg
-                // brc = TRUE;
-            }
-            else
-                // MB3 click conversion enabled?
-                if (G_HookData.HookConfig.fMB3Click2MB1DblClk)
-                {
-                    // is window under mouse minimized?
-                    SWP swp;
-                    WinQueryWindowPos(hwnd,&swp);
-                    if (swp.fl & SWP_MINIMIZE)
-                    {
-                        // yes:
-                        WinPostMsg(hwnd, WM_BUTTON1DOWN, mp1, mp2);
-                        WinPostMsg(hwnd, WM_BUTTON1UP, mp1, mp2);
-                        WinPostMsg(hwnd, WM_SINGLESELECT, mp1, mp2);
-                        WinPostMsg(hwnd, WM_BUTTON1DBLCLK, mp1, mp2);
-                        WinPostMsg(hwnd, WM_OPEN, mp1, mp2);
-                        WinPostMsg(hwnd, WM_BUTTON1UP, mp1, mp2);
-                    }
-                    // brc = FALSE;   // pass on to next hook in chain (if any)
-                    // you HAVE TO return FALSE so that the OS
-                    // can translate a sequence of WM_BUTTON3DOWN
-                    // WM_BUTTON3UP to WM_BUTTON3CLICK
-                }
-        break; }
-
-        /*
-         * WM_BUTTON3CLICK:
-         *      convert MB3 single-clicks to MB1 double-clicks, AutoScroll,
-         *      or Push2Bottom.
-         *
-         *      Contributed for V0.9.4 by Lars Erdmann.
-         */
-
+        case WM_BUTTON3UP:
         case WM_BUTTON3CLICK:
-            // MB3 click conversion enabled?
-            if (G_HookData.HookConfig.fMB3Click2MB1DblClk)
-            {
-                // if we would post a WM_BUTTON1DOWN message to the titlebar,
-                // it would not receive WM_BUTTON1DBLCLK, WM_OPEN, WM_BUTTON1UP
-                // for some strange reason (I think it has something to do with
-                // the window tracking that is initiated when WM_BUTTON1DOWN
-                // is posted to the titlebar, because it does not make sense
-                // to prepare any window tracking when we really want to maximize
-                // or restore the window, we just skip this);
-                // for all other windows, pass this on
-                if (WinQueryWindowUShort(hwnd, QWS_ID) != FID_TITLEBAR)
-                {
-                    WinPostMsg(hwnd, WM_BUTTON1DOWN, mp1, mp2);
-                    WinPostMsg(hwnd, WM_BUTTON1UP, mp1, mp2);
-                }
-                WinPostMsg(hwnd, WM_SINGLESELECT, mp1, mp2);
-                WinPostMsg(hwnd, WM_BUTTON1DBLCLK, mp1, mp2);
-                WinPostMsg(hwnd, WM_OPEN, mp1, mp2);
-                WinPostMsg(hwnd, WM_BUTTON1UP, mp1, mp2);
-            }
-            else
-            // MB3 autoscroll enabled?
-            if (    (G_HookData.HookConfig.fMB3AutoScroll)
-                 && (SHORT2FROMMP(mp2) == KC_NONE)
-               )
-            {
-                // yes:
-                // make sure that the mouse is not currently captured
-                if (WinQueryCapture(HWND_DESKTOP) == NULLHANDLE)
-                {
-                    // OK:
-                    bAutoScroll = TRUE;
-
-                    goto BEGIN_MB3_SCROLL;
-                }
-            }
-            else
-            // MB3 push to bottom enabled?
-            if (    (G_HookData.HookConfig.fMB3Push2Bottom)
-                 && (SHORT2FROMMP(mp2) == KC_NONE)
-               )
-            {
-                // make sure that the mouse is not currently captured
-                if (WinQueryCapture(HWND_DESKTOP) == NULLHANDLE)
-                    WinSetWindowPos(GetFrameWindow(hwnd),
-                                    HWND_BOTTOM,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    SWP_NOADJUST | SWP_ZORDER);
-            }
-            // brc = FALSE;   // pass on to next hook in chain (if any)
+            // moved all this handling to hk_scroll.c,
+            // this code was getting too long
+            // V0.9.16 (2001-11-22) [umoeller]
+            brc = HandleMB3Msgs(pqmsg,
+                                &fRestartAutoHide);
         break;
+
 
         /*
          * WM_CHORD:
@@ -1478,7 +1245,7 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
 
     // V0.9.14 (2001-08-21) [umoeller]
     if (G_HookData.fClickWatches)
-        switch (msg)
+        switch (pqmsg->msg)
         {
             case WM_BUTTON1DOWN:
             case WM_BUTTON1UP:
@@ -1491,8 +1258,8 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
             case WM_BUTTON3DBLCLK:
                 WinPostMsg(G_HookData.hwndDaemonObject,
                            XDM_MOUSECLICKED,
-                           (MPARAM)msg,
-                           mp1);             // POINTS pointer pos
+                           (MPARAM)pqmsg->msg,
+                           pqmsg->mp1);             // POINTS pointer pos
         }
 
     return (brc);                           // msg not processed if FALSE
@@ -1565,8 +1332,10 @@ BOOL EXPENTRY hookPreAccelHook(HAB hab, PQMSG pqmsg, ULONG option)
             if (
                         // a) object hotkeys are enabled or
                    (    (G_HookData.HookConfig.fGlobalHotkeys)
+#ifndef __NOPAGEMAGE__
                         // b) pagemage switch-screen hotkeys are enabled
                     ||  (G_HookData.PageMageConfig.fEnableArrowHotkeys)
+#endif
                    )
                   // and system is not locked up
                && (!G_HookData.hwndLockupFrame)

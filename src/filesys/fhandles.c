@@ -102,6 +102,7 @@
 #define INCL_DOSEXCEPTIONS
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
+#define INCL_WINMESSAGEMGR
 #include <os2.h>
 
 // C library headers
@@ -164,7 +165,7 @@ BOOL fhdlLockHandles(ULONG ulTimeout)
     }
 
     if (brc)
-        brc = (DosRequestMutexSem(G_hmtxHandles,
+        brc = (WinRequestMutexSem(G_hmtxHandles,
                                   ulTimeout)
                     == NO_ERROR);
 

@@ -2433,32 +2433,56 @@ VOID trshLoadDrivesSupport(M_XWPTrashCan *somSelf)
 
 /*
  *@@ trshIsOnSupportedDrive:
- *      returns TRUE only if pObject is on a drive for which
+ *      returns NO_ERROR only if pObject is on a drive for which
  *      trash can support has been enabled.
  *
+ *      Otherwise this returns:
+ *
+ *      --  FOPSERR_TRASHDRIVENOTSUPPORTED
+ *
+ *      --  FOPSERR_WPQUERYFILENAME_FAILED
+ *
  *@@added V0.9.2 (2000-03-04) [umoeller]
+ *@@changed V0.9.16 (2001-11-10) [umoeller]: now returning FOPSRET
+ *@@changed V0.9.16 (2001-11-10) [umoeller]: now checking for whether trash can exists
+ *@@changed V0.9.16 (2001-11-10) [umoeller]: fixed UNC objects
  */
 
-BOOL trshIsOnSupportedDrive(WPObject *pObject)
+APIRET trshIsOnSupportedDrive(WPObject *pObject)
 {
-    BOOL brc = FALSE;
-    WPFolder *pFolder = _wpQueryFolder(pObject);
-    if (pFolder)
+    FOPSRET frc = FOPSERR_NOT_HANDLED_ABORT;
+
+    // check if the trash can exists
+    // V0.9.16 (2001-11-10) [umoeller]
+    if (NULL == _xwpclsQueryDefaultTrashCan(_XWPTrashCan))
+        frc = FOPSERR_NO_TRASHCAN;
+    else
     {
+        WPFolder *pFolder;
         CHAR szFolderPath[CCHMAXPATH];
-        if (_wpQueryFilename(pFolder, szFolderPath, TRUE))
+
+        if (    (pFolder = _wpQueryFolder(pObject))
+             && (_wpQueryFilename(pFolder, szFolderPath, TRUE))
+           )
         {
             nlsUpper(szFolderPath, 0);
-            if (szFolderPath[0] >= 'C')
+
+            frc = FOPSERR_TRASHDRIVENOTSUPPORTED;   // for drive A: and B: also
+
+            if (    (szFolderPath[0] >= 'C')
+                 && (szFolderPath[0] <= 'Z')        // exclude UNC V0.9.16 (2001-11-10) [umoeller]
+               )
             {
                 // is on hard disk:
                 if (G_abSupportedDrives[szFolderPath[0] - 'C'] == XTRC_SUPPORTED)
-                    brc = TRUE;
+                    frc = NO_ERROR;
             }
         }
+        else
+            frc = FOPSERR_WPQUERYFILENAME_FAILED;       // V0.9.16 (2001-11-10) [umoeller]
     }
 
-    return (brc);
+    return (frc);
 }
 
 /* ******************************************************************

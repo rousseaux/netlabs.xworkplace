@@ -128,7 +128,7 @@ DEBUG_OBJS = $(XWP_OUTPUT_ROOT)\xdebug.obj $(XWP_OUTPUT_ROOT)\xdebug_folder.obj
 #   somtk       is the SOM toolkit lib
 #   pmprintf    is for debugging
 # The other OS/2 libraries are used by default.
-LIBS = somtk.lib $(PMPRINTF_LIB)
+LIBS = $(TKBASE)\som\lib\somtk.lib $(PMPRINTF_LIB)
 
 # some variable strings to pass to sub-nmakes
 SUBMAKE_PASS_STRING = "PROJECT_BASE_DIR=$(PROJECT_BASE_DIR)" "PROJECT_INCLUDE=$(PROJECT_INCLUDE)"
@@ -328,9 +328,9 @@ src\shared\xwp.def: include\bldlevel.h makefile
 
 $(MODULESDIR)\xfldr.dll: $(OBJS) $(HLPOBJS) $(ANIOBJS) $(MODDEFFILE) objects.in
         @echo $(MAKEDIR)\makefile [$@]: Linking $@
-        $(LINK) @<<
+        $(LINK) @<<$(TEMP)\XFLDR.LNK
 /OUT:$@ $(MODDEFFILE) $(OBJS) $(HLPOBJS) $(ANIOBJS) $(LIBS)
-<<
+<<KEEP
 !ifdef XWP_OUTPUT_ROOT_DRIVE
         @$(XWP_OUTPUT_ROOT_DRIVE)
 !endif

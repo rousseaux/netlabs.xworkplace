@@ -218,7 +218,7 @@ SOM_Scope ULONG  SOMLINK xfdesk_xwpInsertXFldDesktopArchivesPage(XFldDesktop *so
     pcnbp->hmod = savehmod;
     pcnbp->usPageStyleFlags = BKA_MAJOR;
     pcnbp->pszName = cmnGetString(ID_XSSI_ARCHIVESPAGE);  // pszArchivesPage
-    pcnbp->ulDlgID = ID_XSD_DTP_ARCHIVES;
+    pcnbp->ulDlgID = ID_XFD_EMPTYDLG;       // ID_XSD_DTP_ARCHIVES; V0.9.16 (2001-11-22) [umoeller]
     // pcnbp->usFirstControlID = ID_SDDI_ARCHIVES;
     // pcnbp->ulFirstSubpanel = ID_XSH_SETTINGS_DTP_SHUTDOWN_SUB;   // help panel for "System setup"
     pcnbp->ulDefaultHelpPanel  = ID_XSH_SETTINGS_DTP_ARCHIVES;

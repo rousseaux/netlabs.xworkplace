@@ -147,6 +147,10 @@ static SHUTDOWNANIM        G_sdAnim;
 static THREADINFO          G_tiShutdownThread = {0},
                            G_tiUpdateThread = {0};
 
+static ULONG               G_fShutdownRunning = FALSE;
+            // moved this here from KERNELGLOBALS
+            // V0.9.16 (2001-11-22) [umoeller]
+
 // forward declarations
 MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM mp2);
 void _Optlink fntUpdateThread(PTHREADINFO pti);
@@ -317,8 +321,7 @@ ULONG xsdConfirmShutdown(PSHUTDOWNPARAMS psdParms)
         {
             PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
             // items exist: evaluate
-            pINI = malloc(ulKeyLength);
-            if (pINI)
+            if (pINI = malloc(ulKeyLength))
             {
                 PrfQueryProfileData(HINI_USER,
                                     (PSZ)INIAPP_XWORKPLACE,
@@ -1699,16 +1702,26 @@ VOID xsdQueryShutdownSettings(PSHUTDOWNPARAMS psdp)
 
 /*
  *@@ xsdIsShutdownRunning:
+ *      returns
+ *
+ *      --  0 if shutdown is not running;
+ *
+ *      --  1 if the shutdown confirmation dialogs are open;
+ *
+ *      --  2 if the shutdown thread is active.
  *
  *@@added V0.9.9 (2001-03-07) [umoeller]
+ *@@changed V0.9.16 (2001-11-22) [umoeller]: changed return codes
  */
 
-BOOL xsdIsShutdownRunning(VOID)
+ULONG xsdIsShutdownRunning(VOID)
 {
-    PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
-    return (    (thrQueryID(&G_tiShutdownThread) != 0)
-             || (pKernelGlobals->fShutdownRunning)
-           );
+    if (G_fShutdownRunning)
+        return 1;
+    else if (thrQueryID(&G_tiShutdownThread))
+        return 2;
+
+    return 0;
 }
 
 /*
@@ -1723,30 +1736,25 @@ VOID StartShutdownThread(BOOL fStartShutdown,
                          PSHUTDOWNPARAMS psdp,
                          ULONG ulSoundIndex)
 {
-    PKERNELGLOBALS pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-    if (pKernelGlobals)
+    if (psdp)
     {
-        if (psdp)
+        if (fStartShutdown)
         {
-            if (fStartShutdown)
-            {
-                // everything OK: create shutdown thread,
-                // which will handle the rest
-                thrCreate(&G_tiShutdownThread,
-                          fntShutdownThread,
-                          NULL, // running flag
-                          "Shutdown",
-                          THRF_PMMSGQUEUE,    // changed V0.9.12 (2001-05-29) [umoeller]
-                          (ULONG)psdp);           // pass SHUTDOWNPARAMS to thread
-                cmnPlaySystemSound(ulSoundIndex);
-            }
-            else
-                free(psdp);     // fixed V0.9.1 (99-12-12)
+            // everything OK: create shutdown thread,
+            // which will handle the rest
+            thrCreate(&G_tiShutdownThread,
+                      fntShutdownThread,
+                      NULL, // running flag
+                      "Shutdown",
+                      THRF_PMMSGQUEUE,    // changed V0.9.12 (2001-05-29) [umoeller]
+                      (ULONG)psdp);           // pass SHUTDOWNPARAMS to thread
+            cmnPlaySystemSound(ulSoundIndex);
         }
-
-        pKernelGlobals->fShutdownRunning = fStartShutdown;
-        krnUnlockGlobals();
+        else
+            free(psdp);     // fixed V0.9.1 (99-12-12)
     }
+
+    G_fShutdownRunning = fStartShutdown;
 }
 
 /*
@@ -1786,20 +1794,12 @@ BOOL xsdInitiateShutdown(VOID)
     PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     PSHUTDOWNPARAMS     psdp = (PSHUTDOWNPARAMS)malloc(sizeof(SHUTDOWNPARAMS));
 
-    PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-    if (pKernelGlobals)
-    {
-        if (    (pKernelGlobals->fShutdownRunning)
-             || (thrQueryID(&G_tiShutdownThread))
-           )
-            // shutdown thread already running: return!
-            fStartShutdown = FALSE;
+    if (xsdIsShutdownRunning())
+        // shutdown thread already running: return!
+        fStartShutdown = FALSE;
 
-        // lock shutdown menu items
-        pKernelGlobals->fShutdownRunning = TRUE;
-
-        krnUnlockGlobals();
-    }
+    // lock shutdown menu items
+    G_fShutdownRunning = TRUE;
 
     if (fStartShutdown)
     {
@@ -1897,20 +1897,12 @@ BOOL xsdInitiateRestartWPS(BOOL fLogoff)        // in: if TRUE, perform logoff a
     PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     PSHUTDOWNPARAMS     psdp = (PSHUTDOWNPARAMS)malloc(sizeof(SHUTDOWNPARAMS));
 
-    PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-    if (pKernelGlobals)
-    {
-        if (    (pKernelGlobals->fShutdownRunning)
-             || (thrQueryID(&G_tiShutdownThread))
-           )
-            // shutdown thread already running: return!
-            fStartShutdown = FALSE;
+    if (xsdIsShutdownRunning())
+        // shutdown thread already running: return!
+        fStartShutdown = FALSE;
 
-        // lock shutdown menu items
-        pKernelGlobals->fShutdownRunning = TRUE;
-
-        krnUnlockGlobals();
-    }
+    // lock shutdown menu items
+    G_fShutdownRunning = TRUE;
 
     if (fStartShutdown)
     {
@@ -1966,20 +1958,12 @@ BOOL xsdInitiateShutdownExt(PSHUTDOWNPARAMS psdpShared)
     // PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     PSHUTDOWNPARAMS     psdpNew = NULL;
 
-    PKERNELGLOBALS     pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-    if (pKernelGlobals)
-    {
-        if (    (pKernelGlobals->fShutdownRunning)
-             || (thrQueryID(&G_tiShutdownThread))
-           )
-            // shutdown thread already running: return!
-            fStartShutdown = FALSE;
+    if (xsdIsShutdownRunning())
+        // shutdown thread already running: return!
+        fStartShutdown = FALSE;
 
-        // lock shutdown menu items
-        pKernelGlobals->fShutdownRunning = TRUE;
-
-        krnUnlockGlobals();
-    }
+    // lock shutdown menu items
+    G_fShutdownRunning = TRUE;
 
     if (psdpShared == NULL)
         fStartShutdown = FALSE;
@@ -2584,13 +2568,14 @@ MRESULT xsdShutdownItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  ********************************************************************/
 
 /*
- *@@ xsdLog:
+ * xsdLog:
  *      common function for writing into the XSHUTDWN.LOG file.
  *
- *@@added V0.9.0 [umoeller]
+ *added V0.9.0 [umoeller]
+ *removed V0.9.16 (2001-11-22) [umoeller]
  */
 
-void xsdLog(FILE *File,
+/* void xsdLog(FILE *File,
             const char* pcszFormatString,
             ...)
 {
@@ -2611,7 +2596,7 @@ void xsdLog(FILE *File,
         va_end(vargs);
         fflush(File);
     }
-}
+} */
 
 /*
  *@@ xsdLoadAnimation:
@@ -2761,7 +2746,7 @@ typedef struct _SHUTDOWNDATA
     ULONG           ulMaxItemCount,
                     ulLastItemCount;
 
-    FILE*           ShutdownLogFile;
+    PXFILE          ShutdownLogFile;        // changed V0.9.16 (2001-11-22) [umoeller]
 
     ULONG           ulStatus;
                 // one of:
@@ -3756,7 +3741,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
     QMSG            qmsg;
     APIRET          arc;
     HAB             hab = ptiMyself->hab;
-    FILE            *LogFile = NULL;
+    PXFILE          LogFile = NULL;
 
     // exception-occured flag
     // BOOL fExceptionOccured = FALSE;
@@ -3789,8 +3774,13 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
     if (pShutdownData->sdParams.optLog)
     {
         CHAR    szLogFileName[CCHMAXPATH];
+        ULONG   cbFile = 0;
         sprintf(szLogFileName, "%c:\\%s", doshQueryBootDrive(), XFOLDER_SHUTDOWNLOG);
-        LogFile = fopen(szLogFileName, "a");  // text file, append
+        doshOpen(szLogFileName,
+                 XOPEN_READWRITE_APPEND,
+                 &cbFile,
+                 &LogFile);
+
         pShutdownData->ShutdownLogFile = LogFile;
     }
 
@@ -3799,15 +3789,15 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         // write log header
         DATETIME DT;
         DosGetDateTime(&DT);
-        fprintf(LogFile,
+        doshWriteLogEntry(LogFile,
                 "\n\nXWorkplace Shutdown Log -- Date: %04d-%02d-%02d, Time: %02d:%02d:%02d\n",
                 DT.year, DT.month, DT.day,
                 DT.hours, DT.minutes, DT.seconds);
-        fprintf(LogFile, "-----------------------------------------------------------\n");
-        fprintf(LogFile, "\nXWorkplace version: %s\n", XFOLDER_VERSION);
-        fprintf(LogFile, "\nShutdown thread started, TID: 0x%lX\n",
+        doshWriteLogEntry(LogFile, "-----------------------------------------------------------\n");
+        doshWriteLogEntry(LogFile, "\nXWorkplace version: %s\n", XFOLDER_VERSION);
+        doshWriteLogEntry(LogFile, "\nShutdown thread started, TID: 0x%lX\n",
                 thrQueryID(ptiMyself));
-        fprintf(LogFile, "Settings: RestartWPS %d, Confirm %s, Reboot %s, WPSCloseWnds %s, CloseVIOs %s, WarpCenterFirst %s, APMPowerOff %s\n\n",
+        doshWriteLogEntry(LogFile, "Settings: RestartWPS %d, Confirm %s, Reboot %s, WPSCloseWnds %s, CloseVIOs %s, WarpCenterFirst %s, APMPowerOff %s\n\n",
                 pShutdownData->sdParams.ulRestartWPS,
                 (pShutdownData->sdParams.optConfirm) ? "ON" : "OFF",
                 (pShutdownData->sdParams.optReboot) ? "ON" : "OFF",
@@ -3855,7 +3845,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         lstInit(&pShutdownData->llSkipped, TRUE);       // auto-free items
         lstInit(&pShutdownData->llAutoClose, TRUE);     // auto-free items
 
-        xsdLog(LogFile,
+        doshWriteLogEntry(LogFile,
                __FUNCTION__ ": Getting auto-close items from OS2.INI...\n");
 
         // check for auto-close items in OS2.INI
@@ -3863,10 +3853,10 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         ulAutoCloseItemsFound = xsdLoadAutoCloseItems(&pShutdownData->llAutoClose,
                                                       NULLHANDLE); // no list box
 
-        xsdLog(LogFile,
+        doshWriteLogEntry(LogFile,
                "  Found %d auto-close items.\n", ulAutoCloseItemsFound);
 
-        xsdLog(LogFile,
+        doshWriteLogEntry(LogFile,
                "  Creating shutdown windows...\n");
 
         /*************************************************
@@ -3891,10 +3881,10 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
                    (MPARAM)hptrShutdown,
                     NULL);
 
-        xsdLog(LogFile,
+        doshWriteLogEntry(LogFile,
                "  Created main window (hwnd: 0x%lX)\n",
                pShutdownData->SDConsts.hwndMain);
-        xsdLog(LogFile,
+        doshWriteLogEntry(LogFile,
                "  HAB: 0x%lX, HMQ: 0x%lX, pidWPS: 0x%lX, pidPM: 0x%lX\n",
                hab,
                ptiMyself->hmq,
@@ -3939,7 +3929,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
                    (MPARAM)hptrShutdown,
                    NULL);
 
-        xsdLog(LogFile,
+        doshWriteLogEntry(LogFile,
                "  Created status window (hwnd: 0x%lX)\n",
                pShutdownData->SDConsts.hwndShutdownStatus);
 
@@ -3980,7 +3970,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
                       0,    // no msgq
                       (ULONG)pShutdownData);  // V0.9.9 (2001-03-07) [umoeller]
 
-            xsdLog(LogFile,
+            doshWriteLogEntry(LogFile,
                    __FUNCTION__ ": Update thread started, tid: 0x%lX\n",
                    thrQueryID(&G_tiUpdateThread));
         }
@@ -3994,7 +3984,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
             WinShowWindow(pShutdownData->SDConsts.hwndMain, TRUE);
         }
 
-        xsdLog(LogFile,
+        doshWriteLogEntry(LogFile,
                __FUNCTION__ ": Now entering shutdown message loop...\n");
 
         // tell PageMage to recover all windows to the current screen
@@ -4005,7 +3995,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
 
             if (pXwpGlobalShared)
             {
-                xsdLog(LogFile,
+                doshWriteLogEntry(LogFile,
                        __FUNCTION__ ": Recovering all PageMage windows...\n");
 
                 if (pXwpGlobalShared->hwndDaemonObject)
@@ -4022,7 +4012,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
             // first empty the trash can, process the
             // shutdown folder, and finally start closing
             // windows
-            xsdLog(LogFile, __FUNCTION__ ": Posting ID_SDDI_BEGINSHUTDOWN\n");
+            doshWriteLogEntry(LogFile, __FUNCTION__ ": Posting ID_SDDI_BEGINSHUTDOWN\n");
             WinPostMsg(pShutdownData->SDConsts.hwndMain,
                        WM_COMMAND,
                        MPFROM2SHORT(ID_SDDI_BEGINSHUTDOWN, 0),
@@ -4038,7 +4028,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
              || (pShutdownData->sdParams.optWPSCloseWindows)
            )
         {
-            xsdLog(LogFile, __FUNCTION__ ": Broadcasting WM_SAVEAPPLICATION\n");
+            doshWriteLogEntry(LogFile, __FUNCTION__ ": Broadcasting WM_SAVEAPPLICATION\n");
         } */
 
         // pShutdownData->ulStatus is still XSD_IDLE at this point
@@ -4057,7 +4047,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         while (WinGetMsg(hab, &qmsg, NULLHANDLE, 0, 0))
             WinDispatchMsg(hab, &qmsg);
 
-        xsdLog(LogFile,
+        doshWriteLogEntry(LogFile,
                __FUNCTION__ ": Done with message loop.\n");
 
         /*************************************************
@@ -4078,12 +4068,12 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
                 WinSetDlgItemText(G_hwndShutdownStatus, ID_SDDI_STATUS,
                                   "Waiting for the Update thread to end...");
             #endif
-            xsdLog(LogFile,
+            doshWriteLogEntry(LogFile,
                    __FUNCTION__ ": Closing Update thread, tid: 0x%lX...\n",
                    thrQueryID(&G_tiUpdateThread));
 
             thrFree(&G_tiUpdateThread);  // close and wait
-            xsdLog(LogFile,
+            doshWriteLogEntry(LogFile,
                    __FUNCTION__ ": Update thread closed.\n");
         }
 
@@ -4116,7 +4106,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
             // the regular SHUTLISTITEM list)
             xsdUpdateClosingStatus(pShutdownData->SDConsts.hwndShutdownStatus,
                                    _wpQueryTitle(pShutdownData->SDConsts.pActiveDesktop));
-            xsdLog(LogFile,
+            doshWriteLogEntry(LogFile,
                    __FUNCTION__ ": Closing Desktop window\n");
 
             // sleep a little while... XCenter might have resized
@@ -4173,7 +4163,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
                     // if open: close it
                     xsdUpdateClosingStatus(pShutdownData->SDConsts.hwndShutdownStatus,
                                            _wpQueryTitle(pShutdownData->SDConsts.pKernelGlobals->pAwakeWarpCenter));
-                    xsdLog(LogFile,
+                    doshWriteLogEntry(LogFile,
                            __FUNCTION__ ": Found open WarpCenter USEITEM, closing...\n");
 
                     _wpSaveImmediate(pShutdownData->SDConsts.pKernelGlobals->pAwakeWarpCenter);
@@ -4237,7 +4227,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
                               ID_SDDI_STATUS,
                               szTitle);
 
-            xsdLog(LogFile,
+            doshWriteLogEntry(LogFile,
                    __FUNCTION__ ": Saving %d awake Desktop objects...\n",
                    cObjectsToSave);
 
@@ -4277,7 +4267,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
                        (MPARAM)1,
                        (MPARAM)1);
 
-            xsdLog(LogFile,
+            doshWriteLogEntry(LogFile,
                    __FUNCTION__ ": Done saving WPS, %d objects saved.\n",
                    cObjectsSaved);
 
@@ -4329,7 +4319,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
                 krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT, (MPARAM)pszErrMsg,
                                         (MPARAM)1); // enforce Desktop restart
 
-                xsdLog(LogFile,
+                doshWriteLogEntry(LogFile,
                        "\n*** CRASH\n%s\n", pszErrMsg);
             }
         }
@@ -4350,7 +4340,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
     // close "main" window, but keep the status window for now
     WinDestroyWindow(pShutdownData->SDConsts.hwndMain);
 
-    xsdLog(LogFile,
+    doshWriteLogEntry(LogFile,
            __FUNCTION__ ": Entering cleanup...\n");
 
     {
@@ -4359,40 +4349,40 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         // if we do (e.g. after an exception), release them now
         if (pShutdownData->fShutdownSemOwned)
         {
-            xsdLog(LogFile, "  Releasing shutdown mutex\n");
+            doshWriteLogEntry(LogFile, "  Releasing shutdown mutex\n");
             DosReleaseMutexSem(pShutdownData->hmtxShutdown);
             pShutdownData->fShutdownSemOwned = FALSE;
         }
         if (pShutdownData->fSkippedSemOwned)
         {
-            xsdLog(LogFile, "  Releasing skipped mutex\n");
+            doshWriteLogEntry(LogFile, "  Releasing skipped mutex\n");
             DosReleaseMutexSem(pShutdownData->hmtxSkipped);
             pShutdownData->fSkippedSemOwned = FALSE;
         }
 
-        xsdLog(LogFile, "  Done releasing semaphores.\n");
+        doshWriteLogEntry(LogFile, "  Done releasing semaphores.\n");
 
         // get rid of the Update thread;
         // this got closed by xsd_fnwpShutdown normally,
         // but with exceptions, this might not have happened
         if (thrQueryID(&G_tiUpdateThread))
         {
-            xsdLog(LogFile, "  Closing Update thread...\n");
+            doshWriteLogEntry(LogFile, "  Closing Update thread...\n");
             thrFree(&G_tiUpdateThread); // fixed V0.9.0
-            xsdLog(LogFile, "  Update thread closed.\n");
+            doshWriteLogEntry(LogFile, "  Update thread closed.\n");
         }
 
         // krnUnlockGlobals();
     }
 
-    xsdLog(LogFile, "  Closing semaphores...\n");
+    doshWriteLogEntry(LogFile, "  Closing semaphores...\n");
     DosCloseEventSem(pShutdownData->hevUpdated);
     if (pShutdownData->hmtxShutdown != NULLHANDLE)
     {
         if (arc = DosCloseMutexSem(pShutdownData->hmtxShutdown))
         {
             DosBeep(100, 1000);
-            xsdLog(LogFile, "    Error %d closing hmtxShutdown!\n",
+            doshWriteLogEntry(LogFile, "    Error %d closing hmtxShutdown!\n",
                    arc);
         }
         pShutdownData->hmtxShutdown = NULLHANDLE;
@@ -4402,14 +4392,14 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         if (arc = DosCloseMutexSem(pShutdownData->hmtxSkipped))
         {
             DosBeep(100, 1000);
-            xsdLog(LogFile, "    Error %d closing hmtxSkipped!\n",
+            doshWriteLogEntry(LogFile, "    Error %d closing hmtxSkipped!\n",
                    arc);
         }
         pShutdownData->hmtxSkipped = NULLHANDLE;
     }
-    xsdLog(LogFile, "  Done closing semaphores.\n");
+    doshWriteLogEntry(LogFile, "  Done closing semaphores.\n");
 
-    xsdLog(LogFile, "  Freeing lists...\n");
+    doshWriteLogEntry(LogFile, "  Freeing lists...\n");
     TRY_LOUD(excpt1)
     {
         // destroy all global lists; this time, we need
@@ -4419,7 +4409,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         lstClear(&pShutdownData->llSkipped);
     }
     CATCH(excpt1) {} END_CATCH();
-    xsdLog(LogFile, "  Done freeing lists.\n");
+    doshWriteLogEntry(LogFile, "  Done freeing lists.\n");
 
     /*
      * Restart Desktop or shutdown:
@@ -4436,7 +4426,7 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
         if (pShutdownData->sdParams.ulRestartWPS) // restart Desktop (1) or logoff (2)
         {
             // here we will actually restart the WPS
-            xsdLog(LogFile, "Preparing Desktop restart...\n");
+            doshWriteLogEntry(LogFile, "Preparing Desktop restart...\n");
 
             ctlStopAnimation(WinWindowFromID(pShutdownData->SDConsts.hwndShutdownStatus, ID_SDDI_ICON));
             WinDestroyWindow(pShutdownData->SDConsts.hwndShutdownStatus);
@@ -4446,8 +4436,8 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
             if (pShutdownData->sdParams.ulRestartWPS)
 
             {
-                xsdLog(LogFile, "Restarting WPS: Calling DosExit(), closing log.\n");
-                fclose(LogFile);
+                doshWriteLogEntry(LogFile, "Restarting WPS: Calling DosExit(), closing log.\n");
+                doshClose(&LogFile);
                 LogFile = NULL;
             }
             xsdRestartWPS(hab,
@@ -4475,20 +4465,16 @@ void _Optlink fntShutdownThread(PTHREADINFO ptiMyself)
     // the following code is only reached if
     // shutdown was cancelled...
 
-    {
-        PKERNELGLOBALS pKernelGlobals = krnLockGlobals(__FILE__, __LINE__, __FUNCTION__);
-        // set the global flag for whether shutdown is
-        // running to FALSE; this will re-enable the
-        // items in the Desktop's context menu
-        pKernelGlobals->fShutdownRunning = FALSE;
-        krnUnlockGlobals();
-    }
+    // set the global flag for whether shutdown is
+    // running to FALSE; this will re-enable the
+    // items in the Desktop's context menu
+    G_fShutdownRunning = FALSE;
 
     // close logfile
     if (LogFile)
     {
-        xsdLog(LogFile, "Reached cleanup, closing log.\n");
-        fclose(LogFile);
+        doshWriteLogEntry(LogFile, "Reached cleanup, closing log.\n");
+        doshClose(&LogFile);
         LogFile = NULL;
     }
 
@@ -4530,7 +4516,7 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
                         // this will become one of the ACL_* flags
                         // if something is to be done with this session
 
-    xsdLog(pShutdownData->ShutdownLogFile,
+    doshWriteLogEntry(pShutdownData->ShutdownLogFile,
            "  ID_SDMI_CLOSEVIO, hwnd: 0x%lX; entering xsdCloseVIO\n",
            hwndFrame);
 
@@ -4544,7 +4530,7 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
         PLISTNODE   pAutoCloseNode = 0;
         xsdLongTitle(pShutdownData->szVioTitle, pItem);
         pShutdownData->VioItem = *pItem;
-        xsdLog(pShutdownData->ShutdownLogFile, "    xsdCloseVIO: VIO item: %s\n", pShutdownData->szVioTitle);
+        doshWriteLogEntry(pShutdownData->ShutdownLogFile, "    xsdCloseVIO: VIO item: %s\n", pShutdownData->szVioTitle);
 
         // activate VIO window
         WinSetActiveWindow(HWND_DESKTOP, pShutdownData->VioItem.swctl.hwnd);
@@ -4554,7 +4540,7 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
         while (pAutoCloseNode)
         {
             PAUTOCLOSELISTITEM pliThis = pAutoCloseNode->pItemData;
-            xsdLog(pShutdownData->ShutdownLogFile, "      Checking %s\n", pliThis->szItemName);
+            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      Checking %s\n", pliThis->szItemName);
             // compare first characters
             if (strnicmp(pShutdownData->VioItem.swctl.szSwtitle,
                          pliThis->szItemName,
@@ -4562,7 +4548,7 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
                    == 0)
             {
                 // item found:
-                xsdLog(pShutdownData->ShutdownLogFile, "        Matching item found, auto-closing item\n");
+                doshWriteLogEntry(pShutdownData->ShutdownLogFile, "        Matching item found, auto-closing item\n");
                 pliAutoCloseFound = pliThis;
                 break;
             }
@@ -4573,7 +4559,7 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
         if (pliAutoCloseFound)
         {
             // item was found on auto-close list:
-            xsdLog(pShutdownData->ShutdownLogFile, "    Found on auto-close list\n");
+            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "    Found on auto-close list\n");
 
             // store this item's action for later
             ulSessionAction = pliAutoCloseFound->usAction;
@@ -4584,7 +4570,7 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
             if (pShutdownData->sdParams.optAutoCloseVIO)
             {
                 // auto-close enabled globally though:
-                xsdLog(pShutdownData->ShutdownLogFile, "    Not found on auto-close list, auto-close is on:\n");
+                doshWriteLogEntry(pShutdownData->ShutdownLogFile, "    Not found on auto-close list, auto-close is on:\n");
 
                 // "auto close VIOs" is on
                 if (pShutdownData->VioItem.swctl.idSession == 1)
@@ -4594,14 +4580,14 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
                     WinPostMsg((WinWindowFromID(pShutdownData->VioItem.swctl.hwnd, FID_SYSMENU)),
                                WM_SYSCOMMAND,
                                (MPARAM)SC_CLOSE, MPNULL);
-                    xsdLog(pShutdownData->ShutdownLogFile, "      Posted SC_CLOSE to hwnd 0x%lX\n",
+                    doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      Posted SC_CLOSE to hwnd 0x%lX\n",
                            WinWindowFromID(pShutdownData->VioItem.swctl.hwnd, FID_SYSMENU));
                 }
                 else
                 {
                     // OS/2 windows: kill
                     DosKillProcess(DKP_PROCESS, pShutdownData->VioItem.swctl.idProcess);
-                    xsdLog(pShutdownData->ShutdownLogFile, "      Killed pid 0x%lX\n",
+                    doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      Killed pid 0x%lX\n",
                            pShutdownData->VioItem.swctl.idProcess);
                 }
             } // end if (psdParams->optAutoCloseVIO)
@@ -4610,7 +4596,7 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
                 CHAR            szText[500];
 
                 // no auto-close: confirmation wnd
-                xsdLog(pShutdownData->ShutdownLogFile, "    Not found on auto-close list, auto-close is off, query-action dlg:\n");
+                doshWriteLogEntry(pShutdownData->ShutdownLogFile, "    Not found on auto-close list, auto-close is off, query-action dlg:\n");
 
                 cmnSetDlgHelpPanel(ID_XFH_CLOSEVIO);
                 pShutdownData->SDConsts.hwndVioDlg
@@ -4636,24 +4622,24 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
 
                 if (ulReply == DID_OK)
                 {
-                    xsdLog(pShutdownData->ShutdownLogFile, "      'OK' pressed\n");
+                    doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      'OK' pressed\n");
 
                     // "OK" button pressed: check the radio buttons
                     // for what to do with this session
                     if (winhIsDlgItemChecked(pShutdownData->SDConsts.hwndVioDlg, ID_XSDI_ACL_SKIP))
                     {
                         ulSessionAction = ACL_SKIP;
-                        xsdLog(pShutdownData->ShutdownLogFile, "      xsdCloseVIO: 'Skip' selected\n");
+                        doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      xsdCloseVIO: 'Skip' selected\n");
                     }
                     else if (winhIsDlgItemChecked(pShutdownData->SDConsts.hwndVioDlg, ID_XSDI_ACL_WMCLOSE))
                     {
                         ulSessionAction = ACL_WMCLOSE;
-                        xsdLog(pShutdownData->ShutdownLogFile, "      xsdCloseVIO: 'WM_CLOSE' selected\n");
+                        doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      xsdCloseVIO: 'WM_CLOSE' selected\n");
                     }
                     else if (winhIsDlgItemChecked(pShutdownData->SDConsts.hwndVioDlg, ID_XSDI_ACL_KILLSESSION))
                     {
                         ulSessionAction = ACL_KILLSESSION;
-                        xsdLog(pShutdownData->ShutdownLogFile, "      xsdCloseVIO: 'Kill' selected\n");
+                        doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      xsdCloseVIO: 'Kill' selected\n");
                     }
 
                     // "store item" checked?
@@ -4674,7 +4660,7 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
 
                             // write list back to OS2.INI
                             ulInvalid = xsdWriteAutoCloseItems(&pShutdownData->llAutoClose);
-                            xsdLog(pShutdownData->ShutdownLogFile, "         Updated auto-close list in OS2.INI, rc: %d\n",
+                            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "         Updated auto-close list in OS2.INI, rc: %d\n",
                                         ulInvalid);
                         }
                 }
@@ -4685,7 +4671,7 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
                     WinPostMsg(pShutdownData->SDConsts.hwndMain, WM_COMMAND,
                                MPFROM2SHORT(ID_SDDI_CANCELSHUTDOWN, 0),
                                MPNULL);
-                    xsdLog(pShutdownData->ShutdownLogFile, "      'Cancel shutdown' pressed\n");
+                    doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      'Cancel shutdown' pressed\n");
                 }
                 // else: we could also get DID_CANCEL; this means
                 // that the dialog was closed because the Update
@@ -4697,7 +4683,7 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
             } // end else (optAutoCloseVIO)
         }
 
-        xsdLog(pShutdownData->ShutdownLogFile, "      xsdCloseVIO: ulSessionAction is %d\n", ulSessionAction);
+        doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      xsdCloseVIO: ulSessionAction is %d\n", ulSessionAction);
 
         // OK, let's see what to do with this session
         switch (ulSessionAction)
@@ -4707,20 +4693,20 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
                 WinPostMsg((WinWindowFromID(pShutdownData->VioItem.swctl.hwnd, FID_SYSMENU)),
                            WM_SYSCOMMAND,
                            (MPARAM)SC_CLOSE, MPNULL);
-                xsdLog(pShutdownData->ShutdownLogFile, "      xsdCloseVIO: Posted SC_CLOSE to sysmenu, hwnd: 0x%lX\n",
+                doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      xsdCloseVIO: Posted SC_CLOSE to sysmenu, hwnd: 0x%lX\n",
                        WinWindowFromID(pShutdownData->VioItem.swctl.hwnd, FID_SYSMENU));
             break;
 
             case ACL_CTRL_C:
                 DosSendSignalException(pShutdownData->VioItem.swctl.idProcess,
                                        XCPT_SIGNAL_INTR);
-                xsdLog(pShutdownData->ShutdownLogFile, "      xsdCloseVIO: Sent INTR signal to pid 0x%lX\n",
+                doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      xsdCloseVIO: Sent INTR signal to pid 0x%lX\n",
                        pShutdownData->VioItem.swctl.idProcess);
             break;
 
             case ACL_KILLSESSION:
                 DosKillProcess(DKP_PROCESS, pShutdownData->VioItem.swctl.idProcess);
-                xsdLog(pShutdownData->ShutdownLogFile, "      xsdCloseVIO: Killed pid 0x%lX\n",
+                doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      xsdCloseVIO: Killed pid 0x%lX\n",
                        pShutdownData->VioItem.swctl.idProcess);
             break;
 
@@ -4728,12 +4714,12 @@ VOID xsdCloseVIO(PSHUTDOWNDATA pShutdownData,
                 WinPostMsg(pShutdownData->SDConsts.hwndMain, WM_COMMAND,
                            MPFROM2SHORT(ID_SDDI_SKIPAPP, 0),
                            MPNULL);
-                xsdLog(pShutdownData->ShutdownLogFile, "      xsdCloseVIO: Posted ID_SDDI_SKIPAPP\n");
+                doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      xsdCloseVIO: Posted ID_SDDI_SKIPAPP\n");
             break;
         }
     }
 
-    xsdLog(pShutdownData->ShutdownLogFile, "  Done with xsdCloseVIO\n");
+    doshWriteLogEntry(pShutdownData->ShutdownLogFile, "  Done with xsdCloseVIO\n");
 }
 
 /*
@@ -4756,7 +4742,7 @@ VOID CloseOneItem(PSHUTDOWNDATA pShutdownData,
     // compose string from item
     xsdLongTitle(szTitle, pItem);
 
-    xsdLog(pShutdownData->ShutdownLogFile, "    Item: %s\n", szTitle);
+    doshWriteLogEntry(pShutdownData->ShutdownLogFile, "    Item: %s\n", szTitle);
 
     // find string in the invisible list box
     usItem = (USHORT)WinSendMsg(hwndListbox,
@@ -4783,13 +4769,13 @@ VOID CloseOneItem(PSHUTDOWNDATA pShutdownData,
                     // WPObject::goes thru the list of USAGE_OPENVIEW
                     // useitems and sends WM_CLOSE to each of them
 
-        xsdLog(pShutdownData->ShutdownLogFile,
+        doshWriteLogEntry(pShutdownData->ShutdownLogFile,
                "      Open Desktop object, called wpClose(pObject)\n");
     }
     else if (pItem->swctl.hwnd)
     {
         // no WPS window: differentiate further
-        xsdLog(pShutdownData->ShutdownLogFile,
+        doshWriteLogEntry(pShutdownData->ShutdownLogFile,
                "      swctl.hwnd found: 0x%lX\n",
                pItem->swctl.hwnd);
 
@@ -4801,13 +4787,13 @@ VOID CloseOneItem(PSHUTDOWNDATA pShutdownData,
            )
         {
             // not a PM session: ask what to do (handled below)
-            xsdLog(pShutdownData->ShutdownLogFile, "      Seems to be VIO, swctl.bProgType: 0x%lX\n", pItem->swctl.bProgType);
+            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      Seems to be VIO, swctl.bProgType: 0x%lX\n", pItem->swctl.bProgType);
             if (    (pShutdownData->SDConsts.hwndVioDlg == NULLHANDLE)
                  || (strcmp(szTitle, pShutdownData->szVioTitle) != 0)
                )
             {
                 // "Close VIO window" not currently open:
-                xsdLog(pShutdownData->ShutdownLogFile, "      Posting ID_SDMI_CLOSEVIO\n");
+                doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      Posting ID_SDMI_CLOSEVIO\n");
                 WinPostMsg(pShutdownData->SDConsts.hwndMain, WM_COMMAND,
                            MPFROM2SHORT(ID_SDMI_CLOSEVIO, 0),
                            MPNULL);
@@ -4822,7 +4808,7 @@ VOID CloseOneItem(PSHUTDOWNDATA pShutdownData,
             // WM_SAVEAPPLICATION and WM_QUIT is what WinShutdown
             // does too for every message queue per process;
             // re-enabled this here per window V0.9.13 (2001-06-17) [umoeller]
-            xsdLog(pShutdownData->ShutdownLogFile,
+            doshWriteLogEntry(pShutdownData->ShutdownLogFile,
                    "      Posting WM_SAVEAPPLICATION to hwnd 0x%lX\n",
                    pItem->swctl.hwnd);
 
@@ -4830,7 +4816,7 @@ VOID CloseOneItem(PSHUTDOWNDATA pShutdownData,
                        WM_SAVEAPPLICATION,
                        MPNULL, MPNULL);
 
-            xsdLog(pShutdownData->ShutdownLogFile,
+            doshWriteLogEntry(pShutdownData->ShutdownLogFile,
                    "      Posting WM_QUIT to hwnd 0x%lX\n",
                    pItem->swctl.hwnd);
 
@@ -4841,7 +4827,7 @@ VOID CloseOneItem(PSHUTDOWNDATA pShutdownData,
         /* else
         {
             // no system menu: try something more brutal
-            xsdLog(pShutdownData->ShutdownLogFile, "      Has no sys menu, posting WM_CLOSE to hwnd 0x%lX\n",
+            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      Has no sys menu, posting WM_CLOSE to hwnd 0x%lX\n",
                         pItem->swctl.hwnd);
 
             WinPostMsg(pItem->swctl.hwnd,
@@ -4852,7 +4838,7 @@ VOID CloseOneItem(PSHUTDOWNDATA pShutdownData,
     }
     else
     {
-        xsdLog(pShutdownData->ShutdownLogFile,
+        doshWriteLogEntry(pShutdownData->ShutdownLogFile,
                "      Helpless... leaving item alone, pid: 0x%lX\n",
                pItem->swctl.idProcess);
         // DosKillProcess(DKP_PROCESS, pItem->swctl.idProcess);
@@ -4930,7 +4916,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
 
                     _Pmpf((" ---> ID_SDDI_BEGINSHUTDOWN"));
 
-                    xsdLog(pShutdownData->ShutdownLogFile, "  ID_SDDI_BEGINSHUTDOWN, hwnd: 0x%lX\n", hwndFrame);
+                    doshWriteLogEntry(pShutdownData->ShutdownLogFile, "  ID_SDDI_BEGINSHUTDOWN, hwnd: 0x%lX\n", hwndFrame);
 
                     WinShowWindow(pShutdownData->SDConsts.hwndShutdownStatus, TRUE);
 
@@ -4942,7 +4928,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                         APIRET arc = NO_ERROR;
                         WinSetDlgItemText(pShutdownData->SDConsts.hwndShutdownStatus, ID_SDDI_STATUS,
                                           cmnGetString(ID_XSSI_FOPS_EMPTYINGTRASHCAN)) ; // pszFopsEmptyingTrashCan
-                        xsdLog(pShutdownData->ShutdownLogFile, "    Emptying trash can...\n");
+                        doshWriteLogEntry(pShutdownData->ShutdownLogFile, "    Emptying trash can...\n");
 
                         arc = cmnEmptyDefTrashCan(pShutdownData->habShutdownThread,
                                                             // synchronously
@@ -4950,10 +4936,10 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                                                   NULLHANDLE);   // no confirm
                         if (arc == NO_ERROR)
                             // success:
-                            xsdLog(pShutdownData->ShutdownLogFile, "    Done emptying trash can.\n");
+                            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "    Done emptying trash can.\n");
                         else
                         {
-                            xsdLog(pShutdownData->ShutdownLogFile, "    Emptying trash can failed, rc: %d.\n",
+                            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "    Emptying trash can failed, rc: %d.\n",
                                     arc);
                             if (cmnMessageBoxMsg(pShutdownData->SDConsts.hwndShutdownStatus,
                                                  104, // "error"
@@ -4972,13 +4958,13 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                                                             (PSZ)XFOLDER_SHUTDOWNID,
                                                             TRUE))
                     {
-                        xsdLog(pShutdownData->ShutdownLogFile, "    Processing shutdown folder...\n");
+                        doshWriteLogEntry(pShutdownData->ShutdownLogFile, "    Processing shutdown folder...\n");
 
                         // using new implementation V0.9.12 (2001-04-29) [umoeller]
                         _xwpStartFolderContents(pShutdownFolder,
                                                 0);         // wait mode
 
-                        xsdLog(pShutdownData->ShutdownLogFile, "    Started processing shutdown folder.\n");
+                        doshWriteLogEntry(pShutdownData->ShutdownLogFile, "    Started processing shutdown folder.\n");
                     }
 
                     // now build our shutlist V0.9.12 (2001-04-29) [umoeller]
@@ -5000,7 +4986,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                                         // but wait explicit V0.9.12 (2001-04-29) [umoeller]
                                   (ULONG)pShutdownData);  // V0.9.9 (2001-03-07) [umoeller]
 
-                        xsdLog(pShutdownData->ShutdownLogFile,
+                        doshWriteLogEntry(pShutdownData->ShutdownLogFile,
                                __FUNCTION__ ": Update thread started, tid: 0x%lX\n",
                                thrQueryID(&G_tiUpdateThread));
                     }
@@ -5013,16 +4999,16 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
 
                     // close open WarpCenter first, if desired
                     // V0.9.7 (2000-12-08) [umoeller]
-                    xsdLog(pShutdownData->ShutdownLogFile, "  WarpCenter treatment:\n");
+                    doshWriteLogEntry(pShutdownData->ShutdownLogFile, "  WarpCenter treatment:\n");
                     if (somIsObj(pShutdownData->SDConsts.pKernelGlobals->pAwakeWarpCenter))
                     {
                         if (pShutdownData->SDConsts.hwndOpenWarpCenter)
                         {
-                            xsdLog(pShutdownData->ShutdownLogFile, "      WarpCenter found, has HWND 0x%lX\n",
+                            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      WarpCenter found, has HWND 0x%lX\n",
                                    pShutdownData->SDConsts.hwndOpenWarpCenter);
                             if (pShutdownData->sdParams.optWarpCenterFirst)
                             {
-                                xsdLog(pShutdownData->ShutdownLogFile, "      WarpCenterFirst is ON, posting WM_COMMAND 0x66F7\n");
+                                doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      WarpCenterFirst is ON, posting WM_COMMAND 0x66F7\n");
                                 xsdUpdateClosingStatus(pShutdownData->SDConsts.hwndShutdownStatus,
                                                        "WarpCenter");
                                 WinPostMsg(pShutdownData->SDConsts.hwndOpenWarpCenter,
@@ -5036,10 +5022,10 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                                 pShutdownData->SDConsts.hwndOpenWarpCenter = NULLHANDLE;
                             }
                             else
-                                xsdLog(pShutdownData->ShutdownLogFile, "      WarpCenterFirst is OFF, skipping...\n");
+                                doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      WarpCenterFirst is OFF, skipping...\n");
                         }
                         else
-                            xsdLog(pShutdownData->ShutdownLogFile, "      WarpCenter not found.\n");
+                            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "      WarpCenter not found.\n");
                     }
 
                     // mark status as "closing windows now"
@@ -5072,7 +5058,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                 {
                     PSHUTLISTITEM pItem;
 
-                    xsdLog(pShutdownData->ShutdownLogFile,
+                    doshWriteLogEntry(pShutdownData->ShutdownLogFile,
                            "  ID_SDMI_CLOSEITEM\n");
 
                     // get task list item to close from linked list
@@ -5086,7 +5072,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                     else
                     {
                         // no more items left: enter phase 2 (save WPS)
-                        xsdLog(pShutdownData->ShutdownLogFile,
+                        doshWriteLogEntry(pShutdownData->ShutdownLogFile,
                                "    All items closed. Posting WM_QUIT...\n");
 
                         pShutdownData->ulStatus = XSD_ALLDONEOK;
@@ -5107,12 +5093,12 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                 {
                     PSHUTLISTITEM   pItem,
                                     pSkipItem;
-                    xsdLog(pShutdownData->ShutdownLogFile, "  ID_SDDI_SKIPAPP, hwnd: 0x%lX\n", hwndFrame);
+                    doshWriteLogEntry(pShutdownData->ShutdownLogFile, "  ID_SDDI_SKIPAPP, hwnd: 0x%lX\n", hwndFrame);
 
                     pItem = xsdQueryCurrentItem(pShutdownData);
                     if (pItem)
                     {
-                        xsdLog(pShutdownData->ShutdownLogFile, "    Adding %s to the list of skipped items\n",
+                        doshWriteLogEntry(pShutdownData->ShutdownLogFile, "    Adding %s to the list of skipped items\n",
                                pItem->swctl.szSwtitle);
 
                         pShutdownData->fSkippedSemOwned = !WinRequestMutexSem(pShutdownData->hmtxSkipped, 4000);
@@ -5169,7 +5155,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                         DosBeep(10000, 50);
                     #endif
 
-                    xsdLog(pShutdownData->ShutdownLogFile,
+                    doshWriteLogEntry(pShutdownData->ShutdownLogFile,
                            "  ID_SDMI_UPDATESHUTLIST, hwnd: 0x%lX\n",
                            hwndFrame);
 
@@ -5178,7 +5164,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                     DosPostEventSem(pShutdownData->hevUpdated);
                         // signal update to Update thread
 
-                    xsdLog(pShutdownData->ShutdownLogFile,
+                    doshWriteLogEntry(pShutdownData->ShutdownLogFile,
                            "    Rebuilt shut list, %d items remaining\n",
                            xsdCountRemainingItems(pShutdownData));
 
@@ -5205,7 +5191,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                                        MPNULL);
                             // this will result in a DID_CANCEL return code
                             // for WinProcessDlg in ID_SDMI_CLOSEVIO above
-                            xsdLog(pShutdownData->ShutdownLogFile,
+                            doshWriteLogEntry(pShutdownData->ShutdownLogFile,
                                    "    Closed open VIO confirm dlg' dlg\n");
                         }
                     }
@@ -5231,7 +5217,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                         pShutdownData->ulLastItemCount = -1; // enforce update
                     }
 
-                    xsdLog(pShutdownData->ShutdownLogFile, "  ID_SDMI_UPDATEPROGRESSBAR, hwnd: 0x%lX, remaining: %d, total: %d\n",
+                    doshWriteLogEntry(pShutdownData->ShutdownLogFile, "  ID_SDMI_UPDATEPROGRESSBAR, hwnd: 0x%lX, remaining: %d, total: %d\n",
                            hwndFrame, ulItemCount, pShutdownData->ulMaxItemCount);
 
                     if ((ulItemCount) != pShutdownData->ulLastItemCount)
@@ -5274,7 +5260,7 @@ MRESULT EXPENTRY xsd_fnwpShutdown(HWND hwndFrame, ULONG msg, MPARAM mp1, MPARAM 
                         // mark shutdown status as cancelled
                         pShutdownData->ulStatus = XSD_CANCELLED;
 
-                        xsdLog(pShutdownData->ShutdownLogFile,
+                        doshWriteLogEntry(pShutdownData->ShutdownLogFile,
                                 "  DID_CANCEL/ID_SDDI_CANCELSHUTDOWN, hwnd: 0x%lX\n");
 
                         /* if (pShutdownData->hPOC)
@@ -5418,12 +5404,14 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
     switch (pGlobalSettings->_bSaveINIS)
     {
         case 2:         // do nothing:
-            xsdLog(pShutdownData->ShutdownLogFile, "Saving INIs has been disabled, skipping.\n");
+            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "Saving INIs has been disabled, skipping.\n");
         break;
 
         case 1:     // old method:
-            xsdLog(pShutdownData->ShutdownLogFile, "Saving INIs, old method (prfhSaveINIs)...\n");
-            arc = prfhSaveINIs(pShutdownData->habShutdownThread, pShutdownData->ShutdownLogFile,
+            doshWriteLogEntry(pShutdownData->ShutdownLogFile,
+                              "Saving INIs, old method (prfhSaveINIs)...\n");
+            arc = prfhSaveINIs(pShutdownData->habShutdownThread,
+                               NULL, // pShutdownData->ShutdownLogFile, @@todo
                                (PFNWP)fncbUpdateINIStatus,
                                    // callback function for updating the progress bar
                                pShutdownData->hwndProgressBar,
@@ -5432,17 +5420,17 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
                                    // message passed to callback
                                (PFNWP)fncbSaveINIError);
                                    // callback for errors
-            xsdLog(pShutdownData->ShutdownLogFile, "Done with prfhSaveINIs.\n");
+            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "Done with prfhSaveINIs.\n");
         break;
 
         default:    // includes 0, new method
 #endif
-            xsdLog(pShutdownData->ShutdownLogFile, "Saving INIs, new method (xprfSaveINIs)...\n");
+            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "Saving INIs, new method (xprfSaveINIs)...\n");
 
             arc = xprfSaveINIs(pShutdownData->habShutdownThread,
                                xsd_fnSaveINIsProgress,
                                pShutdownData->hwndProgressBar);
-            xsdLog(pShutdownData->ShutdownLogFile, "Done with xprfSaveINIs.\n");
+            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "Done with xprfSaveINIs.\n");
 #ifndef __EASYSHUTDOWN__
         break;
     }
@@ -5450,7 +5438,7 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
 
     if (arc != NO_ERROR)
     {
-        xsdLog(pShutdownData->ShutdownLogFile, "--- Error %d was reported!\n", arc);
+        doshWriteLogEntry(pShutdownData->ShutdownLogFile, "--- Error %d was reported!\n", arc);
 
         // error occured: ask whether to restart the WPS
         if (cmnMessageBoxMsg(pShutdownData->SDConsts.hwndShutdownStatus,
@@ -5459,14 +5447,14 @@ VOID xsdFinishShutdown(PSHUTDOWNDATA pShutdownData) // HAB hab)
                              MB_YESNO)
                     == MBID_YES)
         {
-            xsdLog(pShutdownData->ShutdownLogFile, "User requested to restart Desktop.\n");
+            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "User requested to restart Desktop.\n");
             xsdRestartWPS(pShutdownData->habShutdownThread,
                           FALSE);
                     // doesn't return
         }
     }
 
-    xsdLog(pShutdownData->ShutdownLogFile, "Now preparing shutdown...\n");
+    doshWriteLogEntry(pShutdownData->ShutdownLogFile, "Now preparing shutdown...\n");
 
     // always say "releasing filesystems"
     WinShowPointer(HWND_DESKTOP, FALSE);
@@ -5563,8 +5551,8 @@ VOID xsdFinishStandardMessage(PSHUTDOWNDATA pShutdownData)
 
     if (pShutdownData->ShutdownLogFile)
     {
-        xsdLog(pShutdownData->ShutdownLogFile, "xsdFinishStandardMessage: Calling DosShutdown(0), closing log.\n");
-        fclose(pShutdownData->ShutdownLogFile);
+        doshWriteLogEntry(pShutdownData->ShutdownLogFile, "xsdFinishStandardMessage: Calling DosShutdown(0), closing log.\n");
+        doshClose(&pShutdownData->ShutdownLogFile);
         pShutdownData->ShutdownLogFile = NULL;
     }
 
@@ -5636,9 +5624,9 @@ VOID xsdFinishStandardReboot(PSHUTDOWNDATA pShutdownData)
 
     if (pShutdownData->ShutdownLogFile)
     {
-        xsdLog(pShutdownData->ShutdownLogFile, "xsdFinishStandardReboot: Opened DOS.SYS, hFile: 0x%lX\n", hIOCTL);
-        xsdLog(pShutdownData->ShutdownLogFile, "xsdFinishStandardReboot: Calling DosShutdown(0), closing log.\n");
-        fclose(pShutdownData->ShutdownLogFile);
+        doshWriteLogEntry(pShutdownData->ShutdownLogFile, "xsdFinishStandardReboot: Opened DOS.SYS, hFile: 0x%lX\n", hIOCTL);
+        doshWriteLogEntry(pShutdownData->ShutdownLogFile, "xsdFinishStandardReboot: Calling DosShutdown(0), closing log.\n");
+        doshClose(&pShutdownData->ShutdownLogFile);
         pShutdownData->ShutdownLogFile = NULL;
     }
 
@@ -5707,9 +5695,9 @@ VOID xsdFinishUserReboot(PSHUTDOWNDATA pShutdownData)
 
     if (pShutdownData->ShutdownLogFile)
     {
-        xsdLog(pShutdownData->ShutdownLogFile, "Trying to start user reboot cmd: %s, closing log.\n",
+        doshWriteLogEntry(pShutdownData->ShutdownLogFile, "Trying to start user reboot cmd: %s, closing log.\n",
                pShutdownData->sdParams.szRebootCommand);
-        fclose(pShutdownData->ShutdownLogFile);
+        doshClose(&pShutdownData->ShutdownLogFile);
         pShutdownData->ShutdownLogFile = NULL;
     }
 
@@ -5758,14 +5746,14 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData)
 
     // prepare APM power off
     ulrcAPM = apmPreparePowerOff(szAPMError);
-    xsdLog(pShutdownData->ShutdownLogFile, "xsdFinishAPMPowerOff: apmPreparePowerOff returned 0x%lX\n",
+    doshWriteLogEntry(pShutdownData->ShutdownLogFile, "xsdFinishAPMPowerOff: apmPreparePowerOff returned 0x%lX\n",
             ulrcAPM);
 
     if (ulrcAPM & APM_IGNORE)
     {
         // if this returns APM_IGNORE, we continue
         // with the regular shutdown w/out APM
-        xsdLog(pShutdownData->ShutdownLogFile, "APM_IGNORE, continuing with normal shutdown\n",
+        doshWriteLogEntry(pShutdownData->ShutdownLogFile, "APM_IGNORE, continuing with normal shutdown\n",
                ulrcAPM);
 
         xsdFinishStandardMessage(pShutdownData);
@@ -5775,7 +5763,7 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData)
     {
         // APM_CANCEL means cancel shutdown
         WinShowPointer(HWND_DESKTOP, TRUE);
-        xsdLog(pShutdownData->ShutdownLogFile, "  APM error message: %s",
+        doshWriteLogEntry(pShutdownData->ShutdownLogFile, "  APM error message: %s",
                szAPMError);
 
         cmnMessageBox(HWND_DESKTOP, "APM Error", szAPMError,
@@ -5792,7 +5780,7 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData)
         // shutdown request by apm.c:
         if (pShutdownData->ShutdownLogFile)
         {
-            xsdLog(pShutdownData->ShutdownLogFile, "xsdFinishAPMPowerOff: Calling DosShutdown(0), closing log.\n");
+            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "xsdFinishAPMPowerOff: Calling DosShutdown(0), closing log.\n");
             fclose(pShutdownData->ShutdownLogFile);
             pShutdownData->ShutdownLogFile = NULL;
         }
@@ -5805,8 +5793,8 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData)
     {
         if (pShutdownData->ShutdownLogFile)
         {
-            xsdLog(pShutdownData->ShutdownLogFile, "xsdFinishAPMPowerOff: Calling DosShutdown(1), closing log.\n");
-            fclose(pShutdownData->ShutdownLogFile);
+            doshWriteLogEntry(pShutdownData->ShutdownLogFile, "xsdFinishAPMPowerOff: Calling DosShutdown(1), closing log.\n");
+            doshClose(&pShutdownData->ShutdownLogFile);
             pShutdownData->ShutdownLogFile = NULL;
         }
 
@@ -5817,7 +5805,7 @@ VOID xsdFinishAPMPowerOff(PSHUTDOWNDATA pShutdownData)
 
     if (pShutdownData->ShutdownLogFile)
     {
-        fclose(pShutdownData->ShutdownLogFile);
+        doshClose(&pShutdownData->ShutdownLogFile);
         pShutdownData->ShutdownLogFile = NULL;
     }
 
@@ -6044,7 +6032,7 @@ void _Optlink fntUpdateThread(PTHREADINFO ptiMyself)
                     krnPostThread1ObjectMsg(T1M_EXCEPTIONCAUGHT, (MPARAM)pszErrMsg,
                             (MPARAM)0); // don't enforce Desktop restart
 
-                    xsdLog(pShutdownData->ShutdownLogFile, "\n*** CRASH\n%s\n", pszErrMsg);
+                    doshWriteLogEntry(pShutdownData->ShutdownLogFile, "\n*** CRASH\n%s\n", pszErrMsg);
                 }
             }
         } END_CATCH();

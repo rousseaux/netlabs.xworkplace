@@ -108,7 +108,7 @@ dep:
         $(CC_DLL_MT) /fi"$(PRECH)\$(@B).pch" /si"$(PRECH)\$(@B).pch" /Fo$(OUTPUTDIR)\$(@B).obj $(@B).c
 !endif
 
-$(OUTPUTDIR)\xwpres.res: *.ico $(@B).rc
+$(OUTPUTDIR)\xwpres.res: grafx\*.ico grafx\*.bmp $(@B).rc
         $(RC) -r $(@B).rc $(OUTPUTDIR)\$(@B).res
 
 $(OUTPUTDIR)\xwpfonts.res: *.fnt xwpfonts.rc

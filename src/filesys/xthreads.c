@@ -1502,6 +1502,7 @@ void _Optlink fntStartupThread(PTHREADINFO ptiMyself)
                 #endif
                 XFldStartupNewClass(XFldStartup_MajorVersion,
                                     XFldStartup_MinorVersion);
+                // and make sure this is never unloaded
                 _wpclsIncUsage(_XFldStartup);
             }
 

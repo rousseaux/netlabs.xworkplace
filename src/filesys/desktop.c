@@ -83,6 +83,7 @@
 #include "helpers\shapewin.h"           // shaped windows helper functions
 #include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"            // string helper routines
+#include "helpers\syssound.h"           // system sound helper routines
 #include "helpers\threads.h"            // thread helpers
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\wphandle.h"           // file-system object handles
@@ -601,16 +602,18 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
                          PULONG pulMenuId) // in/out: menu item ID (can be changed)
 {
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    PCKERNELGLOBALS   pKernelGlobals = krnQueryGlobals();
+    // PCKERNELGLOBALS   pKernelGlobals = krnQueryGlobals();
 
-    if (!(pKernelGlobals->fShutdownRunning))
+    if (!xsdIsShutdownRunning())
     {
-        if ((*pulMenuId - (pGlobalSettings->VarMenuOffset)) == ID_XFMI_OFS_RESTARTWPS)
+        ULONG ulMenuId2 = (*pulMenuId - (pGlobalSettings->VarMenuOffset));
+
+        if (ulMenuId2 == ID_XFMI_OFS_RESTARTWPS)
         {
             xsdInitiateRestartWPS(FALSE);   // restart Desktop, no logoff
             return (TRUE);
         }
-        else if ((*pulMenuId - (pGlobalSettings->VarMenuOffset)) == ID_XFMI_OFS_LOGOFF)
+        else if (ulMenuId2 == ID_XFMI_OFS_LOGOFF)
         {
             xsdInitiateRestartWPS(TRUE);    // logoff
             return (TRUE);
@@ -625,8 +628,7 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
                 xsdInitiateShutdown();
                 return (TRUE);
             }
-            else if ((*pulMenuId - (pGlobalSettings->VarMenuOffset))
-                    == ID_XFMI_OFS_OS2_SHUTDOWN)
+            else if (ulMenuId2 == ID_XFMI_OFS_OS2_SHUTDOWN)
             {
                 // default OS/2 shutdown (in submenu):
                 // have parent method called with default shutdown menu item ID
@@ -636,6 +638,15 @@ BOOL dtpMenuItemSelected(XFldDesktop *somSelf,
             }
         }
     }
+
+#ifdef __XWPLITE__
+    if (*pulMenuId == 0x25D)          // product info
+    {
+        cmnShowProductInfo(NULLHANDLE,      // owner
+                           MMSOUND_SYSTEMSTARTUP);
+        return (TRUE);
+    }
+#endif
 
     #ifdef __XWPMEMDEBUG__ // setup.h, helpers\memdebug.c
         // if XWorkplace is compiled with

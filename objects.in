@@ -20,7 +20,9 @@ $(OUTPUTDIR)\xfontfile.obj \
 $(OUTPUTDIR)\xfontobj.obj \
 $(OUTPUTDIR)\xfobj.obj \
 $(OUTPUTDIR)\xfpgmf.obj \
+!ifndef XWPLITE
 $(OUTPUTDIR)\xfsys.obj \
+!endif
 $(OUTPUTDIR)\xfwps.obj \
 $(OUTPUTDIR)\xfstart.obj \
 !ifndef XWPLITE
@@ -61,15 +63,20 @@ $(OUTPUTDIR)\wpsh.obj
 
 # code from config\
 XFLDR_OBJS_CONFIG = \
-$(OUTPUTDIR)\cfgsys.obj \
 !ifndef XWPLITE
+$(OUTPUTDIR)\cfgsys.obj \
 $(OUTPUTDIR)\classlst.obj \
 !endif
+$(OUTPUTDIR)\drivexports.obj \
+!ifndef XWPLITE
 $(OUTPUTDIR)\drivdlgs.obj \
 $(OUTPUTDIR)\drivers.obj \
+!endif
 $(OUTPUTDIR)\fonts.obj \
 $(OUTPUTDIR)\hookintf.obj \
+!ifndef XWPLITE
 $(OUTPUTDIR)\pagemage.obj \
+!endif
 #$(OUTPUTDIR)\partitions.obj \
 $(OUTPUTDIR)\sound.obj
 
@@ -83,7 +90,7 @@ $(OUTPUTDIR)\fdrnotebooks.obj \
 $(OUTPUTDIR)\fdrsort.obj \
 $(OUTPUTDIR)\fdrsubclass.obj \
 $(OUTPUTDIR)\fdrmenus.obj \
-$(OUTPUTDIR)\fhandles.obj \
+#$(OUTPUTDIR)\fhandles.obj \
 $(OUTPUTDIR)\filedlg.obj \
 $(OUTPUTDIR)\fileops.obj \
 $(OUTPUTDIR)\filesys.obj \

@@ -236,7 +236,7 @@ BOOL hifEnablePageMage(BOOL fEnable)
 {
     BOOL    brc = FALSE;
 
-// #ifdef __PAGEMAGE__
+#ifndef __NOPAGEMAGE__
     PCKERNELGLOBALS  pKernelGlobals = krnQueryGlobals();
     PXWPGLOBALSHARED pXwpGlobalShared = pKernelGlobals->pXwpGlobalShared;
 
@@ -265,7 +265,7 @@ BOOL hifEnablePageMage(BOOL fEnable)
             _Pmpf(("  Returning %d", brc));
         }
     }
-// #endif
+#endif
 
     return (brc);
 }
@@ -2550,13 +2550,15 @@ VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
 
             WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_WINDOWLIST)) ; // pszSpecialWindowList
             WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_DESKTOPPOPUP)) ; // pszSpecialDesktopPopup
-            WinInsertLboxItem(hwndDrop, LIT_END, "PageMage");
 
+#ifndef __NOPAGEMAGE__
+            WinInsertLboxItem(hwndDrop, LIT_END, "PageMage");
             // V0.9.9 (2001-01-25) [lafaix] (clockwise)
             WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_PAGEMAGEUP)) ; // pszSpecialPageMageUp
             WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_PAGEMAGERIGHT)) ; // pszSpecialPageMageRight
             WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_PAGEMAGEDOWN)) ; // pszSpecialPageMageDown
             WinInsertLboxItem(hwndDrop, LIT_END, cmnGetString(ID_XSSI_SPECIAL_PAGEMAGELEFT)) ; // pszSpecialPageMageLeft
+#endif
         }
 
         // set up container
@@ -2655,9 +2657,6 @@ VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
 
     if (flFlags & CBI_ENABLE)
     {
-        // PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-        // PHOOKCONFIG pdc = (PHOOKCONFIG)pcnbp->pUser;
-
         winhEnableDlgItem(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_SPECIAL_DROP,
                           winhIsDlgItemChecked(pcnbp->hwndDlgPage,
                                                ID_XSDI_MOUSE_SPECIAL_CHECK));

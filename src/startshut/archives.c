@@ -76,6 +76,7 @@
 
 #define INCL_WINDIALOGS
 #define INCL_WINBUTTONS
+#define INCL_WINSTATICS
 #define INCL_WINSTDSPIN
 #define INCL_WINSHELLDATA       // Prf* functions
 #include <os2.h>
@@ -94,8 +95,10 @@
 
 // headers in /helpers
 #include "helpers\datetime.h"           // date/time helpers
+#include "helpers\dialog.h"             // dialog helpers
 #include "helpers\dosh.h"
 #include "helpers\prfh.h"
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\stringh.h"
 #include "helpers\winh.h"               // PM helper routines
 #include "helpers\wphandle.h"           // file-system object handles
@@ -140,6 +143,143 @@ static CHAR                G_szArcBaseFilename[CCHMAXPATH] = "";
 // PSZ's for percentage spinbutton
 static PSZ     G_apszPercentages[PERCENTAGES_COUNT];
 
+CONTROLDEF
+    ArcCriteriaGroup = CONTROLDEF_GROUP(
+                            LOAD_STRING,
+                            ID_XSDI_ARC_CRITERIA_GROUP),
+    EnableArchiveCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_ARC_ENABLE,
+                            -1,
+                            -1),
+    ArcAlwaysCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_ARC_ALWAYS,
+                            -1,
+                            -1),
+    ArcNextCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_ARC_NEXT,
+                            -1,
+                            -1),
+    ArcINICB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_ARC_INI,
+                            -1,
+                            -1),
+    ArcINISpin =
+        {
+            WC_SPINBUTTON,
+            NULL,
+            WS_VISIBLE | WS_TABSTOP
+                | SPBS_MASTER | SPBS_JUSTLEFT | SPBS_JUSTRIGHT | SPBS_JUSTCENTER
+                | SPBS_FASTSPIN,
+            ID_XSDI_ARC_INI_SPIN,
+            CTL_COMMON_FONT,
+            0,
+            { 100, 20 },     // size
+            5               // spacing
+        },
+    ArcINITxt2 = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_XSDI_ARC_INI_SPINTXT1,
+                            -1,
+                            -1),
+    ArcDaysCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_ARC_DAYS,
+                            -1,
+                            -1),
+    ArcDaysSpin =
+        {
+            WC_SPINBUTTON,
+            NULL,
+            WS_VISIBLE | WS_TABSTOP
+                | SPBS_MASTER | SPBS_JUSTLEFT | SPBS_JUSTRIGHT | SPBS_JUSTCENTER
+                | SPBS_FASTSPIN,
+            ID_XSDI_ARC_DAYS_SPIN,
+            CTL_COMMON_FONT,
+            0,
+            { 100, 20 },     // size
+            5               // spacing
+        },
+    ArcDaysTxt2 = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_XSDI_ARC_DAYS_SPINTXT1,
+                            -1,
+                            -1),
+    ArcShowStatusCB = CONTROLDEF_AUTOCHECKBOX(
+                            LOAD_STRING,
+                            ID_XSDI_ARC_SHOWSTATUS,
+                            -1,
+                            -1),
+    Arc2Group = CONTROLDEF_GROUP(
+                            LOAD_STRING,
+                            ID_XSDI_ARC_ARCHIVES_GROUP),
+    ArcNoTxt1 = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_XSDI_ARC_ARCHIVES_NO_TXT1,
+                            -1,
+                            -1),
+    ArcNoSpin =
+        {
+            WC_SPINBUTTON,
+            NULL,
+            WS_VISIBLE | WS_TABSTOP
+                | SPBS_MASTER | SPBS_JUSTLEFT | SPBS_JUSTRIGHT | SPBS_JUSTCENTER,
+            ID_XSDI_ARC_ARCHIVES_NO_SPIN,
+            CTL_COMMON_FONT,
+            0,
+            { 100, 20 },     // size
+            5               // spacing
+        },
+    ArcNoTxt2 = CONTROLDEF_TEXT(
+                            LOAD_STRING,
+                            ID_XSDI_ARC_ARCHIVES_NO_TXT2,
+                            -1,
+                            -1);
+
+DLGHITEM dlgArchives[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(0),       // row 1 in the root table, required
+                // create group on top
+                START_GROUP_TABLE(&ArcCriteriaGroup),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&EnableArchiveCB),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&G_Spacing),    // notebook.c
+                        CONTROL_DEF(&ArcAlwaysCB),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&G_Spacing),    // notebook.c
+                        CONTROL_DEF(&ArcNextCB),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&G_Spacing),    // notebook.c
+                        CONTROL_DEF(&ArcINICB),
+                        CONTROL_DEF(&ArcINISpin),
+                        CONTROL_DEF(&ArcINITxt2),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&G_Spacing),    // notebook.c
+                        CONTROL_DEF(&ArcDaysCB),
+                        CONTROL_DEF(&ArcDaysSpin),
+                        CONTROL_DEF(&ArcDaysTxt2),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&ArcShowStatusCB),
+                END_TABLE,
+            START_ROW(0),       // row 2 in the root table
+                START_GROUP_TABLE(&Arc2Group),
+                    START_ROW(ROW_VALIGN_CENTER),
+                        CONTROL_DEF(&ArcNoTxt1),
+                        CONTROL_DEF(&ArcNoSpin),
+                        CONTROL_DEF(&ArcNoTxt2),
+                END_TABLE,
+            START_ROW(0),       // notebook buttons (will be moved)
+                CONTROL_DEF(&G_UndoButton),         // notebook.c
+                CONTROL_DEF(&G_DefaultButton),      // notebook.c
+                CONTROL_DEF(&G_HelpButton),         // notebook.c
+        END_TABLE
+    };
+
 /*
  * arcArchivesInitPage:
  *      notebook callback function (notebook.c) for the
@@ -150,6 +290,7 @@ static PSZ     G_apszPercentages[PERCENTAGES_COUNT];
  *
  *@@added V0.9.0 [umoeller]
  *@@changed V0.9.9 (2001-04-07) [pr]: fixed Undo/Default
+ *@@changed V0.9.16 (2001-11-22) [umoeller]: now using dlg formatter
  */
 
 VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -180,6 +321,12 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             G_apszPercentages[8]  = "1.000";
             G_apszPercentages[9]  = "2.500";
             G_apszPercentages[10] = "5.000";
+
+            // insert the controls using the dialog formatter
+            // V0.9.16 (2001-11-22) [umoeller]
+            ntbFormatPage(pcnbp->hwndDlgPage,
+                          dlgArchives,
+                          ARRAYITEMCOUNT(dlgArchives));
         }
 
         WinSendDlgItemMsg(pcnbp->hwndDlgPage, ID_XSDI_ARC_INI_SPIN,
@@ -238,7 +385,7 @@ VOID arcArchivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         // no. of archives
         arcSetNumArchives(&pArcSettings->cArchivesCount,
                           FALSE);       // query
-        winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_XSDI_ARC_ARCHIVES_SPIN,
+        winhSetDlgItemSpinData(pcnbp->hwndDlgPage, ID_XSDI_ARC_ARCHIVES_NO_SPIN,
                                1, 9,        // spin button limits
                                pArcSettings->cArchivesCount);
     }
@@ -343,8 +490,7 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pArcSettings->fShowStatus = ulExtra;
         break;
 
-        case ID_XSDI_ARC_ARCHIVES_SPIN:
-        {
+        case ID_XSDI_ARC_ARCHIVES_NO_SPIN:
             pArcSettings->cArchivesCount = (CHAR)winhAdjustDlgItemSpinData(pcnbp->hwndDlgPage,
                                                                            ulItemID,
                                                                            0,              // no grid
@@ -352,7 +498,7 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             arcSetNumArchives(&pArcSettings->cArchivesCount,
                               TRUE);        // set
             fSave = FALSE;
-        break; }
+        break;
 
         case DID_UNDO:
         {
@@ -370,17 +516,17 @@ MRESULT arcArchivesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
+        }
+        break;
 
         case DID_DEFAULT:
-        {
             // set the default settings for this settings page
             arcSetDefaultSettings();
             arcSetNumArchives(&pArcSettings->cArchivesCount,
                               TRUE);        // set
             // update the display by calling the INIT callback
             pcnbp->pfncbInitPage(pcnbp, CBI_SET | CBI_ENABLE);
-        break; }
+        break;
 
         default:
             fSave = FALSE;
@@ -604,6 +750,24 @@ VOID arcForceNoArchiving(VOID)
     arcSaveSettings();
 }
 
+CONTROLDEF
+    ArcStatusIcon = CONTROLDEF_ICON(
+                            NULLHANDLE,     // replaced below
+                            ID_ICONDLG),
+    ArcStatusText = CONTROLDEF_TEXT_WORDBREAK(
+                            "1\n2\n3\n4",   // room for four lines, replaced below
+                            ID_XFDI_GENERICDLGTEXT,
+                            400);
+
+DLGHITEM dlgArcStatus[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(ROW_VALIGN_CENTER),
+                CONTROL_DEF(&ArcStatusIcon),
+                CONTROL_DEF(&ArcStatusText),
+        END_TABLE
+    };
+
 /*
  *@@ arcCheckIfBackupNeeded:
  *      this checks the system according to the settings
@@ -628,6 +792,7 @@ VOID arcForceNoArchiving(VOID)
  *
  *@@changed V0.9.4 (2000-07-22) [umoeller]: archiving wasn't always disabled if turned off completely; fixed
  *@@changed V0.9.13 (2001-06-14) [umoeller]: no longer using archive marker file, thanks Stefan Milcke
+ *@@changed V0.9.16 (2001-11-19) [umoeller]: now using dialog formatter for status window
  */
 
 BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
@@ -643,22 +808,27 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
     if (G_ArcSettings.ulArcFlags & ARCF_ENABLED)
     {
         HWND    hwndStatus = NULLHANDLE;
-        // BOOL    fShowWindow = TRUE;
         XSTRING strMsg;
 
         CHAR    lRestoredArchiveNumber = 0;
-        // BOOL    fWasJustRestored = FALSE;
 
         xstrInit(&strMsg, 300);
 
         if (G_ArcSettings.fShowStatus)
         {
-            hwndStatus = WinLoadDlg(HWND_DESKTOP, HWND_DESKTOP,
-                                    WinDefDlgProc,
-                                    cmnQueryNLSModuleHandle(FALSE),
-                                    ID_XFD_ARCHIVINGSTATUS,
-                                    NULL);
-            cmnSetControlsFont(hwndStatus, 1, 10000);
+            ArcStatusIcon.pcszText = (PCSZ)cmnQueryDlgIcon();
+
+            // format the status window
+            // V0.9.16 (2001-11-19) [umoeller]
+            dlghCreateDlg(&hwndStatus,
+                          NULLHANDLE,
+                          FCF_TITLEBAR | /* FCF_SYSMENU | */ FCF_DLGBORDER | FCF_NOBYTEALIGN,
+                          WinDefDlgProc,
+                          cmnGetString(ID_XFD_ARCHIVINGSTATUS),
+                          dlgArcStatus,
+                          ARRAYITEMCOUNT(dlgArcStatus),
+                          NULL,
+                          cmnQueryDefaultFont());
         }
 
         // changed V0.9.13 (2001-06-14) [umoeller]:
@@ -687,7 +857,6 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
 
                 if (G_ArcSettings.fShowStatus)
                 {
-
                     WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT,
                                       cmnGetString(ID_XSSI_ARCENABLED));
                     WinShowWindow(hwndStatus, TRUE);
@@ -809,7 +978,14 @@ BOOL arcCheckIfBackupNeeded(HWND hwndNotify,        // in: window to notify
                             0);
 
                 WinSetDlgItemText(hwndStatus, ID_XFDI_GENERICDLGTEXT, strMsg.psz);
-                WinShowWindow(hwndStatus, TRUE);
+                // WinShowWindow(hwndStatus, TRUE);
+                WinSetWindowPos(hwndStatus,
+                                HWND_TOP,
+                                50,
+                                50,
+                                0,
+                                0,
+                                SWP_MOVE | /* SWP_ACTIVATE | */ SWP_SHOW);
             }
         }
 

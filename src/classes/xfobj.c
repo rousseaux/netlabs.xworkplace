@@ -1840,7 +1840,8 @@ SOM_Scope ULONG  SOMLINK xfobj_wpConfirmObjectTitle(XFldObject *somSelf,
 
     // first of all, check whether the confirmation
     // dialogs have been replaced in the global settings;
-    if (pGlobalSettings->fReplFileExists)
+#ifndef __NOREPLACEFILEEXISTS__
+    if (cmnIsFeatureEnabled(ReplaceFileExists))
     {
         // yes: use our replacement (fileops.c)
         ulrc = fopsConfirmObjectTitle(somSelf,
@@ -1851,6 +1852,7 @@ SOM_Scope ULONG  SOMLINK xfobj_wpConfirmObjectTitle(XFldObject *somSelf,
                                       menuID);
     }
     else
+#endif
     {
         // global settings do not allow dialog
         // replacement: call default

@@ -1507,6 +1507,10 @@ BOOL fdrRemoveAwakeRootFolder(WPFolder *somSelf)
  *
  *      --  The path must not end in '\\'.
  *
+ *      Postconditions:
+ *
+ *      --  This trashes the string buffer.
+ *
  *@@added V0.9.16 (2001-10-25) [umoeller]
  */
 
@@ -1796,7 +1800,8 @@ VOID fdrCreateStandardGEAList(VOID)
             {
                 ".CLASSINFO",
                 ".LONGNAME",
-                ".TYPE"
+                ".TYPE",
+                ".ICON"
             };
 
         // check how much memory we need:
@@ -2195,6 +2200,7 @@ PCSZ FindBestDataFileClass(PFEA2LIST pFEA2List2,
                     PBYTE pbNext =   pszType
                                    + (*pusLengthThis);   // skip string
 
+                    // null-terminate the type string
                     CHAR c = *pbNext;
                     *pbNext = '\0';
                     // pszType now has the null-terminated type string:
@@ -2406,6 +2412,8 @@ WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
         // hidden in the macro code), somFindClass _will_
         // return the proper replacement classes.
 
+        _Pmpf((__FUNCTION__ ": checking %s", pszTitle));
+
         // decode the .CLASSINFO EA, which may give us a
         // class name and the OBJDATA buffer
         if (!(pcszClassName = DecodeClassInfo(pFEA2List2,
@@ -2424,6 +2432,9 @@ WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
             // we found a class name:
             // if this is "WPDataFile", return NULL instead so we
             // can still check for the default data file subclasses
+
+            _Pmpf(("  got .CLASSINFO %s", pcszClassName));
+
             if (    (s_ulWPDataFileLen == ulClassNameLen)
                  && (!memcmp(G_pcszWPDataFile, pcszClassName, s_ulWPDataFileLen))
                )
@@ -2431,15 +2442,22 @@ WPFileSystem* RefreshOrAwake(WPFolder *pFolder,
         }
 
         if (!pcszClassName)
-            // for _WPDataFile, we must run through the
+        {
+            // still NULL: this means we have no .CLASSINFO,
+            // or the .CLASSINFO specified "WPDataFile"...
+            // for WPDataFile, we must run through the
             // wpclsQueryInstanceType/Filter methods to
             // find if any WPDataFile subclass wants this
-            // object to be its own
+            // object to be its own (for example, .EXE files
+            // should be WPProgramFile instead)
             pcszClassName = FindBestDataFileClass(pFEA2List2,
                                                   // title (.LONGNAME or realname)
                                                   pszTitle);
-                    // this returns either _WPDataFile or the
+                    // this returns either WPDataFile or the
                     // class object of a subclass
+
+            _Pmpf(("  FindBestDataFileClass = %s", pcszClassName));
+        }
 
         if (!pcszClassName)
             // still nothing:
@@ -2677,7 +2695,7 @@ void _Optlink fntFindFiles(PTHREADINFO ptiMyself)
                 // was initially requested, and later on
                 // because of the explicit request below.
 
-                // 1) set buffer pointer
+                // 1) set buffer pointer for populate thread
                 pspt->pfb3 = (PFILEFINDBUF3)(pbCurrentBuffer + sizeof(EAOP2));
                 // 2) unset "buffer taken" event sem
                 DosResetEventSem(pspt->hevBufTaken, &ulPosted);
@@ -2830,11 +2848,11 @@ BOOL PopulateWithFileSystems(WPFolder *somSelf,
             {
                 // go block until find-files has set the buf ptr
                 // _Pmpf((__FUNCTION__ ": blocking on hevBufPtrChanged"));
-                if (!(arc = DosWaitEventSem(spt.hevBufPtrChanged,
+                if (!(arc = WinWaitEventSem(spt.hevBufPtrChanged,
                                             SEM_INDEFINITE_WAIT)))
                 {
                     // _Pmpf((__FUNCTION__ ": blocking on hmtxBuffer"));
-                    if (!(arc = DosRequestMutexSem(spt.hmtxBuffer,
+                    if (!(arc = WinRequestMutexSem(spt.hmtxBuffer,
                                                    SEM_INDEFINITE_WAIT)))
                     {
                         // OK, find-files released that sem:

@@ -100,6 +100,8 @@ PFNWP   G_pfnwpOrigStatic = NULL;
  *
  ********************************************************************/
 
+#ifndef __NOPAGEMAGE__
+
 /*
  *@@ LoadPageMageConfig:
  *
@@ -141,13 +143,13 @@ VOID SavePageMageConfig(PAGEMAGECONFIG* pPgmgConfig,
         //    a timer for this...
         //    after that, the daemon sends XDM_PAGEMAGECONFIG
         //    to the daemon.
-// #ifdef __PAGEMAGE__
         krnPostThread1ObjectMsg(T1M_PAGEMAGECONFIGDELAYED,
                                 (MPARAM)ulFlags,
                                 0);
-// #endif // __PAGEMAGE__
     }
 }
+
+#endif
 
 /* ******************************************************************
  *
@@ -155,7 +157,7 @@ VOID SavePageMageConfig(PAGEMAGECONFIG* pPgmgConfig,
  *
  ********************************************************************/
 
-// #ifdef __PAGEMAGE__
+#ifndef __NOPAGEMAGE__
 
 /*
  *@@ UpdateValueSet:
@@ -470,8 +472,6 @@ MRESULT pgmiPageMageGeneralItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *   PageMage Window page notebook functions (notebook.c)
  *
  ********************************************************************/
-
-// #ifdef __PAGEMAGE__
 
 /*
  *@@ pgmiPageMageWindowInitPage:
@@ -1325,4 +1325,4 @@ MRESULT pgmiPageMageColorsItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     return (mrc);
 }
 
-// #endif // __PAGEMAGE__
+#endif // __NOPAGEMAGE__

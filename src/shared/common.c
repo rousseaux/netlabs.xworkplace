@@ -58,6 +58,7 @@
 #define INCL_DOSERRORS
 
 #define INCL_WINSHELLDATA       // Prf* functions
+#define INCL_WINMESSAGEMGR
 #define INCL_WINWINDOWMGR
 #define INCL_WINFRAMEMGR        // SC_CLOSE etc.
 #define INCL_WINPOINTERS
@@ -156,6 +157,10 @@ extern BOOL            G_fTurboSettingsEnabled = FALSE;
 
 static HMODULE         G_hmodIconsDLL = NULLHANDLE;
 static CHAR            G_szLanguageCode[20] = "";
+
+static HPOINTER        G_hptrDlgIcon = NULLHANDLE;
+            // XWP icon for message boxes and stuff
+            // V0.9.16 (2001-11-10) [umoeller]
 
 static COUNTRYSETTINGS G_CountrySettings;                  // V0.9.6 (2000-11-12) [umoeller]
 static BOOL            G_fCountrySettingsLoaded = FALSE;
@@ -422,6 +427,9 @@ typedef struct _XWPENTITY
                **ppcszString;
 } XWPENTITY, *PXWPENTITY;
 
+PCSZ    G_pcszBldlevel = BLDLEVEL_VERSION,
+        G_pcszBldDate = __DATE__;
+
 XWPENTITY  G_aEntities[] =
     {
         "&xwp;", &ENTITY_XWORKPLACE,
@@ -429,6 +437,8 @@ XWPENTITY  G_aEntities[] =
         "&warpcenter;", &ENTITY_WARPCENTER,
         "&xcenter;", &ENTITY_XCENTER,
         "&xsd;", &ENTITY_XSHUTDOWN,
+        "&version;", &G_pcszBldlevel,
+        "&date;", &G_pcszBldDate
     };
 
 /*
@@ -531,7 +541,7 @@ BOOL LockStrings(VOID)
                  &G_cStringsInCache);
     }
     else
-        brc = !DosRequestMutexSem(G_hmtxStringsCache, SEM_INDEFINITE_WAIT);
+        brc = !WinRequestMutexSem(G_hmtxStringsCache, SEM_INDEFINITE_WAIT);
 
     return (brc);
 }
@@ -1644,51 +1654,6 @@ BOOL cmnDescribeKey(PSZ pszBuf,
 }
 
 /*
- *@@ cmnAddProductInfoMenuItem:
- *      adds the XWP product info menu item to the menu.
- *
- *@@added V0.9.9 (2001-04-05) [umoeller]
- */
-
-BOOL cmnAddProductInfoMenuItem(HWND hwndMenu)   // in: main menu with "Help" submenu
-{
-    BOOL brc = FALSE;
-    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-
-    if ((pGlobalSettings->DefaultMenuItems & CTXT_HELP) == 0)
-    {
-        MENUITEM mi;
-
-        #ifdef DEBUG_MENUS
-            _Pmpf(("  Inserting 'Product info'"));
-        #endif
-        // get handle to the WPObject's "Help" submenu in the
-        // the folder's popup menu
-        if (winhQueryMenuItem(hwndMenu,
-                              WPMENUID_HELP,
-                              TRUE,
-                              &mi))
-        {
-            // mi.hwndSubMenu now contains "Help" submenu handle,
-            // which we add items to now
-            winhInsertMenuSeparator(mi.hwndSubMenu,
-                                    MIT_END,
-                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
-            winhInsertMenuItem(mi.hwndSubMenu,
-                               MIT_END,
-                               (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_PRODINFO),
-                               cmnGetString(ID_XSSI_PRODUCTINFO),  // pszProductInfo
-                               MIS_TEXT, 0);
-            brc = TRUE;
-        }
-        // else: "Help" menu not found, but this can
-        // happen in Warp 4 folder menu bars
-    }
-
-    return (brc);
-}
-
-/*
  *@@ cmnAddCloseMenuItem:
  *      adds a "Close" menu item to the given menu.
  *
@@ -2156,7 +2121,7 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
         break;
 
         case SP_26CONFIGITEMS:
-            G_GlobalSettings.MenuCascadeMode = 0;
+            G_GlobalSettings.MenuCascadeMode = 1;       // changed V0.9.16 (2001-11-22) [umoeller]
             G_GlobalSettings.RemoveX = 1;
             G_GlobalSettings.AppdParam = 1;
             G_GlobalSettings.TemplatesOpenSettings = BM_INDETERMINATE;
@@ -2253,7 +2218,9 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
 #ifdef __REPLHANDLES__
             G_GlobalSettings.fReplaceHandles = 0; // added V0.9.5 (2000-08-14) [umoeller]
 #endif
-            G_GlobalSettings.fReplFileExists = 0;
+#ifdef __NOREPLACEFILEEXISTS__
+            G_GlobalSettings.__fReplFileExists = 0;
+#endif
             G_GlobalSettings.fReplDriveNotReady = 0;
             G_GlobalSettings.fTrashDelete = 0;
             G_GlobalSettings.fReplaceTrueDelete = 0; // added V0.9.3 (2000-04-26) [umoeller]
@@ -2347,6 +2314,10 @@ BOOL cmnIsFeatureEnabled(XWPFEATURE f)
 
 #ifndef __ALWAYSREPLACEICONPAGE__
         case ReplaceIconPage: return G_GlobalSettings.__fReplaceIconPage;
+#endif
+
+#ifndef __NOREPLACEFILEEXISTS__
+        case ReplaceFileExists: return G_GlobalSettings.__fReplFileExists;
 #endif
 
         // for turbo folders, return the setting that was initially
@@ -3157,10 +3128,12 @@ BOOL cmnEnableTrashCan(HWND hwndOwner,     // for message boxes
 BOOL cmnDeleteIntoDefTrashCan(WPObject *pObject)
 {
     BOOL brc = FALSE;
-    XWPTrashCan *pDefaultTrashCan = _xwpclsQueryDefaultTrashCan(_XWPTrashCan);
-    if (pDefaultTrashCan)
+    XWPTrashCan *pDefaultTrashCan;
+
+    if (pDefaultTrashCan = _xwpclsQueryDefaultTrashCan(_XWPTrashCan))
         brc = _xwpDeleteIntoTrashCan(pDefaultTrashCan,
                                      pObject);
+
     return (brc);
 }
 
@@ -3195,145 +3168,138 @@ APIRET cmnEmptyDefTrashCan(HAB hab,        // in: synchronously?
 
 /* ******************************************************************
  *
- *   Miscellaneae
+ *   Product info
  *
  ********************************************************************/
 
-/*
- *@@ cmnRegisterView:
- *      helper for the typical wpAddToObjUseList/wpRegisterView
- *      sequence.
- *
- *      With pUseItem, pass in a USEITEM structure which must be
- *      immediately followed by a VIEWITEM structure. The buffer
- *      pointed to by pUseItem must be valid while the view exists,
- *      so you best store this in the view's window words somewhere.
- *
- *      This function then calls wpRegisterView with the specified
- *      frame window handle and view title. Tilde chars (~) are
- *      removed from the view title so you can easily use the
- *      menu item's text.
- *
- *@@added V0.9.11 (2001-04-18) [umoeller]
- */
-
-BOOL cmnRegisterView(WPObject *somSelf,
-                     PUSEITEM pUseItem,     // in: USEITEM, immediately followed by VIEWITEM
-                     ULONG ulViewID,        // in: view ID == menu item ID
-                     HWND hwndFrame,        // in: frame window handle of new view (must be WC_FRAME)
-                     const char *pcszViewTitle) // in: view title for wpRegisterView (tilde chars are removed)
-{
-    BOOL        brc = FALSE;
-    PSZ         pszViewTitle = strdup(pcszViewTitle),
-                p = 0;
-
-    if (pszViewTitle)
-    {
-        PVIEWITEM   pViewItem = (PVIEWITEM)(((PBYTE)pUseItem) + sizeof(USEITEM));
-        // add the use list item to the object's use list
-        pUseItem->type    = USAGE_OPENVIEW;
-        pUseItem->pNext   = NULL;
-        memset(pViewItem, 0, sizeof(VIEWITEM));
-        pViewItem->view   = ulViewID;
-        pViewItem->handle = hwndFrame;
-        if (!_wpAddToObjUseList(somSelf, pUseItem))
-            cmnLog(__FILE__, __LINE__, __FUNCTION__,
-                   "_wpAddToObjUseList failed.");
-        else
-        {
-            // create view title: remove ~ char
-            p = strchr(pszViewTitle, '~');
-            if (p)
-                // found: remove that
-                strcpy(p, p+1);
-
-            brc = _wpRegisterView(somSelf,
-                                  hwndFrame,
-                                  pszViewTitle); // view title
-        }
-        free(pszViewTitle);
-    }
-
-    return (brc);
-}
+#ifndef __XWPLITE__
 
 /*
- *@@ cmnPlaySystemSound:
- *      this posts a msg to the XFolder Media thread to
- *      have it play a system sound. This does sufficient
- *      error checking and returns FALSE if playing the
- *      sound failed.
+ *@@ cmnAddProductInfoMenuItem:
+ *      adds the XWP product info menu item to the menu.
  *
- *      usIndex may be any of the MMSOUND_* values defined
- *      in helpers\syssound.h and shared\common.h.
- *
- *@@changed V0.9.3 (2000-04-10) [umoeller]: "Sounds" setting in XWPSetup wasn't respected; fixed
+ *@@added V0.9.9 (2001-04-05) [umoeller]
  */
 
-BOOL cmnPlaySystemSound(USHORT usIndex)
+BOOL cmnAddProductInfoMenuItem(HWND hwndMenu)   // in: main menu with "Help" submenu
 {
     BOOL brc = FALSE;
     PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
-    if (pGlobalSettings->fXSystemSounds)    // V0.9.3 (2000-04-10) [umoeller]
-    {
-        // PCKERNELGLOBALS pKernelGlobals = krnQueryGlobals();
 
-        // check if the XWPMedia subsystem is working
-        if (xmmQueryStatus() == MMSTAT_WORKING)
+    if ((pGlobalSettings->DefaultMenuItems & CTXT_HELP) == 0)
+    {
+        MENUITEM mi;
+
+        #ifdef DEBUG_MENUS
+            _Pmpf(("  Inserting 'Product info'"));
+        #endif
+        // get handle to the WPObject's "Help" submenu in the
+        // the folder's popup menu
+        if (winhQueryMenuItem(hwndMenu,
+                              WPMENUID_HELP,
+                              TRUE,
+                              &mi))
         {
-            brc = xmmPostMediaMsg(XMM_PLAYSYSTEMSOUND,
-                                  (MPARAM)usIndex,
-                                  MPNULL);
+            // mi.hwndSubMenu now contains "Help" submenu handle,
+            // which we add items to now
+            winhInsertMenuSeparator(mi.hwndSubMenu,
+                                    MIT_END,
+                                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+            winhInsertMenuItem(mi.hwndSubMenu,
+                               MIT_END,
+                               (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_PRODINFO),
+                               cmnGetString(ID_XSSI_PRODUCTINFO),  // pszProductInfo
+                               MIS_TEXT, 0);
+            brc = TRUE;
         }
+        // else: "Help" menu not found, but this can
+        // happen in Warp 4 folder menu bars
     }
 
     return (brc);
 }
 
-/*
- *@@ cmnIsADesktop:
- *      returns TRUE if somSelf is a WPDesktop
- *      instance.
- *
- *@@added V0.9.14 (2001-07-28) [umoeller]
- */
+#endif
 
-BOOL cmnIsADesktop(WPObject *somSelf)
-{
-    return (_somIsA(somSelf, _WPDesktop));
-}
+#define INFO_WIDTH  400
 
-/*
- *@@ cmnQueryActiveDesktop:
- *      wrapper for wpclsQueryActiveDesktop. This
- *      has been implemented so that this method
- *      gets called only once (speed). Also, this
- *      saves us from including wpdesk.h in every
- *      source file.
- *
- *@@added V0.9.3 (2000-04-17) [umoeller]
- */
 
-WPObject* cmnQueryActiveDesktop(VOID)
-{
-    return (_wpclsQueryActiveDesktop(_WPDesktop));
-}
+CONTROLDEF
+    ProductInfoBitmap = CONTROLDEF_BITMAP(
+                            NULLHANDLE,     // replaced with HBITMAP below
+                            ID_XFD_PRODLOGO),
 
-/*
- *@@ cmnQueryActiveDesktopHWND:
- *      wrapper for wpclsQueryActiveDesktopHWND. This
- *      has been implemented so that this method
- *      gets called only once (speed). Also, this
- *      saves us from including wpdesk.h in every
- *      source file.
- *
- *@@added V0.9.3 (2000-04-17) [umoeller]
- */
+#ifdef __XWPLITE__
+    ProductInfoText1 =
+        {
+            WC_STATIC,
+            "eComStation Desktop Version 4.5",
+            WS_VISIBLE | SS_TEXT | DT_LEFT | DT_TOP | DT_WORDBREAK,
+            -1,
+            "9.WarpSans Bold",
+            0,
+            {INFO_WIDTH, -1},
+            COMMON_SPACING
+        },
+    ProductInfoText2 = CONTROLDEF_TEXT_WORDBREAK(
+                            "(C) Copyright 1992, 1996 IBM Corporation. All rights reserved.\n"
+                            "(C) Copyright 2001 Serenity Systems International. All rights reserved.",
+                            -1,
+                            INFO_WIDTH),
+#endif
+    ProductInfoText3 = CONTROLDEF_TEXT_WORDBREAK(
+                            NULL,
+                            ID_XSDI_INFO_STRING,
+                            INFO_WIDTH),
 
-HWND cmnQueryActiveDesktopHWND(VOID)
-{
-    return (_wpclsQueryActiveDesktopHWND(_WPDesktop));
-}
+    OKButton = CONTROLDEF_DEFPUSHBUTTON(
+                            LOAD_STRING,
+                            ID_XSSI_DLG_OK,
+                            100,
+                            30);
+
+DLGHITEM dlgProductInfo[] =
+    {
+        START_TABLE,            // root table, required
+            START_ROW(ROW_VALIGN_BOTTOM),
+                CONTROL_DEF(&ProductInfoBitmap),
+                START_TABLE,
+#ifdef __XWPLITE__
+                    START_ROW(0),
+                        CONTROL_DEF(&ProductInfoText1),
+                    START_ROW(0),
+                        CONTROL_DEF(&ProductInfoText2),
+#endif
+                    START_ROW(0),
+                        CONTROL_DEF(&ProductInfoText3),
+                    START_ROW(0),
+                        CONTROL_DEF(&OKButton),
+                END_TABLE,
+        END_TABLE
+    };
+
+/* DLGTEMPLATE ID_XFD_PRODINFO LOADONCALL MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "XWorkplace Product Information", ID_XFD_PRODINFO, 20, 8, 266,
+            129, FS_SCREENALIGN, FCF_SYSMENU | FCF_TITLEBAR
+    BEGIN
+        GROUPBOX        "XWorkplace %a", ID_XFDI_XFLDVERSION, 6, 24, 254, 99
+        LTEXT           "OpenSource Workplace Shell enhancer. Consider this "
+                        "your next OS/2 Warp upgrade.", -1, 16, 90, 139, 17,
+                        DT_WORDBREAK
+        LTEXT           "XWorkplace is a Netlabs project. See http://xworkpl"
+                        "ace.netlabs.org for details.", -1, 16, 74, 139, 17,
+                        DT_WORDBREAK
+        DEFPUSHBUTTON   "~OK", DID_OK, 5, 6, 60, 12
+        PUSHBUTTON      "Open User Guide", ID_XLD_CLASSLIST, 154, 6, 105, 12,
+                        BS_HELP | BS_NOPOINTERFOCUS
+        CONTROL         "", ID_XLDI_TEXT2, 15, 30, 235, 40, WC_MLE,
+                        MLS_READONLY | MLS_WORDWRAP | MLS_VSCROLL | WS_GROUP |
+                        WS_TABSTOP | WS_VISIBLE
+        CONTROL         "", ID_XFD_PRODLOGO, 164, 76, 86, 38, WC_STATIC,
+                        SS_FGNDFRAME | WS_GROUP | WS_VISIBLE
+    END
+END */
 
 /*
  * PRODUCTINFODATA:
@@ -3354,7 +3320,7 @@ typedef struct _PRODUCTINFODATA
  *@@added V0.9.5 (2000-10-07) [umoeller]
  */
 
-MRESULT EXPENTRY cmn_fnwpProductInfo(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
+/* MRESULT EXPENTRY cmn_fnwpProductInfo(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
     MRESULT mrc = 0;
 
@@ -3452,7 +3418,7 @@ MRESULT EXPENTRY cmn_fnwpProductInfo(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM
         mrc = cmn_fnwpDlgWithHelp(hwndDlg, msg, mp1, mp2);
 
     return (mrc);
-}
+} */
 
 /*
  *@@ cmnShowProductInfo:
@@ -3468,20 +3434,15 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
                         ULONG ulSound)      // in: sound intex to play
 {
     // advertise for myself
-    XSTRING strGPLInfo;
-    LONG    lBackClr = CLR_WHITE;
-    HWND hwndInfo = WinLoadDlg(HWND_DESKTOP,
-                               hwndOwner,
-                               cmn_fnwpProductInfo,
-                               cmnQueryNLSModuleHandle(FALSE),
-                               ID_XFD_PRODINFO,
-                               NULL),
-         hwndTextView;
+    HPS     hps;
+    HBITMAP hbmLogo = NULLHANDLE;
+    HWND    hwndInfo;
+    XSTRING strInfo;
 
-    xstrInit(&strGPLInfo, 0);
+    xstrInit(&strInfo, 0);
 
     // text view (GPL info)
-    txvRegisterTextView(WinQueryAnchorBlock(hwndInfo));
+    /* txvRegisterTextView(WinQueryAnchorBlock(hwndInfo));
     hwndTextView = txvReplaceWithTextView(hwndInfo,
                                           ID_XLDI_TEXT2,
                                           WS_VISIBLE | WS_TABSTOP,
@@ -3493,30 +3454,196 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
                     sizeof(ULONG),
                     &lBackClr);
 
-    cmnSetControlsFont(hwndInfo, 1, 10000);
+    cmnSetControlsFont(hwndInfo, 1, 10000); */
 
     cmnPlaySystemSound(ulSound);
 
     // load and convert info text
     cmnGetMessage(NULL, 0,
-                  &strGPLInfo,
+                  &strInfo,
                   140);
-    /* pszGPLInfo = strdup(szGPLInfo);
-    txvStripLinefeeds(&pszGPLInfo, 4); */
-    WinSetWindowText(hwndTextView, strGPLInfo.psz);
+
 
     // version string
-    winhSetWindowText(WinWindowFromID(hwndInfo, ID_XFDI_XFLDVERSION),
+    /* winhSetWindowText(WinWindowFromID(hwndInfo, ID_XFDI_XFLDVERSION),
                       "XWorkplace V%s (%s)",
                       BLDLEVEL_VERSION,
                       __DATE__);
 
-    cmnSetDlgHelpPanel(0);
-    winhCenterWindow(hwndInfo);
-    WinProcessDlg(hwndInfo);
-    WinDestroyWindow(hwndInfo);
+    cmnSetDlgHelpPanel(0); */
 
-    xstrClear(&strGPLInfo);
+    if (hps = WinGetPS(HWND_DESKTOP))
+    {
+        hbmLogo = GpiLoadBitmap(hps,
+                                cmnQueryMainResModuleHandle(),
+                                ID_XWPBIGLOGO,
+                                0, 0); // no stretch
+        ProductInfoBitmap.pcszText = (PCSZ)hbmLogo;
+        WinReleasePS(hps);
+    }
+
+    cmnLoadDialogStrings(dlgProductInfo,
+                         ARRAYITEMCOUNT(dlgProductInfo));
+
+    ProductInfoText3.pcszText = strInfo.psz;
+
+    if (!dlghCreateDlg(&hwndInfo,
+                       hwndOwner,
+                       FCF_TITLEBAR | FCF_SYSMENU | FCF_DLGBORDER | FCF_NOBYTEALIGN,
+                       WinDefDlgProc,
+                       "Product Information",    // @@todo localize
+                       dlgProductInfo,
+                       ARRAYITEMCOUNT(dlgProductInfo),
+                       NULL,
+                       cmnQueryDefaultFont()))
+    {
+        winhCenterWindow(hwndInfo);
+        WinProcessDlg(hwndInfo);
+        WinDestroyWindow(hwndInfo);
+    }
+
+    if (hbmLogo)
+        GpiDeleteBitmap(hbmLogo);
+    xstrClear(&strInfo);
+}
+
+/* ******************************************************************
+ *
+ *   Miscellaneae
+ *
+ ********************************************************************/
+
+/*
+ *@@ cmnRegisterView:
+ *      helper for the typical wpAddToObjUseList/wpRegisterView
+ *      sequence.
+ *
+ *      With pUseItem, pass in a USEITEM structure which must be
+ *      immediately followed by a VIEWITEM structure. The buffer
+ *      pointed to by pUseItem must be valid while the view exists,
+ *      so you best store this in the view's window words somewhere.
+ *
+ *      This function then calls wpRegisterView with the specified
+ *      frame window handle and view title. Tilde chars (~) are
+ *      removed from the view title so you can easily use the
+ *      menu item's text.
+ *
+ *@@added V0.9.11 (2001-04-18) [umoeller]
+ */
+
+BOOL cmnRegisterView(WPObject *somSelf,
+                     PUSEITEM pUseItem,     // in: USEITEM, immediately followed by VIEWITEM
+                     ULONG ulViewID,        // in: view ID == menu item ID
+                     HWND hwndFrame,        // in: frame window handle of new view (must be WC_FRAME)
+                     const char *pcszViewTitle) // in: view title for wpRegisterView (tilde chars are removed)
+{
+    BOOL        brc = FALSE;
+    PSZ         pszViewTitle;
+
+    if (pszViewTitle = strdup(pcszViewTitle))
+    {
+        PVIEWITEM   pViewItem = (PVIEWITEM)(((PBYTE)pUseItem) + sizeof(USEITEM));
+        // add the use list item to the object's use list
+        pUseItem->type    = USAGE_OPENVIEW;
+        pUseItem->pNext   = NULL;
+        memset(pViewItem, 0, sizeof(VIEWITEM));
+        pViewItem->view   = ulViewID;
+        pViewItem->handle = hwndFrame;
+        if (!_wpAddToObjUseList(somSelf, pUseItem))
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "_wpAddToObjUseList failed.");
+        else
+        {
+            // create view title: remove ~ char
+            PSZ p = strchr(pszViewTitle, '~');
+            if (p)
+                // found: remove that
+                strcpy(p, p+1);
+
+            brc = _wpRegisterView(somSelf,
+                                  hwndFrame,
+                                  pszViewTitle); // view title
+        }
+        free(pszViewTitle);
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ cmnPlaySystemSound:
+ *      this posts a msg to the XFolder Media thread to
+ *      have it play a system sound. This does sufficient
+ *      error checking and returns FALSE if playing the
+ *      sound failed.
+ *
+ *      usIndex may be any of the MMSOUND_* values defined
+ *      in helpers\syssound.h and shared\common.h.
+ *
+ *@@changed V0.9.3 (2000-04-10) [umoeller]: "Sounds" setting in XWPSetup wasn't respected; fixed
+ */
+
+BOOL cmnPlaySystemSound(USHORT usIndex)
+{
+    BOOL brc = FALSE;
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+    if (pGlobalSettings->fXSystemSounds)    // V0.9.3 (2000-04-10) [umoeller]
+    {
+        // check if the XWPMedia subsystem is working
+        if (xmmQueryStatus() == MMSTAT_WORKING)
+        {
+            brc = xmmPostMediaMsg(XMM_PLAYSYSTEMSOUND,
+                                  (MPARAM)usIndex,
+                                  MPNULL);
+        }
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ cmnIsADesktop:
+ *      returns TRUE if somSelf is a WPDesktop
+ *      instance.
+ *
+ *@@added V0.9.14 (2001-07-28) [umoeller]
+ */
+
+BOOL cmnIsADesktop(WPObject *somSelf)
+{
+    return (_somIsA(somSelf, _WPDesktop));
+}
+
+/*
+ *@@ cmnQueryActiveDesktop:
+ *      wrapper for wpclsQueryActiveDesktop. This
+ *      has been implemented so that this method
+ *      gets called only once (speed). Also, this
+ *      saves us from including wpdesk.h in every
+ *      source file.
+ *
+ *@@added V0.9.3 (2000-04-17) [umoeller]
+ */
+
+WPObject* cmnQueryActiveDesktop(VOID)
+{
+    return (_wpclsQueryActiveDesktop(_WPDesktop));
+}
+
+/*
+ *@@ cmnQueryActiveDesktopHWND:
+ *      wrapper for wpclsQueryActiveDesktopHWND. This
+ *      has been implemented so that this method
+ *      gets called only once (speed). Also, this
+ *      saves us from including wpdesk.h in every
+ *      source file.
+ *
+ *@@added V0.9.3 (2000-04-17) [umoeller]
+ */
+
+HWND cmnQueryActiveDesktopHWND(VOID)
+{
+    return (_wpclsQueryActiveDesktopHWND(_WPDesktop));
 }
 
 const char *G_apcszExtensions[]
@@ -4039,8 +4166,8 @@ HAPP cmnRunCommandLine(HWND hwndOwner,              // in: owner window or NULLH
 
                 if (arc != NO_ERROR)
                 {
-                    PSZ pszError = doshQuerySysErrorMsg(arc);
-                    if (pszError)
+                    PSZ pszError;
+                    if (pszError = doshQuerySysErrorMsg(arc))
                     {
                         cmnMessageBox(hwndOwner,
                                       pszCommand,
@@ -4147,6 +4274,24 @@ VOID cmnSetControlsFont(HWND hwnd,
 }
 
 /*
+ *@@ cmnQueryDlgIcon:
+ *      returns the handle of the XWP dialog icon,
+ *      which is used in message boxes and such.
+ *      This is loaded once and used forevermore.
+ *
+ *@@added V0.9.16 (2001-11-10) [umoeller]
+ */
+
+HPOINTER cmnQueryDlgIcon(VOID)
+{
+    if (!G_hptrDlgIcon)
+        G_hptrDlgIcon = WinLoadPointer(HWND_DESKTOP,
+                                       cmnQueryMainResModuleHandle(),
+                                       ID_ICONDLG);
+    return (G_hptrDlgIcon);
+}
+
+/*
  *@@ cmnMessageBox:
  *      this is the generic function for displaying XFolder
  *      message boxes. This is very similar to WinMessageBox,
@@ -4195,16 +4340,12 @@ ULONG cmnMessageBox(HWND hwndOwner,     // in: owner
     // set our extended exception handler
     TRY_LOUD(excpt1)
     {
-        static hptrIcon = NULLHANDLE;
+        static fStringsLoaded = FALSE;
         static MSGBOXSTRINGS Strings;
 
-        if (!hptrIcon)
+        if (!fStringsLoaded)
         {
-            // first call:
-            hptrIcon = WinLoadPointer(HWND_DESKTOP,
-                                      cmnQueryMainResModuleHandle(),
-                                      ID_ICONDLG);
-            // load all the strings too
+            // first call: load all the strings
             Strings.pcszYes = cmnGetString(ID_XSSI_DLG_YES);
             Strings.pcszNo = cmnGetString(ID_XSSI_DLG_NO);
             Strings.pcszOK = cmnGetString(ID_XSSI_DLG_OK);
@@ -4219,7 +4360,7 @@ ULONG cmnMessageBox(HWND hwndOwner,     // in: owner
         // now using new dynamic dialog routines
         // V0.9.13 (2001-06-23) [umoeller]
         ulrc = dlghMessageBox(hwndOwner,
-                              hptrIcon,
+                              cmnQueryDlgIcon(),
                               pcszTitle,
                               pcszMessage,
                               flStyle,

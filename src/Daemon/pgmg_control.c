@@ -1252,6 +1252,7 @@ MRESULT ClientButtonClick(HWND hwnd,
  *      implementation for WM_DESTROY in fnwpPageMageClient.
  *
  *@@added V0.9.7 (2001-01-18) [umoeller]
+ *@@changed V0.9.16 (2001-11-21) [pr]: fixed broken repaint after destroy
  */
 
 VOID ClientDestroy(PPAGEMAGECLIENTDATA pClientData)
@@ -1263,6 +1264,7 @@ VOID ClientDestroy(PPAGEMAGECLIENTDATA pClientData)
             // this was missing V0.9.7 (2001-01-18) [umoeller], geese!
     GpiDestroyPS(pClientData->hpsMem);
     DevCloseDC(pClientData->hdcMem);
+    memset(pClientData, 0, sizeof(PAGEMAGECLIENTDATA)); // V0.9.16 (2001-11-21) [pr]: this was missing!
 }
 
 /*

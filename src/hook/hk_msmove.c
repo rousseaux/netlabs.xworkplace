@@ -38,21 +38,20 @@
 
 #include <stdio.h>
 
-// #include "setup.h"
+// PMPRINTF in hooks is a tricky issue;
+// avoid this unless this is really needed.
+// If enabled, NEVER give the PMPRINTF window
+// the focus, or your system will hang solidly...
+#define DONTDEBUGATALL
+#define DONT_REPLACE_MALLOC         // in case mem debug is enabled
+#include "setup.h"
 
 #include "helpers\undoc.h"
 
 #include "hook\xwphook.h"
 #include "hook\hook_private.h"          // private hook and daemon definitions
 
-// PMPRINTF in hooks is a tricky issue;
-// avoid this unless this is really needed.
-// If enabled, NEVER give the PMPRINTF window
-// the focus, or your system will hang solidly...
-
-#define DONTDEBUGATALL
-#define DONT_REPLACE_MALLOC         // in case mem debug is enabled
-#include "setup.h"
+#pragma hdrstop
 
 /******************************************************************
  *
@@ -255,8 +254,10 @@ VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hoo
 {
     BOOL    fStopTimers = FALSE;    // setting this to TRUE will stop timers
 
+#ifndef __NOPAGEMAGE__
     if (G_HookData.fDisableMouseSwitch)
         return;
+#endif
 
     do      // just a do for breaking, no loop
     {

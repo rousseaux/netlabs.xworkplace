@@ -45,6 +45,8 @@
 #include "hook\hook_private.h"
 #include "hook\xwpdaemn.h"              // PageMage and daemon declarations
 
+#pragma hdrstop
+
 /* ******************************************************************
  *
  *   Global variables

@@ -38,21 +38,26 @@
 
 #include <stdio.h>
 
-// #include "setup.h"
+// PMPRINTF in hooks is a tricky issue;
+// avoid this unless this is really needed.
+// If enabled, NEVER give the PMPRINTF window
+// the focus, or your system will hang solidly...
+#define DONTDEBUGATALL
+#define DONT_REPLACE_MALLOC         // in case mem debug is enabled
+#include "setup.h"
 
 #include "helpers\undoc.h"
 
 #include "hook\xwphook.h"
 #include "hook\hook_private.h"          // private hook and daemon definitions
 
-// PMPRINTF in hooks is a tricky issue;
-// avoid this unless this is really needed.
-// If enabled, NEVER give the PMPRINTF window
-// the focus, or your system will hang solidly...
+#pragma hdrstop
 
-#define DONTDEBUGATALL
-#define DONT_REPLACE_MALLOC         // in case mem debug is enabled
-#include "setup.h"
+/******************************************************************
+ *
+ *  Input hook -- character
+ *
+ ******************************************************************/
 
 /*
  *@@ WMChar_FunctionKeys:
@@ -411,6 +416,7 @@ BOOL WMChar_Main(PQMSG pqmsg)       // in/out: from hookPreAccelHook
                 }
             }
 
+#ifndef __NOPAGEMAGE__
             // PageMage hotkeys:
             if (!brc)       // message not swallowed yet:
             {
@@ -451,6 +457,7 @@ BOOL WMChar_Main(PQMSG pqmsg)       // in/out: from hookPreAccelHook
                     }
                 }
             } // end if (!brc)       // message not swallowed yet
+#endif
 
             DosReleaseMutexSem(G_hmtxGlobalHotkeys);
         } // end if WinRequestMutexSem

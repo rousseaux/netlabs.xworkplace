@@ -361,8 +361,9 @@ FOPSRET fopsValidateObjOperation(ULONG ulOperation,        // in: operation
                 frc = FOPSERR_MOVE2TRASH_NOT_DELETABLE;
                 fPromptUser = FALSE;
             }
-            else if (!trshIsOnSupportedDrive(pObject))
-                frc = FOPSERR_TRASHDRIVENOTSUPPORTED;
+            else
+                frc = trshIsOnSupportedDrive(pObject);
+                            // V0.9.16 (2001-11-10) [umoeller]
         break;
 
         case XFT_TRUEDELETE:
@@ -429,12 +430,10 @@ FOPSRET fopsAddObjectToTask(HFILETASKLIST hftl,      // in: file-task-list handl
     FOPSRET frc = NO_ERROR;
     PFILETASKLIST pftl = (PFILETASKLIST)hftl;
 
-    frc = fopsValidateObjOperation(pftl->ulOperation,
-                                   pftl->pfnErrorCallback,
-                                   pObject,
-                                   &pftl->ulIgnoreSubsequent);
-
-    if (frc == NO_ERROR)
+    if (!(frc = fopsValidateObjOperation(pftl->ulOperation,
+                                         pftl->pfnErrorCallback,
+                                         pObject,
+                                         &pftl->ulIgnoreSubsequent)))
         // proceed:
         if (!lstAppendItem(&pftl->llObjects, pObject))
             // error:
@@ -517,21 +516,20 @@ FOPSRET fopsStartTask(HFILETASKLIST hftl,
                              0,
                              0))
         {
-            hwndNotify = WinCreateWindow(HWND_OBJECT,
-                                         "XWPFileOperationsNotify",
-                                         (PSZ)"",
-                                         0,
-                                         0,0,0,0,
-                                         0,
-                                         HWND_BOTTOM,
-                                         0,
-                                         0,
-                                         NULL);
-            if (!hwndNotify)
+            if (!(hwndNotify = WinCreateWindow(HWND_OBJECT,
+                                               "XWPFileOperationsNotify",
+                                               (PSZ)"",
+                                               0,
+                                               0,0,0,0,
+                                               0,
+                                               HWND_BOTTOM,
+                                               0,
+                                               0,
+                                               NULL)))
                 frc = FOPSERR_START_FAILED;
         }
 
-    if (frc == NO_ERROR)
+    if (!frc)
     {
         // have File thread process this list;
         // this calls fopsFileThreadProcessing below

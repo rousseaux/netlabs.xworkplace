@@ -114,9 +114,9 @@
 #include <wpfsys.h>
 
 /* ******************************************************************
- *                                                                  *
- *   Global variables                                               *
- *                                                                  *
+ *
+ *   Global variables
+ *
  ********************************************************************/
 
 /*
@@ -135,9 +135,9 @@ typedef struct _INVOKESETUPSTRING
 } INVOKESETUPSTRING, *PINVOKESETUPSTRING;
 
 /* ******************************************************************
- *                                                                  *
- *   Setup string thread                                            *
- *                                                                  *
+ *
+ *   Setup string thread
+ *
  ********************************************************************/
 
 /*
@@ -202,9 +202,9 @@ void _Optlink xwstrfntSetupThread(PTHREADINFO pti)
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XWPString notebook callbacks (shared\notebook.c)               *
- *                                                                  *
+ *
+ *   XWPString notebook callbacks (shared\notebook.c)
+ *
  ********************************************************************/
 
 /*
@@ -384,9 +384,9 @@ MRESULT xwstrStringItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 }
 
 /* ******************************************************************
- *                                                                  *
- *   XWPString Instance Methods                                     *
- *                                                                  *
+ *
+ *   XWPString Instance Methods
+ *
  ********************************************************************/
 
 /*
@@ -1499,9 +1499,9 @@ SOM_Scope MRESULT  SOMLINK xwstr_wpDrop(XWPString *somSelf,
 
 
 /* ******************************************************************
- *                                                                  *
- *   XWPString Class Methods                                        *
- *                                                                  *
+ *
+ *   XWPString Class Methods
+ *
  ********************************************************************/
 
 /*

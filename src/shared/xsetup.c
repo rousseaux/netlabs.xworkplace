@@ -192,9 +192,9 @@ static FEATURESITEM G_FeatureItemsList[] =
 #endif
             ID_XCSI_XWPHOOK, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_GLOBALHOTKEYS, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-// #ifdef __PAGEMAGE__
+#ifndef __NOPAGEMAGE__
             ID_XCSI_PAGEMAGE, ID_XCSI_MOUSEKEYBOARDFEATURES, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
-// #endif
+#endif
 
             // startup/shutdown features
             ID_XCSI_STARTSHUTFEATURES, 0, 0, NULL,
@@ -207,7 +207,9 @@ static FEATURESITEM G_FeatureItemsList[] =
             ID_XCSI_EXTASSOCS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             // ID_XCSI_CLEANUPINIS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
                     // removed for now V0.9.12 (2001-05-15) [umoeller]
+#ifndef __NOREPLACEFILEEXISTS__
             ID_XCSI_REPLFILEEXISTS, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
+#endif
             ID_XCSI_REPLDRIVENOTREADY, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_XWPTRASHCAN, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL,
             ID_XCSI_REPLACEDELETE, ID_XCSI_FILEOPERATIONS, WS_VISIBLE | BS_AUTOCHECKBOX, NULL
@@ -293,9 +295,11 @@ static STANDARDOBJECT
             &XFOLDER_WPSID, &G_pcszXFldWPS, "<WP_CONFIG>",
                     "",
                     200, 0,
+#ifndef __NOOS2KERNEL__
             &XFOLDER_KERNELID, &G_pcszXFldSystem, "<WP_CONFIG>",
                     "",
                     201, 0,
+#endif
             &XFOLDER_SCREENID, &G_pcszXWPScreen, "<WP_CONFIG>",
                     "",
                     203, 0,
@@ -566,9 +570,11 @@ static XWPCLASSITEM G_aClasses[] =
         &G_pcszXWPSetup, NULL,
             (REQ)-1, 0,
             1260,
+#ifndef __NOOS2KERNEL__
         &G_pcszXFldSystem, NULL,
             NULL, 0,
             1261,
+#endif
         &G_pcszXFldWPS, NULL,
             (REQ)-1, 0,
             1262,
@@ -1482,6 +1488,8 @@ VOID ShowClassesDlg(HWND hwndOwner)
  *
  ********************************************************************/
 
+#ifndef __XWPLITE__
+
 /*
  *@@ XWPSETUPLOGODATA:
  *      window data structure for XWPSetup "Logo" page.
@@ -1615,6 +1623,8 @@ BOOL setLogoMessages(PCREATENOTEBOOKPAGE pcnbp,
 
     return (brc);
 }
+
+#endif
 
 /* ******************************************************************
  *
@@ -1864,8 +1874,10 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLHANDLES,
                 pGlobalSettings->fReplaceHandles);
 #endif
+#ifndef __NOREPLACEFILEEXISTS__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLFILEEXISTS,
-                pGlobalSettings->fReplFileExists);
+                pGlobalSettings->__fReplFileExists);
+#endif
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLDRIVENOTREADY,
                 pGlobalSettings->fReplDriveNotReady);
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_XWPTRASHCAN,
@@ -2155,10 +2167,11 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     ulNotifyMsg = 208;
             break;
 
+#ifndef __NOREPLACEFILEEXISTS__
             case ID_XCSI_REPLFILEEXISTS:
-                pGlobalSettings->fReplFileExists = precc->usCheckState;
+                pGlobalSettings->__fReplFileExists = precc->usCheckState;
             break;
-
+#endif
             case ID_XCSI_REPLDRIVENOTREADY:
                 pGlobalSettings->fReplDriveNotReady = precc->usCheckState;
             break;
@@ -2255,7 +2268,9 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
     #ifdef __REPLHANDLES__
             pGlobalSettings->fReplaceHandles = pGSBackup->fReplaceHandles;
     #endif
-            pGlobalSettings->fReplFileExists = pGSBackup->fReplFileExists;
+#ifndef __NOREPLACEFILEEXISTS__
+            pGlobalSettings->__fReplFileExists = pGSBackup->__fReplFileExists;
+#endif
             pGlobalSettings->fReplDriveNotReady = pGSBackup->fReplDriveNotReady;
             cEnableTrashCan = pGSBackup->fTrashDelete;
             pGlobalSettings->fReplaceTrueDelete = pGSBackup->fReplaceTrueDelete;

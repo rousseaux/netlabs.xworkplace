@@ -43,7 +43,7 @@
  *      XFolder's subclassed frame window proc is called
  *      fnwpSubclassedFolderFrame. Take a look at it, it's one of
  *      the most interesting parts of XWorkplace. It handles status
- *      bars (which are frame controls), tree view auto-rolling,
+ *      bars (which are frame controls), tree view auto-scrolling,
  *      special menu features, the "folder content" menus and more.
  *
  *      This gives us the following hierarchy of window procedures:
@@ -96,7 +96,7 @@
  */
 
 /*
- *      Copyright (C) 1997-2000 Ulrich M”ller.
+ *      Copyright (C) 1997-2001 Ulrich M”ller.
  *      This file is part of the XWorkplace source package.
  *      XWorkplace is free software; you can redistribute it and/or modify
  *      it under the terms of the GNU General Public License as published
@@ -126,6 +126,7 @@
 #define INCL_DOSPROCESS
 #define INCL_DOSSEMAPHORES
 #define INCL_DOSERRORS
+
 #define INCL_WINWINDOWMGR
 #define INCL_WINMESSAGEMGR
 #define INCL_WINFRAMEMGR
@@ -157,6 +158,7 @@
 #include "helpers\cnrh.h"               // container helper routines
 #include "helpers\except.h"             // exception handling
 #include "helpers\linklist.h"           // linked list helper routines
+#include "helpers\standards.h"          // some standard macros
 #include "helpers\winh.h"               // PM helper routines
 
 // SOM headers which don't crash with prec. header files
@@ -222,55 +224,56 @@ VOID EXPENTRY fdr_SendMsgHook(HAB hab,
      *
      */
 
-    if (psmh->msg == WM_CREATE)
+    // re-register the WPFolder window class if we haven't
+    // done this yet; this is needed because per default,
+    // the WPS "wpFolder window" class apparently uses
+    // QWL_USER for other purposes...
+
+    if (    (psmh->msg == WM_CREATE)
+         && (!G_WPFolderWinClassExtended)
+       )
     {
-        // re-register the WPFolder window class if we haven't
-        // done this yet; this is needed because per default,
-        // the WPS "wpFolder window" class apparently uses
-        // QWL_USER for other purposes...
-        if (!G_WPFolderWinClassExtended)
+        CHAR    szClass[300];
+
+        // _Pmpf(("fdr_SendMsgHook: checking WM_CREATE window class"));
+
+        WinQueryClassName(psmh->hwnd,
+                          sizeof(szClass),
+                          szClass);
+
+        // _Pmpf(("    got %s", szClass));
+
+        if (!strcmp(szClass, "wpFolder window"))
         {
-            CHAR    szClass[300];
-
-            // _Pmpf(("fdr_SendMsgHook: checking WM_CREATE window class"));
-
-            WinQueryClassName(psmh->hwnd,
-                              sizeof(szClass),
-                              szClass);
-
-            // _Pmpf(("    got %s", szClass));
-
-            if (strcmp(szClass, "wpFolder window") == 0)
+            // it's a folder:
+            // OK, we have the first WM_CREATE for a folder window
+            // after Desktop startup now...
+            if (WinQueryClassInfo(hab,
+                                  "wpFolder window",
+                                  &G_WPFolderWinClassInfo))
             {
-                // it's a folder:
-                // OK, we have the first WM_CREATE for a folder window
-                // after Desktop startup now...
-                if (WinQueryClassInfo(hab,
-                                      "wpFolder window",
-                                      &G_WPFolderWinClassInfo))
+                // _Pmpf(("    wpFolder cbWindowData: %d", G_WPFolderWinClassInfo.cbWindowData));
+                // _Pmpf(("    QWL_USER is: %d", QWL_USER));
+
+                // replace original window class
+                if (WinRegisterClass(hab,
+                                     "wpFolder window",
+                                     G_WPFolderWinClassInfo.pfnWindowProc, // fdr_fnwpSubclassedFolder2,
+                                     G_WPFolderWinClassInfo.flClassStyle,
+                                     G_WPFolderWinClassInfo.cbWindowData + 16))
                 {
-                    // _Pmpf(("    wpFolder cbWindowData: %d", G_WPFolderWinClassInfo.cbWindowData));
-                    // _Pmpf(("    QWL_USER is: %d", QWL_USER));
+                    // _Pmpf(("    WinRegisterClass OK"));
 
-                    // replace original window class
-                    if (WinRegisterClass(hab,
-                                         "wpFolder window",
-                                         G_WPFolderWinClassInfo.pfnWindowProc, // fdr_fnwpSubclassedFolder2,
-                                         G_WPFolderWinClassInfo.flClassStyle,
-                                         G_WPFolderWinClassInfo.cbWindowData + 16))
-                    {
-                        // _Pmpf(("    WinRegisterClass OK"));
+                    // OK, window class successfully re-registered:
+                    // store the offset of our window word for the
+                    // SUBCLASSEDFOLDERVIEW's in a global variable
+                    G_SFVOffset = G_WPFolderWinClassInfo.cbWindowData + 12;
 
-                        // OK, window class successfully re-registered:
-                        // store the offset of our window word for the
-                        // SUBCLASSEDFOLDERVIEW's in a global variable
-                        G_SFVOffset = G_WPFolderWinClassInfo.cbWindowData + 12;
+                    // don't do this again
+                    G_WPFolderWinClassExtended = TRUE;
 
-                        // and don't do all this again...
-                        G_WPFolderWinClassExtended = TRUE;
-                    }
-                    // else _Pmpf(("    WinRegisterClass failed"));
                 }
+                // else _Pmpf(("    WinRegisterClass failed"));
             }
         }
     }
@@ -330,13 +333,11 @@ PSUBCLASSEDFOLDERVIEW fdrCreateSFV(HWND hwndFrame,
                                         // in: the "real" object; for XFolder, this is == somSelf,
                                         // for XFldDisk, this is the disk object (needed for object handles)
 {
-    // BOOL fSemOwned = FALSE;
-    PSUBCLASSEDFOLDERVIEW psliNew = 0;
+    PSUBCLASSEDFOLDERVIEW psliNew;
 
-    psliNew = malloc(sizeof(SUBCLASSEDFOLDERVIEW));
-    if (psliNew)
+    if (psliNew = NEW(SUBCLASSEDFOLDERVIEW))
     {
-        memset(psliNew, 0, sizeof(SUBCLASSEDFOLDERVIEW)); // V0.9.0
+        ZERO(psliNew);
 
         if (hwndCnr == NULLHANDLE)
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
@@ -348,7 +349,6 @@ PSUBCLASSEDFOLDERVIEW fdrCreateSFV(HWND hwndFrame,
         psliNew->somSelf = somSelf;
         psliNew->pRealObject = pRealObject;
         psliNew->hwndCnr = hwndCnr;
-        // psliNew->ulView = ulView;
         psliNew->fRemoveSourceEmphasis = FALSE;
         // set status bar hwnd to zero at this point;
         // this will be created elsewhere
@@ -357,28 +357,24 @@ PSUBCLASSEDFOLDERVIEW fdrCreateSFV(HWND hwndFrame,
         // create a supplementary object window
         // for this folder frame (see
         // fdr_fnwpSupplFolderObject for details)
-        psliNew->hwndSupplObject
-            = winhCreateObjectWindow(WNDCLASS_SUPPLOBJECT,
-                                     psliNew);
+        if (psliNew->hwndSupplObject = winhCreateObjectWindow(WNDCLASS_SUPPLOBJECT,
+                                                              psliNew))
+        {
+            psliNew->ulWindowWordOffset
+                    = (ulWindowWordOffset == -1)
+                         ? G_SFVOffset        // window word offset which we've
+                                          // calculated in fdr_SendMsgHook
+                         : ulWindowWordOffset, // changed V0.9.9 (2001-03-11) [umoeller]
 
-        if (!psliNew->hwndSupplObject)
+            // store SFV in frame's window words
+            WinSetWindowPtr(hwndFrame,
+                            psliNew->ulWindowWordOffset,
+                            psliNew);
+        }
+        else
             cmnLog(__FILE__, __LINE__, __FUNCTION__,
                    "Unable to create suppl. folder object window.");
-
-        psliNew->ulWindowWordOffset
-                = (ulWindowWordOffset == -1)
-                     ? G_SFVOffset        // window word offset which we've
-                                      // calculated in fdr_SendMsgHook
-                     : ulWindowWordOffset, // changed V0.9.9 (2001-03-11) [umoeller]
-
-        // store SFV in frame's window words
-        WinSetWindowPtr(hwndFrame,
-                        psliNew->ulWindowWordOffset,
-                        psliNew);
     }
-    else
-        cmnLog(__FILE__, __LINE__, __FUNCTION__,
-               "psliNew is NULL (malloc failed).");
 
     return (psliNew);
 }
@@ -403,14 +399,16 @@ PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
                                                  // in: the "real" object; for XFolder, this is == somSelf,
                                                  // for XFldDisk, this is the disk object (needed for object handles)
 {
-    PSUBCLASSEDFOLDERVIEW psfv = fdrCreateSFV(hwndFrame,
-                                              hwndCnr,
-                                              -1,    // default window word V0.9.9 (2001-03-11) [umoeller]
-                                              somSelf,
-                                              pRealObject);
-    if (psfv)
+    PSUBCLASSEDFOLDERVIEW psfv;
+    if (psfv = fdrCreateSFV(hwndFrame,
+                            hwndCnr,
+                            -1,    // default window word V0.9.9 (2001-03-11) [umoeller]
+                            somSelf,
+                            pRealObject))
+    {
         psfv->pfnwpOriginal = WinSubclassWindow(hwndFrame,
                                                 fdr_fnwpSubclassedFolderFrame);
+    }
 
     return (psfv);
 }
@@ -437,9 +435,8 @@ PSUBCLASSEDFOLDERVIEW fdrSubclassFolderView(HWND hwndFrame,
 PSUBCLASSEDFOLDERVIEW fdrQuerySFV(HWND hwndFrame,        // in: folder frame to find
                                   PULONG pulIndex)       // out: index in linked list if found
 {
-    PSUBCLASSEDFOLDERVIEW psliFound = (PSUBCLASSEDFOLDERVIEW)WinQueryWindowPtr(hwndFrame,
-                                                                               G_SFVOffset);
-    return (psliFound);
+    return ((PSUBCLASSEDFOLDERVIEW)WinQueryWindowPtr(hwndFrame,
+                                                     G_SFVOffset));
 }
 
 /*
@@ -910,6 +907,7 @@ VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
                         psfv->pSourceObject = psfv->somSelf;
                                 // V0.9.12 (2001-05-29) [umoeller]
 
+#ifndef __XWPLITE__
                         winhInsertMenuSeparator(hwndMenuMsg, MIT_END,
                                                (pGlobalSettings->VarMenuOffset
                                                        + ID_XFMI_OFS_SEPARATOR));
@@ -918,6 +916,7 @@ VOID InitMenu(PSUBCLASSEDFOLDERVIEW psfv, // in: frame information
                                                    + ID_XFMI_OFS_PRODINFO),
                                            cmnGetString(ID_XSSI_PRODUCTINFO),  // pszProductInfo
                                            MIS_TEXT, 0);
+#endif
 
                     break;
 

@@ -1,7 +1,7 @@
 
 /*
- *@@sourcefile w_theseus.c:
- *      XCenter Theseus widget.
+ *@@sourcefile w_sentinel.c:
+ *      XCenter sentinel widget (memory monitor).
  *
  *      This is all new with V0.9.9.
  *
@@ -77,6 +77,7 @@
 
 // headers in /helpers
 #include "helpers\comctl.h"             // common controls (window procs)
+#include "helpers\configsys.h"          // CONFIG.SYS routines
 #include "helpers\dosh.h"               // Control Program helper routines
 #include "helpers\gpih.h"               // GPI helper routines
 #include "helpers\nls.h"                // National Language Support helpers
@@ -113,7 +114,7 @@
 
 typedef struct _SNAPSHOT
 {
-    ULONG   ulSwapperSizeKB,      // cfgQuerySwapperSize
+    ULONG   ulSwapperSizeKB,      // csysQuerySwapperSize
             ulSwapperFreeKB,      // free space in swapper (win32k.sys only)
             ulPhysFreeKB;         // Dos16MemAvail
 
@@ -202,7 +203,7 @@ static XCENTERWIDGETCLASS G_WidgetClasses[] =
  */
 
 // resolved function pointers from XFLDR.DLL
-PCFGQUERYSWAPPERSIZE pcfgQuerySwapperSize = NULL;
+PCSYSQUERYSWAPPERSIZE pcsysQuerySwapperSize = NULL;
 
 PCMNQUERYDEFAULTFONT pcmnQueryDefaultFont = NULL;
 PCMNQUERYHELPLIBRARY pcmnQueryHelpLibrary = NULL;
@@ -238,7 +239,7 @@ PXSTRINIT pxstrInit = NULL;
 
 RESOLVEFUNCTION G_aImports[] =
     {
-        "cfgQuerySwapperSize", (PFN*)&pcfgQuerySwapperSize,
+        "csysQuerySwapperSize", (PFN*)&pcsysQuerySwapperSize,
 
         "cmnQueryDefaultFont", (PFN*)&pcmnQueryDefaultFont,
         "cmnQueryHelpLibrary", (PFN*)&pcmnQueryHelpLibrary,
@@ -1101,7 +1102,7 @@ VOID GetSnapshot(PWIDGETPRIVATE pPrivate)
     else
     {
         // win32k.sys failed:
-        pLatest->ulSwapperSizeKB = (pcfgQuerySwapperSize() + 512) / 1024;
+        pLatest->ulSwapperSizeKB = (pcsysQuerySwapperSize() + 512) / 1024;
         Dos16MemAvail(&pLatest->ulPhysFreeKB);
         pLatest->ulPhysFreeKB = (pLatest->ulPhysFreeKB + 512) / 1024;
         pLatest->ulVirtTotalKB = pPrivate->ulTotPhysMemKB + pLatest->ulSwapperSizeKB;

@@ -207,24 +207,25 @@ PRECH = $(TEMP)
 !error TKBASE is not defined.
 !endif
 
-INCLUDE_TEMP=
-
+INCLUDE_TEMP1=
 !ifdef DDKBASE
 INCLUDE_TEMP1=$(DDKBASE)\h;
 !endif
 
+INCLUDE_TEMP2=
 !ifdef SESBASE
 # SES defined:
 INCLUDE_TEMP2=$(SESBASE)\h;
 !endif
 
-#!ifndef XWPLITE
-LIBC_HEADERS = $(VACBASE)\include
-#!else
-#LIBC_HEADERS = $(TKBASE)\include\libc
-#!endif
+INCLUDE_TEMP3=
+!ifdef LANHEADERS
+INCLUDE_TEMP3=$(LANHEADERS);
+!endif
 
-PROJECT_INCLUDE = $(TKBASE)\h;$(TKBASE)\som\include;$(LIBC_HEADERS);$(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classes;$(HELPERS_BASE)\include;$(INCLUDE_TEMP1)$(INCLUDE_TEMP2)
+LIBC_HEADERS = $(VACBASE)\include
+
+PROJECT_INCLUDE = $(TKBASE)\h;$(TKBASE)\som\include;$(INCLUDE_TEMP3)$(LIBC_HEADERS);$(PROJECT_BASE_DIR)\include;$(PROJECT_BASE_DIR)\include\classes;$(HELPERS_BASE)\include;$(INCLUDE_TEMP1)$(INCLUDE_TEMP2)
 
 
 # TOOLS SETUP
@@ -267,20 +268,6 @@ COPY = cmd.exe /c copy
 # corresponding environment variable is defined. The convention is that
 # each of these environment variables will #define __VARNAME__ on the
 # compiler command line so that the code can be conditionally compiled.
-# For example, the PAGEMAGE environment variable will result in a
-# __PAGEMAGE__ #define. This allows for building a "stable" release,
-# excluding certain features (if the variable is not defined).
-#
-# The following features are presently defined (we list the #define's here):
-#   __PAGEMAGE__: include PageMage code
-#         --> removed V0.9.7 (2001-01-19) [umoeller]; this is always compiled now
-#   __ANIMATED_MOUSE_POINTERS__: include AMPTR code
-#   __REPLHANDLES__: include replacement file handles management
-
-# PAGEMAGE_STRING =
-# !ifdef PAGEMAGE
-# PAGEMAGE_STRING = /D__PAGEMAGE__=1
-# !endif
 
 ANIMATED_MOUSE_POINTERS_STRING =
 !ifdef ANIMATED_MOUSE_POINTERS
@@ -439,10 +426,10 @@ LINK_ALWAYSPACK = $(LINK)
 
 RCDEFS =
 !ifdef XWPLITE
-RCDEFS = -D __XWPLITE__
+RCDEFS = -D__XWPLITE__
 !endif
 
-RC      = rc -p -x2 -n -i $(TKBASE)\h -i $(PROJECT_BASE_DIR)\include
+RC      = rc -p -x2 -n -i $(TKBASE)\h -i $(PROJECT_BASE_DIR)\include $(RCDEFS)
 
 # RC options:
 # -p       pack (64K boundaries)

@@ -19,6 +19,13 @@
  *          files, only #define statements are evaluated.
  *          This can be used for string replacements.
  *
+ *      --  It supports IFDEF and IFNDEF blocks like this:
+ *
+ +              <IFDEF some_c_definition>
+ +                  Lots of text here, which can optionally
+ +                  be ignored.
+ +              <ENDIF some_c_definition>
+ *
  *      --  It supports a RESID attribute to the HTML
  *          tag to allow for setting a resid explicitly.
  *          Together with the include facility, this
@@ -111,11 +118,8 @@ typedef struct _DEFINENODE
 
 typedef struct _ARTICLETREENODE
 {
-    TREE        Tree;
-                        // Tree.ulKey has the (PSZ) filename
+    TREE        Tree;               // Tree.ulKey has the (PSZ) filename
 
-    // PSZ         pszFilename;        // the HTML file name, or, if URL,
-                                    // the URL
     ULONG       ulHeaderLevel;      // IPF header level (1 if root file;
                                     // -1 if link for "Internet" section)
 
@@ -161,8 +165,18 @@ typedef struct _ARTICLETREENODE
 
 typedef struct _STATUS
 {
+    // temp data for handlers
+    PSZ         pSource;          // current source pointer;
+                                  // with HandleTag:
+                                  //    in: points to '<' char,
+                                  //    out: should point to '>' char
+
+    PSZ         pNextClose;       // ptr to next closing tag while in HandleTag
+
+    // accumulated line length (for inserting line breaks automatically)
     ULONG       ulLineLength;
 
+    // current state of formatting
     BOOL        fInHead,
                 fItalics,
                 fBold,
@@ -190,8 +204,13 @@ typedef struct _STATUS
                                     // error is considered a warning only
 } STATUS, *PSTATUS;
 
+/* ******************************************************************
+ *
+ *   Global variables
+ *
+ ********************************************************************/
+
 TREE        *G_DefinesTreeRoot;
-// LINKLIST    G_llDefines;
 ULONG       G_cDefines = 0;
 ULONG       G_ulReplacements = 0;
 TREE        *G_LinkIDsTreeRoot;
@@ -201,6 +220,9 @@ LINKLIST    G_llFiles2Process;
 ULONG       G_ulVerbosity = 1;
 
 BOOL        G_fNoMoveToRoot = FALSE;
+
+XSTRING     G_strError,               // string buffer for error msgs
+            G_strCrashContext;
 
 /* ******************************************************************
  *
@@ -257,6 +279,14 @@ VOID Error(ULONG ulCategory,
         printf("\n");
 }
 
+VOID PrintHeader(VOID)
+{
+    printf("h2i V"BLDLEVEL_VERSION" ("__DATE__") (C) 2001 Ulrich M”ller\n");
+    printf("  Part of the XWorkplace package.\n");
+    printf("  This is free software under the GNU General Public Licence (GPL).\n");
+    printf("  Refer to the COPYING file in the XWorkplace installation dir for details.\n");
+}
+
 /*
  *@@ Explain:
  *
@@ -275,10 +305,7 @@ VOID Explain(const char *pcszFormat,     // in: format string (like with printf)
         printf("\n");
     }
 
-    printf("h2i V"BLDLEVEL_VERSION" ("__DATE__") (C) 2001 Ulrich M”ller\n");
-    printf("  Part of the XWorkplace package.\n");
-    printf("  This is free software under the GNU General Public Licence (GPL).\n");
-    printf("  Refer to the COPYING file in the XWorkplace installation dir for details.\n");
+    PrintHeader();
     printf("h2i (for 'html to ipf') translates a large bunch of HTML files into a\n");
     printf("single IPF file, which can then be fed into IBM's ipfc compiler.\n");
     printf("Usage: h2i [-i<include>]... [-v[0|1|2|3]] [-s] [-r] <root.htm>\n");
@@ -316,12 +343,6 @@ ULONG xstrprintf(PXSTRING pxstr,
     return (ul);
 }
 
-/* ******************************************************************
- *
- *   Parser
- *
- ********************************************************************/
-
 /*
  *@@ fnCompareStrings:
  *      tree comparison func (src\helpers\tree.c).
@@ -335,6 +356,12 @@ int TREEENTRY fnCompareStrings(ULONG ul1, ULONG ul2)
                      (const char *)ul2));
 }
 
+/* ******************************************************************
+ *
+ *   Parser helpers
+ *
+ ********************************************************************/
+
 /*
  *@@ AddDefinition:
  *
@@ -345,6 +372,7 @@ BOOL AddDefinition(PDEFINENODE p)
     // lstAppendItem(&G_llDefines, p);
     // return (TRUE);
     return (!treeInsert(&G_DefinesTreeRoot,
+                        NULL,
                         (TREE*)p,
                         fnCompareStrings));
 }
@@ -461,7 +489,41 @@ APIRET ResolveEntities(PARTICLETREENODE pFile2Process,
 }
 
 /*
- *@@ GetOrCreateLinkID:
+ *@@ ConvertEscapes:
+ *
+ */
+
+const char *ConvertEscapes(PXSTRING pstr)
+{
+    const char *papszSources[] =
+        {
+            "&amp;",
+            "&lt;",
+            "&gt;"
+        };
+    const char *papszTargets[] =
+        {
+            "&amp.",
+            "<",
+            ">"
+        };
+
+    ULONG ul;
+    for (ul = 0;
+         ul < ARRAYITEMCOUNT(papszSources);
+         ul++)
+    {
+        ULONG ulOfs = 0;
+        while (xstrFindReplaceC(pstr,
+                                &ulOfs,
+                                papszSources[ul],
+                                papszTargets[ul]))
+            ;
+    }
+}
+
+/*
+ *@@ GetOrCreateArticle:
  *      returns a link ID (resid) for the
  *      specified filename.
  *
@@ -505,7 +567,7 @@ PARTICLETREENODE GetOrCreateArticle(const char *pcszFilename,
             {
                 ZERO(pMapping);
 
-                pMapping->Tree.ulKey = (ULONG)strhdup(pcszFilename);
+                pMapping->Tree.ulKey = (ULONG)strhdup(pcszFilename, NULL);
                 pMapping->ulHeaderLevel = ulCurrentLevel + 1;
                 pMapping->ulResID = -1;         // for now
                 pMapping->pFirstReferencedFrom = pParent;
@@ -514,6 +576,7 @@ PARTICLETREENODE GetOrCreateArticle(const char *pcszFilename,
                 xstrInit(&pMapping->strTitle, 0);
 
                 if (!treeInsert(&G_LinkIDsTreeRoot,
+                                NULL,
                                 (TREE*)pMapping,
                                 fnCompareStrings))
                 {
@@ -544,6 +607,12 @@ PARTICLETREENODE GetOrCreateArticle(const char *pcszFilename,
 
     return (0);
 }
+
+/* ******************************************************************
+ *
+ *   Tag handlers
+ *
+ ********************************************************************/
 
 /*
  *@@ CheckP:
@@ -612,67 +681,102 @@ VOID PopList(PSTATUS pstat) // in/out: parser status
                   lstQueryLastNode(&pstat->llListStack));
 }
 
+typedef PCSZ TAGHANDLER(PARTICLETREENODE pFile2Process, // in: file to process
+                        PXSTRING pxstrIPF,  // out: IPF string
+                        PSTATUS pstat,      // in/out: parser status
+                        BOOL fClosingTag,   // in: TRUE == closing tag, FALSE == opening tag
+                        PSZ pszAttrs);      // in: attributes
+typedef TAGHANDLER *PTAGHANDLER;
+
 /*
  *@@ HandleHTML:
  *
  */
 
 PCSZ HandleHTML(PARTICLETREENODE pFile2Process,
+                PXSTRING pxstrIPF,  // out: IPF string
+                PSTATUS pstat,      // in/out: parser status
+                BOOL fClosingTag,   // in: TRUE == closing tag, FALSE == opening tag
                 PSZ pszAttrs)
 {
-    if (pszAttrs)
+    if (!fClosingTag)
     {
-        PSZ pszAttrib;
-        if (pszAttrib = strhGetTextAttr(pszAttrs,
-                                        "GROUP",
-                                        NULL))
+        if (pszAttrs)
         {
-            pFile2Process->lGroup = atoi(pszAttrib);
-            free(pszAttrib);
-        }
-        if (pszAttrib = strhGetTextAttr(pszAttrs,
-                                        "WIDTH",
-                                        NULL))
-        {
-            pFile2Process->pszWidth = pszAttrib;
-        }
-        if (pszAttrib = strhGetTextAttr(pszAttrs,
-                                        "XPOS",
-                                        NULL))
-        {
-            pFile2Process->pszXPos = pszAttrib;
-        }
-        if (pszAttrib = strhGetTextAttr(pszAttrs,
-                                        "HIDDEN",
-                                        NULL))
-        {
-            pFile2Process->fHidden = TRUE;
-            free(pszAttrib);
-        }
-        if (pszAttrib = strhGetTextAttr(pszAttrs,
-                                        "RESID",
-                                        NULL))
-        {
-            pFile2Process->ulResID = atoi(pszAttrib);
-            if (!pFile2Process->ulResID)
-                return ("Invalid RESID in <HTML> tag.");
-            free(pszAttrib);
-        }
-        if (pszAttrib = strhGetTextAttr(pszAttrs,
-                                        "SUBLINKS",
-                                        NULL))
-        {
-            // @@todo
-        }
-        if (pszAttrib = strhGetTextAttr(pszAttrs,
-                                        "NOSUBLINKS",
-                                        NULL))
-        {
-            // @@todo
+            PSZ pszAttrib;
+            if (pszAttrib = strhGetTextAttr(pszAttrs,
+                                            "GROUP",
+                                            NULL))
+            {
+                pFile2Process->lGroup = atoi(pszAttrib);
+                free(pszAttrib);
+            }
+            if (pszAttrib = strhGetTextAttr(pszAttrs,
+                                            "WIDTH",
+                                            NULL))
+            {
+                pFile2Process->pszWidth = pszAttrib;
+            }
+            if (pszAttrib = strhGetTextAttr(pszAttrs,
+                                            "XPOS",
+                                            NULL))
+            {
+                pFile2Process->pszXPos = pszAttrib;
+            }
+            if (pszAttrib = strhGetTextAttr(pszAttrs,
+                                            "HIDDEN",
+                                            NULL))
+            {
+                pFile2Process->fHidden = TRUE;
+                free(pszAttrib);
+            }
+            if (pszAttrib = strhGetTextAttr(pszAttrs,
+                                            "RESID",
+                                            NULL))
+            {
+                pFile2Process->ulResID = atoi(pszAttrib);
+                if (!pFile2Process->ulResID)
+                    return ("Invalid RESID in <HTML> tag.");
+                free(pszAttrib);
+            }
+            if (pszAttrib = strhGetTextAttr(pszAttrs,
+                                            "SUBLINKS",
+                                            NULL))
+            {
+                // @@todo
+            }
+            if (pszAttrib = strhGetTextAttr(pszAttrs,
+                                            "NOSUBLINKS",
+                                            NULL))
+            {
+                // @@todo
+            }
         }
     }
 
     return (0);
+}
+
+/*
+ *@@ HandleHEAD:
+ *
+ *@@added V0.9.16 (2001-11-22) [umoeller]
+ */
+
+PCSZ HandleHEAD(PARTICLETREENODE pFile2Process,
+                PXSTRING pxstrIPF,  // out: IPF string
+                PSTATUS pstat,      // in/out: parser status
+                BOOL fClosingTag,   // in: TRUE == closing tag, FALSE == opening tag
+                PSZ pszAttrs)
+{
+    if (!fClosingTag)
+        pstat->fInHead = TRUE;
+                // this flag starts skipping all characters
+    else
+        pstat->fInHead = FALSE;
+                // stop skipping all characters
+
+    return 0;
 }
 
 /*
@@ -681,53 +785,603 @@ PCSZ HandleHTML(PARTICLETREENODE pFile2Process,
  */
 
 PCSZ HandleTITLE(PARTICLETREENODE pFile2Process,
-                 PSZ *ppSource,
-                 PSZ pNextClose)
+                 PXSTRING pxstrIPF,  // out: IPF string
+                 PSTATUS pstat,      // in/out: parser status
+                 BOOL fClosingTag,   // in: TRUE == closing tag, FALSE == opening tag
+                 PSZ pszAttrs)
 {
-    // TITLE tag...
-    // we need to remove whitespace from the
-    // front and the tail, so play a bit here
-    PSZ p3 = pNextClose + 1;
-    while (    *p3
-            && (    (*p3 == ' ')
-                 || (*p3 == '\n')
-                 || (*p3 == '\t')
-               )
-          )
-        p3++;
-    if (!*p3)
-        return ("Incomplete <TITLE>.");
-    // find closing title tag
-    PSZ p4 = strstr(p3, "</TITLE>");
-    if (!p4)
-        return ("<TITLE> has no closing tag.");
-    else
+    if (!fClosingTag)
     {
-        // from beginning of title, go backwards
-        // until the last non-whitespace
-        PSZ p5 = p4 - 1;
-        while (    p5 > p3
-                && (    (*p5 == ' ')
-                     || (*p5 == '\n')
-                     || (*p5 == '\t')
+        // TITLE tag...
+        // we need to remove whitespace from the
+        // front and the tail, so play a bit here
+        PSZ p3 = pstat->pNextClose + 1;
+        while (    *p3
+                && (    (*p3 == ' ')
+                     || (*p3 == '\n')
+                     || (*p3 == '\t')
                    )
               )
-            p5--;
-
-        if (p5 > p3)
-        {
-            xstrcpy(&pFile2Process->strTitle,
-                    p3,
-                    p5 - p3 + 1);
-            ResolveEntities(pFile2Process,
-                            &pFile2Process->strTitle);
-            *ppSource = p4 + 8;
-        }
+            p3++;
+        if (!*p3)
+            return ("Incomplete <TITLE>.");
+        // find closing title tag
+        PSZ p4 = strstr(p3, "</TITLE>");
+        if (!p4)
+            return ("<TITLE> has no closing tag.");
         else
-            return ("Empty <TITLE> block.");
+        {
+            // from beginning of title, go backwards
+            // until the last non-whitespace
+            PSZ p5 = p4 - 1;
+            while (    p5 > p3
+                    && (    (*p5 == ' ')
+                         || (*p5 == '\n')
+                         || (*p5 == '\t')
+                       )
+                  )
+                p5--;
+
+            if (p5 > p3)
+            {
+                xstrcpy(&pFile2Process->strTitle,
+                        p3,
+                        p5 - p3 + 1);
+                ResolveEntities(pFile2Process,
+                                &pFile2Process->strTitle);
+                // search on after </TITLE>
+                pstat->pNextClose = p4 + 7;
+            }
+            else
+                return ("Empty <TITLE> block.");
+        }
     }
 
     return (0);
+}
+
+/*
+ *@@ HandleIFDEF:
+ *
+ */
+
+PCSZ HandleIFDEF(PARTICLETREENODE pFile2Process,
+                 PXSTRING pxstrIPF,  // out: IPF string
+                 PSTATUS pstat,      // in/out: parser status
+                 BOOL fClosingTag,   // in: TRUE == closing tag, FALSE == opening tag
+                 PSZ pszAttrs)
+{
+    if (!fClosingTag)
+    {
+        // IFDEF tag...
+        // get the define from the attributes
+        PCSZ pDef = pszAttrs;
+        while (    (*pDef)
+                && (*pDef == ' ')
+              )
+            pDef++;
+
+        if (*pDef)
+        {
+            PDEFINENODE pNode;
+            if (!(pNode = FindDefinition(pDef)))
+            {
+                // definition _not_ found: then we must _skip_ everything
+                PSZ pEndOfSkip;
+                if (pEndOfSkip = strstr(pstat->pNextClose + 1,
+                                        "</IFDEF>"))
+                {
+                    // search on after </TITLE>
+                    if (G_ulVerbosity > 1)
+                        printf("\n<IFDEF '%s'> is FALSE, skipping %d chars",
+                               pDef,
+                               pEndOfSkip + 8 - pstat->pSource);
+                    pstat->pNextClose = pEndOfSkip + 7;
+                }
+                else
+                    return ("Cannot find closing </IFDEF> tag");
+            }
+        }
+    }
+    else
+        return ("Unrelated closing </IFDEF> tag");
+
+    return (0);
+}
+
+/*
+ *@@ HandleIFNDEF:
+ *
+ */
+
+PCSZ HandleIFNDEF(PARTICLETREENODE pFile2Process,
+                  PXSTRING pxstrIPF,  // out: IPF string
+                  PSTATUS pstat,      // in/out: parser status
+                  BOOL fClosingTag,   // in: TRUE == closing tag, FALSE == opening tag
+                  PSZ pszAttrs)
+{
+    if (!fClosingTag)
+    {
+        // IFDEF tag...
+        // get the define from the attributes
+        PCSZ pDef = pszAttrs;
+        while (    (*pDef)
+                && (*pDef == ' ')
+              )
+            pDef++;
+
+        if (*pDef)
+        {
+            PDEFINENODE pNode;
+            if (pNode = FindDefinition(pDef))
+            {
+                // definition _found_: then we must _skip_ everything
+                PSZ pEndOfSkip;
+                if (pEndOfSkip = strstr(pstat->pNextClose + 1,
+                                        "</IFNDEF>"))
+                {
+                    // search on after </TITLE>
+                    if (G_ulVerbosity > 1)
+                        printf("\n<IFNDEF '%s'> is FALSE, skipping %d chars",
+                               pDef,
+                               pEndOfSkip + 9 - pstat->pSource);
+                    pstat->pNextClose = pEndOfSkip + 8;
+                }
+                else
+                    return ("Cannot find closing </IFNDEF> tag");
+            }
+        }
+    }
+    else
+        return ("Unrelated closing </IFNDEF> tag");
+
+    return (0);
+}
+
+/*
+ *@@ HandleP:
+ *
+ *@@added V0.9.16 (2001-11-22) [umoeller]
+ */
+
+PCSZ HandleP(PARTICLETREENODE pFile2Process,
+             PXSTRING pxstrIPF,
+             PSTATUS pstat,    // in/out: parser status
+             BOOL fClosingTag,   // in: TRUE == closing tag, FALSE == opening tag
+             PSZ pszAttrs)
+{
+    if (!fClosingTag)
+        // mark this only for now since we don't
+        // know yet whether a <LI> comes next...
+        // if we do <P><LI>, we get huge spaces
+        pstat->fNeedsP = TRUE;
+
+    return 0;
+}
+
+/*
+ *@@ HandleBR:
+ *
+ *@@added V0.9.16 (2001-11-22) [umoeller]
+ */
+
+PCSZ HandleBR(PARTICLETREENODE pFile2Process,
+              PXSTRING pxstrIPF,
+              PSTATUS pstat,    // in/out: parser status
+              BOOL fClosingTag,   // in: TRUE == closing tag, FALSE == opening tag
+              PSZ pszAttrs)
+{
+    if (!fClosingTag)
+    {
+        if (!pstat->fInTable)
+        {
+            // IPF cannot handle .br in tables
+            xstrcat(pxstrIPF, "\n.br\n", 0);
+            pstat->ulLineLength = 0;
+        }
+    }
+
+    return 0;
+}
+
+/*
+ *@@ HandleHR:
+ *
+ *@@added V0.9.16 (2001-11-22) [umoeller]
+ */
+
+PCSZ HandleHR(PARTICLETREENODE pFile2Process,
+              PXSTRING pxstrIPF,
+              PSTATUS pstat,    // in/out: parser status
+              BOOL fClosingTag,   // in: TRUE == closing tag, FALSE == opening tag
+              PSZ pszAttrs)
+{
+    if (!fClosingTag)
+    {
+        ULONG ul;
+        xstrcat(pxstrIPF, ":cgraphic.", 0);
+        for (ul = 0; ul < 80; ul++)
+            xstrcatc(pxstrIPF, '_');
+        xstrcat(pxstrIPF, ":ecgraphic.", 0);
+        pstat->fNeedsP = TRUE;
+    }
+    return 0;
+}
+
+/*
+ *@@ HandleI:
+ *
+ *@@added V0.9.16 (2001-11-22) [umoeller]
+ */
+
+PCSZ HandleI(PARTICLETREENODE pFile2Process,
+             PXSTRING pxstrIPF,
+             PSTATUS pstat,    // in/out: parser status
+             BOOL fClosingTag,   // in: TRUE == closing tag, FALSE == opening tag
+             PSZ pszAttrs)
+{
+    if (!fClosingTag)
+    {
+        if (pstat->fItalics)
+            return ("Nested <I> or <EM> tag.");
+        else
+        {
+            xstrcat(pxstrIPF, ":hp1.", 0);
+            pstat->fItalics = TRUE;
+        }
+    }
+    else
+    {
+        if (!pstat->fItalics)
+            return ("Unrelated closing </I> or </EM> tag.");
+        else
+        {
+            xstrcat(pxstrIPF, ":ehp1.", 0);
+            pstat->fItalics = FALSE;
+        }
+    }
+
+    return 0;
+}
+
+/*
+ *@@ HandleB:
+ *
+ *@@added V0.9.16 (2001-11-22) [umoeller]
+ */
+
+PCSZ HandleB(PARTICLETREENODE pFile2Process,
+             PXSTRING pxstrIPF,
+             PSTATUS pstat,    // in/out: parser status
+             BOOL fClosingTag,   // in: TRUE == closing tag, FALSE == opening tag
+             PSZ pszAttrs)
+{
+    if (!fClosingTag)
+    {
+        if (pstat->fBold)
+            return ("Nested <B> or <STRONG> tag.");
+        else
+        {
+            xstrcat(pxstrIPF, ":hp2.", 0);
+            pstat->fBold = TRUE;
+        }
+    }
+    else
+    {
+        if (!pstat->fBold)
+            return ("Unrelated closing </B> or </STRONG> tag.");
+        else
+        {
+            xstrcat(pxstrIPF, ":ehp2.", 0);
+            pstat->fBold = FALSE;
+        }
+    }
+
+    return 0;
+}
+
+/*
+ *@@ HandleU:
+ *
+ *@@added V0.9.16 (2001-11-22) [umoeller]
+ */
+
+PCSZ HandleU(PARTICLETREENODE pFile2Process,
+             PXSTRING pxstrIPF,
+             PSTATUS pstat,    // in/out: parser status
+             BOOL fClosingTag,   // in: TRUE == closing tag, FALSE == opening tag
+             PSZ pszAttrs)
+{
+    if (!fClosingTag)
+    {
+        if (pstat->fUnderlined)
+            return ("Nested <U> tag.");
+        else
+        {
+            xstrcat(pxstrIPF, ":hp5.", 0);
+            pstat->fUnderlined = TRUE;
+        }
+    }
+    else
+    {
+        if (!pstat->fUnderlined)
+            return ("Unrelated closing </U> tag.");
+        else
+        {
+            xstrcat(pxstrIPF, ":ehp5.", 0);
+            pstat->fUnderlined = FALSE;
+        }
+    }
+
+    return 0;
+}
+
+/*
+ *@@ HandleCODE:
+ *
+ *@@added V0.9.16 (2001-11-22) [umoeller]
+ */
+
+PCSZ HandleCODE(PARTICLETREENODE pFile2Process,
+                PXSTRING pxstrIPF,
+                PSTATUS pstat,    // in/out: parser status
+                BOOL fClosingTag,   // in: TRUE == closing tag, FALSE == opening tag
+                PSZ pszAttrs)
+{
+    if (!fClosingTag)
+    {
+        if (pstat->fCode)
+            return ("Nested <CODE>, <CITE>, or <TT> tag.");
+        else
+        {
+            xstrcat(pxstrIPF, ":font facename='Courier' size=18x12.", 0);
+            pstat->fCode = TRUE;
+        }
+    }
+    else
+    {
+        if (!pstat->fCode)
+            return ("Unrelated closing </CODE>, </CITE>, or </TT> tag.");
+        else
+        {
+            xstrcat(pxstrIPF, ":font facename=default size=0x0.", 0);
+            pstat->fCode = FALSE;
+        }
+    }
+
+    return 0;
+}
+
+/*
+ *@@ HandlePRE:
+ *
+ *@@added V0.9.16 (2001-11-22) [umoeller]
+ */
+
+PCSZ HandlePRE(PARTICLETREENODE pFile2Process,
+               PXSTRING pxstrIPF,
+               PSTATUS pstat,    // in/out: parser status
+               BOOL fClosingTag,   // in: TRUE == closing tag, FALSE == opening tag
+               PSZ pszAttrs)
+{
+    if (!fClosingTag)
+    {
+        if (pstat->fInPre)
+            return ("Nested <PRE> tag.");
+        else
+        {
+            xstrcat(pxstrIPF, "\n:cgraphic.", 0);
+            pstat->fInPre = TRUE;
+        }
+    }
+    else
+    {
+        if (!pstat->fInPre)
+            return ("Unrelated closing </PRE> tag.");
+        else
+        {
+            xstrcat(pxstrIPF, "\n:ecgraphic.", 0);
+            pstat->fInPre = FALSE;
+            pstat->fNeedsP = TRUE;
+        }
+    }
+
+    return 0;
+}
+
+/*
+ *@@ HandleUL:
+ *
+ *@@added V0.9.16 (2001-11-22) [umoeller]
+ */
+
+PCSZ HandleUL(PARTICLETREENODE pFile2Process,
+              PXSTRING pxstrIPF,
+              PSTATUS pstat,    // in/out: parser status
+              BOOL fClosingTag,   // in: TRUE == closing tag, FALSE == opening tag
+              PSZ pszAttrs)
+{
+    if (!fClosingTag)
+    {
+        xstrcat(pxstrIPF, "\n:ul compact.", 0);
+        PushList(pstat, LIST_UL);
+        pstat->ulLineLength = 0;
+    }
+    else
+    {
+        if (CheckListTop(pstat, LIST_UL))
+        {
+            xstrcat(pxstrIPF, "\n:eul.", 0);
+            PopList(pstat);
+            pstat->fNeedsP = TRUE;
+        }
+        else
+            return ("Invalid </UL> nesting.");
+    }
+
+    return 0;
+}
+
+/*
+ *@@ HandleOL:
+ *
+ *@@added V0.9.16 (2001-11-22) [umoeller]
+ */
+
+PCSZ HandleOL(PARTICLETREENODE pFile2Process,
+              PXSTRING pxstrIPF,
+              PSTATUS pstat,    // in/out: parser status
+              BOOL fClosingTag,   // in: TRUE == closing tag, FALSE == opening tag
+              PSZ pszAttrs)
+{
+    if (!fClosingTag)
+    {
+        xstrcat(pxstrIPF, "\n:ol compact.", 0);
+        PushList(pstat, LIST_OL);
+        pstat->ulLineLength = 0;
+    }
+    else
+    {
+        if (CheckListTop(pstat, LIST_OL))
+        {
+            xstrcat(pxstrIPF, "\n:eol.", 0);
+            PopList(pstat);
+            pstat->fNeedsP = TRUE;
+        }
+        else
+            return ("Invalid </OL> nesting.");
+    }
+
+    return 0;
+}
+
+/*
+ *@@ HandleLI:
+ *
+ *@@added V0.9.16 (2001-11-22) [umoeller]
+ */
+
+PCSZ HandleLI(PARTICLETREENODE pFile2Process,
+              PXSTRING pxstrIPF,
+              PSTATUS pstat,    // in/out: parser status
+              BOOL fClosingTag,   // in: TRUE == closing tag, FALSE == opening tag
+              PSZ pszAttrs)
+{
+    if (!fClosingTag)
+    {
+        if (    (CheckListTop(pstat, LIST_UL))
+             || (CheckListTop(pstat, LIST_OL))
+           )
+        {
+            if (pstat->fNeedsP)
+            {
+                // we just had a <P> previously:
+                // add a .br instead or we'll get huge
+                // whitespace
+                xstrcat(pxstrIPF, "\n.br\n", 0);
+                pstat->fNeedsP = FALSE;
+            }
+            xstrcat(pxstrIPF, ":li.\n", 0);
+            pstat->ulLineLength = 0;
+        }
+        else
+            return ("<LI> outside list.");
+    }
+
+    return 0;
+}
+
+/*
+ *@@ HandleDL:
+ *
+ *@@added V0.9.16 (2001-11-22) [umoeller]
+ */
+
+PCSZ HandleDL(PARTICLETREENODE pFile2Process,
+              PXSTRING pxstrIPF,
+              PSTATUS pstat,    // in/out: parser status
+              BOOL fClosingTag,   // in: TRUE == closing tag, FALSE == opening tag
+              PSZ pszAttrs)
+{
+    if (!fClosingTag)
+    {
+        xstrcat(pxstrIPF, "\n:dl compact break=all.", 0);
+        PushList(pstat, LIST_DL);
+        pstat->ulLineLength = 0;
+    }
+    else
+    {
+        if (CheckListTop(pstat, LIST_DL))
+        {
+            if (!pstat->ulDefinition)
+                // if the list didn't stop with a DD last,
+                // we must add one or IPFC will choke
+                xstrcat(pxstrIPF, "\n:dd.", 0);
+
+            xstrcat(pxstrIPF, "\n:edl.", 0);
+            PopList(pstat);
+            pstat->fNeedsP = TRUE;
+            pstat->ulDefinition = 0;
+        }
+        else
+            return ("Invalid </DL> nesting.");
+    }
+
+    return 0;
+}
+
+/*
+ *@@ HandleDD:
+ *
+ *@@added V0.9.16 (2001-11-22) [umoeller]
+ */
+
+PCSZ HandleDD(PARTICLETREENODE pFile2Process,
+              PXSTRING pxstrIPF,
+              PSTATUS pstat,    // in/out: parser status
+              BOOL fClosingTag,   // in: TRUE == closing tag, FALSE == opening tag
+              PSZ pszAttrs)
+{
+    if (!fClosingTag)
+    {
+        if (!CheckListTop(pstat, LIST_DL))
+            return ("<DD> outside of <DL>.");
+        else
+        {
+            xstrcat(pxstrIPF, "\n:dd.", 0);
+            pstat->ulLineLength = 0;
+            pstat->ulDefinition = 1;
+        }
+    }
+
+    return 0;
+}
+
+/*
+ *@@ HandleDT:
+ *
+ *@@added V0.9.16 (2001-11-22) [umoeller]
+ */
+
+PCSZ HandleDT(PARTICLETREENODE pFile2Process,
+              PXSTRING pxstrIPF,
+              PSTATUS pstat,    // in/out: parser status
+              BOOL fClosingTag,   // in: TRUE == closing tag, FALSE == opening tag
+              PSZ pszAttrs)
+{
+    if (!fClosingTag)
+    {
+        if (!CheckListTop(pstat, LIST_DL))
+            return ("<DT> outside of <DL>.");
+        else
+        {
+            xstrcat(pxstrIPF, "\n:dt.", 0);
+            pstat->ulLineLength = 0;
+            pstat->ulDefinition = 0;
+        }
+    }
+
+    return 0;
 }
 
 #define START_KEY  "@#!LINK1@#!"
@@ -741,77 +1395,96 @@ PCSZ HandleTITLE(PARTICLETREENODE pFile2Process,
 PCSZ HandleA(PARTICLETREENODE pFile2Process,
              PXSTRING pxstrIPF,
              PSTATUS pstat,    // in/out: parser status
+             BOOL fClosingTag,   // in: TRUE == closing tag, FALSE == opening tag
              PSZ pszAttrs)
 {
-    if (pstat->ulInLink)
-        return ("Nested <A ...> blocks.");
-    else
+    if (!fClosingTag)
     {
-        // check the attribute:
-        // is it HREF?
-        if (pszAttrs)
+        if (pstat->ulInLink)
+            return ("Nested <A ...> blocks.");
+        else
         {
-            PSZ pszAttrib;
-            if (pszAttrib = strhGetTextAttr(pszAttrs,
-                                            "AUTO",
-                                            NULL))
+            // check the attribute:
+            // is it HREF?
+            if (pszAttrs)
             {
-                PARTICLETREENODE patn
-                    = GetOrCreateArticle(pszAttrib,
-                                         pFile2Process->ulHeaderLevel,
-                                         pFile2Process);
-                xstrprintf(pxstrIPF,
-                           // hack in the @#!LINK@#! for now;
-                           // this is later replaced with the
-                           // resid in ParseFiles
-                           ":link reftype=hd res=" START_KEY "%s" END_KEY " auto dependent.",
-                           pszAttrib);
-                pstat->ulInLink = 2;        // special, do not close
-            }
-            else if (pszAttrib = strhGetTextAttr(pszAttrs,
-                                            "HREF",
-                                            NULL))
-            {
-                if (strhistr(pszAttrib, ".INF"))
+                PSZ pszAttrib;
+                if (pszAttrib = strhGetTextAttr(pszAttrs,
+                                                "AUTO",
+                                                NULL))
                 {
-                    // special INF cross-link support:
-                    // convert all # into spaces
-                    PSZ p3 = pszAttrib;
-                    while (*p3)
-                    {
-                        if (*p3 == '#')
-                            *p3 = ' ';
-                        p3++;
-                    }
-
-                    xstrprintf(pxstrIPF,
-                               ":link reftype=launch object='view.exe' data='%s'.",
-                               pszAttrib);
-                }
-                else
-                {
-                    // no INF:
                     PARTICLETREENODE patn
-                    = GetOrCreateArticle(pszAttrib,
-                                         pFile2Process->ulHeaderLevel,
-                                         pFile2Process);
+                        = GetOrCreateArticle(pszAttrib,
+                                             pFile2Process->ulHeaderLevel,
+                                             pFile2Process);
                     xstrprintf(pxstrIPF,
-                               // hack in the @#!LINK@#! string for now;
+                               // hack in the @#!LINK@#! for now;
                                // this is later replaced with the
                                // resid in ParseFiles
-                               ":link reftype=hd res=" START_KEY "%s" END_KEY ".",
+                               ":link reftype=hd res=" START_KEY "%s" END_KEY " auto dependent.",
                                pszAttrib);
+                    pstat->ulInLink = 2;        // special, do not close
                 }
+                else if (pszAttrib = strhGetTextAttr(pszAttrs,
+                                                "HREF",
+                                                NULL))
+                {
+                    if (strhistr(pszAttrib, ".INF"))
+                    {
+                        // special INF cross-link support:
+                        // convert all # into spaces
+                        PSZ p3 = pszAttrib;
+                        while (*p3)
+                        {
+                            if (*p3 == '#')
+                                *p3 = ' ';
+                            p3++;
+                        }
 
-                pstat->ulInLink = 1;        // regular, do close
+                        xstrprintf(pxstrIPF,
+                                   ":link reftype=launch object='view.exe' data='%s'.",
+                                   pszAttrib);
+                    }
+                    else
+                    {
+                        // no INF:
+                        PARTICLETREENODE patn
+                        = GetOrCreateArticle(pszAttrib,
+                                             pFile2Process->ulHeaderLevel,
+                                             pFile2Process);
+                        xstrprintf(pxstrIPF,
+                                   // hack in the @#!LINK@#! string for now;
+                                   // this is later replaced with the
+                                   // resid in ParseFiles
+                                   ":link reftype=hd res=" START_KEY "%s" END_KEY ".",
+                                   pszAttrib);
+                    }
 
-                free(pszAttrib);
+                    pstat->ulInLink = 1;        // regular, do close
+
+                    free(pszAttrib);
+                }
+                else
+                    return ("Unknown attribute to <A> tag.");
             }
             else
-                return ("Unknown attribute to <A> tag.");
+                return ("<A> tag has no attributes.");
+        }
+    } // end if (!fClosingTag)
+    else
+    {
+        if (pstat->ulInLink)
+        {
+            if (pstat->ulInLink == 1)
+                xstrcat(pxstrIPF,
+                        ":elink.",
+                        0);
+            // otherwise 2: that's from A AUTO, do not close
+
+            pstat->ulInLink = 0;
         }
         else
-            return ("<A> tag has no attributes.");
+            return ("Unrelated closing </A> tag.");
     }
 
     return (0);
@@ -822,8 +1495,10 @@ PCSZ HandleA(PARTICLETREENODE pFile2Process,
  *
  */
 
-PCSZ HandleIMG(PXSTRING pxstrIPF,
+PCSZ HandleIMG(PARTICLETREENODE pFile2Process,
+               PXSTRING pxstrIPF,
                PSTATUS pstat,    // in/out: parser status
+               BOOL fClosingTag,   // in: TRUE == closing tag, FALSE == opening tag
                PSZ pszAttrs)
 {
     PSZ pszAttrib;
@@ -860,36 +1535,98 @@ PCSZ HandleIMG(PXSTRING pxstrIPF,
     return (0);
 }
 
+typedef struct _HANDLERDEF
+{
+    PCSZ        pcszTag;
+    PTAGHANDLER pHandler;
+} HANDLERDEF, *PHANDLERDEF;
+
+typedef struct _HANDLERTREENODE
+{
+    TREE        Tree;           // ulkey is used for (ULONG)pcszTag
+    PTAGHANDLER pHandler;
+} HANDLERTREENODE, *PHANDLERTREENODE;
+
 /*
- *@@ HandleTag:
- *      monster HTML tag handler. Gets called from
- *      ParseFile whenever a '<' character is found
- *      in the HTML sources.
+ *@@ HandlersList:
+ *      array of all tags we understand with the
+ *      handler func that handles the tag, or NULL
+ *      if the tag is to be silently ignored.
  *
- *      Terrible spaghetti, but works for now.
+ *      We build a string map from this list for
+ *      fast lookup in main().
+ *
+ *@@added V0.9.16 (2001-11-22) [umoeller]
  */
 
-const char *HandleTag(PARTICLETREENODE pFile2Process,
-                      PSZ *ppSource,    // in: points to '<' char,
-                                        // out: should point to '>' char
+HANDLERDEF HandlersList[] =
+    {
+        "P", HandleP,
+        "BR", HandleBR,
+        "LI", HandleLI,
+        "IMG", HandleIMG,
+        "HR", HandleHR,
+        "I", HandleI,
+        "EM", HandleI,
+        "B", HandleB,
+        "STRONG", HandleB,
+        "U", HandleU,
+        "CODE", HandleCODE,
+        "CITE", HandleCODE,
+        "TT", HandleCODE,
+        "A", HandleA,
+        "UL", HandleUL,
+        "OL", HandleOL,
+        "DL", HandleDL,
+        "DT", HandleDT,
+        "DD", HandleDD,
+        "HEAD", HandleHEAD,
+        "PRE", HandlePRE,
+        "HTML", HandleHTML,
+        "TITLE", HandleTITLE,
+        "IFDEF", HandleIFDEF,
+        "IFNDEF", HandleIFNDEF,
+        "BODY", NULL,           // ignore
+        "H1", NULL,             // ignore
+        "H2", NULL,             // ignore
+        "H3", NULL,             // ignore
+        "H4", NULL,             // ignore
+        "H5", NULL,             // ignore
+        "H6", NULL              // ignore
+    };
+
+TREE *G_HandlersTreeRoot;
+
+/*
+ *@@ HandleTag:
+ *      HTML tag handler. Gets called from ParseFile
+ *      whenever a '<' character is found in the HTML
+ *      sources. We then look up the tag name in the
+ *      string map we built in main() and call the
+ *      respective handler, if one exists.
+ *
+ *@@changed V0.9.16 (2001-11-22) [umoeller]: major speedup with tag handlers string map
+ */
+
+const char* HandleTag(PARTICLETREENODE pFile2Process,
                       PSTATUS pstat)    // in/out: parser status
 {
     const char *pcszError = NULL;
     PXSTRING pxstrIPF = &pFile2Process->strIPF;
 
-    PSZ pStartOfTagName = *ppSource + 1;
+    PSZ pStartOfTagName = pstat->pSource + 1;
 
     // is this a comment?
     if (!strncmp(pStartOfTagName, "!--", 3))
     {
         // start of comment:
         // find end of comment
-        PSZ pEnd = strstr(pStartOfTagName + 3, "-->");
-        if (pEnd)
+        PSZ pEnd;
+        if (pEnd = strstr(pStartOfTagName + 3, "-->"))
         {
             // found:
             // search on after end of comment
-            *ppSource = pEnd + 2;
+            pstat->pSource = pEnd + 2;
         }
         else
         {
@@ -904,9 +1641,12 @@ const char *HandleTag(PARTICLETREENODE pFile2Process,
         // no comment:
         // find end of tag
         PSZ     p2 = pStartOfTagName,
-                pNextClose = 0,     // receives first '>' after '<'
+                // pNextClose = 0,     // receives first '>' after '<'
                 pNextSpace = 0;     // receives first ' ' after '<'
         BOOL    fCont = TRUE;
+
+        pstat->pNextClose = 0;
+
         while (fCont)
         {
             switch (*p2)
@@ -914,6 +1654,7 @@ const char *HandleTag(PARTICLETREENODE pFile2Process,
                 case ' ':
                 case '\r':
                 case '\n':
+                case '\t':
                     // store first space after '<'
                     if (!pNextSpace)
                         pNextSpace = p2;
@@ -921,14 +1662,14 @@ const char *HandleTag(PARTICLETREENODE pFile2Process,
                 break;
 
                 case '>':   // end of tag found:
-                    pNextClose = p2;
+                    pstat->pNextClose = p2;
                     fCont = FALSE;
                 break;
 
                 case '<':
                     // another opening tag:
                     // that's an HTML error
-                    pcszError = "Opening < within another tag found.";
+                    return ("Opening < within another tag found.");
                 break;
 
                 case 0:
@@ -938,31 +1679,35 @@ const char *HandleTag(PARTICLETREENODE pFile2Process,
             p2++;
         }
 
-        if (pNextClose)
+        if (pstat->pNextClose)
         {
             // end of tag found:
             ULONG cbTag;
             PSZ pszAttrs = NULL;
 
-            if ((pNextSpace) && (pNextSpace < pNextClose))
+            if ((pNextSpace) && (pNextSpace < pstat->pNextClose))
             {
                 // we have attributes:
                 cbTag = pNextSpace - pStartOfTagName;
-                pszAttrs = strhSubstr(pNextSpace, pNextClose);
+                pszAttrs = strhSubstr(pNextSpace, pstat->pNextClose);
             }
             else
-                cbTag = pNextClose - pStartOfTagName;
+                cbTag = pstat->pNextClose - pStartOfTagName;
 
             if (!cbTag)
             {
                 // happens if we have a "<>" in the text:
                 // just insert the '<>' and go on, we have no tag here
-                xstrcatc(pxstrIPF, *(*ppSource++));
-                xstrcatc(pxstrIPF, *(*ppSource++));
+                xstrcatc(pxstrIPF, *(pstat->pSource)++);
+                xstrcatc(pxstrIPF, *(pstat->pSource)++);
                 pstat->ulLineLength += 2;
             }
             else
             {
+                PHANDLERTREENODE pHandlerTreeNode;
+                PTAGHANDLER pHandler = NULL;
+                BOOL fClosingTag = FALSE;
+
                 // attributes come after this
                 // and go up to pNextClose
 
@@ -973,291 +1718,47 @@ const char *HandleTag(PARTICLETREENODE pFile2Process,
 
                 // printf("'%s' ", pStartOfTagName);
 
+                // tags which can be open or closed
+                // (e.g. B or /B):
+                PSZ pStart2 = pStartOfTagName;
+
+                if (*pStart2 == '/')
+                {
+                    // closing tag:
+                    fClosingTag = TRUE;
+                    // use next char for strcmp
+                    pStart2++;
+                }
+
                 // now handle tags
-                if (!strcmp(pStartOfTagName, "P"))
+                if (pHandlerTreeNode = (PHANDLERTREENODE)treeFind(G_HandlersTreeRoot,
+                                                                  (ULONG)pStart2,
+                                                                  fnCompareStrings))
                 {
-                    // mark this only for now since we don't
-                    // know yet whether a <LI> comes next...
-                    // if we do <P><LI>, we get huge spaces
-                    pstat->fNeedsP = TRUE;
+                    // handler tree node found:
+                    if (pHandlerTreeNode->pHandler)
+                        // tag needs handling code:
+                        pcszError = pHandlerTreeNode->pHandler(pFile2Process,
+                                                               pxstrIPF,
+                                                               pstat,
+                                                               fClosingTag,
+                                                               pszAttrs);
                 }
-                else if (!strcmp(pStartOfTagName, "BR"))
+                else
                 {
-                    if (!pstat->fInTable)
-                    {
-                        // IPF cannot handle .br in tables
-                        xstrcat(pxstrIPF, "\n.br\n", 0);
-                        pstat->ulLineLength = 0;
-                    }
-                }
-                else if (    (!strcmp(pStartOfTagName, "I"))
-                          || (!strcmp(pStartOfTagName, "EM"))
-                        )
-                {
-                    if (pstat->fItalics)
-                        pcszError = "Nested <I> or <EM> tag.";
-                    else
-                    {
-                        xstrcat(pxstrIPF, ":hp1.", 0);
-                        pstat->fItalics = TRUE;
-                    }
-                }
-                else if (    (!strcmp(pStartOfTagName, "/I"))
-                          || (!strcmp(pStartOfTagName, "/EM"))
-                        )
-                {
-                    if (!pstat->fItalics)
-                        pcszError = "Unrelated closing </I> or </EM> tag.";
-                    else
-                    {
-                        xstrcat(pxstrIPF, ":ehp1.", 0);
-                        pstat->fItalics = FALSE;
-                    }
-                }
-                else if (    (!strcmp(pStartOfTagName, "B"))
-                          || (!strcmp(pStartOfTagName, "STRONG"))
-                        )
-                {
-                    if (pstat->fBold)
-                        pcszError = "Nested <B> or <STRONG> tag.";
-                    else
-                    {
-                        xstrcat(pxstrIPF, ":hp2.", 0);
-                        pstat->fBold = TRUE;
-                    }
-                }
-                else if (    (!strcmp(pStartOfTagName, "/B"))
-                          || (!strcmp(pStartOfTagName, "/STRONG"))
-                        )
-                {
-                    if (!pstat->fBold)
-                        pcszError = "Unrelated closing </B> or </STRONG> tag.";
-                    else
-                    {
-                        xstrcat(pxstrIPF, ":ehp2.", 0);
-                        pstat->fBold = FALSE;
-                    }
-                }
-                else if (    (!strcmp(pStartOfTagName, "U"))
-                        )
-                {
-                    if (pstat->fUnderlined)
-                        pcszError = "Nested <U> tag.";
-                    else
-                    {
-                        xstrcat(pxstrIPF, ":hp5.", 0);
-                        pstat->fUnderlined = TRUE;
-                    }
-                }
-                else if (    (!strcmp(pStartOfTagName, "/U"))
-                        )
-                {
-                    if (!pstat->fUnderlined)
-                        pcszError = "Unrelated closing </U> tag.";
-                    else
-                    {
-                        xstrcat(pxstrIPF, ":ehp5.", 0);
-                        pstat->fUnderlined = FALSE;
-                    }
-                }
-                else if (    (!strcmp(pStartOfTagName, "CODE"))
-                          || (!strcmp(pStartOfTagName, "CITE"))
-                          || (!strcmp(pStartOfTagName, "TT"))
-                        )
-                {
-                    if (pstat->fCode)
-                        pcszError = "Nested <CODE>, <CITE>, or <TT> tag.";
-                    else
-                    {
-                        xstrcat(pxstrIPF, ":font facename='Courier' size=18x12.", 0);
-                        pstat->fCode = TRUE;
-                    }
-                }
-                else if (    (!strcmp(pStartOfTagName, "/CODE"))
-                          || (!strcmp(pStartOfTagName, "/CITE"))
-                          || (!strcmp(pStartOfTagName, "/TT"))
-                        )
-                {
-                    if (!pstat->fCode)
-                        pcszError = "Unrelated closing </CODE>, </CITE>, or </TT> tag.";
-                    else
-                    {
-                        xstrcat(pxstrIPF, ":font facename=default size=0x0.", 0);
-                        pstat->fCode = FALSE;
-                    }
-                }
-                else if (!strcmp(pStartOfTagName, "A"))
-                    pcszError = HandleA(pFile2Process,
-                                        pxstrIPF,
-                                        pstat,
-                                        pszAttrs);
-                else if (!strcmp(pStartOfTagName, "/A"))
-                {
-                    if (pstat->ulInLink)
-                    {
-                        if (pstat->ulInLink == 1)
-                            xstrcat(pxstrIPF,
-                                    ":elink.",
-                                    0);
-                        // otherwise 2: that's from A AUTO, do not close
-
-                        pstat->ulInLink = 0;
-                    }
-                    else
-                        pcszError = "Unrelated closing </A> tag.";
-                }
-                else if (!strcmp(pStartOfTagName, "UL"))
-                {
-                    xstrcat(pxstrIPF, "\n:ul compact.", 0);
-                    PushList(pstat, LIST_UL);
-                    pstat->ulLineLength = 0;
-                }
-                else if (!strcmp(pStartOfTagName, "/UL"))
-                {
-                    if (CheckListTop(pstat, LIST_UL))
-                    {
-                        xstrcat(pxstrIPF, "\n:eul.", 0);
-                        PopList(pstat);
-                        pstat->fNeedsP = TRUE;
-                    }
-                    else
-                        pcszError = "Invalid </UL> nesting.";
-                }
-                else if (!strcmp(pStartOfTagName, "OL"))
-                {
-                    xstrcat(pxstrIPF, "\n:ol compact.", 0);
-                    PushList(pstat, LIST_OL);
-                    pstat->ulLineLength = 0;
-                }
-                else if (!strcmp(pStartOfTagName, "/OL"))
-                {
-                    if (CheckListTop(pstat, LIST_OL))
-                    {
-                        xstrcat(pxstrIPF, "\n:eol.", 0);
-                        PopList(pstat);
-                        pstat->fNeedsP = TRUE;
-                    }
-                    else
-                        pcszError = "Invalid </OL> nesting.";
-                }
-                else if (!strcmp(pStartOfTagName, "LI"))
-                {
-                    if (    (CheckListTop(pstat, LIST_UL))
-                         || (CheckListTop(pstat, LIST_OL))
-                       )
-                    {
-                        if (pstat->fNeedsP)
-                        {
-                            // we just had a <P> previously:
-                            // add a .br instead or we'll get huge
-                            // whitespace
-                            xstrcat(pxstrIPF, "\n.br\n", 0);
-                            pstat->fNeedsP = FALSE;
-                        }
-                        xstrcat(pxstrIPF, ":li.\n", 0);
-                        pstat->ulLineLength = 0;
-                    }
-                    else
-                        pcszError = "<LI> outside list.";
-                }
-                else if (!strcmp(pStartOfTagName, "DL"))
-                {
-                    xstrcat(pxstrIPF, "\n:dl compact break=all.", 0);
-                    PushList(pstat, LIST_DL);
-                    pstat->ulLineLength = 0;
-                }
-                else if (!strcmp(pStartOfTagName, "DT"))
-                {
-                    if (!CheckListTop(pstat, LIST_DL))
-                        pcszError = "<DT> outside of <DL>.";
-                    else
-                    {
-                        xstrcat(pxstrIPF, "\n:dt.", 0);
-                        pstat->ulLineLength = 0;
-                        pstat->ulDefinition = 0;
-                    }
-                }
-                else if (!strcmp(pStartOfTagName, "DD"))
-                {
-                    if (!CheckListTop(pstat, LIST_DL))
-                        pcszError = "<DD> outside of <DL>.";
-                    else
-                    {
-                        xstrcat(pxstrIPF, "\n:dd.", 0);
-                        pstat->ulLineLength = 0;
-                        pstat->ulDefinition = 1;
-                    }
-                }
-                else if (!strcmp(pStartOfTagName, "/DL"))
-                {
-                    if (CheckListTop(pstat, LIST_DL))
-                    {
-                        if (!pstat->ulDefinition)
-                            // if the list didn't stop with a DD last,
-                            // we must add one or IPFC will choke
-                            xstrcat(pxstrIPF, "\n:dd.", 0);
-
-                        xstrcat(pxstrIPF, "\n:edl.", 0);
-                        PopList(pstat);
-                        pstat->fNeedsP = TRUE;
-                        pstat->ulDefinition = 0;
-                    }
-                    else
-                        pcszError = "Invalid </DL> nesting.";
-                }
-                else if (!strcmp(pStartOfTagName, "HTML"))
-                    pcszError = HandleHTML(pFile2Process,
-                               pszAttrs);
-                else if (!strcmp(pStartOfTagName, "TITLE"))
-                    pcszError = HandleTITLE(pFile2Process,
-                                            ppSource,
-                                            pNextClose);
-                else if (!strcmp(pStartOfTagName, "HEAD"))
-                    pstat->fInHead = TRUE;
-                            // this flag starts skipping all characters
-                else if (!strcmp(pStartOfTagName, "/HEAD"))
-                    pstat->fInHead = FALSE;
-                            // stop skipping all characters
-                else if (!strcmp(pStartOfTagName, "PRE"))
-                {
-                    if (pstat->fInPre)
-                        pcszError = "Nested <PRE> tag.";
-                    else
-                    {
-                        xstrcat(pxstrIPF, "\n:cgraphic.", 0);
-                        pstat->fInPre = TRUE;
-                    }
-                }
-                else if (!strcmp(pStartOfTagName, "/PRE"))
-                {
-                    if (!pstat->fInPre)
-                        pcszError = "Unrelated closing </PRE> tag.";
-                    else
-                    {
-                        xstrcat(pxstrIPF, "\n:ecgraphic.", 0);
-                        pstat->fInPre = FALSE;
-                        pstat->fNeedsP = TRUE;
-                    }
-                }
-                else if (!strcmp(pStartOfTagName, "IMG"))
-                    pcszError = HandleIMG(pxstrIPF,
-                                          pstat,
-                                          pszAttrs);
-                else if (!strcmp(pStartOfTagName, "HR"))
-                {
-                    ULONG ul;
-                    xstrcat(pxstrIPF, ":cgraphic.", 0);
-                    for (ul = 0; ul < 80; ul++)
-                        xstrcatc(pxstrIPF, '_');
-                    xstrcat(pxstrIPF, ":ecgraphic.", 0);
-                    pstat->fNeedsP = TRUE;
+                    xstrcpy(&G_strError, "", 0);
+                    xstrprintf(&G_strError,
+                               "Unknown tag %s (%s)",
+                               pStartOfTagName,
+                               pStart2);
+                    pcszError = G_strError.psz;
                 }
 
                 // restore char under null terminator
                 *(pStartOfTagName + cbTag) = cSaved;
 
                 // skip the tag, even if unknown
-                *ppSource = pNextClose;
+                pstat->pSource = pstat->pNextClose;
 
                 if (pszAttrs)
                     free(pszAttrs);
@@ -1266,7 +1767,7 @@ const char *HandleTag(PARTICLETREENODE pFile2Process,
         else
         {
             xstrcatc(pxstrIPF,
-                     **ppSource);
+                     *(pstat->pSource));
             // no closing tag found:
             // just return, caller will try next char
             // (probably no tag anyway)
@@ -1274,40 +1775,6 @@ const char *HandleTag(PARTICLETREENODE pFile2Process,
     }
 
     return (pcszError);
-}
-
-/*
- *@@ ConvertEscapes:
- *
- */
-
-const char *ConvertEscapes(PXSTRING pstr)
-{
-    const char *papszSources[] =
-        {
-            "&amp;",
-            "&lt;",
-            "&gt;"
-        };
-    const char *papszTargets[] =
-        {
-            "&amp.",
-            "<",
-            ">"
-        };
-
-    ULONG ul;
-    for (ul = 0;
-         ul < ARRAYITEMCOUNT(papszSources);
-         ul++)
-    {
-        ULONG ulOfs = 0;
-        while (xstrFindReplaceC(pstr,
-                                &ulOfs,
-                                papszSources[ul],
-                                papszTargets[ul]))
-            ;
-    }
 }
 
 /*
@@ -1330,24 +1797,25 @@ const char *ConvertEscapes(PXSTRING pstr)
 APIRET ParseFile(PARTICLETREENODE pFile2Process,
                  PSZ pszBuf)
 {
-    PSZ    p = pszBuf;
     PXSTRING pxstrIPF = &pFile2Process->strIPF;
 
     STATUS stat = {0};
     lstInit(&stat.llListStack, FALSE);
     stat.fJustHadSpace = TRUE;
 
+    // start at beginning of buffer
+    stat.pSource = pszBuf;
+
     while (TRUE)
     {
         const char *pcszError = NULL;
-        CHAR    c = *p;
-        PSZ     pSaved = p;
+        CHAR    c = *(stat.pSource);
+        PSZ     pSaved = stat.pSource;
 
         switch (c)
         {
             case '<':
                 pcszError = HandleTag(pFile2Process,
-                                      &p,
                                       &stat);
             break;
 
@@ -1439,8 +1907,8 @@ APIRET ParseFile(PARTICLETREENODE pFile2Process,
             // otherwise continue
         }
 
-        if (*p)
-            p++;
+        if (*(stat.pSource))
+            (stat.pSource)++;
         else
             break;
     }
@@ -1591,10 +2059,11 @@ VOID DumpArticlesWithParent(PXSTRING pxstrIPF,
  *@@ ProcessFiles:
  *      loops through all files.
  *
- *      When this is called (fro main()), G_llFiles2Process
+ *      When this is called (from main()), G_llFiles2Process
  *      contains only the one file that was specified on
  *      the command line. This then calls ParseFile() on
- *      that file, which will add to the list.
+ *      that file, which will add to the list for every
+ *      A tag that links to another file.
  *
  *      After ParseFile() has been called for each such
  *      file then, we run several additional loops here
@@ -1650,6 +2119,11 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
                 fflush(stdout);
             }
 
+            xstrcpy(&G_strCrashContext, "", 0);
+            xstrprintf(&G_strCrashContext,
+                       "Processing file %s",
+                       (PSZ)pFile2Process->Tree.ulKey);
+
             if (!(arc = doshLoadTextFile((PSZ)pFile2Process->Tree.ulKey, // pszFilename,
                                          &pszContents)))
             {
@@ -1670,7 +2144,8 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
                 if (G_ulVerbosity > 1)
                     printf("\n");
             }
-            else
+
+            if (arc)
             {
                 Error(2,
                       __FILE__, __LINE__, __FUNCTION__,
@@ -1745,76 +2220,81 @@ APIRET ProcessFiles(PXSTRING pxstrIPF)           // out: one huge IPF file
             // rule out special links for now
             if (pFile2Process->ulHeaderLevel != -1)
             {
-                PSZ pStart = pFile2Process->strIPF.psz,
-                    p;
-                // now, find the special ugly link keys
-                // we hacked in before; for each string
-                // target filename now, find the resid
+                PSZ pStart;
 
-                while (p = (strstr(pStart,
-                                   START_KEY)))
+                if (pStart = pFile2Process->strIPF.psz)
+                        // could be empty V0.9.16 (2001-11-22) [umoeller]
                 {
-                    PSZ pFirst = pFile2Process->strIPF.psz;
+                    PSZ p;
+                    // now, find the special ugly link keys
+                    // we hacked in before; for each string
+                    // target filename now, find the resid
 
-                    PSZ p2 = strstr(p + ulStartKeyLen,
-                                    END_KEY);
-                    if (!p2)
+                    while (p = (strstr(pStart,
+                                       START_KEY)))
                     {
-                        Error(2,
-                              __FILE__, __LINE__, __FUNCTION__,
-                              "Cannot find second LINK string for \"%s\"\nFile: \"%s\"\n",
-                              p,
-                              (PSZ)pFile2Process->Tree.ulKey); // pszFilename);
-                        arc = 1;
-                        break;
+                        PSZ pFirst = pFile2Process->strIPF.psz;
+
+                        PSZ p2 = strstr(p + ulStartKeyLen,
+                                        END_KEY);
+                        if (!p2)
+                        {
+                            Error(2,
+                                  __FILE__, __LINE__, __FUNCTION__,
+                                  "Cannot find second LINK string for \"%s\"\nFile: \"%s\"\n",
+                                  p,
+                                  (PSZ)pFile2Process->Tree.ulKey); // pszFilename);
+                            arc = 1;
+                            break;
+                        }
+
+                        CHAR cSaved = *p2;
+                        *p2 = '\0';
+
+                        if (G_ulVerbosity > 2)
+                            printf("   encountered link \"%s\" at %d (len %d), searching resid\n",
+                                   p + ulStartKeyLen,
+                                   p - pFirst,
+                                   p2 - pFirst);
+
+                        PARTICLETREENODE pTarget = GetOrCreateArticle(p + ulStartKeyLen, // filename
+                                                                      -1,   // do not create
+                                                                      NULL);
+
+                        if (!pTarget)
+                        {
+                            Error(2,
+                                  __FILE__, __LINE__, __FUNCTION__,
+                                  "Cannot resolve cross reference for \"%s\"\nFile: \"%s\"\n",
+                                  p + ulStartKeyLen,
+                                  (PSZ)pFile2Process->Tree.ulKey); // pszFilename);
+                            arc = 1;
+                            break;
+                        }
+
+                        *p2 = cSaved;
+
+                        CHAR szResID[30];
+                        sprintf(szResID, "%d", pTarget->ulResID);
+                        ULONG ulResIDLen = strlen(szResID);
+                        ULONG   ulFirst = p - pFirst,
+                                cReplace = (p2 + ulStartKeyLen) - p;
+                        if (G_ulVerbosity > 2)
+                            printf("     ofs %d, cReplace %d, replacing with \"%s\"\n",
+                                   ulFirst,
+                                   cReplace,
+                                   szResID);
+                        xstrrpl(&pFile2Process->strIPF,
+                                // ofs of first char to replace:
+                                ulFirst,
+                                // count of chars to replace:
+                                cReplace, // (p2 + KEYLEN) - p,
+                                // replace this with the resid
+                                szResID,
+                                ulResIDLen);
+
+                        pStart = pFile2Process->strIPF.psz + ulFirst;
                     }
-
-                    CHAR cSaved = *p2;
-                    *p2 = '\0';
-
-                    if (G_ulVerbosity > 2)
-                        printf("   encountered link \"%s\" at %d (len %d), searching resid\n",
-                               p + ulStartKeyLen,
-                               p - pFirst,
-                               p2 - pFirst);
-
-                    PARTICLETREENODE pTarget = GetOrCreateArticle(p + ulStartKeyLen, // filename
-                                                                  -1,   // do not create
-                                                                  NULL);
-
-                    if (!pTarget)
-                    {
-                        Error(2,
-                              __FILE__, __LINE__, __FUNCTION__,
-                              "Cannot resolve cross reference for \"%s\"\nFile: \"%s\"\n",
-                              p + ulStartKeyLen,
-                              (PSZ)pFile2Process->Tree.ulKey); // pszFilename);
-                        arc = 1;
-                        break;
-                    }
-
-                    *p2 = cSaved;
-
-                    CHAR szResID[30];
-                    sprintf(szResID, "%d", pTarget->ulResID);
-                    ULONG ulResIDLen = strlen(szResID);
-                    ULONG   ulFirst = p - pFirst,
-                            cReplace = (p2 + ulStartKeyLen) - p;
-                    if (G_ulVerbosity > 2)
-                        printf("     ofs %d, cReplace %d, replacing with \"%s\"\n",
-                               ulFirst,
-                               cReplace,
-                               szResID);
-                    xstrrpl(&pFile2Process->strIPF,
-                            // ofs of first char to replace:
-                            ulFirst,
-                            // count of chars to replace:
-                            cReplace, // (p2 + KEYLEN) - p,
-                            // replace this with the resid
-                            szResID,
-                            ulResIDLen);
-
-                    pStart = pFile2Process->strIPF.psz + ulFirst;
                 }
             }
 
@@ -2156,7 +2636,10 @@ int main(int argc, char* argv[])
 {
     int     rc = 0;
 
-    PCSZ    pcszCrashContext = "Startup";
+    xstrInit(&G_strError, 0);
+    xstrInit(&G_strCrashContext, 0);
+
+    xstrcpy(&G_strCrashContext, "Startup", 0);
 
     TRY_LOUD(excpt1)
     {
@@ -2164,15 +2647,14 @@ int main(int argc, char* argv[])
 
         BOOL    fShowStatistics = FALSE;
 
-        treeInit(&G_LinkIDsTreeRoot);
-        treeInit(&G_DefinesTreeRoot);
-        // lstInit(&G_llDefines, FALSE);
+        treeInit(&G_LinkIDsTreeRoot, NULL);
+        treeInit(&G_DefinesTreeRoot, NULL);
         lstInit(&G_llFiles2Process, FALSE);
 
         LINKLIST llIncludes;
         lstInit(&llIncludes, TRUE);         // will hold plain -i filenames from strdup
 
-        pcszCrashContext = "Parsing command line";
+        xstrcpy(&G_strCrashContext, "Parsing command line", 0);
 
         if (argc < 2)
         {
@@ -2273,8 +2755,28 @@ int main(int argc, char* argv[])
 
         if (!rc)
         {
+            if (G_ulVerbosity)
+                PrintHeader();
+
+            // build handlers tree
+            treeInit(&G_HandlersTreeRoot, NULL);
+
+            ULONG ul;
+            for (ul = 0;
+                 ul < ARRAYITEMCOUNT(HandlersList);
+                 ul++)
+            {
+                PHANDLERTREENODE pNode = NEW(HANDLERTREENODE);
+                pNode->Tree.ulKey = (ULONG)HandlersList[ul].pcszTag;
+                pNode->pHandler = HandlersList[ul].pHandler;
+                treeInsert(&G_HandlersTreeRoot,
+                           NULL,
+                           (TREE*)pNode,
+                           fnCompareStrings);
+            }
+
             // parse includes, if any
-            pcszCrashContext = "Parsing include files";
+            xstrcpy(&G_strCrashContext, "Parsing include files", 0);
 
             PLISTNODE pNode = lstQueryFirstNode(&llIncludes);
             while (pNode)
@@ -2299,7 +2801,6 @@ int main(int argc, char* argv[])
                 pNode = pNode->pNext;
             }
 
-
             XSTRING str;
             xstrInit(&str, 100*1000);
 
@@ -2313,7 +2814,7 @@ int main(int argc, char* argv[])
                     ".* Created by h2i (C) Ulrich M”ller\n",
                     0);
 
-            pcszCrashContext = "Reading root article";
+            xstrcpy(&G_strCrashContext, "Reading root article", 0);
 
             GetOrCreateArticle(szRootFile,
                                0,             // current nesting level will be 1 then
@@ -2325,7 +2826,7 @@ int main(int argc, char* argv[])
                     ":euserdoc.",
                     0);
 
-            pcszCrashContext = "Writing IPF";
+            xstrcpy(&G_strCrashContext, "Writing IPF", 0);
 
             if (!rc)
             {
@@ -2382,7 +2883,7 @@ int main(int argc, char* argv[])
         Error(2,
               __FILE__, __LINE__, __FUNCTION__,
               "Exception caught in main(), context: %s",
-              pcszCrashContext);
+              G_strCrashContext.psz);
         rc = 1;
     } END_CATCH();
 

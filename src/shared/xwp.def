@@ -37,7 +37,7 @@ EXPORTS
     apmhOpen
     apmhReadStatus
     apmhClose
-    cfgQuerySwapperSize
+    csysQuerySwapperSize
     cmnGetString
     cmnQueryDefaultFont
     cmnQueryHelpLibrary
