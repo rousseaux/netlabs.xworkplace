@@ -38,6 +38,16 @@
 
     /* ******************************************************************
      *
+     *   Global variables (ctr_setup.c)
+     *
+     ********************************************************************/
+
+    extern const XWPSETUPENTRY    G_XCenterSetupSet[];
+
+    extern ULONG                  G_cXCenterSetupSetEntries;
+
+    /* ******************************************************************
+     *
      *   XCenter model (ctr_model.c)
      *
      ********************************************************************/
@@ -502,6 +512,13 @@
      *   Widget window creation
      *
      ********************************************************************/
+
+        #define WPOPFL_NOTEBOOKMENU         0x0001
+        #define WPOPFL_REMOVEWIDGETHELP     0x0002
+
+        HWND ctrpLoadWidgetPopupMenu(HWND hwndOwner,
+                                     PCXCENTERWIDGETCLASS pWidgetClass,
+                                     ULONG fl);
 
         PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,
                                                   PXCENTERWIDGET pOwningTrayWidget,

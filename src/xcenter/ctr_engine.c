@@ -3056,6 +3056,106 @@ APIRET ctrpDrop(HWND hwndClient,          // in: XCenter client
  ********************************************************************/
 
 /*
+ *@@ ctrpLoadWidgetPopupMenu:
+ *      loads the default popup menu for widgets and hacks
+ *      menu items.
+ *
+ *      fl can be any combination of:
+ *
+ *      --  WPOPFL_NOTEBOOKMENU: if set, remove entire
+ *          help menu, close, properties, etc. This is
+ *          used for the notebook menu on the "Widgets"
+ *          page.
+ *
+ *      --  WPOPFL_REMOVEWIDGETHELP: if set, remove widget
+ *          help only. Ignored if WPOPFL_NOTEBOOKMENU is
+ *          set.
+ *
+ *@@added V0.9.21 (2002-08-12) [umoeller]
+ */
+
+HWND ctrpLoadWidgetPopupMenu(HWND hwndOwner,
+                             PCXCENTERWIDGETCLASS pWidgetClass,     // in: widget class
+                             ULONG fl)
+{
+    HWND hMenu;
+    if (hMenu = WinLoadMenu(hwndOwner,
+                            cmnQueryNLSModuleHandle(FALSE),
+                            ID_CRM_WIDGET))
+    {
+        HWND hwndHelp;
+
+        // remove properties if class has no show-settings proc
+        // (we used to just disabled, but that's against CUA)
+        // V0.9.20 (2002-08-08) [umoeller]
+        if (!pWidgetClass->pShowSettingsDlg)
+        {
+            winhRemoveMenuItem(hMenu,
+                               ID_CRMI_PROPERTIES);
+            winhRemoveMenuItem(hMenu,
+                               ID_CRMI_SEP1);
+        }
+
+        if (fl & WPOPFL_NOTEBOOKMENU)
+        {
+            static const SHORT asIDs[] =
+                {
+                    ID_CRMI_HELPSUBMENU,
+                    ID_CRMI_SEP2,
+                    ID_CRMI_SEP3,
+                    ID_CRMI_XCSUB_PROPERTIES,
+                    ID_CRMI_XCSUB_CLOSE
+                };
+
+            winhRemoveMenuItems(hMenu,
+                                asIDs,
+                                ARRAYITEMCOUNT(asIDs));
+        }
+        else
+        {
+            if (hwndHelp = winhQuerySubmenu(hMenu,
+                                             ID_CRMI_HELPSUBMENU))
+            {
+                SHORT sDefID = ID_CRMI_HELP;
+
+                if (fl & WPOPFL_REMOVEWIDGETHELP)
+                {
+                    winhRemoveMenuItem(hwndHelp,
+                                       ID_CRMI_HELP);
+                    sDefID = ID_CRMI_HELP_XCENTER;
+                }
+
+                WinSendMsg(hwndHelp,
+                           MM_SETITEMTEXT,
+                           (MPARAM)ID_CRMI_HELP_XCENTER,
+                           (MPARAM)cmnGetString(ID_CRMI_HELP_XCENTER));
+
+                // make conditional cascade
+                winhSetMenuCondCascade(hwndHelp, sDefID);
+            }
+
+            WinSendMsg(hMenu,
+                       MM_SETITEMTEXT,
+                       (MPARAM)ID_CRMI_XCSUB_PROPERTIES,
+                       (MPARAM)cmnGetString(ID_CRMI_XCSUB_PROPERTIES));
+            WinSendMsg(hMenu,
+                       MM_SETITEMTEXT,
+                       (MPARAM)ID_CRMI_XCSUB_CLOSE,
+                       (MPARAM)cmnGetString(ID_CRMI_XCSUB_CLOSE));
+        }
+
+        if (    (!(pWidgetClass->ulClassFlags & WGTF_CONFIRMREMOVE))
+             || (fl & WPOPFL_NOTEBOOKMENU)
+           )
+            winhMenuRemoveEllipse(hMenu,
+                                  ID_CRMI_REMOVEWGT);
+    }
+
+    return hMenu;
+}
+
+
+/*
  *@@ ctrpCreateWidgetWindow:
  *      creates a new widget window from the specified
  *      PRIVATEWIDGETSETTING.
@@ -3219,6 +3319,8 @@ PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,      // 
                 {
                     // V0.9.13 (2001-06-09) [pr]
                     PSZ pszStdMenuFont;
+                    ULONG fl;
+
                     if (!(pszStdMenuFont = prfhQueryProfileData(HINI_USER,
                                                                 PMINIAPP_SYSTEMFONTS, // "PM_SystemFonts",
                                                                 PMINIKEY_MENUSFONT, // "Menus",
@@ -3245,64 +3347,19 @@ PPRIVATEWIDGETVIEW ctrpCreateWidgetWindow(PXCENTERWINDATA pXCenterData,      // 
                         pGlobals->cyInnerClient = pGlobals->cyWidgetMax;
 
                     // load standard context menu
-                    if (pWidget->hwndContextMenu = WinLoadMenu(pWidget->hwndWidget,
-                                                               cmnQueryNLSModuleHandle(FALSE),
-                                                               ID_CRM_WIDGET))
-                    {
-                        HWND hwndHelp;
+                    fl = 0;
+                    // remove "widget help" if widget has none
+                    // (we used to just disable, but that's against CUA)
+                    // V0.9.20 (2002-08-10) [umoeller]
+                    if (    (!pWidget->pcszHelpLibrary)
+                         || (!pWidget->ulHelpPanelID)
+                       )
+                        fl |= WPOPFL_REMOVEWIDGETHELP;
 
-                        // reworked V0.9.20 (2002-08-08) [umoeller]
-                        WinSendMsg(pWidget->hwndContextMenu,
-                                   MM_SETITEMTEXT,
-                                   (MPARAM)ID_CRMI_XCSUB_PROPERTIES,
-                                   (MPARAM)cmnGetString(ID_CRMI_XCSUB_PROPERTIES));
-
-                        WinSendMsg(pWidget->hwndContextMenu,
-                                   MM_SETITEMTEXT,
-                                   (MPARAM)ID_CRMI_XCSUB_CLOSE,
-                                   (MPARAM)cmnGetString(ID_CRMI_XCSUB_CLOSE));
-
-                        // remove properties if class has no show-settings proc
-                        // (we used to just disabled, but that's against CUA)
-                        // V0.9.20 (2002-08-08) [umoeller]
-                        if (!pWidgetClass->pShowSettingsDlg)
-                        {
-                            winhRemoveMenuItem(pWidget->hwndContextMenu,
-                                               ID_CRMI_PROPERTIES);
-                            winhRemoveMenuItem(pWidget->hwndContextMenu,
-                                               ID_CRMI_SEP1);
-                        }
-
-                        if (hwndHelp = winhQuerySubmenu(pWidget->hwndContextMenu,
-                                                        ID_CRMI_HELPSUBMENU))
-                        {
-                            SHORT sDefID = ID_CRMI_HELP;
-
-                            // remove "widget help" if widget has none
-                            // (we used to just disabled, but that's against CUA)
-                            // V0.9.20 (2002-08-10) [umoeller]
-                            if (    (!pWidget->pcszHelpLibrary)
-                                 || (!pWidget->ulHelpPanelID)
-                               )
-                            {
-                                winhRemoveMenuItem(hwndHelp,
-                                                   ID_CRMI_HELP);
-                                sDefID = ID_CRMI_HELP_XCENTER;
-                            }
-
-                            WinSendMsg(hwndHelp,
-                                       MM_SETITEMTEXT,
-                                       (MPARAM)ID_CRMI_HELP_XCENTER,
-                                       (MPARAM)cmnGetString(ID_CRMI_HELP_XCENTER));
-
-                            // make conditional cascade
-                            winhSetMenuCondCascade(hwndHelp, sDefID);
-                        }
-
-                        if (!(pWidgetClass->ulClassFlags & WGTF_CONFIRMREMOVE))
-                            winhMenuRemoveEllipse(pWidget->hwndContextMenu,
-                                                  ID_CRMI_REMOVEWGT);
-                    }
+                    pWidget->hwndContextMenu = ctrpLoadWidgetPopupMenu(pWidget->hwndWidget,
+                                                                       pWidgetClass,
+                                                                       fl);
+                            // extracted this code V0.9.21 (2002-08-12) [umoeller]
 
                     if (pszStdMenuFont)
                     {

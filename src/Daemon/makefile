@@ -65,6 +65,7 @@ $(OUTPUTDIR)\pg_winlist.obj
 OBJS = \
 $(OUTPUTDIR)\xwpdaemn.obj \
 $(OUTPUTDIR)\drivemonitor.obj \
+$(OUTPUTDIR)\watchdog.obj \
 $(PGRDAEMNOBJS)
 
 HLPOBJS = \
@@ -73,6 +74,7 @@ $(OUTPUTDIR)\gpih.obj \
 $(OUTPUTDIR)\linklist.obj \
 $(OUTPUTDIR)\except.obj \
 $(OUTPUTDIR)\dosh.obj \
+$(OUTPUTDIR)\procstat.obj \
 $(OUTPUTDIR)\regexp.obj \
 $(OUTPUTDIR)\shapewin.obj \
 $(OUTPUTDIR)\stringh.obj \

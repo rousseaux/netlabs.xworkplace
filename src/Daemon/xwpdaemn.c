@@ -3494,6 +3494,9 @@ int main(int argc, char *argv[])
                               THRF_WAIT_EXPLICIT,
                               0);
 
+                    // create watchdog threads
+                    dmnStartWatchdog();
+
                     // post msg to XFLDR.DLL thread-1 object window
                     // that we're ready, which will in turn send
                     // XDM_HOOKINSTALL

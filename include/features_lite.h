@@ -54,6 +54,7 @@
 #define __NEVEREXTASSOCS__                      1
 #define __NEVERREPLACEDRIVENOTREADY__           1
 #define __ALWAYSTRASHANDTRUEDELETE__            1
+#define __ALWAYSREPLACEPASTE__                  1
 
 // hook features
 #define __ALWAYSHOOK__                          1

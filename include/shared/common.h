@@ -837,7 +837,9 @@
         sfReplaceDriveNotReady,
 #endif
 
+#ifndef __ALWAYSREPLACEPASTE__
         sfReplacePaste,             // V0.9.20 (2002-08-08) [umoeller]
+#endif
 
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
         /* sfTrashDelete,

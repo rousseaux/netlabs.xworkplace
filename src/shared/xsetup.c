@@ -1785,7 +1785,9 @@ static const XWPSETTING G_FeaturesBackup[] =
         sfReplaceDriveNotReady,
 #endif
 
+#ifndef __ALWAYSREPLACEPASTE__
         sfReplacePaste,             // V0.9.20 (2002-08-08) [umoeller]
+#endif
 
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
         sfReplaceDelete,
@@ -2064,8 +2066,10 @@ VOID setFeaturesInitPage(PNOTEBOOKPAGE pnbp,   // notebook info struct
                 cmnQuerySetting(sfReplaceDriveNotReady));
 #endif
 
+#ifndef __ALWAYSREPLACEPASTE__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEPASTE,
                 cmnQuerySetting(sfReplacePaste));
+#endif
 
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
         ctlSetRecordChecked(hwndFeaturesCnr, ID_XCSI_REPLACEDELETE,
@@ -2423,9 +2427,11 @@ MRESULT setFeaturesItemChanged(PNOTEBOOKPAGE pnbp,
                 cmnSetSetting(sCleanupINIs, precc->usCheckState);
             break; */       // removed for now V0.9.12 (2001-05-15) [umoeller]
 
+#ifndef __ALWAYSREPLACEPASTE__
             case ID_XCSI_REPLACEPASTE:
                 cmnSetSetting(sfReplacePaste, precc->usCheckState);
             break;
+#endif
 
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
             case ID_XCSI_REPLACEDELETE:

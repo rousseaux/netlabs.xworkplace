@@ -846,6 +846,8 @@ static VOID DwgtMenuEnd(HWND hwnd,
  *      implementation for WM_COMMAND in ctrDefWidgetProc.
  *
  *@@changed V0.9.19 (2002-04-14) [umoeller]: added "Properties" and "Close" items to def. widget context menu
+ *@@changed V0.9.20 (2002-08-08) [umoeller]: added confirmations for delete
+ *@@changed V0.9.21 (2002-08-12) [umoeller]: confirmations for delete never worked, fixed
  */
 
 static VOID DwgtCommand(HWND hwnd,
@@ -938,7 +940,9 @@ xcenterhelp:
                                                  FALSE,       // fMustBeTrayable
                                                  &pClass))
                               && (pcszClassTitle = pClass->pcszClassTitle)
-                              && (DID_YES == cmnMessageBoxExt(hwnd,
+                              // && (DID_YES == cmnMessageBoxExt(hwnd,
+                                    // wrong V0.9.21 (2002-08-12) [umoeller]
+                              && (MBID_YES == cmnMessageBoxExt(hwnd,
                                                               243, // Remove Widget
                                                               &pcszClassTitle,
                                                               1,

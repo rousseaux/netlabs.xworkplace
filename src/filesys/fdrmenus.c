@@ -3267,7 +3267,9 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                                                           hwndFrame,
                                                           ulMenuId)))
                         if (    (ulMenuId == WPMENUID_PASTE)        // V0.9.20 (2002-08-08) [umoeller]
+#ifndef __ALWAYSREPLACEPASTE__
                              && (cmnQuerySetting(sfReplacePaste))
+#endif
                            )
                         {
                             fdrShowPasteDlg(somSelf, hwndFrame);

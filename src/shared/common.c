@@ -3017,10 +3017,12 @@ static const SETTINGINFO G_aSettingInfos[] =
             "fReplaceDriveNotReady",
 #endif
 
+#ifndef __ALWAYSREPLACEPASTE__
         // added this V0.9.20 (2002-08-08) [umoeller]
         sfReplacePaste, -1, 0,
             SP_SETUP_FEATURES, 0,
             "fReplacePaste",
+#endif
 
         // adjusted the following two V0.9.19 (2001-04-13) [umoeller]
 #ifndef __ALWAYSTRASHANDTRUEDELETE__
@@ -4665,12 +4667,6 @@ static CONTROLDEF
             {INFO_WIDTH, 4},
             COMMON_SPACING
         },
-#ifdef __ECSPRODUCTINFO__
-    ProductInfoText2 = CONTROLDEF_TEXT_WORDBREAK(
-                            NULL,       // &copy;&nbsp;1992, 1996 IBM Corporation. ...
-                            -1,
-                            INFO_WIDTH),
-#endif
     ProductInfoText3 = /* CONTROLDEF_TEXT_WORDBREAK(
                             NULL,
                             ID_XSDI_INFO_STRING,
@@ -4734,10 +4730,6 @@ static const DLGHITEM dlgProductInfo[] =
                         CONTROL_DEF(&ProductInfoText1),
                     START_ROW(0),
                         CONTROL_DEF(&ProductInfoSepLine1),
-#ifdef __ECSPRODUCTINFO__
-                    START_ROW(0),
-                        CONTROL_DEF(&ProductInfoText2),
-#endif
                     START_ROW(0),
                         CONTROL_DEF(&ProductInfoText3),
                     START_ROW(0),
@@ -4893,8 +4885,7 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
     HBITMAP     hbmLogo = NULLHANDLE;
     HWND        hwndInfo;
     XSTRING     strInfo,
-                strInfoECS1,
-                strInfoECS2;
+                strInfoECS1;
     PDLGHITEM   paNew;
 
     CHAR        szPhysMem[50],
@@ -4925,14 +4916,6 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
                      &strInfoECS1,
                      "PRODUCTINFO");
     ProductInfoText1.pcszText = strInfoECS1.psz;
-
-#ifdef __ECSPRODUCTINFO__
-    xstrInit(&strInfoECS2, 0);
-    cmnGetMessageExt(NULL, 0,
-                     &strInfoECS2,
-                     "ECSPRODINFO02");      // &copy;&nbsp;1992, 1996 IBM Corporation. ...
-    ProductInfoText2.pcszText = strInfoECS2.psz;
-#endif
 
     xstrInit(&strInfo, 0);
     cmnGetMessage(NULL, 0,
@@ -4987,10 +4970,7 @@ VOID cmnShowProductInfo(HWND hwndOwner,     // in: owner window or NULLHANDLE
     if (strInfo.psz)
         free(strInfo.psz);
 
-#ifdef __ECSPRODUCTINFO__
     xstrClear(&strInfoECS1);
-    xstrClear(&strInfoECS2);
-#endif
 }
 
 /* ******************************************************************
