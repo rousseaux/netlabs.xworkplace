@@ -238,5 +238,8 @@
     #define ID_XSH_OBJICONPAGE1             137     // V0.9.16 (2001-10-15) [umoeller]
     #define ID_XSH_OBJICONPAGE2             138     // V0.9.16 (2001-10-15) [umoeller]
 
+    #define ID_XSH_XWPNETWORK_MAIN          139     // V0.9.16 (2001-10-19) [umoeller]
+    #define ID_XSH_XWPNETSERVER_MAIN        140     // V0.9.16 (2001-10-19) [umoeller]
+
 #endif
 

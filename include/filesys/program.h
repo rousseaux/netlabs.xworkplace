@@ -36,6 +36,8 @@
     BOOL progQuerySetup(WPObject *somSelf,
                         PVOID pstrSetup);
 
+    ULONG progIsProgramOrProgramFile(WPObject *somSelf);
+
     #ifdef INCL_WINPROGRAMLIST
         PPROGDETAILS progQueryDetails(WPObject *pProgObject);
     #endif
@@ -64,8 +66,9 @@
      ********************************************************************/
 
     #ifdef SOM_WPDataFile_h
-    HAPP progOpenProgram(WPObject *pProgObject,
-                         WPFileSystem *pArgDataFile,
-                         ULONG ulMenuID);
+    APIRET progOpenProgram(WPObject *pProgObject,
+                           WPFileSystem *pArgDataFile,
+                           ULONG ulMenuID,
+                           HAPP *phapp);
     #endif
 #endif

@@ -36,13 +36,6 @@
 
     extern PFNWP        G_pfnwpFolderContentMenuOriginal;
 
-    #ifdef LINKLIST_HEADER_INCLUDED
-    #ifdef OBJECT_HEADER_INCLUDED
-        extern OBJECTLIST   G_llFavoriteFolders,
-                            G_llQuickOpenFolders;
-    #endif
-    #endif
-
     /* ******************************************************************
      *
      *   Additional declarations for xfldr.c

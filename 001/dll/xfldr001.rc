@@ -932,6 +932,7 @@ BEGIN
     ID_XSDI_FC_SHOWICONS                "Show ~icons"
 
     /* strings formerly in ID_XSD_SETTINGS_FLDR1 */
+    ID_XSSI_GENERALVIEWPAGE             "General view settings"
     ID_XSDI_FAVORITEFOLDER              "~Favorite folder"
     ID_XSDI_QUICKOPEN                   "~Quick open at Desktop startup"
     ID_XSDI_FULLPATH                    "Show full path in folder ~title"
@@ -1017,6 +1018,7 @@ BEGIN
     ID_XSDI_ICON_TITLE_TEXT             "T~itle:"
     ID_XSDI_ICON_GROUP                  "Current icon"
     ID_XSDI_ICON_EXPLANATION_TXT        "Drag any object into the rectangle on the left, or find an icon file using the ""Browse"" button."
+    ID_XSDI_ICON_EDIT_BUTTON            "~Edit icon"
     ID_XSDI_ICON_RESET_BUTTON           "~Reset icon"
     ID_XSDI_ICON_LOCKPOSITION_CB        "~Lock position"
     ID_XSDI_ICON_TEMPLATE_CB            "~Template"

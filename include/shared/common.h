@@ -250,6 +250,9 @@
     DECLARE_CMN_STRING(INIKEY_ARCHIVE_SETTINGS, "ArchiveSettings");
     DECLARE_CMN_STRING(INIKEY_ARCHIVE_LASTBACKUP, "ArchiveLastBackup");
 
+    // V0.9.16 (2001-10-19) [umoeller]
+    DECLARE_CMN_STRING(INIKEY_ICONPAGE_LASTDIR, "IconPageLastDir");
+
     /*
      * file type hierarchies:
      *
@@ -352,6 +355,9 @@
     DECLARE_CMN_STRING(G_pcszXMMCDPlayer, "XMMCDPlayer");
     DECLARE_CMN_STRING(G_pcszXMMVolume, "XMMVolume");
 #endif
+
+    DECLARE_CMN_STRING(G_pcszXWPNetwork, "XWPNetwork");
+    DECLARE_CMN_STRING(G_pcszXWPNetServer, "XWPNetServer");
 
     // @@todo
     DECLARE_CMN_STRING(G_pcszXWPProgram, "XWPProgram");
@@ -494,6 +500,9 @@
 
     // notebook.c messages: moved here V0.9.6 (2000-11-07) [umoeller]
     #define XNTBM_UPDATE            (WM_USER+97)  // update
+
+    #define XM_DISPLAYERROR         (WM_USER+98)
+            // V0.9.16 (2001-10-19) [umoeller]
 
     // common value for indicating that a Global Setting
     // is to be used instead of an instance's one
@@ -1602,7 +1611,7 @@
 
     ULONG XWPENTRY cmnDosErrorMsgBox(HWND hwndOwner,
                                      CHAR cDrive,
-                                     PSZ pszTitle,
+                                     PCSZ pcszTitle,
                                      APIRET arc,
                                      ULONG ulFlags,
                                      BOOL fShowExplanation);

@@ -313,9 +313,13 @@
 
     /* ******************************************************************
      *
-     *   Folder content hacks
+     *   Method call helpers
      *
      ********************************************************************/
+
+    BOOL wpshParentQuerySetup2(WPObject *somSelf,
+                               SOMClass *pClass,
+                               PVOID pstrSetup);
 
     /*
      *@@ xfTP_get_pobjNext:
@@ -540,6 +544,11 @@
                                              PICONINFO pData,
                                              ULONG ulIndex);
     typedef xfTP_wpSetIconDataN *xfTD_wpSetIconDataN;
+
+
+    typedef HPOINTER _System xfTP_wpclsQueryIconN(M_WPFolder *somSelf,
+                                                  ULONG ulIndex);
+    typedef xfTP_wpclsQueryIconN *xfTD_wpclsQueryIconN;
 
     #endif // SOM_WPFolder_h
 

@@ -124,6 +124,9 @@
                                     // -- BKA_MINOR
                                     // BKA_STATUSTEXTON will always be added.
         BOOL        fEnumerate;     // if TRUE: add "page 1 of 3"-like thingies
+        PSZ         pszMinorName;   // if != NULL, subtitle to add to notebook context
+                                    // menu V0.9.16 (2001-10-23) [umoeller]
+                                    // (useful with fEnumerate)
         BOOL        fPassCnrHelp;   // if TRUE: CN_HELP is not intercepted, but sent
                                     // to "item changed" callback;
                                     // if FALSE: CN_HELP is processed like WM_HELP
@@ -132,8 +135,8 @@
                                     // in the XFolder help file;
                                     // this will be displayed when WM_HELP comes in
                                     // and if no subpanel could be found
-        USHORT      usFirstControlID; // the first control ID and
-        ULONG       ulFirstSubpanel; // the help panel ID of the first subpanel
+        // USHORT      usFirstControlID; // the first control ID and
+        // ULONG       ulFirstSubpanel; // the help panel ID of the first subpanel
                                     // if the user presses "F1" while a dialog item
                                     // on the page has the keyboard focus; see
                                     // ntbDisplayFocusHelp for details how this works.
@@ -293,10 +296,5 @@
     PCREATENOTEBOOKPAGE ntbQueryOpenPages(PCREATENOTEBOOKPAGE pcnbp);
 
     ULONG ntbUpdateVisiblePage(WPObject *somSelf, ULONG ulPageID);
-
-    BOOL ntbDisplayFocusHelp(WPObject *somSelf,
-                             USHORT usFirstControlID,
-                             ULONG ulFirstSubpanel,
-                             ULONG ulPanelIfNotFound);
 
 #endif

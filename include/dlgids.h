@@ -466,6 +466,7 @@
 // XFolder page in folder notebook
 // (also uses some ID's def'd above)
 // #define ID_XSD_SETTINGS_FLDR1           710      // removed V0.9.16 (2001-09-29) [umoeller]
+#define ID_XSSI_GENERALVIEWPAGE         710     // V0.9.16 (2001-10-23) [umoeller]
 #ifndef __NOFOLDERCONTENTS__
 #define ID_XSDI_FAVORITEFOLDER          711
 #endif
@@ -549,14 +550,15 @@
 #define ID_XSDI_ICON_GROUP              842
 #define ID_XSDI_ICON_STATIC             843
 #define ID_XSDI_ICON_EXPLANATION_TXT    844
-#define ID_XSDI_ICON_RESET_BUTTON       845
-#define ID_XSDI_ICON_LOCKPOSITION_CB    846
-#define ID_XSDI_ICON_TEMPLATE_CB        847
-#define ID_XSDI_ICON_HOTKEY_TEXT        848
-#define ID_XSDI_ICON_HOTKEY_EF          849
-#define ID_XSDI_ICON_HOTKEY_CLEAR       850
-#define ID_XSDI_ICON_HOTKEY_SET         851
-#define ID_XSDI_ICON_EXTRAS_GROUP       852
+#define ID_XSDI_ICON_EDIT_BUTTON        845
+#define ID_XSDI_ICON_RESET_BUTTON       846
+#define ID_XSDI_ICON_LOCKPOSITION_CB    847
+#define ID_XSDI_ICON_TEMPLATE_CB        848
+#define ID_XSDI_ICON_HOTKEY_TEXT        849
+#define ID_XSDI_ICON_HOTKEY_EF          850
+#define ID_XSDI_ICON_HOTKEY_CLEAR       851
+#define ID_XSDI_ICON_HOTKEY_SET         852
+#define ID_XSDI_ICON_EXTRAS_GROUP       853
 
 // object "Details" dialog V0.9.16 (2001-10-15) [umoeller]
 #define ID_XSDI_DETAILS_DIALOG          880
