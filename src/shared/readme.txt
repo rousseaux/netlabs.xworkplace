@@ -1,0 +1,15 @@
+
+src\shared has code which is shared by the various
+XWorkplace classes. The code in this directory has
+been separated from the actual class code because
+it might be interesting for other developers too.
+
+This has the XWorkplace "Kernel" (kernel.c) which
+handles WPS startup and thread synchronization,
+common.c which deals with global settings, NLS, and
+such, notebook.c which has useful code for managing
+notebook settings pages, and more.
+
+All this code goes into XFLDR.DLL.
+
+

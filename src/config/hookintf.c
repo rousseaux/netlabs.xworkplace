@@ -787,6 +787,8 @@ VOID hifCollectHotkeys(MPARAM mp1,  // in: HWND hwndCnr
  *      "Object hotkeys" page in the "Keyboard" settings object.
  *      Sets the controls on the page according to the
  *      Global Settings.
+ *
+ *@@changed V0.9.4 (2000-06-13) [umoeller]: group title was missing; fixed
  */
 
 VOID hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -801,13 +803,17 @@ VOID hifKeybdHotkeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
         int             i = 0;
         HWND            hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
         PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+        SWP             swpCnr;
+
+        // set group title V0.9.4 (2000-06-13) [umoeller]
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
+                          pNLSStrings->pszObjectHotkeysPage);
 
         // recreate container at the same position as
         // the container in the dlg resources;
         // this is required because of the undocumented
         // CCS_MINICONS style to support mini-icons in
         // Details view (duh...)
-        SWP             swpCnr;
         WinQueryWindowPos(hwndCnr, &swpCnr);
         WinDestroyWindow(hwndCnr);
         hwndCnr = WinCreateWindow(pcnbp->hwndDlgPage,        // parent
@@ -1112,6 +1118,7 @@ MRESULT EXPENTRY hif_fnwpSubclassedFuncKeyEF(HWND hwndEdit,
  *      window procedure for "edit function key" dlg.
  *
  *@@added V0.9.3 (2000-04-18) [umoeller]
+ *@@changed V0.9.4 (2000-06-12) [umoeller]: help page was wrong; fixed
  */
 
 MRESULT EXPENTRY hif_fnwpEditFunctionKeyDlg(HWND hwndDlg,
@@ -1129,7 +1136,7 @@ MRESULT EXPENTRY hif_fnwpEditFunctionKeyDlg(HWND hwndDlg,
     {
         case WM_HELP:
             cmnDisplayHelp(pefkd->somSelf,
-                           67);
+                           ID_XSH_SETTINGS_FUNCTIONKEYS + 1);
         break;
 
         case WM_DESTROY:
@@ -1191,6 +1198,7 @@ VOID AddFuncKeyRecord(HWND hwndCnr,             // in: cnr to create record in
  *      Global Settings.
  *
  *@@added V0.9.3 (2000-04-17) [umoeller]
+ *@@changed V0.9.4 (2000-06-13) [umoeller]: group title was missing; fixed
  */
 
 VOID hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -1205,6 +1213,10 @@ VOID hifKeybdFunctionKeysInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info 
         int             i = 0;
         HWND            hwndCnr = WinWindowFromID(pcnbp->hwndDlgPage, ID_XFDI_CNR_CNR);
         PNLSSTRINGS     pNLSStrings = cmnQueryNLSStrings();
+
+        // set group title V0.9.4 (2000-06-13) [umoeller]
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
+                          pNLSStrings->pszFunctionKeysPage);
 
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(FUNCTIONKEYRECORD, ulIndex);
@@ -1513,6 +1525,7 @@ MRESULT hifKeybdFunctionKeysItemChanged(PCREATENOTEBOOKPAGE pcnbp,
  *      Global Settings.
  *
  *@@added V0.9.1 (99-12-10) [umoeller]
+ *@@changed V0.9.4 (2000-06-12) [umoeller]: added mb3 clicks
  */
 
 VOID hifMouseMappings2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -1557,6 +1570,10 @@ VOID hifMouseMappings2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
                               pdc->fChordWinList);
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_SYSMENUMB2,
                               pdc->fSysMenuMB2TitleBar);
+
+        // mb3 clicks to MB1 dblclicks
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3CLK2MB1DBLCLK,
+                              pdc->fMB3Click2MB1DblClk);
 
         // mb3 scroll
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_MOUSE_MB3SCROLL,
@@ -1619,6 +1636,8 @@ VOID hifMouseMappings2InitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info str
  *      Reacts to changes of any of the dialog controls.
  *
  *@@added V0.9.1 (99-12-10) [umoeller]
+ *@@changed V0.9.4 (2000-06-12) [umoeller]: added mb3 clicks
+ *@@changed V0.9.4 (2000-06-12) [umoeller]: fixed "default" and "undo" buttons
  */
 
 MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -1639,6 +1658,11 @@ MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_MOUSE_SYSMENUMB2:
             hifLoadHookConfig(pdc);
             pdc->fSysMenuMB2TitleBar = ulExtra;
+        break;
+
+        case ID_XSDI_MOUSE_MB3CLK2MB1DBLCLK:
+            hifLoadHookConfig(pdc);
+            pdc->fMB3Click2MB1DblClk = ulExtra;
         break;
 
         case ID_XSDI_MOUSE_MB3SCROLL:
@@ -1704,6 +1728,7 @@ MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             hifLoadHookConfig(pdc);
             pdc->fChordWinList = 0;
             pdc->fSysMenuMB2TitleBar = 0;
+            pdc->fMB3Click2MB1DblClk = 0;
             pdc->fMB3Scroll = 0;
             pdc->usMB3ScrollMin = 0;
             pdc->usScrollMode = SM_LINEWISE; // 0
@@ -1720,7 +1745,17 @@ MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case DID_UNDO:
             // restore data which was backed up in INIT callback
             if (pcnbp->pUser2)
-                memcpy(pdc, pcnbp->pUser2, sizeof(HOOKCONFIG));
+            {
+                PHOOKCONFIG pBackup = (PHOOKCONFIG)pcnbp->pUser2;
+                pdc->fChordWinList = pBackup->fChordWinList;
+                pdc->fSysMenuMB2TitleBar = pBackup->fSysMenuMB2TitleBar;
+                pdc->fMB3Click2MB1DblClk = pBackup->fMB3Click2MB1DblClk;
+                pdc->fMB3Scroll = pBackup->fMB3Scroll;
+                pdc->usMB3ScrollMin = pBackup->usMB3ScrollMin;
+                pdc->usScrollMode = pBackup->usScrollMode;
+                pdc->sAmplification = pBackup->sAmplification;
+                pdc->fMB3ScrollReverse = pBackup->fMB3ScrollReverse;
+            }
             (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
         break;
 
@@ -1736,10 +1771,15 @@ MRESULT hifMouseMappings2ItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
 ULONG   ulScreenCornerSelectedID = ID_XSDI_MOUSE_RADIO_TOPLEFT;
 ULONG   ulScreenCornerSelectedIndex = 0;
-                            // 0 = lower left,
-                            // 1 = top left,
-                            // 2 = lower right,
-                            // 3 = top right
+                            // 0 = lower left corner,
+                            // 1 = top left corner,
+                            // 2 = lower right corner,
+                            // 3 = top right corner;
+                            //      the following added with V0.9.4 (2000-06-12) [umoeller]:
+                            // 4 = top border,
+                            // 5 = left border,
+                            // 6 = right border,
+                            // 7 = bottom border
 
 // screen corner object container d'n'd
 HOBJECT hobjBeingDragged = NULLHANDLE;
@@ -1750,6 +1790,7 @@ HOBJECT hobjBeingDragged = NULLHANDLE;
 /*
  *@@ UpdateScreenCornerIndex:
  *
+ *@@changed V0.9.4 (2000-06-12) [umoeller]: added screen borders
  */
 
 VOID UpdateScreenCornerIndex(USHORT usItemID)
@@ -1764,6 +1805,16 @@ VOID UpdateScreenCornerIndex(USHORT usItemID)
             ulScreenCornerSelectedIndex = 0; break;
         case ID_XSDI_MOUSE_RADIO_BOTTOMRIGHT:
             ulScreenCornerSelectedIndex = 2; break;
+
+        // V0.9.4 (2000-06-12) [umoeller]
+        case ID_XSDI_MOUSE_RADIO_TOP:
+            ulScreenCornerSelectedIndex = 4; break;
+        case ID_XSDI_MOUSE_RADIO_LEFT:
+            ulScreenCornerSelectedIndex = 5; break;
+        case ID_XSDI_MOUSE_RADIO_RIGHT:
+            ulScreenCornerSelectedIndex = 6; break;
+        case ID_XSDI_MOUSE_RADIO_BOTTOM:
+            ulScreenCornerSelectedIndex = 7; break;
     }
 }
 
@@ -1912,6 +1963,8 @@ VOID hifMouseMovementInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info stru
  *      notebook callback function (notebook.c) for the
  *      "Mouse hook" page in the "Mouse" settings object.
  *      Reacts to changes of any of the dialog controls.
+ *
+ *@@changed V0.9.4 (2000-06-12) [umoeller]: fixed "default" and "undo" buttons
  */
 
 MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -2027,7 +2080,19 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case DID_DEFAULT:
             hifLoadHookConfig(pdc);
-            memset(pdc, 0, sizeof(HOOKCONFIG));
+
+            pdc->fSlidingFocus = 0;
+            pdc->fSlidingBring2Top = 0;
+            pdc->fSlidingIgnoreSeamless = 0;
+            pdc->fSlidingIgnoreDesktop = 0;
+            pdc->fSlidingIgnorePageMage = 0;
+            pdc->ulSlidingFocusDelay = 0;
+            pdc->fSlidingMenus = 0;
+            pdc->ulSubmenuDelay = 0;
+            pdc->fMenuImmediateHilite = 0;
+            pdc->fAutoHideMouse = 0;
+            pdc->ulAutoHideDelay = 0;
+
             (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
         break;
 
@@ -2040,7 +2105,20 @@ MRESULT hifMouseMovementItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // restore data which was backed up in INIT callback
             hifLoadHookConfig(pdc);
             if (pcnbp->pUser2)
-                memcpy(pdc, pcnbp->pUser2, sizeof(HOOKCONFIG));
+            {
+                PHOOKCONFIG pBackup = (PHOOKCONFIG)pcnbp->pUser2;
+                pdc->fSlidingFocus = pBackup->fSlidingFocus;
+                pdc->fSlidingBring2Top = pBackup->fSlidingBring2Top;
+                pdc->fSlidingIgnoreSeamless = pBackup->fSlidingIgnoreSeamless;
+                pdc->fSlidingIgnoreDesktop = pBackup->fSlidingIgnoreDesktop;
+                pdc->fSlidingIgnorePageMage = pBackup->fSlidingIgnorePageMage;
+                pdc->ulSlidingFocusDelay = pBackup->ulSlidingFocusDelay;
+                pdc->fSlidingMenus = pBackup->fSlidingMenus;
+                pdc->ulSubmenuDelay = pBackup->ulSubmenuDelay;
+                pdc->fMenuImmediateHilite = pBackup->fMenuImmediateHilite;
+                pdc->fAutoHideMouse = pBackup->fAutoHideMouse;
+                pdc->ulAutoHideDelay = pBackup->ulAutoHideDelay;
+            }
             (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
         break;
 
@@ -2189,6 +2267,9 @@ VOID hifMouseCornersInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struc
  *      notebook callback function (notebook.c) for the
  *      "Mouse hook" page in the "Mouse" settings object.
  *      Reacts to changes of any of the dialog controls.
+ *
+ *@@changed V0.9.4 (2000-06-12) [umoeller]: added screen borders
+ *@@changed V0.9.4 (2000-06-12) [umoeller]: fixed "default" and "undo" buttons
  */
 
 MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -2212,6 +2293,10 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
         case ID_XSDI_MOUSE_RADIO_TOPRIGHT:
         case ID_XSDI_MOUSE_RADIO_BOTTOMLEFT:
         case ID_XSDI_MOUSE_RADIO_BOTTOMRIGHT:
+        case ID_XSDI_MOUSE_RADIO_TOP:
+        case ID_XSDI_MOUSE_RADIO_LEFT:
+        case ID_XSDI_MOUSE_RADIO_RIGHT:
+        case ID_XSDI_MOUSE_RADIO_BOTTOM:
             // check if the old current corner's object
             // is 1 (our "pseudo" object)
             if (pdc->ahobjHotCornerObjects[ulScreenCornerSelectedIndex] == 1)
@@ -2310,7 +2395,7 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
 
         case DID_DEFAULT:
             hifLoadHookConfig(pdc);
-            memset(pdc, 0, sizeof(HOOKCONFIG));
+            memset(pdc->ahobjHotCornerObjects, 0, sizeof(pdc->ahobjHotCornerObjects));
             (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
         break;
 
@@ -2323,7 +2408,12 @@ MRESULT hifMouseCornersItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             hifLoadHookConfig(pdc);
             // restore data which was backed up in INIT callback
             if (pcnbp->pUser2)
-                memcpy(pdc, pcnbp->pUser2, sizeof(HOOKCONFIG));
+            {
+                PHOOKCONFIG pBackup = (PHOOKCONFIG)pcnbp->pUser2;
+                memcpy(pdc->ahobjHotCornerObjects,
+                       pBackup->ahobjHotCornerObjects,
+                       sizeof(pdc->ahobjHotCornerObjects));
+            }
             (pcnbp->pfncbInitPage)(pcnbp, CBI_SET | CBI_ENABLE);
         break;
 

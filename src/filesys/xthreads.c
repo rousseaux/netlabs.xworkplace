@@ -111,6 +111,7 @@
 #include <wpshadow.h>                   // WPShadow
 // #include <wpdesk.h>                     // WPDesktop
 #include "classes\xtrash.h"             // XWPTrashCan
+#include "classes\xtrashobj.h"             // XWPTrashCan
 #include "filesys\trash.h"              // trash can implementation
 
 /* ******************************************************************

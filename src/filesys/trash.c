@@ -4,6 +4,8 @@
  *      this file has implementation code for XWPTrashCan
  *      and XWPTrashObject.
  *
+ *      Gets called from src\classes\xtrash.c mostly.
+ *
  *      Function prefix for this file:
  *      --  trsh*
  *
@@ -72,6 +74,7 @@
 
 // SOM headers which don't crash with prec. header files
 #include "xtrash.ih"
+#include "xtrashobj.ih"
 
 // XWorkplace implementation headers
 #include "dlgids.h"                     // all the IDs that are shared with NLS
@@ -2022,24 +2025,6 @@ VOID trshTrashCanDrivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info st
         }
     }
 
-    if (flFlags & CBI_ENABLE)
-    {
-        // enable "Add" button if items are selected
-        // in the "Unsupported" listbox
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XTDI_ADD_SUPPORTED,
-                         (winhQueryLboxSelectedItem(WinWindowFromID(pcnbp->hwndDlgPage,
-                                                                    ID_XTDI_UNSUPPORTED_LB),
-                                                     LIT_FIRST)
-                                != LIT_NONE));
-        // enable "Remove" button if items are selected
-        // in the "Supported" listbox
-        WinEnableControl(pcnbp->hwndDlgPage, ID_XTDI_REMOVE_SUPPORTED,
-                         (winhQueryLboxSelectedItem(WinWindowFromID(pcnbp->hwndDlgPage,
-                                                                    ID_XTDI_SUPPORTED_LB),
-                                                     LIT_FIRST)
-                                != LIT_NONE));
-    }
-
     if (flFlags & CBI_SET)
     {
         ULONG   bIndex = 0;
@@ -2074,6 +2059,24 @@ VOID trshTrashCanDrivesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info st
             // raise drive letter
             (szDriveName[0])++;
         }
+    }
+
+    if (flFlags & CBI_ENABLE)
+    {
+        // enable "Add" button if items are selected
+        // in the "Unsupported" listbox
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XTDI_ADD_SUPPORTED,
+                         (winhQueryLboxSelectedItem(WinWindowFromID(pcnbp->hwndDlgPage,
+                                                                    ID_XTDI_UNSUPPORTED_LB),
+                                                     LIT_FIRST)
+                                != LIT_NONE));
+        // enable "Remove" button if items are selected
+        // in the "Supported" listbox
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XTDI_REMOVE_SUPPORTED,
+                         (winhQueryLboxSelectedItem(WinWindowFromID(pcnbp->hwndDlgPage,
+                                                                    ID_XTDI_SUPPORTED_LB),
+                                                     LIT_FIRST)
+                                != LIT_NONE));
     }
 }
 

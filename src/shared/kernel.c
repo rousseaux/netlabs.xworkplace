@@ -67,6 +67,7 @@
 #define INCL_WINMESSAGEMGR
 #define INCL_WINTIMER
 #define INCL_WINSYS
+#define INCL_WINPOINTERS
 #define INCL_WINDIALOGS
 #define INCL_WINBUTTONS
 #define INCL_WINPROGRAMLIST     // needed for PROGDETAILS, wppgm.h
@@ -658,6 +659,7 @@ VOID krn_T1M_DaemonReady(VOID)
  *
  *@@added V0.9.3 (2000-04-20) [umoeller]
  *@@changed V0.9.3 (2000-04-20) [umoeller]: added system sound
+ *@@changed V0.9.4 (2000-06-12) [umoeller]: fixed desktop menu position
  */
 
 VOID krn_T1M_OpenObjectFromHandle(MPARAM mp1,
@@ -721,7 +723,8 @@ VOID krn_T1M_OpenObjectFromHandle(MPARAM mp1,
                     {
                         HWND hwndClient = wpshQueryCnrFromFrame(hwndFrame);
                         POINTL ptlPopup = { 0, 0 }; // default: lower left
-                        switch ((ULONG)mp2)
+                        WinQueryPointerPos(HWND_DESKTOP, &ptlPopup);
+                        /* switch ((ULONG)mp2)
                         {
                             // corner reached:
                             case 2: // top left
@@ -738,7 +741,7 @@ VOID krn_T1M_OpenObjectFromHandle(MPARAM mp1,
                                 ptlPopup.x = WinQuerySysValue(HWND_DESKTOP, SV_CXSCREEN);
                                 ptlPopup.y = WinQuerySysValue(HWND_DESKTOP, SV_CYSCREEN);
                             break;
-                        }
+                        } */
                         _wpDisplayMenu(pActiveDesktop,
                                        hwndFrame,       // owner
                                        hwndClient,

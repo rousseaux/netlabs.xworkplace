@@ -155,6 +155,10 @@
      *      so the structure can be zeroed to disable
      *      everything.
      *
+     *      If settings are added to this structure, they
+     *      must be added to the bottom in order not to
+     *      break binary compatibility between XWP versions.
+     *
      *      Note that the object hotkey _definitions_ are
      *      not part of this structure. Those are set using
      *      XDM_HOTKEYSCHANGED instead. However, object
@@ -179,23 +183,11 @@
                 // FALSE: always bring them to top
 
         // Screen corner objects:
-
-        HOBJECT         ahobjHotCornerObjects[4];
-                            // Indices:
-                            //      0 = lower left,
-                            //      1 = top left,
-                            //      2 = lower right,
-                            //      3 = top right.
-                            // If any item is NULLHANDLE, it means the
-                            // corner is inactive (no function defined).
-                            // If the hiword of the item is 0xFFFF, this
-                            // means a special function has been defined.
-                            // Currently the following exist:
-                            //      0xFFFF0000 = show window list;
-                            //      0xFFFF0001 = show Desktop's context menu.
-                            // Otherwise (> 0 and < 0xFFFF0000), we have
-                            // a "real" object handle, and a regular WPS
-                            // object is to be opened.
+        HOBJECT         ahobjDummy[4];      // was four screen corner objects;
+                                            // we extended the array to 8 items
+                                            // so the array had to be moved to the
+                                            // bottom in order not to break binary
+                                            // compatibility
 
         BYTE            bMonitorDrives[30];     // array of 1-byte BOOLs; if any of these
                 // is "1", the corresponding drive letter
@@ -255,6 +247,36 @@
         ULONG           ulSubmenuDelay;
                 // delay in ms; 0 = off
         BOOL            fMenuImmediateHilite;
+
+        // Mouse-button-3 single-clicks to MB1 double-clicks
+        // V0.9.4 (2000-06-12) [umoeller]
+        BOOL            fMB3Click2MB1DblClk;
+
+        // Screen corner objects:
+        // moved the array down here (there's a dummy above)
+        // V0.9.4 (2000-06-12) [umoeller]
+        HOBJECT         ahobjHotCornerObjects[8];
+                            // Indices:
+                            //      0 = lower left corner,
+                            //      1 = top left corner,
+                            //      2 = lower right corner,
+                            //      3 = top right corner;
+                            //   borders added V0.9.4 (2000-06-12) [umoeller]:
+                            //      4 = top border,
+                            //      5 = left border,
+                            //      6 = right border,
+                            //      7 = bottom border.
+                            // If any item is NULLHANDLE, it means the
+                            // corner is inactive (no function defined).
+                            // If the hiword of the item is 0xFFFF, this
+                            // means a special function has been defined.
+                            // Currently the following exist:
+                            //      0xFFFF0000 = show window list;
+                            //      0xFFFF0001 = show Desktop's context menu.
+                            // Otherwise (> 0 and < 0xFFFF0000), we have
+                            // a "real" object handle, and a regular WPS
+                            // object is to be opened.
+
     } HOOKCONFIG, *PHOOKCONFIG;
 
     /*
@@ -408,6 +430,8 @@
     #define XDM_SLIDINGMENU         (WM_USER + 309)
 
     #define XDM_HOTCORNER           (WM_USER + 310)
+
+    #define XDM_WMCHORDWINLIST      (WM_USER + 311)
 
 #endif
 

@@ -41,11 +41,6 @@ PROJECT_BASE_DIR = $(MAKEDIR)\..\..
 # files will be created in.
 OUTPUTDIR = ..\..\bin
 
-!ifdef ANIMATED_MOUSE_POINTERS
-CC_DLL_THIS = $(CC_DLL) /D__ANIMATED_MOUSE_POINTERS__=1
-!else
-CC_DLL_THIS = $(CC_DLL)
-!endif
 # create output directory
 !if [@md $(OUTPUTDIR) 2> NUL]
 !endif
@@ -61,6 +56,8 @@ OBJS = \
        $(OUTPUTDIR)\anwcur.obj \
 !endif
        $(OUTPUTDIR)\xdebug.obj \
+       $(OUTPUTDIR)\xdebug_folder.obj \
+       $(OUTPUTDIR)\xcenter.obj \
        $(OUTPUTDIR)\xclslist.obj \
        $(OUTPUTDIR)\xfdataf.obj \
        $(OUTPUTDIR)\xfdesk.obj \
@@ -72,6 +69,7 @@ OBJS = \
        $(OUTPUTDIR)\xfsys.obj \
        $(OUTPUTDIR)\xfwps.obj \
        $(OUTPUTDIR)\xtrash.obj \
+       $(OUTPUTDIR)\xtrashobj.obj \
        $(OUTPUTDIR)\xwpkeybd.obj \
        $(OUTPUTDIR)\xwpmedia.obj \
        $(OUTPUTDIR)\xwpmouse.obj \
@@ -161,6 +159,13 @@ $(OUTPUTDIR)\anwcur.obj: \
             $(INC)\shared\common.h $(INC)\shared\kernel.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
+$(OUTPUTDIR)\xcenter.obj: \
+            $(INC)\setup.h \
+            $(HLPINC)\except.h $(HLPINC)\winh.h \
+            $(INC)\dlgids.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
+            $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
+
 $(OUTPUTDIR)\xclslist.obj: \
             $(INC)\setup.h \
             $(HLPINC)\except.h $(HLPINC)\winh.h \
@@ -170,6 +175,12 @@ $(OUTPUTDIR)\xclslist.obj: \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xdebug.obj: \
+            $(INC)\setup.h \
+            $(HLPINC)\ras.h $(HLPINC)\winh.h \
+            $(INC)\shared\common.h $(INC)\shared\wpsh.h \
+            $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
+
+$(OUTPUTDIR)\xdebug_folder.obj: \
             $(INC)\setup.h \
             $(HLPINC)\ras.h $(HLPINC)\winh.h \
             $(INC)\shared\common.h $(INC)\shared\wpsh.h \
@@ -261,7 +272,18 @@ $(OUTPUTDIR)\xtrash.obj: \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(INC)\filesys\trash.h \
-            $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
+            $(@B).c \
+            $(MYOWNINC)\xtrash.ih $(MYOWNINC)\xtrash.h $(MYOWNINC)\xtrashobj.ih $(MYOWNINC)\xtrashobj.h
+
+$(OUTPUTDIR)\xtrashobj.obj: \
+            $(INC)\setup.h \
+            $(HLPINC)\except.h $(HLPINC)\winh.h $(HLPINC)\stringh.h \
+            $(INC)\classes\xfobj.h \
+            $(INC)\dlgids.h \
+            $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
+            $(INC)\filesys\trash.h \
+            $(@B).c \
+            $(MYOWNINC)\xtrash.ih $(MYOWNINC)\xtrash.h $(MYOWNINC)\xtrashobj.ih $(MYOWNINC)\xtrashobj.h
 
 $(OUTPUTDIR)\xwpkeybd.obj: \
             $(INC)\setup.h \

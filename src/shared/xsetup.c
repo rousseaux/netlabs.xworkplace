@@ -2,7 +2,8 @@
 /*
  *@@sourcefile xsetup.c:
  *      this file contains the implementation of the XWPSetup
- *      class.
+ *      class. This is in the shared directory because this
+ *      affects all installed classes.
  *
  *@@header "shared\xsetup.h"
  */
@@ -109,6 +110,8 @@
 /*
  *@@ STANDARDOBJECT:
  *      structure used for XWPSetup "Objects" page.
+ *      Each of these represents an object to be
+ *      created from the menu buttons.
  */
 
 typedef struct _STANDARDOBJECT
@@ -124,6 +127,7 @@ typedef struct _STANDARDOBJECT
 #define OBJECTSIDFIRST 100      // first object menu ID, inclusive
 #define OBJECTSIDLAST  213      // last object menu ID, inclusive
 
+// array of objects for "Standard WPS objects" menu button
 STANDARDOBJECT  G_WPSObjects[] = {
                                     "<WP_KEYB>", "WPKeyboard", "", 100,
                                     "<WP_MOUSE>", "WPMouse", "", 101,
@@ -149,6 +153,8 @@ STANDARDOBJECT  G_WPSObjects[] = {
                                     "<WP_TEMPS>", "WPTemplates", "", 141,
                                     "<WP_DRIVES>", "WPDrives", "", 142
                                },
+
+// array of objects for "XWorkplace objects" menu button
                 G_XWPObjects[] = {
                                     XFOLDER_WPSID, "XFldWPS", "", 200,
                                     XFOLDER_KERNELID, "XFldSystem", "", 201,
@@ -170,6 +176,12 @@ STANDARDOBJECT  G_WPSObjects[] = {
                                             "SORTCLASS=XWPTrashObject;",
                                             213
                                };
+
+/* ******************************************************************
+ *                                                                  *
+ *   XWPSetup helper functions                                      *
+ *                                                                  *
+ ********************************************************************/
 
 /*
  *@@ setCreateStandardObject:
@@ -267,12 +279,6 @@ BOOL setCreateStandardObject(HWND hwndOwner,         // in: for dialogs
 
     return (brc);
 }
-
-/* ******************************************************************
- *                                                                  *
- *   XWPSetup helper functions                                      *
- *                                                                  *
- ********************************************************************/
 
 /*
  *@@ AddResourceDLLToLB:
@@ -1290,8 +1296,11 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
             memcpy(pcnbp->pUser, pGlobalSettings, sizeof(GLOBALSETTINGS));
         }
 
-        if (ctlMakeCheckboxContainer(pcnbp->hwndDlgPage,
+        if (!ctlMakeCheckboxContainer(pcnbp->hwndDlgPage,
                                      ID_XCDI_CONTAINER))
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "ctlMakeCheckboxContainer failed.");
+        else
         {
             cRecords = sizeof(FeatureItemsList) / sizeof(FEATURESITEM);
 
@@ -1352,7 +1361,10 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         } // end if (ctlMakeCheckboxContainer(pcnbp->hwndPage,
 
         // register tooltip class
-        if (ctlRegisterTooltip(WinQueryAnchorBlock(pcnbp->hwndDlgPage)))
+        if (!ctlRegisterTooltip(WinQueryAnchorBlock(pcnbp->hwndDlgPage)))
+            cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                   "ctlRegisterTooltip failed.");
+        else
         {
             // create tooltip
             pcnbp->hwndTooltip = WinCreateWindow(HWND_DESKTOP,  // parent
@@ -1367,7 +1379,10 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                                                  NULL,          // control data
                                                  NULL);         // presparams
 
-            if (pcnbp->hwndTooltip)
+            if (!pcnbp->hwndTooltip)
+               cmnLog(__FILE__, __LINE__, __FUNCTION__,
+                      "WinCreateWindow failed creating tooltip.");
+            else
             {
                 // tooltip successfully created:
                 // add tools (i.e. controls of the dialog)
@@ -1463,8 +1478,11 @@ VOID setFeaturesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_EXTFOLDERSORT,
                 (pKernelGlobals->fXFolder));
 
-        ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_ANIMOUSE,
-                FALSE);     // ### not implemented yet
+        #ifndef __ANIMATED_MOUSE_POINTERS__
+            ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_ANIMOUSE,
+                    FALSE);     // ### not implemented yet
+            xxx
+        #endif
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_XWPHOOK,
                 (pDaemonShared->hwndDaemonObject != NULLHANDLE));
         ctlEnableRecord(hwndFeaturesCnr, ID_XCSI_GLOBALHOTKEYS,
@@ -1685,26 +1703,30 @@ MRESULT setFeaturesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             // and restore the settings for this page
             pGlobalSettings->fReplaceIcons = pGSBackup->fReplaceIcons;
             pGlobalSettings->AddObjectPage = pGSBackup->AddObjectPage;
-            pGlobalSettings->fEnableXWPHook = pGSBackup->fEnableXWPHook;
             pGlobalSettings->fReplaceFilePage = pGSBackup->fReplaceFilePage;
             pGlobalSettings->fXSystemSounds = pGSBackup->fXSystemSounds;
-            pGlobalSettings->fAniMouse = pGSBackup->fAniMouse;
 
             pGlobalSettings->fEnableStatusBars = pGSBackup->fEnableStatusBars;
             pGlobalSettings->fEnableSnap2Grid = pGSBackup->fEnableSnap2Grid;
             pGlobalSettings->fEnableFolderHotkeys = pGSBackup->fEnableFolderHotkeys;
             pGlobalSettings->ExtFolderSort = pGSBackup->ExtFolderSort;
-            pGlobalSettings->fMonitorCDRoms = pGSBackup->fMonitorCDRoms;
+            // pGlobalSettings->fMonitorCDRoms = pGSBackup->fMonitorCDRoms;
+
+            pGlobalSettings->fAniMouse = pGSBackup->fAniMouse;
+            pGlobalSettings->fEnableXWPHook = pGSBackup->fEnableXWPHook;
+            // global hotkeys... ### V0.9.4 (2000-06-05) [umoeller]
+            // pagemage... ### V0.9.4 (2000-06-05) [umoeller]
 
             pGlobalSettings->fReplaceArchiving = pGSBackup->fReplaceArchiving;
             pGlobalSettings->fRestartWPS = pGSBackup->fRestartWPS;
             pGlobalSettings->fXShutdown = pGSBackup->fXShutdown;
 
             pGlobalSettings->fExtAssocs = pGSBackup->fExtAssocs;
-            // pGlobalSettings->fIgnoreFilters = pGSBackup->fIgnoreFilters;
             pGlobalSettings->CleanupINIs = pGSBackup->CleanupINIs;
             pGlobalSettings->fReplFileExists = pGSBackup->fReplFileExists;
             pGlobalSettings->fReplDriveNotReady = pGSBackup->fReplDriveNotReady;
+            // trash can ### V0.9.4 (2000-06-05) [umoeller]
+            pGlobalSettings->fReplaceTrueDelete = pGSBackup->fReplaceTrueDelete;
 
             // update the display by calling the INIT callback
             ulUpdateFlags = CBI_SET | CBI_ENABLE;

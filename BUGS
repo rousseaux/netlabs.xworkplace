@@ -19,11 +19,14 @@ SERIOUS PROBLEMS
 
 --  "create another" for folders can lead to black-screen trap (see readme)
 
+-- Clicking "Refresh" in the "object" strap of an object causes a WPS-Hangup.
+
 file page:
     -- Opening the context menu of swapper.dat and selecting the "file" strap(?)
        causes a WPS-hangup.
     -- Same with chkdsk.log. Apparently EA handling is buggy somewhere.
 
+--  XShutdown creates 0-byte OS2.INI.
 
 NOT-SO-SERIOUS PROBLEMS
 -----------------------
@@ -31,9 +34,20 @@ NOT-SO-SERIOUS PROBLEMS
 misc:
     -- install: XWPScreen no work; probably the old DLL is still in use
        when replaced (DosReplaceModule)
+    -- XWPSETUP: check objects at startup; disable menu items if creation was successful
 
 folders:
     -- using WarpCenter moves icons upwards at each WPS startup
+    -- dragging stuff to folders crashes WPS if folder is being populated
+    -- On some objects the delete menu item appears to try to delete the
+       parent folder of the item rather than the item itself.  This appears
+       to be a consistent error ie. the problem always appears for a given
+       object but other objects are OK.  Using the delete key seems to work
+       fine.
+       Using the delete key works OK.
+       Disabling the true delete has no affect - error still present.
+       Disabling trashcan restores the default WPS behaviour (obviously)
+       which does not display the error.
 
 status bars:
     -- hidden records are counted in total objects count (Templates folder)
@@ -42,7 +56,6 @@ trash can:
     -- open subfolders are not closed when deleting parent folder
     -- sorting doesn't work right
     -- Drives page: multiple selections are not all moved
-    -- Drives page: drive Z: doesn't show up. Loop limit?
 
 archiving:
     -- after restoring a backup, archiving is enabled because of the
@@ -54,16 +67,11 @@ startup folder:
        "XWorkplace Startup"?) with "Xworkplace Startup folder" is wrong while getting
        down from 500 to 10000, but from 10000 up to 750. Why no option for 250ms?
 
-OS/2 Kernel:
-    -- "Optimize" does nothing with CDFS.IFS
-
 other settings pages:
     -- XWPSetup: "Undo" and "Default" don't affect newer settings (trashcan);
        PageMage isn't affected
-    -- Clicking "Refresh" in the "object" strap of an object causes a WPS-Hangup.
     -- System paths:
        -- scroll listbox to first visible
-       -- check resize controls; crashes on "Close" button
 
 NetscDDE:
     -- With the Netscape DDE feature Netscape does not get the right location of
@@ -78,36 +86,18 @@ create objects:
     -- select editable title
 
 hook:
+    -- hotkeys:
+       -- don't work on fresh install
+
     -- auto-hide pointer:
        -- no work when typing in PM window
        -- disappears while MB3-scrolling or Mb1-menus
        -- above WarpCenter menus, the mouse disappears and never comes back. ?!?!?
 
     -- MB3 scroll:
-       -- Netscape hangs
        -- VIEW.EXE TOC not fully shown
-       -- I have found that "MB3 window scrolling" function by  XWorkplace 0.9.2
-          intercepts "MB3 double click emulation" function in Styler/2.
-            --> WM_BUTTON3BEGINDRAG?
 
     -- VIO copy conflicts with WM_CHORD; check window class
-
-    -- WM_CHORD over Netscape/PMMail no work
-
-    -- Mouse object / Movement: "windows to top" and "Ignore WinOS/2" does not
-       ignore WinOS/2 windows.
-
-    -- I had problem with my second installation of XWp. I installed, but
-       afterwards it was not possible to check "Enable global object hotkeys"
-       unless (afaik) I temporarily turned sliding focus on. (the Hook etc was - of
-       course - installed).
-       But I reinstalled XWorkplace on a new partition (with a new Warp4, FP12, DDFix,
-       ..) and the same happened. I was not able to enable the global hotkeys - unless
-       I temporarily turned the sliding focus on. So it is definetely reproducable.
-
-    -- I was still able to trigger the Window list as mouse cursor bug (not as easily,
-       though).  I think I did it from PMMail.
-
 
 PageMage:
     -- maximized windows show border on adjacent screen; hide them when switching...

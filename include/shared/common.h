@@ -284,7 +284,7 @@
     #define ID_XSH_MEDIA_DEVICES             80     // V0.9.3: XWPMedia "Devices" page
     #define ID_XSH_MEDIA_CODECS              81     // V0.9.3: XWPMedia "Codecs" page
     #define ID_XSH_MEDIA_IOPROCS             82     // V0.9.3: XWPMedia "IOProcs" page
-
+    #define ID_XSH_SETTINGS_TRASHCAN_DRIVES  83     // V0.9.4: XWPTrashCan "Drives" page
     // "subpanels" for pages with context-sensitive help
     // #define ID_XSH_SETTINGS_REMOVEMENUS_SUB  81+19  // "Find" item on "Remove menus" page
     // #define ID_XSH_SETTINGS_ADDMENUS_SUB     98+19
@@ -779,6 +779,14 @@
                         // replace "true delete" also?
                         // on XWPSetup "Features" page
 
+    /* XWorkplace 0.9.4 */
+        BYTE        fFdrDefaultDoc,
+                        // folder default documents enabled?
+                        // "Workplace Shell" "View" page
+                    fFdrDefaultDocView;
+                        // "default doc = folder default view"
+                        // "Workplace Shell" "View" page
+
     } GLOBALSETTINGS;
 
     typedef const GLOBALSETTINGS* PCGLOBALSETTINGS;
@@ -1065,7 +1073,14 @@
 
                 pszFuncKeyDescription,
                 pszFuncKeyScanCode,
-                pszFuncKeyModifier;
+                pszFuncKeyModifier,
+
+                // default documents V0.9.4 (2000-06-09) [umoeller]
+                pszDataFileDefaultDoc,
+                pszFdrDefaultDoc,
+
+                // XCenter V0.9.4 (2000-06-10) [umoeller]
+                pszXCenterPage1;
     } NLSSTRINGS;
 
     typedef const NLSSTRINGS* PNLSSTRINGS;

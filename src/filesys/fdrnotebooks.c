@@ -103,6 +103,7 @@
  *
  *@@changed V0.9.0 [umoeller]: adjusted function prototype, renamed function
  *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
+ *@@changed V0.9.4 (2000-06-09) [umoeller]: added default documents
  */
 
 VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -139,6 +140,12 @@ VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                                pGlobalSettings->MaxPathChars);  // data
         winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_TREEVIEWAUTOSCROLL,
                               pGlobalSettings->TreeViewAutoScroll);
+
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FDRDEFAULTDOC,
+                              pGlobalSettings->fFdrDefaultDoc);
+        winhSetDlgItemChecked(pcnbp->hwndDlgPage, ID_XSDI_FDRDEFAULTDOCVIEW,
+                              pGlobalSettings->fFdrDefaultDocView);
+
     }
 
     if (flFlags & CBI_ENABLE)
@@ -147,6 +154,8 @@ VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
                 (    (pGlobalSettings->NoWorkerThread == FALSE)
                   && (pGlobalSettings->fNoSubclassing == FALSE)
                 ));
+        WinEnableControl(pcnbp->hwndDlgPage, ID_XSDI_FDRDEFAULTDOCVIEW,
+                         pGlobalSettings->fFdrDefaultDoc);
     }
 }
 
@@ -158,6 +167,7 @@ VOID fdrViewInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
  *
  *@@changed V0.9.0 [umoeller]: adjusted function prototype
  *@@changed V0.9.0 [umoeller]: moved this func here from xfwps.c
+ *@@changed V0.9.4 (2000-06-09) [umoeller]: added default documents
  */
 
 MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
@@ -196,6 +206,15 @@ MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             fUpdate = TRUE;
         break;
 
+        case ID_XSDI_FDRDEFAULTDOC:
+            pGlobalSettings->fFdrDefaultDoc = ulExtra;
+            fUpdate = TRUE;
+        break;
+
+        case ID_XSDI_FDRDEFAULTDOCVIEW:
+            pGlobalSettings->fFdrDefaultDocView = ulExtra;
+        break;
+
         case DID_UNDO:
         {
             // "Undo" button: get pointer to backed-up Global Settings
@@ -208,6 +227,9 @@ MRESULT fdrViewItemChanged(PCREATENOTEBOOKPAGE pcnbp,
             pGlobalSettings->KeepTitle = pGSBackup->KeepTitle;
             pGlobalSettings->TreeViewAutoScroll = pGSBackup->TreeViewAutoScroll;
             pGlobalSettings->MaxPathChars = pGSBackup->MaxPathChars;
+
+            pGlobalSettings->fFdrDefaultDoc = pGSBackup->fFdrDefaultDoc;
+            pGlobalSettings->fFdrDefaultDocView = pGSBackup->fFdrDefaultDocView;
 
             // update the display by calling the INIT callback
             (*(pcnbp->pfncbInitPage))(pcnbp, CBI_SET | CBI_ENABLE);

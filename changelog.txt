@@ -21,8 +21,16 @@ utility handy to be able to search for strings like "V0.9.0".
 \OS2\APPS\PMSEEK.EXE should do also.
 
 
-Changes since V0.9.0
-====================
+Changes for V0.9.4
+==================
+
+    --  ID_XSD_FOLDERVIEWS changed.
+    --  ID_XSD_MOUSEMAPPINGS2 changed.
+    --  ID_XSD_MOUSE_CORNERS changed.
+    --  ID_XFD_CONTAINERPAGE changed.
+
+Changes between V0.9.0 and V0.9.3
+=================================
 
     Sorry, I have lost track about the changes in the dialog
     resources. I guess more than 70% of the dialogs have

@@ -3,8 +3,10 @@ This file lists feature suggestions from XWorkplace users.
 Please don't suggest features which are already listed in
 this file. Thank you.
 
-install:
-    -- give main XWP folder nicer icons
+
+everywhere:
+    -- remember split bar positions
+    -- make WPS notebooks resizeable
 
 PageMage:
     -- add sticky windows config to "Screen"
@@ -24,6 +26,14 @@ OS/2 Kernel:
     -- add other paths (TEMP, Java...) to System paths page
     -- add page for unparsed lines
     -- add timezone (TZ variable, DosSetDateTime)
+    -- >I have one suggestion for the OS/2 Kernel object. I use multiple Config.*
+       >files in c:\OS2\Boot to get different WPSs for different family members.
+       >So the Kernel object is not much use for me at the moment. How about
+       >setting an environment variable in Config.* like
+       >    set xwpkernelconfig=c:\os2\boot\config.b
+       >and from that determining which Config.* to use for the OS/2 Kernel
+       >object?
+
 
 File page:
     -- allow changing dates
@@ -50,9 +60,13 @@ hook:
     -- add screen edges to hot corners too
     -- window list filtering from WarpEnhancer
     -- PageMage and screen corner actions ("flash")
+    -- corners: add screen edges too
 
 startup:
     -- environment var for X, Y pos of classes initialization dlg
+
+shutdown:
+    -- disable animations
 
 NetscDDE:
     -- prompt for whether to open a new window

@@ -2320,6 +2320,7 @@ VOID AddSyslevelsForDir(HWND hwndCnr,
  *@@ cfgSyslevelInitPage:
  *
  *@@added V0.9.2 (2000-03-08) [umoeller]
+ *@@changed V0.9.4 (2000-06-13) [umoeller]: group title was missing; fixed
  */
 
 VOID cfgSyslevelInitPage(PCREATENOTEBOOKPAGE pcnbp,
@@ -2332,6 +2333,11 @@ VOID cfgSyslevelInitPage(PCREATENOTEBOOKPAGE pcnbp,
         XFIELDINFO      xfi[5];
         PFIELDINFO      pfi = NULL;
         int             i = 0;
+
+        // set group title V0.9.4 (2000-06-13) [umoeller]
+        PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
+                          pNLSStrings->pszSyslevelPage);
 
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(SYSLEVELRECORD, pszComponent);

@@ -1184,6 +1184,17 @@ VOID LoadNLSData(HAB habDesktop,
             &(pNLSStrings->pszFuncKeyScanCode));
     cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_FUNCKEY_MODIFIER,
             &(pNLSStrings->pszFuncKeyModifier));
+
+    // default documents V0.9.4 (2000-06-09) [umoeller]
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_DATAFILEDEFAULTDOC,
+            &(pNLSStrings->pszDataFileDefaultDoc));
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_FDRDEFAULTDOC,
+            &(pNLSStrings->pszFdrDefaultDoc));
+
+    // XCenter V0.9.4 (2000-06-10) [umoeller]
+    cmnLoadString(habDesktop, G_hmodNLS, ID_XSSI_XCENTERPAGE1,
+            &(pNLSStrings->pszXCenterPage1));
+
 }
 
 /*
@@ -1850,6 +1861,9 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
             G_pGlobalSettings->KeepTitle = 1;
             G_pGlobalSettings->MaxPathChars = 25;
             G_pGlobalSettings->TreeViewAutoScroll = 1;
+
+            G_pGlobalSettings->fFdrDefaultDoc = 0;
+            G_pGlobalSettings->fFdrDefaultDocView = 0;
         break;
 
         case SP_2REMOVEITEMS:
@@ -1947,12 +1961,14 @@ BOOL cmnSetDefaultSettings(USHORT usSettingsPage)
 
             G_pGlobalSettings->fAniMouse = 0;
             G_pGlobalSettings->fEnableXWPHook = 0;
-            G_pGlobalSettings->fEnablePageMage = 0;
+            // global hotkeys ### V0.9.4 (2000-06-05) [umoeller]
+            G_pGlobalSettings->fEnablePageMage = 0; // ### V0.9.4 (2000-06-05) [umoeller]
 
-            G_pGlobalSettings->fMonitorCDRoms = 0;
+            G_pGlobalSettings->fReplaceArchiving = 0;
             G_pGlobalSettings->fRestartWPS = 0;
             G_pGlobalSettings->fXShutdown = 0;
-            G_pGlobalSettings->fReplaceArchiving = 0;
+
+            // G_pGlobalSettings->fMonitorCDRoms = 0;
 
             G_pGlobalSettings->fExtAssocs = 0;
             G_pGlobalSettings->CleanupINIs = 0;

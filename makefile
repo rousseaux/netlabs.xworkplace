@@ -79,10 +79,11 @@ MODULESDIR=bin\modules
 # created from the files in MAIN\.
 OBJS = \
 # code from classes\
-    bin\xfobj.obj bin\xfldr.obj bin\xfdesk.obj bin\xfsys.obj bin\xfwps.obj \
+    bin\xcenter.obj bin\xfobj.obj bin\xfldr.obj bin\xfdesk.obj bin\xfsys.obj bin\xfwps.obj \
     bin\xfdisk.obj bin\xfdataf.obj bin\xfpgmf.obj bin\xfstart.obj \
-    bin\xclslist.obj bin\xwpsound.obj bin\xtrash.obj bin\xwpkeybd.obj \
-    bin\xwpmedia.obj bin\xwpmouse.obj bin\xwpsetup.obj bin\xwpscreen.obj bin\xwpstring.obj \
+    bin\xclslist.obj bin\xwpsound.obj bin\xtrash.obj bin\xtrashobj.obj bin\xwpkeybd.obj \
+    bin\xwpmedia.obj bin\xwpmouse.obj bin\xwpsetup.obj bin\xwpscreen.obj \
+    bin\xwpstring.obj \
 # code from shared \
     bin\classes.obj bin\cnrsort.obj bin\common.obj bin\notebook.obj \
     bin\kernel.obj bin\xsetup.obj bin\wpsh.obj \
@@ -99,7 +100,8 @@ OBJS = \
     bin\apm.obj bin\archives.obj bin\shutdown.obj
 
 OBJS_ANICLASSES = bin\anand.obj bin\anos2ptr.obj bin\anwani.obj bin\anwcur.obj
-OBJS_ANICONVERT = bin\cursor.obj bin\pointer.obj bin\script.obj bin\expire.obj
+OBJS_ANICONVERT = bin\cursor.obj bin\pointer.obj bin\script.obj
+#bin\expire.obj
 OBJS_ANIDLL = bin\dll.obj bin\dllbin.obj
 OBJS_ANIANI = bin\mptranim.obj bin\mptrcnr.obj bin\mptredit.obj bin\mptrlset.obj \
     bin\mptrpag1.obj bin\mptrppl.obj bin\mptrprop.obj bin\mptrptr.obj bin\mptrset.obj \
@@ -120,6 +122,9 @@ DMNOBJS = bin\exe_mt\xwpdaemn.obj \
           bin\exe_mt\pgmg_control.obj bin\exe_mt\pgmg_move.obj bin\exe_mt\pgmg_settings.obj \
                 bin\exe_mt\pgmg_winscan.obj \
           bin\helpers.lib
+
+# objects for XDEBUG.DLL (debugging only)
+DEBUG_OBJS = bin\xdebug.obj bin\xdebug_folder.obj
 
 # Define the suffixes for files which NMAKE will work on.
 # .SUFFIXES is a reserved NMAKE keyword ("pseudotarget") for
@@ -279,7 +284,6 @@ nls:
 link: $(XWPRUNNING)\bin\xfldr.dll \
       $(XWPRUNNING)\bin\xwphook.dll \
       $(XWPRUNNING)\bin\xwpdaemn.exe \
-#$(XWPRUNNING)\bin\sound.dll \
       $(XWPRUNNING)\bin\xdebug.dll
 
 # Finally, define rules for linking the target DLLs and EXEs
@@ -402,8 +406,8 @@ $(XWPRUNNING)\bin\xdebug.dll: $(MODULESDIR)\$(@B).dll
 !endif
         cmd.exe /c copy $(MODULESDIR)\$(@B).dll $(XWPRUNNING)\bin
 
-$(MODULESDIR)\xdebug.dll: src\shared\$(@B).def bin\$(@B).obj $(HLPOBJS) bin\wpsh.obj
-        $(LINK) /OUT:$(MODULESDIR)\$(@B).dll src\shared\$(@B).def bin\$(@B).obj $(HLPOBJS) $(LIBS) bin\wpsh.obj
+$(MODULESDIR)\xdebug.dll: src\shared\$(@B).def $(DEBUG_OBJS) $(HLPOBJS) bin\wpsh.obj
+        $(LINK) /OUT:$(MODULESDIR)\$(@B).dll src\shared\$(@B).def $(DEBUG_OBJS) $(HLPOBJS) $(LIBS) bin\wpsh.obj
 
 #
 # Special target "dlgedit": this is not called by "all",

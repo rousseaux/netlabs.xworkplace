@@ -42,8 +42,10 @@ all: $(OUTPUTDIR)\anand.h \
      $(OUTPUTDIR)\anos2ptr.h \
      $(OUTPUTDIR)\anwani.h \
      $(OUTPUTDIR)\anwcur.h \
+     $(OUTPUTDIR)\xcenter.h \
      $(OUTPUTDIR)\xclslist.h \
      $(OUTPUTDIR)\xdebug.h \
+     $(OUTPUTDIR)\xdebug_folder.h \
      $(OUTPUTDIR)\xfdataf.h \
      $(OUTPUTDIR)\xfdesk.h \
      $(OUTPUTDIR)\xfdisk.h \
@@ -54,6 +56,7 @@ all: $(OUTPUTDIR)\anand.h \
      $(OUTPUTDIR)\xfsys.h \
      $(OUTPUTDIR)\xfwps.h \
      $(OUTPUTDIR)\xtrash.h \
+     $(OUTPUTDIR)\xtrashobj.h \
      $(OUTPUTDIR)\xwpkeybd.h \
      $(OUTPUTDIR)\xwpmedia.h \
      $(OUTPUTDIR)\xwpmouse.h \
@@ -96,9 +99,13 @@ $(OUTPUTDIR)\anwani.h:           $(@B).idl
 
 $(OUTPUTDIR)\anwcur.h:           $(@B).idl
 
+$(OUTPUTDIR)\xcenter.h:          $(@B).idl
+
 $(OUTPUTDIR)\xclslist.h:         $(@B).idl
 
 $(OUTPUTDIR)\xdebug.h:           $(@B).idl
+
+$(OUTPUTDIR)\xdebug_folder.h:    $(@B).idl
 
 $(OUTPUTDIR)\xfdataf.h:          $(@B).idl
 
@@ -119,6 +126,8 @@ $(OUTPUTDIR)\xfsys.h:            $(@B).idl
 $(OUTPUTDIR)\xfwps.h:            $(@B).idl
 
 $(OUTPUTDIR)\xtrash.h:           $(@B).idl
+
+$(OUTPUTDIR)\xtrashobj.h:        $(@B).idl
 
 $(OUTPUTDIR)\xwpkeybd.h:         $(@B).idl
 

@@ -12,7 +12,7 @@
  *      for them. In order to use these classes, do the following:
  *
  *      a)  Register the classes with the WPS class list.
- *      b)  Replace the original WPS classes with the debug classes
+ *      b)  Create an object of this class manually.
  *
  *      After the next WPS restart, you'll see an additional
  *      "Debug" menu item in all object context menus, where
@@ -71,7 +71,7 @@
 
 #pragma hdrstop
 
-BOOL    G_fDebugInit = FALSE;
+BOOL    G_fDebugDataFileInit = FALSE;
 
 /*
  * InstanceMethodDebug:
@@ -165,7 +165,7 @@ SOM_Scope void SOMLINK ddf_somDefaultInit(DbgDataFile *somSelf,
      * local DbgDataFile initialization code added by programmer
      */
 
-    _fDebugThis = G_fDebugInit;  // set this to the global for instantiation;
+    _fDebugThis = G_fDebugDataFileInit;  // set this to the global for instantiation;
                             // this will be reset by wpObjectReady
     _ulIndent = 0;
 
@@ -1280,7 +1280,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpModifyPopupMenu(DbgDataFile *somSelf,
                            ID_DOMI_DEBUGALL,
                            "~Trace all initialization method calls",
                            MIS_TEXT,
-                           (G_fDebugInit)
+                           (G_fDebugDataFileInit)
                                 ? MIA_CHECKED
                                 : 0);
     }
@@ -1326,7 +1326,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpMenuItemSelected(DbgDataFile *somSelf,
     BOOL    rc = FALSE;
     DbgDataFileData *somThis = DbgDataFileGetData(somSelf);
     BOOL    fNewDebug = _fDebugThis,
-            fNewDebugAll = G_fDebugInit;
+            fNewDebugAll = G_fDebugDataFileInit;
     DbgDataFileMethodDebug("DbgDataFile","ddf_wpMenuItemSelected");
 
     if (ulMenuId == ID_DOMI_DEBUGTHIS)
@@ -1349,7 +1349,7 @@ SOM_Scope BOOL  SOMLINK ddf_wpMenuItemSelected(DbgDataFile *somSelf,
 
     EndInstanceMethodDebug();
     _fDebugThis = fNewDebug;
-    G_fDebugInit = fNewDebugAll;
+    G_fDebugDataFileInit = fNewDebugAll;
     return (rc);
 }
 
@@ -2208,14 +2208,14 @@ SOM_Scope SOMObject*  SOMLINK ddfM_somNew(M_DbgDataFile *somSelf)
     /* M_DbgDataFileData *somThis = M_DbgDataFileGetData(somSelf); */
     M_DbgDataFileMethodDebug("M_DbgDataFile","ddfM_somNew");
 
-    if (G_fDebugInit)
+    if (G_fDebugDataFileInit)
     {
         _Pmpf(("++ Entering somNew"));
     }
 
     rc = (M_DbgDataFile_parent_M_WPDataFile_somNew(somSelf));
 
-    if (G_fDebugInit)
+    if (G_fDebugDataFileInit)
     {
         _Pmpf(("-- End of somNew; returning obj 0x%lX", rc ));
     }
@@ -2229,14 +2229,14 @@ SOM_Scope SOMObject*  SOMLINK ddfM_somNewNoInit(M_DbgDataFile *somSelf)
     /* M_DbgDataFileData *somThis = M_DbgDataFileGetData(somSelf); */
     M_DbgDataFileMethodDebug("M_DbgDataFile","ddfM_somNewNoInit");
 
-    if (G_fDebugInit)
+    if (G_fDebugDataFileInit)
     {
         _Pmpf(("++ Entering somNewNoInit"));
     }
 
     rc =  (M_DbgDataFile_parent_M_WPDataFile_somNewNoInit(somSelf));
 
-    if (G_fDebugInit)
+    if (G_fDebugDataFileInit)
     {
         _Pmpf(("-- End of somNewNoInit; returning obj 0x%lX", rc ));
     }
@@ -2251,14 +2251,14 @@ SOM_Scope SOMObject*  SOMLINK ddfM_somRenew(M_DbgDataFile *somSelf,
     /* M_DbgDataFileData *somThis = M_DbgDataFileGetData(somSelf); */
     M_DbgDataFileMethodDebug("M_DbgDataFile","ddfM_somRenew");
 
-    if (G_fDebugInit)
+    if (G_fDebugDataFileInit)
     {
         _Pmpf(("++ Entering somRenew for obj 0x%lX", obj ));
     }
 
     rc =  (M_DbgDataFile_parent_M_WPDataFile_somRenew(somSelf,
                                                        obj));
-    if (G_fDebugInit)
+    if (G_fDebugDataFileInit)
     {
         _Pmpf(("-- End of somRenew; returning obj 0x%lX", rc ));
     }
@@ -2273,14 +2273,14 @@ SOM_Scope SOMObject*  SOMLINK ddfM_somRenewNoInit(M_DbgDataFile *somSelf,
     /* M_DbgDataFileData *somThis = M_DbgDataFileGetData(somSelf); */
     M_DbgDataFileMethodDebug("M_DbgDataFile","ddfM_somRenewNoInit");
 
-    if (G_fDebugInit)
+    if (G_fDebugDataFileInit)
     {
         _Pmpf(("++ Entering somRenewNoInit for obj 0x%lX", obj ));
     }
 
     rc =  (M_DbgDataFile_parent_M_WPDataFile_somRenewNoInit(somSelf,
                                                              obj));
-    if (G_fDebugInit)
+    if (G_fDebugDataFileInit)
     {
         _Pmpf(("-- End of somRenewNoInit; returning obj 0x%lX", rc ));
     }
@@ -2295,14 +2295,14 @@ SOM_Scope SOMObject*  SOMLINK ddfM_somRenewNoInitNoZero(M_DbgDataFile *somSelf,
     /* M_DbgDataFileData *somThis = M_DbgDataFileGetData(somSelf); */
     M_DbgDataFileMethodDebug("M_DbgDataFile","ddfM_somRenewNoInitNoZero");
 
-    if (G_fDebugInit)
+    if (G_fDebugDataFileInit)
     {
         _Pmpf(("++ Entering somRenewNoInitNoZero for obj 0x%lX", obj ));
     }
 
     rc =  (M_DbgDataFile_parent_M_WPDataFile_somRenewNoInitNoZero(somSelf,
                                                                    obj));
-    if (G_fDebugInit)
+    if (G_fDebugDataFileInit)
     {
         _Pmpf(("-- End of somRenewNoInitNoZero; returning obj 0x%lX",
                 rc));
@@ -2324,14 +2324,14 @@ SOM_Scope SOMObject*  SOMLINK ddfM_somRenewNoZero(M_DbgDataFile *somSelf,
     /* M_DbgDataFileData *somThis = M_DbgDataFileGetData(somSelf); */
     M_DbgDataFileMethodDebug("M_DbgDataFile","ddfM_somRenewNoZero");
 
-    if (G_fDebugInit)
+    if (G_fDebugDataFileInit)
     {
         _Pmpf(("++ Entering somRenewNoZero"));
     }
 
     rc =  (M_DbgDataFile_parent_M_WPDataFile_somRenewNoZero(somSelf,
                                                              obj));
-    if (G_fDebugInit)
+    if (G_fDebugDataFileInit)
     {
         _Pmpf(("-- End of somRenewNoZero; returning obj 0x%lX", rc ));
     }
@@ -2350,14 +2350,14 @@ SOM_Scope long  SOMLINK ddfM_somGetInstancePartSize(M_DbgDataFile *somSelf)
     /* M_DbgDataFileData *somThis = M_DbgDataFileGetData(somSelf); */
     M_DbgDataFileMethodDebug("M_DbgDataFile","ddfM_somGetInstancePartSize");
 
-    if (G_fDebugInit)
+    if (G_fDebugDataFileInit)
     {
         _Pmpf(("++ Entering somGetInstancePartSize"));
     }
 
     rc  = (M_DbgDataFile_parent_M_WPDataFile_somGetInstancePartSize(somSelf));
 
-    if (G_fDebugInit)
+    if (G_fDebugDataFileInit)
     {
         _Pmpf(("-- End of somGetInstancePartSize; returning 0x%lX", rc ));
     }
@@ -2381,14 +2381,14 @@ SOM_Scope long  SOMLINK ddfM_somGetInstanceSize(M_DbgDataFile *somSelf)
     /* M_DbgDataFileData *somThis = M_DbgDataFileGetData(somSelf); */
     M_DbgDataFileMethodDebug("M_DbgDataFile","ddfM_somGetInstanceSize");
 
-    if (G_fDebugInit)
+    if (G_fDebugDataFileInit)
     {
         _Pmpf(("++ Entering somGetInstanceSize"));
     }
 
     rc = (M_DbgDataFile_parent_M_WPDataFile_somGetInstanceSize(somSelf));
 
-    if (G_fDebugInit)
+    if (G_fDebugDataFileInit)
     {
         _Pmpf(("-- End of somGetInstanceSize; returning 0x%lX", rc ));
     }
@@ -2420,7 +2420,7 @@ SOM_Scope WPObject*  SOMLINK ddfM_wpclsMakeAwake(M_DbgDataFile *somSelf,
     /* M_DbgDataFileData *somThis = M_DbgDataFileGetData(somSelf); */
     M_DbgDataFileMethodDebug("M_DbgDataFile","ddfM_wpclsMakeAwake");
 
-    if (G_fDebugInit)
+    if (G_fDebugDataFileInit)
     {
         _Pmpf(("++ Entering wpclsMakeAwake"));
         _Pmpf(("        title: %s, ulStyle: 0x%lX, hptrIcon: 0x%lX, pObjData: 0x%lX, folder: 0x%lX (%s), ulUser: 0x%lX",
@@ -2441,7 +2441,7 @@ SOM_Scope WPObject*  SOMLINK ddfM_wpclsMakeAwake(M_DbgDataFile *somSelf,
                                                           Folder,
                                                           ulUser);
 
-    if (G_fDebugInit)
+    if (G_fDebugDataFileInit)
     {
         _Pmpf(("-- End of wpclsMakeAwake; returning obj 0x%lX (%s)", rc, _wpQueryTitle(rc) ));
     }
@@ -2459,7 +2459,7 @@ SOM_Scope WPObject*  SOMLINK ddfM_wpclsNew(M_DbgDataFile *somSelf,
     /* M_DbgDataFileData *somThis = M_DbgDataFileGetData(somSelf); */
     M_DbgDataFileMethodDebug("M_DbgDataFile","ddfM_wpclsNew");
 
-    if (G_fDebugInit)
+    if (G_fDebugDataFileInit)
     {
         _Pmpf(("++ Entering wpclsNew"));
         _Pmpf(("        title: %s, setup: %s, folder: 0x%lX (%s), fLock: %d",
@@ -2475,7 +2475,7 @@ SOM_Scope WPObject*  SOMLINK ddfM_wpclsNew(M_DbgDataFile *somSelf,
                                                        pszSetupEnv,
                                                        Folder,
                                                        fLock);
-    if (G_fDebugInit)
+    if (G_fDebugDataFileInit)
     {
         _Pmpf(("-- End of wpclsNew; returned obj 0x%lX (%s)", rc, _wpQueryTitle(rc) ));
     }

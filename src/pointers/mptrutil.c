@@ -1,3 +1,27 @@
+
+/*
+ *@@sourcefile mptrutil.c:
+ *
+ *      This file is ALL new with V0.9.4.
+ *
+ *@@added V0.9.4 [umoeller]
+ *@@header "pointers\mptrutil.h"
+ */
+
+/*
+ *      Copyright (C) 1996-2000 Christian Langanke.
+ *      Copyright (C) 2000 Ulrich M봪ler.
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
 // C Runtime
 #include <stdlib.h>
 #include <string.h>
@@ -17,13 +41,15 @@
 // generic headers
 #include "setup.h"              // code generation and debugging options
 
+// XWorkplace implementation headers
+#include "dlgids.h"                     // all the IDs that are shared with NLS
+
 #include "pointers\mptrcnr.h"
 #include "pointers\macros.h"
 #include "pointers\debug.h"
 
 #include "pointers\mptrutil.h"
 #include "pointers\mptrptr.h"
-#include "pointers\r_wpamptr.h"
 #include "pointers\title.h"
 
 #include "pointers\r_amptreng.h"
@@ -43,13 +69,10 @@
  *읕컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴켸
  */
 
-APIRET _Export GetModuleInfo
- (
-     PFN pfn,
-     PHMODULE phmod,
-     PSZ pszBuffer,
-     ULONG ulBufLen
-)
+APIRET _Export GetModuleInfo(PFN pfn,
+                             PHMODULE phmod,
+                             PSZ pszBuffer,
+                             ULONG ulBufLen)
 {
     APIRET rc = NO_ERROR;
     ULONG ulObjectNumber = 0;
@@ -76,7 +99,7 @@ APIRET _Export GetModuleInfo
         *pszBuffer = 0;
         rc = DosQueryModFromEIP(phmod, &ulObjectNumber,
                                 ulBufLen, pszBuffer,
-                                &ulOffset, pfn);
+                                &ulOffset, (PVOID)pfn);
 
         if (rc != NO_ERROR)
             break;
@@ -786,7 +809,7 @@ APIRET _Export LoadResourceLib
             CHAR szVersion[20];
 
             LOADSTRING(IDSTR_VERSION, szVersion);
-            if (strcmp(szVersion, __VERSION__) != 0)
+            if (strcmp(szVersion, BLDLEVEL_VERSION) != 0)
                 rc = ERROR_INVALID_DATA;
         }
 

@@ -1665,7 +1665,9 @@ BOOL WMMouseMove_MB3Scroll(HWND hwnd)       // in: window with WM_MOUSEMOVE
 
     if (!brc)
     {
-        DosBeep(100, 100);
+        #ifdef __DEBUG__
+            DosBeep(100, 100);
+        #endif
         // any error found:
         StopMB3Scrolling(FALSE);   // don't post messages
     }
@@ -1685,7 +1687,24 @@ BOOL WMMouseMove_MB3Scroll(HWND hwnd)       // in: window with WM_MOUSEMOVE
  *      and active window processing (starting a timer, if
  *      delayed focus is active).
  *
+ *      Processing is fairly complicated because special
+ *      case checks are needed for certain window classes
+ *      (combo boxes, Win-OS/2 windows). Basically, this
+ *      function finds the frame window to which hwnd
+ *      (the window under the mouse, from the hook) belongs
+ *      and passes that frame to the daemon. If another
+ *      frame is found between the main frame and hwnd,
+ *      that frame is passed to the daemon also.
+ *
+ *      Frame activation is then not done from the hook, but
+ *      from the daemon instead.
+ *
+ *      Initially based on code from ProgramCommander (C) Roman Stangl.
+ *      Fixed a few problems with MDI frames.
+ *
  *@@changed V0.9.3 (2000-05-22) [umoeller]: fixed combobox problems
+ *@@changed V0.9.3 (2000-05-22) [umoeller]: fixed MDI frames problems
+ *@@changed V0.9.4 (2000-06-12) [umoeller]: fixed Win-OS/2 menu problems
  */
 
 VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hookInputHook
@@ -1732,7 +1751,8 @@ VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hoo
         // BOOL    fIsSeamless = FALSE;
         // CHAR    szClassUnderMouse[MAXNAMEL+4] = "";
         HWND    hwndFocusNow = WinQueryFocus(HWND_DESKTOP);
-        CHAR    szClassName[200];
+        CHAR    szClassName[200],
+                szWindowText[200];
 
         // check 2: make sure mouse is not captured
         if (WinQueryCapture(HWND_DESKTOP) != NULLHANDLE)
@@ -1749,15 +1769,6 @@ VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hoo
             if (strcmp(szFocusClass, "#4") == 0)
                 return;
         }
-
-        // skip seamless Win-OS/2 frames
-        // (we must check the actual window under the
-        // mouse, because seamless windows have a
-        // regular WC_FRAME desktop window, which
-        // is apparently invisible though)
-        /* if (strcmp(pszClassUnderMouse, "SeamlessClass") == 0)
-            // Win-OS/2 window:
-            fIsSeamless = TRUE; */
 
         // now climb up the parent window hierarchy of the
         // window under the mouse (first: hwndDesktopChild)
@@ -1780,29 +1791,26 @@ VOID WMMouseMove_SlidingFocus(HWND hwnd,        // in: wnd under mouse, from hoo
         if (hwndFrameInBetween == hwndDesktopChild)
             hwndFrameInBetween = NULLHANDLE;
 
-        /* WinQueryClassName(hwndDesktopChild,
-                          sizeof(szClassName), szClassName);
-        while (     (hwndDesktopChild != G_HookData.hwndPMDesktop)
-                 && (hwndDesktopChild != NULLHANDLE)
-                 && (strcmp(szClassName, "#1"))
-              )
-        {
-            hwndDesktopChild = WinQueryWindow(hwndDesktopChild, QW_PARENT);
-            WinQueryClassName(hwndDesktopChild,
-                              sizeof(szClassName), szClassName);
-        }; */
-
         // hwndDesktopChild now has the window which we need to activate
+        // (the topmost parent under the desktop of the window under the mouse)
 
         WinQueryClassName(hwndDesktopChild,
                           sizeof(szClassName), szClassName);
 
         // check 4: skip certain window classes
 
-        if (!strcmp(szClassName, "#4")) // menu
+        if (!strcmp(szClassName, "#4"))
+            // menu
             return;
 
-        if (!strcmp(szClassName, "#7")) // listbox: this must belong to a combo box
+        if (!strcmp(szClassName, "#7"))
+            // listbox: this must belong to a combo box, so
+            // this is a drop-down box which is currently open
+            return;
+
+        WinQueryWindowText(hwndDesktopChild, sizeof(szWindowText), szWindowText);
+        if (strstr(szWindowText, "Seamless"))
+            // ignore seamless Win-OS/2 menus; these are separate windows!
             return;
 
         // OK, enough checks.
@@ -2106,138 +2114,166 @@ BOOL WMMouseMove(PQMSG pqmsg)
 
     do // allow break's
     {
-       HWND    hwndCaptured = WinQueryCapture(HWND_DESKTOP);
+        HWND    hwndCaptured = WinQueryCapture(HWND_DESKTOP);
 
-       // store mouse pos in win coords
-       G_ptsMousePosWin.x = SHORT1FROMMP(pqmsg->mp1);
-       G_ptsMousePosWin.y = SHORT2FROMMP(pqmsg->mp1);
+        // store mouse pos in win coords
+        G_ptsMousePosWin.x = SHORT1FROMMP(pqmsg->mp1);
+        G_ptsMousePosWin.y = SHORT2FROMMP(pqmsg->mp1);
 
-       // has position changed since last WM_MOUSEMOVE?
-       // PM keeps posting WM_MOUSEMOVE even if the
-       // mouse hasn't moved, so we can drop unnecessary
-       // processing...
-       if (G_ptlMousePosDesktop.x != pqmsg->ptl.x)
-       {
-           // store x mouse pos in Desktop coords
-           G_ptlMousePosDesktop.x = pqmsg->ptl.x;
-           fMouseMoved = TRUE;
-       }
-       if (G_ptlMousePosDesktop.y != pqmsg->ptl.y)
-       {
-           // store y mouse pos in Desktop coords
-           G_ptlMousePosDesktop.y = pqmsg->ptl.y;
-           fMouseMoved = TRUE;
-       }
-       if (pqmsg->hwnd != G_hwndUnderMouse)
-       {
-           // mouse has moved to a different window:
-           // this can happen even if the coordinates
-           // are the same, because PM posts WM_MOUSEMOVE
-           // with changing window positions also to
-           // allow an application to change pointers
-           G_hwndUnderMouse = pqmsg->hwnd;
-           fWinChanged = TRUE;
-       }
+        // has position changed since last WM_MOUSEMOVE?
+        // PM keeps posting WM_MOUSEMOVE even if the
+        // mouse hasn't moved, so we can drop unnecessary
+        // processing...
+        if (G_ptlMousePosDesktop.x != pqmsg->ptl.x)
+        {
+            // store x mouse pos in Desktop coords
+            G_ptlMousePosDesktop.x = pqmsg->ptl.x;
+            fMouseMoved = TRUE;
+        }
+        if (G_ptlMousePosDesktop.y != pqmsg->ptl.y)
+        {
+            // store y mouse pos in Desktop coords
+            G_ptlMousePosDesktop.y = pqmsg->ptl.y;
+            fMouseMoved = TRUE;
+        }
+        if (pqmsg->hwnd != G_hwndUnderMouse)
+        {
+            // mouse has moved to a different window:
+            // this can happen even if the coordinates
+            // are the same, because PM posts WM_MOUSEMOVE
+            // with changing window positions also to
+            // allow an application to change pointers
+            G_hwndUnderMouse = pqmsg->hwnd;
+            fWinChanged = TRUE;
+        }
 
-       if (    (fMouseMoved)
-            || (fWinChanged)
-          )
-       {
-           BYTE    bHotCorner = 0;
+        if (    (fMouseMoved)
+             || (fWinChanged)
+           )
+        {
+            BYTE    bHotCorner = 0;
 
-           /*
-            * MB3 scroll
-            *
-            */
+            /*
+             * MB3 scroll
+             *
+             */
 
-           // are we currently in scrolling mode
-           // (is MB3 currently depressed)?
-           if (    (G_HookData.HookConfig.fMB3Scroll)
-                && (G_HookData.hwndCurrentlyScrolling)
-              )
-           {
-               // simulate mouse capturing by passing the scrolling
-               // window, no matter what hwnd came in with WM_MOUSEMOVE
-               brc = WMMouseMove_MB3Scroll(G_HookData.hwndCurrentlyScrolling);
-               break;  // skip all the rest
-           }
+            // are we currently in scrolling mode
+            // (is MB3 currently depressed)?
+            if (    (G_HookData.HookConfig.fMB3Scroll)
+                 && (G_HookData.hwndCurrentlyScrolling)
+               )
+            {
+                // simulate mouse capturing by passing the scrolling
+                // window, no matter what hwnd came in with WM_MOUSEMOVE
+                brc = WMMouseMove_MB3Scroll(G_HookData.hwndCurrentlyScrolling);
+                break;  // skip all the rest
+            }
 
-           // make sure that the mouse is not currently captured
-           if (hwndCaptured == NULLHANDLE)
-           {
-               CHAR    szClassUnderMouse[200];
+            // make sure that the mouse is not currently captured
+            if (hwndCaptured == NULLHANDLE)
+            {
+                CHAR    szClassUnderMouse[200];
 
-               WinQueryClassName(pqmsg->hwnd,
-                                 sizeof(szClassUnderMouse),
-                                 szClassUnderMouse);
+                WinQueryClassName(pqmsg->hwnd,
+                                  sizeof(szClassUnderMouse),
+                                  szClassUnderMouse);
 
-               if (fMouseMoved)
-               {
-                   // only if mouse has moved, not
-                   // on window change:
+                if (fMouseMoved)
+                {
+                    // only if mouse has moved, not
+                    // on window change:
 
-                   /*
-                    * sliding focus:
-                    *
-                    */
+                    /*
+                     * sliding focus:
+                     *
+                     */
 
-                   WMMouseMove_SlidingFocus(pqmsg->hwnd,
-                                            fMouseMoved,
-                                            szClassUnderMouse);
+                    WMMouseMove_SlidingFocus(pqmsg->hwnd,
+                                             fMouseMoved,
+                                             szClassUnderMouse);
 
-                   /*
-                    * hot corners:
-                    *
-                    */
+                    /*
+                     * hot corners:
+                     *
+                     */
 
-                   // check if mouse is in one of the screen
-                   // corners
-                   if (G_ptlMousePosDesktop.x == 0)
-                   {
-                       if (G_ptlMousePosDesktop.y == 0)
-                           // lower left corner:
-                           bHotCorner = 1;
-                       else if (G_ptlMousePosDesktop.y == G_HookData.lCYScreen - 1)
-                           // top left corner:
-                           bHotCorner = 2;
-                   }
-                   else if (G_ptlMousePosDesktop.x == G_HookData.lCXScreen - 1)
-                   {
-                       if (G_ptlMousePosDesktop.y == 0)
-                           // lower right corner:
-                           bHotCorner = 3;
-                       else if (G_ptlMousePosDesktop.y == G_HookData.lCYScreen - 1)
-                           // top right corner:
-                           bHotCorner = 4;
-                   }
+                    // check if mouse is in one of the screen
+                    // corners
+                    if (G_ptlMousePosDesktop.x == 0)
+                    {
+                        if (G_ptlMousePosDesktop.y == 0)
+                            // lower left corner:
+                            bHotCorner = 1;
+                        else if (G_ptlMousePosDesktop.y == G_HookData.lCYScreen - 1)
+                            // top left corner:
+                            bHotCorner = 2;
+                        // or maybe left screen border:
+                        // make sure mouse y is in the middle third of the screen
+                        else if (    (G_ptlMousePosDesktop.y >= G_HookData.lCYScreen / 3)
+                                  && (G_ptlMousePosDesktop.y <= G_HookData.lCYScreen * 2 / 3)
+                                )
+                            bHotCorner = 6; // left border
+                    }
+                    else if (G_ptlMousePosDesktop.x == G_HookData.lCXScreen - 1)
+                    {
+                        if (G_ptlMousePosDesktop.y == 0)
+                            // lower right corner:
+                            bHotCorner = 3;
+                        else if (G_ptlMousePosDesktop.y == G_HookData.lCYScreen - 1)
+                            // top right corner:
+                            bHotCorner = 4;
+                        // or maybe right screen border:
+                        // make sure mouse y is in the middle third of the screen
+                        else if (    (G_ptlMousePosDesktop.y >= G_HookData.lCYScreen / 3)
+                                  && (G_ptlMousePosDesktop.y <= G_HookData.lCYScreen * 2 / 3)
+                                )
+                            bHotCorner = 7; // right border
+                    }
+                    else
+                        // more checks for top and bottom screen border:
+                        if (    (G_ptlMousePosDesktop.y == 0)   // bottom
+                             || (G_ptlMousePosDesktop.y == G_HookData.lCYScreen - 1) // top
+                           )
+                        {
+                            if (    (G_ptlMousePosDesktop.x >= G_HookData.lCXScreen / 3)
+                                 && (G_ptlMousePosDesktop.x <= G_HookData.lCXScreen * 2 / 3)
+                               )
+                                if (G_ptlMousePosDesktop.y == 0)
+                                    // bottom border:
+                                    bHotCorner = 8;
+                                else
+                                    // top border:
+                                    bHotCorner = 5;
+                        }
 
-                   // is mouse in a screen corner?
-                   if (bHotCorner != 0)
-                       // yes:
-                       // notify thread-1 object window, which
-                       // will start the user-configured action
-                       // (if any)
-                       WinPostMsg(G_HookData.hwndDaemonObject,
-                                  XDM_HOTCORNER,
-                                  (MPARAM)bHotCorner,
-                                  (MPARAM)NULL);
+                    // is mouse in a screen corner?
+                    if (bHotCorner != 0)
+                        // yes:
+                        // notify thread-1 object window, which
+                        // will start the user-configured action
+                        // (if any)
+                        WinPostMsg(G_HookData.hwndDaemonObject,
+                                   XDM_HOTCORNER,
+                                   (MPARAM)bHotCorner,
+                                   (MPARAM)NULL);
 
-               } // end if (fMouseMoved)
+                } // end if (fMouseMoved)
 
-               /*
-                * sliding menus:
-                *
-                */
+                /*
+                 * sliding menus:
+                 *
+                 */
 
-               if (G_HookData.HookConfig.fSlidingMenus)
-                   if (strcmp(szClassUnderMouse, "#4") == 0)
-                       // window under mouse is a menu:
-                       WMMouseMove_SlidingMenus(pqmsg->hwnd,
-                                                pqmsg->mp1,
-                                                pqmsg->mp2);
+                if (G_HookData.HookConfig.fSlidingMenus)
+                    if (strcmp(szClassUnderMouse, "#4") == 0)
+                        // window under mouse is a menu:
+                        WMMouseMove_SlidingMenus(pqmsg->hwnd,
+                                                 pqmsg->mp1,
+                                                 pqmsg->mp2);
 
-           } // if (WinQueryCapture(HWND_DESKTOP) == NULLHANDLE)
-       } // end if (fMouseMoved)
+            } // if (WinQueryCapture(HWND_DESKTOP) == NULLHANDLE)
+        } // end if (fMouseMoved)
     } while (FALSE);
 
     if (fMouseMoved)
@@ -2381,7 +2417,6 @@ VOID WMChord_WinList(VOID)
     // now make it the active window
     WinSetActiveWindow(HWND_DESKTOP,
                        G_HookData.hwndWindowList);
-
 }
 
 /******************************************************************
@@ -2428,6 +2463,9 @@ VOID WMChord_WinList(VOID)
  *@@changed V0.9.2 (2000-02-21) [umoeller]: added PageMage processing
  *@@changed V0.9.2 (2000-02-25) [umoeller]: HScroll not working when VScroll disabled; fixed
  *@@changed V0.9.2 (2000-02-25) [umoeller]: added checks for mouse capture
+ *@@changed V0.9.4 (2000-06-11) [umoeller]: changed MB3 scroll to WM_BUTTON3MOTIONSTART/END
+ *@@changed V0.9.4 (2000-06-11) [umoeller]: added MB3 single-click
+ *@@changed V0.9.4 (2000-06-14) [umoeller]: fixed PMMail win-list-as-pointer bug
  */
 
 BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
@@ -2482,6 +2520,12 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
 
     switch(msg)
     {
+        /*****************************************************************
+         *                                                               *
+         *  mouse button 1                                               *
+         *                                                               *
+         *****************************************************************/
+
         /*
          * WM_BUTTON1DOWN:
          *      if "sliding focus" is on and "bring to top" is off,
@@ -2515,6 +2559,12 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
             }
         break;
 
+        /*****************************************************************
+         *                                                               *
+         *  mouse button 2                                               *
+         *                                                               *
+         *****************************************************************/
+
         /*
          * WM_BUTTON2DOWN:
          *      if mb2 is clicked on titlebar,
@@ -2546,15 +2596,85 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
             }
         break; }
 
+        /*****************************************************************
+         *                                                               *
+         *  mouse button 3                                               *
+         *                                                               *
+         *****************************************************************/
+
         /*
-         * WM_BUTTON3DOWN:
-         *      start scrolling. From now on, WM_MOUSEMOVE
-         *      (below) will call WMMouseMove_MB3Scroll.
+         * WM_BUTTON3UP:
+         *      needed for MB3 double-clicks on minimized windows.
+         *
+         *      Contributed for V0.9.4 by Lars Erdmann.
+         */
+
+        case WM_BUTTON3UP:
+            // MB3 click conversion enabled?
+            if (G_HookData.HookConfig.fMB3Click2MB1DblClk)
+            {
+                // is window under mouse minimized?
+                SWP swp;
+                WinQueryWindowPos(hwnd,&swp);
+                if (swp.fl & SWP_MINIMIZE)
+                {
+                    // yes:
+                    WinPostMsg(hwnd, WM_BUTTON1DOWN, mp1, mp2);
+                    WinPostMsg(hwnd, WM_BUTTON1UP, mp1, mp2);
+                    WinPostMsg(hwnd, WM_SINGLESELECT, mp1, mp2);
+                    WinPostMsg(hwnd, WM_BUTTON1DBLCLK, mp1, mp2);
+                    WinPostMsg(hwnd, WM_OPEN, mp1, mp2);
+                    WinPostMsg(hwnd, WM_BUTTON1UP, mp1, mp2);
+                }
+                // brc = FALSE;   // pass on to next hook in chain (if any)
+                // you HAVE TO return FALSE so that the OS
+                // can translate a sequence of WM_BUTTON3DOWN
+                // WM_BUTTON3UP to WM_BUTTON3CLICK
+            }
+        break;
+
+        /*
+         * WM_BUTTON3CLICK:
+         *      convert MB3 single-clicks to MB1 double-clicks.
+         *
+         *      Contributed for V0.9.4 by Lars Erdmann.
+         */
+
+        case WM_BUTTON3CLICK:
+            // MB3 click conversion enabled?
+            if (G_HookData.HookConfig.fMB3Click2MB1DblClk)
+            {
+                // if we would post a WM_BUTTON1DOWN message to the titlebar,
+                // it would not receive WM_BUTTON1DBLCLK, WM_OPEN, WM_BUTTON1UP
+                // for some strange reason (I think it has something to do with
+                // the window tracking that is initiated when WM_BUTTON1DOWN
+                // is posted to the titlebar, because it does not make sense
+                // to prepare any window tracking when we really want to maximize
+                // or restore the window, we just skip this);
+                // for all other windows, pass this on
+                if (WinQueryWindowUShort(hwnd, QWS_ID) != FID_TITLEBAR)
+                {
+                    WinPostMsg(hwnd, WM_BUTTON1DOWN, mp1, mp2);
+                    WinPostMsg(hwnd, WM_BUTTON1UP, mp1, mp2);
+                }
+                WinPostMsg(hwnd, WM_SINGLESELECT, mp1, mp2);
+                WinPostMsg(hwnd, WM_BUTTON1DBLCLK, mp1, mp2);
+                WinPostMsg(hwnd, WM_OPEN, mp1, mp2);
+                WinPostMsg(hwnd, WM_BUTTON1UP, mp1, mp2);
+            }
+            // brc = FALSE;   // pass on to next hook in chain (if any)
+        break;
+
+        /*
+         * WM_BUTTON3MOTIONSTART:
+         *      start MB3 scrolling. This prepares the hook
+         *      data for tracking mouse movements in WM_MOUSEMOVE
+         *      so that the window under the mouse will be scrolled.
          *
          *      Based on code from WarpEnhancer, (C) Achim HasenmÅller.
          */
 
-        case WM_BUTTON3DOWN: // mouse button 3 was pressed down
+        case WM_BUTTON3MOTIONSTART: // mouse button 3 was pressed down
         {
             // MB3-scroll enabled?
             if (G_HookData.HookConfig.fMB3Scroll)
@@ -2590,18 +2710,18 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                 }
 
                 // swallow msg
-                brc = TRUE;
+                // brc = TRUE;
             }
         break; }
 
         /*
-         * WM_BUTTON3UP:
-         *      stop scrolling.
+         * WM_BUTTON3MOTIONEND:
+         *      stop MB3 scrolling.
          *
          *      Based on code from WarpEnhancer, (C) Achim HasenmÅller.
          */
 
-        case WM_BUTTON3UP: // mouse button 3 has been released
+        case WM_BUTTON3MOTIONEND: // mouse button 3 has been released
         {
             if (    (G_HookData.HookConfig.fMB3Scroll)
                  && (G_HookData.hwndCurrentlyScrolling)
@@ -2613,21 +2733,6 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                 brc = TRUE;
             } // end if (HookData.fCurrentlyMB3Scrolling)
         break; }
-
-        /*
-         *@@ WM_BUTTON3CLICK:
-         *
-         *@@added V0.9.2 (2000-02-26) [umoeller]
-         */
-
-        case WM_BUTTON3CLICK:
-        case WM_BUTTON3DBLCLK:
-        case WM_BUTTON3MOTIONSTART:
-        case WM_BUTTON3MOTIONEND:
-            if (G_HookData.HookConfig.fMB3Scroll)
-                // swallow msg
-                brc = TRUE;
-        break;
 
         /*
          * WM_CHORD:
@@ -2645,8 +2750,13 @@ BOOL EXPENTRY hookInputHook(HAB hab,        // in: anchor block of receiver wnd
                 // make sure that the mouse is not currently captured
                 if (WinQueryCapture(HWND_DESKTOP) == NULLHANDLE)
                 {
-                    WMChord_WinList();
-                    brc = TRUE;         // swallow message
+                    WinPostMsg(G_HookData.hwndDaemonObject,
+                               XDM_WMCHORDWINLIST,
+                               0, 0);
+                    // WMChord_WinList();
+                    // brc = TRUE;         // swallow message
+                    // we must not swallow the message, or PMMail
+                    // will cause the "win list as cursor" bug
                 }
         break;
 

@@ -90,7 +90,7 @@
 #include "pointers\macros.h"            // Animated Mouse Pointers
 #include "pointers\mptrutil.h"          // Animated Mouse Pointers
 #include "pointers\mptrset.h"           // Animated Mouse Pointers
-#include "pointers\r_wpamptr.h"         // Animated Mouse Pointers -- resources
+// #include "pointers\r_wpamptr.h"         // Animated Mouse Pointers -- resources
 
 #include "pointers\mptrpage.h"          // Animated Mouse Pointers -- entrypoints
 #endif
@@ -212,7 +212,7 @@ SOM_Scope ULONG  SOMLINK xms_xwpAddAnimatedMousePointerPage(XWPMouse *somSelf,
         PAGEINFO pi;
         CHAR szTabName[MAX_RES_STRLEN];
         HAB hab = WinQueryAnchorBlock(HWND_DESKTOP);
-        HMODULE hmodResource = cmnQueryNLSModuleHandle(FALSE); // cmnQueryNLSModuleHandle(FALSE); // V0.9.3 (2000-05-21) [umoeller] V0.9.3 (2000-05-21) [umoeller]
+        HMODULE hmodResource = cmnQueryNLSModuleHandle(FALSE);
 
         XWPMouseData *somThis = XWPMouseGetData(somSelf);
         XWPMouseMethodDebug("XWPMouse","xms_xwpAddAnimatedMousePointerPage");
@@ -528,14 +528,17 @@ SOM_Scope ULONG  SOMLINK xms_wpAddMouseCometPage(XWPMouse *somSelf,
 SOM_Scope ULONG  SOMLINK xms_wpAddMousePtrPage(XWPMouse *somSelf,
                                                HWND hwndNotebook)
 {
+    PCGLOBALSETTINGS    pGlobalSettings = cmnQueryGlobalSettings();
     /* XWPMouseData *somThis = XWPMouseGetData(somSelf); */
     XWPMouseMethodDebug("XWPMouse","xms_wpAddMousePtrPage");
 
-    // return _InsertAnimatedMousePointerPage(somSelf, hwndNotebook);
-            // ###
-
-    return (XWPMouse_parent_WPMouse_wpAddMousePtrPage(somSelf,
-                                                      hwndNotebook));
+    #ifdef __ANIMATED_MOUSE_POINTERS__
+        if (pGlobalSettings->fAniMouse)
+            return _xwpAddAnimatedMousePointerPage(somSelf, hwndNotebook);
+        else
+    #endif
+        return (XWPMouse_parent_WPMouse_wpAddMousePtrPage(somSelf,
+                                                          hwndNotebook));
 }
 
 /*

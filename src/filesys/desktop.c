@@ -985,7 +985,7 @@ MRESULT dtpStartupItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                     "DEFAULTVIEW=ICON;ICONVIEW=NONFLOWED,MINI;"
                     "OBJECTID=%s;",
                     XFOLDER_STARTUPID);
-                if (hObj = WinCreateObject("XFldStartup", "XFolder Startup",
+                if (hObj = WinCreateObject("XFldStartup", "XWorkplace Startup",
                                            szSetup,
                                            "<WP_DESKTOP>",
                                            CO_UPDATEIFEXISTS))

@@ -214,14 +214,15 @@ interface XFolder : WPFolder
     ULONG xwpSetQuickOpen(in BOOL fQuickOpen);
     BOOL xwpQueryQuickOpen();
 
+    BOOL xwpSetDefaultDocument(in WPFileSystem pDefDoc);
+    WPFileSystem xwpQueryDefaultDocument();
+
     BOOL xwpQueryMenuBarVisibility();
 
     BOOL xwpSetStatusBarVisibility(in ULONG ulVisibility, in BOOL fUpdate);
     ULONG xwpQueryStatusBarVisibility();
 
     BOOL xwpUpdateStatusBar(in HWND hwndStatusBar, in HWND hwndCnr);
-
-    // BOOL xwpForEachOpenView(in ULONG ulMsg, in PFNWP pfnwpCallback);
 
     ULONG xwpAddXFolderPages(in HWND hwndDlg);
 
@@ -250,7 +251,9 @@ interface XFolder : WPFolder
         xwpBeginEnumContent,
         xwpEnumNext,
         xwpEndEnumContent,
-        xwpQuerySetup2;
+        xwpQuerySetup2,
+        xwpSetDefaultDocument,
+        xwpQueryDefaultDocument;
 
     /*
      * Class Modifiers:
@@ -312,26 +315,31 @@ interface XFolder : WPFolder
 
     // pointer to WPFolder's sort data struct;
     // this is intercepted in wpRestoreData (IDKEY_FDRSORTINFO)
-    PFDRSORTINFO    pWPFolderSortInfo;
+    PFDRSORTINFO    pFolderSortInfo;
     // pointer to WPFolder's "long array";
     // this is intercepted in wpRestoreData (IDKEY_FDRLONGARRAY)
-    PFDRLONGARRAY   pWPFolderLongArray;
-    ULONG           cbWPFolderLongArray;
+    PFDRLONGARRAY   pFolderLongArray;
+    ULONG           cbFolderLongArray;
     // pointer to WPFolder's "string array";
     // this is intercepted in wpRestoreData (IDKEY_FDRSTRARRAY)
-    PSZ             pszWPFolderStrArray;
-    ULONG           cbWPFolderStrArray;
+    PSZ             pszFolderStrArray;
+    ULONG           cbFolderStrArray;
     // pointer to WPFolder's folder background info
-    PFDRBACKGROUND  pWPFolderBackground;
-    ULONG           cbWPFolderBackground;        // normally 14, see above
+    PFDRBACKGROUND  pFolderBackground;
+    ULONG           cbFolderBackground;        // normally 14, see above
     // pointer to WPFolder's "SHOWALLINTREEVIEW" flag
     // (Warp 4 only); this is intercepted in wpRestoreLong (IDKEY_FDRTREEVIEWCONTENTS)
-    PULONG          pulWPFolderShowAllInTreeView;
+    PULONG          pulFolderShowAllInTreeView;
     // copy of IDKEY_CNRBACKGROUND data;
     // we cannot store a pointer to instance
     // data because the pointer used in wpRestoreString (IDKEY_FDRBKGNDIMAGEFILE)
     // apparently only points to a temporary buffer
-    PSZ             pszWPFolderBkgndImageFile;
+    PSZ             pszFolderBkgndImageFile;
+
+    // default document V0.9.4 (2000-06-09) [umoeller]
+    WPFileSystem    pDefaultDocument;
+
+    PSZ             pszDefaultDocDeferred;      // holds file name from wpRestoreState
 
     /*
      * WPFolder methods overridden by XFolder:
@@ -370,6 +378,9 @@ interface XFolder : WPFolder
     wpMenuItemSelected: override;
     wpMenuItemHelpSelected: override;
 
+    wpQueryDefaultView: override;
+    wpQueryDefaultHelp: override;
+
     wpOpen: override;
     wpPopulate: override;
     wpRefresh: override;
@@ -389,8 +400,6 @@ interface XFolder : WPFolder
     wpSetTitle: override;
 
     wpSetFldrSort: override;
-
-    wpQueryDefaultHelp: override;
 
 #ifdef __PRIVATE__
 

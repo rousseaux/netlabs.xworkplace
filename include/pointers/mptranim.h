@@ -10,7 +10,7 @@
 
 // prototypes
 
-VOID _Optlink AnimationThread( ULONG ulParms);
+VOID _Optlink AnimationThread(PVOID pvParams); // ULONG ulParms);
 MRESULT EXPENTRY ObjectWindowProc( HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2);
 
 HAB  QueryAnimationHab(VOID);

@@ -138,6 +138,7 @@
 #pragma hdrstop                         // VAC++ keeps crashing otherwise
 #include <wpfolder.h>
 #include "xtrash.h"
+#include "xtrashobj.h"
 #include "filesys\trash.h"              // trash can implementation
 #include "shared\wpsh.h"                // some pseudo-SOM functions (WPS helper routines)
 

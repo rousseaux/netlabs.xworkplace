@@ -841,7 +841,7 @@ MRESULT EXPENTRY anwcur_NotebookPageProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARA
     SOMAny *somSelf;
     XWPWinCursorData *somThis;
     APIRET rc = NO_ERROR;
-    BOOL fSuccess = FALSE;
+    // BOOL fSuccess = FALSE;
     USHORT usPageId = WinQueryWindowUShort(hwnd, QWS_ID);
     HAB hab = WinQueryAnchorBlock(hwnd);
 
@@ -1154,8 +1154,8 @@ MRESULT EXPENTRY anwcur_NotebookPageProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARA
                         {
                             CHAR szFilename[_MAX_PATH];
                             SOURCEINFO sourceinfo;
-                            CHAR szInfoName[_MAX_PATH];
-                            CHAR szInfoArtist[_MAX_PATH];
+                            CHAR szInfoName0[_MAX_PATH];
+                            CHAR szInfoArtist0[_MAX_PATH];
 
                             BOOL fNameChanged = DLGQUERYCHANGED(hwnd, IDDLG_EF_INFONAME);
                             BOOL fArtistChanged = DLGQUERYCHANGED(hwnd, IDDLG_EF_INFOARTIST);

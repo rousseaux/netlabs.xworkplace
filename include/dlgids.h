@@ -22,6 +22,12 @@
  *      to the list below. Do not add resources which are part of
  *      another developer's number space, or we'll get into trouble.
  *
+ *      NOTE: The ID's in this file are limited to 12000. All resource
+ *            ID's must be below that number because numbers above that
+ *            are reserved for other XWorkplace parts. For example,
+ *            the animated mouse pointers use ID's 0x7000 (28672) and
+ *            above. V0.9.4 (2000-06-15) [umoeller]
+ *
  *      Current number spaces:
  *      -- Ulrich M”ller:  200-12000
  */
@@ -69,11 +75,11 @@
 // XFolder version flags; since this file is
 // #include'd in the NLS DLLs also, this string
 // will be readable as a resource in the NLS DLL
-#define XFOLDER_VERSION        "0.9.3"
+#define XFOLDER_VERSION        "0.9.4"
 
 // this sets the minimum version number for NLS DLLS
 // which XFolder will accept
-#define MINIMUM_NLS_VERSION    "0.9.3"
+#define MINIMUM_NLS_VERSION    "0.9.4"
 
 // icons / bitmaps
 #define ID_ICON1               100
@@ -229,6 +235,8 @@
 #define ID_XSDI_MAXPATHCHARS_TX1        505
 #define ID_XSDI_MAXPATHCHARS_TX2        506
 #define ID_XSDI_TREEVIEWAUTOSCROLL      507
+#define ID_XSDI_FDRDEFAULTDOC           508
+#define ID_XSDI_FDRDEFAULTDOCVIEW       509
 
 // "Remove menu items" page
 #define ID_XSD_SET2REMOVEMENUS          510
@@ -879,11 +887,15 @@
 #define ID_XSDI_MOUSE_RADIO_TOPRIGHT    3432
 #define ID_XSDI_MOUSE_RADIO_BOTTOMLEFT  3433
 #define ID_XSDI_MOUSE_RADIO_BOTTOMRIGHT 3434
-#define ID_XSDI_MOUSE_INACTIVEOBJ       3435
-#define ID_XSDI_MOUSE_SPECIAL_CHECK     3436
-#define ID_XSDI_MOUSE_SPECIAL_DROP      3437
-#define ID_XSDI_MOUSE_OPEN_CHECK        3438
-#define ID_XSDI_MOUSE_OPEN_CNR          3439
+#define ID_XSDI_MOUSE_RADIO_TOP         3435
+#define ID_XSDI_MOUSE_RADIO_LEFT        3436
+#define ID_XSDI_MOUSE_RADIO_RIGHT       3437
+#define ID_XSDI_MOUSE_RADIO_BOTTOM      3438
+#define ID_XSDI_MOUSE_INACTIVEOBJ       3439
+#define ID_XSDI_MOUSE_SPECIAL_CHECK     3040
+#define ID_XSDI_MOUSE_SPECIAL_DROP      3441
+#define ID_XSDI_MOUSE_OPEN_CHECK        3442
+#define ID_XSDI_MOUSE_OPEN_CNR          3443
 
 #define ID_XSD_MOUSEMAPPINGS2           3450
 #define ID_XSDI_MOUSE_CHORDWINLIST      3451
@@ -898,6 +910,7 @@
 #define ID_XSDI_MOUSE_MB3AMP_SLIDER     3460
 #define ID_XSDI_MOUSE_MB3AMP_TXT2       3461
 #define ID_XSDI_MOUSE_MB3SCROLLREVERSE  3462
+#define ID_XSDI_MOUSE_MB3CLK2MB1DBLCLK  3463
 
 /******************************************
  * XWPString (V0.9.3)       >= 3800       *
@@ -1082,12 +1095,18 @@
 // "Partitions" item in WPDrives "open" menu V0.9.2 (2000-02-29) [umoeller]
 #define ID_XFMI_OFS_OPENPARTITIONS      (WPMENUID_USER+47)
 
+// "Default document" item in WPFolder "Open" and WPDataFile main context menu V0.9.4 (2000-06-09) [umoeller]
+#define ID_XFMI_OFS_FDRDEFAULTDOC       (WPMENUID_USER+48)
+
+// "XCenter" item in XCenter "Open" submenu
+#define ID_XFMI_OFS_XCENTER             (WPMENUID_USER+49)
+
 // this is the value used for variable menu items, i.e.
 // those inserted according to the config folder and by
 // the "folder content" functions; XFolder will use this
 // value (i.e. WPMENUID_USER + "menu item id offset"
 // + FIRST_VARIABLE) and increment it until 0x8000 is reached
-#define FIRST_VARIABLE                  50
+#define FIRST_VARIABLE                  60      // raised V0.9.4 (2000-06-10) [umoeller]
 #define ID_XFMI_OFS_VARIABLE            (WPMENUID_USER+FIRST_VARIABLE)
 
 /******************************************
@@ -1461,6 +1480,13 @@
 #define ID_XSSI_FUNCKEY_SCANCODE        5924
 #define ID_XSSI_FUNCKEY_MODIFIER        5925
 
+// default documents V0.9.4 (2000-06-09) [umoeller]
+#define ID_XSSI_DATAFILEDEFAULTDOC      5926
+#define ID_XSSI_FDRDEFAULTDOC           5927
+
+// XCenter V0.9.4 (2000-06-10) [umoeller]
+#define ID_XSSI_XCENTERPAGE1            5928
+
 /******************************************
  *  Features on XWPSetup "Features" page  *
  ******************************************/
@@ -1541,6 +1567,271 @@
 #define ID_NDD_STARTING                 10103
 
 #define ID_ND_ICON                      10110
+
+/********************************************
+ * Animated mouse pointers       >= 0x6000  *
+ ********************************************/
+
+// --- diverse res ids
+
+#define IDDLG_UNUSED                      -1
+#define IDTAB_NBPAGE                      0x60F0
+#define IDDLG_GB_NBPAGE                   0x60F1
+
+#define IDDLG_NBANIMATION                 0x60F2
+#define IDDLG_NBHIDE                      0x60F3
+#define IDDLG_NBDRAGDROP                  0x60F4
+#define IDDLG_NBINIT                      0x60F5
+
+#define IDTAB_NBANIMATION                 0x60F6
+#define IDTAB_NBHIDE                      0x60F7
+#define IDTAB_NBDRAGDROP                  0x60F8
+#define IDTAB_NBINIT                      0x60F9
+
+// --- pushbuttons
+
+#define IDDLG_PB_OK                       0x6100
+#define IDDLG_PB_CANCEL                   0x6101
+#define IDDLG_PB_EDIT                     0x6102
+#define IDDLG_PB_FIND                     0x6103
+#define IDDLG_PB_LOAD                     0x6104
+#define IDDLG_PB_UNDO                     0x6105
+#define IDDLG_PB_DEFAULT                  0x6106
+#define IDDLG_PB_HELP                     0x6107
+#define IDDLG_PB_CLOSE                    0x6108
+#define IDDLG_PB_RETURN                   0x6109
+
+
+// --- notebook page dialog
+
+#define IDDLG_DLG_ANIMATEDWAITPOINTER_230 0x6110
+#define IDDLG_DLG_ANIMATEDWAITPOINTER     0x6111
+#define IDDLG_CN_POINTERSET               0x6101
+
+
+// --- about dialog
+
+#define IDDLG_DLG_ABOUT                   0x6120
+
+
+// --- settings dialog
+
+#define IDDLG_DLG_CNRSETTINGS_230         0x6130
+#define IDDLG_DLG_CNRSETTINGS             0x6131
+#define IDDLG_EF_ANIMATIONPATH            0x6132
+#define IDDLG_SB_FRAMELENGTH              0x6133
+#define IDDLG_CB_USEFORALL                0x6134
+#define IDDLG_CB_ANIMATEONLOAD            0x6135
+#define IDDLG_EF_DRAGPTRTYPE              0x6136
+#define IDDLG_EF_DRAGSETTYPE              0x6137
+#define IDDLG_CB_HIDEPOINTER              0x6138
+#define IDDLG_SB_HIDEPOINTERDELAY         0x6139
+#define IDDLG_SB_INITDELAY                0x613A
+
+
+// --- load set dialog
+
+#define IDDLG_DLG_LOADSET                 0x6140
+#define IDDLG_CN_FOUNDSETS                0x6141
+#define IDDLG_CO_FILTER                   0x6142
+
+
+// --- animation page for file classes properties notebook
+#define IDDLG_DLG_ANIMATIONPAGE1_230      0x6150
+#define IDDLG_DLG_ANIMATIONPAGE1          0x6151
+#define IDDLG_DLG_ANIMATIONPAGE2_230      0x6152
+#define IDDLG_DLG_ANIMATIONPAGE2          0x6153
+#define IDDLG_DLG_ANIMATIONPAGE3_230      0x6154
+#define IDDLG_DLG_ANIMATIONPAGE3          0x6155
+
+#define IDTAB_NBGENERAL_230               0x615E
+#define IDTAB_NBGENERAL                   0x615F
+
+#define IDDLG_EF_INFONAME                 0x6160
+#define IDDLG_EF_INFOARTIST               0x6161
+#define IDDLG_EF_FRAMES                   0x6162
+#define IDDLG_EF_PHYSFRAMES               0x6163
+#define IDDLG_EF_DEFTIMEOUT               0x6164
+
+// --- icon page for file classes properties notebook
+#define IDDLG_DLG_ICONPAGE_230            0x6160
+#define IDDLG_DLG_ICONPAGE                0x6161
+
+#define IDDLG_ME_TITLE                    0x6162
+#define IDDLG_CB_TEMPLATE                 0x6161
+#define IDDLG_CB_LOCKPOS                  0x6163
+#define IDDLG_GB_CONTENTS                 0x6164
+#define IDDLG_IC_CONTENTS                 0x6165
+
+// fine IDTAB_NBANIMATION                 bereits definiert
+
+
+// --- animation editor dialog
+
+#define IDDLG_DLG_EDITANIMATION           0x6180
+#define IDDLG_GB_SELECTEDFRAME            0x6181
+#define IDDLG_CN_FRAMESET                 0x6182
+#define IDDLG_ST_SHOWFOR                  0x6183
+//      IDDLG_SB_FRAMELENGTH              ------
+#define IDDLG_ST_UNIT                     0x6184
+#define IDDLG_GB_PREVIEW                  0x6185
+#define IDDLG_ST_PREVIEW                  0x6186
+//      IDDLG_EF_INFONAME
+//      IDDLG_EF_INFOARTIST
+
+#define IDDLG_BMP_STOP                    0x6187
+#define IDDLG_BMP_STOPP                   0x6188
+#define IDDLG_BMP_START                   0x6189
+#define IDDLG_BMP_STARTP                  0x618A
+
+// --- animation editor menu
+
+#define IDMEN_AE_FILE                     0x6300
+#define IDMEN_AE_FILE_NEW                 0x6301
+#define IDMEN_AE_FILE_OPEN                0x6302
+#define IDMEN_AE_FILE_SAVE                0x6303
+#define IDMEN_AE_FILE_SAVEAS              0x6304
+#define IDMEN_AE_FILE_IMPORT              0x6305
+#define IDMEN_AE_FILE_EXIT                0x6306
+
+#define IDMEN_AE_EDIT                     0x6310
+#define IDMEN_AE_EDIT_COPY                0x6311
+#define IDMEN_AE_EDIT_CUT                 0x6312
+#define IDMEN_AE_EDIT_PASTE               0x6313
+#define IDMEN_AE_EDIT_DELETE              0x6314
+#define IDMEN_AE_EDIT_SELECTALL           0x6315
+#define IDMEN_AE_EDIT_DESELECTALL         0x6316
+
+#define IDMEN_AE_PALETTE                  0x6320
+#define IDMEN_AE_PALETTE_OPEN             0x6321
+#define IDMEN_AE_PALETTE_SAVEAS           0x6322
+#define IDMEN_AE_PALETTE_COPY             0x6323
+#define IDMEN_AE_PALETTE_PASTE            0x6324
+
+#define IDMEN_AE_OPTION                   0x6331
+#define IDMEN_AE_OPTION_UNIT              0x6332
+#define IDMEN_AE_OPTION_UNIT_MS           0x6333
+#define IDMEN_AE_OPTION_UNIT_JIF          0x6334
+
+#define IDMEN_AE_HELP                     0x6340
+#define IDMEN_AE_HELP_INDEX               0x6341
+#define IDMEN_AE_HELP_GENERAL             0x6342
+#define IDMEN_AE_HELP_USING               0x6343
+#define IDMEN_AE_HELP_KEYS                0x6344
+#define IDMEN_AE_HELP_ABOUT               0x6345
+
+// --- animation editor item menu
+
+#define IDMEN_EDITITEM                    0x6400
+
+// --- res ids for container item popup menu
+
+#define IDMEN_ITEM                        0x6200
+#define IDMEN_ITEM_HELP                   0x6201
+#define IDMEN_ITEM_HELP_INDEX             0x6202
+#define IDMEN_ITEM_HELP_GENERAL           0x6203
+#define IDMEN_ITEM_HELP_USING             0x6204
+#define IDMEN_ITEM_HELP_KEYS              0x6205
+#define IDMEN_ITEM_HELP_ABOUT             0x6206
+#define IDMEN_ITEM_EDIT                   0x6207
+#define IDMEN_ITEM_FIND                   0x6208
+#define IDMEN_ITEM_SAVEAS                 0x6209
+#define IDMEN_ITEM_DEFAULT                0x620A
+#define IDMEN_ITEM_ANIMATE                0x620B
+
+
+// --- res ids for container popup menu
+
+#define IDMEN_FOLDER                      0x6210
+#define IDMEN_FOLDER_SETTINGS_230         0x6211
+#define IDMEN_FOLDER_SETTINGS             0x6212
+#define IDMEN_FOLDER_SETTINGS_NEW         0x6712
+#define IDMEN_FOLDER_VIEW                 0x6213
+#define IDMEN_FOLDER_VIEW_ICON            0x6214
+#define IDMEN_FOLDER_VIEW_DETAIL          0x6215
+#define IDMEN_FOLDER_HELP                 0x6216
+#define IDMEN_FOLDER_HELP_INDEX           0x6217
+#define IDMEN_FOLDER_HELP_GENERAL         0x6218
+#define IDMEN_FOLDER_HELP_USING           0x6219
+#define IDMEN_FOLDER_HELP_KEYS            0x621A
+#define IDMEN_FOLDER_HELP_ABOUT           0x621B
+#define IDMEN_FOLDER_FIND                 0x621C
+#define IDMEN_FOLDER_SAVEAS               0x621D
+#define IDMEN_FOLDER_DEFAULT              0x621E
+#define IDMEN_FOLDER_DEMO                 0x621F
+#define IDMEN_FOLDER_LEFTHANDED           0x6220
+#define IDMEN_FOLDER_HIDEPOINTER          0x6221
+#define IDMEN_FOLDER_BLACKWHITE           0x6222
+#define IDMEN_FOLDER_ANIMATE              0x6223
+
+// --- res id for strings
+
+#define IDSTR_VERSION                     0x6000
+#define IDSTR_FILETYPE_DEFAULT            0x6001
+#define IDSTR_FILETYPE_POINTER            0x6002
+#define IDSTR_FILETYPE_POINTERSET         0x6003
+#define IDSTR_FILETYPE_CURSOR             0x6004
+#define IDSTR_FILETYPE_CURSORSET          0x6005
+#define IDSTR_FILETYPE_ANIMOUSE           0x6006
+#define IDSTR_FILETYPE_ANIMOUSESET        0x6007
+#define IDSTR_FILETYPE_WINANIMATION       0x6008
+#define IDSTR_FILETYPE_WINANIMATIONSET    0x6009
+#define IDSTR_FILETYPE_ANIMATIONSETDIR    0x600A
+#define IDSTR_FILETYPE_ALL                0x600B
+
+#define IDSTR_POINTER_ARROW               0x6010
+#define IDSTR_POINTER_TEXT                0x6011
+#define IDSTR_POINTER_WAIT                0x6012
+#define IDSTR_POINTER_SIZENWSE            0x6013
+#define IDSTR_POINTER_SIZEWE              0x6014
+#define IDSTR_POINTER_MOVE                0x6015
+#define IDSTR_POINTER_SIZENESW            0x6016
+#define IDSTR_POINTER_SIZENS              0x6017
+#define IDSTR_POINTER_ILLEGAL             0x6018
+
+#define IDSTR_TITLE_ICON                  0x6020
+#define IDSTR_TITLE_NAME                  0x6021
+#define IDSTR_TITLE_STATUS                0x6022
+#define IDSTR_TITLE_ANIMATIONTYPE         0x6023
+#define IDSTR_TITLE_POINTER               0x6024
+#define IDSTR_TITLE_ANIMATIONNAME         0x6025
+#define IDSTR_TITLE_FRAMERATE             0x6026
+#define IDSTR_TITLE_INFONAME              0x6027
+#define IDSTR_TITLE_INFOARTIST            0x6028
+#define IDSTR_STATUS_ON                   0x6029
+#define IDSTR_STATUS_OFF                  0x602A
+
+#define IDSTR_TITLE_IMAGE                 0x6030
+#define IDSTR_SELECTED_NONE               0x6031
+#define IDSTR_SELECTED_FRAME              0x6032
+#define IDSTR_SELECTED_FRAMES             0x6033
+#define IDSTR_UNIT_MILLISECONDS           0x6034
+#define IDSTR_UNIT_JIFFIES                0x6035
+
+
+// --- res id for messages
+
+#define IDMSG_TITLE_ERROR                 0x6F01
+#define IDMSG_ANIMATIONPATH_NOT_FOUND     0x6F02
+#define IDMSG_TITLENOTFOUND               0x6F03
+#define IDMSG_MSGNOTFOUND                 0x6F04
+
+// online Help Id for DisplayHelp
+#define IDPNL_MAIN                     1
+#define IDPNL_USAGE_NBPAGE             2
+#define IDPNL_USAGE_NBPAGE_CNRSETTINGS 3
+#define IDPNL_USAGE_NBPAGE_CNRLOADSET  4
+
+// --- res ids for container item popup menu
+
+// define submenu ids for submenu of every resource WPS class
+#define IDMEN_CONVERT_MENU                0x7111
+
+// define menuitem ids
+#define IDMEN_CONVERT_POINTER             0x7120
+#define IDMEN_CONVERT_CURSOR              0x7121
+#define IDMEN_CONVERT_WINANIMATION        0x7122
+#define IDMEN_CONVERT_ANIMOUSE            0x7123
 
 #endif
 

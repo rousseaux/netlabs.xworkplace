@@ -18,8 +18,8 @@
  *          class to be installed, which can lead to
  *          crashes if it is not.
  *
- *      These functions should work even if XWorkplace is not
- *      installed.
+ *      These functions could even be used from WPS classes
+ *      which are not part of XWorkplace.
  *
  *      This file was new with V0.84, called "xwps.c". Most of
  *      these functions used to have the cmn* prefix and were
@@ -858,6 +858,14 @@ BOOL wpshIsViewCnr(WPObject *somSelf,
  *      container "source" emphasis, so this is what we
  *      evaluate.
  *
+ *      This is used from XWorkplace to collect objects from
+ *      a folder container when an operation is to be
+ *      executed and the typical WPS behavior must be imitated.
+ *      There are no WPS methods for this. By contrast, the
+ *      WPS normally instead calls wpMenuItemSelected for every
+ *      single selected object, which is not optimal in many
+ *      cases.
+ *
  *      This function only works when a context menu is open,
  *      because otherwise WPS cnr items don't have source emphasis.
  *
@@ -876,7 +884,8 @@ BOOL wpshIsViewCnr(WPObject *somSelf,
  *                          whitespace of the container;
  *                          this func then returns the folder itself.
  *                          This is only possible if (fKeyboard ==
- *                          FALSE).
+ *                          FALSE) because keyboard operations
+ *                          never affect the currently open folder.
  *
  *      --   SEL_SINGLESEL  the context menu was opened for a
  *                          single selected object (that is,
@@ -902,7 +911,8 @@ BOOL wpshIsViewCnr(WPObject *somSelf,
  *                          possible if (fKeyboard == TRUE); only
  *                          in that case, NULL is returned also.
  *
- *      Note that these flags are defined in include\helpers\cnrh.h.
+ *      Note that these flags are defined in include\helpers\cnrh.h,
+ *      which should be included.
  *
  *      Keep in mind that if this function returns something other
  *      than the folder of the container (SEL_WHITESPACE), the

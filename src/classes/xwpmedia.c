@@ -3,7 +3,7 @@
  *@@sourcefile xwpstring.c:
  *      This file contains SOM code for the following XWorkplace classes:
  *
- *      --  XWPMedia: a WPAbstract subclass for multimedia.
+ *      --  XWPMedia: a WPAbstract subclass for multimedia settings.
  *
  *      This class is new with V0.9.3.
  *
@@ -240,7 +240,7 @@ void _Optlink fntInsertDevices(PTHREADINFO pti)
  *      Sets the controls on the page according to the
  *      Global Settings.
  *
- *@@changed V0.9.2 (2000-03-28) [umoeller]: added freaky menus setting
+ *@@changed V0.9.4 (2000-06-13) [umoeller]: group title was missing; fixed
  */
 
 VOID xwmmDevicesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -254,6 +254,10 @@ VOID xwmmDevicesInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         XFIELDINFO      xfi[5];
         PFIELDINFO      pfi = NULL;
         int             i = 0;
+
+        // set group title V0.9.4 (2000-06-13) [umoeller]
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
+                          pNLSStrings->pszPagetitleDevices);
 
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(MMDEVRECORD, pszDeviceType);
@@ -535,7 +539,7 @@ void _Optlink fntInsertIOProcs(PTHREADINFO pti)
  *      Sets the controls on the page according to the
  *      Global Settings.
  *
- *@@changed V0.9.2 (2000-03-28) [umoeller]: added freaky menus setting
+ *@@changed V0.9.4 (2000-06-13) [umoeller]: group title was missing; fixed
  */
 
 VOID xwmmIOProcsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -549,6 +553,10 @@ VOID xwmmIOProcsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         XFIELDINFO      xfi[6];
         PFIELDINFO      pfi = NULL;
         int             i = 0;
+
+        // set group title V0.9.4 (2000-06-13) [umoeller]
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
+                          pNLSStrings->pszPagetitleIOProcs);
 
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(IOPROCRECORD, ulIndex);
@@ -761,7 +769,7 @@ void _Optlink fntInsertCodecs(PTHREADINFO pti)
  *      Sets the controls on the page according to the
  *      Global Settings.
  *
- *@@changed V0.9.2 (2000-03-28) [umoeller]: added freaky menus setting
+ *@@changed V0.9.4 (2000-06-13) [umoeller]: group title was missing; fixed
  */
 
 VOID xwmmCodecsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
@@ -775,6 +783,10 @@ VOID xwmmCodecsInitPage(PCREATENOTEBOOKPAGE pcnbp,   // notebook info struct
         XFIELDINFO      xfi[6];
         PFIELDINFO      pfi = NULL;
         int             i = 0;
+
+        // set group title V0.9.4 (2000-06-13) [umoeller]
+        WinSetDlgItemText(pcnbp->hwndDlgPage, ID_XFDI_CNR_GROUPTITLE,
+                          pNLSStrings->pszPagetitleCodecs);
 
         // set up cnr details view
         xfi[i].ulFieldOffset = FIELDOFFSET(CODECRECORD, ulIndex);
@@ -945,9 +957,12 @@ SOM_Scope BOOL  SOMLINK xwmm_wpQueryDefaultHelp(XWPMedia *somSelf,
 
 /*
  *@@ wpQueryDefaultView:
- *      this returns the default view of the object, which
- *      for XWPString is the settings notebook. This must
- *      be overridden for direct WPAbstract subclasses,
+ *      this WPObject method returns the default view of an object,
+ *      that is, which view is opened if the program file is
+ *      double-clicked upon. This is also used to mark
+ *      the default view in the "Open" context submenu.
+ *
+ *      This must be overridden for direct WPAbstract subclasses,
  *      because otherwise double-clicks on the object won't
  *      work.
  *

@@ -542,10 +542,11 @@ SOM_Scope BOOL  SOMLINK xfpgmf_wpSetProgIcon(XFldProgramFile *somSelf,
 
 /*
  *@@ wpQueryDefaultView:
- *      this returns the default view of an object, that
- *      is, which view is opened if the program file is
+ *      this WPObject method returns the default view of an object,
+ *      that is, which view is opened if the program file is
  *      double-clicked upon. This is also used to mark
  *      the default view in the "Open" context submenu.
+ *
  *      For WPProgramFile, the WPS always returns
  *      OPEN_RUNNING (0x04), which doesn't make sense
  *      for DLL's and drivers, which cannot be executed.

@@ -44,7 +44,7 @@ HELPERS_OUTPUT_DIR = $(PROJECT_BASE_DIR)\bin
 # If the following is uncommented, the makefiles will compile the
 # animated mouse pointers as well.
 
-# SET ANIMATED_MOUSE_POINTERS=YES
+ANIMATED_MOUSE_POINTERS=YES
 
 # DEBUG CODE
 # ----------
@@ -226,34 +226,34 @@ CC_WARNINGS  = /w3 /Wcmp+ /Wcnd- /Wcns+ /Wcnv+ /Wgen /Wcns /Wcpy /Wobs /Word- /W
 # /Wuse+ /Wuni+
 
 # compiler options which are the same with debug and release code
-CC_SHARED    = icc /I$(PROJECT_INCLUDE) /c /gd- /gi+ /q+ /se /ss /tn+
+CC_SHARED    = icc /I$(PROJECT_INCLUDE) /c /gd- /gi+ /q+ /se /ss
 
 !ifdef XWP_DEBUG
 # debug code
-CC_TEMP      = $(CC_SHARED) /o- /oi- /ol- /gh /ti+ /D__DEBUG__=1
+CC_TEMP      = $(CC_SHARED) /o- /oi- /ol- /ti+ /D__DEBUG__=1
 # /tm+
 !else
 # release code
 CC_TEMP      = $(CC_SHARED) /o+ /oi- /ol-
 !endif
 
+!ifdef ANIMATED_MOUSE_POINTERS
+AMPTR_STRING = /D__ANIMATED_MOUSE_POINTERS__=1
+!else
+AMPTR_STRING =
+!endif
+
 # DLL code (multi-threaded)
-CC_DLL = $(CC_TEMP) /ge- /gm+ $(CC_WARNINGS)
+CC_DLL = $(CC_TEMP) /ge- /gm+ $(CC_WARNINGS) $(AMPTR_STRING)
 # EXE code (multi-threaded)
-CC_EXE_MT = $(CC_TEMP) /ge+ /gm+ $(CC_WARNINGS)
+CC_EXE_MT = $(CC_TEMP) /ge+ /gm+ $(CC_WARNINGS) $(AMPTR_STRING)
 # EXE code (single-threaded)
-CC_EXE_ST = $(CC_TEMP) /ge+ /gm- $(CC_WARNINGS)
+CC_EXE_ST = $(CC_TEMP) /ge+ /gm- $(CC_WARNINGS) $(AMPTR_STRING)
 
 # compiler options for WarpIN helpers;
 # this is necessary because WarpIN uses a different compiler
 # setup to compile the helpers
-CC_HELPERS=$(CC_EXE_MT)
-CCPP_HELPERS= $(CC_TEMP) /ge+ /gm+ /w1
-# CCPP_HELPERS=$(CC_EXE_MT)
-# V0.9.3 (2000-04-17) [umoeller]
-
-# /oi- /w2 /fi+ /Tn+
-#/ti+
+CC_HELPERS = $(CC_EXE_MT)
 
 # Some VisualAge C++ compiler options explained [default in brackets]:
 # /c:   compile only, no link (we'll call the linker explicitly)
@@ -269,6 +269,7 @@ CCPP_HELPERS= $(CC_TEMP) /ge+ /gm+ /w1
 # /gi+: fast integer execution
 # /Gl+: remove unreferenced functions (when comp.+link in 1 step)
 # /gm+: multithread libraries
+# /gm+: disable stack probes (single-thread only!)
 # /kc+: produce preprocessor warnings
 # /o+:  optimization (inlining etc.)
 # /oi-: no inlining (?)

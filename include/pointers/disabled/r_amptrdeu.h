@@ -59,7 +59,7 @@
 
 #define IDT_IDDLG_DLG_ABOUT                      "Produktinformation"
 #define IDT_IDDLG_DLG_ABOUT_TITLE                __TITLE__
-#define IDT_IDDLG_DLG_ABOUT_VERSION              "Version " __VERSION__
+#define IDT_IDDLG_DLG_ABOUT_VERSION              "Version " BLDLEVEL_VERSION
 #define IDT_IDDLG_DLG_ABOUT_AUTHOR               "von " __AUTHOR__  " " __YEAR__
 #define IDT_IDDLG_DLG_ABOUT_RIGHTS               "Alle Rechte vorbehalten."
 #define IDT_IDDLG_DLG_ABOUT_NLS                  "National Language Support"
@@ -232,12 +232,12 @@
 #define IDT_IDMEN_AE_OPTION_UNIT                 "Change Unit"
 #define IDT_IDMEN_AE_OPTION_UNIT_MS              "milliseconds"
 #define IDT_IDMEN_AE_OPTION_UNIT_JIF             "Jiffies"
-#define IDT_IDMEN_AE_HELP                        IDT_IDMEN_ITEM_HELP        
-#define IDT_IDMEN_AE_HELP_INDEX                  IDT_IDMEN_ITEM_HELP_INDEX  
+#define IDT_IDMEN_AE_HELP                        IDT_IDMEN_ITEM_HELP
+#define IDT_IDMEN_AE_HELP_INDEX                  IDT_IDMEN_ITEM_HELP_INDEX
 #define IDT_IDMEN_AE_HELP_GENERAL                IDT_IDMEN_ITEM_HELP_GENERAL
-#define IDT_IDMEN_AE_HELP_USING                  IDT_IDMEN_ITEM_HELP_USING  
-#define IDT_IDMEN_AE_HELP_KEYS                   IDT_IDMEN_ITEM_HELP_KEYS   
-#define IDT_IDMEN_AE_ABOUT                       IDT_IDMEN_ITEM_HELP_ABOUT  
+#define IDT_IDMEN_AE_HELP_USING                  IDT_IDMEN_ITEM_HELP_USING
+#define IDT_IDMEN_AE_HELP_KEYS                   IDT_IDMEN_ITEM_HELP_KEYS
+#define IDT_IDMEN_AE_ABOUT                       IDT_IDMEN_ITEM_HELP_ABOUT
 
 //
 //      Text for online help panel titles

@@ -1,4 +1,28 @@
 
+/*
+ *@@sourcefile pointer.c:
+ *
+ *      This file is ALL new with V0.9.4.
+ *
+ *@@added V0.9.4 [umoeller]
+ *@@header "pointers\pointer.h"
+ */
+
+/*
+ *      Copyright (C) 1996-2000 Christian Langanke.
+ *      Copyright (C) 2000 Ulrich M봪ler.
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -304,12 +328,9 @@ APIRET FlipPointerVertical
  *� returns   : APIRET - OS/2 error code                                   �
  *읕컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴켸
  */
-APIRET GrayScalePointer
- (
-     PVOID pvIconData,
-     ULONG ulScaleCount,
-     ULONG ulBwTreshold
-)
+APIRET GrayScalePointer(PVOID pvIconData,
+                        ULONG ulScaleCount,
+                        ULONG ulBwTreshold)
 {
 
     APIRET rc = NO_ERROR;
@@ -328,7 +349,7 @@ APIRET GrayScalePointer
     BOOL fUseOldHeader = (ulHeaderSize == sizeof(BITMAPFILEHEADER));
     BOOL fIsColorPointer;
 
-    USHORT cx, cy;
+    USHORT cx = 0, cy = 0;
     PUSHORT pxHostspot;
     USHORT cPlanes, cBitCount;
 
@@ -1043,7 +1064,7 @@ APIRET GetPalette
     BOOL fUseOldHeader = (ulHeaderSize == sizeof(BITMAPFILEHEADER));
     BOOL fIsColorPointer;
 
-    USHORT cx, cy;
+    USHORT cx = 0, cy = 0;
     PUSHORT pxHostspot;
     USHORT cPlanes, cBitCount;
 

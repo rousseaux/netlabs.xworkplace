@@ -24,7 +24,7 @@
 ;      SOM Emitter emitdef: 2.41
 
 LIBRARY xfldr INITGLOBAL TERMGLOBAL
-Description '@#Ulrich M”ller:0.9.3#@ XWorkplace Main WPS Classes Module'
+Description '@#Ulrich M”ller:0.9.4#@ XWorkplace Main WPS Classes Module'
 PROTMODE
 DATA MULTIPLE NONSHARED LOADONCALL
 
@@ -169,4 +169,10 @@ EXPORTS
    M_XWPMediaClassData
    M_XWPMediaNewClass
 
+   XCenterCClassData
+   XCenterClassData
+   XCenterNewClass
+   M_XCenterCClassData
+   M_XCenterClassData
+   M_XCenterNewClass
 

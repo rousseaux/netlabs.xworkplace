@@ -604,6 +604,7 @@ VOID AddHotkeyToMenuItem(HWND hwndMenu,
  *      only.
  *
  *@@added V0.9.2 (2000-03-06) [umoeller]
+ *@@changed V0.9.4 (2000-06-11) [umoeller]: hotkeys showed up even if hotkeys were globally disabled; fixed
  */
 
 VOID fdrAddHotkeysToMenu(WPObject *somSelf,
@@ -612,7 +613,9 @@ VOID fdrAddHotkeysToMenu(WPObject *somSelf,
 {
     PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
 
-    if (pGlobalSettings->fShowHotkeysInMenus)
+    if (    (pGlobalSettings->fEnableFolderHotkeys) // V0.9.4 (2000-06-11) [umoeller]
+         && (pGlobalSettings->fShowHotkeysInMenus)
+       )
     {
         CHAR        szDescription[100];
         PNLSSTRINGS pNLSStrings = cmnQueryNLSStrings();

@@ -1,3 +1,27 @@
+
+/*
+ *@@sourcefile mptrcnr.c:
+ *
+ *      This file is ALL new with V0.9.4.
+ *
+ *@@added V0.9.4 [umoeller]
+ *@@header "pointers\mptrcnr.h"
+ */
+
+/*
+ *      Copyright (C) 1996-2000 Christian Langanke.
+ *      Copyright (C) 2000 Ulrich M봪ler.
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
 // C Runtime
 #include <stdlib.h>
 #include <string.h>
@@ -16,6 +40,9 @@
 // generic headers
 #include "setup.h"              // code generation and debugging options
 
+// XWorkplace implementation headers
+#include "dlgids.h"                     // all the IDs that are shared with NLS
+
 #include "pointers\mptrcnr.h"
 #include "pointers\mptrprop.h"
 #include "pointers\mptrutil.h"
@@ -24,7 +51,6 @@
 #include "pointers\mptrset.h"
 #include "pointers\mptranim.h"
 #include "pointers\wmuser.h"
-#include "pointers\r_wpamptr.h"
 #include "pointers\macros.h"
 #include "pointers\debug.h"
 
@@ -93,21 +119,6 @@ CHAR szTitleInfoArtist[MAX_RES_STRLEN];
 CHAR szStatusOn[MAX_RES_STRLEN];
 CHAR szStatusOff[MAX_RES_STRLEN];
 
-
-// ----------------------------------------------------------------------
-// private prototypes
-// ----------------------------------------------------------------------
-
-
-BOOL InitPtrSetContainer(HWND hwnd, PVOID * ppvCnrData);
-BOOL RefreshCnrItem(HWND hwnd, PRECORDCORE prec, PRECORDCORE pcnrrec, BOOL fResetArrowPtr);
-BOOL SetContainerView(HWND hwnd, ULONG ulViewStyle);
-BOOL ToggleAnimate(HWND hwnd, ULONG ulPtrIndex, PRECORDCORE prec, PRECORDCORE pcnrrrec, BOOL fChangeAll, BOOL fRefresh, PBOOL fEnable);
-
-BOOL LoadAnimationResource(HWND hwnd, PSZ pszName, PRECORDCORE prec, PRECORDCORE pcnrrrec);
-
-BOOL BeginEditPointer(HWND hwnd, PRECORDCORE prec, PRECORDCORE pcnrrec);
-BOOL EndEditPointer(HWND hwnd, HAPP happ, ULONG ulReturncode, PRECORDCORE pcnrrec);
 
 /*旼컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴커
  *� Name      : InitCnrResources                                           �

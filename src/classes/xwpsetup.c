@@ -201,9 +201,12 @@ SOM_Scope ULONG  SOMLINK xwset_xwpAddXWPSetupPages(XWPSetup *somSelf,
 
 /*
  *@@ wpQueryDefaultView:
- *      this returns the default view of the object, which
- *      for XWPSetup is the settings notebook. This must
- *      be overridden for direct WPAbstract subclasses,
+ *      this WPObject method returns the default view of an object,
+ *      that is, which view is opened if the program file is
+ *      double-clicked upon. This is also used to mark
+ *      the default view in the "Open" context submenu.
+ *
+ *      This must be overridden for direct WPAbstract subclasses,
  *      because otherwise double-clicks on the object won't
  *      work.
  */

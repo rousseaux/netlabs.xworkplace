@@ -16,10 +16,12 @@
 // generic headers
 #include "setup.h"              // code generation and debugging options
 
+// XWorkplace implementation headers
+#include "dlgids.h"                     // all the IDs that are shared with NLS
+
 #include "pointers\expire.h"
 #include "pointers\debug.h"
 #include "pointers\r_amptreng.h"
-#include "pointers\r_wpamptr.h"
 
 #define NEWLINE "\n"
 
@@ -88,12 +90,12 @@ APIRET _Export CheckExpiration
         DosFreeResource(pvResource);
 
 // Fehlermeldung ausgeben
-    if (rc != NO_ERROR)
+    /* if (rc != NO_ERROR)
     {
         WinMessageBox(HWND_DESKTOP, HWND_DESKTOP,
          "Beta version has expired. Contact " __EMAIL__ " for a new version.",
                       __TITLE__, 0, MB_CANCEL);
-    }
+    } */
 
     return rc;
 

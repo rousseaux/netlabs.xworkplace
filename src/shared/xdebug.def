@@ -37,3 +37,10 @@ EXPORTS
    M_DbgDataFileClassData
    M_DbgDataFileNewClass
 
+   DbgFolderCClassData
+   DbgFolderClassData
+   DbgFolderNewClass
+   M_DbgFolderCClassData
+   M_DbgFolderClassData
+   M_DbgFolderNewClass
+

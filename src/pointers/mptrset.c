@@ -1,3 +1,27 @@
+
+/*
+ *@@sourcefile mptrset.c:
+ *
+ *      This file is ALL new with V0.9.4.
+ *
+ *@@added V0.9.4 [umoeller]
+ *@@header "pointers\mptrset.h"
+ */
+
+/*
+ *      Copyright (C) 1996-2000 Christian Langanke.
+ *      Copyright (C) 2000 Ulrich M봪ler.
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
 // C Runtime
 #include <stdlib.h>
 #include <string.h>
@@ -17,6 +41,9 @@
 // generic headers
 #include "setup.h"              // code generation and debugging options
 
+// XWorkplace implementation headers
+#include "dlgids.h"                     // all the IDs that are shared with NLS
+
 #include "pointers\mptrppl.h"
 #include "pointers\mptrset.h"
 #include "pointers\mptrptr.h"
@@ -24,7 +51,6 @@
 #include "pointers\mptrutil.h"
 #include "pointers\mptranim.h"
 #include "pointers\wmuser.h"
-#include "pointers\r_wpamptr.h"
 #include "pointers\pointer.h"
 #include "pointers\cursor.h"
 #include "pointers\dll.h"
@@ -75,26 +101,26 @@ static PSZ pszSettingUseMouseSetupNo = "NO";
 // strings
 
 // global vars
-static BOOL fSettingsInitialized = FALSE;
+static BOOL G_fSettingsInitialized = FALSE;
 
 // global vars: object settings
-static ULONG ulDefaultTimeout = DEFAULT_ANIMATION_TIMEOUT;
-static BOOL fOverrideTimeout = DEFAULT_OVERRIDETIMEOUT;
-static BOOL fActivateOnLoad = DEFAULT_ACTIVATEONLOAD;
+static ULONG G_ulDefaultTimeout = DEFAULT_ANIMATION_TIMEOUT;
+static BOOL G_fOverrideTimeout = DEFAULT_OVERRIDETIMEOUT;
+static BOOL G_fActivateOnLoad = DEFAULT_ACTIVATEONLOAD;
 
-static BOOL fAnimationInitDelayInitialized = FALSE;
-static BOOL usAnimationInitDelay = 0;
+static BOOL G_fAnimationInitDelayInitialized = FALSE;
+static BOOL G_usAnimationInitDelay = 0;
 
-static BOOL fAnimationPathInitialized = FALSE;
-static CHAR szAnimationPath[_MAX_PATH];
+static BOOL G_fAnimationPathInitialized = FALSE;
+static CHAR G_szAnimationPath[_MAX_PATH];
 
-static ULONG ulDragPtrFileType = DEFAULT_DRAGPTRTYPE;
-static ULONG ulDragSetFileType = DEFAULT_DRAGSETTYPE;
+static ULONG G_ulDragPtrFileType = DEFAULT_DRAGPTRTYPE;
+static ULONG G_ulDragSetFileType = DEFAULT_DRAGSETTYPE;
 
-static BOOL fUseMouseSetup = DEFAULT_USEMOUSESETUP;
-static BOOL fBlackWhite = DEFAULT_BLACKWHITE;
-static BOOL fHidePointer = DEFAULT_HIDEPOINTER;
-static ULONG ulHidePointerDelay = DEFAULT_HIDEPOINTERDELAY;
+static BOOL G_fUseMouseSetup = DEFAULT_USEMOUSESETUP;
+static BOOL G_fBlackWhite = DEFAULT_BLACKWHITE;
+static BOOL G_fHidePointer = DEFAULT_HIDEPOINTER;
+static ULONG G_ulHidePointerDelay = DEFAULT_HIDEPOINTERDELAY;
 
 /*旼컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴커
  *� Name      : Get/Set Funktionen f걊 globale Variablen                   �
@@ -103,7 +129,7 @@ static ULONG ulHidePointerDelay = DEFAULT_HIDEPOINTERDELAY;
 
 BOOL IsSettingsInitialized(VOID)
 {
-    return fSettingsInitialized;
+    return G_fSettingsInitialized;
 }
 
 // f걊 folgende Settings werden keine extra Zugriffsfunktionen ben봳igt
@@ -131,11 +157,11 @@ BOOL IsSettingsInitialized(VOID)
 
 BOOL getActivateOnLoad(VOID)
 {
-    return fActivateOnLoad;
+    return G_fActivateOnLoad;
 }
 VOID setActivateOnLoad(BOOL fActivate)
 {
-    fActivateOnLoad = fActivate;
+    G_fActivateOnLoad = fActivate;
 }
 
 // ======================================================================
@@ -162,19 +188,19 @@ ULONG _Export getDefaultAnimationInitDelay(VOID)
 ULONG _Export getAnimationInitDelay(VOID)
 {
 
-    if (fAnimationInitDelayInitialized)
-        return usAnimationInitDelay;
+    if (G_fAnimationInitDelayInitialized)
+        return G_usAnimationInitDelay;
     else
     {
-        fAnimationInitDelayInitialized = TRUE;
+        G_fAnimationInitDelayInitialized = TRUE;
         return getDefaultAnimationInitDelay();
     }
 }
 
 VOID _Export setAnimationInitDelay(ULONG ulNewInitDelay)
 {
-    fAnimationInitDelayInitialized = TRUE;
-    usAnimationInitDelay = ulNewInitDelay;
+    G_fAnimationInitDelayInitialized = TRUE;
+    G_usAnimationInitDelay = ulNewInitDelay;
     return;
 }
 
@@ -184,8 +210,8 @@ VOID _Export setAnimationInitDelay(ULONG ulNewInitDelay)
 
 PCSZ getAnimationPath(VOID)
 {
-    if (fAnimationPathInitialized)
-        return szAnimationPath;
+    if (G_fAnimationPathInitialized)
+        return G_szAnimationPath;
     else
         return DEFAULT_ANIMATIONPATH;
 }
@@ -198,15 +224,17 @@ BOOL setAnimationPath(PSZ pszNewPath)
     {
         if (FileExist(pszNewPath, TRUE))
         {
-            fAnimationPathInitialized = TRUE;
-            strcpy(szAnimationPath, pszNewPath);
+            G_fAnimationPathInitialized = TRUE;
+            strcpy(G_szAnimationPath, pszNewPath);
             fResult = TRUE;
 
             // store Animationpath to OS2.INI
             {
                 HAB hab = WinQueryAnchorBlock(HWND_DESKTOP);
 
-                PrfWriteProfileData(HINI_PROFILE, "WPAMPTR", "AnimationFilePath", szAnimationPath, strlen(szAnimationPath));
+                PrfWriteProfileData(HINI_PROFILE, "WPAMPTR", "AnimationFilePath",
+                                    G_szAnimationPath,
+                                    strlen(G_szAnimationPath));
             }
         }
     }
@@ -219,12 +247,12 @@ BOOL setAnimationPath(PSZ pszNewPath)
 
 BOOL getBlackWhite(VOID)
 {
-    return fBlackWhite;
+    return G_fBlackWhite;
 }
 
 VOID setBlackWhite(BOOL fNewBlackWhite)
 {
-    fBlackWhite = fNewBlackWhite;
+    G_fBlackWhite = fNewBlackWhite;
 }
 
 // ======================================================================
@@ -233,12 +261,12 @@ VOID setBlackWhite(BOOL fNewBlackWhite)
 // ======================================================================
 VOID setDragPtrType(ULONG ulResFileType)
 {
-    ulDragPtrFileType = ulResFileType;
+    G_ulDragPtrFileType = ulResFileType;
     return;
 }
 ULONG getDragPtrType(VOID)
 {
-    return ulDragPtrFileType;
+    return G_ulDragPtrFileType;
 }
 
 // ======================================================================
@@ -246,12 +274,12 @@ ULONG getDragPtrType(VOID)
 // ======================================================================
 VOID setDragSetType(ULONG ulResFileType)
 {
-    ulDragSetFileType = ulResFileType;
+    G_ulDragSetFileType = ulResFileType;
     return;
 }
 ULONG getDragSetType(VOID)
 {
-    return ulDragSetFileType;
+    return G_ulDragSetFileType;
 }
 
 // ======================================================================
@@ -260,24 +288,24 @@ ULONG getDragSetType(VOID)
 
 ULONG getDefaultTimeout(VOID)
 {
-    return ulDefaultTimeout;
+    return G_ulDefaultTimeout;
 }
 VOID setDefaultTimeout(ULONG ulTimeout)
 {
     if ((ulTimeout >= TIMEOUT_MIN) &&
         (ulTimeout <= TIMEOUT_MAX))
-        ulDefaultTimeout = ulTimeout;
+        G_ulDefaultTimeout = ulTimeout;
 }
 
 // ------------------------------
 
 BOOL getOverrideTimeout(VOID)
 {
-    return fOverrideTimeout;
+    return G_fOverrideTimeout;
 }
 VOID setOverrideTimeout(BOOL fOverride)
 {
-    fOverrideTimeout = fOverride;
+    G_fOverrideTimeout = fOverride;
 }
 
 // ======================================================================
@@ -286,7 +314,7 @@ VOID setOverrideTimeout(BOOL fOverride)
 
 BOOL getHidePointer(VOID)
 {
-    return fHidePointer;
+    return G_fHidePointer;
 }
 
 VOID setHidePointer(BOOL fNewHidePointer)
@@ -295,12 +323,12 @@ VOID setHidePointer(BOOL fNewHidePointer)
                WM_USER_ENABLEHIDEPOINTER,
                MPFROMSHORT(fNewHidePointer),
                0);
-    fHidePointer = fNewHidePointer;
+    G_fHidePointer = fNewHidePointer;
 }
 
 VOID overrideSetHidePointer(BOOL fNewHidePointer)
 {
-    fHidePointer = fNewHidePointer;
+    G_fHidePointer = fNewHidePointer;
 }
 
 // ======================================================================
@@ -309,14 +337,14 @@ VOID overrideSetHidePointer(BOOL fNewHidePointer)
 
 ULONG getHidePointerDelay(VOID)
 {
-    return ulHidePointerDelay;
+    return G_ulHidePointerDelay;
 }
 
 VOID setHidePointerDelay(ULONG ulNewHidePointerDelay)
 {
     if ((ulNewHidePointerDelay >= HIDEPONTERDELAY_MIN) &&
         (ulNewHidePointerDelay <= HIDEPONTERDELAY_MAX))
-        ulHidePointerDelay = ulNewHidePointerDelay;
+        G_ulHidePointerDelay = ulNewHidePointerDelay;
 }
 
 // ======================================================================
@@ -325,12 +353,12 @@ VOID setHidePointerDelay(ULONG ulNewHidePointerDelay)
 
 BOOL getUseMouseSetup(VOID)
 {
-    return fUseMouseSetup;
+    return G_fUseMouseSetup;
 }
 
 VOID setUseMouseSetup(BOOL fNewUseMouseSetup)
 {
-    fUseMouseSetup = fNewUseMouseSetup;
+    G_fUseMouseSetup = fNewUseMouseSetup;
 }
 
 
@@ -421,10 +449,10 @@ typedef struct _PARM
 }
 PARM, *PPARM;
 
-VOID _Optlink ScanSetupStringAsync(ULONG ulParms)
+VOID _Optlink ScanSetupStringAsync(PVOID pvParams) // ULONG ulParms)
 {
     APIRET rc = NO_ERROR;
-    PPARM pparm = (PPARM) ulParms;
+    PPARM pparm = (PPARM)pvParams;
     HAB hab = WinInitialize(0);
     HMQ hmq = WinCreateMsgQueue(hab, 0);
     PSZ pszDelay = NULL;
@@ -554,7 +582,7 @@ APIRET _Export ScanSetupString
 
         // notifizieren, dass die initialisierung durchgef갿rt wird
         // bzw. "bald fertig ist"
-        fSettingsInitialized = TRUE;
+        G_fSettingsInitialized = TRUE;
 
         // Parameter pr갽en
         if (pszSetup == NULL)

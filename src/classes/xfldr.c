@@ -151,7 +151,7 @@
 
 #include <wprootf.h>                    // WPRootFolder
 #include <wpshadow.h>                   // WPShadow
-// #include <wpdesk.h>                     // WPDesktop
+#include <wpdesk.h>                     // WPDesktop
 #include "xfobj.h"                      // XFldObject
 #include "xfdisk.h"                     // XFldDisk
 
@@ -261,8 +261,8 @@ SOM_Scope BOOL  SOMLINK xf_xwpSetFldrSort(XFolder *somSelf,
                 // messing with the container attributes;
                 // but make sure the folder is not being copied right now
                 if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
-                    if (_pWPFolderSortInfo)
-                        (_pWPFolderSortInfo)->fAlwaysSort = ALWAYS_SORT;
+                    if (_pFolderSortInfo)
+                        (_pFolderSortInfo)->fAlwaysSort = ALWAYS_SORT;
                 Update = TRUE;
             }
         } // end if (fFolderLocked)
@@ -910,6 +910,108 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryQuickOpen(XFolder *somSelf)
 }
 
 /*
+ *@@ xwpSetDefaultDocument:
+ *      this sets the default document for this folder.
+ *      If a default document is set for a folder, a
+ *      double-click on the folder will not open the
+ *      folder, but the default document instead.
+ *
+ *      Returns FALSE on errors, e.g. if pDefDoc is
+ *      not a WPFileSystem or does not reside in the
+ *      current folder (somSelf).
+ *
+ *      If pDefDoc is NULL, the default document is
+ *      unset to restore normal folder behavior.
+ *
+ *@@added V0.9.4 (2000-06-09) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xf_xwpSetDefaultDocument(XFolder *somSelf,
+                                                 WPFileSystem* pDefDoc)
+{
+    BOOL brc = FALSE;
+    BOOL fFolderLocked = FALSE;
+    XFolderMethodDebug("XFolder","xf_xwpSetDefaultDocument");
+
+    TRY_LOUD(excpt1, NULL)
+    {
+        fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
+        if (fFolderLocked)
+        {
+            XFolderData *somThis = XFolderGetData(somSelf);
+
+            if (!pDefDoc)
+            {
+                // NULL:
+                _pDefaultDocument = NULL;
+                brc = TRUE;
+            }
+            else
+            {
+                if (    (_somIsA(pDefDoc, _WPFileSystem))       // must be a WPFileSystem
+                     && (_wpQueryFolder(pDefDoc) == somSelf)    // must be in this folder
+                   )
+                {
+                    _pDefaultDocument = pDefDoc;
+                    brc = TRUE;
+                }
+            }
+
+            _wpSaveDeferred(somSelf);
+        } // end if (fFolderLocked)
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fFolderLocked)
+        _wpReleaseObjectMutexSem(somSelf);
+
+    return (brc);
+}
+
+/*
+ *@@ xwpQueryDefaultDocument:
+ *      returns the default document which has been set
+ *      previously with XFolder::xwpSetDefaultDocument
+ *      or NULL if there's none.
+ *
+ *@@added V0.9.4 (2000-06-09) [umoeller]
+ */
+
+SOM_Scope WPFileSystem*  SOMLINK xf_xwpQueryDefaultDocument(XFolder *somSelf)
+{
+    WPFileSystem *rc = NULL;
+    BOOL fFolderLocked = FALSE;
+
+    XFolderMethodDebug("XFolder","xf_xwpQueryDefaultDocument");
+
+    TRY_LOUD(excpt1, NULL)
+    {
+        if (!_somIsA(somSelf, _WPDesktop))
+        {
+            fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
+            if (fFolderLocked)
+            {
+                XFolderData *somThis = XFolderGetData(somSelf);
+
+                if (_pszDefaultDocDeferred)
+                    // we have a default document, but this hasn't been
+                    // resolved yet:
+                    rc = NULL;
+                else
+                    rc = _pDefaultDocument;
+            } // end if (fFolderLocked)
+        }
+    }
+
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fFolderLocked)
+        _wpReleaseObjectMutexSem(somSelf);
+
+    return (rc);
+}
+
+/*
  *@@ xwpQueryMenuBarVisibility:
  *      returns TRUE or FALSE if Warp 4's folder bar is
  *      currently visible for this folder. On Warp 3, this
@@ -934,10 +1036,10 @@ SOM_Scope BOOL  SOMLINK xf_xwpQueryMenuBarVisibility(XFolder *somSelf)
         // obtained a pointer using the ugly kludge in
         // XFolder::wpRestoreData
         if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
-            if (_pWPFolderLongArray)
+            if (_pFolderLongArray)
             {
                 // _Pmpf(("cbFldrLongArray: %d", _cbFldrLongArray));
-                ULONG   ulMenuBarVisibility = _pWPFolderLongArray->ulMenuBarVisibility;
+                ULONG   ulMenuBarVisibility = _pFolderLongArray->ulMenuBarVisibility;
                             // 0 = off, 1 = on, 2 = default
                 if (ulMenuBarVisibility == 1)
                     brc = TRUE;
@@ -1203,23 +1305,26 @@ SOM_Scope void  SOMLINK xf_wpInitData(XFolder *somSelf)
     _bDefaultSortInstance = SET_DEFAULT;
     // _ulSBInflatedFrame = 0;
 
-    _pWPFolderSortInfo = NULL;
-    _pWPFolderLongArray = NULL;
-    _pszWPFolderStrArray = NULL;
-    _cbWPFolderStrArray = 0;
-    _cbWPFolderLongArray = 0;
+    _pFolderSortInfo = NULL;
+    _pFolderLongArray = NULL;
+    _pszFolderStrArray = NULL;
+    _cbFolderStrArray = 0;
+    _cbFolderLongArray = 0;
 
-    _pWPFolderBackground = NULL;
-    _cbWPFolderBackground = 0;
+    _pFolderBackground = NULL;
+    _cbFolderBackground = 0;
 
-    _pulWPFolderShowAllInTreeView = NULL;
+    _pulFolderShowAllInTreeView = NULL;
 
-    _pszWPFolderBkgndImageFile = 0;
+    _pszFolderBkgndImageFile = 0;
 
     _fUnInitCalled = FALSE;
     _hwndCnrSaved = NULLHANDLE;
 
     _pfnResolvedUpdateStatusBar = NULL;
+
+    _pDefaultDocument = NULL; // V0.9.4 (2000-06-09) [umoeller]
+    _pszDefaultDocDeferred = NULL; // V0.9.4 (2000-06-09) [umoeller]
 }
 
 /*
@@ -1496,13 +1601,15 @@ SOM_Scope WPObject*  SOMLINK xf_wpCreateFromTemplate(XFolder *somSelf,
  *      so we override this method for XFolder also.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.4 (2000-06-09) [umoeller]: added default document
  */
 
 SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
                                          ULONG ulCode,
                                          WPObject* refObject)
 {
-    // XFolderData *somThis = XFolderGetData(somSelf);
+    BOOL        fFolderLocked = FALSE;
+
     // XFolderMethodDebug("XFolder","xf_wpObjectReady");
 
     #if defined(DEBUG_SOMMETHODS) || defined(DEBUG_AWAKEOBJECTS)
@@ -1524,6 +1631,29 @@ SOM_Scope void  SOMLINK xf_wpObjectReady(XFolder *somSelf,
     xthrPostWorkerMsg(WOM_ADDAWAKEOBJECT,
                       (MPARAM)somSelf,
                       MPNULL);
+
+    TRY_LOUD(excpt1, NULL)
+    {
+        fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
+        if (fFolderLocked)
+        {
+            XFolderData *somThis = XFolderGetData(somSelf);
+            if (_pszDefaultDocDeferred)
+            {
+                _Pmpf(("_pszDefaultDocDeferred: %s", _pszDefaultDocDeferred));
+                // this has been set by wpRestoreState
+                _pDefaultDocument = wpshContainsFile(somSelf, _pszDefaultDocDeferred);
+                    // can return NULL if not found
+                _Pmpf(("  Resolved _pDefaultDocument: 0x%lX", _pDefaultDocument));
+                free(_pszDefaultDocDeferred);
+                _pszDefaultDocDeferred = NULL;
+            }
+        } // end if (fFolderLocked)
+    }
+    CATCH(excpt1) {} END_CATCH();
+
+    if (fFolderLocked)
+        _wpReleaseObjectMutexSem(somSelf);
 }
 
 /*
@@ -1545,8 +1675,8 @@ SOM_Scope void  SOMLINK xf_wpUnInitData(XFolder *somSelf)
     if (!_fUnInitCalled)
         _fUnInitCalled = TRUE;
 
-    if (_pszWPFolderBkgndImageFile)
-        free(_pszWPFolderBkgndImageFile);
+    if (_pszFolderBkgndImageFile)
+        free(_pszFolderBkgndImageFile);
 
     XFolder_parent_WPFolder_wpUnInitData(somSelf);
         // fixed this (V0.9.0)
@@ -1620,6 +1750,8 @@ SOM_Scope BOOL  SOMLINK xf_wpFree(XFolder *somSelf)
  *      with wpRestoreState. This gets called during wpClose,
  *      wpSaveImmediate or wpSaveDeferred processing.
  *      All persistent instance variables should be stored here.
+ *
+ *@@changed V0.9.4 (2000-06-09) [umoeller]: added default document
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpSaveState(XFolder *somSelf)
@@ -1652,6 +1784,13 @@ SOM_Scope BOOL  SOMLINK xf_wpSaveState(XFolder *somSelf)
     if (_bDefaultSortInstance != SET_DEFAULT)
         _wpSaveLong(somSelf, (PSZ)G_pcszXFolder, 7, (ULONG)_bDefaultSortInstance);
 
+    if (_pDefaultDocument)  // V0.9.4 (2000-06-09) [umoeller]
+    {
+        CHAR szDefaultDoc[CCHMAXPATH];
+        _wpQueryFilename(_pDefaultDocument, szDefaultDoc, FALSE);   // not qualified
+        _wpSaveString(somSelf, (PSZ)G_pcszXFolder, 8, szDefaultDoc);
+    }
+
     brc = XFolder_parent_WPFolder_wpSaveState(somSelf);
 
     #if defined DEBUG_RESTOREDATA || defined DEBUG_SOMMETHODS
@@ -1666,6 +1805,8 @@ SOM_Scope BOOL  SOMLINK xf_wpSaveState(XFolder *somSelf)
  *      this WPObject instance method gets called during object
  *      initialization (after wpInitData) to restore the data
  *      which was stored with wpSaveState.
+ *
+ *@@changed V0.9.4 (2000-06-09) [umoeller]: added default document
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
@@ -1673,6 +1814,9 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
 {
     ULONG   ul;
     BOOL    brc;
+    CHAR    szDefaultDoc[CCHMAXPATH];
+    ULONG   cbDefaultDoc = sizeof(szDefaultDoc);
+
     XFolderData *somThis = XFolderGetData(somSelf);
     // XFolderMethodDebug("XFolder","xf_wpRestoreState");
 
@@ -1711,6 +1855,13 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreState(XFolder *somSelf,
 
     if (_wpRestoreLong(somSelf, (PSZ)G_pcszXFolder, 7, &ul))
         _bDefaultSortInstance = (USHORT)ul;
+
+    if (_wpRestoreString(somSelf, (PSZ)G_pcszXFolder, 8, szDefaultDoc, &cbDefaultDoc))
+    {
+        // store file name in instance data; wpObjectReady will then
+        // find the file, which doesn't work when the folder isn't fully initialized.
+        _pszDefaultDocDeferred = strdup(szDefaultDoc);
+    }
 
     brc = (XFolder_parent_WPFolder_wpRestoreState(somSelf, ulReserved));
 
@@ -1762,11 +1913,11 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreLong(XFolder *somSelf, PSZ pszClass,
                 // then the pointer given to this method (pValue) must
                 // be the pointer to the WPFolder-internal SHOWALLINTREEVIEW
                 // flag
-                    if (pulValue)
-                    {
-                        XFolderData *somThis = XFolderGetData(somSelf);
-                        _pulWPFolderShowAllInTreeView = pulValue;
-                    }
+                if (pulValue)
+                {
+                    XFolderData *somThis = XFolderGetData(somSelf);
+                    _pulFolderShowAllInTreeView = pulValue;
+                }
             break; }
         }
     }
@@ -1808,7 +1959,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreString(XFolder *somSelf,
                 if ((pszValue) && (brc))
                 {
                     XFolderData *somThis = XFolderGetData(somSelf);
-                    _pszWPFolderBkgndImageFile = strdup(pszValue);   // freed in uninitdata
+                    _pszFolderBkgndImageFile = strdup(pszValue);   // freed in uninitdata
                 }
             break;
         }
@@ -1882,7 +2033,7 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
                     if (pValue)
                     {
                         XFolderData *somThis = XFolderGetData(somSelf);
-                        _pWPFolderSortInfo = (PFDRSORTINFO)pValue;
+                        _pFolderSortInfo = (PFDRSORTINFO)pValue;
 
                         if (brc)
                             // if the parent method has found sort data,
@@ -1904,8 +2055,8 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
                 if (pValue)
                 {
                     XFolderData *somThis = XFolderGetData(somSelf);
-                    _cbWPFolderBackground = *pcbValue;
-                    _pWPFolderBackground = (PVOID)pValue;
+                    _cbFolderBackground = *pcbValue;
+                    _pFolderBackground = (PVOID)pValue;
                 }
             break;
 
@@ -1927,9 +2078,9 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
                 // store the size of the data returned in
                 // folder instance data, in case it is not
                 // 84 bytes (as it is with Warp 4 fixpak 8)
-                _cbWPFolderLongArray = *pcbValue;
+                _cbFolderLongArray = *pcbValue;
                 if (pValue)
-                    _pWPFolderLongArray = (PFDRLONGARRAY)pValue;
+                    _pFolderLongArray = (PFDRLONGARRAY)pValue;
             break; }
 
             case IDKEY_FDRSTRARRAY:         // size: 400 bytes
@@ -1940,8 +2091,8 @@ SOM_Scope BOOL  SOMLINK xf_wpRestoreData(XFolder *somSelf,
                 // 400 bytes (as it is with Warp 4 fixpak 8)
                 if (pValue)
                 {
-                    _cbWPFolderStrArray = *pcbValue;
-                    _pszWPFolderStrArray = (PSZ)pValue;
+                    _cbFolderStrArray = *pcbValue;
+                    _pszFolderStrArray = (PSZ)pValue;
                 }
             break; }
 
@@ -2480,6 +2631,92 @@ SOM_Scope BOOL  SOMLINK xf_wpMenuItemHelpSelected(XFolder *somSelf,
 }
 
 /*
+ *@@ wpQueryDefaultView:
+ *      this WPObject method returns the default view of an object,
+ *      that is, which view is opened if the program file is
+ *      double-clicked upon. This is also used to mark
+ *      the default view in the "Open" context submenu.
+ *
+ *      We change the folder's default view to "open default document"
+ *      if this has been enabled in "Workplace Shell" and a
+ *      default document exists.
+ *
+ *@@added V0.9.4 (2000-06-09) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xf_wpQueryDefaultView(XFolder *somSelf)
+{
+    ULONG   ulDefaultView = 0;
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
+
+    XFolderMethodDebug("XFolder","xf_wpQueryDefaultView");
+
+    if (    (_wpIsObjectInitialized(somSelf))    // wpPopulate hangs otherwise
+         && (!_somIsA(somSelf, _WPDesktop))
+       )
+    {
+        if (    (pGlobalSettings->fFdrDefaultDoc)
+             && (pGlobalSettings->fFdrDefaultDocView)
+           )
+        {
+            // XFolderData *somThis = XFolderGetData(somSelf);
+            WPFileSystem *pDefaultDoc = _xwpQueryDefaultDocument(somSelf);
+            if (pDefaultDoc)
+                // we have a default document for this folder:
+                // change default view to menu item ID of "open default document"
+                // (same as in mnuModifyDataFilePopupMenu)
+                ulDefaultView = pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_FDRDEFAULTDOC;
+        }
+    }
+
+    if (!ulDefaultView)
+        // call parent:
+        ulDefaultView = XFolder_parent_WPFolder_wpQueryDefaultView(somSelf);
+
+    return (ulDefaultView);
+}
+
+/*
+ *@@ wpQueryDefaultHelp:
+ *      this WPObject instance method specifies the default
+ *      help panel for an object (when "Extended help" is
+ *      selected from the object's context menu). This should
+ *      describe what this object can do in general.
+ *      We must return TRUE to report successful completion.
+ *
+ *      XFolder will return something different for the
+ *      Config folder and its subfolders.
+ */
+
+SOM_Scope BOOL  SOMLINK xf_wpQueryDefaultHelp(XFolder *somSelf,
+                                              PULONG pHelpPanelId,
+                                              PSZ HelpLibrary)
+{
+    BOOL        rc;
+    XFolder *pCfg = _xwpclsQueryConfigFolder(_XFolder);
+
+    // XFolderData *somThis = XFolderGetData(somSelf);
+    XFolderMethodDebug("XFolder","xf_wpQueryDefaultHelp");
+
+    if (    (pCfg)
+         && (wpshResidesBelow(somSelf, pCfg))
+       )
+    {
+        // somSelf is in the config folder hierarchy:
+        // display help for config folders
+        strncpy(HelpLibrary, cmnQueryHelpLibrary(), CCHMAXPATH);
+        *pHelpPanelId = ID_XMH_CONFIGFOLDER;
+        rc = TRUE;
+    }
+    else
+        rc = (XFolder_parent_WPFolder_wpQueryDefaultHelp(somSelf,
+                                                           pHelpPanelId,
+                                                           HelpLibrary));
+
+    return (rc);
+}
+
+/*
  *@@ wpOpen:
  *      this instance method opens a new folder view.
  *      This is one of the main hooks where the XFolder
@@ -2490,6 +2727,7 @@ SOM_Scope BOOL  SOMLINK xf_wpMenuItemHelpSelected(XFolder *somSelf,
  *      fdr_fnwpSubclassedFolderFrame window procedure.
  *
  *@@changed V0.9.2 (2000-03-04) [umoeller]: fixed work-area hangs
+ *@@changed V0.9.4 (2000-06-09) [umoeller]: added default documents
  */
 
 SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
@@ -2497,8 +2735,9 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
                                   ULONG ulView,
                                   ULONG param)
 {
+    PCGLOBALSETTINGS pGlobalSettings = cmnQueryGlobalSettings();
     HWND        hwndNewFrame; // return HWND
-    // BOOL        fFolderLocked = FALSE;
+    BOOL        fOpenDefaultDoc = FALSE;
     // XFolderMethodDebug("XFolder","xf_wpOpen");
 
     #ifdef DEBUG_SOMMETHODS
@@ -2509,39 +2748,64 @@ SOM_Scope HWND  SOMLINK xf_wpOpen(XFolder *somSelf,
                     param));
     #endif
 
-    TRY_LOUD(excpt1, NULL)
+    // default document support
+    if (ulView == OPEN_DEFAULT)
     {
-        // request object mutex;
-        // parent_wpOpen starts the Populate thread, and we
-        // don't want that one to start until we are done
-        // with our folder manipulations
-        /* fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
-        if (fFolderLocked) */
-        // V0.9.2 (2000-03-04) [umoeller]: no, don't do this, this
-        // prevents work areas from re-opening
+        if (    (pGlobalSettings->fFdrDefaultDoc)
+             && (pGlobalSettings->fFdrDefaultDocView)
+             && (!_somIsA(somSelf, _WPDesktop))
+           )
         {
-            // have parent do the window creation
-            hwndNewFrame = XFolder_parent_WPFolder_wpOpen(somSelf,
-                                                          hwndCnr,
-                                                          ulView,
-                                                          param);
-
-            if (   (ulView == OPEN_CONTENTS)
-                || (ulView == OPEN_TREE)
-                || (ulView == OPEN_DETAILS)
-               )
-            {
-                fdrManipulateNewView(somSelf,
-                                     hwndNewFrame,
-                                     ulView);
-            }
+            fOpenDefaultDoc = TRUE;
         }
     }
-    CATCH(excpt1) { } END_CATCH();
+    else if (ulView == (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_FDRDEFAULTDOC))
+        fOpenDefaultDoc = TRUE;
 
-    /* if (fFolderLocked)
-        _wpReleaseObjectMutexSem(somSelf); */
-                // this will unblock the Populate thread
+    if (fOpenDefaultDoc)
+    {
+        WPFileSystem *pDefaultDoc = _xwpQueryDefaultDocument(somSelf);
+        if (pDefaultDoc)
+            _wpViewObject(pDefaultDoc, NULLHANDLE, OPEN_DEFAULT, 0);
+    }
+    else
+    {
+        // not default document:
+        TRY_LOUD(excpt1, NULL)
+        {
+            // request object mutex;
+            // parent_wpOpen starts the Populate thread, and we
+            // don't want that one to start until we are done
+            // with our folder manipulations
+            /* fFolderLocked = !_wpRequestObjectMutexSem(somSelf, 5000);
+            if (fFolderLocked) */
+            // V0.9.2 (2000-03-04) [umoeller]: no, don't do this, this
+            // prevents work areas from re-opening
+            {
+                // have parent do the window creation
+                hwndNewFrame = XFolder_parent_WPFolder_wpOpen(somSelf,
+                                                              hwndCnr,
+                                                              ulView,
+                                                              param);
+
+                if (   (ulView == OPEN_CONTENTS)
+                    || (ulView == OPEN_TREE)
+                    || (ulView == OPEN_DETAILS)
+                   )
+                {
+                    fdrManipulateNewView(somSelf,
+                                         hwndNewFrame,
+                                         ulView);
+                }
+            }
+        }
+        CATCH(excpt1) { } END_CATCH();
+
+        /* if (fFolderLocked)
+            _wpReleaseObjectMutexSem(somSelf); */
+                    // this will unblock the Populate thread
+
+    }
 
     #ifdef DEBUG_SOMMETHODS
         _Pmpf(("End of XFolder::wpOpen for %s: hwndFrame = 0x%lX",
@@ -3122,6 +3386,8 @@ SOM_Scope BOOL  SOMLINK xf_wpSetTitle(XFolder *somSelf, PSZ pszNewTitle)
  *      Since XFolder completely takes over the other sort
  *      functions, this method probably only gets called
  *      when files are renamed any more.
+ *
+ *@@changed V0.9.4 (2000-06-08) [umoeller]: reversed call order
  */
 
 SOM_Scope BOOL  SOMLINK xf_wpSetFldrSort(XFolder *somSelf,
@@ -3129,69 +3395,36 @@ SOM_Scope BOOL  SOMLINK xf_wpSetFldrSort(XFolder *somSelf,
                                          ULONG ulView,
                                          ULONG ulType)
 {
-    PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+    BOOL    brc;
 
-    if (pGlobalSettings->ExtFolderSort)
+    XFolderMethodDebug("XFolder","xf_wpSetFldrSort");
+
+    brc = XFolder_parent_WPFolder_wpSetFldrSort(somSelf,
+                                                pSortRecord,
+                                                ulView,
+                                                ulType);
+    if (brc)
     {
-        HWND hwndFrame = wpshQueryFrameFromView(somSelf, ulView);
-        if (hwndFrame)
+        PCGLOBALSETTINGS     pGlobalSettings = cmnQueryGlobalSettings();
+
+        if (pGlobalSettings->ExtFolderSort)
         {
-            HWND hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
-            if (hwndCnr)
+            HWND hwndFrame = wpshQueryFrameFromView(somSelf, ulView);
+            if (hwndFrame)
             {
-                fdrSetFldrCnrSort(somSelf, hwndCnr,
-                                  TRUE);  // enfore cnr sort
-                return (TRUE);
+                HWND hwndCnr = wpshQueryCnrFromFrame(hwndFrame);
+                if (hwndCnr)
+                {
+                    fdrSetFldrCnrSort(somSelf, hwndCnr,
+                                      TRUE);  // enfore cnr sort
+                    return (TRUE);
+                }
             }
         }
     }
 
-    return (XFolder_parent_WPFolder_wpSetFldrSort(somSelf,
-                                                  pSortRecord,
-                                                  ulView,
-                                                  ulType));
+    return (brc);
 }
-
-/*
- *@@ wpQueryDefaultHelp:
- *      this WPObject instance method specifies the default
- *      help panel for an object (when "Extended help" is
- *      selected from the object's context menu). This should
- *      describe what this object can do in general.
- *      We must return TRUE to report successful completion.
- *
- *      XFolder will return something different for the
- *      Config folder and its subfolders.
- */
-
-SOM_Scope BOOL  SOMLINK xf_wpQueryDefaultHelp(XFolder *somSelf,
-                                              PULONG pHelpPanelId,
-                                              PSZ HelpLibrary)
-{
-    BOOL        rc;
-    XFolder *pCfg = _xwpclsQueryConfigFolder(_XFolder);
-
-    // XFolderData *somThis = XFolderGetData(somSelf);
-    XFolderMethodDebug("XFolder","xf_wpQueryDefaultHelp");
-
-    if (    (pCfg)
-         && (wpshResidesBelow(somSelf, pCfg))
-       )
-    {
-        // somSelf is in the config folder hierarchy:
-        // display help for config folders
-        strncpy(HelpLibrary, cmnQueryHelpLibrary(), CCHMAXPATH);
-        *pHelpPanelId = ID_XMH_CONFIGFOLDER;
-        rc = TRUE;
-    }
-    else
-        rc = (XFolder_parent_WPFolder_wpQueryDefaultHelp(somSelf,
-                                                           pHelpPanelId,
-                                                           HelpLibrary));
-
-    return (rc);
-}
-
 
 /* ******************************************************************
  *                                                                  *

@@ -658,26 +658,29 @@ VOID DeinstallHook(VOID)
  *
  *      -- If sliding focus delay is off, directly
  *         when the daemon receives XDM_SLIDINGFOCUS
- *         from the hook.
+ *         from the hook, that is, if the mouse has
+ *         moved over a new frame window which should
+ *         be activated.
  *
  *      -- If we have a delay of sliding focus,
  *         fnwpDaemonObject starts a timer on receiving
- *         XDM_SLIDINGFOCUS and calls this func when
- *         the timer elapsed.
+ *         XDM_SLIDINGFOCUS and calls this func only
+ *         after the timer has elapsed.
  *
  *      This was initially based on code from
- *      ProgramCommander/2, but I had a few bugs fixed
+ *      ProgramCommander/2, but I got a few bugs fixed
  *      now.
  *
  *@@changed V0.9.3 (2000-05-23) [umoeller]: fixed MDI-subframes problem (VIEW.EXE)
+ *@@changed V0.9.4 (2000-06-12) [umoeller]: fixed Win-OS/2 handling, which broke with 0.9.3
  */
 
 VOID ProcessSlidingFocus(HWND hwndFrameInBetween,
                          HWND hwnd2Activate)     // in: highest parent of hwndUnderMouse, child of desktop
 {
-    HWND    hwndPreviousActive;
+    HWND    hwndPreviousActive = NULLHANDLE,
+            hwndClient = NULLHANDLE;
     BOOL    fIsSeamless = FALSE;
-    CHAR szClassName[200];
 
     // rule out desktops, if "ignore desktop" is on
     if (G_pHookData->HookConfig.fSlidingIgnoreDesktop)
@@ -708,9 +711,18 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween,
     if (hwndPreviousActive == G_pHookData->hwndWindowList)
         return;
 
-    WinQueryClassName(hwnd2Activate, sizeof(szClassName), szClassName);
-    if (strcmp(szClassName, "SeamlessClass") == 0)
-        fIsSeamless = TRUE;
+    // handle seamless Win-OS/2 windows: those have a frame
+    // and an FID_CLIENT of the SeamlessClass class
+    hwndClient = WinWindowFromID(hwnd2Activate, FID_CLIENT);
+    if (hwndClient)
+    {
+        CHAR szClassName[200];
+        WinQueryClassName(hwndClient, sizeof(szClassName), szClassName);
+        _Pmpf(("ProcessSlidingFocus: hwndClient 0x%lX", hwndClient));
+        _Pmpf(("  class name: %s", szClassName));
+        if (strcmp(szClassName, "SeamlessClass") == 0)
+            fIsSeamless = TRUE;
+    }
 
     // rule out redundant processing:
     // we might come here if the mouse has moved
@@ -822,8 +834,8 @@ VOID ProcessSlidingFocus(HWND hwndFrameInBetween,
                 {
                     // frame window has no saved focus:
                     // try if we can activate the client
-                    HWND hwndClient = WinWindowFromID(hwnd2Activate,
-                                                      FID_CLIENT);
+                    hwndClient = WinWindowFromID(hwnd2Activate,
+                                                 FID_CLIENT);
                     if (hwndClient)
                     {
                         _Pmpf(("        giving focus 2 client"));
@@ -1148,29 +1160,79 @@ MRESULT EXPENTRY fnwpDaemonObject(HWND hwndObject, ULONG msg, MPARAM mp1, MPARAM
              *
              *      Parameters:
              *      -- BYTE mp1: corner reached;
-             *                  1 = lower left,
-             *                  2 = top left,
-             *                  3 = lower right,
-             *                  4 = top right.
+             *                  1 = lower left corner,
+             *                  2 = top left corner,
+             *                  3 = lower right corner,
+             *                  4 = top right corner.
+             *              Borders added V0.9.4 (2000-06-12) [umoeller]:
+             *                  5 = top border,
+             *                  6 = left border,
+             *                  7 = right border,
+             *                  8 = bottom border.
              *      -- mp2: unused, always 0.
              */
 
             case XDM_HOTCORNER:
                 if (mp1)
                 {
-                    // create array index
+                    // create array index: mp1 minus one.
                     LONG lIndex = ((LONG)mp1)-1;
 
-                    if ((lIndex >= 0) && (lIndex <= 3))
+                    if ((lIndex >= 0) && (lIndex <= 7))
                         if (G_pHookData->HookConfig.ahobjHotCornerObjects[lIndex] != NULLHANDLE)
                             // hot-corner object defined:
                             WinPostMsg(G_pDaemonShared->hwndThread1Object,
                                        T1M_OPENOBJECTFROMHANDLE,
+                                       // pass HOBJECT or special function (0xFFFF000x)
                                        (MPARAM)(G_pHookData->HookConfig.ahobjHotCornerObjects[lIndex]),
+                                       // pass mp1
                                        (MPARAM)(lIndex + 1));
 
                 }
             break;
+
+            /*
+             *@@ XDM_WMCHORDWINLIST:
+             *      posted from the hook when WM_CHORD has been
+             *      received and the window list should be displayed.
+             *      We offload this to the daemon to process this
+             *      asynchronously.
+             *
+             *      Parameters: none.
+             *
+             *@@added V0.9.4 (2000-06-14) [umoeller]
+             */
+
+            case XDM_WMCHORDWINLIST:
+            {
+                POINTL  ptlMouse;       // mouse coordinates
+                SWP     WinListPos;     // position of window list window
+                LONG WinListX, WinListY; // new ordinates of window list window
+                // LONG DesktopCX, DesktopCY; // width and height of screen
+                // get mouse coordinates (absolute coordinates)
+                WinQueryPointerPos(HWND_DESKTOP, &ptlMouse);
+                // get position of window list window
+                WinQueryWindowPos(G_pHookData->hwndWindowList,
+                                  &WinListPos);
+                // calculate window list position (mouse pointer is center)
+                WinListX = ptlMouse.x - (WinListPos.cx / 2);
+                if (WinListX < 0)
+                    WinListX = 0;
+                WinListY = ptlMouse.y - (WinListPos.cy / 2);
+                if (WinListY < 0)
+                    WinListY = 0;
+                if (WinListX + WinListPos.cx > G_pHookData->lCXScreen)
+                    WinListX = G_pHookData->lCXScreen - WinListPos.cx;
+                if (WinListY + WinListPos.cy > G_pHookData->lCYScreen)
+                    WinListY = G_pHookData->lCYScreen - WinListPos.cy;
+                // set window list window to calculated position
+                WinSetWindowPos(G_pHookData->hwndWindowList, HWND_TOP,
+                                WinListX, WinListY, 0, 0,
+                                SWP_MOVE | SWP_SHOW | SWP_ZORDER);
+                // now make it the active window
+                WinSetActiveWindow(HWND_DESKTOP,
+                                   G_pHookData->hwndWindowList);
+            break; }
 
             /*
              * WM_TIMER:

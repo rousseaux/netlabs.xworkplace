@@ -5,12 +5,7 @@
  *      XWorkplace classes (in this order):
  *
  *      --  XWPTrashCan: a subclass of WPFolder, which implements
- *                       the actual trash can object;
- *
- *      --  XWPTrashObject: a subclass of WPTransient. One instance
- *                          of this class is created by XWPTrashCan
- *                          for every object that was placed into
- *                          the trash can.
+ *                       the actual trash can folder.
  *
  *      See src\classes\xtrash.c for details.
  *
@@ -27,7 +22,6 @@
  */
 
 #include <wpfolder.idl>         // this is SOM for WPFolder
-#include <wptrans.idl>          // this is SOM for WPTransient
 
 /*
    CLASS: XWPTrashCan
@@ -217,171 +211,6 @@ interface M_XWPTrashCan : M_WPFolder
     wpclsQueryIconData: override;
     wpclsQueryIconDataN: override;
 
-  };
-#endif /* __SOMIDL__ */
-};
-
-/*
-   CLASS: XWPTrashObject
-
-   CLASS HIERARCHY:
-
-       SOMObject
-         ÀÄÄ WPObject [ = XFldObject ]
-               ÀÄÄ WPTransient
-                     ÀÄÄ XWPTrashObject
-*/
-
-interface M_XWPTrashObject;            // forward reference to metaclass
-
-interface XWPTrashObject : WPTransient
-{
-
-    /*
-     * New instance methods for XWPTrashObject:
-     *
-     */
-
-    BOOL xwpSetRelatedObject(in WPObject pObject);
-    WPObject xwpQueryRelatedObject();
-    PSZ xwpQueryRelatedPath();
-    VOID xwpSetExpandedObjectData(in PVOID pvData,
-                                  in ULONG ulNewSize,
-                                  in XWPTrashCan pTrashCan);
-    ULONG xwpQueryRelatedSize();
-    APIRET xwpValidateTrashObject();
-    BOOL xwpRestoreFromTrashCan(in WPFolder pTargetFolder);
-
-#ifdef __SOMIDL__
-  implementation {
-
-    releaseorder:
-            xwpSetRelatedObject,
-            xwpQueryRelatedObject,
-            xwpQueryRelatedPath,
-            xwpSetExpandedObjectData,
-            xwpQueryRelatedSize,
-            xwpValidateTrashObject,
-            xwpRestoreFromTrashCan;
-
-    /*
-     * Class Modifiers:
-     *
-     */
-
-    externalprefix = xtro_;
-    externalstem = xtro;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xtrash;           //# specifies the filestem for sc-generated files
-    metaclass = M_XWPTrashObject;
-    dllname = "xfldr.dll";
-    callstyle = oidl;           //# forget CORBA stuff (*ev and such)
-
-    /*
-     * Internal instance variables for XWPTrashObject:
-     *
-     */
-
-    WPObject pRelatedObject;    // related object in "\Trash" directories
-                                // (xwpQueryRelatedObject)
-    PSZ      pszSourcePath;     // where the related object was deleted from
-                                // (xwpQuerySourcePath)
-    ULONG    ulTotalSize;       // total size of object;
-                                // this is 0 for non-file-system objects,
-                                // but calculated on the File thread if we
-                                // have a folder and will then include all
-                                // subfolders;
-                                // if it's a regular file, it's its size
-
-    CHAR     szTotalSize[30];   // string with total size; initially, this
-                                // is set to "calculating"
-
-    PVOID    pvExpandedObject;  // points to a EXPANDEDOBJECT (fileops.h)
-
-    /*
-     * WPTransient methods overridden by XWPTrashObject:
-     *
-     */
-
-    wpInitData: override;
-    wpUnInitData: override;
-
-    wpSetupOnce: override;
-
-    wpQueryDetailsData: override;
-
-    wpFilterPopupMenu: override;
-    wpModifyPopupMenu: override;
-    wpMenuItemSelected: override;
-    wpMenuItemHelpSelected: override;
-
-    wpQueryDefaultHelp: override;
-
-    wpMoveObject: override;
-
-    wpOpen: override;
-
-    wpDragOver: override;
-    wpDrop: override;
-
-#ifdef __PRIVATE__
-
-#endif
-
-  }; // implementation
-#endif /* __SOMIDL__ */
-};
-
-//#
-//#
-//# Now define Metaclass.
-//# ---------------------
-//#
-
-interface M_XWPTrashObject : M_WPTransient
-{
-
-    /*
-     * New class methods for M_XWPTrashObject:
-     *
-     */
-
-#ifdef __SOMIDL__
-  implementation {
-
-    /* releaseorder:
-            xwpclsCreateTrashObject; */
-
-    /*
-     * Class Modifiers:
-     *
-     */
-
-    externalprefix = xtroM_;
-    externalstem = xtroM;
-    functionprefix = xtroM_;
-    majorversion = 1;
-    minorversion = 1;
-    filestem = xtrash;           //# specifies the filestem for sc-generated files
-    dllname = "xfldr.dll";
-    callstyle = oidl;
-
-    /*
-     * Internal instance variables for M_XWPTrashObject:
-     *
-     */
-
-    /*
-     * M_WPTransient methods overridden by M_XWPTrashObject:
-     *
-     */
-
-    wpclsInitData: override;
-    wpclsCreateDefaultTemplates: override;
-    wpclsQueryDetailsInfo: override;
-    wpclsQueryTitle: override;
-    wpclsQueryStyle: override;
   };
 #endif /* __SOMIDL__ */
 };

@@ -1473,6 +1473,29 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
             }
 
             /*
+             * Default document in "Open" submenu:
+             *
+             */
+
+            if (pGlobalSettings->fFdrDefaultDoc)
+            {
+                if (_xwpQueryDefaultDocument(somSelf))
+                    // we have a default document for this folder:
+                    if (WinSendMsg(hwndMenu,
+                                   MM_QUERYITEM,
+                                   MPFROM2SHORT(WPMENUID_OPEN, TRUE),
+                                   (MPARAM)&mi))
+                    {
+                        // mi.hwndSubMenu now contains "Open" submenu handle;
+                        // add "Default document"
+                        winhInsertMenuItem(mi.hwndSubMenu, MIT_END,
+                                           (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_FDRDEFAULTDOC),
+                                           pNLSStrings->pszFdrDefaultDoc,
+                                           MIS_TEXT, 0);
+                    }
+            }
+
+            /*
              * "View" submenu:
              *
              */
@@ -1811,6 +1834,8 @@ BOOL mnuModifyFolderPopupMenu(WPFolder *somSelf,  // in: folder or root folder
  *      etc.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.4 (2000-06-09) [umoeller]: added default documents
+ *@@changed V0.9.4 (2000-06-09) [umoeller]: fixed separators
  */
 
 BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
@@ -1894,17 +1919,20 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
         */
     }
 
+    // insert separator V0.9.4 (2000-06-09) [umoeller]
+    if (    (pGlobalSettings->FileAttribs)
+         || (pGlobalSettings->AddCopyFilenameItem)
+         || (pGlobalSettings->fFdrDefaultDoc)
+       )
+        winhInsertMenuSeparator(hwndMenu, MIT_END,
+                    (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
+
     // insert "Attributes" submenu (for data files
     // only, not for folders
     if (pGlobalSettings->FileAttribs)
     {
         ULONG ulAttr;
         HWND hwndAttrSubmenu;
-
-        if (!pGlobalSettings->AddCopyFilenameItem)
-            // separator not yet inserted: do it now
-            winhInsertMenuSeparator(hwndMenu, MIT_END,
-                        (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR));
 
         // get this file's file-system attributes
         ulAttr = _wpQueryAttr(somSelf);
@@ -1941,9 +1969,24 @@ BOOL mnuModifyDataFilePopupMenu(WPDataFile *somSelf,
                     (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_SEPARATOR)); */
 
         winhInsertMenuItem(hwndMenu, MIT_END,
-            (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_COPYFILENAME_MENU),
-            (pNLSStrings)->pszCopyFilename,
-            0, 0);
+                           (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_COPYFILENAME_MENU),
+                           (pNLSStrings)->pszCopyFilename,
+                           0, 0);
+    }
+
+    // insert "Default document" if enabled
+    if (pGlobalSettings->fFdrDefaultDoc)
+    {
+        ULONG flAttr = 0;
+        if (_xwpQueryDefaultDocument(_wpQueryFolder(somSelf)) == somSelf)
+            // somSelf is default document of its folder:
+            flAttr = MIA_CHECKED;
+
+        winhInsertMenuItem(hwndMenu, MIT_END,
+                           (pGlobalSettings->VarMenuOffset + ID_XFMI_OFS_FDRDEFAULTDOC),
+                           (pNLSStrings)->pszDataFileDefaultDoc,
+                           MIS_TEXT,
+                           flAttr);
     }
 
     return (TRUE);
@@ -2362,6 +2405,7 @@ VOID mnuCreateFromTemplate(WPObject *pTemplate,
  *@@changed V0.9.0 [umoeller]: "Refresh" item now moved to File thread
  *@@changed V0.9.1 (99-11-29) [umoeller]: "Open parent and close" closed even the Desktop; fixed
  *@@changed V0.9.1 (99-12-01) [umoeller]: "Open parent" crashed for root folders; fixed
+ *@@changed V0.9.4 (2000-06-09) [umoeller]: added default document
  */
 
 BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
@@ -2409,6 +2453,23 @@ BOOL mnuMenuItemSelected(WPFolder *somSelf,  // in: folder or root folder
                     partCreatePartitionsView(somSelf,
                                              ulMenuId);
                 break;
+
+                /*
+                 * ID_XFMI_OFS_FDRDEFAULTDOC:
+                 *      open folder's default document
+                 *
+                 *  V0.9.4 (2000-06-09) [umoeller]
+                 */
+
+                case ID_XFMI_OFS_FDRDEFAULTDOC:
+                {
+                    WPFileSystem *pDefaultDoc = _xwpQueryDefaultDocument(somSelf);
+                    if (pDefaultDoc)
+                    {
+                        _wpViewObject(pDefaultDoc, NULLHANDLE, OPEN_DEFAULT, 0);
+                    }
+
+                break; }
 
                 /*
                  * ID_XFMI_OFS_PRODINFO:
@@ -2803,6 +2864,8 @@ BOOL mnuMenuItemHelpSelected(WPObject *somSelf, ULONG MenuId)
  *      -- FALSE         the menu item was _not_ handled.
  *                       We do _not_ touch *pfDismiss then. In any
  *                       case, wpMenuItemSelected will be called.
+ *
+ *@@changed V0.9.4 (2000-06-09) [umoeller]: added default documents
  */
 
 BOOL mnuFileSystemSelectingMenuItem(WPObject *somSelf,
@@ -2940,6 +3003,22 @@ BOOL mnuFileSystemSelectingMenuItem(WPObject *somSelf,
             // dismiss menu
             *pfDismiss = TRUE;
         break;
+
+        /*
+         * ID_XFMI_OFS_FDRDEFAULTDOC:
+         *      V0.9.4 (2000-06-09) [umoeller]
+         */
+
+        case ID_XFMI_OFS_FDRDEFAULTDOC:
+        {
+            WPFolder *pMyFolder = _wpQueryFolder(somSelf);
+            if (_xwpQueryDefaultDocument(pMyFolder) == somSelf)
+                // we are already the default document:
+                // unset
+                _xwpSetDefaultDocument(pMyFolder, NULL);
+            else
+                _xwpSetDefaultDocument(pMyFolder, somSelf);
+        break; }
 
         default:
             fHandled = FALSE;

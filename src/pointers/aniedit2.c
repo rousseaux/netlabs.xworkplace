@@ -1,4 +1,27 @@
 
+/*
+ *@@sourcefile aniedit2.c:
+ *
+ *      This file is ALL new with V0.9.4.
+ *
+ *@@added V0.9.4 [umoeller]
+ *@@header "pointers\aniedit2.h"
+ */
+
+/*
+ *      Copyright (C) 1996-2000 Christian Langanke.
+ *      Copyright (C) 2000 Ulrich M”ller.
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
 /* C Runtime */
 #define EXTERN
 #include <io.h>
@@ -17,6 +40,9 @@
 // generic headers
 #include "setup.h"              // code generation and debugging options
 
+// XWorkplace implementation headers
+#include "dlgids.h"                     // all the IDs that are shared with NLS
+
 #include "pointers\aniedit2.h"
 #include "pointers\debug.h"
 #include "pointers\macros.h"
@@ -26,7 +52,6 @@
 #include "pointers\mptrfile.h"  // V0.9.3 (2000-05-21) [umoeller]
 #include "pointers\mptrutil.h"
 #include "pointers\mptrptr.h"
-#include "pointers\r_wpamptr.h"
 #include "pointers\r_amptreng.h"
 
 #include "pointers\mptrcnr.h"   // V0.9.3 (2000-05-21) [umoeller]

@@ -223,21 +223,21 @@ ULONG fdrQuerySetup(WPObject *somSelf,
 
         // BACKGROUND
         if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
-            if ((_pszWPFolderBkgndImageFile) && (_pWPFolderBackground))
+            if ((_pszFolderBkgndImageFile) && (_pFolderBackground))
             {
                 CHAR cType = 'S';
 
-                PBYTE pbRGB = ( (PBYTE)(&(_pWPFolderBackground->rgbColor)) );
+                PBYTE pbRGB = ( (PBYTE)(&(_pFolderBackground->rgbColor)) );
 
                 PSZ pszBitmapFile;
                 CHAR cBootDrive = doshQueryBootDrive();
-                pszBitmapFile = strupr(strdup(_pszWPFolderBkgndImageFile));
+                pszBitmapFile = strupr(strdup(_pszFolderBkgndImageFile));
                 if (*pszBitmapFile == cBootDrive)
                     // file on boot drive:
                     // replace with '?' to make it portable
                     *pszBitmapFile = '?';
 
-                switch (_pWPFolderBackground->bImageType & 0x07) // ?2=Normal, ?3=tiled, ?4=scaled
+                switch (_pFolderBackground->bImageType & 0x07) // ?2=Normal, ?3=tiled, ?4=scaled
                 {
                     case 2: cType = 'N'; break;
                     case 3: cType = 'T'; break;
@@ -247,8 +247,8 @@ ULONG fdrQuerySetup(WPObject *somSelf,
                 sprintf(szTemp, "BACKGROUND=%s,%c,%d,%c,%d %d %d;",
                         pszBitmapFile,  // image name
                         cType,                    // N = normal, T = tiled, S = scaled
-                        _pWPFolderBackground->bScaleFactor,  // scaling factor
-                        (_pWPFolderBackground->bColorOnly == 0x28) // 0x28 Image, 0x27 Color only
+                        _pFolderBackground->bScaleFactor,  // scaling factor
+                        (_pFolderBackground->bColorOnly == 0x28) // 0x28 Image, 0x27 Color only
                             ? 'I'
                             : 'C', // I = image, C = color only
                         *(pbRGB + 2), *(pbRGB + 1), *pbRGB);  // RGB color; apparently optional
@@ -327,13 +327,13 @@ ULONG fdrQuerySetup(WPObject *somSelf,
 
         // ICONTEXTCOLOR
         if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
-            if (_pWPFolderLongArray)
+            if (_pFolderLongArray)
             {
                 BYTE bUseDefault = FALSE;
-                PBYTE pbArrayField = ( (PBYTE)(&(_pWPFolderLongArray->rgbIconViewTextColAsPlaced)) );
+                PBYTE pbArrayField = ( (PBYTE)(&(_pFolderLongArray->rgbIconViewTextColAsPlaced)) );
                 if (fIconViewColumns)
                     // FLOWED or NONFLOWED: use different field then
-                    pbArrayField = ( (PBYTE)(&(_pWPFolderLongArray->rgbIconViewTextColColumns)) );
+                    pbArrayField = ( (PBYTE)(&(_pFolderLongArray->rgbIconViewTextColColumns)) );
 
                 bUseDefault = *(pbArrayField + 3);
                 if (!bUseDefault)
@@ -349,11 +349,11 @@ ULONG fdrQuerySetup(WPObject *somSelf,
 
         // ICONSHADOWCOLOR
         if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
-            if (_pWPFolderLongArray)
+            if (_pFolderLongArray)
                 // only Warp 4 has these fields, so check size of array
-                if (_cbWPFolderLongArray >= 84)
+                if (_cbFolderLongArray >= 84)
                 {
-                    PBYTE pbArrayField = ( (PBYTE)(&(_pWPFolderLongArray->rgbIconViewShadowCol)) );
+                    PBYTE pbArrayField = ( (PBYTE)(&(_pFolderLongArray->rgbIconViewShadowCol)) );
 
                     BYTE bUseDefault = *(pbArrayField + 3);
                     if (!bUseDefault)
@@ -442,14 +442,14 @@ ULONG fdrQuerySetup(WPObject *somSelf,
         }
 
         if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
-            if (_pWPFolderLongArray)
+            if (_pFolderLongArray)
             {
                 // TREETEXTCOLOR
                 BYTE bUseDefault = FALSE;
-                PBYTE pbArrayField = ( (PBYTE)(&(_pWPFolderLongArray->rgbTreeViewTextColIcons)) );
+                PBYTE pbArrayField = ( (PBYTE)(&(_pFolderLongArray->rgbTreeViewTextColIcons)) );
 
                 if (fTreeIconsInvisible)
-                    pbArrayField = ( (PBYTE)(&(_pWPFolderLongArray->rgbTreeViewTextColTextOnly)) );
+                    pbArrayField = ( (PBYTE)(&(_pFolderLongArray->rgbTreeViewTextColTextOnly)) );
 
                 bUseDefault = *(pbArrayField + 3);
                 if (!bUseDefault)
@@ -464,9 +464,9 @@ ULONG fdrQuerySetup(WPObject *somSelf,
 
                 // TREESHADOWCOLOR
                 // only Warp 4 has these fields, so check size of array
-                if (_cbWPFolderLongArray >= 84)
+                if (_cbFolderLongArray >= 84)
                 {
-                    pbArrayField = ( (PBYTE)(&(_pWPFolderLongArray->rgbTreeViewShadowCol)) );
+                    pbArrayField = ( (PBYTE)(&(_pFolderLongArray->rgbTreeViewShadowCol)) );
 
                     bUseDefault = *(pbArrayField + 3);
                     if (!bUseDefault)
@@ -483,8 +483,8 @@ ULONG fdrQuerySetup(WPObject *somSelf,
 
         // SHOWALLINTREEVIEW
         if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
-            if (_pulWPFolderShowAllInTreeView) // only != NULL on Warp 4
-                if (*_pulWPFolderShowAllInTreeView)
+            if (_pulFolderShowAllInTreeView) // only != NULL on Warp 4
+                if (*_pulFolderShowAllInTreeView)
                     xstrcat(&pszTemp, "SHOWALLINTREEVIEW=YES;");
 
         /*
@@ -521,10 +521,10 @@ ULONG fdrQuerySetup(WPObject *somSelf,
 
         // DETAILSTEXTCOLOR
         if (_wpIsObjectInitialized(somSelf)) // V0.9.3 (2000-04-29) [umoeller]
-            if (_pWPFolderLongArray)
+            if (_pFolderLongArray)
             {
                 BYTE bUseDefault = FALSE;
-                PBYTE pbArrayField = ( (PBYTE)(&(_pWPFolderLongArray->rgbDetlViewTextCol)) );
+                PBYTE pbArrayField = ( (PBYTE)(&(_pFolderLongArray->rgbDetlViewTextCol)) );
 
                 bUseDefault = *(pbArrayField + 3);
                 if (!bUseDefault)
@@ -539,9 +539,9 @@ ULONG fdrQuerySetup(WPObject *somSelf,
 
                 // DETAILSSHADOWCOLOR
                 // only Warp 4 has these fields, so check size of array
-                if (_cbWPFolderLongArray >= 84)
+                if (_cbFolderLongArray >= 84)
                 {
-                    pbArrayField = ( (PBYTE)(&(_pWPFolderLongArray->rgbDetlViewShadowCol)) );
+                    pbArrayField = ( (PBYTE)(&(_pFolderLongArray->rgbDetlViewShadowCol)) );
 
                     bUseDefault = *(pbArrayField + 3);
                     if (!bUseDefault)
@@ -1249,8 +1249,9 @@ VOID fdrSetFldrCnrSort(WPFolder *somSelf,      // in: folder to sort
                 // now also update the internal WPFolder sort info, because otherwise
                 // the WPS will keep reverting the cnr attrs; we have obtained the pointer
                 // to this structure in wpRestoreData
-                if (_pWPFolderSortInfo)
-                    _pWPFolderSortInfo->fAlwaysSort = AlwaysSort;
+                if (_wpIsObjectInitialized(somSelf))
+                    if (_pFolderSortInfo)
+                        _pFolderSortInfo->fAlwaysSort = AlwaysSort;
 
                 // finally, set the cnr sort function: we perform these checks
                 // to avoid cnr flickering

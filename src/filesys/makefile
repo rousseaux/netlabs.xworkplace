@@ -180,7 +180,7 @@ $(OUTPUTDIR)\fileops.obj: \
     $(INC)\setup.h \
     $(HLPINC)\comctl.h $(HLPINC)\cnrh.h $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
             $(HLPINC)\prfh.h  $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\undoc.h $(HLPINC)\xstring.h \
-    $(INC)\classes\xfobj.ih $(INC)\classes\xtrash.h \
+    $(INC)\classes\xfobj.ih $(INC)\classes\xtrash.h $(INC)\classes\xtrashobj.h \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h $(INC)\shared\xsetup.h \
     $(INC)\filesys\trash.h $(INC)\filesys\xthreads.h \
@@ -255,7 +255,7 @@ $(OUTPUTDIR)\trash.obj: \
      $(INC)\setup.h \
      $(HLPINC)\dosh.h $(HLPINC)\linklist.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
             $(HLPINC)\undoc.h \
-     $(INC)\classes\xtrash.ih $(INC)\classes\xfobj.h \
+     $(INC)\classes\xtrash.ih $(INC)\classes\xtrashobj.ih $(INC)\classes\xfobj.h \
      $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\notebook.h \
             $(INC)\shared\wpsh.h \
      $(INC)\filesys\fileops.h $(INC)\filesys\xthreads.h   \
@@ -267,7 +267,7 @@ $(OUTPUTDIR)\xthreads.obj: \
             $(HLPINC)\dosh.h $(HLPINC)\eah.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
             $(HLPINC)\gpih.h $(HLPINC)\prfh.h $(HLPINC)\shapewin.h $(HLPINC)\stringh.h \
             $(HLPINC)\syssound.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
-    $(INC)\classes\xfldr.h $(INC)\classes\xtrash.h \
+    $(INC)\classes\xfldr.h $(INC)\classes\xtrash.h $(INC)\classes\xtrashobj.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
     $(INC)\dlgids.h \
     $(INC)\hook\xwphook.h \

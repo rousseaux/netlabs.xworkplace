@@ -397,6 +397,8 @@ MRESULT EXPENTRY drv_fnwpConfigHPFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
  *      structure with mp2 in WM_INITDLG.
  *
  *@@added V0.9.0 [umoeller]
+ *@@changed V0.9.4 (2000-06-05) [umoeller]: "Optimize" and "Default" didn't work
+ *@@changed V0.9.4 (2000-06-05) [umoeller]: crashed if params line was empty
  */
 
 MRESULT EXPENTRY drv_fnwpConfigCDFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2)
@@ -430,20 +432,22 @@ MRESULT EXPENTRY drv_fnwpConfigCDFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
             if (pszParamsCopy)
             {
                 pszToken = strtok(pszParamsCopy, " ");
-                do {
-                    if (memicmp(pszToken, "/W", 2) == 0)
-                        fJoliet = TRUE;
-                    else if (memicmp(pszToken, "/K", 2) == 0)
-                        fKanji = TRUE;
-                    else if (memicmp(pszToken, "/Q", 2) == 0)
-                        ulInit = 1;         // quiet
-                    else if (memicmp(pszToken, "/V", 2) == 0)
-                        ulInit = 2;         // verbose
-                    else if (memicmp(pszToken, "/C:", 3) == 0)
-                        ulCacheX64 = strtoul(pszToken + 3, NULL, 10);
-                    else if (memicmp(pszToken, "/M:", 3) == 0)
-                        ulSectors = strtoul(pszToken + 3, NULL, 10);
-                } while (pszToken = strtok(NULL, " "));
+                if (pszToken) // V0.9.4 (2000-06-11) [umoeller]
+                    do {
+                        if (memicmp(pszToken, "/W", 2) == 0)
+                            fJoliet = TRUE;
+                        else if (memicmp(pszToken, "/K", 2) == 0)
+                            fKanji = TRUE;
+                        else if (memicmp(pszToken, "/Q", 2) == 0)
+                            ulInit = 1;         // quiet
+                        else if (memicmp(pszToken, "/V", 2) == 0)
+                            ulInit = 2;         // verbose
+                        else if (memicmp(pszToken, "/C:", 3) == 0)
+                            ulCacheX64 = strtoul(pszToken + 3, NULL, 10);
+                        else if (memicmp(pszToken, "/M:", 3) == 0)
+                            ulSectors = strtoul(pszToken + 3, NULL, 10);
+                    } while (pszToken = strtok(NULL, " "));
+
                 free(pszParamsCopy);
             }
 
@@ -542,8 +546,26 @@ MRESULT EXPENTRY drv_fnwpConfigCDFS(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM 
                 break; }
 
                 case DID_OPTIMIZE:
+                {
+                    HWND    hwndCacheSlider = WinWindowFromID(hwndDlg, ID_OSDI_CDFS_CACHESLIDER),
+                            hwndSectorsSlider = WinWindowFromID(hwndDlg, ID_OSDI_CDFS_SECTORSSLIDER);
+                    winhSetDlgItemChecked(hwndDlg, ID_OSDI_CDFS_JOLIET, TRUE);
+                    winhSetDlgItemChecked(hwndDlg, ID_OSDI_CDFS_KANJI, FALSE);
+                    winhSetSliderArmPosition(hwndCacheSlider, SMA_INCREMENTVALUE, 8); // 512 KB
+                    winhSetSliderArmPosition(hwndSectorsSlider, SMA_INCREMENTVALUE, 32); // sectors
+                    winhSetDlgItemChecked(hwndDlg, ID_OSDI_CDFS_INITDEFAULT, TRUE);
+                break; }
+
                 case DID_DEFAULT:
-                break;
+                {
+                    HWND    hwndCacheSlider = WinWindowFromID(hwndDlg, ID_OSDI_CDFS_CACHESLIDER),
+                            hwndSectorsSlider = WinWindowFromID(hwndDlg, ID_OSDI_CDFS_SECTORSSLIDER);
+                    winhSetDlgItemChecked(hwndDlg, ID_OSDI_CDFS_JOLIET, FALSE);
+                    winhSetDlgItemChecked(hwndDlg, ID_OSDI_CDFS_KANJI, FALSE);
+                    winhSetSliderArmPosition(hwndCacheSlider, SMA_INCREMENTVALUE, 2); // 128 KB
+                    winhSetSliderArmPosition(hwndSectorsSlider, SMA_INCREMENTVALUE, 8); // sectors
+                    winhSetDlgItemChecked(hwndDlg, ID_OSDI_CDFS_INITDEFAULT, TRUE);
+                break; }
 
                 default:
                     mrc = WinDefDlgProc(hwndDlg, msg, mp1, mp2);

@@ -1,3 +1,27 @@
+
+/*
+ *@@sourcefile mptranim.c:
+ *
+ *      This file is ALL new with V0.9.4.
+ *
+ *@@added V0.9.4 [umoeller]
+ *@@header "pointers\mptranim.h"
+ */
+
+/*
+ *      Copyright (C) 1996-2000 Christian Langanke.
+ *      Copyright (C) 2000 Ulrich M봪ler.
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
 // C Runtime
 #include <stdlib.h>
 #include <string.h>
@@ -16,7 +40,6 @@
 // generic headers
 #include "setup.h"              // code generation and debugging options
 
-
 #include "pointers\title.h"
 #include "pointers\mptranim.h"
 #include "pointers\mptrset.h"
@@ -28,7 +51,6 @@
 #include "pointers\wmuser.h"
 #include "pointers\macros.h"
 #include "pointers\debug.h"
-
 
 // Timer IDs f걊 die 2 Timer Variante
 #define ANIMATION_TIMER_ID   256
@@ -132,7 +154,7 @@ APIRET _LoadHook
         // Daten 갶ertragen
         memset(&hookdata, 0, sizeof(hookdata));
         hookdata.hwndNotify = hwndNotify;
-        rc = pfnSetHookData(__VERSION__, &hookdata);
+        rc = pfnSetHookData(BLDLEVEL_VERSION, &hookdata);
         if (rc != NO_ERROR)
             break;
 
@@ -292,7 +314,7 @@ HWND QueryAnimationHwnd(VOID)
  *읕컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴켸
  */
 
-VOID _Optlink AnimationThread(ULONG ulParms)
+VOID _Optlink AnimationThread(PVOID pvParams) // ULONG ulParms)
 {
     HAB hab;
     HMQ hmq;
@@ -306,7 +328,7 @@ VOID _Optlink AnimationThread(ULONG ulParms)
 
     BOOL fDragHook = FALSE;
     HMODULE hmodHook;
-    PHEV phevStartup = (PHEV)ulParms;
+    PHEV phevStartup = (PHEV)pvParams;
 
     PSZ pszAnimPriority;
     ULONG ulAnimPriority = PRTYC_FOREGROUNDSERVER;
@@ -421,16 +443,10 @@ VOID _Optlink AnimationThread(ULONG ulParms)
  *읕컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴켸
  */
 
-MRESULT EXPENTRY ObjectWindowProc
- (
-     HWND hwnd,
-     ULONG msg,
-     MPARAM mp1,
-     MPARAM mp2
-)
+MRESULT EXPENTRY ObjectWindowProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
-    APIRET rc;
-    ULONG i;
+    // APIRET rc;
+    // ULONG i;
 
     PHEV phevStartup;
     static BOOL fUse9Timer = FALSE;
@@ -461,6 +477,7 @@ MRESULT EXPENTRY ObjectWindowProc
                 BOOL fEnable = SHORT1FROMMP(mp1);
                 HAB hab = WinQueryAnchorBlock(hwnd);
                 ULONG ulHidePointerDelay = getHidePointerDelay();
+                APIRET rc = NO_ERROR;
 
                 if (fEnable)
                 {
@@ -622,6 +639,7 @@ MRESULT EXPENTRY ObjectWindowProc
                 BOOL fIsActive;
                 BOOL fDragPending = FALSE;
                 HAB hab = WinQueryAnchorBlock(hwnd);
+                APIRET rc = NO_ERROR;
 
                 switch (ulTimerId)
                 {

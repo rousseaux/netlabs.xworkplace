@@ -9,6 +9,8 @@
  *@@include #include <wpobject.h>
  *@@include #include "helpers\linklist.h"
  *@@include #include "shared\notebook.h"
+ *@@include #include "classes\xtrash.h"
+ *@@include #include "classes\xtrashobj.h"
  *@@include #include "filesys\trash.h"
  */
 
@@ -32,7 +34,7 @@
         #error trash.h requires xtrash.h to be included.
     #endif
 
-    #define CB_SUPPORTED_DRIVES     23
+    #define CB_SUPPORTED_DRIVES     24  // fixed V0.9.4 (2000-06-08) [umoeller]
 
     #define XTRC_INVALID            0
     #define XTRC_SUPPORTED          1

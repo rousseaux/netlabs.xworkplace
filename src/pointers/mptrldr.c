@@ -1,3 +1,27 @@
+
+/*
+ *@@sourcefile mptrldr.c:
+ *
+ *      This file is ALL new with V0.9.4.
+ *
+ *@@added V0.9.4 [umoeller]
+ *@@header "pointers\mptrldr.h"
+ */
+
+/*
+ *      Copyright (C) 1996-2000 Christian Langanke.
+ *      Copyright (C) 2000 Ulrich M봪ler.
+ *      This file is part of the XWorkplace source package.
+ *      XWorkplace is free software; you can redistribute it and/or modify
+ *      it under the terms of the GNU General Public License as published
+ *      by the Free Software Foundation, in version 2 as it comes in the
+ *      "COPYING" file of the XWorkplace main distribution.
+ *      This program is distributed in the hope that it will be useful,
+ *      but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *      GNU General Public License for more details.
+ */
+
 // C Runtime
 #include <stdlib.h>
 #include <string.h>
@@ -14,9 +38,11 @@
 // generic headers
 #include "setup.h"              // code generation and debugging options
 
+// XWorkplace implementation headers
+#include "dlgids.h"                     // all the IDs that are shared with NLS
+
 #include "pointers\mptrldr.h"
 #include "pointers\wmuser.h"
-#include "pointers\r_wpamptr.h"
 #include "pointers\macros.h"
 #include "pointers\debug.h"
 #include "pointers\wmuser.h"
@@ -27,7 +53,6 @@
 #include "pointers\mptrset.h"
 #include "pointers\mptrlset.h"          // V0.9.3 (2000-05-21) [umoeller]
 
-#include "pointers\r_wpamptr.h"
 #include "pointers\r_amptreng.h"
 
 #define SEM_LOADER_ACTIVE                     "\\SEM32\\WPAMPTR\\ACTIVE"
@@ -42,18 +67,18 @@ typedef struct _WINDOWDATA
 WINDOWDATA, *PWINDOWDATA;
 
 
-static HWND hwndException = NULLHANDLE;
-static HWND hwndHelp = NULLHANDLE;
+static HWND G_hwndException = NULLHANDLE;
+static HWND G_hwndHelp = NULLHANDLE;
 
-static PFNWP pfnwpFrameProc;
+static PFNWP G_pfnwpFrameProc;
 
-static BOOL fMinimize = FALSE;
+static BOOL G_fMinimize = FALSE;
 
 // Daten f걊 Settingseingabe
-static HWND hwndEntryfield = NULLHANDLE;
+static HWND G_hwndEntryfield = NULLHANDLE;
 
 #define  ID_ENTRYFIELD  512
-static HWND hwndPushbutton = NULLHANDLE;
+static HWND G_hwndPushbutton = NULLHANDLE;
 
 #define  ID_PUSHBUTTON  513
 
@@ -95,10 +120,10 @@ typedef PVOID WPObject;
 #define _WPAnimatedMousePointer NULL
 
 // dummy SOM instance Daten
-static PSZ _pszCurrentSettings = NULL;
-static PRECORDCORE _pcnrrec = NULL;
-static PVOID somSelf = NULL;
-static HMODULE _hmodResource = NULLHANDLE;
+static PSZ G_pszCurrentSettings = NULL;
+static PRECORDCORE G_pcnrrec = NULL;
+static PVOID G_somSelf = NULL;
+static HMODULE G_hmodResource = NULLHANDLE;
 
 /*旼컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴커
  *� Name      : main                                                       �
@@ -192,7 +217,7 @@ INT main
         rc = LoadResourceLib(&wd.hmodResource);
         if (rc != NO_ERROR)
             break;
-        _hmodResource = wd.hmodResource;
+        G_hmodResource = wd.hmodResource;
         hmodResource = wd.hmodResource;
 
 #ifdef BETA
@@ -228,7 +253,7 @@ INT main
         }
 
         // subclass frame window
-        pfnwpFrameProc = WinSubclassWindow(hwndFrame,
+        G_pfnwpFrameProc = WinSubclassWindow(hwndFrame,
                                            (PFNWP) LoaderFrameWindowProc);
 
         // create notebook
@@ -331,15 +356,9 @@ INT main
  *읕컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴켸
  */
 
-MRESULT EXPENTRY Page1DlgWindowProc
- (
-     HWND hwnd,
-     ULONG msg,
-     MPARAM mp1,
-     MPARAM mp2
-)
+MRESULT EXPENTRY Page1DlgWindowProc(HWND hwnd, ULONG msg, MPARAM mp1, MPARAM mp2)
 {
-    APIRET rc;
+    // APIRET rc;
 
     static PWINDOWDATA pwd = NULL;
     static HSWITCH hswitch = NULLHANDLE;
@@ -361,7 +380,7 @@ MRESULT EXPENTRY Page1DlgWindowProc
                 WinSetWindowPtr(hwnd, QWL_USER, pwd);
 
                 // Zielfenster f걊 Exception sichern
-                hwndException = hwnd;
+                G_hwndException = hwnd;
 
                 // Tasklisteneintrag erstellen
                 memset(&swctlSwitchData, 0, sizeof(SWCNTRL));
@@ -385,25 +404,25 @@ MRESULT EXPENTRY Page1DlgWindowProc
                 //    WinSetWindowBits( hwnd, QWL_STYLE, FS_BORDER, FS_BORDER);
 
                 // Entryfield erzeugen
-                hwndEntryfield = WinCreateWindow(hwnd, WC_ENTRYFIELD, "",
+                G_hwndEntryfield = WinCreateWindow(hwnd, WC_ENTRYFIELD, "",
                              ES_AUTOSCROLL | ES_MARGIN | ES_LEFT | WS_VISIBLE,
                  10, 403, 300, 24, hwnd, HWND_TOP, ID_ENTRYFIELD, NULL, NULL);
-                WinSendMsg(hwndEntryfield, EM_SETTEXTLIMIT, MPFROMLONG(_MAX_PATH), 0);
+                WinSendMsg(G_hwndEntryfield, EM_SETTEXTLIMIT, MPFROMLONG(_MAX_PATH), 0);
 
                 // Pushbutton erzeugen
-                hwndPushbutton = WinCreateWindow(hwnd, WC_BUTTON, "~Set",
+                G_hwndPushbutton = WinCreateWindow(hwnd, WC_BUTTON, "~Set",
                                    BS_PUSHBUTTON | BS_SYSCOMMAND | WS_VISIBLE,
                  320, 400, 60, 32, hwnd, HWND_TOP, ID_PUSHBUTTON, NULL, NULL);
-                WinSendMsg(hwndPushbutton, BM_SETDEFAULT, MPFROMLONG(TRUE), 0);
+                WinSendMsg(G_hwndPushbutton, BM_SETDEFAULT, MPFROMLONG(TRUE), 0);
 
                 // Hilfe-Instanz anlegen und assoziieren
-                rc = GetHelpLibName(szHelpLibrary, sizeof(szHelpLibrary));
+                /* rc = */ GetHelpLibName(szHelpLibrary, sizeof(szHelpLibrary));
                 // create help instance
-                hwndHelp = CreateHelpInstance(WinQueryAnchorBlock(hwnd),
+                G_hwndHelp = CreateHelpInstance(WinQueryAnchorBlock(hwnd),
                                               hwnd,
                                               (HLIB) 0,
                                               IDPNL_MAIN,
-                                              __TITLE__ " " __VERSION__,
+                                              "?!?!?", // __TITLE__ " " __VERSION__,
                                               szHelpLibrary);
 
                 // wpRestoreState Aufruf durch wpInit simulieren
@@ -424,9 +443,9 @@ MRESULT EXPENTRY Page1DlgWindowProc
                 {
                     memset(pwd->phd, 0, sizeof(HANDLERDATA));
                     pwd->phd->hmodResource = pwd->hmodResource;
-                    pwd->phd->somSelf = somSelf;
+                    pwd->phd->somSelf = G_somSelf;
                     pwd->phd->pfnwpOriginal = pfnwpOriginal;
-                    pwd->phd->ppcnrrec = &_pcnrrec;
+                    pwd->phd->ppcnrrec = &G_pcnrrec;
                 }
                 return DialogHandlerProc(hwnd, msg, 0, 0);
 
@@ -436,7 +455,7 @@ MRESULT EXPENTRY Page1DlgWindowProc
             // break;
 
         case WM_USER_DELAYEDINIT:
-            ScanSetupString(hwnd, _pcnrrec, _pszCurrentSettings, FALSE, TRUE);
+            ScanSetupString(hwnd, G_pcnrrec, G_pszCurrentSettings, FALSE, TRUE);
             break;
 
         case WM_SYSCOMMAND:
@@ -445,13 +464,13 @@ MRESULT EXPENTRY Page1DlgWindowProc
                 CHAR szSettings[_MAX_PATH];
 
                 DLGQUERYSTRING(hwnd, ID_ENTRYFIELD, szSettings);
-                ScanSetupString(hwnd, _pcnrrec, szSettings, TRUE, FALSE);
-                WinSetFocus(HWND_DESKTOP, hwndEntryfield);
+                ScanSetupString(hwnd, G_pcnrrec, szSettings, TRUE, FALSE);
+                WinSetFocus(HWND_DESKTOP, G_hwndEntryfield);
             }
             break;
 
         case WM_DESTROY:
-            WinDestroyWindow(hwndHelp);
+            WinDestroyWindow(G_hwndHelp);
             break;
 
 // ### integrated code begin
@@ -465,12 +484,12 @@ MRESULT EXPENTRY Page1DlgWindowProc
                     case SERVICE_RESTORE:
                         DEBUGMSG("SERVICE: restore" NEWLINE, 0);
 //          DEBUGMSG( "SERVICE: %s" NEWLINE, _pszCurrentSettings);
-                        ScanSetupString(hwnd, PVOIDFROMMP(mp2), _pszCurrentSettings, TRUE, TRUE);
+                        ScanSetupString(hwnd, PVOIDFROMMP(mp2), G_pszCurrentSettings, TRUE, TRUE);
                         break;  // SERVICE_RESTORE
 
                     case SERVICE_SAVE:
                         DEBUGMSG("SERVICE: save" NEWLINE, 0);
-                        _wpSaveImmediate(somSelf);
+                        _wpSaveImmediate(G_somSelf);
                         break;  // SERVICE_SAVE
 
                     case SERVICE_HELP:
@@ -479,7 +498,7 @@ MRESULT EXPENTRY Page1DlgWindowProc
                             PSZ pszHelpLibrary = _clsQueryHelpLibrary(_WPAnimatedMousePointer);
 
                             DEBUGMSG("SERVICE: help %u in %s" NEWLINE, ulPanelId _c_ pszHelpLibrary);
-                            _wpDisplayHelp(somSelf, ulPanelId, pszHelpLibrary);
+                            _wpDisplayHelp(G_somSelf, ulPanelId, pszHelpLibrary);
                         }
                         break;  // SERVICE_HELP
 
@@ -489,7 +508,7 @@ MRESULT EXPENTRY Page1DlgWindowProc
                             BOOL fResult;
                             APIRET rc;
 
-                            fResult = _wpMenuItemSelected(somSelf, hwnd, ulMenuId);
+                            fResult = _wpMenuItemSelected(G_somSelf, hwnd, ulMenuId);
                             rc = (fResult) ? 0 : ERRORIDERROR(WinGetLastError(WinQueryAnchorBlock(hwnd)));
                             DEBUGMSG("SERVICE: menu help %u (result=%u rc=%u/0x%08x)" NEWLINE, ulMenuId _c_ fResult _c_ rc _c_ rc);
 
@@ -503,7 +522,7 @@ MRESULT EXPENTRY Page1DlgWindowProc
 
                             DEBUGMSG("SERVICE: Find Pointer" NEWLINE, 0);
                             rc = FindFiles(_WPAnimatedMousePointer,
-                                           somSelf,
+                                           G_somSelf,
                                            HWND_DESKTOP,
                                            hwnd,
                                            _clsQueryModuleHandle(_WPAnimatedMousePointer),
@@ -598,7 +617,7 @@ MRESULT EXPENTRY LoaderFrameWindowProc
 
     }
 
-    return pfnwpFrameProc(hwnd, msg, mp1, mp2);
+    return G_pfnwpFrameProc(hwnd, msg, mp1, mp2);
 }
 
 /*旼컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴커
@@ -627,7 +646,7 @@ ULONG _System SignalHandler
 // im Debug-Modus Exception nicht abfangen !
     if (pERepRec->ExceptionNum == XCPT_SIGNAL)
     {
-        WinPostMsg(hwndException, WM_QUIT, 0L, 0L);
+        WinPostMsg(G_hwndException, WM_QUIT, 0L, 0L);
         return (XCPT_CONTINUE_EXECUTION);
     }
     else
@@ -652,9 +671,9 @@ BOOL _wpSaveImmediate(PVOID * somSelf)
             break;
 
         // alte Settings verwerfen
-        if (_pszCurrentSettings != NULL)
-            free(_pszCurrentSettings);
-        _pszCurrentSettings = pszSettings;
+        if (G_pszCurrentSettings != NULL)
+            free(G_pszCurrentSettings);
+        G_pszCurrentSettings = pszSettings;
 
         // jetzt speichern
         _wpSaveString(somSelf, "WPAnimatedMousePointer", 1, pszSettings);
@@ -706,9 +725,9 @@ BOOL _wpRestoreState(PVOID * somSelf)
         _wpRestoreString(somSelf, "WPAnimatedMousePointer", 1, pszSettings, &ulMaxLen);
 
         // alte Settings verwerfen
-        if (_pszCurrentSettings != NULL)
-            free(_pszCurrentSettings);
-        _pszCurrentSettings = pszSettings;
+        if (G_pszCurrentSettings != NULL)
+            free(G_pszCurrentSettings);
+        G_pszCurrentSettings = pszSettings;
 
 
     }
@@ -792,7 +811,7 @@ BOOL _wpRestoreLong(PVOID somSelf, PSZ pszClass, ULONG ulKey, PULONG pulValue)
 /* ------------------------------------------------- */
 BOOL _wpDisplayHelp(PVOID somSelf, ULONG ulHelpPanelId, PSZ pHelpLibrary)
 {
-    WinSendMsg(hwndHelp, HM_DISPLAY_HELP, (MPARAM) ulHelpPanelId, (MPARAM) HM_RESOURCEID);
+    WinSendMsg(G_hwndHelp, HM_DISPLAY_HELP, (MPARAM) ulHelpPanelId, (MPARAM) HM_RESOURCEID);
     return FALSE;
 }
 
@@ -824,14 +843,14 @@ PSZ _clsQueryHelpLibrary(PVOID * somSelf)
 /* ------------------------------------------------- */
 HMODULE _clsQueryModuleHandle(PVOID self)
 {
-    return _hmodResource;
+    return G_hmodResource;
 }
 
 /* ------------------------------------------------- */
 BOOL DisplayHelp(PVOID somSelf, ULONG ulHelpPanelId)
 
 {
-    WinSendMsg(hwndHelp, HM_DISPLAY_HELP, (MPARAM) ulHelpPanelId, (MPARAM) HM_RESOURCEID);
+    WinSendMsg(G_hwndHelp, HM_DISPLAY_HELP, (MPARAM) ulHelpPanelId, (MPARAM) HM_RESOURCEID);
     return FALSE;
 }
 
@@ -858,15 +877,12 @@ BOOL DisplayHelp(PVOID somSelf, ULONG ulHelpPanelId)
  *읕컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴켸
  */
 
-HWND CreateHelpInstance
- (
-     HAB hab,
-     HWND hwndToAssociate,
-     HLIB hlibResource,
-     USHORT usHelpTableID,
-     PSZ pszHelpTitle,
-     PSZ pszHelpLib
-)
+HWND CreateHelpInstance(HAB hab,
+                        HWND hwndToAssociate,
+                        HLIB hlibResource,
+                        USHORT usHelpTableID,
+                        PSZ pszHelpTitle,
+                        PSZ pszHelpLib)
 {
     HELPINIT hinit;
     HWND hwndHelp = NULLHANDLE;

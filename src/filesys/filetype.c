@@ -1023,7 +1023,11 @@ PFILETYPERECORD AddFileTypeAndAllParents(PFILETYPESPAGEDATA pftpd,
  *      which can be used for any purpose by an application.
  *      We use it for the object handles here.
  *
+ *      Note: This does NOT invalidate the container.
+ *
  *      Returns the new ASSOCRECORD or NULL upon errors.
+ *
+ *@@changed V0.9.4 (2000-06-14) [umoeller]: fixed repaint problems
  */
 
 PASSOCRECORD AddAssocObject2Cnr(HWND hwndAssocsCnr,
@@ -1057,7 +1061,8 @@ PASSOCRECORD AddAssocObject2Cnr(HWND hwndAssocsCnr,
                               (PRECORDCORE)preccNew,
                               pszObjectTitle,
                               flRecordAttr,
-                              (PRECORDCORE)preccInsertAfter);
+                              (PRECORDCORE)preccInsertAfter,
+                              FALSE);   // no invalidate
     }
 
     return (preccNew);
@@ -1220,6 +1225,8 @@ VOID UpdateAssocsCnr(HWND hwndAssocsCnr,    // in: container to update
                 else
                     break; // while (*pAssoc)
             } // end while (*pAssoc)
+
+            cnrhInvalidateAll(hwndAssocsCnr);
         }
 
         free(pszAssocData);
@@ -2499,6 +2506,7 @@ MRESULT ftypFileTypesItemChanged(PCREATENOTEBOOKPAGE pcnbp,
                                                     // record to insert after; has been set by CN_DRAGOVER
                                                TRUE);
                                                     // enable record
+                            cnrhInvalidateAll(pftpd->hwndAssocsCnr);
                         }
 
                         // write the new associations to INI
@@ -2917,6 +2925,8 @@ MRESULT EXPENTRY fnwpImportWPSFilters(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARA
                                                    TRUE);
                         }
                     } // end while (TRUE);
+
+                    cnrhInvalidateAll(pftpd->hwndAssocsCnr);
 
                     // write the new associations to INI
                     WriteAssocs2INI(WPINIAPP_ASSOCTYPE, // "PMWP_ASSOC_TYPE",
