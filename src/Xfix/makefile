@@ -101,8 +101,8 @@ HLPINC = $(HELPERS_BASE)\include\helpers
 $(OUTPUTDIR)\$(APPNAME).obj: \
     $(INC)\setup.h $(INC)\bldlevel.h \
     $(HLPINC)\cnrh.h $(HLPINC)\datetime.h $(HLPINC)\except.h $(HLPINC)\linklist.h \
-        $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\threads.h $(HLPINC)\winh.h \
-        $(HLPINC)\wphandle.h $(HLPINC)\xstring.h \
+        $(HLPINC)\prfh.h $(HLPINC)\standards.h $(HLPINC)\stringh.h $(HLPINC)\threads.h \
+        $(HLPINC)\tree.h $(HLPINC)\winh.h $(HLPINC)\wphandle.h $(HLPINC)\xstring.h \
     $(INC)\shared\common.h \
     $(APPNAME).h
 

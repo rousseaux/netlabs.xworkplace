@@ -45,8 +45,10 @@
 #include "helpers\except.h"
 #include "helpers\linklist.h"
 #include "helpers\prfh.h"
+#include "helpers\standards.h"
 #include "helpers\stringh.h"
 #include "helpers\threads.h"
+#include "helpers\tree.h"
 #include "helpers\winh.h"
 #include "helpers\wphandle.h"
 #include "helpers\xstring.h"
@@ -135,6 +137,8 @@ typedef struct _NODERECORD
 {
     RECORDCORE  recc;
 
+    struct _NODERECORD  *pNextRecord;            // next record;
+
     ULONG       ulIndex;
             // index
 
@@ -219,12 +223,12 @@ PNODERECORD     G_RecordHashTable[65536];
 
 typedef struct _DEFERREDINI
 {
-    HINI        hini;
-    const char  *pcszApp;
-    PSZ         pszKey;
+    HINI        hini;           // normally HINI_USER
+    const char  *pcszApp;       // INI application
+    PSZ         pszKey;         // INI key
 
-    PVOID       pvData;         // or NULL
-    ULONG       cbData;         // or 0
+    PVOID       pvData;         // or NULL for nuke
+    ULONG       cbData;         // or 0 for nuke
 } DEFERREDINI, *PDEFERREDINI;
 
 // deferred changes to the desktop contents
@@ -305,11 +309,11 @@ BOOL ComposeFullName(PNODERECORD precc,
 }
 
 /*
- *@@ RebuildHashTable:
+ *@@ RebuildNodeHashTable:
  *
  */
 
-VOID RebuildHashTable(VOID)
+VOID RebuildNodeHashTable(VOID)
 {
     memset(G_NodeHashTable, 0, sizeof(G_NodeHashTable));
 
@@ -339,11 +343,41 @@ VOID RebuildHashTable(VOID)
     }
 }
 
+/*
+ *@@ RebuildRecordsHashTable:
+ *
+ *      Only called after records have been removed.
+ *
+ *@@added V0.9.9 (2001-04-07) [umoeller]
+ */
+
+VOID RebuildRecordsHashTable(VOID)
+{
+    memset(G_RecordHashTable, 0, sizeof(G_RecordHashTable));
+
+    PNODERECORD prec = G_preccVeryFirst;
+    while (prec)
+    {
+        if (!G_RecordHashTable[prec->ulHandle])
+            // not yet set:
+            G_RecordHashTable[prec->ulHandle] = prec;
+        // otherwise it's a duplicate handle, but this
+        // has been tested for already in fntInsertHandles
+
+        prec = prec->pNextRecord;
+    }
+}
+
 /* ******************************************************************
  *
  *   Handle records
  *
  ********************************************************************/
+
+/*
+ *@@ Append:
+ *
+ */
 
 VOID Append(PXSTRING pstr, const char *pcsz)
 {
@@ -351,6 +385,11 @@ VOID Append(PXSTRING pstr, const char *pcsz)
         xstrcat(pstr, "; ", 0);
     xstrcat(pstr, pcsz, 0);
 }
+
+/*
+ *@@ UpdateStatusDescr:
+ *
+ */
 
 VOID UpdateStatusDescr(PNODERECORD prec)
 {
@@ -390,6 +429,7 @@ VOID UpdateStatusDescr(PNODERECORD prec)
 
     if (str.ulLength)
     {
+        // we had an error: set "picked" emphasis
         prec->pszStatusDescr = str.psz;
         prec->recc.flRecordAttr |= CRA_PICKED;
     }
@@ -430,8 +470,62 @@ VOID UpdateStatusDescr(PNODERECORD prec)
  ********************************************************************/
 
 /*
+ *@@ CompareFolderPosNodes:
+ *
+ *@@added V0.9.9 (2001-04-07) [umoeller]
+ */
+
+int TREEENTRY CompareFolderPosNodes(TREE *t1, TREE *t2)
+{
+    return (strhcmp((const char*)(t1->id),
+                    (const char*)(t2->id)));
+}
+
+/*
+ *@@ CompareFolderNodesData:
+ *
+ *@@added V0.9.9 (2001-04-07) [umoeller]
+ */
+
+int TREEENTRY CompareFolderNodesData(TREE *t1,
+                                     void *pData)
+{
+    char *pcsz = (char*)pData;
+    if (pcsz)
+    {
+        ULONG cbLength = min(strlen((const char*)(t1->id)),
+                             strlen(pcsz));
+        int i = memicmp((void*)(t1->id),
+                        pcsz,
+                        cbLength);
+        if (i < 0)
+            return -1;
+        if (i > 0)
+            return +1;
+    }
+
+    return (0);
+}
+
+/*
+ *@@ HasFolderPos:
+ *
+ *@@added V0.9.9 (2001-04-07) [umoeller]
+ */
+
+BOOL HasFolderPos(TREE **pFolderPosTree,
+                  char *pcszDecimalHandle)
+{
+    return (!!treeFindEQData(pFolderPosTree,
+                             pcszDecimalHandle,
+                             CompareFolderNodesData));
+}
+
+/*
  *@@ fntInsertHandles:
  *
+ *@@changed V0.9.9 (2001-04-07) [umoeller]: fixed wrong duplicates reports for UNC drive names
+ *@@changed V0.9.9 (2001-04-07) [umoeller]: sped up folder pos search fourfold
  */
 
 void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
@@ -443,6 +537,7 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
     G_ulPercentDone = 0;
     G_fResolvingRefs = FALSE;
 
+    // make this idle-time, or we'll hog the system
     DosSetPriority(PRTYS_THREAD,
                    PRTYC_IDLETIME,
                    +31,
@@ -515,12 +610,26 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                 // load folderpos entries from OS2.INI
                 PSZ pszFolderPoses = prfhQueryKeysForApp(HINI_USER,
                                                          "PM_Workplace:FolderPos");
+                TREE    *FolderPosTree;
+                treeInit(&FolderPosTree);
+
+                // build tree from folderpos entries V0.9.9 (2001-04-07) [umoeller]
+                const char *pcszFolderPosThis = pszFolderPoses;
+                while (*pcszFolderPosThis)
+                {
+                    TREE    *pNewNode = NEW(TREE);
+                    pNewNode->id = (ULONG)pcszFolderPosThis;
+                    treeInsertNode(&FolderPosTree,
+                                   pNewNode,
+                                   CompareFolderPosNodes,
+                                   FALSE);       // no duplicates
+                            // @@ free the tree nodes
+                    pcszFolderPosThis += strlen(pcszFolderPosThis) + 1;   // next type/filter
+                }
 
                 if ((G_preccVeryFirst) && (pszFolderPoses))
                 {
                     PNODERECORD preccThis = G_preccVeryFirst;
-                                // preccFirst2Insert = G_preccVeryFirst;
-                    // ULONG       cReccs2Insert = 0;
 
                     // restart at beginning of buffer
                     pCur = G_pHandlesBuffer + 4;
@@ -528,6 +637,11 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                     ULONG   ulIndexThis = 0;
                     while (pCur < pEnd)
                     {
+                        // copy ptr to next record as given to
+                        // us by the container;
+                        // I'm not sure this will always remain valid
+                        preccThis->pNextRecord = (PNODERECORD)(preccThis->recc.preccNextRecord);
+
                         preccThis->ulIndex = ulIndexThis++;
                         preccThis->ulOfs = (pCur - G_pHandlesBuffer);
 
@@ -553,17 +667,25 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                             preccThis->pszLongName = preccThis->szLongName;
 
                             // store this in global drives array
-                            ULONG ulLogicalDrive =   pDriv->szName[0] // drive letter
-                                                   - 'A'
-                                                   + 1;
-                            if (G_aDriveNodes[ulLogicalDrive] == 0)
-                                // drive not occupied yet:
-                                G_aDriveNodes[ulLogicalDrive] = pDriv;
-                            else
+                            // there are nodes like "\\SERVER" for UNC drive names,
+                            // so watch this V0.9.9 (2001-04-07) [umoeller]
+                            if (    (pDriv->szName[0] >= 'A')
+                                 && (pDriv->szName[0] <= 'Z')
+                               )
                             {
-                                // that's a duplicate DRIV node!!!
-                                preccThis->ulStatus |= NODESTAT_DUPLICATEDRIV;
-                                G_cDuplicatesFound++;
+                                ULONG ulLogicalDrive =   pDriv->szName[0] // drive letter
+                                                       - 'A'
+                                                       + 1;
+
+                                if (G_aDriveNodes[ulLogicalDrive] == 0)
+                                    // drive not occupied yet:
+                                    G_aDriveNodes[ulLogicalDrive] = pDriv;
+                                else
+                                {
+                                    // that's a duplicate DRIV node!!!
+                                    preccThis->ulStatus |= NODESTAT_DUPLICATEDRIV;
+                                    G_cDuplicatesFound++;
+                                }
                             }
 
                             pCur += sizeof(DRIV) + strlen(pDriv->szName);
@@ -587,7 +709,10 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
 
                             ComposeFullName(preccThis, pNode);
 
-                            if (strlen(preccThis->szLongName) == 2)
+                            if (    (preccThis->szLongName[0] >= 'A')
+                                 && (preccThis->szLongName[0] <= 'Z')
+                                 && (strlen(preccThis->szLongName) == 2)
+                               )
                             {
                                 // this is a root node:
                                 // store this in global drives array
@@ -601,19 +726,14 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                                     if (G_aRootNodes[ulLogicalDrive] == 0)
                                         // root not occupied yet:
                                         G_aRootNodes[ulLogicalDrive] = pNode;
-                                    // else
-                                        // that's a duplicate root node!!!
-                                        // preccThis->ulStatus |= NODESTAT_DUPLICATEROOT;
                                 }
                                 else
                                     preccThis->ulStatus |= NODESTAT_INVALIDDRIVE;
                             }
 
                             // store record in hash table
-                            if (G_RecordHashTable[pNode->usHandle] == 0)
-                            {
+                            if (!G_RecordHashTable[pNode->usHandle])
                                 G_RecordHashTable[pNode->usHandle] = preccThis;
-                            }
                             else
                             {
                                 // wow, record already exists for this handle:
@@ -626,9 +746,12 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                                     prec2 = prec2->pNextDuplicate;
                                 prec2->pNextDuplicate = preccThis;
 
+                                // update duplicates count of existing
                                 precExisting->cDuplicates++;
 
+                                // set error status of THIS record
                                 preccThis->ulStatus |= NODESTAT_ISDUPLICATE;
+
                                 G_cDuplicatesFound++;
                             }
 
@@ -655,7 +778,6 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                             // for some reason, these are decimal,
                             // followed by "@" and some other key...
                             // XWP adds keys to this too.
-                            PSZ pszFolderPosThis = pszFolderPoses;
                             CHAR szDecimalHandle[30];
                             sprintf(szDecimalHandle,
                                     "%d@",
@@ -663,31 +785,8 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                                     (ULONG)(pNode->usHandle)
                                           | (G_ulHiwordFileSystem << 16L));
 
-                            ULONG DecimalLen = strlen(szDecimalHandle);
-                            while (*pszFolderPosThis)
-                            {
-                                ULONG ulLengthThis = strlen(pszFolderPosThis);
-                                if (!ulLengthThis)
-                                    break;
-                                else
-                                {
-                                    ULONG cbComp = DecimalLen;
-                                    if (ulLengthThis < cbComp)
-                                        cbComp = ulLengthThis;
-                                    if (memcmp(pszFolderPosThis,
-                                               szDecimalHandle,
-                                               cbComp)
-                                           == 0)
-                                    {
-                                        // matches:
-                                        preccThis->fFolderPos = TRUE;
-                                        // we can stop here...
-                                        break;
-                                    }
-                                }
-
-                                pszFolderPosThis += ulLengthThis + 1;   // next type/filter
-                            }
+                            preccThis->fFolderPos = HasFolderPos(&FolderPosTree,
+                                                                 szDecimalHandle);
 
                             pCur += sizeof (NODE) + pNode->usNameSize;
                         }
@@ -700,8 +799,9 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                             break;
                         }
 
-                        preccThis = (PNODERECORD)(preccThis->recc.preccNextRecord);
+                        preccThis = preccThis->pNextRecord;
 
+                        // report progress to thread 1
                         ULONG ulMax = (pEnd - G_pHandlesBuffer);
                         ULONG ulNow = (pCur - G_pHandlesBuffer);
                         G_ulPercentDone = ulNow * 100 / ulMax;
@@ -747,14 +847,6 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                                             // raise its usage count
                                             pParentRec->cChildren++;
 
-                                            /* if (    (pParentRec->ulStatus == NODESTAT_DUPLICATEROOT)
-                                                 || (pParentRec->ulStatus == NODESTAT_CHILDOFDUPLICATE)
-                                               )
-                                            {
-                                                preccThis->ulStatus = NODESTAT_CHILDOFDUPLICATE;
-                                                UpdateStatusDescr(preccThis);
-                                            } */
-
                                             // go for next higher parent
                                             pNodeThis = G_NodeHashTable[pParentRec->ulHandle];
 
@@ -765,7 +857,8 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                                             // parent record:
                                             // whoa, that's a problem
                                             preccThis->ulStatus |= NODESTAT_INVALID_PARENT;
-                                            MarkAllOrphans(preccThis, preccThis->ulHandle);
+                                            MarkAllOrphans(preccThis,
+                                                           preccThis->ulHandle);
                                             break;
                                         }
                                     }
@@ -780,7 +873,7 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
                             UpdateStatusDescr(preccThis);
 
                             // next record
-                            preccThis = (PNODERECORD)(preccThis->recc.preccNextRecord);
+                            preccThis = preccThis->pNextRecord;
                             cReccs2++;
 
                             G_ulPercentDone = cReccs2 * 100 / cReccsTotal;
@@ -806,7 +899,7 @@ void _Optlink fntInsertHandles(PTHREADINFO ptiMyself)
     {
     } END_CATCH();
 
-    cnrhInvalidateAll(hwndCnr);
+    // cnrhInvalidateAll(hwndCnr);
 
     ULONG ulMillisecondsNow = dtGetULongTime();
 
@@ -873,7 +966,7 @@ void _Optlink fntCheckFiles(PTHREADINFO ptiMyself)
         if (ptiMyself->fExit)
             break;
 
-        preccThis = (PNODERECORD)(preccThis->recc.preccNextRecord);
+        preccThis = preccThis->pNextRecord;
         ulCount++;
         ulCount2++;
     }
@@ -930,7 +1023,7 @@ void _Optlink fntCheckFiles(PTHREADINFO ptiMyself)
             UpdateStatusDescr(preccThis);
 
         // next record
-        preccThis = (PNODERECORD)(preccThis->recc.preccNextRecord);
+        preccThis = preccThis->pNextRecord;
 
     } // end while (preccThis)
 
@@ -947,26 +1040,26 @@ void _Optlink fntCheckFiles(PTHREADINFO ptiMyself)
 
 LONG inline CompareULongs(PNODERECORD precc1, PNODERECORD precc2, ULONG ulFieldOfs)
 {
-    ULONG   *pul1 = (PULONG)((PBYTE)precc1 + ulFieldOfs),
-            *pul2 = (PULONG)((PBYTE)precc2 + ulFieldOfs);
-    if (*pul1 < *pul2)
+    ULONG   ul1 = *(PULONG)((PBYTE)precc1 + ulFieldOfs),
+            ul2 = *(PULONG)((PBYTE)precc2 + ulFieldOfs);
+    if (ul1 < ul2)
         return -1;
-    if (*pul1 > *pul2)
+    if (ul1 > ul2)
         return 1;
     return (0);
 }
 
 LONG inline CompareStrings(PNODERECORD precc1, PNODERECORD precc2, ULONG ulFieldOfs)
 {
-    char **ppsz1 = (char**)((PBYTE)precc1 + ulFieldOfs);
-    char **ppsz2 = (char**)((PBYTE)precc2 + ulFieldOfs);
-    if ((*ppsz1) && (*ppsz2))
-       return (strcmp(*ppsz1,
-                      *ppsz2));
-    else if (*ppsz1)
+    char *psz1 = *(char**)((PBYTE)precc1 + ulFieldOfs);
+    char *psz2 = *(char**)((PBYTE)precc2 + ulFieldOfs);
+    if ((psz1) && (psz2))
+       return (strcmp(psz1,
+                      psz2));
+    else if (psz1)
         // string 1 exists, but 2 doesn't:
         return (1);
-    else if (*ppsz2)
+    else if (psz2)
         // string 2 exists, but 1 doesn't:
         return (-1);
 
@@ -1227,7 +1320,7 @@ VOID UpdateMenuItems(USHORT usSortCmd)
 VOID SetSort(USHORT usCmd)
 {
     PVOID pvSortFunc = NULL;
-    switch(usCmd)
+    switch (usCmd)
     {
         case IDMI_SORT_INDEX:
             pvSortFunc = (PVOID)fnCompareIndex;
@@ -1273,10 +1366,15 @@ VOID SetSort(USHORT usCmd)
     if (pvSortFunc)
     {
         HPOINTER hptrOld = winhSetWaitPointer();
-        BEGIN_CNRINFO()
+
+        /* BEGIN_CNRINFO()
         {
             cnrhSetSortFunc(pvSortFunc);
-        } END_CNRINFO(WinWindowFromID(G_hwndMain, FID_CLIENT));
+        } END_CNRINFO(WinWindowFromID(G_hwndMain, FID_CLIENT)); */
+        WinSendMsg(WinWindowFromID(G_hwndMain, FID_CLIENT),
+                   CM_SORTRECORD,
+                   (MPARAM)pvSortFunc,
+                   0);
 
         UpdateMenuItems(usCmd);
         WinSetPointer(HWND_DESKTOP, hptrOld);
@@ -1314,13 +1412,16 @@ VOID StartInsertHandles(HWND hwndCnr)
  *      to be nuked on "Write".
  *
  *@@added V0.9.7 (2001-01-25) [umoeller]
+ *@@changed V0.9.9 (2001-04-07) [umoeller]: fixed bad alloc error
  */
 
 VOID CreateDeferredNuke(HINI hini,              // in: INI file
                         const char *pcszApp,    // in: INI app
                         const char *pcszKey)    // in: INI key or NULL
 {
-    PDEFERREDINI pNuke = (PDEFERREDINI)malloc(sizeof(PDEFERREDINI));
+    // PDEFERREDINI pNuke = (PDEFERREDINI)malloc(sizeof(PDEFERREDINI));
+                // whow V0.9.9 (2001-04-07) [umoeller]
+    PDEFERREDINI pNuke = NEW(DEFERREDINI);
     if (pNuke)
     {
         pNuke->hini = hini;
@@ -1337,6 +1438,8 @@ VOID CreateDeferredNuke(HINI hini,              // in: INI file
  *@@ GetAbstracts:
  *      loads the ULONG array of abstract objects
  *      for the specified record.
+ *
+ *      Returns a new buffer, which must be free()'d.
  *
  *@@added V0.9.7 (2001-01-25) [umoeller]
  */
@@ -1377,7 +1480,7 @@ VOID NukeAbstracts(PNODERECORD prec,
     PULONG  paulAbstracts = GetAbstracts(prec,
                                          szHandleShort,
                                          &cAbstracts);
-    if (cAbstracts)
+    if (paulAbstracts && cAbstracts)
     {
         ULONG ul;
         for (ul = 0;
@@ -1556,9 +1659,10 @@ VOID MoveAbstracts(PLINKLIST pll,               // in: linked list of NODERECORD
  *      will be too.
  *
  *@@added V0.9.7 (2001-01-21) [umoeller]
+ *@@changed V0.9.9 (2001-04-07) [umoeller]: fixed multiple recursions
  */
 
-VOID MarkAllOrphans(PNODERECORD prec,
+VOID MarkAllOrphans(PNODERECORD prec,         // in: rec to start with (advanced)
                     ULONG ulParentHandle)
 {
     while (prec)
@@ -1570,11 +1674,12 @@ VOID MarkAllOrphans(PNODERECORD prec,
             UpdateStatusDescr(prec);
 
             // recurse
-            MarkAllOrphans(prec, prec->ulHandle);
+            MarkAllOrphans(prec,
+                           prec->ulHandle);
         }
 
         // next record
-        prec = (PNODERECORD)prec->recc.preccNextRecord;
+        prec = prec->pNextRecord;
     }
 }
 
@@ -1582,10 +1687,11 @@ VOID MarkAllOrphans(PNODERECORD prec,
  *@@ RemoveHandles:
  *
  *@@added V0.9.7 (2001-01-21) [umoeller]
+ *@@changed V0.9.9 (2001-04-07) [umoeller]: greatly reordered, fixed many crashes
  */
 
 ULONG RemoveHandles(HWND hwndCnr,
-                    PLINKLIST pllRecords)
+                    PLINKLIST pllRecords)       // in: linked list of records to work on
 {
     ULONG       ulrc = 0;
     PLISTNODE   pNode;
@@ -1604,6 +1710,11 @@ ULONG RemoveHandles(HWND hwndCnr,
         while (pNode)
         {
             PNODERECORD precDelete = (PNODERECORD)pNode->pItemData;
+
+            /*
+             *   calculate bytes in handles buffer to delete
+             *
+             */
 
             PBYTE pbItem = G_pHandlesBuffer + precDelete->ulOfs;
             // address of next node in buffer: depends on whether
@@ -1634,18 +1745,10 @@ ULONG RemoveHandles(HWND hwndCnr,
             // address of next node in buffer:
             pbNextItem = pbItem + cbDelete;
 
-            // overwrite node with everything that comes after it
-            ULONG   ulOfsOfNextItem = (pbNextItem - G_pHandlesBuffer);
-            memmove(pbItem,
-                    pbNextItem,
-                    // byte count to move:
-                    G_cbHandlesBuffer - ulOfsOfNextItem);
-
-            G_cbHandlesBuffer -= cbDelete;
-
-            // go thru all records which come after this one and
-            // update references
-            PNODERECORD precAfterThis = (PNODERECORD)precDelete->recc.preccNextRecord;
+            /*
+             *   delete abstracts, folder pos entries
+             *
+             */
 
             if (!fIsDrive)
             {
@@ -1657,67 +1760,106 @@ ULONG RemoveHandles(HWND hwndCnr,
                 NukeFolderPoses(precDelete,
                                 pszFolderPoses,
                                 &cFolderPosesNuked);
-
-                // go thru all items after this and mark children
-                // as orphaned
-                MarkAllOrphans(precAfterThis,
-                               precDelete->ulHandle);
             }
 
+            /*
+             *   delete bytes in handles buffer
+             *
+             */
+
+            // overwrite node with everything that comes after it
+            ULONG   ulOfsOfNextItem = (pbNextItem - G_pHandlesBuffer);
+            memmove(pbItem,
+                    pbNextItem,
+                    // byte count to move:
+                    G_cbHandlesBuffer - ulOfsOfNextItem);
+
+            // shrink handles buffer
+            G_cbHandlesBuffer -= cbDelete;
+
+            /*
+             *   update NODERECORD pointers
+             *
+             */
+
+            // go thru all records which come after this one and
+            // update references
+            PNODERECORD precAfterThis = precDelete->pNextRecord;
             while (precAfterThis)
             {
                 // hack all record NODE offsets which come after the deletee
                 precAfterThis->ulOfs -= cbDelete;
 
                 // next record
-                precAfterThis = (PNODERECORD)precAfterThis->recc.preccNextRecord;
+                precAfterThis = precAfterThis->pNextRecord;
             }
 
-            // next record
+            // go thru the entire records list and check which other
+            // records reference this record to be deleted
+            PNODERECORD prec2 = G_preccVeryFirst;
+            while (prec2)
+            {
+                if (prec2->pNextDuplicate == precDelete)
+                {
+                    // record to be deleted is stored as a duplicate:
+                    // replace with ptr to next duplicate (probably NULL)
+                    prec2->pNextDuplicate = precDelete->pNextDuplicate;
+                    prec2->cDuplicates--;
+                }
+
+                PNODERECORD pNextRec = prec2->pNextRecord;
+
+                if (pNextRec == precDelete)
+                    // record to be deleted is stored as "next record":
+                    // replace with ptr to the one afterwards (can be NULL)
+                    prec2->pNextRecord = precDelete->pNextRecord;
+
+                prec2 = pNextRec;
+            }
+
+            // for each record to be removed, update global counts
+            G_cHandlesParsed--;
+            if (precDelete->ulStatus & NODESTAT_ISDUPLICATE)
+                // this was a duplicate:
+                G_cDuplicatesFound--;
+
+            // next record to be deleted
             pNode = pNode->pNext;
+        } // end while (pNode)
+
+        RebuildNodeHashTable();
+        RebuildRecordsHashTable();
+
+        // only now that we have rebuilt all record
+        // pointers, we can safely mark orphans
+        // V0.9.9 (2001-04-07) [umoeller]
+        ULONG cNewRecords = 0;
+        PNODERECORD prec2 = G_preccVeryFirst;
+        while (prec2)
+        {
+            if (prec2->ulParentHandle)
+            {
+                PNODERECORD pParent = G_RecordHashTable[prec2->ulParentHandle];
+                BOOL        fInvalid = FALSE;
+                if (!pParent)
+                    fInvalid = TRUE;
+                else if (pParent->ulStatus & NODESTAT_INVALID_PARENT)
+                    fInvalid = TRUE;
+
+                if (fInvalid)
+                    if (!(prec2->ulStatus & NODESTAT_INVALID_PARENT))
+                    {
+                        prec2->ulStatus |= NODESTAT_INVALID_PARENT;
+                        UpdateStatusDescr(prec2);
+                    }
+            }
+
+            prec2 = prec2->pNextRecord;
+            cNewRecords++;
         }
 
         if (ulrc == 0)
         {
-            // fix record pointers within the record lists
-            // if something points to a record being deleted
-            pNode = lstQueryFirstNode(pllRecords);
-            while (pNode)
-            {
-                PNODERECORD precDelete = (PNODERECORD)pNode->pItemData;
-
-                // go thru the entire records list and check which other
-                // records reference this record to be deleted
-                PNODERECORD prec2 = G_preccVeryFirst;
-                while (prec2)
-                {
-                    if (prec2->pNextDuplicate == precDelete)
-                    {
-                        // record to be deleted is stored as a duplicate:
-                        // replace with ptr to next duplicate (probably NULL)
-                        prec2->pNextDuplicate = precDelete->pNextDuplicate;
-                        prec2->cDuplicates--;
-                    }
-
-                    PNODERECORD pNextRec = (PNODERECORD)prec2->recc.preccNextRecord;
-
-                    if (pNextRec == precDelete)
-                        // record to be deleted is stored as "next record":
-                        // replace with ptr to the one afterwards (can be NULL)
-                        prec2->recc.preccNextRecord = precDelete->recc.preccNextRecord;
-
-                    prec2 = pNextRec;
-                }
-
-                // for each record to be removed, update global counts
-                G_cHandlesParsed--;
-                if (precDelete->ulStatus & NODESTAT_ISDUPLICATE)
-                    // this was a duplicate:
-                    G_cDuplicatesFound--;
-
-                pNode = pNode->pNext;
-            }
-
             // now update the container:
             // build an array of PRECORDCORE's to be removed
             // (damn, this SICK message...)
@@ -1745,45 +1887,58 @@ ULONG RemoveHandles(HWND hwndCnr,
             }
 
             UpdateStatusBar(-1);
-        }
 
-        RebuildHashTable();
+            // we must invalidate all because many record
+            // offsets and emphasis will have changed
+            cnrhInvalidateAll(hwndCnr);
 
-        cnrhInvalidateAll(hwndCnr);
+            free(pszFolderPoses);
 
-        free(pszFolderPoses);
-    } // if (pszFolderPoses)
+            XSTRING str;
+            CHAR    sz[500] = "";
+            xstrInit(&str, 100);
 
-    if (    (cAbstractsNuked) || (cFolderPosesNuked) )
-    {
-        XSTRING str;
-        CHAR    sz[100] = "";
-        xstrInit(&str, 100);
-        if (cAbstractsNuked)
-        {
-            sprintf(sz, "%d abstract object(s)",
-                    cAbstractsNuked);
-            xstrcpy(&str, sz, 0);
-        }
-        if (cFolderPosesNuked)
-        {
-            if (sz[0])
-                xstrcat(&str, " and ", 0);
-            sprintf(sz, "%d folder position(s)",
-                    cFolderPosesNuked);
+            CNRINFO CnrInfo;
+            WinSendMsg(hwndCnr,
+                       CM_QUERYCNRINFO,
+                       (MPARAM)&CnrInfo,
+                       (MPARAM)sizeof(CnrInfo));
+
+            if (cAbstractsNuked)
+            {
+                sprintf(sz, "%d abstract object(s)",
+                        cAbstractsNuked);
+                xstrcpy(&str, sz, 0);
+            }
+            if (cFolderPosesNuked)
+            {
+                if (sz[0])
+                    xstrcat(&str, " and ", 0);
+                sprintf(sz, "%d folder position(s)",
+                        cFolderPosesNuked);
+                xstrcat(&str, sz, 0);
+            }
+
+            if (str.ulLength)
+                xstrcat(&str, " have been scheduled for deletion. ", 0);
+
+            if (CnrInfo.cRecords != cNewRecords)
+                sprintf(sz,
+                        "Hmmm. CNRINFO reports %d handles left, but we counted %d.",
+                        CnrInfo.cRecords,
+                        cNewRecords);
+            else
+                sprintf(sz, "%d handles are left.", cNewRecords);
             xstrcat(&str, sz, 0);
-        }
 
-        if (str.ulLength)
-        {
-            xstrcat(&str, " have been scheduled for deletion.", 0);
-            winhDebugBox(G_hwndMain,
-                         "xfix",
-                         str.psz);
-        }
+            if (str.ulLength)
+                winhDebugBox(G_hwndMain,
+                             "xfix",
+                             str.psz);
 
-        xstrClear(&str);
-    }
+            xstrClear(&str);
+        }
+    } // if (pszFolderPoses)
 
     return (ulrc);
 }
@@ -2730,7 +2885,7 @@ int main(int argc, char* argv[])
                                   &G_cbHandlesBuffer))
                 G_pHandlesBuffer = NULL;
 
-            RebuildHashTable();
+            RebuildNodeHashTable();
 
             StartInsertHandles(hwndCnr);
 
