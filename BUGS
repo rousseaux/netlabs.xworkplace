@@ -26,10 +26,15 @@ FIXPAK 13/14
 
 This is my private bug list for FP13/14:
 
+-- ### "XShutdown non-PM session" popup msg box help panel is WRONG
+
 -- Sometimes after a WPS restart, the WPS doesn't populate
    the Desktop, and the system hangs. I'm not sure what this
    is about. This doesn't happen with FP11, and it happens
    with my Desktop even if I disable XWP.
+
+   UPDATE: I was told at Warpstock Europe that this has been
+   fixed with kernel build level 14.050.
 
 -- IBM has ruined the DosQProcStat and DosQuerySysState APIs.
    These still return garbage with FP14 sometimes.

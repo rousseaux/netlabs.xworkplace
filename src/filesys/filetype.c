@@ -220,7 +220,7 @@ ULONG ftypListTypesForFile(const char *pcszObjectTitle,
                        //      pFilterThis, pszObjectTitle));
 
                     // check if this matches the data file name
-                    if (strhMatchOS2(pFilterThis, pszObjectTitle))
+                    if (strhMatchOS2(pFilterThis, pcszObjectTitle))
                     {
                         // matches:
                         // now we have:

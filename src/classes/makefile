@@ -233,7 +233,8 @@ $(OUTPUTDIR)\xfobj.obj: \
             $(HLPINC)\cnrh.h $(HLPINC)\except.h $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\undoc.h \
             $(INC)\dlgids.h \
             $(INC)\shared\common.h $(INC)\shared\kernel.h $(INC)\shared\wpsh.h \
-            $(INC)\filesys\fileops.h $(INC)\filesys\folder.h $(INC)\filesys\object.h $(INC)\filesys\xthreads.h \
+            $(INC)\filesys\fileops.h $(INC)\filesys\folder.h $(INC)\filesys\object.h \
+                $(INC)\filesys\program.h $(INC)\filesys\xthreads.h \
             $(@B).c $(MYOWNINC)\$(@B).ih $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\xfpgmf.obj: \

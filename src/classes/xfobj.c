@@ -74,6 +74,7 @@
 #define INCL_WINDIALOGS
 #define INCL_WINSTDCNR
 #define INCL_WINSTDBOOK
+#define INCL_WINPROGRAMLIST
 #include <os2.h>
 
 // C library headers
@@ -102,6 +103,7 @@
 #include "filesys\fileops.h"            // file operations implementation
 #include "filesys\folder.h"             // XFolder implementation
 #include "filesys\object.h"             // XFldObject implementation
+#include "filesys\program.h"            // program implementation
 #include "filesys\xthreads.h"           // extra XWorkplace threads
 
 // other SOM headers
@@ -264,6 +266,129 @@ SOM_Scope BOOL  SOMLINK xfobj_xwpSetTrashObject(XFldObject *somSelf,
     _pTrashObject = pTrashObject;
 
     return (TRUE);
+}
+
+/*
+ *@@ xwpQueryListNotify:
+ *      returns the current list notification flags for this
+ *      object. See XFldObject::xwpSetListNotify for details.
+ *
+ *@@added V0.9.6 (2000-10-23) [umoeller]
+ */
+
+SOM_Scope ULONG  SOMLINK xfobj_xwpQueryListNotify(XFldObject *somSelf)
+{
+    ULONG   ulrc = 0;
+    BOOL    fSemOwned = FALSE;
+    XFldObjectMethodDebug("XFldObject","xfobj_xwpQueryListNotify");
+    fSemOwned = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT);
+    if (fSemOwned)
+    {
+        XFldObjectData *somThis = XFldObjectGetData(somSelf);
+        ulrc = _ulListNotify;
+        _wpReleaseObjectMutexSem(somSelf);
+    }
+
+    return (ulrc);
+}
+
+/*
+ *@@ xwpSetListNotify:
+ *      sets the list notification flags for this object.
+ *
+ *      List notification flags are a new object feature
+ *      with XWorkplace. These are intended to implement
+ *      object-granular functions when an object has been
+ *      stored in some XWP-internal list which needs to
+ *      be updated in certain cases.
+ *
+ *      Current flags are:
+ *
+ *      -- OBJLIST_RUNNINGSTORED: this means that the
+ *         object has been given in-use emphasis by
+ *         progOpenProgram. This can happen to program
+ *         objects (WPProgram or WPProgramFile) or
+ *         data files. If the object is destroyed
+ *         for whatever reason, the object needs to
+ *         be removed from the list maintained by
+ *         progOpenProgram because otherwise we'd
+ *         run into problems when WM_APPTERMINATENOTIFY
+ *         comes in.
+ *
+ *      Note: These flags are NOT persistant across
+ *      reboots, i.e. not stored with wpSaveState.
+ *
+ *@@added V0.9.6 (2000-10-23) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfobj_xwpSetListNotify(XFldObject *somSelf,
+                                               ULONG flNotifyFlags)
+{
+    BOOL    brc = FALSE;
+    BOOL    fSemOwned = FALSE;
+    XFldObjectMethodDebug("XFldObject","xfobj_xwpSetListNotify");
+
+    fSemOwned = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT);
+    if (fSemOwned)
+    {
+        XFldObjectData *somThis = XFldObjectGetData(somSelf);
+        _ulListNotify = flNotifyFlags;
+        brc = TRUE;
+        _wpReleaseObjectMutexSem(somSelf);
+    }
+
+    return (brc);
+}
+
+/*
+ *@@ xwpModifyListNotify:
+ *      this modifies the current list-notify flags for the
+ *      current object in an atomic operation.
+ *
+ *      See XFldObject::xwpSetListNotify for details.
+ *
+ *      Use this method if you need to modify single flags
+ *      while keeping others (instead of first querying and
+ *      then setting the new flags). This function is an
+ *      atomic operation, similar to wpModifyStyle.
+ *
+ *      This operates bit-wise. To set a flag, set it in
+ *      both flNotifyFlags and flNotifyMask. To unset a
+ *      flag, set it in flNotifyFlags only.
+ *
+ *      For example, to set FLAG1 and clear FLAG2, call:
+ +
+ +          _xwpModifyListNotify(...,
+ +                               FLAG1 | FLAG2,     // affected flags
+ +                               FLAG1);            // flags to set (i.e. clear FLAG2)
+ *
+ *@@added V0.9.6 (2000-10-23) [umoeller]
+ */
+
+SOM_Scope BOOL  SOMLINK xfobj_xwpModifyListNotify(XFldObject *somSelf,
+                                                  ULONG flNotifyFlags,
+                                                  ULONG flNotifyMask)
+{
+    BOOL    brc = FALSE;
+    BOOL    fSemOwned = FALSE;
+    XFldObjectMethodDebug("XFldObject","xfobj_xwpModifyListNotify");
+
+    fSemOwned = !_wpRequestObjectMutexSem(somSelf, SEM_INDEFINITE_WAIT);
+    if (fSemOwned)
+    {
+        XFldObjectData *somThis = XFldObjectGetData(somSelf);
+
+        _ulListNotify = (
+                            // copy all unaffected
+                            (_ulListNotify & ~flNotifyFlags)
+                            // OR with masked new ones
+                            | (flNotifyFlags & flNotifyMask)
+                        );
+        brc = TRUE;
+        _wpReleaseObjectMutexSem(somSelf);
+    }
+
+    return (brc);
 }
 
 /*
@@ -510,6 +635,8 @@ SOM_Scope void  SOMLINK xfobj_wpInitData(XFldObject *somSelf)
     _cbWPObjectData = 0;
 
     _pTrashObject = NULL;
+
+    _ulListNotify = 0;
 }
 
 /*
@@ -602,6 +729,7 @@ SOM_Scope void  SOMLINK xfobj_wpObjectReady(XFldObject *somSelf,
  *      of awake objects.
  *
  *@@changed V0.9.3 (2000-04-11) [umoeller]: now destroying related trash object too
+ *@@changed V0.9.6 (2000-10-23) [umoeller]: added support for progOpenProgram
  */
 
 SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
@@ -617,6 +745,16 @@ SOM_Scope void  SOMLINK xfobj_wpUnInitData(XFldObject *somSelf)
     // destroy trash object, if there's one
     if (_pTrashObject)
         _wpFree(_pTrashObject);
+
+    // go thru notifications
+    if (_ulListNotify & OBJLIST_RUNNINGSTORED)
+    {
+        // this object is currently stored in the
+        // "running programs" list: remove it, or
+        // we'll get crashes later...
+        _ulListNotify &= ~OBJLIST_RUNNINGSTORED;
+        progRunningAppDestroyed(somSelf);
+    }
 
     XFldObject_parent_WPObject_wpUnInitData(somSelf);
 }

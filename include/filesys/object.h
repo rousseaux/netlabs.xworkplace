@@ -28,17 +28,25 @@
     #define OBJECT_HEADER_INCLUDED
 
     /* ******************************************************************
-     *                                                                  *
-     *   Object "Internals" page                                        *
-     *                                                                  *
+     *
+     *   Object flags
+     *
+     ********************************************************************/
+
+    #define OBJLIST_RUNNINGSTORED           0x0001
+
+    /* ******************************************************************
+     *
+     *   Object "Internals" page
+     *
      ********************************************************************/
 
     MRESULT EXPENTRY obj_fnwpSettingsObjDetails(HWND hwndDlg, ULONG msg, MPARAM mp1, MPARAM mp2);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Object hotkeys                                                 *
-     *                                                                  *
+     *
+     *   Object hotkeys
+     *
      ********************************************************************/
 
     #ifdef XWPHOOK_HEADER_INCLUDED
@@ -60,9 +68,9 @@
     BOOL objRemoveObjectHotkey(HOBJECT hobj);
 
     /* ******************************************************************
-     *                                                                  *
-     *   Object setup strings                                           *
-     *                                                                  *
+     *
+     *   Object setup strings
+     *
      ********************************************************************/
 
     ULONG objQuerySetup(WPObject *somSelf,

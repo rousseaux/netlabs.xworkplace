@@ -96,18 +96,4 @@
     GROUPID=0
 >root</USER>
 
-<USER
-    NAME="ulli"
-    USERID=1
-    PASS="pass"
-    GROUPID=2
->Ulrich M”ller</USER>
-
-<USER
-    NAME="special"
-    USERID=2
-    PASS="pass"
-    GROUPID=3
->Ulrich M”ller</USER>
-
 

@@ -265,11 +265,12 @@ $(OUTPUTDIR)\object.obj: \
 
 $(OUTPUTDIR)\program.obj: \
     $(INC)\setup.h \
-    $(HLPINC)\except.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h $(HLPINC)\stringh.h $(HLPINC)\xstring.h \
-    $(INC)\classes\xfdataf.ih \
+    $(HLPINC)\dosh.h $(HLPINC)\except.h $(HLPINC)\linklist.h $(HLPINC)\prfh.h \
+        $(HLPINC)\stringh.h $(HLPINC)\winh.h $(HLPINC)\xstring.h \
+    $(INC)\classes\xfdataf.ih $(INC)\classes\xfobj.ih \
     $(INC)\dlgids.h \
     $(INC)\shared\common.h $(INC)\shared\kernel.h \
-    $(INC)\hook\xwphook.h \
+    $(INC)\filesys\object.h $(INC)\filesys\program.h \
     $(@B).c $(MYOWNINC)\$(@B).h
 
 $(OUTPUTDIR)\statbars.obj: \

@@ -3782,7 +3782,7 @@ VOID xsdCloseVIO(HWND hwndFrame)
                                           ID_SDD_CLOSEVIO,
                                           NULL);
 
-                // ID_SDDI_VDMAPPTEXT has ""cannot be closed automatically";
+                // ID_SDDI_VDMAPPTEXT has "\"cannot be closed automatically";
                 // prefix session title
                 strcpy(szText, "\"");
                 strcat(szText, G_VioItem.swctl.szSwtitle);

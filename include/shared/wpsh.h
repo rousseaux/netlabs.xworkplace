@@ -122,7 +122,7 @@
 
     /* ******************************************************************
      *
-     *   Undocumented WPS method prototypes
+     *   Additional WPObject method prototypes
      *
      ********************************************************************/
 
@@ -133,15 +133,120 @@
      *  IMPORTANT NOTE: Make sure these things have the _System
      *  calling convention. Normally, SOM uses #pragma linkage
      *  in the headers to ensure this, but we must do this manually.
+     *  The usual SOMLINK does _not_ suffice.
      */
 
-    typedef BOOL _System (xfTP_wpModifyMenu)(WPObject*,
-                                             HWND,
-                                             HWND,
-                                             ULONG,
-                                             ULONG,
-                                             ULONG,
-                                             ULONG);
+    /*
+     * xfTP_wpMakeDormant:
+     *      prototype for WPObject::wpMakeDormant.
+     *
+     *      _wpMakeDormant is undocumented. It destroys only
+     *      the SOM object which represents the persistent
+     *      form of a WPS object. This gets called whenever
+     *      the WPS puts an object back to sleep (e.g. because
+     *      its folder was closed and the "sleepy time" has
+     *      elapsed on the object). This is described in the
+     *      WPSGUIDE, "WPS Processes and Threads", "Sleepy
+     *      Time Thread".
+     *
+     *      This also gets called in turn by _wpFree (which,
+     *      in addition, destroys the persistent form) after
+     *      the object has been deleted.
+     *
+     *      WPObject::wpMakeDormant apparently does the
+     *      following:
+     *
+     *      1)  changes the folder flags of the owning
+     *          folder, if that folder was populated
+     *          (apparently to force a re-populate at
+     *          the next open);
+     *
+     *      2)  closes all open views (by calling _wpClose);
+     *
+     *      3)  calls _wpSaveImmediate, if (fSaveState == TRUE);
+     *
+     *      4)  cleans up the object's useitems list (remove
+     *          the object from all containers, cleans up
+     *          memory, etc.);
+     *
+     *      5)  calls _somUninit, which in turn calls _wpUnInitData.
+     *
+     *      For example, _wpMakeDormant on a data file would
+     *      only remove the SOM representation of the data
+     *      file, without deleting the file itself.
+     *
+     *      By contrast, _wpFree on a data file would first
+     *      delete the file and then call _wpMakeDormant in
+     *      turn to have the SOM object destroyed as well.
+     *
+     *      In other words, wpMakeDormant is the reverse to
+     *      wpclsMakeAwake. By contrast, wpFree is the reverse
+     *      to wpclsNew.
+     */
+
+    typedef BOOL32 _System xfTP_wpMakeDormant(WPObject *somSelf,
+                                              BOOL32 fSaveState);
+    typedef xfTP_wpMakeDormant *xfTD_wpMakeDormant;
+
+    /*
+     * xfTP_wpModifyMenu:
+     *      prototype for WPObject::wpModifyMenu.
+     *
+     *      See the Warp 4 Toolkit documentation for details.
+     *
+     *      From my testing (after overriding _all_ WPDataFile methods...),
+     *      I found out that wpDisplayMenu apparently calls the following
+     *      methods in this order:
+     *
+     *      --  wpFilterMenu (Warp-4-specific);
+     *      --  wpFilterPopupMenu;
+     *      --  wpModifyPopupMenu;
+     *      --  wpModifyMenu (Warp-4-specific).
+     */
+
+    typedef BOOL _System xfTP_wpModifyMenu(WPObject*,
+                                           HWND,
+                                           HWND,
+                                           ULONG,
+                                           ULONG,
+                                           ULONG,
+                                           ULONG);
     typedef xfTP_wpModifyMenu *xfTD_wpModifyMenu;
+
+    /* ******************************************************************
+     *
+     *   Additional WPFolder method prototypes
+     *
+     ********************************************************************/
+
+    #ifdef SOM_WPFolder_h
+
+    /*
+     * xfTP_wpclsGetNotifySem:
+     *      prototype for M_WPFolder::wpclsGetNotifySem.
+     *
+     *      This "notify mutex" is used before the background
+     *      threads in the WPS attempt to update folder contents
+     *      for auto-refreshing folders. By requesting this
+     *      semaphore, any other WPS thread which does file
+     *      operations can therefore keep these background
+     *      threads from interfering.
+     */
+
+    typedef BOOL _System xfTP_wpclsGetNotifySem(M_WPFolder *somSelf,
+                                                ULONG ulTimeout);
+    typedef xfTP_wpclsGetNotifySem *xfTD_wpclsGetNotifySem;
+
+    /*
+     * M_WPFolder:
+     *      prototype for M_WPFolder::wpclsReleaseNotifySem.
+     *
+     *      This is the reverse to xfTP_wpclsGetNotifySem.
+     */
+
+    typedef VOID _System xfTP_wpclsReleaseNotifySem(M_WPFolder *somSelf);
+    typedef xfTP_wpclsReleaseNotifySem *xfTD_wpclsReleaseNotifySem;
+
+    #endif // SOM_WPFolder_h
 
 #endif

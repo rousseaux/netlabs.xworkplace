@@ -760,7 +760,7 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
 
                 pNode = pNode->pNext;
                 ulSubObjectThis++;
-            }
+            } // end while (pNode)
 
             // done with subobjects: report NULL subobject
             if (frc == FOPSERR_OK)
@@ -771,8 +771,8 @@ FOPSRET fopsFileThreadTrueDelete(HFILETASKLIST hftl,
                                                FALSE, // no update progress
                                                pfu);
             }
-        }
-    }
+        } // end if (    (frc == FOPSERR_OK)
+    } // end if (frc == FOPSERR_OK)
 
     lstClear(&llObjects);
 

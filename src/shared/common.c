@@ -2497,7 +2497,7 @@ VOID cmnShowProductInfo(ULONG ulSound) // in: sound intex to play
     free(pszGPLInfo);
 
     // version string
-    sprintf(szGPLInfo, "XWorkplace V%s built %s", BLDLEVEL_VERSION, __DATE__);
+    sprintf(szGPLInfo, "XWorkplace V%s (%s)", BLDLEVEL_VERSION, __DATE__);
     WinSetDlgItemText(hwndInfo, ID_XFDI_XFLDVERSION, szGPLInfo);
 
     cmnSetDlgHelpPanel(0);

@@ -217,7 +217,6 @@
     #define ID_XFH_SELECTCLASS      (ID_XFH_BORED+7)
     #define ID_XFH_REGISTERCLASS    (ID_XFH_BORED+8)
     #define ID_XFH_TITLECLASH       (ID_XFH_BORED+9)
-    #define ID_XFH_CLOSEVIO         (ID_XFH_BORED+10)
 
     #define ID_XMH_VARIABLE         12
     #define ID_XMH_CONFIGFOLDER     13
@@ -298,6 +297,8 @@
     #define ID_XSH_XWPMEDIA                  93     // V0.9.5: XWPMedia main panel
 
     #define ID_XSH_XWP_CLASSESDLG            94     // V0.9.5: XWP "Classes" dlg
+
+    #define ID_XFH_CLOSEVIO                  95     // V0.9.6: was missing
 
     /********************************************************************
      *

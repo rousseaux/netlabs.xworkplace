@@ -510,7 +510,9 @@ SOM_Scope HWND  SOMLINK xfdf_wpOpen(XFldDataFile *somSelf,
             hwnd = (HWND)progOpenProgram(pAssocObject,
                                          somSelf);
 
-            _wpUnlockObject(pAssocObject);
+            // _wpUnlockObject(pAssocObject);
+                    // do not unlock the assoc object...
+                    // this is still needed in the use list!!!
         }
     }
     else
@@ -691,6 +693,7 @@ SOM_Scope WPObject*  SOMLINK xfdf_wpQueryAssociatedProgram(XFldDataFile *somSelf
         // use our replacement mechanism
         pobj = ftypQueryAssociatedProgram(somSelf,
                                           ulView);
+                        // locks the object
     else
 #endif
         pobj = XFldDataFile_parent_WPDataFile_wpQueryAssociatedProgram(somSelf,

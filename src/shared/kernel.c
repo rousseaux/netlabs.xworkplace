@@ -947,8 +947,7 @@ MRESULT EXPENTRY krn_fnwpThread1Object(HWND hwndObject, ULONG msg, MPARAM mp1, M
             case WM_APPTERMINATENOTIFY:
                 _Pmpf((__FUNCTION__ ": WM_APPTERMINATENOTIFY happ 0x%lX ulrc %d",
                         mp1, mp2));
-                progRemoveRunningProgram((HAPP)mp1,
-                                         (ULONG)mp2);
+                progAppTerminateNotify((HAPP)mp1);
             break;
 
             /*

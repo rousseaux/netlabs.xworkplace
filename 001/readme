@@ -1,7 +1,7 @@
 
 XWorkplace 0.9.5 README
 (W) Ulrich M”ller, Feb 7, 2000
-Last updated October 7, 2000
+Last updated October 22, 2000
 
 
 0. CONTENTS OF THIS FILE
@@ -20,7 +20,7 @@ Last updated October 7, 2000
 1. INTRODUCTION
 ===============
 
-    Welcome to XWorkplace V0.9.5.
+    Welcome to XWorkplace V0.9.6.
 
     XWorkplace is a complex set of replacement classes for the
     OS/2 Workplace Shell to enhance the WPS's behavior in many
@@ -52,14 +52,8 @@ Last updated October 7, 2000
     ------------------
 
     This version is mainly another bugfix release compared
-    to previous versions. While V0.9.4 was pretty stable
-    already, this version fixes two major bugs:
-
-        -- The XShutdown INI problems appear to be
-           finally solved for good.
-
-        -- Object hotkeys should work now without
-           hanging the system when assigning them.
+    to previous versions. Most importantly, extended file
+    associations should work now.
 
     For details, refer to the "XWorkplace User Guide" after
     unpacking the files. To extract the documentation only,
@@ -187,17 +181,13 @@ Last updated October 7, 2000
         but there's still some work left. If anybody finds the time
         to do the remaining integration work, any help is welcome.
 
-    2)  If "Extended associations" is enabled in XWPSetup, the new
-        "File types" page in "Workplace Shell" is working, but
-        XFldDataFile doesn't support the enhanced file type icons yet.
-        You'll see the proper icons and associations in the "Open"
-        submenu, but clicking on them will not open the proper
-        association.
+    2)  Extended file associations are working now, but they will
+        noticeably slow down folder populating.
 
     3)  Even though I've fixed many PageMage bugs with V0.9.4,
         there are still a number of problems left. PageMage doesn't
         shouldn't hang system any more, but it has problems tracking
-        windows at times. PageMage 0.9.5 is essentially unchanged
+        windows at times. PageMage 0.9.6 is essentially unchanged
         from 0.9.4.
 
     4)  There are problems with WPS restarts and FP13/14. This has

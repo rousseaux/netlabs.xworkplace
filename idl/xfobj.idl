@@ -72,6 +72,11 @@ interface XFldObject : WPObject
 
     BOOL xwpSetTrashObject(in WPObject pTrashObject);
 
+    ULONG xwpQueryListNotify();
+    BOOL xwpSetListNotify(in ULONG flNotifyFlags);
+    BOOL xwpModifyListNotify(in ULONG flNotifyFlags,
+                             in ULONG flNotifyMask);
+
     BOOL xwpQueryObjectHotkey(in PUSHORT pusFlags,
                               in PUCHAR  pucScanCode,
                               in PUSHORT pusKeyCode);
@@ -95,7 +100,10 @@ interface XFldObject : WPObject
                   xwpQueryObjectHotkey,
                   xwpSetObjectHotkey,
                   xwpQuerySetup,
-                  xwpQuerySetup2;
+                  xwpQuerySetup2,
+                  xwpQueryListNotify,
+                  xwpSetListNotify,
+                  xwpModifyListNotify;
 
     //# Class Modifiers
     externalprefix = xfobj_;
@@ -125,6 +133,8 @@ interface XFldObject : WPObject
                                 // corresponding trash object; this is set when
                                 // the trash object is created (upon deletion
                                 // or upon first trash can populate)
+
+    ULONG       ulListNotify;   // OBJLIST_* flags set with xwpSetListNotify
 
     /*
      * The following is forced into the .H file:
